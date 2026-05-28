@@ -52,9 +52,15 @@ function dwarn(...args) { /* eslint-disable-next-line no-console */ console.warn
 function dgroup(label)  { /* eslint-disable-next-line no-console */ console.groupCollapsed('[ChatBot]', label); }
 function dgroupEnd()    { /* eslint-disable-next-line no-console */ console.groupEnd(); }
 
-// (Previously: MAX_ITER capped a multi-iteration tool loop.  Removed —
-// the new pipeline runs exactly one LLM call per user turn, no
-// iteration to bound.)
+// Hard cap on LLM iterations per user turn.  A single user message
+// kicks off an agentic loop: the model emits prose + JSON tool calls,
+// the orchestrator dispatches them, folds the results into history,
+// and re-prompts.  The loop ends when the model emits no tool calls
+// (its "workflow complete" signal), the user cancels a confirm, or
+// this cap fires.  Six is enough for any realistic chained workflow
+// (read → decide → write → verify → close, with one spare) and tight
+// enough to bail quickly when a model gets stuck repeating itself.
+const MAX_TURN_ITERATIONS = 6;
 
 // Stall timeout (ms) for the single combined LLM call.  WebLLM 0.2.x
 // has a known failure mode where chat.completions.create can wedge
@@ -1484,7 +1490,11 @@ export class ChatBot {
     urlInput.type = 'url';
     urlInput.className = 'cb-remote-input';
     urlInput.placeholder = 'http://localhost:11434/v1';
-    urlInput.value = seed?.url ?? '';
+    // Default to the local-Ollama URL when adding a new endpoint —
+    // it's by far the most common case, and the auto-fetch at the
+    // bottom of this method will probe it immediately so models
+    // appear in the dropdown without the user typing anything.
+    urlInput.value = seed?.url ?? 'http://localhost:11434/v1';
     wrap.appendChild(urlInput);
 
     const modelLabel = document.createElement('label');
@@ -1617,8 +1627,9 @@ export class ChatBot {
     urlInput.focus();
 
     // Auto-fetch on first render when a URL is already present (edit
-    // mode, or browser-restored value).  Skipped when starting fresh
-    // since there's nothing to fetch yet.
+    // mode, browser-restored value, OR the default Ollama URL we
+    // prefill above for new endpoints — so models load immediately
+    // for the common case of a user running local Ollama).
     if (urlInput.value.trim()) {
       refreshModels(seed?.model);
     }
@@ -2002,6 +2013,22 @@ export class ChatBot {
     const content = ctxNote ? `${ctxNote}\n\n${userText}` : userText;
     this._history.push({ role: 'user', content });
 
+    // Agentic outer loop — one user turn drives up to
+    // MAX_TURN_ITERATIONS LLM calls.  Each iteration: generate a
+    // reply, dispatch any tool calls, fold the results into history,
+    // re-prompt the model so it can decide the next step.  The model
+    // ends the workflow by emitting prose only (no JSON tool calls);
+    // we also stop on user-cancel, stale (Stop pressed), or the cap.
+    //
+    // Cross-iteration state: bubble + SUGGEST chips from the FINAL
+    // iteration are what we render once the workflow ends.
+    let lastBubble = null;
+    let lastSuggestions = null;
+    let hitMaxIter = false;
+    let outerIter = 0;
+    outer: for (; outerIter < MAX_TURN_ITERATIONS; outerIter++) {
+      dlog(`runLoop: outer iter ${outerIter + 1}/${MAX_TURN_ITERATIONS}`);
+
     // Generate-and-validate retry loop.
     //
     // Each iteration: build messages from the current history, stream
@@ -2193,36 +2220,72 @@ export class ChatBot {
       dlog('runLoop: retrying attempt=', attempt + 1, 'after unknown:', unknownNames);
     }
 
+    // Carry this iteration's bubble + chips forward so the FINAL
+    // iteration's values are what we render at the end of the turn.
+    lastBubble = bubble;
+    if (suggestions) lastSuggestions = suggestions;
+
     if (toolCalls.length === 0) {
-      dlog('runLoop: no tool calls in response (conceptual question or model omitted JSON)');
-    } else {
-      // Dispatch in document order.  Each iteration awaits the full
-      // tool lifecycle (confirm widget render → user click → handler
-      // execute → history note).  Three exit conditions stop the
-      // chain mid-flight:
-      //   1. stale()  — Stop pressed or new chat reset
-      //   2. cancel   — _dispatchTool returns false on user-cancelled
-      //                 confirm; the user rejected this step, so any
-      //                 follow-up steps that depended on it would be
-      //                 surprising at best, destructive at worst
-      //   3. unknown  — _dispatchTool also returns false on unknown
-      //                 tool names, to avoid spamming bubbles for
-      //                 every malformed call in a bad chain
-      for (let i = 0; i < toolCalls.length; i++) {
-        const tc = toolCalls[i];
-        dlog(`runLoop: dispatching tool ${i + 1}/${toolCalls.length}:`, tc.name);
-        const ok = await this._dispatchTool(tc);
-        if (stale()) {
-          dlog('runLoop: stale after tool dispatch, exit (skipped',
-               toolCalls.length - i - 1, 'remaining call(s))');
-          return;
-        }
-        if (!ok) {
-          dlog('runLoop: dispatch returned false (cancel or unknown), aborting chain (skipped',
-               toolCalls.length - i - 1, 'remaining call(s))');
-          break;
-        }
+      // Model emitted prose only — the "workflow complete" signal.
+      // Also covers conceptual questions ("what does SWAP do?") on
+      // the first iteration: same code path, same exit.
+      dlog(`runLoop: iter ${outerIter + 1} produced no tool calls — workflow complete`);
+      break outer;
+    }
+
+    // Dispatch in document order.  Each iteration awaits the full
+    // tool lifecycle (confirm widget render → user click → handler
+    // execute → history note).  Three exit conditions stop the
+    // chain mid-flight:
+    //   1. stale()  — Stop pressed or new chat reset
+    //   2. cancel   — _dispatchTool returns false on user-cancelled
+    //                 confirm; the user rejected this step, so any
+    //                 follow-up steps that depended on it would be
+    //                 surprising at best, destructive at worst
+    //   3. unknown  — _dispatchTool also returns false on unknown
+    //                 tool names, to avoid spamming bubbles for
+    //                 every malformed call in a bad chain
+    let chainBroken = false;
+    for (let i = 0; i < toolCalls.length; i++) {
+      const tc = toolCalls[i];
+      dlog(`runLoop: iter ${outerIter + 1} dispatching tool ${i + 1}/${toolCalls.length}:`, tc.name);
+      const ok = await this._dispatchTool(tc);
+      if (stale()) {
+        dlog('runLoop: stale after tool dispatch, exit (skipped',
+             toolCalls.length - i - 1, 'remaining call(s))');
+        return;
       }
+      if (!ok) {
+        dlog('runLoop: dispatch returned false (cancel or unknown), aborting chain (skipped',
+             toolCalls.length - i - 1, 'remaining call(s))');
+        chainBroken = true;
+        break;
+      }
+    }
+    if (chainBroken) break outer;
+
+    // About to iterate again.  Inject a synthetic user turn so the
+    // next assistant turn doesn't sit adjacent to the previous one
+    // in history — most chat templates (Llama / Qwen / Mistral)
+    // require strict user/assistant alternation, and two adjacent
+    // assistant messages will silently misbehave on the NEXT prefill.
+    // See _pushHistoryNote's comment for the canonical incident.
+    //
+    // On the LAST allowed iteration, skip the synthetic message and
+    // flag hitMaxIter — there'll be no further LLM call, so no
+    // alternation to maintain, and the user gets a "cap reached" note.
+    if (outerIter + 1 < MAX_TURN_ITERATIONS) {
+      this._history.push({
+        role: 'user',
+        content: '[Continue the workflow if more steps are needed, or respond with prose only — no JSON tool calls — to indicate the workflow is complete.]',
+      });
+    } else {
+      hitMaxIter = true;
+    }
+    }   // end outer:
+
+    if (hitMaxIter) {
+      this._addRetryNote(`Reached workflow iteration cap (${MAX_TURN_ITERATIONS}); stopping.`);
     }
 
     // Render follow-up suggestions (if any) as chips below the
@@ -2232,11 +2295,11 @@ export class ChatBot {
     // dispatched automatically; that's the whole point of routing
     // them through the chip-suggestion channel rather than the
     // tool-call channel.
-    if (!stale() && suggestions?.length) {
-      dlog('runLoop: rendering', suggestions.length, 'suggestion chip(s)');
-      this._renderChips(suggestions, bubble);
+    if (!stale() && lastSuggestions?.length) {
+      dlog('runLoop: rendering', lastSuggestions.length, 'suggestion chip(s)');
+      this._renderChips(lastSuggestions, lastBubble);
     }
-    dlog('runLoop: turnId=', turnId, 'complete');
+    dlog(`runLoop: turnId=`, turnId, `complete after ${outerIter + 1} iter(s)`);
   }
 
   /** Dispatch a parsed tool call through the registry.  Renders a
