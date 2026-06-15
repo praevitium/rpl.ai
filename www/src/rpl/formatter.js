@@ -1,10 +1,5 @@
-/* =================================================================
-   Value -> display-string formatter.
-
-   HP50 supports STD, FIX n, SCI n, ENG n display modes.  This module
-   handles STD + FIX now; SCI/ENG are stubs that call FIX for the
-   moment and will be filled in later.
-   ================================================================= */
+/* Value -> display-string formatter.  HP50 supports STD, FIX n, SCI n,
+   ENG n display modes. */
 
 import {
   isReal, isInteger, isRational, isBinaryInteger, isComplex, isString,
@@ -57,9 +52,6 @@ export function format(v, display = DEFAULT_DISPLAY, options = {}) {
   if (isString(v))  return `"${v.value}"`;
   if (isName(v)) {
     if (v.local)  return `↓${v.id}`;
-    // On a stack level, any Name is a name literal by nature — backtick it.
-    // Otherwise, only a quoted Name gets backticks (bare survives inside
-    // programs, lists, and other internal renderings).
     if (options.context === 'stack' || v.quoted) return `\`${v.id}\``;
     return v.id;
   }
@@ -95,12 +87,6 @@ export function formatStackTop(v, display = DEFAULT_DISPLAY) {
   return format(v, display, { context: 'stack' });
 }
 
-/**
- * Format a single Complex component.  In EXACT + STD mode, integer-
- * valued components render without a trailing dot — so `(1, 1)` stays
- * `(1, 1)` rather than `(1., 1.)`, matching HP50 EXACT display.  In
- * APPROX or any non-STD mode we delegate to `formatReal` unchanged.
- */
 /** Render a Complex in the active coordinate display mode.
  *
  *    RECT    → `(a, b)`              — real/imag, HP50 default
@@ -265,12 +251,9 @@ function formatStd(n) {
   if (n === 0) return '0.';
   const abs = Math.abs(n);
   if (abs >= 1e12 || abs < 1e-11) {
-    // Fall back to scientific with up to 11 digits mantissa.
     return n.toExponential().replace('e+', 'E').replace('e', 'E');
   }
-  // Round to 12 significant digits and strip insignificant zeros.
   let s = n.toPrecision(12);
-  // toPrecision may emit exponential if abs is tiny or huge — caught above.
   if (s.includes('.')) s = s.replace(/0+$/, '').replace(/\.$/, '.');
   return s;
 }

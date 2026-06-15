@@ -1,38 +1,18 @@
-/* =================================================================
-   Pretty-print (textbook-mode 2D rendering) of algebra AST nodes.
+/* Pretty-print (textbook-mode 2D rendering) of algebra AST nodes.
 
-   Features:
-     - Renders fractions with a horizontal bar and stacked
-       numerator/denominator.
-     - Renders exponents as superscripts (smaller, raised text).
-     - Draws matching parens that scale to the enclosed content height
-       (useful once a paren surrounds a fraction or a large expression).
-     - Everything else prints flat — numbers, identifiers, functions,
-       +/-/* chains, neg, sqrt.
+   String-producing only — never touches the DOM.  We use a fixed
+   advance-width model tuned for a monospace font so layout is
+   reproducible in Node (for tests) and in the browser.
 
-   The module is entirely string-producing.  It never touches the DOM
-   or a measured-font-metrics API — we use a fixed advance-width model
-   tuned for a monospace font so layout is reproducible in Node (for
-   tests) and in the browser (which then actually kerns, at which point
-   the text may not perfectly align but reads correctly).
-
-   The unit of coordinate is CSS px; the top-level astToSvg returns a
-   complete `<svg>` element with width/height/viewBox set from the
-   computed layout box.  The caller (or a display-mode toggle in the
-   UI layer) is responsible for deciding when to use this instead of
-   the flat formatAlgebra().
-
-   Design sketch.  Everything is a Box:
+   Everything is a Box:
      {
        width:   px  (horizontal advance — always positive)
        ascent:  px  (distance from the drawing baseline to the top)
        descent: px  (distance from baseline to the bottom)
        draw(x, baselineY): SVG fragment string
      }
-   Total height of a Box is `ascent + descent`.  When boxes are placed
-   in a row, their baselines align; the row's ascent is the max child
-   ascent, the row's descent the max child descent.
-   ================================================================= */
+   When boxes are placed in a row, their baselines align; the row's
+   ascent/descent are the max of the children's. */
 
 import { isNum, isVar, isNeg, isBin, isFn } from './algebra.js';
 

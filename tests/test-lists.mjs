@@ -22,7 +22,6 @@ import { assert, assertThrows } from './helpers.mjs';
 
 /* List ops — GET / PUT / HEAD / TAIL / SUB / →LIST / LIST→ / POS. */
 
-  // ---- GET on a List ----
   {
     const s = new Stack();
     s.push(RList([Real(10), Real(20), Real(30)]));
@@ -39,7 +38,6 @@ import { assert, assertThrows } from './helpers.mjs';
     catch (e) { assert(e.message.match(/argument/i), 'GET OOB throws'); }
   }
 
-  // ---- GET on a Vector ----
   {
     const s = new Stack();
     s.push(Vector([Real(7), Real(8), Real(9)]));
@@ -49,7 +47,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'GET [ 7 8 9 ] 3 → 9');
   }
 
-  // ---- GET on a Matrix with {row col} ----
   {
     const s = new Stack();
     s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]));
@@ -59,7 +56,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'GET [[1 2][3 4]] {2 1} → 3');
   }
 
-  // ---- GET on a String ----
   {
     const s = new Stack();
     s.push(Str('hello'));
@@ -69,7 +65,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'GET "hello" 1 → "h"');
   }
 
-  // ---- PUT on a List ----
   {
     const s = new Stack();
     s.push(RList([Real(1), Real(2), Real(3)]));
@@ -82,7 +77,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'PUT { 1 2 3 } 2 99 → { 1 99 3 }');
   }
 
-  // ---- PUT on a Matrix ----
   {
     const s = new Stack();
     s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]));
@@ -95,7 +89,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'PUT [[1 2][3 4]] {1 2} 50 → [[1 50][3 4]]');
   }
 
-  // ---- HEAD ----
   {
     const s = new Stack();
     s.push(RList([Real(7), Real(8), Real(9)]));
@@ -111,7 +104,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'HEAD "abc" → "a"');
   }
 
-  // ---- TAIL ----
   {
     const s = new Stack();
     s.push(RList([Real(7), Real(8), Real(9)]));
@@ -137,7 +129,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'TAIL "abc" → "bc"');
   }
 
-  // ---- SUB ----
   {
     const s = new Stack();
     s.push(RList([Real(1), Real(2), Real(3), Real(4), Real(5)]));
@@ -169,7 +160,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'SUB OOB window → empty list');
   }
 
-  // ---- →LIST (build list from stack) ----
   {
     const s = new Stack();
     s.push(Real(10)); s.push(Real(20)); s.push(Real(30));
@@ -188,7 +178,6 @@ import { assert, assertThrows } from './helpers.mjs';
       '0 ->LIST → { } (empty list)');
   }
 
-  // ---- LIST→ (explode list onto stack with count) ----
   {
     const s = new Stack();
     s.push(RList([Real(7), Real(8), Real(9)]));
@@ -201,7 +190,6 @@ import { assert, assertThrows } from './helpers.mjs';
       '{ 7 8 9 } LIST→ → 7 8 9 3');
   }
 
-  // ---- POS ----
   {
     const s = new Stack();
     s.push(RList([Real(10), Real(20), Real(30)]));
@@ -245,7 +233,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'POS substring not found → 0');
   }
 
-  // ---- Round-trip: LIST→ ∘ →LIST restores the original list ----
   {
     const s = new Stack();
     const original = RList([Real(10), Real(20), Real(30)]);
@@ -260,11 +247,7 @@ import { assert, assertThrows } from './helpers.mjs';
       'LIST→ then →LIST round-trips a list');
   }
 
-/* ================================================================
-   SORT / REVLIST (list combinators).
-   ================================================================ */
 
-/* ---- SORT: ascending numeric ---- */
 {
   const s = new Stack();
   s.push(RList([Real(3), Real(1), Real(4), Real(1), Real(5), Real(9), Real(2)]));
@@ -276,7 +259,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(JSON.stringify(vals) === JSON.stringify([1, 1, 2, 3, 4, 5, 9]),
     'SORT ascending numeric: 3 1 4 1 5 9 2 → 1 1 2 3 4 5 9');
 }
-/* ---- SORT: mixed numeric types (Real / Integer / BinInt) ---- */
 {
   const s = new Stack();
   s.push(RList([Real(2.5), Integer(1n), Real(3)]));
@@ -287,7 +269,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(JSON.stringify(vals) === JSON.stringify([1, 2.5, 3]),
     'SORT handles mixed Real / Integer numeric types');
 }
-/* ---- SORT: strings lexicographic ---- */
 {
   const s = new Stack();
   s.push(RList([Str('banana'), Str('apple'), Str('Apple'), Str('cherry')]));
@@ -297,7 +278,6 @@ import { assert, assertThrows } from './helpers.mjs';
          === JSON.stringify(['Apple', 'apple', 'banana', 'cherry']),
     'SORT strings: lexicographic with case-sensitive ordering');
 }
-/* ---- SORT: empty list ---- */
 {
   const s = new Stack();
   s.push(RList([]));
@@ -305,7 +285,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek(1).type === 'list' && s.peek(1).items.length === 0,
     'SORT on {} → {}');
 }
-/* ---- SORT: singleton ---- */
 {
   const s = new Stack();
   s.push(RList([Real(42)]));
@@ -313,7 +292,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek(1).items.length === 1 && s.peek(1).items[0].value.eq(42),
     'SORT on {42} → {42}');
 }
-/* ---- SORT: mixed numeric + string rejects ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Str('a'), Real(2)]));
@@ -321,7 +299,6 @@ import { assert, assertThrows } from './helpers.mjs';
   catch (e) { assert(/Bad argument type/i.test(e.message),
     'SORT mixed numeric+string → Bad argument type'); }
 }
-/* ---- SORT: non-list throws ---- */
 {
   const s = new Stack();
   s.push(Real(5));
@@ -329,7 +306,6 @@ import { assert, assertThrows } from './helpers.mjs';
   catch (e) { assert(/Bad argument type/i.test(e.message),
     'SORT on non-list → Bad argument type'); }
 }
-/* ---- SORT: does not mutate the input ---- */
 {
   const src = RList([Real(3), Real(1), Real(2)]);
   const s = new Stack();
@@ -382,7 +358,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session151b: SORT mixed Integer/Real with negatives ordered correctly');
 }
 
-/* ---- REVLIST: basic ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3), Real(4)]));
@@ -392,7 +367,6 @@ import { assert, assertThrows } from './helpers.mjs';
       && out.items.map(x => x.value).join(',') === '4,3,2,1',
     'REVLIST: {1 2 3 4} → {4 3 2 1}');
 }
-/* ---- REVLIST: heterogeneous elements (no comparison needed) ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Str('two'), Name('three')]));
@@ -402,7 +376,6 @@ import { assert, assertThrows } from './helpers.mjs';
       && out.items[2].value.eq(1),
     'REVLIST works on heterogeneous lists');
 }
-/* ---- REVLIST: empty ---- */
 {
   const s = new Stack();
   s.push(RList([]));
@@ -410,7 +383,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek(1).type === 'list' && s.peek(1).items.length === 0,
     'REVLIST on {} → {}');
 }
-/* ---- REVLIST: twice is identity ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3)]));
@@ -420,7 +392,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(out.items.map(x => x.value).join(',') === '1,2,3',
     'REVLIST twice = identity');
 }
-/* ---- REVLIST: non-list ---- */
 {
   const s = new Stack();
   s.push(Str('hi'));
@@ -439,7 +410,6 @@ import { assert, assertThrows } from './helpers.mjs';
    SREPL: replace-all on strings; pushes (result, count).
    ================================================================ */
 
-/* ---- ΣLIST: numeric ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3), Real(4)]));
@@ -447,7 +417,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(isReal(s.peek(1)) && s.peek(1).value.eq(10),
     'ΣLIST {1 2 3 4} → 10');
 }
-/* ---- ΣLIST: Integer-only stays Integer ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(2n), Integer(3n), Integer(5n)]));
@@ -456,7 +425,6 @@ import { assert, assertThrows } from './helpers.mjs';
   const num = typeof v.value === 'bigint' ? Number(v.value) : v.value;
   assert(num === 10, 'ΣLIST {2 3 5} → 10 (Integer or Real)');
 }
-/* ---- ΣLIST: empty list → 0 ---- */
 {
   const s = new Stack();
   s.push(RList([]));
@@ -464,7 +432,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(isReal(s.peek(1)) && s.peek(1).value.eq(0),
     'ΣLIST {} → 0');
 }
-/* ---- ΣLIST: singleton passes through ---- */
 {
   const s = new Stack();
   s.push(RList([Real(42)]));
@@ -472,7 +439,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek(1).value.eq(42),
     'ΣLIST {42} → 42');
 }
-/* ---- ΣLIST: non-list throws ---- */
 {
   const s = new Stack();
   s.push(Real(1));
@@ -480,7 +446,6 @@ import { assert, assertThrows } from './helpers.mjs';
   catch (e) { assert(/Bad argument type/i.test(e.message),
     'ΣLIST on non-list → Bad argument type'); }
 }
-/* ---- ASCII alias SLIST ---- */
 {
   const s = new Stack();
   s.push(RList([Real(10), Real(20)]));
@@ -488,28 +453,24 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek(1).value.eq(30), 'ASCII alias SLIST works like ΣLIST');
 }
 
-/* ---- ΠLIST: numeric ---- */
 {
   const s = new Stack();
   s.push(RList([Real(2), Real(3), Real(4)]));
   lookup('ΠLIST').fn(s);
   assert(s.peek(1).value.eq(24), 'ΠLIST {2 3 4} → 24');
 }
-/* ---- ΠLIST: empty → 1 ---- */
 {
   const s = new Stack();
   s.push(RList([]));
   lookup('ΠLIST').fn(s);
   assert(s.peek(1).value.eq(1), 'ΠLIST {} → 1');
 }
-/* ---- ΠLIST: singleton ---- */
 {
   const s = new Stack();
   s.push(RList([Real(7)]));
   lookup('ΠLIST').fn(s);
   assert(s.peek(1).value.eq(7), 'ΠLIST {7} → 7');
 }
-/* ---- ASCII alias PLIST ---- */
 {
   const s = new Stack();
   s.push(RList([Real(2), Real(5)]));
@@ -517,7 +478,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek(1).value.eq(10), 'ASCII alias PLIST works like ΠLIST');
 }
 
-/* ---- ΔLIST: successive differences ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(4), Real(9), Real(16)]));
@@ -529,7 +489,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(JSON.stringify(vals) === JSON.stringify([3, 5, 7]),
     'ΔLIST {1 4 9 16} → {3 5 7}');
 }
-/* ---- ΔLIST: empty / singleton → empty list ---- */
 {
   const s = new Stack();
   s.push(RList([]));
@@ -542,7 +501,6 @@ import { assert, assertThrows } from './helpers.mjs';
   lookup('ΔLIST').fn(s);
   assert(s.peek(1).items.length === 0, 'ΔLIST {5} → {}');
 }
-/* ---- ΔLIST: non-list throws ---- */
 {
   const s = new Stack();
   s.push(Real(1));
@@ -550,7 +508,6 @@ import { assert, assertThrows } from './helpers.mjs';
   catch (e) { assert(/Bad argument type/i.test(e.message),
     'ΔLIST on non-list → Bad argument type'); }
 }
-/* ---- ASCII alias DLIST ---- */
 {
   const s = new Stack();
   s.push(RList([Real(10), Real(7), Real(3)]));
@@ -560,7 +517,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'ASCII alias DLIST works like ΔLIST');
 }
 
-/* ---- REPL on a String ---- */
 {
   const s = new Stack();
   s.push(Str('HELLO WORLD'));
@@ -570,7 +526,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(isString(s.peek(1)) && s.peek(1).value === 'HELLO CLAUD',
     'REPL "HELLO WORLD" 7 "CLAUD" → "HELLO CLAUD"');
 }
-/* ---- REPL: String overflow throws ---- */
 {
   const s = new Stack();
   s.push(Str('ABC'));
@@ -580,7 +535,6 @@ import { assert, assertThrows } from './helpers.mjs';
   catch (e) { assert(/Bad argument value/i.test(e.message),
     'REPL with overflow → Bad argument value'); }
 }
-/* ---- REPL on a List ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3), Real(4), Real(5)]));
@@ -594,7 +548,6 @@ import { assert, assertThrows } from './helpers.mjs';
       && out.items[0].value.eq(1) && out.items[4].value.eq(5),
     'REPL {1 2 3 4 5} 3 {A B} → {1 2 A B 5}');
 }
-/* ---- REPL on a Vector ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3), Real(4)]));
@@ -607,7 +560,6 @@ import { assert, assertThrows } from './helpers.mjs';
       && v.items[2].value.eq(30) && v.items[3].value.eq(4),
     'REPL [1 2 3 4] 2 [20 30] → [1 20 30 4]');
 }
-/* ---- REPL on a Matrix ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1),Real(2),Real(3)],
@@ -622,7 +574,6 @@ import { assert, assertThrows } from './helpers.mjs';
       && m.rows[0][0].value.eq(1) && m.rows[2][2].value.eq(9),
     'REPL 3×3 {2 2} [[50 60]] splices at (row 2, col 2)');
 }
-/* ---- REPL: Matrix overflow throws ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1),Real(2)],[Real(3),Real(4)]]));
@@ -632,7 +583,6 @@ import { assert, assertThrows } from './helpers.mjs';
   catch (e) { assert(/Bad argument value/i.test(e.message),
     'REPL on Matrix with overflow → Bad argument value'); }
 }
-/* ---- REPL: type mismatch throws ---- */
 {
   const s = new Stack();
   s.push(Str('ABC'));
@@ -643,7 +593,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'REPL with String host and List patch → Bad argument type'); }
 }
 
-/* ---- SREPL: replace-all ---- */
 {
   const s = new Stack();
   s.push(Str('the cat in the hat'));
@@ -655,7 +604,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(isString(s.peek(2)) && s.peek(2).value === 'a cat in a hat',
     'SREPL result on level 2 is the replaced string');
 }
-/* ---- SREPL: no matches → unchanged, count 0 ---- */
 {
   const s = new Stack();
   s.push(Str('HELLO'));
@@ -667,7 +615,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek(2).value === 'HELLO',
     'SREPL unchanged source when no matches');
 }
-/* ---- SREPL: replacement longer than needle ---- */
 {
   const s = new Stack();
   s.push(Str('a_a_a'));
@@ -677,7 +624,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek(2).value === 'XXX_XXX_XXX' && s.peek(1).value === 3n,
     'SREPL grows the string when replacement is longer');
 }
-/* ---- SREPL: replacement can be empty ---- */
 {
   const s = new Stack();
   s.push(Str('remove me please'));
@@ -687,7 +633,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek(2).value === 'remove please' && s.peek(1).value === 1n,
     'SREPL with empty replacement deletes matches');
 }
-/* ---- SREPL: empty needle throws ---- */
 {
   const s = new Stack();
   s.push(Str('abc'));
@@ -697,7 +642,6 @@ import { assert, assertThrows } from './helpers.mjs';
   catch (e) { assert(/Bad argument value/i.test(e.message),
     'SREPL with empty needle → Bad argument value'); }
 }
-/* ---- SREPL: non-String args throw ---- */
 {
   const s = new Stack();
   s.push(Str('abc'));
@@ -708,11 +652,7 @@ import { assert, assertThrows } from './helpers.mjs';
     'SREPL with Real needle → Bad argument type'); }
 }
 
-// ------------------------------------------------------------------
-// MAP combinator
-// ------------------------------------------------------------------
 
-/* ---- MAP on a List with a doubling program ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3)]));
@@ -729,7 +669,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session044: MAP list[2] = 6');
 }
 
-/* ---- MAP on a Vector with SQ ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3)]));
@@ -742,7 +681,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session044: MAP vector SQ → [1 4 9]');
 }
 
-/* ---- MAP on an empty List is the empty List ---- */
 {
   const s = new Stack();
   s.push(RList([]));
@@ -753,7 +691,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session044: MAP on empty list is empty list');
 }
 
-/* ---- MAP on a Matrix preserves shape ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]));
@@ -767,7 +704,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session044: MAP matrix [[10,20],[30,40]]');
 }
 
-/* ---- MAP does NOT consume stack depth before the call ---- */
 {
   const s = new Stack();
   s.push(Real(99));           // leave an unrelated value on the stack
@@ -779,7 +715,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session044: MAP { 1 2 } << 1 + >> → { 2 3 }');
 }
 
-/* ---- MAP: program with net zero delta throws "bad program" ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2)]));
@@ -788,7 +723,6 @@ import { assert, assertThrows } from './helpers.mjs';
                'session044: MAP with 1-in 0-out program throws MAP: bad program');
 }
 
-/* ---- MAP: non-container throws Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Real(5));
@@ -797,7 +731,6 @@ import { assert, assertThrows } from './helpers.mjs';
                'session044: MAP on Real throws Bad argument type');
 }
 
-/* ---- MAP: non-program/non-name/non-symbolic in the combinator slot throws ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1)]));
@@ -806,13 +739,8 @@ import { assert, assertThrows } from './helpers.mjs';
                'session044: MAP with Real combinator throws Bad argument type');
 }
 
-// ------------------------------------------------------------------
-// SEQ / DOLIST / DOSUBS / STREAM — list combinators
-// ------------------------------------------------------------------
 
-/* ---- SEQ: basic ascending count ---- */
 {
-  // 'X^2' iterates X from 1 to 4 step 1 → { 1 4 9 16 }
   const s = new Stack();
   s.push(Program([Name('X'), Real(2), Name('^')]));   // expr: X 2 ^
   s.push(Name('X', { quoted: true }));
@@ -827,7 +755,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session045: SEQ X^2 1..4 step 1 → { 1 4 9 16 }');
 }
 
-/* ---- SEQ: descending with negative step ---- */
 {
   const s = new Stack();
   s.push(Program([Name('X')]));            // expr: X
@@ -842,7 +769,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session045: SEQ X 5..1 step -2 → { 5 3 1 }');
 }
 
-/* ---- SEQ: zero step throws ---- */
 {
   const s = new Stack();
   s.push(Program([Name('X')]));
@@ -854,7 +780,6 @@ import { assert, assertThrows } from './helpers.mjs';
                'session045: SEQ with step=0 throws Bad argument value');
 }
 
-/* ---- SEQ: empty range (start past end in step's direction) ---- */
 {
   const s = new Stack();
   s.push(Program([Name('X')]));
@@ -868,7 +793,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session045: SEQ with start past end → {}');
 }
 
-/* ---- SEQ: restores a prior binding of the loop variable ---- */
 {
   varStore('Y', Real(99));
   const s = new Stack();
@@ -883,7 +807,6 @@ import { assert, assertThrows } from './helpers.mjs';
   varPurge('Y');
 }
 
-/* ---- DOLIST: explicit n=2, two lists, elementwise combine ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3)]));
@@ -897,7 +820,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session045: DOLIST n=2 elementwise + → { 11 22 33 }');
 }
 
-/* ---- DOLIST: implicit n=1 form (no count arg) ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3)]));
@@ -909,7 +831,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session045: DOLIST implicit n=1 with SQ → { 1 4 9 }');
 }
 
-/* ---- DOLIST: length = min of all list lengths ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3), Real(4)]));
@@ -923,7 +844,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session045: DOLIST truncates to shortest list');
 }
 
-/* ---- DOLIST: bad n (non-integer) throws ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1)]));
@@ -933,9 +853,7 @@ import { assert, assertThrows } from './helpers.mjs';
                'session045: DOLIST with non-integer n throws');
 }
 
-/* ---- DOSUBS: sliding window of size 2 with + ---- */
 {
-  // { 1 2 3 4 } 2 << + >> DOSUBS → { 3 5 7 }  (adjacent sums)
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3), Real(4)]));
   s.push(Integer(2n));
@@ -947,7 +865,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session045: DOSUBS window=2 + → { 3 5 7 }');
 }
 
-/* ---- DOSUBS: window > length returns empty list ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2)]));
@@ -959,7 +876,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session045: DOSUBS with window > length → {}');
 }
 
-/* ---- DOSUBS: window = 0 returns empty list ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3)]));
@@ -971,7 +887,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session045: DOSUBS with window=0 → {}');
 }
 
-/* ---- DOSUBS: window of 3 on 5-element list → 3 results ---- */
 {
   // Window of 3 pushes 3 values; use `+ +` to sum them down to 1.
   const s = new Stack();
@@ -985,7 +900,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session045: DOSUBS window=3 sum → { 6 9 12 }');
 }
 
-/* ---- STREAM: reduce with + ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3), Real(4)]));
@@ -995,7 +909,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session045: STREAM { 1 2 3 4 } + → 10');
 }
 
-/* ---- STREAM: single-element list returns that element ---- */
 {
   const s = new Stack();
   s.push(RList([Real(42)]));
@@ -1005,7 +918,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'session045: STREAM on single-element list → that element');
 }
 
-/* ---- STREAM: empty list throws ---- */
 {
   const s = new Stack();
   s.push(RList([]));
@@ -1014,7 +926,6 @@ import { assert, assertThrows } from './helpers.mjs';
                'session045: STREAM on empty list throws Invalid dimension');
 }
 
-/* ---- STREAM: compute max via MAX combinator ---- */
 {
   const s = new Stack();
   s.push(RList([Real(3), Real(7), Real(1), Real(9), Real(5)]));
@@ -1058,11 +969,7 @@ import { assert, assertThrows } from './helpers.mjs';
                'session045: DOLIST with DUP (delta=+2) throws bad program');
 }
 
-// ------------------------------------------------------------------
-// NSUB / ENDSUB
-// ------------------------------------------------------------------
 
-/* ---- NSUB / ENDSUB outside DOSUBS throw ---- */
 {
   const s = new Stack();
   try { lookup('NSUB').fn(s); assert(false, 'NSUB outside DOSUBS should throw'); }
@@ -1100,7 +1007,6 @@ import { assert, assertThrows } from './helpers.mjs';
   s.push(Program(parseEntry('« DROP DROP ENDSUB »')[0].tokens));
   lookup('DOSUBS').fn(s);
   const out = s.peek();
-  // 5 elements, window 2 → 4 windows; every iteration pushes 4
   assert(out.items.length === 4, 'session046: DOSUBS len=5 win=2 → 4 windows');
   for (const r of out.items) {
     assert(isInteger(r) && Number(r.value) === 4,
@@ -1115,7 +1021,6 @@ import { assert, assertThrows } from './helpers.mjs';
   s.push(Integer(1));
   s.push(Program(parseEntry('« NSUB + »')[0].tokens));
   lookup('DOSUBS').fn(s);
-  // Now call NSUB again — should throw because frame is gone
   try { lookup('NSUB').fn(s); assert(false, 'NSUB after DOSUBS frame pop should throw'); }
   catch (e) { assert(/Undefined local name/i.test(e.message),
     'session046: NSUB cleared after DOSUBS completes'); }
@@ -1161,7 +1066,6 @@ import { assert, assertThrows } from './helpers.mjs';
   lookup('DOSUBS').fn(s);
   const outer = s.peek();
   assert(outer.items.length === 2, 'session046: outer DOSUBS → 2 windows');
-  // Each inner-result list is { 1 2 }
   for (const inner of outer.items) {
     assert(isList(inner) && inner.items.length === 2
         && Number(inner.items[0].value) === 1
@@ -1170,11 +1074,7 @@ import { assert, assertThrows } from './helpers.mjs';
   }
 }
 
-// ------------------------------------------------------------------
-// GETI / PUTI  (auto-incrementing GET / PUT with wrap)
-// ------------------------------------------------------------------
 
-/* ---- GETI on List: (L 2 → L 3 elt) ---- */
 {
   const s = new Stack();
   s.push(RList([Real(10), Real(20), Real(30)]));
@@ -1189,7 +1089,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(isReal(elt) && elt.value.eq(20), 'session052: GETI returns item at original idx');
 }
 
-/* ---- GETI wraparound: last index → 1 ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3)]));
@@ -1203,7 +1102,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(elt.value.eq(3), 'session052: GETI last-idx item is the last element');
 }
 
-/* ---- GETI on Vector ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(5), Real(6), Real(7)]));
@@ -1215,7 +1113,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(elt.value.eq(5), 'session052: GETI on Vector returns first element');
 }
 
-/* ---- GETI out-of-range throws ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2)]));
@@ -1224,7 +1121,6 @@ import { assert, assertThrows } from './helpers.mjs';
                'session052: GETI out-of-range throws');
 }
 
-/* ---- GETI on Matrix with {r c} index, column-major advance ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -1242,7 +1138,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(elt.value.eq(2), 'session052: GETI Matrix returns (1,2) entry');
 }
 
-/* ---- GETI Matrix wrap: last column → next row, first col ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -1258,7 +1153,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session052: GETI Matrix (1,last-col) wraps to (2,1)');
 }
 
-/* ---- GETI Matrix full wrap at (last,last) → (1,1) ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -1274,7 +1168,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session052: GETI Matrix (last,last) wraps to (1,1)');
 }
 
-/* ---- GETI on String returns single-char Str, integer advance ---- */
 {
   const s = new Stack();
   s.push(Str('hello'));
@@ -1288,7 +1181,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(nxt.value === 2n, 'session052: GETI String advances index');
 }
 
-/* ---- GETI on unsupported type (Real) throws ---- */
 {
   const s = new Stack();
   s.push(Real(42));
@@ -1297,7 +1189,6 @@ import { assert, assertThrows } from './helpers.mjs';
                'session052: GETI on Real throws Bad argument type');
 }
 
-/* ---- PUTI on List: (L 2 'X' → L' 3) ---- */
 {
   const s = new Stack();
   s.push(RList([Real(10), Real(20), Real(30)]));
@@ -1311,12 +1202,10 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(isList(lst) && lst.items.length === 3
       && lst.items[1].value.eq(99),
     'session052: PUTI patches index 2 → 99');
-  // Unmodified items stay put.
   assert(lst.items[0].value.eq(10) && lst.items[2].value.eq(30),
     'session052: PUTI leaves other items alone');
 }
 
-/* ---- PUTI wraparound at last index → 1 ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3)]));
@@ -1329,7 +1218,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(lst.items[2].value.eq(42), 'session052: PUTI still writes at original idx');
 }
 
-/* ---- PUTI on Vector ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3)]));
@@ -1342,7 +1230,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session052: PUTI on Vector writes + advances');
 }
 
-/* ---- PUTI on Matrix: (M {r c} val → M' {r' c'}) ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -1357,12 +1244,10 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(M.rows[0][1].value.eq(99), 'session052: PUTI Matrix writes at (1,2)');
   assert(nxt.items[0].value === 2n && nxt.items[1].value === 1n,
     'session052: PUTI Matrix (1,2) advances to (2,1) column-major');
-  // Other cells intact.
   assert(M.rows[0][0].value.eq(1) && M.rows[1][0].value.eq(3) && M.rows[1][1].value.eq(4),
     'session052: PUTI Matrix leaves other cells alone');
 }
 
-/* ---- PUTI out-of-range throws ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1)]));
@@ -1372,7 +1257,6 @@ import { assert, assertThrows } from './helpers.mjs';
                'session052: PUTI out-of-range throws');
 }
 
-/* ---- PUTI on unsupported type (String) throws ---- */
 {
   const s = new Stack();
   s.push(Str('abc'));
@@ -1382,14 +1266,8 @@ import { assert, assertThrows } from './helpers.mjs';
                'session052: PUTI on String throws (strings immutable)');
 }
 
-// ------------------------------------------------------------------
-// ------------------------------------------------------------------
 
-// ==================================================================
-// APPEND (list append)
-// ==================================================================
 
-/* ---- APPEND {1 2} 3 → {1 2 3} ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(2n)]));
@@ -1401,7 +1279,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session053: APPEND {1 2} 3 → {1 2 3}');
 }
 
-/* ---- APPEND on empty list ---- */
 {
   const s = new Stack();
   s.push(RList([]));
@@ -1412,7 +1289,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session053: APPEND on empty list');
 }
 
-/* ---- APPEND accepts heterogeneous value types ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n)]));
@@ -1426,7 +1302,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session053: APPEND builds heterogeneous list');
 }
 
-/* ---- APPEND non-list host throws ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -1435,7 +1310,6 @@ import { assert, assertThrows } from './helpers.mjs';
                'session053: APPEND on non-list throws');
 }
 
-/* ---- APPEND does not mutate the original list ---- */
 {
   const original = RList([Integer(1n), Integer(2n)]);
   const s = new Stack();
@@ -1451,7 +1325,6 @@ import { assert, assertThrows } from './helpers.mjs';
    auto-distribute element-wise when given a List.
    ================================================================= */
 
-// ---- Unary numeric: {1 4 9} SQRT → {1 2 3} ----
 // Perfect squares stay exact (Integer) in EXACT mode.
 {
   const s = new Stack();
@@ -1465,7 +1338,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'list-distribute: {1 4 9} SQRT → {1 2 3}');
 }
 
-// ---- Unary numeric: {-3 4 -5} ABS → {3 4 5} ----
 {
   const s = new Stack();
   s.push(RList([Real(-3), Real(4), Real(-5)]));
@@ -1475,7 +1347,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'list-distribute: {-3 4 -5} ABS → {3 4 5}');
 }
 
-// ---- Unary numeric: {0 1 2} NEG → {0 -1 -2} ----
 {
   const s = new Stack();
   s.push(RList([Integer(0n), Integer(1n), Integer(2n)]));
@@ -1583,7 +1454,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'list +: {1 {2 3}} 9 + → {1 {2 3} 9}  (no recursive distribution)');
 }
 
-// ---- Nested lists: {1 {4 9}} SQRT → {1 {2 3}} ----
 // Perfect squares stay exact (Integer) in EXACT mode.
 {
   const s = new Stack();
@@ -1598,7 +1468,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'list-distribute: nested {1 {4 9}} SQRT → {1 {2 3}}');
 }
 
-// ---- Trig distributes: {0 π/2} RAD SIN → {0 1} (approx) ----
 {
   setAngle('RAD');
   const s = new Stack();
@@ -1609,7 +1478,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'list-distribute: {0 π/2} SIN → {0 1}');
 }
 
-// ---- LN distributes, too ----
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(Math.E)]));
@@ -1619,7 +1487,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'list-distribute: {1 e} LN → {0 1}');
 }
 
-// ---- Empty list distributes to empty list ----
 {
   const s = new Stack();
   s.push(RList([]));
@@ -1660,7 +1527,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'list +: {} {} + → {}');
 }
 
-// ---- MIN / MAX distribute element-wise ----
 {
   const s = new Stack();
   s.push(RList([Integer(3n), Integer(1n), Integer(7n)]));
@@ -1671,7 +1537,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'list-distribute: element-wise MIN');
 }
 
-// ---- XROOT distributes: {8 27} 3 XROOT → {2 3} ----
 {
   const s = new Stack();
   s.push(RList([Integer(8n), Integer(27n)]));
@@ -1694,7 +1559,6 @@ import { assert, assertThrows } from './helpers.mjs';
    _evalValueSync catch-all.
    ================================================================ */
 
-// Empty list EVAL is a no-op.
 {
   const s = new Stack();
   s.push(RList([]));
@@ -1702,7 +1566,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.depth === 0, 'List EVAL: empty list consumes itself, pushes nothing');
 }
 
-// List with literal numbers and a command — { 1 2 + } EVAL → 3.
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(2n), Name('+')]));
@@ -1711,7 +1574,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value === 3n, 'List EVAL: { 1 2 + } yields 3');
 }
 
-// List EVAL of pure literals pushes each literal.
 {
   const s = new Stack();
   s.push(RList([Integer(10n), Integer(20n), Integer(30n)]));
@@ -1723,7 +1585,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'List EVAL: literal items land in order');
 }
 
-// List EVAL evaluates a Name to its bound value.
 {
   resetHome();
   varStore('K', Real(99));
@@ -1735,7 +1596,6 @@ import { assert, assertThrows } from './helpers.mjs';
   resetHome();
 }
 
-// List EVAL runs an embedded Program.
 {
   const s = new Stack();
   s.push(RList([Program([Integer(7n), Integer(8n), Name('*')])]));
@@ -1744,7 +1604,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'List EVAL: { « 7 8 * » } runs the embedded program');
 }
 
-// Quoted Name in a list EVAL stays unevaluated (parallel to program semantics).
 {
   const s = new Stack();
   s.push(RList([Name('X', { quoted: true })]));

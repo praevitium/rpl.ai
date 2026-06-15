@@ -31,10 +31,7 @@ import { assert, assertThrows } from './helpers.mjs';
 // observe per-value base.
 setBinaryBase(null);
 
-// BinaryInteger type + parser + formatter
-// ------------------------------------------------------------------
 
-// Constructor clamps negatives and rejects bad base letters
 {
   const a = BinaryInteger(255, 'h');
   assert(a.type === 'binaryInteger' && a.value === 255n && a.base === 'h',
@@ -47,7 +44,6 @@ setBinaryBase(null);
   assert(c.base === 'd', 'BinaryInteger lowercases the base letter');
 }
 
-// Formatter renders #NNNNh / d / o / b with correct digits
 {
   assert(format(BinaryInteger(255, 'h')) === '#FFh', 'format #FFh (hex uppercase)');
   assert(format(BinaryInteger(255, 'd')) === '#255d', 'format #255d');
@@ -58,7 +54,6 @@ setBinaryBase(null);
          'format Directory-not-allowed code → #502h');
 }
 
-// Parser accepts hex / dec / oct / bin literals and round-trips through format
 {
   const hex = parseEntry('#FFh');
   assert(hex.length === 1 && hex[0].type === 'binaryInteger' &&
@@ -84,7 +79,6 @@ setBinaryBase(null);
          'parseEntry("#FFFFFFFFFFFFFFFFh") preserves 64-bit value');
 }
 
-// Parser rejects malformed literals
 {
   assertThrows(() => parseEntry('#'), null,
                'parseEntry("#") throws (no digits, no base)');
@@ -104,7 +98,6 @@ setBinaryBase(null);
                'parseEntry("#Gh") throws (G not a valid hex digit)');
 }
 
-// Binary integers inside programs and lists survive parse + format unchanged
 {
   const parsed = parseEntry('{ #FFh #10d }');
   assert(parsed.length === 1 && parsed[0].type === 'list' &&
@@ -116,8 +109,6 @@ setBinaryBase(null);
          'list of BinInts formats as "{ #FFh #10d }"');
 }
 
-// EVAL of a BinaryInteger is a no-op (push-back), matching numbers + strings.
-// Covers the general numeric dispatch path.
 {
   const s = new Stack();
   s.push(BinaryInteger(0x502n, 'h'));
@@ -127,12 +118,8 @@ setBinaryBase(null);
          'EVAL(#502h) pushes it back unchanged');
 }
 
-// ------------------------------------------------------------------
 
-// STWS wordsize + HEX/DEC/OCT/BIN display mode
-// ------------------------------------------------------------------
 
-// Default wordsize is 64 bits with no display override.
 {
   resetBinaryState();
   assert(getWordsize() === 64, 'default wordsize = 64');
@@ -140,7 +127,6 @@ setBinaryBase(null);
   assert(getWordsizeMask() === (1n << 64n) - 1n, 'default mask = 2^64 - 1');
 }
 
-// STWS sets wordsize, RCWS recalls it as a BinInt in the current display base.
 {
   resetBinaryState();
   const s = new Stack();
@@ -155,7 +141,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// STWS clamps out-of-range inputs to [1, 64]; decimals truncate.
 {
   resetBinaryState();
   const s = new Stack();
@@ -171,7 +156,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// HEX / DEC / OCT / BIN set the display-base override.
 {
   resetBinaryState();
   lookup('HEX').fn(new Stack());
@@ -185,7 +169,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// Formatter respects the display override; output is always minimum-width.
 {
   resetBinaryState();
   assert(format(BinaryInteger(0xFF, 'h')) === '#FFh',
@@ -209,7 +192,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// Wordsize mask wraps BinInt arithmetic.
 {
   resetBinaryState();
   setWordsize(16);
@@ -224,11 +206,7 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// ------------------------------------------------------------------
-// BinaryInteger arithmetic + bitwise ops
-// ------------------------------------------------------------------
 
-// + - * / on BinInts: wordsize masked, left-operand base wins.
 {
   resetBinaryState();
   const s = new Stack();
@@ -293,7 +271,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// BinInt subtraction wraps via two's-complement at the wordsize.
 {
   resetBinaryState();
   setWordsize(8);
@@ -318,7 +295,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// AND / OR / XOR on BinInts are bitwise; on Reals still boolean.
 {
   resetBinaryState();
   const s = new Stack();
@@ -354,7 +330,6 @@ setBinaryBase(null);
          'Real 1 AND Real 0 still boolean = 0');
 }
 
-// Mixed BinInt + Real errors on logic ops too.
 {
   resetBinaryState();
   const s = new Stack();
@@ -364,9 +339,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// ------------------------------------------------------------------
-// B→R / R→B converters
-// ------------------------------------------------------------------
 {
   resetBinaryState();
   const s = new Stack();
@@ -434,7 +406,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// Round-trip: HEX/BIN mode re-renders an ERRN result in the chosen base.
 {
   resetBinaryState();
   // No override — the ERRN BinInt (base h) renders minimum-width.
@@ -448,11 +419,7 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// ------------------------------------------------------------------
-// STWS-aware BinInt literal truncation at parse time
-// ------------------------------------------------------------------
 
-// Wide literal masked to the current wordsize at parse time.
 {
   resetBinaryState();
   setWordsize(8);
@@ -463,7 +430,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// Binary literal wider than wordsize is masked.
 {
   resetBinaryState();
   setWordsize(4);
@@ -473,7 +439,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// Decimal literal wider than wordsize is masked.
 {
   resetBinaryState();
   setWordsize(8);
@@ -484,7 +449,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// Exactly-wordsize-wide literal keeps its full value.
 {
   resetBinaryState();
   setWordsize(16);
@@ -494,7 +458,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// Fresh-boot default (ws=64) accepts full 64-bit literal unchanged.
 {
   resetBinaryState();
   const [v] = parseEntry('#FFFFFFFFFFFFFFFFh');
@@ -503,11 +466,7 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// ------------------------------------------------------------------
-// Shift / rotate ops on BinaryInteger
-// ------------------------------------------------------------------
 
-// SL: shift left 1 bit at wordsize 8
 {
   resetBinaryState();
   setWordsize(8);
@@ -520,7 +479,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// SL: high bit shifted out
 {
   resetBinaryState();
   setWordsize(8);
@@ -531,7 +489,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// SR: logical shift right; high bit zero fill
 {
   resetBinaryState();
   setWordsize(8);
@@ -542,7 +499,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// ASR: arithmetic shift right preserves MSB
 {
   resetBinaryState();
   setWordsize(8);
@@ -555,7 +511,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// ASR on low value: zero fill (sign bit was 0)
 {
   resetBinaryState();
   setWordsize(8);
@@ -567,7 +522,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// SLB: shift left 8 bits
 {
   resetBinaryState();
   setWordsize(16);
@@ -579,7 +533,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// SRB: shift right 8 bits
 {
   resetBinaryState();
   setWordsize(16);
@@ -591,7 +544,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// RL: rotate left 1 bit
 {
   resetBinaryState();
   setWordsize(8);
@@ -603,7 +555,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// RR: rotate right 1 bit
 {
   resetBinaryState();
   setWordsize(8);
@@ -615,7 +566,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// RLB: rotate left 8 bits on a 16-bit word
 {
   resetBinaryState();
   setWordsize(16);
@@ -627,7 +577,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// RRB: rotate right 8 bits on a 16-bit word
 {
   resetBinaryState();
   setWordsize(16);
@@ -639,7 +588,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// Round-trip: RL and RR are inverses at any wordsize
 {
   resetBinaryState();
   setWordsize(16);
@@ -652,7 +600,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// Base inheritance: SL keeps the display base of the input
 {
   resetBinaryState();
   setWordsize(8);
@@ -664,7 +611,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// Bad argument type — SL on a Real
 {
   const s = new Stack();
   s.push(Real(5));
@@ -672,7 +618,6 @@ setBinaryBase(null);
                'session044: SL on Real throws Bad argument type');
 }
 
-// Bad argument type — RR on a Real
 {
   const s = new Stack();
   s.push(Real(5));
@@ -680,7 +625,6 @@ setBinaryBase(null);
                'session044: RR on Real throws Bad argument type');
 }
 
-// Full wordsize RL wraps completely (value unchanged after wsSize rotates)
 {
   resetBinaryState();
   setWordsize(8);
@@ -692,7 +636,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-// ASR on wordsize 1 is effectively a no-op (corner case)
 {
   resetBinaryState();
   setWordsize(1);
@@ -717,7 +660,6 @@ setBinaryBase(null);
 // 'Bad argument type' (the boolean vs. bitwise distinction lives on
 // a per-op basis).
 
-/* ---- BinInt +/-/*// with Real on the right, base 'h' preserved ---- */
 {
   resetBinaryState();
   const s = new Stack();
@@ -728,7 +670,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-/* ---- BinInt on the right with Real on the left ---- */
 {
   resetBinaryState();
   const s = new Stack();
@@ -739,7 +680,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-/* ---- Real with fractional part truncates toward zero ---- */
 {
   resetBinaryState();
   const s = new Stack();
@@ -751,7 +691,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-/* ---- Base preservation: base 'd' (decimal display) ---- */
 {
   resetBinaryState();
   const s = new Stack();
@@ -762,7 +701,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-/* ---- Subtract: #10h 1 - → #Fh ---- */
 {
   resetBinaryState();
   const s = new Stack();
@@ -773,7 +711,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-/* ---- Divide by coerced-zero throws Division by zero ---- */
 {
   resetBinaryState();
   const s = new Stack();
@@ -783,7 +720,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-/* ---- Complex on one side still throws Bad argument type ---- */
 {
   resetBinaryState();
   const s = new Stack();
@@ -793,7 +729,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-/* ---- AND / OR / XOR of mixed BinInt + Real is still unchanged ---- */
 {
   resetBinaryState();
   const s = new Stack();
@@ -803,7 +738,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-/* ---- Negative Integer wraps via two's-complement at ws=8 ---- */
 {
   resetBinaryState();
   setWordsize(8);
@@ -816,7 +750,6 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
-/* ---- Power: #2h 8 ^ → #100h (modular exp via binIntBinary) ---- */
 {
   resetBinaryState();
   const s = new Stack();

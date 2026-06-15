@@ -39,7 +39,6 @@ import { assert, assertThrows } from './helpers.mjs';
   const { formatAlgebra } = await import('../www/src/rpl/algebra.js');
   const { isSymbolic, isList } = await import('../www/src/rpl/types.js');
 
-  // isAlgebraic() — parity of `'` characters
   {
     const e = new Entry(new Stack());
     assert(e.isAlgebraic() === false, 'isAlgebraic empty → false');
@@ -48,7 +47,6 @@ import { assert, assertThrows } from './helpers.mjs';
     e.type("`"); assert(e.isAlgebraic() === false, "isAlgebraic after closing ``` → false");
   }
 
-  // typeOrExec — inside `'` it types, outside it execs
   {
     const s = new Stack();
     const e = new Entry(s);
@@ -65,7 +63,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(s.depth === 1 && s.peek().value.eq(7), 'typeOrExec outside → exec +');
   }
 
-  // typeOrExecFn — inside `'` types `FN(`; outside runs the op
   {
     const s = new Stack();
     const e = new Entry(s);
@@ -113,7 +110,6 @@ import { assert, assertThrows } from './helpers.mjs';
       `typeOrExecName leaves existing trailing space alone → '${e.buffer}'`);
   }
 
-  // typeWithCursor — inserts and moves cursor back
   {
     const e = new Entry(new Stack());
     e.typeWithCursor('()', 1);
@@ -255,7 +251,6 @@ import { assert, assertThrows } from './helpers.mjs';
 {
   const { Entry } = await import('../www/src/ui/entry.js');
 
-  // ----- hyperbolic ops -----
   {
     const s = new Stack(); s.push(Real(0));
     lookup('SINH').fn(s, null);
@@ -301,7 +296,6 @@ import { assert, assertThrows } from './helpers.mjs';
       `ATANH(0.5) = atanh(0.5)`);
   }
   {
-    // ATANH of out-of-domain
     const s = new Stack(); s.push(Real(1));
     assertThrows(() => lookup('ATANH').fn(s, null), null,
       'ATANH(1) throws (domain |x| < 1)');
@@ -321,13 +315,11 @@ import { assert, assertThrows } from './helpers.mjs';
       `16 XROOT 4 → 2`);
   }
   {
-    // XROOT by 0 should throw
     const s = new Stack(); s.push(Real(5)); s.push(Real(0));
     assertThrows(() => lookup('XROOT').fn(s, null), null,
       'XROOT by 0 throws');
   }
 
-  // ----- ARG / CONJ / RE / IM -----
   {
     // ARG on Real: nonneg → 0, neg → π (in current angle mode)
     setAngle('RAD');
@@ -351,7 +343,6 @@ import { assert, assertThrows } from './helpers.mjs';
     setAngle('RAD');
   }
   {
-    // ARG on Complex
     setAngle('RAD');
     const s = new Stack();
     s.push({ type: 'complex', re: 1, im: 1 });
@@ -360,7 +351,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'ARG(1+i) = π/4');
   }
   {
-    // CONJ on Complex
     const s = new Stack();
     s.push({ type: 'complex', re: 3, im: -4 });
     lookup('CONJ').fn(s, null);
@@ -369,7 +359,6 @@ import { assert, assertThrows } from './helpers.mjs';
       `CONJ(3-4i) = 3+4i, got ${v.re}+${v.im}i`);
   }
   {
-    // CONJ on Real → identity
     const s = new Stack(); s.push(Real(7));
     lookup('CONJ').fn(s, null);
     assert(s.peek().value.eq(7), 'CONJ(7) = 7');
@@ -387,13 +376,11 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(s.peek().value.eq(-4), 'IM(3-4i) = -4');
   }
   {
-    // IM on Real → 0
     const s = new Stack(); s.push(Real(9));
     lookup('IM').fn(s, null);
     assert(s.peek().value.eq(0), 'IM(9) = 0');
   }
 
-  // ----- GCD / LCM on integers -----
   {
     const s = new Stack();
     s.push({ type: 'integer', value: 12n });
@@ -430,7 +417,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(s.peek().value === 0n, 'LCM(0,5) = 0');
   }
   {
-    // GCD on non-integer Real should throw
     const s = new Stack(); s.push(Real(1.5)); s.push(Real(3));
     assertThrows(() => lookup('GCD').fn(s, null), null,
       'GCD(1.5, 3) throws');
@@ -446,7 +432,6 @@ import { assert, assertThrows } from './helpers.mjs';
       `DEL clears buffer → '${e.buffer}' cursor=${e.cursor}`);
   }
 
-  // ----- CLEAR: register('CLEAR') wipes the stack -----
   {
     const s = new Stack();
     s.push(Real(1)); s.push(Real(2)); s.push(Real(3));
@@ -465,7 +450,6 @@ import { assert, assertThrows } from './helpers.mjs';
   const { Entry } = await import('../www/src/ui/entry.js');
   const { Stack } = await import('../www/src/rpl/stack.js');
 
-  // ---- ENTER records the committed text ----
   {
     resetHome();
     const s = new Stack();
@@ -477,7 +461,6 @@ import { assert, assertThrows } from './helpers.mjs';
       `ENTER records '1 2 +' to history — got ${JSON.stringify(h)}`);
   }
 
-  // ---- Empty-line ENTER (= DUP) does NOT record ----
   {
     resetHome();
     const s = new Stack();
@@ -488,7 +471,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'empty ENTER (DUP) does not record history');
   }
 
-  // ---- Consecutive duplicates collapse ----
   {
     resetHome();
     const s = new Stack();
@@ -501,7 +483,6 @@ import { assert, assertThrows } from './helpers.mjs';
       `consecutive dup entries collapse — got ${JSON.stringify(h)}`);
   }
 
-  // ---- Non-duplicates keep order (oldest first in storage) ----
   {
     resetHome();
     const s = new Stack();
@@ -514,7 +495,6 @@ import { assert, assertThrows } from './helpers.mjs';
       `history preserves order oldest→newest — got ${JSON.stringify(h)}`);
   }
 
-  // ---- Ring buffer caps at HISTORY_MAX ----
   {
     resetHome();
     const s = new Stack();
@@ -530,7 +510,6 @@ import { assert, assertThrows } from './helpers.mjs';
       `oldest entries drop off — first surviving is '${h[0]}', expected '5'`);
   }
 
-  // ---- execOp commit-path also records ----
   {
     resetHome();
     const s = new Stack();
@@ -543,7 +522,6 @@ import { assert, assertThrows } from './helpers.mjs';
       `execOp commit path records pre-op buffer — got ${JSON.stringify(h)}`);
   }
 
-  // ---- Failed parse does NOT record ----
   {
     // Malformed binary integer still throws at parse time (unlike
     // unterminated-string, which auto-closes now).  What we care about
@@ -558,7 +536,6 @@ import { assert, assertThrows } from './helpers.mjs';
       `failed commit does not record — got ${JSON.stringify(h)}`);
   }
 
-  // ---- recall() replaces buffer and repositions cursor ----
   {
     resetHome();
     const s = new Stack();
@@ -571,7 +548,6 @@ import { assert, assertThrows } from './helpers.mjs';
       `recall positions cursor at end — got ${e.cursor}`);
   }
 
-  // ---- getHistory() returns a defensive copy ----
   {
     resetHome();
     const s = new Stack();
@@ -600,7 +576,6 @@ import { assert, assertThrows } from './helpers.mjs';
     return e;
   };
 
-  // ---- 1E7 → 1E-7 (not -1E7) ----
   {
     const e = mk('1E7');
     e.toggleSign();
@@ -610,14 +585,12 @@ import { assert, assertThrows } from './helpers.mjs';
       '1E7 +/- leaves cursor at end of buffer');
   }
 
-  // ---- 1E-7 → 1E7 (second press removes the minus) ----
   {
     const e = mk('1E-7');
     e.toggleSign();
     assert(e.buffer === '1E7', `1E-7 +/- → 1E7, got "${e.buffer}"`);
   }
 
-  // ---- 1E+7 → 1E-7 (flip explicit +) ----
   {
     const e = mk('1E+7');
     e.toggleSign();
@@ -626,7 +599,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'flipping + to - keeps buffer length unchanged');
   }
 
-  // ---- Round-trip: two +/- presses return to original ----
   {
     const e = mk('1E7');
     e.toggleSign();
@@ -635,14 +607,12 @@ import { assert, assertThrows } from './helpers.mjs';
       `1E7 +/- +/- → 1E7 (round-trip), got "${e.buffer}"`);
   }
 
-  // ---- Multi-digit mantissa + exponent ----
   {
     const e = mk('1.5E2');
     e.toggleSign();
     assert(e.buffer === '1.5E-2', `1.5E2 +/- → 1.5E-2, got "${e.buffer}"`);
   }
 
-  // ---- Negative mantissa with positive exponent: flip only exponent ----
   {
     const e = mk('-1.5E2');
     e.toggleSign();
@@ -650,14 +620,12 @@ import { assert, assertThrows } from './helpers.mjs';
       `-1.5E2 +/- → -1.5E-2 (mantissa sign preserved), got "${e.buffer}"`);
   }
 
-  // ---- Lowercase e also counts as exponent marker ----
   {
     const e = mk('2e3');
     e.toggleSign();
     assert(e.buffer === '2e-3', `2e3 +/- → 2e-3, got "${e.buffer}"`);
   }
 
-  // ---- No exponent: still flips mantissa (regression protection) ----
   {
     const e = mk('1.5');
     e.toggleSign();
@@ -666,7 +634,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(e.buffer === '1.5', `-1.5 +/- → 1.5, got "${e.buffer}"`);
   }
 
-  // ---- Empty buffer: NEGs the stack top (existing dispatch) ----
   {
     const s = new Stack();
     s.push(Real(7));
@@ -676,7 +643,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'empty buffer: +/- NEGs the stack top');
   }
 
-  // ---- Trailing E with no exponent digits yet (just after EEX) ----
   {
     const e = mk('123E');
     e.toggleSign();
@@ -697,7 +663,6 @@ import { assert, assertThrows } from './helpers.mjs';
   // Helper: Integer holds BigInt, Real holds JS Number.  Parser emits
   // Integer for bare digit literals in EXACT mode.  Compare as Number.
   const val = (v) => Number(v.value);
-  // `3 4 +` via the command line, then LASTARG as a subsequent entry.
   {
     const s = new Stack();
     const e = new Entry(s);
@@ -710,7 +675,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(s.depth === 3 && val(s.peek(2)) === 3 && val(s.peek(1)) === 4,
       'session046(entry): LASTARG via entry pushes 3 4');
   }
-  // execOp path: type `5` then press an operator key bound via execOp.
   {
     const s = new Stack();
     const e = new Entry(s);

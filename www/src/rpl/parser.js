@@ -1,22 +1,8 @@
-/* =================================================================
-   Tiny RPL-ish parser for the command-line entry buffer.
-
-   On the HP50, pressing ENTER with text in the command line causes
-   the text to be parsed and its result pushed onto the stack.  This
-   module implements a minimal version that covers:
-
-     - signed decimal reals           42, -3.14, 1.5E-3
-     - unsigned integers (Integer)    42   (no decimal point)
-     - binary integers                #FFh, #1010b, #777o, #255d
-     - parenthesised complex          (re,im)
-     - string literals                "hello"
-     - bare identifiers               X, `Y`
-     - lists                          { 1 2 3 }
-     - programs                       << 1 2 + >>   (stored as tokens)
-     - vectors                        [ 1 2 3 ]
-
-   Anything unrecognised is passed through as a bare identifier.
-   ================================================================= */
+/* RPL-ish parser for the command-line entry buffer.  On ENTER the text
+   is parsed and its result pushed onto the stack.  Covers reals,
+   integers, binary integers, complex, strings, names, lists, programs,
+   and vectors; anything unrecognised passes through as a bare
+   identifier. */
 
 import {
   Real, Integer, BinaryInteger, Complex, Str, Name, RList, Vector, Matrix, Program,
@@ -27,7 +13,6 @@ import { getWordsizeMask, state as _state, toRadians } from './state.js';
 import { parseAlgebra } from './algebra.js';
 import { parseUnitExpr } from './units.js';
 
-/* ----------------------------- tokenizer ----------------------------- */
 export function tokenize(src) {
   const tokens = [];
   let i = 0;
@@ -58,7 +43,6 @@ export function tokenize(src) {
       i = (j < n) ? j + 1 : n; continue;
     }
 
-    // Delimiters that are single-char
     if ('{}[]'.includes(c)) {
       tokens.push({ kind: 'delim', text: c });
       i++; continue;
@@ -156,7 +140,7 @@ export function tokenize(src) {
       // after the number kicks off a unit expression that runs to the
       // next whitespace or structural delimiter.
       if (i < n && src[i] === '_') {
-        i++;                                  // consume the '_'
+        i++;
         let j = i;
         while (j < n && !isSpace(src[j]) && !'{}[]"`'.includes(src[j])) j++;
         tokens.push({ kind: 'unit', numText: m[0], unitText: src.slice(i, j) });
@@ -222,8 +206,6 @@ export function tokenize(src) {
   }
   return tokens;
 }
-
-/* ----------------------------- parser ----------------------------- */
 
 /** Parse the full entry buffer; if it produces exactly one value,
  *  return that value; else return a Program-like list of values (the

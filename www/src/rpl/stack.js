@@ -1,14 +1,5 @@
-/* =================================================================
-   The RPL stack.
-
-   Level 1 is the "top" of the stack (what the user sees at the bottom
-   of the LCD and what most ops operate on).  Internally we store as a
-   JS array where index length-1 == level 1.  Push adds to the top,
-   pop removes from the top.
-
-   The stack emits change events so the display layer can re-render
-   without polling.
-   ================================================================= */
+/* The RPL stack.  Level 1 is the "top" (bottom of the LCD); internally
+   stored as a JS array where index length-1 == level 1. */
 
 /* Push-time coercion hook.
    APPROX mode (flag -105 SET) collapses Integer/Rational/purely-numeric
@@ -35,7 +26,6 @@ export class Stack {
     this._listeners = new Set();
   }
 
-  /* --------------- observer pattern --------------- */
   subscribe(fn) {
     this._listeners.add(fn);
     return () => this._listeners.delete(fn);
@@ -46,7 +36,6 @@ export class Stack {
     }
   }
 
-  /* --------------- inspection --------------- */
   get depth() { return this._items.length; }
 
   /** Level N (1-indexed).  Returns undefined if beyond depth. */
@@ -60,7 +49,6 @@ export class Stack {
     return [...this._items].reverse();
   }
 
-  /* --------------- mutation --------------- */
   push(value) {
     this._items.push(_pushCoerce(value));
     this._emit();
@@ -92,7 +80,6 @@ export class Stack {
     this._emit();
   }
 
-  /* --------------- stack ops --------------- */
   dup()  { if (!this.depth) throw new RPLError('Too few arguments');
            this._items.push(this._items[this._items.length - 1]); this._emit(); }
 
@@ -308,10 +295,8 @@ export class Stack {
  *  without ever holding the whole history in memory. */
 Stack.UNDO_MAX = 100;
 
-/* =================================================================
-   Custom error type so the display/controller can show a friendly
-   HP50-style status-line error without catching generic Error.
-   ================================================================= */
+/* Custom error type so the display/controller can show a friendly
+   HP50-style status-line error without catching generic Error. */
 export class RPLError extends Error {
   constructor(msg) { super(msg); this.name = 'RPLError'; }
 }

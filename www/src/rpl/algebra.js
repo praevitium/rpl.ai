@@ -1,5 +1,4 @@
-/* =================================================================
-   Symbolic-algebra module — core of the HP50 CAS.
+/* Symbolic-algebra module — core of the HP50 CAS.
 
    Covers: parse / format / simplify / expand / factor / differentiate
    / integrate / solve for polynomial-ish expressions with a small set
@@ -23,8 +22,7 @@
    Deliberate non-goals:
      - rational simplification across the whole tree (common-denom,
        cancellation).  The simplifier is strictly local (each op makes
-       one pattern-match pass over its immediate children).
-   ================================================================= */
+       one pattern-match pass over its immediate children). */
 
 export function Num(v) {
   return Object.freeze({ kind: 'num', value: Number(v) });
@@ -2717,8 +2715,7 @@ function numericCoefAt(coefs, power) {
   return isNum(s) ? s.value : null;
 }
 
-/* ==================================================================
-   SUBST — substitute a value for a variable in an expression.
+/* SUBST — substitute a value for a variable in an expression.
 
    Two stack shapes supported:
 
@@ -2735,8 +2732,7 @@ function numericCoefAt(coefs, power) {
 
    After substitution we run `simplify` so numeric substitutions
    collapse (e.g. `SUBST('X^2 + 1', 'X', 3)` → `Num(10)`).  The
-   caller decides whether to re-wrap as Symbolic or unwrap to Real.
-================================================================== */
+   caller decides whether to re-wrap as Symbolic or unwrap to Real. */
 
 /** replaceVar(ast, varName, replacement) — recursively replace
  *  every `Var varName` in `ast` with the given AST `replacement`.
@@ -2776,8 +2772,7 @@ function subst(expr, varName, valueAst) {
   return simplify(replaceVar(expr, varName, valueAst));
 }
 
-/* ==================================================================
-   Polynomial COLLECT — group a polynomial by powers of a named
+/* Polynomial COLLECT — group a polynomial by powers of a named
    variable.
 
      'X + A*X + B*X + C' 'X' COLLECT  →  '(1 + A + B)*X + C'
@@ -2795,8 +2790,7 @@ function subst(expr, varName, valueAst) {
    stable ordering: highest power first (classic textbook form).
 
    Scoped to handle any integer power of the var; linear and quadratic
-   are the common cases.
-================================================================== */
+   are the common cases. */
 
 /** collectByVar(ast, varName) — polynomial COLLECT entry.  Returns
  *  the regrouped AST or `ast` unchanged if the shape isn't
@@ -2854,8 +2848,7 @@ function collectByVar(ast, varName) {
   return result;
 }
 
-/* ==================================================================
-   SOLVE — one-variable equation / polynomial root finder.
+/* SOLVE — one-variable equation / polynomial root finder.
 
    Coverage:
 
@@ -2875,8 +2868,7 @@ function collectByVar(ast, varName) {
    equation `Bin('=', Var(varName), rootAst)`.  The caller (the SOLVE
    op in ops.js) wraps those in Symbolics and puts them into an RList.
    When the discriminant is negative we emit complex solutions as
-   `re ± im·i` AST nodes using `Var('i')` as the imaginary unit.
-================================================================== */
+   `re ± im·i` AST nodes using `Var('i')` as the imaginary unit. */
 
 /** solve(ast, varName) — return an array of solution ASTs for the
  *  polynomial equation `ast = 0` (or the equivalent L − R when `ast`

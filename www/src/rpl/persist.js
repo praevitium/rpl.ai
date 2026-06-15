@@ -1,5 +1,4 @@
-/* =================================================================
-   Persistence: snapshot the calculator state to a JSON-safe shape
+/* Persistence: snapshot the calculator state to a JSON-safe shape
    and rehydrate it later.
 
    Drives two features:
@@ -26,8 +25,7 @@
 
    The snapshot carries a `version` tag.  Bump it whenever the on-disk
    shape changes incompatibly so old saved state is rejected cleanly
-   instead of loading as garbage.
-   ================================================================= */
+   instead of loading as garbage. */
 
 import {
   state, currentPath, goHome, goInto, notify,
@@ -45,14 +43,10 @@ import { seedPrng } from './state.js';
 export const STORAGE_KEY = 'hp50.state';
 export const SCHEMA_VERSION = 1;
 
-/* ----------------------------- encode ----------------------------- */
-
 function encode(v) {
   if (v === null || v === undefined) return v;
   if (typeof v === 'bigint') return { __t: 'bigint', v: v.toString() };
-  // Decimal instance — detect by the constructor (the decimal.js instance
-  // has `Decimal` in its prototype chain).  Preserve full 15-digit
-  // precision by round-tripping through `.toString()`.
+  // toString() round-trip preserves full 15-digit precision.
   if (v instanceof Decimal) return { __t: 'decimal', v: v.toString() };
   if (v instanceof Map) {
     return { __t: 'map', v: [...v].map(([k, x]) => [k, encode(x)]) };
@@ -95,8 +89,8 @@ function decode(v) {
 export function encodeValue(v) { return encode(v); }
 export function decodeValue(v) { return decode(v); }
 
-/* Walk a decoded Directory tree and re-link parent pointers so
-   currentPath / goUp / goInto all work as before. */
+/* Re-link parent pointers after decode so currentPath / goUp / goInto
+   all work as before. */
 function relinkParents(dir, parent = null) {
   dir.parent = parent;
   if (!(dir.entries instanceof Map)) return;
@@ -104,8 +98,6 @@ function relinkParents(dir, parent = null) {
     if (child && child.type === TYPES.DIRECTORY) relinkParents(child, dir);
   }
 }
-
-/* ---------------------------- snapshot ---------------------------- */
 
 /** Build a JSON-safe snapshot of the calculator's persistent state. */
 export function snapshot(stack) {
@@ -235,8 +227,6 @@ export function rehydrate(snap, stack) {
   notify();
 }
 
-/* --------------------------- localStorage --------------------------- */
-
 /** Best-effort save — never throws (e.g. quota errors are swallowed
  *  with a console warn).  The user shouldn't see autosave failures
  *  break the calculator. */
@@ -266,8 +256,6 @@ export function loadFromLocalStorage(stack) {
     return false;
   }
 }
-
-/* ---------------------- export / import (file) ---------------------- */
 
 /** Trigger a browser download of the current state as a JSON file.
  *  Returns the filename that was used. */
@@ -309,7 +297,7 @@ function defaultFilename() {
   return `hp50-${stamp}.json`;
 }
 
-/* ---------------------- single-variable export / import ----------------------
+/* single-variable export / import
    The Files tab supports exporting and importing one variable (or one
    subdirectory) at a time, as opposed to the whole HOME-tree snapshot above.
    The wire shape is intentionally distinct from `snapshot()` so a malformed
@@ -325,8 +313,7 @@ function defaultFilename() {
    `value` carries the same `{__t: 'bigint'|'decimal'|'map', ...}` envelopes
    that `snapshot()` uses, so Decimal / BigInt / Directory all round-trip
    through `decode()` unchanged.  A Directory exports recursively (its
-   `.entries` are walked by `encode()` already).
-   ---------------------------------------------------------------------- */
+   `.entries` are walked by `encode()` already). */
 
 /** Build the JSON-safe wire object for a single named variable.
  *  Exposed for tests; `exportVariableToFile` is the user-facing wrapper. */
