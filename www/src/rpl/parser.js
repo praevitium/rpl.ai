@@ -19,7 +19,7 @@
    ================================================================= */
 
 import {
-  Real, Integer, BinaryInteger, Complex, Str, Name, RList, Vector, Program,
+  Real, Integer, BinaryInteger, Complex, Str, Name, RList, Vector, Matrix, Program,
   Symbolic, Unit, isValidHpIdentifier,
 } from './types.js';
 import { RPLError } from './stack.js';
@@ -33,7 +33,12 @@ export function tokenize(src) {
   let i = 0;
   const n = src.length;
 
-  const isSpace = c => /\s/.test(c);
+  // A bare comma acts as a separator, like whitespace — so `[1,2,3]`
+  // and `[[1,2][3,4]]` parse the same as their space-separated forms.
+  // Commas that belong to a complex literal `(1,2)`, a backtick
+  // algebraic `COMB(N,K)`, or a string are consumed by those branches
+  // before reaching this predicate, so they're unaffected.
+  const isSpace = c => c === ',' || /\s/.test(c);
 
   while (i < n) {
     const c = src[i];
@@ -534,6 +539,19 @@ export function parseEntry(src) {
     const endIdx = start + collected.length;
     while (idx < endIdx) items.push(parseOne());
     idx = savedIdx;
+
+    // A literal whose every element is itself a vector row of equal,
+    // non-zero length is a 2-D array — promote it to a real Matrix so
+    // matrix ops (INV, DET, *, …) accept it, matching the HP50 where
+    // `[[1 2][3 4]]` IS a matrix.  Ragged or mixed shapes stay a plain
+    // Vector (an HP50 surfaces those as "Invalid Dimension" only when a
+    // matrix op consumes them).
+    if (items.length > 0 && items.every(v => v?.type === 'vector')) {
+      const width = items[0].items.length;
+      if (width > 0 && items.every(v => v.items.length === width)) {
+        return Matrix(items.map(v => v.items));
+      }
+    }
     return Vector(items);
   }
 

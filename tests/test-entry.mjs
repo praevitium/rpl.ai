@@ -946,6 +946,41 @@ import { assert, assertThrows } from './helpers.mjs';
     "parseEntry('[1 2]DUP') → [[1 2], Name('DUP')]");
 }
 {
+  // 2-D rectangular literal promotes to a real Matrix so matrix ops
+  // (INV/DET/TRN) accept it, matching the HP50.
+  const m = parseEntry('[[1 2][3 4]]')[0];
+  assert(m?.type === 'matrix' && m.rows.length === 2 && m.rows[0].length === 2
+      && isInteger(m.rows[1][0]) && m.rows[1][0].value === 3n,
+    "parseEntry('[[1 2][3 4]]') → 2x2 Matrix");
+}
+{
+  // Commas act as element separators — the matrix form a user (or the
+  // chatbot) naturally types parses identically to the space form.
+  const m = parseEntry('[[1,2],[3,4]]')[0];
+  assert(m?.type === 'matrix' && m.rows.length === 2 && m.rows[0].length === 2,
+    "parseEntry('[[1,2],[3,4]]') → 2x2 Matrix (comma-separated)");
+  const v = parseEntry('[1,2,3]')[0];
+  assert(isVector(v) && v.items.length === 3,
+    "parseEntry('[1,2,3]') → 3-element Vector (comma-separated)");
+  const l = parseEntry('{1,2,3}')[0];
+  assert(isList(l) && l.items.length === 3,
+    "parseEntry('{1,2,3}') → 3-element list (comma-separated)");
+}
+{
+  // A comma inside a complex literal stays the real/imag separator —
+  // the comma-as-separator rule only applies outside (…)/backticks.
+  const z = parseEntry('(3,4)')[0];
+  assert(isComplex(z) && z.re === 3 && z.im === 4,
+    "parseEntry('(3,4)') → Complex(3,4) (comma not split)");
+}
+{
+  // Ragged rows are NOT a matrix — stay a Vector of Vectors so the
+  // dimension error surfaces only when a matrix op consumes them.
+  const v = parseEntry('[[1 2][3]]')[0];
+  assert(isVector(v) && v.items.length === 2 && isVector(v.items[0]),
+    "parseEntry('[[1 2][3]]') → ragged stays Vector-of-Vectors");
+}
+{
   // Empty list abutting a Name inside a program: `2{}»` splits the
   // Integer, an empty list, and the program closer with no swallowing.
   const v = parseEntry('« 2{}»')[0];
