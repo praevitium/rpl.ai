@@ -27,9 +27,11 @@ const FILES = [
   './test-reflection.mjs',
   './test-units.mjs',
   './test-ui.mjs',
+  './test-op-search.mjs',
   './test-stack-ops.mjs',
   './test-stats.mjs',
   './test-arrow-aliases.mjs',
+  './test-chatbot-parse.mjs',
 ];
 
 const perFile = [];

@@ -16865,6 +16865,42 @@ register('EGV', (s) => {
 });
 
 /* ------------------------------------------------------------------
+   SCHUR   (HP50 AUR §3-218)
+   Schur decomposition of a square matrix.
+
+     Input :  level 1 = [[ M ]]   (n × n)
+     Output:  level 2 = [[ Q ]]   (orthogonal / unitary)
+              level 1 = [[ T ]]   (upper quasi-triangular)
+   such that  M = Q · T · TRN(Q).
+
+   Giac exposes `SCHUR(A) = hessenberg(A,-1)`, returning the pair
+   `[P, B]` with `B = inv(P)·A·P`.  P is orthogonal, so `inv(P) =
+   TRN(P)` and the identity matches HP50's Q / T exactly (P↔Q, B↔T).
+   Both matrices flow through the same `_matrixToGiacStr` /
+   `_astToRplValue` pipeline as EGV; a non-pair / non-matrix shape from
+   Giac surfaces `Bad argument value`.  No-fallback: `!giac.isReady()`
+   ⇒ `CAS not ready`.
+   ------------------------------------------------------------------ */
+register('SCHUR', (s) => {
+  const { matrix } = _popSquareMatrix(s);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const matStr = _matrixToGiacStr(matrix);
+  const pair = splitGiacList(giac.caseval(`SCHUR(${matStr})`));
+  if (pair === null || pair.length !== 2) throw new RPLError('Bad argument value');
+  const toMatrix = (mStr) => {
+    const rows = splitGiacList(mStr);
+    if (rows === null) throw new RPLError('Bad argument value');
+    return Matrix(rows.map((rowStr) => {
+      const cols = splitGiacList(rowStr);
+      if (cols === null) throw new RPLError('Bad argument value');
+      return cols.map((c) => _astToRplValue(giacToAst(c)));
+    }));
+  };
+  s.push(toMatrix(pair[0]));
+  s.push(toMatrix(pair[1]));
+});
+
+/* ------------------------------------------------------------------
    RSD   (HP50 AUR §3-213)
    Residual command — returns B − A·Z.
 

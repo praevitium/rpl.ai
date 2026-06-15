@@ -392,7 +392,7 @@ function appendSpans(parent, text) {
  *  The same regex shape is used by _runLoop's streaming detector to
  *  know when to start hiding tokens from the user-facing bubble — the
  *  detector only needs the FIRST occurrence; the parser needs all. */
-function parseAllToolCalls(text) {
+export function parseAllToolCalls(text) {
   const calls = [];
   const anchor = /\{\s*"name"\s*:/g;
   let m;
@@ -437,7 +437,7 @@ function parseAllToolCalls(text) {
  *  tokens if JSON.parse rejects the slice (small models occasionally
  *  emit smart quotes or stray commas).  Returns up to three trimmed
  *  non-empty strings, or null if nothing matched. */
-function parseSuggestions(text) {
+export function parseSuggestions(text) {
   if (!text) return null;
   const anchor = /\bSUGGEST\s*:/i.exec(text);
   if (!anchor) return null;
@@ -485,7 +485,7 @@ function parseSuggestions(text) {
  *  JSON and SUGGEST are orchestrator-only; the user shouldn't see
  *  raw structured output flicker in their chat).  Returns -1 when
  *  neither marker is present yet (still pure prose). */
-function findMachineSectionStart(text) {
+export function findMachineSectionStart(text) {
   const jsonM = text.match(/\{\s*"name"\s*:/);
   const sugM  = text.match(/\bSUGGEST\s*:/i);
   const jIdx = jsonM ? jsonM.index : -1;
@@ -517,7 +517,7 @@ function findMachineSectionStart(text) {
  *  Both `<think>` and `<thinking>` spellings are recognised; tag
  *  matching is case-insensitive.
  */
-function stripThinkBlocks(text) {
+export function stripThinkBlocks(text) {
   if (!text) return text;
   // First: collapse every complete pair.  Greedy [\s\S] handles
   // newlines (which `.` doesn't, even with /m).

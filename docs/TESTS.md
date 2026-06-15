@@ -4,10 +4,12 @@
 scheduled-task lane. It tracks what tests exist, where the coverage gaps are,
 which tests are known-flaky or known-failing, and what to pick up next run.
 
-**Last updated.** Session 269 (2026-04-26).  Unit-tests lane run
-(snapshot refresh — Sunday 2026-04-26; 28th
+**Last updated.** Session 273 (2026-06-14).  Unit-tests lane run
+(+8 String lex-compare symmetric-closure pins; first net-new
+assertions in this lane since session 267's sibling delta — sessions
+265 and 269 were snapshot-refresh runs).  29th
 release-window run in this lane after sessions 156, 160, 164, 160-unit-tests,
-168, 173, 177, 181, 185, 189, 193, 198, 202, 206, 210, 214, 218, 223, 228, 238, 242, 246, 250, 256, 260, 265, 269).
+168, 173, 177, 181, 185, 189, 193, 198, 202, 206, 210, 214, 218, 223, 228, 238, 242, 246, 250, 256, 260, 265, 269, 273).
 Note: session-233-unit-tests lock was pruned as crashed (header-only
 update; no session log written) — absorbed into a prior run's snapshot.
 Note: session 238 log index claims a coverage snapshot was added but
@@ -833,6 +835,35 @@ Session 117 unit-tests deltas:
   `cowork_allow_file_delete` permission prompt is blocked in
   unsupervised mode.  Filed an "open — blocked by tooling" pointer
   in the known-gaps list for a human-present run to clear.
+
+## Coverage snapshot (session 273)
+
+Session 273 unit-tests deltas (this run):
+- **+8 String lex-compare symmetric-closure pins** in
+  `tests/test-types.mjs` (`session273:` labels), hardening the
+  session179 String-ordered-compare cluster.  session179 pinned the
+  both-String lex path for `<` / `>` / `≤` / `≥` but only pinned the
+  cross-type String/numeric **rejection** on `<`; all four route
+  through the same `comparePair` cross-type guard at `ops.js:5143`.
+  Closes the rejection arm on `>` (both orderings), `≤`, and `≥`
+  (4 pins) plus a non-empty proper-prefix lex boundary on each op
+  (`"ab" < "abc"`, `"abc" > "ab"`, `"ab" ≤ "abc"`, `"abc" ≥ "ab"` —
+  4 pins; session179 only exercised the empty-prefix corner
+  `"" < "a"`).  No source change — the guard and JS-string lex path
+  were already live.
+
+Baseline at session-273 entry: **5725 / 0** (fully green; +59 from
+the session-269 close of 5666 absorbed across sibling lanes —
+ai-chatbot +25, ui-development +23 op-search, command/data deltas).
+Final: **5733 / 0** — fully green (+8 from this run).
+`test-persist.mjs` passed / 0 (stable).  `sanity.mjs` 22 / 0.
+
+| File             | OK   | FAIL | Notes                              |
+|------------------|------|------|------------------------------------|
+| test-types.mjs   | 1226 | 0    | +8 s273 String lex-compare pins.   |
+| **test-all**     | **5733** | **0** | Session 273 close.  Fully green. |
+
+### Prior snapshot — Session 269 (retained for context)
 
 ## Coverage snapshot (session 269)
 

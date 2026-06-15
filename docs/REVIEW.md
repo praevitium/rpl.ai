@@ -6,7 +6,12 @@ across the whole repo, classified into the six lane buckets
 (`User Interface`, `Commands`, `Data Types`, `RPL`, `Unit Tests`,
 `Other`), so the sibling implementer lanes can pick them up as a group.
 
-**Last updated.** Session 270-code-review (thirty-ninth and final
+**Last updated.** Session 200-code-review (2026-06-15 04:56; filed and
+same-run resolved **C-016** — `COMMANDS.md` ✓-count and register-count
+prose stale after the SCHUR ship: ✓ bullet 447 → 448, register prose
+480/461 → 481/462 to match live `ops.js` counts; doc-only;
+`node tests/test-all.mjs` = 5733/0).
+Prior update: Session 270-code-review (thirty-ninth and final
 review-lane run; sessions 266–269 folded in; 5666/0 clean; O-011
 count 107 → 108 (session266-code-review phantom lock); O-012 aged
 18 → 19 code-review-lane runs; O-014 chat-bot.js mtime updated
@@ -3921,6 +3926,41 @@ are UI-adjacent but classified under Other for bookkeeping.)_
 - **Status.** `[resolved - session 257]` — Counts stamp advanced
   252 → 257; session-log entries added for sessions 253 / 254 /
   255-code-review / 256 / 257 in `docs/COMMANDS.md`.
+
+### C-016  `COMMANDS.md` ✓-count and register-count prose stale after session 196's SCHUR ship
+
+- **Classification.** Commands (doc drift).
+- **Where.** `docs/COMMANDS.md:39` (the "Fully shipped (✓)" bullet)
+  and `docs/COMMANDS.md:224,238` (the register-count prose block).
+- **What.** Session 196 (`rpl5050-command-support`) shipped `SCHUR`
+  (✗ → ✓) and updated both the Counts header narrative and the
+  "Not yet implemented (✗): 1" bullet, but left three figures that
+  the same transition moves: the "Fully shipped (✓)" bullet still
+  read **447** with the parenthetical "no net change since session
+  149" (now false — SCHUR is the net change), and the register-count
+  prose still read `grep -c "register("` = **480** / `grep -cE
+  "^register\("` = **461**.  `SCHUR` adds exactly one top-level
+  `register('SCHUR', …)` call, so the live counts are **481 / 462**
+  and the ✓ count is **448**.
+- **Why.** The Counts block is the canonical completeness reference;
+  a ✓ bullet that contradicts the ✗ bullet directly above it, plus
+  grep figures that no longer match `ops.js`, erode trust in the
+  doc.  Mirrors C-012 / C-013.
+- **Fix.** Update the ✓ bullet to **448** and reword its stale
+  "no net change since session 149" opening; update the register-
+  count prose to **481** / **462** with a session-196 SCHUR clause.
+  Doc-only, no source change.
+- **Confidence.** high — `grep -c "register(" www/src/rpl/ops.js`
+  = 481 and `grep -cE '^register\(' www/src/rpl/ops.js` = 462
+  verified this run; `git diff www/src/rpl/ops.js` shows exactly one
+  added `+register('SCHUR',` line.
+- **Age.** new (filed session 200-code-review).
+- **Status.** **[resolved - session 200-code-review]** — fixed in
+  the same run it was filed: `docs/COMMANDS.md:39` advanced 447 → 448
+  with a corrected "no net change between sessions 149 and 195"
+  clause; register-count prose advanced 480 → 481 and 461 → 462 with
+  a SCHUR +1 clause on each.  Doc-only close, no source change;
+  `node tests/test-all.mjs` unaffected.
 
 ### O-012  Stray `www/src/ui/keyboard.js.bak` backup file
 

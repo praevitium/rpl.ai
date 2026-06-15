@@ -9434,6 +9434,75 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   );
 }
 
+// ---- session273: String lex-compare symmetric closure (> ≤ ≥ cross-type reject +
+// non-empty proper-prefix boundary) -------------------------------------------------
+// session179 pinned the both-String lex path for < > ≤ ≥ but only pinned the cross-type
+// String/numeric rejection on `<`.  All four ordered ops route through the same
+// `comparePair` cross-type guard (ops.js:5143), so a refactor that special-cased one of
+// > / ≤ / ≥ and bypassed that guard would slip past session179.  This closes the
+// rejection arm on the remaining three ops (symmetric to session179's `<` pair), plus a
+// non-empty proper-prefix lex pin on each op — session179 only exercised the empty-prefix
+// corner ("" < "a"); "ab" is a proper prefix of "abc" so the shorter string is lex-less.
+{
+  // Cross-type String/numeric rejection on > / ≤ / ≥ (mirror of session179's < pair).
+  assertThrows(
+    () => { const s = new Stack(); s.push(Str('a')); s.push(Integer(5n)); lookup('>').fn(s); },
+    'Bad argument type',
+    'session273: Str > Integer → Bad argument type (cross-type guard fires on > as on <)'
+  );
+  assertThrows(
+    () => { const s = new Stack(); s.push(Integer(5n)); s.push(Str('a')); lookup('>').fn(s); },
+    'Bad argument type',
+    'session273: Integer > Str → Bad argument type (reverse-order cross-type mix rejected on >)'
+  );
+  assertThrows(
+    () => { const s = new Stack(); s.push(Str('a')); s.push(Integer(5n)); lookup('≤').fn(s); },
+    'Bad argument type',
+    'session273: Str ≤ Integer → Bad argument type (cross-type guard fires on ≤)'
+  );
+  assertThrows(
+    () => { const s = new Stack(); s.push(Str('a')); s.push(Integer(5n)); lookup('≥').fn(s); },
+    'Bad argument type',
+    'session273: Str ≥ Integer → Bad argument type (cross-type guard fires on ≥)'
+  );
+
+  // Non-empty proper-prefix boundary: "ab" is a proper prefix of "abc", so the shorter
+  // string sorts lex-less (char-code lex with end-of-string lowest).  session179 only
+  // pinned the empty-prefix corner; this exercises the prefix path on all four ops.
+  {
+    const s = new Stack();
+    s.push(Str('ab')); s.push(Str('abc'));
+    lookup('<').fn(s);
+    const v = s.peek();
+    assert(isReal(v) && v.value.eq(1),
+      `session273: "ab" < "abc" → Real(1) (proper prefix is lex-less than its extension); got type=${v?.type} val=${v?.value?.toString?.()}`);
+  }
+  {
+    const s = new Stack();
+    s.push(Str('abc')); s.push(Str('ab'));
+    lookup('>').fn(s);
+    const v = s.peek();
+    assert(isReal(v) && v.value.eq(1),
+      `session273: "abc" > "ab" → Real(1) (extension is lex-greater than its proper prefix); got type=${v?.type} val=${v?.value?.toString?.()}`);
+  }
+  {
+    const s = new Stack();
+    s.push(Str('ab')); s.push(Str('abc'));
+    lookup('≤').fn(s);
+    const v = s.peek();
+    assert(isReal(v) && v.value.eq(1),
+      `session273: "ab" ≤ "abc" → Real(1) (proper prefix satisfies ≤); got type=${v?.type} val=${v?.value?.toString?.()}`);
+  }
+  {
+    const s = new Stack();
+    s.push(Str('abc')); s.push(Str('ab'));
+    lookup('≥').fn(s);
+    const v = s.peek();
+    assert(isReal(v) && v.value.eq(1),
+      `session273: "abc" ≥ "ab" → Real(1) (extension satisfies ≥ against its proper prefix); got type=${v?.type} val=${v?.value?.toString?.()}`);
+  }
+}
+
 // ---- session185 (re-land of session177 Cluster 1): EXACT-mode Integer-stay-exact
 // composition pins for forward-trig + inverse-trig on bare-List + Tagged-of-List axes.
 //
@@ -11516,5 +11585,37 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     const s = new Stack(); s.push(M1); s.push(M1);
     assertThrows(() => lookup('IREMAINDER').fn(s), /Bad argument type/i,
       'session267: M IREMAINDER → Bad argument type (M=✗; same _intQuotientArg guard as IQUOT M pin)');
+  }
+}
+
+/* ====================================================================
+   session268: C-column rejection pins — GAMMA / LNGAMMA / HEAVISIDE
+   ----------------------------------------------------------------
+   Closes the three stat-dist family ops session 267 skipped when it
+   pinned C=✗ on DIRAC/ERF/ERFC/BETA/UTPC/UTPF/UTPT.  All three reject
+   Complex, but the cells carried ✗ with no documenting note or pin.
+     • _gammaScalar / _lngammaScalar: `x = isInteger?…:isReal?…:null`;
+       Complex → null → throw 'Bad argument type'.
+     • HEAVISIDE scalar: isReal/isInteger/isBinaryInteger/isSym only;
+       Complex falls through to the final throw.
+   No source changes — the rejection was already correct, just untested.
+   ================================================================ */
+{
+  const C1 = Complex(1, 2);   // 1+2i — representative Complex input
+
+  {
+    const s = new Stack(); s.push(C1);
+    assertThrows(() => lookup('GAMMA').fn(s), /Bad argument type/i,
+      'session268: Complex(1,2) GAMMA → Bad argument type (C=✗; _gammaScalar x = isInteger?…:isReal?…:null; Complex → null → throw)');
+  }
+  {
+    const s = new Stack(); s.push(C1);
+    assertThrows(() => lookup('LNGAMMA').fn(s), /Bad argument type/i,
+      'session268: Complex(1,2) LNGAMMA → Bad argument type (C=✗; _lngammaScalar same isInteger/isReal/null pattern; Complex → throw)');
+  }
+  {
+    const s = new Stack(); s.push(C1);
+    assertThrows(() => lookup('HEAVISIDE').fn(s), /Bad argument type/i,
+      'session268: Complex(1,2) HEAVISIDE → Bad argument type (C=✗; scalar arm isReal/isInteger/isBinaryInteger/isSym only; Complex falls through)');
   }
 }

@@ -7808,3 +7808,52 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   /* ---- Reset for hygiene ---- */
   resetCasModulo();
 }
+
+// ==================================================================
+// SCHUR — Schur decomposition (HP50 AUR §3-218).
+// Giac `SCHUR(A) = hessenberg(A,-1)` returns the pair `[P, B]` with
+// `B = inv(P)·A·P`; the op pushes P (→ level 2 = Q) then B (→ level 1 = T).
+// ==================================================================
+{
+  // Happy path — Giac returns `[P, B]`; op pushes Q at level 2, T at level 1.
+  const s = new Stack();
+  s.push(Matrix([[Integer(1n), Integer(2n)], [Integer(3n), Integer(4n)]]));
+  giac._clear();
+  giac._setFixture('SCHUR([[1,2],[3,4]])', '[[[1,0],[0,1]],[[5,6],[0,7]]]');
+  lookup('SCHUR').fn(s);
+  assert(s.depth === 2, 'SCHUR pushes two results (Q, T)');
+  const T = s.peek();
+  const Q = s.peek(2);
+  assert(isMatrix(Q) && isMatrix(T), 'SCHUR results are both Matrix');
+  assert(Q.rows.length === 2 && Q.rows[0].length === 2, 'SCHUR Q is 2x2');
+  assert(format(Q.rows[1][0]) === '0.' && format(Q.rows[0][0]) === '1.',
+         'SCHUR Q (level 2) = first Giac pair element P');
+  assert(format(T.rows[0][1]) === '6.' && format(T.rows[1][0]) === '0.',
+         'SCHUR T (level 1) = second Giac pair element B (upper quasi-triangular)');
+  giac._clear();
+}
+{
+  // Non-Matrix input rejects before any Giac call.
+  const s = new Stack();
+  s.push(Real(3.5));
+  assertThrows(() => { lookup('SCHUR').fn(s); }, /Bad argument type/,
+               'SCHUR on a Real rejects with Bad argument type');
+}
+{
+  // Non-square Matrix rejects with Invalid dimension.
+  const s = new Stack();
+  s.push(Matrix([[Integer(1n), Integer(2n), Integer(3n)],
+                 [Integer(4n), Integer(5n), Integer(6n)]]));
+  assertThrows(() => { lookup('SCHUR').fn(s); }, /Invalid dimension/,
+               'SCHUR on a 2x3 matrix rejects with Invalid dimension');
+}
+{
+  // Giac returning a non-pair shape surfaces Bad argument value.
+  const s = new Stack();
+  s.push(Matrix([[Integer(1n), Integer(2n)], [Integer(3n), Integer(4n)]]));
+  giac._clear();
+  giac._setFixture('SCHUR([[1,2],[3,4]])', '[[1,2],[3,4]]');
+  assertThrows(() => { lookup('SCHUR').fn(s); }, /Bad argument value/,
+               'SCHUR with a non-pair Giac result rejects with Bad argument value');
+  giac._clear();
+}

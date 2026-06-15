@@ -116,13 +116,17 @@ to the user is thin.  Worth building out:
 
 Most of the substrate is in place.  Open items tracked in `RPL.md`:
 
-- HALT inside a **named sub-program called via a variable** (the
-  `_evalValueSync` path) still rejects cleanly but doesn't suspend.
-  Lifting that requires threading the generator protocol through the
-  synchronous Name-eval call — doable but a surgical change.
-- **DBUG / SST / SST↓** step-debugger ops ship as stubs; they need a
-  UI surface (a step-mode indicator + single-step button) to be
-  useful to end users.  UI-lane collaboration.
+- HALT inside a **named sub-program called via a variable** now
+  suspends cleanly (shipped session 106): `evalToken`'s Name-binding
+  branch is a generator (`_evalValueGen`) that yields up through the
+  `yield*` chain, pinned in `tests/test-control-flow.mjs`.  The only
+  structural sync-path call site that still *rejects* HALT is
+  `runArrow`'s Symbolic body, currently unreachable in practice (the
+  Symbolic AST cannot carry a Program subnode).
+- **DBUG / SST / SST↓** are implemented as real ops (single-step
+  debugger; SST↓ is a true step-into since session 106), but still
+  need a UI surface (a step-mode indicator + single-step button) to
+  be useful to end users.  UI-lane collaboration.
 - **ABORT-level UI.**  `ABORT` propagates cleanly to the outer loop
   but displays via the generic error banner.  A dedicated "Program
   aborted" status-line flash would feel closer to the HP50.
@@ -159,7 +163,10 @@ concrete improvements:
 - **Command palette / fuzzy op search.**  `/<name>` opens an overlay,
   types filter the registered op list, Enter invokes the op (as if
   entered in the command line).  The `allOps()` enumerator already
-  exposes the registry.
+  exposes the registry.  *Matching core shipped:* `www/src/ui/op-search.js`
+  (`fuzzyScore` / `searchOps`) is a DOM-free subsequence matcher+ranker
+  unit-tested in `tests/test-op-search.mjs`; the overlay that consumes it
+  (input box, result list, Enter-to-invoke, Esc-to-close) is still TODO.
 - **Contextual help.**  Hover an op name in the stack or command line
   → a tooltip with its AUR one-liner plus argument signature.  The
   metadata lives in `COMMANDS.md` today as prose; a structured

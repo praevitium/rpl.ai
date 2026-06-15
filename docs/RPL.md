@@ -15,7 +15,7 @@ open, and the next-session queue.
 
 ---
 
-## Current implementation status (as of session 268)
+## Current implementation status (as of session 271)
 
 
 ### Program value — parser & round-trip
@@ -309,7 +309,40 @@ open, and the next-session queue.
 
 ---
 
-## Session 268 (this run) — what shipped
+## Session 271 (this run) — what shipped
+
+Doc-drift fix run on 2026-06-15.  Caught a doc↔code drift in
+`docs/ROADMAP.md` §4 ("RPL interpreter — finish the suspended-execution
+story") whose first two open-item bullets described the pre-session-106
+substrate state and contradicted shipped, test-pinned behavior:
+
+1. Bullet 1 claimed HALT inside a **named sub-program called via a
+   variable** (the `_evalValueSync` path) "still rejects cleanly but
+   doesn't suspend."  Session 106 lifted exactly this path —
+   `evalToken`'s Name-binding branch is now a generator
+   (`_evalValueGen`) that yields up through the `yield*` chain — pinned
+   by the `session106:` assertions in `tests/test-control-flow.mjs`
+   (HALT inside Name-reached sub-program suspends; CONT resumes; nested
+   `→` frame stays live).  Rewrote the bullet to state the lift shipped
+   and that the only structural sync-path call site that still rejects
+   HALT is `runArrow`'s Symbolic body (currently unreachable — the
+   Symbolic AST cannot carry a Program subnode).
+2. Bullet 2 called `DBUG / SST / SST↓` "stubs."  Session 101 shipped
+   DBUG and SST as real ops and session 106 made SST↓ a true step-into;
+   reworded to "implemented as real ops … but still need a UI surface,"
+   preserving the accurate UI-lane-collaboration note.
+
+**Doc-only run — no source or test change.**  `node tests/test-all.mjs`
+→ 5677 / 0 passed (unchanged from the session-268 / sibling-lane
+baseline; doc edits cannot move the assertion count).
+
+Session-268 `(this run)` heading demoted to plain past tense below
+(per the recurring R-005 discipline).  Status stamp bumped from
+"as of session 268" to "as of session 271".
+
+---
+
+## Session 268 — what shipped
 
 Post-ship verification pass on Sunday 2026-04-26.  All R-bucket findings
 in `docs/REVIEW.md` remain fully closed at run-entry (R-001 — R-012
