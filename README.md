@@ -206,9 +206,12 @@ the stack.
 `'SIN(X)' 'X' ∂` for a derivative, or `'X^2-4=0' 'X' SOLVE`. The CAS is
 Giac, so most expressions you'd type into Xcas work here too.
 
-**Local variables.** `2 3 → a b « a b + a b * »` pops two values into named
-locals, runs the body, and tears down the frame on exit. Compiled locals are
-the normal way to give intermediate values names inside a program.
+**Local variables.** The `→` binding must live inside a program. Enter
+`« 2 3 → a b « a b + a b * » »` to put the program on the stack, then run it
+with `EVAL`: `2` and `3` are bound to the locals `a` and `b`, the inner body
+runs, and the frame is torn down on exit — leaving `5` (a + b) and `6`
+(a * b). Compiled locals are the normal way to give intermediate values names
+inside a program.
 
 **Store a program.** Type `« DUP * » 'SQ' STO`. Now `5 SQ` gives `25`. User-
 defined names sit in the same namespace as built-ins — same lookup, same
