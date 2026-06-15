@@ -20,14 +20,26 @@ the `Last lane` pointer.
 
 ## Pointer
 
-Last lane: data-types
-Last run: 2026-06-15 06:31
+Last lane: rpl-programming
+Last run: 2026-06-15 06:36
 
 ---
 
 ## Run log
 
 (newest first — each run appends one entry: date, lane, what shipped, test result, what's next)
+
+### 2026-06-15 06:36 — rpl-programming
+Closed session 272's queued follow-up: verified list/vector openers `{[`
+are symmetric with the program-guillemet abutment class. `{}[]` are
+single-char delims already in the ident-scanner stop set, so a Name or
+number abutting a list/vector opener/closer with no whitespace splits
+cleanly (`X{1 2}`, `{1 2}DUP`, `« 2{}»`) — no `<<`/`>>` lookahead needed
+since none is a valid operator name. No source change; +6 `session278:`
+pins in `tests/test-entry.mjs`. Updated `docs/RPL.md` (parser bullet +
+session-278 chapter, stamp 272→278). `node tests/test-all.mjs` → 5814
+passed / 0 failed (baseline 5808). Next: deferred halted-stack
+persistence across `persist.js` is the lone larger open item.
 
 ### 2026-06-15 06:31 — data-types
 Extended the **S (String) column** onto the special-function family table

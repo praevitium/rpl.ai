@@ -4,7 +4,7 @@ import {
   Real, Integer, BinaryInteger, Complex, Name, Str, Directory, Program, Tagged,
   RList, Vector, Matrix,
   isReal, isInteger, isBinaryInteger, isComplex, isDirectory, isProgram, isName,
-  isString,
+  isString, isList, isVector,
 } from '../www/src/rpl/types.js';
 import { parseEntry } from '../www/src/rpl/parser.js';
 import { format, formatStackTop } from '../www/src/rpl/formatter.js';
@@ -895,6 +895,64 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(isProgram(v) && v.tokens.length === 2 && isProgram(v.tokens[1])
       && v.tokens[1].tokens.length === 2,
     "parseEntry('« 1 << 3 4 >> »') → outer Program with nested Program");
+}
+
+/* ====================================================================
+   session278: list / vector delimiters are symmetric with the program-
+   guillemet abutment class (session 272's queued follow-up).  `{` `}`
+   `[` `]` are single-char delims already in the ident-tokenizer stop
+   set, so an opener/closer abutting a Name or number with no space
+   splits cleanly — unlike the `«»` case, no `<<`/`>>`-style lookahead
+   is needed because none of these glyphs is a valid bare operator name.
+   These pins guard against a future stop-set refactor silently
+   swallowing a list/vector delimiter into an adjacent identifier.
+   ==================================================================== */
+{
+  // Name abutting a list opener: `X{` → Name('X') then the list.
+  const v = parseEntry('« X{1 2}»')[0];
+  assert(isProgram(v) && v.tokens.length === 2
+      && isName(v.tokens[0]) && v.tokens[0].id === 'X'
+      && isList(v.tokens[1]) && v.tokens[1].items.length === 2,
+    "parseEntry('« X{1 2}»') → Program [Name('X'), {1 2}]");
+}
+{
+  // Name abutting a vector opener: `X[` → Name('X') then the vector.
+  const v = parseEntry('« X[1 2]»')[0];
+  assert(isProgram(v) && v.tokens.length === 2
+      && isName(v.tokens[0]) && v.tokens[0].id === 'X'
+      && isVector(v.tokens[1]),
+    "parseEntry('« X[1 2]»') → Program [Name('X'), [1 2]]");
+}
+{
+  // Number abutting a list opener: `1{` → Integer(1) then the list.
+  const v = parseEntry('« 1{2 3}»')[0];
+  assert(isProgram(v) && v.tokens.length === 2
+      && isInteger(v.tokens[0]) && v.tokens[0].value === 1n
+      && isList(v.tokens[1]) && v.tokens[1].items.length === 2,
+    "parseEntry('« 1{2 3}»') → Program [Integer(1), {2 3}]");
+}
+{
+  // List closer abutting a Name: `}DUP` → close the list, then Name('DUP').
+  const out = parseEntry('{1 2}DUP');
+  assert(out.length === 2 && isList(out[0]) && out[0].items.length === 2
+      && isName(out[1]) && out[1].id === 'DUP',
+    "parseEntry('{1 2}DUP') → [{1 2}, Name('DUP')]");
+}
+{
+  // Vector closer abutting a Name: `]DUP` → close the vector, then Name.
+  const out = parseEntry('[1 2]DUP');
+  assert(out.length === 2 && isVector(out[0])
+      && isName(out[1]) && out[1].id === 'DUP',
+    "parseEntry('[1 2]DUP') → [[1 2], Name('DUP')]");
+}
+{
+  // Empty list abutting a Name inside a program: `2{}»` splits the
+  // Integer, an empty list, and the program closer with no swallowing.
+  const v = parseEntry('« 2{}»')[0];
+  assert(isProgram(v) && v.tokens.length === 2
+      && isInteger(v.tokens[0])
+      && isList(v.tokens[1]) && v.tokens[1].items.length === 0,
+    "parseEntry('« 2{}»') → Program [Integer(2), {}]");
 }
 
 /* ====================================================================

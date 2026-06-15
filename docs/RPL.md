@@ -15,7 +15,7 @@ open, and the next-session queue.
 
 ---
 
-## Current implementation status (as of session 272)
+## Current implementation status (as of session 278)
 
 
 ### Program value — parser & round-trip
@@ -39,6 +39,14 @@ open, and the next-session queue.
   ident stop set gained `«»`, and a `j > i` lookahead breaks on `<<`/`>>`
   while leaving a lone `<`/`>` as a valid bare operator name. Pinned in
   `tests/test-entry.mjs`.
+- **List / vector delimiter symmetry (session 278, verification-only):**
+  `{` `}` `[` `]` are single-char delims already present in the ident
+  stop set, so a Name or number abutting a list/vector opener or closer
+  with no whitespace splits cleanly (`X{1 2}` → `Name('X')` + list;
+  `{1 2}DUP` → list + `Name('DUP')`). No `<<`/`>>`-style lookahead is
+  needed — none of these glyphs is a valid bare operator name. No source
+  change; +6 `session278:` regression pins in `tests/test-entry.mjs`
+  guard against a stop-set refactor swallowing a delimiter.
 
 ### Evaluation
 - `EVAL` (ops.js) dispatches Program / Name / Tagged / Symbolic /
@@ -317,7 +325,33 @@ open, and the next-session queue.
 
 ---
 
-## Session 272 (this run) — what shipped
+## Session 278 (this run) — what shipped
+
+Verification-only run on 2026-06-15 closing session 272's queued
+follow-up: confirm the list/vector openers `{[` are fully symmetric with
+the program-guillemet abutment class.  They already are — `{` `}` `[` `]`
+are single-char `delim` tokens (parser.js:57) and all four are in the
+bare-ident scanner's stop set (`'{}[]()"`«»'`, parser.js:204), so a Name
+or number abutting a list/vector opener or closer with no whitespace
+splits cleanly.  Unlike the `«»` fix, no `<<`/`>>`-style lookahead is
+needed because none of these glyphs is a valid bare operator name, so a
+plain stop-set membership suffices.
+
+**No source change** — the behavior was already correct.  Added +6
+`session278:` regression pins to `tests/test-entry.mjs` (Name/number
+abutting list `{` and vector `[` openers inside a program, list and
+vector closers `}`/`]` abutting a following Name, and an empty-list
+`2{}»` boundary) so a future stop-set refactor that drops a delimiter
+surfaces as a hard failure.  `node tests/test-all.mjs` → 5814 passed /
+0 failed (baseline 5808; Δ+6 = this run's pins).
+
+Next: the deferred halted-stack persistence across `persist.js` (page
+refresh drops the halted stack via `clearAllHalted` on `resetHome`)
+remains the lone larger open item for this lane.
+
+---
+
+## Session 272 — what shipped
 
 First net-new source change in this lane since the session-106/116/121/131
 suspended-execution work — a real parser bug fix on 2026-06-14.  The bare-
