@@ -388,15 +388,15 @@ export class Display {
 
   /** Update the Real/Complex annunciator.  HP50 flag -103: when CLEAR
    *  ("Real") SOLVE returns real roots only and domain-violating
-   *  transcendental ops throw; the annunciator shows `R`.  When SET
+   *  transcendental ops throw; the annunciator shows `ℝ`.  When SET
    *  ("Complex") SOLVE also searches for complex roots and those ops
    *  return their principal-branch Complex result; the annunciator
-   *  flips to `C`.  Always lit so the mode is visible at a glance,
+   *  flips to `i`.  Always lit so the mode is visible at a glance,
    *  mirroring the EXACT/APPROX annunciator. */
   setComplexAnnunciator(on) {
     const el = this.statusLine?.querySelector('#ann-complex');
     if (!el) return;
-    el.textContent = on ? 'C' : 'R';
+    el.textContent = on ? 'i' : 'ℝ';
     el.classList.add('on');
     el.title = on
       ? 'Complex mode (flag -103 set) — SOLVE finds complex roots; click to switch to Real'
