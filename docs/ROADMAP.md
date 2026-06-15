@@ -74,27 +74,10 @@ plotting).  Priority order:
 Explicitly out of scope (`will-not`, per `@!MY_NOTES.md`): USER mode,
 ENTRY, S.SLV, NUM.SLV, FINANCE, TIME, DEF, LIB, OFF, and the
 `ATTACH`/`DETACH`/`LIBS` library system.  Graphics (`BARPLOT`,
-`HISTPLOT`, `SCATRPLOT`) lives in the UI lane — see below.
+`HISTPLOT`, `SCATRPLOT`) is deferred to a longer-term stretch theme —
+see "Graphics output" below.
 
-### 2. Graphics output — charts as a first-class calculator view
-
-The HP50 draws histograms, scatter plots and bar charts onto its
-128×80 LCD.  A modern high-resolution adaptation should treat the
-graphics surface as an actual canvas subview rather than a pixel
-emulation.  Rough sequence:
-
-- Add a `graphics` display mode to the main view (adjacent to stack /
-  algebraic-input / interactive-stack).  Switching into it suspends
-  the numeric stack render and allocates an SVG / canvas panel.
-- Wire `BARPLOT`, `HISTPLOT`, `SCATRPLOT` off the ΣDAT matrix already
-  populated by the stats family.  These should read the same
-  `state.lastFitModel` slot that `PREDV` / `PREDX` use, so a fitted
-  line can be overlaid on a scatter without respecifying data.
-- Follow up with `FUNCTION`, `POLAR`, `PARAMETRIC`, `DIFFEQ` plot
-  types (all documented in HP50 User Guide §22) — each driven off a
-  sampled EVAL of a user-supplied Program or Symbolic.
-
-### 3. Persistence and session portability
+### 2. Persistence and session portability
 
 `persist.js` round-trips most value types but the surface it exposes
 to the user is thin.  Worth building out:
@@ -112,7 +95,7 @@ to the user is thin.  Worth building out:
   RPLErrors visible from the UI — useful for debugging scripted
   programs where the error flashes by.
 
-### 4. RPL interpreter — finish the suspended-execution story
+### 3. RPL interpreter — finish the suspended-execution story
 
 Most of the substrate is in place.  Open items tracked in `RPL.md`:
 
@@ -131,7 +114,7 @@ Most of the substrate is in place.  Open items tracked in `RPL.md`:
   but displays via the generic error banner.  A dedicated "Program
   aborted" status-line flash would feel closer to the HP50.
 
-### 5. Data-type width — the last few intentional asymmetries
+### 4. Data-type width — the last few intentional asymmetries
 
 `DATA_TYPES.md` tracks ✗ cells per op-per-type.  The remaining gaps
 are largely *deliberate* (Complex on ordering ops, Unit on percent
@@ -154,7 +137,7 @@ closing:
   trig / hyperbolic family to delegate to complex.js rather than keep
   parallel hand-rolled kernels.
 
-### 6. UI polish and keyboard-first usability
+### 5. UI polish and keyboard-first usability
 
 The keypad and interactive stack are feature-complete but the
 calculator is hard to drive without HP50 muscle-memory.  A few
@@ -181,7 +164,7 @@ concrete improvements:
   `calc.css`); a third "LCD emulation" skin that leans into the
   green-on-black look for nostalgia users.
 
-### 7. Unit-test lane — drive the flake count to zero
+### 6. Unit-test lane — drive the flake count to zero
 
 The skip+flake set is concentrated in three areas:
 
@@ -195,7 +178,7 @@ The skip+flake set is concentrated in three areas:
   hermetic (self-seeding random state, resetting global modes in
   `beforeAll` helpers) would retire most of them.
 
-### 8. Code-review lane — continuing doc ↔ code drift audit
+### 7. Code-review lane — continuing doc ↔ code drift audit
 
 `REVIEW.md` tracks the open findings.  Standing obligations (the drift
 patterns this lane sees most):
@@ -213,6 +196,19 @@ maintenance mode and catches drift as it happens.
 
 These are aspirational and not on any current queue:
 
+- **Graphics output — charts as a first-class calculator view.**
+  The HP50 draws histograms, scatter plots and bar charts onto its
+  128×80 LCD; a modern adaptation should treat the graphics surface as
+  an actual subview rather than a pixel emulation.  Rather than
+  hand-roll a plotting layer, this will lean on an embedded charting /
+  graphing component — Desmos or similar — driven off the ΣDAT matrix
+  and the `state.lastFitModel` slot that `PREDV` / `PREDX` already
+  populate, so a fitted line can overlay a scatter without respecifying
+  data.  Scope covers `BARPLOT`, `HISTPLOT`, `SCATRPLOT` first, then
+  `FUNCTION`, `POLAR`, `PARAMETRIC`, `DIFFEQ` plot types (HP50 User
+  Guide §22), each sampled from an EVAL of a user-supplied Program or
+  Symbolic.  It *will* be implemented eventually — just not in the
+  near-term cohorts.
 - **Programmable soft-menus.**  HP50 lets a user bind custom soft-
   key menus; a web-native equivalent opens the door to per-user
   keyboard-shortcut layouts.
