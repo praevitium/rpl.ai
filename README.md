@@ -230,6 +230,67 @@ history panel — click a prior result to push it back onto the stack.
 
 ---
 
+## Interface reference
+
+### Header controls
+
+The top brand row doubles as a control strip — each label is clickable:
+
+- **`rpl.ai` logo** — cycles the chrome density: **full → simple →
+  minimal**. Full shows the whole shell; minimal strips it down to a
+  resizable stack-and-entry window. The choice is remembered across
+  sessions.
+- **`AI-Assisted RPL Calculator` subtitle** — toggles the side panel
+  (catalog, characters, files, history). Click again to close it.
+- **Version label** — toggles the native **DevTools** panel (desktop
+  Tauri build only). In a plain browser tab use `F12` / `Cmd+Option+I`
+  instead.
+
+### Keyboard shortcuts
+
+Beyond the on-screen keypad, the physical keyboard is fully wired:
+
+- **`Ctrl/Cmd-Z`** — UNDO (multi-level history)
+- **`Ctrl/Cmd-Y`** or **`Shift-Ctrl/Cmd-Z`** — REDO
+- **`Ctrl/Cmd-V`** — paste clipboard text into the command line (OS
+  copy/paste still works normally inside text fields)
+- **`▲` (Up)** — with an empty command line, enter interactive-stack
+  mode (browse levels with an ECHO / PICK / ROLL soft menu); while
+  typing, scroll the stack view
+- **`▼` (Down)** — with an empty command line, pull level 1 down onto
+  the command line for editing
+- **`▶` (Right)** — with an empty command line and ≥2 stack items, SWAP
+  levels 1 and 2; while typing, move the cursor
+- **`◀` (Left)** — cursor-left while editing; otherwise page the soft
+  menu
+
+`Alt`-combinations are deliberately passed through so browser and OS
+shortcuts keep working.
+
+### Command-line prefixes
+
+- **`?`** — send the rest of the line to the AI assistant (e.g.
+  `? n-th prime program`); the reply comes back as RPL you can push onto
+  the stack
+- Whitespace-separated input evaluates left-to-right — `2 3 + 4 *` ends
+  with `20` on the stack
+
+### Resetting the calculator
+
+To wipe all persisted state — calculator stack and HOME directory,
+side-panel layout, chrome mode, AI model choice, remote-endpoint config,
+and consent flags — open the DevTools console (click the version label,
+or `F12` in a browser) and run:
+
+```js
+calc_reset()
+```
+
+This clears every `localStorage` key the app writes and reloads the page,
+returning the calculator to a fresh boot state.
+
+---
+
 ## Project layout
 
 ```
