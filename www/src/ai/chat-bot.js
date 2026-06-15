@@ -545,9 +545,13 @@ export function stripThinkBlocks(text) {
  *  model is ready.  Kept short and concrete so the user sees what kinds
  *  of things the assistant can actually do. */
 const STARTER_CHIPS = [
-  'Compute the sum of 3 and 5',
-  'Solve for X: X^2-3*X+2 = 0',
-  'Take the derivative of x^3+3*x+1',
+  'Solve X^2-3*X+2 = 0 for X',
+  'Differentiate x^3+3*x+1',
+  'Integrate sin(x) dx',
+  'Factor x^4-1',
+  'What is the quadratic formula?',
+  'Invert the matrix [[1,2],[3,4]]',
+  'Convert 5 km to miles',
 ];
 
 /* ---- Model catalog ------------------------------------------------
