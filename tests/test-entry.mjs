@@ -4,7 +4,7 @@ import {
   Real, Integer, BinaryInteger, Complex, Name, Str, Directory, Program, Tagged,
   RList, Vector, Matrix,
   isReal, isInteger, isBinaryInteger, isComplex, isDirectory, isProgram, isName,
-  isString, isList, isVector,
+  isString, isList, isVector, isUnit,
 } from '../www/src/rpl/types.js';
 import { parseEntry } from '../www/src/rpl/parser.js';
 import { format, formatStackTop } from '../www/src/rpl/formatter.js';
@@ -1005,6 +1005,98 @@ import { assert, assertThrows } from './helpers.mjs';
       && isName(v.tokens[0]) && v.tokens[0].id === 'X'
       && isProgram(v.tokens[1]) && v.tokens[1].tokens.length === 1,
     "parseEntry('<< X<<1>> >>') → Program [Name('X'), <<1>>]");
+}
+
+/* ====================================================================
+   session283: the program CLOSER abutting a FOLLOWING token — the last
+   open corner of the guillemet abutment class (session278 pinned the
+   list/vector closer→Name case `}DUP`, session282 the opener→value case
+   `2«1»`; the closer was only pinned against a *preceding* Name `X»`).
+   Once `»` / ASCII `>>` closes a program the scanner resumes a fresh
+   token, so a Name, number, or list opener immediately after the closer
+   with no whitespace splits cleanly into `[Program, next]`.  These guard
+   a closer-scan refactor that lets a trailing token leak back into the
+   program body or get swallowed by the closer.
+   ==================================================================== */
+{
+  // Unicode closer abutting a Name: `«1»DUP` → [Program, Name('DUP')].
+  const out = parseEntry('«1»DUP');
+  assert(out.length === 2 && isProgram(out[0]) && out[0].tokens.length === 1
+      && isName(out[1]) && out[1].id === 'DUP',
+    "parseEntry('«1»DUP') → [«1», Name('DUP')]");
+}
+{
+  // Unicode closer abutting a number: `«1»2` → [Program, Integer(2)].
+  const out = parseEntry('«1»2');
+  assert(out.length === 2 && isProgram(out[0]) && out[0].tokens.length === 1
+      && isInteger(out[1]) && out[1].value === 2n,
+    "parseEntry('«1»2') → [«1», Integer(2)]");
+}
+{
+  // Unicode closer abutting a list opener: `«1»{2}` → [Program, {2}].
+  const out = parseEntry('«1»{2}');
+  assert(out.length === 2 && isProgram(out[0])
+      && isList(out[1]) && out[1].items.length === 1,
+    "parseEntry('«1»{2}') → [«1», {2}]");
+}
+{
+  // ASCII closer abutting a Name relies on the `>>` lookahead, not the
+  // stop set: `<<1>>DUP` → [Program, Name('DUP')].
+  const out = parseEntry('<<1>>DUP');
+  assert(out.length === 2 && isProgram(out[0]) && out[0].tokens.length === 1
+      && isName(out[1]) && out[1].id === 'DUP',
+    "parseEntry('<<1>>DUP') → [<<1>>, Name('DUP')]");
+}
+
+/* ====================================================================
+   session293: a UNIT literal abutting the program closer — the last
+   unswept member of the guillemet abutment class.  The unit-expression
+   scanner ran to the next whitespace or the `{}[]"\`` delims, but NOT the
+   program closer, so `« 1_m»` (no space before `»`) swallowed the closer
+   into the unit text and threw `Bad unit expression near '»': m»`, while
+   `« 1_m »` parsed fine.  The list/vector delims already stopped it
+   (`1_m{2}` split cleanly); the program closer did not.  Fix adds `«»`
+   to the unit-text stop set and the `<<`/`>>` ASCII lookahead (a unit
+   expression never contains `<`/`>`), mirroring the ident scanner.
+   ==================================================================== */
+{
+  // Unicode closer abutting a unit inside a program: `« 1_m»` parses the
+  // same as the spaced `« 1_m »` — one unit token, closer not swallowed.
+  const out = parseEntry('« 1_m»');
+  assert(out.length === 1 && isProgram(out[0]) && out[0].tokens.length === 1
+      && isUnit(out[0].tokens[0]) && out[0].tokens[0].value === 1,
+    "parseEntry('« 1_m»') → [«1_m»] (closer not swallowed)");
+}
+{
+  // Compound unit expression abutting the closer keeps both factors of the
+  // uexpr: `« 1_m/s»` → a program holding one m/s unit (uexpr length 2).
+  const out = parseEntry('« 1_m/s»');
+  const u = out[0] && out[0].tokens && out[0].tokens[0];
+  assert(out.length === 1 && isProgram(out[0]) && out[0].tokens.length === 1
+      && isUnit(u) && u.uexpr.length === 2,
+    "parseEntry('« 1_m/s»') → [«1_m/s»] (compound uexpr intact)");
+}
+{
+  // ASCII `>>` closer abutting a unit relies on the lookahead: `<< 1_kg>>`.
+  const out = parseEntry('<< 1_kg>>');
+  const u = out[0] && out[0].tokens && out[0].tokens[0];
+  assert(out.length === 1 && isProgram(out[0]) && out[0].tokens.length === 1
+      && isUnit(u) && u.uexpr[0][0] === 'kg',
+    "parseEntry('<< 1_kg>>') → [«1_kg»] (ASCII closer not swallowed)");
+}
+{
+  // Closer abutting the unit, then a following token: `« 1_m»DUP` →
+  // [Program holding the unit, Name('DUP')].
+  const out = parseEntry('« 1_m»DUP');
+  assert(out.length === 2 && isProgram(out[0]) && out[0].tokens.length === 1
+      && isUnit(out[0].tokens[0]) && isName(out[1]) && out[1].id === 'DUP',
+    "parseEntry('« 1_m»DUP') → [«1_m», Name('DUP')]");
+}
+{
+  // Regression: list opener still splits a unit cleanly (unchanged path).
+  const out = parseEntry('1_m{2}');
+  assert(out.length === 2 && isUnit(out[0]) && isList(out[1]),
+    "parseEntry('1_m{2}') → [1_m, {2}] (list delim still stops unit)");
 }
 
 /* ====================================================================

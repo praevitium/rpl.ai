@@ -216,6 +216,56 @@ All currently-open findings are in the `Other` bucket and are
     guard to the non-glyph command names (needs a robust prose-vs-command
     line classifier so the leading command column is pinned without
     false-positives from the HOW-THE-STACK-WORKS narrative blocks).
+  - **2026-06-15 audit pass + non-glyph guard (closes the queued
+    follow-up).** Shipped the robust prose-vs-command classifier the
+    prior run flagged as the open piece, so the uppercase command names
+    are now evergreen too (previously only glyph-bearing names were).
+    The classifier walks `RPL_CATALOG` section by section: column-0 lines
+    are headers; the two narrative blocks (`HOW THE STACK WORKS`,
+    `ALGEBRAIC OBJECTS`) are skipped wholesale so their ALL-CAPS emphasis
+    words (`LITERALS`/`COMMANDS`/`STACK`/`LIFO`/`PUSH`) don't read as ops;
+    within command-list sections, each indented line's leading command
+    column (the run before the 2-space description gap) is taken, syntax-
+    template lines are dropped (those carrying `...` or a literal/structure
+    marker — brackets, braces, guillemets, backticks, `:`, `/`, which is
+    what filters out `IF…THEN…END`, `{ a b c }`, `:tag:value`, `n FIX`),
+    and every uppercase-shaped token (len >= 2) is asserted to dispatch via
+    `hasOp`. Yields 245 uppercase command tokens, zero unresolved. Added a
+    `session291:` block to `tests/test-chatbot-parse.mjs` (+246 assertions:
+    a >=200 floor so a broken extractor is caught, plus one per token).
+    `node tests/test-all.mjs` → 6242 passed / 0 failed. Known limitation
+    (documented in the test): a *new* narrative block would reintroduce
+    ALL-CAPS-emphasis false positives — the fix is to extend the `PROSE`
+    header set; the failure is loud, not silent. Next: lowercase ops
+    (`erf`/`erfc`/`lim`/`e`/`i`) and single-letter names are still
+    unswept by this guard (excluded to stay false-positive-free) — the
+    glyph sweep covers `π`/Σ/etc.; the remaining lowercase command tokens
+    would need an explicit small allowlist to pin without re-admitting
+    prose words.
+  - **2026-06-15 audit pass + non-uppercase allowlist (closes the queued
+    follow-up).** Built the explicit allowlist the prior run flagged, so the
+    last shape-excluded catalog command classes are now pinned too. The two
+    earlier sweeps both filter on shape and so skip real ops: session286
+    takes only glyph-led tokens, session291's `^[A-Z][A-Z0-9]+$` excludes
+    anything not pure uppercase+digits. That left the mixed-case/lowercase
+    special-function names (`Beta`/`erf`/`erfc`/`Ei`/`Si`/`Ci`/`lim`) and the
+    punctuation-suffixed ops (query-flag `?`: `FC?`/`FS?`/`FC?C`/`FS?C`/
+    `ISPRIME?`/`CMPLX?`; row/col `+`/`-`: `COL+`/`COL-`/`ROW+`/`ROW-`; and the
+    `SST↓` glyph) unguarded — a typo or de-registration of any would ship the
+    same wrong advice as the `ΣX²`/`ΣX2` bug, silently. Auto-extraction
+    re-admits prose/syntax fragments (`"text"`, the `(alias XNUM)`
+    parentheticals, the `n` operand placeholder), so per the queue this is a
+    curated allowlist (18 names): each is asserted to both appear in the
+    catalog text (so the list can't rot past a rename) and dispatch via
+    `hasOp`. Verified live first — all 18 in-catalog and registered; the
+    backtick constants `e`/`i`/`π` are symbolic literals (not ops) and the
+    XNUM/XQ alias names are pure uppercase (already swept by session291), so
+    both are deliberately excluded. Added a `session297:` block to
+    `tests/test-chatbot-parse.mjs` (+36 assertions). `node tests/test-all.mjs`
+    → 6383 passed / 0 failed. With glyph + uppercase + non-uppercase sweeps
+    the catalog's command-token surface is now fully drift-guarded; the only
+    remaining uncovered tokens are single-letter operand placeholders and the
+    backtick constants, both intentionally not ops.
 
 ### O-014  Unlogged `test-algebra.mjs` +3 assertions + `chat-bot.js` unlocked-modification anomaly
 

@@ -149,7 +149,14 @@ concrete improvements:
 - **Contextual help.**  Hover an op name in the stack or command line
   → a tooltip with its AUR one-liner plus argument signature.  The
   metadata lives in `COMMANDS.md` today as prose; a structured
-  pass-through to tooltip copy would not cost much.
+  pass-through to tooltip copy would not cost much.  *Partly shipped:*
+  the right-click command-help popup (`www/src/ui/command-help.js`)
+  serves the AUR reference per op; its doc-heading→command-key
+  normalizer is now the pure, exported `headingKey` (strips the
+  trailing parenthetical gloss, e.g. `!(Factorial)`→`!`), and its
+  panel-name→heading fallback table `ALIASES` (SQRT→√, CHARPOL→PCAR, …)
+  is exported with a structural guard (upper-case keys, single-hop
+  targets, no self-alias), both unit-tested in `tests/test-ui.mjs`.
 - **Mobile layout.**  The keypad assumes desktop aspect ratios.  Two
   breakpoints — landscape phone and portrait tablet — would unlock
   the tool on a second screen while the user writes on their main

@@ -326,3 +326,72 @@ import { assert } from './helpers.mjs';
            `RPL_CATALOG glyph op ${name} resolves to a registered op`);
   }
 }
+
+// session291: extend the O-013 drift-watch to the non-glyph (uppercase)
+// command names — the queued follow-up to session286's glyph sweep. The
+// model emits catalog names verbatim, so a misspelled or de-registered
+// uppercase command in a command-list section is the same drift class as
+// the `ΣX²`/`ΣX2` bug, just without a glyph to flag it.
+//
+// Robust extraction (the part the queue noted was hard): walk the catalog
+// section by section. Column-0 lines are section headers; the two narrative
+// blocks (HOW THE STACK WORKS, ALGEBRAIC OBJECTS) are prose and are skipped
+// wholesale — their ALL-CAPS emphasis words (LITERALS, COMMANDS, STACK …)
+// would otherwise read as command tokens. Within command-list sections,
+// take each indented line's leading command column (the run before the
+// 2-space description gap), skip syntax-template lines (those carrying
+// `...` or a literal/structure marker like brackets, braces, guillemets,
+// backticks, `:` or `/`), and assert every uppercase-shaped token (len >= 2)
+// dispatches via hasOp. If a new narrative block is added, extend PROSE.
+{
+  const PROSE = /^(HOW THE STACK WORKS|ALGEBRAIC OBJECTS)/;
+  const names = new Set();
+  let inProse = false;
+  for (const ln of RPL_CATALOG.split('\n')) {
+    if (/^\S/.test(ln)) { inProse = PROSE.test(ln); continue; }
+    if (inProse) { continue; }
+    const m = ln.match(/^(\s+)(\S.*?)(\s{2,})(\S.*)$/);
+    if (!m) { continue; }
+    const col = m[2].trim();
+    if (/\.\.\.|[:\[\]{}«»`/]/.test(col)) { continue; }
+    for (const tok of col.split(/\s+/)) {
+      if (/^[A-Z][A-Z0-9]+$/.test(tok)) { names.add(tok); }
+    }
+  }
+  assert(names.size >= 200,
+         'RPL_CATALOG exposes the uppercase command tokens to sweep');
+  for (const name of names) {
+    assert(hasOp(name),
+           `RPL_CATALOG uppercase op ${name} resolves to a registered op`);
+  }
+}
+
+// session297: close the last uncovered RPL_CATALOG command-token classes —
+// the queued follow-up to session291. The two prior sweeps both filter on
+// shape and so skip real ops: session286 takes only glyph-led tokens, and
+// session291's `^[A-Z][A-Z0-9]+$` excludes any name that isn't pure
+// uppercase+digits. That leaves the mixed-case / lowercase special-function
+// names (Beta, erf, erfc, Ei, Si, Ci, lim) and the punctuation-suffixed ops
+// (query-flag `?`, row/col `+`/`-`, the `SST↓` glyph) unguarded — a typo or
+// de-registration of any of these in the catalog would ship the same wrong
+// advice as the `ΣX²`/`ΣX2` bug, silently. Auto-extracting them re-admits
+// prose words and syntax fragments (`"text"`, the `(alias XNUM)`
+// parentheticals, the `n` operand placeholder), so per the queue this is an
+// explicit curated allowlist instead. The backtick constants `e`/`i`/`π` are
+// symbolic literals, not registered ops, and the XNUM/XQ alias names are pure
+// uppercase (already swept by session291); both are deliberately absent here.
+// Each entry is asserted to actually appear in the catalog text (so the
+// allowlist can't silently rot past a catalog rename) and to dispatch.
+{
+  const NON_UPPER_OPS = [
+    'Beta', 'erf', 'erfc', 'Ei', 'Si', 'Ci', 'lim',
+    'CMPLX?', 'FC?', 'FC?C', 'FS?', 'FS?C', 'ISPRIME?',
+    'COL+', 'COL-', 'ROW+', 'ROW-', 'SST↓',
+  ];
+  for (const name of NON_UPPER_OPS) {
+    assert(RPL_CATALOG.includes(name),
+           `RPL_CATALOG still advertises ${name}`);
+    assert(hasOp(name),
+           `RPL_CATALOG non-uppercase op ${name} resolves to a registered op`);
+  }
+}

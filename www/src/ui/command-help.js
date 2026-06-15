@@ -17,7 +17,7 @@
    mnemonic forms (SQRT, -, <=, …).  When a direct lookup misses,
    `show()` falls back through this table.  Keep both sides upper-case
    so the existing key normalization stays one-step. */
-const ALIASES = new Map([
+export const ALIASES = new Map([
   ['SQRT',    '√'],
   ['-',       '–'],
   ['HMS-',    'HMS–'],
@@ -44,6 +44,16 @@ const ALIASES = new Map([
   ['DLIST',   'ΔLIST'],
 ]);
 
+/** Derive the bare command key a help-doc `<h2>` heading is filed
+ *  under.  The HP50 reference headings carry a trailing parenthetical
+ *  gloss — "!(Factorial)", "==(Logical Equality)" — that isn't part of
+ *  the dispatchable symbol; strip it (and surrounding whitespace) so
+ *  the section map keys on "!" / "==".  Headings with no parenthetical
+ *  pass through trimmed; empty/whitespace/nullish input yields ''. */
+export function headingKey(raw) {
+  return String(raw == null ? '' : raw).trim().replace(/\s*\(.*\)\s*$/, '').trim();
+}
+
 let _loadPromise = null;
 let _sectionsByName = null;
 
@@ -63,7 +73,7 @@ async function _loadSections() {
       // bare command symbol the panel knows about.
       const raw = (h2.firstChild?.textContent ?? '').trim();
       if (!raw) continue;
-      const key = raw.replace(/\s*\(.*\)\s*$/, '').trim();
+      const key = headingKey(raw);
       if (!key) continue;
       const upper = key.toUpperCase();
       if (map.has(upper)) continue;             // first wins on collisions

@@ -21,7 +21,7 @@ the `Last lane` pointer.
 ## Pointer
 
 Last lane: command-support
-Last run: 2026-06-15 09:54
+Last run: 2026-06-15 12:28
 
 ---
 
@@ -29,6 +29,299 @@ Last run: 2026-06-15 09:54
 
 Newest entry per lane (older history is in git). Each run appends one entry:
 date, lane, what shipped, test result, what's next.
+
+### 2026-06-15 12:28 — command-support
+Closed session201's queued follow-up: the POWMOD type-rejection gap. The
+lane ✓-criterion wants ≥1 rejection pin per op; session144 pinned only
+POWMOD's negative-exponent `Bad argument value` path. POWMOD is a separate
+handler (not the `_modBinary` siblings), but its Symbolic/Name path shares
+the same `_toAst` null-check — a non-int-like operand throws `Bad argument
+type` before the negative-exponent and `giac.isReady()` checks, so it holds
+without a loaded CAS. Probed live first (Vector(left)/Complex(right)/
+List(left)/String(left) all → `Bad argument type`), then added a
+`session202:` block (+4 pins) in `tests/test-algebra.mjs`. No source change —
+guards a future inline reimplementation that drops the `_toAst` guard.
+Updated `docs/COMMANDS.md` (POWMOD row). `node tests/test-all.mjs` → 6387
+passed / 0 failed (baseline 6383). Note: sandbox bash can't delete from the
+repo mount, so scratch `tests/_probe_powmod.mjs` (plus older `_probe_*`)
+stays untracked — harmless, test-all.mjs imports an explicit file list, not a
+glob. Next: `CHARPOL` (PCAR alias) has positive coverage but zero rejection
+pins; and `EXPANDMOD`/`FACTORMOD`/`GCDMOD`/`DIVMOD`/`DIV2MOD` each warrant a
+non-int-like type-rejection sweep mirroring this one.
+
+### 2026-06-15 12:18 — code-review
+Closed O-013's queued follow-up: the explicit non-uppercase allowlist that
+guards the last RPL_CATALOG command-token classes the two shape-based sweeps
+skip. session286 takes only glyph-led tokens; session291's `^[A-Z][A-Z0-9]+$`
+excludes anything not pure uppercase+digits — leaving the mixed-case/lowercase
+special-fn names (`Beta`/`erf`/`erfc`/`Ei`/`Si`/`Ci`/`lim`) and the
+punctuation-suffixed ops (`FC?`/`FS?`/`FC?C`/`FS?C`/`ISPRIME?`/`CMPLX?`,
+`COL+`/`COL-`/`ROW+`/`ROW-`, `SST↓`) unguarded — a typo/de-registration of any
+ships wrong AI advice silently, same drift class as the twice-fired `ΣX²`/`ΣX2`
+bug. Auto-extraction re-admits prose/syntax (`"text"`, `(alias XNUM)`, the `n`
+placeholder), so per the queue it's a curated 18-name allowlist; each asserted
+to appear in the catalog text AND dispatch via `hasOp`. Probed live first (all
+18 in-catalog + registered; `e`/`i` are backtick constants, not ops — excluded;
+XNUM/XQ are uppercase, already swept). Added `session297:` block in
+`tests/test-chatbot-parse.mjs` (+36 assertions); updated `docs/REVIEW.md`
+(O-013 audit-pass note). `node tests/test-all.mjs` → 6383 passed / 0 failed
+(baseline 6347). Note: sandbox bash can't delete from the repo mount, so
+scratch `tests/_probe_*` (incl. this run's `_probe_lcase*`/`_probe_opcount`)
+stay untracked — harmless, test-all.mjs imports an explicit file list, not a
+glob. Next: the catalog's command-token surface is now fully drift-guarded
+(glyph + uppercase + non-uppercase); the next code-review increment is the
+standing pattern-1 Counts reconciliation (COMMANDS.md "✓: 449" / ROADMAP "449
+ops" vs the live register/allOps totals) or O-013's arity/stack-effect hints.
+
+### 2026-06-15 12:08 — unit-tests
+Closed the last Real-only `✓` Z cell in the special-function family from the
+lane's evergreen positive-coverage audit: LAMBERT. `_lambertScalar` coerces
+its operand via `isInteger(v) ? Number : isReal(v) ? toNumber : null`, but
+every positive LAMBERT pin pushed `Real`, so the `isInteger` arm was never
+positively exercised (PSI already had `PSI(Integer(5))`, ZETA already had
+`ZETA(0)/ZETA(-1)/ZETA(-2)` — all `Integer` — so only LAMBERT was Real-only).
+Probed live first (`LAMBERT(Integer(0))`→0, `LAMBERT(Integer(1))`→Ω,
+`LAMBERT(Integer(3))` satisfies W·e^W=3), then added a `session296:` block
+(+3 pins) in `tests/test-numerics.mjs` right after the closed-form LAMBERT
+values. No source change — guards a refactor degrading LAMBERT's Z column to
+Real-only. Updated `docs/TESTS.md` (count 6344→6347, advanced the evergreen
+queue, LAMBERT Z coverage note). `node tests/test-all.mjs` → 6347 passed / 0
+failed (baseline 6344). Note: sandbox bash can't delete from the repo mount,
+so scratch `tests/_probe_lambertz.mjs` (plus older `_probe_*`) stays
+untracked — harmless, test-all.mjs imports an explicit file list, not a glob.
+Next: re-enumerate `✓` cells across the rest of the type matrix for the same
+Real-only pattern (TRUNC/XPON Z folds, the stat-dist family Z columns).
+
+### 2026-06-15 11:58 — ui-development
+Closed session289's queued follow-up: exported and guarded the
+`ALIASES` panel-name→doc-heading fallback table in
+`www/src/ui/command-help.js` (one-word `export const`, mirroring the
+ai-chatbot `TOOL_ALIASES` precedent). `_render` upper-cases the
+requested name then does `ALIASES.get(key)` and resolves exactly one
+hop — so the table has three reachability invariants nothing pinned:
+every key must be upper-case (a lower-case key is unreachable), no
+target may itself be a key (would need a second hop `_render` never
+does), and no entry may self-alias (a no-op the direct lookup already
+covers). Probed live first — all 24 entries satisfy all three. Added a
+`session295:` block (+76 pins) in `tests/test-ui.mjs`: the three
+invariant sweeps over the live map plus four spot-checks
+(CHARPOL→PCAR, LIM→LIMIT, SQRT→√, <=→≤). No behavior change — guards a
+future alias edit that adds an entry the lookup path can't hit or that
+needs re-feeding. Updated ROADMAP §5 (contextual-help bullet).
+`node tests/test-all.mjs` → 6344 passed / 0 failed (baseline 6268).
+Note: sandbox bash can't delete from the repo mount, so scratch
+`tests/_probe_*` from earlier runs stay untracked — harmless,
+test-all.mjs imports an explicit file list, not a glob. Next: the
+command-palette overlay and contextual-help tooltip copy remain the
+only uncovered UI surfaces (both DOM, need a render harness); every
+pure helper in op-search.js and command-help.js is now pinned.
+
+### 2026-06-15 11:48 — ai-chatbot
+Closed session288's queued follow-up: extracted RemoteLLM's SSE
+frame-splitter out of `generate()`'s read loop into a pure
+`export function takeSSEFrames(buffer)` in `www/src/ai/remote-llm.js`.
+It owns the trickiest streaming bit — carving the accumulating byte
+buffer into complete `data:` payloads (skipping blank lines, non-`data:`
+comment lines, and the `[DONE]` sentinel) while returning the
+unterminated final line as `rest` to carry into the next read. JSON.parse
+stays at the call site so the malformed-frame `console.warn` still logs in
+context — behavior-identical refactor (probed live first via a scratch
+harness: split frames reassemble across reads, CRLF tolerated, partial
+tails preserved). Added a `session294:` block (+9 pins) to the existing
+`tests/test-remote-llm.mjs` (imported the new export): in-order extraction
++ tail carry, a frame split across two reads reassembling via rest,
+blank/comment/[DONE] skips, CRLF, and empty/unterminated degenerates.
+`node tests/test-all.mjs` → 6268 passed / 0 failed (baseline 6259). Note:
+sandbox bash can't delete from the repo mount, so scratch
+`tests/_probe_sse.mjs` (plus older `_probe_*`) stays untracked — harmless,
+test-all.mjs imports an explicit file list, not a glob. Next: the
+markdown→DOM renderer and streamed-bubble body assembly in chat-bot.js
+remain the only uncovered AI surfaces (both DOM, need a render harness);
+RemoteLLM's stats/timing math in `generate()` (ttft/decodeTps) is the next
+pure-ish extraction candidate if its post-stream block can be factored out.
+
+### 2026-06-15 11:38 — rpl-programming
+Fixed a real parser bug (not just an unguarded path): a **unit literal
+abutting the program closer** swallowed the closer. The `tokenize`
+`<number>_<unitExpr>` branch ran the unit-text scan to whitespace or the
+`{}[]"\`` delims but not `»`/`>>`, so `« 1_m»` (no space before `»`) threw
+`Bad unit expression near '»': m»` while the spaced `« 1_m »` parsed fine.
+This was the last unswept member of the guillemet abutment class (idents
+session278/282/283; list/vector delims already stopped the unit scan, e.g.
+`1_m{2}`). Probed live first, then fixed `www/src/rpl/parser.js` by adding
+`«»` to the unit-text stop set and the `<<`/`>>` ASCII doubled lookahead (a
+unit expression never contains `<`/`>`), mirroring the bare-ident scanner.
+Added a `session293:` block (+5 pins) in `tests/test-entry.mjs`: `« 1_m»`
+== spaced form, compound `« 1_m/s»` keeps both uexpr factors, ASCII
+`<< 1_kg>>`, `« 1_m»DUP`→`[«1_m», DUP]`, and a `1_m{2}` regression for the
+unchanged list-delim path. Updated `docs/RPL.md` (new parser bullet).
+`node tests/test-all.mjs` → 6259 passed / 0 failed (baseline 6254). Note:
+sandbox bash can't delete from the repo mount, so scratch `tests/_probe_*`
+(incl. this run's `_probe_unitclose*`/`_probe_uc*`) remain untracked —
+harmless, test-all.mjs imports an explicit file list, not a glob. Next: the
+abutment class is now complete across idents/numbers/units; the lone larger
+open item remains halted-stack persistence across `persist.js` (page
+refresh drops the LIFO; generators aren't JSON-serialisable).
+
+### 2026-06-15 11:28 — data-types
+Corrected a doc↔code drift on the `^` (power) row of the type matrix: the
+B (BinInt) column read `✗` ("BinInt ✗ for the base"), contradicting both
+the BinInt masking contract (which lists all five arithmetic ops incl.
+`^`) and existing pins session045 (`#2h 8 ^ → #100h`) / session110
+(`#2h ^ Integer(10)` masked). Probed live first — BinInt is accepted as
+base AND exponent: BinInt^BinInt via `binIntBinary`; mixed Integer/Real ↔
+BinInt via `_scalarBinaryMixed` (non-BinInt coerced, BinInt base
+preserved), result masked to wordsize. Flipped B `✗`→`✓`, rewrote the
+note, and added a `session292:` block (+4 pins) in `tests/test-types.mjs`
+locking the previously-unpinned cases: `#2h ^ #3h`→`#8h`, `Integer(2) ^
+#5h`→`#32h`, and the ws=8 mask edges `#2h ^ #Ah`→`#0h` and `#FFh ^ #2h`→
+`#1h`. No source change. **Also flagged (not fixed) a second drift on the
+same row:** live `^` broadcasts element-wise over a Vector base
+(`V[2,3] ^ 2`→`V[4,9]`, doc says V=✗) and over a Matrix base
+(`M[[1,2],[3,4]] ^ 2`→ element-wise `M[[1,4],[9,16]]`, NOT the documented
+matmul) — the Matrix case is a likely HP50-fidelity bug; recorded both in
+the next-session candidates. `node tests/test-all.mjs` → 6254 passed / 0
+failed (baseline 6250). Note: sandbox bash can't delete from the repo
+mount, so scratch `tests/_probe_*` from earlier runs remain untracked —
+harmless (test-all.mjs imports an explicit file list, not a glob). Next:
+decide `^` on V/M base per AUR §3 — fix the Matrix matmul path (code +
+pins) and resolve whether V^scalar should broadcast (✓) or reject.
+
+### 2026-06-15 11:18 — command-support
+Closed the ✓-criterion rejection gap for the modular-arithmetic siblings
+`SUBTMOD` / `MULTMOD`: both had positive coverage only (0 rejection pins),
+while `ADDTMOD` — the third op sharing the same `_modBinary` helper — was
+the only one with rejection pins. The lane's ✓ definition wants ≥1
+rejection test per op. JORDAN stays the lone ✗ and remains blocked here
+(Giac WASM init ~40-45 s exceeds the 45 s bash cap, per the session-199/200
+notes), so this was the highest-value in-lane increment. Probed live first
+(`SUBTMOD`/`MULTMOD` reject Vector(left)/Complex(right)/List(left)/
+String(left) all → `Bad argument type` via `_modBinary`'s `_toAst`
+null-check), then added a `session201:` block (+8 pins, 4 types × 2 ops) in
+`tests/test-algebra.mjs`. No source change — behavior was already correct,
+just unguarded against a refactor that splits the shared helper or drops the
+`_toAst` guard. Updated `docs/COMMANDS.md` (ADDTMOD/SUBTMOD/MULTMOD row).
+`node tests/test-all.mjs` → 6250 passed / 0 failed (baseline 6242). Note:
+sandbox bash can't delete from the repo mount, so scratch
+`tests/_probe_tmod.mjs` (plus older `_probe_*`) remains untracked — harmless,
+test-all.mjs imports an explicit file list, not a glob. Next: `POWMOD`'s
+Vector/List/Complex rejection path is the analogous unpinned guard (it has a
+negative-exponent `Bad argument value` pin but no type-rejection pin); and
+`CHARPOL` (PCAR alias) has positive coverage but zero rejection pins.
+
+### 2026-06-15 11:06 — code-review
+Closed O-013's standing queued follow-up: extended the RPL_CATALOG
+drift guard from glyph-only (session286) to the non-glyph **uppercase**
+command names. The prior run flagged the blocker as "needs a robust
+prose-vs-command line classifier" — built it. Confirmed clean first
+(register( = 482, ^register( = 463, allOps() = 467 unchanged; no stale
+`src/` doc paths). The classifier walks RPL_CATALOG section by section,
+skips the two narrative blocks (HOW THE STACK WORKS / ALGEBRAIC OBJECTS)
+so their ALL-CAPS emphasis words aren't mistaken for ops, drops syntax-
+template lines (markers `...`/brackets/braces/guillemets/backtick/`:`/`/`),
+and asserts every uppercase token (len>=2) in each command column
+dispatches via hasOp — 245 tokens, zero unresolved. Added a `session291:`
+block to `tests/test-chatbot-parse.mjs` (+246 assertions) and updated
+`docs/REVIEW.md` (O-013 audit-pass + guard note). `node tests/test-all.mjs`
+→ 6242 passed / 0 failed (baseline 5996). Next: lowercase ops
+(erf/erfc/lim/e/i) and single-letter names remain unswept (excluded to
+stay false-positive-free) — would need a small explicit allowlist.
+
+### 2026-06-15 10:54 — unit-tests
+Closed the GAMMA/LNGAMMA Real-operand pole-guard gap (and corrected a stale
+queue note: GAMMA's exact-factorial Integer branch and LNGAMMA's integer arm
+are already well pinned, so the "backed mostly by Real-operand evidence" flag
+was wrong). The real gap: `_gammaScalar`/`_lngammaScalar` coerce the operand
+to a JS number, then throw at non-positive integers via `Number.isInteger(x)
+&& x <= 0` — so the pole guard must also fire for Real-valued whole numbers,
+but both existing pole pins used `Integer` only. Probed live first
+(`GAMMA(Real(0/-2/-3))` and `LNGAMMA(Real(0/-1/-4))` all → 'Infinite result'),
+then added a `session290:` block (+6 pins) in `tests/test-numerics.mjs`. No
+source change — guards a refactor narrowing the guard to `isInteger(v)`, which
+would let `GAMMA(Real(-2))` return garbage. Updated `docs/TESTS.md` (count,
+coverage note, corrected/advanced the queue). `node tests/test-all.mjs` →
+5996 passed / 0 failed (baseline 5990). Note: sandbox bash can't delete from
+the repo mount, so scratch `tests/_probe_gamma.mjs` (plus older `_probe_*`)
+remains untracked — harmless, test-all.mjs imports an explicit file list, not
+a glob. Next: verify the `PSI`/`ZETA`/`LAMBERT` `_*Scalar` `isInteger` arms
+each have a bare-`Integer` positive pin, not only `Real`-operand evidence.
+
+### 2026-06-15 10:42 — ui-development
+The op-search palette helpers are now fully pinned, so I extracted the
+next DOM-free piece from the *contextual-help* surface (ROADMAP §5):
+`command-help.js`'s `_loadSections` derived each section's command key
+inline with `raw.replace(/\s*\(.*\)\s*$/, '').trim()` — the strip that
+turns an HP50 reference heading like `!(Factorial)` / `==(Logical
+Equality)` into the bare dispatchable symbol the popup files it under,
+with zero coverage. Pulled it into a pure `export function
+headingKey(raw)` and routed the one call site through it (no behavior
+change — same regex), then added a `session289:` block (+13 pins) in
+`tests/test-ui.mjs`: bare/whitespace passthrough, the two glossed
+shapes, space-before-gloss, greedy multi-word strip, glyph names
+(`√`, `ΣX`) preserved, and the empty/whitespace/null/undefined/
+gloss-only degenerates that collapse to `''` (which the caller skips).
+Importing command-help.js under Node is safe — no top-level DOM access;
+`document`/`DOMParser`/`fetch` are all inside methods. `node
+tests/test-all.mjs` → 5990 passed / 0 failed (baseline 5977). Next: the
+command-palette overlay and the contextual-help tooltip copy remain the
+DOM pieces (need a render harness); the `ALIASES` panel-name→heading
+map in command-help.js is the next pure-ish extraction if a
+reverse-collision / real-target guard is wanted (mirrors the
+ai-chatbot TOOL_ALIASES guard precedent).
+
+### 2026-06-15 10:30 — ai-chatbot
+Closed the last untested pure surface in `www/src/ai/`: `remote-llm.js`'s
+URL normalizers `toOpenAIBase` / `toOllamaBase` had zero coverage (no
+test file imported them at all), yet they feed every RemoteLLM request
+URL. Added a new `tests/test-remote-llm.mjs` (+21 `session288:` pins) and
+registered it in `tests/test-all.mjs`: bare host→/v1, trailing-slash
+stripping (single + multiple), explicit /v1 passthrough, the Ollama-
+native /api→/v1 fold, empty/null/undefined coercion for both fns, the
+/v1 and /api suffix strips on `toOllamaBase`, plus a round-trip sweep
+proving `toOllamaBase(toOpenAIBase(typed))` folds back to one shared
+server root across five typed shapes. No source change — behavior was
+already correct, just unguarded against a refactor of the suffix
+juggling. `node tests/test-all.mjs` → 5977 passed / 0 failed (baseline
+5956). Next: the markdown→DOM renderer and streamed-bubble body assembly
+in chat-bot.js remain uncovered (both DOM, need a harness); RemoteLLM's
+SSE chunk parser in `generate()` is the next pure-ish extraction
+candidate if its line-splitting can be factored out of the fetch loop.
+
+### 2026-06-15 10:18 — rpl-programming
+Closed the last open corner of the guillemet abutment class: the program
+*closer* abutting a *following* token. session278 pinned the list/vector
+closer→Name (`}DUP`), session282 the opener→value (`2«1»`), and `X»` the
+closer→preceding-Name — but nothing guarded `«1»DUP` / `«1»2` / `«1»{2}` /
+ASCII `<<1>>DUP`. Probed live first (all split cleanly into `[Program,
+next]`), then added a `session283:` block (+4 pins) in
+`tests/test-entry.mjs`. No source change — behavior was already correct,
+just unguarded against a closer-scan refactor letting a trailing token leak
+into the body or get swallowed. Updated `docs/RPL.md` (new parser bullet).
+`node tests/test-all.mjs` → 5956 passed / 0 failed (baseline 5952). Note:
+sandbox bash cannot delete from the repo mount, so a scratch
+`tests/_probe_close.mjs` remains untracked (harmless — test-all.mjs imports
+an explicit file list, not a glob). Next: the lone larger open item remains
+halted-stack persistence across `persist.js` (page refresh drops the LIFO;
+generators aren't JSON-serialisable — needs a token/IP capture design);
+DBUG/SST UI surfaces belong to the ui-development lane.
+
+### 2026-06-15 10:06 — data-types
+Closed an unpinned-rejection gap on the ordered comparators. DATA_TYPES
+documents L/V/M/T/U as `✗` on `<`/`>`/`≤`/`≥` ("scalar-only
+`comparePair`"), but only String×Real (s087) and String-lex (s102)
+rejections were pinned — nothing guarded the collection/wrapper/Unit
+throws against a refactor that widens `comparePair` past `isNumber`.
+Probed live first (all 20 `op × {List,Vector,Matrix,Tagged,Unit}` pairs
+→ 'Bad argument type'), then added a `session287:` block (+20 pins, a
+4-op × 5-type sweep) in `tests/test-comparisons.mjs` and imported `Unit`
+there. No source change — behavior was already correct, just untested.
+Updated `docs/DATA_TYPES.md` (comparator scalar-only note). `node
+tests/test-all.mjs` → 5952 passed / 0 failed (baseline 5932). Note: the
+sandbox bash cannot delete files from the repo mount, so a scratch
+`tests/_probe_cmp.mjs` (plus older `_p2/_p3/_probe_mant/_probe_tmp`)
+remains untracked; harmless — `test-all.mjs` imports an explicit file
+list, not a glob. Next: the lone larger open candidate remains Unit
+dim-equivalence `==` (UEQUAL / flag flip, AUR §20, multi-run design).
 
 ### 2026-06-15 09:54 — command-support
 Closed the XNUM/XQ ✓-criterion rejection gap (the lane's ✓ definition

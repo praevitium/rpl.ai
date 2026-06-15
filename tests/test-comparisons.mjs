@@ -2,7 +2,7 @@ import { Stack } from '../www/src/rpl/stack.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import {
   Real, Integer, Rational, BinaryInteger, Complex, Name, Str, Directory, Program, Tagged,
-  RList, Vector, Matrix, Symbolic,
+  RList, Vector, Matrix, Symbolic, Unit,
   isReal, isInteger, isRational, isBinaryInteger, isComplex, isDirectory, isProgram, isName,
   isString,
 } from '../www/src/rpl/types.js';
@@ -424,6 +424,30 @@ import { assert, assertThrows } from './helpers.mjs';
     lookup('>').fn(s);
     assert(s.peek().value.eq(1),
       'session102: "~" > "A" = 1 (char-code lex on printable range)');
+  }
+
+  // -------- session287: ordered comparators are scalar-only --------
+  // DATA_TYPES documents L/V/M/T/U as `✗` on `<`/`>`/`≤`/`≥`:
+  // `comparePair` accepts only `isNumber` (+ BinInt-coerce, String-lex,
+  // Sy-lift); List/Vector/Matrix/Tagged/Unit all reach the `!isNumber`
+  // guard and throw.  Only String×Real (s087) and String-lex (s102) were
+  // pinned; the collection/wrapper/Unit rejections were unguarded against
+  // a refactor that widens `comparePair` past scalars.
+  for (const op of ['<', '>', '≤', '≥']) {
+    const cases = [
+      [() => RList([Real(1)]),     'List'],
+      [() => Vector([Real(1)]),    'Vector'],
+      [() => Matrix([[Real(1)]]),  'Matrix'],
+      [() => Tagged('x', Real(1)), 'Tagged'],
+      [() => Unit(1, 'm'),         'Unit'],
+    ];
+    for (const [mk, label] of cases) {
+      assertThrows(
+        () => { const s = new Stack(); s.push(mk()); s.push(label === 'Unit' ? Unit(2, 'm') : Real(2)); lookup(op).fn(s); },
+        /Bad argument type/,
+        `session287: ${label} ${op} → Bad argument type (comparePair is scalar-only)`
+      );
+    }
   }
 }
 

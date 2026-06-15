@@ -18,6 +18,7 @@ import {
   setApproxMode, setCoordMode,
 } from '../www/src/rpl/state.js';
 import { clampStackScroll, computeMenuPage } from '../www/src/ui/paging.js';
+import { headingKey, ALIASES } from '../www/src/ui/command-help.js';
 import { assert, assertThrows } from './helpers.mjs';
 
 /* UI helpers — paging, physical-keyboard modifier shortcuts,
@@ -512,4 +513,78 @@ import { assert, assertThrows } from './helpers.mjs';
 // Reset
 setCoordMode('RECT');
 setAngle('RAD');
+
+/* ================================================================
+   session289: headingKey — the doc-heading → command-key normalizer
+   the command-help popup files each <h2> section under.  Pure string
+   function, no DOM.  Guards the parenthetical strip against a regex
+   refactor that would mis-key (or drop) help entries.
+   ================================================================ */
+{
+  // No parenthetical: trimmed passthrough.
+  assert(headingKey('ABS') === 'ABS', 'headingKey: bare name passes through');
+  assert(headingKey('  SIN  ') === 'SIN', 'headingKey: surrounding whitespace trimmed');
+
+  // The two shapes the inline comment called out.
+  assert(headingKey('!(Factorial)') === '!', 'headingKey: !(Factorial) → !');
+  assert(headingKey('==(Logical Equality)') === '==',
+    'headingKey: ==(Logical Equality) → ==');
+
+  // Space before the gloss is absorbed by the strip.
+  assert(headingKey('FLOOR (Greatest Integer)') === 'FLOOR',
+    'headingKey: space before parenthetical is stripped');
+
+  // Greedy strip: a multi-word gloss with inner spaces goes entirely.
+  assert(headingKey('ARG(Argument of a complex number)') === 'ARG',
+    'headingKey: multi-word gloss fully removed');
+
+  // Glyph command names survive the strip.
+  assert(headingKey('√(Square Root)') === '√', 'headingKey: glyph name preserved');
+  assert(headingKey('ΣX(Sum of X)') === 'ΣX', 'headingKey: Σ-prefixed name preserved');
+
+  // Degenerate inputs collapse to '' (the caller skips these).
+  assert(headingKey('') === '', 'headingKey: empty → empty');
+  assert(headingKey('   ') === '', 'headingKey: whitespace → empty');
+  assert(headingKey(null) === '', 'headingKey: null → empty');
+  assert(headingKey(undefined) === '', 'headingKey: undefined → empty');
+  assert(headingKey('(only a gloss)') === '', 'headingKey: gloss-only heading → empty');
+}
+
+/* ================================================================
+   session295: ALIASES — the panel-name → doc-heading fallback table
+   command-help's `_render` consults when a direct section lookup
+   misses.  `_render` upper-cases the requested name before
+   `ALIASES.get(key)` and resolves exactly one hop (it does NOT
+   re-feed the alias target back through the table).  These guard the
+   map's structural invariants against a future edit that would add an
+   entry the lookup path can never hit or that needs a second rewrite.
+   ================================================================ */
+{
+  // Every key must equal its own upper-case: `_render` only ever calls
+  // `.get(String(name).toUpperCase())`, so a lower-case key is dead.
+  for (const k of ALIASES.keys()) {
+    assert(k === k.toUpperCase(),
+      `ALIASES: key '${k}' must be upper-case to be reachable`);
+  }
+
+  // Single-hop: no alias *target* is itself an alias *key* (case-folded),
+  // which would need a second resolution `_render` never performs.
+  for (const v of ALIASES.values()) {
+    assert(!ALIASES.has(v.toUpperCase()),
+      `ALIASES: target '${v}' is also a key — would need a second hop`);
+  }
+
+  // No self-alias: a key that maps to itself (case-folded) is a no-op
+  // entry — the direct lookup already covers it.
+  for (const [k, v] of ALIASES) {
+    assert(k.toUpperCase() !== v.toUpperCase(),
+      `ALIASES: '${k}' aliases itself`);
+  }
+
+  // Spot-check the documented redirections still resolve as written.
+  assert(ALIASES.get('CHARPOL') === 'PCAR', 'ALIASES: CHARPOL → PCAR');
+  assert(ALIASES.get('LIM') === 'LIMIT', 'ALIASES: LIM → LIMIT');
+  assert(ALIASES.get('SQRT') === '√', 'ALIASES: SQRT → √');
+  assert(ALIASES.get('<=') === '≤', 'ALIASES: <= → ≤');
+}
 

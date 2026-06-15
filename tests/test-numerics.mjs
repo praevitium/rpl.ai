@@ -4143,6 +4143,18 @@ setAngle('RAD');
   s.push(Complex(1, 1));
   assertThrows(() => { lookup('GAMMA').fn(s); }, /Bad argument type/, 'session068: GAMMA((1,1)) throws Bad argument type');
 }
+{
+  // Real-valued non-positive integers hit the same pole guard
+  // (`Number.isInteger(x) && x <= 0`) as the Integer operands above —
+  // the existing pole pins only use Integer, so a refactor narrowing
+  // the guard to isInteger(v) would let GAMMA(Real(-2)) return garbage.
+  for (const x of [0, -2, -3]) {
+    const s = new Stack();
+    s.push(Real(x));
+    assertThrows(() => { lookup('GAMMA').fn(s); }, /Infinite result/,
+      `session290: GAMMA(Real(${x})) throws Infinite result (pole via Number.isInteger guard)`);
+  }
+}
 
 {
   // ln Γ(5) = ln(24).
@@ -4186,6 +4198,17 @@ setAngle('RAD');
   const s = new Stack();
   s.push(Integer(0n));
   assertThrows(() => { lookup('LNGAMMA').fn(s); }, /Infinite result/, 'session068: LNGAMMA(0) throws Infinite result');
+}
+{
+  // Same Real-operand pole guard as GAMMA above (session290) — LNGAMMA's
+  // `Number.isInteger(x) && x <= 0` throw must fire for Real non-positive
+  // integers, not just Integer operands.
+  for (const x of [0, -1, -4]) {
+    const s = new Stack();
+    s.push(Real(x));
+    assertThrows(() => { lookup('LNGAMMA').fn(s); }, /Infinite result/,
+      `session290: LNGAMMA(Real(${x})) throws Infinite result (pole via Number.isInteger guard)`);
+  }
 }
 {
   // String → Bad argument type.
@@ -5734,6 +5757,33 @@ function _arrayEq(a, b) {
   // Branch point — Puiseux seeding lets Halley hit -1 exactly.
   assert(s.peek().value.eq(-1),
     'session086: LAMBERT(-1/e) = -1 exactly (branch point)');
+}
+
+// LAMBERT — bare-Integer operands exercise the `isInteger` arm of
+// `_lambertScalar` directly (every other positive pin pushes Real, so the
+// Z `✓` cell was Real-only). Guards a refactor degrading Z to Real-only.
+{
+  const s = new Stack();
+  s.push(Integer(0n));
+  lookup('LAMBERT').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.eq(0),
+    'session296: LAMBERT(Integer(0)) = 0');
+}
+{
+  const s = new Stack();
+  s.push(Integer(1n));
+  lookup('LAMBERT').fn(s);
+  // Ω constant via the integer arm.
+  assert(isReal(s.peek()) && Math.abs(s.peek().value - 0.5671432904097838) < 1e-14,
+    'session296: LAMBERT(Integer(1)) = Ω (omega constant)');
+}
+{
+  const s = new Stack();
+  s.push(Integer(3n));
+  lookup('LAMBERT').fn(s);
+  const w = s.peek().value;
+  assert(isReal(s.peek()) && Math.abs(w * Math.exp(w) - 3) < 1e-12,
+    'session296: LAMBERT(Integer(3)) inverse property W·e^W = 3');
 }
 
 // LAMBERT — inverse property W(x)·e^W(x) = x over a wide x range.

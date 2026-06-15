@@ -43,6 +43,28 @@ export function toOllamaBase(typed) {
     .replace(/\/api$/, '');
 }
 
+/** Pull complete SSE data frames out of an accumulating stream buffer.
+ *  Each returned frame is the JSON text following a `data:` prefix on a
+ *  newline-terminated line; blank lines, non-`data:` lines, and the
+ *  `[DONE]` sentinel are skipped.  The unconsumed tail (an incomplete
+ *  final line that hasn't seen its newline yet) is returned as `rest` to
+ *  carry into the next read.  JSON parsing stays at the call site so a
+ *  malformed frame can be logged in context. */
+export function takeSSEFrames(buffer) {
+  const frames = [];
+  let nl;
+  while ((nl = buffer.indexOf('\n')) >= 0) {
+    const line = buffer.slice(0, nl).trim();
+    buffer = buffer.slice(nl + 1);
+    if (!line) continue;
+    if (!line.startsWith('data:')) continue;
+    const data = line.slice(5).trim();
+    if (data === '[DONE]') continue;
+    frames.push(data);
+  }
+  return { frames, rest: buffer };
+}
+
 export class RemoteLLM {
   constructor(endpoint = '') {
     // Always store the OpenAI-compat base (with /v1).  /chat/completions
@@ -218,14 +240,9 @@ export class RemoteLLM {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        let nl;
-        while ((nl = buffer.indexOf('\n')) >= 0) {
-          const line = buffer.slice(0, nl).trim();
-          buffer = buffer.slice(nl + 1);
-          if (!line) continue;
-          if (!line.startsWith('data:')) continue;
-          const data = line.slice(5).trim();
-          if (data === '[DONE]') continue;
+        const { frames, rest } = takeSSEFrames(buffer);
+        buffer = rest;
+        for (const data of frames) {
           let chunk;
           try {
             chunk = JSON.parse(data);

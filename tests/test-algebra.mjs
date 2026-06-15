@@ -6917,6 +6917,81 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session144: Complex on right of ADDTMOD → Bad argument type');
   }
 
+  // session201: SUBTMOD / MULTMOD share ADDTMOD's `_modBinary` helper, so
+  // a non-int-like operand `_toAst` can't coerce throws 'Bad argument
+  // type' the same way — but only ADDTMOD had rejection pins (the lane
+  // ✓-criterion wants ≥1 rejection per op).  Probed live first; pins both
+  // siblings' guard against a refactor that splits the shared helper or
+  // drops the `_toAst` null-check.
+  setCasModulo(7n);
+  for (const op of ['SUBTMOD', 'MULTMOD']) {
+    {
+      const s = new Stack();
+      s.push(Vector([Real(1), Real(2)]));
+      s.push(Integer(3n));
+      assertThrows(() => { lookup(op).fn(s); }, null,
+                   `session201: Vector on left of ${op} → Bad argument type`);
+    }
+    {
+      const s = new Stack();
+      s.push(Integer(3n));
+      s.push(Complex(1, 2));
+      assertThrows(() => { lookup(op).fn(s); }, null,
+                   `session201: Complex on right of ${op} → Bad argument type`);
+    }
+    {
+      const s = new Stack();
+      s.push(RList([Integer(1n)]));
+      s.push(Integer(3n));
+      assertThrows(() => { lookup(op).fn(s); }, null,
+                   `session201: List on left of ${op} → Bad argument type`);
+    }
+    {
+      const s = new Stack();
+      s.push(Str('x'));
+      s.push(Integer(3n));
+      assertThrows(() => { lookup(op).fn(s); }, null,
+                   `session201: String on left of ${op} → Bad argument type`);
+    }
+  }
+
+  // session202: POWMOD is a separate handler (not _modBinary), but its
+  // Symbolic/Name path shares the same `_toAst` null-check guard, reached
+  // when either operand isn't int-like.  session144 pinned the
+  // negative-exponent `Bad argument value` path but no type rejection; the
+  // lane ✓-criterion wants ≥1 rejection per op.  Probed live first — all
+  // four reject before the negative-exponent and giac.isReady() checks, so
+  // they hold without a loaded CAS.
+  setCasModulo(7n);
+  {
+    const s = new Stack();
+    s.push(Vector([Real(1), Real(2)]));
+    s.push(Integer(3n));
+    assertThrows(() => { lookup('POWMOD').fn(s); }, null,
+                 'session202: Vector on left of POWMOD → Bad argument type');
+  }
+  {
+    const s = new Stack();
+    s.push(Integer(3n));
+    s.push(Complex(1, 2));
+    assertThrows(() => { lookup('POWMOD').fn(s); }, null,
+                 'session202: Complex on right of POWMOD → Bad argument type');
+  }
+  {
+    const s = new Stack();
+    s.push(RList([Integer(1n)]));
+    s.push(Integer(3n));
+    assertThrows(() => { lookup('POWMOD').fn(s); }, null,
+                 'session202: List on left of POWMOD → Bad argument type');
+  }
+  {
+    const s = new Stack();
+    s.push(Str('x'));
+    s.push(Integer(3n));
+    assertThrows(() => { lookup('POWMOD').fn(s); }, null,
+                 'session202: String on left of POWMOD → Bad argument type');
+  }
+
   {
     const s = new Stack();
     s.push(Integer(3n));

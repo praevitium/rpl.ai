@@ -11679,3 +11679,71 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       'session281: Str("x") Str("y") UTPT → Bad argument type (S=✗; asReal rejects String ν)');
   }
 }
+
+/* ================================================================
+   Session 292 — `^` BinInt (B) column correction.
+
+   DATA_TYPES marked B=✗ on the `^` row ("BinInt ✗ for the base"), but
+   that contradicts both the BinInt masking contract (which lists all
+   five arithmetic ops incl. `^`) and the existing pins session045
+   (#2h 8 ^ → #100h) / session110 (#2h ^ Integer(10) masked).  BinInt is
+   accepted as base AND exponent: BinInt^BinInt routes through
+   binIntBinary; an Integer/Real base with a BinInt exponent (or vice
+   versa) routes through _scalarBinaryMixed → binIntBinary with the
+   BinInt side's base preserved.  The result is always masked to the
+   current wordsize.  Already-pinned: BinInt-base ^ Integer-exponent.
+   Gap closed here: BinInt^BinInt and Integer-base ^ BinInt-exponent,
+   plus their wordsize-mask edges.  No source change — behavior was
+   already correct; the matrix cell was the error.
+   ================================================================ */
+{
+  const wsEntry = getWordsize();
+
+  // BinInt ^ BinInt at the default wordsize: #2h ^ #3h → #8h.
+  {
+    const s = new Stack();
+    s.push(BinaryInteger(2n, 'h'));
+    s.push(BinaryInteger(3n, 'h'));
+    lookup('^').fn(s);
+    const v = s.peek();
+    assert(isBinaryInteger(v) && v.value === 8n && v.base === 'h',
+      `session292: #2h ^ #3h → #8h (B=✓ base+exponent; binIntBinary) (value=${v.value})`);
+  }
+
+  // Integer base ^ BinInt exponent (operand-order mirror of session110):
+  // Z2 ^ #5h → #32h (2^5=32; BinInt exponent's base wins via _scalarBinaryMixed).
+  {
+    const s = new Stack();
+    s.push(Integer(2n));
+    s.push(BinaryInteger(5n, 'h'));
+    lookup('^').fn(s);
+    const v = s.peek();
+    assert(isBinaryInteger(v) && v.value === 32n && v.base === 'h',
+      `session292: Integer(2) ^ #5h → #32h (B exponent coerces Integer base; base preserved) (value=${v.value})`);
+  }
+
+  // ws=8 BinInt^BinInt overflow: #2h ^ #Ah (10) = 1024 & 0xFF = 0 → #0h.
+  setWordsize(8);
+  {
+    const s = new Stack();
+    s.push(BinaryInteger(2n, 'h'));
+    s.push(BinaryInteger(10n, 'h'));
+    lookup('^').fn(s);
+    const v = s.peek();
+    assert(isBinaryInteger(v) && v.value === 0n && v.base === 'h',
+      `session292: ws=8 #2h ^ #Ah → #0h (1024 masked to 8 bits; both-BinInt path) (value=${v.value})`);
+  }
+
+  // ws=8 BinInt^BinInt non-trivial mask: #FFh ^ #2h = 65025 & 0xFF = 1 → #1h.
+  {
+    const s = new Stack();
+    s.push(BinaryInteger(255n, 'h'));
+    s.push(BinaryInteger(2n, 'h'));
+    lookup('^').fn(s);
+    const v = s.peek();
+    assert(isBinaryInteger(v) && v.value === 1n && v.base === 'h',
+      `session292: ws=8 #FFh ^ #2h → #1h (255²=65025 masked to 8 bits) (value=${v.value})`);
+  }
+
+  setWordsize(wsEntry);
+}

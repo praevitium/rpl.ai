@@ -49,6 +49,29 @@ collapsed into the current-tense reference below; git preserves the history.
   Unicode `«` stop-set glyph or, for ASCII, the same `<<` lookahead that
   closes on `>>`. Pinned by the `session282:` block in `tests/test-entry.mjs`
   (Unicode + ASCII openers, Name + number operands, empty nested body).
+- **Program-closer abutment with a following token (last corner):** once
+  `»` / ASCII `>>` closes a program the scanner resumes a fresh token, so a
+  Name, number, or list opener abutting the closer with no whitespace splits
+  cleanly into `[Program, next]` — `«1»DUP` → `«1»` + `Name('DUP')`; `«1»2`
+  → `«1»` + `Integer(2)`; `«1»{2}` → `«1»` + list; ASCII `<<1>>DUP` rides the
+  `>>` lookahead. Completes the abutment class (session278 pinned the
+  list/vector closer→Name, session282 the opener→value, and `X»` the
+  closer→*preceding* Name). Pinned by the `session283:` block in
+  `tests/test-entry.mjs`.
+- **Unit-literal abutment with the program closer (the last unswept member
+  of the class):** the unit-expression scanner in `tokenize` (the
+  `<number>_<unitExpr>` branch) ran to the next whitespace or the `{}[]"\``
+  delims but *not* the program closer, so `« 1_m»` (no space before `»`)
+  swallowed the closer into the unit text and threw `Bad unit expression
+  near '»': m»`, while the spaced `« 1_m »` parsed fine — a real fidelity
+  bug, not just an unguarded behavior. The list/vector delims already
+  stopped it (`1_m{2}` split cleanly); the program closer did not. Fixed by
+  adding `«»` to the unit-text stop set and the `<<`/`>>` ASCII doubled
+  lookahead (a unit expression never contains `<`/`>`), mirroring the bare-
+  ident scanner. Now `« 1_m»` == `« 1_m »`, compound `« 1_m/s»` keeps both
+  uexpr factors, ASCII `<< 1_kg>>` rides the lookahead, and `« 1_m»DUP`
+  splits into `[«1_m», Name('DUP')]`. Pinned by the `session293:` block in
+  `tests/test-entry.mjs`.
 
 ## Evaluation
 

@@ -9,9 +9,10 @@ current state.
 
 ## Current status
 
-`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (5899)** —
+`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (6347)** —
 fully green, 0 failing. `test-persist.mjs` 66 / 0 (stable; D-001 closed at
-ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~5 ms.
+ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~5 ms. (Aggregate now 6347
+after session296.)
 
 The aggregate has grown past the last full per-file table below (5666, the
 session-269 snapshot, reproduced here as the most recent authoritative
@@ -150,10 +151,19 @@ Sibling lanes:
 - **Positive-coverage pass on `✓` cells in DATA_TYPES that only have negative /
   rejection evidence today.** Plan: enumerate `✓` cells → grep for the op name
   in tests → flag any `✓` cell whose op has no adjacent positive assertion.
-  This is the standing open queue item for the lane. erf/erfc Z (session280)
-  and MANT Z (session285) are closed. Next candidates flagged earlier:
-  GAMMA/LNGAMMA Z folds (`_gammaScalar`/`_lngammaScalar` `isInteger` branch),
-  backed mostly by Real-operand evidence today.
+  This is the standing open queue item for the lane. erf/erfc Z (session280),
+  MANT Z (session285), and the GAMMA/LNGAMMA Real-operand pole guard
+  (session290) are closed. Note: the earlier "GAMMA/LNGAMMA Z folds backed
+  mostly by Real-operand evidence" flag was inaccurate — GAMMA's exact-
+  factorial Integer branch is well pinned (`GAMMA(5)`→24, `GAMMA(21)`→20!,
+  `GAMMA(1)`→1) and LNGAMMA's integer arm is exercised by `LNGAMMA(5)` /
+  `LNGAMMA(200)`. The `PSI`/`ZETA`/`LAMBERT` `_*Scalar` `isInteger` arms are
+  now all covered: PSI by `session081: PSI(Integer(5))`, ZETA by `session086:
+  ZETA(0)/ZETA(-1)/ZETA(-2)` (all `Integer`), and LAMBERT by `session296:
+  LAMBERT(Integer(0/1/3))` (was Real-only — closed this run). No remaining
+  Real-only `✓` Z cells in the special-function family are known; next run
+  should re-enumerate `✓` cells across the rest of the matrix for the same
+  pattern (e.g. TRUNC/XPON Z folds, the stat-dist family Z columns).
 
 ---
 
@@ -178,3 +188,20 @@ Sibling lanes:
   `XPON(Integer 86000)` → `Real(4)` for a >1-digit exponent on the integer arm).
   Probed live first; no source change. Guards against a refactor degrading
   MANT's Z column to Real-only.
+- **GAMMA / LNGAMMA Real-operand pole guard** — `_gammaScalar` /
+  `_lngammaScalar` reject non-positive integers via `Number.isInteger(x) &&
+  x <= 0` *after* coercing the operand to a JS number, so the throw must fire
+  for Real-valued whole numbers (`Real(0)`, `Real(-2)`), not just `Integer`.
+  Both prior pole pins used `Integer` only; `session290:` in
+  `test-numerics.mjs` adds Real(0/-2/-3) for GAMMA and Real(0/-1/-4) for
+  LNGAMMA. Probed live first; no source change. Guards a refactor narrowing
+  the guard to `isInteger(v)`, which would let `GAMMA(Real(-2))` return garbage.
+- **LAMBERT Z column** — `_lambertScalar` coerces via `isInteger(v) ? Number :
+  isReal(v) ? toNumber : null`, but every positive LAMBERT pin pushed `Real`,
+  so the `isInteger` arm was never positively exercised (only the String
+  rejection touched a non-Real type). `session296:` in `test-numerics.mjs`
+  adds `LAMBERT(Integer(0))` → 0, `LAMBERT(Integer(1))` → Ω, and
+  `LAMBERT(Integer(3))` checked via the inverse property W·e^W = 3. Probed
+  live first; no source change. Guards a refactor degrading Z to Real-only.
+  (PSI and ZETA already had bare-`Integer` positive pins — PSI(Integer(5)),
+  ZETA(0)/ZETA(-1)/ZETA(-2) — so only LAMBERT was Real-only.)

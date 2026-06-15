@@ -159,7 +159,7 @@ Holds for left / right / both-Tagged scalar inputs and for T+V / T+M broadcast.
 | `-` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓  | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | String ✗ (no subtraction on String). Unit dim-algebra (compatible dims only). **BinInt:** `_binaryMathMixed('-')`. **Rational:** `Vec[Real(3),Real(4)] - Rational(1,2)` → `Vec[Real(2.5),Real(3.5)]` (V−Q broadcast, sign-correct). **Tagged:** binary tag-drop; `:v:Vec[5,7] - Integer(1)` → un-Tagged `Vec[Real(4),Real(6)]`. |
 | `*` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓  | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | V·V = dot product (collapses V→R); M·M = matrix multiply; Real×String = string repeat. **BinInt:** `_binaryMathMixed('*')` — `ws=8 Real(300) * #2h → #58h` (600 masked to 8 bits); `#20h * Real(2.7) → #40h` (trunc coerce). **Rational:** Q×V/Q×M scalar-broadcast — `Vec[Real(2),Real(4)] * Q(1/2)` → `Vec[Real(1),Real(2)]`; `Mat[Z(2),Z(4)|Z(6),Z(8)] * Q(1/2)` → `Mat[Z(1),Z(2)|Z(3),Z(4)]` (Z×Q d=1 collapse per element). **Tagged:** binary tag-drop — bespoke V·V dot product survives the tag-drop (`:a:Vec[1,2] * :b:Vec[3,4]` → `Real(11)`, kind change V→R survives wrapper); matmul through tag-drop (`:m:Mat * Mat` → un-Tagged Matrix). |
 | `/` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓  | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | String ✗. Unit dim-algebra (quotient unit). **BinInt:** `binIntBinary` — `#5h / Integer(0)` → 'Division by zero' (guarded before mask). **Rational:** `Vec[Q(1,1),Q(2,1)] / Q(1/2)` → `Vec[Integer(2),Integer(4)]` (Q/Q stay-exact + d=1 collapse per element). **Tagged:** binary tag-drop — `Vec[8,10] / :s:Integer(2)` → un-Tagged `Vec[Real(4),Real(5)]`. |
-| `^` | ✓ | ✓ | ✓ | ✗ | ✓ | ✓ | ✓  | ✓ | ✗ | ✓ | ✓ | ✓ | ✗ | BinInt ✗ for the base (B as *exponent* is accepted only if coerced to Integer by the dispatch chain). Vector ✗ as base (no element-wise `^` on the V axis; `^` is scalar-broadcast). M^n = repeated matmul for integer n ≥ 0 (M must be square). **BinInt exponent:** `_modPow` — `ws=8 #2h ^ 10` → `#0h` (1024 masked to 8 bits = 0). **Rational:** Q^Z stay-exact — `Rational(3,2)^Integer(3)` → `Rational(27,8)`; `Rational(7,11)^Integer(0)` → `Integer(1)` (d=1 collapse); fractional Q exponent in EXACT mode → Symbolic. **Tagged:** binary tag-drop. |
+| `^` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓  | ✓ | ✗ | ✓ | ✓ | ✓ | ✗ | M^n = repeated matmul for integer n ≥ 0 (M must be square). **BinInt:** accepted as base AND exponent — BinInt^BinInt routes through `binIntBinary`; a BinInt on one side with an Integer/Real on the other coerces the non-BinInt operand and preserves the BinInt side's base (`_scalarBinaryMixed`); the result is masked to the current wordsize. `#2h ^ #3h` → `#8h`; `Integer(2) ^ #5h` → `#32h`; `ws=8 #2h ^ #Ah` → `#0h` (1024 masked to 8 bits); `ws=8 #FFh ^ #2h` → `#1h` (65025 masked); `ws=8 #2h ^ Integer(10)` → `#0h` (mixed). Pinned session045/110 (BinInt-base ^ Integer-exponent) + session292 (BinInt^BinInt and Integer-base ^ BinInt-exponent). **Rational:** Q^Z stay-exact — `Rational(3,2)^Integer(3)` → `Rational(27,8)`; `Rational(7,11)^Integer(0)` → `Integer(1)` (d=1 collapse); fractional Q exponent in EXACT mode → Symbolic. **Tagged:** binary tag-drop. **V/M drift watch:** the V `✗` cell and the "M^n = matmul" note above are stale — live behavior broadcasts `^` element-wise over a Vector base (`V[2,3] ^ 2` → `V[4,9]`) and over a Matrix base (`M[[1,2],[3,4]] ^ 2` → element-wise `M[[1,4],[9,16]]`, NOT matmul). See next-session candidates. |
 
 ### Reference rows — unary sign/complex ops (NEG / CONJ / RE / IM)
 
@@ -236,7 +236,10 @@ imaginary part rejects (no total order on ℂ).  String lex compare
 lexicographic) is supported.  `comparePair` is scalar-only: `isNumber`
 (Real/Integer/Rational/Complex) is the only accepted numeric type beyond
 BinInt-coerce and String-lex; List/Vector/Matrix/Tagged/Unit all reach the
-`!isNumber` guard and throw.
+`!isNumber` guard and throw (pinned session287 — a 4-op × 5-type rejection
+sweep in `tests/test-comparisons.mjs`, guarding against a refactor that
+widens `comparePair` past scalars; previously only String×Real and
+String-lex were pinned).
 
 | Op   | R | Z | Q | B | C* | N | Sy | L | V | M | T | U | S | Notes |
 |------|---|---|---|---|----|---|----|---|---|---|---|---|---|-------|
@@ -264,6 +267,18 @@ Real 1./0.).  Numeric cross-promotion is the same as in `<`/`≤`/`>`/`≥`
 
 ## Next-session widening candidates
 
+- **`^` on Vector / Matrix base — drift vs HP50 (decide before pinning).**
+  Found session 292: the `^` row's V `✗` cell and "M^n = matmul" note are
+  both stale.  Live behavior runs the generic `binaryMath` broadcast path,
+  so `V[2,3] ^ 2` → `V[4,9]` (element-wise, base accepted — V should be ✓
+  or `~`) and `M[[1,2],[3,4]] ^ 2` → element-wise `M[[1,4],[9,16]]`, NOT the
+  documented matrix power `[[7,10],[15,22]]`.  This is the M^n note's bug:
+  no matrix-power path intercepts before `binaryMath`.  HP50 AUR specifies
+  `^` on a square matrix = repeated matmul, so the *Matrix* case is likely
+  a real code-fidelity bug (worth a code fix + pins), while the *Vector*
+  case is a doc fix (decide whether HP50 broadcasts V^scalar or rejects it
+  — check AUR §3 before flipping V to ✓ vs adding a rejection guard).
+  V^V already throws `Bad argument type` (only +/- element-wise, * dot).
 - **Dim-equivalence `==` on Units** — distinct from today's strict
   structural `==`.  Could be a new op (`UEQUAL`?) or a flag that
   flips `==` semantics.  Read AUR §20 first.

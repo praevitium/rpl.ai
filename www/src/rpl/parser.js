@@ -142,7 +142,16 @@ export function tokenize(src) {
       if (i < n && src[i] === '_') {
         i++;
         let j = i;
-        while (j < n && !isSpace(src[j]) && !'{}[]"`'.includes(src[j])) j++;
+        // Stop the unit expression at a program delimiter so a closer
+        // abutting the unit (`1_m»`, `1_m>>`) closes the program instead of
+        // being swallowed into the unit text and failing parseUnitExpr.  The
+        // guillemets are in the stop set; the ASCII `<<`/`>>` pair needs the
+        // doubled lookahead (a unit expression never contains `<`/`>`).
+        while (j < n && !isSpace(src[j]) && !'{}[]"`«»'.includes(src[j])) {
+          if ((src[j] === '<' && src[j + 1] === '<') ||
+              (src[j] === '>' && src[j + 1] === '>')) break;
+          j++;
+        }
         tokens.push({ kind: 'unit', numText: m[0], unitText: src.slice(i, j) });
         i = j; continue;
       }
