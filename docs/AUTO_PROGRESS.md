@@ -20,14 +20,31 @@ the `Last lane` pointer.
 
 ## Pointer
 
-Last lane: rpl-programming
-Last run: 2026-06-15 06:36
+Last lane: ai-chatbot
+Last run: 2026-06-15 06:50
 
 ---
 
 ## Run log
 
 (newest first — each run appends one entry: date, lane, what shipped, test result, what's next)
+
+### 2026-06-15 06:50 — ai-chatbot
+Closed session 275's queued follow-up: pulled the two remaining inline
+bits of `www/src/ai/chat-bot.js` into pure, testable helpers. Added
+`export function resolveToolAlias(name)` (`TOOL_ALIASES[name] ?? name`)
+and routed both alias call sites through it (runLoop pre-resolve +
+dispatchTool rewrite), switching the rewrite guard from truthiness to
+`aliased !== name` — behavior-identical since no alias target equals its
+key. Also exported the already-pure `effectiveBudget` / `activeContextTokens`
+so the per-model history-budget math is pinnable. +14 `session279:` pins in
+`tests/test-chatbot-parse.mjs` (alias hit/passthrough/canonical; the 4096
+no-model and unknown-catalog fallbacks, remote probed vs remote-default
+contextTokens, and the `ctx*4 - reserve` budget formula). `node tests/test-all.mjs`
+→ 5824 passed / 0 failed (baseline 5814). Next: still no coverage for the
+markdown→DOM renderer or the streamed-bubble body assembly (both DOM, need a
+harness); `TOOL_ALIASES` could grow a reverse-collision guard test if the map
+ever gains a key equal to a canonical name.
 
 ### 2026-06-15 06:36 — rpl-programming
 Closed session 272's queued follow-up: verified list/vector openers `{[`

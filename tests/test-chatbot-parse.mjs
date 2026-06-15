@@ -1,5 +1,6 @@
 import {
   parseAllToolCalls, parseSuggestions, findMachineSectionStart, stripThinkBlocks,
+  resolveToolAlias, activeContextTokens, effectiveBudget,
 } from '../www/src/ai/chat-bot.js';
 import { assert } from './helpers.mjs';
 
@@ -215,4 +216,68 @@ import { assert } from './helpers.mjs';
          'stripThinkBlocks preserves empty string');
   assert(stripThinkBlocks(null) === null,
          'stripThinkBlocks preserves null');
+}
+
+/* ================================================================
+   resolveToolAlias  (session279)
+   ================================================================ */
+
+// A known synonym resolves to its canonical registry name.
+{
+  assert(resolveToolAlias('add_to_stack') === 'push_to_stack',
+         'resolveToolAlias maps a push synonym to push_to_stack');
+  assert(resolveToolAlias('execute') === 'run',
+         'resolveToolAlias maps a run synonym to run');
+}
+
+// An unknown name passes through unchanged (so callers detect a
+// rewrite by inequality, and never silently mis-route).
+{
+  assert(resolveToolAlias('frobnicate') === 'frobnicate',
+         'resolveToolAlias passes an unknown name through');
+}
+
+// An already-canonical name is not in the alias map, so it too passes
+// through — guards against a double-mapping refactor.
+{
+  assert(resolveToolAlias('push_to_stack') === 'push_to_stack',
+         'resolveToolAlias leaves an already-canonical name untouched');
+}
+
+/* ================================================================
+   activeContextTokens / effectiveBudget  (session279)
+   ================================================================ */
+
+// No model loaded → the safe WebLLM default (4096), and the budget is
+// that window in chars minus the response reserve (4096*4 - 4000).
+{
+  assert(activeContextTokens({}) === 4096,
+         'activeContextTokens falls back to 4096 with no model loaded');
+  assert(effectiveBudget({}) === 4096 * 4 - 4000,
+         'effectiveBudget subtracts the response reserve from the char window');
+}
+
+// A remote endpoint (duck-typed by a string `endpoint`) uses its
+// probed contextTokens directly.
+{
+  const remote = { loadedModelId: 'llama3', endpoint: 'http://x', contextTokens: 8000 };
+  assert(activeContextTokens(remote) === 8000,
+         'activeContextTokens uses a remote model probed contextTokens');
+  assert(effectiveBudget(remote) === 8000 * 4 - 4000,
+         'effectiveBudget tracks a remote model context window');
+}
+
+// A remote endpoint that never reported contextTokens falls back to
+// the generous remote default (16384).
+{
+  const remote = { loadedModelId: 'llama3', endpoint: 'http://x', contextTokens: null };
+  assert(activeContextTokens(remote) === 16384,
+         'activeContextTokens uses the remote default when unprobed');
+}
+
+// An in-browser id absent from the MODELS catalog falls back to 4096
+// (the worker-LLM branch has no `endpoint`).
+{
+  assert(activeContextTokens({ loadedModelId: 'not-a-real-model' }) === 4096,
+         'activeContextTokens falls back to 4096 for an unknown catalog id');
 }

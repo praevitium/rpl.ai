@@ -104,7 +104,7 @@ const RESPONSE_RESERVE_CHARS = 4000;
 // budget; a 16K-context model like Llama 3.2 3B gets nearly 12K
 // chars to play with.  Computing this dynamically means the trimmer
 // matches whatever the user picked from the picker.
-function effectiveBudget(llm) {
+export function effectiveBudget(llm) {
   const ctxTokens = activeContextTokens(llm);
   // Tokens → chars: rough 4 chars/token for English / Latin-script.
   // We err on the small side (use 4) so we under-count tokens-per-
@@ -658,10 +658,19 @@ const TOOL_ALIASES = Object.freeze({
   'run_rpl':            'run',
 });
 
+/** Map a model-emitted tool name to its canonical registry name.
+ *  Returns the aliased name when `name` is a known synonym (see
+ *  TOOL_ALIASES), otherwise `name` unchanged — so callers can detect a
+ *  rewrite by `resolveToolAlias(n) !== n`.  Names not in the map
+ *  (including already-canonical ones) pass through untouched. */
+export function resolveToolAlias(name) {
+  return TOOL_ALIASES[name] ?? name;
+}
+
 /** Look up the per-model contextTokens for the currently-loaded model.
  *  Falls back to 4096 (a safe WebLLM default) when no model is loaded
  *  or the loaded id isn't in our catalog. */
-function activeContextTokens(llm) {
+export function activeContextTokens(llm) {
   const id = llm?.loadedModelId;
   if (!id) return 4096;
   // RemoteLLM exposes the server-side model name as loadedModelId.
@@ -2160,8 +2169,8 @@ export class ChatBot {
       // ("add_to_stack" → "push_to_stack").  Retry only fires for
       // names that are unknown even after alias resolution.
       for (const tc of toolCalls) {
-        const aliased = TOOL_ALIASES[tc.name];
-        if (aliased) {
+        const aliased = resolveToolAlias(tc.name);
+        if (aliased !== tc.name) {
           dlog('runLoop: alias-resolve', tc.name, '→', aliased);
           tc.name = aliased;
         }
@@ -2341,8 +2350,8 @@ export class ChatBot {
     // `push_to_stack`.  Logged when it fires so the trace shows the
     // remap; the rewritten name is what gets dispatched and recorded
     // in the history note.
-    const aliasedName = TOOL_ALIASES[toolCall.name];
-    if (aliasedName) {
+    const aliasedName = resolveToolAlias(toolCall.name);
+    if (aliasedName !== toolCall.name) {
       dlog('dispatchTool: alias rewrite', toolCall.name, '→', aliasedName);
       toolCall = { ...toolCall, name: aliasedName };
     }
