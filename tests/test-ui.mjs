@@ -90,9 +90,6 @@ import { assert, assertThrows } from './helpers.mjs';
 }
 
 
-// ================================================================
-// physical-keyboard modifier shortcuts
-// ================================================================
 // The handler lives in src/ui/shortcuts.js as a pure function so it
 // can be exercised without a DOM.  It receives an event-shaped object
 // plus the Entry and (optionally) a clipboard facade.
@@ -104,7 +101,6 @@ import { assert, assertThrows } from './helpers.mjs';
     key: '', ctrlKey: false, metaKey: false, altKey: false, shiftKey: false,
   }, patch);
 
-  // ---- Ctrl-Z → UNDO ----
   {
     const s = new Stack();
     s.push(Real(1));
@@ -117,7 +113,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'Ctrl-Z routes to performUndo — stack restored');
   }
 
-  // ---- Cmd-Z also works ----
   {
     const s = new Stack();
     s.push(Real(5));
@@ -129,7 +124,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'Cmd-Z routes to performUndo (Mac convention)');
   }
 
-  // ---- Ctrl-Y → REDO ----
   {
     const s = new Stack();
     s.push(Real(1));
@@ -144,7 +138,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'Ctrl-Y routes to performRedo — push re-applied');
   }
 
-  // ---- Shift-Ctrl-Z also triggers REDO (standard macOS editor alt) ----
   {
     const s = new Stack();
     s.push(Real(10));
@@ -157,7 +150,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'Shift-Ctrl-Z routes to performRedo');
   }
 
-  // ---- Ctrl-Z with no undo history: handled, but flashes error, no crash ----
   {
     const s = new Stack();
     const e = new Entry(s);
@@ -169,7 +161,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'Ctrl-Z with empty history shows No undo error via flashError');
   }
 
-  // ---- Ctrl-Y with no redo: flashes No-redo error ----
   {
     const s = new Stack();
     const e = new Entry(s);
@@ -180,7 +171,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'Ctrl-Y with empty redo shows No redo error');
   }
 
-  // ---- Stack-only saveForUndo stays in lockstep with var-state ----
   // Pure stack mutations (physical Backspace→DROP, ▶ SWAP, interactive-
   // stack PICK/ROLL/ROLLD/DROP, ▼ editLevel1) must push both the
   // stack undo slot and the var-state undo slot, or performUndo will
@@ -206,7 +196,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'Ctrl-Y re-applies the DROP');
   }
 
-  // ---- Ctrl-V → paste clipboard contents ----
   // Inject a fake clipboard facade whose readText resolves synchronously
   // via a Promise; await resolution to assert buffer was populated.
   {
@@ -225,7 +214,6 @@ import { assert, assertThrows } from './helpers.mjs';
       `Ctrl-V typed the clipboard payload into the entry buffer, got ${JSON.stringify(e.buffer)}`);
   }
 
-  // ---- Cmd-V paste also works (Mac) ----
   {
     const s = new Stack();
     const e = new Entry(s);
@@ -235,7 +223,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(e.buffer === 'XYZ', 'Cmd-V also pastes');
   }
 
-  // ---- Empty clipboard: handled, buffer unchanged ----
   {
     const s = new Stack();
     const e = new Entry(s);
@@ -247,7 +234,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'empty clipboard leaves the entry buffer alone');
   }
 
-  // ---- Clipboard read rejection surfaces as flashError ----
   {
     const s = new Stack();
     const e = new Entry(s);
@@ -260,7 +246,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'clipboard read rejection routes to flashError');
   }
 
-  // ---- Missing clipboard API: flashes "Clipboard unavailable" ----
   {
     const s = new Stack();
     const e = new Entry(s);
@@ -271,7 +256,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'no clipboard facade → "Clipboard unavailable" via flashError');
   }
 
-  // ---- Ctrl-C is NOT hijacked (standard copy passes through) ----
   {
     const s = new Stack();
     const e = new Entry(s);
@@ -280,7 +264,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'Ctrl-C is declined so the browser handles copy normally');
   }
 
-  // ---- Non-modifier key: handler declines and returns false ----
   {
     const s = new Stack();
     const e = new Entry(s);
@@ -289,7 +272,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'bare Z (no modifier) is not handled — passes through to typing path');
   }
 
-  // ---- Alt-combo: handler declines so OS shortcut is not hijacked ----
   {
     const s = new Stack();
     const e = new Entry(s);
@@ -298,7 +280,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'Ctrl-Alt-Z is not hijacked — treated as an OS shortcut');
   }
 
-  // ---- Unrelated modifier combo: Ctrl-Q declines ----
   {
     const s = new Stack();
     const e = new Entry(s);

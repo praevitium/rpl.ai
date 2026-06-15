@@ -1,5 +1,4 @@
-/* =================================================================
-   Units: dimensional catalog + unit-expression algebra.
+/* Units: dimensional catalog + unit-expression algebra.
 
    An HP50 Unit value pairs a number with a unit expression:
        9.8_m/s^2        value = 9.8,  uexpr = [[m,1],[s,-2]]
@@ -20,10 +19,7 @@
    compatibility checks used by `+`/`-` and CONVERT.
 
    First-pass scope: purely multiplicative units.  Affine temperature
-   (°C/°F) is out — that needs offset+scale per unit, not just scale.
-   ================================================================= */
-
-/* ----- Catalog ---------------------------------------------------- */
+   (°C/°F) is out — that needs offset+scale per unit, not just scale. */
 
 // Base dimension order, fixed for the lifetime of the program.
 // When adding a new fundamental dimension (e.g. information/bit) the
@@ -104,9 +100,8 @@ export const UNIT_CATALOG = new Map([
 
 export function isKnownUnit(sym) { return UNIT_CATALOG.has(sym); }
 
-/* ----- uexpr: canonical array of [sym, exp] tuples ---------------- */
-
-/** Sort, merge, drop zero-exponent factors.  Throws on unknown symbols. */
+/** Canonical uexpr: sort, merge, drop zero-exponent factors.  Throws on
+ *  unknown symbols. */
 export function normalizeUexpr(factors) {
   const merged = new Map();
   for (const [sym, exp] of factors) {
@@ -172,7 +167,7 @@ export function toBaseUexpr(uexpr) {
   return { scale, uexpr: normalizeUexpr(base) };
 }
 
-/* ----- parser --------------------------------------------------------
+/* parser
 
    Grammar (right of the underscore):
      uexpr  := factor ( ('*' | '/') factor )*
@@ -184,8 +179,7 @@ export function toBaseUexpr(uexpr) {
    (m/s)*s → m, not m/(s*s).  Parens group the enclosed sub-expression
    so '/(a*b)' inverts both a and b — this is what the formatter emits
    when a denominator has more than one factor, so a unit expression
-   always round-trips through parse/format.
-   ---------------------------------------------------------------- */
+   always round-trips through parse/format. */
 
 export function parseUnitExpr(src) {
   const n = src.length;
@@ -193,7 +187,7 @@ export function parseUnitExpr(src) {
 
   function readFactor() {
     if (src[i] === '(') {
-      i++;                                     // consume '('
+      i++;
       const sub = readExpr(')');
       if (src[i] === ')') i++;
       else throw new Error(`Unclosed '(' in unit expression: ${src}`);
@@ -235,13 +229,12 @@ export function parseUnitExpr(src) {
   return readExpr(undefined);
 }
 
-/* ----- formatter ----------------------------------------------------
+/* formatter
 
-   Display style mirrors how the user typed it:
-     positive factors first, joined by '*', then '/' + negative factors
-     with positive exponents.  Multiple negative factors get parens so
-     the output round-trips through parseUnitExpr without sign drift.
-   ---------------------------------------------------------------- */
+   Display style mirrors how the user typed it: positive factors first,
+   joined by '*', then '/' + negative factors with positive exponents.
+   Multiple negative factors get parens so the output round-trips through
+   parseUnitExpr without sign drift. */
 
 export function formatUnitExpr(uexpr) {
   if (uexpr.length === 0) return '';

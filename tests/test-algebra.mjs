@@ -35,13 +35,9 @@ import { assert, assertThrows } from './helpers.mjs';
    keypad symbolic acceptance, string concat, complex cube-root closed form,
    FACT / UNDO / cube-root. */
 
-// ==================================================================
-// CAS: Symbolic AST + DERIV for polynomials
-// ==================================================================
 
 
 
-// --- parser: basic atoms and precedence -----------------------------
 {
   const a = parseAlgebra('X');
   assert(a.kind === 'var' && a.name === 'X', 'parseAlgebra(X) = var X');
@@ -87,9 +83,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(out === 'X^2 + 3*X + 1', `round-trip: '${s}' → '${out}'`);
 }
 
-// --- simplifier -----------------------------------------------------
-// --- deriv: rules in isolation --------------------------------------
-// --- parser.js integration: 'expr' tokens become Symbolic -----------
 {
   const [v] = parseEntry("`X^2 + 3*X + 1`");
   assert(isSymbolic(v), 'parseEntry on algebraic body returns Symbolic');
@@ -111,7 +104,6 @@ import { assert, assertThrows } from './helpers.mjs';
          "parseEntry on `+` returns quoted Name (unchanged)");
 }
 
-// --- DERIV op end-to-end -------------------------------------------
 // DERIV routes Symbolic inputs through Giac's diff().  Each test below
 // registers a mock fixture keyed on the exact caseval command
 // `buildGiacCmd` emits, then asserts that the op parses Giac's reply
@@ -158,7 +150,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assertThrows(() => { lookup('DERIV').fn(s); }, null, 'DERIV on List throws "Bad argument type"');
 }
 
-// --- Symbolic formatter dispatch -----------------------------------
 {
   // format() of a Symbolic should render via formatAlgebra with tick
   // wrappers so the stack display uses HP50 style.
@@ -167,7 +158,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(out === "`2*X + 1`", `format(Symbolic(2*X+1)) = '${out}'`);
 }
 
-// --- Associativity-aware printing ----------------------------------
 {
   // Left-assoc: a - (b - c) MUST print with parens around the right
   // child (otherwise it would look identical to (a-b)-c).
@@ -185,7 +175,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `right-assoc power wraps left child when same prec: '${s}'`);
 }
 
-// --- Keyboard-reachable round-trip: typing '2*X+3' then DERIV -------
 // Simulates a user typing  '2*X+3' 'X' DERIV  at the command line.
 {
   const s = new Stack();
@@ -216,13 +205,9 @@ import { assert, assertThrows } from './helpers.mjs';
   giac._clear();
 }
 
-// ==================================================================
-// CAS extensions: fn node, chain rule, Symbolic EVAL
-// ==================================================================
 
 
 
-// --- fn node: parser ------------------------------------------------
 {
   const a = parseAlgebra('SIN(X)');
   assert(a.kind === 'fn' && a.name === 'SIN' && a.args.length === 1 &&
@@ -254,7 +239,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assertThrows(() => { parseAlgebra('FOO(X)'); }, null, 'parseAlgebra(FOO(X)) throws (FOO not whitelisted)');
 }
 
-// --- auto-close: missing ')' at EOF ---------------------------------
 // parseAlgebra accepts `SIN(X` as `SIN(X)` — mirrors parser.js's
 // soft-close of unterminated lists/vectors/programs.  Turns the common
 // "user forgot the closer" case into a parseable expression instead of
@@ -289,7 +273,6 @@ import { assert, assertThrows } from './helpers.mjs';
     "parseAlgebra('SIN(X + ) +') mid-stream garbage still throws");
 }
 
-// --- fn node: formatter --------------------------------------------
 {
   const out = formatAlgebra(parseAlgebra('SIN(X)'));
   assert(out === 'SIN(X)', `format SIN(X) → '${out}'`);
@@ -309,7 +292,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(out === '2*SIN(X)', `format 2*SIN(X) → '${out}'`);
 }
 
-// --- parseEntry & DERIV op on a function-call Symbolic -------------
 {
   // Full round-trip through the outer parser: 'SIN(X)' should land as
   // a Symbolic on the stack.
@@ -424,7 +406,6 @@ import { assert, assertThrows } from './helpers.mjs';
   giac._clear();
 }
 
-// --- freeVars + evalAst core ---------------------------------------
 {
   const fv = freeVars(parseAlgebra('SIN(X) + Y*3'));
   assert(fv.has('X') && fv.has('Y') && fv.size === 2,
@@ -455,7 +436,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(defaultFnEval('SQRT', [-1]) === null, 'defaultFnEval SQRT(-1) = null');
 }
 
-// --- EVAL of Symbolic (ops.js) -------------------------------------
 {
   // No bindings → EVAL pushes the same Symbolic back.
   resetHome();
@@ -550,7 +530,6 @@ import { assert, assertThrows } from './helpers.mjs';
            isSymbolic(s.peek()) ? formatAlgebra(s.peek().expr) : 'other'}`);
 }
 
-// --- pretty.js — SVG pretty-printer MVP -----------------------------
 // Textbook-mode rendering tests.  These tests don't run a browser; they
 // assert structural properties of the returned SVG string (which glyphs,
 // which elements, approximate box sizes).  Visual fidelity is verified
@@ -629,7 +608,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(!m[1].includes('"'),
     `font-family value has no stray double quotes — got '${m[1]}'`);
 }
-// --- pretty.js — √ radical glyph ---------------------
 // SQRT(arg) draws a hook+vinculum via a <path> (the hook and the
 // vinculum segment are part of the same path / single stroke), rather
 // than rendering the literal text `SQRT(...)`.  The radicand is drawn
@@ -683,7 +661,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(!svg.includes('>SQRT<'), 'no literal SQRT text');
 }
 
-// --- pretty.js — ⁿ√k indexed radical for XROOT -------
 // XROOT(radicand, index) renders as a √-hook with the index tucked
 // into the crook at SUP_SCALE of base size.  The radical path stays a
 // single <path>; the index is a separate <text>.  The parser recognises
@@ -765,7 +742,6 @@ import { assert, assertThrows } from './helpers.mjs';
     '1 + XROOT(2, 3) still shows the + separator');
 }
 
-// --- CLB: clear the display-base override --------------------------
 {
   // After HEX, BinInts render in hex regardless of their stored base.
   // CLB clears the override, so they render in their own stored base
@@ -814,7 +790,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `EXPAND on a Real is a pass-through`);
 }
 
-// --- COLLECT op (CAS menu alias for simplify) ---------
 // COLLECT 1-arg routes through Giac's simplify(); 2-arg through
 // Giac's collect(expr,var).  Each block registers the caseval
 // fixture the op emits.
@@ -862,7 +837,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `COLLECT on a Name is a pass-through`);
 }
 
-// --- TEXTBOOK / FLAT ops + textbookMode state flag ----
 {
   const { setTextbookMode, getTextbookMode } =
     await import('../www/src/rpl/state.js');
@@ -885,7 +859,6 @@ import { assert, assertThrows } from './helpers.mjs';
   setTextbookMode(false);                // reset for later tests
 }
 
-// --- textbookMode fires a state-change event -----------
 {
   const { subscribe, setTextbookMode } =
     await import('../www/src/rpl/state.js');
@@ -900,15 +873,11 @@ import { assert, assertThrows } from './helpers.mjs';
   off();
 }
 
-// ===================================================================
-// FACTOR / SUBST / polynomial COLLECT
-// ===================================================================
 
 
 
 
 
-// --- buildGiacCmd: purge-wrapped caseval command builder ----------
 // Pure string builder — the counterpart of astToGiac.  Purges every
 // free variable alphabetically so reserved-name collisions with Xcas
 // built-ins (UI, GF, IS, …) can't raise "<name> is not defined".
@@ -933,7 +902,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'buildGiacCmd: function-name is not purged');
 }
 
-// --- astToGiac / buildGiacCmd: name-validator guard ---------------
 // The CAS input boundary rejects any AST whose Var or Fn carries a name
 // that wouldn't round-trip through Xcas — notably the `#FFh` shape a
 // malformed Name('#FFh') gets lifted to via _toAst.  Without this guard,
@@ -965,7 +933,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `buildGiacCmd: valid extraVars still flow through — got "${goodCmd}"`);
 }
 
-// --- stripGiacQuotes: iterative unwrap -----------------------------
 // Giac's semicolon-sequence output sometimes nests the string wrap one
 // layer deeper for certain result shapes, yielding `"\"X-1\""`.  A
 // single strip would leave a leading `"` in the string handed to
@@ -998,7 +965,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'stripGiacQuotes: non-string pass-through');
 }
 
-// --- giacToAst: wraps parse failures with raw Giac string ---------
 // If anything ever slips past stripGiacQuotes and reaches parseAlgebra
 // with a malformed input, the error message carries the raw Giac output
 // so debugging starts with a visible fingerprint instead of a bare
@@ -1016,7 +982,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `giacToAst error includes raw string: ${caught && caught.message}`);
 }
 
-// --- giacToAst: unicode √ normalisation ----------------------------
 // The Xcas/Pyiodide wasm build emits the unicode prefix-form radical
 // for sqrt in pretty-print mode (e.g. `1/2*(√x)^-1` for the
 // derivative of √x).  parseAlgebra's lexer is ASCII-only, so without
@@ -1068,7 +1033,6 @@ import { assert, assertThrows } from './helpers.mjs';
   giac._clear();
 }
 
-// --- buildGiacCmd: bare body, no purge preamble ------------------
 // buildGiacCmd emits the bare astToGiac body — no `purge(v1);purge(v2);…`
 // preamble.  rpl5050's CAS flow never assigns variables inside Giac's
 // session, so purging is unnecessary, and on recent Giac builds
@@ -1092,7 +1056,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `buildGiacCmd: no-var bare body (got "${none}")`);
 }
 
-// --- isGiacErrorString: known Giac runtime-error prefixes ---------
 // Giac sometimes delivers runtime errors as result strings rather than
 // thrown exceptions (typically when a semicolon-sequence clause aborts
 // with no try/catch around it).  The detector is prefix-based and
@@ -1124,7 +1087,6 @@ import { assert, assertThrows } from './helpers.mjs';
          'isGiacErrorString: non-prefix "error" not flagged');
 }
 
-// --- giacToAst: detects Giac runtime-error strings ----------------
 // If Giac delivers an error-shaped string (from purge-on-unassigned in
 // a build without try/catch, or any other runtime error that slips
 // through the value channel), giacToAst raises a clean
@@ -1175,7 +1137,6 @@ import { assert, assertThrows } from './helpers.mjs';
   giac._clear();
 }
 
-// --- FACTOR op: Giac-backed routing -------------------------------
 // Prove that FACTOR on a Symbolic routes through Giac. There is no
 // fallback — the CAS is Giac, full stop. We register fixtures for the
 // cases we exercise and verify both (a) the result AST is the round-
@@ -1267,7 +1228,6 @@ import { assert, assertThrows } from './helpers.mjs';
   }
 }
 
-// --- FACTOR op: reserved-name pass-through -------------------------
 // Regression guard for the "UI is not defined" shape.  Giac's caseval
 // resolves bare identifiers through its global symbol table before
 // running commands, so a handful of two-letter uppercase names (UI, GF,
@@ -1304,8 +1264,6 @@ import { assert, assertThrows } from './helpers.mjs';
   giac._clear();
 }
 
-// --- SUBST: single-variable numeric substitution ------------------
-// --- SUBST op: 3-arg form on the stack -----------------------------
 // SUBST routes each binding through Giac's `subst(expr, var=value)`.
 // For list/equation multi-binding forms, bindings are applied
 // sequentially so each step is its own caseval command — fixtures
@@ -1354,7 +1312,6 @@ giac._setFixtures({
          `SUBST 3-arg name-for-name: '${formatAlgebra(s.peek().expr)}'`);
 }
 
-// --- SUBST op: 2-arg list form -------------------------------------
 {
   // { 'X' 2 'Y' 3 } substitutes both vars — X+Y → 5.
   const s = new Stack();
@@ -1375,8 +1332,6 @@ giac._setFixtures({
          `SUBST list form: X^2-4 with {X=2} → 0`);
 }
 
-// --- Polynomial COLLECT by variable --------------------------------
-// --- COLLECT op: 2-arg form on the stack ---------------------------
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X + A*X + B*X + C')));
@@ -1417,12 +1372,8 @@ giac._setFixtures({
          `COLLECT 2-arg dispatch doesn't consume level-2 when Real is on top`);
 }
 
-// ===================================================================
-// `=` in algebra grammar + SUBST equation form
-// ===================================================================
 
 // --- parseEntry integration: `'X = 3'` reaches the stack as Symbolic
-// --- parseAlgebra: `=` at the top level ----------------------------
 {
   // Simple variable binding parses as Bin('=', Var, Num).
   const a = parseAlgebra('X = 3');
@@ -1447,7 +1398,6 @@ giac._setFixtures({
   assert(nestedThrew, `parseAlgebra rejects nested equation '(X = 3) + 1'`);
 }
 
-// --- SUBST equation form: expr 'var = val' SUBST -------------------
 // Fixtures cover every intermediate caseval result produced by the
 // equation-form, list-of-equations, list-of-pairs, and mixed-list
 // variants.  Sequential list/mixed-list applications each produce
@@ -1514,10 +1464,8 @@ giac._setFixtures({
          `SUBST mixed list: 1+2+3=6 (got ${JSON.stringify(s.peek())})`);
 }
 
-// ===================================================================
 // FACTOR: non-monic rational-root + sum/diff of cubes
 //          `=` pretty-print (textbook mode)
-// ===================================================================
 
 
 
@@ -1525,7 +1473,6 @@ giac._setFixtures({
 
 
 
-// --- pretty.js: `=` renders as flat row with spaces ----
 {
   const { astToSvg, layoutAst } = await import('../www/src/rpl/pretty.js');
   // Simple equation — three text glyphs in a row (X, ' = ', 3), no
@@ -1647,7 +1594,6 @@ giac._setFixtures({
 
 
 
-// --- SOLVE op: stack integration ------------------------------
 // SOLVE routes through Giac's solve(expr,var) — the reply is a list
 // literal of roots which `splitGiacList` splits and we re-wrap each
 // root as a `var = root` equation.  Each block registers a fixture
@@ -1844,9 +1790,6 @@ giac._setFixtures({
    FACT factorial, one-level UNDO, cube-root closed-form surd detection.
    ============================================================ */
 
-// ============================================================
-// Keypad binary/unary ops accept Symbolic + Name
-// ============================================================
 // HP50 behavior: any symbolic operand lifts the whole op into the
 // algebra domain, so `'X' 'Y' +` builds `X + Y` rather than throwing
 // "Bad argument type".  These tests pin:
@@ -2092,7 +2035,6 @@ giac._setFixtures({
     const { formatAlgebra } = await import('../www/src/rpl/algebra.js');
     const { TYPES } = await import('../www/src/rpl/types.js');
 
-    // --- parse inside '…' for every comparison operator ---
     const parseOps = [
       ["`x<y`",  'x<y'],
       ["`x>y`",  'x>y'],
@@ -2112,7 +2054,6 @@ giac._setFixtures({
         `${src} → ${expected} (got ${got})`);
     }
 
-    // --- stack op: `x y >` with two Names → 'x>y' ---
     const stackCases = [
       ['>', 'x>y'],
       ['<', 'x<y'],
@@ -2133,7 +2074,6 @@ giac._setFixtures({
         `Name('x') Name('y') ${op} → '${expected}' (got '${got}')`);
     }
 
-    // --- ASCII aliases <= / >= / <> produce the canonical Unicode op ---
     for (const [alias, canonical] of [['<=', '≤'], ['>=', '≥'], ['<>', '≠']]) {
       const s = new Stack();
       s.push(Name('x'));
@@ -2145,7 +2085,6 @@ giac._setFixtures({
         `${alias} alias normalises to ${canonical} (got ${s.peek(1).expr.op})`);
     }
 
-    // --- Name-vs-Number still lifts: `x 5 <` → 'x<5' ---
     {
       const s = new Stack();
       s.push(Name('x'));
@@ -2157,7 +2096,6 @@ giac._setFixtures({
         `x 5 < → 'x<5', got ${formatAlgebra(s.peek(1).expr)}`);
     }
 
-    // --- Pure numeric comparisons still return booleans (regression) ---
     {
       const s = new Stack();
       s.push(Integer(5)); s.push(Integer(3));
@@ -2173,7 +2111,6 @@ giac._setFixtures({
         '5 3 ≠ → 1. (boolean path preserved)');
     }
 
-    // --- The `=` stack op builds an equation, even from numerics ---
     {
       const s = new Stack();
       s.push(Integer(2)); s.push(Integer(3));
@@ -2184,7 +2121,6 @@ giac._setFixtures({
         `2 3 = → '2 = 3', got ${formatAlgebra(s.peek(1).expr)}`);
     }
 
-    // --- `==` stays boolean / structural even with Names (regression) ---
     {
       const s = new Stack();
       s.push(Name('X')); s.push(Name('X'));
@@ -2193,7 +2129,6 @@ giac._setFixtures({
         'Name(X) Name(X) == → 1. (structural test, not symbolic)');
     }
 
-    // --- End-to-end keypad flow: 'x' ENTER 'y' ENTER `>` → 'x>y' ---
     {
       const { Entry } = await import('../www/src/ui/entry.js');
       const s = new Stack();
@@ -2272,15 +2207,12 @@ giac._setFixtures({
 
 
 
-// ================================================================
 // APPROX / EXACT numeric-eval mode
-//
 // APPROX: EVAL on a Symbolic folds transcendentals to a 12-digit
 // decimal.  EXACT (default): EVAL only folds when the result is an
 // integer AND every arg was an integer, so SQRT(9) → 3 still folds
 // but SQRT(2) and LN(2) stay symbolic.  →NUM forces APPROX for the
 // span of one EVAL regardless of the flag.
-// ================================================================
 {
   const {
     setApproxMode, getApproxMode, toggleApproxMode,
@@ -2296,7 +2228,6 @@ giac._setFixtures({
     return formatStackTop(s.peek());
   }
 
-  // ---- APPROX mode (default) folds everything ----
   //     formatStackTop wraps Symbolic values in `'…'` and appends `.`
   //     to whole-number Reals (HP50 conventions); the tests accommodate
   //     both so they read as "the stack top shows ___".
@@ -2312,7 +2243,6 @@ giac._setFixtures({
       `APPROX: LN(2) folds to decimal — got ${evalExpr("`LN(2)`")}`);
   }
 
-  // ---- EXACT mode keeps non-integer results symbolic ----
   {
     resetHome();
     setApproxMode(false);
@@ -2332,7 +2262,6 @@ giac._setFixtures({
       `EXACT: SQRT(0.25) stays symbolic — got ${evalExpr("`SQRT(0.25)`")}`);
   }
 
-  // ---- toggleApproxMode flips the flag ----
   {
     setApproxMode(false);
     toggleApproxMode();
@@ -2341,7 +2270,6 @@ giac._setFixtures({
     assert(getApproxMode() === false, 'toggle: true → false');
   }
 
-  // ---- APPROX / EXACT ops from the registry ----
   {
     resetHome();
     setApproxMode(true);
@@ -2352,7 +2280,6 @@ giac._setFixtures({
     assert(getApproxMode() === true, 'APPROX op: flag is true after running');
   }
 
-  // ---- →NUM forces APPROX for one EVAL, then restores the flag ----
   {
     resetHome();
     setApproxMode(false);
@@ -2369,7 +2296,6 @@ giac._setFixtures({
       '→NUM restores the pre-call APPROX flag (stayed EXACT)');
   }
 
-  // ---- →NUM restores flag even when EVAL throws ----
   {
     resetHome();
     setApproxMode(false);
@@ -2383,7 +2309,6 @@ giac._setFixtures({
       '→NUM restores the EXACT flag even on error');
   }
 
-  // ---- ->NUM ASCII alias routes to same op ----
   {
     resetHome();
     setApproxMode(false);
@@ -2398,9 +2323,7 @@ giac._setFixtures({
   setApproxMode(false);
 }
 
-// ==================================================================
 // →NUM coverage in EXACT mode + symbolic constants.
-//
 // Behaviour pinned here:
 //   1. Parser: pure-numeric tick-strings like '1/3' and '2^0.5'
 //      parse as Symbolic rather than Name, so →NUM can reach them.
@@ -2411,10 +2334,8 @@ giac._setFixtures({
 //   3. algebra.evalAst honours a `binGate` callback; ops.js passes
 //      `_approxGate` so EXACT-mode EVAL refuses to fold `'1/3'` or
 //      `'1+0.5'` into a Real.
-// ==================================================================
 {
   const { getApproxMode } = await import('../www/src/rpl/state.js');
-  // --- parser recognizes pure-numeric tick-strings as Symbolic ------
   {
     const toks = parseEntry("`1/3`");
     assert(toks.length === 1 && isSymbolic(toks[0]),
@@ -2433,7 +2354,6 @@ giac._setFixtures({
            `session041: '+' still falls back to a quoted Name`);
   }
 
-  // --- →NUM folds symbolic inputs that EXACT mode keeps symbolic ------
   function runNum(src) {
     resetHome();
     setApproxMode(false);
@@ -2504,9 +2424,6 @@ giac._setFixtures({
   setApproxMode(false);
 }
 
-// ==================================================================
-// pretty.js opSepBox tightens `+`/`-`/`=` spacing.
-// ==================================================================
 {
   const { astToSvg } = await import('../www/src/rpl/pretty.js');
   {
@@ -2531,10 +2448,8 @@ giac._setFixtures({
   }
 }
 
-// ==================================================================
 // Complex display drops trailing `.` on integer-valued components in
 // EXACT + STD mode.
-// ==================================================================
 {
   const prev = (await import('../www/src/rpl/state.js')).getApproxMode();
   setApproxMode(false);
@@ -2551,11 +2466,7 @@ giac._setFixtures({
 }
 
 
-// ==================================================================
-// HORNER / PCOEF / FCOEF
-// ==================================================================
 
-/* ---- HORNER: (x³ - 6x² + 11x - 6) synth-divided by (x - 1) ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(-6n), Integer(11n), Integer(-6n)]));
@@ -2572,7 +2483,6 @@ giac._setFixtures({
   assert(a.value === 1n, 'session053: HORNER pushes `a` on top');
 }
 
-/* ---- HORNER evaluated at non-root: remainder = p(a) ---- */
 {
   // p(x) = 2x² - 3x + 1 ; p(2) = 2*4 - 6 + 1 = 3
   const s = new Stack();
@@ -2582,7 +2492,6 @@ giac._setFixtures({
   assert(s.peek(2).value === 3n, 'session053: HORNER remainder = p(a)');
 }
 
-/* ---- HORNER: empty coefs throws ---- */
 {
   const s = new Stack();
   s.push(RList([]));
@@ -2590,7 +2499,6 @@ giac._setFixtures({
   assertThrows(() => { lookup('HORNER').fn(s); }, /Bad argument/, 'session053: HORNER empty coef list throws');
 }
 
-/* ---- HORNER: non-numeric coef throws ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Name('A')]));
@@ -2598,7 +2506,6 @@ giac._setFixtures({
   assertThrows(() => { lookup('HORNER').fn(s); }, /Bad argument/, 'session053: HORNER Name coef throws');
 }
 
-/* ---- PCOEF: {1 2 3} → coefs of (x-1)(x-2)(x-3) = x³-6x²+11x-6 ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(2n), Integer(3n)]));
@@ -2610,7 +2517,6 @@ giac._setFixtures({
     'session053: PCOEF {1 2 3} → {1 -6 11 -6}');
 }
 
-/* ---- PCOEF: empty list → {1} ---- */
 {
   const s = new Stack();
   s.push(RList([]));
@@ -2620,7 +2526,6 @@ giac._setFixtures({
     'session053: PCOEF {} → {1}');
 }
 
-/* ---- PCOEF: single root {5} → {1 -5} ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(5n)]));
@@ -2629,7 +2534,6 @@ giac._setFixtures({
     'session053: PCOEF {5} → {1 -5}');
 }
 
-/* ---- PCOEF and HORNER round-trip: roots → poly → remainder@root = 0 ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(2n), Integer(3n), Integer(5n)]));
@@ -2641,7 +2545,6 @@ giac._setFixtures({
     'session053: PCOEF|HORNER at root → remainder 0');
 }
 
-/* ---- FCOEF: {1 2} → (VX - 1)² ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(2n)]));
@@ -2656,7 +2559,6 @@ giac._setFixtures({
     'session053: FCOEF {1 2} → (X-1)*(X-1)');
 }
 
-/* ---- FCOEF: {1 1 2 1} → (X-1)*(X-2) ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(1n), Integer(2n), Integer(1n)]));
@@ -2666,21 +2568,18 @@ giac._setFixtures({
     'session053: FCOEF two distinct roots → product');
 }
 
-/* ---- FCOEF: odd-length list throws ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(2n), Integer(3n)]));
   assertThrows(() => { lookup('FCOEF').fn(s); }, /Bad argument/, 'session053: FCOEF odd-length list throws');
 }
 
-/* ---- FCOEF: negative multiplicity throws ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(-1n)]));
   assertThrows(() => { lookup('FCOEF').fn(s); }, /Bad argument/, 'session053: FCOEF negative multiplicity throws');
 }
 
-/* ---- FCOEF: zero-multiplicity skipped; empty result = Num(1) ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(0n)]));
@@ -2694,7 +2593,6 @@ giac._setFixtures({
    PROOT, QUOT, REMAINDER.
    ================================================================= */
 
-/* ---- PROOT: x² - 3x + 2 = (x-1)(x-2) ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(-3n), Integer(2n)]));
@@ -2708,7 +2606,6 @@ giac._setFixtures({
     'session054: PROOT x²-3x+2 → {1, 2}');
 }
 
-/* ---- PROOT: x² + 1 → ±i ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(0n), Integer(1n)]));
@@ -2725,7 +2622,6 @@ giac._setFixtures({
   assert(sawI && sawNegI, 'session054: PROOT x²+1 → ±i');
 }
 
-/* ---- PROOT: cubic (x-1)(x-2)(x-3) = x³-6x²+11x-6 ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(-6n), Integer(11n), Integer(-6n)]));
@@ -2737,7 +2633,6 @@ giac._setFixtures({
     'session054: PROOT cubic → {1, 2, 3}');
 }
 
-/* ---- PROOT: linear shortcut 2x - 6 → {3} ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(2n), Integer(-6n)]));
@@ -2748,21 +2643,18 @@ giac._setFixtures({
     'session054: PROOT linear 2x-6 → {3}');
 }
 
-/* ---- PROOT: empty list → Bad argument value ---- */
 {
   const s = new Stack();
   s.push(RList([]));
   assertThrows(() => { lookup('PROOT').fn(s); }, /Bad argument value/, 'session054: PROOT {} throws');
 }
 
-/* ---- PROOT: Name coef rejected ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Name('a'), Integer(1n)]));
   assertThrows(() => { lookup('PROOT').fn(s); }, /Bad argument/, 'session054: PROOT Name coef throws');
 }
 
-/* ---- QUOT: (x³ - 2x² + x - 2) / (x - 2) = x² + 1 ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(-2n), Integer(1n), Integer(-2n)]));
@@ -2776,7 +2668,6 @@ giac._setFixtures({
     'session054: QUOT → {1 0 1}');
 }
 
-/* ---- REMAINDER: (x² + 1) / (x - 1) = quot (x+1), rem 2 ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(0n), Integer(1n)]));
@@ -2788,7 +2679,6 @@ giac._setFixtures({
     'session054: REMAINDER → {2}');
 }
 
-/* ---- REMAINDER: exact divide → {0} ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(-3n), Integer(2n)])); // x²-3x+2
@@ -2800,7 +2690,6 @@ giac._setFixtures({
     'session054: REMAINDER exact → {0}');
 }
 
-/* ---- QUOT: divisor-degree > dividend-degree → {0} ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(0n)]));               // x
@@ -2812,7 +2701,6 @@ giac._setFixtures({
     'session054: QUOT smaller dividend → {0}');
 }
 
-/* ---- QUOT: divisor = {0} → Infinite result ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(1n)]));
@@ -2826,7 +2714,6 @@ giac._setFixtures({
    tests/test-matrix.mjs and tests/test-numerics.mjs.)
    ================================================================= */
 
-/* ---- PEVAL: p(x) = x² - 3x + 2, x = 5 → 12 ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(-3n), Integer(2n)]));
@@ -2837,7 +2724,6 @@ giac._setFixtures({
     'session055: PEVAL x²-3x+2 at 5 → 12');
 }
 
-/* ---- PEVAL: constant polynomial returns the constant ---- */
 {
   const s = new Stack();
   s.push(RList([Real(7)]));
@@ -2848,7 +2734,6 @@ giac._setFixtures({
     'session055: PEVAL constant → constant');
 }
 
-/* ---- PEVAL: complex argument ---- */
 {
   const s = new Stack();
   // p(x) = x² + 1; evaluated at i should be 0.
@@ -2860,7 +2745,6 @@ giac._setFixtures({
     'session055: PEVAL x²+1 at i → 0');
 }
 
-/* ---- PEVAL: empty list throws ---- */
 {
   const s = new Stack();
   s.push(RList([]));
@@ -2868,7 +2752,6 @@ giac._setFixtures({
   assertThrows(() => { lookup('PEVAL').fn(s); }, /Bad argument value/, 'session055: PEVAL {} throws');
 }
 
-/* ---- PEVAL: Symbolic coef rejected ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Symbolic(AstVar('a'))]));
@@ -2876,7 +2759,6 @@ giac._setFixtures({
   assertThrows(() => { lookup('PEVAL').fn(s); }, /Bad argument/, 'session055: PEVAL Symbolic coef throws');
 }
 
-/* ---- PTAYL: x²  shifted by a=0  →  x² unchanged ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(0n), Integer(0n)]));
@@ -2901,7 +2783,6 @@ giac._setFixtures({
     'session055: PTAYL x² at 1 → {1 2 1}');
 }
 
-/* ---- PTAYL: (x+1)³  round-trips PCOEF → PTAYL at -1 gives {1 0 0 0} ---- */
 {
   const s = new Stack();
   // (x - -1)³ expansion: x³ + 3x² + 3x + 1
@@ -2918,7 +2799,6 @@ giac._setFixtures({
     'session055: PTAYL (x+1)³ at -1 → {1 0 0 0}');
 }
 
-/* ---- PTAYL: constant polynomial → constant polynomial ---- */
 {
   const s = new Stack();
   s.push(RList([Real(5)]));
@@ -2929,7 +2809,6 @@ giac._setFixtures({
     'session055: PTAYL constant → constant');
 }
 
-/* ---- PTAYL: empty list throws ---- */
 {
   const s = new Stack();
   s.push(RList([]));
@@ -2937,7 +2816,6 @@ giac._setFixtures({
   assertThrows(() => { lookup('PTAYL').fn(s); }, /Bad argument value/, 'session055: PTAYL {} throws');
 }
 
-/* ---- EPSX0: tiny numeric drops to 0 ---- */
 {
   const s = new Stack();
   // Sym:  X + 1e-15
@@ -2952,7 +2830,6 @@ giac._setFixtures({
     'session055: EPSX0 tiny → 0 inside AST');
 }
 
-/* ---- EPSX0: value above threshold preserved ---- */
 {
   const s = new Stack();
   s.push(Symbolic(AstBin('+', AstVar('X'), AstNum(0.5))));
@@ -2963,7 +2840,6 @@ giac._setFixtures({
     'session055: EPSX0 preserves non-small values');
 }
 
-/* ---- EPSX0: nested inside fn call ---- */
 {
   const s = new Stack();
   s.push(Symbolic(AstFn('SIN', [AstBin('+', AstVar('X'), AstNum(1e-14))])));
@@ -2976,7 +2852,6 @@ giac._setFixtures({
     'session055: EPSX0 recurses into fn args');
 }
 
-/* ---- EPSX0: scalar Real below threshold → Real(0) ---- */
 {
   const s = new Stack();
   s.push(Real(1e-15));
@@ -2986,7 +2861,6 @@ giac._setFixtures({
     'session055: EPSX0 Real tiny → 0');
 }
 
-/* ---- EPSX0: scalar Real above threshold pass-through ---- */
 {
   const s = new Stack();
   s.push(Real(2));
@@ -2996,7 +2870,6 @@ giac._setFixtures({
     'session055: EPSX0 Real 2 → 2');
 }
 
-/* ---- EPSX0: Complex with tiny imaginary → Real ---- */
 {
   const s = new Stack();
   s.push(Complex(3, 1e-13));
@@ -3006,7 +2879,6 @@ giac._setFixtures({
     'session055: EPSX0 tiny-imag Complex → Real');
 }
 
-/* ---- EPSX0: Vector of tiny values ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1e-15), Real(2), Real(-1e-20)]));
@@ -3019,7 +2891,6 @@ giac._setFixtures({
     'session055: EPSX0 Vector element-wise');
 }
 
-/* ---- DISTRIB: a*(b+c) → a*b + a*c ---- */
 {
   const s = new Stack();
   // X * (Y + Z)
@@ -3038,7 +2909,6 @@ giac._setFixtures({
     'session055: DISTRIB X*(Y+Z) → X*Y + X*Z');
 }
 
-/* ---- DISTRIB: (b-c)*a → b*a - c*a ---- */
 {
   const s = new Stack();
   s.push(Symbolic(AstBin('*',
@@ -3056,7 +2926,6 @@ giac._setFixtures({
     'session055: DISTRIB (B-C)*A → B*A - C*A');
 }
 
-/* ---- DISTRIB: (b+c)/a → b/a + c/a ---- */
 {
   const s = new Stack();
   s.push(Symbolic(AstBin('/',
@@ -3070,7 +2939,6 @@ giac._setFixtures({
     'session055: DISTRIB (B+C)/A → B/A + C/A');
 }
 
-/* ---- DISTRIB: no distributable → unchanged ---- */
 {
   const s = new Stack();
   s.push(Symbolic(AstBin('+', AstVar('X'), AstVar('Y'))));
@@ -3081,7 +2949,6 @@ giac._setFixtures({
     'session055: DISTRIB X+Y → X+Y (no change)');
 }
 
-/* ---- DISTRIB: descends into children to find first distributable ---- */
 {
   const s = new Stack();
   // (X + (A * (B + C)))  → distribute on inner A*(B+C)
@@ -3097,7 +2964,6 @@ giac._setFixtures({
     'session055: DISTRIB recurses into children');
 }
 
-/* ---- DISTRIB: non-Symbolic input rejected ---- */
 {
   const s = new Stack();
   s.push(Integer(5n));
@@ -3160,7 +3026,6 @@ function _evalSymAtX(sym, x) {
   return out.value;
 }
 
-/* ---- HERMITE 0 / 1 / 3 / 5: closed-form values at x = 0.7, -1.2 ---- */
 for (const n of [0, 1, 3, 5]) {
   for (const x of [0.7, -1.2]) {
     const s = new Stack();
@@ -3174,7 +3039,6 @@ for (const n of [0, 1, 3, 5]) {
   }
 }
 
-/* ---- HERMITE: H_3(X) = 8·X^3 - 12·X structural check ---- */
 {
   const s = new Stack();
   s.push(Integer(3n));
@@ -3186,7 +3050,6 @@ for (const n of [0, 1, 3, 5]) {
     'session056: HERMITE(3) root is subtraction (8X^3 - 12X)');
 }
 
-/* ---- LEGENDRE 0 / 1 / 2 / 4: closed-form values at x = 0.3, -0.8 ---- */
 for (const n of [0, 1, 2, 4]) {
   for (const x of [0.3, -0.8]) {
     const s = new Stack();
@@ -3200,7 +3063,6 @@ for (const n of [0, 1, 2, 4]) {
   }
 }
 
-/* ---- LEGENDRE(1) = X passthrough ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -3210,7 +3072,6 @@ for (const n of [0, 1, 2, 4]) {
     'session056: LEGENDRE(1) = X');
 }
 
-/* ---- TCHEBYCHEFF 0 / 1 / 3 / 6 at x = 0.5, -0.9 ---- */
 for (const n of [0, 1, 3, 6]) {
   for (const x of [0.5, -0.9]) {
     const s = new Stack();
@@ -3224,7 +3085,6 @@ for (const n of [0, 1, 3, 6]) {
   }
 }
 
-/* ---- TCHEB alias produces same result as TCHEBYCHEFF ---- */
 {
   const s1 = new Stack(); s1.push(Integer(4n)); lookup('TCHEBYCHEFF').fn(s1);
   const s2 = new Stack(); s2.push(Integer(4n)); lookup('TCHEB').fn(s2);
@@ -3239,7 +3099,6 @@ for (const n of [0, 1, 3, 6]) {
     'session056: TCHEB alias matches TCHEBYCHEFF numerically');
 }
 
-/* ---- HERMITE(0) = 1 (constant) ---- */
 {
   const s = new Stack();
   s.push(Integer(0n));
@@ -3258,21 +3117,18 @@ for (const name of ['HERMITE', 'LEGENDRE']) {
   assertThrows(() => { lookup(name).fn(s); }, /Bad argument value/, `session056: ${name}(-1) throws Bad argument value`);
 }
 
-/* ---- Non-integer Real rejected (Bad argument value) ---- */
 {
   const s = new Stack();
   s.push(Real(2.5));
   assertThrows(() => { lookup('HERMITE').fn(s); }, /Bad argument value/, 'session056: HERMITE(2.5) non-integer throws');
 }
 
-/* ---- Non-numeric argument rejected (Bad argument type) ---- */
 {
   const s = new Stack();
   s.push(RList([Real(3)]));
   assertThrows(() => { lookup('LEGENDRE').fn(s); }, /Bad argument type/, 'session056: LEGENDRE on list throws Bad argument type');
 }
 
-/* ---- Integer-valued Real accepted (n = 3.0 works like n = 3) ---- */
 {
   const s = new Stack();
   s.push(Real(3));
@@ -3303,7 +3159,6 @@ function _refTchebU(n, x) {
   return b;
 }
 
-/* ---- TCHEBYCHEFF(-1) = U_0 = 1 ---- */
 {
   const s = new Stack();
   s.push(Integer(-1n));
@@ -3313,7 +3168,6 @@ function _refTchebU(n, x) {
     'session057: TCHEBYCHEFF(-1) = U_0 = constant 1');
 }
 
-/* ---- TCHEBYCHEFF(-2) = U_1 = 2X ---- */
 {
   const s = new Stack();
   s.push(Integer(-2n));
@@ -3325,7 +3179,6 @@ function _refTchebU(n, x) {
     `session057: TCHEBYCHEFF(-2) at x=0.37 → ${got}, expect ${want}`);
 }
 
-/* ---- TCHEBYCHEFF neg 3..7 at x = 0.25, -0.8 ---- */
 for (const nNeg of [-3, -4, -5, -7]) {
   for (const x of [0.25, -0.8]) {
     const s = new Stack();
@@ -3339,7 +3192,6 @@ for (const nNeg of [-3, -4, -5, -7]) {
   }
 }
 
-/* ---- TCHEB alias accepts negative n too ---- */
 {
   const s = new Stack();
   s.push(Integer(-4n));
@@ -3351,7 +3203,6 @@ for (const nNeg of [-3, -4, -5, -7]) {
     'session057: TCHEB alias accepts negative n');
 }
 
-/* ---- Non-integer Real still rejected on negative side ---- */
 {
   const s = new Stack();
   s.push(Real(-2.5));
@@ -3409,7 +3260,6 @@ function _assertRootsMatch(got, expected, name) {
   }
 }
 
-/* ---- FROOTS X^2 - 5X + 6 = (X-2)(X-3) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2-5*X+6')));
@@ -3420,7 +3270,6 @@ function _assertRootsMatch(got, expected, name) {
     'session057: FROOTS X^2-5X+6');
 }
 
-/* ---- FROOTS (X-2)^3 = X^3 - 6X^2 + 12X - 8 → {2 3} ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^3-6*X^2+12*X-8')));
@@ -3431,7 +3280,6 @@ function _assertRootsMatch(got, expected, name) {
     'session057: FROOTS (X-2)^3 clusters as {2 3}');
 }
 
-/* ---- FROOTS X^2 + 1 = (X-i)(X+i) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2+1')));
@@ -3442,7 +3290,6 @@ function _assertRootsMatch(got, expected, name) {
     'session057: FROOTS X^2+1 complex roots');
 }
 
-/* ---- FROOTS linear 2X + 6 = 0 → {-3 1} ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('2*X+6')));
@@ -3453,7 +3300,6 @@ function _assertRootsMatch(got, expected, name) {
     'session057: FROOTS 2X+6 → -3');
 }
 
-/* ---- FROOTS X^3 - X = X(X-1)(X+1) → 3 simple real roots ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^3-X')));
@@ -3466,7 +3312,6 @@ function _assertRootsMatch(got, expected, name) {
     'session057: FROOTS X^3-X → {0 1 -1}');
 }
 
-/* ---- FROOTS pure non-zero constant = 5 → empty list ---- */
 {
   const s = new Stack();
   s.push(Symbolic(AstNum(5)));
@@ -3476,35 +3321,30 @@ function _assertRootsMatch(got, expected, name) {
     'session057: FROOTS on non-zero constant → empty list');
 }
 
-/* ---- FROOTS zero constant → Bad argument value ---- */
 {
   const s = new Stack();
   s.push(Symbolic(AstNum(0)));
   assertThrows(() => { lookup('FROOTS').fn(s); }, /Bad argument value/, 'session057: FROOTS on zero constant throws');
 }
 
-/* ---- FROOTS rejects multi-variable ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2+Y+1')));
   assertThrows(() => { lookup('FROOTS').fn(s); }, /Bad argument value/, 'session057: FROOTS rejects multi-variable expression');
 }
 
-/* ---- FROOTS rejects rational (1/X) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1/X')));
   assertThrows(() => { lookup('FROOTS').fn(s); }, /Bad argument value/, 'session057: FROOTS rejects rational expression');
 }
 
-/* ---- FROOTS on non-Symbolic rejects with Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Real(5));
   assertThrows(() => { lookup('FROOTS').fn(s); }, /Bad argument type/, 'session057: FROOTS on Real throws Bad argument type');
 }
 
-/* ---- FROOTS on a non-X variable picks it automatically ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('Y^2-9')));   // roots ±3
@@ -3515,7 +3355,6 @@ function _assertRootsMatch(got, expected, name) {
     'session057: FROOTS Y^2-9 picks Y as main variable');
 }
 
-/* ---- FROOTS clusters a double root: (X-1)^2 = X^2-2X+1 → {1 2} ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2-2*X+1')));
@@ -3534,7 +3373,6 @@ function _assertRootsMatch(got, expected, name) {
    symbolic-algebra ops.
    ================================================================ */
 
-/* ---- FROOTS rational-root pre-scan keeps Integer roots Integer ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2-5*X+6')));   // roots 2, 3
@@ -3551,7 +3389,6 @@ function _assertRootsMatch(got, expected, name) {
     'session058: FROOTS X^2-5X+6 roots include 2 and 3');
 }
 
-/* ---- FROOTS cubic with all integer roots ---- */
 {
   const s = new Stack();
   // (X-1)(X-2)(X-3) = X^3 - 6X^2 + 11X - 6
@@ -3574,7 +3411,6 @@ function _assertRootsMatch(got, expected, name) {
     `session058: FROOTS cubic has at least one Integer root (got ${intCount})`);
 }
 
-/* ---- FROOTS with rational root 1/2: 2X - 1 → {1/2 1} ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('2*X-1')));
@@ -3640,7 +3476,6 @@ giac._setFixtures({
   'simplify(subst(x+y,x=1)-subst(x+y,x=0))': '1',
 });
 
-/* ---- PREVAL of X^2 from 0 to 3 = 9 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2')));
@@ -3652,7 +3487,6 @@ giac._setFixtures({
     'session058: PREVAL X^2 from 0 to 3 → 9');
 }
 
-/* ---- PREVAL of 2X+1 from 1 to 5 = (11)-(3) = 8 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('2*X+1')));
@@ -3664,7 +3498,6 @@ giac._setFixtures({
     'session058: PREVAL 2X+1 from 1 to 5 → 8');
 }
 
-/* ---- PREVAL List-form: F(X) {a b} ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^3')));
@@ -3676,7 +3509,6 @@ giac._setFixtures({
     'session058: PREVAL X^3 with {1 2} list → 7');
 }
 
-/* ---- PREVAL with Integer endpoints ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2')));
@@ -3688,7 +3520,6 @@ giac._setFixtures({
     'session058: PREVAL accepts Integer endpoints');
 }
 
-/* ---- PREVAL with Symbolic endpoint stays Symbolic ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2')));
@@ -3701,7 +3532,6 @@ giac._setFixtures({
     'session058: PREVAL with Symbolic endpoint returns Symbolic');
 }
 
-/* ---- PREVAL constant F returns 0 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('5')));
@@ -3730,7 +3560,6 @@ giac._setFixtures({
     'session076: PREVAL x+y from 0 to 1 → 1 (substitutes VX=x)');
 }
 
-/* ---- PREVAL non-Symbolic F rejects ---- */
 {
   const s = new Stack();
   s.push(Real(5));
@@ -3743,7 +3572,6 @@ giac._setFixtures({
    TAN2SC: TAN(X) → SIN(X) / COS(X) rewrite.
    ================================================================ */
 
-/* ---- TAN2SC on TAN(X) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('TAN(X)')));
@@ -3758,7 +3586,6 @@ giac._setFixtures({
     'session058: TAN2SC TAN(X) → SIN(X)/COS(X)');
 }
 
-/* ---- TAN2SC leaves SIN / COS unchanged ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(X)+COS(X)')));
@@ -3768,7 +3595,6 @@ giac._setFixtures({
     'session058: TAN2SC on SIN+COS stays Symbolic');
 }
 
-/* ---- TAN2SC is idempotent ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('TAN(X)')));
@@ -3783,7 +3609,6 @@ giac._setFixtures({
     'session058: TAN2SC ∘ TAN2SC stable');
 }
 
-/* ---- TAN2SC deep: 1 + TAN(X)^2 → 1 + (SIN/COS)^2 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1+TAN(X)^2')));
@@ -3804,7 +3629,6 @@ giac._setFixtures({
     'session058: TAN2SC eliminates all TAN nodes from 1+TAN(X)^2');
 }
 
-/* ---- TAN2SC on non-Symbolic rejects ---- */
 {
   const s = new Stack();
   s.push(Real(1));
@@ -3839,7 +3663,6 @@ giac._setFixtures({
   'ilaplace(1/(X^2+1),X,X)': 'sin(X)',
 });
 
-/* ---- LAPLACE of 1 = 1/x ---- */
 // Constant-input LAPLACE picks the variable from VX.  rpl5050 ships
 // VX='x' (lowercase deviation from HP50; see state.js casVx slot),
 // so this test exercises the default-VX path with the lowercase
@@ -3860,7 +3683,6 @@ giac._setFixture('laplace(1,x,x)', '1/x');
     'session058: LAPLACE(1) = 1/x');
 }
 
-/* ---- LAPLACE of X = 1/X^2 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X')));
@@ -3876,7 +3698,6 @@ giac._setFixture('laplace(1,x,x)', '1/x');
     'session058: LAPLACE(X) = 1 / X^2');
 }
 
-/* ---- LAPLACE of X^2 = 2/X^3 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2')));
@@ -3893,7 +3714,6 @@ giac._setFixture('laplace(1,x,x)', '1/x');
     'session058: LAPLACE(X^2) denominator = X^3');
 }
 
-/* ---- LAPLACE of EXP(2X) = 1 / (X - 2) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('EXP(2*X)')));
@@ -3911,7 +3731,6 @@ giac._setFixture('laplace(1,x,x)', '1/x');
     'session058: LAPLACE(EXP(2X)) denominator = X - 2');
 }
 
-/* ---- LAPLACE of SIN(3X) = 3 / (X^2 + 9) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(3*X)')));
@@ -3925,7 +3744,6 @@ giac._setFixture('laplace(1,x,x)', '1/x');
     'session058: LAPLACE(SIN(3X)) numerator = 3');
 }
 
-/* ---- LAPLACE of COS(X) = X / (X^2 + 1) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('COS(X)')));
@@ -3937,7 +3755,6 @@ giac._setFixture('laplace(1,x,x)', '1/x');
     'session058: LAPLACE(COS(X)) numerator is X');
 }
 
-/* ---- LAPLACE distributes over sum: LAPLACE(1 + X) = 1/X + 1/X^2 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1+X')));
@@ -3948,7 +3765,6 @@ giac._setFixture('laplace(1,x,x)', '1/x');
     'session058: LAPLACE(1+X) is a sum');
 }
 
-/* ---- LAPLACE pulls scalar out: LAPLACE(5·SIN(X)) = 5 · (1/(X^2+1)) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('5*SIN(X)')));
@@ -3965,7 +3781,6 @@ giac._setFixture('laplace(1,x,x)', '1/x');
     'session058: LAPLACE(5·SIN(X)) keeps 5 out front');
 }
 
-/* ---- ILAP inverse of 1/X = 1 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1/X')));
@@ -3977,7 +3792,6 @@ giac._setFixture('laplace(1,x,x)', '1/x');
     `session058: ILAP(1/X) = 1`);
 }
 
-/* ---- ILAP of 1/X^2 = X ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1/X^2')));
@@ -3990,7 +3804,6 @@ giac._setFixture('laplace(1,x,x)', '1/x');
     `session058: ILAP(1/X^2) = X`);
 }
 
-/* ---- ILAP of 1/(X-3) = EXP(3·X) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1/(X-3)')));
@@ -4002,7 +3815,6 @@ giac._setFixture('laplace(1,x,x)', '1/x');
     'session058: ILAP(1/(X-3)) = EXP(3·X)');
 }
 
-/* ---- LAPLACE / ILAP round-trip on SIN(X) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(X)')));
@@ -4024,14 +3836,12 @@ giac._setFixture('laplace(1,x,x)', '1/x');
     'session058: LAPLACE∘ILAP(SIN(X)) contains SIN');
 }
 
-/* ---- LAPLACE non-Symbolic rejects ---- */
 {
   const s = new Stack();
   s.push(Real(1));
   assertThrows(() => { lookup('LAPLACE').fn(s); }, /Bad argument type/, 'session058: LAPLACE on Real rejects');
 }
 
-/* ---- ILAP non-Symbolic rejects ---- */
 {
   const s = new Stack();
   s.push(Real(1));
@@ -4053,7 +3863,6 @@ function _s059HasFn(node, name) {
   return false;
 }
 
-/* ---- HALFTAN returns Symbolic ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(X)')));
@@ -4062,7 +3871,6 @@ function _s059HasFn(node, name) {
   assert(isSymbolic(out), 'session059: HALFTAN returns Symbolic');
 }
 
-/* ---- HALFTAN SIN(X) rewrite introduces TAN and drops SIN ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(X)')));
@@ -4074,7 +3882,6 @@ function _s059HasFn(node, name) {
     'session059: HALFTAN(SIN(X)) eliminates SIN');
 }
 
-/* ---- HALFTAN COS(X) rewrite introduces TAN and drops COS ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('COS(X)')));
@@ -4086,7 +3893,6 @@ function _s059HasFn(node, name) {
     'session059: HALFTAN(COS(X)) eliminates COS');
 }
 
-/* ---- HALFTAN TAN(X) rewrite keeps TAN (but now of X/2) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('TAN(X)')));
@@ -4099,7 +3905,6 @@ function _s059HasFn(node, name) {
     'session059: HALFTAN(TAN(X)) top is a quotient');
 }
 
-/* ---- HALFTAN walks into 1+SIN(X) sums ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1+SIN(X)')));
@@ -4111,14 +3916,12 @@ function _s059HasFn(node, name) {
     'session059: HALFTAN walks into the sum and eliminates SIN');
 }
 
-/* ---- HALFTAN non-Symbolic rejects ---- */
 {
   const s = new Stack();
   s.push(Real(1));
   assertThrows(() => { lookup('HALFTAN').fn(s); }, /Bad argument type/, 'session059: HALFTAN on Real rejects');
 }
 
-/* ---- TAN2SC2 returns Symbolic ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('TAN(X)')));
@@ -4127,7 +3930,6 @@ function _s059HasFn(node, name) {
   assert(isSymbolic(out), 'session059: TAN2SC2 returns Symbolic');
 }
 
-/* ---- TAN2SC2 TAN(X) → SIN(2X) / (1 + COS(2X)) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('TAN(X)')));
@@ -4141,7 +3943,6 @@ function _s059HasFn(node, name) {
     'session059: TAN2SC2 result is a division');
 }
 
-/* ---- TAN2SC2 walks into 1+TAN(X)^2 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1+TAN(X)^2')));
@@ -4151,14 +3952,12 @@ function _s059HasFn(node, name) {
     'session059: TAN2SC2 walks into 1+TAN(X)^2 and eliminates TAN');
 }
 
-/* ---- TAN2SC2 non-Symbolic rejects ---- */
 {
   const s = new Stack();
   s.push(Real(1));
   assertThrows(() => { lookup('TAN2SC2').fn(s); }, /Bad argument type/, 'session059: TAN2SC2 on Real rejects');
 }
 
-/* ---- TAN2CS2 TAN(X) → (1 - COS(2X)) / SIN(2X) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('TAN(X)')));
@@ -4173,7 +3972,6 @@ function _s059HasFn(node, name) {
     'session059: TAN2CS2 result is a division');
 }
 
-/* ---- TAN2CS2 walks into 1+TAN(X)^2 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1+TAN(X)^2')));
@@ -4183,14 +3981,12 @@ function _s059HasFn(node, name) {
     'session059: TAN2CS2 walks into 1+TAN(X)^2 and eliminates TAN');
 }
 
-/* ---- TAN2CS2 non-Symbolic rejects ---- */
 {
   const s = new Stack();
   s.push(Real(1));
   assertThrows(() => { lookup('TAN2CS2').fn(s); }, /Bad argument type/, 'session059: TAN2CS2 on Real rejects');
 }
 
-/* ---- ACOS2S : ACOS(X) → π/2 - ASIN(X) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('ACOS(X)')));
@@ -4205,14 +4001,12 @@ function _s059HasFn(node, name) {
     'session059: ACOS2S result top-level is subtraction');
 }
 
-/* ---- ACOS2S non-Symbolic rejects ---- */
 {
   const s = new Stack();
   s.push(Real(0.5));
   assertThrows(() => { lookup('ACOS2S').fn(s); }, /Bad argument type/, 'session059: ACOS2S on Real rejects');
 }
 
-/* ---- ASIN2C : ASIN(X) → π/2 - ACOS(X) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('ASIN(X)')));
@@ -4225,14 +4019,12 @@ function _s059HasFn(node, name) {
     'session059: ASIN2C introduces ACOS');
 }
 
-/* ---- ASIN2C non-Symbolic rejects ---- */
 {
   const s = new Stack();
   s.push(Real(0.5));
   assertThrows(() => { lookup('ASIN2C').fn(s); }, /Bad argument type/, 'session059: ASIN2C on Real rejects');
 }
 
-/* ---- ASIN2T : ASIN(X) → ATAN(X / √(1 - X²)) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('ASIN(X)')));
@@ -4247,14 +4039,12 @@ function _s059HasFn(node, name) {
     'session059: ASIN2T result contains SQRT(1 - X²)');
 }
 
-/* ---- ASIN2T non-Symbolic rejects ---- */
 {
   const s = new Stack();
   s.push(Real(0.5));
   assertThrows(() => { lookup('ASIN2T').fn(s); }, /Bad argument type/, 'session059: ASIN2T on Real rejects');
 }
 
-/* ---- ATAN2S : ATAN(X) → ASIN(X / √(X² + 1)) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('ATAN(X)')));
@@ -4269,14 +4059,12 @@ function _s059HasFn(node, name) {
     'session059: ATAN2S result contains SQRT(X² + 1)');
 }
 
-/* ---- ATAN2S non-Symbolic rejects ---- */
 {
   const s = new Stack();
   s.push(Real(0.5));
   assertThrows(() => { lookup('ATAN2S').fn(s); }, /Bad argument type/, 'session059: ATAN2S on Real rejects');
 }
 
-/* ---- ACOS2S ∘ ASIN2C round-trips through ASIN/ACOS ---- */
 // Not an exact identity (the nested subtractions differ), but the walk
 // should be stable and produce Symbolic output both ways.
 {
@@ -4290,7 +4078,6 @@ function _s059HasFn(node, name) {
     'session059: ACOS2S eliminates the ACOS side of ASIN(X)+ACOS(X)');
 }
 
-/* ---- FROOTS X² - 2 yields exact ±√2 Symbolic roots ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2-2')));
@@ -4313,7 +4100,6 @@ function _s059HasFn(node, name) {
     'session059: one of X²-2 roots is the negation');
 }
 
-/* ---- FROOTS X² + X - 1 yields the golden-ratio pair ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2+X-1')));
@@ -4347,7 +4133,6 @@ function _s059HasFn(node, name) {
     'session059: X²+X-1 radicand is 5');
 }
 
-/* ---- FROOTS 2X² - 1 yields ±√2 / 2 (gcd reduction works) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('2*X^2-1')));
@@ -4368,7 +4153,6 @@ function _s059HasFn(node, name) {
     'session059: 2X²-1 roots have denominator 2');
 }
 
-/* ---- FROOTS 2X² + 3X - 1 yields (-3 ± √17)/4 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('2*X^2+3*X-1')));
@@ -4396,7 +4180,6 @@ function _s059HasFn(node, name) {
     'session059: 2X²+3X-1 radicand is 17');
 }
 
-/* ---- FROOTS X² + 1 still yields complex roots (D < 0 defers) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2+1')));
@@ -4412,7 +4195,6 @@ function _s059HasFn(node, name) {
     'session059: FROOTS X²+1 does not misroute to the exact-quadratic branch');
 }
 
-/* ---- FROOTS X² - 1 still yields rational roots (√D integer path) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2-1')));
@@ -4469,7 +4251,6 @@ function _s060HasVar(node, name) {
   return false;
 }
 
-/* ---- TEXPAND returns Symbolic ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(A+B)')));
@@ -4478,7 +4259,6 @@ function _s060HasVar(node, name) {
   assert(isSymbolic(out), 'session060: TEXPAND returns Symbolic');
 }
 
-/* ---- TEXPAND SIN(A+B) → SIN(A)COS(B) + COS(A)SIN(B) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(A+B)')));
@@ -4491,7 +4271,6 @@ function _s060HasVar(node, name) {
     'session060: TEXPAND SIN(A+B) introduces both SIN and COS');
 }
 
-/* ---- TEXPAND SIN(A-B) uses subtraction at the top ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(A-B)')));
@@ -4501,7 +4280,6 @@ function _s060HasVar(node, name) {
     'session060: TEXPAND SIN(A-B) top is subtraction');
 }
 
-/* ---- TEXPAND COS(A+B) top is subtraction (COS·COS - SIN·SIN) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('COS(A+B)')));
@@ -4513,7 +4291,6 @@ function _s060HasVar(node, name) {
     'session060: TEXPAND COS(A+B) keeps SIN and COS');
 }
 
-/* ---- TEXPAND COS(A-B) top is addition (COS·COS + SIN·SIN) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('COS(A-B)')));
@@ -4523,7 +4300,6 @@ function _s060HasVar(node, name) {
     'session060: TEXPAND COS(A-B) top is addition');
 }
 
-/* ---- TEXPAND TAN(A+B) becomes a division with TAN in both parts ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('TAN(A+B)')));
@@ -4535,7 +4311,6 @@ function _s060HasVar(node, name) {
     'session060: TEXPAND TAN(A+B) preserves TAN in both sides');
 }
 
-/* ---- TEXPAND TAN(A-B) denominator uses + (dual sign) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('TAN(A-B)')));
@@ -4550,7 +4325,6 @@ function _s060HasVar(node, name) {
     'session060: TEXPAND TAN(A-B) denominator uses +');
 }
 
-/* ---- TEXPAND parity: SIN(-X) = -SIN(X) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(-X)')));
@@ -4562,7 +4336,6 @@ function _s060HasVar(node, name) {
     'session060: TEXPAND SIN(-X) keeps SIN');
 }
 
-/* ---- TEXPAND parity: COS(-X) = COS(X) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('COS(-X)')));
@@ -4575,7 +4348,6 @@ function _s060HasVar(node, name) {
     'session060: TEXPAND COS(-X) argument is X (not -X)');
 }
 
-/* ---- TEXPAND leaves SIN(X) (bare var arg) unchanged ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(X)')));
@@ -4585,7 +4357,6 @@ function _s060HasVar(node, name) {
     'session060: TEXPAND SIN(X) is unchanged (no sum to expand)');
 }
 
-/* ---- TEXPAND walks into outer sums ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(A+B)+COS(A-B)')));
@@ -4596,14 +4367,12 @@ function _s060HasVar(node, name) {
     'session060: TEXPAND walks into outer sum');
 }
 
-/* ---- TEXPAND non-Symbolic rejects ---- */
 {
   const s = new Stack();
   s.push(Real(1));
   assertThrows(() => { lookup('TEXPAND').fn(s); }, /Bad argument type/, 'session060: TEXPAND on Real rejects');
 }
 
-/* ---- TLIN returns Symbolic ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(X)*COS(X)')));
@@ -4612,7 +4381,6 @@ function _s060HasVar(node, name) {
   assert(isSymbolic(out), 'session060: TLIN returns Symbolic');
 }
 
-/* ---- TLIN SIN(X)·COS(X) → (SIN(2X)+SIN(0))/2 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(X)*COS(X)')));
@@ -4628,7 +4396,6 @@ function _s060HasVar(node, name) {
     'session060: TLIN SIN·COS numerator contains SIN');
 }
 
-/* ---- TLIN SIN(A)·SIN(B) uses COS(a-b) - COS(a+b) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(A)*SIN(B)')));
@@ -4645,7 +4412,6 @@ function _s060HasVar(node, name) {
     'session060: TLIN SIN·SIN eliminates SIN in the numerator');
 }
 
-/* ---- TLIN COS(A)·COS(B) uses COS(a-b) + COS(a+b) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('COS(A)*COS(B)')));
@@ -4657,7 +4423,6 @@ function _s060HasVar(node, name) {
     'session060: TLIN COS·COS numerator is an addition');
 }
 
-/* ---- TLIN SIN²(X) → (1 - COS(2X))/2 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(X)^2')));
@@ -4674,7 +4439,6 @@ function _s060HasVar(node, name) {
     'session060: TLIN SIN²(X) numerator is 1 - COS(...)');
 }
 
-/* ---- TLIN COS²(X) → (1 + COS(2X))/2 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('COS(X)^2')));
@@ -4687,7 +4451,6 @@ function _s060HasVar(node, name) {
     'session060: TLIN COS²(X) numerator is 1 + COS(...)');
 }
 
-/* ---- TLIN leaves non-trig products unchanged ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X*Y')));
@@ -4698,14 +4461,12 @@ function _s060HasVar(node, name) {
     'session060: TLIN X*Y stays as a product');
 }
 
-/* ---- TLIN non-Symbolic rejects ---- */
 {
   const s = new Stack();
   s.push(Real(1));
   assertThrows(() => { lookup('TLIN').fn(s); }, /Bad argument type/, 'session060: TLIN on Real rejects');
 }
 
-/* ---- TCOLLECT returns Symbolic ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(A)+SIN(B)')));
@@ -4714,7 +4475,6 @@ function _s060HasVar(node, name) {
   assert(isSymbolic(out), 'session060: TCOLLECT returns Symbolic');
 }
 
-/* ---- TCOLLECT SIN(A)+SIN(B) → 2·SIN((A+B)/2)·COS((A-B)/2) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(A)+SIN(B)')));
@@ -4727,7 +4487,6 @@ function _s060HasVar(node, name) {
     'session060: TCOLLECT SIN+SIN introduces both SIN and COS');
 }
 
-/* ---- TCOLLECT SIN(A)-SIN(B) introduces a leading COS (not SIN) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(A)-SIN(B)')));
@@ -4742,7 +4501,6 @@ function _s060HasVar(node, name) {
     'session060: TCOLLECT SIN-SIN introduces COS');
 }
 
-/* ---- TCOLLECT COS(A)+COS(B) uses only COS ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('COS(A)+COS(B)')));
@@ -4756,7 +4514,6 @@ function _s060HasVar(node, name) {
     'session060: TCOLLECT COS+COS preserves COS');
 }
 
-/* ---- TCOLLECT COS(A)-COS(B) produces a negated product ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('COS(A)-COS(B)')));
@@ -4771,7 +4528,6 @@ function _s060HasVar(node, name) {
     'session060: TCOLLECT COS-COS introduces SIN');
 }
 
-/* ---- TCOLLECT leaves mixed SIN+COS unchanged (no sum-to-product) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(A)+COS(B)')));
@@ -4803,14 +4559,12 @@ function _s060HasVar(node, name) {
     'session060: TCOLLECT SIN(X+Y)+SIN(X-Y) introduces COS');
 }
 
-/* ---- TCOLLECT non-Symbolic rejects ---- */
 {
   const s = new Stack();
   s.push(Real(1));
   assertThrows(() => { lookup('TCOLLECT').fn(s); }, /Bad argument type/, 'session060: TCOLLECT on Real rejects');
 }
 
-/* ---- EXPLN returns Symbolic ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(X)')));
@@ -4819,7 +4573,6 @@ function _s060HasVar(node, name) {
   assert(isSymbolic(out), 'session060: EXPLN returns Symbolic');
 }
 
-/* ---- EXPLN SIN(X) introduces EXP and i, drops SIN ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(X)')));
@@ -4833,7 +4586,6 @@ function _s060HasVar(node, name) {
     'session060: EXPLN SIN(X) references imaginary unit i');
 }
 
-/* ---- EXPLN COS(X) introduces EXP and i, drops COS ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('COS(X)')));
@@ -4851,7 +4603,6 @@ function _s060HasVar(node, name) {
     'session060: EXPLN COS(X) top denominator is 2');
 }
 
-/* ---- EXPLN TAN(X) is a division with e^(iX) on both sides ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('TAN(X)')));
@@ -4865,7 +4616,6 @@ function _s060HasVar(node, name) {
     'session060: EXPLN TAN(X) references imaginary unit i');
 }
 
-/* ---- EXPLN SINH(X) uses real exp (no i) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SINH(X)')));
@@ -4879,7 +4629,6 @@ function _s060HasVar(node, name) {
     'session060: EXPLN SINH(X) does not reference i (real-only form)');
 }
 
-/* ---- EXPLN COSH(X) uses real exp, top-level division by 2 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('COSH(X)')));
@@ -4894,7 +4643,6 @@ function _s060HasVar(node, name) {
     'session060: EXPLN COSH(X) does not reference i');
 }
 
-/* ---- EXPLN TANH(X) is a division of exp-sum and exp-diff ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('TANH(X)')));
@@ -4908,7 +4656,6 @@ function _s060HasVar(node, name) {
     'session060: EXPLN TANH(X) does not reference i (real-only form)');
 }
 
-/* ---- EXPLN walks into 1+SIN(X) (sum-level container unchanged) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1+SIN(X)')));
@@ -4922,7 +4669,6 @@ function _s060HasVar(node, name) {
     'session060: EXPLN 1+SIN(X) introduces EXP');
 }
 
-/* ---- EXPLN leaves bare variables unchanged ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X+Y')));
@@ -4933,7 +4679,6 @@ function _s060HasVar(node, name) {
     'session060: EXPLN X+Y does not introduce EXP');
 }
 
-/* ---- EXPLN non-Symbolic rejects ---- */
 {
   const s = new Stack();
   s.push(Real(1));
@@ -4980,7 +4725,6 @@ giac._setFixtures({
   'tsimplify(X+Y)':        'X+Y',
 });
 
-/* ---- TSIMP Pythagorean sum to 1 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(X)^2+COS(X)^2')));
@@ -4990,7 +4734,6 @@ giac._setFixtures({
     'session061: TSIMP(SIN(X)^2+COS(X)^2) = 1');
 }
 
-/* ---- TSIMP Pythagorean sum COS+SIN order ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('COS(X)^2+SIN(X)^2')));
@@ -5000,7 +4743,6 @@ giac._setFixtures({
     'session061: TSIMP(COS(X)^2+SIN(X)^2) = 1 (order-independent)');
 }
 
-/* ---- TSIMP 1 - SIN^2 → COS^2 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1-SIN(X)^2')));
@@ -5010,7 +4752,6 @@ giac._setFixtures({
     'session061: TSIMP(1-SIN(X)^2) rewrites to COS form');
 }
 
-/* ---- TSIMP 1 - COS^2 → SIN^2 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1-COS(X)^2')));
@@ -5020,7 +4761,6 @@ giac._setFixtures({
     'session061: TSIMP(1-COS(X)^2) rewrites to SIN form');
 }
 
-/* ---- TSIMP TAN·COS → SIN ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('TAN(X)*COS(X)')));
@@ -5030,7 +4770,6 @@ giac._setFixtures({
     'session061: TSIMP(TAN(X)·COS(X)) = SIN(X)');
 }
 
-/* ---- TSIMP SIN/COS → TAN ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(X)/COS(X)')));
@@ -5040,7 +4779,6 @@ giac._setFixtures({
     'session061: TSIMP(SIN(X)/COS(X)) = TAN(X)');
 }
 
-/* ---- TSIMP compound: Pythagorean + arithmetic fold ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(A)^2+COS(A)^2+5')));
@@ -5050,7 +4788,6 @@ giac._setFixtures({
     'session061: TSIMP(SIN(A)^2+COS(A)^2+5) folds to 6');
 }
 
-/* ---- TSIMP leaves unrelated expression unchanged ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X+Y')));
@@ -5060,14 +4797,12 @@ giac._setFixtures({
     'session061: TSIMP(X+Y) leaves structure intact');
 }
 
-/* ---- TSIMP rejects Real input ---- */
 {
   const s = new Stack();
   s.push(Real(1));
   assertThrows(() => { lookup('TSIMP').fn(s); }, /Bad argument type/, 'session061: TSIMP on Real rejects');
 }
 
-/* ---- EXPLN ASIN(X) introduces LN and i ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('ASIN(X)')));
@@ -5081,7 +4816,6 @@ giac._setFixtures({
     'session061: EXPLN(ASIN(X)) references i');
 }
 
-/* ---- EXPLN ACOS(X) references LN + i + SQRT ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('ACOS(X)')));
@@ -5095,7 +4829,6 @@ giac._setFixtures({
     'session061: EXPLN(ACOS(X)) references i');
 }
 
-/* ---- EXPLN ATAN(X) uses (1 + iX)/(1 - iX) form ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('ATAN(X)')));
@@ -5112,7 +4845,6 @@ giac._setFixtures({
     'session061: EXPLN(ATAN(X)) has no SQRT (rational log form)');
 }
 
-/* ---- EXPLN ASINH(X) pure-real (no i) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('ASINH(X)')));
@@ -5126,7 +4858,6 @@ giac._setFixtures({
     'session061: EXPLN(ASINH(X)) does not reference i');
 }
 
-/* ---- EXPLN ACOSH(X) pure-real (no i) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('ACOSH(X)')));
@@ -5140,7 +4871,6 @@ giac._setFixtures({
     'session061: EXPLN(ACOSH(X)) does not reference i');
 }
 
-/* ---- EXPLN ATANH(X) pure-real rational-log form ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('ATANH(X)')));
@@ -5156,7 +4886,6 @@ giac._setFixtures({
     'session061: EXPLN(ATANH(X)) has no SQRT');
 }
 
-/* ---- EXPLN walks into nested ASIN inside a sum ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1+ASIN(X)')));
@@ -5168,7 +4897,6 @@ giac._setFixtures({
     'session061: EXPLN(1+ASIN(X)) introduces LN');
 }
 
-/* ---- HEAVISIDE on positive Real = 1 ---- */
 {
   const s = new Stack();
   s.push(Real(2.5));
@@ -5178,7 +4906,6 @@ giac._setFixtures({
     'session061: HEAVISIDE(2.5) = 1');
 }
 
-/* ---- HEAVISIDE on negative Real = 0 ---- */
 {
   const s = new Stack();
   s.push(Real(-0.001));
@@ -5188,7 +4915,6 @@ giac._setFixtures({
     'session061: HEAVISIDE(-0.001) = 0');
 }
 
-/* ---- HEAVISIDE(0) = 1 (right-continuous) ---- */
 {
   const s = new Stack();
   s.push(Real(0));
@@ -5198,7 +4924,6 @@ giac._setFixtures({
     'session061: HEAVISIDE(0) = 1 (right-continuous)');
 }
 
-/* ---- HEAVISIDE on Integer ---- */
 {
   const s = new Stack();
   s.push(Integer(-5n));
@@ -5208,7 +4933,6 @@ giac._setFixtures({
     'session061: HEAVISIDE(-5) = Integer 0');
 }
 
-/* ---- HEAVISIDE on Symbolic stays Symbolic ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X-3')));
@@ -5219,7 +4943,6 @@ giac._setFixtures({
     'session061: HEAVISIDE(X-3) stays Symbolic');
 }
 
-/* ---- HEAVISIDE accepts empty List ---- */
 /* List is dispatched element-wise; an empty List input returns an
    empty List. */
 {
@@ -5231,7 +4954,6 @@ giac._setFixtures({
     'session061: HEAVISIDE on List rejects [updated session191: now accepts → { }]');
 }
 
-/* ---- DIRAC on non-zero Real = 0 ---- */
 {
   const s = new Stack();
   s.push(Real(3.2));
@@ -5241,7 +4963,6 @@ giac._setFixtures({
     'session061: DIRAC(3.2) = 0');
 }
 
-/* ---- DIRAC on zero Real stays Symbolic ---- */
 {
   const s = new Stack();
   s.push(Real(0));
@@ -5252,7 +4973,6 @@ giac._setFixtures({
     'session061: DIRAC(0) stays Symbolic');
 }
 
-/* ---- DIRAC on non-zero Integer = 0 ---- */
 {
   const s = new Stack();
   s.push(Integer(7n));
@@ -5262,7 +4982,6 @@ giac._setFixtures({
     'session061: DIRAC(7) = Integer 0');
 }
 
-/* ---- DIRAC on Symbolic stays Symbolic ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X-3')));
@@ -5273,7 +4992,6 @@ giac._setFixtures({
     'session061: DIRAC(X-3) stays Symbolic');
 }
 
-/* ---- DIRAC accepts empty List ---- */
 /* List is dispatched element-wise; an empty List input returns an
    empty List. */
 {
@@ -5305,7 +5023,6 @@ giac._setFixtures({
   'ilaplace(exp((-2)*X)/X,X,X)':        'HEAVISIDE(X-2)',
 });
 
-/* ---- LAPLACE HEAVISIDE(X) → 1/X ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('HEAVISIDE(X)')));
@@ -5317,7 +5034,6 @@ giac._setFixtures({
     'session061: LAPLACE(H(X)) = 1/X');
 }
 
-/* ---- LAPLACE HEAVISIDE(X-3) has EXP factor ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('HEAVISIDE(X-3)')));
@@ -5330,7 +5046,6 @@ giac._setFixtures({
     'session061: LAPLACE(H(X-3)) top is division');
 }
 
-/* ---- LAPLACE DIRAC(X) = 1 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('DIRAC(X)')));
@@ -5340,7 +5055,6 @@ giac._setFixtures({
     'session061: LAPLACE(δ(X)) = 1');
 }
 
-/* ---- LAPLACE DIRAC(X-3) top is EXP ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('DIRAC(X-3)')));
@@ -5350,7 +5064,6 @@ giac._setFixtures({
     'session061: LAPLACE(δ(X-3)) top is EXP');
 }
 
-/* ---- LAPLACE frequency-shift: L{EXP(2X)·SIN(X)} substitutes X→X-2 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('EXP(2*X)*SIN(X)')));
@@ -5377,7 +5090,6 @@ giac._setFixtures({
     'session061: LAPLACE(e^(2X)·SIN(X)) references the shift constant 2');
 }
 
-/* ---- ILAP EXP(-3X)/X → HEAVISIDE(X - 3) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('EXP(-3*X)/X')));
@@ -5387,7 +5099,6 @@ giac._setFixtures({
     'session061: ILAP(e^(-3X)/X) = HEAVISIDE(X-3)');
 }
 
-/* ---- ILAP EXP(-3X) → DIRAC(X - 3) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('EXP(-3*X)')));
@@ -5397,7 +5108,6 @@ giac._setFixtures({
     'session061: ILAP(e^(-3X)) = DIRAC(X-3)');
 }
 
-/* ---- ILAP constant 1 → DIRAC(x) ---- */
 // Constant-input ILAP picks the variable from VX (default 'x').
 // Mirror the LAPLACE(1) story above: register the lowercase fixture
 // and assert the lowercase variable in the result.
@@ -5412,7 +5122,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'session061: ILAP(1) = DIRAC(x)');
 }
 
-/* ---- LAPLACE / ILAP round-trip on DIRAC(X-3) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('DIRAC(X-3)')));
@@ -5423,7 +5132,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'session061: LAPLACE∘ILAP(DIRAC(X-3)) contains DIRAC');
 }
 
-/* ---- LAPLACE / ILAP round-trip on HEAVISIDE(X-2) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('HEAVISIDE(X-2)')));
@@ -5434,7 +5142,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'session061: LAPLACE∘ILAP(H(X-2)) contains HEAVISIDE');
 }
 
-/* ---- LNCOLLECT LN(A) + LN(B) → LN(A·B) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('LN(A)+LN(B)')));
@@ -5445,7 +5152,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'session061: LNCOLLECT(LN(A)+LN(B)) = LN(A·B)');
 }
 
-/* ---- LNCOLLECT LN(A) - LN(B) → LN(A/B) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('LN(A)-LN(B)')));
@@ -5456,7 +5162,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'session061: LNCOLLECT(LN(A)-LN(B)) = LN(A/B)');
 }
 
-/* ---- LNCOLLECT n·LN(A) → LN(A^n) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('2*LN(X)')));
@@ -5468,7 +5173,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'session061: LNCOLLECT(2·LN(X)) wraps X^2 inside LN');
 }
 
-/* ---- LNCOLLECT LN(A)·n (coefficient on right) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('LN(X)*3')));
@@ -5480,7 +5184,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'session061: LNCOLLECT(LN(X)·3) = LN(X^3)');
 }
 
-/* ---- LNCOLLECT associates three LN terms ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('LN(A)+LN(B)+LN(C)')));
@@ -5492,7 +5195,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'session061: LNCOLLECT(LN(A)+LN(B)+LN(C)) = single LN');
 }
 
-/* ---- LNCOLLECT leaves non-LN sums unchanged ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X+Y')));
@@ -5503,14 +5205,12 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'session061: LNCOLLECT(X+Y) introduces no LN');
 }
 
-/* ---- LNCOLLECT rejects Real ---- */
 {
   const s = new Stack();
   s.push(Real(1));
   assertThrows(() => { lookup('LNCOLLECT').fn(s); }, /Bad argument type/, 'session061: LNCOLLECT on Real rejects');
 }
 
-/* ---- FROOTS biquadratic X^4 - 10X^2 + 1 → four nested radicals ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^4-10*X^2+1')));
@@ -5533,7 +5233,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'session061: FROOTS biquad roots contain SQRT (closed-form radicals)');
 }
 
-/* ---- FROOTS biquadratic with a leading coefficient ≠ 1 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('2*X^4-20*X^2+2')));
@@ -5547,7 +5246,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
    VX / SVX CAS-main-variable state + ops.
    ================================================================ */
 
-/* ---- VX push default = Name('x') ---- */
 // rpl5050 ships a lowercase default for the CAS main variable
 // (deliberate deviation from the HP50's `'X'` — matches the
 // lowercase-default keyboard layout in www/src/ui/keyboard.js).
@@ -5561,7 +5259,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'session076: VX pushes Name(x) on a freshly-booted unit');
 }
 
-/* ---- SVX accepts Name and is observable via VX ---- */
 {
   const { resetCasVx } = await import('../www/src/rpl/state.js');
   resetCasVx();
@@ -5576,7 +5273,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   resetCasVx();
 }
 
-/* ---- SVX accepts String (HP50 accepts either at prompt) ---- */
 {
   const { resetCasVx, getCasVx } = await import('../www/src/rpl/state.js');
   resetCasVx();
@@ -5587,7 +5283,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   resetCasVx();
 }
 
-/* ---- SVX rejects Real ---- */
 {
   const { resetCasVx } = await import('../www/src/rpl/state.js');
   resetCasVx();
@@ -5596,7 +5291,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   assertThrows(() => { lookup('SVX').fn(s); }, /Bad argument type/, 'session076: SVX on Real rejects with Bad argument type');
 }
 
-/* ---- SVX rejects empty String with Invalid name ---- */
 {
   // SVX routes through the HP50 identifier validator (types.js
   // isValidHpIdentifier), which catches empty strings and any non-
@@ -5609,7 +5303,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   assertThrows(() => { lookup('SVX').fn(s); }, /Invalid name/, 'session076: SVX on empty string rejects with Invalid name');
 }
 
-/* ---- PREVAL follows the active VX (not the single-free-var heuristic) ---- */
 {
   const { resetCasVx, setCasVx } = await import('../www/src/rpl/state.js');
   resetCasVx();
@@ -5636,7 +5329,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   resetCasVx();
 }
 
-/* ---- LAPLACE picks VX when the input has multiple free vars ---- */
 {
   const { resetCasVx, setCasVx } = await import('../www/src/rpl/state.js');
   resetCasVx();
@@ -5658,7 +5350,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   resetCasVx();
 }
 
-/* ---- VX round-trips through SVX/VX ---- */
 {
   const { resetCasVx } = await import('../www/src/rpl/state.js');
   resetCasVx();
@@ -5676,7 +5367,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
    EXLR: extract left and right sides of a symbolic.
    ================================================================ */
 
-/* ---- EXLR on A = B ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('A = B')));
@@ -5690,7 +5380,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'session076: EXLR(A=B) right is Symbolic(B)');
 }
 
-/* ---- EXLR on the quadratic X^2 + 2X + 1 = 0 ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2 + 2*X + 1 = 0')));
@@ -5703,7 +5392,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'session076: EXLR on quadratic RHS is Symbolic(0)');
 }
 
-/* ---- EXLR on X + Y (non-equation binary) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X + Y')));
@@ -5716,7 +5404,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'session076: EXLR on X+Y right = Symbolic(Y)');
 }
 
-/* ---- EXLR on comparison operator (<) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X < 5')));
@@ -5729,21 +5416,18 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'session076: EXLR on X<5 right = Symbolic(5)');
 }
 
-/* ---- EXLR rejects a bare variable (no top-level bin) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X')));
   assertThrows(() => { lookup('EXLR').fn(s); }, /Bad argument value/, 'session076: EXLR on bare Sy(X) rejects with Bad argument value');
 }
 
-/* ---- EXLR rejects a unary (SIN(X)) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(X)')));
   assertThrows(() => { lookup('EXLR').fn(s); }, /Bad argument value/, 'session076: EXLR on SIN(X) rejects with Bad argument value');
 }
 
-/* ---- EXLR rejects a Real (non-Symbolic type) ---- */
 {
   const s = new Stack();
   s.push(Real(42));
@@ -5758,9 +5442,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
    `Bad argument type`.
    ================================================================== */
 
-// ---- PROPFRAC ----------------------------------------------------
 
-/* ---- PROPFRAC on a Symbolic routes through Giac propfrac(...) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('(X^2+1)/(X+1)')));
@@ -5773,7 +5455,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- PROPFRAC on a more complex rational ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('(X^3 - 2*X + 1)/(X - 1)')));
@@ -5786,7 +5467,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- PROPFRAC on a Rational lifts to Symbolic and routes to Giac ---- */
 {
   // 1 3 /  → Rational(1/3).  PROPFRAC on a bare ratio is a little silly
   // (the ratio is already proper) but Giac's propfrac(1/3) just returns
@@ -5804,7 +5484,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- PROPFRAC on a Real is a pass-through ---- */
 {
   const s = new Stack();
   s.push(Real(3.14));
@@ -5813,7 +5492,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          'session104: PROPFRAC on Real is a pass-through');
 }
 
-/* ---- PROPFRAC on an Integer is a pass-through ---- */
 {
   const s = new Stack();
   s.push(Integer(7n));
@@ -5822,7 +5500,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          'session104: PROPFRAC on Integer is a pass-through');
 }
 
-/* ---- PROPFRAC on a bare Name is a pass-through ---- */
 {
   const s = new Stack();
   s.push(Name('FOO'));
@@ -5831,16 +5508,13 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          'session104: PROPFRAC on Name is a pass-through');
 }
 
-/* ---- PROPFRAC on a String rejects with Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Str('hello'));
   assertThrows(() => { lookup('PROPFRAC').fn(s); }, /Bad argument type/, 'session104: PROPFRAC on String rejects with Bad argument type');
 }
 
-// ---- PARTFRAC ----------------------------------------------------
 
-/* ---- PARTFRAC on a Symbolic routes through Giac partfrac(...) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('(2*X-1)/((X-1)*(X+1))')));
@@ -5855,7 +5529,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- PARTFRAC on a three-pole rational ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1/(X*(X-1)*(X+1))')));
@@ -5869,7 +5542,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- PARTFRAC on a Real / Integer / Name is a pass-through ---- */
 {
   const s = new Stack();
   s.push(Real(2.5));
@@ -5892,7 +5564,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          'session104: PARTFRAC on Name is a pass-through');
 }
 
-/* ---- PARTFRAC on a Rational is a pass-through (degenerate decomp) ---- */
 {
   const s = new Stack();
   s.push(Integer(7n));
@@ -5904,16 +5575,13 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          'session104: PARTFRAC on Rational is a pass-through');
 }
 
-/* ---- PARTFRAC on a String rejects with Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Str('nope'));
   assertThrows(() => { lookup('PARTFRAC').fn(s); }, /Bad argument type/, 'session104: PARTFRAC on String rejects with Bad argument type');
 }
 
-// ---- COSSIN ------------------------------------------------------
 
-/* ---- COSSIN on a Symbolic routes through Giac tan2sincos(...) ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('TAN(X)')));
@@ -5939,7 +5607,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- COSSIN idempotent on a pure SIN / COS expression ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(X) + COS(X)')));
@@ -5952,7 +5619,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- COSSIN on a Real / Integer / Name is a pass-through ---- */
 {
   const s = new Stack();
   s.push(Real(0.5));
@@ -5975,7 +5641,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          'session104: COSSIN on Name is a pass-through');
 }
 
-/* ---- COSSIN on a String rejects with Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Str('trig'));
@@ -5998,7 +5663,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   setCasVx('X');
 }
 
-// ---- PCAR — characteristic polynomial ------------------------------
 
 /* ---- PCAR on a 2×2 integer matrix routes through Giac charpoly(...) */
 {
@@ -6013,7 +5677,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- PCAR on a diagonal 3×3 returns a factored-ish cubic --------- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -6031,7 +5694,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- CHARPOL alias dispatches through PCAR's registered fn ------- */
 {
   const s = new Stack();
   s.push(Matrix([[Integer(1n), Integer(2n)], [Integer(3n), Integer(4n)]]));
@@ -6044,7 +5706,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- PCAR on a Vector rejects with Bad argument type ------------- */
 {
   const s = new Stack();
   s.push(Vector([Integer(1n), Integer(2n), Integer(3n)]));
@@ -6053,7 +5714,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session114: PCAR on Vector → Bad argument type');
 }
 
-/* ---- PCAR on a non-square matrix rejects with Invalid dimension -- */
 {
   const s = new Stack();
   s.push(Matrix([[Integer(1n), Integer(2n), Integer(3n)],
@@ -6063,9 +5723,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session114: PCAR on 2x3 → Invalid dimension');
 }
 
-// ---- EGVL — eigenvalues as a Vector ------------------------------
 
-/* ---- EGVL on a diagonal matrix returns the diagonal entries ----- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -6101,7 +5759,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- EGVL on a Matrix rejects when splitGiacList returns null --- */
 {
   const s = new Stack();
   s.push(Matrix([[Integer(1n), Integer(2n)], [Integer(3n), Integer(4n)]]));
@@ -6114,7 +5771,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- EGVL on an Integer rejects with Bad argument type ---------- */
 {
   const s = new Stack();
   s.push(Integer(7n));
@@ -6131,9 +5787,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   resetCasVx();
 }
 
-// ---- PA2B2 — Fermat sum of two squares ---------------------------
 
-/* ---- PA2B2 on p = 2 returns 1 + i (the unique decomp) ----------- */
 {
   const s = new Stack();
   s.push(Integer(2n));
@@ -6143,7 +5797,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          `session114: PA2B2 2 → (${z && z.re}, ${z && z.im}) want (1, 1)`);
 }
 
-/* ---- PA2B2 on p = 5 returns 1 + 2i (1² + 2² = 5) --------------- */
 {
   const s = new Stack();
   s.push(Integer(5n));
@@ -6153,7 +5806,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          `session114: PA2B2 5 → (${z && z.re}, ${z && z.im}) want (1, 2)`);
 }
 
-/* ---- PA2B2 on p = 13 returns 2 + 3i ----------------------------- */
 {
   const s = new Stack();
   s.push(Integer(13n));
@@ -6163,7 +5815,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          `session114: PA2B2 13 → (${z && z.re}, ${z && z.im}) want (2, 3)`);
 }
 
-/* ---- PA2B2 on p = 65537 (largest Fermat prime) ----------------- */
 {
   // 65537 = 1² + 256²; a good stress-test that the BigInt powMod path
   // and Newton sqrt handle p near 2^16 cleanly.
@@ -6175,7 +5826,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          `session114: PA2B2 65537 → (${z && z.re}, ${z && z.im}) want (1, 256)`);
 }
 
-/* ---- PA2B2 accepts integer-valued Real input -------------------- */
 {
   const s = new Stack();
   s.push(Real(29));
@@ -6185,7 +5835,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          `session114: PA2B2 Real(29) → (${z && z.re}, ${z && z.im}) want (2, 5)`);
 }
 
-/* ---- PA2B2 on p = 3 rejects (prime but ≡ 3 mod 4) --------------- */
 {
   const s = new Stack();
   s.push(Integer(3n));
@@ -6194,7 +5843,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session114: PA2B2 3 → Bad argument value (3 ≡ 3 mod 4)');
 }
 
-/* ---- PA2B2 on p = 7 rejects (prime but ≡ 3 mod 4) --------------- */
 {
   const s = new Stack();
   s.push(Integer(7n));
@@ -6203,7 +5851,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session114: PA2B2 7 → Bad argument value (7 ≡ 3 mod 4)');
 }
 
-/* ---- PA2B2 on a composite rejects ------------------------------- */
 {
   const s = new Stack();
   s.push(Integer(21n));          // 3 · 7, not prime
@@ -6212,7 +5859,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session114: PA2B2 21 → Bad argument value (composite)');
 }
 
-/* ---- PA2B2 on p = 1 rejects ------------------------------------- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -6230,7 +5876,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session114: PA2B2 Real(5.5) → Bad argument value');
 }
 
-/* ---- PA2B2 on a String rejects with Bad argument type ----------- */
 {
   const s = new Stack();
   s.push(Str('nope'));
@@ -6246,9 +5891,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
    native linear algebra (no CAS dependency).
    ================================================================== */
 
-// ---- EGV — eigenvector matrix + eigenvalue vector -----------------
 
-/* ---- EGV on a diagonal 2×2 yields the I matrix + diag entries ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -6279,7 +5922,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- EGV preserves the EGVL eigenvalue ordering ------------------ */
 {
   // Both EGVL and EGV use eigenvals(...) for the value list, so the
   // i-th eigenvalue must correspond to the i-th column of the EGV
@@ -6301,7 +5943,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- EGV on irrational eigenvalues lifts to Symbolic ------------- */
 {
   const s = new Stack();
   s.push(Matrix([[Integer(1n), Integer(2n)], [Integer(3n), Integer(4n)]]));
@@ -6322,7 +5963,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- EGV on a non-Matrix rejects Bad argument type --------------- */
 {
   const s = new Stack();
   s.push(Vector([Integer(1n), Integer(2n)]));
@@ -6331,7 +5971,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session119: EGV on Vector → Bad argument type');
 }
 
-/* ---- EGV on a non-square matrix rejects Invalid dimension -------- */
 {
   const s = new Stack();
   s.push(Matrix([[Integer(1n), Integer(2n), Integer(3n)],
@@ -6341,7 +5980,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session119: EGV on 2×3 matrix → Invalid dimension');
 }
 
-/* ---- EGV with garbage Giac matrix output rejects ---------------- */
 {
   const s = new Stack();
   s.push(Matrix([[Integer(1n), Integer(2n)], [Integer(3n), Integer(4n)]]));
@@ -6354,7 +5992,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-// ---- RSD — residual B − A·Z ---------------------------------------
 
 /* ---- RSD vector branch: zero residual is the exact-solution case  */
 {
@@ -6372,7 +6009,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          `session119: RSD vector zero-residual → [0,0]`);
 }
 
-/* ---- RSD vector branch: non-zero residual ----------------------- */
 {
   // A = [[1,1],[1,-1]], Z = [3,1].  A·Z = [4, 2].
   // B = [10, 0].  Residual = B - A·Z = [6, -2].
@@ -6388,7 +6024,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          `session119: RSD vector branch B-A·Z = [6, -2]`);
 }
 
-/* ---- RSD matrix branch: identity A, Z is 2×2 -------------------- */
 {
   // A = I, Z = [[1,2],[3,4]].  A·Z = Z.  B = [[5,6],[7,8]].
   // Residual = B - Z = [[4,4],[4,4]].
@@ -6404,7 +6039,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          'session119: RSD matrix branch B-A·Z (A=I)');
 }
 
-/* ---- RSD with Real entries ------------------------------------- */
 {
   // A = [[2.5]], Z = [4], A·Z = [10].  B = [12.5] → residual [2.5].
   const s = new Stack();
@@ -6418,7 +6052,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          `session119: RSD Real entries → [2.5]`);
 }
 
-/* ---- RSD rejects non-Matrix A ---------------------------------- */
 {
   const s = new Stack();
   s.push(Vector([Integer(1n)]));
@@ -6429,7 +6062,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session119: RSD on non-Matrix A → Bad argument type');
 }
 
-/* ---- RSD rejects mixed B (matrix) + Z (vector) ------------------ */
 {
   const s = new Stack();
   s.push(Matrix([[Integer(1n)], [Integer(2n)]]));   // B is matrix
@@ -6440,7 +6072,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session119: RSD with mixed matrix B / vector Z → reject');
 }
 
-/* ---- RSD rejects shape mismatch (vector Z length ≠ cols(A)) ----- */
 {
   const s = new Stack();
   s.push(Vector([Integer(1n), Integer(2n)]));
@@ -6452,7 +6083,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session119: RSD shape mismatch → Invalid dimension');
 }
 
-/* ---- RSD rejects Symbolic entries (numeric-only path) ----------- */
 {
   const s = new Stack();
   s.push(Vector([Integer(1n)]));
@@ -6463,9 +6093,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session119: RSD on Symbolic A → Bad argument type');
 }
 
-// ---- GREDUCE — Grœbner reduction --------------------------------
 
-/* ---- GREDUCE on the AUR p.3-99 worked example -------------------- */
 {
   // GREDUCE(X^2*Y - X*Y - 1, [X, 2*Y^3 - 1], [X, Y]) → -1.
   const s = new Stack();
@@ -6504,7 +6132,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- GREDUCE rejects non-Vector basis ---------------------------- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X')));
@@ -6515,7 +6142,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session119: GREDUCE on non-Vector basis → Bad argument type');
 }
 
-/* ---- GREDUCE rejects non-Vector vars ----------------------------- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X')));
@@ -6526,7 +6152,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session119: GREDUCE on non-Vector vars → Bad argument type');
 }
 
-/* ---- GREDUCE rejects non-Name elements in vars vector ----------- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X')));
@@ -6537,7 +6162,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session119: GREDUCE on Symbolic-in-vars → Bad argument type');
 }
 
-/* ---- GREDUCE rejects empty basis -------------------------------- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X')));
@@ -6548,7 +6172,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session119: GREDUCE empty basis → Invalid dimension');
 }
 
-/* ---- GREDUCE rejects empty vars list ---------------------------- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X')));
@@ -6566,7 +6189,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
    Giac-backed (uses fixture mocks).
    ================================================================== */
 
-// ---- LNAME — list variable names in a Symbolic --------------------
 
 /* ---- LNAME on the AUR worked example ----------------------------- *
  * AUR p.3-136 (paraphrased — we construct the post-parse AST directly
@@ -6605,7 +6227,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          `session124: LNAME equal-length alpha sort → A,B,T (got ${ids.slice(2).join(',')})`);
 }
 
-/* ---- LNAME on a single bare variable ----------------------------- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X')));
@@ -6616,7 +6237,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          'session124: LNAME on lone X → [X]');
 }
 
-/* ---- LNAME on a constant returns an empty Vector ----------------- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(2)+COS(3)')));
@@ -6627,7 +6247,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          `session124: LNAME on constant expr → [] (got length ${v && v.items && v.items.length})`);
 }
 
-/* ---- LNAME deduplicates repeated occurrences -------------------- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2 + 2*X + 1 + Y*X')));
@@ -6641,7 +6260,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          `session124: LNAME dedupes X,Y from polynomial (got ${ids.join(',')})`);
 }
 
-/* ---- LNAME alpha tiebreak with length-3 names -------------------- */
 {
   const s = new Stack();
   // Build manually: parser would treat ABC, BAC, AAB as known fns or
@@ -6658,7 +6276,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          `session124: LNAME alpha tiebreak (AAB,ABC,BAC) → got ${ids.join(',')}`);
 }
 
-/* ---- LNAME on a Real rejects with Bad argument type -------------- */
 {
   const s = new Stack();
   s.push(Real(3.14));
@@ -6667,7 +6284,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session124: LNAME on Real → Bad argument type');
 }
 
-/* ---- LNAME on a Vector rejects with Bad argument type ----------- */
 {
   const s = new Stack();
   s.push(Vector([Integer(1n), Integer(2n)]));
@@ -6676,7 +6292,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session124: LNAME on Vector → Bad argument type');
 }
 
-/* ---- LNAME walks under negation and binary ops ------------------ */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('-(A*B + C^D)')));
@@ -6691,7 +6306,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
 }
 
 
-// ---- GBASIS — Grœbner basis of an ideal --------------------------
 
 /* ---- GBASIS on the AUR worked example ---------------------------- *
  * AUR p.3-95:
@@ -6725,7 +6339,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- GBASIS — single-poly basis with a constant result ----------- */
 {
   const s = new Stack();
   s.push(Vector([Integer(7n)]));            // ideal generated by 7 (a unit-like int)
@@ -6741,7 +6354,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- GBASIS rejects non-Vector polys ----------------------------- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X')));    // not a Vector
@@ -6751,7 +6363,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session124: GBASIS on non-Vector polys → Bad argument type');
 }
 
-/* ---- GBASIS rejects non-Vector vars ------------------------------ */
 {
   const s = new Stack();
   s.push(Vector([Symbolic(parseAlgebra('X'))]));
@@ -6761,7 +6372,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session124: GBASIS on non-Vector vars → Bad argument type');
 }
 
-/* ---- GBASIS rejects empty polys list ----------------------------- */
 {
   const s = new Stack();
   s.push(Vector([]));
@@ -6771,7 +6381,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session124: GBASIS empty polys → Invalid dimension');
 }
 
-/* ---- GBASIS rejects empty vars list ------------------------------ */
 {
   const s = new Stack();
   s.push(Vector([Symbolic(parseAlgebra('X'))]));
@@ -6781,7 +6390,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session124: GBASIS empty vars → Invalid dimension');
 }
 
-/* ---- GBASIS rejects non-Name elements in vars vector ----------- */
 {
   const s = new Stack();
   s.push(Vector([Symbolic(parseAlgebra('X'))]));
@@ -6791,7 +6399,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session124: GBASIS on Symbolic-in-vars → Bad argument type');
 }
 
-/* ---- GBASIS rejects when Giac returns a non-list result --------- */
 {
   const s = new Stack();
   s.push(Vector([Symbolic(parseAlgebra('X'))]));
@@ -6806,9 +6413,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
 }
 
 
-// ==================================================================
 // session127: LNAME edge cases — extending the cluster
-//
 // The LNAME tests cover: 5-name AUR worked example, lone
 // var, dedup, alpha tiebreak, walk-under-Neg/Bin, plus reject paths
 // for Real and Vector.  The gaps closed here:
@@ -6829,9 +6434,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
 //     the user-defined wrapper *inside* — pinning the contract that a
 //     known-fn drops its *own* name but keeps walking, so a user-fn
 //     buried under a built-in is still discovered.
-// ==================================================================
 
-/* ---- LNAME on a String rejects with Bad argument type ----------- */
 {
   const s = new Stack();
   s.push(Str('X+1'));               // looks-like-an-expr but is a String
@@ -6852,7 +6455,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session127: LNAME on bare Name → Bad argument type (Symbolic required, not raw Name)');
 }
 
-/* ---- LNAME on a Complex rejects --------------------------------- */
 {
   const s = new Stack();
   s.push(Complex(1, 2));
@@ -6928,7 +6530,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
    point arguments accepted.  No-fallback policy.
    ================================================================== */
 
-// ---- LIN — exponential linearization ------------------------------
 
 /* ---- LIN on `e^X * e^Y` collapses to `e^(X+Y)` via Giac lin(...) - */
 {
@@ -6943,7 +6544,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- LIN on a Real passes through unchanged ---------------------- */
 {
   const s = new Stack();
   s.push(Real(3.14));
@@ -6952,7 +6552,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          `session139: LIN Real(3.14) passthrough`);
 }
 
-/* ---- LIN on Integer / Rational / Name pass through --------------- */
 {
   const s = new Stack();
   s.push(Integer(42n));
@@ -6968,7 +6567,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          'session139: LIN Name(Y) passthrough');
 }
 
-/* ---- LIN on a Vector rejects with Bad argument type -------------- */
 {
   const s = new Stack();
   s.push(Vector([Integer(1n), Integer(2n)]));
@@ -6977,9 +6575,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session139: LIN on Vector → Bad argument type');
 }
 
-// ---- LIMIT — limit at a point ------------------------------------
 
-/* ---- LIMIT on `(X^2-1)/(X-1)` with `X=1` returns 2 (numeric) ----- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('(X^2-1)/(X-1)')));
@@ -6992,7 +6588,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- LIMIT bare-value form uses VX as default variable ---------- */
 {
   // VX defaults to 'x' (rpl5050 lowercase deviation from HP50 — see
   // state.js casVx slot).  Bare-value pointArg should resolve to that
@@ -7011,7 +6606,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- LIMIT returning a Symbolic preserves the algebraic form ---- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('A*X+B')));
@@ -7024,7 +6618,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- LIMIT with non-Symbolic expression rejects ----------------- */
 {
   const s = new Stack();
   s.push(Vector([Integer(1n), Integer(2n)]));
@@ -7034,7 +6627,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session139: LIMIT on Vector expression → Bad argument type');
 }
 
-/* ---- LIMIT with malformed equation (lhs not Var) rejects -------- */
 {
   // Equation `1=0` has a Num lhs, not a Var.  HP50 rejects with Bad
   // argument value (no variable to take the limit in).
@@ -7046,7 +6638,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session139: LIMIT with non-Var equation lhs → Bad argument value');
 }
 
-/* ---- LIMIT with Vector point rejects with Bad argument type ----- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X')));
@@ -7056,9 +6647,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                'session139: LIMIT with Vector point → Bad argument type');
 }
 
-// ---- lim — HP50 lowercase canonical alias ------------------------
 
-/* ---- lim alias dispatches through LIMIT's registered fn --------- */
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('(X^2-1)/(X-1)')));
@@ -7071,7 +6660,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-/* ---- lim on Rational point uses VX --------------------------- */
 {
   // Rational point exercises the third pointArg branch (besides
   // Symbolic + Real/Integer).  Build the Rational directly via the
@@ -7089,15 +6677,12 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-// ==================================================================
 // — MODSTO + ADDTMOD / SUBTMOD / MULTMOD / POWMOD
 // HP50 AUR §3-150 / §3-9 / §3-243 / §3-153 / §3-175
-// ==================================================================
 {
   const stateMod = await import('../www/src/rpl/state.js');
   const { setCasModulo, getCasModulo, resetCasModulo } = stateMod;
 
-  /* ---- Default modulus + setter normalization ---- */
   resetCasModulo();
   assert(getCasModulo() === 13n,
          `session144: factory default casModulo === 13n (got ${getCasModulo()})`);
@@ -7118,7 +6703,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   assert(getCasModulo() === 2n,
          `session144: setCasModulo(1n) promoted to 2n (got ${getCasModulo()})`);
 
-  /* ---- MODSTO op on Integer / negative Integer / 0 / 1 ---- */
   resetCasModulo();
   {
     const s = new Stack();
@@ -7143,7 +6727,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session144: MODSTO Integer(0n) promoted to 2n (got ${getCasModulo()})`);
   }
 
-  /* ---- MODSTO on integer-valued Real ---- */
   {
     const s = new Stack();
     s.push(Real(5));
@@ -7152,7 +6735,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session144: MODSTO Real(5) integer-valued accepted (got ${getCasModulo()})`);
   }
 
-  /* ---- MODSTO rejection: non-integer Real ---- */
   {
     const s = new Stack();
     s.push(Real(5.5));
@@ -7160,7 +6742,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session144: MODSTO Real(5.5) → Bad argument value');
   }
 
-  /* ---- MODSTO rejection: Vector ---- */
   {
     const s = new Stack();
     s.push(Vector([Real(1), Real(2)]));
@@ -7168,7 +6749,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session144: MODSTO Vector → Bad argument type');
   }
 
-  /* ---- ADDTMOD pure Integer, no centering needed ---- */
   resetCasModulo();
   setCasModulo(11n);
   {
@@ -7181,7 +6761,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session144: 5 7 ADDTMOD (m=11) → Integer(1) (got ${s.peek() && s.peek().value})`);
   }
 
-  /* ---- ADDTMOD pure Integer, centering kicks in ---- */
   setCasModulo(7n);
   {
     const s = new Stack();
@@ -7193,7 +6772,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session144: 12 0 ADDTMOD (m=7) → Integer(-2) centered (got ${s.peek() && s.peek().value})`);
   }
 
-  /* ---- ADDTMOD Symbolic round-trip via Giac mock ---- */
   setCasModulo(7n);
   {
     const s = new Stack();
@@ -7209,7 +6787,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     giac._clear();
   }
 
-  /* ---- SUBTMOD pure Integer ---- */
   setCasModulo(11n);
   {
     const s = new Stack();
@@ -7221,7 +6798,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session144: 5 3 SUBTMOD (m=11) → Integer(2) (got ${s.peek() && s.peek().value})`);
   }
 
-  /* ---- SUBTMOD pure Integer, wrap-around exercise of _centerMod ---- */
   setCasModulo(7n);
   {
     const s = new Stack();
@@ -7234,7 +6810,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     assert(s.depth === 1 && isInteger(s.peek()) && s.peek().value === 3n,
            `session144: 1 5 SUBTMOD (m=7) → centered Integer(3) (got ${s.peek() && s.peek().value})`);
   }
-  /* ---- SUBTMOD where centering does flip the sign ---- */
   setCasModulo(7n);
   {
     const s = new Stack();
@@ -7256,7 +6831,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session144: 0 3 SUBTMOD (m=7) → centered Integer(-3) (got ${s.peek() && s.peek().value})`);
   }
 
-  /* ---- MULTMOD pure Integer with centering ---- */
   setCasModulo(11n);
   {
     const s = new Stack();
@@ -7268,7 +6842,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session144: 3 4 MULTMOD (m=11) → Integer(1) (got ${s.peek() && s.peek().value})`);
   }
 
-  /* ---- MULTMOD Symbolic via Giac mock ---- */
   setCasModulo(5n);
   {
     const s = new Stack();
@@ -7283,7 +6856,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     giac._clear();
   }
 
-  /* ---- POWMOD pure Integer ---- */
   setCasModulo(7n);
   {
     const s = new Stack();
@@ -7295,7 +6867,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session144: 3 5 POWMOD (m=7) → Integer(-2) centered (got ${s.peek() && s.peek().value})`);
   }
 
-  /* ---- POWMOD pure Integer, exponent 0 ---- */
   setCasModulo(11n);
   {
     const s = new Stack();
@@ -7307,7 +6878,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session144: 7 0 POWMOD (m=11) → Integer(1) (got ${s.peek() && s.peek().value})`);
   }
 
-  /* ---- POWMOD rejects negative exponent ---- */
   setCasModulo(7n);
   {
     const s = new Stack();
@@ -7317,7 +6887,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session144: 2 -1 POWMOD → Bad argument value');
   }
 
-  /* ---- POWMOD Symbolic via Giac mock ---- */
   setCasModulo(7n);
   {
     const s = new Stack();
@@ -7332,7 +6901,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     giac._clear();
   }
 
-  /* ---- ADDTMOD rejects Vector / Complex ---- */
   setCasModulo(7n);
   {
     const s = new Stack();
@@ -7349,7 +6917,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session144: Complex on right of ADDTMOD → Bad argument type');
   }
 
-  /* ---- MODSTO + ADDTMOD round-trip: changing the modulus changes results ---- */
   {
     const s = new Stack();
     s.push(Integer(3n));
@@ -7362,20 +6929,16 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session144: MODSTO 3 then 2 2 ADDTMOD → Integer(1) (got ${s.peek() && s.peek().value})`);
   }
 
-  /* ---- Reset for hygiene ---- */
   resetCasModulo();
 }
 
-// ==================================================================
 // — EXPANDMOD / FACTORMOD / GCDMOD / DIVMOD / DIV2MOD
 // HP50 AUR §3-80 / §3-83 / §3-96 / §3-63 / §3-62.
 // User Guide p.5-14 / p.5-15 worked examples mod 12.
-// ==================================================================
 {
   const stateMod = await import('../www/src/rpl/state.js');
   const { setCasModulo, resetCasModulo } = stateMod;
 
-  /* ---- EXPANDMOD on Integer (User Guide p.5-15 worked examples) ---- */
   setCasModulo(12n);
   {
     const s = new Stack();
@@ -7401,7 +6964,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session149: 6 EXPANDMOD (m=12) → Integer(6) at boundary (got ${s.peek() && s.peek().value})`);
   }
 
-  /* ---- EXPANDMOD on integer-valued Real ---- */
   setCasModulo(7n);
   {
     const s = new Stack();
@@ -7412,7 +6974,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session149: Real(20) EXPANDMOD (m=7) → Integer(-1) centered (got ${s.peek() && s.peek().value})`);
   }
 
-  /* ---- EXPANDMOD Symbolic via Giac mock (AUR §3-80 worked example) ---- */
   setCasModulo(3n);
   {
     const s = new Stack();
@@ -7426,7 +6987,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     giac._clear();
   }
 
-  /* ---- EXPANDMOD rejects Vector ---- */
   setCasModulo(7n);
   {
     const s = new Stack();
@@ -7435,7 +6995,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session149: Vector EXPANDMOD → Bad argument type');
   }
 
-  /* ---- FACTORMOD on Integer (collapses to centered representative) ---- */
   setCasModulo(7n);
   {
     const s = new Stack();
@@ -7446,7 +7005,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session149: 15 FACTORMOD (m=7) → Integer(1) (got ${s.peek() && s.peek().value})`);
   }
 
-  /* ---- FACTORMOD Symbolic via Giac mock (AUR §3-83 worked example) ---- */
   setCasModulo(3n);
   {
     const s = new Stack();
@@ -7460,7 +7018,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     giac._clear();
   }
 
-  /* ---- FACTORMOD modulus precondition: composite m rejects ---- */
   setCasModulo(12n);
   {
     const s = new Stack();
@@ -7469,7 +7026,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session149: FACTORMOD m=12 (composite) → Bad argument value');
   }
 
-  /* ---- FACTORMOD modulus precondition: m >= 100 rejects (even if prime) ---- */
   setCasModulo(101n);
   {
     const s = new Stack();
@@ -7478,7 +7034,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session149: FACTORMOD m=101 (>=100, even prime) → Bad argument value');
   }
 
-  /* ---- GCDMOD on pure Integer ---- */
   setCasModulo(13n);
   {
     const s = new Stack();
@@ -7490,7 +7045,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session149: 20 8 GCDMOD (m=13) → Integer(4) (got ${s.peek() && s.peek().value})`);
   }
 
-  /* ---- GCDMOD rejects gcd(0, 0) ---- */
   setCasModulo(13n);
   {
     const s = new Stack();
@@ -7500,7 +7054,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session149: 0 0 GCDMOD → Bad argument value');
   }
 
-  /* ---- GCDMOD Symbolic via Giac mock (AUR §3-96 worked example) ---- */
   setCasModulo(13n);
   {
     const s = new Stack();
@@ -7515,7 +7068,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     giac._clear();
   }
 
-  /* ---- DIVMOD: User Guide p.5-14 examples (mod 12) ---- */
   setCasModulo(12n);
   // 12/3 ≡ 4 (mod 12) — exact integer division path
   {
@@ -7562,7 +7114,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session149: 12 8 DIVMOD → Bad argument value (gcd(8,12)≠1)');
   }
 
-  /* ---- DIVMOD Symbolic via Giac mock (AUR §3-63 worked example) ---- */
   setCasModulo(3n);
   {
     const s = new Stack();
@@ -7576,7 +7127,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     giac._clear();
   }
 
-  /* ---- DIV2MOD: User Guide p.5-14 examples (mod 12) ---- */
   setCasModulo(12n);
   // 125/17 mod 12 = 1 r 0
   {
@@ -7618,7 +7168,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session149: 2 3 DIV2MOD (m=12) → Bad argument value (no inverse, not exact)');
   }
 
-  /* ---- DIV2MOD Symbolic via Giac mock (AUR §3-62 worked example) ---- */
   setCasModulo(3n);
   {
     const s = new Stack();
@@ -7639,7 +7188,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     giac._clear();
   }
 
-  /* ---- Modulus consultation: changing MODSTO changes results ---- */
   {
     const s = new Stack();
     s.push(Integer(5n));
@@ -7651,7 +7199,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session149: MODSTO 5 then 7 EXPANDMOD → Integer(2) (got ${s.peek() && s.peek().value})`);
   }
 
-  /* ---- DIVMOD rejects Vector / non-numeric type ---- */
   setCasModulo(7n);
   {
     const s = new Stack();
@@ -7684,7 +7231,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
          is pinned here).
   =============================================================== */
 
-  /* ---- (a) DIV2MOD rejects Vector ---- */
   setCasModulo(7n);
   {
     const s = new Stack();
@@ -7694,7 +7240,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session156: Vector DIV2MOD → Bad argument type (mirror of session-149 DIVMOD Vector reject)');
   }
 
-  /* ---- (b) DIVMOD rejects Complex ---- */
   {
     const s = new Stack();
     s.push(Complex(3, 4));
@@ -7703,7 +7248,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session156: DIVMOD Complex (level 2) → Bad argument type');
   }
 
-  /* ---- (b cont) DIVMOD rejects String on level 2 ---- */
   {
     const s = new Stack();
     s.push(Str('foo'));
@@ -7712,7 +7256,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session156: DIVMOD String (level 2) → Bad argument type');
   }
 
-  /* ---- (c) GCDMOD with one zero argument: gcd(a, 0) = a ---- */
   setCasModulo(13n);
   {
     const s = new Stack();
@@ -7734,7 +7277,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session156: 0 15 GCDMOD (m=13) → Integer(2) centered (gcd(0,a)=a symmetric edge; got ${s.peek() && s.peek().value})`);
   }
 
-  /* ---- (d) EXPANDMOD on a negative integer ---- */
   setCasModulo(12n);
   {
     const s = new Stack();
@@ -7745,7 +7287,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session156: -7 EXPANDMOD (m=12) → Integer(5) centered (negative-input branch of _centerMod; got ${s.peek() && s.peek().value})`);
   }
 
-  /* ---- (e) FACTORMOD m=2 (smallest prime modulus accepted) ---- */
   setCasModulo(2n);
   {
     const s = new Stack();
@@ -7756,7 +7297,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
            `session156: 5 FACTORMOD (m=2 smallest prime) → Integer(1) (m=2 accepted; got ${s.peek() && s.peek().value})`);
   }
 
- /* ---- (e cont) FACTORMOD m=99 (composite, opposite boundary from 's m=101 prime reject) ---- */
   setCasModulo(99n);
   {
     const s = new Stack();
@@ -7765,7 +7305,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session156: FACTORMOD m=99 (composite, just below the >=100 cutoff) → Bad argument value (composite-modulus reject path; symmetric to session-149 m=101 prime-but-too-large reject)');
   }
 
-  /* ---- (f) DIVMOD MODSTO consultation: changing MODSTO changes the result ---- */
   setCasModulo(12n);
   {
     const s = new Stack();
@@ -7840,15 +7379,12 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  'session160: GCDMOD(0, 0) mod 13 → Bad argument value (both-zero edge of _extGcdBigInt; closes the s156 gcd-with-one-zero pair on the both-zero corner — the mathematically-undefined case rejects as value-domain error rather than silently returning 0)');
   }
 
-  /* ---- Reset for hygiene ---- */
   resetCasModulo();
 }
 
-// ==================================================================
 // SCHUR — Schur decomposition (HP50 AUR §3-218).
 // Giac `SCHUR(A) = hessenberg(A,-1)` returns the pair `[P, B]` with
 // `B = inv(P)·A·P`; the op pushes P (→ level 2 = Q) then B (→ level 1 = T).
-// ==================================================================
 {
   // Happy path — Giac returns `[P, B]`; op pushes Q at level 2, T at level 1.
   const s = new Stack();
@@ -7893,11 +7429,9 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
-// ==================================================================
 // PMINI — minimal polynomial of a square matrix (HP50 AUR §3-172).
 // Sibling of PCAR; routes through Giac `pmin(M,vx)`.  VX is the default
 // lowercase 'x' here (the PCAR cluster's 'X' pin was reset at line ~6096).
-// ==================================================================
 {
   // Happy path — AUR example: PMINI([[0,1],[1,0]]) → x^2-1.
   const s = new Stack();

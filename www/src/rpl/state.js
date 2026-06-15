@@ -1,13 +1,6 @@
-/* =================================================================
-   Global calculator modes / flags.
-
-   This module owns cross-cutting state that the RPL core, UI display
-   and keyboard all need to read or mutate in lockstep.
-
-   Keep it small and synchronous.  Anything that should react to
-   changes can subscribe().  Ops mutate via the `set*` helpers so the
-   subscribers fire exactly once per change.
-   ================================================================= */
+/* Global calculator modes / flags.  Cross-cutting state the RPL core,
+   UI display and keyboard read or mutate in lockstep.  Ops mutate via
+   the `set*` helpers so subscribers fire exactly once per change. */
 
 import { Directory, TYPES, BIN_BASES, Decimal } from './types.js';
 
@@ -232,8 +225,6 @@ Decimal.set({ MAX_EXP: REAL_MAX_EXP_DEFAULT, MIN_EXP: -REAL_MAX_EXP_DEFAULT });
  *  equal the old ones. */
 export function notify() { _emit(); }
 
-/* ----------------------------- angle ----------------------------- */
-
 export function setAngle(mode) {
   const m = String(mode).toUpperCase();
   if (!ANGLE_MODES.includes(m)) {
@@ -249,8 +240,6 @@ export function cycleAngle() {
   const i = ANGLE_MODES.indexOf(state.angle);
   setAngle(ANGLE_MODES[(i + 1) % ANGLE_MODES.length]);
 }
-
-/* --------------------------- coord mode --------------------------- */
 
 export function setCoordMode(mode) {
   const m = String(mode).toUpperCase();
@@ -269,8 +258,6 @@ export function cycleCoordMode() {
   const i = COORD_MODES.indexOf(state.coordMode);
   setCoordMode(COORD_MODES[(i + 1) % COORD_MODES.length]);
 }
-
-/* --------------------- number-display mode ---------------------- */
 
 export const DISPLAY_MODES = Object.freeze(['STD', 'FIX', 'SCI', 'ENG']);
 
@@ -311,7 +298,7 @@ export function fromRadians(x) {
   }
 }
 
-/* -------------------- wordsize / binary display base --------------------
+/* wordsize / binary display base
    STWS sets the binary-integer word width in bits; RCWS reads it.  The
    formatter and BinInt arithmetic both consult `state.wordsize` — setting
    it to 16, for example, makes `#FFFFh #1h +` wrap to `#0h`.  The HP50
@@ -1238,8 +1225,7 @@ export function restoreLastError(rec) {
   state.lastError = rec;
 }
 
-/* ================================================================
-   Multi-level UNDO for VARIABLE + DIRECTORY state.
+/* Multi-level UNDO for VARIABLE + DIRECTORY state.
 
    Companion to Stack's saveForUndo/undo/redo/hasUndo/hasRedo/
    clearUndo.  Snapshots the HOME tree (deep clone: directories cloned,
@@ -1255,8 +1241,7 @@ export function restoreLastError(rec) {
    the popped snapshot.  redoVarState() is the inverse.  hasVarUndo()
    / hasVarRedo() report availability; clearVarUndo() drops both
    history lists (called on error paths alongside Stack.clearUndo so
-   the two halves stay in lock-step).
-   ================================================================ */
+   the two halves stay in lock-step). */
 
 /** Deep-clone a Directory sub-tree.  Directories are recreated;
  *  leaf values are shared by reference (RPL values are immutable). */

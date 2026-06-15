@@ -16,7 +16,6 @@
 
 import { isNum, isVar, isNeg, isBin, isFn } from './algebra.js';
 
-/* ----------------------------- constants ---------------------------- */
 // Monospace-ish stack — matches the LCD font in css/calc.css.  Font
 // family names that contain spaces are wrapped in SINGLE quotes so
 // the whole stack can live inside a double-quoted SVG attribute
@@ -53,11 +52,8 @@ const RAD_BAR_H     = 1/24;   // vinculum thickness as fraction of fontSize (≥
 const RAD_DIP_FRAC  = 0.35;   // hook tip dips this far below the baseline
                               // (fraction of total radical height)
 
-/* -------------------------- SVG escape helpers ---------------------- */
 const XML_ENT = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
 function esc(s) { return String(s).replace(/[&<>"]/g, c => XML_ENT[c]); }
-
-/* ----------------------------- Boxes -------------------------------- */
 
 /** Plain text glyph block.  Returns a Box whose width is proportional
  *  to string length × CHAR_W × size, and whose ascent/descent follow
@@ -309,8 +305,6 @@ function fmt(n) {
   return Number(n).toFixed(3).replace(/\.?0+$/, '');
 }
 
-/* --------------------------- AST → Box ------------------------------ */
-
 // Precedence mirrors algebra.js's fmt():
 //   =,≠,<,>,≤,≥ → 0 (outermost only)
 //   +,-  → 1    *,/  → 2    ^  → 3    neg  → 4 (unary)
@@ -328,7 +322,6 @@ export function layoutAst(ast, size = DEFAULT_SIZE) {
 function lay(ast, parentPrec, size) {
   if (!ast) return textBox('', size);
   if (isNum(ast)) {
-    // Integer: show no decimal.  Non-integer: JS default, which we accept.
     const s = Number.isInteger(ast.value) ? String(ast.value) : String(ast.value);
     return textBox(s, size);
   }
@@ -447,8 +440,6 @@ function lay(ast, parentPrec, size) {
   // renderer is updated.
   return textBox(`?${ast.kind || ''}?`, size);
 }
-
-/* --------------------------- top level ------------------------------ */
 
 /** astToSvg(ast, [opts]) → { svg, width, height }.
  *

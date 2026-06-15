@@ -22,7 +22,6 @@ import { assert } from './helpers.mjs';
 
 /* Reflection ops — TYPE, OBJ→. */
 
-  // ---- TYPE ----
   {
     const s = new Stack();
     s.push(Real(3.14));
@@ -90,7 +89,6 @@ import { assert } from './helpers.mjs';
     assert(s.peek().value.eq(28), 'TYPE Integer (ZINT) → 28');
   }
 
-  // ---- OBJ→ ----
   {
     const s = new Stack();
     s.push(Complex(3, 4));
@@ -762,7 +760,6 @@ import { assert } from './helpers.mjs';
    →ARRY / ARRY→ (array compose / decompose).
    ================================================================ */
 
-/* ---- →ARRY: bare count → Vector ---- */
 {
   const s = new Stack();
   s.push(Real(1)); s.push(Real(2)); s.push(Real(3));
@@ -775,7 +772,6 @@ import { assert } from './helpers.mjs';
   assert(v.items[0].value.eq(1) && v.items[2].value.eq(3),
     '→ARRY preserves element order');
 }
-/* ---- →ARRY: {n} list → Vector ---- */
 {
   const s = new Stack();
   s.push(Real(10)); s.push(Real(20));
@@ -786,7 +782,6 @@ import { assert } from './helpers.mjs';
       && v.items[0].value.eq(10) && v.items[1].value.eq(20),
     '→ARRY with {2} size-list → Vector[10 20]');
 }
-/* ---- →ARRY: {m n} list → Matrix (row-major) ---- */
 {
   const s = new Stack();
   for (let i = 1; i <= 6; i++) s.push(Real(i));
@@ -801,7 +796,6 @@ import { assert } from './helpers.mjs';
       && m.rows[1][0].value.eq(4) && m.rows[1][2].value.eq(6),
     '→ARRY matrix elements row-major: [[1 2 3][4 5 6]]');
 }
-/* ---- ASCII alias ->ARRY ---- */
 {
   const s = new Stack();
   s.push(Real(7)); s.push(Real(8));
@@ -810,7 +804,6 @@ import { assert } from './helpers.mjs';
   assert(s.peek(1).type === 'vector' && s.peek(1).items.length === 2,
     'ASCII alias ->ARRY behaves the same as →ARRY');
 }
-/* ---- →ARRY error: bad dim spec ---- */
 {
   const s = new Stack();
   s.push(Real(1));
@@ -828,7 +821,6 @@ import { assert } from './helpers.mjs';
     '→ARRY with 3-element size list → Bad argument value'); }
 }
 
-/* ---- ARRY→: Vector decompose ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(11), Real(22), Real(33)]));
@@ -841,7 +833,6 @@ import { assert } from './helpers.mjs';
   assert(s.peek(2).value.eq(33) && s.peek(4).value.eq(11),
     'ARRY→ Vector elements in HP50 order (L2=last, L4=first)');
 }
-/* ---- ARRY→: Matrix decompose ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]));
@@ -854,7 +845,6 @@ import { assert } from './helpers.mjs';
   assert(s.peek(2).value.eq(4) && s.peek(5).value.eq(1),
     'ARRY→ on Matrix: elements in row-major order, L2=last, L5=first');
 }
-/* ---- ARRY→ round-trip with →ARRY ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3), Real(4)]));
@@ -876,7 +866,6 @@ import { assert } from './helpers.mjs';
       && round.rows[0][0].value.eq(1) && round.rows[1][2].value.eq(6),
     'ARRY→ then →ARRY round-trips a Matrix (row-major preserved)');
 }
-/* ---- ASCII alias ARRY-> ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(9)]));
@@ -885,7 +874,6 @@ import { assert } from './helpers.mjs';
       && s.peek(1).type === 'list' && s.peek(1).items[0].value.eq(1),
     'ASCII alias ARRY-> behaves the same as ARRY→');
 }
-/* ---- ARRY→ on a non-array ---- */
 {
   const s = new Stack();
   s.push(Real(3));
@@ -902,7 +890,6 @@ import { assert } from './helpers.mjs';
    V→  ( [x1…xn] → x1 … xn   )   decompose WITHOUT pushing a size list
    ================================================================ */
 
-/* ---- →V2 ---- */
 {
   const s = new Stack();
   s.push(Real(3));
@@ -930,7 +917,6 @@ import { assert } from './helpers.mjs';
     '→V2 with one stack item → Too few arguments'); }
 }
 
-/* ---- →V3 ---- */
 {
   const s = new Stack();
   s.push(Real(1));
@@ -951,7 +937,6 @@ import { assert } from './helpers.mjs';
     'ASCII alias ->V3 works like →V3');
 }
 
-/* ---- V→ ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(11), Real(22), Real(33)]));
@@ -994,7 +979,6 @@ import { assert } from './helpers.mjs';
     'V→ on Matrix → Bad argument type (use ARRY→ for matrices)'); }
 }
 
-/* ---- Round-trip: →V3 then V→ ---- */
 {
   const s = new Stack();
   s.push(Real(1)); s.push(Real(2)); s.push(Real(3));
@@ -1005,11 +989,7 @@ import { assert } from './helpers.mjs';
     '→V3 then V→ round-trips three scalars');
 }
 
-// ------------------------------------------------------------------
-// LAST / LASTARG
-// ------------------------------------------------------------------
 
-/* ---- LAST / LASTARG: basic 2-arg binary op ---- */
 {
   const s = new Stack();
   s.push(Real(3));
@@ -1025,7 +1005,6 @@ import { assert } from './helpers.mjs';
     'session046: LASTARG after 3 4 + pushes 3 4');
 }
 
-/* ---- LAST is a synonym for LASTARG ---- */
 {
   const s = new Stack();
   s.push(Real(10));
@@ -1037,7 +1016,6 @@ import { assert } from './helpers.mjs';
     'session046: LAST (synonym) after 10 2 - pushes 10 2');
 }
 
-/* ---- LASTARG after a unary op ---- */
 {
   const s = new Stack();
   s.push(Real(5));
@@ -1048,7 +1026,6 @@ import { assert } from './helpers.mjs';
     'session046: LASTARG after NEG pushes the pre-NEG value');
 }
 
-/* ---- LASTARG with no recorded op throws ---- */
 {
   const s = new Stack();
   try { lookup('LASTARG').fn(s); assert(false, 'LASTARG on empty history should throw'); }
@@ -1056,7 +1033,6 @@ import { assert } from './helpers.mjs';
     'session046: LASTARG with no prior op → No last arguments'); }
 }
 
-/* ---- LASTARG after a zero-consumption op (DUP) is empty ---- */
 {
   const s = new Stack();
   s.push(Real(7));
@@ -1066,7 +1042,6 @@ import { assert } from './helpers.mjs';
     'session046: LASTARG after DUP (no consumed args) → No last arguments'); }
 }
 
-/* ---- LASTARG after a 3-arg op (PUT) pushes 3 values ---- */
 {
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3)]));
@@ -1128,7 +1103,6 @@ import { assert } from './helpers.mjs';
      t1 … tn n  →PRG  →  « t1 … tn »
    See src/rpl/ops.js for the implementation and comments. */
 
-/* ---- OBJ→ on a non-empty Program pushes tokens + count ---- */
 {
   const s = new Stack();
   // << 3 4 + >> — three tokens
@@ -1144,7 +1118,6 @@ import { assert } from './helpers.mjs';
     'session067: OBJ→ Program level 4 = first token (3)');
 }
 
-/* ---- OBJ→ on empty Program pushes just a zero count ---- */
 {
   const s = new Stack();
   s.push(Program([]));
@@ -1153,7 +1126,6 @@ import { assert } from './helpers.mjs';
     'session067: OBJ→ on empty Program leaves just 0');
 }
 
-/* ---- →PRG composes a Program from count + tokens ---- */
 {
   const s = new Stack();
   s.push(Integer(3n));
@@ -1169,7 +1141,6 @@ import { assert } from './helpers.mjs';
     'session067: →PRG preserves token order (+ is last)');
 }
 
-/* ---- →PRG with zero count yields an empty program ---- */
 {
   const s = new Stack();
   s.push(Integer(0n));
@@ -1178,7 +1149,6 @@ import { assert } from './helpers.mjs';
     'session067: →PRG with 0 count → empty program');
 }
 
-/* ---- OBJ→ + →PRG round-trip preserves program body ---- */
 {
   const s = new Stack();
   // « 2 'X' * 1 + » — five tokens
@@ -1207,7 +1177,6 @@ import { assert } from './helpers.mjs';
   assert(allMatch, 'session067: round-trip preserves every token identity');
 }
 
-/* ---- →PRG ASCII alias ->PRG works identically ---- */
 {
   const s = new Stack();
   s.push(Integer(42n));
@@ -1218,7 +1187,6 @@ import { assert } from './helpers.mjs';
     'session067: ->PRG ASCII alias produces the same Program shape');
 }
 
-/* ---- →PRG on negative count raises Bad argument value ---- */
 {
   const s = new Stack();
   s.push(Integer(-1n));
@@ -1228,7 +1196,6 @@ import { assert } from './helpers.mjs';
     'session067: →PRG negative count raises Bad argument value');
 }
 
-/* ---- →PRG on a non-numeric count raises Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Name('foo'));
@@ -1238,7 +1205,6 @@ import { assert } from './helpers.mjs';
     'session067: →PRG non-numeric count raises Bad argument type');
 }
 
-/* ---- Programs can contain other Programs as tokens (round-trip) ---- */
 {
   const s = new Stack();
   const inner = Program([Name('+')]);
@@ -1470,14 +1436,12 @@ function _roundTripProgram(prog) {
   return back;
 }
 
-/* ---- Empty program round-trips to an empty Program ---- */
 {
   const back = _roundTripProgram(Program([]));
   assert(back.tokens.length === 0,
     'session073: DECOMP→STR→ preserves empty Program');
 }
 
-/* ---- Multi-token arithmetic round-trips with identical token count ---- */
 {
   const src = Program([Integer(3n), Integer(4n), Name('+'), Integer(5n), Name('*')]);
   const back = _roundTripProgram(src);
@@ -1485,7 +1449,6 @@ function _roundTripProgram(prog) {
     'session073: DECOMP→STR→ preserves token count for arithmetic program');
 }
 
-/* ---- Round-trip execution agrees with the original ---- */
 {
   resetHome();
   const prev = calcState.approxMode;
@@ -1518,7 +1481,6 @@ function _roundTripProgram(prog) {
   }
 }
 
-/* ---- Nested Program inside Program round-trips structurally ---- */
 {
   // outer Program whose single token is an inner Program.
   const inner = Program([Integer(1n), Integer(2n), Name('+')]);
@@ -1532,7 +1494,6 @@ function _roundTripProgram(prog) {
     'session073: DECOMP→STR→ nested Program token count survives');
 }
 
-/* ---- Program containing a String token round-trips with the string intact ---- */
 {
   // The quoted string with spaces must survive lexing intact via the
   // `" … "` delimiters the formatter emits.
@@ -1576,7 +1537,6 @@ function _roundTripProgram(prog) {
   }
 }
 
-/* ---- Program containing a quoted Name round-trips as quoted ---- */
 {
   // Quoted-Name tokens in a Program body come from source like `'X'`.
   const q = Name('X', { quoted: true });
@@ -1589,7 +1549,6 @@ function _roundTripProgram(prog) {
     'session073: DECOMP→STR→ quoted-Name round-trips as quoted');
 }
 
-/* ---- Program containing a Real with a fractional part round-trips ---- */
 {
   const src = Program([Real(3.25), Real(2.5), Name('+')]);
   const back = _roundTripProgram(src);
@@ -1600,7 +1559,6 @@ function _roundTripProgram(prog) {
     'session073: DECOMP→STR→ preserves Real value 3.25');
 }
 
-/* ---- Idempotence: DECOMP→STR→→DECOMP produces the SAME string ---- */
 {
   // Second round yields the identical source — this is the
   // "canonical form" check.  If the formatter ever introduced
@@ -1641,7 +1599,6 @@ function _roundTripProgram(prog) {
        shape LIST→ ; →LIST has.
    ================================================================ */
 
-/* ---- Count-type parity: BinaryInteger on level 1 ---- */
 {
   const s = new Stack();
   s.push(Integer(10n)); s.push(Integer(20n));
@@ -1670,7 +1627,6 @@ function _roundTripProgram(prog) {
     'session077: →ARRY accepts BinaryInteger bare count (parity widening)');
 }
 
-/* ---- Count-type parity: negative count ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -1699,7 +1655,6 @@ function _roundTripProgram(prog) {
     'session077: →ARRY with negative bare count raises Bad argument value');
 }
 
-/* ---- Count-type parity: String count rejects with Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -1728,7 +1683,6 @@ function _roundTripProgram(prog) {
     'session077: →ARRY rejects String bare count with Bad argument type');
 }
 
-/* ---- Zero count across the trio produces the empty form ---- */
 {
   const s = new Stack();
   s.push(Integer(0n));
@@ -1762,7 +1716,6 @@ function _roundTripProgram(prog) {
     'with →LIST 0 / →PRG 0 — follow-up in RPL.md)');
 }
 
-/* ---- OBJ→ on Program / List both push Integer count (parity) ---- */
 {
   const s = new Stack();
   s.push(RList([Integer(1n), Integer(2n), Integer(3n)]));
@@ -1788,7 +1741,6 @@ function _roundTripProgram(prog) {
     'session077: LIST→ pushes Integer count (baseline)');
 }
 
-/* ---- Round-trip idempotence: OBJ→ ; →PRG reproduces the Program ---- */
 {
   const s = new Stack();
   const prog = Program([
@@ -1814,7 +1766,6 @@ function _roundTripProgram(prog) {
   }
 }
 
-/* ---- Round-trip idempotence: LIST→ ; →LIST reproduces the list ---- */
 {
   const s = new Stack();
   const src = RList([Integer(10n), Integer(20n), Integer(30n)]);
@@ -1848,7 +1799,6 @@ function _roundTripProgram(prog) {
     + 'LIST→/OBJ→(Program) by design (matches →ARRY input shape)');
 }
 
-/* ---- SIZE on Program ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1887,7 +1837,6 @@ function _roundTripProgram(prog) {
     'session088: SIZE on Real still throws Bad argument type');
 }
 
-/* ---- TVARS — type-filtered VARS ---- */
 {
   resetHome();
 
@@ -1900,7 +1849,6 @@ function _roundTripProgram(prog) {
   varStore('AZ',  Integer(42n));                    // type 28
   varStore('AR2', Real(2.71));                      // type 0 (second Real)
 
-  // --- Integer arg: single type filter ---
   {
     const s = new Stack();
     s.push(Integer(0n));
@@ -1913,7 +1861,6 @@ function _roundTripProgram(prog) {
       'session099: TVARS 0 picks AR and AR2');
   }
 
-  // --- Real-but-integer arg: should coerce ---
   {
     const s = new Stack();
     s.push(Real(28));
@@ -1923,7 +1870,6 @@ function _roundTripProgram(prog) {
       'session099: TVARS 28. (Real) picks Integer var AZ');
   }
 
-  // --- Integer arg: type that nobody matches ---
   {
     const s = new Stack();
     s.push(Integer(9n));  // Algebraic / Symbolic — none stored
@@ -1933,7 +1879,6 @@ function _roundTripProgram(prog) {
       'session099: TVARS 9 with no Symbolics returns {}');
   }
 
-  // --- Negative Integer: complement (all except type |n|) ---
   {
     const s = new Stack();
     s.push(Integer(-0n));  // -0n === 0n in BigInt semantics — use Integer(-1) route instead
@@ -1957,7 +1902,6 @@ function _roundTripProgram(prog) {
       'session099: TVARS -2 returns every non-String var');
   }
 
-  // --- List arg: union of positive types ---
   {
     const s = new Stack();
     s.push(RList([ Integer(0n), Integer(2n) ]));
@@ -1971,7 +1915,6 @@ function _roundTripProgram(prog) {
       'session099: TVARS {0 2} includes AR, AR2, AS');
   }
 
-  // --- List arg with a negative: include-list minus exclude-list ---
   {
     const s = new Stack();
     s.push(RList([ Integer(0n), Integer(2n), Integer(-2n) ]));
@@ -1985,7 +1928,6 @@ function _roundTripProgram(prog) {
       'session099: TVARS {0 2 -2} returns only Reals');
   }
 
-  // --- Empty list: no positive filter → everything (minus no exclusions) ---
   {
     const s = new Stack();
     s.push(RList([]));
@@ -1995,7 +1937,6 @@ function _roundTripProgram(prog) {
       'session099: TVARS {} returns every var (empty include == no filter)');
   }
 
-  // --- Reject non-integer Real ---
   {
     const s = new Stack();
     s.push(Real(3.14));
@@ -2005,7 +1946,6 @@ function _roundTripProgram(prog) {
       'session099: TVARS 3.14 rejects non-integer Real');
   }
 
-  // --- Reject Name / String / Program as type arg ---
   {
     const s = new Stack();
     s.push(Name('foo'));
@@ -2023,7 +1963,6 @@ function _roundTripProgram(prog) {
       'session099: TVARS with String arg rejects');
   }
 
-  // --- List containing a non-integer element: reject ---
   {
     const s = new Stack();
     s.push(RList([ Integer(0n), Str('x') ]));
@@ -2033,7 +1972,6 @@ function _roundTripProgram(prog) {
       'session099: TVARS { 0 "x" } rejects non-integer list element');
   }
 
-  // --- Empty HOME: TVARS returns {} for any filter ---
   {
     resetHome();
     const s = new Stack();
@@ -2070,7 +2008,6 @@ function _roundTripProgram(prog) {
    vocabulary correctly.
    ================================================================ */
 
-/* ---- NEWOB on an empty Program returns a distinct empty Program ---- */
 {
   const s = new Stack();
   const orig = Program([]);
@@ -2108,7 +2045,6 @@ function _roundTripProgram(prog) {
     'session146: NEWOB Program token 2 preserves Name(+)');
 }
 
-/* ---- NEWOB-produced tokens array is frozen ---- */
 {
   const s = new Stack();
   s.push(Program([Integer(1n), Integer(2n)]));
@@ -2118,7 +2054,6 @@ function _roundTripProgram(prog) {
     'session146: NEWOB on Program returns a frozen tokens array (matches Program() invariant)');
 }
 
-/* ---- NEWOB on a Program containing nested Program preserves nesting ---- */
 {
   const s = new Stack();
   const inner = Program([Name('+')]);
@@ -2167,7 +2102,6 @@ function _roundTripProgram(prog) {
     'session146: NEWOB preserves IF/THEN/ELSE/END structural keywords');
 }
 
-/* ---- NEWOB result EVALs to the same final stack as the original ---- */
 {
   resetHome();
   const prevApprox = calcState.approxMode;
@@ -2201,7 +2135,6 @@ function _roundTripProgram(prog) {
   }
 }
 
-/* ---- NEWOB on a Program → DECOMP→STR→ round-trip is invariant ---- */
 {
   const s = new Stack();
   const orig = Program([Integer(2n), Name('X', { quoted: true }), Name('*')]);
@@ -2249,7 +2182,6 @@ function _roundTripProgram(prog) {
    follow-on.
    ================================================================ */
 
-/* ---- NEWOB on a Rational returns a distinct frozen Rational ---- */
 {
   const s = new Stack();
   const orig = Rational(3n, 4n);
@@ -2266,7 +2198,6 @@ function _roundTripProgram(prog) {
     'session167: NEWOB on Rational returns a frozen instance (matches Rational() constructor invariant)');
 }
 
-/* ---- NEWOB on a negative Rational preserves sign convention ---- */
 {
   const s = new Stack();
   const orig = Rational(-7n, 2n);
@@ -2279,7 +2210,6 @@ function _roundTripProgram(prog) {
     'session167: NEWOB on Rational(-7/2) preserves sign-on-numerator convention (sign rides n, denominator stays positive)');
 }
 
-/* ---- NEWOB on a Rational with denominator=1 keeps n/1 shape ---- */
 {
   // Mirror of session164's OBJ→ Rational(5/1) pin — pin that NEWOB
   // does NOT auto-collapse n/1 to Integer.  A refactor that
@@ -2297,7 +2227,6 @@ function _roundTripProgram(prog) {
     'session167: NEWOB on Rational(5/1) preserves n/1 shape (no auto-collapse to Integer)');
 }
 
-/* ---- NEWOB on a zero Rational preserves the canonical 0/1 form ---- */
 {
   // Rational's GCD-reduce normalises 0/anything to 0/1.  Pin that
   // NEWOB's reconstruction round-trips this canonical form.
@@ -2404,7 +2333,6 @@ function _roundTripProgram(prog) {
    touches tests/.
    ================================================================ */
 
-/* ---- NEWOB on an Integer returns a distinct frozen Integer ---- */
 {
   const s = new Stack();
   const orig = Integer(42n);
@@ -2419,7 +2347,6 @@ function _roundTripProgram(prog) {
     'session168: NEWOB on Integer preserves BigInt value (42n)');
 }
 
-/* ---- NEWOB on a negative Integer preserves sign ---- */
 {
   const s = new Stack();
   const orig = Integer(-7n);
@@ -2432,7 +2359,6 @@ function _roundTripProgram(prog) {
     'session168: NEWOB on Integer(-7) preserves negative sign on BigInt value');
 }
 
-/* ---- NEWOB on a BinaryInteger preserves value AND base ---- */
 {
   const s = new Stack();
   const orig = BinaryInteger(0x15n, 'h');
@@ -2449,7 +2375,6 @@ function _roundTripProgram(prog) {
     'session168: NEWOB on BinaryInteger preserves base ("h" not normalised to "d") — pins the second BinInt() constructor argument is threaded through');
 }
 
-/* ---- NEWOB on a BinaryInteger at octal base preserves base ---- */
 {
   // Mirror of 's OBJ→ #7o octal-base preservation pin
   // applied to the NEWOB sibling op.  Closes the BIN_BASES quartet
@@ -2466,7 +2391,6 @@ function _roundTripProgram(prog) {
     'session168: NEWOB on BinaryInteger(#7o) preserves octal base');
 }
 
-/* ---- NEWOB on a Complex returns a distinct Complex ---- */
 {
   const s = new Stack();
   const orig = Complex(3, 4);
@@ -2499,7 +2423,6 @@ function _roundTripProgram(prog) {
     'session168: NEWOB on Tagged-of-Integer preserves tag + inner Integer identity (shallow-copy contract — outer rebuilt, immutable inner shared by ref)');
 }
 
-/* ---- NEWOB on a Tagged-of-BinaryInteger preserves inner identity ---- */
 {
   const s = new Stack();
   const innerBI = BinaryInteger(0x15n, 'h');
@@ -2513,7 +2436,6 @@ function _roundTripProgram(prog) {
     'session168: NEWOB on Tagged-of-BinaryInteger preserves tag + inner BinInt identity (shallow-copy: inner is BinInt, base=h preserved by-ref through the outer rebuild — mirror of s164 OBJ→ Tagged-of-BinInt pin onto NEWOB)');
 }
 
-/* ---- NEWOB on a Tagged-of-Complex preserves inner identity ---- */
 {
   const s = new Stack();
   const innerCx = Complex(1, 2);
@@ -2527,7 +2449,6 @@ function _roundTripProgram(prog) {
     'session168: NEWOB on Tagged-of-Complex preserves tag + inner Complex identity (shallow-copy contract — closes Tagged composition for all five enumerated numeric-scalar shapes Real/Integer/BinInt/Rational/Complex; s167 covered Rational, this run covers Integer/BinInt/Complex)');
 }
 
-/* ---- NEWOB on a Tagged-of-Real preserves inner identity ---- */
 {
   // Closes the Tagged-of-X composition row for the Real arm.
   // only pinned Tagged-of-Rational; didn't
@@ -2573,7 +2494,6 @@ function _roundTripProgram(prog) {
     'session168: NEWOB on Vector preserves inner Real identity (shallow-copy contract — outer items array is fresh but immutable inner Real is shared by reference; mirror of s167 List-of-Rational shallow-copy pin onto the Vector container)');
 }
 
-/* ---- NEWOB on an empty List rebuilds the outer List ---- */
 {
   // Closes the n=0 List boundary on NEWOB. 's empty-
   // Matrix pin established the empty-container distinct-object
@@ -2613,7 +2533,6 @@ function _roundTripProgram(prog) {
     'session168: NEWOB on List-of-Tagged preserves nested Tagged identity (shallow-copy contract through nested composition — outer List rebuilt, immutable inner Tagged preserved by-ref; closes the s167 List-of-Rational shallow-copy pin on the Tagged inner-value composition)');
 }
 
-/* ---- NEWOB-then-OBJ→ on BinaryInteger composes correctly ---- */
 {
   // Companion to 's NEWOB-then-OBJ→ on Rational composition
   // pin, lifted onto the BinaryInteger arm of the s163 push-back
@@ -2674,7 +2593,6 @@ function _roundTripProgram(prog) {
    silent identity-decoupling regression.
    ================================================================ */
 
-/* ---- NEWOB on a Program returns a frozen outer wrapper ---- */
 {
   // Direct pin of the s172 fix: Program's outer Object.isFrozen()
   // contract.  Pre-fix this assertion failed; the inner tokens array
@@ -2691,7 +2609,6 @@ function _roundTripProgram(prog) {
     'session172: NEWOB on Program returns a FROZEN outer wrapper (closes the audit-driven asymmetry vs. every other shape\'s factory-mediated freeze; pre-172 the inline `{ type: \'program\', tokens: ... }` literal was unfrozen)');
 }
 
-/* ---- NEWOB on an empty Program returns a frozen outer wrapper ---- */
 {
   // Boundary case — empty token array.  Pre-fix this also produced an
   // unfrozen outer wrapper since the bypass was unconditional.
@@ -2808,7 +2725,6 @@ function _roundTripProgram(prog) {
    here.
    ================================================================ */
 
-/* ---- IFERR / THEN / ELSE / END round-trip ---- */
 {
   resetHome();
   const prevApprox = calcState.approxMode;
@@ -2838,7 +2754,6 @@ function _roundTripProgram(prog) {
   }
 }
 
-/* ---- WHILE / REPEAT / END round-trip ---- */
 {
   resetHome();
   const prevApprox = calcState.approxMode;
@@ -2870,7 +2785,6 @@ function _roundTripProgram(prog) {
   }
 }
 
-/* ---- DO / UNTIL / END round-trip ---- */
 {
   resetHome();
   const prevApprox = calcState.approxMode;
@@ -2900,7 +2814,6 @@ function _roundTripProgram(prog) {
   }
 }
 
-/* ---- START / NEXT round-trip ---- */
 {
   resetHome();
   const prevApprox = calcState.approxMode;
@@ -2930,7 +2843,6 @@ function _roundTripProgram(prog) {
   }
 }
 
-/* ---- FOR / NEXT round-trip ---- */
 {
   resetHome();
   const prevApprox = calcState.approxMode;
@@ -2959,7 +2871,6 @@ function _roundTripProgram(prog) {
   }
 }
 
-/* ---- CASE / THEN / END / END round-trip ---- */
 {
   resetHome();
   const prevApprox = calcState.approxMode;
@@ -2989,7 +2900,6 @@ function _roundTripProgram(prog) {
   }
 }
 
-/* ---- → (compiled local) round-trip ---- */
 {
   resetHome();
   const prevApprox = calcState.approxMode;

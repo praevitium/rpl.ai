@@ -255,7 +255,6 @@ import { assert, assertThrows } from './helpers.mjs';
    INV uses Gauss-Jordan with partial pivoting — numeric only.
    ================================================================ */
 {
-  // --- DOT -------------------------------------------------------
   {
     const s = new Stack();
     s.push(Vector([Real(1), Real(2), Real(3)]));
@@ -279,7 +278,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assertThrows(() => lookup('DOT').fn(s), /Bad argument/, 'DOT on scalar,Vector throws Bad argument type');
   }
 
-  // --- CROSS -----------------------------------------------------
   {
     // Canonical basis: x̂ × ŷ = ẑ.
     const s = new Stack();
@@ -311,7 +309,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assertThrows(() => lookup('CROSS').fn(s), /dimension/i, 'CROSS on length-2 vectors throws Invalid dimension');
   }
 
-  // --- IDN -------------------------------------------------------
   {
     const s = new Stack();
     s.push(Integer(3n));
@@ -347,7 +344,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assertThrows(() => lookup('IDN').fn(s), /Bad argument value/, 'IDN 0 throws Bad argument value');
   }
 
-  // --- NORM ------------------------------------------------------
   {
     const s = new Stack();
     s.push(Vector([Real(3), Real(4)]));
@@ -372,7 +368,6 @@ import { assert, assertThrows } from './helpers.mjs';
       `NORM frobenius [[1 2][3 4]] → √30 (got ${s.peek()?.value})`);
   }
 
-  // --- DET -------------------------------------------------------
   {
     // 2×2 closed form: 1*4 - 2*3 = -2.
     const s = new Stack();
@@ -418,7 +413,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assertThrows(() => lookup('DET').fn(s), /dimension/i, 'DET on non-square matrix throws Invalid dimension');
   }
 
-  // --- INV (matrix) ---------------------------------------------
   {
     // 2×2 numeric inverse.  A=[[4 7][2 6]], A⁻¹ = (1/10)[[6 -7][-2 4]]
     const s = new Stack();
@@ -473,7 +467,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assertThrows(() => lookup('INV').fn(s), /Bad argument/, 'INV on symbolic-entry matrix throws Bad argument type');
   }
 
-  // --- SIZE alignment --------------------------------------------
   {
     // SIZE entries are Reals, per HP50 Advanced Guide spec.
     const s = new Stack();
@@ -815,7 +808,6 @@ import { assert, assertThrows } from './helpers.mjs';
     return true;
   };
 
-  /* ---- REF — Gaussian elimination without back-substitution ----- */
 
   // REF of [[1 2][3 4]] with partial pivoting: row swap puts |3| on
   // top, so after dividing by 3 and eliminating below the pivot we
@@ -901,7 +893,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assertThrows(() => lookup('REF').fn(s), /Bad argument/, 'session049: REF on Complex-entry matrix throws');
   }
 
-  /* ---- HADAMARD — element-wise matrix/vector product ----- */
 
   // Matrix HADAMARD Matrix.
   {
@@ -972,7 +963,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assertThrows(() => lookup('HADAMARD').fn(s), /Invalid dimension/, 'session049: HADAMARD unequal vectors throws Invalid dimension');
   }
 
-  /* ---- RANM — random-integer matrix/vector ----- */
 
   // RANM with Integer count → Vector of length n; all entries in [-9, 9].
   {
@@ -1044,7 +1034,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assertThrows(() => lookup('RANM').fn(s), /Bad argument/, 'session049: RANM on String throws');
   }
 
-  /* ---- LSQ — least-squares solver ----- */
 
   // LSQ square: solve [[1 1][1 -1]] x = [3 1] → x = [2 1].
   {
@@ -1189,7 +1178,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     return true;
   };
 
-  /* ---- ROW+ — insert row into matrix ---- */
 
   // Insert row at index 1 (top) of a 2×3 matrix.
   {
@@ -1263,7 +1251,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('ROW+').fn(s), /Bad argument/, 'session050: ROW+ on non-Matrix throws');
   }
 
-  /* ---- ROW- — remove row from matrix ---- */
 
   // Remove row 2 of a 3×3 matrix.
   {
@@ -1305,7 +1292,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('ROW-').fn(s), /Invalid dimension/, 'session050: ROW- OOB index throws');
   }
 
-  /* ---- COL+ — insert column into matrix ---- */
 
   // Insert column as new first column of 2×2.
   {
@@ -1340,7 +1326,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('COL+').fn(s), /Invalid dimension/, 'session050: COL+ wrong-length vector throws');
   }
 
-  /* ---- COL- — remove column from matrix ---- */
 
   // Remove column 2 of 3×3.
   {
@@ -1368,7 +1353,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('COL-').fn(s), /Invalid dimension/, 'session050: COL- OOB index throws');
   }
 
-  /* ---- CNRM — column norm ---- */
 
   // CNRM on 2×2: col sums |1|+|3|=4, |2|+|4|=6; max = 6.
   {
@@ -1422,7 +1406,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('CNRM').fn(s), /Bad argument/, 'session050: CNRM on Symbolic-entry throws');
   }
 
-  /* ---- RNRM — row norm ---- */
 
   // RNRM on 2×2: row sums |1|+|2|=3, |3|+|4|=7; max = 7.
   {
@@ -1458,7 +1441,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('RNRM').fn(s), /Bad argument/, 'session050: RNRM on String throws');
   }
 
-  /* ---- AUGMENT — horizontal concat ---- */
 
   // Matrix + Matrix: same row count.
   {
@@ -1520,7 +1502,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('AUGMENT').fn(s), /Bad argument/, 'session050: AUGMENT Real+Real throws Bad argument');
   }
 
-  /* ---- RAND — seeded PRNG ---- */
 
   // RAND returns a Real in [0, 1).
   {
@@ -1563,7 +1544,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
       'session050: consecutive RAND draws differ');
   }
 
-  /* ---- RDZ — seed the PRNG ---- */
 
   // RDZ with Integer seed: subsequent RAND is reproducible.
   {
@@ -1605,7 +1585,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('RDZ').fn(s), /Bad argument/, 'session050: RDZ on Complex throws Bad argument');
   }
 
-  /* ---- RANM — seeded determinism retrofit ---- */
 
   // With seeded PRNG, RANM is reproducible.
   {
@@ -1687,7 +1666,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     return true;
   };
 
-  /* ---- ROW→ — decompose a Matrix into its rows + count ---- */
 
   // 2×3 matrix → three stack items: row1, row2, count(2.).
   {
@@ -1730,7 +1708,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assert(s.depth === 3, 'session051: ROW-> ASCII alias matches ROW→');
   }
 
-  /* ---- →ROW — compose a Matrix from row Vectors ---- */
 
   // Three 3-vectors + count 3 → 3×3 matrix.
   {
@@ -1800,7 +1777,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('→ROW').fn(s), /Bad argument value/, 'session051: →ROW count 0 throws');
   }
 
-  /* ---- COL→ — decompose a Matrix into its columns + count ---- */
 
   // 2×3 → col1, col2, col3, count 3.
   {
@@ -1833,7 +1809,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('COL→').fn(s), /Bad argument/, 'session051: COL→ on Real throws');
   }
 
-  /* ---- →COL — compose a Matrix from column Vectors ---- */
 
   // Two 2-vectors + count 2 → 2×2 matrix whose columns are v1, v2.
   {
@@ -1876,7 +1851,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
       'session051: ->COL ASCII alias matches →COL');
   }
 
-  /* ---- RSWP — swap rows ---- */
 
   // 3×3 RSWP 1 3 swaps top and bottom rows.
   {
@@ -1918,7 +1892,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('RSWP').fn(s), /Bad argument/, 'session051: RSWP on Vector throws');
   }
 
-  /* ---- CSWP — swap columns ---- */
 
   // 2×3 CSWP 1 3 swaps first and third columns.
   {
@@ -1940,7 +1913,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('CSWP').fn(s), /Invalid dimension/, 'session051: CSWP OOB col index throws');
   }
 
-  /* ---- RCI — multiply row i by scalar c ---- */
 
   // RCI M 3 2 scales row 2 by 3.
   {
@@ -2006,7 +1978,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('RCI').fn(s), /Bad argument/, 'session051: RCI with non-scalar c throws');
   }
 
-  /* ---- RCIJ — row_j += c * row_i ---- */
 
   // Classic Gauss elimination step: clear the (2,1) entry of
   // [[1 2][2 5]] by RCIJ c=−2 i=1 j=2  →  row2 = row2 − 2·row1.
@@ -2115,7 +2086,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     return true;
   };
 
-  /* ---- TOT — sum of Vector / column sums of Matrix ---- */
 
   // Scalar sum of a Real Vector.
   {
@@ -2168,7 +2138,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('TOT').fn(s), /Bad argument/, 'session052: TOT on Real throws');
   }
 
-  /* ---- MEAN — arithmetic mean ---- */
 
   // Basic scalar mean of a Real Vector.
   {
@@ -2214,7 +2183,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('MEAN').fn(s), /Bad argument/, 'session052: MEAN of Vector with Name throws');
   }
 
-  /* ---- VAR — sample variance with Bessel n-1 denominator ---- */
 
   // Simple check: [2 4 6] → sample variance 4 (mean=4, ss=8, /n-1=2).
   {
@@ -2259,7 +2227,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('VAR').fn(s), /Bad argument/, 'session052: VAR of empty Vector throws');
   }
 
-  /* ---- SDEV — sqrt of VAR ---- */
 
   // Same small sample as the VAR test: [2 4 6] → SDEV = 2.
   {
@@ -2304,7 +2271,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('SDEV').fn(s), /Bad argument/, 'session052: SDEV on Real throws');
   }
 
-  /* ---- VANDERMONDE — ({ v_i } → [v_i^(j-1)]) ---- */
 
   // Canonical example: {1 2 3} → [[1 1 1][1 2 4][1 3 9]].
   {
@@ -2358,7 +2324,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('VANDERMONDE').fn(s), /Bad argument/, 'session052: VANDERMONDE on list with String throws');
   }
 
-  /* ---- HILBERT — H[i][j] = 1/(i+j-1), 1-based ---- */
 
   // n=3 → canonical Hilbert.
   {
@@ -2406,11 +2371,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('HILBERT').fn(s), /Bad argument/, 'session052: HILBERT on String throws');
   }
 }
-// ==================================================================
-// MEDIAN / COV / CORR
-// ==================================================================
 
-/* ---- MEDIAN of a Vector (odd count) ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(3), Real(2), Real(5), Real(4)]));
@@ -2419,7 +2380,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     'session053: MEDIAN [1 3 2 5 4] = 3');
 }
 
-/* ---- MEDIAN of a Vector (even count) ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3), Real(4)]));
@@ -2428,7 +2388,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     'session053: MEDIAN [1 2 3 4] = 2.5');
 }
 
-/* ---- MEDIAN of per-column Matrix → Vector of medians ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -2443,21 +2402,18 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     'session053: MEDIAN 3×2 matrix → [2 20]');
 }
 
-/* ---- MEDIAN on an empty Vector throws ---- */
 {
   const s = new Stack();
   s.push(Vector([]));
   assertThrows(() => lookup('MEDIAN').fn(s), /Bad argument/, 'session053: MEDIAN [] throws');
 }
 
-/* ---- MEDIAN on non-numeric throws ---- */
 {
   const s = new Stack();
   s.push(Vector([Complex(1, 2)]));
   assertThrows(() => lookup('MEDIAN').fn(s), /Bad argument/, 'session053: MEDIAN on Complex entry throws');
 }
 
-/* ---- COV of a perfectly linear Y = 2X ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -2470,7 +2426,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     'session053: COV perfectly linear data → 2');
 }
 
-/* ---- CORR of Y = 2X → +1 ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -2483,7 +2438,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     'session053: CORR Y=2X → +1');
 }
 
-/* ---- CORR of Y = -X → -1 ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -2496,7 +2450,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     'session053: CORR Y=-X → -1');
 }
 
-/* ---- CORR with zero-variance X throws Infinite result ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -2507,14 +2460,12 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   assertThrows(() => lookup('CORR').fn(s), /Infinite result/, 'session053: CORR zero-var throws Infinite result');
 }
 
-/* ---- COV with 1 row throws ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)]]));
   assertThrows(() => lookup('COV').fn(s), /Bad argument/, 'session053: COV 1-row matrix throws');
 }
 
-/* ---- COV on 3-col matrix throws (must be m×2) ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -2524,7 +2475,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   assertThrows(() => lookup('COV').fn(s), /dimension/i, 'session053: COV 3-col matrix throws Invalid dimension');
 }
 
-/* ---- COV on Vector (not Matrix) throws ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3)]));
@@ -2535,7 +2485,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
    LU decomposition, stats aggregates, regression.
    ================================================================= */
 
-/* ---- LU: A = [[2,3],[4,7]] → P·A = L·U with row swap ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(2), Real(3)], [Real(4), Real(7)]]));
@@ -2578,21 +2527,18 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     'session054: LU U is upper-triangular');
 }
 
-/* ---- LU: singular matrix throws ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)], [Real(2), Real(4)]]));
   assertThrows(() => lookup('LU').fn(s), /Infinite/, 'session054: LU singular matrix throws');
 }
 
-/* ---- LU: non-square throws ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2), Real(3)], [Real(4), Real(5), Real(6)]]));
   assertThrows(() => lookup('LU').fn(s), /dimension/i, 'session054: LU non-square throws');
 }
 
-/* ---- Stats aggregates on a 3×2 matrix ---- */
 {
   const mk = () => Matrix([
     [Real(1), Real(2)],
@@ -2637,14 +2583,12 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   }
 }
 
-/* ---- ΣY on 1-col matrix throws dimension error ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1)], [Real(2)]]));
   assertThrows(() => lookup('ΣY').fn(s), /dimension/i, 'session054: ΣY 1-col matrix throws dimension');
 }
 
-/* ---- LINFIT: perfect y = 2x line → r = 1, model = 0 + 2*X ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -2659,7 +2603,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   assert(Math.abs(r.value - 1) < 1e-12, 'session054: LINFIT perfect line → r=1');
 }
 
-/* ---- EXPFIT: y = 2·e^x perfect fit → r ≈ 1 ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -2673,7 +2616,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   assert(Math.abs(r.value - 1) < 1e-9, 'session054: EXPFIT perfect fit → r≈1');
 }
 
-/* ---- PWRFIT: y = x² → r ≈ 1 ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -2688,7 +2630,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   assert(Math.abs(r.value - 1) < 1e-9, 'session054: PWRFIT x² perfect → r≈1');
 }
 
-/* ---- LOGFIT: y = 2 + 3·ln(x) perfect fit → r ≈ 1 ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -2702,14 +2643,12 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   assert(Math.abs(r.value - 1) < 1e-9, 'session054: LOGFIT perfect fit → r≈1');
 }
 
-/* ---- LOGFIT: X ≤ 0 throws ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(-1), Real(2)], [Real(1), Real(4)]]));
   assertThrows(() => lookup('LOGFIT').fn(s), /Bad argument/, 'session054: LOGFIT negative X throws');
 }
 
-/* ---- BESTFIT: linear data → "LIN" ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -2724,7 +2663,6 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     'session054: BESTFIT linear data → "LIN"');
 }
 
-/* ---- BESTFIT: exponential data → "EXP" ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -2793,7 +2731,6 @@ function _approxMatEqual(A, B, tol) {
   return true;
 }
 
-/* ---- GRAMSCHMIDT: identity in → identity out ---- */
 {
   const s = new Stack();
   const I = [[Real(1), Real(0)], [Real(0), Real(1)]];
@@ -2806,7 +2743,6 @@ function _approxMatEqual(A, B, tol) {
     'session055: GRAMSCHMIDT(I) = I');
 }
 
-/* ---- GRAMSCHMIDT: 3×2 full rank → Qᵀ·Q = I₂ ---- */
 {
   const s = new Stack();
   const A = [
@@ -2823,7 +2759,6 @@ function _approxMatEqual(A, B, tol) {
     'session055: GRAMSCHMIDT Qᵀ·Q = I₂ for 3×2 full-rank input');
 }
 
-/* ---- GRAMSCHMIDT: dependent columns throw Infinite result ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -2834,14 +2769,12 @@ function _approxMatEqual(A, B, tol) {
   assertThrows(() => lookup('GRAMSCHMIDT').fn(s), /Infinite result/, 'session055: GRAMSCHMIDT dependent columns throws Infinite');
 }
 
-/* ---- GRAMSCHMIDT: non-Matrix input rejected ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3)]));
   assertThrows(() => lookup('GRAMSCHMIDT').fn(s), /Bad argument type/, 'session055: GRAMSCHMIDT non-Matrix rejected');
 }
 
-/* ---- QR: 3×2 A = Q·R, Qᵀ·Q = I, R upper-triangular, P = I ---- */
 {
   const s = new Stack();
   const Araw = [
@@ -2871,7 +2804,6 @@ function _approxMatEqual(A, B, tol) {
     'session055: QR P = I (no pivoting)');
 }
 
-/* ---- QR: wide matrix (m < n) throws Invalid dimension ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -2881,7 +2813,6 @@ function _approxMatEqual(A, B, tol) {
   assertThrows(() => lookup('QR').fn(s), /Invalid dimension/, 'session055: QR rejects m<n (wide) matrix');
 }
 
-/* ---- CHOLESKY: 2×2 SPD matrix → L·Lᵀ = A ---- */
 {
   const s = new Stack();
   const Araw = [[Real(4), Real(2)], [Real(2), Real(3)]];
@@ -2898,7 +2829,6 @@ function _approxMatEqual(A, B, tol) {
     'session055: CHOLESKY L·Lᵀ = A (2×2)');
 }
 
-/* ---- CHOLESKY: 3×3 SPD matrix → L·Lᵀ = A ---- */
 {
   const s = new Stack();
   const Araw = [
@@ -2921,14 +2851,12 @@ function _approxMatEqual(A, B, tol) {
     'session055: CHOLESKY 3×3 textbook factors');
 }
 
-/* ---- CHOLESKY: non-symmetric throws Bad argument value ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(4), Real(2)], [Real(1), Real(3)]]));
   assertThrows(() => lookup('CHOLESKY').fn(s), /Bad argument value/, 'session055: CHOLESKY non-symmetric throws');
 }
 
-/* ---- CHOLESKY: non-positive-definite throws Infinite result ---- */
 {
   const s = new Stack();
   // Symmetric, but negative leading minor (eigenvalues include 0).
@@ -2936,14 +2864,12 @@ function _approxMatEqual(A, B, tol) {
   assertThrows(() => lookup('CHOLESKY').fn(s), /Infinite result/, 'session055: CHOLESKY non-PD throws Infinite result');
 }
 
-/* ---- CHOLESKY: non-square throws Invalid dimension ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2), Real(3)], [Real(2), Real(4), Real(5)]]));
   assertThrows(() => lookup('CHOLESKY').fn(s), /Invalid dimension/, 'session055: CHOLESKY non-square throws');
 }
 
-/* ---- RDM: Vector → 2×3 Matrix ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3), Real(4), Real(5), Real(6)]));
@@ -2958,7 +2884,6 @@ function _approxMatEqual(A, B, tol) {
     'session055: RDM Vector→Matrix row-major layout');
 }
 
-/* ---- RDM: Matrix → Vector via {6} ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2), Real(3)], [Real(4), Real(5), Real(6)]]));
@@ -2970,7 +2895,6 @@ function _approxMatEqual(A, B, tol) {
     'session055: RDM Matrix→Vector row-major');
 }
 
-/* ---- RDM: Matrix 2×3 → Matrix 3×2 ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2), Real(3)], [Real(4), Real(5), Real(6)]]));
@@ -2982,7 +2906,6 @@ function _approxMatEqual(A, B, tol) {
     'session055: RDM Matrix→Matrix reshape');
 }
 
-/* ---- RDM: count mismatch throws Invalid dimension ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3)]));
@@ -2990,7 +2913,6 @@ function _approxMatEqual(A, B, tol) {
   assertThrows(() => lookup('RDM').fn(s), /Invalid dimension/, 'session055: RDM count mismatch throws');
 }
 
-/* ---- RDM: zero / negative dimension throws Bad argument value ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2)]));
@@ -2998,7 +2920,6 @@ function _approxMatEqual(A, B, tol) {
   assertThrows(() => lookup('RDM').fn(s), /Bad argument value/, 'session055: RDM zero dimension throws');
 }
 
-/* ---- RDM: heterogeneous entries preserved (Real + Complex + Integer mix) ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Complex(2, 3), Integer(4n), Real(5)]));
@@ -3026,7 +2947,6 @@ function _approxMatEqual(A, B, tol) {
    _approxMatEqual defined above are reused.
    ================================================================ */
 
-/* ---- LQ: 2×2 identity → L = I, Q = I, P = I ---- */
 {
   const s = new Stack();
   const I = [[Real(1), Real(0)], [Real(0), Real(1)]];
@@ -3041,7 +2961,6 @@ function _approxMatEqual(A, B, tol) {
     'session056: LQ identity → (I, I, I)');
 }
 
-/* ---- LQ: 2×3 rectangular, L·Q = A and Q·Qᵀ = I ---- */
 {
   const s = new Stack();
   const A = [[Real(1), Real(2), Real(2)], [Real(3), Real(4), Real(0)]];
@@ -3069,14 +2988,12 @@ function _approxMatEqual(A, B, tol) {
     'session056: LQ P is identity (no row pivoting)');
 }
 
-/* ---- LQ: m > n rejects (invalid dimension) ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)], [Real(5), Real(6)]]));
   assertThrows(() => lookup('LQ').fn(s), /Invalid dimension/, 'session056: LQ m > n throws Invalid dimension');
 }
 
-/* ---- LQ: rank-deficient row triggers Infinite result ---- */
 {
   const s = new Stack();
   // Two identical rows (row 2 = row 1) → Aᵀ has only 1 independent
@@ -3085,14 +3002,12 @@ function _approxMatEqual(A, B, tol) {
   assertThrows(() => lookup('LQ').fn(s), /Infinite result/, 'session056: LQ rank-deficient rows throw Infinite result');
 }
 
-/* ---- LQ: non-Matrix input throws Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2)]));
   assertThrows(() => lookup('LQ').fn(s), /Bad argument type/, 'session056: LQ non-Matrix throws Bad argument type');
 }
 
-/* ---- COND: identity → 1 ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(0), Real(0)],
@@ -3104,7 +3019,6 @@ function _approxMatEqual(A, B, tol) {
     `session056: COND(I_3) = 1, got ${k.value}`);
 }
 
-/* ---- COND: diagonal diag(a, b) → max(|a|,|b|) · max(1/|a|, 1/|b|) ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(2), Real(0)], [Real(0), Real(3)]]));
@@ -3115,7 +3029,6 @@ function _approxMatEqual(A, B, tol) {
     `session056: COND(diag(2,3)) = 1.5, got ${k.value}`);
 }
 
-/* ---- COND: known [[4 2][1 3]] ---- */
 {
   // A = [[4,2],[1,3]], |detA|=10, A^-1 = [[0.3, -0.2],[-0.1, 0.4]]
   // CNRM(A) = max(4+1, 2+3) = 5
@@ -3129,21 +3042,18 @@ function _approxMatEqual(A, B, tol) {
     `session056: COND([[4,2][1,3]]) = 3, got ${k.value}`);
 }
 
-/* ---- COND: singular matrix throws Infinite result ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)], [Real(2), Real(4)]]));    // det = 0
   assertThrows(() => lookup('COND').fn(s), /Infinite result/, 'session056: COND singular throws Infinite result');
 }
 
-/* ---- COND: non-square throws Invalid dimension ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2), Real(3)], [Real(4), Real(5), Real(6)]]));
   assertThrows(() => lookup('COND').fn(s), /Invalid dimension/, 'session056: COND non-square throws Invalid dimension');
 }
 
-/* ---- COND: Integer entries work (Integer ↔ Real boundary) ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Integer(1n), Integer(0n)], [Integer(0n), Integer(2n)]]));
@@ -3154,7 +3064,6 @@ function _approxMatEqual(A, B, tol) {
     `session056: COND(diag(1,2)) Integer entries = 2, got ${k.value}`);
 }
 
-/* ---- COND: non-Matrix throws Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2)]));
@@ -3169,7 +3078,6 @@ function _approxMatEqual(A, B, tol) {
    bridges (HP50 AUR §15.2).
    ================================================================ */
 
-/* ---- MAD on Vector: |x - mean| averaged ---- */
 {
   // [1 2 3 4 5] → mean=3 → |dev| = 2,1,0,1,2 → MAD = 6/5 = 1.2
   const s = new Stack();
@@ -3180,7 +3088,6 @@ function _approxMatEqual(A, B, tol) {
     `session057: MAD [1..5] = 1.2, got ${m.value}`);
 }
 
-/* ---- MAD on integer-only Vector (Integer → Real) ---- */
 {
   const s = new Stack();
   s.push(Vector([Integer(2n), Integer(4n), Integer(4n), Integer(6n)]));
@@ -3191,7 +3098,6 @@ function _approxMatEqual(A, B, tol) {
     `session057: MAD Integer Vec = 1, got ${m.value}`);
 }
 
-/* ---- MAD on length-1 Vector returns 0 (HP50 degenerate convention) ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(42)]));
@@ -3201,14 +3107,12 @@ function _approxMatEqual(A, B, tol) {
     `session057: MAD [42] = 0, got ${m.value}`);
 }
 
-/* ---- MAD on empty Vector throws Bad argument value ---- */
 {
   const s = new Stack();
   s.push(Vector([]));
   assertThrows(() => lookup('MAD').fn(s), /Bad argument value/, 'session057: MAD on empty Vector throws');
 }
 
-/* ---- MAD column-wise on Matrix ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(10)], [Real(2), Real(20)], [Real(3), Real(30)]]));
@@ -3224,21 +3128,18 @@ function _approxMatEqual(A, B, tol) {
     `session057: MAD col2 = 20/3, got ${v.items[1].value}`);
 }
 
-/* ---- MAD on scalar (non-vector/matrix) throws Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Real(5));
   assertThrows(() => lookup('MAD').fn(s), /Bad argument type/, 'session057: MAD on Real throws Bad argument type');
 }
 
-/* ---- MAD rejects Complex entries (same policy as VAR / SDEV) ---- */
 {
   const s = new Stack();
   s.push(Vector([Complex(1, 2), Complex(3, 4)]));
   assertThrows(() => lookup('MAD').fn(s), /Bad argument type/, 'session057: MAD rejects Complex entries');
 }
 
-/* ---- AXL: Vector → List of same items ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3)]));
@@ -3250,7 +3151,6 @@ function _approxMatEqual(A, B, tol) {
     'session057: AXL entry 0 preserved');
 }
 
-/* ---- AXL: Matrix → List of List of rows ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]));
@@ -3264,7 +3164,6 @@ function _approxMatEqual(A, B, tol) {
     'session057: AXL preserves (0,1) entry');
 }
 
-/* ---- AXL: List is a no-op (HP50 idempotency) ---- */
 {
   const original = RList([Real(1), Real(2)]);
   const s = new Stack();
@@ -3275,7 +3174,6 @@ function _approxMatEqual(A, B, tol) {
     'session057: AXL on List is identity (returns same object)');
 }
 
-/* ---- AXM: flat List → Vector ---- */
 {
   const s = new Stack();
   s.push(RList([Real(10), Real(20), Real(30)]));
@@ -3287,7 +3185,6 @@ function _approxMatEqual(A, B, tol) {
     'session057: AXM preserves entries');
 }
 
-/* ---- AXM: nested List of Lists → Matrix ---- */
 {
   const s = new Stack();
   s.push(RList([
@@ -3302,7 +3199,6 @@ function _approxMatEqual(A, B, tol) {
     'session057: AXM preserves (1,2) entry');
 }
 
-/* ---- AXM: ragged nested List throws Invalid dimension ---- */
 {
   const s = new Stack();
   s.push(RList([
@@ -3312,14 +3208,12 @@ function _approxMatEqual(A, B, tol) {
   assertThrows(() => lookup('AXM').fn(s), /Invalid dimension/, 'session057: AXM on ragged nested list throws');
 }
 
-/* ---- AXM: empty List throws Bad argument value ---- */
 {
   const s = new Stack();
   s.push(RList([]));
   assertThrows(() => lookup('AXM').fn(s), /Bad argument value/, 'session057: AXM empty List throws');
 }
 
-/* ---- AXM: Vector / Matrix no-ops (HP50 idempotency) ---- */
 {
   const v = Vector([Real(1), Real(2)]);
   const s = new Stack(); s.push(v);
@@ -3331,7 +3225,6 @@ function _approxMatEqual(A, B, tol) {
   assert(s.pop() === M, 'session057: AXM Matrix is identity');
 }
 
-/* ---- AXL ∘ AXM round-trip on flat list preserves items ---- */
 {
   const s = new Stack();
   s.push(RList([Real(7), Real(8), Real(9)]));
@@ -3342,7 +3235,6 @@ function _approxMatEqual(A, B, tol) {
     'session057: AXL ∘ AXM round-trip preserves flat list');
 }
 
-/* ---- AXM ∘ AXL on Matrix round-trips shape ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]));
@@ -3353,14 +3245,12 @@ function _approxMatEqual(A, B, tol) {
     'session057: AXM ∘ AXL round-trips Matrix shape');
 }
 
-/* ---- AXM on non-list / non-matrix rejects ---- */
 {
   const s = new Stack();
   s.push(Real(5));
   assertThrows(() => lookup('AXM').fn(s), /Bad argument type/, 'session057: AXM on Real throws Bad argument type');
 }
 
-/* ---- AXL on non-list / non-matrix rejects ---- */
 {
   const s = new Stack();
   s.push(Real(5));
@@ -3376,7 +3266,6 @@ function _approxMatEqual(A, B, tol) {
    round-trip.
    ================================================================ */
 
-/* ---- PREDV after LINFIT on y = 2x: PREDV(5) = 10 ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -3393,7 +3282,6 @@ function _approxMatEqual(A, B, tol) {
     'session058: PREDV(5) after LINFIT y=2x → 10');
 }
 
-/* ---- PREDX after LINFIT on y = 2x: PREDX(10) = 5 ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -3410,7 +3298,6 @@ function _approxMatEqual(A, B, tol) {
     'session058: PREDX(10) after LINFIT y=2x → 5');
 }
 
-/* ---- PREDV after EXPFIT on y = e^x: PREDV(1) ≈ e ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -3427,7 +3314,6 @@ function _approxMatEqual(A, B, tol) {
     'session058: PREDV(1) after EXPFIT y=e^x → e');
 }
 
-/* ---- PREDX after EXPFIT on y = e^x: PREDX(e) ≈ 1 ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -3444,7 +3330,6 @@ function _approxMatEqual(A, B, tol) {
     'session058: PREDX(e) after EXPFIT → 1');
 }
 
-/* ---- PREDV after LOGFIT on y = ln(x): PREDV(e) ≈ 1 ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -3461,7 +3346,6 @@ function _approxMatEqual(A, B, tol) {
     'session058: PREDV(e) after LOGFIT → 1');
 }
 
-/* ---- PREDV after PWRFIT on y = x^2: PREDV(5) = 25 ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -3479,7 +3363,6 @@ function _approxMatEqual(A, B, tol) {
     'session058: PREDV(5) after PWRFIT y=x^2 → 25');
 }
 
-/* ---- PREDX after PWRFIT on y = x^2: PREDX(25) ≈ 5 ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -3497,7 +3380,6 @@ function _approxMatEqual(A, B, tol) {
     'session058: PREDX(25) after PWRFIT y=x^2 → 5');
 }
 
-/* ---- PREDV with Integer argument ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -3513,7 +3395,6 @@ function _approxMatEqual(A, B, tol) {
     'session058: PREDV accepts Integer, returns Real(14)');
 }
 
-/* ---- PREDV with no fit run throws Undefined name ---- */
 {
   // Clear the fit slot by routing through clearLastFitModel indirectly:
   // set a model then call a fresh test.  Actually we need to import
@@ -3527,7 +3408,6 @@ function _approxMatEqual(A, B, tol) {
   assertThrows(() => lookup('PREDV').fn(s), /Undefined name/, 'session058: PREDV with no fit throws Undefined name');
 }
 
-/* ---- PREDX with no fit run throws Undefined name ---- */
 {
   calcState.lastFitModel = null;
   const s = new Stack();
@@ -3535,7 +3415,6 @@ function _approxMatEqual(A, B, tol) {
   assertThrows(() => lookup('PREDX').fn(s), /Undefined name/, 'session058: PREDX with no fit throws Undefined name');
 }
 
-/* ---- PREDV on Complex throws Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)], [Real(2), Real(4)]]));
@@ -3545,7 +3424,6 @@ function _approxMatEqual(A, B, tol) {
   assertThrows(() => lookup('PREDV').fn(s), /Bad argument type/, 'session058: PREDV on Complex throws');
 }
 
-/* ---- PREDV after LOGFIT with x≤0 throws Infinite result ---- */
 {
   const s = new Stack();
   s.push(Matrix([
@@ -3558,7 +3436,6 @@ function _approxMatEqual(A, B, tol) {
   assertThrows(() => lookup('PREDV').fn(s), /Infinite result/, 'session058: PREDV(-1) after LOGFIT → Infinite result');
 }
 
-/* ---- BESTFIT does NOT publish a model slot (HP50 rule) ---- */
 {
   // Establish a known prior model.
   const s = new Stack();

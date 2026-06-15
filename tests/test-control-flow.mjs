@@ -722,7 +722,6 @@ import { assert, assertThrows } from './helpers.mjs';
 
 
 // Integer-aware FOR/NEXT/STEP counter
-// ------------------------------------------------------------------
 
 // FOR loop stores loop variable as Integer when both bounds are Integer.
 {
@@ -861,15 +860,9 @@ import { assert, assertThrows } from './helpers.mjs';
          'I*I at I=3 is Integer(9n)');
 }
 
-// ------------------------------------------------------------------
-// ------------------------------------------------------------------
 
 
-// ==================================================================
-// DOERR (user-raised RPL error)
-// ==================================================================
 
-/* ---- DOERR with String raises an error carrying that message ---- */
 {
   clearLastError();
   const s = new Stack();
@@ -879,7 +872,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(caught === 'custom fail', 'session053: DOERR "custom fail" throws');
 }
 
-/* ---- DOERR with empty String raises Interrupted ---- */
 {
   clearLastError();
   const s = new Stack();
@@ -889,7 +881,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(caught === 'Interrupted', 'session053: DOERR "" → Interrupted');
 }
 
-/* ---- DOERR with known hex code maps to canonical message ---- */
 {
   clearLastError();
   const s = new Stack();
@@ -900,7 +891,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session053: DOERR #201h → "Too few arguments"');
 }
 
-/* ---- DOERR with Integer code maps message ---- */
 {
   clearLastError();
   const s = new Stack();
@@ -911,7 +901,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session053: DOERR Integer(0x305) → "Infinite result"');
 }
 
-/* ---- DOERR 0 is a no-op ---- */
 {
   clearLastError();
   const s = new Stack();
@@ -922,7 +911,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.depth === 0, 'session053: DOERR 0 leaves empty stack');
 }
 
-/* ---- DOERR with unknown code falls back to hex formatting ---- */
 {
   const s = new Stack();
   s.push(Integer(0xFFFn));
@@ -932,7 +920,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session053: DOERR unknown code → hex-format fallback');
 }
 
-/* ---- DOERR on bad argument type throws Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Name('X'));
@@ -942,7 +929,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session053: DOERR Name throws Bad argument type');
 }
 
-/* ---- DOERR inside IFERR — THEN clause runs with caught message ---- */
 {
   resetHome();
   clearLastError();
@@ -973,7 +959,6 @@ import { assert, assertThrows } from './helpers.mjs';
    Each THEN clause is its own body-END pair; the CASE itself is
    closed by the trailing outer END.  See runCase in src/rpl/ops.js. */
 
-/* ---- first clause matches — action runs, later clauses skipped ---- */
 {
   resetHome();
   const s = new Stack();
@@ -994,7 +979,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session067: CASE first matching clause runs; later clauses skipped');
 }
 
-/* ---- later clause matches — earlier false clauses fall through ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1010,7 +994,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session067: CASE second clause runs when first test is false');
 }
 
-/* ---- no clause matches — default runs ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1026,7 +1009,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session067: CASE default clause runs when no test matches');
 }
 
-/* ---- no match and no default — nothing added ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1041,7 +1023,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session067: CASE with no match and no default pushes nothing');
 }
 
-/* ---- empty CASE ( CASE END ) is a no-op ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1052,7 +1033,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session067: empty CASE is a no-op');
 }
 
-/* ---- CASE matches use full EVAL — Program action runs, non-Program pushes ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1068,7 +1048,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session067: CASE action body supports multi-token expressions (10 20 +)');
 }
 
-/* ---- CASE inside IF — nested blocks ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1092,7 +1071,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session067: CASE nested inside IF — inner match wins');
 }
 
-/* ---- IF inside CASE action — nested blocks the other way around ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1114,7 +1092,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session067: CASE clause containing IF/ELSE/END — ELSE stays inside clause');
 }
 
-/* ---- nested CASE — inner match does not short-circuit outer ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1482,7 +1459,6 @@ import { assert, assertThrows } from './helpers.mjs';
    inner ENDs — have been dropped off the end of the source.
    ================================================================ */
 
-/* ---- CASE missing only the outer END (first clause matches) ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1497,7 +1473,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session073: CASE auto-closes missing outer END (matched clause)');
 }
 
-/* ---- CASE missing outer END (no clause matches, falls off) ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1513,7 +1488,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session073: CASE auto-closes with no match and no default (leaves stack alone)');
 }
 
-/* ---- CASE missing outer END but has a default clause at the tail ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1531,7 +1505,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session073: CASE auto-close runs trailing default clause when no test matches');
 }
 
-/* ---- CASE with no clauses and no END: default-only auto-close ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1546,7 +1519,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session073: CASE with no THEN and no END runs rest as default clause');
 }
 
-/* ---- CASE with a THEN but missing its inner END (truthy test) ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1562,7 +1534,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session073: CASE auto-closes missing inner END when test matches');
 }
 
-/* ---- CASE with THEN missing inner END (falsy test) ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1615,7 +1586,6 @@ import { assert, assertThrows } from './helpers.mjs';
    with a deliberate flip.
    ================================================================ */
 
-/* ---- Nested program reads an outer-frame local ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1633,7 +1603,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session073: nested program sees outer → local (dynamic-scope pin)');
 }
 
-/* ---- Inner `→` frame shadows outer without clobbering ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1657,7 +1626,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session073: inner → shadows outer local, outer visible again after pop');
 }
 
-/* ---- Outer local survives nested program throwing ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1690,7 +1658,6 @@ import { assert, assertThrows } from './helpers.mjs';
    structured-control frame, no compiled-local frame).
    ================================================================ */
 
-/* ---- HALT suspends, stack carries the pre-HALT result ---- */
 {
   resetHome(); clearHalted();
   const s = new Stack();
@@ -1708,7 +1675,6 @@ import { assert, assertThrows } from './helpers.mjs';
   clearHalted();
 }
 
-/* ---- CONT resumes from the token after HALT ---- */
 {
   resetHome(); clearHalted();
   const s = new Stack();
@@ -1727,7 +1693,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session073: CONT clears halted slot on successful resume');
 }
 
-/* ---- KILL clears the halted slot without resuming ---- */
 {
   resetHome(); clearHalted();
   const s = new Stack();
@@ -1746,7 +1711,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session073: KILL does not touch the stack');
 }
 
-/* ---- KILL with no halted program is a no-op ---- */
 {
   resetHome(); clearHalted();
   const s = new Stack();
@@ -1756,7 +1720,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session073: KILL with empty halted slot is a no-op (stack unchanged)');
 }
 
-/* ---- CONT with no halted program raises an RPLError ---- */
 {
   resetHome(); clearHalted();
   const s = new Stack();
@@ -1766,7 +1729,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session073: CONT with empty halted slot raises No halted program');
 }
 
-/* ---- HALT inside structured control flow ---- */
 {
   resetHome(); clearHalted();
   const s = new Stack();
@@ -1787,7 +1749,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session088: CONT after HALT-inside-IF resumes and finishes cleanly');
 }
 
-/* ---- HALT inside a compiled-local `→` frame ---- */
 {
   resetHome(); clearHalted();
   const s = new Stack();
@@ -1819,7 +1780,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session073: bare-op HALT (outside a program body) raises clear error');
 }
 
-/* ---- HALT + CONT round-trip preserves mid-stream compute ---- */
 {
   resetHome(); clearHalted();
   const s = new Stack();
@@ -1836,7 +1796,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session073: CONT runs DUP * on the preserved 10 → 100');
 }
 
-/* ---- Two sequential HALT/CONT pairs (sequential resumption) ---- */
 {
   resetHome(); clearHalted();
   const s = new Stack();
@@ -1875,7 +1834,6 @@ import { assert, assertThrows } from './helpers.mjs';
    them, the flake will not come back silently.
    ================================================================ */
 
-/* ---- localFramesDepth() is zero after a fresh resetHome() ---- */
 {
   resetHome();
   assert(localFramesDepth() === 0,
@@ -1902,7 +1860,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session077: _localFrames empty after normal → exit');
 }
 
-/* ---- localFramesDepth() is zero after EVAL that throws inside → ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1963,7 +1920,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session077: halted slot + local frames both empty at end');
 }
 
-/* ---- resetHome clears a populated halted slot ---- */
 {
   resetHome();
   const s = new Stack();
@@ -2020,7 +1976,6 @@ import { assert, assertThrows } from './helpers.mjs';
    no sensible default clause.
    ================================================================ */
 
-/* ---- IFERR…THEN… with no END runs the THEN clause on throw ---- */
 {
   resetHome(); clearLastError();
   const s = new Stack();
@@ -2036,7 +1991,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session077: IFERR auto-closes without END; THEN clause fires on throw');
 }
 
-/* ---- IFERR…THEN… with no END and no error is a clean no-op ---- */
 {
   resetHome(); clearLastError();
   const s = new Stack();
@@ -2053,7 +2007,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session077: IFERR auto-close without END leaves trap result on stack when no error');
 }
 
-/* ---- IFERR…THEN…ELSE… with no END runs the ELSE on normal flow ---- */
 {
   resetHome(); clearLastError();
   const s = new Stack();
@@ -2072,7 +2025,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session077: IFERR/THEN/ELSE auto-close runs ELSE on clean trap');
 }
 
-/* ---- IFERR…THEN…ELSE… with no END and THROW picks THEN clause ---- */
 {
   resetHome(); clearLastError();
   const s = new Stack();
@@ -2091,7 +2043,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session077: IFERR/THEN/ELSE auto-close picks THEN clause on error');
 }
 
-/* ---- IFERR without THEN is STILL a structural error (no auto-close) ---- */
 {
   resetHome(); clearLastError();
   const s = new Stack();
@@ -2132,7 +2083,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session077: IFERR auto-close absorbs trailing tokens into the handler clause');
 }
 
-/* ---- Parse from source with missing END and run end-to-end ---- */
 {
   resetHome(); clearLastError();
   const s = new Stack();
@@ -2150,7 +2100,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session077: parsed source `<< IFERR 1 0 / THEN ERRM >>` auto-closes and runs');
 }
 
-/* ---- IFERR auto-close state hygiene: lastError restored on exit ---- */
 {
   resetHome(); clearLastError();
   const s = new Stack();
@@ -2184,7 +2133,6 @@ import { assert, assertThrows } from './helpers.mjs';
    clause.
    ================================================================ */
 
-/* ---- IF THEN … (no END) on truthy test runs the true-branch ---- */
 {
   resetHome();
   const s = new Stack();
@@ -2198,7 +2146,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session083: IF THEN … (no END) auto-closes and runs true-branch');
 }
 
-/* ---- IF THEN … (no END) on falsy test is a no-op ---- */
 {
   resetHome();
   const s = new Stack();
@@ -2211,7 +2158,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session083: IF THEN … (no END) with falsy test leaves stack clean');
 }
 
-/* ---- IF THEN … ELSE … (no END) on truthy test runs true-branch ---- */
 {
   resetHome();
   const s = new Stack();
@@ -2225,7 +2171,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session083: IF THEN … ELSE … (no END) truthy → true-branch');
 }
 
-/* ---- IF THEN … ELSE … (no END) on falsy test runs else-branch ---- */
 {
   resetHome();
   const s = new Stack();
@@ -2239,7 +2184,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session083: IF THEN … ELSE … (no END) falsy → else-branch');
 }
 
-/* ---- "IF without THEN" stays a hard error (no default clause) ---- */
 {
   resetHome();
   const s = new Stack();
@@ -2274,7 +2218,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session083: queue-item-6 — CASE in IF, both missing outer END, auto-close composes');
 }
 
-/* ---- Nested IF with inner END but outer END missing auto-closes ---- */
 {
   resetHome();
   const s = new Stack();
@@ -2289,7 +2232,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session083: nested IF — outer END missing auto-closes, inner END honoured');
 }
 
-/* ---- IF auto-close from parseEntry source ---- */
 {
   resetHome();
   const s = new Stack();
@@ -2328,7 +2270,6 @@ import { assert, assertThrows } from './helpers.mjs';
    RUN op (AUR p.2-177): alias for CONT
    ================================================================ */
 
-/* ---- RUN resumes a halted program (parity with CONT) ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2346,7 +2287,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session083: RUN clears the halted slot on successful finish');
 }
 
-/* ---- RUN with no halted program raises the same error as CONT ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2356,7 +2296,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session083: RUN with empty halted stack raises No halted program');
 }
 
-/* ---- RUN can chain through multiple HALTs, same as CONT ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2385,7 +2324,6 @@ import { assert, assertThrows } from './helpers.mjs';
    Matches HP50 AUR p.2-135's stack-of-halted-programs behaviour.
    ================================================================ */
 
-/* ---- haltedDepth() baseline is zero ---- */
 {
   resetHome();
   assert(haltedDepth() === 0,
@@ -2394,7 +2332,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session083: getHalted is null when the stack is empty');
 }
 
-/* ---- Two sequential HALTs from two separate EVAL calls stack up ---- */
 {
   resetHome();
   const s = new Stack();
@@ -2452,7 +2389,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session083: getHalted is null once the LIFO is drained');
 }
 
-/* ---- KILL peels one halt off the LIFO, preserving the rest ---- */
 {
   resetHome();
   const s = new Stack();
@@ -2472,7 +2408,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(getHalted() === null, 'session083: getHalted null after both KILLs');
 }
 
-/* ---- clearAllHalted drains the whole LIFO in one call ---- */
 {
   resetHome();
   const s = new Stack();
@@ -2490,7 +2425,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session083: state.halted goes to null after clearAllHalted');
 }
 
-/* ---- resetHome drains the LIFO (not just the scalar top slot) ---- */
 {
   resetHome();
   const s = new Stack();
@@ -2523,7 +2457,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session083: back-compat — clearHalted on a 1-deep stack empties both');
 }
 
-/* ---- RUN also resumes the LIFO top (same as CONT) ---- */
 {
   resetHome();
   const s = new Stack();
@@ -2539,7 +2472,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session083: after RUN, the older halt remains on the LIFO');
 }
 
-/* ---- RUN step-state clear: DBUG → SST → RUN drains halt (session178) ---- */
 /* Verifies AUR p.2-177 "no more single steps are permitted" after RUN.
  * The explicit _singleStepMode / _stepInto zeroing in RUN's body ensures
  * the remainder of the program runs full-speed even when the last step
@@ -2568,7 +2500,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session178: RUN cleared _stepInto at exit');
 }
 
-/* ---- RUN step-state clear: DBUG → SST↓ → RUN (session178) ---- */
 /* Same pattern as above but using SST↓ (step-into) instead of SST.
  * Program « 5 3 - 2 * »: DBUG token 1 (push 5), SST↓ token 2 (push 3),
  * RUN drains remaining 3 tokens (- 2 *) → 5−3=2, 2*2=4. */
@@ -2591,7 +2522,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session178: RUN cleared _stepInto even when last step was SST↓');
 }
 
-/* ---- RUN with no halted program raises error; step flags stay cleared (session178) ---- */
 /* Semantic regression: RUN's error path must not leave step flags set.
  * The finally block restores the prior values (both false in normal use). */
 {
@@ -2669,7 +2599,6 @@ import { assert, assertThrows } from './helpers.mjs';
    preserves all structural context automatically.
    ================================================================ */
 
-/* ---- HALT inside FOR loop ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2703,7 +2632,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(localFramesDepth() === 0, 'session088: FOR-HALT: localFrames clean after completion');
 }
 
-/* ---- HALT inside IF true branch ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2726,7 +2654,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session088: HALT-inside-IF: 99 pushed by resumed branch');
 }
 
-/* ---- HALT inside WHILE body ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2763,7 +2690,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session088: HALT-inside-WHILE loop exited cleanly');
 }
 
-/* ---- HALT inside → body ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2791,7 +2717,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session088: HALT-inside-arrow: frame popped after generator completes');
 }
 
-/* ---- KILL on a structural HALT cleans up _localFrames ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2814,7 +2739,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session088: KILL-arrow: _localFrames cleaned up by KILL via gen.return()');
 }
 
-/* ---- resetHome on a structural HALT cleans up _localFrames ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2833,7 +2757,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session088: resetHome-arrow: _localFrames clean after resetHome');
 }
 
-/* ---- HALT inside nested FOR-inside-IF ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2866,7 +2789,6 @@ import { assert, assertThrows } from './helpers.mjs';
    SST / SST↓ / DBUG single-step debugger
    ================================================================ */
 
-/* ---- SST drives a halted program one token at a time ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2898,7 +2820,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session101: single-step flag false after generator finishes');
 }
 
-/* ---- SST with no halted program raises "No halted program" ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2910,7 +2831,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session101: failed SST does not leave single-step flag set');
 }
 
-/* ---- SST↓ aliases SST (same one-token-per-call semantics) ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2929,7 +2849,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session101: SST↓ drains generator, no halts left');
 }
 
-/* ---- DBUG starts a program in single-step mode ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2951,7 +2870,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session101: SST drains DBUG-started program');
 }
 
-/* ---- DBUG → CONT runs the rest at full speed (no further single-stepping) ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2967,7 +2885,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session101: single-step flag clear after CONT-after-DBUG');
 }
 
-/* ---- DBUG on a non-Program raises Bad argument type ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2982,7 +2899,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session101: failed DBUG leaves no halted slot and clears single-step');
 }
 
-/* ---- DBUG on an empty program completes immediately, no halt ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -2992,7 +2908,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session101: DBUG on « » runs to completion immediately, no halt');
 }
 
-/* ---- KILL closes a single-stepped program cleanly (frames cleaned) ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -3364,7 +3279,6 @@ import { assert, assertThrows } from './helpers.mjs';
    regression in the message.
    ================================================================ */
 
-/* ---- IFT action with HALT now reports "IFT action" ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -3377,7 +3291,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session111: failed IFT leaves no halt and no leaked frames');
 }
 
-/* ---- IFTE: both branches get the IFTE label, true branch ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -3391,7 +3304,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session111: failed IFTE (true branch) leaves no halt / frames');
 }
 
-/* ---- IFTE false branch — same label ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -3405,7 +3317,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session111: failed IFTE (false branch) leaves no halt / frames');
 }
 
-/* ---- MAP on a HALT-containing program reports "MAP program" ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -3418,7 +3329,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session111: failed MAP leaves no halt and no leaked frames');
 }
 
-/* ---- SEQ with HALT in the expression names "SEQ expression" ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -3434,7 +3344,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session111: failed SEQ leaves no halt and no leaked frames');
 }
 
-/* ---- DOLIST single-list form: HALT reports "DOLIST program" ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -3447,7 +3356,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session111: failed DOLIST leaves no halt and no leaked frames');
 }
 
-/* ---- DOSUBS with HALT names "DOSUBS program" ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -3461,7 +3369,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session111: failed DOSUBS leaves no halt and no leaked frames');
 }
 
-/* ---- STREAM with HALT in the combinator names "STREAM program" ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -3764,7 +3671,6 @@ import { assert, assertThrows } from './helpers.mjs';
 const { getPromptMessage, clearPromptMessage }
   = await import('../www/src/rpl/state.js');
 
-/* ---- PROMPT pops level 1, halts, and exposes the banner ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -3789,7 +3695,6 @@ const { getPromptMessage, clearPromptMessage }
     'session121: CONT clears the halted slot once the program completes');
 }
 
-/* ---- PROMPT message can be any type, not just String ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -3803,7 +3708,6 @@ const { getPromptMessage, clearPromptMessage }
     'session121: KILL clears the prompt banner alongside the halt slot');
 }
 
-/* ---- PROMPT with empty stack throws Too few arguments ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -3817,7 +3721,6 @@ const { getPromptMessage, clearPromptMessage }
     'session121: failed PROMPT leaves no leaked local frames');
 }
 
-/* ---- PROMPT outside a program (Name dispatch) throws ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -3852,7 +3755,6 @@ const { getPromptMessage, clearPromptMessage }
     'session121: prompt banner cleared after CONT completes the program');
 }
 
-/* ---- PROMPT inside an IF true branch ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -3873,7 +3775,6 @@ const { getPromptMessage, clearPromptMessage }
    HALT lift through IFT body (evalRange intercept path).
    ================================================================ */
 
-/* ---- HALT inside IFT action lifts and CONT resumes ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -3896,7 +3797,6 @@ const { getPromptMessage, clearPromptMessage }
     'session121: HALT-in-IFT cleanup — no leftover halt or local frames');
 }
 
-/* ---- PROMPT inside IFT action lifts and CONT resumes ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -3934,7 +3834,6 @@ const { getPromptMessage, clearPromptMessage }
     'session121: false-branch IFT body does not suspend');
 }
 
-/* ---- Sync fallback (Name dispatch) still rejects HALT in IFT ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -3952,7 +3851,6 @@ const { getPromptMessage, clearPromptMessage }
    HALT lift through IFTE body — both branches.
    ================================================================ */
 
-/* ---- HALT inside IFTE true-branch action lifts and CONT resumes ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -3975,7 +3873,6 @@ const { getPromptMessage, clearPromptMessage }
     'session121: HALT-in-IFTE-true: branch body completes after CONT (1)');
 }
 
-/* ---- HALT inside IFTE false-branch action lifts and CONT resumes ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -3997,7 +3894,6 @@ const { getPromptMessage, clearPromptMessage }
     'session121: HALT-in-IFTE-false: branch body finishes after CONT (2)');
 }
 
-/* ---- Sync fallback IFTE still rejects HALT in either branch ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -4011,7 +3907,6 @@ const { getPromptMessage, clearPromptMessage }
     'session121: sync-fallback IFTE rejection cleans up halts and frames');
 }
 
-/* ---- KILL of a HALT-inside-IFT body cleans up local frames ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -4034,7 +3929,6 @@ const { getPromptMessage, clearPromptMessage }
     'session121: KILL also closes the generator and tears down → frame');
 }
 
-/* ---- resetHome clears the prompt banner ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4063,7 +3957,6 @@ const { getPromptMessage, clearPromptMessage }
    `HALT: cannot suspend inside MAP program`.
    ================================================================ */
 
-/* ---- SEQ: HALT inside the body (iter 1 only) suspends mid-iteration ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4096,7 +3989,6 @@ const { getPromptMessage, clearPromptMessage }
     'session126: SEQ across HALT/CONT yields { 10 20 30 }');
 }
 
-/* ---- SEQ: HALT in middle iteration preserves the partial accumulator ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4125,7 +4017,6 @@ const { getPromptMessage, clearPromptMessage }
     'session126: SEQ partial accumulator + completion produces { 1 2 3 4 5 }');
 }
 
-/* ---- SEQ: KILL during a halted iteration restores the loop variable ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   varStore('I', Integer(99n));         // pre-existing binding for I
@@ -4153,7 +4044,6 @@ const { getPromptMessage, clearPromptMessage }
   varPurge('I');
 }
 
-/* ---- SEQ: PROMPT inside the body suspends with the banner set ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4201,7 +4091,6 @@ const { getPromptMessage, clearPromptMessage }
     'session126: sync-fallback SEQ rejection cleans up halts and frames');
 }
 
-/* ---- SEQ: empty range produces empty list, no halt regardless of body ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4223,7 +4112,6 @@ const { getPromptMessage, clearPromptMessage }
     'session126: SEQ empty-range produces empty list');
 }
 
-/* ---- MAP: HALT inside body (iter 1 only) suspends mid-element ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4252,7 +4140,6 @@ const { getPromptMessage, clearPromptMessage }
     'session126: MAP HALT-in-iter-1 preserves all three results after CONT');
 }
 
-/* ---- MAP: HALT in middle element keeps partial accumulator ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4275,7 +4162,6 @@ const { getPromptMessage, clearPromptMessage }
     'session126: MAP across HALT yields { 2 3 4 5 }');
 }
 
-/* ---- MAP on a Vector: HALT lift preserves type ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4294,7 +4180,6 @@ const { getPromptMessage, clearPromptMessage }
     'session126: MAP over Vector returns a Vector after HALT/CONT');
 }
 
-/* ---- MAP on a Matrix: HALT lift preserves shape ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4313,7 +4198,6 @@ const { getPromptMessage, clearPromptMessage }
     'session126: MAP over Matrix preserves 2x2 shape after HALT/CONT');
 }
 
-/* ---- MAP: PROMPT inside body sets banner ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4351,7 +4235,6 @@ const { getPromptMessage, clearPromptMessage }
     'session126: sync-fallback MAP rejection cleans up halts and frames');
 }
 
-/* ---- MAP empty list: no halt, returns empty list ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4368,7 +4251,6 @@ const { getPromptMessage, clearPromptMessage }
     'session126: MAP on empty list returns empty list');
 }
 
-/* ---- HALT in MAP body inside a → frame: KILL tears down both ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4387,7 +4269,6 @@ const { getPromptMessage, clearPromptMessage }
     'session126: KILL closes the generator and tears down → frame from MAP-in-→');
 }
 
-/* ---- resetHome during a halted SEQ closes the generator and restores the loop var ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   varStore('J', Integer(7n));
@@ -4434,7 +4315,6 @@ const { getPromptMessage, clearPromptMessage }
    `... DOSUBS program` / `... STREAM program`.
    ================================================================ */
 
-/* ---- DOLIST: HALT inside body (iter 1) suspends mid-iteration ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4462,7 +4342,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: DOLIST across HALT/CONT yields { 10 20 30 }');
 }
 
-/* ---- DOLIST: HALT in middle iteration preserves the partial accumulator ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4488,7 +4367,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: DOLIST partial accumulator + completion produces { 1 2 3 4 5 }');
 }
 
-/* ---- DOLIST: parallel multi-list form, HALT in iter 1 ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4513,7 +4391,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: DOLIST 2-list form yields { 11 22 33 }');
 }
 
-/* ---- DOLIST: PROMPT inside body sets banner mid-iteration ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4538,7 +4415,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: DOLIST completes both iterations after PROMPT/CONT (yields { 7 14 })');
 }
 
-/* ---- DOLIST: KILL during a halted iteration leaves no halt residue ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4556,7 +4432,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: KILL of halted DOLIST leaves no local-frame leak');
 }
 
-/* ---- DOLIST: sync fallback still rejects HALT with the DOLIST label ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4569,7 +4444,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: sync-fallback DOLIST rejection cleans up halts and frames');
 }
 
-/* ---- DOLIST: empty list never halts and produces empty list ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4586,7 +4460,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: DOLIST on empty list produces empty list');
 }
 
-/* ---- DOSUBS: HALT inside body (iter 1) suspends mid-window ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4618,7 +4491,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: DOSUBS across HALT/CONT yields { 3 5 7 }');
 }
 
-/* ---- DOSUBS: NSUB/ENDSUB readable from the body during a halted-and-resumed window ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4646,7 +4518,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: DOSUBS NSUB index survives HALT/CONT and continues correctly');
 }
 
-/* ---- DOSUBS: KILL during halted window tears down the NSUB/ENDSUB frame ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4676,7 +4547,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: ENDSUB outside DOSUBS throws after KILL teardown');
 }
 
-/* ---- DOSUBS: sync fallback still rejects HALT with label ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4691,7 +4561,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: sync-fallback DOSUBS rejection cleans up halts, frames, and DOSUBS frame');
 }
 
-/* ---- DOSUBS: empty-window-set short-circuit (n > list length) never halts ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4711,7 +4580,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: DOSUBS no-windows short-circuit pushes no NSUB frame');
 }
 
-/* ---- STREAM: HALT inside fold body suspends with accumulator visible ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4736,7 +4604,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: STREAM CONT yields final accumulator 10');
 }
 
-/* ---- STREAM: PROMPT mid-fold sets banner; CONT clears it ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4760,7 +4627,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: STREAM completes after PROMPT/CONT (final accumulator = 6)');
 }
 
-/* ---- STREAM: sync fallback still rejects HALT with the STREAM label ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4773,7 +4639,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: sync-fallback STREAM rejection cleans up halts and frames');
 }
 
-/* ---- STREAM: single-element short-circuit never halts ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4789,7 +4654,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: STREAM single-element short-circuit pushes the bare element');
 }
 
-/* ---- HALT in DOLIST inside a → frame: KILL tears down both ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4808,7 +4672,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: KILL closes the generator and tears down → frame from DOLIST-in-→');
 }
 
-/* ---- HALT in DOSUBS inside a → frame: KILL tears down → frame AND DOSUBS frame ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4825,7 +4688,6 @@ const { getPromptMessage, clearPromptMessage }
     'session131: KILL of DOSUBS-in-→ tears down both frames via finally chain');
 }
 
-/* ---- resetHome during a halted DOSUBS closes generator and clears frame stack ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -4874,7 +4736,6 @@ const { getPromptMessage, clearPromptMessage }
        without END.
    ================================================================ */
 
-/* ---- WHILE / REPEAT auto-close on missing END ---- */
 {
   resetHome();
   const s = new Stack();
@@ -4891,7 +4752,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: WHILE/REPEAT auto-closes on missing END (loops to 3)');
 }
 
-/* ---- WHILE/REPEAT auto-close: false test from the start ---- */
 {
   resetHome();
   const s = new Stack();
@@ -4907,7 +4767,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: WHILE/REPEAT auto-close with false test never enters body');
 }
 
-/* ---- WHILE/REPEAT auto-close via parsed source ---- */
 {
   resetHome();
   const s = new Stack();
@@ -4932,7 +4791,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: parsed WHILE auto-closes on missing END and runs to completion');
 }
 
-/* ---- WHILE without REPEAT is still a hard error (no auto-close) ---- */
 {
   resetHome();
   const s = new Stack();
@@ -4951,7 +4809,6 @@ const { getPromptMessage, clearPromptMessage }
     'ship-prep r3: WHILE-without-REPEAT consumes the Program (post-pop snapshot)');
 }
 
-/* ---- WHILE with a spurious NEXT in the END slot is still an error ---- */
 {
   resetHome();
   const s = new Stack();
@@ -4967,7 +4824,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: WHILE with spurious NEXT preserves "without END" error');
 }
 
-/* ---- DO / UNTIL auto-close on missing END ---- */
 {
   resetHome();
   const s = new Stack();
@@ -4985,7 +4841,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: DO/UNTIL auto-closes on missing END (3 iterations)');
 }
 
-/* ---- DO/UNTIL auto-close: body always runs at least once ---- */
 {
   resetHome();
   const s = new Stack();
@@ -5003,7 +4858,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: DO/UNTIL auto-close still runs body at least once');
 }
 
-/* ---- DO without UNTIL is still a hard error ---- */
 {
   resetHome();
   const s = new Stack();
@@ -5018,7 +4872,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: DO without UNTIL preserves error message');
 }
 
-/* ---- DO/UNTIL with a spurious NEXT in the END slot is still an error ---- */
 {
   resetHome();
   const s = new Stack();
@@ -5033,7 +4886,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: DO with spurious NEXT preserves "without END" error');
 }
 
-/* ---- START auto-close on missing NEXT (implicit step=1) ---- */
 {
   resetHome();
   const s = new Stack();
@@ -5050,7 +4902,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: START auto-closes on missing NEXT (loops 5 times)');
 }
 
-/* ---- START auto-close: zero-iteration case (start > end) ---- */
 {
   resetHome();
   const s = new Stack();
@@ -5067,7 +4918,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: START auto-close runs body once when start>end (HP50 semantics)');
 }
 
-/* ---- START with a spurious END in the closer slot is still an error ---- */
 {
   resetHome();
   const s = new Stack();
@@ -5084,7 +4934,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: START with spurious END preserves "without NEXT/STEP" error');
 }
 
-/* ---- FOR auto-close on missing NEXT (implicit step=1, var preserved) ---- */
 {
   resetHome();
   const s = new Stack();
@@ -5103,7 +4952,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: FOR auto-close still purges the loop var on exit');
 }
 
-/* ---- FOR auto-close: prior binding restored after the loop ---- */
 {
   resetHome();
   varStore('i', Real(99));    // pre-existing binding
@@ -5122,7 +4970,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: FOR auto-close restores pre-existing var binding via finally');
 }
 
-/* ---- FOR with a spurious END in the closer slot is still an error ---- */
 {
   resetHome();
   const s = new Stack();
@@ -5145,7 +4992,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: FOR-without-NEXT/STEP error leaves no leaked binding');
 }
 
-/* ---- Nested auto-close: WHILE inside an auto-closed IF ---- */
 {
   resetHome();
   const s = new Stack();
@@ -5166,7 +5012,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: nested WHILE-in-IF both auto-close correctly');
 }
 
-/* ---- Nested auto-close: parsed-source FOR with no NEXT ---- */
 {
   resetHome();
   const s = new Stack();
@@ -5183,7 +5028,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: parsed-source FOR auto-closes on missing NEXT (sum 1..5)');
 }
 
-/* ---- Auto-close composes with HALT lift inside the body ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -5211,7 +5055,6 @@ const { getPromptMessage, clearPromptMessage }
     'session136: auto-closed START leaves three 7s on stack after full HALT/CONT cycle');
 }
 
-/* ---- Auto-close + KILL: clean teardown ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -5255,7 +5098,6 @@ const { getPromptMessage, clearPromptMessage }
        caught error into the outer scope.
    ================================================================ */
 
-/* ---- HALT inside the IFERR trap clause (no error path) ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -5291,7 +5133,6 @@ const { getPromptMessage, clearPromptMessage }
     'session141: HALT-in-IFERR-trap leaves no local-frame leak');
 }
 
-/* ---- HALT inside the IFERR THEN clause (after caught error) ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -5334,7 +5175,6 @@ const { getPromptMessage, clearPromptMessage }
     'session141: HALT-in-IFERR-THEN leaves no local-frame leak');
 }
 
-/* ---- HALT inside the IFERR ELSE clause (success path) ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -5365,7 +5205,6 @@ const { getPromptMessage, clearPromptMessage }
     'session141: HALT-in-IFERR-ELSE leaves no local-frame leak');
 }
 
-/* ---- PROMPT inside the IFERR THEN clause ---- */
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
@@ -5396,7 +5235,6 @@ const { getPromptMessage, clearPromptMessage }
     'session141: IFERR finally restores outer last-error after PROMPT/CONT');
 }
 
-/* ---- KILL of HALT-inside-IFERR-THEN runs the finally chain ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -5424,7 +5262,6 @@ const { getPromptMessage, clearPromptMessage }
     'session141: KILL of halted IFERR-THEN leaves no local-frame leak');
 }
 
-/* ---- HALT in trap, post-HALT DOERR triggers the catch path ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -5453,7 +5290,6 @@ const { getPromptMessage, clearPromptMessage }
     'session141: outer last-error restored after THEN finishes');
 }
 
-/* ---- HALT inside an auto-closed IFERR trap clause (no END) ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -5480,7 +5316,6 @@ const { getPromptMessage, clearPromptMessage }
     'session141: auto-closed IFERR + HALT leaves no local-frame leak');
 }
 
-/* ---- HALT inside an auto-closed IFERR THEN clause (no END) ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -5511,7 +5346,6 @@ const { getPromptMessage, clearPromptMessage }
     'session141: auto-closed IFERR THEN HALT leaves no local-frame leak');
 }
 
-/* ---- HALT inside an auto-closed IFERR ELSE clause (no END) ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -5540,7 +5374,6 @@ const { getPromptMessage, clearPromptMessage }
     'session141: auto-closed IFERR ELSE HALT leaves no local-frame leak');
 }
 
-/* ---- Nested IFERR: inner THEN halts; outer last-error preserved ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -5550,7 +5383,6 @@ const { getPromptMessage, clearPromptMessage }
   //   - During the inner halt: getLastError() == inner caught
   //   - After CONT (inner finishes): getLastError() restored to OUTER caught
   //   - After outer finishes: getLastError() restored to null (entry value)
-  //
   // « IFERR 1 0 / THEN
   //     IFERR "inner" DOERR THEN HALT END
   //   END »
@@ -5580,7 +5412,6 @@ const { getPromptMessage, clearPromptMessage }
     'session141: nested IFERR HALT leaves no local-frame leak');
 }
 
-/* ---- KILL of inner-IFERR-THEN halt restores OUTER caught error ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -5619,7 +5450,6 @@ const { getPromptMessage, clearPromptMessage }
     'session141: nested IFERR KILL leaves no local-frame leak');
 }
 
-/* ---- HALT in IFERR trap ignored by IFERR's own catch (yield ≠ throw) ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -5687,7 +5517,6 @@ const { getPromptMessage, clearPromptMessage }
   resetHome(); clearAllHalted();
   const s = new Stack();
   // 1 2 → a b « 10 20 → a b « a HALT b » »
-  //
   //   Outer pops 1,2; binds outer a=1, b=2.
   //   Inner pops 10,20; binds inner a=10, b=20 (shadowing outer).
   //   Inner body pushes a (→ 10), HALTs.  At suspension stack = [10],
@@ -5720,7 +5549,6 @@ const { getPromptMessage, clearPromptMessage }
     'session146: nested → HALT: both frames torn down after CONT');
 }
 
-/* ---- KILL of a nested-→ HALT runs both finallys in LIFO ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -5753,7 +5581,6 @@ const { getPromptMessage, clearPromptMessage }
   resetHome(); clearAllHalted();
   const s = new Stack();
   // 1 2 → a b « 10 20 → x y « x y + » HALT a »
-  //
   //   Outer pops 1,2; binds outer a=1, b=2.
   //   Inner-→ runs to completion, pushes 30 (10+20), pops its frame.
   //   HALT fires after the inner frame has been torn down.
@@ -5822,7 +5649,6 @@ const { getPromptMessage, clearPromptMessage }
   resetHome(); clearAllHalted();
   const s = new Stack();
   // « 1 → a « a HALT 2 → b « b HALT a b + » » »
-  //
   //   Step 1: Outer →: a=1.  Body pushes a (→1), HALTs.  At first
   //           suspension: stack = [1], one frame live (outer a=1).
   //   Step 2: CONT.  Push 2.  Inner →: b=2 (pops the 2).  Body
@@ -6166,7 +5992,6 @@ const { getPromptMessage, clearPromptMessage }
     'session151: DO/UNTIL final counter 3 (UNTIL test exited at counter=3)');
 }
 
-/* ---- KILL of halted DO body: tear down generator chain ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -6224,7 +6049,6 @@ const { getPromptMessage, clearPromptMessage }
    closerIdx (the auto-closed forms have their own pins above).
    ---------------------------------------------------------------- */
 
-/* ---- HALT inside fully-closed START/NEXT body: halts each iter ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -6324,7 +6148,6 @@ const { getPromptMessage, clearPromptMessage }
     'session151: FOR/STEP final stack [1,2,3,4]');
 }
 
-/* ---- KILL of halted fully-closed FOR/STEP: finally restores i ---- */
 {
   resetHome(); clearAllHalted();
   // Establish a prior binding for i so we can verify save/restore.

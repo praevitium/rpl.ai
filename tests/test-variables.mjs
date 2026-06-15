@@ -659,7 +659,6 @@ import { assert, assertThrows } from './helpers.mjs';
   resetHome();
 }
 
-/* ---------- STO / PURGE subdir protection ---------- */
 
 // STO refuses to overwrite a subdirectory with a scalar.
 {
@@ -802,17 +801,12 @@ import { assert, assertThrows } from './helpers.mjs';
   clearLastError();
 }
 
-// ------------------------------------------------------------------
 
-// ================================================================
-// State UNDO (variables + current directory)
-// ================================================================
 {
   const {
     saveVarStateForUndo, undoVarState, hasVarUndo, clearVarUndo,
   } = await import('../www/src/rpl/state.js');
 
-  // ---- snapshot isolates live tree from stashed tree ----
   {
     resetHome();
     varStore('X', Real(5));
@@ -827,7 +821,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'undoVarState drops Y that was added after snapshot');
   }
 
-  // ---- Multi-level var-state undo round-trip: undo + redo. ----
   {
     const { redoVarState, hasVarRedo } = await import('../www/src/rpl/state.js');
     resetHome();
@@ -844,7 +837,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'redo restores Y = 7');
   }
 
-  // ---- clearVarUndo drops the slot ----
   {
     resetHome();
     varStore('X', Real(5));
@@ -856,7 +848,6 @@ import { assert, assertThrows } from './helpers.mjs';
                  'undoVarState with no slot throws No undo available');
   }
 
-  // ---- PURGE is undoable ----
   {
     resetHome();
     varStore('X', Real(11));
@@ -869,7 +860,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'undo restores purged X');
   }
 
-  // ---- current-directory restoration after goInto ----
   {
     resetHome();
     makeSubdir('AFOO');
@@ -882,7 +872,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'undoVarState navigates back to HOME');
   }
 
-  // ---- current-directory restoration after goUp ----
   {
     resetHome();
     makeSubdir('AFOO');
@@ -895,7 +884,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'undoVarState navigates back into AFOO');
   }
 
-  // ---- undo captures AFOO's contents, even after we leave + modify ----
   {
     resetHome();
     const sub = makeSubdir('AFOO');
@@ -934,7 +922,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'shadow is independent — overwrite did not bleed into snapshot');
   }
 
-  // ---- Entry._snapForUndo saves BOTH stack and var state ----
   {
     const { Entry } = await import('../www/src/ui/entry.js');
     const { Stack } = await import('../www/src/rpl/stack.js');
@@ -949,7 +936,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(hasVarUndo(), 'var undo shadow present');
   }
 
-  // ---- performUndo() swaps BOTH ----
   {
     const { Entry } = await import('../www/src/ui/entry.js');
     const { Stack } = await import('../www/src/rpl/stack.js');
@@ -970,7 +956,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'performUndo kept X that predates snap');
   }
 
-  // ---- performUndo throws when no stack shadow exists ----
   {
     const { Entry } = await import('../www/src/ui/entry.js');
     const { Stack } = await import('../www/src/rpl/stack.js');
@@ -981,7 +966,6 @@ import { assert, assertThrows } from './helpers.mjs';
                  'performUndo with no shadow throws No undo available');
   }
 
-  // ---- End-to-end: Entry.enter is the snap point for STO+UNDO ----
   {
     const { Entry } = await import('../www/src/ui/entry.js');
     const { Stack } = await import('../www/src/rpl/stack.js');
@@ -1012,7 +996,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(s.depth === 2, 'UNDO restored the pre-STO stack { 42, X }');
   }
 
-  // ---- End-to-end: PURGE via entry line is undoable ----
   {
     const { Entry } = await import('../www/src/ui/entry.js');
     const { Stack } = await import('../www/src/rpl/stack.js');
@@ -1034,7 +1017,6 @@ import { assert, assertThrows } from './helpers.mjs';
 }
 
 /* stored-variable arithmetic ops (STO+ STO- STO* STO/). */
-  // ---- STO+/STO-/STO*/STO/ ----
   resetHome();   // clean slate for variable tests below
   {
     varStore('X', Real(10));
@@ -1103,7 +1085,6 @@ const {
   setUserFlag, clearUserFlag, testUserFlag, clearAllUserFlags,
 } = await import('../www/src/rpl/state.js');
 
-/* ---- INCR / DECR happy paths ---- */
 {
   resetHome();
   varStore('X', Real(10));
@@ -1164,7 +1145,6 @@ const {
     'DECR with non-name/non-string → Bad argument type'); }
 }
 
-/* ---- User flag ops ---- */
 {
   clearAllUserFlags();
   const s = new Stack();
@@ -1302,7 +1282,6 @@ const {
                              numbers; empty flag set pushes {})
    ================================================================ */
 
-/* ---- RCLF on empty flag set ---- */
 {
   clearAllUserFlags();
   const s = new Stack();
@@ -1311,7 +1290,6 @@ const {
       && s.peek(1).items.length === 0,
     'RCLF with no flags set pushes {}');
 }
-/* ---- RCLF after setting flags — sorted ascending ---- */
 {
   clearAllUserFlags();
   setUserFlag(42);
@@ -1329,7 +1307,6 @@ const {
     'RCLF pushes Integer-typed flag numbers');
   clearAllUserFlags();
 }
-/* ---- STOF: replaces flag set with list contents ---- */
 {
   clearAllUserFlags();
   setUserFlag(1); setUserFlag(2); setUserFlag(3);
@@ -1343,7 +1320,6 @@ const {
     'STOF set exactly the flags named in the list');
   clearAllUserFlags();
 }
-/* ---- STOF roundtrips via RCLF ---- */
 {
   clearAllUserFlags();
   setUserFlag(-40); setUserFlag(17); setUserFlag(100);
@@ -1356,7 +1332,6 @@ const {
     'STOF then RCLF round-trips the flag set');
   clearAllUserFlags();
 }
-/* ---- STOF with empty list clears everything ---- */
 {
   clearAllUserFlags();
   setUserFlag(1); setUserFlag(2);
@@ -1366,7 +1341,6 @@ const {
   assert(!testUserFlag(1) && !testUserFlag(2),
     'STOF {} clears all flags');
 }
-/* ---- STOF accepts Real-typed integer-valued flag numbers ---- */
 {
   clearAllUserFlags();
   const s = new Stack();
@@ -1376,7 +1350,6 @@ const {
     'STOF accepts Real elements (integer-valued)');
   clearAllUserFlags();
 }
-/* ---- STOF rejects non-list ---- */
 {
   clearAllUserFlags();
   const s = new Stack();
@@ -1385,7 +1358,6 @@ const {
   catch (e) { assert(/Bad argument type/i.test(e.message),
     'STOF on Real → Bad argument type'); }
 }
-/* ---- STOF rejects list containing invalid element type ---- */
 {
   clearAllUserFlags();
   setUserFlag(5);
@@ -1399,7 +1371,6 @@ const {
     'STOF leaves flag set unchanged when validation fails');
   clearAllUserFlags();
 }
-/* ---- STOF rejects out-of-range flag number ---- */
 {
   clearAllUserFlags();
   setUserFlag(5);
@@ -1418,7 +1389,6 @@ const {
   catch (e) { assert(/Bad argument value/i.test(e.message),
     'STOF with |n| > 128 → Bad argument value'); }
 }
-/* ---- STOF rejects non-integer Real ---- */
 {
   clearAllUserFlags();
   const s = new Stack();
@@ -1428,11 +1398,7 @@ const {
     'STOF with non-integer Real → Bad argument value'); }
 }
 
-// ------------------------------------------------------------------
-// SNEG / SINV / SCONJ, PGDIR
-// ------------------------------------------------------------------
 
-/* ---- SNEG: negate a stored numeric ---- */
 {
   resetHome();
   varStore('X', Real(7));
@@ -1443,7 +1409,6 @@ const {
     'session046: SNEG X (X=7) → X=-7, stack empty');
 }
 
-/* ---- SNEG on an Integer stored-value preserves Integer ---- */
 {
   resetHome();
   varStore('N', Integer(42n));
@@ -1455,7 +1420,6 @@ const {
     'session046: SNEG on Integer 42 → Integer -42');
 }
 
-/* ---- SINV: invert a stored numeric ---- */
 {
   resetHome();
   varStore('Y', Real(4));
@@ -1466,7 +1430,6 @@ const {
     'session046: SINV Y (Y=4) → Y=0.25');
 }
 
-/* ---- SCONJ on a real is a no-op (value semantically unchanged) ---- */
 {
   resetHome();
   varStore('R', Real(5));
@@ -1477,7 +1440,6 @@ const {
     'session046: SCONJ on real leaves value unchanged');
 }
 
-/* ---- SCONJ on a stored Complex flips imaginary sign ---- */
 {
   resetHome();
   varStore('Z', Complex(3, 4));
@@ -1489,7 +1451,6 @@ const {
     'session046: SCONJ on Complex(3,4) → Complex(3,-4)');
 }
 
-/* ---- SNEG with a String identifier ---- */
 {
   resetHome();
   varStore('A', Real(9));
@@ -1500,7 +1461,6 @@ const {
     'session046: SNEG accepts String identifier');
 }
 
-/* ---- SNEG on a missing variable throws ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1510,7 +1470,6 @@ const {
     'session046: SNEG missing var → Undefined name'); }
 }
 
-/* ---- SINV on a Real 0 throws (division by zero → Infinite result) ---- */
 {
   resetHome();
   varStore('ZERO', Real(0));
@@ -1521,7 +1480,6 @@ const {
     'session046: SINV on stored 0 → error propagates'); }
 }
 
-/* ---- PGDIR: purge a non-empty subdirectory ---- */
 {
   resetHome();
   makeSubdir('TEMP');
@@ -1537,7 +1495,6 @@ const {
     'session046: PGDIR removes non-empty subdirectory');
 }
 
-/* ---- PURGE on a non-empty subdirectory still refuses ---- */
 {
   resetHome();
   makeSubdir('KEEP');
@@ -1551,7 +1508,6 @@ const {
     'session046: PURGE on non-empty subdir still refuses — PGDIR is needed'); }
 }
 
-/* ---- PGDIR on a non-existent name throws ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1561,7 +1517,6 @@ const {
     'session046: PGDIR missing → Undefined name'); }
 }
 
-/* ---- PGDIR on a non-directory value throws Bad argument type ---- */
 {
   resetHome();
   varStore('NOTADIR', Real(99));
@@ -1574,7 +1529,6 @@ const {
   assert(varRecall('NOTADIR') !== undefined, 'PGDIR error didn\'t clobber the variable');
 }
 
-/* ---- PGDIR on a deeply-nested directory cascades ---- */
 {
   resetHome();
   makeSubdir('OUTER');
@@ -1624,11 +1578,7 @@ const {
     'SINV { P Q } inverts both stored values');
 }
 
-// ==================================================================
-// ORDER, BYTES, NEWOB, MEM
-// ==================================================================
 
-/* ---- ORDER reshapes the directory so VARS shows the requested order ---- */
 {
   resetHome();
   varStore('Z', Real(1));
@@ -1655,7 +1605,6 @@ const {
     'session047: ORDER({A,Z}) → VARS now M,Z,A (reverse of internal A,Z,M)');
 }
 
-/* ---- ORDER accepts Strings in the list too ---- */
 {
   resetHome();
   varStore('B', Real(1));
@@ -1670,7 +1619,6 @@ const {
     'session047: ORDER accepts String names (internal A,B → VARS reversed → B,A)');
 }
 
-/* ---- ORDER with unknown names: silently skipped ---- */
 {
   resetHome();
   varStore('X', Real(1));
@@ -1685,7 +1633,6 @@ const {
     'session047: ORDER silently skips unknown names (internal Y,X → VARS reversed → X,Y)');
 }
 
-/* ---- ORDER on a non-list input throws ---- */
 {
   resetHome();
   varStore('Q', Real(1));
@@ -1695,7 +1642,6 @@ const {
                'session047: ORDER on non-List throws Bad argument type');
 }
 
-/* ---- ORDER on an empty list is a no-op ---- */
 {
   resetHome();
   varStore('A', Real(1));
@@ -1710,7 +1656,6 @@ const {
     'session047: ORDER([]) leaves internal order unchanged (A,B → VARS reversed → B,A)');
 }
 
-/* ---- ORDER with a duplicate name: first occurrence wins ---- */
 {
   resetHome();
   varStore('A', Real(1));
@@ -1726,7 +1671,6 @@ const {
     'session047: ORDER dedupe — internal C,A,B → VARS reversed → B,A,C');
 }
 
-/* ---- BYTES on an Integer: returns [checksum=0, size] ---- */
 {
   const s = new Stack();
   s.push(Integer(42));
@@ -1740,7 +1684,6 @@ const {
     'session047: BYTES size is a positive Integer byte estimate');
 }
 
-/* ---- BYTES on a large list gives a larger size than on a tiny atom ---- */
 {
   const s1 = new Stack();
   s1.push(Integer(1));
@@ -1758,7 +1701,6 @@ const {
     `session047: BYTES on 5-element list (${sList}) > BYTES on atom (${sAtom})`);
 }
 
-/* ---- NEWOB on a Real returns a structurally equal but distinct object ---- */
 {
   const s = new Stack();
   const orig = Real(3.14);
@@ -1771,7 +1713,6 @@ const {
     'session047: NEWOB produces a distinct object (not ===)');
 }
 
-/* ---- NEWOB on a List duplicates the container ---- */
 {
   const s = new Stack();
   const orig = RList([Integer(1), Integer(2)]);
@@ -1783,7 +1724,6 @@ const {
   assert(copy !== orig, 'session047: NEWOB on List returns a new object');
 }
 
-/* ---- NEWOB on a Matrix returns a distinct Matrix ---- */
 {
   const s = new Stack();
   const orig = Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]);
@@ -1795,7 +1735,6 @@ const {
   assert(copy !== orig, 'session047: NEWOB on Matrix returns new object');
 }
 
-/* ---- MEM pushes a 1 GiB constant ---- */
 {
   const s = new Stack();
   lookup('MEM').fn(s);
@@ -1804,11 +1743,7 @@ const {
     'session047: MEM pushes Real(1 GiB)');
 }
 
-// ==================================================================
-// VTYPE (value-type of a stored Name)
-// ==================================================================
 
-/* ---- VTYPE returns HP50 type code of stored value ---- */
 {
   resetHome();
   varStore('X', Integer(42n));
@@ -1826,7 +1761,6 @@ const {
     'session053: VTYPE X === KIND of stored X');
 }
 
-/* ---- VTYPE undefined name throws ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1835,7 +1769,6 @@ const {
                'session053: VTYPE undefined name throws');
 }
 
-/* ---- VTYPE on non-Name throws ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -1847,7 +1780,6 @@ const {
    MERGE: directory / list-of-pairs merge.
    ================================================================= */
 
-/* ---- MERGE list of (Name, value) pairs into current dir ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1865,7 +1797,6 @@ const {
     'session054: MERGE stored C');
 }
 
-/* ---- MERGE overwrites existing vars ---- */
 {
   resetHome();
   varStore('X', Integer(100n));
@@ -1876,7 +1807,6 @@ const {
     'session054: MERGE overwrites existing var');
 }
 
-/* ---- MERGE empty list is no-op ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1885,7 +1815,6 @@ const {
   assert(varList().length === 0, 'session054: MERGE {} no-op');
 }
 
-/* ---- MERGE accepts String keys ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1894,7 +1823,6 @@ const {
   assert(varRecall('K').value === 7n, 'session054: MERGE accepts String key');
 }
 
-/* ---- MERGE odd-length list throws ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1903,7 +1831,6 @@ const {
                'session054: MERGE odd-length throws');
 }
 
-/* ---- MERGE non-Name key throws ---- */
 {
   resetHome();
   const s = new Stack();
@@ -1912,7 +1839,6 @@ const {
                'session054: MERGE numeric key throws');
 }
 
-/* ---- MERGE Directory value copies entries ---- */
 {
   resetHome();
   const d = Directory({ name: 'SRC' });
@@ -1925,7 +1851,6 @@ const {
     'session054: MERGE Directory copies all entries');
 }
 
-/* ---- MERGE non-list / non-directory throws ---- */
 {
   resetHome();
   const s = new Stack();

@@ -223,7 +223,6 @@ import { assert, assertThrows } from './helpers.mjs';
 
 
 // FLOOR / CEIL / IP / FP / SIGN / MOD / MIN / MAX
-// ------------------------------------------------------------------
 
 // FLOOR / CEIL / IP / FP on reals
 {
@@ -344,7 +343,6 @@ import { assert, assertThrows } from './helpers.mjs';
    percent family (%/%T/%CH).
    ================================================================== */
 
-/* ---- DUPN ---- */
 {
   const s = new Stack();
   s.push(Real(1)); s.push(Real(2)); s.push(Real(3));
@@ -376,7 +374,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assertThrows(() => { lookup('DUPN').fn(s); }, /Too few/, 'session043: DUPN where depth < count → Too few arguments');
 }
 
-/* ---- DUPDUP ---- */
 {
   const s = new Stack();
   s.push(Real(42));
@@ -389,7 +386,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assertThrows(() => { lookup('DUPDUP').fn(s); }, /Too few/, 'session043: DUPDUP on empty stack → Too few arguments');
 }
 
-/* ---- NIP ---- */
 {
   const s = new Stack();
   s.push(Real(1)); s.push(Real(2)); s.push(Real(3));
@@ -403,7 +399,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assertThrows(() => { lookup('NIP').fn(s); }, /Too few/, 'session043: NIP with depth 1 → Too few arguments');
 }
 
-/* ---- PICK3 ---- */
 {
   const s = new Stack();
   s.push(Real(10)); s.push(Real(20)); s.push(Real(30));
@@ -412,7 +407,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session043: PICK3 ≡ 3 PICK (no explicit arg)');
 }
 
-/* ---- ROLL ---- */
 {
   const s = new Stack();
   s.push(Real(1)); s.push(Real(2)); s.push(Real(3));
@@ -444,7 +438,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assertThrows(() => { lookup('ROLL').fn(s); }, /Too few/, 'session043: ROLL with depth < count → Too few arguments');
 }
 
-/* ---- ROLLD ---- */
 {
   const s = new Stack();
   s.push(Real(1)); s.push(Real(2)); s.push(Real(3));
@@ -467,7 +460,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session043: n ROLL then n ROLLD round-trips');
 }
 
-/* ---- UNPICK ---- */
 {
   const s = new Stack();
   s.push(Real(1)); s.push(Real(2)); s.push(Real(3));
@@ -497,7 +489,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assertThrows(() => { lookup('UNPICK').fn(s); }, /Bad argument value/, 'session043: UNPICK with level 0 → Bad argument value');
 }
 
-/* ---- NDUPN ---- */
 {
   const s = new Stack();
   s.push(Real(7)); s.push(Integer(3));
@@ -813,9 +804,7 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek(1).type === 'symbolic', 'session043: 100 \'x\' % → Symbolic');
 }
 
-// ------------------------------------------------------------------
 // MAXR / MINR constants and HMS family
-// ------------------------------------------------------------------
 
 // MAXR: largest finite Real — derived from current realMaxExp (default 999)
 {
@@ -901,7 +890,6 @@ assert(getRealMaxExp() === REAL_MAX_EXP_DEFAULT,
   assert(s.depth === 2, 'session044: MAXR does not pop');
 }
 
-// ------------------ HMS family ------------------
 
 // →HMS of 2.5 hours is 2 h 30 min 0 s → 2.3 exactly
 {
@@ -1026,15 +1014,10 @@ assert(getRealMaxExp() === REAL_MAX_EXP_DEFAULT,
   assertThrows(() => { lookup('→HMS').fn(s); }, /Bad argument type/, 'session044: (1,2) →HMS throws Bad argument type');
 }
 
-// ------------------------------------------------------------------
-// Complex-aware unary math
-// ------------------------------------------------------------------
-//
 // EXP / LN / LOG / ALOG / SIN / COS / TAN / ASIN / ACOS / ATAN /
 // SINH / COSH / TANH / ASINH / ACOSH / ATANH accept Complex inputs
 // via principal-branch formulas so HP50-style complex workflows work.
 // Real inputs still go through the real-only paths.
-// ------------------------------------------------------------------
 
 const _CX_EPS = 1e-10;
 function _cxApprox(got, re, im, label) {
@@ -1243,11 +1226,7 @@ function _cxApprox(got, re, im, label) {
 // Reset angle mode to default
 setAngle('rad');
 
-// ==================================================================
-// factorial `!` bang, →Q rationalize
-// ==================================================================
 
-/* ---- `!` as FACT alias — Integer input stays exact ---- */
 {
   const s = new Stack();
   s.push(Integer(5));
@@ -1256,7 +1235,6 @@ setAngle('rad');
     'session047: 5 ! → Integer(120) (FACT alias)');
 }
 
-/* ---- `!` on 0 returns 1 ---- */
 {
   const s = new Stack();
   s.push(Integer(0));
@@ -1265,7 +1243,6 @@ setAngle('rad');
     'session047: 0 ! → 1 (0! definition)');
 }
 
-/* ---- `!` on a non-integer Real goes through gamma ---- */
 {
   const s = new Stack();
   s.push(Real(0.5));
@@ -1276,14 +1253,12 @@ setAngle('rad');
     'session047: 0.5 ! → Γ(1.5) ≈ √π/2');
 }
 
-/* ---- `!` on negative integer throws ---- */
 {
   const s = new Stack();
   s.push(Integer(-3));
   assertThrows(() => { lookup('!').fn(s); }, null, 'session047: -3 ! throws Bad argument value');
 }
 
-/* ---- `!` parses from an entry buffer as an ident ---- */
 {
   const vals = parseEntry('5 !');
   const s = new Stack();
@@ -1298,7 +1273,6 @@ setAngle('rad');
     'session047: "5 !" via parseEntry → 120 (tokeniser splits 5 and !)');
 }
 
-/* ---- →Q on 0.5 → Symbolic 1/2 ---- */
 {
   const s = new Stack();
   s.push(Real(0.5));
@@ -1312,7 +1286,6 @@ setAngle('rad');
     'session047: 0.5 →Q → Sym(1/2)');
 }
 
-/* ---- →Q on 0.333333333333 → Symbolic 1/3 ---- */
 {
   const s = new Stack();
   s.push(Real(1 / 3));
@@ -1323,7 +1296,6 @@ setAngle('rad');
     'session047: (1/3 as Real) →Q → Sym(1/3) via continued fraction');
 }
 
-/* ---- →Q on a negative: -3/4 → Neg(3/4) ---- */
 {
   const s = new Stack();
   s.push(Real(-0.75));
@@ -1334,7 +1306,6 @@ setAngle('rad');
     'session047: -0.75 →Q → Neg(3/4)');
 }
 
-/* ---- →Q on an integer-valued Real: 5.0 → Sym(5), no /1 ---- */
 {
   const s = new Stack();
   s.push(Real(5));
@@ -1344,7 +1315,6 @@ setAngle('rad');
     'session047: 5.0 →Q → Sym(5)  (no /1 denominator)');
 }
 
-/* ---- →Q on zero: 0 → Sym(0) ---- */
 {
   const s = new Stack();
   s.push(Real(0));
@@ -1354,7 +1324,6 @@ setAngle('rad');
     'session047: 0 →Q → Sym(0)');
 }
 
-/* ---- →Q on an Integer: passes through as Sym(n) ---- */
 {
   const s = new Stack();
   s.push(Integer(42));
@@ -1364,14 +1333,12 @@ setAngle('rad');
     'session047: Integer 42 →Q → Sym(42)');
 }
 
-/* ---- →Q on Complex throws ---- */
 {
   const s = new Stack();
   s.push(Complex(1, 2));
   assertThrows(() => { lookup('→Q').fn(s); }, null, 'session047: Complex →Q throws Bad argument type');
 }
 
-/* ---- ->Q ASCII alias ---- */
 {
   const s = new Stack();
   s.push(Real(0.25));
@@ -1381,11 +1348,8 @@ setAngle('rad');
     'session047: ->Q ASCII alias works (0.25 → 1/4)');
 }
 
-// ------------------------------------------------------------------
 // Q→ decompose, D→HMS / HMS→D bridges
-// ------------------------------------------------------------------
 
-/* ---- Q→ on Symbolic 1/2 → ( 1 2 ) ---- */
 {
   const s = new Stack();
   s.push(Real(0.5));
@@ -1398,7 +1362,6 @@ setAngle('rad');
   assert(isInteger(d) && d.value === 2n, 'session048: Q→ of 1/2 denom=2');
 }
 
-/* ---- Q→ on Symbolic 3/4 constructed directly ---- */
 {
   const s = new Stack();
   s.push(Real(0.75));
@@ -1410,7 +1373,6 @@ setAngle('rad');
     'session048: Q→ of 3/4 → ( 3 4 )');
 }
 
-/* ---- Q→ on a negative Symbolic: -(3/4) → ( -3 4 ) ---- */
 {
   const s = new Stack();
   s.push(Real(-0.75));
@@ -1422,7 +1384,6 @@ setAngle('rad');
     'session048: Q→ of Neg(3/4) → ( -3 4 )');
 }
 
-/* ---- Q→ on an integer Symbolic: Sym(5) → ( 5 1 ) ---- */
 {
   const s = new Stack();
   s.push(Real(5));
@@ -1434,7 +1395,6 @@ setAngle('rad');
     'session048: Q→ of Sym(5) → ( 5 1 ) (integer-over-one convention)');
 }
 
-/* ---- Q→ on zero ---- */
 {
   const s = new Stack();
   s.push(Real(0));
@@ -1446,7 +1406,6 @@ setAngle('rad');
     'session048: Q→ of Sym(0) → ( 0 1 )');
 }
 
-/* ---- Q→ on a bare Integer (convenience passthrough) ---- */
 {
   const s = new Stack();
   s.push(Integer(42));
@@ -1457,7 +1416,6 @@ setAngle('rad');
     'session048: Q→ of Integer(42) → ( 42 1 )');
 }
 
-/* ---- Q→ on a bare Real with integer value ---- */
 {
   const s = new Stack();
   s.push(Real(7));
@@ -1468,14 +1426,12 @@ setAngle('rad');
     'session048: Q→ of Real(7) → ( 7 1 )');
 }
 
-/* ---- Q→ on a non-integer Real throws ---- */
 {
   const s = new Stack();
   s.push(Real(3.14));
   assertThrows(() => { lookup('Q→').fn(s); }, null, 'session048: Q→ of non-integer Real throws Bad argument value');
 }
 
-/* ---- Q→ on wrong Symbolic shape (SIN(x)) throws ---- */
 {
   const s = new Stack();
   // Manually build a Symbolic that's not a rational.
@@ -1490,14 +1446,12 @@ setAngle('rad');
   assertThrows(() => { lookup('Q→').fn(s); }, null, 'session048: Q→ of SIN(X) throws Bad argument type');
 }
 
-/* ---- Q→ on Complex throws ---- */
 {
   const s = new Stack();
   s.push(Complex(1, 2));
   assertThrows(() => { lookup('Q→').fn(s); }, null, 'session048: Q→ of Complex throws Bad argument type');
 }
 
-/* ---- Q-> ASCII alias ---- */
 {
   const s = new Stack();
   s.push(Real(0.25));
@@ -1509,7 +1463,6 @@ setAngle('rad');
     'session048: Q-> ASCII alias works (0.25 round-trip → 1 4)');
 }
 
-/* ---- Round-trip: x →Q Q→ → (n d) where x == n/d ---- */
 {
   const s = new Stack();
   s.push(Real(0.125));
@@ -1520,7 +1473,6 @@ setAngle('rad');
   assert(n === 1 && d === 8, 'session048: 0.125 →Q Q→ → ( 1 8 )');
 }
 
-/* ---- D→HMS — decimal-degree → DD.MMSS ---- */
 {
   const s = new Stack();
   s.push(Real(1.5));         // 1°30'00"
@@ -1530,7 +1482,6 @@ setAngle('rad');
     'session048: D→HMS 1.5 → 1.3 (1°30\')');
 }
 
-/* ---- HMS→D — DD.MMSS → decimal-degree ---- */
 {
   const s = new Stack();
   s.push(Real(1.3));         // 1°30'00"
@@ -1540,7 +1491,6 @@ setAngle('rad');
     'session048: HMS→D 1.3 → 1.5');
 }
 
-/* ---- D→HMS on a degree with arcseconds ---- */
 {
   const s = new Stack();
   s.push(Real(10.25));       // 10°15'00"
@@ -1550,7 +1500,6 @@ setAngle('rad');
     'session048: D→HMS 10.25 → 10.15');
 }
 
-/* ---- HMS→D on 10.3015 → 10.5041666… (10°30'15") ---- */
 {
   const s = new Stack();
   s.push(Real(10.3015));     // 10°30'15"
@@ -1561,7 +1510,6 @@ setAngle('rad');
     'session048: HMS→D 10.3015 → 10°30\'15" decimal');
 }
 
-/* ---- D→HMS / HMS→D round trip on random value ---- */
 {
   const s = new Stack();
   s.push(Real(5.375));
@@ -1572,7 +1520,6 @@ setAngle('rad');
     'session048: D→HMS HMS→D round-trip preserves value');
 }
 
-/* ---- ASCII aliases D->HMS / HMS->D ---- */
 {
   const s = new Stack();
   s.push(Real(1.5));
@@ -1588,21 +1535,14 @@ setAngle('rad');
     'session048: HMS->D ASCII alias');
 }
 
-/* ---- D→HMS rejects Complex ---- */
 {
   const s = new Stack();
   s.push(Complex(1, 2));
   assertThrows(() => { lookup('D→HMS').fn(s); }, null, 'session048: D→HMS on Complex throws');
 }
 
-// ------------------------------------------------------------------
-// ------------------------------------------------------------------
 
-// ------------------------------------------------------------------
-// →Qπ / ->Qπ: rationalize as rational multiple of π
-// ------------------------------------------------------------------
 
-/* ---- →Qπ on π itself → Sym(PI) ---- */
 {
   const s = new Stack();
   s.push(Real(Math.PI));
@@ -1614,7 +1554,6 @@ setAngle('rad');
     'session052: π →Qπ → Sym(PI)');
 }
 
-/* ---- →Qπ on π/2 → Sym(PI/2) ---- */
 {
   const s = new Stack();
   s.push(Real(Math.PI / 2));
@@ -1627,7 +1566,6 @@ setAngle('rad');
     'session052: π/2 →Qπ → Sym(PI / 2)');
 }
 
-/* ---- →Qπ on 3π/4 → Sym((3 * PI) / 4) ---- */
 {
   const s = new Stack();
   s.push(Real(3 * Math.PI / 4));
@@ -1642,7 +1580,6 @@ setAngle('rad');
     'session052: 3π/4 →Qπ numerator is 3 * PI');
 }
 
-/* ---- →Qπ on 2π → Sym(2 * PI), no /1 denominator ---- */
 {
   const s = new Stack();
   s.push(Real(2 * Math.PI));
@@ -1654,7 +1591,6 @@ setAngle('rad');
     'session052: 2π →Qπ → Sym(2 * PI)  (no /1 denom)');
 }
 
-/* ---- →Qπ on -π/3 → Neg(PI / 3) ---- */
 {
   const s = new Stack();
   s.push(Real(-Math.PI / 3));
@@ -1669,7 +1605,6 @@ setAngle('rad');
     'session052: -π/3 →Qπ → Neg(PI / 3)');
 }
 
-/* ---- →Qπ on 0 → Sym(0) ---- */
 {
   const s = new Stack();
   s.push(Real(0));
@@ -1690,14 +1625,12 @@ setAngle('rad');
     'session052: Integer 0 →Qπ → Sym(0)');
 }
 
-/* ---- →Qπ on Complex throws Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Complex(1, 2));
   assertThrows(() => { lookup('→Qπ').fn(s); }, /Bad argument/, 'session052: Complex →Qπ throws');
 }
 
-/* ---- ASCII alias ->Qπ works identically ---- */
 {
   const s = new Stack();
   s.push(Real(Math.PI));
@@ -1706,16 +1639,10 @@ setAngle('rad');
     'session052: ->Qπ ASCII alias matches →Qπ');
 }
 
-// ------------------------------------------------------------------
-// ------------------------------------------------------------------
 
-// ------------------------------------------------------------------
 
-// ==================================================================
 // number-theoretic ops (CAS §11, integer subset)
-// ==================================================================
 
-/* ---- ISPRIME? on small cases ---- */
 {
   const s = new Stack();
   for (const [n, expected] of [[2n,1],[3n,1],[4n,0],[5n,1],[9n,0],[11n,1],[12n,0],[13n,1],[1n,0],[0n,0]]) {
@@ -1727,7 +1654,6 @@ setAngle('rad');
   }
 }
 
-/* ---- ISPRIME? on integer-valued Real coerces ---- */
 {
   const s = new Stack();
   s.push(Real(17));
@@ -1735,14 +1661,12 @@ setAngle('rad');
   assert(s.peek().value.eq(1), 'session053: ISPRIME? Real(17) → true');
 }
 
-/* ---- ISPRIME? on non-integer Real throws ---- */
 {
   const s = new Stack();
   s.push(Real(2.5));
   assertThrows(() => { lookup('ISPRIME?').fn(s); }, /Bad argument/, 'session053: ISPRIME? 2.5 throws');
 }
 
-/* ---- ISPRIME? on larger Miller-Rabin witness cases ---- */
 {
   const s = new Stack();
   s.push(Integer(7919n));   // 1000th prime
@@ -1754,7 +1678,6 @@ setAngle('rad');
   assert(s.peek().value.eq(0), 'session053: ISPRIME? 7920 → false');
 }
 
-/* ---- NEXTPRIME / PREVPRIME ---- */
 {
   const s = new Stack();
   s.push(Integer(10n));
@@ -1779,14 +1702,12 @@ setAngle('rad');
   assert(s.peek().value === 11n, 'session053: PREVPRIME 13 → 11 (skips 13)');
 }
 
-/* ---- PREVPRIME on input where no smaller prime exists ---- */
 {
   const s = new Stack();
   s.push(Integer(2n));
   assertThrows(() => { lookup('PREVPRIME').fn(s); }, /Bad argument/, 'session053: PREVPRIME 2 throws (no prime < 2)');
 }
 
-/* ---- EULER (Euler totient φ) ---- */
 {
   const s = new Stack();
   for (const [n, phi] of [[1n,1n],[2n,1n],[3n,2n],[4n,2n],[6n,2n],[9n,6n],[12n,4n],[36n,12n]]) {
@@ -1798,7 +1719,6 @@ setAngle('rad');
   }
 }
 
-/* ---- EULER 0 / negative throws ---- */
 {
   const s = new Stack();
   s.push(Integer(0n));
@@ -1808,7 +1728,6 @@ setAngle('rad');
   assertThrows(() => { lookup('EULER').fn(s); }, /Bad argument/, 'session053: EULER -5 throws');
 }
 
-/* ---- DIVIS ---- */
 {
   const s = new Stack();
   s.push(Integer(12n));
@@ -1832,14 +1751,12 @@ setAngle('rad');
     'session053: DIVIS -6 uses |n|');
 }
 
-/* ---- DIVIS 0 throws ---- */
 {
   const s = new Stack();
   s.push(Integer(0n));
   assertThrows(() => { lookup('DIVIS').fn(s); }, /Bad argument/, 'session053: DIVIS 0 throws');
 }
 
-/* ---- FACTORS ---- */
 {
   const s = new Stack();
   s.push(Integer(12n));
@@ -1865,7 +1782,6 @@ setAngle('rad');
   assert(s.peek().items.length === 0, 'session053: FACTORS 1 → {}');
 }
 
-/* ---- IBERNOULLI B_0..B_6 ---- */
 {
   const s = new Stack();
   // B_0 = 1
@@ -1924,21 +1840,18 @@ setAngle('rad');
   }
 }
 
-/* ---- IBERNOULLI negative input throws ---- */
 {
   const s = new Stack();
   s.push(Integer(-1n));
   assertThrows(() => { lookup('IBERNOULLI').fn(s); }, /Bad argument/, 'session053: IBERNOULLI -1 throws');
 }
 
-/* ---- IBERNOULLI cap ---- */
 {
   const s = new Stack();
   s.push(Integer(1000n));
   assertThrows(() => { lookup('IBERNOULLI').fn(s); }, /Bad argument/, 'session053: IBERNOULLI 1000 throws (cap)');
 }
 
-/* ---- IEGCD ---- */
 {
   const s = new Stack();
   s.push(Integer(12n));
@@ -1952,7 +1865,6 @@ setAngle('rad');
   assert(u * 12n + v * 18n === 6n, 'session053: IEGCD 12 18 u v satisfies u*a + v*b = g');
 }
 
-/* ---- IEGCD 0 0 — g must be 0; u, v can be any integers ---- */
 {
   const s = new Stack();
   s.push(Integer(0n));
@@ -1962,7 +1874,6 @@ setAngle('rad');
     'session053: IEGCD 0 0 → g = 0');
 }
 
-/* ---- IEGCD with negative input ---- */
 {
   const s = new Stack();
   s.push(Integer(-12n));
@@ -1975,7 +1886,6 @@ setAngle('rad');
     'session053: IEGCD -12 18 satisfies u*(-12) + v*18 = 6');
 }
 
-/* ---- ICHINREM ---- */
 {
   // x ≡ 2 (mod 3), x ≡ 3 (mod 5) → x = 8 (mod 15)
   const s = new Stack();
@@ -1988,7 +1898,6 @@ setAngle('rad');
     'session053: ICHINREM {2,3} {3,5} → {8 15}');
 }
 
-/* ---- ICHINREM no solution throws ---- */
 {
   // x ≡ 1 (mod 2), x ≡ 0 (mod 4) — inconsistent
   const s = new Stack();
@@ -1997,7 +1906,6 @@ setAngle('rad');
   assertThrows(() => { lookup('ICHINREM').fn(s); }, /Bad argument/, 'session053: ICHINREM inconsistent throws');
 }
 
-/* ---- IABCUV ---- */
 {
   // 12 u + 18 v = 30 ; gcd(12,18) = 6, 30/6 = 5, bezout(12,18) has u=-1,v=1 so u=-5,v=5
   const s = new Stack();
@@ -2011,7 +1919,6 @@ setAngle('rad');
     'session053: IABCUV 12 18 30 satisfies 12u + 18v = 30');
 }
 
-/* ---- IABCUV no solution ---- */
 {
   const s = new Stack();
   s.push(Integer(6n));
@@ -2020,11 +1927,7 @@ setAngle('rad');
   assertThrows(() => { lookup('IABCUV').fn(s); }, /Bad argument/, 'session053: IABCUV 6 9 5 (no solution) throws');
 }
 
-// ==================================================================
-// STD / FIX / SCI / ENG (display-mode state)
-// ==================================================================
 
-/* ---- FIX n sets displayMode = 'FIX' and displayDigits = n ---- */
 {
   const s = new Stack();
   s.push(Integer(4n));
@@ -2035,7 +1938,6 @@ setAngle('rad');
     'session053: FIX 4 sets displayDigits = 4');
 }
 
-/* ---- SCI sets displayMode = 'SCI' ---- */
 {
   const s = new Stack();
   s.push(Integer(3n));
@@ -2044,7 +1946,6 @@ setAngle('rad');
     'session053: SCI 3 → mode=SCI, digits=3');
 }
 
-/* ---- ENG sets displayMode = 'ENG' ---- */
 {
   const s = new Stack();
   s.push(Integer(2n));
@@ -2053,7 +1954,6 @@ setAngle('rad');
     'session053: ENG 2 → mode=ENG, digits=2');
 }
 
-/* ---- STD resets mode but preserves digits ---- */
 {
   // First set SCI 5
   const s = new Stack();
@@ -2067,7 +1967,6 @@ setAngle('rad');
     'session053: STD does not overwrite displayDigits');
 }
 
-/* ---- FIX clamps at 11 digits (HP50 cap) ---- */
 {
   const s = new Stack();
   s.push(Integer(20n));
@@ -2076,21 +1975,18 @@ setAngle('rad');
     'session053: FIX 20 clamps to 11');
 }
 
-/* ---- FIX with negative digits throws ---- */
 {
   const s = new Stack();
   s.push(Integer(-1n));
   assertThrows(() => { lookup('FIX').fn(s); }, /Bad argument/, 'session053: FIX -1 throws');
 }
 
-/* ---- FIX with non-integer Real throws ---- */
 {
   const s = new Stack();
   s.push(Real(3.5));
   assertThrows(() => { lookup('FIX').fn(s); }, /Bad argument/, 'session053: FIX 3.5 throws');
 }
 
-/* ---- FIX with non-numeric throws Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Name('X'));
@@ -2101,7 +1997,6 @@ setAngle('rad');
    CMPLX / CMPLX? mode toggle.
    ================================================================= */
 
-/* ---- CMPLX op toggles state.complexMode ---- */
 {
   setComplexMode(false);
   const s = new Stack();
@@ -2111,7 +2006,6 @@ setAngle('rad');
   assert(getComplexMode() === false, 'session054: CMPLX op toggles back off');
 }
 
-/* ---- CMPLX? returns 1/0 ---- */
 {
   setComplexMode(true);
   const s = new Stack();
@@ -2122,7 +2016,6 @@ setAngle('rad');
   assert(s.pop().value.eq(0), 'session054: CMPLX? OFF → 0');
 }
 
-/* ---- CMPLX OFF: LN(-1) throws Bad argument value ---- */
 {
   setComplexMode(false);
   const s = new Stack();
@@ -2130,7 +2023,6 @@ setAngle('rad');
   assertThrows(() => { lookup('LN').fn(s); }, /Bad argument value/, 'session054: LN(-1) throws under CMPLX OFF');
 }
 
-/* ---- CMPLX ON: LN(-1) → (0, π) ---- */
 {
   setComplexMode(true);
   const s = new Stack();
@@ -2173,7 +2065,6 @@ setAngle('rad');
   setComplexMode(false);
 }
 
-/* ---- LOG(-10) under CMPLX OFF throws clean RPL error ---- */
 {
   setComplexMode(false);
   const s = new Stack();
@@ -2192,7 +2083,6 @@ setAngle('rad');
    `toRadians` so the round-trip is an identity in any angle mode.
    ================================================================ */
 
-/* ---- C→P in RAD: (3, 4) → (5, atan2(4,3)) ---- */
 {
   setAngle('RAD');
   const s = new Stack();
@@ -2205,7 +2095,6 @@ setAngle('rad');
     'session055: C→P(3+4i) = (5, atan2(4,3)) in RAD');
 }
 
-/* ---- C→P in DEG: θ returned in degrees ---- */
 {
   setAngle('DEG');
   const s = new Stack();
@@ -2219,7 +2108,6 @@ setAngle('rad');
   setAngle('RAD');
 }
 
-/* ---- P→C in RAD: (2, π/2) → (0, 2) ---- */
 {
   setAngle('RAD');
   const s = new Stack();
@@ -2232,7 +2120,6 @@ setAngle('rad');
     'session055: P→C(2, π/2) = 2i in RAD');
 }
 
-/* ---- P→C in DEG: (1, 180°) → -1 ---- */
 {
   setAngle('DEG');
   const s = new Stack();
@@ -2246,7 +2133,6 @@ setAngle('rad');
   setAngle('RAD');
 }
 
-/* ---- C→P then P→C round-trips (RAD) ---- */
 {
   setAngle('RAD');
   const s = new Stack();
@@ -2260,7 +2146,6 @@ setAngle('rad');
     'session055: C→P / P→C round-trips in RAD');
 }
 
-/* ---- C→P of Real lifts to (|x|, 0) with x>0 ---- */
 {
   setAngle('RAD');
   const s = new Stack();
@@ -2271,7 +2156,6 @@ setAngle('rad');
     'session055: C→P(7) = (7, 0)');
 }
 
-/* ---- C->P ASCII alias matches C→P ---- */
 {
   setAngle('RAD');
   const s = new Stack();
@@ -2282,7 +2166,6 @@ setAngle('rad');
     'session055: C->P ASCII alias');
 }
 
-/* ---- P->C ASCII alias matches P→C ---- */
 {
   setAngle('RAD');
   const s = new Stack();
@@ -2293,7 +2176,6 @@ setAngle('rad');
     'session055: P->C ASCII alias');
 }
 
-/* ---- C→P rejects non-scalar (Vector) with Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2)]));
@@ -2312,7 +2194,6 @@ setAngle('rad');
    SIGN/ARG handle Complex + Vector natively for SIGN.
    ====================================================================== */
 
-/* ---- FLOOR / CEIL / IP / FP: Symbolic lift on Name ---- */
 {
   const s = new Stack();
   s.push(Name('X'));
@@ -2347,7 +2228,6 @@ setAngle('rad');
     'session062: FP on Name lifts to Symbolic');
 }
 
-/* ---- FLOOR / CEIL on Symbolic round-trips through entry parser ---- */
 {
   const parsed = parseEntry("`FLOOR(X+1)`");
   const s = new Stack();
@@ -2358,7 +2238,6 @@ setAngle('rad');
     'session062: FLOOR(X+1) parses as Symbolic(FLOOR(…))');
 }
 
-/* ---- FLOOR / CEIL / IP / FP: Vector element-wise ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1.7), Real(-2.3), Real(3)]));
@@ -2397,7 +2276,6 @@ setAngle('rad');
     'session062: FP on Vector element-wise');
 }
 
-/* ---- FLOOR on Matrix element-wise ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1.7), Real(-2.3)], [Real(0.5), Real(4.9)]]));
@@ -2409,7 +2287,6 @@ setAngle('rad');
     'session062: FLOOR on Matrix element-wise');
 }
 
-/* ---- FLOOR on Tagged: unwrap → apply → re-tag ---- */
 {
   const s = new Stack();
   s.push(Tagged('Price', Real(4.7)));
@@ -2420,7 +2297,6 @@ setAngle('rad');
     'session062: FLOOR on Tagged preserves tag and floors the value');
 }
 
-/* ---- IP on Tagged Integer: tag preserved, value unchanged ---- */
 {
   const s = new Stack();
   s.push(Tagged('N', Integer(42n)));
@@ -2431,7 +2307,6 @@ setAngle('rad');
     'session062: IP on Tagged(Integer) preserves tag, integer identity');
 }
 
-/* ---- FLOOR still rejects Complex (HP50 has no floor on ℂ) ---- */
 {
   const s = new Stack();
   s.push(Complex(1.5, 2.5));
@@ -2443,7 +2318,6 @@ setAngle('rad');
   assertThrows(() => { lookup('FP').fn(s); }, /Bad argument type/, 'session062: FP rejects Complex');
 }
 
-/* ---- SIGN widenings ---- */
 {
   const s = new Stack();
   s.push(Name('X'));
@@ -2474,7 +2348,6 @@ setAngle('rad');
     'session062: SIGN on Tagged preserves tag');
 }
 
-/* ---- ARG widenings: Symbolic lift, Vector/Matrix element-wise, Tagged ---- */
 {
   const s = new Stack();
   s.push(Name('Z'));
@@ -2518,7 +2391,6 @@ setAngle('rad');
     'session062: ARG on Tagged preserves tag');
 }
 
-/* ---- MOD widenings: Symbolic lift, Tagged transparency ---- */
 {
   const s = new Stack();
   s.push(Name('X'));
@@ -2564,7 +2436,6 @@ setAngle('rad');
   assertThrows(() => { lookup('MOD').fn(s); }, /Bad argument type/, 'session062: MOD still rejects Complex (no total order in ℂ)');
 }
 
-/* ---- MIN / MAX widenings: Symbolic lift, Tagged transparency ---- */
 {
   const s = new Stack();
   s.push(Name('X'));
@@ -2609,7 +2480,6 @@ setAngle('rad');
   assertThrows(() => { lookup('MIN').fn(s); }, /Bad argument type/, 'session062: MIN still rejects Complex');
 }
 
-/* ---- Symbolic round-trip through entry parser for new KNOWN_FUNCTIONS ---- */
 {
   const parsed = parseEntry("`MIN(X,3)`");
   const s = new Stack();
@@ -2656,7 +2526,6 @@ const _approx = (got, want, tol = 1e-9) => {
 
 setAngle('RAD');
 
-/* ---- Trig forward (SIN/COS/TAN) on Vector / Matrix / Tagged ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(0), Real(Math.PI / 2), Real(Math.PI)]));
@@ -2692,7 +2561,6 @@ setAngle('RAD');
     'session063: TAN on Tagged Real preserves the tag');
 }
 
-/* ---- Trig inverse (ASIN/ACOS/ATAN) on Vector / Matrix / Tagged ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(0), Real(1)]));
@@ -2723,7 +2591,6 @@ setAngle('RAD');
     'session063: ATAN on Tagged Real preserves the tag');
 }
 
-/* ---- Hyperbolic family on Vector / Matrix / Tagged ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(0), Real(1)]));
@@ -2784,7 +2651,6 @@ setAngle('RAD');
     'session063: ATANH on Tagged Real preserves the tag');
 }
 
-/* ---- Log family (LN / LOG / EXP / ALOG) on V / M / Tagged ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(Math.E), Real(Math.E * Math.E)]));
@@ -2828,7 +2694,6 @@ setAngle('RAD');
     'session063: ALOG on Tagged Real preserves the tag (10^2 = 100)');
 }
 
-/* ---- SQRT on Vector / Matrix / Tagged ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(4), Real(9), Real(16)]));
@@ -2874,7 +2739,6 @@ setAngle('RAD');
     'session063: SQRT on Vector promotes negative entries to Complex');
 }
 
-/* ---- FACT widening: Symbolic / Name lift, List, Vector, Matrix, Tagged ---- */
 {
   const s = new Stack();
   s.push(Name('N'));
@@ -2929,7 +2793,6 @@ setAngle('RAD');
     'session063: FACT on Tagged Integer preserves the tag');
 }
 
-/* ---- LNP1 / EXPM on Vector / Tagged ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(0), Real(1)]));
@@ -2949,7 +2812,6 @@ setAngle('RAD');
     'session063: EXPM on Tagged Real preserves the tag');
 }
 
-/* ---- Rejection: program operands still throw on widened ops ---- */
 {
   const s = new Stack();
   s.push(Program([Real(1)]));
@@ -2973,7 +2835,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('FACT').fn(s); }, /Bad argument value/, 'session063: FACT(-3) still throws Bad argument value');
 }
 
-/* ---- Tagged-of-Vector on hyperbolic: tag preserved across container ---- */
 {
   const s = new Stack();
   s.push(Tagged('temps', Vector([Real(0), Real(1)])));
@@ -2986,7 +2847,6 @@ setAngle('RAD');
     'session063: SINH on Tagged-of-Vector preserves tag and dispatches inside');
 }
 
-/* ---- Symbolic round-trip: FACT(X) parses through entry line ---- */
 {
   const parsed = parseEntry("`FACT(X)`");
   const s = new Stack();
@@ -3010,7 +2870,6 @@ setAngle('RAD');
  * String or Program.
  * ============================================================ */
 
-/* ---- (a) GCD / LCM widening ---- */
 {
   // Tagged × Real on GCD: unwrap both, drop tag (binary convention).
   const s = new Stack();
@@ -3111,7 +2970,6 @@ setAngle('RAD');
     'session064: GCD still rejects Complex element inside a List');
 }
 
-/* ---- (b) % / %T / %CH widening ---- */
 {
   // Tagged × Real on %: unwrap the tag, compute, drop tag.
   const s = new Stack();
@@ -3167,7 +3025,6 @@ setAngle('RAD');
     'session064: %T on Tagged(0) × Real still throws Infinite result');
 }
 
-/* ---- (c) INV / SQ Tagged transparency ---- */
 {
   // Tagged Real on INV: unwrap, invert, re-tag.
   const s = new Stack();
@@ -3238,7 +3095,6 @@ setAngle('RAD');
  * the wrapper plumbing composes with the new handler.
  * ================================================================== */
 
-/* ---- COMB: non-negative integer arguments, n ≥ m ---- */
 {
   const s = new Stack();
   s.push(Integer(7n));
@@ -3352,7 +3208,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('COMB').fn(s); }, /Bad argument type/, 'session065: COMB((2,1), 1) throws Bad argument type');
 }
 
-/* ---- PERM: n! / (n−m)! ---- */
 {
   const s = new Stack();
   s.push(Integer(7n));
@@ -3549,7 +3404,6 @@ setAngle('RAD');
                'session156: COMB(Rat -5/1, Int 2) throws Bad argument type (negative-int-valued Rat reject; type-narrowing fires before the negative-arg value-domain check would)');
 }
 
-/* ---- IDIV2: integer quotient + remainder ---- */
 {
   const s = new Stack();
   s.push(Integer(17n));
@@ -3613,7 +3467,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('IDIV2').fn(s); }, /Bad argument type/, 'session065: IDIV2((3,2), 2) throws Bad argument type');
 }
 
-/* ---- UTPN: upper-tail normal probability ---- */
 {
   // Symmetry: P(X > μ) = 0.5 at the mean.
   const s = new Stack();
@@ -3723,7 +3576,6 @@ setAngle('RAD');
                       Matrix operands (both sides, and scalar ∘ V).
    ============================================================ */
 
-/* ---- Tagged transparency on + / - / * / / / ^ ---- */
 {
   // `+` with both sides Tagged — tag drops, numeric value surfaces.
   const s = new Stack();
@@ -3834,7 +3686,6 @@ setAngle('RAD');
     'session068: Tagged / Tagged(0) → Infinite result (tag does not mask)');
 }
 
-/* ---- Tagged transparency on NEG / ABS / CONJ / RE / IM ---- */
 {
   // NEG on Tagged Real — retag with same label.
   const s = new Stack();
@@ -4004,7 +3855,6 @@ setAngle('RAD');
  * Coverage is ≥1 positive + ≥1 rejection per op.
  * ============================================================ */
 
-/* ---- IQUOT: integer quotient (truncated division) ---- */
 {
   const s = new Stack();
   s.push(Integer(17n));
@@ -4094,7 +3944,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('IQUOT').fn(s); }, /Bad argument type/, 'session068: IQUOT((3,2), 2) throws Bad argument type');
 }
 
-/* ---- IREMAINDER: integer remainder (sign of dividend) ---- */
 {
   const s = new Stack();
   s.push(Integer(17n));
@@ -4176,7 +4025,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('IREMAINDER').fn(s); }, /Bad argument type/, 'session068: IREMAINDER on String dividend throws Bad argument type');
 }
 
-/* ---- GAMMA: Γ(x) via Lanczos ---- */
 {
   // Γ(n) = (n-1)!.  Γ(5) = 24, exact Integer (via _bigFactorial).
   const s = new Stack();
@@ -4276,7 +4124,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('GAMMA').fn(s); }, /Bad argument type/, 'session068: GAMMA((1,1)) throws Bad argument type');
 }
 
-/* ---- LNGAMMA: ln|Γ(x)| via Lanczos-log ---- */
 {
   // ln Γ(5) = ln(24).
   const s = new Stack();
@@ -4327,7 +4174,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('LNGAMMA').fn(s); }, /Bad argument type/, 'session068: LNGAMMA on String throws Bad argument type');
 }
 
-/* ---- UTPC: chi-square upper tail ---- */
 {
   // x = 0 → P(X > 0) = 1 (trivial boundary).
   const s = new Stack();
@@ -4422,7 +4268,6 @@ setAngle('RAD');
    closed-form cross-checks cited per assertion.
    ================================================================= */
 
-/* ---- Beta -------------------------------------------------------- */
 {
   // Β(3, 4) = Γ(3)Γ(4)/Γ(7) = 2! 3! / 6! = 12 / 720 = 1/60.
   const s = new Stack();
@@ -4500,7 +4345,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('Beta').fn(s); }, /Bad argument type/, 'session069: Beta("a", 1) throws Bad argument type');
 }
 
-/* ---- erf --------------------------------------------------------- */
 {
   // erf(0) = 0 exactly.
   const s = new Stack();
@@ -4587,7 +4431,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('erf').fn(s); }, /Bad argument type/, 'session069: erf(Complex) throws Bad argument type');
 }
 
-/* ---- erfc -------------------------------------------------------- */
 {
   // erfc(0) = 1 exactly.
   const s = new Stack();
@@ -4650,7 +4493,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('erfc').fn(s); }, /Bad argument type/, 'session069: erfc("hello") throws Bad argument type');
 }
 
-/* ---- UTPF -------------------------------------------------------- */
 {
   // F(5, 10) α=0.05 critical value 3.326 — AS Table 26.9 / any
   // standard F-distribution table.  UTPF(5, 10, 3.326) ≈ 0.05.
@@ -4734,7 +4576,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('UTPF').fn(s); }, /Bad argument type/, 'session069: UTPF(5, 10, Complex) throws Bad argument type');
 }
 
-/* ---- UTPT -------------------------------------------------------- */
 {
   // UTPT(1, t) is the Cauchy upper tail: 1 - (0.5 + atan(t)/π).
   // At t=1: F(1) = 0.75, so UTPT = 0.25.
@@ -4989,7 +4830,6 @@ setAngle('RAD');
    EUCLID (Bezout) + INVMOD (modular inverse).
    ================================================================ */
 
-/* ---- EUCLID on coprime pair ---- */
 {
   const s = new Stack();
   s.push(Integer(3n));
@@ -5008,7 +4848,6 @@ setAngle('RAD');
     `session076: EUCLID(3, 5) Bezout identity holds (got ${u.value}·3 + ${v.value}·5)`);
 }
 
-/* ---- EUCLID on non-coprime pair ---- */
 {
   const s = new Stack();
   s.push(Integer(12n));
@@ -5022,7 +4861,6 @@ setAngle('RAD');
     `session076: EUCLID(12, 18) Bezout identity holds`);
 }
 
-/* ---- EUCLID with negative operand re-signs Bezout coefficient ---- */
 {
   const s = new Stack();
   s.push(Integer(-15n));
@@ -5037,7 +4875,6 @@ setAngle('RAD');
     `session076: EUCLID(-15, 6) Bezout identity holds on signed operand`);
 }
 
-/* ---- EUCLID with one zero operand ---- */
 {
   const s = new Stack();
   s.push(Integer(0n));
@@ -5051,7 +4888,6 @@ setAngle('RAD');
     'session076: EUCLID(0, 7) Bezout identity holds');
 }
 
-/* ---- EUCLID rejects (0, 0) with Bad argument value ---- */
 {
   const s = new Stack();
   s.push(Integer(0n));
@@ -5059,7 +4895,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('EUCLID').fn(s); }, /Bad argument value/, 'session076: EUCLID(0, 0) rejects with Bad argument value');
 }
 
-/* ---- EUCLID rejects non-integer-valued Real ---- */
 {
   const s = new Stack();
   s.push(Real(3.5));
@@ -5067,7 +4902,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('EUCLID').fn(s); }, /Bad argument value/, 'session076: EUCLID rejects non-integer-valued Real');
 }
 
-/* ---- EUCLID rejects String ---- */
 {
   const s = new Stack();
   s.push(Str('x'));
@@ -5075,7 +4909,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('EUCLID').fn(s); }, /Bad argument type/, 'session076: EUCLID on String rejects with Bad argument type');
 }
 
-/* ---- INVMOD small case: 3^-1 mod 11 = 4 (since 3·4 = 12 ≡ 1) ---- */
 {
   const s = new Stack();
   s.push(Integer(3n));
@@ -5086,7 +4919,6 @@ setAngle('RAD');
     `session076: INVMOD(3, 11) = 4 (got ${out.value})`);
 }
 
-/* ---- INVMOD bigger coprime case: 17^-1 mod 3120 ---- */
 {
   // A textbook RSA-style case.  17 · 2753 = 46801 = 15·3120 + 1.
   const s = new Stack();
@@ -5100,7 +4932,6 @@ setAngle('RAD');
     'session076: INVMOD(17, 3120) satisfies 17·r ≡ 1 (mod 3120)');
 }
 
-/* ---- INVMOD reduces negative a ---- */
 {
   // -3 ≡ 8 (mod 11); so INVMOD(-3, 11) = INVMOD(8, 11).  8·7 = 56 = 5·11+1.
   const s = new Stack();
@@ -5112,7 +4943,6 @@ setAngle('RAD');
     `session076: INVMOD(-3, 11) = 7 (reduces -3 to 8 first) (got ${out.value})`);
 }
 
-/* ---- INVMOD result is in [0, n) ---- */
 {
   const s = new Stack();
   s.push(Integer(5n));
@@ -5125,7 +4955,6 @@ setAngle('RAD');
     'session076: INVMOD(5, 13) satisfies the inverse equation');
 }
 
-/* ---- INVMOD rejects non-coprime pair ---- */
 {
   const s = new Stack();
   s.push(Integer(4n));
@@ -5133,7 +4962,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('INVMOD').fn(s); }, /Bad argument value/, 'session076: INVMOD(4, 6) rejects — no inverse (gcd = 2)');
 }
 
-/* ---- INVMOD rejects modulus < 2 ---- */
 {
   const s = new Stack();
   s.push(Integer(3n));
@@ -5141,7 +4969,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('INVMOD').fn(s); }, /Bad argument value/, 'session076: INVMOD rejects modulus = 1');
 }
 
-/* ---- INVMOD rejects a ≡ 0 (mod n) ---- */
 {
   const s = new Stack();
   s.push(Integer(6n));
@@ -5149,7 +4976,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('INVMOD').fn(s); }, /Bad argument value/, 'session076: INVMOD(6, 3) rejects — 6 ≡ 0 (mod 3)');
 }
 
-/* ---- INVMOD rejects non-integer-valued Real ---- */
 {
   const s = new Stack();
   s.push(Real(3.5));
@@ -5157,7 +4983,6 @@ setAngle('RAD');
   assertThrows(() => { lookup('INVMOD').fn(s); }, /Bad argument value/, 'session076: INVMOD rejects non-integer-valued Real');
 }
 
-/* ---- INVMOD rejects String ---- */
 {
   const s = new Stack();
   s.push(Str('3'));
@@ -5176,7 +5001,6 @@ setAngle('RAD');
    All assertions are hard-asserted — these cells reject by contract.
    ================================================================ */
 
-/* ---- GCD/LCM: Complex / Vector / Matrix rejection ---- */
 {
   // GCD(Complex, Integer) — bare Complex, not wrapped in List or Tagged.
   // AUR §3 says GCD is integer-only.  `_gcdScalar` rejects Complex
@@ -5237,7 +5061,6 @@ setAngle('RAD');
     'session075: LCM(Matrix, Integer) rejects (no broadcast on M)');
 }
 
-/* ---- MAX(Complex, Complex) rejection ---- */
 {
   // MOD and MIN on Complex are pinned elsewhere; MAX mirrors them.
   // No total order on ℂ → Bad argument.
@@ -5248,7 +5071,6 @@ setAngle('RAD');
     'session075: MAX(Complex, Complex) rejects (no total order on ℂ)');
 }
 
-/* ---- %T / %CH on Complex ---- */
 {
   // %T(Complex, Real) — percent family is scalar-only (AUR §3-1).
   // %/%T/%CH refuse Complex; this pins the %T variant explicitly.
@@ -5267,7 +5089,6 @@ setAngle('RAD');
     'session075: %CH(Complex, Real) rejects (percent-family scalar-only)');
 }
 
-/* ---- CEIL / IP on Complex ---- */
 {
   // FLOOR and FP on Complex are pinned elsewhere; CEIL and IP mirror
   // them.  Fill these so the matrix is 1:1.
@@ -5283,7 +5104,6 @@ setAngle('RAD');
     'session075: IP(Complex) rejects (no integer-part on ℂ)');
 }
 
-/* ---- FACT on Vector / Matrix — verify widening direction matches DATA_TYPES ---- */
 /* DATA_TYPES marks FACT V/M as ✓ via `_withVMUnary` (element-wise).
  * This is a DOUBLE-CHECK positive — if someone reverts the widening
  * this assertion fails loudly and the regression is attributed here
@@ -5311,7 +5131,6 @@ setAngle('RAD');
    second argument below.
 */
 
-/* ---- TRUNC numeric parity with TRNC ---- */
 {
   // TRUNC(3.14159, 2) → 3.14  (toward-zero truncation at 2 decimals).
   const s = new Stack();
@@ -5340,7 +5159,6 @@ setAngle('RAD');
     'session081: TRUNC(Integer(42), 3) → Integer(42) (integer passthrough)');
 }
 
-/* ---- TRUNC Symbolic lift ---- */
 {
   // Either-side Symbolic → AST wraps with TRUNC(x, n).
   const s = new Stack();
@@ -5365,7 +5183,6 @@ setAngle('RAD');
     'session081: TRUNC(\'X\', \'N\') lifts to Symbolic TRUNC(X, N)');
 }
 
-/* ---- TRUNC rejections ---- */
 {
   // Non-integer n → Bad argument value (inherits from _roundingOp).
   const s = new Stack();
@@ -5390,7 +5207,6 @@ setAngle('RAD');
     'session081: TRUNC with depth < 2 → Too few arguments');
 }
 
-/* ---- PSI one-arg digamma ---- */
 {
   // ψ(1) = -γ ≈ -0.5772156649015329.  Accept ~1e-10 rel error.
   const s = new Stack();
@@ -5432,7 +5248,6 @@ setAngle('RAD');
     'session081: PSI(0.1) exercises reflection path');
 }
 
-/* ---- PSI two-arg polygamma ---- */
 {
   // ψ_1(1) = ζ(2) = π²/6 ≈ 1.6449340668482264.
   const s = new Stack();
@@ -5470,7 +5285,6 @@ setAngle('RAD');
     'session081: PSI(1, 0) = ψ_0(1) = digamma(1) = -γ');
 }
 
-/* ---- PSI Symbolic lift ---- */
 {
   // 1-arg Symbolic → PSI(X) AST node.
   const s = new Stack();
@@ -5494,7 +5308,6 @@ setAngle('RAD');
     'session081: PSI(\'X\', 2) lifts to Symbolic PSI(X, 2)');
 }
 
-/* ---- PSI rejections ---- */
 {
   // Pole at non-positive integer.
   const s = new Stack();
@@ -5535,7 +5348,6 @@ setAngle('RAD');
     'session081: PSI(x, -1) — negative order falls back to 1-arg on -1, which is a pole');
 }
 
-/* ---- PSI List / Tagged / Vector / Matrix distribution (1-arg) ---- */
 {
   // 1-arg PSI distributes over a List: PSI({1 2}) → {ψ(1) ψ(2)}.
   const s = new Stack();
@@ -5700,7 +5512,6 @@ function _arrayEq(a, b) {
     'session081: CYCLOTOMIC(Real(5)) = Φ_5 = X⁴ + X³ + X² + X + 1 (integer-Real accepted)');
 }
 
-/* ---- CYCLOTOMIC rejections ---- */
 {
   // n = 0 throws.
   const s = new Stack();

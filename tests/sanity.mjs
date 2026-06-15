@@ -184,7 +184,6 @@ const t0 = Date.now();
     `sanity: smoke file finished in ${elapsed} ms (budget < 500 ms)`);
 }
 
-/* ---- standalone runner ---- */
 if (import.meta.url === `file://${process.argv[1]}`) {
   const total = state.passed + state.failed;
   console.log(state.failed === 0

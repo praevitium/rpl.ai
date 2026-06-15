@@ -53,7 +53,6 @@ for (const f of FILES) {
   });
 }
 
-/* ---------- Per-file headline block ---------- */
 console.log('\n' + '='.repeat(60));
 console.log(' Per-file headline counts');
 console.log('='.repeat(60));
@@ -64,7 +63,6 @@ for (const r of perFile) {
   console.log(` ${tag}  ${r.file.padEnd(nameW)}  ${String(r.passed).padStart(5)} passed  ${String(r.failed).padStart(3)} failed`);
 }
 
-/* ---------- Module-load crash report ---------- */
 if (importErrors.length) {
   console.error('\n' + '='.repeat(60));
   console.error(' Module-load failures');
@@ -75,7 +73,6 @@ if (importErrors.length) {
   }
 }
 
-/* ---------- Aggregate line ---------- */
 const total = state.passed + state.failed;
 const hasImportErr = importErrors.length > 0;
 console.log(state.failed === 0 && !hasImportErr

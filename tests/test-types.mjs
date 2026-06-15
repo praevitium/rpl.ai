@@ -34,7 +34,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
      SIGN V   — unit vector v/‖v‖; zero vector stays zero
    ================================================================ */
 {
-  // --- NEG -------------------------------------------------------
   {
     const s = new Stack();
     s.push(Vector([Real(1), Real(-2), Real(3)]));
@@ -55,7 +54,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
       'NEG Matrix negates every entry');
   }
 
-  // --- ABS (= Frobenius norm on arrays per Adv Guide spec) -------
   {
     const s = new Stack();
     s.push(Vector([Real(3), Real(4)]));
@@ -72,7 +70,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
       `ABS Matrix → Frobenius norm ≈ √30 (got ${got})`);
   }
 
-  // --- CONJ / RE / IM element-wise on Vector ---------------------
   {
     const s = new Stack();
     s.push(Vector([Real(1), Real(2), Real(3)]));
@@ -99,7 +96,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
       'IM on real-entry Vector → zero vector');
   }
 
-  // --- CONJ on Matrix is identity (no complex entries yet) -------
   {
     const s = new Stack();
     s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]));
@@ -110,7 +106,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
       'CONJ on real-entry Matrix is identity');
   }
 
-  // --- SIGN on Vector (unit vector v/‖v‖) -----------------------
   {
     const s = new Stack();
     s.push(Vector([Real(3), Real(4)]));  // ‖v‖ = 5
@@ -132,7 +127,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
       'SIGN on zero Vector → zero Vector');
   }
 
-  // --- NEG on Complex stays Complex (regression: don't break scalars) ---
   {
     const s = new Stack();
     s.push(Complex(3, -4));
@@ -147,7 +141,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
    CHR / NUM (String ⇄ single codepoint).
    ================================================================ */
 {
-  /* ---- CHR: ASCII ---- */
   {
     const s = new Stack();
     s.push(Real(65));
@@ -162,7 +155,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     assert(s.peek(1).value === ' ',
       'CHR on Integer 32 → " " (space)');
   }
-  /* ---- CHR: Unicode codepoint ---- */
   {
     const s = new Stack();
     s.push(Real(0x2192)); // →
@@ -170,7 +162,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     assert(s.peek(1).value === '→',
       'CHR 0x2192 → "→" (right arrow)');
   }
-  /* ---- CHR: boundary values ---- */
   {
     const s = new Stack();
     s.push(Real(0));
@@ -178,7 +169,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     assert(isString(s.peek(1)) && s.peek(1).value.charCodeAt(0) === 0,
       'CHR 0 → NUL character');
   }
-  /* ---- CHR errors ---- */
   {
     const s = new Stack();
     s.push(Real(-1));
@@ -208,7 +198,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
       'CHR on String → Bad argument type'); }
   }
 
-  /* ---- NUM: ASCII ---- */
   {
     const s = new Stack();
     s.push(Str('A'));
@@ -216,7 +205,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     assert(isInteger(s.peek(1)) && s.peek(1).value === 65n,
       'NUM "A" → 65 (Integer)');
   }
-  /* ---- NUM: first codepoint of multi-char string ---- */
   {
     const s = new Stack();
     s.push(Str('HELLO'));
@@ -224,7 +212,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     assert(s.peek(1).value === 72n,
       'NUM "HELLO" → 72 (first char only, HP50 convention)');
   }
-  /* ---- NUM: Unicode codepoint round-trip with CHR ---- */
   {
     const s = new Stack();
     s.push(Real(0x03B1)); // α
@@ -233,7 +220,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     assert(s.peek(1).value === BigInt(0x03B1),
       'CHR then NUM round-trips Unicode codepoint α (0x03B1)');
   }
-  /* ---- NUM errors ---- */
   {
     const s = new Stack();
     s.push(Str(''));
@@ -257,7 +243,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
    STR→  ( "src"  → any… )    parse the source as RPL, push each value
    ================================================================ */
 {
-  /* ---- →STR on primitives ---- */
   {
     const s = new Stack();
     s.push(Real(3.14));
@@ -309,7 +294,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
       'ASCII alias ->STR works like →STR');
   }
 
-  /* ---- STR→ on simple inputs ---- */
   {
     const s = new Stack();
     s.push(Str('42'));
@@ -365,7 +349,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
       'STR→ on non-String → Bad argument type'); }
   }
 
-  /* ---- →STR then STR→ round-trip ---- */
   {
     const s = new Stack();
     s.push(Real(2.5));
@@ -385,11 +368,8 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
 }
 
 
-// ==================================================================
 // Tagged objects and type introspection
-// ==================================================================
 
-/* ---- →TAG wraps a value with a String tag ---- */
 {
   const s = new Stack();
   s.push(Integer(42n));
@@ -402,7 +382,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     'session053: →TAG wraps the integer value');
 }
 
-/* ---- →TAG with Name tag (uses name id) ---- */
 {
   const s = new Stack();
   s.push(Real(3.14));
@@ -412,7 +391,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     'session053: →TAG with Name tag uses name id');
 }
 
-/* ---- →TAG on already-tagged value replaces outer tag ---- */
 {
   const s = new Stack();
   s.push(Tagged('inner', Integer(1n)));
@@ -424,7 +402,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     'session053: →TAG re-tag does not double-nest');
 }
 
-/* ---- →TAG non-string/name tag throws ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -433,7 +410,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     'session053: →TAG Integer-tag throws');
 }
 
-/* ---- ASCII alias ->TAG works ---- */
 {
   const s = new Stack();
   s.push(Integer(5n));
@@ -443,7 +419,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     'session053: ->TAG alias');
 }
 
-/* ---- DTAG strips the outer tag ---- */
 {
   const s = new Stack();
   s.push(Tagged('hello', Integer(1n)));
@@ -452,7 +427,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     'session053: DTAG strips tag');
 }
 
-/* ---- DTAG on untagged is a pass-through ---- */
 {
   const s = new Stack();
   s.push(Integer(7n));
@@ -461,7 +435,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     'session053: DTAG on untagged is no-op');
 }
 
-/* ---- UNDER explodes Tagged into value + tag-string ---- */
 {
   const s = new Stack();
   s.push(Tagged('mytag', Real(2.5)));
@@ -473,7 +446,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     'session053: UNDER pushes tag as String');
 }
 
-/* ---- UNDER on untagged throws ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -481,7 +453,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     'session053: UNDER on untagged throws');
 }
 
-/* ---- KIND returns HP50 type code (Real) ---- */
 {
   const s = new Stack();
   s.push(Real(1.5));
@@ -490,7 +461,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     'session053: KIND returns Real');
 }
 
-/* ---- KIND differs by type ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -503,7 +473,6 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
   assert(kInt !== kStr, 'session053: KIND distinguishes Integer vs String');
 }
 
-/* ---- →TAG / UNDER round-trip preserves value ---- */
 {
   const s = new Stack();
   s.push(Integer(99n));
@@ -574,7 +543,6 @@ const TYPE_CODE_TABLE = [
   [() => Integer(12345678901234567890n),             28,  'Integer (arbitrary precision)'],
 ];
 
-/* ---- TYPE: table-drive every row ---- */
 for (const [make, code, label] of TYPE_CODE_TABLE) {
   const s = new Stack();
   s.push(make());
@@ -583,7 +551,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     `session068: TYPE(${label}) = ${code} (got ${s.peek()?.value})`);
 }
 
-/* ---- KIND: should agree with TYPE for every row ---- */
 for (const [make, code, label] of TYPE_CODE_TABLE) {
   const s = new Stack();
   s.push(make());
@@ -609,7 +576,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   }
 }
 
-/* ---- VTYPE rejects non-Name argument ---- */
 {
   const s = new Stack();
   s.push(Real(1));
@@ -617,7 +583,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     'session068: VTYPE on Real → Bad argument type');
 }
 
-/* ---- VTYPE on an undefined name → Undefined name ---- */
 {
   resetHome();
   const s = new Stack();
@@ -626,7 +591,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     'session068: VTYPE on undefined name → Undefined name');
 }
 
-/* ---- TYPE / KIND distinguish Real ≠ Integer ≠ BinaryInteger ---- */
 {
   // HP50 has three distinct numeric types.  This is a common "these
   // should never collide" regression point — easy to break when
@@ -640,7 +604,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     'session068: TYPE distinguishes Real(0) / Integer(28) / BinaryInteger(10)');
 }
 
-/* ---- TYPE on multi-arg inputs consumes exactly one ---- */
 {
   const s = new Stack();
   s.push(Real(1));
@@ -657,7 +620,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   assert(s.peek(3).value.eq(1), 'session068: TYPE leaves level 3 (Real(1)) untouched');
 }
 
-/* ---- KIND on empty stack → Too few arguments ---- */
 {
   const s = new Stack();
   assertThrows(() => lookup('KIND').fn(s), /Too few arguments/i,
@@ -679,7 +641,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
    deferred black box.
    ================================================================ */
 {
-  /* --------- Item 1: DERIV on hyperbolic functions ---------- */
   // DERIV routes through Giac, which handles the entire function
   // universe.  The tests below register fixtures for the exact caseval
   // commands the op emits and assert the formatted round-trip.
@@ -746,7 +707,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
 }
 
 {
-  /* --------- Item 2: INTEG on SINH / COSH / ALOG ---------- */
   // INTEG routes through Giac, which computes antiderivatives without
   // a lookup table.  The tests below register fixtures for each caseval
   // command and verify the formatted round-trip.
@@ -807,7 +767,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
 }
 
 {
-  /* --------- Item 3: simplify rounding / sign idempotency ---------- */
   // HP50-specific rounding identities (FLOOR/CEIL/IP/FP/SIGN idempotency)
   // aren't part of Giac's native simplify().  COLLECT's 1-arg form
   // routes through Giac's simplify(), so the fixtures below simulate
@@ -932,7 +891,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
        the spec).
    ================================================================ */
 {
-  // ---- Program × Program: structurally identical → HP50 1 ----
   // Build two Programs with identical tokens via the public Program
   // constructor.  A real-world equivalent is `« 1 2 + »` typed twice.
   {
@@ -945,7 +903,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     assert(v.eq(1),
       'session087: Program == Program structural (identical tokens) = 1');
   }
-  // ---- Program × Program SAME equivalent ----
   {
     const p1 = Program([Real(1), Real(2), Name('+')]);
     const p2 = Program([Real(1), Real(2), Name('+')]);
@@ -956,7 +913,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     assert(v.eq(1),
       'session087: SAME on identical-token Programs = 1');
   }
-  // ---- Program × Program: differing tokens → 0 (already correct) ----
   // Hard assert: a different token list MUST compare not-equal.  This
   // both-now-and-later-correct test guards the widening — when
   // equality is widened on, this case must STILL be 0.
@@ -969,7 +925,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     assert(s.peek().value.eq(0),
       'session084: Program == Program with different tokens is 0 (regression guard for upcoming widening)');
   }
-  // ---- Program × Program: token-order matters ----
   {
     const p1 = Program([Real(1), Real(2), Name('+')]);
     const p2 = Program([Real(2), Real(1), Name('+')]);  // commuted operands
@@ -979,7 +934,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     assert(s.peek().value.eq(0),
       'session084: SAME on Programs with permuted tokens is 0 (regression guard)');
   }
-  // ---- Program × Program: empty programs are equal ----
   {
     const p1 = Program([]);
     const p2 = Program([]);
@@ -991,7 +945,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       'session087: empty Program == empty Program = 1');
   }
 
-  // ---- Directory × Directory: reference identity (same object) ----
   // HP50 AUR §4-7: SAME on two Directory references is true iff they
   // are the same object.  We build one Directory and push it twice.
   {
@@ -1003,7 +956,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     assert(v.eq(1),
       'session087: SAME on the same Directory ref = 1');
   }
-  // ---- Directory × Directory: same-name distinct objects → 0 ----
   // Hard regression guard: even after widening, two *distinct*
   // Directory objects that happen to share the same name must
   // compare not-equal.  HP50 treats Directories as identifiable
@@ -1017,7 +969,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     assert(s.peek().value.eq(0),
       'session084: SAME on two distinct Directories with same name is 0 (regression guard for reference-identity semantics)');
   }
-  // ---- Directory == Directory: same object → HP50 1 ----
   {
     const d = Directory({ name: 'CALCS' });
     const s = new Stack();
@@ -1035,7 +986,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
    (BinInts are always integer-valued).  FP yields #0 in same base.
    ================================================================ */
 {
-  // ---- FLOOR: BinInt → same BinInt (no-op) ----
   {
     const s = new Stack();
     s.push(BinaryInteger(7n, 'h'));
@@ -1044,7 +994,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     assert(isBinaryInteger(r) && r.value === 7n && r.base === 'h',
       'session087: FLOOR #7h → #7h (BinInt no-op, preserves base)');
   }
-  // ---- CEIL: BinInt → same BinInt ----
   {
     const s = new Stack();
     s.push(BinaryInteger(10n, 'd'));
@@ -1053,7 +1002,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     assert(isBinaryInteger(r) && r.value === 10n && r.base === 'd',
       'session087: CEIL #10d → #10d (BinInt no-op)');
   }
-  // ---- IP: BinInt → same BinInt ----
   {
     const s = new Stack();
     s.push(BinaryInteger(255n, 'h'));
@@ -1062,7 +1010,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     assert(isBinaryInteger(r) && r.value === 255n && r.base === 'h',
       'session087: IP #FFh → #FFh (BinInt no-op, preserves hex base)');
   }
-  // ---- FP: BinInt → #0 in same base (integer part IS the whole value) ----
   {
     const s = new Stack();
     s.push(BinaryInteger(42n, 'o'));
@@ -1071,14 +1018,12 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     assert(isBinaryInteger(r) && r.value === 0n && r.base === 'o',
       'session087: FP #42o → #0o (FP of BinInt always 0, preserves base)');
   }
-  // ---- rejection: Complex still rejected by FLOOR ----
   assertThrows(
     () => { const s = new Stack(); s.push(Complex(1, 2)); lookup('FLOOR').fn(s); },
     /Bad argument type/,
     'session087: FLOOR on Complex still throws Bad argument type'
   );
 
-  // -------- session102: BinInt rounder — edge-case values --------
   // Zero BinInt through each rounder — base-preservation regression guard.
   {
     const s = new Stack();
@@ -1665,7 +1610,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
      decimate; `X + 1` stays symbolic.
    ================================================================ */
 {
-  /* ---- EXACT-mode exactness for transcendentals ---- */
   const prev = calcState.approxMode;
   setApproxMode(false);
   try {
@@ -1748,7 +1692,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
 }
 
 {
-  /* ---- APPROX push-time coercion ---- */
   const prev = calcState.approxMode;
   setApproxMode(true);
   try {
@@ -1839,7 +1782,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
    Greek range (U+0391-U+03A9, U+03B1-U+03C9) but no wider Unicode.
    ================================================================ */
 {
-  // --- syntactic validity ----------------------------------------
   assert(isValidHpIdentifier('X'),     'isValid: single ASCII letter');
   assert(isValidHpIdentifier('X1'),    'isValid: letter + digit');
   assert(isValidHpIdentifier('foo_bar'), 'isValid: lowercase + underscore');
@@ -1861,7 +1803,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   assert(!isValidHpIdentifier(null),     '!isValid: null');
   assert(!isValidHpIdentifier(42),       '!isValid: number');
 
-  // --- reserved-name bookkeeping ---------------------------------
   // ops.js registers every op name at module load.  'SIN' / 'STO' are
   // core ops; querying them should now show reserved.
   assert(isReservedHpName('SIN'),  'SIN registered as reserved (from ops.js load)');
@@ -1874,13 +1815,11 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   assert(isReservedHpName('MYRESERVED_PROBE_X'), 'registerReservedName sticks');
   assert(isReservedHpName('myreserved_probe_x'), 'registerReservedName: case folds');
 
-  // --- combined storable check ------------------------------------
   assert(isStorableHpName('MYVAR'),  'isStorable: valid + unreserved');
   assert(!isStorableHpName('SIN'),   '!isStorable: valid but reserved');
   assert(!isStorableHpName('1X'),    '!isStorable: invalid shape');
   assert(!isStorableHpName(''),      '!isStorable: empty');
 
-  // --- STO / CRDIR reject invalid / reserved names ---------------
   // Wiring integration check: the /ops.js/ write path surfaces
   // "Invalid name" through RPLError when given anything that fails
   // isStorableHpName.  The string literal is the canonical message
@@ -1947,7 +1886,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
    form, matching the existing test-algebra.mjs pattern).
    ================================================================ */
 {
-  /* ---------- helpers ---------- */
   const rtSymbolic = (entrySrc) => {
     const [v1] = parseEntry(`\`${entrySrc}\``);
     assert(v1 && v1.type === 'symbolic',
@@ -1961,7 +1899,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session105: round-trip idempotent for ${entrySrc} (got ${f1} vs ${f2})`);
   };
 
-  /* ---------- Cluster A: 2-arg HP50 ops ---------- */
   const CLUSTER_A = [
     'MIN', 'MAX', 'MOD', 'COMB', 'PERM',
     'IQUOT', 'IREMAINDER', 'GCD', 'LCM', 'XROOT',
@@ -2018,7 +1955,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   assert(defaultFnEval('XROOT',[-8, 3]) === null,       'session105: XROOT negative radicand → null');
   assert(defaultFnEval('XROOT',[8, 0]) === null,        'session105: XROOT zero index → null');
 
-  /* ---------- Cluster B: 10 special-function / stat-dist ops ---------- */
   const CLUSTER_B = [
     'UTPC', 'UTPF', 'UTPT', 'BETA', 'ERF', 'ERFC',
     'GAMMA', 'LNGAMMA', 'HEAVISIDE', 'DIRAC',
@@ -2060,7 +1996,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   assert(defaultFnEval('UTPT',      [5, 1.2]) === null, 'session105: UTPT has no simplify-time fold');
   assert(defaultFnEval('LNGAMMA',   [5]) === null,    'session105: LNGAMMA has no simplify-time fold');
 
-  /* ---------- Cluster C: TRUNC arity-2 + PSI variadic ---------- */
   // TRUNC has spec.arity === 2 → 1-arg form must be rejected at parseAlgebra
   // (the throw path).  2-arg form round-trips.  3-arg form is also rejected.
   rtSymbolic('TRUNC(X, 3)');
@@ -2132,7 +2067,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
        the matrix has no Q column today.
    ================================================================ */
 {
-  /* ---------- Cluster 1: BinInt × Real/Integer mixed-scalar ---------- */
 
   // Capture wordsize so we can restore it after the ws=8 block.
   const wsEntry = getWordsize();
@@ -2268,7 +2202,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     'session110: #5h + Complex(1,2) → Bad argument type (no BinInt×Complex path)'
   );
 
-  /* ---------- Cluster 2: Tagged transparency on rounders + SIGN/ARG ---------- */
   // The _withTaggedUnary wrapper unwraps, applies the op to the inner
   // value, and re-tags with the *same* label.  Pin each of the six ops.
 
@@ -2340,7 +2273,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session110: ARG(:v:Complex(3,4)) ≈ atan2(4,3) (got ${arg})`);
   }
 
-  /* ---------- Cluster 3: Rational cross-family compare & equality ---------- */
   // eqValues routes numeric pairs through promoteNumericPair; Rational
   // is in isNumber.  `==` returns Real(1) / Real(0); `SAME` uses the
   // same comparator (and therefore ALSO cross-widens Rational×Real —
@@ -2511,7 +2443,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
        OUTSIDE _withListUnary in the wrapper chain).
    ================================================================ */
 {
-  /* ---------- Cluster 1: Binary Tagged tag-drop ---------- */
   // Helper: assert the binary op drops tags and returns the expected
   // non-Tagged result.  Relies on plain rplEqual-style value checks
   // rather than a structural assertion — lets each op keep its own
@@ -2902,7 +2833,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session115: :a:Rational(1,2) + :b:Rational(1,3) → Rational(5/6) (tag-drop + exact add)`);
   }
 
-  /* ---------- Cluster 3: List distribution edges ---------- */
 
   // Tagged(List): Tagged wrapper unwraps first (outer), list distributes
   // inside, outer tag re-applied.  Pins the wrapper-nesting contract
@@ -3089,7 +3019,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
      Integer(0); INV(Rational(1, n)) collapses to Integer(n)).
    ================================================================ */
 {
-  /* ---------- Cluster 1: Hyperbolic Tagged + List + Sy-lift ---------- */
 
   // Helper: assert Tagged-Real-inner with a numeric tolerance.
   const assertTaggedRealClose = (op, lbl, inner, expected, eps, desc) => {
@@ -3199,7 +3128,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session120: :lbl:{0 1} SINH → :lbl:{0 sinh(1)} (Tagged-outer-of-List unwrap order)`);
   }
 
-  /* ---------- Cluster 2: Tagged tag-drop on % / %T / %CH ---------- */
 
   // Helper: pin the both-side tag-drop contract on a percent op.
   const assertPctBothTags = (op, leftVal, rightVal, expectedVal, desc) => {
@@ -3284,7 +3212,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     'session120: 80 Matrix(1×1) % → Bad argument type (% is scalar-only on M)'
   );
 
-  /* ---------- Cluster 3: Rational unary stay-exact contract ---------- */
 
   // NEG / INV / SQ / ABS — all stay-exact on Rational (EXACT mode).
   // The convention text "EXACT keeps the Rational" is pinned here for
@@ -3565,7 +3492,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
        Vector, Matrix.
    ================================================================ */
 {
-  /* ---- Cluster 1: XPON L/V/M/T ---- */
 
   // n=0 empty-List — bare axis
   {
@@ -3660,7 +3586,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session187: :x:Real(250) XPON → :x:Real(2) (scalar Tagged path; XPON(250)=2; got tag=${v?.tag} val=${v?.value?.value?.toString()})`);
   }
 
-  /* ---- Cluster 2: MANT L/V/M/T ---- */
 
   // n=0 empty-List — bare axis
   {
@@ -3792,7 +3717,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
      pin documents the current behavior so the change is visible.
    ================================================================ */
 {
-  /* ---------- Cluster 1: List distribution on arity-2 numeric family ---------- */
 
   // COMB scalar × List — broadcasts the scalar n across list of m's.
   // `5 COMB {0 2 5}` → {C(5,0)=1, C(5,2)=10, C(5,5)=1}.
@@ -3962,7 +3886,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session125: {1 5 3} {4 2 8} MAX → {Integer(4) Integer(5) Integer(8)} (got types=${v?.items?.map(x => x.type).join(',')})`);
   }
 
-  /* ---------- Cluster 2: Tagged-of-List on rounding / sign / abs ---------- */
 
   // FLOOR :lbl:{7.2 -1.5} → :lbl:{Real(7) Real(-2)} — Tagged unwraps
   // first, list distributes inside, outer tag re-applies on the
@@ -4105,7 +4028,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     'session125: :v:{:x:Real(1) :y:Real(-2)} NEG → Bad argument type (inner Tagged inside List has no unwrapper at the scalar handler)'
   );
 
-  /* ---------- Cluster 3: Q→R degradation on MIN/MAX/MOD ---------- */
 
   // MIN Q Q — both operands Rational, but the inner _minMax handler
   // does NOT route through the rational-kind branch.  It checks
@@ -7865,7 +7787,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // through a bespoke registration shape, not _unaryCx — see s158
   // header comment for the distinction).  Pins that the bare and
   // Tagged-of-List wrappers both preserve an empty inner-List unchanged.
-  //
   // ---- Empty bare List on ACOSH: { } ACOSH → { } (n=0 boundary on
   // direct-registered wrapper; closes the boundary the s158 ACOSH n=2
   // pins do not enumerate).
@@ -8082,7 +8003,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // pass-through preserves an empty-List shell unchanged on every code
   // path, AND that the outer Tagged wrapper preserves the tag across the
   // empty inner composition.
-  //
   // ---- Empty bare List on LN: { } LN → { } (transcendental n=0 edge).
   {
     const s = new Stack();
@@ -8121,9 +8041,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session160: { Integer(1) } LN → { Integer(0) } (n=1 single-element boundary on bare _withListUnary; pins per-element EXACT-mode integer-clean fold runs through the wrapper for n=1 — guards against refactor that bypasses wrapper for singleton); got items=${v?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
   }
 
-  // ============================================================
   // session162 — LNP1 / EXPM bare-List + Tagged-of-List composition.
-  //
   // Cluster 1. pinned LNP1 Tagged-of-Vector
   // composition through the 3-deep wrapper `_withTaggedUnary(
   // _withListUnary(_withVMUnary(handler)))`.
@@ -8137,7 +8055,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // `_withListUnary`, (b) Tagged-of-List composition outer-tag
   // preservation, or (c) the n=0 / n=1 boundary closures (which
   // added for LN but not for the LNP1/EXPM duals).
-  //
   // CONTRAST with LN/LOG/EXP/ALOG L+T pins: those four
   // ops dispatch through `_unaryCx` which has an EXACT-mode
   // `_exactUnaryLift` Integer-stay-exact arm — Integer(1) input
@@ -8156,7 +8073,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // boundary on both bare and Tagged-of-List, and n=1 single-
   // element boundary (mirror of 's LN n=0 / n=1 pins
   // lifted onto the LNP1/EXPM duals).
-  //
   // The mixed-input pin (LNP1 { Real(-0.5) Real(0) } → { Real(ln(
   // 0.5)) Real(0) }) closes a heterogeneous-output-value axis:
   // distinct Real values per List position pin per-element wrapper
@@ -8307,10 +8223,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session162: EXPM { Real(1) Real(0) } → { Real(expm1(1)) Real(0) } (heterogeneous-output-value pin under bare _withListUnary on EXPM — distinct values per List position pin per-element wrapper dispatch); got items=${v?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
   }
 
-  // ============================================================
   // session162 — LNP1 / EXPM n=0 empty-List + n=1 single-element
   // boundary closures.
-  //
   // Cluster 2. added n=0 empty-List and n=1 single-
   // element boundary pins on the LN axis (`{ } LN → { }`,
   // `:l:{ } LN → :l:{ }`, `{ Integer(1) } LN → { Integer(0) }`).
@@ -8321,7 +8235,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // preserves an empty-List shell unchanged AND that the n=1
   // singleton pass goes through the wrapper (NOT special-cased
   // to bare-scalar).
-  //
   // The n=0 boundary is a distinct refactor-guard from the n=2
   // pin in Cluster 1 above: a future refactor that bypasses the
   // wrapper for an empty list (e.g. `if items.length === 0
@@ -8401,10 +8314,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session162: { Real(0) } EXPM → { Real(0) } (n=1 single-element boundary on bare _withListUnary; pins per-element Math.expm1 fold runs through the wrapper for n=1 — closes LNP1/EXPM dual pair on n=1 shoulder); got items=${v?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
   }
 
-  // ============================================================
   // session164 — LNP1 / EXPM follow-up edges that the
   // s162 cluster-1 pin-set did not enumerate.  Three pins:
-  //
   //   (1) LNP1 boundary-throw under Tagged-of-List composition —
   //       s162 pinned `{ Real(-1) } LNP1 → throws Infinite result`
   //       on bare-List but did NOT pin the same throw under the
@@ -8417,7 +8328,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   //       cases a Tagged outer to swallow inner throws (e.g., a
   //       try/catch in `_withTaggedUnary` that re-tags an error
   //       value instead of re-throwing).
-  //
   //   (2) LNP1 heterogeneous-output mixed-input under Tagged-of-
   //       List — s162 pinned bare-List `{ Real(-0.5) Real(0) }
   //       LNP1 → { Real(log1p(-0.5)) Real(0) }` but the same
@@ -8426,7 +8336,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   //       T+L composition: outer tag preserved + per-element
   //       distinct-value output (NOT a uniform-output short-circuit
   //       under Tagged peel).
-  //
   //   (3) EXPM heterogeneous-output mixed-input under Tagged-of-
   //       List — companion to LNP1 pin (2); closes the LNP1/EXPM
   //       dual pair on the T+L heterogeneous-output axis.  s162
@@ -8478,11 +8387,9 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session164: :e:{ Real(1) Real(0) } EXPM → :e:{ Real(expm1(1)) Real(0) } (heterogeneous-output-value pin under Tagged-of-List composition on EXPM — closes LNP1/EXPM dual pair on the T+L heterogeneous-output axis; mirror of s162 bare-List heterogeneous pin lifted onto T+L); got tag=${v?.tag} items=${v?.value?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
   }
 
-  // ============================================================
   // session166 — Cluster 1: LOG / EXP / ALOG n=0 empty-List + n=1
   // single-element boundary closures on the bare-List + Tagged-of-List
   // wrapper composition.
-  //
   // added n=0 / n=1 boundary pins on the LN axis only —
   // explicit single-cluster scope. lifted those n=0 / n=1
   // boundary closures onto the LNP1 / EXPM dual pair (which bypasses
@@ -8493,20 +8400,17 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // wrapper-VM cleanup, but 's L+T pin set used n=2 / n=3
   // homogeneous + heterogeneous cases without enumerating the n=0
   // empty-List shoulder or the n=1 single-element shoulder.
-  //
   // This cluster closes the LOG / EXP / ALOG trio on the n=0 / n=1
   // boundary axes — same code path as the LN n=0 / n=1
   // pins, lifted onto the remaining three ops in the quartet that
   // routes through `_unaryCx` (`ops.js:7984`).  Pure pinning: no
   // source-side change. Mirror of 's structure.
-  //
   // Why these boundary pins matter: the n=2 / n=3 pins
   // can't catch a refactor that special-cases n=0 (e.g. early-return
   // an empty list to bypass the wrapper) or n=1 (e.g. unwrap to bare
   // scalar before dispatch).  The n=0 / n=1 pins guard those
   // shoulders explicitly.
 
-  // ---- LOG bare-List n=0: { } LOG → { } ----
   {
     const s = new Stack();
     s.push(RList([]));
@@ -8516,7 +8420,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session166: { } LOG → { } (n=0 empty-List boundary on bare _withListUnary on LOG axis — wrapper preserves empty shell unchanged; closes the boundary the s158 n=2/n=3 pins do not enumerate; mirror of s160 LN n=0 pin lifted onto LOG); got ${v?.type} items.length=${v?.items?.length}`);
   }
 
-  // ---- LOG Tagged-of-List n=0: :l:{ } LOG → :l:{ } ----
   {
     const s = new Stack();
     s.push(Tagged('l', RList([])));
@@ -8527,7 +8430,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session166: :l:{ } LOG → :l:{ } (n=0 empty-List under Tagged composition on LOG: outer tag preserved across empty inner List dispatch through 3-deep wrapper; mirror of s160 LN T+L n=0 pin lifted onto LOG); got tag=${v?.tag} inner=${v?.value?.type} items.length=${v?.value?.items?.length}`);
   }
 
-  // ---- LOG bare-List n=1: { Integer(10) } LOG → { Integer(1) } ----
   // Single-element boundary; pins per-element EXACT-mode integer-
   // clean fold runs through the wrapper for n=1 — guards against a
   // refactor that bypasses the wrapper for singletons.  log10(10)=1
@@ -8555,7 +8457,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session166: :l:{ Integer(10) } LOG → :l:{ Integer(1) } (n=1 single-element under Tagged-of-List composition on LOG; outer tag preserved + inner per-element EXACT integer-clean fold for the singleton); got tag=${v?.tag} items=${v?.value?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
   }
 
-  // ---- EXP bare-List n=0: { } EXP → { } ----
   {
     const s = new Stack();
     s.push(RList([]));
@@ -8565,7 +8466,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session166: { } EXP → { } (n=0 empty-List boundary on bare _withListUnary on EXP axis — wrapper preserves empty shell unchanged; closes EXP n=0 corner that s158 n=2 pin does not enumerate); got ${v?.type} items.length=${v?.items?.length}`);
   }
 
-  // ---- EXP Tagged-of-List n=0: :l:{ } EXP → :l:{ } ----
   {
     const s = new Stack();
     s.push(Tagged('l', RList([])));
@@ -8576,7 +8476,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session166: :l:{ } EXP → :l:{ } (n=0 empty-List under Tagged composition on EXP: outer tag preserved across empty inner List dispatch); got tag=${v?.tag} inner=${v?.value?.type} items.length=${v?.value?.items?.length}`);
   }
 
-  // ---- EXP bare-List n=1: { Integer(0) } EXP → { Integer(1) } ----
   // exp(0)=1 integer-clean → Integer(1) per element under bare-List
   // wrapper for n=1.
   {
@@ -8602,7 +8501,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session166: :l:{ Integer(0) } EXP → :l:{ Integer(1) } (n=1 single-element under Tagged-of-List on EXP; outer tag preserved + per-element EXACT integer-clean fold); got tag=${v?.tag} items=${v?.value?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
   }
 
-  // ---- ALOG bare-List n=0: { } ALOG → { } ----
   {
     const s = new Stack();
     s.push(RList([]));
@@ -8612,7 +8510,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session166: { } ALOG → { } (n=0 empty-List boundary on bare _withListUnary on ALOG axis — wrapper preserves empty shell unchanged; closes ALOG n=0 corner that s158 n=3 pin does not enumerate); got ${v?.type} items.length=${v?.items?.length}`);
   }
 
-  // ---- ALOG Tagged-of-List n=0: :l:{ } ALOG → :l:{ } ----
   {
     const s = new Stack();
     s.push(Tagged('l', RList([])));
@@ -8623,7 +8520,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session166: :l:{ } ALOG → :l:{ } (n=0 empty-List under Tagged composition on ALOG: outer tag preserved across empty inner List dispatch); got tag=${v?.tag} inner=${v?.value?.type} items.length=${v?.value?.items?.length}`);
   }
 
-  // ---- ALOG bare-List n=1: { Integer(2) } ALOG → { Integer(100) } ----
   // 10^2=100 integer-clean (high-magnitude relative to LN/EXP n=1
   // pin) — pins `_exactUnaryLift`'s BigInt round-trip per element
   // under bare-List wrapper for n=1.
@@ -8650,11 +8546,9 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session166: :l:{ Integer(2) } ALOG → :l:{ Integer(100) } (n=1 single-element under Tagged-of-List on ALOG; outer tag preserved + per-element high-magnitude integer-clean fold); got tag=${v?.tag} items=${v?.value?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
   }
 
-  // ============================================================
   // session166 — Cluster 2: ATANH n=0 + ACOSH/ATANH n=1 boundary
   // closures + ACOSH/ATANH Tagged-of-List n=0 closures on the
   // direct-registered (non-`_unaryCx`) wrapper shape.
-  //
   // added an n=0 boundary pin on ACOSH (`{ } ACOSH →
   // { }`) but did NOT pin (a) the symmetric ATANH n=0 case, (b)
   // either op's Tagged-of-List n=0 case (`:h:{ } ACOSH/ATANH`),
@@ -8664,13 +8558,11 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // need explicit pinning on this shape — they aren't covered by
   // the LN-axis pins or the LNP1/EXPM
   // pins, which run through different code paths.
-  //
   // This cluster mirrors the structure of
   // (the LNP1 / EXPM n=0 / n=1 closures on a different
   // direct-registered wrapper) onto the inverse-hyp pair —
   // closing the n=0 / n=1 boundary axes on ACOSH / ATANH.
 
-  // ---- ATANH bare-List n=0: { } ATANH → { } ----
   // Symmetric to 's ACOSH n=0 pin lifted onto ATANH.
   {
     const s = new Stack();
@@ -8681,7 +8573,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session166: { } ATANH → { } (n=0 empty-List boundary on direct-registered ATANH bare wrapper; symmetric to s160 ACOSH n=0 pin lifted onto ATANH — closes ATANH n=0 corner that s158 n=2 pins do not enumerate); got ${v?.type} items.length=${v?.items?.length}`);
   }
 
-  // ---- ACOSH Tagged-of-List n=0: :h:{ } ACOSH → :h:{ } ----
   // Lifts 's bare-List ACOSH n=0 pin onto Tagged-of-
   // List composition on the direct-registered wrapper shape.
   {
@@ -8694,7 +8585,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session166: :h:{ } ACOSH → :h:{ } (n=0 empty-List under Tagged-of-List composition on direct-registered ACOSH; outer tag preserved across empty inner List dispatch through 3-deep wrapper — closes ACOSH T+L n=0 corner that s158/s160 do not enumerate); got tag=${v?.tag} inner=${v?.value?.type} items.length=${v?.value?.items?.length}`);
   }
 
-  // ---- ATANH Tagged-of-List n=0: :h:{ } ATANH → :h:{ } ----
   {
     const s = new Stack();
     s.push(Tagged('h', RList([])));
@@ -8705,7 +8595,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session166: :h:{ } ATANH → :h:{ } (n=0 empty-List under Tagged-of-List composition on direct-registered ATANH; outer tag preserved across empty inner — closes ATANH T+L n=0 corner); got tag=${v?.tag} inner=${v?.value?.type} items.length=${v?.value?.items?.length}`);
   }
 
-  // ---- ACOSH bare-List n=1 (Real): { Real(1) } ACOSH → { Real(0) } ----
   // acosh(1)=0 boundary value — the same value 's bare-List
   // ACOSH pin uses but at the n=1 shoulder (singleton, distinct from
   // s158's n=2 pin).  Pins per-element wrapper dispatch fires for n=1
@@ -8720,7 +8609,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session166: { Real(1) } ACOSH → { Real(0) } (n=1 single-element boundary on bare _withListUnary on direct-registered ACOSH; pins per-element acosh(1)=0 fold runs through the wrapper for n=1 — guards against singleton bypass refactor); got items=${v?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
   }
 
-  // ---- ATANH bare-List n=1 (Real): { Real(0) } ATANH → { Real(0) } ----
   // atanh(0)=0 trivial — n=1 shoulder for ATANH.
   {
     const s = new Stack();
@@ -8758,10 +8646,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session166: :h:{ Real(0) } ATANH → :h:{ Real(0) } (n=1 single-element under Tagged-of-List composition on direct-registered ATANH; outer tag preserved + per-element atanh(0)=0 fold for the singleton — closes ACOSH/ATANH dual on the T+L n=1 boundary); got tag=${v?.tag} items=${v?.value?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
   }
 
-  // ============================================================
   // session168 — LOG / EXP / ALOG heterogeneous-output mixed-input
   // pinning under bare-List + Tagged-of-List composition.
-  //
   // closed the n=0 empty-List + n=1 single-element
   // boundary on LOG / EXP / ALOG. (LNP1 / EXPM dual
   // pair) and (LNP1 / EXPM Tagged-of-List heterogeneous
@@ -8770,7 +8656,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // axis on the LOG / EXP / ALOG trio was deliberately deferred
   // by (its scope was n=0 / n=1 boundary closures
   // only).
-  //
   // This cluster lifts 's bare-List heterogeneous
   // mixed-input pattern + 's Tagged-of-List
   // heterogeneous mixed-input pattern onto the LOG / EXP / ALOG
@@ -8780,9 +8665,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // Mixed boundary inputs include the natural identity points
   // (LOG(1)=0, EXP(0)=1, ALOG(0)=1) paired with a non-identity
   // value to surface per-position output divergence.
-  //
-  // 6 pins total: 3 ops × 2 axes (bare-List + Tagged-of-List).
-  // ============================================================
 
   // ---- LOG bare-List heterogeneous mixed-input:
   //      { Real(10) Real(1) } LOG → { Real(1) Real(0) }.
@@ -8881,11 +8763,9 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session168: :a:{ Real(0) Real(1) } ALOG → :a:{ Real(1) Real(10) } (heterogeneous-output-value pin under Tagged-of-List composition on ALOG — outer tag preserved + distinct values per List position; closes the LOG/EXP/ALOG trio on the heterogeneous T+L axis — completes the s166 cluster's deferred heterogeneous-output axis); got tag=${v?.tag} items=${v?.value?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
   }
 
-  // ----------------------------------------------------------------
   // session171 — Cluster 1: forward-hyperbolic family
   //   (SINH / COSH / TANH / ASINH) n=0 empty-List + n=1 single-element
   //   boundary closures on bare-List + Tagged-of-List composition.
-  //
   // pinned SINH/COSH/TANH/ASINH bare-List dispatch on n=2
   // (`{Real(0) Real(1)} OP → 2-element Real list`), and additionally
   // pinned the SINH-only Tagged-of-List composition on n=2.  Sessions
@@ -8905,7 +8785,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // asinh(0)=0 — so the n=1 pin produces a value-precise output that
   // exercises both the wrapper dispatch and the inner numeric primitive
   // ran for the singleton without any ambiguity.
-  //
   // 16 hard assertions (4 ops × 4 boundary cases = bare-n=0 + T+L-n=0
   // + bare-n=1 + T+L-n=1).
 
@@ -8962,11 +8841,9 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     }
   }
 
-  // ----------------------------------------------------------------
   // session171 — Cluster 2: forward-hyperbolic family (COSH / TANH /
   //   ASINH) heterogeneous-output mixed-input value pins on bare-List
   //   + Tagged-of-List composition.
-  //
   // pinned SINH bare-List heterogeneous-output values
   // (`SINH({0 1}) → {0 sinh(1)}` with both values asserted, including
   // the Tagged-of-List `:lbl:{0 1} SINH → :lbl:{0 sinh(1)}` shape).
@@ -8979,13 +8856,11 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // pin pattern onto COSH/TANH/ASINH on both bare-List and T+L
   // composition — the s120 pin's type+length-only structure left these
   // three ops without a value-precise pin on the mixed-input axis.
-  //
   // Per-op identity-then-non-identity input pair (matches s120's `{0 1}`
   // shape so the sibling-pin lineage is direct):
   //   COSH({0,1}) → {1, cosh(1)} where cosh(1) ≈ 1.5430806348152437
   //   TANH({0,1}) → {0, tanh(1)} where tanh(1) ≈ 0.7615941559557649
   //   ASINH({0,1}) → {0, asinh(1)} where asinh(1) ≈ 0.881373587019543
-  //
   // 6 hard assertions (3 ops × 2 axes = bare-List + Tagged-of-List).
 
   for (const op of ['COSH', 'TANH', 'ASINH']) {
@@ -9023,11 +8898,9 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     }
   }
 
-  // ----------------------------------------------------------------
   // session173 — Cluster 1: forward-trig family
   //   (SIN / COS / TAN) n=0 empty-List + n=1 single-element
   //   boundary closures on bare-List + Tagged-of-List composition.
-  //
   // 's "Open queue items" block flagged this gap
   // explicitly: "Forward-trig family (SIN / COS / TAN) bare-List +
   // T+L axes — only the wrapper-V/M composition (s145) and
@@ -9040,14 +8913,12 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // handler)))` composition via the trig dispatch path.  Closes the
   // bare-List + T+L boundary corner the s120/s130/s145 sweeps did
   // not enumerate.
-  //
   // n=1 input Real(0) is angle-mode-independent for all three ops
   // (sin(0)=0, cos(0)=1, tan(0)=0 in RAD/DEG/GRD), so no
   // setAngle/restore guard is needed — the outputs are clean
   // integer-clean Reals across every mode.  COSH-style outlier
   // pattern: COS is the only forward-trig op with a non-identity
   // fold at zero (matching 's COSH n=1 outlier).
-  //
   // 12 hard assertions (3 ops × 4 boundary cases = bare-n=0 +
   // T+L-n=0 + bare-n=1 + T+L-n=1).
 
@@ -9105,11 +8976,9 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     }
   }
 
-  // ----------------------------------------------------------------
   // session173 — Cluster 2: inverse-trig family
   //   (ASIN / ACOS / ATAN) n=0 empty-List + n=1 single-element
   //   boundary closures on bare-List + Tagged-of-List composition.
-  //
   // Companion to Cluster 1 — 's "Open queue items" block
   // flagged this gap as well: "Inverse-trig family (ASIN / ACOS /
   // ATAN) bare-List + T+L axes — same gap as SIN/COS/TAN."  Lifts
@@ -9120,7 +8989,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // pinned the bare-scalar Integer-stay-exact path
   // (ASIN/ACOS/ATAN(Integer(0)) RAD = Integer(0); ASIN/ACOS/ATAN(1)
   // DEG = 90/0/45) but the bare-List + T+L axes were unpinned.
-  //
   // n=1 input Real(0): asin(0)=0, acos(0)=π/2, atan(0)=0.
   // ACOS(0) = π/2 is angle-mode-DEPENDENT (RAD: ≈ 1.5707963…;
   // DEG: 90; GRD: 100), so this cluster sets RAD explicitly inside
@@ -9130,7 +8998,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // The Decimal precision of π/2 is matched against `Math.PI / 2`
   // with a 1e-12 tolerance for the ACOS n=1 case; ASIN/ATAN are
   // exact-zero so `.eq(0)` suffices.
-  //
   // 12 hard assertions (3 ops × 4 boundary cases = bare-n=0 +
   // T+L-n=0 + bare-n=1 + T+L-n=1).
   {
@@ -9207,18 +9074,15 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   }
 }
 
-// ---- session175 (re-land): forward-trig + inverse-trig heterogeneous-output value pins -----
 // Originally authored (ship-day T-0 wrap-up); the write did not persist
 // to the shared filesystem (T-003 in REVIEW.md). Re-landed verbatim
 // using session175r: labels so the lineage is traceable without colliding with the
 // lost session175: label namespace.
-//
 // pinned COSH/TANH/ASINH heterogeneous-output mixed-input values
 // (bare-List + T+L). lifts that same pattern onto the forward-trig trio
 // (SIN/COS/TAN) and the inverse-trig trio (ASIN/ACOS/ATAN).  All six ops were already
 // covered on n=0/n=1 boundary by sessions 171/173; this adds the {0,1} heterogeneous-
 // output value-precise axis that the boundary pins leave unexercised.
-//
 // Input pair {Real(0) Real(1)} in RAD is the canonical identity-then-non-identity
 // shape matching s171's {0,1} choice:
 //   SIN:  {0, sin(1)}  — sin(0)=0 (identity), sin(1)≈0.8414709848078965
@@ -9227,11 +9091,9 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
 //   ASIN: {0, asin(1)} — asin(0)=0 (identity), asin(1)=π/2≈1.5707963267948966
 //   ACOS: {π/2, 0}     — FLIPPED: acos(0)=π/2, acos(1)=0 (strongest pin — BOTH positions)
 //   ATAN: {0, atan(1)} — atan(0)=0 (identity), atan(1)=π/4≈0.7853981633974483
-//
 // All six ops are angle-mode-dependent for non-zero inputs, so the entire block is
 // wrapped in a try/finally that restores the prior angle mode (mirror of s173 Cluster 2).
 // Tolerance 1e-12 for Decimal .toNumber() vs. Math.* double comparisons on π/2 and π/4.
-//
 // 12 hard assertions (6 ops × 2 axes = bare-List + Tagged-of-List).
 {
   const _prevAngle = calcState.angle;
@@ -9322,7 +9184,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   }
 }
 
-// ---- session179: String lex compare pins for < > ≤ ≥ ----------------------------
 // ops.js `comparePair` has a String branch (HP50 User Guide App. J: char-code
 // lexicographic order) that predates this session.  The matrix shows ✓ on S for
 // all four ordered-compare ops, but no hard assertions existed.  This cluster
@@ -9503,7 +9364,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   }
 }
 
-// ---- session277: String lex-vs-value-equality contrast ----------------------------
 // session068 pinned String value-equality on `==` ("hello"=="hello"→1, "Hello"→0) and
 // session179/273 pinned the lex path on `< > ≤ ≥`, but no pin contrasts the two families
 // on the SAME input pair — i.e. that `==` / `≠` / `SAME` are VALUE-based (a lex-ordered
@@ -9593,22 +9453,18 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
 
 // ---- session185 (re-land of session177 Cluster 1): EXACT-mode Integer-stay-exact
 // composition pins for forward-trig + inverse-trig on bare-List + Tagged-of-List axes.
-//
 // authored these 14 pins on ship-day but the write did not persist to the
 // shared filesystem (T-003 in REVIEW.md).  Re-landed here verbatim using session185:
 // labels so the lineage is traceable without colliding with the lost session177: namespace.
-//
 // Implementation path: all six ops route Integer/Rational input through
 // `_exactUnaryLift` (ops.js). The lift applies `fromRadians` to the primitive result
 // and then checks `Math.abs(result - Math.round(result)) < 1e-12`; if integer-clean it
 // returns Integer(round), otherwise Symbolic(AstFn(name, [_toAst(v)])).
-//
 // Pin logic:
 //   SIN(0)=0,  COS(0)=1 (the outlier — non-zero clean fold),  TAN(0)=0,
 //   ASIN(0)=0, ATAN(0)=0 — all angle-mode-independent integer-clean folds.
 //   ACOS(0)=π/2: in RAD mode fromRadians(π/2)≈1.5707 is NOT integer-clean → Symbolic;
 //                in DEG mode fromRadians(π/2)=90 IS integer-clean → Integer(90n).
-//
 // 10 assertions: five ops × (bare-List + Tagged-of-List).
 // 4 assertions: ACOS × 2 axes × 2 angle modes (RAD + DEG).
 // Total: 14 hard assertions.
@@ -9618,7 +9474,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   setAngle('RAD');
   setApproxMode(false);
   try {
-    // ---- Cluster A: SIN / COS / TAN / ASIN / ATAN — integer-clean zero-input folds ----
     // All five ops produce integer-clean results on Integer(0) input regardless of angle mode.
     // COS(0)=1 is the non-zero outlier; the others produce 0.
     for (const op of ['SIN', 'COS', 'TAN', 'ASIN', 'ATAN']) {
@@ -9648,7 +9503,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       }
     }
 
-    // ---- Cluster B: ACOS — angle-mode-dependent outlier ----
     // ACOS(Integer(0)) RAD: acos(0)=π/2; fromRadians(π/2)≈1.5707, |1.5707-2|≈0.43 >> 1e-12
     //   → Symbolic arm of _exactUnaryLift.
     // ACOS(Integer(0)) DEG: acos(0)=π/2; fromRadians(π/2)=90 → integer-clean → Integer(90n).
@@ -9718,7 +9572,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
    non-zero scalar folds to Real(0)/Integer(0); x=0 lifts to Symbolic.
    ================================================================ */
 {
-  /* ---- Cluster 1: HEAVISIDE L/V/M/T ---- */
 
   // n=0 empty-List — bare axis
   {
@@ -9813,7 +9666,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session191: :x:Real(3) HEAVISIDE → :x:Real(1) (scalar Tagged; HEAVISIDE(3)=1; got tag=${v?.tag} val=${v?.value?.value?.toString()})`);
   }
 
-  /* ---- Cluster 2: DIRAC L/V/M/T ---- */
 
   // n=0 empty-List — bare axis
   {
@@ -10026,7 +9878,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
    outputs that pin the wrapper dispatch without needing tolerance guards.
    ================================================================ */
 {
-  // ---- GAMMA ----
 
   // n=0 bare-List passthrough: { } GAMMA → { }
   {
@@ -10083,7 +9934,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session200: [[ Integer(2) Integer(3) ]] GAMMA → [[ Integer(1) Integer(2) ]] (M integer-exact; got r00=${row[0]?.value} r01=${row[1]?.value})`);
   }
 
-  // ---- LNGAMMA ----
 
   // n=0 bare-List passthrough: { } LNGAMMA → { }
   {
@@ -10115,7 +9965,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session200: [ Integer(2) ] LNGAMMA → [ Real(0) ] (V; lngamma(2)=0; got a=${a?.value?.toString()})`);
   }
 
-  // ---- erf ----
 
   // bare-List: { Integer(0) } erf → { Real(0) }   (erf(0) = 0, zero special-case)
   {
@@ -10133,7 +9982,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session200: [ Integer(0) ] erf → [ Real(0) ] (V; erf(0)=0; got a=${a?.value?.toString()})`);
   }
 
-  // ---- erfc ----
 
   // Tagged scalar: :e:Integer(0) erfc → :e:Real(1)   (erfc(0) = 1, zero special-case)
   {
@@ -10211,13 +10059,11 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session204: [[ Integer(0) ]] erfc → [[ Real(1) ]] (M; erfc(0)=1; got ${cell?.value?.toNumber()})`);
   }
 
-  // ----------------------------------------------------------------
   // session208: erf M-cell promotion (documentation lag same as erfc/session204).
   // erf is registered as _withTaggedUnary(_withListUnary(bespoke-V/M handler)).
   // The M branch (rows.map(r => r.map(_erfScalar))) has been in the handler
   // since the op was first wrapped; session200 only pinned L and V.
   // _erfScalar(Integer(0)) = Real(0)  (erf(0) = 0, zero special-case).
-  // ----------------------------------------------------------------
 
   // Matrix axis: [[ Integer(0) ]] erf → [[ Real(0) ]]
   {
@@ -10228,14 +10074,11 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session208: [[ Integer(0) ]] erf → [[ Real(0) ]] (M; erf(0)=0; got ${cell?.value?.toNumber()})`);
   }
 
-  // ----------------------------------------------------------------
   // session212: ZETA / LAMBERT Z/L/V/M stale-·-cell promotion.
   // Both are registered as _withTaggedUnary(_withListUnary(bespoke-V/M handler)).
   // Their scalar functions accept isInteger(v) — the Z column was also stale.
   // Anchor values: ζ(0) = -1/2 (exact fp); W(0) = 0 (exact branch in _lambertW0).
-  // ----------------------------------------------------------------
 
-  // ---- ZETA ----
 
   // Z axis: Integer(0) ZETA → Real(-0.5)  (ζ(0) = -1/2, exact fp)
   {
@@ -10279,7 +10122,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session212: [[ Integer(2) ]] ZETA → [[ Real(ζ(2)) ]] (M; got ${cell?.value?.toNumber()})`);
   }
 
-  // ---- LAMBERT ----
 
   // Z axis: Integer(0) LAMBERT → Real(0)  (W(0) = 0, exact branch in _lambertW0)
   {
@@ -10420,7 +10262,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
    +7 session231 pins.
    ================================================================ */
 {
-  // ---- ARG Q=✗ (rejection) ----
   // _argScalar has no isRational branch; Rational falls through to throw.
   {
     const s = new Stack();
@@ -10435,7 +10276,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session231: ARG Rational(-1,2) → 'Bad argument type' (negative rational also rejected by _argScalar)`);
   }
 
-  // ---- % Q=✓ (acceptance, Q→R degradation) ----
   // toRealOrThrow handles isRational: Number(v.n)/Number(v.d).
   // x = Rational(1,2) = 0.5, y (percent) = Real(50) → 0.5*50/100 = 0.25.
   {
@@ -10448,7 +10288,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session231: Rational(1,2) Real(50) % → Real(0.25) (Q→R degradation; got ${r?.value?.toNumber()})`);
   }
 
-  // ---- %T Q=✓ (acceptance, Q→R degradation) ----
   // %T formula: 100*y/x.  x = Rational(1,4) = 0.25, y = Real(1) → 100*1/0.25 = 400.
   {
     const s = new Stack();
@@ -10460,7 +10299,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session231: Rational(1,4) Real(1) %T → Real(400) (Q→R degradation; got ${r?.value?.toNumber()})`);
   }
 
-  // ---- %CH Q=✓ (acceptance, Q→R degradation) ----
   // %CH formula: 100*(y-x)/x.  x = Rational(1,2) = 0.5, y = Real(1) → 100*(1-0.5)/0.5 = 100.
   {
     const s = new Stack();
@@ -10472,7 +10310,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session231: Rational(1,2) Real(1) %CH → Real(100) (Q→R degradation; got ${r?.value?.toNumber()})`);
   }
 
-  // ---- GCD Q=✗ (rejection) ----
   // _toBigIntOrThrow has no isRational branch; Rational → Bad argument type.
   {
     const s = new Stack();
@@ -10482,7 +10319,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session231: Rational(1,2) Integer(2) GCD → 'Bad argument type' (_toBigIntOrThrow rejects Rational; GCD is integer-domain)`);
   }
 
-  // ---- LCM Q=✗ (rejection) ----
   {
     const s = new Stack();
     s.push(Rational(1n, 2n));
@@ -10515,7 +10351,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
    +6 session236 pins.
    ================================================================ */
 {
-  // ---- LNP1 Q=✓ (acceptance, Q→R degradation) ----
   // toRealOrThrow handles isRational; log1p(0.5) is the expected value.
   {
     const v = runOp('LNP1', Rational(1n, 2n));
@@ -10523,7 +10358,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session236: LNP1 Rational(1,2) → Real(log1p(0.5)) (Q→R degradation; got ${v?.value?.toNumber()})`);
   }
 
-  // ---- EXPM Q=✓ (acceptance, Q→R degradation) ----
   // toRealOrThrow handles isRational; expm1(0.5) is the expected value.
   {
     const v = runOp('EXPM', Rational(1n, 2n));
@@ -10531,7 +10365,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session236: EXPM Rational(1,2) → Real(expm1(0.5)) (Q→R degradation; got ${v?.value?.toNumber()})`);
   }
 
-  // ---- TRUNC x=Q → ✗ (rejection on value operand) ----
   // _roundingOp checks `!isReal(xv) && !isInteger(xv)` → Bad argument type.
   {
     const s = new Stack();
@@ -10541,7 +10374,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session236: Rational(3,2) Integer(1) TRUNC → 'Bad argument type' (_roundingOp rejects non-Real/non-Integer x)`);
   }
 
-  // ---- ZETA Q=✗ (rejection) ----
   // _zetaScalar: isInteger/isReal only; Rational → null → Bad argument type.
   {
     const s = new Stack();
@@ -10550,7 +10382,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session236: ZETA Rational(1,2) → 'Bad argument type' (_zetaScalar has no isRational branch)`);
   }
 
-  // ---- LAMBERT Q=✗ (rejection) ----
   // _lambertScalar: isInteger/isReal only; Rational → null → Bad argument type.
   {
     const s = new Stack();
@@ -10559,7 +10390,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session236: LAMBERT Rational(1,2) → 'Bad argument type' (_lambertScalar has no isRational branch)`);
   }
 
-  // ---- PSI Q=✗ (rejection) ----
   // _psiScalar: isInteger/isReal only; Rational → null → Bad argument type.
   {
     const s = new Stack();
@@ -10591,7 +10421,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
    15 new assertions (5525 → 5540).
    ================================================================ */
 {
-  // ---- GAMMA Q=✗ ----
   // _gammaScalar: `x = isInteger ? … : isReal ? … : null` → Rational → null → throw.
   {
     const s = new Stack();
@@ -10600,7 +10429,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session240: GAMMA Rational(1,2) → 'Bad argument type' (_gammaScalar has no isRational branch)`);
   }
 
-  // ---- LNGAMMA Q=✗ ----
   // _lngammaScalar: same isInteger/isReal/null pattern.
   {
     const s = new Stack();
@@ -10609,7 +10437,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session240: LNGAMMA Rational(1,2) → 'Bad argument type' (_lngammaScalar has no isRational branch)`);
   }
 
-  // ---- ERF Q=✗ ----
   // _erfScalar: `x = isInteger ? … : isReal ? … : null` → Rational → null → throw.
   {
     const s = new Stack();
@@ -10618,7 +10445,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session240: erf Rational(1,2) → 'Bad argument type' (_erfScalar has no isRational branch)`);
   }
 
-  // ---- ERFC Q=✗ ----
   // _erfcScalar: same isInteger/isReal/null pattern.
   {
     const s = new Stack();
@@ -10627,7 +10453,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session240: erfc Rational(1,2) → 'Bad argument type' (_erfcScalar has no isRational branch)`);
   }
 
-  // ---- BETA Q=✗ ----
   // _betaScalar: aNum = isInteger ? … : isReal ? … : null; if null → throw.
   // Rational on level 2 (a-arg) is rejected before bNum is even evaluated.
   {
@@ -10638,7 +10463,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session240: Beta Rational(1,2) Integer(1) → 'Bad argument type' (_betaScalar has no isRational branch)`);
   }
 
-  // ---- UTPC Q=✗ ----
   // local asReal: only Integer and Real → throw for Rational.
   // Testing Rational on the ν (degree-of-freedom) arg.
   {
@@ -10649,7 +10473,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session240: UTPC Rational(3,2) Real(1) → 'Bad argument type' (asReal has no isRational branch)`);
   }
 
-  // ---- UTPF Q=✗ ----
   // Same asReal helper used for all three args (n, d, F); Rational on n triggers immediately.
   {
     const s = new Stack();
@@ -10660,7 +10483,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session240: UTPF Rational(3,2) Integer(2) Real(1) → 'Bad argument type' (asReal rejects Rational on n)`);
   }
 
-  // ---- UTPT Q=✗ ----
   // Same asReal helper; Rational on ν triggers immediately.
   {
     const s = new Stack();
@@ -10670,7 +10492,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session240: UTPT Rational(3,2) Real(1) → 'Bad argument type' (asReal rejects Rational on ν)`);
   }
 
-  // ---- HEAVISIDE Q=✗ ----
   // Handler checks isReal / isInteger / isBinaryInteger / _isSymOperand only — no isRational branch.
   {
     const s = new Stack();
@@ -10679,7 +10500,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session240: HEAVISIDE Rational(1,2) → 'Bad argument type' (no isRational branch in scalar handler)`);
   }
 
-  // ---- DIRAC Q=✗ ----
   // Same handler structure as HEAVISIDE — no isRational branch.
   {
     const s = new Stack();
@@ -10688,7 +10508,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session240: DIRAC Rational(1,2) → 'Bad argument type' (no isRational branch in scalar handler)`);
   }
 
-  // ---- COMB Q=✗ ----
   // _combPermArgs guard: `!isInteger(a) && !isReal(a) → throw 'Bad argument type'`.
   // Rational on level 2 (n-arg) triggers immediately.
   {
@@ -10699,7 +10518,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session240: COMB Rational(5,1) Integer(2) → 'Bad argument type' (_combPermArgs rejects Rational even when integer-valued)`);
   }
 
-  // ---- PERM Q=✗ ----
   // Same _combPermArgs guard as COMB.
   {
     const s = new Stack();
@@ -10709,7 +10527,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session240: PERM Rational(5,1) Integer(2) → 'Bad argument type' (_combPermArgs rejects Rational even when integer-valued)`);
   }
 
-  // ---- IQUOT Q=✗ ----
   // _intQuotientArg: only isInteger and isReal branches → Rational → throw.
   {
     const s = new Stack();
@@ -10719,7 +10536,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session240: IQUOT Rational(7,2) Integer(2) → 'Bad argument type' (_intQuotientArg has no isRational branch)`);
   }
 
-  // ---- IREMAINDER Q=✗ ----
   // Same _intQuotientArg guard as IQUOT.
   {
     const s = new Stack();
@@ -10729,7 +10545,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session240: IREMAINDER Rational(7,2) Integer(2) → 'Bad argument type' (_intQuotientArg has no isRational branch)`);
   }
 
-  // ---- XROOT Q=✓ (Q→R degradation) ----
   // Degree x uses `toRealOrThrow` which accepts Rational (Number(n)/Number(d)).
   // Radicand y goes through '^' which accepts Rational.
   // Both sides Q→R via toRealOrThrow / ^ dispatch; result is always Real.
@@ -10782,7 +10597,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
    `asReal`, which rejects them.
    ================================================================ */
 {
-  // ---- ERF Z=✓ (doc lag: _erfScalar has isInteger branch) ----
   // erf(Integer(0)) = 0 (zero special-case, exact Real).
   {
     const s = new Stack();
@@ -10802,7 +10616,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session244: erf Integer(1) → Real(erf(1)) (Z bare scalar; non-zero integer path; got ${v.value})`);
   }
 
-  // ---- ERFC Z=✓ (doc lag: _erfcScalar has isInteger branch) ----
   // erfc(Integer(0)) = 1 (zero special-case, exact Real).
   {
     const s = new Stack();
@@ -10823,7 +10636,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session244: erfc Integer(2) → Real(erfc(2)) (Z bare scalar; positive-x integer path; got ${v.value})`);
   }
 
-  // ---- UTPC Z=✓ (doc lag: asReal helper has isInteger branch) ----
   // UTPC(Integer(3), Integer(0)) — X≤0 branch returns Real(1) exactly.
   // Push order: ν (level 2) then x (level 1).
   {
@@ -10846,7 +10658,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session244: UTPC Integer(2) Integer(2) → Real(exp(-1)) (Z×Z; df=2 tail; tol 1e-10; got ${v.value})`);
   }
 
-  // ---- UTPF Z=✓ (doc lag: same asReal helper accepts Integer on all three args) ----
   // UTPF(n=Integer(2), d=Integer(2), F=Integer(1)).
   // Push order: n (level 3), d (level 2), F (level 1).
   // w = d/(d+n·F) = 2/(2+2·1) = 0.5; I_{0.5}(1, 1) = 0.5 — clean half-integer.
@@ -10861,7 +10672,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session244: UTPF Integer(2) Integer(2) Integer(1) → Real(0.5) (Z×Z×Z; I_0.5(1,1)=0.5; got ${v.value})`);
   }
 
-  // ---- UTPT Z=✓ (doc lag: same asReal helper accepts Integer on both args) ----
   // UTPT(ν=Integer(5), t=Integer(0)) — t=0 exact branch returns Real(0.5).
   // Push order: ν (level 2), t (level 1).
   {
@@ -10874,7 +10684,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session244: UTPT Integer(5) Integer(0) → Real(0.5) (Z×Z; t=0 exact branch; got ${v.value})`);
   }
 
-  // ---- BETA L=✓ (doc lag: _withListBinary wrapper distributes element-wise) ----
   // { Integer(1) Integer(2) } { Integer(1) Integer(3) } Beta
   //   → { Real(B(1,1)) Real(B(2,3)) }
   //   = { Real(≈1.0)   Real(≈0.0833) }
@@ -10896,7 +10705,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session244: Beta({...,Z(2)},{...,Z(3)})[1] = B(2,3) = 1/12 (got ${b23})`);
   }
 
-  // ---- BETA V=✗ / M=✗ (no _withVMBinary wrapper; _betaScalar rejects non-scalar) ----
   // Vector input: _betaScalar receives Vector as the 'a' arg — isInteger/isReal both
   // false → aNum = null → throws 'Bad argument type'.
   {
@@ -10915,7 +10723,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session244: Beta(Matrix, Integer) → 'Bad argument type' (no _withVMBinary; M=✗)`);
   }
 
-  // ---- UTPC L=✓ / V=✗ (session248: _withTaggedBinary(_withListBinary) lift) ----
   // n=0 empty-list passthrough.
   {
     const s = new Stack();
@@ -10980,7 +10787,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session248: UTPC Integer(2) Vector([Real(1)]) → 'Bad argument type' (no _withVMBinary; V=✗)`);
   }
 
-  // ---- UTPF L=✗ / V=✗ (bare 3-arg handler; no _withListBinary shape) ----
   {
     const s = new Stack();
     s.push(Integer(2n));
@@ -10998,7 +10804,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session244: UTPF Integer(2) Integer(2) Vector([Real(1)]) → 'Bad argument type' (3-arg bare handler; V=✗)`);
   }
 
-  // ---- UTPT L=✓ / V=✗ (session248: _withTaggedBinary(_withListBinary) lift) ----
   // n=0 empty-list passthrough.
   {
     const s = new Stack();
@@ -11209,7 +11014,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
      CONJ / RE / IM
    ================================================================ */
 {
-  // --- Unary math ops — BinaryInteger rejected ----------------
 
   // INV
   {
@@ -11530,7 +11334,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   const V2 = Vector([Real(3), Real(4)]);
   const M1 = Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]);
 
-  // --- (1) C column — Real-decomp family ---
   {
     const s = new Stack(); s.push(C1);
     assertThrows(() => lookup('ZETA').fn(s), /Bad argument type/i,
@@ -11547,7 +11350,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       'session267: Complex(1,2) PSI → Bad argument type (C=✗; _psiScalar isInteger/isReal only; Complex → null → throw)');
   }
 
-  // --- (2) C column — Stat-dist family ---
   {
     const s = new Stack(); s.push(C1);
     assertThrows(() => lookup('DIRAC').fn(s), /Bad argument type/i,
@@ -11586,7 +11388,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       'session267: Complex(1,2) Complex(2,1) UTPT → Bad argument type (C=✗; same asReal helper; Complex nu-arg → throw)');
   }
 
-  // --- (3) C column — Combinatorial family ---
   {
     const s = new Stack(); s.push(C1); s.push(C2);
     assertThrows(() => lookup('COMB').fn(s), /Bad argument type/i,
@@ -11614,7 +11415,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       'session267: Complex(1,2) Complex(2,1) XROOT → Bad argument type: expected real, got complex (C=✗; degree x goes through toRealOrThrow which explicitly rejects Complex)');
   }
 
-  // --- (4) S (String) column — CONJ / RE / IM ---
   {
     const s = new Stack(); s.push(S1);
     assertThrows(() => lookup('CONJ').fn(s), /Bad argument type/i,
@@ -11631,7 +11431,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       'session267: Str("x") IM → Bad argument type (S=✗; _imScalar same dispatch; no isString branch)');
   }
 
-  // --- (5) V/M columns — Combinatorial family ---
   // COMB: representative for all four ops (COMB/PERM/IQUOT/IREMAINDER)
   // All use _combPermArgs or _intQuotientArg — neither has isVector/isMatrix branch.
   {
