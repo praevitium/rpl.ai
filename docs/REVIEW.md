@@ -181,6 +181,41 @@ All currently-open findings are in the `Other` bucket and are
 - **Status.** Last occurrence resolved same-run (2026-06-14); kept as a
   **standing drift-watch item** because the catalog is hand-maintained
   and has recurred. Re-audit on every new-op ship.
+  - **2026-06-15 audit pass (clean).** Full `lookup()`-based token sweep
+    of every command-like token in `RPL_CATALOG` against the live op set
+    (`allOps()` = 467) — every command name resolves; the only misses
+    are prose, section headers, type names (`Real`/`Symbolic`/`Vector`),
+    and placeholders. The `AVAILABLE TOOLS` block (8 tools) matches
+    `_buildRegistry` exactly, and the three aliases it advertises
+    (`add_to_stack`/`recall`/`show_stack`) resolve via
+    `resolveToolAlias`. The prompt-side of this drift class is now
+    partly **evergreen**: `tests/test-chatbot-parse.mjs` pins the
+    documented tool set, asserts each canonical name is alias-stable
+    (reverse-collision guard the ai-chatbot lane had queued), and that
+    the advertised aliases still resolve. The prior run's queued
+    "`SCHUR`/`PMINI` absent from the catalog" item is **not drift** —
+    `RPL_CATALOG`'s own header declares it a curated subset (not the
+    exhaustive index, which is `docs/COMMANDS.md`), so a shipped op
+    missing from it is by design, not a mismatch.
+  - **2026-06-15 audit pass + new evergreen guard.** Fresh full-catalog
+    `hasOp()` sweep against the live op set (`allOps()` = 467, unchanged):
+    every `RPL_CATALOG` command name and advertised alias resolves —
+    `JORDAN` still ✗ (unregistered), `SCHUR`/`PMINI`/`PCAR` ✓, `ΣX2`/`ΣY2`
+    ✓ with the superscript `ΣX²` correctly absent. Turned the part of this
+    class most prone to recurrence — the glyph-bearing names (Σ/Δ/Π
+    accumulators, →-arrow conversions) the model emits verbatim — into a
+    test guard: exported `RPL_CATALOG` from `system-prompt.js` (one-word
+    change, mirrors the `TOOL_ALIASES`/`effectiveBudget` export precedent)
+    and added a `session286:` block to `tests/test-chatbot-parse.mjs` that
+    pulls every glyph-led token straight from the catalog text and asserts
+    it dispatches via `hasOp`. Whole-token capture is deliberate so a
+    superscript like `ΣX²` surfaces as the full unresolved token rather
+    than truncating to a resolving `ΣX` — i.e. the exact twice-fired bug
+    now fails the suite, not just a manual sweep. `node tests/test-all.mjs`
+    → 5928 passed / 0 failed. Next: extend the same catalog-extraction
+    guard to the non-glyph command names (needs a robust prose-vs-command
+    line classifier so the leading command column is pinned without
+    false-positives from the HOW-THE-STACK-WORKS narrative blocks).
 
 ### O-014  Unlogged `test-algebra.mjs` +3 assertions + `chat-bot.js` unlocked-modification anomaly
 

@@ -632,6 +632,26 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek(1).value.eq(2), 'session043: XPON Integer 500 → 2');
 }
 {
+  // session285: MANT Z-column ✓ cell was backed only by Real operands —
+  // XPON had a bare-Integer pin (above) but MANT did not. Pin the integer
+  // arm directly so a refactor degrading Z→Real-only on MANT is caught.
+  const s = new Stack();
+  s.push(Integer(500n));
+  lookup('MANT').fn(s);
+  assert(isReal(s.peek(1)) && s.peek(1).value.eq(5),
+    'session285: MANT Integer 500 → 5');
+  s.clear();
+  s.push(Integer(86000n));
+  lookup('MANT').fn(s);
+  assert(isReal(s.peek(1)) && Math.abs(s.peek(1).value - 8.6) < 1e-12,
+    'session285: MANT Integer 86000 → 8.6 (non-trivial mantissa)');
+  s.clear();
+  s.push(Integer(86000n));
+  lookup('XPON').fn(s);
+  assert(isReal(s.peek(1)) && s.peek(1).value.eq(4),
+    'session285: XPON Integer 86000 → 4 (>1-digit exponent on Integer)');
+}
+{
   // Bad type
   const s = new Stack();
   s.push(Str('nope'));
@@ -5777,6 +5797,42 @@ function _arrayEq(a, b) {
   const v = s.peek();
   assert(isReal(v) && Math.abs(v.value - 0.25) < 1e-15,
     'session086: XNUM evaluates Symbolic numerically (→NUM delegate)');
+}
+
+// XNUM / XQ — alias delegation must propagate the target's guards, not
+// just the happy path (the COMMANDS.md ✓ criterion wants a rejection
+// pin per op).  These lock the alias to →Q / →NUM so a future inline
+// reimplementation that drops a guard is caught.
+{
+  // XQ inherits →Q's Integer-passthrough branch: Integer → Symbolic Num,
+  // no /1 denominator (distinct from the Real → continued-fraction path).
+  const s = new Stack();
+  s.push(Integer(5n));
+  lookup('XQ').fn(s);
+  const v = s.peek();
+  assert(v.type === 'symbolic' && v.expr.kind === 'num' && v.expr.value === 5,
+    'session200: XQ Integer(5) → Symbolic Num(5) (→Q integer passthrough)');
+}
+{
+  // XQ inherits →Q's type guard.
+  const s = new Stack();
+  s.push(Str('foo'));
+  assertThrows(() => lookup('XQ').fn(s), /Bad argument type/,
+    'session200: XQ String rejects Bad argument type (→Q type guard)');
+}
+{
+  // XQ inherits →Q's finiteness guard.
+  const s = new Stack();
+  s.push(Real(Infinity));
+  assertThrows(() => lookup('XQ').fn(s), /Bad argument value/,
+    'session200: XQ non-finite Real rejects Bad argument value (→Q finiteness guard)');
+}
+{
+  // XNUM delegates to →NUM → EVAL, so it has no scalar type guard; its
+  // rejection path is the empty-stack underflow the pop raises.
+  const s = new Stack();
+  assertThrows(() => lookup('XNUM').fn(s), /Too few arguments/,
+    'session200: XNUM on empty stack rejects Too few arguments (→NUM/EVAL pop)');
 }
 
 /* =====================================================================

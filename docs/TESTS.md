@@ -9,7 +9,7 @@ current state.
 
 ## Current status
 
-`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (5844)** —
+`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (5899)** —
 fully green, 0 failing. `test-persist.mjs` 66 / 0 (stable; D-001 closed at
 ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~5 ms.
 
@@ -150,7 +150,10 @@ Sibling lanes:
 - **Positive-coverage pass on `✓` cells in DATA_TYPES that only have negative /
   rejection evidence today.** Plan: enumerate `✓` cells → grep for the op name
   in tests → flag any `✓` cell whose op has no adjacent positive assertion.
-  This is the standing open queue item for the lane.
+  This is the standing open queue item for the lane. erf/erfc Z (session280)
+  and MANT Z (session285) are closed. Next candidates flagged earlier:
+  GAMMA/LNGAMMA Z folds (`_gammaScalar`/`_lngammaScalar` `isInteger` branch),
+  backed mostly by Real-operand evidence today.
 
 ---
 
@@ -168,3 +171,10 @@ Sibling lanes:
   (`erf(Integer(1))` → `Real(≈0.8427)`, `erfc(Integer(2))` → `Real(≈0.00468)`),
   not just `Real(n)` — `session280:` in `test-numerics.mjs`. Guards against a
   refactor that drops the integer arm and silently degrades Z→Real-only.
+- **MANT Z column** — same audit class: XPON carried a bare-`Integer` pin
+  (`session043:` XPON Integer 500 → 2) but MANT's Z `✓` cell was backed only by
+  `Real` operands. Added `session285:` pins in `test-numerics.mjs`
+  (`MANT(Integer 500)` → `Real(5)`, `MANT(Integer 86000)` → `Real(8.6)`, plus
+  `XPON(Integer 86000)` → `Real(4)` for a >1-digit exponent on the integer arm).
+  Probed live first; no source change. Guards against a refactor degrading
+  MANT's Z column to Real-only.

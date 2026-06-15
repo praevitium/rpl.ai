@@ -1,7 +1,9 @@
 import {
   parseAllToolCalls, parseSuggestions, findMachineSectionStart, stripThinkBlocks,
-  resolveToolAlias, activeContextTokens, effectiveBudget,
+  resolveToolAlias, activeContextTokens, effectiveBudget, TOOL_ALIASES,
 } from '../www/src/ai/chat-bot.js';
+import { SYSTEM_PROMPT_COMBINED, RPL_CATALOG } from '../www/src/ai/system-prompt.js';
+import { hasOp } from '../www/src/rpl/ops.js';
 import { assert } from './helpers.mjs';
 
 /* AI chat-bot response parsers — the pure helpers that pull structured
@@ -241,4 +243,86 @@ import { assert } from './helpers.mjs';
 {
   assert(activeContextTokens({ loadedModelId: 'not-a-real-model' }) === 4096,
          'activeContextTokens falls back to 4096 for an unknown catalog id');
+}
+
+// AI prompt <-> tool-registry sync guards.  The AVAILABLE TOOLS block in
+// SYSTEM_PROMPT_COMBINED is a hand-maintained contract the model emits
+// verbatim; a tool name that drifts from chat-bot.js _buildRegistry, or
+// an advertised alias that no longer resolves, silently breaks dispatch.
+{
+  const head = SYSTEM_PROMPT_COMBINED.indexOf('AVAILABLE TOOLS');
+  const tail = SYSTEM_PROMPT_COMBINED.indexOf('EXAMPLES', head);
+  const documented = [...new Set(
+    [...SYSTEM_PROMPT_COMBINED.slice(head, tail).matchAll(/"name":"([^"]+)"/g)]
+      .map((m) => m[1])
+      .filter((n) => !n.includes('<')),
+  )].sort();
+  const expected = [
+    'append_to_editor', 'clear_editor', 'get_editor', 'get_stack',
+    'get_vars', 'push_to_stack', 'recall_var', 'run',
+  ];
+  assert(documented.join(',') === expected.join(','),
+         'AVAILABLE TOOLS block documents exactly the registry tool set');
+
+  // A canonical tool name must never also be an alias key, or the
+  // orchestrator would rewrite a real tool call to something else.
+  for (const name of documented) {
+    assert(resolveToolAlias(name) === name,
+           `canonical tool ${name} is alias-stable (not a TOOL_ALIASES key)`);
+  }
+
+  // The aliases the prompt explicitly advertises must still resolve to a
+  // documented canonical tool.
+  for (const [alias, canon] of [
+    ['add_to_stack', 'push_to_stack'],
+    ['recall', 'recall_var'],
+    ['show_stack', 'get_stack'],
+  ]) {
+    assert(resolveToolAlias(alias) === canon && documented.includes(canon),
+           `advertised alias ${alias} resolves to documented tool ${canon}`);
+  }
+}
+
+// session283: guard the alias map from the target side. Every alias must
+// point at a real canonical tool, and no target may also be a key — a
+// two-hop chain (synonym of a synonym) would leave resolveToolAlias one
+// rewrite short, and a target outside the tool set would silently route
+// a call to a nonexistent op.
+{
+  const canonical = new Set([
+    'append_to_editor', 'clear_editor', 'get_editor', 'get_stack',
+    'get_vars', 'push_to_stack', 'recall_var', 'run',
+  ]);
+  const keys = new Set(Object.keys(TOOL_ALIASES));
+  for (const target of new Set(Object.values(TOOL_ALIASES))) {
+    assert(canonical.has(target),
+           `alias target ${target} is a canonical tool`);
+    assert(!keys.has(target),
+           `alias target ${target} is not also an alias key (single-hop)`);
+  }
+}
+
+// session286: make the O-013 RPL_CATALOG drift-watch evergreen for the
+// glyph-bearing ops — the class that has actually drifted twice. The model
+// emits catalog command names verbatim, and Σ/Δ/Π accumulators and →-arrow
+// conversions are the names most prone to ASCII<->Unicode confusion (the
+// fixed bug advertised `ΣX²` (superscript) when the registered name is `ΣX2`
+// (ASCII 2)). Pull every glyph-led token straight from the catalog text and
+// assert it dispatches, so a future glyph typo fails the suite instead of
+// waiting for a manual review-lane sweep. Whole-token capture (not just the
+// leading run) is deliberate: `ΣX²` must surface as the full unresolved
+// token, not silently truncate to a resolving `ΣX`.
+{
+  const strip = (t) => t.replace(/^[`"'(){}\[\].,;:]+|[`"'(){}\[\].,;:]+$/g, '');
+  const tokens = [...new Set(
+    [...RPL_CATALOG.matchAll(/\S*(?:→|[ΣΔΠ])\S*/g)]
+      .map((m) => strip(m[0]))
+      .filter((t) => t && t !== '→'),  // bare → is the local-variable arrow, not an op
+  )].sort();
+  assert(tokens.length >= 25,
+         'RPL_CATALOG exposes the glyph-bearing op tokens to sweep');
+  for (const name of tokens) {
+    assert(hasOp(name),
+           `RPL_CATALOG glyph op ${name} resolves to a registered op`);
+  }
 }

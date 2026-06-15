@@ -1,4 +1,4 @@
-import { fuzzyScore, searchOps, moveSelection, matchPositions } from '../www/src/ui/op-search.js';
+import { fuzzyScore, searchOps, moveSelection, matchPositions, highlightSegments } from '../www/src/ui/op-search.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { assert } from './helpers.mjs';
 
@@ -90,6 +90,47 @@ import { assert } from './helpers.mjs';
   const idx = matchPositions('AN', 'TANGENT');
   assert(idx.every((v, i) => i === 0 || v > idx[i - 1]),
     'matchPositions: indices are strictly ascending');
+}
+
+{
+  // session284: highlightSegments — runs the overlay renders from matchPositions
+  const segs = (name, q) => highlightSegments(name, matchPositions(q, name));
+  const join = (s) => s.map((r) => r.text).join('');
+  const eqSeg = (a, b) =>
+    a.length === b.length &&
+    a.every((r, i) => r.text === b[i].text && r.match === b[i].match);
+
+  assert(highlightSegments('', [0]).length === 0, 'highlightSegments: empty name → []');
+
+  const whole = highlightSegments('SIN', []);
+  assert(eqSeg(whole, [{ text: 'SIN', match: false }]),
+    'highlightSegments: empty positions → one unmatched run');
+  assert(eqSeg(highlightSegments('SIN', null), [{ text: 'SIN', match: false }]),
+    'highlightSegments: missing positions → one unmatched run');
+
+  assert(eqSeg(segs('SIN', 'SIN'), [{ text: 'SIN', match: true }]),
+    'highlightSegments: exact match → one matched run');
+
+  assert(eqSeg(segs('COSINE', 'SI'), [
+    { text: 'CO', match: false },
+    { text: 'SI', match: true },
+    { text: 'NE', match: false },
+  ]), 'highlightSegments: contiguous interior match merges into one run');
+
+  assert(eqSeg(segs('ARCSIN', 'AN'), [
+    { text: 'A', match: true },
+    { text: 'RCSI', match: false },
+    { text: 'N', match: true },
+  ]), 'highlightSegments: scattered matches split by an unmatched gap');
+
+  const ascii = segs('TANGENT', 'AN');
+  assert(join(ascii) === 'TANGENT', 'highlightSegments: text reconstructs the name');
+  assert(ascii.every((r, i) => i === 0 || r.match !== ascii[i - 1].match),
+    'highlightSegments: adjacent runs alternate match flag');
+
+  assert(eqSeg(highlightSegments('SIN', [99, -1, NaN]),
+    [{ text: 'SIN', match: false }]),
+    'highlightSegments: out-of-range/non-finite positions ignored');
 }
 
 {

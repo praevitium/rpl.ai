@@ -42,6 +42,13 @@ collapsed into the current-tense reference below; git preserves the history.
   `<<`/`>>`-style lookahead is needed — none of these glyphs is a valid bare
   operator name, so plain stop-set membership suffices. Guarded by
   regression pins in `tests/test-entry.mjs`.
+- **Program-opener abutment (symmetric to the closer):** a Name or number
+  abutting an opener with no whitespace splits cleanly into `[value, nested
+  Program]` — `2«1 +»` → `Integer(2)` + `«1 +»`; `X«1»` → `Name('X')` +
+  `«1»`. The number scanner stops at `«`/`<`; the ident scanner stops on the
+  Unicode `«` stop-set glyph or, for ASCII, the same `<<` lookahead that
+  closes on `>>`. Pinned by the `session282:` block in `tests/test-entry.mjs`
+  (Unicode + ASCII openers, Name + number operands, empty nested body).
 
 ## Evaluation
 

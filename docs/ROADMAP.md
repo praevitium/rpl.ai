@@ -139,9 +139,10 @@ concrete improvements:
   entered in the command line).  The `allOps()` enumerator already
   exposes the registry.  *Matching core shipped:* `www/src/ui/op-search.js`
   (`fuzzyScore` / `searchOps`, `moveSelection` for wrap-around
-  ArrowUp/ArrowDown highlight navigation, plus `matchPositions` returning
-  the matched-character indices so the overlay can highlight the matched
-  glyphs) is a DOM-free matcher+ranker+navigator unit-tested in
+  ArrowUp/ArrowDown highlight navigation, `matchPositions` returning
+  the matched-character indices, plus `highlightSegments` folding those
+  indices into the alternating matched/unmatched text runs the overlay
+  renders) is a DOM-free matcher+ranker+navigator unit-tested in
   `tests/test-op-search.mjs`; the overlay that consumes it (input box,
   result list, matched-char highlighting, Enter-to-invoke, Esc-to-close)
   is still TODO.

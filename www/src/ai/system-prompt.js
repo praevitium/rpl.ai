@@ -51,7 +51,7 @@
 // route correctly without them.  Every byte here competes with the
 // user's message + conversation history for the model's attention
 // budget; a tighter catalog is a better catalog.
-const RPL_CATALOG = `RPL is RPN-postfix.  Examples: 5 3 +  (not 5 + 3),  10 FACT  (factorial),  \`SIN(X)\` \`X\` DERIV  (derivative).
+export const RPL_CATALOG = `RPL is RPN-postfix.  Examples: 5 3 +  (not 5 + 3),  10 FACT  (factorial),  \`SIN(X)\` \`X\` DERIV  (derivative).
 
 HOW THE STACK WORKS
   - The calculator has a STACK — a LIFO list of values.  LEVEL 1 IS THE TOP — the most recently pushed value, the one operators consume first.  Level 2 sits below level 1, level 3 below that, etc.  Results of operations land back on level 1.

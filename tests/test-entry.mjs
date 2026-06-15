@@ -955,6 +955,59 @@ import { assert, assertThrows } from './helpers.mjs';
 }
 
 /* ====================================================================
+   session282: the program OPENER side of the guillemet abutment class
+   (the symmetric counterpart to session278, which pinned the closer and
+   the list/vector openers).  A Name or number abutting `«` (or the ASCII
+   `<<`) with no whitespace splits cleanly into the value followed by the
+   nested Program: the number scanner stops at `«`/`<`, and the ident
+   scanner stops on the `«` stop-set glyph (Unicode) or the `<<` lookahead
+   (ASCII).  These guard against a stop-set / lookahead refactor swallowing
+   an opener into a preceding token (`2«1»` → `Name('2«1»')`).
+   ==================================================================== */
+{
+  // Number abutting a Unicode opener: `2«` → Integer(2) then nested Program.
+  const v = parseEntry('« 2«1 +»»')[0];
+  assert(isProgram(v) && v.tokens.length === 2
+      && isInteger(v.tokens[0]) && v.tokens[0].value === 2n
+      && isProgram(v.tokens[1]) && v.tokens[1].tokens.length === 2,
+    "parseEntry('« 2«1 +»»') → Program [Integer(2), «1 +»]");
+}
+{
+  // Name abutting a Unicode opener: `X«` → Name('X') then nested Program.
+  const v = parseEntry('« X«1»»')[0];
+  assert(isProgram(v) && v.tokens.length === 2
+      && isName(v.tokens[0]) && v.tokens[0].id === 'X'
+      && isProgram(v.tokens[1]) && v.tokens[1].tokens.length === 1,
+    "parseEntry('« X«1»»') → Program [Name('X'), «1»]");
+}
+{
+  // Number abutting an empty Unicode opener: `3«»` → Integer then empty Program.
+  const v = parseEntry('« 3«»»')[0];
+  assert(isProgram(v) && v.tokens.length === 2
+      && isInteger(v.tokens[0]) && v.tokens[0].value === 3n
+      && isProgram(v.tokens[1]) && v.tokens[1].tokens.length === 0,
+    "parseEntry('« 3«»»') → Program [Integer(3), « »]");
+}
+{
+  // ASCII opener abutting a number relies on the `<<` lookahead, not the
+  // stop set: `2<<` → Integer(2) then nested Program.
+  const v = parseEntry('<< 2<<1 +>> >>')[0];
+  assert(isProgram(v) && v.tokens.length === 2
+      && isInteger(v.tokens[0]) && v.tokens[0].value === 2n
+      && isProgram(v.tokens[1]) && v.tokens[1].tokens.length === 2,
+    "parseEntry('<< 2<<1 +>> >>') → Program [Integer(2), <<1 +>>]");
+}
+{
+  // ASCII opener abutting a Name: `X<<` → Name('X') then nested Program,
+  // exercising the same `j > i` lookahead that closes on `>>`.
+  const v = parseEntry('<< X<<1>> >>')[0];
+  assert(isProgram(v) && v.tokens.length === 2
+      && isName(v.tokens[0]) && v.tokens[0].id === 'X'
+      && isProgram(v.tokens[1]) && v.tokens[1].tokens.length === 1,
+    "parseEntry('<< X<<1>> >>') → Program [Name('X'), <<1>>]");
+}
+
+/* ====================================================================
    Polar / cylindrical / spherical input — HP50 AUR §4.4 (complex) and
    §9 (vector).  The angle component (prefixed with U+2220 `∠`) is
    interpreted in the active RAD / DEG / GRD mode and converted to

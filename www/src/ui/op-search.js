@@ -67,6 +67,40 @@ export function matchPositions(query, name) {
   return qi < q.length ? [] : hits;
 }
 
+/** Split `name` into consecutive matched/unmatched runs for the
+ *  overlay to render, given the matched-character `positions` from
+ *  `matchPositions`.  Returns an array of `{ text, match }` segments
+ *  whose `text` concatenates back to `name`, with adjacent matched
+ *  indices merged into one `match: true` run and the gaps emitted as
+ *  `match: false` runs.  An empty `name` yields `[]`; an empty or
+ *  missing `positions` yields a single unmatched run of the whole name.
+ *  Out-of-range or non-finite positions are ignored. */
+export function highlightSegments(name, positions) {
+  const n = String(name == null ? '' : name);
+  if (n === '') return [];
+
+  const marked = new Set();
+  if (Array.isArray(positions)) {
+    for (const p of positions) {
+      const i = Math.trunc(Number(p));
+      if (Number.isFinite(i) && i >= 0 && i < n.length) marked.add(i);
+    }
+  }
+
+  const segments = [];
+  let start = 0;
+  let cur = marked.has(0);
+  for (let i = 1; i <= n.length; i++) {
+    const m = i < n.length && marked.has(i);
+    if (i === n.length || m !== cur) {
+      segments.push({ text: n.slice(start, i), match: cur });
+      start = i;
+      cur = m;
+    }
+  }
+  return segments;
+}
+
 /** Filter + rank `names` against `query`.  An empty/whitespace query
  *  returns a copy of `names` unchanged (the palette's resting view).
  *  Otherwise only subsequence matches survive, sorted by descending

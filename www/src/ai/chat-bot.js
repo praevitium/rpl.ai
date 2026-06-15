@@ -617,7 +617,7 @@ const MODELS = [
  *  consistent variant.  Skip ambiguous synonyms (e.g. raw "add" —
  *  could mean push, could mean the `+` operator) because resolving
  *  those silently to the wrong tool is worse than a retry. */
-const TOOL_ALIASES = Object.freeze({
+export const TOOL_ALIASES = Object.freeze({
   // push variants
   'add_to_stack':       'push_to_stack',
   'push':               'push_to_stack',

@@ -11605,3 +11605,77 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       'session271: Real(3.14159) Str("x") TRUNC → Bad argument type: expected real, got string (S=✗; n via toRealOrThrow)');
   }
 }
+
+/* ====================================================================
+   session281: S-column (String) rejection pins — special-function /
+   stat-dist family (HEAVISIDE / DIRAC / GAMMA / LNGAMMA / ERF / ERFC /
+   BETA / UTPC / UTPF / UTPT)
+   ----------------------------------------------------------------
+   Adds the S column to the stat-dist table (it had R/Z/Q/C/N/Sy/L/V/M/T
+   only — no S column), completing the DATA_TYPES "Next-session widening
+   candidates" item after session 271's special-function S-column.  All
+   ten reject String with 'Bad argument type':
+     • HEAVISIDE / DIRAC:   scalar arm isReal/isInteger/isBinaryInteger/isSym
+                            only; String falls through to the closing throw.
+     • GAMMA / LNGAMMA / ERF / ERFC: `_*Scalar` `isInteger ? … : isReal ? …
+                            : null` → String → null → throw.
+     • BETA:                `_betaScalar` aNum `isInteger ? … : isReal ? …
+                            : null` → String → null → throw.
+     • UTPC / UTPF / UTPT:  shared `asReal` helper (isInteger/isReal only)
+                            throws on the first String operand.
+   No source changes — the rejection was already correct, just untested.
+   ================================================================ */
+{
+  const S1 = Str('x');   // representative String input
+
+  {
+    const s = new Stack(); s.push(S1);
+    assertThrows(() => lookup('HEAVISIDE').fn(s), /Bad argument type/i,
+      'session281: Str("x") HEAVISIDE → Bad argument type (S=✗; scalar arm isReal/isInteger/isBinaryInteger/isSym only)');
+  }
+  {
+    const s = new Stack(); s.push(S1);
+    assertThrows(() => lookup('DIRAC').fn(s), /Bad argument type/i,
+      'session281: Str("x") DIRAC → Bad argument type (S=✗; same arm as HEAVISIDE)');
+  }
+  {
+    const s = new Stack(); s.push(S1);
+    assertThrows(() => lookup('GAMMA').fn(s), /Bad argument type/i,
+      'session281: Str("x") GAMMA → Bad argument type (S=✗; _gammaScalar isInteger/isReal/null → throw)');
+  }
+  {
+    const s = new Stack(); s.push(S1);
+    assertThrows(() => lookup('LNGAMMA').fn(s), /Bad argument type/i,
+      'session281: Str("x") LNGAMMA → Bad argument type (S=✗; _lngammaScalar isInteger/isReal/null → throw)');
+  }
+  {
+    const s = new Stack(); s.push(S1);
+    assertThrows(() => lookup('erf').fn(s), /Bad argument type/i,
+      'session281: Str("x") ERF → Bad argument type (S=✗; _erfScalar isInteger/isReal/null → throw)');
+  }
+  {
+    const s = new Stack(); s.push(S1);
+    assertThrows(() => lookup('erfc').fn(s), /Bad argument type/i,
+      'session281: Str("x") ERFC → Bad argument type (S=✗; _erfcScalar isInteger/isReal/null → throw)');
+  }
+  {
+    const s = new Stack(); s.push(S1); s.push(Str('y'));
+    assertThrows(() => lookup('Beta').fn(s), /Bad argument type/i,
+      'session281: Str("x") Str("y") BETA → Bad argument type (S=✗; _betaScalar aNum null → throw)');
+  }
+  {
+    const s = new Stack(); s.push(S1); s.push(Str('y'));
+    assertThrows(() => lookup('UTPC').fn(s), /Bad argument type/i,
+      'session281: Str("x") Str("y") UTPC → Bad argument type (S=✗; asReal rejects String ν)');
+  }
+  {
+    const s = new Stack(); s.push(S1); s.push(Str('y')); s.push(Str('z'));
+    assertThrows(() => lookup('UTPF').fn(s), /Bad argument type/i,
+      'session281: Str("x") Str("y") Str("z") UTPF → Bad argument type (S=✗; asReal rejects String ν₁)');
+  }
+  {
+    const s = new Stack(); s.push(S1); s.push(Str('y'));
+    assertThrows(() => lookup('UTPT').fn(s), /Bad argument type/i,
+      'session281: Str("x") Str("y") UTPT → Bad argument type (S=✗; asReal rejects String ν)');
+  }
+}
