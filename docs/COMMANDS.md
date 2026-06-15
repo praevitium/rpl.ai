@@ -21,7 +21,30 @@ exists at all**, not the shape of its type coverage.
 Where relevant the **Notes** column records the last session number that
 touched the row, and any known caveats worth carrying forward.
 
-## Counts (as of session 197 — 2026-06-14)
+## Counts (as of session 198 — 2026-06-15)
+
+**Session 198 (`rpl5050-command-support`)** shipped the CAS-independent
+core of `JORDAN`'s level-2 / level-1 output (HP50 AUR §3-122) as a new
+standalone module `www/src/rpl/jordan-format.js` — mirrors the
+op-search precedent of landing the pure shaping core before the op that
+consumes it.  AUR level 2 is "a list of characteristic spaces tagged by
+the corresponding eigenvalue (either a vector or a list of Jordan
+chains, each ending with an 'Eigen:'-tagged eigenvector)"; the module
+exports `charSpaceList(entries)` (RList of eigenvalue-`Tagged` spaces),
+`jordanChain(vectors)` (RList terminating in an `Eigen:`-tagged
+eigenvector, leads left bare), `eigenTag(v)`, and `eigenvalueArray`
+(level-1 Vector, eigenvalues repeated by multiplicity).  Pinned against
+the AUR worked example `JORDAN([[1,1],[1,1]])` → level 2 `{0: [1,-1]
+2: [1,1]}`, level 1 `[0,2]`.  +20 assertions in
+`tests/test-jordan-format.mjs` (wired into `tests/test-all.mjs`);
+`node tests/test-all.mjs` 5781 → 5801.  No source change to `ops.js`:
+`JORDAN` is still `✗` (unregistered) — what remains is the op wiring
+that pulls eigenvalues / multiplicities / characteristic spaces / Jordan
+chains out of Giac and feeds these builders, plus `pmin` (level 4,
+already shipped as PMINI) and `charpoly` (level 3, PCAR) for the upper
+levels.  The Giac eigenvects/Jordan-chain output shape needs real-CAS
+verification (the test mock would otherwise encode a guess), so that
+op-wiring step is deferred to a run that can confirm it.
 
 **Session 197 (`rpl5050-command-support`)** shipped `PMINI` (HP50 AUR
 §3-172, minimal polynomial of a square matrix) — a real HP50 command

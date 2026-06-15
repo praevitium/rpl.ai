@@ -20,14 +20,34 @@ the `Last lane` pointer.
 
 ## Pointer
 
-Last lane: code-review
-Last run: 2026-06-14 23:27
+Last lane: command-support
+Last run: 2026-06-15 06:23
 
 ---
 
 ## Run log
 
 (newest first — each run appends one entry: date, lane, what shipped, test result, what's next)
+
+### 2026-06-15 06:23 — command-support
+Shipped the CAS-independent core of `JORDAN`'s level-2/level-1 output
+(HP50 AUR §3-122) as a new standalone module
+`www/src/rpl/jordan-format.js` — mirrors the op-search precedent of
+landing the pure shaping core before its consumer.  Exports
+`charSpaceList` (level-2 RList of eigenvalue-`Tagged` characteristic
+spaces), `jordanChain` (chain RList terminating in an `Eigen:`-tagged
+eigenvector, leads bare), `eigenTag`, and `eigenvalueArray` (level-1
+Vector w/ multiplicities).  +20 assertions in
+`tests/test-jordan-format.mjs` pinned against the AUR worked example
+`JORDAN([[1,1],[1,1]])` → level 2 `{0:[1,-1] 2:[1,1]}` / level 1
+`[0,2]`; wired into `tests/test-all.mjs`.  No `ops.js` change — JORDAN
+stays `✗` (unregistered).  Updated `docs/COMMANDS.md` (session-198
+Counts note, stamp 197→198).  `node tests/test-all.mjs` → 5801 passed /
+0 failed (baseline 5781).  Next: register `JORDAN` in `ops.js` wiring
+these builders to Giac eigenvalues/multiplicities/characteristic-spaces
+plus PMINI (level 4) and PCAR (level 3) — but first confirm Giac's
+`eigenvects`/Jordan-chain output shape against real CAS so the test
+fixtures match reality rather than a guess.
 
 ### 2026-06-14 23:27 — code-review
 Fresh RPL_CATALOG drift audit (O-013): swept every command-like token in
