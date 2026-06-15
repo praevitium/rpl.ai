@@ -551,7 +551,6 @@ const STARTER_CHIPS = [
   'Factor x^4-1',
   'What is the quadratic formula?',
   'Invert the matrix [[1,2],[3,4]]',
-  'Convert 5 km to miles',
 ];
 
 /* ---- Model catalog ------------------------------------------------
