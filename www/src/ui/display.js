@@ -386,6 +386,23 @@ export class Display {
       : 'EXACT mode (flag -105 clear) — click to switch to APPROX';
   }
 
+  /** Update the Real/Complex annunciator.  HP50 flag -103: when CLEAR
+   *  ("Real") SOLVE returns real roots only and domain-violating
+   *  transcendental ops throw; the annunciator shows `R`.  When SET
+   *  ("Complex") SOLVE also searches for complex roots and those ops
+   *  return their principal-branch Complex result; the annunciator
+   *  flips to `C`.  Always lit so the mode is visible at a glance,
+   *  mirroring the EXACT/APPROX annunciator. */
+  setComplexAnnunciator(on) {
+    const el = this.statusLine?.querySelector('#ann-complex');
+    if (!el) return;
+    el.textContent = on ? 'C' : 'R';
+    el.classList.add('on');
+    el.title = on
+      ? 'Complex mode (flag -103 set) — SOLVE finds complex roots; click to switch to Real'
+      : 'Real mode (flag -103 clear) — SOLVE finds real roots only; click to switch to Complex';
+  }
+
   /** Show the current BinaryInteger display-base override as a short
    *  label (HEX / DEC / OCT / BIN) in the status line.  When the
    *  override is cleared (`null`) the annunciator hides — BinInts

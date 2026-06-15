@@ -64,3 +64,19 @@ export function searchOps(query, names) {
     b.score - a.score || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   return scored.map((e) => e.name);
 }
+
+/** Move the palette's highlighted index by `delta` over a result list
+ *  of `length` rows, wrapping at both ends (ArrowDown past the bottom
+ *  lands on the first row; ArrowUp past the top lands on the last).
+ *  An empty list has no selection, so the result is -1.  A negative
+ *  `index` is the "nothing selected yet" sentinel: the first ArrowDown
+ *  snaps to the first row and the first ArrowUp to the last. */
+export function moveSelection(index, delta, length) {
+  const n = Math.trunc(Number(length));
+  if (!Number.isFinite(n) || n <= 0) return -1;
+  const d = Math.trunc(Number(delta)) || 0;
+  let i = Math.trunc(Number(index));
+  if (!Number.isFinite(i)) i = -1;
+  if (i < 0) i = d >= 0 ? -1 : 0;
+  return ((i + d) % n + n) % n;
+}

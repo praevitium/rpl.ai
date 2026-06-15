@@ -186,7 +186,7 @@ PROGRAMS & CONTROL FLOW
 
 STATISTICS
   MEAN MEDIAN SDEV VAR STD CORR COV TOT
-  ΣX ΣY ΣX² ΣY² ΣXY  (and SX SY SX2 SY2 SXY ASCII aliases)    summation accumulators
+  ΣX ΣY ΣX2 ΣY2 ΣXY  (and SX SY SX2 SY2 SXY ASCII aliases; the sum-of-squares ops are spelled with an ASCII 2, not a superscript ²)    summation accumulators
   BESTFIT LINFIT EXPFIT LOGFIT PWRFIT     curve fitting
   PREDV PREDX PREVAL                       predictions
   RAND RDZ                   pseudo-random / seed

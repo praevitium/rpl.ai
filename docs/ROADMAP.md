@@ -164,9 +164,11 @@ concrete improvements:
   types filter the registered op list, Enter invokes the op (as if
   entered in the command line).  The `allOps()` enumerator already
   exposes the registry.  *Matching core shipped:* `www/src/ui/op-search.js`
-  (`fuzzyScore` / `searchOps`) is a DOM-free subsequence matcher+ranker
-  unit-tested in `tests/test-op-search.mjs`; the overlay that consumes it
-  (input box, result list, Enter-to-invoke, Esc-to-close) is still TODO.
+  (`fuzzyScore` / `searchOps`, plus `moveSelection` for wrap-around
+  ArrowUp/ArrowDown highlight navigation) is a DOM-free matcher+ranker+
+  navigator unit-tested in `tests/test-op-search.mjs`; the overlay that
+  consumes it (input box, result list, Enter-to-invoke, Esc-to-close) is
+  still TODO.
 - **Contextual help.**  Hover an op name in the stack or command line
   → a tooltip with its AUR one-liner plus argument signature.  The
   metadata lives in `COMMANDS.md` today as prose; a structured

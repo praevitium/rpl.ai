@@ -15,7 +15,7 @@ open, and the next-session queue.
 
 ---
 
-## Current implementation status (as of session 271)
+## Current implementation status (as of session 272)
 
 
 ### Program value — parser & round-trip
@@ -31,6 +31,14 @@ open, and the next-session queue.
 - **Auto-close on unterminated** `«`: the parser silently auto-closes the
   program body when the source runs out before `»`. Matches the existing
   "forgot the closer" convenience on lists / vectors.
+- **Delimiter-stop in the ident tokenizer (session 272):** the bare-ident
+  scanner in `tokenize` now stops at an embedded program closer so a
+  closing `»` (or ASCII `>>`) abutting an operator name closes the program
+  rather than being swallowed. Pre-272 `« 1 2 <»` minted `Name('<»')` and
+  the program auto-closed on end-of-buffer instead of on its real `»`; the
+  ident stop set gained `«»`, and a `j > i` lookahead breaks on `<<`/`>>`
+  while leaving a lone `<`/`>` as a valid bare operator name. Pinned in
+  `tests/test-entry.mjs`.
 
 ### Evaluation
 - `EVAL` (ops.js) dispatches Program / Name / Tagged / Symbolic /
@@ -309,7 +317,38 @@ open, and the next-session queue.
 
 ---
 
-## Session 271 (this run) — what shipped
+## Session 272 (this run) — what shipped
+
+First net-new source change in this lane since the session-106/116/121/131
+suspended-execution work — a real parser bug fix on 2026-06-14.  The bare-
+identifier tokenizer in `www/src/rpl/parser.js` ran its scan until
+whitespace or one of `{}[]()"\``, which did **not** include the program
+guillemets.  So an operator name directly abutting a closing `»` swallowed
+the delimiter: `« 1 2 <»` tokenized the tail as `Name('<»')` and the
+program body auto-closed on end-of-buffer instead of on its actual `»`.
+Same failure for the Unicode comparison glyphs (`≤»` → `Name('≤»')`) and
+the ASCII `<>>` form.
+
+Fix (one scoped edit to the ident loop): added `«»` to the stop set so a
+guillemet always terminates an identifier, plus a `j > i` lookahead that
+breaks on an embedded `<<`/`>>` pair — the `j > i` guard keeps a *leading*
+`<`/`>` from terminating early, so a lone `<`/`>` is still a valid bare
+operator name and nested `« … »` is unaffected.
+
++6 assertions in `tests/test-entry.mjs` (the `<»` / `≤»` / `<>>` adjacency
+cases, the lone-`<` operator-name no-regression pin, the `X»` Name-abutting
+case, and a nested-program no-regression pin).  `node tests/test-all.mjs`
+→ 5751 passed / 0 failed.
+
+Next: same swallow class likely exists for an ident abutting an *opening*
+delimiter mid-token without whitespace (e.g. `X«1»` already splits via the
+new `«` stop, but verify list/vector openers `{[` are fully symmetric); and
+the deferred halted-stack persistence across `persist.js` remains the lone
+larger open item.
+
+---
+
+## Session 271 — what shipped
 
 Doc-drift fix run on 2026-06-15.  Caught a doc↔code drift in
 `docs/ROADMAP.md` §4 ("RPL interpreter — finish the suspended-execution

@@ -378,6 +378,33 @@ function appendSpans(parent, text) {
 
 /* ---- Model-output parsing ----------------------------------------- */
 
+/** Find the index of the `close` delimiter that balances the `open`
+ *  delimiter at `text[start]`, ignoring any delimiters that fall inside
+ *  a JSON string literal (double-quoted, with `\` escapes).  HP50 list
+ *  literals carry bare `{`/`}` and `[`/`]` inside `run`/`push` string
+ *  arguments, so a raw delimiter counter mis-walks the moment one of
+ *  those is unbalanced (e.g. `"« IF x }"`).  Returns the close index, or
+ *  -1 if the block never closes (partial stream). */
+function matchBalancedEnd(text, start, open, close) {
+  let depth = 0;
+  let inStr = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (inStr) {
+      if (c === '\\') i++;            // skip the escaped character
+      else if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') inStr = true;
+    else if (c === open) depth++;
+    else if (c === close) {
+      depth--;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+
 /** Walk `text` and return every `{"name":"…","arguments":…}` block in
  *  document order.  The model is told to emit one bare-JSON tool call
  *  per action; when it wants to chain steps it just lists them one
@@ -398,16 +425,7 @@ export function parseAllToolCalls(text) {
   let m;
   while ((m = anchor.exec(text)) !== null) {
     const start = m.index;
-    let depth = 0;
-    let end = -1;
-    for (let i = start; i < text.length; i++) {
-      const c = text[i];
-      if (c === '{') depth++;
-      else if (c === '}') {
-        depth--;
-        if (depth === 0) { end = i; break; }
-      }
-    }
+    const end = matchBalancedEnd(text, start, '{', '}');
     if (end < 0) break;   // unclosed brace, give up — partial stream
     try {
       const obj = JSON.parse(text.slice(start, end + 1));
@@ -444,16 +462,7 @@ export function parseSuggestions(text) {
   const after = text.slice(anchor.index + anchor[0].length);
   const lo = after.indexOf('[');
   if (lo < 0) return null;
-  let depth = 0;
-  let hi = -1;
-  for (let i = lo; i < after.length; i++) {
-    const c = after[i];
-    if (c === '[') depth++;
-    else if (c === ']') {
-      depth--;
-      if (depth === 0) { hi = i; break; }
-    }
-  }
+  const hi = matchBalancedEnd(after, lo, '[', ']');
   if (hi < 0) return null;
   const slice = after.slice(lo, hi + 1);
   const tryParse = (raw) => {

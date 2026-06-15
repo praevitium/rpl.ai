@@ -17,6 +17,7 @@ import {
   setWordsize, getWordsize, getWordsizeMask,
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
+  setComplexMode, getComplexMode,
 } from '../www/src/rpl/state.js';
 import { clampStackScroll, computeMenuPage } from '../www/src/ui/paging.js';
 import {
@@ -1668,6 +1669,40 @@ giac._setFixtures({
          formatAlgebra(top.items[1].expr) === 'X = -2',
          `SOLVE op: second root is X=-2`);
   giac._clear();
+}
+{
+  // Real mode (default, flag -103 clear): X^2+1 routes through real
+  // `solve`, which finds no real roots → empty list.
+  setComplexMode(false);
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('X^2 + 1')));
+  s.push(Name('X'));
+  giac._clear();
+  giac._setFixture('solve(X^2+1,X)', '[]');
+  lookup('SOLVE').fn(s);
+  const top = s.peek();
+  assert(top && top.type === 'list' && top.items.length === 0,
+         `SOLVE op: real mode X^2+1 routes through solve → empty list`);
+  giac._clear();
+}
+{
+  // Complex mode (flag -103 set): SOLVE emits `csolve` and surfaces the
+  // complex roots Giac returns.
+  setComplexMode(true);
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('X^2 + 1')));
+  s.push(Name('X'));
+  giac._clear();
+  giac._setFixture('csolve(X^2+1,X)', '[i,-i]');
+  lookup('SOLVE').fn(s);
+  const top = s.peek();
+  assert(top && top.type === 'list' && top.items.length === 2,
+         `SOLVE op: complex mode X^2+1 routes through csolve → 2 roots`);
+  assert(isSymbolic(top.items[0]) &&
+         formatAlgebra(top.items[0].expr) === 'X = i',
+         `SOLVE op: complex mode first root is X=i`);
+  giac._clear();
+  setComplexMode(false);
 }
 {
   // Linear via equation form.  SOLVE rewrites `lhs = rhs` to the
@@ -7856,4 +7891,52 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   assertThrows(() => { lookup('SCHUR').fn(s); }, /Bad argument value/,
                'SCHUR with a non-pair Giac result rejects with Bad argument value');
   giac._clear();
+}
+
+// ==================================================================
+// PMINI — minimal polynomial of a square matrix (HP50 AUR §3-172).
+// Sibling of PCAR; routes through Giac `pmin(M,vx)`.  VX is the default
+// lowercase 'x' here (the PCAR cluster's 'X' pin was reset at line ~6096).
+// ==================================================================
+{
+  // Happy path — AUR example: PMINI([[0,1],[1,0]]) → x^2-1.
+  const s = new Stack();
+  s.push(Matrix([[Integer(0n), Integer(1n)], [Integer(1n), Integer(0n)]]));
+  giac._clear();
+  giac._setFixture('pmin([[0,1],[1,0]],x)', 'x^2-1');
+  lookup('PMINI').fn(s);
+  assert(isSymbolic(s.peek()) && formatAlgebra(s.peek().expr) === 'x^2 - 1',
+         `session197: PMINI 2x2 → '${formatAlgebra(s.peek().expr)}' (want 'x^2 - 1')`);
+  giac._clear();
+}
+{
+  // Min poly degree < char poly degree on a repeated-eigenvalue matrix:
+  // PMINI(2·I₃) → x-2 (char poly would be (x-2)^3).
+  const s = new Stack();
+  s.push(Matrix([
+    [Integer(2n), Integer(0n), Integer(0n)],
+    [Integer(0n), Integer(2n), Integer(0n)],
+    [Integer(0n), Integer(0n), Integer(2n)],
+  ]));
+  giac._clear();
+  giac._setFixture('pmin([[2,0,0],[0,2,0],[0,0,2]],x)', 'x-2');
+  lookup('PMINI').fn(s);
+  assert(isSymbolic(s.peek()) && formatAlgebra(s.peek().expr) === 'x - 2',
+         `session197: PMINI 2·I3 → '${formatAlgebra(s.peek().expr)}' (want 'x - 2')`);
+  giac._clear();
+}
+{
+  // Non-Matrix input rejects before any Giac call.
+  const s = new Stack();
+  s.push(Real(3.5));
+  assertThrows(() => { lookup('PMINI').fn(s); }, /Bad argument type/,
+               'session197: PMINI on a Real rejects with Bad argument type');
+}
+{
+  // Non-square Matrix rejects with Invalid dimension.
+  const s = new Stack();
+  s.push(Matrix([[Integer(1n), Integer(2n), Integer(3n)],
+                 [Integer(4n), Integer(5n), Integer(6n)]]));
+  assertThrows(() => { lookup('PMINI').fn(s); }, /Invalid dimension/,
+               'session197: PMINI on a 2x3 matrix rejects with Invalid dimension');
 }

@@ -5749,18 +5749,26 @@ register('SOLVE', (s) => {
   // `[r1,r2,…]`.  We split the list (nesting-aware via splitGiacList),
   // parse each root, and wrap each as an equation `var = root` —
   // matches the HP50 convention that SOLVE yields a list of equations.
+  //
+  // Complex mode (HP50 flag -103, our `complexMode`): when SET, SOLVE
+  // searches for complex roots as well as real ones, so we route through
+  // Giac's `csolve` instead of `solve` (and `cfsolve` for the numeric
+  // fallback below).  When CLEAR — the factory-reset default — we stay
+  // on real-only `solve`/`fsolve`, matching the stock HP50.
   if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const cmd = buildGiacCmd(ast, (e) => `solve(${e},${varName})`, [varName]);
+  const cmplx = getComplexMode();
+  const solveFn = cmplx ? 'csolve' : 'solve';
+  const cmd = buildGiacCmd(ast, (e) => `${solveFn}(${e},${varName})`, [varName]);
   let raw = giac.caseval(cmd);
   // Numeric fallback: when Giac can't reduce a root to closed-form
   // radicals (typically a cubic with no rational roots, or higher-
   // degree polynomials), it returns its `rootof([[…]],[[…]])`
   // placeholder syntax.  Our algebra parser can't decode that nested-
-  // array argument shape, so retry with `fsolve` which returns real
-  // roots numerically (e.g. `[-0.6388…]`).  Matches the HP50
-  // convention that SOLVE returns real roots only.
+  // array argument shape, so retry with `fsolve` (real mode) / `cfsolve`
+  // (complex mode), which return roots numerically (e.g. `[-0.6388…]`).
   if (typeof raw === 'string' && raw.includes('rootof')) {
-    const cmdN = buildGiacCmd(ast, (e) => `fsolve(${e},${varName})`, [varName]);
+    const fsolveFn = cmplx ? 'cfsolve' : 'fsolve';
+    const cmdN = buildGiacCmd(ast, (e) => `${fsolveFn}(${e},${varName})`, [varName]);
     raw = giac.caseval(cmdN);
   }
   let parts = splitGiacList(raw);
@@ -16792,6 +16800,20 @@ register('PCAR', (s) => {
  *  future refinement of PCAR automatically (mirrors the XNUM / XQ
  *  alias pattern XNUM / XQ use). */
 register('CHARPOL', (s) => { OPS.get('PCAR').fn(s); });
+
+/* `PMINI` — minimal polynomial of a square matrix (HP50 AUR §3-172).
+   Sibling of PCAR: same `_popSquareMatrix` validator and
+   `_matrixToGiacStr` serialization, routed through Giac `pmin(M,vx)`
+   instead of `charpoly`.  Returns a Symbolic in the CAS variable; it is
+   also JORDAN's level-4 output.  No-fallback: `!giac.isReady()` ⇒
+   `CAS not ready`. */
+register('PMINI', (s) => {
+  const { matrix } = _popSquareMatrix(s);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const vx = getCasVx();
+  const matStr = _matrixToGiacStr(matrix);
+  s.push(Symbolic(giacToAst(giac.caseval(`pmin(${matStr},${vx})`))));
+});
 
 register('EGVL', (s) => {
   const { matrix } = _popSquareMatrix(s);

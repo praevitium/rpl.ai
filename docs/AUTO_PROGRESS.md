@@ -21,13 +21,125 @@ the `Last lane` pointer.
 ## Pointer
 
 Last lane: code-review
-Last run: 2026-06-15 04:56
+Last run: 2026-06-14 23:27
 
 ---
 
 ## Run log
 
 (newest first — each run appends one entry: date, lane, what shipped, test result, what's next)
+
+### 2026-06-14 23:27 — code-review
+Fresh RPL_CATALOG drift audit (O-013): swept every command-like token in
+the AI system-prompt catalog against the live `register()` set in
+`www/src/rpl/ops.js`. Caught real drift the session-243 spot-check
+missed — the STATISTICS block (`www/src/ai/system-prompt.js:189`)
+advertised the sum-of-squares accumulators as `ΣX²` / `ΣY²`
+(superscript ²), but the dispatchable registered names are `ΣX2` /
+`ΣY2` (ASCII 2): no `register('ΣX²')` exists, the tokenizer has no
+`²`→`2` normalization, and `tests/test-stats.mjs` invokes them via
+`lookup('ΣX2')`. A model following the catalog would emit an unrunnable
+`ΣX²`. Fixed the line to `ΣX2 ΣY2` with an "ASCII 2, not a superscript
+²" caveat (source-only, one line). The `²`-rendered forms in ops.js
+comments / COMMANDS.md / TESTS.md are human labels, not dispatch keys —
+not drift. Re-opened+resolved the O-013 occurrence and bumped the
+header in `docs/REVIEW.md`. `node tests/test-all.mjs` → 5781 passed /
+0 failed (no test covers the prompt string). Next: extend the
+token-sweep methodology to the rest of the catalog's arity/stack-effect
+hints (e.g. INVMOD's 2-arg deviation still carries no arity note) and to
+the PROGRAMS/CONTAINERS matrix-decomp lines (SCHUR/PMINI now shipped but
+absent from the catalog).
+
+### 2026-06-14 23:14 — unit-tests
+Added the lex-vs-value-equality contrast for Strings that session 273's
+queue flagged as next: +9 `session277:` pins in `tests/test-types.mjs`
+proving `==` / `≠` / `SAME` are value-based while `< > ≤ ≥` are
+lex-based, on a shared input pair (lex-distinct "abc"/"abd": ==→0,
+≠→1, SAME→0 but ≤→1; equal "abc"/"abc": ==→1, ≠→0, SAME→1, with the
+lex family agreeing at the boundary). Behavior probed first; no source
+change — guards against a refactor routing equality through the lex
+comparator. Updated `docs/TESTS.md` (header → s277 + session-277 delta
+block). `node tests/test-all.mjs` → 5781 passed / 0 failed (baseline
+5772). Next: the ✓-cell positive-coverage audit (queue item 7) remains
+the lane's open evergreen.
+
+### 2026-06-14 23:01 — ui-development
+Advanced ROADMAP §6's command palette by shipping its next DOM-free piece:
+`moveSelection(index, delta, length)` in `www/src/ui/op-search.js` — the
+wrap-around highlight navigator the overlay needs for ArrowUp/ArrowDown
+(down past the bottom wraps to first, up past the top to last; empty list
+→ -1; negative index is a "nothing selected yet" sentinel that snaps to
+first on down / last on up; multi-step deltas wrap modulo for PageUp/
+PageDown; non-finite inputs tolerated). +17 assertions in
+`tests/test-op-search.mjs`. Updated ROADMAP §6 bullet. `node tests/test-all.mjs`
+→ 5772 passed / 0 failed (baseline 5755). Next: build the actual overlay DOM
+that consumes `searchOps` + `moveSelection` — `/`-triggered input over
+#calculator, live result list, Enter invokes the highlighted op via the
+command-line path, Esc/backdrop closes; mirror command-help.js's
+mount-inside-#calculator pattern. (Overlay is DOM, so not Node-unit-testable
+without a new dep — keep extracting pure helpers where it pays.)
+
+### 2026-06-14 22:43 — ai-chatbot
+Hardened the response parsers in `www/src/ai/chat-bot.js` against the
+queued unbalanced-brace bug: extracted a string-aware `matchBalancedEnd`
+helper that ignores `{`/`}`/`[`/`]` falling inside JSON string literals
+(respecting `\` escapes), and routed both `parseAllToolCalls` (brace) and
+`parseSuggestions` (bracket) through it. Previously a lone unbalanced
+brace inside a `run`/`push` string arg (e.g. `"« IF x }"`) mis-walked
+depth and dropped an otherwise-valid tool call; `parseSuggestions`'
+doc-claimed string-awareness was also untrue until now. +4 `session275:`
+pins in `tests/test-chatbot-parse.mjs` (unbalanced `}` / `{`, escaped
+quote, SUGGEST `]`-in-string). `node tests/test-all.mjs` → 5755 passed /
+0 failed (baseline 5751). Next: still no coverage for `TOOL_ALIASES`
+normalization or `effectiveBudget`/`activeContextTokens` — pull those out
+as pure helpers and pin them.
+
+### 2026-06-14 22:31 — rpl-programming
+Fixed a real parser bug in `www/src/rpl/parser.js`: the bare-identifier
+tokenizer's stop set lacked the program guillemets, so an operator name
+abutting a closing `»` swallowed the delimiter (`« 1 2 <»` → `Name('<»')`,
+program auto-closing on EOF instead of its real `»`; same for `≤»` and
+ASCII `<>>`). Added `«»` to the ident stop set plus a `j > i` lookahead
+that breaks on embedded `<<`/`>>` while keeping a lone `<`/`>` a valid
+bare operator name. +6 pins in `tests/test-entry.mjs`. Updated `docs/RPL.md`
+(parser bullet + session-272 chapter, stamp → 272, demoted s271 heading).
+`node tests/test-all.mjs` → 5751 passed / 0 failed.
+Next: verify list/vector openers `{[` are symmetric for the same no-space
+abutment class; deferred halted-stack persistence remains the lone larger item.
+
+### 2026-06-15 05:19 — data-types
+Added the **S (String) column** to the combinatorial / integer-divmod
+family matrix table in `docs/DATA_TYPES.md` (COMB / PERM / IQUOT /
+IREMAINDER / XROOT) — the table carried R/Z/Q/C/N/Sy/L/V/M/T only, so
+String was untested. All five reject String (COMB/PERM via
+`_combPermArgs` `!isInteger&&!isReal`; IQUOT/IREMAINDER via
+`_intQuotientArg`; XROOT degree-x via `toRealOrThrow` → "expected real,
+got string"). Continues session 267's S-column work on CONJ/RE/IM.
++5 `session269:` rejection pins in `tests/test-types.mjs` (one per op).
+No source changes — rejections were already correct, just untested.
+`node tests/test-all.mjs` → 5742 passed / 0 failed (baseline 5737).
+Next: extend the S column onto the stat-dist family (UTPC/UTPF/UTPT/
+BETA/ERF/ERFC/GAMMA/LNGAMMA/HEAVISIDE/DIRAC — all reject String via
+scalar-handler guards, confirmed by probe) and the special-function
+family (XPON/MANT/TRUNC/ZETA/LAMBERT/PSI). Open larger item remains
+candidate #4: Unit dim-equivalence `==` (AUR §20, multi-run design).
+
+### 2026-06-15 05:12 — command-support
+Shipped `PMINI` (HP50 AUR §3-172, minimal polynomial of a square matrix)
+in `www/src/rpl/ops.js` — a real HP50 command that was missing from both
+the registry and `docs/COMMANDS.md` (so it never showed in the ✗ tally).
+Near-copy of PCAR: `_popSquareMatrix` + `_matrixToGiacStr` routed through
+Giac `pmin(M,vx)`, returning a Symbolic; it's also JORDAN's level-4
+output, so this is a building block toward the lone remaining ✗. +4
+assertions in `tests/test-algebra.mjs` (2×2 happy, repeated-eigenvalue
+3×3 where deg(min) < deg(char), non-Matrix + non-square rejections).
+Updated COMMANDS.md (PMINI row, ✓ 448→449, register 481→482 / top-level
+462→463, session-197 Counts note). `node tests/test-all.mjs` → 5737
+passed / 0 failed (baseline 5733). Next: `JORDAN` is still the only ✗ —
+its 4-output format (PMINI level 4, PCAR level 3, eigenvalue-tagged
+characteristic spaces with "Eigen:"-tagged Jordan chains level 2,
+eigenvalue-with-multiplicity array level 1) can now reuse PMINI + PCAR
+for levels 3/4; remaining work is the level-2 tagged-space formatting.
 
 ### 2026-06-15 04:56 — code-review
 Caught fresh doc↔code drift left by the 04:01 SCHUR ship: `docs/COMMANDS.md`

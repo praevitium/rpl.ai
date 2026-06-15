@@ -848,6 +848,56 @@ import { assert, assertThrows } from './helpers.mjs';
 }
 
 /* ====================================================================
+   Identifier tokens stop at an embedded program delimiter.  A closing
+   guillemet `»` (or the ASCII `>>`) abutting an operator name must
+   close the program rather than be swallowed into the identifier —
+   pre-fix `« 1 2 <»` minted `Name('<»')` and the program auto-closed
+   on end-of-buffer instead of on its real `»`.  A lone `<`/`>` stays a
+   valid bare operator name, and nested `« … »` is unaffected.
+   ==================================================================== */
+{
+  // `<»` adjacency: `<` is the operator, `»` closes the program.
+  const v = parseEntry('« 1 2 <»')[0];
+  assert(isProgram(v) && v.tokens.length === 3
+      && isName(v.tokens[2]) && v.tokens[2].id === '<',
+    "parseEntry('« 1 2 <»') → Program ending in Name('<'), `»` closes it");
+}
+{
+  // `≤»` adjacency (Unicode operator glyph) closes the same way.
+  const v = parseEntry('« 1 2 ≤»')[0];
+  assert(isProgram(v) && v.tokens.length === 3
+      && isName(v.tokens[2]) && v.tokens[2].id === '≤',
+    "parseEntry('« 1 2 ≤»') → Program ending in Name('≤')");
+}
+{
+  // ASCII `>>` abutting `<` closes the program too (`<>>` → `<` then `>>`).
+  const v = parseEntry('<< 1 2 <>>')[0];
+  assert(isProgram(v) && v.tokens.length === 3
+      && isName(v.tokens[2]) && v.tokens[2].id === '<',
+    "parseEntry('<< 1 2 <>>') → Program ending in Name('<')");
+}
+{
+  // A lone `<` outside a program is still a valid bare operator Name.
+  const out = parseEntry('< 3');
+  assert(isName(out[0]) && out[0].id === '<' && isInteger(out[1]),
+    "parseEntry('< 3') → bare Name('<') then Integer(3)");
+}
+{
+  // A Name abutting the closer is split correctly (`X»` → Name('X') + close).
+  const v = parseEntry('« X»')[0];
+  assert(isProgram(v) && v.tokens.length === 1
+      && isName(v.tokens[0]) && v.tokens[0].id === 'X',
+    "parseEntry('« X»') → Program holding Name('X')");
+}
+{
+  // Nested programs are unaffected by the delimiter-stop change.
+  const v = parseEntry('« 1 << 3 4 >> »')[0];
+  assert(isProgram(v) && v.tokens.length === 2 && isProgram(v.tokens[1])
+      && v.tokens[1].tokens.length === 2,
+    "parseEntry('« 1 << 3 4 >> »') → outer Program with nested Program");
+}
+
+/* ====================================================================
    Polar / cylindrical / spherical input — HP50 AUR §4.4 (complex) and
    §9 (vector).  The angle component (prefixed with U+2220 `∠`) is
    interpreted in the active RAD / DEG / GRD mode and converted to

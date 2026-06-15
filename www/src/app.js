@@ -17,7 +17,8 @@ import {
 import { format } from './rpl/formatter.js';
 import {
   state as calcState, subscribe as subscribeState,
-  cycleAngle, toggleApproxMode, cycleCoordMode, setBinaryBase, setDisplay,
+  cycleAngle, toggleApproxMode, cycleCoordMode, toggleComplexMode,
+  setBinaryBase, setDisplay,
   varOrder, varList, varRecall, varStore, currentPath,
   goInto, goHome, goUp,
 } from './rpl/state.js';
@@ -217,6 +218,7 @@ class App {
       this.display.setAngleMode(st.angle);
       this.display.setPath(currentPath());
       this.display.setApproxAnnunciator(st.approxMode);
+      this.display.setComplexAnnunciator(st.complexMode);
       this.display.setBinaryBaseAnnunciator(st.binaryBase);
       this.display.setCoordMode(st.coordMode);
       this.display.setDisplayAnnunciator(st.displayMode, st.displayDigits);
@@ -258,6 +260,7 @@ class App {
     this.display.setAngleMode(calcState.angle);
     this.display.setPath(currentPath());
     this.display.setApproxAnnunciator(calcState.approxMode);
+    this.display.setComplexAnnunciator(calcState.complexMode);
     this.display.setBinaryBaseAnnunciator(calcState.binaryBase);
     this.display.setCoordMode(calcState.coordMode);
     this.display.setDisplayAnnunciator(calcState.displayMode, calcState.displayDigits);
@@ -420,6 +423,14 @@ class App {
         onPress: () => {
           this.entry.safeRun(() =>
             lookup(calcState.approxMode ? 'EXACT' : 'APPROX').fn(this.stack, this.entry), calcState.approxMode ? 'EXACT' : 'APPROX');
+          rebuild();
+        } },
+      // Real/Complex toggle (HP50 flag -103).  Label shows the target
+      // mode, matching the EXA→APX pattern above.  CMPLX is a pure
+      // toggle, so the same op switches either direction.
+      { label: calcState.complexMode ? 'CMP→REAL' : 'REAL→CMP',
+        onPress: () => {
+          this.entry.safeRun(() => lookup('CMPLX').fn(this.stack, this.entry), 'CMPLX');
           rebuild();
         } },
     ];
@@ -827,9 +838,10 @@ class App {
    *  prefix before dispatching. */
   cycleIndicator(id) {
     switch (id) {
-      case 'angle':  cycleAngle();       return;
-      case 'approx': toggleApproxMode(); return;
-      case 'coord':  cycleCoordMode();   return;
+      case 'angle':   cycleAngle();        return;
+      case 'approx':  toggleApproxMode();  return;
+      case 'complex': toggleComplexMode(); return;
+      case 'coord':   cycleCoordMode();    return;
       // Click the base annunciator → cycle HEX → DEC → OCT → BIN →
       // HEX.  The `null` ("per-value stored base") state is still
       // reachable via the CLB op but skipped in the cycle so the

@@ -1,4 +1,4 @@
-import { fuzzyScore, searchOps } from '../www/src/ui/op-search.js';
+import { fuzzyScore, searchOps, moveSelection } from '../www/src/ui/op-search.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { assert } from './helpers.mjs';
 
@@ -86,4 +86,41 @@ import { assert } from './helpers.mjs';
     'searchOps(live): every hit is a real subsequence match');
   assert(ops.includes('SIN') ? hits[0] === 'SIN' : true,
     'searchOps(live): exact op name ranks first when present');
+}
+
+/* ================================================================
+   moveSelection — wrap-around highlight navigation for the palette.
+   Pure function, no DOM.
+   ================================================================ */
+{
+  // Empty list has no selectable row.
+  assert(moveSelection(0, 1, 0) === -1, 'moveSelection: empty list → -1');
+  assert(moveSelection(-1, -1, 0) === -1, 'moveSelection: empty list ignores delta');
+
+  // Plain in-range moves.
+  assert(moveSelection(0, 1, 5) === 1, 'moveSelection: down advances one');
+  assert(moveSelection(2, -1, 5) === 1, 'moveSelection: up retreats one');
+  assert(moveSelection(2, 0, 5) === 2, 'moveSelection: zero delta stays put');
+
+  // Wrap-around at both ends.
+  assert(moveSelection(4, 1, 5) === 0, 'moveSelection: down past bottom wraps to first');
+  assert(moveSelection(0, -1, 5) === 4, 'moveSelection: up past top wraps to last');
+
+  // Negative sentinel: nothing selected yet.
+  assert(moveSelection(-1, 1, 5) === 0, 'moveSelection: sentinel + down → first');
+  assert(moveSelection(-1, -1, 5) === 4, 'moveSelection: sentinel + up → last');
+
+  // Larger deltas (e.g. PageUp/PageDown) also wrap.
+  assert(moveSelection(1, 3, 5) === 4, 'moveSelection: multi-step down in range');
+  assert(moveSelection(1, 7, 5) === 3, 'moveSelection: multi-step down wraps modulo');
+  assert(moveSelection(1, -3, 5) === 3, 'moveSelection: multi-step up wraps modulo');
+
+  // Single-row list always resolves to its only index.
+  assert(moveSelection(0, 1, 1) === 0, 'moveSelection: single row stays at 0');
+  assert(moveSelection(-1, -1, 1) === 0, 'moveSelection: single row from sentinel');
+
+  // Non-finite inputs are tolerated.
+  assert(moveSelection(NaN, 1, 5) === 0, 'moveSelection: NaN index → sentinel then first');
+  assert(moveSelection(0, NaN, 5) === 0, 'moveSelection: NaN delta is no-op');
+  assert(moveSelection(0, 1, NaN) === -1, 'moveSelection: NaN length → -1');
 }

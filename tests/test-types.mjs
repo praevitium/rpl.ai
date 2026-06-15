@@ -9503,6 +9503,94 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   }
 }
 
+// ---- session277: String lex-vs-value-equality contrast ----------------------------
+// session068 pinned String value-equality on `==` ("hello"=="hello"→1, "Hello"→0) and
+// session179/273 pinned the lex path on `< > ≤ ≥`, but no pin contrasts the two families
+// on the SAME input pair — i.e. that `==` / `≠` / `SAME` are VALUE-based (a lex-ordered
+// but unequal pair is "not equal") while `< > ≤ ≥` are lex-based.  A refactor that routed
+// the equality ops through the lex comparator (returning <0/=0/>0 truthiness) would pass
+// every existing String pin yet break this contrast.  Two pairs lock it down:
+//   - lex-distinct "abc" vs "abd": ==→0, ≠→1, SAME→0 even though ≤→1 (lex-ordered).
+//   - equal "abc" vs "abc": ==→1, ≠→0, SAME→1, and the lex family agrees at the boundary
+//     (≤→1, ≥→1, strict <→0, >→0).
+{
+  // lex-distinct pair: equality family reports "not equal" while ≤ reports lex-ordered.
+  {
+    const s = new Stack();
+    s.push(Str('abc')); s.push(Str('abd'));
+    lookup('==').fn(s);
+    const v = s.peek();
+    assert(isReal(v) && v.value.eq(0),
+      `session277: "abc" == "abd" → Real(0) (value-equality, not lex: distinct strings are not equal even though ≤ is true); got type=${v?.type} val=${v?.value?.toString?.()}`);
+  }
+  {
+    const s = new Stack();
+    s.push(Str('abc')); s.push(Str('abd'));
+    lookup('≠').fn(s);
+    const v = s.peek();
+    assert(isReal(v) && v.value.eq(1),
+      `session277: "abc" ≠ "abd" → Real(1) (≠ is the value-equality negation); got type=${v?.type} val=${v?.value?.toString?.()}`);
+  }
+  {
+    const s = new Stack();
+    s.push(Str('abc')); s.push(Str('abd'));
+    lookup('SAME').fn(s);
+    const v = s.peek();
+    assert(isReal(v) && v.value.eq(0),
+      `session277: "abc" SAME "abd" → Real(0) (SAME is value-based like ==, not lex); got type=${v?.type} val=${v?.value?.toString?.()}`);
+  }
+  {
+    const s = new Stack();
+    s.push(Str('abc')); s.push(Str('abd'));
+    lookup('≤').fn(s);
+    const v = s.peek();
+    assert(isReal(v) && v.value.eq(1),
+      `session277: "abc" ≤ "abd" → Real(1) (lex family DOES order this pair — the contrast to ==/SAME above); got type=${v?.type} val=${v?.value?.toString?.()}`);
+  }
+
+  // equal pair: equality family reports equal; lex family agrees at the boundary.
+  {
+    const s = new Stack();
+    s.push(Str('abc')); s.push(Str('abc'));
+    lookup('==').fn(s);
+    const v = s.peek();
+    assert(isReal(v) && v.value.eq(1),
+      `session277: "abc" == "abc" → Real(1) (value-equal); got type=${v?.type} val=${v?.value?.toString?.()}`);
+  }
+  {
+    const s = new Stack();
+    s.push(Str('abc')); s.push(Str('abc'));
+    lookup('≠').fn(s);
+    const v = s.peek();
+    assert(isReal(v) && v.value.eq(0),
+      `session277: "abc" ≠ "abc" → Real(0) (not unequal); got type=${v?.type} val=${v?.value?.toString?.()}`);
+  }
+  {
+    const s = new Stack();
+    s.push(Str('abc')); s.push(Str('abc'));
+    lookup('SAME').fn(s);
+    const v = s.peek();
+    assert(isReal(v) && v.value.eq(1),
+      `session277: "abc" SAME "abc" → Real(1) (value-equal, no type/lex divergence); got type=${v?.type} val=${v?.value?.toString?.()}`);
+  }
+  {
+    const s = new Stack();
+    s.push(Str('abc')); s.push(Str('abc'));
+    lookup('<').fn(s);
+    const v = s.peek();
+    assert(isReal(v) && v.value.eq(0),
+      `session277: "abc" < "abc" → Real(0) (strict lex is false at the equality boundary); got type=${v?.type} val=${v?.value?.toString?.()}`);
+  }
+  {
+    const s = new Stack();
+    s.push(Str('abc')); s.push(Str('abc'));
+    lookup('≥').fn(s);
+    const v = s.peek();
+    assert(isReal(v) && v.value.eq(1),
+      `session277: "abc" ≥ "abc" → Real(1) (non-strict lex is true at the equality boundary, agreeing with ==); got type=${v?.type} val=${v?.value?.toString?.()}`);
+  }
+}
+
 // ---- session185 (re-land of session177 Cluster 1): EXACT-mode Integer-stay-exact
 // composition pins for forward-trig + inverse-trig on bare-List + Tagged-of-List axes.
 //
@@ -11617,5 +11705,48 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     const s = new Stack(); s.push(C1);
     assertThrows(() => lookup('HEAVISIDE').fn(s), /Bad argument type/i,
       'session268: Complex(1,2) HEAVISIDE → Bad argument type (C=✗; scalar arm isReal/isInteger/isBinaryInteger/isSym only; Complex falls through)');
+  }
+}
+
+/* ====================================================================
+   session269: S-column (String) rejection pins — combinatorial /
+   integer-divmod family (COMB / PERM / IQUOT / IREMAINDER / XROOT)
+   ----------------------------------------------------------------
+   Adds the S column to the combinatorial-family matrix table (it had
+   R/Z/Q/C/N/Sy/L/V/M/T only — no S column), continuing session 267's
+   S-column work on CONJ/RE/IM.  All five reject String:
+     • COMB / PERM:        `_combPermArgs` — `!isInteger(a) && !isReal(a) → throw`.
+     • IQUOT / IREMAINDER: `_intQuotientArg` — isInteger/isReal only.
+     • XROOT:              degree x via `toRealOrThrow` → 'expected real, got string'.
+   No source changes — the rejection was already correct, just untested.
+   ================================================================ */
+{
+  const S1 = Str('x');   // representative String input
+
+  {
+    const s = new Stack(); s.push(S1); s.push(Str('y'));
+    assertThrows(() => lookup('COMB').fn(s), /Bad argument type/i,
+      'session269: Str("x") Str("y") COMB → Bad argument type (S=✗; _combPermArgs !isInteger&&!isReal → throw; PERM shares guard)');
+  }
+  {
+    const s = new Stack(); s.push(S1); s.push(Str('y'));
+    assertThrows(() => lookup('PERM').fn(s), /Bad argument type/i,
+      'session269: Str("x") Str("y") PERM → Bad argument type (S=✗; same _combPermArgs guard as COMB)');
+  }
+  {
+    const s = new Stack(); s.push(S1); s.push(Str('y'));
+    assertThrows(() => lookup('IQUOT').fn(s), /Bad argument type/i,
+      'session269: Str("x") Str("y") IQUOT → Bad argument type (S=✗; _intQuotientArg isInteger/isReal only; IREMAINDER shares guard)');
+  }
+  {
+    const s = new Stack(); s.push(S1); s.push(Str('y'));
+    assertThrows(() => lookup('IREMAINDER').fn(s), /Bad argument type/i,
+      'session269: Str("x") Str("y") IREMAINDER → Bad argument type (S=✗; same _intQuotientArg guard as IQUOT)');
+  }
+  {
+    // XROOT: level2=radicand y, level1=degree x — degree String rejects via toRealOrThrow
+    const s = new Stack(); s.push(S1); s.push(Str('y'));
+    assertThrows(() => lookup('XROOT').fn(s), /Bad argument type/i,
+      'session269: Str("x") Str("y") XROOT → Bad argument type: expected real, got string (S=✗; degree x via toRealOrThrow rejects String)');
   }
 }

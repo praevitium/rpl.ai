@@ -21,7 +21,19 @@ exists at all**, not the shape of its type coverage.
 Where relevant the **Notes** column records the last session number that
 touched the row, and any known caveats worth carrying forward.
 
-## Counts (as of session 196 — 2026-06-14)
+## Counts (as of session 197 — 2026-06-14)
+
+**Session 197 (`rpl5050-command-support`)** shipped `PMINI` (HP50 AUR
+§3-172, minimal polynomial of a square matrix) — a real HP50 command
+that was missing from both `www/src/rpl/ops.js` and this inventory (so
+it never appeared in the ✗ tally).  PMINI is a near-copy of PCAR: same
+`_popSquareMatrix` validator and `_matrixToGiacStr` serialization,
+routed through Giac `pmin(M,vx)` instead of `charpoly`, returning a
+Symbolic in the CAS variable.  It is also JORDAN's level-4 output, so
+this is a building block toward the lone remaining ✗.  +4 assertions in
+`tests/test-algebra.mjs` (2×2 happy path, repeated-eigenvalue 3×3 where
+min poly degree < char poly degree, non-Matrix and non-square
+rejections); `node tests/test-all.mjs` 5733 → 5737.
 
 **Session 196 (`rpl5050-command-support`)** shipped `SCHUR` (✗ → ✓ — the
 first net new registration in this lane since the session-149 MODULO
@@ -36,7 +48,8 @@ whose 4-output tagged-space / Jordan-chain formatting needs a dedicated
 multi-run effort.
 
 
-- Fully shipped (✓): 448 (+1 at session 196 — `SCHUR`; no net change
+- Fully shipped (✓): 449 (+1 at session 197 — `PMINI`, previously
+  untracked; +1 at session 196 — `SCHUR`; no net change
   between sessions 149 and 195 — sessions
   150 / 151 / 152 / 153 / 154 / 155 / 156 / 157 / 158 / 159 / 160 /
   161 / 162 / 163 / 164 / 165 / 166 / 167 / 168 / 169 / 170 are all
@@ -221,10 +234,12 @@ multi-run effort.
 - Will-not-support (by design): 9 menu groups
 
 The registry lives at `www/src/rpl/ops.js` and is enumerated by `allOps()`.
-`grep -c "register(" www/src/rpl/ops.js` = **481** (was 480 after session
-225's −2 comment-cleanup pass — that pass removed two comment lines that
-happened to contain `register(`, no actual registration change; session
-196's `SCHUR` registration then adds +1 back; was 482 at the end of
+`grep -c "register(" www/src/rpl/ops.js` = **482** (session 197's `PMINI`
+registration adds +1 over the 481 that stood after session 196; was 480
+after session 225's −2 comment-cleanup pass — that pass removed two
+comment lines that happened to contain `register(`, no actual
+registration change; session 196's `SCHUR` registration then added +1
+back to 481; was 482 at the end of
 sessions 195–224;
 was 481 at the end of session 190, was 471 at the end of session
 144, was 466 at the end of session 139, was 463 at the end of session
@@ -235,7 +250,8 @@ and session 195 occurred in session 191 (data-type-support —
 HEAVISIDE and DIRAC; the extra `register(` hit is the `_withTaggedUnary`
 inner wrapper call folded into the top-level registration line).  The
 actual top-level `register()` *call* count
-(`grep -cE '^register\(' www/src/rpl/ops.js`) is **462** (was 461 at the
+(`grep -cE '^register\(' www/src/rpl/ops.js`) is **463** (session 197's
+`PMINI` adds +1 over the 462 that stood after session 196; was 461 at the
 end of session 195, plus session 196's one new top-level `SCHUR`
 registration; was 460 at the end of session 190, was 455 at the end of
 session 144; session 149 added five more top-level registrations —
@@ -653,6 +669,7 @@ DERIV, etc. via Giac).
 | `HILBERT` `VANDERMONDE` `AUGMENT` `FLAT` | ✓ | |
 | `MAD` | ✓ | |
 | `PCAR` `CHARPOL` `EGVL` | ✓ | **Session 114 [Giac]** — characteristic polynomial (`PCAR` = HP50 canonical, `CHARPOL` = Giac-style alias both via `charpoly(M,vx)`) and eigenvalue vector via `eigenvals(M)` (Xcas's list form; `egvl(M)` is the Jordan-matrix form and isn't what HP50 wants).  HP50 AUR §3-196, §3-90.  Square-matrix input only; entries serialised to Giac brackets via `_matrixToGiacStr` + `_scalarToGiacStr` (Integer/Real/Rational/Complex/Symbolic/Name).  Eigenvalues come back as a flat bracket list → Vector of AST-lifted items via `_astToRplValue`.  No-fallback policy. |
+| `PMINI` | ✓ | **Session 197 [Giac]** — `( [[ M ]] → 'pmin' )` minimal polynomial of a square matrix.  HP50 AUR §3-172.  Sibling of PCAR: same `_popSquareMatrix` validator + `_matrixToGiacStr` serialization, routed through Giac `pmin(M,vx)` instead of `charpoly`; result is a Symbolic in the CAS variable (also JORDAN's level-4 output).  Non-Matrix → `Bad argument type`; non-square → `Invalid dimension`.  No-fallback policy (`!giac.isReady()` ⇒ `CAS not ready`).  Was missing from both the registry and this inventory before session 197. |
 | `EGV` | ✓ | **Session 119 [Giac]** — `( [[ M ]] → [[ EVec ]] [ EVal ] )`. HP50 AUR §3-73.  Square-matrix-only.  Eigenvector matrix via Xcas `egv(M)` (columns = right eigenvectors so `M·P = P·diag(EVal)`); eigenvalue vector via the same `eigenvals(M)` call EGVL uses, so the i-th eigenvalue corresponds to the i-th column of EVec by construction.  Reuses `_matrixToGiacStr` / `_popSquareMatrix` from PCAR; non-list Giac output → `Bad argument value`.  No-fallback policy. |
 | `RSD` | ✓ | **Session 119** — `( B A Z → B−A·Z )` residual.  HP50 AUR §3-213.  Native numeric (Real / Integer entries); reuses `_asNumArray*` and `_matMulNum` / `_matVecNum`.  Both vector-vector and matrix-matrix shapes supported; mixed shapes (vec/mat) reject with `Bad argument type`; cols(A) ≠ len(Z)/rows(Z) or rows(A) ≠ len(B)/rows(B) reject with `Invalid dimension`.  Symbolic entries reject (numeric-only path, mirrors LSQ). |
 | `SCHUR` | ✓ | **Session 196 [Giac]** — `( [[ M ]] → [[ Q ]] [[ T ]] )` Schur decomposition.  HP50 AUR §3-218.  Square-matrix-only.  Giac `SCHUR(A) = hessenberg(A,-1)` returns the pair `[P, B]` with `B = inv(P)·A·P`; P is orthogonal so `inv(P) = TRN(P)`, matching HP50's `A = Q·T·TRN(Q)` (P↔Q at level 2, B↔T at level 1).  Reuses `_popSquareMatrix` / `_matrixToGiacStr` / `_astToRplValue` from EGV; non-pair / non-matrix Giac output → `Bad argument value`.  No-fallback policy (`!giac.isReady()` ⇒ `CAS not ready`). |

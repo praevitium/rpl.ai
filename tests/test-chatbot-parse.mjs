@@ -52,6 +52,41 @@ import { assert } from './helpers.mjs';
          'parseAllToolCalls keeps balanced braces inside a string argument');
 }
 
+// session275: a lone unbalanced `}` inside a string argument no longer
+// mis-walks depth — the string-aware scanner ignores braces in literals,
+// so the real closing brace is found and the call survives.
+{
+  const calls = parseAllToolCalls('{"name":"run","arguments":{"text":"« IF x } »"}}');
+  assert(calls.length === 1 && calls[0].name === 'run'
+         && calls[0].arguments.text === '« IF x } »',
+         'parseAllToolCalls survives an unbalanced } inside a string arg');
+}
+
+// session275: a lone unbalanced `{` inside a string argument is likewise
+// ignored, and a following well-formed call still surfaces.
+{
+  const calls = parseAllToolCalls('{"name":"run","arguments":{"text":"{ open"}} {"name":"clear"}');
+  assert(calls.length === 2 && calls[0].arguments.text === '{ open'
+         && calls[1].name === 'clear',
+         'parseAllToolCalls ignores an unbalanced { in a string and reads the next call');
+}
+
+// session275: an escaped quote inside the string keeps the scanner in
+// string mode so a `}` after it is still treated as literal.
+{
+  const calls = parseAllToolCalls('{"name":"run","arguments":{"text":"say \\"} \\" done"}}');
+  assert(calls.length === 1 && calls[0].arguments.text === 'say "} " done',
+         'parseAllToolCalls respects escaped quotes when skipping string braces');
+}
+
+// session275: SUGGEST bracket walker is now string-aware too — a `]`
+// inside a suggestion string no longer truncates the array early.
+{
+  const out = parseSuggestions('SUGGEST: ["close the ] list", "second"]');
+  assert(out && out.length === 2 && out[0] === 'close the ] list' && out[1] === 'second',
+         'parseSuggestions ignores a ] inside a suggestion string');
+}
+
 // Malformed JSON at the anchor is skipped, not thrown.
 {
   const calls = parseAllToolCalls('{"name": not valid json here}');

@@ -201,7 +201,17 @@ export function tokenize(src) {
     // expressions still go through the backtick path, which routes to
     // `parseAlgebra` and handles function calls properly.
     let j = i;
-    while (j < n && !isSpace(src[j]) && !'{}[]()"`'.includes(src[j])) j++;
+    while (j < n && !isSpace(src[j]) && !'{}[]()"`«»'.includes(src[j])) {
+      // Stop at an embedded program delimiter so a closer abutting an
+      // operator (`2<»`, `X>>`) closes the program instead of being
+      // swallowed into the identifier.  The guillemets are caught by the
+      // stop set above; the ASCII `<<`/`>>` pair needs a lookahead since a
+      // lone `<`/`>` is a valid bare operator name.  `j > i` keeps a
+      // leading `<`/`>` from terminating the ident before it has a body.
+      if (j > i && ((src[j] === '<' && src[j + 1] === '<') ||
+                    (src[j] === '>' && src[j + 1] === '>'))) break;
+      j++;
+    }
     tokens.push({ kind: 'ident', text: src.slice(i, j) });
     i = j;
   }

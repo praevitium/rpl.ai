@@ -4,12 +4,30 @@
 scheduled-task lane. It tracks what tests exist, where the coverage gaps are,
 which tests are known-flaky or known-failing, and what to pick up next run.
 
-**Last updated.** Session 273 (2026-06-14).  Unit-tests lane run
-(+8 String lex-compare symmetric-closure pins; first net-new
-assertions in this lane since session 267's sibling delta — sessions
-265 and 269 were snapshot-refresh runs).  29th
+**Last updated.** Session 277 (2026-06-14).  Unit-tests lane run
+(+9 String lex-vs-value-equality contrast pins — pins that `==` / `≠` /
+`SAME` on Strings are value-based while `< > ≤ ≥` are lex-based, on a
+shared input pair; continues session 273's String-compare work).  30th
 release-window run in this lane after sessions 156, 160, 164, 160-unit-tests,
-168, 173, 177, 181, 185, 189, 193, 198, 202, 206, 210, 214, 218, 223, 228, 238, 242, 246, 250, 256, 260, 265, 269, 273).
+168, 173, 177, 181, 185, 189, 193, 198, 202, 206, 210, 214, 218, 223, 228, 238, 242, 246, 250, 256, 260, 265, 269, 273, 277).
+
+Session 277 unit-tests deltas:
+- **+9 String lex-vs-value-equality contrast pins** in
+  `tests/test-types.mjs` (1231 → 1240).  session068 pinned String
+  value-equality on `==`, and session179/273 pinned the lex path on
+  `< > ≤ ≥`, but no pin contrasted the two families on the same input
+  pair — that the equality ops (`==` / `≠` / `SAME`) are VALUE-based
+  while the ordered ops are lex-based.  A refactor routing equality
+  through the lex comparator would pass every existing String pin yet
+  break this contrast.  Two pairs lock it: lex-distinct "abc" vs "abd"
+  (`==`→0, `≠`→1, `SAME`→0, but `≤`→1) and equal "abc" vs "abc"
+  (`==`→1, `≠`→0, `SAME`→1, with the lex family agreeing at the
+  boundary: `≤`→1, `≥`→1, strict `<`→0).  Behavior probed before
+  pinning; no source change — all three equality ops were value-based
+  since session068/087.
+  Next: String `==` / `≠` / `SAME` are now contrasted against the lex
+  family; the remaining open evergreen for this lane is the ✓-cell
+  positive-coverage audit (queue item 7).
 Note: session-233-unit-tests lock was pruned as crashed (header-only
 update; no session log written) — absorbed into a prior run's snapshot.
 Note: session 238 log index claims a coverage snapshot was added but

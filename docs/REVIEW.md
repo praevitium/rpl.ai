@@ -6,7 +6,15 @@ across the whole repo, classified into the six lane buckets
 (`User Interface`, `Commands`, `Data Types`, `RPL`, `Unit Tests`,
 `Other`), so the sibling implementer lanes can pick them up as a group.
 
-**Last updated.** Session 200-code-review (2026-06-15 04:56; filed and
+**Last updated.** Code-review run 2026-06-14 23:27 — re-opened and
+same-run fixed an **O-013** RPL_CATALOG drift occurrence: the AI
+system-prompt STATISTICS block advertised the sum-of-squares
+accumulators as `ΣX²` / `ΣY²` (superscript ²) but the dispatchable
+registered names are `ΣX2` / `ΣY2` (ASCII 2, confirmed by the live
+`register()` set and `tests/test-stats.mjs` `lookup('ΣX2')`); fixed
+`www/src/ai/system-prompt.js:189` to the ASCII spelling with a caveat.
+Source-only one-line edit; `node tests/test-all.mjs` = 5781/0.
+Prior update: Session 200-code-review (2026-06-15 04:56; filed and
 same-run resolved **C-016** — `COMMANDS.md` ✓-count and register-count
 prose stale after the SCHUR ship: ✓ bullet 447 → 448, register prose
 480/461 → 481/462 to match live `ops.js` counts; doc-only;
@@ -4073,6 +4081,24 @@ are UI-adjacent but classified under Other for bookkeeping.)_
   and ops.js `register()` calls; no drift found; "last audited —
   session 243 (2026-04-26)" comment added to `system-prompt.js`
   above the `RPL_CATALOG` constant.
+  **Re-opened occurrence + fixed (code-review, 2026-06-14 23:27):** a
+  fresh full-catalog token sweep against the live `register()` set
+  caught real drift the session-243 spot-check missed — the STATISTICS
+  block (`system-prompt.js:189`) advertised the sum-of-squares
+  accumulators as `ΣX²` / `ΣY²` (superscript ²), but the dispatchable
+  registered names are `ΣX2` / `ΣY2` (ASCII 2): no `register('ΣX²')`
+  exists, the tokenizer has no `²`→`2` normalization, and
+  `tests/test-stats.mjs` itself invokes the ops via `lookup('ΣX2')` /
+  `lookup('ΣY2')`. The model following the catalog would emit
+  `ΣX²`, which tokenizes as `ΣX` + a stray `²` rather than the intended
+  op. Fixed the catalog line to `ΣX2 ΣY2` with an explicit "ASCII 2,
+  not a superscript ²" caveat. Source-only one-line edit;
+  `node tests/test-all.mjs` = 5781/0 (no test covers the prompt
+  string, suite unaffected). The `²`-rendered forms in `ops.js`
+  comments, `docs/COMMANDS.md:745`, and `docs/TESTS.md` are
+  human-readable labels for the op, not dispatch keys, so they are
+  not drift — only the AI catalog, which the model emits verbatim,
+  needed the ASCII spelling.
 
 ### O-014  Unlogged +3 algebra assertions + chat-bot.js mtime anomaly
 
