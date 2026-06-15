@@ -1,4 +1,4 @@
-import { fuzzyScore, searchOps, moveSelection } from '../www/src/ui/op-search.js';
+import { fuzzyScore, searchOps, moveSelection, matchPositions } from '../www/src/ui/op-search.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { assert } from './helpers.mjs';
 
@@ -64,6 +64,32 @@ import { assert } from './helpers.mjs';
     'searchOps(live): every hit is a real subsequence match');
   assert(ops.includes('SIN') ? hits[0] === 'SIN' : true,
     'searchOps(live): exact op name ranks first when present');
+}
+
+{
+  const eq = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+
+  assert(eq(matchPositions('', 'SIN'), []), 'matchPositions: empty query → []');
+  assert(eq(matchPositions('SIN', 'SIN'), [0, 1, 2]), 'matchPositions: exact → all indices');
+  assert(eq(matchPositions('sin', 'SIN'), [0, 1, 2]), 'matchPositions: case-insensitive');
+
+  assert(eq(matchPositions('SI', 'COSINE'), [2, 3]), 'matchPositions: interior subsequence');
+  assert(eq(matchPositions('AN', 'ARCSIN'), [0, 5]), 'matchPositions: scattered subsequence');
+
+  assert(eq(matchPositions('XYZ', 'SIN'), []), 'matchPositions: non-subsequence → []');
+  assert(eq(matchPositions('SX', 'XS'), []), 'matchPositions: order respected → []');
+
+  assert(eq(matchPositions('SS', 'ASIN'), []),
+    'matchPositions: too few occurrences → [] (no reuse of one char)');
+  assert(eq(matchPositions('S', 'COSINE'), [2]),
+    'matchPositions: greedy takes the first occurrence');
+
+  assert(eq(matchPositions('SIN', null), []), 'matchPositions: null name → []');
+  assert(eq(matchPositions(null, 'SIN'), []), 'matchPositions: null query → []');
+
+  const idx = matchPositions('AN', 'TANGENT');
+  assert(idx.every((v, i) => i === 0 || v > idx[i - 1]),
+    'matchPositions: indices are strictly ascending');
 }
 
 {

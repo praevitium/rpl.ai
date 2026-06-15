@@ -4492,6 +4492,25 @@ setAngle('RAD');
   s.push(Str('hello'));
   assertThrows(() => { lookup('erfc').fn(s); }, /Bad argument type/, 'session069: erfc("hello") throws Bad argument type');
 }
+{
+  // Z ✓ — erf/erfc accept a bare Integer operand (the _erfScalar /
+  // _erfcScalar isInteger branch), not just Real.  Pins the DATA_TYPES
+  // Z column, which prior coverage only exercised with Real(n).
+  const s = new Stack();
+  s.push(Integer(1n));
+  lookup('erf').fn(s);
+  const v = s.peek();
+  assert(isReal(v) && _approx(v.value, 0.8427007929497149, 1e-12),
+    'session280: erf(Integer(1)) = Real(≈0.8427) (Z operand, not Real)');
+}
+{
+  const s = new Stack();
+  s.push(Integer(2n));
+  lookup('erfc').fn(s);
+  const v = s.peek();
+  assert(isReal(v) && _approx(v.value, 0.004677734981047266, 1e-12),
+    'session280: erfc(Integer(2)) = Real(≈0.00468) (Z operand, not Real)');
+}
 
 {
   // F(5, 10) α=0.05 critical value 3.326 — AS Table 26.9 / any

@@ -20,8 +20,8 @@ the `Last lane` pointer.
 
 ## Pointer
 
-Last lane: ai-chatbot
-Last run: 2026-06-15 06:50
+Last lane: unit-tests
+Last run: 2026-06-15 08:20
 
 ---
 
@@ -29,6 +29,39 @@ Last run: 2026-06-15 06:50
 
 Newest entry per lane (older history is in git). Each run appends one entry:
 date, lane, what shipped, test result, what's next.
+
+### 2026-06-15 08:20 — unit-tests
+Closed a positive-coverage gap from the evergreen `✓`-cell audit: the
+DATA_TYPES Z `✓` cell for ERF/ERFC (the `_erfScalar`/`_erfcScalar`
+`isInteger` branch) was only backed by `Real(n)` assertions — every erf/erfc
+positive test pushed `Real`, none a bare `Integer`. Probed the live behavior
+first (`erf(Integer(1))` → `Real(0.84270…)`, `erfc(Integer(2))` →
+`Real(0.0046777…)`), then added 2 `session280:` pins in `test-numerics.mjs`
+exercising the Integer operand directly, so a refactor dropping the integer
+arm (degrading Z to Real-only) is caught. No source change. Updated
+`docs/TESTS.md` (count 5830→5844 + erf/erfc Z coverage note).
+`node tests/test-all.mjs` → 5844 passed / 0 failed (baseline 5842). Next: the
+`✓`-cell positive-coverage audit (queue item 7) remains the lane's open
+evergreen — XPON/MANT Z and the GAMMA/LNGAMMA Z folds are similar candidates
+backed mostly by Real-operand evidence.
+
+### 2026-06-15 08:05 — ui-development
+Advanced ROADMAP §6's command palette with its next DOM-free piece:
+`matchPositions(query, name)` in `www/src/ui/op-search.js` — returns the
+ascending indices into `name` of the characters the query matched, using
+the same greedy left-to-right subsequence walk as `fuzzyScore` so a
+highlight built from them lines up with what the score rewarded (exact →
+all indices, interior/scattered subsequences, case-insensitive; empty
+query, non-subsequence, too-few-occurrences, and null inputs all → `[]`).
++13 assertions in `tests/test-op-search.mjs`. Updated ROADMAP §6 bullet
+(matched-char highlighting now has its core; overlay still TODO).
+`node tests/test-all.mjs` → 5842 passed / 0 failed (baseline 5824). Next:
+build the actual overlay DOM consuming `searchOps` + `moveSelection` +
+`matchPositions` — `/`-triggered input over #calculator, live result list
+with matched glyphs bolded, Enter invokes the highlighted op, Esc/backdrop
+closes; mirror command-help.js's mount-inside-#calculator pattern. (Overlay
+is DOM, not Node-unit-testable without a new dep — keep extracting pure
+helpers where it pays.)
 
 ### 2026-06-15 06:50 — ai-chatbot
 Closed session 275's queued follow-up: pulled the two remaining inline

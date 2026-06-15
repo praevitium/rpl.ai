@@ -9,7 +9,7 @@ current state.
 
 ## Current status
 
-`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (5830)** —
+`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (5844)** —
 fully green, 0 failing. `test-persist.mjs` 66 / 0 (stable; D-001 closed at
 ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~5 ms.
 
@@ -163,3 +163,8 @@ Sibling lanes:
   against the lex-based ordered family (`< > ≤ ≥`) on shared input pairs, so a
   refactor routing equality through the lex comparator is caught. The
   cross-type String/numeric rejection arm is pinned on all four ordered ops.
+- **erf / erfc Z column** — the DATA_TYPES Z `✓` cell (the `_erfScalar` /
+  `_erfcScalar` `isInteger` branch) is now pinned with bare-`Integer` operands
+  (`erf(Integer(1))` → `Real(≈0.8427)`, `erfc(Integer(2))` → `Real(≈0.00468)`),
+  not just `Real(n)` — `session280:` in `test-numerics.mjs`. Guards against a
+  refactor that drops the integer arm and silently degrades Z→Real-only.

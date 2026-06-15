@@ -46,6 +46,27 @@ export function fuzzyScore(query, name) {
   return score;
 }
 
+/** The indices in `name` of the characters that `query` matches, using
+ *  the same greedy left-to-right subsequence walk as `fuzzyScore`, so a
+ *  highlight built from these positions lines up with what the score
+ *  rewarded.  Returns ascending indices into the original `name` (one
+ *  per query character), or `[]` when `query` is empty or not a
+ *  subsequence.  Matching is case-insensitive. */
+export function matchPositions(query, name) {
+  const q = String(query == null ? '' : query).toUpperCase();
+  const n = String(name == null ? '' : name);
+  if (q === '') return [];
+
+  const hits = [];
+  let qi = 0;
+  for (let i = 0; i < n.length && qi < q.length; i++) {
+    if (n[i].toUpperCase() !== q[qi]) continue;
+    hits.push(i);
+    qi += 1;
+  }
+  return qi < q.length ? [] : hits;
+}
+
 /** Filter + rank `names` against `query`.  An empty/whitespace query
  *  returns a copy of `names` unchanged (the palette's resting view).
  *  Otherwise only subsequence matches survive, sorted by descending
