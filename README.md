@@ -110,7 +110,8 @@ modules — no build step, no framework.
 control flow (`IF` / `WHILE` / `DO` / `FOR` / `START` / `CASE` / `IFERR`),
 compiled local variable environments (`→ a b « … »`), and the
 suspended-execution substrate (`HALT` / `CONT` / `KILL`) are all working.
-Most of the HP 50g command set is registered. See
+The HP 50g command set is essentially complete — 449 commands registered,
+with `JORDAN` the lone remaining op. See
 [docs/ROADMAP.md](docs/ROADMAP.md) for what's remaining and
 [docs/COMMANDS.md](docs/COMMANDS.md) for the current command inventory.
 

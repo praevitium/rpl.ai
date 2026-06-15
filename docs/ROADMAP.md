@@ -42,34 +42,25 @@ The substrate the roadmap builds on:
 
 ### 1. Close the last command-support gap cluster
 
-Roughly two-dozen HP50 AUR ops are still unregistered in
-`www/src/rpl/ops.js`.  The gap is small and lopsided: the easy scalar
-clusters are in, what's left is heavier or touches state (MODULO,
-plotting).  Priority order:
+The command surface is effectively complete: 449 HP50 ops are registered
+and `COMMANDS.md` carries a single remaining `✗` — **JORDAN**.  Its
+CAS-independent output-shaping core already ships and is tested
+(`www/src/rpl/jordan-format.js`, `tests/test-jordan-format.mjs`); what
+remains is registering the op in `www/src/rpl/ops.js` and wiring those
+builders to Giac's eigenvalues / multiplicities / characteristic-spaces /
+Jordan-chain output (levels 3/4 reuse the already-shipped `PCAR` and
+`PMINI`).  This is deferred only until Giac's `eigenvects` / Jordan-chain
+output shape is confirmed against the real CAS, so the fixtures match
+reality rather than a guess.
 
-- **Matrix decomposition — `CHARPOL`, `EGVL`, `EGV`** (medium
-  priority).  Characteristic polynomial and eigenvalues round out the
-  linear-algebra surface alongside the existing LU / QR / SVD / RDM
-  stack.  `CHARPOL` is straightforward (Leverrier or Faddeev–LeVerrier);
-  `EGVL` / `EGV` need a robust eigensolver — likely QR iteration with
-  Hessenberg reduction for real matrices and Schur for complex.
-- **Modular polynomial ops — `POLYEVAL`, `MULTMOD`** (low).  Both
-  depend on a persisted `MODULO` state slot that the calc doesn't
-  carry yet; introducing that slot is the prerequisite.  `EUCLID` and
-  `INVMOD` already ship and provide the template.
-- **CAS-special functions — `Ei`, `Si`, `Ci`** (low).  Exponential /
-  sine / cosine integrals.  Numerically well-studied, but fewer
-  HP50 users hit these than the zeta/lambert cluster already shipped.
-- **Reflection — `TVARS`** (low).  Type-filtered sibling of `VARS`;
-  one screenful of work once the value-type predicates settle.
-- **Advanced matrix decomps — `JORDAN`, `SCHUR`, `LQD`, `RSD`** (low).
-  HP50 completeness checkboxes; `JORDAN` in particular is numerically
-  delicate and rarely used outside teaching.
-- **Control-theory — `ACKER`, `CTRB`, `OBSV`** (low).  Small and
-  self-contained once `EGVL` lands.
-- **Groebner / CAS — `GREDUCE`, `GXROOT`, `SRPLY`** (low).  Behind
-  `SOLVE` on the roadmap priority — a focused CAS expansion, not a
-  scatter-shot of new ops.
+Everything earlier drafts of this roadmap listed as pending has since
+landed — `CHARPOL` / `EGVL` / `EGV`, `RSD`, `GREDUCE`, `MULTMOD`, the
+`Ei` / `Si` / `Ci` integral cluster, `TVARS`, and `SCHUR` are all
+registered.  Seven names that once appeared here — `POLYEVAL`, `LQD`,
+`ACKER`, `CTRB`, `OBSV`, `GXROOT`, `SRPLY` — were checked against the
+three HP50 manuals (`pdftotext`, zero hits in all of them) and retired as
+phantoms: they are not real HP50 commands (the real polynomial evaluator
+is `PEVAL`, which already ships).
 
 Explicitly out of scope (`will-not`, per `@!MY_NOTES.md`): USER mode,
 ENTRY, S.SLV, NUM.SLV, FINANCE, TIME, DEF, LIB, OFF, and the
