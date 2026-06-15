@@ -323,16 +323,11 @@ export const CHAR_GROUPS = {
    ----------------------------------------------------------------- */
 
 export class SidePanel {
-  /**
-   * @param {object} params
-   * @param {HTMLElement} params.root   - Element to append the panel into.
-   * @param {object}      params.app    - App instance (for entry / stack / lookup).
-   */
   constructor({ root, app }) {
     this.root = root;
     this.app = app;
-    this.tab = 'ai';                               // active tab
-    this.historySort = 'newest';                   // 'newest' | 'oldest'
+    this.tab = 'ai';
+    this.historySort = 'newest';
     // Set of `${tab}:${sectionTitle}` strings marking sections the
     // user has collapsed.  Absence = open (the default for every new
     // section).  Persists to localStorage via _saveUIState so the
@@ -386,17 +381,14 @@ export class SidePanel {
     this.root.appendChild(panel);
     this._bindResizer(panel.querySelector('.side-panel-resizer'));
 
-    // Tab switching
     panel.querySelectorAll('.sp-tab').forEach(btn => {
       btn.addEventListener('click', () => this.setTab(btn.dataset.tab));
     });
     panel.querySelector('.sp-close').addEventListener('click', () => this.close());
 
-    // Live filter
     const filter = panel.querySelector('.sp-filter');
     filter.addEventListener('input', () => this._render());
 
-    // Sort toggle (history only)
     panel.querySelector('.sp-sort').addEventListener('click', () => {
       this.historySort = this.historySort === 'newest' ? 'oldest' : 'newest';
       const lbl = panel.querySelector('.sp-sort');

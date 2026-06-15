@@ -26,7 +26,6 @@
        one pattern-match pass over its immediate children).
    ================================================================= */
 
-/* ------------------------------ AST ctors ----------------------------- */
 export function Num(v) {
   return Object.freeze({ kind: 'num', value: Number(v) });
 }
@@ -39,18 +38,8 @@ export function Neg(arg) {
 export function Bin(op, l, r) {
   return Object.freeze({ kind: 'bin', op, l, r });
 }
-/**
- * Function-call node: SIN(X), LN(X+1), SQRT(X), etc.
- *
- *   name: canonical UPPERCASE function id (e.g. 'SIN', 'LN').
- *   args: frozen array of AST nodes.  Most supported builtins are
- *         single-argument; the shape is still an array so future
- *         multi-arg calls (e.g. user-defined f(x, y)) don't require
- *         another node kind.
- *
- * Uppercasing happens inside the ctor so callers can pass either case
- * and comparisons stay simple.
- */
+/** Function-call node.  Uppercasing happens inside the ctor so callers
+ *  can pass either case and structural comparisons stay simple. */
 export function Fn(name, args) {
   return Object.freeze({
     kind: 'fn',
@@ -65,8 +54,6 @@ export const isNeg = n => n && n.kind === 'neg';
 export const isBin = n => n && n.kind === 'bin';
 export const isFn  = n => n && n.kind === 'fn';
 
-/** Shallow structural equality.  Used by the simplifier for x - x → 0
- *  and a couple of other cheap patterns. */
 export function astEqual(a, b) {
   if (a === b) return true;
   if (!a || !b || a.kind !== b.kind) return false;
@@ -87,9 +74,7 @@ export function astEqual(a, b) {
   return false;
 }
 
-/* ------------------------ supported functions ------------------------- *
- *
- * KNOWN_FUNCTIONS is the whitelist of identifiers the algebra parser
+/* KNOWN_FUNCTIONS is the whitelist of identifiers the algebra parser
  * accepts as `NAME(args)` call syntax.  Anything NOT on this list falls
  * through to the "implicit multiplication is not supported" / quoted
  * Name path so the parser still refuses gracefully.
@@ -383,8 +368,6 @@ export function isKnownFunction(name) {
   return Object.prototype.hasOwnProperty.call(KNOWN_FUNCTIONS, String(name).toUpperCase());
 }
 
-/* ------------------------------ Parser -------------------------------- */
-
 /** Parse an algebraic expression string into an AST.
  *
  *  Grammar (recursive descent with precedence climbing):
@@ -443,18 +426,11 @@ export function parseAlgebra(src) {
   }
 
   function parseEq() {
-    // Outer wrapper — at most one comparison at the top level.  Inside
-    // a parenthesis or a function-call argument we drop back to parseE,
-    // which never looks for a comparison.  That keeps `X < 5` legal
-    // but `(X = 3) + 1` a parse error — matching HP50 expression-vs-
-    // equation discipline and avoiding ambiguity with bit-shift
-    // operators (we have none, but leaving room for them is cheap).
     const left = parseE();
     skip();
     // Two-char ASCII comparisons first (so '<=' isn't misread as '<').
     if (s[i] === '<' && s[i + 1] === '=') { i += 2; return Bin('≤', left, parseE()); }
     if (s[i] === '>' && s[i + 1] === '=') { i += 2; return Bin('≥', left, parseE()); }
-    // Single-char comparisons.  `=` / `≠` / `<` / `>` / `≤` / `≥`.
     if ('=≠<>≤≥'.includes(s[i])) {
       const op = s[i]; i++;
       return Bin(op, left, parseE());
@@ -511,7 +487,6 @@ export function parseAlgebra(src) {
     if (i >= n) throw new Error('Unexpected end of expression');
     const c = s[i];
 
-    // Number literal — decimals and simple exponents.
     if (/[0-9.]/.test(c)) {
       const m = s.slice(i).match(/^\d+\.?\d*(?:[eE][-+]?\d+)?|^\.\d+(?:[eE][-+]?\d+)?/);
       if (!m) throw new Error(`Bad number at pos ${i}`);
@@ -519,7 +494,6 @@ export function parseAlgebra(src) {
       return Num(parseFloat(m[0]));
     }
 
-    // Parenthesised sub-expression.
     if (c === '(') {
       i++;
       const e = parseE();
@@ -527,38 +501,19 @@ export function parseAlgebra(src) {
       return e;
     }
 
-    // Identifier — alpha, then alphanumeric.  HP50 variable names are
-    // alphanumeric, case-sensitive, start with a letter.  We allow
-    // UPPERCASE + digits to match the common math-notation style.
-    //
-    // Function-call syntax: if the identifier is in the KNOWN_FUNCTIONS
-    // whitelist AND is immediately followed by `(`, we parse it as a
-    // function call and wrap the argument list in an Fn node.  Non-
-    // whitelisted identifiers followed by `(` would be ambiguous with
-    // implicit multiplication (FOO(X) = FOO*X?) so we reject them —
-    // the outer parser.js will then fall back to a quoted Name, which
-    // keeps unusual identifier-quoted tokens round-tripping.
-    //
-    // Multi-argument calls are parsed generically (comma-separated),
-    // but the KNOWN_FUNCTIONS table currently only has arity-1 entries.
-    // Mismatched arity throws a clear error.
-    // Identifier characters: ASCII letters plus the Greek-letter
-    // glyphs that users type directly via the Characters palette or
-    // SPC-shift-L (π).  Keeping the character class narrow on the
-    // remaining-char side — letters + digits, no underscores — means
-    // implicit multiplication like `2π` still tokenises cleanly
-    // (digits are consumed by the number path first).
+    // A KNOWN_FUNCTIONS identifier followed by `(` parses as a function
+    // call; non-whitelisted `FOO(...)` would be ambiguous with implicit
+    // multiplication, so we reject it and let parser.js fall back to a
+    // quoted Name.  Identifier chars allow Greek glyphs but no
+    // underscores so `2π` still tokenises cleanly.
     if (/[A-Za-zΑ-Ωα-ω]/.test(c)) {
       const m = s.slice(i).match(/^[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω0-9]*/);
       i += m[0].length;
       const ident = m[0];
       skip();
       if (s[i] === '(' && isKnownFunction(ident)) {
-        i++;                                      // consume '('
+        i++;
         const args = [];
-        // Empty arg list '()' allowed but makes no sense for arity>=1
-        // builtins — we still parse one expression on the assumption
-        // every supported func is at least unary.
         args.push(parseE());
         skip();
         while (s[i] === ',') {
@@ -586,9 +541,7 @@ export function parseAlgebra(src) {
   return ast;
 }
 
-/* ------------------------------ Simplifier ---------------------------- */
-
-/* ------------------------- like-terms combiner ------------------------
+/* like-terms combiner
  *
  * Extends the local simplifier so any top-level + / - chain over a tree
  * gets its coefficients summed per-variable-body.  Examples:
@@ -624,17 +577,11 @@ function flattenAddSub(ast, sign, out) {
     flattenAddSub(ast.arg, -sign, out);
     return out;
   }
-  // Leaf — decompose into coef * body.  Pure numeric leaves are
-  // collapsed to a body-less constant so like-terms combine them all
-  // into a single trailing offset.
   let coef = sign, body = ast;
   if (isNum(ast)) {
     coef = sign * ast.value;
     body = null;
   } else if (isBin(ast) && ast.op === '*') {
-    // Extract a numeric factor at either side.  `Num * body` is the
-    // common shape emitted by the polynomial DERIV rule; `body * Num`
-    // is still accepted for symmetry.
     if (isNum(ast.l))      { coef = sign * ast.l.value; body = ast.r; }
     else if (isNum(ast.r)) { coef = sign * ast.r.value; body = ast.l; }
   }
@@ -673,13 +620,10 @@ function canonicalizeTermBody(body) {
     else nonNum.push(f);
   }
   if (nonNum.length === 0) {
-    // Everything was numeric — body collapses to a constant.  Return
-    // body=null so the caller rolls this into the running constant.
     return { coef, body: null };
   }
-  // Sort non-numeric factors alphabetically by their printed form.
-  // Stable sort — ties keep original order (matters if two factors
-  // happen to share a print form, e.g. identical sub-expressions).
+  // Sort alphabetically by printed form so `X*Y` and `Y*X` canonicalize
+  // alike.  Stable — ties keep original order.
   const decorated = nonNum.map((f, i) => ({ f, key: formatAlgebra(f), i }));
   decorated.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : a.i - b.i));
   let out = decorated[0].f;
@@ -690,22 +634,11 @@ function canonicalizeTermBody(body) {
 }
 
 function combineLikeTerms(ast) {
-  // Entry point — given a Bin('+'|'-', ..., ...), return a rebuilt AST
-  // with per-body coefficients summed and the pure-numeric constant
-  // pushed to the tail.  Safe to call on any + / - bin node; preserves
-  // input shape when nothing merges.
   const flat = flattenAddSub(ast, 1, []);
   let constant = 0;
   const terms = [];   // [{ coef, body, key }], first-appearance order
   for (const { coef, body } of flat) {
     if (body === null) { constant += coef; continue; }
-    // Canonicalize product ordering so `X*Y` and `Y*X` share a bucket
-    // key.  Also peels any remaining Num factors out of the body into
-    // a numeric-extra coefficient — flattenAddSub's shallow Num-strip
-    // already handled `Num*body` and `body*Num`, but parser output
-    // like `2*X*Y = (2*X)*Y` hides the `2` inside a nested Bin and
-    // only gets extracted here.  If the body collapses to all-numeric
-    // the extra bubbles into the running constant bucket.
     const canon = canonicalizeTermBody(body);
     const fullCoef = coef * canon.coef;
     if (canon.body === null) { constant += fullCoef; continue; }
@@ -735,7 +668,6 @@ function combineLikeTerms(ast) {
     if (mag === 1) {
       factor = t.body;
     } else if (isBin(t.body) && t.body.op === '*') {
-      // Flatten and prepend so we get a left-assoc chain.
       const bodyFactors = [];
       (function flatten(n) {
         if (isBin(n) && n.op === '*') { flatten(n.l); flatten(n.r); }
@@ -754,8 +686,6 @@ function combineLikeTerms(ast) {
   }
   if (parts.length === 0) return Num(0);
 
-  // First part: a leading '-' becomes Neg(factor); '+' is bare.
-  // Subsequent parts chain on with Bin(sign, acc, factor).
   let result = parts[0].sign === '-' ? Neg(parts[0].factor) : parts[0].factor;
   for (let i = 1; i < parts.length; i++) {
     result = Bin(parts[i].sign, result, parts[i].factor);
@@ -797,19 +727,17 @@ function simplify(ast) {
     return simplifyFn(ast);
   }
 
-  // bin
   const op = ast.op;
   const l = simplify(ast.l);
   const r = simplify(ast.r);
 
-  // Numeric fold — both constants collapse now.
   if (isNum(l) && isNum(r)) {
     switch (op) {
       case '+': return Num(l.value + r.value);
       case '-': return Num(l.value - r.value);
       case '*': return Num(l.value * r.value);
       case '/':
-        if (r.value === 0) return Bin('/', l, r); // leave for the user to explode
+        if (r.value === 0) return Bin('/', l, r);
         return Num(l.value / r.value);
       case '^': return Num(Math.pow(l.value, r.value));
     }
@@ -817,17 +745,16 @@ function simplify(ast) {
 
   switch (op) {
     case '+':
-      if (isNum(l) && l.value === 0) return r;    // 0 + x
-      if (isNum(r) && r.value === 0) return l;    // x + 0
-      // x + (-y) → x - y
+      if (isNum(l) && l.value === 0) return r;
+      if (isNum(r) && r.value === 0) return l;
       if (isNeg(r)) return simplify(Bin('-', l, r.arg));
-      if (isNeg(l)) return simplify(Bin('-', r, l.arg));  // -x + y = y - x
+      if (isNeg(l)) return simplify(Bin('-', r, l.arg));
       break;
     case '-':
-      if (isNum(r) && r.value === 0) return l;    // x - 0
-      if (isNum(l) && l.value === 0) return simplify(Neg(r)); // 0 - x → -x
-      if (astEqual(l, r)) return Num(0);          // x - x → 0
-      if (isNeg(r)) return simplify(Bin('+', l, r.arg)); // x - (-y) → x + y
+      if (isNum(r) && r.value === 0) return l;
+      if (isNum(l) && l.value === 0) return simplify(Neg(r));
+      if (astEqual(l, r)) return Num(0);
+      if (isNeg(r)) return simplify(Bin('+', l, r.arg));
       break;
     case '*':
       if (isNum(l) && l.value === 0) return Num(0);
@@ -850,10 +777,10 @@ function simplify(ast) {
       }
       break;
     case '^':
-      if (isNum(r) && r.value === 0) return Num(1);   // x^0 → 1
-      if (isNum(r) && r.value === 1) return l;        // x^1 → x
+      if (isNum(r) && r.value === 0) return Num(1);
+      if (isNum(r) && r.value === 1) return l;
       if (isNum(l) && l.value === 0) return Num(0);   // 0^n = 0 (n>0 caught above)
-      if (isNum(l) && l.value === 1) return Num(1);   // 1^x = 1
+      if (isNum(l) && l.value === 1) return Num(1);
       // (u^m)^n → u^(m*n) when both exponents are Num.  Cleans up
       // DERIV chain-rule output like ATAN(X^2) → 2*X/(X^4+1) instead
       // of 2*X/((X^2)^2 + 1).  Conservative — we require BOTH m and n
@@ -906,7 +833,6 @@ function simplify(ast) {
 function simplifyFn(ast) {
   const name = ast.name;
   const args = ast.args.map(simplify);
-  // Zero-arg identities first (checked before generic numeric fold).
   if (args.length === 1) {
     const a = args[0];
     if (isNum(a)) {
@@ -930,7 +856,6 @@ function simplifyFn(ast) {
         if (name === 'LOG')  return Num(0);
         if (name === 'SQRT') return Num(1);
       }
-      // Generic numeric fold for mode-independent evals.
       const spec = KNOWN_FUNCTIONS[name];
       if (spec && typeof spec.eval === 'function') {
         const out = spec.eval(a.value);
@@ -946,10 +871,9 @@ function simplifyFn(ast) {
     if (name === 'EXP' && isFn(a) && a.name === 'LN' && a.args.length === 1) {
       return a.args[0];
     }
-    // ABS(-x) → ABS(x), ABS(ABS(x)) → ABS(x) (idempotent).
     if (name === 'ABS' && isNeg(a)) return Fn('ABS', [a.arg]);
     if (name === 'ABS' && isFn(a) && a.name === 'ABS') return a;
-    // SQRT(X^2) → ABS(X)  — a small textbook rewrite; cheap and useful.
+    // SQRT(X^2) → ABS(X), not X — the radicand sign is lost.
     if (name === 'SQRT' && isBin(a) && a.op === '^' &&
         isNum(a.r) && a.r.value === 2) {
       return Fn('ABS', [a.l]);
@@ -981,23 +905,15 @@ function simplifyFn(ast) {
     if (isFn(a) && a.args.length === 1) {
       const inner = a;
       const innerName = a.name;
-      // Rule family 1: outer rounder is itself integer-producing and
-      // inner is already integer-producing ⇒ inner wins (outer is a
-      // no-op on integers).
       if (ROUND_INT_PRODUCERS.has(name) && ROUND_INT_PRODUCERS.has(innerName)) {
         return inner;
       }
-      // Rule family 2: FP of an integer-producing rounder = 0.
       if (name === 'FP' && ROUND_INT_PRODUCERS.has(innerName)) {
         return Num(0);
       }
-      // Rule family 3: FP(FP(x)) = FP(x) — FP result is in (-1, 1) but
-      // the second application is also stable because FP(FP(x)) = FP(x)
-      // whenever |x| < 1.  Concretely: FP is idempotent on its image.
       if (name === 'FP' && innerName === 'FP') {
         return inner;
       }
-      // Rule family 4: SIGN(SIGN(x)) = SIGN(x) — SIGN is idempotent.
       if (name === 'SIGN' && innerName === 'SIGN') {
         return inner;
       }
@@ -1026,7 +942,7 @@ function simplifyFn(ast) {
   return Fn(name, args);
 }
 
-/* ------------------------------ EXPAND -------------------------------- *
+/* EXPAND
  *
  * `expand(ast)` multiplies-out products and small non-negative integer
  * powers of sums, then runs simplify() on the result so the like-terms
@@ -1144,8 +1060,8 @@ function multiplyTerms(a, b) {
 }
 
 function expandProduct(a, b) {
-  // Distribute across + / - chains on both sides.  Single-term × single-
-  // term still goes through multiplyTerms so X*X becomes X^2.
+  // Single-term × single-term still goes through multiplyTerms so
+  // X*X becomes X^2.
   const aTerms = additiveTerms(a);
   const bTerms = additiveTerms(b);
   const parts = [];
@@ -1201,8 +1117,6 @@ function expandAst(ast) {
   return ast;
 }
 
-/* ------------------------------ Differentiator ------------------------ */
-
 /** Derivative of `ast` with respect to variable `varName`.
  *  Returns a fully simplified AST. */
 function deriv(ast, varName) {
@@ -1249,14 +1163,10 @@ function derivFn(ast, v) {
   }
   const u  = ast.args[0];
   const du = derivRaw(u, v);
-  // fast shortcut: if u' = 0, the whole derivative is 0 (the chain
-  // rule factor kills it).  Skips a lot of pointless simplification.
   switch (name) {
     case 'SIN':
       return Bin('*', Fn('COS', [u]), du);
     case 'COS':
-      // -SIN(u) * u'  — use Neg for clarity; simplify collapses neg at
-      // the top if needed.
       return Bin('*', Neg(Fn('SIN', [u])), du);
     case 'TAN': {
       // sec^2(u) * u' — we don't have SEC; (1 + TAN(u)^2) is equivalent.
@@ -1264,7 +1174,6 @@ function derivFn(ast, v) {
       return Bin('*', sec2, du);
     }
     case 'ASIN': {
-      // u' / sqrt(1 - u^2)
       const inner = Bin('-', Num(1), Bin('^', u, Num(2)));
       return Bin('/', du, Fn('SQRT', [inner]));
     }
@@ -1273,54 +1182,41 @@ function derivFn(ast, v) {
       return Bin('/', Neg(du), Fn('SQRT', [inner]));
     }
     case 'ATAN': {
-      // u' / (1 + u^2)
       const denom = Bin('+', Num(1), Bin('^', u, Num(2)));
       return Bin('/', du, denom);
     }
     case 'LN':
       return Bin('/', du, u);
     case 'LOG':
-      // (1 / (u * ln 10)) * u' == u' / (u * LN(10))
       return Bin('/', du, Bin('*', u, Fn('LN', [Num(10)])));
     case 'EXP':
       return Bin('*', Fn('EXP', [u]), du);
     case 'ALOG':
-      // d/dx 10^u = 10^u * ln(10) * u'
       return Bin('*', Bin('*', Fn('ALOG', [u]), Fn('LN', [Num(10)])), du);
     case 'SQRT':
-      // u' / (2 * sqrt(u))
       return Bin('/', du, Bin('*', Num(2), Fn('SQRT', [u])));
     case 'ABS':
-      // d/dx |u| = u/|u| * u'  (sign(u) * u' symbolically).  We encode
-      // as Bin('/', u, Fn('ABS', [u])) * du.
       return Bin('*', Bin('/', u, Fn('ABS', [u])), du);
-    // Hyperbolic family — mode-independent derivatives.
     case 'SINH':
       return Bin('*', Fn('COSH', [u]), du);
     case 'COSH':
-      // d/dx cosh(u) = +sinh(u) * u' — no sign flip (cosh is even, but
-      // its derivative is odd sinh; the chain-rule factor carries no
-      // extra sign).  Don't confuse with d/dx cos(u) which does flip.
+      // +sinh(u) * u' — no sign flip; don't confuse with d/dx cos(u).
       return Bin('*', Fn('SINH', [u]), du);
     case 'TANH': {
-      // sech^2(u) * u' — but we don't expose SECH; use the algebraic
-      // identity sech^2 = 1 - tanh^2 so the result stays inside the
-      // KNOWN_FUNCTIONS surface and round-trips cleanly.
+      // sech^2 = 1 - tanh^2 — we don't expose SECH, so use the identity
+      // to stay inside the KNOWN_FUNCTIONS surface.
       const sech2 = Bin('-', Num(1), Bin('^', Fn('TANH', [u]), Num(2)));
       return Bin('*', sech2, du);
     }
     case 'ASINH': {
-      // u' / SQRT(u^2 + 1)
       const inner = Bin('+', Bin('^', u, Num(2)), Num(1));
       return Bin('/', du, Fn('SQRT', [inner]));
     }
     case 'ACOSH': {
-      // u' / SQRT(u^2 - 1)
       const inner = Bin('-', Bin('^', u, Num(2)), Num(1));
       return Bin('/', du, Fn('SQRT', [inner]));
     }
     case 'ATANH': {
-      // u' / (1 - u^2)
       const denom = Bin('-', Num(1), Bin('^', u, Num(2)));
       return Bin('/', du, denom);
     }
@@ -1342,48 +1238,27 @@ function derivRaw(ast, v) {
       case '+': return Bin('+', dl, dr);
       case '-': return Bin('-', dl, dr);
       case '*':
-        // (uv)' = u'v + uv'
         return Bin('+', Bin('*', dl, r), Bin('*', l, dr));
       case '/':
-        // (u/v)' = (u'v - uv') / v^2
         return Bin('/',
           Bin('-', Bin('*', dl, r), Bin('*', l, dr)),
           Bin('^', r, Num(2)));
       case '^':
-        // Polynomial shortcut — exponent is a numeric literal.
-        //   (u^n)' = n * u^(n-1) * u'
-        // Keeps the clean form tests already pin down (DERIV('X^3','X')
-        // → '3*X^2', etc.); also avoids the dead v'=0 term the general
-        // rule would emit.
+        // Polynomial shortcut (u^n)' = n*u^(n-1)*u' for numeric n —
+        // keeps the clean form tests pin down and avoids the dead
+        // v'=0 term the general rule would emit.
         if (isNum(r)) {
           const n = r.value;
           return Bin('*', Num(n),
                      Bin('*', Bin('^', l, Num(n - 1)), dl));
         }
-        // Constant-base shortcut — base is a numeric literal, exponent
-        // depends on v.  (a^v)' = a^v * LN(a) * v'.
-        // LN(a) stays symbolic at simplify time only when a<=0; for
-        // positive integer bases it folds to a numeric constant.
+        // Constant-base shortcut (a^v)' = a^v * LN(a) * v'.
         if (isNum(l)) {
           return Bin('*', Bin('*', Bin('^', l, r), Fn('LN', [l])), dr);
         }
-        // General power rule — both u and v depend on x.
-        //   (u^v)'  =  v * u^(v-1) * u'  +  u^v * LN(u) * v'
-        // We pick this form (rather than u^v * (v*u'/u + v'*LN(u))) so
-        // that:
-        //   - the v'=0 term drops out cleanly via the simplifier's
-        //     `x * 0 → 0` rule (no stray `v * 0/u` residue),
-        //   - the u'=0 term drops out likewise,
-        //   - polynomial cases match the same shape as the shortcut
-        //     above (v * u^(v-1) * u' with v' = 0 killing the second
-        //     term).
-        // Worked examples:
-        //   DERIV(X^X, X) = X * X^(X-1) * 1 + X^X * LN(X) * 1
-        //                 = X*X^(X-1) + X^X*LN(X)
-        //   DERIV(2^X, X) = X * 2^(X-1) * 0 + 2^X * LN(2) * 1
-        //                 = 2^X * LN(2)           (via simplify)
-        //   DERIV(X^(2*X), X) = 2*X * X^(2*X - 1) * 1
-        //                     + X^(2*X) * LN(X) * 2
+        // General power rule, written as v*u^(v-1)*u' + u^v*LN(u)*v'
+        // (rather than the factored form) so the simplifier's x*0→0 rule
+        // cleanly drops whichever of u', v' is zero.
         return Bin('+',
           Bin('*', r, Bin('*', Bin('^', l, Bin('-', r, Num(1))), dl)),
           Bin('*', Bin('^', l, r), Bin('*', Fn('LN', [l]), dr)));
@@ -1391,8 +1266,6 @@ function derivRaw(ast, v) {
   }
   throw new Error(`DERIV: unknown AST kind '${ast.kind}'`);
 }
-
-/* ------------------------------ Integrator ---------------------------- */
 
 /** Indefinite integral of `ast` with respect to variable `varName`.
  *  Returns a fully simplified AST.  Only covers the cases that can be
@@ -1470,7 +1343,7 @@ function integRaw(ast, v) {
   return Fn('INTEG', [ast, Var(v)]);
 }
 
-/* ------------------------------ Evaluator ----------------------------- *
+/* Evaluator
  *
  * Walks an AST, resolving variables via the caller-supplied lookup and
  * applying numeric evaluators for Fn nodes.  Used by ops.js EVAL when
@@ -1575,8 +1448,6 @@ export function freeVars(ast, out = new Set()) {
   return out;
 }
 
-/* ------------------------------ Printer ------------------------------- */
-
 /** Format an AST as a string, parenthesising only where required by
  *  operator precedence.  Matches the grammar above:
  *    +,- precedence 1
@@ -1601,23 +1472,17 @@ const CMP_OPS = new Set(['=', '≠', '<', '>', '≤', '≥']);
 function fmt(ast, parentPrec) {
   if (!ast) return '';
   if (ast.kind === 'num') {
-    // Use simple integer if exact; else JS default.
     return Number.isInteger(ast.value) ? ast.value.toString() : String(ast.value);
   }
   if (ast.kind === 'var') return ast.name;
   if (ast.kind === 'neg') {
-    // Unary minus binds tighter than + / -.  If the parent is already a
-    // multiplicative op or higher, we still parenthesise for clarity —
-    // '2*-X' is ugly; '2*(-X)' reads.  Exception: inside '+' or '-' we
-    // can print plain '-X'.
+    // Parenthesise inside a multiplicative-or-higher parent: '2*-X' is
+    // ugly, '2*(-X)' reads.  Inside +/- we can print plain '-X'.
     const inner = fmt(ast.arg, 4);
     const s = `-${inner}`;
     return parentPrec >= 2 ? `(${s})` : s;
   }
   if (ast.kind === 'fn') {
-    // Function call prints as NAME(arg1, arg2, ...) — no spaces after
-    // commas to match HP50 style.  Args print at precedence 0 so the
-    // top-level ones never get over-parenthesised.
     const inside = ast.args.map(a => fmt(a, 0)).join(',');
     return `${ast.name}(${inside})`;
   }
@@ -1635,10 +1500,8 @@ function fmt(ast, parentPrec) {
     const rPrec = rightAssoc ? p : p + 1;
     const lStr = fmt(ast.l, lPrec);
     const rStr = fmt(ast.r, rPrec);
-    // + / - / comparisons get surrounding spaces; * / / / ^ stay tight.
-    // Comparison ops print without surrounding spaces so `x>y` renders
-    // exactly like the user types it — matches HP50 behaviour and matches
-    // the user's expectation that `x y >` produces `'x>y'`.
+    // + / - / = get surrounding spaces; comparison ops print tight so
+    // `x y >` round-trips as `'x>y'`, matching HP50 behaviour.
     const sep = (ast.op === '+' || ast.op === '-' || ast.op === '=')
                 ? ` ${ast.op} `
                 : ast.op;
@@ -1648,8 +1511,7 @@ function fmt(ast, parentPrec) {
   return '?';
 }
 
-/* ==================================================================
-   FACTOR
+/* FACTOR
 
    `factor(ast)` recognises a set of common polynomial shapes and
    returns a factored form; anything outside the recognised set is
@@ -1673,8 +1535,7 @@ function fmt(ast, parentPrec) {
 
    All unsupported shapes pass through unchanged, matching the
    partial-CAS convention — users get EXPAND-style "best effort"
-   rather than a noisy error.  The CAS menu's F4 slot delegates here.
-================================================================== */
+   rather than a noisy error.  The CAS menu's F4 slot delegates here. */
 
 /** extractPolyCoeffs(ast, varName) — treat `ast` as a polynomial in
  *  the single variable `varName` and return an array `coefs` where

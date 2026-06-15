@@ -1,44 +1,7 @@
 #!/usr/bin/env node
-/* =================================================================
-   Reflow each per-command <pre> block in
-   www/docs/hp50-commands.html into a structured proportional layout.
-
-   The PDF-extracted source crams every command into a single <pre>:
-     <pre>NAME
-     Type:           Function
-     Description:    First line of prose,
-                     wrapped continuation,
-                     more prose.
-                     • Bullet 1
-                       continuation
-                     • Bullet 2
-                                       col1     col2     col3
-                                        x        y        z
-     Access:         …keystrokes…
-     Input/Output:
-                     Level 2/Arg 1     Level 1/Arg 2     →    Level 1/Item 1
-                     ...
-     See also:       FOO, BAR
-     </pre>
-
-   We slice that into a <dl class="cmd-body">…</dl> with one <dt>/<dd>
-   pair per labeled field.  Within each <dd> we group consecutive
-   lines into runs that are either "prose" (joined into <p>, possibly
-   converted to <ul> when they contain bullets) or "mono" (kept as
-   <pre> so PDF columns / stack diagrams stay aligned).
-
-   Heuristics:
-     - prose: ordinary text; wrapped continuations get joined.
-     - mono : any line with three-or-more consecutive interior spaces,
-              or with a stack-mapping `→` separated by whitespace.
-              Blank lines INSIDE a mono run are preserved (so a
-              header-blank-rows table renders as one <pre>).
-
-   Run with `node scripts/reflow-hp50-commands.mjs`.  The script is
-   idempotent — it only matches bare `<pre>` (no attributes) and the
-   reflowed output uses `<pre class="cmd-mono">`, so re-running is a
-   no-op once the file is converted.
-   ================================================================= */
+/* The script is idempotent — it only matches bare `<pre>` (no
+   attributes) and the reflowed output uses `<pre class="cmd-mono">`,
+   so re-running is a no-op once the file is converted. */
 
 import { fileURLToPath } from 'node:url';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -47,10 +10,8 @@ import path from 'node:path';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HTML_PATH = path.resolve(HERE, '../www/docs/hp50-commands.html');
 
-// Labels we surface in the reflowed body.  `Access:` is intentionally
-// omitted — it documents the physical-keypad shortcut path (e.g.
-// "…ãL LOGIC AND") which is meaningless on a virtual calc, so any
-// `Access:` line in the source is silently dropped.
+// `Access:` is intentionally omitted — it documents the physical-keypad
+// shortcut path, meaningless on a virtual calc, so it's silently dropped.
 const KNOWN_LABELS = new Set([
   'Type', 'Description', 'Flags',
   'Input/Output', 'Input', 'Output', 'Example',
@@ -62,7 +23,6 @@ function slugify(label) {
   return label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-/* ---------------- Parse a <pre> body into labeled sections. -------- */
 function parseSections(body) {
   const lines = body.split('\n');
   let i = 0;
@@ -101,7 +61,6 @@ function parseSections(body) {
   return sections;
 }
 
-/* ---------------- Whitespace helpers ----------------------------- */
 function commonIndent(lines) {
   const widths = lines
     .filter(l => l.trim() !== '')
@@ -118,7 +77,6 @@ function trimEmpty(lines) {
   return lines.slice(i, j + 1);
 }
 
-/* ---------------- Line classification & grouping ----------------- */
 function isMonoLine(l) {
   if (/\s→\s/.test(l)) return true;
   if (/\S {3,}\S/.test(l.trimStart())) return true;
@@ -154,9 +112,7 @@ function groupLines(lines) {
   return groups;
 }
 
-/* ---------------- Group renderers ------------------------------- */
 function renderBullets(lines) {
-  // Optional intro paragraph followed by `•`-prefixed items.
   let i = 0;
   const intro = [];
   while (i < lines.length && !lines[i].trimStart().startsWith('•')) {
@@ -223,7 +179,6 @@ function renderGroup(group, label) {
    <table>s — see buildIOTable). */
 const VERBATIM_LABELS = new Set(['Example']);
 
-/* ---------------- Stack-diagram → HTML table -------------------- */
 /* Stack-diagram blocks have a header row of "Level k/Argument k" /
    "Level 1/Item 1" titles, then data rows with `→` separating inputs
    from outputs.  Cells are 2+ space–separated.  Returns null when
@@ -276,7 +231,6 @@ function buildIOTable(text) {
   return out;
 }
 
-/* ---------------- Command / Result key-value tables -------------- */
 /* Many Example bodies are a stack of `Label:  value` pairs (Example N,
    Command, Result, …).  Render those as a small two-column table rather
    than a wall of preformatted text. */
@@ -311,7 +265,6 @@ function buildKVTable(text) {
   return out + '</tbody></table>';
 }
 
-/* ---------------- Generic multi-column tables -------------------- */
 /* Catches PDF-extracted multi-column blocks that aren't I/O stack
    diagrams (no `→`) and aren't code listings (no `«»` / backtick).
    Cells separated by 3+ spaces; first row becomes <thead>.  Rejects
@@ -379,7 +332,6 @@ function mergeIOFragments(bodyHtml) {
   return `<table class="cmd-io">${thead}<tbody>${rows.join('')}</tbody></table>`;
 }
 
-/* ---------------- Section + whole-pre renderers ------------------ */
 function renderSection({ label, lines }) {
   const indent = commonIndent(lines);
   const stripped = trimEmpty(stripIndent(lines, indent));
@@ -404,7 +356,6 @@ function transformPre(body) {
   return `<dl class="cmd-body">\n${sections.map(renderSection).join('\n')}\n</dl>`;
 }
 
-/* ---------------- Drive ----------------------------------------- */
 let html = readFileSync(HTML_PATH, 'utf8');
 const before = (html.match(/<pre>/g) || []).length;
 html = html.replace(/<pre>([\s\S]*?)<\/pre>/g, (_, body) => transformPre(body));

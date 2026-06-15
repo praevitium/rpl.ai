@@ -1,11 +1,7 @@
 #!/usr/bin/env node
-/**
- * Copies www/ → www-dist/ with the models/ directory excluded.
- *
- * Used as Tauri's beforeBuildCommand / beforeDevCommand so that local
- * model weights downloaded for development don't end up in the
- * production bundle.  Run from the project root.
- */
+/* Used as Tauri's beforeBuildCommand / beforeDevCommand so that local
+   model weights downloaded for development don't end up in the
+   production bundle.  Run from the project root. */
 import { cpSync, rmSync, mkdirSync } from 'node:fs';
 import { join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';

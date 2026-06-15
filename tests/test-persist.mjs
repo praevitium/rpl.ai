@@ -68,18 +68,15 @@ varStore('INNER', Str('from inside'));
 const snap = snapshot(s);
 const json = JSON.parse(JSON.stringify(snap));   // force JSON round-trip
 
-// Wipe
 resetHome();
 setAngle('RAD');
 const s2 = new Stack();
 
 rehydrate(json, s2);
 
-/* --- Assertions --- */
 assert(calcState.angle === 'DEG', 'angle restored to DEG');
 assert(currentPath().join('/') === 'HOME/SUB', 'path restored to HOME/SUB');
 
-// Stack depth and top value
 assert(s2.depth === 9, 'stack has 9 items after restore');
 
 const lvl1 = s2.peek(1);
@@ -115,7 +112,6 @@ assert(isInteger(int) && int.value === 42n, 'Integer 42 restored');
 const real = s2.peek(9);
 assert(isReal(real) && real.value.eq(3.14), 'Real 3.14 restored');
 
-/* --- Variables --- */
 // Current dir is SUB now.  Check INNER.
 const inner = calcState.current.entries.get('INNER');
 assert(inner && isString(inner) && inner.value === 'from inside',

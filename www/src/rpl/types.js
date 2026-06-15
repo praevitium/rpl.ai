@@ -90,13 +90,11 @@ export const BIN_BASES = Object.freeze(['h', 'd', 'o', 'b']);
  * arithmetic raises an error instead.
  */
 export function Real(n) {
-  // Reject JS NaN up front.  Decimal doesn't throw on NaN; it stores
-  // it and propagates — which is the opposite of what the HP50 does.
+  // Decimal doesn't throw on NaN; it stores and propagates — opposite
+  // of the HP50, which has no NaN.
   if (typeof n === 'number' && Number.isNaN(n)) {
     throw new TypeError('Real() does not accept NaN');
   }
-  // Already-Decimal fast path: avoid re-wrapping if the caller has
-  // done the work (realBinary hands us Decimals end-to-end).
   const d = (n instanceof Decimal) ? n : new Decimal(n);
   if (d.isNaN()) {
     throw new TypeError(`Real() does not accept NaN (from ${n})`);
@@ -142,17 +140,14 @@ export function Rational(n, d = 1n) {
            : (typeof d === 'number' && Number.isInteger(d)) ? BigInt(d)
            : (() => { throw new TypeError(`Rational denominator must be BigInt or integer Number, got ${typeof d}`); })();
   if (di === 0n) throw new RangeError('Division by zero');
-  // Put sign on the numerator; keep denominator strictly positive.
   let num = ni, den = di;
   if (den < 0n) { num = -num; den = -den; }
-  // Reduce by GCD.
   const g = _bigIntGcd(num < 0n ? -num : num, den);
   num = num / g;
   den = den / g;
   return Object.freeze({ type: TYPES.RATIONAL, n: num, d: den });
 }
 
-/** Euclidean GCD on non-negative BigInts. `_bigIntGcd(0n, x)` = x. */
 function _bigIntGcd(a, b) {
   while (b !== 0n) { [a, b] = [b, a % b]; }
   return a;
@@ -304,8 +299,6 @@ export function isStorableHpName(name) {
 }
 
 export function Symbolic(expr) {
-  // expr is an AST node — shape defined in src/rpl/algebra.js (future).
-  // For now, accept any object and store it.
   return Object.freeze({ type: TYPES.SYMBOLIC, expr });
 }
 
@@ -426,9 +419,6 @@ export function toRealDecimal(v) {
   if (isReal(v)) return v.value;
   if (isInteger(v)) return new Decimal(v.value.toString());
   if (isRational(v)) {
-    // n / d routed through Decimal at current precision.  For Integer
-    // pairs the division is exact when d | n; otherwise it rounds per
-    // the module-level Decimal.set() config (15 digits, ROUND_HALF_UP).
     return new Decimal(v.n.toString()).div(new Decimal(v.d.toString()));
   }
   if (isComplex(v) && v.im === 0) return new Decimal(v.re);

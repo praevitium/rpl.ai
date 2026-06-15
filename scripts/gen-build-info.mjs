@@ -1,5 +1,4 @@
-/* Generate www/src/build-info.js from package.json + git commit count.
-   Runs as a `pre*` hook for serve/dev/build/bundle:vendor so every build
+/* Runs as a `pre*` hook for serve/dev/build/bundle:vendor so every build
    pipeline picks up a fresh count without manual maintenance. */
 import { execSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -24,7 +23,7 @@ let sha = '';
 try {
   sha = execSync('git rev-parse --short HEAD', { cwd: root, stdio: ['ignore', 'pipe', 'ignore'] })
     .toString().trim();
-} catch { /* ignore */ }
+} catch { }
 
 const full = `${version}-build${build}`;
 

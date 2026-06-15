@@ -246,7 +246,6 @@ class App {
       onArrowRightEmpty:() => { this.stack.depth >= 2 ? this.swapTop() : this.nextMenuPage(); },
     });
 
-    // Initial render
     this.display.renderStack(this.stack);
     this.display.renderCmdline(this.entry);
 

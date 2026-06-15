@@ -12,9 +12,6 @@ import {
 } from '../www/src/rpl/units.js';
 import { assert, assertThrows } from './helpers.mjs';
 
-/* ================================================================
-   Unit parser — canonicalisation, sign propagation
-   ================================================================ */
 {
   const u = parseUnitExpr('m');
   assert(u.length === 1 && u[0][0] === 'm' && u[0][1] === 1,
@@ -41,14 +38,10 @@ import { assert, assertThrows } from './helpers.mjs';
          `parse 'kg*m/s^2' exponents`);
 }
 {
-  // Unknown symbol → Error.
   assertThrows(() => parseUnitExpr('foobar'), null,
     `parseUnitExpr rejects unknown symbol`);
 }
 
-/* ================================================================
-   uexpr algebra — multiply / divide / inverse / power
-   ================================================================ */
 {
   const m_per_s = parseUnitExpr('m/s');
   const s       = parseUnitExpr('s');
@@ -68,16 +61,12 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(sq[0][0] === 'm' && sq[0][1] === 2, `m^2`);
 }
 {
-  // sameDims: ft and m share length dim
   assert(sameDims(parseUnitExpr('ft'), parseUnitExpr('m')),
          `ft and m are dimensionally equal`);
   assert(!sameDims(parseUnitExpr('m'), parseUnitExpr('s')),
          `m and s differ`);
 }
 
-/* ================================================================
-   Unit literal parser (REPL entry path)
-   ================================================================ */
 {
   const vals = parseEntry('9.8_m/s^2');
   assert(Array.isArray(vals) && vals.length === 1 && isUnit(vals[0]),
@@ -92,14 +81,10 @@ import { assert, assertThrows } from './helpers.mjs';
          `Newton-shape uexpr`);
 }
 {
-  // Bogus unit → RPL parse error propagates.
   assertThrows(() => parseEntry('1_zzz'), null,
     `'1_zzz' (unknown unit) throws`);
 }
 
-/* ================================================================
-   Unit formatter
-   ================================================================ */
 {
   const u = Unit(9.8, parseUnitExpr('m/s^2'));
   const s = format(u);
@@ -118,16 +103,11 @@ import { assert, assertThrows } from './helpers.mjs';
   const fu = formatUnitExpr(u.uexpr);
   assert(fu.includes('/(') || fu.startsWith('1/('),
          `denominator with multiple factors parenthesised: '${fu}'`);
-  // Round-trip check
   const reparsed = parseUnitExpr(fu);
   assert(uexprEqual(u.uexpr, reparsed), `round-trip: ${fu}`);
 }
 
-/* ================================================================
-   Arithmetic: +, -, *, /, ^ on Units
-   ================================================================ */
 {
-  // Unit + Unit, same dims, different symbols — result in LEFT's unit.
   const s = new Stack();
   s.push(parseEntry('1_km')[0]);
   s.push(parseEntry('500_m')[0]);
@@ -137,7 +117,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `1_km + 500_m → 1.5_km (got ${JSON.stringify(r)})`);
 }
 {
-  // Mismatched dims → error.
   const s = new Stack();
   s.push(parseEntry('1_m')[0]);
   s.push(parseEntry('1_s')[0]);
@@ -145,7 +124,6 @@ import { assert, assertThrows } from './helpers.mjs';
     `1_m + 1_s throws Inconsistent units`);
 }
 {
-  // Unit * Real → Unit with same uexpr.
   const s = new Stack();
   s.push(parseEntry('2_m')[0]);
   s.push(Real(3));
@@ -155,7 +133,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `2_m * 3 → 6_m`);
 }
 {
-  // Unit * Unit combines uexprs.
   const s = new Stack();
   s.push(parseEntry('2_m')[0]);
   s.push(parseEntry('3_s')[0]);
@@ -168,7 +145,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `...with uexpr m*s`);
 }
 {
-  // Dimensionless result unwraps to Real: _m / _m.
   const s = new Stack();
   s.push(parseEntry('6_m')[0]);
   s.push(parseEntry('2_m')[0]);
@@ -178,7 +154,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `6_m / 2_m → Real(3) (got ${JSON.stringify(r)})`);
 }
 {
-  // Power: (_m)^3 → m^3.
   const s = new Stack();
   s.push(parseEntry('2_m')[0]);
   s.push(Integer(3));
@@ -188,9 +163,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `2_m ^ 3 → 8_m^3`);
 }
 
-/* ================================================================
-   NEG / ABS / INV / SQ on Units
-   ================================================================ */
 {
   const s = new Stack();
   s.push(parseEntry('5_m')[0]);
@@ -223,9 +195,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `SQ 3_m → 9_m^2`);
 }
 
-/* ================================================================
-   UVAL / UBASE / →UNIT / CONVERT
-   ================================================================ */
 {
   const s = new Stack();
   s.push(parseEntry('3.5_km')[0]);
@@ -234,7 +203,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(isReal(r) && r.value.eq(3.5), `UVAL 3.5_km → Real(3.5)`);
 }
 {
-  // UBASE: 1_km → 1000_m
   const s = new Stack();
   s.push(parseEntry('1_km')[0]);
   lookup('UBASE').fn(s);
@@ -243,7 +211,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `UBASE 1_km → 1000_m (got ${JSON.stringify(r)})`);
 }
 {
-  // UBASE on a Newton: 1_N → 1_kg*m/s^2
   const s = new Stack();
   s.push(parseEntry('1_N')[0]);
   lookup('UBASE').fn(s);
@@ -254,7 +221,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `UBASE 1_N → 1_kg*m/s^2`);
 }
 {
-  // CONVERT: 1_km into feet → 3280.839895_ft
   const s = new Stack();
   s.push(parseEntry('1_km')[0]);
   s.push(parseEntry('1_ft')[0]);
@@ -266,7 +232,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `1_km converts to ≈3280.84_ft (got ${r.value})`);
 }
 {
-  // CONVERT rejects incompatible dims.
   const s = new Stack();
   s.push(parseEntry('1_m')[0]);
   s.push(parseEntry('1_s')[0]);
@@ -274,7 +239,6 @@ import { assert, assertThrows } from './helpers.mjs';
     `CONVERT m → s throws`);
 }
 {
-  // →UNIT: 5 and 1_kg → 5_kg (the unit's value is ignored).
   const s = new Stack();
   s.push(Real(5));
   s.push(parseEntry('1_kg')[0]);
@@ -284,9 +248,6 @@ import { assert, assertThrows } from './helpers.mjs';
          `5 1_kg →UNIT → 5_kg`);
 }
 
-/* ================================================================
-   TYPE returns 13 for units (HP50 code)
-   ================================================================ */
 {
   const s = new Stack();
   s.push(parseEntry('1_m')[0]);
@@ -331,7 +292,6 @@ import { assert, assertThrows } from './helpers.mjs';
        on the Real branch must surface for Unit/Real too.
    ================================================================ */
 
-/* ---- Subtraction: same unit, no conversion needed ---- */
 {
   const s = new Stack();
   s.push(parseEntry('5_m')[0]);
@@ -342,7 +302,6 @@ import { assert, assertThrows } from './helpers.mjs';
     `session137: 5_m - 2_m → 3_m (got ${JSON.stringify(r)})`);
 }
 
-/* ---- Subtraction: cross-scale conversion (mirrors + cross-scale) ---- */
 {
   const s = new Stack();
   s.push(parseEntry('1_km')[0]);
@@ -353,7 +312,6 @@ import { assert, assertThrows } from './helpers.mjs';
     `session137: 1_km - 500_m → 0.5_km (subtraction mirror of existing + cross-scale pin; got ${JSON.stringify(r)})`);
 }
 
-/* ---- Real * Unit (left-Real reorder; symmetric to existing 2_m * 3 pin) ---- */
 {
   const s = new Stack();
   s.push(Real(3));
@@ -364,7 +322,6 @@ import { assert, assertThrows } from './helpers.mjs';
     `session137: 3 * 2_m → 6_m (Real*Unit; symmetric to Unit*Real)`);
 }
 
-/* ---- Unit / Real — scalar divisor case (uexpr unchanged, value scaled) ---- */
 {
   const s = new Stack();
   s.push(parseEntry('6_m')[0]);
@@ -376,7 +333,6 @@ import { assert, assertThrows } from './helpers.mjs';
     `session137: 6_m / 2 → 3_m (Unit/Real keeps uexpr, scales value)`);
 }
 
-/* ---- Unit / Unit — mixed dims compose into a 2-factor uexpr ---- */
 {
   const s = new Stack();
   s.push(parseEntry('6_m')[0]);
@@ -390,7 +346,6 @@ import { assert, assertThrows } from './helpers.mjs';
     `session137: 6_m / 2_s uexpr → m^1 * s^-1 (composite via multiplyUexpr+inverseUexpr)`);
 }
 
-/* ---- INV on composite Unit — full uexpr inversion ---- */
 {
   const s = new Stack();
   s.push(parseEntry('2_m/s')[0]);
@@ -403,7 +358,6 @@ import { assert, assertThrows } from './helpers.mjs';
     `session137: INV 2_m/s uexpr → s/m (each exponent flipped — composite inversion, not just scalar)`);
 }
 
-/* ---- SQ on composite Unit — both exponents doubled ---- */
 {
   const s = new Stack();
   s.push(parseEntry('3_m/s')[0]);
@@ -416,7 +370,6 @@ import { assert, assertThrows } from './helpers.mjs';
     `session137: SQ 3_m/s uexpr → m^2/s^2 (powerUexpr applied to all factors)`);
 }
 
-/* ---- NEG on a Newton-shaped Unit (composite uexpr) ---- */
 {
   const s = new Stack();
   s.push(parseEntry('1_N')[0]);
@@ -426,7 +379,6 @@ import { assert, assertThrows } from './helpers.mjs';
     `session137: NEG 1_N → -1_N (NEG keeps uexpr atomic-N intact, only flips value)`);
 }
 
-/* ---- Unit / 0 → Infinite result (distinct error path from "Inconsistent units") ---- */
 {
   const s = new Stack();
   s.push(parseEntry('6_m')[0]);
@@ -473,7 +425,6 @@ import { assert, assertThrows } from './helpers.mjs';
        Both edge cases were unpinned.
    ================================================================ */
 
-/* ---- Subtraction mixed-dim reject (`-` arm of Inconsistent units) ---- */
 {
   const s = new Stack();
   s.push(parseEntry('5_m')[0]);
@@ -482,7 +433,6 @@ import { assert, assertThrows } from './helpers.mjs';
     `session147: 5_m - 1_s → Inconsistent units ('-' subtractive-arm reject; existing s064 pin only covers '+' additive arm)`);
 }
 
-/* ---- Different dim pair: mass + length → Inconsistent units ---- */
 {
   const s = new Stack();
   s.push(parseEntry('1_kg')[0]);
@@ -491,7 +441,6 @@ import { assert, assertThrows } from './helpers.mjs';
     `session147: 1_kg + 1_m → Inconsistent units (different dim pair than the existing m-vs-s pin; defense against a refactor that special-cased length-vs-time)`);
 }
 
-/* ---- ABS on composite-uexpr Unit (-1_N → 1_N) ---- */
 {
   const s = new Stack();
   s.push(parseEntry('-1_N')[0]);
@@ -501,7 +450,6 @@ import { assert, assertThrows } from './helpers.mjs';
     `session147: ABS -1_N → 1_N (composite-uexpr ABS keeps the Newton-alias uexpr intact, only flips sign; mirror of session-137's NEG -1_N pin on the ABS arm)`);
 }
 
-/* ---- Unit ^ negative integer (2_m ^ -1 → 0.5_1/m) ---- */
 {
   const s = new Stack();
   s.push(parseEntry('2_m')[0]);
@@ -512,7 +460,6 @@ import { assert, assertThrows } from './helpers.mjs';
     `session147: 2_m ^ -1 → 0.5_m^-1 (negative-exponent power flips uexpr sign via powerUexpr; existing ^ pin uses positive 3)`);
 }
 
-/* ---- Unit ^ 0 → dimensionless Real(1) ---- */
 {
   const s = new Stack();
   s.push(parseEntry('2_m')[0]);

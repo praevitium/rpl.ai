@@ -26,7 +26,6 @@ function getCtx() {
   return _ctx;
 }
 
-/** Play the error beep.  Non-blocking; returns immediately. */
 export function errorBeep() {
   const ctx = getCtx();
   if (!ctx) return;
@@ -35,7 +34,7 @@ export function errorBeep() {
   const osc  = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = 'square';
-  osc.frequency.value = 1000;                     // HP50-ish pitch
+  osc.frequency.value = 1000;
 
   const now = ctx.currentTime;
   const dur = 0.125;

@@ -19,9 +19,6 @@
 // This module doesn't depend on the Giac engine itself. It's pure
 // string / AST manipulation, so it's safe to use in Node tests.
 
-// Only the parseAlgebra entry point is needed at runtime — Num/Var/Neg/
-// Bin/Fn/formatAlgebra appear in the comments above as references to
-// the AST shape but are never constructed or called from this file.
 import { parseAlgebra } from "../algebra.js";
 import { isValidHpIdentifier } from "../types.js";
 import { RPLError } from "../stack.js";
@@ -58,11 +55,6 @@ function assertAstNamesValid(ast) {
       assertValidCasName(ast.name);
       return;
     case "fn":
-      // HP function names are resolved via HP_TO_GIAC; an entry that's
-      // not in the table passes through verbatim, so it also needs to
-      // be identifier-shaped.  The special cases (ALOG / LNGAMMA /
-      // XROOT / MOD / INTEG) all satisfy the predicate too, so this
-      // check doesn't require a whitelist exception.
       assertValidCasName(ast.name);
       for (const a of ast.args) assertAstNamesValid(a);
       return;
@@ -73,7 +65,6 @@ function assertAstNamesValid(ast) {
       assertAstNamesValid(ast.l);
       assertAstNamesValid(ast.r);
       return;
-    // "num" and anything else — nothing to check.
   }
 }
 
@@ -165,7 +156,6 @@ function emit(ast, parentPrec) {
     case "var":
       return ast.name;
     case "neg": {
-      // Unary minus: bind tighter than * and /, looser than ^.
       const inner = emit(ast.arg, 4);
       const s = `-${inner}`;
       return parentPrec >= 2 ? `(${s})` : s;

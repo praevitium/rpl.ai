@@ -1087,7 +1087,7 @@ register('ABS', _withTaggedUnary(_withListUnary((s) => {
    Vector is `V · V` (dot product, scalar) and on a Matrix is `M · M`
    (matmul), both handled by the `*` op; an element-wise wrapper here
    would silently break that semantic. */
-register('SQ', _withTaggedUnary(_withListUnary((s) => {             // ^2
+register('SQ', _withTaggedUnary(_withListUnary((s) => {
   const v = s.pop();
   if (_isSymOperand(v))  { s.push(Symbolic(AstBin('^', _toAst(v), AstNum(2)))); return; }
   if (isReal(v))    s.push(Real(v.value.times(v.value)));

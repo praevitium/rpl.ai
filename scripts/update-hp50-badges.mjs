@@ -1,28 +1,8 @@
 #!/usr/bin/env node
-/* =================================================================
-   Refresh the in-app / not-in-app badges in
-   www/docs/hp50-commands.html against the live ops registry.
-
-   Run with `node scripts/update-hp50-badges.mjs`.
-
-   The HTML file has three places that reference each command's
-   implementation status:
-
-     1. Each <h2 id="cmd-…"> heading carries a span:
-            <span class="in-app">in app</span>
-        or  <span class="not-in-app">not in app</span>
-
-     2. The TOC link gets `class='notinapp'` when the command isn't
-        implemented; in-app entries have no class.
-
-     3. The lead paragraph reports "320 are implemented in this RPL
-        app" — that count needs to track too.
-
-   The original generator that produced this file isn't checked in,
-   so this script edits the existing markup in place.  Pure regex
-   updates (no DOM library) — the markup the generator emits is
-   regular enough that a few targeted patterns suffice.
-   ================================================================= */
+/* The original generator that produced hp50-commands.html isn't checked
+   in, so this script edits the existing markup in place.  Pure regex
+   updates (no DOM library) — the markup the generator emits is regular
+   enough that a few targeted patterns suffice. */
 
 import { fileURLToPath } from 'node:url';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -58,7 +38,6 @@ function commandKey(display) {
 
 let html = readFileSync(HTML_PATH, 'utf8');
 
-// Pass 1: rewrite each <h2 id="cmd-…"> badge based on registration.
 const idToInApp = new Map();
 let h2Count = 0;
 html = html.replace(
@@ -77,9 +56,8 @@ if (h2Count === 0) {
   process.exit(1);
 }
 
-// Pass 2: rewrite TOC links to match.  The lead anchor in the file
-// (id='top') has no `cmd-` prefix; only links pointing at command
-// sections are touched.
+// The lead anchor (id='top') has no `cmd-` prefix; only links pointing
+// at command sections are touched.
 html = html.replace(
   /<a href="(#cmd-[^"]+)"(?:\s+class='notinapp')?>([^<]+)<\/a>/g,
   (m, href, label) => {
@@ -90,7 +68,6 @@ html = html.replace(
       : `<a href="${href}" class='notinapp'>${label}</a>`;
   });
 
-// Pass 3: the lead paragraph's "320 are implemented" count.
 const inAppCount = [...idToInApp.values()].filter(Boolean).length;
 const totalCount = idToInApp.size;
 html = html.replace(

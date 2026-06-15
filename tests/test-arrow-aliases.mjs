@@ -87,7 +87,6 @@ function rplEqual(a, b) {
   }
 }
 
-/* Generic "run op by name, return L1" helper. */
 function run(opName, pre) {
   const s = new Stack();
   for (const v of pre) s.push(v);
@@ -95,7 +94,6 @@ function run(opName, pre) {
   return s.peek();
 }
 
-/* Pairs of (canonical, ascii, pre-stack, label). */
 const unaryPairs = [
   ['R→D', 'R->D', [Real(Math.PI)], 'R→D(π) ≈ 180'],
   ['D→R', 'D->R', [Real(180)],     'D→R(180) ≈ π'],
@@ -109,14 +107,11 @@ const unaryPairs = [
 ];
 
 for (const [canon, ascii, pre, label] of unaryPairs) {
-  // Some of these (V→, C→R) produce multi-level output; compare full
-  // snapshots for those cases.
   const sCanon = new Stack();
   const sAscii = new Stack();
   for (const v of pre) { sCanon.push(v); sAscii.push(v); }
   lookup(canon).fn(sCanon);
   lookup(ascii).fn(sAscii);
-  // Compare the full post-op stack.
   const snapA = sCanon.snapshot();
   const snapB = sAscii.snapshot();
   const ok = snapA.length === snapB.length
@@ -124,7 +119,6 @@ for (const [canon, ascii, pre, label] of unaryPairs) {
   assert(ok, `session064: ${canon} and ${ascii} agree — ${label}`);
 }
 
-/* ---- R→B / ->B and B→R / ->R — BinaryInteger conversions ---- */
 {
   resetBinaryState();
   setWordsize(64);
@@ -143,7 +137,6 @@ for (const [canon, ascii, pre, label] of unaryPairs) {
   assert(isBinaryInteger(uBI) && isBinaryInteger(aBI) && rplEqual(uBI, aBI),
     'session064: R→B and R->B both produce the same BinaryInteger (255 → #FFh)');
 
-  // Round-trip back with B→R / B->R.
   const sU2 = new Stack();
   sU2.push(uBI);
   lookup('B→R').fn(sU2);
@@ -154,7 +147,6 @@ for (const [canon, ascii, pre, label] of unaryPairs) {
     'session064: B→R and B->R agree (#FFh → 255.0)');
 }
 
-/* ---- →LIST / ->LIST — compose a list ---- */
 {
   const pre = [Integer(1n), Integer(2n), Integer(3n), Integer(3n)];
   const sU = new Stack(); for (const v of pre) sU.push(v);
@@ -166,7 +158,6 @@ for (const [canon, ascii, pre, label] of unaryPairs) {
     'session064: →LIST and ->LIST both build the same 3-element list');
 }
 
-/* ---- →V2 / ->V2, →V3 / ->V3 — compose a Vector ---- */
 {
   const sU = new Stack(); sU.push(Real(1)); sU.push(Real(2));
   const sA = new Stack(); sA.push(Real(1)); sA.push(Real(2));
@@ -185,7 +176,6 @@ for (const [canon, ascii, pre, label] of unaryPairs) {
     'session064: →V3 and ->V3 both compose [1 2 3]');
 }
 
-/* ---- →TAG / ->TAG — attach a tag ---- */
 {
   const sU = new Stack(); sU.push(Real(3.14)); sU.push(Str('pi'));
   const sA = new Stack(); sA.push(Real(3.14)); sA.push(Str('pi'));
@@ -196,7 +186,6 @@ for (const [canon, ascii, pre, label] of unaryPairs) {
     'session064: →TAG and ->TAG both attach tag "pi"');
 }
 
-/* ---- →UNIT / ->UNIT — attach a unit template ---- */
 {
   // The unit template lives at L1; the value is at L2.  We construct
   // a Unit with value=1 just to supply the uexpr.
@@ -210,7 +199,6 @@ for (const [canon, ascii, pre, label] of unaryPairs) {
     'session064: →UNIT and ->UNIT both produce 5_m');
 }
 
-/* ---- →Q correctness check (not just alias parity) ---- */
 {
   const s = new Stack();
   s.push(Real(0.25));
@@ -219,20 +207,16 @@ for (const [canon, ascii, pre, label] of unaryPairs) {
     'session064: →Q(0.25) returns a Symbolic (=1/4)');
 }
 
-/* ---- →HMS / HMS→ round-trip ---- */
 {
   const s = new Stack();
   s.push(Real(2.5));
   lookup('→HMS').fn(s);
   lookup('HMS→').fn(s);
-  // Allow a tiny FP slack.
   assert(isReal(s.peek()) && Math.abs(s.peek().value - 2.5) < 1e-12,
     'session064: →HMS / HMS→ round-trip preserves 2.5');
 }
 
-/* ---- Rejection guard: ASCII alias rejects same types as canonical ---- */
 {
-  // R→B / R->B on a String must both fail with Bad argument type.
   let bothThrew = 0;
   for (const op of ['R→B', 'R->B']) {
     const s = new Stack();

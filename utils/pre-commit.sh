@@ -16,9 +16,6 @@
 # Wire this in as a real git hook with:
 #   ln -sf ../../scripts/pre-commit.sh .git/hooks/pre-commit
 #   chmod +x scripts/pre-commit.sh
-#
-# Filed against the unit-tests lane in docs/TESTS.md
-# ("Next-session queue" item 5, rolled forward s070 → s074 → s075).
 
 set -euo pipefail
 

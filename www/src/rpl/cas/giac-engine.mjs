@@ -69,36 +69,25 @@ const isBrowser =
 
 class BrowserGiacEngine {
   constructor() {
-    this._ready = null;      // Promise<void> | null
+    this._ready = null;
     this._resolved = false;
     this._caseval = null;    // sync string -> string, once ready
-    // Last `angle_radian` value pushed to Giac.  null means "never set,
-    // re-sync on the next caseval".  Tracked here so we don't pay a
-    // round-trip on every caseval — only when the calculator's mode
-    // actually changed.
+    // null means "never set, re-sync on the next caseval".  Tracked so
+    // we only pay a round-trip when the calculator's mode changed.
     this._angleSent = null;
   }
 
-  // Map rpl5050's state.angle to the integer Giac expects for
-  // `angle_radian`: 1 for RAD, 0 for DEG/GRD.  Giac has no native
-  // gradian mode — GRD numerics still flow through rpl5050's own
-  // `toRadians` / `fromRadians` helpers, so for symbolic Giac calls
-  // we collapse GRD onto DEG (closest match).
+  // Giac has no native gradian mode — GRD numerics flow through
+  // rpl5050's own toRadians / fromRadians helpers, so for symbolic Giac
+  // calls we collapse GRD onto DEG (closest match).
   _angleFlagForMode(mode) {
     return mode === "RAD" ? 1 : 0;
   }
 
-  // Push `angle_radian:=N;` into Giac if (and only if) the rpl5050
-  // angle mode has changed since we last synced.  Cheap no-op on the
-  // hot path — set once per mode transition, not once per caseval.
-  // Runs *before* the user's command so subsequent trig evaluations
-  // honour the active mode.
   _syncAngleMode() {
     const want = this._angleFlagForMode(calcState.angle);
     if (this._angleSent === want) return;
-    // Single underscore-prefixed call — bypass the public caseval so
-    // we don't recurse and so the command logged for debugging is
-    // exactly the user's command, not the angle preamble.
+    // Bypass the public caseval so we don't recurse.
     this._caseval(`angle_radian:=${want}`);
     this._angleSent = want;
   }
@@ -175,11 +164,8 @@ class BrowserGiacEngine {
     // a numeric leaf, etc.) honour the rpl5050 RAD/DEG/GRD setting.
     // Cheap: the helper short-circuits when the mode hasn't changed.
     this._syncAngleMode();
-    // Giac wraps many results in literal double-quotes (expression-level
-    // strings, semicolon-sequence outputs, etc.).  Normalise at the
-    // engine boundary so every downstream consumer — giacToAst,
-    // splitGiacList, latex pipes — sees the raw expression text without
-    // quote fencing.
+    // Giac wraps many results in literal double-quotes; normalise at the
+    // engine boundary so downstream consumers see raw expression text.
     return stripGiacQuotes(this._caseval(cmd));
   }
 
@@ -194,7 +180,7 @@ class BrowserGiacEngine {
 
 class MockGiacEngine {
   constructor() {
-    this._fixtures = new Map(); // cmd string -> result string | Error
+    this._fixtures = new Map();
     this._callLog = [];
     this._defaultThrow = true;
   }

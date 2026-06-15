@@ -26,9 +26,9 @@ export class Display {
     this.selectedLevel = null;
     // Optional click/hover callbacks injected by App.  Left null by
     // default so the Display stays standalone for tests.
-    this.onStackRowClick    = null;  // (level:number) => void
-    this.onIndicatorClick   = null;  // (id:string) => void
-    this.onPathSegmentClick = null;  // (index:number) => void
+    this.onStackRowClick    = null;
+    this.onIndicatorClick   = null;
+    this.onPathSegmentClick = null;
     this._installInteractiveHandlers();
   }
 
@@ -43,8 +43,6 @@ export class Display {
     if (!this.stackView || typeof this.stackView.addEventListener !== 'function') {
       return;                                   // non-DOM test harness
     }
-    // Stack rows: click → onStackRowClick(level); mouseover / mouseout
-    // toggles the hover class so CSS can light up the hovered row.
     this.stackView.addEventListener('click', (ev) => {
       if (!this.onStackRowClick) return;
       const row = ev.target.closest?.('.stack-row');
@@ -63,8 +61,6 @@ export class Display {
       row.classList.remove('hover');
     });
 
-    // Status line: click an indicator → onIndicatorClick(id);
-    //              click a path segment → onPathSegmentClick(index).
     if (this.statusLine && typeof this.statusLine.addEventListener === 'function') {
       this.statusLine.addEventListener('click', (ev) => {
         const seg = ev.target.closest?.('.path-segment');
@@ -112,8 +108,6 @@ export class Display {
       // a DOM walk, and anchors CSS :hover and .selected styling.
       row.dataset.level = String(level);
       if (this.selectedLevel === level) row.classList.add('selected');
-      // Tooltip: hover reveals the level number and a hint that
-      // clicking echoes the value to the entry line.
       row.title = `Stack level ${level} — click to copy to the command line`;
       // `.value` is a flex container that right-aligns its inner
       // `.value-text` span.  The inner span owns overflow / ellipsis,

@@ -40,7 +40,6 @@ function makeXYMatrix() {
   ]);
 }
 
-/* ---- NΣ / NSIGMA ---- */
 {
   const s = new Stack();
   s.push(makeXYMatrix());
@@ -48,20 +47,17 @@ function makeXYMatrix() {
   assert(s.depth === 1 && isReal(s.peek()) && s.peek().value.eq(4),
     'session064: NΣ on 4-row XY matrix returns 4');
 
-  // NSIGMA alias (ASCII)
   const t = new Stack();
   t.push(makeXYMatrix());
   lookup('NSIGMA').fn(t);
   assert(t.peek().value.eq(4), 'session064: NSIGMA ASCII name == NΣ');
 
-  // On a bare Vector: count the items.
   const u = new Stack();
   u.push(Vector([Real(1), Real(2), Real(3), Real(4), Real(5)]));
   lookup('NΣ').fn(u);
   assert(u.peek().value.eq(5), 'session064: NΣ on 5-item Vector returns 5');
 }
 
-/* ---- ΣX / ΣX² on single-column Vector ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3), Real(4)]));
@@ -75,7 +71,6 @@ function makeXYMatrix() {
   assert(t.peek().value.eq(30),
     'session064: ΣX² on [1 2 3 4] → 30 (=1+4+9+16)');
 
-  // SX ASCII alias returns same value as ΣX.
   const u = new Stack();
   u.push(makeXYMatrix());
   lookup('SX').fn(u);
@@ -83,7 +78,6 @@ function makeXYMatrix() {
     'session064: SX (ASCII) on XY matrix col-0 → 10');
 }
 
-/* ---- ΣY / ΣY² / ΣXY ---- */
 {
   const s = new Stack();
   s.push(makeXYMatrix());
@@ -102,20 +96,17 @@ function makeXYMatrix() {
   assert(u.peek().value.eq(60),
     'session064: ΣXY on XY matrix → 60 (=2+8+18+32)');
 
-  // SY2 alias matches ΣY²
   const v = new Stack();
   v.push(makeXYMatrix());
   lookup('SY2').fn(v);
   assert(v.peek().value.eq(120), 'session064: SY2 (ASCII) == ΣY²');
 
-  // ΣY on a single-column input → "Invalid dimension" (needs >=2 cols).
   const w = new Stack();
   w.push(Matrix([[Real(1)], [Real(2)]]));
   assertThrows(() => lookup('ΣY').fn(w), /Invalid dimension/,
     'session064: ΣY on single-column matrix → Invalid dimension');
 }
 
-/* ---- MAXΣ / MINΣ return per-column Vector ---- */
 {
   const s = new Stack();
   s.push(makeXYMatrix());
@@ -133,7 +124,6 @@ function makeXYMatrix() {
          && w.items[0].value.eq(1) && w.items[1].value.eq(2),
     'session064: MINΣ on XY matrix → Vector [1, 2]');
 
-  // MAXS / MINS (ASCII) match.
   const u = new Stack();
   u.push(makeXYMatrix());
   lookup('MAXS').fn(u);
@@ -141,7 +131,6 @@ function makeXYMatrix() {
   assert(isVector(mv) && mv.items[0].value.eq(4),
     'session064: MAXS (ASCII) == MAXΣ');
 
-  // On a bare Vector the output is a single-element Vector of the max.
   const x = new Stack();
   x.push(Vector([Real(-3), Real(5), Real(0)]));
   lookup('MAXΣ').fn(x);
@@ -150,9 +139,7 @@ function makeXYMatrix() {
     'session064: MAXΣ on plain Vector → 1-elem Vector of the max');
 }
 
-/* ---- Error paths ---- */
 {
-  // Empty matrix: NΣ rejects (Bad argument value).
   const s = new Stack();
   s.push(Matrix([]));
   assertThrows(() => lookup('NΣ').fn(s), /Bad argument value/,
@@ -169,13 +156,11 @@ function makeXYMatrix() {
                               : (isReal(res) && res.value.eq(0)),
     'session064: ΣX on empty Vector → 0 or Bad argument (documented)');
 
-  // NΣ on non-Vector/Matrix: Bad argument type.
   const u = new Stack();
   u.push(Real(5));
   assertThrows(() => lookup('NΣ').fn(u), /Bad argument type/,
     'session064: NΣ on Real → Bad argument type');
 
-  // ΣX on a Matrix with a String entry → Bad argument type.
   const w = new Stack();
   w.push(Matrix([[Str('oops')]]));
   assertThrows(() => lookup('ΣX').fn(w), /Bad argument type/,
@@ -213,7 +198,6 @@ function makeXYMatrix() {
        end-to-end pinned — the existing block pins SX, SY2, MAXS).
    ================================================================ */
 
-/* ---- ΣY2 rejection: 1-col Matrix → Invalid dimension ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1)], [Real(2)]]));
@@ -221,7 +205,6 @@ function makeXYMatrix() {
     'session127: ΣY2 on single-column matrix → Invalid dimension');
 }
 
-/* ---- ΣXY rejection branches (non-Matrix / 1-col / empty) ---- */
 {
   // Non-Matrix → Bad argument type (the `!isMatrix(M)` guard).
   const s = new Stack();
@@ -257,7 +240,6 @@ function makeXYMatrix() {
     'session127: ΣX2 on Real → Bad argument type');
 }
 
-/* ---- MAXΣ rejection: non-Vector/non-Matrix → Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Real(5));
@@ -265,7 +247,6 @@ function makeXYMatrix() {
     'session127: MAXΣ on Real → Bad argument type (bottom-of-fn fallthrough)');
 }
 
-/* ---- MAXΣ rejection: empty Vector → Bad argument value ---- */
 {
   const s = new Stack();
   s.push(Vector([]));
@@ -273,7 +254,6 @@ function makeXYMatrix() {
     'session127: MAXΣ on empty Vector → Bad argument value');
 }
 
-/* ---- MAXΣ rejection: empty Matrix → Bad argument value ---- */
 {
   const s = new Stack();
   s.push(Matrix([]));
@@ -303,7 +283,6 @@ function makeXYMatrix() {
     `session127: MINΣ 3-col per-column mins → [1, 2, -1] (got ${v.items.map(x => x.value).join(',')})`);
 }
 
-/* ---- SXY ASCII alias matches ΣXY ---- */
 {
   const s = new Stack();
   s.push(makeXYMatrix());
@@ -312,11 +291,7 @@ function makeXYMatrix() {
     'session127: SXY (ASCII) on XY matrix → 60 (alias of ΣXY)');
 }
 
-/* ---- MEAN / SDEV / VAR on XY matrix use column 0 (reinforce invariant) ---- */
 {
-  // MEAN of [1 2 3 4] = 2.5.  Just exercise the code once more to
-  // double-check it still works under the "XY matrix, use col 0"
-  // rule that ΣX/ΣX2 already rely on.
   const s = new Stack();
   s.push(makeXYMatrix());
   lookup('MEAN').fn(s);
@@ -375,7 +350,6 @@ function makeXYMatrix() {
        behavior on uniformly negative inputs is easy to break).
    ================================================================ */
 
-/* ---- SX2 ASCII alias — Vector + Matrix routing ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3), Real(4)]));
@@ -391,7 +365,6 @@ function makeXYMatrix() {
     'session132: SX2 (ASCII) on XY matrix col-0 → 30 (alias routes through col-0 reducer)');
 }
 
-/* ---- SY ASCII alias — positive + symmetric rejection ---- */
 {
   const s = new Stack();
   s.push(makeXYMatrix());
@@ -410,7 +383,6 @@ function makeXYMatrix() {
     'session132: SY (ASCII) on single-column matrix → Invalid dimension (alias inherits ΣY 2-col guard)');
 }
 
-/* ---- MINS ASCII alias — Matrix + Vector routing ---- */
 {
   const s = new Stack();
   s.push(makeXYMatrix());
@@ -519,7 +491,6 @@ function makeXYMatrix() {
     'session137: SXY (ASCII) on Real → Bad argument type (alias inherits ΣXY type guard)');
 }
 
-/* ---- MAXS (alias of MAXΣ) rejects Real ---- */
 {
   const s = new Stack();
   s.push(Real(5));
@@ -527,7 +498,6 @@ function makeXYMatrix() {
     'session137: MAXS (ASCII) on Real → Bad argument type (alias inherits MAXΣ type guard)');
 }
 
-/* ---- MAXS on empty Vector → Bad argument value ---- */
 {
   const s = new Stack();
   s.push(Vector([]));
@@ -535,7 +505,6 @@ function makeXYMatrix() {
     'session137: MAXS (ASCII) on empty Vector → Bad argument value (alias inherits MAXΣ empty guard)');
 }
 
-/* ---- MINS on Real → Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Real(5));
@@ -543,7 +512,6 @@ function makeXYMatrix() {
     'session137: MINS (ASCII) on Real → Bad argument type (alias inherits MINΣ type guard)');
 }
 
-/* ---- MINS on empty Matrix → Bad argument value ---- */
 {
   const s = new Stack();
   s.push(Matrix([]));
@@ -589,7 +557,6 @@ function makeXYMatrix() {
        direction — canonical-positive-coverage closure.
    ================================================================ */
 
-/* ---- NSIGMA on Real → Bad argument type (canonical-name fall-through) ---- */
 {
   const s = new Stack();
   s.push(Real(5));
@@ -597,7 +564,6 @@ function makeXYMatrix() {
     'session147: NSIGMA on Real → Bad argument type (bottom-of-fn fallthrough at ops.js:12177; canonical-name reject was unpinned)');
 }
 
-/* ---- NΣ on Real → Bad argument type (symbol-alias delegation) ---- */
 {
   const s = new Stack();
   s.push(Real(5));
@@ -605,7 +571,6 @@ function makeXYMatrix() {
     'session147: NΣ on Real → Bad argument type (symbol-alias delegates to NSIGMA at ops.js:12179; alias-arm reject was unpinned)');
 }
 
-/* ---- NΣ on empty Vector → Bad argument value (Vector-arm of empty reject) ---- */
 {
   const s = new Stack();
   s.push(Vector([]));
@@ -613,7 +578,6 @@ function makeXYMatrix() {
     'session147: NΣ on empty Vector → Bad argument value (Vector arm at ops.js:12168 — existing s064 pin only covered the empty-Matrix arm at ops.js:12173)');
 }
 
-/* ---- MEAN on Real → Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Real(5));
@@ -621,7 +585,6 @@ function makeXYMatrix() {
     'session147: MEAN on Real → Bad argument type (bottom-of-fn fallthrough at ops.js:10260; the file only had the positive XY-matrix MEAN pin)');
 }
 
-/* ---- VAR on Real → Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Real(5));
@@ -629,7 +592,6 @@ function makeXYMatrix() {
     'session147: VAR on Real → Bad argument type (bottom-of-fn fallthrough at ops.js:10270; VAR rejection was unpinned)');
 }
 
-/* ---- SDEV on Real → Bad argument type ---- */
 {
   const s = new Stack();
   s.push(Real(5));
@@ -637,7 +599,6 @@ function makeXYMatrix() {
     'session147: SDEV on Real → Bad argument type (bottom-of-fn fallthrough at ops.js:10280; SDEV rejection was unpinned — closes MEAN/VAR/SDEV reject trio)');
 }
 
-/* ---- canonical ΣX on XY matrix col-0 → 10 (canonical-arm positive) ---- */
 {
   const s = new Stack();
   s.push(makeXYMatrix());
@@ -646,7 +607,6 @@ function makeXYMatrix() {
     'session147: ΣX (canonical) on XY matrix col-0 → 10 (canonical-name positive coverage; the file only had the SX alias-arm pin and the ΣX-Vector positive)');
 }
 
-/* ---- canonical ΣX2 on XY matrix col-0 → 30 (canonical-arm positive) ---- */
 {
   const s = new Stack();
   s.push(makeXYMatrix());

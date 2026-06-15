@@ -175,14 +175,10 @@ export class Entry {
     this._state = this._view.state;
   }
 
-  /** Give the editor keyboard focus.  No-op when no view is attached. */
   focus() { this._view?.focus(); }
 
-  /** Drop keyboard focus from the editor.  No-op when no view is
-   *  attached or when the editor wasn't focused to begin with. */
   blur() { this._view?.contentDOM?.blur?.(); }
 
-  /** Whether the editor currently holds keyboard focus. */
   hasFocus() { return !!this._view?.hasFocus; }
 
   subscribe(fn) { this._listeners.add(fn); return () => this._listeners.delete(fn); }
@@ -392,22 +388,18 @@ export class Entry {
     this.focus();
   }
 
-  /** Move the cursor one character left.  No-op at position 0. */
   cursorLeft() {
     if (this.cursor > 0) { this.cursor--; this._emit(); }
   }
 
-  /** Move the cursor one character right.  No-op past the end. */
   cursorRight() {
     if (this.cursor < this.buffer.length) { this.cursor++; this._emit(); }
   }
 
-  /** Jump the cursor to the start of the buffer. */
   cursorHome() {
     if (this.cursor !== 0) { this.cursor = 0; this._emit(); }
   }
 
-  /** Jump the cursor to the end of the buffer. */
   cursorEnd() {
     if (this.cursor !== this.buffer.length) {
       this.cursor = this.buffer.length;

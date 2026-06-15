@@ -26,7 +26,6 @@ import { assert, assertThrows } from './helpers.mjs';
    Comparison + logical ops — HP50 booleans are Reals: 1. = true, 0.
    ================================================================ */
 
-// == across numeric types
 {
   const s = new Stack();
   s.push(Real(3)); s.push(Integer(3));
@@ -38,7 +37,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(0), '1 == 2 is false');
 }
 
-// ≠ / <> / < / > / ≤ / ≥
 {
   const s = new Stack();
   s.push(Real(1)); s.push(Real(2));
@@ -58,7 +56,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(1), '3 <> 4 is true');
 }
 
-// == on Names and Strings (structural)
 {
   const s = new Stack();
   s.push(Name('X')); s.push(Name('X'));
@@ -70,7 +67,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(0), "`foo` != `bar`");
 }
 
-// Logical ops
 {
   const s = new Stack();
   s.push(Real(1)); s.push(Real(0)); lookup('AND').fn(s);
@@ -89,7 +85,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(0), 'NOT 42 = 0');
 }
 
-// TRUE / FALSE push the literals
 {
   const s = new Stack();
   lookup('TRUE').fn(s);  assert(s.peek().value.eq(1), 'TRUE pushes 1');
@@ -118,7 +113,6 @@ import { assert, assertThrows } from './helpers.mjs';
    suite stays green and the gap is visible.
    ================================================================ */
 
-/* ---- Complex ==  /  ≠ — both structural on { re, im } pairs ---- */
 {
   const s = new Stack();
   s.push(Complex(3, 4)); s.push(Complex(3, 4));
@@ -138,7 +132,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(0), 'session068: (2,0) == (0,2) is false (swap re/im)');
 }
 {
-  // Complex with zero imaginary part == Real with same value.
   const s = new Stack();
   s.push(Complex(5, 0)); s.push(Real(5));
   lookup('==').fn(s);
@@ -165,7 +158,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(1), 'session068: (1,2) ≠ (3,4) is true');
 }
 
-/* ---- Complex < is rejected (partial order undefined on ℂ) ---- */
 {
   const s = new Stack();
   s.push(Complex(1, 2)); s.push(Complex(3, 4));
@@ -173,7 +165,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session068: (1,2) < (3,4) rejects — no total order on ℂ when im≠0');
 }
 
-/* ---- SAME on Name is structural (same id ⇒ true) ---- */
 {
   const s = new Stack();
   s.push(Name('X')); s.push(Name('X'));
@@ -236,7 +227,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session068: Name ≥ Name lifts to Symbolic');
 }
 
-/* ---- = (equation builder) always returns Symbolic, even on numerics ---- */
 {
   const s = new Stack();
   s.push(Real(2)); s.push(Real(3));
@@ -252,7 +242,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session068: X X = yields a Symbolic equation even when both sides identical');
 }
 
-/* ---- ASCII alias parity: <= ≡ ≤  and  >= ≡ ≥ ---- */
 {
   const s = new Stack();
   s.push(Real(3)); s.push(Real(4));
@@ -266,16 +255,13 @@ import { assert, assertThrows } from './helpers.mjs';
     'session068: <= and ≤ agree on 3 4 (both 1)');
 }
 
-/* ---- == across numeric-type pairs, for the round-trip promotion matrix ---- */
 {
-  // Integer == Real with matching value
   const s = new Stack();
   s.push(Integer(7n)); s.push(Real(7));
   lookup('==').fn(s);
   assert(s.peek().value.eq(1), 'session068: Integer(7) == Real(7) is true');
 }
 {
-  // Integer == Integer with big-bigint value
   const s = new Stack();
   s.push(Integer(10n ** 30n)); s.push(Integer(10n ** 30n));
   lookup('==').fn(s);
@@ -290,7 +276,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session068: Real(NaN) is rejected at construction (prevents NaN==NaN ambiguity)');
 }
 
-/* ---- String equality is structural (char-for-char) ---- */
 {
   const s = new Stack();
   s.push(Str('hello')); s.push(Str('hello'));
@@ -457,9 +442,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session072: SAME on structurally identical Symbolics returns 1 — gap filed s070, fixed s072');
 }
 
-/* ================================================================
-   Logical-op coverage strengthening (short).
-   ================================================================ */
 {
   // NOT on Real(0) = 1; NOT on any non-zero = 0.
   const s = new Stack();
@@ -491,9 +473,7 @@ import { assert, assertThrows } from './helpers.mjs';
    Unit via == and SAME — the full per-type sweep.  Covers positive +
    negative + length-mismatch + nested + cross-type-rejection for each.
    ================================================================ */
-/* ---- List == List ---- */
 {
-  // Same-length structural match.
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3)]));
   s.push(RList([Real(1), Real(2), Real(3)]));
@@ -501,7 +481,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(1), 'session072: SAME {1,2,3} {1,2,3} = 1');
 }
 {
-  // Different length — not equal.
   const s = new Stack();
   s.push(RList([Real(1), Real(2)]));
   s.push(RList([Real(1), Real(2), Real(3)]));
@@ -509,7 +488,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(0), 'session072: {1,2} == {1,2,3} = 0 (length mismatch)');
 }
 {
-  // Same length, different element — not equal.
   const s = new Stack();
   s.push(RList([Real(1), Real(2), Real(3)]));
   s.push(RList([Real(1), Real(2), Real(4)]));
@@ -517,7 +495,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(0), 'session072: {1,2,3} == {1,2,4} = 0');
 }
 {
-  // Nested lists — recursive structural compare.
   const s = new Stack();
   s.push(RList([RList([Real(1), Real(2)]), Real(3)]));
   s.push(RList([RList([Real(1), Real(2)]), Real(3)]));
@@ -525,7 +502,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(1), 'session072: { {1,2} 3 } == { {1,2} 3 } = 1');
 }
 {
-  // Heterogeneous list with promoted numerics — Real vs Integer inside still equal.
   const s = new Stack();
   s.push(RList([Real(1), Real(2)]));
   s.push(RList([Integer(1n), Integer(2n)]));
@@ -533,7 +509,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(1),
     'session072: { 1. 2. } == { 1 2 } = 1 (numeric promotion inside list)');
 }
-/* ---- Vector == Vector ---- */
 {
   const s = new Stack();
   s.push(Vector([Real(3), Real(4)]));
@@ -549,7 +524,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(0), 'session072: [3 4] == [4 3] = 0 (order-sensitive)');
 }
 {
-  // Vector vs list is a cross-type no — structural compare does not mix.
   const s = new Stack();
   s.push(Vector([Real(1), Real(2)]));
   s.push(RList([Real(1), Real(2)]));
@@ -557,7 +531,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(0),
     'session072: [1 2] == {1 2} = 0 (different container types are not equal)');
 }
-/* ---- Matrix == Matrix ---- */
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]));
@@ -566,7 +539,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(1), 'session072: [[1 2][3 4]] == [[1 2][3 4]] = 1');
 }
 {
-  // Row count mismatch — not equal.
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)]]));
   s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]));
@@ -580,7 +552,6 @@ import { assert, assertThrows } from './helpers.mjs';
   lookup('SAME').fn(s);
   assert(s.peek().value.eq(0), 'session072: SAME matrix cell mismatch → 0');
 }
-/* ---- Symbolic == Symbolic and SAME ---- */
 {
   const [a] = parseEntry("`X+Y`");
   const [b] = parseEntry("`X+Y`");
@@ -590,7 +561,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(1), "session072: `X+Y` == `X+Y` = 1");
 }
 {
-  // Subtly different operand order — structural compare is order-sensitive.
   const [a] = parseEntry("`X+Y`");
   const [b] = parseEntry("`Y+X`");
   const s = new Stack();
@@ -600,7 +570,6 @@ import { assert, assertThrows } from './helpers.mjs';
     "session072: `X+Y` == `Y+X` = 0 (commutativity is a CAS concern, not ==)");
 }
 {
-  // Symbolic fn calls.
   const [a] = parseEntry("`SIN(X)`");
   const [b] = parseEntry("`SIN(X)`");
   const s = new Stack();
@@ -609,7 +578,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(1), "session072: SAME `SIN(X)` `SIN(X)` = 1");
 }
 {
-  // SIN(X) vs COS(X) — different fn name.
   const [a] = parseEntry("`SIN(X)`");
   const [b] = parseEntry("`COS(X)`");
   const s = new Stack();
@@ -618,7 +586,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(0), "session072: `SIN(X)` == `COS(X)` = 0 (fn-name differs)");
 }
 {
-  // Nested bin + fn.
   const [a] = parseEntry("`X^2+SIN(X)`");
   const [b] = parseEntry("`X^2+SIN(X)`");
   const s = new Stack();
@@ -626,9 +593,7 @@ import { assert, assertThrows } from './helpers.mjs';
   lookup('==').fn(s);
   assert(s.peek().value.eq(1), "session072: `X^2+SIN(X)` structural match");
 }
-/* ---- Tagged == Tagged ---- */
 {
-  // Same tag + same value.
   const s = new Stack();
   s.push(Tagged('price', Real(200)));
   s.push(Tagged('price', Real(200)));
@@ -637,7 +602,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session072: SAME price:200 price:200 = 1 (tag + value match)');
 }
 {
-  // Different tag, same value — not SAME (strict structural).
   const s = new Stack();
   s.push(Tagged('price', Real(200)));
   s.push(Tagged('cost',  Real(200)));
@@ -646,16 +610,13 @@ import { assert, assertThrows } from './helpers.mjs';
     'session072: price:200 == cost:200 = 0 (tag differs)');
 }
 {
-  // Same tag, different value.
   const s = new Stack();
   s.push(Tagged('x', Real(1)));
   s.push(Tagged('x', Real(2)));
   lookup('==').fn(s);
   assert(s.peek().value.eq(0), 'session072: x:1 == x:2 = 0 (value differs)');
 }
-/* ---- Unit == Unit ---- */
 {
-  // Exact structural compare: same value AND same uexpr string.
   const [a] = parseEntry('1_m');
   const [b] = parseEntry('1_m');
   const s = new Stack();
@@ -664,7 +625,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(1), 'session072: 1_m == 1_m = 1');
 }
 {
-  // Same dimension, different scale — structural compare says not equal.
   const [a] = parseEntry('1_m');
   const [b] = parseEntry('1_km');
   const s = new Stack();
@@ -674,7 +634,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session072: 1_m == 1_km = 0 (different uexpr even though both are lengths)');
 }
 {
-  // Same uexpr, different numeric.
   const [a] = parseEntry('1_m');
   const [b] = parseEntry('2_m');
   const s = new Stack();
@@ -682,9 +641,7 @@ import { assert, assertThrows } from './helpers.mjs';
   lookup('==').fn(s);
   assert(s.peek().value.eq(0), 'session072: 1_m == 2_m = 0 (value differs)');
 }
-/* ---- Cross-type rejection (regression guard) ---- */
 {
-  // List vs String — different types, eqValues returns false.
   const s = new Stack();
   s.push(RList([Real(1)])); s.push(Str('1'));
   lookup('==').fn(s);
@@ -715,7 +672,6 @@ import { assert, assertThrows } from './helpers.mjs';
  docs/DATA_TYPES.md notes for the Rational rollout.
    ================================================================ */
 
-/* ---- Q × Q canonicalisation — same ratio compares equal ---- */
 {
   // Q is canonicalised at construction (sign on numerator, reduced by
   // gcd) so Rational(2,4) and Rational(1,2) are the SAME frozen shape
@@ -728,7 +684,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session107: 1/2 == 2/4 (canonicalised) → 1');
 }
 {
-  // -6/9 canonicalises to -2/3 — so Rational(-6,9) == Rational(-2,3) is 1.
   const s = new Stack();
   s.push(Rational(-6, 9));
   s.push(Rational(-2, 3));
@@ -737,7 +692,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session107: -6/9 == -2/3 (canonical shape matches after gcd reduction)');
 }
 {
-  // Different rationals compare unequal.
   const s = new Stack();
   s.push(Rational(1, 2));
   s.push(Rational(1, 3));
@@ -746,9 +700,7 @@ import { assert, assertThrows } from './helpers.mjs';
     'session107: 1/2 == 1/3 → 0');
 }
 
-/* ---- Cross-type Q × Z ---- */
 {
-  // Z ⊂ Q: Integer(3) promotes to 3/1 for the compare.
   const s = new Stack();
   s.push(Rational(3, 1));
   s.push(Integer(3));
@@ -757,7 +709,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session107: Rational(3/1) == Integer(3) → 1 (Z promoted to Q)');
 }
 {
-  // Non-integer Rational vs Integer: unequal regardless of direction.
   const s = new Stack();
   s.push(Rational(1, 2));
   s.push(Integer(0));
@@ -766,9 +717,7 @@ import { assert, assertThrows } from './helpers.mjs';
     'session107: Rational(1/2) == Integer(0) → 0');
 }
 
-/* ---- Cross-type Q × R ---- */
 {
-  // Q ⊂ R: 1/2 promoted to 0.5 (Decimal) — value-equal to Real(0.5).
   const s = new Stack();
   s.push(Rational(1, 2));
   s.push(Real(0.5));
@@ -777,7 +726,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session107: Rational(1/2) == Real(0.5) → 1 (Q widened to R)');
 }
 
-/* ---- Ordering < / > / ≤ / ≥ on Q ---- */
 {
   const s = new Stack();
   s.push(Rational(1, 3));
@@ -793,7 +741,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(1), 'session107: 1/2 > 1/3 → 1');
 }
 {
-  // ≤ accepts equality.
   const s = new Stack();
   s.push(Rational(2, 3));
   s.push(Rational(2, 3));
@@ -801,7 +748,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(1), 'session107: 2/3 ≤ 2/3 → 1 (equal accepted)');
 }
 {
-  // Sign crossing: negative rational strictly less than positive.
   const s = new Stack();
   s.push(Rational(-1, 2));
   s.push(Rational(1, 2));
@@ -809,7 +755,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(1), 'session107: -1/2 < 1/2 → 1');
 }
 {
-  // ≥ with cross-type Q × Z.
   const s = new Stack();
   s.push(Rational(3, 2));
   s.push(Integer(1));
@@ -817,7 +762,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(1), 'session107: 3/2 ≥ 1 → 1 (cross-type Q × Z)');
 }
 {
-  // Integer strictly less than positive rational.
   const s = new Stack();
   s.push(Integer(0));
   s.push(Rational(1, 2));
@@ -825,7 +769,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(1), 'session107: 0 < 1/2 → 1 (Z × Q direction)');
 }
 
-/* ---- ≠ / <> on Q ---- */
 {
   const s = new Stack();
   s.push(Rational(1, 2));
@@ -834,7 +777,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.peek().value.eq(1), 'session107: 1/2 <> 1/3 → 1');
 }
 
-/* ---- SAME on Q — not strict on type within the numeric lattice ---- */
 {
   // Unlike BinaryInteger (where SAME is strict on type), Rational goes
   // through `eqValues`'s `isNumber && isNumber` branch, which promotes
@@ -849,7 +791,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session107: Rational(3/1) SAME Integer(3) → 1 (numeric promotion, not type-strict)');
 }
 {
-  // Q × Q SAME on same canonical shape.
   const s = new Stack();
   s.push(Rational(1, 2));
   s.push(Rational(1, 2));
@@ -889,7 +830,6 @@ import { assert, assertThrows } from './helpers.mjs';
        (its sign-crossing test stayed in Q × Q).
    ================================================================ */
 
-/* ---- Q < C → Bad argument type (Complex partial-order rejection) ---- */
 {
   const s = new Stack();
   s.push(Rational(1, 2));
@@ -899,7 +839,6 @@ import { assert, assertThrows } from './helpers.mjs';
                'session127: Rational < Complex → Bad argument type (Complex partial-order rejection holds for Q too)');
 }
 
-/* ---- Q == C(non-zero im) → 0 ----------------------------------------- */
 {
   const s = new Stack();
   s.push(Rational(1, 2));
@@ -921,7 +860,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session127: Rational(1/2) == Complex(0.5, 0) → 1 (Q widens cleanly into ℂ for value-equal real-axis Complex)');
 }
 
-/* ---- Q <> C(non-zero im) → 1 ---------------------------------------- */
 {
   const s = new Stack();
   s.push(Rational(1, 2));
@@ -976,7 +914,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session127: Rational(1/4) < Real(0.3) → 1 (Q × R direction)');
 }
 {
-  // Reverse direction — R on level 2, Q on level 1.
   const s = new Stack();
   s.push(Real(0.3));
   s.push(Rational(1, 4));
@@ -1019,7 +956,6 @@ import { assert, assertThrows } from './helpers.mjs';
        case where the underlying compare returns 0 not -1).
    ================================================================ */
 
-/* ---- Z == Q reverse direction (Integer first, Rational second) ---- */
 {
   const s = new Stack();
   s.push(Integer(3));
@@ -1037,7 +973,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session132: Integer(0) == Rational(1/2) → 0 (Z × Q unequal; reverse-direction companion)');
 }
 
-/* ---- Z <> Q and Q <> Z cross-type direction pins ---- */
 {
   const s = new Stack();
   s.push(Integer(2));
@@ -1055,7 +990,6 @@ import { assert, assertThrows } from './helpers.mjs';
     'session132: Rational(7/4) <> Integer(2) → 1 (Q × Z <>)');
 }
 
-/* ---- Z SAME Q reverse direction — equal + unequal ---- */
 {
   const s = new Stack();
   s.push(Integer(3));

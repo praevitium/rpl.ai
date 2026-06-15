@@ -27,7 +27,6 @@ function vals(s) {
   return out;
 }
 
-/* ---- DEPTH ---- */
 {
   const s = new Stack();
   lookup('DEPTH').fn(s);
@@ -43,7 +42,6 @@ function vals(s) {
     'session064: DEPTH counts items BEFORE pushing result (3 items → push Integer 3)');
 }
 
-/* ---- OVER ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -59,7 +57,6 @@ function vals(s) {
     'session064: OVER on depth 1 → Too few arguments');
 }
 
-/* ---- ROT ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -77,7 +74,6 @@ function vals(s) {
     'session064: ROT on depth 2 → Too few arguments');
 }
 
-/* ---- DUP2 ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -93,7 +89,6 @@ function vals(s) {
     'session064: DUP2 on depth 1 → Too few arguments');
 }
 
-/* ---- DROP2 ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -110,7 +105,6 @@ function vals(s) {
     'session064: DROP2 on depth 1 → Too few arguments');
 }
 
-/* ---- DROPN — pops count from L1, then drops N ---- */
 {
   const s = new Stack();
   s.push(Integer(10n));
@@ -122,7 +116,6 @@ function vals(s) {
   assert(s.depth === 1 && s.peek().value === 10n,
     'session064: 3 DROPN removes top three after N: (10 20 30 40 3 → 10)');
 
-  // 0 DROPN is a no-op after popping the count.
   const t = new Stack();
   t.push(Integer(99n));
   t.push(Integer(0n));
@@ -138,7 +131,6 @@ function vals(s) {
     'session064: -1 DROPN → Bad argument value');
 }
 
-/* ---- DUPN — pops count from L1, then dupes top N ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -152,7 +144,6 @@ function vals(s) {
       && v[3] === 2n && v[4] === 3n,
     'session064: 2 DUPN duplicates top two: (1 2 3 2 → 1 2 3 2 3)');
 
-  // 0 DUPN: count popped, nothing copied.
   const t = new Stack();
   t.push(Integer(9n));
   t.push(Integer(0n));
@@ -161,14 +152,12 @@ function vals(s) {
     'session064: 0 DUPN removes count only');
 }
 
-/* ---- DUPDUP — error path: asserts "Too few arguments" semantics. ---- */
 {
   const s = new Stack();
   assertThrows(() => lookup('DUPDUP').fn(s), /Too few/,
     'session064: DUPDUP on empty → Too few arguments');
 }
 
-/* ---- NIP — drops level 2 ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -185,7 +174,6 @@ function vals(s) {
     'session064: NIP on depth 1 → Too few arguments');
 }
 
-/* ---- PICK — pop N from L1, then copy level N onto top ---- */
 {
   const s = new Stack();
   s.push(Integer(10n));
@@ -196,7 +184,6 @@ function vals(s) {
   assert(s.depth === 4 && s.peek().value === 10n,
     'session064: 3 PICK copies level 3 onto top');
 
-  // 1 PICK is equivalent to DUP.
   const t = new Stack();
   t.push(Integer(42n));
   t.push(Integer(1n));
@@ -212,7 +199,6 @@ function vals(s) {
     'session064: 0 PICK → Bad argument value');
 }
 
-/* ---- PICK3 — shortcut for `3 PICK` ---- */
 {
   const s = new Stack();
   s.push(Integer(100n));
@@ -223,7 +209,6 @@ function vals(s) {
     'session064: PICK3 copies level 3 (100) onto top');
 }
 
-/* ---- ROLL — pop N, move level (N+1) before pop to top ---- */
 {
   const s = new Stack();
   s.push(Integer(10n));
@@ -239,7 +224,6 @@ function vals(s) {
   assert(v.length === 4 && v[0] === 10n && v[1] === 30n && v[2] === 40n && v[3] === 20n,
     'session064: 3 ROLL moves level 3 (=20) to top: (10 20 30 40 3 → 10 30 40 20)');
 
-  // 1 ROLL is a no-op.
   const t = new Stack();
   t.push(Integer(5n));
   t.push(Integer(1n));
@@ -248,7 +232,6 @@ function vals(s) {
     'session064: 1 ROLL is a no-op (after count popped)');
 }
 
-/* ---- ROLLD — inverse of ROLL, pop N, insert level 1 at depth N ---- */
 {
   const s = new Stack();
   s.push(Integer(10n));
@@ -264,7 +247,6 @@ function vals(s) {
     'session064: 3 ROLLD moves top (=40) to level 3: (10 20 30 40 3 → 10 40 20 30)');
 }
 
-/* ---- UNPICK — pop N, pop value, store value at level N ---- */
 {
   const s = new Stack();
   s.push(Integer(10n));
@@ -281,7 +263,6 @@ function vals(s) {
     'session064: 99 2 UNPICK writes 99 at level 2: (10 20 30 99 2 → 10 99 30)');
 }
 
-/* ---- NDUPN — dup x n times, leaves n on top ---- */
 {
   const s = new Stack();
   s.push(Integer(7n));                      // x
@@ -292,7 +273,6 @@ function vals(s) {
   assert(v.length === 4 && v[0] === 7n && v[1] === 7n && v[2] === 7n && v[3] === 3n,
     'session064: 7 3 NDUPN → (7 7 7 3)');
 
-  // x 0 NDUPN: no copies, but 0 is restored (per HP50 spec).
   const t = new Stack();
   t.push(Integer(42n));
   t.push(Integer(0n));
@@ -301,7 +281,6 @@ function vals(s) {
     'session064: x 0 NDUPN leaves just 0 on the stack (x consumed, no copies, n pushed)');
 }
 
-/* ---- SWAP — already covered in numerics, but assert error path ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -309,7 +288,6 @@ function vals(s) {
     'session064: SWAP on depth 1 → Too few arguments');
 }
 
-/* ---- CLEAR — drop everything ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -318,14 +296,12 @@ function vals(s) {
   lookup('CLEAR').fn(s);
   assert(s.depth === 0, 'session064: CLEAR empties the stack');
 
-  // CLEAR on empty stack is also fine — no error.
   let threw = false;
   try { lookup('CLEAR').fn(s); } catch (e) { threw = true; }
   assert(!threw && s.depth === 0,
     'session064: CLEAR on empty is a no-op (no error)');
 }
 
-/* ---- LASTSTACK alias of UNDO ---- */
 {
   // With UNDO/LASTSTACK we need an explicit saveForUndo() snapshot; the
   // ops.js wrapper calls s.undo() which pops from the undo stack.  We
@@ -377,7 +353,6 @@ function vals(s) {
        guard).
    ================================================================ */
 
-/* ---- DUPDUP positive: a → a a a ---- */
 {
   const s = new Stack();
   s.push(Integer(7n));
@@ -387,7 +362,6 @@ function vals(s) {
     'session137: DUPDUP on (7) → (7 7 7) — positive case (file previously only pinned DUPDUP empty rejection)');
 }
 
-/* ---- ROLL N>depth → Too few arguments ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -397,7 +371,6 @@ function vals(s) {
     'session137: 5 ROLL with only 2 items left → Too few arguments (s.depth<n guard)');
 }
 
-/* ---- ROLLD 0 — no-op after popping count ---- */
 {
   const s = new Stack();
   s.push(Integer(10n));
@@ -409,7 +382,6 @@ function vals(s) {
     'session137: 0 ROLLD is a no-op after popping count (mirror of existing 1 ROLL pin)');
 }
 
-/* ---- ROLLD N>depth → Too few arguments ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -419,7 +391,6 @@ function vals(s) {
     'session137: 5 ROLLD with only 2 items left → Too few arguments (symmetric to ROLL)');
 }
 
-/* ---- UNPICK 0 → Bad argument value (_toPosIntIndex rejects zero) ---- */
 {
   const s = new Stack();
   s.push(Integer(10n));
@@ -429,7 +400,6 @@ function vals(s) {
     'session137: 0 UNPICK → Bad argument value (UNPICK uses _toPosIntIndex which requires N≥1)');
 }
 
-/* ---- UNPICK N>depth → Too few arguments ---- */
 {
   const s = new Stack();
   s.push(Integer(10n));
@@ -439,7 +409,6 @@ function vals(s) {
     'session137: 5 UNPICK with only 2 items left → Too few arguments (s.depth<n guard)');
 }
 
-/* ---- DROPN N>depth → Too few arguments ---- */
 {
   const s = new Stack();
   s.push(Integer(10n));
@@ -448,7 +417,6 @@ function vals(s) {
     'session137: 5 DROPN with only 1 item left → Too few arguments (s.depth<n guard)');
 }
 
-/* ---- DUPN N>depth → Too few arguments ---- */
 {
   const s = new Stack();
   s.push(Integer(10n));
@@ -457,7 +425,6 @@ function vals(s) {
     'session137: 5 DUPN with only 1 item left → Too few arguments (s.depth<n guard)');
 }
 
-/* ---- NDUPN -1 → Bad argument value (_toNonNegIntCount rejects negative) ---- */
 {
   const s = new Stack();
   s.push(Integer(7n));
@@ -509,7 +476,6 @@ function vals(s) {
        Pinning this branch closes NDUPN's rejection grid.
    ================================================================ */
 
-/* ---- PICK -1 → Bad argument value (negative-N branch of `k<1` guard) ---- */
 {
   const s = new Stack();
   s.push(Integer(9n));
@@ -518,7 +484,6 @@ function vals(s) {
     'session147: -1 PICK → Bad argument value (negative-N branch of PICK wrapper k<1 guard; distinct from existing 0 PICK pin)');
 }
 
-/* ---- PICK 5 with depth 2 → Too few arguments (s.depth<level guard in stack.pick) ---- */
 {
   const s = new Stack();
   s.push(Integer(1n));
@@ -528,7 +493,6 @@ function vals(s) {
     'session147: 5 PICK with only 2 items left → Too few arguments (Stack.pick n<level guard; closes PICK depth-overrun branch session-137 left for siblings)');
 }
 
-/* ---- PICK with non-integer Real (1.5) → Bad argument value ---- */
 {
   const s = new Stack();
   s.push(Integer(9n));
@@ -537,7 +501,6 @@ function vals(s) {
     'session147: 1.5 PICK → Bad argument value (!Number.isInteger branch of PICK wrapper guard; distinct branch from negative/zero rejects)');
 }
 
-/* ---- PICK with String → Bad argument type (toRealOrThrow rejection at wrapper) ---- */
 {
   const s = new Stack();
   s.push(Integer(9n));
@@ -546,7 +509,6 @@ function vals(s) {
     'session147: "foo" PICK → Bad argument type (toRealOrThrow rejection at wrapper; distinct from value-domain rejects)');
 }
 
-/* ---- PICK3 on depth<3 → Too few arguments ---- */
 {
   const s = new Stack();
   s.push(Integer(10n));
@@ -555,7 +517,6 @@ function vals(s) {
     'session147: PICK3 on depth-2 stack → Too few arguments (closes PICK3 rejection branch — file previously had only the (100,200,300) happy-path pin)');
 }
 
-/* ---- UNPICK -1 → Bad argument value (negative-N branch of _toPosIntIndex) ---- */
 {
   const s = new Stack();
   s.push(Integer(10n));
@@ -565,7 +526,6 @@ function vals(s) {
     'session147: -1 UNPICK → Bad argument value (negative-N branch of _toPosIntIndex; distinct from session-137 0-UNPICK pin — guards against a future refactor that only checks n===0)');
 }
 
-/* ---- NDUPN with only count on stack (depth=1 after pop) → Too few arguments ---- */
 {
   const s = new Stack();
   s.push(Integer(2n));                      // count alone, no x below

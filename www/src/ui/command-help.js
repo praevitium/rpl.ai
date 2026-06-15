@@ -18,7 +18,6 @@
    `show()` falls back through this table.  Keep both sides upper-case
    so the existing key normalization stays one-step. */
 const ALIASES = new Map([
-  // Operator glyphs the panel labels with ASCII equivalents.
   ['SQRT',    '√'],
   ['-',       '–'],
   ['HMS-',    'HMS–'],
@@ -28,12 +27,10 @@ const ALIASES = new Map([
   ['<=',      '≤'],
   ['>=',      '≥'],
   ['<>',      '≠'],
-  // Names the panel mnemonic-ifies.
   ['LIM',     'LIMIT'],
   ['TCHEB',   'TCHEBYCHEFF'],
   ['CHARPOL', 'PCAR'],
   ['INTEG',   '∫'],
-  // Statistics ASCII aliases for the Σ-prefixed canonical names.
   ['SX',      'ΣX'],
   ['SY',      'ΣY'],
   ['SXY',     'ΣXY'],
@@ -42,7 +39,6 @@ const ALIASES = new Map([
   ['MAXS',    'MAXΣ'],
   ['MINS',    'MINΣ'],
   ['NSIGMA',  'NΣ'],
-  // List-fold ASCII aliases.
   ['SLIST',   'ΣLIST'],
   ['PLIST',   'ΠLIST'],
   ['DLIST',   'ΔLIST'],
@@ -110,10 +106,6 @@ async function _loadSections() {
 }
 
 export class CommandHelp {
-  /**
-   * @param {object} params
-   * @param {HTMLElement} params.host  - Element to mount into.
-   */
   constructor({ host }) {
     this.host = host;
     this._currentName = null;
@@ -194,9 +186,6 @@ export class CommandHelp {
     window.addEventListener('keydown', this._onKey, true);
   }
 
-  /** Navigate the popup to the help for `name`.  Truncates any forward
-   *  history (matching browser-style nav) and advances the cursor.  A
-   *  no-op if the same name is already current and visible. */
   async show(name) {
     if (!name) return;
     const key = String(name).toUpperCase();
@@ -213,14 +202,12 @@ export class CommandHelp {
     await this._render(name);
   }
 
-  /** Step the history cursor backward.  No-op at the start. */
   goBack() {
     if (this._historyIdx <= 0) return;
     this._historyIdx -= 1;
     this._render(this._history[this._historyIdx]);
   }
 
-  /** Step the history cursor forward.  No-op at the end. */
   goForward() {
     if (this._historyIdx >= this._history.length - 1) return;
     this._historyIdx += 1;
@@ -264,9 +251,6 @@ export class CommandHelp {
   _refreshNav() {
     this._backBtn.disabled = this._historyIdx <= 0;
     this._fwdBtn .disabled = this._historyIdx >= this._history.length - 1;
-    // Rebuild the history dropdown.  Most-recent entry first reads
-    // more naturally, but we keep insertion order so that <option>
-    // values map directly to indices.
     this._histSel.innerHTML = '';
     if (this._history.length === 0) {
       this._histSel.disabled = true;
@@ -285,8 +269,6 @@ export class CommandHelp {
     }
   }
 
-  /** Hide the popup.  Used by the close button, Esc, backdrop click,
-   *  and SidePanel.close(). */
   hide() {
     this._currentName = null;
     this.el.classList.add('hidden');

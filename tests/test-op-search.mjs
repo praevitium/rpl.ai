@@ -5,79 +5,57 @@ import { assert } from './helpers.mjs';
 /* Fuzzy op-name search — the matching/ranking core behind the
    command palette (ROADMAP §6).  Pure functions, no DOM. */
 
-/* ================================================================
-   fuzzyScore — subsequence match + ranking signal.
-   ================================================================ */
 {
-  // Empty query is a neutral match (the palette's resting view).
   assert(fuzzyScore('', 'SIN') === 0, 'fuzzyScore: empty query scores 0');
 
-  // Exact match short-circuits to the top score.
   assert(fuzzyScore('SIN', 'SIN') === 1000, 'fuzzyScore: exact hit is 1000');
   assert(fuzzyScore('sin', 'SIN') === 1000, 'fuzzyScore: match is case-insensitive');
 
-  // Non-subsequence is rejected.
   assert(fuzzyScore('XYZ', 'SIN') === -1, 'fuzzyScore: non-subsequence is -1');
   assert(fuzzyScore('SX', 'XS') === -1, 'fuzzyScore: order matters (SX not in XS)');
 
-  // A scattered subsequence still matches but scores below a prefix.
-  const prefix = fuzzyScore('SI', 'SIN');     // S,I contiguous at start
-  const scattered = fuzzyScore('SI', 'COSINE'); // S@2, I@3 — mid-name
+  const prefix = fuzzyScore('SI', 'SIN');
+  const scattered = fuzzyScore('SI', 'COSINE');
   assert(prefix > 0, 'fuzzyScore: prefix match is positive');
   assert(scattered > 0, 'fuzzyScore: scattered subsequence still matches');
   assert(prefix > scattered, 'fuzzyScore: prefix outranks scattered match');
 
-  // A first-character anchor beats a later same-length run.
   assert(fuzzyScore('A', 'ASIN') > fuzzyScore('A', 'TAN'),
     'fuzzyScore: leading-char match outranks interior match');
 
-  // Tighter (shorter) names get the length tie-break.
   assert(fuzzyScore('SIN', 'SINH') > 0 && fuzzyScore('SIN', 'ARCSIN') > 0,
     'fuzzyScore: SIN is a subsequence of both SINH and ARCSIN');
   assert(fuzzyScore('SIN', 'SINH') > fuzzyScore('SIN', 'ARCSIN'),
     'fuzzyScore: prefix SINH outranks interior ARCSIN');
 }
 
-/* ================================================================
-   searchOps — filter + rank a name list.
-   ================================================================ */
 {
   const names = ['SIN', 'SINH', 'ASIN', 'COS', 'COSINE', 'TAN'];
 
-  // Empty query returns a copy of the list, unchanged and detached.
   const all = searchOps('', names);
   assert(all.length === names.length && all[0] === 'SIN',
     'searchOps: empty query returns the full list');
   all.push('MUT');
   assert(names.length === 6, 'searchOps: returned array is a copy, not the input');
 
-  // Whitespace-only query is treated as empty.
   assert(searchOps('   ', names).length === names.length,
     'searchOps: whitespace query returns the full list');
 
-  // Exact match ranks first.
   const r = searchOps('SIN', names);
   assert(r[0] === 'SIN', 'searchOps: exact match ranks first');
   assert(r.includes('SINH') && r.includes('ASIN'),
     'searchOps: subsequence matches are retained');
   assert(!r.includes('TAN'), 'searchOps: non-matches are dropped');
 
-  // SINH (prefix) outranks ASIN (interior) for the same query.
   assert(r.indexOf('SINH') < r.indexOf('ASIN'),
     'searchOps: prefix match outranks interior match');
 
-  // Equal-score ties break alphabetically (deterministic order).
   const tie = searchOps('XYZZY', ['ZZ', 'AA']);
   assert(tie.length === 0, 'searchOps: no matches yields empty list');
 
-  // Non-array input is tolerated.
   assert(searchOps('X', null).length === 0, 'searchOps: null names → empty');
 }
 
-/* ================================================================
-   Integration against the live registry — every result is a real,
-   subsequence-matching op name, and the query itself round-trips.
-   ================================================================ */
 {
   const ops = allOps();
   const hits = searchOps('SIN', ops);
@@ -88,38 +66,27 @@ import { assert } from './helpers.mjs';
     'searchOps(live): exact op name ranks first when present');
 }
 
-/* ================================================================
-   moveSelection — wrap-around highlight navigation for the palette.
-   Pure function, no DOM.
-   ================================================================ */
 {
-  // Empty list has no selectable row.
   assert(moveSelection(0, 1, 0) === -1, 'moveSelection: empty list → -1');
   assert(moveSelection(-1, -1, 0) === -1, 'moveSelection: empty list ignores delta');
 
-  // Plain in-range moves.
   assert(moveSelection(0, 1, 5) === 1, 'moveSelection: down advances one');
   assert(moveSelection(2, -1, 5) === 1, 'moveSelection: up retreats one');
   assert(moveSelection(2, 0, 5) === 2, 'moveSelection: zero delta stays put');
 
-  // Wrap-around at both ends.
   assert(moveSelection(4, 1, 5) === 0, 'moveSelection: down past bottom wraps to first');
   assert(moveSelection(0, -1, 5) === 4, 'moveSelection: up past top wraps to last');
 
-  // Negative sentinel: nothing selected yet.
   assert(moveSelection(-1, 1, 5) === 0, 'moveSelection: sentinel + down → first');
   assert(moveSelection(-1, -1, 5) === 4, 'moveSelection: sentinel + up → last');
 
-  // Larger deltas (e.g. PageUp/PageDown) also wrap.
   assert(moveSelection(1, 3, 5) === 4, 'moveSelection: multi-step down in range');
   assert(moveSelection(1, 7, 5) === 3, 'moveSelection: multi-step down wraps modulo');
   assert(moveSelection(1, -3, 5) === 3, 'moveSelection: multi-step up wraps modulo');
 
-  // Single-row list always resolves to its only index.
   assert(moveSelection(0, 1, 1) === 0, 'moveSelection: single row stays at 0');
   assert(moveSelection(-1, -1, 1) === 0, 'moveSelection: single row from sentinel');
 
-  // Non-finite inputs are tolerated.
   assert(moveSelection(NaN, 1, 5) === 0, 'moveSelection: NaN index → sentinel then first');
   assert(moveSelection(0, NaN, 5) === 0, 'moveSelection: NaN delta is no-op');
   assert(moveSelection(0, 1, NaN) === -1, 'moveSelection: NaN length → -1');
