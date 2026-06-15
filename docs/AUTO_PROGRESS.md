@@ -20,14 +20,31 @@ the `Last lane` pointer.
 
 ## Pointer
 
-Last lane: command-support
-Last run: 2026-06-15 06:23
+Last lane: data-types
+Last run: 2026-06-15 06:31
 
 ---
 
 ## Run log
 
 (newest first — each run appends one entry: date, lane, what shipped, test result, what's next)
+
+### 2026-06-15 06:31 — data-types
+Extended the **S (String) column** onto the special-function family table
+in `docs/DATA_TYPES.md` (XPON/MANT/TRUNC/ZETA/LAMBERT/PSI) — the table
+carried R/Z/Q/C/N/Sy/L/V/M/T only, so String was untested. All six reject
+String: XPON/MANT via handler guard `!isReal(v) && !isInteger(v) → throw`;
+ZETA/LAMBERT/PSI via `_*Scalar` (`isInteger?…:isReal?…:null` → null →
+`Bad argument type`); TRUNC's x-operand via `_roundingOp` and n-operand via
+`toRealOrThrow` ("expected real, got string"). +7 `session271:` rejection
+pins in `tests/test-types.mjs` (one per op, two for TRUNC's two arms). No
+source changes — rejections were already correct, just untested. Continues
+session 269's combinatorial-family S-column work.
+`node tests/test-all.mjs` → 5808 passed / 0 failed (baseline 5801).
+Next: extend the S column onto the stat-dist family table (HEAVISIDE/DIRAC/
+GAMMA/LNGAMMA/ERF/ERFC/BETA/UTPC/UTPF/UTPT — probe-confirmed all reject
+String via the same scalar-handler / `asReal` guards). Open larger item
+remains candidate #4: Unit dim-equivalence `==` (AUR §20, multi-run design).
 
 ### 2026-06-15 06:23 — command-support
 Shipped the CAS-independent core of `JORDAN`'s level-2/level-1 output

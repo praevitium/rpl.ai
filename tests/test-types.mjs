@@ -11750,3 +11750,59 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       'session269: Str("x") Str("y") XROOT → Bad argument type: expected real, got string (S=✗; degree x via toRealOrThrow rejects String)');
   }
 }
+
+/* ====================================================================
+   session271: S-column (String) rejection pins — special-function
+   family (XPON / MANT / TRUNC / ZETA / LAMBERT / PSI)
+   ----------------------------------------------------------------
+   Adds the S column to the special-function table (it had
+   R/Z/Q/C/N/Sy/L/V/M/T only — no S column), continuing session 269's
+   S-column work on the combinatorial family.  All six reject String:
+     • XPON / MANT:        handler guard `!isReal(v) && !isInteger(v) → throw`.
+     • ZETA / LAMBERT / PSI: `_*Scalar` — `isInteger ? … : isReal ? … : null`
+                            → String → null → 'Bad argument type'.
+     • TRUNC:              x via `_roundingOp` `!isReal && !isInteger → throw`;
+                            n (level 1) via `toRealOrThrow` → 'expected real, got string'.
+   No source changes — the rejection was already correct, just untested.
+   ================================================================ */
+{
+  const S1 = Str('x');   // representative String input
+
+  {
+    const s = new Stack(); s.push(S1);
+    assertThrows(() => lookup('XPON').fn(s), /Bad argument type/i,
+      'session271: Str("x") XPON → Bad argument type (S=✗; handler guard !isReal&&!isInteger → throw; MANT shares guard)');
+  }
+  {
+    const s = new Stack(); s.push(S1);
+    assertThrows(() => lookup('MANT').fn(s), /Bad argument type/i,
+      'session271: Str("x") MANT → Bad argument type (S=✗; same !isReal&&!isInteger guard as XPON)');
+  }
+  {
+    const s = new Stack(); s.push(S1);
+    assertThrows(() => lookup('ZETA').fn(s), /Bad argument type/i,
+      'session271: Str("x") ZETA → Bad argument type (S=✗; _zetaScalar isInteger/isReal/null; String → null → throw)');
+  }
+  {
+    const s = new Stack(); s.push(S1);
+    assertThrows(() => lookup('LAMBERT').fn(s), /Bad argument type/i,
+      'session271: Str("x") LAMBERT → Bad argument type (S=✗; _lambertScalar isInteger/isReal/null; String → null → throw)');
+  }
+  {
+    const s = new Stack(); s.push(S1);
+    assertThrows(() => lookup('PSI').fn(s), /Bad argument type/i,
+      'session271: Str("x") PSI → Bad argument type (S=✗; _psiScalar isInteger/isReal/null; String → null → throw)');
+  }
+  {
+    // TRUNC x-operand (level 2) String → Bad argument type via _roundingOp guard
+    const s = new Stack(); s.push(S1); s.push(Real(2));
+    assertThrows(() => lookup('TRUNC').fn(s), /Bad argument type/i,
+      'session271: Str("x") Real(2) TRUNC → Bad argument type (S=✗; x via _roundingOp !isReal&&!isInteger → throw)');
+  }
+  {
+    // TRUNC n-operand (level 1) String → 'expected real, got string' via toRealOrThrow
+    const s = new Stack(); s.push(Real(3.14159)); s.push(S1);
+    assertThrows(() => lookup('TRUNC').fn(s), /expected real, got string/i,
+      'session271: Real(3.14159) Str("x") TRUNC → Bad argument type: expected real, got string (S=✗; n via toRealOrThrow)');
+  }
+}
