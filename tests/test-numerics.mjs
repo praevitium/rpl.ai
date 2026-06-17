@@ -327,6 +327,121 @@ import { assert, assertThrows } from './helpers.mjs';
          'MAX mixed Integer+Real promotes to Real');
 }
 
+// session320: mixed Integer/Real operands exercise the else-branch
+// Decimal-from-Integer coercion arm of MOD and MIN/MAX. The both-Integer
+// case takes the dedicated Integer×Integer branch and the both-Real case
+// the isReal arm; only a mixed pair routes one operand through
+// `new Decimal(isInteger(v) ? v.value.toString() : …)`. MOD's mixed cases
+// had no positive pin (every MOD test was both-Real or both-Integer), and
+// MIN/MAX only pinned the left-operand (da) Integer arm via
+// MAX(Integer 5, Real 9.5) — the right-operand (db) Integer arm was
+// untested. Guards a refactor that drops or narrows that coercion arm.
+{
+  const s = new Stack();
+  s.pushMany([Integer(7), Real(3)]);
+  lookup('MOD').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.eq(1),
+         'session320: Integer 7 Real 3 MOD = Real 1 (db Real, da Integer arm)');
+  s.clear();
+  s.pushMany([Real(7), Integer(3)]);
+  lookup('MOD').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.eq(1),
+         'session320: Real 7 Integer 3 MOD = Real 1 (db Integer arm)');
+  s.clear();
+  s.pushMany([Integer(-7), Real(3)]);
+  lookup('MOD').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.eq(2),
+         'session320: Integer -7 Real 3 MOD = Real 2 (sign of divisor, da Integer arm)');
+  s.clear();
+  s.pushMany([Real(-7), Integer(3)]);
+  lookup('MOD').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.eq(2),
+         'session320: Real -7 Integer 3 MOD = Real 2 (sign of divisor, db Integer arm)');
+  s.clear();
+  s.pushMany([Real(9.5), Integer(5)]);
+  lookup('MIN').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.eq(5),
+         'session320: Real 9.5 Integer 5 MIN = Real 5 (db Integer arm)');
+  s.clear();
+  s.pushMany([Real(9.5), Integer(5)]);
+  lookup('MAX').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.eq(9.5),
+         'session320: Real 9.5 Integer 5 MAX = Real 9.5 (db Integer arm, da Real)');
+  s.clear();
+  s.pushMany([Integer(5), Real(9.5)]);
+  lookup('MIN').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.eq(5),
+         'session320: Integer 5 Real 9.5 MIN = Real 5 (da Integer arm)');
+}
+
+// session327: core binary arithmetic (+ - * /) mixed Integer/Real coercion
+// arm. A both-Integer pair takes promoteNumericPair's 'integer' kind
+// (Integer-preserving) and a both-Real pair its 'real' kind via
+// toRealDecimal's isReal arm on both sides — so toRealDecimal's *isInteger*
+// arm (`new Decimal(v.value.toString())`) is only exercised when ONE operand
+// is Integer and the other Real. Every existing +/-/*// pin was both-Integer,
+// both-Real, or Tagged-of-Real; the bare mixed pair (each operand position
+// independently) had no positive pin, so the Integer-side coercion arm was
+// untested. These guard a refactor that drops or narrows that arm. The result
+// is always Real (the mixed pair never returns Integer or Rational).
+{
+  const s = new Stack();
+  s.pushMany([Integer(7), Real(2.5)]);
+  lookup('+').fn(s);
+  let v = s.peek();
+  assert(isReal(v) && v.value.eq(9.5),
+         'session327: Integer 7 + Real 2.5 = Real 9.5 (a Integer arm)');
+
+  s.clear();
+  s.pushMany([Real(7.5), Integer(2)]);
+  lookup('+').fn(s);
+  v = s.peek();
+  assert(isReal(v) && v.value.eq(9.5),
+         'session327: Real 7.5 + Integer 2 = Real 9.5 (b Integer arm)');
+
+  s.clear();
+  s.pushMany([Integer(7), Real(2.5)]);
+  lookup('-').fn(s);
+  v = s.peek();
+  assert(isReal(v) && v.value.eq(4.5),
+         'session327: Integer 7 - Real 2.5 = Real 4.5 (a Integer arm)');
+
+  s.clear();
+  s.pushMany([Real(7.5), Integer(2)]);
+  lookup('-').fn(s);
+  v = s.peek();
+  assert(isReal(v) && v.value.eq(5.5),
+         'session327: Real 7.5 - Integer 2 = Real 5.5 (b Integer arm)');
+
+  s.clear();
+  s.pushMany([Integer(7), Real(2.5)]);
+  lookup('*').fn(s);
+  v = s.peek();
+  assert(isReal(v) && v.value.eq(17.5),
+         'session327: Integer 7 * Real 2.5 = Real 17.5 (a Integer arm)');
+
+  s.clear();
+  s.pushMany([Real(7.5), Integer(2)]);
+  lookup('*').fn(s);
+  v = s.peek();
+  assert(isReal(v) && v.value.eq(15),
+         'session327: Real 7.5 * Integer 2 = Real 15 (b Integer arm)');
+
+  s.clear();
+  s.pushMany([Integer(7), Real(2.5)]);
+  lookup('/').fn(s);
+  v = s.peek();
+  assert(isReal(v) && v.value.eq(2.8),
+         'session327: Integer 7 / Real 2.5 = Real 2.8 (a Integer arm)');
+
+  s.clear();
+  s.pushMany([Real(7.5), Integer(2)]);
+  lookup('/').fn(s);
+  v = s.peek();
+  assert(isReal(v) && v.value.eq(3.75),
+         'session327: Real 7.5 / Integer 2 = Real 3.75 (b Integer arm)');
+}
+
 // Complex rejected by MOD / MIN / MAX
 {
   const s = new Stack();
@@ -2990,6 +3105,89 @@ setAngle('RAD');
     'session064: GCD still rejects Complex element inside a List');
 }
 
+/* ============================================================
+ * session314: GCD / LCM integer-valued-Real acceptance arm
+ *
+ * The DATA_TYPES R* (`~`) cell — "R accepted only when
+ * integer-valued" — is `_toBigIntOrThrow`'s `isReal(v) &&
+ * v.value.isInteger()` branch (ops.js ~1561), distinct from the
+ * `isInteger(v)` branch every Integer-operand pin already hits.
+ * session064 pins only the NEGATIVE side (non-integer Real 1.5
+ * rejected); every positive GCD/LCM pin pushes Integer, so the
+ * integer-valued-Real ACCEPTANCE arm was never exercised. These
+ * guard a refactor narrowing GCD/LCM to Integer-only (dropping the
+ * isReal arm), which would silently break `Real(12) Real(18) GCD`.
+ * Probed live first; no source change.
+ * ============================================================ */
+{
+  // Both operands integer-valued Real → accepted, Integer result.
+  const s = new Stack();
+  s.push(Real(12));
+  s.push(Real(18));
+  lookup('GCD').fn(s);
+  const v = s.peek();
+  assert(v.type === 'integer' && v.value === 6n,
+    'session314: GCD Real(12) Real(18) → Integer(6) (integer-valued Real arm)');
+}
+{
+  // Mixed Real × Integer → integer-valued Real coerces.
+  const s = new Stack();
+  s.push(Real(12));
+  s.push(Integer(18n));
+  lookup('GCD').fn(s);
+  const v = s.peek();
+  assert(v.type === 'integer' && v.value === 6n,
+    'session314: GCD Real(12) Integer(18) → Integer(6) (left Real arm)');
+}
+{
+  // Mixed Integer × Real → right operand exercises the Real arm.
+  const s = new Stack();
+  s.push(Integer(12n));
+  s.push(Real(18));
+  lookup('GCD').fn(s);
+  const v = s.peek();
+  assert(v.type === 'integer' && v.value === 6n,
+    'session314: GCD Integer(12) Real(18) → Integer(6) (right Real arm)');
+}
+{
+  // GCD(0, n) = |n| boundary through the Real arm.
+  const s = new Stack();
+  s.push(Real(0));
+  s.push(Real(7));
+  lookup('GCD').fn(s);
+  const v = s.peek();
+  assert(v.type === 'integer' && v.value === 7n,
+    'session314: GCD Real(0) Real(7) → Integer(7) (zero boundary, Real arm)');
+}
+{
+  // LCM with integer-valued Real operands.
+  const s = new Stack();
+  s.push(Real(4));
+  s.push(Real(6));
+  lookup('LCM').fn(s);
+  const v = s.peek();
+  assert(v.type === 'integer' && v.value === 12n,
+    'session314: LCM Real(4) Real(6) → Integer(12) (integer-valued Real arm)');
+}
+{
+  // LCM mixed Real × Integer.
+  const s = new Stack();
+  s.push(Real(4));
+  s.push(Integer(6n));
+  lookup('LCM').fn(s);
+  const v = s.peek();
+  assert(v.type === 'integer' && v.value === 12n,
+    'session314: LCM Real(4) Integer(6) → Integer(12) (left Real arm)');
+}
+{
+  // Rejection: bare non-integer Real (not Tagged) on LCM → Bad argument value.
+  const s = new Stack();
+  s.push(Real(4.2));
+  s.push(Integer(6n));
+  assertThrows(() => { lookup('LCM').fn(s); }, /Bad argument value/,
+    'session314: LCM rejects bare non-integer Real (value, not type)');
+}
+
 {
   // Tagged × Real on %: unwrap the tag, compute, drop tag.
   const s = new Stack();
@@ -4723,6 +4921,117 @@ setAngle('RAD');
 }
 
 /* ================================================================
+   session308: UTPF / UTPT value-operand Z `✓` fold.
+   The asReal integer arm (`isInteger(v) ? Number(v.value)`) for the
+   distribution-variate operand was never positively pinned: every
+   UTPF F-operand and UTPT t-operand in session069 was pushed as Real
+   (n/d/ν always Integer, so only the degrees-of-freedom integer arm
+   was exercised). UTPC's x integer arm is already covered by
+   session068's UTPC(2, 6). Guards a refactor that drops or narrows the
+   Integer coercion of the variate, which would degrade the Z column to
+   Real-only there. Probed live first; no source change.
+   ================================================================ */
+{
+  // F(2, 4) has the closed-form survival S(F) = (1 + (n/d)F)^(-d/2);
+  // at F=3: (1 + 0.5·3)^(-2) = 2.5^(-2) = 0.16 exactly. Integer F.
+  const s = new Stack();
+  s.push(Integer(2n));
+  s.push(Integer(4n));
+  s.push(Integer(3n));
+  lookup('UTPF').fn(s);
+  assert(_approx(s.peek().value, 0.16, 1e-12),
+    'session308: UTPF(2, 4, Integer 3) = 0.16 (integer F arm, n=2 closed form)');
+}
+{
+  // Integer F matches the Real F path exactly (coercion guard).
+  const si = new Stack();
+  si.push(Integer(2n)); si.push(Integer(4n)); si.push(Integer(3n));
+  lookup('UTPF').fn(si);
+  const sr = new Stack();
+  sr.push(Integer(2n)); sr.push(Integer(4n)); sr.push(Real(3));
+  lookup('UTPF').fn(sr);
+  assert(si.peek().value.eq(sr.peek().value),
+    'session308: UTPF Integer F == Real F (asReal integer arm coerces identically)');
+}
+{
+  // Integer F ≤ 0 short-circuits to 1 through the integer arm.
+  const s = new Stack();
+  s.push(Integer(5n));
+  s.push(Integer(10n));
+  s.push(Integer(0n));
+  lookup('UTPF').fn(s);
+  assert(s.peek().value.eq(1),
+    'session308: UTPF(5, 10, Integer 0) = 1 (integer F short-circuit)');
+}
+{
+  // UTPT(1, t) is the Cauchy upper tail; at t=1 → 0.25. Integer t.
+  const s = new Stack();
+  s.push(Integer(1n));
+  s.push(Integer(1n));
+  lookup('UTPT').fn(s);
+  assert(_approx(s.peek().value, 0.25, 1e-12),
+    'session308: UTPT(1, Integer 1) = 0.25 (integer t arm, Cauchy closed form)');
+}
+{
+  // t-symmetry: UTPT(1, -1) = 1 - UTPT(1, 1) = 0.75. Integer t.
+  const s = new Stack();
+  s.push(Integer(1n));
+  s.push(Integer(-1n));
+  lookup('UTPT').fn(s);
+  assert(_approx(s.peek().value, 0.75, 1e-12),
+    'session308: UTPT(1, Integer -1) = 0.75 (integer t arm, t-symmetry)');
+}
+{
+  // Integer t = 0 short-circuits to exactly 0.5 through the integer arm.
+  const s = new Stack();
+  s.push(Integer(5n));
+  s.push(Integer(0n));
+  lookup('UTPT').fn(s);
+  assert(s.peek().value.eq(0.5),
+    'session308: UTPT(5, Integer 0) = 0.5 (integer t short-circuit)');
+}
+
+/* ================================================================
+   session310: UTPF collection-operand rejection (L / V / M ✗).
+   UTPF is the asymmetric stat-dist op — its bare 3-arg handler has
+   NO `_withListBinary` wrapper (unlike UTPC/UTPT), so a List in the
+   variate position rejects rather than distributing.  `asReal` runs
+   on every popped operand before any value check, accepting only
+   Integer/Real, so a List/Vector/Matrix in ANY of the three slots
+   throws 'Bad argument type'.  DATA_TYPES documents L/V/M `✗` for
+   UTPF but only Complex was pinned (session069); this guards a
+   refactor that adds `_withListBinary` to UTPF or widens `asReal`.
+   ================================================================ */
+{
+  // Variate (F) position: the slot UTPC/UTPT distribute over, UTPF does not.
+  for (const [label, mk] of [
+    ['List', () => RList([Integer(2n), Integer(3n)])],
+    ['Vector', () => Vector([Real(1), Real(2)])],
+    ['Matrix', () => Matrix([[Real(1), Real(2)]])],
+  ]) {
+    const s = new Stack();
+    s.push(Integer(5n));
+    s.push(Integer(10n));
+    s.push(mk());
+    assertThrows(() => { lookup('UTPF').fn(s); }, /Bad argument type/,
+      `session310: UTPF(5, 10, ${label}) throws Bad argument type (no list-distribute)`);
+  }
+  // n (degrees-of-freedom) position rejects the same way — not position-specific.
+  for (const [label, mk] of [
+    ['List', () => RList([Integer(2n), Integer(3n)])],
+    ['Vector', () => Vector([Real(1), Real(2)])],
+    ['Matrix', () => Matrix([[Real(1), Real(2)]])],
+  ]) {
+    const s = new Stack();
+    s.push(mk());
+    s.push(Integer(10n));
+    s.push(Integer(3n));
+    assertThrows(() => { lookup('UTPF').fn(s); }, /Bad argument type/,
+      `session310: UTPF(${label}, 10, 3) throws Bad argument type`);
+  }
+}
+
+/* ================================================================
    Widening cluster #1:
      FLOOR / CEIL / IP / FP on Unit operand.
    HP50 AUR §3-65 / §3-66 / §3-108: these rounders apply to the
@@ -5267,6 +5576,67 @@ setAngle('RAD');
   s.push(Real(3.14));
   assertThrows(() => lookup('TRUNC').fn(s), /Too few arguments/,
     'session081: TRUNC with depth < 2 → Too few arguments');
+}
+
+{
+  // session302: Z-column fold for the rounding family — an Integer operand
+  // rounded/truncated to a NEGATIVE decimal place. _roundingOp's integer
+  // passthrough only fires for n >= 0 (session081 pins TRUNC(Integer(42),3));
+  // a negative n routes the Integer through the same Real-rounding path as a
+  // Real operand, so the result is a Real, not an Integer. Every prior pin on
+  // this branch used a Real x — this exercises the `isInteger(xv)` arm.
+  for (const op of ['TRNC', 'TRUNC']) {
+    {
+      const s = new Stack();
+      s.push(Integer(123n));
+      s.push(Integer(-1n));
+      lookup(op).fn(s);
+      const v = s.peek();
+      assert(v.type === 'real' && Math.abs(v.value - 100) < 1e-9,
+        `session302: ${op}(Integer(123), -1) → Real(100) (toward-zero on integer arm)`);
+    }
+    {
+      const s = new Stack();
+      s.push(Integer(1250n));
+      s.push(Integer(-2n));
+      lookup(op).fn(s);
+      const v = s.peek();
+      assert(v.type === 'real' && Math.abs(v.value - 1200) < 1e-9,
+        `session302: ${op}(Integer(1250), -2) → Real(1200)`);
+    }
+    {
+      // 7 sits below the -1 decimal place, so toward-zero leaves it at 7 —
+      // but still returned as a Real, since the integer arm only passes
+      // through unchanged for n >= 0.
+      const s = new Stack();
+      s.push(Integer(7n));
+      s.push(Integer(-1n));
+      lookup(op).fn(s);
+      const v = s.peek();
+      assert(v.type === 'real' && Math.abs(v.value - 7) < 1e-9,
+        `session302: ${op}(Integer(7), -1) → Real(7)`);
+    }
+  }
+  // RND shares _roundingOp but rounds half-away-from-zero, so it diverges from
+  // TRNC/TRUNC's toward-zero on the same integer arm: RND(1250,-2) → 1300.
+  {
+    const s = new Stack();
+    s.push(Integer(1250n));
+    s.push(Integer(-2n));
+    lookup('RND').fn(s);
+    const v = s.peek();
+    assert(v.type === 'real' && Math.abs(v.value - 1300) < 1e-9,
+      'session302: RND(Integer(1250), -2) → Real(1300) (half-away contrasts toward-zero)');
+  }
+  {
+    const s = new Stack();
+    s.push(Integer(123n));
+    s.push(Integer(-1n));
+    lookup('RND').fn(s);
+    const v = s.peek();
+    assert(v.type === 'real' && Math.abs(v.value - 100) < 1e-9,
+      'session302: RND(Integer(123), -1) → Real(100)');
+  }
 }
 
 {

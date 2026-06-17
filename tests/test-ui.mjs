@@ -19,6 +19,7 @@ import {
 } from '../www/src/rpl/state.js';
 import { clampStackScroll, computeMenuPage } from '../www/src/ui/paging.js';
 import { headingKey, ALIASES } from '../www/src/ui/command-help.js';
+import { escapeHtml, normalizeMenuSlots, binaryBaseLabel, displayModeLabel, coordModeGlyph } from '../www/src/ui/display.js';
 import { assert, assertThrows } from './helpers.mjs';
 
 /* UI helpers — paging, physical-keyboard modifier shortcuts,
@@ -88,6 +89,93 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(empty.totalPages === 1 && empty.view.every(v => v === null)
          && empty.hasMore === false,
                                              'computeMenuPage: empty list = one null page');
+}
+
+/* ================================================================
+   session313: escapeHtml — the pure HTML-escaper the Display's cell /
+   list / path renderers all route formatted text through.  Extracted
+   from three inlined copies in display.js; the setPath copy used to
+   escape only & and < (missing > and "), so this pins the unified
+   four-character contract against a regression to under-escaping.
+   ================================================================ */
+{
+  assert(escapeHtml('a&b') === 'a&amp;b',   'escapeHtml: & → &amp;');
+  assert(escapeHtml('a<b') === 'a&lt;b',    'escapeHtml: < → &lt;');
+  assert(escapeHtml('a>b') === 'a&gt;b',    'escapeHtml: > → &gt;');
+  assert(escapeHtml('a"b') === 'a&quot;b',  'escapeHtml: " → &quot;');
+  // All four in one pass, ampersand-first so the entity markers it
+  // introduces aren't themselves re-escaped.
+  assert(escapeHtml('<a href="x&y">') === '&lt;a href=&quot;x&amp;y&quot;&gt;',
+                                            'escapeHtml: all four escaped in one pass');
+  assert(escapeHtml('&amp;') === '&amp;amp;',
+                                            'escapeHtml: a literal entity is escaped, not preserved');
+  // Non-string coercion (the renderers can hand it a name that is not a
+  // string) and the empty/whitespace degenerates.
+  assert(escapeHtml(42) === '42',           'escapeHtml: number coerces to string');
+  assert(escapeHtml('') === '',             'escapeHtml: empty string stays empty');
+  assert(escapeHtml('plain') === 'plain',   'escapeHtml: no special chars unchanged');
+}
+
+/* ================================================================
+   session319: normalizeMenuSlots — the pure slice/pad extracted from
+   Display.setMenu so the soft-menu row is always exactly six slots.
+   Pins the truncate-past-6, pad-short-with-'', exactly-6-unchanged, and
+   input-not-mutated invariants so a refactor of setMenu can't regress
+   the fixed-grid contract.
+   ================================================================ */
+{
+  assert(JSON.stringify(normalizeMenuSlots(['A', 'B'])) ===
+         JSON.stringify(['A', 'B', '', '', '', '']),
+                                             'normalizeMenuSlots: short array padded to six');
+  assert(JSON.stringify(normalizeMenuSlots([])) ===
+         JSON.stringify(['', '', '', '', '', '']),
+                                             'normalizeMenuSlots: empty array → six blanks');
+  const six = ['A', 'B', 'C', 'D', 'E', 'F'];
+  assert(JSON.stringify(normalizeMenuSlots(six)) === JSON.stringify(six),
+                                             'normalizeMenuSlots: exactly six unchanged');
+  assert(normalizeMenuSlots(six).length === 6,
+                                             'normalizeMenuSlots: exactly six stays length six');
+  assert(JSON.stringify(normalizeMenuSlots(
+           ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'])) ===
+         JSON.stringify(['A', 'B', 'C', 'D', 'E', 'F']),
+                                             'normalizeMenuSlots: more than six truncated to six');
+  // The input array is not mutated (slice returns a copy).
+  const input = ['A'];
+  const out = normalizeMenuSlots(input);
+  assert(input.length === 1 && out.length === 6 && out !== input,
+                                             'normalizeMenuSlots: input left untouched, fresh array returned');
+}
+
+/* ================================================================
+   session326: the three annunciator label/glyph maps extracted from
+   Display.setBinaryBaseAnnunciator / setDisplayAnnunciator / setCoordMode
+   into pure functions, so the status-line label text is testable DOM-free.
+   Pins the known-key maps plus the divergent fallbacks: unknown base →
+   undefined (caller hides the annunciator), falsy/unknown display mode →
+   STD (digits ignored), and unknown coord mode → 'XYZ'.  Case-sensitivity
+   of the base/coord keys is deliberate (the callers pass canonical keys).
+   ================================================================ */
+{
+  assert(binaryBaseLabel('h') === 'HEX',     'binaryBaseLabel: h → HEX');
+  assert(binaryBaseLabel('d') === 'DEC',     'binaryBaseLabel: d → DEC');
+  assert(binaryBaseLabel('o') === 'OCT',     'binaryBaseLabel: o → OCT');
+  assert(binaryBaseLabel('b') === 'BIN',     'binaryBaseLabel: b → BIN');
+  assert(binaryBaseLabel('x') === undefined, 'binaryBaseLabel: unknown key → undefined (hide)');
+  assert(binaryBaseLabel('H') === undefined, 'binaryBaseLabel: keys are case-sensitive');
+
+  assert(displayModeLabel('STD', 5) === 'STD',   'displayModeLabel: STD ignores digits');
+  assert(displayModeLabel('std', 2) === 'STD',   'displayModeLabel: mode is upper-cased');
+  assert(displayModeLabel(undefined, 3) === 'STD','displayModeLabel: falsy mode → STD');
+  assert(displayModeLabel('', 7) === 'STD',      'displayModeLabel: empty mode → STD');
+  assert(displayModeLabel('fix', 4) === 'FIX 4', 'displayModeLabel: FIX carries upper-cased mode + digits');
+  assert(displayModeLabel('SCI', 2) === 'SCI 2', 'displayModeLabel: SCI carries digits');
+  assert(displayModeLabel('eng', 0) === 'ENG 0', 'displayModeLabel: ENG 0 keeps zero digits');
+
+  assert(coordModeGlyph('RECT') === 'XYZ',   'coordModeGlyph: RECT → XYZ');
+  assert(coordModeGlyph('CYLIN') === 'R∠Z',  'coordModeGlyph: CYLIN → R∠Z');
+  assert(coordModeGlyph('SPHERE') === 'R∠∠', 'coordModeGlyph: SPHERE → R∠∠');
+  assert(coordModeGlyph('BOGUS') === 'XYZ',  'coordModeGlyph: unknown mode → XYZ');
+  assert(coordModeGlyph('rect') === 'XYZ',   'coordModeGlyph: keys are case-sensitive, falls back to XYZ');
 }
 
 
@@ -288,6 +376,53 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(handled === false,
       'Ctrl-Q is declined — passes through to browser');
   }
+
+  // session307: the deliberate `!e.shiftKey` guard on the V branch.
+  // Ctrl/Cmd-Shift-V is declined so the browser's native plain-text
+  // paste keeps working (parallel to the Ctrl-C decline) — and the
+  // shifted combo must never touch the clipboard facade or the buffer.
+  // Ctrl-Shift-Y, by contrast, still redoes: the Y arm ignores shift.
+  {
+    const s = new Stack();
+    const e = new Entry(s);
+    e.type('keep');
+    let read = false;
+    const fakeClipboard = { readText: () => { read = true; return Promise.resolve('NOPE'); } };
+    const handled = handleModifierShortcut(
+      evt({ key: 'v', ctrlKey: true, shiftKey: true }), e, { clipboard: fakeClipboard },
+    );
+    await Promise.resolve(); await Promise.resolve();
+    assert(handled === false,
+      'Ctrl-Shift-V is declined so the browser plain-text paste works');
+    assert(read === false, 'Ctrl-Shift-V never reads the clipboard facade');
+    assert(e.buffer === 'keep', 'Ctrl-Shift-V leaves the entry buffer untouched');
+  }
+
+  {
+    const s = new Stack();
+    const e = new Entry(s);
+    e.type('keep');
+    const fakeClipboard = { readText: () => Promise.resolve('NOPE') };
+    const handled = handleModifierShortcut(
+      evt({ key: 'v', metaKey: true, shiftKey: true }), e, { clipboard: fakeClipboard },
+    );
+    await Promise.resolve(); await Promise.resolve();
+    assert(handled === false, 'Cmd-Shift-V is likewise declined');
+    assert(e.buffer === 'keep', 'Cmd-Shift-V leaves the entry buffer untouched');
+  }
+
+  {
+    const s = new Stack();
+    s.push(Real(7));
+    const e = new Entry(s);
+    e._snapForUndo();
+    s.push(Real(8));
+    e.performUndo();                  // back to { 7 }
+    const handled = handleModifierShortcut(evt({ key: 'y', ctrlKey: true, shiftKey: true }), e);
+    assert(handled === true, 'Ctrl-Shift-Y is handled (the Y arm ignores shift)');
+    assert(s.depth === 2 && s.peek(1).value.eq(8),
+      'Ctrl-Shift-Y still routes to performRedo');
+  }
 }
 
 
@@ -401,6 +536,68 @@ import { assert, assertThrows } from './helpers.mjs';
     const s = new Stack();
     s.push(Real(1));
     assertThrows(() => dropLevel(s, 2), null, 'dropLevel: out-of-range throws');
+  }
+
+  // session301: rollDownToLevel's own corners — only the rollLevel-inverse
+  // round-trip was pinned before, leaving its level-1 no-op, out-of-range
+  // throw, and forward semantics unguarded — plus the documented "emit once"
+  // invariant for all three mutators (the level-1 no-ops short-circuit before
+  // _emit, so they emit zero times).
+  {
+    // Forward semantics: the top value lands at level N, intermediates shift up.
+    const s = new Stack();
+    s.push(Real(1)); s.push(Real(2)); s.push(Real(3)); s.push(Real(4));
+    rollDownToLevel(s, 3);            // top (4) → level 3
+    const top = s.snapshot();
+    assert(s.depth === 4 && top[2].value.eq(4),
+           'rollDownToLevel: top value lands at level N');
+    assert(top[0].value.eq(3) && top[1].value.eq(2) && top[3].value.eq(1),
+           'rollDownToLevel: intermediates shift toward the top');
+  }
+  // rollDownToLevel(1) is a no-op
+  {
+    const s = new Stack();
+    s.push(Real(10)); s.push(Real(20));
+    rollDownToLevel(s, 1);
+    const top = s.snapshot();
+    assert(top[0].value.eq(20) && top[1].value.eq(10),
+           'rollDownToLevel(1): no-op');
+  }
+  // rollDownToLevel: out-of-range throws
+  {
+    const s = new Stack();
+    s.push(Real(1));
+    assertThrows(() => rollDownToLevel(s, 5), null,
+                 'rollDownToLevel: out-of-range throws');
+  }
+  // dropLevel(1) removes the top, like a plain pop.
+  {
+    const s = new Stack();
+    s.push(Real(10)); s.push(Real(20)); s.push(Real(30));
+    dropLevel(s, 1);
+    const top = s.snapshot();
+    assert(s.depth === 2 && top[0].value.eq(20) && top[1].value.eq(10),
+           'dropLevel(1): removes the top level');
+  }
+  // emit-once invariant: a mutating roll / rollD / drop emits exactly once;
+  // a level-1 no-op short-circuits before _emit and emits zero times.
+  {
+    const s = new Stack();
+    s.push(Real(1)); s.push(Real(2)); s.push(Real(3));
+    let emits = 0;
+    const off = s.subscribe(() => { emits++; });
+
+    emits = 0; rollLevel(s, 3);
+    assert(emits === 1, 'rollLevel(N>1): emits once');
+    emits = 0; rollLevel(s, 1);
+    assert(emits === 0, 'rollLevel(1) no-op: emits zero');
+    emits = 0; rollDownToLevel(s, 3);
+    assert(emits === 1, 'rollDownToLevel(N>1): emits once');
+    emits = 0; rollDownToLevel(s, 1);
+    assert(emits === 0, 'rollDownToLevel(1) no-op: emits zero');
+    emits = 0; dropLevel(s, 2);
+    assert(emits === 1, 'dropLevel: emits once');
+    off();
   }
 }
 

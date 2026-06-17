@@ -295,6 +295,136 @@ All currently-open findings are in the `Other` bucket and are
   session 252). **Status.** open, `[deferred - post-ship]` — low-risk
   hygiene, no behavior impact.
 
+### R-013  `parseEntry` JSDoc described a return shape the code never produces
+
+- **Classification.** RPL (doc↔code drift in source).
+- **Where.** `www/src/rpl/parser.js` — `parseEntry` JSDoc (~:223).
+- **What.** The doc claimed parseEntry "if it produces exactly one value,
+  return that value; else return a Program-like list of values." The body
+  (`const values = []; while (idx < toks.length) values.push(parseOne());
+  return values;`) **always** returns a plain array — it never unwraps a
+  single value, and the array is not a Program object. Every caller relies
+  on the array contract (the entry loop pushes each element;
+  `tests/test-binary-int.mjs` checks `.length === 1` and indexes `[0]`), so
+  the code is correct and the doc was the wrong side. Flagged by the
+  rpl-programming lane (2026-06-17 run-log).
+- **Fix.** Rewrote the JSDoc to describe the actual contract (always an
+  array, one entry per top-level object in entry order, `[]` for
+  empty/whitespace input). No behavior change.
+- **Confidence.** high — verified body + callers.
+- **Status.** **resolved 2026-06-17 (code-review).** Added a `session303:`
+  block in `tests/test-entry.mjs` (+3 pins) guarding the return-shape
+  contract so a future unwrap-the-single-value refactor that re-creates the
+  old doc fails the suite.
+
+### R-014  `parser.js` file-header comment under-listed the object kinds the entry parser covers
+
+- **Classification.** RPL (doc↔code drift in source).
+- **Where.** `www/src/rpl/parser.js` — file-header comment (~:1-5).
+- **What.** The header claimed the parser "Covers reals, integers, binary
+  integers, complex, strings, names, lists, programs, and vectors" — but the
+  code also produces `Matrix` (`[[..]]` → `:548`), `Unit` (`n_uexpr` →
+  `:259`), and `Symbolic` algebraics (backtick `` `..` `` → `:387`). All three
+  had been added since the comment was written but never folded into its
+  list, so a reader auditing parser coverage from the header would miss them.
+  Same drift class as R-013 (the comment was the wrong side).
+- **Fix.** Rewrote the header to list vectors, matrices, programs, units, and
+  backtick algebraics (symbolics) alongside the existing kinds. No behavior
+  change.
+- **Confidence.** high — verified each kind is produced (live probe + the
+  `Matrix`/`Unit`/`Symbolic` constructor sites).
+- **Status.** **resolved 2026-06-17 (code-review).** Added a `session309:`
+  block in `tests/test-entry.mjs` (+13 pins) asserting `parseEntry` yields
+  each documented kind (real/integer/binint/complex/string/name/list/vector/
+  matrix/program/unit/symbolic) plus the "unrecognised → bare identifier"
+  fallthrough, so the comment can't silently drift from the code again.
+
+### O-015  Registry↔prompt sync guard checked the prompt against a hand-copied literal, not the live registry
+
+- **Classification.** Other (drift-guard weakness — the guard that
+  watches the O-013-adjacent tool-registry/prompt sync was itself a
+  drift surface).
+- **Where.** `tests/test-chatbot-parse.mjs` — the AVAILABLE-TOOLS sync
+  block (~:322) and the alias target-side block (~:360).
+- **What.** Both blocks asserted against a hard-coded 8-name literal
+  (`expected` / `canonical`), duplicated across the two blocks — so the
+  same tool list lived in THREE hand-maintained copies (the prompt's
+  AVAILABLE TOOLS block, `chat-bot.js _buildRegistry`, and twice in the
+  test). The guard's own comment claims it catches "a tool name that
+  drifts from chat-bot.js _buildRegistry", but it never read the
+  registry: a tool added to `_buildRegistry` without a matching prompt
+  entry (or vice versa) would pass, while a stale `expected` literal
+  could fail for a registry that was actually correct.
+- **Fix.** Test-only. Added a DOM-free `registryToolNames()` helper —
+  `ChatBot.prototype._buildRegistry.call({ _tools: {}, _getContext: () => ({}) })`
+  exposes the live key set (the method reads only `this._tools` /
+  `this._getContext`, no DOM), so the prompt's documented names are now
+  asserted equal to the live registry and the alias target-side set is
+  derived from it too. Both hand-copied literals removed; a `>= 8`
+  extraction floor guards against a silently-empty registry. `ChatBot`
+  added to the test's chat-bot.js import.
+- **Confidence.** high — verified the extraction returns exactly the 8
+  registered names live, and that the strengthened guard still passes.
+- **Status.** **resolved 2026-06-17 (code-review).** `session315:`
+  reuses the existing AVAILABLE-TOOLS assertions against the live
+  registry; `node tests/test-all.mjs` → 6535 passed / 0 failed.
+
+### O-016  Prompt's AVAILABLE-TOOLS confirm/read-only prose was unguarded against the registry's `confirm` flags
+
+- **Classification.** Other (drift-guard gap — extends the O-015 name-sync guard).
+- **Where.** `tests/test-chatbot-parse.mjs` — AVAILABLE-TOOLS confirm-semantics
+  block; source of truth is `chat-bot.js _buildRegistry` (`confirm` per tool)
+  vs the `system-prompt.js` AVAILABLE TOOLS descriptions.
+- **What.** O-015 made the prompt↔registry *name* set evergreen, but the
+  descriptions still advertise each tool as either "Requires user
+  confirmation" (mutating) or "Auto-executes (read-only)" with nothing
+  asserting that prose against the registry's `confirm` boolean — the flag
+  the orchestrator actually gates on. A tool flipped read-only↔mutating in
+  `_buildRegistry` without a matching prompt edit (or vice versa) would
+  silently mislead the model about whether an action runs unattended.
+- **Fix.** Test-only. Parse each documented tool's description from the
+  AVAILABLE TOOLS block, derive the documented semantic (confirm vs
+  auto/read-only), and assert it equals the live registry's `confirm` flag,
+  with a mutual-exclusion check (exactly one phrase present) so a dropped
+  semantic phrase is caught too, plus a `>= 8` extraction floor.
+- **Confidence.** high — probed live: all 8 tools parse cleanly; mutating
+  four are `confirm: true` + "Requires user confirmation", read-only four are
+  `confirm: false` + "Auto-executes".
+- **Status.** **resolved 2026-06-17 (code-review).** `session321:` block in
+  `tests/test-chatbot-parse.mjs` (+25 pins). `node tests/test-all.mjs` →
+  6608 passed / 0 failed (baseline 6583).
+
+### O-017  Prompt's AVAILABLE-TOOLS argument names were unguarded against the registry handlers' destructured keys
+
+- **Classification.** Other (drift-guard gap — closes the queued O-013
+  arg-name/arity follow-up that O-015 (name sync) and O-016 (confirm sync)
+  left open).
+- **Where.** `tests/test-chatbot-parse.mjs` — AVAILABLE-TOOLS arg-name block;
+  sources of truth are the `system-prompt.js` AVAILABLE TOOLS JSON
+  (`"arguments":{...}`) and `chat-bot.js _buildRegistry` (each handler's
+  destructured arg key).
+- **What.** O-015/O-016 made the prompt↔registry tool *names* and confirm
+  flags evergreen, but the per-tool *argument names* were still unguarded. The
+  model emits the AVAILABLE TOOLS argument object verbatim
+  (`{"name":"run","arguments":{"text":...}}`), while the orchestrator
+  destructures a fixed key from it (`({ text }) => tools.run(...)`). A handler
+  arg renamed (e.g. `text`→`code`) without a matching prompt edit (or vice
+  versa) makes the model send a key the handler ignores → the action silently
+  runs empty, invisible to both the name and confirm guards.
+- **Fix.** Test-only. Introspect each handler's real read-keys with a recording
+  `Proxy` as the args object (a Get trap fires once per destructured key) and a
+  no-op `_tools` proxy so the side-effecting handlers run DOM-free; parse the
+  advertised arg-key set per tool from the AVAILABLE TOOLS JSON; assert the two
+  sets are equal per tool, in both directions, with a `>= 8` floor.
+- **Confidence.** high — probed live: all 8 tools match (run→`text`,
+  push_to_stack→`value`, append_to_editor→`text`, recall_var→`name`, the four
+  read-only tools take no args); no handler threw under the no-op tools proxy.
+- **Status.** **resolved 2026-06-17 (code-review).** `session328:` block in
+  `tests/test-chatbot-parse.mjs` (+25 pins). `node tests/test-all.mjs` →
+  6676 passed / 0 failed (baseline 6651). With names (O-015), confirm flags
+  (O-016) and now argument names all pinned against the live registry, the
+  AVAILABLE-TOOLS prompt↔registry contract is fully drift-guarded.
+
 ---
 
 ## Recently closed (full write-ups live in git history)

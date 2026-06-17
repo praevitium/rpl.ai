@@ -1,0 +1,14 @@
+import { parseEntry } from '../www/src/rpl/parser.js';
+import { isMatrix, isUnit, isSymbolic, isVector, isList, isProgram, isComplex, isBinaryInteger } from '../www/src/rpl/types.js';
+const p = s => parseEntry(s)[0];
+const m = p('[[1 2][3 4]]');
+console.log('matrix', isMatrix(m), m && m.type);
+const u = p('1_m/s');
+console.log('unit', isUnit(u), u && u.uexpr && u.uexpr.length);
+const sy = p('`X^2+1`');
+console.log('symbolic', isSymbolic(sy), sy && sy.type);
+console.log('vector', isVector(p('[1 2 3]')));
+console.log('list', isList(p('{ 1 2 }')));
+console.log('program', isProgram(p('« 1 + »')));
+console.log('complex', isComplex(p('(1,2)')));
+console.log('binint', isBinaryInteger(p('#FFh')));

@@ -1,4 +1,4 @@
-import { toOpenAIBase, toOllamaBase, takeSSEFrames } from '../www/src/ai/remote-llm.js';
+import { toOpenAIBase, toOllamaBase, takeSSEFrames, summarizeRun } from '../www/src/ai/remote-llm.js';
 import { assert } from './helpers.mjs';
 
 /* RemoteLLM URL normalizers — the two pure helpers that turn whatever
@@ -149,4 +149,68 @@ const frame = (obj) => 'data: ' + JSON.stringify(obj);
   const partial = takeSSEFrames('data: {"p":1}');
   assert(partial.frames.length === 0 && partial.rest === 'data: {"p":1}',
          'takeSSEFrames holds a complete-looking but unterminated frame as rest');
+}
+
+/* summarizeRun — the post-stream stats/timing assembler extracted from
+   generate().  It turns the three captured timestamps (t0, firstTokenAt,
+   t1) plus the per-run counters into the stats object the onStats
+   listeners receive.  The derivations are the subtle bit: ttft/decode
+   throughput must collapse to null when no token arrived, and the
+   tokens-per-second math must not divide by a zero-length decode window.
+   Pure, so it pins exactly without standing up a fetch. */
+
+// session300: nominal run — t0=100, first token at 300, end at 1300.
+// totalMs=1200, ttftMs=200, decode window=1000ms over 50 tokens → 50 tps.
+{
+  const s = summarizeRun({
+    t0: 100, firstTokenAt: 300, t1: 1300,
+    inputChars: 42, inputMessages: 3, outputChars: 210, outputTokens: 50,
+    finishReason: 'stop', aborted: false,
+  });
+  assert(s.totalMs === 1200, 'summarizeRun totalMs = t1 - t0');
+  assert(s.ttftMs === 200, 'summarizeRun ttftMs = firstTokenAt - t0');
+  assert(s.decodeTps === 50, 'summarizeRun decodeTps = tokens / (decodeMs/1000)');
+}
+
+// session300: passthrough fields and the fixed id/runtimeStats shape are
+// carried straight through so the onStats consumer sees the same object.
+{
+  const s = summarizeRun({
+    t0: 0, firstTokenAt: 10, t1: 20,
+    inputChars: 7, inputMessages: 2, outputChars: 9, outputTokens: 4,
+    finishReason: 'length', aborted: true,
+  });
+  assert(s.id === 0 && s.runtimeStats === null,
+         'summarizeRun fixes id=0 and runtimeStats=null');
+  assert(s.inputChars === 7 && s.inputMessages === 2 &&
+         s.outputChars === 9 && s.outputTokens === 4,
+         'summarizeRun passes the counters through unchanged');
+  assert(s.finishReason === 'length' && s.aborted === true,
+         'summarizeRun passes finishReason and aborted through unchanged');
+}
+
+// session300: no token ever arrived (firstTokenAt null) — ttftMs and
+// decodeTps are null, but totalMs is still measured end to end.
+{
+  const s = summarizeRun({
+    t0: 100, firstTokenAt: null, t1: 900,
+    inputChars: 5, inputMessages: 1, outputChars: 0, outputTokens: 0,
+    finishReason: null, aborted: true,
+  });
+  assert(s.totalMs === 800, 'summarizeRun still reports totalMs with no tokens');
+  assert(s.ttftMs === null && s.decodeTps === null,
+         'summarizeRun nulls ttftMs and decodeTps when no token arrived');
+}
+
+// session300: zero-length decode window (first token on the final read,
+// firstTokenAt === t1) — guarded so decodeTps is null, not Infinity/NaN.
+{
+  const s = summarizeRun({
+    t0: 0, firstTokenAt: 500, t1: 500,
+    inputChars: 3, inputMessages: 1, outputChars: 8, outputTokens: 2,
+    finishReason: 'stop', aborted: false,
+  });
+  assert(s.ttftMs === 500, 'summarizeRun ttftMs measured even for a zero decode window');
+  assert(s.decodeTps === null,
+         'summarizeRun nulls decodeTps when the decode window is zero-length');
 }

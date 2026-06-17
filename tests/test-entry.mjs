@@ -4,7 +4,7 @@ import {
   Real, Integer, BinaryInteger, Complex, Name, Str, Directory, Program, Tagged,
   RList, Vector, Matrix,
   isReal, isInteger, isBinaryInteger, isComplex, isDirectory, isProgram, isName,
-  isString, isList, isVector, isUnit,
+  isString, isList, isVector, isUnit, isMatrix, isSymbolic,
 } from '../www/src/rpl/types.js';
 import { parseEntry } from '../www/src/rpl/parser.js';
 import { format, formatStackTop } from '../www/src/rpl/formatter.js';
@@ -1100,6 +1100,96 @@ import { assert, assertThrows } from './helpers.mjs';
 }
 
 /* ====================================================================
+   session299: a PARENTHESISED unit literal abutting the program closer.
+   session293 pinned the simple (`m`) and compound (`m/s`) cases, but the
+   parenthesised form `kg/(m*s)` is a distinct corner: the unit-text
+   scanner deliberately keeps `()` OUT of its stop set (parens are valid
+   unit-grouping syntax — the formatter emits them for multiple negative
+   factors), so the program-closer stop has to fire on `»`/`>>` while the
+   interior parens stay inside the unit.  Guards a future "harmonisation"
+   that copies the bare-ident stop set (which DOES include `()`) onto the
+   unit scanner — that would split `kg/(m*s)` at the `(` and break every
+   parenthesised unit, abutting a closer or not.
+   ==================================================================== */
+{
+  // Baseline: a parenthesised unit parses as one Unit with the parens kept
+  // (uexpr canonicalises kg/(m*s) → [kg^1, m^-1, s^-1]).
+  const out = parseEntry('1_kg/(m*s)');
+  assert(out.length === 1 && isUnit(out[0]) && out[0].uexpr.length === 3
+      && out[0].uexpr.some(([s, e]) => s === 'kg' && e === 1)
+      && out[0].uexpr.some(([s, e]) => s === 'm' && e === -1)
+      && out[0].uexpr.some(([s, e]) => s === 's' && e === -1),
+    "parseEntry('1_kg/(m*s)') → [1_kg/(m*s)] (parens kept inside unit)");
+}
+{
+  // Unicode closer abutting a parenthesised unit: `« 1_kg/(m*s)»` closes
+  // on the real `»`, not on the interior `(` — one program, one unit.
+  const out = parseEntry('« 1_kg/(m*s)»');
+  const u = out[0] && out[0].tokens && out[0].tokens[0];
+  assert(out.length === 1 && isProgram(out[0]) && out[0].tokens.length === 1
+      && isUnit(u) && u.uexpr.length === 3,
+    "parseEntry('« 1_kg/(m*s)»') → [«1_kg/(m*s)»] (closer fires past parens)");
+}
+{
+  // ASCII `>>` closer abutting a parenthesised unit rides the lookahead.
+  const out = parseEntry('<< 1_kg/(m*s)>>');
+  const u = out[0] && out[0].tokens && out[0].tokens[0];
+  assert(out.length === 1 && isProgram(out[0]) && out[0].tokens.length === 1
+      && isUnit(u) && u.uexpr.length === 3,
+    "parseEntry('<< 1_kg/(m*s)>>') → [«1_kg/(m*s)»] (ASCII closer past parens)");
+}
+{
+  // The formatter's own multiple-negative-factor output `W/(K*m^2)` (the
+  // round-trip shape) also closes a program cleanly when it abuts `»`.
+  const out = parseEntry('« 1_W/(K*m^2)»');
+  const u = out[0] && out[0].tokens && out[0].tokens[0];
+  assert(out.length === 1 && isProgram(out[0]) && out[0].tokens.length === 1
+      && isUnit(u) && u.uexpr.length === 3,
+    "parseEntry('« 1_W/(K*m^2)»') → [«1_W/(K*m^2)»] (formatter form closes)");
+}
+{
+  // Regression: a following list opener still splits a parenthesised unit
+  // cleanly — the `{` stop fires after the closing `)`, not inside it.
+  const out = parseEntry('1_kg/(m*s){9}');
+  assert(out.length === 2 && isUnit(out[0]) && out[0].uexpr.length === 3
+      && isList(out[1]),
+    "parseEntry('1_kg/(m*s){9}') → [1_kg/(m*s), {9}] (list delim still stops)");
+}
+
+/* ====================================================================
+   session303: parseEntry's return-shape contract (code-review lane).
+   The JSDoc previously claimed parseEntry unwraps a single value for
+   one-token input and otherwise returns a "Program-like list" — both
+   false: it ALWAYS returns a plain array (one entry per top-level object,
+   in entry order; empty/whitespace input → []), and the callers (entry
+   loop, test-binary-int.mjs) rely on that by indexing `[0]` / checking
+   `.length`. Corrected the doc to match the code; this block guards the
+   contract so a future "helpful" unwrap-the-single-value refactor that
+   re-creates the old (wrong) doc is caught by the suite, not just review.
+   ==================================================================== */
+{
+  // Single top-level object → a length-1 array, NOT the bare value.
+  const one = parseEntry('42');
+  assert(Array.isArray(one) && one.length === 1 && isInteger(one[0]),
+    "parseEntry('42') → [Integer(42)] (single object stays wrapped)");
+}
+{
+  // Several top-level objects → one array entry each, in entry order.
+  const many = parseEntry('1 2 +');
+  assert(Array.isArray(many) && many.length === 3
+      && isInteger(many[0]) && isInteger(many[1]) && isName(many[2]),
+    "parseEntry('1 2 +') → [1, 2, +] (one entry per top-level object)");
+}
+{
+  // Empty / whitespace-only input → [], never a value or null.
+  const empty = parseEntry('');
+  const blank = parseEntry('   ');
+  assert(Array.isArray(empty) && empty.length === 0
+      && Array.isArray(blank) && blank.length === 0,
+    "parseEntry('') and parseEntry('   ') → [] (empty array)");
+}
+
+/* ====================================================================
    Polar / cylindrical / spherical input — HP50 AUR §4.4 (complex) and
    §9 (vector).  The angle component (prefixed with U+2220 `∠`) is
    interpreted in the active RAD / DEG / GRD mode and converted to
@@ -1267,6 +1357,72 @@ const _close = (a, b, eps = 1e-10) => Math.abs(Number(a) - Number(b)) < eps;
   // ∠ with a non-numeric tail.
   assertThrows(() => parseEntry('[ 1 ∠foo ]'), /angle/,
     '[ 1 ∠foo ] rejects — non-numeric angle');
+}
+
+/* ====================================================================
+   session305: program auto-close on an unterminated `«` / `<<`.  When the
+   source runs out before a closer, `parseProgram` (parser.js) exits its
+   loop and returns `Program(body)` as-is — the same "forgot the closer"
+   convenience the parser already grants lists / vectors / strings.  This
+   behavior is documented in docs/RPL.md but had no direct parseEntry pin;
+   guards a future strictness change that would throw on a missing `»`.
+   ==================================================================== */
+{
+  // Unterminated Unicode program with trailing content auto-closes and
+  // round-trips through the formatter to the spaced, closed form.
+  const v = parseEntry('« 1 2 +')[0];
+  assert(isProgram(v) && v.tokens.length === 3 && format(v) === '« 1 2 + »',
+    "parseEntry('« 1 2 +') auto-closes → « 1 2 + »");
+}
+{
+  // ASCII `<<` opener auto-closes identically (same delim pair).
+  const v = parseEntry('<< 1 2 +')[0];
+  assert(isProgram(v) && v.tokens.length === 3 && format(v) === '« 1 2 + »',
+    "parseEntry('<< 1 2 +') auto-closes → « 1 2 + »");
+}
+{
+  // A bare opener with no body auto-closes to the empty program.
+  const v = parseEntry('«')[0];
+  assert(isProgram(v) && v.tokens.length === 0 && format(v) === '«  »',
+    "parseEntry('«') auto-closes → empty program");
+}
+{
+  // Nested openers both auto-close at end-of-buffer (inner closes first,
+  // then the outer), so the inner Program is a single token of the outer.
+  const v = parseEntry('« 1 «2 +')[0];
+  assert(isProgram(v) && v.tokens.length === 2 && isProgram(v.tokens[1])
+      && v.tokens[1].tokens.length === 2 && format(v) === '« 1 « 2 + » »',
+    "parseEntry('« 1 «2 +') auto-closes both nesting levels");
+}
+{
+  // An unterminated program with an unterminated structural body inside it
+  // (IF without END) still auto-closes at the program level — the IF is one
+  // top-level token of the body, resolved structurally later by evalRange.
+  const v = parseEntry('« IF 1 THEN 2')[0];
+  assert(isProgram(v) && v.tokens.length === 4 && format(v) === '« IF 1 THEN 2 »',
+    "parseEntry('« IF 1 THEN 2') auto-closes the program body");
+}
+
+// session309: the parser.js file-header comment enumerates the object
+// kinds the entry parser covers.  Pin each so the comment can't drift
+// out of sync with the code (the same doc↔code guard class as R-013):
+// matrices, units, and algebraics had been silently added since the
+// comment was first written but were missing from its list.
+{
+  assert(isReal(parseEntry('1.5')[0]), 'header kind: real');
+  assert(isInteger(parseEntry('42')[0]), 'header kind: integer');
+  assert(isBinaryInteger(parseEntry('#FFh')[0]), 'header kind: binary integer');
+  assert(isComplex(parseEntry('(1,2)')[0]), 'header kind: complex');
+  assert(isString(parseEntry('"hi"')[0]), 'header kind: string');
+  assert(isName(parseEntry('FOO')[0]), 'header kind: name');
+  assert(isList(parseEntry('{ 1 2 }')[0]), 'header kind: list');
+  assert(isVector(parseEntry('[1 2 3]')[0]), 'header kind: vector');
+  assert(isMatrix(parseEntry('[[1 2][3 4]]')[0]), 'header kind: matrix');
+  assert(isProgram(parseEntry('« 1 + »')[0]), 'header kind: program');
+  assert(isUnit(parseEntry('1_m/s')[0]), 'header kind: unit');
+  assert(isSymbolic(parseEntry('`X^2+1`')[0]), 'header kind: algebraic (symbolic)');
+  // anything unrecognised passes through as a bare identifier (Name).
+  assert(isName(parseEntry('ZZQ?')[0]), 'header kind: unrecognised → bare identifier');
 }
 
 // --- Cleanup shared state so later tests don't see stray bindings

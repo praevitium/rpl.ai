@@ -9,10 +9,10 @@ current state.
 
 ## Current status
 
-`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (6347)** —
+`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (6651)** —
 fully green, 0 failing. `test-persist.mjs` 66 / 0 (stable; D-001 closed at
-ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~5 ms. (Aggregate now 6347
-after session296.)
+ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~5 ms. (Aggregate now 6651
+after session327.)
 
 The aggregate has grown past the last full per-file table below (5666, the
 session-269 snapshot, reproduced here as the most recent authoritative
@@ -160,10 +160,26 @@ Sibling lanes:
   `LNGAMMA(200)`. The `PSI`/`ZETA`/`LAMBERT` `_*Scalar` `isInteger` arms are
   now all covered: PSI by `session081: PSI(Integer(5))`, ZETA by `session086:
   ZETA(0)/ZETA(-1)/ZETA(-2)` (all `Integer`), and LAMBERT by `session296:
-  LAMBERT(Integer(0/1/3))` (was Real-only — closed this run). No remaining
-  Real-only `✓` Z cells in the special-function family are known; next run
-  should re-enumerate `✓` cells across the rest of the matrix for the same
-  pattern (e.g. TRUNC/XPON Z folds, the stat-dist family Z columns).
+  LAMBERT(Integer(0/1/3))`. The rounding family's negative-`n` Z fold
+  (TRNC/TRUNC/RND with an Integer operand and `n < 0`) is closed by session302
+  — see the coverage note below. No remaining Real-only `✓` Z cells in the
+  special-function family are known; next run should re-enumerate `✓` cells
+  across the rest of the matrix for the same pattern (XPON/MANT are already
+  covered by session043/285; the stat-dist family Z columns — UTPC/UTPF/UTPT
+  `asReal` integer arms — are now covered by session068/308, see the coverage
+  note below). The GCD/LCM R* (`~`) integer-valued-Real *acceptance* arm is
+  closed by session314 — see the coverage note below. The MOD / MIN / MAX
+  mixed-operand Decimal-from-Integer coercion arm is closed by session320 —
+  see the coverage note below. The core binary arithmetic (`+ - * /`)
+  mixed Integer/Real coercion arm is closed by session327 — see the coverage
+  note below (note `%` has no distinct Z arm: `_percentOp` runs `toRealOrThrow`
+  on both operands, so Integer and Real share one path and always yield Real).
+  Next run: re-enumerate `✓` cells across the rest of the matrix for any
+  remaining op whose result-type-determining coercion arm is exercised only by
+  a sibling type — candidates worth a pass are the comparison family's
+  promoteNumericPair-backed ordered ops and the Complex-promotion arm of the
+  arithmetic ops (Integer/Real ∘ Complex → Complex via toComplex's per-type
+  arms).
 
 ---
 
@@ -205,3 +221,73 @@ Sibling lanes:
   live first; no source change. Guards a refactor degrading Z to Real-only.
   (PSI and ZETA already had bare-`Integer` positive pins — PSI(Integer(5)),
   ZETA(0)/ZETA(-1)/ZETA(-2) — so only LAMBERT was Real-only.)
+- **Rounding family (TRNC / TRUNC / RND) negative-`n` Z fold** —
+  `_roundingOp`'s integer passthrough only fires for `n >= 0` (session081 pins
+  `TRUNC(Integer(42), 3)` → `Integer(42)`); a negative `n` routes the Integer
+  through the same Real-rounding path as a Real operand, so the result is a
+  `Real`, not an `Integer`. Every prior pin on that arm used a Real `x`.
+  `session302:` in `test-numerics.mjs` adds `TRNC`/`TRUNC`(Integer(123), -1) →
+  Real(100), (Integer(1250), -2) → Real(1200), (Integer(7), -1) → Real(7),
+  plus an RND contrast — half-away-from-zero diverges from toward-zero on the
+  same integer arm: `RND(Integer(1250), -2)` → Real(1300) vs TRNC/TRUNC's 1200.
+  Probed live first; no source change. Guards a refactor that would let the
+  integer arm skip the rounding fn or wrongly return an Integer for `n < 0`.
+- **Stat-dist (UTPF / UTPT) variate-operand Z fold** — the `asReal`
+  integer arm (`isInteger(v) ? Number(v.value)`) for the distribution
+  variate (UTPF's `F`, UTPT's `t`) was never positively pinned: every
+  session069 case pushed a `Real` for those operands (n/d/ν were always
+  `Integer`, so only the degrees-of-freedom integer arm was exercised).
+  UTPC's `x` integer arm was already covered by `session068:` `UTPC(2, 6)`.
+  `session308:` in `test-numerics.mjs` adds `UTPF(2, 4, Integer 3)` → 0.16
+  (n=2 closed form S(F) = (1 + (n/d)F)^(-d/2)), an Integer-F == Real-F
+  coercion-parity pin, `UTPF(5, 10, Integer 0)` → 1 (integer short-circuit),
+  `UTPT(1, Integer ±1)` → 0.25 / 0.75 (Cauchy closed form + t-symmetry), and
+  `UTPT(5, Integer 0)` → 0.5 (integer short-circuit). Probed live first; no
+  source change. Guards a refactor narrowing the variate's Integer coercion,
+  which would degrade the Z column there to Real-only.
+- **GCD / LCM integer-valued-Real acceptance arm (R* `~` cell)** — the
+  DATA_TYPES R* cell ("R accepted only when integer-valued") is
+  `_toBigIntOrThrow`'s `isReal(v) && v.value.isInteger()` branch (`ops.js`
+  ~1561), a distinct arm from the `isInteger(v)` branch every Integer-operand
+  pin already exercises. session064 pinned only the NEGATIVE side (non-integer
+  Real 1.5 rejected via a Tagged); every positive GCD/LCM pin pushed Integer,
+  so the integer-valued-Real *acceptance* arm was never positively exercised.
+  `session314:` in `test-numerics.mjs` adds `Real(12) Real(18) GCD` → 6 (both
+  Real), `Real(12) Integer(18)` / `Integer(12) Real(18)` GCD → 6 (each mixed
+  side independently), `Real(0) Real(7) GCD` → 7 (zero boundary through the
+  Real arm), `Real(4) Real(6)` / `Real(4) Integer(6)` LCM → 12, and a bare
+  (non-Tagged) `Real(4.2) Integer(6) LCM` → 'Bad argument value' contrast.
+  Probed live first; no source change. Guards a refactor narrowing GCD/LCM to
+  Integer-only (dropping the isReal arm of `_toBigIntOrThrow`).
+- **MOD / MIN / MAX mixed-operand Decimal-from-Integer coercion arm** — both
+  ops keep a dedicated Integer×Integer branch (Integer-preserving) and an
+  `else` branch that promotes each operand to `Decimal` via
+  `isReal(v) ? v.value : new Decimal(isInteger(v) ? v.value.toString() : …)`.
+  A both-Integer pair never reaches the `else`, and a both-Real pair takes the
+  `isReal` arm on both sides — so the `new Decimal(v.value.toString())` arm is
+  only exercised by a *mixed* Integer/Real pair. MOD had no mixed pin (every
+  MOD test was both-Real or both-Integer), and MIN/MAX pinned only the
+  left-operand (`da`) Integer arm via `MAX(Integer 5, Real 9.5)` — the
+  right-operand (`db`) Integer arm was untested. `session320:` in
+  `test-numerics.mjs` adds `Integer 7 Real 3 MOD` / `Real 7 Integer 3 MOD` → 1,
+  the sign-of-divisor pair `Integer -7 Real 3` / `Real -7 Integer 3 MOD` → 2,
+  and `Real 9.5 Integer 5` MIN → 5 / MAX → 9.5 plus `Integer 5 Real 9.5 MIN`
+  → 5 (covering both `da` and `db` Integer arms). Probed live first; no source
+  change. Guards a refactor that drops or narrows that coercion arm. (`%` has
+  no analogous Z arm: `_percentOp` runs `toRealOrThrow` on both operands and
+  always returns Real.)
+- **Core binary arithmetic (`+ - * /`) mixed Integer/Real coercion arm** —
+  `promoteNumericPair` routes a both-Integer pair to the `'integer'` kind
+  (Integer-preserving BigInt path) and a both-Real pair to the `'real'` kind
+  via `toRealDecimal`'s `isReal` arm on both sides. `toRealDecimal`'s
+  *isInteger* arm (`new Decimal(v.value.toString())`, `types.js` ~420) is
+  therefore only reached when ONE operand is Integer and the other Real. Every
+  prior `+ - * /` pin was both-Integer (`10 3 *` → Integer 30), both-Real, or
+  Tagged-of-Real, so the Integer-side coercion arm of the `'real'` path had no
+  positive pin — the analogue of the MOD/MIN/MAX session320 gap. `session327:`
+  in `test-numerics.mjs` adds the bare mixed pair for all four ops on both
+  operand positions: `Integer 7 ∘ Real 2.5` and `Real 7.5 ∘ Integer 2` →
+  Real (9.5/9.5, 4.5/5.5, 17.5/15, 2.8/3.75), asserting `isReal` and exact
+  value each time. Probed live first; no source change. Guards a refactor that
+  drops or narrows `toRealDecimal`'s Integer arm (which would mis-coerce or
+  reject a mixed arithmetic pair).

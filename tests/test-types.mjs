@@ -10723,6 +10723,40 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session244: Beta(Matrix, Integer) → 'Bad argument type' (no _withVMBinary; M=✗)`);
   }
 
+  // session323: b-arg (right-side) V/M rejection — the analogous unpinned cell.
+  // session244 pinned only V/M in the a-arg slot.  _withListBinary distributes
+  // Lists only, so a Vector/Matrix in the b slot falls through to _betaScalar:
+  // aNum resolves fine, bNum = null → throws 'Bad argument type'.
+  {
+    const s = new Stack();
+    s.push(Integer(1n));
+    s.push(Vector([Real(2), Real(1)]));
+    assertThrows(() => lookup('Beta').fn(s), /Bad argument type/i,
+      `session323: Beta(Integer, Vector) → 'Bad argument type' (b-arg V; no _withVMBinary)`);
+  }
+  {
+    const s = new Stack();
+    s.push(Integer(1n));
+    s.push(Matrix([[Real(2)]]));
+    assertThrows(() => lookup('Beta').fn(s), /Bad argument type/i,
+      `session323: Beta(Integer, Matrix) → 'Bad argument type' (b-arg M; no _withVMBinary)`);
+  }
+  // Real a-arg variant: confirms the bNum=null path fires regardless of a's kind.
+  {
+    const s = new Stack();
+    s.push(Real(2.5));
+    s.push(Vector([Real(2)]));
+    assertThrows(() => lookup('Beta').fn(s), /Bad argument type/i,
+      `session323: Beta(Real, Vector) → 'Bad argument type' (b-arg V; a=Real)`);
+  }
+  {
+    const s = new Stack();
+    s.push(Real(2.5));
+    s.push(Matrix([[Real(2)]]));
+    assertThrows(() => lookup('Beta').fn(s), /Bad argument type/i,
+      `session323: Beta(Real, Matrix) → 'Bad argument type' (b-arg M; a=Real)`);
+  }
+
   // n=0 empty-list passthrough.
   {
     const s = new Stack();
@@ -10865,6 +10899,64 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     s.push(Vector([Real(1)]));
     assertThrows(() => lookup('UTPT').fn(s), /Bad argument type/i,
       `session248: UTPT Integer(3) Vector([Real(1)]) → 'Bad argument type' (no _withVMBinary; V=✗)`);
+  }
+}
+
+// ── session316: UTPC/UTPT — M=✗ and ν-position V/M rejection pins ───────────
+// session248 pinned only Vector in the x/t (variate) slot for UTPC/UTPT, but
+// both ops document M=✗ and the ν (first-operand) collection cells too.
+// `_withListBinary` distributes Lists only, so a Vector/Matrix in EITHER slot
+// reaches the scalar dispatcher's `asReal` (isInteger/isReal only) → Bad
+// argument type — mirroring session310's UTPF variate+ν sweep. No source
+// change; guards a refactor that adds `_withVMBinary` or widens `asReal`.
+{
+  // UTPC — Matrix in the x slot.
+  {
+    const s = new Stack();
+    s.push(Integer(2n));
+    s.push(Matrix([[Real(1), Real(2)]]));
+    assertThrows(() => lookup('UTPC').fn(s), /Bad argument type/i,
+      `session316: UTPC Integer(2) Matrix([[Real(1) Real(2)]]) → 'Bad argument type' (no _withVMBinary; M=✗)`);
+  }
+  // UTPC — Vector in the ν slot.
+  {
+    const s = new Stack();
+    s.push(Vector([Real(1)]));
+    s.push(Integer(2n));
+    assertThrows(() => lookup('UTPC').fn(s), /Bad argument type/i,
+      `session316: UTPC Vector([Real(1)]) Integer(2) → 'Bad argument type' (ν-position; V=✗)`);
+  }
+  // UTPC — Matrix in the ν slot.
+  {
+    const s = new Stack();
+    s.push(Matrix([[Real(1), Real(2)]]));
+    s.push(Integer(2n));
+    assertThrows(() => lookup('UTPC').fn(s), /Bad argument type/i,
+      `session316: UTPC Matrix([[Real(1) Real(2)]]) Integer(2) → 'Bad argument type' (ν-position; M=✗)`);
+  }
+  // UTPT — Matrix in the t slot.
+  {
+    const s = new Stack();
+    s.push(Integer(3n));
+    s.push(Matrix([[Real(1), Real(2)]]));
+    assertThrows(() => lookup('UTPT').fn(s), /Bad argument type/i,
+      `session316: UTPT Integer(3) Matrix([[Real(1) Real(2)]]) → 'Bad argument type' (no _withVMBinary; M=✗)`);
+  }
+  // UTPT — Vector in the ν slot.
+  {
+    const s = new Stack();
+    s.push(Vector([Real(1)]));
+    s.push(Integer(0n));
+    assertThrows(() => lookup('UTPT').fn(s), /Bad argument type/i,
+      `session316: UTPT Vector([Real(1)]) Integer(0) → 'Bad argument type' (ν-position; V=✗)`);
+  }
+  // UTPT — Matrix in the ν slot.
+  {
+    const s = new Stack();
+    s.push(Matrix([[Real(1), Real(2)]]));
+    s.push(Integer(0n));
+    assertThrows(() => lookup('UTPT').fn(s), /Bad argument type/i,
+      `session316: UTPT Matrix([[Real(1) Real(2)]]) Integer(0) → 'Bad argument type' (ν-position; M=✗)`);
   }
 }
 
@@ -11476,6 +11568,52 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
 }
 
 /* ====================================================================
+   session330: combinatorial family — b-slot (right-operand) V/M rejection
+   ----------------------------------------------------------------
+   session267 pinned V/M=✗ for COMB/PERM/IQUOT/IREMAINDER using
+   both-operand Vector (V V) / Matrix (M M) inputs, which trip the
+   FIRST-operand check: `_combPermArgs` rejects `a` at the `!isInteger(a)
+   && !isReal(a)` arm (ops.js ~1827) and IQUOT/IREMAINDER reject `a` at
+   `_intQuotientArg(a)` (ops.js ~1998/2012, evaluated before `b`).  The
+   SECOND-operand arm — a valid Integer `a` with a Vector/Matrix `b` —
+   was unguarded, the analogue of BETA's b-arg cell pinned session323.
+   `_withListBinary` distributes Lists only, so a Vector/Matrix in the b
+   slot falls through to the inner handler where the b-arm throws.
+   No source change — guards a refactor that drops the second-operand
+   type check or short-circuits before it.
+   ================================================================ */
+{
+  const Ia = Integer(5n);     // valid left operand
+  const V = Vector([Real(1), Real(2)]);
+  const M = Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]);
+
+  for (const op of ['COMB', 'PERM']) {
+    {
+      const s = new Stack(); s.push(Ia); s.push(V);
+      assertThrows(() => lookup(op).fn(s), /Bad argument type/i,
+        `session330: Integer(5) Vector ${op} → Bad argument type (b-slot V=✗; _combPermArgs rejects b at !isInteger(b)&&!isReal(b))`);
+    }
+    {
+      const s = new Stack(); s.push(Ia); s.push(M);
+      assertThrows(() => lookup(op).fn(s), /Bad argument type/i,
+        `session330: Integer(5) Matrix ${op} → Bad argument type (b-slot M=✗; same _combPermArgs b-arm)`);
+    }
+  }
+  for (const op of ['IQUOT', 'IREMAINDER']) {
+    {
+      const s = new Stack(); s.push(Ia); s.push(V);
+      assertThrows(() => lookup(op).fn(s), /Bad argument type/i,
+        `session330: Integer(5) Vector ${op} → Bad argument type (b-slot V=✗; _intQuotientArg(b) rejects Vector)`);
+    }
+    {
+      const s = new Stack(); s.push(Ia); s.push(M);
+      assertThrows(() => lookup(op).fn(s), /Bad argument type/i,
+        `session330: Integer(5) Matrix ${op} → Bad argument type (b-slot M=✗; same _intQuotientArg(b) arm)`);
+    }
+  }
+}
+
+/* ====================================================================
    session268: C-column rejection pins — GAMMA / LNGAMMA / HEAVISIDE
    ----------------------------------------------------------------
    Closes the three stat-dist family ops session 267 skipped when it
@@ -11547,6 +11685,66 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     const s = new Stack(); s.push(S1); s.push(Str('y'));
     assertThrows(() => lookup('XROOT').fn(s), /Bad argument type/i,
       'session269: Str("x") Str("y") XROOT → Bad argument type: expected real, got string (S=✗; degree x via toRealOrThrow rejects String)');
+  }
+}
+
+/* ====================================================================
+   session304: XROOT V/M doc↔code drift — Vector/Matrix radicand reject
+   ----------------------------------------------------------------
+   The DATA_TYPES XROOT row carried V `✓` / M `✓`, but those cells went
+   stale when session298 changed `^`'s V/M semantics.  XROOT(y, x) is
+   pure plumbing — it pushes `1/x` and delegates to `^` — so the radicand
+   y inherits whatever `^` does with a Vector/Matrix base:
+     • Vector base → `^` rejects ('Bad argument type'; there is no vector
+       power).  `_withListBinary` only distributes Lists, NOT Vectors, so
+       a Vector y reaches the inner handler and hits `^`'s rejection.
+       V = ✗.
+     • Matrix base → `^` matrix-power, which requires a whole-number
+       exponent.  The exponent is `1/x`, whole only at x = ±1 (and `^`
+       rejects negative exponents for matrices), so any genuine root
+       rejects: non-whole `1/x` → 'Bad argument value'; non-square M →
+       'Invalid dimension'.  The lone non-error path is the degenerate
+       x=1 identity (`M^1 = M`), which is `^`'s no-op, not a matrix root —
+       so M = ✗.
+   No source change — the behavior is already correct post-298; this
+   pins it and the doc row is corrected to match.
+   ================================================================ */
+{
+  // V = ✗ — Vector radicand → `^` rejects the vector base.
+  {
+    const s = new Stack();
+    s.push(Vector([Real(8), Real(27)]));
+    s.push(Integer(3n));
+    assertThrows(() => lookup('XROOT').fn(s), /Bad argument type/i,
+      'session304: V[8,27] 3 XROOT → Bad argument type (V=✗; radicand routes through `^`, which rejects a Vector base — no vector power)');
+  }
+  // M = ✗ — square Matrix radicand with non-whole 1/x → matrix-power rejects.
+  {
+    const s = new Stack();
+    s.push(Matrix([[Real(8), Real(27)], [Real(1), Real(1)]]));
+    s.push(Integer(3n));
+    assertThrows(() => lookup('XROOT').fn(s), /Bad argument value/i,
+      'session304: M[[8,27],[1,1]] 3 XROOT → Bad argument value (M=✗; 1/3 is not a whole-number exponent for `^`s matrix power)');
+  }
+  // M = ✗ — non-square Matrix radicand → matrix-power dimension reject.
+  {
+    const s = new Stack();
+    s.push(Matrix([[Real(1), Real(2), Real(3)]]));
+    s.push(Integer(1n));
+    assertThrows(() => lookup('XROOT').fn(s), /Invalid dimension/i,
+      'session304: M[[1,2,3]] 1 XROOT → Invalid dimension (M=✗; non-square has no matrix power)');
+  }
+  // Degenerate exception — square M with x=1 → `^`s M^1 no-op (NOT a matrix
+  // root).  Documents the lone non-error path behind the M=✗ classification.
+  {
+    const s = new Stack();
+    s.push(Matrix([[Integer(1n), Integer(2n)], [Integer(3n), Integer(4n)]]));
+    s.push(Integer(1n));
+    lookup('XROOT').fn(s);
+    const v = s.peek();
+    assert(isMatrix(v) && v.rows[0][0].value.toString() === '1' &&
+           v.rows[1][1].value.toString() === '4',
+      `session304: M[[1,2],[3,4]] 1 XROOT → M^1 = the same matrix (degenerate x=1 identity, not a root; got ${v?.type})`);
   }
 }
 
@@ -11746,4 +11944,119 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   }
 
   setWordsize(wsEntry);
+}
+
+/* ================================================================
+   session298: `^` on a Matrix base is the *matrix power* (repeated
+   matmul, M^0 = identity), per HP50 AUR ("`^` can also apply to a
+   square matrix raised to a whole-number power").  session292's drift
+   watch flagged the old `^` row: a Matrix base ran the generic
+   element-wise broadcast (`M[[1,2],[3,4]] ^ 2` → element-wise
+   `[[1,4],[9,16]]`) and a Vector base broadcast too.  Source fix:
+   `binaryMath` now intercepts `op==='^'` for Matrix/Vector bases —
+   square Matrix^whole-number routes through the new `_matrixPow`
+   (which shares `_matMul` with the `*` branch); Vector base and a
+   non-whole-number / negative exponent reject.  These pins lock the
+   corrected behavior plus a `*`-matmul regression for the extracted
+   `_matMul` helper.
+   ================================================================ */
+{
+  const M22 = () => Matrix([[Integer(1n), Integer(2n)], [Integer(3n), Integer(4n)]]);
+  const rowsEqual = (m, expected) =>
+    isMatrix(m) && m.rows.length === expected.length &&
+    m.rows.every((row, i) =>
+      row.length === expected[i].length &&
+      row.every((x, j) => isInteger(x) && x.value === expected[i][j]));
+
+  // M^2 = M·M = [[7,10],[15,22]] (NOT element-wise [[1,4],[9,16]]).
+  {
+    const s = new Stack();
+    s.push(M22());
+    s.push(Integer(2n));
+    lookup('^').fn(s);
+    assert(rowsEqual(s.peek(), [[7n, 10n], [15n, 22n]]),
+      'session298: M[[1,2],[3,4]] ^ 2 → [[7,10],[15,22]] (matrix power, not element-wise)');
+  }
+
+  // M^0 = identity.
+  {
+    const s = new Stack();
+    s.push(M22());
+    s.push(Integer(0n));
+    lookup('^').fn(s);
+    assert(rowsEqual(s.peek(), [[1n, 0n], [0n, 1n]]),
+      'session298: M ^ 0 → identity [[1,0],[0,1]]');
+  }
+
+  // M^1 = M.
+  {
+    const s = new Stack();
+    s.push(M22());
+    s.push(Integer(1n));
+    lookup('^').fn(s);
+    assert(rowsEqual(s.peek(), [[1n, 2n], [3n, 4n]]),
+      'session298: M ^ 1 → M unchanged');
+  }
+
+  // M^3 = M^2·M = [[37,54],[81,118]].
+  {
+    const s = new Stack();
+    s.push(M22());
+    s.push(Integer(3n));
+    lookup('^').fn(s);
+    assert(rowsEqual(s.peek(), [[37n, 54n], [81n, 118n]]),
+      'session298: M ^ 3 → [[37,54],[81,118]] (repeated matmul)');
+  }
+
+  // Whole-number Real exponent is accepted (integer-valued Real arm).
+  {
+    const s = new Stack();
+    s.push(M22());
+    s.push(Real(2));
+    lookup('^').fn(s);
+    assert(rowsEqual(s.peek(), [[7n, 10n], [15n, 22n]]),
+      'session298: M ^ Real(2) → matrix power (integer-valued Real exponent)');
+  }
+
+  // Vector base has no defined `^` — reject (V cell is genuinely ✗).
+  assertThrows(() => {
+    const s = new Stack();
+    s.push(Vector([Integer(2n), Integer(3n)]));
+    s.push(Integer(2n));
+    lookup('^').fn(s);
+  }, 'Bad argument type', 'session298: V[2,3] ^ 2 → Bad argument type (no vector power)');
+
+  // Non-square matrix base — matrix power undefined.
+  assertThrows(() => {
+    const s = new Stack();
+    s.push(Matrix([[Integer(1n), Integer(2n), Integer(3n)], [Integer(4n), Integer(5n), Integer(6n)]]));
+    s.push(Integer(2n));
+    lookup('^').fn(s);
+  }, 'Invalid dimension', 'session298: M(2x3) ^ 2 → Invalid dimension (square only)');
+
+  // Negative exponent — AUR specifies whole-number power only.
+  assertThrows(() => {
+    const s = new Stack();
+    s.push(M22());
+    s.push(Integer(-1n));
+    lookup('^').fn(s);
+  }, 'Bad argument value', 'session298: M ^ -1 → Bad argument value (whole-number only)');
+
+  // Non-integer exponent — rejected.
+  assertThrows(() => {
+    const s = new Stack();
+    s.push(M22());
+    s.push(Real(1.5));
+    lookup('^').fn(s);
+  }, 'Bad argument value', 'session298: M ^ 1.5 → Bad argument value (whole-number only)');
+
+  // Regression for the extracted `_matMul`: M·M still matmul.
+  {
+    const s = new Stack();
+    s.push(M22());
+    s.push(M22());
+    lookup('*').fn(s);
+    assert(rowsEqual(s.peek(), [[7n, 10n], [15n, 22n]]),
+      'session298: M * M → [[7,10],[15,22]] (matmul via extracted _matMul helper)');
+  }
 }

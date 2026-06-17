@@ -191,6 +191,30 @@ import { assert, assertThrows } from './helpers.mjs';
   }
 
   {
+    // session329: the ASCII `LIST->` alias (ops.js ~6671) had zero test
+    // mention — only the Unicode LIST→ was exercised.  Pin alias identity,
+    // identical list expansion, and the non-List rejection.
+    assert(lookup('LIST->').fn === lookup('LIST→').fn,
+      'session329: LIST-> shares LIST→ handler (ASCII alias identity)');
+
+    const s = new Stack();
+    s.push(RList([Real(7), Real(8), Real(9)]));
+    lookup('LIST->').fn(s);
+    assert(s.depth === 4
+        && isInteger(s.peek(1)) && s.peek(1).value === 3n
+        && isReal(s.peek(2)) && s.peek(2).value.eq(9)
+        && isReal(s.peek(3)) && s.peek(3).value.eq(8)
+        && isReal(s.peek(4)) && s.peek(4).value.eq(7),
+      '{ 7 8 9 } LIST-> → 7 8 9 3 (ASCII alias)');
+  }
+  {
+    const s = new Stack();
+    s.push(Real(5));
+    assertThrows(() => lookup('LIST->').fn(s), 'Bad argument type',
+      'session329: LIST-> rejects non-List operand');
+  }
+
+  {
     const s = new Stack();
     s.push(RList([Real(10), Real(20), Real(30)]));
     s.push(Real(20));

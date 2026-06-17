@@ -1,6 +1,6 @@
 import {
   parseAllToolCalls, parseSuggestions, findMachineSectionStart, stripThinkBlocks,
-  resolveToolAlias, activeContextTokens, effectiveBudget, TOOL_ALIASES,
+  resolveToolAlias, activeContextTokens, effectiveBudget, TOOL_ALIASES, ChatBot,
 } from '../www/src/ai/chat-bot.js';
 import { SYSTEM_PROMPT_COMBINED, RPL_CATALOG } from '../www/src/ai/system-prompt.js';
 import { hasOp } from '../www/src/rpl/ops.js';
@@ -134,6 +134,33 @@ import { assert } from './helpers.mjs';
          'parseSuggestions returns null on empty input');
 }
 
+// session318: parseSuggestions' remaining early-return and coercion arms.
+// The marker-present-but-malformed branches and the non-string element
+// coercion in tryParse were never pinned — session275/the JSON-array and
+// trailing-comma-fallback blocks above only exercise well-formed brackets
+// and empty-STRING filtering. These guard a refactor that drops the `lo`/`hi`
+// bracket-locator guards or narrows tryParse's `typeof v === 'string'` arm.
+{
+  // SUGGEST marker present but no opening `[` at all -> lo < 0 -> null.
+  assert(parseSuggestions('SUGGEST: nothing here') === null,
+         'parseSuggestions returns null when the marker has no [ array');
+  // Opening `[` but never closed -> matchBalancedEnd returns -1 -> null.
+  assert(parseSuggestions('SUGGEST: ["a", "b"') === null,
+         'parseSuggestions returns null on an unbalanced [ array');
+  // Non-string elements are coerced to '' and filtered, strings survive.
+  const mixed = parseSuggestions('SUGGEST: ["keep", 42, true, null, "also"]');
+  assert(mixed && mixed.length === 2 && mixed[0] === 'keep' && mixed[1] === 'also',
+         'parseSuggestions drops non-string array elements, keeps strings');
+  // Array parses but holds only non-strings -> [] -> tryParse null; the
+  // quoted-token fallback finds no "…" tokens either -> null.
+  assert(parseSuggestions('SUGGEST: [1, 2, 3]') === null,
+         'parseSuggestions returns null when the array has no usable strings');
+  // JSON.parse fails (bare identifiers) and the fallback finds no quoted
+  // tokens -> null, distinct from the trailing-comma-with-strings recovery.
+  assert(parseSuggestions('SUGGEST: [unquoted, junk,]') === null,
+         'parseSuggestions returns null when neither parse nor quoted fallback matches');
+}
+
 
 {
   assert(findMachineSectionStart('totally plain prose') === -1,
@@ -156,6 +183,32 @@ import { assert } from './helpers.mjs';
   const text = 'p SUGGEST: ["q"] more {"name":"x"}';
   assert(findMachineSectionStart(text) === text.indexOf('SUGGEST'),
          'findMachineSectionStart returns the earliest of the two markers');
+}
+
+// session325: the prior block only pins the SUGGEST-before-JSON ordering
+// (Math.min picks sIdx).  The system prompt's REPLY FORMAT puts TOOL CALLS
+// *before* SUGGEST, so the live ordering is JSON-first — the Math.min arm
+// that must pick jIdx.  Guards a refactor that returns the wrong marker
+// (or drops the min) when both are present in spec order.
+{
+  const text = 'p {"name":"x"} then SUGGEST: ["q"]';
+  assert(findMachineSectionStart(text) === text.indexOf('{'),
+         'findMachineSectionStart picks the JSON anchor when it precedes SUGGEST');
+}
+
+{
+  // Multiple JSON anchors before SUGGEST: still the FIRST marker offset.
+  const text = 'lead {"name":"a"} mid {"name":"b"} SUGGEST: ["q"]';
+  assert(findMachineSectionStart(text) === text.indexOf('{'),
+         'findMachineSectionStart reports the first JSON anchor with several before SUGGEST');
+}
+
+{
+  // SUGGEST is matched case-insensitively, so a lowercase marker after the
+  // JSON anchor still loses the min — JSON-first offset wins.
+  const text = 'x {"name":"y"} suggest: ["z"]';
+  assert(findMachineSectionStart(text) === text.indexOf('{'),
+         'findMachineSectionStart picks JSON over a lowercase suggest marker that follows it');
 }
 
 
@@ -186,6 +239,51 @@ import { assert } from './helpers.mjs';
          'stripThinkBlocks preserves empty string');
   assert(stripThinkBlocks(null) === null,
          'stripThinkBlocks preserves null');
+}
+
+// session306: stripThinkBlocks' two replaces in concert, plus the
+// integration that is its whole reason to exist (doc point 2): a fake
+// tool-call shape inside a reasoning block must be removed BEFORE
+// parseAllToolCalls runs, so a model's internal monologue never
+// dispatches a phantom command.  Only single complete pairs and one
+// trailing-open block were pinned; multi-pair, interleaved, and the
+// strip→parse hand-off were not.
+{
+  // The global flag collapses every complete pair, not just the first.
+  assert(stripThinkBlocks('<think>a</think>keep1<think>b</think>keep2') === 'keep1keep2',
+         'stripThinkBlocks removes multiple complete pairs');
+  assert(stripThinkBlocks('Intro <think>x</think>middle <think>y</think>end')
+           === 'Intro middle end',
+         'stripThinkBlocks strips think blocks interleaved with prose');
+  // Complete pair then a trailing open block: the pair-collapse pass
+  // removes the first, the open-tail pass drops the second.
+  assert(stripThinkBlocks('<think>done</think>Answer is 4.<think>more') === 'Answer is 4.',
+         'stripThinkBlocks handles a complete pair followed by an open block');
+}
+
+// session306: the strip→parse contract.  A `{"name":...}` emitted inside
+// a reasoning block parses as a real call on the RAW text but is gone
+// once stripped — so the orchestrator's strip-then-parse order is what
+// stops a phantom dispatch.
+{
+  const raw = '<think>Maybe {"name":"DROP","arguments":{}}</think>Pushing 3.\n'
+            + '{"name":"push_to_stack","arguments":{"value":"3"}}';
+  const rawNames = parseAllToolCalls(raw).map(c => c.name);
+  assert(rawNames.length === 2 && rawNames[0] === 'DROP',
+         'parseAllToolCalls on RAW text would see the in-think phantom call');
+  const strippedNames = parseAllToolCalls(stripThinkBlocks(raw)).map(c => c.name);
+  assert(strippedNames.length === 1 && strippedNames[0] === 'push_to_stack',
+         'stripThinkBlocks drops the phantom so only the real call parses');
+  // Mid-stream: an unclosed think block carrying a tool-call shape is
+  // suppressed entirely, leaving nothing for the parser to dispatch.
+  const mid = 'Working.<think>plan: {"name":"CLEAR"}';
+  assert(stripThinkBlocks(mid) === 'Working.',
+         'stripThinkBlocks suppresses an open block mid-stream');
+  assert(parseAllToolCalls(stripThinkBlocks(mid)).length === 0,
+         'no tool call survives an unclosed reasoning block');
+  // And the streaming hide-detector sees pure prose after the strip.
+  assert(findMachineSectionStart(stripThinkBlocks('<think>{"name":"X"}</think>just prose')) === -1,
+         'findMachineSectionStart reports pure prose once a think-wrapped call is stripped');
 }
 
 
@@ -245,6 +343,45 @@ import { assert } from './helpers.mjs';
          'activeContextTokens falls back to 4096 for an unknown catalog id');
 }
 
+// session312: positive coverage for the in-catalog worker-model branch and
+// the effectiveBudget zero-floor — only the unknown-id `?? 4096` fallback and
+// the remote paths were pinned, leaving the catalog hit and the Math.max(0,…)
+// guard untested.
+{
+  // A worker LLM (no `endpoint`) whose id IS in MODELS resolves that
+  // entry's real contextTokens, not the 4096 fallback.
+  const worker = { loadedModelId: 'Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC' };
+  assert(activeContextTokens(worker) === 32768,
+         'activeContextTokens resolves an in-catalog worker model contextTokens');
+  assert(effectiveBudget(worker) === 32768 * 4 - 4000,
+         'effectiveBudget tracks an in-catalog worker model window');
+
+  // The remote branch is gated on a STRING `endpoint`; a worker LLM that
+  // happens to carry a contextTokens field still goes through the catalog,
+  // so that stray field is ignored.
+  const ducked = { loadedModelId: 'Qwen3-0.6B-q4f16_1-MLC', contextTokens: 999 };
+  assert(activeContextTokens(ducked) === 32768,
+         'activeContextTokens ignores a worker LLM contextTokens field (no endpoint → catalog wins)');
+
+  // A window smaller than the response reserve floors the budget at 0
+  // instead of going negative.
+  const tiny = { loadedModelId: 'srv', endpoint: 'http://x', contextTokens: 500 };
+  assert(activeContextTokens(tiny) === 500,
+         'activeContextTokens passes through a tiny remote window');
+  assert(effectiveBudget(tiny) === 0,
+         'effectiveBudget floors at 0 when the window is below the response reserve');
+}
+
+// Canonical tool set pulled from the LIVE registry — chat-bot.js
+// _buildRegistry is the documented single source of truth.  It reads only
+// this._tools / this._getContext, so a minimal fake `this` extracts the
+// keys without constructing a ChatBot (DOM-free).  Both sync guards below
+// derive from this instead of a hand-copied literal, so a tool added to
+// the registry but not the prompt (or vice versa) fails the suite — the
+// exact drift these guards promise to catch.
+const registryToolNames = () =>
+  Object.keys(ChatBot.prototype._buildRegistry.call({ _tools: {}, _getContext: () => ({}) }));
+
 // AI prompt <-> tool-registry sync guards.  The AVAILABLE TOOLS block in
 // SYSTEM_PROMPT_COMBINED is a hand-maintained contract the model emits
 // verbatim; a tool name that drifts from chat-bot.js _buildRegistry, or
@@ -257,12 +394,11 @@ import { assert } from './helpers.mjs';
       .map((m) => m[1])
       .filter((n) => !n.includes('<')),
   )].sort();
-  const expected = [
-    'append_to_editor', 'clear_editor', 'get_editor', 'get_stack',
-    'get_vars', 'push_to_stack', 'recall_var', 'run',
-  ];
-  assert(documented.join(',') === expected.join(','),
-         'AVAILABLE TOOLS block documents exactly the registry tool set');
+  const registryNames = registryToolNames().sort();
+  assert(registryNames.length >= 8,
+         'registry exposes the full tool set (extraction floor)');
+  assert(documented.join(',') === registryNames.join(','),
+         'AVAILABLE TOOLS block documents exactly the live registry tool set');
 
   // A canonical tool name must never also be an alias key, or the
   // orchestrator would rewrite a real tool call to something else.
@@ -283,16 +419,98 @@ import { assert } from './helpers.mjs';
   }
 }
 
+// session321: pin each documented tool's confirm / read-only semantics
+// against the live registry's `confirm` flag — the queued code-review
+// follow-up to the O-015 name-sync guard, which checked only the tool
+// names. The AVAILABLE TOOLS prose the model reads states each tool as
+// either "Requires user confirmation" (mutating) or "Auto-executes
+// (read-only)", while the registry's `confirm` boolean is what the
+// orchestrator actually gates on. A tool flipped read-only<->mutating in
+// _buildRegistry without a matching prompt edit (or vice versa) would
+// silently mislead the model about whether an action runs unattended, so
+// derive the documented semantic from the prose and assert it matches the
+// registry flag in both directions. The mutual-exclusion check also
+// catches a description that drops the semantic phrase entirely.
+{
+  const reg = ChatBot.prototype._buildRegistry.call({ _tools: {}, _getContext: () => ({}) });
+  const head = SYSTEM_PROMPT_COMBINED.indexOf('AVAILABLE TOOLS');
+  const tail = SYSTEM_PROMPT_COMBINED.indexOf('EXAMPLES', head);
+  const block = SYSTEM_PROMPT_COMBINED.slice(head, tail);
+  let documentedCount = 0;
+  for (const m of block.matchAll(/\{"name":"([^"]+)"[^\n]*\}\n\s+([^\n]+)/g)) {
+    const name = m[1];
+    if (name.includes('<')) { continue; }
+    const desc = m[2];
+    const saysConfirm = /confirmation/i.test(desc);
+    const saysAuto = /auto-executes|read-only/i.test(desc);
+    assert(saysConfirm !== saysAuto,
+           `AVAILABLE TOOLS describes ${name} as exactly one of mutating / read-only`);
+    assert(name in reg,
+           `documented tool ${name} exists in the live registry`);
+    assert(reg[name].confirm === saysConfirm,
+           `${name} prose confirm-semantics match the registry confirm flag`);
+    documentedCount++;
+  }
+  assert(documentedCount >= 8,
+         'every registry tool carries a confirm-semantics description in the prompt');
+}
+
+// session328: pin each documented tool's ARGUMENT NAMES against the keys its
+// registry handler actually reads — the queued O-013 follow-up that O-015
+// (name sync) and O-016 (confirm sync) left open. The model emits the
+// AVAILABLE TOOLS argument object verbatim (`{"name":"run","arguments":
+// {"text":...}}`), but the orchestrator destructures a fixed key out of that
+// object (`({ text }) => tools.run(...)`). If a handler's arg is renamed
+// (text->code) without a matching prompt edit, or vice versa, the model sends
+// a key the handler ignores and the action silently runs empty — invisible to
+// the name and confirm guards. Introspect the real read-keys with a recording
+// Proxy as the args object (a Get trap fires once per destructured key) and a
+// no-op `_tools` so the side-effecting handlers run DOM-free, then assert the
+// advertised key set equals the read set per tool, in both directions.
+{
+  const head = SYSTEM_PROMPT_COMBINED.indexOf('AVAILABLE TOOLS');
+  const tail = SYSTEM_PROMPT_COMBINED.indexOf('EXAMPLES', head);
+  const block = SYSTEM_PROMPT_COMBINED.slice(head, tail);
+  const advertised = {};
+  for (const m of block.matchAll(/"name":"([^"]+)","arguments":\{([^}]*)\}/g)) {
+    const name = m[1];
+    if (name.includes('<')) { continue; }
+    advertised[name] = [...m[2].matchAll(/"([^"]+)":/g)].map((x) => x[1]).sort();
+  }
+  const toolsProxy = new Proxy({}, { get: () => () => undefined });
+  const reg = ChatBot.prototype._buildRegistry.call({
+    _tools: toolsProxy,
+    _getContext: () => ({ stack: [], angleMode: 0, displayMode: 0, dir: [] }),
+  });
+  let pairs = 0;
+  for (const [name, tool] of Object.entries(reg)) {
+    const got = new Set();
+    const argp = new Proxy({}, {
+      get(_o, p) { if (typeof p === 'string') { got.add(p); } return undefined; },
+    });
+    tool.handler(argp);
+    const readKeys = [...got].sort();
+    assert(name in advertised,
+           `registry tool ${name} appears in the AVAILABLE TOOLS block`);
+    assert(advertised[name].join(',') === readKeys.join(','),
+           `${name} advertised arg names match the handler's read keys`);
+    pairs++;
+  }
+  for (const name of Object.keys(advertised)) {
+    assert(name in reg,
+           `documented tool ${name} exists in the live registry (arg-name guard)`);
+  }
+  assert(pairs >= 8,
+         'every registry tool is checked for arg-name sync (extraction floor)');
+}
+
 // session283: guard the alias map from the target side. Every alias must
 // point at a real canonical tool, and no target may also be a key — a
 // two-hop chain (synonym of a synonym) would leave resolveToolAlias one
 // rewrite short, and a target outside the tool set would silently route
 // a call to a nonexistent op.
 {
-  const canonical = new Set([
-    'append_to_editor', 'clear_editor', 'get_editor', 'get_stack',
-    'get_vars', 'push_to_stack', 'recall_var', 'run',
-  ]);
+  const canonical = new Set(registryToolNames());
   const keys = new Set(Object.keys(TOOL_ALIASES));
   for (const target of new Set(Object.values(TOOL_ALIASES))) {
     assert(canonical.has(target),

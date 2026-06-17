@@ -637,6 +637,45 @@ function _scalarSum(parts) {
   return acc;
 }
 
+/** Standard matrix product of two row-major operand grids (m×n · n×p).
+ *  Shared by the M·M `*` branch and `_matrixPow`. */
+function _matMul(aRows, bRows) {
+  const ar = aRows.length, ac = aRows[0]?.length ?? 0;
+  const br = bRows.length, bc = bRows[0]?.length ?? 0;
+  if (ac !== br) throw new RPLError('Invalid dimension');
+  const out = [];
+  for (let i = 0; i < ar; i++) {
+    const row = new Array(bc);
+    for (let j = 0; j < bc; j++) {
+      const parts = new Array(ac);
+      for (let k = 0; k < ac; k++) parts[k] = _scalarBinary('*', aRows[i][k], bRows[k][j]);
+      row[j] = _scalarSum(parts);
+    }
+    out.push(row);
+  }
+  return out;
+}
+
+/** Square matrix raised to a whole-number power (HP50 AUR `^`): repeated
+ *  matmul, with `M^0` = identity.  `m` must be square; `n` a non-negative
+ *  integer. */
+function _matrixPow(m, n) {
+  const dim = m.rows.length;
+  if (dim === 0 || (m.rows[0]?.length ?? 0) !== dim) throw new RPLError('Invalid dimension');
+  let acc = m.rows.map((_, i) => m.rows.map((__, j) => (i === j ? Integer(1n) : Integer(0n))));
+  for (let k = 0; k < n; k++) acc = _matMul(acc, m.rows);
+  return Matrix(acc);
+}
+
+/** A non-negative whole number as a JS integer, or null.  Accepts an
+ *  Integer or an integer-valued Real (the two whole-number stack shapes a
+ *  matrix exponent can arrive as). */
+function _wholeNumberExp(v) {
+  if (isInteger(v)) return v.value >= 0n ? Number(v.value) : null;
+  if (isReal(v) && v.value.isInteger() && v.value.gte(0)) return v.value.toNumber();
+  return null;
+}
+
 function binaryMath(op) {
   return _withListBinary((s) => {
     const [a, b] = s.popN(2);                   // level2, level1
@@ -669,20 +708,7 @@ function binaryMath(op) {
         return;
       }
       if (op === '*') {
-        if (ac !== br) throw new RPLError('Invalid dimension');
-        const out = [];
-        for (let i = 0; i < ar; i++) {
-          const row = new Array(bc);
-          for (let j = 0; j < bc; j++) {
-            const parts = new Array(ac);
-            for (let k = 0; k < ac; k++) {
-              parts[k] = _scalarBinary('*', a.rows[i][k], b.rows[k][j]);
-            }
-            row[j] = _scalarSum(parts);
-          }
-          out.push(row);
-        }
-        s.push(Matrix(out));
+        s.push(Matrix(_matMul(a.rows, b.rows)));
         return;
       }
       throw new RPLError('Bad argument type');
@@ -710,6 +736,20 @@ function binaryMath(op) {
         out[j] = _scalarSum(parts);
       }
       s.push(Vector(out));
+      return;
+    }
+
+    // Matrix ^ whole-number → matrix power (square M only), per HP50 AUR
+    // (`^` "can also apply to a square matrix raised to a whole-number
+    // power").  Must intercept before the generic scalar broadcast, which
+    // would otherwise raise each element to the power individually.  A
+    // Vector base (and a non-whole-number / negative exponent) has no
+    // defined `^` and is rejected.
+    if (op === '^' && (isMatrix(a) || isVector(a)) && _isScalarOperand(b)) {
+      if (isVector(a)) throw new RPLError('Bad argument type');
+      const n = _wholeNumberExp(b);
+      if (n === null) throw new RPLError('Bad argument value');
+      s.push(_matrixPow(a, n));
       return;
     }
 

@@ -7,6 +7,48 @@ import { astToSvg } from '../rpl/pretty.js';
 import { isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
 import { state as calcState } from '../rpl/state.js';
 
+/** Escape the four characters that bite when interpolating plain text
+ *  into HTML.  The formatter never emits raw markup, but the cell /
+ *  list / path renderers route every formatted value through this so a
+ *  future change can't leak a `<` or `&` into the LCD DOM. */
+export function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/** Normalize a soft-menu label array to exactly six slots: truncate any
+ *  past the sixth, pad short arrays with ''.  HP50 menu rows always have
+ *  six slots, so setMenu renders a fixed grid regardless of how many
+ *  labels the caller supplies.  Returns a fresh array (the input is left
+ *  untouched). */
+export function normalizeMenuSlots(slots) {
+  const out = slots.slice(0, 6);
+  while (out.length < 6) out.push('');
+  return out;
+}
+
+/** Map a BinaryInteger display-base key (h/d/o/b) to its annunciator
+ *  label.  Returns undefined for any unknown / cleared key, which the
+ *  caller treats as "hide the annunciator". */
+export function binaryBaseLabel(base) {
+  return { h: 'HEX', d: 'DEC', o: 'OCT', b: 'BIN' }[base];
+}
+
+/** Build the number-display-mode annunciator label: 'STD' (the bare
+ *  mode, ignoring digits) or `<MODE> <digits>` for FIX / SCI / ENG.  A
+ *  falsy mode defaults to STD; the mode is upper-cased. */
+export function displayModeLabel(mode, digits) {
+  const m = String(mode || 'STD').toUpperCase();
+  return m === 'STD' ? 'STD' : `${m} ${digits}`;
+}
+
+/** Map a coordinate mode (RECT/CYLIN/SPHERE) to its display glyph,
+ *  defaulting to the rectangular 'XYZ' for any unknown mode. */
+export function coordModeGlyph(mode) {
+  return { RECT: 'XYZ', CYLIN: 'R∠Z', SPHERE: 'R∠∠' }[mode] || 'XYZ';
+}
+
 export class Display {
   constructor({ stackView, cmdline, statusLine, menuBar }) {
     this.stackView  = stackView;
@@ -237,13 +279,7 @@ export class Display {
           return `<span class="mcell mcell-sym">${svg}</span>`;
         }
         const text = format(cell, this.displayOpts);
-        // Cells are plain text — escape the four characters that bite
-        // in HTML.  The formatter never emits raw markup, but this
-        // costs nothing and stops a future change from leaking.
-        const safe = text
-          .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        return `<span class="mcell">${safe}</span>`;
+        return `<span class="mcell">${escapeHtml(text)}</span>`;
       }).join('');
     });
     const cls = isMatrix(val) ? 'matrix-grid' : 'matrix-grid vector-grid';
@@ -269,10 +305,7 @@ export class Display {
         return `<span class="lcell lcell-sym">${svg}</span>`;
       }
       const text = format(item, this.displayOpts);
-      const safe = text
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      return `<span class="lcell">${safe}</span>`;
+      return `<span class="lcell">${escapeHtml(text)}</span>`;
     });
     const inner = items.join('<span class="lsep"> </span>');
     return `<span class="list-inline">{ ${inner} }</span>`;
@@ -320,8 +353,7 @@ export class Display {
   }
 
   setMenu(slots) {
-    this.menuSlots = slots.slice(0, 6);
-    while (this.menuSlots.length < 6) this.menuSlots.push('');
+    this.menuSlots = normalizeMenuSlots(slots);
     if (!this.menuBar) return;     // on-screen menu bar is optional
     this.menuBar.innerHTML = '';
     this.menuSlots.forEach(label => {
@@ -408,8 +440,7 @@ export class Display {
   setBinaryBaseAnnunciator(base) {
     const el = this.statusLine?.querySelector('#ann-hex');
     if (!el) return;
-    const labels = { h: 'HEX', d: 'DEC', o: 'OCT', b: 'BIN' };
-    const label = labels[base];
+    const label = binaryBaseLabel(base);
     if (!label) {
       el.textContent = '';
       el.classList.remove('on');
@@ -428,8 +459,7 @@ export class Display {
   setDisplayAnnunciator(mode, digits) {
     const el = this.statusLine?.querySelector('#ann-display');
     if (!el) return;
-    const m = String(mode || 'STD').toUpperCase();
-    const label = m === 'STD' ? 'STD' : `${m} ${digits}`;
+    const label = displayModeLabel(mode, digits);
     el.textContent = label;
     el.classList.add('on');
     el.title = `Number display mode: ${label}`;
@@ -442,8 +472,7 @@ export class Display {
   setCoordMode(mode) {
     const el = this.statusLine?.querySelector('#ann-coord');
     if (!el) return;
-    const glyphs = { RECT: 'XYZ', CYLIN: 'R∠Z', SPHERE: 'R∠∠' };
-    el.textContent = glyphs[mode] || 'XYZ';
+    el.textContent = coordModeGlyph(mode);
     el.classList.add('on');
     el.title = `Coord mode: ${el.textContent} — click to cycle RECT → CYLIN → SPHERE`;
   }
@@ -472,7 +501,7 @@ export class Display {
       const hint = i === segs.length - 1
         ? `Current directory: ${name}`
         : `Navigate up to ${name}`;
-      const esc = String(name).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+      const esc = escapeHtml(name);
       parts.push(
         `<span class="path-segment" data-index="${i}" title="${hint}">${esc}</span>`
       );

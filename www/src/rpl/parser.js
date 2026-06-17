@@ -1,8 +1,8 @@
 /* RPL-ish parser for the command-line entry buffer.  On ENTER the text
    is parsed and its result pushed onto the stack.  Covers reals,
-   integers, binary integers, complex, strings, names, lists, programs,
-   and vectors; anything unrecognised passes through as a bare
-   identifier. */
+   integers, binary integers, complex, strings, names, lists, vectors,
+   matrices, programs, units, and backtick algebraics (symbolics);
+   anything unrecognised passes through as a bare identifier. */
 
 import {
   Real, Integer, BinaryInteger, Complex, Str, Name, RList, Vector, Matrix, Program,
@@ -147,6 +147,10 @@ export function tokenize(src) {
         // being swallowed into the unit text and failing parseUnitExpr.  The
         // guillemets are in the stop set; the ASCII `<<`/`>>` pair needs the
         // doubled lookahead (a unit expression never contains `<`/`>`).
+        // Unlike the bare-ident stop set below, `()` are deliberately NOT
+        // here — parentheses are valid unit-grouping syntax (`kg/(m*s)`,
+        // and the formatter emits them for multiple negative factors), so
+        // they must stay inside the unit token.
         while (j < n && !isSpace(src[j]) && !'{}[]"`«»'.includes(src[j])) {
           if ((src[j] === '<' && src[j + 1] === '<') ||
               (src[j] === '>' && src[j + 1] === '>')) break;
@@ -216,9 +220,10 @@ export function tokenize(src) {
   return tokens;
 }
 
-/** Parse the full entry buffer; if it produces exactly one value,
- *  return that value; else return a Program-like list of values (the
- *  caller can decide to push each). */
+/** Parse the full entry buffer into an array of values, one per
+ *  top-level object in the source, in entry order — the caller pushes
+ *  each onto the stack. Always returns an array (a single object is a
+ *  length-1 array; empty/whitespace-only input is `[]`). */
 export function parseEntry(src) {
   const toks = tokenize(src);
   let idx = 0;
@@ -553,6 +558,8 @@ export function parseEntry(src) {
     while (idx < toks.length && !(toks[idx].kind === 'delim' && toks[idx].text === '>>')) {
       body.push(parseOne());
     }
+    // If the input ran out before `>>` we auto-close silently (same
+    // "forgot the closer" convenience as lists / vectors / strings).
     if (idx < toks.length) idx++;
     return Program(body);
   }

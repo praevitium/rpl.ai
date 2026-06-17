@@ -316,6 +316,48 @@ function vals(s) {
     'session064: LASTSTACK is an alias for UNDO (restores pre-push snapshot)');
 }
 
+{
+  // session322: the registered UNDO / REDO ops themselves had zero
+  // coverage — session064 only pinned the LASTSTACK alias.  These pin
+  // the op-registry path (lookup('UNDO').fn) directly: a happy
+  // undo/redo round-trip, both empty-history rejections, and the
+  // "new action kills redo history" invariant via the op path.
+  const s = new Stack();
+  s.push(Integer(1n));
+  s.push(Integer(2n));
+  s.saveForUndo();
+  s.push(Integer(3n));                       // state (1 2 3), undo has (1 2)
+  lookup('UNDO').fn(s);
+  assert(s.depth === 2 && s.peek(1).value === 2n && s.peek(2).value === 1n,
+    'session322: UNDO op restores the pre-push snapshot');
+  lookup('REDO').fn(s);
+  assert(s.depth === 3 && s.peek(1).value === 3n,
+    'session322: REDO op re-applies the undone push');
+
+  const empty = new Stack();
+  empty.push(Integer(5n));
+  let threw = '';
+  try { lookup('UNDO').fn(empty); } catch (e) { threw = e.message; }
+  assert(threw === 'No undo available',
+    'session322: UNDO with no history → No undo available');
+  threw = '';
+  try { lookup('REDO').fn(empty); } catch (e) { threw = e.message; }
+  assert(threw === 'No redo available',
+    'session322: REDO with no prior undo → No redo available');
+
+  const k = new Stack();
+  k.push(Integer(1n));
+  k.saveForUndo();
+  k.push(Integer(2n));
+  lookup('UNDO').fn(k);                      // back to (1); redo has (1 2)
+  k.saveForUndo();
+  k.push(Integer(9n));                       // new action invalidates redo
+  threw = '';
+  try { lookup('REDO').fn(k); } catch (e) { threw = e.message; }
+  assert(threw === 'No redo available',
+    'session322: a new saveForUndo clears the REDO op history');
+}
+
 /* ================================================================
    session137: stack-op edge-path coverage closure.
 

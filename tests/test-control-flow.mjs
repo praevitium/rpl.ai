@@ -839,6 +839,96 @@ import { assert, assertThrows } from './helpers.mjs';
     'session122: FOR/STEP zero-step error message is exactly "STEP of 0"');
 }
 
+/* ---- STEP of 0 across the rest of runLoopBody's surface.  session122
+   pinned only FOR in Integer mode (the `step === ZERO` int-mode arm).
+   The same guard lives in the shared `runLoopBody`, so it must also fire
+   for START (`varName === null`), for the real-mode comparison arm
+   (`step === 0`, reached when both bounds are Real), and for the
+   int-mode → real-mode demote corner (an Integer-bounded loop popping a
+   Real(0) step: the loop demotes, then the real arm catches the zero).
+   All probed live; each throws exactly "STEP of 0". ---- */
+{
+  resetHome();
+  const s = new Stack();
+  s.push(Integer(0));
+  // 0 « 1 5 START 1 + 0 STEP »  — START shares runLoopBody (varName null)
+  s.push(Program([
+    Integer(1), Integer(5), Name('START'),
+      Integer(1), Name('+'),
+      Integer(0),
+    Name('STEP'),
+  ]));
+  const err = assertThrows(() => lookup('EVAL').fn(s),
+                           /STEP of 0/,
+                           'START/STEP with Integer step of 0 throws');
+  assert(err.message === 'STEP of 0',
+    'session311: START/STEP Integer zero-step message is exactly "STEP of 0"');
+}
+
+{
+  resetHome();
+  const s = new Stack();
+  s.push(Integer(0));
+  // 0 « 1. 5. START 1 + 0. STEP »  — real-mode bounds hit the `step === 0` arm
+  s.push(Program([
+    Real(1), Real(5), Name('START'),
+      Integer(1), Name('+'),
+      Real(0),
+    Name('STEP'),
+  ]));
+  const err = assertThrows(() => lookup('EVAL').fn(s),
+                           /STEP of 0/,
+                           'START/STEP real-mode zero-step throws');
+  assert(err.message === 'STEP of 0',
+    'session311: real-mode STEP of 0 message is exactly "STEP of 0"');
+}
+
+{
+  resetHome();
+  const s = new Stack();
+  s.push(Integer(0));
+  // 0 « 1 5 START 1 + 0. STEP »  — Integer bounds, Real(0) step demotes then throws
+  s.push(Program([
+    Integer(1), Integer(5), Name('START'),
+      Integer(1), Name('+'),
+      Real(0),
+    Name('STEP'),
+  ]));
+  assertThrows(() => lookup('EVAL').fn(s),
+               /STEP of 0/,
+    'session311: START int-mode demoted by Real(0) step throws STEP of 0');
+}
+
+{
+  resetHome();
+  const s = new Stack();
+  // « 1. 5. FOR I I 0. STEP »  — FOR real-mode zero-step (the `step === 0` arm)
+  s.push(Program([
+    Real(1), Real(5), Name('FOR'), Name('I'),
+      Name('I'),
+      Real(0),
+    Name('STEP'),
+  ]));
+  assertThrows(() => lookup('EVAL').fn(s),
+               /STEP of 0/,
+    'session311: FOR real-mode zero-step throws STEP of 0');
+}
+
+{
+  resetHome();
+  const s = new Stack();
+  // « 1 5 FOR I I 0. STEP »  — Integer bounds, Real(0) step demotes then throws
+  s.push(Program([
+    Integer(1), Integer(5), Name('FOR'), Name('I'),
+      Name('I'),
+      Real(0),
+    Name('STEP'),
+  ]));
+  assertThrows(() => lookup('EVAL').fn(s),
+               /STEP of 0/,
+    'session311: FOR int-mode demoted by Real(0) step throws STEP of 0');
+}
+
 // Arithmetic on Integer loop var stays Integer:
 //   1 3 FOR I I I * NEXT — 1*1 + 2*2 + 3*3 — we want individual Integer
 //   products.  Here: 1*1, 2*2, 3*3 pushed as three Integers.
@@ -1071,6 +1161,113 @@ import { assert, assertThrows } from './helpers.mjs';
     'session067: CASE nested inside IF — inner match wins');
 }
 
+/* ---- CASE nested inside a FALSY IF's true-branch: scanAtDepth0 must
+        skip the entire (never-executed) CASE via _skipPastCaseEnd to
+        reach the IF's ELSE/END.  session067 above only covers the
+        TRUTHY path (where the CASE then runs); the falsy path is the
+        pointed exercise of the _skipPastCaseEnd-while-skipping
+        composition the RPL.md "Known issues" note warns about — if the
+        skip miscounted inner ENDs, the IF's ELSE boundary would land
+        wrong. ---- */
+{
+  resetHome();
+  const s = new Stack();
+  // « IF 0 THEN CASE 1 THEN 111 END 1 THEN 222 END END ELSE 999 END »
+  // Falsy IF: the multi-clause CASE in the true-branch is skipped whole;
+  // the else-branch runs → 999.
+  s.push(Program([
+    Name('IF'), Integer(0n), Name('THEN'),
+      Name('CASE'),
+        Integer(1n), Name('THEN'), Integer(111n), Name('END'),
+        Integer(1n), Name('THEN'), Integer(222n), Name('END'),
+      Name('END'),
+    Name('ELSE'), Integer(999n),
+    Name('END'),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 999n,
+    'session324: falsy IF skips whole multi-clause CASE in true-branch, ELSE runs');
+}
+
+{
+  resetHome();
+  const s = new Stack();
+  // Same, but the skipped CASE itself nests a CASE — exercises
+  // _skipPastCaseEnd's recursion while skipping (not executing).
+  s.push(Program([
+    Name('IF'), Integer(0n), Name('THEN'),
+      Name('CASE'),
+        Integer(1n), Name('THEN'),
+          Name('CASE'),
+            Integer(1n), Name('THEN'), Integer(11n), Name('END'),
+            Integer(22n),
+          Name('END'),
+        Name('END'),
+      Name('END'),
+    Name('ELSE'), Integer(888n),
+    Name('END'),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 888n,
+    'session324: falsy IF skips a CASE-nesting-CASE in true-branch, ELSE runs');
+}
+
+{
+  resetHome();
+  const s = new Stack();
+  // « IF 0 THEN CASE 1 THEN 5 END END END » — falsy IF, no ELSE: the
+  // CASE is skipped to find the IF's own END → clean no-op.
+  s.push(Program([
+    Name('IF'), Integer(0n), Name('THEN'),
+      Name('CASE'),
+        Integer(1n), Name('THEN'), Integer(5n), Name('END'),
+      Name('END'),
+    Name('END'),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 0,
+    'session324: falsy IF skips CASE to find own END (no ELSE) — clean no-op');
+}
+
+{
+  resetHome();
+  const s = new Stack();
+  // Truthy counterpart with no ELSE: the CASE runs (default clause 7),
+  // and the IF's END is correctly located past the CASE's outer END.
+  s.push(Program([
+    Name('IF'), Integer(1n), Name('THEN'),
+      Name('CASE'),
+        Integer(0n), Name('THEN'), Integer(5n), Name('END'),
+        Integer(7n), Name('END'),
+      Name('END'),
+    Name('END'),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 7n,
+    'session324: truthy IF runs inner CASE default, IF END found past CASE');
+}
+
+{
+  resetHome();
+  const s = new Stack();
+  // Corner: the inner CASE is missing its own inner END, so its
+  // auto-close greedily consumes the enclosing IF's ELSE/END
+  // (_skipPastCaseEnd runs off the end → bound).  With a falsy IF and
+  // no IF-level ELSE found, the whole thing auto-closes to a no-op.
+  // Documents the greedy-auto-close composition rather than an error.
+  s.push(Program([
+    Name('IF'), Integer(0n), Name('THEN'),
+      Name('CASE'),
+        Integer(1n), Name('THEN'), Integer(101n),
+        // NO inner END — CASE auto-close swallows the ELSE below
+    Name('ELSE'), Integer(777n),
+    Name('END'),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 0,
+    'session324: CASE missing inner END inside IF greedily auto-closes past ELSE (no-op)');
+}
+
 {
   resetHome();
   const s = new Stack();
@@ -1132,6 +1329,55 @@ import { assert, assertThrows } from './helpers.mjs';
   lookup('EVAL').fn(s);
   assert(s.depth === 1 && s.peek().value === 10n,
     'session073: unterminated outer CASE auto-closes, matched clause still runs');
+}
+
+/* ---- CASE with no THEN at all is NOT a hard error (unlike IF/IFERR):
+        the whole clause range becomes the default and runs.  Pins the
+        runCase "no THEN found" arms (explicit-END default-clause and
+        the auto-close default-clause) against a future strictness change
+        that would raise "CASE without THEN".  Corrects a doc drift: the
+        auto-close policy in docs/RPL.md previously listed CASE-without-THEN
+        as a hard error while the same paragraph said the body becomes the
+        default. ---- */
+{
+  // « CASE 1 2 + END »  — no THEN; [body, END) is the default clause → 3
+  resetHome();
+  const s = new Stack();
+  s.push(Program([
+    Name('CASE'), Integer(1n), Integer(2n), Name('+'), Name('END'),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 3n,
+    'session317: CASE with no THEN, explicit END runs the body as default clause');
+}
+{
+  // « CASE 1 2 + »  — no THEN and no END; auto-closes to the same default
+  resetHome();
+  const s = new Stack();
+  s.push(Program([
+    Name('CASE'), Integer(1n), Integer(2n), Name('+'),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 3n,
+    'session317: CASE with no THEN, no END auto-closes default clause (no throw)');
+}
+{
+  // « CASE END »  — empty default clause: a clean no-op, not an error
+  resetHome();
+  const s = new Stack();
+  s.push(Program([ Name('CASE'), Name('END') ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 0,
+    'session317: empty CASE body is a no-op (empty default clause)');
+}
+{
+  // « CASE »  — bare opener; auto-closes to an empty default clause
+  resetHome();
+  const s = new Stack();
+  s.push(Program([ Name('CASE') ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 0,
+    'session317: bare CASE opener auto-closes to an empty no-op');
 }
 
 /* ================================================================

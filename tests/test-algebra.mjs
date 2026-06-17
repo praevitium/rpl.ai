@@ -150,6 +150,46 @@ import { assert, assertThrows } from './helpers.mjs';
   assertThrows(() => { lookup('DERIV').fn(s); }, null, 'DERIV on List throws "Bad argument type"');
 }
 
+// session315: rejection-path coverage for the VX-implicit calculus cluster
+// (INTVX / DERVX / DERIVX) and the `∫` glyph alias — none had any test
+// mention. INTVX/DERVX push Name(VX) then delegate to INTEG/DERIV, so a
+// non-symbolic operand falls through every accepted-type branch to the
+// final `Bad argument type` throw BEFORE any Giac call; the empty stack
+// hits the wrapper's depth guard. `∫` is the raw 2-arg INTEG alias, so it
+// needs both operands and rejects a non-symbolic expr the same way.
+{
+  const bad = [
+    ['Vector', () => Vector([Real(1), Real(2)])],
+    ['List', () => RList([Integer(1n)])],
+    ['Complex', () => Complex(Real(1), Real(2))],
+    ['Matrix', () => Matrix([[Real(1), Real(2)], [Real(3), Real(4)]])],
+  ];
+  for (const op of ['INTVX', 'DERVX', 'DERIVX']) {
+    for (const [label, make] of bad) {
+      const s = new Stack();
+      s.push(make());
+      assertThrows(() => { lookup(op).fn(s); }, /Bad argument type/,
+                   `session315: ${op} on ${label} → Bad argument type`);
+    }
+    const empty = new Stack();
+    assertThrows(() => { lookup(op).fn(empty); }, /Too few arguments/,
+                 `session315: ${op} on empty stack → Too few arguments`);
+  }
+  // `∫` is the 2-arg INTEG alias: bad expr (var = Name) rejects pre-Giac.
+  for (const [label, make] of bad) {
+    const s = new Stack();
+    s.push(make());
+    s.push(Name('X'));
+    assertThrows(() => { lookup('∫').fn(s); }, /Bad argument type/,
+                 `session315: ∫ on ${label} expr → Bad argument type`);
+  }
+  // `∫` with only one operand hits INTEG's 2-arg pop guard.
+  const oneArg = new Stack();
+  oneArg.push(Vector([Real(1), Real(2)]));
+  assertThrows(() => { lookup('∫').fn(oneArg); }, /Too few arguments/,
+               'session315: ∫ with a single operand → Too few arguments');
+}
+
 {
   // format() of a Symbolic should render via formatAlgebra with tick
   // wrappers so the stack display uses HP50 style.
@@ -1766,6 +1806,43 @@ giac._setFixtures({
          formatAlgebra(top.items[0].expr) === 'Y = 7',
          `SOLVE op: accepts String 'Y' as var`);
   giac._clear();
+}
+
+{
+  // session329: ISOL is registered as a thin alias of SOLVE's handler
+  // (ops.js ~5854 `register('ISOL', lookup('SOLVE').fn)`) but had ZERO
+  // test mention — no positive pin and no rejection pin.  Guard the
+  // alias identity, the shared Giac route, and the argument-type
+  // validation (which throws before the giac.isReady() check).
+  assert(lookup('ISOL').fn === lookup('SOLVE').fn,
+         'session329: ISOL is the same handler as SOLVE (alias identity)');
+
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('X^2 - 4')));
+  s.push(Name('X'));
+  giac._clear();
+  giac._setFixture('solve(X^2-4,X)', '[2,-2]');
+  lookup('ISOL').fn(s);
+  const top = s.peek();
+  assert(top && top.type === 'list' && top.items.length === 2 &&
+         formatAlgebra(top.items[0].expr) === 'X = 2' &&
+         formatAlgebra(top.items[1].expr) === 'X = -2',
+         'session329: ISOL routes through solve → { X=2 X=-2 }');
+  giac._clear();
+
+  assertThrows(() => {
+    const t = new Stack();
+    t.push(Symbolic(parseAlgebra('X^2 - 4')));
+    t.push(Integer(5));
+    lookup('ISOL').fn(t);
+  }, 'Bad argument type', 'session329: ISOL rejects non-Name/String var');
+
+  assertThrows(() => {
+    const t = new Stack();
+    t.push(RList([]));
+    t.push(Name('X'));
+    lookup('ISOL').fn(t);
+  }, 'Bad argument type', 'session329: ISOL rejects non-expression operand');
 }
 
 
@@ -5706,6 +5783,45 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
+/* ---- session203: CHARPOL rejection coverage (PCAR alias).  CHARPOL
+   delegates via `OPS.get('PCAR').fn`, so its rejections flow through
+   `_popSquareMatrix`, which throws before the `giac.isReady()` check —
+   no fixture needed.  PCAR had its own rejection pins (session114) but
+   the alias had only happy-path coverage; these guard a future inline
+   reimplementation that drops the shared validator. */
+{
+  const s = new Stack();
+  s.push(Vector([Integer(1n), Integer(2n), Integer(3n)]));
+  assertThrows(() => { lookup('CHARPOL').fn(s); },
+               /Bad argument type/,
+               'session203: CHARPOL on Vector → Bad argument type');
+}
+
+{
+  const s = new Stack();
+  s.push(Integer(7n));
+  assertThrows(() => { lookup('CHARPOL').fn(s); },
+               /Bad argument type/,
+               'session203: CHARPOL on Integer → Bad argument type');
+}
+
+{
+  const s = new Stack();
+  s.push(Str('hi'));
+  assertThrows(() => { lookup('CHARPOL').fn(s); },
+               /Bad argument type/,
+               'session203: CHARPOL on String → Bad argument type');
+}
+
+{
+  const s = new Stack();
+  s.push(Matrix([[Integer(1n), Integer(2n), Integer(3n)],
+                 [Integer(4n), Integer(5n), Integer(6n)]]));
+  assertThrows(() => { lookup('CHARPOL').fn(s); },
+               /Invalid dimension/,
+               'session203: CHARPOL on 2x3 → Invalid dimension');
+}
+
 {
   const s = new Stack();
   s.push(Vector([Integer(1n), Integer(2n), Integer(3n)]));
@@ -6990,6 +7106,73 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     s.push(Integer(3n));
     assertThrows(() => { lookup('POWMOD').fn(s); }, null,
                  'session202: String on left of POWMOD → Bad argument type');
+  }
+
+  // session204: the remaining MODULO-ARITH ops EXPANDMOD / FACTORMOD
+  // (unary) and GCDMOD / DIVMOD / DIV2MOD (binary) each guard the
+  // symbolic path with the shared `_toAst` null-check — a non-int-like
+  // operand `_toAst` can't coerce throws 'Bad argument type' before the
+  // `giac.isReady()` check, so it holds without a loaded CAS.  Only
+  // ADDTMOD/SUBTMOD/MULTMOD/POWMOD had rejection pins; the lane
+  // ✓-criterion wants ≥1 rejection per op.  Modulo is 7 (prime, <100)
+  // so FACTORMOD's modulus precondition passes and its operand-type
+  // rejection is reachable.  Probed live first.
+  setCasModulo(7n);
+  for (const op of ['EXPANDMOD', 'FACTORMOD']) {
+    {
+      const s = new Stack();
+      s.push(Vector([Real(1), Real(2)]));
+      assertThrows(() => { lookup(op).fn(s); }, 'Bad argument type',
+                   `session204: Vector on ${op} → Bad argument type`);
+    }
+    {
+      const s = new Stack();
+      s.push(RList([Integer(1n)]));
+      assertThrows(() => { lookup(op).fn(s); }, 'Bad argument type',
+                   `session204: List on ${op} → Bad argument type`);
+    }
+    {
+      const s = new Stack();
+      s.push(Complex(1, 2));
+      assertThrows(() => { lookup(op).fn(s); }, 'Bad argument type',
+                   `session204: Complex on ${op} → Bad argument type`);
+    }
+    {
+      const s = new Stack();
+      s.push(Str('x'));
+      assertThrows(() => { lookup(op).fn(s); }, 'Bad argument type',
+                   `session204: String on ${op} → Bad argument type`);
+    }
+  }
+  for (const op of ['GCDMOD', 'DIVMOD', 'DIV2MOD']) {
+    {
+      const s = new Stack();
+      s.push(Vector([Real(1), Real(2)]));
+      s.push(Integer(3n));
+      assertThrows(() => { lookup(op).fn(s); }, 'Bad argument type',
+                   `session204: Vector on left of ${op} → Bad argument type`);
+    }
+    {
+      const s = new Stack();
+      s.push(Integer(3n));
+      s.push(Complex(1, 2));
+      assertThrows(() => { lookup(op).fn(s); }, 'Bad argument type',
+                   `session204: Complex on right of ${op} → Bad argument type`);
+    }
+    {
+      const s = new Stack();
+      s.push(RList([Integer(1n)]));
+      s.push(Integer(3n));
+      assertThrows(() => { lookup(op).fn(s); }, 'Bad argument type',
+                   `session204: List on left of ${op} → Bad argument type`);
+    }
+    {
+      const s = new Stack();
+      s.push(Str('x'));
+      s.push(Integer(3n));
+      assertThrows(() => { lookup(op).fn(s); }, 'Bad argument type',
+                   `session204: String on left of ${op} → Bad argument type`);
+    }
   }
 
   {

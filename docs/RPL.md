@@ -26,7 +26,18 @@ collapsed into the current-tense reference below; git preserves the history.
   formatter's source-form string. Tests in `tests/test-reflection.mjs`.
 - **Auto-close on unterminated** `«`: the parser silently auto-closes the
   program body when the source runs out before `»`. Matches the existing
-  "forgot the closer" convenience on lists / vectors.
+  "forgot the closer" convenience on lists / vectors. `parseProgram`
+  (`parser.js`) exits its `while` loop at end-of-buffer and returns
+  `Program(body)` as-is — the trailing `if (idx < toks.length) idx++` only
+  consumes a closer when one is actually present. This documented behavior
+  had no direct `parseEntry` pin until the `session305:` block in
+  `tests/test-entry.mjs`: an unterminated Unicode program with trailing
+  content (`« 1 2 +`), the ASCII opener (`<< 1 2 +`), a bare opener (`«` →
+  empty program), nested both-unterminated openers (`« 1 «2 +` → inner
+  closes then outer), and an unterminated structural body (`« IF 1 THEN 2`,
+  where the IF is one top-level token resolved later by `evalRange`). Each
+  asserts the token count and the formatter round-trip to the spaced, closed
+  form. Guards a future strictness change that would throw on a missing `»`.
 - **Delimiter-stop in the ident tokenizer:** the bare-ident scanner in
   `tokenize` stops at an embedded program closer so a closing `»` (or ASCII
   `>>`) abutting an operator name closes the program rather than being
@@ -72,6 +83,23 @@ collapsed into the current-tense reference below; git preserves the history.
   uexpr factors, ASCII `<< 1_kg>>` rides the lookahead, and `« 1_m»DUP`
   splits into `[«1_m», Name('DUP')]`. Pinned by the `session293:` block in
   `tests/test-entry.mjs`.
+- **Parenthesised-unit abutment with the program closer (session293
+  follow-up):** session293 pinned the simple (`m`) and compound (`m/s`)
+  closer-abutment, but the parenthesised form `kg/(m*s)` is a distinct
+  corner. The unit-text scanner deliberately keeps `()` *out* of its stop
+  set — parentheses are valid unit-grouping syntax (`kg/(m*s)`, and the
+  formatter emits them for multiple negative factors), so they must stay
+  inside the unit token, unlike the bare-ident scanner whose stop set *does*
+  include `()`. That asymmetry is what lets `« 1_kg/(m*s)»` close on the real
+  `»` (and `<< 1_kg/(m*s)>>` on the `>>` lookahead) rather than splitting at
+  the interior `(`. No source behavior change — added a clarifying comment in
+  `parser.js` on the deliberate `()` exclusion and a `session299:` block (+5
+  pins) in `tests/test-entry.mjs`: the baseline parenthesised parse, the
+  Unicode and ASCII closer-abutments, the formatter's own `W/(K*m^2)`
+  round-trip shape abutting `»`, and a `1_kg/(m*s){9}` list-opener split
+  regression. Guards a future "harmonisation" that copies the bare-ident
+  stop set onto the unit scanner — which would break every parenthesised
+  unit.
 
 ## Evaluation
 
@@ -129,14 +157,29 @@ end-of-program as the implicit closer — `END` for the condition-loops and
 dispatchers, `NEXT` (step = 1) for the counter-loops. Mirrors the parser's
 auto-close on unterminated `«` / `{` / `[`. Missing-separator errors
 (WHILE-without-REPEAT, DO-without-UNTIL, FOR-without-name, IF-without-THEN,
-IFERR-without-THEN, CASE-without-THEN) and spurious-closer errors (END in a
+IFERR-without-THEN) and spurious-closer errors (END in a
 START/FOR closer slot, NEXT/STEP in a WHILE/DO END slot) stay as hard
 errors. IF and IFERR have no default-clause semantics, so a missing THEN is
-always an error (unlike CASE, where the whole body becomes the default).
+always an error — unlike CASE, where a missing THEN is *not* an error: the
+whole clause range becomes the default and runs (`« CASE 1 2 + END »` → 3,
+`« CASE 1 2 + »` auto-closes to the same, and an empty `« CASE END »` is a
+no-op). Pinned by the `session317:` block in `tests/test-control-flow.mjs`.
 HALT/CONT/KILL composition is automatic — the runner is a generator, so HALT
 inside an auto-closed body suspends through the same `yield*` chain as a
 fully-closed body, and FOR's bound-name save/restore carries through the
 auto-close path.
+
+**Zero-step `STEP` guard (counter loops).** `runLoopBody` (shared by START
+and FOR) throws `STEP of 0` on a zero step, because a zero step is an
+infinite loop on the real machine (ops.js ~4331). The guard has two arms:
+`step === ZERO` (int-mode, both bounds Integer) and `step === 0` (real-mode,
+reached when a bound is Real or when an Integer-bounded loop pops a Real step
+and demotes mid-loop). session122 pinned only the FOR int-mode arm; the
+`session311:` block in `tests/test-control-flow.mjs` extends coverage to
+START (the `varName === null` path through the same helper), the real-mode
+arm, and the int-mode → real-mode demote-then-zero corner for both START and
+FOR — each throws exactly `STEP of 0`. Guards a refactor that splits the
+shared helper or narrows the zero check to one mode.
 
 ## Compiled local environments
 
@@ -366,7 +409,13 @@ rejection asymmetry (see above).
   implementation solves this by having `runCase` take over parsing from the
   opener onward, scanning forward for its own internal structure (not going
   through `CF_OPENERS` for its children). Worth revisiting if we see weird
-  errors from mixed CASE-inside-IF nesting.
+  errors from mixed CASE-inside-IF nesting. Pinned (session324,
+  `tests/test-control-flow.mjs`): a CASE in a *falsy* IF's true-branch is
+  skipped whole by `scanAtDepth0`→`_skipPastCaseEnd` (incl. a nested
+  CASE-in-CASE) so the ELSE/END boundary lands correctly; the truthy
+  no-ELSE counterpart locates the IF's END past the CASE; and a CASE
+  missing its own inner END greedily auto-closes past the enclosing IF's
+  ELSE (a defined no-op, not an error).
 - `ABORT` message is not catchable by IFERR, but the outer user-facing
   `entry.js` loop may need to learn about `RPLAbort` to display a cleaner
   status-line message. The fallback `error.message` path is good enough for

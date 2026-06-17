@@ -65,6 +65,38 @@ export function takeSSEFrames(buffer) {
   return { frames, rest: buffer };
 }
 
+/** Assemble the post-stream stats object from a run's raw measurements.
+ *  Derives totalMs/ttftMs and the decode throughput (tokens per second
+ *  over the decode window) from the three timestamps; `firstTokenAt`
+ *  null means no token ever arrived, so ttft and decodeTps stay null.
+ *  A zero-length decode window yields null decodeTps (no divide-by-zero).
+ *  Pure — generate() passes its captured timings and counters in. */
+export function summarizeRun({
+  t0, firstTokenAt, t1,
+  inputChars, inputMessages, outputChars, outputTokens,
+  finishReason, aborted,
+}) {
+  const totalMs   = t1 - t0;
+  const ttftMs    = firstTokenAt !== null ? firstTokenAt - t0 : null;
+  const decodeMs  = firstTokenAt !== null ? t1 - firstTokenAt : null;
+  const decodeTps = (decodeMs && decodeMs > 0)
+    ? (outputTokens / (decodeMs / 1000))
+    : null;
+  return {
+    id: 0,
+    inputChars,
+    inputMessages,
+    outputTokens,
+    outputChars,
+    totalMs,
+    ttftMs,
+    decodeTps,
+    finishReason,
+    aborted,
+    runtimeStats: null,
+  };
+}
+
 export class RemoteLLM {
   constructor(endpoint = '') {
     // Always store the OpenAI-compat base (with /v1).  /chat/completions
@@ -283,26 +315,11 @@ export class RemoteLLM {
 
     const t1 = (typeof performance !== 'undefined' && performance.now)
       ? performance.now() : Date.now();
-    const totalMs   = t1 - t0;
-    const ttftMs    = firstTokenAt !== null ? firstTokenAt - t0 : null;
-    const decodeMs  = firstTokenAt !== null ? t1 - firstTokenAt : null;
-    const decodeTps = (decodeMs && decodeMs > 0)
-      ? (outputTokens / (decodeMs / 1000))
-      : null;
-
-    const stats = {
-      id: 0,
-      inputChars,
-      inputMessages: messages.length,
-      outputTokens,
-      outputChars,
-      totalMs,
-      ttftMs,
-      decodeTps,
-      finishReason,
-      aborted,
-      runtimeStats: null,
-    };
+    const stats = summarizeRun({
+      t0, firstTokenAt, t1,
+      inputChars, inputMessages: messages.length,
+      outputChars, outputTokens, finishReason, aborted,
+    });
     this._lastStats = stats;
     for (const fn of this._statsListeners) {
       try { fn(stats); } catch (err) {
