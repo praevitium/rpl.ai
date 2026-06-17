@@ -1,6 +1,6 @@
-# Release Notes — rpl.ai v0.2
+# Release Notes — rpl.ai
 
-**Release date:** 2026-04-26
+**Latest release:** v0.3.0 (2026-06-17)
 
 ---
 
@@ -22,7 +22,77 @@ development.
 
 ---
 
-## Functionality in v0.2
+## v0.3.0 — 2026-06-17
+
+A consolidation release: the HP 50g command surface reached effective
+completeness, the RPL interpreter closed its last suspended-execution gap, the
+AI assistant gained multi-step replies and rich math rendering, and the test
+suite grew past 6,600 assertions.
+
+### Command coverage — effectively complete
+
+449 HP 50g commands are now fully shipped (✓), up from 447 in v0.2, with
+**`JORDAN` the single remaining unimplemented op**. Registered since v0.2:
+
+- **Matrix eigensolvers and decompositions:** `CHARPOL` / `PCAR`, `EGVL`,
+  `EGV`, `PMINI`, `SCHUR`, `RSD` — the eigenvalue / eigenvector / Schur /
+  residual surface that v0.2 listed as its most notable gap.
+- **Modular arithmetic:** the full `MODULO` family, including `MULTMOD` and
+  `EXPANDMOD`, backed by a persistent modulus state slot.
+- **CAS special functions:** the `Ei` / `Si` / `Ci` exponential-, sine-, and
+  cosine-integral cluster, plus `GREDUCE`.
+- **Reflection:** `TVARS` (type-filtered `VARS`).
+
+Seven names earlier notes tracked as gaps — `POLYEVAL`, `LQD`, `ACKER`,
+`CTRB`, `OBSV`, `GXROOT`, `SRPLY` — were checked against the HP 50g manuals,
+found to be phantoms (not real HP 50g commands), and retired. `JORDAN`'s
+CAS-independent output-shaping core ships and is tested
+(`www/src/rpl/jordan-format.js`); only the Giac wiring remains, pending
+real-CAS verification of the eigenvects / Jordan-chain output shape.
+
+### RPL interpreter — suspended execution completed
+
+`HALT` inside a named sub-program invoked via a variable now suspends cleanly
+through the generator protocol — the one substrate gap called out in v0.2.
+`SST↓` graduated from an alias to a true step-into, and `DBUG` / `SST` /
+`SST↓` are real single-step-debugger ops (a step-mode UI surface is still
+pending). Parser tolerance and type coverage widened across the board.
+
+### AI assistant
+
+The side-panel assistant now produces multi-step replies, renders math with
+KaTeX and diagrams with Mermaid, offers contextual suggestions, and ships a
+revised system prompt. The Ollama remote-endpoint integration was fixed.
+
+### Test suite and hygiene
+
+The suite grew to **6,691 assertions across 22 test files** (from 5,666 across
+18 in v0.2), all passing. Repository hygiene: removed scratch probe files and
+stale `.bak` backups, and tightened `.gitignore` so neither recurs.
+
+### Known limitations carried into v0.3.0
+
+- **`JORDAN`** is not yet wired (its formatting core ships; Giac wiring pending).
+- **Step-debugger UI:** `DBUG` / `SST` / `SST↓` work as ops but have no UI surface yet.
+- **Command palette:** the fuzzy op-search matcher ships and is tested
+  (`www/src/ui/op-search.js`); the overlay that consumes it is still TODO.
+- **Graphics / plotting** (Desmos integration planned), the **equation writer**,
+  and the **matrix writer** are not yet implemented.
+- **CAS runs on the main thread** — long `FACTOR` / `SOLVE` calls block the UI.
+- **No mobile layout** — the keypad assumes desktop aspect ratios.
+
+### Upgrade notes
+
+No migration is required from v0.2. Pull the latest commit and re-run
+`npm install` to regenerate `build-info.js` (now `0.3.0-build162`).
+
+---
+
+## v0.2.0 — 2026-04-26 (initial release)
+
+*The sections below are retained as the historical v0.2 release record.*
+
+### Functionality in v0.2
 
 ### Stack engine and RPN model
 
@@ -199,10 +269,12 @@ phone or tablet viewports.
 
 ---
 
-## Possible future enhancements
+## Possible future enhancements (as captured at v0.2)
 
-The items below are drawn directly from `docs/ROADMAP.md`. They represent
-the clearest paths forward after v0.2.0, roughly in priority order.
+The items below were the forward-looking list at the time of v0.2. Several
+have since shipped in v0.3.0 — matrix eigensolvers, `HALT` inside named
+sub-programs, and `SST↓` step-into. For the current roadmap, see
+[docs/ROADMAP.md](docs/ROADMAP.md).
 
 **Close the command gap.** Matrix eigensolvers (`EGVL`, `EGV`) and the
 `CHARPOL` characteristic-polynomial op are the highest-value remaining holes

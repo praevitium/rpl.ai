@@ -52,13 +52,14 @@ re-verified at the new path.
 Recurring doc↔code drift classes that have each fired multiple times.
 Check these every run:
 
-1. **`docs/COMMANDS.md` Counts / register-count prose drift.** The
-   Counts block claims `grep -c "register(" www/src/rpl/ops.js` and
-   `grep -cE "^register\(" www/src/rpl/ops.js` totals, plus a ✓-count
-   and "as of session NNN" stamp. These go stale whenever a sibling
-   lane adds a `register()` call (especially wrapper-adds) or ships a
-   new op without updating COMMANDS.md. Re-run both greps each pass and
-   reconcile. (History: C-005/C-012/C-013/C-015/C-016.)
+1. **`docs/COMMANDS.md` ✓-count drift.** The "Current status" block
+   states a `✓` total (currently 449) reconciled against the live
+   registry. It goes stale whenever a sibling lane adds a `register()`
+   call (especially wrapper-adds) or ships a new op without updating
+   COMMANDS.md. Re-derive each pass: `grep -cE "^register\(" www/src/rpl/ops.js`
+   gives distinct registered names (currently 463) and `allOps()` the
+   reachable total (467); the ✓ count is these minus internal aliases
+   and `will-not` rows. (History: C-005/C-012/C-013/C-015/C-016.)
 2. **`docs/COMMANDS.md` / `docs/RPL.md` / `docs/TESTS.md` /
    `docs/DATA_TYPES.md` "Last updated" stamp + session-log back-fill
    drift.** Doc stamps and per-session log blocks lag behind the actual
@@ -130,25 +131,15 @@ All currently-open findings are in the `Other` bucket and are
 - **Age.** 31 code-review-lane runs (filed session 143). **Status.**
   open, `[deferred - post-ship]`.
 
-### O-012  Stray `www/src/ui/keyboard.js.bak` backup file
+### O-012  Stray `www/src/ui/keyboard.js.bak` backup file — RESOLVED
 
 - **Classification.** Other (file-hygiene / build artifact).
-- **Where.** `www/src/ui/keyboard.js.bak` (mtime 2026-04-25).
-- **What.** A `.bak` copy of `www/src/ui/keyboard.js` sits beside the
-  live file. Not referenced by any build or test script; likely an
-  editor backup. `find www/ -name '*.bak*'` returns exactly this one
-  hit, unchanged across all re-checks.
-- **Why.** Grep noise; risk of a contributor editing the stale copy;
-  `.bak` proliferation precedent.
-- **Fix.** Delete the file. Requires an interactive (non-scheduled)
-  session to approve via `mcp__cowork__allow_cowork_file_delete`, or a
-  user-side `rm` — the scheduled-task sandbox hits
-  `Operation not permitted`. Recommend adding `*.bak` to `.gitignore`.
+- **What.** A `.bak` copy of `www/src/ui/keyboard.js` sat beside the
+  live file. Deleted 2026-06-17 (interactive session), and `*.bak` added
+  to `.gitignore` so it cannot recur. `find www/ -name '*.bak*'` now
+  returns no tracked-source hits (only gitignored `www-dist/` output).
 - **Confidence.** high.
-- **Owner.** `rpl5050-ui-development` or any interactive session.
-- **Age.** 19 code-review-lane runs (filed session 189-code-review).
-  **Status.** open, `[deferred - post-ship]` pending interactive
-  delete approval — no behavior risk.
+- **Status.** closed (2026-06-17).
 
 ### O-013  `www/src/ai/system-prompt.js` `RPL_CATALOG` is manually maintained and can drift from the live op set
 

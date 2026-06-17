@@ -1003,10 +1003,7 @@ function _stringCoerce(v) {
 /* -------------------- unary ops --------------------
    Each numeric unary op checks for a symbolic operand (Symbolic or
    Name) first and emits a Symbolic(AST) wrapping the operator; other-
-   wise it dispatches on Real/Integer/Complex as before.  ABS is
-   intentionally LEFT numeric-only for now (HP50's symbolic ABS is a
-   stub that shows 'ABS(X)' but we don't represent an ABS AST node;
-   adding one is straightforward once users ask for it).
+   wise it dispatches on Real/Integer/Complex as before.
    ---------------------------------------------------------------- */
 /* NEG has Tagged transparency.  The unary wrapper unwraps the tag,
    applies NEG, and re-tags with the same label ("reactive:-x" stays

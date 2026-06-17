@@ -16,6 +16,8 @@ Guide.pdf`, `HP50 User Manual.pdf`) remain the fidelity reference.
 
 ## Current state — foundations in place
 
+*As of v0.3.0 (2026-06-17).*
+
 The substrate the roadmap builds on:
 
 - **CAS.**  Giac (Bernard Parisse, GPL-3.0+) is vendored at

@@ -23,7 +23,10 @@ touched the row, and any known caveats worth carrying forward.
 
 ## Current status
 
-- **Fully shipped (✓): 449**
+- **Fully shipped (✓): 449** — as of 2026-06-17 (v0.3.0). For reference,
+  `grep -cE "^register\(" www/src/rpl/ops.js` = 463 distinct registered
+  names and `allOps()` = 467 reachable; the ✓ total is those minus
+  internal aliases and `will-not` rows.
 - **Partially shipped (~): 0**
 - **Not yet implemented (✗): 1** — only `JORDAN` remains.  Its
   CAS-independent formatting core ships as `www/src/rpl/jordan-format.js`

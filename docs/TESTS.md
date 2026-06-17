@@ -9,37 +9,36 @@ current state.
 
 ## Current status
 
-`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (6651)** —
+`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (6691)** —
 fully green, 0 failing. `test-persist.mjs` 66 / 0 (stable; D-001 closed at
-ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~5 ms. (Aggregate now 6651
-after session327.)
-
-The aggregate has grown past the last full per-file table below (5666, the
-session-269 snapshot, reproduced here as the most recent authoritative
-breakdown); subsequent growth is concentrated in `test-types.mjs`
-(data-type-support type-surface pins) with no per-file regressions.
+ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~5 ms. (Aggregate now 6691
+after session330.)
 
 | File                        | OK   | FAIL | Notes                              |
 |-----------------------------|------|------|------------------------------------|
-| test-algebra.mjs            | 1064 | 0    | Largest CAS-focused file.          |
+| test-algebra.mjs            | 1139 | 0    | Largest CAS-focused file.          |
 | test-arrow-aliases.mjs      |   19 | 0    |                                    |
 | test-binary-int.mjs         |  122 | 0    |                                    |
-| test-comparisons.mjs        |  111 | 0    |                                    |
-| test-control-flow.mjs       |  799 | 0    |                                    |
-| test-entry.mjs              |  117 | 0    |                                    |
+| test-chatbot-parse.mjs      |  450 | 0    |                                    |
+| test-comparisons.mjs        |  131 | 0    |                                    |
+| test-control-flow.mjs       |  815 | 0    |                                    |
+| test-entry.mjs              |  175 | 0    |                                    |
 | test-eval.mjs               |   61 | 0    |                                    |
 | test-helpers.mjs            |   43 | 0    |                                    |
-| test-lists.mjs              |  190 | 0    |                                    |
+| test-jordan-format.mjs      |   20 | 0    |                                    |
+| test-lists.mjs              |  193 | 0    |                                    |
 | test-matrix.mjs             |  347 | 0    |                                    |
-| test-numerics.mjs           |  709 | 0    |                                    |
+| test-numerics.mjs           |  769 | 0    |                                    |
+| test-op-search.mjs          |   61 | 0    |                                    |
 | test-reflection.mjs         |  382 | 0    |                                    |
-| test-stack-ops.mjs          |   48 | 0    |                                    |
+| test-remote-llm.mjs         |   40 | 0    |                                    |
+| test-stack-ops.mjs          |   53 | 0    |                                    |
 | test-stats.mjs              |   55 | 0    |                                    |
-| test-types.mjs              | 1215+ | 0   | Largest single growth area.        |
-| test-ui.mjs                 |   77 | 0    |                                    |
+| test-types.mjs              | 1293 | 0    | Largest single growth area.        |
+| test-ui.mjs                 |  216 | 0    |                                    |
 | test-units.mjs              |   56 | 0    |                                    |
 | test-variables.mjs          |  251 | 0    |                                    |
-| **test-all (aggregate)**    | **5830** | **0** | Fully green.                 |
+| **test-all (aggregate)**    | **6691** | **0** | Fully green.                 |
 | test-persist.mjs (separate) |   66 | 0    | Stable; D-001 closed ship-prep.    |
 | sanity.mjs (standalone)     |   22 | 0    | ~5 ms smoke suite.                 |
 
@@ -95,11 +94,11 @@ runnable test file and prints per-file headline counts plus the aggregate.
   known-bad ordering directly. When no reproducer is found it exits 3 with a
   one-liner. Back-end is `tests/run-order.mjs`, a configurable variant
   aggregator that takes FILES via argv or `--from-test-all`.
-- **Pre-commit gate `scripts/pre-commit.sh`** — default invocation runs the
+- **Pre-commit gate `utils/pre-commit.sh`** — default invocation runs the
   ~5 ms `tests/sanity.mjs` smoke as the always-on cheap gate; `--full` adds
   `tests/test-all.mjs`; `--persist` adds `tests/test-persist.mjs`. Hookable as
   a real git hook via
-  `ln -sf ../../scripts/pre-commit.sh .git/hooks/pre-commit`.
+  `ln -sf ../../utils/pre-commit.sh .git/hooks/pre-commit`.
 
 ---
 
@@ -138,13 +137,11 @@ Sibling lanes:
 
 ### File hygiene (blocked by tooling — `rpl5050-unit-tests`)
 
-- **O-009 — `tests/test-control-flow.mjs.bak{,2}` stray backups.** Two backup
-  files (92,129 + 92,141 bytes, pre-session-111 snapshots) sit beside the live
-  `test-control-flow.mjs`. Not referenced by any runner but create grep noise
-  and source-of-truth confusion. `rm` from the scheduled-task sandbox returns
-  `Operation not permitted`, and the `cowork_allow_file_delete` permission
-  prompt is gated behind user-present approval, unavailable in unsupervised
-  runs. Deferred to a human-supervised unit-tests run or the code-review lane.
+- **O-009 — `tests/test-control-flow.mjs.bak{,2}` stray backups — CLOSED.**
+  The two pre-session-111 backup files that used to sit beside the live
+  `test-control-flow.mjs` are gone (`find tests -name '*.bak*'` returns
+  nothing); the grep-noise and source-of-truth confusion they created are
+  resolved.
 
 ### Evergreen coverage work (own item — `rpl5050-unit-tests`)
 

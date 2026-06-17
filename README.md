@@ -154,11 +154,9 @@ bundles or depends on:
   rational arithmetic
 - **[complex.js](https://github.com/rawify/Complex.js)** (MIT) — complex
   number arithmetic
-- **[MathLive](https://cortexjs.io/mathlive/)** (Apache-2.0) — math input
-  and rendering components
 - **[CodeMirror 6](https://codemirror.net/)** (MIT) — the RPL source editor
-- **[KaTeX](https://katex.org/)** (MIT) — LaTeX math rendering for the stack
-  display *(to be integrated)*
+- **[KaTeX](https://katex.org/)** (MIT) — LaTeX math rendering in the AI
+  assistant's replies
 - **GMP / MPFR / MPFI** (LGPL) — arbitrary-precision arithmetic libraries
   compiled transitively into Giac's WebAssembly
 
