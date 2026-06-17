@@ -49,3 +49,7 @@ bundle/
 *.msi
 *.AppImage
 *.deb
+
+# Dev-loop scratch probes and stale backups
+tests/_probe_*.mjs
+*.bak
