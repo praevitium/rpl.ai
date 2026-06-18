@@ -18,8 +18,12 @@ import {
   setApproxMode, setCoordMode,
 } from '../www/src/rpl/state.js';
 import { clampStackScroll, computeMenuPage } from '../www/src/ui/paging.js';
-import { headingKey, ALIASES } from '../www/src/ui/command-help.js';
+import { headingKey, ALIASES, pushHistory } from '../www/src/ui/command-help.js';
 import { escapeHtml, normalizeMenuSlots, binaryBaseLabel, displayModeLabel, coordModeGlyph } from '../www/src/ui/display.js';
+import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '../www/src/ui/side-panel.js';
+import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS } from '../www/src/ui/keyboard.js';
+import { allOps } from '../www/src/rpl/ops.js';
+import { UNIT_CATALOG } from '../www/src/rpl/units.js';
 import { assert, assertThrows } from './helpers.mjs';
 
 /* UI helpers — paging, physical-keyboard modifier shortcuts,
@@ -89,6 +93,47 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(empty.totalPages === 1 && empty.view.every(v => v === null)
          && empty.hasMore === false,
                                              'computeMenuPage: empty list = one null page');
+}
+
+/* ================================================================
+   session402: computeMenuPage pageSize parameter.  Every prior pin
+   uses the default pageSize of 6, so the parameter — which drives
+   totalPages (ceil(len/pageSize)), the slice start (page*pageSize),
+   the view width, and the tail pad — was never positively exercised.
+   A refactor hardcoding 6 instead of honoring the argument would pass
+   every existing pin.  Probed live (paging.js, DOM-free).
+   ================================================================ */
+{
+  const seven = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+  const q0 = computeMenuPage(seven, 0, 3);
+  assert(q0.totalPages === 3,                'computeMenuPage: pageSize 3, 7 slots → 3 pages');
+  assert(q0.view.length === 3,               'computeMenuPage: view width tracks pageSize');
+  assert(JSON.stringify(q0.view) === JSON.stringify(['A', 'B', 'C']),
+                                             'computeMenuPage: pageSize 3 page 0 shows A..C');
+  assert(q0.hasMore === true,                'computeMenuPage: multi-page under pageSize 3');
+
+  const q1 = computeMenuPage(seven, 1, 3);
+  assert(JSON.stringify(q1.view) === JSON.stringify(['D', 'E', 'F']),
+                                             'computeMenuPage: pageSize 3 page 1 shows D..F');
+
+  // Last page slices the short tail and pads to pageSize width
+  const q2 = computeMenuPage(seven, 2, 3);
+  assert(JSON.stringify(q2.view) === JSON.stringify(['G', null, null]),
+                                             'computeMenuPage: pageSize 3 last page pads tail to width');
+
+  // Wrap and negative wrap honor the pageSize-derived totalPages
+  const qw = computeMenuPage(seven, 3, 3);
+  assert(qw.page === 0 && qw.view[0] === 'A',
+                                             'computeMenuPage: pageSize 3 page past end wraps to 0');
+  const qm = computeMenuPage(seven, -1, 3);
+  assert(qm.page === 2 && qm.view[0] === 'G',
+                                             'computeMenuPage: pageSize 3 page -1 wraps to last');
+
+  // pageSize 1 → one slot per page, width-1 view, no tail to pad
+  const one = computeMenuPage(['X', 'Y'], 0, 1);
+  assert(one.totalPages === 2 && one.view.length === 1 && one.view[0] === 'X'
+         && one.hasMore === true,
+                                             'computeMenuPage: pageSize 1 → single-slot pages');
 }
 
 /* ================================================================
@@ -176,6 +221,126 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(coordModeGlyph('SPHERE') === 'R∠∠', 'coordModeGlyph: SPHERE → R∠∠');
   assert(coordModeGlyph('BOGUS') === 'XYZ',  'coordModeGlyph: unknown mode → XYZ');
   assert(coordModeGlyph('rect') === 'XYZ',   'coordModeGlyph: keys are case-sensitive, falls back to XYZ');
+}
+
+/* ================================================================
+   session347: uncategorizedOps — the "Other" bucket builder extracted
+   from SidePanel._renderCommands so the registered-but-uncategorized op
+   list is testable DOM-free.  First coverage of www/src/ui/side-panel.js.
+   Pins the seen-exclusion, the ASCII arrow-alias hide (`->`), the
+   lower-cased substring filter, and the alphabetical sort — guarding a
+   refactor that drops the alias hide or the sort.  Also asserts the
+   exported CATEGORIES / CHAR_GROUPS catalog shapes (string keys, array
+   values, no within-category dupes) so the panel's source-of-truth maps
+   can't silently degrade.
+   ================================================================ */
+{
+  const reg = new Set(['ABS', 'FOO', 'BAR', '->NUM', 'HMS->', 'ZED']);
+  const seen = new Set(['ABS']);
+  assert(JSON.stringify(uncategorizedOps(reg, seen, '')) ===
+         JSON.stringify(['BAR', 'FOO', 'ZED']),
+                                             'uncategorizedOps: excludes seen + arrow aliases, sorted');
+  assert(JSON.stringify(uncategorizedOps(reg, seen)) ===
+         JSON.stringify(['BAR', 'FOO', 'ZED']),
+                                             'uncategorizedOps: filter defaults to no-filter');
+  assert(JSON.stringify(uncategorizedOps(reg, seen, 'a')) ===
+         JSON.stringify(['BAR']),
+                                             'uncategorizedOps: lower-cased substring filter on upper-cased names');
+  assert(JSON.stringify(uncategorizedOps(new Set(['ABS']), new Set(['ABS']), '')) ===
+         JSON.stringify([]),
+                                             'uncategorizedOps: all-seen → empty');
+  assert(JSON.stringify(uncategorizedOps(new Set(['->NUM', 'A->B', 'HMS->']), new Set(), '')) ===
+         JSON.stringify([]),
+                                             'uncategorizedOps: every arrow alias hidden');
+  // Sort is alphabetical regardless of insertion order.
+  assert(JSON.stringify(uncategorizedOps(new Set(['ZED', 'ABS', 'MID']), new Set(), '')) ===
+         JSON.stringify(['ABS', 'MID', 'ZED']),
+                                             'uncategorizedOps: result sorted alphabetically');
+
+  // Catalog shape guards — first foothold on side-panel.js's data maps.
+  const catKeys = Object.keys(CATEGORIES);
+  assert(catKeys.length >= 15 && catKeys.every(k => typeof k === 'string' && k.length > 0),
+                                             'CATEGORIES: non-empty string display-name keys');
+  assert(catKeys.every(k => Array.isArray(CATEGORIES[k]) && CATEGORIES[k].length > 0),
+                                             'CATEGORIES: every value is a non-empty op-name array');
+  assert(catKeys.every(k => {
+    const list = CATEGORIES[k];
+    return new Set(list).size === list.length;
+  }),                                        'CATEGORIES: no duplicate op name within a category');
+  assert(CATEGORIES['Stack'].includes('DUP') && CATEGORIES['Arithmetic'].includes('+'),
+                                             'CATEGORIES: known anchors present (Stack/DUP, Arithmetic/+)');
+
+  /* session388: tie the side-panel command catalog to the live registry.
+     `_renderCommands` (side-panel.js ~767) classifies every CATEGORIES
+     entry into one of three buttons: a registered op (looked up
+     case-insensitively via `registered.has(name.toUpperCase())`), a
+     unit-insert button (`UNIT_CATALOG.has(name)`), or — neither — a
+     greyed `sp-cmd-stub` "not yet implemented" button.  The shape pins
+     above only spot-check two anchors, so a renamed/removed op or a typo
+     in CATEGORIES would silently become a dead stub button with no test
+     catching it.  Probed live (CAS-free): 467 entries → 428 ops + 39
+     units + 0 stubs, and every unit-only entry sits in the 'Units'
+     category.  These guard that every catalog button stays live. */
+  const liveOps = new Set(allOps().map(s => s.toUpperCase()));
+  const classify = (name) =>
+    UNIT_CATALOG.has(name) ? 'unit'
+      : liveOps.has(name.toUpperCase()) ? 'op'
+        : 'stub';
+  const stubs = [];
+  let unitEntries = 0;
+  let opEntries = 0;
+  for (const k of catKeys) {
+    for (const name of CATEGORIES[k]) {
+      const kind = classify(name);
+      if (kind === 'stub') stubs.push(`${k}:${name}`);
+      else if (kind === 'unit') unitEntries += 1;
+      else opEntries += 1;
+    }
+  }
+  assert(stubs.length === 0,
+                                             `CATEGORIES: every entry resolves to a live op or unit, no dead stubs (got ${stubs.join(', ')})`);
+  assert(opEntries > 400,
+                                             'CATEGORIES: the op-backed entries dominate the catalog');
+  assert(unitEntries > 0,
+                                             'CATEGORIES: the unit-insert entries are present');
+  assert(catKeys.filter(k => k !== 'Units')
+           .every(k => CATEGORIES[k].every(n => classify(n) === 'op')),
+                                             'CATEGORIES: unit-insert buttons are confined to the Units category');
+
+  const charKeys = Object.keys(CHAR_GROUPS);
+  assert(charKeys.length >= 4 && charKeys.includes('Constants'),
+                                             'CHAR_GROUPS: has the expected groups incl. Constants');
+  assert(charKeys.every(k => CHAR_GROUPS[k].every(e =>
+           Array.isArray(e) && e.length >= 2 &&
+           typeof e[0] === 'string' && typeof e[1] === 'string')),
+                                             'CHAR_GROUPS: every entry is [label, insert, title?] with string label+insert');
+
+  /* session354: dropZoneForFraction — the three-zone drag geometry
+     extracted from SidePanel._dropTargetAt so the row-hover decision is
+     testable DOM-free (the session347/326 extract-and-pin pattern).  The
+     folder split is before/into/after at the 0.25/0.75 boundaries; a
+     non-folder row is a plain before/after at 0.5.  Boundary values are
+     pinned exactly: `< 0.25` and `> 0.75` (so 0.25 and 0.75 fall to
+     into), and `< 0.5` (so 0.5 falls to after). */
+  assert(dropZoneForFraction(0, true) === 'before' &&
+         dropZoneForFraction(0.24, true) === 'before',
+                                             'dropZoneForFraction: folder top quarter → before');
+  assert(dropZoneForFraction(0.25, true) === 'into' &&
+         dropZoneForFraction(0.5, true) === 'into' &&
+         dropZoneForFraction(0.75, true) === 'into',
+                                             'dropZoneForFraction: folder middle (incl. both boundaries) → into');
+  assert(dropZoneForFraction(0.76, true) === 'after' &&
+         dropZoneForFraction(1, true) === 'after',
+                                             'dropZoneForFraction: folder bottom quarter → after');
+  assert(dropZoneForFraction(0, false) === 'before' &&
+         dropZoneForFraction(0.49, false) === 'before',
+                                             'dropZoneForFraction: non-folder top half → before');
+  assert(dropZoneForFraction(0.5, false) === 'after' &&
+         dropZoneForFraction(1, false) === 'after',
+                                             'dropZoneForFraction: non-folder bottom half (incl. 0.5 boundary) → after');
+  assert(dropZoneForFraction(0.5, true) === 'into' &&
+         dropZoneForFraction(0.5, false) === 'after',
+                                             'dropZoneForFraction: same 0.5 frac diverges by isDir (into vs after)');
 }
 
 
@@ -423,6 +588,71 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(s.depth === 2 && s.peek(1).value.eq(8),
       'Ctrl-Shift-Y still routes to performRedo');
   }
+
+  // session414: the `.toLowerCase()` key normalization (shortcuts.js ~42).
+  // Every prior pin feeds a lower-case `key`, but real browsers deliver an
+  // upper-case `e.key` ('Z'/'Y'/'V') whenever Shift is held or Caps Lock is
+  // on — so the Shift-Ctrl-Z redo path, the prime real-world combo, runs an
+  // upper-case key that no test exercised.  A refactor dropping the
+  // case-fold would pass every lower-case pin yet break real undo/redo/paste.
+  {
+    const s = new Stack();
+    s.push(Real(1));
+    const e = new Entry(s);
+    e._snapForUndo();
+    s.push(Real(2));
+    const handled = handleModifierShortcut(evt({ key: 'Z', ctrlKey: true }), e);
+    assert(handled === true, 'upper-case Ctrl-Z (Caps Lock) is handled');
+    assert(s.depth === 1 && s.peek(1).value.eq(1),
+      'upper-case Ctrl-Z routes to performUndo via the case-fold');
+  }
+
+  {
+    const s = new Stack();
+    s.push(Real(10));
+    const e = new Entry(s);
+    e._snapForUndo();
+    s.push(Real(20));
+    e.performUndo();
+    const handled = handleModifierShortcut(evt({ key: 'Z', ctrlKey: true, shiftKey: true }), e);
+    assert(handled === true, 'upper-case Shift-Ctrl-Z is handled (the real redo combo)');
+    assert(s.depth === 2 && s.peek(1).value.eq(20),
+      'upper-case Shift-Ctrl-Z routes to performRedo');
+  }
+
+  {
+    const s = new Stack();
+    s.push(Real(7));
+    const e = new Entry(s);
+    e._snapForUndo();
+    s.push(Real(8));
+    e.performUndo();
+    const handled = handleModifierShortcut(evt({ key: 'Y', ctrlKey: true }), e);
+    assert(handled === true, 'upper-case Ctrl-Y is handled');
+    assert(s.depth === 2 && s.peek(1).value.eq(8),
+      'upper-case Ctrl-Y routes to performRedo');
+  }
+
+  {
+    const s = new Stack();
+    const e = new Entry(s);
+    const fakeClipboard = { readText: () => Promise.resolve('PASTED') };
+    const handled = handleModifierShortcut(evt({ key: 'V', metaKey: true }), e, { clipboard: fakeClipboard });
+    await Promise.resolve(); await Promise.resolve();
+    assert(handled === true, 'upper-case Cmd-V is handled');
+    assert(e.buffer === 'PASTED', 'upper-case Cmd-V pastes via the case-fold');
+  }
+
+  // The `(e.key || '')` guard: a modifier combo carrying no usable key
+  // (empty string or nullish) matches no branch and passes through.
+  {
+    const s = new Stack();
+    const e = new Entry(s);
+    assert(handleModifierShortcut(evt({ key: '', ctrlKey: true }), e) === false,
+      'Ctrl with empty key is declined');
+    assert(handleModifierShortcut(evt({ key: undefined, ctrlKey: true }), e) === false,
+      'Ctrl with undefined key is declined (the e.key || "" guard)');
+  }
 }
 
 
@@ -479,6 +709,40 @@ import { assert, assertThrows } from './helpers.mjs';
   hmenu[5].onPress();
   assert(echoed === 1 && picked === 1 && cancelled === 1,
          'interactiveStackMenu: each handler routes to its slot');
+
+  /* session421: interactiveStackMenu — the three middle slots and the
+     null-handlers guard. The block above pins F1/F2/F6 labels and the
+     onEcho/onPick/onCancel routing only, so the F3/F4/F5 labels
+     (ROLL/ROLLD/DROP) and their onRoll/onRollD/onDrop wiring were never
+     exercised — a refactor reordering the slots or crossing those three
+     handler keys would pass every prior pin. The `handlers || {}` guard
+     (interactive-stack.js ~64) was also unhit: every prior call passed a
+     truthy object, so a refactor dropping the guard would throw on a
+     no-arg / null call yet stay green. Probed live (repo-rooted import,
+     DOM-free): labels ECHO,PICK,ROLL,ROLLD,DROP,CANCL; onRoll/onRollD/
+     onDrop fire from slots 2/3/4; interactiveStackMenu() and (null) both
+     return 6 safe no-op slots. */
+  assert(menu[2].label === 'ROLL' && menu[3].label === 'ROLLD' && menu[4].label === 'DROP',
+         'interactiveStackMenu: ROLL / ROLLD / DROP on F3 / F4 / F5');
+  let rolled = 0, rolledD = 0, dropped = 0;
+  const mmenu = interactiveStackMenu({
+    onRoll:  () => rolled++,
+    onRollD: () => rolledD++,
+    onDrop:  () => dropped++,
+  });
+  mmenu[2].onPress();
+  mmenu[3].onPress();
+  mmenu[4].onPress();
+  assert(rolled === 1 && rolledD === 1 && dropped === 1,
+         'interactiveStackMenu: middle handlers route to their slots');
+  // `handlers || {}` guard: no-arg and null both yield 6 safe no-op slots.
+  for (const noHandlers of [interactiveStackMenu(), interactiveStackMenu(null)]) {
+    assert(noHandlers.length === 6 && noHandlers[2].label === 'ROLL',
+           'interactiveStackMenu: missing handlers still build the full menu');
+    noHandlers.forEach(slot => slot.onPress());
+    assert(noHandlers.every(slot => typeof slot.onPress === 'function'),
+           'interactiveStackMenu: every slot has a callable no-op default');
+  }
 
   // rollLevel: move level N to the top
   {
@@ -598,6 +862,39 @@ import { assert, assertThrows } from './helpers.mjs';
     emits = 0; dropLevel(s, 2);
     assert(emits === 1, 'dropLevel: emits once');
     off();
+  }
+
+  // session395: the `level < 1` arm of the shared bounds guard
+  // (`level < 1 || level > depth`) in all three mutators.  Every prior
+  // out-of-range pin (session301 + above) fed only `level > depth`, so the
+  // low arm — reachable when an empty-stack clampLevel returns 0 — was never
+  // positively exercised; a refactor dropping it would let rollLevel(s,0)
+  // splice at idx=length (a silent no-op/garbage) and still pass green.  The
+  // throw message ('Too few arguments') was also unpinned (assertThrows above
+  // passes null).  Probed live: level 0 and negatives reject identically on a
+  // populated and an empty (depth-0) stack, leaving the stack untouched.
+  {
+    const mk = () => {
+      const s = new Stack();
+      s.push(Real(1)); s.push(Real(2)); s.push(Real(3));
+      return s;
+    };
+    for (const lvl of [0, -1, -5]) {
+      assertThrows(() => rollLevel(mk(), lvl), 'Too few arguments',
+        `rollLevel(${lvl}): level < 1 rejects with the bounds message`);
+      assertThrows(() => rollDownToLevel(mk(), lvl), 'Too few arguments',
+        `rollDownToLevel(${lvl}): level < 1 rejects with the bounds message`);
+      assertThrows(() => dropLevel(mk(), lvl), 'Too few arguments',
+        `dropLevel(${lvl}): level < 1 rejects with the bounds message`);
+    }
+    // depth-0 empty stack: clampLevel returns 0, which trips the same low arm.
+    assertThrows(() => rollLevel(new Stack(), 0), 'Too few arguments',
+      'rollLevel: level 0 on empty stack rejects (clamp-0 path)');
+    // a rejected low-arm call leaves the stack untouched (guard precedes splice).
+    const s = mk();
+    assertThrows(() => rollLevel(s, 0), 'Too few arguments', 'rollLevel(0): guarded');
+    assert(s.depth === 3 && s.snapshot()[0].value.eq(3),
+      'rollLevel(0): rejected call leaves the stack untouched');
   }
 }
 
@@ -783,5 +1080,254 @@ setAngle('RAD');
   assert(ALIASES.get('LIM') === 'LIMIT', 'ALIASES: LIM → LIMIT');
   assert(ALIASES.get('SQRT') === '√', 'ALIASES: SQRT → √');
   assert(ALIASES.get('<=') === '≤', 'ALIASES: <= → ≤');
+}
+
+/* ================================================================
+   session361: pushHistory — the visited-name history transition lifted
+   out of CommandHelp.show() (was inline truncate-forward-and-append,
+   entangled with the popup's DOM render).  The popup keeps an ordered
+   `_history` of shown names with `_historyIdx` at the current one;
+   show() truncates any forward entries and appends, advancing the
+   cursor, EXCEPT when the requested name is already current (a no-op,
+   so re-right-clicking the same command doesn't grow history).  Pure
+   list logic — guards a refactor that drops the no-op short-circuit,
+   forgets to truncate the forward branch, or mis-advances the cursor.
+   ================================================================ */
+{
+  // First push onto an empty history seeds index 0.
+  let r = pushHistory([], -1, 'A');
+  assert(JSON.stringify(r.history) === '["A"]' && r.idx === 0,
+    'pushHistory: first push seeds [A] @0');
+
+  // Append at the end advances the cursor to the new last entry.
+  r = pushHistory(['A'], 0, 'B');
+  assert(JSON.stringify(r.history) === '["A","B"]' && r.idx === 1,
+    'pushHistory: append at end → [A,B] @1');
+
+  // Re-issuing the current entry is a no-op: same references, same idx.
+  const cur = ['A', 'B', 'C'];
+  r = pushHistory(cur, 2, 'C');
+  assert(r.history === cur && r.idx === 2,
+    'pushHistory: re-issue current → unchanged (same array ref)');
+
+  // Re-issuing the current entry mid-history is also a no-op (does NOT
+  // truncate the forward entries the cursor still sits before).
+  r = pushHistory(['A', 'B', 'C'], 1, 'B');
+  assert(JSON.stringify(r.history) === '["A","B","C"]' && r.idx === 1,
+    'pushHistory: re-issue current mid-history keeps forward entries');
+
+  // A new name with the cursor mid-history truncates the forward tail
+  // before appending.
+  r = pushHistory(['A', 'B', 'C'], 0, 'X');
+  assert(JSON.stringify(r.history) === '["A","X"]' && r.idx === 1,
+    'pushHistory: new name mid-history truncates forward then appends');
+
+  r = pushHistory(['A', 'B', 'C'], 1, 'Z');
+  assert(JSON.stringify(r.history) === '["A","B","Z"]' && r.idx === 2,
+    'pushHistory: new name at mid cursor drops the tail past idx');
+
+  // Append returns a FRESH array (the popup reassigns `_history`), never
+  // a mutation of the input — so a stale reference can't observe it.
+  const input = ['A'];
+  r = pushHistory(input, 0, 'B');
+  assert(r.history !== input && JSON.stringify(input) === '["A"]',
+    'pushHistory: append leaves the input array untouched');
+
+  // Distinct new name at the end (the common forward-browse case).
+  r = pushHistory(['A', 'B'], 1, 'C');
+  assert(JSON.stringify(r.history) === '["A","B","C"]' && r.idx === 2,
+    'pushHistory: distinct end append → [A,B,C] @2');
+}
+
+/* ================================================================
+   session368: keyboard layout tables — first coverage of
+   www/src/ui/keyboard.js.  The SOFT_KEYS / NAV_KEYS / ARROW_KEYS /
+   MAIN_KEYS grids are pure exported data (built by the `mk` factory)
+   but had ZERO test callers, so a refactor that drops a key, breaks
+   the `mk` shape, or scrambles the documented alpha sequence would
+   pass green.  Structural guards in the session347 catalog-shape
+   precedent: fixed grid sizes (the physical HP50 layout — 6 soft,
+   6 nav, 6 arrow-cluster, 5×7 main), the nine-field `mk` contract on
+   every entry, the per-grid primaries/kinds, and the header's
+   "alpha a..z maps to the first 26 keys, F1=a … ÷=z" invariant.
+   ================================================================ */
+{
+  // Fixed grid sizes — faithful to the physical hardware (header §10-14).
+  assert(SOFT_KEYS.length === 6,   'keyboard: SOFT_KEYS is the 6-slot F1..F6 menu row');
+  assert(NAV_KEYS.length === 6,    'keyboard: NAV_KEYS is 6 (VARS/PREV/NEXT + HOME/STO/RCL)');
+  assert(ARROW_KEYS.length === 6,  'keyboard: ARROW_KEYS is 6 (CST + diamond + TOOLS)');
+  assert(MAIN_KEYS.length === 35,  'keyboard: MAIN_KEYS is 5 cols x 7 rows = 35');
+
+  // Every entry carries exactly the nine fields the `mk` factory builds —
+  // guards a refactor that hand-rolls an entry and drops a field.
+  const mkFields = ['primary', 'shiftL', 'shiftR', 'alpha', 'action',
+                    'shiftLAction', 'shiftRAction', 'kind', 'className'];
+  const allKeys = [...SOFT_KEYS, ...NAV_KEYS, ...ARROW_KEYS, ...MAIN_KEYS];
+  assert(allKeys.every(k => {
+    const ks = Object.keys(k);
+    return ks.length === mkFields.length && mkFields.every(f => f in k);
+  }),                                'keyboard: every key has exactly the 9 mk fields');
+  // The three action slots are either absent (null) or callable — never a
+  // stray non-function left by a botched edit.
+  assert(allKeys.every(k =>
+    [k.action, k.shiftLAction, k.shiftRAction].every(a => a === null || typeof a === 'function')),
+                                     'keyboard: every action slot is null or a function');
+
+  // Soft row: F1..F6, alpha a..f, all menu-styled op keys with a handler.
+  assert(SOFT_KEYS.map(k => k.primary).join(',') === 'F1,F2,F3,F4,F5,F6',
+                                     'keyboard: SOFT_KEYS primaries are F1..F6 in order');
+  assert(SOFT_KEYS.map(k => k.alpha).join('') === 'abcdef',
+                                     'keyboard: SOFT_KEYS alpha letters are a..f');
+  assert(SOFT_KEYS.every(k => k.kind === 'op' && k.className === 'menu' && typeof k.action === 'function'),
+                                     'keyboard: SOFT_KEYS are menu-class op keys, each with an action');
+
+  // Nav block: the renamed HOME/VARS/STO/RCL + PREV/NEXT paging, alpha g..l.
+  assert(NAV_KEYS.map(k => k.primary).join(',') === 'VARS,PREV,NEXT,HOME,STO,RCL',
+                                     'keyboard: NAV_KEYS primaries in row-major order');
+  assert(NAV_KEYS.map(k => k.alpha).join('') === 'ghijkl',
+                                     'keyboard: NAV_KEYS alpha letters are g..l');
+
+  // Arrow cluster: CST + 4-way diamond + TOOLS, each distinctly kinded and
+  // CSS-positioned (the className drives the inverted-T placement).
+  assert(ARROW_KEYS.map(k => k.primary).join(',') === 'CST,▲,TOOLS,◀,▶,▼',
+                                     'keyboard: ARROW_KEYS primaries are CST/▲/TOOLS/◀/▶/▼');
+  assert(ARROW_KEYS.map(k => k.kind).join(',') === 'menu,arrow,cat,arrow,arrow,arrow',
+                                     'keyboard: ARROW_KEYS kinds (CST menu, TOOLS cat, four arrows)');
+  assert(ARROW_KEYS.every(k => k.className.length > 0),
+                                     'keyboard: every arrow-cluster key has a positioning className');
+
+  // The header invariant: alpha a..z maps to the first 26 alpha-bearing
+  // keys in declaration order across the three typing grids (the arrow
+  // cluster has no alpha), with F1=a and ÷=z.
+  const alphaSeq = [...SOFT_KEYS, ...NAV_KEYS, ...MAIN_KEYS]
+    .map(k => k.alpha).filter(a => a !== '');
+  assert(alphaSeq.join('') === 'abcdefghijklmnopqrstuvwxyz',
+                                     'keyboard: alpha labels form a..z across soft+nav+main');
+  assert(new Set(alphaSeq).size === 26,
+                                     'keyboard: the 26 alpha letters are unique');
+  const zKey = [...SOFT_KEYS, ...NAV_KEYS, ...MAIN_KEYS].find(k => k.alpha === 'z');
+  assert(zKey && zKey.primary === '÷',
+                                     'keyboard: the z alpha key is ÷ (header: F1=a … ÷=z)');
+
+  // No two physical keys share a primary label across the whole layout.
+  const primaries = allKeys.map(k => k.primary);
+  assert(new Set(primaries).size === primaries.length,
+                                     'keyboard: every primary label is unique across all grids');
+
+  // Main keypad anchors: the bottom row is ON 0 . SPC ENTER, and the
+  // digit keys carry kind 'digit' so the renderer styles them as a pad.
+  assert(MAIN_KEYS.slice(-5).map(k => k.primary).join(',') === 'ON,0,.,SPC,ENTER',
+                                     'keyboard: MAIN_KEYS bottom row is ON 0 . SPC ENTER');
+  assert(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].every(d =>
+           MAIN_KEYS.some(k => k.primary === d && k.kind === 'digit')),
+                                     'keyboard: digits 0..9 are all present as kind=digit keys');
+}
+
+/* ================================================================
+   session333: errorBeep — the error-flash piezo chirp (beep.js).  The
+   only previously uncovered www/src/ui module.  errorBeep has two
+   environment arms: a silent no-op when no (webkit)AudioContext exists
+   (the Node default, exercised by every other test that flashes an
+   error), and the real WebAudio-graph build under a browser context.
+   A fake AudioContext lets the build path run headless so we can pin
+   the lazy single-context cache, the suspended→resume guard, and the
+   oscillator/gain wiring + envelope schedule that approximate the
+   HP50 buzzer.  Guards a refactor that drops the cache, the resume
+   guard, or rewires the graph/envelope.
+   ================================================================ */
+{
+  const { errorBeep } = await import('../www/src/ui/beep.js');
+
+  // No AudioContext in scope yet → silent no-op, never throws, returns
+  // undefined.  Leaves the module's lazy `_ctx` cache null so the build
+  // path below constructs the first (and only) context.
+  assert(typeof globalThis.AudioContext === 'undefined',
+    'errorBeep: no AudioContext in the bare Node env (precondition)');
+  assert(errorBeep() === undefined, 'errorBeep: no AudioContext → silent no-op');
+
+  class FakeParam {
+    constructor() { this.events = []; }
+    setValueAtTime(v, t) { this.events.push(['set', v, t]); }
+    linearRampToValueAtTime(v, t) { this.events.push(['ramp', v, t]); }
+  }
+  class FakeOsc {
+    constructor() {
+      this.type = null;
+      this.frequency = { value: null };
+      this.started = null;
+      this.stopped = null;
+      this.dest = null;
+    }
+    connect(dest) { this.dest = dest; return dest; }
+    start(t) { this.started = t; }
+    stop(t) { this.stopped = t; }
+  }
+  class FakeGain {
+    constructor() { this.gain = new FakeParam(); this.dest = null; }
+    connect(dest) { this.dest = dest; return dest; }
+  }
+  class FakeAudioContext {
+    constructor() {
+      FakeAudioContext.instances.push(this);
+      this.state = 'suspended';
+      this.currentTime = 10;
+      this.resumed = 0;
+      this.destination = { tag: 'dest' };
+      this.oscs = [];
+      this.gains = [];
+    }
+    resume() { this.resumed += 1; return Promise.resolve(); }
+    createOscillator() { const o = new FakeOsc(); this.oscs.push(o); return o; }
+    createGain() { const g = new FakeGain(); this.gains.push(g); return g; }
+  }
+  FakeAudioContext.instances = [];
+
+  globalThis.AudioContext = FakeAudioContext;
+  try {
+    errorBeep();
+    assert(FakeAudioContext.instances.length === 1,
+      'errorBeep: first beep constructs exactly one AudioContext');
+    const ctx = FakeAudioContext.instances[0];
+
+    assert(ctx.resumed === 1,
+      'errorBeep: a suspended context is resumed before playing');
+    assert(ctx.oscs.length === 1 && ctx.gains.length === 1,
+      'errorBeep: one oscillator and one gain node per beep');
+
+    const osc = ctx.oscs[0];
+    const gain = ctx.gains[0];
+    assert(osc.type === 'square', 'errorBeep: oscillator is a square wave');
+    assert(osc.frequency.value === 1000, 'errorBeep: ~1 kHz piezo pitch');
+    assert(osc.dest === gain && gain.dest === ctx.destination,
+      'errorBeep: graph is osc → gain → destination');
+    assert(osc.started === 10 && osc.stopped === 10 + 0.125 + 0.01,
+      'errorBeep: osc plays from currentTime, stops after dur + tail');
+
+    const labels = gain.gain.events.map((e) => e[0]).join(',');
+    assert(labels === 'set,ramp,set,ramp',
+      'errorBeep: envelope is attack ramp up then release ramp down');
+    assert(gain.gain.events[0][1] === 0 && gain.gain.events[1][1] === 0.12,
+      'errorBeep: envelope ramps from silence to the 0.12 peak');
+    assert(gain.gain.events[3][1] === 0 && gain.gain.events[3][2] === 10 + 0.125,
+      'errorBeep: envelope returns to silence at dur end');
+
+    // Lazy cache: a second beep reuses the one context (no new ctor),
+    // adding a fresh oscillator/gain pair to it.
+    errorBeep();
+    assert(FakeAudioContext.instances.length === 1,
+      'errorBeep: second beep reuses the cached context');
+    assert(ctx.oscs.length === 2 && ctx.gains.length === 2,
+      'errorBeep: each beep builds a fresh oscillator/gain pair');
+
+    // The resume guard only fires while suspended.  Flip the cached
+    // context to running: the next beep must NOT call resume again.
+    const before = ctx.resumed;
+    ctx.state = 'running';
+    errorBeep();
+    assert(ctx.resumed === before,
+      'errorBeep: a running context is not resumed again');
+  } finally {
+    delete globalThis.AudioContext;
+  }
 }
 

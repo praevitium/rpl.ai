@@ -28,6 +28,9 @@
      Matrix    — 2-D array of Reals/Complex
      Program   — compiled RPL program (sequence of tokens)
      Tagged    — value wrapped with a string label
+     Directory — mutable named container for variables (HOME and its
+                 subdirectories); STO writes into it, PURGE removes from
+                 it.  See the `Directory` constructor below.
      BinaryInteger — non-negative integer with a display base (h/d/o/b),
                      written `#NNNNh` etc.  Produced by ERRN and by
                      HEX/DEC/OCT/BIN literals.  Payload is a BigInt so

@@ -14,9 +14,11 @@
    Values on the stack are Integers so we can compare .value directly
    without worrying about Real-vs-Integer promotion. */
 
-import { Stack } from '../www/src/rpl/stack.js';
+import { Stack, setPushCoerce } from '../www/src/rpl/stack.js';
 import { lookup } from '../www/src/rpl/ops.js';
-import { Real, Integer, Str, isInteger, isReal } from '../www/src/rpl/types.js';
+import { Real, Integer, Rational, Complex, BinaryInteger, Symbolic, Str, isInteger, isReal, isComplex, isBinaryInteger, isSymbolic } from '../www/src/rpl/types.js';
+import { setApproxMode } from '../www/src/rpl/state.js';
+import { parseAlgebra } from '../www/src/rpl/algebra.js';
 import { assert, assertThrows } from './helpers.mjs';
 
 /* Helper: return an array of .value fields from level-N-down to level-1.
@@ -573,4 +575,99 @@ function vals(s) {
   s.push(Integer(2n));                      // count alone, no x below
   assertThrows(() => lookup('NDUPN').fn(s), /Too few/,
     'session147: NDUPN with only count on stack → Too few arguments (s.depth<1 guard at ops.js:7255 — distinct from session-137 NDUPN-negative-N reject which fires earlier in _toNonNegIntCount)');
+}
+
+/* session408 (code-review, REVIEW R-021 follow-up): session376 pins the
+   push-vs-pushMany ASYMMETRY by swapping a sentinel for the real hook, then
+   resets to identity — so the actual APPROX-collapse CONTRACT the stack.js
+   header documents (and the ops.js hook ~17222 implements, gated on state.js
+   getApproxMode()) is never positively exercised. The cross-file invariant —
+   ops.js consults state.js's mode per call, collapsing Integer/Rational and
+   free-variable-free numeric Symbolic to Real on entry while leaving X+1 and
+   the don't-touch types (Complex, BinaryInteger, …) alone — had zero coverage:
+   a refactor narrowing the collapse to Integer-only, dropping the per-call
+   getApproxMode() read, or coercing a free-variable Symbolic would pass green.
+   This block runs BEFORE session376 (which permanently resets the hook to
+   identity), so the live ops.js hook is still installed; it restores EXACT
+   (the suite default) at the end. Probed all arms live first. No source
+   change. */
+{
+  setApproxMode(true);
+  const s = new Stack();
+  s.push(Integer(5n));
+  assert(isReal(s.peek()) && s.peek().value.eq(5),
+    'session408: APPROX push collapses Integer(5) -> Real 5 (live ops.js hook + state.js mode)');
+  s.push(Rational(1n, 4n));
+  assert(isReal(s.peek()) && s.peek().value.eq(0.25),
+    'session408: APPROX push collapses Rational(1/4) -> Real 0.25 (terminating, exact)');
+  s.push(Rational(1n, 3n));
+  assert(isReal(s.peek()),
+    'session408: APPROX push collapses non-terminating Rational(1/3) -> Real too');
+  s.push(Symbolic(parseAlgebra('1/4')));
+  assert(isReal(s.peek()) && s.peek().value.eq(0.25),
+    'session408: APPROX push folds a free-variable-free numeric Symbolic (1/4) -> Real 0.25');
+  s.push(Symbolic(parseAlgebra('X+1')));
+  assert(isSymbolic(s.peek()),
+    'session408: APPROX push leaves a Symbolic with a free variable (X+1) untouched');
+  s.push(Complex(Real(1), Real(2)));
+  assert(isComplex(s.peek()),
+    'session408: APPROX push does not touch Complex (a don\'t-touch type)');
+  s.push(BinaryInteger(5n, 'h'));
+  assert(isBinaryInteger(s.peek()),
+    'session408: APPROX push does not touch BinaryInteger (integer-arithmetic domain)');
+
+  // Per-call getApproxMode() read: flipping back to EXACT makes the very next
+  // push a no-op again with no hook re-registration.
+  setApproxMode(false);
+  const e = new Stack();
+  e.push(Integer(5n));
+  assert(isInteger(e.peek()),
+    'session408: EXACT push is a no-op again immediately after the flip (mode read per call)');
+}
+
+/* session376 (code-review, closes REVIEW R-021): the stack.js file-header
+   documents the push-time coercion contract — `push` runs the installed
+   `_pushCoerce` hook (APPROX collapses Integer/Rational/Symbolic to Real on
+   entry), while `pushMany` and the internal stack ops (DUP/ROT/OVER) BYPASS
+   it, and "EXACT mode makes this a true no-op".  `setPushCoerce` had ZERO
+   test callers anywhere in the suite, so a refactor that routed pushMany
+   through the hook, dropped it from push, or removed the non-function reset
+   guard would pass green while contradicting the header.  Probed all arms
+   live first.  The block installs a sentinel-returning probe to make the
+   bypass observable, then restores the identity hook (= EXACT-mode behavior,
+   the suite's default) so the module-global coercion does not leak into
+   later-running test files — `setPushCoerce(null)` is the documented reset. */
+{
+  // EXACT default: the live ops.js hook is installed (ops imported above)
+  // but is a true no-op while APPROX is unset — a pushed Integer stays Integer.
+  const s = new Stack();
+  s.push(Integer(5n));
+  assert(isInteger(s.peek()),
+    'session376: push in EXACT mode is a no-op (installed coerce hook returns the Integer unchanged)');
+
+  const SENT = Str('COERCED');
+  setPushCoerce(() => SENT);
+
+  const sp = new Stack();
+  sp.push(Integer(1n));
+  assert(sp.peek() === SENT,
+    'session376: push() applies the installed _pushCoerce hook (sentinel replaces the pushed value)');
+
+  sp.pushMany([Integer(2n), Integer(3n)]);
+  assert(sp.peek() !== SENT && isInteger(sp.peek()),
+    'session376: pushMany() BYPASSES _pushCoerce (values land verbatim, not the sentinel)');
+
+  const sd = new Stack();
+  sd.pushMany([Integer(7n)]);
+  sd.dup();
+  assert(sd.peek(1) === sd.peek(2) && isInteger(sd.peek(1)) && sd.peek(1) !== SENT,
+    'session376: dup() (internal _items.push) bypasses _pushCoerce — duplicates the value as-is');
+
+  // Non-function argument resets the hook to the identity default; doubles as
+  // the restore so the sentinel probe does not leak to later test files.
+  setPushCoerce('not a function');
+  const sr = new Stack();
+  sr.push(Integer(9n));
+  assert(isInteger(sr.peek()),
+    'session376: setPushCoerce(non-function) resets the hook to identity (push no longer coerces)');
 }

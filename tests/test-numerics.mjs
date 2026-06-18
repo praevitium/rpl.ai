@@ -10,7 +10,8 @@ import {
 import { parseEntry } from '../www/src/rpl/parser.js';
 import { format, formatStackTop } from '../www/src/rpl/formatter.js';
 import {
-  state as calcState, setAngle, cycleAngle, toRadians, fromRadians,
+  state as calcState, setAngle, cycleAngle, toRadians, fromRadians, ANGLE_MODES,
+  setCoordMode, cycleCoordMode, COORD_MODES,
   varStore, varRecall, varList, varPurge, resetHome, currentPath,
   setLastError, clearLastError, getLastError,
   goHome, goUp, goInto, makeSubdir,
@@ -19,7 +20,7 @@ import {
   setApproxMode,
   setComplexMode, getComplexMode, toggleComplexMode,
   getRealMaxExp, setRealMaxExp, resetRealMaxExp,
-  REAL_MAX_EXP_DEFAULT, REAL_MAX_EXP_MIN,
+  REAL_MAX_EXP_DEFAULT, REAL_MAX_EXP_MIN, REAL_MAX_EXP_MAX,
 } from '../www/src/rpl/state.js';
 import { clampStackScroll, computeMenuPage } from '../www/src/ui/paging.js';
 import { assert, assertThrows } from './helpers.mjs';
@@ -186,6 +187,47 @@ import { assert, assertThrows } from './helpers.mjs';
   cycleAngle(); assert(calcState.angle === 'DEG', 'cycle RAD -> DEG');
   cycleAngle(); assert(calcState.angle === 'GRD', 'cycle DEG -> GRD');
   cycleAngle(); assert(calcState.angle === 'RAD', 'cycle GRD -> RAD');
+}
+
+// session397: the ANGLE_MODES frozen list + setAngle's normalize/reject/no-op
+// arms were unpinned, while the sibling COORD_MODES got that via session349
+// just below. cycleAngle's order is pinned above, but nothing tied it to the
+// constant, showed the list frozen, or exercised setAngle's uppercase
+// normalization and unknown-mode reject. Guards a refactor that reorders
+// ANGLE_MODES, drops the freeze, or changes setAngle's normalize/reject guard.
+{
+  assert(JSON.stringify(ANGLE_MODES) === '["RAD","DEG","GRD"]',
+    'ANGLE_MODES order is RAD, DEG, GRD');
+  assert(Object.isFrozen(ANGLE_MODES), 'ANGLE_MODES is frozen');
+  setAngle('deg');
+  assert(calcState.angle === 'DEG', 'setAngle upper-cases its argument');
+  let threw = false;
+  try { setAngle('BOGUS'); } catch (e) { threw = e.message; }
+  assert(threw === 'Unknown angle mode: BOGUS', 'setAngle rejects an unknown mode');
+  assert(calcState.angle === 'DEG', 'rejected setAngle leaves angle unchanged');
+  setAngle('RAD');
+}
+
+// session349: cycleCoordMode's JSDoc-documented RECT -> CYLIN -> SPHERE -> RECT
+// cycle (state.js ~254) was unpinned, while its sibling cycleAngle's order is
+// pinned just above. Also pin setCoordMode's normalize/reject/no-op arms,
+// symmetric with setAngle. Guards a refactor that reorders COORD_MODES or
+// drops the modulo wrap / uppercase normalization / unknown-mode guard.
+{
+  assert(JSON.stringify(COORD_MODES) === '["RECT","CYLIN","SPHERE"]',
+    'COORD_MODES order is RECT, CYLIN, SPHERE');
+  assert(Object.isFrozen(COORD_MODES), 'COORD_MODES is frozen');
+  setCoordMode('RECT');
+  cycleCoordMode(); assert(calcState.coordMode === 'CYLIN', 'cycle RECT -> CYLIN');
+  cycleCoordMode(); assert(calcState.coordMode === 'SPHERE', 'cycle CYLIN -> SPHERE');
+  cycleCoordMode(); assert(calcState.coordMode === 'RECT', 'cycle SPHERE -> RECT (wrap)');
+  setCoordMode('cylin');
+  assert(calcState.coordMode === 'CYLIN', 'setCoordMode upper-cases its argument');
+  let threw = false;
+  try { setCoordMode('BOGUS'); } catch (e) { threw = e.message; }
+  assert(threw === 'Unknown coordinate mode: BOGUS', 'setCoordMode rejects an unknown mode');
+  assert(calcState.coordMode === 'CYLIN', 'rejected setCoordMode leaves coordMode unchanged');
+  setCoordMode('RECT');
 }
 
 // toRadians / fromRadians honor current state
@@ -440,6 +482,77 @@ import { assert, assertThrows } from './helpers.mjs';
   v = s.peek();
   assert(isReal(v) && v.value.eq(3.75),
          'session327: Real 7.5 / Integer 2 = Real 3.75 (b Integer arm)');
+}
+
+// session334: core binary arithmetic (+ - * /) Complex-promotion arm. When
+// either operand is Complex, promoteNumericPair takes its 'complex' branch and
+// runs BOTH operands through toComplex — so the non-Complex operand exercises
+// toComplex's per-type arms: isInteger (re = Number(value)), isReal
+// (re = value.toNumber()), isRational (re = n/d). The only existing scalar
+// complex-arithmetic pin (line ~64) is Complex × Complex, which takes
+// toComplex's isComplex arm on both sides; the mixed Integer/Real/Rational ∘
+// Complex pairs had no positive pin, so those three coercion arms were
+// untested for arithmetic. The result is always Complex (the lattice tops out
+// at Complex). These guard a refactor that drops or narrows a toComplex arm.
+{
+  const s = new Stack();
+  // Integer ∘ Complex — both operand positions (toComplex isInteger arm).
+  s.pushMany([Integer(2), Complex(3, 4)]);
+  lookup('+').fn(s);
+  let v = s.peek();
+  assert(isComplex(v) && v.re === 5 && v.im === 4,
+         'session334: Integer 2 + (3,4) = (5,4) (a isInteger arm → complex)');
+
+  s.clear();
+  s.pushMany([Complex(3, 4), Integer(2)]);
+  lookup('-').fn(s);
+  v = s.peek();
+  assert(isComplex(v) && v.re === 1 && v.im === 4,
+         'session334: (3,4) - Integer 2 = (1,4) (b isInteger arm → complex)');
+
+  s.clear();
+  s.pushMany([Integer(2), Complex(3, 4)]);
+  lookup('*').fn(s);
+  v = s.peek();
+  assert(isComplex(v) && v.re === 6 && v.im === 8,
+         'session334: Integer 2 * (3,4) = (6,8) (a isInteger arm → complex)');
+
+  s.clear();
+  s.pushMany([Integer(2), Complex(1, 1)]);
+  lookup('/').fn(s);
+  v = s.peek();
+  assert(isComplex(v) && Math.abs(v.re - 1) < 1e-12 && Math.abs(v.im + 1) < 1e-12,
+         'session334: Integer 2 / (1,1) = (1,-1) (a isInteger arm → complex)');
+
+  // Real ∘ Complex — both operand positions (toComplex isReal arm).
+  s.clear();
+  s.pushMany([Real(2.5), Complex(3, 4)]);
+  lookup('+').fn(s);
+  v = s.peek();
+  assert(isComplex(v) && v.re === 5.5 && v.im === 4,
+         'session334: Real 2.5 + (3,4) = (5.5,4) (a isReal arm → complex)');
+
+  s.clear();
+  s.pushMany([Complex(3, 4), Real(0.5)]);
+  lookup('*').fn(s);
+  v = s.peek();
+  assert(isComplex(v) && v.re === 1.5 && v.im === 2,
+         'session334: (3,4) * Real 0.5 = (1.5,2) (b isReal arm → complex)');
+
+  // Rational ∘ Complex — both operand positions (toComplex isRational arm).
+  s.clear();
+  s.pushMany([Rational(1n, 2n), Complex(3, 4)]);
+  lookup('+').fn(s);
+  v = s.peek();
+  assert(isComplex(v) && v.re === 3.5 && v.im === 4,
+         'session334: Rational 1/2 + (3,4) = (3.5,4) (a isRational arm → complex)');
+
+  s.clear();
+  s.pushMany([Complex(3, 4), Rational(1n, 2n)]);
+  lookup('*').fn(s);
+  v = s.peek();
+  assert(isComplex(v) && v.re === 1.5 && v.im === 2,
+         'session334: (3,4) * Rational 1/2 = (1.5,2) (b isRational arm → complex)');
 }
 
 // Complex rejected by MOD / MIN / MAX
@@ -699,6 +812,34 @@ import { assert, assertThrows } from './helpers.mjs';
       && s.peek(2).items[0].value.eq(1) && s.peek(2).items[1].value.eq(3)
       && s.peek(1).items[0].value.eq(2) && s.peek(1).items[1].value.eq(4),
     'session043: C→R on complex vector → real-part vector, imag-part vector');
+}
+{
+  // session404: close the C→R/R→C rejection-symmetry gap.  session043 pinned
+  // only R→C's String reject; C→R's canonical Bad-argument-type throw was
+  // unpinned, and the ASCII aliases C->R / R->C had happy-path-only coverage.
+  // Both alias pairs share the canonical fn instance, so they reject identically.
+  assert(lookup('R->C').fn === lookup('R→C').fn, 'session404: R->C shares the R→C fn instance');
+  assert(lookup('C->R').fn === lookup('C→R').fn, 'session404: C->R shares the C→R fn instance');
+
+  // C→R: the missing canonical sibling reject (non-Complex/Real/Integer/Vector).
+  const s1 = new Stack();
+  s1.push(Str('x'));
+  assertThrows(() => { lookup('C→R').fn(s1); }, /Bad argument type/, 'session404: C→R on String → Bad argument type');
+
+  // C→R vector branch: a non-Complex/Real/Integer element trips the inner guard.
+  const s2 = new Stack();
+  s2.push(Vector([Str('x')]));
+  assertThrows(() => { lookup('C→R').fn(s2); }, /Bad argument type/, 'session404: C→R on vector of String → Bad argument type');
+
+  // ASCII alias C->R rejects identically.
+  const s3 = new Stack();
+  s3.push(Str('x'));
+  assertThrows(() => { lookup('C->R').fn(s3); }, /Bad argument type/, 'session404: ASCII C->R on String → Bad argument type');
+
+  // ASCII alias R->C rejects a String operand (mirrors R→C's session043 pin).
+  const s4 = new Stack();
+  s4.push(Str('x')); s4.push(Real(3));
+  assertThrows(() => { lookup('R->C').fn(s4); }, /Bad argument type/, 'session404: ASCII R->C with String operand → Bad argument type');
 }
 
 /* ==================================================================
@@ -1003,6 +1144,67 @@ assert(getRealMaxExp() === REAL_MAX_EXP_DEFAULT,
   resetRealMaxExp();
 }
 
+// session390: REAL_MAX_EXP_* bounds + STMXE/setRealMaxExp reject arms.
+// session044 pins only the below-MIN reject (and only that it threw), so the
+// constants' values, the *inclusive* MIN/MAX boundaries, the above-MAX reject,
+// the non-integer-Real and non-numeric rejects (distinct messages), and
+// setRealMaxExp's own range throw were unpinned — the R-022 WORDSIZE pattern
+// one constant family over. REAL_MAX_EXP_MAX had zero test callers.
+{
+  // constants + relationships (REAL_MAX_EXP_MAX was previously unimported)
+  assert(REAL_MAX_EXP_MIN === 10, 'session390: REAL_MAX_EXP_MIN is 10');
+  assert(REAL_MAX_EXP_MAX === 9e15, 'session390: REAL_MAX_EXP_MAX is 9e15 (decimal.js cap)');
+  assert(REAL_MAX_EXP_DEFAULT === 999, 'session390: REAL_MAX_EXP_DEFAULT is 999');
+  assert(REAL_MAX_EXP_MIN < REAL_MAX_EXP_DEFAULT && REAL_MAX_EXP_DEFAULT < REAL_MAX_EXP_MAX,
+         'session390: MIN < DEFAULT < MAX');
+
+  const stmxe = (v) => { const s = new Stack(); s.push(v); lookup('STMXE').fn(s); };
+
+  // MIN boundary accepted (inclusive), tied to the constant not a literal
+  stmxe(Integer(BigInt(REAL_MAX_EXP_MIN)));
+  assert(getRealMaxExp() === REAL_MAX_EXP_MIN, 'session390: STMXE accepts REAL_MAX_EXP_MIN unclamped');
+  resetRealMaxExp();
+
+  // MAX boundary accepted (inclusive)
+  stmxe(Integer(BigInt(REAL_MAX_EXP_MAX)));
+  assert(getRealMaxExp() === REAL_MAX_EXP_MAX, 'session390: STMXE accepts REAL_MAX_EXP_MAX unclamped');
+  resetRealMaxExp();
+
+  // above MAX rejected — MAX+1 is still a safe integer, so it reaches the
+  // range check rather than the integrality check (distinct from MIN-1)
+  assert(Number.isInteger(REAL_MAX_EXP_MAX + 1), 'session390: REAL_MAX_EXP_MAX+1 is a safe integer');
+  assertThrows(() => stmxe(Integer(BigInt(REAL_MAX_EXP_MAX) + 1n)), 'Bad argument value',
+               'session390: STMXE rejects above REAL_MAX_EXP_MAX with Bad argument value');
+  resetRealMaxExp();
+
+  // below MIN rejected — pin the message session044 left as a bare threw
+  assertThrows(() => stmxe(Integer(BigInt(REAL_MAX_EXP_MIN - 1))), 'Bad argument value',
+               'session390: STMXE rejects below REAL_MAX_EXP_MIN with Bad argument value');
+  resetRealMaxExp();
+
+  // non-integer Real rejected via the integrality arm (distinct path from range)
+  assertThrows(() => stmxe(Real(new Decimal('500.5'))), 'Bad argument value',
+               'session390: STMXE rejects non-integer Real with Bad argument value');
+  resetRealMaxExp();
+
+  // non-numeric type rejected before the range check — distinct message
+  assertThrows(() => stmxe(Str('x')), 'Bad argument type',
+               'session390: STMXE rejects non-numeric type with Bad argument type');
+  resetRealMaxExp();
+
+  // setRealMaxExp's own range throw — the state.js function-level guard had no
+  // direct caller exercising its (distinct) message; reachable past STMXE,
+  // which pre-validates and throws its own RPLError first
+  assertThrows(() => setRealMaxExp(5),
+               /realMaxExp must be an integer in \[10, 9000000000000000\], got 5/,
+               'session390: setRealMaxExp rejects below MIN with its range message');
+  resetRealMaxExp();
+  assertThrows(() => setRealMaxExp(500.5),
+               /realMaxExp must be an integer in \[10, 9000000000000000\], got 500.5/,
+               'session390: setRealMaxExp rejects non-integer with its range message');
+  resetRealMaxExp();
+}
+
 // Large-exponent formatting: values beyond IEEE-754 range display correctly
 {
   const big = Real(new Decimal('1.23456789012e+500'));
@@ -1147,6 +1349,46 @@ assert(getRealMaxExp() === REAL_MAX_EXP_DEFAULT,
   const s = new Stack();
   s.push(Complex(1, 2));
   assertThrows(() => { lookup('→HMS').fn(s); }, /Bad argument type/, 'session044: (1,2) →HMS throws Bad argument type');
+}
+
+// session410: HMS+ / HMS- (the binary closures) carried zero rejection
+// coverage — only happy paths (session044).  _hmsBinary rejects a Complex
+// in either slot up front (Bad argument type), routes both operands through
+// toRealOrThrow (non-numeric → Bad argument type), then _hmsToHours (an
+// invalid HH.MMSS value with minutes ≥ 60 → Bad argument value) in either
+// slot.  And the four ASCII aliases (->HMS / HMS-> / D->HMS / HMS->D) are
+// DISTINCT _hmsUnary closures, not the canonical fn instance, so their guard
+// arms were never exercised — only happy-path equivalence.  Pin both, so a
+// refactor that drops a guard from one closure can't pass green.
+{
+  // HMS+ / HMS- Complex reject — both operand positions.
+  const mk = (a, b) => { const s = new Stack(); s.push(a); s.push(b); return s; };
+  assertThrows(() => { lookup('HMS+').fn(mk(Complex(1, 2), Real(1.30))); },
+    /Bad argument type/, 'session410: Complex 1.30 HMS+ → Bad argument type');
+  assertThrows(() => { lookup('HMS+').fn(mk(Real(1.30), Complex(1, 2))); },
+    /Bad argument type/, 'session410: 1.30 Complex HMS+ → Bad argument type');
+  assertThrows(() => { lookup('HMS-').fn(mk(Complex(1, 2), Real(1.30))); },
+    /Bad argument type/, 'session410: Complex 1.30 HMS- → Bad argument type');
+  // HMS+ / HMS- non-numeric (String) reject via toRealOrThrow — either slot.
+  assertThrows(() => { lookup('HMS+').fn(mk(Str('x'), Real(1.30))); },
+    /Bad argument type/, 'session410: "x" 1.30 HMS+ → Bad argument type');
+  assertThrows(() => { lookup('HMS-').fn(mk(Real(1.30), Str('x'))); },
+    /Bad argument type/, 'session410: 1.30 "x" HMS- → Bad argument type');
+  // HMS+ / HMS- invalid HH.MMSS (minutes ≥ 60) reject — either slot.
+  assertThrows(() => { lookup('HMS+').fn(mk(Real(1.60), Real(1.30))); },
+    /Bad argument value/, 'session410: 1.60 1.30 HMS+ → Bad argument value');
+  assertThrows(() => { lookup('HMS-').fn(mk(Real(1.30), Real(1.70))); },
+    /Bad argument value/, 'session410: 1.30 1.70 HMS- → Bad argument value');
+}
+{
+  // ASCII unary aliases reject like their canonicals (distinct closures).
+  const mk1 = (v) => { const s = new Stack(); s.push(v); return s; };
+  assertThrows(() => { lookup('->HMS').fn(mk1(Complex(1, 2))); },
+    /Bad argument type/, 'session410: Complex ->HMS → Bad argument type');
+  assertThrows(() => { lookup('->HMS').fn(mk1(Str('x'))); },
+    /Bad argument type/, 'session410: "x" ->HMS → Bad argument type');
+  assertThrows(() => { lookup('HMS->').fn(mk1(Real(1.60))); },
+    /Bad argument value/, 'session410: 1.60 HMS-> → Bad argument value');
 }
 
 // EXP / LN / LOG / ALOG / SIN / COS / TAN / ASIN / ACOS / ATAN /
@@ -1392,6 +1634,51 @@ setAngle('rad');
   const s = new Stack();
   s.push(Integer(-3));
   assertThrows(() => { lookup('!').fn(s); }, null, 'session047: -3 ! throws Bad argument value');
+}
+
+/* ================================================================
+   session421: FACT on an integer-valued Real.
+   Every prior FACT/! pin fed an Integer (the exact-factorial path)
+   or a *non-integer* Real (0.5, the Γ(x+1) path).  The arm that
+   collapses a non-negative integer-valued Real to an exact Integer
+   (ops.js ~1672) and the pole arm that throws 'Infinite result' on a
+   *negative* integer-valued Real (~1671) were never exercised — a
+   refactor folding the integer-valued-Real check into the Γ branch
+   would return a Real(120) (or NaN at the pole) yet pass every prior
+   pin.  Note the Real pole error ('Infinite result') is distinct from
+   the Integer reject ('Bad argument value', session047).
+   ================================================================ */
+{
+  {
+    const s = new Stack();
+    s.push(Real(5));
+    lookup('FACT').fn(s);
+    const r = s.peek();
+    assert(isInteger(r) && !isReal(r) && r.value === 120n,
+      'session421: FACT Real(5) → Integer(120) (integer-valued Real collapses to exact Integer, not Real)');
+  }
+  {
+    const s = new Stack();
+    s.push(Real(0));
+    lookup('FACT').fn(s);
+    const r = s.peek();
+    assert(isInteger(r) && r.value === 1n,
+      'session421: FACT Real(0) → Integer(1) (0! through the integer-valued-Real arm)');
+  }
+  {
+    const s = new Stack();
+    s.push(Real(6));
+    lookup('!').fn(s);
+    const r = s.peek();
+    assert(isInteger(r) && r.value === 720n,
+      'session421: 6.0 ! → Integer(720) (alias, same integer-valued-Real arm)');
+  }
+  {
+    const s = new Stack();
+    s.push(Real(-3));
+    assertThrows(() => { lookup('FACT').fn(s); }, /Infinite result/,
+      'session421: FACT Real(-3) → Infinite result (gamma pole, distinct from Integer(-3) → Bad argument value)');
+  }
 }
 
 {
@@ -1673,7 +1960,24 @@ setAngle('rad');
 {
   const s = new Stack();
   s.push(Complex(1, 2));
-  assertThrows(() => { lookup('D→HMS').fn(s); }, null, 'session048: D→HMS on Complex throws');
+  assertThrows(() => { lookup('D→HMS').fn(s); }, /Bad argument type/, 'session048: D→HMS on Complex throws Bad argument type');
+}
+
+// session410: the degree siblings D→HMS / HMS→D and their ASCII aliases
+// (D->HMS / HMS->D) are also distinct _hmsUnary closures sharing the same
+// guard arms, but only happy paths (session048) plus the now-tightened
+// D→HMS Complex reject above were covered.  Pin the reject siblings: HMS→D
+// rejects an invalid HH.MMSS value (minutes ≥ 60 → Bad argument value, the
+// canonical HMS→ pin's degree mirror), D->HMS rejects Complex, and HMS->D
+// rejects the same invalid value through the ASCII alias closure.
+{
+  const mk1 = (v) => { const s = new Stack(); s.push(v); return s; };
+  assertThrows(() => { lookup('HMS→D').fn(mk1(Real(1.60))); },
+    /Bad argument value/, 'session410: 1.60 HMS→D → Bad argument value');
+  assertThrows(() => { lookup('D->HMS').fn(mk1(Complex(1, 2))); },
+    /Bad argument type/, 'session410: Complex D->HMS → Bad argument type');
+  assertThrows(() => { lookup('HMS->D').fn(mk1(Real(1.60))); },
+    /Bad argument value/, 'session410: 1.60 HMS->D → Bad argument value');
 }
 
 
@@ -2315,6 +2619,35 @@ setAngle('rad');
   const s = new Stack();
   s.push(Vector([Real(1), Real(2)]));
   assertThrows(() => { lookup('C→P').fn(s); }, /Bad argument type/, 'session055: C→P rejects Vector');
+}
+
+/* session398: C→P/P→C rejection symmetry.  session055 pinned only C→P's
+   Vector reject and the C->P/P->C ASCII aliases' happy paths.  Both _cToPOp
+   and _pToCOp accept Complex/Real/Integer and reject everything else with
+   'Bad argument type'; the ASCII aliases share the canonical fn instance, so
+   they reject identically.  This pins the missing P→C canonical reject and
+   the two aliases' reject paths, guarding a refactor that splits an alias
+   into its own impl and drops a guard. */
+{
+  assert(lookup('C->P').fn === lookup('C→P').fn,
+    'session398: C->P shares the canonical C→P fn instance');
+  assert(lookup('P->C').fn === lookup('P→C').fn,
+    'session398: P->C shares the canonical P→C fn instance');
+
+  const sv = new Stack(); sv.push(Vector([Real(1), Real(2)]));
+  assertThrows(() => { lookup('P→C').fn(sv); }, /Bad argument type/,
+    'session398: P→C rejects Vector (sibling of the session055 C→P pin)');
+
+  const ss = new Stack(); ss.push(Str('x'));
+  assertThrows(() => { lookup('P→C').fn(ss); }, /Bad argument type/,
+    'session398: P→C rejects String');
+
+  const sa1 = new Stack(); sa1.push(Vector([Real(1), Real(2)]));
+  assertThrows(() => { lookup('C->P').fn(sa1); }, /Bad argument type/,
+    'session398: ASCII C->P rejects Vector');
+  const sa2 = new Stack(); sa2.push(Vector([Real(1), Real(2)]));
+  assertThrows(() => { lookup('P->C').fn(sa2); }, /Bad argument type/,
+    'session398: ASCII P->C rejects Vector');
 }
 
 /* ======================================================================
@@ -4052,6 +4385,77 @@ setAngle('RAD');
   assertThrows(() => { lookup('MAX').fn(s); }, /Bad argument type/, 'session068: MAX rejects scalar ∘ Matrix (no broadcast)');
 }
 
+/* ---- session344: MIN/MAX V/M rejection — complementary operand slots ----
+   session068 pinned MIN only as Vector ∘ Vector (which trips the FIRST
+   `!isNumber(a)` arm) and MAX only as scalar ∘ Matrix (the b-slot M arm).
+   But `_minMax` checks `!isNumber(a) || !isNumber(b)`, so each op rejects a
+   V/M in EITHER position; `_withListBinary` distributes Lists only, so a
+   Vector/Matrix in either slot reaches the inner scalar handler.  The
+   un-pinned arms are MIN with a valid scalar `a` and a V/M `b`, MIN with a
+   V/M `a` and a valid scalar `b`, and MAX with a V/M `a` and a valid scalar
+   `b` (plus MAX's b-slot Vector).  Pin them so both operand positions are
+   guarded symmetrically (mirrors the combinatorial-family session330 and
+   GCD/LCM session337 b-slot sweeps).  Test-only — guards a refactor that
+   drops the second-operand `isNumber` check. */
+{
+  const s = new Stack();
+  s.push(Real(5));
+  s.push(Vector([Real(1), Real(2)]));
+  assertThrows(() => { lookup('MIN').fn(s); }, /Bad argument type/, 'session344: MIN rejects scalar ∘ Vector (b-slot V)');
+}
+{
+  const s = new Stack();
+  s.push(Real(5));
+  s.push(Matrix([[Real(1), Real(9)], [Real(3), Real(7)]]));
+  assertThrows(() => { lookup('MIN').fn(s); }, /Bad argument type/, 'session344: MIN rejects scalar ∘ Matrix (b-slot M)');
+}
+{
+  const s = new Stack();
+  s.push(Vector([Real(1), Real(2)]));
+  s.push(Real(5));
+  assertThrows(() => { lookup('MIN').fn(s); }, /Bad argument type/, 'session344: MIN rejects Vector ∘ scalar (a-slot V)');
+}
+{
+  const s = new Stack();
+  s.push(Matrix([[Real(1), Real(9)], [Real(3), Real(7)]]));
+  s.push(Real(5));
+  assertThrows(() => { lookup('MIN').fn(s); }, /Bad argument type/, 'session344: MIN rejects Matrix ∘ scalar (a-slot M)');
+}
+{
+  const s = new Stack();
+  s.push(Vector([Real(1), Real(2)]));
+  s.push(Real(5));
+  assertThrows(() => { lookup('MAX').fn(s); }, /Bad argument type/, 'session344: MAX rejects Vector ∘ scalar (a-slot V)');
+}
+{
+  const s = new Stack();
+  s.push(Matrix([[Real(1), Real(9)], [Real(3), Real(7)]]));
+  s.push(Real(5));
+  assertThrows(() => { lookup('MAX').fn(s); }, /Bad argument type/, 'session344: MAX rejects Matrix ∘ scalar (a-slot M)');
+}
+{
+  const s = new Stack();
+  s.push(Real(5));
+  s.push(Vector([Real(1), Real(2)]));
+  assertThrows(() => { lookup('MAX').fn(s); }, /Bad argument type/, 'session344: MAX rejects scalar ∘ Vector (b-slot V)');
+}
+
+/* ---- session365: MOD V/M rejection — the un-pinned y-slot Matrix arm ----
+   MOD shares MIN/MAX's `!isNumber(a) || !isNumber(b)` guard, so it rejects a
+   V/M in EITHER operand position; `_withListBinary` distributes Lists only, so
+   a V/M in either slot reaches the inner scalar handler.  session068 pinned
+   MOD's x-slot Vector, y-slot Vector, and x-slot Matrix — but never the y-slot
+   Matrix (valid Real `a`, Matrix `b`), the lone unpinned V/M arm.  Pin it so
+   MOD's V/M rejection is symmetric across both operand positions and both kinds
+   (mirrors the MIN/MAX session344 sweep one op over).  Test-only — guards a
+   refactor that drops the second-operand `isNumber` check. */
+{
+  const s = new Stack();
+  s.push(Real(17));
+  s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]));
+  assertThrows(() => { lookup('MOD').fn(s); }, /Bad argument type/, 'session365: MOD rejects scalar ∘ Matrix (b-slot M)');
+}
+
 /* ---- MOD / MIN / MAX symbolic-lift still works for Name operands ----
    Spot-check that related widening did not regress the symbolic-lift path. */
 {
@@ -4587,6 +4991,43 @@ setAngle('RAD');
 }
 
 {
+  // session396: _betaScalar's Integer Z-arm (aNum/bNum =
+  // isInteger ? Number(.value) : isReal ? .value.toNumber() : null) was
+  // positively exercised only by the pole-throw cases (Beta(0,3)/Beta(-2,3) →
+  // Infinite result); every finite closed-form pin above pushes Real operands.
+  // A refactor folding the isInteger arm into the Real guard (or dropping it)
+  // would still pass those — the pole throws before computing, the Real pins
+  // never touch the Integer arm. Pin a finite value through the Integer arm on
+  // both operands and the two mixed slots; the result must match the Real path
+  // bit-for-bit and stay Real.  Probed live (repo-rooted, CAS-free): all four
+  // forms = 1/60, exactly equal to Beta(Real(3),Real(4)).
+  const ref = (() => {
+    const s = new Stack();
+    s.push(Real(3)); s.push(Real(4));
+    lookup('Beta').fn(s);
+    return s.peek().value;
+  })();
+  function betaVal(a, b) {
+    const s = new Stack();
+    s.push(a); s.push(b);
+    lookup('Beta').fn(s);
+    return s.peek();
+  }
+  const ii = betaVal(Integer(3n), Integer(4n));
+  assert(isReal(ii) && ii.value.eq(ref),
+    'session396: Beta(Integer 3, Integer 4) = Beta(Real 3, Real 4) = 1/60, stays Real');
+  const i17 = betaVal(Integer(1n), Integer(7n));
+  assert(isReal(i17) && _approx(i17.value, 1/7, 1e-12),
+    'session396: Beta(Integer 1, Integer 7) = 1/7 via the Integer arm');
+  const ir = betaVal(Integer(3n), Real(4));
+  assert(isReal(ir) && ir.value.eq(ref),
+    'session396: Beta(Integer 3, Real 4) = 1/60 (a-slot Integer arm, b-slot Real arm)');
+  const ri = betaVal(Real(3), Integer(4n));
+  assert(isReal(ri) && ri.value.eq(ref),
+    'session396: Beta(Real 3, Integer 4) = 1/60 (b-slot Integer arm)');
+}
+
+{
   // erf(0) = 0 exactly.
   const s = new Stack();
   s.push(Real(0));
@@ -5032,6 +5473,30 @@ setAngle('RAD');
 }
 
 /* ================================================================
+   session378: UTPF middle (ν₂ / d) operand-slot rejection.
+   session310 pinned UTPF's first (ν₁) and third (variate F) slots
+   for L/V/M, but the MIDDLE d slot was never pinned.  `asReal` runs
+   on `n` then `d` then `F` (ops.js ~2905), so a valid Integer n
+   reaches the `asReal(d)` check — a List/Vector/Matrix there throws
+   'Bad argument type' before any value gate.  Guards a refactor that
+   special-cases the d slot or widens `asReal` for that operand only.
+   ================================================================ */
+{
+  for (const [label, mk] of [
+    ['List', () => RList([Integer(2n), Integer(3n)])],
+    ['Vector', () => Vector([Real(1), Real(2)])],
+    ['Matrix', () => Matrix([[Real(1), Real(2)]])],
+  ]) {
+    const s = new Stack();
+    s.push(Integer(5n));
+    s.push(mk());
+    s.push(Integer(3n));
+    assertThrows(() => { lookup('UTPF').fn(s); }, /Bad argument type/,
+      `session378: UTPF(5, ${label}, 3) throws Bad argument type (middle ν₂ slot; no list-distribute)`);
+  }
+}
+
+/* ================================================================
    Widening cluster #1:
      FLOOR / CEIL / IP / FP on Unit operand.
    HP50 AUR §3-65 / §3-66 / §3-108: these rounders apply to the
@@ -5195,6 +5660,37 @@ setAngle('RAD');
   lookup('%').fn(s);
   assert(s.peek().type === 'symbolic',
     'session072: regression guard — %(Sy, Real) lifts to Symbolic');
+}
+
+/* ================================================================
+   session358: percent-family V/M rejection — complementary
+     operand-position × kind arms.  session072 pinned only %'s x-Vec
+     and y-Vec, %T's x-Mat, and %CH's both-V/both-M (which trip the
+     x-slot).  `_percentOp` runs `toRealOrThrow(x)` then
+     `toRealOrThrow(y)`, so the y-slot is a distinct reject path reached
+     only with a valid Real x — untested for %T and %CH (and for %'s
+     y-Mat).  This closes the gap so each of % / %T / %CH rejects a
+     Vector OR Matrix in EITHER operand position, mirroring the
+     MOD/MIN/MAX symmetric-slot audit (session344).
+   ================================================================ */
+{
+  const V = () => Vector([Real(1), Real(2)]);
+  const M = () => Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]);
+  const rej = (op, a, b, label) => {
+    const s = new Stack();
+    s.push(a); s.push(b);
+    assertThrows(() => { lookup(op).fn(s); }, /Bad argument type/i, label);
+  };
+  // % — complementary kinds (x-Vec / y-Vec already in session072).
+  rej('%',   M(),       Real(10), 'session358: %(Mat, Real) → Bad argument type (x-Mat)');
+  rej('%',   Real(100), M(),      'session358: %(Real, Mat) → Bad argument type (y-Mat slot)');
+  // %T — y-slot V/M (reached past a valid Real x) + x-Vec.
+  rej('%T',  V(),       Real(10), 'session358: %T(Vec, Real) → Bad argument type (x-Vec)');
+  rej('%T',  Real(100), V(),      'session358: %T(Real, Vec) → Bad argument type (y-Vec slot)');
+  rej('%T',  Real(100), M(),      'session358: %T(Real, Mat) → Bad argument type (y-Mat slot)');
+  // %CH — y-slot V/M (its session072 both-V/both-M pins trip the x-arm).
+  rej('%CH', Real(100), V(),      'session358: %CH(Real, Vec) → Bad argument type (y-Vec slot)');
+  rej('%CH', Real(100), M(),      'session358: %CH(Real, Mat) → Bad argument type (y-Mat slot)');
 }
 
 /* ================================================================
@@ -5715,6 +6211,38 @@ setAngle('RAD');
   lookup('PSI').fn(s);
   assert(Math.abs(s.peek().value - (-0.5772156649015329)) < 1e-10,
     'session081: PSI(1, 0) = ψ_0(1) = digamma(1) = -γ');
+}
+
+{
+  // session389: _polygammaScalar's x-operand integer arm (ops.js ~2595,
+  // `isInteger(v) ? Number(v.value) : isReal(v) ? v.value.toNumber()`).
+  // Every session081 two-arg pin pushed a Real x, so the isInteger arm was
+  // never positively exercised — only the String reject (1-arg path) touched a
+  // non-Real type. Same Real-only Z gap as Ei/Si/Ci (session382), erf/erfc
+  // (session280), MANT (session285), LAMBERT (session296). Probed live: an
+  // Integer x yields the Real-x result bit-for-bit and stays Real.
+  const psi2 = (xMaker, n) => {
+    const s = new Stack();
+    s.push(xMaker());
+    s.push(Integer(BigInt(n)));
+    lookup('PSI').fn(s);
+    return s.peek();
+  };
+  for (const [x, n, label] of [
+    [1, 1, 'ψ_1(1)'], [1, 2, 'ψ_2(1)'], [2, 1, 'ψ_1(2)'],
+    [5, 1, 'ψ_1(5)'], [1, 0, 'ψ_0(1)'],
+  ]) {
+    const ri = psi2(() => Integer(BigInt(x)), n);
+    const rr = psi2(() => Real(x), n);
+    assert(isReal(ri), `session389: PSI(Integer ${x}, ${n}) = ${label} stays Real`);
+    assert(Number(ri.value) === Number(rr.value),
+      `session389: PSI(Integer ${x}, ${n}) = ${label} matches Real-operand result`);
+  }
+  // Closed-form anchors on the integer arm (mirrors the session081 Real pins).
+  assert(Math.abs(Number(psi2(() => Integer(1n), 1).value) - (Math.PI * Math.PI / 6)) < 1e-10,
+    'session389: PSI(Integer 1, 1) = ψ_1(1) ≈ π²/6');
+  assert(Math.abs(Number(psi2(() => Integer(1n), 0).value) - (-0.5772156649015329)) < 1e-10,
+    'session389: PSI(Integer 1, 0) = ψ_0(1) = -γ (n=0 collapses to digamma)');
 }
 
 {
@@ -6484,4 +7012,63 @@ function _arrayEq(a, b) {
       && Math.abs(items[0].value - 0.3374039229009681) < 1e-13
       && Math.abs(items[1].value - (-0.045456433004455381)) < 1e-13,
     'session109: Ci distributes over RList');
+}
+
+/* session382: Ei / Si / Ci Z column — the integral-function `isInteger(v) ?
+   Number(v.value)` coercion arm (`_eiScalar`/`_siScalar`/`_ciScalar`,
+   ops.js ~14561/14569/14577). Every session109 positive pin pushes Real, so
+   the Integer arm — distinct from the `isReal(v) ? v.value.toNumber()` arm —
+   was never positively exercised; only the String reject touched a non-Real
+   type. Same audit class as erf/erfc (session280), MANT (session285), and
+   LAMBERT (session296). Probed live first: Integer operands match the Real
+   result bit-for-bit and return Real. Guards a refactor degrading the Z
+   column there to Real-only. */
+{
+  const s = new Stack();
+  s.push(Integer(1n));
+  lookup('Ei').fn(s);
+  assert(isReal(s.peek()) && Math.abs(s.peek().value - 1.8951178163559368) < 1e-12,
+    'session382: Ei(Integer 1) = 1.89511781635… via the integer arm');
+}
+{
+  const s = new Stack();
+  s.push(Integer(5n));
+  lookup('Ei').fn(s);
+  assert(isReal(s.peek()) && Math.abs(s.peek().value - 40.18527535580318) < 1e-10,
+    'session382: Ei(Integer 5) = 40.18527535… (Z arm == R arm)');
+}
+{
+  const s = new Stack();
+  s.push(Integer(-1n));
+  lookup('Ei').fn(s);
+  assert(isReal(s.peek()) && Math.abs(s.peek().value - (-0.21938393439552029)) < 1e-12,
+    'session382: Ei(Integer -1) = -0.219383934… (negative integer through E1 branch)');
+}
+{
+  const s = new Stack();
+  s.push(Integer(1n));
+  lookup('Si').fn(s);
+  assert(isReal(s.peek()) && Math.abs(s.peek().value - 0.9460830703671831) < 1e-12,
+    'session382: Si(Integer 1) = 0.946083070… via the integer arm');
+}
+{
+  const s = new Stack();
+  s.push(Integer(-5n));
+  lookup('Si').fn(s);
+  assert(isReal(s.peek()) && Math.abs(s.peek().value - (-1.5499312449446743)) < 1e-12,
+    'session382: Si(Integer -5) = -Si(5) (odd parity, integer arm across CF branch)');
+}
+{
+  const s = new Stack();
+  s.push(Integer(1n));
+  lookup('Ci').fn(s);
+  assert(isReal(s.peek()) && Math.abs(s.peek().value - 0.3374039229009681) < 1e-12,
+    'session382: Ci(Integer 1) = 0.337403922… via the integer arm');
+}
+{
+  const s = new Stack();
+  s.push(Integer(4n));
+  lookup('Ci').fn(s);
+  assert(isReal(s.peek()) && Math.abs(s.peek().value - (-0.140981697886930)) < 1e-12,
+    'session382: Ci(Integer 4) = -0.140981697886… (Z arm == R arm, series boundary)');
 }

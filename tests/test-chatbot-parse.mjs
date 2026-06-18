@@ -1,10 +1,12 @@
 import {
   parseAllToolCalls, parseSuggestions, findMachineSectionStart, stripThinkBlocks,
   resolveToolAlias, activeContextTokens, effectiveBudget, TOOL_ALIASES, ChatBot,
+  parseFencedBlock, parseInlineSpans, classifyMarkdownLine,
 } from '../www/src/ai/chat-bot.js';
 import { SYSTEM_PROMPT_COMBINED, RPL_CATALOG } from '../www/src/ai/system-prompt.js';
 import { hasOp } from '../www/src/rpl/ops.js';
 import { assert } from './helpers.mjs';
+import { readFileSync } from 'node:fs';
 
 /* AI chat-bot response parsers — the pure helpers that pull structured
    tool calls, follow-up suggestions and reasoning blocks out of a raw
@@ -93,6 +95,28 @@ import { assert } from './helpers.mjs';
   const calls = parseAllToolCalls('just a plain prose answer with no tool call');
   assert(Array.isArray(calls) && calls.length === 0,
          'parseAllToolCalls returns [] when no anchor is present');
+}
+
+// session332: the two unpinned skip/give-up arms of parseAllToolCalls. The
+// malformed-object block above only exercises a JSON.parse *throw*; the
+// `obj && typeof obj.name === 'string'` guard's other false arm — valid JSON
+// whose `name` is non-string — and the `end < 0` unclosed-brace `break` were
+// never pinned. These guard a refactor that narrows the name-type guard or
+// drops the early break.
+{
+  // Valid JSON, numeric `name`: JSON.parse succeeds but the typeof guard
+  // rejects it (no throw), and the post-try lastIndex advance still lets a
+  // following well-formed call surface — distinct from the parse-throw path.
+  const calls = parseAllToolCalls('{"name":42,"arguments":{}} {"name":"clear"}');
+  assert(calls.length === 1 && calls[0].name === 'clear',
+         'parseAllToolCalls skips a valid object with a non-string name and reads the next call');
+  // A null `name` is likewise rejected (typeof null === "object").
+  assert(parseAllToolCalls('{"name":null,"arguments":{}}').length === 0,
+         'parseAllToolCalls skips an object whose name is null');
+  // An unclosed first anchor trips matchBalancedEnd → -1 → the loop *breaks*,
+  // so even a following well-formed call is abandoned (partial-stream policy).
+  assert(parseAllToolCalls('{"name":"a","arguments":{"x":1 then {"name":"b"}').length === 0,
+         'parseAllToolCalls gives up entirely on an unclosed leading brace');
 }
 
 
@@ -211,6 +235,42 @@ import { assert } from './helpers.mjs';
          'findMachineSectionStart picks JSON over a lowercase suggest marker that follows it');
 }
 
+// session380: the two anchor regexes are whitespace-tolerant (`/\{\s*"name"\s*:/`
+// and `/\bSUGGEST\s*:/i`) but every pin above feeds only the tight `{"name":` /
+// `SUGGEST:` forms.  Real streamed/pretty-printed JSON carries spaces and
+// newlines, so the `\s*` arms and the SUGGEST `\b` boundary are the live paths
+// the detector actually runs against — none were pinned.  Guards a refactor that
+// tightens either regex (dropping `\s*`, the `\b`, or the name-must-be-first-key
+// constraint) and would then miss a real machine section mid-stream.
+{
+  // JSON anchor tolerates whitespace/newlines after `{` and around the colon.
+  const pretty = 'ok {\n  "name" : "x"}';
+  assert(findMachineSectionStart(pretty) === pretty.indexOf('{'),
+         'findMachineSectionStart matches a pretty-printed JSON tool-call anchor');
+  const tabbed = 'ok {  "name"\t:"x"}';
+  assert(findMachineSectionStart(tabbed) === tabbed.indexOf('{'),
+         'findMachineSectionStart tolerates tabs/spaces in the JSON anchor');
+  // `"name"` must be the FIRST key after the brace — a leading other key means
+  // the `\s*`-only gap between `{` and `"name"` fails to match, so no anchor.
+  assert(findMachineSectionStart('ok {"id":1, "name":"x"}') === -1,
+         'findMachineSectionStart requires "name" immediately after the brace');
+  // SUGGEST tolerates whitespace before the colon.
+  const spaced = 'p SUGGEST : ["q"]';
+  assert(findMachineSectionStart(spaced) === spaced.indexOf('SUGGEST'),
+         'findMachineSectionStart matches SUGGEST with a space before the colon');
+  // The `\b` boundary blocks a substring match (NOSUGGEST is not SUGGEST)...
+  assert(findMachineSectionStart('here NOSUGGEST: stuff') === -1,
+         'findMachineSectionStart does not match SUGGEST as a word substring');
+  // ...but a non-word char before SUGGEST still satisfies the boundary.
+  const dotted = 'here .SUGGEST: x';
+  assert(findMachineSectionStart(dotted) === dotted.indexOf('SUGGEST'),
+         'findMachineSectionStart matches SUGGEST after a non-word boundary char');
+  // A whitespace-laden JSON anchor before a tight SUGGEST still wins via min.
+  const both = 'a {  "name":"x"} SUGGEST: ["q"]';
+  assert(findMachineSectionStart(both) === both.indexOf('{'),
+         'findMachineSectionStart picks a whitespace JSON anchor over a later SUGGEST');
+}
+
 
 {
   assert(stripThinkBlocks('<think>weighing options</think>The answer is 4.') === 'The answer is 4.',
@@ -286,6 +346,216 @@ import { assert } from './helpers.mjs';
          'findMachineSectionStart reports pure prose once a think-wrapped call is stripped');
 }
 
+// session353: parseFencedBlock — the ```-fence language/code splitter lifted
+// out of renderMarkdown's DOM (session326/347 extract-and-pin precedent). The
+// markdown renderer was the lane's last uncovered surface; this pins the pure
+// part — the `lang` routing key that selects mermaid-vs-codeblock and the body
+// extraction — without a DOM. Guards a refactor that drops the lower-case/trim
+// on the tag, mishandles a tag-less fence, or eats a body newline.
+{
+  // Tag line present: lower-cased and trimmed; body is everything past the
+  // first newline, verbatim (the trailing newline is left for the caller).
+  assert(JSON.stringify(parseFencedBlock('```js\nconst x = 1;\n```'))
+           === JSON.stringify({ lang: 'js', code: 'const x = 1;\n' }),
+         'parseFencedBlock reads the language tag and the body after the first newline');
+  // The mermaid routing key folds case AND surrounding whitespace, so a
+  // sloppy `  MERMAID  ` tag still routes to the diagram renderer.
+  assert(parseFencedBlock('```  MERMAID  \ngraph TD\nA-->B\n```').lang === 'mermaid',
+         'parseFencedBlock lower-cases and trims the tag so the mermaid key matches');
+  // No newline at all: there is no tag line — the whole inner text is code.
+  assert(JSON.stringify(parseFencedBlock('```inline code```'))
+           === JSON.stringify({ lang: '', code: 'inline code' }),
+         'parseFencedBlock treats a newline-less fence as an untagged code body');
+  // A bare opening fence (newline immediately) has an empty tag and a body.
+  assert(JSON.stringify(parseFencedBlock('```\nplain code\n```'))
+           === JSON.stringify({ lang: '', code: 'plain code\n' }),
+         'parseFencedBlock yields an empty tag for a fence with no language line');
+  // Multi-line bodies are preserved verbatim (no internal trimming).
+  assert(parseFencedBlock('```py\na = 1\nb = 2\n```').code === 'a = 1\nb = 2\n',
+         'parseFencedBlock preserves a multi-line body verbatim');
+  // A language line with no body yields an empty code string, not undefined.
+  assert(JSON.stringify(parseFencedBlock('```python\n```'))
+           === JSON.stringify({ lang: 'python', code: '' }),
+         'parseFencedBlock returns an empty body for a tag-only fence');
+}
+
+// session360: parseInlineSpans — the inline-markdown span tokenizer lifted out
+// of appendSpans' DOM (session326/347/353 extract-and-pin precedent). The
+// markdown renderer's inline pass was the lane's last uncovered surface; this
+// pins the pure part — the alternation order (code before math before bold
+// before italic), the span-type dispatch, and the `$…$` bare-dollar guard —
+// without a DOM. Guards a refactor that reorders the alternation, drops the
+// non-space lookarounds on the `$` math form, or mis-routes a span type.
+{
+  const types = t => parseInlineSpans(t).map(s => s.type).join(',');
+  // Plain text → a single text token; empty input → no tokens.
+  assert(JSON.stringify(parseInlineSpans('plain'))
+           === JSON.stringify([{ type: 'text', content: 'plain' }]),
+         'parseInlineSpans wraps unformatted text in one text token');
+  assert(parseInlineSpans('').length === 0,
+         'parseInlineSpans returns no tokens for empty input');
+  // Code, bold, italic each route to their own type with the body unwrapped.
+  assert(JSON.stringify(parseInlineSpans('a `c` b'))
+           === JSON.stringify([{ type: 'text', content: 'a ' },
+                               { type: 'code', content: 'c' },
+                               { type: 'text', content: ' b' }]),
+         'parseInlineSpans splits a backtick code span with surrounding text');
+  assert(types('**b** and *i*') === 'bold,text,em',
+         'parseInlineSpans routes **bold** to bold and *italic* to em');
+  // Both inline-math forms collapse to the math type; body is left untrimmed.
+  assert(JSON.stringify(parseInlineSpans('\\(x+1\\)'))
+           === JSON.stringify([{ type: 'math', content: 'x+1' }]),
+         'parseInlineSpans maps the \\(…\\) math form to a math token');
+  assert(JSON.stringify(parseInlineSpans('$x^2$'))
+           === JSON.stringify([{ type: 'math', content: 'x^2' }]),
+         'parseInlineSpans maps the $…$ math form to a math token');
+  // Code wins over math: a $…$ inside backticks stays literal code.
+  assert(types('` $x$ `') === 'code',
+         'parseInlineSpans lets a backtick span swallow an inner $…$ (code before math)');
+  // The bare-dollar guard: prose dollars and a space-padded $ … $ stay text.
+  assert(types('costs $5 and $10') === 'text',
+         'parseInlineSpans leaves bare prose dollar signs as text');
+  assert(types('$ spaced $') === 'text',
+         'parseInlineSpans rejects a space-padded $ … $ as non-math (lookaround guard)');
+}
+
+// session401: parseInlineSpans — the deliberate newline asymmetry between the
+// two inline-math forms. The `\(…\)` arm matches `[\s\S]+?` (spans newlines)
+// while the `$…$` arm matches `[^$\n]+?` (single-line only); session360 pinned
+// each form standalone but never the cross-form distinction, so a refactor
+// unifying the two character classes (e.g. widening `$…$` to `[\s\S]` or
+// narrowing `\(…\)` to `[^\n]`) would pass every prior pin yet silently change
+// which strings math-ify. Also pins paren-math surrounded by prose (session360
+// only tested it bare) and back-to-back `$…$` adjacency (the non-greedy body).
+{
+  const T = t => JSON.stringify(parseInlineSpans(t).map(s => [s.type, s.content]));
+  // The `\(…\)` form spans a newline; the `$…$` form does not.
+  assert(T('\\(a\nb\\)') === JSON.stringify([['math', 'a\nb']]),
+         'parseInlineSpans lets \\(…\\) math span a newline ([\\s\\S] body)');
+  assert(T('$a\nb$') === JSON.stringify([['text', '$a\nb$']]),
+         'parseInlineSpans rejects a $…$ span across a newline ([^$\\n] body)');
+  // Paren math surrounded by prose splits into text/math/text.
+  assert(T('see \\(x\\) here')
+           === JSON.stringify([['text', 'see '], ['math', 'x'], ['text', ' here']]),
+         'parseInlineSpans isolates a \\(…\\) math span from surrounding prose');
+  // Adjacent $…$ spans each tokenize (non-greedy body, no swallow).
+  assert(T('$a$ $b$')
+           === JSON.stringify([['math', 'a'], ['text', ' '], ['math', 'b']]),
+         'parseInlineSpans tokenizes back-to-back $…$ spans separately');
+}
+
+// session407: parseInlineSpans — the leftmost-match "swallow" contract. The
+// single alternation regex is scanned left-to-right, so whichever delimiter
+// OPENS FIRST in the string consumes everything up to its own close; the
+// alternation order only breaks ties at the same index. session360 pinned just
+// code-swallows-math (`\` $x$ \``), reading like an absolute "code before math"
+// precedence — but the inverse, `$a\`c\`$`, math-ifies the whole body, proving
+// code does NOT unconditionally beat math (the `$` simply opened first). This
+// pins the swallow across the emphasis/bold arms (never exercised) and both
+// directions of the code↔math tie-break, guarding a refactor that splits the
+// regex into ranked passes and turns the order comment into a real precedence.
+{
+  const T = t => JSON.stringify(parseInlineSpans(t).map(s => [s.type, s.content]));
+  // A backtick opening first swallows literal **bold** / *italic* markers.
+  assert(T('`**x**`') === JSON.stringify([['code', '**x**']]),
+         'parseInlineSpans lets a code span swallow inner emphasis markers verbatim');
+  // A `*`/`**` opening first swallows an inner $…$ math span (stays emphasis).
+  assert(T('*a $x$ b*') === JSON.stringify([['em', 'a $x$ b']]),
+         'parseInlineSpans lets an *italic* span swallow inner $…$ math');
+  assert(T('**a $x$ b**') === JSON.stringify([['bold', 'a $x$ b']]),
+         'parseInlineSpans lets a **bold** span swallow inner $…$ math');
+  // Emphasis opening first also swallows an inner code span.
+  assert(T('*a `c` b*') === JSON.stringify([['em', 'a `c` b']]),
+         'parseInlineSpans lets an *italic* span swallow an inner code span');
+  // A `$` opening first swallows literal `*` and backtick chars as math body —
+  // the math arm wins the tie-break the other way, so code does not always win.
+  assert(T('$a*b*c$') === JSON.stringify([['math', 'a*b*c']]),
+         'parseInlineSpans keeps bare * inside a leading $…$ as math body');
+  assert(T('$a`c`$') === JSON.stringify([['math', 'a`c`']]),
+         'parseInlineSpans math-ifies a $…$ that opens before an inner code span');
+}
+
+// session367: classifyMarkdownLine — the per-line block-role classifier lifted
+// out of appendInlineMarkdownLines' DOM (session326/347/353/360 extract-and-pin
+// precedent). The renderer's block dispatch (heading/list/paragraph routing)
+// was the lane's last uncovered pure surface; this pins the if-chain precedence
+// and each arm's captured content without a DOM. Guards a refactor that reorders
+// the precedence, drops a `\s+` separator (which would mis-route prose), or
+// changes a capture group.
+{
+  const J = x => JSON.stringify(classifyMarkdownLine(x));
+  // Headings: 1-3 hashes + a space carry the 1-3 level and the trimmed-of-marker body.
+  assert(J('# Title') === JSON.stringify({ kind: 'heading', level: 1, content: 'Title' }),
+         'classifyMarkdownLine reads a level-1 heading');
+  assert(J('### Deep') === JSON.stringify({ kind: 'heading', level: 3, content: 'Deep' }),
+         'classifyMarkdownLine reads a level-3 heading');
+  // 4+ hashes exceed the {1,3} bound, and a hash with no following space, fall to text.
+  assert(J('#### too deep') === JSON.stringify({ kind: 'text', content: '#### too deep' }),
+         'classifyMarkdownLine treats 4+ hashes as text (level bound is 1-3)');
+  assert(J('#NoSpace') === JSON.stringify({ kind: 'text', content: '#NoSpace' }),
+         'classifyMarkdownLine requires a space after the hash run');
+  // Bullets: a `-` or `*` plus a space, optionally indented; the marker is stripped.
+  assert(J('- item') === JSON.stringify({ kind: 'bullet', content: 'item' }),
+         'classifyMarkdownLine reads a dash bullet');
+  assert(J('  * spaced') === JSON.stringify({ kind: 'bullet', content: 'spaced' }),
+         'classifyMarkdownLine reads an indented star bullet');
+  // `*italic*` has no space after the star, so it is NOT a bullet — stays text.
+  assert(J('*just italic*') === JSON.stringify({ kind: 'text', content: '*just italic*' }),
+         'classifyMarkdownLine leaves *italic* (no space after star) as text, not a bullet');
+  // Ordered: digits + dot + space, optionally indented; the marker is stripped.
+  assert(J('1. first') === JSON.stringify({ kind: 'ordered', content: 'first' }),
+         'classifyMarkdownLine reads a numbered item');
+  assert(J('   12. twelfth') === JSON.stringify({ kind: 'ordered', content: 'twelfth' }),
+         'classifyMarkdownLine reads an indented multi-digit numbered item');
+  // Blank: empty or whitespace-only collapses to the blank role (a paragraph break).
+  assert(J('') === JSON.stringify({ kind: 'blank' }),
+         'classifyMarkdownLine maps an empty line to blank');
+  assert(J('   ') === JSON.stringify({ kind: 'blank' }),
+         'classifyMarkdownLine maps a whitespace-only line to blank');
+  // Anything else is text, carried verbatim.
+  assert(J('plain line') === JSON.stringify({ kind: 'text', content: 'plain line' }),
+         'classifyMarkdownLine carries an ordinary line as text');
+  // Heading is checked before bullet, but a bullet line owns its body verbatim
+  // even when the body itself starts with a hash — the line doesn't start with #.
+  assert(J('- # not heading') === JSON.stringify({ kind: 'bullet', content: '# not heading' }),
+         'classifyMarkdownLine keeps a leading-# bullet body as a bullet (precedence)');
+}
+
+// session420: classifyMarkdownLine empty-body asymmetry. The list arms capture
+// `(.*)` (empty body allowed) while the heading arm requires `(.+)` — every
+// session367 list pin fed a non-empty body, so the empty-marker arms and the
+// heading/list capture asymmetry were never exercised. A refactor tightening a
+// list's `\s+(.*)` to `\s+(.+)` (mis-aligning it with the heading) would route a
+// bare marker to text yet pass every prior pin. Also pins that the heading
+// separator `\s+` accepts a tab, not just a space.
+{
+  const J = x => JSON.stringify(classifyMarkdownLine(x));
+  // A marker followed by a space but no body still classifies as a list item
+  // with an empty content string (the `.*` capture permits zero chars).
+  assert(J('- ') === JSON.stringify({ kind: 'bullet', content: '' }),
+         'classifyMarkdownLine reads a bodyless dash bullet (empty content)');
+  assert(J('* ') === JSON.stringify({ kind: 'bullet', content: '' }),
+         'classifyMarkdownLine reads a bodyless star bullet (empty content)');
+  assert(J('  - ') === JSON.stringify({ kind: 'bullet', content: '' }),
+         'classifyMarkdownLine reads an indented bodyless bullet (empty content)');
+  assert(J('1. ') === JSON.stringify({ kind: 'ordered', content: '' }),
+         'classifyMarkdownLine reads a bodyless numbered item (empty content)');
+  assert(J('12. ') === JSON.stringify({ kind: 'ordered', content: '' }),
+         'classifyMarkdownLine reads a bodyless multi-digit numbered item (empty content)');
+  // The heading arm requires `(.+)`, so a bodyless hash run is NOT a heading —
+  // it falls through to text (the empty-body asymmetry with the list arms).
+  assert(J('# ') === JSON.stringify({ kind: 'text', content: '# ' }),
+         'classifyMarkdownLine treats a bodyless hash as text, not an empty heading');
+  assert(J('## ') === JSON.stringify({ kind: 'text', content: '## ' }),
+         'classifyMarkdownLine treats a bodyless two-hash run as text');
+  // A bare `*` with no space and no body is not a bullet — it stays text.
+  assert(J('*') === JSON.stringify({ kind: 'text', content: '*' }),
+         'classifyMarkdownLine leaves a bare star as text (no space, no body)');
+  // The heading separator is `\s+`, so a tab after the hash run is accepted.
+  assert(J('#\tTabbed') === JSON.stringify({ kind: 'heading', level: 1, content: 'Tabbed' }),
+         'classifyMarkdownLine accepts a tab as the heading separator');
+}
+
 
 {
   assert(resolveToolAlias('add_to_stack') === 'push_to_stack',
@@ -306,6 +576,55 @@ import { assert } from './helpers.mjs';
 {
   assert(resolveToolAlias('push_to_stack') === 'push_to_stack',
          'resolveToolAlias leaves an already-canonical name untouched');
+}
+
+// session387: source-side fidelity of the whole alias map. session283
+// guards the map from the TARGET side (every value is canonical and
+// single-hop), and the blocks above spot-check only a couple of keys
+// (add_to_stack, execute) plus the three the prompt advertises — so a
+// refactor of resolveToolAlias' lookup (or a stale copy of the map) that
+// returned the wrong-but-still-canonical target, or failed to rewrite some
+// keys, would pass session283 and every existing pin. Pin the source side:
+// resolveToolAlias(key) returns exactly TOOL_ALIASES[key] for every one of
+// the 30 keys, and always rewrites to a different name (the inequality
+// callers rely on to detect a rewrite). The single-hop guarantee from
+// session283 (no target is also a key) is what makes the !== assertion hold.
+{
+  const keys = Object.keys(TOOL_ALIASES);
+  assert(keys.length >= 30,
+         'TOOL_ALIASES exposes the full synonym set (extraction floor)');
+  for (const key of keys) {
+    assert(resolveToolAlias(key) === TOOL_ALIASES[key],
+           `resolveToolAlias(${key}) returns its mapped target`);
+    assert(resolveToolAlias(key) !== key,
+           `resolveToolAlias rewrites the alias key ${key} to a different name`);
+  }
+}
+
+// session394: resolveToolAlias' own-property guard. session387 flagged (but
+// did not pin) that the prior `TOOL_ALIASES[name] ?? name` read through the
+// prototype, so a model emitting an Object.prototype member name as a tool
+// (toString, constructor, valueOf, hasOwnProperty, __proto__, isPrototypeOf)
+// resolved to the inherited function/object instead of passing through —
+// dispatch would then see `resolveToolAlias(n) !== n` and mis-route. Source
+// now guards with Object.prototype.hasOwnProperty.call, so every such name is
+// a clean string pass-through. Probed all six live first (repo-rooted import,
+// CAS-free): each returns the name unchanged; real aliases still resolve.
+{
+  const protoNames = ['toString', 'constructor', 'valueOf',
+                      'hasOwnProperty', '__proto__', 'isPrototypeOf'];
+  for (const n of protoNames) {
+    const r = resolveToolAlias(n);
+    assert(r === n,
+           `resolveToolAlias(${n}) passes a prototype-member name through unchanged`);
+    assert(typeof r === 'string',
+           `resolveToolAlias(${n}) never returns an inherited prototype member`);
+  }
+  // A real alias and an unknown name are unaffected by the guard.
+  assert(resolveToolAlias('push') === 'push_to_stack',
+         'resolveToolAlias still rewrites a genuine alias after the guard');
+  assert(resolveToolAlias('totally_unknown') === 'totally_unknown',
+         'resolveToolAlias still passes an unknown name through after the guard');
 }
 
 
@@ -370,6 +689,24 @@ import { assert } from './helpers.mjs';
          'activeContextTokens passes through a tiny remote window');
   assert(effectiveBudget(tiny) === 0,
          'effectiveBudget floors at 0 when the window is below the response reserve');
+}
+
+// session426: the remote branch's `contextTokens || DEFAULT` falsy fallback was
+// pinned only with `null`, which `||` and `??` treat alike — so a refactor
+// swapping `||` for `??` would pass every prior pin yet change behavior for a
+// server that probes a 0 / NaN window (`??` would surface 0 instead of falling
+// back). 0 (a server reporting an unusable window) and NaN must both fold to
+// the generous remote default, distinguishing `||` from `??`.
+{
+  const zero = { loadedModelId: 'srv', endpoint: 'http://x', contextTokens: 0 };
+  assert(activeContextTokens(zero) === 16384,
+         'activeContextTokens folds a remote 0 context window to the remote default (|| not ??)');
+  assert(effectiveBudget(zero) === 16384 * 4 - 4000,
+         'effectiveBudget sizes the default window when a remote reports 0 tokens');
+
+  const nan = { loadedModelId: 'srv', endpoint: 'http://x', contextTokens: NaN };
+  assert(activeContextTokens(nan) === 16384,
+         'activeContextTokens folds a remote NaN context window to the remote default');
 }
 
 // Canonical tool set pulled from the LIVE registry — chat-bot.js
@@ -611,5 +948,141 @@ const registryToolNames = () =>
            `RPL_CATALOG still advertises ${name}`);
     assert(hasOp(name),
            `RPL_CATALOG non-uppercase op ${name} resolves to a registered op`);
+  }
+}
+
+/* ================================================================
+   session342: chat-bot.js header "Tool-call loop" ↔ wire-format drift
+   guard (code-review R-016, R-013/R-014/R-015 class). The header's
+   step 3 described scanning the model reply for `<tool_call>...
+   </tool_call>` XML tags, but the orchestrator parses BARE JSON
+   objects (parseAllToolCalls anchors on `{"name":`), and the system
+   prompt explicitly FORBIDS `<tool_call>` wrappers — so the comment
+   documented a wire format the code never reads and the prompt rejects.
+   Pin the corrected contract against live behavior so the stale XML
+   description can't creep back: the prompt prohibits the tags, the
+   parser keys on the bare JSON anchor, and the header no longer claims
+   the loop scans for an XML wrapper.
+   ================================================================ */
+{
+  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
+  const header = src.slice(0, src.indexOf('================================================================= */') + 1);
+
+  // The drift that was just fixed: the header must not claim the loop
+  // scans for a `<tool_call>...</tool_call>` XML wrapper.
+  assert(!/scan for <tool_call>\.\.\.<\/tool_call>/.test(header),
+         'session342: chat-bot.js header no longer claims the loop scans for <tool_call> XML tags');
+  // ...and must positively name the bare-JSON wire format it really uses.
+  assert(header.includes('parseAllToolCalls') && header.includes('{"name"'),
+         'session342: chat-bot.js header documents the bare JSON tool-call format read by parseAllToolCalls');
+
+  // Code side of the contract: the parser reads a bare object with no
+  // XML wrapper, and an XML-wrapped object is parsed only by its inner
+  // JSON (the tags are inert), proving the anchor is JSON, not `<tool_call>`.
+  assert(parseAllToolCalls('{"name":"get_stack","arguments":{}}').length === 1,
+         'session342: parseAllToolCalls reads a bare JSON tool call (no <tool_call> wrapper needed)');
+  const wrapped = parseAllToolCalls('<tool_call>{"name":"get_stack","arguments":{}}</tool_call>');
+  assert(wrapped.length === 1 && wrapped[0].name === 'get_stack',
+         'session342: parseAllToolCalls keys on the inner JSON, ignoring inert <tool_call> tags');
+
+  // Prompt side: the system prompt forbids the XML wrapper the header
+  // used to describe, which is why the corrected wire format is bare JSON.
+  assert(/<tool_call>\s*tags/.test(SYSTEM_PROMPT_COMBINED) &&
+         /DO NOT/.test(SYSTEM_PROMPT_COMBINED),
+         'session342: system prompt forbids <tool_call> tags (bare JSON objects only)');
+}
+
+/* ================================================================
+   session356: chat-bot.js file-header "Constructor options" `tools`
+   bag ↔ live registry drift guard (code-review R-018, R-014/R-015/
+   R-016 class). The header's `tools: { ... }` block listed only `run`,
+   but the constructor JSDoc just below it and `_buildRegistry` consume
+   six members (run/appendToEditor/clearEditor/getEditor/listVars/
+   recallVar) — so a reader auditing the calculator-side callback bag
+   from the header would miss five. Derive the live consumed set by
+   running every registry handler against a recording `_tools` proxy
+   (a Get trap fires once per `tools.<member>` access), then assert the
+   header documents exactly that set, both directions. The header was
+   the wrong side (it predates the editor/vars tools being added).
+   ================================================================ */
+{
+  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
+
+  // Live consumed set: which `this._tools.<member>` keys the handlers read.
+  const accessed = new Set();
+  const toolsProxy = new Proxy({}, { get(_t, k) { accessed.add(k); return () => undefined; } });
+  const reg = ChatBot.prototype._buildRegistry.call({
+    _tools: toolsProxy,
+    _getContext: () => ({ stack: [], angleMode: '', displayMode: '', dir: '' }),
+  });
+  for (const t of Object.values(reg)) t.handler({});
+  assert(accessed.size >= 6,
+         'session356: at least the six known tools-bag members are consumed by the registry');
+
+  // Documented set: the member names inside the header's `tools: { ... }`
+  // block (each line's leading identifier before `(`).
+  const optsIdx = src.indexOf('Constructor options:');
+  const toolsOpen = src.indexOf('tools: {', optsIdx);
+  const toolsClose = src.indexOf('}', toolsOpen);
+  const toolsBlock = src.slice(toolsOpen, toolsClose);
+  const documented = new Set(
+    [...toolsBlock.matchAll(/^\s*([a-zA-Z]\w*)\s*\(/gm)].map(m => m[1]),
+  );
+
+  for (const member of accessed) {
+    assert(documented.has(member),
+           `session356: header tools block documents consumed member '${member}'`);
+  }
+  for (const member of documented) {
+    assert(accessed.has(member),
+           `session356: header tools block member '${member}' is actually consumed by the registry`);
+  }
+}
+
+/* ================================================================
+   session363: chat-bot.js file-header "Constructor options"
+   `getContext(): { ... }` return-shape ↔ live registry drift guard
+   (code-review R-019, sibling of session356/R-018, R-014/R-015/R-016
+   class). The header documents the context object the calculator must
+   supply (stack/angleMode/displayMode/dir); the registry handlers read
+   those keys off `_getContext()`. Derive the live consumed set by
+   running every handler against a recording context proxy (a Get trap
+   fires once per `ctx.<key>` access) and assert the header documents
+   exactly that set, both directions — so a key added to / dropped from
+   the consumed shape without a matching header edit fails the suite.
+   ================================================================ */
+{
+  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
+
+  // Live consumed set: which `_getContext().<key>` keys the handlers read.
+  const accessed = new Set();
+  const ctxProxy = new Proxy({}, {
+    get(_t, k) { if (typeof k === 'string') accessed.add(k); return undefined; },
+  });
+  const reg = ChatBot.prototype._buildRegistry.call({
+    _tools: new Proxy({}, { get() { return () => undefined; } }),
+    _getContext: () => ctxProxy,
+  });
+  for (const t of Object.values(reg)) t.handler({});
+  assert(accessed.size >= 4,
+         'session363: at least the four known context keys are consumed by the registry');
+
+  // Documented set: the keys inside the header's `getContext(): { ... }`
+  // block (each line's leading identifier before `:`).
+  const optsIdx = src.indexOf('Constructor options:');
+  const ctxOpen = src.indexOf('getContext(): {', optsIdx);
+  const ctxClose = src.indexOf('}', ctxOpen);
+  const ctxBlock = src.slice(src.indexOf('{', ctxOpen) + 1, ctxClose);
+  const documented = new Set(
+    [...ctxBlock.matchAll(/^\s*([a-zA-Z]\w*)\s*:/gm)].map(m => m[1]),
+  );
+
+  for (const key of accessed) {
+    assert(documented.has(key),
+           `session363: header getContext block documents consumed key '${key}'`);
+  }
+  for (const key of documented) {
+    assert(accessed.has(key),
+           `session363: header getContext block key '${key}' is actually consumed by the registry`);
   }
 }

@@ -7,8 +7,12 @@
 
    Constructor options:
      tools: {
-       run(text: string): void   — type text into the entry and commit.
-                                   ALWAYS requires user confirmation.
+       run(text: string): void          — type RPL into the editor and ENTER
+       appendToEditor(text: string)     — insert at cursor, no commit
+       clearEditor(): void              — empty the editor buffer
+       getEditor(): string              — current editor contents
+       listVars(): string[]             — variable names in current dir
+       recallVar(name: string): any     — value of named variable (or undefined)
      }
      getContext(): {
        stack: string[]   — formatted stack lines, index 0 = level 1
@@ -24,7 +28,9 @@
    Tool-call loop:
      1. Build messages array (with current context injected into user msg).
      2. Generate.  Stream tokens into a live bubble.
-     3. When done, scan for <tool_call>...</tool_call> in the response.
+     3. When done, scan the response for bare JSON tool-call objects
+        ({"name":...,"arguments":...}, one per line — NOT <tool_call>
+        XML tags, which the prompt forbids) via parseAllToolCalls.
      4. If found:
           - run / any future mutating tool → show ▶ Confirm button.
           - get_stack → execute automatically, feed result back.
@@ -219,6 +225,22 @@ function renderMermaidInto(parent, source) {
    the text — they get their own widget.
    ------------------------------------------------------------------ */
 
+/** Split a ```-fenced block into its optional language tag and code body.
+ *  The first line after the opening fence is the language tag (trimmed and
+ *  lower-cased; empty when the fence has no tag line); everything after that
+ *  first newline is the code, verbatim.  A fence with no newline at all has
+ *  no tag — its whole inner text is the code.  Pure string logic, separated
+ *  from renderMarkdown's DOM so the mermaid-vs-codeblock routing key (`lang`)
+ *  and the body extraction can be pinned without a DOM.  Callers trim the
+ *  trailing newline off `code` themselves. */
+export function parseFencedBlock(block) {
+  const inner = block.slice(3, -3);
+  const nlIdx = inner.indexOf('\n');
+  const lang  = nlIdx >= 0 ? inner.slice(0, nlIdx).trim().toLowerCase() : '';
+  const code  = nlIdx >= 0 ? inner.slice(nlIdx + 1) : inner;
+  return { lang, code };
+}
+
 function renderMarkdown(text) {
   const frag = document.createDocumentFragment();
 
@@ -227,11 +249,7 @@ function renderMarkdown(text) {
 
   for (const part of parts) {
     if (part.startsWith('```')) {
-      // Fenced block — extract optional language tag.
-      const inner = part.slice(3, -3);
-      const nlIdx = inner.indexOf('\n');
-      const lang  = nlIdx >= 0 ? inner.slice(0, nlIdx).trim().toLowerCase() : '';
-      const code  = nlIdx >= 0 ? inner.slice(nlIdx + 1) : inner;
+      const { lang, code } = parseFencedBlock(part);
       if (lang === 'mermaid') {
         renderMermaidInto(frag, code.trimEnd());
       } else {
@@ -271,29 +289,42 @@ function appendInlineMarkdown(frag, text) {
   appendInlineMarkdownLines(frag, text);
 }
 
+/** Classify one inline-markdown line into its block role, lifted out of
+ *  appendInlineMarkdownLines' DOM so the heading/list/paragraph routing can be
+ *  tested headless (the session326/347/353/360 extract-and-pin precedent).
+ *  Returns `{ kind, ... }` where kind is `'heading' | 'bullet' | 'ordered' |
+ *  'blank' | 'text'`; a heading carries a 1-3 `level` plus `content`, list
+ *  items and text carry `content`.  Precedence matches the original if-chain:
+ *  heading, then bullet, then ordered, then blank, then text. */
+export function classifyMarkdownLine(line) {
+  const hm = line.match(/^(#{1,3})\s+(.+)/);
+  if (hm) return { kind: 'heading', level: hm[1].length, content: hm[2] };
+  const lim = line.match(/^\s*[-*]\s+(.*)/);
+  if (lim) return { kind: 'bullet', content: lim[1] };
+  const nlim = line.match(/^\s*\d+\.\s+(.*)/);
+  if (nlim) return { kind: 'ordered', content: nlim[1] };
+  if (line.trim() === '') return { kind: 'blank' };
+  return { kind: 'text', content: line };
+}
+
 function appendInlineMarkdownLines(frag, text) {
-  // Process line by line so we can detect list items and headers.
   const lines = text.split('\n');
   let p = null; // current paragraph
 
   const flushP = () => { if (p) { frag.appendChild(p); p = null; } };
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const c = classifyMarkdownLine(lines[i]);
 
-    // Heading
-    const hm = line.match(/^(#{1,3})\s+(.+)/);
-    if (hm) {
+    if (c.kind === 'heading') {
       flushP();
-      const h = document.createElement(`h${hm[1].length + 2}`); // h3–h5
-      appendSpans(h, hm[2]);
+      const h = document.createElement(`h${c.level + 2}`); // h3–h5
+      appendSpans(h, c.content);
       frag.appendChild(h);
       continue;
     }
 
-    // Bullet list item
-    const lim = line.match(/^\s*[-*]\s+(.*)/);
-    if (lim) {
+    if (c.kind === 'bullet') {
       flushP();
       // Wrap consecutive items in a <ul> if the previous sibling isn't one.
       let ul = frag.lastChild;
@@ -302,14 +333,12 @@ function appendInlineMarkdownLines(frag, text) {
         frag.appendChild(ul);
       }
       const li = document.createElement('li');
-      appendSpans(li, lim[1]);
+      appendSpans(li, c.content);
       ul.appendChild(li);
       continue;
     }
 
-    // Numbered list item
-    const nlim = line.match(/^\s*\d+\.\s+(.*)/);
-    if (nlim) {
+    if (c.kind === 'ordered') {
       flushP();
       let ol = frag.lastChild;
       if (!ol || ol.tagName !== 'OL') {
@@ -317,13 +346,12 @@ function appendInlineMarkdownLines(frag, text) {
         frag.appendChild(ol);
       }
       const li = document.createElement('li');
-      appendSpans(li, nlim[1]);
+      appendSpans(li, c.content);
       ol.appendChild(li);
       continue;
     }
 
-    // Blank line → paragraph break
-    if (line.trim() === '') {
+    if (c.kind === 'blank') {
       flushP();
       continue;
     }
@@ -333,46 +361,63 @@ function appendInlineMarkdownLines(frag, text) {
     if (p.childNodes.length > 0) {
       p.appendChild(document.createTextNode(' '));
     }
-    appendSpans(p, line);
+    appendSpans(p, c.content);
   }
   flushP();
 }
 
-/** Append inline-formatted spans (bold, italic, code, $math$) to a
- *  parent.  Inline math is `$…$` or `\(…\)`; the `$` form requires
- *  a non-space char immediately after the opening `$` to avoid eating
- *  bare dollar signs in prose ("costs $5 and $10"). */
-function appendSpans(parent, text) {
+/** Split an inline-markdown line into ordered span tokens, lifted out of
+ *  appendSpans' DOM so the span-type dispatch can be tested without a DOM
+ *  (the session326/347/353 extract-and-pin precedent).  Each token is
+ *  `{type, content}` where type is `'text' | 'code' | 'math' | 'bold' |
+ *  'em'`; `content` is the raw captured body (math is left untrimmed — the
+ *  caller trims at the render site).  Inline math is `$…$` or `\(…\)`; the
+ *  `$` form requires a non-space char immediately after the opening `$` to
+ *  avoid eating bare dollar signs in prose ("costs $5 and $10"). */
+export function parseInlineSpans(text) {
   // Order: code (so `…$x$…` inside backticks doesn't math-ify), then
   // inline math (\(…\) and $…$), then **bold**, then *italic*.
   const re = /(`([^`]+)`|\\\(([\s\S]+?)\\\)|\$(?=\S)([^$\n]+?)(?<=\S)\$|\*\*([^*]+)\*\*|\*([^*]+)\*)/g;
+  const spans = [];
   let last = 0;
   let m;
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) {
-      parent.appendChild(document.createTextNode(text.slice(last, m.index)));
+      spans.push({ type: 'text', content: text.slice(last, m.index) });
     }
-    if (m[2] !== undefined) {
-      const s = document.createElement('code');
-      s.textContent = m[2];
-      parent.appendChild(s);
-    } else if (m[3] !== undefined) {
-      renderMathInto(parent, m[3].trim(), /* displayMode */ false);
-    } else if (m[4] !== undefined) {
-      renderMathInto(parent, m[4].trim(), /* displayMode */ false);
-    } else if (m[5] !== undefined) {
-      const s = document.createElement('strong');
-      s.textContent = m[5];
-      parent.appendChild(s);
-    } else if (m[6] !== undefined) {
-      const s = document.createElement('em');
-      s.textContent = m[6];
-      parent.appendChild(s);
-    }
+    if (m[2] !== undefined) spans.push({ type: 'code', content: m[2] });
+    else if (m[3] !== undefined) spans.push({ type: 'math', content: m[3] });
+    else if (m[4] !== undefined) spans.push({ type: 'math', content: m[4] });
+    else if (m[5] !== undefined) spans.push({ type: 'bold', content: m[5] });
+    else if (m[6] !== undefined) spans.push({ type: 'em', content: m[6] });
     last = m.index + m[0].length;
   }
   if (last < text.length) {
-    parent.appendChild(document.createTextNode(text.slice(last)));
+    spans.push({ type: 'text', content: text.slice(last) });
+  }
+  return spans;
+}
+
+/** Append inline-formatted spans (bold, italic, code, $math$) to a parent. */
+function appendSpans(parent, text) {
+  for (const span of parseInlineSpans(text)) {
+    if (span.type === 'text') {
+      parent.appendChild(document.createTextNode(span.content));
+    } else if (span.type === 'code') {
+      const s = document.createElement('code');
+      s.textContent = span.content;
+      parent.appendChild(s);
+    } else if (span.type === 'math') {
+      renderMathInto(parent, span.content.trim(), /* displayMode */ false);
+    } else if (span.type === 'bold') {
+      const s = document.createElement('strong');
+      s.textContent = span.content;
+      parent.appendChild(s);
+    } else if (span.type === 'em') {
+      const s = document.createElement('em');
+      s.textContent = span.content;
+      parent.appendChild(s);
+    }
   }
 }
 
@@ -661,9 +706,15 @@ export const TOOL_ALIASES = Object.freeze({
  *  Returns the aliased name when `name` is a known synonym (see
  *  TOOL_ALIASES), otherwise `name` unchanged — so callers can detect a
  *  rewrite by `resolveToolAlias(n) !== n`.  Names not in the map
- *  (including already-canonical ones) pass through untouched. */
+ *  (including already-canonical ones) pass through untouched.  The
+ *  own-property guard is load-bearing: a bare `TOOL_ALIASES[name]` would
+ *  read through the prototype, so a model emitting `toString`,
+ *  `constructor`, `valueOf`, etc. as a tool name would mis-resolve to an
+ *  inherited Object.prototype member instead of passing through. */
 export function resolveToolAlias(name) {
-  return TOOL_ALIASES[name] ?? name;
+  return Object.prototype.hasOwnProperty.call(TOOL_ALIASES, name)
+    ? TOOL_ALIASES[name]
+    : name;
 }
 
 /** Look up the per-model contextTokens for the currently-loaded model.

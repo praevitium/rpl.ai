@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.3.0 (2026-06-17)
+**Latest release:** v0.3.1 (2026-06-17)
 
 ---
 
@@ -19,6 +19,65 @@ The application runs as a native desktop window on macOS, Windows, and Linux
 via [Tauri 2](https://tauri.app/). The entire calculator frontend is plain
 HTML / CSS / ES modules — no build step, no framework, no bundler required for
 development.
+
+---
+
+## v0.3.1 — 2026-06-17
+
+A hardening and testability patch on top of v0.3.0. No new commands and no
+change to calculator behavior; the focus is regression-proofing the interpreter
+and AI surfaces, one AI-protocol fix, and repository hygiene.
+
+### Test suite — 7,611 assertions
+
+The suite grew to **7,611 assertions across 23 test files** (from 6,691 across
+22 in v0.3.0), all passing. The new file `tests/test-llm-manager.mjs` gives the
+worker-based `LLM` manager its first coverage. The bulk of the growth is
+characterization pins that lock in existing behavior so future refactors can't
+silently change it — covering op argument-type acceptance/rejection across the
+numeric/stats families, RPL control-flow edge cases, the arrow-alias rejection
+contracts, and the AI markdown/parsing helpers.
+
+### Testability refactors
+
+Several pieces of pure logic were lifted out of DOM-, network-, and
+state-bound methods into named, exported helpers so they can be tested headless
+— behavior is unchanged, only the seams moved:
+
+- AI assistant: `parseFencedBlock` (code-fence language/body split) and
+  `classifyMarkdownLine` (heading/list/paragraph routing) in `chat-bot.js`;
+  `pickContextLength` (Ollama `/api/show` context-window extraction) in
+  `remote-llm.js`.
+- UI: `pushHistory` (command-help visited-name navigation) in
+  `command-help.js`; `uncategorizedOps` (the side-panel "Other" bucket) and
+  `dropZoneForFraction` (drag-drop row geometry) in `side-panel.js`.
+
+### AI assistant
+
+Tool calls are now parsed as bare JSON objects (`{"name":…,"arguments":…}`,
+one per line) rather than `<tool_call>…</tool_call>` XML tags, matching what
+the system prompt instructs the model to emit. The assistant's editor/variable
+tool surface is documented and expanded (`appendToEditor`, `clearEditor`,
+`getEditor`, `listVars`, `recallVar`), and the Ollama context-length probe is
+hardened against missing/malformed `model_info` maps.
+
+### Hygiene
+
+Removed accumulated scratch probe files from the working tree. Documentation
+notes (`docs/DATA_TYPES.md`, `docs/COMMANDS.md`, `docs/ROADMAP.md`, and the
+autonomous-loop ledgers) were reconciled with the code they describe.
+
+### Known limitations carried into v0.3.1
+
+Unchanged from v0.3.0: `JORDAN` Giac wiring, the step-debugger UI, the
+command-palette overlay (the fuzzy matcher ships and is tested), graphics /
+plotting, the equation and matrix writers, main-thread CAS, and the absence of
+a mobile layout all remain pending.
+
+### Upgrade notes
+
+No migration is required from v0.3.0. Pull the latest commit and re-run
+`npm install` to regenerate `build-info.js` (now `0.3.1-build164`).
 
 ---
 

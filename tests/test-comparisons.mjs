@@ -165,6 +165,93 @@ import { assert, assertThrows } from './helpers.mjs';
     'session068: (1,2) < (3,4) rejects — no total order on ℂ when im≠0');
 }
 
+/* ---- session341: ordered ops (< > ≤ ≥) — comparePair kind-branch
+   coercion arms with a positive ordered result --------------------------
+   session068 covers the equality-cluster (`==`) Complex/Real fold and the
+   Complex-im≠0 ordered *rejection*; session127/132 cover Q×R and Z×Q
+   ordered. But two of comparePair's kind branches (ops.js ~5185) had no
+   positive *ordered* pin:
+     • the `p.kind === 'complex'` ZERO-im branch (`av = p.a.re; bv = p.b.re`)
+       — only its im≠0 throw was pinned, never the real-part comparison that
+       fires when both operands fold to Complex with zero imaginary part;
+     • the `p.kind === 'real'` branch (`p.a.toNumber()`) reached by a MIXED
+       Integer/Real pair — every prior `< > ≤ ≥` Real pin was both-Real.
+   Probed all live first; no source change. Guards a refactor that drops the
+   zero-im real-part extraction or narrows the mixed-pair real coercion. */
+{
+  const s = new Stack();
+  s.push(Complex(2, 0)); s.push(Complex(5, 0));
+  lookup('<').fn(s);
+  assert(s.peek().value.eq(1),
+    'session341: (2,0) < (5,0) → 1 (both fold to Complex, zero im → real-part compare)');
+}
+{
+  const s = new Stack();
+  s.push(Complex(5, 0)); s.push(Complex(2, 0));
+  lookup('>').fn(s);
+  assert(s.peek().value.eq(1), 'session341: (5,0) > (2,0) → 1');
+}
+{
+  const s = new Stack();
+  s.push(Complex(5, 0)); s.push(Complex(5, 0));
+  lookup('≤').fn(s);
+  assert(s.peek().value.eq(1), 'session341: (5,0) ≤ (5,0) → 1 (equal real parts)');
+}
+{
+  const s = new Stack();
+  s.push(Complex(5, 0)); s.push(Complex(6, 0));
+  lookup('≥').fn(s);
+  assert(s.peek().value.eq(0), 'session341: (5,0) ≥ (6,0) → 0');
+}
+{
+  const s = new Stack();
+  s.push(Complex(5, 0)); s.push(Real(5));
+  lookup('≤').fn(s);
+  assert(s.peek().value.eq(1),
+    'session341: (5,0) ≤ 5 → 1 (Complex × Real folds to Complex, zero im, equal)');
+}
+{
+  const s = new Stack();
+  s.push(Real(3)); s.push(Complex(5, 0));
+  lookup('<').fn(s);
+  assert(s.peek().value.eq(1),
+    'session341: 3 < (5,0) → 1 (Real × Complex direction, zero im)');
+}
+{
+  const s = new Stack();
+  s.push(Complex(5, 1)); s.push(Real(3));
+  assertThrows(() => lookup('<').fn(s), /Bad argument type/i,
+    'session341: (5,1) < 3 rejects — Complex × Real with non-zero im has no ordering');
+}
+{
+  const s = new Stack();
+  s.push(Integer(7n)); s.push(Real(7.5));
+  lookup('<').fn(s);
+  assert(s.peek().value.eq(1),
+    'session341: Integer(7) < Real(7.5) → 1 (mixed Z/R folds to the real kind)');
+}
+{
+  const s = new Stack();
+  s.push(Real(7.5)); s.push(Integer(7n));
+  lookup('>').fn(s);
+  assert(s.peek().value.eq(1),
+    'session341: Real(7.5) > Integer(7) → 1 (mixed R/Z direction)');
+}
+{
+  const s = new Stack();
+  s.push(Integer(7n)); s.push(Real(7));
+  lookup('≤').fn(s);
+  assert(s.peek().value.eq(1),
+    'session341: Integer(7) ≤ Real(7) → 1 (mixed pair, equal value boundary)');
+}
+{
+  const s = new Stack();
+  s.push(Real(2.5)); s.push(Integer(3n));
+  lookup('≥').fn(s);
+  assert(s.peek().value.eq(0),
+    'session341: Real(2.5) ≥ Integer(3) → 0 (mixed pair, strict ordering)');
+}
+
 {
   const s = new Stack();
   s.push(Name('X')); s.push(Name('X'));
@@ -491,6 +578,59 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(allOk,
     'session068: Real AND/OR/XOR truth table (12 rows) all correct');
 }
+{
+  // session432: AND/OR/XOR route non-BinInt operands through isTruthy
+  // (ops.js ~5237: `const x = isTruthy(a), y = isTruthy(b)`), but every
+  // prior pin fed only Real operands — so the Integer arm, the Complex arm,
+  // and the reject arm of isTruthy were never exercised through the logical
+  // ops.  A refactor narrowing binaryLogic to a Real-only coercion would pass
+  // the session068 truth table yet break `Integer 5 Integer 0 AND` and a
+  // pure-imaginary operand.  isTruthy's Integer arm is value !== 0n, its
+  // Complex arm is re !== 0 || im !== 0, else `Bad argument type`.
+  const I = (n) => Integer(BigInt(n));
+  const apply = (op, a, b) => {
+    const s = new Stack();
+    s.push(a); s.push(b);
+    lookup(op).fn(s);
+    return s.peek();
+  };
+  // Integer arm — flag-style truthiness, not bitwise (that path needs BinInt).
+  assert(apply('AND', I(5), I(0)).value.eq(0),
+    'session432: Integer 5 AND 0 = 0 (0n is falsy)');
+  assert(apply('AND', I(5), I(3)).value.eq(1),
+    'session432: Integer 5 AND 3 = 1 (both non-zero are truthy)');
+  assert(apply('OR', I(0), I(0)).value.eq(0),
+    'session432: Integer 0 OR 0 = 0');
+  assert(apply('OR', I(5), I(0)).value.eq(1),
+    'session432: Integer 5 OR 0 = 1');
+  assert(apply('XOR', I(5), I(3)).value.eq(0),
+    'session432: Integer 5 XOR 3 = 0 (both truthy)');
+  assert(apply('XOR', I(0), I(4)).value.eq(1),
+    'session432: Integer 0 XOR 4 = 1 (exactly one truthy)');
+  // Complex arm — truthy iff either component is non-zero.
+  assert(apply('AND', Complex(0, 2), Complex(3, 4)).value.eq(1),
+    'session432: Complex (0,2) AND (3,4) = 1 (both truthy)');
+  assert(apply('AND', Complex(0, 0), Complex(3, 4)).value.eq(0),
+    'session432: Complex (0,0) AND (3,4) = 0 (zero complex is falsy)');
+  assert(apply('OR', Complex(0, 0), Complex(0, 0)).value.eq(0),
+    'session432: Complex (0,0) OR (0,0) = 0');
+  assert(apply('XOR', Complex(0, 2), Complex(0, 0)).value.eq(1),
+    'session432: Complex (0,2) XOR (0,0) = 1 (exactly one truthy)');
+  // Mixed non-Real / Real operands still route through isTruthy per slot.
+  assert(apply('AND', I(5), Real(0)).value.eq(0),
+    'session432: Integer 5 AND Real 0 = 0 (per-operand truthiness)');
+  assert(apply('OR', Complex(0, 2), Real(0)).value.eq(1),
+    'session432: Complex (0,2) OR Real 0 = 1');
+  // Reject arm — a non-numeric operand in either slot hits isTruthy's throw.
+  assertThrows(() => apply('AND', Str('x'), I(1)), 'Bad argument type',
+    'session432: String AND Integer rejects (isTruthy else-throw, level 2)');
+  assertThrows(() => apply('AND', I(1), Str('x')), 'Bad argument type',
+    'session432: Integer AND String rejects (level 1)');
+  assertThrows(() => apply('XOR', I(1), Str('x')), 'Bad argument type',
+    'session432: Integer XOR String rejects');
+  assertThrows(() => apply('OR', Complex(0, 2), Str('x')), 'Bad argument type',
+    'session432: Complex OR String rejects');
+}
 
 /* ================================================================
    Structural equality on List / Vector / Matrix / Symbolic / Tagged /
@@ -665,6 +805,202 @@ import { assert, assertThrows } from './helpers.mjs';
   lookup('==').fn(s);
   assert(s.peek().value.eq(0), 'session072: 1_m == 2_m = 0 (value differs)');
 }
+/* ================================================================
+   session362: SAME on Units.  The block header above promises "Unit via
+   == AND SAME", but the session072 Unit pins only exercise `==` — `SAME`
+   on a Unit was unpinned anywhere in the suite.  SAME routes through the
+   same `eqValues` Unit branch (ops.js ~5003: value-equal AND structural
+   uexpr-equal) as `==`, but SAME's contract differs by type: it does NOT
+   cross-coerce (`SAME #10h Integer(16)` = 0) and Directory SAME is
+   reference identity.  These pin that Unit SAME stays *structural* —
+   two distinct allocations that match on value + uexpr are SAME, unlike
+   Directory — so a refactor extending "SAME = identity" to Units fails.
+   No source change.  Probed live first.
+   ================================================================ */
+{
+  const [a] = parseEntry('1_m');
+  const [b] = parseEntry('1_m');
+  const s = new Stack();
+  s.push(a); s.push(b);
+  assert(a !== b, 'session362: parseEntry yields distinct Unit allocations');
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(1),
+    'session362: SAME 1_m 1_m = 1 (structural, not reference identity — contrast Directory)');
+}
+{
+  const [a] = parseEntry('1_m');
+  const [b] = parseEntry('1_km');
+  const s = new Stack();
+  s.push(a); s.push(b);
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(0),
+    'session362: SAME 1_m 1_km = 0 (same value, uexpr differs — no dim-equivalence coercion)');
+}
+{
+  const [a] = parseEntry('1_m');
+  const [b] = parseEntry('2_m');
+  const s = new Stack();
+  s.push(a); s.push(b);
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(0), 'session362: SAME 1_m 2_m = 0 (value differs)');
+}
+{
+  const [a] = parseEntry('1_m/s');
+  const [b] = parseEntry('1_m/s');
+  const s = new Stack();
+  s.push(a); s.push(b);
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(1), 'session362: SAME 1_m/s 1_m/s = 1 (compound uexpr matches)');
+}
+{
+  const [a] = parseEntry('1_m/s');
+  const [b] = parseEntry('1_m');
+  const s = new Stack();
+  s.push(a); s.push(b);
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(0), 'session362: SAME 1_m/s 1_m = 0 (compound vs simple uexpr)');
+}
+/* ================================================================
+   session363: SAME on Tagged.  The same gap session362 closed for Units,
+   one type over.  The session072 Tagged pins exercise the `eqValues`
+   Tagged branch (ops.js ~5000: `a.tag === b.tag && eqValues(a.value,
+   b.value)`) via `==` (and one SAME tag+value-match), but never pinned
+   SAME's distinguishing contract on a Tagged: that it is *structural*
+   (two distinct allocations matching on tag + value are SAME, unlike a
+   Directory, whose SAME is reference identity) and that it recurses into
+   the wrapped value without type-coercion (the outer `==` BinInt widening
+   in `_binIntCrossNormalize` does NOT reach inside a Tagged value, so a
+   Tagged-of-#16h is never SAME — nor `==` — a Tagged-of-Integer(16)).
+   No source change.  Probed live first.
+   ================================================================ */
+{
+  const a = Tagged('price', Real(200));
+  const b = Tagged('price', Real(200));
+  const s = new Stack();
+  s.push(a); s.push(b);
+  assert(a !== b, 'session363: distinct Tagged allocations');
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(1),
+    'session363: SAME price:200 price:200 = 1 (structural — tag + value match, not reference identity like Directory)');
+}
+{
+  const s = new Stack();
+  s.push(Tagged('price', Real(200)));
+  s.push(Tagged('cost', Real(200)));
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(0), 'session363: SAME price:200 cost:200 = 0 (tag differs)');
+}
+{
+  const s = new Stack();
+  s.push(Tagged('x', Real(1)));
+  s.push(Tagged('x', Real(2)));
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(0), 'session363: SAME x:1 x:2 = 0 (value differs)');
+}
+{
+  const s = new Stack();
+  s.push(Tagged('v', RList([Real(1), Real(2)])));
+  s.push(Tagged('v', RList([Real(1), Real(2)])));
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(1), 'session363: SAME v:{1 2} v:{1 2} = 1 (recurses into nested value)');
+}
+{
+  const s = new Stack();
+  s.push(Tagged('v', RList([Real(1), Real(2)])));
+  s.push(Tagged('v', RList([Real(1), Real(3)])));
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(0), 'session363: SAME v:{1 2} v:{1 3} = 0 (nested value differs)');
+}
+{
+  const s = new Stack();
+  s.push(Tagged('h', BinaryInteger(16n)));
+  s.push(Tagged('h', Integer(16)));
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(0),
+    'session363: SAME h:#16 h:16 = 0 (no type-coercion through the value — BinInt widening stays at the outer level)');
+}
+
+/* ----------------------------------------------------------------
+   session375: SAME on List / Vector / Matrix — the structural arm.
+   The same gap session362 (Unit) and session363 (Tagged) closed, one
+   collection over.  `eqValues`' List/Vector/Matrix branches (`ops.js`
+   ~4990) recurse via `_eqArr` → `eqValues`, so they are structural:
+   two distinct allocations that match elementwise are SAME, unlike a
+   Directory whose SAME is reference identity (~5018).  The session072
+   collection pins are almost entirely `==` — the lone List SAME (above)
+   does not assert distinct allocations, Vector has no SAME pin at all,
+   and Matrix has only a negative cell-mismatch SAME — so a refactor
+   extending "SAME = reference identity" to collections, dropping the
+   `_eqArr` recursion, or letting the outer `_binIntCrossNormalize`
+   widening leak inside a collection would pass green.  The BinInt arm
+   is the collection analogue of session363's Tagged-of-#16h case: the
+   widening is applied only at the top level (the operands here are
+   List/Vector, not BinInt), so a collection-of-#16h is never SAME — nor
+   `==` — a collection-of-Integer(16).  Probed all arms live first.
+   ---------------------------------------------------------------- */
+{
+  const a = RList([Real(1), Real(2), Real(3)]);
+  const b = RList([Real(1), Real(2), Real(3)]);
+  assert(a !== b, 'session375: distinct List allocations');
+  const s = new Stack();
+  s.push(a); s.push(b);
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(1),
+    'session375: SAME {1 2 3} {1 2 3} = 1 (structural, not reference identity — contrast Directory)');
+}
+{
+  const s = new Stack();
+  s.push(RList([RList([Real(1), Real(2)]), Real(3)]));
+  s.push(RList([RList([Real(1), Real(2)]), Real(3)]));
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(1),
+    'session375: SAME { {1 2} 3 } { {1 2} 3 } = 1 (recurses into nested List value)');
+}
+{
+  const s = new Stack();
+  s.push(RList([BinaryInteger(16n)]));
+  s.push(RList([Integer(16)]));
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(0),
+    'session375: SAME {#16} {16} = 0 (no BinInt coercion through the collection)');
+}
+{
+  const s = new Stack();
+  s.push(RList([BinaryInteger(16n)]));
+  s.push(RList([Integer(16)]));
+  lookup('==').fn(s);
+  assert(s.peek().value.eq(0),
+    'session375: {#16} == {16} = 0 (cross-normalize stays at the outer level)');
+}
+{
+  const a = Vector([Real(3), Real(4)]);
+  const b = Vector([Real(3), Real(4)]);
+  assert(a !== b, 'session375: distinct Vector allocations');
+  const s = new Stack();
+  s.push(a); s.push(b);
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(1),
+    'session375: SAME [3 4] [3 4] = 1 (structural, not reference identity)');
+}
+{
+  const s = new Stack();
+  s.push(Vector([Real(3), Real(4)]));
+  s.push(Vector([Real(4), Real(3)]));
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(0),
+    'session375: SAME [3 4] [4 3] = 0 (order-sensitive)');
+}
+{
+  const a = Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]);
+  const b = Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]);
+  assert(a !== b, 'session375: distinct Matrix allocations');
+  const s = new Stack();
+  s.push(a); s.push(b);
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(1),
+    'session375: SAME [[1 2][3 4]] [[1 2][3 4]] = 1 (structural, not reference identity)');
+}
+
 {
   const s = new Stack();
   s.push(RList([Real(1)])); s.push(Str('1'));
@@ -1057,4 +1393,95 @@ import { assert, assertThrows } from './helpers.mjs';
   lookup('≤').fn(s);
   assert(s.peek().value.eq(1),
     'session132: Rational(2/1) ≤ Integer(2) → 1 (Q × Z equal-value boundary; ≤ accepts equal)');
+}
+
+/* ================================================================
+   session355: Rational kind cross-multiply ordered branch —
+   NEGATIVE-numerator pairs across < > ≤ ≥.
+
+   comparePair's `rational` kind branch (ops.js ~5192) extracts the
+   comparable scalars by cross-multiplying:
+     av = p.a.n * p.b.d;  bv = p.b.n * p.a.d;
+   This is correct only because `d` is always positive after Rational
+   sign-normalization (the sign lives in `n`).  session127/132's Z × Q
+   ordered pins reach this branch but only with positive Rational
+   numerators (the lone negative came from an Integer-derived {n<0, d:1}
+   pair — `Integer(-1) < Rational(1/2)`), so the sign handling on a
+   genuine negative-numerator Rational with a NON-UNIT denominator was
+   unguarded for the ordered comparators.  A refactor that dropped the
+   sign-normalization invariant (letting `d` go negative) or formed a
+   real first would flip these.  Probed all arms live first.
+   ================================================================ */
+
+{
+  const s = new Stack();
+  s.push(Rational(-3, 4));
+  s.push(Rational(-1, 2));
+  lookup('<').fn(s);
+  assert(s.peek().value.eq(1),
+    'session355: Rational(-3/4) < Rational(-1/2) → 1 (both negative numerators, non-unit denoms; -.75 < -.5)');
+}
+{
+  const s = new Stack();
+  s.push(Rational(-1, 2));
+  s.push(Rational(-3, 4));
+  lookup('>').fn(s);
+  assert(s.peek().value.eq(1),
+    'session355: Rational(-1/2) > Rational(-3/4) → 1 (reverse direction of the same negative pair)');
+}
+{
+  const s = new Stack();
+  s.push(Rational(-2, 3));
+  s.push(Rational(-2, 3));
+  lookup('≤').fn(s);
+  assert(s.peek().value.eq(1),
+    'session355: Rational(-2/3) ≤ Rational(-2/3) → 1 (equal negative-numerator boundary; cross-products tie)');
+}
+{
+  const s = new Stack();
+  s.push(Rational(-1, 4));
+  s.push(Rational(-1, 2));
+  lookup('≥').fn(s);
+  assert(s.peek().value.eq(1),
+    'session355: Rational(-1/4) ≥ Rational(-1/2) → 1 (-.25 ≥ -.5)');
+}
+{
+  const s = new Stack();
+  s.push(Rational(-1, 2));
+  s.push(Rational(1, 3));
+  lookup('<').fn(s);
+  assert(s.peek().value.eq(1),
+    'session355: Rational(-1/2) < Rational(1/3) → 1 (sign-crossing, negative numerator on level 2)');
+}
+{
+  const s = new Stack();
+  s.push(Rational(-1, 2));
+  s.push(Rational(1, 3));
+  lookup('>').fn(s);
+  assert(s.peek().value.eq(0),
+    'session355: Rational(-1/2) > Rational(1/3) → 0 (negative not greater than positive; guards a sign flip)');
+}
+{
+  const s = new Stack();
+  s.push(Rational(1, -2));
+  s.push(Rational(1, 3));
+  lookup('<').fn(s);
+  assert(s.peek().value.eq(1),
+    'session355: Rational(1/-2) < Rational(1/3) → 1 (denom-supplied sign normalizes to n<0, d>0)');
+}
+{
+  const s = new Stack();
+  s.push(Rational(-3, -4));
+  s.push(Rational(1, 2));
+  lookup('>').fn(s);
+  assert(s.peek().value.eq(1),
+    'session355: Rational(-3/-4) > Rational(1/2) → 1 (double negative normalizes to 3/4 > 1/2)');
+}
+{
+  const s = new Stack();
+  s.push(Rational(-5, 2));
+  s.push(Integer(-2));
+  lookup('<').fn(s);
+  assert(s.peek().value.eq(1),
+    'session355: Rational(-5/2) < Integer(-2) → 1 (Q × Z both negative; -2.5 < -2 via cross-multiply)');
 }

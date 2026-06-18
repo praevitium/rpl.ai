@@ -97,6 +97,22 @@ export function summarizeRun({
   };
 }
 
+/** Pick the model's max context length out of Ollama's `/api/show`
+ *  `model_info` map.  The key is arch-prefixed and varies by model
+ *  (e.g. `qwen2.context_length`), so we match whichever key ends in
+ *  `.context_length`.  Returns the positive token count, or null when
+ *  no usable entry is present — a missing/non-object map, no matching
+ *  key, or a non-positive / non-number value — so load() can fall back
+ *  to chat-bot.js's default budget. */
+export function pickContextLength(modelInfo) {
+  const info = modelInfo ?? {};
+  const ctxKey = Object.keys(info).find((k) => k.endsWith('.context_length'));
+  if (ctxKey && typeof info[ctxKey] === 'number' && info[ctxKey] > 0) {
+    return info[ctxKey];
+  }
+  return null;
+}
+
 export class RemoteLLM {
   constructor(endpoint = '') {
     // Always store the OpenAI-compat base (with /v1).  /chat/completions
@@ -197,13 +213,11 @@ export class RemoteLLM {
         });
         if (r.ok) {
           const data = await r.json();
-          const info = data?.model_info ?? {};
-          const ctxKey = Object.keys(info).find((k) => k.endsWith('.context_length'));
-          if (ctxKey && typeof info[ctxKey] === 'number' && info[ctxKey] > 0) {
-            this._contextTokens = info[ctxKey];
+          const ctx = pickContextLength(data?.model_info);
+          if (ctx !== null) {
+            this._contextTokens = ctx;
             // eslint-disable-next-line no-console
-            console.log('[RemoteLLM] /api/show: contextTokens =', this._contextTokens,
-                        '(from', ctxKey + ')');
+            console.log('[RemoteLLM] /api/show: contextTokens =', this._contextTokens);
           }
         }
       } catch { /* server didn't expose /api/show — use default */ }

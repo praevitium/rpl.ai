@@ -756,6 +756,64 @@ import { assert } from './helpers.mjs';
       'session164: OBJ→ Rational(5/1) → 5/1 (n/1 shape NOT normalised to Integer through OBJ→; pins type stability across the push-back branch)');
   }
 
+  /* session359 — OBJ→ unhandled-type rejection (the dispatch's final
+     `throw new RPLError('Bad argument type')` fall-through).  s155/s159/
+     s160/s163/s164 pinned every type with an OBJ→ branch (Complex /
+     Tagged / List / Vector / Matrix / String / Program / Symbolic /
+     Real / Integer / BinaryInteger / Rational / Unit), but the
+     fall-through itself — reached by the value types with NO row in the
+     AUR §3-149 Input/Output table — had ZERO rejection pins, so a
+     refactor that reorders the dispatch or replaces the throw with a
+     silent no-op would pass green.  Name and Directory are the live
+     reachable fall-through types: a bare Name on the stack and a
+     Directory value both decompose to nothing on the real machine, so
+     OBJ→ rejects.  Probed all four live first (bare Name, quoted Name,
+     Directory, and the ASCII-alias parity → all `Bad argument type`).
+     No source change — guards the dispatch's reject tail. */
+  {
+    /* Bare Name → Bad argument type (no OBJ→ branch; falls through the
+       whole dispatch to the reject tail). */
+    const s = new Stack();
+    s.push(Name('X'));
+    let caught = null;
+    try { lookup('OBJ→').fn(s); } catch (e) { caught = e; }
+    assert(caught && /Bad argument type/.test(caught.message),
+      'session359: OBJ→ on a bare Name rejects with Bad argument type (no AUR §3-149 row; reaches the dispatch fall-through)');
+  }
+  {
+    /* Quoted Name → same reject path; the quoted flag does not route
+       it to a different branch. */
+    const s = new Stack();
+    s.push(Name('X', { quoted: true }));
+    let caught = null;
+    try { lookup('OBJ→').fn(s); } catch (e) { caught = e; }
+    assert(caught && /Bad argument type/.test(caught.message),
+      'session359: OBJ→ on a quoted Name rejects with Bad argument type (quoted flag does not bypass the fall-through)');
+  }
+  {
+    /* Directory → Bad argument type.  A Directory is a live mutable
+       container with no OBJ→ decomposition (NEWOB falls through to
+       identity for the same reason); OBJ→ rejects rather than
+       enumerating its entries. */
+    const s = new Stack();
+    s.push(Directory({ name: 'D', entries: new Map() }));
+    let caught = null;
+    try { lookup('OBJ→').fn(s); } catch (e) { caught = e; }
+    assert(caught && /Bad argument type/.test(caught.message),
+      'session359: OBJ→ on a Directory rejects with Bad argument type (live container, no decomposition; symmetric with NEWOB identity fall-through)');
+  }
+  {
+    /* ASCII alias OBJ-> rejects identically — the alias is a thin
+       `OPS.get('OBJ→').fn(s)` delegation, so the reject tail must fire
+       through both glyphs. */
+    const s = new Stack();
+    s.push(Name('X'));
+    let caught = null;
+    try { lookup('OBJ->').fn(s); } catch (e) { caught = e; }
+    assert(caught && /Bad argument type/.test(caught.message),
+      'session359: ASCII alias OBJ-> on a Name rejects with Bad argument type (delegation preserves the reject tail)');
+  }
+
 /* ================================================================
    →ARRY / ARRY→ (array compose / decompose).
    ================================================================ */
@@ -821,6 +879,119 @@ import { assert } from './helpers.mjs';
     '→ARRY with 3-element size list → Bad argument value'); }
 }
 
+/* session372: the remaining unpinned _toDimSpec reject arms. The
+   String-typed dim-spec (final `throw 'Bad argument type'`) and the
+   `length > 2` size-list arm are pinned above; this block closes the
+   complementary arms reached by the same `_toDimSpec` / `_toIntIdx`
+   path so a refactor narrowing either guard can't pass green.
+   All probed live first (CAS-free). */
+{
+  // The `length < 1` side of the size-list length check — distinct
+  // boundary from the already-pinned `> 2` (3-element) arm.
+  const s = new Stack();
+  s.push(Real(1));
+  s.push(RList([]));
+  try { lookup('→ARRY').fn(s); assert(false, 'should throw'); }
+  catch (e) { assert(/Bad argument value/i.test(e.message),
+    'session372: →ARRY with empty {} size list → Bad argument value'); }
+}
+{
+  // A non-integer Real inside an otherwise valid-length size-list trips
+  // `_toIntIdx`'s integrality check (a different path from the bare
+  // non-integer count, which never reaches the List branch).
+  const s = new Stack();
+  s.push(Real(1)); s.push(Real(2));
+  s.push(RList([Real(2.5)]));
+  try { lookup('→ARRY').fn(s); assert(false, 'should throw'); }
+  catch (e) { assert(/Bad argument value/i.test(e.message),
+    'session372: →ARRY size-list item 2.5 → Bad argument value'); }
+}
+{
+  // A String size-list item trips `_toIntIdx`'s type check — the type
+  // error is reached *inside* the list map, not by the outer dim-spec
+  // type guard (which only sees the List as a whole).
+  const s = new Stack();
+  s.push(Real(1));
+  s.push(RList([Str('x')]));
+  try { lookup('→ARRY').fn(s); assert(false, 'should throw'); }
+  catch (e) { assert(/Bad argument type/i.test(e.message),
+    'session372: →ARRY size-list item "x" → Bad argument type'); }
+}
+{
+  // A negative size-list item trips `_toIntIdx`'s non-negative check.
+  const s = new Stack();
+  s.push(Real(1));
+  s.push(RList([Real(-1)]));
+  try { lookup('→ARRY').fn(s); assert(false, 'should throw'); }
+  catch (e) { assert(/Bad argument value/i.test(e.message),
+    'session372: →ARRY size-list item -1 → Bad argument value'); }
+}
+{
+  // 2-D matrix path: `{2 3}` needs m*n = 6 elements; with fewer the
+  // matrix-branch `popN(total)` underflows — pins the row-major
+  // assembly's stack-depth requirement (the bare-vector underflow is a
+  // separate popN(n) site).
+  const s = new Stack();
+  s.push(Real(1)); s.push(Real(2));
+  s.push(RList([Real(2), Real(3)]));
+  try { lookup('→ARRY').fn(s); assert(false, 'should throw'); }
+  catch (e) { assert(/Too few arguments/i.test(e.message),
+    'session372: →ARRY {2 3} with only 2 stack elements → Too few arguments'); }
+}
+
+/* session405: the positive BinaryInteger arm of `_toIntIdx` reached
+   through `_toDimSpec`'s size-list map (`v.items.map(_toIntIdx)`). The
+   bare BinInt count is pinned (session077) and the size-list reject arms
+   are pinned (session372), but a BinInt *inside* a size-list was never
+   positively exercised — so a refactor swapping the list-map's
+   `_toIntIdx` for an Integer/Real-only coercion would pass green. This
+   is a distinct caller from GET/PUT/GETI's `_toIntIdx` BinInt arm
+   (session392). All probed live first (CAS-free). */
+{
+  // {#2h} size-list → a 2-vector, same shape as the {Real(2)} form.
+  const s = new Stack();
+  s.push(Real(10)); s.push(Real(20));
+  s.push(RList([BinaryInteger(2n, 'h')]));
+  lookup('→ARRY').fn(s);
+  const v = s.peek(1);
+  assert(v.type === 'vector' && v.items.length === 2
+      && v.items[0].value.eq(10) && v.items[1].value.eq(20),
+    'session405: →ARRY with {#2h} BinInt size-list → Vector[10 20]');
+}
+{
+  // {#2h #3h} size-list → a 2×3 Matrix, row-major (both dims via BinInt).
+  const s = new Stack();
+  for (let i = 1; i <= 6; i++) s.push(Real(i));
+  s.push(RList([BinaryInteger(2n, 'h'), BinaryInteger(3n, 'h')]));
+  lookup('→ARRY').fn(s);
+  const m = s.peek(1);
+  assert(m.type === 'matrix' && m.rows.length === 2 && m.rows[0].length === 3
+      && m.rows[0][0].value.eq(1) && m.rows[0][2].value.eq(3)
+      && m.rows[1][0].value.eq(4) && m.rows[1][2].value.eq(6),
+    'session405: →ARRY with {#2h #3h} BinInt size-list → 2×3 Matrix row-major');
+}
+{
+  // Mixed {#2h 3}: a BinInt and an Integer in the same size-list both
+  // resolve through the per-item _toIntIdx map → 2×3 Matrix.
+  const s = new Stack();
+  for (let i = 1; i <= 6; i++) s.push(Real(i));
+  s.push(RList([BinaryInteger(2n, 'h'), Integer(3n)]));
+  lookup('→ARRY').fn(s);
+  const m = s.peek(1);
+  assert(m.type === 'matrix' && m.rows.length === 2 && m.rows[0].length === 3,
+    'session405: →ARRY with mixed {#2h 3} size-list → 2×3 Matrix');
+}
+{
+  // Base is cosmetic in the size-list index: #10b (binary 2) → 2-vector.
+  const s = new Stack();
+  s.push(Real(10)); s.push(Real(20));
+  s.push(RList([BinaryInteger(2n, 'b')]));
+  lookup('→ARRY').fn(s);
+  const v = s.peek(1);
+  assert(v.type === 'vector' && v.items.length === 2,
+    'session405: →ARRY with base-cosmetic {#10b} size-list → Vector[2]');
+}
+
 {
   const s = new Stack();
   s.push(Vector([Real(11), Real(22), Real(33)]));
@@ -882,6 +1053,73 @@ import { assert } from './helpers.mjs';
     'ARRY→ on Real → Bad argument type'); }
 }
 
+// session437: →ARRY/ARRY→ carried their own rejection pins (session372/405
+// compose path, the ARRY→-on-Real decompose reject above), but the
+// `->ARRY`/`ARRY->` ASCII aliases had happy-path coverage only. Each alias
+// is registered with the SAME fn instance as its canonical (`_toArrayOp` /
+// `_fromArrayOp`), so it rejects identically — pin the shared-instance
+// identity plus a reject through each alias so a refactor that splits the
+// alias into its own implementation and drops a guard is caught (the
+// session391 row/col and session417 vector alias precedent).
+{
+  assert(lookup('->ARRY').fn === lookup('→ARRY').fn
+      && lookup('ARRY->').fn === lookup('ARRY→').fn,
+    'session437: ARRY ASCII aliases share the canonical fn instance');
+
+  // ->ARRY mirrors →ARRY's compose-path rejects.
+  {
+    const s = new Stack();
+    s.push(Real(10));
+    s.push(Real(20));
+    s.push(Str('x'));
+    try { lookup('->ARRY').fn(s); assert(false, 'should throw'); }
+    catch (e) { assert(/Bad argument type/i.test(e.message),
+      'session437: ->ARRY String dim-spec → Bad argument type'); }
+  }
+  {
+    const s = new Stack();
+    for (let i = 0; i < 6; i++) s.push(Real(i + 1));
+    s.push(RList([Integer(2), Integer(2), Integer(2)]));
+    try { lookup('->ARRY').fn(s); assert(false, 'should throw'); }
+    catch (e) { assert(/Bad argument value/i.test(e.message),
+      'session437: ->ARRY 3-element size list → Bad argument value'); }
+  }
+  {
+    const s = new Stack();
+    s.push(Real(1));
+    s.push(RList([Integer(-1)]));
+    try { lookup('->ARRY').fn(s); assert(false, 'should throw'); }
+    catch (e) { assert(/Bad argument value/i.test(e.message),
+      'session437: ->ARRY size-list item -1 → Bad argument value'); }
+  }
+  // ->ARRY positive path flows through the shared instance.
+  {
+    const s = new Stack();
+    s.push(Real(10));
+    s.push(Real(20));
+    s.push(RList([Integer(2)]));
+    lookup('->ARRY').fn(s);
+    assert(s.peek().type === 'vector' && s.peek().items.length === 2
+        && s.peek().items[0].value.eq(10) && s.peek().items[1].value.eq(20),
+      'session437: ->ARRY {2} size-list → Vector[10 20]');
+  }
+  // ARRY-> mirrors ARRY→'s non-array decompose rejects.
+  {
+    const s = new Stack();
+    s.push(Real(3));
+    try { lookup('ARRY->').fn(s); assert(false, 'should throw'); }
+    catch (e) { assert(/Bad argument type/i.test(e.message),
+      'session437: ARRY-> on Real → Bad argument type'); }
+  }
+  {
+    const s = new Stack();
+    s.push(Str('x'));
+    try { lookup('ARRY->').fn(s); assert(false, 'should throw'); }
+    catch (e) { assert(/Bad argument type/i.test(e.message),
+      'session437: ARRY-> on String → Bad argument type'); }
+  }
+}
+
 /* ================================================================
    V→ / →V2 / →V3 (simple vector compose/decompose).
 
@@ -938,6 +1176,36 @@ import { assert } from './helpers.mjs';
 }
 
 {
+  // session384: →V3 / ->V3 underflow — sibling →V2's underflow is pinned
+  // above (1 arg → Too few arguments) but →V3's was not. →V3 popN(3) needs
+  // three operands; 2 or 1 on the stack must trip the same guard, and the
+  // ASCII alias shares the fn instance so it rejects identically. Also pins
+  // →V2's 0-arg boundary, completing the pair.
+  const u2 = new Stack();
+  u2.push(Real(1)); u2.push(Real(2));
+  try { lookup('→V3').fn(u2); assert(false, '→V3 with 2 args should throw'); }
+  catch (e) { assert(/Too few/i.test(e.message),
+    'session384: →V3 with two stack items → Too few arguments'); }
+
+  const u1 = new Stack();
+  u1.push(Real(1));
+  try { lookup('→V3').fn(u1); assert(false, '→V3 with 1 arg should throw'); }
+  catch (e) { assert(/Too few/i.test(e.message),
+    'session384: →V3 with one stack item → Too few arguments'); }
+
+  const ua = new Stack();
+  ua.push(Real(1)); ua.push(Real(2));
+  try { lookup('->V3').fn(ua); assert(false, '->V3 with 2 args should throw'); }
+  catch (e) { assert(/Too few/i.test(e.message),
+    'session384: ->V3 alias underflow rejects identically → Too few arguments'); }
+
+  const u0 = new Stack();
+  try { lookup('→V2').fn(u0); assert(false, '→V2 with 0 args should throw'); }
+  catch (e) { assert(/Too few/i.test(e.message),
+    'session384: →V2 with empty stack → Too few arguments'); }
+}
+
+{
   const s = new Stack();
   s.push(Vector([Real(11), Real(22), Real(33)]));
   lookup('V→').fn(s);
@@ -987,6 +1255,38 @@ import { assert } from './helpers.mjs';
   assert(s.depth === 3
       && s.peek(3).value.eq(1) && s.peek(1).value.eq(3),
     '→V3 then V→ round-trips three scalars');
+}
+
+// session417: each ASCII alias (->V2 / ->V3 / V->) is registered with the
+// SAME fn instance as its Unicode canonical, so it rejects identically. The
+// canonical V→ carries non-vector reject pins (Real, Matrix above) but its
+// alias V-> had happy-path-only coverage — a refactor splitting an alias into
+// its own implementation and dropping the isVector guard would pass green.
+{
+  assert(lookup('->V2').fn === lookup('→V2').fn,
+    'session417: ->V2 shares the →V2 fn instance');
+  assert(lookup('->V3').fn === lookup('→V3').fn,
+    'session417: ->V3 shares the →V3 fn instance');
+  assert(lookup('V->').fn === lookup('V→').fn,
+    'session417: V-> shares the V→ fn instance');
+
+  const sR = new Stack();
+  sR.push(Real(3));
+  try { lookup('V->').fn(sR); assert(false, 'V-> on Real should throw'); }
+  catch (e) { assert(/Bad argument type/i.test(e.message),
+    'session417: V-> on Real → Bad argument type'); }
+
+  const sM = new Stack();
+  sM.push(Matrix([[Real(1), Real(2)]]));
+  try { lookup('V->').fn(sM); assert(false, 'V-> on Matrix should throw'); }
+  catch (e) { assert(/Bad argument type/i.test(e.message),
+    'session417: V-> on Matrix → Bad argument type (use ARRY→)'); }
+
+  const sS = new Stack();
+  sS.push(Str('x'));
+  try { lookup('V->').fn(sS); assert(false, 'V-> on String should throw'); }
+  catch (e) { assert(/Bad argument type/i.test(e.message),
+    'session417: V-> on String → Bad argument type'); }
 }
 
 
@@ -1409,6 +1709,41 @@ import { assert } from './helpers.mjs';
     'session068: OBJ→ 2-arg Fn count is N+1 = 3');
 }
 
+/* session345: the two defensive arms of _symbolicDecompose (ops.js ~269)
+   that the session068 sweep left unpinned — every real AST kind
+   (num/var/neg/bin/fn) is covered above, but the `!ast` empty guard and
+   the unknown-kind fall-through were not. Both are reachable because the
+   Symbolic() constructor stores its `expr` verbatim.
+     - `!ast`: a Symbolic carrying no expr pushes just Integer(0) — the
+       empty-count shape, symmetric with OBJ→ on the empty Program / List
+       (session156). Both null and undefined exprs hit it.
+     - unknown kind: an AST node whose `kind` matches none of the
+       enumerated branches preserves the original Symbolic by reference and
+       emits a count of 1, so a generic →PRG-style rebuild loop never loses
+       the value. Guards a refactor that drops either defensive arm. */
+{
+  for (const expr of [null, undefined]) {
+    const s = new Stack();
+    s.push(Symbolic(expr));
+    lookup('OBJ→').fn(s);
+    assert(s.depth === 1,
+      'session345: OBJ→ on a Symbolic with no expr leaves just the count');
+    assert(s._items[0].type === 'integer' && s._items[0].value === 0n,
+      'session345: OBJ→ empty Symbolic count is Integer(0)');
+  }
+
+  const v = Symbolic({ kind: 'mystery', foo: 1 });
+  const s = new Stack();
+  s.push(v);
+  lookup('OBJ→').fn(s);
+  assert(s.depth === 2,
+    'session345: OBJ→ on an unknown AST kind leaves 2 items (value, count)');
+  assert(s._items[0] === v,
+    'session345: OBJ→ unknown-kind preserves the original Symbolic by reference');
+  assert(s._items[1].type === 'integer' && s._items[1].value === 1n,
+    'session345: OBJ→ unknown-kind count is Integer(1)');
+}
+
 /* ================================================================
    DECOMP → STR→ round-trip invariants
 
@@ -1764,6 +2099,59 @@ function _roundTripProgram(prog) {
     assert(same,
       `session077: round-trip token[${i}] preserved (${a.type})`);
   }
+}
+
+/* ---- session366: →PRG count via _toCountIdx — the Real arms + the
+       too-few-items underflow.  session067/077 pinned the Integer and
+       BinaryInteger accepts, the Integer-negative and non-numeric (Name/
+       String) rejects, and the 0 case, but `_toCountIdx`'s Real branch
+       (ops.js ~6996) was only ever reached implicitly.  Its `!isInteger()`
+       guard (whole-Real accepted, fractional-Real → Bad argument value) and
+       the handler's own `n < 0` reject on a negative WHOLE Real (which passes
+       the isInteger gate, a distinct path from the Integer-negative pin) had
+       no direct pin, nor did the popN underflow when the count exceeds the
+       stack depth.  Probed live first (Real(2)→2-token Program; Real(2.5),
+       Real(-1), Real(-2.5) → Bad argument value; count 5 over 2 items → Too
+       few arguments).  No source change — guards a refactor that drops the
+       Real integrality check or the underflow guard. */
+{
+  const s = new Stack();
+  s.push(Integer(10n)); s.push(Integer(20n)); s.push(Real(2));
+  lookup('→PRG').fn(s);
+  assert(s.depth === 1 && isProgram(s.peek()) && s.peek().tokens.length === 2,
+    'session366: →PRG accepts a whole Real count (Real(2) → 2-token program)');
+}
+{
+  const s = new Stack();
+  s.push(Integer(10n)); s.push(Integer(20n)); s.push(Real(2.5));
+  let caught = null;
+  try { lookup('→PRG').fn(s); } catch (e) { caught = e.message; }
+  assert(caught && /Bad argument value/.test(caught),
+    'session366: →PRG fractional Real count → Bad argument value');
+}
+{
+  const s = new Stack();
+  s.push(Real(-1));
+  let caught = null;
+  try { lookup('→PRG').fn(s); } catch (e) { caught = e.message; }
+  assert(caught && /Bad argument value/.test(caught),
+    'session366: →PRG negative whole Real count → Bad argument value (passes the isInteger gate, rejected by n < 0)');
+}
+{
+  const s = new Stack();
+  s.push(Real(-2.5));
+  let caught = null;
+  try { lookup('→PRG').fn(s); } catch (e) { caught = e.message; }
+  assert(caught && /Bad argument value/.test(caught),
+    'session366: →PRG negative fractional Real count → Bad argument value');
+}
+{
+  const s = new Stack();
+  s.push(Integer(10n)); s.push(Integer(20n)); s.push(Integer(5n));
+  let caught = null;
+  try { lookup('→PRG').fn(s); } catch (e) { caught = e.message; }
+  assert(caught && /Too few arguments/.test(caught),
+    'session366: →PRG count exceeding stack depth → Too few arguments (popN underflow)');
 }
 
 {
@@ -2713,6 +3101,39 @@ function _roundTripProgram(prog) {
 
   assert(decompOrig === decompCopy,
     'session172: NEWOB-then-DECOMP on Program produces the same source-form string as DECOMP on the original (factory switch preserves observable Program shape end-to-end)');
+}
+
+/* ---- NEWOB on a Directory is the documented exception: identity
+        fall-through, NOT a decoupled frozen copy ----
+   Every enumerated shape in _newObCopy (Real/Integer/BinInt/Rational/
+   Complex/String/Name/Symbolic/List/Vector/Matrix/Program/Tagged/Unit)
+   is rebuilt into a distinct FROZEN outer wrapper — the session172
+   sweep pins that for all 14.  Directory deliberately falls past every
+   branch and returns the input unchanged: a Directory is a live mutable
+   container (STO writes into it, PURGE removes from it), so handing back
+   a frozen snapshot would be wrong.  The constructor leaves it unfrozen
+   on purpose (types.js ~359).  This block pins the inverse contract —
+   `copy === orig`, NOT frozen, live `entries` Map shared by reference —
+   so a future _newObCopy that adds an over-eager Directory branch (or a
+   universal freeze of all NEWOB outputs) surfaces here rather than
+   silently breaking directory mutation. */
+{
+  const s = new Stack();
+  const entries = new Map([['A', Integer(1n)]]);
+  const orig = Directory({ name: 'MYDIR', entries });
+  s.push(orig);
+  lookup('NEWOB').fn(s);
+  const copy = s.peek();
+  assert(isDirectory(copy),
+    'session338: NEWOB on a Directory leaves a Directory on the stack');
+  assert(copy === orig,
+    'session338: NEWOB on a Directory returns the SAME object — identity fall-through, the documented exception to the decoupling contract every enumerated shape obeys (a live mutable container must not be snapshotted)');
+  assert(!Object.isFrozen(copy),
+    'session338: NEWOB on a Directory stays unfrozen — deliberately mutable (the opposite of the session172 freeze-parity sweep across the 14 enumerated shapes)');
+  assert(copy.entries === entries,
+    'session338: NEWOB on a Directory preserves the live entries Map by reference (no shallow rebuild — STO/PURGE keep writing into the same store)');
+  assert(copy.name === 'MYDIR',
+    'session338: NEWOB on a Directory preserves the directory name');
 }
 
 /* ================================================================

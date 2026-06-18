@@ -54,6 +54,19 @@ export function headingKey(raw) {
   return String(raw == null ? '' : raw).trim().replace(/\s*\(.*\)\s*$/, '').trim();
 }
 
+/** Visited-name history transition for `show()`.  Truncates any forward
+ *  entries and appends `name`, advancing the cursor — unless `name` is
+ *  already the current entry, in which case history and cursor are
+ *  returned unchanged (re-issuing the current name is a no-op).  Pure:
+ *  returns a fresh `{ history, idx }` on append, the same references on
+ *  no-op. */
+export function pushHistory(history, idx, name) {
+  if (history[idx] === name) return { history, idx };
+  const next = history.slice(0, idx + 1);
+  next.push(name);
+  return { history: next, idx: next.length - 1 };
+}
+
 let _loadPromise = null;
 let _sectionsByName = null;
 
@@ -202,13 +215,9 @@ export class CommandHelp {
     if (this._currentName === key && !this.el.classList.contains('hidden')) {
       return;
     }
-    // Truncate forward history and append, unless the user is just
-    // re-issuing the current entry.
-    if (this._history[this._historyIdx] !== name) {
-      this._history = this._history.slice(0, this._historyIdx + 1);
-      this._history.push(name);
-      this._historyIdx = this._history.length - 1;
-    }
+    const { history, idx } = pushHistory(this._history, this._historyIdx, name);
+    this._history = history;
+    this._historyIdx = idx;
     await this._render(name);
   }
 

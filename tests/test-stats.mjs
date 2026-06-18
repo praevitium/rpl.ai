@@ -21,8 +21,8 @@
 import { Stack } from '../www/src/rpl/stack.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import {
-  Real, Integer, Complex, Str, Vector, Matrix,
-  isReal, isInteger, isVector,
+  Real, Integer, Complex, BinaryInteger, Str, Vector, Matrix,
+  isReal, isInteger, isVector, isComplex,
 } from '../www/src/rpl/types.js';
 import { assert, assertThrows } from './helpers.mjs';
 
@@ -613,4 +613,131 @@ function makeXYMatrix() {
   lookup('ΣX2').fn(s);
   assert(isReal(s.peek()) && s.peek().value.eq(30),
     'session147: ΣX² (canonical) on XY matrix col-0 → 30 (canonical-name positive coverage; the file only had the SX2 alias-arm pin from session-132 + the ΣX² Vector positive)');
+}
+
+/* ================================================================
+   session431: TOT / MEAN / VAR / SDEV element-level entry-coercion
+   reject arms — distinct from session147's wrong-container reject.
+
+   The session147 trio pins the bottom-of-fn `Bad argument type` when
+   the OPERAND is neither Vector nor Matrix.  These pins instead pass a
+   well-formed Vector / Matrix (clears the container guard) whose
+   ELEMENT is a BinaryInteger — the reject then fires inside the
+   per-entry coercer, a different code path that had zero coverage.
+
+   Two coercers split the family: TOT / MEAN route entries through
+   `_statsNumOrComplexEntry` (ops.js ~10826; isReal / isInteger /
+   isComplex), VAR / SDEV through `_statsNumericEntry` (~10820; isReal /
+   isInteger only).  Neither has an isBinaryInteger arm, so all four
+   reject a BinInt element — the reject-symmetry complement of the now-
+   complete BinInt-accepting list-aggregate sweep (session424).  The
+   Complex element sharpens it: TOT / MEAN ACCEPT it (result Complex)
+   while VAR / SDEV REJECT it, so a refactor sharing one coercer across
+   both pairs would change behavior and trip these pins.  Probed all
+   arms live first (Stack + lookup, CAS-free): BinInt element → `Bad
+   argument type` for all four on a Vector, and for TOT on a Matrix
+   column; Complex element → Complex for TOT (re 6, im 4) / MEAN,
+   `Bad argument type` for VAR / SDEV.
+   ================================================================ */
+
+{
+  const vecB = Vector([Real(1), BinaryInteger(2n, 'h'), Real(3)]);
+  for (const op of ['TOT', 'MEAN', 'VAR', 'SDEV']) {
+    const s = new Stack();
+    s.push(vecB);
+    assertThrows(() => lookup(op).fn(s), /Bad argument type/,
+      `session431: ${op} on Vector with a BinInt element → Bad argument type (per-entry coercer has no isBinaryInteger arm; clears the container guard, distinct from session147)`);
+  }
+}
+
+{
+  const s = new Stack();
+  s.push(Matrix([[Real(1), BinaryInteger(2n, 'h')], [Real(3), Real(4)]]));
+  assertThrows(() => lookup('TOT').fn(s), /Bad argument type/,
+    'session431: TOT on Matrix with a BinInt element → Bad argument type (column reducer routes each entry through the same coercer)');
+}
+
+{
+  const vecC = Vector([Real(1), Complex(2, 4), Real(3)]);
+  for (const op of ['TOT', 'MEAN']) {
+    const s = new Stack();
+    s.push(vecC);
+    lookup(op).fn(s);
+    assert(isComplex(s.peek()),
+      `session431: ${op} on Vector with a Complex element → Complex (_statsNumOrComplexEntry accepts Complex; contrasts the BinInt reject and the VAR/SDEV Complex reject)`);
+  }
+}
+
+{
+  const s = new Stack();
+  s.push(Vector([Real(1), Complex(2, 4), Real(3)]));
+  lookup('TOT').fn(s);
+  assert(isComplex(s.peek()) && s.peek().re === 6 && s.peek().im === 4,
+    'session431: TOT on Vector with a Complex element → Complex(6, 4) (component sum 1+(2+4i)+3)');
+}
+
+{
+  const vecC = Vector([Real(1), Complex(2, 4), Real(3)]);
+  for (const op of ['VAR', 'SDEV']) {
+    const s = new Stack();
+    s.push(vecC);
+    assertThrows(() => lookup(op).fn(s), /Bad argument type/,
+      `session431: ${op} on Vector with a Complex element → Bad argument type (_statsNumericEntry rejects Complex, unlike TOT/MEAN)`);
+  }
+}
+
+/* ================================================================
+   session357: last stat-accessor ASCII-alias rejection gaps.
+
+   The session-132/137/147 sweep pinned alias-name rejections for
+   SX / SY / SY2 / SXY / MAXS / MINS / NΣ, but two gaps survived:
+
+     • SX2 (alias of ΣX2) had only POSITIVE alias pins (session 132)
+       — no rejection pin under the SX2 name at all.  ΣX2 routes
+       through `_statsVectorOrMatrixCol0`, so SX2 inherits its
+       non-V/M `Bad argument type` and empty-V/M `Bad argument
+       value` arms; pin all three through the alias.
+     • SY / SY2 had only their `Invalid dimension` (1-col Matrix)
+       alias pins (session 132/137).  ΣY / ΣY2 require a Matrix and
+       reject a Vector with `Bad argument type` — a DIFFERENT guard,
+       reached before the column check — and neither alias had it
+       pinned.
+
+   A refactor that special-cased one of these aliases and bypassed
+   the canonical backend's type/value guards would slip past every
+   existing pin.  Test-only; no source change.
+   ================================================================ */
+
+/* ---- SX2 (alias of ΣX2) rejection arms ---- */
+{
+  const s = new Stack();
+  s.push(Real(5));
+  assertThrows(() => lookup('SX2').fn(s), /Bad argument type/,
+    'session357: SX2 (ASCII) on Real → Bad argument type (alias inherits ΣX2 _statsVectorOrMatrixCol0 type guard)');
+}
+{
+  const s = new Stack();
+  s.push(Vector([]));
+  assertThrows(() => lookup('SX2').fn(s), /Bad argument value/,
+    'session357: SX2 (ASCII) on empty Vector → Bad argument value (alias inherits ΣX2 empty-Vector guard)');
+}
+{
+  const s = new Stack();
+  s.push(Matrix([]));
+  assertThrows(() => lookup('SX2').fn(s), /Bad argument value/,
+    'session357: SX2 (ASCII) on empty Matrix → Bad argument value (alias inherits ΣX2 empty-column guard)');
+}
+
+/* ---- SY / SY2 reject a Vector with Bad argument type (not the dim guard) ---- */
+{
+  const s = new Stack();
+  s.push(Vector([Real(1), Real(2)]));
+  assertThrows(() => lookup('SY').fn(s), /Bad argument type/,
+    'session357: SY (ASCII) on Vector → Bad argument type (alias inherits ΣY require-Matrix guard, reached before the 2-col check)');
+}
+{
+  const s = new Stack();
+  s.push(Vector([Real(1), Real(2)]));
+  assertThrows(() => lookup('SY2').fn(s), /Bad argument type/,
+    'session357: SY2 (ASCII) on Vector → Bad argument type (alias inherits ΣY2 require-Matrix guard, reached before the 2-col check)');
 }

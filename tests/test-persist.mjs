@@ -1,10 +1,11 @@
 /* Round-trip test for src/rpl/persist.js — snapshot() + rehydrate()
    without touching localStorage or the DOM. */
 
+import { readFileSync } from 'node:fs';
 import { Stack } from '../www/src/rpl/stack.js';
 import {
   Real, Integer, BinaryInteger, Complex, Name, Str, Program,
-  RList, Vector, Matrix, Tagged, Symbolic,
+  RList, Vector, Matrix, Tagged, Symbolic, Decimal,
   isReal, isInteger, isBinaryInteger, isComplex, isString, isName,
   isList, isVector, isMatrix, isProgram, isTagged, isSymbolic,
   isDirectory,
@@ -16,7 +17,7 @@ import {
   makeSubdir, goInto,
   seedPrng, getPrngSeed, resetPrng, nextPrngUnit,
 } from '../www/src/rpl/state.js';
-import { snapshot, rehydrate } from '../www/src/rpl/persist.js';
+import { snapshot, rehydrate, encodeValue, decodeValue } from '../www/src/rpl/persist.js';
 
 let failed = 0;
 function assert(cond, msg) {
@@ -455,6 +456,143 @@ assert(isReal(mat.rows[0][1]) && mat.rows[0][1].value.eq(2) &&
   assertThrows(() => moveCurrentEntry('X', Real(5)),
     /not a directory/,
     'session-files: non-Directory target rejected');
+}
+
+/* ================================================================
+   session369: persist.js file-header "Encoding rules" block ↔ live
+   encode() wire shape drift guard (code-review R-014/R-015/R-016
+   class — the header is the side that rots). The header documents the
+   `__t` tag strings (bigint / decimal / map) and the Directory
+   encoding shape (type:'directory', name, entries, parent dropped)
+   that the localStorage autosave and .json export both round-trip
+   through, but nothing tied the documented tags to what encode()
+   actually emits: a tag renamed on one side, or a header that goes
+   stale after a new encoded type lands, would drift silently and
+   corrupt every previously-saved snapshot on decode. Derive both
+   sides live — the documented tags from the header text, the emitted
+   tags from encodeValue() on a representative bigint / Decimal / Map —
+   and assert they match in both directions; pin the Directory wire
+   shape on both sides too. Probed all arms live first.
+   ================================================================ */
+{
+  const src = readFileSync(new URL('../www/src/rpl/persist.js', import.meta.url), 'utf8');
+  const header = src.slice(0, src.search(/^import /m));
+
+  const emittedTags = new Set([
+    encodeValue(2n ** 80n).__t,
+    encodeValue(new Decimal('3.14159265358979')).__t,
+    encodeValue(new Map([['k', 1n]])).__t,
+  ]);
+  assert(emittedTags.size >= 3,
+    `session369: encode() emits >= 3 distinct __t tags (extraction guard), got ${emittedTags.size}`);
+
+  const documentedTags = new Set(
+    [...header.matchAll(/__t:\s*'(\w+)'/g)].map(m => m[1]));
+  assert(documentedTags.size >= 3,
+    `session369: header documents >= 3 __t tags (extraction guard), got ${documentedTags.size}`);
+
+  for (const t of emittedTags) {
+    assert(documentedTags.has(t),
+      `session369: header documents the __t:'${t}' tag encode() emits`);
+  }
+  for (const t of documentedTags) {
+    assert(emittedTags.has(t),
+      `session369: documented __t:'${t}' tag is one encode() actually emits`);
+  }
+
+  // The three specific tags by name — a rename on either side fails here.
+  assert(encodeValue(2n).__t === 'bigint',
+    "session369: BigInt encodes with __t:'bigint'");
+  assert(encodeValue(new Decimal('1')).__t === 'decimal',
+    "session369: Decimal encodes with __t:'decimal'");
+  assert(encodeValue(new Map()).__t === 'map',
+    "session369: Map encodes with __t:'map'");
+
+  // Directory wire shape: type:'directory', name + entries kept, parent
+  // back-pointer dropped (relinked on decode) — header documents exactly that.
+  resetHome();
+  varStore('R', Real(1));
+  const encHome = encodeValue(calcState.home);
+  assert(encHome.type === 'directory',
+    "session369: Directory encodes with type:'directory'");
+  assert('name' in encHome && 'entries' in encHome,
+    'session369: encoded Directory keeps name + entries');
+  assert(!('parent' in encHome),
+    'session369: encoded Directory drops the parent back-pointer');
+  assert(encHome.entries.__t === 'map',
+    "session369: Directory entries encode as a __t:'map'");
+  assert(/type:\s*'directory'/.test(header),
+    "session369: header documents the Directory type:'directory' shape");
+  assert(/parent.*dropped/i.test(header),
+    'session369: header documents that the Directory parent pointer is dropped');
+}
+
+/* ================================================================
+   session416: persist.js decode() inverse contract (code-review
+   R-020 sibling — session369 pinned only the encode() side). The
+   header's "Encoding rules" block documents both directions, and the
+   on-disk `{__t: 'bigint'|'decimal'|'map', ...}` envelopes are read
+   back by decode() on every localStorage load and .json import. But
+   `decodeValue` had ZERO direct test callers — decode was exercised
+   only indirectly through snapshot/rehydrate round-trips, so the
+   per-tag reconstruction contract (each documented tag → its runtime
+   type, recursively, with primitives/null/undefined passed through)
+   was never positively pinned. A refactor that dropped a tag arm,
+   stopped recursing into Map/array/plain-object bodies, or coerced a
+   passthrough primitive would corrupt every saved snapshot on load
+   yet pass green. Probed all arms live first.
+   ================================================================ */
+{
+  // Each documented __t tag reconstructs its runtime type.
+  const big = decodeValue({ __t: 'bigint', v: '1208925819614629174706176' });
+  assert(typeof big === 'bigint' && big === 2n ** 80n,
+    "session416: __t:'bigint' decodes to a BigInt");
+
+  const dec = decodeValue({ __t: 'decimal', v: '3.14159265358979' });
+  assert(dec instanceof Decimal && dec.toString() === '3.14159265358979',
+    "session416: __t:'decimal' decodes to a Decimal");
+
+  const m = decodeValue({ __t: 'map', v: [['k', { __t: 'bigint', v: '5' }], ['j', 2]] });
+  assert(m instanceof Map,
+    "session416: __t:'map' decodes to a Map");
+  assert(typeof m.get('k') === 'bigint' && m.get('k') === 5n,
+    'session416: map values are decoded recursively (nested bigint tag)');
+  assert(m.get('j') === 2,
+    'session416: map plain values pass through unchanged');
+
+  // Recursion through arrays and plain objects (no __t wrapper).
+  const obj = decodeValue({ a: { __t: 'bigint', v: '7' }, b: [{ __t: 'decimal', v: '2.5' }] });
+  assert(typeof obj.a === 'bigint' && obj.a === 7n,
+    'session416: plain-object members are decoded recursively');
+  assert(obj.b[0] instanceof Decimal && obj.b[0].toString() === '2.5',
+    'session416: array elements are decoded recursively');
+
+  // Primitives, null, and undefined pass through untouched.
+  assert(decodeValue(null) === null && decodeValue(undefined) === undefined,
+    'session416: null/undefined pass through unchanged');
+  assert(decodeValue(5) === 5 && decodeValue('hi') === 'hi' && decodeValue(true) === true,
+    'session416: primitives pass through unchanged');
+
+  // Directory round-trips: encode then decode reconstructs the type +
+  // entries Map; the parent back-pointer stays absent (callers relink).
+  resetHome();
+  varStore('R', Real(1));
+  const decHome = decodeValue(encodeValue(calcState.home));
+  assert(isDirectory(decHome),
+    'session416: a Directory round-trips encode->decode back to a Directory');
+  assert(decHome.entries instanceof Map,
+    'session416: decoded Directory entries are a live Map');
+  assert(!('parent' in decHome),
+    'session416: decoded Directory has no parent back-pointer (caller relinks)');
+
+  // Per-tag round-trip identity — the encode/decode pair is lossless.
+  assert(decodeValue(encodeValue(2n ** 80n)) === 2n ** 80n,
+    'session416: bigint survives an encode->decode round-trip');
+  assert(decodeValue(encodeValue(new Decimal('1.25'))).toString() === '1.25',
+    'session416: Decimal survives an encode->decode round-trip');
+  const rtm = decodeValue(encodeValue(new Map([['a', 3n]])));
+  assert(rtm instanceof Map && rtm.get('a') === 3n,
+    'session416: Map survives an encode->decode round-trip');
 }
 
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');

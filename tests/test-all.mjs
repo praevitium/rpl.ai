@@ -34,6 +34,7 @@ const FILES = [
   './test-arrow-aliases.mjs',
   './test-chatbot-parse.mjs',
   './test-remote-llm.mjs',
+  './test-llm-manager.mjs',
 ];
 
 const perFile = [];

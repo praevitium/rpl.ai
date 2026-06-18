@@ -318,6 +318,39 @@ export const CHAR_GROUPS = {
 };
 
 /* -----------------------------------------------------------------
+   The "Other" bucket: every registered op not already shown under a
+   named category.  ASCII arrow aliases (`->NUM`, `HMS->`, …) are
+   deliberately hidden — each has a `→NUM` / `→HMS` Unicode form shown
+   in its proper category, and listing both doubles the panel for no
+   benefit (the ASCII names stay typeable from the entry buffer
+   regardless).  `registered` and `seen` are both upper-cased sets;
+   `filter` is the lower-cased search substring ('' = no filter).
+   ----------------------------------------------------------------- */
+export function uncategorizedOps(registered, seen, filter = '') {
+  return [...registered]
+    .filter(n => !seen.has(n))
+    .filter(n => !n.includes('->'))
+    .filter(n => !filter || n.toLowerCase().includes(filter))
+    .sort();
+}
+
+/* -----------------------------------------------------------------
+   Drop-zone geometry for a row hovered during a drag.  `frac` is the
+   cursor's vertical position within the row (0 = top edge, 1 = bottom).
+   Folder rows get a three-zone split — top 25% = before, middle 50% =
+   into, bottom 25% = after — so a file can be dropped *into* a folder;
+   non-folder rows use a plain top-half/bottom-half before/after split.
+   ----------------------------------------------------------------- */
+export function dropZoneForFraction(frac, isDir) {
+  if (isDir) {
+    if (frac < 0.25) return 'before';
+    if (frac > 0.75) return 'after';
+    return 'into';
+  }
+  return frac < 0.5 ? 'before' : 'after';
+}
+
+/* -----------------------------------------------------------------
    Render helpers.  All DOM construction happens here — the owning
    App just calls `SidePanel.open('commands' | 'history' | 'chars')`.
    ----------------------------------------------------------------- */
@@ -507,12 +540,10 @@ export class SidePanel {
       const rect = row.getBoundingClientRect();
       const frac = rect.height > 0 ? (ev.clientY - rect.top) / rect.height : 0.5;
       const isDir = row.classList.contains('sp-file-row-dir');
-      if (isDir) {
-        if (frac < 0.25) return { kind: 'reorder', name, zone: 'before', el: row };
-        if (frac > 0.75) return { kind: 'reorder', name, zone: 'after',  el: row };
-        return { kind: 'into', name, zone: 'into', el: row };
-      }
-      return { kind: 'reorder', name, zone: frac < 0.5 ? 'before' : 'after', el: row };
+      const zone = dropZoneForFraction(frac, isDir);
+      return zone === 'into'
+        ? { kind: 'into', name, zone: 'into', el: row }
+        : { kind: 'reorder', name, zone, el: row };
     }
     // Empty space inside the file list → drop at end of current dir.
     const list = ev.target.closest?.('.sp-file-list');
@@ -766,17 +797,7 @@ export class SidePanel {
       wrap.appendChild(section);
     }
 
-    // Any registered op not already covered lives under "Other".
-    // ASCII arrow aliases (`->NUM`, `HMS->`, …) are deliberately
-    // hidden — every one of them has a `→NUM` / `→HMS` Unicode form
-    // already shown in its proper category, and showing both flavours
-    // doubles the panel for no benefit (the ASCII names stay typeable
-    // from the entry buffer regardless).
-    const isAsciiArrowAlias = (n) => n.includes('->');
-    const others = [...registered].filter(n => !seen.has(n))
-      .filter(n => !isAsciiArrowAlias(n))
-      .filter(n => !filter || n.toLowerCase().includes(filter))
-      .sort();
+    const others = uncategorizedOps(registered, seen, filter);
     if (others.length) {
       const { section, grid } = this._makeSection('Other');
       for (const name of others) {

@@ -469,3 +469,43 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(isReal(r) && r.value.eq(1),
     `session147: 2_m ^ 0 → Real(1) (zero-exponent collapses uexpr to empty → unwraps to dimensionless Real(1); previously unpinned edge of the ^ dispatch)`);
 }
+
+/* session422 (code-review, R-026): normalizeUexpr is imported here but never
+   called directly — every prior pin reaches it only through parseUnitExpr /
+   multiplyUexpr / inverseUexpr / powerUexpr, all of which feed it factor lists
+   that are already single-symbol or already sorted. So the four arms the
+   units.js file-header documents as the canonical-uexpr contract ("a canonical,
+   frozen array of [symbol, exponent] tuples, sorted alphabetically by symbol,
+   with zero-exponent factors dropped") were never positively exercised on a raw
+   multi-symbol input: merging duplicate symbols, dropping a merged-to-zero
+   factor, sorting an out-of-order list, and the deep freeze (each tuple + the
+   outer array). A refactor dropping the merge, the zero-filter, the sort, or
+   either Object.freeze would pass every prior pin. Probed all arms live first. */
+{
+  const merged = normalizeUexpr([['m', 1], ['m', 2]]);
+  assert(merged.length === 1 && merged[0][0] === 'm' && merged[0][1] === 3,
+    `session422: normalizeUexpr merges duplicate symbols ([m,1],[m,2] → [m,3])`);
+
+  const dropped = normalizeUexpr([['m', 1], ['m', -1]]);
+  assert(dropped.length === 0,
+    `session422: normalizeUexpr drops a factor that merges to exponent 0 ([m,1],[m,-1] → [])`);
+
+  const sorted = normalizeUexpr([['s', -2], ['kg', 1], ['m', 1]]);
+  assert(sorted.map(([s]) => s).join(',') === 'kg,m,s',
+    `session422: normalizeUexpr sorts factors alphabetically by symbol`);
+
+  const frozen = normalizeUexpr([['m', 1], ['s', -1]]);
+  assert(Object.isFrozen(frozen) && Object.isFrozen(frozen[0]),
+    `session422: normalizeUexpr deep-freezes the outer array and each tuple`);
+  assertThrows(() => { frozen.push(['kg', 1]); }, null,
+    `session422: normalizeUexpr result rejects a push (outer array frozen)`);
+  assertThrows(() => { frozen[0][1] = 99; }, null,
+    `session422: normalizeUexpr result rejects a tuple mutation (tuple frozen)`);
+
+  assertThrows(() => normalizeUexpr([['foobar', 1]]), null,
+    `session422: normalizeUexpr throws on an unknown symbol`);
+
+  const empty = normalizeUexpr([]);
+  assert(empty.length === 0 && Object.isFrozen(empty),
+    `session422: normalizeUexpr([]) → frozen empty uexpr`);
+}

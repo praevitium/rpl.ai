@@ -1,7 +1,7 @@
 import { Stack } from '../www/src/rpl/stack.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import {
-  Real, Integer, BinaryInteger, Complex, Name, Str, Directory, Program, Tagged,
+  Real, Integer, Rational, BinaryInteger, Complex, Name, Str, Directory, Program, Tagged,
   RList, Vector, Matrix,
   isReal, isInteger, isBinaryInteger, isComplex, isDirectory, isProgram, isName,
   isString, isList, isVector, isUnit, isMatrix, isSymbolic,
@@ -343,6 +343,56 @@ import { assert, assertThrows } from './helpers.mjs';
     setAngle('RAD');
   }
   {
+    // session403: ARG on a bare Integer — the `isInteger(v)` arm of
+    // _argScalar (ops.js ~1492) is distinct from the Real arm: it tests
+    // the sign with a BigInt compare (v.value < 0n) and routes the result
+    // through fromRadians for the angle mode, returning a Real. Every prior
+    // ARG scalar pin used Real, Complex, or a reject type, so a refactor
+    // folding the Integer branch into the Real branch (coercing first) would
+    // pass green. Pin sign, the zero boundary, angle-mode conversion, and
+    // Integer==Real parity.
+    setAngle('RAD');
+    {
+      const s = new Stack(); s.push(Integer(5n));
+      lookup('ARG').fn(s, null);
+      const v = s.peek();
+      assert(isReal(v) && Math.abs(v.value - 0) < 1e-12,
+        'session403: ARG(Integer 5) = Real(0) in RAD (non-negative integer arm)');
+    }
+    {
+      const s = new Stack(); s.push(Integer(0n));
+      lookup('ARG').fn(s, null);
+      assert(Math.abs(s.peek().value - 0) < 1e-12,
+        'session403: ARG(Integer 0) = 0 (zero is non-negative, 0n < 0n false)');
+    }
+    {
+      const si = new Stack(); si.push(Integer(-3n));
+      lookup('ARG').fn(si, null);
+      const sr = new Stack(); sr.push(Real(-3));
+      lookup('ARG').fn(sr, null);
+      assert(isReal(si.peek()) && Math.abs(si.peek().value - Math.PI) < 1e-12,
+        'session403: ARG(Integer -3) = π in RAD (negative integer arm)');
+      assert(Number(si.peek().value) === Number(sr.peek().value),
+        'session403: ARG(Integer -3) == ARG(Real -3) (Integer/Real parity, bit-for-bit)');
+    }
+    {
+      setAngle('DEG');
+      const s = new Stack(); s.push(Integer(-1n));
+      lookup('ARG').fn(s, null);
+      assert(Math.abs(s.peek().value - 180) < 1e-12,
+        'session403: ARG(Integer -1) = 180 in DEG (integer arm through fromRadians)');
+    }
+    {
+      setAngle('GRD');
+      const s = new Stack(); s.push(Integer(-2n));
+      lookup('ARG').fn(s, null);
+      assert(Math.abs(s.peek().value - 200) < 1e-12,
+        'session403: ARG(Integer -2) = 200 in GRD (integer arm, grad angle mode)');
+      setAngle('RAD');
+    }
+    setAngle('RAD');
+  }
+  {
     setAngle('RAD');
     const s = new Stack();
     s.push({ type: 'complex', re: 1, im: 1 });
@@ -379,6 +429,58 @@ import { assert, assertThrows } from './helpers.mjs';
     const s = new Stack(); s.push(Real(9));
     lookup('IM').fn(s, null);
     assert(s.peek().value.eq(0), 'IM(9) = 0');
+  }
+
+  /* session407: CONJ / RE / IM bare-Integer / -Rational scalar arms.
+     _conjScalar / _reScalar return v unchanged on Integer/Rational
+     (identity, same-ref); _imScalar returns Integer(0n) — an *Integer*
+     zero, distinct from the Real arm's Real(0). Every prior scalar pin
+     fed a Real or Complex operand (CONJ(7)/IM(9) use Real, the rest
+     Complex), so the Integer/Rational identity arm and IM's Integer-zero
+     arm were never positively exercised — a refactor folding them into the
+     Real arm (so IM would return Real(0)) or coercing the operand would
+     pass green. */
+  {
+    const s = new Stack(); const inp = Integer(7n); s.push(inp);
+    lookup('CONJ').fn(s, null);
+    const v = s.peek();
+    assert(isInteger(v) && v.value === 7n && v === inp,
+      'session407: CONJ(Integer 7) = Integer 7 (identity, same-ref)');
+  }
+  {
+    const s = new Stack(); const inp = Integer(7n); s.push(inp);
+    lookup('RE').fn(s, null);
+    const v = s.peek();
+    assert(isInteger(v) && v.value === 7n && v === inp,
+      'session407: RE(Integer 7) = Integer 7 (identity, same-ref)');
+  }
+  {
+    const s = new Stack(); s.push(Integer(7n));
+    lookup('IM').fn(s, null);
+    const v = s.peek();
+    assert(isInteger(v) && v.value === 0n,
+      'session407: IM(Integer 7) = Integer 0 (Integer zero, not Real(0))');
+  }
+  {
+    const s = new Stack(); const inp = Rational(3n, 4n); s.push(inp);
+    lookup('CONJ').fn(s, null);
+    const v = s.peek();
+    assert(v.type === 'rational' && v.n === 3n && v.d === 4n && v === inp,
+      'session407: CONJ(Rational 3/4) = Rational 3/4 (identity, same-ref)');
+  }
+  {
+    const s = new Stack(); s.push(Rational(3n, 4n));
+    lookup('RE').fn(s, null);
+    const v = s.peek();
+    assert(v.type === 'rational' && v.n === 3n && v.d === 4n,
+      'session407: RE(Rational 3/4) = Rational 3/4 (identity)');
+  }
+  {
+    const s = new Stack(); s.push(Rational(3n, 4n));
+    lookup('IM').fn(s, null);
+    const v = s.peek();
+    assert(isInteger(v) && v.value === 0n,
+      'session407: IM(Rational 3/4) = Integer 0 (Integer zero, not Real(0))');
   }
 
   {
@@ -650,6 +752,47 @@ import { assert, assertThrows } from './helpers.mjs';
       `123E +/- inserts a - after E for the yet-to-be-typed exponent, got "${e.buffer}"`);
     assert(e.cursor === e.buffer.length,
       'cursor advances past the inserted - so next digit typed appends to exponent');
+  }
+
+  // session381: toggleSign's two never-exercised arms.  Every pin above
+  // is a SINGLE-token buffer with a leading '-' or no sign, so two source
+  // paths had no coverage: (1) the current-token isolation — the walk-back
+  // loop stops at whitespace, so CHS must flip only the token under the
+  // cursor in a multi-token buffer, leaving an earlier token untouched;
+  // (2) the leading-'+' mantissa flip (`t[startTok] === '+'` → replace with
+  // '-', length unchanged), reachable via a typed '+5'.  Probed live first.
+  {
+    const e = mk('3 1.5');
+    e.toggleSign();
+    assert(e.buffer === '3 -1.5' && e.cursor === 6,
+      `"3 1.5" CHS flips only the current token → "3 -1.5", got "${e.buffer}"`);
+    e.toggleSign();
+    assert(e.buffer === '3 1.5' && e.cursor === 4,
+      `"3 -1.5" CHS round-trips → "3 1.5", got "${e.buffer}"`);
+  }
+  {
+    const e = mk('3 1E7');
+    e.toggleSign();
+    assert(e.buffer === '3 1E-7',
+      `"3 1E7" CHS flips the current token's exponent only → "3 1E-7", got "${e.buffer}"`);
+  }
+  {
+    const e = mk('3 1E-7');
+    e.toggleSign();
+    assert(e.buffer === '3 1E7',
+      `"3 1E-7" CHS → "3 1E7" (earlier token untouched), got "${e.buffer}"`);
+  }
+  {
+    const e = mk('3 1E+7');
+    e.toggleSign();
+    assert(e.buffer === '3 1E-7',
+      `"3 1E+7" CHS → "3 1E-7" (current token, + to -), got "${e.buffer}"`);
+  }
+  {
+    const e = mk('+5');
+    e.toggleSign();
+    assert(e.buffer === '-5' && e.cursor === 2,
+      `"+5" CHS replaces the leading + mantissa sign with - (length unchanged), got "${e.buffer}"`);
   }
 }
 
@@ -1423,6 +1566,72 @@ const _close = (a, b, eps = 1e-10) => Math.abs(Number(a) - Number(b)) < eps;
   assert(isSymbolic(parseEntry('`X^2+1`')[0]), 'header kind: algebraic (symbolic)');
   // anything unrecognised passes through as a bare identifier (Name).
   assert(isName(parseEntry('ZZQ?')[0]), 'header kind: unrecognised → bare identifier');
+}
+
+// session374: first coverage of Entry's pure cursor/buffer movement
+// helpers — cursorUp/cursorDown (multi-line column preservation) and
+// cursorHome/cursorEnd/eex had ZERO test callers, so a refactor of the
+// column arithmetic or the eex token-scan would pass green.  These are
+// DOM-free: construct an Entry, set buffer/cursor directly, call, read.
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const at = (buf, cur) => { const e = new Entry(new Stack()); e.buffer = buf; e.cursor = cur; return e; };
+
+  // cursorUp — same column on the previous line, clamped to its length.
+  let e = at('abc\ndefgh', 7); e.cursorUp();
+  assert(e.cursor === 3, 'cursorUp: preserves column onto previous line');
+  e = at('ab\ndefgh', 6); e.cursorUp();
+  assert(e.cursor === 2, 'cursorUp: clamps to shorter previous line length');
+  e = at('abc', 2); e.cursorUp();
+  assert(e.cursor === 2, 'cursorUp: no-op on the first line');
+
+  // cursorDown — same column on the next line, clamped to its length.
+  e = at('abcde\nfg', 3); e.cursorDown();
+  assert(e.cursor === 8, 'cursorDown: clamps to shorter next line length');
+  e = at('abc\ndefgh', 1); e.cursorDown();
+  assert(e.cursor === 5, 'cursorDown: preserves column onto next line');
+  e = at('abc\ndef', 6); e.cursorDown();
+  assert(e.cursor === 6, 'cursorDown: no-op on the last line');
+
+  // cursorHome / cursorEnd — jump to buffer ends, no-op when already there.
+  e = at('hello', 3); e.cursorHome();
+  assert(e.cursor === 0, 'cursorHome: moves to start');
+  e = at('hello', 0); e.cursorHome();
+  assert(e.cursor === 0, 'cursorHome: no-op when already at start');
+  e = at('hello', 3); e.cursorEnd();
+  assert(e.cursor === 5, 'cursorEnd: moves to end');
+
+  // eex — empty buffer seeds '1E'; otherwise appends 'E' unless the
+  // current token already carries an exponent (either case).
+  e = at('', 0); e.eex();
+  assert(e.buffer === '1E' && e.cursor === 2, 'eex: empty buffer seeds 1E');
+  e = at('25', 2); e.eex();
+  assert(e.buffer === '25E' && e.cursor === 3, 'eex: appends E to a number');
+  e = at('2 3', 3); e.eex();
+  assert(e.buffer === '2 3E', 'eex: appends E to the current token only');
+  e = at('1E', 2); e.eex();
+  assert(e.buffer === '1E', 'eex: no-op when token already has E');
+  e = at('1e9', 3); e.eex();
+  assert(e.buffer === '1e9', 'eex: no-op when token already has lowercase e');
+
+  // session434: eex with the cursor mid-buffer.  Every pin above parks
+  // the cursor at the buffer end, so two arms had no coverage: (1) eex
+  // inserts 'E' AT the cursor (via type()), not appended at the end; and
+  // (2) the exponent guard scans only the token segment LEFT of the
+  // cursor (`buffer.slice(0, cursor)` → `?? ''` when that segment ends in
+  // whitespace or is empty).  A refactor scanning the whole token, or
+  // appending at the end, would pass every prior pin yet change these.
+  // Probed live first (entry.js, DOM-free).
+  e = at('25', 1); e.eex();
+  assert(e.buffer === '2E5' && e.cursor === 2, 'eex: inserts E at the cursor, not at the end');
+  e = at('5', 0); e.eex();
+  assert(e.buffer === 'E5' && e.cursor === 1, 'eex: cursor at start → empty left segment, E prepended');
+  e = at('2 5', 2); e.eex();
+  assert(e.buffer === '2 E5' && e.cursor === 3, 'eex: left segment ending in space → no token match, E inserted');
+  e = at('1E5', 1); e.eex();
+  assert(e.buffer === '1EE5' && e.cursor === 2, 'eex: guard scans only left of cursor → misses the E to the right');
+  e = at('1E5', 3); e.eex();
+  assert(e.buffer === '1E5' && e.cursor === 3, 'eex: cursor right of E → left segment carries the E, no-op');
 }
 
 // --- Cleanup shared state so later tests don't see stray bindings

@@ -14,6 +14,7 @@ import {
   setLastError, clearLastError, getLastError,
   goHome, goUp, goInto, makeSubdir,
   setWordsize, getWordsize, getWordsizeMask,
+  WORDSIZE_MIN, WORDSIZE_MAX, WORDSIZE_DEFAULT,
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
 } from '../www/src/rpl/state.js';
@@ -154,6 +155,40 @@ setBinaryBase(null);
   lookup('STWS').fn(s);
   assert(getWordsize() === 8, 'STWS 8.9 truncates to 8');
   resetBinaryState();
+}
+
+// session383: pin the WORDSIZE_* constants and tie the STWS clamp to them.
+// The clamp behavior above is exercised with literal 100/0, but the exported
+// bounds had zero test callers, the MIN/MAX boundaries were never shown to be
+// inclusive (accepted unclamped), and STWS's Integer/BinInt accept arms plus
+// the non-numeric reject and setWordsize's non-finite throw were unpinned —
+// only the Real arm was. Guards a refactor that changes a bound, makes a
+// boundary exclusive, or drops a coercion arm.
+{
+  assert(WORDSIZE_MIN === 1, 'WORDSIZE_MIN is 1 (HP50 floor)');
+  assert(WORDSIZE_MAX === 64, 'WORDSIZE_MAX is 64 (HP50 ceiling)');
+  assert(WORDSIZE_DEFAULT === 64, 'WORDSIZE_DEFAULT is 64');
+  assert(WORDSIZE_DEFAULT === WORDSIZE_MAX, 'default wordsize equals the max');
+  assert(WORDSIZE_MIN < WORDSIZE_MAX, 'wordsize range is non-empty');
+
+  const stws = (v) => { resetBinaryState(); const s = new Stack(); s.push(v); lookup('STWS').fn(s); return getWordsize(); };
+  // Boundaries are inclusive — exactly MIN and MAX are accepted unclamped.
+  assert(stws(Real(WORDSIZE_MAX)) === WORDSIZE_MAX, 'STWS WORDSIZE_MAX accepted unclamped');
+  assert(stws(Real(WORDSIZE_MIN)) === WORDSIZE_MIN, 'STWS WORDSIZE_MIN accepted unclamped');
+  // One past each edge clamps back to the constant (not a hard-coded 64/1).
+  assert(stws(Real(WORDSIZE_MAX + 1)) === WORDSIZE_MAX, 'STWS above max clamps to WORDSIZE_MAX');
+  assert(stws(Real(WORDSIZE_MIN - 1)) === WORDSIZE_MIN, 'STWS below min clamps to WORDSIZE_MIN');
+  // STWS coercion arms beyond Real: Integer and BinaryInteger both accept.
+  assert(stws(Integer(24n)) === 24, 'STWS accepts an Integer operand');
+  assert(stws(BinaryInteger(8n, 'h')) === 8, 'STWS accepts a BinaryInteger operand');
+  // Non-numeric operand rejects via the STWS type guard.
+  resetBinaryState();
+  assertThrows(() => { const s = new Stack(); s.push(Str('x')); lookup('STWS').fn(s); },
+    /Bad argument type/, 'STWS on a String rejects');
+  // setWordsize's own non-finite guard (distinct from STWS's Number.isFinite check).
+  assertThrows(() => setWordsize(NaN), /STWS needs a number/, 'setWordsize(NaN) throws');
+  resetBinaryState();
+  assert(getWordsize() === WORDSIZE_DEFAULT, 'resetBinaryState restores WORDSIZE_DEFAULT');
 }
 
 {
@@ -963,6 +998,78 @@ setBinaryBase(null);
     s.pushMany([BinaryInteger(1n, 'h'), Str('a')]);
     assertThrows(() => lookup('<').fn(s), /Bad argument type/i,
       'session074: #1h < "a" throws Bad argument type (BinInt × String is not comparable).');
+  }
+
+  // session348: MIXED BinInt × Integer ordered comparators. session074
+  // covers both-BinInt (both widened) and BinInt × Real (which routes
+  // through the `real` kind), but the mixed BinInt × Integer pair — which
+  // routes through `comparePair`'s `integer` kind branch (av/bv via Number)
+  // — was unpinned. These guard the TWO independent widening `if`s
+  // (`if (isBinaryInteger(a))` / `if (isBinaryInteger(b))`): a single
+  // combined `&&` guard would still pass both-BinInt and BinInt×Real but
+  // break a BinInt in only one slot.
+  {
+    // a-slot is BinInt, b-slot is a bare Integer.
+    const s = new Stack();
+    s.pushMany([BinaryInteger(5n, 'h'), Integer(7)]);
+    lookup('<').fn(s);
+    assert(s.peek().value.eq(1),
+      'session348: #5h < Integer(7) = 1 (a-slot widened, integer kind).');
+  }
+  {
+    const s = new Stack();
+    s.pushMany([BinaryInteger(5n, 'h'), Integer(7)]);
+    lookup('≥').fn(s);
+    assert(s.peek().value.eq(0),
+      'session348: #5h ≥ Integer(7) = 0.');
+  }
+  {
+    const s = new Stack();
+    s.pushMany([BinaryInteger(7n, 'h'), Integer(5)]);
+    lookup('>').fn(s);
+    assert(s.peek().value.eq(1),
+      'session348: #7h > Integer(5) = 1.');
+  }
+  {
+    // b-slot is BinInt, a-slot is a bare Integer — isolates the second
+    // widening `if` with a non-BinInt left operand.
+    const s = new Stack();
+    s.pushMany([Integer(7), BinaryInteger(5n, 'h')]);
+    lookup('>').fn(s);
+    assert(s.peek().value.eq(1),
+      'session348: Integer(7) > #5h = 1 (b-slot widened, integer kind).');
+  }
+  {
+    // Equal-value boundary through the mixed integer path.
+    const s = new Stack();
+    s.pushMany([Integer(5), BinaryInteger(5n, 'h')]);
+    lookup('≤').fn(s);
+    assert(s.peek().value.eq(1),
+      'session348: Integer(5) ≤ #5h = 1 (equal-value mixed boundary).');
+  }
+  {
+    const s = new Stack();
+    s.pushMany([Integer(7), BinaryInteger(5n, 'h')]);
+    lookup('≤').fn(s);
+    assert(s.peek().value.eq(0),
+      'session348: Integer(7) ≤ #5h = 0.');
+  }
+  {
+    // Wordsize mask applies to the BinInt operand on the mixed path too:
+    // at ws=8, #100h masks to #0h, so 0 < Integer(1) = 1.
+    resetBinaryState();
+    setWordsize(8);
+    const s = new Stack();
+    s.pushMany([BinaryInteger(0x100n, 'h'), Integer(1)]);
+    lookup('<').fn(s);
+    assert(s.peek().value.eq(1),
+      'session348: #100h < Integer(1) at ws=8 = 1 (mask on mixed a-slot).');
+    const s2 = new Stack();
+    s2.pushMany([Integer(1), BinaryInteger(0x100n, 'h')]);
+    lookup('>').fn(s2);
+    assert(s2.peek().value.eq(1),
+      'session348: Integer(1) > #100h at ws=8 = 1 (mask on mixed b-slot).');
+    resetBinaryState();
   }
 
   resetBinaryState();

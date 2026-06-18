@@ -581,6 +581,48 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(typeof layoutAst === 'function', 'pretty.layoutAst is a function');
 }
 {
+  // session436 (R-028): pretty.js's file-header documents the Box model —
+  // every layout node is a Box { width (always positive), ascent, descent,
+  // draw(x, baselineY) → SVG string }, and a row's ascent/descent are the
+  // max of its children (baselines align) while its width is their sum.
+  // The suite imported `layoutAst` but only typeof-checked it (~:581) and
+  // again destructured-but-unused it (~:1517); every other pretty pin goes
+  // through `astToSvg`, which exposes only the outer width/height. So the
+  // Box four-member shape, `draw` returning a string, and — critically —
+  // the row max-of-children rule were never asserted: a refactor changing
+  // rowBox's ascent/descent from Math.max to a sum (or dropping a Box
+  // member) would pass every astToSvg pin for equal-height rows. Probed
+  // all arms live first.
+  const { layoutAst } = await import('../www/src/rpl/pretty.js');
+  const L = s => layoutAst(parseAlgebra(s));
+
+  const X = L('X');
+  assert(typeof X.width === 'number' && typeof X.ascent === 'number' &&
+         typeof X.descent === 'number' && typeof X.draw === 'function',
+         'session436: layoutAst returns a Box {width,ascent,descent,draw}');
+  assert(X.width > 0, 'session436: Box width is always positive');
+  const frag = X.draw(0, X.ascent);
+  assert(typeof frag === 'string' && frag.includes('<text'),
+         `session436: Box.draw returns an SVG fragment string (got ${typeof frag})`);
+
+  // Row max-of-children: a fraction next to a short glyph dominates the
+  // row's ascent/descent — the row takes the MAX, not the first/last/sum.
+  const frac = L('1/2');
+  const three = L('3');
+  const row = L('1/2 = 3');
+  assert(row.ascent === frac.ascent && row.descent === frac.descent,
+         'session436: row ascent/descent == tallest child (the fraction)');
+  assert(row.ascent > three.ascent,
+         'session436: row ascent exceeds the short child (max, not last)');
+  assert(row.ascent < frac.ascent + three.ascent,
+         'session436: row ascent is the max of children, not their sum');
+
+  // Row width is the sum of children: Neg('X') is a row of '-' and X, so
+  // its width is exactly twice a single glyph.
+  assert(L('-X').width === 2 * X.width,
+         'session436: row width is the sum of child widths');
+}
+{
   // A single variable renders to one <text> element, no bar, no path.
   const { astToSvg } = await import('../www/src/rpl/pretty.js');
   const { svg, width, height } = astToSvg(parseAlgebra('X'));
@@ -6793,6 +6835,42 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
+// session336: `lim` rejection-path closure.  The session139 pins above
+// only exercised `lim`'s happy path (delegation through LIMIT to a Giac
+// fixture).  `lim` is a thin `OPS.get('LIMIT').fn(s)` wrapper, so its
+// rejections must flow through LIMIT's validators — mirror the three
+// session139 LIMIT rejection pins through the alias to guard a future
+// inline reimplementation that drops the delegation.  All three throw
+// before any caseval (the level-2 type check fires before the
+// `giac.isReady()` gate; the point-arg checks throw inside
+// `_limitPointToGiac` before the Giac call), so no fixture is needed.
+{
+  const s = new Stack();
+  s.push(Vector([Integer(1n), Integer(2n)]));
+  s.push(Symbolic(parseAlgebra('X=0')));
+  assertThrows(() => { lookup('lim').fn(s); },
+               /Bad argument type/,
+               'session336: lim on Vector expression → Bad argument type');
+}
+
+{
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('X')));
+  s.push(Symbolic(parseAlgebra('1=0')));
+  assertThrows(() => { lookup('lim').fn(s); },
+               /Bad argument value/,
+               'session336: lim with non-Var equation lhs → Bad argument value');
+}
+
+{
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('X')));
+  s.push(Vector([Integer(0n), Integer(1n)]));
+  assertThrows(() => { lookup('lim').fn(s); },
+               /Bad argument type/,
+               'session336: lim with Vector point → Bad argument type');
+}
+
 // — MODSTO + ADDTMOD / SUBTMOD / MULTMOD / POWMOD
 // HP50 AUR §3-150 / §3-9 / §3-243 / §3-153 / §3-175
 {
@@ -7731,4 +7809,49 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
                  [Integer(4n), Integer(5n), Integer(6n)]]));
   assertThrows(() => { lookup('PMINI').fn(s); }, /Invalid dimension/,
                'session197: PMINI on a 2x3 matrix rejects with Invalid dimension');
+}
+
+/* ---- session429: algebra.js AST-constructor contract (R-027).
+   The file-header documents "all nodes are plain frozen objects so they
+   are cheap to compare and share", and the Fn JSDoc that "Uppercasing
+   happens inside the ctor so callers can pass either case".  Every prior
+   pin reaches the ctors only structurally (astEqual / parseAlgebra), so
+   the freeze, the value/name coercion, and the in-ctor uppercasing were
+   never asserted directly: the uppercase pin (~270) feeds parseAlgebra,
+   so a refactor moving the fold to the parser would pass it while
+   breaking AstFn('sin', …) and any non-parser caller. */
+{
+  const n = AstNum('3.5');
+  assert(n.kind === 'num' && n.value === 3.5 && Object.isFrozen(n),
+         'session429: Num coerces value via Number and is frozen');
+  assert(Number.isNaN(AstNum('abc').value),
+         'session429: Num(non-numeric) coerces to NaN');
+  let threw = false;
+  try { n.value = 99; } catch (e) { threw = true; }
+  assert(threw && n.value === 3.5,
+         'session429: mutating a frozen Num node throws and leaves it unchanged');
+
+  const v = AstVar(42);
+  assert(v.kind === 'var' && v.name === '42' && typeof v.name === 'string' &&
+         Object.isFrozen(v),
+         'session429: Var coerces name via String and is frozen');
+
+  const g = AstNeg(n);
+  assert(g.kind === 'neg' && g.arg === n && Object.isFrozen(g),
+         'session429: Neg preserves arg ref and is frozen');
+
+  const b = AstBin('+', n, v);
+  assert(b.kind === 'bin' && b.op === '+' && b.l === n && b.r === v &&
+         Object.isFrozen(b),
+         'session429: Bin preserves op/l/r and is frozen');
+
+  const argsIn = [v];
+  const f = AstFn('sin', argsIn);
+  assert(f.kind === 'fn' && f.name === 'SIN' && Object.isFrozen(f),
+         'session429: Fn uppercases name inside the ctor and is frozen');
+  assert(Object.isFrozen(f.args) && f.args !== argsIn && f.args[0] === v,
+         'session429: Fn freezes a COPY of args (input array not aliased)');
+  argsIn.push(AstNum(1));
+  assert(f.args.length === 1,
+         'session429: mutating the input args array after construction does not leak into the node');
 }

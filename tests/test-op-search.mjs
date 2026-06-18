@@ -30,6 +30,39 @@ import { assert } from './helpers.mjs';
 }
 
 {
+  // session340: fuzzyScore's three scoring arms the prefix/scattered pins
+  // above don't isolate — the length tie-break, its clamp floor, and the
+  // progressive contiguous-run bonus.  Exact-value pins lock the scoring.
+
+  // Length tie-break: an identical leading match scores higher on the
+  // shorter name (the `Math.max(0, 10 - n.length)` bonus shrinks with length).
+  assert(fuzzyScore('X', 'XZ') === 19, 'fuzzyScore: 2-char name leading match = 19');
+  assert(fuzzyScore('X', 'XZZ') === 18, 'fuzzyScore: 3-char name leading match = 18');
+  assert(fuzzyScore('X', 'XZ') > fuzzyScore('X', 'XZZ'),
+    'fuzzyScore: shorter name wins the length tie-break');
+
+  // Clamp floor: at length >= 10 the length bonus hits 0, so two longer
+  // names with the same leading match score equally (and equal the bare
+  // anchor score) — guards a refactor that drops the Math.max(0, ...).
+  assert(fuzzyScore('X', 'X' + 'Z'.repeat(9)) === 11,
+    'fuzzyScore: length-10 name floors the length bonus to 0');
+  assert(fuzzyScore('X', 'X' + 'Z'.repeat(13)) === fuzzyScore('X', 'X' + 'Z'.repeat(20)),
+    'fuzzyScore: names past length 10 share the clamped (0) length bonus');
+  assert(fuzzyScore('X', 'X' + 'Z'.repeat(13)) === 11,
+    'fuzzyScore: clamped long-name score is the anchor score alone');
+
+  // Progressive run bonus + reset: with the index-0 anchor neutralized
+  // (neither match starts at 0), a tight 3-char run (bonuses 1,3,5) outscores
+  // the same chars split by a gap, where the run counter resets at the gap.
+  assert(fuzzyScore('BCD', 'ZBCDZ') === 14,
+    'fuzzyScore: contiguous interior run accumulates the progressive bonus');
+  assert(fuzzyScore('BCD', 'ZBZCD') === 10,
+    'fuzzyScore: a gap resets the run counter, costing the packed bonus');
+  assert(fuzzyScore('BCD', 'ZBCDZ') > fuzzyScore('BCD', 'ZBZCD'),
+    'fuzzyScore: tightly packed match outranks the scattered one (anchor neutralized)');
+}
+
+{
   const names = ['SIN', 'SINH', 'ASIN', 'COS', 'COSINE', 'TAN'];
 
   const all = searchOps('', names);
@@ -54,6 +87,46 @@ import { assert } from './helpers.mjs';
   assert(tie.length === 0, 'searchOps: no matches yields empty list');
 
   assert(searchOps('X', null).length === 0, 'searchOps: null names → empty');
+}
+
+{
+  /* session427: searchOps' equal-score tie-break — the
+     `|| (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)` arm of the
+     sort comparator (op-search.js ~118) orders names that fuzzyScore
+     identically alphabetically, independent of their input order.  Every
+     prior searchOps pin feeds names that score DIFFERENTLY (e.g. SINH's
+     first-char anchor outranks ASIN's interior match), so the tie-break
+     itself was never positively exercised: a refactor dropping it and
+     leaning on JS's stable sort would preserve input order on equal
+     scores yet pass every prior pin.  'AX'/'BX'/'ZX' all score 9 against
+     'X' (probed), so descending input must come back ascending. */
+  assert(fuzzyScore('X', 'AX') === fuzzyScore('X', 'BX') &&
+         fuzzyScore('X', 'BX') === fuzzyScore('X', 'ZX'),
+    'searchOps tie: AX/BX/ZX score identically against X');
+
+  const rev2 = searchOps('X', ['BX', 'AX']);
+  assert(rev2.length === 2 && rev2[0] === 'AX' && rev2[1] === 'BX',
+    'searchOps tie: equal scores sort alphabetically, not by input order');
+
+  const rev3 = searchOps('X', ['CX', 'BX', 'AX']);
+  assert(rev3.join(',') === 'AX,BX,CX',
+    'searchOps tie: descending input returns fully re-sorted ascending');
+
+  const mixed = searchOps('X', ['ZX', 'AX', 'MX']);
+  assert(mixed.join(',') === 'AX,MX,ZX',
+    'searchOps tie: out-of-order equal scores land alphabetically');
+
+  // Higher-scoring anchored match still wins; the tie-break only orders
+  // the equal-scoring remainder.  'XA' anchors on the first char (score
+  // 19), the two 'X'-tail names tie at 9.
+  assert(fuzzyScore('X', 'XA') > fuzzyScore('X', 'AX'),
+    'searchOps tie: anchored XA outscores the interior matches');
+  assert(searchOps('X', ['BX', 'XA', 'AX']).join(',') === 'XA,AX,BX',
+    'searchOps tie: score precedence dominates, alphabetical breaks the tail tie');
+
+  // Equal name and equal score reaches the comparator's `=== 0` arm.
+  assert(searchOps('X', ['AX', 'AX']).join(',') === 'AX,AX',
+    'searchOps tie: identical names compare equal (comparator 0 arm)');
 }
 
 {
@@ -131,6 +204,35 @@ import { assert } from './helpers.mjs';
   assert(eqSeg(highlightSegments('SIN', [99, -1, NaN]),
     [{ text: 'SIN', match: false }]),
     'highlightSegments: out-of-range/non-finite positions ignored');
+
+  // session409: positions are normalized through a Set + a 0..n scan and each
+  // coerced via Math.trunc(Number(p)), so the render is independent of input
+  // order, deduplicated, and tolerant of fractional / numeric-string positions.
+  // session284 pins only ascending matchPositions output and the reject arms;
+  // a refactor assuming sorted/unique/integer input would pass those yet break
+  // an overlay that passes positions in any of these shapes.
+  const split = [
+    { text: 'S', match: true },
+    { text: 'I', match: false },
+    { text: 'N', match: true },
+  ];
+  assert(eqSeg(highlightSegments('SIN', [2, 0]), split),
+    'highlightSegments: unsorted positions render the same as sorted');
+  assert(eqSeg(highlightSegments('SIN', [0, 2]),
+    highlightSegments('SIN', [2, 0])),
+    'highlightSegments: order-independent (Set + 0..n scan)');
+  assert(eqSeg(highlightSegments('SIN', [1, 1, 1]),
+    [{ text: 'S', match: false }, { text: 'I', match: true }, { text: 'N', match: false }]),
+    'highlightSegments: duplicate positions collapse to one mark');
+  assert(eqSeg(highlightSegments('SIN', [1.9]),
+    highlightSegments('SIN', [1])),
+    'highlightSegments: fractional position truncates (1.9 → 1), not rounds');
+  assert(eqSeg(highlightSegments('SIN', ['1']),
+    highlightSegments('SIN', [1])),
+    'highlightSegments: numeric-string position coerced through Number');
+  assert(eqSeg(highlightSegments('TAN', [3, 0, 99]),
+    [{ text: 'T', match: true }, { text: 'AN', match: false }]),
+    'highlightSegments: valid positions kept when mixed with out-of-range');
 }
 
 {

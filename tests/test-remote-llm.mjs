@@ -1,4 +1,4 @@
-import { toOpenAIBase, toOllamaBase, takeSSEFrames, summarizeRun } from '../www/src/ai/remote-llm.js';
+import { toOpenAIBase, toOllamaBase, takeSSEFrames, summarizeRun, pickContextLength, RemoteLLM } from '../www/src/ai/remote-llm.js';
 import { assert } from './helpers.mjs';
 
 /* RemoteLLM URL normalizers — the two pure helpers that turn whatever
@@ -151,6 +151,27 @@ const frame = (obj) => 'data: ' + JSON.stringify(obj);
          'takeSSEFrames holds a complete-looking but unterminated frame as rest');
 }
 
+// session373: the space after `data:` is optional per the SSE spec, and
+// the prior block only ever feeds the spaced `data: ` form (via `frame`).
+// The `.slice(5).trim()` handles both — a refactor to `.slice(6)` assuming
+// a leading space would pass every other pin but drop these. Pin the
+// no-space frame, the multi-space payload, the no-space [DONE] skip, and
+// the whitespace-only payload (trims to an empty `''` frame, not skipped).
+{
+  const nospace = takeSSEFrames('data:{"a":1}\n');
+  assert(nospace.frames.length === 1 && nospace.frames[0] === '{"a":1}' && nospace.rest === '',
+         'takeSSEFrames reads a frame with no space after data:');
+  const multispace = takeSSEFrames('data:    {"b":2}\n');
+  assert(multispace.frames.length === 1 && multispace.frames[0] === '{"b":2}',
+         'takeSSEFrames trims extra spaces after data:');
+  const doneTight = takeSSEFrames('data:[DONE]\n');
+  assert(doneTight.frames.length === 0 && doneTight.rest === '',
+         'takeSSEFrames skips a [DONE] sentinel with no space after data:');
+  const blankPayload = takeSSEFrames('data:   \n');
+  assert(blankPayload.frames.length === 1 && blankPayload.frames[0] === '',
+         'takeSSEFrames emits an empty-string frame for a whitespace-only data: payload');
+}
+
 /* summarizeRun — the post-stream stats/timing assembler extracted from
    generate().  It turns the three captured timestamps (t0, firstTokenAt,
    t1) plus the per-run counters into the stats object the onStats
@@ -213,4 +234,132 @@ const frame = (obj) => 'data: ' + JSON.stringify(obj);
   assert(s.ttftMs === 500, 'summarizeRun ttftMs measured even for a zero decode window');
   assert(s.decodeTps === null,
          'summarizeRun nulls decodeTps when the decode window is zero-length');
+}
+
+/* pickContextLength — the arch-keyed context-window extractor lifted out of
+   load()'s /api/show probe.  The key name is model-dependent (the arch
+   prefix varies), so it matches whichever key ends in `.context_length` and
+   returns the positive token count or null.  Pure, so it pins the key-match
+   and the value-validity guard (positive number) without standing up fetch;
+   load() routes through it, then chat-bot.js's effectiveBudget falls back to
+   a default when it returns null. */
+
+// session346: the happy path — the arch-prefixed `.context_length` key is
+// found regardless of arch, and its positive value is returned.
+{
+  assert(pickContextLength({ 'qwen2.context_length': 32768, 'general.name': 'x' }) === 32768,
+         'pickContextLength returns the value behind an arch-prefixed .context_length key');
+  assert(pickContextLength({ 'llama.context_length': 8192 }) === 8192,
+         'pickContextLength matches a different arch prefix');
+}
+
+// session346: the value-validity guard — a zero, negative, or non-number
+// value is rejected to null (the > 0 and typeof === 'number' checks), so a
+// bogus server response falls back to the default budget rather than sizing
+// the trimmer to a useless window.
+{
+  assert(pickContextLength({ 'a.context_length': 0 }) === null,
+         'pickContextLength rejects a zero context length');
+  assert(pickContextLength({ 'a.context_length': -5 }) === null,
+         'pickContextLength rejects a negative context length');
+  assert(pickContextLength({ 'a.context_length': '4096' }) === null,
+         'pickContextLength rejects a non-number context length');
+}
+
+// session346: the no-usable-key arms — a map with no matching key, an empty
+// map, and a missing (null/undefined) map all yield null without throwing.
+{
+  assert(pickContextLength({ 'general.name': 'x' }) === null,
+         'pickContextLength returns null when no key ends in .context_length');
+  assert(pickContextLength({}) === null,
+         'pickContextLength returns null for an empty model_info map');
+  assert(pickContextLength(null) === null && pickContextLength(undefined) === null,
+         'pickContextLength tolerates a missing model_info map');
+}
+
+// session413: multi-key + match-shape arms. The key match is
+// `Object.keys(info).find(k => k.endsWith('.context_length'))` — it selects
+// the FIRST matching key by insertion order, then validates only THAT key's
+// value. Every session346 pin feeds a single `.context_length` key, so the
+// order-dependence and the find-by-name-not-by-validity behavior were never
+// exercised: a refactor folding the value guard into the `.find` predicate
+// (so it skips an invalid key to a later valid one) would pass every prior
+// pin yet change the result on a multi-key map. The dot in `.context_length`
+// is also required — a bare `context_length` key does not match.
+{
+  assert(pickContextLength({ 'qwen2.context_length': 32768, 'llama.context_length': 8192 }) === 32768,
+         'pickContextLength returns the first matching key by insertion order');
+  assert(pickContextLength({ 'llama.context_length': 8192, 'qwen2.context_length': 32768 }) === 8192,
+         'pickContextLength is order-dependent: a different first key wins');
+  assert(pickContextLength({ 'a.context_length': 0, 'b.context_length': 4096 }) === null,
+         'pickContextLength validates the first matched key, not a later valid one (zero)');
+  assert(pickContextLength({ 'a.context_length': '4096', 'b.context_length': 4096 }) === null,
+         'pickContextLength validates the first matched key, not a later valid one (non-number)');
+  assert(pickContextLength({ 'general.name': 'x', 'q.context_length': 2048 }) === 2048,
+         'pickContextLength skips a non-matching key to the first one ending in .context_length');
+  assert(pickContextLength({ 'context_length': 4096 }) === null,
+         'pickContextLength requires the dot: a bare context_length key does not match');
+}
+
+/* RemoteLLM class — the network-free surface.  The four pure helpers above
+   were pinned (session288/294/300) but the class wrapping them never was.
+   Construction normalizes the typed endpoint through toOpenAIBase and seeds
+   the initial getter state; load()/generate() guard their preconditions
+   BEFORE any fetch, so those reject/throw arms are reachable with no I/O. */
+
+// session339: constructor normalizes the endpoint via toOpenAIBase and the
+// initial getter state is the idle/unloaded defaults.
+{
+  const r = new RemoteLLM('http://localhost:11434');
+  assert(r.endpoint === 'http://localhost:11434/v1',
+         'RemoteLLM normalizes the constructor endpoint through toOpenAIBase');
+  assert(new RemoteLLM('http://h:1/api/').endpoint === 'http://h:1/v1',
+         'RemoteLLM folds an Ollama /api root in the constructor');
+  assert(new RemoteLLM().endpoint === '',
+         'RemoteLLM defaults to an empty (unset) endpoint');
+  assert(r.status === 'idle' && r.statusMsg === '',
+         'a fresh RemoteLLM is idle with no status message');
+  assert(r.loadedModelId === null && r.contextTokens === null && r.lastStats === null,
+         'a fresh RemoteLLM has no loaded model, context window, or stats');
+}
+
+// session339: load()'s two preconditions reject before any fetch — a missing
+// modelId and an unconfigured (empty) endpoint.
+{
+  let msg = '';
+  await new RemoteLLM('http://h:1').load().catch((e) => { msg = e.message; });
+  assert(msg === 'load() requires a modelId',
+         'load() rejects without a modelId before probing the network');
+  msg = '';
+  await new RemoteLLM('').load('llama3').catch((e) => { msg = e.message; });
+  assert(msg === 'Endpoint URL not configured',
+         'load() rejects when the endpoint is unset before probing');
+}
+
+// session339: generate() throws the readiness gate before opening an
+// AbortController/fetch when the model has not loaded (status !== 'ready').
+{
+  let msg = '';
+  await new RemoteLLM('http://h:1')
+    .generate([{ role: 'user', content: 'hi' }])
+    .catch((e) => { msg = e.message; });
+  assert(msg === 'Model not ready',
+         'generate() rejects on a non-ready model before any network call');
+}
+
+// session339: the onStatus subscription contract — the listener fires on a
+// status change and the returned unsubscribe function removes it (the same
+// add/return-remover shape backs onProgress/onStats).
+{
+  const r = new RemoteLLM('http://h:1');
+  const seen = [];
+  const off = r.onStatus((s, m) => seen.push([s, m]));
+  assert(typeof off === 'function', 'onStatus returns an unsubscribe function');
+  r._setStatus('loading', 'hi');
+  off();
+  r._setStatus('ready', 'done');
+  assert(seen.length === 1 && seen[0][0] === 'loading' && seen[0][1] === 'hi',
+         'onStatus listener fires once then stops after unsubscribe');
+  assert(r.status === 'ready' && r.statusMsg === 'done',
+         '_setStatus updates the status/statusMsg getters regardless of listeners');
 }

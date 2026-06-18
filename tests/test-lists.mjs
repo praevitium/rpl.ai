@@ -89,6 +89,86 @@ import { assert, assertThrows } from './helpers.mjs';
       'PUT [[1 2][3 4]] {1 2} 50 → [[1 50][3 4]]');
   }
 
+  // session392: positive BinaryInteger-index arm of `_toIntIdx` (ops.js
+  // ~6453), the index coercion shared by GET/PUT/GETI on List/Vector/Matrix/
+  // String.  Every prior GET/PUT pin fed an Integer or Real index, so the
+  // BinInt branch — distinct from the Integer and Real arms — was never
+  // positively exercised; only its `n < 1` reject (via session372's →ARRY
+  // dim-spec) touched a non-Integer index path.  Probed all arms live first
+  // (repo-rooted import, CAS-free).  Guards a refactor that drops the BinInt
+  // index branch or folds it into the Integer guard.
+  {
+    const s = new Stack();
+    s.push(RList([Integer(10), Integer(20), Integer(30)]));
+    s.push(BinaryInteger(2n, 'h'));
+    lookup('GET').fn(s);
+    assert(s.depth === 1 && isInteger(s.peek()) && s.peek().value === 20n,
+      'session392: GET { 10 20 30 } #2h → 20 (BinInt index)');
+  }
+  {
+    const s = new Stack();
+    s.push(Vector([Integer(1), Integer(2), Integer(3)]));
+    s.push(BinaryInteger(3n, 'h'));
+    lookup('GET').fn(s);
+    assert(s.depth === 1 && isInteger(s.peek()) && s.peek().value === 3n,
+      'session392: GET [ 1 2 3 ] #3h → 3 (BinInt index)');
+  }
+  {
+    const s = new Stack();
+    s.push(Matrix([[Integer(1), Integer(2)], [Integer(3), Integer(4)]]));
+    s.push(RList([BinaryInteger(2n, 'h'), BinaryInteger(1n, 'h')]));
+    lookup('GET').fn(s);
+    assert(s.depth === 1 && isInteger(s.peek()) && s.peek().value === 3n,
+      'session392: GET [[1 2][3 4]] {#2h #1h} → 3 (BinInt row/col)');
+  }
+  {
+    const s = new Stack();
+    s.push(Str('hello'));
+    s.push(BinaryInteger(1n, 'h'));
+    lookup('GET').fn(s);
+    assert(s.depth === 1 && isString(s.peek()) && s.peek().value === 'h',
+      'session392: GET "hello" #1h → "h" (BinInt index)');
+  }
+  {
+    const s = new Stack();
+    s.push(RList([Integer(10), Integer(20), Integer(30)]));
+    s.push(BinaryInteger(2n, 'h'));
+    s.push(Integer(99));
+    lookup('PUT').fn(s);
+    const out = s.peek();
+    assert(out.type === 'list' && out.items.length === 3
+        && out.items[1].value === 99n && out.items[0].value === 10n,
+      'session392: PUT { 10 20 30 } #2h 99 → { 10 99 30 } (BinInt index)');
+  }
+  {
+    const s = new Stack();
+    s.push(Matrix([[Integer(1), Integer(2)], [Integer(3), Integer(4)]]));
+    s.push(RList([BinaryInteger(1n, 'h'), BinaryInteger(2n, 'h')]));
+    s.push(Integer(99));
+    lookup('PUT').fn(s);
+    const m = s.peek();
+    assert(m.type === 'matrix' && m.rows[0][1].value === 99n
+        && m.rows[1][1].value === 4n,
+      'session392: PUT [[1 2][3 4]] {#1h #2h} 99 → [[1 99][3 4]] (BinInt row/col)');
+  }
+  {
+    const s = new Stack();
+    s.push(RList([Integer(1)]));
+    s.push(BinaryInteger(0n, 'h'));
+    try { lookup('GET').fn(s); assert(false, 'should reject #0h index'); }
+    catch (e) { assert(/Bad argument value/.test(e.message),
+      'session392: GET with #0h index → Bad argument value (BinInt arm n<1 guard)'); }
+  }
+  {
+    const s = new Stack();
+    s.push(RList([Integer(10), Integer(20), Integer(30)]));
+    s.push(BinaryInteger(2n, 'h'));
+    lookup('GETI').fn(s);
+    assert(s.depth === 3 && isInteger(s.peek(1)) && s.peek(1).value === 20n
+        && isInteger(s.peek(2)) && s.peek(2).value === 3n,
+      'session392: GETI { 10 20 30 } #2h → element 20 + next index 3 (BinInt index)');
+  }
+
   {
     const s = new Stack();
     s.push(RList([Real(7), Real(8), Real(9)]));
@@ -158,6 +238,65 @@ import { assert, assertThrows } from './helpers.mjs';
     const out = s.peek();
     assert(out.type === 'list' && out.items.length === 0,
       'SUB OOB window → empty list');
+  }
+
+  // session399: positive BinaryInteger-index arm of SUB's `_toCountN` coercion
+  // (ops.js ~6463), the count helper feeding both SUB index slots (m and n) on
+  // List and String collections.  `_toCountN` accepts Integer/Real/BinaryInteger,
+  // but every prior SUB pin fed Integer indices, so the BinInt branch was never
+  // positively exercised from SUB — only the sibling →LIST count exercises it
+  // (session077).  Probed all arms live first (repo-rooted import, CAS-free).
+  // Guards a refactor that swaps SUB's index coercion for an Integer-only helper.
+  {
+    const s = new Stack();
+    s.push(RList([Real(1), Real(2), Real(3), Real(4), Real(5)]));
+    s.push(BinaryInteger(2n, 'h'));
+    s.push(BinaryInteger(4n, 'h'));
+    lookup('SUB').fn(s);
+    const out = s.peek();
+    assert(out.type === 'list' && out.items.length === 3
+        && out.items[0].value.eq(2) && out.items[2].value.eq(4),
+      'session399: SUB { 1..5 } #2h #4h → { 2 3 4 } (BinInt index both slots)');
+  }
+  {
+    const s = new Stack();
+    s.push(Str('HELLO'));
+    s.push(BinaryInteger(2n, 'h'));
+    s.push(BinaryInteger(4n, 'h'));
+    lookup('SUB').fn(s);
+    assert(isString(s.peek()) && s.peek().value === 'ELL',
+      'session399: SUB "HELLO" #2h #4h → "ELL" (BinInt index both slots)');
+  }
+  {
+    const s = new Stack();
+    s.push(RList([Real(1), Real(2), Real(3), Real(4), Real(5)]));
+    s.push(Integer(2));
+    s.push(BinaryInteger(4n, 'h'));
+    lookup('SUB').fn(s);
+    const out = s.peek();
+    assert(out.type === 'list' && out.items.length === 3
+        && out.items[2].value.eq(4),
+      'session399: SUB { 1..5 } 2 #4h → { 2 3 4 } (mixed Integer/BinInt slots)');
+  }
+  {
+    const s = new Stack();
+    s.push(Str('HELLO'));
+    s.push(BinaryInteger(2n, 'b'));
+    s.push(BinaryInteger(4n, 'b'));
+    lookup('SUB').fn(s);
+    assert(isString(s.peek()) && s.peek().value === 'ELL',
+      'session399: SUB "HELLO" #2b #4b → "ELL" (BinInt base cosmetic)');
+  }
+  {
+    const s = new Stack();
+    s.push(RList([Real(1), Real(2), Real(3), Real(4), Real(5)]));
+    s.push(BinaryInteger(0n, 'h'));
+    s.push(BinaryInteger(2n, 'h'));
+    lookup('SUB').fn(s);
+    const out = s.peek();
+    assert(out.type === 'list' && out.items.length === 2
+        && out.items[0].value.eq(1) && out.items[1].value.eq(2),
+      'session399: SUB { 1..5 } #0h #2h → { 1 2 } (BinInt m clamps low to 1)');
   }
 
   {
@@ -255,6 +394,59 @@ import { assert, assertThrows } from './helpers.mjs';
     lookup('POS').fn(s);
     assert(isInteger(s.peek()) && s.peek().value === 0n,
       'POS substring not found → 0');
+  }
+
+  {
+    // session418: POS's _rplEqual carries a BinaryInteger arm (ops.js ~6514,
+    // `a.value === b.value`) reached only when BOTH operands are BinInt — the
+    // isNumber gate above excludes BinInt, so it falls past `a.type !== b.type`
+    // to the dedicated arm. Every prior POS pin fed Integer/Real/String, so the
+    // BinInt arm was never positively exercised; a refactor folding it into the
+    // numeric branch (or dropping it) would pass green. Unlike `==`, _rplEqual is
+    // structural (SAME-like): it does NOT cross-family widen BinInt↔Integer.
+    {
+      const s = new Stack();
+      s.push(RList([BinaryInteger(5n, 'h'), BinaryInteger(6n, 'h'), BinaryInteger(7n, 'h')]));
+      s.push(BinaryInteger(6n, 'h'));
+      lookup('POS').fn(s);
+      assert(isInteger(s.peek()) && s.peek().value === 2n,
+        'session418: POS { #5h #6h #7h } #6h → 2 (BinInt arm matches by value)');
+    }
+    {
+      const s = new Stack();
+      s.push(RList([BinaryInteger(5n, 'h'), BinaryInteger(6n, 'h')]));
+      s.push(BinaryInteger(9n, 'h'));
+      lookup('POS').fn(s);
+      assert(isInteger(s.peek()) && s.peek().value === 0n,
+        'session418: POS BinInt needle not found → 0');
+    }
+    {
+      // base is cosmetic — #6d matches #6h by value
+      const s = new Stack();
+      s.push(RList([BinaryInteger(5n, 'h'), BinaryInteger(6n, 'h')]));
+      s.push(BinaryInteger(6n, 'd'));
+      lookup('POS').fn(s);
+      assert(isInteger(s.peek()) && s.peek().value === 2n,
+        'session418: POS { #5h #6h } #6d → 2 (base cosmetic)');
+    }
+    {
+      // structural, no cross-family widen: BinInt needle vs Integer elements → 0
+      const s = new Stack();
+      s.push(RList([Integer(6n), Integer(7n)]));
+      s.push(BinaryInteger(6n, 'h'));
+      lookup('POS').fn(s);
+      assert(isInteger(s.peek()) && s.peek().value === 0n,
+        'session418: POS { 6 7 } #6h → 0 (no BinInt↔Integer widen, structural)');
+    }
+    {
+      // mirror: Integer needle vs BinInt elements → 0
+      const s = new Stack();
+      s.push(RList([BinaryInteger(6n, 'h'), BinaryInteger(7n, 'h')]));
+      s.push(Integer(6n));
+      lookup('POS').fn(s);
+      assert(isInteger(s.peek()) && s.peek().value === 0n,
+        'session418: POS { #6h #7h } 6 → 0 (no Integer↔BinInt widen)');
+    }
   }
 
   {
@@ -380,6 +572,46 @@ import { assert, assertThrows } from './helpers.mjs';
   const vals = s.peek(1).items.map(num);
   assert(JSON.stringify(vals) === JSON.stringify([-10, -3, -2.5, 0, 5]),
     'session151b: SORT mixed Integer/Real with negatives ordered correctly');
+}
+
+/* ---- SORT: BinaryInteger elements (session411).
+   `_toCompareNumber` (ops.js ~7186) has an explicit `isBinaryInteger`
+   branch and `_rplCompare`'s `isAnyNum` gate includes BinaryInteger, but
+   every prior SORT pin fed Real/Integer/String only — the BinInt arm was
+   never positively exercised, so a refactor dropping it (→ null, or out of
+   `isAnyNum`) would pass green while silently breaking BinInt sorts. The
+   base (h/d/o/b) is cosmetic: SORT orders by value, preserving the element
+   type and its base. ---- */
+{
+  const s = new Stack();
+  s.push(RList([BinaryInteger(5n), BinaryInteger(1n), BinaryInteger(9n), BinaryInteger(2n)]));
+  lookup('SORT').fn(s);
+  const out = s.peek(1);
+  assert(out.items.every(isBinaryInteger),
+    'session411: SORT preserves BinaryInteger element type');
+  assert(JSON.stringify(out.items.map(x => Number(x.value))) === JSON.stringify([1, 2, 5, 9]),
+    'session411: SORT { #5h #1h #9h #2h } → ascending by value');
+}
+{
+  const s = new Stack();
+  s.push(RList([BinaryInteger(5n, 'h'), BinaryInteger(1n, 'b'), BinaryInteger(9n, 'o'), BinaryInteger(2n, 'd')]));
+  lookup('SORT').fn(s);
+  const out = s.peek(1);
+  assert(JSON.stringify(out.items.map(x => Number(x.value))) === JSON.stringify([1, 2, 5, 9]),
+    'session411: SORT orders BinInts by value, base cosmetic');
+  assert(JSON.stringify(out.items.map(x => x.base)) === JSON.stringify(['b', 'd', 'h', 'o']),
+    'session411: SORT preserves each BinInt base after reorder');
+}
+{
+  const s = new Stack();
+  s.push(RList([BinaryInteger(5n), Integer(2n), Real(3.5), BinaryInteger(1n)]));
+  lookup('SORT').fn(s);
+  const out = s.peek(1);
+  const num = v => typeof v.value === 'bigint' ? Number(v.value) : v.value.toNumber();
+  assert(JSON.stringify(out.items.map(num)) === JSON.stringify([1, 2, 3.5, 5]),
+    'session411: SORT cross-sorts BinInt with Integer/Real by value');
+  assert(JSON.stringify(out.items.map(x => x.type)) === JSON.stringify(['binaryInteger', 'integer', 'real', 'binaryInteger']),
+    'session411: SORT preserves mixed BinInt/Integer/Real element types');
 }
 
 {
@@ -539,6 +771,131 @@ import { assert, assertThrows } from './helpers.mjs';
   const vals = s.peek(1).items.map(x => x.value.toNumber());
   assert(JSON.stringify(vals) === JSON.stringify([-3, -4]),
     'ASCII alias DLIST works like ΔLIST');
+}
+
+// session377: ✓-criterion rejection pins for the fold/diff aliases.  ΣLIST
+// and ΔLIST own a non-list reject pin (above), but ΠLIST never had one, and
+// the ASCII aliases SLIST / PLIST / DLIST had positive coverage only.  SLIST /
+// PLIST are independent _foldListOp closures (distinct fn instances, not
+// delegating wrappers) and DLIST is a (s) => OPS.get('ΔLIST').fn(s) wrapper, so
+// each carries its own `!isList` guard a future inline reimplementation could
+// drop.  All reject a non-List operand with Bad argument type.
+{
+  const s = new Stack();
+  s.push(Real(1));
+  assertThrows(() => lookup('ΠLIST').fn(s), /Bad argument type/i,
+    'ΠLIST on non-list → Bad argument type');
+}
+{
+  const s = new Stack();
+  s.push(Real(1));
+  assertThrows(() => lookup('SLIST').fn(s), /Bad argument type/i,
+    'SLIST on non-list → Bad argument type');
+}
+{
+  const s = new Stack();
+  s.push(Str('x'));
+  assertThrows(() => lookup('PLIST').fn(s), /Bad argument type/i,
+    'PLIST on non-list → Bad argument type');
+}
+{
+  const s = new Stack();
+  s.push(Vector([Real(1), Real(2)]));
+  assertThrows(() => lookup('DLIST').fn(s), /Bad argument type/i,
+    'DLIST on non-list → Bad argument type');
+}
+{
+  assert(lookup('SLIST').fn !== lookup('ΣLIST').fn &&
+    lookup('PLIST').fn !== lookup('ΠLIST').fn &&
+    lookup('DLIST').fn !== lookup('ΔLIST').fn,
+    'SLIST / PLIST / DLIST are distinct fn instances from their canonicals');
+}
+
+// session424: BinInt-element arm of the list aggregations.  ΣLIST/ΠLIST/ΔLIST
+// fold their items through the shared + / * / - dispatch (`_foldListOp`), which
+// accepts BinaryInteger and masks the result to the current wordsize — so a list
+// of BinInts aggregates to a BinInt, never positively exercised before (every
+// prior pin fed Real/Integer).  A refactor swapping the fold's delegation for an
+// Integer/Real-only coercion would pass green while silently breaking BinInt
+// aggregation.  Pins: type-preserved sum/product, ΔLIST two's-complement wrap on
+// a negative difference, wordsize masking on overflow, first-operand base wins
+// (cosmetic), singleton passthrough, and the independent SLIST closure.
+{
+  const ws0 = getWordsize();
+  setWordsize(64);
+  {
+    const s = new Stack();
+    s.push(RList([BinaryInteger(5n), BinaryInteger(6n), BinaryInteger(7n)]));
+    lookup('ΣLIST').fn(s);
+    assert(isBinaryInteger(s.peek(1)) && s.peek(1).value === 18n,
+      'ΣLIST {#5h #6h #7h} → #18 (BinInt sum, type preserved)');
+  }
+  {
+    const s = new Stack();
+    s.push(RList([BinaryInteger(2n), BinaryInteger(3n), BinaryInteger(4n)]));
+    lookup('ΠLIST').fn(s);
+    assert(isBinaryInteger(s.peek(1)) && s.peek(1).value === 24n,
+      'ΠLIST {#2h #3h #4h} → #24 (BinInt product, type preserved)');
+  }
+  {
+    const s = new Stack();
+    s.push(RList([BinaryInteger(3n), BinaryInteger(7n), BinaryInteger(10n)]));
+    lookup('ΔLIST').fn(s);
+    const out = s.peek(1);
+    assert(out.type === 'list' && out.items.length === 2 &&
+      out.items.every(isBinaryInteger) &&
+      out.items[0].value === 4n && out.items[1].value === 3n,
+      'ΔLIST {#3h #7h #10h} → {#4 #3} (BinInt differences, type preserved)');
+  }
+  {
+    const s = new Stack();
+    s.push(RList([BinaryInteger(10n), BinaryInteger(7n), BinaryInteger(3n)]));
+    lookup('ΔLIST').fn(s);
+    const out = s.peek(1);
+    assert(out.items.length === 2 && out.items.every(isBinaryInteger) &&
+      out.items[0].value === (2n ** 64n - 3n) &&
+      out.items[1].value === (2n ** 64n - 4n),
+      'ΔLIST {#10h #7h #3h} → negative diffs wrap two-complement (ws=64)');
+  }
+  setWordsize(8);
+  {
+    const s = new Stack();
+    s.push(RList([BinaryInteger(200n), BinaryInteger(100n)]));
+    lookup('ΣLIST').fn(s);
+    assert(isBinaryInteger(s.peek(1)) && s.peek(1).value === 44n,
+      'ws=8 ΣLIST {#200 #100} → #44 (300 & 0xFF, wordsize-masked)');
+  }
+  {
+    const s = new Stack();
+    s.push(RList([BinaryInteger(20n), BinaryInteger(20n)]));
+    lookup('ΠLIST').fn(s);
+    assert(isBinaryInteger(s.peek(1)) && s.peek(1).value === 144n,
+      'ws=8 ΠLIST {#20 #20} → #144 (400 & 0xFF, wordsize-masked)');
+  }
+  setWordsize(64);
+  {
+    const s = new Stack();
+    s.push(RList([BinaryInteger(5n, 'b'), BinaryInteger(1n, 'b')]));
+    lookup('ΣLIST').fn(s);
+    assert(isBinaryInteger(s.peek(1)) && s.peek(1).value === 6n &&
+      s.peek(1).base === 'b',
+      'ΣLIST {#101b #1b} → #110b (first-operand base wins, cosmetic)');
+  }
+  {
+    const s = new Stack();
+    s.push(RList([BinaryInteger(42n)]));
+    lookup('ΣLIST').fn(s);
+    assert(isBinaryInteger(s.peek(1)) && s.peek(1).value === 42n,
+      'ΣLIST {#2Ah} singleton → #2Ah unchanged (BinInt passthrough)');
+  }
+  {
+    const s = new Stack();
+    s.push(RList([BinaryInteger(8n), BinaryInteger(9n)]));
+    lookup('SLIST').fn(s);
+    assert(isBinaryInteger(s.peek(1)) && s.peek(1).value === 17n,
+      'SLIST {#8h #9h} → #11h (independent closure routes BinInt too)');
+  }
+  setWordsize(ws0);
 }
 
 {

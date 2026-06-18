@@ -6,7 +6,9 @@ import {
   isReal, isInteger, isRational, isBinaryInteger, isComplex, isDirectory, isProgram, isName,
   isString, isNumber, isTagged, isList, isVector, isMatrix, isSymbolic, promoteNumericPair, Decimal,
   isValidHpIdentifier, isReservedHpName, isStorableHpName, registerReservedName,
+  TYPES,
 } from '../www/src/rpl/types.js';
+import { readFileSync } from 'node:fs';
 import { parseEntry } from '../www/src/rpl/parser.js';
 import { format, formatStackTop } from '../www/src/rpl/formatter.js';
 import { isKnownFunction, defaultFnEval } from '../www/src/rpl/algebra.js';
@@ -1235,6 +1237,53 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       lookup('/').fn(s);
       assert(s.peek(1).type === 'real',
         'APPROX: 1/3 (Integer/Integer non-exact) → Real, not Rational');
+    }
+    // session428: FLOOR/CEIL/IP/FP on a Rational in APPROX mode collapse to
+    // Real (the `getApproxMode()` Decimal arm of _rounderScalar, ops.js ~1365),
+    // distinct from the EXACT BigInt arm that returns Integer/Rational. Every
+    // prior rounder-on-Rational pin runs in EXACT mode (see the EXACT block
+    // below), so this arm had zero coverage — a refactor folding it into the
+    // BigInt path would return Integer/Rational yet pass every EXACT pin. The
+    // FP exact-zero case (4/2) returns Real(0) here, not EXACT's Integer(0n).
+    {
+      const rounders = [
+        //  n,   d, FLOOR, CEIL,  IP,   FP
+        [ 7n,  2n,   3,    4,    3,   0.5],   //  7/2 = 3.5
+        [-7n,  2n,  -4,   -3,   -3,  -0.5],   // -7/2 = -3.5
+        [ 4n,  2n,   2,    2,    2,   0  ],   //  4/2 = 2 (FP → Real(0), not Integer)
+      ];
+      for (const [n, d, fl, ce, ip, fp] of rounders) {
+        const tag = `${n}/${d}`;
+        for (const [op, want] of [['FLOOR', fl], ['CEIL', ce], ['IP', ip], ['FP', fp]]) {
+          const s = new Stack();
+          s.push(Rational(n, d));
+          lookup(op).fn(s);
+          const r = s.peek(1);
+          assert(r.type === 'real' && Math.abs(Number(r.value) - want) < 1e-12,
+            `session428: APPROX ${op} ${tag} → Real(${want}) (got ${r.type} ${r.value})`);
+        }
+      }
+    }
+    // session435: SQRT on a non-negative Rational in APPROX mode collapses to
+    // Real (SQRT's final `else`, ops.js ~1182 — the EXACT-mode Rational arm
+    // `isRational(v) && !getApproxMode()` at ~1163 is skipped). Every prior
+    // SQRT-on-Rational pin runs in EXACT mode (test-types ~1317, session120
+    // ~3291), where a perfect square stays an exact Rational/Integer and a
+    // non-perfect square lifts to Symbolic — so this collapse arm had zero
+    // coverage. A refactor folding the APPROX path into the EXACT BigInt
+    // fast-path would return Rational(2/3) / Rational(3/4) for the
+    // perfect-square cases yet pass every EXACT pin. (The negative-Rational
+    // Complex arm at ~1157 fires before the mode check and is pinned in EXACT.)
+    {
+      for (const [n, d] of [[4n, 9n], [9n, 16n], [2n, 9n], [1n, 4n]]) {
+        const s = new Stack();
+        s.push(Rational(n, d));
+        lookup('SQRT').fn(s);
+        const r = s.peek(1);
+        assert(r.type === 'real' &&
+          Math.abs(Number(r.value) - Math.sqrt(Number(n) / Number(d))) < 1e-12,
+          `session435: APPROX SQRT ${n}/${d} → Real (got ${r.type} ${r.value})`);
+      }
     }
     setApproxMode(false);
   }
@@ -9854,6 +9903,48 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
 }
 
 /* ================================================================
+   session351: TRUNC V/M rejection — symmetric across both operand
+   positions + the x-slot Matrix arm.
+
+   session196 pinned only the x-slot (level 2) VECTOR rejection, which
+   trips `_roundingOp`'s `!isReal(xv) && !isInteger(xv)` guard.  Two arms
+   stayed unpinned: the x-slot MATRIX (same guard, different kind) and
+   BOTH n-slot (level 1) V/M arms — n routes through
+   `Number(isInteger(nv) ? nv.value : toRealOrThrow(nv))`, so a V/M in the
+   n position is rejected by `toRealOrThrow` ('expected real, got
+   vector/matrix') rather than the x-slot guard.  `_withListBinary`
+   distributes Lists only, so a V/M in either slot reaches `_truncOp`'s
+   inner numeric handler.  Pins guard a refactor that drops the second-
+   operand `toRealOrThrow` check or narrows the x-slot type guard to
+   Vector-only.  No source change — the rejection was already correct.
+   ================================================================ */
+{
+  // x-slot Matrix (level 2) — same _roundingOp guard as the Vector arm
+  assertThrows(
+    () => runOp('TRUNC', Matrix([[Real(1.5), Real(2.5)]]), Integer(1n)),
+    /Bad argument type/,
+    'session351: Matrix Integer(1) TRUNC → Bad argument type (x-slot M ✗; _roundingOp !isReal&&!isInteger)');
+
+  // n-slot Vector (level 1) — rejected by toRealOrThrow, not the x-slot guard
+  assertThrows(
+    () => runOp('TRUNC', Real(3.14159), Vector([Real(1), Real(2)])),
+    /expected real, got vector/i,
+    'session351: Real(3.14159) Vector TRUNC → expected real, got vector (n-slot V ✗ via toRealOrThrow)');
+
+  // n-slot Matrix (level 1) — same toRealOrThrow path
+  assertThrows(
+    () => runOp('TRUNC', Real(3.14159), Matrix([[Integer(1n)]])),
+    /expected real, got matrix/i,
+    'session351: Real(3.14159) Matrix TRUNC → expected real, got matrix (n-slot M ✗ via toRealOrThrow)');
+
+  // n-slot V/M reject regardless of a valid Integer x (operand-position symmetry)
+  assertThrows(
+    () => runOp('TRUNC', Integer(5n), Vector([Real(1)])),
+    /expected real, got vector/i,
+    'session351: Integer(5) Vector TRUNC → expected real, got vector (n-slot V ✗, valid Integer x)');
+}
+
+/* ================================================================
    session200: GAMMA / LNGAMMA / erf / erfc — L/V/M/T verification
    (stale `·` cells → ✓ in DATA_TYPES.md matrix)
 
@@ -10325,6 +10416,43 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     s.push(Integer(2n));
     assertThrows(() => lookup('LCM').fn(s), /Bad argument type/i,
       `session231: Rational(1,2) Integer(2) LCM → 'Bad argument type' (_toBigIntOrThrow rejects Rational; LCM is integer-domain)`);
+  }
+
+  // session337: GCD/LCM b-slot (second-operand) Rational rejection.
+  // session231 pinned only the a-slot (Rational a, Integer b).  The handler
+  // calls `_toBigIntOrThrow(a)` THEN `_toBigIntOrThrow(b)`, so a valid Integer
+  // a passes and the Rational b throws — the symmetric-operand gap session330
+  // closed for COMB/PERM/IQUOT/IREMAINDER.  `_withListBinary` distributes Lists
+  // only, so a scalar Rational b reaches the inner handler's b-arm.  Even an
+  // integer-valued Rational(5,1) rejects (Q-as-distinct-type, not silently
+  // coerced — matches the a-slot stance).
+  {
+    const s = new Stack();
+    s.push(Integer(2n));
+    s.push(Rational(1n, 2n));
+    assertThrows(() => lookup('GCD').fn(s), /Bad argument type/i,
+      `session337: Integer(2) Rational(1,2) GCD → 'Bad argument type' (b-slot _toBigIntOrThrow rejects Rational after a passes)`);
+  }
+  {
+    const s = new Stack();
+    s.push(Integer(2n));
+    s.push(Rational(1n, 2n));
+    assertThrows(() => lookup('LCM').fn(s), /Bad argument type/i,
+      `session337: Integer(2) Rational(1,2) LCM → 'Bad argument type' (b-slot _toBigIntOrThrow rejects Rational after a passes)`);
+  }
+  {
+    const s = new Stack();
+    s.push(Integer(2n));
+    s.push(Rational(5n, 1n));
+    assertThrows(() => lookup('GCD').fn(s), /Bad argument type/i,
+      `session337: Integer(2) Rational(5,1) GCD → 'Bad argument type' (integer-valued Q b still rejects; Q not coerced)`);
+  }
+  {
+    const s = new Stack();
+    s.push(Real(6));
+    s.push(Rational(1n, 3n));
+    assertThrows(() => lookup('LCM').fn(s), /Bad argument type/i,
+      `session337: Real(6) Rational(1,3) LCM → 'Bad argument type' (Real a passes, Rational b rejects)`);
   }
 }
 
@@ -11749,6 +11877,50 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
 }
 
 /* ====================================================================
+   session371: XROOT degree-slot (level 1) V/M rejection — closes the
+   symmetric-slot gap left by session304
+   ----------------------------------------------------------------
+   session304 pinned the RADICAND slot (level 2): a Vector/Matrix y
+   routes through `^` and rejects there.  The DEGREE slot (level 1, the
+   `x` in `y x XROOT`) is a DISTINCT code path — `x` is coerced via
+   `toRealOrThrow` (`ops.js` ~1319: `new Decimal(isInteger(x) ? … :
+   toRealOrThrow(x))`) BEFORE the `^` delegation, so a Vector/Matrix
+   degree never reaches `^` — it trips `toRealOrThrow`'s 'expected real,
+   got vector/matrix'.  This is the same slot where Complex (session267)
+   and String (session269) already reject; V/M there were unpinned.  This
+   completes XROOT's V/M rejection symmetry across both operand positions
+   (the same sweep MOD/MIN/MAX, GCD/LCM, percent, TRUNC, COMB-family, and
+   BETA-family received).  No source change — pins existing behavior.
+   ================================================================ */
+{
+  // V = ✗ in the degree slot — Vector x → toRealOrThrow rejects before `^`.
+  {
+    const s = new Stack();
+    s.push(Integer(8n));
+    s.push(Vector([Real(2), Real(3)]));
+    assertThrows(() => lookup('XROOT').fn(s), /Bad argument type/i,
+      'session371: Integer(8) V[2,3] XROOT → Bad argument type: expected real, got vector (V=✗ in degree slot; toRealOrThrow rejects before the `^` delegation — distinct from session304s radicand path)');
+  }
+  // M = ✗ in the degree slot — Matrix x → toRealOrThrow rejects before `^`.
+  {
+    const s = new Stack();
+    s.push(Integer(8n));
+    s.push(Matrix([[Real(2), Real(3)], [Real(1), Real(1)]]));
+    assertThrows(() => lookup('XROOT').fn(s), /Bad argument type/i,
+      'session371: Integer(8) M[[2,3],[1,1]] XROOT → Bad argument type: expected real, got matrix (M=✗ in degree slot)');
+  }
+  // Real radicand + Vector degree — same degree-slot reject (radicand kind
+  // is irrelevant; the degree coercion fires first).
+  {
+    const s = new Stack();
+    s.push(Real(8));
+    s.push(Vector([Real(2), Real(3)]));
+    assertThrows(() => lookup('XROOT').fn(s), /Bad argument type/i,
+      'session371: Real(8) V[2,3] XROOT → Bad argument type (degree-slot V reject independent of radicand kind)');
+  }
+}
+
+/* ====================================================================
    session271: S-column (String) rejection pins — special-function
    family (XPON / MANT / TRUNC / ZETA / LAMBERT / PSI)
    ----------------------------------------------------------------
@@ -11875,6 +12047,60 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     const s = new Stack(); s.push(S1); s.push(Str('y'));
     assertThrows(() => lookup('UTPT').fn(s), /Bad argument type/i,
       'session281: Str("x") Str("y") UTPT → Bad argument type (S=✗; asReal rejects String ν)');
+  }
+}
+
+/* ================================================================
+   session385: HEAVISIDE / DIRAC BinaryInteger-accept arm (B=✓).
+   The scalar handlers carry an explicit `isBinaryInteger` branch
+   (ops.js ~16365 / ~16389) — "BinaryInteger is accepted the same as
+   Integer" per the source comment — but every prior pin (session267/
+   268/281) only ever reached the FINAL throw with Complex / String,
+   documenting the arm in a comment while never exercising it. So the
+   positive B-accept had zero coverage: a refactor folding the BinInt
+   branch into the Integer guard, or dropping it, would pass green.
+   HEAVISIDE maps BinInt through `_realStepValue` → Integer step (B is
+   non-negative so step is always 1, incl. #0h → 1, right-continuous);
+   DIRAC maps non-zero BinInt → Integer(0) and #0h → Symbolic DIRAC(0)
+   (the at-origin spike, same as the Integer arm). Probed live first
+   (CAS-free): #5h/#0h HEAVISIDE → Integer(1); #5h DIRAC → Integer(0);
+   #0h DIRAC → Symbolic; #3b (base cosmetic) DIRAC → Integer(0).
+   ================================================================ */
+{
+  {
+    const s = new Stack(); s.push(new BinaryInteger(5n, 'h'));
+    lookup('HEAVISIDE').fn(s);
+    const v = s.peek();
+    assert(isInteger(v) && v.value === 1n,
+      `session385: #5h HEAVISIDE → Integer(1) (B=✓; isBinaryInteger arm → _realStepValue step) (value=${v.value})`);
+  }
+  {
+    const s = new Stack(); s.push(new BinaryInteger(0n, 'h'));
+    lookup('HEAVISIDE').fn(s);
+    const v = s.peek();
+    assert(isInteger(v) && v.value === 1n,
+      `session385: #0h HEAVISIDE → Integer(1) (B=✓; right-continuous at 0, step=1) (value=${v.value})`);
+  }
+  {
+    const s = new Stack(); s.push(new BinaryInteger(5n, 'h'));
+    lookup('DIRAC').fn(s);
+    const v = s.peek();
+    assert(isInteger(v) && v.value === 0n,
+      `session385: #5h DIRAC → Integer(0) (B=✓; non-zero BinInt → 0, same as Integer arm) (value=${v.value})`);
+  }
+  {
+    const s = new Stack(); s.push(new BinaryInteger(0n, 'h'));
+    lookup('DIRAC').fn(s);
+    const v = s.peek();
+    assert(isSymbolic(v),
+      'session385: #0h DIRAC → Symbolic (B=✓; at-origin spike stays symbolic, same as Integer(0) arm)');
+  }
+  {
+    const s = new Stack(); s.push(new BinaryInteger(3n, 'b'));
+    lookup('DIRAC').fn(s);
+    const v = s.peek();
+    assert(isInteger(v) && v.value === 0n,
+      `session385: #3b (binary base) DIRAC → Integer(0) (B=✓; base is cosmetic, value-driven) (value=${v.value})`);
   }
 }
 
@@ -12059,4 +12285,34 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     assert(rowsEqual(s.peek(), [[7n, 10n], [15n, 22n]]),
       'session298: M * M → [[7,10],[15,22]] (matmul via extracted _matMul helper)');
   }
+}
+
+/* ================================================================
+   session335: types.js file-header "Types implemented:" list ↔ TYPES
+   const drift guard (code-review R-014 class). The header comment
+   enumerates every implemented type; it had drifted by omitting
+   Directory (a fully constructed type — Directory ctor + isDirectory
+   predicate + TYPES.DIRECTORY). Each TYPES value is camelCase, so its
+   PascalCase display name is just the first letter upper-cased
+   (binaryInteger → BinaryInteger, directory → Directory) — derive it
+   rather than hand-copy the list, and assert it appears in the header
+   block (the comment above the first import). Fails loudly if a future
+   type is added to TYPES without documenting it in the header.
+   ================================================================ */
+{
+  const src = readFileSync(new URL('../www/src/rpl/types.js', import.meta.url), 'utf8');
+  const header = src.slice(0, src.indexOf('import '));
+  const displayName = v => v[0].toUpperCase() + v.slice(1);
+  const documented = v => new RegExp(`\\b${displayName(v)}\\b`).test(header);
+
+  const typeValues = Object.values(TYPES);
+  assert(typeValues.length >= 16,
+    `session335: TYPES exposes >= 16 kinds (extraction guard), got ${typeValues.length}`);
+  for (const v of typeValues) {
+    assert(documented(v),
+      `session335: types.js header documents ${displayName(v)} (TYPES.${v})`);
+  }
+  // The drift that was just fixed: Directory must be named in the header.
+  assert(/\bDirectory\b/.test(header),
+    'session335: header lists Directory (regression for the omitted-kind drift)');
 }

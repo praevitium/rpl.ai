@@ -93,6 +93,114 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(Math.abs(s.peek().value - 3.14) < 1e-12, 'IFTE selects 3.14 when true');
 }
 
+/* ---- session425: isTruthy's non-Real arms through IFT/IFTE/NOT.
+   `isTruthy` (ops.js ~97) dispatches Real → Integer → Complex, else throws
+   `Bad argument type`.  Every prior IFT/IFTE pin (and the AND/OR/NOT pins in
+   test-comparisons) feeds only `Real(1)`/`Real(0)`, so the Integer arm
+   (`v.value !== 0n`), the Complex arm (`v.re !== 0 || v.im !== 0`), and the
+   reject arm were never positively exercised through a truthiness entry — a
+   refactor narrowing `isTruthy` to Real-only would pass every existing pin
+   while breaking `Integer 5 « … » IFT`, a pure-imaginary test, and the
+   non-numeric reject.  IFT is the simplest sync entry; NOT (`ops.js` ~5259)
+   routes the same helper.  Also pins the IFTE false→plain-value mirror (the
+   true→plain direction is pinned just above).  Probed live first (CAS-free).
+   No source change. ---- */
+{
+  // Integer arm: nonzero truthy, zero falsy (IFT-specific — prior block used Real)
+  resetHome();
+  let s = new Stack();
+  s.push(Integer(5));
+  s.push(Program([Integer(99)]));
+  lookup('IFT').fn(s);
+  assert(s.depth === 1 && s.peek().value === 99n,
+         'session425: IFT Integer(5) test is truthy — action runs');
+
+  resetHome();
+  s = new Stack();
+  s.push(Integer(0));
+  s.push(Program([Integer(99)]));
+  lookup('IFT').fn(s);
+  assert(s.depth === 0, 'session425: IFT Integer(0) test is falsy — both dropped');
+
+  // Complex arm: pure-imaginary truthy, exact zero falsy, fully-complex truthy
+  resetHome();
+  s = new Stack();
+  s.push(Complex(0, 2));
+  s.push(Program([Integer(99)]));
+  lookup('IFT').fn(s);
+  assert(s.depth === 1 && s.peek().value === 99n,
+         'session425: IFT Complex(0,2) is truthy (im≠0) — action runs');
+
+  resetHome();
+  s = new Stack();
+  s.push(Complex(0, 0));
+  s.push(Program([Integer(99)]));
+  lookup('IFT').fn(s);
+  assert(s.depth === 0, 'session425: IFT Complex(0,0) is falsy — both dropped');
+
+  resetHome();
+  s = new Stack();
+  s.push(Complex(3, 4));
+  s.push(Program([Integer(99)]));
+  lookup('IFT').fn(s);
+  assert(s.depth === 1 && s.peek().value === 99n,
+         'session425: IFT Complex(3,4) is truthy — action runs');
+
+  // Reject arm: a non-numeric test throws and runIft rolls the stack back
+  resetHome();
+  s = new Stack();
+  s.push(Str('x'));
+  s.push(Program([Integer(1)]));
+  assertThrows(() => lookup('IFT').fn(s), /Bad argument type/,
+    'session425: IFT String test → Bad argument type');
+  assert(s.depth === 2, 'session425: failed IFT restores the snapshot (test + action kept)');
+
+  // NOT routes the same helper across all three arms + reject
+  resetHome();
+  s = new Stack();
+  s.push(Complex(0, 0));
+  lookup('NOT').fn(s);
+  assert(isReal(s.peek()) && !s.peek().value.isZero(),
+         'session425: NOT Complex(0,0) → TRUE (falsy input)');
+
+  resetHome();
+  s = new Stack();
+  s.push(Complex(0, 2));
+  lookup('NOT').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.isZero(),
+         'session425: NOT Complex(0,2) → FALSE (truthy input)');
+
+  resetHome();
+  s = new Stack();
+  s.push(Integer(0));
+  lookup('NOT').fn(s);
+  assert(isReal(s.peek()) && !s.peek().value.isZero(),
+         'session425: NOT Integer(0) → TRUE');
+
+  resetHome();
+  s = new Stack();
+  s.push(Integer(5));
+  lookup('NOT').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.isZero(),
+         'session425: NOT Integer(5) → FALSE');
+
+  resetHome();
+  s = new Stack();
+  s.push(Str('x'));
+  assertThrows(() => lookup('NOT').fn(s), /Bad argument type/,
+    'session425: NOT String → Bad argument type');
+
+  // IFTE false → plain value (mirror of the true→3.14 pin above)
+  resetHome();
+  s = new Stack();
+  s.push(Real(0));
+  s.push(Real(3.14));
+  s.push(Real(2.71));
+  lookup('IFTE').fn(s);
+  assert(Math.abs(s.peek().value - 2.71) < 1e-12,
+         'session425: IFTE selects 2.71 (f-action plain value) when false');
+}
+
 /* ================================================================
    IF / THEN / ELSE / END inside Programs
    ================================================================ */
@@ -1380,6 +1488,60 @@ import { assert, assertThrows } from './helpers.mjs';
     'session317: bare CASE opener auto-closes to an empty no-op');
 }
 
+/* ---- session386: CASE clause-scan spurious counter-loop closer ----
+   runCase's `scan.kind !== 'THEN'` arm throws `CASE: unexpected <kind>`
+   (ops.js ~3838) when the depth-0 clause scan returns a counter-loop
+   closer (NEXT/STEP) instead of a THEN or the CASE END.  scanAtDepth0
+   only ever returns a wanted THEN or a CF_CLOSER (END/NEXT/STEP); the
+   THEN and END branches are handled above, so this throw is reached
+   exactly by a spurious NEXT/STEP sitting where a clause test/THEN
+   should be.  Every prior CASE pin (session067/073/317) fed only THEN /
+   END / auto-close forms, so this reject arm had zero coverage — a
+   refactor that silently swallowed a stray counter closer, or replaced
+   the throw with a no-op, would pass green.  Probed live: each rejects
+   and EVAL's post-pop snapshot rolls the stack back clean. */
+{
+  // « CASE 1 NEXT »  — NEXT where a clause THEN (or the CASE END) belongs
+  resetHome();
+  const s = new Stack();
+  s.push(Program([ Name('CASE'), Integer(1n), Name('NEXT') ]));
+  const err = assertThrows(() => lookup('EVAL').fn(s),
+                           null,
+                           'session386: CASE with spurious NEXT throws');
+  assert(/CASE: unexpected NEXT/.test(err.message),
+    'session386: CASE clause scan rejects a depth-0 NEXT closer');
+  assert(s.depth === 0,
+    'session386: CASE-spurious-NEXT rolls the stack back clean (post-pop snapshot)');
+}
+{
+  // « CASE 1 STEP »  — STEP is the other counter-loop closer; same arm
+  resetHome();
+  const s = new Stack();
+  s.push(Program([ Name('CASE'), Integer(1n), Name('STEP') ]));
+  const err = assertThrows(() => lookup('EVAL').fn(s),
+                           null,
+                           'session386: CASE with spurious STEP throws');
+  assert(/CASE: unexpected STEP/.test(err.message),
+    'session386: CASE clause scan rejects a depth-0 STEP closer');
+}
+{
+  // « CASE 0 THEN 2 END 0 NEXT »  — first clause false, advance to the
+  // next clause, where a NEXT sits in the test/THEN slot.  Reaches the
+  // same throw on a *subsequent* loop iteration of runCase (i advanced
+  // past the inner END), not just the first.
+  resetHome();
+  const s = new Stack();
+  s.push(Program([
+    Name('CASE'), Integer(0n), Name('THEN'), Integer(2n), Name('END'),
+    Integer(0n), Name('NEXT'),
+  ]));
+  const err = assertThrows(() => lookup('EVAL').fn(s),
+                           null,
+                           'session386: CASE spurious NEXT after a false clause throws');
+  assert(/CASE: unexpected NEXT/.test(err.message),
+    'session386: CASE clause scan rejects a spurious closer on a later clause');
+}
+
 /* ================================================================
    ABORT — program-interrupt primitive.
    AUR p.1-27.  ABORT stops execution of the currently-running
@@ -1518,6 +1680,73 @@ import { assert, assertThrows } from './helpers.mjs';
   } finally {
     setApproxMode(prevApprox);
   }
+}
+
+// session379: algebraic-body PARTIAL reduction.  session068/116 pin only
+// the fully-reducing case (every name in the body is a bound local).  When
+// the body carries a free name with no local AND no global binding, the
+// Symbolic EVAL consults the local frame (substituting the bound local) but
+// leaves the unbound name in the AST — the documented "possibly partially
+// reduced value" (RPL.md "Compiled local environments" / runArrow's Symbolic
+// arm).  This pins the lookup precedence (local frame → global store → name
+// stays symbolic) from the partial-reduction direction; no source change.
+function collectSymLeaves(node, out) {
+  if (!node || typeof node !== 'object') return;
+  if (node.kind === 'var') out.vars.add(node.name);
+  if (node.kind === 'num') out.nums.push(node.value);
+  collectSymLeaves(node.l, out);
+  collectSymLeaves(node.r, out);
+  collectSymLeaves(node.x, out);
+  if (Array.isArray(node.args)) for (const a of node.args) collectSymLeaves(a, out);
+}
+{
+  resetHome();
+  const s = new Stack();
+  s.push(Integer(5n));
+  s.push(parseEntry('<< → a `a+b` >>')[0]);
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1,
+    'session379: → partial-reduction algebraic body leaves one value');
+  const top = s.peek();
+  assert(top.type === 'symbolic',
+    'session379: free name b keeps the body symbolic (a+b not foldable)');
+  const out = { vars: new Set(), nums: [] };
+  collectSymLeaves(top.expr, out);
+  assert(out.vars.size === 1 && out.vars.has('b'),
+    'session379: only the unbound free name b survives in the AST');
+  assert(out.nums.includes(5),
+    'session379: the bound local a was substituted in as 5');
+}
+// Substitution holds in the other operand slot too (b - a, a=2).
+{
+  resetHome();
+  const s = new Stack();
+  s.push(Integer(2n));
+  s.push(parseEntry('<< → a `b-a` >>')[0]);
+  lookup('EVAL').fn(s);
+  const top = s.peek();
+  const out = { vars: new Set(), nums: [] };
+  collectSymLeaves(top.expr, out);
+  assert(top.type === 'symbolic' && out.vars.size === 1 && out.vars.has('b')
+    && out.nums.includes(2),
+    'session379: → body `b-a` substitutes local a=2, frees b regardless of slot');
+}
+// Full chain: a free name WITH a global binding resolves through varRecall,
+// so local a=5 + global b=10 folds to a Real 15 (local shadows nothing here,
+// but the global is consulted for the otherwise-free name).
+{
+  resetHome();
+  const s = new Stack();
+  s.push(parseEntry('<< 10 `b` STO 5 → a `a+b` >>')[0]);
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1,
+    'session379: → global-backed free name leaves one value');
+  const top = s.peek();
+  const val = top.type === 'real' ? top.value.toNumber()
+            : top.type === 'integer' ? Number(top.value) : null;
+  assert(val === 15,
+    'session379: → body a+b folds to 15 (local a=5, global b=10 via varRecall)');
+  resetHome();
 }
 
 // Locals are invisible after the body ends — the outer lookup falls
@@ -1673,6 +1902,46 @@ import { assert, assertThrows } from './helpers.mjs';
   try { lookup('EVAL').fn(s); } catch (e) { caught = e; }
   assert(caught && /body must be a program or algebraic/.test(caught.message),
     'session068: → with non-Program non-Symbolic body is rejected');
+}
+
+// session352: the `!t.quoted` quote-exclusion in runArrow's name collector.
+// The collector gathers consecutive BARE Name tokens as local names and stops
+// at the first non-Name OR quoted Name (`if (isName(t) && !t.quoted)`).  A
+// quoted Name therefore can neither be a local name nor a body — session068
+// pinned only a non-Name (Integer) body, never the quoted-Name corner.  Both
+// arms below guard the `!t.quoted` check from opposite directions: drop it and
+// a quoted name would be silently collected as a local (no throw).
+{
+  // → 'a' «1»  — the leading name is quoted, so the collector adds nothing
+  // and names.length === 0.  Without the quote-exclusion, 'a' would bind as a
+  // local and «1» would be a valid body (no throw).
+  resetHome();
+  const s = new Stack();
+  s.push(Program([
+    Name('→'), Name('a', { quoted: true }),
+    Program([ Integer(1n) ]),
+  ]));
+  let caught = null;
+  try { lookup('EVAL').fn(s); } catch (e) { caught = e; }
+  assert(caught && /no local variable names/.test(caught.message),
+    'session352: → with a quoted leading name collects no locals — quote-exclusion holds');
+}
+
+{
+  // 5 → a 'b'  — the quoted 'b' stops the name collection after the real
+  // local `a`, then becomes the body candidate (a Name, not Program/Symbolic)
+  // and is rejected.  Without the quote-exclusion, 'b' would be a second local
+  // and there would be no body token → a different (missing body) error.
+  resetHome();
+  const s = new Stack();
+  s.push(Integer(5n));
+  s.push(Program([
+    Name('→'), Name('a'), Name('b', { quoted: true }),
+  ]));
+  let caught = null;
+  try { lookup('EVAL').fn(s); } catch (e) { caught = e; }
+  assert(caught && /body must be a program or algebraic/.test(caught.message),
+    'session352: → stops name collection at a quoted name — it becomes the (rejected) body, not a second local');
 }
 
 // Local shadows a global with the same name.
@@ -2441,6 +2710,164 @@ import { assert, assertThrows } from './helpers.mjs';
   try { lookup('EVAL').fn(s); } catch (e) { caught = e; }
   assert(caught && /IF without THEN/.test(caught.message),
     'session083: IF without THEN still throws (auto-close does NOT apply)');
+}
+
+/* ---- session412: IF/IFERR THEN-branch spurious counter-loop closer ----
+   The `IF/THEN: unexpected <kind>` (runIf, ops.js ~3957) and
+   `IFERR/THEN: unexpected <kind>` (runIfErr, ~4035) reject arms are
+   reached when the THEN-branch scan — `scanAtDepth0(.., {ELSE})` — hits
+   a depth-0 counter-loop closer (NEXT/STEP) instead of an ELSE or the
+   block END.  scanAtDepth0 short-circuits on any CF_CLOSER regardless of
+   `wanted`, so a stray NEXT/STEP in the THEN slot lands here as
+   `branchScan.kind` neither ELSE nor END.  This is the IF/IFERR sibling
+   of session386's `CASE: unexpected` arm.  Every prior IF/IFERR pin fed
+   only THEN/ELSE/END/auto-close forms, so these arms had zero coverage —
+   a refactor folding the stray closer into the auto-close (absorb) path,
+   as the ELSE slot already does, would pass green.  The throw fires at
+   scan time, before either branch runs, so a falsy IF test rejects too;
+   EVAL's post-pop snapshot rolls the stack back clean (depth 0).  (A
+   counter closer in the *test* slot instead reaches "IF without THEN"
+   because the THEN scan hits it first; one in the *ELSE* slot is
+   absorbed via the wanted-null END scan's auto-close — distinct arms.)
+   Probed all live first (repo-rooted import, CAS-free). */
+{
+  // « IF 1 THEN 2 NEXT END »  — NEXT where the block END (or an ELSE) belongs
+  resetHome();
+  const s = new Stack();
+  s.push(Program([
+    Name('IF'), Integer(1n), Name('THEN'), Integer(2n), Name('NEXT'), Name('END'),
+  ]));
+  const err = assertThrows(() => lookup('EVAL').fn(s),
+                           null,
+                           'session412: IF with spurious NEXT in THEN slot throws');
+  assert(/IF\/THEN: unexpected NEXT/.test(err.message),
+    'session412: IF THEN-branch scan rejects a depth-0 NEXT closer');
+  assert(s.depth === 0,
+    'session412: IF-spurious-NEXT rolls the stack back clean (post-pop snapshot)');
+}
+{
+  // « IF 1 THEN 2 STEP END »  — STEP is the other counter-loop closer
+  resetHome();
+  const s = new Stack();
+  s.push(Program([
+    Name('IF'), Integer(1n), Name('THEN'), Integer(2n), Name('STEP'), Name('END'),
+  ]));
+  const err = assertThrows(() => lookup('EVAL').fn(s),
+                           null,
+                           'session412: IF with spurious STEP in THEN slot throws');
+  assert(/IF\/THEN: unexpected STEP/.test(err.message),
+    'session412: IF THEN-branch scan rejects a depth-0 STEP closer');
+}
+{
+  // « IF 0 THEN 2 NEXT END »  — falsy test still rejects: the branch scan
+  // (and its throw) runs before either branch is evaluated.
+  resetHome();
+  const s = new Stack();
+  s.push(Program([
+    Name('IF'), Integer(0n), Name('THEN'), Integer(2n), Name('NEXT'), Name('END'),
+  ]));
+  const err = assertThrows(() => lookup('EVAL').fn(s),
+                           null,
+                           'session412: IF (falsy test) with spurious NEXT still throws');
+  assert(/IF\/THEN: unexpected NEXT/.test(err.message),
+    'session412: IF THEN-branch reject fires at scan time, independent of the test');
+}
+{
+  // « IFERR 1 THEN 2 NEXT END »  — IFERR's THEN-branch scan, same arm.
+  // The throw fires before the trap is evaluated.
+  resetHome();
+  const s = new Stack();
+  s.push(Program([
+    Name('IFERR'), Integer(1n), Name('THEN'), Integer(2n), Name('NEXT'), Name('END'),
+  ]));
+  const err = assertThrows(() => lookup('EVAL').fn(s),
+                           null,
+                           'session412: IFERR with spurious NEXT in THEN slot throws');
+  assert(/IFERR\/THEN: unexpected NEXT/.test(err.message),
+    'session412: IFERR THEN-branch scan rejects a depth-0 NEXT closer');
+  assert(s.depth === 0,
+    'session412: IFERR-spurious-NEXT rolls the stack back clean (post-pop snapshot)');
+}
+{
+  // « IFERR 1 THEN 2 STEP END »  — IFERR STEP sibling.
+  resetHome();
+  const s = new Stack();
+  s.push(Program([
+    Name('IFERR'), Integer(1n), Name('THEN'), Integer(2n), Name('STEP'), Name('END'),
+  ]));
+  const err = assertThrows(() => lookup('EVAL').fn(s),
+                           null,
+                           'session412: IFERR with spurious STEP in THEN slot throws');
+  assert(/IFERR\/THEN: unexpected STEP/.test(err.message),
+    'session412: IFERR THEN-branch scan rejects a depth-0 STEP closer');
+}
+
+/* ---- session419: IF/IFERR test-slot spurious CF_INNER is absorbed ----
+   session412's *reject* arm is the THEN-branch (post-THEN) slot.  The
+   complementary slot is the *test* (IF) / *trap* (IFERR) range scanned by
+   the first `scanAtDepth0(.., {THEN})` (runIf ~3918 / runIfErr ~4006).
+   A spurious CF_INNER there — ELSE/REPEAT/UNTIL, none of which is the
+   wanted THEN nor a CF_CLOSER — is skipped by that scan (it short-circuits
+   only on THEN or a closer), so the THEN is still found at its real index.
+   The stray inner then lands inside the evaluated test/trap range, where
+   evalRange's orphan-keyword arm (ops.js ~3681) drops it silently.  Net:
+   the block evaluates identically to the no-spurious-inner baseline — an
+   ABSORB, not a reject (unlike a CF_CLOSER in the test slot, which the THEN
+   scan returns first → "IF without THEN", session083).  Every prior IF/IFERR
+   pin fed only well-formed test/trap ranges, so this absorb arm had zero
+   coverage; a refactor tightening the THEN scan to reject a stray inner (or
+   evalRange to throw on an orphan keyword) would pass green.  Probed all
+   live first (repo-rooted import, CAS-free). */
+{
+  for (const inner of ['ELSE', 'REPEAT', 'UNTIL']) {
+    // « IF 1 <inner> THEN 2 END » — truthy test, stray inner before THEN
+    resetHome();
+    const s = new Stack();
+    s.push(Program([
+      Name('IF'), Integer(1n), Name(inner), Name('THEN'), Integer(2n), Name('END'),
+    ]));
+    lookup('EVAL').fn(s);
+    assert(s.depth === 1 && s.peek().value === 2n,
+      `session419: IF spurious ${inner} in test slot absorbed, true-branch runs`);
+  }
+}
+{
+  // « IF 0 ELSE THEN 2 ELSE 3 END » — the stray ELSE in the test slot is
+  // absorbed while the REAL ELSE separator past THEN is still located; the
+  // falsy test selects the else-branch.
+  resetHome();
+  const s = new Stack();
+  s.push(Program([
+    Name('IF'), Integer(0n), Name('ELSE'),
+    Name('THEN'), Integer(2n), Name('ELSE'), Integer(3n), Name('END'),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 3n,
+    'session419: stray ELSE in test slot absorbed, real ELSE still honoured (falsy)');
+}
+{
+  // « IFERR 1 REPEAT THEN 99 END » — trap completes normally; stray inner
+  // absorbed; no error so the handler does not run (trap result 1 stays).
+  resetHome();
+  const s = new Stack();
+  s.push(Program([
+    Name('IFERR'), Integer(1n), Name('REPEAT'), Name('THEN'), Integer(99n), Name('END'),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 1n,
+    'session419: IFERR spurious REPEAT in trap slot absorbed, no-throw path intact');
+}
+{
+  // « IFERR INV ELSE THEN 99 END » — INV on an empty stack throws an
+  // RPLError; the stray ELSE in the trap is absorbed; the error handler runs.
+  resetHome();
+  const s = new Stack();
+  s.push(Program([
+    Name('IFERR'), Name('INV'), Name('ELSE'), Name('THEN'), Integer(99n), Name('END'),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 99n,
+    'session419: IFERR spurious ELSE in trap slot absorbed, throw path runs handler');
 }
 
 /* ---- CASE nested inside IF whose END is missing.  With auto-close
@@ -5132,6 +5559,136 @@ const { getPromptMessage, clearPromptMessage }
     'session136: DO with spurious NEXT preserves "without END" error');
 }
 
+/* ---- session393: WHILE / DO spurious STEP in the END slot ----
+   The runWhile / runDo source comments both name a spurious NEXT *or
+   STEP* in the END slot as a hard error, but session136 pinned only the
+   NEXT arm for each.  STEP reaches the SAME `else` throw via a distinct
+   `scanAtDepth0` `kind` value (mirroring the NEXT-vs-STEP distinction
+   session386 pinned for CASE, one family over): the closer scan returns a
+   CF_CLOSER of kind 'STEP', which is neither END (auto-close) nor a real
+   END, so it falls to `throw "WHILE/REPEAT without END"` /
+   `"DO/UNTIL without END"`.  Probed both live (repo-rooted, CAS-free):
+   each throws its "without END" message and EVAL's post-pop snapshot rolls
+   the stack back clean (depth 0).  Guards a refactor that narrows the
+   END-slot reject to NEXT only or special-cases STEP. */
+{
+  resetHome();
+  const s = new Stack();
+  // « WHILE 1 REPEAT 2 STEP »   — STEP in the END slot, no real END
+  s.push(Program([
+    Name('WHILE'), Integer(1), Name('REPEAT'), Integer(2), Name('STEP'),
+  ]));
+  const err = assertThrows(() => lookup('EVAL').fn(s),
+                           null,
+                           'session393: WHILE with spurious STEP throws');
+  assert(/WHILE\/REPEAT without END/.test(err.message),
+    'session393: WHILE with spurious STEP preserves "without END" error');
+  assert(s.depth === 0,
+    'session393: WHILE-spurious-STEP rolls the stack back clean (post-pop snapshot)');
+}
+
+{
+  resetHome();
+  const s = new Stack();
+  // « DO 1 UNTIL 1 STEP »   — STEP in the END slot
+  s.push(Program([
+    Name('DO'), Integer(1), Name('UNTIL'), Integer(1), Name('STEP'),
+  ]));
+  const err = assertThrows(() => lookup('EVAL').fn(s),
+                           null,
+                           'session393: DO with spurious STEP throws');
+  assert(/DO\/UNTIL without END/.test(err.message),
+    'session393: DO with spurious STEP preserves "without END" error');
+  assert(s.depth === 0,
+    'session393: DO-spurious-STEP rolls the stack back clean (post-pop snapshot)');
+}
+
+/* ---- session406: spurious CF_INNER in the WHILE / DO slots ----
+   The mirror of session400 (START / FOR closer slot) for the
+   condition-loops.  session136/393 pin that a spurious CF_CLOSER
+   (NEXT / STEP) in the WHILE / DO END slot is a hard error.  But a
+   spurious CF_INNER (THEN / ELSE / REPEAT / UNTIL) is NOT — both of
+   runWhile's / runDo's scans skip it:
+     - the REPEAT / UNTIL separator scan is `scanAtDepth0(toks, …,
+       {REPEAT})` / `{UNTIL}`; a CF_INNER not in the wanted set is
+       neither a CF_CLOSER nor wanted, so the `wanted.has(id)` branch
+       is false and the token is skipped (`i++`) — absorbed into the
+       test/body range before the separator;
+     - the END scan is `scanAtDepth0(toks, …, null)`; with `wanted`
+       null it returns only CF_CLOSERS, so a CF_INNER after the
+       separator is skipped and absorbed into the loop body.
+   In every position the inner token lands in a range run by
+   evalRange, whose orphan-keyword arm (`CF_CLOSERS.has(id) ||
+   CF_INNERS.has(id)` at depth 0) skips it silently — so the loop runs
+   exactly as if the stray inner were absent (here: count 0 → 3).
+   Proves the WHILE/REPEAT-without-END (and DO/UNTIL-without-END) throw
+   is reachable ONLY by a CF_CLOSER, never a CF_INNER.  Guards a
+   refactor that gives `scanAtDepth0` a default `wanted` set or drops
+   evalRange's orphan-keyword skip. ---- */
+// END-slot (the wanted=null scan): inner after the separator, body loops to 3
+for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
+  resetHome();
+  const s = new Stack();
+  // « 0 WHILE DUP 3 < REPEAT 1 + <inner> »  — inner absorbed, auto-closes
+  s.push(Program([
+    Integer(0),
+    Name('WHILE'), Name('DUP'), Integer(3), Name('<'), Name('REPEAT'),
+      Integer(1), Name('+'),
+    Name(inner),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 3n,
+    `session406: spurious ${inner} in WHILE END slot is absorbed, loop runs to 3`);
+}
+for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
+  resetHome();
+  const s = new Stack();
+  // « 0 DO 1 + UNTIL DUP 3 ≥ <inner> »  — inner absorbed, auto-closes
+  s.push(Program([
+    Integer(0),
+    Name('DO'),
+      Integer(1), Name('+'),
+    Name('UNTIL'),
+      Name('DUP'), Integer(3), Name('≥'),
+    Name(inner),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 3n,
+    `session406: spurious ${inner} in DO END slot is absorbed, loop runs to 3`);
+}
+// separator-slot (the wanted={REPEAT}/{UNTIL} scan): a foreign inner before
+// the separator is skipped by the `wanted.has` miss and absorbed into the
+// test/body range — REPEAT/UNTIL excluded since each is its own loop's wanted
+for (const inner of ['THEN', 'ELSE', 'UNTIL']) {
+  resetHome();
+  const s = new Stack();
+  // « 0 WHILE <inner> DUP 3 < REPEAT 1 + »  — inner absorbed into the test
+  s.push(Program([
+    Integer(0),
+    Name('WHILE'), Name(inner), Name('DUP'), Integer(3), Name('<'), Name('REPEAT'),
+      Integer(1), Name('+'),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 3n,
+    `session406: spurious ${inner} before WHILE's REPEAT is absorbed, loop runs to 3`);
+}
+for (const inner of ['THEN', 'ELSE', 'REPEAT']) {
+  resetHome();
+  const s = new Stack();
+  // « 0 DO 1 + <inner> UNTIL DUP 3 ≥ »  — inner absorbed into the body
+  s.push(Program([
+    Integer(0),
+    Name('DO'),
+      Integer(1), Name('+'),
+    Name(inner),
+    Name('UNTIL'),
+      Name('DUP'), Integer(3), Name('≥'),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 3n,
+    `session406: spurious ${inner} before DO's UNTIL is absorbed, loop runs to 3`);
+}
+
 {
   resetHome();
   const s = new Stack();
@@ -5236,6 +5793,124 @@ const { getPromptMessage, clearPromptMessage }
   // bindings are unchanged.)
   assert(varRecall('i') === undefined,
     'session136: FOR-without-NEXT/STEP error leaves no leaked binding');
+}
+
+/* ---- session400: spurious CF_INNER in the START / FOR closer slot ----
+   session136 pins a spurious END (a CF_CLOSER) in the START / FOR closer
+   slot as a hard error.  But the closer scan is `scanAtDepth0(toks, …,
+   null)` — with `wanted` null it returns only CF_CLOSERS (END/NEXT/STEP),
+   never a CF_INNER (THEN/ELSE/REPEAT/UNTIL).  So a stray inner keyword in
+   the closer slot is NOT a sibling reject arm: scanAtDepth0 skips past it,
+   the closer scan runs off the end, the loop auto-closes (implicit NEXT,
+   step = 1), and the inner token is absorbed into the body where
+   evalRange's orphan-keyword arm (`CF_CLOSERS.has(id) || CF_INNERS.has(id)`
+   at depth 0) skips it silently.  The net effect is identical to the plain
+   auto-close — proving the END error is reachable ONLY by a CF_CLOSER, not
+   by any CF_INNER.  Guards a refactor that gives `scanAtDepth0` a default
+   `wanted` set (which would start rejecting these) or drops evalRange's
+   orphan-keyword skip (which would throw on the absorbed token). ---- */
+for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
+  resetHome();
+  const s = new Stack();
+  // « 0 1 5 START 1 + <inner> »  — inner absorbed, START auto-closes,
+  // loop runs 5x adding 1 → 5 (identical to the bare-auto-close case)
+  s.push(Program([
+    Integer(0), Integer(1), Integer(5), Name('START'),
+      Integer(1), Name('+'),
+    Name(inner),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 5n,
+    `session400: spurious ${inner} in START closer slot is absorbed, loop auto-closes`);
+}
+
+for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
+  resetHome();
+  const s = new Stack();
+  // « 0 1 4 FOR i i + <inner> »  — inner absorbed, FOR auto-closes,
+  // sums 0+1+2+3+4 = 10 and purges the loop var on exit
+  s.push(Program([
+    Integer(0), Integer(1), Integer(4), Name('FOR'), Name('i'),
+      Name('i'), Name('+'),
+    Name(inner),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 10n,
+    `session400: spurious ${inner} in FOR closer slot is absorbed, loop auto-closes (sums 1..4)`);
+  assert(varRecall('i') === undefined,
+    `session400: FOR-with-spurious-${inner} auto-close still purges the loop var`);
+}
+
+/* ----------------------------------------------------------------
+   FOR without a counter name is a hard error ("FOR needs a name").
+   The auto-close policy never invents a default counter name, so the
+   token immediately after FOR must be a Name.  runFor pops the two
+   bounds *before* the isName check (ops.js ~4250), and EVAL's post-pop
+   snapshot rolls the whole program back on the throw, so the stack is
+   left clean.  Any Name token is accepted as the counter — even an
+   operator name like `+` — because the gate is structural (isName),
+   not "valid identifier".  The companion FOR-without-NEXT/STEP and
+   START-without-name paths are pinned by session136 above. ---- */
+{
+  resetHome();
+  const s = new Stack();
+  // « 1 5 FOR 7 1 + NEXT »   — Integer where the counter name belongs
+  s.push(Program([
+    Integer(1), Integer(5), Name('FOR'), Integer(7),
+      Integer(1), Name('+'),
+    Name('NEXT'),
+  ]));
+  const err = assertThrows(() => lookup('EVAL').fn(s),
+                           null,
+                           'session331: FOR with an Integer counter slot throws');
+  assert(/FOR needs a name/.test(err.message),
+    'session331: FOR with a non-Name counter slot says "FOR needs a name"');
+  assert(s.depth === 0,
+    'session331: FOR-needs-a-name rolls the program back to a clean stack');
+}
+
+{
+  resetHome();
+  const s = new Stack();
+  // « 1 5 FOR »   — FOR is the final token, so the counter slot is undefined
+  s.push(Program([
+    Integer(1), Integer(5), Name('FOR'),
+  ]));
+  const err = assertThrows(() => lookup('EVAL').fn(s),
+                           null,
+                           'session331: FOR with no following token throws');
+  assert(/FOR needs a name/.test(err.message),
+    'session331: trailing FOR (undefined counter slot) says "FOR needs a name"');
+}
+
+{
+  resetHome();
+  const s = new Stack();
+  // « 1 5 FOR «9» NEXT »   — a Program in the counter slot is not a Name
+  s.push(Program([
+    Integer(1), Integer(5), Name('FOR'), Program([Integer(9)]),
+    Name('NEXT'),
+  ]));
+  const err = assertThrows(() => lookup('EVAL').fn(s),
+                           null,
+                           'session331: FOR with a Program counter slot throws');
+  assert(/FOR needs a name/.test(err.message),
+    'session331: FOR with a Program counter slot says "FOR needs a name"');
+}
+
+{
+  resetHome();
+  const s = new Stack();
+  // « 1 1 FOR + 3 NEXT »   — an operator Name IS a Name, so it is accepted
+  // as the counter name; the one-iteration body just pushes 3.
+  s.push(Program([
+    Integer(1), Integer(1), Name('FOR'), Name('+'),
+      Integer(3),
+    Name('NEXT'),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 3n,
+    'session331: any Name (even an operator name) is a valid FOR counter slot');
 }
 
 {

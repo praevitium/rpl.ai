@@ -1851,6 +1851,75 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
       'session051: ->COL ASCII alias matches →COL');
   }
 
+  // session391: rejection-path closure for the four row/col ASCII aliases.
+  // session051 gave →ROW/→COL/ROW→/COL→ their own rejection pins but the
+  // `->ROW`/`->COL`/`ROW->`/`COL->` aliases had happy-path coverage only.
+  // Each alias is registered with the SAME fn instance as its canonical
+  // (`_rowCompose`/`_colCompose`/`_rowDecompose`/`_colDecompose`), so it
+  // rejects identically — pin both the shared-instance identity and the
+  // rejects so a refactor that splits the alias into its own
+  // implementation and drops a guard is caught.
+  {
+    assert(lookup('->ROW').fn === lookup('→ROW').fn
+        && lookup('->COL').fn === lookup('→COL').fn
+        && lookup('ROW->').fn === lookup('ROW→').fn
+        && lookup('COL->').fn === lookup('COL→').fn,
+      'session391: row/col ASCII aliases share the canonical fn instance');
+
+    // ->ROW mirrors →ROW's four rejects (compose path).
+    {
+      const s = new Stack();
+      s.push(Vector([Real(1)]));
+      s.push(Real(1.5));
+      assertThrows(() => lookup('->ROW').fn(s), /Bad argument type/,
+        'session391: ->ROW non-integer count → Bad argument type');
+    }
+    {
+      const s = new Stack();
+      s.push(Integer(0));
+      assertThrows(() => lookup('->ROW').fn(s), /Bad argument value/,
+        'session391: ->ROW count 0 → Bad argument value');
+    }
+    {
+      const s = new Stack();
+      s.push(Vector([Real(1), Real(2)]));
+      s.push(Vector([Real(1)]));
+      s.push(Integer(2));
+      assertThrows(() => lookup('->ROW').fn(s), /Invalid dimension/,
+        'session391: ->ROW mismatched row lengths → Invalid dimension');
+    }
+    {
+      const s = new Stack();
+      s.push(Real(1));
+      s.push(Real(2));
+      s.push(Integer(2));
+      assertThrows(() => lookup('->ROW').fn(s), /Bad argument type/,
+        'session391: ->ROW non-vector args → Bad argument type');
+    }
+    // ->COL mirrors →COL's mismatched-height reject (compose path).
+    {
+      const s = new Stack();
+      s.push(Vector([Real(1), Real(2)]));
+      s.push(Vector([Real(1)]));
+      s.push(Integer(2));
+      assertThrows(() => lookup('->COL').fn(s), /Invalid dimension/,
+        'session391: ->COL mismatched column heights → Invalid dimension');
+    }
+    // ROW-> / COL-> mirror ROW→/COL→'s non-Matrix rejects (decompose path).
+    {
+      const s = new Stack();
+      s.push(Vector([Real(1), Real(2)]));
+      assertThrows(() => lookup('ROW->').fn(s), /Bad argument type/,
+        'session391: ROW-> on Vector → Bad argument type');
+    }
+    {
+      const s = new Stack();
+      s.push(Real(5));
+      assertThrows(() => lookup('COL->').fn(s), /Bad argument type/,
+        'session391: COL-> on Real → Bad argument type');
+    }
+  }
+
 
   // 3×3 RSWP 1 3 swaps top and bottom rows.
   {
@@ -2479,6 +2548,85 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3)]));
   assertThrows(() => lookup('COV').fn(s), /Bad argument/, 'session053: COV on Vector throws Bad argument type');
+}
+
+/* ----------------------------------------------------------------
+   session438: MEDIAN / COV / CORR / ΣXY element-level entry-coercion
+   reject arms — the bivariate-accumulator complement of session431's
+   TOT/MEAN/VAR/SDEV sweep.  All four coerce each element through
+   `_statsNumericEntry` (ops.js ~10820, isReal/isInteger only), so a
+   BinaryInteger element rejects with 'Bad argument type'.  Prior
+   coverage only exercised container-level rejects (MEDIAN had a lone
+   Complex-Vector reject; COV had 1-row / 3-col / Vector; ΣXY's
+   container rejects live in test-stats) — a well-formed Vector/Matrix
+   carrying a BinInt *element* was never exercised, so a refactor
+   adding a sloppy `Number(x.value)` BinInt arm to `_statsNumericEntry`
+   would silently flip reject→accept on the whole stats family.  The
+   bivariate ops coerce via `_twoColsOrThrow` / `_matStatsCol`, so a
+   reject fires from EITHER column.  Complex elements reject here too
+   (these ops never widened to `_statsNumOrComplexEntry`, unlike
+   TOT/MEAN) — pinned for COV/CORR/ΣXY to mirror MEDIAN's session053
+   Complex reject.  Probed all arms live first (CAS-free): every BinInt
+   and Complex element below → 'Bad argument type'. */
+{
+  const s = new Stack();
+  s.push(Vector([Real(1), BinaryInteger(2n, 'h'), Real(3)]));
+  assertThrows(() => lookup('MEDIAN').fn(s), /Bad argument type/,
+    'session438: MEDIAN on Vector with a BinInt element → Bad argument type (_statsNumericEntry has no isBinaryInteger arm)');
+}
+{
+  const s = new Stack();
+  s.push(Matrix([[Real(1), Real(10)], [BinaryInteger(2n, 'h'), Real(20)], [Real(3), Real(30)]]));
+  assertThrows(() => lookup('MEDIAN').fn(s), /Bad argument type/,
+    'session438: MEDIAN on Matrix with a BinInt column entry → Bad argument type (per-column coercion through _statsNumericEntry)');
+}
+{
+  const s = new Stack();
+  s.push(Matrix([[BinaryInteger(2n, 'h'), Real(2)], [Real(2), Real(4)], [Real(3), Real(6)]]));
+  assertThrows(() => lookup('COV').fn(s), /Bad argument type/,
+    'session438: COV with a BinInt x-column entry → Bad argument type (_twoColsOrThrow coerces col 0)');
+}
+{
+  const s = new Stack();
+  s.push(Matrix([[Real(1), BinaryInteger(2n, 'h')], [Real(2), Real(4)], [Real(3), Real(6)]]));
+  assertThrows(() => lookup('COV').fn(s), /Bad argument type/,
+    'session438: COV with a BinInt y-column entry → Bad argument type (_twoColsOrThrow coerces col 1 — symmetric)');
+}
+{
+  const s = new Stack();
+  s.push(Matrix([[Complex(1, 2), Real(2)], [Real(2), Real(4)], [Real(3), Real(6)]]));
+  assertThrows(() => lookup('COV').fn(s), /Bad argument type/,
+    'session438: COV with a Complex x-column entry → Bad argument type (no _statsNumOrComplexEntry widening, unlike TOT/MEAN)');
+}
+{
+  const s = new Stack();
+  s.push(Matrix([[BinaryInteger(2n, 'h'), Real(2)], [Real(2), Real(4)], [Real(3), Real(6)]]));
+  assertThrows(() => lookup('CORR').fn(s), /Bad argument type/,
+    'session438: CORR with a BinInt x-column entry → Bad argument type (shares _twoColsOrThrow with COV)');
+}
+{
+  const s = new Stack();
+  s.push(Matrix([[Real(1), Complex(1, 2)], [Real(2), Real(4)], [Real(3), Real(6)]]));
+  assertThrows(() => lookup('CORR').fn(s), /Bad argument type/,
+    'session438: CORR with a Complex y-column entry → Bad argument type');
+}
+{
+  const s = new Stack();
+  s.push(Matrix([[BinaryInteger(2n, 'h'), Real(2)], [Real(3), Real(4)], [Real(5), Real(6)]]));
+  assertThrows(() => lookup('ΣXY').fn(s), /Bad argument type/,
+    'session438: ΣXY with a BinInt x-column entry → Bad argument type (_matStatsCol on col 0)');
+}
+{
+  const s = new Stack();
+  s.push(Matrix([[Real(1), BinaryInteger(2n, 'h')], [Real(3), Real(4)], [Real(5), Real(6)]]));
+  assertThrows(() => lookup('ΣXY').fn(s), /Bad argument type/,
+    'session438: ΣXY with a BinInt y-column entry → Bad argument type (_matStatsCol on col 1 — symmetric)');
+}
+{
+  const s = new Stack();
+  s.push(Matrix([[Real(1), Complex(1, 2)], [Real(3), Real(4)], [Real(5), Real(6)]]));
+  assertThrows(() => lookup('ΣXY').fn(s), /Bad argument type/,
+    'session438: ΣXY with a Complex y-column entry → Bad argument type');
 }
 
 /* =================================================================
@@ -3393,6 +3541,50 @@ function _approxMatEqual(A, B, tol) {
   const y = s.pop();
   assert(isReal(y) && Math.abs(y.value - 14) < 1e-9,
     'session058: PREDV accepts Integer, returns Real(14)');
+}
+
+// session415: _fitScalar's BinaryInteger arm (ops.js ~15361) is unique among
+// the special-function _*Scalar helpers — the rest reject BinInt — but every
+// PREDV/PREDX pin fed Real or Integer (session058), so the BinInt branch was
+// never positively exercised. A refactor folding it into the Integer arm, or
+// dropping it, would make PREDV(#7h) throw 'Bad argument type' yet pass green.
+// LINFIT y=2x seeds the slot; PREDV(#7h) → Real(14), PREDX(#16) → Real(8).
+{
+  const s = new Stack();
+  s.push(Matrix([[Real(1), Real(2)], [Real(2), Real(4)]]));
+  lookup('LINFIT').fn(s);
+  s.pop(); s.pop();
+  s.push(BinaryInteger(7n));
+  lookup('PREDV').fn(s);
+  const y = s.pop();
+  assert(isReal(y) && Math.abs(y.value - 14) < 1e-9,
+    'session415: PREDV accepts BinInt #7h, returns Real(14)');
+}
+
+{
+  // Base-cosmetic: #111b (binary 7) takes the same value-based BinInt arm.
+  const s = new Stack();
+  s.push(Matrix([[Real(1), Real(2)], [Real(2), Real(4)]]));
+  lookup('LINFIT').fn(s);
+  s.pop(); s.pop();
+  s.push(BinaryInteger(7n, 'b'));
+  lookup('PREDV').fn(s);
+  const y = s.pop();
+  assert(isReal(y) && Math.abs(y.value - 14) < 1e-9,
+    'session415: PREDV accepts base-cosmetic BinInt #111b, returns Real(14)');
+}
+
+{
+  // PREDX (inverse fit) feeds its operand through the same _fitScalar BinInt arm.
+  const s = new Stack();
+  s.push(Matrix([[Real(1), Real(2)], [Real(2), Real(4)]]));
+  lookup('LINFIT').fn(s);
+  s.pop(); s.pop();
+  s.push(BinaryInteger(16n));
+  lookup('PREDX').fn(s);
+  const x = s.pop();
+  assert(isReal(x) && Math.abs(x.value - 8) < 1e-9,
+    'session415: PREDX accepts BinInt #16, returns Real(8)');
 }
 
 {
