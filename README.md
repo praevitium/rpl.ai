@@ -189,6 +189,26 @@ The frontend is pure static assets. You can also open
 without Tauri, with the caveat that features depending on Tauri APIs (native
 menus, filesystem persistence) won't be wired up.
 
+### Cutting a release
+
+Installers for all three platforms are built in CI by
+[`.github/workflows/release.yml`](.github/workflows/release.yml). Tag a commit
+and push the tag:
+
+```bash
+git tag v0.3.1
+git push origin v0.3.1
+```
+
+GitHub Actions then builds in parallel on macOS, Windows, and Ubuntu runners and
+uploads the installers to a **draft** GitHub Release — a universal `.dmg` (Intel
++ Apple Silicon), `.msi`/`.exe` for Windows, and `.deb` / `.rpm` / `.AppImage`
+for Linux. Review the draft on the repo's Releases page and click publish.
+
+Builds are unsigned, so first launch shows a Gatekeeper warning on macOS and a
+SmartScreen warning on Windows. Adding code-signing/notarization secrets later
+removes those without changing the workflow.
+
 ---
 
 ## Try this first
