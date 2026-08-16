@@ -28,5 +28,6 @@ These are house conventions, not project documentation. Follow them so they don'
 
 - Work on the working branch; open PRs against the main branch — don't commit straight to it.
 - Commit only when asked.
-- Commit subjects are **short and lowercase**, imperative mood, no scope prefix, no trailing period (e.g. `fix cursor`, `add katex support`).
+- Commit subjects are **short and lowercase**, imperative mood, no scope prefix, no trailing period (e.g. `fix cursor`, `add katex support`). Roughly four words; subject line only — never add a description body or trailers.
 - Keep each commit to one logical change.
+- When asked to "commit as you go", commit each coherent chunk as it lands and push at the end.

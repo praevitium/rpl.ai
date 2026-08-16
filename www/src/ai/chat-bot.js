@@ -2543,7 +2543,7 @@ export class ChatBot {
     if (outerIter + 1 < cfg.maxIterations) {
       this._history.push({
         role: 'user',
-        content: '[Tool results are attached to your previous message. Continue if more steps are needed; when the task is complete, reply with prose only — no tool calls.]',
+        content: '[Tool results are attached to your previous message. Continue if more steps are needed. When the task is complete, reply with prose only — no tool calls — and only add what is new (results, conclusions, next steps); do not repeat explanations you already gave.]',
       });
     } else {
       hitMaxIter = true;
