@@ -1333,7 +1333,7 @@ export class ChatBot {
     const betaBadge = document.createElement('span');
     betaBadge.className = 'cb-beta-badge';
     betaBadge.textContent = 'BETA';
-    betaBadge.title = 'On-device LLM is a research preview — replies may be wrong; always verify before running tool calls.';
+    betaBadge.title = 'Research preview — replies may be wrong; actions run immediately and every turn can be undone.';
 
     this._newChatBtn = document.createElement('button');
     this._newChatBtn.type = 'button';
