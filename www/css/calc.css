@@ -2113,64 +2113,151 @@ body.mode-minimal .keypad {
 }
 
 /* ---- Tool-call / action widget ---- */
+.cb-bubble-tool {
+  padding: 0;
+  background: transparent;
+  border: none;
+  max-width: 100%;
+}
 .cb-action-widget {
-  margin-top: 8px;
   background: #181e2c;
   border: 1px solid rgba(103, 232, 249, .25);
+  border-left-width: 3px;
   border-radius: 8px;
-  padding: 8px 10px 10px;
+  padding: 7px 10px 8px;
+  transition: border-color .2s;
+}
+.cb-action-widget.cb-action-done   { border-left-color: #6edb8f; }
+.cb-action-widget.cb-action-failed { border-left-color: #e85a5a; }
+.cb-action-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
 }
 .cb-action-label {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   color: #67e8f9;
   letter-spacing: .4px;
-  margin-bottom: 6px;
   text-transform: uppercase;
 }
+.cb-action-status {
+  font-size: 12px;
+  color: #8a93a4;
+  white-space: nowrap;
+}
+.cb-action-done   .cb-action-status { color: #6edb8f; }
+.cb-action-failed .cb-action-status { color: #e85a5a; }
+.cb-action-running .cb-action-status { animation: cb-blink 1s steps(1) infinite; }
 .cb-action-code {
   background: #0d1119;
   border: 1px solid rgba(255,255,255,.08);
   border-radius: 5px;
-  padding: 8px 11px;
-  margin-bottom: 8px;
+  padding: 7px 10px;
+  margin: 0 0 6px;
   font-family: var(--font-lcd);
   font-size: 14.5px;
   color: #a8c8f0;
   white-space: pre-wrap;
   word-break: break-all;
 }
+.cb-action-error {
+  font-size: 13px;
+  color: #f0a0a0;
+  margin: 0 0 6px;
+  white-space: pre-wrap;
+}
+.cb-action-error.hidden { display: none; }
 .cb-action-btns {
   display: flex;
   gap: 6px;
 }
-.cb-btn-confirm {
-  padding: 7px 18px;
-  background: #1a4a2e;
-  border: 1px solid #2d7a4a;
-  border-radius: 5px;
-  color: #6edb8f;
-  font-size: 14.5px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background .15s;
-}
-.cb-btn-confirm:hover  { background: #225e38; color: #a0f0b8; }
-.cb-btn-confirm:active { background: #0f2e1c; }
-.cb-btn-confirm:disabled { opacity: .5; cursor: default; }
-.cb-btn-cancel {
-  padding: 7px 14px;
+.cb-btn-rerun {
+  padding: 4px 11px;
   background: transparent;
-  border: 1px solid rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.14);
   border-radius: 5px;
-  color: #8a93a4;
-  font-size: 14.5px;
+  color: #a4adc0;
+  font-size: 12.5px;
   cursor: pointer;
   transition: background .15s, color .15s;
 }
-.cb-btn-cancel:hover  { background: #2b313c; color: #c0c8d8; }
-.cb-btn-cancel:active { background: #1a1f2a; }
-.cb-btn-cancel:disabled { opacity: .5; cursor: default; }
+.cb-btn-rerun:hover    { background: #2b313c; color: #e5ecf7; }
+.cb-btn-rerun:active   { background: #1a1f2a; }
+.cb-btn-rerun:disabled { opacity: .4; cursor: default; }
+
+/* Read-only tool trace: one muted line per lookup / dry-run so the
+   user can see what the assistant checked. */
+.cb-tool-trace {
+  align-self: flex-start;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 92%;
+  padding: 2px 6px;
+  font-size: 12.5px;
+  color: #7f889a;
+}
+.cb-tool-trace-icon { font-size: 11px; opacity: .8; }
+.cb-tool-trace-name { color: #9aa4b8; font-weight: 600; letter-spacing: .2px; }
+.cb-tool-trace-code {
+  font-family: var(--font-lcd);
+  font-size: 13px;
+  color: #a8c8f0;
+  background: #0d1119;
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.cb-tool-trace-outcome { color: #b9c2d3; }
+
+/* Turn-level undo footer */
+.cb-undo-row {
+  align-self: flex-start;
+  margin: 2px 0 6px;
+}
+.cb-undo-btn {
+  appearance: none;
+  border: 1px solid rgba(240, 176, 72, .45);
+  background: rgba(240, 176, 72, .10);
+  color: #f0b048;
+  font: inherit;
+  font-size: 12.5px;
+  border-radius: 999px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.cb-undo-btn:hover    { background: rgba(240, 176, 72, .22); color: #ffd48a; }
+.cb-undo-btn:disabled { opacity: .55; cursor: default; }
+
+/* Thinking (Ollama reasoning models): dim the placeholder while the
+   model reasons and no visible text has arrived yet. */
+.cb-bubble-thinking .cb-stream-text {
+  color: #8a93a4;
+  font-style: italic;
+}
+
+/* Remote form knobs */
+.cb-remote-opts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 6px 0 2px;
+}
+.cb-remote-opt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+.cb-remote-ctx { width: auto; margin: 0; }
+.cb-remote-check input { margin: 0; accent-color: #67e8f9; }
 
 /* ---- Stop button ---- */
 .cb-stop-btn {
@@ -2297,9 +2384,8 @@ body.mode-minimal .keypad {
 
 /* Suggestion chips — wrap below the most recent assistant bubble.
    One row of pill-shaped buttons that submit their text as the next
-   user message when clicked.  Styling mirrors .cb-btn-cancel (subdued
-   border + hover lift) so they read as suggestions rather than primary
-   actions. */
+   user message when clicked.  Subdued border + hover lift so they read
+   as suggestions rather than primary actions. */
 .cb-chips {
   display: flex;
   flex-wrap: wrap;

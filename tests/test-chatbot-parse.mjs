@@ -2,8 +2,11 @@ import {
   parseAllToolCalls, parseSuggestions, findMachineSectionStart, stripThinkBlocks,
   resolveToolAlias, activeContextTokens, effectiveBudget, TOOL_ALIASES, ChatBot,
   parseFencedBlock, parseInlineSpans, classifyMarkdownLine,
+  normalizeRpl, normalizeRemoteConfig,
 } from '../www/src/ai/chat-bot.js';
-import { SYSTEM_PROMPT_COMBINED, RPL_CATALOG } from '../www/src/ai/system-prompt.js';
+import {
+  SYSTEM_PROMPT_COMBINED, SYSTEM_PROMPT_FULL, RPL_CATALOG, TOOL_SCHEMAS, buildSystemPrompt,
+} from '../www/src/ai/system-prompt.js';
 import { hasOp } from '../www/src/rpl/ops.js';
 import { assert } from './helpers.mjs';
 import { readFileSync } from 'node:fs';
@@ -756,18 +759,14 @@ const registryToolNames = () =>
   }
 }
 
-// session321: pin each documented tool's confirm / read-only semantics
-// against the live registry's `confirm` flag — the queued code-review
-// follow-up to the O-015 name-sync guard, which checked only the tool
-// names. The AVAILABLE TOOLS prose the model reads states each tool as
-// either "Requires user confirmation" (mutating) or "Auto-executes
-// (read-only)", while the registry's `confirm` boolean is what the
-// orchestrator actually gates on. A tool flipped read-only<->mutating in
-// _buildRegistry without a matching prompt edit (or vice versa) would
-// silently mislead the model about whether an action runs unattended, so
-// derive the documented semantic from the prose and assert it matches the
-// registry flag in both directions. The mutual-exclusion check also
-// catches a description that drops the semantic phrase entirely.
+// Pin each documented tool's read-only / mutating semantics against the
+// live registry's `mutates` flag.  Every tool executes immediately (no
+// confirmation step any more), but the prose still tells the model which
+// calls change the calculator and which merely read it — and the
+// orchestrator uses the same flag to decide whether a turn earns an Undo
+// link.  A tool flipped read-only<->mutating in _buildRegistry without a
+// matching prompt edit (or vice versa) would mislead the model, so derive
+// the documented semantic from the prose and assert it matches the flag.
 {
   const reg = ChatBot.prototype._buildRegistry.call({ _tools: {}, _getContext: () => ({}) });
   const head = SYSTEM_PROMPT_COMBINED.indexOf('AVAILABLE TOOLS');
@@ -778,18 +777,69 @@ const registryToolNames = () =>
     const name = m[1];
     if (name.includes('<')) { continue; }
     const desc = m[2];
-    const saysConfirm = /confirmation/i.test(desc);
-    const saysAuto = /auto-executes|read-only/i.test(desc);
-    assert(saysConfirm !== saysAuto,
-           `AVAILABLE TOOLS describes ${name} as exactly one of mutating / read-only`);
+    const saysReadOnly = /read-only/i.test(desc);
+    const saysExecutes = /executes immediately|same effect as run/i.test(desc);
+    assert(saysReadOnly !== saysExecutes,
+           `AVAILABLE TOOLS describes ${name} as exactly one of read-only / executes`);
     assert(name in reg,
            `documented tool ${name} exists in the live registry`);
-    assert(reg[name].confirm === saysConfirm,
-           `${name} prose confirm-semantics match the registry confirm flag`);
+    assert(reg[name].mutates === saysExecutes,
+           `${name} prose semantics match the registry mutates flag`);
+    assert(!/requires (user )?confirmation/i.test(desc),
+           `${name} prose no longer promises a confirmation step`);
     documentedCount++;
   }
-  assert(documentedCount >= 8,
-         'every registry tool carries a confirm-semantics description in the prompt');
+  assert(documentedCount >= 11,
+         'every registry tool carries a read-only / executes description in the prompt');
+}
+
+// The native tool schemas (Ollama /api/chat `tools`) must name exactly the
+// registry tools and advertise the same argument names as the prose block.
+{
+  const reg = ChatBot.prototype._buildRegistry.call({ _tools: {}, _getContext: () => ({}) });
+  const names = TOOL_SCHEMAS.map((t) => t.function.name).sort();
+  assert(names.join(',') === Object.keys(reg).sort().join(','),
+         'TOOL_SCHEMAS names exactly the live registry tool set');
+  for (const t of TOOL_SCHEMAS) {
+    assert(t.type === 'function' && typeof t.function.description === 'string' && t.function.description.length > 20,
+           `TOOL_SCHEMAS ${t.function.name} carries a description`);
+    assert(t.function.parameters?.type === 'object',
+           `TOOL_SCHEMAS ${t.function.name} parameters is an object schema`);
+  }
+  const head = SYSTEM_PROMPT_COMBINED.indexOf('AVAILABLE TOOLS');
+  const tail = SYSTEM_PROMPT_COMBINED.indexOf('EXAMPLES', head);
+  const block = SYSTEM_PROMPT_COMBINED.slice(head, tail);
+  for (const m of block.matchAll(/"name":"([^"]+)","arguments":\{([^}]*)\}/g)) {
+    const schema = TOOL_SCHEMAS.find((t) => t.function.name === m[1]);
+    const proseKeys = [...m[2].matchAll(/"([^"]+)":/g)].map((x) => x[1]).sort();
+    const schemaKeys = Object.keys(schema.function.parameters.properties ?? {}).sort();
+    assert(proseKeys.join(',') === schemaKeys.join(','),
+           `${m[1]} schema properties match the prose argument names`);
+  }
+}
+
+// The full (Ollama) profile documents the same tools and keeps the
+// markers the orchestrator and these guards depend on.
+{
+  assert(SYSTEM_PROMPT_FULL !== SYSTEM_PROMPT_COMBINED, 'full and compact profiles differ');
+  const head = SYSTEM_PROMPT_FULL.indexOf('AVAILABLE TOOLS');
+  const tail = SYSTEM_PROMPT_FULL.indexOf('EXAMPLES', head);
+  assert(head > 0 && tail > head, 'full profile has AVAILABLE TOOLS and EXAMPLES markers');
+  const documented = [...new Set(
+    [...SYSTEM_PROMPT_FULL.slice(head, tail).matchAll(/"name":"([^"]+)"/g)]
+      .map((m) => m[1]).filter((n) => !n.includes('<')),
+  )].sort();
+  assert(documented.join(',') === registryToolNames().sort().join(','),
+         'full profile AVAILABLE TOOLS block documents exactly the live registry tool set');
+  assert(SYSTEM_PROMPT_FULL.includes(RPL_CATALOG), 'full profile embeds the RPL catalog');
+  assert(/evaluate/.test(SYSTEM_PROMPT_FULL) && /lookup_command/.test(SYSTEM_PROMPT_FULL),
+         'full profile teaches the dry-run and lookup workflow');
+  const native = buildSystemPrompt({ profile: 'full', nativeTools: true });
+  assert(/tool-calling interface/.test(native) && !/one JSON object per line/.test(native),
+         'native-tools variant swaps the JSON-lines contract for the API interface');
+  const compactNative = buildSystemPrompt({ profile: 'compact', nativeTools: true });
+  assert(/tool-calling interface/.test(compactNative),
+         'compact profile also has a native-tools variant');
 }
 
 // session328: pin each documented tool's ARGUMENT NAMES against the keys its
@@ -1016,6 +1066,9 @@ const registryToolNames = () =>
     _getContext: () => ({ stack: [], angleMode: '', displayMode: '', dir: '' }),
   });
   for (const t of Object.values(reg)) t.handler({});
+  // The turn loop reaches into the bag directly for the whole-calculator
+  // snapshot / restore that backs the Undo link.
+  for (const m of src.matchAll(/this\._tools\.(\w+)/g)) accessed.add(m[1]);
   assert(accessed.size >= 6,
          'session356: at least the six known tools-bag members are consumed by the registry');
 
@@ -1035,7 +1088,7 @@ const registryToolNames = () =>
   }
   for (const member of documented) {
     assert(accessed.has(member),
-           `session356: header tools block member '${member}' is actually consumed by the registry`);
+           `session356: header tools block member '${member}' is actually consumed by the chat bot`);
   }
 }
 
@@ -1085,4 +1138,44 @@ const registryToolNames = () =>
     assert(accessed.has(key),
            `session363: header getContext block key '${key}' is actually consumed by the registry`);
   }
+}
+
+/* ================================================================
+   normalizeRpl — model-written RPL is made parseable before it runs.
+   Models trained on HP manuals write 'X^2+1' with apostrophes and
+   textbook glyphs; the entry line wants backticks and ASCII.
+   ================================================================ */
+{
+  assert(normalizeRpl("'X^2+1' 'X' DERIV") === '`X^2+1` `X` DERIV',
+         'normalizeRpl converts apostrophe-quoted algebraics to backticks');
+  assert(normalizeRpl('`X^2+1` \'X\' DERIV') === '`X^2+1` \'X\' DERIV',
+         'normalizeRpl leaves apostrophes alone when the text already uses backticks');
+  assert(normalizeRpl('"it\'s" 1 +') === '"it\'s" 1 +',
+         'normalizeRpl never touches apostrophes inside a string literal');
+  assert(normalizeRpl('`x² × 3 ÷ 4 − 1`') === '`x^2 * 3 / 4 - 1`',
+         'normalizeRpl maps superscripts and unicode operators to ASCII');
+  assert(normalizeRpl('`√(2) + √x`') === '`SQRT(2) + SQRT(x)`',
+         'normalizeRpl maps the radical glyph to SQRT()');
+  assert(normalizeRpl('3 ->LIST') === '3 →LIST',
+         'normalizeRpl maps ASCII -> arrows on command names to →');
+  assert(normalizeRpl('"a → b" 2 - 3') === '"a → b" 2 - 3',
+         'normalizeRpl leaves string contents and plain minus alone');
+  assert(normalizeRpl('') === '' && normalizeRpl(null) === '' && normalizeRpl(undefined) === '',
+         'normalizeRpl coerces empty / nullish input to an empty string');
+}
+
+/* normalizeRemoteConfig — saved endpoint config with defaults for the
+   Ollama knobs added later (context window, thinking). */
+{
+  const c = normalizeRemoteConfig({ url: ' http://x:11434/ ', model: ' m ' });
+  assert(c.url === 'http://x:11434/' && c.model === 'm',
+         'normalizeRemoteConfig trims url and model');
+  assert(c.contextTokens === 16384 && c.think === true,
+         'normalizeRemoteConfig defaults context to 16K and thinking on');
+  const c2 = normalizeRemoteConfig({ url: 'http://x', model: 'm', contextTokens: '32768', think: false });
+  assert(c2.contextTokens === 32768 && c2.think === false,
+         'normalizeRemoteConfig keeps explicit context and thinking values');
+  assert(normalizeRemoteConfig({ url: '', model: 'm' }) === null
+         && normalizeRemoteConfig(null) === null,
+         'normalizeRemoteConfig rejects incomplete configs');
 }

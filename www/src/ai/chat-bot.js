@@ -7,40 +7,59 @@
 
    Constructor options:
      tools: {
-       run(text: string): void          — type RPL into the editor and ENTER
+       run(text: string): string        — type RPL into the editor and ENTER;
+                                          returns the LCD error text or ''
+       evaluate(text: string): object   — dry-run RPL on a scratch copy of the
+                                          stack: ok + stack + depth, or ok:false + error
        appendToEditor(text: string)     — insert at cursor, no commit
        clearEditor(): void              — empty the editor buffer
        getEditor(): string              — current editor contents
        listVars(): string[]             — variable names in current dir
        recallVar(name: string): any     — value of named variable (or undefined)
+       lookupCommand(name: string)      — text + registered + name from the
+                                          command reference ('' text if none)
+       searchCommands(query: string)    — ranked rows: name, inApp, description, category
+       snapshotState(): any             — opaque whole-calculator snapshot
+       restoreState(snap: any): void    — restore a snapshot (turn-level undo)
      }
      getContext(): {
        stack: string[]   — formatted stack lines, index 0 = level 1
+       depth: number     — total stack depth (stack[] may be truncated)
        angleMode: string — 'RAD' | 'DEG' | 'GRD'
        displayMode: string
+       exactMode: string — 'EXACT' | 'APPROX'
+       base: string      — 'DEC' | 'HEX' | 'OCT' | 'BIN'
+       casVar: string    — current CAS variable (VX)
        dir: string       — current directory path
+       vars: string[]    — variable names in the current directory
+       editor: string    — entry-line buffer
+       lastError: string — most recent LCD error, or ''
      }
 
    Public API:
      mount(containerEl)          — render into a DOM element
+     sendUserMessage(text)       — submit as if typed
      open() / close()            — lifecycle (optional, for animation hooks)
 
    Tool-call loop:
-     1. Build messages array (with current context injected into user msg).
+     1. Snapshot the calculator, build the messages array (current
+        context injected into the user msg).
      2. Generate.  Stream tokens into a live bubble.
-     3. When done, scan the response for bare JSON tool-call objects
-        ({"name":...,"arguments":...}, one per line — NOT <tool_call>
-        XML tags, which the prompt forbids) via parseAllToolCalls.
-     4. If found:
-          - run / any future mutating tool → show ▶ Confirm button.
-          - get_stack → execute automatically, feed result back.
-     5. Add tool response to history as { role:'tool', content:'...' }.
-     6. Loop (up to MAX_ITER to prevent runaway).
+     3. When done, collect tool calls: native ones the backend returned
+        plus bare JSON objects in the text ({"name":...,"arguments":...},
+        one per line — NOT <tool_call> XML tags, which the prompt
+        forbids) via parseAllToolCalls.
+     4. Execute each in order — no confirmation.  Mutating tools get an
+        action card, reads a one-line trace; results are folded into
+        history as prose notes.
+     5. Loop while the model keeps calling tools (up to the iteration
+        cap).  If anything mutated the calculator, offer an Undo link
+        that restores the step-1 snapshot.
    ================================================================= */
 
 import { LLM } from './llm.js';
 import { RemoteLLM, toOpenAIBase, toOllamaBase } from './remote-llm.js';
-import { SYSTEM_PROMPT_COMBINED } from './system-prompt.js';
+import { buildSystemPrompt, TOOL_SCHEMAS } from './system-prompt.js';
 
 // Diagnostic logging — every flow-control transition in this module
 // goes through these helpers so the console transcript reads as a
@@ -59,14 +78,23 @@ function dgroup(label)  { /* eslint-disable-next-line no-console */ console.grou
 function dgroupEnd()    { /* eslint-disable-next-line no-console */ console.groupEnd(); }
 
 // Hard cap on LLM iterations per user turn.  A single user message
-// kicks off an agentic loop: the model emits prose + JSON tool calls,
-// the orchestrator dispatches them, folds the results into history,
-// and re-prompts.  The loop ends when the model emits no tool calls
-// (its "workflow complete" signal), the user cancels a confirm, or
-// this cap fires.  Six is enough for any realistic chained workflow
-// (read → decide → write → verify → close, with one spare) and tight
-// enough to bail quickly when a model gets stuck repeating itself.
+// kicks off an agentic loop: the model emits prose + tool calls, the
+// orchestrator dispatches them, folds the results into history, and
+// re-prompts.  The loop ends when the model emits no tool calls (its
+// "workflow complete" signal) or this cap fires.  Small in-browser
+// models get six — enough for read → decide → write → verify and
+// tight enough to bail when they loop; remote (Ollama) models get
+// room for genuine multi-step work: look up a command, dry-run a
+// candidate, fix it, run it, check the result.
 const MAX_TURN_ITERATIONS = 6;
+const MAX_TURN_ITERATIONS_REMOTE = 12;
+
+// Per-reply token cap.  In-browser models are slow and prone to
+// repetition loops, so their cap stays tight; a remote model gets
+// room for a worked explanation plus several tool calls.  Ollama
+// thinking models spend part of this budget on hidden reasoning.
+const MAX_REPLY_TOKENS = 512;
+const MAX_REPLY_TOKENS_REMOTE = 4096;
 
 // Stall timeout (ms) for the single combined LLM call.  WebLLM 0.2.x
 // has a known failure mode where chat.completions.create can wedge
@@ -584,6 +612,45 @@ export function stripThinkBlocks(text) {
   return out;
 }
 
+/** Make model-written RPL parseable by this calculator.  Models trained
+ *  on HP manuals write algebraics in apostrophes ('X^2+1'), textbook
+ *  glyphs (x², √, ×, ÷, −) and fancy quotes; the entry line wants
+ *  backticks and ASCII.  Applied to every run / push / evaluate payload
+ *  right before execution — and shown in the action card, so the user
+ *  sees exactly what ran.  Text inside "…" strings is left alone. */
+export function normalizeRpl(text) {
+  let s = String(text ?? '');
+  if (!s) return s;
+  s = s.replace(/[‘’]/g, "'").replace(/[“”]/g, '"');
+  // Apostrophe-quoted algebraics → backticks, but only when the text
+  // has no backticks of its own (mixed usage means the model knew the
+  // convention and any remaining apostrophe is deliberate).
+  if (!s.includes('`')) {
+    let out = '', inStr = false;
+    for (const ch of s) {
+      if (ch === '"') inStr = !inStr;
+      out += (ch === "'" && !inStr) ? '`' : ch;
+    }
+    s = out;
+  }
+  const outside = (fn) => {
+    let out = '', inStr = false, buf = '';
+    for (const ch of s) {
+      if (ch === '"') {
+        out += inStr ? buf + '"' : fn(buf) + '"';
+        buf = ''; inStr = !inStr;
+      } else buf += ch;
+    }
+    return out + (inStr ? buf : fn(buf));
+  };
+  s = outside((t) => t
+    .replace(/[×·]/g, '*').replace(/÷/g, '/').replace(/[−–]/g, '-')
+    .replace(/²/g, '^2').replace(/³/g, '^3')
+    .replace(/√\s*\(/g, 'SQRT(').replace(/√\s*([A-Za-z0-9.]+)/g, 'SQRT($1)')
+    .replace(/(^|[\s(])->(?=[A-Z])/g, '$1→'));
+  return s;
+}
+
 /* ---- Starter chips ------------------------------------------------- */
 
 /** Initial suggestion chips, shown alongside the greeting once the
@@ -592,9 +659,9 @@ export function stripThinkBlocks(text) {
 const STARTER_CHIPS = [
   'Solve X^2-3*X+2 = 0 for X',
   'Differentiate x^3+3*x+1',
-  'Integrate sin(x) dx',
-  'Factor x^4-1',
-  'What is the quadratic formula?',
+  'Is 1234567 prime? If not, factor it',
+  'Write a program that sums the stack',
+  'What does ROLLD do?',
   'Invert the matrix [[1,2],[3,4]]',
 ];
 
@@ -700,6 +767,26 @@ export const TOOL_ALIASES = Object.freeze({
   'execute':            'run',
   'execute_rpl':        'run',
   'run_rpl':            'run',
+  // evaluate (dry-run) variants
+  'eval':               'evaluate',
+  'evaluate_rpl':       'evaluate',
+  'dry_run':            'evaluate',
+  'preview':            'evaluate',
+  'calculate':          'evaluate',
+  'compute':            'evaluate',
+  'test_rpl':           'evaluate',
+  // reference lookup variants
+  'lookup':             'lookup_command',
+  'lookup_cmd':         'lookup_command',
+  'command_help':       'lookup_command',
+  'help':               'lookup_command',
+  'describe_command':   'lookup_command',
+  'get_command':        'lookup_command',
+  'search':             'search_commands',
+  'search_command':     'search_commands',
+  'find_command':       'search_commands',
+  'find_commands':      'search_commands',
+  'list_commands':      'search_commands',
 });
 
 /** Map a model-emitted tool name to its canonical registry name.
@@ -723,12 +810,12 @@ export function resolveToolAlias(name) {
 export function activeContextTokens(llm) {
   const id = llm?.loadedModelId;
   if (!id) return 4096;
-  // RemoteLLM exposes the server-side model name as loadedModelId.
-  // It also fills `contextTokens` from Ollama's /api/show probe at
-  // load time; when present, use that (the model's true max).
-  // Plain OpenAI-compat servers don't expose this so we fall back to
-  // the default below.  Detected by duck-typing on `endpoint` —
-  // RemoteLLM has it, the worker LLM doesn't.
+  // RemoteLLM exposes the server-side model name as loadedModelId and
+  // the context window it actually runs with (the num_ctx it requests
+  // from Ollama, clamped to the model's max).  Plain OpenAI-compat
+  // servers don't expose one, so fall back to the default.  Detected
+  // by duck-typing on `endpoint` — RemoteLLM has it, the worker LLM
+  // doesn't.
   if (typeof llm?.endpoint === 'string') {
     return llm.contextTokens || REMOTE_CONTEXT_TOKENS_DEFAULT;
   }
@@ -745,22 +832,34 @@ const MODEL_STORAGE_KEY = 'rpl5050.chatbot.modelId';
 // `MODELS.find(...)` lookup safely returns undefined.
 const REMOTE_MODEL_ID    = '__remote__';
 const REMOTE_CONFIG_KEY  = 'rpl5050.chatbot.remote';
-// Default context-token budget assumed for remote models — Ollama
-// servers typically run with 8K-32K windows and the user can resize
-// it server-side, so we pick a generous middle ground.  This only
-// affects the history-trimming budget shown in the stats line; the
-// server enforces the real limit.
+// Default context window for remote models.  For Ollama this is the
+// num_ctx we REQUEST (Ollama's own default is small enough to truncate
+// our system prompt), clamped to the model's maximum; for other
+// servers it's just the history-trimming budget.  16K comfortably
+// holds the prompt plus a long conversation on typical hardware; the
+// remote form lets the user pick another size.
 const REMOTE_CONTEXT_TOKENS_DEFAULT = 16384;
+const REMOTE_CONTEXT_CHOICES = [8192, 16384, 32768, 65536];
+
+/** Saved remote config: { url, model, contextTokens, think }.  Older
+ *  saves lack the last two; they default to 16K and thinking on. */
+export function normalizeRemoteConfig(cfg) {
+  if (!cfg || typeof cfg.url !== 'string' || typeof cfg.model !== 'string'
+      || !cfg.url.trim() || !cfg.model.trim()) return null;
+  const ctx = Number(cfg.contextTokens);
+  return {
+    url: cfg.url.trim(),
+    model: cfg.model.trim(),
+    contextTokens: Number.isFinite(ctx) && ctx > 0 ? ctx : REMOTE_CONTEXT_TOKENS_DEFAULT,
+    think: cfg.think !== false,
+  };
+}
 
 function loadRemoteConfig() {
   try {
     const raw = localStorage.getItem(REMOTE_CONFIG_KEY);
     if (!raw) return null;
-    const cfg = JSON.parse(raw);
-    if (cfg && typeof cfg.url === 'string' && typeof cfg.model === 'string'
-        && cfg.url.trim() && cfg.model.trim()) {
-      return { url: cfg.url.trim(), model: cfg.model.trim() };
-    }
+    return normalizeRemoteConfig(JSON.parse(raw));
   } catch { /* corrupt entry — fall through */ }
   return null;
 }
@@ -884,16 +983,11 @@ function saveModelId(id) {
 export class ChatBot {
   /**
    * @param {object} opts
-   * @param {object} opts.tools — Calculator-side callback bag.  Each
-   *   field corresponds to a primitive operation that one or more tools
-   *   exposed to the model dispatch into.  Members:
-   *     run(text:string):void          — type RPL into the editor and ENTER
-   *     appendToEditor(text:string)    — insert at cursor, no commit
-   *     clearEditor():void             — empty the editor buffer
-   *     getEditor():string             — current editor contents
-   *     listVars():string[]            — variable names in current dir
-   *     recallVar(name:string):any     — value of named variable (or undefined)
-   * @param {function} opts.getContext — () => { stack, angleMode, displayMode, dir }
+   * @param {object} opts.tools — Calculator-side callback bag; see the
+   *   file header for the member list.  Each member is a primitive one
+   *   or more model-facing tools dispatch into.
+   * @param {function} opts.getContext — () => calculator state; keys
+   *   listed in the file header.
    */
   constructor({ tools, getContext }) {
     this._tools      = tools;
@@ -908,7 +1002,6 @@ export class ChatBot {
     this._statusEl   = null;
     this._progressEl = null;
     this._generating = false;
-    this._pendingConfirm = null; // { resolve } | null — awaiting user confirmation
     // Queue of user messages submitted while a turn is in progress.
     // Drained one-at-a-time by the active _submit() after its
     // _runLoop finishes; cleared by _newChat / _abort to discard
@@ -922,13 +1015,13 @@ export class ChatBot {
     this._runId = 0;
 
     // Tool registry — the single source of truth for what the model can
-    // call.  Each entry is { confirm, summary(args), handler(args) }.
-    // Read-only tools (confirm:false) execute automatically; mutating
-    // tools render a confirmation widget and pause the loop on
-    // _pendingConfirm until the user clicks Run or Cancel.  Adding a new
-    // tool means: register it here, document it in SYSTEM_PROMPT, and
-    // (if it needs a new calculator primitive) add a callback in
-    // app.js's `tools` bag.
+    // call.  Each entry is { mutates, summary(args), handler(args) }.
+    // Every tool executes as soon as the model asks; `mutates` only
+    // decides how it's shown (action card vs one-line trace) and
+    // whether the turn earns an Undo link.  Adding a new tool means:
+    // register it here, document it in system-prompt.js (prose +
+    // TOOL_SCHEMAS), and (if it needs a new calculator primitive) add
+    // a callback in app.js's `tools` bag.
     this._registry = this._buildRegistry();
 
     this._wireLLMListeners();
@@ -950,15 +1043,17 @@ export class ChatBot {
    *  No-op if already the right kind AND, for remote, the configured
    *  endpoint URL hasn't changed.  When swapping, aborts any in-flight
    *  generation, recreates the instance, and re-wires listeners. */
-  _ensureLLMKind(kind, endpoint = '') {
+  _ensureLLMKind(kind, endpoint = '', opts = {}) {
     const isRemote = this._llm instanceof RemoteLLM;
     if (kind === 'remote') {
-      if (isRemote && this._llm.endpoint === toOpenAIBase(endpoint)) return;
+      if (isRemote && this._llm.endpoint === toOpenAIBase(endpoint)
+          && this._llm.options.contextTokens === (opts.contextTokens ?? null)
+          && this._llm.options.think === (opts.think !== false)) return;
     } else {
       if (!isRemote) return;
     }
     try { this._llm.abort(); } catch { /* no-op */ }
-    this._llm = kind === 'remote' ? new RemoteLLM(endpoint) : new LLM();
+    this._llm = kind === 'remote' ? new RemoteLLM(endpoint, opts) : new LLM();
     this._wireLLMListeners();
   }
 
@@ -967,34 +1062,44 @@ export class ChatBot {
   _buildRegistry() {
     const tools = this._tools;
     const ctx   = () => this._getContext();
+    // `run` and `push_to_stack` share one execution path: type the
+    // text and ENTER.  The LCD error (if any) comes back so the model
+    // sees exactly what the user saw.
+    const execute = (text) => {
+      const error = tools.run(normalizeRpl(text));
+      const c = ctx();
+      return error
+        ? { success: false, error: String(error), stack: c.stack, depth: c.depth }
+        : { success: true, stack: c.stack, depth: c.depth };
+    };
     return {
-      // ---- Read-only (auto, no confirmation) ----
+      // ---- Reads (shown as a one-line trace) ----
       get_stack: {
-        confirm: false,
-        summary: () => ({ label: '🔍 get_stack', code: '' }),
+        mutates: false,
+        summary: () => ({ label: 'get_stack', code: '' }),
         handler: () => {
           const c = ctx();
           return {
-            stack: c.stack,
-            angleMode: c.angleMode,
-            displayMode: c.displayMode,
-            dir: c.dir,
+            stack: c.stack, depth: c.depth,
+            angleMode: c.angleMode, displayMode: c.displayMode,
+            exactMode: c.exactMode, base: c.base, casVar: c.casVar,
+            dir: c.dir, vars: c.vars, editor: c.editor, lastError: c.lastError,
           };
         },
       },
       get_editor: {
-        confirm: false,
-        summary: () => ({ label: '🔍 get_editor', code: '' }),
+        mutates: false,
+        summary: () => ({ label: 'get_editor', code: '' }),
         handler: () => ({ buffer: tools.getEditor() }),
       },
       get_vars: {
-        confirm: false,
-        summary: () => ({ label: '🔍 get_vars', code: '' }),
+        mutates: false,
+        summary: () => ({ label: 'get_vars', code: '' }),
         handler: () => ({ vars: tools.listVars(), dir: ctx().dir }),
       },
       recall_var: {
-        confirm: false,
-        summary: ({ name } = {}) => ({ label: `🔍 recall_var ${name ?? ''}`, code: '' }),
+        mutates: false,
+        summary: ({ name } = {}) => ({ label: `recall_var ${name ?? ''}`, code: '' }),
         handler: ({ name } = {}) => {
           const v = tools.recallVar(String(name ?? ''));
           return v === undefined
@@ -1002,35 +1107,46 @@ export class ChatBot {
             : { name, exists: true, value: String(v) };
         },
       },
+      // Dry-run: same parse/execute path as `run`, on a scratch copy
+      // of the stack, every side effect rolled back.  This is how the
+      // model computes intermediate values and checks its RPL before
+      // touching the real calculator.
+      evaluate: {
+        mutates: false,
+        summary: ({ text } = {}) => ({ label: 'evaluate', code: normalizeRpl(text) }),
+        handler: ({ text } = {}) => tools.evaluate(normalizeRpl(text)),
+      },
+      lookup_command: {
+        mutates: false,
+        summary: ({ name } = {}) => ({ label: `lookup_command ${name ?? ''}`, code: '' }),
+        handler: ({ name } = {}) => tools.lookupCommand(String(name ?? '')),
+      },
+      search_commands: {
+        mutates: false,
+        summary: ({ query } = {}) => ({ label: `search_commands ${query ?? ''}`, code: '' }),
+        handler: ({ query } = {}) => ({
+          query: String(query ?? ''),
+          results: tools.searchCommands(String(query ?? '')),
+        }),
+      },
 
-      // ---- Mutating (require user confirmation) ----
+      // ---- Actions (shown as an action card; turn becomes undoable) ----
       run: {
-        confirm: true,
-        summary: ({ text } = {}) => ({ label: '▶ Run RPL', code: String(text ?? '') }),
-        handler: ({ text } = {}) => {
-          tools.run(String(text ?? ''));
-          const c = ctx();
-          return { success: true, stack: c.stack };
-        },
+        mutates: true,
+        summary: ({ text } = {}) => ({ label: '▶ Run RPL', code: normalizeRpl(text) }),
+        handler: ({ text } = {}) => execute(text),
       },
       // Friendly alias for `run` when the user just wants to push
       // literals (numbers, lists, vectors, Symbolics) onto the stack.
-      // The implementation is identical to `run` — small chat-tuned
-      // models reliably misroute "put 3 on the stack" to recall_var,
-      // so naming the action explicitly steers the picker.  `value`
-      // is whatever RPL literal text the user wants pushed; spaces
-      // separate multiple pushes ("3 5" pushes two numbers).
+      // Small chat-tuned models reliably misroute "put 3 on the stack"
+      // to recall_var, so naming the action explicitly steers them.
       push_to_stack: {
-        confirm: true,
-        summary: ({ value } = {}) => ({ label: '▲ Push to stack', code: String(value ?? '') }),
-        handler: ({ value } = {}) => {
-          tools.run(String(value ?? ''));
-          const c = ctx();
-          return { success: true, stack: c.stack };
-        },
+        mutates: true,
+        summary: ({ value } = {}) => ({ label: '▲ Push to stack', code: normalizeRpl(value) }),
+        handler: ({ value } = {}) => execute(value),
       },
       append_to_editor: {
-        confirm: true,
+        mutates: true,
         summary: ({ text } = {}) => ({ label: '✎ Append to editor', code: String(text ?? '') }),
         handler: ({ text } = {}) => {
           tools.appendToEditor(String(text ?? ''));
@@ -1038,7 +1154,7 @@ export class ChatBot {
         },
       },
       clear_editor: {
-        confirm: true,
+        mutates: true,
         summary: () => ({ label: '✗ Clear editor', code: '' }),
         handler: () => {
           tools.clearEditor();
@@ -1435,7 +1551,7 @@ export class ChatBot {
 
     const heading = document.createElement('div');
     heading.className = 'cb-remote-heading';
-    heading.textContent = 'Or use a remote OpenAI-compatible endpoint (e.g. Ollama)';
+    heading.textContent = 'Or use Ollama / an OpenAI-compatible endpoint (recommended — bigger, smarter models)';
     wrap.appendChild(heading);
 
     const cfg = loadRemoteConfig();
@@ -1463,9 +1579,10 @@ export class ChatBot {
 
       const note = document.createElement('div');
       note.className = 'cb-picker-note';
+      const knobs = `${(cfg.contextTokens ?? REMOTE_CONTEXT_TOKENS_DEFAULT) / 1024}K context · thinking ${cfg.think === false ? 'off' : 'on'}`;
       note.textContent = isActive
-        ? 'Custom endpoint · loaded'
-        : 'Custom endpoint — click to connect';
+        ? `Custom endpoint · loaded · ${knobs}`
+        : `Custom endpoint — click to connect · ${knobs}`;
       row.appendChild(note);
 
       const btnRow = document.createElement('div');
@@ -1550,8 +1667,9 @@ export class ChatBot {
     const help = document.createElement('div');
     help.className = 'cb-remote-help';
     help.textContent =
-      'For local Ollama, the URL is typically http://localhost:11434/v1. '
-      + 'Models you have pulled appear in the dropdown once the URL is reachable.';
+      'For local Ollama the URL is http://localhost:11434 — models you have pulled '
+      + 'appear below once it is reachable. Any OpenAI-compatible server also works. '
+      + 'Ollama models that support tools and thinking get native tool calling and reasoning.';
     wrap.appendChild(help);
 
     const urlLabel = document.createElement('label');
@@ -1585,6 +1703,41 @@ export class ChatBot {
     const statusEl = document.createElement('div');
     statusEl.className = 'cb-remote-help';
     wrap.appendChild(statusEl);
+
+    // Ollama knobs.  Context is the num_ctx we request (bigger = more
+    // history fits, more VRAM); thinking lets reasoning models plan
+    // before answering — slower per turn, noticeably better on multi-
+    // step problems.  Both are harmless no-ops on non-Ollama servers.
+    const optsRow = document.createElement('div');
+    optsRow.className = 'cb-remote-opts';
+    const ctxLabel = document.createElement('label');
+    ctxLabel.className = 'cb-remote-label cb-remote-opt';
+    ctxLabel.textContent = 'Context';
+    const ctxSelect = document.createElement('select');
+    ctxSelect.className = 'cb-remote-input cb-picker-select cb-remote-ctx';
+    ctxSelect.title = 'Context window to request from Ollama (num_ctx). Larger keeps more conversation but uses more memory.';
+    for (const n of REMOTE_CONTEXT_CHOICES) {
+      const opt = document.createElement('option');
+      opt.value = String(n);
+      opt.textContent = `${n / 1024}K tokens`;
+      ctxSelect.appendChild(opt);
+    }
+    ctxSelect.value = String(seed?.contextTokens ?? REMOTE_CONTEXT_TOKENS_DEFAULT);
+    if (ctxSelect.value !== String(seed?.contextTokens ?? REMOTE_CONTEXT_TOKENS_DEFAULT)) {
+      ctxSelect.value = String(REMOTE_CONTEXT_TOKENS_DEFAULT);
+    }
+    ctxLabel.appendChild(ctxSelect);
+    const thinkLabel = document.createElement('label');
+    thinkLabel.className = 'cb-remote-label cb-remote-opt cb-remote-check';
+    const thinkBox = document.createElement('input');
+    thinkBox.type = 'checkbox';
+    thinkBox.checked = seed ? seed.think !== false : true;
+    thinkLabel.appendChild(thinkBox);
+    thinkLabel.appendChild(document.createTextNode(' Let thinking models reason first'));
+    thinkLabel.title = 'For models that support it (Qwen3, DeepSeek-R1, gpt-oss…): reason before answering. Slower, but better on multi-step problems.';
+    optsRow.appendChild(ctxLabel);
+    optsRow.appendChild(thinkLabel);
+    wrap.appendChild(optsRow);
 
     const errEl = document.createElement('div');
     errEl.className = 'cb-remote-err';
@@ -1675,7 +1828,11 @@ export class ChatBot {
         errEl.textContent = 'Pick a model from the dropdown.';
         return;
       }
-      const cfg = { url: url.replace(/\/+$/, ''), model };
+      const cfg = {
+        url: url.replace(/\/+$/, ''), model,
+        contextTokens: Number(ctxSelect.value) || REMOTE_CONTEXT_TOKENS_DEFAULT,
+        think: thinkBox.checked,
+      };
       saveRemoteConfig(cfg);
       saveModelId(REMOTE_MODEL_ID);
       this._pickerEl.classList.add('hidden');
@@ -1737,13 +1894,7 @@ export class ChatBot {
     // Bump the turn id so an in-flight _runLoop detects the reset and
     // unwinds without writing back into the freshly-cleared history.
     this._runId++;
-    if (this._generating) {
-      this._llm.abort();
-      if (this._pendingConfirm) {
-        this._pendingConfirm.resolve(false);
-        this._pendingConfirm = null;
-      }
-    }
+    if (this._generating) this._llm.abort();
     // Discard any messages the user queued during the in-flight turn —
     // a "new chat" reset wipes pending work alongside the current turn.
     this._queue = [];
@@ -1812,7 +1963,8 @@ export class ChatBot {
       this._showPicker();
       return;
     }
-    this._ensureLLMKind('remote', cfg.url.replace(/\/+$/, ''));
+    this._ensureLLMKind('remote', cfg.url.replace(/\/+$/, ''),
+                        { contextTokens: cfg.contextTokens, think: cfg.think });
     this._loadBtn.disabled = true;
     this._loadBtn.textContent = 'Loading…';
     this._loadBtn.classList.add('hidden');
@@ -1840,8 +1992,17 @@ export class ChatBot {
       const entry = MODELS.find((m) => m.id === id);
       const isRemote = this._llm instanceof RemoteLLM;
       const label = isRemote
-        ? `Remote: ${id || 'Ready'}`
+        ? `${this._llm.isOllama ? 'Ollama' : 'Remote'}: ${id || 'Ready'}`
         : (entry?.label ?? id ?? '');
+      if (isRemote) {
+        const caps = [];
+        if (this._llm.supportsTools) caps.push('native tools');
+        if (this._llm.supportsThinking) caps.push(this._llm.thinkEnabled ? 'thinking on' : 'thinking off');
+        if (this._llm.contextTokens) caps.push(`${Math.round(this._llm.contextTokens / 1024)}K context`);
+        this._statusEl.title = caps.length ? caps.join(' · ') : '';
+      } else {
+        this._statusEl.title = '';
+      }
       this._statusEl.textContent = `● ${label || 'Ready'}`;
       this._statusEl.className = 'cb-status cb-status-ready';
       this._progressEl.classList.add('hidden');
@@ -1854,9 +2015,9 @@ export class ChatBot {
       // straight into a representative task.
       if (this._history.length === 0) {
         const greeting = this._addAssistantBubble(
-          `${label || 'Model'} ready. I can answer questions about RPL, commands, and ` +
-          'maths, and suggest calculator actions for you to confirm. ' +
-          'Pick a starter or type your own:',
+          `${label || 'Model'} ready. I can explain RPL and commands, work through maths ` +
+          'problems, and drive the calculator for you — anything I change can be undone ' +
+          'with one click. Pick a starter or type your own:',
         );
         this._renderChips(STARTER_CHIPS, greeting);
       }
@@ -1932,7 +2093,9 @@ export class ChatBot {
   _renderStats(stats) {
     if (!this._statsEl) return;
     const inChars  = stats.inputChars ?? 0;
-    const inTok    = Math.round(inChars / 4);
+    // Prefer the server's real prompt token count (Ollama reports it);
+    // fall back to the chars/4 estimate the trimmer uses.
+    const inTok    = stats.inputTokens ?? Math.round(inChars / 4);
     const outTok   = stats.outputTokens ?? 0;
     const ms       = Math.round(stats.totalMs ?? 0);
     const tps      = stats.decodeTps !== null && stats.decodeTps !== undefined
@@ -1945,10 +2108,10 @@ export class ChatBot {
     // the catalog has its own contextTokens, so this number changes
     // when the user switches models.
     const budgetChars  = effectiveBudget(this._llm);
-    const ctxPct       = budgetChars > 0
-      ? Math.min(100, Math.round((inChars / budgetChars) * 100))
-      : 0;
     const ctxBudgetTok = Math.round(budgetChars / 4);
+    const ctxPct       = ctxBudgetTok > 0
+      ? Math.min(100, Math.round((inTok / ctxBudgetTok) * 100))
+      : 0;
     const t        = this._sessionTotals ?? { turns: 0, outputTokens: 0 };
     this._statsEl.textContent =
       `last turn: ~${inTok} in / ${outTok} out tok · ${ms}ms · ${tps}` +
@@ -2045,10 +2208,13 @@ export class ChatBot {
     }
   }
 
-  /* ---- Single-pass pipeline ---------------------------------------
-     One user turn = ONE LLM call.  The model emits prose AND a JSON
-     tool call in a single streamed response; the orchestrator
-     extracts each part by string-matching the JSON brace-block.
+  /* ---- Turn pipeline -----------------------------------------------
+     One user turn = a short agentic loop.  Each iteration is ONE
+     streamed LLM call whose reply carries prose, tool calls (bare JSON
+     lines, or native calls when the backend supports them) and an
+     optional SUGGEST line.  Tool calls execute immediately; their
+     results are folded into history as prose notes and the model is
+     re-invoked until it replies without tool calls (or the cap fires).
 
      Single-call design: splitting reply, tool dispatch, and suggestion
      into separate LLM calls would rebuild the full system-prompt +
@@ -2057,26 +2223,47 @@ export class ChatBot {
      in WebLLM's incremental-prefill path ("Phase 2 silent for minutes,
      zero GPU usage" — see the worker comment around resetChat()).  A
      single streaming call avoids that stall surface, reduces prefill
-     cost, and keeps prose and tool call coherent (the model sees both
-     in one context window, preventing mismatches between what it says
-     and what it dispatches).
-
-     Format the model emits (enforced by SYSTEM_PROMPT_COMBINED):
-         <one short prose sentence>
-         {"name":"<tool>","arguments":{...}}
-     For conceptual questions ("what does SWAP do?"), the JSON is
-     omitted entirely and we skip dispatch.
+     cost, and keeps prose and tool call coherent.
 
      Display: the streaming bubble shows prose live, but the JSON
      portion is hidden as soon as the parser sees `{"name"` so the
      user never sees raw JSON in their chat.  Full text (incl. JSON)
      is what gets pushed into history — keeping the JSON in history
      reinforces the format on subsequent turns and gives the next-
-     turn model a literal example of what it's expected to produce. */
+     turn model a literal example of what it's expected to produce.
+     Native tool calls are serialised into the same JSON-line shape
+     before the history push so both backends leave identical
+     transcripts. */
+
+  _isRemote() { return this._llm instanceof RemoteLLM; }
+
+  /** Per-backend knobs for a turn: prompt profile, native tools,
+   *  iteration cap, reply length. */
+  _turnConfig() {
+    const remote = this._isRemote();
+    const nativeTools = remote && this._llm.supportsTools === true;
+    return {
+      remote,
+      nativeTools,
+      systemPrompt: buildSystemPrompt({ profile: remote ? 'full' : 'compact', nativeTools }),
+      maxIterations: remote ? MAX_TURN_ITERATIONS_REMOTE : MAX_TURN_ITERATIONS,
+      maxTokens: remote ? MAX_REPLY_TOKENS_REMOTE : MAX_REPLY_TOKENS,
+    };
+  }
+
   async _runLoop(userText) {
     const turnId = ++this._runId;
     const stale  = () => this._runId !== turnId;
     dlog('runLoop: enter turnId=', turnId, 'userText=', userText);
+
+    // Whole-calculator snapshot from before anything ran.  If any tool
+    // in this turn mutates the calculator we offer an Undo link that
+    // restores it.
+    let snapshot = null;
+    try { snapshot = this._tools.snapshotState?.() ?? null; } catch (err) {
+      dwarn('runLoop: snapshotState threw:', err);
+    }
+    let mutated = false;
 
     // Inject current calculator state into the user message so every
     // turn starts with fresh stack/dir context.
@@ -2085,34 +2272,29 @@ export class ChatBot {
     const content = ctxNote ? `${ctxNote}\n\n${userText}` : userText;
     this._history.push({ role: 'user', content });
 
-    // Agentic outer loop — one user turn drives up to
-    // MAX_TURN_ITERATIONS LLM calls.  Each iteration: generate a
-    // reply, dispatch any tool calls, fold the results into history,
-    // re-prompt the model so it can decide the next step.  The model
-    // ends the workflow by emitting prose only (no JSON tool calls);
-    // we also stop on user-cancel, stale (Stop pressed), or the cap.
-    //
+    const cfg = this._turnConfig();
+    const systemMsg = { role: 'system', content: cfg.systemPrompt };
+
     // Cross-iteration state: bubble + SUGGEST chips from the FINAL
     // iteration are what we render once the workflow ends.
     let lastBubble = null;
     let lastSuggestions = null;
     let hitMaxIter = false;
     let outerIter = 0;
-    outer: for (; outerIter < MAX_TURN_ITERATIONS; outerIter++) {
-      dlog(`runLoop: outer iter ${outerIter + 1}/${MAX_TURN_ITERATIONS}`);
+    outer: for (; outerIter < cfg.maxIterations; outerIter++) {
+      dlog(`runLoop: outer iter ${outerIter + 1}/${cfg.maxIterations}`);
 
     // Generate-and-validate retry loop.
     //
-    // Each iteration: build messages from the current history, stream
-    // a response, parse out tool calls + suggestions, alias-resolve
-    // the names, then check if any tool name is still unknown to the
+    // Each attempt: build messages from the current history, stream a
+    // response, parse out tool calls + suggestions, alias-resolve the
+    // names, then check if any tool name is still unknown to the
     // registry.  If all known: break out and proceed to dispatch.  If
     // some unknown AND we have retries left: push a corrective user
-    // message into history and run another iteration so the model can
+    // message into history and run another attempt so the model can
     // fix its tool name.  After MAX_RETRY_ATTEMPTS the chain proceeds
     // anyway and the unknown-tool path in _dispatchTool surfaces the
-    // error to the user — a graceful fallback so a permanently-
-    // confused model doesn't trap us in an infinite loop.
+    // error to the user.
     let bubble = null, textEl = null;
     let toolCalls = [];
     let suggestions = null;
@@ -2125,49 +2307,64 @@ export class ChatBot {
     while (attempt < MAX_RETRY_ATTEMPTS) {
       attempt++;
 
-      const systemMsg = { role: 'system', content: SYSTEM_PROMPT_COMBINED };
       const keptHistory = this._trimHistoryForBudget(systemMsg);
       const messages = [systemMsg, ...keptHistory];
       this._logPhase(`combined attempt=${attempt}`, messages);
 
       // Each attempt builds its own streaming bubble — earlier
       // attempts stay visible in the chat above the retry note so the
-      // user sees the full sequence (first reply → retry note → second
-      // reply → tool dispatch).  Bubbles from prior attempts are never
-      // mutated after their finalise.
+      // user sees the full sequence.
       const stream = this._addStreamingBubble();
       bubble = stream.bubble;
       textEl = stream.textEl;
       let fullText = '';
+      let thinkingChars = 0;
+      let nativeCalls = [];
       const watchdog = this._makeStallWatchdog();
+      const paint = () => {
+        // Strip <think>...</think> reasoning blocks BEFORE computing
+        // what the user sees and where the machine-readable section
+        // starts.  Reasoning-tuned models emit a hidden chain-of-
+        // thought before their visible answer; without stripping it
+        // would flicker into the bubble and be fed to the tool-call
+        // parser.  Recomputed each token because a `<think>` open tag
+        // may swallow tokens until its matching close arrives.
+        const cleaned = stripThinkBlocks(fullText);
+        const idx = findMachineSectionStart(cleaned);
+        const visible = idx >= 0 ? cleaned.slice(0, idx).trim() : cleaned.trim();
+        if (visible) {
+          textEl.textContent = visible;
+          bubble.classList.remove('cb-bubble-thinking');
+        } else if (thinkingChars > 0) {
+          textEl.textContent = 'Thinking…';
+          bubble.classList.add('cb-bubble-thinking');
+        } else {
+          textEl.textContent = '…';
+        }
+      };
 
+      let result;
       try {
-        await this._llm.generate(messages, {
+        result = await this._llm.generate(messages, {
+          maxTokens: cfg.maxTokens,
+          tools: cfg.nativeTools ? TOOL_SCHEMAS : undefined,
           onToken: (t) => {
             if (typeof t !== 'string' || !t) return;
             watchdog.onToken();
             fullText += t;
-            // Strip <think>...</think> reasoning blocks BEFORE
-            // computing what the user sees and where the machine-
-            // readable section starts.  Reasoning-tuned models like
-            // Qwen3 / DeepSeek-R1 emit a hidden chain-of-thought
-            // before their visible answer; without stripping it
-            // would flicker into the bubble, get fed to the tool-
-            // call parser (a stray `{"name":` shape inside the
-            // reasoning would be misread as a real tool call), and
-            // pollute the history we save for next-turn context.
-            // Recomputed each token because mid-stream a `<think>`
-            // open tag may swallow tokens until its matching close
-            // arrives — the offset of the visible region is not a
-            // monotonic prefix of fullText.
-            const cleaned = stripThinkBlocks(fullText);
-            const idx = findMachineSectionStart(cleaned);
-            const visible = idx >= 0
-              ? cleaned.slice(0, idx).trim()
-              : cleaned.trim();
-            textEl.textContent = visible || '…';
+            paint();
+          },
+          // Ollama streams a thinking model's reasoning separately;
+          // it never reaches the transcript, but it must keep the
+          // stall watchdog alive and give the user a sign of life.
+          onThinking: (t) => {
+            if (typeof t !== 'string' || !t) return;
+            watchdog.onToken();
+            thinkingChars += t.length;
+            paint();
           },
         });
+        nativeCalls = Array.isArray(result?.toolCalls) ? result.toolCalls : [];
       } catch (err) {
         watchdog.stop();
         const cleaned = stripThinkBlocks(fullText).trim();
@@ -2180,18 +2377,13 @@ export class ChatBot {
       watchdog.stop();
 
       // Stale = user hit Stop (or _newChat) mid-stream.  Finalise
-      // whatever prose made it through with a "(stopped)" badge
-      // and return — no dispatch, no retry.  History push is
-      // skipped because the turn was cancelled.  (For _newChat,
-      // the messages container gets wiped right after this anyway.)
+      // whatever prose made it through with a "(stopped)" badge and
+      // return — no dispatch, no retry, no history push.
       if (stale()) {
         const cleaned = stripThinkBlocks(fullText);
         const idx = findMachineSectionStart(cleaned);
-        const visiblePart = idx >= 0
-          ? cleaned.slice(0, idx).trim()
-          : cleaned.trim();
-        this._finaliseStreamBubble(bubble, textEl, visiblePart, null,
-                                   { state: 'stopped' });
+        const visiblePart = idx >= 0 ? cleaned.slice(0, idx).trim() : cleaned.trim();
+        this._finaliseStreamBubble(bubble, textEl, visiblePart, null, { state: 'stopped' });
         dlog('runLoop: stale after generate, finalised stopped bubble');
         return;
       }
@@ -2199,25 +2391,21 @@ export class ChatBot {
       stalled = watchdog.isStalled();
       // Cleaned text is the canonical view from this point on — the
       // bubble body, the prose/JSON split, the tool-call and SUGGEST
-      // parsers, and the history push all operate on it.  fullText
-      // is retained only for the dlog below (so a debugging session
-      // can see how much got stripped vs how much was kept).
+      // parsers, and the history push all operate on it.
       const cleanedText  = stripThinkBlocks(fullText);
-      trimmed = cleanedText.trim();
       const hideStart = findMachineSectionStart(cleanedText);
       dlog(`runLoop: attempt ${attempt} returned ${fullText.length} chars`,
-           `(${cleanedText.length} after stripping <think> blocks),`,
+           `(${cleanedText.length} after stripping <think> blocks,`,
+           `${thinkingChars} thinking chars, ${nativeCalls.length} native call(s)),`,
            `stalled=${stalled}, hideStart=${hideStart}`);
 
       const proseRaw = hideStart >= 0 ? cleanedText.slice(0, hideStart) : cleanedText;
       prose      = proseRaw.trim();
-      toolCalls  = parseAllToolCalls(cleanedText);
+      toolCalls  = [...nativeCalls, ...parseAllToolCalls(cleanedText)];
       suggestions = parseSuggestions(cleanedText);
       // Apply the alias map up front, BEFORE deciding whether to
-      // retry — saves a retry round-trip on the most frequent
-      // failure mode where the model just used a near-synonym
-      // ("add_to_stack" → "push_to_stack").  Retry only fires for
-      // names that are unknown even after alias resolution.
+      // retry — saves a retry round-trip on the most frequent failure
+      // mode where the model just used a near-synonym.
       for (const tc of toolCalls) {
         const aliased = resolveToolAlias(tc.name);
         if (aliased !== tc.name) {
@@ -2226,11 +2414,17 @@ export class ChatBot {
         }
       }
       dlog(`runLoop: attempt ${attempt} extracted ${toolCalls.length} tool call(s)`,
-           toolCalls.map(c => c.name),
-           'suggestions=', suggestions);
+           toolCalls.map(c => c.name), 'suggestions=', suggestions);
 
-      // Compute the body for THIS attempt's bubble (whether or not
-      // we'll retry; the bubble stays visible in the chat regardless).
+      // Native calls are serialised into the same JSON-line shape the
+      // text protocol uses, so history reads identically either way.
+      trimmed = cleanedText.trim();
+      if (nativeCalls.length) {
+        const lines = nativeCalls.map((c) => JSON.stringify({ name: c.name, arguments: c.arguments ?? {} }));
+        trimmed = trimmed ? `${trimmed}\n${lines.join('\n')}` : lines.join('\n');
+      }
+
+      // Body for THIS attempt's bubble (whether or not we'll retry).
       if (stalled) {
         display = prose
           || (toolCalls.length > 0
@@ -2239,43 +2433,34 @@ export class ChatBot {
       } else if (prose) {
         display = prose;
       } else if (toolCalls.length > 0) {
-        display = toolCalls.length === 1
-          ? `Running ${toolCalls[0].name}.`
-          : `Running ${toolCalls.length} actions.`;
+        display = '';
       } else {
         display = '_(model returned no output — try rephrasing.)_';
       }
-      this._finaliseStreamBubble(
-        bubble, textEl, display, null,
-        stalled ? { state: 'stalled' } : undefined,
-      );
+      if (display) {
+        this._finaliseStreamBubble(bubble, textEl, display, null,
+                                   stalled ? { state: 'stalled' } : undefined);
+      } else {
+        // Tool calls with no prose: drop the empty bubble; the action
+        // cards / traces that follow are the visible record.
+        bubble.remove();
+        bubble = null;
+      }
       // Push the response to history every attempt — even the ones
-      // we're about to retry.  The corrective user message we'll
-      // inject below references "your previous response", so the
-      // previous response needs to actually be in the conversation
-      // log for the model to revise.  Note: `trimmed` is already
-      // post-strip-think-blocks (see assignment above), so the
-      // model's hidden reasoning trace is NOT included in history —
-      // saving context budget AND avoiding accidental influence on
-      // subsequent turns from a previous turn's chain-of-thought.
+      // we're about to retry — so the corrective message below can
+      // refer to "your previous response".  `trimmed` is already
+      // post-strip-think-blocks, so hidden reasoning is NOT kept.
       this._history.push({ role: 'assistant', content: trimmed });
 
-      // Validate tool names against the registry.  An empty toolCalls
-      // array (conceptual question, no tool needed) is valid.
       const unknownNames = toolCalls
         .filter((c) => !this._registry[c.name])
         .map((c) => c.name);
-      if (unknownNames.length === 0) {
-        break;   // All clean — proceed to dispatch.
-      }
+      if (unknownNames.length === 0) break;
       if (attempt >= MAX_RETRY_ATTEMPTS) {
         dwarn('runLoop: retries exhausted; proceeding with',
               unknownNames.length, 'unknown tool(s):', unknownNames);
         break;
       }
-      // Retry path: corrective user message + visible chip-style note
-      // so the user knows what's happening.  Loop iteration will
-      // rebuild messages from the now-augmented history.
       const validNames = Object.keys(this._registry);
       this._addRetryNote(
         `Retrying — assistant proposed unknown tool${unknownNames.length === 1 ? '' : 's'}: ${unknownNames.join(', ')}`,
@@ -2287,69 +2472,51 @@ export class ChatBot {
           `${unknownNames.map((n) => `"${n}"`).join(', ')}. ` +
           `The ONLY valid tool names are: ${validNames.join(', ')}. ` +
           `Please regenerate the response using a valid tool name. ` +
-          `Re-emit the prose preamble + JSON tool call(s) in the same format as before.`,
+          `Re-emit the prose preamble + tool call(s) in the same format as before.`,
       });
       dlog('runLoop: retrying attempt=', attempt + 1, 'after unknown:', unknownNames);
     }
 
-    // Carry this iteration's bubble + chips forward so the FINAL
-    // iteration's values are what we render at the end of the turn.
-    lastBubble = bubble;
+    if (bubble) lastBubble = bubble;
     if (suggestions) lastSuggestions = suggestions;
 
     if (toolCalls.length === 0) {
-      // Model emitted prose only — the "workflow complete" signal.
-      // Also covers conceptual questions ("what does SWAP do?") on
-      // the first iteration: same code path, same exit.
+      // Prose only — the "workflow complete" signal.  Also covers
+      // conceptual questions on the first iteration.
       dlog(`runLoop: iter ${outerIter + 1} produced no tool calls — workflow complete`);
       break outer;
     }
 
-    // Dispatch in document order.  Each iteration awaits the full
-    // tool lifecycle (confirm widget render → user click → handler
-    // execute → history note).  Three exit conditions stop the
-    // chain mid-flight:
-    //   1. stale()  — Stop pressed or new chat reset
-    //   2. cancel   — _dispatchTool returns false on user-cancelled
-    //                 confirm; the user rejected this step, so any
-    //                 follow-up steps that depended on it would be
-    //                 surprising at best, destructive at worst
-    //   3. unknown  — _dispatchTool also returns false on unknown
-    //                 tool names, to avoid spamming bubbles for
-    //                 every malformed call in a bad chain
-    let chainBroken = false;
+    // Dispatch in document order.  Stop the chain if the user pressed
+    // Stop / New chat mid-way, or a call named an unknown tool (no
+    // point running the follow-ups of a malformed chain).
     for (let i = 0; i < toolCalls.length; i++) {
       const tc = toolCalls[i];
       dlog(`runLoop: iter ${outerIter + 1} dispatching tool ${i + 1}/${toolCalls.length}:`, tc.name);
-      const ok = await this._dispatchTool(tc);
+      const outcome = await this._dispatchTool(tc);
       if (stale()) {
         dlog('runLoop: stale after tool dispatch, exit (skipped',
              toolCalls.length - i - 1, 'remaining call(s))');
         return;
       }
-      if (!ok) {
-        dlog('runLoop: dispatch returned false (cancel or unknown), aborting chain (skipped',
+      if (outcome.mutated) mutated = true;
+      if (outcome.card) lastBubble = outcome.card;
+      if (!outcome.ok) {
+        dlog('runLoop: unknown tool, aborting chain (skipped',
              toolCalls.length - i - 1, 'remaining call(s))');
-        chainBroken = true;
-        break;
+        break outer;
       }
     }
-    if (chainBroken) break outer;
 
     // About to iterate again.  Inject a synthetic user turn so the
-    // next assistant turn doesn't sit adjacent to the previous one
-    // in history — most chat templates (Llama / Qwen / Mistral)
-    // require strict user/assistant alternation, and two adjacent
-    // assistant messages will silently misbehave on the NEXT prefill.
-    // See _pushHistoryNote's comment for the canonical incident.
-    //
-    // On the LAST allowed iteration, skip the synthetic message and
-    // flag hitMaxIter — there'll be no further LLM call, so no
-    // alternation to maintain, and the user gets a "cap reached" note.
-    if (outerIter + 1 < MAX_TURN_ITERATIONS) {
+    // next assistant turn doesn't sit adjacent to the previous one in
+    // history — most chat templates require strict user/assistant
+    // alternation.  On the LAST allowed iteration skip it and flag
+    // hitMaxIter — there'll be no further LLM call.
+    if (outerIter + 1 < cfg.maxIterations) {
       this._history.push({
         role: 'user',
-        content: '[Continue the workflow if more steps are needed, or respond with prose only — no JSON tool calls — to indicate the workflow is complete.]',
+        content: '[Tool results are attached to your previous message. Continue if more steps are needed; when the task is complete, reply with prose only — no tool calls.]',
       });
     } else {
       hitMaxIter = true;
@@ -2357,16 +2524,15 @@ export class ChatBot {
     }   // end outer:
 
     if (hitMaxIter) {
-      this._addRetryNote(`Reached workflow iteration cap (${MAX_TURN_ITERATIONS}); stopping.`);
+      this._addRetryNote(`Reached workflow iteration cap (${cfg.maxIterations}); stopping.`);
     }
 
-    // Render follow-up suggestions (if any) as chips below the
-    // turn's output.  Click-handler is _sendChip, which submits the
-    // chip text as a new user message — so the model gets a fresh
-    // turn with the user's stated intent.  Suggestions are NOT
-    // dispatched automatically; that's the whole point of routing
-    // them through the chip-suggestion channel rather than the
-    // tool-call channel.
+    // Undo link for the turn (only if something changed), then the
+    // SUGGEST chips.  Both hang off the last thing rendered so they
+    // read as the turn's footer.
+    if (!stale() && mutated && snapshot) {
+      lastBubble = this._addUndoRow(snapshot, lastBubble) ?? lastBubble;
+    }
     if (!stale() && lastSuggestions?.length) {
       dlog('runLoop: rendering', lastSuggestions.length, 'suggestion chip(s)');
       this._renderChips(lastSuggestions, lastBubble);
@@ -2374,32 +2540,20 @@ export class ChatBot {
     dlog(`runLoop: turnId=`, turnId, `complete after ${outerIter + 1} iter(s)`);
   }
 
-  /** Dispatch a parsed tool call through the registry.  Renders a
-   *  confirm widget for mutating tools, executes, then appends a
+  /** Execute a parsed tool call through the registry and append a
    *  natural-language summary of what happened to history (so the
-   *  *next* user turn's model sees coherent prose alongside its
-   *  previous JSON tool call, not just raw structured output).
+   *  next LLM call sees coherent prose alongside its previous tool
+   *  call, not raw structured output).  Mutating tools render an
+   *  action card with a Rerun button; reads render a one-line trace.
    *
-   *  Returns:
-   *   - `true`  on success (confirmed + ran, or read-only auto-exec —
-   *     including handler failures, since "ran but errored" is still
-   *     a definitive outcome the chain shouldn't preempt)
-   *   - `false` if the user cancelled the confirm widget — a signal
-   *     to the caller (multi-call dispatch loop in _runLoop) that the
-   *     user has rejected this action and any chained follow-up
-   *     actions should NOT run either
-   *
-   *   Unknown tools also return `false` so a chain doesn't keep
-   *   producing diagnostic bubbles for each malformed call.
-   */
+   *  Returns { ok, mutated, card }:
+   *   - ok      — false only for an unknown tool name (chain stops)
+   *   - mutated — true when a mutating tool ran (turn earns Undo)
+   *   - card    — the DOM element rendered for this call, if any */
   async _dispatchTool(toolCall) {
-    // Cheap pre-pass: rewrite common synonyms to their actual
-    // registry name BEFORE looking up the tool.  Saves a full
-    // unknown-tool / retry round-trip on the most frequent failure
-    // mode where the model says e.g. `add_to_stack` instead of
-    // `push_to_stack`.  Logged when it fires so the trace shows the
-    // remap; the rewritten name is what gets dispatched and recorded
-    // in the history note.
+    // Rewrite common synonyms to their registry name BEFORE looking
+    // the tool up.  Saves an unknown-tool / retry round-trip when the
+    // model says e.g. `add_to_stack` instead of `push_to_stack`.
     const aliasedName = resolveToolAlias(toolCall.name);
     if (aliasedName !== toolCall.name) {
       dlog('dispatchTool: alias rewrite', toolCall.name, '→', aliasedName);
@@ -2409,81 +2563,79 @@ export class ChatBot {
     const tool = this._registry[toolCall.name];
     const args = toolCall.arguments ?? {};
     dlog('dispatchTool: name=', toolCall.name, 'args=', args,
-         'confirm=', !!tool?.confirm, 'known=', !!tool);
+         'mutates=', !!tool?.mutates, 'known=', !!tool);
 
     if (!tool) {
       dwarn('dispatchTool: unknown tool', toolCall.name);
-      this._addAssistantBubble(`_(unknown tool: \`${toolCall.name}\`.)_`);
+      const card = this._addAssistantBubble(`_(unknown tool: \`${toolCall.name}\`.)_`);
       this._pushHistoryNote(`(Tried to use unknown tool "${toolCall.name}".)`);
-      return false;
+      return { ok: false, mutated: false, card };
     }
 
-    if (tool.confirm) {
-      const summary = tool.summary(args);
-      // `complete` flips the widget out of "Running…" once the
-      // handler returns.  Without this call the button stays stuck
-      // on the interim label forever, even though the tool has
-      // actually finished executing.  Cancel path is handled by the
-      // cancel button's own click listener (it sets "✗ Cancelled"
-      // before resolve(false)), so we only call complete() on the
-      // run path.
-      // Rerun closure — captured here so the widget can re-invoke the
-      // same handler+args after the initial confirmation flow has
-      // completed.  Pushes a fresh history note each rerun so the
-      // conversation log reflects every actual execution (the user
-      // explicitly asked for the action to happen again).
-      const rerun = async () => {
-        try {
-          const result = await tool.handler(args);
-          const note = this._summariseToolResult(toolCall.name, args, result);
-          this._pushHistoryNote(note);
-          dlog('dispatchTool: rerun success', toolCall.name);
-        } catch (err) {
-          this._pushHistoryNote(`(Re-running ${toolCall.name} failed: ${err.message}.)`);
-          dwarn('dispatchTool: rerun handler threw for', toolCall.name, err);
-          throw err;
-        }
-      };
-      const { complete } = this._addToolWidgetBubble({
-        name: toolCall.name, ...summary, onRerun: rerun,
-      });
-      dlog('dispatchTool: awaiting user confirmation for', toolCall.name);
-      const confirmed = await new Promise((resolve) => {
-        this._pendingConfirm = { resolve };
-      });
-      this._pendingConfirm = null;
-      if (!confirmed) {
-        dlog('dispatchTool: user cancelled', toolCall.name, '— chain will stop');
-        this._pushHistoryNote(`(User cancelled the proposed ${toolCall.name} action.)`);
-        return false;
-      }
-      dlog('dispatchTool: user confirmed, executing', toolCall.name);
-      try {
-        const result = await tool.handler(args);
-        complete(true, '✓ Done');
-        const note = this._summariseToolResult(toolCall.name, args, result);
-        this._pushHistoryNote(note);
-        dlog('dispatchTool: success', toolCall.name, 'note=', note);
-      } catch (err) {
-        complete(false, `✗ ${err.message ?? 'Failed'}`);
-        this._pushHistoryNote(`(Running ${toolCall.name} failed: ${err.message}.)`);
-        dwarn('dispatchTool: handler threw for', toolCall.name, err);
-      }
-      return true;
-    }
-
-    // Read-only — execute silently.
-    dlog('dispatchTool: read-only auto-exec', toolCall.name);
-    try {
+    const summary = tool.summary(args);
+    const runOnce = async () => {
       const result = await tool.handler(args);
       const note = this._summariseToolResult(toolCall.name, args, result);
       this._pushHistoryNote(note);
-      dlog('dispatchTool: read-only success', toolCall.name, 'note=', note);
-    } catch (err) {
-      this._pushHistoryNote(`(Reading ${toolCall.name} failed: ${err.message}.)`);
-      dwarn('dispatchTool: read-only handler threw for', toolCall.name, err);
+      return { result, note };
+    };
+
+    if (tool.mutates) {
+      const { card, complete } = this._addActionCard({
+        ...summary,
+        onRerun: async () => {
+          const { result } = await runOnce();
+          this._pushHistoryNote('(The user re-ran the previous action by hand.)');
+          return result;
+        },
+      });
+      try {
+        const { result, note } = await runOnce();
+        complete(result?.success !== false, result?.success === false ? result.error : '');
+        dlog('dispatchTool: action', toolCall.name, 'note=', note);
+      } catch (err) {
+        complete(false, err.message ?? 'Failed');
+        this._pushHistoryNote(`(Running ${toolCall.name} failed: ${err.message}.)`);
+        dwarn('dispatchTool: handler threw for', toolCall.name, err);
+      }
+      return { ok: true, mutated: true, card };
     }
-    return true;
+
+    let card = null;
+    try {
+      const { result, note } = await runOnce();
+      card = this._addToolTrace(summary, this._traceSummary(toolCall.name, result));
+      dlog('dispatchTool: read', toolCall.name, 'note=', note);
+    } catch (err) {
+      card = this._addToolTrace(summary, `✗ ${err.message ?? 'failed'}`);
+      this._pushHistoryNote(`(Reading ${toolCall.name} failed: ${err.message}.)`);
+      dwarn('dispatchTool: read handler threw for', toolCall.name, err);
+    }
+    return { ok: true, mutated: false, card };
+  }
+
+  /** Very short human-facing outcome for a read-only tool's trace row. */
+  _traceSummary(name, result) {
+    const r = result ?? {};
+    const head = (stack) => Array.isArray(stack) && stack.length ? stack[0] : '';
+    switch (name) {
+      case 'evaluate':
+        return r.ok ? `→ ${head(r.stack) || '(empty)'}` : `✗ ${r.error}`;
+      case 'lookup_command':
+        return r.text ? (r.registered ? 'found' : 'found (not implemented here)') : 'no entry';
+      case 'search_commands':
+        return `${(r.results ?? []).length} match${(r.results ?? []).length === 1 ? '' : 'es'}`;
+      case 'recall_var':
+        return r.exists ? `= ${r.value}` : 'not defined';
+      case 'get_vars':
+        return `${(r.vars ?? []).length} variable${(r.vars ?? []).length === 1 ? '' : 's'}`;
+      case 'get_stack':
+        return `${r.depth ?? (r.stack ?? []).length} level${(r.depth ?? 0) === 1 ? '' : 's'}`;
+      case 'get_editor':
+        return r.buffer ? `"${r.buffer}"` : 'empty';
+      default:
+        return '';
+    }
   }
 
   /** Append a short natural-language note to history as if the
@@ -2528,19 +2680,48 @@ export class ChatBot {
    *  shapes — better that than nothing. */
   _summariseToolResult(name, args, result) {
     const r = result ?? {};
-    if (name === 'run' && r.success) {
-      const stack = Array.isArray(r.stack) ? r.stack : [];
-      const head  = stack.slice(0, 3).map((v, i) => `${i + 1}: ${v}`).join(', ');
-      return stack.length
-        ? `(Ran \`${args.text}\`. Stack now: ${head}${stack.length > 3 ? ', …' : ''}.)`
-        : `(Ran \`${args.text}\`. Stack is empty.)`;
+    // Stack rendering shared by every tool that reports one: the top
+    // few levels, level 1 first, plus the true depth when truncated.
+    const stackText = (stack, depth, n = 4) => {
+      const list = Array.isArray(stack) ? stack : [];
+      if (!list.length) return 'Stack is empty';
+      const head = list.slice(0, n).map((v, i) => `${i + 1}: ${v}`).join(', ');
+      const total = depth ?? list.length;
+      return `Stack now: ${head}${total > n ? `, … (${total} levels)` : ''}`;
+    };
+    if (name === 'run' || name === 'push_to_stack') {
+      const code = normalizeRpl(name === 'run' ? args.text : args.value);
+      const verb = name === 'run' ? 'Ran' : 'Pushed';
+      if (r.success === false) {
+        return `(${verb} \`${code}\` — FAILED with calculator error: "${r.error}". ` +
+               `The line was rejected and the stack is unchanged (${stackText(r.stack, r.depth, 3)}). ` +
+               'Fix the RPL before trying again.)';
+      }
+      return `(${verb} \`${code}\`. ${stackText(r.stack, r.depth)}.)`;
     }
-    if (name === 'push_to_stack' && r.success) {
-      const stack = Array.isArray(r.stack) ? r.stack : [];
-      const head  = stack.slice(0, 3).map((v, i) => `${i + 1}: ${v}`).join(', ');
-      return stack.length
-        ? `(Pushed \`${args.value}\`. Stack now: ${head}${stack.length > 3 ? ', …' : ''}.)`
-        : `(Pushed \`${args.value}\`. Stack is empty.)`;
+    if (name === 'evaluate') {
+      const code = normalizeRpl(args.text);
+      if (r.ok === false) {
+        return `(evaluate \`${code}\` → ERROR: ${r.error}. Nothing changed. Fix the RPL before running it.)`;
+      }
+      const list = Array.isArray(r.stack) ? r.stack : [];
+      const shown = list.slice(0, 4).map((v, i) => `${i + 1}: ${v}`).join(', ');
+      return list.length
+        ? `(evaluate \`${code}\` → ${shown}${(r.depth ?? list.length) > 4 ? `, … (${r.depth} levels)` : ''}. Dry run only — the real stack is unchanged.)`
+        : `(evaluate \`${code}\` → empty stack. Dry run only.)`;
+    }
+    if (name === 'lookup_command') {
+      if (!r.text) {
+        return `(No reference entry for "${r.name || args.name}"${r.registered ? ' — the command IS implemented here; try search_commands for related names' : ' — try search_commands to find the right name'}.)`;
+      }
+      return `(Reference for ${r.name}${r.registered ? '' : ' [NOT implemented in this calculator]'}:\n${r.text})`;
+    }
+    if (name === 'search_commands') {
+      const rows = Array.isArray(r.results) ? r.results : [];
+      if (!rows.length) return `(No commands matched "${r.query ?? args.query}".)`;
+      const lines = rows.map((x) =>
+        `${x.name}${x.inApp ? '' : ' [not implemented here]'}${x.description ? ` — ${x.description}` : ''}${x.category ? ` [${x.category}]` : ''}`);
+      return `(Commands matching "${r.query ?? args.query}":\n${lines.join('\n')})`;
     }
     if (name === 'append_to_editor' && r.success) {
       return `(Editor now contains: \`${r.buffer}\`.)`;
@@ -2549,10 +2730,19 @@ export class ChatBot {
       return '(Editor cleared.)';
     }
     if (name === 'get_stack') {
-      const stack = Array.isArray(r.stack) ? r.stack : [];
-      return stack.length
-        ? `(Stack: ${stack.slice(0, 3).map((v, i) => `${i + 1}: ${v}`).join(', ')}.)`
-        : '(Stack is empty.)';
+      const parts = [stackText(r.stack, r.depth, 8)];
+      const modes = [];
+      if (r.angleMode)   modes.push(`angle ${r.angleMode}`);
+      if (r.displayMode) modes.push(`display ${r.displayMode}`);
+      if (r.exactMode)   modes.push(`CAS ${r.exactMode}`);
+      if (r.base && r.base !== 'DEC') modes.push(`base ${r.base}`);
+      if (r.casVar)      modes.push(`CAS variable ${r.casVar}`);
+      if (modes.length)  parts.push(`Modes: ${modes.join(', ')}`);
+      if (r.dir)         parts.push(`Directory: ${r.dir}`);
+      if (Array.isArray(r.vars)) parts.push(r.vars.length ? `Variables: ${r.vars.join(' ')}` : 'No variables');
+      if (r.editor)      parts.push(`Entry line: \`${r.editor}\``);
+      if (r.lastError)   parts.push(`Last error: ${r.lastError}`);
+      return `(${parts.join('. ')}.)`;
     }
     if (name === 'get_editor') {
       return r.buffer ? `(Editor: \`${r.buffer}\`.)` : '(Editor is empty.)';
@@ -2682,7 +2872,6 @@ export class ChatBot {
 
   _abort() {
     dwarn('abort: stop pressed (generating=', this._generating,
-          'pendingConfirm=', !!this._pendingConfirm,
           'queueDepth=', this._queue.length, ')');
     // Bump _runId BEFORE we abort the in-flight generate.  Each phase
     // captures its own turnId locally; bumping the canonical _runId
@@ -2697,11 +2886,6 @@ export class ChatBot {
     //   UI back to idle.
     this._runId++;
     this._llm.abort();
-    // Also resolve any pending confirmation as cancelled.
-    if (this._pendingConfirm) {
-      this._pendingConfirm.resolve(false);
-      this._pendingConfirm = null;
-    }
     // Stop = halt EVERYTHING — drop any queued messages too, so the
     // user isn't surprised by them being processed after they hit
     // stop on the visibly-active turn.
@@ -2731,11 +2915,13 @@ export class ChatBot {
     //      together.  Costs a few extra tokens per turn for a much
     //      clearer mental model — worth it.
     if (ctx.stack?.length > 0) {
-      lines.push('Stack (level 1 is the TOP of stack — operators consume from level 1 first; higher numbers are deeper):');
-      for (let i = 0; i < ctx.stack.length; i++) {
+      const depth = ctx.depth ?? ctx.stack.length;
+      const shown = ctx.stack.length;
+      lines.push(`Stack (${depth} level${depth === 1 ? '' : 's'}${depth > shown ? `, top ${shown} shown` : ''}; level 1 is the TOP — operators consume from level 1 first; higher numbers are deeper):`);
+      for (let i = 0; i < shown; i++) {
         const marker =
-          i === 0                       ? '   ← top of stack' :
-          i === ctx.stack.length - 1    ? '   ← bottom of stack' : '';
+          i === 0                                ? '   ← top of stack' :
+          (i === shown - 1 && depth === shown)   ? '   ← bottom of stack' : '';
         lines.push(`  ${i + 1}: ${ctx.stack[i]}${marker}`);
       }
     } else {
@@ -2744,8 +2930,18 @@ export class ChatBot {
     const flags = [];
     if (ctx.angleMode)   flags.push(`Angle: ${ctx.angleMode}`);
     if (ctx.displayMode) flags.push(`Display: ${ctx.displayMode}`);
+    if (ctx.exactMode)   flags.push(`CAS: ${ctx.exactMode}`);
+    if (ctx.base && ctx.base !== 'DEC') flags.push(`Base: ${ctx.base}`);
+    if (ctx.casVar && ctx.casVar !== 'x') flags.push(`CAS var: \`${ctx.casVar}\``);
     if (ctx.dir)         flags.push(`Dir: ${ctx.dir}`);
     if (flags.length) lines.push(flags.join('  '));
+    if (Array.isArray(ctx.vars)) {
+      lines.push(ctx.vars.length
+        ? `Variables: ${ctx.vars.join(' ')}`
+        : 'Variables: (none)');
+    }
+    if (ctx.editor)    lines.push(`Entry line (uncommitted): ${ctx.editor}`);
+    if (ctx.lastError) lines.push(`Last error shown: ${ctx.lastError}`);
     return lines.join('\n');
   }
 
@@ -2784,33 +2980,140 @@ export class ChatBot {
     return el;
   }
 
-  // (Previously: _renderInlinePill — animated status pill with a live
-  // token counter, used while Phase 2 / Phase 3 ran silently.  Removed
-  // along with the three-phase pipeline; the single combined call
-  // streams its output into a regular bubble, so the live token feedback
-  // is the bubble's own text update.  CSS for .cb-inline-pill* in
-  // calc.css is left in place in case the pill machinery is needed
-  // again — it has no callers and is harmless until then.)
+  /** Action card for a mutating tool call: what ran (label + RPL),
+   *  a status badge, and a Rerun button.  Returns `{ card, complete }`
+   *  — call `complete(ok, errorText)` once the handler finishes so the
+   *  card shows the outcome (a failed line shows the calculator's
+   *  error inline). */
+  _addActionCard({ label, code, onRerun }) {
+    const card = document.createElement('div');
+    card.className = 'cb-bubble cb-bubble-assistant cb-bubble-tool';
+    const widget = document.createElement('div');
+    widget.className = 'cb-action-widget cb-action-running';
 
-  /** A bubble that contains only a tool-call confirmation widget — no
-   *  prose.  The prose lives in the streaming reply bubble that
-   *  preceded this one; the proposed action gets its own card so the
-   *  Run / Cancel buttons are visually distinct from the model's
-   *  natural-language explanation.
-   *  Returns `{ bubble, complete }` — `complete(ok, label)` flips the
-   *  widget out of its in-flight "Running…" state once the handler
-   *  finishes; see `_buildToolCallWidget`'s docstring for the
-   *  contract. */
-  _addToolWidgetBubble({ name, label, code, onRerun }) {
-    const bubble = document.createElement('div');
-    bubble.className = 'cb-bubble cb-bubble-assistant cb-bubble-tool';
-    const { widget, complete } = this._buildToolCallWidget({
-      name, label, code, onRerun,
+    const head = document.createElement('div');
+    head.className = 'cb-action-head';
+    const labelEl = document.createElement('span');
+    labelEl.className = 'cb-action-label';
+    labelEl.textContent = label;
+    const status = document.createElement('span');
+    status.className = 'cb-action-status';
+    status.textContent = 'running…';
+    head.appendChild(labelEl);
+    head.appendChild(status);
+    widget.appendChild(head);
+
+    if (code) {
+      const pre = document.createElement('pre');
+      pre.className = 'cb-action-code';
+      pre.textContent = code;
+      widget.appendChild(pre);
+    }
+
+    const errEl = document.createElement('div');
+    errEl.className = 'cb-action-error hidden';
+    widget.appendChild(errEl);
+
+    const btnRow = document.createElement('div');
+    btnRow.className = 'cb-action-btns';
+    const rerunBtn = document.createElement('button');
+    rerunBtn.type = 'button';
+    rerunBtn.className = 'cb-btn-rerun';
+    rerunBtn.textContent = '↻ Rerun';
+    rerunBtn.title = 'Execute this again';
+    rerunBtn.disabled = true;
+    btnRow.appendChild(rerunBtn);
+    widget.appendChild(btnRow);
+
+    const complete = (ok, errorText = '') => {
+      widget.classList.remove('cb-action-running', 'cb-action-done', 'cb-action-failed');
+      widget.classList.add(ok ? 'cb-action-done' : 'cb-action-failed');
+      status.textContent = ok ? '✓ done' : '✗ failed';
+      errEl.textContent = errorText || '';
+      errEl.classList.toggle('hidden', !errorText);
+      rerunBtn.disabled = !onRerun;
+    };
+    rerunBtn.addEventListener('click', async () => {
+      if (!onRerun) return;
+      rerunBtn.disabled = true;
+      widget.classList.add('cb-action-running');
+      status.textContent = 'running…';
+      try {
+        const result = await onRerun();
+        complete(result?.success !== false, result?.success === false ? result.error : '');
+      } catch (err) {
+        complete(false, err.message ?? 'Failed');
+      }
     });
-    bubble.appendChild(widget);
-    this._messagesEl.appendChild(bubble);
+
+    card.appendChild(widget);
+    this._messagesEl.appendChild(card);
     this._scrollBottom();
-    return { bubble, complete };
+    return { card, complete };
+  }
+
+  /** One-line trace for a read-only tool call — keeps the user in
+   *  the loop about what the assistant looked at without the weight
+   *  of a card.  `code` (RPL for evaluate) renders inline. */
+  _addToolTrace({ label, code }, outcome) {
+    const row = document.createElement('div');
+    row.className = 'cb-tool-trace';
+    const icon = document.createElement('span');
+    icon.className = 'cb-tool-trace-icon';
+    icon.textContent = '🔍';
+    row.appendChild(icon);
+    const name = document.createElement('span');
+    name.className = 'cb-tool-trace-name';
+    name.textContent = label;
+    row.appendChild(name);
+    if (code) {
+      const c = document.createElement('code');
+      c.className = 'cb-tool-trace-code';
+      c.textContent = code;
+      row.appendChild(c);
+    }
+    if (outcome) {
+      const out = document.createElement('span');
+      out.className = 'cb-tool-trace-outcome';
+      out.textContent = outcome;
+      row.appendChild(out);
+    }
+    this._messagesEl.appendChild(row);
+    this._scrollBottom();
+    return row;
+  }
+
+  /** Footer row offering to restore the calculator to the snapshot
+   *  taken before this turn's actions ran.  One-shot: after clicking,
+   *  the row flips to a confirmation and the model is told. */
+  _addUndoRow(snapshot, after = null) {
+    if (typeof this._tools.restoreState !== 'function') return null;
+    const row = document.createElement('div');
+    row.className = 'cb-undo-row';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cb-undo-btn';
+    btn.textContent = '↶ Undo this turn';
+    btn.title = 'Restore the stack, variables and modes to how they were before the assistant acted';
+    btn.addEventListener('click', () => {
+      try {
+        this._tools.restoreState(snapshot);
+        btn.disabled = true;
+        btn.textContent = '↶ Undone — calculator restored';
+        this._pushHistoryNote('(The user pressed Undo: the calculator was restored to its state from before this turn — every action above was reverted.)');
+      } catch (err) {
+        btn.textContent = `✗ Undo failed: ${err.message ?? err}`;
+        dwarn('undo: restoreState threw', err);
+      }
+    });
+    row.appendChild(btn);
+    if (after && after.parentNode === this._messagesEl) {
+      this._messagesEl.insertBefore(row, after.nextSibling);
+    } else {
+      this._messagesEl.appendChild(row);
+    }
+    this._scrollBottom();
+    return row;
   }
 
   /** Create an in-progress streaming bubble.  Returns refs to update it. */
@@ -2832,24 +3135,14 @@ export class ChatBot {
     return { bubble, textEl };
   }
 
-  /** Replace the streaming span with rendered markdown + optional tool-call widget. */
-  _finaliseStreamBubble(bubble, _textEl, cleanText, toolCall, opts = {}) {
-    bubble.classList.remove('cb-bubble-streaming');
+  /** Replace the streaming span with rendered markdown. */
+  _finaliseStreamBubble(bubble, _textEl, cleanText, _toolCall, opts = {}) {
+    bubble.classList.remove('cb-bubble-streaming', 'cb-bubble-thinking');
     bubble.innerHTML = '';
 
     if (cleanText) {
       const mdFrag = renderMarkdown(cleanText);
       bubble.appendChild(mdFrag);
-    }
-
-    if (toolCall) {
-      // Legacy path — current pipeline always passes toolCall=null
-      // here and renders the widget in a separate bubble via
-      // _addToolWidgetBubble.  Kept for symmetry; the `complete`
-      // handle is intentionally unused because nothing in this code
-      // path awaits the tool.
-      const { widget } = this._buildToolCallWidget(toolCall);
-      bubble.appendChild(widget);
     }
 
     // Distinct visual treatment when a finalisation is the result of
@@ -2926,119 +3219,6 @@ export class ChatBot {
     this._removeActiveChips();
     this._inputEl.value = text;
     this._submit();
-  }
-
-  /** Build a tool-call confirmation widget.
-   *
-   *  Returns `{ widget, complete }` rather than a bare DOM node:
-   *    - `widget`   — the element to insert into the message list.
-   *    - `complete(ok, label)` — call this AFTER the tool handler
-   *      finishes (or throws) to flip the button out of its
-   *      "✓ Running…" state.  Without it the button is stuck on
-   *      "Running…" forever, which is misleading because the tool
-   *      has actually completed by then — the widget just never got
-   *      told.  Cancel and Run-then-await both flow through this
-   *      helper so the disabled-state contract stays uniform.
-   *
-   *  The click handlers themselves only resolve the pending-confirm
-   *  promise and disable both buttons — they DO NOT set a final
-   *  label.  That's `complete()`'s job, called from `_dispatchTool`
-   *  with the actual outcome.  This avoids the previous footgun
-   *  where the click handler optimistically wrote "✓ Running…" and
-   *  the dispatch path had no way to overwrite it. */
-  _buildToolCallWidget({ name, label, code, onRerun }) {
-    const widget = document.createElement('div');
-    widget.className = 'cb-action-widget';
-
-    const labelEl = document.createElement('div');
-    labelEl.className = 'cb-action-label';
-    labelEl.textContent = label || `Tool: ${name}`;
-    widget.appendChild(labelEl);
-
-    if (code) {
-      const pre = document.createElement('pre');
-      pre.className = 'cb-action-code';
-      pre.textContent = code;
-      widget.appendChild(pre);
-    }
-
-    const btnRow = document.createElement('div');
-    btnRow.className = 'cb-action-btns';
-
-    const confirmBtn = document.createElement('button');
-    confirmBtn.className = 'cb-btn-confirm';
-    confirmBtn.textContent = '▶ Run';
-    // Capture click time so complete() can enforce a 1s minimum
-    // disabled window — fast handlers (push a number, clear the
-    // editor) otherwise complete in <50 ms and the user gets no
-    // visible feedback that anything happened.
-    let runStartedAt = null;
-    confirmBtn.addEventListener('click', async () => {
-      // First click: drive the initial confirmation flow.  Once
-      // _pendingConfirm has been resolved, _completed flips to true
-      // (after complete() runs); subsequent clicks then go through
-      // the rerun branch below, which re-invokes the captured handler
-      // directly without involving the dispatch loop.
-      if (this._pendingConfirm) {
-        runStartedAt = Date.now();
-        confirmBtn.disabled = true;
-        cancelBtn.disabled  = true;
-        this._pendingConfirm.resolve(true);
-        return;
-      }
-      if (_completed && onRerun) {
-        runStartedAt = Date.now();
-        confirmBtn.disabled = true;
-        // Reset for another complete() cycle.
-        _completed = false;
-        widget.classList.remove('cb-action-done', 'cb-action-failed');
-        try {
-          await onRerun();
-          complete(true);
-        } catch {
-          complete(false);
-        }
-      }
-    });
-
-    const cancelBtn = document.createElement('button');
-    cancelBtn.className = 'cb-btn-cancel';
-    cancelBtn.textContent = 'Cancel';
-    cancelBtn.addEventListener('click', () => {
-      if (!this._pendingConfirm) return;
-      confirmBtn.disabled = true;
-      cancelBtn.disabled  = true;
-      cancelBtn.textContent = '✗ Cancelled';
-      this._pendingConfirm.resolve(false);
-    });
-
-    btnRow.appendChild(confirmBtn);
-    btnRow.appendChild(cancelBtn);
-    widget.appendChild(btnRow);
-
-    // Mark the widget done.  Called from _dispatchTool with the
-    // outcome of the handler so the user sees a definite end state
-    // rather than the in-flight "Running…" label.  Idempotent — safe
-    // to call multiple times; only the first call has visible
-    // effect.
-    let _completed = false;
-    const complete = (ok /* , _finalLabel */) => {
-      if (_completed) return;
-      _completed = true;
-      // Enforce a min 1s disabled window so fast handlers still flash
-      // the interim state visibly.  After that, relabel to "↻ Rerun"
-      // and re-enable so the user can re-execute the same action; the
-      // widget also picks up a done/failed CSS class for distinction.
-      const elapsed   = Date.now() - (runStartedAt ?? Date.now());
-      const remaining = Math.max(0, 1000 - elapsed);
-      setTimeout(() => {
-        confirmBtn.disabled = onRerun ? false : true;
-        confirmBtn.textContent = '↻ Rerun';
-        widget.classList.add(ok ? 'cb-action-done' : 'cb-action-failed');
-      }, remaining);
-    };
-
-    return { widget, complete };
   }
 
   /* ---- UI state ---- */

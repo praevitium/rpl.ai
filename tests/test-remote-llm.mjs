@@ -1,4 +1,7 @@
-import { toOpenAIBase, toOllamaBase, takeSSEFrames, summarizeRun, pickContextLength, RemoteLLM } from '../www/src/ai/remote-llm.js';
+import {
+  toOpenAIBase, toOllamaBase, takeSSEFrames, takeNDJSONLines, summarizeRun, pickContextLength,
+  chooseNumCtx, normalizeToolCall, RemoteLLM,
+} from '../www/src/ai/remote-llm.js';
 import { assert } from './helpers.mjs';
 
 /* RemoteLLM URL normalizers — the two pure helpers that turn whatever
@@ -362,4 +365,153 @@ const frame = (obj) => 'data: ' + JSON.stringify(obj);
          'onStatus listener fires once then stops after unsubscribe');
   assert(r.status === 'ready' && r.statusMsg === 'done',
          '_setStatus updates the status/statusMsg getters regardless of listeners');
+}
+
+/* Ollama-native helpers: NDJSON line splitting, num_ctx choice, native
+   tool-call normalisation, and the load()-time capability probe. */
+{
+  const { lines, rest } = takeNDJSONLines('{"a":1}\n\n{"b":2}\n{"c":');
+  assert(lines.length === 2 && lines[0] === '{"a":1}' && lines[1] === '{"b":2}',
+         'takeNDJSONLines returns complete non-empty lines');
+  assert(rest === '{"c":', 'takeNDJSONLines carries the incomplete tail');
+  const done = takeNDJSONLines(rest + '3}\n');
+  assert(done.lines.length === 1 && done.rest === '', 'takeNDJSONLines completes a carried tail');
+}
+{
+  assert(chooseNumCtx(16384, 131072) === 16384, 'chooseNumCtx honours the requested window under the model max');
+  assert(chooseNumCtx(65536, 32768) === 32768, 'chooseNumCtx clamps to the model max');
+  assert(chooseNumCtx(2048, 131072) === 8192, 'chooseNumCtx floors at 8K so the system prompt fits');
+  assert(chooseNumCtx(null, null) === 8192, 'chooseNumCtx defaults to the floor when nothing is known');
+  assert(chooseNumCtx(16384, null) === 16384, 'chooseNumCtx keeps the request when the model max is unknown');
+}
+{
+  const a = normalizeToolCall({ function: { name: 'run', arguments: { text: '10 FACT' } } });
+  assert(a.name === 'run' && a.arguments.text === '10 FACT', 'normalizeToolCall reads Ollama-shaped calls');
+  const b = normalizeToolCall({ function: { name: 'run', arguments: '{"text":"SWAP"}' } });
+  assert(b.arguments.text === 'SWAP', 'normalizeToolCall parses stringified OpenAI-style arguments');
+  const c = normalizeToolCall({ function: { name: 'get_stack' } });
+  assert(c.name === 'get_stack' && Object.keys(c.arguments).length === 0,
+         'normalizeToolCall defaults missing arguments to {}');
+  assert(normalizeToolCall({ function: { arguments: {} } }) === null
+         && normalizeToolCall(null) === null,
+         'normalizeToolCall rejects entries without a name');
+}
+{
+  const s = summarizeRun({ t0: 0, firstTokenAt: 10, t1: 110, inputChars: 400, inputMessages: 2,
+                           outputChars: 20, outputTokens: 10, finishReason: 'stop', aborted: false,
+                           inputTokens: 123 });
+  assert(s.inputTokens === 123, 'summarizeRun carries the server-reported prompt token count');
+  const s2 = summarizeRun({ t0: 0, firstTokenAt: null, t1: 5, inputChars: 1, inputMessages: 1,
+                            outputChars: 0, outputTokens: 0, finishReason: null, aborted: true });
+  assert(s2.inputTokens === null, 'summarizeRun defaults inputTokens to null');
+}
+{
+  // load() against a fake Ollama: /api/show answers with capabilities +
+  // context length; the instance reports them and sizes num_ctx.
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    if (String(url).endsWith('/api/version')) return { ok: true, status: 200, json: async () => ({ version: '0.12.0' }) };
+    if (String(url).endsWith('/api/show')) {
+      return { ok: true, status: 200, json: async () => ({
+        capabilities: ['completion', 'tools', 'thinking'],
+        model_info: { 'qwen3.context_length': 40960 },
+      }) };
+    }
+    return { ok: false, status: 404, text: async () => '' };
+  };
+  try {
+    const llm = new RemoteLLM('http://localhost:11434', { contextTokens: 16384, think: false });
+    await llm.load('qwen3:8b');
+    assert(llm.status === 'ready' && llm.isOllama, 'RemoteLLM.load detects Ollama via /api/show');
+    assert(llm.supportsTools && llm.supportsThinking, 'RemoteLLM exposes tools/thinking capabilities');
+    assert(llm.contextTokens === 16384, 'RemoteLLM sizes num_ctx from the requested window');
+    assert(llm.thinkEnabled === false && llm.options.think === false,
+           'RemoteLLM keeps the think option');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+}
+{
+  // load() against a plain OpenAI-compatible server: /api/show 404s
+  // (no Ollama body), /v1/models answers.
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (String(url).endsWith('/api/version')) return { ok: false, status: 404, json: async () => ({}) };
+    if (String(url).endsWith('/models')) return { ok: true, status: 200, json: async () => ({ data: [{ id: 'm' }] }) };
+    return { ok: false, status: 500, text: async () => '' };
+  };
+  try {
+    const llm = new RemoteLLM('http://srv:8000/v1');
+    await llm.load('m');
+    assert(llm.status === 'ready' && !llm.isOllama && !llm.supportsTools,
+           'RemoteLLM.load falls back to OpenAI-compat when /api/show is not Ollama');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+}
+{
+  // generate() on the Ollama path: NDJSON stream with thinking, content
+  // and a native tool call; stats pick up the real token counts.
+  const origFetch = globalThis.fetch;
+  const enc = new TextEncoder();
+  const chunks = [
+    '{"message":{"role":"assistant","content":"","thinking":"hmm"},"done":false}\n',
+    '{"message":{"role":"assistant","content":"Computing."},"done":false}\n',
+    '{"message":{"role":"assistant","content":"","tool_calls":[{"function":{"name":"run","arguments":{"text":"10 FACT"}}}]},"done":false}\n',
+    '{"message":{"role":"assistant","content":""},"done":true,"done_reason":"stop","prompt_eval_count":321,"eval_count":7}\n',
+  ];
+  let sentBody = null;
+  globalThis.fetch = async (url, init) => {
+    if (String(url).endsWith('/api/version')) return { ok: true, status: 200, json: async () => ({ version: '0.12.0' }) };
+    if (String(url).endsWith('/api/show')) {
+      return { ok: true, status: 200, json: async () => ({ capabilities: ['tools', 'thinking'], model_info: {} }) };
+    }
+    if (String(url).endsWith('/api/chat')) {
+      sentBody = JSON.parse(init.body);
+      let i = 0;
+      return { ok: true, status: 200, body: { getReader: () => ({
+        read: async () => (i < chunks.length ? { done: false, value: enc.encode(chunks[i++]) } : { done: true }),
+      }) } };
+    }
+    return { ok: false, status: 404, text: async () => '' };
+  };
+  try {
+    const llm = new RemoteLLM('http://localhost:11434', { contextTokens: 8192 });
+    await llm.load('m');
+    let text = '', thinking = '';
+    const out = await llm.generate([{ role: 'user', content: 'hi' }], {
+      onToken: (t) => { text += t; }, onThinking: (t) => { thinking += t; },
+      maxTokens: 999, tools: [{ type: 'function', function: { name: 'run', parameters: {} } }],
+    });
+    assert(text === 'Computing.' && thinking === 'hmm', 'generate streams content and thinking separately');
+    assert(out.toolCalls.length === 1 && out.toolCalls[0].arguments.text === '10 FACT',
+           'generate returns native tool calls');
+    assert(sentBody.options.num_ctx === 8192 && sentBody.options.num_predict === 999,
+           'generate requests num_ctx and num_predict');
+    assert(Array.isArray(sentBody.tools) && sentBody.think === true && sentBody.keep_alive,
+           'generate passes tools, think and keep_alive when supported');
+    assert(llm.lastStats.inputTokens === 321 && llm.lastStats.outputTokens === 7,
+           'generate reports Ollama\'s real prompt/eval token counts');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+}
+
+{
+  // Ollama without the requested model: /api/show 404 → clear error.
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (String(url).endsWith('/api/version')) return { ok: true, status: 200, json: async () => ({ version: '0.12.0' }) };
+    if (String(url).endsWith('/api/show')) return { ok: false, status: 404, text: async () => '{"error":"model not found"}' };
+    return { ok: false, status: 500, text: async () => '' };
+  };
+  try {
+    const llm = new RemoteLLM('http://localhost:11434');
+    let msg = '';
+    try { await llm.load('nope'); } catch (e) { msg = e.message; }
+    assert(/not available on the server/.test(msg) && llm.status === 'error',
+           'RemoteLLM.load reports a missing Ollama model plainly');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
 }

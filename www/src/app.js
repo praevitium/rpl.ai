@@ -21,8 +21,14 @@ import {
   setBinaryBase, setDisplay,
   varOrder, varList, varRecall, varStore, currentPath,
   goInto, goHome, goUp,
+  captureCalcState, restoreCalcState,
 } from './rpl/state.js';
-import { lookup } from './rpl/ops.js';
+import { lookup, allOps } from './rpl/ops.js';
+import { evalScratch } from './rpl/scratch.js';
+import { CATEGORIES } from './ui/side-panel.js';
+import {
+  loadCommandReference, findReferenceEntry, formatReferenceEntry, searchCommands,
+} from './ui/command-reference.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, Real,
 } from './rpl/types.js';
@@ -110,16 +116,31 @@ class App {
     // We hand it an opaque `tools` object and a `getContext` function;
     // it never imports anything from rpl/ or the rest of the UI.
     // The SidePanel mounts the chatBot's DOM on first AI-tab open.
+    // Warm the command-reference index in the background so the
+    // assistant's first lookup doesn't pay the 1.4 MB fetch + parse.
+    let commandRef = null;
+    loadCommandReference().then((m) => { commandRef = m; }).catch(() => {});
+    const displayOpts = () => this.display?.displayOpts;
+
     this.chatBot = new ChatBot({
       tools: {
         /** Run RPL code exactly as if the user typed it and pressed ENTER.
          *  This is how the model "places things on the stack" — the RPL
          *  parser handles numbers, names, expressions, programs, and
-         *  whole sequences indifferently. */
+         *  whole sequences indifferently.  Returns the error text the
+         *  LCD flashed, or '' on success, so the model learns when its
+         *  RPL didn't work. */
         run: (text) => {
           this.entry.recall(text);
           this.entry.enter();
+          return this.entry.error || '';
         },
+        /** Dry-run RPL on a scratch copy of the stack; nothing the user
+         *  sees changes.  Same parse/execute path as `run`. */
+        evaluate: (text) => evalScratch(text, {
+          liveItems: this.stack.save(),
+          displayOpts: displayOpts(),
+        }),
         /** Insert text at the editor cursor without committing.  Lets
          *  the model build up an expression piece-by-piece while the
          *  user watches. */
@@ -138,7 +159,34 @@ class App {
         recallVar: (name) => {
           const v = varRecall(name);
           if (v === undefined) return undefined;
-          return format(v, this.display?.displayOpts);
+          return format(v, displayOpts());
+        },
+        /** Reference-manual entry for one command, as text.  `null`
+         *  when the reference has no page for it (the model then knows
+         *  to fall back to search_commands). */
+        lookupCommand: (name) => {
+          const entry = commandRef ? findReferenceEntry(commandRef, name) : null;
+          const registered = lookup(name) != null;
+          if (!entry) return { text: '', registered, name: String(name ?? '') };
+          return {
+            text: formatReferenceEntry(entry),
+            registered: registered || entry.inApp,
+            name: entry.name,
+          };
+        },
+        /** Ranked command search over names, reference descriptions
+         *  and the side-panel categories. */
+        searchCommands: (query) => searchCommands(query, {
+          names: allOps(), entries: commandRef, categories: CATEGORIES, limit: 12,
+        }),
+        /** Snapshot / restore the whole calculator (stack + variables +
+         *  modes) so a turn's actions can be undone as one unit. */
+        snapshotState: () => ({ stack: this.stack.save(), calc: captureCalcState() }),
+        restoreState: (snap) => {
+          this.entry.cancel();
+          this.entry._snapForUndo();
+          this.stack.restore(snap.stack);
+          restoreCalcState(snap.calc);
         },
       },
       getContext: () => {
@@ -146,14 +194,21 @@ class App {
         // shape we want for the LLM context (top of stack at index 0).
         const levels = this.stack.snapshot();
         const st     = calcState;
-        const opts   = this.display?.displayOpts;
+        const opts   = displayOpts();
         return {
           stack: levels.slice(0, 8).map(v => format(v, opts)),
+          depth: levels.length,
           angleMode: st.angle,
           displayMode: st.displayMode === 'STD'
             ? 'STD'
             : `${st.displayMode} ${st.displayDigits}`,
+          exactMode: st.approxMode ? 'APPROX' : 'EXACT',
+          base: { d: 'DEC', h: 'HEX', o: 'OCT', b: 'BIN' }[st.binaryBase] ?? 'DEC',
+          casVar: st.casVx,
           dir: currentPath().join('/') || 'HOME',
+          vars: varList().slice(0, 40),
+          editor: this.entry.buffer,
+          lastError: this.entry.error || '',
         };
       },
     });
