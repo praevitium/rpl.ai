@@ -1351,3 +1351,52 @@ export function redoVarState() {
   _restoreVarSnapshot(future);
   _emit();
 }
+
+/* ------------------- whole-state capture / restore ------------------
+   Everything the ops read and write in this module — variables and
+   directories, modes, flags, CAS slots, halted programs — bundled so
+   the AI assistant can (a) run RPL in a scratch sandbox and roll it
+   back, and (b) offer "undo the assistant's turn" that restores the
+   calculator to exactly where it stood before the turn began.  Stack
+   contents live on the Stack instance and are captured separately
+   (Stack.save / restore). */
+
+const CAPTURED_SCALARS = [
+  'angle', 'coordMode', 'displayMode', 'displayDigits', 'lastError',
+  'wordsize', 'binaryBase', 'textbookMode', 'approxMode', 'complexMode',
+  'lastFitModel', 'casVx', 'casModulo', 'halted', 'promptMessage', 'prngSeed',
+  'realMaxExp',
+];
+
+export function captureCalcState() {
+  const scalars = {};
+  for (const k of CAPTURED_SCALARS) scalars[k] = state[k];
+  return {
+    vars: _snapshotVarState(),
+    scalars,
+    userFlags: new Set(state.userFlags),
+    haltedStack: [...state.haltedStack],
+  };
+}
+
+export function restoreCalcState(snap) {
+  _restoreVarSnapshot(snap.vars);
+  const { realMaxExp, ...rest } = snap.scalars;
+  Object.assign(state, rest);
+  state.userFlags = new Set(snap.userFlags);
+  state.haltedStack = [...snap.haltedStack];
+  if (state.realMaxExp !== realMaxExp) setRealMaxExp(realMaxExp);
+  _emit();
+}
+
+/** Run `fn` and put every module global back afterwards (even if it
+ *  throws), so a sandboxed `5 \`A\` STO` or `HEX` leaves no trace.
+ *  Listeners see the restore, so the UI ends where it started. */
+export function withScratchState(fn) {
+  const snap = captureCalcState();
+  try {
+    return fn();
+  } finally {
+    restoreCalcState(snap);
+  }
+}

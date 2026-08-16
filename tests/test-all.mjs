@@ -35,6 +35,8 @@ const FILES = [
   './test-chatbot-parse.mjs',
   './test-remote-llm.mjs',
   './test-llm-manager.mjs',
+  './test-command-reference.mjs',
+  './test-scratch.mjs',
 ];
 
 const perFile = [];
