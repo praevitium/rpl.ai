@@ -222,10 +222,29 @@ panel handles Greek letters and operators that aren't on the keyboard. The
 file manager moves programs and variables in and out of the calculator's
 home directory.
 
-**Ask the AI.** Prefix any command-line input with `?` to send it to the
-assistant — e.g. `? give me a program that returns the n-th Fibonacci
-number`. Answers come back as RPL you can push onto the stack with one
-click.
+**Ask the AI.** Open the ✦ tab (or prefix any command-line input with `?`,
+e.g. `? give me a program that returns the n-th Fibonacci number`). The
+assistant reads the live stack, modes and variables every turn, looks
+commands up in the built-in HP50 reference, dry-runs RPL on a scratch copy
+of the calculator to compute and verify, and then executes for real —
+pushing values, running commands, storing programs, changing modes. Every
+action shows up as a card, every lookup as a one-line trace, and each turn
+ends with an **↶ Undo** link that restores the calculator to how it was
+before the assistant acted. It handles multi-step work (write a program,
+test it, store it, run it), explains how it got there when asked, and
+works through maths / physics / finance problems using the calculator as
+its lab bench.
+
+Two ways to run it:
+
+- **In-browser (WebLLM)** — small models (0.5–2 B) downloaded once and run
+  on your GPU. Private and offline; best for quick calculator help.
+- **Ollama / OpenAI-compatible endpoint** — recommended. Point the picker
+  at `http://localhost:11434` and choose any pulled model. Ollama models
+  that advertise `tools` get native tool calling; models that advertise
+  `thinking` (Qwen3, DeepSeek-R1, gpt-oss, …) reason before answering (a
+  checkbox turns that off); the context window you pick is requested as
+  `num_ctx` so the assistant's system prompt is never truncated.
 
 **History.** Every entry from the current session is replayable from the
 history panel — click a prior result to push it back onto the stack.

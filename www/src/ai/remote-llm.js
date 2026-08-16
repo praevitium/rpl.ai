@@ -369,7 +369,7 @@ export class RemoteLLM {
         console.warn('[RemoteLLM] stats listener threw:', err);
       }
     }
-    return { toolCalls: run.toolCalls };
+    return { toolCalls: run.toolCalls, finishReason: run.finishReason };
   }
 
   abort() {

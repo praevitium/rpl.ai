@@ -2,7 +2,7 @@ import {
   parseAllToolCalls, parseSuggestions, findMachineSectionStart, stripThinkBlocks,
   resolveToolAlias, activeContextTokens, effectiveBudget, TOOL_ALIASES, ChatBot,
   parseFencedBlock, parseInlineSpans, classifyMarkdownLine,
-  normalizeRpl, normalizeRemoteConfig,
+  normalizeRpl, normalizeRemoteConfig, looksInfix,
 } from '../www/src/ai/chat-bot.js';
 import {
   SYSTEM_PROMPT_COMBINED, SYSTEM_PROMPT_FULL, RPL_CATALOG, TOOL_SCHEMAS, buildSystemPrompt,
@@ -1178,4 +1178,17 @@ const registryToolNames = () =>
   assert(normalizeRemoteConfig({ url: '', model: 'm' }) === null
          && normalizeRemoteConfig(null) === null,
          'normalizeRemoteConfig rejects incomplete configs');
+}
+
+/* looksInfix — the hint attached to a failed run/evaluate when the model
+   wrote an infix formula as bare RPL. */
+{
+  assert(looksInfix('(10 * (10^321 - 1) / 9) - 321'), 'looksInfix flags a parenthesised infix formula');
+  assert(looksInfix('A+B') && looksInfix('3*(2+1)'), 'looksInfix flags operator-adjacent operands');
+  assert(!looksInfix('10 321 ^ 1 -'), 'looksInfix accepts postfix RPL');
+  assert(!looksInfix('1E-5 2 *'), 'looksInfix ignores exponent literals');
+  assert(!looksInfix('1_m/s 2 *'), 'looksInfix ignores unit suffixes');
+  assert(!looksInfix('"a+b" 1 +'), 'looksInfix ignores string contents');
+  assert(!looksInfix('`x^2+1` EVAL'), 'looksInfix leaves backtick algebraics alone');
+  assert(!looksInfix('[1 -2 3] 10 -3 +'), 'looksInfix ignores negative literals');
 }
