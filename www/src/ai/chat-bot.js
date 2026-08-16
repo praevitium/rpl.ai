@@ -403,27 +403,30 @@ function appendInlineMarkdownLines(frag, text) {
  *  'em'`; `content` is the raw captured body (math is left untrimmed — the
  *  caller trims at the render site).  Inline math is `$…$` or `\(…\)`; the
  *  `$` form requires a non-space char immediately after the opening `$` to
- *  avoid eating bare dollar signs in prose ("costs $5 and $10"). */
+ *  avoid eating bare dollar signs in prose ("costs $5 and $10").  An escaped
+ *  `\$` never opens or closes math — inside `$…$` it stays for KaTeX to
+ *  render as a literal dollar; in text/bold/em it is unescaped to `$`. */
 export function parseInlineSpans(text) {
   // Order: code (so `…$x$…` inside backticks doesn't math-ify), then
   // inline math (\(…\) and $…$), then **bold**, then *italic*.
-  const re = /(`([^`]+)`|\\\(([\s\S]+?)\\\)|\$(?=\S)([^$\n]+?)(?<=\S)\$|\*\*([^*]+)\*\*|\*([^*]+)\*)/g;
+  const re = /(`([^`]+)`|\\\(([\s\S]+?)\\\)|(?<!\\)\$(?=\S)((?:\\[^\n]|[^\\$\n])+?)(?<=\S)\$|\*\*([^*]+)\*\*|\*([^*]+)\*)/g;
+  const prose = s => s.replace(/\\\$/g, '$');
   const spans = [];
   let last = 0;
   let m;
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) {
-      spans.push({ type: 'text', content: text.slice(last, m.index) });
+      spans.push({ type: 'text', content: prose(text.slice(last, m.index)) });
     }
     if (m[2] !== undefined) spans.push({ type: 'code', content: m[2] });
     else if (m[3] !== undefined) spans.push({ type: 'math', content: m[3] });
     else if (m[4] !== undefined) spans.push({ type: 'math', content: m[4] });
-    else if (m[5] !== undefined) spans.push({ type: 'bold', content: m[5] });
-    else if (m[6] !== undefined) spans.push({ type: 'em', content: m[6] });
+    else if (m[5] !== undefined) spans.push({ type: 'bold', content: prose(m[5]) });
+    else if (m[6] !== undefined) spans.push({ type: 'em', content: prose(m[6]) });
     last = m.index + m[0].length;
   }
   if (last < text.length) {
-    spans.push({ type: 'text', content: text.slice(last) });
+    spans.push({ type: 'text', content: prose(text.slice(last)) });
   }
   return spans;
 }

@@ -478,6 +478,31 @@ import { readFileSync } from 'node:fs';
          'parseInlineSpans math-ifies a $…$ that opens before an inner code span');
 }
 
+// parseInlineSpans — escaped dollars. Models write `\$` for a literal dollar
+// sign both inside `$…$` (KaTeX renders it) and in prose. The `$…$` arm must
+// not treat `\$` as a delimiter, or "$60 \times \$5$" splits at the `\$` into
+// two KaTeX-error fragments; in prose spans `\$` unescapes to a bare `$`.
+{
+  const T = t => JSON.stringify(parseInlineSpans(t).map(s => [s.type, s.content]));
+  assert(T('$60 \\times \\$5,845.90 \\approx \\mathbf{\\$350,754.02}$')
+           === JSON.stringify([['math', '60 \\times \\$5,845.90 \\approx \\mathbf{\\$350,754.02}']]),
+         'parseInlineSpans keeps \\$ inside $…$ as math body (not a closer)');
+  assert(T('$\\mathbf{\\$114}$ then $\\approx \\$885$')
+           === JSON.stringify([['math', '\\mathbf{\\$114}'], ['text', ' then '],
+                               ['math', '\\approx \\$885']]),
+         'parseInlineSpans closes $…$ at the first unescaped $ after \\$ escapes');
+  assert(T('costs \\$5 and \\$10')
+           === JSON.stringify([['text', 'costs $5 and $10']]),
+         'parseInlineSpans unescapes prose \\$ to $ and does not open math on it');
+  assert(T('pay \\$5 for $x$')
+           === JSON.stringify([['text', 'pay $5 for '], ['math', 'x']]),
+         'parseInlineSpans skips an escaped \\$ opener and still finds later $…$ math');
+  assert(T('**\\$5**') === JSON.stringify([['bold', '$5']]),
+         'parseInlineSpans unescapes \\$ inside bold');
+  assert(T('`\\$5`') === JSON.stringify([['code', '\\$5']]),
+         'parseInlineSpans leaves \\$ verbatim inside a code span');
+}
+
 // session367: classifyMarkdownLine — the per-line block-role classifier lifted
 // out of appendInlineMarkdownLines' DOM (session326/347/353/360 extract-and-pin
 // precedent). The renderer's block dispatch (heading/list/paragraph routing)
