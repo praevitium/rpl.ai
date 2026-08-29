@@ -1697,6 +1697,41 @@ setAngle('rad');
 
 {
   const s = new Stack();
+  s.push(Integer(9));
+  lookup('√').fn(s);
+  assert(s.depth === 1 && isInteger(s.peek()) && s.peek().value === 3n,
+    '√ is a SQRT alias: 9 √ → 3');
+}
+{
+  const s = new Stack();
+  s.push(Real(-4));
+  lookup('√').fn(s);
+  const v = s.peek();
+  assert(isComplex(v) && Math.abs(v.re) < 1e-10 && Math.abs(v.im - 2) < 1e-10,
+    '√ alias shares SQRT complex path: √(-4) = (0, 2)');
+}
+{
+  const s = new Stack();
+  s.push(Str('x'));
+  assertThrows(() => { lookup('√').fn(s); }, /Bad argument type/,
+    '√ alias rejects a String the same way SQRT does');
+}
+{
+  const vals = parseEntry('9 √');
+  const s = new Stack();
+  for (const v of vals) {
+    if (v?.type === 'name' && !v.quoted) {
+      const op = lookup(v.id);
+      if (op) { op.fn(s); continue; }
+    }
+    s.push(v);
+  }
+  assert(isInteger(s.peek()) && s.peek().value === 3n,
+    '"9 √" via parseEntry runs the SQRT alias');
+}
+
+{
+  const s = new Stack();
   s.push(Real(0.5));
   lookup('→Q').fn(s);
   const sym = s.peek();

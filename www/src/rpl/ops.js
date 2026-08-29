@@ -1186,6 +1186,9 @@ register('SQRT', _withTaggedUnary(_withListUnary(_withVMUnary((s) => {
     s.push(Real(d.sqrt()));
   }
 }))));
+/* Character picker and the HP50 heading both use `√`; without this,
+   ENTER on an inserted glyph pushes Name('√') instead of running SQRT. */
+register('√', (s) => { OPS.get('SQRT').fn(s); });
 
 /**
  * Integer square root for non-negative BigInt.  Returns the exact

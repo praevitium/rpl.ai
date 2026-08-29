@@ -62,7 +62,7 @@ export const CATEGORIES = {
   ],
   'Arithmetic': [
     '+', '-', '*', '/', '^',
-    'NEG', 'INV', 'ABS', 'SQ', 'SQRT', 'XROOT',
+    'NEG', 'INV', 'ABS', 'SQ', 'SQRT', '√', 'XROOT',
     'FLOOR', 'CEIL', 'IP', 'FP', 'SIGN', 'MOD', 'RND', 'TRNC', 'TRUNC',
     'MIN', 'MAX', 'MINR', 'MAXR',
     'MANT', 'XPON',
