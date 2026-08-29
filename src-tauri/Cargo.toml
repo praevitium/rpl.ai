@@ -4,7 +4,7 @@ version = "0.3.3"
 description = "AI-Assisted RPL Calculator - Modern HP50g Adaptation"
 authors = ["RPL5050 Contributors"]
 license = "MIT"
-repository = "https://github.com/user/rpl5050"
+repository = "https://github.com/praevitium/rpl.ai"
 edition = "2021"
 rust-version = "1.60"
 
