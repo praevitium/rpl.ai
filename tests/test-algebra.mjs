@@ -1094,6 +1094,24 @@ import { assert, assertThrows } from './helpers.mjs';
          `√<number> normalises to SQRT in AST: got ${out3}`);
 }
 
+{
+  const { giacToAst, astToGiac } = await import('../www/src/rpl/cas/giac-convert.mjs');
+  const pos = giacToAst('+infinity');
+  assert(pos && pos.kind === 'var' && pos.name === '∞',
+         'giacToAst: +infinity → Var(∞)');
+  const neg = giacToAst('-infinity');
+  assert(neg && neg.kind === 'neg' && neg.arg && neg.arg.kind === 'var' && neg.arg.name === '∞',
+         'giacToAst: -infinity → Neg(Var(∞))');
+  assert(astToGiac(pos) === '+infinity',
+         'astToGiac: Var(∞) → +infinity');
+  assert(astToGiac(neg) === '-infinity',
+         'astToGiac: Neg(Var(∞)) → -infinity');
+  assert(astToGiac({ kind: 'var', name: 'INFINITY' }) === '+infinity',
+         'astToGiac: Var(INFINITY) → +infinity');
+  assert(astToGiac({ kind: 'var', name: '-∞' }) === '-infinity',
+         'astToGiac: Var(-∞) → -infinity');
+}
+
 // --- FACTOR end-to-end: nested-quote fixture doesn't leak to parser -
 // Simulate the real-Giac shape where caseval returns a doubly-wrapped
 // string `"\"X-1\""`.  With the iterative strip, FACTOR yields
@@ -6888,6 +6906,30 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   lookup('LIMIT').fn(s);
   assert(isReal(s.peek()) && s.peek().value.eq(0),
          'LIMIT at Symbolic X=-INFINITY maps Neg(INFINITY) to Giac -infinity');
+  giac._clear();
+}
+{
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('1/X')));
+  s.push(Integer(0n));
+  giac._clear();
+  giac._setFixture('limit(1/X,x,0)', '+infinity');
+  lookup('LIMIT').fn(s);
+  assert(isSymbolic(s.peek()) && s.peek().expr.kind === 'var' && s.peek().expr.name === '∞',
+         'LIMIT result +infinity lands as Symbolic ∞');
+  giac._clear();
+}
+{
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('1/X')));
+  s.push(Name('-∞'));
+  giac._clear();
+  giac._setFixture('limit(1/X,x,-infinity)', '-infinity');
+  lookup('LIMIT').fn(s);
+  const ast = s.peek() && s.peek().expr;
+  assert(isSymbolic(s.peek()) && ast && ast.kind === 'neg'
+      && ast.arg && ast.arg.kind === 'var' && ast.arg.name === '∞',
+         'LIMIT result -infinity lands as Symbolic -∞');
   giac._clear();
 }
 

@@ -9,13 +9,13 @@ current state.
 
 ## Current status
 
-`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (7909)** —
+`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (7917)** —
 fully green, 0 failing. `test-persist.mjs` is standalone (D-001 closed at
 ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~6 ms.
 
 | File                        | OK   | FAIL | Notes                              |
 |-----------------------------|------|------|------------------------------------|
-| test-algebra.mjs            | 1163 | 0    | Largest CAS-focused file.          |
+| test-algebra.mjs            | 1171 | 0    | Largest CAS-focused file.          |
 | test-arrow-aliases.mjs      |   82 | 0    |                                    |
 | test-binary-int.mjs         |  144 | 0    |                                    |
 | test-chatbot-parse.mjs      |  788 | 0    |                                    |
@@ -40,7 +40,7 @@ ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~6 ms.
 | test-ui.mjs                 |  318 | 0    |                                    |
 | test-units.mjs              |   64 | 0    |                                    |
 | test-variables.mjs          |  251 | 0    |                                    |
-| **test-all (aggregate)**    | **7909** | **0** | Fully green.                 |
+| **test-all (aggregate)**    | **7917** | **0** | Fully green.                 |
 | test-persist.mjs (separate) |   98 | 0    | Stable; D-001 closed ship-prep.    |
 | sanity.mjs (standalone)     |   22 | 0    | ~6 ms smoke suite.                 |
 

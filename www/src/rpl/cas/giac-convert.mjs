@@ -19,7 +19,7 @@
 // This module doesn't depend on the Giac engine itself. It's pure
 // string / AST manipulation, so it's safe to use in Node tests.
 
-import { parseAlgebra } from "../algebra.js";
+import { parseAlgebra, Var, Neg } from "../algebra.js";
 import { isValidHpIdentifier } from "../types.js";
 import { RPLError } from "../stack.js";
 
@@ -44,15 +44,33 @@ function assertValidCasName(name) {
   if (!isValidHpIdentifier(name)) throw new RPLError(`Invalid name: ${name}`);
 }
 
-/** Walk an AST and throw CasNameError on the first Var / Fn whose name
- *  wouldn't round-trip through Giac.  Pure traversal — does not mutate
- *  the tree.  Called at the top of astToGiac and by buildGiacCmd on
- *  each extraVars entry. */
+function infGiacFromName(name) {
+  if (name == null) return null;
+  const s = String(name);
+  if (s === "∞" || s === "+∞") return "+infinity";
+  if (s === "-∞") return "-infinity";
+  const u = s.toUpperCase();
+  if (u === "INFINITY" || u === "+INFINITY") return "+infinity";
+  if (u === "-INFINITY") return "-infinity";
+  return null;
+}
+
+function infAstFromGiac(s) {
+  const t = String(s).trim().toLowerCase();
+  if (t === "+infinity" || t === "infinity" || t === "inf" || t === "+inf") {
+    return Var("∞");
+  }
+  if (t === "-infinity" || t === "-inf") return Neg(Var("∞"));
+  return null;
+}
+
+/** Walk an AST and throw on the first Var / Fn whose name wouldn't
+ *  round-trip through Giac.  ∞ / INFINITY names are allowed. */
 function assertAstNamesValid(ast) {
   if (!ast || typeof ast !== "object") return;
   switch (ast.kind) {
     case "var":
-      assertValidCasName(ast.name);
+      if (!infGiacFromName(ast.name)) assertValidCasName(ast.name);
       return;
     case "fn":
       assertValidCasName(ast.name);
@@ -154,8 +172,13 @@ function emit(ast, parentPrec) {
     case "num":
       return formatNum(ast.value);
     case "var":
-      return ast.name;
+      return infGiacFromName(ast.name) || ast.name;
     case "neg": {
+      const inf = ast.arg && ast.arg.kind === "var" && infGiacFromName(ast.arg.name);
+      if (inf === "+infinity") {
+        return parentPrec >= 2 ? "(-infinity)" : "-infinity";
+      }
+      if (inf === "-infinity") return "+infinity";
       const inner = emit(ast.arg, 4);
       const s = `-${inner}`;
       return parentPrec >= 2 ? `(${s})` : s;
@@ -378,11 +401,11 @@ export function stripGiacQuotes(s) {
  *
  * Giac can also return:
  *   - lists:     [a, b, c]                    — not yet supported
- *   - special:   undef, +infinity, -infinity  — not yet supported
+ *   - special:   undef                        — not yet supported
  *   - piecewise: piecewise(c1, v1, c2, v2, …) — not yet supported
- * These cases throw so the caller can handle them explicitly rather
- * than silently produce garbage. Future expansion: return a tagged
- * result shape { kind: 'ast' | 'list' | 'undef', ... }.
+ *   - ±infinity: mapped to Var('∞') / Neg(Var('∞'))
+ * Unsupported shapes throw so the caller can handle them explicitly
+ * rather than silently produce garbage.
  */
 export function giacToAst(giacStr) {
   const s = String(giacStr).trim();
@@ -403,9 +426,8 @@ export function giacToAst(giacStr) {
   if (s.includes("piecewise(")) {
     throw new GiacResultError(s, "piecewise");
   }
-  if (s.endsWith("infinity") || s === "inf") {
-    throw new GiacResultError(s, "infinity");
-  }
+  const infAst = infAstFromGiac(s);
+  if (infAst) return infAst;
 
   // Giac runtime errors sometimes make it across the boundary as
   // plain-text result strings rather than thrown exceptions — e.g.
@@ -469,7 +491,7 @@ export function giacToAst(giacStr) {
 
 /**
  * Thrown when Giac returned a valid result that our adapter can't
- * (yet) represent as an AST — lists, infinity, piecewise, etc.
+ * (yet) represent as an AST — lists, piecewise, undef, etc.
  * Carries the raw Giac string so callers can present it to the user
  * or handle specific shapes.
  */

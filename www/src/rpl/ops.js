@@ -16690,40 +16690,18 @@ register('LIN', (s) => {
        entry: "If the variable approaching a value is the current CAS
        variable, it is sufficient to give its value alone."
      • The HP50 also accepts `∞` for plus/minus infinity.  The keypad
-       and character picker type that glyph as a Name; we also accept
-       `INFINITY` / `+INFINITY` / `-INFINITY` (Name or Symbolic Var,
-       including unary minus) and emit Giac `+infinity` / `-infinity`.
+       glyph and `INFINITY` / `±INFINITY` names map through astToGiac
+       to Giac `+infinity` / `-infinity`; a Giac infinity result lands
+       as Symbolic `∞`.
    `LIMIT` is the canonical name (HP49 backward-compat); `lim` is
    registered as a thin alias that delegates to LIMIT's fn so any
    future refinement picks up automatically (mirrors XNUM / XQ and
    CHARPOL).
    No-fallback policy: Giac not ready → `CAS not ready`.
    ------------------------------------------------------------------ */
-function _limitInfGiac(id) {
-  if (id == null) return null;
-  const s = String(id);
-  if (s === '∞' || s === '+∞') return '+infinity';
-  if (s === '-∞') return '-infinity';
-  const u = s.toUpperCase();
-  if (u === 'INFINITY' || u === '+INFINITY') return '+infinity';
-  if (u === '-INFINITY') return '-infinity';
-  return null;
-}
-
-function _limitAstToGiac(ast) {
-  if (ast && ast.kind === 'var') {
-    const inf = _limitInfGiac(ast.name);
-    if (inf) return inf;
-  } else if (ast && ast.kind === 'neg' && ast.arg && ast.arg.kind === 'var') {
-    const inf = _limitInfGiac(ast.arg.name);
-    if (inf === '+infinity') return '-infinity';
-    if (inf === '-infinity') return '+infinity';
-  }
-  return astToGiac(ast);
-}
-
 function _limitPointToGiac(pointArg) {
   // Returns { varName, valGiac } or throws RPLError.
+  // ∞ / INFINITY names go through astToGiac, which emits Giac ±infinity.
   if (isSymbolic(pointArg)) {
     const ast = pointArg.expr;
     // Equation form: var = val (HP equality is `=`; AST lays it as
@@ -16733,10 +16711,10 @@ function _limitPointToGiac(pointArg) {
       if (!ast.l || ast.l.kind !== 'var') {
         throw new RPLError('Bad argument value');
       }
-      return { varName: ast.l.name, valGiac: _limitAstToGiac(ast.r) };
+      return { varName: ast.l.name, valGiac: astToGiac(ast.r) };
     }
     // Bare Symbolic value (no equation) — use current VX.
-    return { varName: getCasVx(), valGiac: _limitAstToGiac(ast) };
+    return { varName: getCasVx(), valGiac: astToGiac(ast) };
   }
   if (isInteger(pointArg))  return { varName: getCasVx(), valGiac: pointArg.value.toString() };
   if (isReal(pointArg))     return { varName: getCasVx(), valGiac: pointArg.value.toString() };
@@ -16745,8 +16723,6 @@ function _limitPointToGiac(pointArg) {
     valGiac: `(${pointArg.n.toString()}/${pointArg.d.toString()})`,
   };
   if (isName(pointArg)) {
-    const inf = _limitInfGiac(pointArg.id);
-    if (inf) return { varName: getCasVx(), valGiac: inf };
     return { varName: getCasVx(), valGiac: astToGiac(AstVar(pointArg.id)) };
   }
   throw new RPLError('Bad argument type');
