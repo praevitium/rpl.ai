@@ -6913,10 +6913,9 @@ register('OBJ→', (s) => {
     return;
   }
   if (isString(v)) {
-    // OBJ→ on a string parses the string as RPL source, evaluates each
-    // top-level token, and leaves the results on the stack.  We reuse
-    // parseEntry so this stays consistent with typed entry.
-    const parsed = _parseStringForObjTo(v.value);
+    // Parse as RPL source and push each top-level object.  Ops are not
+    // run — `"1 2 +"` leaves Integer(1), Integer(2), Name('+').
+    const parsed = _parseEntryForObjTo(v.value);
     for (const item of parsed) s.push(item);
     return;
   }
@@ -7012,16 +7011,6 @@ register('→PRG', (s) => {
   s.push(Program(items));
 });
 register('->PRG', (s) => OPS.get('→PRG').fn(s));
-
-function _parseStringForObjTo(src) {
-  // parseEntry may return a single value, an array, or something
-  // falsy for an empty string.  Normalize to a plain array of pushable
-  // values.  Throws propagate as RPL parse errors, matching HP50
-  // "OBJ→ Syntax Error" behavior on bad inputs.
-  const r = _parseEntryForObjTo(src);
-  if (r == null) return [];
-  return Array.isArray(r) ? r : [r];
-}
 
 /* ================================================================
    INCR / DECR
@@ -7446,7 +7435,7 @@ register('DECOMP', (s) => {
 const _fromStrOp = (s) => {
   const [v] = s.popN(1);
   if (!isString(v)) throw new RPLError('Bad argument type');
-  const parsed = _parseStringForObjTo(v.value);
+  const parsed = _parseEntryForObjTo(v.value);
   for (const item of parsed) s.push(item);
 };
 register('STR→',  _fromStrOp);

@@ -141,8 +141,13 @@ import { assert } from './helpers.mjs';
     const s = new Stack();
     s.push(Str('1 2 +'));
     lookup('OBJ→').fn(s);
-    // Parsed as three values: Integer(1), Integer(2), Name('+')
-    assert(s.depth === 3, 'OBJ→ "1 2 +" parses 3 tokens');
+    // Parsed as three values: Integer(1), Integer(2), Name('+') —
+    // OBJ→ does not run ops (typed entry would execute `+`).
+    assert(s.depth === 3
+        && isInteger(s.peek(3)) && s.peek(3).value === 1n
+        && isInteger(s.peek(2)) && s.peek(2).value === 2n
+        && isName(s.peek(1)) && s.peek(1).id === '+',
+      'OBJ→ "1 2 +" parses 3 tokens and does not run +');
   }
   /* HP50 AUR §3-149 — OBJ→ on a Real returns the Real unchanged.
      Prior versions did a mantissa/exponent split here, but the AUR
