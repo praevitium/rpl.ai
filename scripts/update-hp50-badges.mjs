@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { allOps } from '../www/src/rpl/ops.js';
+import { ALIASES } from '../www/src/ui/command-help.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HTML_PATH = path.resolve(HERE, '../www/docs/hp50-commands.html');
@@ -36,6 +37,20 @@ function commandKey(display) {
   return decodeEntities(stripped).toUpperCase();
 }
 
+// Manual headings use glyphs (`√`) where the registry uses mnemonics
+// (`SQRT`). Invert command-help ALIASES so those headings stay in-app.
+const dispatchForDoc = new Map();
+for (const [dispatch, doc] of ALIASES) {
+  dispatchForDoc.set(String(doc).toUpperCase(), String(dispatch).toUpperCase());
+}
+
+function isRegistered(display) {
+  const key = commandKey(display);
+  if (registered.has(key)) return true;
+  const alias = dispatchForDoc.get(key);
+  return !!(alias && registered.has(alias));
+}
+
 let html = readFileSync(HTML_PATH, 'utf8');
 
 const idToInApp = new Map();
@@ -44,7 +59,7 @@ html = html.replace(
   /<h2 id="(cmd-[^"]+)">([^<]+?) <span class="(?:in-app|not-in-app)">(?:in app|not in app)<\/span>/g,
   (_m, id, display) => {
     h2Count += 1;
-    const inApp = registered.has(commandKey(display));
+    const inApp = isRegistered(display);
     idToInApp.set(id, inApp);
     const cls   = inApp ? 'in-app' : 'not-in-app';
     const label = inApp ? 'in app' : 'not in app';

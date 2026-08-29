@@ -120,3 +120,37 @@ const REF = parseCommandReference(HTML);
                         `searchCommands inApp row ${r.name} is registered or doc-flagged in-app`);
   }
 }
+
+// Heading ids must be unique: LCD→ used to share LASTARG's id, so the
+// badge script last-wins-grayed LASTARG and the LCD→ TOC href was dead.
+{
+  const ids = [...HTML.matchAll(/<h2 id="(cmd-[^"]+)">/g)].map((m) => m[1]);
+  const seen = new Set();
+  const dups = [];
+  for (const id of ids) {
+    if (seen.has(id)) dups.push(id);
+    seen.add(id);
+  }
+  assert(dups.length === 0,
+         `command-reference heading ids are unique (dups: ${dups.join(', ')})`);
+  assert(seen.has('cmd-LCD-to') && seen.has('cmd-LASTARG'),
+         'LCD→ and LASTARG have distinct heading ids');
+  const toc = HTML.split('<div class="toc"', 2)[1].split('</div>', 2)[0];
+  const hrefs = [...toc.matchAll(/<a href="#(cmd-[^"]+)"/g)].map((m) => m[1]);
+  const missing = hrefs.filter((h) => !seen.has(h));
+  assert(missing.length === 0,
+         `every TOC href has a heading (missing: ${missing.join(', ')})`);
+}
+
+{
+  assert(REF.get('LASTARG')?.inApp, 'LASTARG is flagged in-app');
+  assert(REF.get('PMINI')?.inApp, 'PMINI is flagged in-app');
+  assert(REF.get('SCHUR')?.inApp, 'SCHUR is flagged in-app');
+  assert(findReferenceEntry(REF, 'SQRT')?.inApp,
+         'SQRT / √ heading is flagged in-app');
+  const lcd = findReferenceEntry(REF, 'LCD→');
+  assert(lcd && !lcd.inApp, 'LCD→ is indexed and flagged not-in-app');
+  assert(REF.get('COL–')?.inApp && REF.get('ROW–')?.inApp
+      && REF.get('HMS–')?.inApp && REF.get('STO–')?.inApp,
+         'en-dash COL– / ROW– / HMS– / STO– headings are flagged in-app');
+}

@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>809 commands extracted from the HP 50g Advanced User's Reference Manual. 408 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>810 commands extracted from the HP 50g Advanced User's Reference Manual. 415 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -167,7 +167,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-COLCT" class='notinapp'>COLCT</a>
 <a href="#cmd-COLLECT">COLLECT</a>
 <a href="#cmd-COLΣ" class='notinapp'>COLΣ</a>
-<a href="#cmd-COL-minus" class='notinapp'>COL–</a>
+<a href="#cmd-COL-minus">COL–</a>
 <a href="#cmd-COMB">COMB</a>
 <a href="#cmd-CON">CON</a>
 <a href="#cmd-COND">COND</a>
@@ -338,7 +338,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-HISTOGRAM" class='notinapp'>HISTOGRAM</a>
 <a href="#cmd-HISTPLOT" class='notinapp'>HISTPLOT</a>
 <a href="#cmd-HMS-plus">HMS+</a>
-<a href="#cmd-HMS-minus" class='notinapp'>HMS–</a>
+<a href="#cmd-HMS-minus">HMS–</a>
 <a href="#cmd-HMS-to">HMS→</a>
 <a href="#cmd-HOME">HOME</a>
 <a href="#cmd-HORNER">HORNER</a>
@@ -389,6 +389,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-LAPL" class='notinapp'>LAPL</a>
 <a href="#cmd-LAST">LAST</a>
 <a href="#cmd-LASTARG">LASTARG</a>
+<a href="#cmd-LCD-to" class='notinapp'>LCD→</a>
 <a href="#cmd-LCM">LCM</a>
 <a href="#cmd-LCXM" class='notinapp'>LCXM</a>
 <a href="#cmd-LDEC" class='notinapp'>LDEC</a>
@@ -500,7 +501,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-PLOTADD" class='notinapp'>PLOTADD</a>
 <a href="#cmd-PMAX" class='notinapp'>PMAX</a>
 <a href="#cmd-PMIN" class='notinapp'>PMIN</a>
-<a href="#cmd-PMINI" class='notinapp'>PMINI</a>
+<a href="#cmd-PMINI">PMINI</a>
 <a href="#cmd-POLAR" class='notinapp'>POLAR</a>
 <a href="#cmd-POLYNOMIAL" class='notinapp'>POLYNOMIAL</a>
 <a href="#cmd-POP" class='notinapp'>POP</a>
@@ -587,7 +588,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-ROOT" class='notinapp'>ROOT</a>
 <a href="#cmd-ROT">ROT</a>
 <a href="#cmd-ROW-plus">ROW+</a>
-<a href="#cmd-ROW-minus" class='notinapp'>ROW–</a>
+<a href="#cmd-ROW-minus">ROW–</a>
 <a href="#cmd-ROW-to">ROW→</a>
 <a href="#cmd-RPL-gt" class='notinapp'>RPL&gt;</a>
 <a href="#cmd-RR">RR</a>
@@ -611,7 +612,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-SCALEW" class='notinapp'>SCALEW</a>
 <a href="#cmd-SCATRPLOT" class='notinapp'>SCATRPLOT</a>
 <a href="#cmd-SCATTER" class='notinapp'>SCATTER</a>
-<a href="#cmd-SCHUR" class='notinapp'>SCHUR</a>
+<a href="#cmd-SCHUR">SCHUR</a>
 <a href="#cmd-SCI">SCI</a>
 <a href="#cmd-SCLΣ" class='notinapp'>SCLΣ</a>
 <a href="#cmd-SCONJ">SCONJ</a>
@@ -648,7 +649,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-SORT">SORT</a>
 <a href="#cmd-SPHERE">SPHERE</a>
 <a href="#cmd-SQ">SQ</a>
-<a href="#cmd-SQRT" class='notinapp'>SQRT (√)</a>
+<a href="#cmd-SQRT">SQRT (√)</a>
 <a href="#cmd-SR">SR</a>
 <a href="#cmd-SRAD" class='notinapp'>SRAD</a>
 <a href="#cmd-SRB">SRB</a>
@@ -671,7 +672,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-STORE" class='notinapp'>STORE</a>
 <a href="#cmd-STOVX" class='notinapp'>STOVX</a>
 <a href="#cmd-STOΣ" class='notinapp'>STOΣ</a>
-<a href="#cmd-STO-minus" class='notinapp'>STO–</a>
+<a href="#cmd-STO-minus">STO–</a>
 <a href="#cmd-STREAM">STREAM</a>
 <a href="#cmd-STRM" class='notinapp'>STRM</a>
 <a href="#cmd-STR-to">STR→</a>
@@ -827,7 +828,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-to-V3">→V3</a>
 <a href="#cmd-down-MATCH" class='notinapp'>↓MATCH</a>
 <a href="#cmd-partial-Derivative" class='notinapp'>∂(Derivative)</a>
-<a href="#cmd-sqrt-Square-Root" class='notinapp'>√(Square Root)</a>
+<a href="#cmd-SQRT">√(Square Root)</a>
 <a href="#cmd-inf-Infinity" class='notinapp'>∞(Infinity)</a>
 <a href="#cmd-integral-Integrate">∫(Integrate)</a>
 <a href="#cmd-ne-Not-equal">≠(Not equal)</a>
@@ -2806,7 +2807,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>→COL, →ROW, ROW→</p>
   </dd>
 </dl>
-<h2 id="cmd-COL-minus">COL– <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-COL-minus">COL– <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 159 · printed page 3-39</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -7254,7 +7255,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>BARPLOT, BINS, FREEZE, PICTURE, PVIEW, RES, SCATRPLOT, XCOL</p>
   </dd>
 </dl>
-<h2 id="cmd-HMS-minus">HMS– <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-HMS-minus">HMS– <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 226 · printed page 3-106</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -8727,7 +8728,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>ANS, LAST</p>
   </dd>
 </dl>
-<h2 id="cmd-LASTARG">LCD→ <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-LCD-to">LCD→ <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 248 · printed page 3-128</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -11643,7 +11644,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>PDIM, PMAX, XRNG, YRNG</p>
   </dd>
 </dl>
-<h2 id="cmd-PMINI">PMINI <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PMINI">PMINI <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 292 · printed page 3-172</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -13790,7 +13791,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>OVER, PICK, ROLL, ROLLD, SWAP, UNROT</p>
   </dd>
 </dl>
-<h2 id="cmd-ROW-minus">ROW– <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-ROW-minus">ROW– <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 327 · printed page 3-207</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -14411,7 +14412,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>BAR, CONIC, DIFFEQ, FUNCTION, GRIDMAP, HISTOGRAM, PARAMETRIC, PARSURFACE, PCONTOUR, POLAR, SLOPEFIELD, TRUTH, WIREFRAME, YSLICE</p>
   </dd>
 </dl>
-<h2 id="cmd-SCHUR">SCHUR <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-SCHUR">SCHUR <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 338 · printed page 3-218</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -15831,7 +15832,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>STO–, STO*, STO/, +</p>
   </dd>
 </dl>
-<h2 id="cmd-STO-minus">STO– <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-STO-minus">STO– <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 359 · printed page 3-239</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
