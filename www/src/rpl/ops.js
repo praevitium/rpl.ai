@@ -3564,8 +3564,9 @@ function* evalRange(s, toks, from, to, depth) {
     // Compiled local environment: `→ n1 n2 … body`.  `runArrow` collects
     // the local names, pops that many values from the stack, pushes a
     // binding frame, runs the body (Program or Symbolic), and pops the
-    // frame.
-    if (id === '→') {
+    // frame.  ASCII `->` is the same form — commands already have
+    // `->NUM`/`->LIST` aliases, but the arrow itself was glyph-only.
+    if (id === '→' || id === '->') {
       i = yield* runArrow(s, toks, i, to, depth);
       if (_shouldStepYield()) yield;
       continue;

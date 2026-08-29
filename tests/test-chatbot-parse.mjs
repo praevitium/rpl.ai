@@ -1183,6 +1183,10 @@ const registryToolNames = () =>
          'normalizeRpl maps the radical glyph to SQRT()');
   assert(normalizeRpl('3 ->LIST') === '3 →LIST',
          'normalizeRpl maps ASCII -> arrows on command names to →');
+  assert(normalizeRpl('<< -> n << n SQ >> >>') === '<< → n << n SQ >> >>',
+         'normalizeRpl maps ASCII -> local-assignment arrow to →');
+  assert(normalizeRpl('«-> a `a`»') === '«→ a `a`»',
+         'normalizeRpl maps -> after a guillemet (no intervening space)');
   assert(normalizeRpl('"a → b" 2 - 3') === '"a → b" 2 - 3',
          'normalizeRpl leaves string contents and plain minus alone');
   assert(normalizeRpl('') === '' && normalizeRpl(null) === '' && normalizeRpl(undefined) === '',

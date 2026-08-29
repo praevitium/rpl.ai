@@ -1639,6 +1639,19 @@ import { assert, assertThrows } from './helpers.mjs';
     'session068: → single-clause, program body, a + b with a=3 b=4 → 7');
 }
 
+// ASCII `->` is the same compiled-local form (keyboards / models
+// without a → glyph).  Parsed from source, not a hand-built Name('→').
+{
+  resetHome();
+  const s = new Stack();
+  s.push(Integer(3n));
+  s.push(Integer(4n));
+  s.push(parseEntry('<< -> a b << a b + >> >>')[0]);
+  lookup('EVAL').fn(s);
+  assert(s.depth === 1 && s.peek().value === 7n,
+    'ASCII -> local-assignment arrow binds and runs the same as →');
+}
+
 // Three locals; rightmost name takes stack level 1.
 // 10 3 2 → a b c « a b c * - »  → 10 - (3 * 2) = 4
 {

@@ -652,7 +652,7 @@ export function normalizeRpl(text) {
     .replace(/[×·]/g, '*').replace(/÷/g, '/').replace(/[−–]/g, '-')
     .replace(/²/g, '^2').replace(/³/g, '^3')
     .replace(/√\s*\(/g, 'SQRT(').replace(/√\s*([A-Za-z0-9.]+)/g, 'SQRT($1)')
-    .replace(/(^|[\s(])->(?=[A-Z])/g, '$1→'));
+    .replace(/(^|[\s(«]|<<)->(?=[A-Z\s])/g, '$1→'));
   return s;
 }
 
