@@ -6835,6 +6835,62 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
+{
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('SIN(X)/X')));
+  s.push(Name('∞'));
+  giac._clear();
+  giac._setFixture('limit(sin(X)/X,x,+infinity)', '0');
+  lookup('LIMIT').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.eq(0),
+         'LIMIT at Name(∞) maps the keypad glyph to Giac +infinity');
+  giac._clear();
+}
+{
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('SIN(X)/X')));
+  s.push(Name('INFINITY'));
+  giac._clear();
+  giac._setFixture('limit(sin(X)/X,x,+infinity)', '0');
+  lookup('LIMIT').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.eq(0),
+         'LIMIT at Name(INFINITY) maps to Giac +infinity');
+  giac._clear();
+}
+{
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('1/X')));
+  s.push(Name('-∞'));
+  giac._clear();
+  giac._setFixture('limit(1/X,x,-infinity)', '0');
+  lookup('LIMIT').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.eq(0),
+         'LIMIT at Name(-∞) maps to Giac -infinity');
+  giac._clear();
+}
+{
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('SIN(X)/X')));
+  s.push(Symbolic(parseAlgebra('X=INFINITY')));
+  giac._clear();
+  giac._setFixture('limit(sin(X)/X,X,+infinity)', '0');
+  lookup('LIMIT').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.eq(0),
+         'LIMIT at Symbolic X=INFINITY maps the Var to Giac +infinity');
+  giac._clear();
+}
+{
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('SIN(X)/X')));
+  s.push(Symbolic(parseAlgebra('X=-INFINITY')));
+  giac._clear();
+  giac._setFixture('limit(sin(X)/X,X,-infinity)', '0');
+  lookup('LIMIT').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.eq(0),
+         'LIMIT at Symbolic X=-INFINITY maps Neg(INFINITY) to Giac -infinity');
+  giac._clear();
+}
+
 // session336: `lim` rejection-path closure.  The session139 pins above
 // only exercised `lim`'s happy path (delegation through LIMIT to a Giac
 // fixture).  `lim` is a thin `OPS.get('LIMIT').fn(s)` wrapper, so its
