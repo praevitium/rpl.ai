@@ -23,7 +23,7 @@ touched the row, and any known caveats worth carrying forward.
 
 ## Current status
 
-- **Fully shipped (✓): 449** — as of 2026-06-17 (v0.3.1). For reference,
+- **Fully shipped (✓): 449** — as of 2026-08-15 (v0.3.3). For reference,
   `grep -cE "^register\(" www/src/rpl/ops.js` = 463 distinct registered
   names and `allOps()` = 467 reachable; the ✓ total is those minus
   internal aliases and `will-not` rows.

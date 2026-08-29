@@ -277,9 +277,9 @@ Status: ✓ green (boxed-program and algebraic bodies).
 
 - HP50 syntax: `→ a b c « ... body ... »` pops 3 from the stack into
   locals `a`, `b`, `c` visible only to `body` (rightmost name gets level 1
-  per HP50 convention). Algebraic body form (`→ a b 'a+b'`) also supported —
-  the body is an `Algebraic` object whose EVAL consults the local frame
-  before `varRecall`.
+  per HP50 convention). ASCII `->` is the same form. Algebraic body form
+  (`→ a b 'a+b'`) also supported — the body is an `Algebraic` object whose
+  EVAL consults the local frame before `varRecall`.
 - **Algebraic-body partial reduction.** When the Symbolic body carries a
   name that is neither a bound local nor a global, EVAL substitutes the
   bound locals but leaves the free name in the AST — the "possibly partially
@@ -293,7 +293,7 @@ Status: ✓ green (boxed-program and algebraic bodies).
   lookup precedence (local frame → global `varRecall` → name stays symbolic).
   No source change.
 - Evaluator hook: `evalRange` intercepts the bare-`Name` token with id `→`
-  and dispatches to `runArrow`. Frame is a `Map<string, value>` pushed onto
+  or ASCII `->` and dispatches to `runArrow`. Frame is a `Map<string, value>` pushed onto
   the module-level `_localFrames` stack; popped in `finally` so a throw
   inside the body still cleans up.
 - Lookup precedence: local frame (innermost first) → global `varStore`

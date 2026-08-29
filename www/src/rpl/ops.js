@@ -3365,7 +3365,7 @@ function _skipPastCaseEnd(toks, caseIdx) {
 }
 
 /* ------------------------------------------------------------------
-   Compiled local environments — `→ a b … body`.
+   Compiled local environments — `→ a b … body` (ASCII `->` is the same form).
 
    HP50 AUR §21.1 defines a short-lived binding form that pops N values
    off the stack into lexically scoped locals for the duration of a

@@ -9,39 +9,40 @@ current state.
 
 ## Current status
 
-`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (7587)** —
-fully green, 0 failing. `test-persist.mjs` 66 / 0 (stable; D-001 closed at
-ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~5 ms. (Aggregate now 7587
-after session435; intervening sibling-lane runs lifted the count from 7507
-to 7583 between session428 and session435.)
+`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (7891)** —
+fully green, 0 failing. `test-persist.mjs` is standalone (D-001 closed at
+ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~6 ms.
 
 | File                        | OK   | FAIL | Notes                              |
 |-----------------------------|------|------|------------------------------------|
-| test-algebra.mjs            | 1142 | 0    | Largest CAS-focused file.          |
-| test-arrow-aliases.mjs      |   50 | 0    |                                    |
+| test-algebra.mjs            | 1158 | 0    | Largest CAS-focused file.          |
+| test-arrow-aliases.mjs      |   82 | 0    |                                    |
 | test-binary-int.mjs         |  144 | 0    |                                    |
-| test-chatbot-parse.mjs      |  576 | 0    |                                    |
-| test-comparisons.mjs        |  174 | 0    | +10 session375 (List/Vec/Mat SAME).|
-| test-control-flow.mjs       |  839 | 0    |                                    |
-| test-entry.mjs              |  207 | 0    | +6 session407 (CONJ/RE/IM Z arm).  |
+| test-chatbot-parse.mjs      |  788 | 0    |                                    |
+| test-command-reference.mjs  |   55 | 0    | AI command-reference index.        |
+| test-comparisons.mjs        |  190 | 0    |                                    |
+| test-control-flow.mjs       |  903 | 0    | Includes ASCII `->` local arrow.   |
+| test-entry.mjs              |  212 | 0    |                                    |
 | test-eval.mjs               |   61 | 0    |                                    |
 | test-helpers.mjs            |   43 | 0    |                                    |
 | test-jordan-format.mjs      |   20 | 0    |                                    |
-| test-lists.mjs              |  198 | 0    |                                    |
-| test-matrix.mjs             |  350 | 0    | +3 session415 (PREDV/PREDX BinInt).|
-| test-numerics.mjs           |  873 | 0    | +4 session421 (FACT integer-Real arm).|
-| test-op-search.mjs          |   70 | 0    |                                    |
-| test-reflection.mjs         |  412 | 0    |                                    |
-| test-remote-llm.mjs         |   63 | 0    |                                    |
-| test-stack-ops.mjs          |   58 | 0    |                                    |
-| test-stats.mjs              |   60 | 0    |                                    |
-| test-types.mjs              | 1343 | 0    | +4 session435 (SQRT Rational APPROX collapse arm). |
-| test-ui.mjs                 |  281 | 0    |                                    |
-| test-units.mjs              |   56 | 0    |                                    |
+| test-lists.mjs              |  231 | 0    |                                    |
+| test-llm-manager.mjs        |   22 | 0    |                                    |
+| test-matrix.mjs             |  368 | 0    |                                    |
+| test-numerics.mjs           |  873 | 0    |                                    |
+| test-op-search.mjs          |   83 | 0    |                                    |
+| test-reflection.mjs         |  429 | 0    |                                    |
+| test-remote-llm.mjs         |   94 | 0    |                                    |
+| test-scratch.mjs            |   23 | 0    | AI dry-run eval isolation.         |
+| test-stack-ops.mjs          |   66 | 0    |                                    |
+| test-stats.mjs              |   70 | 0    |                                    |
+| test-types.mjs              | 1343 | 0    |                                    |
+| test-ui.mjs                 |  318 | 0    |                                    |
+| test-units.mjs              |   64 | 0    |                                    |
 | test-variables.mjs          |  251 | 0    |                                    |
-| **test-all (aggregate)**    | **7587** | **0** | Fully green.                 |
-| test-persist.mjs (separate) |   66 | 0    | Stable; D-001 closed ship-prep.    |
-| sanity.mjs (standalone)     |   22 | 0    | ~5 ms smoke suite.                 |
+| **test-all (aggregate)**    | **7891** | **0** | Fully green.                 |
+| test-persist.mjs (separate) |   98 | 0    | Stable; D-001 closed ship-prep.    |
+| sanity.mjs (standalone)     |   22 | 0    | ~6 ms smoke suite.                 |
 
 ### Skip / flake snapshot
 

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.3.1 (2026-06-17)
+**Latest release:** v0.3.3 (2026-08-15)
 
 ---
 
@@ -19,6 +19,58 @@ The application runs as a native desktop window on macOS, Windows, and Linux
 via [Tauri 2](https://tauri.app/). The entire calculator frontend is plain
 HTML / CSS / ES modules — no build step, no framework, no bundler required for
 development.
+
+---
+
+## v0.3.3 — 2026-08-15
+
+The AI assistant grew from a side-panel helper into a calculator-aware
+workflow: it looks commands up in the HP 50g reference, dry-runs RPL on a
+scratch copy of the machine, and talks to Ollama with native tool calling.
+Command coverage is unchanged — 449 ✓, with `JORDAN` still the one remaining
+✗. There was no v0.3.2.
+
+### AI assistant
+
+- **Command reference.** `www/src/ui/command-reference.js` parses
+  `www/docs/hp50-commands.html` into a plain-text index (no DOM, so it also
+  runs under Node). The assistant uses it through `lookup_command` and
+  `search_commands` instead of guessing stack diagrams.
+- **Scratch eval.** `www/src/rpl/scratch.js` runs a line the way ENTER would,
+  on a throwaway stack, inside `withScratchState` so STO / mode / flag
+  changes roll back. The assistant dry-runs with `evaluate` before a live
+  `run`.
+- **Tool surface and Ollama.** Tools execute immediately (each turn ends
+  with an Undo that restores the pre-turn snapshot). Ollama models that
+  advertise `tools` get native tool calling; models that advertise
+  `thinking` can reason first. The context window is requested as `num_ctx`
+  so the system prompt is not truncated.
+- **Prompt.** Infix-vs-RPN reminder, applied-maths / exactness guidance, and
+  a compact vs full profile split (in-browser WebLLM vs remote).
+
+### RPL
+
+ASCII `->` is accepted as the compiled-local arrow (same as `→`), so
+keyboards and models without the glyph still bind `-> a b « … »`.
+
+### Test suite
+
+The suite grew to **7,891 assertions across 25 test files** (from 7,611
+across 23 in v0.3.1). New files `tests/test-command-reference.mjs` and
+`tests/test-scratch.mjs` pin the assistant lookup and dry-run surfaces.
+The ASCII local-arrow path is pinned in `tests/test-control-flow.mjs`.
+
+### Known limitations carried into v0.3.3
+
+Unchanged from v0.3.1: `JORDAN` Giac wiring, the step-debugger UI, the
+command-palette overlay (the fuzzy matcher ships and is tested), graphics /
+plotting, the equation and matrix writers, main-thread CAS, and the absence of
+a mobile layout all remain pending.
+
+### Upgrade notes
+
+No migration is required from v0.3.1. Pull the latest commit and re-run
+`npm install` to regenerate `build-info.js`.
 
 ---
 
