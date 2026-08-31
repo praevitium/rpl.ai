@@ -248,6 +248,15 @@ class App {
     this.display.onStackRowClick    = (level) => this.echoStackLevel(level);
     this.display.onIndicatorClick   = (id)    => this.cycleIndicator(id);
     this.display.onPathSegmentClick = (index) => this.navigateToPathSegment(index);
+    this.display.stackRowTitle = (level) => {
+      const sp = this.sidePanel;
+      if (sp?.isOpen() && (sp.tab === 'equation' || sp.tab === 'matrix' || sp.tab === 'graph')) {
+        const dest = sp.tab === 'equation' ? 'formula editor'
+          : sp.tab === 'matrix' ? 'matrix editor' : 'graph';
+        return `Stack level ${level} — click to copy into the ${dest}`;
+      }
+      return `Stack level ${level} — click to copy to the command line`;
+    };
 
     // Restore persisted state from localStorage before wiring any
     // autosave listener — otherwise the restore itself would trigger
@@ -877,6 +886,7 @@ class App {
   echoStackLevel(level) {
     const depth = this.stack.depth;
     if (level < 1 || level > depth) return;
+    if (this.sidePanel?.takeFromStack(level)) return;
     const v = this.stack.snapshot()[level - 1];   // level 1 == last element
     const text = format(v);
     // Append with a leading space separator if the buffer already has

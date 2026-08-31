@@ -623,6 +623,25 @@ export class SidePanel {
     this._graphView.applyPlotOp(kind, stack);
   }
 
+  /** Copy a stack level into the open equation / matrix / graph editor.
+   *  Returns true if this tab handled the click. */
+  takeFromStack(level) {
+    if (!this.isOpen()) return false;
+    if (this.tab === 'equation') {
+      if (!this._equation) this._equation = new EquationEditor({ app: this.app });
+      return this._equation.loadFromStack(level);
+    }
+    if (this.tab === 'matrix') {
+      if (!this._matrix) this._matrix = new MatrixEditor({ app: this.app });
+      return this._matrix.loadFromStack(level);
+    }
+    if (this.tab === 'graph') {
+      if (!this._graphView) this._graphView = new GraphView({ app: this.app });
+      return this._graphView.loadFromStack(level);
+    }
+    return false;
+  }
+
   close() {
     this.el.classList.add('hidden');
     if (this.commandHelp) this.commandHelp.hide();
@@ -674,6 +693,7 @@ export class SidePanel {
                            'Filter characters…';
     this._render();
     this._saveUIState();
+    if (this.app?.display && this.app.stack) this.app.display.renderStack(this.app.stack);
   }
 
   _render() {

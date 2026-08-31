@@ -110,15 +110,15 @@ export class EquationEditor {
     this.el.className = 'eq-editor';
     this.el.innerHTML = `
       <div class="ed-toolbar">
-        <button type="button" data-eq="load" title="Load stack level 1">Load</button>
-        <button type="button" data-eq="push" title="Push onto the stack">Push</button>
+        <button type="button" data-eq="load" title="Copy stack level 1 into the editor">From stack</button>
+        <button type="button" data-eq="push" title="Push this formula onto the stack">To stack</button>
         <button type="button" data-eq="clear" title="Clear">Clear</button>
       </div>
       <div class="eq-preview" aria-label="Equation preview"></div>
       <label class="eq-field">
         <span class="eq-field-label">Algebraic</span>
         <input type="text" class="eq-input" spellcheck="false"
-               placeholder="SIN(X)^2 + COS(X)^2" aria-label="Algebraic expression" />
+               placeholder="SIN(X)^2 + COS(X)^2 — or From stack" aria-label="Algebraic expression" />
       </label>
       <div class="eq-status" role="status"></div>
       <div class="eq-palette" role="toolbar" aria-label="Templates">
@@ -209,15 +209,19 @@ export class EquationEditor {
     this._input.focus();
   }
 
-  loadFromStack() {
+  loadFromStack(level = 1) {
     const stack = this.app?.stack;
     if (!stack || stack.depth < 1) {
       this.app?.entry?.flashError?.({ message: 'Equation: empty stack' });
-      return;
+      return true;
     }
-    this._input.value = valueToEquationDraft(stack.peek());
+    if (level < 1 || level > stack.depth) return true;
+    this._input.value = valueToEquationDraft(stack.peek(level));
     this._refresh();
     this._input.focus();
+    this._status.textContent = `Copied L${level}`;
+    this._status.classList.remove('error');
+    return true;
   }
 
   push() {
@@ -226,7 +230,7 @@ export class EquationEditor {
       const entry = this.app?.entry;
       if (entry?.buffer?.trim?.().length > 0) entry.enter();
       this.app.stack.push(v);
-      this._status.textContent = 'Pushed';
+      this._status.textContent = 'Pushed to stack';
       this._status.classList.remove('error');
     } catch (e) {
       this._status.textContent = e.message;

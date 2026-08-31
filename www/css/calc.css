@@ -2570,6 +2570,10 @@ body.mode-minimal .keypad {
   padding: 4px 2px;
 }
 .gr-trace.off { opacity: .45; }
+.gr-trace.selected {
+  background: rgba(103, 232, 249, .1);
+  border-radius: 4px;
+}
 .gr-swatch {
   width: 14px;
   height: 14px;
@@ -2588,6 +2592,15 @@ body.mode-minimal .keypad {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.gr-trace button[data-act="push"] {
+  background: transparent;
+  border: 1px solid #3a4252;
+  color: #cdd3de;
+  font-size: 11px;
+  padding: 2px 6px;
+  cursor: pointer;
+  border-radius: 3px;
 }
 .gr-trace button[data-act="remove"] {
   background: transparent;

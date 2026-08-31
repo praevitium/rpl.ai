@@ -113,8 +113,8 @@ export class MatrixEditor {
         <label class="mx-dim">Cols <input type="number" class="mx-cols" min="1" max="${MATRIX_MAX}" value="${MATRIX_DEFAULT}" /></label>
         <button type="button" data-mx="id" title="Identity">I</button>
         <button type="button" data-mx="zero" title="Fill with zeros">0</button>
-        <button type="button" data-mx="load" title="Load stack level 1">Load</button>
-        <button type="button" data-mx="push" title="Push onto the stack">Push</button>
+        <button type="button" data-mx="load" title="Copy stack level 1 into the grid">From stack</button>
+        <button type="button" data-mx="push" title="Push this matrix onto the stack">To stack</button>
         <button type="button" data-mx="clear" title="Clear cells">Clear</button>
       </div>
       <div class="mx-scroll">
@@ -244,23 +244,25 @@ export class MatrixEditor {
     this._status.classList.remove('error');
   }
 
-  loadFromStack() {
+  loadFromStack(level = 1) {
     const stack = this.app?.stack;
     if (!stack || stack.depth < 1) {
       this.app?.entry?.flashError?.({ message: 'Matrix: empty stack' });
-      return;
+      return true;
     }
-    const top = stack.peek();
+    if (level < 1 || level > stack.depth) return true;
+    const top = stack.peek(level);
     const grid = valueToGrid(top);
     if (!grid) {
-      this.app?.entry?.flashError?.({ message: 'Matrix: stack top is not a matrix, vector, or number' });
-      return;
+      this.app?.entry?.flashError?.({ message: 'Matrix: that stack level is not a matrix, vector, or number' });
+      return true;
     }
     this._asVector = isVector(top) || (isList(top) && top.items.every(isNumber));
     this.grid = grid;
     this._renderGrid();
-    this._status.textContent = `${grid.length} × ${grid[0].length} loaded`;
+    this._status.textContent = `Copied L${level} (${grid.length} × ${grid[0].length})`;
     this._status.classList.remove('error');
+    return true;
   }
 
   push() {

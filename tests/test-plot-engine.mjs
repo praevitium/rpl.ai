@@ -6,9 +6,11 @@ import {
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
 } from '../www/src/ui/plot-engine.js';
-import { Matrix, Vector, Real, Integer } from '../www/src/rpl/types.js';
+import { Matrix, Vector, Real, Integer, Symbolic, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
 import { lookup, setGraphicsHook } from '../www/src/rpl/ops.js';
 import { Stack } from '../www/src/rpl/stack.js';
+import { parseAlgebra } from '../www/src/rpl/algebra.js';
+import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.js';
 
 {
   assert(lookupEnv('π', {}) === Math.PI, 'lookupEnv: π is pi');
@@ -151,6 +153,35 @@ import { Stack } from '../www/src/rpl/stack.js';
   assert(polar.length > 10, 'sampleTraceForFit: polar unit circle');
   const stored = sampleTraceForFit({ kind: 'scatter', points: [[0, 1], [2, 3]] }, view);
   assert(stored.length === 2 && stored[1][0] === 2, 'sampleTraceForFit: stored points');
+}
+
+{
+  const spec = stackValueToTrace(Symbolic(parseAlgebra('X^2')));
+  assert(spec.kind === 'function' && spec.expr.includes('X'),
+    'stackValueToTrace: Symbolic → function');
+  const polar = stackValueToTrace(Symbolic(parseAlgebra('SIN(θ)')), 'polar');
+  assert(polar.kind === 'polar', 'stackValueToTrace: preferred polar');
+  const data = stackValueToTrace(Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]));
+  assert(data.kind === 'scatter' && data.points.length === 2,
+    'stackValueToTrace: Matrix → scatter');
+  const bar = stackValueToTrace(Vector([Real(5), Real(6)]), 'bar');
+  assert(bar.kind === 'bar' && bar.points[0][1] === 5,
+    'stackValueToTrace: Vector + preferred bar');
+  assert(stackValueToTrace(null) === null, 'stackValueToTrace: null');
+}
+
+{
+  const pushed = traceToStackValues({ kind: 'function', expr: 'X + 1' });
+  assert(pushed.length === 1 && isSymbolic(pushed[0]),
+    'traceToStackValues: function → Symbolic');
+  const pair = traceToStackValues({ kind: 'parametric', expr: 'COS(T)', exprY: 'SIN(T)' });
+  assert(pair.length === 2 && isSymbolic(pair[0]) && isSymbolic(pair[1]),
+    'traceToStackValues: parametric → two Symbolics');
+  const mat = traceToStackValues({ kind: 'scatter', points: [[1, 2], [3, 4]] });
+  assert(mat.length === 1 && isMatrix(mat[0]) && mat[0].rows.length === 2,
+    'traceToStackValues: scatter → Matrix');
+  assert(traceToStackValues({ kind: 'function', expr: '' }).length === 0,
+    'traceToStackValues: empty expr');
 }
 
 {

@@ -11,8 +11,9 @@ import {
   fitViewToTraces,
 } from './plot-engine.js';
 import { formatAlgebra } from '../rpl/algebra.js';
-import { isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
+import { isSymbolic, isMatrix, isVector, isList, Matrix, Real } from '../rpl/types.js';
 import { varRecall, getLastFitModel, toRadians, fromRadians } from '../rpl/state.js';
+import { equationToSymbolic, valueToEquationDraft } from './equation-editor.js';
 
 let _traceSeq = 0;
 
@@ -42,6 +43,52 @@ export function makeTrace(partial = {}) {
   };
 }
 
+/** Stack value → a plottable trace spec (no id/color).  Symbolics
+ *  become expression traces; Matrix/Vector/List become data traces. */
+export function stackValueToTrace(v, preferredKind = 'function') {
+  if (isSymbolic(v)) {
+    const expr = formatAlgebra(v.expr);
+    const kind = (preferredKind === 'polar' || preferredKind === 'parametric')
+      ? preferredKind : 'function';
+    return { kind, expr, exprY: '', label: expr, points: null };
+  }
+  if (isMatrix(v) || isVector(v) || isList(v)) {
+    const points = valueToPoints(v);
+    if (!points || !points.length) return null;
+    const kind = (preferredKind === 'bar' || preferredKind === 'hist')
+      ? preferredKind : 'scatter';
+    return { kind, points, label: kind, expr: '', exprY: '' };
+  }
+  const expr = valueToEquationDraft(v);
+  if (!expr) return null;
+  const kind = (preferredKind === 'polar' || preferredKind === 'parametric')
+    ? preferredKind : 'function';
+  return { kind, expr, exprY: '', label: expr, points: null };
+}
+
+/** Trace → RPL values to push (0–2).  Expressions become Symbolic;
+ *  point traces become a 2-col Matrix. */
+export function traceToStackValues(t) {
+  if (!t) return [];
+  if (t.kind === 'parametric') {
+    const out = [];
+    if (t.expr) out.push(equationToSymbolic(t.expr));
+    if (t.exprY) out.push(equationToSymbolic(t.exprY));
+    return out;
+  }
+  if (t.kind === 'function' || t.kind === 'polar' || t.kind === 'fit') {
+    if (!t.expr) return [];
+    return [equationToSymbolic(t.expr)];
+  }
+  if (t.points && t.points.length) {
+    return [Matrix(t.points.map(([x, y]) => [
+      Real(Number.isFinite(x) ? x : 0),
+      Real(Number.isFinite(y) ? y : 0),
+    ]))];
+  }
+  return [];
+}
+
 export class GraphView {
   constructor({ app } = {}) {
     this.app = app;
@@ -60,6 +107,8 @@ export class GraphView {
           <button type="button" data-kind="bar" title="Bar chart">bar</button>
           <button type="button" data-kind="hist" title="Histogram">hist</button>
         </span>
+        <button type="button" data-gr="from" title="Copy stack level 1 into a new trace">From stack</button>
+        <button type="button" data-gr="to" title="Push the selected (or last) trace onto the stack">To stack</button>
         <button type="button" data-gr="reset" title="Reset view">Reset</button>
         <button type="button" data-gr="fit" title="Fit view to data">Fit</button>
       </div>
@@ -84,6 +133,7 @@ export class GraphView {
     this._ctx = this._canvas.getContext('2d');
     this._readout = this.el.querySelector('.gr-readout');
     this._kind = 'function';
+    this._selectedId = null;
     this._bind();
     this._renderExprs();
   }
@@ -101,16 +151,30 @@ export class GraphView {
     this.el.querySelector('[data-gr="fit"]').addEventListener('click', () => {
       this.fitView();
     });
+    this.el.querySelector('[data-gr="from"]').addEventListener('click', () => {
+      this.loadFromStack(1);
+    });
+    this.el.querySelector('[data-gr="to"]').addEventListener('click', () => {
+      this.pushToStack();
+    });
     this._form.addEventListener('submit', (ev) => {
       ev.preventDefault();
       this.addFromInputs();
     });
     this._exprs.addEventListener('click', (ev) => {
       const btn = ev.target.closest?.('button[data-trace]');
-      if (!btn) return;
-      const id = btn.dataset.trace;
-      if (btn.dataset.act === 'remove') this.removeTrace(id);
-      else if (btn.dataset.act === 'toggle') this.toggleTrace(id);
+      if (btn) {
+        const id = btn.dataset.trace;
+        if (btn.dataset.act === 'remove') this.removeTrace(id);
+        else if (btn.dataset.act === 'toggle') this.toggleTrace(id);
+        else if (btn.dataset.act === 'push') this.pushTrace(id);
+        return;
+      }
+      const row = ev.target.closest?.('.gr-trace');
+      if (row?.dataset.trace) {
+        this._selectedId = row.dataset.trace;
+        this._renderExprs();
+      }
     });
     this._addX.addEventListener('keydown', (ev) => ev.stopPropagation());
     this._addY.addEventListener('keydown', (ev) => ev.stopPropagation());
@@ -285,8 +349,77 @@ export class GraphView {
     this.loadData(kind, data);
   }
 
+  loadFromStack(level = 1) {
+    const stack = this.app?.stack;
+    if (!stack || stack.depth < 1) {
+      this.app?.entry?.flashError?.({ message: 'Graph: empty stack' });
+      return true;
+    }
+    if (level < 1 || level > stack.depth) return true;
+    const v = stack.peek(level);
+    if (this._kind === 'parametric' && isSymbolic(v)) {
+      const y = formatAlgebra(v.expr);
+      const xVal = stack.depth >= level + 1 ? stack.peek(level + 1) : null;
+      const xExpr = isSymbolic(xVal) ? formatAlgebra(xVal.expr) : 'T';
+      const t = makeTrace({
+        kind: 'parametric', expr: xExpr, exprY: y,
+        label: `(${xExpr}, ${y})`,
+      });
+      this.traces.push(t);
+      this._selectedId = t.id;
+      this._renderExprs();
+      this.draw();
+      this._readout.textContent = `Copied L${level}`;
+      return true;
+    }
+    const spec = stackValueToTrace(v, this._kind);
+    if (!spec) {
+      this.app?.entry?.flashError?.({ message: 'Graph: stack value is not an expression or data' });
+      return true;
+    }
+    const t = makeTrace(spec);
+    this.traces.push(t);
+    this._selectedId = t.id;
+    this.setKind(t.kind);
+    this.fitView();
+    this._renderExprs();
+    this.draw();
+    this._readout.textContent = `Copied L${level}`;
+    return true;
+  }
+
+  pushTrace(id) {
+    const t = this.traces.find(tr => tr.id === id);
+    if (!t) return;
+    try {
+      const values = traceToStackValues(t);
+      if (!values.length) {
+        this.app?.entry?.flashError?.({ message: 'Graph: nothing to push' });
+        return;
+      }
+      const entry = this.app?.entry;
+      if (entry?.buffer?.trim?.().length > 0) entry.enter();
+      for (const v of values) this.app.stack.push(v);
+      this._readout.textContent = `Pushed ${t.label || t.kind}`;
+    } catch (e) {
+      this.app?.entry?.flashError?.({ message: `Graph: ${e.message}` });
+    }
+  }
+
+  pushToStack() {
+    const id = this._selectedId
+      || [...this.traces].reverse().find(t => t.enabled)?.id
+      || this.traces[this.traces.length - 1]?.id;
+    if (!id) {
+      this.app?.entry?.flashError?.({ message: 'Graph: no traces' });
+      return;
+    }
+    this.pushTrace(id);
+  }
+
   removeTrace(id) {
     this.traces = this.traces.filter(t => t.id !== id);
+    if (this._selectedId === id) this._selectedId = null;
     this._renderExprs();
     this.draw();
   }
@@ -313,13 +446,15 @@ export class GraphView {
 
   _renderExprs() {
     this._exprs.innerHTML = this.traces.map(t => `
-      <div class="gr-trace ${t.enabled ? '' : 'off'}">
+      <div class="gr-trace ${t.enabled ? '' : 'off'}${t.id === this._selectedId ? ' selected' : ''}"
+           data-trace="${t.id}">
         <button type="button" class="gr-swatch" data-trace="${t.id}" data-act="toggle"
                 style="--swatch:${t.color}" title="Toggle" aria-label="Toggle"></button>
         <span class="gr-trace-label">${escapeHtml(t.label || t.expr || t.kind)}</span>
+        <button type="button" data-trace="${t.id}" data-act="push" title="Push onto the stack">To stack</button>
         <button type="button" data-trace="${t.id}" data-act="remove" title="Remove">×</button>
       </div>
-    `).join('') || '<div class="gr-empty">Add an expression, or run SCATRPLOT / BARPLOT / HISTPLOT on data.</div>';
+    `).join('') || '<div class="gr-empty">From stack copies level 1 here. To stack pushes a trace. Or type an expression and Add.</div>';
   }
 
   resize() { this.draw(); }

@@ -71,6 +71,7 @@ export class Display {
     this.onStackRowClick    = null;
     this.onIndicatorClick   = null;
     this.onPathSegmentClick = null;
+    this.stackRowTitle      = null;
     this._installInteractiveHandlers();
   }
 
@@ -150,7 +151,9 @@ export class Display {
       // a DOM walk, and anchors CSS :hover and .selected styling.
       row.dataset.level = String(level);
       if (this.selectedLevel === level) row.classList.add('selected');
-      row.title = `Stack level ${level} — click to copy to the command line`;
+      row.title = this.stackRowTitle
+        ? this.stackRowTitle(level)
+        : `Stack level ${level} — click to copy to the command line`;
       // `.value` is a flex container that right-aligns its inner
       // `.value-text` span.  The inner span owns overflow / ellipsis,
       // so short values hug the right edge (HP50-style) AND long
