@@ -1,10 +1,11 @@
 import { assert, assertThrows } from './helpers.mjs';
 import {
   emptyGrid, identityGrid, zerosGrid, clampDim, resizeGrid,
-  parseMatrixCell, gridToMatrix, gridToValue, valueToGrid, MATRIX_MAX,
+  parseMatrixCell, gridToMatrix, gridToValue, valueToGrid, pasteIntoGrid,
+  MATRIX_MAX,
 } from '../www/src/ui/matrix-editor.js';
 import {
-  Matrix, Vector, Real, Integer, isMatrix, isInteger, isReal, isVector,
+  Matrix, Vector, Real, Integer, RList, isMatrix, isInteger, isReal, isVector,
 } from '../www/src/rpl/types.js';
 
 {
@@ -68,4 +69,37 @@ import {
   const grown = gridToValue([['1', '2'], ['3', '4']], { asVector: true });
   assert(isMatrix(grown) && grown.rows.length === 2,
     'gridToValue: asVector ignored once there is a second row');
+}
+
+{
+  const nested = RList([
+    RList([Integer(1), Integer(2)]),
+    RList([Integer(3), Integer(4)]),
+  ]);
+  const g = valueToGrid(nested);
+  assert(g && g.length === 2 && g[0][1] === '2' && g[1][0] === '3',
+    'valueToGrid: list of lists');
+  const jagged = valueToGrid(RList([
+    Vector([Integer(1)]),
+    Vector([Integer(2), Integer(3)]),
+  ]));
+  assert(jagged.length === 2 && jagged[0].length === 2 && jagged[0][1] === '',
+    'valueToGrid: jagged list-of-vectors pads');
+  const flat = valueToGrid(RList([Integer(9), Integer(8)]));
+  assert(flat.length === 1 && flat[0][0] === '9',
+    'valueToGrid: flat numeric list is a row');
+}
+
+{
+  const src = [['a', 'b'], ['c', 'd']];
+  const same = pasteIntoGrid(src, 0, 0, 'z');
+  assert(same === src, 'pasteIntoGrid: single cell is a no-op');
+  const tsv = pasteIntoGrid([['1', ''], ['', '']], 0, 0, '7\t8\n9\t10');
+  assert(tsv[0][0] === '7' && tsv[0][1] === '8' && tsv[1][0] === '9' && tsv[1][1] === '10',
+    'pasteIntoGrid: 2x2 TSV overlay');
+  const grown = pasteIntoGrid([['1']], 0, 0, 'a\tb\nc');
+  assert(grown.length === 2 && grown[0].length === 2,
+    'pasteIntoGrid: grows to fit');
+  assert(grown[0][0] === 'a' && grown[0][1] === 'b' && grown[1][0] === 'c',
+    'pasteIntoGrid: grown cells');
 }

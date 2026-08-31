@@ -81,6 +81,14 @@ export function gridToValue(grid, { asVector = false } = {}) {
   return m;
 }
 
+function isCellValue(v) {
+  return isNumber(v) || isSymbolic(v);
+}
+
+function isRowLike(v) {
+  return (isList(v) || isVector(v)) && v.items.every(isCellValue);
+}
+
 export function valueToGrid(v) {
   if (isMatrix(v)) {
     return v.rows.map(row => row.map(cell => cellToDraft(cell)));
@@ -88,11 +96,48 @@ export function valueToGrid(v) {
   if (isVector(v)) {
     return [v.items.map(cell => cellToDraft(cell))];
   }
-  if (isList(v) && v.items.every(isNumber)) {
-    return [v.items.map(cell => cellToDraft(cell))];
+  if (isList(v)) {
+    if (v.items.length && v.items.every(isRowLike)) {
+      const rows = v.items.map(row => row.items.map(cell => cellToDraft(cell)));
+      const cols = Math.max(1, ...rows.map(r => r.length));
+      return rows.map(r => r.length === cols ? r : padRow(r, cols));
+    }
+    if (v.items.every(isCellValue)) {
+      return [v.items.map(cell => cellToDraft(cell))];
+    }
   }
   if (isNumber(v)) return [[cellToDraft(v)]];
   return null;
+}
+
+function padRow(row, cols) {
+  const out = row.slice();
+  while (out.length < cols) out.push('');
+  return out;
+}
+
+/** Overlay TSV / newline-separated text onto `grid` at (startR, startC),
+ *  growing the grid if the paste rectangle does not fit.  A lone cell
+ *  (no tab or newline) is returned unchanged so the caller can let the
+ *  native input paste happen. */
+export function pasteIntoGrid(grid, startR, startC, text) {
+  const raw = String(text ?? '').replace(/\r\n|\r/g, '\n');
+  if (!/[\t\n]/.test(raw)) return grid;
+  const lines = raw.split('\n');
+  if (lines.length && lines[lines.length - 1] === '') lines.pop();
+  const parsed = lines.map(line => line.split('\t'));
+  if (!parsed.length) return grid;
+  const r0 = Math.max(0, startR | 0);
+  const c0 = Math.max(0, startC | 0);
+  const needR = r0 + parsed.length;
+  const needC = Math.max(grid[0]?.length || 1, ...parsed.map(row => c0 + row.length));
+  const next = resizeGrid(grid, Math.max(grid.length, needR), needC);
+  for (let i = 0; i < parsed.length; i++) {
+    for (let j = 0; j < parsed[i].length; j++) {
+      next[r0 + i][c0 + j] = parsed[i][j];
+    }
+  }
+  return next;
 }
 
 function cellToDraft(v) {
@@ -149,6 +194,7 @@ export class MatrixEditor {
     this._rowsIn.addEventListener('change', onDim);
     this._colsIn.addEventListener('change', onDim);
     this._table.addEventListener('keydown', (ev) => this._onKey(ev));
+    this._table.addEventListener('paste', (ev) => this._onPaste(ev));
     this._table.addEventListener('input', (ev) => {
       const cell = ev.target.closest?.('input.mx-cell');
       if (!cell) return;
@@ -182,19 +228,43 @@ export class MatrixEditor {
         nc = c + 1;
         if (nc >= cols) { nc = 0; nr = (r + 1) % rows; }
       }
-    } else if (ev.key === 'ArrowUp' && ev.altKey) {
+    } else if (ev.key === 'ArrowUp') {
       ev.preventDefault(); nr = Math.max(0, r - 1);
-    } else if (ev.key === 'ArrowDown' && ev.altKey) {
+    } else if (ev.key === 'ArrowDown') {
       ev.preventDefault(); nr = Math.min(rows - 1, r + 1);
-    } else if (ev.key === 'ArrowLeft' && ev.altKey) {
-      ev.preventDefault(); nc = Math.max(0, c - 1);
-    } else if (ev.key === 'ArrowRight' && ev.altKey) {
-      ev.preventDefault(); nc = Math.min(cols - 1, c + 1);
+    } else if (ev.key === 'ArrowLeft'
+               && cell.selectionStart === 0 && cell.selectionEnd === 0) {
+      ev.preventDefault();
+      nc = c - 1;
+      if (nc < 0) { nc = cols - 1; nr = Math.max(0, r - 1); }
+    } else if (ev.key === 'ArrowRight'
+               && cell.selectionStart === cell.value.length
+               && cell.selectionEnd === cell.value.length) {
+      ev.preventDefault();
+      nc = c + 1;
+      if (nc >= cols) { nc = 0; nr = Math.min(rows - 1, r + 1); }
     } else {
       return;
     }
     const next = this._table.querySelector(`input.mx-cell[data-r="${nr}"][data-c="${nc}"]`);
     if (next) { next.focus(); next.select(); }
+  }
+
+  _onPaste(ev) {
+    const cell = ev.target.closest?.('input.mx-cell');
+    if (!cell) return;
+    const text = ev.clipboardData?.getData('text/plain') ?? '';
+    if (!/[\t\n\r]/.test(text)) return;
+    ev.preventDefault();
+    const r = Number(cell.dataset.r);
+    const c = Number(cell.dataset.c);
+    this.grid = pasteIntoGrid(this.grid, r, c, text);
+    if (this.grid.length !== 1) this._asVector = false;
+    this._renderGrid();
+    const next = this._table.querySelector(`input.mx-cell[data-r="${r}"][data-c="${c}"]`);
+    if (next) next.focus();
+    this._status.textContent = '';
+    this._status.classList.remove('error');
   }
 
   _syncDimInputs() {
@@ -254,7 +324,7 @@ export class MatrixEditor {
     const top = stack.peek(level);
     const grid = valueToGrid(top);
     if (!grid) {
-      this.app?.entry?.flashError?.({ message: 'Matrix: that stack level is not a matrix, vector, or number' });
+      this.app?.entry?.flashError?.({ message: 'Matrix: that stack level is not a matrix, vector, list, or number' });
       return true;
     }
     this._asVector = isVector(top) || (isList(top) && top.items.every(isNumber));
