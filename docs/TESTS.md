@@ -9,7 +9,7 @@ current state.
 
 ## Current status
 
-`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (8049)** —
+`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (8054)** —
 fully green, 0 failing. `test-persist.mjs` is standalone (D-001 closed at
 ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~6 ms.
 
@@ -23,7 +23,7 @@ ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~6 ms.
 | test-comparisons.mjs        |  190 | 0    |                                    |
 | test-control-flow.mjs       |  903 | 0    | Includes ASCII `->` local arrow.   |
 | test-entry.mjs              |  212 | 0    |                                    |
-| test-equation-editor.mjs    |   20 | 0    | Equation-writer wrap/preview.      |
+| test-equation-editor.mjs    |   25 | 0    | Equation-writer wrap/preview.      |
 | test-eval.mjs               |   61 | 0    |                                    |
 | test-helpers.mjs            |   43 | 0    |                                    |
 | test-jordan-format.mjs      |   20 | 0    |                                    |
@@ -43,7 +43,7 @@ ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~6 ms.
 | test-ui.mjs                 |  318 | 0    |                                    |
 | test-units.mjs              |   64 | 0    |                                    |
 | test-variables.mjs          |  251 | 0    |                                    |
-| **test-all (aggregate)**    | **8049** | **0** | Fully green.                 |
+| **test-all (aggregate)**    | **8054** | **0** | Fully green.                 |
 | test-persist.mjs (separate) |   98 | 0    | Stable; D-001 closed ship-prep.    |
 | sanity.mjs (standalone)     |   22 | 0    | ~6 ms smoke suite.                 |
 

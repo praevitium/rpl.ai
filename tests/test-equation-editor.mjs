@@ -29,7 +29,16 @@ import { isSymbolic } from '../www/src/rpl/types.js';
 
 {
   const i = insertAt('ab', 1, 1, 'π');
-  assert(i.text === 'aπb' && i.cursor === 2, 'insertAt: mid');
+  assert(i.text === 'a*πb' && i.cursor === 3, 'insertAt: mid joins atoms');
+  const pi = insertAt('2', 1, 1, 'π');
+  assert(pi.text === '2*π' && pi.cursor === 3, 'insertAt: number then π');
+  const plus = insertAt('2+', 2, 2, 'π');
+  assert(plus.text === '2+π', 'insertAt: no join after operator');
+  const empty = insertAt('', 0, 0, 'π');
+  assert(empty.text === 'π', 'insertAt: empty start');
+  const fn = wrapSelection('2', 1, 1, 'fn', 'SIN');
+  assert(fn.text === '2*SIN()', 'wrapSelection: mul-join fn after number');
+  assert(fn.cursor === '2*SIN('.length, 'wrapSelection: cursor in SIN args');
 }
 
 {

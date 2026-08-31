@@ -15,6 +15,17 @@ export const EQ_FNS = Object.freeze([
   'SIN', 'COS', 'TAN', 'LN', 'EXP', 'SQRT', 'ABS', 'ATAN',
 ]);
 
+/** Algebra has no implicit mul, so `2π` / `2SIN()` are trailing-input
+ *  errors.  Insert a `*` when both sides look like atoms. */
+function joinAtom(left, chunk) {
+  const c = String(chunk ?? '');
+  if (!left || !c) return c;
+  const a = left[left.length - 1];
+  const b = c[0];
+  if (/[0-9.)A-Za-zΑ-Ωα-ω]/.test(a) && /[0-9.(A-Za-zΑ-Ωα-ω]/.test(b)) return '*' + c;
+  return c;
+}
+
 export function wrapSelection(src, start, end, kind, extra) {
   const s = String(src ?? '');
   const a = Math.max(0, Math.min(start, s.length));
@@ -23,52 +34,39 @@ export function wrapSelection(src, start, end, kind, extra) {
   const sel = s.slice(a, b);
   const right = s.slice(b);
 
+  let mid;
+  let cursorInMid;
   if (kind === 'frac') {
-    const num = sel;
-    const text = `${left}(${num})/()${right}`;
-    const cursor = num
-      ? left.length + num.length + 4
-      : left.length + 1;
-    return { text, cursor };
-  }
-  if (kind === 'pow') {
-    const text = `${left}(${sel})^()${right}`;
-    const cursor = sel
-      ? left.length + sel.length + 4
-      : left.length + 1;
-    return { text, cursor };
-  }
-  if (kind === 'sqrt') {
-    const text = `${left}SQRT(${sel})${right}`;
-    const cursor = sel
-      ? left.length + 5 + sel.length + 1
-      : left.length + 5;
-    return { text, cursor };
-  }
-  if (kind === 'parens') {
-    const text = `${left}(${sel})${right}`;
-    const cursor = sel
-      ? left.length + sel.length + 2
-      : left.length + 1;
-    return { text, cursor };
-  }
-  if (kind === 'fn') {
+    mid = `(${sel})/()`;
+    cursorInMid = sel ? sel.length + 4 : 1;
+  } else if (kind === 'pow') {
+    mid = `(${sel})^()`;
+    cursorInMid = sel ? sel.length + 4 : 1;
+  } else if (kind === 'sqrt') {
+    mid = `SQRT(${sel})`;
+    cursorInMid = sel ? 5 + sel.length + 1 : 5;
+  } else if (kind === 'parens') {
+    mid = `(${sel})`;
+    cursorInMid = sel ? sel.length + 2 : 1;
+  } else if (kind === 'fn') {
     const name = String(extra || 'SIN').toUpperCase();
-    const text = `${left}${name}(${sel})${right}`;
-    const cursor = sel
-      ? left.length + name.length + sel.length + 2
-      : left.length + name.length + 1;
-    return { text, cursor };
+    mid = `${name}(${sel})`;
+    cursorInMid = sel ? name.length + sel.length + 2 : name.length + 1;
+  } else {
+    return { text: s, cursor: b };
   }
-  return { text: s, cursor: b };
+  const glued = joinAtom(left, mid);
+  const shift = glued.length - mid.length;
+  return { text: left + glued + right, cursor: left.length + cursorInMid + shift };
 }
 
 export function insertAt(src, start, end, insert) {
   const s = String(src ?? '');
   const a = Math.max(0, Math.min(start, s.length));
   const b = Math.max(a, Math.min(end, s.length));
-  const text = s.slice(0, a) + insert + s.slice(b);
-  return { text, cursor: a + String(insert).length };
+  const chunk = joinAtom(s.slice(0, a), String(insert ?? ''));
+  const text = s.slice(0, a) + chunk + s.slice(b);
+  return { text, cursor: a + chunk.length };
 }
 
 export function previewEquation(src, opts = {}) {
