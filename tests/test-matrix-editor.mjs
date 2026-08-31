@@ -1,10 +1,10 @@
 import { assert, assertThrows } from './helpers.mjs';
 import {
   emptyGrid, identityGrid, zerosGrid, clampDim, resizeGrid,
-  parseMatrixCell, gridToMatrix, valueToGrid, MATRIX_MAX,
+  parseMatrixCell, gridToMatrix, gridToValue, valueToGrid, MATRIX_MAX,
 } from '../www/src/ui/matrix-editor.js';
 import {
-  Matrix, Vector, Real, Integer, isMatrix, isInteger, isReal,
+  Matrix, Vector, Real, Integer, isMatrix, isInteger, isReal, isVector,
 } from '../www/src/rpl/types.js';
 
 {
@@ -54,4 +54,18 @@ import {
   const v = valueToGrid(Vector([Integer(9), Integer(8)]));
   assert(v.length === 1 && v[0][1] === '8', 'valueToGrid: vector is a row');
   assert(valueToGrid(Integer(5))[0][0] === '5', 'valueToGrid: scalar 1x1');
+}
+
+{
+  const row = [['1', '2', '3']];
+  const vec = gridToValue(row, { asVector: true });
+  assert(isVector(vec) && vec.items.length === 3, 'gridToValue: 1-row + asVector → Vector');
+  assert(Number(vec.items[1].value) === 2 || vec.items[1].value.toNumber?.() === 2,
+    'gridToValue: vector mid element');
+  const mat = gridToValue(row, { asVector: false });
+  assert(isMatrix(mat) && mat.rows.length === 1 && mat.rows[0].length === 3,
+    'gridToValue: 1-row without flag stays Matrix');
+  const grown = gridToValue([['1', '2'], ['3', '4']], { asVector: true });
+  assert(isMatrix(grown) && grown.rows.length === 2,
+    'gridToValue: asVector ignored once there is a second row');
 }

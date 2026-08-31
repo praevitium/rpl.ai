@@ -71,6 +71,16 @@ export function gridToMatrix(grid) {
   return Matrix(rows);
 }
 
+/** Push-side of the writer: a 1-row grid loaded from a Vector (or a
+ *  numeric List) round-trips as a Vector; anything else is a Matrix.
+ *  Growing past one row drops the vector flag so a 2×n edit can't
+ *  silently collapse. */
+export function gridToValue(grid, { asVector = false } = {}) {
+  const m = gridToMatrix(grid);
+  if (asVector && m.rows.length === 1) return Vector(m.rows[0]);
+  return m;
+}
+
 export function valueToGrid(v) {
   if (isMatrix(v)) {
     return v.rows.map(row => row.map(cell => cellToDraft(cell)));
@@ -94,6 +104,7 @@ export class MatrixEditor {
   constructor({ app } = {}) {
     this.app = app;
     this.grid = emptyGrid(MATRIX_DEFAULT, MATRIX_DEFAULT);
+    this._asVector = false;
     this.el = document.createElement('div');
     this.el.className = 'mx-editor';
     this.el.innerHTML = `
@@ -132,6 +143,7 @@ export class MatrixEditor {
     });
     const onDim = () => {
       this.grid = resizeGrid(this.grid, this._rowsIn.value, this._colsIn.value);
+      if (this.grid.length !== 1) this._asVector = false;
       this._renderGrid();
     };
     this._rowsIn.addEventListener('change', onDim);
@@ -215,11 +227,13 @@ export class MatrixEditor {
   fillIdentity() {
     const n = Math.max(this.grid.length, this.grid[0]?.length || 1);
     this.grid = identityGrid(n);
+    this._asVector = false;
     this._renderGrid();
   }
 
   fillZeros() {
     this.grid = zerosGrid(this.grid.length, this.grid[0]?.length || 1);
+    if (this.grid.length !== 1) this._asVector = false;
     this._renderGrid();
   }
 
@@ -236,11 +250,13 @@ export class MatrixEditor {
       this.app?.entry?.flashError?.({ message: 'Matrix: empty stack' });
       return;
     }
-    const grid = valueToGrid(stack.peek());
+    const top = stack.peek();
+    const grid = valueToGrid(top);
     if (!grid) {
       this.app?.entry?.flashError?.({ message: 'Matrix: stack top is not a matrix, vector, or number' });
       return;
     }
+    this._asVector = isVector(top) || (isList(top) && top.items.every(isNumber));
     this.grid = grid;
     this._renderGrid();
     this._status.textContent = `${grid.length} × ${grid[0].length} loaded`;
@@ -249,11 +265,13 @@ export class MatrixEditor {
 
   push() {
     try {
-      const m = gridToMatrix(this.grid);
+      const v = gridToValue(this.grid, { asVector: this._asVector });
       const entry = this.app?.entry;
       if (entry?.buffer?.trim?.().length > 0) entry.enter();
-      this.app.stack.push(m);
-      this._status.textContent = `Pushed ${m.rows.length} × ${m.rows[0].length}`;
+      this.app.stack.push(v);
+      this._status.textContent = isVector(v)
+        ? `Pushed vector ${v.items.length}`
+        : `Pushed ${v.rows.length} × ${v.rows[0].length}`;
       this._status.classList.remove('error');
     } catch (e) {
       this._status.textContent = e.message;
