@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.3.5 (2026-08-31)
+**Latest release:** v0.3.6 (2026-08-31)
 
 ---
 
@@ -19,6 +19,34 @@ The application runs as a native desktop window on macOS, Windows, and Linux
 via [Tauri 2](https://tauri.app/). The entire calculator frontend is plain
 HTML / CSS / ES modules — no build step, no framework, no bundler required for
 development.
+
+---
+
+## v0.3.6 — 2026-08-31
+
+Graph traces are editable; the matrix writer accepts paste and nested lists.
+
+### Side panel
+
+- **Graph.** Expression traces (y=f(x), polar, parametric) edit in place.
+  Polar and parametric add auto-fits the view. Clicking a non-expression
+  stack value no longer dumps unparseable text into the equation writer.
+- **Matrix editor.** TSV paste grows the grid from the focused cell. Arrow
+  keys move between cells. A list of lists (or list of vectors) loads as a
+  matrix.
+
+### Test suite
+
+**8,032** assertions.
+
+### Known limitations carried into v0.3.6
+
+Same as v0.3.5: `JORDAN`, step-debugger UI, command-palette overlay,
+main-thread CAS, `DIFFEQ` plots, no mobile layout.
+
+### Upgrade notes
+
+No migration is required from v0.3.5.
 
 ---
 

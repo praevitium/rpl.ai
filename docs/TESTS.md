@@ -9,7 +9,7 @@ current state.
 
 ## Current status
 
-`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (8023)** —
+`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (8032)** —
 fully green, 0 failing. `test-persist.mjs` is standalone (D-001 closed at
 ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~6 ms.
 
@@ -23,17 +23,17 @@ ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~6 ms.
 | test-comparisons.mjs        |  190 | 0    |                                    |
 | test-control-flow.mjs       |  903 | 0    | Includes ASCII `->` local arrow.   |
 | test-entry.mjs              |  212 | 0    |                                    |
-| test-equation-editor.mjs    |   19 | 0    | Equation-writer wrap/preview.      |
+| test-equation-editor.mjs    |   20 | 0    | Equation-writer wrap/preview.      |
 | test-eval.mjs               |   61 | 0    |                                    |
 | test-helpers.mjs            |   43 | 0    |                                    |
 | test-jordan-format.mjs      |   20 | 0    |                                    |
 | test-lists.mjs              |  231 | 0    |                                    |
 | test-llm-manager.mjs        |   22 | 0    |                                    |
 | test-matrix.mjs             |  368 | 0    |                                    |
-| test-matrix-editor.mjs      |   21 | 0    | Matrix-writer grid helpers.        |
+| test-matrix-editor.mjs      |   28 | 0    | Matrix-writer grid helpers.        |
 | test-numerics.mjs           |  877 | 0    |                                    |
 | test-op-search.mjs          |   83 | 0    |                                    |
-| test-plot-engine.mjs        |   66 | 0    | Graph sampling / plot ops hook.    |
+| test-plot-engine.mjs        |   67 | 0    | Graph sampling / plot ops hook.    |
 | test-reflection.mjs         |  429 | 0    |                                    |
 | test-remote-llm.mjs         |   94 | 0    |                                    |
 | test-scratch.mjs            |   23 | 0    | AI dry-run eval isolation.         |
@@ -43,7 +43,7 @@ ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~6 ms.
 | test-ui.mjs                 |  318 | 0    |                                    |
 | test-units.mjs              |   64 | 0    |                                    |
 | test-variables.mjs          |  251 | 0    |                                    |
-| **test-all (aggregate)**    | **8023** | **0** | Fully green.                 |
+| **test-all (aggregate)**    | **8032** | **0** | Fully green.                 |
 | test-persist.mjs (separate) |   98 | 0    | Stable; D-001 closed ship-prep.    |
 | sanity.mjs (standalone)     |   22 | 0    | ~6 ms smoke suite.                 |
 
