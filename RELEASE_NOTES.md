@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.3.6 (2026-08-31)
+**Latest release:** v0.3.7 (2026-08-31)
 
 ---
 
@@ -19,6 +19,38 @@ The application runs as a native desktop window on macOS, Windows, and Linux
 via [Tauri 2](https://tauri.app/). The entire calculator frontend is plain
 HTML / CSS / ES modules — no build step, no framework, no bundler required for
 development.
+
+---
+
+## v0.3.7 — 2026-08-31
+
+Command palette and a first mobile layout — the two biggest "can't ship
+without this" UI holes.
+
+### Command palette
+
+`/` on an empty command line, or Ctrl/Cmd-K, opens a fuzzy command overlay
+(`www/src/ui/command-palette.js`) over the calculator. Typing filters
+`allOps()`, matched characters highlight, ↑↓ move the selection, Enter
+runs the op (same path as a keypad press), Esc closes.
+
+### Mobile
+
+At `max-width: 720px` the side panel stacks under the calculator and keys
+shrink. At `480px` the F-key row hides so the LCD and keypad fit a phone.
+
+### Test suite
+
+**8,058** assertions.
+
+### Known limitations carried into v0.3.7
+
+`JORDAN`, step-debugger UI, main-thread CAS, and `DIFFEQ` plots remain
+pending.
+
+### Upgrade notes
+
+No migration is required from v0.3.6.
 
 ---
 
