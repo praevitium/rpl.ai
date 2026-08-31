@@ -95,6 +95,7 @@ export class GraphView {
     this.view = defaultView();
     this.traces = [];
     this._drag = null;
+    this._hover = null;
     this.el = document.createElement('div');
     this.el.className = 'gr-view';
     this.el.innerHTML = `
@@ -192,9 +193,17 @@ export class GraphView {
     canvas.addEventListener('pointerdown', (ev) => {
       canvas.setPointerCapture(ev.pointerId);
       this._drag = { x: ev.offsetX, y: ev.offsetY, view: { ...this.view } };
+      this._hover = null;
+      this.draw();
     });
-    canvas.addEventListener('pointerup', () => { this._drag = null; });
-    canvas.addEventListener('pointercancel', () => { this._drag = null; });
+    canvas.addEventListener('pointerup', (ev) => {
+      this._drag = null;
+      this._hoverFromEvent(ev);
+    });
+    canvas.addEventListener('pointercancel', () => {
+      this._drag = null;
+      this._clearHover();
+    });
     canvas.addEventListener('pointermove', (ev) => {
       const rect = canvas.getBoundingClientRect();
       if (this._drag) {
@@ -203,12 +212,11 @@ export class GraphView {
         this.view = panView(this._drag.view, x0 - x1, y0 - y1);
         this.draw();
       } else {
-        const [wx, wy] = pixelToWorld(ev.offsetX, ev.offsetY, this.view, rect.width, rect.height);
-        this._readout.textContent = this._hoverReadout(wx, wy);
+        this._hoverFromEvent(ev);
       }
     });
     canvas.addEventListener('pointerleave', () => {
-      if (!this._drag) this._readout.textContent = '';
+      if (!this._drag) this._clearHover();
     });
     canvas.addEventListener('wheel', (ev) => {
       ev.preventDefault();
@@ -216,11 +224,11 @@ export class GraphView {
       const [cx, cy] = pixelToWorld(ev.offsetX, ev.offsetY, this.view, rect.width, rect.height);
       const factor = ev.deltaY > 0 ? 1.12 : 1 / 1.12;
       this.view = zoomView(this.view, cx, cy, factor);
-      this.draw();
+      this._hoverFromEvent(ev);
     }, { passive: false });
-    canvas.addEventListener('dblclick', () => {
+    canvas.addEventListener('dblclick', (ev) => {
       this.view = defaultView();
-      this.draw();
+      this._hoverFromEvent(ev);
     });
 
     this._ro = new ResizeObserver(() => this.draw());
@@ -430,16 +438,67 @@ export class GraphView {
     });
   }
 
+  _hoverOpts() {
+    return {
+      angleOpts: angleOpts(),
+      fitModel: getLastFitModel(),
+      snapX: (this.view.xmax - this.view.xmin) * 0.03,
+    };
+  }
+
+  _hoverFromEvent(ev) {
+    const rect = this._canvas.getBoundingClientRect();
+    const [wx, wy] = pixelToWorld(ev.offsetX, ev.offsetY, this.view, rect.width, rect.height);
+    this._hover = { x: wx, y: wy };
+    this._readout.textContent = this._hoverReadout(wx, wy);
+    this.draw();
+  }
+
+  _clearHover() {
+    this._hover = null;
+    this._readout.textContent = '';
+    this.draw();
+  }
+
   _hoverReadout(wx, wy) {
     const bits = [`${fmtAxis(wx)}, ${fmtAxis(wy)}`];
-    const snapX = (this.view.xmax - this.view.xmin) * 0.03;
-    const opts = { angleOpts: angleOpts(), fitModel: getLastFitModel(), snapX };
+    const opts = this._hoverOpts();
     for (const t of this.traces) {
       const yv = evalTraceAtX(t, wx, opts);
       if (!Number.isFinite(yv)) continue;
       bits.push(`${t.label || t.expr || t.kind}=${fmtAxis(yv)}`);
     }
     return bits.join('  ');
+  }
+
+  _drawHover(ctx, width, height) {
+    const h = this._hover;
+    if (!h || this._drag) return;
+    const view = this.view;
+    const [px] = worldToPixel(h.x, 0, view, width, height);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(42, 49, 64, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(px, 0);
+    ctx.lineTo(px, height);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const opts = this._hoverOpts();
+    for (const t of this.traces) {
+      const yv = evalTraceAtX(t, h.x, opts);
+      if (!Number.isFinite(yv)) continue;
+      const [dx, dy] = worldToPixel(h.x, yv, view, width, height);
+      ctx.fillStyle = t.color;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(dx, dy, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   _onTraceExprInput(input) {
@@ -538,6 +597,7 @@ export class GraphView {
       if (!t.enabled) continue;
       this._drawTrace(ctx, t, width, height);
     }
+    this._drawHover(ctx, width, height);
   }
 
   _drawGrid(ctx, width, height) {
