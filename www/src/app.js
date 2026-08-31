@@ -40,6 +40,7 @@ import {
 import { giac } from './rpl/cas/giac-engine.mjs';
 import { FULL as BUILD_FULL } from './build-info.js';
 import { ChatBot } from './ai/chat-bot.js';
+import { CommandPalette } from './ui/command-palette.js';
 
 class App {
   constructor() {
@@ -97,6 +98,15 @@ class App {
       navRow:  document.getElementById('navRow'),
       keypad:  document.getElementById('keypad'),
     });
+
+    const calcEl = document.getElementById('calculator');
+    if (calcEl) {
+      this.commandPalette = new CommandPalette({
+        host: calcEl,
+        getNames: () => allOps(),
+        onInvoke: (name) => this.entry.execOp(name),
+      });
+    }
 
     // Side panel (Commands / History / Characters / Files).  Mounts
     // itself into #sidePanelRoot and starts hidden.  Browsable catalog
@@ -1238,6 +1248,20 @@ class App {
      `<`, `>`, `_`, etc. — goes straight into the buffer via e.key.
   ---------------------------------------------------------------- */
   _installKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      if (!this.commandPalette || this.commandPalette.isOpen()) return;
+      const tag = e.target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      const openK = (e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k';
+      const openSlash = e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey
+        && this.entry.buffer.length === 0;
+      if (openK || openSlash) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.commandPalette.open();
+      }
+    }, true);
+
     document.addEventListener('keydown', (e) => {
       // Ignore if user is typing into a real <input>/<textarea>
       const tag = e.target?.tagName;

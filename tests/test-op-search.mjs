@@ -1,4 +1,5 @@
 import { fuzzyScore, searchOps, moveSelection, matchPositions, highlightSegments } from '../www/src/ui/op-search.js';
+import { paletteRowHtml } from '../www/src/ui/command-palette.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { assert } from './helpers.mjs';
 
@@ -259,4 +260,15 @@ import { assert } from './helpers.mjs';
   assert(moveSelection(NaN, 1, 5) === 0, 'moveSelection: NaN index → sentinel then first');
   assert(moveSelection(0, NaN, 5) === 0, 'moveSelection: NaN delta is no-op');
   assert(moveSelection(0, 1, NaN) === -1, 'moveSelection: NaN length → -1');
+}
+
+{
+  assert(paletteRowHtml('SIN', '') === 'SIN',
+    'paletteRowHtml: empty query is unhighlighted');
+  assert(paletteRowHtml('SIN', 'SIN') === '<mark>SIN</mark>',
+    'paletteRowHtml: exact match is one mark');
+  assert(paletteRowHtml('COSINE', 'SI') === 'CO<mark>SI</mark>NE',
+    'paletteRowHtml: interior run');
+  assert(paletteRowHtml('A<B', 'A') === '<mark>A</mark>&lt;B',
+    'paletteRowHtml: escapes unmatched HTML');
 }

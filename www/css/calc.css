@@ -2646,3 +2646,108 @@ body.mode-minimal .keypad {
 .gr-canvas { display: block; width: 100%; height: 100%; cursor: grab; }
 .gr-canvas:active { cursor: grabbing; }
 .gr-readout { font-family: var(--font-lcd); }
+
+/* Command palette — overlays the calculator like command-help. */
+.cmd-palette {
+  position: absolute;
+  inset: 0;
+  z-index: 95;
+  background: rgba(15, 18, 26, 0.72);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 16px 16px;
+}
+.cmd-palette.hidden { display: none; }
+.cmd-palette-card {
+  width: min(480px, 100%);
+  max-height: 70vh;
+  background: #1c212c;
+  border: 1px solid #3a4252;
+  border-radius: 10px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .45);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.cmd-palette-input {
+  flex: 0 0 auto;
+  background: #15181f;
+  border: none;
+  border-bottom: 1px solid #3a4252;
+  color: #e7ebf2;
+  font-family: var(--font-lcd);
+  font-size: 18px;
+  padding: 12px 14px;
+  outline: none;
+}
+.cmd-palette-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+.cmd-palette-list li {
+  padding: 7px 14px;
+  font-family: var(--font-lcd);
+  font-size: 15px;
+  color: #e7ebf2;
+  cursor: pointer;
+}
+.cmd-palette-list li.selected,
+.cmd-palette-list li:hover {
+  background: rgba(103, 232, 249, .14);
+}
+.cmd-palette-list li.empty {
+  color: #8b93a4;
+  cursor: default;
+}
+.cmd-palette-list mark {
+  background: transparent;
+  color: #67e8f9;
+  font-weight: 700;
+  padding: 0;
+}
+.cmd-palette-hint {
+  flex: 0 0 auto;
+  padding: 6px 14px 8px;
+  font-size: 11px;
+  color: #8b93a4;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+
+/* Phone / narrow tablet: stack the panel under the calculator, grow
+   the LCD, shrink keys so the machine is usable without a desk. */
+@media (max-width: 720px) {
+  body {
+    flex-direction: column;
+    height: 100dvh;
+  }
+  .calculator {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+  }
+  #sidePanelRoot {
+    order: 2;
+    width: 100%;
+    flex: 0 0 auto;
+  }
+  .side-panel {
+    width: 100% !important;
+    max-width: 100%;
+    height: 42dvh;
+  }
+  .bezel { padding: 6px 6px 8px; gap: 4px; }
+  .key { min-height: 34px; padding: 2px; }
+  .soft-row, .nav-row, .keypad { gap: 3px; }
+  .brand { font-size: 12px; }
+  .model { font-size: 9px; }
+}
+
+@media (max-width: 480px) {
+  .soft-row { display: none; }
+  .key { min-height: 38px; }
+  .cmd-palette { padding-top: 8vh; }
+}

@@ -16,7 +16,7 @@ Guide.pdf`, `HP50 User Manual.pdf`) remain the fidelity reference.
 
 ## Current state — foundations in place
 
-*As of v0.3.6 (2026-08-31).*
+*As of v0.3.7 (2026-08-31).*
 
 The substrate the roadmap builds on:
 
@@ -151,9 +151,9 @@ concrete improvements:
   the matched-character indices, plus `highlightSegments` folding those
   indices into the alternating matched/unmatched text runs the overlay
   renders) is a DOM-free matcher+ranker+navigator unit-tested in
-  `tests/test-op-search.mjs`; the overlay that consumes it (input box,
-  result list, matched-char highlighting, Enter-to-invoke, Esc-to-close)
-  is still TODO.
+  `tests/test-op-search.mjs`.  Overlay ships as `www/src/ui/command-palette.js`:
+  `/` on an empty command line (or Ctrl/Cmd-K) opens it, typing filters
+  `allOps()`, Enter runs the highlighted op, Esc closes.
 - **Contextual help.**  Hover an op name in the stack or command line
   → a tooltip with its AUR one-liner plus argument signature.  The
   metadata lives in `COMMANDS.md` today as prose; a structured
@@ -165,10 +165,10 @@ concrete improvements:
   panel-name→heading fallback table `ALIASES` (SQRT→√, CHARPOL→PCAR, …)
   is exported with a structural guard (upper-case keys, single-hop
   targets, no self-alias), both unit-tested in `tests/test-ui.mjs`.
-- **Mobile layout.**  The keypad assumes desktop aspect ratios.  Two
-  breakpoints — landscape phone and portrait tablet — would unlock
-  the tool on a second screen while the user writes on their main
-  monitor.
+- **Mobile layout.**  Narrow viewports (`max-width: 720px`) stack the
+  side panel under the calculator and shrink keys; phones (`480px`)
+  hide the F-key row so the LCD and keypad fit.  Further polish
+  (safe-area insets, landscape keypad) can follow.
 - **Theme polish.**  Two official skins (light + dark, already in
   `calc.css`); a third "LCD emulation" skin that leans into the
   green-on-black look for nostalgia users.
