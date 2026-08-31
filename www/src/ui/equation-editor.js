@@ -145,7 +145,7 @@ export class EquationEditor {
   _bind() {
     this._input.addEventListener('input', () => this._refresh());
     this._input.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) {
+      if (ev.key === 'Enter' && !ev.shiftKey) {
         ev.preventDefault();
         this.push();
       }
@@ -226,7 +226,11 @@ export class EquationEditor {
       const entry = this.app?.entry;
       if (entry?.buffer?.trim?.().length > 0) entry.enter();
       this.app.stack.push(v);
+      this._status.textContent = 'Pushed';
+      this._status.classList.remove('error');
     } catch (e) {
+      this._status.textContent = e.message;
+      this._status.classList.add('error');
       this.app?.entry?.flashError?.({ message: `Equation: ${e.message}` });
     }
   }
