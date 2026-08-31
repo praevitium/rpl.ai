@@ -46,6 +46,55 @@ export function resizeGrid(grid, rows, cols) {
   return next;
 }
 
+function clampIndex(n, lo, hi) {
+  const v = Math.floor(Number(n));
+  if (!Number.isFinite(v)) return lo;
+  return Math.max(lo, Math.min(hi, v));
+}
+
+/** Insert a blank row at `at` (0 = before first; length = after last). */
+export function insertRow(grid, at) {
+  if (grid.length >= MATRIX_MAX) return grid;
+  const cols = grid[0]?.length || 1;
+  const i = clampIndex(at, 0, grid.length);
+  const next = grid.map(r => r.slice());
+  next.splice(i, 0, Array.from({ length: cols }, () => ''));
+  return next;
+}
+
+/** Remove the row at `at`.  Refuses to drop the last remaining row. */
+export function deleteRow(grid, at) {
+  if (grid.length <= 1) return grid;
+  const i = clampIndex(at, 0, grid.length - 1);
+  const next = grid.map(r => r.slice());
+  next.splice(i, 1);
+  return next;
+}
+
+/** Insert a blank column at `at`. */
+export function insertCol(grid, at) {
+  const cols = grid[0]?.length || 1;
+  if (cols >= MATRIX_MAX) return grid;
+  const i = clampIndex(at, 0, cols);
+  return grid.map(row => {
+    const r = row.slice();
+    r.splice(i, 0, '');
+    return r;
+  });
+}
+
+/** Remove the column at `at`.  Refuses to drop the last remaining column. */
+export function deleteCol(grid, at) {
+  const cols = grid[0]?.length || 1;
+  if (cols <= 1) return grid;
+  const i = clampIndex(at, 0, cols - 1);
+  return grid.map(row => {
+    const r = row.slice();
+    r.splice(i, 1);
+    return r;
+  });
+}
+
 export function parseMatrixCell(text) {
   const t = String(text ?? '').trim();
   if (t === '') return Real(0);
@@ -150,6 +199,8 @@ export class MatrixEditor {
     this.app = app;
     this.grid = emptyGrid(MATRIX_DEFAULT, MATRIX_DEFAULT);
     this._asVector = false;
+    this._focusR = 0;
+    this._focusC = 0;
     this.el = document.createElement('div');
     this.el.className = 'mx-editor';
     this.el.innerHTML = `
@@ -158,6 +209,10 @@ export class MatrixEditor {
         <label class="mx-dim">Cols <input type="number" class="mx-cols" min="1" max="${MATRIX_MAX}" value="${MATRIX_DEFAULT}" /></label>
         <button type="button" data-mx="id" title="Identity">I</button>
         <button type="button" data-mx="zero" title="Fill with zeros">0</button>
+        <button type="button" data-mx="insRow" title="Insert row at the focused cell">+row</button>
+        <button type="button" data-mx="delRow" title="Delete focused row">-row</button>
+        <button type="button" data-mx="insCol" title="Insert column at the focused cell">+col</button>
+        <button type="button" data-mx="delCol" title="Delete focused column">-col</button>
         <button type="button" data-mx="load" title="Copy stack level 1 into the grid">From stack</button>
         <button type="button" data-mx="push" title="Push this matrix onto the stack">To stack</button>
         <button type="button" data-mx="clear" title="Clear cells">Clear</button>
@@ -182,6 +237,10 @@ export class MatrixEditor {
       const act = btn.dataset.mx;
       if (act === 'id') this.fillIdentity();
       else if (act === 'zero') this.fillZeros();
+      else if (act === 'insRow') this.insertRowAtFocus();
+      else if (act === 'delRow') this.deleteRowAtFocus();
+      else if (act === 'insCol') this.insertColAtFocus();
+      else if (act === 'delCol') this.deleteColAtFocus();
       else if (act === 'load') this.loadFromStack();
       else if (act === 'push') this.push();
       else if (act === 'clear') this.clear();
@@ -194,6 +253,12 @@ export class MatrixEditor {
     this._rowsIn.addEventListener('change', onDim);
     this._colsIn.addEventListener('change', onDim);
     this._table.addEventListener('keydown', (ev) => this._onKey(ev));
+    this._table.addEventListener('focusin', (ev) => {
+      const cell = ev.target.closest?.('input.mx-cell');
+      if (!cell) return;
+      this._focusR = Number(cell.dataset.r);
+      this._focusC = Number(cell.dataset.c);
+    });
     this._table.addEventListener('paste', (ev) => this._onPaste(ev));
     this._table.addEventListener('input', (ev) => {
       const cell = ev.target.closest?.('input.mx-cell');
@@ -246,8 +311,7 @@ export class MatrixEditor {
     } else {
       return;
     }
-    const next = this._table.querySelector(`input.mx-cell[data-r="${nr}"][data-c="${nc}"]`);
-    if (next) { next.focus(); next.select(); }
+    this._focusCell(nr, nc, { select: true });
   }
 
   _onPaste(ev) {
@@ -261,10 +325,51 @@ export class MatrixEditor {
     this.grid = pasteIntoGrid(this.grid, r, c, text);
     if (this.grid.length !== 1) this._asVector = false;
     this._renderGrid();
-    const next = this._table.querySelector(`input.mx-cell[data-r="${r}"][data-c="${c}"]`);
-    if (next) next.focus();
+    this._focusCell(r, c);
     this._status.textContent = '';
     this._status.classList.remove('error');
+  }
+
+  _focusCell(r, c, { select = false } = {}) {
+    const rows = this.grid.length;
+    const cols = this.grid[0]?.length || 1;
+    const nr = Math.max(0, Math.min(rows - 1, r));
+    const nc = Math.max(0, Math.min(cols - 1, c));
+    this._focusR = nr;
+    this._focusC = nc;
+    const next = this._table.querySelector(`input.mx-cell[data-r="${nr}"][data-c="${nc}"]`);
+    if (!next) return;
+    next.focus();
+    if (select) next.select();
+  }
+
+  insertRowAtFocus() {
+    const at = this._focusR;
+    this.grid = insertRow(this.grid, at);
+    this._asVector = false;
+    this._renderGrid();
+    this._focusCell(at, this._focusC);
+  }
+
+  deleteRowAtFocus() {
+    const at = this._focusR;
+    this.grid = deleteRow(this.grid, at);
+    this._renderGrid();
+    this._focusCell(at, this._focusC);
+  }
+
+  insertColAtFocus() {
+    const at = this._focusC;
+    this.grid = insertCol(this.grid, at);
+    this._renderGrid();
+    this._focusCell(this._focusR, at);
+  }
+
+  deleteColAtFocus() {
+    const at = this._focusC;
+    this.grid = deleteCol(this.grid, at);
+    this._renderGrid();
+    this._focusCell(this._focusR, at);
   }
 
   _syncDimInputs() {

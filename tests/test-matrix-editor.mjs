@@ -2,7 +2,7 @@ import { assert, assertThrows } from './helpers.mjs';
 import {
   emptyGrid, identityGrid, zerosGrid, clampDim, resizeGrid,
   parseMatrixCell, gridToMatrix, gridToValue, valueToGrid, pasteIntoGrid,
-  MATRIX_MAX,
+  insertRow, deleteRow, insertCol, deleteCol, MATRIX_MAX,
 } from '../www/src/ui/matrix-editor.js';
 import {
   Matrix, Vector, Real, Integer, RList, isMatrix, isInteger, isReal, isVector,
@@ -102,4 +102,26 @@ import {
     'pasteIntoGrid: grows to fit');
   assert(grown[0][0] === 'a' && grown[0][1] === 'b' && grown[1][0] === 'c',
     'pasteIntoGrid: grown cells');
+}
+
+{
+  const src = [['a', 'b'], ['c', 'd']];
+  const ins = insertRow(src, 1);
+  assert(ins.length === 3 && ins[1][0] === '' && ins[2][0] === 'c',
+    'insertRow: blank at 1, rest shift down');
+  assert(src.length === 2, 'insertRow: does not mutate source');
+  const end = insertRow(src, 99);
+  assert(end.length === 3 && end[2][0] === '', 'insertRow: past-end clamps to last');
+  const del = deleteRow(ins, 1);
+  assert(del.length === 2 && del[1][0] === 'c', 'deleteRow: removes the blank');
+  const one = [['x']];
+  assert(deleteRow(one, 0) === one, 'deleteRow: refuses last row');
+
+  const col = insertCol(src, 1);
+  assert(col[0].length === 3 && col[0][1] === '' && col[0][2] === 'b',
+    'insertCol: blank at 1');
+  const gone = deleteCol(col, 1);
+  assert(gone[0].length === 2 && gone[0][1] === 'b', 'deleteCol: removes the blank');
+  const slim = [['x'], ['y']];
+  assert(deleteCol(slim, 0) === slim, 'deleteCol: refuses last column');
 }
