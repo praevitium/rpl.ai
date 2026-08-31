@@ -8,7 +8,7 @@ import {
   worldToPixel, pixelToWorld, niceTicks, parsePlotExpr,
   sampleFunction, samplePolar, sampleParametric, sampleFit,
   valueToPoints, valuesFromColumn, histogram, boundsOfPoints,
-  fitViewToTraces,
+  fitViewToTraces, evalTraceAtX,
 } from './plot-engine.js';
 import { formatAlgebra } from '../rpl/algebra.js';
 import { isSymbolic, isMatrix, isVector, isList, Matrix, Real } from '../rpl/types.js';
@@ -204,7 +204,7 @@ export class GraphView {
         this.draw();
       } else {
         const [wx, wy] = pixelToWorld(ev.offsetX, ev.offsetY, this.view, rect.width, rect.height);
-        this._readout.textContent = `${fmtAxis(wx)}, ${fmtAxis(wy)}`;
+        this._readout.textContent = this._hoverReadout(wx, wy);
       }
     });
     canvas.addEventListener('pointerleave', () => {
@@ -428,6 +428,18 @@ export class GraphView {
     this._exprs.querySelectorAll('.gr-trace').forEach(row => {
       row.classList.toggle('selected', row.dataset.trace === id);
     });
+  }
+
+  _hoverReadout(wx, wy) {
+    const bits = [`${fmtAxis(wx)}, ${fmtAxis(wy)}`];
+    const snapX = (this.view.xmax - this.view.xmin) * 0.03;
+    const opts = { angleOpts: angleOpts(), fitModel: getLastFitModel(), snapX };
+    for (const t of this.traces) {
+      const yv = evalTraceAtX(t, wx, opts);
+      if (!Number.isFinite(yv)) continue;
+      bits.push(`${t.label || t.expr || t.kind}=${fmtAxis(yv)}`);
+    }
+    return bits.join('  ');
   }
 
   _onTraceExprInput(input) {

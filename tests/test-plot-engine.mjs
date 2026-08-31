@@ -5,8 +5,9 @@ import {
   pixelToWorld, zoomView, panView, defaultView, boundsOfPoints,
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
+  evalTraceAtX,
 } from '../www/src/ui/plot-engine.js';
-import { Matrix, Vector, Real, Integer, Symbolic, Program, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
+import { Matrix, Vector, Real, Integer, Symbolic, Program, RList, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
 import { lookup, setGraphicsHook } from '../www/src/rpl/ops.js';
 import { Stack } from '../www/src/rpl/stack.js';
 import { parseAlgebra } from '../www/src/rpl/algebra.js';
@@ -92,6 +93,18 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(valueToPoints(Integer(1)) === null, 'valueToPoints: scalar is null');
   const nums = valuesFromColumn(m, 1);
   assert(nums[0] === 2 && nums[1] === 4, 'valuesFromColumn: col 1');
+  const nested = valueToPoints(RList([
+    RList([Real(1), Real(2)]),
+    Vector([Real(3), Real(4)]),
+  ]));
+  assert(nested.length === 2 && nested[0][0] === 1 && nested[1][1] === 4,
+    'valueToPoints: list of lists/vectors is xy');
+  const nestedCol = valuesFromColumn(RList([
+    RList([Real(5), Real(6)]),
+    RList([Real(7), Real(8)]),
+  ]), 1);
+  assert(nestedCol[0] === 6 && nestedCol[1] === 8,
+    'valuesFromColumn: nested list col 1');
 }
 
 {
@@ -232,6 +245,28 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   );
   assert(off.ymin === view.ymin && off.ymax === view.ymax,
     'fitViewToTraces: disabled traces are ignored');
+}
+
+{
+  const y = evalTraceAtX({ kind: 'function', expr: '2*X', enabled: true }, 3);
+  assert(y === 6, 'evalTraceAtX: function');
+  assert(Number.isNaN(evalTraceAtX({ kind: 'function', expr: 'X', enabled: false }, 3)),
+    'evalTraceAtX: disabled is NaN');
+  const scatter = evalTraceAtX(
+    { kind: 'scatter', points: [[0, 1], [10, 5]], enabled: true },
+    9.5,
+    { snapX: 1 },
+  );
+  assert(scatter === 5, 'evalTraceAtX: scatter snaps to nearest');
+  assert(Number.isNaN(evalTraceAtX(
+    { kind: 'scatter', points: [[0, 1]], enabled: true },
+    9,
+    { snapX: 1 },
+  )), 'evalTraceAtX: scatter outside snap is NaN');
+  const fitY = evalTraceAtX({ kind: 'fit', enabled: true }, 3, {
+    fitModel: { kind: 'LIN', a: 1, b: 2 },
+  });
+  assert(fitY === 7, 'evalTraceAtX: fit model');
 }
 
 

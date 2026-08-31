@@ -253,25 +253,39 @@ function scalarToNumber(v) {
   catch { return NaN; }
 }
 
+function isRowContainer(v) {
+  return (isList(v) || isVector(v)) && Array.isArray(v.items);
+}
+
+function cellsToPoint(cells, i) {
+  if (!cells || !cells.length) return null;
+  if (cells.length >= 2) return [scalarToNumber(cells[0]), scalarToNumber(cells[1])];
+  return [i + 1, scalarToNumber(cells[0])];
+}
+
 /** Pull [x,y] pairs from a Matrix (1-col → (i,y), 2+-col → (x,y)),
- *  Vector (i, y), or List of numbers.  Indices are 1-based like HP50. */
+ *  Vector (i, y), List of numbers, or List-of-lists / list-of-vectors
+ *  (same row rule as Matrix).  Indices are 1-based like HP50. */
 export function valueToPoints(v) {
   if (isMatrix(v)) {
     const pts = [];
     v.rows.forEach((row, i) => {
-      if (row.length >= 2) {
-        pts.push([scalarToNumber(row[0]), scalarToNumber(row[1])]);
-      } else if (row.length === 1) {
-        pts.push([i + 1, scalarToNumber(row[0])]);
-      }
+      const p = cellsToPoint(row, i);
+      if (p) pts.push(p);
     });
     return pts;
   }
-  if (isVector(v)) {
-    return v.items.map((item, i) => [i + 1, scalarToNumber(item)]);
-  }
-  if (isList(v)) {
-    return v.items.map((item, i) => [i + 1, scalarToNumber(item)]);
+  if (isVector(v) || isList(v)) {
+    const items = v.items;
+    if (items.length && items.every(isRowContainer)) {
+      const pts = [];
+      items.forEach((row, i) => {
+        const p = cellsToPoint(row.items, i);
+        if (p) pts.push(p);
+      });
+      return pts;
+    }
+    return items.map((item, i) => [i + 1, scalarToNumber(item)]);
   }
   return null;
 }
@@ -281,10 +295,46 @@ export function valuesFromColumn(v, col = 0) {
     return v.rows.map(row => scalarToNumber(row[col] ?? row[0]));
   }
   if (isVector(v) || isList(v)) {
-    const items = isVector(v) ? v.items : v.items;
+    const items = v.items;
+    if (items.length && items.every(isRowContainer)) {
+      return items.map(row => scalarToNumber(row.items[col] ?? row.items[0]));
+    }
     return items.map(scalarToNumber);
   }
   return null;
+}
+
+/** y-value of a trace at world x, or NaN.  Function/fit evaluate the
+ *  expression (or last-fit model); point traces snap to the nearest
+ *  sample when it is within `opts.snapX` (default: always nearest). */
+export function evalTraceAtX(t, x, opts = {}) {
+  if (!t || t.enabled === false || !Number.isFinite(x)) return NaN;
+  const angle = opts.angleOpts || {};
+  try {
+    if (t.kind === 'function' && t.expr) {
+      return evalNumeric(parsePlotExpr(t.expr), { x, X: x }, angle);
+    }
+    if (t.kind === 'fit') {
+      if (opts.fitModel) return evalFitModel(opts.fitModel, x);
+      if (t.expr) return evalNumeric(parsePlotExpr(t.expr), { x, X: x }, angle);
+      return NaN;
+    }
+    if ((t.kind === 'scatter' || t.kind === 'bar' || t.kind === 'hist') && t.points) {
+      let bestY = NaN;
+      let bestD = Infinity;
+      for (const p of t.points) {
+        if (!p || !Number.isFinite(p[0]) || !Number.isFinite(p[1])) continue;
+        const d = Math.abs(p[0] - x);
+        if (d < bestD) { bestD = d; bestY = p[1]; }
+      }
+      const snap = opts.snapX;
+      if (Number.isFinite(snap) && bestD > snap) return NaN;
+      return bestY;
+    }
+  } catch {
+    return NaN;
+  }
+  return NaN;
 }
 
 export function histogram(values, binCount) {
