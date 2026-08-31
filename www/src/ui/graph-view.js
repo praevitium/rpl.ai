@@ -171,9 +171,18 @@ export class GraphView {
         return;
       }
       const row = ev.target.closest?.('.gr-trace');
-      if (row?.dataset.trace) {
-        this._selectedId = row.dataset.trace;
-        this._renderExprs();
+      if (row?.dataset.trace) this._selectTrace(row.dataset.trace);
+    });
+    this._exprs.addEventListener('input', (ev) => {
+      const input = ev.target.closest?.('input.gr-expr');
+      if (input) this._onTraceExprInput(input);
+    });
+    this._exprs.addEventListener('keydown', (ev) => {
+      if (!ev.target.closest?.('input.gr-expr')) return;
+      ev.stopPropagation();
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        ev.target.blur();
       }
     });
     this._addX.addEventListener('keydown', (ev) => ev.stopPropagation());
@@ -250,16 +259,14 @@ export class GraphView {
       this.app?.entry?.flashError?.({ message: `Graph: ${e.message}` });
       return;
     }
-    this.traces.push(makeTrace({
+    this._addTrace({
       kind,
       expr,
       exprY: kind === 'parametric' ? exprY : '',
       label: kind === 'parametric' ? `(${expr}, ${exprY})` : expr,
-    }));
+    }, { fit: kind === 'polar' || kind === 'parametric' });
     this._addX.value = '';
     this._addY.value = '';
-    this._renderExprs();
-    this.draw();
   }
 
   loadData(kind, value) {
@@ -275,31 +282,28 @@ export class GraphView {
         (hist.edges[i] + hist.edges[i + 1]) / 2,
         count,
       ]);
-      this.traces.push(makeTrace({
-        kind: 'hist',
-        points,
-        label: 'histogram',
-      }));
-    } else {
-      const points = valueToPoints(v);
-      if (!points || !points.length) {
-        this.app?.entry?.flashError?.({ message: 'Graph: no numeric points' });
-        return;
-      }
-      this.traces.push(makeTrace({
-        kind,
-        points,
-        label: kind === 'bar' ? 'bar' : 'scatter',
-      }));
-      const fit = getLastFitModel();
-      if (kind === 'scatter' && fit) {
-        this.traces.push(makeTrace({
-          kind: 'fit',
-          label: `${fit.kind} fit`,
-          color: TRACE_COLORS[4],
-        }));
-      }
+      this._addTrace({ kind: 'hist', points, label: 'histogram' }, { fit: true });
+      return;
     }
+    const points = valueToPoints(v);
+    if (!points || !points.length) {
+      this.app?.entry?.flashError?.({ message: 'Graph: no numeric points' });
+      return;
+    }
+    const t = this._addTrace({
+      kind,
+      points,
+      label: kind === 'bar' ? 'bar' : 'scatter',
+    }, { fit: false, draw: false });
+    const fit = getLastFitModel();
+    if (kind === 'scatter' && fit) {
+      this.traces.push(makeTrace({
+        kind: 'fit',
+        label: `${fit.kind} fit`,
+        color: TRACE_COLORS[4],
+      }));
+    }
+    this._selectedId = t.id;
     this.fitView();
     this._renderExprs();
     this.draw();
@@ -329,15 +333,13 @@ export class GraphView {
           const y = expr;
           const xVal = stack.depth >= 2 ? stack.peek(2) : null;
           const xExpr = isSymbolic(xVal) ? formatAlgebra(xVal.expr) : 'T';
-          this.traces.push(makeTrace({
+          this._addTrace({
             kind: 'parametric', expr: xExpr, exprY: y,
             label: `(${xExpr}, ${y})`,
-          }));
+          }, { fit: true });
         } else {
-          this.traces.push(makeTrace({ kind, expr, label: expr }));
+          this._addTrace({ kind, expr, label: expr }, { fit: kind === 'polar' });
         }
-        this._renderExprs();
-        this.draw();
         return;
       }
       this.app?.entry?.flashError?.({ message: `Graph: ${kind} expects a Symbolic on the stack` });
@@ -361,14 +363,10 @@ export class GraphView {
       const y = formatAlgebra(v.expr);
       const xVal = stack.depth >= level + 1 ? stack.peek(level + 1) : null;
       const xExpr = isSymbolic(xVal) ? formatAlgebra(xVal.expr) : 'T';
-      const t = makeTrace({
+      this._addTrace({
         kind: 'parametric', expr: xExpr, exprY: y,
         label: `(${xExpr}, ${y})`,
-      });
-      this.traces.push(t);
-      this._selectedId = t.id;
-      this._renderExprs();
-      this.draw();
+      }, { fit: true });
       this._readout.textContent = `Copied L${level}`;
       return true;
     }
@@ -377,13 +375,8 @@ export class GraphView {
       this.app?.entry?.flashError?.({ message: 'Graph: stack value is not an expression or data' });
       return true;
     }
-    const t = makeTrace(spec);
-    this.traces.push(t);
-    this._selectedId = t.id;
-    this.setKind(t.kind);
-    this.fitView();
-    this._renderExprs();
-    this.draw();
+    this.setKind(spec.kind);
+    this._addTrace(spec, { fit: true });
     this._readout.textContent = `Copied L${level}`;
     return true;
   }
@@ -417,6 +410,42 @@ export class GraphView {
     this.pushTrace(id);
   }
 
+  _addTrace(partial, { fit = false, draw = true } = {}) {
+    const t = makeTrace(partial);
+    this.traces.push(t);
+    this._selectedId = t.id;
+    if (fit) this.fitView();
+    if (draw) {
+      this._renderExprs();
+      this.draw();
+    }
+    return t;
+  }
+
+  _selectTrace(id) {
+    if (this._selectedId === id) return;
+    this._selectedId = id;
+    this._exprs.querySelectorAll('.gr-trace').forEach(row => {
+      row.classList.toggle('selected', row.dataset.trace === id);
+    });
+  }
+
+  _onTraceExprInput(input) {
+    const t = this.traces.find(tr => tr.id === input.dataset.trace);
+    if (!t) return;
+    if (input.dataset.field === 'y') t.exprY = input.value;
+    else t.expr = input.value;
+    t.label = t.kind === 'parametric' ? `(${t.expr}, ${t.exprY})` : t.expr;
+    try {
+      if (t.expr.trim()) parsePlotExpr(t.expr);
+      if (t.kind === 'parametric' && t.exprY.trim()) parsePlotExpr(t.exprY);
+      this._readout.textContent = '';
+    } catch (e) {
+      this._readout.textContent = e.message;
+    }
+    this.draw();
+  }
+
   removeTrace(id) {
     this.traces = this.traces.filter(t => t.id !== id);
     if (this._selectedId === id) this._selectedId = null;
@@ -445,16 +474,31 @@ export class GraphView {
   }
 
   _renderExprs() {
-    this._exprs.innerHTML = this.traces.map(t => `
+    this._exprs.innerHTML = this.traces.map(t => {
+      const editable = t.kind === 'function' || t.kind === 'polar' || t.kind === 'parametric';
+      const body = editable
+        ? (t.kind === 'parametric'
+          ? `<input class="gr-expr" data-trace="${t.id}" data-field="x"
+                    spellcheck="false" aria-label="X expression"
+                    value="${escapeHtml(t.expr)}" placeholder="COS(T)" />
+             <span class="gr-param-sep">,</span>
+             <input class="gr-expr" data-trace="${t.id}" data-field="y"
+                    spellcheck="false" aria-label="Y expression"
+                    value="${escapeHtml(t.exprY)}" placeholder="SIN(T)" />`
+          : `<input class="gr-expr" data-trace="${t.id}" data-field="x"
+                    spellcheck="false" aria-label="Expression"
+                    value="${escapeHtml(t.expr)}" placeholder="${t.kind === 'polar' ? '1 + COS(θ)' : 'SIN(X)'}" />`)
+        : `<span class="gr-trace-label">${escapeHtml(t.label || t.kind)}</span>`;
+      return `
       <div class="gr-trace ${t.enabled ? '' : 'off'}${t.id === this._selectedId ? ' selected' : ''}"
            data-trace="${t.id}">
         <button type="button" class="gr-swatch" data-trace="${t.id}" data-act="toggle"
                 style="--swatch:${t.color}" title="Toggle" aria-label="Toggle"></button>
-        <span class="gr-trace-label">${escapeHtml(t.label || t.expr || t.kind)}</span>
+        ${body}
         <button type="button" data-trace="${t.id}" data-act="push" title="Push onto the stack">To stack</button>
         <button type="button" data-trace="${t.id}" data-act="remove" title="Remove">×</button>
-      </div>
-    `).join('') || '<div class="gr-empty">From stack copies level 1 here. To stack pushes a trace. Or type an expression and Add.</div>';
+      </div>`;
+    }).join('') || '<div class="gr-empty">From stack copies level 1 here. To stack pushes a trace. Or type an expression and Add.</div>';
   }
 
   resize() { this.draw(); }

@@ -100,7 +100,7 @@ export function valueToEquationDraft(v) {
     const s = format(v);
     return s.replace(/^`|`$/g, '');
   }
-  return format(v).replace(/^`|`$/g, '');
+  return null;
 }
 
 export class EquationEditor {
@@ -216,7 +216,12 @@ export class EquationEditor {
       return true;
     }
     if (level < 1 || level > stack.depth) return true;
-    this._input.value = valueToEquationDraft(stack.peek(level));
+    const draft = valueToEquationDraft(stack.peek(level));
+    if (draft == null) {
+      this.app?.entry?.flashError?.({ message: 'Equation: that stack level is not an expression' });
+      return true;
+    }
+    this._input.value = draft;
     this._refresh();
     this._input.focus();
     this._status.textContent = `Copied L${level}`;

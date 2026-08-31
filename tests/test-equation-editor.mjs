@@ -3,7 +3,7 @@ import {
   wrapSelection, insertAt, previewEquation, equationToSymbolic,
   valueToEquationDraft, EQ_FNS,
 } from '../www/src/ui/equation-editor.js';
-import { Symbolic, Real, Name, Integer } from '../www/src/rpl/types.js';
+import { Symbolic, Real, Name, Integer, Matrix } from '../www/src/rpl/types.js';
 import { parseAlgebra, isBin, isFn } from '../www/src/rpl/algebra.js';
 import { isSymbolic } from '../www/src/rpl/types.js';
 
@@ -54,6 +54,8 @@ import { isSymbolic } from '../www/src/rpl/types.js';
   assert(valueToEquationDraft(Name('foo')) === 'foo', 'valueToEquationDraft: name');
   const n = valueToEquationDraft(Integer(4));
   assert(n === '4', 'valueToEquationDraft: integer');
+  assert(valueToEquationDraft(Matrix([[Integer(1)]])) === null,
+    'valueToEquationDraft: matrix is not an expression');
   assert(EQ_FNS.includes('SIN') && EQ_FNS.includes('SQRT'), 'EQ_FNS: palette');
 }
 

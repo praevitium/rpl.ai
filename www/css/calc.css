@@ -2593,6 +2593,23 @@ body.mode-minimal .keypad {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.gr-expr {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #e7ebf2;
+  font-family: var(--font-lcd);
+  font-size: 13px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  outline: none;
+}
+.gr-expr:focus {
+  border-color: rgba(103, 232, 249, .5);
+  background: #15181f;
+}
+.gr-param-sep { color: #8b93a4; padding: 0 2px; }
 .gr-trace button[data-act="push"] {
   background: transparent;
   border: 1px solid #3a4252;

@@ -6,7 +6,7 @@ import {
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
 } from '../www/src/ui/plot-engine.js';
-import { Matrix, Vector, Real, Integer, Symbolic, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
+import { Matrix, Vector, Real, Integer, Symbolic, Program, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
 import { lookup, setGraphicsHook } from '../www/src/rpl/ops.js';
 import { Stack } from '../www/src/rpl/stack.js';
 import { parseAlgebra } from '../www/src/rpl/algebra.js';
@@ -168,6 +168,8 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(bar.kind === 'bar' && bar.points[0][1] === 5,
     'stackValueToTrace: Vector + preferred bar');
   assert(stackValueToTrace(null) === null, 'stackValueToTrace: null');
+  assert(stackValueToTrace(Program([])) === null,
+    'stackValueToTrace: program is not a plot');
 }
 
 {
