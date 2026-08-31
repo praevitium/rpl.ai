@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.3.4 (2026-08-30)
+**Latest release:** v0.3.5 (2026-08-31)
 
 ---
 
@@ -19,6 +19,33 @@ The application runs as a native desktop window on macOS, Windows, and Linux
 via [Tauri 2](https://tauri.app/). The entire calculator frontend is plain
 HTML / CSS / ES modules — no build step, no framework, no bundler required for
 development.
+
+---
+
+## v0.3.5 — 2026-08-31
+
+Stack copy/push on the formula, matrix, and graph editors.
+
+### Side panel
+
+- **From stack / To stack** on the equation writer, matrix editor, and graph
+  view. Clicking a stack row while one of those tabs is open copies that
+  level into the editor (instead of the command line). Graph traces also
+  have a per-trace **To stack** control; expressions push as Symbolic,
+  scatter/bar/hist push as a 2-column Matrix.
+
+### Test suite
+
+**8,023** assertions. Plot-engine tests cover stack↔trace conversion.
+
+### Known limitations carried into v0.3.5
+
+Same as v0.3.4: `JORDAN`, step-debugger UI, command-palette overlay,
+main-thread CAS, `DIFFEQ` plots, no mobile layout.
+
+### Upgrade notes
+
+No migration is required from v0.3.4.
 
 ---
 
