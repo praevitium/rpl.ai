@@ -4,7 +4,7 @@ import {
   sampleParametric, segmentPoints, niceTicks, niceNum, worldToPixel,
   pixelToWorld, zoomView, panView, defaultView, boundsOfPoints,
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit,
-  nextTraceColor, TRACE_COLORS,
+  nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
 } from '../www/src/ui/plot-engine.js';
 import { Matrix, Vector, Real, Integer } from '../www/src/rpl/types.js';
 import { lookup, setGraphicsHook } from '../www/src/rpl/ops.js';
@@ -132,6 +132,73 @@ import { Stack } from '../www/src/rpl/stack.js';
     'POLAR without hook → No graphics view');
   assertThrows(() => lookup('PARAMETRIC').fn(s), /No graphics view/,
     'PARAMETRIC without hook → No graphics view');
+}
+
+{
+  const view = defaultView();
+  const pts = sampleTraceForFit({ kind: 'function', expr: 'SIN(X)' }, view, {
+    angleOpts: { toRad: x => x, fromRad: x => x },
+  });
+  assert(pts.length > 10, 'sampleTraceForFit: function yields samples');
+  const ys = pts.map(p => p[1]);
+  assert(Math.max(...ys) > 0.9 && Math.min(...ys) < -0.9,
+    'sampleTraceForFit: SIN spans [-1, 1]');
+
+  const polar = sampleTraceForFit({ kind: 'polar', expr: '1' }, view, {
+    angleOpts: { toRad: x => x },
+    thetaRange: { min: 0, max: 2 * Math.PI },
+  });
+  assert(polar.length > 10, 'sampleTraceForFit: polar unit circle');
+  const stored = sampleTraceForFit({ kind: 'scatter', points: [[0, 1], [2, 3]] }, view);
+  assert(stored.length === 2 && stored[1][0] === 2, 'sampleTraceForFit: stored points');
+}
+
+{
+  const view = defaultView();
+  const sinFit = fitViewToTraces(
+    [{ kind: 'function', expr: 'SIN(X)', enabled: true }],
+    view,
+    { angleOpts: { toRad: x => x } },
+  );
+  assert(sinFit.xmin === view.xmin && sinFit.xmax === view.xmax,
+    'fitViewToTraces: function keeps x-range');
+  assert(sinFit.ymax < 2 && sinFit.ymin > -2,
+    'fitViewToTraces: function fits y to SIN');
+
+  const again = fitViewToTraces(
+    [{ kind: 'function', expr: 'SIN(X)', enabled: true }],
+    sinFit,
+    { angleOpts: { toRad: x => x } },
+  );
+  assert(again.xmin === sinFit.xmin && again.xmax === sinFit.xmax,
+    'fitViewToTraces: repeated function Fit does not creep x');
+
+  const polarFit = fitViewToTraces(
+    [{ kind: 'polar', expr: '1', enabled: true }],
+    view,
+    { angleOpts: { toRad: x => x }, thetaRange: { min: 0, max: 2 * Math.PI } },
+  );
+  assert(polarFit.xmax < 2 && polarFit.xmin > -2 && polarFit.ymax < 2,
+    'fitViewToTraces: polar unit circle frames near ±1');
+
+  const dataFit = fitViewToTraces(
+    [{ kind: 'scatter', points: [[0, 0], [4, 8]], enabled: true }],
+    view,
+  );
+  assert(dataFit.xmin < 0.1 && dataFit.xmax > 3.9 && dataFit.ymax > 7,
+    'fitViewToTraces: scatter uses stored points');
+
+  const empty = fitViewToTraces([], { xmin: 1, xmax: 2, ymin: 3, ymax: 4 });
+  assert(empty.xmin === 1 && empty.ymax === 4,
+    'fitViewToTraces: nothing to fit keeps the view');
+
+  const off = fitViewToTraces(
+    [{ kind: 'function', expr: 'SIN(X)', enabled: false }],
+    view,
+    { angleOpts: { toRad: x => x } },
+  );
+  assert(off.ymin === view.ymin && off.ymax === view.ymax,
+    'fitViewToTraces: disabled traces are ignored');
 }
 
 

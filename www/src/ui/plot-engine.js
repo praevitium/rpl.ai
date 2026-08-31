@@ -329,6 +329,84 @@ export function sampleFit(model, xMin, xMax, n) {
   return segmentPoints(pts, Infinity);
 }
 
+function finitePts(pts) {
+  const out = [];
+  for (const p of pts) {
+    if (p && Number.isFinite(p[0]) && Number.isFinite(p[1])) out.push(p);
+  }
+  return out;
+}
+
+function isDataTrace(t) {
+  if (Array.isArray(t.points) && t.points.length) return true;
+  const k = t.kind;
+  return k === 'polar' || k === 'parametric' || k === 'scatter'
+    || k === 'bar' || k === 'hist';
+}
+
+/** Flatten a trace to finite [x,y] samples for auto-fit.
+ *  Point traces contribute their stored points; function/fit traces
+ *  are sampled across `view`'s x-range; polar/parametric traces are
+ *  sampled over `opts.thetaRange` / `opts.tRange`. */
+export function sampleTraceForFit(t, view, opts = {}) {
+  if (!t) return [];
+  if (Array.isArray(t.points) && t.points.length) return finitePts(t.points);
+
+  const width = Math.max(240, Number(opts.width) || 240);
+  const angle = opts.angleOpts || {};
+  const v = view || defaultView();
+  try {
+    if ((t.kind === 'function' || !t.kind) && t.expr) {
+      const ast = parsePlotExpr(t.expr);
+      return finitePts(sampleFunction(ast, v.xmin, v.xmax, width, {}, {
+        ...angle,
+        ySpan: v.ymax - v.ymin,
+      }).flat());
+    }
+    if (t.kind === 'fit' && opts.fitModel) {
+      return finitePts(sampleFit(opts.fitModel, v.xmin, v.xmax, width).flat());
+    }
+    if (t.kind === 'polar' && t.expr) {
+      const ast = parsePlotExpr(t.expr);
+      const th = opts.thetaRange || { min: 0, max: 2 * Math.PI };
+      return finitePts(samplePolar(ast, th.min, th.max, 720, {}, angle).flat());
+    }
+    if (t.kind === 'parametric' && t.expr && t.exprY) {
+      const tr = opts.tRange || { min: -10, max: 10 };
+      return finitePts(sampleParametric(
+        parsePlotExpr(t.expr), parsePlotExpr(t.exprY),
+        tr.min, tr.max, 480, {}, angle,
+      ).flat());
+    }
+  } catch {
+    return [];
+  }
+  return [];
+}
+
+/** Compute a viewport that frames `traces`.
+ *  Data / polar / parametric traces set both axes.  Function-only
+ *  traces keep the current x-range and fit y, so repeated Fit doesn't
+ *  creep the window outward by padFrac.  Nothing to fit → `view`. */
+export function fitViewToTraces(traces, view, opts = {}) {
+  const v = view || defaultView();
+  const xy = [];
+  const yOnly = [];
+  for (const t of traces || []) {
+    if (!t || t.enabled === false) continue;
+    const pts = sampleTraceForFit(t, v, opts);
+    if (!pts.length) continue;
+    if (isDataTrace(t)) xy.push(...pts);
+    else yOnly.push(...pts);
+  }
+  if (xy.length) return boundsOfPoints(xy);
+  if (yOnly.length) {
+    const b = boundsOfPoints(yOnly);
+    return { xmin: v.xmin, xmax: v.xmax, ymin: b.ymin, ymax: b.ymax };
+  }
+  return { xmin: v.xmin, xmax: v.xmax, ymin: v.ymin, ymax: v.ymax };
+}
+
 export function symbolicToAst(v) {
   return isSymbolic(v) ? v.expr : null;
 }

@@ -8,6 +8,7 @@ import {
   worldToPixel, pixelToWorld, niceTicks, parsePlotExpr,
   sampleFunction, samplePolar, sampleParametric, sampleFit,
   valueToPoints, valuesFromColumn, histogram, boundsOfPoints,
+  fitViewToTraces,
 } from './plot-engine.js';
 import { formatAlgebra } from '../rpl/algebra.js';
 import { isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
@@ -299,12 +300,14 @@ export class GraphView {
   }
 
   fitView() {
-    const pts = [];
-    for (const t of this.traces) {
-      if (!t.enabled) continue;
-      if (t.points) pts.push(...t.points);
-    }
-    this.view = pts.length ? boundsOfPoints(pts) : defaultView();
+    const wrap = this._canvas?.parentElement;
+    this.view = fitViewToTraces(this.traces, this.view, {
+      angleOpts: angleOpts(),
+      thetaRange: thetaRange(),
+      tRange: { min: -10, max: 10 },
+      fitModel: getLastFitModel(),
+      width: wrap?.clientWidth || 240,
+    });
     this.draw();
   }
 
