@@ -1,5 +1,5 @@
 /* =================================================================
-   Side-panel: Commands / History / Characters / Files
+   Side-panel: Commands / History / Characters / Files / Graph / Writer
 
    A slide-in overlay on the right edge of the bezel that replaces
    several shift-layer soft menus (CMD, PRG, CHARS, MTH, CAT, EXP&LN,
@@ -7,7 +7,7 @@
    Instead of 6 cramped labels on the LCD, the user gets a scrollable,
    tabbed panel.
 
-   Three tabs:
+   Tabs:
 
      1. Commands  —  Every registered op, grouped by the same categories
                      used in docs/COMMANDS.md.  Click behavior
@@ -41,6 +41,9 @@ import {
   exportVariableToFile, parseVariableFile,
 } from '../rpl/persist.js';
 import { CommandHelp } from './command-help.js';
+import { GraphView } from './graph-view.js';
+import { EquationEditor } from './equation-editor.js';
+import { MatrixEditor } from './matrix-editor.js';
 
 /* -----------------------------------------------------------------
    Command categories.  Keys are the display names; values are arrays
@@ -165,6 +168,10 @@ export const CATEGORIES = {
     'CORR', 'COV',
     'LINFIT', 'LOGFIT', 'EXPFIT', 'PWRFIT', 'BESTFIT',
     'PREDV', 'PREDX',
+  ],
+  'Graphics': [
+    'BARPLOT', 'HISTPLOT', 'SCATRPLOT',
+    'FUNCTION', 'POLAR', 'PARAMETRIC', 'DRAW',
   ],
   'Variables / directories': [
     'STO', 'RCL', 'PURGE', 'VARS', 'TVARS',
@@ -393,6 +400,12 @@ export class SidePanel {
                   title="AI Assistant (BETA)" aria-label="AI Assistant (BETA)">✦</button>
           <button type="button" class="sp-tab" data-tab="commands" role="tab"
                   title="Commands" aria-label="Commands">📖</button>
+          <button type="button" class="sp-tab" data-tab="equation" role="tab"
+                  title="Equation writer" aria-label="Equation writer">ƒ𝑥</button>
+          <button type="button" class="sp-tab" data-tab="matrix"   role="tab"
+                  title="Matrix editor" aria-label="Matrix editor">⊞</button>
+          <button type="button" class="sp-tab" data-tab="graph"    role="tab"
+                  title="Graph" aria-label="Graph">📈</button>
           <button type="button" class="sp-tab" data-tab="chars"    role="tab"
                   title="Characters" aria-label="Characters">🔤</button>
           <button type="button" class="sp-tab" data-tab="files"    role="tab"
@@ -603,6 +616,13 @@ export class SidePanel {
     this._saveUIState();
   }
 
+  /** Open the Graph tab and apply a plot-op (SCATRPLOT, FUNCTION, …). */
+  openGraph(kind, stack) {
+    this.open('graph');
+    if (!this._graphView) this._graphView = new GraphView({ app: this.app });
+    this._graphView.applyPlotOp(kind, stack);
+  }
+
   close() {
     this.el.classList.add('hidden');
     if (this.commandHelp) this.commandHelp.hide();
@@ -639,7 +659,10 @@ export class SidePanel {
     // The filter bar is unused on the AI tab — hide it so the chatbot
     // gets the full panel height.
     const filterRow = this.el.querySelector('.side-panel-filter');
-    if (filterRow) filterRow.classList.toggle('hidden', tab === 'ai');
+    if (filterRow) {
+      filterRow.classList.toggle(
+        'hidden', tab === 'ai' || tab === 'graph' || tab === 'equation' || tab === 'matrix');
+    }
     // Clear the filter input when switching tabs so stale text from the
     // Commands filter doesn't hide every History entry.
     const filterInput = this.el.querySelector('.sp-filter');
@@ -668,6 +691,29 @@ export class SidePanel {
     // subsequent renders will keep re-appending an empty <div> forever.
     // So we only cache after a successful mount, and re-attempt on every
     // render until ChatBot is available.
+    if (this.tab === 'graph') {
+      if (!this._graphView) this._graphView = new GraphView({ app: this.app });
+      body.innerHTML = '';
+      body.appendChild(this._graphView.el);
+      this._graphView.resize();
+      this._refreshExpandLabel();
+      return;
+    }
+    if (this.tab === 'equation') {
+      if (!this._equation) this._equation = new EquationEditor({ app: this.app });
+      body.innerHTML = '';
+      body.appendChild(this._equation.el);
+      this._refreshExpandLabel();
+      return;
+    }
+    if (this.tab === 'matrix') {
+      if (!this._matrix) this._matrix = new MatrixEditor({ app: this.app });
+      body.innerHTML = '';
+      body.appendChild(this._matrix.el);
+      this._refreshExpandLabel();
+      return;
+    }
+
     if (this.tab === 'ai') {
       if (!this._chatContainer) {
         const container = document.createElement('div');
@@ -1332,7 +1378,8 @@ export class SidePanel {
     let st;
     try { st = JSON.parse(raw); } catch { return; }
     if (!st || typeof st !== 'object') return;
-    const tab = VALID_TABS.has(st.tab) ? st.tab : 'ai';
+    const savedTab = st.tab === 'write' ? 'equation' : st.tab;
+    const tab = VALID_TABS.has(savedTab) ? savedTab : 'ai';
     if (st.historySort === 'newest' || st.historySort === 'oldest') {
       this.historySort = st.historySort;
       const lbl = this.el.querySelector('.sp-sort');
@@ -1396,7 +1443,9 @@ const PANEL_MIN_WIDTH = 240;
 const PANEL_MAX_WIDTH = 800;
 
 const UI_STORAGE_KEY = 'hp50.ui.sidePanel';
-const VALID_TABS = new Set(['commands', 'chars', 'files', 'history', 'ai']);
+const VALID_TABS = new Set([
+  'commands', 'chars', 'files', 'history', 'ai', 'graph', 'equation', 'matrix',
+]);
 
 /* Short labels beside each file row.  Kept compact (≤4 chars) so the
    type column doesn't push the name off-screen on narrow panels. */

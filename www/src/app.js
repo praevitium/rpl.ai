@@ -23,7 +23,7 @@ import {
   goInto, goHome, goUp,
   captureCalcState, restoreCalcState,
 } from './rpl/state.js';
-import { lookup, allOps } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook } from './rpl/ops.js';
 import { evalScratch } from './rpl/scratch.js';
 import { CATEGORIES } from './ui/side-panel.js';
 import {
@@ -109,6 +109,9 @@ class App {
       // and refresh() is a no-op when the panel is closed or on another tab.
       this.entry.subscribeHistory(() => {
         if (this.sidePanel?.tab === 'history') this.sidePanel.refresh();
+      });
+      setGraphicsHook((kind, stack) => {
+        this.sidePanel.openGraph(kind, stack);
       });
     }
 

@@ -366,7 +366,8 @@ not fallbacks.  Migration is incremental — rows below are flagged
 These are tracked here only to mark them out-of-scope for the command-support
 lane; `rpl5050-ui-development` owns them.
 
-- `DRAW` `DRAX` `DRAWMENU` `ERASE` `PICT` → ui lane
+- `DRAW` `BARPLOT` `HISTPLOT` `SCATRPLOT` `FUNCTION` `POLAR` `PARAMETRIC`
+  → side-panel Graph view.  `DRAX` `DRAWMENU` `ERASE` `PICT` remain GROB.
 - `DISP` `CLLCD` `FREEZE` `INPUT` `WAIT` `BEEP` → ui lane (PROMPT moved
   to the control-flow section session 129 — it ships through the
   rpl-programming lane as a HALT-flavored suspension op, not through
@@ -383,7 +384,6 @@ can be picked up as a group.
 | Command | Cluster | Priority | Notes |
 |---------|---------|----------|-------|
 | `JORDAN` | Matrix | low | Jordan cycle decomposition — 4-output (min poly / char poly / tagged characteristic spaces / eigenvalue array per AUR §3-122).  Composable from Giac `pmin` / `charpoly` / `eigenvects` / `eigenvals`, but the tagged-space + Jordan-chain output formatting is the heavy part; needs a dedicated multi-run effort.  Session 199 proved real Giac runs under Node for shape-capture (see the count note above); the remaining work is capturing those shapes reliably and wiring the op.  (`SCHUR` shipped session 196; `RSD` shipped session 119; `LQD` retired session 134 as a phantom.) |
-| `BARPLOT` `HISTPLOT` `SCATRPLOT` | graphics | ui-lane | (graphics — not in this lane) |
 | `ATTACH` `DETACH` `LIBS` | libraries | will-not | `LIB` not supported per `@!MY_NOTES.md`. |
 
 ## Will-not-support (by design deviation)

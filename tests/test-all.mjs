@@ -37,6 +37,9 @@ const FILES = [
   './test-llm-manager.mjs',
   './test-command-reference.mjs',
   './test-scratch.mjs',
+  './test-plot-engine.mjs',
+  './test-equation-editor.mjs',
+  './test-matrix-editor.mjs',
 ];
 
 const perFile = [];

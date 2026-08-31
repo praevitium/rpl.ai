@@ -17238,3 +17238,29 @@ setPushCoerce((v) => {
   }
   return v;
 });
+
+/* ------------------------------------------------------------------
+   Graphics ops.  The plot itself lives in the side-panel Graph view;
+   these commands hand a kind + the live stack to a hook the App
+   installs at boot.  Without a hook (Node tests, headless) they
+   reject so a program can't silently no-op.
+   ------------------------------------------------------------------ */
+let _graphicsHook = null;
+export function setGraphicsHook(fn) {
+  _graphicsHook = typeof fn === 'function' ? fn : null;
+}
+
+function _requestPlot(kind, s) {
+  if (typeof _graphicsHook !== 'function') {
+    throw new RPLError('No graphics view');
+  }
+  _graphicsHook(kind, s);
+}
+
+register('SCATRPLOT', (s) => _requestPlot('scatter', s));
+register('BARPLOT',   (s) => _requestPlot('bar', s));
+register('HISTPLOT',  (s) => _requestPlot('hist', s));
+register('FUNCTION',  (s) => _requestPlot('function', s));
+register('POLAR',     (s) => _requestPlot('polar', s));
+register('PARAMETRIC',(s) => _requestPlot('parametric', s));
+register('DRAW',      (s) => _requestPlot('draw', s));

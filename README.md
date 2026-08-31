@@ -97,10 +97,10 @@ the computer algebra system written by Bernard Parisse, who also authored
 sense, the natural heir to the original engine.
 
 The side panel (visible in the full-view screenshot above) hosts the command
-catalog, character picker, file explorer, and session history. It's very much
-in the spirit of the HP-28's side panel — the original gangster of that
-design — and it's where future features like graphing, the equation writer,
-and the matrix editor will live, rather than as inline calculator prompts.
+catalog, equation writer, matrix editor, graph view, character picker, file
+explorer, and session history. It's very much in the spirit of the HP-28's
+side panel — the original gangster of that design — and it's where features
+like graphing and the writers live, rather than as inline calculator prompts.
 
 The app runs as a native desktop window via [Tauri 2](https://tauri.app/) on
 macOS, Windows, and Linux. The entire frontend is plain HTML / CSS / ES
@@ -115,9 +115,9 @@ with `JORDAN` the lone remaining op. See
 [docs/ROADMAP.md](docs/ROADMAP.md) for what's remaining and
 [docs/COMMANDS.md](docs/COMMANDS.md) for the current command inventory.
 
-**Not yet implemented:** graphing (Desmos integration is planned), equation
-writer, and matrix writer. These are on the roadmap and will surface in the
-side panel.
+**Not yet implemented:** the command-palette overlay (the fuzzy matcher
+already ships), `JORDAN`, and a mobile layout. Graphing, the equation
+writer, and the matrix writer live in the side panel.
 
 ---
 

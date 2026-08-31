@@ -67,8 +67,8 @@ is `PEVAL`, which already ships).
 Explicitly out of scope (`will-not`, per `@!MY_NOTES.md`): USER mode,
 ENTRY, S.SLV, NUM.SLV, FINANCE, TIME, DEF, LIB, OFF, and the
 `ATTACH`/`DETACH`/`LIBS` library system.  Graphics (`BARPLOT`,
-`HISTPLOT`, `SCATRPLOT`) is deferred to a longer-term stretch theme —
-see "Graphics output" below.
+`HISTPLOT`, `SCATRPLOT`, `FUNCTION`, `POLAR`, `PARAMETRIC`) ships in
+the side-panel Graph view — see "Graphics output" below.
 
 ### 2. Persistence and session portability
 
@@ -136,6 +136,12 @@ The keypad and interactive stack are feature-complete but the
 calculator is hard to drive without HP50 muscle-memory.  A few
 concrete improvements:
 
+- **Equation and matrix writers.**  Side-panel **ƒ𝑥** (equation) and
+  **⊞** (matrix) tabs: algebraic entry with a textbook pretty-print
+  preview (palette wraps the selection in fractions, powers, radicals,
+  and named functions) and a spreadsheet matrix grid that round-trips
+  `Matrix` / `Vector` values.  Push / Load talk to stack level 1.
+
 - **Command palette / fuzzy op search.**  `/<name>` opens an overlay,
   types filter the registered op list, Enter invokes the op (as if
   entered in the command line).  The `allOps()` enumerator already
@@ -200,18 +206,13 @@ maintenance mode and catches drift as it happens.
 These are aspirational and not on any current queue:
 
 - **Graphics output — charts as a first-class calculator view.**
-  The HP50 draws histograms, scatter plots and bar charts onto its
-  128×80 LCD; a modern adaptation should treat the graphics surface as
-  an actual subview rather than a pixel emulation.  Rather than
-  hand-roll a plotting layer, this will lean on an embedded charting /
-  graphing component — Desmos or similar — driven off the ΣDAT matrix
-  and the `state.lastFitModel` slot that `PREDV` / `PREDX` already
-  populate, so a fitted line can overlay a scatter without respecifying
-  data.  Scope covers `BARPLOT`, `HISTPLOT`, `SCATRPLOT` first, then
-  `FUNCTION`, `POLAR`, `PARAMETRIC`, `DIFFEQ` plot types (HP50 User
-  Guide §22), each sampled from an EVAL of a user-supplied Program or
-  Symbolic.  It *will* be implemented eventually — just not in the
-  near-term cohorts.
+  The side-panel Graph tab is the modern stand-in for the HP50's 128×80
+  PICT: pan/zoom cartesian plots, expression traces, polar and
+  parametric sampling, plus `BARPLOT` / `HISTPLOT` / `SCATRPLOT` off a
+  stack matrix or the `ΣDAT` variable.  A LINFIT/LOGFIT/EXPFIT/PWRFIT
+  overlay reads `state.lastFitModel` so a fitted line can sit on a
+  scatter without respecifying data.  `DIFFEQ` plot type and GROB
+  pixel-emulation remain open.
 - **Programmable soft-menus.**  HP50 lets a user bind custom soft-
   key menus; a web-native equivalent opens the door to per-user
   keyboard-shortcut layouts.

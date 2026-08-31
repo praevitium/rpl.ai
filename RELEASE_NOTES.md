@@ -63,9 +63,9 @@ The ASCII local-arrow path is pinned in `tests/test-control-flow.mjs`.
 ### Known limitations carried into v0.3.3
 
 Unchanged from v0.3.1: `JORDAN` Giac wiring, the step-debugger UI, the
-command-palette overlay (the fuzzy matcher ships and is tested), graphics /
-plotting, the equation and matrix writers, main-thread CAS, and the absence of
-a mobile layout all remain pending.
+command-palette overlay (the fuzzy matcher ships and is tested), main-thread
+CAS, and the absence of a mobile layout all remain pending. Graphing and the
+equation / matrix writers now live in the side panel.
 
 ### Upgrade notes
 
@@ -352,8 +352,9 @@ legacy binary library formats, or are superseded by better modern equivalents:
 ### Graphics / plotting
 
 `BARPLOT`, `HISTPLOT`, `SCATRPLOT`, `FUNCTION`, `POLAR`, `PARAMETRIC`, and
-`DIFFEQ` plot modes are not yet implemented. The ΣDAT matrix and fit-model
-state are fully functional — plots are the remaining UI surface.
+`DRAW` open the side-panel Graph view (cartesian / polar / parametric
+traces, plus bar / histogram / scatter from a stack matrix or `ΣDAT`,
+with a last-fit overlay). `DIFFEQ` is still open.
 
 ### Suspended execution — named sub-programs
 
