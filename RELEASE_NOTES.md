@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.3.3 (2026-08-15)
+**Latest release:** v0.3.4 (2026-08-30)
 
 ---
 
@@ -19,6 +19,43 @@ The application runs as a native desktop window on macOS, Windows, and Linux
 via [Tauri 2](https://tauri.app/). The entire calculator frontend is plain
 HTML / CSS / ES modules — no build step, no framework, no bundler required for
 development.
+
+---
+
+## v0.3.4 — 2026-08-30
+
+Graphing and the equation / matrix writers land in the side panel, replacing
+the HP 50g PICT / EQW / matrix-writer prompts with first-class tabs.
+
+### Side panel
+
+- **Graph (📈).** Pan/zoom cartesian canvas. Expression traces (`y=f(x)`,
+  polar, parametric), plus `BARPLOT` / `HISTPLOT` / `SCATRPLOT` off a stack
+  matrix or `ΣDAT`, with a last-fit overlay from `LINFIT` / `LOGFIT` /
+  `EXPFIT` / `PWRFIT`. `FUNCTION`, `POLAR`, `PARAMETRIC`, and `DRAW` open
+  this view.
+- **Equation writer (ƒ𝑥).** Algebraic entry with a live textbook preview
+  (pretty.js). Palette wraps the selection in fractions, powers, radicals,
+  and named functions. Load / Push talk to stack level 1.
+- **Matrix editor (⊞).** Spreadsheet grid that round-trips `Matrix` /
+  `Vector` values, with identity / zeros / resize.
+
+### Test suite
+
+**7,999** assertions across 28 test files. New files pin plot sampling
+(`tests/test-plot-engine.mjs`), equation wrap/preview
+(`tests/test-equation-editor.mjs`), and matrix-grid helpers
+(`tests/test-matrix-editor.mjs`).
+
+### Known limitations carried into v0.3.4
+
+`JORDAN` Giac wiring, the step-debugger UI, the command-palette overlay
+(the fuzzy matcher ships and is tested), main-thread CAS, `DIFFEQ` plots,
+and the absence of a mobile layout remain pending.
+
+### Upgrade notes
+
+No migration is required from v0.3.3.
 
 ---
 
@@ -63,9 +100,9 @@ The ASCII local-arrow path is pinned in `tests/test-control-flow.mjs`.
 ### Known limitations carried into v0.3.3
 
 Unchanged from v0.3.1: `JORDAN` Giac wiring, the step-debugger UI, the
-command-palette overlay (the fuzzy matcher ships and is tested), main-thread
-CAS, and the absence of a mobile layout all remain pending. Graphing and the
-equation / matrix writers now live in the side panel.
+command-palette overlay (the fuzzy matcher ships and is tested), graphics /
+plotting, the equation and matrix writers, main-thread CAS, and the absence of
+a mobile layout all remain pending.
 
 ### Upgrade notes
 
