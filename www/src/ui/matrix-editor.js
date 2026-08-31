@@ -16,10 +16,11 @@ export function emptyGrid(rows, cols) {
   return Array.from({ length: r }, () => Array.from({ length: c }, () => ''));
 }
 
-export function identityGrid(n) {
-  const d = clampDim(n);
-  return Array.from({ length: d }, (_, i) =>
-    Array.from({ length: d }, (_, j) => (i === j ? '1' : '0')));
+export function identityGrid(rows, cols = rows) {
+  const r = clampDim(rows);
+  const c = clampDim(cols);
+  return Array.from({ length: r }, (_, i) =>
+    Array.from({ length: c }, (_, j) => (i === j ? '1' : '0')));
 }
 
 export function zerosGrid(rows, cols) {
@@ -400,8 +401,7 @@ export class MatrixEditor {
   }
 
   fillIdentity() {
-    const n = Math.max(this.grid.length, this.grid[0]?.length || 1);
-    this.grid = identityGrid(n);
+    this.grid = identityGrid(this.grid.length, this.grid[0]?.length || 1);
     this._asVector = false;
     this._renderGrid();
   }

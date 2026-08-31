@@ -21,6 +21,12 @@ import {
   const i = identityGrid(2);
   assert(i[0][0] === '1' && i[0][1] === '0' && i[1][1] === '1',
     'identityGrid: I2');
+  const rect = identityGrid(2, 3);
+  assert(rect.length === 2 && rect[0].length === 3,
+    'identityGrid: keeps rectangular size');
+  assert(rect[0][0] === '1' && rect[0][1] === '0' && rect[1][1] === '1'
+    && rect[1][2] === '0',
+    'identityGrid: 1s on the diagonal of a 2x3');
   const z = zerosGrid(1, 2);
   assert(z[0][0] === '0' && z[0][1] === '0', 'zerosGrid');
 }
