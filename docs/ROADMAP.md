@@ -16,7 +16,7 @@ Guide.pdf`, `HP50 User Manual.pdf`) remain the fidelity reference.
 
 ## Current state — foundations in place
 
-*As of v0.3.7 (2026-08-31).*
+*As of v0.3.8 (2026-09-01).*
 
 The substrate the roadmap builds on:
 
@@ -167,8 +167,8 @@ concrete improvements:
   targets, no self-alias), both unit-tested in `tests/test-ui.mjs`.
 - **Mobile layout.**  Narrow viewports (`max-width: 720px`) stack the
   side panel under the calculator and shrink keys; phones (`480px`)
-  hide the F-key row so the LCD and keypad fit.  Further polish
-  (safe-area insets, landscape keypad) can follow.
+  hide the F-key row so the LCD and keypad fit.  Safe-area insets are
+  applied. Landscape keypad can follow.
 - **Theme polish.**  Two official skins (light + dark, already in
   `calc.css`); a third "LCD emulation" skin that leans into the
   green-on-black look for nostalgia users.

@@ -1,6 +1,6 @@
 {
   "productName": "rpl.ai",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "identifier": "com.rpl5050.rplai",
   "build": {
     "beforeBuildCommand": "node scripts/build-frontend-dist.mjs",

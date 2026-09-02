@@ -1,6 +1,6 @@
 {
   "name": "rplai",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "AI-Assisted RPL Calculator - Modern HP50g Adaptation",
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
     "reflow-hp50-commands": "node scripts/reflow-hp50-commands.mjs",
     "postinstall": "npm run build-info",
     "preserve": "npm run build-info",
-    "serve": "npx --yes live-server --port=5050 --host=127.0.0.1 --no-browser --entry-file=index.html www",
+    "serve": "npx --yes live-server --port=5050 --host=0.0.0.0 --no-browser --entry-file=index.html www",
     "prebundle:vendor": "npm run build-info",
     "bundle:vendor": "esbuild www/vendor/codemirror/src-entry.mjs --bundle --format=esm --outfile=www/vendor/codemirror/codemirror.bundle.js",
     "tauri": "tauri",

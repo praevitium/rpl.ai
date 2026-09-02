@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.3.7 (2026-08-31)
+**Latest release:** v0.3.8 (2026-09-01)
 
 ---
 
@@ -19,6 +19,27 @@ The application runs as a native desktop window on macOS, Windows, and Linux
 via [Tauri 2](https://tauri.app/). The entire calculator frontend is plain
 HTML / CSS / ES modules — no build step, no framework, no bundler required for
 development.
+
+---
+
+## v0.3.8 — 2026-09-01
+
+Phone layout: keys stay tappable, shift labels no longer collide, the
+side panel stacks under the calculator, and the home indicator is
+respected.
+
+### Test suite
+
+**8,058** assertions.
+
+### Known limitations carried into v0.3.8
+
+`JORDAN`, step-debugger UI, main-thread CAS, and `DIFFEQ` plots remain
+pending.
+
+### Upgrade notes
+
+No migration is required from v0.3.7.
 
 ---
 
