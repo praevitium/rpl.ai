@@ -1,8 +1,3 @@
-/* Graph view — Desmos-like cartesian plot in the side panel.
-
-   Traces are sampled from Symbolic expressions (or from ΣDAT / the
-   stack) by plot-engine.js and drawn on a pan/zoom canvas. */
-
 import {
   TRACE_COLORS, nextTraceColor, defaultView, zoomView, panView,
   worldToPixel, pixelToWorld, niceTicks, parsePlotExpr,
@@ -22,7 +17,6 @@ function angleOpts() {
 }
 
 function thetaRange() {
-  // Sample a full turn in the active angle unit so SIN(θ) honours DEG.
   const rad = toRadians(1);
   if (Math.abs(rad - Math.PI / 180) < 1e-9) return { min: 0, max: 360 };
   if (Math.abs(rad - Math.PI / 200) < 1e-9) return { min: 0, max: 400 };
@@ -43,8 +37,6 @@ export function makeTrace(partial = {}) {
   };
 }
 
-/** Stack value → a plottable trace spec (no id/color).  Symbolics
- *  become expression traces; Matrix/Vector/List become data traces. */
 export function stackValueToTrace(v, preferredKind = 'function') {
   if (isSymbolic(v)) {
     const expr = formatAlgebra(v.expr);
@@ -66,8 +58,6 @@ export function stackValueToTrace(v, preferredKind = 'function') {
   return { kind, expr, exprY: '', label: expr, points: null };
 }
 
-/** Trace → RPL values to push (0–2).  Expressions become Symbolic;
- *  point traces become a 2-col Matrix. */
 export function traceToStackValues(t) {
   if (!t) return [];
   if (t.kind === 'parametric') {
@@ -337,7 +327,6 @@ export class GraphView {
       if (isSymbolic(top)) {
         const expr = formatAlgebra(top.expr);
         if (kind === 'parametric') {
-          // Need two symbolics: y on level 1, x on level 2.
           const y = expr;
           const xVal = stack.depth >= 2 ? stack.peek(2) : null;
           const xExpr = isSymbolic(xVal) ? formatAlgebra(xVal.expr) : 'T';

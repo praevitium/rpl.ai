@@ -616,15 +616,12 @@ export class SidePanel {
     this._saveUIState();
   }
 
-  /** Open the Graph tab and apply a plot-op (SCATRPLOT, FUNCTION, …). */
   openGraph(kind, stack) {
     this.open('graph');
     if (!this._graphView) this._graphView = new GraphView({ app: this.app });
     this._graphView.applyPlotOp(kind, stack);
   }
 
-  /** Copy a stack level into the open equation / matrix / graph editor.
-   *  Returns true if this tab handled the click. */
   takeFromStack(level) {
     if (!this.isOpen()) return false;
     if (this.tab === 'equation') {

@@ -1,6 +1,3 @@
-/* Plot sampling, viewport math, and data extraction.
-   DOM-free so Node tests can pin the graphing surface. */
-
 import {
   isNum, isVar, isNeg, isBin, isFn, parseAlgebra, defaultFnEval,
 } from '../rpl/algebra.js';
@@ -22,8 +19,6 @@ export function nextTraceColor(index) {
   return TRACE_COLORS[index % TRACE_COLORS.length];
 }
 
-/** Map a variable name onto an env value.  Exact match first, then
- *  case-insensitive, then the small constants table (π, e). */
 export function lookupEnv(name, env) {
   if (env && Object.prototype.hasOwnProperty.call(env, name)) return env[name];
   if (env) {
@@ -38,11 +33,6 @@ export function lookupEnv(name, env) {
   return undefined;
 }
 
-/**
- * Numeric eval of an algebra AST.  Returns a finite number or NaN.
- * `toRad` / `fromRad` default to identity so tests can stay in radians;
- * the graph view passes the calculator's angle-mode converters.
- */
 export function evalNumeric(ast, env, opts = {}) {
   const toRad = opts.toRad || (x => x);
   const fromRad = opts.fromRad || (x => x);
@@ -94,7 +84,6 @@ export function parsePlotExpr(src) {
   return parseAlgebra(String(src).trim());
 }
 
-/** Sample y = f(x) as a list of segments (gaps at NaN / big jumps). */
 export function sampleFunction(ast, xMin, xMax, n, env, opts = {}) {
   const count = Math.max(2, n | 0);
   const dx = (xMax - xMin) / (count - 1);
@@ -109,7 +98,6 @@ export function sampleFunction(ast, xMin, xMax, n, env, opts = {}) {
   return segmentPoints(pts, jump);
 }
 
-/** Polar r = f(θ).  `thetaMin`/`thetaMax` are in the caller's angle units. */
 export function samplePolar(ast, thetaMin, thetaMax, n, env, opts = {}) {
   const count = Math.max(2, n | 0);
   const d = (thetaMax - thetaMin) / (count - 1);
@@ -184,7 +172,6 @@ export function niceTicks(min, max, maxTicks = 8) {
   const step = niceNum(range / Math.max(1, maxTicks - 1), true);
   const start = Math.ceil(min / step) * step;
   const ticks = [];
-  // Guard against float drift at the end of the range.
   for (let v = start; v <= max + step * 0.5; v += step) {
     const t = Number(v.toPrecision(12));
     if (t >= min - step * 1e-6 && t <= max + step * 1e-6) ticks.push(t);
@@ -263,9 +250,6 @@ function cellsToPoint(cells, i) {
   return [i + 1, scalarToNumber(cells[0])];
 }
 
-/** Pull [x,y] pairs from a Matrix (1-col → (i,y), 2+-col → (x,y)),
- *  Vector (i, y), List of numbers, or List-of-lists / list-of-vectors
- *  (same row rule as Matrix).  Indices are 1-based like HP50. */
 export function valueToPoints(v) {
   if (isMatrix(v)) {
     const pts = [];
@@ -304,9 +288,6 @@ export function valuesFromColumn(v, col = 0) {
   return null;
 }
 
-/** y-value of a trace at world x, or NaN.  Function/fit evaluate the
- *  expression (or last-fit model); point traces snap to the nearest
- *  sample when it is within `opts.snapX` (default: always nearest). */
 export function evalTraceAtX(t, x, opts = {}) {
   if (!t || t.enabled === false || !Number.isFinite(x)) return NaN;
   const angle = opts.angleOpts || {};
@@ -394,10 +375,6 @@ function isDataTrace(t) {
     || k === 'bar' || k === 'hist';
 }
 
-/** Flatten a trace to finite [x,y] samples for auto-fit.
- *  Point traces contribute their stored points; function/fit traces
- *  are sampled across `view`'s x-range; polar/parametric traces are
- *  sampled over `opts.thetaRange` / `opts.tRange`. */
 export function sampleTraceForFit(t, view, opts = {}) {
   if (!t) return [];
   if (Array.isArray(t.points) && t.points.length) return finitePts(t.points);
@@ -434,10 +411,6 @@ export function sampleTraceForFit(t, view, opts = {}) {
   return [];
 }
 
-/** Compute a viewport that frames `traces`.
- *  Data / polar / parametric traces set both axes.  Function-only
- *  traces keep the current x-range and fit y, so repeated Fit doesn't
- *  creep the window outward by padFrac.  Nothing to fit → `view`. */
 export function fitViewToTraces(traces, view, opts = {}) {
   const v = view || defaultView();
   const xy = [];

@@ -1,11 +1,3 @@
-/* Equation writer — algebraic entry with a textbook preview.
-
-   The HP50 EQW is a structured 2-D editor; this adaptation keeps the
-   algebraic line as the source of truth (so it round-trips through
-   parseAlgebra) and renders a live pretty-print via pretty.js, plus
-   palette buttons that wrap the current selection in fraction / power /
-   radical / function templates. */
-
 import { parseAlgebra, formatAlgebra } from '../rpl/algebra.js';
 import { astToSvg } from '../rpl/pretty.js';
 import { Symbolic, isSymbolic, isNumber, isName } from '../rpl/types.js';
@@ -15,8 +7,6 @@ export const EQ_FNS = Object.freeze([
   'SIN', 'COS', 'TAN', 'LN', 'EXP', 'SQRT', 'ABS', 'ATAN',
 ]);
 
-/** Algebra has no implicit mul, so `2π` / `2SIN()` are trailing-input
- *  errors.  Insert a `*` when both sides look like atoms. */
 function joinAtom(left, chunk) {
   const c = String(chunk ?? '');
   if (!left || !c) return c;

@@ -99,14 +99,11 @@ class App {
       keypad:  document.getElementById('keypad'),
     });
 
-    const calcEl = document.getElementById('calculator');
-    if (calcEl) {
-      this.commandPalette = new CommandPalette({
-        host: calcEl,
-        getNames: () => allOps(),
-        onInvoke: (name) => this.entry.execOp(name),
-      });
-    }
+    this.commandPalette = new CommandPalette({
+      host: document.getElementById('calculator'),
+      getNames: () => allOps(),
+      onInvoke: (name) => this.entry.execOp(name),
+    });
 
     // Side panel (Commands / History / Characters / Files).  Mounts
     // itself into #sidePanelRoot and starts hidden.  Browsable catalog

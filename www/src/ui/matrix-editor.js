@@ -1,5 +1,3 @@
-/* Matrix writer — spreadsheet grid that round-trips RPL Matrix values. */
-
 import { parseEntry } from '../rpl/parser.js';
 import { format } from '../rpl/formatter.js';
 import {
@@ -53,7 +51,6 @@ function clampIndex(n, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
 
-/** Insert a blank row at `at` (0 = before first; length = after last). */
 export function insertRow(grid, at) {
   if (grid.length >= MATRIX_MAX) return grid;
   const cols = grid[0]?.length || 1;
@@ -63,7 +60,6 @@ export function insertRow(grid, at) {
   return next;
 }
 
-/** Remove the row at `at`.  Refuses to drop the last remaining row. */
 export function deleteRow(grid, at) {
   if (grid.length <= 1) return grid;
   const i = clampIndex(at, 0, grid.length - 1);
@@ -72,7 +68,6 @@ export function deleteRow(grid, at) {
   return next;
 }
 
-/** Insert a blank column at `at`. */
 export function insertCol(grid, at) {
   const cols = grid[0]?.length || 1;
   if (cols >= MATRIX_MAX) return grid;
@@ -84,7 +79,6 @@ export function insertCol(grid, at) {
   });
 }
 
-/** Remove the column at `at`.  Refuses to drop the last remaining column. */
 export function deleteCol(grid, at) {
   const cols = grid[0]?.length || 1;
   if (cols <= 1) return grid;
@@ -121,10 +115,6 @@ export function gridToMatrix(grid) {
   return Matrix(rows);
 }
 
-/** Push-side of the writer: a 1-row grid loaded from a Vector (or a
- *  numeric List) round-trips as a Vector; anything else is a Matrix.
- *  Growing past one row drops the vector flag so a 2×n edit can't
- *  silently collapse. */
 export function gridToValue(grid, { asVector = false } = {}) {
   const m = gridToMatrix(grid);
   if (asVector && m.rows.length === 1) return Vector(m.rows[0]);
@@ -166,10 +156,6 @@ function padRow(row, cols) {
   return out;
 }
 
-/** Overlay TSV / newline-separated text onto `grid` at (startR, startC),
- *  growing the grid if the paste rectangle does not fit.  A lone cell
- *  (no tab or newline) is returned unchanged so the caller can let the
- *  native input paste happen. */
 export function pasteIntoGrid(grid, startR, startC, text) {
   const raw = String(text ?? '').replace(/\r\n|\r/g, '\n');
   if (!/[\t\n]/.test(raw)) return grid;

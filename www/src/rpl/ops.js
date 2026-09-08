@@ -17239,12 +17239,6 @@ setPushCoerce((v) => {
   return v;
 });
 
-/* ------------------------------------------------------------------
-   Graphics ops.  The plot itself lives in the side-panel Graph view;
-   these commands hand a kind + the live stack to a hook the App
-   installs at boot.  Without a hook (Node tests, headless) they
-   reject so a program can't silently no-op.
-   ------------------------------------------------------------------ */
 let _graphicsHook = null;
 export function setGraphicsHook(fn) {
   _graphicsHook = typeof fn === 'function' ? fn : null;

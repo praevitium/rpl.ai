@@ -1,7 +1,3 @@
-/* Command palette overlay.  `/` (empty command line) or Ctrl/Cmd-K
-   opens it; typing filters allOps() via searchOps; Enter runs the
-   highlighted op through Entry.execOp. */
-
 import {
   searchOps, moveSelection, matchPositions, highlightSegments,
 } from './op-search.js';
