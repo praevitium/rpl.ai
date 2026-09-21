@@ -1262,6 +1262,34 @@ setAngle('RAD');
                                      'keyboard: digits 0..9 are all present as kind=digit keys');
 }
 
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const down = ARROW_KEYS.find(k => k.primary === '▼');
+  assert(down.shiftL === 'SST' && typeof down.shiftLAction === 'function',
+    'keyboard: left-shift ▼ is the SST key');
+
+  resetHome();
+  try {
+    const s = new Stack();
+    const e = new Entry(s);
+    s.push(Program([Integer(1n), Integer(2n), Name('+')]));
+    lookup('DBUG').fn(s);
+    assert(s.depth === 1 && s.peek().value === 1n && calcState.halted && calcState.halted.kind === 'step',
+      'SST key setup: DBUG runs the first token and suspends');
+    down.shiftLAction(e);
+    assert(s.depth === 2 && s.peek().value === 2n && calcState.halted && calcState.halted.kind === 'step',
+      'SST key steps one token and stays suspended');
+
+    const editing = new Entry(new Stack());
+    editing.type('1');
+    down.shiftLAction(editing);
+    assert(editing.buffer === '1 SST ',
+      'SST key types the name while the command line is open');
+  } finally {
+    resetHome();
+  }
+}
+
 /* ================================================================
    session333: errorBeep — the error-flash piezo chirp (beep.js).  The
    only previously uncovered www/src/ui module.  errorBeep has two

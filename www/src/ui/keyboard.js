@@ -151,11 +151,12 @@ export const ARROW_KEYS = [
               else if (app.stack.depth >= 2) app.swapTop();
               else app.nextMenuPage();
             } }),
-  mk('▼', { kind: 'arrow', className: 'arrow-down',
+  mk('▼', { kind: 'arrow', className: 'arrow-down', shiftL: 'SST',
             action: (e, _s, app) => {
               if (e.buffer.length > 0) e.cursorDown();     // editor → cursor
               else if (app.stack.depth >= 1) app.editLevel1();
-            } }),
+            },
+            shiftLAction: typeExecName('SST') }),
 ];
 
 /* -------------------- Rows 4-10: main keypad (35) ------------------- */
