@@ -1,5 +1,9 @@
 import { eigenTag, jordanChain, charSpaceList, eigenvalueArray } from '../www/src/rpl/jordan-format.js';
-import { Integer, Vector, isList, isVector, isTagged } from '../www/src/rpl/types.js';
+import { giac } from '../www/src/rpl/cas/giac-engine.mjs';
+import { lookup } from '../www/src/rpl/ops.js';
+import { Stack } from '../www/src/rpl/stack.js';
+import { setCasVx, resetCasVx } from '../www/src/rpl/state.js';
+import { Integer, Vector, Matrix, isList, isVector, isSymbolic, isTagged } from '../www/src/rpl/types.js';
 import { assert, assertThrows } from './helpers.mjs';
 
 /* JORDAN level-2 / level-1 output shaping (HP50 AUR §3-122).  Pure,
@@ -75,4 +79,32 @@ const vec = (...ns) => Vector(ns.map((n) => Integer(n)));
   // Multiplicity > 1 repeats the eigenvalue (AUR "with multiplicities").
   const repeated = eigenvalueArray([Integer(2), Integer(2), Integer(2)]);
   assert(repeated.items.length === 3, 'eigenvalueArray: repeats by multiplicity');
+}
+
+{
+  setCasVx('x');
+  giac._clear();
+  giac._setFixtures({
+    'pmin([[1,1],[1,1]],x)': 'x*(x-2)',
+    'charpoly([[1,1],[1,1]],x)': 'x*(x-2)',
+    'eigenvects([[1,1],[1,1]])': '[[2,1,[[1,1]]],[0,1,[[-1,1]]]]',
+  });
+  const s = new Stack();
+  s.push(Matrix([
+    [Integer(1n), Integer(1n)],
+    [Integer(1n), Integer(1n)],
+  ]));
+  lookup('JORDAN').fn(s);
+  assert(s.depth === 4, 'JORDAN: four results');
+  const evals = s.peek(1);
+  const spaces = s.peek(2);
+  assert(isVector(evals) && evals.items.length === 2, 'JORDAN: eigenvalue array has one entry per space');
+  assert(isList(spaces) && spaces.items.length === 2, 'JORDAN: one tagged space per eigenvector');
+  const tags = spaces.items.map(item => item.tag).sort();
+  assert(tags[0] === '0' && tags[1] === '2', 'JORDAN: spaces tagged by 0 and 2');
+  assert(spaces.items.every(item => item.type === 'tagged' && isVector(item.value) && item.value.items.length === 2),
+    'JORDAN: each space is a 2-vector');
+  assert(isSymbolic(s.peek(3)) && isSymbolic(s.peek(4)), 'JORDAN: charpoly and minpoly are symbolic');
+  giac._clear();
+  resetCasVx();
 }

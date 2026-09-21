@@ -27,45 +27,10 @@ touched the row, and any known caveats worth carrying forward.
   `register(` under `www/src/rpl/ops/`. `allOps()` is the reachable set.
   The ✓ total is that set minus internal aliases and `will-not` rows.
 - **Partially shipped (~): 0**
-- **Not yet implemented (✗): 1** — only `JORDAN` remains.  Its
-  CAS-independent formatting core ships as `www/src/rpl/jordan-format.js`
-  (tested in `tests/test-jordan-format.mjs`); what remains is the
-  `ops.js` wiring that pulls eigenvalues / multiplicities /
-  characteristic spaces / Jordan chains out of Giac and feeds those
-  builders (its level-4 / level-3 outputs already ship as `PMINI` /
-  `PCAR`).  The Giac eigenvects / Jordan-chain output shape needs
-  real-CAS verification before the op can be registered.
-
-  **Session 199 — real-CAS verification path established (no source
-  change).**  Contrary to the `giac-engine.mjs` / vendor README claim
-  that "real Giac is intentionally not run in Node," the vendored WASM
-  *does* load and `caseval` under Node — a probe produced full
-  `eigenvects([[1,1],[1,1]])` / `jordan(...)` output in one run.  Recipe:
-  set `globalThis.Module = { wasmBinary: fs.readFileSync('.../giacwasm.wasm'),
-  locateFile, noInitialRun: true }`, `require('giacwasm.js')`, await
-  `onRuntimeInitialized`, then `Module.cwrap('caseval','string',['string'])`.
-  Blocker for the auto-loop: WASM init takes ~40–45 s, right at the 45 s
-  sandbox-bash cap, so capture is flaky here (most attempts time out).
-
-  **Session 200 — recipe refinement + blocker re-confirmed (no source
-  change).**  Two corrections to the session-199 recipe for the next
-  run: (1) this emscripten build *ignores* both `Module.wasmBinary` and
-  `Module.locateFile` and reads a bare relative `giacwasm.wasm` via its
-  own `readBinary`, so the probe must run with `cwd` set to
-  `www/vendor/giac/` (running from the repo root fails with `ENOENT:
-  giacwasm.wasm`).  (2) Detached / `nohup`+`setsid` background processes
-  do **not** survive across independent sandbox-bash calls (re-verified —
-  no node process and no output file persisted), so the warmed/long-lived
-  capture strategy is a dead end here; the probe has to finish inside one
-  bash call.  With the `cwd` fix the probe gets past the wasm-load step
-  but still exits 124 (timeout) before `onRuntimeInitialized` fires —
-  init alone exceeds the 43 s budget.  JORDAN shape-capture remains
-  blocked in this environment; needs a host where Giac init fits the cap.
-  Next command-support run should capture the `eigenvals` / `eigenvects`
-  / `jordan` / `pmin` / `charpoly` shapes for the AUR worked example with
-  a warmed/cached run (or by persisting the probe output to disk across a
-  longer-running harness) and *then* register `JORDAN` with fixtures that
-  match the real shapes — not a guess.
+- **Not yet implemented (✗): 0** — `JORDAN` ships. It pushes the
+  minimal polynomial, the characteristic polynomial, the eigenvalue-tagged
+  characteristic spaces, and the eigenvalue array. The spaces come from
+  Giac `eigenvects`.
 - **Will-not-support (by design): 9 menu groups** (see below).
 
 Shipped commands are the `register` calls under `www/src/rpl/ops/`.
@@ -80,7 +45,7 @@ are still missing or deliberately out of scope.
 These are tracked here only to mark them out-of-scope for the command-support
 lane; `rpl5050-ui-development` owns them.
 
-- `DRAW` `BARPLOT` `HISTPLOT` `SCATRPLOT` `FUNCTION` `POLAR` `PARAMETRIC`
+- `DRAW` `BARPLOT` `HISTPLOT` `SCATRPLOT` `FUNCTION` `POLAR` `PARAMETRIC` `DIFFEQ`
   ship in `www/src/rpl/ops/graphics.js` and open the side-panel Graph view.
   `DRAX` `DRAWMENU` `ERASE` `PICT` remain GROB.
 - `DISP` `CLLCD` `FREEZE` `INPUT` `WAIT` `BEEP` → ui lane (PROMPT moved
@@ -98,7 +63,6 @@ can be picked up as a group.
 
 | Command | Cluster | Priority | Notes |
 |---------|---------|----------|-------|
-| `JORDAN` | Matrix | low | Jordan cycle decomposition — 4-output (min poly / char poly / tagged characteristic spaces / eigenvalue array per AUR §3-122).  Composable from Giac `pmin` / `charpoly` / `eigenvects` / `eigenvals`, but the tagged-space + Jordan-chain output formatting is the heavy part; needs a dedicated multi-run effort.  Session 199 proved real Giac runs under Node for shape-capture (see the count note above); the remaining work is capturing those shapes reliably and wiring the op.  (`SCHUR` shipped session 196; `RSD` shipped session 119; `LQD` retired session 134 as a phantom.) |
 | `ATTACH` `DETACH` `LIBS` | libraries | will-not | `LIB` not supported per `@!MY_NOTES.md`. |
 
 ## Will-not-support (by design deviation)

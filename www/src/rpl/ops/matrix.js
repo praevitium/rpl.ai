@@ -3,6 +3,7 @@ import { RPLError } from '../stack.js';
 import { nextPrngInt9, getCasVx } from '../state.js';
 import { giac } from '../cas/giac-engine.mjs';
 import { giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
+import { charSpaceList, eigenvalueArray } from '../jordan-format.js';
 import { register, OPS } from './registry.js';
 import { _astToRplValue, _coefArrToSymbolicX, _colCompose, _colDecompose, _decimalFrobeniusNorm, _fromArrayOp, _fromVecOp, _indexAsInt, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _matrixToGiacStr, _nFromIntegerArg, _popSquareMatrix, _rowCompose, _rowDecompose, _scalarBinary, _scalarSum, _toArrayOp, _toV2Op, _toV3Op } from './internal.js';
 
@@ -1926,6 +1927,55 @@ register('EGV', (s) => {
   s.push(Matrix(matrixRows));
   s.push(Vector(evalItems));
 }, { category: 'Vectors / matrices', categoryOrder: 48, label: "EGV" });
+
+
+function eigenvalueTag(value) {
+  if (isInteger(value)) return String(value.value);
+  if (isReal(value)) return value.value.toString();
+  return String(value?.value ?? value);
+}
+
+function eigenvectGroup(groupStr) {
+  const parts = splitGiacList(groupStr);
+  if (!parts || parts.length < 3) return null;
+  const lambda = _astToRplValue(giacToAst(parts[0]));
+  const vectors = splitGiacList(parts[2]);
+  if (!vectors) return null;
+  return {
+    lambda,
+    vectors: vectors.map((vecStr) => {
+      const comps = splitGiacList(vecStr);
+      if (!comps) throw new RPLError('Bad argument value');
+      return Vector(comps.map((c) => _astToRplValue(giacToAst(c))));
+    }),
+  };
+}
+
+register('JORDAN', (s) => {
+  const { matrix } = _popSquareMatrix(s);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const vx = getCasVx();
+  const matStr = _matrixToGiacStr(matrix);
+  const pmin = Symbolic(giacToAst(giac.caseval(`pmin(${matStr},${vx})`)));
+  const pcar = Symbolic(giacToAst(giac.caseval(`charpoly(${matStr},${vx})`)));
+  const groups = splitGiacList(giac.caseval(`eigenvects(${matStr})`));
+  if (!groups) throw new RPLError('Bad argument value');
+  const spaces = [];
+  const values = [];
+  for (const group of groups) {
+    const parsed = eigenvectGroup(group);
+    if (!parsed || parsed.vectors.length === 0) throw new RPLError('Bad argument value');
+    const tag = eigenvalueTag(parsed.lambda);
+    for (const vec of parsed.vectors) {
+      spaces.push({ tag, space: vec });
+      values.push(parsed.lambda);
+    }
+  }
+  s.push(pmin);
+  s.push(pcar);
+  s.push(charSpaceList(spaces));
+  s.push(eigenvalueArray(values));
+}, { category: 'Vectors / matrices', categoryOrder: 50, label: 'JORDAN' });
 
 
 /* ------------------------------------------------------------------
