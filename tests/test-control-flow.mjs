@@ -3520,6 +3520,67 @@ function collectSymLeaves(node, out) {
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
+  s.push(Program([Integer(1n), Name('HALT'), Integer(2n)]));
+  lookup('EVAL').fn(s);
+  const halted = getHalted();
+  assert(halted.kind === 'halt',
+    'HALT record kind is halt');
+  assert(halted.index === 2 && halted.tokens.length === 3 && halted.tokens[1].id === 'HALT',
+    'HALT record points at the token after HALT and keeps the program');
+  lookup('SST').fn(s);
+  const stepped = getHalted();
+  assert(stepped.kind === 'step' && stepped.index === 3,
+    'SST after HALT records step kind and the index past the resumed token');
+  lookup('SST').fn(s);
+  assert(getHalted() === null, 'draining the last SST clears the halt record');
+}
+
+{
+  resetHome(); clearAllHalted();
+  const s = new Stack();
+  s.push(Program([Integer(1n), Integer(2n), Name('+')]));
+  lookup('DBUG').fn(s);
+  const halted = getHalted();
+  assert(halted.kind === 'step' && halted.index === 1 && halted.tokens.length === 3,
+    'DBUG records step kind and the next token index');
+  lookup('SST').fn(s);
+  assert(getHalted().kind === 'step' && getHalted().index === 2,
+    'SST from DBUG advances the recorded index');
+  lookup('KILL').fn(s);
+}
+
+{
+  resetHome(); clearAllHalted();
+  const s = new Stack();
+  s.push(Str('hi'));
+  s.push(Program([Name('PROMPT'), Integer(1n)]));
+  lookup('EVAL').fn(s);
+  const halted = getHalted();
+  assert(halted.kind === 'prompt' && halted.index === 1,
+    'PROMPT records prompt kind and the token after PROMPT');
+  lookup('KILL').fn(s);
+}
+
+{
+  resetHome(); clearAllHalted();
+  const s = new Stack();
+  s.push(Program([Integer(10n), Name('HALT')]));
+  lookup('EVAL').fn(s);
+  const older = getHalted();
+  s.push(Program([Integer(20n), Name('HALT')]));
+  lookup('EVAL').fn(s);
+  assert(getHalted().tokens[0].value === 20n && getHalted() !== older,
+    'newer halt is the status-line record');
+  assert(older.kind === 'halt' && older.tokens[0].value === 10n,
+    'buried halt keeps its own step record');
+  lookup('KILL').fn(s);
+  assert(getHalted() === older, 'KILL reveals the buried halt record');
+  lookup('KILL').fn(s);
+}
+
+{
+  resetHome(); clearAllHalted();
+  const s = new Stack();
   s.push(Program([Integer(10n), Name('HALT'), Integer(20n), Integer(30n)]));
   lookup('EVAL').fn(s);
   assert(s.depth === 1 && haltedDepth() === 1,

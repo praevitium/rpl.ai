@@ -49,6 +49,12 @@ export function coordModeGlyph(mode) {
   return { RECT: 'XYZ', CYLIN: 'R∠Z', SPHERE: 'R∠∠' }[mode] || 'XYZ';
 }
 
+export function haltAnnunciatorLabel(kind) {
+  if (kind === 'step') return 'SST';
+  if (kind === 'halt' || kind === 'prompt') return 'HLT';
+  return undefined;
+}
+
 export class Display {
   constructor({ stackView, cmdline, statusLine, menuBar }) {
     this.stackView  = stackView;
@@ -365,6 +371,23 @@ export class Display {
       d.textContent = label || '';
       this.menuBar.appendChild(d);
     });
+  }
+
+  setHaltAnnunciator(kind) {
+    const el = this.statusLine?.querySelector('#ann-halt');
+    if (!el) return;
+    const label = haltAnnunciatorLabel(kind);
+    if (!label) {
+      el.textContent = '';
+      el.classList.remove('on');
+      el.removeAttribute('title');
+      return;
+    }
+    el.textContent = label;
+    el.classList.add('on');
+    el.title = label === 'SST'
+      ? 'SST — single-step paused before the next instruction'
+      : 'HLT — program execution paused';
   }
 
   setAnnunciator(id, on) {

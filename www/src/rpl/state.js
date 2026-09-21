@@ -169,10 +169,11 @@ export const state = {
   realMaxExp: REAL_MAX_EXP_DEFAULT,
   // Suspended-execution slots — a LIFO stack of halted records.
   // Each record shape is
-  //   { tokens: Array, ip: number, length: number }
-  //   `tokens`   — the program's token list at the HALT point
-  //   `ip`       — index of the next token to execute on CONT
-  //   `length`   — upper bound (cached `tokens.length` at HALT time)
+  //   { generator, tokens, index, kind }
+  //   `generator` — live continuation resumed by CONT / SST
+  //   `tokens`    — token list of the program that suspended
+  //   `index`     — index of the next token to execute
+  //   `kind`      — 'step', 'halt', or 'prompt'
   //
   // `halted` carries the *top* of the LIFO stack (the most recently
   // suspended program) or `null` when no program is currently
@@ -470,7 +471,7 @@ export function clearLastFitModel() {
    HALT/CONT/KILL substrate.  `state.halted` is a convenience view of
    the stack's top, or `null` when the stack is empty.  `haltedStack`
    is the full LIFO stack; each record is a plain object with fields
-   `{tokens, ip, length}` (see the `state.halted` comment above).
+   `{generator, tokens, index, kind}` (see the `state.halted` comment above).
 
    HP50 AUR p.2-135 describes a stack of halted programs — CONT
    resumes the most-recently suspended program, and a prior suspension

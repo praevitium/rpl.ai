@@ -1,8 +1,8 @@
-import { setHalted, setApproxMode, getApproxMode, getLastError, clearLastError } from '../state.js';
+import { setApproxMode, getApproxMode, getLastError, clearLastError } from '../state.js';
 import { RPLAbort, RPLError } from '../stack.js';
 import { Str, BinaryInteger, isInteger, isBinaryInteger, isReal, Program, isString, Integer } from '../types.js';
 import { register, OPS } from './registry.js';
-import { _driveGen, _evalValueGen, _localFrames, _truncateLocalFrames, runIft, runIfte } from './internal.js';
+import { _driveGen, _evalValueGen, _localFrames, _truncateLocalFrames, runIft, runIfte, pushSuspendedGenerator, clearPendingSuspend } from './internal.js';
 
 
 
@@ -69,14 +69,17 @@ register('EVAL', (s) => {
     if (!result.done) {
       // Suspended at HALT — store live generator, leave frames.
       halted = true;
-      setHalted({ generator: gen });
+      pushSuspendedGenerator(gen);
       return;
     }
   } catch (e) {
     if (!(e instanceof RPLAbort) && snap !== null) s.restore(snap);
     throw e;
   } finally {
-    if (!halted) _truncateLocalFrames(framesAtEntry);
+    if (!halted) {
+      clearPendingSuspend();
+      _truncateLocalFrames(framesAtEntry);
+    }
   }
 }, { category: 'Evaluation / program', categoryOrder: 0, label: "EVAL" });
 

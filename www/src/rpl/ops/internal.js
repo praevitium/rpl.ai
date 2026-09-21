@@ -1303,7 +1303,7 @@ function* evalRange(s, toks, from, to, depth) {
     const id = bareNameId(tok);
     if (id && CF_OPENERS.has(id)) {
       i = yield* runControl(s, toks, i, to, depth);
-      if (_shouldStepYield()) yield;
+      yield* _stepYield(toks, i);
       continue;
     }
     // Compiled local environment: `→ n1 n2 … body`.  `runArrow` collects
@@ -1313,7 +1313,7 @@ function* evalRange(s, toks, from, to, depth) {
     // `->NUM`/`->LIST` aliases, but the arrow itself was glyph-only.
     if (id === '→' || id === '->') {
       i = yield* runArrow(s, toks, i, to, depth);
-      if (_shouldStepYield()) yield;
+      yield* _stepYield(toks, i);
       continue;
     }
     // HALT — generator-based suspension.  `yield` here propagates up
@@ -1325,6 +1325,7 @@ function* evalRange(s, toks, from, to, depth) {
     // preserves every call-frame on the JS engine's stack, HALT works
     // correctly at any structural depth (inside FOR, IF, →, etc.).
     if (id === 'HALT') {
+      _markSuspend(toks, i + 1, 'halt');
       yield;
       i++;          // resume: advance past HALT
       continue;
@@ -1345,6 +1346,7 @@ function* evalRange(s, toks, from, to, depth) {
       if (s.depth < 1) throw new RPLError('PROMPT: Too few arguments');
       const msg = s.pop();
       setPromptMessage(msg);
+      _markSuspend(toks, i + 1, 'prompt');
       yield;
       i++;          // resume: advance past PROMPT
       continue;
@@ -1360,7 +1362,7 @@ function* evalRange(s, toks, from, to, depth) {
     if (id === 'IFT') {
       yield* runIft(s, depth);
       i++;
-      if (_shouldStepYield()) yield;
+      yield* _stepYield(toks, i);
       continue;
     }
     // IFTE — same pattern as IFT, with three pops
@@ -1369,7 +1371,7 @@ function* evalRange(s, toks, from, to, depth) {
     if (id === 'IFTE') {
       yield* runIfte(s, depth);
       i++;
-      if (_shouldStepYield()) yield;
+      yield* _stepYield(toks, i);
       continue;
     }
     // SEQ / MAP — list combinators whose body is EVAL'd once per
@@ -1388,13 +1390,13 @@ function* evalRange(s, toks, from, to, depth) {
     if (id === 'SEQ') {
       yield* runSeq(s, depth);
       i++;
-      if (_shouldStepYield()) yield;
+      yield* _stepYield(toks, i);
       continue;
     }
     if (id === 'MAP') {
       yield* runMap(s, depth);
       i++;
-      if (_shouldStepYield()) yield;
+      yield* _stepYield(toks, i);
       continue;
     }
     // DOLIST / DOSUBS / STREAM — same generator-flavor pattern as
@@ -1409,19 +1411,19 @@ function* evalRange(s, toks, from, to, depth) {
     if (id === 'DOLIST') {
       yield* runDoList(s, depth);
       i++;
-      if (_shouldStepYield()) yield;
+      yield* _stepYield(toks, i);
       continue;
     }
     if (id === 'DOSUBS') {
       yield* runDoSubs(s, depth);
       i++;
-      if (_shouldStepYield()) yield;
+      yield* _stepYield(toks, i);
       continue;
     }
     if (id === 'STREAM') {
       yield* runStream(s, depth);
       i++;
-      if (_shouldStepYield()) yield;
+      yield* _stepYield(toks, i);
       continue;
     }
     if (id && (CF_CLOSERS.has(id) || CF_INNERS.has(id))) {
@@ -1442,18 +1444,40 @@ function* evalRange(s, toks, from, to, depth) {
     // semantics mean every structural-context frame (FOR counter, IF
     // branch, → local frame) is preserved across single-step
     // suspensions for free.
-    if (_shouldStepYield()) yield;
+    yield* _stepYield(toks, i);
   }
 }
 
 
-/** Post-token yield predicate for the single-step debugger.  Session
- *  106: modulated by `_insideSubProgram` and `_stepInto` — see those
- *  docstrings.  Breaking this out as a helper keeps the three callers
- *  (evalRange's three post-token yield sites) from duplicating the
- *  boolean expression. */
 function _shouldStepYield() {
   return _singleStepMode && (!_insideSubProgram || _stepInto);
+}
+
+let _pendingSuspend = null;
+
+function _markSuspend(tokens, index, kind) {
+  _pendingSuspend = { tokens, index, kind };
+}
+
+export function clearPendingSuspend() {
+  _pendingSuspend = null;
+}
+
+export function pushSuspendedGenerator(generator) {
+  const view = _pendingSuspend;
+  _pendingSuspend = null;
+  setHalted({
+    generator,
+    tokens: view ? view.tokens : null,
+    index: view ? view.index : null,
+    kind: view ? view.kind : null,
+  });
+}
+
+function* _stepYield(tokens, index) {
+  if (!_shouldStepYield()) return;
+  _markSuspend(tokens, index, 'step');
+  yield;
 }
 
 
@@ -3796,12 +3820,15 @@ export function _stepOnce(s, into = false) {
       // a fresh HALT inside the program).  Re-push it so the next
       // SST/CONT/RUN can resume.
       halted = true;
-      setHalted({ generator: h.generator });
+      pushSuspendedGenerator(h.generator);
     }
   } finally {
     _singleStepMode = wasStepping;     // typically false
     _stepInto = wasInto;               // typically false
-    if (!halted) _truncateLocalFrames(framesAtEntry);
+    if (!halted) {
+      clearPendingSuspend();
+      _truncateLocalFrames(framesAtEntry);
+    }
   }
 }
 

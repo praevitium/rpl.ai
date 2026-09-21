@@ -1,7 +1,7 @@
 import { RPLAbort, RPLError } from '../stack.js';
-import { getHalted, clearPromptMessage, takeHalted, setHalted, clearHalted } from '../state.js';
+import { getHalted, clearPromptMessage, takeHalted, clearHalted } from '../state.js';
 import { register } from './registry.js';
-import { _localFrames, _stepOnce, _truncateLocalFrames } from './internal.js';
+import { _localFrames, _stepOnce, _truncateLocalFrames, pushSuspendedGenerator, clearPendingSuspend } from './internal.js';
 
 
 
@@ -111,10 +111,13 @@ register('CONT', (s) => {
     if (!result.done) {
       // Generator yielded again (another HALT) — push it back.
       halted = true;
-      setHalted({ generator: h.generator });
+      pushSuspendedGenerator(h.generator);
     }
   } finally {
-    if (!halted) _truncateLocalFrames(framesAtEntry);
+    if (!halted) {
+      clearPendingSuspend();
+      _truncateLocalFrames(framesAtEntry);
+    }
   }
 }, { category: 'Control flow / debug', categoryOrder: 2, label: "CONT" });
 

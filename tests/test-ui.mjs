@@ -19,7 +19,7 @@ import {
 } from '../www/src/rpl/state.js';
 import { clampStackScroll, computeMenuPage } from '../www/src/ui/paging.js';
 import { headingKey, ALIASES, pushHistory } from '../www/src/ui/command-help.js';
-import { escapeHtml, normalizeMenuSlots, binaryBaseLabel, displayModeLabel, coordModeGlyph } from '../www/src/ui/display.js';
+import { escapeHtml, normalizeMenuSlots, binaryBaseLabel, displayModeLabel, coordModeGlyph, haltAnnunciatorLabel } from '../www/src/ui/display.js';
 import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '../www/src/ui/side-panel.js';
 import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
@@ -221,6 +221,13 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(coordModeGlyph('SPHERE') === 'R∠∠', 'coordModeGlyph: SPHERE → R∠∠');
   assert(coordModeGlyph('BOGUS') === 'XYZ',  'coordModeGlyph: unknown mode → XYZ');
   assert(coordModeGlyph('rect') === 'XYZ',   'coordModeGlyph: keys are case-sensitive, falls back to XYZ');
+
+  assert(haltAnnunciatorLabel('step') === 'SST',       'haltAnnunciatorLabel: step → SST');
+  assert(haltAnnunciatorLabel('halt') === 'HLT',       'haltAnnunciatorLabel: halt → HLT');
+  assert(haltAnnunciatorLabel('prompt') === 'HLT',     'haltAnnunciatorLabel: prompt → HLT');
+  assert(haltAnnunciatorLabel(null) === undefined,     'haltAnnunciatorLabel: null hides the annunciator');
+  assert(haltAnnunciatorLabel(undefined) === undefined,'haltAnnunciatorLabel: undefined hides the annunciator');
+  assert(haltAnnunciatorLabel('SST') === undefined,    'haltAnnunciatorLabel: unknown kind hides the annunciator');
 }
 
 /* ================================================================
@@ -950,6 +957,38 @@ import { assert, assertThrows } from './helpers.mjs';
   // segments are clickable.
   assert(statusLine._node.title === '',
          'setPath: the #ann-mode container has no aggregate tooltip');
+}
+
+{
+  const halt = {
+    textContent: 'stale',
+    title: 'stale',
+    _on: false,
+    classList: {
+      add(c) { if (c === 'on') halt._on = true; },
+      remove(c) { if (c === 'on') halt._on = false; },
+    },
+    removeAttribute(name) { if (name === 'title') halt.title = ''; },
+  };
+  const { Display } = await import('../www/src/ui/display.js');
+  const d = new Display({
+    stackView: { addEventListener() {} },
+    cmdline: {},
+    statusLine: {
+      querySelector(sel) { return sel === '#ann-halt' ? halt : null; },
+      addEventListener() {},
+    },
+    menuBar: null,
+  });
+  d.setHaltAnnunciator('step');
+  assert(halt.textContent === 'SST' && halt._on && halt.title.includes('SST'),
+    'setHaltAnnunciator: step lights SST');
+  d.setHaltAnnunciator('prompt');
+  assert(halt.textContent === 'HLT' && halt._on && halt.title.includes('HLT'),
+    'setHaltAnnunciator: prompt lights HLT');
+  d.setHaltAnnunciator(null);
+  assert(halt.textContent === '' && halt._on === false && halt.title === '',
+    'setHaltAnnunciator: null clears the annunciator');
 }
 
 /* ================================================================

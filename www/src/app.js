@@ -288,6 +288,7 @@ class App {
       this.display.setBinaryBaseAnnunciator(st.binaryBase);
       this.display.setCoordMode(st.coordMode);
       this.display.setDisplayAnnunciator(st.displayMode, st.displayDigits);
+      this.display.setHaltAnnunciator(st.halted ? st.halted.kind : null);
       if (this.menuKind === 'VARS')  this.showVarsMenu({ preservePage: true });
       if (this.menuKind === 'MODES') this.showModesMenu({ preservePage: true });
       // Re-render the stack so Symbolic rows swap between pretty-printed
@@ -329,6 +330,7 @@ class App {
     this.display.setBinaryBaseAnnunciator(calcState.binaryBase);
     this.display.setCoordMode(calcState.coordMode);
     this.display.setDisplayAnnunciator(calcState.displayMode, calcState.displayDigits);
+    this.display.setHaltAnnunciator(calcState.halted ? calcState.halted.kind : null);
 
     this._installKeyboardShortcuts();
     this._installAutosave();
@@ -926,6 +928,8 @@ class App {
       // keypad, so the LCD marker is the same affordance as the
       // physical button.
       case 'alpha': this.setShift('alpha'); return;
+      case 'halt':
+        return;
       case 'display': {
         // STD → FIX 4 → SCI 4 → ENG 4 → STD
         const m = calcState.displayMode;
