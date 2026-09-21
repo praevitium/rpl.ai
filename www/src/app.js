@@ -55,6 +55,7 @@ class App {
       cmdline:    document.getElementById('cmdline'),
       statusLine: document.getElementById('statusLine'),
       menuBar:    document.getElementById('menuBar'),
+      suspendedProgram: document.getElementById('suspendedProgram'),
     });
 
     // Shift state.  `shift` is one of:
@@ -289,6 +290,7 @@ class App {
       this.display.setCoordMode(st.coordMode);
       this.display.setDisplayAnnunciator(st.displayMode, st.displayDigits);
       this.display.setHaltAnnunciator(st.halted ? st.halted.kind : null);
+      this.display.setSuspendedProgram(st.halted);
       if (this.menuKind === 'VARS')  this.showVarsMenu({ preservePage: true });
       if (this.menuKind === 'MODES') this.showModesMenu({ preservePage: true });
       // Re-render the stack so Symbolic rows swap between pretty-printed
@@ -331,6 +333,7 @@ class App {
     this.display.setCoordMode(calcState.coordMode);
     this.display.setDisplayAnnunciator(calcState.displayMode, calcState.displayDigits);
     this.display.setHaltAnnunciator(calcState.halted ? calcState.halted.kind : null);
+    this.display.setSuspendedProgram(calcState.halted);
 
     this._installKeyboardShortcuts();
     this._installAutosave();

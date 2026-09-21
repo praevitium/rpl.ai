@@ -55,12 +55,38 @@ export function haltAnnunciatorLabel(kind) {
   return undefined;
 }
 
+const SUSPENDED_CONTEXT = 8;
+
+export function suspendedProgramText(halted, display = DEFAULT_DISPLAY) {
+  if (!halted || !Array.isArray(halted.tokens)) return '';
+  const tokens = halted.tokens;
+  const raw = halted.index;
+  const index = Number.isInteger(raw) && raw >= 0
+    ? Math.min(raw, tokens.length)
+    : tokens.length;
+  const fmt = (tok) => format(tok, display);
+  const beforeAll = tokens.slice(0, index).map(fmt);
+  const next = index < tokens.length ? fmt(tokens[index]) : null;
+  const afterAll = index < tokens.length ? tokens.slice(index + 1).map(fmt) : [];
+  const before = beforeAll.slice(-SUSPENDED_CONTEXT);
+  const after = afterAll.slice(0, SUSPENDED_CONTEXT);
+  const chunks = ['«'];
+  if (beforeAll.length > SUSPENDED_CONTEXT) chunks.push('…');
+  if (before.length) chunks.push(before.join(' '));
+  chunks.push(next == null ? '▸' : `▸${next}`);
+  if (after.length) chunks.push(after.join(' '));
+  if (afterAll.length > SUSPENDED_CONTEXT) chunks.push('…');
+  chunks.push('»');
+  return chunks.join(' ');
+}
+
 export class Display {
-  constructor({ stackView, cmdline, statusLine, menuBar }) {
+  constructor({ stackView, cmdline, statusLine, menuBar, suspendedProgram }) {
     this.stackView  = stackView;
     this.cmdline    = cmdline;
     this.statusLine = statusLine;
     this.menuBar    = menuBar;
+    this.suspendedProgram = suspendedProgram ?? null;
     this.displayOpts = { ...DEFAULT_DISPLAY };
     this.menuSlots = ['', '', '', '', '', ''];
     // How many rows to push the bottom of the visible window up past
@@ -388,6 +414,19 @@ export class Display {
     el.title = label === 'SST'
       ? 'SST — single-step paused before the next instruction'
       : 'HLT — program execution paused';
+  }
+
+  setSuspendedProgram(halted) {
+    const el = this.suspendedProgram;
+    if (!el) return;
+    this.displayOpts.mode = calcState.displayMode || 'STD';
+    this.displayOpts.digits = calcState.displayDigits ?? 12;
+    const text = suspendedProgramText(halted, this.displayOpts);
+    el.textContent = text;
+    el.hidden = text.length === 0;
+    el.title = text
+      ? 'Suspended program; ▸ marks the next instruction'
+      : '';
   }
 
   setAnnunciator(id, on) {

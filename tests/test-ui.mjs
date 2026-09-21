@@ -19,7 +19,7 @@ import {
 } from '../www/src/rpl/state.js';
 import { clampStackScroll, computeMenuPage } from '../www/src/ui/paging.js';
 import { headingKey, ALIASES, pushHistory } from '../www/src/ui/command-help.js';
-import { escapeHtml, normalizeMenuSlots, binaryBaseLabel, displayModeLabel, coordModeGlyph, haltAnnunciatorLabel } from '../www/src/ui/display.js';
+import { escapeHtml, normalizeMenuSlots, binaryBaseLabel, displayModeLabel, coordModeGlyph, haltAnnunciatorLabel, suspendedProgramText } from '../www/src/ui/display.js';
 import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '../www/src/ui/side-panel.js';
 import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
@@ -228,6 +228,30 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(haltAnnunciatorLabel(null) === undefined,     'haltAnnunciatorLabel: null hides the annunciator');
   assert(haltAnnunciatorLabel(undefined) === undefined,'haltAnnunciatorLabel: undefined hides the annunciator');
   assert(haltAnnunciatorLabel('SST') === undefined,    'haltAnnunciatorLabel: unknown kind hides the annunciator');
+
+  const stepHalt = { tokens: [Integer(1n), Integer(2n), Name('+')], index: 1, kind: 'step' };
+  assert(suspendedProgramText(stepHalt) === '« 1 ▸2 + »',
+    'suspendedProgramText: marks the next token while stepping');
+  assert(suspendedProgramText({ ...stepHalt, index: 0 }) === '« ▸1 2 + »',
+    'suspendedProgramText: index 0 marks the first token');
+  assert(suspendedProgramText({ ...stepHalt, index: 3 }) === '« 1 2 + ▸ »',
+    'suspendedProgramText: index at the end marks past the last token');
+  assert(suspendedProgramText({ tokens: stepHalt.tokens, index: null }) === '« 1 2 + ▸ »',
+    'suspendedProgramText: a missing index marks past the last token');
+  assert(suspendedProgramText(null) === '',
+    'suspendedProgramText: null hides the program');
+  assert(suspendedProgramText({ kind: 'step' }) === '',
+    'suspendedProgramText: a halt record without tokens hides the program');
+  assert(suspendedProgramText({
+    tokens: [Integer(1n), Name('HALT'), Integer(2n)],
+    index: 2,
+    kind: 'halt',
+  }) === '« 1 HALT ▸2 »',
+    'suspendedProgramText: a halted program shows the token after HALT');
+  const many = Array.from({ length: 30 }, (_, i) => Integer(BigInt(i)));
+  assert(suspendedProgramText({ tokens: many, index: 15, kind: 'step' }) ===
+         '« … 7 8 9 10 11 12 13 14 ▸15 16 17 18 19 20 21 22 23 … »',
+    'suspendedProgramText: a long program keeps the next token in view');
 }
 
 /* ================================================================
@@ -989,6 +1013,29 @@ import { assert, assertThrows } from './helpers.mjs';
   d.setHaltAnnunciator(null);
   assert(halt.textContent === '' && halt._on === false && halt.title === '',
     'setHaltAnnunciator: null clears the annunciator');
+
+  const programRow = { hidden: true, textContent: 'stale', title: 'stale' };
+  const shown = new Display({
+    stackView: { addEventListener() {} },
+    cmdline: {},
+    statusLine: { querySelector() { return null; }, addEventListener() {} },
+    menuBar: null,
+    suspendedProgram: programRow,
+  });
+  shown.setSuspendedProgram({
+    tokens: [Integer(1n), Integer(2n), Name('+')],
+    index: 1,
+    kind: 'step',
+  });
+  assert(programRow.hidden === false &&
+         programRow.textContent === '« 1 ▸2 + »' &&
+         programRow.title.includes('▸'),
+    'setSuspendedProgram: step shows the suspended program');
+  shown.setSuspendedProgram(null);
+  assert(programRow.hidden === true &&
+         programRow.textContent === '' &&
+         programRow.title === '',
+    'setSuspendedProgram: null hides the suspended program');
 }
 
 /* ================================================================
@@ -1276,9 +1323,13 @@ setAngle('RAD');
     lookup('DBUG').fn(s);
     assert(s.depth === 1 && s.peek().value === 1n && calcState.halted && calcState.halted.kind === 'step',
       'SST key setup: DBUG runs the first token and suspends');
+    assert(suspendedProgramText(calcState.halted) === '« 1 ▸2 + »',
+      'SST key setup: the suspended program shows the next token');
     down.shiftLAction(e);
     assert(s.depth === 2 && s.peek().value === 2n && calcState.halted && calcState.halted.kind === 'step',
       'SST key steps one token and stays suspended');
+    assert(suspendedProgramText(calcState.halted) === '« 1 2 ▸+ »',
+      'SST key steps: the suspended program advances to the next token');
 
     const editing = new Entry(new Stack());
     editing.type('1');
