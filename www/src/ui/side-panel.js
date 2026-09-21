@@ -45,6 +45,25 @@ import { GraphView } from './graph-view.js';
 import { EquationEditor } from './equation-editor.js';
 import { MatrixEditor } from './matrix-editor.js';
 
+const EDITOR_TABS = {
+  equation: {
+    takesStack: true,
+    dest: 'formula editor',
+    create(app) { return new EquationEditor({ app }); },
+  },
+  matrix: {
+    takesStack: true,
+    dest: 'matrix editor',
+    create(app) { return new MatrixEditor({ app }); },
+  },
+  graph: {
+    takesStack: true,
+    dest: 'graph',
+    create(app) { return new GraphView({ app }); },
+    mount(view) { view.resize(); },
+  },
+};
+
 const UNIT_SYMBOLS = [
   'm', 'cm', 'mm', 'km', 'in', 'ft', 'yd', 'mi',
   'kg', 'g', 'mg', 'lb', 'oz',
@@ -204,6 +223,7 @@ export class SidePanel {
     // section).  Persists to localStorage via _saveUIState so the
     // layout survives a reload.
     this._collapsedSections = new Set();
+    this._editors = {};
     this.el = null;
     // Lazily-loaded popup that overlays the calculator with the
     // command-reference entry for whichever Commands-tab button is
@@ -447,27 +467,29 @@ export class SidePanel {
     this._saveUIState();
   }
 
+  _editor(tab = this.tab) {
+    const spec = EDITOR_TABS[tab];
+    if (!spec) return null;
+    if (!this._editors[tab]) this._editors[tab] = spec.create(this.app);
+    return this._editors[tab];
+  }
+
+  stackRowTitle(level) {
+    const spec = EDITOR_TABS[this.tab];
+    if (this.isOpen() && spec?.takesStack) {
+      return `Stack level ${level} — click to copy into the ${spec.dest}`;
+    }
+    return `Stack level ${level} — click to copy to the command line`;
+  }
+
   openGraph(kind, stack) {
     this.open('graph');
-    if (!this._graphView) this._graphView = new GraphView({ app: this.app });
-    this._graphView.applyPlotOp(kind, stack);
+    this._editor('graph').applyPlotOp(kind, stack);
   }
 
   takeFromStack(level) {
-    if (!this.isOpen()) return false;
-    if (this.tab === 'equation') {
-      if (!this._equation) this._equation = new EquationEditor({ app: this.app });
-      return this._equation.loadFromStack(level);
-    }
-    if (this.tab === 'matrix') {
-      if (!this._matrix) this._matrix = new MatrixEditor({ app: this.app });
-      return this._matrix.loadFromStack(level);
-    }
-    if (this.tab === 'graph') {
-      if (!this._graphView) this._graphView = new GraphView({ app: this.app });
-      return this._graphView.loadFromStack(level);
-    }
-    return false;
+    if (!this.isOpen() || !EDITOR_TABS[this.tab]?.takesStack) return false;
+    return this._editor().loadFromStack(level);
   }
 
   close() {
@@ -508,7 +530,7 @@ export class SidePanel {
     const filterRow = this.el.querySelector('.side-panel-filter');
     if (filterRow) {
       filterRow.classList.toggle(
-        'hidden', tab === 'ai' || tab === 'graph' || tab === 'equation' || tab === 'matrix');
+        'hidden', tab === 'ai' || Boolean(EDITOR_TABS[tab]));
     }
     // Clear the filter input when switching tabs so stale text from the
     // Commands filter doesn't hide every History entry.
@@ -539,25 +561,12 @@ export class SidePanel {
     // subsequent renders will keep re-appending an empty <div> forever.
     // So we only cache after a successful mount, and re-attempt on every
     // render until ChatBot is available.
-    if (this.tab === 'graph') {
-      if (!this._graphView) this._graphView = new GraphView({ app: this.app });
+    const editorSpec = EDITOR_TABS[this.tab];
+    if (editorSpec) {
+      const view = this._editor();
       body.innerHTML = '';
-      body.appendChild(this._graphView.el);
-      this._graphView.resize();
-      this._refreshExpandLabel();
-      return;
-    }
-    if (this.tab === 'equation') {
-      if (!this._equation) this._equation = new EquationEditor({ app: this.app });
-      body.innerHTML = '';
-      body.appendChild(this._equation.el);
-      this._refreshExpandLabel();
-      return;
-    }
-    if (this.tab === 'matrix') {
-      if (!this._matrix) this._matrix = new MatrixEditor({ app: this.app });
-      body.innerHTML = '';
-      body.appendChild(this._matrix.el);
+      body.appendChild(view.el);
+      editorSpec.mount?.(view);
       this._refreshExpandLabel();
       return;
     }

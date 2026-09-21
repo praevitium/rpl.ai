@@ -255,15 +255,7 @@ class App {
     this.display.onStackRowClick    = (level) => this.echoStackLevel(level);
     this.display.onIndicatorClick   = (id)    => this.cycleIndicator(id);
     this.display.onPathSegmentClick = (index) => this.navigateToPathSegment(index);
-    this.display.stackRowTitle = (level) => {
-      const sp = this.sidePanel;
-      if (sp?.isOpen() && (sp.tab === 'equation' || sp.tab === 'matrix' || sp.tab === 'graph')) {
-        const dest = sp.tab === 'equation' ? 'formula editor'
-          : sp.tab === 'matrix' ? 'matrix editor' : 'graph';
-        return `Stack level ${level} — click to copy into the ${dest}`;
-      }
-      return `Stack level ${level} — click to copy to the command line`;
-    };
+    this.display.stackRowTitle = (level) => this.sidePanel.stackRowTitle(level);
 
     // Restore persisted state from localStorage before wiring any
     // autosave listener — otherwise the restore itself would trigger
@@ -529,11 +521,14 @@ class App {
 
   /** Push a raw number onto the stack.  Used by menu slots that
    *  produce a constant (e, π, etc.). */
+  commitEntryAndPush(values) {
+    if (this.entry.buffer.trim().length > 0) this.entry.enter();
+    const list = Array.isArray(values) ? values : [values];
+    for (const value of list) this.stack.push(value);
+  }
+
   _pushReal(value) {
-    return () => {
-      if (this.entry.buffer.trim().length > 0) this.entry.enter();
-      this.stack.push(Real(value));
-    };
+    return () => this.commitEntryAndPush(Real(value));
   }
 
   /** "Not yet implemented" handler for menu slots whose op hasn't

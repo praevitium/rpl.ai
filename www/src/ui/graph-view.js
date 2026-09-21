@@ -4,6 +4,7 @@ import {
   sampleTrace, fitViewToTraces, evalTraceAtX,
   stackValueToTrace, traceToStackValues,
 } from './plot-engine.js';
+import { escapeHtml } from './display.js';
 import { isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
 import { varRecall, getLastFitModel, toRadians, fromRadians } from '../rpl/state.js';
 
@@ -323,9 +324,7 @@ export class GraphView {
         this.app?.entry?.flashError?.({ message: 'Graph: nothing to push' });
         return;
       }
-      const entry = this.app?.entry;
-      if (entry?.buffer?.trim?.().length > 0) entry.enter();
-      for (const v of values) this.app.stack.push(v);
+      this.app.commitEntryAndPush(values);
       this._readout.textContent = `Pushed ${t.label || t.kind}`;
     } catch (e) {
       this.app?.entry?.flashError?.({ message: `Graph: ${e.message}` });
@@ -636,10 +635,5 @@ function fmtAxis(n) {
   return String(Number(n.toPrecision(6)));
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  }[c]));
-}
 
 

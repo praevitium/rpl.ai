@@ -1,3 +1,4 @@
+import { escapeHtml } from './display.js';
 import { parseEntry } from '../rpl/parser.js';
 import { format } from '../rpl/formatter.js';
 import {
@@ -377,7 +378,7 @@ export class MatrixEditor {
         const val = this.grid[r][c] ?? '';
         cells.push(
           `<td><input class="mx-cell" data-r="${r}" data-c="${c}" ` +
-          `value="${escapeAttr(val)}" spellcheck="false" /></td>`
+          `value="${escapeHtml(val)}" spellcheck="false" /></td>`
         );
       }
       body.push(`<tr>${cells.join('')}</tr>`);
@@ -429,9 +430,7 @@ export class MatrixEditor {
   push() {
     try {
       const v = gridToValue(this.grid, { asVector: this._asVector });
-      const entry = this.app?.entry;
-      if (entry?.buffer?.trim?.().length > 0) entry.enter();
-      this.app.stack.push(v);
+      this.app.commitEntryAndPush(v);
       this._status.textContent = isVector(v)
         ? `Pushed vector ${v.items.length}`
         : `Pushed ${v.rows.length} × ${v.rows[0].length}`;
@@ -444,8 +443,3 @@ export class MatrixEditor {
   }
 }
 
-function escapeAttr(s) {
-  return String(s).replace(/[&<>"']/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  }[c]));
-}

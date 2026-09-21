@@ -220,9 +220,7 @@ export class EquationEditor {
   push() {
     try {
       const v = equationToSymbolic(this._input.value);
-      const entry = this.app?.entry;
-      if (entry?.buffer?.trim?.().length > 0) entry.enter();
-      this.app.stack.push(v);
+      this.app.commitEntryAndPush(v);
       this._status.textContent = 'Pushed to stack';
       this._status.classList.remove('error');
     } catch (e) {
