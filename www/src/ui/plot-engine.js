@@ -316,6 +316,82 @@ function finitePts(pts) {
   return out;
 }
 
+function odeSlope(ast, x, y, opts) {
+  return evalNumeric(ast, { x, X: x, y, Y: y }, opts || {});
+}
+
+function rk4Step(ast, x, y, h, opts) {
+  const k1 = odeSlope(ast, x, y, opts);
+  const k2 = odeSlope(ast, x + h / 2, y + (h * k1) / 2, opts);
+  const k3 = odeSlope(ast, x + h / 2, y + (h * k2) / 2, opts);
+  const k4 = odeSlope(ast, x + h, y + h * k3, opts);
+  if (![k1, k2, k3, k4].every(Number.isFinite)) return null;
+  const next = y + (h / 6) * (k1 + 2 * k2 + 2 * k3 + k4);
+  return Number.isFinite(next) ? next : null;
+}
+
+function integrateOde(ast, x0, y0, x1, steps, opts) {
+  if (!Number.isFinite(x0) || !Number.isFinite(y0) || !Number.isFinite(x1)) return [];
+  if (x0 === x1) return [[x0, y0]];
+  const count = Math.max(1, steps | 0);
+  const h = (x1 - x0) / count;
+  const pts = [[x0, y0]];
+  let x = x0;
+  let y = y0;
+  for (let i = 0; i < count; i++) {
+    const next = rk4Step(ast, x, y, h, opts);
+    if (next == null) break;
+    x += h;
+    y = next;
+    pts.push([x, y]);
+  }
+  return pts;
+}
+
+export function sampleDiffEq(ast, y0, xMin, xMax, n, opts = {}) {
+  const yStart = Number(y0);
+  if (!Number.isFinite(yStart) || !Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) {
+    return [];
+  }
+  const steps = Math.max(8, n | 0);
+  const x0 = xMin <= 0 && xMax >= 0 ? 0 : xMin;
+  const forward = integrateOde(ast, x0, yStart, xMax, steps, opts);
+  const backward = integrateOde(ast, x0, yStart, xMin, steps, opts);
+  const pts = backward.slice(0, -1).reverse().concat(forward);
+  return segmentPoints(pts, Infinity);
+}
+
+function diffeqInitialY(t) {
+  const raw = t?.exprY == null || t.exprY === '' ? '0' : String(t.exprY);
+  const n = Number(raw);
+  if (Number.isFinite(n)) return n;
+  try {
+    const y = evalNumeric(parsePlotExpr(raw), {}, {});
+    return Number.isFinite(y) ? y : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function diffeqFromStack(v, below) {
+  const expr = valueToEquationDraft(v);
+  if (!expr) return null;
+  const y0 = valueToEquationDraft(below);
+  return {
+    kind: 'diffeq',
+    expr,
+    exprY: y0 || '0',
+    label: `y'=${expr}`,
+    points: null,
+  };
+}
+
+function diffeqToStack(t) {
+  if (!t?.expr) return [];
+  const y = diffeqInitialY(t);
+  return [Real(y), equationToSymbolic(t.expr)];
+}
+
 function pointsSegment(pts) {
   const finite = finitePts(pts || []);
   return finite.length ? [finite] : [];
@@ -471,6 +547,29 @@ export const TRACE_KINDS = Object.freeze({
     fromStack: histFromStack,
     toStack: pointsToStack,
   },
+  diffeq: {
+    render: 'stroke',
+    data: false,
+    sample(t, ctx) {
+      if (!t.expr) return [];
+      const view = ctx.view;
+      return sampleDiffEq(
+        parsePlotExpr(t.expr), diffeqInitialY(t),
+        view.xmin, view.xmax, Math.max(48, ctx.width | 0),
+        ctx.angleOpts || {},
+      );
+    },
+    evalAt(t, x, ctx) {
+      if (!t.expr || !Number.isFinite(x)) return NaN;
+      const view = ctx.view || { xmin: Math.min(0, x), xmax: Math.max(0, x) };
+      const x0 = view.xmin <= 0 && view.xmax >= 0 ? 0 : view.xmin;
+      const pts = integrateOde(parsePlotExpr(t.expr), x0, diffeqInitialY(t), x, 48, ctx.angleOpts || {});
+      const last = pts[pts.length - 1];
+      return last ? last[1] : NaN;
+    },
+    fromStack: diffeqFromStack,
+    toStack: diffeqToStack,
+  },
   fit: {
     render: 'stroke',
     data: false,
@@ -545,6 +644,7 @@ export function stackValueToTrace(v, preferredKind = 'function', below = null) {
       ? preferredKind : 'scatter';
     return TRACE_KINDS[kind].fromStack(v);
   }
+  if (preferredKind === 'diffeq') return TRACE_KINDS.diffeq.fromStack(v, below);
   if (preferredKind === 'parametric') {
     if (!isSymbolic(v)) return expressionFromStack('parametric', v);
     const y = valueToEquationDraft(v);

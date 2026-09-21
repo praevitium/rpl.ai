@@ -55,6 +55,7 @@ export class GraphView {
           <button type="button" data-kind="function" class="active" title="y = f(x)">y=f(x)</button>
           <button type="button" data-kind="polar" title="r = f(θ)">polar</button>
           <button type="button" data-kind="parametric" title="x(t), y(t)">param</button>
+          <button type="button" data-kind="diffeq" title="dy/dx = f(x, y)">dy/dx</button>
           <button type="button" data-kind="scatter" title="Scatter from ΣDAT or stack">scatter</button>
           <button type="button" data-kind="bar" title="Bar chart">bar</button>
           <button type="button" data-kind="hist" title="Histogram">hist</button>
@@ -191,14 +192,15 @@ export class GraphView {
     this.el.querySelectorAll('.gr-modes button').forEach(b => {
       b.classList.toggle('active', b.dataset.kind === kind);
     });
-    const parametric = kind === 'parametric';
-    this._addY.classList.toggle('hidden', !parametric);
+    const twoField = kind === 'parametric' || kind === 'diffeq';
+    this._addY.classList.toggle('hidden', !twoField);
     this._addX.placeholder =
       kind === 'polar' ? '1 + COS(θ)' :
       kind === 'parametric' ? 'COS(T)' :
+      kind === 'diffeq' ? 'X+Y' :
       kind === 'function' ? 'SIN(X)' :
       'data from stack / ΣDAT';
-    this._addY.placeholder = 'SIN(T)';
+    this._addY.placeholder = kind === 'diffeq' ? '0' : 'SIN(T)';
     this._renderExprs();
   }
 
@@ -214,6 +216,7 @@ export class GraphView {
     try {
       parsePlotExpr(expr);
       if (kind === 'parametric') parsePlotExpr(exprY);
+      if (kind === 'diffeq' && exprY) parsePlotExpr(exprY);
     } catch (e) {
       this.app?.entry?.flashError?.({ message: `Graph: ${e.message}` });
       return;
@@ -221,9 +224,10 @@ export class GraphView {
     this._addTrace({
       kind,
       expr,
-      exprY: kind === 'parametric' ? exprY : '',
-      label: kind === 'parametric' ? `(${expr}, ${exprY})` : expr,
-    }, { fit: kind === 'polar' || kind === 'parametric' });
+      exprY: kind === 'parametric' || kind === 'diffeq' ? (exprY || '0') : '',
+      label: kind === 'parametric' ? `(${expr}, ${exprY})`
+        : kind === 'diffeq' ? `y'=${expr}` : expr,
+    }, { fit: kind === 'polar' || kind === 'parametric' || kind === 'diffeq' });
     this._addX.value = '';
     this._addY.value = '';
   }
@@ -274,7 +278,7 @@ export class GraphView {
       this.draw();
       return;
     }
-    if (kind === 'function' || kind === 'polar' || kind === 'parametric') {
+    if (kind === 'function' || kind === 'polar' || kind === 'parametric' || kind === 'diffeq') {
       const top = stack?.peek?.();
       if (!isSymbolic(top)) {
         this.app?.entry?.flashError?.({ message: `Graph: ${kind} expects a Symbolic on the stack` });

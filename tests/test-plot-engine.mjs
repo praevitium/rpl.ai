@@ -3,7 +3,7 @@ import {
   evalNumeric, lookupEnv, parsePlotExpr, sampleFunction, samplePolar,
   sampleParametric, segmentPoints, niceTicks, niceNum, worldToPixel,
   pixelToWorld, zoomView, panView, defaultView, boundsOfPoints,
-  valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit,
+  valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit, sampleDiffEq,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
   evalTraceAtX,
 } from '../www/src/ui/plot-engine.js';
@@ -267,6 +267,17 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
     fitModel: { kind: 'LIN', a: 1, b: 2 },
   });
   assert(fitY === 7, 'evalTraceAtX: fit model');
+}
+
+{
+  const segs = sampleDiffEq(parsePlotExpr('Y'), 1, 0, 1, 40, {});
+  const pts = segs.flat();
+  const last = pts[pts.length - 1];
+  assert(last && Math.abs(last[0] - 1) < 1e-9, 'sampleDiffEq: ends at x = 1');
+  assert(last && Math.abs(last[1] - Math.E) < 1e-3, 'sampleDiffEq: y\'=y grows like e^x');
+  const parabola = sampleDiffEq(parsePlotExpr('X'), 0, 0, 2, 20, {}).flat();
+  const end = parabola[parabola.length - 1];
+  assert(end && Math.abs(end[1] - 2) < 1e-6, 'sampleDiffEq: y\'=x from 0 is x^2/2');
 }
 
 
