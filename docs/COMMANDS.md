@@ -23,7 +23,7 @@ touched the row, and any known caveats worth carrying forward.
 
 ## Current status
 
-- **Fully shipped (✓): 449** — as of 2026-09-21 (v0.3.10). Count
+- **Fully shipped (✓): 449** — as of 2026-09-21 (v0.4.0). Count
   `register(` under `www/src/rpl/ops/`. `allOps()` is the reachable set.
   The ✓ total is that set minus internal aliases and `will-not` rows.
 - **Partially shipped (~): 0**
