@@ -16,7 +16,7 @@ Guide.pdf`, `HP50 User Manual.pdf`) remain the fidelity reference.
 
 ## Current state — foundations in place
 
-*As of v0.3.9 (2026-09-21).*
+*As of v0.3.10 (2026-09-21).*
 
 The substrate the roadmap builds on:
 
@@ -99,10 +99,10 @@ Most of the substrate is in place.  Open items tracked in `RPL.md`:
   structural sync-path call site that still *rejects* HALT is
   `runArrow`'s Symbolic body, currently unreachable in practice (the
   Symbolic AST cannot carry a Program subnode).
-- **DBUG / SST / SST↓** are implemented as real ops (single-step
-  debugger; SST↓ is a true step-into since session 106), but still
-  need a UI surface (a step-mode indicator + single-step button) to
-  be useful to end users.  UI-lane collaboration.
+- **DBUG / SST / SST↓** run from the LCD. The status line shows
+  `SST` or `HLT`, left-shift ▼ runs `SST`, and the suspended program
+  stays on screen with `▸` on the next instruction. SST↓ remains a
+  true step-into (session 106).
 - **ABORT-level UI.**  `ABORT` propagates cleanly to the outer loop
   but displays via the generic error banner.  A dedicated "Program
   aborted" status-line flash would feel closer to the HP50.
