@@ -64,8 +64,8 @@ To pull a newer Giac build:
 
 ```bash
 git clone --depth 1 https://github.com/adriweb/emgiac.git /tmp/emgiac
-cp /tmp/emgiac/giac/giacwasm.js    www/src/vendor/giac/
-cp /tmp/emgiac/giac/giacwasm.wasm  www/src/vendor/giac/
+cp /tmp/emgiac/giac/giacwasm.js    www/vendor/giac/
+cp /tmp/emgiac/giac/giacwasm.wasm  www/vendor/giac/
 ```
 
 Then regenerate the checksums above and bump the vendoring date in this

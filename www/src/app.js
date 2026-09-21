@@ -1443,7 +1443,7 @@ window.calc_reset = function calc_reset() {
 
 /* ------------------------------------------------------------------
    Kick off the Giac CAS in the background.  Cold init is ~150 ms
-   (loads /src/vendor/giac/giacwasm.js + giacwasm.wasm and cwraps the
+   (loads /vendor/giac/giacwasm.js + giacwasm.wasm and cwraps the
    caseval bridge).  Fire-and-forget: the UI stays responsive while
    the WASM fetches, and any CAS-routed op (FACTOR on Symbolic, and
    the EXPAND/DERIV/INTEG/SOLVE migrations to come) that runs before

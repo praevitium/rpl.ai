@@ -319,9 +319,10 @@ www/                  Browser-loaded assets (Tauri frontendDist)
   index.html          Calculator shell
   src/app.js          Bootstrap
   src/rpl/            Stack engine, parser, evaluator, formatter, persistence
+  src/rpl/ops/        Command families. `src/rpl/ops.js` re-exports the registry
   src/rpl/cas/        Giac adapter (synchronous, main-thread) + AST↔Giac conversion
   src/ui/             Keyboard, display, interactive stack, side panel, entry
-  src/vendor/         Vendored third-party libraries (giac, decimal.js, etc.)
+  vendor/             Vendored libraries (giac, decimal.js, fraction.js, complex.js, CodeMirror, KaTeX)
   css/                Styles
 src-tauri/            Rust/Tauri host (window config, icons, native glue)
 tests/                Node-based test suites

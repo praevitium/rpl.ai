@@ -18,7 +18,7 @@
                  the Integer ⊂ Rational ⊂ Real ⊂ Complex promotion lattice.
                  Stored as { n: BigInt, d: BigInt } in lowest terms with
                  d ≥ 1n.  Fraction.js is vendored at
-                 `www/src/vendor/fraction.js/`.
+                 `www/vendor/fraction.js/`.
      Complex   — { re, im } real pair
      String    — quoted string literal
      Name      — global or local identifier
@@ -46,7 +46,7 @@
        future graphics primitives have something to round-trip.
    ================================================================= */
 
-import Decimal from '../vendor/decimal.js/decimal.mjs';
+import Decimal from '../../vendor/decimal.js/decimal.mjs';
 /* decimal.js runtime config — precision/rounding are set once in
    ops.js at module load, which runs before any stack values are built
    in normal operation.  If a caller constructs a Real before ops.js
@@ -131,7 +131,7 @@ export function Integer(n) {
  *     Integer(2), not Rational(2/1)).
  *
  * Arithmetic is performed internally via Fraction.js (vendored at
- * `www/src/vendor/fraction.js/`), which is BigInt-backed so a Rational of
+ * `www/vendor/fraction.js/`), which is BigInt-backed so a Rational of
  * arbitrarily large numerator and denominator (e.g. a factorial ratio)
  * works out of the box.
  */

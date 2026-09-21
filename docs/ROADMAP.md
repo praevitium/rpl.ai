@@ -21,7 +21,7 @@ Guide.pdf`, `HP50 User Manual.pdf`) remain the fidelity reference.
 The substrate the roadmap builds on:
 
 - **CAS.**  Giac (Bernard Parisse, GPL-3.0+) is vendored at
-  `www/src/vendor/giac/` and wired through `www/src/rpl/cas/giac-engine.mjs`
+  `www/vendor/giac/` and wired through `www/src/rpl/cas/giac-engine.mjs`
   as a main-thread sync adapter.  Every Symbolic op routes through
   Giac with a strict no-fallback policy; `algebra.js` is the lean
   AST + parser/formatter + `freeVars` surface the op layer still

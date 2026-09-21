@@ -26,7 +26,7 @@
 //
 // Environment handling:
 //   Browser (Tauri webview):
-//     - Calls init() to load www/src/vendor/giac/giacwasm.js as a
+//     - Calls init() to load www/vendor/giac/giacwasm.js as a
 //       <script>, wait for emscripten's onRuntimeInitialized, then grab
 //       a synchronous cwrap of caseval.
 //     - After init() resolves, caseval(cmd) returns a string synchronously.
@@ -63,7 +63,7 @@ const isBrowser =
      5. Callers now have synchronous giac.caseval(cmd).
 
    locateFile must return the path to giacwasm.wasm relative to the
-   document. The vendored blob lives at /src/vendor/giac/giacwasm.wasm
+   document. The vendored blob lives at /vendor/giac/giacwasm.wasm
    relative to the served www/ root, so that's the literal URL.
    ------------------------------------------------------------------ */
 
@@ -120,7 +120,7 @@ class BrowserGiacEngine {
           print: function (_t) { /* silent; uncomment for debug */ },
           printErr: function (_t) { /* silent; uncomment for debug */ },
           locateFile: function (name) {
-            if (name.endsWith(".wasm")) return "/src/vendor/giac/giacwasm.wasm";
+            if (name.endsWith(".wasm")) return "/vendor/giac/giacwasm.wasm";
             return name;
           },
           onRuntimeInitialized: () => {
@@ -137,7 +137,7 @@ class BrowserGiacEngine {
           },
         };
         const script = document.createElement("script");
-        script.src = "/src/vendor/giac/giacwasm.js";
+        script.src = "/vendor/giac/giacwasm.js";
         script.async = true;
         script.onerror = () => reject(new Error("Failed to load giacwasm.js"));
         document.head.appendChild(script);

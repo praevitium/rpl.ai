@@ -1,14 +1,13 @@
 import {
-  TRACE_COLORS, nextTraceColor, defaultView, zoomView, panView,
+  TRACE_COLORS, TRACE_KINDS, nextTraceColor, defaultView, zoomView, panView,
   worldToPixel, pixelToWorld, niceTicks, parsePlotExpr,
-  sampleFunction, samplePolar, sampleParametric, sampleFit,
-  valueToPoints, valuesFromColumn, histogram, boundsOfPoints,
-  fitViewToTraces, evalTraceAtX,
+  sampleTrace, fitViewToTraces, evalTraceAtX,
+  stackValueToTrace, traceToStackValues,
 } from './plot-engine.js';
-import { formatAlgebra } from '../rpl/algebra.js';
-import { isSymbolic, isMatrix, isVector, isList, Matrix, Real } from '../rpl/types.js';
+import { isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
 import { varRecall, getLastFitModel, toRadians, fromRadians } from '../rpl/state.js';
-import { equationToSymbolic, valueToEquationDraft } from './equation-editor.js';
+
+export { stackValueToTrace, traceToStackValues };
 
 let _traceSeq = 0;
 
@@ -34,49 +33,10 @@ export function makeTrace(partial = {}) {
     exprY: partial.exprY || '',
     points: partial.points || null,
     label: partial.label || '',
+    model: partial.model
+      ? { kind: partial.model.kind, a: partial.model.a, b: partial.model.b }
+      : null,
   };
-}
-
-export function stackValueToTrace(v, preferredKind = 'function') {
-  if (isSymbolic(v)) {
-    const expr = formatAlgebra(v.expr);
-    const kind = (preferredKind === 'polar' || preferredKind === 'parametric')
-      ? preferredKind : 'function';
-    return { kind, expr, exprY: '', label: expr, points: null };
-  }
-  if (isMatrix(v) || isVector(v) || isList(v)) {
-    const points = valueToPoints(v);
-    if (!points || !points.length) return null;
-    const kind = (preferredKind === 'bar' || preferredKind === 'hist')
-      ? preferredKind : 'scatter';
-    return { kind, points, label: kind, expr: '', exprY: '' };
-  }
-  const expr = valueToEquationDraft(v);
-  if (!expr) return null;
-  const kind = (preferredKind === 'polar' || preferredKind === 'parametric')
-    ? preferredKind : 'function';
-  return { kind, expr, exprY: '', label: expr, points: null };
-}
-
-export function traceToStackValues(t) {
-  if (!t) return [];
-  if (t.kind === 'parametric') {
-    const out = [];
-    if (t.expr) out.push(equationToSymbolic(t.expr));
-    if (t.exprY) out.push(equationToSymbolic(t.exprY));
-    return out;
-  }
-  if (t.kind === 'function' || t.kind === 'polar' || t.kind === 'fit') {
-    if (!t.expr) return [];
-    return [equationToSymbolic(t.expr)];
-  }
-  if (t.points && t.points.length) {
-    return [Matrix(t.points.map(([x, y]) => [
-      Real(Number.isFinite(x) ? x : 0),
-      Real(Number.isFinite(y) ? y : 0),
-    ]))];
-  }
-  return [];
 }
 
 export class GraphView {
@@ -273,32 +233,23 @@ export class GraphView {
       this.app?.entry?.flashError?.({ message: 'Graph: no ΣDAT and stack top is not data' });
       return;
     }
-    if (kind === 'hist') {
-      const nums = valuesFromColumn(v, 0) || [];
-      const hist = histogram(nums);
-      const points = hist.counts.map((count, i) => [
-        (hist.edges[i] + hist.edges[i + 1]) / 2,
-        count,
-      ]);
-      this._addTrace({ kind: 'hist', points, label: 'histogram' }, { fit: true });
-      return;
-    }
-    const points = valueToPoints(v);
-    if (!points || !points.length) {
+    const spec = TRACE_KINDS[kind]?.fromStack(v);
+    if (!spec) {
       this.app?.entry?.flashError?.({ message: 'Graph: no numeric points' });
       return;
     }
-    const t = this._addTrace({
-      kind,
-      points,
-      label: kind === 'bar' ? 'bar' : 'scatter',
-    }, { fit: false, draw: false });
+    if (kind === 'hist') {
+      this._addTrace(spec, { fit: true });
+      return;
+    }
+    const t = this._addTrace(spec, { fit: false, draw: false });
     const fit = getLastFitModel();
     if (kind === 'scatter' && fit) {
       this.traces.push(makeTrace({
         kind: 'fit',
         label: `${fit.kind} fit`,
         color: TRACE_COLORS[4],
+        model: { kind: fit.kind, a: fit.a, b: fit.b },
       }));
     }
     this._selectedId = t.id;
@@ -324,22 +275,17 @@ export class GraphView {
     }
     if (kind === 'function' || kind === 'polar' || kind === 'parametric') {
       const top = stack?.peek?.();
-      if (isSymbolic(top)) {
-        const expr = formatAlgebra(top.expr);
-        if (kind === 'parametric') {
-          const y = expr;
-          const xVal = stack.depth >= 2 ? stack.peek(2) : null;
-          const xExpr = isSymbolic(xVal) ? formatAlgebra(xVal.expr) : 'T';
-          this._addTrace({
-            kind: 'parametric', expr: xExpr, exprY: y,
-            label: `(${xExpr}, ${y})`,
-          }, { fit: true });
-        } else {
-          this._addTrace({ kind, expr, label: expr }, { fit: kind === 'polar' });
-        }
+      if (!isSymbolic(top)) {
+        this.app?.entry?.flashError?.({ message: `Graph: ${kind} expects a Symbolic on the stack` });
         return;
       }
-      this.app?.entry?.flashError?.({ message: `Graph: ${kind} expects a Symbolic on the stack` });
+      const below = stack.depth >= 2 ? stack.peek(2) : null;
+      const spec = stackValueToTrace(top, kind, below);
+      if (!spec) {
+        this.app?.entry?.flashError?.({ message: `Graph: ${kind} expects a Symbolic on the stack` });
+        return;
+      }
+      this._addTrace(spec, { fit: kind === 'polar' || kind === 'parametric' });
       return;
     }
     const top = stack?.peek?.();
@@ -356,18 +302,8 @@ export class GraphView {
     }
     if (level < 1 || level > stack.depth) return true;
     const v = stack.peek(level);
-    if (this._kind === 'parametric' && isSymbolic(v)) {
-      const y = formatAlgebra(v.expr);
-      const xVal = stack.depth >= level + 1 ? stack.peek(level + 1) : null;
-      const xExpr = isSymbolic(xVal) ? formatAlgebra(xVal.expr) : 'T';
-      this._addTrace({
-        kind: 'parametric', expr: xExpr, exprY: y,
-        label: `(${xExpr}, ${y})`,
-      }, { fit: true });
-      this._readout.textContent = `Copied L${level}`;
-      return true;
-    }
-    const spec = stackValueToTrace(v, this._kind);
+    const below = stack.depth >= level + 1 ? stack.peek(level + 1) : null;
+    const spec = stackValueToTrace(v, this._kind, below);
     if (!spec) {
       this.app?.entry?.flashError?.({ message: 'Graph: stack value is not an expression or data' });
       return true;
@@ -430,7 +366,6 @@ export class GraphView {
   _hoverOpts() {
     return {
       angleOpts: angleOpts(),
-      fitModel: getLastFitModel(),
       snapX: (this.view.xmax - this.view.xmin) * 0.03,
     };
   }
@@ -527,7 +462,6 @@ export class GraphView {
       angleOpts: angleOpts(),
       thetaRange: thetaRange(),
       tRange: { min: -10, max: 10 },
-      fitModel: getLastFitModel(),
       width: wrap?.clientWidth || 240,
     });
     this.draw();
@@ -625,34 +559,24 @@ export class GraphView {
   }
 
   _drawTrace(ctx, t, width, height) {
-    const view = this.view;
-    const opts = { ...angleOpts(), ySpan: view.ymax - view.ymin };
+    const spec = TRACE_KINDS[t.kind];
+    if (!spec) return;
     let segs = [];
     try {
-      if (t.kind === 'function') {
-        const ast = parsePlotExpr(t.expr);
-        segs = sampleFunction(ast, view.xmin, view.xmax, Math.max(240, width), {}, opts);
-      } else if (t.kind === 'polar') {
-        const ast = parsePlotExpr(t.expr);
-        const th = thetaRange();
-        segs = samplePolar(ast, th.min, th.max, 720, {}, opts);
-      } else if (t.kind === 'parametric') {
-        const ax = parsePlotExpr(t.expr);
-        const ay = parsePlotExpr(t.exprY);
-        segs = sampleParametric(ax, ay, -10, 10, 480, {}, opts);
-      } else if (t.kind === 'fit') {
-        const model = getLastFitModel();
-        if (model) segs = sampleFit(model, view.xmin, view.xmax, Math.max(240, width));
-      } else if (t.points) {
-        if (t.kind === 'bar' || t.kind === 'hist') {
-          this._drawBars(ctx, t, width, height);
-          return;
-        }
-        segs = [t.points.filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y))];
-      }
+      segs = sampleTrace(t, this.view, {
+        width,
+        angleOpts: angleOpts(),
+        thetaRange: thetaRange(),
+        tRange: { min: -10, max: 10 },
+      });
     } catch {
       return;
     }
+    if (spec.render === 'bars') {
+      this._drawBars(ctx, t, segs, width, height);
+      return;
+    }
+    const view = this.view;
     ctx.save();
     ctx.strokeStyle = t.color;
     ctx.fillStyle = t.color;
@@ -660,7 +584,7 @@ export class GraphView {
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     for (const seg of segs) {
-      if (t.kind === 'scatter') {
+      if (spec.render === 'points') {
         for (const [x, y] of seg) {
           const [px, py] = worldToPixel(x, y, view, width, height);
           ctx.beginPath();
@@ -681,11 +605,14 @@ export class GraphView {
     ctx.restore();
   }
 
-  _drawBars(ctx, t, width, height) {
+  _drawBars(ctx, t, segs, width, height) {
     const view = this.view;
     ctx.save();
     ctx.fillStyle = t.color;
-    const pts = t.points || [];
+    const pts = [];
+    for (const seg of segs || []) {
+      for (const p of seg) pts.push(p);
+    }
     const barW = pts.length > 1
       ? Math.abs(worldToPixel(pts[1][0], 0, view, width, height)[0]
         - worldToPixel(pts[0][0], 0, view, width, height)[0]) * 0.7

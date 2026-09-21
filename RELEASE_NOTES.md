@@ -388,7 +388,7 @@ All four numeric towers operate in parallel with no precision-loss surprises:
 
 ### CAS (symbolic computation)
 
-Giac is vendored at `www/src/vendor/giac/` as a prebuilt WebAssembly module
+Giac is vendored at `www/vendor/giac/` as a prebuilt WebAssembly module
 and runs synchronously on the main thread via a thin adapter in
 `www/src/rpl/cas/`. Symbolic objects (`'expr'`) push through Giac for
 `EXPAND`, `FACTOR`, `SIMPLIFY`, `SOLVE`, `DIFF`, `INTEGRATE`, `TAYLOR`,

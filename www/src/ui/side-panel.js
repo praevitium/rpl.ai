@@ -28,7 +28,7 @@
    button (×) or another CAT press dismisses it.
    ================================================================= */
 
-import { allOps, lookup } from '../rpl/ops.js';
+import { allOps, lookup, opCategories } from '../rpl/ops.js';
 import {
   state as calcState, subscribe as subscribeState,
   varRecall, varStore, varPurge, goInto, currentPath,
@@ -45,190 +45,21 @@ import { GraphView } from './graph-view.js';
 import { EquationEditor } from './equation-editor.js';
 import { MatrixEditor } from './matrix-editor.js';
 
-/* -----------------------------------------------------------------
-   Command categories.  Keys are the display names; values are arrays
-   of op names (must match the registered op names from ops.js).  Ops
-   not in this map fall into "Other".  Missing-from-registry names are
-   rendered but disabled — lets the catalog double as a roadmap.
-   Kept roughly aligned with docs/COMMANDS.md so the two
-   stay in sync.
-   ----------------------------------------------------------------- */
+const UNIT_SYMBOLS = [
+  'm', 'cm', 'mm', 'km', 'in', 'ft', 'yd', 'mi',
+  'kg', 'g', 'mg', 'lb', 'oz',
+  's', 'ms', 'us', 'ns', 'min', 'h', 'd', 'yr',
+  'L', 'mL',
+  'A', 'K', 'mol', 'cd',
+  'Hz', 'N', 'J', 'W',
+  'Pa', 'kPa', 'bar', 'atm',
+  'V', 'Ω', 'ohm', 'C',
+];
+
+const _opCategories = opCategories();
 export const CATEGORIES = {
-  'Stack': [
-    'DUP', 'DUP2', 'DUPN', 'DUPDUP', 'NDUPN',
-    'DROP', 'DROP2', 'DROPN',
-    'SWAP', 'OVER', 'UNDER', 'ROT', 'NIP',
-    'PICK', 'PICK3', 'UNPICK', 'ROLL', 'ROLLD',
-    'DEPTH', 'CLEAR',
-    'UNDO', 'REDO', 'LASTSTACK',
-    'LAST', 'LASTARG',
-  ],
-  'Arithmetic': [
-    '+', '-', '*', '/', '^',
-    'NEG', 'INV', 'ABS', 'SQ', 'SQRT', '√', 'XROOT',
-    'FLOOR', 'CEIL', 'IP', 'FP', 'SIGN', 'MOD', 'RND', 'TRNC', 'TRUNC',
-    'MIN', 'MAX', 'MINR', 'MAXR',
-    'MANT', 'XPON',
-    '%', '%CH', '%T',
-    'DECR', 'INCR',
-    'HMS+', 'HMS-', '→HMS', 'HMS→',
-    'D→HMS', 'HMS→D',
-    'RAND', 'RDZ',
-    '→Q', 'Q→', '→QΠ',
-  ],
-  'Trig / log / exp / hyperbolic': [
-    'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN',
-    'LN', 'LOG', 'EXP', 'ALOG', 'LNP1', 'EXPM',
-    'SINH', 'COSH', 'TANH', 'ASINH', 'ACOSH', 'ATANH',
-    'R→D', 'D→R',
-    'DEG', 'RAD', 'GRD', 'GRAD',
-  ],
-  'Complex / coordinates': [
-    'RE', 'IM', 'CONJ', 'ARG',
-    'R→C', 'C→R',
-    'C→P', 'P→C',
-    'RECT', 'CYLIN', 'SPHERE',
-    'CMPLX', 'CMPLX?',
-  ],
-  'Comparisons / logic': [
-    '==', '=', 'SAME', '≠', '<>', '<', '>', '≤', '<=', '≥', '>=',
-    'AND', 'OR', 'XOR', 'NOT',
-    'TRUE', 'FALSE',
-  ],
-  'Integer / number theory': [
-    'GCD', 'LCM', 'FACT', '!',
-    'DIVIS', 'FACTORS', 'EULER',
-    'ISPRIME?', 'NEXTPRIME', 'PREVPRIME',
-    'IABCUV', 'IBERNOULLI', 'ICHINREM', 'IEGCD',
-    'EUCLID', 'IDIV2', 'IQUOT', 'IREMAINDER', 'PA2B2',
-    // Modular-arithmetic family — share state.casModulo via MODSTO.
-    'MODSTO', 'ADDTMOD', 'SUBTMOD', 'MULTMOD', 'POWMOD',
-    'INVMOD', 'DIVMOD', 'DIV2MOD', 'GCDMOD', 'EXPANDMOD', 'FACTORMOD',
-  ],
-  'Probability / combinatorics': [
-    'COMB', 'PERM',
-    'UTPN', 'UTPC', 'UTPF', 'UTPT',
-  ],
-  'Polynomials': [
-    'FCOEF', 'PCOEF', 'PEVAL', 'HORNER', 'PTAYL',
-    'PROOT', 'FROOTS', 'QUOT', 'REMAINDER',
-    'CYCLOTOMIC', 'DECOMP',
-    // Gröbner-basis ops: structurally polynomial-system manipulation
-    // even though they live in the CAS section of HP50 AUR.
-    'GBASIS', 'GREDUCE',
-  ],
-  'CAS / symbolic': [
-    'DERIV', 'DERVX', 'INTEG', 'INTVX', 'SUBST', 'PREVAL',
-    'EXPAND', 'COLLECT', 'FACTOR', 'SOLVE', 'ISOL', 'DISTRIB',
-    'EXPLN', 'LNCOLLECT', 'EPSX0', 'SIMPLIFY',
-    'TEXPAND', 'TLIN', 'TCOLLECT', 'TSIMP', 'HALFTAN', 'COSSIN',
-    'ACOS2S', 'ASIN2C', 'ASIN2T', 'ATAN2S',
-    'TAN2SC', 'TAN2SC2', 'TAN2CS2',
-    'HEAVISIDE', 'DIRAC', 'LAPLACE', 'ILAP',
-    'LIM', 'LIMIT', 'LIN',
-    'PARTFRAC', 'PROPFRAC',
-    'EXLR', 'LNAME',
-    'VX', 'SVX', 'XNUM', 'XQ',
-  ],
-  'Special functions': [
-    'GAMMA', 'LNGAMMA', 'PSI', 'BETA',
-    'ERF', 'ERFC', 'EI', 'CI', 'SI',
-    'ZETA', 'LAMBERT',
-  ],
-  'Vectors / matrices': [
-    'SIZE', 'TRN', 'DET', 'NORM', 'CNRM', 'RNRM', 'TRACE', 'COND', 'RANK',
-    'DOT', 'CROSS', 'HADAMARD',
-    'IDN', 'CON', 'RANM', 'LSQ', 'REF', 'RREF', 'AUGMENT', 'RSD',
-    'ROW+', 'ROW-', 'COL+', 'COL-',
-    'ROW→', '→ROW', 'COL→', '→COL',
-    'RSWP', 'CSWP', 'RCI', 'RCIJ', 'RDM',
-    'LU', 'QR', 'LQ', 'CHOLESKY', 'GRAMSCHMIDT',
-    'HERMITE', 'LEGENDRE', 'TCHEB', 'TCHEBYCHEFF', 'VANDERMONDE', 'HILBERT',
-    'AXL', 'AXM',
-    'PCAR', 'CHARPOL', 'EGV', 'EGVL',
-    '→V2', '→V3', 'V→',
-    '→ARRY', 'ARRY→',
-  ],
-  'Lists / strings': [
-    'GET', 'PUT', 'GETI', 'PUTI', 'HEAD', 'TAIL', 'SUB', 'POS', 'APPEND',
-    '→LIST', 'LIST→', 'OBJ→',
-    '→STR', 'STR→', 'CHR',
-    'REVLIST', 'SORT',
-    'REPL', 'SREPL',
-    'ΔLIST', 'ΠLIST', 'ΣLIST', 'DLIST', 'PLIST', 'SLIST', 'SUM',
-    'MAP', 'SEQ', 'DOLIST', 'DOSUBS', 'STREAM',
-    'NSUB', 'ENDSUB',
-  ],
-  'Statistics': [
-    'MEAN', 'MEDIAN', 'VAR', 'SDEV', 'MAD', 'NSIGMA',
-    'TOT', 'MAXS', 'MINS',
-    'SX', 'SX2', 'SY', 'SY2', 'SXY',
-    'ΣX', 'ΣX2', 'ΣY', 'ΣY2', 'ΣXY', 'NΣ',
-    'MAXΣ', 'MINΣ',
-    'CORR', 'COV',
-    'LINFIT', 'LOGFIT', 'EXPFIT', 'PWRFIT', 'BESTFIT',
-    'PREDV', 'PREDX',
-  ],
-  'Graphics': [
-    'BARPLOT', 'HISTPLOT', 'SCATRPLOT',
-    'FUNCTION', 'POLAR', 'PARAMETRIC', 'DRAW',
-  ],
-  'Variables / directories': [
-    'STO', 'RCL', 'PURGE', 'VARS', 'TVARS',
-    'CRDIR', 'UPDIR', 'HOME', 'PATH', 'PGDIR', 'ORDER', 'MERGE',
-    'STO+', 'STO-', 'STO*', 'STO/',
-    'SNEG', 'SINV', 'SCONJ',
-  ],
-  'Evaluation / program': [
-    'EVAL', '→NUM', 'NUM', '→PRG',
-    'APPROX', 'EXACT',
-    'IFT', 'IFTE',
-    'ERRM', 'ERRN', 'ERR0', 'DOERR',
-  ],
-  'Control flow / debug': [
-    'ABORT', 'HALT', 'CONT', 'KILL', 'PROMPT', 'RUN',
-    'DBUG', 'SST', 'SST↓',
-  ],
-  'Flags': [
-    'SF', 'CF', 'FS?', 'FC?', 'FS?C', 'FC?C',
-    'RCLF', 'STOF',
-  ],
-  'Display / base': [
-    'TEXTBOOK', 'FLAT',
-    'STD', 'FIX', 'SCI', 'ENG',
-    'HEX', 'DEC', 'OCT', 'BIN', 'CLB',
-    'B→R', 'R→B',
-    'STWS', 'RCWS',
-    'ASR', 'SL', 'SR', 'RL', 'RR',
-    'SLB', 'SRB', 'RLB', 'RRB',
-  ],
-  'Types & tags': [
-    'TYPE', 'KIND', 'VTYPE',
-    '→TAG', 'DTAG',
-  ],
-  'Units': [
-    // Commands
-    'UVAL', 'UBASE', '→UNIT', 'CONVERT',
-    // Length
-    'm', 'cm', 'mm', 'km', 'in', 'ft', 'yd', 'mi',
-    // Mass
-    'kg', 'g', 'mg', 'lb', 'oz',
-    // Time
-    's', 'ms', 'us', 'ns', 'min', 'h', 'd', 'yr',
-    // Volume
-    'L', 'mL',
-    // Electric / thermo / amount / luminous base SI units
-    'A', 'K', 'mol', 'cd',
-    // Derived SI (mechanical)
-    'Hz', 'N', 'J', 'W',
-    // Pressure
-    'Pa', 'kPa', 'bar', 'atm',
-    // Electrical (derived)
-    'V', 'Ω', 'ohm', 'C',
-  ],
-  'System': [
-    'MEM', 'BYTES', 'NEWOB',
-  ],
+  ..._opCategories,
+  Units: [...(_opCategories.Units || []), ...UNIT_SYMBOLS],
 };
 
 /* -----------------------------------------------------------------

@@ -1563,7 +1563,7 @@ AUR §20, multi-run design).
 
 ### 2026-06-17 19:51 — command-support
 Re-confirmed the JORDAN blocker first (sessions 199/200): the Giac WASM still
-loads under Node from `www/src/vendor/giac/` but `onRuntimeInitialized` does not
+loads under Node from `www/vendor/giac/` but `onRuntimeInitialized` does not
 fire inside the 43–44 s `timeout` budget (probe exits 124 with only
 `required`/`start` logged; with no keepalive node drains the loop and exits 0
 before init). Background warm-up across bash calls re-tested and still does NOT

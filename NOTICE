@@ -8,7 +8,7 @@ This distribution bundles the following third-party components.
 
 -----------------------------------------------------------------
 Giac / Xcas
-  Location:   www/src/vendor/giac/
+  Location:   www/vendor/giac/
   Copyright:  © Bernard Parisse, Renée de Graeve, and contributors
               (Institut Fourier, Université Grenoble Alpes)
   License:    GNU General Public License v3.0 or later (GPL-3.0+)
@@ -16,7 +16,7 @@ Giac / Xcas
   Build:      Prebuilt WebAssembly bundle obtained from
               https://github.com/adriweb/emgiac (Emscripten output:
               giacwasm.js + giacwasm.wasm). See
-              www/src/vendor/giac/README.md for exact provenance.
+              www/vendor/giac/README.md for exact provenance.
 
   Giac is a computer algebra system developed by Bernard Parisse. It
   is the calculation engine of Xcas, and the same engine (with a

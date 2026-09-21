@@ -6,6 +6,14 @@ These are house conventions, not project documentation. Follow them so they don'
 
 **This is a living document.** When the user corrects you on style or working habits — especially something they've said more than once — add it here (and to memory) so it stops needing to be repeated.
 
+## Find and verify
+
+- Boot the browser app with `npm run serve` (port 5050, root `www/`). The Tauri shell is `npm run dev`.
+- Validate one area with `node tests/test-<area>.mjs`. Run `npm test` only when the change crosses modules. The files share one calculator state, so a single file can fail because an earlier file left angle mode or a fit model behind; `tests/flake-bisect.mjs` hunts that.
+- A command lives in `www/src/rpl/ops/<family>.js`. Find it with `rg "register\\('SIN'" www/src/rpl/ops`. The `category` argument is the side-panel group. `www/src/rpl/ops.js` only re-exports the registry.
+- Find tests with `rg "\\bSIN\\b" tests`. Assert labels should name the command.
+- `www/src/build-info.js` is generated. `www/vendor/` is third-party, including the Giac wasm loader; do not search or edit it. `docs/AUTO_PROGRESS.md` and `docs/REVIEW.md` are session diaries, not the spec. `docs/COMMANDS.md` lists only commands that are still missing or out of scope.
+
 ## Code style
 
 - **Match the surrounding file** for indentation, naming, and idiom — mirror it rather than importing your own defaults. (Comments are the exception: keep them sparse even where older code is dense — see below.) There is no Prettier/ESLint/EditorConfig; formatting is by hand.
@@ -20,7 +28,7 @@ These are house conventions, not project documentation. Follow them so they don'
 - **Edit in place; don't recreate.** Prefer modifying an existing file over adding a new one. Don't leave `.bak` copies, commented-out dead code, or "old" alongside "new" — delete what you replace (git is the history).
 - **Keep diffs minimal and scoped** to the task. Don't opportunistically reformat, rename, or "tidy" code you aren't otherwise changing — it buries the real change and breaks `git blame`.
 - **Don't add dependencies, build steps, or frameworks** to solve something the existing code already does. Justify any new dependency explicitly before reaching for it.
-- **Run the test suite before calling work done**, and report the actual result. If tests fail or you skipped a step, say so plainly rather than implying success.
+- **Run the file-scoped test before calling work done** (`node tests/test-<area>.mjs`), and report the actual result. Use `npm test` when the change crosses modules. If tests fail or you skipped a step, say so plainly rather than implying success.
 - **Don't touch generated or gitignored files** by hand — fix the generator instead.
 - **No emojis** in code, comments, or commit messages unless they already exist in the file you're editing.
 

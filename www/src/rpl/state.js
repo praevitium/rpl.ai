@@ -436,6 +436,17 @@ export function toggleComplexMode() {
 
 export const FIT_KINDS = Object.freeze(['LIN', 'LOG', 'EXP', 'PWR']);
 
+export function evalFitModel(model, x) {
+  if (!model || !Number.isFinite(x)) return NaN;
+  switch (model.kind) {
+    case 'LIN': return model.a + model.b * x;
+    case 'LOG': return x > 0 ? model.a + model.b * Math.log(x) : NaN;
+    case 'EXP': return model.a * Math.exp(model.b * x);
+    case 'PWR': return x > 0 ? model.a * Math.pow(x, model.b) : NaN;
+    default: return NaN;
+  }
+}
+
 export function setLastFitModel(kind, a, b) {
   if (!FIT_KINDS.includes(kind)) {
     throw new Error(`setLastFitModel: bad kind ${kind}`);

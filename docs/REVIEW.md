@@ -787,7 +787,7 @@ All currently-open findings are in the `Other` bucket and are
 - **What.** All three doc sites promise realMaxExp is "forwarded to
   `Decimal.set()` so arithmetic that exceeds the configured boundary"
   overflows (to ±Infinity / underflows to 0). But the vendored
-  decimal.js `config()` (`www/src/vendor/decimal.js/decimal.mjs`
+  decimal.js `config()` (`www/vendor/decimal.js/decimal.mjs`
   ~:4198-4239) only honours the keys
   `precision/rounding/toExpNeg/toExpPos/maxE/minE/modulo/crypto` — it
   iterates that fixed list and reads `obj[key]`, so unrecognised keys are

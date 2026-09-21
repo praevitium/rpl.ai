@@ -1,4 +1,4 @@
-import Decimal from '../www/src/vendor/decimal.js/decimal.mjs';
+import Decimal from '../www/vendor/decimal.js/decimal.mjs';
 import { Stack } from '../www/src/rpl/stack.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import {

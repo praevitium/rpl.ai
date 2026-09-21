@@ -1,10 +1,14 @@
 import {
-  isNum, isVar, isNeg, isBin, isFn, parseAlgebra, defaultFnEval,
+  isNum, parseAlgebra, evalAst, defaultFnEval,
 } from '../rpl/algebra.js';
 import {
-  isMatrix, isVector, isList, isSymbolic, isNumber,
-  toRealOrThrow,
+  isMatrix, isVector, isList, isSymbolic,
+  toRealOrThrow, Matrix, Real,
 } from '../rpl/types.js';
+import { evalFitModel } from '../rpl/state.js';
+import { equationToSymbolic, valueToEquationDraft } from './equation-editor.js';
+
+export { evalFitModel };
 
 export const TRACE_COLORS = Object.freeze([
   '#c74440', '#2d70b3', '#388c46', '#6042a6', '#fa7e19', '#000000',
@@ -33,51 +37,36 @@ export function lookupEnv(name, env) {
   return undefined;
 }
 
-export function evalNumeric(ast, env, opts = {}) {
+function plotFnEval(name, args, opts = {}) {
+  if (args.some(a => !Number.isFinite(a))) return NaN;
   const toRad = opts.toRad || (x => x);
   const fromRad = opts.fromRad || (x => x);
-  function ev(n) {
-    if (!n) return NaN;
-    if (isNum(n)) return n.value;
-    if (isVar(n)) {
-      const v = lookupEnv(n.name, env);
-      return Number.isFinite(v) ? v : NaN;
+  if (args.length === 1) {
+    const x = args[0];
+    switch (String(name).toUpperCase()) {
+      case 'SIN': return Math.sin(toRad(x));
+      case 'COS': return Math.cos(toRad(x));
+      case 'TAN': return Math.tan(toRad(x));
+      case 'ASIN': return x >= -1 && x <= 1 ? fromRad(Math.asin(x)) : NaN;
+      case 'ACOS': return x >= -1 && x <= 1 ? fromRad(Math.acos(x)) : NaN;
+      case 'ATAN': return fromRad(Math.atan(x));
+      default: break;
     }
-    if (isNeg(n)) return -ev(n.arg);
-    if (isBin(n)) {
-      const l = ev(n.l);
-      const r = ev(n.r);
-      switch (n.op) {
-        case '+': return l + r;
-        case '-': return l - r;
-        case '*': return l * r;
-        case '/': return r === 0 ? NaN : l / r;
-        case '^': return Math.pow(l, r);
-        default: return NaN;
-      }
-    }
-    if (isFn(n)) {
-      const args = n.args.map(ev);
-      if (args.some(a => !Number.isFinite(a))) return NaN;
-      const name = String(n.name).toUpperCase();
-      if (args.length === 1) {
-        const x = args[0];
-        switch (name) {
-          case 'SIN': return Math.sin(toRad(x));
-          case 'COS': return Math.cos(toRad(x));
-          case 'TAN': return Math.tan(toRad(x));
-          case 'ASIN': return Number.isFinite(x) && x >= -1 && x <= 1 ? fromRad(Math.asin(x)) : NaN;
-          case 'ACOS': return Number.isFinite(x) && x >= -1 && x <= 1 ? fromRad(Math.acos(x)) : NaN;
-          case 'ATAN': return fromRad(Math.atan(x));
-        }
-      }
-      const folded = defaultFnEval(n.name, args);
-      return Number.isFinite(folded) ? folded : NaN;
-    }
-    return NaN;
   }
-  const y = ev(ast);
-  return Number.isFinite(y) ? y : NaN;
+  const folded = defaultFnEval(name, args);
+  return Number.isFinite(folded) ? folded : NaN;
+}
+
+export function evalNumeric(ast, env, opts = {}) {
+  const node = evalAst(
+    ast,
+    (name) => {
+      const v = lookupEnv(name, env);
+      return Number.isFinite(v) ? v : null;
+    },
+    (name, args) => plotFnEval(name, args, opts),
+  );
+  return isNum(node) && Number.isFinite(node.value) ? node.value : NaN;
 }
 
 export function parsePlotExpr(src) {
@@ -288,36 +277,6 @@ export function valuesFromColumn(v, col = 0) {
   return null;
 }
 
-export function evalTraceAtX(t, x, opts = {}) {
-  if (!t || t.enabled === false || !Number.isFinite(x)) return NaN;
-  const angle = opts.angleOpts || {};
-  try {
-    if (t.kind === 'function' && t.expr) {
-      return evalNumeric(parsePlotExpr(t.expr), { x, X: x }, angle);
-    }
-    if (t.kind === 'fit') {
-      if (opts.fitModel) return evalFitModel(opts.fitModel, x);
-      if (t.expr) return evalNumeric(parsePlotExpr(t.expr), { x, X: x }, angle);
-      return NaN;
-    }
-    if ((t.kind === 'scatter' || t.kind === 'bar' || t.kind === 'hist') && t.points) {
-      let bestY = NaN;
-      let bestD = Infinity;
-      for (const p of t.points) {
-        if (!p || !Number.isFinite(p[0]) || !Number.isFinite(p[1])) continue;
-        const d = Math.abs(p[0] - x);
-        if (d < bestD) { bestD = d; bestY = p[1]; }
-      }
-      const snap = opts.snapX;
-      if (Number.isFinite(snap) && bestD > snap) return NaN;
-      return bestY;
-    }
-  } catch {
-    return NaN;
-  }
-  return NaN;
-}
-
 export function histogram(values, binCount) {
   const nums = (values || []).filter(Number.isFinite);
   if (!nums.length) return { edges: [], counts: [], width: 0 };
@@ -336,17 +295,6 @@ export function histogram(values, binCount) {
   const edges = [];
   for (let i = 0; i <= n; i++) edges.push(min + i * width);
   return { edges, counts, width };
-}
-
-export function evalFitModel(model, x) {
-  if (!model || !Number.isFinite(x)) return NaN;
-  switch (model.kind) {
-    case 'LIN': return model.a + model.b * x;
-    case 'LOG': return x > 0 ? model.a + model.b * Math.log(x) : NaN;
-    case 'EXP': return model.a * Math.exp(model.b * x);
-    case 'PWR': return x > 0 ? model.a * Math.pow(x, model.b) : NaN;
-    default: return NaN;
-  }
 }
 
 export function sampleFit(model, xMin, xMax, n) {
@@ -368,47 +316,197 @@ function finitePts(pts) {
   return out;
 }
 
+function pointsSegment(pts) {
+  const finite = finitePts(pts || []);
+  return finite.length ? [finite] : [];
+}
+
+function nearestY(points, x, snapX) {
+  let bestY = NaN;
+  let bestD = Infinity;
+  for (const p of points || []) {
+    if (!p || !Number.isFinite(p[0]) || !Number.isFinite(p[1])) continue;
+    const d = Math.abs(p[0] - x);
+    if (d < bestD) { bestD = d; bestY = p[1]; }
+  }
+  if (Number.isFinite(snapX) && bestD > snapX) return NaN;
+  return bestY;
+}
+
+function expressionFromStack(kind, v) {
+  if (v == null || isMatrix(v) || isVector(v) || isList(v)) return null;
+  const expr = valueToEquationDraft(v);
+  if (!expr) return null;
+  return { kind, expr, exprY: '', label: expr, points: null };
+}
+
+function expressionToStack(t) {
+  if (!t || !t.expr) return [];
+  return [equationToSymbolic(t.expr)];
+}
+
+function pointsFromStack(kind, v) {
+  const points = valueToPoints(v);
+  if (!points || !points.length) return null;
+  return { kind, points, label: kind, expr: '', exprY: '' };
+}
+
+function pointsToStack(t) {
+  if (!t?.points?.length) return [];
+  return [Matrix(t.points.map(([x, y]) => [
+    Real(Number.isFinite(x) ? x : 0),
+    Real(Number.isFinite(y) ? y : 0),
+  ]))];
+}
+
+function histFromStack(v) {
+  const nums = valuesFromColumn(v, 0);
+  if (!nums) return null;
+  const hist = histogram(nums);
+  if (!hist.counts.length) return null;
+  const points = hist.counts.map((count, i) => [
+    (hist.edges[i] + hist.edges[i + 1]) / 2,
+    count,
+  ]);
+  return { kind: 'hist', points, label: 'histogram', expr: '', exprY: '' };
+}
+
+function traceContext(view, opts = {}) {
+  const v = view || defaultView();
+  const raw = Number(opts.width);
+  const width = Math.max(240, Number.isFinite(raw) && raw > 0 ? raw : 240);
+  return {
+    view: v,
+    width,
+    angleOpts: opts.angleOpts || {},
+    thetaRange: opts.thetaRange || { min: 0, max: 2 * Math.PI },
+    tRange: opts.tRange || { min: -10, max: 10 },
+    fitModel: opts.fitModel || null,
+    env: opts.env || {},
+    snapX: opts.snapX,
+  };
+}
+
+function kindSpec(t) {
+  if (!t) return null;
+  return TRACE_KINDS[t.kind] || (!t.kind ? TRACE_KINDS.function : null);
+}
+
+export const TRACE_KINDS = Object.freeze({
+  function: {
+    render: 'stroke',
+    data: false,
+    sample(t, ctx) {
+      if (!t.expr) return [];
+      const view = ctx.view;
+      return sampleFunction(
+        parsePlotExpr(t.expr), view.xmin, view.xmax,
+        Math.max(2, ctx.width | 0), ctx.env || {},
+        { ...(ctx.angleOpts || {}), ySpan: view.ymax - view.ymin },
+      );
+    },
+    evalAt(t, x, ctx) {
+      if (!t.expr) return NaN;
+      return evalNumeric(parsePlotExpr(t.expr), { x, X: x }, ctx.angleOpts || {});
+    },
+    fromStack(v) { return expressionFromStack('function', v); },
+    toStack: expressionToStack,
+  },
+  polar: {
+    render: 'stroke',
+    data: true,
+    sample(t, ctx) {
+      if (!t.expr) return [];
+      const th = ctx.thetaRange || { min: 0, max: 2 * Math.PI };
+      return samplePolar(
+        parsePlotExpr(t.expr), th.min, th.max, 720,
+        ctx.env || {}, ctx.angleOpts || {},
+      );
+    },
+    evalAt() { return NaN; },
+    fromStack(v) { return expressionFromStack('polar', v); },
+    toStack: expressionToStack,
+  },
+  parametric: {
+    render: 'stroke',
+    data: true,
+    sample(t, ctx) {
+      if (!t.expr || !t.exprY) return [];
+      const tr = ctx.tRange || { min: -10, max: 10 };
+      return sampleParametric(
+        parsePlotExpr(t.expr), parsePlotExpr(t.exprY),
+        tr.min, tr.max, 480, ctx.env || {}, ctx.angleOpts || {},
+      );
+    },
+    evalAt() { return NaN; },
+    fromStack(v, below) { return stackValueToTrace(v, 'parametric', below); },
+    toStack(t) {
+      const out = [];
+      if (t.expr) out.push(equationToSymbolic(t.expr));
+      if (t.exprY) out.push(equationToSymbolic(t.exprY));
+      return out;
+    },
+  },
+  scatter: {
+    render: 'points',
+    data: true,
+    sample(t) { return pointsSegment(t.points); },
+    evalAt(t, x, ctx) { return nearestY(t.points, x, ctx.snapX); },
+    fromStack(v) { return pointsFromStack('scatter', v); },
+    toStack: pointsToStack,
+  },
+  bar: {
+    render: 'bars',
+    data: true,
+    sample(t) { return pointsSegment(t.points); },
+    evalAt(t, x, ctx) { return nearestY(t.points, x, ctx.snapX); },
+    fromStack(v) { return pointsFromStack('bar', v); },
+    toStack: pointsToStack,
+  },
+  hist: {
+    render: 'bars',
+    data: true,
+    sample(t) { return pointsSegment(t.points); },
+    evalAt(t, x, ctx) { return nearestY(t.points, x, ctx.snapX); },
+    fromStack: histFromStack,
+    toStack: pointsToStack,
+  },
+  fit: {
+    render: 'stroke',
+    data: false,
+    sample(t, ctx) {
+      const model = t.model || ctx.fitModel;
+      if (!model) return [];
+      return sampleFit(model, ctx.view.xmin, ctx.view.xmax, Math.max(2, ctx.width | 0));
+    },
+    evalAt(t, x, ctx) {
+      const model = t.model || ctx.fitModel;
+      if (model) return evalFitModel(model, x);
+      if (!t.expr) return NaN;
+      return evalNumeric(parsePlotExpr(t.expr), { x, X: x }, ctx.angleOpts || {});
+    },
+    fromStack(v) { return expressionFromStack('fit', v); },
+    toStack: expressionToStack,
+  },
+});
+
+export function sampleTrace(t, view, opts = {}) {
+  const kind = kindSpec(t);
+  if (!kind) return [];
+  return kind.sample(t, traceContext(view, opts));
+}
+
 function isDataTrace(t) {
-  if (Array.isArray(t.points) && t.points.length) return true;
-  const k = t.kind;
-  return k === 'polar' || k === 'parametric' || k === 'scatter'
-    || k === 'bar' || k === 'hist';
+  return !!kindSpec(t)?.data;
 }
 
 export function sampleTraceForFit(t, view, opts = {}) {
   if (!t) return [];
-  if (Array.isArray(t.points) && t.points.length) return finitePts(t.points);
-
-  const width = Math.max(240, Number(opts.width) || 240);
-  const angle = opts.angleOpts || {};
-  const v = view || defaultView();
   try {
-    if ((t.kind === 'function' || !t.kind) && t.expr) {
-      const ast = parsePlotExpr(t.expr);
-      return finitePts(sampleFunction(ast, v.xmin, v.xmax, width, {}, {
-        ...angle,
-        ySpan: v.ymax - v.ymin,
-      }).flat());
-    }
-    if (t.kind === 'fit' && opts.fitModel) {
-      return finitePts(sampleFit(opts.fitModel, v.xmin, v.xmax, width).flat());
-    }
-    if (t.kind === 'polar' && t.expr) {
-      const ast = parsePlotExpr(t.expr);
-      const th = opts.thetaRange || { min: 0, max: 2 * Math.PI };
-      return finitePts(samplePolar(ast, th.min, th.max, 720, {}, angle).flat());
-    }
-    if (t.kind === 'parametric' && t.expr && t.exprY) {
-      const tr = opts.tRange || { min: -10, max: 10 };
-      return finitePts(sampleParametric(
-        parsePlotExpr(t.expr), parsePlotExpr(t.exprY),
-        tr.min, tr.max, 480, {}, angle,
-      ).flat());
-    }
+    return finitePts(sampleTrace(t, view, opts).flat());
   } catch {
     return [];
   }
-  return [];
 }
 
 export function fitViewToTraces(traces, view, opts = {}) {
@@ -430,6 +528,43 @@ export function fitViewToTraces(traces, view, opts = {}) {
   return { xmin: v.xmin, xmax: v.xmax, ymin: v.ymin, ymax: v.ymax };
 }
 
-export function symbolicToAst(v) {
-  return isSymbolic(v) ? v.expr : null;
+export function evalTraceAtX(t, x, opts = {}) {
+  if (!t || t.enabled === false || !Number.isFinite(x)) return NaN;
+  const kind = TRACE_KINDS[t.kind];
+  if (!kind) return NaN;
+  try {
+    return kind.evalAt(t, x, opts);
+  } catch {
+    return NaN;
+  }
+}
+
+export function stackValueToTrace(v, preferredKind = 'function', below = null) {
+  if (isMatrix(v) || isVector(v) || isList(v)) {
+    const kind = (preferredKind === 'bar' || preferredKind === 'hist')
+      ? preferredKind : 'scatter';
+    return TRACE_KINDS[kind].fromStack(v);
+  }
+  if (preferredKind === 'parametric') {
+    if (!isSymbolic(v)) return expressionFromStack('parametric', v);
+    const y = valueToEquationDraft(v);
+    if (!y) return null;
+    const xExpr = isSymbolic(below) ? (valueToEquationDraft(below) || 'T') : 'T';
+    return {
+      kind: 'parametric',
+      expr: xExpr,
+      exprY: y,
+      label: `(${xExpr}, ${y})`,
+      points: null,
+    };
+  }
+  const kind = preferredKind === 'polar' ? 'polar' : 'function';
+  return TRACE_KINDS[kind].fromStack(v);
+}
+
+export function traceToStackValues(t) {
+  if (!t) return [];
+  const kind = TRACE_KINDS[t.kind];
+  if (!kind) return [];
+  return kind.toStack(t);
 }
