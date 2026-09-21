@@ -698,16 +698,16 @@ import { readFileSync } from 'node:fs';
   // A worker LLM (no `endpoint`) whose id IS in MODELS resolves that
   // entry's real contextTokens, not the 4096 fallback.
   const worker = { loadedModelId: 'Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC' };
-  assert(activeContextTokens(worker) === 32768,
+  assert(activeContextTokens(worker) === 4096,
          'activeContextTokens resolves an in-catalog worker model contextTokens');
-  assert(effectiveBudget(worker) === 32768 * 4 - 4000,
+  assert(effectiveBudget(worker) === 4096 * 4 - 4000,
          'effectiveBudget tracks an in-catalog worker model window');
 
   // The remote branch is gated on a STRING `endpoint`; a worker LLM that
   // happens to carry a contextTokens field still goes through the catalog,
   // so that stray field is ignored.
   const ducked = { loadedModelId: 'Qwen3-0.6B-q4f16_1-MLC', contextTokens: 999 };
-  assert(activeContextTokens(ducked) === 32768,
+  assert(activeContextTokens(ducked) === 4096,
          'activeContextTokens ignores a worker LLM contextTokens field (no endpoint → catalog wins)');
 
   // A window smaller than the response reserve floors the budget at 0

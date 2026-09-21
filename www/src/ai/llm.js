@@ -110,7 +110,7 @@ export class LLM {
       // WORKER_VERSION below is the surest way to force a fresh
       // fetch on the next full page reload.  Bump this any time
       // llm-worker.js changes in a way users need to see.
-      const WORKER_VERSION = '14';
+      const WORKER_VERSION = '15';
       const workerUrl = new URL('./llm-worker.js', import.meta.url);
       workerUrl.searchParams.set('v', WORKER_VERSION);
       this._worker = new Worker(workerUrl, { type: 'module' });

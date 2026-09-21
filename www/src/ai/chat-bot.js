@@ -734,16 +734,14 @@ const STARTER_CHIPS = [
    ------------------------------------------------------------------ */
 const MODELS = [
   // Code-tuned variants
-  { id: 'Qwen2.5-Coder-0.5B-Instruct-q4f16_1-MLC',    label: 'Qwen2.5 Coder 0.5B',     size: '~400 MB',  contextTokens: 32768, note: 'Smallest — fast but weakest reasoning; code-tuned' },
-  { id: 'Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC',    label: 'Qwen2.5 Coder 1.5B',     size: '~1.3 GB',  contextTokens: 32768, note: 'Sweet spot for low-end GPUs — strong at structured output', isDefault: true },
-
-  // Original (instruction-tuned) Qwen models, 500 MB – 2 GB
-  { id: 'Qwen3-0.6B-q4f16_1-MLC',                     label: 'Qwen3 0.6B',             size: '~500 MB',  contextTokens: 32768, note: 'Newer Qwen generation — tiny' },
-  { id: 'Qwen3.5-0.8B-q4f16_1-MLC',                   label: 'Qwen3.5 0.8B',           size: '~650 MB',  contextTokens: 32768, note: 'Latest Qwen3.5 — small' },
-  { id: 'Qwen2-1.5B-Instruct-q4f16_1-MLC',            label: 'Qwen2 1.5B',             size: '~1.0 GB',  contextTokens: 32768, note: 'Original Qwen2 instruction-tuned' },
-  { id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',          label: 'Qwen2.5 1.5B',           size: '~1.0 GB',  contextTokens: 32768, note: 'Qwen2.5 base instruct (non-Coder)' },
-  { id: 'Qwen3-1.7B-q4f16_1-MLC',                     label: 'Qwen3 1.7B',             size: '~1.4 GB',  contextTokens: 32768, note: 'Newer Qwen generation, mid-size' },
-  { id: 'Qwen3.5-2B-q4f16_1-MLC',                     label: 'Qwen3.5 2B',             size: '~1.6 GB',  contextTokens: 32768, note: 'Latest Qwen3.5 — largest under 2 GB' },
+  { id: 'Qwen2.5-Coder-0.5B-Instruct-q4f16_1-MLC',    label: 'Qwen2.5 Coder 0.5B',     size: '~400 MB',  contextTokens: 4096, note: 'Smallest — fast but weakest reasoning; code-tuned' },
+  { id: 'Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC',    label: 'Qwen2.5 Coder 1.5B',     size: '~1.0 GB',  contextTokens: 4096, note: 'Default — code-tuned, fits the prebuilt 4K library', isDefault: true },
+  { id: 'Qwen3-0.6B-q4f16_1-MLC',                     label: 'Qwen3 0.6B',             size: '~500 MB',  contextTokens: 4096, note: 'Newer Qwen generation — tiny' },
+  { id: 'Qwen2.5-Math-1.5B-Instruct-q4f16_1-MLC',     label: 'Qwen2.5 Math 1.5B',      size: '~1.1 GB',  contextTokens: 4096, note: 'Math-tuned — best small model for calculator work' },
+  { id: 'Qwen2-1.5B-Instruct-q4f16_1-MLC',            label: 'Qwen2 1.5B',             size: '~1.0 GB',  contextTokens: 4096, note: 'Original Qwen2 instruction-tuned' },
+  { id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',          label: 'Qwen2.5 1.5B',           size: '~1.0 GB',  contextTokens: 4096, note: 'Qwen2.5 base instruct (non-Coder)' },
+  { id: 'Qwen3-1.7B-q4f16_1-MLC',                     label: 'Qwen3 1.7B',             size: '~1.4 GB',  contextTokens: 4096, note: 'Newer Qwen generation, mid-size' },
+  { id: 'Qwen3-4B-q4f16_1-MLC',                       label: 'Qwen3 4B',               size: '~2.6 GB',  contextTokens: 4096, note: 'Strongest model that still fits a laptop GPU' },
 ];
 
 /** Tool-name aliases for common synonyms small models reach for.
@@ -1975,9 +1973,18 @@ export class ChatBot {
     try {
       await this._llm.load(modelId, { contextTokens });
     } catch (err) {
+      this._surfaceLoadFailure();
+    }
+  }
+
+  _surfaceLoadFailure() {
+    if (this._loadBtn) {
       this._loadBtn.disabled = false;
       this._loadBtn.textContent = 'Retry';
+      this._loadBtn.classList.remove('hidden');
     }
+    if (this._switchModelBtn) this._switchModelBtn.classList.remove('hidden');
+    this._showPicker();
   }
 
   /** Connect to a configured Ollama-compatible HTTP endpoint.  Mirrors
@@ -2001,8 +2008,7 @@ export class ChatBot {
     try {
       await this._llm.load(cfg.model);
     } catch (err) {
-      this._loadBtn.disabled = false;
-      this._loadBtn.textContent = 'Retry';
+      this._surfaceLoadFailure();
     }
   }
 
@@ -2052,10 +2058,7 @@ export class ChatBot {
       this._statusEl.textContent = `✗ ${msg || 'Error'}`;
       this._statusEl.className = 'cb-status cb-status-error';
       this._progressEl.classList.add('hidden');
-      this._loadBtn.disabled = false;
-      this._loadBtn.textContent = 'Retry';
-      this._loadBtn.classList.remove('hidden');
-      this._switchModelBtn.classList.remove('hidden');
+      this._surfaceLoadFailure();
     }
   }
 

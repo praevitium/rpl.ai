@@ -45,7 +45,18 @@
 // this, verify the new web-llm's `modelVersion` constant in
 //   https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@<ver>/lib/config.js
 // and check that the resulting .wasm URLs return 200.
-import { CreateMLCEngine } from 'https://esm.run/@mlc-ai/web-llm@0.2.82';
+import { CreateMLCEngine, prebuiltAppConfig } from 'https://esm.run/@mlc-ai/web-llm@0.2.82';
+
+function engineConfig(initProgressCallback) {
+  const config = {
+    appConfig: {
+      ...prebuiltAppConfig,
+      useIndexedDBCache: typeof caches === 'undefined',
+    },
+  };
+  if (initProgressCallback) config.initProgressCallback = initProgressCallback;
+  return config;
+}
 
 // eslint-disable-next-line no-console
 console.log('%c[llm-worker] BOOT — runtime:', 'color:#67e8f9;font-weight:bold',
@@ -122,7 +133,7 @@ async function loadModel({ modelId, contextTokens }) {
     // other ChatOptions (sliding_window_size, attention_sink_size,
     // sampling defaults), add them to the chatOpts object below.
     const chatOpts = contextTokens ? { context_window_size: contextTokens } : undefined;
-    engine = await CreateMLCEngine(modelId, { initProgressCallback }, chatOpts);
+    engine = await CreateMLCEngine(modelId, engineConfig(initProgressCallback), chatOpts);
     // Save the config so the silent-recreation workaround in
     // generate() can rebuild the engine with identical settings.
     // initProgressCallback is intentionally NOT saved — recreations
@@ -180,7 +191,7 @@ async function recreateEngineSilently() {
   }
   const { modelId, contextTokens } = _lastLoadConfig;
   const chatOpts = contextTokens ? { context_window_size: contextTokens } : undefined;
-  engine = await CreateMLCEngine(modelId, {}, chatOpts);
+  engine = await CreateMLCEngine(modelId, engineConfig(), chatOpts);
   const ms = ((typeof performance !== 'undefined' && performance.now)
     ? performance.now() : Date.now()) - t0;
   // eslint-disable-next-line no-console
