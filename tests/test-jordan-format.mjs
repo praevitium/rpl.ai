@@ -1,14 +1,12 @@
-import { eigenTag, jordanChain, charSpaceList, eigenvalueArray } from '../www/src/rpl/jordan-format.js';
-import { giac } from '../www/src/rpl/cas/giac-engine.mjs';
-import { lookup } from '../www/src/rpl/ops.js';
-import { Stack } from '../www/src/rpl/stack.js';
-import { setCasVx, resetCasVx } from '../www/src/rpl/state.js';
-import { Integer, Vector, Matrix, isList, isVector, isSymbolic, isTagged } from '../www/src/rpl/types.js';
+import { eigenTag, jordanChain, charSpaceList, eigenvalueArray, spacesFromJordan } from '../www/src/rpl/jordan-format.js';
+import { format } from '../www/src/rpl/formatter.js';
+import { Integer, Vector, Real, Rational, Complex, isList, isVector, isTagged } from '../www/src/rpl/types.js';
 import { assert, assertThrows } from './helpers.mjs';
 
 /* JORDAN level-2 / level-1 output shaping (HP50 AUR §3-122).  Pure,
-   CAS-independent builders — the eigendata comes from Giac at the op
-   layer; these assemble the tagged-space List the AUR mandates. */
+   CAS-independent builders.  spacesFromJordan turns a transition
+   matrix and a Jordan form into chains; the other builders wrap those
+   chains into the tagged-space list and the eigenvalue array. */
 
 const vec = (...ns) => Vector(ns.map((n) => Integer(n)));
 
@@ -82,29 +80,63 @@ const vec = (...ns) => Vector(ns.map((n) => Integer(n)));
 }
 
 {
-  setCasVx('x');
-  giac._clear();
-  giac._setFixtures({
-    'pmin([[1,1],[1,1]],x)': 'x*(x-2)',
-    'charpoly([[1,1],[1,1]],x)': 'x*(x-2)',
-    'eigenvects([[1,1],[1,1]])': '[[2,1,[[1,1]]],[0,1,[[-1,1]]]]',
-  });
-  const s = new Stack();
-  s.push(Matrix([
-    [Integer(1n), Integer(1n)],
-    [Integer(1n), Integer(1n)],
-  ]));
-  lookup('JORDAN').fn(s);
-  assert(s.depth === 4, 'JORDAN: four results');
-  const evals = s.peek(1);
-  const spaces = s.peek(2);
-  assert(isVector(evals) && evals.items.length === 2, 'JORDAN: eigenvalue array has one entry per space');
-  assert(isList(spaces) && spaces.items.length === 2, 'JORDAN: one tagged space per eigenvector');
-  const tags = spaces.items.map(item => item.tag).sort();
-  assert(tags[0] === '0' && tags[1] === '2', 'JORDAN: spaces tagged by 0 and 2');
-  assert(spaces.items.every(item => item.type === 'tagged' && isVector(item.value) && item.value.items.length === 2),
-    'JORDAN: each space is a 2-vector');
-  assert(isSymbolic(s.peek(3)) && isSymbolic(s.peek(4)), 'JORDAN: charpoly and minpoly are symbolic');
-  giac._clear();
-  resetCasVx();
+  const built = spacesFromJordan(
+    [[Integer(1), Integer(-1)], [Integer(1), Integer(1)]],
+    [[Integer(2), Integer(0)], [Integer(0), Integer(0)]],
+  );
+  assert(built.spaces.length === 2, 'spacesFromJordan: one space per 1×1 block');
+  assert(built.spaces.every(entry => isVector(entry.space)),
+    'spacesFromJordan: a single eigenvector stays a vector');
+  assert(built.spaces[0].tag === '2' && built.spaces[1].tag === '0',
+    'spacesFromJordan: tags are the eigenvalues');
+  assert(built.values.length === 2, 'spacesFromJordan: one eigenvalue per 1×1 block');
+
+  const block = spacesFromJordan(
+    [[Integer(1), Integer(0)], [Integer(0), Integer(1)]],
+    [[Integer(0), Integer(1)], [Integer(0), Integer(0)]],
+  );
+  assert(block.spaces.length === 1 && block.spaces[0].tag === '0',
+    'spacesFromJordan: one space for a Jordan block');
+  assert(isList(block.spaces[0].space), 'spacesFromJordan: a longer block is a chain');
+  const chain = block.spaces[0].space;
+  assert(isVector(chain.items[0]) && !isTagged(chain.items[0]),
+    'spacesFromJordan: generalized eigenvector stays bare');
+  assert(isTagged(chain.items[1]) && chain.items[1].tag === 'Eigen',
+    'spacesFromJordan: chain ends on the eigenvector');
+  assert(block.values.length === 2 && block.values.every(v => v === block.values[0]),
+    'spacesFromJordan: algebraic multiplicity repeats the eigenvalue');
+
+  const split = spacesFromJordan(
+    [[Integer(1), Integer(0)], [Integer(0), Integer(1)]],
+    [[Integer(2), Integer(0)], [Integer(0), Integer(2)]],
+  );
+  assert(split.spaces.length === 1 && isList(split.spaces[0].space)
+    && split.spaces[0].space.items.length === 2,
+    'spacesFromJordan: equal eigenvalues with no coupling are two chains');
+  assert(split.values.length === 2, 'spacesFromJordan: repeated eigenvalue keeps both copies');
+
+  const tagged = spacesFromJordan(
+    [[Real(2), Real(0)], [Real(0), Real(1)]],
+    [[Real(3), Real(0)], [Real(0), Real(0)]],
+  );
+  assert(tagged.spaces[0].tag === '3' && tagged.spaces[1].tag === '0',
+    'spacesFromJordan: integral reals tag as integers');
+
+  assert(spacesFromJordan([[Integer(1)]], [[Integer(1), Integer(0)]]) === null,
+    'spacesFromJordan: ragged Jordan form is rejected');
+
+  const ratio = spacesFromJordan(
+    [[Rational(1n, 1n)]],
+    [[Rational(1n, 2n)]],
+  );
+  assert(ratio.spaces[0].tag === format(Rational(1n, 2n)),
+    'spacesFromJordan: rational eigenvalue uses its display form');
+  const imag = spacesFromJordan(
+    [[Complex(1, 0)]],
+    [[Complex(0, 1)]],
+  );
+  assert(imag.spaces[0].tag === format(Complex(0, 1)),
+    'spacesFromJordan: complex eigenvalue uses its display form');
+  assert(spacesFromJordan([[{ type: 'nope' }]], [[{ type: 'nope' }]]) === null,
+    'spacesFromJordan: an unprintable eigenvalue is rejected');
 }

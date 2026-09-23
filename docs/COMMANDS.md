@@ -29,8 +29,10 @@ touched the row, and any known caveats worth carrying forward.
 - **Partially shipped (~): 0**
 - **Not yet implemented (✗): 0** — `JORDAN` ships. It pushes the
   minimal polynomial, the characteristic polynomial, the eigenvalue-tagged
-  characteristic spaces, and the eigenvalue array. The spaces come from
-  Giac `eigenvects`.
+  characteristic spaces, and the eigenvalue array. Spaces come from
+  Giac `jordan`: a single eigenvector stays a vector, and a longer
+  block is a Jordan chain. The eigenvalue array repeats by algebraic
+  multiplicity.
 - **Will-not-support (by design): 9 menu groups** (see below).
 
 Shipped commands are the `register` calls under `www/src/rpl/ops/`.

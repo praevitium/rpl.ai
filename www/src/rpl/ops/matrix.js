@@ -3,7 +3,7 @@ import { RPLError } from '../stack.js';
 import { nextPrngInt9, getCasVx } from '../state.js';
 import { giac } from '../cas/giac-engine.mjs';
 import { giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
-import { charSpaceList, eigenvalueArray } from '../jordan-format.js';
+import { charSpaceList, eigenvalueArray, spacesFromJordan } from '../jordan-format.js';
 import { register, OPS } from './registry.js';
 import { _astToRplValue, _coefArrToSymbolicX, _colCompose, _colDecompose, _decimalFrobeniusNorm, _fromArrayOp, _fromVecOp, _indexAsInt, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _matrixToGiacStr, _nFromIntegerArg, _popSquareMatrix, _rowCompose, _rowDecompose, _scalarBinary, _scalarSum, _toArrayOp, _toV2Op, _toV3Op } from './internal.js';
 
@@ -1929,26 +1929,53 @@ register('EGV', (s) => {
 }, { category: 'Vectors / matrices', categoryOrder: 48, label: "EGV" });
 
 
-function eigenvalueTag(value) {
-  if (isInteger(value)) return String(value.value);
-  if (isReal(value)) return value.value.toString();
-  return String(value?.value ?? value);
+function giacMatrixRows(raw) {
+  const rows = splitGiacList(raw);
+  if (!rows || rows.length === 0) return null;
+  const out = [];
+  for (const rowStr of rows) {
+    const cols = splitGiacList(rowStr);
+    if (!cols) return null;
+    try {
+      out.push(cols.map((cell) => _astToRplValue(giacToAst(cell))));
+    } catch {
+      return null;
+    }
+  }
+  return out;
 }
 
-function eigenvectGroup(groupStr) {
-  const parts = splitGiacList(groupStr);
-  if (!parts || parts.length < 3) return null;
-  const lambda = _astToRplValue(giacToAst(parts[0]));
-  const vectors = splitGiacList(parts[2]);
-  if (!vectors) return null;
-  return {
-    lambda,
-    vectors: vectors.map((vecStr) => {
-      const comps = splitGiacList(vecStr);
-      if (!comps) throw new RPLError('Bad argument value');
-      return Vector(comps.map((c) => _astToRplValue(giacToAst(c))));
-    }),
-  };
+function topLevelParts(text) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '(' || c === '[' || c === '{') depth++;
+    else if (c === ')' || c === ']' || c === '}') depth--;
+    else if (c === ',' && depth === 0) {
+      parts.push(text.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  parts.push(text.slice(start).trim());
+  return parts.filter((part) => part !== '');
+}
+
+function jordanFactors(raw) {
+  const text = String(raw).trim();
+  const sequence = topLevelParts(text);
+  if (sequence.length === 2) {
+    const transition = giacMatrixRows(sequence[0]);
+    const form = giacMatrixRows(sequence[1]);
+    if (transition && form) return { transition, form };
+  }
+  const listed = splitGiacList(text);
+  if (!listed || listed.length !== 2) return null;
+  const transition = giacMatrixRows(listed[0]);
+  const form = giacMatrixRows(listed[1]);
+  if (!transition || !form) return null;
+  return { transition, form };
 }
 
 register('JORDAN', (s) => {
@@ -1958,23 +1985,14 @@ register('JORDAN', (s) => {
   const matStr = _matrixToGiacStr(matrix);
   const pmin = Symbolic(giacToAst(giac.caseval(`pmin(${matStr},${vx})`)));
   const pcar = Symbolic(giacToAst(giac.caseval(`charpoly(${matStr},${vx})`)));
-  const groups = splitGiacList(giac.caseval(`eigenvects(${matStr})`));
-  if (!groups) throw new RPLError('Bad argument value');
-  const spaces = [];
-  const values = [];
-  for (const group of groups) {
-    const parsed = eigenvectGroup(group);
-    if (!parsed || parsed.vectors.length === 0) throw new RPLError('Bad argument value');
-    const tag = eigenvalueTag(parsed.lambda);
-    for (const vec of parsed.vectors) {
-      spaces.push({ tag, space: vec });
-      values.push(parsed.lambda);
-    }
-  }
+  const factors = jordanFactors(giac.caseval(`jordan(${matStr})`));
+  if (!factors) throw new RPLError('Bad argument value');
+  const built = spacesFromJordan(factors.transition, factors.form);
+  if (!built) throw new RPLError('Bad argument value');
   s.push(pmin);
   s.push(pcar);
-  s.push(charSpaceList(spaces));
-  s.push(eigenvalueArray(values));
+  s.push(charSpaceList(built.spaces));
+  s.push(eigenvalueArray(built.values));
 }, { category: 'Vectors / matrices', categoryOrder: 50, label: 'JORDAN' });
 
 

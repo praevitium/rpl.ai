@@ -29,12 +29,12 @@ weights go through IndexedDB. The picker stays open after a failed load.
 Qwen3.5 ids that WebLLM does not ship are replaced by Qwen2.5 Math 1.5B
 and Qwen3 4B. `DIFFEQ` plots `dy/dx = f(x, y)`. `JORDAN` returns the
 minimal polynomial, the characteristic polynomial, the tagged
-eigenspaces, and the eigenvalues.
+characteristic spaces (a vector, or Jordan chains when the block
+is longer), and the eigenvalues.
 
 ### Known limitations carried into v0.4.0
 
-Giac still runs on the main thread. `JORDAN` reports eigenspaces from
-`eigenvects`, not generalized chains for a defective matrix.
+Giac still runs on the main thread.
 
 ---
 

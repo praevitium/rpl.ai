@@ -44,16 +44,13 @@ The substrate the roadmap builds on:
 
 ### 1. Close the last command-support gap cluster
 
-The command surface is effectively complete: 449 HP50 ops are registered
-and `COMMANDS.md` carries a single remaining `✗` — **JORDAN**.  Its
-CAS-independent output-shaping core already ships and is tested
-(`www/src/rpl/jordan-format.js`, `tests/test-jordan-format.mjs`); what
-remains is registering the op in `www/src/rpl/ops.js` and wiring those
-builders to Giac's eigenvalues / multiplicities / characteristic-spaces /
-Jordan-chain output (levels 3/4 reuse the already-shipped `PCAR` and
-`PMINI`).  This is deferred only until Giac's `eigenvects` / Jordan-chain
-output shape is confirmed against the real CAS, so the fixtures match
-reality rather than a guess.
+The command surface is complete: 449 HP50 ops are registered and
+`COMMANDS.md` has no remaining `✗`. `JORDAN` pushes the minimal
+polynomial, the characteristic polynomial, the eigenvalue-tagged
+characteristic spaces, and the eigenvalue array. A single eigenvector
+stays a vector; a longer block, or several chains for one eigenvalue,
+is a Jordan chain. Levels 3 and 4 are the same polynomials as `PCAR`
+and `PMINI`.
 
 Everything earlier drafts of this roadmap listed as pending has since
 landed — `CHARPOL` / `EGVL` / `EGV`, `RSD`, `GREDUCE`, `MULTMOD`, the
