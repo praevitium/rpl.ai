@@ -1,8 +1,8 @@
 import {
   TRACE_COLORS, TRACE_KINDS, nextTraceColor, defaultView, zoomView, panView,
-  worldToPixel, pixelToWorld, niceTicks, parsePlotExpr,
+  worldToPixel, pixelToWorld, niceTicks,
   sampleTrace, fitViewToTraces, evalTraceAtX,
-  stackValueToTrace, traceToStackValues,
+  stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs,
 } from './plot-engine.js';
 import { escapeHtml } from './display.js';
 import { isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
@@ -192,42 +192,36 @@ export class GraphView {
     this.el.querySelectorAll('.gr-modes button').forEach(b => {
       b.classList.toggle('active', b.dataset.kind === kind);
     });
-    const twoField = kind === 'parametric' || kind === 'diffeq';
-    this._addY.classList.toggle('hidden', !twoField);
-    this._addX.placeholder =
-      kind === 'polar' ? '1 + COS(θ)' :
-      kind === 'parametric' ? 'COS(T)' :
-      kind === 'diffeq' ? 'X+Y' :
-      kind === 'function' ? 'SIN(X)' :
-      'data from stack / ΣDAT';
-    this._addY.placeholder = kind === 'diffeq' ? '0' : 'SIN(T)';
+    const spec = TRACE_KINDS[kind];
+    if (spec) {
+      const fields = spec.fields || [];
+      const yField = fields.find(f => f.key === 'exprY');
+      this._addY.classList.toggle('hidden', !yField);
+      this._addX.placeholder = fields[0]?.placeholder || 'data from stack / ΣDAT';
+      if (yField) {
+        this._addY.placeholder = yField.placeholder;
+        this._addY.setAttribute('aria-label', yField.aria);
+      }
+    }
     this._renderExprs();
   }
 
   addFromInputs() {
     const kind = this._kind;
-    if (kind === 'scatter' || kind === 'bar' || kind === 'hist') {
+    const spec = TRACE_KINDS[kind];
+    if (!spec?.fields?.length) {
       this.loadData(kind);
       return;
     }
     const expr = this._addX.value.trim();
     const exprY = this._addY.value.trim();
     if (!expr) return;
-    try {
-      parsePlotExpr(expr);
-      if (kind === 'parametric') parsePlotExpr(exprY);
-      if (kind === 'diffeq' && exprY) parsePlotExpr(exprY);
-    } catch (e) {
-      this.app?.entry?.flashError?.({ message: `Graph: ${e.message}` });
+    const err = traceInputError(kind, { expr, exprY }, { adding: true });
+    if (err) {
+      this.app?.entry?.flashError?.({ message: `Graph: ${err}` });
       return;
     }
-    this._addTrace({
-      kind,
-      expr,
-      exprY: kind === 'parametric' || kind === 'diffeq' ? (exprY || '0') : '',
-      label: kind === 'parametric' ? `(${expr}, ${exprY})`
-        : kind === 'diffeq' ? `y'=${expr}` : expr,
-    }, { fit: kind === 'polar' || kind === 'parametric' || kind === 'diffeq' });
+    this._addTrace(traceFromInputs(kind, expr, exprY), { fit: !!spec.fitOnAdd });
     this._addX.value = '';
     this._addY.value = '';
   }
@@ -278,19 +272,25 @@ export class GraphView {
       this.draw();
       return;
     }
-    if (kind === 'function' || kind === 'polar' || kind === 'parametric' || kind === 'diffeq') {
+    const spec = TRACE_KINDS[kind];
+    if (spec?.fields?.length) {
       const top = stack?.peek?.();
       if (!isSymbolic(top)) {
         this.app?.entry?.flashError?.({ message: `Graph: ${kind} expects a Symbolic on the stack` });
         return;
       }
       const below = stack.depth >= 2 ? stack.peek(2) : null;
-      const spec = stackValueToTrace(top, kind, below);
-      if (!spec) {
+      const built = stackValueToTrace(top, kind, below);
+      if (!built) {
         this.app?.entry?.flashError?.({ message: `Graph: ${kind} expects a Symbolic on the stack` });
         return;
       }
-      this._addTrace(spec, { fit: kind === 'polar' || kind === 'parametric' });
+      const err = traceInputError(kind, built, { adding: true });
+      if (err) {
+        this.app?.entry?.flashError?.({ message: `Graph: ${err}` });
+        return;
+      }
+      this._addTrace(built, { fit: !!spec.fitOnAdd });
       return;
     }
     const top = stack?.peek?.();
@@ -311,6 +311,11 @@ export class GraphView {
     const spec = stackValueToTrace(v, this._kind, below);
     if (!spec) {
       this.app?.entry?.flashError?.({ message: 'Graph: stack value is not an expression or data' });
+      return true;
+    }
+    const err = traceInputError(spec.kind, spec, { adding: true });
+    if (err) {
+      this.app?.entry?.flashError?.({ message: `Graph: ${err}` });
       return true;
     }
     this.setKind(spec.kind);
@@ -367,9 +372,12 @@ export class GraphView {
   }
 
   _hoverOpts() {
+    const rect = this._canvas.getBoundingClientRect();
     return {
       angleOpts: angleOpts(),
       snapX: (this.view.xmax - this.view.xmin) * 0.03,
+      view: this.view,
+      width: rect.width || 240,
     };
   }
 
@@ -433,14 +441,10 @@ export class GraphView {
     if (!t) return;
     if (input.dataset.field === 'y') t.exprY = input.value;
     else t.expr = input.value;
-    t.label = t.kind === 'parametric' ? `(${t.expr}, ${t.exprY})` : t.expr;
-    try {
-      if (t.expr.trim()) parsePlotExpr(t.expr);
-      if (t.kind === 'parametric' && t.exprY.trim()) parsePlotExpr(t.exprY);
-      this._readout.textContent = '';
-    } catch (e) {
-      this._readout.textContent = e.message;
-    }
+    const spec = TRACE_KINDS[t.kind];
+    if (spec?.label) t.label = spec.label(t);
+    const err = traceInputError(t.kind, t);
+    this._readout.textContent = err || '';
     this.draw();
   }
 
@@ -472,19 +476,19 @@ export class GraphView {
 
   _renderExprs() {
     this._exprs.innerHTML = this.traces.map(t => {
-      const editable = t.kind === 'function' || t.kind === 'polar' || t.kind === 'parametric';
-      const body = editable
-        ? (t.kind === 'parametric'
-          ? `<input class="gr-expr" data-trace="${t.id}" data-field="x"
-                    spellcheck="false" aria-label="X expression"
-                    value="${escapeHtml(t.expr)}" placeholder="COS(T)" />
-             <span class="gr-param-sep">,</span>
-             <input class="gr-expr" data-trace="${t.id}" data-field="y"
-                    spellcheck="false" aria-label="Y expression"
-                    value="${escapeHtml(t.exprY)}" placeholder="SIN(T)" />`
-          : `<input class="gr-expr" data-trace="${t.id}" data-field="x"
-                    spellcheck="false" aria-label="Expression"
-                    value="${escapeHtml(t.expr)}" placeholder="${t.kind === 'polar' ? '1 + COS(θ)' : 'SIN(X)'}" />`)
+      const spec = TRACE_KINDS[t.kind];
+      const fields = spec?.editable ? (spec.fields || []) : [];
+      const body = fields.length
+        ? fields.map((field, i) => {
+            const sep = i > 0 && spec.fieldSep
+              ? `<span class="gr-param-sep">${escapeHtml(spec.fieldSep)}</span>`
+              : '';
+            const key = field.key === 'exprY' ? 'y' : 'x';
+            const value = field.key === 'exprY' ? t.exprY : t.expr;
+            return `${sep}<input class="gr-expr" data-trace="${t.id}" data-field="${key}"
+                    spellcheck="false" aria-label="${escapeHtml(field.aria)}"
+                    value="${escapeHtml(value)}" placeholder="${escapeHtml(field.placeholder)}" />`;
+          }).join('')
         : `<span class="gr-trace-label">${escapeHtml(t.label || t.kind)}</span>`;
       return `
       <div class="gr-trace ${t.enabled ? '' : 'off'}${t.id === this._selectedId ? ' selected' : ''}"

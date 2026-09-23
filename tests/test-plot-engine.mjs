@@ -5,7 +5,7 @@ import {
   pixelToWorld, zoomView, panView, defaultView, boundsOfPoints,
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit, sampleDiffEq,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
-  evalTraceAtX,
+  evalTraceAtX, sampleTrace, traceInputError, traceFromInputs,
 } from '../www/src/ui/plot-engine.js';
 import { Matrix, Vector, Real, Integer, Symbolic, Program, RList, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
 import { lookup, setGraphicsHook } from '../www/src/rpl/ops.js';
@@ -180,6 +180,11 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   const bar = stackValueToTrace(Vector([Real(5), Real(6)]), 'bar');
   assert(bar.kind === 'bar' && bar.points[0][1] === 5,
     'stackValueToTrace: Vector + preferred bar');
+  for (const dataKind of ['scatter', 'bar', 'hist', 'fit']) {
+    const fromData = stackValueToTrace(Symbolic(parseAlgebra('SIN(X)')), dataKind);
+    assert(fromData?.kind === 'function',
+      `stackValueToTrace: Symbolic in ${dataKind} mode → function`);
+  }
   assert(stackValueToTrace(null) === null, 'stackValueToTrace: null');
   assert(stackValueToTrace(Program([])) === null,
     'stackValueToTrace: program is not a plot');
@@ -278,6 +283,57 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   const parabola = sampleDiffEq(parsePlotExpr('X'), 0, 0, 2, 20, {}).flat();
   const end = parabola[parabola.length - 1];
   assert(end && Math.abs(end[1] - 2) < 1e-6, 'sampleDiffEq: y\'=x from 0 is x^2/2');
+
+  const shifted = { xmin: 1, xmax: 5, ymin: -1, ymax: 1 };
+  const anchored = evalTraceAtX(
+    { kind: 'diffeq', expr: 'Y', exprY: '1', enabled: true },
+    2,
+    { view: shifted, width: 48 },
+  );
+  assert(Math.abs(anchored - Math.E) < 1e-3, 'evalTraceAtX: diffeq anchors at the left edge when 0 is off-screen');
+  assert(Math.abs(anchored - Math.exp(2)) > 1, 'evalTraceAtX: diffeq does not restart at 0 off-screen');
+  assert(Number.isNaN(evalTraceAtX(
+    { kind: 'diffeq', expr: 'Y', exprY: '1', enabled: true },
+    2,
+    { width: 48 },
+  )), 'evalTraceAtX: diffeq without a view is NaN');
+  assert(Number.isNaN(evalTraceAtX(
+    { kind: 'diffeq', expr: '1/0', exprY: '1', enabled: true },
+    1,
+    { view: { xmin: 0, xmax: 2, ymin: -1, ymax: 1 }, width: 48 },
+  )), 'evalTraceAtX: diffeq that cannot reach x is NaN');
+  const atAnchor = evalTraceAtX(
+    { kind: 'diffeq', expr: '1/0', exprY: '1', enabled: true },
+    0,
+    { view: { xmin: 0, xmax: 2, ymin: -1, ymax: 1 }, width: 48 },
+  );
+  assert(atAnchor === 1, 'evalTraceAtX: diffeq at the anchor is the initial value');
+  const badY = sampleTrace(
+    { kind: 'diffeq', expr: 'Y', exprY: 'X' },
+    { xmin: 0, xmax: 1, ymin: 0, ymax: 1 },
+    { width: 48 },
+  );
+  assert(badY.length === 0, 'sampleTrace: diffeq with a non-constant initial y draws nothing');
+
+  const added = traceFromInputs('diffeq', 'Y', '');
+  assert(added.exprY === '0' && added.label === "y'=Y", 'traceFromInputs: blank diffeq initial y is 0');
+  assert(traceInputError('diffeq', { expr: 'Y', exprY: 'X' }, { adding: true }),
+    'traceInputError: diffeq initial y must be a number');
+  assert(!traceInputError('parametric', { expr: 'COS(T)', exprY: 'SIN(T)' }, { adding: true }),
+    'traceInputError: parametric pair parses');
+  assert(traceInputError('parametric', { expr: 'COS(T)', exprY: '' }, { adding: true }),
+    'traceInputError: parametric y is required');
+  const param = stackValueToTrace(
+    Symbolic(parseAlgebra('SIN(T)')),
+    'parametric',
+    Symbolic(parseAlgebra('COS(T)')),
+  );
+  assert(param.kind === 'parametric' && param.expr.includes('COS') && param.exprY.includes('SIN'),
+    'stackValueToTrace: parametric reads x below and y on top');
+  const slope = stackValueToTrace(Symbolic(parseAlgebra('Y')), 'diffeq', Real(1));
+  assert(slope.kind === 'diffeq' && slope.label === "y'=Y", 'stackValueToTrace: diffeq keeps the slope label');
+  assert(stackValueToTrace(Matrix([[Real(1), Real(2)]]), 'diffeq').kind === 'scatter',
+    'stackValueToTrace: data still wins over a preferred expression kind');
 }
 
 

@@ -330,15 +330,23 @@ function rk4Step(ast, x, y, h, opts) {
   return Number.isFinite(next) ? next : null;
 }
 
-function integrateOde(ast, x0, y0, x1, steps, opts) {
+function ivpAnchor(xMin, xMax) {
+  return xMin <= 0 && xMax >= 0 ? 0 : xMin;
+}
+
+function ivpSteps(n) {
+  return Math.max(8, n | 0);
+}
+
+function integrateOde(ast, x0, y0, x1, count, opts) {
   if (!Number.isFinite(x0) || !Number.isFinite(y0) || !Number.isFinite(x1)) return [];
   if (x0 === x1) return [[x0, y0]];
-  const count = Math.max(1, steps | 0);
-  const h = (x1 - x0) / count;
+  const steps = Math.max(1, count | 0);
+  const h = (x1 - x0) / steps;
   const pts = [[x0, y0]];
   let x = x0;
   let y = y0;
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < steps; i++) {
     const next = rk4Step(ast, x, y, h, opts);
     if (next == null) break;
     x += h;
@@ -348,40 +356,102 @@ function integrateOde(ast, x0, y0, x1, steps, opts) {
   return pts;
 }
 
+function yOnSampledIvp(pts, x, tol) {
+  let prev = null;
+  for (const p of pts) {
+    if (prev && (prev[0] - x) * (p[0] - x) <= 0) {
+      const span = p[0] - prev[0];
+      if (span === 0) return p[1];
+      const t = (x - prev[0]) / span;
+      return prev[1] + t * (p[1] - prev[1]);
+    }
+    prev = p;
+  }
+  if (!pts.length) return NaN;
+  const ends = [pts[0], pts[pts.length - 1]];
+  for (const p of ends) {
+    if (Math.abs(p[0] - x) <= tol) return p[1];
+  }
+  return NaN;
+}
+
 export function sampleDiffEq(ast, y0, xMin, xMax, n, opts = {}) {
   const yStart = Number(y0);
   if (!Number.isFinite(yStart) || !Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) {
     return [];
   }
-  const steps = Math.max(8, n | 0);
-  const x0 = xMin <= 0 && xMax >= 0 ? 0 : xMin;
+  const steps = ivpSteps(n);
+  const x0 = ivpAnchor(xMin, xMax);
   const forward = integrateOde(ast, x0, yStart, xMax, steps, opts);
   const backward = integrateOde(ast, x0, yStart, xMin, steps, opts);
   const pts = backward.slice(0, -1).reverse().concat(forward);
   return segmentPoints(pts, Infinity);
 }
 
-function diffeqInitialY(t) {
-  const raw = t?.exprY == null || t.exprY === '' ? '0' : String(t.exprY);
-  const n = Number(raw);
-  if (Number.isFinite(n)) return n;
+function plotConstant(src) {
   try {
-    const y = evalNumeric(parsePlotExpr(raw), {}, {});
-    return Number.isFinite(y) ? y : 0;
+    const y = evalNumeric(parsePlotExpr(src), {}, {});
+    return Number.isFinite(y) ? y : NaN;
   } catch {
-    return 0;
+    return NaN;
   }
+}
+
+function diffeqInitialY(t) {
+  const raw = t?.exprY == null || String(t.exprY).trim() === '' ? '0' : String(t.exprY).trim();
+  return plotConstant(raw);
+}
+
+function functionLabel(t) {
+  return t.expr || '';
+}
+
+function parametricLabel(t) {
+  return `(${t.expr}, ${t.exprY})`;
+}
+
+function diffeqLabel(t) {
+  return `y'=${t.expr}`;
+}
+
+function diffeqSteps(ctx) {
+  return Math.max(48, ctx?.width | 0);
+}
+
+function plotFieldError(fields, values, adding) {
+  for (const field of fields || []) {
+    const raw = String(values?.[field.key] ?? '').trim();
+    if (!raw) {
+      if (!adding || field.optional || field.key !== 'exprY') continue;
+      try {
+        parsePlotExpr(raw);
+      } catch (e) {
+        return e.message;
+      }
+      continue;
+    }
+    try {
+      parsePlotExpr(raw);
+    } catch (e) {
+      return e.message;
+    }
+    if (field.constant && !Number.isFinite(plotConstant(raw))) {
+      return 'initial value is not a number';
+    }
+  }
+  return null;
 }
 
 function diffeqFromStack(v, below) {
   const expr = valueToEquationDraft(v);
   if (!expr) return null;
-  const y0 = valueToEquationDraft(below);
+  const drafted = valueToEquationDraft(below);
+  const exprY = drafted || '0';
   return {
     kind: 'diffeq',
     expr,
-    exprY: y0 || '0',
-    label: `y'=${expr}`,
+    exprY,
+    label: diffeqLabel({ expr, exprY }),
     points: null,
   };
 }
@@ -389,6 +459,7 @@ function diffeqFromStack(v, below) {
 function diffeqToStack(t) {
   if (!t?.expr) return [];
   const y = diffeqInitialY(t);
+  if (!Number.isFinite(y)) throw new Error('initial value is not a number');
   return [Real(y), equationToSymbolic(t.expr)];
 }
 
@@ -419,6 +490,20 @@ function expressionFromStack(kind, v) {
 function expressionToStack(t) {
   if (!t || !t.expr) return [];
   return [equationToSymbolic(t.expr)];
+}
+
+function parametricFromStack(v, below) {
+  if (!isSymbolic(v)) return expressionFromStack('parametric', v);
+  const y = valueToEquationDraft(v);
+  if (!y) return null;
+  const xExpr = isSymbolic(below) ? (valueToEquationDraft(below) || 'T') : 'T';
+  return {
+    kind: 'parametric',
+    expr: xExpr,
+    exprY: y,
+    label: parametricLabel({ expr: xExpr, exprY: y }),
+    points: null,
+  };
 }
 
 function pointsFromStack(kind, v) {
@@ -472,6 +557,10 @@ export const TRACE_KINDS = Object.freeze({
   function: {
     render: 'stroke',
     data: false,
+    editable: true,
+    fitOnAdd: false,
+    fields: [{ key: 'expr', placeholder: 'SIN(X)', aria: 'Expression' }],
+    label: functionLabel,
     sample(t, ctx) {
       if (!t.expr) return [];
       const view = ctx.view;
@@ -491,6 +580,10 @@ export const TRACE_KINDS = Object.freeze({
   polar: {
     render: 'stroke',
     data: true,
+    editable: true,
+    fitOnAdd: true,
+    fields: [{ key: 'expr', placeholder: '1 + COS(θ)', aria: 'Expression' }],
+    label: functionLabel,
     sample(t, ctx) {
       if (!t.expr) return [];
       const th = ctx.thetaRange || { min: 0, max: 2 * Math.PI };
@@ -506,6 +599,14 @@ export const TRACE_KINDS = Object.freeze({
   parametric: {
     render: 'stroke',
     data: true,
+    editable: true,
+    fitOnAdd: true,
+    fieldSep: ',',
+    fields: [
+      { key: 'expr', placeholder: 'COS(T)', aria: 'X expression' },
+      { key: 'exprY', placeholder: 'SIN(T)', aria: 'Y expression' },
+    ],
+    label: parametricLabel,
     sample(t, ctx) {
       if (!t.expr || !t.exprY) return [];
       const tr = ctx.tRange || { min: -10, max: 10 };
@@ -515,7 +616,7 @@ export const TRACE_KINDS = Object.freeze({
       );
     },
     evalAt() { return NaN; },
-    fromStack(v, below) { return stackValueToTrace(v, 'parametric', below); },
+    fromStack: parametricFromStack,
     toStack(t) {
       const out = [];
       if (t.expr) out.push(equationToSymbolic(t.expr));
@@ -550,22 +651,40 @@ export const TRACE_KINDS = Object.freeze({
   diffeq: {
     render: 'stroke',
     data: false,
+    editable: true,
+    fitOnAdd: true,
+    fields: [
+      { key: 'expr', placeholder: 'X+Y', aria: 'dy/dx' },
+      { key: 'exprY', placeholder: '0', aria: 'Initial y', optional: true, blank: '0', constant: true },
+    ],
+    label: diffeqLabel,
     sample(t, ctx) {
       if (!t.expr) return [];
+      const y0 = diffeqInitialY(t);
+      if (!Number.isFinite(y0)) return [];
       const view = ctx.view;
       return sampleDiffEq(
-        parsePlotExpr(t.expr), diffeqInitialY(t),
-        view.xmin, view.xmax, Math.max(48, ctx.width | 0),
+        parsePlotExpr(t.expr), y0,
+        view.xmin, view.xmax, diffeqSteps(ctx),
         ctx.angleOpts || {},
       );
     },
     evalAt(t, x, ctx) {
       if (!t.expr || !Number.isFinite(x)) return NaN;
-      const view = ctx.view || { xmin: Math.min(0, x), xmax: Math.max(0, x) };
-      const x0 = view.xmin <= 0 && view.xmax >= 0 ? 0 : view.xmin;
-      const pts = integrateOde(parsePlotExpr(t.expr), x0, diffeqInitialY(t), x, 48, ctx.angleOpts || {});
-      const last = pts[pts.length - 1];
-      return last ? last[1] : NaN;
+      const view = ctx.view;
+      if (!view || !Number.isFinite(view.xmin) || !Number.isFinite(view.xmax) || view.xmin === view.xmax) {
+        return NaN;
+      }
+      const y0 = diffeqInitialY(t);
+      if (!Number.isFinite(y0)) return NaN;
+      const steps = diffeqSteps(ctx);
+      if (x === ivpAnchor(view.xmin, view.xmax)) return y0;
+      const pts = sampleDiffEq(
+        parsePlotExpr(t.expr), y0,
+        view.xmin, view.xmax, steps,
+        ctx.angleOpts || {},
+      ).flat();
+      return yOnSampledIvp(pts, x, Math.abs(view.xmax - view.xmin) / ivpSteps(steps));
     },
     fromStack: diffeqFromStack,
     toStack: diffeqToStack,
@@ -638,28 +757,39 @@ export function evalTraceAtX(t, x, opts = {}) {
   }
 }
 
+export function traceInputError(kind, values, { adding = false } = {}) {
+  const spec = TRACE_KINDS[kind];
+  if (!spec?.fields?.length) return null;
+  return plotFieldError(spec.fields, values, adding);
+}
+
+export function traceFromInputs(kind, expr, exprY) {
+  const spec = TRACE_KINDS[kind];
+  const yField = spec?.fields?.find(f => f.key === 'exprY');
+  const typedY = String(exprY ?? '').trim();
+  const storedY = yField
+    ? (typedY || (yField.optional ? (yField.blank ?? '') : typedY))
+    : '';
+  const storedX = String(expr ?? '').trim();
+  const t = { expr: storedX, exprY: storedY };
+  return {
+    kind,
+    expr: storedX,
+    exprY: storedY,
+    label: spec?.label ? spec.label(t) : storedX,
+    points: null,
+  };
+}
+
 export function stackValueToTrace(v, preferredKind = 'function', below = null) {
   if (isMatrix(v) || isVector(v) || isList(v)) {
     const kind = (preferredKind === 'bar' || preferredKind === 'hist')
       ? preferredKind : 'scatter';
     return TRACE_KINDS[kind].fromStack(v);
   }
-  if (preferredKind === 'diffeq') return TRACE_KINDS.diffeq.fromStack(v, below);
-  if (preferredKind === 'parametric') {
-    if (!isSymbolic(v)) return expressionFromStack('parametric', v);
-    const y = valueToEquationDraft(v);
-    if (!y) return null;
-    const xExpr = isSymbolic(below) ? (valueToEquationDraft(below) || 'T') : 'T';
-    return {
-      kind: 'parametric',
-      expr: xExpr,
-      exprY: y,
-      label: `(${xExpr}, ${y})`,
-      points: null,
-    };
-  }
-  const kind = preferredKind === 'polar' ? 'polar' : 'function';
-  return TRACE_KINDS[kind].fromStack(v);
+  const preferred = TRACE_KINDS[preferredKind];
+  const spec = preferred?.fields ? preferred : TRACE_KINDS.function;
+  return spec.fromStack(v, below);
 }
 
 export function traceToStackValues(t) {

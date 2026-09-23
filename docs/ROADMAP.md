@@ -64,8 +64,8 @@ is `PEVAL`, which already ships).
 Explicitly out of scope (`will-not`, per `@!MY_NOTES.md`): USER mode,
 ENTRY, S.SLV, NUM.SLV, FINANCE, TIME, DEF, LIB, OFF, and the
 `ATTACH`/`DETACH`/`LIBS` library system.  Graphics (`BARPLOT`,
-`HISTPLOT`, `SCATRPLOT`, `FUNCTION`, `POLAR`, `PARAMETRIC`) ships in
-the side-panel Graph view — see "Graphics output" below.
+`HISTPLOT`, `SCATRPLOT`, `FUNCTION`, `POLAR`, `PARAMETRIC`, `DIFFEQ`)
+ships in the side-panel Graph view — see "Graphics output" below.
 
 ### 2. Persistence and session portability
 
@@ -208,8 +208,8 @@ These are aspirational and not on any current queue:
   parametric sampling, plus `BARPLOT` / `HISTPLOT` / `SCATRPLOT` off a
   stack matrix or the `ΣDAT` variable.  A LINFIT/LOGFIT/EXPFIT/PWRFIT
   overlay reads `state.lastFitModel` so a fitted line can sit on a
-  scatter without respecifying data.  `DIFFEQ` plot type and GROB
-  pixel-emulation remain open.
+  scatter without respecifying data.  `DIFFEQ` plots `dy/dx = f(x, y)`
+  on that same view.  GROB pixel-emulation remains open.
 - **Programmable soft-menus.**  HP50 lets a user bind custom soft-
   key menus; a web-native equivalent opens the door to per-user
   keyboard-shortcut layouts.

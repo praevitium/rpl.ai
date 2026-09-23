@@ -9,7 +9,7 @@ current state.
 
 ## Current status
 
-`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (8058)** —
+`node tests/test-all.mjs` currently reports **ALL TESTS PASSED (8145)** —
 fully green, 0 failing. `test-persist.mjs` is standalone (D-001 closed at
 ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~6 ms.
 
@@ -21,29 +21,30 @@ ship-prep 2026-04-25). `sanity.mjs` 22 / 0 in ~6 ms.
 | test-chatbot-parse.mjs      |  788 | 0    |                                    |
 | test-command-reference.mjs  |   64 | 0    | AI command-reference index.        |
 | test-comparisons.mjs        |  190 | 0    |                                    |
-| test-control-flow.mjs       |  903 | 0    | Includes ASCII `->` local arrow.   |
+| test-control-flow.mjs       |  913 | 0    | Includes ASCII `->` local arrow.   |
 | test-entry.mjs              |  212 | 0    |                                    |
 | test-equation-editor.mjs    |   25 | 0    | Equation-writer wrap/preview.      |
 | test-eval.mjs               |   61 | 0    |                                    |
 | test-helpers.mjs            |   43 | 0    |                                    |
-| test-jordan-format.mjs      |   20 | 0    |                                    |
+| test-jordan-format.mjs      |   36 | 0    | Chain assembly from P and J.       |
+| test-jordan.mjs             |   20 | 0    | JORDAN op against Giac fixtures.   |
 | test-lists.mjs              |  231 | 0    |                                    |
 | test-llm-manager.mjs        |   22 | 0    |                                    |
 | test-matrix.mjs             |  368 | 0    |                                    |
 | test-matrix-editor.mjs      |   38 | 0    | Matrix-writer grid helpers.        |
 | test-numerics.mjs           |  877 | 0    |                                    |
 | test-op-search.mjs          |   87 | 0    | Command-palette row HTML.          |
-| test-plot-engine.mjs        |   74 | 0    | Graph sampling / plot ops hook.    |
+| test-plot-engine.mjs        |   90 | 0    | Graph sampling / plot ops hook.    |
 | test-reflection.mjs         |  429 | 0    |                                    |
 | test-remote-llm.mjs         |   94 | 0    |                                    |
 | test-scratch.mjs            |   23 | 0    | AI dry-run eval isolation.         |
 | test-stack-ops.mjs          |   66 | 0    |                                    |
 | test-stats.mjs              |   70 | 0    |                                    |
 | test-types.mjs              | 1343 | 0    |                                    |
-| test-ui.mjs                 |  318 | 0    |                                    |
+| test-ui.mjs                 |  343 | 0    |                                    |
 | test-units.mjs              |   64 | 0    |                                    |
 | test-variables.mjs          |  251 | 0    |                                    |
-| **test-all (aggregate)**    | **8058** | **0** | Fully green.                 |
+| **test-all (aggregate)**    | **8145** | **0** | Fully green.                 |
 | test-persist.mjs (separate) |   98 | 0    | Stable; D-001 closed ship-prep.    |
 | sanity.mjs (standalone)     |   22 | 0    | ~6 ms smoke suite.                 |
 
