@@ -110,14 +110,13 @@ modules — no build step, no framework.
 control flow (`IF` / `WHILE` / `DO` / `FOR` / `START` / `CASE` / `IFERR`),
 compiled local variable environments (`→ a b « … »`), and the
 suspended-execution substrate (`HALT` / `CONT` / `KILL`) are all working.
-The HP 50g command set is essentially complete — 449 commands registered,
-with `JORDAN` the lone remaining op. See
+The HP 50g command set is complete — 452 commands registered, with no
+remaining gaps outside the deliberate out-of-scope groups. See
 [docs/ROADMAP.md](docs/ROADMAP.md) for what's remaining and
 [docs/COMMANDS.md](docs/COMMANDS.md) for the current command inventory.
-
-**Not yet implemented:** the command-palette overlay (the fuzzy matcher
-already ships), `JORDAN`, and a mobile layout. Graphing, the equation
-writer, and the matrix writer live in the side panel.
+Graphing, the equation writer, and the matrix writer live in the side
+panel; its Files tab also manages `ARCHIVE` / `RESTORE` backups and
+reads and writes HP text files (`.rpl`).
 
 ---
 

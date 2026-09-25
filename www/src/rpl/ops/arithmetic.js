@@ -6,7 +6,7 @@ import { getApproxMode, varRecall, varStore, getRealMaxExp, getWordsize, nextPrn
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { inverseUexpr, powerUexpr } from '../units.js';
 import { register, lookup, OPS } from './registry.js';
-import { _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary } from './internal.js';
+import { _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary } from './internal.js';
 
 
 
@@ -529,7 +529,7 @@ register('XROOT', _withListBinary((s) => {
    fallback intFn returning `Integer(0n)` is never reached — a Unit
    carries a Real-typed value by construction, per types.js §Unit). */
 function _rounderScalar(name, realFn, intFn) {
-  return (v) => {
+  const round = (v) => {
     if (isInteger(v))        return intFn(v);
     /* Rational: exact rounding via BigInt trunc/mod.  APPROX mode
        collapses to Real (consistent with the rest of the Rational
@@ -574,9 +574,14 @@ function _rounderScalar(name, realFn, intFn) {
       return Real(d);
     }
     if (isUnit(v))           return Unit(realFn(v.value), v.uexpr);  // Unit.value is JS number
+    if (isSymbolic(v)) {
+      const literal = _astToRplValue(v.expr);
+      if (isReal(literal) || isInteger(literal)) return round(literal);
+    }
     if (_isSymOperand(v))    return Symbolic(AstFn(name, [_toAst(v)]));
     throw new RPLError('Bad argument type');
   };
+  return round;
 }
 
 const _floorScalar = _rounderScalar('FLOOR', Math.floor, v => v);
@@ -892,38 +897,40 @@ function _roundingOp(name, fn) {
   };
 }
 
-register('RND',  _roundingOp('RND',  _roundHalfAwayFromZero), { category: 'Arithmetic', categoryOrder: 18, label: "RND" });
+register('RND',  _symbolicRoundingOp('RND',  _roundHalfAwayFromZero), { category: 'Arithmetic', categoryOrder: 18, label: "RND" });
 
-register('TRNC', _roundingOp('TRNC', _truncTowardZero), { category: 'Arithmetic', categoryOrder: 19, label: "TRNC" });
+register('TRNC', _symbolicRoundingOp('TRNC', _truncTowardZero), { category: 'Arithmetic', categoryOrder: 19, label: "TRNC" });
 
 
-/* --------------- TRUNC — CAS-form truncate ---------------
-   HP50 AUR §3.1 lists TRUNC as a CAS sibling of TRNC with identical
-   numeric semantics but an additional Symbolic lift: a Name / Symbolic
-   value leaves an unevaluated `TRUNC(x, n)` node on the stack instead
-   of erroring.  Same (x, n → y) stack shape as TRNC; same half-digit
-   behaviour; same rejection error strings.  Reuses `_roundingOp` so
-   any future precision fix on the rounding helpers lands on both ops.
+/* --------------- RND / TRNC / TRUNC symbolic lift ---------------
+   HP50 AUR lists `'symb' n RND` → `'RND(symb,n)'`, the same for TRNC,
+   and TRUNC as TRNC's CAS sibling.  All three share `_roundingOp` for
+   numeric input, so a precision fix lands on every op.
 
    Symbolic lift applies when either argument is a Name or Symbolic:
-   `'X' 3 TRUNC` → `'TRUNC(X,3)'`.  If `n` is symbolic, we keep the
-   expression unevaluated (the CAS caller may substitute later).  The
-   numeric rejection rules from `_roundingOp` still fire for plain
-   numeric inputs — e.g. non-integer `n`, `n` outside [-11, 11].  */
+   `'X' 3 TRUNC` → `'TRUNC(X,3)'`.  A quoted number (`` `3.7` ``) is
+   unwrapped first and rounds numerically.  The numeric rejection rules
+   from `_roundingOp` still fire for plain numeric inputs — e.g.
+   non-integer `n`, `n` outside [-11, 11].  */
 
-function _truncOp() {
-  const numeric = _roundingOp('TRUNC', _truncTowardZero);
+function _unwrapNumericLiteral(v) {
+  if (!isSymbolic(v)) return v;
+  const literal = _astToRplValue(v.expr);
+  return isReal(literal) || isInteger(literal) ? literal : v;
+}
+
+function _symbolicRoundingOp(name, fn) {
+  const numeric = _roundingOp(name, fn);
   return (s) => {
-    if (s.depth < 2) throw new RPLError('Too few arguments');
-    const nv = s.peek(1);
-    const xv = s.peek(2);
+    const [xv, nv] = s.popN(2).map(_unwrapNumericLiteral);
     if (_isSymOperand(xv) || _isSymOperand(nv)) {
-      s.popN(2);
       const l = _toAst(xv), r = _toAst(nv);
       if (!l || !r) throw new RPLError('Bad argument type');
-      s.push(Symbolic(AstFn('TRUNC', [l, r])));
+      s.push(Symbolic(AstFn(name, [l, r])));
       return;
     }
+    s.push(xv);
+    s.push(nv);
     numeric(s);
   };
 }
@@ -932,7 +939,7 @@ function _truncOp() {
 // List (pairwise broadcast) or a scalar applied to every x in a List.
 // Vector/Matrix are deliberately rejected — no _withVMBinary exists and
 // TRUNC element-wise on V/M has no HP50 precedent (mirrors MOD/MIN/MAX).
-register('TRUNC', _withTaggedBinary(_withListBinary(_truncOp())), { category: 'Arithmetic', categoryOrder: 20, label: "TRUNC" });
+register('TRUNC', _withTaggedBinary(_withListBinary(_symbolicRoundingOp('TRUNC', _truncTowardZero))), { category: 'Arithmetic', categoryOrder: 20, label: "TRUNC" });
 
 
 /* --------------- Percent family — %, %T, %CH ---------------
@@ -1321,6 +1328,7 @@ register('→Q', (s) => {
 
 function _astIntOrThrow(n, msg = 'Bad argument value') {
   if (!n || n.kind !== 'num') throw new RPLError(msg);
+  if (n.digits) return BigInt(n.digits);
   if (!Number.isFinite(n.value) || !Number.isInteger(n.value)) {
     throw new RPLError(msg);
   }

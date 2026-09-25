@@ -14,7 +14,7 @@ import {
   interactiveStackMenu, levelUp, levelDown, clampLevel,
   rollLevel, rollDownToLevel, dropLevel,
 } from './ui/interactive-stack.js';
-import { format } from './rpl/formatter.js';
+import { format, formatSource } from './rpl/formatter.js';
 import {
   state as calcState, subscribe as subscribeState,
   cycleAngle, toggleApproxMode, cycleCoordMode, toggleComplexMode,
@@ -41,6 +41,7 @@ import { giac } from './rpl/cas/giac-engine.mjs';
 import { FULL as BUILD_FULL } from './build-info.js';
 import { ChatBot } from './ai/chat-bot.js';
 import { CommandPalette } from './ui/command-palette.js';
+import { installCommandHover } from './ui/hover-help.js';
 
 class App {
   constructor() {
@@ -112,7 +113,7 @@ class App {
     const sidePanelRoot = document.getElementById('sidePanelRoot');
     if (sidePanelRoot) {
       this.sidePanel = new SidePanel({ root: sidePanelRoot, app: this });
-      // Re-render the History tab whenever a new entry is committed.
+      // Re-render the History tab whenever an entry is committed or an error is logged.
       // subscribeHistory fires only on actual additions (not every keystroke),
       // and refresh() is a no-op when the panel is closed or on another tab.
       this.entry.subscribeHistory(() => {
@@ -314,6 +315,7 @@ class App {
       onArrowLeftEmpty: () => this.prevMenuPage(),
       onArrowRightEmpty:() => { this.stack.depth >= 2 ? this.swapTop() : this.nextMenuPage(); },
     });
+    installCommandHover(this.display.cmdline, this.entry);
 
     this.display.renderStack(this.stack);
     this.display.renderCmdline(this.entry);
@@ -810,7 +812,7 @@ class App {
     this.entry._snapForUndo();
     const v = this.stack.pop();
     this._pendingEditValue = v;
-    const text = format(v);
+    const text = formatSource(v);
     this.entry.buffer = text;
     this.entry.cursor = text.length;
     this.entry.error  = '';

@@ -5,7 +5,7 @@ import { buildGiacCmd, giacToAst, splitGiacList, astToGiac } from '../cas/giac-c
 import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, isKnownFunction } from '../algebra.js';
 import { getComplexMode, getCasVx, setCasVx } from '../state.js';
 import { register, lookup, OPS } from './registry.js';
-import { _ZERO, _isSymOperand, _toAst, _withListUnary, _withTaggedUnary, _withVMUnary } from './internal.js';
+import { _ZERO, _astToRplValue, _isSymOperand, _toAst, _withListUnary, _withTaggedUnary, _withVMUnary } from './internal.js';
 
 
 
@@ -199,11 +199,9 @@ register('FACTOR', (s) => {
   if (isInteger(v) || (isReal(v) && v.value.isInteger())) {
     const bv = isInteger(v) ? v.value : BigInt(v.value.toFixed(0));
     const abs = bv < 0n ? -bv : bv;
-    // 0 and ±1 have no meaningful prime factorisation; primes above
-    // 2^53 exceed what an AstNum can hold without precision loss, so
-    // in both cases pass the value through.  Users rarely run FACTOR
-    // on 20-digit primes and the trial-division loop wouldn't finish
-    // on them anyway.
+    // 0 and ±1 have no meaningful prime factorisation, and the
+    // trial-division loop wouldn't finish past 2^53, so in both cases
+    // pass the value through.
     if (abs < 2n || abs > BigInt(Number.MAX_SAFE_INTEGER)) {
       s.push(v);
       return;
@@ -523,7 +521,7 @@ function coerceToAst(v) {
 /** Push the simplified result of a SUBST — unwrap Num to Real for
  *  users who substitute numeric values into every free variable. */
 function _pushSubstResult(s, ast) {
-  if (ast && ast.kind === 'num') { s.push(Real(ast.value)); return; }
+  if (ast && ast.kind === 'num') { s.push(_astToRplValue(ast)); return; }
   if (ast && ast.kind === 'var') { s.push(Name(ast.name)); return; }
   s.push(Symbolic(ast));
 }
@@ -955,7 +953,7 @@ register('PREVAL', (s) => {
     extra,
   );
   const diff = giacToAst(giac.caseval(cmd));
-  if (diff && diff.kind === 'num') { s.push(Real(diff.value)); return; }
+  if (diff && diff.kind === 'num') { s.push(_astToRplValue(diff)); return; }
   s.push(Symbolic(diff));
 }, { category: 'CAS / symbolic', categoryOrder: 5, label: "PREVAL" });
 
@@ -2246,7 +2244,7 @@ register('LIMIT', (s) => {
   const ast = giacToAst(giac.caseval(cmd));
   // Numeric-leaf result (Giac returned e.g. `2`) → push as Real so the
   // caller can do further numeric math without unwrapping a Symbolic.
-  if (ast && ast.kind === 'num') { s.push(Real(ast.value)); return; }
+  if (ast && ast.kind === 'num') { s.push(_astToRplValue(ast)); return; }
   s.push(Symbolic(ast));
 }, { category: 'CAS / symbolic', categoryOrder: 34, label: "LIMIT" });
 

@@ -1059,18 +1059,15 @@ function _ratMul(a, b) {
 }
 
 
-/** Build a Symbolic AST from a [num, den] rational.  Uses Num(Number)
- *  which loses precision for numerators above 2^53 — good enough for
- *  small-index Bernoulli numbers but flagged for larger indices.
- *  Future work: extend the AST Num kind to carry a BigInt payload so
- *  `IBERNOULLI 30` = 8615841276005/14322 doesn't lose its tail. */
+/** Build a Symbolic AST from a [num, den] rational.  Num keeps exact
+ *  digits for BigInts past 2^53, so large Bernoulli numbers survive. */
 function _ratToSymbolic(n, d) {
-  if (d === _ONE) return Symbolic(AstNum(Number(n)));
+  if (d === _ONE) return Symbolic(AstNum(n));
   if (n === _ZERO) return Symbolic(AstNum(0));
   if (n < _ZERO) {
-    return Symbolic(AstNeg(AstBin('/', AstNum(Number(-n)), AstNum(Number(d)))));
+    return Symbolic(AstNeg(AstBin('/', AstNum(-n), AstNum(d))));
   }
-  return Symbolic(AstBin('/', AstNum(Number(n)), AstNum(Number(d))));
+  return Symbolic(AstBin('/', AstNum(n), AstNum(d)));
 }
 
 

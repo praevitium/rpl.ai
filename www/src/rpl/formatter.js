@@ -35,7 +35,8 @@ export const DEFAULT_DISPLAY = {
  *       calls (list items, program tokens, vector/matrix cells, tagged
  *       payloads).  Inside a `{ X Y }` list the names remain bare,
  *       matching how the list was authored and how the HP50 itself
- *       displays container literals.
+ *       displays container literals.  List items and program tokens go
+ *       through `formatSource`, so a nested tag reads `:tag:obj`.
  *
  *       When undefined (the default), only Names with quoted=true get
  *       ticks — this is the pre-stack-tick behavior and is what the
@@ -57,11 +58,11 @@ export function format(v, display = DEFAULT_DISPLAY, options = {}) {
   }
   // Recursive calls deliberately drop the `stack` context — nested
   // names render with their normal (quoted ? tick : bare) rule.
-  if (isList(v))    return '{ ' + v.items.map(x => format(x, display)).join(' ') + ' }';
+  if (isList(v))    return '{ ' + v.items.map(x => formatSource(x, display)).join(' ') + ' }';
   if (isVector(v))  return formatVector(v, display);
   if (isMatrix(v))  return '[[ ' + v.rows.map(r =>
                          r.map(x => format(x, display)).join(' ')).join(' ][ ') + ' ]]';
-  if (isProgram(v)) return '« ' + v.tokens.map(x => format(x, display)).join(' ') + ' »';
+  if (isProgram(v)) return '« ' + v.tokens.map(x => formatSource(x, display)).join(' ') + ' »';
   if (isTagged(v))  return `${v.tag}: ${format(v.value, display)}`;
   if (isSymbolic(v))return `\`${formatSymbolic(v.expr)}\``;
   if (isDirectory(v)) return `Directory { ${v.name} }`;
@@ -71,6 +72,16 @@ export function format(v, display = DEFAULT_DISPLAY, options = {}) {
     return u ? `${num}_${u}` : num;
   }
   return `‹${v.type}›`;
+}
+
+/** Format a value in re-enterable source form: a tag is written `:tag:obj`
+ *  (the stack shows `tag: obj`, as the HP50 does) and a string escapes
+ *  `"` and `\` the way the parser reads them.  Lists and programs
+ *  use it for their items, and ▼ edit and →STR use it for the whole value. */
+export function formatSource(v, display = DEFAULT_DISPLAY) {
+  if (isTagged(v)) return `:${v.tag}:${formatSource(v.value, display)}`;
+  if (isString(v)) return `"${v.value.replace(/[\\"]/g, '\\$&')}"`;
+  return format(v, display);
 }
 
 /**

@@ -17,7 +17,12 @@ import {
   makeSubdir, goInto,
   seedPrng, getPrngSeed, resetPrng, nextPrngUnit,
 } from '../www/src/rpl/state.js';
-import { snapshot, rehydrate, encodeValue, decodeValue } from '../www/src/rpl/persist.js';
+import {
+  snapshot, rehydrate, encodeValue, decodeValue,
+  BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup,
+} from '../www/src/rpl/persist.js';
+import { lookup } from '../www/src/rpl/ops.js';
+import { varRecall } from '../www/src/rpl/state.js';
 
 let failed = 0;
 function assert(cond, msg) {
@@ -593,6 +598,66 @@ assert(isReal(mat.rows[0][1]) && mat.rows[0][1].value.eq(2) &&
   const rtm = decodeValue(encodeValue(new Map([['a', 3n]])));
   assert(rtm instanceof Map && rtm.get('a') === 3n,
     'session416: Map survives an encode->decode round-trip');
+}
+
+{
+  const saved = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = {
+    getItem: k => store.get(k) ?? null,
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: k => store.delete(k),
+  };
+  try {
+    resetHome();
+    const s = new Stack();
+    varStore('A', Integer(42n));
+    s.push(Integer(1n));
+    s.push(Integer(2n));
+    s.push(Tagged('0', Name('BAK', { quoted: true })));
+    lookup('ARCHIVE').fn(s);
+    assert(s.depth === 2, 'ARCHIVE consumes its :0:name argument');
+
+    varStore('A', Integer(7n));
+    s.clear();
+    s.push(Integer(99n));
+    s.push(Tagged('0', Name('BAK', { quoted: true })));
+    lookup('RESTORE').fn(s);
+    assert(s.depth === 2 && s.peek(1).value === 2n && s.peek(2).value === 1n,
+      'RESTORE brings back the archived stack');
+    assert(varRecall('A')?.value === 42n, 'RESTORE brings back the archived HOME variables');
+
+    archiveBackup('2', 'LATER', s, Date.now() + 1000);
+    const listed = listBackups();
+    assert(listed.length === 2 && listed[0].name === 'LATER' && listed[0].port === '2'
+        && listed[1].name === 'BAK' && listed[1].depth === 2,
+      'listBackups is newest first with port, name and stack depth');
+
+    s.push(Tagged('1', Name('NOPE', { quoted: true })));
+    assertThrows(() => lookup('RESTORE').fn(s), /Nonexistent backup :1:NOPE/,
+      'RESTORE of a missing backup names it');
+    s.clear();
+    s.push(Tagged('7', Name('X', { quoted: true })));
+    assertThrows(() => lookup('ARCHIVE').fn(s), /Bad argument value/,
+      'ARCHIVE rejects a port outside 0-3');
+    s.clear();
+    s.push(Integer(5n));
+    assertThrows(() => lookup('ARCHIVE').fn(s), /Bad argument type/,
+      'ARCHIVE needs a :port:name tagged name');
+
+    deleteBackup('2', 'LATER');
+    assert(listBackups().length === 1 && JSON.parse(store.get(BACKUPS_KEY))['0:BAK'],
+      'deleteBackup removes only that backup');
+    assertThrows(() => deleteBackup('2', 'LATER'), /Nonexistent backup/,
+      'deleteBackup of a missing backup throws');
+
+    delete globalThis.localStorage;
+    assertThrows(() => listBackups(), /Backup storage unavailable/,
+      'backups report missing storage instead of crashing');
+  } finally {
+    globalThis.localStorage = saved;
+    resetHome();
+  }
 }
 
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');

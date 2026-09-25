@@ -16,7 +16,7 @@ Guide.pdf`, `HP50 User Manual.pdf`) remain the fidelity reference.
 
 ## Current state — foundations in place
 
-*As of v0.4.0 (2026-09-21).*
+*As of v0.4.1 (2026-09-23).*
 
 The substrate the roadmap builds on:
 
@@ -44,7 +44,7 @@ The substrate the roadmap builds on:
 
 ### 1. Close the last command-support gap cluster
 
-The command surface is complete: 449 HP50 ops are registered and
+The command surface is complete: 452 HP50 ops are registered and
 `COMMANDS.md` has no remaining `✗`. `JORDAN` pushes the minimal
 polynomial, the characteristic polynomial, the eigenvalue-tagged
 characteristic spaces, and the eigenvalue array. A single eigenvector
@@ -69,21 +69,14 @@ ships in the side-panel Graph view — see "Graphics output" below.
 
 ### 2. Persistence and session portability
 
-`persist.js` round-trips most value types but the surface it exposes
-to the user is thin.  Worth building out:
-
-- **Named stack snapshots.**  A user-visible way to save the whole
-  stack + home directory under a label, then restore it later.  HP50
-  calls this "backup ports"; an IndexedDB or file-API equivalent plus
-  a small menu would do the same job.
-- **Import / export programs as text.**  `DECOMP` already stringifies
-  Programs; pair it with a robust parser round-trip so users can
-  paste RPL source in and out of a clipboard.  The parser accepts
-  `« … »` input today, but Symbolic programs with embedded unicode
-  operators (≤, ≠, →) need wider tolerance.
-- **Session-scoped error log.**  A ring buffer of the last 10
-  RPLErrors visible from the UI — useful for debugging scripted
-  programs where the error flashes by.
+`:n:name ARCHIVE` and `:n:name RESTORE` save and restore the stack,
+HOME tree, and modes as a named backup in `localStorage` (ports 0–3).
+The Files tab's Backups section archives, restores, and deletes them.
+The Files tab also reads and writes HP text files (`%%HP: T(3)…`,
+`DIR … END`, apostrophe algebraics, T(3) codes such as `\<<`) through
+`www/src/rpl/hp-text.js`, and pasting into the entry line runs the
+same conversion. The History tab lists the session's last 10 errors
+with the command line that raised each one.
 
 ### 3. RPL interpreter — finish the suspended-execution story
 
@@ -100,27 +93,13 @@ Most of the substrate is in place.  Open items tracked in `RPL.md`:
   `SST` or `HLT`, left-shift ▼ runs `SST`, and the suspended program
   stays on screen with `▸` on the next instruction. SST↓ remains a
   true step-into (session 106).
-- **ABORT-level UI.**  `ABORT` propagates cleanly to the outer loop
-  but displays via the generic error banner.  A dedicated "Program
-  aborted" status-line flash would feel closer to the HP50.
 
 ### 4. Data-type width — the last few intentional asymmetries
 
 `DATA_TYPES.md` tracks ✗ cells per op-per-type.  The remaining gaps
 are largely *deliberate* (Complex on ordering ops, Unit on percent
-ops, String × numeric on arithmetic).  Two live threads worth
-closing:
+ops, String × numeric on arithmetic).  Live threads worth closing:
 
-- **Symbolic simplification on rounding results.**  `FLOOR('x')` and
-  friends lift to Symbolic but don't simplify `FLOOR(3.0)` (a literal
-  Real wrapped in Symbolic) back to `3`.  Routine AST pass.
-- **Unit + Tagged combo under element-wise ops.**  `Tagged "m"
-  (1.5_m FLOOR)` works; `Tagged Vector of Units` doesn't because the
-  V/M apply layer currently drops tags before entering the per-entry
-  rounder.  Tagged-over-container is a recurring paper cut.
-- **Dedicated num-ratio AST leaf.**  Avoid the `Number()` precision
-  loss for BigInt numerators above 2^53 when a Rational lifts into
-  Symbolic.
 - **Polar / CYLIN / SPHERE display paths** via complex.js — currently
   handled piecemeal; a single delegation point would halve the surface.
 - **Remaining complex unary ops.**  Migrate SQRT, LN, EXP and the
@@ -151,10 +130,9 @@ concrete improvements:
   `tests/test-op-search.mjs`.  Overlay ships as `www/src/ui/command-palette.js`:
   `/` on an empty command line (or Ctrl/Cmd-K) opens it, typing filters
   `allOps()`, Enter runs the highlighted op, Esc closes.
-- **Contextual help.**  Hover an op name in the stack or command line
-  → a tooltip with its AUR one-liner plus argument signature.  The
-  metadata lives in `COMMANDS.md` today as prose; a structured
-  pass-through to tooltip copy would not cost much.  *Partly shipped:*
+- **Contextual help.**  Hovering a command name in the command line
+  shows `NAME — AUR one-liner` (`www/src/ui/hover-help.js`).  Still open:
+  the same tooltip over program tokens on the stack.  *Also shipped:*
   the right-click command-help popup (`www/src/ui/command-help.js`)
   serves the AUR reference per op; its doc-heading→command-key
   normalizer is now the pure, exported `headingKey` (strips the

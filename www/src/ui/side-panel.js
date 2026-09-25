@@ -38,8 +38,10 @@ import {
 import { TYPES, isStorableHpName } from '../rpl/types.js';
 import { UNIT_CATALOG } from '../rpl/units.js';
 import {
-  exportVariableToFile, parseVariableFile,
+  exportVariableToFile, parseVariableFile, exportHpTextFile, readFileText,
+  listBackups, archiveBackup, restoreBackup, deleteBackup,
 } from '../rpl/persist.js';
+import { parseHpText } from '../rpl/hp-text.js';
 import { CommandHelp } from './command-help.js';
 import { GraphView } from './graph-view.js';
 import { EquationEditor } from './equation-editor.js';
@@ -730,6 +732,10 @@ export class SidePanel {
     const container = document.createElement('div');
     container.className = 'sp-history';
 
+    const errors = this.app.entry.getErrorLog().reverse()
+      .filter(e => !filter || `${e.message} ${e.input}`.toLowerCase().includes(filter));
+    if (errors.length > 0) container.appendChild(this._renderErrorLog(errors));
+
     if (matched.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'sp-empty';
@@ -775,6 +781,47 @@ export class SidePanel {
     return container;
   }
 
+  _renderErrorLog(errors) {
+    const details = document.createElement('details');
+    details.className = 'sp-errors';
+    details.open = this._errorsOpen !== false;
+    details.addEventListener('toggle', () => { this._errorsOpen = details.open; });
+
+    const summary = document.createElement('summary');
+    summary.textContent = `Recent errors (${errors.length})`;
+    details.appendChild(summary);
+
+    for (const { message, input, at } of errors) {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'sp-hist sp-error';
+      if (input) {
+        row.dataset.action = 'recall';
+        row.dataset.value = input;
+        row.title = 'Recall the command line that raised this error';
+      } else {
+        row.disabled = true;
+      }
+      const msg = document.createElement('span');
+      msg.className = 'sp-error-msg';
+      msg.textContent = message;
+      const meta = document.createElement('span');
+      meta.className = 'sp-error-meta';
+      meta.textContent = [new Date(at).toLocaleTimeString(), input].filter(Boolean).join(' · ');
+      row.appendChild(msg);
+      row.appendChild(meta);
+      details.appendChild(row);
+    }
+
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'sp-io-btn sp-errors-clear';
+    clear.dataset.action = 'errors-clear';
+    clear.textContent = 'Clear errors';
+    details.appendChild(clear);
+    return details;
+  }
+
   _renderChars(filter) {
     const wrap = document.createElement('div');
     wrap.className = 'sp-chars';
@@ -806,10 +853,11 @@ export class SidePanel {
     wrap.className = 'sp-files';
 
     // IO toolbar: full-tree Export/Import sit alongside a single-variable
-    // Upload that drops one entry into the current directory.  Per-row
-    // Download / Move / Delete handle the inverse direction (one entry
-    // out, or shuffled around).  Click delegation goes through
-    // _handleAction('export' | 'import' | 'upload-var').
+    // Upload that drops one entry into the current directory, and an
+    // HP text export of the current directory.  Per-row Download / Move /
+    // Delete handle the inverse direction (one entry out, or shuffled
+    // around).  Click delegation goes through
+    // _handleAction('export' | 'import' | 'upload-var' | 'export-rpl').
     const io = document.createElement('div');
     io.className = 'sp-io';
     const exportBtn = document.createElement('button');
@@ -829,11 +877,19 @@ export class SidePanel {
     uploadBtn.className = 'sp-io-btn';
     uploadBtn.dataset.action = 'upload-var';
     uploadBtn.textContent = 'Upload';
-    uploadBtn.title = 'Add a single variable (or directory) to this directory from a JSON file';
+    uploadBtn.title = 'Add a variable (or directory) to this directory from a JSON file or an HP text file (.rpl / .txt, named after the file)';
+    const rplBtn = document.createElement('button');
+    rplBtn.type = 'button';
+    rplBtn.className = 'sp-io-btn';
+    rplBtn.dataset.action = 'export-rpl';
+    rplBtn.textContent = 'Export .rpl';
+    rplBtn.title = 'Download this directory as an HP text file (DIR … END)';
     io.appendChild(exportBtn);
     io.appendChild(importBtn);
     io.appendChild(uploadBtn);
+    io.appendChild(rplBtn);
     wrap.appendChild(io);
+    wrap.appendChild(this._renderBackups());
 
     // Clickable breadcrumb mirroring the LCD path annunciator — each
     // segment navigates via the app's existing path-click handler so
@@ -958,6 +1014,116 @@ export class SidePanel {
     return wrap;
   }
 
+  _renderBackups() {
+    const details = document.createElement('details');
+    details.className = 'sp-backups';
+    details.open = this._backupsOpen === true;
+    details.addEventListener('toggle', () => { this._backupsOpen = details.open; });
+
+    let backups = [];
+    let unavailable = '';
+    try { backups = listBackups(); }
+    catch (e) { unavailable = e.message; }
+
+    const summary = document.createElement('summary');
+    summary.textContent = `Backups (${backups.length})`;
+    details.appendChild(summary);
+
+    const form = document.createElement('form');
+    form.className = 'sp-backup-new';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'sp-backup-name';
+    input.placeholder = 'Backup name';
+    input.spellcheck = false;
+    input.autocomplete = 'off';
+    input.setAttribute('aria-label', 'Backup name');
+    const archive = document.createElement('button');
+    archive.type = 'submit';
+    archive.className = 'sp-io-btn';
+    archive.textContent = 'Archive';
+    archive.title = 'Save the stack and HOME tree as :0:name (same as :0:name ARCHIVE)';
+    form.appendChild(input);
+    form.appendChild(archive);
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      this._archiveBackupNamed(input.value.trim());
+    });
+    details.appendChild(form);
+
+    if (unavailable || backups.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'sp-empty';
+      empty.textContent = unavailable || 'No backups yet. Name one above, or run :0:name ARCHIVE.';
+      details.appendChild(empty);
+      return details;
+    }
+
+    const list = document.createElement('div');
+    list.className = 'sp-file-list';
+    for (const { port, name, savedAt, depth } of backups) {
+      const key = `${port}:${name}`;
+      const row = document.createElement('div');
+      row.className = 'sp-file-row';
+
+      const main = document.createElement('button');
+      main.type = 'button';
+      main.className = 'sp-file';
+      main.dataset.action = 'backup-restore';
+      main.dataset.value = key;
+      main.title = `Restore :${key} (replaces the stack and HOME tree)`;
+      const nameEl = document.createElement('span');
+      nameEl.className = 'sp-file-name';
+      nameEl.textContent = `:${key}`;
+      const metaEl = document.createElement('span');
+      metaEl.className = 'sp-file-type';
+      metaEl.textContent = `${depth} lvl · ${new Date(savedAt).toLocaleString()}`;
+      main.appendChild(nameEl);
+      main.appendChild(metaEl);
+      row.appendChild(main);
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'sp-file-act sp-file-act-del';
+      del.dataset.action = 'backup-delete';
+      del.dataset.value = key;
+      del.textContent = '×';
+      del.title = `Delete backup :${key}`;
+      del.setAttribute('aria-label', `Delete backup :${key}`);
+      row.appendChild(del);
+
+      list.appendChild(row);
+    }
+    details.appendChild(list);
+    return details;
+  }
+
+  _readHpTextUpload(filename, text) {
+    const name = filename.replace(/\.[^.]*$/, '');
+    if (!isStorableHpName(name)) {
+      throw new Error(`${filename}: rename the file to a valid variable name`);
+    }
+    return { name, value: parseHpText(text, name) };
+  }
+
+  _archiveBackupNamed(name) {
+    const { entry, stack } = this.app;
+    if (!isStorableHpName(name)) {
+      entry.flashError({ message: `Archive: invalid name: ${name}` });
+      return;
+    }
+    try {
+      const exists = listBackups().some(b => b.port === '0' && b.name === name);
+      if (exists && typeof window !== 'undefined' && typeof window.confirm === 'function'
+          && !window.confirm(`Overwrite backup :0:${name}?`)) return;
+      archiveBackup('0', name, stack);
+      entry.flashNotice(`Archived :0:${name}`);
+    } catch (e) {
+      entry.flashError({ message: `Archive: ${e.message}` });
+    }
+    this._render();
+  }
+
   _handleAction(action, value, btn) {
     const { entry, stack } = this.app;
     if (action === 'op') {
@@ -1005,6 +1171,11 @@ export class SidePanel {
       entry.recall(value);
       // Leave the panel open — user typically wants to see the list so
       // they can pick another entry if they got the wrong one.
+      return;
+    }
+    if (action === 'errors-clear') {
+      entry.clearErrorLog();
+      this._render();
       return;
     }
     if (action === 'history-delete') {
@@ -1115,19 +1286,57 @@ export class SidePanel {
       }
       return;
     }
+    if (action === 'backup-restore' || action === 'backup-delete') {
+      const sep = value.indexOf(':');
+      const port = value.slice(0, sep);
+      const name = value.slice(sep + 1);
+      const restoring = action === 'backup-restore';
+      if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+        const ok = window.confirm(restoring
+          ? `Restore :${value}?  This replaces the stack and HOME tree.`
+          : `Delete backup :${value}?`);
+        if (!ok) return;
+      }
+      try {
+        if (restoring) {
+          entry._snapForUndo();
+          restoreBackup(port, name, stack);
+          entry.flashNotice(`Restored :${value}`);
+        } else {
+          deleteBackup(port, name);
+        }
+      } catch (e) {
+        entry.flashError({ message: `${restoring ? 'Restore' : 'Delete'}: ${e.message}` });
+      }
+      this._render();
+      return;
+    }
+    if (action === 'export-rpl') {
+      const dir = calcState.current;
+      try {
+        const filename = exportHpTextFile(dir.name, dir);
+        entry.flashNotice(`Saved ${filename}`);
+      } catch (e) {
+        entry.flashError({ message: `Export failed: ${e.message}` });
+      }
+      return;
+    }
     if (action === 'upload-var') {
-      // Files: top-of-tab Upload.  Reads a single-variable JSON file,
-      // checks for a name collision in the current directory, and
-      // installs it.  Same transient-input pattern as the full-snapshot
-      // Import button so the change event fires reliably on a re-pick.
+      // Files: top-of-tab Upload.  Reads a single-variable JSON file or
+      // an HP text file (stored under the file's base name), checks for
+      // a name collision in the current directory, and installs it.
+      // Same transient-input pattern as the full-snapshot Import button
+      // so the change event fires reliably on a re-pick.
       const picker = document.createElement('input');
       picker.type = 'file';
-      picker.accept = 'application/json,.json';
+      picker.accept = 'application/json,.json,.rpl,.txt,text/plain';
       picker.addEventListener('change', async () => {
         const file = picker.files?.[0];
         if (!file) return;
         try {
-          const { name, value: val } = await parseVariableFile(file);
+          const { name, value: val } = /\.json$/i.test(file.name)
+            ? await parseVariableFile(file)
+            : this._readHpTextUpload(file.name, await readFileText(file));
           if (calcState.current.entries.has(name)) {
             entry.flashError({ message: `Upload: ${name} already exists here` });
             return;

@@ -1,12 +1,13 @@
 /* RPL-ish parser for the command-line entry buffer.  On ENTER the text
    is parsed and its result pushed onto the stack.  Covers reals,
    integers, binary integers, complex, strings, names, lists, vectors,
-   matrices, programs, units, and backtick algebraics (symbolics);
-   anything unrecognised passes through as a bare identifier. */
+   matrices, programs, units, tagged objects (`:tag:obj`), and backtick
+   algebraics (symbolics); anything unrecognised passes through as a
+   bare identifier. */
 
 import {
   Real, Integer, BinaryInteger, Complex, Str, Name, RList, Vector, Matrix, Program,
-  Symbolic, Unit, isValidHpIdentifier,
+  Symbolic, Unit, Tagged, isValidHpIdentifier,
 } from './types.js';
 import { RPLError } from './stack.js';
 import { getWordsizeMask, state as _state, toRadians } from './state.js';
@@ -126,6 +127,14 @@ export function tokenize(src) {
       while (j < n && src[j] !== '`') sym += src[j++];
       tokens.push({ kind: 'quotedName', text: sym });
       i = (j < n) ? j + 1 : n; continue;
+    }
+
+    if (c === ':') {
+      const tm = src.slice(i).match(/^:([^\s:{}[\]()"`«»][^:\n{}[\]()"`«»]*):/);
+      if (tm) {
+        tokens.push({ kind: 'tag', text: tm[1] });
+        i += tm[0].length; continue;
+      }
     }
 
     // Number? start with digit, decimal, or sign followed by digit/.
@@ -368,8 +377,9 @@ export function parseEntry(src) {
         //   - an operator name:            `+`        → Name('+', quoted)
         //   - an algebraic expression:     `X^2 + 1`  → Symbolic(ast)
         //   - a pure-numeric algebra form: `1/3`      → Symbolic(ast)
-        // Heuristic: if the body contains any algebra token (+ - * / ^
-        // ( ) = ≠ < > ≤ ≥), try the algebra parser.  If that fails,
+        //   - a bare number:               `3.7`      → Symbolic(Num)
+        // Heuristic: if the body is a number or contains any algebra token
+        // (+ - * / ^ ( ) = ≠ < > ≤ ≥), try the algebra parser.  If that fails,
         // fall back to Name so forms like `+` (bare operator) still
         // round-trip as a Name.
         const body = t.text;
@@ -381,7 +391,7 @@ export function parseEntry(src) {
         // Bare operator atoms like `+` fall through to Name via the
         // parseAlgebra try/catch.
         const looksAlgebraic =
-          /[+\-*/^()=≠<>≤≥]/.test(body);
+          /[+\-*/^()=≠<>≤≥]/.test(body) || /^(\d+\.?\d*|\.\d+)(E[-+]?\d+)?$/i.test(body);
         if (looksAlgebraic) {
           try {
             return Symbolic(parseAlgebra(body));
@@ -409,6 +419,11 @@ export function parseEntry(src) {
         // flag tells EVAL and the entry loop to push this back instead
         // of looking it up.
         return Name(body, { quoted: true });
+      }
+
+      case 'tag': {
+        if (idx >= toks.length) throw new RPLError(`Missing object after :${t.text}:`);
+        return Tagged(t.text, parseOne());
       }
 
       case 'ident': {

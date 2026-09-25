@@ -1,6 +1,7 @@
 import { varStore, varRecall, varPurge, varOrder, makeSubdir, goUp, goHome, currentPath, state as _calcState, reorderCurrentEntries } from '../state.js';
 import { RPLError } from '../stack.js';
-import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory } from '../types.js';
+import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory, isTagged } from '../types.js';
+import { archiveBackup, restoreBackup } from '../persist.js';
 import { register, lookup } from './registry.js';
 import { _coerceDirName, _coerceStorableName, _hp50TypeCode } from './internal.js';
 
@@ -396,3 +397,20 @@ register('MERGE', (s) => {
     varStore(name, val);
   }
 }, { category: 'Variables / directories', categoryOrder: 11, label: "MERGE" });
+
+
+function _popBackupObject(s) {
+  const [v] = s.popN(1);
+  if (!isTagged(v) || !isName(v.value)) throw new RPLError('Bad argument type');
+  return { port: v.tag, name: v.value.id };
+}
+
+register('ARCHIVE', (s) => {
+  const { port, name } = _popBackupObject(s);
+  archiveBackup(port, name, s);
+}, { category: 'Variables / directories', categoryOrder: 19, label: "ARCHIVE" });
+
+register('RESTORE', (s) => {
+  const { port, name } = _popBackupObject(s);
+  restoreBackup(port, name, s);
+}, { category: 'Variables / directories', categoryOrder: 20, label: "RESTORE" });

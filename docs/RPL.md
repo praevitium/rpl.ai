@@ -573,10 +573,8 @@ rejection asymmetry (see above).
   no-ELSE counterpart locates the IF's END past the CASE; and a CASE
   missing its own inner END greedily auto-closes past the enclosing IF's
   ELSE (a defined no-op, not an error).
-- `ABORT` message is not catchable by IFERR, but the outer user-facing
-  `entry.js` loop may need to learn about `RPLAbort` to display a cleaner
-  status-line message. The fallback `error.message` path is good enough for
-  now; revisit when we wire up the UI-side ABORT display.
+- `ABORT` is not catchable by IFERR. `Entry.safeRun` shows a "Program
+  aborted" notice and keeps the stack as it stood at the abort.
 
 ---
 

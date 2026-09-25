@@ -1,15 +1,17 @@
 /* Persistence: snapshot the calculator state to a JSON-safe shape
    and rehydrate it later.
 
-   Drives two features:
+   Drives three features:
      - Autosave to localStorage so refreshing the page doesn't wipe
        the stack and HOME directory.
      - Export/import to a .json file the user can hand around or back
        up.
+     - Named backups (`:n:name ARCHIVE` / `RESTORE`, ports 0-3), kept
+       together under one localStorage key.
 
-   Both go through `snapshot(stack)` and `rehydrate(snap, stack)` —
-   localStorage just stringifies the snapshot and stashes it under a
-   single key, while export wraps it in a download Blob.
+   All go through `snapshot(stack)` and `rehydrate(snap, stack)` —
+   autosave stringifies the snapshot under a single key, backups store
+   one snapshot per `port:name`, and export wraps it in a download Blob.
 
    Encoding rules (handled by encode/decode below):
      - BigInt        → { __t: 'bigint', v: '<digits>' }
@@ -33,6 +35,8 @@ import {
   setCasModulo, resetCasModulo,
 } from './state.js';
 import { TYPES, Decimal } from './types.js';
+import { RPLError } from './stack.js';
+import { formatHpText } from './hp-text.js';
 
 /* PRNG seed survives page reload.  `seedPrng(n)` does the zero-
    avoidance + reduction to [1, PRNG_MOD-1].  Imported here to apply a
@@ -260,9 +264,11 @@ export function loadFromLocalStorage(stack) {
 /** Trigger a browser download of the current state as a JSON file.
  *  Returns the filename that was used. */
 export function exportToFile(stack, filename = defaultFilename()) {
-  const json = JSON.stringify(snapshot(stack), null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
+  return downloadText(JSON.stringify(snapshot(stack), null, 2), filename, 'application/json');
+}
+
+function downloadText(text, filename, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
@@ -273,20 +279,19 @@ export function exportToFile(stack, filename = defaultFilename()) {
   return filename;
 }
 
-/** Read a File object the user picked, parse it, and rehydrate.
- *  Returns a Promise that resolves on success, rejects on failure. */
-export function importFromFile(file, stack) {
+export function readFileText(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(reader.error || new Error('read failed'));
-    reader.onload  = () => {
-      try {
-        rehydrate(JSON.parse(String(reader.result)), stack);
-        resolve();
-      } catch (e) { reject(e); }
-    };
+    reader.onload  = () => resolve(String(reader.result));
     reader.readAsText(file);
   });
+}
+
+/** Read a File object the user picked, parse it, and rehydrate.
+ *  Returns a Promise that resolves on success, rejects on failure. */
+export async function importFromFile(file, stack) {
+  rehydrate(JSON.parse(await readFileText(file)), stack);
 }
 
 function defaultFilename() {
@@ -295,6 +300,62 @@ function defaultFilename() {
   const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`
               + `-${pad(d.getHours())}${pad(d.getMinutes())}`;
   return `hp50-${stamp}.json`;
+}
+
+export const BACKUPS_KEY = 'hp50.backups';
+export const BACKUP_PORTS = Object.freeze(['0', '1', '2', '3']);
+
+function backupStorage() {
+  const storage = globalThis.localStorage;
+  if (!storage) throw new RPLError('Backup storage unavailable');
+  return storage;
+}
+
+function readBackups() {
+  const raw = backupStorage().getItem(BACKUPS_KEY);
+  if (!raw) return {};
+  const parsed = JSON.parse(raw);
+  return parsed && typeof parsed === 'object' ? parsed : {};
+}
+
+function writeBackups(backups) {
+  backupStorage().setItem(BACKUPS_KEY, JSON.stringify(backups));
+}
+
+function backupKey(port, name) {
+  if (!BACKUP_PORTS.includes(String(port))) throw new RPLError('Bad argument value');
+  if (!name) throw new RPLError('Bad argument value');
+  return `${port}:${name}`;
+}
+
+/** Newest first: `{ port, name, savedAt, depth }` per backup. */
+export function listBackups() {
+  return Object.entries(readBackups())
+    .map(([key, b]) => {
+      const sep = key.indexOf(':');
+      return { port: key.slice(0, sep), name: key.slice(sep + 1), savedAt: b.savedAt, depth: b.snap?.stack?.length ?? 0 };
+    })
+    .sort((a, b) => b.savedAt - a.savedAt);
+}
+
+export function archiveBackup(port, name, stack, savedAt = Date.now()) {
+  const backups = readBackups();
+  backups[backupKey(port, name)] = { savedAt, snap: snapshot(stack) };
+  writeBackups(backups);
+}
+
+export function restoreBackup(port, name, stack) {
+  const backup = readBackups()[backupKey(port, name)];
+  if (!backup) throw new RPLError(`Nonexistent backup :${port}:${name}`);
+  rehydrate(backup.snap, stack);
+}
+
+export function deleteBackup(port, name) {
+  const backups = readBackups();
+  const key = backupKey(port, name);
+  if (!(key in backups)) throw new RPLError(`Nonexistent backup :${port}:${name}`);
+  delete backups[key];
+  writeBackups(backups);
 }
 
 /* single-variable export / import
@@ -358,35 +419,21 @@ export function rehydrateVariable(snap) {
  *  tell single-variable dumps from the full snapshot at a glance.
  *  Returns the filename that was used. */
 export function exportVariableToFile(name, value, filename = defaultVariableFilename(name)) {
-  const json = JSON.stringify(snapshotVariable(name, value), null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  return filename;
+  return downloadText(JSON.stringify(snapshotVariable(name, value), null, 2), filename, 'application/json');
+}
+
+/** Download `value` (a Directory exports as `DIR … END`) as `<name>.rpl` in HP text format. */
+export function exportHpTextFile(name, value) {
+  const safe = String(name).replace(/[^A-Za-z0-9_+\-]/g, '_') || 'var';
+  return downloadText(formatHpText(value), `${safe}.rpl`, 'text/plain');
 }
 
 /** Read a File object the user picked, parse it, and return
  *  `{ name, value }`.  Does NOT install the variable anywhere — the
  *  caller decides whether to overwrite, rename, or refuse on conflict.
  *  Returns a Promise that resolves on success and rejects on failure. */
-export function parseVariableFile(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(reader.error || new Error('read failed'));
-    reader.onload  = () => {
-      try {
-        const snap = JSON.parse(String(reader.result));
-        resolve(rehydrateVariable(snap));
-      } catch (e) { reject(e); }
-    };
-    reader.readAsText(file);
-  });
+export async function parseVariableFile(file) {
+  return rehydrateVariable(JSON.parse(await readFileText(file)));
 }
 
 function defaultVariableFilename(name) {

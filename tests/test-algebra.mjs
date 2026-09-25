@@ -7953,3 +7953,33 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   assert(f.args.length === 1,
          'session429: mutating the input args array after construction does not leak into the node');
 }
+
+{
+  const { astToGiac } = await import('../www/src/rpl/cas/giac-convert.mjs');
+  const { Rational: Rat, isInteger: isInt } = await import('../www/src/rpl/types.js');
+  const BIG = '123456789012345678901';
+
+  const ast = parseAlgebra(`${BIG}+X`);
+  assert(formatAlgebra(ast) === `${BIG} + X` && astToGiac(ast) === `${BIG}+X`,
+    'a big integer literal keeps every digit through format and astToGiac');
+
+  const run = (a, b, op) => { const s = new Stack(); s.push(a); s.push(b); lookup(op).fn(s); return s.peek(); };
+  assert(format(run(Integer(BigInt(BIG)), Name('X', { quoted: true }), '*')) === `\`${BIG}*X\``,
+    'Integer past 2^53 lifts into a Symbolic exactly');
+  assert(format(run(Rat(BigInt(BIG), 7n), Name('X', { quoted: true }), '+')) === `\`${BIG}/7 + X\``,
+    'Rational with a big numerator lifts into a Symbolic exactly');
+
+  const evalOf = (src) => { const s = new Stack(); for (const v of parseEntry(src)) s.push(v); lookup('EVAL').fn(s); return s.peek(); };
+  setApproxMode(false);
+  const pow = evalOf('`2^70`');
+  assert(isInt(pow) && pow.value === 2n ** 70n, 'EXACT: `2^70` EVAL is the exact Integer 2^70');
+  assert(evalOf('`10^20+1`').value === 10n ** 20n + 1n, 'EXACT: an exact fold keeps folding past 2^53');
+  setApproxMode(true);
+  assert(isReal(evalOf('`2^70`')), 'APPROX: `2^70` EVAL stays a Real');
+  setApproxMode(false);
+
+  const s = new Stack();
+  for (const v of parseEntry(`\`${BIG}\``)) s.push(v);
+  lookup('OBJ→').fn(s);
+  assert(isInt(s.peek(2)) && s.peek(2).value === BigInt(BIG), 'OBJ→ on a big integer Symbolic pushes the exact Integer');
+}

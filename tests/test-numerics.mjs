@@ -2258,6 +2258,14 @@ setAngle('rad');
 
 {
   const s = new Stack();
+  s.push(Integer(60n));
+  lookup('IBERNOULLI').fn(s);
+  assert(format(s.peek()) === '`-(1215233140483755572040304994079820246041491/56786730)`',
+    'IBERNOULLI 60 keeps every digit of its 43-digit numerator');
+}
+
+{
+  const s = new Stack();
   // B_0 = 1
   s.push(Integer(0n));
   lookup('IBERNOULLI').fn(s);
@@ -2729,6 +2737,45 @@ setAngle('rad');
   lookup('FP').fn(s);
   assert(s.peek().type === 'symbolic' && s.peek().expr.name === 'FP',
     'session062: FP on Name lifts to Symbolic');
+}
+
+for (const [src, op, want] of [
+  ['`3.7`', 'FLOOR', 3], ['`-2.5`', 'CEIL', -2], ['`3.2`', 'IP', 3], ['`3.25`', 'FP', 0.25],
+]) {
+  const s = new Stack();
+  for (const item of parseEntry(src)) s.push(item);
+  lookup(op).fn(s);
+  const v = s.peek();
+  assert(isReal(v) && v.value.toNumber() === want,
+    `${op} on numeric-literal Symbolic ${src} folds to ${want}`);
+}
+
+for (const [src, want] of [
+  ['`X` 2 RND', '`RND(X,2)`'],
+  ['`X+1` 1 TRNC', '`TRNC(X + 1,1)`'],
+  ['`3.456` 2 RND', '3.46'],
+  ['3.456 2 TRNC', '3.45'],
+]) {
+  const s = new Stack();
+  const items = parseEntry(src);
+  const op = items.pop();
+  for (const item of items) s.push(item);
+  lookup(op.id).fn(s);
+  assert(format(s.peek()) === want, `${op.id}: ${src} → ${want} (got ${format(s.peek())})`);
+}
+
+for (const src of ['`RND(X,2)`', '`TRNC(X,1)`']) {
+  const [v] = parseEntry(src);
+  assert(v.type === 'symbolic' && v.expr.kind === 'fn',
+    `parser: ${src} re-enters as a function call`);
+}
+
+{
+  const s = new Stack();
+  for (const item of parseEntry('`3.7`')) s.push(item);
+  assert(s.peek().type === 'symbolic' && s.peek().expr.kind === 'num'
+      && s.peek().expr.value === 3.7,
+    'parser: quoted numeric literal `3.7` is a Symbolic number, not a Name');
 }
 
 {

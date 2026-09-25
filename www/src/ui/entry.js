@@ -10,8 +10,9 @@
    ================================================================= */
 
 import { parseEntry } from '../rpl/parser.js';
+import { hpTextToSource } from '../rpl/hp-text.js';
 import { lookup } from '../rpl/ops.js';
-import { RPLError } from '../rpl/stack.js';
+import { RPLAbort, RPLError } from '../rpl/stack.js';
 import { errorBeep } from './beep.js';
 import { Name } from '../rpl/types.js';
 import {
@@ -29,10 +30,12 @@ import {
 // (20 entries = 4 soft-menu pages at 6 slots per page, with the tail
 // padded).  Parameterised here so tests can reset it if needed.
 const HISTORY_MAX = 20;
+const ERROR_LOG_MAX = 10;
 
 
 export class Entry {
   static HISTORY_MAX = HISTORY_MAX;
+  static ERROR_LOG_MAX = ERROR_LOG_MAX;
 
   constructor(stack, options = {}) {
     this.stack = stack;
@@ -50,6 +53,7 @@ export class Entry {
     this._historyListeners = new Set();
     this.onError = options.onError || ((msg) => { this.error = msg; this._emit(); });
     this._history = [];
+    this._errorLog = [];
   }
 
   /** Apply a transaction spec to the internal state.  When an EditorView
@@ -146,6 +150,7 @@ export class Entry {
           drawSelection(),
           appKeys,                                        // higher priority
           keymap.of([...historyKeymap, ...defaultKeymap]),// CM defaults
+          EditorView.clipboardInputFilter.of(hpTextToSource),
           // Deliberately NO lineWrapping: long content scrolls
           // horizontally; newlines appear only when the user presses
           // Shift-Enter.
@@ -177,17 +182,27 @@ export class Entry {
 
   focus() { this._view?.focus(); }
 
+  /** Document offset under viewport point (x, y), or null off the text. */
+  posAtCoords(x, y) { return this._view?.posAtCoords({ x, y }) ?? null; }
+
   blur() { this._view?.contentDOM?.blur?.(); }
 
   hasFocus() { return !!this._view?.hasFocus; }
 
   subscribe(fn) { this._listeners.add(fn); return () => this._listeners.delete(fn); }
-  /** Subscribe to history-ring changes only.  Fires after a new entry is
-   *  successfully recorded — i.e. after ENTER / execOp commit, not on
-   *  every keystroke.  Returns an unsubscribe function. */
+  /** Subscribe to history-ring and error-log changes only.  Fires after a
+   *  new entry is successfully recorded (ENTER / execOp commit) or an
+   *  error is logged, not on every keystroke.  Returns an unsubscribe
+   *  function. */
   subscribeHistory(fn) { this._historyListeners.add(fn); return () => this._historyListeners.delete(fn); }
   _emit() { for (const fn of this._listeners) fn(this); }
   _emitHistory() { for (const fn of this._historyListeners) fn(this); }
+
+  /** Insert clipboard text, reading calculator source (`'X'`, `\<<`, `@`
+   *  comments, a `%%HP:` header) the way the Files tab's Upload does. */
+  paste(text) {
+    this.type(hpTextToSource(text));
+  }
 
   /** Append raw text at the cursor.  Pulls keyboard focus into the
    *  editor so physical typing flows straight in after a virtual-key or
@@ -367,6 +382,25 @@ export class Entry {
     if (idx < 0) return false;
     this._history.splice(idx, 1);
     return true;
+  }
+
+  /** Session error log, newest LAST: `{ message, input, at }` where
+   *  `input` is the command line as it stood when the error flashed. */
+  getErrorLog() {
+    return this._errorLog.map(e => ({ ...e }));
+  }
+
+  clearErrorLog() {
+    this._errorLog.length = 0;
+    this._emitHistory();
+  }
+
+  _recordError(message) {
+    this._errorLog.push({ message, input: this.buffer.trim(), at: Date.now() });
+    if (this._errorLog.length > Entry.ERROR_LOG_MAX) {
+      this._errorLog.splice(0, this._errorLog.length - Entry.ERROR_LOG_MAX);
+    }
+    this._emitHistory();
   }
 
   /** Drop every entry from the command-line history ring buffer.
@@ -549,6 +583,8 @@ export class Entry {
    *  type") leaves the stack unchanged — HP50 behavior where a type
    *  error does NOT consume its arguments.  Also clears the undo
    *  slot on failure since the rolled-back state equals the slot.
+   *  ABORT is the exception: the stack stays as the program left it
+   *  and a "Program aborted" notice replaces the error.
    *
    *  Public: callers outside Entry (side-panel, soft-menu handlers in
    *  app.js) that invoke ops directly need the same rollback
@@ -558,6 +594,10 @@ export class Entry {
     const rollback = this.stack.save();
     try { body(); }
     catch (e) {
+      if (e instanceof RPLAbort) {
+        this.flashNotice('Program aborted');
+        return;
+      }
       this.stack.restore(rollback);
       this.stack.clearUndo();
       // Also nuke the var-state UNDO slot.  Since `body()` may have
@@ -591,6 +631,7 @@ export class Entry {
     try {
       this.stack.runOp(() => op.fn(this.stack, this));
     } catch (e) {
+      if (e instanceof RPLAbort) throw e;
       const msg = (e && typeof e === 'object' && e.message != null) ? e.message : String(e);
       throw new RPLError(`${opName}: ${msg}`);
     }
@@ -639,24 +680,29 @@ export class Entry {
       return;
     }
     this.safeRun(() => {
-      const values = parseEntry(raw);
-      // If a *bare* (unquoted) identifier resolves to an op, run it rather
-      // than pushing.  Quoted identifiers (`'+'`) are literal references
-      // and always push — this is what makes `'+' 'X' STO` work.
-      // Wrap each op invocation in `stack.runOp` so LAST/LASTARG
-      // sees the most recently executed user-facing command's
-      // argument list.
-      for (const v of values) {
-        if (v?.type === 'name' && !v.quoted) {
-          if (lookup(v.id)) { this._runOpTagged(v.id); continue; }
-        }
-        this.stack.push(v);
-      }
-      this._recordHistory(raw);
-      this.buffer = '';
-      this.cursor = 0;
+      this._commitEntry(raw);
       this._emit();
     });
+  }
+
+  /** An ABORT still commits the entry: it lands in history and the buffer clears. */
+  _commitEntry(raw) {
+    try {
+      for (const v of parseEntry(raw)) {
+        if (v?.type === 'name' && !v.quoted && lookup(v.id)) this._runOpTagged(v.id);
+        else this.stack.push(v);
+      }
+    } catch (e) {
+      if (e instanceof RPLAbort) this._clearCommittedBuffer(raw);
+      throw e;
+    }
+    this._clearCommittedBuffer(raw);
+  }
+
+  _clearCommittedBuffer(raw) {
+    this._recordHistory(raw);
+    this.buffer = '';
+    this.cursor = 0;
   }
 
   /** Commit then run an op.  Called by operator keys. */
@@ -670,19 +716,7 @@ export class Entry {
     this._snapForUndo();
     this.safeRun(() => {
       // commit current entry first (if any)
-      if (this.buffer.trim().length > 0) {
-        const raw = this.buffer.trim();
-        const values = parseEntry(raw);
-        for (const v of values) {
-          if (v?.type === 'name' && !v.quoted) {
-            if (lookup(v.id)) { this._runOpTagged(v.id); continue; }
-          }
-          this.stack.push(v);
-        }
-        this._recordHistory(raw);
-        this.buffer = '';
-        this.cursor = 0;
-      }
+      if (this.buffer.trim().length > 0) this._commitEntry(this.buffer.trim());
       this._runOpTagged(name);
     });
     this._emit();
@@ -697,6 +731,7 @@ export class Entry {
     this.error = (e && typeof e === 'object' && e.message != null)
       ? String(e.message)
       : String(e);
+    this._recordError(this.error);
     // Errors take priority over any pending notice.
     this.notice = '';
     clearTimeout(this._noticeTimer);

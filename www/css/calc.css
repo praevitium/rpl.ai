@@ -705,15 +705,16 @@ body {
 }
 
 /* Export / Import toolbar at the top of the side-panel Files tab.
-   Two equal-width buttons matching the rest of the panel's dark
-   surface. */
+   Buttons share the row and wrap onto a second one when the panel
+   is too narrow for all of them. */
 .sp-io {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 0 0 6px;
 }
 .sp-io-btn {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   padding: 6px 10px;
   font-size: 14.5px;
   letter-spacing: .4px;
@@ -2804,3 +2805,69 @@ body.mode-minimal .keypad {
   .key .primary { font-size: 12px; }
   .key.digit .primary { font-size: 15px; }
 }
+
+.sp-backups,
+.sp-errors {
+  margin: 0 0 8px;
+  border: 1px solid #3a4252;
+  border-radius: 3px;
+  padding: 4px 6px;
+}
+.sp-backups > summary,
+.sp-errors > summary {
+  cursor: pointer;
+  font-size: 14.5px;
+  letter-spacing: .4px;
+  color: #cdd3de;
+  padding: 2px 0;
+}
+.sp-backup-new {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0;
+}
+.sp-backup-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: #1a1f2c;
+  border: 1px solid #4a5260;
+  border-radius: 3px;
+  padding: 5px 8px;
+  color: #d0d5e0;
+  font: inherit;
+  font-size: 15px;
+}
+.sp-backup-new .sp-io-btn { flex: 0 0 auto; }
+.sp-error {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 3px 0 0;
+}
+.sp-error:disabled { cursor: default; }
+.sp-error-msg { color: #ffc2c7; white-space: normal; }
+.sp-error-meta {
+  font-size: 13px;
+  color: #7d8596;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sp-errors-clear { margin-top: 6px; }
+
+.cmd-hover {
+  position: fixed;
+  z-index: 200;
+  max-width: min(420px, calc(100vw - 16px));
+  padding: 6px 10px;
+  background: rgba(15, 18, 26, 0.96);
+  color: #e7ebf2;
+  border: 1px solid #3a4252;
+  border-radius: 4px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.35;
+  pointer-events: none;
+}
+.cmd-hover.hidden { display: none; }

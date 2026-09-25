@@ -48,6 +48,43 @@ import { assert, assertThrows } from './helpers.mjs';
   }
 
   {
+    const e = new Entry(new Stack());
+    let emitted = 0;
+    e.subscribeHistory(() => { emitted++; });
+    e.buffer = '"a" SIN';
+    e.enter();
+    const [logged] = e.getErrorLog();
+    assert(logged?.message.startsWith('SIN: Bad argument type') && logged.input === '"a" SIN' && emitted === 1,
+      'error log records the message and the command line that raised it');
+    e.buffer = '1 2 +';
+    e.enter();
+    e.buffer = '« 3 ABORT » EVAL';
+    e.enter();
+    assert(e.getErrorLog().length === 1, 'error log skips successful commands and ABORT notices');
+    for (let i = 0; i < Entry.ERROR_LOG_MAX + 2; i++) e.flashError({ message: `E${i}` });
+    const log = e.getErrorLog();
+    assert(log.length === Entry.ERROR_LOG_MAX && log[0].message === 'E2'
+        && log.at(-1).message === `E${Entry.ERROR_LOG_MAX + 1}`,
+      'error log keeps only the newest ERROR_LOG_MAX errors, oldest first');
+    e.clearErrorLog();
+    assert(e.getErrorLog().length === 0, 'clearErrorLog empties the log');
+    clearTimeout(e._errTimer);
+    clearTimeout(e._noticeTimer);
+  }
+
+  {
+    const s = new Stack();
+    const e = new Entry(s);
+    e.buffer = '1 2 « 3 ABORT 4 » EVAL';
+    e.enter();
+    assert(s.depth === 3 && format(s.peek()) === '3',
+      'ABORT keeps the stack as it was at the abort');
+    assert(e.error === '' && e.notice === 'Program aborted' && e.buffer === '',
+      'ABORT shows a Program aborted notice, not an error, and clears the entry');
+    clearTimeout(e._noticeTimer);
+  }
+
+  {
     const s = new Stack();
     const e = new Entry(s);
     e.type("`"); e.type('3');

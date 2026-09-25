@@ -10,7 +10,7 @@ import {
 } from '../www/src/rpl/types.js';
 import { readFileSync } from 'node:fs';
 import { parseEntry } from '../www/src/rpl/parser.js';
-import { format, formatStackTop } from '../www/src/rpl/formatter.js';
+import { format, formatSource, formatStackTop } from '../www/src/rpl/formatter.js';
 import { isKnownFunction, defaultFnEval } from '../www/src/rpl/algebra.js';
 import {
   state as calcState, setAngle, cycleAngle, toRadians, fromRadians,
@@ -9812,7 +9812,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
 
 /* ================================================================
    session196: TRUNC — List distribution + Tagged transparency
-   (_withTaggedBinary(_withListBinary(_truncOp())) wrapper-add)
+   (_withTaggedBinary(_withListBinary(_symbolicRoundingOp('TRUNC', …))) wrapper-add)
 
    TRUNC is a 2-arg op: (x n → y), truncates x to n decimal places.
    Binary Tagged transparency drops the tag (unlike unary, which re-applies).
@@ -9913,7 +9913,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
    `Number(isInteger(nv) ? nv.value : toRealOrThrow(nv))`, so a V/M in the
    n position is rejected by `toRealOrThrow` ('expected real, got
    vector/matrix') rather than the x-slot guard.  `_withListBinary`
-   distributes Lists only, so a V/M in either slot reaches `_truncOp`'s
+   distributes Lists only, so a V/M in either slot reaches `_symbolicRoundingOp`'s
    inner numeric handler.  Pins guard a refactor that drops the second-
    operand `toRealOrThrow` check or narrows the x-slot type guard to
    Vector-only.  No source change — the rejection was already correct.
@@ -12315,4 +12315,43 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // The drift that was just fixed: Directory must be named in the header.
   assert(/\bDirectory\b/.test(header),
     'session335: header lists Directory (regression for the omitted-kind drift)');
+}
+
+{
+  const [v] = parseEntry(':x:7.2');
+  assert(isTagged(v) && v.tag === 'x' && v.value.type === 'real',
+    'parser: :x:7.2 is a tagged Real');
+  assertThrows(() => parseEntry(':x:'), /Missing object/,
+    'parser: a bare :x: tag with no object is rejected');
+}
+
+{
+  const s = new Stack();
+  for (const v of parseEntry(':x:[1.5_m 2.7_m]')) s.push(v);
+  lookup('FLOOR').fn(s);
+  const out = s.peek();
+  assert(isTagged(out) && out.tag === 'x' && format(out.value) === '[ 1._m 2._m ]',
+    'FLOOR on a tagged vector of units keeps the tag and the units');
+}
+
+for (const src of ['{ :a:1 :b:"s" }', '« :a:1 DTAG »', ':o:{ :i:2 }']) {
+  const text = formatSource(parseEntry(src)[0]);
+  assert(formatSource(parseEntry(text)[0]) === text,
+    `formatSource: ${src} re-parses to the same object`);
+}
+
+{
+  const s = new Stack();
+  s.push(Tagged('x', Integer(5n)));
+  lookup('→STR').fn(s);
+  assert(s.peek().value === ':x:5', '→STR on a tagged value gives the re-enterable :x:5 form');
+  lookup('STR→').fn(s);
+  assert(isTagged(s.peek()) && s.peek().tag === 'x', 'STR→ reads :x:5 back as a tagged value');
+}
+
+{
+  const [v] = parseEntry(':my tag:5');
+  assert(isTagged(v) && v.tag === 'my tag', 'parser: a tag may contain a space, as →TAG allows');
+  const [big] = parseEntry('`1E+3`');
+  assert(big.type === 'symbolic' && big.expr.value === 1000, 'parser: `1E+3` is a Symbolic number');
 }

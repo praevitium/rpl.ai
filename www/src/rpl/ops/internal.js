@@ -6,7 +6,7 @@ import { sameDims, scaleOf, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr
 import { getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varPurge, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, getHalted, clearPromptMessage, takeHalted, setHalted } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
-import { format as formatValue, DEFAULT_DISPLAY } from '../formatter.js';
+import { format as formatValue, formatSource, DEFAULT_DISPLAY } from '../formatter.js';
 import { parseEntry as _parseEntryForObjTo } from '../parser.js';
 import { astToGiac } from '../cas/giac-convert.mjs';
 import { register, lookup, OPS } from './registry.js';
@@ -81,18 +81,13 @@ export function _isSymOperand(v) {
 export function _toAst(v) {
   if (isSymbolic(v))   return v.expr;
   if (isName(v))       return AstVar(v.id);
-  if (isInteger(v))    return AstNum(Number(v.value));
+  if (isInteger(v))    return AstNum(v.value);
   if (isReal(v))       return AstNum(v.value.toNumber());
   // Rational lifts to Bin('/', Num(n), Num(d)) so the ratio survives
-  // into the symbolic expression exactly (rather than being coerced
-  // to a float leaf via Number(n)/Number(d)).  The algebra AST has
-  // no num-ratio leaf today; the Bin form prints as `n/d`, routes
-  // through the normal simplifier, and preserves exactness for
-  // downstream ops like FACTOR/EXPAND/INTEG via Giac.  BigInts above
-  // 2^53 lose precision through Number() — acceptable for classroom
-  // inputs; a dedicated 'ratio' AST kind is future work.
+  // into the symbolic expression exactly, prints as `n/d`, and reaches
+  // Giac intact.  Num keeps exact digits for BigInts above 2^53.
   if (isRational(v)) {
-    return AstBin('/', AstNum(Number(v.n)), AstNum(Number(v.d)));
+    return AstBin('/', AstNum(v.n), AstNum(v.d));
   }
   return null;
 }
@@ -104,7 +99,7 @@ export function _toAst(v) {
  *  other value. */
 export function _astToRplValue(ast) {
   if (!ast) return Name('', { quoted: true });
-  if (ast.kind === 'num') return Real(ast.value);
+  if (ast.kind === 'num') return ast.digits ? Integer(BigInt(ast.digits)) : Real(ast.value);
   if (ast.kind === 'var') return Name(ast.name, { quoted: true });
   // `Neg(Num(v))` is the AST shape parseAlgebra emits for any negative
   // numeric literal — Giac's `caseval` returns negative integers and
@@ -115,7 +110,7 @@ export function _astToRplValue(ast) {
   // single-leaf negation node.  (Surfaced by GREDUCE's AUR worked
   // example which returns `-1`.)
   if (ast.kind === 'neg' && ast.arg && ast.arg.kind === 'num') {
-    return Real(-ast.arg.value);
+    return ast.arg.digits ? Integer(-BigInt(ast.arg.digits)) : Real(-ast.arg.value);
   }
   return Symbolic(ast);
 }
@@ -139,7 +134,7 @@ export function _symbolicDecompose(v) {
   const ast = v.expr;
   if (!ast) return [Integer(0n)];
   if (ast.kind === 'num') {
-    return [Real(ast.value), Integer(1n)];
+    return [_astToRplValue(ast), Integer(1n)];
   }
   if (ast.kind === 'var') {
     return [Name(ast.name, { quoted: true }), Integer(1n)];
@@ -2511,7 +2506,7 @@ function _evalValueSync(s, v, depth, caller) {
       : (_op, args, result) => _approxGate(result, args);
     const reduced = algebraEvalAst(v.expr, lookup, _angleAwareFnEval, binGate);
     if (reduced && reduced.kind === 'num') {
-      s.push(Real(reduced.value));
+      s.push(_astToRplValue(reduced));
     } else {
       s.push(Symbolic(reduced));
     }
@@ -2921,10 +2916,10 @@ export const _fromArrayOp = (s) => {
 export const _toStrOp = (s) => {
   const [v] = s.popN(1);
   // Use STD display mode explicitly so the serialized form is stable
-  // (independent of any future FIX/SCI/ENG state).  context is left
-  // as non-'stack' so Names come out bare unless they were quoted,
-  // matching what an OBJ→-then-STR→ round-trip would expect.
-  s.push(Str(formatValue(v, DEFAULT_DISPLAY)));
+  // (independent of any future FIX/SCI/ENG state).  Source form keeps
+  // Names bare unless they were quoted and writes tags as `:tag:obj`,
+  // so the string reads back through STR→.
+  s.push(Str(formatSource(v, DEFAULT_DISPLAY)));
 };
 
 

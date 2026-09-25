@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.4.0 (2026-09-21)
+**Latest release:** v0.4.1 (2026-09-23)
 
 ---
 
@@ -19,6 +19,32 @@ The application runs as a native desktop window on macOS, Windows, and Linux
 via [Tauri 2](https://tauri.app/). The entire calculator frontend is plain
 HTML / CSS / ES modules — no build step, no framework, no bundler required for
 development.
+
+---
+
+## v0.4.1 — 2026-09-23
+
+`:n:name ARCHIVE` saves the stack, HOME tree, and modes as a named
+backup in port 0–3, and `:n:name RESTORE` brings it back. The Files
+tab's Backups section archives, restores, and deletes them. Tagged
+objects can be typed as `:tag:obj`, and lists, programs, ▼ edit, and
+`→STR` write them back in that form. ABORT shows "Program aborted"
+and keeps the stack as it stood. `RND` and `TRNC` lift to
+`RND(x,n)` / `TRNC(x,n)` on symbolic input, and the rounding family
+folds a quoted number such as `` `3.7` FLOOR `` to a Real. Copying an
+expression from the stack in a data plot mode adds a function trace
+again. The Files tab reads HP text files (`.rpl` / `.txt`, with the
+`%%HP:` header, T(3) codes, `@` comments, and `DIR … END`) as a
+variable named after the file, and Export .rpl writes the current
+directory back out in that format. Strings with `"` or `\` inside
+now round-trip through lists, programs, and `→STR`. The History tab
+keeps the session's last 10 errors, each with the command line that
+raised it; clicking one recalls that command. Pasting calculator
+source into the entry line converts `'X'`, T(3) codes, and `@`
+comments the same way. Hovering a command name in the entry line shows
+its one-line AUR description. Integers past 2^53 keep every digit in
+symbolic form: typed literals, big Integer and Rational operands, exact
+folds such as `` `2^70` EVAL ``, and `IBERNOULLI` results.
 
 ---
 

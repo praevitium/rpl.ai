@@ -321,10 +321,7 @@ export function layoutAst(ast, size = DEFAULT_SIZE) {
 
 function lay(ast, parentPrec, size) {
   if (!ast) return textBox('', size);
-  if (isNum(ast)) {
-    const s = Number.isInteger(ast.value) ? String(ast.value) : String(ast.value);
-    return textBox(s, size);
-  }
+  if (ast.kind === 'num') return textBox(ast.digits ?? String(ast.value), size);
   if (isVar(ast)) return textBox(ast.name, size);
 
   if (isNeg(ast)) {

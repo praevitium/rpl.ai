@@ -7,7 +7,8 @@
      Ctrl/Cmd-Z                   → UNDO  (multi-level history)
      Ctrl/Cmd-Y   OR Shift-Ctrl/Cmd-Z → REDO
      Ctrl/Cmd-V                   → PASTE clipboard contents into the
-                                    input editor.  The handler only
+                                    input editor, reading HP source
+                                    (`'X'`, `\<<`) via Entry.paste.  The handler only
                                     fires when no real <input> /
                                     <textarea> has focus (guarded in
                                     app.js), so standard OS copy /
@@ -63,7 +64,7 @@ export function handleModifierShortcut(e, entry, opts = {}) {
       // Fire-and-forget: keydown handlers can't block on await in
       // all browsers, and preventDefault has already been decided.
       Promise.resolve(cb.readText()).then((text) => {
-        if (typeof text === 'string' && text.length) entry.type(text);
+        if (typeof text === 'string' && text.length) entry.paste(text);
       }).catch((err) => entry.flashError(err));
     } else {
       entry.flashError({ message: 'Clipboard unavailable' });

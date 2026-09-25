@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { Stack } from '../www/src/rpl/stack.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import {
@@ -24,6 +25,8 @@ import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '
 import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { UNIT_CATALOG } from '../www/src/rpl/units.js';
+import { commandWordAt, commandHelpText } from '../www/src/ui/hover-help.js';
+import { parseCommandReference } from '../www/src/ui/command-reference.js';
 import { assert, assertThrows } from './helpers.mjs';
 
 /* UI helpers — paging, physical-keyboard modifier shortcuts,
@@ -506,6 +509,15 @@ import { assert, assertThrows } from './helpers.mjs';
     handleModifierShortcut(evt({ key: 'v', metaKey: true }), e, { clipboard: fakeClipboard });
     await Promise.resolve(); await Promise.resolve();
     assert(e.buffer === 'XYZ', 'Cmd-V also pastes');
+  }
+
+  {
+    const e = new Entry(new Stack());
+    const fakeClipboard = { readText: () => Promise.resolve("\\<< 'X^2' \\-> \\>> @ square\n\"it's\"") };
+    handleModifierShortcut(evt({ key: 'v', ctrlKey: true }), e, { clipboard: fakeClipboard });
+    await Promise.resolve(); await Promise.resolve();
+    assert(e.buffer.replace(/\s+/g, ' ').trim() === '« `X^2` → » "it\'s"',
+      `Ctrl-V reads pasted HP source into app syntax, got ${JSON.stringify(e.buffer)}`);
   }
 
   {
@@ -1449,3 +1461,18 @@ setAngle('RAD');
   }
 }
 
+{
+  const line = '1 2 + `SIN(X)` "a SIN b"  →STR';
+  assert(commandWordAt(line, 4) === '+', 'commandWordAt: an operator symbol is a word');
+  assert(commandWordAt(line, 8) === 'SIN', 'commandWordAt: stops at ( inside a backtick algebraic');
+  assert(commandWordAt(line, line.indexOf('a SIN') + 3) === null, 'commandWordAt: nothing inside a string');
+  assert(commandWordAt(line, line.indexOf('  →') + 1) === null, 'commandWordAt: nothing between two spaces');
+  assert(commandWordAt(line, line.length) === '→STR', 'commandWordAt: a word at the end of the line');
+
+  const ref = parseCommandReference(readFileSync(new URL('../www/docs/hp50-commands.html', import.meta.url), 'utf8'));
+  assert(commandHelpText('sin', ref) === 'SIN — Returns the sine of the argument.',
+    'commandHelpText: upper-cased name plus the AUR one-liner');
+  assert(commandHelpText('SIN', null) === 'SIN', 'commandHelpText: the bare name before the reference loads');
+  assert(commandHelpText('X', ref) === null && commandHelpText('42', ref) === null,
+    'commandHelpText: no tooltip for a variable name or a number');
+}

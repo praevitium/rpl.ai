@@ -15,10 +15,8 @@ import { _localFrames, _stepOnce, _truncateLocalFrames, pushSuspendedGenerator, 
  * so the signal bubbles straight to the outer EVAL, whose snapshot-
  * restore catch has been taught to let RPLAbort pass through without
  * restoring — ABORT preserves stack state at the point of the abort,
- * matching HP50 behavior.  The top-level entry.js safeRun loop treats
- * RPLAbort as a clean program termination (no `flashError`, no
- * rollback) — see the EVAL catch below and the entry.js integration
- * we'll add alongside the UI-side display work.
+ * matching HP50 behavior.  Entry.safeRun treats RPLAbort as a clean
+ * program termination: a "Program aborted" notice, no rollback.
  */
 register('ABORT', () => {
   throw new RPLAbort('Abort');

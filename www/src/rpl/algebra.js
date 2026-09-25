@@ -7,6 +7,9 @@
    so they are cheap to compare and share.
 
      { kind: 'num', value: number }
+     { kind: 'num', value: number, digits: string }   an integer beyond
+       2^53: `digits` is exact, `value` is the nearest double.  isNum()
+       is false for it, so numeric folding leaves it as an atom.
      { kind: 'var', name: string }
      { kind: 'neg', arg: <node> }
      { kind: 'bin', op: '+'|'-'|'*'|'/'|'^', l: <node>, r: <node> }
@@ -25,7 +28,11 @@
        one pattern-match pass over its immediate children). */
 
 export function Num(v) {
-  return Object.freeze({ kind: 'num', value: Number(v) });
+  const value = Number(v);
+  if (typeof v === 'bigint' && !Number.isSafeInteger(value)) {
+    return Object.freeze({ kind: 'num', value, digits: v.toString() });
+  }
+  return Object.freeze({ kind: 'num', value });
 }
 export function Var(name) {
   return Object.freeze({ kind: 'var', name: String(name) });
@@ -46,7 +53,30 @@ export function Fn(name, args) {
   });
 }
 
-export const isNum = n => n && n.kind === 'num';
+export const isNum = n => n && n.kind === 'num' && n.digits === undefined;
+
+const EXACT_POW_MAX = 4096;
+
+function exactInt(n) {
+  if (!n || n.kind !== 'num') return null;
+  if (n.digits !== undefined) return BigInt(n.digits);
+  return Number.isSafeInteger(n.value) ? BigInt(n.value) : null;
+}
+
+/** Integer fold of two integer leaves via BigInt, so a result past 2^53
+ *  keeps its digits; null when the fold is not exact-integer. */
+function exactIntFold(op, l, r) {
+  const x = exactInt(l);
+  const y = exactInt(r);
+  if (x === null || y === null) return null;
+  switch (op) {
+    case '+': return Num(x + y);
+    case '-': return Num(x - y);
+    case '*': return Num(x * y);
+    case '^': return y >= 0n && y <= BigInt(EXACT_POW_MAX) ? Num(x ** y) : null;
+    default:  return null;
+  }
+}
 export const isVar = n => n && n.kind === 'var';
 export const isNeg = n => n && n.kind === 'neg';
 export const isBin = n => n && n.kind === 'bin';
@@ -55,7 +85,7 @@ export const isFn  = n => n && n.kind === 'fn';
 export function astEqual(a, b) {
   if (a === b) return true;
   if (!a || !b || a.kind !== b.kind) return false;
-  if (a.kind === 'num') return a.value === b.value;
+  if (a.kind === 'num') return a.value === b.value && a.digits === b.digits;
   if (a.kind === 'var') return a.name === b.name;
   if (a.kind === 'neg') return astEqual(a.arg, b.arg);
   if (a.kind === 'bin') {
@@ -328,14 +358,16 @@ export const KNOWN_FUNCTIONS = Object.freeze({
     const e = Math.floor(Math.log10(Math.abs(x)));
     return x / Math.pow(10, e);
   } },
-  // TRUNC — CAS-form truncate-to-n-places.  Symbolic lift happens when
-  // either operand is a Name / Symbolic, so the entry-line round-trip is
-  // `'TRUNC(X, 3)'`.  No numeric evaluator at simplify time: the stack
+  // RND / TRNC / TRUNC — round or truncate to n places.  Symbolic lift
+  // happens when either operand is a Name / Symbolic, so the entry-line
+  // round-trip is `'TRUNC(X, 3)'`.  No numeric evaluator at simplify time: the stack
   // op rejects n outside [-11, 11] and only produces numeric output for
   // n ≥ 0 in decimal-places mode (n < 0 is significant-figures, which
   // depends on MANT / XPON internally — leave that path to the stack
   // op rather than duplicating it here).  Arity 2, parser-round-trip only.
   TRUNC: { arity: 2 },
+  RND:   { arity: 2 },
+  TRNC:  { arity: 2 },
   // Special functions — ZETA (Riemann ζ), LAMBERT (principal-branch W₀),
   // PSI (digamma / polygamma).  All have numeric evaluators on the
   // stack side (Euler–Maclaurin, Halley iteration, Bernoulli series),
@@ -489,7 +521,7 @@ export function parseAlgebra(src) {
       const m = s.slice(i).match(/^\d+\.?\d*(?:[eE][-+]?\d+)?|^\.\d+(?:[eE][-+]?\d+)?/);
       if (!m) throw new Error(`Bad number at pos ${i}`);
       i += m[0].length;
-      return Num(parseFloat(m[0]));
+      return Num(/^\d+$/.test(m[0]) ? BigInt(m[0]) : parseFloat(m[0]));
     }
 
     if (c === '(') {
@@ -729,6 +761,8 @@ function simplify(ast) {
   const l = simplify(ast.l);
   const r = simplify(ast.r);
 
+  const exact = exactIntFold(op, l, r);
+  if (exact) return exact;
   if (isNum(l) && isNum(r)) {
     switch (op) {
       case '+': return Num(l.value + r.value);
@@ -1383,6 +1417,15 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
   if (ast.kind === 'bin') {
     const l = evalAst(ast.l, lookup, fnEval, binGate);
     const r = evalAst(ast.r, lookup, fnEval, binGate);
+    const exact = exactIntFold(ast.op, l, r);
+    if (exact) {
+      if (!binGate) return exact;
+      const gated = binGate(ast.op, [l.value, r.value], exact.value);
+      if (gated === null || gated === undefined || !Number.isFinite(gated)) {
+        return Bin(ast.op, l, r);
+      }
+      return gated === exact.value ? exact : Num(gated);
+    }
     if (isNum(l) && isNum(r)) {
       let folded;
       switch (ast.op) {
@@ -1469,9 +1512,7 @@ const CMP_OPS = new Set(['=', '≠', '<', '>', '≤', '≥']);
 
 function fmt(ast, parentPrec) {
   if (!ast) return '';
-  if (ast.kind === 'num') {
-    return Number.isInteger(ast.value) ? ast.value.toString() : String(ast.value);
-  }
+  if (ast.kind === 'num') return ast.digits ?? String(ast.value);
   if (ast.kind === 'var') return ast.name;
   if (ast.kind === 'neg') {
     // Parenthesise inside a multiplicative-or-higher parent: '2*-X' is

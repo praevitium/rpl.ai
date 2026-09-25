@@ -170,7 +170,7 @@ function emit(ast, parentPrec) {
   if (!ast) return "";
   switch (ast.kind) {
     case "num":
-      return formatNum(ast.value);
+      return ast.digits ?? formatNum(ast.value);
     case "var":
       return infGiacFromName(ast.name) || ast.name;
     case "neg": {

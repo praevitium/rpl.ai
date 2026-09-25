@@ -30,6 +30,7 @@ const FILES = [
   './test-op-search.mjs',
   './test-jordan-format.mjs',
   './test-jordan.mjs',
+  './test-hp-text.mjs',
   './test-stack-ops.mjs',
   './test-stats.mjs',
   './test-arrow-aliases.mjs',

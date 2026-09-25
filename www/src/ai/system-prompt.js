@@ -99,6 +99,7 @@ VARIABLES & DIRECTORIES (operate in the current directory)
   STO+ STO- STO* STO/        in-place arithmetic update
   INCR DECR                  ++ / -- on a numeric variable
   CRDIR PGDIR HOME UPDIR PATH    directory navigation / management
+  ARCHIVE RESTORE            :0:NAME ARCHIVE saves stack + HOME as a backup (ports 0-3); :0:NAME RESTORE brings it back
   SF CF FS? FC? FS?C FC?C    flag set / clear / query
   STOF RCLF                  flag-word save / restore
 
