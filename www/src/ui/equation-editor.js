@@ -97,7 +97,7 @@ export const EQW_INSERTS = Object.freeze([
   Object.freeze({ face: 'const:i', label: 'i', title: 'Imaginary unit' }),
 ]);
 
-export const GREEK_WORDS = Object.freeze({
+const GREEK_WORDS = Object.freeze({
   alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', epsilon: 'ε', zeta: 'ζ', eta: 'η', theta: 'θ',
   iota: 'ι', kappa: 'κ', lambda: 'λ', mu: 'μ', nu: 'ν', xi: 'ξ', rho: 'ρ', sigma: 'σ', tau: 'τ',
   upsilon: 'υ', phi: 'φ', chi: 'χ', psi: 'ψ', omega: 'ω', pi: 'π',
@@ -1328,7 +1328,7 @@ export function renameVariable(ast, from, to) {
   return ast;
 }
 
-export function usesTrig(ast) {
+function usesTrig(ast) {
   if (ast.kind === 'fn') return TRIG_NAMES.has(ast.name.toUpperCase()) || ast.args.some(usesTrig);
   if (ast.kind === 'neg') return usesTrig(ast.arg);
   if (ast.kind === 'bin') return usesTrig(ast.l) || usesTrig(ast.r);
@@ -1342,7 +1342,7 @@ function runOps(values, ops) {
   return stack.peek(1);
 }
 
-export function plainNumber(value) {
+function plainNumber(value) {
   return format(Real(value)).replace(/\.$/, '');
 }
 

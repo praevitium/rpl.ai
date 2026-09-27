@@ -9,7 +9,7 @@ const kbd = (actionId) => {
   return text ? ` (${text})` : '';
 };
 
-export function modeMenuHtml(mode) {
+function modeMenuHtml(mode) {
   const current = mode.current();
   const rows = mode.options.map((o) => `
     <button type="button" class="opt${o.value === current ? ' on' : ''}" role="menuitemradio" aria-checked="${o.value === current}" data-v="${escapeHtml(o.value)}">

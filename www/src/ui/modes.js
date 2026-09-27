@@ -88,13 +88,6 @@ export const MODES = Object.freeze([
   },
 ]);
 
-export const TEXTBOOK_MODE = Object.freeze({
-  id: 'textbook',
-  title: 'Pretty math',
-  current: () => calcState.textbookMode,
-  set: (on) => setTextbookMode(!!on),
-});
-
 export function modeById(id) {
   return MODES.find((m) => m.id === id) ?? null;
 }

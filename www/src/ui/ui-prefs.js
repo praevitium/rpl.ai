@@ -1,10 +1,10 @@
 export const UI_PREFS_KEY = 'rplai.ui';
 
 export const THEMES = Object.freeze(['auto', 'graphite', 'paper', 'classic']);
-export const KEYPAD_LAYOUTS = Object.freeze(['full', 'compact', 'hidden']);
-export const DRAWER_IDS = Object.freeze(['assistant', 'catalog', 'vars', 'history', 'plot', 'chars']);
+const KEYPAD_LAYOUTS = Object.freeze(['full', 'compact', 'hidden']);
+const DRAWER_IDS = Object.freeze(['assistant', 'catalog', 'vars', 'history', 'plot', 'chars']);
 const HISTORY_SORTS = Object.freeze(['newest', 'oldest']);
-export const ASSISTANT_MODES = Object.freeze(['ask', 'tutor']);
+const ASSISTANT_MODES = Object.freeze(['ask', 'tutor']);
 export const TUTOR_STYLES = Object.freeze(['socratic', 'direct']);
 
 export const DEFAULT_UI_PREFS = Object.freeze({
@@ -52,7 +52,7 @@ export function normalizeUiPrefs(raw) {
   return p;
 }
 
-export function legacyUiPrefs(storage) {
+function legacyUiPrefs(storage) {
   const panel = readJson(storage, 'hp50.ui.sidePanel');
   let chrome = null;
   try { chrome = storage?.getItem('hp50.ui.chrome') ?? null; } catch { chrome = null; }

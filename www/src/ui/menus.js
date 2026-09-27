@@ -40,6 +40,3 @@ export function menuById(id) {
   return OWN_MENUS.find((m) => m.id === id) ?? MENU_FAMILIES.find((m) => m.id === id) ?? null;
 }
 
-export function familyOfCategory(category) {
-  return MENU_FAMILIES.find((f) => f.category === category) ?? null;
-}

@@ -194,7 +194,7 @@ export function chordText(chord, mac = isMacPlatform()) {
   return [...ordered.map((m) => (m === 'Mod' ? 'Ctrl' : m)), keyText].join('+');
 }
 
-export function bindingsFor(actionId, context = null) {
+function bindingsFor(actionId, context = null) {
   return KEYMAP.filter((b) => b.action === actionId && (!context || b.context === context));
 }
 

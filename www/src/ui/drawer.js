@@ -154,7 +154,7 @@ export function signatureOf(entry) {
   return first.length > 42 ? `${first.slice(0, 41)}…` : first;
 }
 
-export const DRAWERS = Object.freeze([
+const DRAWERS = Object.freeze([
   { id: 'assistant', icon: 'spark', label: 'Assistant' },
   { id: 'catalog', icon: 'book', label: 'Catalog' },
   { id: 'vars', icon: 'folder', label: 'Variables' },

@@ -409,7 +409,7 @@ const FACE_ICONS = { '▲': 'tri-u', '▼': 'tri-d', '◀': 'tri-l', '▶': 'tri
 const SUPERSCRIPT_FACES = { 'yˣ': 'y<sup>x</sup>', 'eˣ': 'e<sup>x</sup>', '10ˣ': '10<sup>x</sup>', 'x²': 'x<sup>2</sup>', 'ⁿ√y': '<sup>n</sup>√y' };
 const KEY_CLASS = { shiftL: 'shl', shiftR: 'shr', alpha: 'alp' };
 
-export const PHYSICAL_HINTS = Object.freeze({
+const PHYSICAL_HINTS = Object.freeze({
   '0': '0', '1': '1', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
   '.': '.', '+': '+', '−': '-', '×': '*', '÷': '/', 'yˣ': '^', 'SPC': 'Space', 'ENTER': '↵',
   '⌫': '⌫', 'ON': 'Esc', '▲': '↑', '▼': '↓', '◀': '←', '▶': '→', 'PREV': 'PgUp', 'NEXT': 'PgDn',
@@ -419,7 +419,7 @@ function escapeText(text) {
   return String(text).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 }
 
-export function faceHtml(label) {
+function faceHtml(label) {
   if (FACE_ICONS[label]) return `<svg class="i" aria-hidden="true"><use href="#i-${FACE_ICONS[label]}"/></svg>`;
   if (SUPERSCRIPT_FACES[label]) return SUPERSCRIPT_FACES[label];
   return escapeText(label);

@@ -2,7 +2,7 @@ import { icon } from './icons.js';
 import { escapeHtml } from './display.js';
 import { shortcutText } from './actions.js';
 
-export const WRITERS = Object.freeze([
+const WRITERS = Object.freeze([
   { id: 'rpl', icon: 'chr', label: 'RPL', action: null },
   { id: 'equation', icon: 'fx', label: 'Equation', action: 'writer.equation' },
   { id: 'matrix', icon: 'matrix', label: 'Matrix', action: 'writer.matrix' },

@@ -64,7 +64,7 @@ export function suspendedProgramText(halted, display = DEFAULT_DISPLAY) {
   return chunks.join(' ');
 }
 
-export const TYPE_NAMES = Object.freeze({
+const TYPE_NAMES = Object.freeze({
   [TYPES.REAL]: 'Real number',
   [TYPES.INTEGER]: 'Integer',
   [TYPES.RATIONAL]: 'Fraction',
