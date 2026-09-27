@@ -276,7 +276,8 @@ export class Drawers {
 
   _headActions(id) {
     if (id === 'plot') {
-      return `<button type="button" class="icon-btn sm" data-dw="plot-focus" title="Expand to fill the window" aria-label="Expand">${icon('expand', 'sm')}</button><button type="button" class="icon-btn sm" data-dw="plot-full" title="Full screen" aria-label="Full screen">${icon('full', 'sm')}</button>`;
+      const focused = this.app.plotFocus;
+      return `<button type="button" class="icon-btn sm" data-dw="plot-focus" title="${focused ? 'Back to the drawer' : 'Expand to fill the window'}" aria-label="${focused ? 'Back to the drawer' : 'Expand'}">${icon(focused ? 'collapse' : 'expand', 'sm')}</button><button type="button" class="icon-btn sm" data-dw="plot-full" title="Full screen" aria-label="Full screen">${icon('full', 'sm')}</button>`;
     }
     if (id === 'history') {
       return `<button type="button" class="icon-btn sm" data-dw="hist-sort" title="${this.prefs.historySort === 'newest' ? 'Newest first' : 'Oldest first'}: click to flip" aria-label="Sort">${icon(this.prefs.historySort === 'newest' ? 'down' : 'up', 'sm')}</button><button type="button" class="icon-btn sm" data-dw="hist-clear" title="Clear the history" aria-label="Clear the history">${icon('trash', 'sm')}</button>`;

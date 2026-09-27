@@ -634,10 +634,12 @@ export class Entry {
   _runOpTagged(opName, tag = opName) {
     const op = lookup(opName);
     if (!op) throw new RPLError(`Undefined: ${opName}`);
+    const seen = this.stack.snapshot().slice(0, 3);
     try {
       this.stack.runOp(() => op.fn(this.stack, this));
     } catch (e) {
       if (e instanceof RPLAbort) throw e;
+      this.failure = { op: tag, levels: seen };
       const msg = (e && typeof e === 'object' && e.message != null) ? e.message : String(e);
       throw new RPLError(`${tag}: ${msg}`);
     }
@@ -646,6 +648,7 @@ export class Entry {
   /** Commit current buffer to the stack (ENTER). */
   enter() {
     this.error = '';
+    this.failure = null;
     const raw = this.buffer.trim();
     // An entry consisting entirely of UNDO / REDO / LASTSTACK tokens
     // (any case, any count) routes straight to performUndo /
@@ -714,6 +717,7 @@ export class Entry {
   /** Commit then run an op.  Called by operator keys. */
   execOp(name) {
     this.error = '';
+    this.failure = null;
     // Snapshot BEFORE any stack mutation (buffer commit OR op run)
     // so HIST SHIFT-R UNDO can revert the whole keypress — stack AND
     // variable/directory state.  One snapshot per keypress — if the
@@ -743,9 +747,6 @@ export class Entry {
     clearTimeout(this._noticeTimer);
     this._emit();
     errorBeep();
-    // optionally auto-clear after a bit
-    clearTimeout(this._errTimer);
-    this._errTimer = setTimeout(() => { this.error = ''; this._emit(); }, 2500);
   }
 
   /** Show a transient informational message on the command line (green,

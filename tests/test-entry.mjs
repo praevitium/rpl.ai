@@ -67,7 +67,6 @@ import { assert, assertThrows } from './helpers.mjs';
       'error log keeps only the newest ERROR_LOG_MAX errors, oldest first');
     e.clearErrorLog();
     assert(e.getErrorLog().length === 0, 'clearErrorLog empties the log');
-    clearTimeout(e._errTimer);
     clearTimeout(e._noticeTimer);
   }
 

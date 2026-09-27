@@ -943,37 +943,27 @@ import { assert, assertThrows } from './helpers.mjs';
     cmdline: {},
     statusLine,
   });
-  d.renderStatus({ halted: 'step' });
-  assert(statusLine.innerHTML.includes('PROGRAM HALTED'),
-    'renderStatus: a halted program shows PROGRAM HALTED');
-  d.renderStatus({ halted: null });
-  assert(!statusLine.innerHTML.includes('PROGRAM HALTED'),
-    'renderStatus: clearing halted removes the pill');
+  d.renderStatus({ classic: true, halted: 'step' });
+  assert(/<span class="on ">HALT<\/span>/.test(statusLine.innerHTML),
+    'renderStatus: the Classic LCD lights HALT for a halted program');
+  d.renderStatus({ classic: true, halted: null });
+  assert(/<span class=" ">HALT<\/span>/.test(statusLine.innerHTML),
+    'renderStatus: HALT stays ghosted when nothing is halted');
+  d.renderStatus({ editing: 3 });
+  assert(statusLine.innerHTML.includes('EDITING LEVEL 3'), 'renderStatus: editing a level shows a pill');
   d.renderStatus({ shift: 'shiftLLock' });
   assert(statusLine.innerHTML.includes('LOCKED') && statusLine.innerHTML.includes('↰'),
     'renderStatus: a locked shift layer shows its glyph and LOCKED');
 
-  const programRow = { hidden: true, textContent: 'stale', title: 'stale' };
-  const shown = new Display({
-    stackView: { addEventListener() {} },
-    cmdline: {},
-    statusLine: { innerHTML: '', className: '' },
-    suspendedProgram: programRow,
-  });
-  shown.setSuspendedProgram({
-    tokens: [Integer(1n), Integer(2n), Name('+')],
-    index: 1,
-    kind: 'step',
-  });
-  assert(programRow.hidden === false &&
-         programRow.textContent === '« 1 ▸2 + »' &&
-         programRow.title.includes('▸'),
-    'setSuspendedProgram: step shows the suspended program');
-  shown.setSuspendedProgram(null);
-  assert(programRow.hidden === true &&
-         programRow.textContent === '' &&
-         programRow.title === '',
-    'setSuspendedProgram: null hides the suspended program');
+  const { suspendedProgramHtml } = await import('../www/src/ui/display.js');
+  const halted = { tokens: [Integer(1n), Integer(2n), Name('+')], index: 1, kind: 'step' };
+  assert(suspendedProgramHtml(halted) === '« 1 <mark>2</mark> + »',
+    'suspendedProgramHtml: the next instruction is marked');
+  assert(suspendedProgramHtml({ tokens: [Integer(1n)], index: 1, kind: 'halt' }) === '« 1 <mark>end</mark> »',
+    'suspendedProgramHtml: past the last token marks the end');
+  assert(suspendedProgramHtml(null) === '', 'suspendedProgramHtml: nothing halted, nothing shown');
+  assert(suspendedProgramHtml({ tokens: [{ type: 'string', value: '<b>' }], index: 0, kind: 'step' }).includes('&lt;b&gt;'),
+    'suspendedProgramHtml: program text is escaped');
 }
 
 /* ================================================================

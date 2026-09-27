@@ -87,16 +87,49 @@ export function typeName(value) {
   return TYPE_NAMES[value?.type] ?? 'Object';
 }
 
+const clipText = (text, max = 28) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
+
+/** "the string "hi"", "a 2×3 matrix", "the real number 5." — how an
+ *  error banner names a value. */
+export function describeValue(value) {
+  const type = typeName(value);
+  const shown = clipText(format(value));
+  switch (value?.type) {
+    case TYPES.STRING: return { type, text: `the string ${shown}` };
+    case TYPES.NAME: return { type, text: `the name ${shown}` };
+    case TYPES.SYMBOLIC: return { type, text: `the expression ${shown}` };
+    case TYPES.PROGRAM: return { type, text: 'a program' };
+    case TYPES.LIST: return { type, text: `a list of ${value.items.length} item${value.items.length === 1 ? '' : 's'}` };
+    case TYPES.MATRIX: return { type, text: `a ${value.rows.length}×${value.rows[0]?.length ?? 0} matrix` };
+    case TYPES.VECTOR: return { type, text: `a vector of ${value.items.length}` };
+    case TYPES.DIRECTORY: return { type, text: 'a folder' };
+    case TYPES.UNIT: return { type, text: `the unit object ${shown}` };
+    case TYPES.TAGGED: return { type, text: `the tagged object ${shown}` };
+    default: return { type, text: `the ${type.toLowerCase()} ${shown}` };
+  }
+}
+
+/** The halted program with the next instruction wrapped in <mark>. */
+export function suspendedProgramHtml(halted, display = DEFAULT_DISPLAY) {
+  const text = suspendedProgramText(halted, display);
+  if (!text) return '';
+  const at = text.indexOf('▸');
+  if (at < 0) return escapeHtml(text);
+  const rest = text.slice(at + 1);
+  const end = rest.search(/\s|$/);
+  const next = rest.slice(0, end);
+  return `${escapeHtml(text.slice(0, at))}<mark>${escapeHtml(next || 'end')}</mark>${escapeHtml(rest.slice(end))}`;
+}
+
 const MARK_TAGS = Object.freeze({ arg: 'argument', gone: 'removed', culprit: 'this one', 'culprit-prev': 'wrong type' });
 
 const prefersReducedMotion = () => !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 export class Display {
-  constructor({ stackView, cmdline, statusLine, suspendedProgram }) {
+  constructor({ stackView, cmdline, statusLine }) {
     this.stackView = stackView;
     this.cmdline = cmdline;
     this.statusLine = statusLine;
-    this.suspendedProgram = suspendedProgram ?? null;
     this.displayOpts = { ...DEFAULT_DISPLAY };
     this.selectedLevel = null;
     this.marks = null;
@@ -338,24 +371,7 @@ export class Display {
   }
 
   renderCmdline(entry) {
-    const { buffer, error, notice } = entry;
-    if (!this._errNode) {
-      this._errNode = document.createElement('div');
-      this._errNode.className = 'cmdline-error';
-      this._errNode.setAttribute('role', 'alert');
-      this.cmdline.appendChild(this._errNode);
-    }
-    if (!this._noticeNode) {
-      this._noticeNode = document.createElement('div');
-      this._noticeNode.className = 'cmdline-notice';
-      this._noticeNode.setAttribute('role', 'status');
-      this.cmdline.appendChild(this._noticeNode);
-    }
-    this._errNode.textContent = error || '';
-    this._errNode.hidden = !error;
-    this._noticeNode.textContent = !error && notice ? notice : '';
-    this._noticeNode.hidden = !!error || !notice;
-    this.cmdline.classList.toggle('empty', buffer.length === 0);
+    this.cmdline.classList.toggle('empty', entry.buffer.length === 0);
   }
 
   renderStatus({ classic = false, minimal = false, shift = null, halted = null, busy = false, editing = null } = {}) {
@@ -403,7 +419,6 @@ export class Display {
     if (layer === 'r') pills.push(`<span class="pill r">↱ ${locked ? 'LOCKED' : 'SHIFT'}</span>`);
     if (layer === 'a') pills.push(`<span class="pill a">α ${locked ? 'LOCKED' : 'ALPHA'}</span>`);
     if (editing) pills.push(`<span class="pill e">EDITING LEVEL ${editing}</span>`);
-    if (halted) pills.push('<span class="pill h">PROGRAM HALTED</span>');
     el.innerHTML = pills.join('');
     el.className = pills.length ? 'status-line has-pills' : 'status-line';
     void path;
@@ -411,17 +426,6 @@ export class Display {
 
   _pathHtml() {
     return pathSegmentsHtml(currentPathSegments());
-  }
-
-  setSuspendedProgram(halted) {
-    const el = this.suspendedProgram;
-    if (!el) return;
-    this.displayOpts.mode = calcState.displayMode || 'STD';
-    this.displayOpts.digits = calcState.displayDigits ?? 12;
-    const text = suspendedProgramText(halted, this.displayOpts);
-    el.textContent = text;
-    el.hidden = text.length === 0;
-    el.title = text ? 'Suspended program; ▸ marks the next instruction' : '';
   }
 
   announce(text) {

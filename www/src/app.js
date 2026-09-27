@@ -1,10 +1,12 @@
 import { Stack } from './rpl/stack.js';
 import { Entry } from './ui/entry.js';
-import { Display, escapeHtml } from './ui/display.js';
+import { Display, escapeHtml, describeValue, suspendedProgramHtml } from './ui/display.js';
 import { Keypad } from './ui/keyboard.js';
 import { MenuBar } from './ui/menubar.js';
 import { AppBar } from './ui/appbar.js';
-import { Drawers, CATEGORIES, familyCommands, UNIT_SYMBOLS } from './ui/drawer.js';
+import { Drawers, CATEGORIES, familyCommands, UNIT_SYMBOLS, signatureOf } from './ui/drawer.js';
+import { describeError } from './ui/errors.js';
+import { errorBannerHtml, haltedBannerHtml } from './ui/banner.js';
 import { InputArea } from './ui/input-area.js';
 import { Palette } from './ui/palette.js';
 import { Popover } from './ui/popover.js';
@@ -27,7 +29,7 @@ import { format, formatSource } from './rpl/formatter.js';
 import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, currentPath,
-  goInto, goHome, goUp, captureCalcState, restoreCalcState,
+  goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook } from './rpl/ops.js';
 import { evalScratch } from './rpl/scratch.js';
@@ -68,13 +70,16 @@ class App {
     this._eqwSlots = null;
     this._keyRepeat = false;
     this.reference = null;
+    this.errorBanner = null;
+    this._errorShown = '';
+    this._noticeShown = '';
 
     this.popover = new Popover($('layPop'));
     this.toasts = new Toasts($('toasts'));
     this.display = new Display({
-      stackView: $('stackView'), cmdline: $('cmdline'),
-      statusLine: $('statusLine'), suspendedProgram: $('suspendedProgram'),
+      stackView: $('stackView'), cmdline: $('cmdline'), statusLine: $('statusLine'),
     });
+    $('banner').addEventListener('click', (e) => this._onBannerClick(e));
     this.appbar = new AppBar({ el: $('appbar'), app: this });
     this.keypad = new Keypad({ el: $('keys'), app: this });
     this.menubar = new MenuBar({ el: $('menubar'), app: this });
@@ -127,7 +132,7 @@ class App {
     this.appbar.render();
     this.display.renderStack(this.stack);
     this.display.renderCmdline(this.entry);
-    this.display.setSuspendedProgram(calcState.halted);
+    this.renderBanner();
     this.renderStatus();
     this.input.render();
     this.menubar.render();
@@ -154,6 +159,7 @@ class App {
       this.pendingEdit = null;
       this.input.render();
     }
+    if (this.errorBanner && !this.entry.error) this._showError('');
     this.display.renderStack(this.stack);
     this.appbar.render();
     this.menubar.render();
@@ -161,6 +167,9 @@ class App {
   }
 
   _onEntryChange() {
+    if (this.entry.error !== this._errorShown) this._showError(this.entry.error);
+    if (this.entry.notice && this.entry.notice !== this._noticeShown) this.toast(this.entry.notice);
+    this._noticeShown = this.entry.notice;
     this.display.renderCmdline(this.entry);
     if (this.entry.buffer && this.selection != null) this.clearSelection();
     this.input.render();
@@ -170,7 +179,7 @@ class App {
   _onStateChange() {
     this.appbar.render();
     this.renderStatus();
-    this.display.setSuspendedProgram(calcState.halted);
+    this.renderBanner();
     if (this.menuKind === 'VARS') this.showVarsMenu({ preservePage: true });
     else if (this.menuKind === 'MODES') this.showModesMenu({ preservePage: true });
     else this.menubar.render();
@@ -223,7 +232,85 @@ class App {
   setPlotFocus(on) {
     this.plotFocus = !!on;
     $('app').classList.toggle('plot-focus', this.plotFocus);
-    this.drawers.graph?.resize?.();
+    if (this.drawers.current === 'plot') this.drawers.render();
+    requestAnimationFrame(() => this.drawers.graph?.resize?.());
+  }
+
+  /* ---------------- banners: errors that explain, halted programs ---------------- */
+
+  _showError(message) {
+    this._errorShown = message;
+    this.errorBanner = message ? describeError(message, {
+      failure: this.entry.failure,
+      stack: this.stack.snapshot().slice(0, 3),
+      depth: this.stack.depth,
+      line: this.entry.buffer,
+      describe: describeValue,
+      signatureOf: (name) => {
+        const entry = this.reference ? findReferenceEntry(this.reference, name) : null;
+        return entry ? signatureOf(entry) : '';
+      },
+    }) : null;
+    const levels = this.errorBanner?.culpritLevels ?? [];
+    this.display.marks = levels.length ? Object.fromEntries(levels.map((l) => [l, 'culprit'])) : null;
+    this.display.renderStack(this.stack);
+    this.renderBanner();
+    if (this.errorBanner) this.display.announce(`${this.errorBanner.title} ${this.errorBanner.detail}`);
+  }
+
+  renderBanner() {
+    const el = $('banner');
+    if (this.errorBanner) { el.innerHTML = errorBannerHtml(this.errorBanner); return; }
+    const halted = calcState.halted;
+    if (halted) {
+      const prompt = getPromptMessage();
+      el.innerHTML = haltedBannerHtml({
+        kind: halted.kind,
+        prompt: prompt == null ? '' : isString(prompt) ? prompt.value : format(prompt),
+        programHtml: suspendedProgramHtml(halted, this.display.displayOpts),
+      });
+      return;
+    }
+    el.innerHTML = '';
+  }
+
+  dismissError() {
+    if (!this.entry.error) return;
+    this.entry.error = '';
+    this.entry._emit();
+  }
+
+  _onBannerClick(e) {
+    const b = e.target.closest('[data-bn]');
+    if (!b) return;
+    const act = b.dataset.bn;
+    if (act === 'dismiss') { this.dismissError(); return; }
+    if (act === 'cont' || act === 'sst' || act === 'kill') { this.entry.execOp({ cont: 'CONT', sst: 'SST', kill: 'KILL' }[act]); return; }
+    if (act === 'fix') this._runFix(b.dataset.fix, b.dataset.arg);
+  }
+
+  _runFix(id, arg) {
+    const desc = this.errorBanner;
+    const message = this.entry.error;
+    switch (id) {
+      case 'drop':
+        this.dismissError();
+        this.entry._snapForUndo();
+        try { dropLevel(this.stack, 1); } catch (err) { this.entry.flashError(err); }
+        return;
+      case 'swap': this.dismissError(); this.swapTop(); return;
+      case 'help': this.drawers.showReference(arg ?? desc?.command); return;
+      case 'explain': this._explainError(message); return;
+      case 'edit-line': this.entry.focus(); return;
+      case 'vars': this.drawers.open('vars'); return;
+      case 'retry': this.dismissError(); this.commitEntry(); return;
+    }
+  }
+
+  _explainError(message) {
+    const levels = this.stack.snapshot().slice(0, 4).map((v, i) => `level ${i + 1} is ${formatSource(v)}`).join(', ');
+    const line = this.entry.buffer.trim();
+    this.askAssistant(`I got this error on the calculator: "${message}".${line ? ` The command line held: ${line}.` : ''} ${levels ? `On the stack, ${levels}.` : 'The stack is empty.'} What went wrong, and how do I fix it?`);
   }
 
   /* ---------------- notifications ---------------- */

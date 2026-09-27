@@ -44,6 +44,7 @@ const FILES = [
   './test-fonts.mjs',
   './test-offline.mjs',
   './test-actions.mjs',
+  './test-errors.mjs',
 ];
 
 const perFile = [];

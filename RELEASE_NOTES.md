@@ -73,6 +73,14 @@ browser-reserved chords; ⌫ and Enter on an empty line no longer fire
 from key-repeat, and ↰ON runs CONT. Settings covers appearance, the
 assistant and data, including a reset that also clears backups.
 
+Errors no longer flash and vanish. A banner says what went wrong in
+plain words ("SIN can't use a string."), quotes the command's stack
+diagram and what the stack held, outlines the level at fault, and
+offers fixes: drop it, swap levels, fix the line, open the reference,
+or ask the assistant to explain. It stays until dismissed. A halted
+program shows its PROMPT text and the program with the next
+instruction highlighted, with Continue, Step and Stop.
+
 ---
 
 ## v0.4.1 — 2026-09-23
