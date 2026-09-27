@@ -70,7 +70,7 @@ export class Autocomplete {
   update() {
     const { entry } = this.app;
     const text = entry.buffer;
-    const at = this.app.inputMode === 'rpl' && entry.hasFocus() && !text.trimStart().startsWith('?')
+    const at = this.app.inputMode === 'rpl' && entry.hasFocus() && !this.app.errorBanner && !text.trimStart().startsWith('?')
       ? wordBeforeCursor(text, entry.cursor) : null;
     if (!at) this._dismissedWord = null;
     const after = text.slice(entry.cursor);
