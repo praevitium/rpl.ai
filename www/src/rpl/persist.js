@@ -1,9 +1,10 @@
 /* Persistence: snapshot the calculator state to a JSON-safe shape
    and rehydrate it later.
 
-   Drives three features:
+   Drives four features:
      - Autosave to localStorage so refreshing the page doesn't wipe
        the stack and HOME directory.
+     - A first-run seed (`www/hp50-all.json`) when that store is empty.
      - Export/import to a .json file the user can hand around or back
        up.
      - Named backups (`:n:name ARCHIVE` / `RESTORE`, ports 0-3), kept
@@ -44,6 +45,7 @@ import { formatHpText } from './hp-text.js';
    decoded snapshot's prngSeed through the canonical coerce + emit path
    so listeners see exactly one state event when rehydrate runs. */
 import { seedPrng } from './state.js';
+import SEED_STATE from '../../hp50-all.json' with { type: 'json' };
 
 export const STORAGE_KEY = 'hp50.state';
 export const SCHEMA_VERSION = 1;
@@ -292,6 +294,12 @@ export function loadFromLocalStorage(stack) {
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
     return false;
   }
+}
+
+export function loadInitialState(stack) {
+  if (loadFromLocalStorage(stack)) return 'stored';
+  rehydrate(SEED_STATE, stack);
+  return 'seed';
 }
 
 /** Trigger a browser download of the current state as a JSON file.

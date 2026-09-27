@@ -13,14 +13,14 @@ import {
 import { Num, Var, Bin } from '../www/src/rpl/algebra.js';
 import {
   state as calcState, setAngle,
-  varStore, resetHome, currentPath,
+  varStore, resetHome, currentPath, goHome,
   makeSubdir, goInto,
   seedPrng, getPrngSeed, resetPrng, nextPrngUnit,
   setCoordMode, setDisplay, setWordsize, setBinaryBase, setTextbookMode,
   setApproxMode, setComplexMode, setUserFlag, clearUserFlag, WORDSIZE_DEFAULT,
 } from '../www/src/rpl/state.js';
 import {
-  snapshot, rehydrate, encodeValue, decodeValue,
+  snapshot, rehydrate, encodeValue, decodeValue, loadInitialState, STORAGE_KEY,
   BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup,
 } from '../www/src/rpl/persist.js';
 import { lookup } from '../www/src/rpl/ops.js';
@@ -659,6 +659,43 @@ assert(isReal(mat.rows[0][1]) && mat.rows[0][1].value.eq(2) &&
   } finally {
     globalThis.localStorage = saved;
     resetHome();
+  }
+}
+
+{
+  resetHome();
+  const seeded = new Stack();
+  assert(loadInitialState(seeded) === 'seed', 'an empty store loads the hp50-all.json seed');
+  assert(isDirectory(varRecall('Finance')) && isDirectory(varRecall('Junk')),
+    'the seed installs the Finance and Junk folders');
+  assert(isList(varRecall('CST')) && varRecall('CST').items.length === 2,
+    'the seed installs the CST menu');
+  goInto('Junk');
+  const matrix = varRecall('Matrix');
+  assert(isMatrix(matrix) && matrix.rows.length === 3 && matrix.rows[0].length === 3,
+    'the seed Matrix is a 3 by 3 matrix');
+  goHome();
+
+  const savedStorage = globalThis.localStorage;
+  const store = new Map();
+  resetHome();
+  varStore('ONLY', Integer(1n));
+  const savedSnap = JSON.stringify(snapshot(new Stack()));
+  resetHome();
+  globalThis.localStorage = {
+    getItem: (k) => store.get(k) ?? null,
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: (k) => store.delete(k),
+  };
+  store.set(STORAGE_KEY, savedSnap);
+  try {
+    assert(loadInitialState(new Stack()) === 'stored', 'a saved snapshot is kept and the seed is not applied');
+    assert(varRecall('ONLY')?.value === 1n && varRecall('Finance') === undefined,
+      'a saved store still has its own variables');
+  } finally {
+    globalThis.localStorage = savedStorage;
+    resetHome();
+    resetPrng();
   }
 }
 

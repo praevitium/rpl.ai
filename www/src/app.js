@@ -40,7 +40,7 @@ import {
   isMatrix, isVector, isReal, isInteger, Symbolic,
 } from './rpl/types.js';
 import { UNIT_CATALOG } from './rpl/units.js';
-import { loadFromLocalStorage, saveToLocalStorage, exportToFile, importFromFile } from './rpl/persist.js';
+import { loadInitialState, saveToLocalStorage, exportToFile, importFromFile } from './rpl/persist.js';
 import { giac } from './rpl/cas/giac-engine.mjs';
 import { ChatBot } from './ai/chat-bot.js';
 
@@ -104,7 +104,7 @@ class App {
     loadCommandReference().then((m) => { this.reference = m; this.menubar.render(); }).catch(() => {});
 
     this._wireDisplay();
-    loadFromLocalStorage(this.stack);
+    loadInitialState(this.stack);
 
     this.stack.subscribe(() => this._onStackChange());
     this.entry.subscribe(() => this._onEntryChange());

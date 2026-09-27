@@ -1,0 +1,685 @@
+{
+  "version": 1,
+  "angle": "RAD",
+  "home": {
+    "type": "directory",
+    "name": "HOME",
+    "entries": {
+      "__t": "map",
+      "v": [
+        [
+          "Finance",
+          {
+            "type": "directory",
+            "name": "Finance",
+            "entries": {
+              "__t": "map",
+              "v": [
+                [
+                  "FIP",
+                  {
+                    "type": "symbolic",
+                    "expr": {
+                      "kind": "bin",
+                      "op": "=",
+                      "l": {
+                        "kind": "bin",
+                        "op": "/",
+                        "l": {
+                          "kind": "var",
+                          "name": "F"
+                        },
+                        "r": {
+                          "kind": "var",
+                          "name": "P"
+                        }
+                      },
+                      "r": {
+                        "kind": "bin",
+                        "op": "^",
+                        "l": {
+                          "kind": "var",
+                          "name": "I"
+                        },
+                        "r": {
+                          "kind": "var",
+                          "name": "N"
+                        }
+                      }
+                    }
+                  }
+                ],
+                [
+                  "FIA",
+                  {
+                    "type": "symbolic",
+                    "expr": {
+                      "kind": "bin",
+                      "op": "=",
+                      "l": {
+                        "kind": "bin",
+                        "op": "/",
+                        "l": {
+                          "kind": "var",
+                          "name": "F"
+                        },
+                        "r": {
+                          "kind": "var",
+                          "name": "A"
+                        }
+                      },
+                      "r": {
+                        "kind": "bin",
+                        "op": "/",
+                        "l": {
+                          "kind": "bin",
+                          "op": "-",
+                          "l": {
+                            "kind": "bin",
+                            "op": "^",
+                            "l": {
+                              "kind": "var",
+                              "name": "I"
+                            },
+                            "r": {
+                              "kind": "var",
+                              "name": "N"
+                            }
+                          },
+                          "r": {
+                            "kind": "num",
+                            "value": 1
+                          }
+                        },
+                        "r": {
+                          "kind": "bin",
+                          "op": "-",
+                          "l": {
+                            "kind": "var",
+                            "name": "I"
+                          },
+                          "r": {
+                            "kind": "num",
+                            "value": 1
+                          }
+                        }
+                      }
+                    }
+                  }
+                ],
+                [
+                  "FIG",
+                  {
+                    "type": "symbolic",
+                    "expr": {
+                      "kind": "bin",
+                      "op": "=",
+                      "l": {
+                        "kind": "var",
+                        "name": "F"
+                      },
+                      "r": {
+                        "kind": "bin",
+                        "op": "/",
+                        "l": {
+                          "kind": "bin",
+                          "op": "*",
+                          "l": {
+                            "kind": "var",
+                            "name": "G"
+                          },
+                          "r": {
+                            "kind": "bin",
+                            "op": "-",
+                            "l": {
+                              "kind": "bin",
+                              "op": "-",
+                              "l": {
+                                "kind": "bin",
+                                "op": "^",
+                                "l": {
+                                  "kind": "var",
+                                  "name": "I"
+                                },
+                                "r": {
+                                  "kind": "var",
+                                  "name": "N"
+                                }
+                              },
+                              "r": {
+                                "kind": "bin",
+                                "op": "*",
+                                "l": {
+                                  "kind": "var",
+                                  "name": "N"
+                                },
+                                "r": {
+                                  "kind": "var",
+                                  "name": "I"
+                                }
+                              }
+                            },
+                            "r": {
+                              "kind": "num",
+                              "value": 1
+                            }
+                          }
+                        },
+                        "r": {
+                          "kind": "bin",
+                          "op": "^",
+                          "l": {
+                            "kind": "bin",
+                            "op": "-",
+                            "l": {
+                              "kind": "var",
+                              "name": "I"
+                            },
+                            "r": {
+                              "kind": "num",
+                              "value": 1
+                            }
+                          },
+                          "r": {
+                            "kind": "num",
+                            "value": 2
+                          }
+                        }
+                      }
+                    }
+                  }
+                ],
+                [
+                  "I",
+                  {
+                    "type": "symbolic",
+                    "expr": {
+                      "kind": "bin",
+                      "op": "=",
+                      "l": {
+                        "kind": "var",
+                        "name": "I"
+                      },
+                      "r": {
+                        "kind": "bin",
+                        "op": "+",
+                        "l": {
+                          "kind": "num",
+                          "value": 1
+                        },
+                        "r": {
+                          "kind": "var",
+                          "name": "periodInterestFrac"
+                        }
+                      }
+                    }
+                  }
+                ],
+                [
+                  "N",
+                  {
+                    "type": "symbolic",
+                    "expr": {
+                      "kind": "bin",
+                      "op": "=",
+                      "l": {
+                        "kind": "var",
+                        "name": "N"
+                      },
+                      "r": {
+                        "kind": "var",
+                        "name": "totalPeriods"
+                      }
+                    }
+                  }
+                ],
+                [
+                  "P",
+                  {
+                    "type": "symbolic",
+                    "expr": {
+                      "kind": "bin",
+                      "op": "=",
+                      "l": {
+                        "kind": "var",
+                        "name": "P"
+                      },
+                      "r": {
+                        "kind": "var",
+                        "name": "presentValue"
+                      }
+                    }
+                  }
+                ],
+                [
+                  "F",
+                  {
+                    "type": "symbolic",
+                    "expr": {
+                      "kind": "bin",
+                      "op": "=",
+                      "l": {
+                        "kind": "var",
+                        "name": "F"
+                      },
+                      "r": {
+                        "kind": "var",
+                        "name": "futureValue"
+                      }
+                    }
+                  }
+                ],
+                [
+                  "A",
+                  {
+                    "type": "symbolic",
+                    "expr": {
+                      "kind": "bin",
+                      "op": "=",
+                      "l": {
+                        "kind": "var",
+                        "name": "A"
+                      },
+                      "r": {
+                        "kind": "var",
+                        "name": "annuityAmount"
+                      }
+                    }
+                  }
+                ],
+                [
+                  "G",
+                  {
+                    "type": "symbolic",
+                    "expr": {
+                      "kind": "bin",
+                      "op": "=",
+                      "l": {
+                        "kind": "var",
+                        "name": "G"
+                      },
+                      "r": {
+                        "kind": "var",
+                        "name": "gradientFactor"
+                      }
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ],
+        [
+          "Junk",
+          {
+            "type": "directory",
+            "name": "Junk",
+            "entries": {
+              "__t": "map",
+              "v": [
+                [
+                  "Integer",
+                  {
+                    "type": "integer",
+                    "value": {
+                      "__t": "bigint",
+                      "v": "12345"
+                    }
+                  }
+                ],
+                [
+                  "Real",
+                  {
+                    "type": "real",
+                    "value": {
+                      "__t": "decimal",
+                      "v": "1234.5678"
+                    }
+                  }
+                ],
+                [
+                  "List",
+                  {
+                    "type": "list",
+                    "items": [
+                      {
+                        "type": "name",
+                        "id": "A",
+                        "local": false,
+                        "quoted": false
+                      },
+                      {
+                        "type": "name",
+                        "id": "B",
+                        "local": false,
+                        "quoted": false
+                      },
+                      {
+                        "type": "name",
+                        "id": "C",
+                        "local": false,
+                        "quoted": false
+                      },
+                      {
+                        "type": "integer",
+                        "value": {
+                          "__t": "bigint",
+                          "v": "1"
+                        }
+                      },
+                      {
+                        "type": "integer",
+                        "value": {
+                          "__t": "bigint",
+                          "v": "2"
+                        }
+                      },
+                      {
+                        "type": "integer",
+                        "value": {
+                          "__t": "bigint",
+                          "v": "3"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                [
+                  "Vector",
+                  {
+                    "type": "vector",
+                    "items": [
+                      {
+                        "type": "integer",
+                        "value": {
+                          "__t": "bigint",
+                          "v": "1"
+                        }
+                      },
+                      {
+                        "type": "integer",
+                        "value": {
+                          "__t": "bigint",
+                          "v": "2"
+                        }
+                      },
+                      {
+                        "type": "integer",
+                        "value": {
+                          "__t": "bigint",
+                          "v": "3"
+                        }
+                      },
+                      {
+                        "type": "integer",
+                        "value": {
+                          "__t": "bigint",
+                          "v": "4"
+                        }
+                      },
+                      {
+                        "type": "integer",
+                        "value": {
+                          "__t": "bigint",
+                          "v": "5"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                [
+                  "Matrix",
+                  {
+                    "type": "matrix",
+                    "rows": [
+                      [
+                        {
+                          "type": "integer",
+                          "value": {
+                            "__t": "bigint",
+                            "v": "1"
+                          }
+                        },
+                        {
+                          "type": "integer",
+                          "value": {
+                            "__t": "bigint",
+                            "v": "2"
+                          }
+                        },
+                        {
+                          "type": "integer",
+                          "value": {
+                            "__t": "bigint",
+                            "v": "3"
+                          }
+                        }
+                      ],
+                      [
+                        {
+                          "type": "integer",
+                          "value": {
+                            "__t": "bigint",
+                            "v": "4"
+                          }
+                        },
+                        {
+                          "type": "integer",
+                          "value": {
+                            "__t": "bigint",
+                            "v": "5"
+                          }
+                        },
+                        {
+                          "type": "integer",
+                          "value": {
+                            "__t": "bigint",
+                            "v": "6"
+                          }
+                        }
+                      ],
+                      [
+                        {
+                          "type": "integer",
+                          "value": {
+                            "__t": "bigint",
+                            "v": "7"
+                          }
+                        },
+                        {
+                          "type": "integer",
+                          "value": {
+                            "__t": "bigint",
+                            "v": "8"
+                          }
+                        },
+                        {
+                          "type": "integer",
+                          "value": {
+                            "__t": "bigint",
+                            "v": "9"
+                          }
+                        }
+                      ]
+                    ]
+                  }
+                ],
+                [
+                  "String",
+                  {
+                    "type": "string",
+                    "value": "The quick brown fox jumps over the lazy dog."
+                  }
+                ],
+                [
+                  "Expression",
+                  {
+                    "type": "symbolic",
+                    "expr": {
+                      "kind": "bin",
+                      "op": "/",
+                      "l": {
+                        "kind": "bin",
+                        "op": "-",
+                        "l": {
+                          "kind": "bin",
+                          "op": "^",
+                          "l": {
+                            "kind": "var",
+                            "name": "x"
+                          },
+                          "r": {
+                            "kind": "num",
+                            "value": 5
+                          }
+                        },
+                        "r": {
+                          "kind": "num",
+                          "value": 1
+                        }
+                      },
+                      "r": {
+                        "kind": "bin",
+                        "op": "-",
+                        "l": {
+                          "kind": "var",
+                          "name": "x"
+                        },
+                        "r": {
+                          "kind": "num",
+                          "value": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                [
+                  "Program",
+                  {
+                    "type": "program",
+                    "tokens": [
+                      {
+                        "type": "name",
+                        "id": "*",
+                        "local": false,
+                        "quoted": false
+                      },
+                      {
+                        "type": "name",
+                        "id": "LASTARG",
+                        "local": false,
+                        "quoted": false
+                      },
+                      {
+                        "type": "name",
+                        "id": "+",
+                        "local": false,
+                        "quoted": false
+                      },
+                      {
+                        "type": "name",
+                        "id": "/",
+                        "local": false,
+                        "quoted": false
+                      }
+                    ]
+                  }
+                ],
+                [
+                  "Name",
+                  {
+                    "type": "name",
+                    "id": "X",
+                    "local": false,
+                    "quoted": false
+                  }
+                ]
+              ]
+            }
+          }
+        ],
+        [
+          "CST",
+          {
+            "type": "list",
+            "items": [
+              {
+                "type": "tagged",
+                "tag": "+",
+                "value": {
+                  "type": "program",
+                  "tokens": [
+                    {
+                      "type": "name",
+                      "id": "+",
+                      "local": false,
+                      "quoted": false
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "tagged",
+                "tag": "||",
+                "value": {
+                  "type": "program",
+                  "tokens": [
+                    {
+                      "type": "name",
+                      "id": "dup2",
+                      "local": false,
+                      "quoted": false
+                    },
+                    {
+                      "type": "name",
+                      "id": "*",
+                      "local": false,
+                      "quoted": false
+                    },
+                    {
+                      "type": "name",
+                      "id": "rot",
+                      "local": false,
+                      "quoted": false
+                    },
+                    {
+                      "type": "name",
+                      "id": "rot",
+                      "local": false,
+                      "quoted": false
+                    },
+                    {
+                      "type": "name",
+                      "id": "+",
+                      "local": false,
+                      "quoted": false
+                    },
+                    {
+                      "type": "name",
+                      "id": "/",
+                      "local": false,
+                      "quoted": false
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      ]
+    }
+  },
+  "path": [
+    "HOME"
+  ],
+  "stack": [],
+  "prngSeed": {
+    "__t": "bigint",
+    "v": "741"
+  },
+  "casVx": "x",
+  "casModulo": {
+    "__t": "bigint",
+    "v": "13"
+  }
+}
