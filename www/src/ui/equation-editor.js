@@ -1,14 +1,17 @@
 import {
-  parseAlgebra, formatAlgebra, isKnownFunction, KNOWN_FUNCTIONS,
+  parseAlgebra, formatAlgebra, isKnownFunction, KNOWN_FUNCTIONS, freeVars, astEqual,
   Num, Var, Neg, Bin, Fn, isNum, isVar, isNeg, isBin, isFn,
 } from '../rpl/algebra.js';
-import { eqwToSvg } from '../rpl/pretty.js';
-import { Symbolic, isSymbolic, isNumber, isName, isInteger, isReal, Integer } from '../rpl/types.js';
+import { eqwToSvg, astToSvg } from '../rpl/pretty.js';
+import { Symbolic, Name, Real, isSymbolic, isNumber, isName, isInteger, isReal, isList, Integer } from '../rpl/types.js';
 import { format } from '../rpl/formatter.js';
 import { RPLError, Stack } from '../rpl/stack.js';
 import { lookup } from '../rpl/ops.js';
 import { _astToRplValue } from '../rpl/ops/internal.js';
 import { giac } from '../rpl/cas/giac-engine.mjs';
+import { state as calcState, toRadians, fromRadians } from '../rpl/state.js';
+import { evalNumeric } from './plot-engine.js';
+import { escapeHtml } from './display.js';
 
 export const HOLE = Object.freeze({ t: 'hole' });
 
@@ -79,101 +82,27 @@ const STRUCT_FACE = {
   'Σ': 'sigma', '∂': 'deriv', '∫': 'integ',
 };
 
-function paletteButton(face, label, title) {
-  return Object.freeze({ face, label: label ?? face, title });
-}
-
-function paletteGroup(name, items) {
-  return Object.freeze({ name, items: Object.freeze(items) });
-}
-
-export const EQW_FEATURED = Object.freeze([
-  paletteButton('∂', '∂', 'Derivative'),
-  paletteButton('∫', '∫', 'Integral'),
-  paletteButton('Σ', 'Σ', 'Sum'),
-  paletteButton('√x', '√', 'Square root'),
-  paletteButton('ⁿ√y', 'ⁿ√', 'nth root'),
-  paletteButton('π', 'π', 'Pi'),
-  paletteButton('∞', '∞', 'Infinity'),
-  paletteButton('const:i', 'i', 'Imaginary unit'),
-  paletteButton('≠', '≠', 'Not equal'),
-  paletteButton('≤', '≤', 'Less or equal'),
-  paletteButton('≥', '≥', 'Greater or equal'),
-  paletteButton('α', 'α', 'alpha'),
-  paletteButton('β', 'β', 'beta'),
-  paletteButton('γ', 'γ', 'gamma'),
-  paletteButton('θ', 'θ', 'theta'),
-  paletteButton('λ', 'λ', 'lambda'),
-  paletteButton('μ', 'μ', 'mu'),
-  paletteButton('ω', 'ω', 'omega'),
-  paletteButton('Δ', 'Δ', 'Delta'),
+export const EQW_INSERTS = Object.freeze([
+  Object.freeze({ face: '√x', label: '√', title: 'Square root' }),
+  Object.freeze({ face: 'ⁿ√y', label: 'ⁿ√', title: 'nth root' }),
+  Object.freeze({ face: '∂', label: '∂', title: 'Derivative' }),
+  Object.freeze({ face: '∫', label: '∫', title: 'Integral' }),
+  Object.freeze({ face: 'Σ', label: 'Σ', title: 'Sum' }),
+  Object.freeze({ face: 'ABS', label: '|x|', title: 'Absolute value' }),
+  Object.freeze({ face: '∞', label: '∞', title: 'Infinity' }),
+  Object.freeze({ face: '≠', label: '≠', title: 'Not equal' }),
+  Object.freeze({ face: '≤', label: '≤', title: 'Less or equal (or type <=)' }),
+  Object.freeze({ face: '≥', label: '≥', title: 'Greater or equal (or type >=)' }),
+  Object.freeze({ face: 'π', label: 'π', title: 'Pi (or type pi)' }),
+  Object.freeze({ face: 'const:i', label: 'i', title: 'Imaginary unit' }),
 ]);
 
-const GREEK_MORE = 'αβγδεζηθικλμνξοπρστυφχψωΔ'.split('');
-
-export const EQW_PALETTE = Object.freeze([
-  paletteGroup('Templates', [
-    paletteButton('yˣ', 'xʸ', 'Power'),
-    paletteButton('x²', 'x²', 'Square'),
-    paletteButton('eˣ', 'eˣ', 'Exponential'),
-    paletteButton('10ˣ', '10ˣ', 'Power of ten'),
-    paletteButton('1/x', '1/x', 'Reciprocal'),
-    paletteButton('!', 'n!', 'Factorial'),
-    paletteButton('( )', '( )', 'Parentheses'),
-    paletteButton('+/-', '±', 'Negate'),
-    paletteButton('÷', '÷', 'Fraction'),
-  ]),
-  paletteGroup('Functions', [
-    paletteButton('SIN', 'SIN', 'Sine'),
-    paletteButton('COS', 'COS', 'Cosine'),
-    paletteButton('TAN', 'TAN', 'Tangent'),
-    paletteButton('ASIN', 'ASIN', 'Arcsine'),
-    paletteButton('ACOS', 'ACOS', 'Arccosine'),
-    paletteButton('ATAN', 'ATAN', 'Arctangent'),
-    paletteButton('SINH', 'SINH', 'Hyperbolic sine'),
-    paletteButton('COSH', 'COSH', 'Hyperbolic cosine'),
-    paletteButton('TANH', 'TANH', 'Hyperbolic tangent'),
-    paletteButton('LN', 'LN', 'Natural log'),
-    paletteButton('LOG', 'LOG', 'Log base 10'),
-    paletteButton('ABS', 'ABS', 'Absolute value'),
-    paletteButton('ARG', 'ARG', 'Argument'),
-  ]),
-  paletteGroup('Names', [
-    paletteButton('x', 'x', 'Variable x'),
-    paletteButton('e', 'e', 'Euler number'),
-  ]),
-  paletteGroup('Operators', [
-    paletteButton('+', '+', 'Add'),
-    paletteButton('−', '−', 'Subtract'),
-    paletteButton('×', '×', 'Multiply'),
-    paletteButton('=', '=', 'Equal'),
-    paletteButton('<', '<', 'Less than'),
-    paletteButton('>', '>', 'Greater than'),
-    paletteButton(',', ',', 'Next template slot'),
-  ]),
-  paletteGroup('Digits', [
-    ...'7894561230'.split('').map(digit => paletteButton(digit, digit, digit)),
-    paletteButton('.', '.', 'Decimal point'),
-    paletteButton('EEX', 'EEX', 'Scientific notation'),
-  ]),
-  paletteGroup('Greek', GREEK_MORE
-    .filter(letter => !EQW_FEATURED.some(button => button.face === letter))
-    .map(letter => paletteButton(letter, letter, letter))),
-  paletteGroup('Move', [
-    paletteButton('⌫', '⌫', 'Backspace'),
-    paletteButton('◀', '◀', 'Previous'),
-    paletteButton('▶', '▶', 'Next'),
-    paletteButton('▲', '▲', 'Grow selection'),
-    paletteButton('▼', '▼', 'Shrink selection'),
-  ]),
-]);
-
-export function eqwPaletteFaces() {
-  return [
-    ...EQW_FEATURED.map(button => button.face),
-    ...EQW_PALETTE.flatMap(group => group.items.map(button => button.face)),
-  ];
-}
+export const GREEK_WORDS = Object.freeze({
+  alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', epsilon: 'ε', zeta: 'ζ', eta: 'η', theta: 'θ',
+  iota: 'ι', kappa: 'κ', lambda: 'λ', mu: 'μ', nu: 'ν', xi: 'ξ', rho: 'ρ', sigma: 'σ', tau: 'τ',
+  upsilon: 'υ', phi: 'φ', chi: 'χ', psi: 'ψ', omega: 'ω', pi: 'π',
+  Gamma: 'Γ', Delta: 'Δ', Theta: 'Θ', Lambda: 'Λ', Xi: 'Ξ', Phi: 'Φ', Psi: 'Ψ', Omega: 'Ω',
+});
 
 function numLeaf(text) { return Object.freeze({ t: 'num', text: String(text) }); }
 function nameLeaf(text) { return Object.freeze({ t: 'name', text: String(text) }); }
@@ -890,6 +819,17 @@ function extendRun(state, dir) {
   return landSelect(state, target.row, from, to);
 }
 
+function extendSelection(state, dir) {
+  const target = state.target;
+  if (target.mode === 'select') {
+    const wider = extendRun(state, dir);
+    return wider === state ? grow(state) : wider;
+  }
+  const item = getItem(state.root, target.path);
+  if (!item || item.t === 'hole') return moveSide(state, dir);
+  return landSelect(state, rowKeyOf(target.path), target.path.at(-1), target.path.at(-1));
+}
+
 function selectAll(state) {
   const node = parseRel(state.root, 0, state.root.length);
   return move(state, { mode: 'select', row: '', from: node.from, to: node.to });
@@ -1297,10 +1237,13 @@ function isLetterFace(face) {
   return /^[A-Za-zΑ-Ωα-ω]$/.test(face);
 }
 
+const KEEPS_WORD_OPEN = new Set(['⌫', 'DEL']);
+
 export function pressEquationKey(state, face) {
   if (face === 'UNDO') return undoState(state);
   if (face === 'REDO') return redoState(state);
   if (face === 'CLEAR') return clearAll(state);
+  if (!KEEPS_WORD_OPEN.has(face) && !isLetterFace(face) && !/^[0-9]$/.test(face)) state = completeWord(state);
   if (face === '⌫') return backspace(state);
   if (face === 'DEL') return deleteTarget(state);
   if (face === '▲') return grow(state);
@@ -1310,6 +1253,8 @@ export function pressEquationKey(state, face) {
   if (face === 'RS▲') return selectAll(state);
   if (face === 'RS◀') return extendRun(state, -1);
   if (face === 'RS▶') return extendRun(state, 1);
+  if (face === '⇧◀') return extendSelection(state, -1);
+  if (face === '⇧▶') return extendSelection(state, 1);
   if (face === ',') return comma(state);
   if (face === ')') return closeGroup(state);
   if (face === '=' && state.lastFace === '<') return upgradeOp(state, '≤');
@@ -1329,6 +1274,145 @@ export function pressEquationKey(state, face) {
   if (face === '+/-') return toggleNeg(state);
   if (isKnownFunction(face)) return structureKey(state, NAME_KIND[face.toUpperCase()] || 'fn', face);
   throw new RPLError(`${face}: not available in EQW`);
+}
+
+export function completeWord(state) {
+  if (state.target.mode !== 'insert') return state;
+  const item = getItem(state.root, state.target.path);
+  const letter = item?.t === 'name' ? GREEK_WORDS[item.text] : undefined;
+  return letter ? putLeaf(state, nameLeaf(letter)) : state;
+}
+
+export function isBlankEquation(state) {
+  return state.root.length === 1 && state.root[0].t === 'hole';
+}
+
+export function holePath(root) {
+  return stops(root).find((path) => getItem(root, path)?.t === 'hole') ?? null;
+}
+
+export function replaceWhole(state, ast, typingKey = null) {
+  const root = fromAst(ast);
+  return step(state, { root, target: { mode: 'insert', path: stops(root).at(-1) || [0] }, lastFace: null }, typingKey);
+}
+
+export function wrapTarget(state, kind) {
+  const items = targetItems(state);
+  return postfix(state, kind === 'paren' ? makeParen(items, true) : makeStruct(kind, [items]));
+}
+
+export function collapseSelection(state, dir = 1) {
+  if (state.target.mode !== 'select') return state;
+  const { rowKey, from, to } = spanOf(state);
+  const path = dir < 0 ? firstStopIn(state.root, rowKey, from, to) : lastStopIn(state.root, rowKey, from, to);
+  return path ? move(state, { mode: 'insert', path }) : state;
+}
+
+const CONSTANT_NAMES = new Set(['π', 'e', 'i', '∞']);
+const TRIG_NAMES = new Set(['SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN']);
+
+export function variablesOf(ast) {
+  return [...freeVars(ast)].filter((name) => !CONSTANT_NAMES.has(name));
+}
+
+export function primaryVariable(ast, preferred = 'x') {
+  const names = variablesOf(ast);
+  return names.find((n) => n === preferred) ?? names.find((n) => n.toLowerCase() === 'x') ?? names[0] ?? null;
+}
+
+export function renameVariable(ast, from, to) {
+  if (ast.kind === 'var') return ast.name === from ? Var(to) : ast;
+  if (ast.kind === 'neg') return Neg(renameVariable(ast.arg, from, to));
+  if (ast.kind === 'bin') return Bin(ast.op, renameVariable(ast.l, from, to), renameVariable(ast.r, from, to));
+  if (ast.kind === 'fn') return Fn(ast.name, ast.args.map((arg) => renameVariable(arg, from, to)));
+  return ast;
+}
+
+export function usesTrig(ast) {
+  if (ast.kind === 'fn') return TRIG_NAMES.has(ast.name.toUpperCase()) || ast.args.some(usesTrig);
+  if (ast.kind === 'neg') return usesTrig(ast.arg);
+  if (ast.kind === 'bin') return usesTrig(ast.l) || usesTrig(ast.r);
+  return false;
+}
+
+function runOps(values, ops) {
+  const stack = new Stack();
+  for (const value of values) stack.push(value);
+  for (const op of ops) lookup(op).fn(stack);
+  return stack.peek(1);
+}
+
+export function plainNumber(value) {
+  return format(Real(value)).replace(/\.$/, '');
+}
+
+function solutionsText(list) {
+  const items = isList(list) ? list.items : [list];
+  if (!items.length) return 'none found';
+  return items.map((item) => (isSymbolic(item) ? formatAlgebra(item.expr) : format(item))).join(' or ');
+}
+
+function removableHoles(ast, variable, numeric) {
+  if (ast.kind !== 'bin' || ast.op !== '/') return [];
+  const roots = runOps([Symbolic(ast.r), Name(variable)], ['SOLVE']);
+  const points = (isList(roots) ? roots.items : [roots])
+    .filter((item) => isSymbolic(item) && item.expr.kind === 'bin' && item.expr.op === '=')
+    .map((item) => numeric(item.expr.r, {}))
+    .filter(Number.isFinite)
+    .slice(0, 3);
+  const holes = [];
+  for (const at of points) {
+    if (Math.abs(numeric(ast.l, { [variable]: at })) > 1e-9) continue;
+    const limit = runOps([Symbolic(ast), Symbolic(Bin('=', Var(variable), Num(at)))], ['LIMIT']);
+    const value = isSymbolic(limit) ? numeric(limit.expr, {}) : isReal(limit) ? limit.value.toNumber() : isInteger(limit) ? Number(limit.value) : NaN;
+    if (Number.isFinite(value)) holes.push({ at, limit: value });
+  }
+  return holes;
+}
+
+export function equationInsights(ast, { variable = primaryVariable(ast), numeric = (a, env) => evalNumeric(a, env), cas = giac.isReady() } = {}) {
+  const out = [];
+  const names = variablesOf(ast);
+  const relation = ast.kind === 'bin' && RELS.has(ast.op);
+  const equation = relation && ast.op === '=';
+  if (!names.length && (!relation || equation)) {
+    const value = numeric(equation ? Bin('-', ast.l, ast.r) : ast, {});
+    if (Number.isFinite(value)) out.push({ kind: 'value', label: equation ? 'Left − right' : 'Value', done: 'Replaced with its value', value });
+  }
+  if (names.length === 1 && !relation) out.push({ kind: 'plot', label: `Plot in ${variable}`, variable, ast });
+  if (!cas || !names.length) return out;
+  const seen = [ast];
+  const offer = (label, done, compute) => {
+    try {
+      const result = compute();
+      const next = isSymbolic(result) ? result.expr : valueToAst(result);
+      if (seen.some((known) => astEqual(known, next))) return;
+      seen.push(next);
+      out.push({ kind: 'replace', label, done, ast: next });
+    } catch { /* no insight when the CAS can't do it */ }
+  };
+  offer('Simplifies to', 'Simplified', () => runOps([Symbolic(ast)], ['SIMPLIFY']));
+  offer('Factors as', 'Factored', () => runOps([Symbolic(ast)], ['FACTOR']));
+  offer('Expands to', 'Expanded', () => runOps([Symbolic(ast)], ['EXPAND']));
+  if (variable && !relation) offer(`d/d${variable}`, `Differentiated with respect to ${variable}`, () => runOps([Symbolic(ast), Name(variable)], ['DERIV']));
+  if (variable && (equation || (!relation && names.length === 1))) {
+    try {
+      const solutions = runOps([Symbolic(ast), Name(variable)], ['SOLVE']);
+      out.push({ kind: 'solve', label: equation ? `Solve for ${variable}` : `Zeros in ${variable}`, value: solutions, text: solutionsText(solutions) });
+    } catch { /* unsolvable here */ }
+  }
+  if (variable && names.length === 1) {
+    try {
+      for (const hole of removableHoles(ast, variable, numeric)) {
+        out.push({
+          kind: 'note', hot: true, label: 'Removable hole',
+          text: `at ${variable} = ${plainNumber(hole.at)} · limit ${plainNumber(hole.limit)}`,
+          note: `At ${variable} = ${plainNumber(hole.at)} the top and bottom are both 0, so the expression is undefined there, but it approaches ${plainNumber(hole.limit)}. Cancelling the common factor removes the hole.`,
+        });
+      }
+    } catch { /* no hole analysis without SOLVE and LIMIT */ }
+  }
+  return out;
 }
 
 export function applyOpsToAst(ast, ops) {
@@ -1410,32 +1494,20 @@ export function isEquationFace(face) {
 }
 
 export function physicalFace(event) {
-  if (event.altKey) return null;
-  if (event.ctrlKey || event.metaKey) {
-    const key = String(event.key || '').toLowerCase();
-    if (key === 'z' && event.shiftKey) return 'REDO';
-    if (key === 'z') return 'UNDO';
-    if (key === 'y') return 'REDO';
-    if (key === 'c') return 'COPY';
-    if (key === 'x') return 'CUT';
-    if (key === 'v') return 'PASTE';
-    if (key === 'a') return 'RS▲';
-    return null;
-  }
+  if (event.altKey || event.ctrlKey || event.metaKey) return null;
   if (event.shiftKey && event.key === 'ArrowDown') return 'NOOP';
-  const arrows = {
+  const moves = {
     ArrowUp: event.shiftKey ? 'RS▲' : '▲',
     ArrowDown: '▼',
-    ArrowLeft: event.shiftKey ? 'RS◀' : '◀',
-    ArrowRight: event.shiftKey ? 'RS▶' : '▶',
+    ArrowLeft: event.shiftKey ? '⇧◀' : '◀',
+    ArrowRight: event.shiftKey ? '⇧▶' : '▶',
+    Tab: event.shiftKey ? '◀' : '▶',
     Home: 'RS◀',
     End: 'RS▶',
     Backspace: '⌫',
     Delete: 'DEL',
-    Enter: 'ENTER',
-    Escape: 'ON',
   };
-  if (arrows[event.key]) return arrows[event.key];
+  if (moves[event.key]) return moves[event.key];
   if (event.key === ' ') return 'NOOP';
   const map = {
     '+': '+', '-': '−', '−': '−', '*': '×', '×': '×', '·': '×',
@@ -1449,171 +1521,164 @@ export function physicalFace(event) {
   return null;
 }
 
+const INSIGHT_DELAY_MS = 200;
+const SELECTING_FACES = new Set(['⇧◀', '⇧▶', 'RS▲', 'RS◀', 'RS▶', '▲', '▼']);
+const INSIGHT_CAS_SOURCE_LIMIT = 160;
+const SIZE = Object.freeze({ normal: 28, big: 38 });
+
+const SELECTION_TOOLS = Object.freeze([
+  Object.freeze({ id: 'EVAL', label: 'Evaluate' }),
+  Object.freeze({ id: 'SIMP', label: 'Simplify' }),
+  Object.freeze({ id: 'EXPA', label: 'Expand' }),
+  Object.freeze({ id: 'FACTO', label: 'Factor' }),
+  Object.freeze({ id: 'd/dx', label: 'd/dx' }),
+  Object.freeze({ id: 'sqrt', label: '√' }),
+  Object.freeze({ id: 'DEL', label: 'Delete' }),
+]);
+
+const INSIGHT_TITLES = Object.freeze({
+  value: 'Click to replace the expression with its value',
+  plot: 'Click to open the plot',
+  replace: 'Click to use it (⌘Z undoes)',
+  solve: 'Click to push the solutions to the stack',
+});
+
+function angleOpts() {
+  return { toRad: toRadians, fromRad: fromRadians };
+}
+
+function sparklineSvg(ast, variable) {
+  const span = usesTrig(ast) ? Math.abs(fromRadians(2 * Math.PI)) : 5;
+  const width = 120;
+  const height = 30;
+  const samples = 64;
+  const ys = [];
+  for (let k = 0; k <= samples; k++) {
+    const y = evalNumeric(ast, { [variable]: -span + (2 * span * k) / samples }, angleOpts());
+    ys.push(Number.isFinite(y) ? y : NaN);
+  }
+  const finite = ys.filter(Number.isFinite).sort((a, b) => a - b);
+  if (finite.length < 3) return '<span class="val">no real values here</span>';
+  const lo = finite[Math.floor(finite.length * 0.04)];
+  const hi = finite[Math.ceil(finite.length * 0.96) - 1];
+  const range = hi - lo || 1;
+  const toY = (y) => (height - 2 - ((Math.min(hi, Math.max(lo, y)) - lo) / range) * (height - 4)).toFixed(1);
+  let path = '';
+  let pen = false;
+  ys.forEach((y, k) => {
+    if (!Number.isFinite(y) || y < lo - range / 2 || y > hi + range / 2) { pen = false; return; }
+    path += `${pen ? 'L' : 'M'}${((k / samples) * width).toFixed(1)} ${toY(y)}`;
+    pen = true;
+  });
+  const axis = lo < 0 && hi > 0 ? `<line x1="0" x2="${width}" y1="${toY(0)}" y2="${toY(0)}"/>` : '';
+  return `<svg class="spark" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">${axis}<path d="${path}"/></svg>`;
+}
+
+function insightNote(title, text) {
+  return `<div class="ins-note"><small>${escapeHtml(title)}</small><span>${escapeHtml(text)}</span></div>`;
+}
+
 export class EquationEditor {
   constructor({ app } = {}) {
     this.app = app;
     this.el = document.createElement('div');
-    this.el.className = 'eqw-editor';
-    const palette = document.createElement('div');
-    palette.className = 'eqw-palette';
-    const featured = document.createElement('div');
-    featured.className = 'eqw-featured';
-    for (const item of EQW_FEATURED) featured.appendChild(this._paletteButton(item));
-    const moreBtn = document.createElement('button');
-    moreBtn.type = 'button';
-    moreBtn.className = 'eqw-more-toggle';
-    moreBtn.textContent = 'More…';
-    moreBtn.title = 'Digits, operators, functions, and the rest of the Greek alphabet';
-    moreBtn.addEventListener('mousedown', (event) => event.preventDefault());
-    moreBtn.addEventListener('click', () => {
-      this._moreOpen = !this._moreOpen;
-      this.el.classList.toggle('eqw-more-open', this._moreOpen);
-      moreBtn.textContent = this._moreOpen ? 'Less' : 'More…';
-    });
-    featured.appendChild(moreBtn);
-    palette.appendChild(featured);
-    const more = document.createElement('div');
-    more.className = 'eqw-more';
-    for (const group of EQW_PALETTE) {
-      const row = document.createElement('div');
-      row.className = 'eqw-palette-group';
-      const heading = document.createElement('span');
-      heading.className = 'eqw-palette-label';
-      heading.textContent = group.name;
-      row.appendChild(heading);
-      for (const item of group.items) row.appendChild(this._paletteButton(item));
-      more.appendChild(row);
-    }
-    palette.appendChild(more);
-    this.el.appendChild(palette);
-    this._focusNote = document.createElement('div');
-    this._focusNote.className = 'eqw-focus-note';
-    this.el.appendChild(this._focusNote);
-    this.view = document.createElement('div');
-    this.view.className = 'eqw-view';
-    this.view.tabIndex = -1;
-    this.el.appendChild(this.view);
-    this._syncFocusChrome();
-    this._open = false;
-    this._focused = false;
-    this._moreOpen = false;
-    this._line = false;
-    this.big = true;
+    this.el.className = 'eqw';
+    this.el.tabIndex = 0;
+    this.el.setAttribute('role', 'textbox');
+    this.el.setAttribute('aria-label', 'Equation. Type to build it: / makes a fraction, ^ a power, ( a group. Enter pushes it, Esc cancels.');
+    this.el.innerHTML = '<div class="eqw-canvas"></div><div class="eqw-text" hidden><textarea class="eqw-ta" rows="1" spellcheck="false" autocomplete="off" aria-label="The expression as text"></textarea></div><div class="eqw-ins" aria-live="polite"></div>';
+    this.canvas = this.el.querySelector('.eqw-canvas');
+    this.textBox = this.el.querySelector('.eqw-text');
+    this.textArea = this.el.querySelector('.eqw-ta');
+    this.strip = this.el.querySelector('.eqw-ins');
     this.state = emptyEquation();
-    this.replacesLevel1 = false;
-    this.original = null;
+    this.big = false;
+    this.showText = false;
+    this.insights = [];
+    this._insightFor = null;
+    this._insightTimer = 0;
+    this._rects = null;
     this._drag = null;
-    this.view.addEventListener('pointerdown', (event) => this._pointerDown(event));
-    this.view.addEventListener('pointermove', (event) => this._pointerMove(event));
-    this.view.addEventListener('pointerup', () => { this._drag = null; });
+    this._selecting = false;
+    this.canvas.addEventListener('pointerdown', (e) => this._pointerDown(e));
+    this.canvas.addEventListener('pointermove', (e) => this._pointerMove(e));
+    this.canvas.addEventListener('pointerup', () => { this._drag = null; });
+    this.canvas.addEventListener('scroll', () => { if (this.hasSelection() && this._toolsFor) this._placeTools(this._toolsFor); });
+    this.el.addEventListener('mousedown', (e) => { if (e.target.closest('.ins, .eqw-tip')) e.preventDefault(); });
+    this.el.addEventListener('click', (e) => this._onClick(e));
+    this.textArea.addEventListener('input', () => this._onTextInput());
+    this.textArea.addEventListener('keydown', (e) => this._onTextKey(e));
+    document.addEventListener('copy', (e) => this._onCopy(e, false));
+    document.addEventListener('cut', (e) => this._onCopy(e, true));
+    document.addEventListener('paste', (e) => this._onPaste(e));
   }
 
-  isOpen() { return this._open; }
-  ownsKeyboard() {
-    return this._open && this._focused && !this._line && this.app?.inputMode === 'equation';
-  }
-
-  _paletteButton(item) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = item.label;
-    button.title = item.title;
-    button.addEventListener('mousedown', (event) => event.preventDefault());
-    button.addEventListener('click', () => this.insertPaletteFace(item.face));
-    return button;
-  }
-
-  _syncFocusChrome() {
-    const live = !!this._focused;
-    this.el.classList.toggle('eqw-live', live);
-    this.view?.classList.toggle('eqw-focused', live);
-    if (!this._focusNote) return;
-    this._focusNote.textContent = live
-      ? 'Typing · Escape returns to the calculator'
-      : 'Click the expression to type';
-  }
-
-  focusEquation() {
-    if (!this._open || this._line) return;
-    this._focused = true;
-    this._syncFocusChrome();
-    this.app?.activateEquationKeys?.();
-  }
-
-  blurEquation() {
-    if (!this._focused) return;
-    this._focused = false;
-    this._syncFocusChrome();
-    this.app?.deactivateEquationKeys?.();
-  }
-  isLineEditing() { return this._line; }
-
-  open({ value = null, replacesLevel1 = false } = {}) {
-    this.original = replacesLevel1 ? value : null;
-    this.replacesLevel1 = !!replacesLevel1;
+  load(value) {
     this.state = value ? equationFromValue(value) : emptyEquation();
-    this._open = true;
-    this._focused = false;
-    this._syncFocusChrome();
-    this._line = false;
-    this.big = this.big !== false;
+    this._selecting = false;
     this._render();
   }
 
-  close() {
-    this._open = false;
-    this._focused = false;
-    this._syncFocusChrome();
-    this._line = false;
-    this._drag = null;
-    if (this.view) this.view.innerHTML = '';
+  value() { return valueFromEquation(completeWord(this.state).root); }
+
+  clear() {
+    this.state = emptyEquation();
+    this._selecting = false;
+    this._render();
   }
 
-  loadFromStack(level = 1) {
-    const value = this.app.stack.peek(level);
-    if (!isSymbolic(value) && !isName(value)) {
-      this.app.entry.flashError({ message: 'not an algebraic' });
-      return false;
-    }
-    this.open({ value, replacesLevel1: level === 1 });
+  isEmpty() { return isBlankEquation(this.state); }
+
+  canUndo() { return this.state.history.length > 0; }
+
+  snapshot() { return { state: this.state }; }
+
+  restore(saved) {
+    this.state = saved.state;
+    this._selecting = false;
+    this._render();
+  }
+
+  focus() { this.el.focus({ preventScroll: true }); }
+
+  ownsKeyboard(target = document.activeElement) {
+    if (!this.el.isConnected || target === this.textArea) return false;
+    const tag = target?.tagName;
+    return !(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable);
+  }
+
+  hasSelection() { return this.state.target.mode === 'select' && this._selecting; }
+
+  collapseSelection() {
+    if (!this.hasSelection()) return false;
+    this.state = collapseSelection(this.state);
+    this._selecting = false;
+    this._render();
     return true;
   }
 
-  menuSlots() {
-    const big = this.big ? 'BIG■' : 'BIG';
-    return [
-      { label: 'EDIT', onPress: () => this.editTargetAsText() },
-      { label: 'EXPA', onPress: () => this.applyNamed('EXPA') },
-      { label: big, onPress: () => this.toggleBig() },
-      { label: 'EVAL', onPress: () => this.applyNamed('EVAL') },
-      { label: 'FACTO', onPress: () => this.applyNamed('FACTO') },
-      { label: 'SIMP', onPress: () => this.applyNamed('SIMP') },
-      { label: 'CMDS', onPress: () => this.showCmds() },
-      { label: '→NUM', onPress: () => this.applyNamed('→NUM') },
-      { label: 'COPY', onPress: () => this.copy() },
-      { label: 'CUT', onPress: () => this.cut() },
-      { label: 'PASTE', onPress: () => this.paste() },
-      { label: '', onPress: () => {} },
-    ];
-  }
-
-  showCmds() {
-    const slots = [{ label: 'EXIT', onPress: () => this.app.setMenu(this.menuSlots(), 'EQW') }];
-    for (const name of EQW_CMDS) {
-      slots.push({ label: name, onPress: () => { this.applyOps([name]); this.app.setMenu(this.menuSlots(), 'EQW'); } });
+  handleKey(e) {
+    const face = physicalFace(e);
+    if (face == null) return false;
+    if ((face === '◀' || face === '▶') && e.key.startsWith('Arrow') && this.hasSelection()) {
+      this.state = collapseSelection(this.state, face === '◀' ? -1 : 1);
+      this._selecting = false;
+      this._render();
+      return true;
     }
-    this.app.setMenu(slots, 'EQW');
-  }
-
-  toggleBig() {
-    this.big = !this.big;
-    this.app.setMenu(this.menuSlots(), 'EQW');
-    this._render();
-  }
-
-  insertPaletteFace(face) {
-    if (!this._open) this.open();
+    if (face === 'UNAVAILABLE') { this.app.notifyError(`${e.key} can't go in an equation.`); return true; }
     this.pressFace(face);
+    return true;
+  }
+
+  pressFace(face) {
+    if (!face || face === 'NOOP') return;
+    if (EQW_APP_FACES.has(face)) { this._appFace(face); return; }
+    if (EQW_UNAVAILABLE_FACES.has(face)) { this.app.notifyError(`${face} isn't part of the equation writer.`); return; }
+    try { this.state = pressEquationKey(this.state, face); }
+    catch (error) { this.app.notifyError(error.message); return; }
+    this._selecting = SELECTING_FACES.has(face);
+    this._render();
   }
 
   pressKeypad(key, shift) {
@@ -1621,139 +1686,241 @@ export class EquationEditor {
       this.pressFace('const:i');
       return;
     }
-    const face = keypadFace(key, shift);
-    if (face) this.pressFace(face);
-  }
-
-  pressFace(face) {
-    if (!face || face === 'NOOP') return;
-    if (face === 'UNAVAILABLE') {
-      this.app.entry.flashError({ message: 'not available in EQW' });
-      return;
-    }
-    if (EQW_APP_FACES.has(face)) { this._appFace(face); return; }
-    if (EQW_UNAVAILABLE_FACES.has(face)) {
-      this.app.entry.flashError({ message: `${face}: not available in EQW` });
-      return;
-    }
-    try { this.state = pressEquationKey(this.state, face); }
-    catch (error) { this.app.entry.flashError(error); return; }
-    this._render();
-  }
-
-  handleKeyDown(event) {
-    const face = physicalFace(event);
-    if (face == null) return false;
-    if (face === 'NOOP') return true;
-    this.pressFace(face);
-    return true;
+    this.pressFace(keypadFace(key, shift));
   }
 
   typeText(text) {
-    for (const char of String(text)) this.pressFace(char === 'i' ? 'i' : char);
+    for (const char of String(text)) this.pressFace(char);
   }
 
   pressCommand(name) {
-    if (EQW_CMDS.includes(name)) { this.applyOps([name]); return; }
+    if (EQW_CMDS.includes(name)) { this.transformWith([name]); return; }
     if (isKnownFunction(name)) { this.pressFace(name); return; }
-    this.app.entry.flashError({ message: `${name}: not available in EQW` });
+    this.app.notifyError(`${name} isn't available in the equation writer.`);
   }
 
-  editTargetAsText() {
-    let ast;
-    try { ast = targetAst(this.state); }
-    catch (error) { this.app.entry.flashError(error); return; }
-    const text = formatAlgebra(ast);
-    this._line = true;
-    this.app.entry.buffer = text;
-    this.app.entry.cursor = text.length;
-    this.app.entry.error = '';
-    this.app.entry._emit();
-    this.app.entry.focus();
+  menu() {
+    const slot = (label, title, onPress, extra = {}) => ({ label, title, onPress, ...extra });
+    const variable = this._variable() ?? calcState.casVx;
+    const inserts = EQW_INSERTS.map((item) => slot(item.label, item.title, () => this.pressFace(item.face)));
+    return [
+      slot('SIMP', 'Simplify the selection, or the whole expression', () => this.transform('SIMP')),
+      slot('EXPA', 'Expand', () => this.transform('EXPA')),
+      slot('FACTO', 'Factor', () => this.transform('FACTO')),
+      slot(`d/d${variable}`, `Differentiate with respect to ${variable}`, () => this.transform('d/dx')),
+      slot('SOLVE', `Solve for ${variable} and push the solutions`, () => this.solve()),
+      slot('→NUM', 'Evaluate to a number', () => this.transform('→NUM')),
+      ...inserts.slice(0, 6),
+      slot('TEXT', 'Show the expression as text under the equation', () => this.toggleText(), { toggle: true, on: () => this.showText }),
+      slot('BIG', 'Bigger type', () => this.toggleBig(), { toggle: true, on: () => this.big }),
+      slot('COPY', 'Copy the selection, or the whole expression, as text', () => this.copy()),
+      slot('PASTE', 'Paste text in place of the selection', () => this.paste()),
+      slot('CMDS', 'More algebra commands for the selection or the expression', () => this.showCommands()),
+      slot('DONE', 'Push it to the stack (Enter)', () => this.app.commitEntry()),
+      ...inserts.slice(6),
+    ];
   }
 
-  commitLineEdit() {
-    try {
-      const ast = parseAlgebra(this.app.entry.buffer.trim());
-      this.state = replaceTarget(this.state, [...fromAst(ast)]);
-    } catch (error) {
-      this.app.entry.flashError(error);
-      return;
-    }
-    this._line = false;
-    this.app.entry.buffer = '';
-    this.app.entry.cursor = 0;
-    this.app.entry.error = '';
-    this.app.entry._emit();
-    this.app.entry.blur();
+  showCommands() {
+    const back = { label: '◀ BACK', title: 'Back to the equation menu', onPress: () => this.app.setMenu(null, 'EQW') };
+    this.app.setMenu([back, ...EQW_CMDS.map((name) => ({
+      label: name,
+      title: this.app.commandTitle?.(name) ?? name,
+      onPress: () => { this.transformWith([name]); this.app.setMenu(null, 'EQW'); },
+    }))], 'EQW');
+  }
+
+  toggleBig() {
+    this.big = !this.big;
     this._render();
+    this.app.menubar.render();
   }
 
-  cancelLineEdit() {
-    this._line = false;
-    this.app.entry.buffer = '';
-    this.app.entry.cursor = 0;
-    this.app.entry.error = '';
-    this.app.entry._emit();
-    this.app.entry.blur();
+  toggleText() {
+    this.showText = !this.showText;
+    this.textBox.hidden = !this.showText;
+    this._render();
+    this.app.menubar.render();
+    if (this.showText) this.textArea.focus();
+    else this.focus();
+  }
+
+  transform(id) {
+    if (id !== 'd/dx') { this.transformWith(EQW_ACTION_OPS[id]); return; }
+    const variable = this._variable();
+    if (!variable) { this.app.notifyError('There is no variable to differentiate by.'); return; }
+    this._replacePart((ast) => valueToAst(runOps([Symbolic(ast), Name(variable)], ['DERIV'])));
+  }
+
+  transformWith(ops) {
+    this._replacePart((ast) => applyOpsToAst(ast, ops));
+  }
+
+  solve() {
+    const ast = this._wholeAst();
+    if (!ast) return;
+    const variable = primaryVariable(ast, calcState.casVx);
+    if (!variable) { this.app.notifyError('There is no variable to solve for.'); return; }
+    let solutions;
+    try { solutions = runOps([Symbolic(ast), Name(variable)], ['SOLVE']); }
+    catch (error) { this.app.notifyError(this._casMessage(error)); return; }
+    this.app.pushFromWriter(solutions, `Pushed the solutions for ${variable}: ${solutionsText(solutions)}`);
   }
 
   commit() {
-    let value;
-    try { value = valueFromEquation(this.state.root); }
-    catch (error) { this.app.entry.flashError(error); return; }
-    this.app.entry._snapForUndo();
-    if (this.replacesLevel1 && this.app.stack.depth >= 1 && this.app.stack.peek(1) === this.original) {
-      this.app.stack.pop();
+    this.state = completeWord(this.state);
+    if (this.isEmpty()) {
+      this.app.notifyError(this.app.pendingEdit ? 'The equation is empty. Type one, or press Esc to keep the level as it was.' : 'Type an expression first, for example x^2/2.');
+      return;
     }
-    this.app.stack.push(value);
-    this.replacesLevel1 = false;
-    this.original = null;
-    this.app.display.renderStack(this.app.stack);
-  }
-
-  cancel() { this.blurEquation(); }
-
-  applyNamed(name) { this.applyOps(EQW_ACTION_OPS[name]); }
-
-  applyOps(ops) {
-    let ast;
-    try { ast = targetAst(this.state); }
-    catch (error) { this.app.entry.flashError(error); return; }
-    try {
-      const result = applyOpsToAst(ast, ops);
-      this.state = replaceTarget(this.state, [...fromAst(result)]);
+    const hole = holePath(this.state.root);
+    if (hole) {
+      this.state = placeCursor(this.state, hole);
       this._render();
-    } catch (error) {
-      this.app.entry.flashError(error);
+      this.canvas.classList.remove('flash');
+      void this.canvas.offsetWidth;
+      this.canvas.classList.add('flash');
+      this.app.notifyError("There's an empty box. Fill it, or press ⌫ to remove it.");
+      return;
     }
+    let value;
+    try { value = this.value(); }
+    catch (error) { this.app.notifyError(`The expression isn't complete: ${error.message}`); return; }
+    this.app.writerCommit(value);
+    this.clear();
   }
 
-  copy() { this._clip(false); }
-  cut() { this._clip(true); }
+  copy() { this._writeClipboard(this._selectionText()); }
 
-  _clip(remove) {
-    try {
-      const next = remove ? cutTarget(this.state) : null;
-      const text = remove ? next.cutText : formatAlgebra(targetAst(this.state));
-      const write = navigator.clipboard?.writeText(text);
-      if (write && typeof write.then === 'function') write.catch(() => {});
-      if (remove) { this.state = next; this._render(); }
-    } catch (error) {
-      this.app.entry.flashError(error);
-    }
+  cut() {
+    const text = this._selectionText();
+    if (text == null) return;
+    this._writeClipboard(text);
+    this.pressFace('DEL');
   }
 
   paste() {
-    const read = navigator.clipboard?.readText();
-    if (!read || typeof read.then !== 'function') {
-      this.app.entry.flashError({ message: 'Clipboard unavailable' });
+    const read = navigator.clipboard?.readText?.();
+    if (!read) { this.app.notifyError('The clipboard is not available here. Try ⌘V or Ctrl+V.'); return; }
+    read.then((text) => this._pasteText(text)).catch(() => this.app.notifyError('The clipboard is not available here. Try ⌘V or Ctrl+V.'));
+  }
+
+  refreshInsights() {
+    this._insightFor = null;
+    this._scheduleInsights();
+  }
+
+  _variable() {
+    try { return primaryVariable(toAst(completeWord(this.state).root), calcState.casVx); }
+    catch { return null; }
+  }
+
+  _wholeAst() {
+    try { return toAst(completeWord(this.state).root); }
+    catch { this.app.notifyError('Finish the expression first: fill every box.'); return null; }
+  }
+
+  _casMessage(error) {
+    const message = String(error?.message ?? error);
+    return /CAS not ready/.test(message) ? 'The algebra engine is still loading. Try again in a moment.' : message;
+  }
+
+  _replacePart(compute) {
+    const whole = !this.hasSelection();
+    let ast;
+    try { ast = whole ? toAst(completeWord(this.state).root) : targetAst(this.state); }
+    catch { this.app.notifyError('Finish the expression first: fill every box.'); return; }
+    try {
+      const result = compute(ast);
+      this.state = whole ? replaceWhole(this.state, result) : replaceTarget(this.state, [...fromAst(result)]);
+      this._render();
+    } catch (error) {
+      this.app.notifyError(this._casMessage(error));
+    }
+  }
+
+  _selectionText() {
+    try { return formatAlgebra(this.hasSelection() ? targetAst(this.state) : toAst(completeWord(this.state).root)); }
+    catch { this.app.notifyError('Finish the expression first: fill every box.'); return null; }
+  }
+
+  _writeClipboard(text) {
+    if (text == null) return;
+    const write = navigator.clipboard?.writeText?.(text);
+    if (!write) { this.app.notifyError('The clipboard is not available here.'); return; }
+    write.then(() => this.app.toast('Copied')).catch(() => this.app.notifyError('The clipboard is not available here.'));
+  }
+
+  _pasteText(text) {
+    try { this.state = pasteText(this.state, String(text ?? '').replace(/^\s*['`]|['`]\s*$/g, '')); }
+    catch (error) { this.app.notifyError(`That doesn't read as an expression: ${error.message}`); return; }
+    this._render();
+  }
+
+  _clipboardApplies(e) {
+    if (this.app.inputMode !== 'equation' || !this.ownsKeyboard(e.target)) return false;
+    return document.getSelection()?.isCollapsed !== false;
+  }
+
+  _onCopy(e, remove) {
+    if (!this._clipboardApplies(e)) return;
+    const text = this._selectionText();
+    if (text == null) return;
+    e.clipboardData.setData('text/plain', text);
+    e.preventDefault();
+    if (remove) this.pressFace('DEL');
+  }
+
+  _onPaste(e) {
+    if (!this._clipboardApplies(e)) return;
+    e.preventDefault();
+    this._pasteText(e.clipboardData.getData('text/plain'));
+  }
+
+  _onTextInput() {
+    const text = this.textArea.value.trim();
+    try {
+      this.state = text ? replaceWhole(this.state, parseAlgebra(text), 'text') : pressEquationKey(this.state, 'CLEAR');
+      this.textArea.classList.remove('bad');
+    } catch {
+      this.textArea.classList.add('bad');
       return;
     }
-    read.then((text) => {
-      try { this.state = pasteText(this.state, text); this._render(); }
-      catch (error) { this.app.entry.flashError(error); }
-    }).catch((error) => this.app.entry.flashError(error));
+    this._render();
+  }
+
+  _onTextKey(e) {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.focus(); return; }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); this.app.commitEntry(); }
+  }
+
+  _onClick(e) {
+    const tool = e.target.closest('.eqw-tip [data-tool]');
+    if (tool) { this._runTool(tool.dataset.tool); return; }
+    const card = e.target.closest('.ins[data-i]');
+    if (card) this._applyInsight(Number(card.dataset.i));
+  }
+
+  _runTool(id) {
+    if (id === 'DEL') { this.pressFace('DEL'); return; }
+    if (id === 'sqrt') { this.state = wrapTarget(this.state, 'sqrt'); this._render(); return; }
+    this.transform(id);
+  }
+
+  _applyInsight(index) {
+    const insight = this.insights[index];
+    if (!insight) return;
+    if (insight.kind === 'plot') {
+      const x = /^x$/i.test(insight.variable) ? insight.ast : renameVariable(insight.ast, insight.variable, 'X');
+      this.app.plotExpression(x);
+      return;
+    }
+    if (insight.kind === 'solve') { this.app.pushFromWriter(insight.value, `Pushed ${insight.text}`); return; }
+    if (insight.kind === 'note') { this.app.toast(insight.note, { timeout: 8000 }); return; }
+    this.state = replaceWhole(this.state, insight.kind === 'value' ? Num(insight.value) : insight.ast);
+    this._selecting = false;
+    this._render();
+    this.app.toast(insight.done, { action: 'Undo', onAction: () => this.pressFace('UNDO') });
   }
 
   _appFace(face) {
@@ -1761,48 +1928,118 @@ export class EquationEditor {
     if (face === 'PREV') { this.app.prevMenuPage(); return; }
     if (face === 'NEXT') { this.app.nextMenuPage(); return; }
     if (face === 'CAT') { this.app.drawers.toggle('catalog'); return; }
-    if (face === 'ENTER') { this.commit(); return; }
-    if (face === 'ON') { this.cancel(); return; }
-    if (face === 'EVAL' || face === '→NUM') { this.applyNamed(face); return; }
+    if (face === 'ENTER') { this.app.commitEntry(); return; }
+    if (face === 'ON') { this.app.runAction('ui.escape'); return; }
+    if (face === 'EVAL' || face === '→NUM') { this.transform(face); return; }
     if (face === 'COPY') { this.copy(); return; }
     if (face === 'CUT') { this.cut(); return; }
-    if (face === 'PASTE') { this.paste(); return; }
+    if (face === 'PASTE') this.paste();
   }
 
   _render() {
-    if (!this.view || !this._open) return;
-    const size = (parseFloat(getComputedStyle(this.view).fontSize) || 22) * (this.big ? 1.25 : 0.85);
+    this.el.querySelector('.eqw-tip')?.remove();
+    this.el.classList.toggle('big', this.big);
     const target = this.state.target;
     const drawn = eqwToSvg(this.state.root, {
-      size,
+      size: this.big ? SIZE.big : SIZE.normal,
       caret: target.mode === 'insert' ? target.path.join('.') : null,
       boxed: target.mode === 'clear' ? target.path.join('.') : null,
       selected: target.mode === 'select' ? { row: target.row, from: target.from, to: target.to } : null,
+      selectionAsCaret: !this._selecting,
       clipId: 'eqw-selection',
     });
     this._rects = drawn.rects;
-    let label = '■';
-    try { label = formatAlgebra(toAst(this.state.root)); } catch { label = '■'; }
-    const aria = label.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
-    this.view.innerHTML = drawn.svg.replace('<svg ', `<svg role="img" aria-label="${aria}" `);
-    const rect = target.mode === 'insert'
-      ? drawn.rects.get(target.path.join('.'))
-      : target.mode === 'clear'
-        ? drawn.rects.get(target.path.join('.'))
-        : null;
-    if (rect && this.view.scrollTo) {
-      const margin = 8;
-      if (rect.x < this.view.scrollLeft + margin) this.view.scrollLeft = Math.max(0, rect.x - margin);
-      if (rect.x + rect.w > this.view.scrollLeft + this.view.clientWidth - margin) {
-        this.view.scrollLeft = rect.x + rect.w - this.view.clientWidth + margin;
-      }
+    let text = '';
+    try { text = formatAlgebra(toAst(this.state.root)); } catch { text = ''; }
+    this.canvas.innerHTML = drawn.svg.replace('<svg ', `<svg role="img" aria-label="${escapeHtml(text || 'empty')}" `);
+    if (drawn.selection && this._selecting) this._placeTools(drawn.selection);
+    this._scrollToCaret(drawn.rects.get(target.path?.join('.') ?? ''));
+    if (this.showText && document.activeElement !== this.textArea) {
+      this.textArea.value = text;
+      this.textArea.classList.remove('bad');
     }
+    this._scheduleInsights();
+  }
+
+  _svgOrigin(host = this.canvas) {
+    const svg = this.canvas.querySelector('svg');
+    const box = svg.getBoundingClientRect();
+    const frame = host.getBoundingClientRect();
+    return { x: box.left - frame.left + host.scrollLeft, y: box.top - frame.top + host.scrollTop };
+  }
+
+  _placeTools(union) {
+    this.el.querySelector('.eqw-tip')?.remove();
+    const origin = this._svgOrigin(this.el);
+    const variable = this._variable() ?? calcState.casVx;
+    const tip = document.createElement('div');
+    tip.className = 'eqw-tip';
+    tip.setAttribute('role', 'toolbar');
+    tip.setAttribute('aria-label', 'Change the selected part');
+    tip.innerHTML = SELECTION_TOOLS.map((t) => `<button type="button" data-tool="${t.id}">${escapeHtml(t.id === 'd/dx' ? `d/d${variable}` : t.label)}</button>`).join('');
+    this.el.appendChild(tip);
+    const half = tip.offsetWidth / 2 + 4;
+    const left = Math.min(Math.max(half, origin.x + union.x + union.w / 2), this.el.clientWidth - half);
+    tip.style.left = `${left}px`;
+    tip.style.top = `${origin.y + union.y - 6}px`;
+    this._toolsFor = union;
+  }
+
+  _scrollToCaret(rect) {
+    if (!rect || !this.el.isConnected) return;
+    const x = this._svgOrigin().x + rect.x;
+    const margin = 16;
+    if (x < this.canvas.scrollLeft + margin) this.canvas.scrollLeft = Math.max(0, x - margin);
+    else if (x + rect.w > this.canvas.scrollLeft + this.canvas.clientWidth - margin) this.canvas.scrollLeft = x + rect.w - this.canvas.clientWidth + margin;
+  }
+
+  _scheduleInsights() {
+    clearTimeout(this._insightTimer);
+    this._insightTimer = setTimeout(() => this._renderInsights(), INSIGHT_DELAY_MS);
+  }
+
+  _renderInsights() {
+    if (this.app.inputMode !== 'equation') return;
+    const state = completeWord(this.state);
+    if (isBlankEquation(state)) { this._showInsightNote('Start typing', 'x^2 makes a power · 1/3 a fraction · sqrt( a root · pi becomes π'); return; }
+    if (holePath(state.root)) { this._showInsightNote('Keep going', 'Fill the empty box to see what the CAS can tell you'); return; }
+    let ast;
+    try { ast = toAst(state.root); }
+    catch (error) { this._showInsightNote('Not finished', error.message); return; }
+    const source = formatAlgebra(ast);
+    const cas = giac.isReady() && source.length <= INSIGHT_CAS_SOURCE_LIMIT;
+    const key = `${source}|${cas}|${calcState.angle}|${calcState.casVx}`;
+    if (key === this._insightFor) return;
+    this._insightFor = key;
+    this.insights = equationInsights(ast, {
+      variable: primaryVariable(ast, calcState.casVx),
+      numeric: (a, env) => evalNumeric(a, env, angleOpts()),
+      cas,
+    });
+    const cards = this.insights.map((insight, i) => this._insightHtml(insight, i)).join('');
+    const loading = giac.isReady() ? '' : insightNote('Algebra engine', 'Loading. Simplify, factor and solve appear here when it is ready.');
+    this.strip.innerHTML = cards + loading || insightNote('Nothing to add', 'The CAS has no simpler form for this one.');
+  }
+
+  _showInsightNote(title, text) {
+    this.insights = [];
+    this._insightFor = null;
+    this.strip.innerHTML = insightNote(title, text);
+  }
+
+  _insightHtml(insight, index) {
+    let body;
+    if (insight.kind === 'value') body = `<span class="val">${Number.isInteger(insight.value) ? '=' : '≈'} ${escapeHtml(plainNumber(insight.value))}</span>`;
+    else if (insight.kind === 'plot') body = sparklineSvg(insight.ast, insight.variable);
+    else if (insight.kind === 'replace') body = `<span class="m">${astToSvg(insight.ast, { size: 17, padding: 1 }).svg}</span>`;
+    else body = `<span class="val">${escapeHtml(insight.text)}</span>`;
+    const title = insight.kind === 'note' ? insight.note : INSIGHT_TITLES[insight.kind];
+    return `<button type="button" class="ins${insight.hot ? ' hot' : ''}" data-i="${index}" title="${escapeHtml(title)}"><small>${escapeHtml(insight.label)}</small>${body}</button>`;
   }
 
   _point(event) {
-    const svg = this.view.querySelector('svg');
-    if (!svg) return null;
-    const matrix = svg.getScreenCTM();
+    const svg = this.canvas.querySelector('svg');
+    const matrix = svg?.getScreenCTM();
     if (!matrix) return null;
     const point = svg.createSVGPoint();
     point.x = event.clientX;
@@ -1824,29 +2061,30 @@ export class EquationEditor {
   }
 
   _pointerDown(event) {
-    this.focusEquation();
-    if (!this.ownsKeyboard()) return;
+    if (event.button !== 0 || event.target.closest('.eqw-tip')) return;
+    event.preventDefault();
+    this.focus();
     const hit = this._hit(this._point(event));
     if (!hit) return;
     const path = hit.key.split('.').map(Number);
-    if (hit.rect.kind === 'leaf' || hit.rect.kind === 'hole') {
-      this.state = placeCursor(this.state, path);
-    } else if (hit.rect.kind === 'op') {
-      this.state = selectBetween(this.state, path, path);
-    } else {
-      this.state = landSelect(this.state, rowKeyOf(path), path.at(-1), path.at(-1));
-    }
+    const state = completeWord(this.state);
+    if (hit.rect.kind === 'leaf' || hit.rect.kind === 'hole') this.state = placeCursor(state, path);
+    else if (hit.rect.kind === 'op') this.state = selectBetween(state, path, path);
+    else this.state = landSelect(state, rowKeyOf(path), path.at(-1), path.at(-1));
+    this._selecting = this.state.target.mode === 'select';
     this._drag = path;
+    this.canvas.setPointerCapture?.(event.pointerId);
     this._render();
   }
 
   _pointerMove(event) {
-    if (!this._drag || !this.ownsKeyboard()) return;
+    if (!this._drag) return;
     const hit = this._hit(this._point(event));
     if (!hit || (hit.rect.kind !== 'leaf' && hit.rect.kind !== 'hole')) return;
-    const path = hit.key.split('.').map(Number);
-    this.state = selectBetween(this.state, this._drag, path);
+    const next = selectBetween(this.state, this._drag, hit.key.split('.').map(Number));
+    if (JSON.stringify(next.target) === JSON.stringify(this.state.target)) return;
+    this.state = next;
+    this._selecting = next.target.mode === 'select';
     this._render();
   }
 }
-

@@ -313,6 +313,9 @@ const PREC = {
   '+': 1, '-': 1, '*': 2, '/': 2, '^': 3,
 };
 
+const OP_GLYPHS = Object.freeze({ '*': '·', '-': '−' });
+const opGlyph = (op) => OP_GLYPHS[op] ?? op;
+
 /** layoutAst(ast, size) → Box.  Top-level entry; always passes
  *  parentPrec=0 so the outermost box never gets wrapped in parens. */
 export function layoutAst(ast, size = DEFAULT_SIZE) {
@@ -333,17 +336,28 @@ function placeholderBox(size) {
 }
 
 function caretBox(size) {
-  const w = 0.45 * size;
-  const h = 0.7 * size;
+  const bar = Math.max(1.5, 0.06 * size);
   return {
-    width: w,
-    ascent: h * 0.75,
-    descent: h * 0.1,
+    width: bar + 2,
+    ascent: size * 0.78,
+    descent: size * 0.2,
     draw(x, by) {
-      const top = by - h * 0.55;
-      const mid = by + h * 0.05;
-      const bot = by + h * 0.35;
-      return `<polygon class="eqw-caret" points="${fmt(x)},${fmt(mid)} ${fmt(x + w)},${fmt(top)} ${fmt(x + w)},${fmt(bot)}" fill="currentColor"/>`;
+      return `<rect class="eqw-caret" x="${fmt(x + 1)}" y="${fmt(by - size * 0.78)}" width="${fmt(bar)}" height="${fmt(size * 0.98)}" rx="${fmt(bar / 2)}" fill="currentColor"/>`;
+    },
+  };
+}
+
+function caretSlotBox(size) {
+  const slot = placeholderBox(size);
+  const caret = caretBox(size);
+  return {
+    width: slot.width,
+    ascent: Math.max(slot.ascent, caret.ascent),
+    descent: Math.max(slot.descent, caret.descent),
+    draw(x, by) {
+      const y = by - slot.ascent;
+      const frame = `<rect class="eqw-slot" x="${fmt(x)}" y="${fmt(y)}" width="${fmt(slot.width)}" height="${fmt(slot.ascent + slot.descent)}" fill="currentColor"/>`;
+      return frame + caret.draw(x + (slot.width - caret.width) / 2, by);
     },
   };
 }
@@ -391,7 +405,7 @@ function lay(ast, parentPrec, size) {
     // Unary minus binds tighter than + / - but looser than * / ^.
     // We mirror fmt()'s rule: inside * / ^, wrap the whole neg.
     const inner = lay(ast.arg, 3, size);
-    const box = rowBox([textBox('-', size), inner]);
+    const box = rowBox([textBox('−', size), inner]);
     return parentPrec >= 2 ? parenBox(box) : box;
   }
 
@@ -514,15 +528,16 @@ function lay(ast, parentPrec, size) {
     // We do NOT juxtapose Num × Num (ambiguity) or non-Num × anything
     // (to keep the rule conservative; X*Y in the HP50 is usually an
     // explicit product written as X*Y anyway).
-    const juxtapose = op === '*' && isNum(l) && !isNum(r);
+    const rightInParens = isNeg(r) || (isBin(r) && PREC[r.op] < rPrec);
+    const juxtapose = op === '*' && ((isNum(l) && !isNum(r)) || rightInParens);
 
     let box;
     if (juxtapose) {
       box = rowBox([lBox, rBox]);
     } else {
       const sep = (op === '+' || op === '-' || op === '=')
-        ? opSepBox(op, size)
-        : textBox(op, size);
+        ? opSepBox(opGlyph(op), size)
+        : textBox(opGlyph(op), size);
       box = rowBox([lBox, sep, rBox]);
     }
     return p < parentPrec ? parenBox(box) : box;
@@ -590,19 +605,32 @@ function eqwRowHas(row, ops) {
   return row.some(item => item.t === 'op' && ops.includes(item.op));
 }
 
-function layEqwSlot(row, rowKey, size, caret, rects) {
+function layEqwSlot(row, rowKey, size, caret, rects, { bareParen = false } = {}) {
+  if (bareParen && row.length === 1 && row[0].t === 'paren') {
+    const key = eqwItemKey(rowKey, 0);
+    return eqwTrack(layEqwRow(row[0].slots[0], `${key}.0`, size, caret, rects), key, 'struct', rects);
+  }
   return layEqwRow(row, rowKey, size, caret, rects);
+}
+
+function isImpliedProduct(row, index) {
+  const item = row[index];
+  const next = row[index + 1];
+  return item.t === 'op' && item.op === '*' && row[index - 1]?.t === 'num'
+    && !!next && next.t !== 'num' && next.t !== 'op' && next.t !== 'hole';
 }
 
 function layEqwRow(row, rowKey, size, caret, rects) {
   return rowBox(row.map((item, index) => {
-    return layEqwItem(item, eqwItemKey(rowKey, index), size, caret, rects);
+    const key = eqwItemKey(rowKey, index);
+    if (isImpliedProduct(row, index)) return eqwTrack(gapBox(size * 0.06), key, 'op', rects);
+    return layEqwItem(item, key, size, caret, rects);
   }));
 }
 
 function layEqwItem(item, key, size, caret, rects) {
   if (item.t === 'hole') {
-    const box = key === caret ? caretBox(size) : placeholderBox(size);
+    const box = key === caret ? caretSlotBox(size) : placeholderBox(size);
     return eqwTrack(box, key, 'hole', rects);
   }
   if (item.t === 'num' || item.t === 'name') {
@@ -611,7 +639,7 @@ function layEqwItem(item, key, size, caret, rects) {
     return eqwTrack(box, key, 'leaf', rects);
   }
   if (item.t === 'op') {
-    const glyph = item.op === '*' ? '·' : item.op;
+    const glyph = opGlyph(item.op);
     const box = (item.op === '+' || item.op === '-' || item.op === '=')
       ? opSepBox(glyph, size)
       : textBox(glyph, size);
@@ -620,25 +648,21 @@ function layEqwItem(item, key, size, caret, rects) {
   const slots = item.slots.map((slot, index) => {
     return layEqwSlot(slot, `${key}.${index}`, size, caret, rects);
   });
+  const bare = (index, at = size) => layEqwSlot(item.slots[index], `${key}.${index}`, at, caret, rects, { bareParen: true });
   let box;
-  if (item.t === 'frac') box = fracBox(slots[0], slots[1], size);
+  if (item.t === 'frac') box = fracBox(bare(0), bare(1), size);
   else if (item.t === 'pow') {
     const base = (item.slots[0].length !== 1 || ['frac', 'neg', 'pow', 'fact'].includes(item.slots[0][0]?.t))
       ? parenBox(slots[0])
       : slots[0];
-    box = supBox(base, layEqwSlot(item.slots[1], `${key}.1`, size * SUP_SCALE, caret, rects));
+    box = supBox(base, bare(1, size * SUP_SCALE));
   }
-  else if (item.t === 'sqrt') box = radicalBox(slots[0], size);
-  else if (item.t === 'xroot') {
-    const index = layEqwSlot(item.slots[1], `${key}.1`, size * SUP_SCALE, caret, rects);
-    box = radicalBox(slots[0], size, index);
-  }
-  else if (item.t === 'exp') {
-    box = supBox(textBox('e', size), layEqwSlot(item.slots[0], `${key}.0`, size * SUP_SCALE, caret, rects));
-  }
+  else if (item.t === 'sqrt') box = radicalBox(bare(0), size);
+  else if (item.t === 'xroot') box = radicalBox(bare(0), size, bare(1, size * SUP_SCALE));
+  else if (item.t === 'exp') box = supBox(textBox('e', size), bare(0, size * SUP_SCALE));
   else if (item.t === 'neg') {
     const arg = eqwRowHas(item.slots[0], ['+', '-']) ? parenBox(slots[0]) : slots[0];
-    box = rowBox([textBox('-', size), arg]);
+    box = rowBox([textBox('−', size), arg]);
   }
   else if (item.t === 'fact') {
     const bare = item.slots[0].length === 1 && ['num', 'name', 'hole', 'paren', 'fn'].includes(item.slots[0][0]?.t);
@@ -711,8 +735,10 @@ export function eqwToSvg(root, opts = {}) {
     const rect = rects.get(boxed);
     inner += `<rect class="eqw-clear" x="${fmt(rect.x - 1)}" y="${fmt(rect.y - 1)}" width="${fmt(rect.w + 2)}" height="${fmt(rect.h + 2)}" fill="none" stroke="currentColor" stroke-width="1.5"/>`;
   }
-  if (selected) {
-    const union = eqwUnion(rects, selected);
+  const union = selected ? eqwUnion(rects, selected) : null;
+  if (union && opts.selectionAsCaret) {
+    inner += caretBox(size).draw(union.x + union.w, baseline);
+  } else if (selected) {
     if (union) {
       const again = content.draw(pad, baseline);
       inner += `<defs><clipPath id="${clipId}"><rect x="${fmt(union.x - 1)}" y="${fmt(union.y - 1)}" width="${fmt(union.w + 2)}" height="${fmt(union.h + 2)}"/></clipPath></defs>`;
@@ -723,5 +749,5 @@ export function eqwToSvg(root, opts = {}) {
     `<svg xmlns="http://www.w3.org/2000/svg" width="${fmt(width)}" ` +
     `height="${fmt(height)}" viewBox="0 0 ${fmt(width)} ${fmt(height)}" ` +
     `fill="currentColor">${inner}</svg>`;
-  return { svg, width, height, rects };
+  return { svg, width, height, rects, selection: union };
 }

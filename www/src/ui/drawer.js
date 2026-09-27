@@ -600,7 +600,7 @@ export class Drawers {
       case 'ref-insert': entry.type(`${entry.buffer && !/\s$/.test(entry.buffer) ? ' ' : ''}${this.cat.ref} `); entry.focus(); return;
       case 'ref-ask': app.askAssistant(`Explain the ${this.cat.ref} command: what it takes from the stack, what it returns, and a short example I can try.`); return;
       case 'char':
-        if (app.equationEditor?.ownsKeyboard?.()) app.equationEditor.typeText(t.dataset.text);
+        if (app.inputMode === 'equation') app.equationEditor.typeText(t.dataset.text);
         else entry.type(t.dataset.text);
         return;
       case 'hist-recall': entry.recall(t.dataset.text); entry.focus(); return;

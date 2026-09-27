@@ -1693,29 +1693,23 @@ giac._setFixtures({
            `pretty '2*SIN(X)' still contains SIN — got ${svg}`);
   }
 
-  // 2*3 — Num × Num → juxtaposition would produce "23", which reads as
-  // twenty-three.  Do NOT drop the * here.
   {
     const { svg } = astToSvg(parseAlgebra('2*3'));
-    assert(/>\s*\*\s*<\/text>/.test(svg),
-           `pretty '2*3' KEEPS the * glyph to avoid 23 ambiguity — got ${svg}`);
+    assert(/>\s*·\s*<\/text>/.test(svg),
+           `pretty '2*3' keeps a visible product dot so it can't read as 23 — got ${svg}`);
   }
 
-  // X*Y — Var × Var; current rule is conservative (left must be a
-  // Num).  Ensure the `*` stays so this doesn't regress.
   {
     const { svg } = astToSvg(parseAlgebra('X*Y'));
-    assert(/>\s*\*\s*<\/text>/.test(svg),
-           `pretty 'X*Y' KEEPS the * glyph (conservative rule) — got ${svg}`);
+    assert(/>\s*·\s*<\/text>/.test(svg),
+           `pretty 'X*Y' keeps the product dot between two names — got ${svg}`);
   }
 
-  // 2*X*Y — outer is (l=Bin, r=Var), inner is (l=2, r=X).  Inner
-  // juxtaposes; outer keeps its *.  Expect exactly one * glyph.
   {
     const { svg } = astToSvg(parseAlgebra('2*X*Y'));
-    const stars = (svg.match(/>\s*\*\s*<\/text>/g) || []).length;
-    assert(stars === 1,
-           `pretty '2*X*Y' has exactly 1 * glyph (inner juxtaposed) — got ${stars}: ${svg}`);
+    const dots = (svg.match(/>\s*·\s*<\/text>/g) || []).length;
+    assert(dots === 1,
+           `pretty '2*X*Y' has exactly one product dot (2X juxtaposed) — got ${dots}: ${svg}`);
   }
 }
 
@@ -2603,12 +2597,12 @@ giac._setFixtures({
            `session041: 'A = B' renders with tight = separator`);
   }
   {
-    // `*` without juxtaposition still uses the plain textBox(op) path
-    // — no padding change there, so `A * B` still looks like `A*B`
-    // (no spaces) in SVG.
     const { svg } = astToSvg(parseAlgebra('A * B'));
-    assert(svg.includes('>*<'),
-           `session041: 'A * B' '*' glyph still inline`);
+    assert(svg.includes('>·<'),
+           `session041: 'A * B' renders as a tight A·B`);
+    const factors = astToSvg(parseAlgebra('(X-3)*(X-2)')).svg;
+    assert(!factors.includes('>·<') && factors.includes('>−<'),
+           'astToSvg writes (X-3)*(X-2) as (X−3)(X−2) with true minus signs');
   }
 }
 

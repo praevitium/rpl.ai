@@ -1,7 +1,9 @@
 import { assert, assertThrows } from './helpers.mjs';
 import {
-  emptyEquation, equationFromValue, fromAst, toAst, targetAst, EQW_PALETTE, EQW_FEATURED, eqwPaletteFaces,
+  emptyEquation, equationFromValue, fromAst, toAst, targetAst, EQW_INSERTS,
   pressEquationKey, keypadFace, physicalFace, isEquationFace,
+  completeWord, holePath, replaceWhole, wrapTarget, collapseSelection, isBlankEquation,
+  equationInsights, variablesOf, primaryVariable, renameVariable,
   equationToSymbolic, valueToEquationDraft, valueFromEquation,
   EQW_CMDS, EQW_APP_FACES, EQW_UNAVAILABLE_FACES, applyOpsToAst,
   cutTarget, pasteText, replaceTarget,
@@ -337,8 +339,14 @@ function same(state, source, label) {
     'EQW physicalFace maps / to ÷');
   assert(physicalFace({ key: 'ArrowUp', ctrlKey: false, metaKey: false, altKey: false, shiftKey: true }) === 'RS▲',
     'EQW physicalFace maps Shift+ArrowUp to RS▲');
-  assert(physicalFace({ key: 'z', ctrlKey: true, metaKey: false, altKey: false, shiftKey: false }) === 'UNDO',
-    'EQW physicalFace maps Ctrl+Z to UNDO');
+  assert(physicalFace({ key: 'z', ctrlKey: true, metaKey: false, altKey: false, shiftKey: false }) === null,
+    'EQW physicalFace leaves Ctrl and Cmd chords to the app keymap');
+  assert(physicalFace({ key: 'Tab', ctrlKey: false, metaKey: false, altKey: false, shiftKey: false }) === '▶'
+    && physicalFace({ key: 'Tab', ctrlKey: false, metaKey: false, altKey: false, shiftKey: true }) === '◀',
+    'EQW physicalFace: Tab leaves the box, Shift+Tab goes back');
+  assert(physicalFace({ key: 'Enter', ctrlKey: false, metaKey: false, altKey: false, shiftKey: false }) === null
+    && physicalFace({ key: 'Escape', ctrlKey: false, metaKey: false, altKey: false, shiftKey: false }) === null,
+    'EQW physicalFace leaves Enter and Escape to the app, which commits and cancels');
 }
 
 {
@@ -364,31 +372,74 @@ function same(state, source, label) {
 }
 
 {
-  const featured = new Set(EQW_FEATURED.map(button => button.face));
-  const offered = new Set(eqwPaletteFaces());
-  assert(featured.has('∂') && featured.has('∫') && featured.has('Σ') && featured.has('π') && featured.has('≠'),
-    'EQW palette features derivative, integral, sum, and symbols a keyboard cannot type');
-  for (const face of ['0', '+', '−', '×', 'x', 'e', 'SIN', '( )', '⌫']) {
-    assert(!featured.has(face), `EQW featured palette hides typeable ${face}`);
-    assert(offered.has(face), `EQW more palette still offers ${face}`);
-  }
-  const dead = [...EQW_FEATURED, ...EQW_PALETTE.flatMap(group => group.items)].filter(button => !isEquationFace(button.face)).map(button => button.label);
-  assert(dead.length === 0, `EQW palette buttons insert equation faces${dead.length ? ` (${dead.join(', ')})` : ''}`);
+  const dead = EQW_INSERTS.filter((item) => !isEquationFace(item.face)).map((item) => item.label);
+  assert(dead.length === 0, `EQW insert menu entries are equation faces${dead.length ? ` (${dead.join(', ')})` : ''}`);
   for (const [face, kind] of [['∂', 'deriv'], ['∫', 'integ'], ['Σ', 'sigma'], ['÷', 'frac'], ['yˣ', 'pow'], ['√x', 'sqrt'], ['ⁿ√y', 'xroot'], ['eˣ', 'exp']]) {
     const state = press(emptyEquation(), face);
-    assert(state.root[0]?.t === kind, `EQW palette ${face} opens a ${kind} (got ${state.root[0]?.t})`);
+    assert(state.root[0]?.t === kind, `EQW ${face} opens a ${kind} (got ${state.root[0]?.t})`);
   }
+}
+
+{
+  same(press(emptyEquation(), 'p', 'i', '×', '2'), 'π*2', 'EQW a typed Greek word becomes the letter once the word is done (pi × 2 → π·2)');
+  same(press(emptyEquation(), 't', 'h', 'e', 't', 'a', '+', '1'), 'θ+1', 'EQW theta becomes θ');
+  same(press(emptyEquation(), 'p', 'i', 'x'), 'pix', 'EQW a longer name is left alone');
+  const open = press(emptyEquation(), 'a', 'l', 'p', 'h', 'a');
+  assert(textOf(open) === 'alpha' && textOf(completeWord(open)) === 'α', 'EQW completeWord finishes the word at the caret (on commit)');
+  same(press(emptyEquation(), 'p', 'i', '⌫'), 'p', 'EQW backspace edits the word instead of finishing it');
+}
+
+{
+  const half = press(emptyEquation(), '1', '÷');
+  assert(holePath(half.root)?.join('.') === '0.1.0', 'EQW holePath finds the empty denominator');
+  assert(holePath(press(half, '2').root) === null, 'EQW holePath is null once every box is filled');
+  assert(isBlankEquation(emptyEquation()) && !isBlankEquation(half), 'EQW isBlankEquation is true only for the untouched box');
+}
+
+{
+  const start = press(emptyEquation(), 'x', '+', 'x');
+  const replaced = replaceWhole(start, parseAlgebra('2*x'));
+  same(replaced, '2*x', 'EQW replaceWhole swaps in a new expression');
+  same(pressEquationKey(replaced, 'UNDO'), 'x+x', 'EQW replaceWhole is one undo step');
+  const one = press(emptyEquation(), 'x', '+', '1', '⇧◀');
+  assert(one.target.mode === 'select' && one.target.from === 2 && one.target.to === 2, 'EQW Shift+Left selects the item at the caret');
+  const selected = pressEquationKey(one, '⇧◀');
+  assert(selected.target.mode === 'select' && selected.target.from === 0 && selected.target.to === 2, 'EQW Shift+Left again widens to the neighbouring term');
+  const wrapped = wrapTarget(press(emptyEquation(), 'x', '+', '1', '◀', '◀', '⇧◀'), 'sqrt');
+  assert(textOf(wrapped).includes('√') || textOf(wrapped).includes('SQRT'), `EQW wrapTarget puts the selection under a root (got ${textOf(wrapped)})`);
+  assert(collapseSelection(selected).target.mode === 'insert', 'EQW collapseSelection turns a selection back into a caret');
+}
+
+{
+  assert(variablesOf(parseAlgebra('π*X+e^i')).join() === 'X', 'EQW variablesOf skips π, e and i');
+  assert(primaryVariable(parseAlgebra('a*t^2+x'), 'x') === 'x' && primaryVariable(parseAlgebra('a*t'), 'x') === 'a',
+    'EQW primaryVariable prefers the CAS variable, then the first name');
+  assert(formatAlgebra(renameVariable(parseAlgebra('t^2+t'), 't', 'X')) === 'X^2 + X', 'EQW renameVariable renames every use');
+  const value = equationInsights(parseAlgebra('2+3*4'), { cas: false });
+  assert(value.length === 1 && value[0].kind === 'value' && value[0].value === 14, 'EQW insights: a number-only expression shows its value');
+  const plot = equationInsights(parseAlgebra('X^2-1'), { cas: false });
+  assert(plot.some((i) => i.kind === 'plot' && i.variable === 'X'), 'EQW insights: one variable offers a plot');
+  const eq = equationInsights(parseAlgebra('2=3'), { cas: false });
+  assert(eq[0]?.label === 'Left − right' && eq[0].value === -1, 'EQW insights: a numeric equation shows left minus right');
+  giac._clear();
+  const twice = parseAlgebra('X+X');
+  giac._setFixture(buildGiacCmd(twice, (e) => `simplify(${e})`), '2*X');
+  const cas = equationInsights(twice, { cas: true });
+  const simp = cas.find((i) => i.label === 'Simplifies to');
+  assert(simp && formatAlgebra(simp.ast) === '2*X', 'EQW insights: the CAS simplification is offered');
+  assert(!cas.some((i) => i.label === 'Factors as'), 'EQW insights: a CAS command that fails leaves no card');
+  giac._clear();
 }
 
 {
   const empty = emptyEquation();
   const drawn = eqwToSvg(empty.root, { caret: '0', size: 24 });
   assert(drawn.rects.has('0'), 'eqwToSvg records a rect for every item key');
-  assert(drawn.svg.includes('eqw-caret') && !drawn.svg.includes('eqw-hole'),
-    'eqwToSvg draws ■ for holes and the caret instead of the cursor\'s ■');
+  assert(drawn.svg.includes('eqw-caret') && drawn.svg.includes('eqw-slot') && !drawn.svg.includes('eqw-hole'),
+    'eqwToSvg draws the box under the caret as the active slot, not as a hole');
   const other = eqwToSvg(press(emptyEquation(), '1', '÷').root, { caret: '0.0.0', size: 24 });
   assert(other.svg.includes('eqw-hole') && other.svg.includes('eqw-caret'),
-    'eqwToSvg draws ■ for the hole that does not hold the cursor');
+    'eqwToSvg draws an empty box for the hole that does not hold the caret');
   const boxed = eqwToSvg(press(emptyEquation(), '1').root, { boxed: '0', size: 24 });
   assert(boxed.svg.includes('eqw-clear'), 'eqwToSvg draws the clear cursor as an outline');
   const selected = eqwToSvg(press(emptyEquation(), '1', '+', '2').root, {
@@ -396,6 +447,9 @@ function same(state, source, label) {
   });
   assert(selected.svg.includes('eqw-inverse') && selected.svg.includes('clipPath'),
     'eqwToSvg draws the selection as an inverse clip over exactly the selected items');
+  assert(selected.selection && selected.selection.w > 0, 'eqwToSvg reports the selection bounds for the toolbar');
+  assert(!eqwToSvg(press(emptyEquation(), '2', 'x').root, { size: 24 }).svg.includes('·'), 'eqwToSvg writes 2·x as 2x');
+  assert(eqwToSvg(press(emptyEquation(), 'x', '×', 'y').root, { size: 24 }).svg.includes('·'), 'eqwToSvg keeps the dot between two names');
 }
 
 function replaceSelection(state, ast) {

@@ -10,7 +10,7 @@ export const WRITERS = Object.freeze([
 
 const HINTS = Object.freeze({
   rpl: ['Enter runs', '⇧Enter new line', 'start with ? to ask the assistant'],
-  equation: ['Type to build it', 'Enter pushes', 'Esc goes back to the command line'],
+  equation: ['/ fraction · ^ power · ( group', 'Tab next box', '⇧← ⇧→ select', 'Enter pushes', 'Esc cancels'],
   matrix: ['Tab next cell', 'Enter pushes', 'paste a spreadsheet range'],
 });
 
@@ -66,6 +66,7 @@ export class InputArea {
     this.top.innerHTML = `<div class="in-tabs" role="group" aria-label="Writer">${tabs}</div><div class="in-status">${status}</div><button type="button" class="in-ask" data-in="ask" title="Ask the assistant${ask ? ` (${escapeHtml(ask)})` : ''}">${icon('spark', 'sm')}Ask</button>`;
     this.hint.innerHTML = HINTS[this.mode].map((h) => `<span>${escapeHtml(h)}</span>`).join('');
     this.cmdline.classList.toggle('editing', !!editing && this.mode === 'rpl');
+    this._writerEl?.classList.toggle('editing', !!editing);
     this.badge.hidden = !app.entry.buffer.trimStart().startsWith('?');
   }
 

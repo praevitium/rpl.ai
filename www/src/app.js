@@ -36,7 +36,7 @@ import { lookup, allOps, setGraphicsHook } from './rpl/ops.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
-  isMatrix, isVector, isReal, isInteger,
+  isMatrix, isVector, isReal, isInteger, Symbolic,
 } from './rpl/types.js';
 import { UNIT_CATALOG } from './rpl/units.js';
 import { loadFromLocalStorage, saveToLocalStorage, exportToFile, importFromFile } from './rpl/persist.js';
@@ -118,7 +118,6 @@ class App {
       onDeleteEmpty: () => this._runChord('Delete'),
     });
     this.input.attachEditorChrome();
-    this.entry._view.dom.addEventListener('focusin', () => this.equationEditor?.blurEquation());
     installCommandHover(this.display.cmdline, entryWordAtEvent(this.entry));
     installCommandHover(this.display.stackView, stackWordAtEvent);
 
@@ -551,6 +550,7 @@ class App {
   writerCommit(value) {
     const edit = this.pendingEdit;
     if (this.entry.buffer.trim()) this.entry.enter();
+    this.entry._recordHistory(formatSource(value));
     this.entry._snapForUndo();
     if (edit?.kind === 'level' && this.stack.peek(edit.level) === edit.value) replaceLevel(this.stack, edit.level, [value]);
     else if (edit?.kind === 'var') varStore(edit.name, value);
@@ -558,6 +558,39 @@ class App {
     this._endEdit();
     this.setInputMode('rpl');
     if (edit?.kind === 'var') this.toast(`Stored ${edit.name}`);
+  }
+
+  cancelWriter() {
+    const mode = this.inputMode;
+    const writer = mode === 'equation' ? this.equationEditor : this.matrixEditor;
+    if (writer.collapseSelection?.()) return;
+    const edit = this.pendingEdit;
+    const saved = writer.snapshot();
+    const hadContent = !writer.isEmpty();
+    writer.clear();
+    if (edit) this._endEdit();
+    this.setInputMode('rpl');
+    const reopen = () => {
+      if (edit) this.pendingEdit = edit;
+      this.setInputMode(mode);
+      writer.restore(saved);
+      this.input.render();
+      this.renderStatus();
+    };
+    if (edit) this.toast('Edit cancelled. The level is unchanged.', { action: 'Undo', onAction: reopen });
+    else if (hadContent) this.toast(mode === 'equation' ? 'Discarded the equation' : 'Discarded the matrix', { action: 'Undo', onAction: reopen });
+  }
+
+  pushFromWriter(value, message) {
+    this.entry._snapForUndo();
+    this.stack.push(value);
+    this.toast(message, { action: 'Undo', onAction: () => { try { this.entry.performUndo(); } catch (e) { this.entry.flashError(e); } } });
+  }
+
+  plotExpression(ast) {
+    const scratch = new Stack();
+    scratch.push(Symbolic(ast));
+    this.drawers.openGraph('function', scratch);
   }
 
   commitEntryAndPush(values) {
@@ -596,7 +629,6 @@ class App {
   }
 
   commitEntry() {
-    if (this.equationEditor?.isLineEditing()) { this.equationEditor.commitLineEdit(); return; }
     if (this.inputMode === 'equation') { this.equationEditor.commit(); return; }
     if (this.inputMode === 'matrix') { this.matrixEditor.push(); return; }
     const text = this.entry.buffer.trimStart();
@@ -612,7 +644,6 @@ class App {
   }
 
   cancelEntry() {
-    if (this.equationEditor?.isLineEditing()) { this.equationEditor.cancelLineEdit(); return; }
     if (this.cancelEdit()) return;
     this.entry.cancel();
   }
@@ -624,7 +655,7 @@ class App {
   }
 
   runCommandFromUI(name) {
-    if (this.inputMode === 'equation' && this.equationEditor?.isOpen()) { this.equationEditor.pressCommand(name); return; }
+    if (this.inputMode === 'equation') { this.equationEditor.pressCommand(name); return; }
     if (this.selection != null) this.clearSelection();
     if (!lookup(name)) { this.entry.flashError({ message: `${name} isn't available in rpl.ai` }); return; }
     this.entry.typeOrExecFn(name);
@@ -654,11 +685,11 @@ class App {
     if (mode === 'equation') {
       if (!this.equationEditor) this.equationEditor = new EquationEditor({ app: this });
       const eqw = this.equationEditor;
-      if (value) eqw.open({ value });
-      else if (!eqw.isOpen()) eqw.open();
       this.inputMode = 'equation';
       this.input.show('equation', eqw.el);
-      eqw.focusEquation();
+      if (value) eqw.load(value);
+      else eqw.refreshInsights();
+      eqw.focus();
     } else if (mode === 'matrix') {
       if (!this.matrixEditor) this.matrixEditor = new MatrixEditor({ app: this });
       if (value) this.matrixEditor.loadValue(value);
@@ -666,7 +697,6 @@ class App {
       this.input.show('matrix', this.matrixEditor.el);
       this.matrixEditor.focusGrid();
     } else {
-      if (this.inputMode === 'equation') this.equationEditor?.blurEquation();
       this.inputMode = 'rpl';
       this._eqwSlots = null;
       this.input.show('rpl');
@@ -682,13 +712,6 @@ class App {
     if (fromLevel1 && this.stack.depth && (isSymbolic(this.stack.peek(1)) || isName(this.stack.peek(1)))) this.editLevel(1);
     else this.setInputMode('equation');
   }
-
-  activateEquationKeys() {
-    this.entry.blur();
-    this.menubar.render();
-  }
-
-  deactivateEquationKeys() { this.menubar.render(); }
 
   showMenu(id, { remember = true } = {}) {
     if (this.selection != null) this.clearSelection();
@@ -710,7 +733,7 @@ class App {
   menuView() {
     let ctx = null;
     if (this.selection != null && this.stack.depth) ctx = { key: `LVL${this.selection}`, title: `LEVEL ${this.selection}`, short: `LVL ${this.selection}`, items: this._levelSlots() };
-    else if (this.inputMode === 'equation' && this.equationEditor) ctx = { key: 'EQW', title: 'EQUATION', short: 'EQW', items: this._eqwSlots ?? this.equationEditor.menuSlots() };
+    else if (this.inputMode === 'equation' && this.equationEditor) ctx = { key: 'EQW', title: 'EQUATION', short: 'EQW', items: this._eqwSlots ?? this.equationEditor.menu() };
     else if (this.inputMode === 'matrix' && this.matrixEditor) ctx = { key: 'MTRW', title: 'MATRIX', short: 'MTRW', items: this.matrixEditor.menuSlots() };
     if (ctx) {
       if (ctx.key !== this._ctxKey) { this._ctxKey = ctx.key; this._ctxPage = 0; }
@@ -778,7 +801,7 @@ class App {
     const slots = names.map((name) => ({
       label: name,
       command: name,
-      title: this._commandTitle(name),
+      title: this.commandTitle(name),
       blockedReason: () => this._tooFewArgumentsReason(name),
       onPress: () => this.runCommandFromUI(name),
       onPressL: () => { this.entry.type(`${this.entry.buffer && !/\s$/.test(this.entry.buffer) ? ' ' : ''}${name} `); this.entry.focus(); },
@@ -795,7 +818,7 @@ class App {
     this.menubar.render();
   }
 
-  _commandTitle(name) {
+  commandTitle(name) {
     const info = this.commandInfo(name);
     return info ? `${name}: ${shortDescription(info.entry, 100)} · ↰ types it · ↱ opens the reference` : `${name} · ↰ types it · ↱ opens the reference`;
   }
@@ -1029,7 +1052,7 @@ class App {
       this.clearSelection();
     }
 
-    if (this.inputMode === 'equation' && this.equationEditor?.isOpen()) {
+    if (this.inputMode === 'equation') {
       if (key.primary === 'ON' && !this.shift) { this.runAction('ui.escape'); return; }
       this.equationEditor.pressKeypad(key, this.shift);
       if (this.shift && !this.shiftLocked()) this.setShift(null);
@@ -1057,7 +1080,7 @@ class App {
 
   _keyContexts() {
     const contexts = [];
-    if (this.inputMode === 'equation' && this.equationEditor?.ownsKeyboard()) contexts.push('equation');
+    if (this.inputMode === 'equation') contexts.push('equation');
     if (this.inputMode === 'matrix') contexts.push('matrix');
     if (this.selection != null) contexts.push('selection');
     if (this.inputMode === 'rpl') contexts.push(this.entry.buffer.length ? 'line' : 'empty');
@@ -1099,11 +1122,13 @@ class App {
       case 'settings.open': this.sheets.openSettings(); return true;
       case 'shortcuts.open': this.sheets.openShortcuts(); return true;
       case 'edit.undo':
-        if (this.entry.buffer.length) { this.entry.undoText(); return true; }
+        if (this.inputMode === 'equation' && this.equationEditor.canUndo()) { this.equationEditor.pressFace('UNDO'); return true; }
+        if (this.inputMode === 'rpl' && this.entry.buffer.length) { this.entry.undoText(); return true; }
         try { this.entry.performUndo(); } catch (e) { this.entry.flashError(e); }
         return true;
       case 'edit.redo':
-        if (this.entry.buffer.length) { this.entry.redoText(); return true; }
+        if (this.inputMode === 'equation' && this.equationEditor.state.future.length) { this.equationEditor.pressFace('REDO'); return true; }
+        if (this.inputMode === 'rpl' && this.entry.buffer.length) { this.entry.redoText(); return true; }
         try { this.entry.performRedo(); } catch (e) { this.entry.flashError(e); }
         return true;
       case 'edit.paste':
@@ -1112,6 +1137,12 @@ class App {
           .catch(() => this.notifyError('The clipboard is not available here. Click the command line and paste there.'));
         return true;
       case 'ui.escape': return this._escape();
+      case 'writer.commit': this.commitEntry(); return true;
+      case 'eqw.fraction': this.equationEditor.pressFace('÷'); return true;
+      case 'eqw.power': this.equationEditor.pressFace('yˣ'); return true;
+      case 'eqw.group': this.equationEditor.pressFace('( )'); return true;
+      case 'eqw.next': this.equationEditor.pressFace('▶'); return true;
+      case 'eqw.extend': this.equationEditor.pressFace(arg < 0 ? '⇧◀' : '⇧▶'); return true;
       case 'menu.prev': this.prevMenuPage(); return true;
       case 'menu.next': this.nextMenuPage(); return true;
       case 'softkey.press': this.pressSoftKey(arg); return true;
@@ -1147,9 +1178,8 @@ class App {
     if (this.plotFocus) { this.setPlotFocus(false); return true; }
     if (this.selection != null) { this.clearSelection(); return true; }
     if (this.entry.error) { this.entry.error = ''; this.entry._emit(); return true; }
-    if (this.equationEditor?.isLineEditing()) { this.equationEditor.cancelLineEdit(); return true; }
+    if (this.inputMode !== 'rpl') { this.cancelWriter(); return true; }
     if (this.pendingEdit) { this.cancelEdit(); return true; }
-    if (this.inputMode !== 'rpl') { this.setInputMode('rpl'); return true; }
     if (this.entry.buffer.length) {
       const text = this.entry.buffer;
       this.entry.cancel();
@@ -1184,9 +1214,13 @@ class App {
     if (!chord) return;
     if (tag === 'BUTTON' && (e.key === 'Enter' || e.key === ' ')) return;
 
-    if (this.inputMode === 'equation' && this.equationEditor?.ownsKeyboard() && !/^(Mod\+|F\d|Shift\+F|Alt\+F|PageUp|PageDown)/.test(chord)) {
-      if (this.equationEditor.handleKeyDown(e)) { e.preventDefault(); return; }
-      if (e.key === 'Enter') { this.equationEditor.commit(); e.preventDefault(); return; }
+    if (this.inputMode === 'equation' && this.equationEditor.ownsKeyboard(target)) {
+      const writerBinding = findBinding(chord, ['equation']);
+      if (writerBinding) {
+        if (this.runAction(writerBinding.action, writerBinding.arg) !== false) e.preventDefault();
+        return;
+      }
+      if (!/^(Mod\+|F\d|Shift\+F|Alt\+F|PageUp|PageDown|Escape)/.test(chord) && this.equationEditor.handleKey(e)) { e.preventDefault(); return; }
     }
 
     if (inField) {
@@ -1228,7 +1262,7 @@ window.calc_reset = function calc_reset() {
   window.__hp50.sheets.resetEverything();
 };
 
-giac.init().catch((e) => {
+giac.init().then(() => window.__hp50.equationEditor?.refreshInsights()).catch((e) => {
   console.error('[giac] init failed:', e);
 });
 
