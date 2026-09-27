@@ -1,7 +1,3 @@
-/* Bundled-font glyph coverage: every character the calculator draws
-   from IBM Plex resolves to a bundled @font-face whose unicode-range
-   claims it and whose woff2 cmap actually has it. */
-
 import { readFileSync } from 'node:fs';
 import { brotliDecompressSync } from 'node:zlib';
 import { assert } from './helpers.mjs';

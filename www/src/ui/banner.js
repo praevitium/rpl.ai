@@ -12,8 +12,6 @@ const HALT_TITLES = Object.freeze({
   prompt: 'The program is waiting for you',
 });
 
-/** `kind` is the halted record's kind; `prompt` the PROMPT text, if any;
- *  `programHtml` the program with the next instruction marked. */
 export function haltedBannerHtml({ kind, prompt = '', programHtml = '' }) {
   const title = HALT_TITLES[kind] ?? HALT_TITLES.halt;
   return `<div class="bn halt" role="status"><div class="bn-ico" aria-hidden="true">${icon('stop', 'xs')}</div><div class="bn-t">${escapeHtml(title)}${prompt ? ` · ${escapeHtml(prompt)}` : ''}</div>${programHtml ? `<div class="bn-prog">${programHtml}</div>` : ''}<div class="bn-f"><button type="button" class="chip pri" data-bn="cont" title="CONT">${icon('play', 'sm')}Continue</button><button type="button" class="chip" data-bn="sst" title="SST: run the next instruction">${icon('step', 'sm')}Step</button><button type="button" class="chip warn" data-bn="kill" title="KILL: abandon the program">${icon('stop', 'sm')}Stop</button></div></div>`;

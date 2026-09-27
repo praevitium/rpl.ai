@@ -130,8 +130,6 @@ class App {
     this.renderAll();
   }
 
-  /* ---------------- rendering ---------------- */
-
   renderAll() {
     this.appbar.render();
     this.display.renderStack(this.stack);
@@ -195,8 +193,6 @@ class App {
     this.display.renderStack(this.stack);
   }
 
-  /* ---------------- preferences ---------------- */
-
   setPrefs(patch) {
     this.prefs = normalizeUiPrefs({ ...this.prefs, ...patch });
     saveUiPrefs(this.prefs);
@@ -244,8 +240,6 @@ class App {
     if (this.drawers.current === 'plot') this.drawers.render();
     requestAnimationFrame(() => this.drawers.graph?.resize?.());
   }
-
-  /* ---------------- banners: errors that explain, halted programs ---------------- */
 
   _showError(message) {
     this._dropPreview();
@@ -320,13 +314,9 @@ class App {
     this.askAssistant(`I got this error on the calculator: "${message}".${line ? ` The command line held: ${line}.` : ''} ${levels ? `On the stack, ${levels}.` : 'The stack is empty.'} What went wrong, and how do I fix it?`);
   }
 
-  /* ---------------- notifications ---------------- */
-
   toast(message, opts) { this.toasts.show(message, opts); }
 
   notifyError(message) { this.toasts.show(message, { error: true, timeout: 5200 }); }
-
-  /* ---------------- assistant ---------------- */
 
   _assistantTools() {
     const displayOpts = () => this.display.displayOpts;
@@ -391,8 +381,6 @@ class App {
     });
   }
 
-  /* ---------------- persistence ---------------- */
-
   _installAutosave() {
     let pending = false;
     const schedule = () => {
@@ -420,8 +408,6 @@ class App {
     }
   }
 
-  /* ---------------- stack display wiring ---------------- */
-
   _wireDisplay() {
     const d = this.display;
     d.emptyHtml = `<div class="st-empty"><h5>The stack is empty</h5><p>Type a number and press Enter. Commands take their arguments from the stack and leave their results on it.</p><div class="keysline"><span class="kc">2</span> <span class="kc">Enter</span> <span class="kc">3</span> <span class="kc">+</span> → 5</div><div class="chipset" style="justify-content:center"><button type="button" class="chip" data-empty-act="equation">${icon('fx', 'sm')}Write an equation</button><button type="button" class="chip" data-empty-act="solve">Solve x² − 5x + 6 = 0</button><button type="button" class="chip" data-empty-act="plot">${icon('plot', 'sm')}Plot sin x</button><button type="button" class="chip" data-empty-act="ask">${icon('spark', 'sm')}Ask the assistant</button></div></div>`;
@@ -443,8 +429,6 @@ class App {
       else if (kind === 'leave-minimal') this.setMinimal(false);
     };
   }
-
-  /* ---------------- selection ---------------- */
 
   selectLevel(level) {
     const depth = this.stack.depth;
@@ -527,8 +511,6 @@ class App {
     try { await navigator.clipboard.writeText(text); this.toast(message); }
     catch { this.notifyError('The clipboard is not available here.'); }
   }
-
-  /* ---------------- editing a level or a variable ---------------- */
 
   editLevel(level) {
     if (this.stack.depth < level) { this.entry.flashError({ message: 'Too few arguments' }); return; }
@@ -615,8 +597,6 @@ class App {
     return true;
   }
 
-  /* ---------------- the command line ---------------- */
-
   commitEntry() {
     if (this.equationEditor?.isLineEditing()) { this.equationEditor.commitLineEdit(); return; }
     if (this.inputMode === 'equation') { this.equationEditor.commit(); return; }
@@ -672,8 +652,6 @@ class App {
     for (let i = 0; i < stepsUp; i++) goUp();
   }
 
-  /* ---------------- writers ---------------- */
-
   setInputMode(mode, { value = null } = {}) {
     if (mode === 'equation') {
       if (!this.equationEditor) this.equationEditor = new EquationEditor({ app: this });
@@ -713,8 +691,6 @@ class App {
   }
 
   deactivateEquationKeys() { this.menubar.render(); }
-
-  /* ---------------- menus ---------------- */
 
   showMenu(id, { remember = true } = {}) {
     if (this.selection != null) this.clearSelection();
@@ -983,8 +959,6 @@ class App {
     this.menubar.render();
   }
 
-  /* ---------------- shift layers ---------------- */
-
   layer() {
     if (!this.shift) return null;
     if (this.shift.startsWith('shiftL')) return 'L';
@@ -1083,8 +1057,6 @@ class App {
     else if (action) action(this.entry, this.shift, this);
     if (this.shift && !this.shiftLocked()) this.setShift(null);
   }
-
-  /* ---------------- actions and the keyboard ---------------- */
 
   _keyContexts() {
     const contexts = [];

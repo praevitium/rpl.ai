@@ -4,10 +4,6 @@ import {
   isBarePrintableChord, chordFromEvent, chordText, findBinding, shortcutText, parseChord,
 } from '../www/src/ui/actions.js';
 
-/* ACTIONS / KEYMAP: every command the UI can run has a visible home,
-   and the keymap has no clashes, no bare printable globals, and no
-   chords the browser keeps for itself. */
-
 {
   const hidden = Object.entries(ACTIONS).filter(([, a]) => !a.surfaces?.length).map(([id]) => id);
   assert(hidden.length === 0, `every action has a visible surface${hidden.length ? ` (missing: ${hidden.join(', ')})` : ''}`);

@@ -1,9 +1,3 @@
-/* =================================================================
-   rpl.ai — design system: tokens, app shell, stack, input, keypad,
-   drawers, popovers, and per-component styles for the equation and
-   matrix writers, the plotter, and the AI assistant panel.
-   ================================================================= */
-
 :root {
   --font-ui: "IBM Plex Sans", "RPL Symbols", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", "RPL Symbols", "IBM Plex Sans", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -877,7 +871,6 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 :root[data-theme="classic"][data-view="minimal"] .cmdline { background: transparent; box-shadow: none; }
 :root[data-theme="classic"][data-view="minimal"] .status-line { margin: 0 10px; padding: 12px 6px 8px; }
 
-/* ---- Equation writer, matrix writer, plotter ---- */
 .dw-body:has(.cb-panel-wrap),
 .dw-body:has(.gr-view),
 .dw-body:has(.eqw-editor),
@@ -1197,7 +1190,6 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .gr-canvas:active { cursor: grabbing; }
 .gr-readout { font-family: var(--font-mono); }
 
-/* ---- AI assistant panel (cb- prefix = "chat bot") ---- */
 .side-panel-filter.hidden { display: none; }
 .cb-panel-wrap {
   display: flex;
@@ -1981,7 +1973,6 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .cb-chip:active   { background: var(--r1); }
 .cb-chip:disabled { opacity: .5; cursor: default; }
 
-/* ---- Command-word hover tooltip ---- */
 .cmd-hover {
   position: fixed;
   z-index: 200;

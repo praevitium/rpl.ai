@@ -4,9 +4,6 @@ import { errorBannerHtml, haltedBannerHtml } from '../www/src/ui/banner.js';
 import { describeValue } from '../www/src/ui/display.js';
 import { Str, Real, Name } from '../www/src/rpl/types.js';
 
-/* Error banners: every kind of calculator error explains itself and
-   offers at least one fix. */
-
 {
   const p = parseErrorMessage('SIN: Bad argument type: expected real, got string');
   assert(p.command === 'SIN' && p.core === 'Bad argument type' && p.detail === 'expected real, got string',

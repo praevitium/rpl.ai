@@ -1,6 +1,3 @@
-/* Offline contract: the service worker's precache holds every file the
-   app loads, so a cached install runs with no network. */
-
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname, normalize } from 'node:path';
