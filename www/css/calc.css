@@ -1198,11 +1198,10 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 }
 .cb-status {
   flex: 1 1 auto;
-  font-size: 14.5px;
+  font-size: 12.5px;
   font-weight: 600;
-  letter-spacing: .3px;
   word-break: break-word;
-  padding: 4px 0;
+  padding: 3px 0;
 }
 .cb-status-loading { color: var(--amber); }
 .cb-status-ready   { color: var(--ok); }
@@ -1224,13 +1223,13 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .cb-switch-model-btn {
   flex: 0 0 auto;
   margin: 6px 10px 0;
-  padding: 6px 12px;
+  padding: 5px 10px;
   background: transparent;
   border: 1px solid var(--line2);
   border-radius: 5px;
   color: var(--ink2);
   font: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
   cursor: pointer;
   transition: background .15s, color .15s, border-color .15s;
 }
@@ -1321,7 +1320,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .cb-picker-name {
   font-weight: 600;
   color: var(--ink);
-  font-size: 14px;
+  font-size: 13px;
 }
 .cb-picker-size {
   font-size: 12px;
@@ -1377,8 +1376,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   background: var(--r2);
   border: 1px dashed var(--ink4);
   color: var(--ink2);
-  font-size: 13px;
-  padding: 7px 12px;
+  font-size: 12.5px;
+  padding: 5px 10px;
   border-radius: 5px;
   cursor: pointer;
   transition: background .12s, border-color .12s;
@@ -1414,8 +1413,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   background: var(--accent-dim);
   border: 1px solid color-mix(in oklab, var(--ok) 35%, transparent);
   color: var(--ink);
-  font-size: 13px;
-  padding: 6px 12px;
+  font-size: 12.5px;
+  padding: 5px 10px;
   border-radius: 5px;
   cursor: pointer;
   transition: background .12s, border-color .12s;
@@ -1428,8 +1427,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   border: 1px solid var(--line2);
   color: var(--ink2);
   font: inherit;
-  font-size: 12.5px;
-  padding: 5px 10px;
+  font-size: 12px;
+  padding: 4px 9px;
   border-radius: 6px;
   cursor: pointer;
   transition: background .12s, border-color .12s, color .12s;
@@ -1439,12 +1438,12 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .cb-load-btn {
   flex: 0 0 auto;
   margin: 10px;
-  padding: 11px 16px;
+  padding: 8px 14px;
   background: var(--r2);
   border: 1px solid var(--line2);
   border-radius: 6px;
   color: var(--ink2);
-  font-size: 15px;
+  font-size: 13px;
   font-family: var(--font-ui);
   cursor: pointer;
   text-align: center;
@@ -1460,17 +1459,17 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   padding: 10px 10px 4px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   min-height: 0;
   scroll-behavior: smooth;
 }
 .cb-bubble {
   max-width: 96%;
-  padding: 10px 14px;
+  padding: 8px 11px;
   border-radius: 10px;
   line-height: 1.5;
   word-break: break-word;
-  font-size: 16.5px;
+  font-size: 13px;
 }
 .cb-bubble-user {
   align-self: flex-end;
@@ -1497,34 +1496,36 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   animation: cb-blink .7s steps(1) infinite;
 }
 @keyframes cb-blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
-.cb-bubble p { margin: 0 0 6px; }
+.cb-bubble p { margin: 0 0 5px; }
 .cb-bubble p:last-child { margin-bottom: 0; }
 .cb-bubble h3,.cb-bubble h4,.cb-bubble h5 {
-  margin: 10px 0 5px;
-  font-size: 14.5px;
-  color: var(--ink2);
+  margin: 10px 0 4px;
+  font: 600 10.5px/1.2 var(--font-mono);
+  color: var(--ink3);
   text-transform: uppercase;
-  letter-spacing: .5px;
+  letter-spacing: .08em;
 }
-.cb-bubble ul,.cb-bubble ol { margin: 5px 0 5px 20px; padding: 0; }
-.cb-bubble li { margin-bottom: 3px; }
+.cb-bubble ul,.cb-bubble ol { margin: 4px 0 4px 18px; padding: 0; }
+.cb-bubble li { margin-bottom: 2px; }
 .cb-bubble code {
   background: color-mix(in oklab, var(--ink) 8%, transparent);
   border: 1px solid var(--line2);
   border-radius: 3px;
-  padding: 2px 5px;
+  padding: 1px 4px;
   font-family: var(--font-mono);
-  font-size: 14.5px;
+  font-size: 12px;
   color: var(--ink);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 .cb-bubble pre {
   background: var(--r1);
   border: 1px solid var(--line2);
   border-radius: 6px;
-  padding: 10px 12px;
-  margin: 7px 0;
+  padding: 8px 10px;
+  margin: 6px 0;
   overflow-x: auto;
-  font-size: 14.5px;
+  font-size: 12.5px;
   line-height: 1.45;
 }
 .cb-bubble pre code {
@@ -1570,7 +1571,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 }
 .cb-bubble .cb-mermaid-error {
   color: var(--danger);
-  font-size: 13px;
+  font-size: 12px;
   margin-top: 6px;
 }
 .cb-bubble-tool {
@@ -1597,14 +1598,13 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   margin-bottom: 5px;
 }
 .cb-action-label {
-  font-size: 12.5px;
-  font-weight: 700;
+  font: 600 10.5px/1.2 var(--font-mono);
   color: var(--accent);
-  letter-spacing: .4px;
+  letter-spacing: .08em;
   text-transform: uppercase;
 }
 .cb-action-status {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--ink3);
   white-space: nowrap;
 }
@@ -1615,16 +1615,16 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   background: var(--well);
   border: 1px solid var(--line2);
   border-radius: 5px;
-  padding: 7px 10px;
+  padding: 6px 9px;
   margin: 0 0 6px;
   font-family: var(--font-mono);
-  font-size: 14.5px;
+  font-size: 12.5px;
   color: var(--ink2);
   white-space: pre-wrap;
   word-break: break-all;
 }
 .cb-action-error {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--danger);
   margin: 0 0 6px;
   white-space: pre-wrap;
@@ -1635,12 +1635,12 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   gap: 6px;
 }
 .cb-btn-rerun {
-  padding: 4px 11px;
+  padding: 3px 9px;
   background: transparent;
   border: 1px solid var(--line2);
   border-radius: 5px;
   color: var(--ink2);
-  font-size: 12.5px;
+  font-size: 12px;
   cursor: pointer;
   transition: background .15s, color .15s;
 }
@@ -1655,14 +1655,14 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   gap: 6px;
   max-width: 92%;
   padding: 2px 6px;
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--ink3);
 }
 .cb-tool-trace-icon { font-size: 11px; opacity: .8; }
 .cb-tool-trace-name { color: var(--ink2); font-weight: 600; letter-spacing: .2px; }
 .cb-tool-trace-code {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12px;
   color: var(--ink2);
   background: var(--well);
   border-radius: 4px;
@@ -1681,9 +1681,9 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   background: color-mix(in oklab, var(--amber) 10%, transparent);
   color: var(--amber);
   font: inherit;
-  font-size: 12.5px;
+  font-size: 12px;
   border-radius: 999px;
-  padding: 4px 12px;
+  padding: 3px 10px;
   cursor: pointer;
   transition: background .15s, color .15s;
 }
@@ -1711,12 +1711,12 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .cb-stop-btn {
   flex: 0 0 auto;
   margin: 4px 10px 0;
-  padding: 7px 14px;
+  padding: 5px 12px;
   background: color-mix(in oklab, var(--danger) 15%, transparent);
   border: 1px solid color-mix(in oklab, var(--danger) 30%, transparent);
   border-radius: 5px;
   color: var(--danger);
-  font-size: 14.5px;
+  font-size: 12.5px;
   cursor: pointer;
   text-align: center;
   transition: background .15s;
@@ -1738,13 +1738,13 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   background: var(--r1);
   border: 1px solid var(--line2);
   border-radius: 6px;
-  min-height: 40px;
+  min-height: 34px;
   max-height: 14em;
-  padding: 10px 11px;
+  padding: 7px 10px;
   color: var(--ink);
   font-family: var(--font-ui);
-  font-size: 14.5px;
-  line-height: 20px;
+  font-size: 13px;
+  line-height: 18px;
   outline: none;
   transition: border-color .15s;
   box-sizing: border-box;
@@ -1755,13 +1755,13 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .cb-input::placeholder { color: var(--ink3); }
 .cb-send-btn {
   flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   background: var(--accent);
   border: 1px solid var(--accent);
   border-radius: 6px;
   color: var(--accent-ink);
-  font-size: 18px;
+  font-size: 15px;
   cursor: pointer;
   display: flex;
   align-items: center;
