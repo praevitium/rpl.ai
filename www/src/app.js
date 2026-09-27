@@ -77,7 +77,6 @@ class App {
     this._noticeShown = '';
     this.preview = null;
     this._lineEmpty = true;
-    this.installPrompt = null;
 
     this.popover = new Popover($('layPop'));
     this.toasts = new Toasts($('toasts'));
@@ -396,20 +395,24 @@ class App {
   }
 
   installApp() {
-    const prompt = this.installPrompt;
+    const prompt = window.installPrompt;
     if (prompt) {
-      this.installPrompt = null;
+      window.installPrompt = null;
       prompt.prompt();
       return;
     }
     if (this.isInstalledApp()) { this.toast('rpl.ai is already running as an installed app.'); return; }
+    if (!window.isSecureContext) {
+      this.toast(`Browsers only install apps served over https or from localhost, and this page comes from http://${location.host}. Open it as http://localhost:${location.port || 80} on this machine, or serve it over https.`, { timeout: 12000 });
+      return;
+    }
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const safari = /Safari\//.test(navigator.userAgent) && !/Chrome|Chromium|Edg\//.test(navigator.userAgent);
     this.toast(ios
       ? 'In Safari, tap Share, then Add to Home Screen.'
       : safari
         ? 'In Safari, choose File › Add to Dock.'
-        : 'Your browser hasn’t offered an install yet. Use the install icon in the address bar, or Install rpl.ai in the browser menu. Firefox can’t install web apps.', { timeout: 9000 });
+        : 'The browser hasn’t offered an install on this page. If rpl.ai is already installed, the address bar shows Open in app. Otherwise reload once and try again, or use Apps › Install rpl.ai in the browser menu. Firefox can’t install web apps.', { timeout: 12000 });
   }
 
   setAssistantMode(mode) {
@@ -1373,11 +1376,7 @@ function installOfflineCache(app) {
 
 installOfflineCache(window.__hp50);
 
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  window.__hp50.installPrompt = e;
-});
 window.addEventListener('appinstalled', () => {
-  window.__hp50.installPrompt = null;
+  window.installPrompt = null;
   window.__hp50.toast('Installed. rpl.ai now opens in its own window and works offline.');
 });

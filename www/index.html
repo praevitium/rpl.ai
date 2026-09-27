@@ -11,6 +11,7 @@
     if (['graphite', 'paper', 'classic'].includes(ui.theme)) document.documentElement.dataset.theme = ui.theme;
     if (ui.minimal === true) document.documentElement.dataset.view = 'minimal';
   } catch {}
+  addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.installPrompt = e; });
 </script>
 <link rel="icon" href="favicon.ico" sizes="any" />
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
