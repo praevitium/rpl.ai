@@ -4,6 +4,7 @@ import { KEYMAP, CONTEXT_LABELS, chordText, isMacPlatform } from './actions.js';
 import { STORAGE_KEY as STACK_STORAGE_KEY, BACKUPS_KEY } from '../rpl/persist.js';
 import { UI_PREFS_KEY, THEMES, TUTOR_STYLES } from './ui-prefs.js';
 import { state as calcState } from '../rpl/state.js';
+import { VERSION, BUILD, SHA } from '../build-info.js';
 
 const THEME_LABELS = Object.freeze({ auto: 'Match system', graphite: 'Graphite (dark)', paper: 'Paper (light)', classic: 'Classic LCD' });
 const CHAT_CONSENT_KEY = 'rpl5050.chatbot.consented.v1';
@@ -118,7 +119,7 @@ export class Sheets {
   }
 
   _aboutHtml() {
-    return `<div style="display:flex;align-items:center;gap:14px;margin-bottom:6px"><svg class="about-mark" aria-hidden="true"><use href="#i-mark"/></svg><div><h4 style="margin:0">rpl.ai</h4><p style="margin:2px 0 0;color:var(--ink3)">The HP 48/49/50 RPL calculator, rebuilt for the web</p></div></div>
+    return `<div style="display:flex;align-items:center;gap:14px;margin-bottom:6px"><svg class="about-mark" aria-hidden="true"><use href="#i-mark"/></svg><div><h4 style="margin:0">rpl.ai</h4><p style="margin:2px 0 0;color:var(--ink3)">The HP 48/49/50 RPL calculator, rebuilt for the web</p><p class="mono" style="margin:4px 0 0;color:var(--ink3);font-size:12px">Version ${VERSION} · build ${BUILD} · ${SHA}</p></div></div>
       <p>A full RPL stack engine, a computer algebra system, units, plotting, and an assistant that can explain, verify and drive the calculator — all running client-side, installable and usable offline.</p>
       <h5>Open source</h5>
       <p>Built on <a class="ref-link" href="https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html" target="_blank" rel="noopener">Giac</a>, decimal.js, fraction.js, complex.js, CodeMirror 6, KaTeX, and IBM Plex. GPL-3.0-or-later.</p>`;

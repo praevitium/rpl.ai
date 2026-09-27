@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.5.0 (2026-09-26)
+**Latest release:** v0.5.1 (2026-09-27)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.5.1 — 2026-09-27
+
+rpl.ai installs as an app from the help menu or Settings, and the About
+sheet shows the version. The side panel resizes by its edge when it
+floats over the calculator. Σ sums evaluate with EVAL; CAS results come
+back as plain numbers (no more `1/2 = 0.5`), so FACTOR, ISPRIME? and
+friends work on them; FACTOR handles integers past 2^53; EGV and EGVL
+work; odd XROOTs of negatives are real and fractional powers of
+negatives are complex. Keys no longer reach the stack behind open
+dialogs, Ctrl+V pastes into the equation writer, the search panel ranks
+settings and actions by name, and an interrupted assistant turn still
+offers Undo.
 
 ---
 
