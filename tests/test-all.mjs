@@ -43,6 +43,7 @@ const FILES = [
   './test-matrix-editor.mjs',
   './test-fonts.mjs',
   './test-offline.mjs',
+  './test-actions.mjs',
 ];
 
 const perFile = [];
