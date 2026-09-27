@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.4.2 (2026-09-26)
+**Latest release:** v0.5.0 (2026-09-26)
 
 ---
 
@@ -22,7 +22,7 @@ development.
 
 ---
 
-## v0.4.2 — 2026-09-26
+## v0.5.0 — 2026-09-26
 
 The equation writer is a structural editor in the side panel: ↱ on
 the `` ` `` key, or ▼ on a symbolic or name, opens it, and its soft

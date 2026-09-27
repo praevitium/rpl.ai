@@ -16,7 +16,7 @@ Guide.pdf`, `HP50 User Manual.pdf`) remain the fidelity reference.
 
 ## Current state — foundations in place
 
-*As of v0.4.2 (2026-09-26).*
+*As of v0.5.0 (2026-09-26).*
 
 The substrate the roadmap builds on:
 
