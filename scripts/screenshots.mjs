@@ -4,7 +4,7 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 
 const ROOT = new URL('../www/', import.meta.url).pathname;
-const OUT = new URL('../docs/screenshots/', import.meta.url).pathname;
+const OUT = new URL('../screenshots/', import.meta.url).pathname;
 const SCALE = 1.5;
 const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',

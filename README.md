@@ -11,7 +11,7 @@ arithmetic, units, lists, matrices, programs and directories. It swaps the
 computer algebra system. Giac is the work of Bernard Parisse, who also wrote
 the CAS inside the HP 49 and 50g.
 
-![rpl.ai with the command reference open](docs/screenshots/hero.png)
+![rpl.ai with the command reference open](screenshots/hero.png)
 
 - **Everything an HP 50g does, where you can see it.** Stack, soft menus,
   shifted keys, VARS, CST, MODES, directories, `HALT`/`CONT` debugging and
@@ -49,7 +49,7 @@ a click, a drag or ⇧← ⇧→, and a toolbar evaluates, simplifies, expands,
 factors or differentiates just that part. Enter pushes the expression, or
 replaces the level you were editing. Esc cancels, with Undo.
 
-![The equation writer and its insight strip](docs/screenshots/equation-writer.png)
+![The equation writer and its insight strip](screenshots/equation-writer.png)
 
 ### Walk me through a problem
 
@@ -59,7 +59,7 @@ and shows the keystrokes. Press **Show me** to watch it happen, or
 **I'll do it** to press the keys yourself; the tutor checks your stack and
 says what's off. Hints come in stages. Choose Socratic or Direct in Settings.
 
-![A tutor walkthrough of a projectile problem](docs/screenshots/tutor.png)
+![A tutor walkthrough of a projectile problem](screenshots/tutor.png)
 
 ### Know what a key will do
 
@@ -67,7 +67,7 @@ Hover a soft key (or move through search results) and the stack shows the
 arguments it will take and the results it will leave, computed on a copy of
 your stack. Keys that need more arguments than the stack holds are dimmed.
 
-![Previewing ROT before pressing it](docs/screenshots/preview.png)
+![Previewing ROT before pressing it](screenshots/preview.png)
 
 ### Errors that help
 
@@ -76,7 +76,7 @@ outlined, the command's stack diagram is quoted, and fixes are one click
 away: drop the bad value, swap levels, open the reference, or ask the
 assistant to explain.
 
-![An error banner with fixes](docs/screenshots/errors.png)
+![An error banner with fixes](screenshots/errors.png)
 
 ### Plots you can work with
 
@@ -86,7 +86,7 @@ and reset are on the canvas, the window is typed in directly, and Trace mode
 (`T`) walks a cursor along the curves with live readouts. Expand to fill the
 window, or go full screen.
 
-![Three traces in trace mode](docs/screenshots/plot.png)
+![Three traces in trace mode](screenshots/plot.png)
 
 ### Search everything
 
@@ -94,7 +94,7 @@ window, or go full screen.
 variables and constants. The selected command shows what it would leave on
 your stack; `→` opens its reference page.
 
-![Search with a result preview](docs/screenshots/palette.png)
+![Search with a result preview](screenshots/palette.png)
 
 ### Variables and directories
 
@@ -102,7 +102,7 @@ Browse, run, recall, edit, rename, move and download variables. Drag them
 between folders or onto the breadcrumb, archive the whole HOME tree to
 backup ports, and import or export HP text files (`.rpl`).
 
-![The Variables drawer](docs/screenshots/variables.png)
+![The Variables drawer](screenshots/variables.png)
 
 ### Debugging
 
@@ -110,7 +110,7 @@ backup ports, and import or export HP text files (`.rpl`).
 highlighted. Continue, Step or Stop from the banner (or `CONT`, `SST`,
 `KILL`). `PROMPT` shows its message and waits for your input.
 
-![A halted program](docs/screenshots/debugging.png)
+![A halted program](screenshots/debugging.png)
 
 ### Three looks, and a Minimal view
 
@@ -120,11 +120,11 @@ status line, the stack and the command line (`⇧⌘F`).
 
 | Classic LCD | Paper |
 |:---:|:---:|
-| ![Classic LCD theme](docs/screenshots/classic.png) | ![Paper theme with the catalog](docs/screenshots/paper.png) |
+| ![Classic LCD theme](screenshots/classic.png) | ![Paper theme with the catalog](screenshots/paper.png) |
 
 | Minimal view | Phone |
 |:---:|:---:|
-| ![Minimal view](docs/screenshots/minimal.png) | ![rpl.ai on a phone](docs/screenshots/phone.png) |
+| ![Minimal view](screenshots/minimal.png) | ![rpl.ai on a phone](screenshots/phone.png) |
 
 ---
 
@@ -201,16 +201,26 @@ their context to it with Explain or Ask.
 The stack engine, the RPL parser and evaluator, structured control flow
 (`IF`, `WHILE`, `DO`, `FOR`, `START`, `CASE`, `IFERR`), compiled local
 environments (`→ a b « … »`) and suspended execution (`HALT`, `CONT`, `SST`,
-`KILL`) are complete. The HP 50g command set is covered: 453 commands, with
-no gaps outside the deliberate out-of-scope groups.
-[docs/COMMANDS.md](docs/COMMANDS.md) tracks the inventory and
-[docs/ROADMAP.md](docs/ROADMAP.md) what's next.
+`KILL`) are complete. The HP 50g command set is covered: 453 commands.
+Shipped commands are the `register` calls under `www/src/rpl/ops/`.
+
+Left out on purpose:
+
+- USER mode and keyboard assignments
+- ENTRY mode
+- S.SLV (algebraic solver screens)
+- NUM.SLV (numeric solver screens)
+- FINANCE (TVMROOT, AMORT, and the rest of that menu)
+- TIME (DATE, TIME, TICKS, and the rest of that menu)
+- DEF
+- LIB, LIBS, ATTACH, DETACH, and port management
+- OFF
+- Saturn assembly and System RPL
+- hardware and IR/serial communication
 
 The guiding principle is **functionality over compatibility**: where a
 modern interaction is clearer than an original calculator prompt, the modern
-one wins, and the keys keep their muscle memory. Out of scope: Saturn
-assembly and System RPL, hardware and IR/serial communication, and library
-and port management.
+one wins, and the keys keep their muscle memory.
 
 ---
 
@@ -230,7 +240,7 @@ www/                  The app: static files served as-is
   vendor/             Giac, decimal.js, fraction.js, complex.js, CodeMirror, KaTeX
 tests/                Node test suites, one area per file
 scripts/              Build info, offline precache, README screenshots
-docs/                 Language and command notes, roadmap, HP 50g reference
+screenshots/          Images used above
 ```
 
 ## Testing
@@ -247,15 +257,7 @@ node tests/flake-scan.mjs         # repeat runs to catch order sensitivity
 (`RPLAI_SCREENSHOT_LLM` and `RPLAI_SCREENSHOT_MODEL` add the assistant
 scene).
 
-## Documentation
-
-- [docs/RPL.md](docs/RPL.md): the RPL language, evaluation, control flow,
-  local environments and suspended execution
-- [docs/COMMANDS.md](docs/COMMANDS.md): command coverage
-- [docs/DATA_TYPES.md](docs/DATA_TYPES.md): stack value types
-- [docs/TESTS.md](docs/TESTS.md): test conventions
-- [docs/ROADMAP.md](docs/ROADMAP.md): what's next
-- [RELEASE_NOTES.md](RELEASE_NOTES.md): what changed
+What changed is in [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
 ---
 

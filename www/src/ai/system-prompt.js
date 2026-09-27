@@ -2,11 +2,9 @@
    System prompt for the chat pipeline.
 
    Sources of truth this prompt was distilled from:
-     - docs/COMMANDS.md               — inventory of every RPL command
-       this implementation ships.  RPL_CATALOG is curated against it;
+     - the registered ops.  RPL_CATALOG is a curated subset;
        tests/test-chatbot-parse.mjs asserts every catalog token is a
        registered op.
-     - docs/RPL.md, docs/DATA_TYPES.md — Programs, evaluation, types.
      - chat-bot.js _buildRegistry()  — the tools the orchestrator
        exposes.  The AVAILABLE TOOLS section and TOOL_SCHEMAS below
        MUST stay in sync with that registry (tests enforce it).
@@ -22,8 +20,7 @@
 // documentation uses.  Goal: give the model enough to (a) explain what
 // a command does in prose, and (b) construct the right RPL text inside
 // a `run` tool call for the requests calculator users actually make.
-// docs/COMMANDS.md is the exhaustive index; lookup_command /
-// search_commands reach everything not listed here.
+// lookup_command / search_commands reach everything not listed here.
 export const RPL_CATALOG = `RPL is RPN-postfix.  Examples: 5 3 +  (not 5 + 3),  10 FACT  (factorial),  \`SIN(X)\` \`X\` DERIV  (derivative).
 
 HOW THE STACK WORKS
