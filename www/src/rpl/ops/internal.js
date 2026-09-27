@@ -932,7 +932,9 @@ export function _coerceDirName(v) {
 export function _coerceStorableName(v) {
   const id = _coerceDirName(v);
   if (!isValidHpIdentifier(id)) {
-    throw new RPLError(`Invalid name: ${id}`);
+    const inner = /^'(.+)'$/.exec(id)?.[1];
+    const hint = inner && isValidHpIdentifier(inner) ? ` (quote names with backticks: \`${inner}\`)` : '';
+    throw new RPLError(`Invalid name: ${id}${hint}`);
   }
   if (!isStorableHpName(id)) {
     // Syntactically valid but reserved (e.g. 'SIN', 'STO').

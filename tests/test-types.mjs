@@ -1891,6 +1891,13 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   }
   {
     const s = new Stack();
+    s.push(Real(1));
+    s.push(Name("'QZ'"));
+    assertThrows(() => { lookup('STO').fn(s); }, /quote names with backticks: `QZ`/,
+      "STO on an HP-style 'QZ' suggests the backtick form");
+  }
+  {
+    const s = new Stack();
     s.push(Name('COS', { quoted: true }));   // reserved
     assertThrows(() => { lookup('CRDIR').fn(s); }, /Invalid name/,
       'CRDIR on reserved name COS throws "Invalid name"');
