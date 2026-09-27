@@ -168,7 +168,7 @@ export class Palette {
           it.shortcut ? `<span class="kbd">${escapeHtml(it.shortcut)}</span>` : '',
           it.reference ? `<button type="button" class="mini" data-ref title="Open the reference (→)" aria-label="Reference">${icon('book', 'sm')}</button>` : '',
         ].join('');
-        html += `<div class="pal-row" role="option" data-i="${i}"><span class="ic">${icon(it.icon ?? 'chr', 'sm')}</span><span class="t${it.mono ? ' mono' : ''}">${highlightMatches(it.title, q.trim())}</span>${it.detail ? `<span class="d">${escapeHtml(it.detail)}</span>` : ''}<span class="r">${right}</span></div>`;
+        html += `<div class="pal-row" role="option" data-i="${i}"><span class="ic">${icon(it.icon ?? 'chr', 'sm')}</span><span class="t${it.mono ? ' mono' : ''}">${highlightMatches(it.title, q.trim())}</span>${it.detail ? `<span class="d">${escapeHtml(it.detail)}</span>` : ''}<span class="r">${right}</span>${it.kind === 'command' ? '<span class="pv" aria-live="polite"></span>' : ''}</div>`;
       }
     }
     this._list.innerHTML = html || `<div class="pal-empty">Nothing matches. Try a command name, a word like “derivative”, or a setting like “degrees”.</div>`;
@@ -181,6 +181,8 @@ export class Palette {
       const on = Number(row.dataset.i) === this.index;
       row.classList.toggle('on', on);
       row.setAttribute('aria-selected', String(on));
+      const preview = row.querySelector('.pv');
+      if (preview) preview.textContent = on ? this.app.previewText(this.rows[this.index].title) : '';
       if (on) row.scrollIntoView({ block: 'nearest' });
     });
   }

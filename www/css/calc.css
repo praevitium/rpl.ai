@@ -624,6 +624,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .pal-row .d { grid-column: 2; font-size: 11.5px; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pal-row .r { grid-row: 1 / 3; grid-column: 3; display: flex; gap: 6px; align-items: center; }
 .pal-row .ic { grid-row: 1 / 3; color: var(--ink3); display: grid; place-items: center; }
+.pal-row .pv { grid-column: 2 / 4; font: 11.5px/1.3 var(--font-mono); color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pal-row .pv:empty { display: none; }
 .pal-foot { display: flex; gap: 14px; flex-wrap: wrap; padding: 8px 14px; border-top: 1px solid var(--line); font: 11px/1.3 var(--font-ui); color: var(--ink3); }
 .pal mark { background: transparent; color: var(--accent); font-weight: 700; }
 .pal-empty { padding: 20px; text-align: center; color: var(--ink3); font-size: 12.5px; }
