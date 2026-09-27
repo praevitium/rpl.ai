@@ -396,6 +396,16 @@ export function stripGiacQuotes(s) {
   return cur;
 }
 
+const GIAC_APPROX_SUFFIX = /^([^=]+)=(-?\d+(?:\.\d*)?(?:e[+-]?\d+)?)$/;
+const GIAC_CONSTANT_WORDS = /\b(?:pi|e|i|euler_gamma|infinity)\b|\b[a-z_]+(?=\()/g;
+
+export function stripGiacApproxSuffix(s) {
+  if (typeof s !== "string") return s;
+  const m = GIAC_APPROX_SUFFIX.exec(s);
+  if (!m || /[a-zA-Z]/.test(m[1].replace(GIAC_CONSTANT_WORDS, ""))) return s;
+  return m[1];
+}
+
 /**
  * Parse a string returned by Giac into an rpl5050 AST.
  *

@@ -43,7 +43,7 @@
 //     giac.caseval(cmd)      // synchronous; throws if not ready
 //     giac.toLatex(expr)     // shortcut: caseval(`latex(${expr})`)
 
-import { stripGiacQuotes } from "./giac-convert.mjs";
+import { stripGiacQuotes, stripGiacApproxSuffix } from "./giac-convert.mjs";
 import { state as calcState } from "../state.js";
 
 const isBrowser =
@@ -166,7 +166,7 @@ class BrowserGiacEngine {
     this._syncAngleMode();
     // Giac wraps many results in literal double-quotes; normalise at the
     // engine boundary so downstream consumers see raw expression text.
-    return stripGiacQuotes(this._caseval(cmd));
+    return stripGiacApproxSuffix(stripGiacQuotes(this._caseval(cmd)));
   }
 
   toLatex(expr) {
@@ -226,7 +226,7 @@ class MockGiacEngine {
       // fixtures that intentionally model Giac's quoted output (e.g.
       // `"(X+1)^2"`) are normalised identically — tests can pin either
       // shape.
-      return stripGiacQuotes(v);
+      return stripGiacApproxSuffix(stripGiacQuotes(v));
     }
     if (this._defaultThrow) {
       throw new Error(
