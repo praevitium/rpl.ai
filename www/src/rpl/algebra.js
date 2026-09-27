@@ -538,6 +538,11 @@ export function parseAlgebra(src) {
       return Var('∞');
     }
 
+    if (c === '√') {
+      i++;
+      return Fn('SQRT', [parseP()]);
+    }
+
     // A KNOWN_FUNCTIONS identifier followed by `(` parses as a function
     // call; non-whitelisted `FOO(...)` would be ambiguous with implicit
     // multiplication, so we reject it and let parser.js fall back to a

@@ -8031,3 +8031,10 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   assert(sigma.svg.includes('>Σ<') && sigma.svg.includes('>K<') && sigma.svg.includes('>N<'),
     'pretty draws Σ with k=1 below and N above');
 }
+
+{
+  assert(format(parseEntry('`√(X+1)`')[0]) === '`SQRT(X + 1)`',
+    'algebraic entry reads √( as SQRT');
+  assert(format(parseEntry('`2*√X`')[0]) === '`2*SQRT(X)`',
+    'algebraic entry reads a bare √X as SQRT of the next term');
+}
