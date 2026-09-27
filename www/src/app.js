@@ -1215,7 +1215,6 @@ class App {
         try { this.entry.performRedo(); } catch (e) { this.entry.flashError(e); }
         return true;
       case 'edit.paste':
-        if (this.entry.hasFocus()) return false;
         navigator.clipboard?.readText?.().then((text) => { if (text) { this.entry.paste(text); this.entry.focus(); } })
           .catch(() => this.notifyError('The clipboard is not available here. Click the command line and paste there.'));
         return true;
@@ -1303,7 +1302,9 @@ class App {
     const inField = !inEditor && (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable);
     const chord = chordFromEvent(e);
     if (!chord) return;
+    if ((this.sheets.isOpen() || this.popover.isOpen()) && !/^(Mod\+|Escape$)/.test(chord)) return;
     if (tag === 'BUTTON' && (e.key === 'Enter' || e.key === ' ')) return;
+    if (chord === 'Mod+V' && (inEditor || this.inputMode !== 'rpl')) return;
 
     if (this.inputMode === 'equation' && this.equationEditor.ownsKeyboard(target)) {
       const writerBinding = findBinding(chord, ['equation']);
