@@ -1,164 +1,130 @@
-# rpl.ai — AI-Assisted RPL Calculator
+# rpl.ai
 
-| Full View                         | Minimal View (resizable)            |
-|:---------------------------------:|:-----------------------------------:|
-| 💡Click logo to switch views      | 💡Full keyboard + mouse support       |
-| ![Full view](screenshot-full.png) | ![Minimal view](screenshot-min.png) |
+**The HP 48/49/50 RPL calculator, rebuilt for the screen in front of you.**
 
-| AI Assistant                                                                     |
-|:--------------------------------------------------------------------------------:|
-| 💡Ask about RPL, derive formulas, and push results straight onto the stack       |
-| ![AI assistant](screenshot-ai.png)                                               |
+rpl.ai is a complete, programmable RPL calculator that runs in any modern
+browser and keeps working offline. It implements the HP 50g's User-RPL
+language and command set: 453 commands, exact big-integer and rational
+arithmetic, units, lists, matrices, programs and directories. It swaps the
+128×80 LCD for a high-resolution stack, a real keyboard and mouse, and the
+[Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
+computer algebra system. Giac is the work of Bernard Parisse, who also wrote
+the CAS inside the HP 49 and 50g.
 
-| Commands (with help)                                              | Constants & Characters                                                  |
-|:-----------------------------------------------------------------:|:-----------------------------------------------------------------------:|
-| Command catalog with inline help (right-click)                    | 💡Physical constants and special-characters                       |
-| ![Commands with help](screenshot-commands-with-help.png)          | ![Constants and characters](screenshot-constants-and-chars.png)         |
+![rpl.ai with the command reference open](docs/screenshots/hero.png)
 
-| File Manager                                                      | History                                                                 |
-|:-----------------------------------------------------------------:|:-----------------------------------------------------------------------:|
-| 💡Browse and organize programs, variables, and data               | 💡Replay any prior session entry straight back to the stack             |
-| ![File manager](screenshot-file-manager.png)                      | ![History](screenshot-history.png)                                      |
-
----
-
-## The story
-
-I've always had a soft spot for the HP 48/49/50 series — specifically for
-the interface, not the hardware. RPL's postfix, stack-based model feels
-remarkably natural once it clicks: you write out your operands first, then
-apply the operation, exactly the way you'd work through a calculation by
-hand. You jot 24 and 15 on paper, one above the other, then perform the
-multiplication to get 360. The stack makes that workflow explicit and direct.
-
-What really distinguished RPL, though, was the seamless consistency between
-built-in commands and user-defined ones. You could write a program, store it
-under a name — say `II` for the parallel-resistance operator — and invoke it
-exactly the same way you'd invoke any built-in: press the soft key beneath
-its name, call it from the command line, or assign it to a key. There was no
-second-class "user program mode." Everything lived in the same namespace and
-behaved the same way.
-
-The hardware was a different story. In raw specs it trailed TI's flagships —
-the TI-89 and TI-92 — and HP's long reluctance to move off the Saturn CPU
-kept the platform in an increasingly awkward position. The interface was
-clearly the better one; the silicon holding it back was a persistent
-frustration. HP's eventual decision to run Saturn emulation on an ARM core
-for the HP 50g was a clever move — it kept the existing software ecosystem
-intact — but it was also a missed opportunity. A native ARM implementation
-could have unlocked dramatically more speed and left headroom to address the
-screen resolution and other lingering limitations.
-
-I kept an HP 50g within reach for years, and when that became impractical I
-turned to emulators. The iOS and Android emulators are genuinely well-crafted
-— I've used several and still use them. But phone screens are close to the
-size of the original device, so the scaled-up 128×80 display doesn't feel
-like much of an improvement. And while I tried many other RPN/RPL calculator
-apps over the years, nearly all of them implement some minimal form of RPN
-with a limited stack and no display to speak of — and essentially none are
-programmable, let alone anything approaching the HP 50g's programming model.
-The RPL interface is simply the best of the lot, regardless of what anyone
-else says.
-
-On the desktop the situation was trickier. I ran emu48+ on Windows and, at
-various points, on macOS via PlayOnMac and even Parallels — and it worked,
-which was great. But I kept wishing for more: higher resolution, full
-keyboard-and-mouse support, multiple undo levels, a file manager that made
-it easy to move programs and data in and out.
-
-When the HP Prime arrived I was hopeful. Higher resolution, yes — but not by
-much. Better keyboard integration on the Android version, maybe, but nothing
-useful on Windows or macOS without an Android emulation layer. And, most
-disappointingly, it discarded enough of the original HP 48/49/50 interface
-to feel like a different calculator entirely while giving back very little in
-return. It felt like a step sideways at best.
-
-I looked around for alternatives. Surely I wasn't the only one who wanted
-this. I never found anything close to what I had in mind, so I eventually
-shelved the idea — though it lingered. I had tried to build something like it
-a couple of times before, but the scope always made it feel like years of
-work.
-
-Then things changed. AI-assisted development made what had previously felt
-intractable feel tractable. So I gave it a serious try, and **rpl.ai** is
-what came out of that effort.
+- **Everything an HP 50g does, where you can see it.** Stack, soft menus,
+  shifted keys, VARS, CST, MODES, directories, `HALT`/`CONT` debugging and
+  the full command set, each reachable from a labelled control.
+- **Keyboard first, mouse friendly.** Type anywhere to enter. `/` divides,
+  `⌘K` (Ctrl+K) searches everything, and every soft key, level and menu
+  works with a click or a tap.
+- **An equation writer that thinks with you.** Type `(x^5-1)/(x-1)` and it
+  typesets as you go. Underneath, it shows the value, a plot, the
+  simplification, the factorisation, the derivative, the zeros and even
+  removable singularities.
+- **Previews before you commit.** Hover a soft key or a search result to see
+  exactly what it will do to your stack, and why it would fail if it can't
+  run.
+- **Errors that explain themselves.** "SIN can't use a string." The
+  offending level is outlined and one-click fixes are offered, with nothing
+  lost.
+- **A tutor, not just an answer engine.** The optional assistant turns a
+  physics or maths problem into steps you work through on your own stack.
+  It checks each step and gives hints before it gives answers.
+- **Installable and offline.** Pure static files, no build step and no
+  server. Once loaded it runs without a network and installs as an app.
 
 ---
 
-## What it is
+## Tour
 
-rpl.ai is an RPL scientific calculator built for high-resolution
-screens, full keyboard-and-mouse input, and a comfortable side panel. It
-faithfully implements the HP 50g's User-RPL language and command surface, and
-replaces the original 128×80 LCD and aging CAS with a modern UI backed by
-[Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html) —
-the computer algebra system written by Bernard Parisse, who also authored
-"erable," the CAS that shipped on the HP 48GX/49/50g. Giac is, in a real
-sense, the natural heir to the original engine.
+### The equation writer
 
-The side panel (visible in the full-view screenshot above) hosts the command
-catalog, equation writer, matrix editor, graph view, character picker, file
-explorer, and session history. It's very much in the spirit of the HP-28's
-side panel — the original gangster of that design — and it's where features
-like graphing and the writers live, rather than as inline calculator prompts.
+Type maths the way you'd say it: `/` makes a fraction, `^` an exponent,
+`(` a group that closes itself, `sqrt(` or `sin(` a function, and `pi`
+becomes π. Tab leaves a box. The insight strip underneath recomputes as you
+type, and one click applies a result or opens the plot. Select any part with
+a click, a drag or ⇧← ⇧→, and a toolbar evaluates, simplifies, expands,
+factors or differentiates just that part. Enter pushes the expression, or
+replaces the level you were editing. Esc cancels, with Undo.
 
-The app is plain HTML / CSS / ES modules that run in any modern browser —
-no build step, no framework.
+![The equation writer and its insight strip](docs/screenshots/equation-writer.png)
 
-**Current status:** The stack engine, RPL parser/evaluator, structured
-control flow (`IF` / `WHILE` / `DO` / `FOR` / `START` / `CASE` / `IFERR`),
-compiled local variable environments (`→ a b « … »`), and the
-suspended-execution substrate (`HALT` / `CONT` / `KILL`) are all working.
-The HP 50g command set is complete — 453 commands registered, with no
-remaining gaps outside the deliberate out-of-scope groups. See
-[docs/ROADMAP.md](docs/ROADMAP.md) for what's remaining and
-[docs/COMMANDS.md](docs/COMMANDS.md) for the current command inventory.
-Graphing, the equation writer, and the matrix writer live in the side
-panel; its Files tab also manages `ARCHIVE` / `RESTORE` backups and
-reads and writes HP text files (`.rpl`).
+### Walk me through a problem
 
----
+In Tutor mode the assistant plans a solution as a few steps, and the
+calculator dry-runs every step before you see it. Each step explains the idea
+and shows the keystrokes. Press **Show me** to watch it happen, or
+**I'll do it** to press the keys yourself; the tutor checks your stack and
+says what's off. Hints come in stages. Choose Socratic or Direct in Settings.
 
-## Design philosophy
+![A tutor walkthrough of a projectile problem](docs/screenshots/tutor.png)
 
-The guiding principle is **functionality over compatibility**. Where a side
-panel interaction is cleaner than replicating an original calculator prompt,
-the side panel wins.
+### Know what a key will do
 
-The following are explicitly out of scope and will not be implemented:
+Hover a soft key (or move through search results) and the stack shows the
+arguments it will take and the results it will leave, computed on a copy of
+your stack. Keys that need more arguments than the stack holds are dimmed.
 
-- Saturn assembly or System RPL
-- HP calculator accessories, IR/serial communication, or any hardware
-  interface
-- Library and port management (no library support at all)
+![Previewing ROT before pressing it](docs/screenshots/preview.png)
 
----
+### Errors that help
 
-## Acknowledgements
+Every error says what happened, why, and where. The culprit level is
+outlined, the command's stack diagram is quoted, and fixes are one click
+away: drop the bad value, swap levels, open the reference, or ask the
+assistant to explain.
 
-I may be the only person in the world who wanted exactly this application.
-AI was the last mile, but it would not have been possible without the
-contributions of many people in the open-source community. This project
-bundles or depends on:
+![An error banner with fixes](docs/screenshots/errors.png)
 
-- **[Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)**
-  (GPL-3.0+) — Bernard Parisse's computer algebra system, prebuilt as a
-  WebAssembly module via
-  [emgiac](https://github.com/adriweb/emgiac)
-- **[decimal.js](https://github.com/MikeMcl/decimal.js)** (MIT) — arbitrary-
-  precision decimal arithmetic, giving HP-style BCD behaviour for numeric
-  operations
-- **[fraction.js](https://github.com/rawify/Fraction.js)** (MIT) — exact
-  rational arithmetic
-- **[complex.js](https://github.com/rawify/Complex.js)** (MIT) — complex
-  number arithmetic
-- **[CodeMirror 6](https://codemirror.net/)** (MIT) — the RPL source editor
-- **[KaTeX](https://katex.org/)** (MIT) — LaTeX math rendering in the AI
-  assistant's replies
-- **GMP / MPFR / MPFI** (LGPL) — arbitrary-precision arithmetic libraries
-  compiled transitively into Giac's WebAssembly
+### Plots you can work with
 
-See [NOTICE](NOTICE) for full attribution and upstream pointers.
+`FUNCTION`, `POLAR`, `PARAMETRIC`, differential equations, scatter, bar and
+histogram plots. Traces have checkboxes and editable expressions. Zoom, fit
+and reset are on the canvas, the window is typed in directly, and Trace mode
+(`T`) walks a cursor along the curves with live readouts. Expand to fill the
+window, or go full screen.
+
+![Three traces in trace mode](docs/screenshots/plot.png)
+
+### Search everything
+
+`⌘K` finds commands (by name, description or topic), settings, modes, menus,
+variables and constants. The selected command shows what it would leave on
+your stack; `→` opens its reference page.
+
+![Search with a result preview](docs/screenshots/palette.png)
+
+### Variables and directories
+
+Browse, run, recall, edit, rename, move and download variables. Drag them
+between folders or onto the breadcrumb, archive the whole HOME tree to
+backup ports, and import or export HP text files (`.rpl`).
+
+![The Variables drawer](docs/screenshots/variables.png)
+
+### Debugging
+
+`HALT` suspends a program and shows it with the next instruction
+highlighted. Continue, Step or Stop from the banner (or `CONT`, `SST`,
+`KILL`). `PROMPT` shows its message and waits for your input.
+
+![A halted program](docs/screenshots/debugging.png)
+
+### Three looks, and a Minimal view
+
+Graphite and Paper follow your system's dark or light setting; Classic LCD
+reimagines the original display. Minimal view strips everything back to the
+status line, the stack and the command line (`⇧⌘F`).
+
+| Classic LCD | Paper |
+|:---:|:---:|
+| ![Classic LCD theme](docs/screenshots/classic.png) | ![Paper theme with the catalog](docs/screenshots/paper.png) |
+
+| Minimal view | Phone |
+|:---:|:---:|
+| ![Minimal view](docs/screenshots/minimal.png) | ![rpl.ai on a phone](docs/screenshots/phone.png) |
 
 ---
 
@@ -169,130 +135,82 @@ npm install      # one-time setup
 npm run serve    # http://localhost:5050
 ```
 
-The calculator is the static files in `www/`; any static web server can host
-it. Browsers won't run it from `file://`, because ES modules and the Giac
-WebAssembly need http(s). Once loaded it works offline and can be installed
-from the browser.
+The app is the static files in `www/`, and any static web server can host
+them. Browsers won't run it from `file://`, because ES modules and the Giac
+WebAssembly need http(s). After the first load it works offline, and the
+browser offers to install it as an app. A short tour runs on first launch;
+replay it from Help › Take the tour.
+
+### Five minutes with RPL
+
+- **Stack arithmetic.** `24` Enter `15` Enter `*` leaves `360`. A whole
+  line works too: `2 3 + 4 *` gives `20`.
+- **Algebra.** Push `` `X^2-4` `` and run `FACTOR` for `(X−2)(X+2)`, or
+  `` `X^2-5*X+6=0` `X` SOLVE `` for `{ X=2 X=3 }`. Or press `⌘E`, type
+  `x^2-5x+6=0`, and click the Solve card.
+- **Programs.** `` « DUP * » `SQ` STO `` stores a program; `5 SQ` then gives
+  `25`, and SQ appears on the VARS menu. User programs and built-ins share
+  one namespace.
+- **Local variables.** `« 2 3 → a b « a b + a b * » » EVAL` leaves `5` and
+  `6`.
+- **Units.** `100_km 2_h /` gives `50_km/h`; `1_km/h CONVERT` converts.
+- **The stack.** Click a level to select it; its actions appear on the row
+  and in the menu bar. Double-click edits it in the right writer. Drag rows
+  to reorder them.
+
+### Keyboard
+
+| Keys | Does |
+|---|---|
+| `⌘K` / Ctrl+K | Search commands, settings, variables and help |
+| `⌘E` · `⇧⌘M` | Equation writer · Matrix writer |
+| `⌘I` | Ask the assistant (or start a line with `?`) |
+| `F1`–`F6` · PgUp/PgDn | Soft keys · menu pages |
+| `↑` · `↓` on an empty line | Select level 1 · edit level 1 |
+| Enter · ⌫ · `→` on an empty line | DUP · DROP · SWAP |
+| `⌘Z` · `⇧⌘Z` | Undo · redo (text when the line has text, otherwise the stack) |
+| `⌘\` · `⌘;` · `⇧⌘F` | Tools drawer · keypad · Minimal view |
+| Tab | Complete a command name, or leave a box in the equation writer |
+| Esc | Close, deselect, dismiss, or cancel with Undo |
+
+Hold ⌥ (Alt) to see each keypad key's keyboard shortcut. `⌘/` lists every
+shortcut, grouped by where it applies.
+
+### The assistant
+
+The assistant is optional and uses a model you choose: any Ollama or
+OpenAI-compatible endpoint. Nothing is sent anywhere until you connect one.
+Each turn it reads the live stack, modes and variables, and looks commands
+up in the built-in HP 50g reference. It dry-runs RPL on a scratch copy of the
+calculator, then acts for real. Every action is shown as a card, and each
+turn can be undone in one click. Error banners and stack levels can hand
+their context to it with Explain or Ask.
+
+- Local Ollama is `http://localhost:11434`. When opening rpl.ai from another
+  machine, add its address to `OLLAMA_ORIGINS` where Ollama runs.
+- For Ollama's cloud models, run `ollama signin` on the machine running
+  Ollama and choose a model whose name ends in `-cloud`. Browsers can't call
+  ollama.com directly.
+- Models that advertise tools get native tool calling, and reasoning models
+  think before answering. Strong models tutor best.
 
 ---
 
-## Try this first
+## What's implemented
 
-If RPL is new (or rusty), here's a short tour that exercises most of what
-the calculator can do in a few minutes.
+The stack engine, the RPL parser and evaluator, structured control flow
+(`IF`, `WHILE`, `DO`, `FOR`, `START`, `CASE`, `IFERR`), compiled local
+environments (`→ a b « … »`) and suspended execution (`HALT`, `CONT`, `SST`,
+`KILL`) are complete. The HP 50g command set is covered: 453 commands, with
+no gaps outside the deliberate out-of-scope groups.
+[docs/COMMANDS.md](docs/COMMANDS.md) tracks the inventory and
+[docs/ROADMAP.md](docs/ROADMAP.md) what's next.
 
-**Stack arithmetic.** Type `24` ENTER, then `15` ENTER, then `*`. The two
-operands stack up; `*` consumes them and leaves `360`. Whitespace-separated
-input works too — `2 3 + 4 *` evaluates left-to-right and ends with `20` on
-the stack.
-
-**Symbolic algebra.** Push `` `X^2-4` `` and run `FACTOR` → `(X-2)*(X+2)`. Try
-`` `SIN(X)` `X` ∂ `` for a derivative, or `` `X^2-4=0` `X` SOLVE ``. The CAS is
-Giac, so most expressions you'd type into Xcas work here too.
-
-**Local variables.** The `→` binding must live inside a program. Enter
-`« 2 3 → a b « a b + a b * » »` to put the program on the stack, then run it
-with `EVAL`: `2` and `3` are bound to the locals `a` and `b`, the inner body
-runs, and the frame is torn down on exit — leaving `5` (a + b) and `6`
-(a * b). Compiled locals are the normal way to give intermediate values names
-inside a program.
-
-**Store a program.** Type `` « DUP * » `SQ` STO ``. Now `5 SQ` gives `25`. User-
-defined names sit in the same namespace as built-ins — same lookup, same
-EVAL, same right-click help.
-
-**The side panel.** Open the catalog and type to filter the command list;
-right-click any entry for its signature and description. The characters
-panel handles Greek letters and operators that aren't on the keyboard. The
-file manager moves programs and variables in and out of the calculator's
-home directory.
-
-**Ask the AI.** Open the ✦ tab (or prefix any command-line input with `?`,
-e.g. `? give me a program that returns the n-th Fibonacci number`). The
-assistant reads the live stack, modes and variables every turn, looks
-commands up in the built-in HP50 reference, dry-runs RPL on a scratch copy
-of the calculator to compute and verify, and then executes for real —
-pushing values, running commands, storing programs, changing modes. Every
-action shows up as a card, every lookup as a one-line trace, and each turn
-ends with an **↶ Undo** link that restores the calculator to how it was
-before the assistant acted. It handles multi-step work (write a program,
-test it, store it, run it), explains how it got there when asked, and
-works through maths / physics / finance problems using the calculator as
-its lab bench.
-
-The assistant runs against an Ollama or OpenAI-compatible endpoint.
-Add one in the ✦ tab (local Ollama is `http://localhost:11434`) and
-choose a model. For Ollama's cloud models, run `ollama signin` on the
-machine running Ollama and pick a model ending in `-cloud`; browsers
-can't call `https://ollama.com` directly. If you open rpl.ai from
-another machine, add its address to `OLLAMA_ORIGINS` where Ollama
-runs. Until an endpoint is configured, the tab asks for one.
-Ollama models that advertise `tools` get native tool calling; models that
-advertise `thinking` (Qwen3, DeepSeek-R1, gpt-oss, …) reason before
-answering (a checkbox turns that off); the context window you pick is
-requested as `num_ctx` so the assistant's system prompt is never
-truncated.
-
-**History.** Every entry from the current session is replayable from the
-history panel — click a prior result to push it back onto the stack.
-
----
-
-## Interface reference
-
-### Header controls
-
-The top brand row doubles as a control strip — each label is clickable:
-
-- **`rpl.ai` logo** — cycles the chrome density: **full → simple →
-  minimal**. Full shows the whole shell; minimal strips it down to a
-  resizable stack-and-entry window. The choice is remembered across
-  sessions.
-- **`AI-Assisted RPL Calculator` subtitle** — toggles the side panel
-  (catalog, characters, files, history). Click again to close it.
-
-### Keyboard shortcuts
-
-Beyond the on-screen keypad, the physical keyboard is fully wired:
-
-- **`Ctrl/Cmd-Z`** — UNDO (multi-level history)
-- **`Ctrl/Cmd-Y`** or **`Shift-Ctrl/Cmd-Z`** — REDO
-- **`Ctrl/Cmd-V`** — paste clipboard text into the command line (OS
-  copy/paste still works normally inside text fields)
-- **`▲` (Up)** — with an empty command line, enter interactive-stack
-  mode (browse levels with an ECHO / PICK / ROLL soft menu); while
-  typing, scroll the stack view
-- **`▼` (Down)** — with an empty command line, pull level 1 down onto
-  the command line for editing
-- **`▶` (Right)** — with an empty command line and ≥2 stack items, SWAP
-  levels 1 and 2; while typing, move the cursor
-- **`◀` (Left)** — cursor-left while editing; otherwise page the soft
-  menu
-
-`Alt`-combinations are deliberately passed through so browser and OS
-shortcuts keep working.
-
-### Command-line prefixes
-
-- **`?`** — send the rest of the line to the AI assistant (e.g.
-  `? n-th prime program`); the reply comes back as RPL you can push onto
-  the stack
-- Whitespace-separated input evaluates left-to-right — `2 3 + 4 *` ends
-  with `20` on the stack
-
-### Resetting the calculator
-
-To wipe all persisted state — calculator stack and HOME directory,
-side-panel layout, chrome mode, the AI endpoint config, and the
-assistant consent flag — open the browser's DevTools console (`F12` /
-`Cmd+Option+I`) and run:
-
-```js
-calc_reset()
-```
-
-This clears every `localStorage` key the app writes and reloads the page,
-returning the calculator to a fresh boot state.
+The guiding principle is **functionality over compatibility**: where a
+modern interaction is clearer than an original calculator prompt, the modern
+one wins, and the keys keep their muscle memory. Out of scope: Saturn
+assembly and System RPL, hardware and IR/serial communication, and library
+and port management.
 
 ---
 
@@ -300,57 +218,82 @@ returning the calculator to a fresh boot state.
 
 ```
 www/                  The app: static files served as-is
-  index.html          Calculator shell
-  src/app.js          Bootstrap
+  index.html          Shell and icon sprite
+  sw.js               Offline cache (the precache list is generated)
+  src/app.js          Wires the UI together
   src/rpl/            Stack engine, parser, evaluator, formatter, persistence
-  src/rpl/ops/        Command families. `src/rpl/ops.js` re-exports the registry
-  src/rpl/cas/        Giac adapter (synchronous, main-thread) + AST↔Giac conversion
-  src/ui/             Keyboard, display, interactive stack, side panel, entry
-  vendor/             Vendored libraries (giac, decimal.js, fraction.js, complex.js, CodeMirror, KaTeX)
-  css/                Styles
-tests/                Node-based test suites
-docs/                 Reference notes, HP 50g documentation, roadmap
+  src/rpl/ops/        Command families; src/rpl/ops.js re-exports the registry
+  src/rpl/cas/        Giac adapter and AST↔Giac conversion
+  src/ui/             Stack display, input and writers, menus, keypad, drawers, search
+  src/ai/             Assistant: chat, tools, tutor, endpoint client
+  css/                Design tokens, themes and components
+  vendor/             Giac, decimal.js, fraction.js, complex.js, CodeMirror, KaTeX
+tests/                Node test suites, one area per file
+scripts/              Build info, offline precache, README screenshots
+docs/                 Language and command notes, roadmap, HP 50g reference
 ```
-
----
 
 ## Testing
 
-Tests are plain Node ES modules under [tests/](tests/) — no framework:
+The tests are plain Node ES modules with no framework:
 
 ```bash
-node tests/test-all.mjs          # full suite
-node tests/test-algebra.mjs      # single file
-node tests/flake-scan.mjs        # repeat runs to surface order-sensitivity
+npm test                          # everything
+node tests/test-equation-editor.mjs   # one area
+node tests/flake-scan.mjs         # repeat runs to catch order sensitivity
 ```
 
-Each `test-*.mjs` file covers one area (parser, evaluator, stack ops,
-numerics, matrix, units, stats, persistence, reflection, UI, …). The harness
-exits non-zero on the first failure and prints a diff.
-
----
+`npm run screenshots` regenerates the images in this README
+(`RPLAI_SCREENSHOT_LLM` and `RPLAI_SCREENSHOT_MODEL` add the assistant
+scene).
 
 ## Documentation
 
-- [docs/RPL.md](docs/RPL.md) — RPL language support: parser, evaluator,
-  control flow, local environments, suspended execution
-- [docs/COMMANDS.md](docs/COMMANDS.md) — HP 50g command surface and coverage
-- [docs/DATA_TYPES.md](docs/DATA_TYPES.md) — stack value types and widening rules
-- [docs/TESTS.md](docs/TESTS.md) — test harness conventions
-- [docs/ROADMAP.md](docs/ROADMAP.md) — next-feature map
+- [docs/RPL.md](docs/RPL.md): the RPL language, evaluation, control flow,
+  local environments and suspended execution
+- [docs/COMMANDS.md](docs/COMMANDS.md): command coverage
+- [docs/DATA_TYPES.md](docs/DATA_TYPES.md): stack value types
+- [docs/TESTS.md](docs/TESTS.md): test conventions
+- [docs/ROADMAP.md](docs/ROADMAP.md): what's next
+- [RELEASE_NOTES.md](RELEASE_NOTES.md): what changed
 
 ---
+
+## Why this exists
+
+I've always loved the HP 48/49/50 interface. RPL's stack makes a calculation
+read the way you'd work it by hand: operands first, then the operation. User
+programs are first-class: store one under a name and it behaves exactly like
+a built-in. The hardware aged. Emulators kept the 128×80 screen, and the HP
+Prime left too much of the language behind. I wanted RPL with a big screen,
+a real keyboard, deep undo and a proper file manager. When AI-assisted
+development made a project of this scope practical, rpl.ai is what came out
+of it.
+
+## Acknowledgements
+
+rpl.ai bundles or depends on:
+
+- **[Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)**
+  (GPL-3.0+): Bernard Parisse's computer algebra system, as WebAssembly via
+  [emgiac](https://github.com/adriweb/emgiac), with GMP, MPFR and MPFI (LGPL)
+- **[decimal.js](https://github.com/MikeMcl/decimal.js)**,
+  **[fraction.js](https://github.com/rawify/Fraction.js)** and
+  **[complex.js](https://github.com/rawify/Complex.js)** (MIT): decimal,
+  rational and complex arithmetic
+- **[CodeMirror 6](https://codemirror.net/)** (MIT): the command line
+- **[KaTeX](https://katex.org/)** (MIT): math in the assistant's replies
+- **[IBM Plex](https://www.ibm.com/plex/)** (OFL): the typefaces
+
+See [NOTICE](NOTICE) for full attribution.
 
 ## License
 
 rpl.ai is licensed under the **GNU General Public License v3.0 or later**
-(`SPDX-License-Identifier: GPL-3.0-or-later`). See [LICENSE](LICENSE) for
-the full text.
-
+(`SPDX-License-Identifier: GPL-3.0-or-later`); see [LICENSE](LICENSE).
 Because Giac is GPL-3.0+, the combined work must be distributed under
-GPL-3.0-or-later. You may not relicense this project under a more permissive
-license while Giac remains bundled.
+GPL-3.0-or-later, and can't be relicensed more permissively while Giac is
+bundled.
 
-*HP, HP 48, HP 49, HP 50g, and HP Prime are trademarks of HP Inc. This
-project is an independent reimplementation and is not affiliated with or
-endorsed by HP.*
+*HP, HP 48, HP 49, HP 50g and HP Prime are trademarks of HP Inc. rpl.ai is
+an independent reimplementation, not affiliated with or endorsed by HP.*

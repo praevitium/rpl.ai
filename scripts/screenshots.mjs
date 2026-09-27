@@ -59,64 +59,92 @@ async function casReady(page) {
   });
 }
 
+const prefs = (extra = {}) => ({ tourSeen: true, ...extra });
+
 const SCENES = [
   {
     name: 'hero',
     viewport: { width: 1440, height: 900 },
     async setup(page) {
       await casReady(page);
-      await enter(page,
-        '[[2 1 0][1 3 1][0 1 4]]',
-        "'(X^5-1)/(X-1)'",
-        '« DUP * LASTARG + »',
-        '12_m/s', '1_km/h', 'CONVERT',
-        "'X^2-4'", 'FACTOR');
-      await page.evaluate(() => window.__hp50.sidePanel.open('commands'));
-    },
-  },
-  {
-    name: 'minimal',
-    viewport: { width: 1280, height: 800 },
-    init: () => localStorage.setItem('hp50.ui.chrome', 'minimal'),
-    async setup(page) {
-      await casReady(page);
-      await enter(page,
-        "'SIN(X)*EXP(X)'", "'X'", 'DERIV',
-        "'1/(X^2-1)'", 'PARTFRAC',
-        "'X^3-6*X^2+11*X-6'", 'FACTOR',
-        "'X^2-3*X+2=0'", "'X'", 'SOLVE',
-        "'X*SIN(X)'", "'X'", 'INTEG');
+      await enter(page, '[[2 1 0][1 3 1][0 1 4]]', "'(X^5-1)/(X-1)'", '« DUP * LASTARG + »', '12_m/s', '1_km/h', 'CONVERT', "'X^2-4'", 'FACTOR');
+      await page.evaluate(() => window.__hp50.drawers.showReference('SOLVE'));
+      await page.waitForTimeout(900);
     },
   },
   {
     name: 'equation-writer',
-    viewport: { width: 1280, height: 800 },
+    viewport: { width: 1280, height: 820 },
     async setup(page) {
       await casReady(page);
-      await enter(page, "'(X^2+1)/√(X^4+1)+X^3/(1-X)'");
-      await page.evaluate(() => window.__hp50.openEquationEditor({ fromLevel1: true }));
-      await page.waitForTimeout(300);
-      await page.click('.eqw-view');
+      await page.evaluate(() => window.__hp50.setInputMode('equation'));
+      await page.keyboard.type('(x^5');
+      await page.keyboard.press('Tab');
+      await page.keyboard.type('-1)/(x-1');
+      await page.waitForTimeout(1200);
     },
   },
   {
-    name: 'matrix-writer',
-    viewport: { width: 1280, height: 800 },
+    name: 'tutor',
+    viewport: { width: 1440, height: 900 },
+    init: () => {
+      localStorage.setItem('rplai.ui', JSON.stringify({ tourSeen: true }));
+      localStorage.setItem('rpl5050.chatbot.consented.v1', '1');
+    },
     async setup(page) {
-      await casReady(page);
-      await enter(page, '[[2 1 0][1 3 1][0 1 4]]', 'DUP', 'DET', 'OVER', 'INV', 'ROT');
-      await page.evaluate(() => window.__hp50.sidePanel.open('matrix'));
-      await page.waitForTimeout(300);
-      await page.getByRole('button', { name: 'From stack' }).click();
+      await page.evaluate(async () => {
+        const { checkTutorPlan } = await import('/src/ai/chat-bot.js');
+        const app = window.__hp50;
+        app.runAction('assistant.tutor');
+        const result = checkTutorPlan({
+          problem: 'A ball is thrown straight up at 12 m/s. How high does it go? Use g = 9.81 m/s².',
+          steps: [
+            { title: 'Name what you know', idea: 'At the highest point the ball stops for an instant, so **v = 0**. You know v₀ = 12 m/s and g = 9.81 m/s². Which motion equation links speeds and height without time?', rpl: '', hints: ['What is the speed at the very top?'] },
+            { title: 'Enter the launch speed', idea: 'Put v₀ on the stack.', rpl: '12', hints: ['Type 12 and press Enter.'] },
+            { title: 'Square it', idea: 'From v² = v₀² − 2gh with v = 0, the height is v₀² / 2g. Which key squares level 1?', rpl: 'SQ', hints: ['It is x² on the keypad.', 'The command is SQ.'] },
+            { title: 'Divide by 2g', idea: 'Divide by 2 × 9.81 to get the height in metres.', rpl: '2 9.81 * /', hints: ['Push 2 and 9.81, multiply, then divide.'] },
+          ],
+        }, (text) => app._assistantTools().evaluate(text));
+        app.chatBot._hidePicker();
+        app.chatBot._addTutorCard(result.plan);
+      });
+      await page.waitForTimeout(200);
+      await page.click('.tut [data-tut="next"]');
+      await page.click('.tut [data-tut="mine"]');
+      await enter(page, '12');
+      await page.click('.tut [data-tut="check"]');
+      await page.click('.tut [data-tut="mine"]');
+      await page.click('.tut [data-tut="hint"]');
     },
   },
   {
-    name: 'graph',
+    name: 'preview',
+    viewport: { width: 1280, height: 800 },
+    async setup(page) {
+      await enter(page, '6', '8', '42');
+      await page.evaluate(() => window.__hp50.showMenu('STACK'));
+      const i = await page.evaluate(() => { const a = window.__hp50; const at = a.menuAll.findIndex((s) => s.label === 'ROT'); a.menuPage = Math.floor(at / 6); a.menubar.render(); return at % 6; });
+      await page.hover(`#menubar .sk[data-i="${i}"]`);
+      await page.waitForTimeout(500);
+    },
+    keepPointer: true,
+  },
+  {
+    name: 'errors',
+    viewport: { width: 1280, height: 800 },
+    async setup(page) {
+      await enter(page, '"hello"');
+      await page.evaluate(() => window.__hp50.entry.execOp('SIN'));
+      await page.waitForTimeout(200);
+    },
+  },
+  {
+    name: 'plot',
     viewport: { width: 1440, height: 900 },
     async setup(page) {
       await casReady(page);
       await enter(page, "'SIN(X)'", 'FUNCTION', "'X^3/20-X/2'", 'FUNCTION', "'COS(2*X)*X/3'", 'FUNCTION');
-      await page.evaluate(() => window.__hp50.sidePanel._applyWidth(640));
+      await page.evaluate(() => { const a = window.__hp50; a.setPlotFocus(true); a.drawers.graph.view = { xmin: -8, xmax: 8, ymin: -3, ymax: 3 }; a.drawers.graph.setTraceMode(true); a.drawers.graph.traceX = 1.6; a.drawers.graph.nudge('right'); });
       await page.waitForTimeout(400);
     },
   },
@@ -125,34 +153,50 @@ const SCENES = [
     viewport: { width: 1280, height: 800 },
     async setup(page) {
       await casReady(page);
-      await enter(page, "'X^3-6*X^2+11*X-6=0'");
+      await enter(page, "'X^3-6*X^2+11*X-6=0'", "'X'");
       await page.keyboard.press('ControlOrMeta+k');
       await page.keyboard.type('solv', { delay: 40 });
-    },
-  },
-  {
-    name: 'reference',
-    viewport: { width: 1440, height: 900 },
-    async setup(page) {
-      await page.evaluate(() => window.__hp50.sidePanel.open('commands'));
-      await page.fill('.sp-filter', 'deriv');
       await page.waitForTimeout(300);
-      await page.locator('.side-panel-body button', { hasText: /^DERIV$/ }).first().click({ button: 'right' });
-      await page.waitForTimeout(1200);
     },
   },
   {
-    name: 'files',
+    name: 'variables',
     viewport: { width: 1280, height: 800 },
     async setup(page) {
-      await enter(page,
-        "'CIRCUITS'", 'CRDIR', 'CIRCUITS',
-        "« INV SWAP INV + INV » 'PAR' STO",
-        "4700 'R1' STO", "10000 'R2' STO",
-        "'V=I*R' 'OHM' STO",
-        "'FILTERS'", 'CRDIR',
-        'R1', 'R2', 'PAR');
-      await page.evaluate(() => { window.__hp50.showVarsMenu(); window.__hp50.sidePanel.open('files'); });
+      await enter(page, "'CIRCUITS'", 'CRDIR', 'CIRCUITS', "« INV SWAP INV + INV » 'PAR' STO", "4700 'R1' STO", "10000 'R2' STO", "'V=I*R' 'OHM' STO", "'FILTERS'", 'CRDIR', 'R1', 'R2', 'PAR');
+      await page.evaluate(() => { window.__hp50.showMenu('VARS'); window.__hp50.drawers.open('vars'); });
+      await page.waitForTimeout(300);
+    },
+  },
+  {
+    name: 'classic',
+    viewport: { width: 1280, height: 800 },
+    init: (ui) => localStorage.setItem('rplai.ui', JSON.stringify(ui)),
+    initArg: prefs({ theme: 'classic' }),
+    async setup(page) {
+      await casReady(page);
+      await enter(page, "'SIN(X)*EXP(X)'", "'X'", 'DERIV', "'X^3-6*X^2+11*X-6'", 'FACTOR', '355', '113', '/');
+    },
+  },
+  {
+    name: 'paper',
+    viewport: { width: 1280, height: 800 },
+    scheme: 'light',
+    async setup(page) {
+      await casReady(page);
+      await enter(page, "'1/(X^2-1)'", 'PARTFRAC', "'X^2-3*X+2=0'", "'X'", 'SOLVE', '2', '100', '^');
+      await page.evaluate(() => window.__hp50.drawers.open('catalog'));
+      await page.waitForTimeout(400);
+    },
+  },
+  {
+    name: 'minimal',
+    viewport: { width: 1280, height: 800 },
+    init: (ui) => localStorage.setItem('rplai.ui', JSON.stringify(ui)),
+    initArg: prefs({ minimal: true }),
+    async setup(page) {
+      await casReady(page);
+      await enter(page, "'SIN(X)*EXP(X)'", "'X'", 'DERIV', "'X^3-6*X^2+11*X-6'", 'FACTOR', "'X^2-3*X+2=0'", "'X'", 'SOLVE', "'X*SIN(X)'", "'X'", 'INTEG');
     },
   },
   {
@@ -167,13 +211,13 @@ const SCENES = [
     viewport: { width: 1440, height: 900 },
     skip: !LLM_URL || !LLM_MODEL,
     init: (cfg) => {
+      localStorage.setItem('rplai.ui', JSON.stringify({ tourSeen: true }));
       localStorage.setItem('rpl5050.chatbot.consented.v1', '1');
       localStorage.setItem('rpl5050.chatbot.remote', JSON.stringify(cfg));
     },
     initArg: { url: LLM_URL, model: LLM_MODEL, contextTokens: 32768, think: false, apiKey: '' },
     async setup(page) {
-      await page.evaluate(() => window.__hp50.sidePanel._applyWidth(560));
-      await page.evaluate(() => window.__hp50.sidePanel.open('ai'));
+      await page.evaluate(() => window.__hp50.drawers.open('assistant'));
       await page.waitForSelector('.cb-status-ready', { timeout: 60000 });
       await page.fill('.cb-input', LLM_PROMPT);
       await page.click('.cb-send-btn');
@@ -203,8 +247,9 @@ function frameHtml(png, { width, height }, phone) {
 }
 
 async function capture(browser, base, scene) {
-  const context = await browser.newContext({ viewport: scene.viewport, deviceScaleFactor: SCALE, colorScheme: 'dark' });
+  const context = await browser.newContext({ viewport: scene.viewport, deviceScaleFactor: SCALE, colorScheme: scene.scheme ?? 'dark' });
   if (scene.init) await context.addInitScript(scene.init, scene.initArg);
+  else await context.addInitScript((ui) => localStorage.setItem('rplai.ui', JSON.stringify(ui)), prefs());
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -212,7 +257,7 @@ async function capture(browser, base, scene) {
   await page.waitForFunction(() => window.__hp50);
   await scene.setup(page);
   await page.waitForTimeout(500);
-  await page.mouse.move(0, 0);
+  if (!scene.keepPointer) await page.mouse.move(0, 0);
   const shot = await page.screenshot();
   await context.close();
   const framer = await browser.newPage({ deviceScaleFactor: SCALE });

@@ -23,11 +23,7 @@ required for development.
 
 ## v0.5.0 — 2026-09-26
 
-The equation writer is a structural editor in the side panel: ↱ on
-the `` ` `` key, or ▼ on a symbolic or name, opens it, and its soft
-menu expands, factors, simplifies, and evaluates the selection. The
-matrix writer adds rows, columns, transpose, identity, and π, i, ∞,
-and keeps a vector a vector. The in-browser model is gone: the
+The in-browser model is gone: the
 assistant talks to Ollama or any OpenAI-compatible endpoint, and a
 failed connection says why (the server refused the page's origin and
 `OLLAMA_ORIGINS` needs it, nothing answered, or it is ollama.com,
@@ -80,6 +76,28 @@ offers fixes: drop it, swap levels, fix the line, open the reference,
 or ask the assistant to explain. It stays until dismissed. A halted
 program shows its PROMPT text and the program with the next
 instruction highlighted, with Continue, Step and Stop.
+
+The equation writer is rebuilt. Typing builds structure (`/` a fraction,
+`^` a power, `(` a group, `sin(` a function, `pi` π, `2x` a product),
+Tab leaves a box, and there is no focus mode to click into. An insight
+strip shows the value, a plot, and what the CAS can do with the
+expression: simplify, factor, expand, differentiate, solve, and spot a
+removable hole. A toolbar transforms just the selected part, a Text view
+edits the same expression as RPL, Enter pushes or replaces the edited
+level, and Esc discards with Undo. The matrix writer drops its toolbar
+for the MATRIX menu, Enter pushes, and blank trailing rows are ignored.
+Hovering a soft key or search result previews its effect on the stack,
+and keys dim when the stack is too shallow. The command line completes
+command and variable names with their stack diagrams. The plot gets
+zoom, fit, reset and trace tools, editable window ranges, a keyboard
+trace cursor, trace checkboxes, and full screen. The assistant gains
+Tutor mode: a problem becomes steps the calculator checks first, each
+with Show me, I'll do it and staged hints, in a Socratic or Direct
+style. A first-run tour, Move to… for variables, reference links on
+hover cards, and higher-contrast muted text round it out. Textbook math
+uses true minus signs and writes `(x−3)(x−2)` without a product sign.
+`-X^2` now means −(X²), as on the HP 50g, so `'-2^2' EVAL` is −4 and
+CAS results such as `-x^2` keep their sign.
 
 ---
 
