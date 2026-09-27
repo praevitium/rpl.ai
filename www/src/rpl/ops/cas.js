@@ -197,11 +197,14 @@ register('FACTOR', (s) => {
   if (isInteger(v) || (isReal(v) && v.value.isInteger())) {
     const bv = isInteger(v) ? v.value : BigInt(v.value.toFixed(0));
     const abs = bv < 0n ? -bv : bv;
-    // 0 and ±1 have no meaningful prime factorisation, and the
-    // trial-division loop wouldn't finish past 2^53, so in both cases
-    // pass the value through.
-    if (abs < 2n || abs > BigInt(Number.MAX_SAFE_INTEGER)) {
+    if (abs < 2n) {
       s.push(v);
+      return;
+    }
+    if (abs > BigInt(Number.MAX_SAFE_INTEGER)) {
+      if (!giac.isReady()) throw new RPLError('CAS not ready');
+      const ast = giacToAst(giac.caseval(`ifactor(${abs.toString()})`));
+      s.push(Symbolic(bv < 0n ? AstNeg(ast) : ast));
       return;
     }
     const factors = _primeFactor(abs);
