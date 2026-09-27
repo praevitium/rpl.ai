@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.4.1 (2026-09-23)
+**Latest release:** v0.4.2 (2026-09-26)
 
 ---
 
@@ -19,6 +19,26 @@ The application runs as a native desktop window on macOS, Windows, and Linux
 via [Tauri 2](https://tauri.app/). The entire calculator frontend is plain
 HTML / CSS / ES modules — no build step, no framework, no bundler required for
 development.
+
+---
+
+## v0.4.2 — 2026-09-26
+
+The equation writer is a structural editor in the side panel: ↱ on
+the `` ` `` key, or ▼ on a symbolic or name, opens it, and its soft
+menu expands, factors, simplifies, and evaluates the selection. The
+matrix writer adds rows, columns, transpose, identity, and π, i, ∞,
+and keeps a vector a vector. The in-browser model is gone: the
+assistant talks to Ollama or any OpenAI-compatible endpoint, and a
+failed connection says why (the server refused the page's origin and
+`OLLAMA_ORIGINS` needs it, nothing answered, or it is ollama.com,
+which no browser can call). `/` on an empty line types a division
+sign; the palette stays on Ctrl/Cmd-K. An error no longer wipes the
+undo history. Coordinate, number-format, wordsize, base, textbook,
+approximate, and complex modes and user flags survive a reload, not
+just the angle. Clicking the command line takes the keyboard back from
+the equation writer. `'QZ' STO` explains that names are quoted with
+backticks. The page has a favicon.
 
 ---
 
