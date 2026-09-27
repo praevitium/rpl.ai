@@ -17,7 +17,7 @@ import { errorBeep } from './beep.js';
 import { Name } from '../rpl/types.js';
 import {
   saveVarStateForUndo, undoVarState, redoVarState,
-  hasVarRedo, clearVarUndo,
+  hasVarRedo, varStateMatchesUndoTop, dropVarUndoTop,
 } from '../rpl/state.js';
 import {
   EditorState, EditorView, keymap, drawSelection,
@@ -599,15 +599,7 @@ export class Entry {
         return;
       }
       this.stack.restore(rollback);
-      this.stack.clearUndo();
-      // Also nuke the var-state UNDO slot.  Since `body()` may have
-      // succeeded a variable STO/PURGE before the throw (and we
-      // intentionally DON'T roll var state back — RPL side effects on
-      // variables are persistent), keeping the var-undo slot would let
-      // a subsequent UNDO revert to a state where the stack matches
-      // the current live one but vars don't.  Clearing both keeps the
-      // two halves in lock-step.
-      clearVarUndo();
+      this._dropNoOpUndoStep();
       // Optional prefix — typically the command name the caller ran.
       // Matches the tagging done inside enter() / execOp() via
       // `_runOpTagged`, but for callers that don't go through those
@@ -618,6 +610,13 @@ export class Entry {
         e = new RPLError(`${context}: ${msg}`);
       }
       this.flashError(e);
+    }
+  }
+
+  _dropNoOpUndoStep() {
+    if (this.stack.undoTopMatchesCurrent() && varStateMatchesUndoTop()) {
+      this.stack.dropUndoTop();
+      dropVarUndoTop();
     }
   }
 

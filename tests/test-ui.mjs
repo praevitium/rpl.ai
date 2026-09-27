@@ -484,6 +484,40 @@ import { assert, assertThrows } from './helpers.mjs';
       'Ctrl-Y re-applies the DROP');
   }
 
+  {
+    const { resetHome } = await import('../www/src/rpl/state.js');
+    resetHome();
+    const s = new Stack();
+    const e = new Entry(s);
+    e.flashError = () => {};
+    e.buffer = '1'; e.enter();
+    e.buffer = '2'; e.enter();
+    e.buffer = '"hi"'; e.enter();
+    e.execOp('SIN');
+    assert(s.depth === 3, 'failed SIN leaves the stack as it was');
+    e.performUndo();
+    assert(s.depth === 2 && format(s.peek(1)) === '2',
+      'a failed command keeps earlier undo steps: UNDO removes "hi"');
+    e.performUndo();
+    assert(s.depth === 1, 'a failed command keeps earlier undo steps: second UNDO removes 2');
+  }
+
+  {
+    const { resetHome, varRecall } = await import('../www/src/rpl/state.js');
+    resetHome();
+    const s = new Stack();
+    const e = new Entry(s);
+    e.flashError = () => {};
+    e.buffer = '« 5 `PARTIALX` STO "a" SIN »'; e.enter();
+    e.execOp('EVAL');
+    assert(varRecall('PARTIALX') !== undefined && varRecall('PARTIALX') !== null,
+      'a program that stores then fails leaves the stored variable');
+    e.performUndo();
+    assert(varRecall('PARTIALX') === undefined || varRecall('PARTIALX') === null,
+      'a failed command that changed variables keeps its own undo step: UNDO removes PARTIALX');
+    resetHome();
+  }
+
   // Inject a fake clipboard facade whose readText resolves synchronously
   // via a Promise; await resolution to assert buffer was populated.
   {

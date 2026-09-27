@@ -1252,8 +1252,8 @@ export function restoreLastError(rec) {
    stashes the CURRENT live state onto the redo history, and restores
    the popped snapshot.  redoVarState() is the inverse.  hasVarUndo()
    / hasVarRedo() report availability; clearVarUndo() drops both
-   history lists (called on error paths alongside Stack.clearUndo so
-   the two halves stay in lock-step). */
+   history lists.  A failed command drops its own snapshot only when
+   neither the stack nor the variables changed (dropVarUndoTop). */
 
 /** Deep-clone a Directory sub-tree.  Directories are recreated;
  *  leaf values are shared by reference (RPL values are immutable). */
@@ -1346,6 +1346,33 @@ export function hasVarRedo() {
 export function clearVarUndo() {
   _varUndoStack = [];
   _varRedoStack = [];
+}
+
+function _sameDir(a, b) {
+  if (a.entries.size !== b.entries.size) return false;
+  const other = [...b.entries];
+  let i = 0;
+  for (const [key, value] of a.entries) {
+    const [otherKey, otherValue] = other[i++];
+    if (key !== otherKey) return false;
+    const isDir = value?.type === TYPES.DIRECTORY;
+    if (isDir !== (otherValue?.type === TYPES.DIRECTORY)) return false;
+    if (isDir ? !_sameDir(value, otherValue) : value !== otherValue) return false;
+  }
+  return true;
+}
+
+export function varStateMatchesUndoTop() {
+  const top = _varUndoStack[_varUndoStack.length - 1];
+  if (!top) return false;
+  const path = _pathNamesToCurrent();
+  return path.length === top.path.length
+    && path.every((name, i) => name === top.path[i])
+    && _sameDir(state.home, top.home);
+}
+
+export function dropVarUndoTop() {
+  _varUndoStack.pop();
 }
 
 export function undoVarState() {

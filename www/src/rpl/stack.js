@@ -220,6 +220,15 @@ export class Stack {
     this._emit();
   }
 
+  undoTopMatchesCurrent() {
+    const top = this.hasUndo() ? this._undoStack[this._undoStack.length - 1] : null;
+    return !!top && top.length === this._items.length && top.every((v, i) => v === this._items[i]);
+  }
+
+  dropUndoTop() {
+    if (this.hasUndo()) this._undoStack.pop();
+  }
+
   /** Drop all pending undo/redo history.  Used by LASTSTACK-reset
    *  tests and by `resetHome` to prevent an undo from crossing a
    *  HOME reset. */
