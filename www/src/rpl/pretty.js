@@ -390,7 +390,7 @@ function lay(ast, parentPrec, size) {
   if (isNeg(ast)) {
     // Unary minus binds tighter than + / - but looser than * / ^.
     // We mirror fmt()'s rule: inside * / ^, wrap the whole neg.
-    const inner = lay(ast.arg, 4, size);
+    const inner = lay(ast.arg, 3, size);
     const box = rowBox([textBox('-', size), inner]);
     return parentPrec >= 2 ? parenBox(box) : box;
   }

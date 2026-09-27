@@ -497,7 +497,14 @@ export function parseAlgebra(src) {
   }
 
   function parseF() {
-    const left = parseU();
+    skip();
+    if (s[i] === '-') { i++; return Neg(parseF()); }
+    if (s[i] === '+') { i++; return parseF(); }
+    return parsePow();
+  }
+
+  function parsePow() {
+    const left = parseP();
     skip();
     if (s[i] === '^') {
       i++;
@@ -505,13 +512,6 @@ export function parseAlgebra(src) {
       return Bin('^', left, right);
     }
     return left;
-  }
-
-  function parseU() {
-    skip();
-    if (s[i] === '-') { i++; return Neg(parseU()); }
-    if (s[i] === '+') { i++; return parseU(); }
-    return parseP();
   }
 
   function parseP() {
@@ -1529,7 +1529,7 @@ function fmt(ast, parentPrec) {
   if (ast.kind === 'neg') {
     // Parenthesise inside a multiplicative-or-higher parent: '2*-X' is
     // ugly, '2*(-X)' reads.  Inside +/- we can print plain '-X'.
-    const inner = fmt(ast.arg, 4);
+    const inner = fmt(ast.arg, 3);
     const s = `-${inner}`;
     return parentPrec >= 2 ? `(${s})` : s;
   }

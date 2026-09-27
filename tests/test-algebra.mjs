@@ -76,6 +76,18 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(a.kind === 'neg' && a.arg.name === 'X', 'parseAlgebra(-X) = neg X');
 }
 {
+  const a = parseAlgebra('-X^2');
+  assert(a.kind === 'neg' && a.arg.op === '^', 'parseAlgebra: -X^2 is -(X^2), as on the HP 50g, not (-X)^2');
+  const b = parseAlgebra('2^-1');
+  assert(b.op === '^' && b.r.kind === 'neg', 'parseAlgebra: a minus sign may open an exponent (2^-1)');
+  assert(formatAlgebra(a) === '-X^2' && formatAlgebra(parseAlgebra('(-X)^2')) === '(-X)^2',
+         'formatAlgebra writes -X^2 bare and keeps the parentheses of (-X)^2');
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('-2^2')));
+  lookup('EVAL').fn(s);
+  assert(Number(format(s.peek(1))) === -4, `'-2^2' EVAL is -4 (got ${format(s.peek(1))})`);
+}
+{
   // round-trip: format(parse(s)) = s (modulo whitespace)
   const s = 'X^2 + 3*X + 1';
   const out = formatAlgebra(parseAlgebra(s));
