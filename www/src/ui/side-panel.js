@@ -254,21 +254,21 @@ export class SidePanel {
       <div class="side-panel-head">
         <div class="side-panel-tabs" role="tablist">
           <button type="button" class="sp-tab" data-tab="ai"       role="tab"
-                  title="AI Assistant (BETA)" aria-label="AI Assistant (BETA)">✦</button>
+                  title="AI Assistant (BETA)" aria-label="AI Assistant (BETA)"><svg class="sp-icon" aria-hidden="true"><use href="#i-spark"/></svg></button>
           <button type="button" class="sp-tab" data-tab="commands" role="tab"
-                  title="Commands" aria-label="Commands">📖</button>
+                  title="Commands" aria-label="Commands"><svg class="sp-icon" aria-hidden="true"><use href="#i-book"/></svg></button>
           <button type="button" class="sp-tab" data-tab="equation" role="tab"
-                  title="Equation writer" aria-label="Equation writer">ƒ𝑥</button>
+                  title="Equation writer" aria-label="Equation writer"><svg class="sp-icon" aria-hidden="true"><use href="#i-fx"/></svg></button>
           <button type="button" class="sp-tab" data-tab="matrix"   role="tab"
-                  title="Matrix editor" aria-label="Matrix editor">⊞</button>
+                  title="Matrix editor" aria-label="Matrix editor"><svg class="sp-icon" aria-hidden="true"><use href="#i-matrix"/></svg></button>
           <button type="button" class="sp-tab" data-tab="graph"    role="tab"
-                  title="Graph" aria-label="Graph">📈</button>
+                  title="Graph" aria-label="Graph"><svg class="sp-icon" aria-hidden="true"><use href="#i-plot"/></svg></button>
           <button type="button" class="sp-tab" data-tab="chars"    role="tab"
-                  title="Characters" aria-label="Characters">🔤</button>
+                  title="Characters" aria-label="Characters"><svg class="sp-icon" aria-hidden="true"><use href="#i-omega"/></svg></button>
           <button type="button" class="sp-tab" data-tab="files"    role="tab"
-                  title="Files" aria-label="Files">📁</button>
+                  title="Files" aria-label="Files"><svg class="sp-icon" aria-hidden="true"><use href="#i-folder"/></svg></button>
           <button type="button" class="sp-tab" data-tab="history"  role="tab"
-                  title="History" aria-label="History">🕐</button>
+                  title="History" aria-label="History"><svg class="sp-icon" aria-hidden="true"><use href="#i-clock"/></svg></button>
         </div>
         <button type="button" class="sp-close" title="Close panel" aria-label="Close">×</button>
       </div>

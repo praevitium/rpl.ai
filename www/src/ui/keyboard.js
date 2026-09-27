@@ -322,9 +322,7 @@ export const MAIN_KEYS = [
   //   5:  MATRICES  / STAT      (matrix menu / statistics menu)
   //   6:  CONVERT   / UNITS     (unit conversion / units menu)
   //   −:  ( )       / _         (parens / underscore for compound units)
-  // ↖️ is U+2196 + U+FE0F variation selector to force emoji presentation,
-  // pointing toward the upper-left where orange labels sit on every key.
-  mk('↖️', { className: 'shift-l-key', kind: 'shiftL' }),
+  mk('↰', { className: 'shift-l-key', kind: 'shiftL' }),
   // 4/5/6 have no shift labels — CALC/ALG/MATRICES/STAT/CONVERT/UNITS
   // all reachable via the side-panel Commands tab under CAS /
   // Vectors&Matrices / (Units - pending) categories.
@@ -342,8 +340,7 @@ export const MAIN_KEYS = [
   //   2:  (none) / (none)       — DEF / LIB not supported
   //   3:  #      / BASE         (binary literal prefix / base menu)
   //   +:  { }    / « »          (list braces / program delimiters)
-  // ↗️ same idea as ↖️ but mirrored to red corner.
-  mk('↗️', { className: 'shift-r-key', kind: 'shiftR' }),
+  mk('↱', { className: 'shift-r-key', kind: 'shiftR' }),
   // 1 has no shift labels — ARITH (MOD/GCD/LCM) and CMPLX
   // (RE/IM/CONJ/ARG/ABS) both live in the side-panel Commands tab.
   mk('1',  { kind: 'digit', action: type('1') }),

@@ -706,6 +706,7 @@ body {
 .key.alpha-key   { background: linear-gradient(180deg, #4b7fa1, #345d7c); }
 
 .key.shift-l-key, .key.shift-r-key, .key.alpha-key { color: #fff; }
+.key.shift-l-key .primary, .key.shift-r-key .primary { font-size: 22px; font-weight: 700; }
 
 /* Digits row a bit bigger */
 .key.digit .primary { font-size: 20.25px; }
@@ -815,14 +816,22 @@ body.sp-resizing {
   background: transparent;
   border: 1px solid transparent;
   color: #aab1bd;
-  padding: 4px 7px;
-  /* Tabs are now emoji glyphs — bump up so they read at a glance. */
-  font-size: 18px;
+  padding: 5px 7px;
   line-height: 1;
-  letter-spacing: .4px;
   border-radius: 4px;
   cursor: pointer;
 }
+.sp-tab .sp-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.icon-sprite { position: absolute; }
 .sp-tab:hover { color: #fff; background: rgba(255, 255, 255, .04); }
 .sp-tab.active {
   color: #fff;

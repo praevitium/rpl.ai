@@ -51,7 +51,7 @@ export const EQW_APP_FACES = new Set([
 export const EQW_UNAVAILABLE_FACES = new Set([
   'LASTARG', 'VARS', 'HOME', 'STO', 'RCL', 'CST', 'SST', '`', '|', 'EQW',
   '∠', '#', "'", '[ ]', '" "', '{ }', '« »', '_', '::', '↵', '→', 'SPC',
-  'CONT', '↖️', '↗️',
+  'CONT', '↰', '↱',
 ]);
 
 const MODEL_LABELS = new Set([
