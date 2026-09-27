@@ -22,6 +22,9 @@ export function highlightMatches(text, query) {
   return segs.length ? segs.map((s) => (s.match ? `<mark>${escapeHtml(s.text)}</mark>` : escapeHtml(s.text))).join('') : escapeHtml(text);
 }
 
+const TITLE_MATCH_SCORE = 600;
+const WORD_MATCH_SCORE = 700;
+
 function textScore(query, text) {
   const q = query.toLowerCase();
   const t = text.toLowerCase();
@@ -29,7 +32,8 @@ function textScore(query, text) {
   if (t === q) return 1000;
   if (t.startsWith(q)) return 800 - t.length;
   const i = t.indexOf(q);
-  if (i >= 0) return 600 - i;
+  if (i > 0 && /\W/.test(t[i - 1])) return WORD_MATCH_SCORE - i;
+  if (i >= 0) return TITLE_MATCH_SCORE - i;
   const f = fuzzyScore(query, text);
   return f > 0 ? f : -1;
 }
@@ -150,7 +154,11 @@ export class Palette {
       run: () => this.app.entry.type(text),
     }));
     if (q) groups.push(['Constants', scored(constants)]);
-    return groups.filter(([, items]) => items.length);
+    const nonEmpty = groups.filter(([, items]) => items.length);
+    if (!q) return nonEmpty;
+    const commandRank = Math.max(commands.length ? textScore(q, commands[0].name) : -1, TITLE_MATCH_SCORE - 1);
+    const groupRank = ([title, items]) => (title === 'Commands' ? commandRank : items[0].score >= TITLE_MATCH_SCORE ? items[0].score : -Infinity);
+    return nonEmpty.sort((a, b) => groupRank(b) - groupRank(a));
   }
 
   _refresh() {
