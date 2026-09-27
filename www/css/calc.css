@@ -35,6 +35,22 @@
 
   --font-lcd: "Menlo", "Consolas", "DejaVu Sans Mono", monospace;
   --font-ui:  "Inter", "Helvetica Neue", Arial, sans-serif;
+
+  --focus-ring: #67e8f9;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 html, body {
