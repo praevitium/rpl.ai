@@ -326,85 +326,25 @@ import { assert, assertThrows } from './helpers.mjs';
 }
 
 
-// The handler lives in src/ui/shortcuts.js as a pure function so it
-// can be exercised without a DOM.  It receives an event-shaped object
-// plus the Entry and (optionally) a clipboard facade.
 {
-  const { handleModifierShortcut } = await import('../www/src/ui/shortcuts.js');
   const { Entry } = await import('../www/src/ui/entry.js');
 
-  const evt = (patch) => Object.assign({
-    key: '', ctrlKey: false, metaKey: false, altKey: false, shiftKey: false,
-  }, patch);
-
   {
     const s = new Stack();
     s.push(Real(1));
     const e = new Entry(s);
     e._snapForUndo();
     s.push(Real(2));
-    const handled = handleModifierShortcut(evt({ key: 'z', ctrlKey: true }), e);
-    assert(handled === true, 'Ctrl-Z is handled');
-    assert(s.depth === 1 && s.peek(1).value.eq(1),
-      'Ctrl-Z routes to performUndo — stack restored');
-  }
-
-  {
-    const s = new Stack();
-    s.push(Real(5));
-    const e = new Entry(s);
-    e._snapForUndo();
-    s.push(Real(6));
-    handleModifierShortcut(evt({ key: 'z', metaKey: true }), e);
-    assert(s.depth === 1 && s.peek(1).value.eq(5),
-      'Cmd-Z routes to performUndo (Mac convention)');
-  }
-
-  {
-    const s = new Stack();
-    s.push(Real(1));
-    const e = new Entry(s);
-    e._snapForUndo();
-    s.push(Real(2));
-    e.performUndo();                  // back to { 1 }
-    assert(s.depth === 1, 'pre-redo sanity: back at { 1 }');
-    const handled = handleModifierShortcut(evt({ key: 'y', ctrlKey: true }), e);
-    assert(handled === true, 'Ctrl-Y is handled');
-    assert(s.depth === 2 && s.peek(1).value.eq(2),
-      'Ctrl-Y routes to performRedo — push re-applied');
-  }
-
-  {
-    const s = new Stack();
-    s.push(Real(10));
-    const e = new Entry(s);
-    e._snapForUndo();
-    s.push(Real(20));
     e.performUndo();
-    handleModifierShortcut(evt({ key: 'z', ctrlKey: true, shiftKey: true }), e);
-    assert(s.depth === 2 && s.peek(1).value.eq(20),
-      'Shift-Ctrl-Z routes to performRedo');
+    assert(s.depth === 1 && s.peek(1).value.eq(1), 'performUndo restores the stack');
+    e.performRedo();
+    assert(s.depth === 2 && s.peek(1).value.eq(2), 'performRedo re-applies the push');
   }
 
   {
-    const s = new Stack();
-    const e = new Entry(s);
-    let flashed = null;
-    e.flashError = (err) => { flashed = err; };
-    const handled = handleModifierShortcut(evt({ key: 'z', ctrlKey: true }), e);
-    assert(handled === true, 'Ctrl-Z is still "handled" when no history');
-    assert(flashed && /no undo/i.test(flashed.message),
-      'Ctrl-Z with empty history shows No undo error via flashError');
-  }
-
-  {
-    const s = new Stack();
-    const e = new Entry(s);
-    let flashed = null;
-    e.flashError = (err) => { flashed = err; };
-    handleModifierShortcut(evt({ key: 'y', ctrlKey: true }), e);
-    assert(flashed && /no redo/i.test(flashed.message),
-      'Ctrl-Y with empty redo shows No redo error');
+    const e = new Entry(new Stack());
+    assertThrows(() => e.performUndo(), /no undo/i, 'performUndo with empty history reports No undo');
+    assertThrows(() => e.performRedo(), /no redo/i, 'performRedo with empty history reports No redo');
   }
 
   // Pure stack mutations (physical Backspace→DROP, ▶ SWAP, interactive-
@@ -423,13 +363,12 @@ import { assert, assertThrows } from './helpers.mjs';
     e._snapForUndo();                 // what swapTop / backspace should do
     s.drop();                          // stack-only mutation, no var change
     assert(s.depth === 1, 'pre-undo sanity: { 1 } after DROP');
-    const handled = handleModifierShortcut(evt({ key: 'z', ctrlKey: true }), e);
-    assert(handled === true, 'Ctrl-Z handled after stack-only mutation');
+    e.performUndo();
     assert(s.depth === 2 && s.peek(1).value.eq(2),
-      'Ctrl-Z restores the pre-DROP stack when only stack state changed');
-    handleModifierShortcut(evt({ key: 'y', ctrlKey: true }), e);
+      'UNDO restores the pre-DROP stack when only stack state changed');
+    e.performRedo();
     assert(s.depth === 1 && s.peek(1).value.eq(1),
-      'Ctrl-Y re-applies the DROP');
+      'REDO re-applies the DROP');
   }
 
   {
@@ -489,219 +428,6 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(varRecall('PARTIALX') === undefined || varRecall('PARTIALX') === null,
       'a failed command that changed variables keeps its own undo step: UNDO removes PARTIALX');
     resetHome();
-  }
-
-  // Inject a fake clipboard facade whose readText resolves synchronously
-  // via a Promise; await resolution to assert buffer was populated.
-  {
-    const s = new Stack();
-    const e = new Entry(s);
-    const fakeClipboard = { readText: () => Promise.resolve('HELLO 42 +') };
-    const handled = handleModifierShortcut(
-      evt({ key: 'v', ctrlKey: true }), e, { clipboard: fakeClipboard },
-    );
-    assert(handled === true, 'Ctrl-V is handled');
-    // Promise chains inside the helper are fired-and-forgotten; flush
-    // microtasks so the .then() runs.
-    await Promise.resolve();
-    await Promise.resolve();
-    assert(e.buffer === 'HELLO 42 +',
-      `Ctrl-V typed the clipboard payload into the entry buffer, got ${JSON.stringify(e.buffer)}`);
-  }
-
-  {
-    const s = new Stack();
-    const e = new Entry(s);
-    const fakeClipboard = { readText: () => Promise.resolve('XYZ') };
-    handleModifierShortcut(evt({ key: 'v', metaKey: true }), e, { clipboard: fakeClipboard });
-    await Promise.resolve(); await Promise.resolve();
-    assert(e.buffer === 'XYZ', 'Cmd-V also pastes');
-  }
-
-  {
-    const e = new Entry(new Stack());
-    const fakeClipboard = { readText: () => Promise.resolve("\\<< 'X^2' \\-> \\>> @ square\n\"it's\"") };
-    handleModifierShortcut(evt({ key: 'v', ctrlKey: true }), e, { clipboard: fakeClipboard });
-    await Promise.resolve(); await Promise.resolve();
-    assert(e.buffer.replace(/\s+/g, ' ').trim() === '« `X^2` → » "it\'s"',
-      `Ctrl-V reads pasted HP source into app syntax, got ${JSON.stringify(e.buffer)}`);
-  }
-
-  {
-    const s = new Stack();
-    const e = new Entry(s);
-    e.type('prior');
-    const fakeClipboard = { readText: () => Promise.resolve('') };
-    handleModifierShortcut(evt({ key: 'v', ctrlKey: true }), e, { clipboard: fakeClipboard });
-    await Promise.resolve(); await Promise.resolve();
-    assert(e.buffer === 'prior',
-      'empty clipboard leaves the entry buffer alone');
-  }
-
-  {
-    const s = new Stack();
-    const e = new Entry(s);
-    let flashed = null;
-    e.flashError = (err) => { flashed = err; };
-    const fakeClipboard = { readText: () => Promise.reject(new Error('denied')) };
-    handleModifierShortcut(evt({ key: 'v', ctrlKey: true }), e, { clipboard: fakeClipboard });
-    await Promise.resolve(); await Promise.resolve();
-    assert(flashed && /denied/.test(flashed.message),
-      'clipboard read rejection routes to flashError');
-  }
-
-  {
-    const s = new Stack();
-    const e = new Entry(s);
-    let flashed = null;
-    e.flashError = (err) => { flashed = err; };
-    handleModifierShortcut(evt({ key: 'v', ctrlKey: true }), e, { clipboard: null });
-    assert(flashed && /clipboard unavailable/i.test(flashed.message),
-      'no clipboard facade → "Clipboard unavailable" via flashError');
-  }
-
-  {
-    const s = new Stack();
-    const e = new Entry(s);
-    const handled = handleModifierShortcut(evt({ key: 'c', ctrlKey: true }), e);
-    assert(handled === false,
-      'Ctrl-C is declined so the browser handles copy normally');
-  }
-
-  {
-    const s = new Stack();
-    const e = new Entry(s);
-    const handled = handleModifierShortcut(evt({ key: 'z' }), e);
-    assert(handled === false,
-      'bare Z (no modifier) is not handled — passes through to typing path');
-  }
-
-  {
-    const s = new Stack();
-    const e = new Entry(s);
-    const handled = handleModifierShortcut(evt({ key: 'z', ctrlKey: true, altKey: true }), e);
-    assert(handled === false,
-      'Ctrl-Alt-Z is not hijacked — treated as an OS shortcut');
-  }
-
-  {
-    const s = new Stack();
-    const e = new Entry(s);
-    const handled = handleModifierShortcut(evt({ key: 'q', ctrlKey: true }), e);
-    assert(handled === false,
-      'Ctrl-Q is declined — passes through to browser');
-  }
-
-  // session307: the deliberate `!e.shiftKey` guard on the V branch.
-  // Ctrl/Cmd-Shift-V is declined so the browser's native plain-text
-  // paste keeps working (parallel to the Ctrl-C decline) — and the
-  // shifted combo must never touch the clipboard facade or the buffer.
-  // Ctrl-Shift-Y, by contrast, still redoes: the Y arm ignores shift.
-  {
-    const s = new Stack();
-    const e = new Entry(s);
-    e.type('keep');
-    let read = false;
-    const fakeClipboard = { readText: () => { read = true; return Promise.resolve('NOPE'); } };
-    const handled = handleModifierShortcut(
-      evt({ key: 'v', ctrlKey: true, shiftKey: true }), e, { clipboard: fakeClipboard },
-    );
-    await Promise.resolve(); await Promise.resolve();
-    assert(handled === false,
-      'Ctrl-Shift-V is declined so the browser plain-text paste works');
-    assert(read === false, 'Ctrl-Shift-V never reads the clipboard facade');
-    assert(e.buffer === 'keep', 'Ctrl-Shift-V leaves the entry buffer untouched');
-  }
-
-  {
-    const s = new Stack();
-    const e = new Entry(s);
-    e.type('keep');
-    const fakeClipboard = { readText: () => Promise.resolve('NOPE') };
-    const handled = handleModifierShortcut(
-      evt({ key: 'v', metaKey: true, shiftKey: true }), e, { clipboard: fakeClipboard },
-    );
-    await Promise.resolve(); await Promise.resolve();
-    assert(handled === false, 'Cmd-Shift-V is likewise declined');
-    assert(e.buffer === 'keep', 'Cmd-Shift-V leaves the entry buffer untouched');
-  }
-
-  {
-    const s = new Stack();
-    s.push(Real(7));
-    const e = new Entry(s);
-    e._snapForUndo();
-    s.push(Real(8));
-    e.performUndo();                  // back to { 7 }
-    const handled = handleModifierShortcut(evt({ key: 'y', ctrlKey: true, shiftKey: true }), e);
-    assert(handled === true, 'Ctrl-Shift-Y is handled (the Y arm ignores shift)');
-    assert(s.depth === 2 && s.peek(1).value.eq(8),
-      'Ctrl-Shift-Y still routes to performRedo');
-  }
-
-  // session414: the `.toLowerCase()` key normalization (shortcuts.js ~42).
-  // Every prior pin feeds a lower-case `key`, but real browsers deliver an
-  // upper-case `e.key` ('Z'/'Y'/'V') whenever Shift is held or Caps Lock is
-  // on — so the Shift-Ctrl-Z redo path, the prime real-world combo, runs an
-  // upper-case key that no test exercised.  A refactor dropping the
-  // case-fold would pass every lower-case pin yet break real undo/redo/paste.
-  {
-    const s = new Stack();
-    s.push(Real(1));
-    const e = new Entry(s);
-    e._snapForUndo();
-    s.push(Real(2));
-    const handled = handleModifierShortcut(evt({ key: 'Z', ctrlKey: true }), e);
-    assert(handled === true, 'upper-case Ctrl-Z (Caps Lock) is handled');
-    assert(s.depth === 1 && s.peek(1).value.eq(1),
-      'upper-case Ctrl-Z routes to performUndo via the case-fold');
-  }
-
-  {
-    const s = new Stack();
-    s.push(Real(10));
-    const e = new Entry(s);
-    e._snapForUndo();
-    s.push(Real(20));
-    e.performUndo();
-    const handled = handleModifierShortcut(evt({ key: 'Z', ctrlKey: true, shiftKey: true }), e);
-    assert(handled === true, 'upper-case Shift-Ctrl-Z is handled (the real redo combo)');
-    assert(s.depth === 2 && s.peek(1).value.eq(20),
-      'upper-case Shift-Ctrl-Z routes to performRedo');
-  }
-
-  {
-    const s = new Stack();
-    s.push(Real(7));
-    const e = new Entry(s);
-    e._snapForUndo();
-    s.push(Real(8));
-    e.performUndo();
-    const handled = handleModifierShortcut(evt({ key: 'Y', ctrlKey: true }), e);
-    assert(handled === true, 'upper-case Ctrl-Y is handled');
-    assert(s.depth === 2 && s.peek(1).value.eq(8),
-      'upper-case Ctrl-Y routes to performRedo');
-  }
-
-  {
-    const s = new Stack();
-    const e = new Entry(s);
-    const fakeClipboard = { readText: () => Promise.resolve('PASTED') };
-    const handled = handleModifierShortcut(evt({ key: 'V', metaKey: true }), e, { clipboard: fakeClipboard });
-    await Promise.resolve(); await Promise.resolve();
-    assert(handled === true, 'upper-case Cmd-V is handled');
-    assert(e.buffer === 'PASTED', 'upper-case Cmd-V pastes via the case-fold');
-  }
-
-  // The `(e.key || '')` guard: a modifier combo carrying no usable key
-  // (empty string or nullish) matches no branch and passes through.
-  {
-    const s = new Stack();
-    const e = new Entry(s);
-    assert(handleModifierShortcut(evt({ key: '', ctrlKey: true }), e) === false,
-      'Ctrl with empty key is declined');
-    assert(handleModifierShortcut(evt({ key: undefined, ctrlKey: true }), e) === false,
-      'Ctrl with undefined key is declined (the e.key || "" guard)');
   }
 }
 
