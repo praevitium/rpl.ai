@@ -71,6 +71,14 @@ import { assert, assertThrows } from './helpers.mjs';
          'X^Y^Z right-assoc');
 }
 {
+  const sum = (src, op) => { const s = new Stack(); s.push(Symbolic(parseAlgebra(src))); lookup(op).fn(s); return s.peek(1); };
+  assert(format(sum('Σ(n^2,n,1,100)', 'EVAL')).replace(/\.$/, '') === '338350', 'EVAL sums Σ(n^2,n,1,100) to 338350');
+  assert(isInteger(sum('Σ(2^k,k,0,100)', 'EVAL')) && format(sum('Σ(2^k,k,0,100)', 'EVAL')) === '2535301200456458802993406410751',
+         'EVAL keeps a large Σ exact');
+  assert(format(sum('Σ(k,k,1,10)', 'EVAL')).replace(/\.$/, '') === '55', 'Σ binds its index even where k names a constant');
+  assert(isSymbolic(sum('Σ(k,k,1,M)', 'EVAL')), 'a Σ with a symbolic bound stays symbolic');
+}
+{
   // unary minus
   const a = parseAlgebra('-X');
   assert(a.kind === 'neg' && a.arg.name === 'X', 'parseAlgebra(-X) = neg X');

@@ -1465,6 +1465,8 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
     return Bin(ast.op, l, r);
   }
   if (ast.kind === 'fn') {
+    const sum = ast.name === 'Σ' ? evalSum(ast.args, lookup, fnEval, binGate) : null;
+    if (sum) return sum;
     const evaldArgs = ast.args.map(a => evalAst(a, lookup, fnEval, binGate));
     if (evaldArgs.every(isNum)) {
       const nums = evaldArgs.map(a => a.value);
@@ -1476,6 +1478,22 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
     return Fn(ast.name, evaldArgs);
   }
   return ast;
+}
+
+const SUM_TERMS_MAX = 100000;
+
+function evalSum([body, index, from, to], lookup, fnEval, binGate) {
+  if (!isVar(index)) return null;
+  const lo = exactInt(evalAst(from, lookup, fnEval, binGate));
+  const hi = exactInt(evalAst(to, lookup, fnEval, binGate));
+  if (lo === null || hi === null || hi - lo >= BigInt(SUM_TERMS_MAX)) return null;
+  let total = Num(0n);
+  for (let k = lo; k <= hi; k++) {
+    const term = evalAst(body, (name) => (name === index.name ? Number(k) : lookup(name)), fnEval, binGate);
+    if (term?.kind !== 'num') return null;
+    total = exactIntFold('+', total, term) ?? Num(total.value + term.value);
+  }
+  return total;
 }
 
 /** Default Fn evaluator — uses the KNOWN_FUNCTIONS numeric eval if
