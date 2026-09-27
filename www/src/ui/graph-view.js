@@ -5,12 +5,25 @@ import {
   stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs,
 } from './plot-engine.js';
 import { escapeHtml } from './display.js';
+import { icon } from './icons.js';
 import { isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
 import { varRecall, getLastFitModel, toRadians, fromRadians } from '../rpl/state.js';
 
 export { stackValueToTrace, traceToStackValues };
 
 let _traceSeq = 0;
+
+const PLOT_KINDS = Object.freeze([
+  ['function', 'Function', 'y = f(x)'],
+  ['polar', 'Polar', 'r = f(θ)'],
+  ['parametric', 'Parametric', 'x(t), y(t)'],
+  ['diffeq', 'dy/dx', 'dy/dx = f(x, y)'],
+  ['scatter', 'Scatter', 'Points from ΣDAT or the stack'],
+  ['bar', 'Bar', 'Bar chart from ΣDAT or the stack'],
+  ['hist', 'Histogram', 'Histogram from ΣDAT or the stack'],
+]);
+const RANGE_FIELDS = Object.freeze([['xmin', 'x from'], ['xmax', 'x to'], ['ymin', 'y from'], ['ymax', 'y to']]);
+const IDLE_READOUT = 'Hover, or press T to trace · drag to pan · scroll to zoom';
 
 function angleOpts() {
   return { toRad: toRadians, fromRad: fromRadians };
@@ -47,37 +60,38 @@ export class GraphView {
     this.traces = [];
     this._drag = null;
     this._hover = null;
+    this.tracing = false;
+    this.traceX = null;
     this.el = document.createElement('div');
     this.el.className = 'gr-view';
     this.el.innerHTML = `
-      <div class="ed-toolbar gr-toolbar">
-        <span class="gr-modes" role="group" aria-label="Plot type">
-          <button type="button" data-kind="function" class="active" title="y = f(x)">y=f(x)</button>
-          <button type="button" data-kind="polar" title="r = f(θ)">polar</button>
-          <button type="button" data-kind="parametric" title="x(t), y(t)">param</button>
-          <button type="button" data-kind="diffeq" title="dy/dx = f(x, y)">dy/dx</button>
-          <button type="button" data-kind="scatter" title="Scatter from ΣDAT or stack">scatter</button>
-          <button type="button" data-kind="bar" title="Bar chart">bar</button>
-          <button type="button" data-kind="hist" title="Histogram">hist</button>
-        </span>
-        <button type="button" data-gr="from" title="Copy stack level 1 into a new trace">From stack</button>
-        <button type="button" data-gr="to" title="Push the selected (or last) trace onto the stack">To stack</button>
-        <button type="button" data-gr="reset" title="Reset view">Reset</button>
-        <button type="button" data-gr="fit" title="Fit view to data">Fit</button>
+      <div class="pl-main">
+        <div class="pl-box" tabindex="0" role="application" aria-label="Plot. Arrows pan, plus and minus zoom, 0 resets, T traces, F goes full screen.">
+          <canvas class="gr-canvas" aria-hidden="true"></canvas>
+          <div class="pl-tools" role="toolbar" aria-label="Plot tools">
+            <button type="button" data-gr="zin" title="Zoom in (+)" aria-label="Zoom in">${icon('plus', 'sm')}</button>
+            <button type="button" data-gr="zout" title="Zoom out (−)" aria-label="Zoom out">${icon('minus', 'sm')}</button>
+            <button type="button" data-gr="fit" title="Fit the traces" aria-label="Fit">${icon('fit', 'sm')}</button>
+            <button type="button" data-gr="reset" title="Reset the view (0)" aria-label="Reset">${icon('target', 'sm')}</button>
+            <button type="button" data-gr="trace" title="Trace (T): arrows move along the curve" aria-label="Trace" aria-pressed="false">${icon('trace', 'sm')}</button>
+          </div>
+        </div>
+        <div class="gr-readout" aria-live="polite">${IDLE_READOUT}</div>
       </div>
-      <div class="gr-exprs" aria-label="Expressions"></div>
-      <form class="gr-add">
-        <input type="text" class="gr-add-x" spellcheck="false"
-               placeholder="SIN(X)" aria-label="Expression" />
-        <input type="text" class="gr-add-y hidden" spellcheck="false"
-               placeholder="COS(T)" aria-label="Y expression" />
-        <button type="submit" title="Add expression">Add</button>
-      </form>
-      <div class="gr-canvas-wrap">
-        <canvas class="gr-canvas" aria-label="Graph"></canvas>
+      <div class="pl-side">
+        <div class="pl-kinds" role="group" aria-label="Plot type">${PLOT_KINDS.map(([kind, label, title]) => `<button type="button" class="chip" data-kind="${kind}" title="${escapeHtml(title)}" aria-pressed="${kind === 'function'}">${escapeHtml(label)}</button>`).join('')}</div>
+        <div class="sec-h">Traces<button type="button" class="btn ghost" data-gr="from" title="Plot stack level 1">${icon('plus', 'sm')}Level 1</button></div>
+        <div class="gr-exprs" aria-label="Traces"></div>
+        <form class="gr-add">
+          <input type="text" class="gr-add-x" spellcheck="false" autocomplete="off" placeholder="SIN(X)" aria-label="Expression" />
+          <input type="text" class="gr-add-y hidden" spellcheck="false" autocomplete="off" placeholder="COS(T)" aria-label="Y expression" />
+          <button type="submit" class="btn" title="Add this trace">Add</button>
+        </form>
+        <div class="sec-h">Window</div>
+        <div class="pl-range">${RANGE_FIELDS.map(([key, label], i) => `${i % 2 ? '<span>to</span>' : `<span>${key[0]}</span>`}<input type="text" inputmode="decimal" data-rng="${key}" aria-label="${label}" spellcheck="false" autocomplete="off">`).join('')}</div>
       </div>
-      <div class="gr-readout" aria-live="polite"></div>
     `;
+    this._box = this.el.querySelector('.pl-box');
     this._exprs = this.el.querySelector('.gr-exprs');
     this._addX = this.el.querySelector('.gr-add-x');
     this._addY = this.el.querySelector('.gr-add-y');
@@ -92,24 +106,30 @@ export class GraphView {
   }
 
   _bind() {
-    this.el.querySelector('.gr-modes').addEventListener('click', (ev) => {
+    this.el.querySelector('.pl-kinds').addEventListener('click', (ev) => {
       const btn = ev.target.closest?.('button[data-kind]');
-      if (!btn) return;
-      this.setKind(btn.dataset.kind);
+      if (btn) this.setKind(btn.dataset.kind);
     });
-    this.el.querySelector('[data-gr="reset"]').addEventListener('click', () => {
-      this.view = defaultView();
-      this.draw();
+    this.el.addEventListener('click', (ev) => {
+      const tool = ev.target.closest?.('[data-gr]');
+      if (!tool) return;
+      const act = tool.dataset.gr;
+      if (act === 'zin') this.zoomBy(1 / 1.25);
+      else if (act === 'zout') this.zoomBy(1.25);
+      else if (act === 'fit') this.fitView();
+      else if (act === 'reset') this.resetView();
+      else if (act === 'trace') this.setTraceMode(!this.tracing);
+      else if (act === 'from') this.loadFromStack(1);
     });
-    this.el.querySelector('[data-gr="fit"]').addEventListener('click', () => {
-      this.fitView();
+    this.el.querySelector('.pl-range').addEventListener('change', (ev) => {
+      const input = ev.target.closest?.('input[data-rng]');
+      if (input) this._applyRange(input);
     });
-    this.el.querySelector('[data-gr="from"]').addEventListener('click', () => {
-      this.loadFromStack(1);
+    this.el.querySelector('.pl-range').addEventListener('keydown', (ev) => {
+      ev.stopPropagation();
+      if (ev.key === 'Enter') { ev.preventDefault(); this._applyRange(ev.target); }
     });
-    this.el.querySelector('[data-gr="to"]').addEventListener('click', () => {
-      this.pushToStack();
-    });
+    document.addEventListener('fullscreenchange', () => requestAnimationFrame(() => this.draw()));
     this._form.addEventListener('submit', (ev) => {
       ev.preventDefault();
       this.addFromInputs();
@@ -143,6 +163,7 @@ export class GraphView {
 
     const canvas = this._canvas;
     canvas.addEventListener('pointerdown', (ev) => {
+      this.focus();
       canvas.setPointerCapture(ev.pointerId);
       this._drag = { x: ev.offsetX, y: ev.offsetY, view: { ...this.view } };
       this._hover = null;
@@ -184,13 +205,13 @@ export class GraphView {
     });
 
     this._ro = new ResizeObserver(() => this.draw());
-    this._ro.observe(this.el.querySelector('.gr-canvas-wrap'));
+    this._ro.observe(this._box);
   }
 
   setKind(kind) {
     this._kind = kind;
-    this.el.querySelectorAll('.gr-modes button').forEach(b => {
-      b.classList.toggle('active', b.dataset.kind === kind);
+    this.el.querySelectorAll('.pl-kinds button').forEach(b => {
+      b.setAttribute('aria-pressed', String(b.dataset.kind === kind));
     });
     const spec = TRACE_KINDS[kind];
     if (spec) {
@@ -340,22 +361,12 @@ export class GraphView {
     }
   }
 
-  pushToStack() {
-    const id = this._selectedId
-      || [...this.traces].reverse().find(t => t.enabled)?.id
-      || this.traces[this.traces.length - 1]?.id;
-    if (!id) {
-      this.app?.entry?.flashError?.({ message: 'Graph: no traces' });
-      return;
-    }
-    this.pushTrace(id);
-  }
-
   _addTrace(partial, { fit = false, draw = true } = {}) {
+    const first = !this.traces.length;
     const t = makeTrace(partial);
     this.traces.push(t);
     this._selectedId = t.id;
-    if (fit) this.fitView();
+    if (fit || first) this.fitView();
     if (draw) {
       this._renderExprs();
       this.draw();
@@ -382,37 +393,111 @@ export class GraphView {
   }
 
   _hoverFromEvent(ev) {
+    if (this.tracing) return;
     const rect = this._canvas.getBoundingClientRect();
     const [wx, wy] = pixelToWorld(ev.offsetX, ev.offsetY, this.view, rect.width, rect.height);
     this._hover = { x: wx, y: wy };
-    this._readout.textContent = this._hoverReadout(wx, wy);
+    this._readout.textContent = this._readoutAt(wx, wy);
     this.draw();
   }
 
   _clearHover() {
     this._hover = null;
-    this._readout.textContent = '';
+    if (!this.tracing) this._readout.textContent = IDLE_READOUT;
     this.draw();
   }
 
-  _hoverReadout(wx, wy) {
-    const bits = [`${fmtAxis(wx)}, ${fmtAxis(wy)}`];
+  _readoutAt(wx, wy = null) {
+    const bits = [`x = ${fmtAxis(wx)}`];
+    if (wy != null) bits.push(`y = ${fmtAxis(wy)}`);
     const opts = this._hoverOpts();
     for (const t of this.traces) {
+      if (!t.enabled) continue;
       const yv = evalTraceAtX(t, wx, opts);
       if (!Number.isFinite(yv)) continue;
-      bits.push(`${t.label || t.expr || t.kind}=${fmtAxis(yv)}`);
+      bits.push(`${t.label || t.expr || t.kind} = ${fmtAxis(yv)}`);
     }
-    return bits.join('  ');
+    return bits.join('  ·  ');
+  }
+
+  _cursor() {
+    return this.tracing ? { x: this.traceX } : this._hover;
+  }
+
+  focus() { this._box.focus({ preventScroll: true }); }
+
+  zoomBy(factor) {
+    const v = this.view;
+    this.view = zoomView(v, (v.xmin + v.xmax) / 2, (v.ymin + v.ymax) / 2, factor);
+    this.draw();
+  }
+
+  resetView() {
+    this.view = defaultView();
+    this.draw();
+  }
+
+  nudge(dir) {
+    const v = this.view;
+    const dx = (v.xmax - v.xmin) / 20;
+    const dy = (v.ymax - v.ymin) / 20;
+    if (this.tracing && (dir === 'left' || dir === 'right')) {
+      this.traceX += (dir === 'left' ? -dx : dx) / 4;
+      if (this.traceX < v.xmin) this.view = panView(v, this.traceX - v.xmin - dx, 0);
+      if (this.traceX > v.xmax) this.view = panView(v, this.traceX - v.xmax + dx, 0);
+      this._readout.textContent = this._readoutAt(this.traceX);
+    } else {
+      this.view = panView(v, dir === 'left' ? -dx : dir === 'right' ? dx : 0, dir === 'down' ? -dy : dir === 'up' ? dy : 0);
+    }
+    this.draw();
+  }
+
+  setTraceMode(on) {
+    this.tracing = !!on;
+    const v = this.view;
+    if (this.tracing && (this.traceX == null || this.traceX < v.xmin || this.traceX > v.xmax)) this.traceX = (v.xmin + v.xmax) / 2;
+    this.el.querySelector('[data-gr="trace"]').setAttribute('aria-pressed', String(this.tracing));
+    this._readout.textContent = this.tracing ? this._readoutAt(this.traceX) : IDLE_READOUT;
+    if (this.tracing) this.focus();
+    this.draw();
+  }
+
+  fullscreen() {
+    if (document.fullscreenElement) { document.exitFullscreen?.(); return; }
+    const request = this._box.requestFullscreen?.();
+    const fallback = () => {
+      this.app?.setPlotFocus?.(true);
+      this.app?.toast?.("Full screen isn't allowed here, so the plot fills the window instead.");
+    };
+    if (request?.catch) request.catch(fallback);
+    else if (!request) fallback();
+  }
+
+  _applyRange(input) {
+    const value = Number(String(input.value).trim());
+    const next = { ...this.view, [input.dataset.rng]: value };
+    const valid = Number.isFinite(value) && next.xmin < next.xmax && next.ymin < next.ymax;
+    input.classList.toggle('bad', !valid);
+    if (!valid) return;
+    this.view = next;
+    this.draw();
+  }
+
+  _syncRanges() {
+    for (const input of this.el.querySelectorAll('input[data-rng]')) {
+      if (document.activeElement === input) continue;
+      input.value = String(Number(this.view[input.dataset.rng].toPrecision(4)));
+      input.classList.remove('bad');
+    }
   }
 
   _drawHover(ctx, width, height) {
-    const h = this._hover;
+    const h = this._cursor();
     if (!h || this._drag) return;
     const view = this.view;
     const [px] = worldToPixel(h.x, 0, view, width, height);
     ctx.save();
-    ctx.strokeStyle = this._colors.axis;
+    ctx.strokeStyle = this.tracing ? this._colors.label : this._colors.axis;
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 3]);
     ctx.beginPath();
@@ -422,10 +507,11 @@ export class GraphView {
     ctx.setLineDash([]);
     const opts = this._hoverOpts();
     for (const t of this.traces) {
+      if (!t.enabled) continue;
       const yv = evalTraceAtX(t, h.x, opts);
       if (!Number.isFinite(yv)) continue;
       const [dx, dy] = worldToPixel(h.x, yv, view, width, height);
-      ctx.fillStyle = t.color;
+      ctx.fillStyle = this._traceColor(t);
       ctx.strokeStyle = this._colors.bg;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -474,6 +560,10 @@ export class GraphView {
     this.draw();
   }
 
+  _traceColor(t) {
+    return document.documentElement.dataset.theme === 'classic' ? this._colors.label : t.color;
+  }
+
   _renderExprs() {
     this._exprs.innerHTML = this.traces.map(t => {
       const spec = TRACE_KINDS[t.kind];
@@ -496,10 +586,10 @@ export class GraphView {
         <button type="button" class="gr-swatch" data-trace="${t.id}" data-act="toggle"
                 style="--swatch:${t.color}" title="Toggle" aria-label="Toggle"></button>
         ${body}
-        <button type="button" data-trace="${t.id}" data-act="push" title="Push onto the stack">To stack</button>
-        <button type="button" data-trace="${t.id}" data-act="remove" title="Remove">×</button>
+        <button type="button" class="mini" data-trace="${t.id}" data-act="push" title="Push it onto the stack" aria-label="Push onto the stack">${icon('down', 'sm')}</button>
+        <button type="button" class="mini" data-trace="${t.id}" data-act="remove" title="Remove" aria-label="Remove">${icon('x', 'sm')}</button>
       </div>`;
-    }).join('') || '<div class="gr-empty">From stack copies level 1 here. To stack pushes a trace. Or type an expression and Add.</div>';
+    }).join('') || '<div class="gr-empty">Select an expression on the stack and press PLOT, add level 1 here, or type one below.</div>';
   }
 
   resize() { this.draw(); }
@@ -517,6 +607,7 @@ export class GraphView {
   }
 
   draw() {
+    this._syncRanges();
     const canvas = this._canvas;
     const wrap = canvas.parentElement;
     if (!wrap) return;
@@ -599,8 +690,8 @@ export class GraphView {
     }
     const view = this.view;
     ctx.save();
-    ctx.strokeStyle = t.color;
-    ctx.fillStyle = t.color;
+    ctx.strokeStyle = this._traceColor(t);
+    ctx.fillStyle = this._traceColor(t);
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
@@ -634,6 +725,7 @@ export class GraphView {
     for (const seg of segs || []) {
       for (const p of seg) pts.push(p);
     }
+    ctx.fillStyle = this._traceColor(t);
     const barW = pts.length > 1
       ? Math.abs(worldToPixel(pts[1][0], 0, view, width, height)[0]
         - worldToPixel(pts[0][0], 0, view, width, height)[0]) * 0.7

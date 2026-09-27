@@ -583,7 +583,7 @@ export class Drawers {
       case 'tab': this.open(t.dataset.drawerTab); return;
       case 'wide': app.setPrefs({ drawerWide: !this.prefs.drawerWide }); this.render(); return;
       case 'plot-focus': app.setPlotFocus(!app.plotFocus); return;
-      case 'plot-full': this.graph.el.querySelector('.gr-canvas-wrap')?.requestFullscreen?.().catch(() => app.notifyError('Full screen is not available here.')); return;
+      case 'plot-full': this.graph.fullscreen(); return;
       case 'hist-sort': app.setPrefs({ historySort: this.prefs.historySort === 'newest' ? 'oldest' : 'newest' }); this.render(); return;
       case 'hist-clear': entry.clearHistory(); this._renderHistoryList(); app.toast('Cleared the history'); return;
       case 'cat-family': this.cat.family = t.dataset.family; this._renderCatalogList(); this._body().scrollTop = 0; return;

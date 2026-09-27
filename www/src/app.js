@@ -234,9 +234,11 @@ class App {
   }
 
   setPlotFocus(on) {
+    const plotHadFocus = !!document.activeElement?.closest?.('.pl-box');
     this.plotFocus = !!on;
     $('app').classList.toggle('plot-focus', this.plotFocus);
     if (this.drawers.current === 'plot') this.drawers.render();
+    if (plotHadFocus) this.drawers.graph.focus();
     requestAnimationFrame(() => this.drawers.graph?.resize?.());
   }
 
@@ -460,7 +462,7 @@ class App {
       case 'drop': run(() => dropLevel(this.stack, level)); if (!this.stack.depth) this.clearSelection(); return;
       case 'eval': this.clearSelection(); this.entry.safeRun(() => { moveLevel(this.stack, level, 1); lookup('EVAL').fn(this.stack, this.entry); }, 'EVAL'); return;
       case 'num': this.clearSelection(); this.entry.safeRun(() => { moveLevel(this.stack, level, 1); lookup('→NUM').fn(this.stack, this.entry); }, '→NUM'); return;
-      case 'plot': this.clearSelection(); this.entry.safeRun(() => { moveLevel(this.stack, level, 1); lookup('FUNCTION').fn(this.stack, this.entry); }, 'FUNCTION'); return;
+      case 'plot': this.clearSelection(); this.plotExpression(value.expr); return;
       case 'copy': this._copyText(formatSource(value), `Copied level ${level}`); return;
       case 'store': this._storePrompt(level, anchor); return;
       case 'ask': this.askAssistant(`Explain what is on level ${level} of my stack: ${formatSource(value)}`); return;
@@ -562,6 +564,11 @@ class App {
 
   _writer() {
     return { equation: this.equationEditor, matrix: this.matrixEditor }[this.inputMode] ?? null;
+  }
+
+  focusInput() {
+    if (this.inputMode === 'rpl') this.entry.focus();
+    else this._writer().focus();
   }
 
   cancelWriter() {
@@ -1083,6 +1090,7 @@ class App {
 
   _keyContexts() {
     const contexts = [];
+    if (document.activeElement?.closest?.('.pl-box')) contexts.push('plot');
     if (this.inputMode === 'equation') contexts.push('equation');
     if (this.inputMode === 'matrix') contexts.push('matrix');
     if (this.selection != null) contexts.push('selection');
@@ -1142,6 +1150,12 @@ class App {
       case 'ui.escape': return this._escape();
       case 'writer.commit': this.commitEntry(); return true;
       case 'matrix.nextCell': this.matrixEditor.focus(); return true;
+      case 'plot.pan': this.drawers.graph.nudge(arg); return true;
+      case 'plot.zoomIn': this.drawers.graph.zoomBy(1 / 1.25); return true;
+      case 'plot.zoomOut': this.drawers.graph.zoomBy(1.25); return true;
+      case 'plot.reset': this.drawers.graph.resetView(); return true;
+      case 'plot.trace': this.drawers.graph.setTraceMode(!this.drawers.graph.tracing); return true;
+      case 'plot.fullscreen': this.drawers.graph.fullscreen(); return true;
       case 'eqw.fraction': this.equationEditor.pressFace('÷'); return true;
       case 'eqw.power': this.equationEditor.pressFace('yˣ'); return true;
       case 'eqw.group': this.equationEditor.pressFace('( )'); return true;
@@ -1180,6 +1194,7 @@ class App {
     if (this.popover.isOpen()) { this.popover.close(); return true; }
     if (this.sheets.isOpen()) { this.sheets.close(); return true; }
     if (this.plotFocus) { this.setPlotFocus(false); return true; }
+    if (document.activeElement?.closest?.('.pl-box')) { this.focusInput(); return true; }
     if (this.selection != null) { this.clearSelection(); return true; }
     if (this.entry.error) { this.entry.error = ''; this.entry._emit(); return true; }
     if (this.inputMode !== 'rpl') { this.cancelWriter(); return true; }
