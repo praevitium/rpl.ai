@@ -548,8 +548,6 @@ class App {
     this.input.render();
   }
 
-  /** Put a writer's result on the stack: replace the level or variable
-   *  being edited, or push it. */
   writerCommit(value) {
     const edit = this.pendingEdit;
     if (this.entry.buffer.trim()) this.entry.enter();
@@ -1022,7 +1020,6 @@ class App {
     });
   }
 
-  /** Called by the keypad when a virtual key is pressed. */
   handleKey(key) {
     if (MODIFIER_KINDS.has(key.kind)) { this.setShift(key.kind); return; }
 
@@ -1074,8 +1071,6 @@ class App {
     return this.runAction(binding.action, binding.arg) !== false;
   }
 
-  /** Run an ACTIONS entry.  Returns false when the action does not
-   *  apply right now, so the key falls through to its default. */
   runAction(id, arg) {
     switch (id) {
       case 'palette.open': this.popover.close({ restoreFocus: false }); this.palette.open(); return true;
