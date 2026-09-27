@@ -1704,10 +1704,7 @@ export class ChatBot {
     // chips immediately.  Otherwise the greeting will fire from
     // _onStatus('ready') as before.
     if (this._llm.status === 'ready') {
-      const greeting = this._addAssistantBubble(
-        'New conversation started. Pick a starter or type your own:',
-      );
-      this._renderChips(STARTER_CHIPS, greeting);
+      this._greetWithStarterChips('New conversation started. Pick a starter or type your own:');
     }
     this._inputEl?.focus();
   }
@@ -1769,12 +1766,11 @@ export class ChatBot {
       // Greet on first ready, with starter chips so the user can jump
       // straight into a representative task.
       if (this._history.length === 0) {
-        const greeting = this._addAssistantBubble(
+        this._greetWithStarterChips(
           `${label} ready. I can explain RPL and commands, work through maths ` +
           'problems, and drive the calculator for you — anything I change can be undone ' +
           'with one click. Pick a starter or type your own:',
         );
-        this._renderChips(STARTER_CHIPS, greeting);
       }
     } else if (status === 'error') {
       this._statusEl.textContent = `✗ ${msg || 'Error'}`;
@@ -2726,11 +2722,18 @@ export class ChatBot {
     // Any active chips belong to the previous turn — drop them before
     // the new user bubble lands so they don't sit awkwardly above.
     this._removeActiveChips();
+    this._greetingEl?.remove();
+    this._greetingEl = null;
     const el = document.createElement('div');
     el.className = 'cb-bubble cb-bubble-user';
     el.textContent = text;
     this._messagesEl.appendChild(el);
     this._scrollBottom();
+  }
+
+  _greetWithStarterChips(text) {
+    this._greetingEl = this._addAssistantBubble(text);
+    this._renderChips(STARTER_CHIPS, this._greetingEl);
   }
 
   _addAssistantBubble(markdownText) {
