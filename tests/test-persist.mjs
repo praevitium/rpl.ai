@@ -16,6 +16,8 @@ import {
   varStore, resetHome, currentPath,
   makeSubdir, goInto,
   seedPrng, getPrngSeed, resetPrng, nextPrngUnit,
+  setCoordMode, setDisplay, setWordsize, setBinaryBase, setTextbookMode,
+  setApproxMode, setComplexMode, setUserFlag, clearUserFlag, WORDSIZE_DEFAULT,
 } from '../www/src/rpl/state.js';
 import {
   snapshot, rehydrate, encodeValue, decodeValue,
@@ -658,6 +660,31 @@ assert(isReal(mat.rows[0][1]) && mat.rows[0][1].value.eq(2) &&
     globalThis.localStorage = saved;
     resetHome();
   }
+}
+
+{
+  resetHome();
+  setCoordMode('CYLIN'); setDisplay('FIX', 3); setWordsize(16); setBinaryBase('h');
+  setTextbookMode(false); setApproxMode(true); setComplexMode(true); setUserFlag(5);
+  const saved = JSON.parse(JSON.stringify(snapshot(new Stack())));
+  setCoordMode('RECT'); setDisplay('STD'); setWordsize(WORDSIZE_DEFAULT); setBinaryBase('d');
+  setTextbookMode(true); setApproxMode(false); setComplexMode(false); clearUserFlag(5);
+  rehydrate(saved, new Stack());
+  assert(calcState.coordMode === 'CYLIN' && calcState.displayMode === 'FIX' && calcState.displayDigits === 3,
+    'coordinate mode and number format survive a reload');
+  assert(calcState.wordsize === 16 && calcState.binaryBase === 'h',
+    'wordsize and integer base survive a reload');
+  assert(calcState.textbookMode === false && calcState.approxMode === true && calcState.complexMode === true,
+    'textbook, approximate and complex modes survive a reload');
+  assert(calcState.userFlags.has(5), 'user flags survive a reload');
+  const legacy = { ...saved };
+  delete legacy.modes;
+  setComplexMode(false);
+  rehydrate(legacy, new Stack());
+  assert(calcState.complexMode === false, 'a snapshot saved before modes were persisted leaves modes alone');
+  setCoordMode('RECT'); setDisplay('STD'); setWordsize(WORDSIZE_DEFAULT); setBinaryBase('d');
+  setTextbookMode(true); setApproxMode(false); setComplexMode(false); clearUserFlag(5);
+  resetHome();
 }
 
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');

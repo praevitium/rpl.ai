@@ -33,8 +33,9 @@ import {
   state, currentPath, goHome, goInto, notify,
   setCasVx, resetCasVx,
   setCasModulo, resetCasModulo,
+  COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX,
 } from './state.js';
-import { TYPES, Decimal } from './types.js';
+import { TYPES, Decimal, BIN_BASES } from './types.js';
 import { RPLError } from './stack.js';
 import { formatHpText } from './hp-text.js';
 
@@ -108,6 +109,17 @@ export function snapshot(stack) {
   return {
     version: SCHEMA_VERSION,
     angle:   state.angle,
+    modes: {
+      coordMode: state.coordMode,
+      displayMode: state.displayMode,
+      displayDigits: state.displayDigits,
+      wordsize: state.wordsize,
+      binaryBase: state.binaryBase,
+      textbookMode: state.textbookMode,
+      approxMode: state.approxMode,
+      complexMode: state.complexMode,
+      userFlags: [...state.userFlags],
+    },
     home:    encode(state.home),
     path:    currentPath(),                 // ['HOME', ...] segments
     stack:   stack._items.map(encode),      // level-1-last order
@@ -127,6 +139,25 @@ export function snapshot(stack) {
     // MODULO to the default 13n, matching a fresh boot.
     casModulo: encode(state.casModulo),
   };
+}
+
+function restoreModes(modes) {
+  if (!modes || typeof modes !== 'object') return;
+  if (COORD_MODES.includes(modes.coordMode)) state.coordMode = modes.coordMode;
+  if (DISPLAY_MODES.includes(modes.displayMode)) state.displayMode = modes.displayMode;
+  if (Number.isInteger(modes.displayDigits) && modes.displayDigits >= 0 && modes.displayDigits <= 11) {
+    state.displayDigits = modes.displayDigits;
+  }
+  if (Number.isInteger(modes.wordsize) && modes.wordsize >= WORDSIZE_MIN && modes.wordsize <= WORDSIZE_MAX) {
+    state.wordsize = modes.wordsize;
+  }
+  if (modes.binaryBase === null || BIN_BASES.includes(modes.binaryBase)) state.binaryBase = modes.binaryBase;
+  for (const key of ['textbookMode', 'approxMode', 'complexMode']) {
+    if (typeof modes[key] === 'boolean') state[key] = modes[key];
+  }
+  if (Array.isArray(modes.userFlags)) {
+    state.userFlags = new Set(modes.userFlags.filter((n) => Number.isInteger(n) && n !== 0 && n >= -128 && n <= 128));
+  }
 }
 
 /** Restore from a snapshot.  Throws on shape/version mismatch.
@@ -223,6 +254,8 @@ export function rehydrate(snap, stack) {
   } else {
     resetCasModulo();
   }
+
+  restoreModes(snap.modes);
 
   const items = Array.isArray(snap.stack) ? snap.stack.map(decode) : [];
   stack.restore(items);
