@@ -93,6 +93,7 @@ export class Sheets {
     }
     return `<h4>Data</h4><p>Everything the calculator keeps lives in this browser.</p>
       <div class="set"><b>Back up your work</b><span>Save the stack and HOME directory as a JSON file you can restore later.</span><button type="button" class="btn" data-sh="backup">${icon('down', 'sm')}Download a backup</button></div>
+      ${app.isInstalledApp() ? '' : `<div class="set"><b>Install as an app</b><span>Runs in its own window, starts from the dock or home screen, and works offline.</span><button type="button" class="btn" data-sh="install">${icon('down', 'sm')}Install</button></div>`}
       <div class="set"><b>Restore from a backup</b><span>Replace the stack and HOME tree from a JSON file (undoable).</span><button type="button" class="btn" data-sh="restore">${icon('up', 'sm')}Choose a file</button></div>
       <div class="set"><b>Reset everything</b><span>Clears the stack, every variable, named backups, layout choices and the assistant connection, then reloads. This cannot be undone.</span>${this._confirmReset
         ? `<button type="button" class="btn danger" data-sh="reset-confirm">Yes, erase everything</button>`
@@ -135,6 +136,7 @@ export class Sheets {
       case 'tutor-style': app.setTutorStyle(b.dataset.style); this._render(); return;
       case 'toggle': this._toggle(b.dataset.setting, b.getAttribute('aria-pressed') !== 'true'); this._render(); return;
       case 'backup': app.exportSnapshot(); return;
+      case 'install': app.runAction('app.install'); return;
       case 'restore': this._pickRestore(); return;
       case 'reset': this._confirmReset = true; this._render(); return;
       case 'reset-confirm': this.resetEverything(); return;

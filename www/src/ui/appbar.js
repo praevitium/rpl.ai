@@ -97,7 +97,7 @@ export class AppBar {
       item('settings', 'sliders', 'Settings', shortcutText('settings.open')),
       '<hr>',
     ].join('') : '';
-    const html = `${appItems}${item('tour', 'play', 'Take the tour')}${item('shortcuts', 'keypad', 'Keyboard shortcuts', shortcutText('shortcuts.open'))}${item('catalog', 'book', 'Command reference')}${item('ask', 'spark', 'Ask the assistant', shortcutText('assistant.ask'))}${item('tutor', 'cap', 'Walk me through a problem')}${item('about', 'info', 'About rpl.ai')}`;
+    const html = `${appItems}${item('tour', 'play', 'Take the tour')}${item('shortcuts', 'keypad', 'Keyboard shortcuts', shortcutText('shortcuts.open'))}${item('catalog', 'book', 'Command reference')}${item('ask', 'spark', 'Ask the assistant', shortcutText('assistant.ask'))}${item('tutor', 'cap', 'Walk me through a problem')}${this.app.isInstalledApp() ? '' : item('install', 'down', 'Install as an app')}${item('about', 'info', 'About rpl.ai')}`;
     this.app.popover.open(anchor, html, {
       label: 'Help',
       onClick: (target) => {
@@ -105,7 +105,7 @@ export class AppBar {
         this.app.runAction({
           undo: 'edit.undo', redo: 'edit.redo', keypad: 'keypad.toggle', minimal: 'view.minimal',
           settings: 'settings.open', shortcuts: 'shortcuts.open', ask: 'assistant.ask',
-          tour: 'help.tour', tutor: 'assistant.tutor', catalog: 'catalog.open', about: 'about.open',
+          tour: 'help.tour', tutor: 'assistant.tutor', catalog: 'catalog.open', about: 'about.open', install: 'app.install',
         }[target.dataset.act] ?? target.dataset.act);
       },
     });
