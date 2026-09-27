@@ -592,10 +592,11 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .pop h6 { margin: 4px 8px 6px; font: 600 10px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); }
 .pop .opt { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 2px 8px; width: 100%; text-align: left; border: 0; background: transparent; border-radius: 8px; padding: 7px 8px; align-items: center; color: var(--ink); }
 .pop .opt:hover, .pop .opt.on, .pop .opt:focus-visible { background: var(--r1); outline: none; }
-.pop .opt b { font: 600 12.5px/1.2 var(--font-ui); }
-.pop .opt span { grid-column: 2 / -1; font-size: 11.5px; color: var(--ink3); line-height: 1.35; }
-.pop .opt .ck { color: var(--accent); font-weight: 700; display: grid; place-items: center; }
-.pop .opt em { font: normal 10.5px/1 var(--font-mono); color: var(--ink3); }
+.pop .opt b { font: 600 12.5px/1.2 var(--font-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pop .opt span:not(.ck) { grid-column: 2 / -1; font-size: 11.5px; color: var(--ink3); line-height: 1.35; }
+.pop .opt .ck { grid-column: 1; color: var(--accent); font-weight: 700; display: grid; place-items: center; }
+.pop .opt em { font: normal 10.5px/1 var(--font-mono); color: var(--ink3); white-space: nowrap; }
+.pop .opt em:empty { display: none; }
 .pop hr { border: 0; border-top: 1px solid var(--line); margin: 5px 4px; }
 .pop .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 2px; }
 .pop .grid button { border: 1px solid var(--line); background: var(--r1); border-radius: 8px; padding: 8px 6px; font: 600 10.5px/1.1 var(--font-mono); letter-spacing: .04em; text-align: center; color: var(--ink); }
