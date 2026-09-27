@@ -48,9 +48,6 @@ class App {
   constructor() {
     this.stack = new Stack();
     this.entry = new Entry(this.stack);
-    this.entry._view?.dom?.addEventListener('focusin', () => {
-      this.equationEditor?.blurEquation();
-    });
 
     const versionEl = document.getElementById('versionLabel');
     if (versionEl) versionEl.textContent = BUILD_FULL;
@@ -317,6 +314,9 @@ class App {
       onArrowDownEmpty: () => { if (this.stack.depth >= 1) this.editLevel1(); },
       onArrowLeftEmpty: () => this.prevMenuPage(),
       onArrowRightEmpty:() => { this.stack.depth >= 2 ? this.swapTop() : this.nextMenuPage(); },
+    });
+    this.entry._view.dom.addEventListener('focusin', () => {
+      this.equationEditor?.blurEquation();
     });
     installCommandHover(this.display.cmdline, entryWordAtEvent(this.entry));
     installCommandHover(this.display.stackView, stackWordAtEvent);
