@@ -46,6 +46,33 @@ favicon. The Tauri desktop shell is gone: rpl.ai is a web app that
 installs from the browser and, once loaded, runs offline, because a
 service worker caches every file, the CAS included.
 
+The whole interface is rebuilt as one system. An app bar holds the
+directory as a clickable path, the modes as chips whose menus explain
+each option, search (Ctrl/Cmd-K finds commands by what they do, plus
+settings, menus, variables and constants), undo and redo, and buttons
+for the keypad, Minimal view, Settings and Help. A rail opens the
+Assistant, Catalog (every command family, each command's stack
+diagram and its manual page inline), Variables, History, Plot and
+Characters drawers; on narrow windows they slide over, on phones they
+rise as a sheet. Click a stack level to select it: a toolbar and the
+LEVEL menu edit, pick, roll, drop, plot, store or explain it, drag
+reorders, double-click edits in place, and Enter writes the edit back
+to the same level. The equation and matrix writers live in the input
+with RPL, Enter pushes and Esc steps back one layer at a time. The
+menu bar is always visible, including on phones, and its picker
+reaches VARS, CST, MODES and every command family. The keypad keeps
+the HP 50g positions, relabels itself when ↰, ↱ or α is active,
+prints what ENTER, ⌫ and the arrows will do (DUP, DROP, SELECT,
+EDIT, SWAP), shows every layer on right-click, and comes Full,
+Compact or hidden. TOOLS is now CAT. Themes are Graphite and Paper
+(following the system) and a Classic LCD with glass, pixel grid and
+ghosted annunciators; the plot follows the theme. Minimal view keeps
+only the status line, stack and command line. Every shortcut lives in
+one keymap that a test keeps free of clashes, bare printable keys and
+browser-reserved chords; ⌫ and Enter on an empty line no longer fire
+from key-repeat, and ↰ON runs CONT. Settings covers appearance, the
+assistant and data, including a reset that also clears backups.
+
 ---
 
 ## v0.4.1 — 2026-09-23

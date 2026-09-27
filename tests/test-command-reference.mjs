@@ -4,7 +4,7 @@ import {
   formatReferenceEntry, shortDescription, searchCommands,
 } from '../www/src/ui/command-reference.js';
 import { allOps, hasOp } from '../www/src/rpl/ops.js';
-import { CATEGORIES } from '../www/src/ui/side-panel.js';
+import { CATEGORIES } from '../www/src/ui/drawer.js';
 import { assert } from './helpers.mjs';
 
 /* Command-reference text index — what the AI assistant's lookup_command

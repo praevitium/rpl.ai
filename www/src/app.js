@@ -1,713 +1,812 @@
-/* =================================================================
-   Main orchestrator.  Wires together stack, entry, display, and
-   keyboard and installs a physical-keyboard handler for desktop use.
-   ================================================================= */
-
-import { Stack }        from './rpl/stack.js';
-import { Entry }        from './ui/entry.js';
-import { Display }      from './ui/display.js';
-import { renderKeyboard } from './ui/keyboard.js';
-import { SidePanel }    from './ui/side-panel.js';
-import { clampStackScroll, computeMenuPage } from './ui/paging.js';
-import { handleModifierShortcut } from './ui/shortcuts.js';
+import { Stack } from './rpl/stack.js';
+import { Entry } from './ui/entry.js';
+import { Display, escapeHtml } from './ui/display.js';
+import { Keypad } from './ui/keyboard.js';
+import { MenuBar } from './ui/menubar.js';
+import { AppBar } from './ui/appbar.js';
+import { Drawers, CATEGORIES, familyCommands, UNIT_SYMBOLS } from './ui/drawer.js';
+import { InputArea } from './ui/input-area.js';
+import { Palette } from './ui/palette.js';
+import { Popover } from './ui/popover.js';
+import { Toasts } from './ui/toast.js';
+import { Sheets } from './ui/sheets.js';
+import { chordFromEvent, findBinding } from './ui/actions.js';
+import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
+import { MENU_FAMILIES, menuById } from './ui/menus.js';
+import { MODES } from './ui/modes.js';
+import { computeMenuPage } from './ui/paging.js';
+import { clampLevel, dropLevel, moveLevel, replaceLevel } from './ui/stack-levels.js';
+import { icon } from './ui/icons.js';
+import { installCommandHover, entryWordAtEvent, stackWordAtEvent } from './ui/hover-help.js';
+import { EquationEditor } from './ui/equation-editor.js';
+import { MatrixEditor } from './ui/matrix-editor.js';
 import {
-  interactiveStackMenu, levelUp, levelDown, clampLevel,
-  rollLevel, rollDownToLevel, dropLevel,
-} from './ui/interactive-stack.js';
+  loadCommandReference, findReferenceEntry, formatReferenceEntry, searchCommands, shortDescription,
+} from './ui/command-reference.js';
 import { format, formatSource } from './rpl/formatter.js';
 import {
   state as calcState, subscribe as subscribeState,
-  cycleAngle, toggleApproxMode, cycleCoordMode, toggleComplexMode,
-  setBinaryBase, setDisplay,
   varOrder, varList, varRecall, varStore, currentPath,
-  goInto, goHome, goUp,
-  captureCalcState, restoreCalcState,
+  goInto, goHome, goUp, captureCalcState, restoreCalcState,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook } from './rpl/ops.js';
 import { evalScratch } from './rpl/scratch.js';
-import { CATEGORIES } from './ui/side-panel.js';
 import {
-  loadCommandReference, findReferenceEntry, formatReferenceEntry, searchCommands,
-} from './ui/command-reference.js';
-import {
-  isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic, Real,
+  isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
+  isMatrix, isVector, isReal, isInteger,
 } from './rpl/types.js';
-import './rpl/ops.js';                     // register ops as side effect
-import {
-  loadFromLocalStorage, saveToLocalStorage,
-  exportToFile, importFromFile,
-} from './rpl/persist.js';
+import { UNIT_CATALOG } from './rpl/units.js';
+import { loadFromLocalStorage, saveToLocalStorage, exportToFile, importFromFile } from './rpl/persist.js';
 import { giac } from './rpl/cas/giac-engine.mjs';
-import { FULL as BUILD_FULL } from './build-info.js';
 import { ChatBot } from './ai/chat-bot.js';
-import { CommandPalette } from './ui/command-palette.js';
-import { installCommandHover, entryWordAtEvent, stackWordAtEvent } from './ui/hover-help.js';
 
+const $ = (id) => document.getElementById(id);
+
+const MODIFIER_KINDS = new Set(['shiftL', 'shiftR', 'alpha']);
+const DOUBLE_PRESS_MS = 300;
 
 class App {
   constructor() {
     this.stack = new Stack();
     this.entry = new Entry(this.stack);
-
-    const versionEl = document.getElementById('versionLabel');
-    if (versionEl) versionEl.textContent = BUILD_FULL;
-
-    this.display = new Display({
-      stackView:  document.getElementById('stackView'),
-      cmdline:    document.getElementById('cmdline'),
-      statusLine: document.getElementById('statusLine'),
-      menuBar:    document.getElementById('menuBar'),
-      suspendedProgram: document.getElementById('suspendedProgram'),
-    });
-    // Shift state.  `shift` is one of:
-    //   null         — no shift active
-    //   'shiftL'     — next key takes its left (orange) shifted meaning
-    //   'shiftR'     — next key takes its right (red) shifted meaning
-    //   'alpha'      — next key types its alpha label (single-shot)
-    //   'shiftLLock' / 'shiftRLock' / 'alphaLock'
-    //                — the respective shift stays engaged across
-    //                  multiple presses until explicitly cleared.
-    // All three modifiers share the same gesture model: a single click
-    // engages the one-shot (and a second slow click cancels it); a
-    // rapid double-click promotes the one-shot to lock; any click on a
-    // locked modifier clears it.  Keeping the three keys identical
-    // means users don't have to remember per-key rules — the double-
-    // click threshold is the one thing to know.
+    this.prefs = loadUiPrefs();
     this.shift = null;
-    this._shiftListeners = new Set();
-    this._lastShiftAt = 0;          // timestamp of most recent shiftL/R press
-    this._lastShiftKind = null;     // which shift ('shiftL' / 'shiftR')
-
-    // Active soft-menu state.
-    // `menuAll` holds every slot; only `menuAll[page*6..page*6+6]` is
-    // shown on the LCD at a time.  NXT advances the page, PREV (shift-L
-    // on NXT) or ◀ / ▶ page backward/forward.  `menuSlots` is the
-    // currently-visible 6-slot view — what pressSoftKey(i) dispatches
-    // through.  `menuKind` tags dynamic menus (e.g. VARS) so the state
-    // subscriber can rebuild them when the underlying data changes.
+    this._lastShiftAt = 0;
+    this._lastShiftKind = null;
     this.menuKind = null;
     this.menuAll = [];
     this.menuPage = 0;
-    this.menuSlots = Array(6).fill(null);
+    this.selection = null;
+    this.pendingEdit = null;
+    this.inputMode = 'rpl';
+    this.plotFocus = false;
+    this.showKeyHints = false;
+    this.equationEditor = null;
+    this.matrixEditor = null;
+    this._ctxPage = 0;
+    this._ctxKey = '';
+    this._eqwSlots = null;
+    this._keyRepeat = false;
+    this.reference = null;
 
-    // Stack scroll: 0 means level 1 is at the bottom of the LCD (usual
-    // HP50 view).  ▲ increments, ▼ decrements.  Any stack mutation
-    // snaps back to 0 so newly-pushed results stay visible.
-    this.stackScroll = 0;
-
-    renderKeyboard(this, {
-      softRow: document.getElementById('softRow'),
-      navRow:  document.getElementById('navRow'),
-      keypad:  document.getElementById('keypad'),
+    this.popover = new Popover($('layPop'));
+    this.toasts = new Toasts($('toasts'));
+    this.display = new Display({
+      stackView: $('stackView'), cmdline: $('cmdline'),
+      statusLine: $('statusLine'), suspendedProgram: $('suspendedProgram'),
     });
-
-    this.commandPalette = new CommandPalette({
-      host: document.getElementById('calculator'),
-      getNames: () => allOps(),
-      onInvoke: (name) => this.entry.execOp(name),
-    });
-
-    // Side panel (Commands / History / Characters / Files).  Mounts
-    // itself into #sidePanelRoot and starts hidden.  Browsable catalog
-    // of every registered op in place of a dozen small shifted soft-menus.
-    const sidePanelRoot = document.getElementById('sidePanelRoot');
-    if (sidePanelRoot) {
-      this.sidePanel = new SidePanel({ root: sidePanelRoot, app: this });
-      // Re-render the History tab whenever an entry is committed or an error is logged.
-      // subscribeHistory fires only on actual additions (not every keystroke),
-      // and refresh() is a no-op when the panel is closed or on another tab.
-      this.entry.subscribeHistory(() => {
-        if (this.sidePanel?.tab === 'history') this.sidePanel.refresh();
-      });
-      setGraphicsHook((kind, stack) => {
-        this.sidePanel.openGraph(kind, stack);
-      });
-    }
-
-    // AI assistant — completely decoupled from calculator internals.
-    // We hand it an opaque `tools` object and a `getContext` function;
-    // it never imports anything from rpl/ or the rest of the UI.
-    // The SidePanel mounts the chatBot's DOM on first AI-tab open.
-    // Warm the command-reference index in the background so the
-    // assistant's first lookup doesn't pay the 1.4 MB fetch + parse.
-    let commandRef = null;
-    loadCommandReference().then((m) => { commandRef = m; }).catch(() => {});
-    const displayOpts = () => this.display?.displayOpts;
+    this.appbar = new AppBar({ el: $('appbar'), app: this });
+    this.keypad = new Keypad({ el: $('keys'), app: this });
+    this.menubar = new MenuBar({ el: $('menubar'), app: this });
+    this.input = new InputArea({ top: $('inputTop'), body: $('inputBody'), hint: $('inputHint'), cmdline: $('cmdline'), app: this });
+    this.palette = new Palette({ host: $('layPal'), app: this });
+    this.sheets = new Sheets({ host: $('laySheet'), app: this });
 
     this.chatBot = new ChatBot({
-      tools: {
-        /** Run RPL code exactly as if the user typed it and pressed ENTER.
-         *  This is how the model "places things on the stack" — the RPL
-         *  parser handles numbers, names, expressions, programs, and
-         *  whole sequences indifferently.  Returns the error text the
-         *  LCD flashed, or '' on success, so the model learns when its
-         *  RPL didn't work. */
-        run: (text) => {
-          this.entry.recall(text);
-          this.entry.enter();
-          return this.entry.error || '';
-        },
-        /** Dry-run RPL on a scratch copy of the stack; nothing the user
-         *  sees changes.  Same parse/execute path as `run`. */
-        evaluate: (text) => evalScratch(text, {
-          liveItems: this.stack.save(),
-          displayOpts: displayOpts(),
-        }),
-        /** Insert text at the editor cursor without committing.  Lets
-         *  the model build up an expression piece-by-piece while the
-         *  user watches. */
-        appendToEditor: (text) => {
-          this.entry.type(text);
-        },
-        /** Empty the editor buffer (HP50 ON / cancel). */
-        clearEditor: () => {
-          this.entry.cancel();
-        },
-        /** Read the current editor buffer — what the user is typing. */
-        getEditor: () => this.entry.buffer,
-        /** List variable names in the current directory. */
-        listVars: () => varList(),
-        /** Recall the value bound to `name` (or undefined). */
-        recallVar: (name) => {
-          const v = varRecall(name);
-          if (v === undefined) return undefined;
-          return format(v, displayOpts());
-        },
-        /** Reference-manual entry for one command, as text.  `null`
-         *  when the reference has no page for it (the model then knows
-         *  to fall back to search_commands). */
-        lookupCommand: (name) => {
-          const entry = commandRef ? findReferenceEntry(commandRef, name) : null;
-          const registered = lookup(name) != null;
-          if (!entry) return { text: '', registered, name: String(name ?? '') };
-          return {
-            text: formatReferenceEntry(entry),
-            registered: registered || entry.inApp,
-            name: entry.name,
-          };
-        },
-        /** Ranked command search over names, reference descriptions
-         *  and the side-panel categories. */
-        searchCommands: (query) => searchCommands(query, {
-          names: allOps(), entries: commandRef, categories: CATEGORIES, limit: 12,
-        }),
-        /** Snapshot / restore the whole calculator (stack + variables +
-         *  modes) so a turn's actions can be undone as one unit. */
-        snapshotState: () => ({ stack: this.stack.save(), calc: captureCalcState() }),
-        restoreState: (snap) => {
-          this.entry.cancel();
-          this.entry._snapForUndo();
-          this.stack.restore(snap.stack);
-          restoreCalcState(snap.calc);
-        },
-      },
-      getContext: () => {
-        // `snapshot()` returns the stack ordered level-1-first — same
-        // shape we want for the LLM context (top of stack at index 0).
-        const levels = this.stack.snapshot();
-        const st     = calcState;
-        const opts   = displayOpts();
-        return {
-          stack: levels.slice(0, 8).map(v => format(v, opts)),
-          depth: levels.length,
-          angleMode: st.angle,
-          displayMode: st.displayMode === 'STD'
-            ? 'STD'
-            : `${st.displayMode} ${st.displayDigits}`,
-          exactMode: st.approxMode ? 'APPROX' : 'EXACT',
-          base: { d: 'DEC', h: 'HEX', o: 'OCT', b: 'BIN' }[st.binaryBase] ?? 'DEC',
-          casVar: st.casVx,
-          dir: currentPath().join('/') || 'HOME',
-          vars: varList().slice(0, 40),
-          editor: this.entry.buffer,
-          lastError: this.entry.error || '',
-        };
-      },
+      tools: this._assistantTools(),
+      getContext: () => this._assistantContext(),
+      onStatus: (status) => this.drawers?.setAssistantConnected(status === 'ready'),
     });
+    this.drawers = new Drawers({ rail: $('rail'), el: $('drawer'), scrim: $('scrim'), app: this });
+    setGraphicsHook((kind, stack) => this.drawers.openGraph(kind, stack));
+    loadCommandReference().then((m) => { this.reference = m; this.menubar.render(); }).catch(() => {});
 
-    // The SidePanel is constructed BEFORE chatBot above, and its
-    // _restoreUIState() may have already rendered the AI tab while
-    // chatBot was still undefined (showing an "Initialising assistant…"
-    // placeholder).  Refresh now that chatBot exists so the real chat UI
-    // takes over without requiring user interaction.
-    if (this.sidePanel?.tab === 'ai') this.sidePanel.refresh();
-
-    this._installChromeToggles();
-
-    // Interactive-stack state (set by enterInteractiveStack, read by
-    // the arrow-key dispatch below).  null means "not active";
-    // otherwise { savedMenuAll, savedMenuPage, savedMenuKind } holds the
-    // pre-existing soft menu so we can restore it on exit.
-    this._interactive = null;
-
-    // "Editing level 1" shadow.  When editLevel1() pops level 1 onto
-    // the command line, it stashes the popped value here.  cancelEntry()
-    // restores it if the user escapes out; commitEntry() clears it if
-    // the user presses ENTER.  See editLevel1 for the full lifecycle
-    // explanation.
-    this._pendingEditValue = null;
-
-    // Plumb the Display's click-delegate callbacks into App-level
-    // handlers.  Stack-row click echoes the level's decompiled form
-    // into the command-line editor (entry.type focuses as a side
-    // effect, so the user can keep typing).  Interactive-stack
-    // browse mode is still reachable via ▲ on an empty cmdline.
-    // Indicator click cycles the underlying mode; path segment
-    // click jumps to that directory.
-    this.display.onStackRowClick    = (level) => this.echoStackLevel(level);
-    this.display.onIndicatorClick   = (id)    => this.cycleIndicator(id);
-    this.display.onPathSegmentClick = (index) => this.navigateToPathSegment(index);
-    this.display.stackRowTitle = (level) => this.sidePanel.stackRowTitle(level);
-
-    // Restore persisted state from localStorage before wiring any
-    // autosave listener — otherwise the restore itself would trigger
-    // a redundant save round-trip.  A silent failure here just means
-    // the user boots into an empty HOME, which is what they'd see on
-    // first visit anyway.
+    this._wireDisplay();
     loadFromLocalStorage(this.stack);
 
-    this.stack.subscribe(() => {
-      this.stackScroll = 0;
-      this.display.setStackScroll(0);
-      this.display.renderStack(this.stack);
-    });
-    // Any stack mutation invalidates a pending edit shadow.  Covers
-    // the operator-auto-commit path (pressing e.g. + with a non-empty
-    // buffer commits the buffer via Entry.enter() and then runs the
-    // op) so we never end up with a stale shadow that a later ESC
-    // would mistakenly restore.
-    this.stack.subscribe(() => { this._pendingEditValue = null; });
-    this.entry.subscribe(() => this.display.renderCmdline(this.entry));
+    this.stack.subscribe(() => this._onStackChange());
+    this.entry.subscribe(() => this._onEntryChange());
+    subscribeState(() => this._onStateChange());
 
-    // Mirror global calc state (angle mode, path, future flags) into
-    // the LCD.  When variables change (STO/PURGE) the VARS menu, if
-    // it's the active one, must re-render too.
-    subscribeState((st) => {
-      this.display.setAngleMode(st.angle);
-      this.display.setPath(currentPath());
-      this.display.setApproxAnnunciator(st.approxMode);
-      this.display.setComplexAnnunciator(st.complexMode);
-      this.display.setBinaryBaseAnnunciator(st.binaryBase);
-      this.display.setCoordMode(st.coordMode);
-      this.display.setDisplayAnnunciator(st.displayMode, st.displayDigits);
-      this.display.setHaltAnnunciator(st.halted ? st.halted.kind : null);
-      this.display.setSuspendedProgram(st.halted);
-      if (this.menuKind === 'VARS')  this.showVarsMenu({ preservePage: true });
-      if (this.menuKind === 'MODES') this.showModesMenu({ preservePage: true });
-      // Re-render the stack so Symbolic rows swap between pretty-printed
-      // SVG and flat text at the moment textbookMode flips.  Done
-      // unconditionally on every state event because renderStack is
-      // cheap for the handful of rows on the LCD and reliably picks up
-      // the flag.
-      this.display.renderStack(this.stack);
+    this.entry.attach($('cmdline'), {
+      onCommit: () => { if (!this._runChord('Enter')) this.commitEntry(); },
+      onCancel: () => this.runAction('ui.escape'),
+      onArrowUpEmpty: () => this._runChord('ArrowUp'),
+      onArrowDownEmpty: () => this._runChord('ArrowDown'),
+      onArrowLeftEmpty: () => this._runChord('ArrowLeft'),
+      onArrowRightEmpty: () => this._runChord('ArrowRight'),
+      onBackspaceEmpty: () => this._runChord('Backspace'),
+      onDeleteEmpty: () => this._runChord('Delete'),
     });
-
-    // Attach CodeMirror to the command-line surface.  Entry-level
-    // operations keep using entry.type() / entry.buffer setter etc.; the
-    // EditorView is the live DOM for user-driven editing (mouse, keyboard
-    // shortcuts, selection, autogrow).  App-level keys (Enter, Escape,
-    // arrows-when-empty) route back here via the callbacks below.
-    this.entry.attach(this.display.cmdline, {
-      onCommit:         () => this.commitEntry(),
-      onCancel:         () => this.cancelEntry(),
-      onArrowUpEmpty:   () => this.enterInteractiveStack(),
-      onArrowDownEmpty: () => { if (this.stack.depth >= 1) this.editLevel1(); },
-      onArrowLeftEmpty: () => this.prevMenuPage(),
-      onArrowRightEmpty:() => { this.stack.depth >= 2 ? this.swapTop() : this.nextMenuPage(); },
-    });
-    this.entry._view.dom.addEventListener('focusin', () => {
-      this.equationEditor?.blurEquation();
-    });
+    this.input.attachEditorChrome();
+    this.entry._view.dom.addEventListener('focusin', () => this.equationEditor?.blurEquation());
     installCommandHover(this.display.cmdline, entryWordAtEvent(this.entry));
     installCommandHover(this.display.stackView, stackWordAtEvent);
 
-    this.display.renderStack(this.stack);
-    this.display.renderCmdline(this.entry);
-
-    // Note: we deliberately DO NOT auto-focus the editor on boot.  Focus
-    // arrives on first interaction — clicking the cmdline, any text
-    // insertion (virtual-keypad press, CMD recall, ▼ edit-level-1), or
-    // the first non-modifier physical-keyboard press (see
-    // _installKeyboardShortcuts).  This keeps the app from stealing
-    // focus from a host page before the user has actually engaged.
-    this.display.setMenu(['', '', '', '', '', '']);
-    this.display.setAngleMode(calcState.angle);
-    this.display.setPath(currentPath());
-    this.display.setApproxAnnunciator(calcState.approxMode);
-    this.display.setComplexAnnunciator(calcState.complexMode);
-    this.display.setBinaryBaseAnnunciator(calcState.binaryBase);
-    this.display.setCoordMode(calcState.coordMode);
-    this.display.setDisplayAnnunciator(calcState.displayMode, calcState.displayDigits);
-    this.display.setHaltAnnunciator(calcState.halted ? calcState.halted.kind : null);
-    this.display.setSuspendedProgram(calcState.halted);
-
-    this._installKeyboardShortcuts();
+    this._applyPrefs();
+    this.showMenu(this.prefs.menu ?? (varOrder().length ? 'VARS' : 'STACK'), { remember: false });
+    if (this.prefs.drawer) this.drawers.open(this.prefs.drawer);
+    this._installKeyboard();
     this._installAutosave();
+    this.renderAll();
   }
 
-  /* ================================================================
-     Persistence
-     ================================================================ */
+  /* ---------------- rendering ---------------- */
 
-  /** Save on every stack or state change, coalesced on a microtask
-   *  so a program pushing many values in a row only writes once. */
+  renderAll() {
+    this.appbar.render();
+    this.display.renderStack(this.stack);
+    this.display.renderCmdline(this.entry);
+    this.display.setSuspendedProgram(calcState.halted);
+    this.renderStatus();
+    this.input.render();
+    this.menubar.render();
+    this.keypad.update();
+  }
+
+  renderStatus() {
+    this.display.renderStatus({
+      classic: this.prefs.theme === 'classic',
+      minimal: this.prefs.minimal,
+      shift: this.shift,
+      halted: calcState.halted ? calcState.halted.kind : null,
+      editing: this.pendingEdit?.kind === 'level' ? this.pendingEdit.level : null,
+    });
+  }
+
+  _onStackChange() {
+    if (this.selection != null) {
+      const clamped = clampLevel(this.selection, this.stack.depth);
+      this.selection = clamped || null;
+      this.display.selectedLevel = this.selection;
+    }
+    if (this.pendingEdit?.kind === 'level' && this.stack.peek(this.pendingEdit.level) !== this.pendingEdit.value) {
+      this.pendingEdit = null;
+      this.input.render();
+    }
+    this.display.renderStack(this.stack);
+    this.appbar.render();
+    this.menubar.render();
+    this.keypad.update();
+  }
+
+  _onEntryChange() {
+    this.display.renderCmdline(this.entry);
+    if (this.entry.buffer && this.selection != null) this.clearSelection();
+    this.input.render();
+    this.keypad.update();
+  }
+
+  _onStateChange() {
+    this.appbar.render();
+    this.renderStatus();
+    this.display.setSuspendedProgram(calcState.halted);
+    if (this.menuKind === 'VARS') this.showVarsMenu({ preservePage: true });
+    else if (this.menuKind === 'MODES') this.showModesMenu({ preservePage: true });
+    else this.menubar.render();
+    this.display.renderStack(this.stack);
+  }
+
+  /* ---------------- preferences ---------------- */
+
+  setPrefs(patch) {
+    this.prefs = normalizeUiPrefs({ ...this.prefs, ...patch });
+    saveUiPrefs(this.prefs);
+  }
+
+  _applyPrefs() {
+    const root = document.documentElement;
+    root.dataset.theme = this.prefs.theme;
+    if (this.prefs.minimal) root.dataset.view = 'minimal';
+    else delete root.dataset.view;
+    if (this.prefs.minimalMenu) root.dataset.minimalMenu = 'on';
+    else delete root.dataset.minimalMenu;
+  }
+
+  setTheme(theme) {
+    this.setPrefs({ theme });
+    this._applyPrefs();
+    this.renderAll();
+    this.drawers.graph?.draw?.();
+  }
+
+  setMinimal(on) {
+    this.setPrefs({ minimal: !!on });
+    this._applyPrefs();
+    this.renderAll();
+    if (on) this.toast('Minimal view. Press it again, or the corner button, to return.', { action: 'Leave', onAction: () => this.setMinimal(false) });
+  }
+
+  setMinimalMenu(on) {
+    this.setPrefs({ minimalMenu: !!on });
+    this._applyPrefs();
+  }
+
+  setKeypadLayout(layout) {
+    if (layout !== 'hidden') this._lastKeypad = layout;
+    this.setPrefs({ keypad: layout });
+    this.keypad.update();
+    this.appbar.render();
+    if (layout === 'hidden') this.toast('Keypad hidden', { action: 'Show', onAction: () => this.setKeypadLayout(this._lastKeypad ?? 'full') });
+  }
+
+  setPlotFocus(on) {
+    this.plotFocus = !!on;
+    $('app').classList.toggle('plot-focus', this.plotFocus);
+    this.drawers.graph?.resize?.();
+  }
+
+  /* ---------------- notifications ---------------- */
+
+  toast(message, opts) { this.toasts.show(message, opts); }
+
+  notifyError(message) { this.toasts.show(message, { error: true, timeout: 5200 }); }
+
+  /* ---------------- assistant ---------------- */
+
+  _assistantTools() {
+    const displayOpts = () => this.display.displayOpts;
+    return {
+      run: (text) => {
+        this.entry.recall(text);
+        this.entry.enter();
+        return this.entry.error || '';
+      },
+      evaluate: (text) => evalScratch(text, { liveItems: this.stack.save(), displayOpts: displayOpts() }),
+      appendToEditor: (text) => this.entry.type(text),
+      clearEditor: () => this.entry.cancel(),
+      getEditor: () => this.entry.buffer,
+      listVars: () => varList(),
+      recallVar: (name) => {
+        const v = varRecall(name);
+        return v === undefined ? undefined : format(v, displayOpts());
+      },
+      lookupCommand: (name) => {
+        const entry = this.reference ? findReferenceEntry(this.reference, name) : null;
+        const registered = lookup(name) != null;
+        if (!entry) return { text: '', registered, name: String(name ?? '') };
+        return { text: formatReferenceEntry(entry), registered: registered || entry.inApp, name: entry.name };
+      },
+      searchCommands: (query) => searchCommands(query, { names: allOps(), entries: this.reference, categories: CATEGORIES, limit: 12 }),
+      snapshotState: () => ({ stack: this.stack.save(), calc: captureCalcState() }),
+      restoreState: (snap) => {
+        this.entry.cancel();
+        this.entry._snapForUndo();
+        this.stack.restore(snap.stack);
+        restoreCalcState(snap.calc);
+      },
+    };
+  }
+
+  _assistantContext() {
+    const levels = this.stack.snapshot();
+    const st = calcState;
+    const opts = this.display.displayOpts;
+    return {
+      stack: levels.slice(0, 8).map((v) => format(v, opts)),
+      depth: levels.length,
+      angleMode: st.angle,
+      displayMode: st.displayMode === 'STD' ? 'STD' : `${st.displayMode} ${st.displayDigits}`,
+      exactMode: st.approxMode ? 'APPROX' : 'EXACT',
+      base: { d: 'DEC', h: 'HEX', o: 'OCT', b: 'BIN' }[st.binaryBase] ?? 'DEC',
+      casVar: st.casVx,
+      dir: currentPath().join('/') || 'HOME',
+      vars: varList().slice(0, 40),
+      editor: this.entry.buffer,
+      lastError: this.entry.error || '',
+    };
+  }
+
+  askAssistant(text = '') {
+    this.drawers.open('assistant');
+    const t = String(text).trim();
+    if (!t) return;
+    requestAnimationFrame(() => {
+      if (this.chatBot._llm?.loadedModelId) this.chatBot.sendUserMessage(t);
+      else this.chatBot.setDraft(t);
+    });
+  }
+
+  /* ---------------- persistence ---------------- */
+
   _installAutosave() {
     let pending = false;
     const schedule = () => {
       if (pending) return;
       pending = true;
-      queueMicrotask(() => {
-        pending = false;
-        saveToLocalStorage(this.stack);
-      });
+      queueMicrotask(() => { pending = false; saveToLocalStorage(this.stack); });
     };
     this.stack.subscribe(schedule);
     subscribeState(schedule);
   }
 
-  /** Brand tag cycles chrome density (full → simple → minimal) via a
-   *  class on <body>; subtitle toggles the side panel.  Mode class is
-   *  set here so the first paint already matches whatever the user
-   *  last chose — kept in memory only for now.
-   *
-   *  Settings reset is the global `calc_reset()` function — type it
-   *  into the DevTools console to wipe localStorage and reload. */
-  _installChromeToggles() {
-    const MODES = ['full', 'simple', 'minimal'];
-    const CHROME_KEY = 'hp50.ui.chrome';
-    let savedMode;
-    try { savedMode = localStorage.getItem(CHROME_KEY); } catch { /* ignore */ }
-    let idx = MODES.includes(savedMode) ? MODES.indexOf(savedMode) : 0;
-    document.body.classList.add(`mode-${MODES[idx]}`);
-    document.querySelector('.brand')?.addEventListener('click', () => {
-      document.body.classList.remove(`mode-${MODES[idx]}`);
-      idx = (idx + 1) % MODES.length;
-      document.body.classList.add(`mode-${MODES[idx]}`);
-      try { localStorage.setItem(CHROME_KEY, MODES[idx]); } catch { /* ignore */ }
-    });
-    document.querySelector('.model')?.addEventListener('click', () => {
-      const sp = this.sidePanel;
-      if (!sp) return;
-      if (sp.isOpen()) sp.close();
-      else sp.open(sp.tab);
-    });
-  }
-
-  /** Download the current stack + HOME directory as a JSON snapshot.
-   *  Called from the side-panel Files tab.  Errors are flashed on the
-   *  LCD rather than raised — the user can just try again. */
   exportSnapshot() {
-    try {
-      const filename = exportToFile(this.stack);
-      this.entry.flashNotice(`Saved ${filename}`);
-    } catch (e) { this.entry.flashError({ message: `Export failed: ${e.message}` }); }
+    try { this.toast(`Saved ${exportToFile(this.stack)}`); }
+    catch (e) { this.notifyError(`Export failed: ${e.message}`); }
   }
 
-  /** Load a snapshot from the given File object, replacing the stack
-   *  and HOME tree.  Also used by the side-panel Files tab. */
   async importSnapshotFromFile(file) {
-    try { await importFromFile(file, this.stack); }
-    catch (e) { this.entry.flashError({ message: `Import failed: ${e.message}` }); }
+    this.entry._snapForUndo();
+    try {
+      await importFromFile(file, this.stack);
+      this.toast(`Restored from ${file.name}`, { action: 'Undo', onAction: () => this.runAction('edit.undo') });
+    } catch (e) {
+      this.entry._dropNoOpUndoStep();
+      this.notifyError(`Couldn't restore ${file.name}: ${e.message}`);
+    }
   }
 
-  /** Called by the MODE meta-key.  A single press cycles the angle
-   *  mode; a full MODE dialog is future work. */
-  cycleAngleMode() { cycleAngle(); }
+  /* ---------------- stack display wiring ---------------- */
 
-  /** Open / close the side panel on the chosen tab.  Used by the 📖
-   *  button (→ 'commands').  Pressing the same tab again closes the
-   *  panel, matching what you'd expect from a toggle. */
-  toggleSidePanel(tab = 'commands') {
-    if (!this.sidePanel) return;
-    this.sidePanel.toggle(tab);
-  }
-
-  /* ================================================================
-     MODES soft-menu.
-
-     Presents display / angle mode toggles on F1..F6 when MODE is
-     pressed.  On a real HP50 this lives inside a full-screen MODE
-     dialog (Flag -17 for angle, Flag -80 for textbook, etc.); our
-     soft-menu version gives the user keypad access to the flags
-     that matter most for day-to-day use.
-
-     F1  ANGL    cycle RAD → DEG → GRD (label shows the active mode)
-     F2  TXT     toggle textbookMode (label shows '→TXT' in flat mode,
-                 '→FLT' in textbook mode — user reads "press to switch")
-     F3  HEX     set binary display base to hex
-     F4  DEC     set binary display base to decimal
-     F5  OCT     set binary display base to octal
-     F6  BIN     set binary display base to binary
-     F7  EXA/APX toggle EXACT ↔ APPROX numeric-eval mode
-
-     The menu labels refresh whenever state changes (angle mode,
-     textbook mode) so the user always sees the current mode without
-     having to look at the annunciator.  Labels rebuild on each
-     render because `showModesMenu` re-captures the live state values
-     when called.
-     ================================================================ */
-  showModesMenu(opts = {}) {
-    // Re-read current state each call so the labels stay live.  When
-    // the user presses ANGL or TXT, the follow-up state event is also
-    // caught by the subscribeState hook below which rebuilds the
-    // MODES menu — so the user sees the updated label even if they
-    // triggered the toggle via other means (e.g., typing ANGL in
-    // alpha mode).
-    //
-    // `preservePage`: keep the current page index on rebuild so a
-    // user who clicks the EXA→APX slot on page 2 doesn't get kicked
-    // back to page 1 by the self-rebuild that follows the state
-    // change.  The initial call from MODE leaves it false so the
-    // menu always opens on page 1.
-    const prevPage = this.menuPage;
-    const rebuild = () => this.showModesMenu({ preservePage: true });
-    const slots = [
-      { label: `ANGL ${calcState.angle}`,
-        onPress: () => { cycleAngle(); rebuild(); } },
-      { label: calcState.textbookMode ? 'TXT→FLT' : 'FLT→TXT',
-        onPress: () => {
-          this.entry.safeRun(() =>
-            lookup(calcState.textbookMode ? 'FLAT' : 'TEXTBOOK').fn(this.stack, this.entry), calcState.textbookMode ? 'FLAT' : 'TEXTBOOK');
-          rebuild();
-        } },
-      { label: 'HEX',
-        onPress: () => this.entry.safeRun(() => lookup('HEX').fn(this.stack, this.entry), 'HEX') },
-      { label: 'DEC',
-        onPress: () => this.entry.safeRun(() => lookup('DEC').fn(this.stack, this.entry), 'DEC') },
-      { label: 'OCT',
-        onPress: () => this.entry.safeRun(() => lookup('OCT').fn(this.stack, this.entry), 'OCT') },
-      { label: 'BIN',
-        onPress: () => this.entry.safeRun(() => lookup('BIN').fn(this.stack, this.entry), 'BIN') },
-      // EXACT/APPROX toggle.  Label shows the target mode the user
-      // would switch INTO if they pressed the key, matching the
-      // TXT→FLT / FLT→TXT pattern above.
-      { label: calcState.approxMode ? 'APX→EXA' : 'EXA→APX',
-        onPress: () => {
-          this.entry.safeRun(() =>
-            lookup(calcState.approxMode ? 'EXACT' : 'APPROX').fn(this.stack, this.entry), calcState.approxMode ? 'EXACT' : 'APPROX');
-          rebuild();
-        } },
-      // Real/Complex toggle (HP50 flag -103).  Label shows the target
-      // mode, matching the EXA→APX pattern above.  CMPLX is a pure
-      // toggle, so the same op switches either direction.
-      { label: calcState.complexMode ? 'CMP→REAL' : 'REAL→CMP',
-        onPress: () => {
-          this.entry.safeRun(() => lookup('CMPLX').fn(this.stack, this.entry), 'CMPLX');
-          rebuild();
-        } },
-    ];
-    this.menuKind = 'MODES';
-    this.menuAll = slots;
-    this.menuPage = opts.preservePage ? prevPage : 0;
-    this._renderMenuPage();
-  }
-
-  /* ================================================================
-     Menu helper
-
-     A single "commit-and-run" factory shared by every soft-menu whose
-     F-keys just dispatch to a registered op.  Keeps each menu
-     definition to a single array of `{label, onPress}` entries.
-     ================================================================ */
-  _run(opName) {
-    return () => {
-      if (this.entry.buffer.trim().length > 0) this.entry.enter();
-      this.entry.safeRun(() => lookup(opName).fn(this.stack, this.entry), opName);
+  _wireDisplay() {
+    const d = this.display;
+    d.emptyHtml = `<div class="st-empty"><h5>The stack is empty</h5><p>Type a number and press Enter. Commands take their arguments from the stack and leave their results on it.</p><div class="keysline"><span class="kc">2</span> <span class="kc">Enter</span> <span class="kc">3</span> <span class="kc">+</span> → 5</div><div class="chipset" style="justify-content:center"><button type="button" class="chip" data-empty-act="equation">${icon('fx', 'sm')}Write an equation</button><button type="button" class="chip" data-empty-act="solve">Solve x² − 5x + 6 = 0</button><button type="button" class="chip" data-empty-act="plot">${icon('plot', 'sm')}Plot sin x</button><button type="button" class="chip" data-empty-act="ask">${icon('spark', 'sm')}Ask the assistant</button></div></div>`;
+    d.onEmptyAction = (act) => {
+      if (act === 'equation') this.setInputMode('equation');
+      else if (act === 'solve') { this.entry.recall('`X^2-5*X+6=0` `X` SOLVE'); this.commitEntry(); }
+      else if (act === 'plot') { this.entry.recall('`SIN(X)` FUNCTION'); this.commitEntry(); }
+      else if (act === 'ask') this.askAssistant();
+    };
+    d.rowActionsHtml = (level, value) => `<div class="st-acts" role="toolbar" aria-label="Level ${level} actions"><button type="button" data-row-act="edit" title="Edit (Enter)">${icon('edit', 'sm')}Edit</button><button type="button" data-row-act="pick" title="Copy it to level 1 (PICK)">Pick</button><button type="button" data-row-act="roll" title="Move it to level 1 (ROLL)">Roll</button>${isSymbolic(value) ? `<button type="button" data-row-act="plot" title="Plot it">${icon('plot', 'sm')}</button>` : ''}<button type="button" data-row-act="drop" title="Drop it (⌫)" aria-label="Drop">${icon('trash', 'sm')}</button><button type="button" data-row-act="more" title="More actions" aria-label="More actions">${icon('more', 'sm')}</button></div>`;
+    d.onRowClick = (level) => this.selectLevel(this.selection === level ? null : level);
+    d.onRowDoubleClick = (level) => this.editLevel(level);
+    d.onRowAction = (level, act, el) => this.levelAction(act, level, el);
+    d.onRowMove = (from, to) => this._moveLevel(from, to);
+    d.onStatusAction = (kind, data, el) => {
+      if (kind === 'mode') this.appbar.openModeMenu(data.mode, el);
+      else if (kind === 'path') this.navigateToPathSegment(Number(data.index));
+      else if (kind === 'fullscreen') document.documentElement.requestFullscreen?.().catch(() => this.notifyError('Full screen is not available here.'));
+      else if (kind === 'leave-minimal') this.setMinimal(false);
     };
   }
 
-  /** Push a raw number onto the stack.  Used by menu slots that
-   *  produce a constant (e, π, etc.). */
+  /* ---------------- selection ---------------- */
+
+  selectLevel(level) {
+    const depth = this.stack.depth;
+    const next = level == null || !depth ? null : clampLevel(level, depth);
+    if (next === this.selection) return;
+    this.selection = next;
+    this._ctxPage = 0;
+    this.display.selectedLevel = next;
+    this.display.renderStack(this.stack);
+    this.menubar.render();
+    this.keypad.update();
+    if (next != null) this.display.announce(`Level ${next} selected`);
+  }
+
+  clearSelection() { this.selectLevel(null); }
+
+  levelAction(act, level = this.selection, anchor = null) {
+    if (level == null || level > this.stack.depth) return;
+    const value = this.stack.peek(level);
+    const run = (fn) => {
+      this.entry._snapForUndo();
+      try { fn(); } catch (e) { this.entry._dropNoOpUndoStep(); this.entry.flashError(e); }
+    };
+    switch (act) {
+      case 'edit': this.editLevel(level); return;
+      case 'echo': this.clearSelection(); this.entry.type(`${this.entry.buffer && !/\s$/.test(this.entry.buffer) ? ' ' : ''}${formatSource(value)}`); this.entry.focus(); return;
+      case 'pick': run(() => this.stack.push(value)); this.selectLevel(level + 1); return;
+      case 'roll': run(() => moveLevel(this.stack, level, 1)); this.selectLevel(1); return;
+      case 'rolld': run(() => moveLevel(this.stack, 1, level)); this.selectLevel(level); return;
+      case 'drop': run(() => dropLevel(this.stack, level)); if (!this.stack.depth) this.clearSelection(); return;
+      case 'eval': this.clearSelection(); this.entry.safeRun(() => { moveLevel(this.stack, level, 1); lookup('EVAL').fn(this.stack, this.entry); }, 'EVAL'); return;
+      case 'num': this.clearSelection(); this.entry.safeRun(() => { moveLevel(this.stack, level, 1); lookup('→NUM').fn(this.stack, this.entry); }, '→NUM'); return;
+      case 'plot': this.clearSelection(); this.entry.safeRun(() => { moveLevel(this.stack, level, 1); lookup('FUNCTION').fn(this.stack, this.entry); }, 'FUNCTION'); return;
+      case 'copy': this._copyText(formatSource(value), `Copied level ${level}`); return;
+      case 'store': this._storePrompt(level, anchor); return;
+      case 'ask': this.askAssistant(`Explain what is on level ${level} of my stack: ${formatSource(value)}`); return;
+      case 'more': this._levelMenu(level, anchor); return;
+    }
+  }
+
+  _levelMenu(level, anchor) {
+    const value = this.stack.peek(level);
+    const item = (act, ico, label, hint = '') => `<button type="button" class="opt" data-act="${act}"><span class="ck">${icon(ico, 'sm')}</span><b>${escapeHtml(label)}</b><em>${escapeHtml(hint)}</em></button>`;
+    const html = `<h6>Level ${level}</h6>${item('edit', 'edit', 'Edit', '↵')}${item('echo', 'chr', 'Copy into the command line')}${item('pick', 'copy', 'Copy to level 1 (PICK)')}${item('roll', 'up', 'Move to level 1 (ROLL)')}${item('rolld', 'down', 'Move level 1 here (ROLLD)')}${item('eval', 'play', 'Evaluate (EVAL)')}${item('num', 'chr', 'To a number (→NUM)')}${isSymbolic(value) ? item('plot', 'plot', 'Plot it') : ''}${item('store', 'folder', 'Store in a variable…')}${item('copy', 'copy', 'Copy as text')}${item('ask', 'spark', 'Ask the assistant about it')}<hr>${item('drop', 'trash', 'Drop', '⌫')}`;
+    this.popover.open(anchor, html, {
+      label: `Level ${level}`,
+      onClick: (t) => { this.popover.close({ restoreFocus: false }); this.levelAction(t.dataset.act, level, anchor); },
+    });
+  }
+
+  _storePrompt(level, anchor) {
+    const html = `<form data-store><h6>Store level ${level} in</h6><div style="padding:4px 6px 6px"><input type="text" name="name" placeholder="Variable name, like R1" aria-label="Variable name" spellcheck="false" autocomplete="off" style="width:100%;height:32px;border-radius:8px;border:1px solid var(--line2);background:var(--well);color:var(--ink);padding:0 9px;font:13px/1 var(--font-mono)"></div><div class="note">Same as <code>\`NAME\` STO</code>. Level ${level} stays on the stack.</div><div style="display:flex;justify-content:flex-end;padding:6px"><button type="submit" class="btn pri">Store</button></div></form>`;
+    const pop = this.popover.open(anchor ?? this.display.stackView.querySelector('.st-row.sel'), html, { label: 'Store' });
+    const form = pop.querySelector('form');
+    requestAnimationFrame(() => form.elements.name.focus());
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = form.elements.name.value.trim();
+      const value = this.stack.peek(level);
+      this.entry._snapForUndo();
+      try {
+        varStore(name, value);
+        this.popover.close();
+        this.toast(`Stored in ${name}`, { action: 'Undo', onAction: () => this.runAction('edit.undo') });
+      } catch (err) {
+        this.entry._dropNoOpUndoStep();
+        this.notifyError(`Couldn't store in “${name}”: ${err.message}`);
+      }
+    });
+  }
+
+  _moveLevel(from, to) {
+    if (from === to) return;
+    this.entry._snapForUndo();
+    try { moveLevel(this.stack, from, to); } catch (e) { this.entry._dropNoOpUndoStep(); this.entry.flashError(e); return; }
+    this.selectLevel(to);
+  }
+
+  async _copyText(text, message) {
+    try { await navigator.clipboard.writeText(text); this.toast(message); }
+    catch { this.notifyError('The clipboard is not available here.'); }
+  }
+
+  /* ---------------- editing a level or a variable ---------------- */
+
+  editLevel(level) {
+    if (this.stack.depth < level) { this.entry.flashError({ message: 'Too few arguments' }); return; }
+    const value = this.stack.peek(level);
+    this.clearSelection();
+    this._beginEdit({ kind: 'level', level, value, label: `Editing level ${level}` });
+  }
+
+  editVariable(name) {
+    const value = varRecall(name);
+    if (value === undefined) return;
+    this._beginEdit({ kind: 'var', name, value, label: `Editing ${name}` });
+  }
+
+  _beginEdit(edit) {
+    if (this.entry.buffer.trim()) this.commitEntry();
+    if (this.entry.buffer.trim()) return;
+    this.pendingEdit = edit;
+    const { value } = edit;
+    if (isSymbolic(value) || (isName(value) && edit.kind === 'level')) {
+      this.setInputMode('equation', { value });
+    } else if (isMatrix(value) || isVector(value)) {
+      this.setInputMode('matrix', { value });
+    } else {
+      this.setInputMode('rpl');
+      this.entry.recall(formatSource(value));
+    }
+    this.renderStatus();
+    this.input.render();
+  }
+
+  _endEdit() {
+    this.pendingEdit = null;
+    this.renderStatus();
+    this.input.render();
+  }
+
+  /** Put a writer's result on the stack: replace the level or variable
+   *  being edited, or push it. */
+  writerCommit(value) {
+    const edit = this.pendingEdit;
+    if (this.entry.buffer.trim()) this.entry.enter();
+    this.entry._snapForUndo();
+    if (edit?.kind === 'level' && this.stack.peek(edit.level) === edit.value) replaceLevel(this.stack, edit.level, [value]);
+    else if (edit?.kind === 'var') varStore(edit.name, value);
+    else this.stack.push(value);
+    this._endEdit();
+    this.setInputMode('rpl');
+    if (edit?.kind === 'var') this.toast(`Stored ${edit.name}`);
+  }
+
   commitEntryAndPush(values) {
-    if (this.entry.buffer.trim().length > 0) this.entry.enter();
-    const list = Array.isArray(values) ? values : [values];
-    for (const value of list) this.stack.push(value);
+    if (this.entry.buffer.trim()) this.entry.enter();
+    for (const value of Array.isArray(values) ? values : [values]) this.stack.push(value);
   }
 
-  _pushReal(value) {
-    return () => this.commitEntryAndPush(Real(value));
+  _commitEdit() {
+    const edit = this.pendingEdit;
+    const before = this.stack.depth;
+    this.entry.enter();
+    if (this.entry.error) { this.entry.focus(); return; }
+    const added = this.stack.depth - before;
+    if (edit.kind === 'level' && added >= 0) {
+      const origLevel = edit.level + added;
+      if (this.stack.peek(origLevel) === edit.value) {
+        const items = this.stack.save();
+        const results = items.splice(items.length - added, added);
+        const at = items.length - edit.level;
+        items.splice(at, 1, ...results);
+        this.stack.restore(items);
+      }
+    } else if (edit.kind === 'var' && added === 1) {
+      varStore(edit.name, this.stack.pop());
+      this.toast(`Stored ${edit.name}`);
+    }
+    this._endEdit();
   }
 
-  /** "Not yet implemented" handler for menu slots whose op hasn't
-   *  been registered.  Keeps the label visible so the user sees the
-   *  full menu layout. */
-  _stub(label) {
-    return () => this.entry.flashError({ message: `${label}: not yet implemented` });
+  cancelEdit() {
+    if (!this.pendingEdit) return false;
+    this.entry.cancel();
+    this._endEdit();
+    if (this.inputMode !== 'rpl') this.setInputMode('rpl');
+    return true;
   }
 
-  /* ================================================================
-     Soft-menu plumbing
-     ================================================================ */
+  /* ---------------- the command line ---------------- */
 
-  /** Install a full slot list and jump to page 0.  Each slot is
-   *  `{ label, onPress, onPressL?, onPressR? }`.  `onPressL` / `onPressR`
-   *  fire when the soft key is pressed with left / right shift active.
-   *  Missing shifted handlers fall through to `onPress`. */
+  commitEntry() {
+    if (this.equationEditor?.isLineEditing()) { this.equationEditor.commitLineEdit(); return; }
+    if (this.inputMode === 'equation') { this.equationEditor.commit(); return; }
+    if (this.inputMode === 'matrix') { this.matrixEditor.push(); return; }
+    const text = this.entry.buffer.trimStart();
+    if (text.startsWith('?')) {
+      const question = text.slice(1).trim();
+      this.entry.cancel();
+      this.askAssistant(question);
+      return;
+    }
+    if (this.pendingEdit && this.inputMode === 'rpl') { this._commitEdit(); return; }
+    this.entry.enter();
+    if (this.entry.error) this.entry.focus();
+  }
+
+  cancelEntry() {
+    if (this.equationEditor?.isLineEditing()) { this.equationEditor.cancelLineEdit(); return; }
+    if (this.cancelEdit()) return;
+    this.entry.cancel();
+  }
+
+  swapTop() {
+    if (this.stack.depth < 2) { this.entry.flashError({ message: 'SWAP needs two values; the stack has one.' }); return; }
+    this.entry._snapForUndo();
+    this.entry.safeRun(() => lookup('SWAP').fn(this.stack, this.entry), 'SWAP');
+  }
+
+  runCommandFromUI(name) {
+    if (this.inputMode === 'equation' && this.equationEditor?.isOpen()) { this.equationEditor.pressCommand(name); return; }
+    if (this.selection != null) this.clearSelection();
+    if (!lookup(name)) { this.entry.flashError({ message: `${name} isn't available in rpl.ai` }); return; }
+    this.entry.typeOrExecFn(name);
+  }
+
+  insertUnit(unit) {
+    const e = this.entry;
+    if (e.buffer.trim()) { e.type(`_${unit}`); e.focus(); return; }
+    const top = this.stack.depth ? this.stack.peek(1) : null;
+    e.recall(top && (isReal(top) || isInteger(top)) ? `1_${unit} *` : `1_${unit}`);
+    this.commitEntry();
+  }
+
+  echoStackLevel(level) { this.levelAction('echo', level); }
+
+  navigateToPathSegment(index) {
+    const path = currentPath();
+    if (index < 0 || index >= path.length) return;
+    const stepsUp = path.length - 1 - index;
+    if (stepsUp <= 0) return;
+    if (this.entry.buffer.trim()) this.commitEntry();
+    if (index === 0) { goHome(); return; }
+    for (let i = 0; i < stepsUp; i++) goUp();
+  }
+
+  /* ---------------- writers ---------------- */
+
+  setInputMode(mode, { value = null } = {}) {
+    if (mode === 'equation') {
+      if (!this.equationEditor) this.equationEditor = new EquationEditor({ app: this });
+      const eqw = this.equationEditor;
+      if (value) eqw.open({ value });
+      else if (!eqw.isOpen()) eqw.open();
+      this.inputMode = 'equation';
+      this.input.show('equation', eqw.el);
+      eqw.focusEquation();
+    } else if (mode === 'matrix') {
+      if (!this.matrixEditor) this.matrixEditor = new MatrixEditor({ app: this });
+      if (value) this.matrixEditor.loadValue(value);
+      this.inputMode = 'matrix';
+      this.input.show('matrix', this.matrixEditor.el);
+      this.matrixEditor.focusGrid();
+    } else {
+      if (this.inputMode === 'equation') this.equationEditor?.blurEquation();
+      this.inputMode = 'rpl';
+      this._eqwSlots = null;
+      this.input.show('rpl');
+      this.entry.focus();
+    }
+    this._ctxPage = 0;
+    this.menubar.render();
+    this.keypad.update();
+    this.renderStatus();
+  }
+
+  openEquationEditor({ fromLevel1 = false } = {}) {
+    if (fromLevel1 && this.stack.depth && (isSymbolic(this.stack.peek(1)) || isName(this.stack.peek(1)))) this.editLevel(1);
+    else this.setInputMode('equation');
+  }
+
+  activateEquationKeys() {
+    this.entry.blur();
+    this.menubar.render();
+  }
+
+  deactivateEquationKeys() { this.menubar.render(); }
+
+  /* ---------------- menus ---------------- */
+
+  showMenu(id, { remember = true } = {}) {
+    if (this.selection != null) this.clearSelection();
+    if (id === 'VARS') this.showVarsMenu();
+    else if (id === 'CST') this.showCustomMenu();
+    else if (id === 'MODES') this.showModesMenu();
+    else this._showFamilyMenu(id);
+    if (remember) this.setPrefs({ menu: this.menuKind });
+  }
+
   setMenu(slots, kind = null) {
+    if (kind === 'EQW') { this._eqwSlots = slots; this._ctxPage = 0; this.menubar.render(); return; }
     this.menuKind = kind;
     this.menuAll = Array.isArray(slots) ? slots.slice() : [];
     this.menuPage = 0;
-    this._renderMenuPage();
+    this.menubar.render();
   }
 
-  clearMenu() {
-    this.menuKind = null;
-    this.menuAll = [];
-    this.menuPage = 0;
-    this.menuSlots = Array(6).fill(null);
-    this.display.setMenu(['', '', '', '', '', '']);
-    this._updateSoftKeyLabels(null);
+  menuView() {
+    let ctx = null;
+    if (this.selection != null && this.stack.depth) ctx = { key: `LVL${this.selection}`, title: `LEVEL ${this.selection}`, short: `LVL ${this.selection}`, items: this._levelSlots() };
+    else if (this.inputMode === 'equation' && this.equationEditor) ctx = { key: 'EQW', title: 'EQUATION', short: 'EQW', items: this._eqwSlots ?? this.equationEditor.menuSlots() };
+    else if (this.inputMode === 'matrix' && this.matrixEditor) ctx = { key: 'MTRW', title: 'MATRIX', short: 'MTRW', items: this.matrixEditor.menuSlots() };
+    if (ctx) {
+      if (ctx.key !== this._ctxKey) { this._ctxKey = ctx.key; this._ctxPage = 0; }
+      const { view, page } = computeMenuPage(ctx.items, this._ctxPage, 6);
+      this._ctxPage = page;
+      return { ...ctx, slots: view, page, pages: Math.max(1, Math.ceil(ctx.items.length / 6)) };
+    }
+    this._ctxKey = '';
+    const meta = menuById(this.menuKind) ?? { title: this.menuKind ?? 'MENU', short: this.menuKind ?? 'MENU' };
+    const { view, page } = computeMenuPage(this.menuAll, this.menuPage, 6);
+    this.menuPage = page;
+    return { title: meta.short === 'VARS' ? `VARS · ${currentPath().at(-1)}` : meta.short, short: meta.short, slots: view, page, pages: Math.max(1, Math.ceil(this.menuAll.length / 6)) };
   }
+
+  _inContextMenu() { return !!this._ctxKey; }
 
   nextMenuPage() {
-    if (this.menuAll.length <= 6) return;
-    this.menuPage += 1;
-    this._renderMenuPage();
+    if (this._inContextMenu()) this._ctxPage += 1;
+    else this.menuPage += 1;
+    this.menubar.render();
   }
 
   prevMenuPage() {
-    if (this.menuAll.length <= 6) return;
-    this.menuPage -= 1;
-    this._renderMenuPage();
+    if (this._inContextMenu()) this._ctxPage -= 1;
+    else this.menuPage -= 1;
+    this.menubar.render();
   }
 
-  _renderMenuPage() {
-    const { view, page } = computeMenuPage(this.menuAll, this.menuPage, 6);
-    this.menuPage = page;                 // normalized (wrap)
-    this.menuSlots = view;
-    this.display.setMenu(view.map(s => s?.label ?? ''));
-    this._updateSoftKeyLabels(view);
+  pressSoftKey(i, forcedLayer = null) {
+    const view = this.menuView();
+    const slot = view.slots[i];
+    if (!slot) return;
+    const layer = forcedLayer ?? this.layer();
+    const handler = (layer === 'L' && slot.onPressL) || (layer === 'R' && slot.onPressR) || slot.onPress;
+    if (!forcedLayer && this.shift && !this.shiftLocked()) this.setShift(null);
+    if (!handler) return;
+    try { handler(); } catch (e) { this.entry.flashError(e); }
   }
 
-  /** Repaint the on-screen F1..F6 button faces to show the active menu's
-   *  slot labels.  When no menu is loaded (or a slot is empty) the button
-   *  falls back to its default 'F1'..'F6' label.  This makes the soft
-   *  keys self-describing — the user can read what each one does from
-   *  the button itself, without having to look up at the LCD menu bar. */
-  _updateSoftKeyLabels(view) {
-    const buttons = document.querySelectorAll('#softRow .key');
-    for (let i = 0; i < buttons.length; i++) {
-      const primary = buttons[i].querySelector('.primary');
-      if (!primary) continue;
-      const dynamic = !!(view && view[i]?.label);
-      primary.textContent = dynamic ? view[i].label : `F${i + 1}`;
-      primary.classList.toggle('menu-label', dynamic);
-    }
+  _levelSlots() {
+    const level = this.selection;
+    const value = this.stack.peek(level);
+    const act = (a) => () => this.levelAction(a, level);
+    return [
+      { label: 'EDIT', title: 'Edit this level (Enter)', onPress: act('edit') },
+      { label: 'ECHO', title: 'Copy it into the command line', onPress: act('echo') },
+      { label: 'PICK', title: 'Copy it to level 1', onPress: act('pick') },
+      { label: 'ROLL', title: 'Move it to level 1', onPress: act('roll') },
+      { label: 'ROLLD', title: 'Move level 1 here', onPress: act('rolld') },
+      { label: 'DROP', title: 'Remove it (⌫)', onPress: act('drop') },
+      isSymbolic(value)
+        ? { label: 'PLOT', title: 'Plot it', onPress: act('plot') }
+        : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },
+      { label: '→NUM', title: 'Evaluate to a number', onPress: act('num') },
+      { label: 'STO…', title: 'Store it in a variable', onPress: () => this.levelAction('store', level) },
+      { label: 'COPY', title: 'Copy to the clipboard', onPress: act('copy') },
+      { label: 'ASK ✦', title: 'Ask the assistant about it', onPress: act('ask') },
+      { label: 'DONE', title: 'Clear the selection (Esc)', onPress: () => this.clearSelection() },
+    ];
   }
 
-  /** Fill the soft-menu bar with the current directory's variables.
-   *  Unshifted F-key:  EVAL-on-press for Program values, DESCEND for
-   *                    Directory values (HP50 "cd into subdir"),
-   *                    otherwise push the value (classic HP50 VARS
-   *                    behavior).
-   *  Left-shift + F:   STO level 1 into that name (`value SHIFT-L F`).
-   *  Right-shift + F:  RCL — push value without evaluating Program or
-   *                    descending into a Directory.
-   *
-   *  `preservePage: true` keeps the current page index after a rebuild,
-   *  which the state subscriber uses so STO-ing doesn't kick the user
-   *  back to page 0.  The index is still clamped by computeMenuPage
-   *  when it ends up past the end of a shrunk var list.
-   */
-  showVarsMenu(opts = {}) {
-    const names = varOrder();
-    const prevPage = this.menuPage;
-    const slots = names.map((id) => ({
-      label: id,
-      // Unshifted: EVAL-or-descend-or-push.  Programs execute; a
-      // Directory value descends into that subdirectory (HP50 VARS
-      // press-on-a-subdir behavior); everything else is pushed
-      // literally.  Looking up via varOrder() restricts this to names
-      // that live in the CURRENT directory, so descent never walks
-      // across parent chains — it always enters a direct child.
-      onPress: () => {
-        if (this.entry.buffer.trim().length > 0) this.entry.enter();
-        const v = varRecall(id);
-        if (v === undefined) {
-          this.entry.flashError({ message: `Undefined: ${id}` });
-          return;
-        }
-        if (isDirectory(v)) {
-          // goInto fires its own state event, which will rebuild the
-          // VARS menu to show the new directory's contents.
-          const ok = goInto(id);
-          if (!ok) this.entry.flashError({ message: `Cannot descend: ${id}` });
-          return;
-        }
-        if (isProgram(v)) {
-          // Push + EVAL inside one safeRun snapshot.  HP50 behavior:
-          // a soft-key invocation that errors should leave the stack
-          // exactly as it was before the press — including dropping
-          // the program itself.  safeRun captures the snapshot at
-          // entry, so pushing the program inside the body means a
-          // rollback also unwinds the push.
-          this.entry.safeRun(() => {
-            this.stack.push(v);
-            lookup('EVAL').fn(this.stack, this.entry);
-          }, 'EVAL');
-          return;
-        }
-        this.stack.push(v);
-      },
-      // Left-shift: STO level 1 into this name.  Classic HP50 VAR
-      // shortcut — spares the user from keying `'NAME' STO`.
-      onPressL: () => {
-        if (this.entry.buffer.trim().length > 0) this.entry.enter();
-        if (this.stack.depth < 1) {
-          this.entry.flashError({ message: 'Too few arguments' });
-          return;
-        }
-        this.entry.safeRun(() => {
-          const value = this.stack.pop();
-          varStore(id, value);
-        });
-      },
-      // Right-shift: RCL — push the value unchanged, never EVALed.
-      onPressR: () => {
-        if (this.entry.buffer.trim().length > 0) this.entry.enter();
-        const v = varRecall(id);
-        if (v === undefined) {
-          this.entry.flashError({ message: `Undefined: ${id}` });
-          return;
-        }
-        this.stack.push(v);
-      },
+  _showFamilyMenu(id) {
+    const family = MENU_FAMILIES.find((f) => f.id === id) ?? MENU_FAMILIES[0];
+    const names = familyCommands(family);
+    const slots = names.map((name) => ({
+      label: name,
+      title: this._commandTitle(name),
+      onPress: () => this.runCommandFromUI(name),
+      onPressL: () => { this.entry.type(`${this.entry.buffer && !/\s$/.test(this.entry.buffer) ? ' ' : ''}${name} `); this.entry.focus(); },
+      onPressR: () => this.drawers.showReference(name),
     }));
+    if (family.id === 'UNITS') {
+      for (const unit of UNIT_SYMBOLS.filter((u) => UNIT_CATALOG.has(u))) {
+        slots.push({ label: unit, title: `Attach _${unit} to the number you are typing, or to level 1`, onPress: () => this.insertUnit(unit) });
+      }
+    }
+    this.menuKind = family.id;
+    this.menuAll = slots;
+    this.menuPage = 0;
+    this.menubar.render();
+  }
+
+  _commandTitle(name) {
+    const entry = this.reference ? findReferenceEntry(this.reference, name) : null;
+    return entry ? `${name}: ${shortDescription(entry, 100)} · ↰ types it · ↱ opens the reference` : `${name} · ↰ types it · ↱ opens the reference`;
+  }
+
+  showModesMenu(opts = {}) {
+    const prevPage = this.menuPage;
+    const slots = MODES.flatMap((m) => m.options.map((o) => ({
+      label: m.id === 'base' ? ({ h: 'HEX', d: 'DEC', o: 'OCT', b: 'BIN' })[o.value] : m.id === 'fmt' || m.id === 'coord' ? o.value.slice(0, 5) : o.value,
+      title: `${m.title}: ${o.label}. ${o.detail}`,
+      toggle: true,
+      on: () => m.current() === o.value,
+      onPress: () => m.set(o.value),
+    })));
+    slots.splice(12, 0, {
+      label: 'TXTBK',
+      title: 'Pretty math: show expressions, matrices and lists in textbook form',
+      toggle: true,
+      on: () => calcState.textbookMode,
+      onPress: () => this.entry.safeRun(() => lookup(calcState.textbookMode ? 'FLAT' : 'TEXTBOOK').fn(this.stack, this.entry)),
+    });
+    this.menuKind = 'MODES';
+    this.menuAll = slots;
+    this.menuPage = opts.preservePage ? prevPage : 0;
+    this.menubar.render();
+  }
+
+  pressVariable(name, layer = null) {
+    if (this.entry.buffer.trim().length > 0) this.commitEntry();
+    const v = varRecall(name);
+    if (v === undefined) { this.entry.flashError({ message: `Undefined name: ${name}` }); return; }
+    if (layer === 'L') {
+      if (this.stack.depth < 1) { this.entry.flashError({ message: `STO ${name} needs a value on level 1; the stack is empty.` }); return; }
+      this.entry.safeRun(() => { this.entry._snapForUndo(); varStore(name, this.stack.pop()); }, 'STO');
+      this.toast(`Stored level 1 in ${name}`);
+      return;
+    }
+    if (layer === 'R') { this.entry._snapForUndo(); this.stack.push(v); return; }
+    if (isDirectory(v)) {
+      if (!goInto(name)) this.entry.flashError({ message: `Cannot open ${name}` });
+      return;
+    }
+    this.entry._snapForUndo();
+    if (isProgram(v)) {
+      this.entry.safeRun(() => { this.stack.push(v); lookup('EVAL').fn(this.stack, this.entry); }, name);
+      return;
+    }
+    this.stack.push(v);
+  }
+
+  showVarsMenu(opts = {}) {
+    const prevPage = this.menuPage;
+    const slots = varOrder().map((id) => {
+      const v = varRecall(id);
+      const dir = isDirectory(v);
+      return {
+        label: id,
+        dir,
+        variable: !dir,
+        title: dir ? `Open folder ${id}` : `${id}: ${isProgram(v) ? 'run it' : 'put it on the stack'} · ↰ stores level 1 into it · ↱ recalls without running`,
+        onPress: () => this.pressVariable(id),
+        onPressL: dir ? null : () => this.pressVariable(id, 'L'),
+        onPressR: dir ? null : () => this.pressVariable(id, 'R'),
+      };
+    });
     this.menuKind = 'VARS';
     this.menuAll = slots;
     this.menuPage = opts.preservePage ? prevPage : 0;
-    this._renderMenuPage();
+    this.menubar.render();
   }
 
-  /** Load the CST reserved variable as a soft menu — HP50 "Custom menu".
-   *
-   *  The CST variable is expected to be a List whose entries are the
-   *  menu items.  Each item can be:
-   *    - a Name / String             → label = name, press = push name
-   *                                    then EVAL (programs run, values
-   *                                    get pushed literally)
-   *    - a Tagged object { name, value }
-   *                                  → label = tag, press = push+EVAL
-   *                                    the value
-   *    - any other value             → label is the value's display
-   *                                    form, press pushes it literally
-   *
-   *  If CST doesn't exist (or isn't a list) we flash a hint rather than
-   *  silently installing an empty menu — the user almost certainly
-   *  wants to know why nothing happened.  */
   showCustomMenu() {
-    if (this.entry.buffer.trim().length > 0) this.entry.enter();
+    if (this.entry.buffer.trim().length > 0) this.commitEntry();
     const cst = varRecall('CST');
-    if (cst === undefined) {
-      this.entry.flashError({
-        message: 'CST undefined — store a list in CST',
-      });
-      return;
-    }
-    if (!isList(cst)) {
-      this.entry.flashError({
-        message: 'CST must be a list',
-      });
+    if (cst === undefined || !isList(cst)) {
+      this.menuKind = 'CST';
+      this.menuAll = [];
+      this.menuPage = 0;
+      this.menubar.render();
+      this.toast(cst === undefined
+        ? 'CST is empty. Store a list of commands or names in CST, for example { SOLVE FACTOR } `CST` STO.'
+        : 'CST must hold a list, for example { SOLVE FACTOR }.');
       return;
     }
     const slots = cst.items.map((item) => {
@@ -715,507 +814,107 @@ class App {
       const [target, tag] = customMenuTarget(item);
       return {
         label,
+        title: `${label} · ↰ types it · ↱ recalls it`,
         onPress: () => {
-          if (this.entry.buffer.trim().length > 0) this.entry.enter();
+          if (this.entry.buffer.trim().length > 0) this.commitEntry();
           if (isProgram(target) || isName(target)) {
-            // Push + EVAL inside one safeRun snapshot so a runtime
-            // error from the program (or an unbound name) rolls the
-            // stack back to its pre-press state — see the matching
-            // VARS soft-key comment in showVarsMenu.
-            this.entry.safeRun(() => {
-              this.stack.push(target);
-              lookup('EVAL').fn(this.stack, this.entry);
-            }, 'EVAL');
+            this.entry.safeRun(() => { this.stack.push(target); lookup('EVAL').fn(this.stack, this.entry); }, label);
           } else {
-            // Non-evaluable item: push literally, no rollback needed.
             this.stack.push(target);
           }
         },
-        // Left-shift: type the item's label into the command line —
-        // useful when the user wants to reference the name without
-        // running the program it points to.
-        onPressL: () => {
-          this.entry.type(tag || label);
-        },
-        // Right-shift: recall (push without EVAL), parallel to VARS.
-        onPressR: () => {
-          if (this.entry.buffer.trim().length > 0) this.entry.enter();
-          this.stack.push(target);
-        },
+        onPressL: () => this.entry.type(tag || label),
+        onPressR: () => { if (this.entry.buffer.trim().length > 0) this.commitEntry(); this.stack.push(target); },
       };
     });
     this.menuKind = 'CST';
     this.menuAll = slots;
     this.menuPage = 0;
-    this._renderMenuPage();
+    this.menubar.render();
   }
 
-  /* ================================================================
-     HP50 arrow-key / direct-manipulation actions
+  /* ---------------- shift layers ---------------- */
 
-     Three HP50 keystroke sequences from the Advanced Guide live here:
-       25.1  ▲ from empty cmdline      → interactive stack
-       35.1  ▼ from empty cmdline      → edit level 1 (EDITB style)
-       36.1  ▶ from empty cmdline      → SWAP
-
-     Plus a family of direct-manipulation helpers for the LCD click
-     delegates: echo a stack level, cycle an indicator, navigate to a
-     path segment.
-     ================================================================ */
-
-  /** Swap level 1 and level 2.  No-op if depth < 2 (with a friendly
-   *  error flash so the user sees why ▶ didn't do anything). */
-  swapTop() {
-    if (this.stack.depth < 2) {
-      this.entry.flashError({ message: 'Too few arguments' });
-      return;
-    }
-    this.entry._snapForUndo();
-    this.entry.safeRun(() => lookup('SWAP').fn(this.stack, this.entry), 'SWAP');
+  layer() {
+    if (!this.shift) return null;
+    if (this.shift.startsWith('shiftL')) return 'L';
+    if (this.shift.startsWith('shiftR')) return 'R';
+    return 'A';
   }
 
-  /** Pull level 1 onto the command line for editing (HP50 EDITB
-   *  shortcut).  Decompiles the value with the default formatter —
-   *  round-trippable for Real / Integer / Name / Symbolic; for nested
-   *  types the user gets a decompiled form they can re-ENTER to rebuild.
-   *
-   *  The original value is POPPED and stashed in `_pendingEditValue`.
-   *  If the user commits with ENTER, the edited buffer is parsed and
-   *  pushed normally (commitEntry discards the stash).  If the user
-   *  cancels with ESC (or the ON key), cancelEntry() pushes the stashed
-   *  value back so nothing is lost — matching the behaviour you'd
-   *  expect from any "edit in place" affordance. */
-  editLevel1() {
-    if (this.stack.depth < 1) {
-      this.entry.flashError({ message: 'Too few arguments' });
-      return;
-    }
-    // Re-entrancy guard.  ▼ is only bound to editLevel1 when the buffer
-    // is empty, but the pendingEdit shadow can outlive an emptied buffer
-    // (user deleted everything without pressing ESC).  In that state,
-    // pulling a fresh level 1 would clobber the first shadow and lose
-    // the original value.  Silently ignore the second ▼ — ESC is how
-    // you exit the pending edit.
-    if (this._pendingEditValue !== null && this._pendingEditValue !== undefined) {
-      return;
-    }
-    const top = this.stack.peek(1);
-    if (isSymbolic(top) || isName(top)) {
-      this.openEquationEditor({ fromLevel1: true });
-      return;
-    }
-    this.entry._snapForUndo();
-    const v = this.stack.pop();
-    this._pendingEditValue = v;
-    const text = formatSource(v);
-    this.entry.buffer = text;
-    this.entry.cursor = text.length;
-    this.entry.error  = '';
-    this.entry._emit();
-    this.entry.focus();
-  }
+  shiftKind() { return this.shift ? this.shift.replace('Lock', '') : null; }
 
-  /** Cancel-aware wrapper around Entry.cancel.  If the buffer was
-   *  populated by editLevel1, restore the popped value to the stack;
-   *  otherwise behave exactly like Entry.cancel. */
-  cancelEntry() {
-    if (this.equationEditor?.isLineEditing()) {
-      this.equationEditor.cancelLineEdit();
-      return;
-    }
-    if (this._pendingEditValue !== null && this._pendingEditValue !== undefined) {
-      this.stack.push(this._pendingEditValue);
-      this._pendingEditValue = null;
-      this.entry.buffer = '';
-      this.entry.cursor = 0;
-      this.entry.error  = '';
-      this.entry._emit();
-      return;
-    }
-    this.entry.cancel();
-  }
+  shiftLocked() { return !!this.shift?.endsWith('Lock'); }
 
-  /** Commit-aware wrapper around Entry.enter.  Clears any pending
-   *  edit shadow — once the user presses ENTER, the edited text is
-   *  authoritative and the popped original should not be restored on
-   *  a later ESC.  Blurs the editor afterward so the post-commit
-   *  state matches "I'm done with this input" — the next physical
-   *  keystroke goes through the calc's unfocused shortcuts
-   *  (Backspace → DROP, etc.) until the user explicitly re-engages
-   *  the editor. */
-  commitEntry() {
-    if (this.equationEditor?.isLineEditing()) {
-      this.equationEditor.commitLineEdit();
-      return;
-    }
-    // `?<text>` escape prefix — route the rest of the buffer to the
-    // chatbot as if the user had typed it into the chat input.  This
-    // turns the entry line into a quick "ask the assistant" affordance
-    // without forcing the user to switch tabs first.  The `?` itself
-    // is consumed; everything after is the message text.  Whitespace
-    // after the `?` is also stripped so `? how do I…` works the same
-    // as `?how do I…`.
-    //
-    // Empty body (just `?`) does nothing useful — clear the buffer so
-    // the user isn't left with a stale `?` and silently no-op, since
-    // there's nothing meaningful to send.
-    if (this.entry.buffer.startsWith('?')) {
-      const prompt = this.entry.buffer.slice(1).trim();
-      this._pendingEditValue = null;
-      this.entry.buffer = '';
-      this.entry.cursor = 0;
-      this.entry.error  = '';
-      this.entry._emit();
-      this.entry.blur();
-      if (prompt) {
-        // Make sure the AI panel is open and on the right tab so the
-        // user actually sees the conversation they just kicked off.
-        // Best-effort — both calls are no-ops if the panel isn't
-        // ready or doesn't exist.
-        try { this.sidePanel?.open?.('ai'); } catch { /* ignore */ }
-        try { this.chatBot?.sendUserMessage?.(prompt); } catch (err) {
-          // eslint-disable-next-line no-console
-          console.warn('[app] commitEntry: chat send failed:', err);
-        }
-      }
-      return;
-    }
-
-    this._pendingEditValue = null;
-    this.entry.enter();
-    // On a failed commit (parse error, undefined op, type error, …) the
-    // buffer is preserved so the user can fix it.  Keep focus in the
-    // editor in that case; only blur when the commit actually went
-    // through, matching "I'm done with this input".
-    if (this.entry.error) this.entry.focus();
-    else this.entry.blur();
-  }
-
-  /** Copy a stack level's decompiled form into the command-line editor
-   *  (HP50 "ECHO").  The source value stays on the stack — echo is a
-   *  non-destructive copy.  Used by both the interactive-stack menu F1
-   *  ECHO slot and by direct clicking on a stack row. */
-  echoStackLevel(level) {
-    const depth = this.stack.depth;
-    if (level < 1 || level > depth) return;
-    if (this.sidePanel?.takeFromStack(level)) return;
-    const v = this.stack.snapshot()[level - 1];   // level 1 == last element
-    const text = format(v);
-    // Append with a leading space separator if the buffer already has
-    // content — otherwise the echoed token runs into whatever the user
-    // was typing.  If empty, just type the text.
-    if (this.entry.buffer.length > 0 &&
-        !/\s$/.test(this.entry.buffer)) {
-      this.entry.type(' ' + text);
-    } else {
-      this.entry.type(text);
-    }
-  }
-
-  /** Cycle the clicked annunciator through its options.  `id` is the
-   *  bare id (e.g. 'angle', 'approx') — the Display strips the `ann-`
-   *  prefix before dispatching. */
-  cycleIndicator(id) {
-    switch (id) {
-      case 'angle':   cycleAngle();        return;
-      case 'approx':  toggleApproxMode();  return;
-      case 'complex': toggleComplexMode(); return;
-      case 'coord':   cycleCoordMode();    return;
-      // Click the base annunciator → cycle HEX → DEC → OCT → BIN →
-      // HEX.  The `null` ("per-value stored base") state is still
-      // reachable via the CLB op but skipped in the cycle so the
-      // annunciator never blinks out mid-click.
-      case 'hex': {
-        const order = ['h', 'd', 'o', 'b'];
-        const i = order.indexOf(calcState.binaryBase);
-        setBinaryBase(order[((i < 0 ? -1 : i) + 1) % order.length]);
-        return;
-      }
-      // Clicking the α annunciator runs the same single-click /
-      // double-click-to-lock cycle as pressing the α key on the
-      // keypad, so the LCD marker is the same affordance as the
-      // physical button.
-      case 'alpha': this.setShift('alpha'); return;
-      case 'halt':
-        return;
-      case 'display': {
-        // STD → FIX 4 → SCI 4 → ENG 4 → STD
-        const m = calcState.displayMode;
-        const d = calcState.displayDigits;
-        if (m === 'STD')            { setDisplay('FIX', 4); return; }
-        if (m === 'FIX' && d === 4) { setDisplay('SCI', 4); return; }
-        if (m === 'SCI' && d === 4) { setDisplay('ENG', 4); return; }
-        setDisplay('STD', 12);
-        return;
-      }
-      // Annunciators without a defined click-cycle action just flash a
-      // gentle "no-op" — better than a silent miss on a labelled click.
-      default:
-        this.entry.flashError({ message: `${id}: nothing to toggle` });
-    }
-  }
-
-  /** Navigate to the directory at path segment `index` (0 = HOME).
-   *  Walks up the appropriate number of levels — we can't use goInto()
-   *  because the user may be jumping across multiple segments at once
-   *  and we don't have sibling directory names in the path. */
-  navigateToPathSegment(index) {
-    const path = currentPath();
-    if (index < 0 || index >= path.length) return;
-    const stepsUp = path.length - 1 - index;
-    if (stepsUp <= 0) return;                      // clicked current dir
-    if (index === 0) { goHome(); return; }
-    for (let i = 0; i < stepsUp; i++) goUp();
-  }
-
-  /* ---------------- Interactive stack ----------------
-     The HP50 interactive stack is a "browse" mode entered by pressing
-     ▲ from an empty command line.  A visual cursor highlights a stack
-     level (starting at level 1); ▲ / ▼ move the cursor; ENTER runs the
-     HP50 default which is ECHO (decompile the selection into the
-     command line).  A soft menu exposes PICK / ROLL / ROLLD / DROP /
-     CANCL as alternative verbs.  ◀ / ESC cancel without acting.
-     -------------------------------------------------------------- */
-
-  enterInteractiveStack(startLevel = 1) {
-    if (this.stack.depth === 0) {
-      // Nothing to browse — a silent no-op mirrors HP50.
-      return;
-    }
-    if (this._interactive) return;                 // already active
-    // Drop editor focus so Arrow / Enter events flow to the document-
-    // level keydown handler (which owns the interactive-stack branch).
-    // Without this, CM would eat arrow keys and the selection couldn't
-    // move.  _exitInteractiveStack refocuses the editor on echo paths.
-    this.entry.blur();
-    // Save the outgoing soft menu so we can restore it on exit.  A user
-    // who'd opened VARS shouldn't lose it after one interactive-stack
-    // round-trip.
-    this._interactive = this._saveMenu();
-    const initial = Math.max(1, Math.min(startLevel | 0, this.stack.depth));
-    this.display.selectedLevel = initial;
-    const refresh = () => {
-      this.display.selectedLevel = this._interactive
-        ? this._interactive.level
-        : null;
-      this.display.renderStack(this.stack);
-    };
-    this._interactive.level = initial;
-    refresh();
-
-    const cleanup = () => {
-      this._interactive = null;
-      this.display.selectedLevel = null;
-      this.display.renderStack(this.stack);
-    };
-
-    const doAndExit = (fn) => () => {
-      try { fn(); }
-      catch (e) { this.entry.flashError(e); }
-      this._exitInteractiveStack();
-    };
-
-    const menu = interactiveStackMenu({
-      onEcho:   doAndExit(() => {
-        this.echoStackLevel(this._interactive.level);
-        this.entry.focus();
-      }),
-      onPick:   doAndExit(() => {
-        this.entry._snapForUndo();
-        this.stack.pick(this._interactive.level);  // pick mutates + pushes
-      }),
-      onRoll:   doAndExit(() => {
-        this.entry._snapForUndo();
-        rollLevel(this.stack, this._interactive.level);
-      }),
-      onRollD:  doAndExit(() => {
-        this.entry._snapForUndo();
-        rollDownToLevel(this.stack, this._interactive.level);
-      }),
-      onDrop:   doAndExit(() => {
-        this.entry._snapForUndo();
-        dropLevel(this.stack, this._interactive.level);
-      }),
-      onCancel: () => this._exitInteractiveStack(),
-    });
-    this.setMenu(menu, 'ISTK');
-    // Attach the level-move helper so the arrow-key handler can nudge.
-    this._interactive.moveUp   = () => {
-      this._interactive.level = levelUp(this._interactive.level, this.stack.depth);
-      refresh();
-    };
-    this._interactive.moveDown = () => {
-      this._interactive.level = levelDown(this._interactive.level, this.stack.depth);
-      refresh();
-    };
-    // ENTER in interactive mode = default action (ECHO, per HP50).  Echo
-    // is non-destructive — the stack value stays — and returns focus
-    // to the editor so the user can continue typing with the echoed
-    // text at the cursor.
-    this._interactive.defaultAction = doAndExit(() => {
-      this.echoStackLevel(this._interactive.level);
-      this.entry.focus();
-    });
-    // Backspace while a level is selected = DROP that level, but stay
-    // in browse mode so the user can chain deletions.  After the
-    // splice, the entry that used to sit one level deeper now occupies
-    // the same level number — the cursor naturally lands on it.
-    // clampLevel handles the "deleted the deepest level" case (snap to
-    // new depth) and the "stack is now empty" case (level → 0, no
-    // highlight).  Only Esc / ◀ / ON exit interactive mode.
-    this._interactive.dropAction = () => {
-      try {
-        this.entry._snapForUndo();
-        dropLevel(this.stack, this._interactive.level);
-      } catch (e) {
-        this.entry.flashError(e);
-        return;
-      }
-      this._interactive.level = clampLevel(this._interactive.level, this.stack.depth);
-      refresh();
-    };
-    // Cleanup hook for _exitInteractiveStack.
-    this._interactive._cleanup = cleanup;
-  }
-
-  _exitInteractiveStack() {
-    if (!this._interactive) return;
-    const saved = this._interactive;
-    const cleanup = saved._cleanup;
-    cleanup();
-    this._restoreMenu(saved);
-  }
-
-  _saveMenu() {
-    return {
-      prevMenuAll: this.menuAll,
-      prevMenuPage: this.menuPage,
-      prevMenuKind: this.menuKind,
-    };
-  }
-
-  _restoreMenu(saved) {
-    if (saved?.prevMenuAll?.length) {
-      this.menuKind = saved.prevMenuKind;
-      this.menuAll = saved.prevMenuAll;
-      this.menuPage = saved.prevMenuPage;
-      this._renderMenuPage();
-    } else {
-      this.clearMenu();
-    }
-  }
-
-  openEquationEditor({ fromLevel1 = false } = {}) {
-    if (!this.sidePanel) return;
-    if (this.entry.buffer.length > 0) {
-      this.commitEntry();
-      if (this.entry.buffer.length > 0) return;
-    }
-    if (this._interactive) this._exitInteractiveStack();
-    let value = null;
-    let replacesLevel1 = false;
-    if (fromLevel1 && this.stack.depth >= 1) {
-      const top = this.stack.peek(1);
-      if (isSymbolic(top) || isName(top)) {
-        value = top;
-        replacesLevel1 = true;
-      }
-    }
-    this.sidePanel.open('equation');
-    const editor = this.equationEditor;
-    if (value) editor.open({ value, replacesLevel1 });
-  }
-
-  activateEquationKeys() {
-    const editor = this.equationEditor;
-    if (!editor?.isOpen() || !editor._focused) return;
-    if (this.menuKind !== 'EQW') this._eqwMenu = this._saveMenu();
-    this.setMenu(editor.menuSlots(), 'EQW');
-    this.entry.blur();
-  }
-
-  deactivateEquationKeys() {
-    if (this.menuKind !== 'EQW') return;
-    this._restoreMenu(this._eqwMenu);
-    this._eqwMenu = null;
-  }
-
-  /* ================================================================
-     Stack scrolling
-     ================================================================ */
-
-  scrollStackUp() {
-    const next = clampStackScroll(this.stackScroll + 1, this.stack.depth);
-    if (next === this.stackScroll) return;
-    this.stackScroll = next;
-    this.display.setStackScroll(next, this.stack);
-  }
-
-  scrollStackDown() {
-    const next = clampStackScroll(this.stackScroll - 1, this.stack.depth);
-    if (next === this.stackScroll) return;
-    this.stackScroll = next;
-    this.display.setStackScroll(next, this.stack);
-  }
-
-  onShiftChange(fn) { this._shiftListeners.add(fn); }
-
-  /** Virtual-button press on a modifier key (shiftL / shiftR / alpha).
-   *  Three-state cycle:
-   *    null         → one-shot      (single click)
-   *    one-shot     → lock          (quick second click — double-click)
-   *    one-shot     → null          (slow second click — toggle off)
-   *    lock         → null          (any click)
-   *    otherShift*  → new one-shot  (switching between L / R / α)
-   *  Any other `state` falls back to plain toggle semantics.
-   */
   setShift(state) {
-    if (state === 'shiftL' || state === 'shiftR' || state === 'alpha') {
-      const lockName = state + 'Lock';
+    if (MODIFIER_KINDS.has(state)) {
+      const lockName = `${state}Lock`;
       const now = Date.now();
-      const DOUBLE_CLICK_MS = 300;
-      if (this.shift === lockName) {
-        this.shift = null;
-      } else if (this.shift === state) {
-        const doubleClick =
-          (now - this._lastShiftAt) < DOUBLE_CLICK_MS &&
-          this._lastShiftKind === state;
-        this.shift = doubleClick ? lockName : null;
-      } else {
-        this.shift = state;
-      }
+      if (this.shift === lockName) this.shift = null;
+      else if (this.shift === state) {
+        const quick = (now - this._lastShiftAt) < DOUBLE_PRESS_MS && this._lastShiftKind === state;
+        this.shift = quick ? lockName : null;
+      } else this.shift = state;
       this._lastShiftAt = now;
       this._lastShiftKind = state;
     } else {
-      this.shift = (this.shift === state) ? null : state;
+      this.shift = state;
     }
-    for (const fn of this._shiftListeners) fn();
+    this.keypad.update();
+    this.menubar.render();
+    this.renderStatus();
   }
 
+  keyCaption(key) {
+    if (this.selection != null) return { '▲': 'UP', '▼': 'DOWN', ENTER: 'EDIT', '⌫': 'DROP', ON: 'DONE' }[key.primary] ?? '';
+    if (this.inputMode !== 'rpl') return { ENTER: 'PUSH', ON: 'BACK' }[key.primary] ?? '';
+    const depth = this.stack.depth;
+    if (this.entry.buffer.length) return key.primary === 'ON' ? 'CANCEL' : '';
+    if (key.primary === 'ENTER' && depth) return 'DUP';
+    if (key.primary === '⌫' && depth) return 'DROP';
+    if (key.primary === '▲' && depth) return 'SELECT';
+    if (key.primary === '▼' && depth) return 'EDIT';
+    if (key.primary === '▶' && depth > 1) return 'SWAP';
+    if (key.primary === '+/-' && depth && (isReal(this.stack.peek(1)) || isInteger(this.stack.peek(1)))) return 'NEG';
+    return '';
+  }
 
-  /** Called by keyboard.js when a virtual key is pressed. */
+  showKeyLayers(key, anchor) {
+    if (MODIFIER_KINDS.has(key.kind)) return;
+    const row = (layer, label, name, desc, color) => `<button type="button" data-v="${layer}" ${label ? '' : 'disabled'}><small style="color:${color}">${name}</small><span><b>${escapeHtml(label || '—')}</b>${desc ? ` · ${escapeHtml(desc)}` : ''}</span></button>`;
+    const html = `<h6>${escapeHtml(key.primary)} key</h6><div class="layers">${row('P', key.primary, 'KEY', '', 'var(--ink3)')}${row('L', key.shiftL, '↰ LEFT', '', 'var(--amber)')}${row('R', key.shiftR, '↱ RIGHT', '', 'var(--coral)')}${row('A', key.alpha, 'α ALPHA', 'types the letter', 'var(--blue)')}</div>`;
+    this.popover.open(anchor, html, {
+      label: `${key.primary} key layers`,
+      onClick: (t) => {
+        this.popover.close({ restoreFocus: false });
+        const layer = t.dataset.v;
+        const saved = this.shift;
+        this.shift = layer === 'L' ? 'shiftL' : layer === 'R' ? 'shiftR' : layer === 'A' ? 'alpha' : null;
+        this.handleKey(key);
+        if (this.shift) this.shift = saved;
+        this.keypad.update();
+        this.renderStatus();
+      },
+    });
+  }
+
+  /** Called by the keypad when a virtual key is pressed. */
   handleKey(key) {
-    switch (key.kind) {
-      case 'shiftL': return this.setShift('shiftL');
-      case 'shiftR': return this.setShift('shiftR');
-      case 'alpha':  return this.setShift('alpha');
+    if (MODIFIER_KINDS.has(key.kind)) { this.setShift(key.kind); return; }
+
+    if (this.selection != null && !this.shift) {
+      const sel = { '▲': 'level.up', '▼': 'level.down', ENTER: 'level.edit', '⌫': 'level.drop', ON: 'ui.escape' }[key.primary];
+      if (sel) { this.runAction(sel); return; }
+      this.clearSelection();
     }
 
-    if (this.equationEditor?.ownsKeyboard()) {
+    if (this.inputMode === 'equation' && this.equationEditor?.isOpen()) {
+      if (key.primary === 'ON' && !this.shift) { this.runAction('ui.escape'); return; }
       this.equationEditor.pressKeypad(key, this.shift);
-      const locked =
-        this.shift === 'alphaLock' ||
-        this.shift === 'shiftLLock' ||
-        this.shift === 'shiftRLock';
-      if (this.shift && !locked) this.setShift(null);
+      if (this.shift && !this.shiftLocked()) this.setShift(null);
       return;
     }
 
-    // Alpha typing.  If alpha shift is active and the pressed key has
-    // a blue alpha label (keyboard.js assigns A..Z across the first 26
-    // physical keys), append that letter to the entry buffer.  Under
-    // plain 'alpha' the shift releases after one letter (HP50 default);
-    // under 'alphaLock' it stays on until the user presses α again.
     const alphaActive = this.shift === 'alpha' || this.shift === 'alphaLock';
     if (alphaActive && key.alpha) {
       this.entry.type(key.alpha);
@@ -1223,257 +922,180 @@ class App {
       return;
     }
 
-    const sL = this.shift === 'shiftL' || this.shift === 'shiftLLock';
-    const sR = this.shift === 'shiftR' || this.shift === 'shiftRLock';
+    const layer = this.layer();
     const action =
-      sL && key.shiftLAction ? key.shiftLAction :
-      sR && key.shiftRAction ? key.shiftRAction :
+      layer === 'L' && key.shiftLAction ? key.shiftLAction :
+      layer === 'R' && key.shiftRAction ? key.shiftRAction :
       key.action;
-
-    // Labeled-but-unimplemented shift: the key shows a label (e.g.
-    // 'USER', 'ENTRY') but no handler is wired.  Flash a clear
-    // "Not implemented" rather than silently falling through to the
-    // unshifted action — the label was a promise the user followed.
-    const unimplementedLabel =
-      (sL && !key.shiftLAction && key.shiftL) ? key.shiftL :
-      (sR && !key.shiftRAction && key.shiftR) ? key.shiftR :
-      null;
-
-    if (unimplementedLabel) {
-      this.entry.flashError({ message: `Not implemented: ${unimplementedLabel}` });
-    } else if (action) {
-      action(this.entry, this.shift, this);
-    }
-
-    // Auto-clear shift after one action — but NOT for any *Lock state
-    // (those persist until the user explicitly cancels them) and not
-    // when the user just toggled a shift key itself.
-    const locked =
-      this.shift === 'alphaLock' ||
-      this.shift === 'shiftLLock' ||
-      this.shift === 'shiftRLock';
-    if (
-      this.shift &&
-      !locked &&
-      !['shiftL','shiftR','alpha'].includes(key.kind)
-    ) {
-      this.setShift(null);
-    }
+    const missing = (layer === 'L' && !key.shiftLAction && key.shiftL) ? key.shiftL
+      : (layer === 'R' && !key.shiftRAction && key.shiftR) ? key.shiftR : null;
+    if (missing) this.entry.flashError({ message: `${missing} isn't available in rpl.ai` });
+    else if (action) action(this.entry, this.shift, this);
+    if (this.shift && !this.shiftLocked()) this.setShift(null);
   }
 
-  pressSoftKey(i) {
-    const slot = this.menuSlots[i];
-    if (!slot) {
-      this.entry.flashError({ message: `F${i + 1} (no menu)` });
-      return;
-    }
-    // Pick the handler matching the current shift; fall back to the
-    // unshifted onPress when a shifted handler is not installed.  We
-    // read `this.shift` synchronously because handleKey auto-clears
-    // shift only AFTER the action returns.
-    const sL = this.shift === 'shiftL' || this.shift === 'shiftLLock';
-    const sR = this.shift === 'shiftR' || this.shift === 'shiftRLock';
-    const handler =
-      (sL && slot.onPressL) ? slot.onPressL :
-      (sR && slot.onPressR) ? slot.onPressR :
-      slot.onPress;
-    if (!handler) {
-      this.entry.flashError({ message: `F${i + 1} (no menu)` });
-      return;
-    }
-    try { handler(); }
-    catch (e) { this.entry.flashError(e); }
+  /* ---------------- actions and the keyboard ---------------- */
+
+  _keyContexts() {
+    const contexts = [];
+    if (this.inputMode === 'equation' && this.equationEditor?.ownsKeyboard()) contexts.push('equation');
+    if (this.inputMode === 'matrix') contexts.push('matrix');
+    if (this.selection != null) contexts.push('selection');
+    if (this.inputMode === 'rpl') contexts.push(this.entry.buffer.length ? 'line' : 'empty');
+    contexts.push('global');
+    return contexts;
   }
 
-  /* ---------------- physical-keyboard shortcuts ----------------
-     The physical keyboard is a plain text-input channel: every
-     printable character types itself into the command-line buffer,
-     exactly like a `<textarea>`.  This means the user can bang out
-     `'X^2 + 2*X + 1'` in one go without fighting alpha mode or worrying
-     that `+` will execute against a partial buffer.  To run RPN ops,
-     they type `+` / `SIN` / `FACTOR` / etc. and press Enter — the
-     command-line parser already commits bare-operator tokens and
-     op names as ops (see entry.js::enter).  For fluency with the
-     virtual calculator, clicking the on-screen buttons still follows
-     HP50 semantics (alpha shift, operator-keys-execute, algebraic
-     entry rerouting — see keyboard.js).
+  _runChord(chord) {
+    const binding = findBinding(chord, this._keyContexts());
+    if (!binding) return false;
+    return this.runAction(binding.action, binding.arg) !== false;
+  }
 
-     Keys with non-text meaning stay special: Enter commits, Backspace
-     deletes, Escape cancels, arrow keys drive stack scroll and menu
-     paging.  Everything else — letters (either case), digits, `+`,
-     `-`, `*`, `/`, `^`, `(`, `)`, `{`, `}`, `[`, `]`, `,`, `=`, `'`,
-     `<`, `>`, `_`, etc. — goes straight into the buffer via e.key.
-  ---------------------------------------------------------------- */
-  _installKeyboardShortcuts() {
-    document.addEventListener('keydown', (e) => {
-      if (this.equationEditor?.ownsKeyboard()) return;
-      if (!this.commandPalette || this.commandPalette.isOpen()) return;
-      const tag = e.target?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      const openK = (e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k';
-      if (openK) {
-        e.preventDefault();
-        e.stopPropagation();
-        this.commandPalette.open();
+  /** Run an ACTIONS entry.  Returns false when the action does not
+   *  apply right now, so the key falls through to its default. */
+  runAction(id, arg) {
+    switch (id) {
+      case 'palette.open': this.popover.close({ restoreFocus: false }); this.palette.open(); return true;
+      case 'assistant.ask': {
+        const text = this.entry.buffer.trim().replace(/^\?/, '').trim();
+        if (text) this.entry.cancel();
+        this.drawers.open('assistant');
+        if (text) requestAnimationFrame(() => this.chatBot.setDraft(text));
+        return true;
       }
+      case 'writer.equation': {
+        if (this.inputMode === 'equation') { this.setInputMode('rpl'); return true; }
+        if (this.selection != null && (isSymbolic(this.stack.peek(this.selection)) || isName(this.stack.peek(this.selection)))) this.editLevel(this.selection);
+        else this.setInputMode('equation');
+        return true;
+      }
+      case 'writer.matrix': {
+        if (this.inputMode === 'matrix') { this.setInputMode('rpl'); return true; }
+        if (this.selection != null && (isMatrix(this.stack.peek(this.selection)) || isVector(this.stack.peek(this.selection)))) this.editLevel(this.selection);
+        else this.setInputMode('matrix');
+        return true;
+      }
+      case 'drawer.toggle': this.drawers.toggle(); return true;
+      case 'keypad.toggle': this.setKeypadLayout(this.prefs.keypad === 'hidden' ? (this._lastKeypad ?? 'full') : 'hidden'); return true;
+      case 'view.minimal': this.setMinimal(!this.prefs.minimal); return true;
+      case 'settings.open': this.sheets.openSettings(); return true;
+      case 'shortcuts.open': this.sheets.openShortcuts(); return true;
+      case 'edit.undo':
+        if (this.entry.buffer.length) { this.entry.undoText(); return true; }
+        try { this.entry.performUndo(); } catch (e) { this.entry.flashError(e); }
+        return true;
+      case 'edit.redo':
+        if (this.entry.buffer.length) { this.entry.redoText(); return true; }
+        try { this.entry.performRedo(); } catch (e) { this.entry.flashError(e); }
+        return true;
+      case 'edit.paste':
+        if (this.entry.hasFocus()) return false;
+        navigator.clipboard?.readText?.().then((text) => { if (text) { this.entry.paste(text); this.entry.focus(); } })
+          .catch(() => this.notifyError('The clipboard is not available here. Click the command line and paste there.'));
+        return true;
+      case 'ui.escape': return this._escape();
+      case 'menu.prev': this.prevMenuPage(); return true;
+      case 'menu.next': this.nextMenuPage(); return true;
+      case 'softkey.press': this.pressSoftKey(arg); return true;
+      case 'softkey.store': this.pressSoftKey(arg, 'L'); return true;
+      case 'softkey.recall': this.pressSoftKey(arg, 'R'); return true;
+      case 'line.newline': this.entry.type('\n'); return true;
+      case 'stack.dup':
+        if (this._keyRepeat) return true;
+        this.entry.enter();
+        return true;
+      case 'stack.drop':
+        if (this._keyRepeat) return true;
+        this.entry.backspace();
+        return true;
+      case 'stack.swap': if (this.stack.depth < 2) { this.nextMenuPage(); return true; } this.swapTop(); return true;
+      case 'level.selectFirst': if (!this.stack.depth) return true; this.selectLevel(1); return true;
+      case 'level.editFirst': if (!this.stack.depth) return true; this.editLevel(1); return true;
+      case 'level.up': this.selectLevel(Math.min(this.stack.depth, this.selection + 1)); return true;
+      case 'level.down': if (this.selection <= 1) this.clearSelection(); else this.selectLevel(this.selection - 1); return true;
+      case 'level.rollUp': if (this.selection < this.stack.depth) this._moveLevel(this.selection, this.selection + 1); return true;
+      case 'level.rollDown': if (this.selection > 1) this._moveLevel(this.selection, this.selection - 1); return true;
+      case 'level.edit': this.levelAction('edit'); return true;
+      case 'level.drop': if (this._keyRepeat) return true; this.levelAction('drop'); return true;
+      case 'level.copy': this.levelAction('copy'); return true;
+      case 'level.pick': this.levelAction('pick'); return true;
+      default: return false;
+    }
+  }
+
+  _escape() {
+    if (this.popover.isOpen()) { this.popover.close(); return true; }
+    if (this.sheets.isOpen()) { this.sheets.close(); return true; }
+    if (this.plotFocus) { this.setPlotFocus(false); return true; }
+    if (this.selection != null) { this.clearSelection(); return true; }
+    if (this.entry.error) { this.entry.error = ''; this.entry._emit(); return true; }
+    if (this.equationEditor?.isLineEditing()) { this.equationEditor.cancelLineEdit(); return true; }
+    if (this.pendingEdit) { this.cancelEdit(); return true; }
+    if (this.inputMode !== 'rpl') { this.setInputMode('rpl'); return true; }
+    if (this.entry.buffer.length) {
+      const text = this.entry.buffer;
+      this.entry.cancel();
+      this.toast('Cleared the command line', { action: 'Undo', onAction: () => this.entry.recall(text) });
+      return true;
+    }
+    if (this.shift) { this.setShift(null); return true; }
+    const overlay = this.prefs.minimal || window.innerWidth < 980;
+    if (this.drawers.isOpen() && overlay) { this.drawers.close(); return true; }
+    return true;
+  }
+
+  _installKeyboard() {
+    document.addEventListener('keydown', (e) => {
+      this._keyRepeat = e.repeat;
+      if (e.key === 'Alt' && !this.showKeyHints) { this.showKeyHints = true; this.keypad.update(); }
     }, true);
-
-    document.addEventListener('keydown', (e) => {
-      // Ignore if user is typing into a real <input>/<textarea>
-      const tag = e.target?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      if (tag === 'BUTTON' && (e.key === 'Enter' || e.key === ' ')) return;
-
-      // If CodeMirror (or one of its keybindings) already claimed this
-      // event, don't double-handle.  CM's bindings call preventDefault on
-      // consumed keys — Enter / Escape / arrows-with-content / every
-      // printable char when the editor has focus — so the document-level
-      // handler below only fires for keys CM declined or for events
-      // dispatched while the editor isn't focused.
-      if (e.defaultPrevented) return;
-
-      if (this.equationEditor?.ownsKeyboard()) {
-        if (this.equationEditor.handleKeyDown(e)) return e.preventDefault();
-        if (!/^F[1-6]$/.test(e.key)) return;
-      }
-
-      const focused = this.entry.hasFocus();
-
-      // Modifier combos (Ctrl/Cmd/Alt) split by focus:
-      //   focused  → CM and the browser own them (text-editor semantics —
-      //              Cmd-Z undoes buffer edits via CM's history, Cmd-V
-      //              pastes through the native paste event).  We stay out.
-      //   unfocused → calc semantics — Cmd-Z ≡ stack UNDO, Cmd-V ≡ type
-      //              clipboard, Cmd-Y ≡ REDO.  handleModifierShortcut
-      //              covers those.
-      // Any remaining modifier combo (Cmd-T, Cmd-R, …) falls through to
-      // the browser unchanged.
-      if (!focused && handleModifierShortcut(e, this.entry)) return e.preventDefault();
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-      // Interactive-stack override: while the browse-cursor is active,
-      // arrow keys move the selection and ENTER echoes the selection.
-      // ESC / ◀ cancel.  Everything else (digits, letters, …) exits
-      // interactive mode first so the user can just start typing.
-      if (this._interactive) {
-        switch (e.key) {
-          case 'ArrowUp':    this._interactive.moveUp();    return e.preventDefault();
-          case 'ArrowDown':  this._interactive.moveDown();  return e.preventDefault();
-          case 'Enter':      this._interactive.defaultAction(); return e.preventDefault();
-          case 'Backspace':  this._interactive.dropAction(); return e.preventDefault();
-          case 'Escape':
-          case 'ArrowLeft':  this._exitInteractiveStack();  return e.preventDefault();
-          default:           this._exitInteractiveStack();  // fall through
-        }
-      }
-
-      // F-keys bypass the focus dance.  F1..F6 press soft-menu slots;
-      // F7..F12 we don't claim (reload / devtools / OS shortcuts live
-      // there).  None of them engage the editor.
-      switch (e.key) {
-        case 'F1': this.pressSoftKey(0); return e.preventDefault();
-        case 'F2': this.pressSoftKey(1); return e.preventDefault();
-        case 'F3': this.pressSoftKey(2); return e.preventDefault();
-        case 'F4': this.pressSoftKey(3); return e.preventDefault();
-        case 'F5': this.pressSoftKey(4); return e.preventDefault();
-        case 'F6': this.pressSoftKey(5); return e.preventDefault();
-        case 'F7': case 'F8': case 'F9':
-        case 'F10': case 'F11': case 'F12':
-          return;
-      }
-
-      // Keys whose meaning depends on focus and that should stay OUT
-      // of the editor when it isn't already focused — handled before
-      // the auto-focus grab so pressing them never pulls focus.  When
-      // the editor IS focused, CM owns these (Backspace →
-      // deleteCharBackward, Tab → appKeys 2-space insert) and the
-      // document handler never sees them thanks to defaultPrevented.
-      if (!focused) {
-        switch (e.key) {
-          case 'Backspace':
-            // Classic calc DROP — pop the top of stack.  Same undo
-            // snapshot Entry.backspace takes on an empty buffer; we
-            // skip Entry.backspace itself so a stale non-empty buffer
-            // doesn't get delete-char'd (the user asked for DROP, not
-            // edit, when the editor isn't active).
-            this.entry._snapForUndo();
-            try { this.stack.drop(); } catch (err) { this.entry.flashError(err); }
-            return e.preventDefault();
-          case 'Tab':
-            // Let the browser perform its default focus navigation.
-            return;
-          case 'Escape':
-            // Esc is a dismiss gesture, not an "engage editor" one —
-            // stay out of the editor when it isn't already active.
-            return;
-        }
-      }
-
-      // Any other non-modifier keypress pulls focus into the editor.
-      // The event has already left the editor's DOM path by the time we
-      // handle it here, so focusing doesn't re-dispatch the keystroke —
-      // we still have to perform the action ourselves via the switch
-      // below (type / commitEntry / cursor moves / …).
-      if (!focused) this.entry.focus();
-
-      // Named non-text keys handled first.
-      switch (e.key) {
-        case 'Enter':
-          if (e.shiftKey) this.entry.type('\n');
-          else this.commitEntry();
-          return e.preventDefault();
-        case 'Escape':     this.cancelEntry();            return e.preventDefault();
-        case 'ArrowUp':
-          // When the editor is active, ▲ only moves the cursor within
-          // the buffer (multi-line-aware).  It never scrolls the stack
-          // or enters the interactive-stack browser — user asked for
-          // the editor to own up/down as long as any text is typed.
-          if (this.entry.buffer.length === 0) this.enterInteractiveStack();
-          else this.entry.cursorUp();
-          return e.preventDefault();
-        case 'ArrowDown':
-          if (this.entry.buffer.length === 0 && this.stack.depth >= 1) this.editLevel1();
-          else if (this.entry.buffer.length > 0) this.entry.cursorDown();
-          return e.preventDefault();
-        case 'ArrowLeft':
-          if (this.entry.buffer.length > 0) this.entry.cursorLeft();
-          else this.prevMenuPage();
-          return e.preventDefault();
-        case 'ArrowRight':
-          if (this.entry.buffer.length > 0) this.entry.cursorRight();
-          else if (this.stack.depth >= 2) this.swapTop();
-          else this.nextMenuPage();
-          return e.preventDefault();
-        case 'Home':
-          if (this.entry.buffer.length > 0) this.entry.cursorHome();
-          return e.preventDefault();
-        case 'End':
-          if (this.entry.buffer.length > 0) this.entry.cursorEnd();
-          return e.preventDefault();
-      }
-
-      // Any single printable character (including Shift-produced
-      // symbols like !@#$%^&*() and punctuation) goes straight into
-      // the buffer.  e.key is already post-shift — Shift+9 arrives
-      // as '(' on US layouts, so no case-fiddling needed.
-      if (e.key.length === 1) {
-        this.entry.type(e.key);
-        return e.preventDefault();
-      }
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'Alt' && this.showKeyHints) { this.showKeyHints = false; this.keypad.update(); }
     });
+    window.addEventListener('blur', () => { if (this.showKeyHints) { this.showKeyHints = false; this.keypad.update(); } });
+    document.addEventListener('keydown', (e) => this._onKeyDown(e));
+  }
+
+  _onKeyDown(e) {
+    if (e.defaultPrevented || this.palette.isOpen()) return;
+    const target = e.target;
+    const tag = target?.tagName;
+    const inEditor = this.entry.hasFocus();
+    const inField = !inEditor && (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable);
+    const chord = chordFromEvent(e);
+    if (!chord) return;
+    if (tag === 'BUTTON' && (e.key === 'Enter' || e.key === ' ')) return;
+
+    if (this.inputMode === 'equation' && this.equationEditor?.ownsKeyboard() && !/^(Mod\+|F\d|Shift\+F|Alt\+F|PageUp|PageDown)/.test(chord)) {
+      if (this.equationEditor.handleKeyDown(e)) { e.preventDefault(); return; }
+      if (e.key === 'Enter') { this.equationEditor.commit(); e.preventDefault(); return; }
+    }
+
+    if (inField) {
+      const fieldSafe = /^Mod\+(K|I|E|\\|;|,|\/)$|^Mod\+Shift\+(F|M)$|^F\d$|^(Shift|Alt)\+F\d$/.test(chord);
+      const escapeSafe = chord === 'Escape' && (!target.value || this.inputMode !== 'rpl');
+      if (!fieldSafe && !escapeSafe) return;
+    }
+
+    const binding = findBinding(chord, inField ? this._keyContexts().filter((c) => c === 'global' || c === 'selection') : this._keyContexts());
+    if (binding) {
+      if (this.runAction(binding.action, binding.arg) !== false) e.preventDefault();
+      return;
+    }
+    if (inField || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (this.inputMode !== 'rpl') return;
+    if (e.key.length === 1) {
+      this.entry.focus();
+      this.entry.type(e.key);
+      e.preventDefault();
+    }
   }
 }
 
-/* ------------------------------------------------------------------
-   CST soft-menu helpers — extract a display label and the underlying
-   RPL value to push when the slot is pressed.  Tagged wrappers are
-   opened (we show the tag, push the wrapped value); raw names/strings
-   are shown verbatim; anything else falls through to the formatter so
-   the label at least identifies the item.
-   ------------------------------------------------------------------ */
 function customMenuLabel(item) {
   if (isTagged(item)) return item.tag || format(item.value);
-  if (isName(item))   return item.id;
+  if (isName(item)) return item.id;
   if (isString(item)) return item.value;
   return format(item);
 }
@@ -1485,47 +1107,25 @@ function customMenuTarget(item) {
 
 window.__hp50 = new App();
 
-/** Wipe all persisted settings and reload the page.  Covers every
- *  localStorage key the app writes: calculator state, side-panel
- *  layout, chrome mode, AI endpoint config,
- *  consent flags, etc.  Exposed as a global so users can run it from
- *  the DevTools console (the previous double-click-version shortcut
- *  has been repurposed to open DevTools itself). */
 window.calc_reset = function calc_reset() {
-  const KEYS = [
-    'hp50.state',
-    'hp50.ui.sidePanel',
-    'hp50.ui.chrome',
-    'rpl5050.chatbot.consented.v1',
-    'rpl5050.chatbot.remote',
-  ];
-  try { for (const k of KEYS) localStorage.removeItem(k); }
-  catch { /* private / storage-blocked — proceed to reload anyway */ }
-  location.reload();
+  window.__hp50.sheets.resetEverything();
 };
 
-/* ------------------------------------------------------------------
-   Kick off the Giac CAS in the background.  Cold init is ~150 ms
-   (loads /vendor/giac/giacwasm.js + giacwasm.wasm and cwraps the
-   caseval bridge).  Fire-and-forget: the UI stays responsive while
-   the WASM fetches, and any CAS-routed op (FACTOR on Symbolic, and
-   the EXPAND/DERIV/INTEG/SOLVE migrations to come) that runs before
-   `giac.isReady()` flips true throws "CAS not ready" per the
-   no-fallback policy — user just presses the op again once init
-   completes.  A visible init error is swallowed to the console for
-   now; a future UI polish pass can annunciate readiness on-screen.
-   ------------------------------------------------------------------ */
 giac.init().catch((e) => {
   console.error('[giac] init failed:', e);
 });
 
 function installOfflineCache(app) {
   if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
+  let reloadRequested = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (reloadRequested) location.reload(); });
   navigator.serviceWorker.register('sw.js').then((reg) => {
     const announceWaitingUpdate = () => {
-      if (reg.waiting && navigator.serviceWorker.controller) {
-        app.entry.flashNotice('An update is ready: it loads the next time rpl.ai opens');
-      }
+      if (!reg.waiting || !navigator.serviceWorker.controller) return;
+      app.toast('A new version of rpl.ai is ready', {
+        action: 'Reload',
+        onAction: () => { reloadRequested = true; reg.waiting?.postMessage({ type: 'activate-update' }); },
+      });
     };
     announceWaitingUpdate();
     reg.addEventListener('updatefound', () => reg.installing?.addEventListener('statechange', announceWaitingUpdate));

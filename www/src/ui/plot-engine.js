@@ -11,7 +11,7 @@ import { equationToSymbolic, valueToEquationDraft } from './equation-editor.js';
 export { evalFitModel };
 
 export const TRACE_COLORS = Object.freeze([
-  '#c74440', '#2d70b3', '#388c46', '#6042a6', '#fa7e19', '#000000',
+  '#e5534b', '#4a9eed', '#57ab5a', '#b083f0', '#f0883e', '#2bb8b3',
 ]);
 
 const CONSTS = Object.freeze({

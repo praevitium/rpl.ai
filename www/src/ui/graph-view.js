@@ -412,7 +412,7 @@ export class GraphView {
     const view = this.view;
     const [px] = worldToPixel(h.x, 0, view, width, height);
     ctx.save();
-    ctx.strokeStyle = 'rgba(42, 49, 64, 0.4)';
+    ctx.strokeStyle = this._colors.axis;
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 3]);
     ctx.beginPath();
@@ -426,7 +426,7 @@ export class GraphView {
       if (!Number.isFinite(yv)) continue;
       const [dx, dy] = worldToPixel(h.x, yv, view, width, height);
       ctx.fillStyle = t.color;
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = this._colors.bg;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.arc(dx, dy, 4.5, 0, Math.PI * 2);
@@ -504,6 +504,18 @@ export class GraphView {
 
   resize() { this.draw(); }
 
+  _palette() {
+    const css = getComputedStyle(this._canvas);
+    const token = (name) => css.getPropertyValue(name).trim();
+    return {
+      bg: token('--plot-bg'),
+      grid: token('--plot-grid'),
+      axis: token('--plot-axis'),
+      label: token('--plot-label'),
+      font: `11px ${token('--font-mono')}`,
+    };
+  }
+
   draw() {
     const canvas = this._canvas;
     const wrap = canvas.parentElement;
@@ -519,7 +531,8 @@ export class GraphView {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
-    ctx.fillStyle = '#fbfbfd';
+    this._colors = this._palette();
+    ctx.fillStyle = this._colors.bg;
     ctx.fillRect(0, 0, width, height);
 
     this._drawGrid(ctx, width, height);
@@ -536,11 +549,12 @@ export class GraphView {
     const yt = niceTicks(view.ymin, view.ymax, 8);
     ctx.save();
     ctx.lineWidth = 1;
-    ctx.font = '11px Inter, Helvetica Neue, Arial, sans-serif';
-    ctx.fillStyle = '#7b8190';
+    const colors = this._colors;
+    ctx.font = colors.font;
+    ctx.fillStyle = colors.label;
     for (const x of xt.ticks) {
       const [px] = worldToPixel(x, 0, view, width, height);
-      ctx.strokeStyle = Math.abs(x) < xt.step * 1e-9 ? '#2a3140' : '#e4e7ee';
+      ctx.strokeStyle = Math.abs(x) < xt.step * 1e-9 ? colors.axis : colors.grid;
       ctx.beginPath();
       ctx.moveTo(px, 0);
       ctx.lineTo(px, height);
@@ -552,7 +566,7 @@ export class GraphView {
     }
     for (const y of yt.ticks) {
       const [, py] = worldToPixel(0, y, view, width, height);
-      ctx.strokeStyle = Math.abs(y) < yt.step * 1e-9 ? '#2a3140' : '#e4e7ee';
+      ctx.strokeStyle = Math.abs(y) < yt.step * 1e-9 ? colors.axis : colors.grid;
       ctx.beginPath();
       ctx.moveTo(0, py);
       ctx.lineTo(width, py);

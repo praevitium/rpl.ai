@@ -22,7 +22,6 @@ import {
   getRealMaxExp, setRealMaxExp, resetRealMaxExp,
   REAL_MAX_EXP_DEFAULT, REAL_MAX_EXP_MIN, REAL_MAX_EXP_MAX,
 } from '../www/src/rpl/state.js';
-import { clampStackScroll, computeMenuPage } from '../www/src/ui/paging.js';
 import { assert, assertThrows } from './helpers.mjs';
 
 /* Numerics: basic arithmetic, complex, SQRT, stack ops, parser+format basics,

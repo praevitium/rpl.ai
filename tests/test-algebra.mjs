@@ -19,7 +19,6 @@ import {
   setApproxMode,
   setComplexMode, getComplexMode,
 } from '../www/src/rpl/state.js';
-import { clampStackScroll, computeMenuPage } from '../www/src/ui/paging.js';
 import {
   parseAlgebra, formatAlgebra,
   Num as AstNum, Var as AstVar, Bin as AstBin, Neg as AstNeg,

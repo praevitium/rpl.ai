@@ -1,9 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="auto">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark light" />
 <title>rpl.ai</title>
+<script>
+  try {
+    const ui = JSON.parse(localStorage.getItem('rplai.ui') || '{}');
+    if (['graphite', 'paper', 'classic'].includes(ui.theme)) document.documentElement.dataset.theme = ui.theme;
+    if (ui.minimal === true) document.documentElement.dataset.view = 'minimal';
+  } catch {}
+</script>
 <link rel="icon" href="favicon.ico" sizes="any" />
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
@@ -18,6 +26,7 @@
 </head>
 <body>
   <svg class="icon-sprite" width="0" height="0" aria-hidden="true" focusable="false">
+    <symbol id="i-mark" viewBox="0 0 64 64"><rect x=".5" y=".5" width="63" height="63" rx="13.5" fill="#171a21" stroke="#ffffff" stroke-opacity=".12"/><rect x="26" y="17" width="26" height="7" rx="3.5" fill="#e8eaef" fill-opacity=".38" stroke="none"/><rect x="19" y="28.5" width="33" height="7" rx="3.5" fill="#e8eaef" fill-opacity=".68" stroke="none"/><rect x="12" y="40" width="7" height="7" rx="2" fill="#f2a33a" stroke="none"/><rect x="22" y="40" width="30" height="7" rx="3.5" fill="#b5d4a1" stroke="none"/></symbol>
     <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.5l1.7 5.1 5.1 1.7-5.1 1.7L12 17.1l-1.7-5.1-5.1-1.7 5.1-1.7z"/><path d="M18.5 15.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></symbol>
     <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6.5c-1.9-1.4-4.4-2-7-2v13c2.6 0 5.1.6 7 2 1.9-1.4 4.4-2 7-2v-13c-2.6 0-5.1.6-7 2z"/><path d="M12 6.5v13"/></symbol>
     <symbol id="i-fx" viewBox="0 0 24 24"><path d="M10 4.5c-2.2 0-3 1.2-3.4 3.3L4.8 19.5M3.8 10.5h6"/><path d="M13 11l6 8M19 11l-6 8"/></symbol>
@@ -26,61 +35,85 @@
     <symbol id="i-omega" viewBox="0 0 24 24"><path d="M5 19h4.5v-1.8a6.5 6.5 0 1 1 5 0V19H19"/></symbol>
     <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.8l2 2h7.2a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></symbol>
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 4.5L4.5 9 9 13.5"/><path d="M4.5 9h10a5 5 0 0 1 0 10h-3"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 4.5L19.5 9 15 13.5"/><path d="M19.5 9h-10a5 5 0 0 0 0 10h3"/></symbol>
+    <symbol id="i-keypad" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M7.5 9h.01M12 9h.01M16.5 9h.01M7.5 12.5h.01M12 12.5h.01M16.5 12.5h.01M8 16h8" stroke-width="2"/></symbol>
+    <symbol id="i-screen" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M7 9h10M10 12.5h7M7 16h5"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9M4 12h13M20 12h.01"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.6M12 16.8h.01"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><path d="M6 12h.01M12 12h.01M18 12h.01" stroke-width="2.6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+    <symbol id="i-chd" viewBox="0 0 24 24"><path d="M6.5 9.5l5.5 5.5 5.5-5.5"/></symbol>
+    <symbol id="i-chu" viewBox="0 0 24 24"><path d="M6.5 14.5l5.5-5.5 5.5 5.5"/></symbol>
+    <symbol id="i-chl" viewBox="0 0 24 24"><path d="M14.5 6.5L9 12l5.5 5.5"/></symbol>
+    <symbol id="i-chr" viewBox="0 0 24 24"><path d="M9.5 6.5L15 12l-5.5 5.5"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4.5 7h15M4.5 12h15M4.5 17h9"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M14.5 5.5l4 4L9 19H5v-4z"/><path d="M12.5 7.5l4 4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M14 4.5h5.5V10M10 19.5H4.5V14M19.5 4.5L13.5 10.5M4.5 19.5l6-6"/></symbol>
+    <symbol id="i-collapse" viewBox="0 0 24 24"><path d="M19.5 10.5H13.5V4.5M4.5 13.5h6v6M13.5 10.5l6-6M10.5 13.5l-6 6"/></symbol>
+    <symbol id="i-full" viewBox="0 0 24 24"><path d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19.5V5M6 11l6-6 6 6"/></symbol>
+    <symbol id="i-enter" viewBox="0 0 24 24"><path d="M19.5 5v6.5a2 2 0 0 1-2 2H5"/><path d="M9 9.5l-4 4 4 4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-cap" viewBox="0 0 24 24"><path d="M2.5 9.5L12 5l9.5 4.5L12 14z"/><path d="M6.5 11.5v4.3c1.4 1.4 3.3 2.2 5.5 2.2s4.1-.8 5.5-2.2v-4.3M21.5 9.5V15"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4.5v11M7 11l5 5 5-5M5 19.5h14"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 16V5M7 9.5l5-5 5 5M5 19.5h14"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M9 5.5h10.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H9L3 12z"/><path d="M11.5 9.5l5 5M16.5 9.5l-5 5"/></symbol>
+    <symbol id="i-tri-u" viewBox="0 0 24 24"><path d="M12 6.5l6.5 10h-13z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-tri-d" viewBox="0 0 24 24"><path d="M12 17.5l6.5-10h-13z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-tri-l" viewBox="0 0 24 24"><path d="M6.5 12l10-6.5v13z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-tri-r" viewBox="0 0 24 24"><path d="M17.5 12l-10-6.5v13z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5l11 6.5-11 6.5z"/></symbol>
+    <symbol id="i-step" viewBox="0 0 24 24"><path d="M6 5.5l9 6.5-9 6.5zM18.5 5.5v13"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol>
+    <symbol id="i-grip" viewBox="0 0 24 24"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="2.6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5.5M12 16.3h.01"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4"/></symbol>
+    <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15"/><path d="M8 14.5c1.3-3.5 2.5-5 3.7-5s1.8 2.7 3 2.7c.6 0 1.1-.6 1.3-1.2"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4.5 11L12 4.5l7.5 6.5V19a.5.5 0 0 1-.5.5h-4.5v-5h-5v5H5a.5.5 0 0 1-.5-.5z"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 17.5h6M10 20.5h4M12 3.5a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.9v1.2h5v-1.2c0-.8.4-1.5 1-1.9A6 6 0 0 0 12 3.5z"/></symbol>
   </svg>
-  <!-- Side-panel mount point.  SidePanel (src/ui/side-panel.js) attaches
-       its own <aside> here at construction.  Kept as a sibling of the
-       calculator so the slide-in overlay can be positioned relative to
-       the viewport without being clipped by the bezel's overflow. -->
-  <div id="sidePanelRoot"></div>
 
-  <div id="calculator" class="calculator">
-    <div class="bezel">
-      <div class="brand-row">
-        <span class="brand">rpl<span class="model-sub">.ai</span></span>
-        <span class="version" id="versionLabel"></span>
-        <span class="model">AI-Assisted RPL Calculator</span>
-      </div>
-
-      <div class="screen" id="screen" aria-label="LCD display">
-        <div class="screen-inner">
-          <div class="status-line" id="statusLine">
-            <span class="annunciator on" id="ann-angle">RAD</span>
-            <!-- Coordinate display mode: XYZ (rect) / R∠Z (cylin) /
-                 R∠∠ (sphere).  Click to cycle. -->
-            <span class="annunciator on" id="ann-coord">XYZ</span>
-            <!-- BinaryInteger display base: HEX / DEC / OCT / BIN.
-                 Hidden (empty) when no base override is active. -->
-            <span class="annunciator" id="ann-hex"></span>
-            <span class="annunciator" id="ann-r"></span>
-            <!-- Number display mode: STD / FIX n / SCI n / ENG n.
-                 Always lit; updates via the STD/FIX/SCI/ENG ops. -->
-            <span class="annunciator on" id="ann-display">STD</span>
-            <!-- Real / Complex mode (HP50 flag -103): ℝ when clear,
-                 i when set.  Click to toggle; gates SOLVE complex roots
-                 and complex-mode transcendental ops. -->
-            <span class="annunciator on" id="ann-complex">ℝ</span>
-            <span class="annunciator on" id="ann-approx">=</span>
-            <span class="annunciator" id="ann-halt"></span>
-            <span class="annunciator" id="ann-mode">{ HOME }</span>
+  <div id="app" class="app">
+    <header class="appbar" id="appbar"></header>
+    <div class="app-body">
+      <nav class="rail" id="rail" aria-label="Tools"></nav>
+      <aside class="drawer" id="drawer" aria-label="Tools drawer"></aside>
+      <div class="scrim" id="scrim"></div>
+      <div class="app-main">
+        <section class="work" id="work" aria-label="Calculator">
+          <div class="well" id="well">
+            <div class="status-line" id="statusLine"></div>
+            <div class="stack-view" id="stackView" role="list" aria-label="Stack"></div>
+            <div class="suspended-program" id="suspendedProgram" hidden></div>
           </div>
-          <div class="stack-view" id="stackView"></div>
-          <div class="suspended-program" id="suspendedProgram" hidden></div>
-          <div class="cmdline" id="cmdline"></div>
-        </div>
+          <div class="banner" id="banner"></div>
+          <div class="input" id="input">
+            <div class="input-top" id="inputTop"></div>
+            <div class="input-body" id="inputBody">
+              <div class="cmdline" id="cmdline"></div>
+            </div>
+            <div class="input-hint" id="inputHint"></div>
+          </div>
+          <div class="menubar" id="menubar" role="toolbar" aria-label="Soft keys"></div>
+        </section>
+        <section class="keys" id="keys" aria-label="Keypad"></section>
       </div>
-
-      <div class="soft-row" id="softRow">
-        <!-- F1..F6 (soft-menu) rendered by src/ui/keyboard.js -->
-      </div>
-
-      <div class="nav-row" id="navRow">
-        <!-- APPS MODE TOOL / VAR STO▶ NXT + 4-way arrow diamond (right)
-             rendered by src/ui/keyboard.js -->
-      </div>
-
-      <div class="keypad" id="keypad">
-        <!-- Main 5-col keypad (rows 4-10) rendered by src/ui/keyboard.js -->
-      </div>
+    </div>
+    <div class="layer" id="layer">
+      <div class="lay-pop" id="layPop"></div>
+      <div class="lay-pal" id="layPal"></div>
+      <div class="lay-sheet" id="laySheet"></div>
+      <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
     </div>
   </div>
 

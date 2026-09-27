@@ -292,6 +292,18 @@ export class MatrixEditor {
       this._focusC = Number(cell.dataset.c);
     });
     this._table.addEventListener('paste', (ev) => this._onPaste(ev));
+    this._table.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Tab' || ev.shiftKey) return;
+      const cell = ev.target.closest?.('input.mx-cell');
+      if (!cell) return;
+      const r = Number(cell.dataset.r);
+      const c = Number(cell.dataset.c);
+      if (r === this.grid.length - 1 && c === this.grid[0].length - 1) {
+        this.grid = resizeGrid(this.grid, this.grid.length + 1, this.grid[0].length);
+        this._asVector = false;
+        this._renderGrid();
+      }
+    });
     this._table.addEventListener('input', (ev) => {
       const cell = ev.target.closest?.('input.mx-cell');
       if (!cell) return;
@@ -307,6 +319,7 @@ export class MatrixEditor {
   _onKey(ev) {
     const cell = ev.target.closest?.('input.mx-cell');
     if (!cell) return;
+    if (ev.key === 'Escape') return;
     ev.stopPropagation();
     const r = Number(cell.dataset.r);
     const c = Number(cell.dataset.c);
@@ -520,16 +533,51 @@ export class MatrixEditor {
   push() {
     try {
       const v = gridToValue(this.grid, { asVector: this._asVector });
-      this.app.commitEntryAndPush(v);
-      this._status.textContent = isVector(v)
-        ? `Pushed vector ${v.items.length}`
-        : `Pushed ${v.rows.length} × ${v.rows[0].length}`;
+      this.app.writerCommit(v);
+      this._status.textContent = '';
       this._status.classList.remove('error');
     } catch (e) {
       this._status.textContent = e.message;
       this._status.classList.add('error');
-      this.app?.entry?.flashError?.({ message: `Matrix: ${e.message}` });
     }
+  }
+
+  /** Load a value directly (not from the stack) — the edit-a-level and
+   *  edit-a-variable entry points. */
+  loadValue(value) {
+    const grid = valueToGrid(value);
+    if (!grid) return;
+    this._asVector = isVector(value) || (isList(value) && value.items.every(isNumber) && !value.items.some(isList));
+    this.grid = grid;
+    this._renderGrid();
+    this._status.textContent = '';
+    this._status.classList.remove('error');
+  }
+
+  focusGrid() {
+    requestAnimationFrame(() => this._focusCell(this._focusR, this._focusC, { select: true }));
+  }
+
+  menuSlots() {
+    const titles = {
+      '+ROW': 'Add a row', '−ROW': 'Remove the last row',
+      '+COL': 'Add a column', '−COL': 'Remove the last column',
+      TRN: 'Transpose', IDN: 'Identity', ZERO: 'All zeros', CLEAR: 'Empty every cell',
+      VECT: 'Push as a vector',
+    };
+    const run = (fn) => () => { fn(); this.app.menubar.render(); };
+    return [
+      { label: '+ROW', title: titles['+ROW'], onPress: run(() => this.insertRowAtFocus()) },
+      { label: '−ROW', title: titles['−ROW'], onPress: run(() => this.deleteRowAtFocus()) },
+      { label: '+COL', title: titles['+COL'], onPress: run(() => this.insertColAtFocus()) },
+      { label: '−COL', title: titles['−COL'], onPress: run(() => this.deleteColAtFocus()) },
+      { label: 'TRN', title: titles.TRN, onPress: run(() => this.transpose()) },
+      { label: 'IDN', title: titles.IDN, onPress: run(() => this.fillIdentity()) },
+      { label: 'ZERO', title: titles.ZERO, onPress: run(() => this.fillZeros()) },
+      { label: 'VECT', title: titles.VECT, toggle: true, on: () => this._asVector, onPress: run(() => { this._asVector = !this._asVector && isVectorShape(this.grid); this._noteShape(); }) },
+      { label: 'CLEAR', title: titles.CLEAR, onPress: run(() => this.clear()) },
+      { label: 'DONE', title: 'Push to the stack (Enter)', onPress: () => this.push() },
+    ];
   }
 }
 

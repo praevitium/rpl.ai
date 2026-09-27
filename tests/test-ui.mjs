@@ -18,10 +18,10 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode, setCoordMode,
 } from '../www/src/rpl/state.js';
-import { clampStackScroll, computeMenuPage } from '../www/src/ui/paging.js';
+import { computeMenuPage } from '../www/src/ui/paging.js';
 import { headingKey, ALIASES, pushHistory } from '../www/src/ui/command-help.js';
-import { escapeHtml, normalizeMenuSlots, binaryBaseLabel, displayModeLabel, coordModeGlyph, haltAnnunciatorLabel, suspendedProgramText } from '../www/src/ui/display.js';
-import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '../www/src/ui/side-panel.js';
+import { escapeHtml, binaryBaseLabel, displayModeLabel, coordModeGlyph, suspendedProgramText } from '../www/src/ui/display.js';
+import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '../www/src/ui/drawer.js';
 import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { UNIT_CATALOG } from '../www/src/rpl/units.js';
@@ -33,25 +33,9 @@ import { assert, assertThrows } from './helpers.mjs';
    interactive-stack pure helpers, Display click/tooltip rendering. */
 
 /* ================================================================
-   UI paging helpers — clampStackScroll and computeMenuPage.
-   Pure functions, no DOM required.  These drive the arrow-key +
-   menu-paging wiring.
+   UI paging helper — computeMenuPage.  Pure, no DOM required; it
+   drives the soft-menu page view.
    ================================================================ */
-
-// clampStackScroll: basic clamping
-{
-  assert(clampStackScroll(0, 5) === 0,   'clampStackScroll: 0 stays 0');
-  assert(clampStackScroll(2, 5) === 2,   'clampStackScroll: in range unchanged');
-  assert(clampStackScroll(4, 5) === 4,   'clampStackScroll: depth-1 is the cap');
-  assert(clampStackScroll(99, 5) === 4,  'clampStackScroll: over cap clamps to depth-1');
-  assert(clampStackScroll(-3, 5) === 0,  'clampStackScroll: negatives clamp to 0');
-  assert(clampStackScroll(3, 1) === 0,   'clampStackScroll: depth 1 pins to 0');
-  assert(clampStackScroll(3, 0) === 0,   'clampStackScroll: depth 0 pins to 0');
-  assert(clampStackScroll(NaN, 10) === 0,'clampStackScroll: NaN → 0');
-  // Floor behavior — fractional offsets are accepted by callers that
-  // do arithmetic (e.g. a touch-scroll gesture in the future).
-  assert(clampStackScroll(2.9, 10) === 2,'clampStackScroll: fractional floors down');
-}
 
 // computeMenuPage: pagination view
 {
@@ -165,36 +149,6 @@ import { assert, assertThrows } from './helpers.mjs';
 }
 
 /* ================================================================
-   session319: normalizeMenuSlots — the pure slice/pad extracted from
-   Display.setMenu so the soft-menu row is always exactly six slots.
-   Pins the truncate-past-6, pad-short-with-'', exactly-6-unchanged, and
-   input-not-mutated invariants so a refactor of setMenu can't regress
-   the fixed-grid contract.
-   ================================================================ */
-{
-  assert(JSON.stringify(normalizeMenuSlots(['A', 'B'])) ===
-         JSON.stringify(['A', 'B', '', '', '', '']),
-                                             'normalizeMenuSlots: short array padded to six');
-  assert(JSON.stringify(normalizeMenuSlots([])) ===
-         JSON.stringify(['', '', '', '', '', '']),
-                                             'normalizeMenuSlots: empty array → six blanks');
-  const six = ['A', 'B', 'C', 'D', 'E', 'F'];
-  assert(JSON.stringify(normalizeMenuSlots(six)) === JSON.stringify(six),
-                                             'normalizeMenuSlots: exactly six unchanged');
-  assert(normalizeMenuSlots(six).length === 6,
-                                             'normalizeMenuSlots: exactly six stays length six');
-  assert(JSON.stringify(normalizeMenuSlots(
-           ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'])) ===
-         JSON.stringify(['A', 'B', 'C', 'D', 'E', 'F']),
-                                             'normalizeMenuSlots: more than six truncated to six');
-  // The input array is not mutated (slice returns a copy).
-  const input = ['A'];
-  const out = normalizeMenuSlots(input);
-  assert(input.length === 1 && out.length === 6 && out !== input,
-                                             'normalizeMenuSlots: input left untouched, fresh array returned');
-}
-
-/* ================================================================
    session326: the three annunciator label/glyph maps extracted from
    Display.setBinaryBaseAnnunciator / setDisplayAnnunciator / setCoordMode
    into pure functions, so the status-line label text is testable DOM-free.
@@ -225,12 +179,6 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(coordModeGlyph('BOGUS') === 'XYZ',  'coordModeGlyph: unknown mode → XYZ');
   assert(coordModeGlyph('rect') === 'XYZ',   'coordModeGlyph: keys are case-sensitive, falls back to XYZ');
 
-  assert(haltAnnunciatorLabel('step') === 'SST',       'haltAnnunciatorLabel: step → SST');
-  assert(haltAnnunciatorLabel('halt') === 'HLT',       'haltAnnunciatorLabel: halt → HLT');
-  assert(haltAnnunciatorLabel('prompt') === 'HLT',     'haltAnnunciatorLabel: prompt → HLT');
-  assert(haltAnnunciatorLabel(null) === undefined,     'haltAnnunciatorLabel: null hides the annunciator');
-  assert(haltAnnunciatorLabel(undefined) === undefined,'haltAnnunciatorLabel: undefined hides the annunciator');
-  assert(haltAnnunciatorLabel('SST') === undefined,    'haltAnnunciatorLabel: unknown kind hides the annunciator');
 
   const stepHalt = { tokens: [Integer(1n), Integer(2n), Name('+')], index: 1, kind: 'step' };
   assert(suspendedProgramText(stepHalt) === '« 1 ▸2 + »',
@@ -759,21 +707,20 @@ import { assert, assertThrows } from './helpers.mjs';
 
 
 /* =================================================================
-   Interactive-stack pure helpers.
+   Stack-level pure helpers.
 
-   These exercise the DOM-free transition / manipulation functions in
-   src/ui/interactive-stack.js so the controller math stays correct as
-   the App wiring evolves.  The App integration itself (arrow-key
-   dispatch, menu install/restore) is covered lightly via Stack-level
-   assertions — a full DOM test would need jsdom which we deliberately
-   avoid in this suite.
+   These exercise the DOM-free level-addressed edits in
+   src/ui/stack-levels.js that back the selected-level actions (the
+   click-to-select row toolbar and the LEVEL soft menu) so the math
+   stays correct as the App wiring evolves.  The App integration
+   itself (click dispatch, menu install/restore) is covered lightly
+   via Stack-level assertions — a full DOM test would need jsdom
+   which we deliberately avoid in this suite.
    ================================================================= */
 {
   const {
-    clampLevel, levelUp, levelDown,
-    interactiveStackMenu,
-    rollLevel, rollDownToLevel, dropLevel,
-  } = await import('../www/src/ui/interactive-stack.js');
+    clampLevel, rollLevel, rollDownToLevel, dropLevel, moveLevel, replaceLevel,
+  } = await import('../www/src/ui/stack-levels.js');
 
   // clampLevel bounds
   assert(clampLevel(0, 5)  === 1, 'clampLevel: below-range snaps to 1');
@@ -782,69 +729,36 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(clampLevel(2, 0)  === 0, 'clampLevel: depth 0 returns 0');
   assert(clampLevel(2.7, 5) === 2, 'clampLevel: trunc fractional input');
 
-  // levelUp / levelDown
-  assert(levelUp(1, 5)   === 2, 'levelUp: 1 → 2 (moves to older)');
-  assert(levelUp(5, 5)   === 5, 'levelUp: clamps at depth');
-  assert(levelDown(3, 5) === 2, 'levelDown: 3 → 2');
-  assert(levelDown(1, 5) === 1, 'levelDown: clamps at 1');
-
-  // interactiveStackMenu returns 6 slots with the HP50 labels.
-  const menu = interactiveStackMenu({});
-  assert(menu.length === 6, 'interactiveStackMenu: 6 slots');
-  assert(menu[0].label === 'ECHO'  && menu[1].label === 'PICK',
-         'interactiveStackMenu: ECHO / PICK on F1 / F2');
-  assert(menu[5].label === 'CANCL',
-         'interactiveStackMenu: CANCL on F6');
-  // Untouched handlers default to a no-op so firing them is safe.
-  menu[0].onPress(); menu[5].onPress();
-  assert(true, 'interactiveStackMenu: default handlers are safe no-ops');
-
-  // Handler wiring — onEcho etc. plumb through to the named slot.
-  let echoed = 0, picked = 0, cancelled = 0;
-  const hmenu = interactiveStackMenu({
-    onEcho:   () => echoed++,
-    onPick:   () => picked++,
-    onCancel: () => cancelled++,
-  });
-  hmenu[0].onPress();
-  hmenu[1].onPress();
-  hmenu[5].onPress();
-  assert(echoed === 1 && picked === 1 && cancelled === 1,
-         'interactiveStackMenu: each handler routes to its slot');
-
-  /* session421: interactiveStackMenu — the three middle slots and the
-     null-handlers guard. The block above pins F1/F2/F6 labels and the
-     onEcho/onPick/onCancel routing only, so the F3/F4/F5 labels
-     (ROLL/ROLLD/DROP) and their onRoll/onRollD/onDrop wiring were never
-     exercised — a refactor reordering the slots or crossing those three
-     handler keys would pass every prior pin. The `handlers || {}` guard
-     (interactive-stack.js ~64) was also unhit: every prior call passed a
-     truthy object, so a refactor dropping the guard would throw on a
-     no-arg / null call yet stay green. Probed live (repo-rooted import,
-     DOM-free): labels ECHO,PICK,ROLL,ROLLD,DROP,CANCL; onRoll/onRollD/
-     onDrop fire from slots 2/3/4; interactiveStackMenu() and (null) both
-     return 6 safe no-op slots. */
-  assert(menu[2].label === 'ROLL' && menu[3].label === 'ROLLD' && menu[4].label === 'DROP',
-         'interactiveStackMenu: ROLL / ROLLD / DROP on F3 / F4 / F5');
-  let rolled = 0, rolledD = 0, dropped = 0;
-  const mmenu = interactiveStackMenu({
-    onRoll:  () => rolled++,
-    onRollD: () => rolledD++,
-    onDrop:  () => dropped++,
-  });
-  mmenu[2].onPress();
-  mmenu[3].onPress();
-  mmenu[4].onPress();
-  assert(rolled === 1 && rolledD === 1 && dropped === 1,
-         'interactiveStackMenu: middle handlers route to their slots');
-  // `handlers || {}` guard: no-arg and null both yield 6 safe no-op slots.
-  for (const noHandlers of [interactiveStackMenu(), interactiveStackMenu(null)]) {
-    assert(noHandlers.length === 6 && noHandlers[2].label === 'ROLL',
-           'interactiveStackMenu: missing handlers still build the full menu');
-    noHandlers.forEach(slot => slot.onPress());
-    assert(noHandlers.every(slot => typeof slot.onPress === 'function'),
-           'interactiveStackMenu: every slot has a callable no-op default');
+  // moveLevel: general from → to, both directions, and a same-level no-op.
+  {
+    const s = new Stack();
+    s.push(Real(1)); s.push(Real(2)); s.push(Real(3)); s.push(Real(4));
+    moveLevel(s, 4, 2);               // bottom value rises to level 2
+    const top = s.snapshot();
+    assert(top[1].value.eq(1) && top[0].value.eq(4) && top[2].value.eq(3),
+           'moveLevel: a lower level can move up past intermediates');
   }
+  {
+    const s = new Stack();
+    s.push(Real(1)); s.push(Real(2)); s.push(Real(3));
+    let emits = 0;
+    const off = s.subscribe(() => { emits++; });
+    moveLevel(s, 2, 2);
+    off();
+    assert(emits === 0 && s.snapshot()[1].value.eq(2), 'moveLevel: from === to is a no-op that does not emit');
+  }
+  assertThrows(() => moveLevel(new Stack(), 1, 1), null, 'moveLevel: out-of-range throws');
+
+  // replaceLevel: splice one or more values in at a level.
+  {
+    const s = new Stack();
+    s.push(Real(1)); s.push(Real(2)); s.push(Real(3));
+    replaceLevel(s, 2, [Real(20), Real(21)]);
+    const top = s.snapshot();
+    assert(s.depth === 4 && top[0].value.eq(3) && top[1].value.eq(21) && top[2].value.eq(20) && top[3].value.eq(1),
+           'replaceLevel: splices values in push order, the last landing at the target level');
+  }
+  assertThrows(() => replaceLevel(new Stack(), 1, [Real(1)]), null, 'replaceLevel: out-of-range throws');
 
   // rollLevel: move level N to the top
   {
@@ -1001,96 +915,49 @@ import { assert, assertThrows } from './helpers.mjs';
 }
 
 /* =================================================================
-   Display click/tooltip rendering.
+   Display status-line rendering.
 
-   The Display module emits HTML; we can probe the strings produced by
-   setPath without a real DOM by giving it a minimal fake statusLine.
-   The goal is to verify that path segments pick up `data-index` and
-   tooltip attributes, and that a setPath replacement doesn't break
-   earlier segments (prefix / brace escaping).
+   pathSegmentsHtml is a pure function — probe it directly.  The
+   halt / suspended-program pieces go through the Display instance
+   with minimal DOM stubs (renderStatus replaces statusLine.innerHTML
+   wholesale, so a stub only needs to hold that string).
    ================================================================= */
 {
-  // Smallest useful fake: a #ann-mode node whose innerHTML / textContent
-  // round-trips, plus querySelector('#ann-mode') returning that node.
-  function makeStatusLine() {
-    const node = {
-      id: 'ann-mode', innerHTML: '', textContent: '',
-      title: '',
-      classList: { toggle() {}, add() {}, remove() {} },
-    };
-    return {
-      querySelector(sel) { return sel === '#ann-mode' ? node : null; },
-      addEventListener() {},
-      _node: node,
-    };
-  }
-  // Shim stackView — setPath is all we're testing so the ctor is fine
-  // with these minimal stubs.
-  const { Display } = await import('../www/src/ui/display.js');
-  const statusLine = makeStatusLine();
-  const d = new Display({
-    stackView: { addEventListener() {} },
-    cmdline:   { addEventListener() {} },
-    statusLine,
-    menuBar:   null,
-  });
-  d.setPath(['HOME', 'WORK', 'A']);
-  const html = statusLine._node.innerHTML;
-  assert(html.includes('data-index="0"') &&
-         html.includes('data-index="1"') &&
-         html.includes('data-index="2"'),
-         'setPath: every segment carries data-index');
+  const { pathSegmentsHtml } = await import('../www/src/ui/display.js');
+  const html = pathSegmentsHtml(['HOME', 'WORK', 'A']);
+  assert(html.includes('data-index="0"') && html.includes('data-index="1"') && !html.includes('data-index="2"'),
+         'pathSegmentsHtml: every ancestor segment carries data-index; the current one does not');
   assert(html.includes('>HOME<') && html.includes('>WORK<') && html.includes('>A<'),
-         'setPath: segment text survives the wrap');
-  assert(html.includes('title="Navigate up to HOME"') &&
-         html.includes('title="Current directory: A"'),
-         'setPath: ancestor vs current tooltip differ');
-  // The outer #ann-mode container must NOT carry a title attribute.
-  // The CSS rule `.annunciator[title]:hover` would otherwise highlight
-  // the braces / whitespace around the segments, turning the whole
-  // path into an apparent hit target even though only the individual
-  // segments are clickable.
-  assert(statusLine._node.title === '',
-         'setPath: the #ann-mode container has no aggregate tooltip');
+         'pathSegmentsHtml: every segment text survives the wrap');
+  assert(html.includes('title="Go to HOME"') && html.includes('title="Go to WORK"'),
+         'pathSegmentsHtml: ancestor segments carry a navigable tooltip');
+  assert(/<span>A<\/span>/.test(html),
+         'pathSegmentsHtml: the current segment is a plain span, not a button');
 }
 
 {
-  const halt = {
-    textContent: 'stale',
-    title: 'stale',
-    _on: false,
-    classList: {
-      add(c) { if (c === 'on') halt._on = true; },
-      remove(c) { if (c === 'on') halt._on = false; },
-    },
-    removeAttribute(name) { if (name === 'title') halt.title = ''; },
-  };
   const { Display } = await import('../www/src/ui/display.js');
+  const statusLine = { innerHTML: '', className: '' };
   const d = new Display({
     stackView: { addEventListener() {} },
     cmdline: {},
-    statusLine: {
-      querySelector(sel) { return sel === '#ann-halt' ? halt : null; },
-      addEventListener() {},
-    },
-    menuBar: null,
+    statusLine,
   });
-  d.setHaltAnnunciator('step');
-  assert(halt.textContent === 'SST' && halt._on && halt.title.includes('SST'),
-    'setHaltAnnunciator: step lights SST');
-  d.setHaltAnnunciator('prompt');
-  assert(halt.textContent === 'HLT' && halt._on && halt.title.includes('HLT'),
-    'setHaltAnnunciator: prompt lights HLT');
-  d.setHaltAnnunciator(null);
-  assert(halt.textContent === '' && halt._on === false && halt.title === '',
-    'setHaltAnnunciator: null clears the annunciator');
+  d.renderStatus({ halted: 'step' });
+  assert(statusLine.innerHTML.includes('PROGRAM HALTED'),
+    'renderStatus: a halted program shows PROGRAM HALTED');
+  d.renderStatus({ halted: null });
+  assert(!statusLine.innerHTML.includes('PROGRAM HALTED'),
+    'renderStatus: clearing halted removes the pill');
+  d.renderStatus({ shift: 'shiftLLock' });
+  assert(statusLine.innerHTML.includes('LOCKED') && statusLine.innerHTML.includes('↰'),
+    'renderStatus: a locked shift layer shows its glyph and LOCKED');
 
   const programRow = { hidden: true, textContent: 'stale', title: 'stale' };
   const shown = new Display({
     stackView: { addEventListener() {} },
     cmdline: {},
-    statusLine: { querySelector() { return null; }, addEventListener() {} },
-    menuBar: null,
+    statusLine: { innerHTML: '', className: '' },
     suspendedProgram: programRow,
   });
   shown.setSuspendedProgram({
@@ -1312,7 +1179,7 @@ setAngle('RAD');
   // Fixed grid sizes — faithful to the physical hardware (header §10-14).
   assert(SOFT_KEYS.length === 6,   'keyboard: SOFT_KEYS is the 6-slot F1..F6 menu row');
   assert(NAV_KEYS.length === 6,    'keyboard: NAV_KEYS is 6 (VARS/PREV/NEXT + HOME/STO/RCL)');
-  assert(ARROW_KEYS.length === 6,  'keyboard: ARROW_KEYS is 6 (CST + diamond + TOOLS)');
+  assert(ARROW_KEYS.length === 6,  'keyboard: ARROW_KEYS is 6 (CST + diamond + CAT)');
   assert(MAIN_KEYS.length === 35,  'keyboard: MAIN_KEYS is 5 cols x 7 rows = 35');
   {
     const sin = MAIN_KEYS.find((k) => k.primary === 'SIN');
@@ -1352,12 +1219,12 @@ setAngle('RAD');
   assert(NAV_KEYS.map(k => k.alpha).join('') === 'ghijkl',
                                      'keyboard: NAV_KEYS alpha letters are g..l');
 
-  // Arrow cluster: CST + 4-way diamond + TOOLS, each distinctly kinded and
+  // Arrow cluster: CST + 4-way diamond + CAT, each distinctly kinded and
   // CSS-positioned (the className drives the inverted-T placement).
-  assert(ARROW_KEYS.map(k => k.primary).join(',') === 'CST,▲,TOOLS,◀,▶,▼',
-                                     'keyboard: ARROW_KEYS primaries are CST/▲/TOOLS/◀/▶/▼');
+  assert(ARROW_KEYS.map(k => k.primary).join(',') === 'CST,▲,CAT,◀,▶,▼',
+                                     'keyboard: ARROW_KEYS primaries are CST/▲/CAT/◀/▶/▼');
   assert(ARROW_KEYS.map(k => k.kind).join(',') === 'menu,arrow,cat,arrow,arrow,arrow',
-                                     'keyboard: ARROW_KEYS kinds (CST menu, TOOLS cat, four arrows)');
+                                     'keyboard: ARROW_KEYS kinds (CST menu, CAT catalog, four arrows)');
   assert(ARROW_KEYS.every(k => k.className.length > 0),
                                      'keyboard: every arrow-cluster key has a positioning className');
 
@@ -1548,4 +1415,51 @@ setAngle('RAD');
   assert(commandHelpText('SIN', null) === 'SIN', 'commandHelpText: the bare name before the reference loads');
   assert(commandHelpText('X', ref) === null && commandHelpText('42', ref) === null,
     'commandHelpText: no tooltip for a variable name or a number');
+}
+
+/* ================================================================
+   Menus: every registered command is reachable from a menu family,
+   and every family's category exists in the registry.
+   ================================================================ */
+{
+  const { MENU_FAMILIES, MENU_GROUPS, menuById } = await import('../www/src/ui/menus.js');
+  const { familyCommands } = await import('../www/src/ui/drawer.js');
+  const { opCategories } = await import('../www/src/rpl/ops.js');
+  const reachable = new Set(MENU_FAMILIES.flatMap((f) => familyCommands(f)).map((n) => n.toUpperCase()));
+  const missing = allOps().filter((n) => !n.includes('->') && !reachable.has(n.toUpperCase()));
+  assert(missing.length === 0, `every registered command is reachable from a menu family${missing.length ? ` (missing ${missing.slice(0, 8).join(' ')})` : ''}`);
+  const categories = new Set(Object.keys(opCategories()));
+  const unknown = MENU_FAMILIES.filter((f) => f.category !== 'Other' && !categories.has(f.category)).map((f) => f.id);
+  assert(unknown.length === 0, `every menu family names a registered category${unknown.length ? ` (${unknown.join(' ')})` : ''}`);
+  const grouped = MENU_GROUPS.flatMap((g) => g.ids);
+  assert(grouped.every((id) => menuById(id)) && new Set(grouped).size === grouped.length,
+    'the menu picker lists each menu once, and every entry resolves');
+  assert(MENU_FAMILIES.every((f) => grouped.includes(f.id)), 'the menu picker reaches every command family');
+}
+
+/* ================================================================
+   UI preferences: validated on load, and the old hp50.ui.* keys
+   migrate once into rplai.ui.
+   ================================================================ */
+{
+  const { loadUiPrefs, normalizeUiPrefs, DEFAULT_UI_PREFS, UI_PREFS_KEY } = await import('../www/src/ui/ui-prefs.js');
+  const memory = (init = {}) => {
+    const data = new Map(Object.entries(init));
+    return { getItem: (k) => (data.has(k) ? data.get(k) : null), setItem: (k, v) => data.set(k, String(v)), removeItem: (k) => data.delete(k), data };
+  };
+  assert(JSON.stringify(normalizeUiPrefs({ theme: 'neon', keypad: 'huge', drawer: 'nope', hints: 'yes' })) === JSON.stringify(DEFAULT_UI_PREFS),
+    'normalizeUiPrefs: unknown values fall back to the defaults');
+  const legacy = memory({ 'hp50.ui.sidePanel': JSON.stringify({ open: true, tab: 'files', historySort: 'oldest', width: 420 }), 'hp50.ui.chrome': 'minimal' });
+  const prefs = loadUiPrefs(legacy);
+  assert(prefs.minimal === true && prefs.drawer === 'vars' && prefs.lastDrawer === 'vars' && prefs.historySort === 'oldest' && prefs.drawerWidth === 420,
+    'loadUiPrefs: the old side-panel and chrome keys migrate (Files tab → Variables drawer, minimal chrome → Minimal view)');
+  assert(!legacy.data.has('hp50.ui.sidePanel') && !legacy.data.has('hp50.ui.chrome') && legacy.data.has(UI_PREFS_KEY),
+    'loadUiPrefs: migration writes rplai.ui and removes the old keys');
+  assert(normalizeUiPrefs({ menu: 'TRIG' }).menu === 'TRIG' && normalizeUiPrefs({ menu: '<b>' }).menu === null,
+    'normalizeUiPrefs: the last menu is remembered, junk is dropped');
+  assert(loadUiPrefs(memory({ 'hp50.ui.chrome': 'simple' })).keypad === 'compact',
+    'loadUiPrefs: the old "simple" chrome becomes the Compact keypad');
+  const saved = memory({ [UI_PREFS_KEY]: JSON.stringify({ theme: 'classic' }), 'hp50.ui.chrome': 'minimal' });
+  assert(loadUiPrefs(saved).theme === 'classic' && loadUiPrefs(saved).minimal === false,
+    'loadUiPrefs: saved rplai.ui wins over leftover legacy keys');
 }

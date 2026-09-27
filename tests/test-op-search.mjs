@@ -1,5 +1,5 @@
 import { fuzzyScore, searchOps, moveSelection, matchPositions, highlightSegments } from '../www/src/ui/op-search.js';
-import { paletteRowHtml } from '../www/src/ui/command-palette.js';
+import { highlightMatches } from '../www/src/ui/palette.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { assert } from './helpers.mjs';
 
@@ -263,12 +263,12 @@ import { assert } from './helpers.mjs';
 }
 
 {
-  assert(paletteRowHtml('SIN', '') === 'SIN',
-    'paletteRowHtml: empty query is unhighlighted');
-  assert(paletteRowHtml('SIN', 'SIN') === '<mark>SIN</mark>',
-    'paletteRowHtml: exact match is one mark');
-  assert(paletteRowHtml('COSINE', 'SI') === 'CO<mark>SI</mark>NE',
-    'paletteRowHtml: interior run');
-  assert(paletteRowHtml('A<B', 'A') === '<mark>A</mark>&lt;B',
-    'paletteRowHtml: escapes unmatched HTML');
+  assert(highlightMatches('SIN', '') === 'SIN',
+    'highlightMatches: empty query is unhighlighted');
+  assert(highlightMatches('SIN', 'SIN') === '<mark>SIN</mark>',
+    'highlightMatches: exact match is one mark');
+  assert(highlightMatches('COSINE', 'SI') === 'CO<mark>SI</mark>NE',
+    'highlightMatches: interior run');
+  assert(highlightMatches('A<B', 'A') === '<mark>A</mark>&lt;B',
+    'highlightMatches: escapes unmatched HTML');
 }

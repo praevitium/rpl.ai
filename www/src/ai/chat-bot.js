@@ -859,9 +859,10 @@ export class ChatBot {
    * @param {function} opts.getContext — () => calculator state; keys
    *   listed in the file header.
    */
-  constructor({ tools, getContext }) {
+  constructor({ tools, getContext, onStatus = null }) {
     this._tools      = tools;
     this._getContext = getContext;
+    this._onStatusChange = onStatus;
     this._llm        = new RemoteLLM();
     this._history    = [];   // conversation turns (messages array)
     this._container  = null; // DOM element we're mounted into
@@ -1680,6 +1681,7 @@ export class ChatBot {
   }
 
   _onStatus(status, msg) {
+    this._onStatusChange?.(status);
     if (status === 'loading') {
       this._statusEl.textContent = msg || 'Loading…';
       this._statusEl.className = 'cb-status cb-status-loading';
@@ -1819,6 +1821,13 @@ export class ChatBot {
    *  user-bubble lands in the chat in submission order.  No-ops
    *  silently if consent hasn't been granted yet (the caller has
    *  no way to honour the gate from outside, so we just refuse). */
+  setDraft(text) {
+    if (!this._inputEl) return;
+    this._inputEl.value = String(text ?? '');
+    this._inputEl.focus();
+    this._inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
   async sendUserMessage(text) {
     const t = (text ?? '').trim();
     if (!t) {

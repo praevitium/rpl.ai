@@ -55,7 +55,7 @@ const enter  =                  (_e, _s, app) => app.commitEntry();
 const back   =                      (e) => e.backspace();
 const chs    =                      (e) => e.toggleSign();
 const eex    =                      (e) => e.eex();
-const cancel =                  (_e, _s, app) => app.cancelEntry();
+const cancel =                  (_e, _s, app) => app.runAction('ui.escape');
 
 /* Edit-aware dispatchers.  While the command line is being composed
    (anything in the buffer OR an unclosed tick — see Entry.isEditing)
@@ -130,16 +130,11 @@ export const ARROW_KEYS = [
               action: (_e, _s, app) => app.showCustomMenu() }),
   mk('▲', { kind: 'arrow', className: 'arrow-up',
             action: (e, _s, app) => {
-              if (e.buffer.length === 0) app.enterInteractiveStack();
-              else e.cursorUp();            // editor active → cursor only
+              if (e.buffer.length === 0) app.selectLevel(1);
+              else e.cursorUp();
             } }),
-  // TOOLS opens the side-panel on its Commands tab — the searchable
-  // catalog of every registered op.  Lives to the right of ▲ so the
-  // catalog is a single click from the top of the keypad.  Labelled
-  // "TOOLS" rather than the older 📖 emoji or "CAT▶" abbreviation so
-  // the affordance reads cleanly without symbol decoding.
-  mk('TOOLS', { kind: 'cat', className: 'cat-key',
-                action: (_e, _s, app) => app.toggleSidePanel('commands') }),
+  mk('CAT', { kind: 'cat', className: 'cat-key',
+              action: (_e, _s, app) => app.drawers.toggle('catalog') }),
   mk('◀', { kind: 'arrow', className: 'arrow-left',
             action: (e, _s, app) => {
               if (e.buffer.length > 0) e.cursorLeft();
@@ -153,8 +148,8 @@ export const ARROW_KEYS = [
             } }),
   mk('▼', { kind: 'arrow', className: 'arrow-down', shiftL: 'SST',
             action: (e, _s, app) => {
-              if (e.buffer.length > 0) e.cursorDown();     // editor → cursor
-              else if (app.stack.depth >= 1) app.editLevel1();
+              if (e.buffer.length > 0) e.cursorDown();
+              else if (app.stack.depth >= 1) app.editLevel(1);
             },
             shiftLAction: typeExecName('SST') }),
 ];
@@ -368,7 +363,8 @@ export const MAIN_KEYS = [
   //   ENTER: —       / →NUM     (numeric eval only — LASTARG has its
   //                              own primary key up on row 4.)
   mk('ON',    { kind: 'cancel', action: cancel,
-                shiftL: 'CONT', shiftR: '' }),
+                shiftL: 'CONT', shiftR: '',
+                shiftLAction: typeExecName('CONT') }),
   // 0 shift-L ∞ and shift-R → both type their glyph.  ∞ isn't a
   // numeric literal in our parser — typing it is useful inside a
   // symbolic expression (LIMIT when we get there, for example) or
@@ -401,36 +397,128 @@ export const MAIN_KEYS = [
 
 /* --------------------------- rendering --------------------------- */
 
-/** Populate the three keyboard regions.  `root` is an object with
- *  three DOM nodes: { softRow, navRow, keypad }. */
-export function renderKeyboard(app, root) {
-  root.softRow.innerHTML = '';
-  root.navRow.innerHTML  = '';
-  root.keypad.innerHTML  = '';
+const NAV_ORDER = [
+  NAV_KEYS[0], NAV_KEYS[1], NAV_KEYS[2], ARROW_KEYS[0], ARROW_KEYS[1], ARROW_KEYS[2],
+  NAV_KEYS[3], NAV_KEYS[4], NAV_KEYS[5], ARROW_KEYS[3], ARROW_KEYS[5], ARROW_KEYS[4],
+];
 
-  SOFT_KEYS.forEach(k => root.softRow.appendChild(makeKeyEl(app, k)));
+const COMPACT_HIDDEN = new Set(MAIN_KEYS.slice(0, 10));
+const BACKSPACE_KEY = MAIN_KEYS.find((k) => k.kind === 'back');
 
-  // Nav row order must match the 5-col × 2-row grid auto-flow:
-  //   row 1: HOME PREV NEXT [arrow cluster spans cols 4-5, rows 1-2]
-  //   row 2: VARS STO  RCL  [cluster continues]
-  // The browser's grid algorithm fills empty cells row-first skipping
-  // cells already claimed by the cluster, so the three NAV_KEYS of
-  // each row will flow into the left three cells automatically as
-  // long as the cluster is placed explicitly.
-  root.navRow.appendChild(makeKeyEl(app, NAV_KEYS[0])); // VARS
-  root.navRow.appendChild(makeKeyEl(app, NAV_KEYS[1])); // PREV
-  root.navRow.appendChild(makeKeyEl(app, NAV_KEYS[2])); // NEXT
+const FACE_ICONS = { '▲': 'tri-u', '▼': 'tri-d', '◀': 'tri-l', '▶': 'tri-r', '⌫': 'back', '↵': 'enter' };
+const SUPERSCRIPT_FACES = { 'yˣ': 'y<sup>x</sup>', 'eˣ': 'e<sup>x</sup>', '10ˣ': '10<sup>x</sup>', 'x²': 'x<sup>2</sup>', 'ⁿ√y': '<sup>n</sup>√y' };
+const KEY_CLASS = { shiftL: 'shl', shiftR: 'shr', alpha: 'alp' };
 
-  const cluster = document.createElement('div');
-  cluster.className = 'arrow-cluster';
-  ARROW_KEYS.forEach(k => cluster.appendChild(makeKeyEl(app, k)));
-  root.navRow.appendChild(cluster);
+export const PHYSICAL_HINTS = Object.freeze({
+  '0': '0', '1': '1', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
+  '.': '.', '+': '+', '−': '-', '×': '*', '÷': '/', 'yˣ': '^', 'SPC': 'Space', 'ENTER': '↵',
+  '⌫': '⌫', 'ON': 'Esc', '▲': '↑', '▼': '↓', '◀': '←', '▶': '→', 'PREV': 'PgUp', 'NEXT': 'PgDn',
+});
 
-  root.navRow.appendChild(makeKeyEl(app, NAV_KEYS[3])); // HOME
-  root.navRow.appendChild(makeKeyEl(app, NAV_KEYS[4])); // STO
-  root.navRow.appendChild(makeKeyEl(app, NAV_KEYS[5])); // RCL
+function escapeText(text) {
+  return String(text).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+}
 
-  MAIN_KEYS.forEach(k => root.keypad.appendChild(makeKeyEl(app, k)));
+export function faceHtml(label) {
+  if (FACE_ICONS[label]) return `<svg class="i" aria-hidden="true"><use href="#i-${FACE_ICONS[label]}"/></svg>`;
+  if (SUPERSCRIPT_FACES[label]) return SUPERSCRIPT_FACES[label];
+  return escapeText(label);
+}
+
+function cornerHtml(label) {
+  return SUPERSCRIPT_FACES[label] ?? escapeText(label === '↵' ? '⏎' : label);
+}
+
+function keyTitle(key, hint) {
+  const bits = [key.primary === '⌫' ? 'Backspace' : key.primary];
+  if (key.shiftL) bits.push(`↰ ${key.shiftL}`);
+  if (key.shiftR) bits.push(`↱ ${key.shiftR}`);
+  if (hint) bits.push(`keyboard ${hint}`);
+  return `${bits.join(' · ')}. Right-click for every layer.`;
+}
+
+/** The on-screen keypad.  Buttons are built once and relabeled in place
+ *  by update(), so keyboard focus on a key survives shift changes. */
+export class Keypad {
+  constructor({ el, app }) {
+    this.el = el;
+    this.app = app;
+    this.buttons = [];
+    el.innerHTML = `<div class="kp-head"><b>Keypad</b><div class="minseg" role="group" aria-label="Keypad layout"><button type="button" data-kp="full">Full</button><button type="button" data-kp="compact">Compact</button><button type="button" data-kp="hidden">Hide</button></div></div><div class="kp"><div class="kp-nav"></div><div class="kp-main"></div></div>`;
+    this.kp = el.querySelector('.kp');
+    NAV_ORDER.forEach((key) => this._add(el.querySelector('.kp-nav'), key));
+    MAIN_KEYS.forEach((key) => this._add(el.querySelector('.kp-main'), key));
+    el.querySelector('.kp-head').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-kp]');
+      if (b) app.setKeypadLayout(b.dataset.kp);
+    });
+  }
+
+  _add(parent, key) {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.setAttribute('aria-label', keyAccessibleName(key));
+    const entry = { el, key };
+    const effective = () => (this.compact && key.kind === 'cancel' ? BACKSPACE_KEY : key);
+    const press = () => {
+      el.classList.add('pressed');
+      setTimeout(() => el.classList.remove('pressed'), 80);
+      this.app.handleKey(effective());
+    };
+    el.addEventListener('mousedown', (evt) => evt.preventDefault());
+    el.addEventListener('pointerdown', (evt) => {
+      if (evt.button !== 0) return;
+      evt.preventDefault();
+      press();
+    });
+    el.addEventListener('click', (evt) => {
+      if (evt.detail !== 0) return;
+      press();
+      el.focus({ preventScroll: true });
+    });
+    el.addEventListener('contextmenu', (evt) => {
+      evt.preventDefault();
+      this.app.showKeyLayers(effective(), el);
+    });
+    parent.appendChild(el);
+    this.buttons.push(entry);
+  }
+
+  update() {
+    const { app } = this;
+    const layout = app.prefs.keypad;
+    this.compact = layout === 'compact';
+    this.el.classList.toggle('kp-hidden', layout === 'hidden');
+    this.el.querySelectorAll('[data-kp]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.kp === layout)));
+    const layer = app.layer();
+    const locked = app.shiftLocked();
+    this.kp.classList.toggle('compact', this.compact);
+    this.kp.classList.toggle('hints', !!(app.prefs.hints || app.showKeyHints));
+    this.kp.dataset.layer = layer ?? '';
+    for (const entry of this.buttons) {
+      const { el, key: raw } = entry;
+      const key = this.compact && raw.kind === 'cancel' ? BACKSPACE_KEY : raw;
+      const modifier = KEY_CLASS[key.kind];
+      const active = modifier && app.shiftKind() === key.kind;
+      let face = key.primary;
+      let flipped = false;
+      let dim = false;
+      if (layer && !modifier) {
+        const alt = layer === 'L' ? key.shiftL : layer === 'R' ? key.shiftR : key.alpha;
+        if (alt) { face = alt; flipped = true; } else dim = true;
+      }
+      const caption = layer ? '' : app.keyCaption(key);
+      const hint = PHYSICAL_HINTS[key.primary] ?? '';
+      const txt = !FACE_ICONS[face] && !SUPERSCRIPT_FACES[face] && face.length > 2;
+      const long = face.length > 5;
+      const cls = ['k', key.kind === 'digit' ? 'digit' : '', key.className === 'enter' ? 'enter' : '', modifier ?? '',
+        active ? 'active' : '', dim ? 'dim' : '', flipped ? 'flip' : '', COMPACT_HIDDEN.has(raw) ? 'hide-compact' : ''].filter(Boolean).join(' ');
+      const html = `${!layer && key.shiftL && !modifier ? `<span class="l">${cornerHtml(key.shiftL)}</span>` : ''}${!layer && key.shiftR && !modifier ? `<span class="r">${cornerHtml(key.shiftR)}</span>` : ''}<span class="p${txt ? ' txt' : ''}${long ? ' long' : ''}${flipped ? ' lay' : ''}">${faceHtml(face)}</span>${caption ? `<span class="cap">${escapeText(caption)}</span>` : ''}${active && locked ? '<span class="lock">LOCK</span>' : ''}${hint ? `<span class="hint">${escapeText(hint)}</span>` : ''}`;
+      if (el.className !== cls) el.className = cls;
+      if (entry.html !== html) { el.innerHTML = html; entry.html = html; }
+      el.title = keyTitle(key, hint);
+    }
+  }
 }
 
 const MODIFIER_KEY_NAMES = { shiftL: 'Left shift', shiftR: 'Right shift', alpha: 'Alpha' };
@@ -442,64 +530,4 @@ export function keyAccessibleName(key) {
     key.shiftL && `left shift ${key.shiftL}`,
     key.shiftR && `right shift ${key.shiftR}`,
   ].filter(Boolean).join(', ');
-}
-
-function makeKeyEl(app, key) {
-  const el = document.createElement('button');
-  el.type = 'button';
-  el.className = 'key '
-    + (key.kind === 'digit' ? 'digit ' : '')
-    + key.className;
-  el.dataset.kind = key.kind;
-
-  if (key.shiftL) {
-    const s = document.createElement('span');
-    s.className = 'shift-l'; s.textContent = key.shiftL;
-    el.appendChild(s);
-  }
-  if (key.shiftR) {
-    const s = document.createElement('span');
-    s.className = 'shift-r'; s.textContent = key.shiftR;
-    el.appendChild(s);
-  }
-  if (key.alpha) {
-    const s = document.createElement('span');
-    s.className = 'alpha'; s.textContent = key.alpha;
-    el.appendChild(s);
-  }
-
-  const p = document.createElement('span');
-  p.className = 'primary'; p.textContent = key.primary;
-  el.appendChild(p);
-  el.setAttribute('aria-label', keyAccessibleName(key));
-
-  const press = () => {
-    el.classList.add('pressed');
-    app.handleKey(key);
-    setTimeout(() => el.classList.remove('pressed'), 80);
-  };
-  el.addEventListener('mousedown', (evt) => {
-    evt.preventDefault();
-    press();
-  });
-  el.addEventListener('click', (evt) => {
-    if (evt.detail !== 0) return;
-    press();
-    el.focus({ preventScroll: true });
-  });
-
-  // Track sticky shift visual state for the three modifier kinds.
-  // Each key lights up ('sticky') for both its one-shot AND its lock
-  // state so the user can see the shift is engaged; a separate
-  // 'locked' class distinguishes lock from single-shot so CSS can
-  // style it differently (e.g. bolder, steady vs. blinking).
-  if (['alpha', 'shiftL', 'shiftR'].includes(key.kind)) {
-    const lockName = key.kind + 'Lock';
-    app.onShiftChange(() => {
-      const sticky = app.shift === key.kind || app.shift === lockName;
-      el.classList.toggle('sticky', sticky);
-      el.classList.toggle('locked', app.shift === lockName);
-    });
-  }
-  return el;
 }

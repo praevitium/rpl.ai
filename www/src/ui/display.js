@@ -4,8 +4,9 @@
 
 import { format, formatStackTop, DEFAULT_DISPLAY } from '../rpl/formatter.js';
 import { astToSvg } from '../rpl/pretty.js';
-import { isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
+import { TYPES, isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
 import { state as calcState } from '../rpl/state.js';
+import { icon } from './icons.js';
 
 /** Escape the four characters that bite when interpolating plain text
  *  into HTML.  The formatter never emits raw markup, but the cell /
@@ -15,17 +16,6 @@ export function escapeHtml(text) {
   return String(text)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-/** Normalize a soft-menu label array to exactly six slots: truncate any
- *  past the sixth, pad short arrays with ''.  HP50 menu rows always have
- *  six slots, so setMenu renders a fixed grid regardless of how many
- *  labels the caller supplies.  Returns a fresh array (the input is left
- *  untouched). */
-export function normalizeMenuSlots(slots) {
-  const out = slots.slice(0, 6);
-  while (out.length < 6) out.push('');
-  return out;
 }
 
 /** Map a BinaryInteger display-base key (h/d/o/b) to its annunciator
@@ -47,12 +37,6 @@ export function displayModeLabel(mode, digits) {
  *  defaulting to the rectangular 'XYZ' for any unknown mode. */
 export function coordModeGlyph(mode) {
   return { RECT: 'XYZ', CYLIN: 'R∠Z', SPHERE: 'R∠∠' }[mode] || 'XYZ';
-}
-
-export function haltAnnunciatorLabel(kind) {
-  if (kind === 'step') return 'SST';
-  if (kind === 'halt' || kind === 'prompt') return 'HLT';
-  return undefined;
 }
 
 const SUSPENDED_CONTEXT = 8;
@@ -80,211 +64,239 @@ export function suspendedProgramText(halted, display = DEFAULT_DISPLAY) {
   return chunks.join(' ');
 }
 
+export const TYPE_NAMES = Object.freeze({
+  [TYPES.REAL]: 'Real number',
+  [TYPES.INTEGER]: 'Integer',
+  [TYPES.RATIONAL]: 'Fraction',
+  [TYPES.BININT]: 'Binary integer',
+  [TYPES.COMPLEX]: 'Complex number',
+  [TYPES.STRING]: 'String',
+  [TYPES.NAME]: 'Name',
+  [TYPES.SYMBOLIC]: 'Expression',
+  [TYPES.LIST]: 'List',
+  [TYPES.VECTOR]: 'Vector',
+  [TYPES.MATRIX]: 'Matrix',
+  [TYPES.PROGRAM]: 'Program',
+  [TYPES.TAGGED]: 'Tagged object',
+  [TYPES.DIRECTORY]: 'Directory',
+  [TYPES.UNIT]: 'Unit object',
+  [TYPES.GROB]: 'Graphic',
+});
+
+export function typeName(value) {
+  return TYPE_NAMES[value?.type] ?? 'Object';
+}
+
+const MARK_TAGS = Object.freeze({ arg: 'argument', gone: 'removed', culprit: 'this one', 'culprit-prev': 'wrong type' });
+
+const prefersReducedMotion = () => !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
 export class Display {
-  constructor({ stackView, cmdline, statusLine, menuBar, suspendedProgram }) {
-    this.stackView  = stackView;
-    this.cmdline    = cmdline;
+  constructor({ stackView, cmdline, statusLine, suspendedProgram }) {
+    this.stackView = stackView;
+    this.cmdline = cmdline;
     this.statusLine = statusLine;
-    this.menuBar    = menuBar;
     this.suspendedProgram = suspendedProgram ?? null;
     this.displayOpts = { ...DEFAULT_DISPLAY };
-    this.menuSlots = ['', '', '', '', '', ''];
-    // How many rows to push the bottom of the visible window up past
-    // level 1.  0 = level 1 is the bottom row (default HP50 view).
-    // The App layer owns the clamp; renderStack just uses whatever
-    // offset is passed in.
-    this.stackScroll = 0;
-    // Interactive stack visual cursor.  null means no level is
-    // selected (normal rendering); otherwise the 1-based level is
-    // highlighted with `.stack-row.selected`.
     this.selectedLevel = null;
-    // Optional click/hover callbacks injected by App.  Left null by
-    // default so the Display stays standalone for tests.
-    this.onStackRowClick    = null;
-    this.onIndicatorClick   = null;
-    this.onPathSegmentClick = null;
-    this.stackRowTitle      = null;
-    this._installInteractiveHandlers();
+    this.marks = null;
+    this.ghosts = null;
+    this.previewLabel = '';
+    this.emptyHtml = '';
+    this.rowActionsHtml = null;
+    this.onRowClick = null;
+    this.onRowDoubleClick = null;
+    this.onRowAction = null;
+    this.onRowMove = null;
+    this.onStatusAction = null;
+    this.onEmptyAction = null;
+    this._ids = new WeakMap();
+    this._nextId = 1;
+    this._dragLevel = null;
+    this._live = null;
+    this._installHandlers();
   }
 
-  /* -------- interactive display event wiring --------
-     The Display owns the DOM for the LCD and is the cheapest place
-     to attach click / hover listeners.  We use event delegation so
-     the handlers survive re-renders of stack rows and annunciators.
-     The App layer plugs in its own `onStackRowClick` / etc. callbacks
-     after construction; when a callback is null the DOM event is a
-     no-op (the CSS cursor hint also drops off — see calc.css). */
-  _installInteractiveHandlers() {
-    if (!this.stackView || typeof this.stackView.addEventListener !== 'function') {
-      return;                                   // non-DOM test harness
-    }
-    this.stackView.addEventListener('click', (ev) => {
-      if (!this.onStackRowClick) return;
-      const row = ev.target.closest?.('.stack-row');
-      if (!row || !row.dataset.level) return;
-      const level = Number(row.dataset.level);
-      if (Number.isFinite(level)) this.onStackRowClick(level);
-    });
-    this.stackView.addEventListener('mouseover', (ev) => {
-      const row = ev.target.closest?.('.stack-row');
-      if (!row || !row.dataset.level) return;
-      row.classList.add('hover');
-    });
-    this.stackView.addEventListener('mouseout', (ev) => {
-      const row = ev.target.closest?.('.stack-row');
+  _installHandlers() {
+    const view = this.stackView;
+    if (!view || typeof view.addEventListener !== 'function') return;
+    view.addEventListener('click', (ev) => {
+      const empty = ev.target.closest?.('[data-empty-act]');
+      if (empty) { this.onEmptyAction?.(empty.dataset.emptyAct, empty); return; }
+      const row = ev.target.closest?.('.st-row[data-level]');
       if (!row) return;
-      row.classList.remove('hover');
+      const level = Number(row.dataset.level);
+      const act = ev.target.closest?.('[data-row-act]');
+      if (act) { this.onRowAction?.(level, act.dataset.rowAct, act); return; }
+      this.onRowClick?.(level, ev);
     });
+    view.addEventListener('dblclick', (ev) => {
+      if (ev.target.closest?.('.st-acts')) return;
+      const row = ev.target.closest?.('.st-row[data-level]');
+      if (row) this.onRowDoubleClick?.(Number(row.dataset.level));
+    });
+    view.addEventListener('dragstart', (ev) => {
+      const row = ev.target.closest?.('.st-row[data-level]');
+      if (!row) return;
+      this._dragLevel = Number(row.dataset.level);
+      row.classList.add('dragging');
+      try { ev.dataTransfer.setData('text/plain', row.querySelector('.value-text')?.textContent ?? ''); ev.dataTransfer.effectAllowed = 'move'; }
+      catch { /* some engines refuse setData outside a trusted drag */ }
+    });
+    view.addEventListener('dragover', (ev) => {
+      if (this._dragLevel == null) return;
+      const row = ev.target.closest?.('.st-row[data-level]');
+      view.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over'));
+      if (!row) return;
+      ev.preventDefault();
+      row.classList.add('drag-over');
+    });
+    view.addEventListener('drop', (ev) => {
+      if (this._dragLevel == null) return;
+      ev.preventDefault();
+      const row = ev.target.closest?.('.st-row[data-level]');
+      const from = this._dragLevel;
+      this._dragLevel = null;
+      if (row) this.onRowMove?.(from, Number(row.dataset.level));
+    });
+    view.addEventListener('dragend', () => {
+      this._dragLevel = null;
+      view.querySelectorAll('.dragging, .drag-over').forEach((el) => el.classList.remove('dragging', 'drag-over'));
+    });
+    this.statusLine?.addEventListener?.('click', (ev) => {
+      const el = ev.target.closest?.('[data-status]');
+      if (el) this.onStatusAction?.(el.dataset.status, el.dataset, el);
+    });
+  }
 
-    if (this.statusLine && typeof this.statusLine.addEventListener === 'function') {
-      this.statusLine.addEventListener('click', (ev) => {
-        const seg = ev.target.closest?.('.path-segment');
-        if (seg && seg.dataset.index != null && this.onPathSegmentClick) {
-          this.onPathSegmentClick(Number(seg.dataset.index));
-          return;
-        }
-        const ann = ev.target.closest?.('.annunciator');
-        if (ann && ann.id && this.onIndicatorClick) {
-          // Annunciator IDs are 'ann-angle', 'ann-approx', 'ann-mode', etc.
-          // Swallow #ann-mode clicks that missed a .path-segment — the
-          // user clicked the braces or whitespace.  Those aren't
-          // interactive; only the named segments are.
-          if (ann.id === 'ann-mode') return;
-          const id = ann.id.replace(/^ann-/, '');
-          this.onIndicatorClick(id);
-        }
-      });
+  _idOf(value) {
+    if (value === null || typeof value !== 'object') return `p${String(value)}`;
+    let id = this._ids.get(value);
+    if (!id) { id = this._nextId++; this._ids.set(value, id); }
+    return id;
+  }
+
+  _positions() {
+    const map = new Map();
+    for (const row of this.stackView.querySelectorAll('.st-row[data-key]')) {
+      map.set(row.dataset.key, row.getBoundingClientRect().top);
     }
+    return map;
   }
 
   renderStack(stack) {
-    const snap = stack.snapshot();                 // [level1, level2, ...]
-    // LCD renders level N at top, level 1 at bottom.  We reverse so the
-    // DOM order is [levelN, ..., level1].  Higher levels that don't
-    // fit in the LCD are clipped at the top by CSS (the flex column is
-    // justify-content: flex-end, overflow: hidden — so the newest items
-    // (levels 1..M) stay visible while older items scroll off-top).
-    //
-    // "Scrolling up" in this LCD means exposing the *higher* levels
-    // that are clipped off the top.  The container is flex-end + hidden,
-    // so the bottommost DOM child is what stays visible.  To shift the
-    // whole window up by N rows, we append N empty spacer rows *after*
-    // the real rows — those spacers anchor to the bottom and push the
-    // real content upward, which drops higher levels into view at the
-    // top and drops lower levels out at the bottom.
-    const rows = snap.slice().reverse();
-    const svgSize = parseFloat(getComputedStyle(this.stackView).fontSize);
-    this.stackView.innerHTML = '';
-    rows.forEach((val, i) => {
-      const level = rows.length - i;
-      const row = document.createElement('div');
-      row.className = 'stack-row';
-      // data-level lets the click delegate read the level without
-      // a DOM walk, and anchors CSS :hover and .selected styling.
-      row.dataset.level = String(level);
-      if (this.selectedLevel === level) row.classList.add('selected');
-      row.title = this.stackRowTitle
-        ? this.stackRowTitle(level)
-        : `Stack level ${level} — click to copy to the command line`;
-      // `.value` is a flex container that right-aligns its inner
-      // `.value-text` span.  The inner span owns overflow / ellipsis,
-      // so short values hug the right edge (HP50-style) AND long
-      // values truncate with `…` rather than spilling past the LCD.
-      row.innerHTML = `
-        <span class="level">${level}:</span>
-        <span class="value"><span class="value-text"></span></span>
-      `;
-      // formatStackTop forces HP50-style tick rendering on bare Names —
-      // on the stack an identifier is always a name literal, so `X`
-      // displays as `'X'` regardless of how it was pushed.  `format`
-      // (no stack context) is still used from inside the formatter
-      // for nested program / list / vector / matrix / tagged cells.
-      //
-      // Textbook mode: when calcState.textbookMode is on AND the
-      // value is a Symbolic, swap the flat-text rendering for the
-      // SVG pretty-print from src/rpl/pretty.js.  Everything else
-      // (Real, Integer, BinInt, Complex, List, …) keeps flat text —
-      // textbook only affects algebraic expressions.
-      const cell = row.querySelector('.value');
-      const inner = row.querySelector('.value-text');
-      // Sync the display options from global state before each format
-      // call so STD / FIX n / SCI n / ENG n ops take visible effect
-      // immediately.  (The state fields are the source of truth; the
-      // local `displayOpts` is a convenience buffer.)
-      this.displayOpts.mode   = calcState.displayMode   || 'STD';
-      this.displayOpts.digits = calcState.displayDigits ?? 12;
-      if (calcState.textbookMode && isSymbolic(val)) {
-        const { svg } = astToSvg(val.expr, { size: svgSize });
-        inner.innerHTML = svg;
-        cell.classList.add('textbook');
-      } else if (calcState.textbookMode && isList(val)) {
-        inner.innerHTML = this._renderTextbookList(val, svgSize);
-        cell.classList.add('textbook');
-      } else if (calcState.textbookMode && (isMatrix(val) || isVector(val))) {
-        // Textbook 2D matrix/vector: lay rows out as a CSS grid of
-        // monospace cells with bracket pseudo-elements drawn either
-        // side.  Vectors render as a single-row matrix so they pick up
-        // the same bracket styling.  Cell text comes from the regular
-        // formatter so EXACT/APPROX, FIX/SCI/ENG, complex polar form,
-        // etc. all keep working — only the layout changes.
-        inner.innerHTML = this._renderTextbookGrid(val);
-        cell.classList.add('textbook');
-      } else {
-        inner.textContent = formatStackTop(val, this.displayOpts);
-        cell.classList.remove('textbook');
-      }
-      this.stackView.appendChild(row);
-    });
-    for (let k = 0; k < this.stackScroll; k++) {
-      const pad = document.createElement('div');
-      pad.className = 'stack-row scroll-pad';
-      pad.innerHTML = '<span class="level">&nbsp;</span><span class="value">&nbsp;</span>';
-      this.stackView.appendChild(pad);
+    const view = this.stackView;
+    const before = this._positions();
+    const values = stack.snapshot();
+    const depth = values.length;
+    this.displayOpts.mode = calcState.displayMode || 'STD';
+    this.displayOpts.digits = calcState.displayDigits ?? 12;
+    if (this.selectedLevel != null && this.selectedLevel > depth) this.selectedLevel = depth || null;
+    view.textContent = '';
+    if (!depth && !this.ghosts?.length) {
+      view.innerHTML = this.emptyHtml;
+      view.dataset.empty = '1';
+      return;
     }
-    // Annunciator hint: show a small "↕" indicator when scrolled so the
-    // user knows they're not looking at level 1 at the bottom.  Done via
-    // a data attribute the CSS can style without forcing a reflow here.
-    this.stackView.dataset.scrolled = this.stackScroll > 0 ? '1' : '0';
+    delete view.dataset.empty;
+    const svgSize = parseFloat(getComputedStyle(view).fontSize) || 18;
+    const frag = document.createDocumentFragment();
+    const spacer = document.createElement('div');
+    spacer.className = 'st-spacer';
+    frag.appendChild(spacer);
+    const seen = new Map();
+    for (let level = depth; level >= 1; level--) {
+      const value = values[level - 1];
+      const id = this._idOf(value);
+      const n = (seen.get(id) ?? 0) + 1;
+      seen.set(id, n);
+      frag.appendChild(this._row(value, level, `${id}.${n}`, svgSize));
+    }
+    (this.ghosts ?? []).forEach((value, j, all) => {
+      const row = this._row(value, all.length - j, null, svgSize);
+      row.classList.add('ghost');
+      row.querySelector('.st-tag').textContent = 'result';
+      frag.appendChild(row);
+    });
+    if (this.previewLabel) {
+      const label = document.createElement('div');
+      label.className = 'st-preview-label';
+      label.textContent = this.previewLabel;
+      frag.appendChild(label);
+    }
+    view.appendChild(frag);
+    const selected = view.querySelector('.st-row.sel');
+    if (selected) selected.scrollIntoView?.({ block: 'nearest' });
+    else view.scrollTop = view.scrollHeight;
+    if (!this.ghosts && !this.marks && before.size && !prefersReducedMotion()) this._animate(before);
   }
 
-  /** Set the scroll offset and re-render with the given stack snapshot.
-   *  Does NOT clamp — callers own clamping (see clampStackScroll). */
-  setStackScroll(offset, stack) {
-    this.stackScroll = offset;
-    if (stack) this.renderStack(stack);
+  _animate(before) {
+    for (const row of this.stackView.querySelectorAll('.st-row[data-key]')) {
+      const top = row.getBoundingClientRect().top;
+      const old = before.get(row.dataset.key);
+      if (old == null) {
+        row.animate?.([{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      } else if (Math.abs(old - top) > 1) {
+        row.animate?.([{ transform: `translateY(${old - top}px)` }, { transform: 'none' }], { duration: 240, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      }
+    }
   }
 
-  /** Render a Matrix or Vector as a 2D HTML grid for textbook mode.
-   *  Each cell goes through the regular formatter so display-mode
-   *  knobs (FIX/SCI/ENG, EXACT/APPROX, polar/rect, …) still apply —
-   *  only the wrapping layout changes here.  The outer .matrix-grid
-   *  div carries left/right square-bracket pseudo-elements via CSS
-   *  (calc.css) so the brackets scale with the cell-grid height
-   *  without us measuring fonts at runtime.
-   *
-   *  Vectors fold into a single-row matrix so they share the same
-   *  bracket / spacing styling and the same "pretty matrix" code
-   *  path — saves a parallel renderer.
-   *
-   *  Empty matrix / empty vector still produce a `[]` pair (an empty
-   *  inner grid) so the user sees something rather than a phantom
-   *  blank cell. */
+  _row(value, level, key, svgSize) {
+    const row = document.createElement('div');
+    row.className = 'st-row';
+    row.setAttribute('role', 'listitem');
+    row.dataset.level = String(level);
+    if (key) {
+      row.dataset.key = key;
+      row.draggable = true;
+      row.title = `Level ${level}. Click to select, double-click to edit, drag to move.`;
+    }
+    const mark = this.marks?.[level];
+    if (mark && key) row.classList.add(mark);
+    const selected = key && this.selectedLevel === level;
+    if (selected) row.classList.add('sel');
+    const lvl = document.createElement('span');
+    lvl.className = 'st-lvl';
+    lvl.textContent = String(level);
+    const tag = document.createElement('span');
+    tag.className = 'st-tag';
+    tag.textContent = (mark && key && MARK_TAGS[mark]) || typeName(value);
+    const cell = document.createElement('span');
+    cell.className = 'st-val';
+    const text = this._fillValue(cell, value, svgSize);
+    row.setAttribute('aria-label', `Level ${level}: ${text}`);
+    row.append(lvl, tag, cell);
+    if (selected && this.rowActionsHtml) row.insertAdjacentHTML('beforeend', this.rowActionsHtml(level, value));
+    return row;
+  }
+
+  _fillValue(cell, value, svgSize) {
+    const flat = formatStackTop(value, this.displayOpts);
+    if (calcState.textbookMode && isSymbolic(value)) {
+      cell.innerHTML = astToSvg(value.expr, { size: svgSize }).svg;
+      cell.classList.add('textbook');
+    } else if (calcState.textbookMode && isList(value)) {
+      cell.innerHTML = this._renderTextbookList(value, svgSize);
+      cell.classList.add('textbook');
+    } else if (calcState.textbookMode && (isMatrix(value) || isVector(value))) {
+      cell.innerHTML = this._renderTextbookGrid(value);
+      cell.classList.add('textbook');
+    } else {
+      const span = document.createElement('span');
+      span.className = 'value-text';
+      span.textContent = flat;
+      cell.appendChild(span);
+    }
+    return flat;
+  }
+
+  /** Textbook 2D matrix / vector: a CSS grid of cells between bracket
+   *  pseudo-elements.  A vector of equal-length vectors (how the parser
+   *  reads `[[1 2][3 4]]`) lays out as a matrix; a vector of scalars is
+   *  a single row. */
   _renderTextbookGrid(val) {
-    // Three input shapes land here in textbook mode:
-    //   - Matrix         → use val.rows directly.
-    //   - Vector whose
-    //     items are all
-    //     same-length
-    //     Vectors        → treat as a Matrix laid out by inner rows.
-    //                      Parser produces this when the user types
-    //                      `[[1 2 3][4 5 6]]` because parseVector is
-    //                      structural-only and never promotes nested
-    //                      Vectors to a Matrix.  Without this branch
-    //                      the outer Vector renders as a single row
-    //                      containing three `[ … ]` cells, defeating
-    //                      the 2D layout the user expects.
-    //   - Vector of
-    //     scalars        → single-row matrix.  (No change.)
     let rows;
     if (isMatrix(val)) {
       rows = val.rows.map(r => r.slice());
@@ -300,120 +312,105 @@ export class Display {
     }
     const ncols = rows.reduce((m, r) => Math.max(m, r.length), 0);
     const cells = rows.map(r => {
-      // Pad short rows with empty cells so a ragged input still lays
-      // out as a rectangle (defensive: the type constructors pin all
-      // rows to the same length, but Matrix(rows)'s inner-array shape
-      // isn't enforced at the boundary).
       const padded = r.concat(Array(Math.max(0, ncols - r.length)).fill(null));
       return padded.map(cell => {
         if (cell === null) return '<span class="mcell"></span>';
-        // Symbolic cells get the same SVG pretty-print as top-level
-        // symbolics; everything else stays as formatted plain text.
         if (isSymbolic(cell)) {
           const { svg } = astToSvg(cell.expr, { size: 18 });
           return `<span class="mcell mcell-sym">${svg}</span>`;
         }
-        const text = format(cell, this.displayOpts);
-        return `<span class="mcell">${escapeHtml(text)}</span>`;
+        return `<span class="mcell">${escapeHtml(format(cell, this.displayOpts))}</span>`;
       }).join('');
     });
     const cls = isMatrix(val) ? 'matrix-grid' : 'matrix-grid vector-grid';
-    const cols = Math.max(1, ncols);
-    return (
-      `<span class="${cls}" style="--mcols:${cols}">` +
-      cells.join('') +
-      `</span>`
-    );
+    return `<span class="${cls}" style="--mcols:${Math.max(1, ncols)}">${cells.join('')}</span>`;
   }
 
-  /** Render a List in textbook mode.
-   *
-   *  Produces:  { <item>  <item>  … }
-   *
-   *  Each item that is a Symbolic gets the full SVG pretty-print;
-   *  everything else uses the regular formatter so numbers, names,
-   *  nested lists, etc. all display correctly. */
   _renderTextbookList(val, svgSize = 22) {
     const items = val.items.map(item => {
       if (isSymbolic(item)) {
         const { svg } = astToSvg(item.expr, { size: svgSize });
         return `<span class="lcell lcell-sym">${svg}</span>`;
       }
-      const text = format(item, this.displayOpts);
-      return `<span class="lcell">${escapeHtml(text)}</span>`;
+      return `<span class="lcell">${escapeHtml(format(item, this.displayOpts))}</span>`;
     });
-    const inner = items.join('<span class="lsep"> </span>');
-    return `<span class="list-inline">{ ${inner} }</span>`;
+    return `<span class="list-inline">{ ${items.join('<span class="lsep"> </span>')} }</span>`;
   }
 
-  /** Render the command line.
-   *
-   *  CodeMirror (attached via Entry.attach) owns the editing surface
-   *  inside `this.cmdline`, so our job here is limited to:
-   *   - showing a transient error banner (replaces the editor visually
-   *     via a child element we toggle on/off)
-   *   - toggling an `empty` class so CSS can style the placeholder state
-   *  The cursor and text rendering are no longer ours — CM draws them. */
   renderCmdline(entry) {
     const { buffer, error, notice } = entry;
-    // Lazily carve out an error node that overlays the editor.  Living
-    // inside #cmdline as a sibling to the CM root keeps the layout
-    // cue (same box) while letting CM's DOM stay unmutated.
     if (!this._errNode) {
       this._errNode = document.createElement('div');
       this._errNode.className = 'cmdline-error';
+      this._errNode.setAttribute('role', 'alert');
       this.cmdline.appendChild(this._errNode);
     }
     if (!this._noticeNode) {
       this._noticeNode = document.createElement('div');
       this._noticeNode.className = 'cmdline-notice';
+      this._noticeNode.setAttribute('role', 'status');
       this.cmdline.appendChild(this._noticeNode);
     }
-    if (error) {
-      this._errNode.textContent = error;
-      this._errNode.hidden = false;
-      this._noticeNode.hidden = true;
-      this.cmdline.classList.remove('empty');
-      return;
-    }
-    this._errNode.hidden = true;
-    if (notice) {
-      this._noticeNode.textContent = notice;
-      this._noticeNode.hidden = false;
-      this.cmdline.classList.remove('empty');
-      return;
-    }
-    this._noticeNode.hidden = true;
+    this._errNode.textContent = error || '';
+    this._errNode.hidden = !error;
+    this._noticeNode.textContent = !error && notice ? notice : '';
+    this._noticeNode.hidden = !!error || !notice;
     this.cmdline.classList.toggle('empty', buffer.length === 0);
   }
 
-  setMenu(slots) {
-    this.menuSlots = normalizeMenuSlots(slots);
-    if (!this.menuBar) return;     // on-screen menu bar is optional
-    this.menuBar.innerHTML = '';
-    this.menuSlots.forEach(label => {
-      const d = document.createElement('div');
-      d.className = 'slot';
-      d.textContent = label || '';
-      this.menuBar.appendChild(d);
-    });
-  }
-
-  setHaltAnnunciator(kind) {
-    const el = this.statusLine?.querySelector('#ann-halt');
+  renderStatus({ classic = false, minimal = false, shift = null, halted = null, busy = false, editing = null } = {}) {
+    const el = this.statusLine;
     if (!el) return;
-    const label = haltAnnunciatorLabel(kind);
-    if (!label) {
-      el.textContent = '';
-      el.classList.remove('on');
-      el.removeAttribute('title');
+    const path = Array.isArray(calcState.path) ? calcState.path : null;
+    const layer = shift?.startsWith('shiftL') ? 'l' : shift?.startsWith('shiftR') ? 'r' : shift?.startsWith('alpha') ? 'a' : '';
+    const locked = !!shift?.endsWith('Lock');
+    const pathHtml = this._pathHtml();
+    const minimalButtons = minimal
+      ? `<button type="button" class="ann-btn" data-status="fullscreen" title="Full screen" aria-label="Full screen">${icon('full', 'sm')}</button><button type="button" class="ann-btn" data-status="leave-minimal" title="Leave minimal view" aria-label="Leave minimal view">${icon('collapse', 'sm')}</button>`
+      : '';
+    if (classic) {
+      const g = (items, cls = '', mode = '') => `<div class="ann-g ${cls}"${mode ? ` data-status="mode" data-mode="${mode}" role="button" tabindex="0" title="Change ${mode}"` : ''}>${items.map(([t, on, c]) => `<span class="${on ? 'on' : ''} ${c || ''}">${t}</span>`).join('')}</div>`;
+      el.innerHTML = [
+        g([['↰', layer === 'l', 'l'], ['↱', layer === 'r'], ['α', layer === 'a']]),
+        g([['RAD', calcState.angle === 'RAD'], ['DEG', calcState.angle === 'DEG'], ['GRD', calcState.angle === 'GRD']], '', 'angle'),
+        g([['XYZ', calcState.coordMode === 'RECT'], ['R∠Z', calcState.coordMode === 'CYLIN'], ['R∠∠', calcState.coordMode === 'SPHERE']], 'opt', 'coord'),
+        g([['=', !calcState.approxMode], ['~', calcState.approxMode]], '', 'exact'),
+        g([['ℝ', !calcState.complexMode], ['ℂ', calcState.complexMode]], '', 'complex'),
+        g([['HALT', !!halted], ['⧗', busy, 'bz']], 'opt'),
+        `<div class="ann-path">${pathHtml}</div>`,
+        minimal ? `<div class="ann-g" style="gap:0">${minimalButtons}</div>` : '',
+      ].join('');
+      el.className = 'status-line';
       return;
     }
-    el.textContent = label;
-    el.classList.add('on');
-    el.title = label === 'SST'
-      ? 'SST — single-step paused before the next instruction'
-      : 'HLT — program execution paused';
+    if (minimal) {
+      const modes = [
+        ['angle', calcState.angle],
+        ['coord', coordModeGlyph(calcState.coordMode)],
+        ['base', binaryBaseLabel(calcState.binaryBase) ?? ''],
+        ['fmt', displayModeLabel(calcState.displayMode, calcState.displayDigits)],
+        ['complex', calcState.complexMode ? 'ℂ' : 'ℝ'],
+        ['exact', calcState.approxMode ? '~' : '='],
+      ].filter(([, t]) => t);
+      const layerMark = layer ? `<span class="ann-m ${layer}">${{ l: '↰', r: '↱', a: 'α' }[layer]}${locked ? ' LOCK' : ''}</span>` : '';
+      const haltMark = halted ? '<span class="ann-m l">HALT</span>' : '';
+      el.innerHTML = `<div class="ann-status">${modes.map(([m, t]) => `<button type="button" class="ann-m" data-status="mode" data-mode="${m}" title="Change ${m === 'fmt' ? 'number format' : m === 'exact' ? 'exact or approximate' : m === 'complex' ? 'real or complex' : m}">${escapeHtml(t)}</button>`).join('')}${layerMark}${haltMark}<span class="ann-sp"></span><span class="ann-path">${pathHtml}</span>${minimalButtons}</div>`;
+      el.className = 'status-line';
+      return;
+    }
+    const pills = [];
+    if (layer === 'l') pills.push(`<span class="pill l">↰ ${locked ? 'LOCKED' : 'SHIFT'}</span>`);
+    if (layer === 'r') pills.push(`<span class="pill r">↱ ${locked ? 'LOCKED' : 'SHIFT'}</span>`);
+    if (layer === 'a') pills.push(`<span class="pill a">α ${locked ? 'LOCKED' : 'ALPHA'}</span>`);
+    if (editing) pills.push(`<span class="pill e">EDITING LEVEL ${editing}</span>`);
+    if (halted) pills.push('<span class="pill h">PROGRAM HALTED</span>');
+    el.innerHTML = pills.join('');
+    el.className = pills.length ? 'status-line has-pills' : 'status-line';
+    void path;
+  }
+
+  _pathHtml() {
+    return pathSegmentsHtml(currentPathSegments());
   }
 
   setSuspendedProgram(halted) {
@@ -424,160 +421,33 @@ export class Display {
     const text = suspendedProgramText(halted, this.displayOpts);
     el.textContent = text;
     el.hidden = text.length === 0;
-    el.title = text
-      ? 'Suspended program; ▸ marks the next instruction'
-      : '';
+    el.title = text ? 'Suspended program; ▸ marks the next instruction' : '';
   }
 
-  setAnnunciator(id, on) {
-    const el = this.statusLine.querySelector(`#ann-${id}`);
-    if (!el) return;
-    el.classList.toggle('on', !!on);
-    // Attach a helpful tooltip on first use.  The map below keeps
-    // copy in one place so every annunciator has a short hint the
-    // user sees on hover (and the App layer can still click to act).
-    if (!el.title) {
-      const hints = {
-        alpha: 'α — alpha (letter) typing mode; click to cycle off → α → α-lock → off',
-        halt: 'HALT — program execution paused',
-        hex:  'HEX — binary display base',
-        xyz:  'XYZ — rectangular coordinate mode',
-        r:    'R — polar / cylindrical mode',
-      };
-      if (hints[id]) el.title = hints[id];
+  announce(text) {
+    if (typeof document === 'undefined') return;
+    if (!this._live) {
+      this._live = document.createElement('div');
+      this._live.className = 'sr-only';
+      this._live.setAttribute('aria-live', 'polite');
+      document.body.appendChild(this._live);
     }
+    this._live.textContent = '';
+    requestAnimationFrame(() => { this._live.textContent = text; });
   }
+}
 
-  /** Update the angle-mode annunciator (DEG/RAD/GRD).  The annunciator
-   *  stays visible — HP50 always shows the active angle mode.
-   *  Tooltip advertises the click-to-cycle behavior. */
-  setAngleMode(mode) {
-    const el = this.statusLine.querySelector('#ann-angle');
-    if (!el) return;
-    el.textContent = mode;
-    el.classList.add('on');
-    el.title = `Angle mode: ${mode} — click to cycle RAD → DEG → GRD`;
-  }
+/** `{ HOME WORK A }` with every ancestor segment as a clickable
+ *  `data-status="path"` button and the current (last) segment as a
+ *  plain span — you're already there, so it isn't a target. */
+export function pathSegmentsHtml(segments) {
+  return `{ ${segments.map((name, i) => (i === segments.length - 1
+    ? `<span>${escapeHtml(name)}</span>`
+    : `<button type="button" data-status="path" data-index="${i}" title="Go to ${escapeHtml(name)}">${escapeHtml(name)}</button>`)).join(' ')} }`;
+}
 
-  /** Update the EXACT/APPROX annunciator.  HP50 flag -105: when CLEAR
-   *  ("EXACT") the calculator keeps symbolic results symbolic and shows
-   *  an `=` glyph; when SET ("APPROX") results fold to decimals and the
-   *  annunciator flips to `~`.  Always lit — the user should be able
-   *  to glance at the LCD and tell which mode they're in without
-   *  opening the MODES menu.  The annunciator disambiguates the `=`
-   *  glyph on the keypad so users don't confuse it with EXACT when
-   *  the calculator is booting in APPROX. */
-  setApproxAnnunciator(approx) {
-    const el = this.statusLine?.querySelector('#ann-approx');
-    if (!el) return;
-    el.textContent = approx ? '~' : '=';
-    el.classList.add('on');
-    el.title = approx
-      ? 'APPROX mode (flag -105 set) — click to switch to EXACT'
-      : 'EXACT mode (flag -105 clear) — click to switch to APPROX';
-  }
-
-  /** Update the Real/Complex annunciator.  HP50 flag -103: when CLEAR
-   *  ("Real") SOLVE returns real roots only and domain-violating
-   *  transcendental ops throw; the annunciator shows `ℝ`.  When SET
-   *  ("Complex") SOLVE also searches for complex roots and those ops
-   *  return their principal-branch Complex result; the annunciator
-   *  flips to `i`.  Always lit so the mode is visible at a glance,
-   *  mirroring the EXACT/APPROX annunciator. */
-  setComplexAnnunciator(on) {
-    const el = this.statusLine?.querySelector('#ann-complex');
-    if (!el) return;
-    el.textContent = on ? 'i' : 'ℝ';
-    el.classList.add('on');
-    el.title = on
-      ? 'Complex mode (flag -103 set) — SOLVE finds complex roots; click to switch to Real'
-      : 'Real mode (flag -103 clear) — SOLVE finds real roots only; click to switch to Complex';
-  }
-
-  /** Show the current BinaryInteger display-base override as a short
-   *  label (HEX / DEC / OCT / BIN) in the status line.  When the
-   *  override is cleared (`null`) the annunciator hides — BinInts
-   *  then render in their own stored base, matching HP50 behaviour
-   *  where this annunciator only lights up when a mode is actively
-   *  forcing a base.  Reach the modes by typing HEX / DEC / OCT /
-   *  BIN (or via the Commands side-panel).  Reuses the `#ann-hex`
-   *  slot for DOM stability. */
-  setBinaryBaseAnnunciator(base) {
-    const el = this.statusLine?.querySelector('#ann-hex');
-    if (!el) return;
-    const label = binaryBaseLabel(base);
-    if (!label) {
-      el.textContent = '';
-      el.classList.remove('on');
-      el.removeAttribute('title');
-      return;
-    }
-    el.textContent = label;
-    el.classList.add('on');
-    el.title = `${label} — BinaryInteger display base (click to cycle)`;
-  }
-
-  /** Update the number-display mode annunciator: STD / FIX n / SCI n /
-   *  ENG n.  Always lit — the user should see at a glance which mode
-   *  is active (matches HP50's persistent indicator).  Reuses the
-   *  `#ann-display` slot. */
-  setDisplayAnnunciator(mode, digits) {
-    const el = this.statusLine?.querySelector('#ann-display');
-    if (!el) return;
-    const label = displayModeLabel(mode, digits);
-    el.textContent = label;
-    el.classList.add('on');
-    el.title = `Number display mode: ${label}`;
-  }
-
-  /** Show the current coordinate mode (XYZ / R∠Z / R∠∠) for complex /
-   *  vector display.  Always lit — the user should see at a glance
-   *  whether (1,1) renders as `(1, 1)` or `(SQRT(2), PI/4)`.  Occupies
-   *  the slot directly after the angle annunciator (`#ann-coord`). */
-  setCoordMode(mode) {
-    const el = this.statusLine?.querySelector('#ann-coord');
-    if (!el) return;
-    el.textContent = coordModeGlyph(mode);
-    el.classList.add('on');
-    el.title = `Coord mode: ${el.textContent} — click to cycle RECT → CYLIN → SPHERE`;
-  }
-
-  /** Update the directory-path annunciator — `{ HOME }` at startup;
-   *  `{ HOME A }` once subdirs land.  Accepts an array of segments.
-   *
-   *  Each segment is wrapped in a clickable
-   *  `<span class="path-segment" data-index="N" title="…">NAME</span>`
-   *  so the user can jump straight back to an ancestor directory by
-   *  clicking on its name in the path annunciator.  The App layer wires
-   *  onPathSegmentClick to navigate there.  Non-segment glyphs — the
-   *  `{` / `}` braces and the inter-segment spaces — stay as plain
-   *  text so they're not clickable. */
-  setPath(segments) {
-    const el = this.statusLine.querySelector('#ann-mode');
-    if (!el) return;
-    const segs = Array.isArray(segments) && segments.length ? segments : ['HOME'];
-    // Wrap the whole path in a single .path-inner so the outer #ann-mode
-    // can truncate-from-the-left via `direction: rtl` + overflow: hidden
-    // without reversing the order of the inner click-targets.  .path-inner
-    // forces `direction: ltr` so the segments render in order.
-    const parts = ['<span class="path-inner">{ '];
-    segs.forEach((name, i) => {
-      if (i > 0) parts.push(' ');
-      const hint = i === segs.length - 1
-        ? `Current directory: ${name}`
-        : `Navigate up to ${name}`;
-      const esc = escapeHtml(name);
-      parts.push(
-        `<span class="path-segment" data-index="${i}" title="${hint}">${esc}</span>`
-      );
-    });
-    parts.push(' }</span>');
-    el.innerHTML = parts.join('');
-    // Deliberately do NOT set a title on #ann-mode itself — only the
-    // inner .path-segment spans should be interactive.  Giving the outer
-    // annunciator a title would (a) trigger the .annunciator[title]:hover
-    // highlight across the whole `{ HOME … }` area including the braces,
-    // and (b) suggest the braces themselves are clickable.  Only the
-    // segment names get the pointer cursor and the hover pill.
-  }
+function currentPathSegments() {
+  const segs = [];
+  for (let dir = calcState.current; dir; dir = dir.parent) segs.unshift(dir.name);
+  return segs.length ? segs : ['HOME'];
 }

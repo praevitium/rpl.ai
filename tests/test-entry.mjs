@@ -17,7 +17,6 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
 } from '../www/src/rpl/state.js';
-import { clampStackScroll, computeMenuPage } from '../www/src/ui/paging.js';
 import { assert, assertThrows } from './helpers.mjs';
 
 /* Entry mode — algebraic entry + shifted keypad ops + command-line history. */

@@ -45,7 +45,7 @@ export const EQW_ACTION_OPS = Object.freeze({
 
 export const EQW_APP_FACES = new Set([
   'ENTER', 'ON', 'EVAL', '→NUM', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6',
-  'PREV', 'NEXT', 'TOOLS', 'COPY', 'CUT', 'PASTE',
+  'PREV', 'NEXT', 'CAT', 'COPY', 'CUT', 'PASTE',
 ]);
 
 export const EQW_UNAVAILABLE_FACES = new Set([
@@ -1510,9 +1510,7 @@ export class EquationEditor {
 
   isOpen() { return this._open; }
   ownsKeyboard() {
-    const panel = this.app?.sidePanel;
-    return this._open && this._focused && !this._line
-      && !!panel?.isOpen?.() && panel.tab === 'equation';
+    return this._open && this._focused && !this._line && this.app?.inputMode === 'equation';
   }
 
   _paletteButton(item) {
@@ -1762,7 +1760,7 @@ export class EquationEditor {
     if (/^F[1-6]$/.test(face)) { this.app.pressSoftKey(Number(face[1]) - 1); return; }
     if (face === 'PREV') { this.app.prevMenuPage(); return; }
     if (face === 'NEXT') { this.app.nextMenuPage(); return; }
-    if (face === 'TOOLS') { this.app.toggleSidePanel('commands'); return; }
+    if (face === 'CAT') { this.app.drawers.toggle('catalog'); return; }
     if (face === 'ENTER') { this.commit(); return; }
     if (face === 'ON') { this.cancel(); return; }
     if (face === 'EVAL' || face === '→NUM') { this.applyNamed(face); return; }

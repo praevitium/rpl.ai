@@ -1,15 +1,9 @@
 /* =================================================================
-   Command help popup.
+   Command reference sections.
 
-   Lazily fetches docs/hp50-commands.html on the first request, parses
-   each <h2 id="cmd-…"> block out of it, and shows the matching block
-   as an overlay over the calculator area.  Triggered by a right-click
-   on a Commands-tab button; dismissed with the × button, the Esc key,
-   or a click on the backdrop outside the content card.
-
-   The popup is owned by the SidePanel and mounted inside #calculator
-   so its `position: absolute; inset: 0` exactly covers the calc area
-   without overlapping the side panel itself.
+   Lazily fetches docs/hp50-commands.html on the first request and
+   parses each <h2 id="cmd-…"> block out of it; the Catalog drawer
+   renders the matching block inline.
    ================================================================= */
 
 /* Panel-name → doc-heading aliases.  The HP50 manual headings use the
@@ -54,7 +48,7 @@ export function headingKey(raw) {
   return String(raw == null ? '' : raw).trim().replace(/\s*\(.*\)\s*$/, '').trim();
 }
 
-/** Visited-name history transition for `show()`.  Truncates any forward
+/** Visited-name history transition for the Catalog's reference view.  Truncates any forward
  *  entries and appends `name`, advancing the cursor — unless `name` is
  *  already the current entry, in which case history and cursor are
  *  returned unchanged (re-issuing the current name is a no-op).  Pure:
@@ -128,175 +122,12 @@ async function _loadSections() {
   return _loadPromise;
 }
 
-export class CommandHelp {
-  constructor({ host }) {
-    this.host = host;
-    this._currentName = null;
-    // Visited-name navigation history.  `_history` is an ordered list
-    // of display names (whatever was passed to show()).  `_historyIdx`
-    // points at the entry currently rendered.  `show()` truncates any
-    // forward entries and appends; goBack / goForward and the history
-    // dropdown move the cursor without truncating.
-    this._history = [];
-    this._historyIdx = -1;
-
-    const el = document.createElement('div');
-    el.className = 'cmd-help-popup hidden';
-    el.setAttribute('aria-hidden', 'true');
-    el.innerHTML = `
-      <div class="cmd-help-bar">
-        <button type="button" class="cmd-help-nav cmd-help-back"
-                aria-label="Back" title="Back" disabled>‹</button>
-        <button type="button" class="cmd-help-nav cmd-help-fwd"
-                aria-label="Forward" title="Forward" disabled>›</button>
-        <select class="cmd-help-history" aria-label="History"
-                title="History"></select>
-        <button type="button" class="cmd-help-close"
-                aria-label="Close" title="Close (Esc)">×</button>
-      </div>
-      <div class="cmd-help-inner"></div>
-    `;
-    this.host.appendChild(el);
-    this.el = el;
-    this._inner = el.querySelector('.cmd-help-inner');
-    this._backBtn = el.querySelector('.cmd-help-back');
-    this._fwdBtn  = el.querySelector('.cmd-help-fwd');
-    this._histSel = el.querySelector('.cmd-help-history');
-
-    this._backBtn.addEventListener('click', () => this.goBack());
-    this._fwdBtn .addEventListener('click', () => this.goForward());
-    // `change` fires only on commit (click / Enter / blur after keyboard
-    // navigation), so we also listen for `input` — fires the moment the
-    // <select>'s value flips during arrow-key navigation, which lets the
-    // popup update live while the dropdown has focus.  Both events are
-    // routed through one idempotent handler so a single value change
-    // doesn't render twice.
-    const onSelectNav = () => {
-      const idx = Number(this._histSel.value);
-      if (!Number.isFinite(idx)) return;
-      if (idx < 0 || idx >= this._history.length) return;
-      if (idx === this._historyIdx) return;
-      this._historyIdx = idx;
-      this._render(this._history[idx]);
-    };
-    this._histSel.addEventListener('input',  onSelectNav);
-    this._histSel.addEventListener('change', onSelectNav);
-
-    el.querySelector('.cmd-help-close').addEventListener('click', () => this.hide());
-    // Backdrop click (anywhere on the popup background that isn't the
-    // inner content card or the toolbar) dismisses.
-    el.addEventListener('click', (ev) => {
-      if (ev.target === el) this.hide();
-    });
-    // Cross-link click inside the rendered content — See Also tokens
-    // are pre-linkified during section parsing; intercept here so we
-    // don't follow the empty `href="#"`.
-    this._inner.addEventListener('click', (ev) => {
-      const a = ev.target.closest?.('.cmd-help-link');
-      if (!a) return;
-      ev.preventDefault();
-      this.show(a.dataset.cmd);
-    });
-    // Esc closes when the popup is open.  Capture phase so we win against
-    // any keypad/entry handlers attached to window.
-    this._onKey = (ev) => {
-      if (ev.key !== 'Escape') return;
-      if (this.el.classList.contains('hidden')) return;
-      ev.stopPropagation();
-      ev.preventDefault();
-      this.hide();
-    };
-    window.addEventListener('keydown', this._onKey, true);
-  }
-
-  async show(name) {
-    if (!name) return;
-    const key = String(name).toUpperCase();
-    if (this._currentName === key && !this.el.classList.contains('hidden')) {
-      return;
-    }
-    const { history, idx } = pushHistory(this._history, this._historyIdx, name);
-    this._history = history;
-    this._historyIdx = idx;
-    await this._render(name);
-  }
-
-  goBack() {
-    if (this._historyIdx <= 0) return;
-    this._historyIdx -= 1;
-    this._render(this._history[this._historyIdx]);
-  }
-
-  goForward() {
-    if (this._historyIdx >= this._history.length - 1) return;
-    this._historyIdx += 1;
-    this._render(this._history[this._historyIdx]);
-  }
-
-  /** Look up `name` (with alias fallback), paint its content into the
-   *  popup, and refresh the toolbar enable/select state.  Internal —
-   *  callers (show / goBack / goForward / select change) own the
-   *  history bookkeeping. */
-  async _render(name) {
-    const key = String(name).toUpperCase();
-    this._currentName = key;
-    let sections;
-    try {
-      await _loadSections();
-      sections = _sectionsByName;
-    } catch (e) {
-      if (this._currentName !== key) return;
-      this._inner.textContent = `Failed to load reference: ${e.message}`;
-      this._reveal();
-      return;
-    }
-    if (this._currentName !== key) return;
-    const aliased = ALIASES.get(key);
-    const frag = sections.get(key)
-              ?? (aliased ? sections.get(aliased.toUpperCase()) : undefined);
-    this._inner.innerHTML = '';
-    if (frag) {
-      this._inner.appendChild(frag.cloneNode(true));
-    } else {
-      const empty = document.createElement('div');
-      empty.className = 'cmd-help-empty';
-      empty.textContent = `No reference entry for "${name}".`;
-      this._inner.appendChild(empty);
-    }
-    this._refreshNav();
-    this._reveal();
-  }
-
-  _refreshNav() {
-    this._backBtn.disabled = this._historyIdx <= 0;
-    this._fwdBtn .disabled = this._historyIdx >= this._history.length - 1;
-    this._histSel.innerHTML = '';
-    if (this._history.length === 0) {
-      this._histSel.disabled = true;
-      return;
-    }
-    this._histSel.disabled = false;
-    // Newest entries first so the dropdown reads top-down most-recent.
-    // `value` keeps its underlying-array index so the change handler
-    // still maps directly to `_history[idx]`.
-    for (let i = this._history.length - 1; i >= 0; i--) {
-      const opt = document.createElement('option');
-      opt.value = String(i);
-      opt.textContent = this._history[i];
-      if (i === this._historyIdx) opt.selected = true;
-      this._histSel.appendChild(opt);
-    }
-  }
-
-  hide() {
-    this._currentName = null;
-    this.el.classList.add('hidden');
-    this.el.setAttribute('aria-hidden', 'true');
-  }
-
-  _reveal() {
-    this.el.classList.remove('hidden');
-    this.el.setAttribute('aria-hidden', 'false');
-    this._inner.scrollTop = 0;
-  }
+/** The reference section for `name` (alias-aware) as a fresh fragment,
+ *  or null when the manual has no entry for it. */
+export async function referenceSection(name) {
+  await _loadSections();
+  const key = String(name ?? '').toUpperCase();
+  const aliased = ALIASES.get(key);
+  const frag = _sectionsByName.get(key) ?? (aliased ? _sectionsByName.get(aliased.toUpperCase()) : undefined);
+  return frag ? frag.cloneNode(true) : null;
 }

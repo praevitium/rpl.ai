@@ -20,8 +20,8 @@ import {
   hasVarRedo, varStateMatchesUndoTop, dropVarUndoTop,
 } from '../rpl/state.js';
 import {
-  EditorState, EditorView, keymap, drawSelection,
-  history, historyKeymap, defaultKeymap,
+  EditorState, EditorView, Transaction, keymap, drawSelection,
+  history, defaultKeymap, undo as cmUndo, redo as cmRedo,
 } from '../../vendor/codemirror/codemirror.bundle.js';
 
 // Maximum length of the command-line history ring buffer.
@@ -88,6 +88,17 @@ export class Entry {
     });
   }
 
+  /** Replace the whole line without recording it in the text-undo
+   *  history, so a commit, cancel or recall never comes back on ⌘Z. */
+  resetBuffer(text) {
+    const next = String(text ?? '');
+    this._dispatch({
+      changes: { from: 0, to: this._state.doc.length, insert: next },
+      selection: { anchor: next.length },
+      annotations: Transaction.addToHistory.of(false),
+    });
+  }
+
   get cursor() { return this._state.selection.main.head; }
   set cursor(n) {
     const len = this._state.doc.length;
@@ -104,12 +115,12 @@ export class Entry {
    *
    *  Call once during init.  Calling twice is a no-op. */
   attach(parent, { onCommit, onCancel, onArrowUpEmpty, onArrowDownEmpty,
-                   onArrowLeftEmpty, onArrowRightEmpty } = {}) {
+                   onArrowLeftEmpty, onArrowRightEmpty, onBackspaceEmpty, onDeleteEmpty } = {}) {
     if (this._view) return;
     const isEmpty = () => this._view.state.doc.length === 0;
     const delegateIfEmpty = (cb) => () => {
       if (!isEmpty() || !cb) return false;
-      cb(); return true;
+      return cb() !== false;
     };
     const appKeys = keymap.of([
       { key: 'Enter',       run: () => { onCommit?.(); return true; } },
@@ -125,21 +136,13 @@ export class Entry {
                           selection: { anchor: head + 2 } });
           return true;
       } },
-      { key: 'Escape',      run: (view) => {
-          // Escape on an empty buffer drops focus instead of doing the
-          // (no-op) cancel — matches the "ESC once to stop editing" idiom
-          // from VS Code and friends.
-          if (view.state.doc.length === 0) {
-            view.contentDOM.blur();
-            return true;
-          }
-          onCancel?.();
-          return true;
-      } },
+      { key: 'Escape',      run: () => { onCancel?.(); return true; } },
       { key: 'ArrowUp',     run: delegateIfEmpty(onArrowUpEmpty) },
       { key: 'ArrowDown',   run: delegateIfEmpty(onArrowDownEmpty) },
       { key: 'ArrowLeft',   run: delegateIfEmpty(onArrowLeftEmpty) },
       { key: 'ArrowRight',  run: delegateIfEmpty(onArrowRightEmpty) },
+      { key: 'Backspace',   run: delegateIfEmpty(onBackspaceEmpty) },
+      { key: 'Delete',      run: delegateIfEmpty(onDeleteEmpty) },
     ]);
     this._view = new EditorView({
       state: EditorState.create({
@@ -148,8 +151,8 @@ export class Entry {
         extensions: [
           history(),
           drawSelection(),
-          appKeys,                                        // higher priority
-          keymap.of([...historyKeymap, ...defaultKeymap]),// CM defaults
+          appKeys,
+          keymap.of(defaultKeymap),
           EditorView.clipboardInputFilter.of(hpTextToSource),
           // Deliberately NO lineWrapping: long content scrolls
           // horizontally; newlines appear only when the user presses
@@ -181,6 +184,12 @@ export class Entry {
   }
 
   focus() { this._view?.focus(); }
+
+  /** Text-buffer undo/redo, routed through CodeMirror's own history —
+   *  distinct from the calculator's stack UNDO (performUndo/performRedo).
+   *  App picks between the two based on whether the buffer has content. */
+  undoText() { if (this._view) cmUndo(this._view); }
+  redoText() { if (this._view) cmRedo(this._view); }
 
   /** Document offset under viewport point (x, y), or null off the text. */
   posAtCoords(x, y) { return this._view?.posAtCoords({ x, y }) ?? null; }
@@ -415,8 +424,7 @@ export class Entry {
    *  recall a historical entry — matches HP50 CMD behavior where a
    *  recall replaces the current command line rather than inserting. */
   recall(text) {
-    this.buffer = String(text ?? '');
-    this.cursor = this.buffer.length;
+    this.resetBuffer(text);
     this.error = '';
     this._emit();
     this.focus();
@@ -492,8 +500,7 @@ export class Entry {
 
   /** Clear the command line entirely (CANCEL / ON). */
   cancel() {
-    this.buffer = '';
-    this.cursor = 0;
+    this.resetBuffer('');
     this.error = '';
     this._emit();
   }
@@ -701,8 +708,7 @@ export class Entry {
 
   _clearCommittedBuffer(raw) {
     this._recordHistory(raw);
-    this.buffer = '';
-    this.cursor = 0;
+    this.resetBuffer('');
   }
 
   /** Commit then run an op.  Called by operator keys. */

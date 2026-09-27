@@ -18,7 +18,6 @@ import {
   setApproxMode,
   setHalted, getHalted, clearHalted, clearAllHalted, haltedDepth,
 } from '../www/src/rpl/state.js';
-import { clampStackScroll, computeMenuPage } from '../www/src/ui/paging.js';
 import { assert, assertThrows } from './helpers.mjs';
 
 /* Control flow — IFT / IFTE, IF/THEN/ELSE/END, WHILE, DO/UNTIL, START,

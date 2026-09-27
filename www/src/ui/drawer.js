@@ -1,76 +1,27 @@
-/* =================================================================
-   Side-panel: Commands / History / Characters / Files / Graph / Writer
-
-   A slide-in overlay on the right edge of the bezel that replaces
-   several shift-layer soft menus (CMD, PRG, CHARS, MTH, CAT, EXP&LN,
-   TRIG, CALC, ALG, MATRICES, STAT, CONVERT, UNITS, ARITH, CMPLX).
-   Instead of 6 cramped labels on the LCD, the user gets a scrollable,
-   tabbed panel.
-
-   Tabs:
-
-     1. Commands  —  Every registered op, grouped by the same categories
-                     used in docs/COMMANDS.md.  Click behavior
-                     mirrors a keypad button press: if the command line
-                     has content, the op commits the buffer first, then
-                     runs.  Inside algebraic entry (unclosed tick), text
-                     commands are appended as identifiers instead.
-
-     2. History   —  The Entry command-history ring buffer, newest
-                     first.  A sort toggle flips to oldest-first.  Click
-                     an entry → recall into the command line for edit.
-
-     3. Characters — Greek letters + math / program glyphs that aren't
-                     on the keypad.  Click → `entry.type(char)`.
-
-   The panel is intentionally NOT modal — the user can click inside the
-   panel and then keep typing or press keypad buttons.  Only a close
-   button (×) or another CAT press dismisses it.
-   ================================================================= */
-
 import { allOps, lookup, opCategories } from '../rpl/ops.js';
 import {
   state as calcState, subscribe as subscribeState,
-  varRecall, varStore, varPurge, goInto, currentPath,
-  getDirectoryByPath, moveCurrentEntry, reorderCurrentEntry,
-  renameCurrentEntry,
+  varRecall, varStore, varPurge, goInto, currentPath, makeSubdir,
+  getDirectoryByPath, moveCurrentEntry, reorderCurrentEntry, renameCurrentEntry,
 } from '../rpl/state.js';
 import { TYPES, isStorableHpName } from '../rpl/types.js';
 import { UNIT_CATALOG } from '../rpl/units.js';
+import { format } from '../rpl/formatter.js';
 import {
   exportVariableToFile, parseVariableFile, exportHpTextFile, readFileText,
   listBackups, archiveBackup, restoreBackup, deleteBackup,
 } from '../rpl/persist.js';
 import { parseHpText } from '../rpl/hp-text.js';
-import { CommandHelp } from './command-help.js';
+import { referenceSection, pushHistory } from './command-help.js';
+import { loadCommandReference, findReferenceEntry, shortDescription, searchCommands } from './command-reference.js';
+import { matchPositions, highlightSegments } from './op-search.js';
 import { GraphView } from './graph-view.js';
-import { MatrixEditor } from './matrix-editor.js';
-import { EquationEditor } from './equation-editor.js';
+import { icon } from './icons.js';
+import { escapeHtml, typeName } from './display.js';
+import { MENU_FAMILIES } from './menus.js';
+import { shortcutText } from './actions.js';
 
-const EDITOR_TABS = {
-  equation: {
-    takesStack: true,
-    dest: 'equation writer',
-    create(app) {
-      const editor = new EquationEditor({ app });
-      app.equationEditor = editor;
-      return editor;
-    },
-  },
-  matrix: {
-    takesStack: true,
-    dest: 'matrix editor',
-    create(app) { return new MatrixEditor({ app }); },
-  },
-  graph: {
-    takesStack: true,
-    dest: 'graph',
-    create(app) { return new GraphView({ app }); },
-    mount(view) { view.resize(); },
-  },
-};
-
-const UNIT_SYMBOLS = [
+export const UNIT_SYMBOLS = Object.freeze([
   'm', 'cm', 'mm', 'km', 'in', 'ft', 'yd', 'mi',
   'kg', 'g', 'mg', 'lb', 'oz',
   's', 'ms', 'us', 'ns', 'min', 'h', 'd', 'yr',
@@ -79,7 +30,7 @@ const UNIT_SYMBOLS = [
   'Hz', 'N', 'J', 'W',
   'Pa', 'kPa', 'bar', 'atm',
   'V', 'Ω', 'ohm', 'C',
-];
+]);
 
 const _opCategories = opCategories();
 export const CATEGORIES = {
@@ -87,54 +38,41 @@ export const CATEGORIES = {
   Units: [...(_opCategories.Units || []), ...UNIT_SYMBOLS],
 };
 
-/* -----------------------------------------------------------------
-   Character palette.  Each entry: [label, textToInsert, optional title]
-   Titles are keyboard-friendly reminders ("alpha", "infinity", ...).
-   ----------------------------------------------------------------- */
 export const CHAR_GROUPS = {
-  // Constants go first: the ones that fold under →NUM or APPROX (π, e,
-  // i, MAXR, MINR) plus the HP50 CONSTANTS-library symbols people
-  // commonly type into expressions.  Clicking inserts the glyph the
-  // HP50 would print on the bezel.  Most physical constants aren't
-  // yet wired to numeric values in this build — they insert as Names
-  // and stay symbolic — but having them discoverable here matches the
-  // HP50's CONS catalog and avoids scavenger-hunting through the
-  // Greek table for a `μ0`.
   'Constants': [
-    ['π',   'π',    'pi — folds to 3.14159… under APPROX / →NUM'],
-    ['e',   'e',    'Euler — folds to 2.71828… under APPROX / →NUM'],
-    ['i',   'i',    'imaginary unit — folds to (0, 1) under APPROX / →NUM'],
-    ['∞',   '∞',    'infinity'],
-    ['MAXR','MAXR', 'maximum real (9.99999999999e499)'],
-    ['MINR','MINR', 'minimum real (1e-499)'],
-    // --- HP50 CONSTANTS library (symbolic insertion only for now) ---
-    ['c',   'c',    'speed of light in vacuum'],
-    ['h',   'h',    'Planck constant'],
-    ['ħ',   'ħ',    'reduced Planck constant (hbar)'],
-    ['G',   'G',    'gravitational constant'],
-    ['g',   'g',    'standard gravity (9.80665 m/s²)'],
-    ['NA',  'NA',   'Avogadro constant'],
-    ['k',   'k',    'Boltzmann constant'],
-    ['R',   'R',    'universal gas constant'],
-    ['Vm',  'Vm',   'molar volume (ideal gas, 0°C 1atm)'],
-    ['σ',   'σ',    'Stefan-Boltzmann constant'],
-    ['ε0',  'ε0',   'vacuum permittivity'],
-    ['μ0',  'μ0',   'vacuum permeability'],
-    ['q',   'q',    'elementary charge'],
-    ['me',  'me',   'electron rest mass'],
-    ['mp',  'mp',   'proton rest mass'],
-    ['mn',  'mn',   'neutron rest mass'],
-    ['F',   'F',    'Faraday constant'],
-    ['α',   'α',    'fine-structure constant'],
-    ['a0',  'a0',   'Bohr radius'],
-    ['μB',  'μB',   'Bohr magneton'],
-    ['μN',  'μN',   'nuclear magneton'],
-    ['Rinf','Rinf', 'Rydberg constant'],
-    ['λc',  'λc',   'Compton wavelength'],
-    ['γe',  'γe',   'electron gyromagnetic ratio'],
-    ['Z0',  'Z0',   'impedance of free space'],
-    ['atm', 'atm',  'standard atmosphere (101325 Pa)'],
-    ['T0',  'T0',   'standard temperature (273.15 K)'],
+    ['π', 'π', 'pi — folds to 3.14159… under APPROX / →NUM'],
+    ['e', 'e', 'Euler — folds to 2.71828… under APPROX / →NUM'],
+    ['i', 'i', 'imaginary unit — folds to (0, 1) under APPROX / →NUM'],
+    ['∞', '∞', 'infinity'],
+    ['MAXR', 'MAXR', 'maximum real (9.99999999999e499)'],
+    ['MINR', 'MINR', 'minimum real (1e-499)'],
+    ['c', 'c', 'speed of light in vacuum'],
+    ['h', 'h', 'Planck constant'],
+    ['ħ', 'ħ', 'reduced Planck constant (hbar)'],
+    ['G', 'G', 'gravitational constant'],
+    ['g', 'g', 'standard gravity (9.80665 m/s²)'],
+    ['NA', 'NA', 'Avogadro constant'],
+    ['k', 'k', 'Boltzmann constant'],
+    ['R', 'R', 'universal gas constant'],
+    ['Vm', 'Vm', 'molar volume (ideal gas, 0°C 1atm)'],
+    ['σ', 'σ', 'Stefan-Boltzmann constant'],
+    ['ε0', 'ε0', 'vacuum permittivity'],
+    ['μ0', 'μ0', 'vacuum permeability'],
+    ['q', 'q', 'elementary charge'],
+    ['me', 'me', 'electron rest mass'],
+    ['mp', 'mp', 'proton rest mass'],
+    ['mn', 'mn', 'neutron rest mass'],
+    ['F', 'F', 'Faraday constant'],
+    ['α', 'α', 'fine-structure constant'],
+    ['a0', 'a0', 'Bohr radius'],
+    ['μB', 'μB', 'Bohr magneton'],
+    ['μN', 'μN', 'nuclear magneton'],
+    ['Rinf', 'Rinf', 'Rydberg constant'],
+    ['λc', 'λc', 'Compton wavelength'],
+    ['γe', 'γe', 'electron gyromagnetic ratio'],
+    ['Z0', 'Z0', 'impedance of free space'],
+    ['atm', 'atm', 'standard atmosphere (101325 Pa)'],
+    ['T0', 'T0', 'standard temperature (273.15 K)'],
   ],
   'Greek (lowercase)': [
     ['α', 'α', 'alpha'], ['β', 'β', 'beta'], ['γ', 'γ', 'gamma'],
@@ -180,15 +118,10 @@ export const CHAR_GROUPS = {
   ],
 };
 
-/* -----------------------------------------------------------------
-   The "Other" bucket: every registered op not already shown under a
-   named category.  ASCII arrow aliases (`->NUM`, `HMS->`, …) are
-   deliberately hidden — each has a `→NUM` / `→HMS` Unicode form shown
-   in its proper category, and listing both doubles the panel for no
-   benefit (the ASCII names stay typeable from the entry buffer
-   regardless).  `registered` and `seen` are both upper-cased sets;
-   `filter` is the lower-cased search substring ('' = no filter).
-   ----------------------------------------------------------------- */
+/** The "Other" bucket: every registered op not already shown under a
+ *  named category, minus the ASCII arrow aliases (`->NUM`), which each
+ *  have a Unicode form in their proper category.  `registered` and
+ *  `seen` are upper-cased sets; `filter` is a lower-cased substring. */
 export function uncategorizedOps(registered, seen, filter = '') {
   return [...registered]
     .filter(n => !seen.has(n))
@@ -197,13 +130,8 @@ export function uncategorizedOps(registered, seen, filter = '') {
     .sort();
 }
 
-/* -----------------------------------------------------------------
-   Drop-zone geometry for a row hovered during a drag.  `frac` is the
-   cursor's vertical position within the row (0 = top edge, 1 = bottom).
-   Folder rows get a three-zone split — top 25% = before, middle 50% =
-   into, bottom 25% = after — so a file can be dropped *into* a folder;
-   non-folder rows use a plain top-half/bottom-half before/after split.
-   ----------------------------------------------------------------- */
+/** Drop zone for a row hovered during a drag: folders split into
+ *  before / into / after (25 / 50 / 25 %), other rows into halves. */
 export function dropZoneForFraction(frac, isDir) {
   if (isDir) {
     if (frac < 0.25) return 'before';
@@ -213,1341 +141,730 @@ export function dropZoneForFraction(frac, isDir) {
   return frac < 0.5 ? 'before' : 'after';
 }
 
-/* -----------------------------------------------------------------
-   Render helpers.  All DOM construction happens here — the owning
-   App just calls `SidePanel.open('commands' | 'history' | 'chars')`.
-   ----------------------------------------------------------------- */
+export function familyCommands(family) {
+  if (family.category === 'Other') {
+    const seen = new Set(Object.values(_opCategories).flat().map((n) => n.toUpperCase()));
+    return uncategorizedOps(new Set(allOps()), seen);
+  }
+  return _opCategories[family.category] ?? [];
+}
 
-export class SidePanel {
-  constructor({ root, app }) {
-    this.root = root;
+export function signatureOf(entry) {
+  const first = String(entry?.io ?? '').split('\n')[0].replace(/`/g, "'").trim();
+  return first.length > 42 ? `${first.slice(0, 41)}…` : first;
+}
+
+export const DRAWERS = Object.freeze([
+  { id: 'assistant', icon: 'spark', label: 'Assistant' },
+  { id: 'catalog', icon: 'book', label: 'Catalog' },
+  { id: 'vars', icon: 'folder', label: 'Variables' },
+  { id: 'history', icon: 'clock', label: 'History' },
+  { id: 'plot', icon: 'plot', label: 'Plot' },
+  { id: 'chars', icon: 'omega', label: 'Characters', short: 'Chars' },
+]);
+
+const DRAWER_MIN_WIDTH = 280;
+const DRAWER_MAX_WIDTH = 720;
+
+export class Drawers {
+  constructor({ rail, el, scrim, app }) {
+    this.rail = rail;
+    this.el = el;
+    this.scrim = scrim;
     this.app = app;
-    this.tab = 'ai';
-    this.historySort = 'newest';
-    // Set of `${tab}:${sectionTitle}` strings marking sections the
-    // user has collapsed.  Absence = open (the default for every new
-    // section).  Persists to localStorage via _saveUIState so the
-    // layout survives a reload.
-    this._collapsedSections = new Set();
-    this._editors = {};
-    this.el = null;
-    // Lazily-loaded popup that overlays the calculator with the
-    // command-reference entry for whichever Commands-tab button is
-    // hovered.  Mounted into #calculator so its `inset: 0` covers
-    // the calc area only — the side panel stays clickable.
-    const calcEl = document.getElementById('calculator');
-    this.commandHelp = calcEl
-      ? new CommandHelp({ host: calcEl })
-      : null;
-    this._build();
-    this._restoreUIState();
-  }
-
-  _build() {
-    const panel = document.createElement('aside');
-    panel.className = 'side-panel hidden';
-    panel.id = 'sidePanel';
-    panel.innerHTML = `
-      <div class="side-panel-resizer" role="separator"
-           aria-orientation="vertical" aria-label="Resize panel"
-           title="Drag to resize"></div>
-      <div class="side-panel-head">
-        <div class="side-panel-tabs" role="tablist">
-          <button type="button" class="sp-tab" data-tab="ai"       role="tab"
-                  title="AI Assistant (BETA)" aria-label="AI Assistant (BETA)"><svg class="sp-icon" aria-hidden="true"><use href="#i-spark"/></svg></button>
-          <button type="button" class="sp-tab" data-tab="commands" role="tab"
-                  title="Commands" aria-label="Commands"><svg class="sp-icon" aria-hidden="true"><use href="#i-book"/></svg></button>
-          <button type="button" class="sp-tab" data-tab="equation" role="tab"
-                  title="Equation writer" aria-label="Equation writer"><svg class="sp-icon" aria-hidden="true"><use href="#i-fx"/></svg></button>
-          <button type="button" class="sp-tab" data-tab="matrix"   role="tab"
-                  title="Matrix editor" aria-label="Matrix editor"><svg class="sp-icon" aria-hidden="true"><use href="#i-matrix"/></svg></button>
-          <button type="button" class="sp-tab" data-tab="graph"    role="tab"
-                  title="Graph" aria-label="Graph"><svg class="sp-icon" aria-hidden="true"><use href="#i-plot"/></svg></button>
-          <button type="button" class="sp-tab" data-tab="chars"    role="tab"
-                  title="Characters" aria-label="Characters"><svg class="sp-icon" aria-hidden="true"><use href="#i-omega"/></svg></button>
-          <button type="button" class="sp-tab" data-tab="files"    role="tab"
-                  title="Files" aria-label="Files"><svg class="sp-icon" aria-hidden="true"><use href="#i-folder"/></svg></button>
-          <button type="button" class="sp-tab" data-tab="history"  role="tab"
-                  title="History" aria-label="History"><svg class="sp-icon" aria-hidden="true"><use href="#i-clock"/></svg></button>
-        </div>
-        <button type="button" class="sp-close" title="Close panel" aria-label="Close">×</button>
-      </div>
-      <div class="side-panel-filter">
-        <input type="search" class="sp-filter" placeholder="Filter…" aria-label="Filter" />
-        <button type="button" class="sp-expand hidden"
-                title="Expand or collapse all sections">⊟ Collapse all</button>
-        <button type="button" class="sp-sort hidden" title="Toggle sort">⇅ Newest</button>
-      </div>
-      <div class="side-panel-body" role="tabpanel"></div>
-    `;
-    this.el = panel;
-    this.root.appendChild(panel);
-    this._bindResizer(panel.querySelector('.side-panel-resizer'));
-
-    panel.querySelectorAll('.sp-tab').forEach(btn => {
-      btn.addEventListener('click', () => this.setTab(btn.dataset.tab));
+    this.current = null;
+    this.cat = { q: '', family: null, ref: null, history: [], idx: -1 };
+    this.charsQuery = '';
+    this.varsQuery = '';
+    this.historyQuery = '';
+    this.reference = null;
+    this._graph = null;
+    this._chat = null;
+    this._dragName = null;
+    this._renderRail();
+    this.rail.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-drawer]');
+      if (b) this.toggle(b.dataset.drawer);
     });
-    panel.querySelector('.sp-close').addEventListener('click', () => this.close());
-
-    const filter = panel.querySelector('.sp-filter');
-    filter.addEventListener('input', () => this._render());
-
-    panel.querySelector('.sp-sort').addEventListener('click', () => {
-      this.historySort = this.historySort === 'newest' ? 'oldest' : 'newest';
-      const lbl = panel.querySelector('.sp-sort');
-      lbl.textContent = this.historySort === 'newest' ? '⇅ Newest' : '⇅ Oldest';
-      this._render();
-      this._saveUIState();
-    });
-
-    // Expand/collapse-all toggle (Commands and Characters tabs).  When
-    // ANY section is open the button collapses all; when all are closed
-    // it expands all.  Operates on the rendered DOM directly AND on the
-    // persisted _collapsedSections set so the choice survives re-renders
-    // + reloads.
-    panel.querySelector('.sp-expand').addEventListener('click', () => {
-      this._toggleAllSections();
-    });
-
-    // Delegated click for body items.  Pass the clicked button through
-    // to _handleAction so handlers that need to navigate to the parent
-    // row (e.g. in-place rename) can do so via btn.closest(...).
-    panel.querySelector('.side-panel-body').addEventListener('click', (ev) => {
-      const btn = ev.target.closest?.('button[data-action]');
-      if (!btn) return;
-      const { action, value } = btn.dataset;
-      this._handleAction(action, value, btn);
-    });
-
-    // Right-click on a Commands-tab op button → show the command-
-    // reference popup over the calculator.  Suppressing the native
-    // context menu here is the whole point of the gesture; left-click
-    // still routes through the normal action handler above.  Unit-
-    // symbol buttons are skipped (no reference entry for them).
-    panel.querySelector('.side-panel-body')
-      .addEventListener('contextmenu', (ev) => {
-        if (!this.commandHelp) return;
-        const btn = ev.target.closest?.('.sp-cmd[data-action="op"]');
-        if (!btn) return;
-        ev.preventDefault();
-        this.commandHelp.show(btn.dataset.value);
-      });
-
-    // Files tab mirrors the current directory — any STO/PURGE or
-    // CRDIR/UPDIR fires a state event, and we repaint only if the
-    // Files tab is the one on screen.
+    this.scrim.addEventListener('click', () => this.close());
+    this.el.addEventListener('click', (e) => this._onClick(e));
+    this.el.addEventListener('input', (e) => this._onInput(e));
+    this.el.addEventListener('submit', (e) => this._onSubmit(e));
+    this.el.addEventListener('keydown', (e) => this._onKeyDown(e));
+    this._bindVarsDrag();
     subscribeState(() => {
-      if (this.tab === 'files' && this.isOpen()) this._render();
+      if (this.current === 'vars') this._renderVarsList();
+      if (this.current === 'vars') this._renderHeadSub();
     });
-
-    // Drag-and-drop for the Files tab.  Listeners are wired once on
-    // the panel root with delegation; each rendered row sets
-    // `draggable=true` and a `data-drag-name` so dragstart can pick
-    // the moving entry's name out without per-row listeners.  Three
-    // drop semantics share the same plumbing:
-    //   - drop on a sibling file row    → reorder before/after it
-    //   - drop on a directory row mid   → move INTO that directory
-    //   - drop on a breadcrumb segment  → move into that ancestor
-    //   - drop in empty space below the last row → move to end
-    panel.addEventListener('dragstart', (ev) => {
-      const row = ev.target.closest?.('.sp-file-row');
-      if (!row || !row.dataset.dragName) return;
-      this._dragName = row.dataset.dragName;
-      try {
-        ev.dataTransfer.setData('text/plain', row.dataset.dragName);
-        ev.dataTransfer.effectAllowed = 'move';
-      } catch { /* setData rare-failure on Firefox; safe to ignore */ }
-      row.classList.add('sp-dragging');
-    });
-    panel.addEventListener('dragend', () => {
-      this._dragName = null;
-      this._clearDropFeedback();
-    });
-    panel.addEventListener('dragover', (ev) => {
-      if (!this._dragName) return;
-      const target = this._dropTargetAt(ev);
-      this._clearDropFeedback();
-      if (!target) return;
-      ev.preventDefault();
-      ev.dataTransfer.dropEffect = 'move';
-      target.el.classList.add(`sp-drop-${target.zone}`);
-    });
-    panel.addEventListener('drop', (ev) => {
-      if (!this._dragName) return;
-      const target = this._dropTargetAt(ev);
-      ev.preventDefault();
-      const dragged = this._dragName;
-      this._dragName = null;
-      this._clearDropFeedback();
-      if (!target) return;
-      this._performDrop(dragged, target);
-    });
+    app.entry.subscribeHistory(() => { if (this.current === 'history') this._renderHistoryList(); });
   }
 
-  /** Resolve the pointer position into a logical drop target.  Returns
-   *  one of:
-   *    { kind: 'reorder', name, zone: 'before' | 'after' }
-   *    { kind: 'into',    name, zone: 'into',  el }
-   *    { kind: 'crumb',   index, zone: 'into', el }
-   *    { kind: 'end',                 zone: 'before', el }
-   *  …or null when the cursor is outside any drop zone or is hovering
-   *  over the dragged row itself.  `el` is the DOM node to flag with a
-   *  visual cue; for reorder targets it's the row, for crumb it's the
-   *  segment button, for end it's the list container.  Three-zone
-   *  geometry inside a row: top 25%/50% = before, middle 50% (folders
-   *  only) = into, bottom 25% = after.  Non-folder rows use a simple
-   *  top-half / bottom-half split. */
-  _dropTargetAt(ev) {
-    if (!this._dragName) return null;
-    const crumb = ev.target.closest?.('.sp-crumb');
-    if (crumb && this.el.contains(crumb)) {
-      return { kind: 'crumb', index: Number(crumb.dataset.value), zone: 'into', el: crumb };
-    }
-    const row = ev.target.closest?.('.sp-file-row');
-    if (row && this.el.contains(row)) {
-      const name = row.dataset.dragName;
-      if (!name || name === this._dragName) return null;
-      const rect = row.getBoundingClientRect();
-      const frac = rect.height > 0 ? (ev.clientY - rect.top) / rect.height : 0.5;
-      const isDir = row.classList.contains('sp-file-row-dir');
-      const zone = dropZoneForFraction(frac, isDir);
-      return zone === 'into'
-        ? { kind: 'into', name, zone: 'into', el: row }
-        : { kind: 'reorder', name, zone, el: row };
-    }
-    // Empty space inside the file list → drop at end of current dir.
-    const list = ev.target.closest?.('.sp-file-list');
-    if (list && this.el.contains(list)) {
-      return { kind: 'end', zone: 'before', el: list };
-    }
-    return null;
-  }
+  get prefs() { return this.app.prefs; }
 
-  _clearDropFeedback() {
-    const cls = ['sp-drop-before', 'sp-drop-after', 'sp-drop-into'];
-    for (const el of this.el.querySelectorAll('.' + cls.join(', .'))) {
-      el.classList.remove(...cls);
-    }
-  }
+  isOpen() { return this.current !== null; }
 
-  _performDrop(name, target) {
-    const { entry } = this.app;
-    if (target.kind === 'crumb') {
-      const segs = currentPath().slice(0, target.index + 1);
-      const dir = getDirectoryByPath(segs);
-      if (!dir) {
-        entry.flashError({ message: `Move: target not found` });
-        return;
-      }
-      try { moveCurrentEntry(name, dir); }
-      catch (e) { entry.flashError({ message: `Move: ${e.message}` }); }
-      return;
-    }
-    if (target.kind === 'into') {
-      const dir = calcState.current.entries.get(target.name);
-      try { moveCurrentEntry(name, dir); }
-      catch (e) { entry.flashError({ message: `Move: ${e.message}` }); }
-      return;
-    }
-    if (target.kind === 'reorder') {
-      let beforeKey = target.name;
-      if (target.zone === 'after') {
-        const keys = [...calcState.current.entries.keys()];
-        const idx = keys.indexOf(target.name);
-        beforeKey = idx >= 0 ? (keys[idx + 1] ?? null) : null;
-      }
-      try { reorderCurrentEntry(name, beforeKey); }
-      catch (e) { entry.flashError({ message: `Reorder: ${e.message}` }); }
-      return;
-    }
-    if (target.kind === 'end') {
-      try { reorderCurrentEntry(name, null); }
-      catch (e) { entry.flashError({ message: `Reorder: ${e.message}` }); }
-      return;
-    }
-  }
-
-  open(tab = 'ai') {
-    this.el.classList.remove('hidden');
-    this.setTab(tab);
-    this._saveUIState();
-  }
-
-  _editor(tab = this.tab) {
-    const spec = EDITOR_TABS[tab];
-    if (!spec) return null;
-    if (!this._editors[tab]) this._editors[tab] = spec.create(this.app);
-    return this._editors[tab];
-  }
-
-  stackRowTitle(level) {
-    const spec = EDITOR_TABS[this.tab];
-    if (this.isOpen() && spec?.takesStack) {
-      return `Stack level ${level} — click to copy into the ${spec.dest}`;
-    }
-    return `Stack level ${level} — click to copy to the command line`;
-  }
-
-  openGraph(kind, stack) {
-    this.open('graph');
-    this._editor('graph').applyPlotOp(kind, stack);
-  }
-
-  takeFromStack(level) {
-    if (!this.isOpen() || !EDITOR_TABS[this.tab]?.takesStack) return false;
-    return this._editor().loadFromStack(level);
+  open(id) {
+    if (!DRAWERS.some((d) => d.id === id)) return;
+    this.current = id;
+    this.app.setPrefs({ drawer: id, lastDrawer: id });
+    this.render();
+    this._focusDefault();
   }
 
   close() {
-    if (this.tab === 'equation') this._editors.equation?.blurEquation();
-    this.el.classList.add('hidden');
-    if (this.commandHelp) this.commandHelp.hide();
-    this._saveUIState();
+    if (!this.current) return;
+    const leaving = this.current;
+    this.current = null;
+    this.app.setPrefs({ drawer: null });
+    this.render();
+    if (leaving === 'plot') this.app.setPlotFocus?.(false);
   }
 
-  toggle(tab = 'ai') {
-    if (this.isOpen() && this.tab === tab) { this.close(); return; }
-    this.open(tab);
+  toggle(id = null) {
+    const target = id ?? (this.current ? null : this.prefs.lastDrawer ?? 'catalog');
+    if (!target || this.current === target) { this.close(); return; }
+    this.open(target);
   }
 
-  isOpen() {
-    return !this.el.classList.contains('hidden');
+  refresh() { if (this.current) this._renderBody(); }
+
+  get graph() {
+    if (!this._graph) this._graph = new GraphView({ app: this.app });
+    return this._graph;
   }
 
-  /** Re-render the current tab's body if the panel is open.  Safe to
-   *  call at any time — no-ops when hidden so callers don't need to
-   *  guard with isOpen(). */
-  refresh() {
-    if (this.isOpen()) this._render();
+  openGraph(kind, stack) {
+    this.open('plot');
+    this.graph.applyPlotOp(kind, stack);
   }
 
-  setTab(tab) {
-    const previous = this.tab;
-    this.tab = tab;
-    this.el.querySelectorAll('.sp-tab').forEach(b => {
-      b.classList.toggle('active', b.dataset.tab === tab);
+  showReference(name) {
+    this.cat.ref = name;
+    const { history, idx } = pushHistory(this.cat.history, this.cat.idx, name);
+    this.cat.history = history;
+    this.cat.idx = idx;
+    if (this.current !== 'catalog') this.open('catalog');
+    else this._renderBody();
+  }
+
+  _renderRail() {
+    this.rail.innerHTML = DRAWERS.map((d) => `<button type="button" data-drawer="${d.id}" aria-pressed="${this.current === d.id}" title="${escapeHtml(d.label)}">${icon(d.icon)}<span>${escapeHtml(d.short ?? d.label)}</span>${d.id === 'assistant' ? '<i class="dot off" aria-hidden="true"></i>' : ''}</button>`).join('');
+  }
+
+  setAssistantConnected(on) {
+    this.rail.querySelector('[data-drawer="assistant"] .dot')?.classList.toggle('off', !on);
+  }
+
+  render() {
+    const id = this.current;
+    this.rail.querySelectorAll('[data-drawer]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.drawer === id)));
+    this.el.classList.toggle('open', !!id);
+    this.el.classList.toggle('wide', !!id && this.prefs.drawerWide);
+    this.scrim.classList.toggle('on', !!id);
+    if (Number.isFinite(this.prefs.drawerWidth) && !this.prefs.drawerWide) this.el.style.setProperty('--drawer-w', `${this.prefs.drawerWidth}px`);
+    else this.el.style.removeProperty('--drawer-w');
+    if (!id) { this.el.innerHTML = ''; return; }
+    const meta = DRAWERS.find((d) => d.id === id);
+    const tabs = `<div class="dw-tabs" role="tablist">${DRAWERS.map((d) => `<button type="button" data-dw="tab" data-drawer-tab="${d.id}" aria-pressed="${d.id === id}">${icon(d.icon, 'sm')}${escapeHtml(d.short ?? d.label)}</button>`).join('')}</div>`;
+    const extra = this._headActions(id);
+    const wideBtn = id === 'assistant' || id === 'plot' ? '' : `<button type="button" class="icon-btn sm" data-dw="wide" title="${this.prefs.drawerWide ? 'Narrower' : 'Wider'}" aria-label="${this.prefs.drawerWide ? 'Narrower' : 'Wider'}">${icon(this.prefs.drawerWide ? 'collapse' : 'expand', 'sm')}</button>`;
+    this.el.innerHTML = `<div class="drawer-grip" aria-hidden="true"></div>${tabs}<div class="dw-head"><div class="dw-title">${icon(meta.icon)}<span>${escapeHtml(meta.label)}</span><small class="dw-sub"></small></div>${extra}${wideBtn}<button type="button" class="icon-btn sm" data-dw="close" title="Close${shortcutText('drawer.toggle') ? ` (${shortcutText('drawer.toggle')})` : ''}" aria-label="Close">${icon('x', 'sm')}</button></div><div class="dw-body"></div>`;
+    this._bindGrip(this.el.querySelector('.drawer-grip'));
+    this._renderHeadSub();
+    this._renderBody();
+  }
+
+  _headActions(id) {
+    if (id === 'plot') {
+      return `<button type="button" class="icon-btn sm" data-dw="plot-focus" title="Expand to fill the window" aria-label="Expand">${icon('expand', 'sm')}</button><button type="button" class="icon-btn sm" data-dw="plot-full" title="Full screen" aria-label="Full screen">${icon('full', 'sm')}</button>`;
+    }
+    if (id === 'history') {
+      return `<button type="button" class="icon-btn sm" data-dw="hist-sort" title="${this.prefs.historySort === 'newest' ? 'Newest first' : 'Oldest first'}: click to flip" aria-label="Sort">${icon(this.prefs.historySort === 'newest' ? 'down' : 'up', 'sm')}</button><button type="button" class="icon-btn sm" data-dw="hist-clear" title="Clear the history" aria-label="Clear the history">${icon('trash', 'sm')}</button>`;
+    }
+    return '';
+  }
+
+  _renderHeadSub() {
+    const sub = this.el.querySelector('.dw-sub');
+    if (!sub) return;
+    if (this.current === 'catalog') sub.textContent = `${allOps().filter((n) => !n.includes('->')).length} commands`;
+    else if (this.current === 'vars') sub.textContent = currentPath().join(' › ');
+    else sub.textContent = '';
+  }
+
+  _body() { return this.el.querySelector('.dw-body'); }
+
+  _renderBody() {
+    const body = this._body();
+    if (!body) return;
+    const id = this.current;
+    if (id === 'assistant') return this._renderAssistant(body);
+    if (id === 'plot') return this._renderPlot(body);
+    if (id === 'catalog') return this._renderCatalog(body);
+    if (id === 'vars') return this._renderVars(body);
+    if (id === 'history') return this._renderHistory(body);
+    if (id === 'chars') return this._renderChars(body);
+  }
+
+  _focusDefault() {
+    if (typeof window === 'undefined' || window.innerWidth < 520) return;
+    requestAnimationFrame(() => {
+      const target = this.el.querySelector('[data-q]') ?? this.el.querySelector('.cb-input');
+      target?.focus({ preventScroll: true });
     });
-    // Sort toggle only relevant for History
-    this.el.querySelector('.sp-sort').classList.toggle('hidden', tab !== 'history');
-    // Expand/collapse-all toggle relevant for tabs with category sections
-    // worth bulk-toggling (Commands and Characters).
-    this.el.querySelector('.sp-expand').classList.toggle(
-      'hidden', tab !== 'commands' && tab !== 'chars');
-    // The filter bar is unused on the AI tab — hide it so the chatbot
-    // gets the full panel height.
-    const filterRow = this.el.querySelector('.side-panel-filter');
-    if (filterRow) {
-      filterRow.classList.toggle(
-        'hidden', tab === 'ai' || Boolean(EDITOR_TABS[tab]));
-    }
-    // Clear the filter input when switching tabs so stale text from the
-    // Commands filter doesn't hide every History entry.
-    const filterInput = this.el.querySelector('.sp-filter');
-    filterInput.value = '';
-    filterInput.placeholder =
-      tab === 'commands' ? 'Filter commands…' :
-      tab === 'history'  ? 'Filter history…'  :
-      tab === 'files'    ? 'Filter files…'    :
-                           'Filter characters…';
-    this._render();
-    if (tab === 'equation') {
-      const editor = this._editor('equation');
-      if (!editor.isOpen()) editor.open();
-    } else if (previous === 'equation') {
-      this._editors.equation?.blurEquation();
-    }
-    this._saveUIState();
-    if (this.app?.display && this.app.stack) this.app.display.renderStack(this.app.stack);
   }
 
-  _render() {
-    const body = this.el.querySelector('.side-panel-body');
-    const filter = this.el.querySelector('.sp-filter').value.trim().toLowerCase();
-
-    // AI tab: preserve the chatbot's live DOM across re-renders by
-    // lazily creating a persistent container and re-appending it
-    // (avoids destroying conversation history or losing event listeners).
-    //
-    // Subtlety: the SidePanel is constructed before `app.chatBot` exists
-    // (see app.js — SidePanel at L99, ChatBot at L112), and
-    // _restoreUIState() may call open()→_render() from inside our own
-    // constructor.  We must NOT cache an unmounted container, or
-    // subsequent renders will keep re-appending an empty <div> forever.
-    // So we only cache after a successful mount, and re-attempt on every
-    // render until ChatBot is available.
-    const editorSpec = EDITOR_TABS[this.tab];
-    if (editorSpec) {
-      const view = this._editor();
-      body.innerHTML = '';
-      body.appendChild(view.el);
-      editorSpec.mount?.(view);
-      this._refreshExpandLabel();
-      return;
+  _renderAssistant(body) {
+    if (!this._chat) {
+      if (!this.app.chatBot) { body.innerHTML = '<div class="empty-note">Starting the assistant…</div>'; return; }
+      this._chat = document.createElement('div');
+      this._chat.className = 'cb-panel-wrap fill';
+      this.app.chatBot.mount(this._chat);
     }
-
-    if (this.tab === 'ai') {
-      if (!this._chatContainer) {
-        const container = document.createElement('div');
-        container.className = 'cb-panel-wrap';
-        if (this.app.chatBot) {
-          this.app.chatBot.mount(container);
-          this._chatContainer = container;          // cache only on success
-        } else {
-          // ChatBot not yet constructed — render a placeholder this turn
-          // and try again next render.  Don't cache.
-          const placeholder = document.createElement('div');
-          placeholder.className = 'cb-panel-wrap';
-          placeholder.textContent = 'Initialising assistant…';
-          body.innerHTML = '';
-          body.appendChild(placeholder);
-          this._refreshExpandLabel();
-          return;
-        }
-      }
-      body.innerHTML = '';
-      body.appendChild(this._chatContainer);
-      this._refreshExpandLabel();
-      return;
-    }
-
     body.innerHTML = '';
-    if (this.tab === 'commands') body.appendChild(this._renderCommands(filter));
-    else if (this.tab === 'history') body.appendChild(this._renderHistory(filter));
-    else if (this.tab === 'files')   body.appendChild(this._renderFiles(filter));
-    else body.appendChild(this._renderChars(filter));
-    this._refreshExpandLabel();
+    body.appendChild(this._chat);
   }
 
-  /** Build a collapsible `<details>` section with an `.sp-cat` header.
-   *  The grid is populated by the caller via the returned element.
-   *  Open/closed state persists per-tab across re-renders (and across
-   *  reloads via _saveUIState) keyed by `${tab}:${title}`. */
-  _makeSection(title, extraGridClass = '') {
-    const key = `${this.tab}:${title}`;
-    const collapsed = this._collapsedSections && this._collapsedSections.has(key);
-    const section = document.createElement('details');
-    section.className = 'sp-section';
-    section.dataset.sectionKey = key;
-    if (!collapsed) section.open = true;
-    const summary = document.createElement('summary');
-    summary.className = 'sp-cat';
-    summary.textContent = title;
-    const grid = document.createElement('div');
-    grid.className = 'sp-grid' + (extraGridClass ? ' ' + extraGridClass : '');
-    section.appendChild(summary);
-    section.appendChild(grid);
-    // `toggle` fires after the browser has flipped the `open` attribute.
-    section.addEventListener('toggle', () => {
-      if (section.open) this._collapsedSections.delete(key);
-      else this._collapsedSections.add(key);
-      this._refreshExpandLabel();
-      this._saveUIState();
-    });
-    return { section, grid };
+  _renderPlot(body) {
+    body.innerHTML = '';
+    body.appendChild(this.graph.el);
+    this.graph.el.classList.add('fill');
+    this.graph.resize?.();
   }
 
-  /** Bulk expand/collapse every rendered section in the current tab.
-   *  Decides direction by the live DOM: if any section is open we
-   *  collapse all, otherwise we expand all.  Updates `_collapsedSections`
-   *  in lockstep so the choice survives a re-render. */
-  _toggleAllSections() {
-    const sections = this.el.querySelectorAll('.side-panel-body details.sp-section');
-    if (!sections.length) return;
-    const anyOpen = [...sections].some(d => d.open);
-    const expand = !anyOpen;
-    for (const d of sections) {
-      d.open = expand;                               // fires `toggle` → updates set
+  async _ensureReference() {
+    if (this.reference) return this.reference;
+    try { this.reference = await loadCommandReference(); }
+    catch { this.reference = new Map(); }
+    if (this.current === 'catalog') this._renderCatalogList();
+    return this.reference;
+  }
+
+  _renderCatalog(body) {
+    if (this.cat.ref) { this._renderReference(body); return; }
+    body.innerHTML = `<div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="cat" placeholder="Search commands and what they do" aria-label="Search commands" value="${escapeHtml(this.cat.q)}" autocomplete="off" spellcheck="false"></label></div><div class="dw-list"></div>`;
+    this._renderCatalogList();
+    this._ensureReference();
+  }
+
+  _renderCatalogList() {
+    const list = this._body()?.querySelector('.dw-list');
+    if (!list) return;
+    const q = this.cat.q.trim();
+    if (q) {
+      const rows = searchCommands(q, { names: allOps(), entries: this.reference, categories: CATEGORIES, limit: 40 });
+      list.innerHTML = rows.length
+        ? `<div class="sec-h">${rows.length} match${rows.length === 1 ? '' : 'es'}</div>${rows.map((r) => this._cmdRow(r.name, q)).join('')}`
+        : `<div class="empty-note">Nothing matches “${escapeHtml(q)}”. Try a word from what the command does, like “derivative” or “swap”.</div>`;
+      return;
     }
-    this._refreshExpandLabel();
+    if (!this.cat.family) {
+      list.innerHTML = `<div class="sec-h">Families</div><div class="cat-cats">${MENU_FAMILIES.map((f) => `<button type="button" data-dw="cat-family" data-family="${f.id}"><b>${escapeHtml(f.title)}</b><span>${familyCommands(f).length} commands</span></button>`).join('')}</div>`;
+      return;
+    }
+    const family = MENU_FAMILIES.find((f) => f.id === this.cat.family);
+    const names = familyCommands(family);
+    const units = family.id === 'UNITS'
+      ? `<div class="sec-h">Insert a unit</div><div class="unit-grid">${UNIT_SYMBOLS.filter((u) => UNIT_CATALOG.has(u)).map((u) => `<button type="button" data-dw="unit" data-unit="${escapeHtml(u)}" title="Attach _${escapeHtml(u)} to the number you are typing, or to level 1">${escapeHtml(u)}</button>`).join('')}</div>`
+      : '';
+    list.innerHTML = `<div class="cat-crumb"><button type="button" class="mini" data-dw="cat-back" title="All families" aria-label="All families">${icon('chl', 'sm')}</button><b>${escapeHtml(family.title)}</b><span class="badge">${names.length}</span></div>${names.map((n) => this._cmdRow(n)).join('')}${units}`;
   }
 
-  /** Sync the expand/collapse-all button label with the live state of
-   *  the rendered sections.  Called after a render and after every
-   *  per-section toggle. */
-  _refreshExpandLabel() {
-    const btn = this.el.querySelector('.sp-expand');
-    if (!btn) return;
-    const sections = this.el.querySelectorAll('.side-panel-body details.sp-section');
-    const anyOpen = [...sections].some(d => d.open);
-    btn.textContent = anyOpen ? '⊟ Collapse all' : '⊞ Expand all';
+  _cmdRow(name, query = '') {
+    const entry = this.reference ? findReferenceEntry(this.reference, name) : null;
+    const available = !!lookup(name);
+    const label = query ? highlightSegments(name, matchPositions(query, name)).map((s) => (s.match ? `<mark>${escapeHtml(s.text)}</mark>` : escapeHtml(s.text))).join('') || escapeHtml(name) : escapeHtml(name);
+    const sig = entry ? signatureOf(entry) : '';
+    const desc = entry ? shortDescription(entry, 120) : (available ? '' : 'Not available in rpl.ai');
+    return `<div class="cmd-row${available ? '' : ' stub'}" data-dw="cmd" data-cmd="${escapeHtml(name)}" role="button" tabindex="0" title="Open the reference for ${escapeHtml(name)}"><div class="nm"><span>${label}</span>${sig ? `<span class="sig">${escapeHtml(sig)}</span>` : ''}</div>${desc ? `<div class="ds">${escapeHtml(desc)}</div>` : ''}<div class="acts">${available ? `<button type="button" class="mini" data-dw="cmd-run" data-cmd="${escapeHtml(name)}" title="Run ${escapeHtml(name)}" aria-label="Run ${escapeHtml(name)}">${icon('play', 'sm')}</button>` : ''}</div></div>`;
   }
 
-  _renderCommands(filter) {
-    const wrap = document.createDocumentFragment();
-    const seen = new Set();
-    const registered = new Set(allOps().map(s => s.toUpperCase()));
-
-    for (const [cat, names] of Object.entries(CATEGORIES)) {
-      const matches = names.filter(n => !filter || n.toLowerCase().includes(filter));
-      if (!matches.length) continue;
-      const { section, grid } = this._makeSection(cat);
-      for (const name of matches) {
-        seen.add(name.toUpperCase());
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'sp-cmd';
-        // A name that isn't an op but IS in the unit catalog becomes a
-        // unit-insert button — clicking appends `_<name>` at the cursor
-        // so the user can attach it to a pending numeric value.  Kept
-        // in the Commands tab's Units section so the ops and the unit
-        // symbols they operate on stay colocated (rather than pulling
-        // the symbols out into a separate tab).
-        if (UNIT_CATALOG.has(name)) {
-          b.classList.add('sp-cmd-unit');
-          b.dataset.action = 'unit';
-          b.dataset.value  = name;
-          b.textContent = name;
-          b.title = `Insert _${name} (unit tag)`;
-        } else {
-          const available = registered.has(name.toUpperCase());
-          if (!available) b.classList.add('sp-cmd-stub');
-          b.dataset.action = 'op';
-          b.dataset.value  = name;
-          b.textContent = name;
-          const baseTitle = available
-            ? `Run ${name}`
-            : `${name} — not yet implemented`;
-          b.title = `${baseTitle}\nRight-click for reference`;
-        }
-        grid.appendChild(b);
-      }
-      wrap.appendChild(section);
+  async _renderReference(body) {
+    const name = this.cat.ref;
+    const entry = (await this._ensureReference()) && findReferenceEntry(this.reference, name);
+    if (this.cat.ref !== name || this.current !== 'catalog') return;
+    const available = !!lookup(name);
+    const sig = entry ? signatureOf(entry) : '';
+    body.innerHTML = `<div class="ref">
+      <div class="ref-top"><button type="button" class="mini" data-dw="ref-back" title="Back" aria-label="Back">${icon('chl', 'sm')}</button><h4>${escapeHtml(entry?.name ?? name)}</h4>${entry?.type ? `<span class="badge">${escapeHtml(entry.type)}</span>` : ''}</div>
+      ${entry ? `<div class="sum">${escapeHtml(shortDescription(entry, 400))}</div>` : ''}
+      ${sig ? `<div><div class="lbl">Stack</div><pre class="ref-sig">${escapeHtml(entry.io.replace(/`/g, "'"))}</pre></div>` : ''}
+      <div class="acts">${available ? `<button type="button" class="btn pri" data-dw="ref-run">${icon('play', 'sm')}Run ${escapeHtml(name)}</button><button type="button" class="btn" data-dw="ref-insert">Insert in the command line</button>` : `<span class="badge">Not available in rpl.ai</span>`}<button type="button" class="btn ghost" data-dw="ref-ask">${icon('spark', 'sm')}Ask about it</button></div>
+      <div class="ref-doc"></div>
+    </div>`;
+    const doc = body.querySelector('.ref-doc');
+    try {
+      const frag = await referenceSection(name);
+      if (this.cat.ref !== name) return;
+      if (frag) doc.appendChild(frag);
+      else doc.innerHTML = `<p class="ref-empty">The HP 50g manual has no page for ${escapeHtml(name)}.</p>`;
+    } catch (e) {
+      doc.innerHTML = `<p class="ref-empty">Couldn't load the reference: ${escapeHtml(e.message)}</p>`;
     }
-
-    const others = uncategorizedOps(registered, seen, filter);
-    if (others.length) {
-      const { section, grid } = this._makeSection('Other');
-      for (const name of others) {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'sp-cmd';
-        b.dataset.action = 'op';
-        b.dataset.value  = name;
-        b.textContent = name;
-        b.title = `Run ${name}\nRight-click for reference`;
-        grid.appendChild(b);
-      }
-      wrap.appendChild(section);
-    }
-
-    const container = document.createElement('div');
-    container.className = 'sp-commands';
-    container.appendChild(wrap);
-    return container;
   }
 
-  _renderHistory(filter) {
-    const hist = this.app.entry.getHistory();
-    const ordered = this.historySort === 'newest' ? hist.slice().reverse() : hist.slice();
-    const matched = ordered.filter(s => !filter || s.toLowerCase().includes(filter));
-
-    const container = document.createElement('div');
-    container.className = 'sp-history';
-
-    const errors = this.app.entry.getErrorLog().reverse()
-      .filter(e => !filter || `${e.message} ${e.input}`.toLowerCase().includes(filter));
-    if (errors.length > 0) container.appendChild(this._renderErrorLog(errors));
-
-    if (matched.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'sp-empty';
-      empty.textContent = hist.length === 0
-        ? 'No history yet — commit some entries with ENTER.'
-        : 'No matches.';
-      container.appendChild(empty);
-      return container;
-    }
-
-    // Each row is a flex pair: a wide "recall" button on the left
-    // (clicking it pulls the text back into the command line, same as
-    // before) and a narrow × delete button on the right.  Wrapping in
-    // a row gives delete its own click target without making the recall
-    // button a nested-button parent (which is invalid HTML and breaks
-    // event delegation).  Click delegation in _handleAction routes
-    // 'recall' / 'history-delete' independently.
-    for (const text of matched) {
-      const row = document.createElement('div');
-      row.className = 'sp-hist-row';
-
-      const recall = document.createElement('button');
-      recall.type = 'button';
-      recall.className = 'sp-hist';
-      recall.dataset.action = 'recall';
-      recall.dataset.value  = text;
-      recall.textContent = text;
-      recall.title = 'Recall into the command line';
-      row.appendChild(recall);
-
-      const del = document.createElement('button');
-      del.type = 'button';
-      del.className = 'sp-hist-del';
-      del.dataset.action = 'history-delete';
-      del.dataset.value  = text;
-      del.textContent = '×';
-      del.title = 'Delete this history entry';
-      del.setAttribute('aria-label', 'Delete history entry');
-      row.appendChild(del);
-
-      container.appendChild(row);
-    }
-    return container;
+  _renderVars(body) {
+    body.innerHTML = `<div class="path-bar" data-path-bar></div><div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="vars" placeholder="Filter variables" aria-label="Filter variables" value="${escapeHtml(this.varsQuery)}" autocomplete="off" spellcheck="false"></label></div><div class="dw-list vr-list"></div><div class="vars-foot">
+      <button type="button" class="btn" data-dw="vars-newdir">${icon('folder', 'sm')}New folder</button>
+      <button type="button" class="btn" data-dw="vars-upload" title="Add a variable from a .json file or an HP text file (.rpl / .txt, named after the file)">${icon('up', 'sm')}Upload</button>
+      <button type="button" class="btn" data-dw="vars-export-rpl" title="Download this directory as an HP text file (DIR … END)">${icon('down', 'sm')}Export .rpl</button>
+      <button type="button" class="btn ghost" data-dw="vars-export" title="Download the stack and the whole HOME tree as JSON">${icon('down', 'sm')}Back up everything</button>
+      <button type="button" class="btn ghost" data-dw="vars-import" title="Replace the stack and HOME tree from a JSON backup (undoable)">${icon('up', 'sm')}Restore from file</button>
+    </div><div class="sec-h">Backups<span class="badge" data-backup-count></span></div><form class="backup-new" data-form="archive"><input type="text" name="name" placeholder="Backup name" aria-label="Backup name" spellcheck="false" autocomplete="off"><select name="port" aria-label="Port" title="Port 0 lives in this browser; ports 1–3 are separate slots">${[0, 1, 2, 3].map((p) => `<option value="${p}">:${p}:</option>`).join('')}</select><button type="submit" class="btn" title="Save the stack and HOME tree (same as :n:name ARCHIVE)">Archive</button></form><div class="dw-backups"></div>`;
+    this._renderVarsList();
   }
 
-  _renderErrorLog(errors) {
-    const details = document.createElement('details');
-    details.className = 'sp-errors';
-    details.open = this._errorsOpen !== false;
-    details.addEventListener('toggle', () => { this._errorsOpen = details.open; });
-
-    const summary = document.createElement('summary');
-    summary.textContent = `Recent errors (${errors.length})`;
-    details.appendChild(summary);
-
-    for (const { message, input, at } of errors) {
-      const row = document.createElement('button');
-      row.type = 'button';
-      row.className = 'sp-hist sp-error';
-      if (input) {
-        row.dataset.action = 'recall';
-        row.dataset.value = input;
-        row.title = 'Recall the command line that raised this error';
-      } else {
-        row.disabled = true;
-      }
-      const msg = document.createElement('span');
-      msg.className = 'sp-error-msg';
-      msg.textContent = message;
-      const meta = document.createElement('span');
-      meta.className = 'sp-error-meta';
-      meta.textContent = [new Date(at).toLocaleTimeString(), input].filter(Boolean).join(' · ');
-      row.appendChild(msg);
-      row.appendChild(meta);
-      details.appendChild(row);
-    }
-
-    const clear = document.createElement('button');
-    clear.type = 'button';
-    clear.className = 'sp-io-btn sp-errors-clear';
-    clear.dataset.action = 'errors-clear';
-    clear.textContent = 'Clear errors';
-    details.appendChild(clear);
-    return details;
-  }
-
-  _renderChars(filter) {
-    const wrap = document.createElement('div');
-    wrap.className = 'sp-chars';
-    for (const [cat, entries] of Object.entries(CHAR_GROUPS)) {
-      const matches = entries.filter(([label, _v, title]) => {
-        if (!filter) return true;
-        const hay = `${label} ${title ?? ''}`.toLowerCase();
-        return hay.includes(filter);
-      });
-      if (!matches.length) continue;
-      const { section, grid } = this._makeSection(cat, 'sp-chars-grid');
-      for (const [label, text, title] of matches) {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'sp-char';
-        b.dataset.action = 'char';
-        b.dataset.value  = text;
-        b.textContent = label;
-        if (title) b.title = title;
-        grid.appendChild(b);
-      }
-      wrap.appendChild(section);
-    }
-    return wrap;
-  }
-
-  _renderFiles(filter) {
-    const wrap = document.createElement('div');
-    wrap.className = 'sp-files';
-
-    // IO toolbar: full-tree Export/Import sit alongside a single-variable
-    // Upload that drops one entry into the current directory, and an
-    // HP text export of the current directory.  Per-row Download / Move /
-    // Delete handle the inverse direction (one entry out, or shuffled
-    // around).  Click delegation goes through
-    // _handleAction('export' | 'import' | 'upload-var' | 'export-rpl').
-    const io = document.createElement('div');
-    io.className = 'sp-io';
-    const exportBtn = document.createElement('button');
-    exportBtn.type = 'button';
-    exportBtn.className = 'sp-io-btn';
-    exportBtn.dataset.action = 'export';
-    exportBtn.textContent = 'Export All';
-    exportBtn.title = 'Download stack + HOME tree as JSON';
-    const importBtn = document.createElement('button');
-    importBtn.type = 'button';
-    importBtn.className = 'sp-io-btn';
-    importBtn.dataset.action = 'import';
-    importBtn.textContent = 'Import All';
-    importBtn.title = 'Replace stack + HOME tree from a JSON file';
-    const uploadBtn = document.createElement('button');
-    uploadBtn.type = 'button';
-    uploadBtn.className = 'sp-io-btn';
-    uploadBtn.dataset.action = 'upload-var';
-    uploadBtn.textContent = 'Upload';
-    uploadBtn.title = 'Add a variable (or directory) to this directory from a JSON file or an HP text file (.rpl / .txt, named after the file)';
-    const rplBtn = document.createElement('button');
-    rplBtn.type = 'button';
-    rplBtn.className = 'sp-io-btn';
-    rplBtn.dataset.action = 'export-rpl';
-    rplBtn.textContent = 'Export .rpl';
-    rplBtn.title = 'Download this directory as an HP text file (DIR … END)';
-    io.appendChild(exportBtn);
-    io.appendChild(importBtn);
-    io.appendChild(uploadBtn);
-    io.appendChild(rplBtn);
-    wrap.appendChild(io);
-    wrap.appendChild(this._renderBackups());
-
-    // Clickable breadcrumb mirroring the LCD path annunciator — each
-    // segment navigates via the app's existing path-click handler so
-    // the explorer, VARS menu, and path annunciator stay in lockstep.
+  _renderVarsList() {
+    const body = this._body();
+    const bar = body?.querySelector('[data-path-bar]');
+    const list = body?.querySelector('.vr-list');
+    if (!bar || !list) return;
     const path = currentPath();
-    const crumb = document.createElement('div');
-    crumb.className = 'sp-breadcrumb';
-    path.forEach((seg, i) => {
-      if (i > 0) {
-        const sep = document.createElement('span');
-        sep.className = 'sp-crumb-sep';
-        sep.textContent = '/';
-        crumb.appendChild(sep);
-      }
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'sp-crumb' + (i === path.length - 1 ? ' sp-crumb-current' : '');
-      b.dataset.action = 'path';
-      b.dataset.value  = String(i);
-      b.textContent = seg;
-      crumb.appendChild(b);
-    });
-    wrap.appendChild(crumb);
-
-    // Insertion-order iteration — the user explicitly asked that
-    // variables NOT be sorted.  state.current.entries is a Map, which
-    // preserves insertion order, and the HP50 ORDER op is the only
-    // way to reshuffle (matches the real unit's VARS menu, which
-    // ignores alphabetical sort).
-    const entries = [...calcState.current.entries.entries()]
-      .filter(([name]) => !filter || name.toLowerCase().includes(filter));
-
-    if (entries.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'sp-empty';
-      empty.textContent = filter
-        ? 'No matches.'
-        : 'Directory is empty — STO a value into a name, or click Upload.';
-      wrap.appendChild(empty);
-      return wrap;
+    bar.innerHTML = path.map((seg, i) => `${i ? '<span class="sep" aria-hidden="true">›</span>' : ''}<button type="button" data-dw="path" data-index="${i}" aria-current="${i === path.length - 1}" title="${i === path.length - 1 ? `You are in ${escapeHtml(seg)}` : `Go to ${escapeHtml(seg)}; drop a variable here to move it`}">${escapeHtml(seg)}</button>`).join('');
+    const q = this.varsQuery.trim().toLowerCase();
+    const entries = [...calcState.current.entries.entries()].filter(([name]) => !q || name.toLowerCase().includes(q));
+    if (!entries.length) {
+      list.innerHTML = `<div class="empty-note">${q ? 'No variable matches.' : 'This directory is empty. Store a value with <span class="kc">STO</span> (for example <code>42 `X` STO</code>), or upload a file.'}</div>`;
+    } else {
+      list.innerHTML = entries.map(([name, value]) => this._varRow(name, value)).join('');
     }
+    this._renderBackups();
+  }
 
-    const list = document.createElement('div');
-    list.className = 'sp-file-list';
-    for (const [name, value] of entries) {
-      // Each row is a flex container holding the main name button plus
-      // three small action buttons (download / move / delete).  Nesting
-      // buttons inside .sp-file would be invalid HTML, so the actions
-      // live as siblings — event delegation in _handleAction routes
-      // each data-action independently.
-      const isDir = value.type === TYPES.DIRECTORY;
-      const row = document.createElement('div');
-      row.className = 'sp-file-row' + (isDir ? ' sp-file-row-dir' : '');
-      // Drag source.  `data-drag-name` is what the dragstart delegator
-      // pulls out — kept separate from data-action / data-value (used
-      // by clicks) so a click on the row still routes through
-      // _handleAction without touching the drag plumbing.
-      row.draggable = true;
-      row.dataset.dragName = name;
-
-      const main = document.createElement('button');
-      main.type = 'button';
-      main.className = 'sp-file' + (isDir ? ' sp-file-dir' : '');
-      main.dataset.action = isDir ? 'dir' : 'var';
-      main.dataset.value  = name;
-      const label = TYPE_LABELS[value.type] ?? value.type;
-      main.title = isDir
-        ? `Open directory ${name}`
-        : `Recall ${name} (${label}) onto the stack`;
-      const nameEl = document.createElement('span');
-      nameEl.className = 'sp-file-name';
-      nameEl.textContent = name;
-      const typeEl = document.createElement('span');
-      typeEl.className = 'sp-file-type';
-      typeEl.textContent = label;
-      main.appendChild(nameEl);
-      main.appendChild(typeEl);
-      row.appendChild(main);
-
-      // ⬇ Download — single-variable JSON.  Works for directories too
-      // (the encoder walks the subtree).
-      const dl = document.createElement('button');
-      dl.type = 'button';
-      dl.className = 'sp-file-act';
-      dl.dataset.action = 'download-var';
-      dl.dataset.value  = name;
-      dl.textContent = '⬇';
-      dl.title = isDir
-        ? `Download directory ${name} as JSON`
-        : `Download variable ${name} as JSON`;
-      dl.setAttribute('aria-label', `Download ${name}`);
-      row.appendChild(dl);
-
-      // ✎ Rename — in-place prompt for a new HP identifier.
-      const rn = document.createElement('button');
-      rn.type = 'button';
-      rn.className = 'sp-file-act';
-      rn.dataset.action = 'rename-var';
-      rn.dataset.value  = name;
-      rn.textContent = '✎';
-      rn.title = `Rename ${name}`;
-      rn.setAttribute('aria-label', `Rename ${name}`);
-      row.appendChild(rn);
-
-      // × Delete — calls PURGE semantics (and refuses non-empty dirs,
-      // matching the HP50 firmware behavior).
-      const del = document.createElement('button');
-      del.type = 'button';
-      del.className = 'sp-file-act sp-file-act-del';
-      del.dataset.action = 'purge-var';
-      del.dataset.value  = name;
-      del.textContent = '×';
-      del.title = isDir
-        ? `Delete directory ${name} (must be empty)`
-        : `Delete variable ${name}`;
-      del.setAttribute('aria-label', `Delete ${name}`);
-      row.appendChild(del);
-
-      list.appendChild(row);
-    }
-    wrap.appendChild(list);
-    return wrap;
+  _varRow(name, value) {
+    const isDir = value.type === TYPES.DIRECTORY;
+    const n = escapeHtml(name);
+    const preview = isDir ? `${value.entries.size} item${value.entries.size === 1 ? '' : 's'}` : format(value);
+    const acts = isDir
+      ? `<button type="button" class="mini" data-dw="var-open" data-name="${n}" title="Open ${n}" aria-label="Open ${n}">${icon('chr', 'sm')}</button>`
+      : `<button type="button" class="mini" data-dw="var-rcl" data-name="${n}" title="Recall ${n} without running it" aria-label="Recall ${n}">${icon('down', 'sm')}</button><button type="button" class="mini" data-dw="var-edit" data-name="${n}" title="Edit ${n}" aria-label="Edit ${n}">${icon('edit', 'sm')}</button>`;
+    return `<div class="vr${isDir ? ' dir' : ''}" draggable="true" data-drag-name="${n}" data-dw="var" data-name="${n}" role="button" tabindex="0" title="${isDir ? `Open ${n}` : `${n}: click to ${value.type === TYPES.PROGRAM ? 'run' : 'put on the stack'}`}">
+      <span class="grip" aria-hidden="true">${icon('grip', 'sm')}</span>
+      <div class="main"><div class="nm">${isDir ? icon('folder', 'sm') : ''}<span class="nm-text">${n}</span><span class="badge">${escapeHtml(isDir ? 'Folder' : typeName(value))}</span></div><div class="pv">${escapeHtml(preview.length > 120 ? `${preview.slice(0, 119)}…` : preview)}</div></div>
+      <div class="acts">${acts}<button type="button" class="mini" data-dw="var-rename" data-name="${n}" title="Rename ${n}" aria-label="Rename ${n}">${icon('edit', 'sm')}</button><button type="button" class="mini" data-dw="var-download" data-name="${n}" title="Download ${n}" aria-label="Download ${n}">${icon('down', 'sm')}</button><button type="button" class="mini danger" data-dw="var-delete" data-name="${n}" title="Delete ${n} (undoable)" aria-label="Delete ${n}">${icon('trash', 'sm')}</button></div>
+    </div>`;
   }
 
   _renderBackups() {
-    const details = document.createElement('details');
-    details.className = 'sp-backups';
-    details.open = this._backupsOpen === true;
-    details.addEventListener('toggle', () => { this._backupsOpen = details.open; });
-
+    const wrap = this._body()?.querySelector('.dw-backups');
+    const count = this._body()?.querySelector('[data-backup-count]');
+    if (!wrap) return;
     let backups = [];
     let unavailable = '';
-    try { backups = listBackups(); }
-    catch (e) { unavailable = e.message; }
+    try { backups = listBackups(); } catch (e) { unavailable = e.message; }
+    if (count) count.textContent = backups.length ? String(backups.length) : '';
+    wrap.innerHTML = unavailable || !backups.length
+      ? `<div class="empty-note">${escapeHtml(unavailable || 'No backups yet. Name one above, or run :0:name ARCHIVE.')}</div>`
+      : backups.map(({ port, name, savedAt, depth }) => {
+        const key = escapeHtml(`${port}:${name}`);
+        return `<div class="vr" data-dw="backup-restore" data-key="${key}" role="button" tabindex="0" title="Restore :${key} (replaces the stack and HOME tree; undoable)"><span class="grip" aria-hidden="true">${icon('clock', 'sm')}</span><div class="main"><div class="nm">:${key}</div><div class="pv">${depth} level${depth === 1 ? '' : 's'} · ${escapeHtml(new Date(savedAt).toLocaleString())}</div></div><div class="acts"><button type="button" class="mini danger" data-dw="backup-delete" data-key="${key}" title="Delete :${key}" aria-label="Delete backup :${key}">${icon('trash', 'sm')}</button></div></div>`;
+      }).join('');
+  }
 
-    const summary = document.createElement('summary');
-    summary.textContent = `Backups (${backups.length})`;
-    details.appendChild(summary);
+  _renderHistory(body) {
+    body.innerHTML = `<div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="history" placeholder="Filter history" aria-label="Filter history" value="${escapeHtml(this.historyQuery)}" autocomplete="off" spellcheck="false"></label></div><div class="dw-list"></div>`;
+    this._renderHistoryList();
+  }
 
-    const form = document.createElement('form');
-    form.className = 'sp-backup-new';
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'sp-backup-name';
-    input.placeholder = 'Backup name';
-    input.spellcheck = false;
-    input.autocomplete = 'off';
-    input.setAttribute('aria-label', 'Backup name');
-    const archive = document.createElement('button');
-    archive.type = 'submit';
-    archive.className = 'sp-io-btn';
-    archive.textContent = 'Archive';
-    archive.title = 'Save the stack and HOME tree as :0:name (same as :0:name ARCHIVE)';
-    form.appendChild(input);
-    form.appendChild(archive);
+  _renderHistoryList() {
+    const list = this._body()?.querySelector('.dw-list');
+    if (!list) return;
+    const { entry } = this.app;
+    const q = this.historyQuery.trim().toLowerCase();
+    const hist = entry.getHistory();
+    const ordered = this.prefs.historySort === 'newest' ? hist.slice().reverse() : hist.slice();
+    const rows = ordered.filter((s) => !q || s.toLowerCase().includes(q));
+    const errors = entry.getErrorLog().slice().reverse().filter((e) => !q || `${e.message} ${e.input}`.toLowerCase().includes(q));
+    const errHtml = errors.length
+      ? `<div class="sec-h">Errors<button type="button" data-dw="errors-clear">Clear</button></div>${errors.map((e) => `<div class="hr err"${e.input ? ` data-dw="hist-recall" data-text="${escapeHtml(e.input)}" role="button" tabindex="0" title="Put it back in the command line"` : ''}><div class="in-t">${escapeHtml(e.input || e.message)}</div><div class="out">${escapeHtml(e.input ? e.message : '')} · ${escapeHtml(new Date(e.at).toLocaleTimeString())}</div><div class="acts">${e.input ? `<button type="button" class="mini" data-dw="hist-recall" data-text="${escapeHtml(e.input)}" title="Recall" aria-label="Recall">${icon('undo', 'sm')}</button>` : ''}<button type="button" class="mini" data-dw="err-explain" data-text="${escapeHtml(`${e.input ? `${e.input}: ` : ''}${e.message}`)}" title="Ask the assistant what went wrong" aria-label="Explain">${icon('spark', 'sm')}</button></div></div>`).join('')}`
+      : '';
+    const histHtml = rows.length
+      ? `<div class="sec-h">Entries</div>${rows.map((t) => `<div class="hr" data-dw="hist-recall" data-text="${escapeHtml(t)}" role="button" tabindex="0" title="Put it back in the command line"><div class="in-t">${escapeHtml(t)}</div><div class="acts"><button type="button" class="mini" data-dw="hist-run" data-text="${escapeHtml(t)}" title="Run it again" aria-label="Run again">${icon('play', 'sm')}</button><button type="button" class="mini danger" data-dw="hist-delete" data-text="${escapeHtml(t)}" title="Delete" aria-label="Delete">${icon('x', 'sm')}</button></div></div>`).join('')}`
+      : `<div class="empty-note">${hist.length ? 'No entry matches.' : 'Everything you enter shows up here, ready to recall or run again.'}</div>`;
+    list.innerHTML = errHtml + histHtml;
+  }
+
+  _renderChars(body) {
+    body.innerHTML = `<div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="chars" placeholder="Filter characters and constants" aria-label="Filter characters" value="${escapeHtml(this.charsQuery)}" autocomplete="off" spellcheck="false"></label></div><div class="dw-list"></div>`;
+    this._renderCharsList();
+  }
+
+  _renderCharsList() {
+    const list = this._body()?.querySelector('.dw-list');
+    if (!list) return;
+    const q = this.charsQuery.trim().toLowerCase();
+    const html = Object.entries(CHAR_GROUPS).map(([group, items]) => {
+      const matches = items.filter(([label, , title]) => !q || `${label} ${title ?? ''}`.toLowerCase().includes(q));
+      if (!matches.length) return '';
+      return `<div class="sec-h">${escapeHtml(group)}</div><div class="cgrid">${matches.map(([label, text, title]) => `<button type="button" data-dw="char" data-text="${escapeHtml(text)}" title="${escapeHtml(title ?? label)}"><b>${escapeHtml(label)}</b><span>${escapeHtml((title ?? '').split(' — ')[0])}</span></button>`).join('')}</div>`;
+    }).join('');
+    list.innerHTML = html || '<div class="empty-note">No character matches.</div>';
+  }
+
+  _onInput(e) {
+    const q = e.target.closest?.('[data-q]');
+    if (!q) return;
+    const value = q.value;
+    if (q.dataset.q === 'cat') { this.cat.q = value; this._renderCatalogList(); }
+    else if (q.dataset.q === 'vars') { this.varsQuery = value; this._renderVarsList(); }
+    else if (q.dataset.q === 'history') { this.historyQuery = value; this._renderHistoryList(); }
+    else if (q.dataset.q === 'chars') { this.charsQuery = value; this._renderCharsList(); }
+  }
+
+  _onKeyDown(e) {
+    const q = e.target.closest?.('[data-q]');
+    if (q && e.key === 'Escape') {
+      if (q.value) { q.value = ''; q.dispatchEvent(new Event('input', { bubbles: true })); e.stopPropagation(); e.preventDefault(); }
+      return;
+    }
+    if (q && e.key === 'Enter' && q.dataset.q === 'cat') {
+      const first = this._body()?.querySelector('.cmd-row');
+      if (first) { e.preventDefault(); this.showReference(first.dataset.cmd); }
+      return;
+    }
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[role="button"][data-dw]')) {
+      e.preventDefault();
+      e.target.click();
+    }
+  }
+
+  _onSubmit(e) {
+    const form = e.target.closest('[data-form="archive"]');
+    if (!form) return;
+    e.preventDefault();
+    const name = form.elements.name.value.trim();
+    const port = form.elements.port.value;
+    this._archive(port, name);
+  }
+
+  _archive(port, name) {
+    const { app } = this;
+    if (!isStorableHpName(name)) { app.notifyError(`Backups need a variable-style name; “${name}” isn't one.`); return; }
+    try {
+      const exists = listBackups().some((b) => b.port === port && b.name === name);
+      archiveBackup(port, name, app.stack);
+      app.toast(`${exists ? 'Replaced' : 'Archived'} :${port}:${name}`);
+    } catch (e) {
+      app.notifyError(`Archive failed: ${e.message}`);
+    }
+    this._renderBackups();
+  }
+
+  _onClick(e) {
+    const t = e.target.closest('[data-dw]');
+    const link = e.target.closest('.cmd-help-link');
+    if (link && this.el.contains(link)) { e.preventDefault(); this.showReference(link.dataset.cmd); return; }
+    if (!t || !this.el.contains(t)) return;
+    const { app } = this;
+    const { entry } = app;
+    const act = t.dataset.dw;
+    const name = t.dataset.name;
+    switch (act) {
+      case 'close': this.close(); return;
+      case 'tab': this.open(t.dataset.drawerTab); return;
+      case 'wide': app.setPrefs({ drawerWide: !this.prefs.drawerWide }); this.render(); return;
+      case 'plot-focus': app.setPlotFocus(!app.plotFocus); return;
+      case 'plot-full': this.graph.el.querySelector('.gr-canvas-wrap')?.requestFullscreen?.().catch(() => app.notifyError('Full screen is not available here.')); return;
+      case 'hist-sort': app.setPrefs({ historySort: this.prefs.historySort === 'newest' ? 'oldest' : 'newest' }); this.render(); return;
+      case 'hist-clear': entry.clearHistory(); this._renderHistoryList(); app.toast('Cleared the history'); return;
+      case 'cat-family': this.cat.family = t.dataset.family; this._renderCatalogList(); this._body().scrollTop = 0; return;
+      case 'cat-back': this.cat.family = null; this._renderCatalogList(); return;
+      case 'cmd': this.showReference(t.dataset.cmd); return;
+      case 'cmd-run': e.stopPropagation(); app.runCommandFromUI(t.dataset.cmd); return;
+      case 'unit': app.insertUnit(t.dataset.unit); return;
+      case 'ref-back':
+        if (this.cat.idx > 0) { this.cat.idx -= 1; this.cat.ref = this.cat.history[this.cat.idx]; }
+        else { this.cat.ref = null; this.cat.history = []; this.cat.idx = -1; }
+        this._renderBody();
+        return;
+      case 'ref-run': app.runCommandFromUI(this.cat.ref); return;
+      case 'ref-insert': entry.type(`${entry.buffer && !/\s$/.test(entry.buffer) ? ' ' : ''}${this.cat.ref} `); entry.focus(); return;
+      case 'ref-ask': app.askAssistant(`Explain the ${this.cat.ref} command: what it takes from the stack, what it returns, and a short example I can try.`); return;
+      case 'char':
+        if (app.equationEditor?.ownsKeyboard?.()) app.equationEditor.typeText(t.dataset.text);
+        else entry.type(t.dataset.text);
+        return;
+      case 'hist-recall': entry.recall(t.dataset.text); entry.focus(); return;
+      case 'hist-run': e.stopPropagation(); entry.recall(t.dataset.text); app.commitEntry(); return;
+      case 'hist-delete': e.stopPropagation(); entry.removeHistory(t.dataset.text); this._renderHistoryList(); return;
+      case 'errors-clear': entry.clearErrorLog(); this._renderHistoryList(); return;
+      case 'err-explain': e.stopPropagation(); app.askAssistant(`I got this error on the calculator: ${t.dataset.text}. What went wrong and how do I fix it?`); return;
+      case 'path': app.navigateToPathSegment(Number(t.dataset.index)); return;
+      case 'var': this._activateVar(name); return;
+      case 'var-open': e.stopPropagation(); this._activateVar(name); return;
+      case 'var-rcl': e.stopPropagation(); this._recallVar(name); return;
+      case 'var-edit': e.stopPropagation(); app.editVariable(name); return;
+      case 'var-rename': e.stopPropagation(); this._beginRename(t.closest('.vr'), name); return;
+      case 'var-download': e.stopPropagation(); this._download(name); return;
+      case 'var-delete': e.stopPropagation(); this._deleteVar(name); return;
+      case 'vars-newdir': this._newFolder(t); return;
+      case 'vars-upload': this._upload(); return;
+      case 'vars-export-rpl': this._exportRpl(); return;
+      case 'vars-export': app.exportSnapshot(); return;
+      case 'vars-import': this._import(); return;
+      case 'backup-restore': this._restoreBackup(t.dataset.key); return;
+      case 'backup-delete': e.stopPropagation(); this._deleteBackup(t.dataset.key); return;
+    }
+  }
+
+  _activateVar(name) {
+    const { app } = this;
+    const value = calcState.current.entries.get(name);
+    if (value === undefined) return;
+    if (value.type === TYPES.DIRECTORY) {
+      if (app.entry.buffer.trim()) app.commitEntry();
+      goInto(name);
+      return;
+    }
+    if (app.entry.isAlgebraic()) { app.entry.type(name); return; }
+    app.pressVariable(name);
+  }
+
+  _recallVar(name) {
+    const { app } = this;
+    const v = varRecall(name);
+    if (v === undefined) return;
+    if (app.entry.buffer.trim()) app.commitEntry();
+    app.entry._snapForUndo();
+    app.stack.push(v);
+  }
+
+  _download(name) {
+    const v = calcState.current.entries.get(name);
+    if (v === undefined) return;
+    try { this.app.toast(`Saved ${exportVariableToFile(name, v)}`); }
+    catch (e) { this.app.notifyError(`Download failed: ${e.message}`); }
+  }
+
+  _deleteVar(name) {
+    const { app } = this;
+    const v = calcState.current.entries.get(name);
+    if (v === undefined) return;
+    app.entry._snapForUndo();
+    try {
+      varPurge(name);
+      app.toast(`Deleted ${name}`, { action: 'Undo', onAction: () => app.runAction('edit.undo') });
+    } catch (e) {
+      app.entry._dropNoOpUndoStep();
+      app.notifyError(v.type === TYPES.DIRECTORY
+        ? `${name} isn't empty. Open it and delete what's inside first (HP PURGE works the same way).`
+        : `Couldn't delete ${name}: ${e.message}`);
+    }
+  }
+
+  _newFolder(anchor) {
+    const { app } = this;
+    const html = `<form data-newdir><h6>New folder</h6><div style="padding:4px 6px 6px"><input type="text" name="name" placeholder="Name, like PROJECTS" aria-label="Folder name" spellcheck="false" autocomplete="off" style="width:100%;height:32px;border-radius:8px;border:1px solid var(--line2);background:var(--well);color:var(--ink);padding:0 9px;font:13px/1 var(--font-mono)"></div><div class="note">Same as <code>\`NAME\` CRDIR</code>.</div><div style="display:flex;justify-content:flex-end;gap:6px;padding:6px"><button type="submit" class="btn pri">Create</button></div></form>`;
+    const pop = app.popover.open(anchor, html, { label: 'New folder' });
+    const form = pop.querySelector('form');
+    requestAnimationFrame(() => form.elements.name.focus());
     form.addEventListener('submit', (ev) => {
       ev.preventDefault();
-      this._archiveBackupNamed(input.value.trim());
+      const dir = form.elements.name.value.trim();
+      if (!isStorableHpName(dir)) { app.notifyError(`“${dir}” isn't a valid name. Use letters and digits, starting with a letter.`); return; }
+      app.entry._snapForUndo();
+      try { makeSubdir(dir); app.popover.close(); app.toast(`Created ${dir}`, { action: 'Undo', onAction: () => app.runAction('edit.undo') }); }
+      catch (err) { app.entry._dropNoOpUndoStep(); app.notifyError(err.message); }
     });
-    details.appendChild(form);
+  }
 
-    if (unavailable || backups.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'sp-empty';
-      empty.textContent = unavailable || 'No backups yet. Name one above, or run :0:name ARCHIVE.';
-      details.appendChild(empty);
-      return details;
-    }
+  _pickFile(accept, onFile) {
+    const picker = document.createElement('input');
+    picker.type = 'file';
+    picker.accept = accept;
+    picker.addEventListener('change', () => { const f = picker.files?.[0]; if (f) onFile(f); });
+    picker.click();
+  }
 
-    const list = document.createElement('div');
-    list.className = 'sp-file-list';
-    for (const { port, name, savedAt, depth } of backups) {
-      const key = `${port}:${name}`;
-      const row = document.createElement('div');
-      row.className = 'sp-file-row';
-
-      const main = document.createElement('button');
-      main.type = 'button';
-      main.className = 'sp-file';
-      main.dataset.action = 'backup-restore';
-      main.dataset.value = key;
-      main.title = `Restore :${key} (replaces the stack and HOME tree)`;
-      const nameEl = document.createElement('span');
-      nameEl.className = 'sp-file-name';
-      nameEl.textContent = `:${key}`;
-      const metaEl = document.createElement('span');
-      metaEl.className = 'sp-file-type';
-      metaEl.textContent = `${depth} lvl · ${new Date(savedAt).toLocaleString()}`;
-      main.appendChild(nameEl);
-      main.appendChild(metaEl);
-      row.appendChild(main);
-
-      const del = document.createElement('button');
-      del.type = 'button';
-      del.className = 'sp-file-act sp-file-act-del';
-      del.dataset.action = 'backup-delete';
-      del.dataset.value = key;
-      del.textContent = '×';
-      del.title = `Delete backup :${key}`;
-      del.setAttribute('aria-label', `Delete backup :${key}`);
-      row.appendChild(del);
-
-      list.appendChild(row);
-    }
-    details.appendChild(list);
-    return details;
+  _upload() {
+    const { app } = this;
+    this._pickFile('application/json,.json,.rpl,.txt,text/plain', async (file) => {
+      try {
+        const { name, value } = /\.json$/i.test(file.name)
+          ? await parseVariableFile(file)
+          : this._readHpTextUpload(file.name, await readFileText(file));
+        if (calcState.current.entries.has(name)) { app.notifyError(`${name} already exists here. Rename or delete it first.`); return; }
+        if (value?.type === TYPES.DIRECTORY) value.parent = calcState.current;
+        app.entry._snapForUndo();
+        varStore(name, value);
+        app.toast(`Added ${name}`, { action: 'Undo', onAction: () => app.runAction('edit.undo') });
+      } catch (e) {
+        app.notifyError(`Upload failed: ${e.message}`);
+      }
+    });
   }
 
   _readHpTextUpload(filename, text) {
     const name = filename.replace(/\.[^.]*$/, '');
-    if (!isStorableHpName(name)) {
-      throw new Error(`${filename}: rename the file to a valid variable name`);
-    }
+    if (!isStorableHpName(name)) throw new Error(`${filename}: rename the file to a valid variable name`);
     return { name, value: parseHpText(text, name) };
   }
 
-  _archiveBackupNamed(name) {
-    const { entry, stack } = this.app;
-    if (!isStorableHpName(name)) {
-      entry.flashError({ message: `Archive: invalid name: ${name}` });
-      return;
-    }
+  _exportRpl() {
+    const dir = calcState.current;
+    try { this.app.toast(`Saved ${exportHpTextFile(dir.name, dir)}`); }
+    catch (e) { this.app.notifyError(`Export failed: ${e.message}`); }
+  }
+
+  _import() {
+    this._pickFile('application/json,.json', (file) => this.app.importSnapshotFromFile(file));
+  }
+
+  _restoreBackup(key) {
+    const { app } = this;
+    const sep = key.indexOf(':');
+    const port = key.slice(0, sep);
+    const name = key.slice(sep + 1);
+    app.entry._snapForUndo();
     try {
-      const exists = listBackups().some(b => b.port === '0' && b.name === name);
-      if (exists && typeof window !== 'undefined' && typeof window.confirm === 'function'
-          && !window.confirm(`Overwrite backup :0:${name}?`)) return;
-      archiveBackup('0', name, stack);
-      entry.flashNotice(`Archived :0:${name}`);
+      restoreBackup(port, name, app.stack);
+      app.toast(`Restored :${key}`, { action: 'Undo', onAction: () => app.runAction('edit.undo') });
     } catch (e) {
-      entry.flashError({ message: `Archive: ${e.message}` });
-    }
-    this._render();
-  }
-
-  _handleAction(action, value, btn) {
-    const { entry, stack } = this.app;
-    if (action === 'op') {
-      if (this.app.equationEditor?.ownsKeyboard()) {
-        this.app.equationEditor.pressCommand(value);
-        return;
-      }
-      const op = lookup(value);
-      if (!op) { entry.flashError({ message: `${value}: not yet implemented` }); return; }
-      // Mirror keypad behaviour exactly — clicks on a panel command
-      // are dispatched through `typeOrExecFn`, the same helper the
-      // SIN / COS / FACTOR / DERIV keys use.  That gives three
-      // input-mode-aware branches:
-      //
-      //   - inside an unclosed backtick (algebraic entry)
-      //       → types `<NAME>(`         so `\`SIN(...)\`` reads like
-      //                                  textbook math.
-      //   - the buffer has any other content (bare-edit RPN entry)
-      //       → types ` <NAME> `        as a whitespace-separated
-      //                                  token that parses to a Name.
-      //       The leading space is added automatically when the cursor
-      //       isn't already on whitespace, so `3 4+SIN` becomes
-      //       `3 4+ SIN` and the name stays tokenised.
-      //   - empty buffer (stack-direct mode)
-      //       → executes the op exactly like a soft-menu press.
-      //
-      // Pre-fix the panel always hard-committed the buffer + ran the
-      // op whenever the user had anything typed, which silently
-      // lost edits a user was building.  Routing through the same
-      // helper aligns "click in panel" with "press the key" so the
-      // user's mental model is one rule, not two.
-      entry.typeOrExecFn(value);
-      return;
-    }
-    if (action === 'char') {
-      if (this.app.equationEditor?.ownsKeyboard()) {
-        this.app.equationEditor.typeText(value);
-        return;
-      }
-      entry.type(value);
-      return;
-    }
-    if (action === 'unit') {
-      // Attach a unit tag to the value at the cursor: type `_<unit>`.
-      // If the buffer is empty, type the symbol `<unit>` alone —
-      // that still parses as a Name the user can then feed to
-      // →UNIT etc.  Keeps one path for "insert a unit reference"
-      // regardless of whether the user has a pending number.
-      entry.type(entry.buffer.length > 0 ? `_${value}` : value);
-      return;
-    }
-    if (action === 'recall') {
-      entry.recall(value);
-      // Leave the panel open — user typically wants to see the list so
-      // they can pick another entry if they got the wrong one.
-      return;
-    }
-    if (action === 'errors-clear') {
-      entry.clearErrorLog();
-      this._render();
-      return;
-    }
-    if (action === 'history-delete') {
-      // Drop the matching history entry and repaint the History tab so
-      // the row disappears immediately.  The recall buffer in the entry
-      // line is untouched — a user mid-edit doesn't lose their typing.
-      entry.removeHistory(value);
-      this._render();
-      return;
-    }
-    if (action === 'dir') {
-      // Files: descend into a subdirectory.  goInto fires a state event
-      // which triggers our re-render subscription.
-      if (entry.buffer.trim().length > 0) entry.enter();
-      const ok = goInto(value);
-      if (!ok) entry.flashError({ message: `Cannot descend: ${value}` });
-      return;
-    }
-    if (action === 'var') {
-      // Files: click a variable.  Mid-algebraic → insert the name so
-      // the user can build an expression referencing it; otherwise push
-      // the value (RCL semantics).
-      if (entry.isAlgebraic()) { entry.type(value); return; }
-      if (entry.buffer.trim().length > 0) entry.enter();
-      const v = varRecall(value);
-      if (v === undefined) { entry.flashError({ message: `Undefined: ${value}` }); return; }
-      stack.push(v);
-      return;
-    }
-    if (action === 'path') {
-      // Breadcrumb click — reuse the app's existing segment handler so
-      // Files, LCD path annunciator, and VARS menu all navigate the
-      // same way.
-      if (entry.buffer.trim().length > 0) entry.enter();
-      this.app.navigateToPathSegment(Number(value));
-      return;
-    }
-    if (action === 'export') {
-      this.app.exportSnapshot();
-      return;
-    }
-    if (action === 'import') {
-      // Files tab uses a transient <input type="file"> so the picker
-      // state (selected-file, etc.) doesn't need to hang off the DOM
-      // between clicks.  Re-creating per press also sidesteps the
-      // "picking the same file twice in a row fires no change event"
-      // browser quirk — fresh element, fresh state.
-      const picker = document.createElement('input');
-      picker.type = 'file';
-      picker.accept = 'application/json,.json';
-      picker.addEventListener('change', async () => {
-        const file = picker.files?.[0];
-        if (file) await this.app.importSnapshotFromFile(file);
-      });
-      picker.click();
-      return;
-    }
-    if (action === 'download-var') {
-      // Files: per-row Download.  Works for both variables and
-      // directories — `encode()` walks the subtree for a Directory.
-      const v = calcState.current.entries.get(value);
-      if (v === undefined) {
-        entry.flashError({ message: `Undefined: ${value}` });
-        return;
-      }
-      try {
-        const filename = exportVariableToFile(value, v);
-        this.app.entry.flashNotice(`Saved ${filename}`);
-      } catch (e) {
-        entry.flashError({ message: `Download failed: ${e.message}` });
-      }
-      return;
-    }
-    if (action === 'rename-var') {
-      // Files: per-row Rename.  Swap the row's name span for an
-      // editable input in-place — committing on Enter / blur, cancel
-      // on Escape.  Validation + the actual move through
-      // renameCurrentEntry happens at commit time; the state-change
-      // subscriber re-renders the list so we don't have to patch
-      // nameEl back ourselves on success.
-      const row = btn?.closest?.('.sp-file-row');
-      if (!row) return;
-      this._beginRenameInPlace(row, value);
-      return;
-    }
-    if (action === 'purge-var') {
-      // Files: per-row Delete.  Confirm before destroying — a single
-      // misclick on a directory full of work shouldn't be silent.
-      // varPurge throws "Directory not empty" for non-empty subdirs,
-      // matching HP50 PURGE semantics; we surface that as a flash
-      // error rather than wrapping it.
-      const v = calcState.current.entries.get(value);
-      if (v === undefined) {
-        entry.flashError({ message: `Undefined: ${value}` });
-        return;
-      }
-      const isDir = v.type === TYPES.DIRECTORY;
-      if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
-        const ok = window.confirm(
-          isDir ? `Delete directory "${value}"?  (Must be empty.)`
-                : `Delete variable "${value}"?`);
-        if (!ok) return;
-      }
-      try {
-        varPurge(value);
-      } catch (e) {
-        entry.flashError({ message: `Delete: ${e.message}` });
-      }
-      return;
-    }
-    if (action === 'backup-restore' || action === 'backup-delete') {
-      const sep = value.indexOf(':');
-      const port = value.slice(0, sep);
-      const name = value.slice(sep + 1);
-      const restoring = action === 'backup-restore';
-      if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
-        const ok = window.confirm(restoring
-          ? `Restore :${value}?  This replaces the stack and HOME tree.`
-          : `Delete backup :${value}?`);
-        if (!ok) return;
-      }
-      try {
-        if (restoring) {
-          entry._snapForUndo();
-          restoreBackup(port, name, stack);
-          entry.flashNotice(`Restored :${value}`);
-        } else {
-          deleteBackup(port, name);
-        }
-      } catch (e) {
-        entry.flashError({ message: `${restoring ? 'Restore' : 'Delete'}: ${e.message}` });
-      }
-      this._render();
-      return;
-    }
-    if (action === 'export-rpl') {
-      const dir = calcState.current;
-      try {
-        const filename = exportHpTextFile(dir.name, dir);
-        entry.flashNotice(`Saved ${filename}`);
-      } catch (e) {
-        entry.flashError({ message: `Export failed: ${e.message}` });
-      }
-      return;
-    }
-    if (action === 'upload-var') {
-      // Files: top-of-tab Upload.  Reads a single-variable JSON file or
-      // an HP text file (stored under the file's base name), checks for
-      // a name collision in the current directory, and installs it.
-      // Same transient-input pattern as the full-snapshot Import button
-      // so the change event fires reliably on a re-pick.
-      const picker = document.createElement('input');
-      picker.type = 'file';
-      picker.accept = 'application/json,.json,.rpl,.txt,text/plain';
-      picker.addEventListener('change', async () => {
-        const file = picker.files?.[0];
-        if (!file) return;
-        try {
-          const { name, value: val } = /\.json$/i.test(file.name)
-            ? await parseVariableFile(file)
-            : this._readHpTextUpload(file.name, await readFileText(file));
-          if (calcState.current.entries.has(name)) {
-            entry.flashError({ message: `Upload: ${name} already exists here` });
-            return;
-          }
-          // Directory uploads need their root parent re-linked to the
-          // live current directory; rehydrateVariable left it null.
-          if (val && val.type === TYPES.DIRECTORY) {
-            val.parent = calcState.current;
-          }
-          // varStore emits a state event so VARS, breadcrumb, and the
-          // Files list all repaint via the existing subscribe()
-          // wiring.  The collision check above already cleared the
-          // "Directory not allowed" branch, so this never throws here.
-          varStore(name, val);
-        } catch (e) {
-          entry.flashError({ message: `Upload failed: ${e.message}` });
-        }
-      });
-      picker.click();
-      return;
+      app.entry._dropNoOpUndoStep();
+      app.notifyError(`Restore failed: ${e.message}`);
     }
   }
 
-  /** Replace the variable name in `row` with an editable input.
-   *  Commits on Enter or blur, cancels on Escape.  On commit we
-   *  validate the new name as a legal HP identifier and call
-   *  renameCurrentEntry; the resulting state event triggers
-   *  _render() which rebuilds the file list (so we don't manually
-   *  patch nameEl back).  On cancel or no-op, restore the original
-   *  text and leave the row alone. */
-  _beginRenameInPlace(row, oldName) {
-    const nameEl = row.querySelector('.sp-file-name');
-    if (!nameEl) return;
-    // Already editing → just refocus.
-    if (row.classList.contains('sp-file-editing')) {
-      nameEl.querySelector('input')?.focus();
-      return;
-    }
-    row.classList.add('sp-file-editing');
+  _deleteBackup(key) {
+    const sep = key.indexOf(':');
+    try { deleteBackup(key.slice(0, sep), key.slice(sep + 1)); this.app.toast(`Deleted backup :${key}`); }
+    catch (e) { this.app.notifyError(`Delete failed: ${e.message}`); }
+    this._renderBackups();
+  }
 
+  _beginRename(row, oldName) {
+    const nameEl = row?.querySelector('.nm-text');
+    if (!nameEl || row.classList.contains('editing')) return;
+    row.classList.add('editing');
+    row.draggable = false;
     const input = document.createElement('input');
     input.type = 'text';
-    input.className = 'sp-file-name-input';
     input.value = oldName;
     input.spellcheck = false;
     input.autocomplete = 'off';
-
-    nameEl.textContent = '';
-    nameEl.appendChild(input);
+    input.setAttribute('aria-label', `New name for ${oldName}`);
+    nameEl.replaceWith(input);
     input.focus();
     input.select();
-
-    let finalised = false;
-    const finalise = (commit) => {
-      if (finalised) return;
-      finalised = true;
-      const newName = input.value.trim();
-      // Restore the displayed text first; if rename succeeds the
-      // state-change subscriber will rebuild the list anyway.
-      row.classList.remove('sp-file-editing');
-      nameEl.textContent = oldName;
-
-      if (!commit)                          return;
-      if (newName === '' || newName === oldName) return;
-      if (!isStorableHpName(newName)) {
-        this.app.entry.flashError({ message: `Rename: invalid name: ${newName}` });
-        return;
+    let done = false;
+    const finish = (commit) => {
+      if (done) return;
+      done = true;
+      const next = input.value.trim();
+      if (commit && next && next !== oldName) {
+        if (!isStorableHpName(next)) { this.app.notifyError(`“${next}” isn't a valid name.`); this._renderVarsList(); return; }
+        this.app.entry._snapForUndo();
+        try { renameCurrentEntry(oldName, next); return; }
+        catch (e) { this.app.entry._dropNoOpUndoStep(); this.app.notifyError(`Rename failed: ${e.message}`); }
       }
-      try {
-        renameCurrentEntry(oldName, newName);
-      } catch (e) {
-        this.app.entry.flashError({ message: `Rename: ${e.message}` });
-      }
+      this._renderVarsList();
     };
-
+    input.addEventListener('click', (ev) => ev.stopPropagation());
     input.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter')      { ev.preventDefault(); finalise(true); }
-      else if (ev.key === 'Escape'){ ev.preventDefault(); finalise(false); }
-      // Stop bubbling so the side panel's global keydown shortcuts
-      // (if any) don't intercept characters being typed.
       ev.stopPropagation();
+      if (ev.key === 'Enter') { ev.preventDefault(); finish(true); }
+      else if (ev.key === 'Escape') { ev.preventDefault(); finish(false); }
     });
-    input.addEventListener('blur', () => finalise(true));
+    input.addEventListener('blur', () => finish(true));
   }
 
-  /* ---- UI persistence: open/tab/sort/width survive a page reload. ----
-     Kept separate from the calc-state snapshot in persist.js — UI prefs
-     are per-browser and shouldn't travel with an exported .json. */
-  _saveUIState() {
+  _bindVarsDrag() {
+    const el = this.el;
+    const clear = () => el.querySelectorAll('.drop-before, .drop-after, .drop-into, .drop-end, .dragging').forEach((n) => n.classList.remove('drop-before', 'drop-after', 'drop-into', 'drop-end', 'dragging'));
+    const targetAt = (ev) => {
+      const crumb = ev.target.closest?.('.path-bar button[data-index]');
+      if (crumb && crumb.getAttribute('aria-current') !== 'true') return { kind: 'crumb', index: Number(crumb.dataset.index), el: crumb, zone: 'into' };
+      const row = ev.target.closest?.('.vr[data-drag-name]');
+      if (row) {
+        const name = row.dataset.dragName;
+        if (name === this._dragName) return null;
+        const rect = row.getBoundingClientRect();
+        const zone = dropZoneForFraction(rect.height ? (ev.clientY - rect.top) / rect.height : 0.5, row.classList.contains('dir'));
+        return { kind: zone === 'into' ? 'into' : 'reorder', name, zone, el: row };
+      }
+      const list = ev.target.closest?.('.vr-list');
+      return list ? { kind: 'end', el: list, zone: 'end' } : null;
+    };
+    el.addEventListener('dragstart', (ev) => {
+      const row = ev.target.closest?.('.vr[data-drag-name]');
+      if (!row) return;
+      this._dragName = row.dataset.dragName;
+      row.classList.add('dragging');
+      try { ev.dataTransfer.setData('text/plain', this._dragName); ev.dataTransfer.effectAllowed = 'move'; }
+      catch { /* setData can throw outside a trusted drag */ }
+    });
+    el.addEventListener('dragend', () => { this._dragName = null; clear(); });
+    el.addEventListener('dragover', (ev) => {
+      if (!this._dragName) return;
+      const target = targetAt(ev);
+      el.querySelectorAll('.drop-before, .drop-after, .drop-into, .drop-end').forEach((n) => n.classList.remove('drop-before', 'drop-after', 'drop-into', 'drop-end'));
+      if (!target) return;
+      ev.preventDefault();
+      target.el.classList.add(`drop-${target.zone}`);
+    });
+    el.addEventListener('drop', (ev) => {
+      if (!this._dragName) return;
+      ev.preventDefault();
+      const target = targetAt(ev);
+      const name = this._dragName;
+      this._dragName = null;
+      clear();
+      if (target) this._performDrop(name, target);
+    });
+  }
+
+  _performDrop(name, target) {
+    const { app } = this;
+    app.entry._snapForUndo();
     try {
-      localStorage.setItem(UI_STORAGE_KEY, JSON.stringify({
-        open: this.isOpen(),
-        tab: this.tab,
-        historySort: this.historySort,
-        width: this._panelWidth,
-        collapsed: [...this._collapsedSections],
-      }));
-    } catch { /* quota or privacy-mode — silently skip */ }
+      if (target.kind === 'crumb') {
+        const dir = getDirectoryByPath(currentPath().slice(0, target.index + 1));
+        if (!dir) throw new Error('that folder no longer exists');
+        moveCurrentEntry(name, dir);
+      } else if (target.kind === 'into') {
+        moveCurrentEntry(name, calcState.current.entries.get(target.name));
+      } else if (target.kind === 'reorder') {
+        let before = target.name;
+        if (target.zone === 'after') {
+          const keys = [...calcState.current.entries.keys()];
+          before = keys[keys.indexOf(target.name) + 1] ?? null;
+        }
+        reorderCurrentEntry(name, before);
+      } else {
+        reorderCurrentEntry(name, null);
+      }
+    } catch (e) {
+      app.entry._dropNoOpUndoStep();
+      app.notifyError(`Move failed: ${e.message}`);
+    }
   }
 
-  _restoreUIState() {
-    let raw;
-    try { raw = localStorage.getItem(UI_STORAGE_KEY); } catch { return; }
-    if (!raw) return;
-    let st;
-    try { st = JSON.parse(raw); } catch { return; }
-    if (!st || typeof st !== 'object') return;
-    const tab = VALID_TABS.has(st.tab) ? st.tab : 'ai';
-    if (st.historySort === 'newest' || st.historySort === 'oldest') {
-      this.historySort = st.historySort;
-      const lbl = this.el.querySelector('.sp-sort');
-      if (lbl) lbl.textContent = st.historySort === 'newest' ? '⇅ Newest' : '⇅ Oldest';
-    }
-    if (typeof st.width === 'number' && isFinite(st.width)) {
-      this._applyWidth(st.width);
-    }
-    if (Array.isArray(st.collapsed)) {
-      this._collapsedSections = new Set(st.collapsed.filter(k => typeof k === 'string'));
-    }
-    if (st.open) this.open(tab);
-    else this.tab = tab;      // remember the tab for the next open()
-  }
-
-  /* ---- Drag-to-resize.  The resizer is a thin strip on the panel's
-     left edge.  Dragging it updates --panel-width, which drives the
-     panel's `width`.  Width is clamped so the panel can't eat the
-     calculator or shrink past its tabs; persisted to localStorage so
-     the chosen size sticks across reloads. */
-  _bindResizer(handle) {
-    if (!handle) return;
-    const onPointerDown = (ev) => {
-      if (ev.button !== undefined && ev.button !== 0) return;
+  _bindGrip(grip) {
+    if (!grip) return;
+    grip.addEventListener('pointerdown', (ev) => {
+      if (ev.button !== 0) return;
       ev.preventDefault();
       const startX = ev.clientX;
-      const startW = this._panelWidth || this.el.getBoundingClientRect().width || PANEL_DEFAULT_WIDTH;
-      document.body.classList.add('sp-resizing');
-      handle.setPointerCapture?.(ev.pointerId);
-      const onMove = (e) => {
-        // Panel is right-anchored, so rightward drag shrinks it.
-        const dx = e.clientX - startX;
-        this._applyWidth(startW - dx);
+      const startW = this.el.getBoundingClientRect().width;
+      grip.classList.add('dragging');
+      grip.setPointerCapture?.(ev.pointerId);
+      const move = (e) => {
+        const w = Math.max(DRAWER_MIN_WIDTH, Math.min(DRAWER_MAX_WIDTH, startW + e.clientX - startX));
+        this.el.style.setProperty('--drawer-w', `${w}px`);
       };
-      const onUp = () => {
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp);
-        document.body.classList.remove('sp-resizing');
-        this._saveUIState();
+      const up = () => {
+        grip.classList.remove('dragging');
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+        this.app.setPrefs({ drawerWidth: Math.round(this.el.getBoundingClientRect().width), drawerWide: false });
+        this._graph?.resize?.();
       };
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
-    };
-    handle.addEventListener('pointerdown', onPointerDown);
-    // Double-click resets to default.
-    handle.addEventListener('dblclick', () => {
-      this._applyWidth(PANEL_DEFAULT_WIDTH);
-      this._saveUIState();
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    });
+    grip.addEventListener('dblclick', () => {
+      this.el.style.removeProperty('--drawer-w');
+      this.app.setPrefs({ drawerWidth: null });
     });
   }
-
-  _applyWidth(w) {
-    const clamped = Math.max(PANEL_MIN_WIDTH, Math.min(PANEL_MAX_WIDTH, w));
-    this._panelWidth = clamped;
-    this.el.style.width = clamped + 'px';
-  }
 }
-
-const PANEL_DEFAULT_WIDTH = 360;
-const PANEL_MIN_WIDTH = 240;
-const PANEL_MAX_WIDTH = 800;
-
-const UI_STORAGE_KEY = 'hp50.ui.sidePanel';
-const VALID_TABS = new Set([
-  'commands', 'chars', 'files', 'history', 'ai', 'graph', 'equation', 'matrix',
-]);
-
-/* Short labels beside each file row.  Kept compact (≤4 chars) so the
-   type column doesn't push the name off-screen on narrow panels. */
-const TYPE_LABELS = Object.freeze({
-  [TYPES.DIRECTORY]: 'DIR',
-  [TYPES.PROGRAM]:   'PRG',
-  [TYPES.REAL]:      'REAL',
-  [TYPES.INTEGER]:   'INT',
-  [TYPES.BININT]:    'BIN',
-  [TYPES.COMPLEX]:   'CPX',
-  [TYPES.STRING]:    'STR',
-  [TYPES.NAME]:      'NAM',
-  [TYPES.SYMBOLIC]:  'SYM',
-  [TYPES.LIST]:      'LIST',
-  [TYPES.VECTOR]:    'VEC',
-  [TYPES.MATRIX]:    'MAT',
-  [TYPES.TAGGED]:    'TAG',
-  [TYPES.UNIT]:      'UN',
-  [TYPES.GROB]:      'GROB',
-});

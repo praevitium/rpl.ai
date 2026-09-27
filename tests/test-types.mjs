@@ -21,7 +21,6 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
 } from '../www/src/rpl/state.js';
-import { clampStackScroll, computeMenuPage } from '../www/src/ui/paging.js';
 import { assert, assertThrows, runOp } from './helpers.mjs';
 
 /* Data-type completeness pass. */
