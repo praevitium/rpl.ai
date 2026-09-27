@@ -171,6 +171,14 @@ class App {
     this.appbar.render();
     this.menubar.render();
     this.keypad.update();
+    this._announceTop();
+  }
+
+  _announceTop() {
+    clearTimeout(this._announceTimer);
+    this._announceTimer = setTimeout(() => {
+      this.display.announce(this.stack.depth ? `Level 1: ${describeValue(this.stack.peek(1)).text}` : 'The stack is empty');
+    }, 300);
   }
 
   _onEntryChange() {
