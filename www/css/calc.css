@@ -1010,6 +1010,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   background: var(--well);
 }
 .gr-param-sep { color: var(--ink3); padding: 0 2px; }
+:root[data-theme="classic"] .gr-expr:focus { background: var(--r1); }
 .gr-expr:has(+ .gr-param-sep) { text-align: right; }
 .gr-add {
   display: flex;
@@ -1290,6 +1291,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   box-sizing: border-box;
   cursor: pointer;
 }
+:root[data-theme="classic"] .cb-picker-select { background: var(--r1); }
 .cb-picker-select:focus {
   outline: none;
   border-color: var(--accent-line);
@@ -1400,6 +1402,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   width: 100%;
   box-sizing: border-box;
 }
+:root[data-theme="classic"] .cb-remote-input { background: var(--r1); }
 .cb-remote-input:focus {
   outline: none;
   border-color: var(--accent-line);
@@ -1590,6 +1593,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 }
 .cb-action-widget.cb-action-done   { border-left-color: var(--ok); }
 .cb-action-widget.cb-action-failed { border-left-color: var(--danger); }
+:root[data-theme="classic"] .cb-action-widget { background: var(--r1); }
 .cb-action-head {
   display: flex;
   align-items: baseline;
@@ -1670,6 +1674,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   white-space: pre-wrap;
   word-break: break-all;
 }
+:root[data-theme="classic"] .cb-tool-trace-code { background: var(--r1); }
 .cb-tool-trace-outcome { color: var(--ink2); }
 .cb-undo-row {
   align-self: flex-start;
