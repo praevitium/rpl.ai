@@ -436,6 +436,17 @@ export function renderKeyboard(app, root) {
   MAIN_KEYS.forEach(k => root.keypad.appendChild(makeKeyEl(app, k)));
 }
 
+const MODIFIER_KEY_NAMES = { shiftL: 'Left shift', shiftR: 'Right shift', alpha: 'Alpha' };
+
+export function keyAccessibleName(key) {
+  if (MODIFIER_KEY_NAMES[key.kind]) return MODIFIER_KEY_NAMES[key.kind];
+  return [
+    key.primary,
+    key.shiftL && `left shift ${key.shiftL}`,
+    key.shiftR && `right shift ${key.shiftR}`,
+  ].filter(Boolean).join(', ');
+}
+
 function makeKeyEl(app, key) {
   const el = document.createElement('button');
   el.type = 'button';
@@ -463,12 +474,21 @@ function makeKeyEl(app, key) {
   const p = document.createElement('span');
   p.className = 'primary'; p.textContent = key.primary;
   el.appendChild(p);
+  el.setAttribute('aria-label', keyAccessibleName(key));
 
-  el.addEventListener('mousedown', (evt) => {
-    evt.preventDefault();
+  const press = () => {
     el.classList.add('pressed');
     app.handleKey(key);
     setTimeout(() => el.classList.remove('pressed'), 80);
+  };
+  el.addEventListener('mousedown', (evt) => {
+    evt.preventDefault();
+    press();
+  });
+  el.addEventListener('click', (evt) => {
+    if (evt.detail !== 0) return;
+    press();
+    el.focus({ preventScroll: true });
   });
 
   // Track sticky shift visual state for the three modifier kinds.

@@ -1336,6 +1336,7 @@ class App {
       // Ignore if user is typing into a real <input>/<textarea>
       const tag = e.target?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (tag === 'BUTTON' && (e.key === 'Enter' || e.key === ' ')) return;
 
       // If CodeMirror (or one of its keybindings) already claimed this
       // event, don't double-handle.  CM's bindings call preventDefault on

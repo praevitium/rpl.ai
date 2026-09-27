@@ -22,7 +22,7 @@ import { clampStackScroll, computeMenuPage } from '../www/src/ui/paging.js';
 import { headingKey, ALIASES, pushHistory } from '../www/src/ui/command-help.js';
 import { escapeHtml, normalizeMenuSlots, binaryBaseLabel, displayModeLabel, coordModeGlyph, haltAnnunciatorLabel, suspendedProgramText } from '../www/src/ui/display.js';
 import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '../www/src/ui/side-panel.js';
-import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS } from '../www/src/ui/keyboard.js';
+import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { UNIT_CATALOG } from '../www/src/rpl/units.js';
 import { commandWordAt, commandHelpText } from '../www/src/ui/hover-help.js';
@@ -1289,6 +1289,14 @@ setAngle('RAD');
   assert(NAV_KEYS.length === 6,    'keyboard: NAV_KEYS is 6 (VARS/PREV/NEXT + HOME/STO/RCL)');
   assert(ARROW_KEYS.length === 6,  'keyboard: ARROW_KEYS is 6 (CST + diamond + TOOLS)');
   assert(MAIN_KEYS.length === 35,  'keyboard: MAIN_KEYS is 5 cols x 7 rows = 35');
+  {
+    const sin = MAIN_KEYS.find((k) => k.primary === 'SIN');
+    assert(keyAccessibleName(sin) === 'SIN, left shift ASIN, right shift Σ',
+      'keys have spoken names that include their shifted functions');
+    const shift = MAIN_KEYS.find((k) => k.kind === 'shiftL');
+    assert(keyAccessibleName(shift) === 'Left shift',
+      'shift keys are named for what they are, not their glyph');
+  }
 
   // Every entry carries exactly the nine fields the `mk` factory builds —
   // guards a refactor that hand-rolls an entry and drops a field.
