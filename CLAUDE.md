@@ -37,6 +37,7 @@ These are house conventions, not project documentation. Follow them so they don'
 - Work on the working branch; open PRs against the main branch — don't commit straight to it.
 - Commit only when asked.
 - After every commit, **push** the working branch.
+- **Restart the dev server before every push**, after committing: `pkill -f '[l]ive-server --port=5050'; setsid npm run serve >/dev/null 2>&1 < /dev/null &`. Its `preserve` step regenerates `build-info.js` and `precache.js`, so the app on port 5050 shows the build being pushed.
 - After a significant chunk of work, **bump the version** (package.json, package-lock.json, and the as-of / latest-release stamps in RELEASE_NOTES.md, docs/ROADMAP.md, docs/COMMANDS.md). Patch for a coherent feature; don't leave the bump uncommitted.
 - Commit subjects are **short and lowercase**, imperative mood, no scope prefix, no trailing period (e.g. `fix cursor`, `add katex support`), four or five words. Follow with a one- or two-sentence body. Never add trailers such as Co-Authored-By.
 - Keep each commit to one logical change.
