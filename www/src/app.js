@@ -13,6 +13,7 @@ import { Palette } from './ui/palette.js';
 import { Popover } from './ui/popover.js';
 import { Toasts } from './ui/toast.js';
 import { Sheets } from './ui/sheets.js';
+import { Tour } from './ui/tour.js';
 import { chordFromEvent, findBinding } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
 import { MENU_FAMILIES, menuById } from './ui/menus.js';
@@ -90,6 +91,7 @@ class App {
     this.autocomplete = new Autocomplete({ host: $('input'), cmdline: $('cmdline'), app: this });
     this.palette = new Palette({ host: $('layPal'), app: this });
     this.sheets = new Sheets({ host: $('laySheet'), app: this });
+    this.tour = new Tour({ app: this });
 
     this.chatBot = new ChatBot({
       tools: this._assistantTools(),
@@ -129,6 +131,7 @@ class App {
     this._installKeyboard();
     this._installAutosave();
     this.renderAll();
+    if (!this.prefs.tourSeen) setTimeout(() => this.tour.start(), 700);
   }
 
   renderAll() {
@@ -1127,6 +1130,9 @@ class App {
     switch (id) {
       case 'palette.open': this.popover.close({ restoreFocus: false }); this.palette.open(); return true;
       case 'assistant.tutor': this.setAssistantMode('tutor'); this.askAssistant(); return true;
+      case 'help.tour': this.tour.start(); return true;
+      case 'catalog.open': this.drawers.open('catalog'); return true;
+      case 'about.open': this.sheets.openAbout(); return true;
       case 'assistant.ask': {
         const text = this.entry.buffer.trim().replace(/^\?/, '').trim();
         if (text) this.entry.cancel();

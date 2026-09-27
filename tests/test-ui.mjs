@@ -1473,3 +1473,16 @@ setAngle('RAD');
   const junk = normalizeUiPrefs({ assistantMode: 'shout', tutorStyle: 42 });
   assert(junk.assistantMode === 'ask' && junk.tutorStyle === 'socratic', 'ui prefs drop unknown assistant modes and tutor styles');
 }
+
+{
+  const { TOUR_STEPS } = await import('../www/src/ui/tour.js');
+  const html = readFileSync(new URL('../www/index.html', import.meta.url), 'utf8');
+  const appbar = readFileSync(new URL('../www/src/ui/appbar.js', import.meta.url), 'utf8');
+  const missing = TOUR_STEPS.filter(({ target }) => {
+    const [id, inner] = target.slice(1).split(' ');
+    return !html.includes(`id="${id}"`) || (inner && !appbar.includes(`class="${inner.slice(1)}"`));
+  }).map((s) => s.target);
+  assert(!missing.length, `every tour step points at markup the app renders${missing.length ? ` (missing ${missing.join(', ')})` : ''}`);
+  const { normalizeUiPrefs } = await import('../www/src/ui/ui-prefs.js');
+  assert(normalizeUiPrefs({}).tourSeen === false && normalizeUiPrefs({ tourSeen: true }).tourSeen === true, 'ui prefs remember that the tour was seen');
+}

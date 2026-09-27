@@ -21,6 +21,7 @@ export const DEFAULT_UI_PREFS = Object.freeze({
   menu: null,
   assistantMode: 'ask',
   tutorStyle: 'socratic',
+  tourSeen: false,
 });
 
 const LEGACY_DRAWER_OF_TAB = Object.freeze({
@@ -47,6 +48,7 @@ export function normalizeUiPrefs(raw) {
   if (typeof raw.menu === 'string' && /^[A-Z]{2,8}$/.test(raw.menu)) p.menu = raw.menu;
   if (ASSISTANT_MODES.includes(raw.assistantMode)) p.assistantMode = raw.assistantMode;
   if (TUTOR_STYLES.includes(raw.tutorStyle)) p.tutorStyle = raw.tutorStyle;
+  if (typeof raw.tourSeen === 'boolean') p.tourSeen = raw.tourSeen;
   return p;
 }
 
