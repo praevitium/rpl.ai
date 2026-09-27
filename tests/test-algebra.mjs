@@ -77,6 +77,10 @@ import { assert, assertThrows } from './helpers.mjs';
          'EVAL keeps a large Σ exact');
   assert(format(sum('Σ(k,k,1,10)', 'EVAL')).replace(/\.$/, '') === '55', 'Σ binds its index even where k names a constant');
   assert(isSymbolic(sum('Σ(k,k,1,M)', 'EVAL')), 'a Σ with a symbolic bound stays symbolic');
+  const factored = new Stack();
+  factored.push(Symbolic(parseAlgebra('338350')));
+  lookup('FACTOR').fn(factored);
+  assert(format(factored.peek(1)) === '`2*5^2*67*101`', `FACTOR factors an integer held in an expression (got ${format(factored.peek(1))})`);
 }
 {
   // unary minus
@@ -3952,10 +3956,8 @@ giac._setFixture('laplace(1,x,x)', '1/x');
   s.push(Symbolic(parseAlgebra('1/X')));
   lookup('ILAP').fn(s);
   const out = s.pop();
-  // Expect Num(1) which may unwrap to Real(1) via _pushSubstResult-style
-  // collapse — here we pushed a Symbolic AST, so it stays Symbolic.
-  assert(isSymbolic(out) && out.expr.kind === 'num' && out.expr.value === 1,
-    `session058: ILAP(1/X) = 1`);
+  assert((isReal(out) || isInteger(out)) && Number(isReal(out) ? out.value.toNumber() : out.value) === 1,
+    `session058: ILAP(1/X) = 1, pushed as a number`);
 }
 
 {
@@ -4896,8 +4898,8 @@ giac._setFixtures({
   s.push(Symbolic(parseAlgebra('SIN(X)^2+COS(X)^2')));
   lookup('TSIMP').fn(s);
   const out = s.pop();
-  assert(isSymbolic(out) && out.expr.kind === 'num' && out.expr.value === 1,
-    'session061: TSIMP(SIN(X)^2+COS(X)^2) = 1');
+  assert((isReal(out) || isInteger(out)) && Number(isReal(out) ? out.value.toNumber() : out.value) === 1,
+    'session061: TSIMP(SIN(X)^2+COS(X)^2) = 1, pushed as a number');
 }
 
 {
@@ -4905,7 +4907,7 @@ giac._setFixtures({
   s.push(Symbolic(parseAlgebra('COS(X)^2+SIN(X)^2')));
   lookup('TSIMP').fn(s);
   const out = s.pop();
-  assert(out.expr.kind === 'num' && out.expr.value === 1,
+  assert((isReal(out) || isInteger(out)) && Number(isReal(out) ? out.value.toNumber() : out.value) === 1,
     'session061: TSIMP(COS(X)^2+SIN(X)^2) = 1 (order-independent)');
 }
 
@@ -4950,7 +4952,7 @@ giac._setFixtures({
   s.push(Symbolic(parseAlgebra('SIN(A)^2+COS(A)^2+5')));
   lookup('TSIMP').fn(s);
   const out = s.pop();
-  assert(out.expr.kind === 'num' && out.expr.value === 6,
+  assert((isReal(out) || isInteger(out)) && Number(isReal(out) ? out.value.toNumber() : out.value) === 6,
     'session061: TSIMP(SIN(A)^2+COS(A)^2+5) folds to 6');
 }
 
@@ -5217,7 +5219,7 @@ giac._setFixtures({
   s.push(Symbolic(parseAlgebra('DIRAC(X)')));
   lookup('LAPLACE').fn(s);
   const out = s.pop();
-  assert(out.expr.kind === 'num' && out.expr.value === 1,
+  assert((isReal(out) || isInteger(out)) && Number(isReal(out) ? out.value.toNumber() : out.value) === 1,
     'session061: LAPLACE(δ(X)) = 1');
 }
 

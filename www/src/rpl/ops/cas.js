@@ -7,6 +7,10 @@ import { getComplexMode, getCasVx, setCasVx } from '../state.js';
 import { register, lookup, OPS } from './registry.js';
 import { _ZERO, _astToRplValue, _isSymOperand, _toAst, _withListUnary, _withTaggedUnary, _withVMUnary } from './internal.js';
 
+function _pushCasResult(s, ast) {
+  s.push(ast && ast.kind === 'num' ? _astToRplValue(ast) : Symbolic(ast));
+}
+
 
 
 /* ------------------------------------------------------------------
@@ -106,7 +110,7 @@ register('COLLECT', (s) => {
       const expr = s.pop();
       if (!giac.isReady()) throw new RPLError('CAS not ready');
       const cmd = buildGiacCmd(expr.expr, (e) => `collect(${e},${varName})`, [varName]);
-      s.push(Symbolic(giacToAst(giac.caseval(cmd))));
+      _pushCasResult(s, giacToAst(giac.caseval(cmd)));
       return;
     }
   }
@@ -116,7 +120,7 @@ register('COLLECT', (s) => {
   if (isSymbolic(v)) {
     if (!giac.isReady()) throw new RPLError('CAS not ready');
     const cmd = buildGiacCmd(v.expr, (e) => `simplify(${e})`);
-    s.push(Symbolic(giacToAst(giac.caseval(cmd))));
+    _pushCasResult(s, giacToAst(giac.caseval(cmd)));
     return;
   }
   if (isReal(v) || isInteger(v) || isName(v)) {
@@ -143,7 +147,7 @@ register('SIMPLIFY', (s) => {
   if (isSymbolic(v)) {
     if (!giac.isReady()) throw new RPLError('CAS not ready');
     const cmd = buildGiacCmd(v.expr, (e) => `simplify(${e})`);
-    s.push(Symbolic(giacToAst(giac.caseval(cmd))));
+    _pushCasResult(s, giacToAst(giac.caseval(cmd)));
     return;
   }
   if (isReal(v) || isInteger(v) || isName(v)) { s.push(v); return; }
@@ -175,7 +179,8 @@ register('SIMPLIFY', (s) => {
    so FACTOR remains composition-safe.
    ------------------------------------------------------------------ */
 register('FACTOR', (s) => {
-  const v = s.pop();
+  const popped = s.pop();
+  const v = isSymbolic(popped) && popped.expr.kind === 'num' ? _astToRplValue(popped.expr) : popped;
 
   // Symbolic input: route to Giac.  Convert the AST to a Giac expression
   // string, call factor(...), then parse Giac's output back into an AST.
@@ -185,9 +190,7 @@ register('FACTOR', (s) => {
       throw new RPLError('CAS not ready');
     }
     const cmd = buildGiacCmd(v.expr, (e) => `factor(${e})`);
-    const giacResult = giac.caseval(cmd);
-    const ast = giacToAst(giacResult);
-    s.push(Symbolic(ast));
+    _pushCasResult(s, giacToAst(giac.caseval(cmd)));
     return;
   }
 
@@ -521,9 +524,8 @@ function coerceToAst(v) {
 /** Push the simplified result of a SUBST — unwrap Num to Real for
  *  users who substitute numeric values into every free variable. */
 function _pushSubstResult(s, ast) {
-  if (ast && ast.kind === 'num') { s.push(_astToRplValue(ast)); return; }
   if (ast && ast.kind === 'var') { s.push(Name(ast.name)); return; }
-  s.push(Symbolic(ast));
+  _pushCasResult(s, ast);
 }
 
 
@@ -952,9 +954,7 @@ register('PREVAL', (s) => {
     (e) => `simplify(subst(${e},${varName}=${bG})-subst(${e},${varName}=${aG}))`,
     extra,
   );
-  const diff = giacToAst(giac.caseval(cmd));
-  if (diff && diff.kind === 'num') { s.push(_astToRplValue(diff)); return; }
-  s.push(Symbolic(diff));
+  _pushCasResult(s, giacToAst(giac.caseval(cmd)));
 }, { category: 'CAS / symbolic', categoryOrder: 5, label: "PREVAL" });
 
 
@@ -1161,7 +1161,7 @@ register('LAPLACE', (s) => {
     (e) => `laplace(${e},${varName},${varName})`,
     [varName],
   );
-  s.push(Symbolic(giacToAst(giac.caseval(cmd))));
+  _pushCasResult(s, giacToAst(giac.caseval(cmd)));
 }, { category: 'CAS / symbolic', categoryOrder: 31, label: "LAPLACE" });
 
 
@@ -1178,7 +1178,7 @@ register('ILAP', (s) => {
     (e) => `ilaplace(${e},${varName},${varName})`,
     [varName],
   );
-  s.push(Symbolic(giacToAst(giac.caseval(cmd))));
+  _pushCasResult(s, giacToAst(giac.caseval(cmd)));
 }, { category: 'CAS / symbolic', categoryOrder: 32, label: "ILAP" });
 
 
@@ -1889,7 +1889,7 @@ register('TSIMP', (s) => {
   if (!isSymbolic(v)) throw new RPLError('Bad argument type');
   if (!giac.isReady()) throw new RPLError('CAS not ready');
   const cmd = buildGiacCmd(v.expr, (e) => `tsimplify(${e})`);
-  s.push(Symbolic(giacToAst(giac.caseval(cmd))));
+  _pushCasResult(s, giacToAst(giac.caseval(cmd)));
 }, { category: 'CAS / symbolic', categoryOrder: 19, label: "TSIMP" });
 
 
@@ -2089,7 +2089,7 @@ register('PROPFRAC', (s) => {
   if (isSymbolic(v)) {
     if (!giac.isReady()) throw new RPLError('CAS not ready');
     const cmd = buildGiacCmd(v.expr, (e) => `propfrac(${e})`);
-    s.push(Symbolic(giacToAst(giac.caseval(cmd))));
+    _pushCasResult(s, giacToAst(giac.caseval(cmd)));
     return;
   }
   if (isRational(v)) {
@@ -2099,7 +2099,7 @@ register('PROPFRAC', (s) => {
     // plain Symbolic sum.
     if (!giac.isReady()) throw new RPLError('CAS not ready');
     const cmd = buildGiacCmd(_toAst(v), (e) => `propfrac(${e})`);
-    s.push(Symbolic(giacToAst(giac.caseval(cmd))));
+    _pushCasResult(s, giacToAst(giac.caseval(cmd)));
     return;
   }
   if (isReal(v) || isInteger(v) || isName(v)) {
@@ -2115,7 +2115,7 @@ register('PARTFRAC', (s) => {
   if (isSymbolic(v)) {
     if (!giac.isReady()) throw new RPLError('CAS not ready');
     const cmd = buildGiacCmd(v.expr, (e) => `partfrac(${e})`);
-    s.push(Symbolic(giacToAst(giac.caseval(cmd))));
+    _pushCasResult(s, giacToAst(giac.caseval(cmd)));
     return;
   }
   if (isReal(v) || isInteger(v) || isRational(v) || isName(v)) {
@@ -2133,7 +2133,7 @@ register('COSSIN', (s) => {
   if (isSymbolic(v)) {
     if (!giac.isReady()) throw new RPLError('CAS not ready');
     const cmd = buildGiacCmd(v.expr, (e) => `tan2sincos(${e})`);
-    s.push(Symbolic(giacToAst(giac.caseval(cmd))));
+    _pushCasResult(s, giacToAst(giac.caseval(cmd)));
     return;
   }
   if (isReal(v) || isInteger(v) || isRational(v) || isName(v)) {
@@ -2158,7 +2158,7 @@ register('LIN', (s) => {
   if (isSymbolic(v)) {
     if (!giac.isReady()) throw new RPLError('CAS not ready');
     const cmd = buildGiacCmd(v.expr, (e) => `lin(${e})`);
-    s.push(Symbolic(giacToAst(giac.caseval(cmd))));
+    _pushCasResult(s, giacToAst(giac.caseval(cmd)));
     return;
   }
   if (isReal(v) || isInteger(v) || isRational(v) || isName(v)) {
@@ -2241,11 +2241,7 @@ register('LIMIT', (s) => {
     (e) => `limit(${e},${varName},${valGiac})`,
     [varName],
   );
-  const ast = giacToAst(giac.caseval(cmd));
-  // Numeric-leaf result (Giac returned e.g. `2`) → push as Real so the
-  // caller can do further numeric math without unwrapping a Symbolic.
-  if (ast && ast.kind === 'num') { s.push(_astToRplValue(ast)); return; }
-  s.push(Symbolic(ast));
+  _pushCasResult(s, giacToAst(giac.caseval(cmd)));
 }, { category: 'CAS / symbolic', categoryOrder: 34, label: "LIMIT" });
 
 
