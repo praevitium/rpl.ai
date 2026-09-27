@@ -235,9 +235,12 @@ works through maths / physics / finance problems using the calculator as
 its lab bench.
 
 The assistant runs against an Ollama or OpenAI-compatible endpoint.
-Add one in the ✦ tab (local Ollama is `http://localhost:11434`; Ollama
-Cloud is `https://ollama.com/v1` with an API key) and choose a model.
-Until an endpoint is configured, the tab asks for one.
+Add one in the ✦ tab (local Ollama is `http://localhost:11434`) and
+choose a model. For Ollama's cloud models, run `ollama signin` on the
+machine running Ollama and pick a model ending in `-cloud`; browsers
+can't call `https://ollama.com` directly. If you open rpl.ai from
+another machine, add its address to `OLLAMA_ORIGINS` where Ollama
+runs. Until an endpoint is configured, the tab asks for one.
 Ollama models that advertise `tools` get native tool calling; models that
 advertise `thinking` (Qwen3, DeepSeek-R1, gpt-oss, …) reason before
 answering (a checkbox turns that off); the context window you pick is
