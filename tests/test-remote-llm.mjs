@@ -1,7 +1,7 @@
 import {
   toOpenAIBase, toOllamaBase, isOllamaCloudUrl, bearerHeaders,
   takeSSEFrames, takeNDJSONLines, summarizeRun, pickContextLength,
-  chooseNumCtx, normalizeToolCall, RemoteLLM,
+  chooseNumCtx, normalizeToolCall, RemoteLLM, explainConnectionError,
 } from '../www/src/ai/remote-llm.js';
 import { assert } from './helpers.mjs';
 
@@ -529,6 +529,30 @@ const frame = (obj) => 'data: ' + JSON.stringify(obj);
     try { await llm.load('nope'); } catch (e) { msg = e.message; }
     assert(/not available on the server/.test(msg) && llm.status === 'error',
            'RemoteLLM.load reports a missing Ollama model plainly');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+}
+
+{
+  const origFetch = globalThis.fetch;
+  const failed = new TypeError('Failed to fetch');
+  try {
+    globalThis.fetch = async () => ({ type: 'opaque', status: 0 });
+    let msg = await explainConnectionError('http://alpha:11434/v1', failed, 'http://10.0.0.22:5050');
+    assert(msg.includes("refused this page's origin (http://10.0.0.22:5050)") && msg.includes('OLLAMA_ORIGINS'),
+           'explainConnectionError: a server that answers but refuses the origin points at OLLAMA_ORIGINS');
+    globalThis.fetch = async () => { throw new TypeError('Failed to fetch'); };
+    msg = await explainConnectionError('http://alpha:11434/v1', failed, 'http://10.0.0.22:5050');
+    assert(msg.startsWith('Nothing answered at alpha:11434'),
+           'explainConnectionError: silence is reported as nothing answering');
+    msg = await explainConnectionError('https://ollama.com/v1', failed, 'http://10.0.0.22:5050');
+    assert(msg.includes('ollama signin') && msg.includes('-cloud'),
+           'explainConnectionError: ollama.com explains CORS and the -cloud route');
+    msg = await explainConnectionError('http://alpha:11434', failed, 'https://calc.example.com');
+    assert(msg.includes('HTTPS'), 'explainConnectionError: an https page calling http explains the mixed-content block');
+    msg = await explainConnectionError('http://alpha:11434', new Error('HTTP 401 — check the API key'), 'http://x');
+    assert(msg === 'HTTP 401 — check the API key', 'explainConnectionError: other errors pass through unchanged');
   } finally {
     globalThis.fetch = origFetch;
   }

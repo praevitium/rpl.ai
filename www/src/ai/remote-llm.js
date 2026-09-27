@@ -54,6 +54,32 @@ export function toOllamaBase(typed) {
     .replace(/\/api$/, '');
 }
 
+/** Browsers report a refused origin, a closed port and a bad host all as
+ *  "Failed to fetch"; a no-cors probe separates "answered" from "nothing there". */
+export async function explainConnectionError(url, err, origin = globalThis.location?.origin ?? '') {
+  if (!(err instanceof TypeError)) return err?.message ?? String(err);
+  if (isOllamaCloudUrl(url)) {
+    return 'ollama.com does not accept requests from a web page (it sends no CORS headers). '
+      + 'Run cloud models through your own Ollama instead: run `ollama signin` there, '
+      + 'then choose a model whose name ends in -cloud.';
+  }
+  const base = toOllamaBase(url);
+  let host = base;
+  try { host = new URL(base).host; } catch { /* keep the typed text */ }
+  if (origin.startsWith('https:') && base.startsWith('http:')) {
+    return `This page is served over HTTPS, so the browser blocks plain-HTTP requests to ${host}. `
+      + 'Open the app over http, or serve the endpoint over https.';
+  }
+  try {
+    await fetch(`${base}/api/version`, { mode: 'no-cors' });
+  } catch {
+    return `Nothing answered at ${host}. Check the address and port, that Ollama is running, `
+      + 'and that it listens on the network (OLLAMA_HOST=0.0.0.0).';
+  }
+  return `${host} answered but refused this page's origin (${origin}). `
+    + `Add ${origin} to OLLAMA_ORIGINS where Ollama runs, then restart Ollama.`;
+}
+
 /** Headers for an Ollama or OpenAI-compatible request. A non-empty key
  *  is sent as `Authorization: Bearer`. Local Ollama is left anonymous. */
 export function bearerHeaders(apiKey, extra = {}) {
@@ -310,7 +336,8 @@ export class RemoteLLM {
       this._setStatus('ready', this._isOllama ? 'Ready (Ollama)' : 'Ready (remote)');
     } catch (err) {
       this._loadingModelId = null;
-      this._setStatus('error', `Remote endpoint unreachable: ${err.message ?? err}`);
+      const why = await explainConnectionError(this._endpoint, err);
+      this._setStatus('error', err instanceof TypeError ? why : `Remote endpoint unreachable: ${why}`);
       throw err;
     }
   }

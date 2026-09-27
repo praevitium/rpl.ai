@@ -57,7 +57,9 @@
         that restores the step-1 snapshot.
    ================================================================= */
 
-import { RemoteLLM, toOpenAIBase, toOllamaBase, isOllamaCloudUrl, bearerHeaders } from './remote-llm.js';
+import {
+  RemoteLLM, toOpenAIBase, toOllamaBase, isOllamaCloudUrl, bearerHeaders, explainConnectionError,
+} from './remote-llm.js';
 import { buildSystemPrompt, TOOL_SCHEMAS } from './system-prompt.js';
 
 // Diagnostic logging — every flow-control transition in this module
@@ -783,9 +785,6 @@ async function fetchRemoteModels(url, apiKey = '') {
   const openaiBase = toOpenAIBase(url);
   const ollamaBase = toOllamaBase(url);
   const headers = bearerHeaders(apiKey);
-  if (isOllamaCloudUrl(url) && !String(apiKey || '').trim()) {
-    throw new Error('Ollama Cloud needs an API key');
-  }
 
   const fromOllama = async () => {
     const r = await fetch(ollamaBase + '/api/tags', { method: 'GET', headers });
@@ -1375,8 +1374,9 @@ export class ChatBot {
     help.className = 'cb-remote-help';
     help.textContent =
       'For local Ollama the URL is http://localhost:11434 — models you have pulled '
-      + 'appear below once it is reachable. Ollama Cloud is https://ollama.com/v1 and needs an API key. '
-      + 'Any OpenAI-compatible server also works. '
+      + 'appear below once it is reachable. For Ollama cloud models, run `ollama signin` on that '
+      + 'machine and pick a model ending in -cloud. Any OpenAI-compatible server that accepts '
+      + 'browser requests also works. '
       + 'Ollama models that support tools and thinking get native tool calling and reasoning.';
     wrap.appendChild(help);
 
@@ -1515,7 +1515,9 @@ export class ChatBot {
         modelSelect.appendChild(placeholder);
         modelSelect.disabled = true;
         statusEl.textContent = '';
-        errEl.textContent = `Couldn't reach ${url}: ${err.message}`;
+        const why = await explainConnectionError(url, err);
+        if (myToken !== fetchToken) return;
+        errEl.textContent = err instanceof TypeError ? why : `Couldn't reach ${url}: ${why}`;
       }
     };
     urlInput.addEventListener('input', () => {
