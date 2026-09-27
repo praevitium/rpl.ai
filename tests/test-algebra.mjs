@@ -275,12 +275,8 @@ import { assert, assertThrows } from './helpers.mjs';
          (isReal(out) && out.value.eq(2)),
          "result is 2 (as Symbolic or Integer); got: " +
          (isSymbolic(out) ? formatAlgebra(out.expr) : JSON.stringify(out)));
-  // After simplify, the derivative of 2*X + 3 wrt X is 2 (a Num).
-  // formatStackTop then renders the Symbolic wrapper — accept either
-  // form, but the visible-to-user rendering must say 2.
   const rendered = formatStackTop(out);
-  assert(rendered === "`2`" || rendered === '2' || rendered === "2",
-         `keyboard 'X^2+3*X+1' DERIV renders as '${rendered}'`);
+  assert(rendered === '2.', `DERIV of 2*X+3 renders a plain number, not a wrapped one (got '${rendered}')`);
   giac._clear();
 }
 
@@ -1059,6 +1055,15 @@ import { assert, assertThrows } from './helpers.mjs';
 // single strip would leave a leading `"` in the string handed to
 // parseAlgebra and trigger `Unexpected character '"' at pos 0`.  The
 // strip loops until stable; these tests pin that behaviour.
+{
+  const { stripGiacApproxSuffix } = await import('../www/src/rpl/cas/giac-convert.mjs');
+  assert(stripGiacApproxSuffix('√2=1.41421356237') === '√2', 'Giac approx suffix: dropped after a constant');
+  assert(stripGiacApproxSuffix('exp(1)=2.71828182846') === 'exp(1)', 'Giac approx suffix: dropped after a function of a constant');
+  assert(stripGiacApproxSuffix('2^60=1.15292150461e+18') === '2^60', 'Giac approx suffix: dropped before an exponent form');
+  assert(stripGiacApproxSuffix('X=2.5') === 'X=2.5', 'Giac approx suffix: an equation in a variable is kept');
+  assert(stripGiacApproxSuffix('X=Y') === 'X=Y', 'Giac approx suffix: a symbolic equation is kept');
+}
+
 {
   const { stripGiacQuotes } = await import('../www/src/rpl/cas/giac-convert.mjs');
 

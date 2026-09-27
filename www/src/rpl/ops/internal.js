@@ -116,6 +116,11 @@ export function _astToRplValue(ast) {
 }
 
 
+export function _pushCasResult(s, ast) {
+  const leaf = ast?.kind === 'neg' ? ast.arg : ast;
+  s.push(leaf?.kind === 'num' ? _astToRplValue(ast) : Symbolic(ast));
+}
+
 /** Decompose a Symbolic value one level: return the sequence of
  *  values OBJ→ should push, with a trailing Integer count.
  *

@@ -1856,17 +1856,18 @@ register('PCAR', (s) => {
 register('CHARPOL', (s) => { OPS.get('PCAR').fn(s); }, { category: 'Vectors / matrices', categoryOrder: 47, label: "CHARPOL" });
 
 
+function _eigenvalueParts(matStr) {
+  const raw = giac.caseval(`eigenvals(${matStr})`);
+  const parts = splitGiacList(/^[[a-z]/.test(raw) ? raw : `[${raw}]`);
+  if (parts === null) throw new RPLError('Bad argument value');
+  return parts;
+}
+
 register('EGVL', (s) => {
   const { matrix } = _popSquareMatrix(s);
   if (!giac.isReady()) throw new RPLError('CAS not ready');
   const matStr = _matrixToGiacStr(matrix);
-  const raw = giac.caseval(`eigenvals(${matStr})`);
-  // `eigenvals` prints a flat `[λ1, λ2, …]` list per Xcas convention.
-  // If Giac (or a future mock) returns something else, splitGiacList
-  // yields null; surface that as `Bad argument value` so the user gets
-  // a clean error instead of a garbled result.
-  const parts = splitGiacList(raw);
-  if (parts === null) throw new RPLError('Bad argument value');
+  const parts = _eigenvalueParts(matStr);
   const items = parts.map((elt) => {
     const ast = giacToAst(elt);
     return _astToRplValue(ast);
@@ -1918,9 +1919,7 @@ register('EGV', (s) => {
   });
 
   // --- eigenvalue vector --- (same call EGVL uses → same ordering)
-  const evalRaw = giac.caseval(`eigenvals(${matStr})`);
-  const evalParts = splitGiacList(evalRaw);
-  if (evalParts === null) throw new RPLError('Bad argument value');
+  const evalParts = _eigenvalueParts(matStr);
   const evalItems = evalParts.map((elt) => _astToRplValue(giacToAst(elt)));
 
   // Push matrix first (it ends up at level 2), then the vector.

@@ -5,11 +5,7 @@ import { buildGiacCmd, giacToAst, splitGiacList, astToGiac } from '../cas/giac-c
 import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, isKnownFunction } from '../algebra.js';
 import { getComplexMode, getCasVx, setCasVx } from '../state.js';
 import { register, lookup, OPS } from './registry.js';
-import { _ZERO, _astToRplValue, _isSymOperand, _toAst, _withListUnary, _withTaggedUnary, _withVMUnary } from './internal.js';
-
-function _pushCasResult(s, ast) {
-  s.push(ast && ast.kind === 'num' ? _astToRplValue(ast) : Symbolic(ast));
-}
+import { _ZERO, _astToRplValue, _pushCasResult, _isSymOperand, _toAst, _withListUnary, _withTaggedUnary, _withVMUnary } from './internal.js';
 
 
 
@@ -60,8 +56,7 @@ register('EXPAND', (s) => {
   if (isSymbolic(v)) {
     if (!giac.isReady()) throw new RPLError('CAS not ready');
     const cmd = buildGiacCmd(v.expr, (e) => `expand(${e})`);
-    const ast = giacToAst(giac.caseval(cmd));
-    s.push(Symbolic(ast));
+    _pushCasResult(s, giacToAst(giac.caseval(cmd)));
     return;
   }
   if (isReal(v) || isInteger(v) || isName(v)) {
@@ -544,8 +539,7 @@ register('DERIV', (s) => {
   if (isSymbolic(expr)) {
     if (!giac.isReady()) throw new RPLError('CAS not ready');
     const cmd = buildGiacCmd(expr.expr, (e) => `diff(${e},${varName})`, [varName]);
-    const ast = giacToAst(giac.caseval(cmd));
-    s.push(Symbolic(ast));
+    _pushCasResult(s, giacToAst(giac.caseval(cmd)));
     return;
   }
   // Constant shortcut — number → 0.

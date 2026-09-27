@@ -5,7 +5,7 @@ import { getCasModulo, setCasModulo } from '../state.js';
 import { giac } from '../cas/giac-engine.mjs';
 import { buildGiacCmd, giacToAst, astToGiac } from '../cas/giac-convert.mjs';
 import { register, lookup } from './registry.js';
-import { FALSE, TRUE, _ONE, _ZERO, _astToRplValue, _bigFactorial, _gamma, _isSymOperand, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary } from './internal.js';
+import { FALSE, TRUE, _ONE, _ZERO, _astToRplValue, _bigFactorial, _pushCasResult, _gamma, _isSymOperand, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary } from './internal.js';
 
 
 
@@ -395,7 +395,7 @@ function _modBinary(s, intOp, giacOp) {
     AstBin(giacOp, lAst, rAst),
     (e) => `(${e}) mod ${m.toString()}`,
   );
-  s.push(Symbolic(giacToAst(giac.caseval(cmd))));
+  _pushCasResult(s, giacToAst(giac.caseval(cmd)));
 }
 
 
@@ -448,7 +448,7 @@ register('POWMOD', (s) => {
     AstBin('+', lAst, rAst),
     (_) => `powmod(${astToGiac(lAst)},${astToGiac(rAst)},${m.toString()})`,
   );
-  s.push(Symbolic(giacToAst(giac.caseval(cmd))));
+  _pushCasResult(s, giacToAst(giac.caseval(cmd)));
 }, { category: 'Integer / number theory', categoryOrder: 23, label: "POWMOD" });
 
 
