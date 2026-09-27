@@ -7153,3 +7153,16 @@ function _arrayEq(a, b) {
   assert(isReal(s.peek()) && Math.abs(s.peek().value - (-0.140981697886930)) < 1e-12,
     'session382: Ci(Integer 4) = -0.140981697886… (Z arm == R arm, series boundary)');
 }
+{
+  const s = new Stack();
+  s.push(Integer(-8n)); s.push(Integer(3n));
+  lookup('XROOT').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.eq(-2), 'XROOT takes the real odd root of a negative number');
+}
+{
+  const s = new Stack();
+  s.push(Integer(-1n)); s.push(Real(0.5));
+  lookup('^').fn(s);
+  const v = s.peek();
+  assert(isComplex(v) && v.re === 0 && v.im === 1, `^ with a negative base and fractional exponent is complex (got ${v.re},${v.im})`);
+}

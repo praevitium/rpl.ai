@@ -286,6 +286,12 @@ export function _scalarBinary(op, a, b) {
     }
     return _rationalBinary(op, p.a, p.b);
   }
+  if (op === '^' && p.a.isNegative() && !p.b.isInteger()) {
+    const modulus = Decimal.pow(p.a.neg(), p.b).toNumber();
+    const angle = Math.PI * p.b.toNumber();
+    const snap = (x) => (Math.abs(x) < modulus * 1e-15 ? 0 : x);
+    return Complex(snap(modulus * Math.cos(angle)), snap(modulus * Math.sin(angle)));
+  }
   return Real(realBinary(op, p.a, p.b));
 }
 

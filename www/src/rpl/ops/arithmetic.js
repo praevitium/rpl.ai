@@ -492,6 +492,15 @@ register('XROOT', _withListBinary((s) => {
   const dx = isReal(x) ? x.value
            : new Decimal(isInteger(x) ? x.value.toString() : toRealOrThrow(x));
   if (dx.isZero()) throw new RPLError('Infinite result');
+  const isOddRootOfNegative = ((isInteger(y) && y.value < 0n) || (isReal(y) && y.value.isNegative()))
+    && dx.isInteger() && dx.mod(2).abs().eq(1);
+  if (isOddRootOfNegative) {
+    s.push(isInteger(y) ? Integer(-y.value) : Real(y.value.neg()));
+    s.push(x);
+    lookup('XROOT').fn(s);
+    lookup('NEG').fn(s);
+    return;
+  }
   s.push(y);
   s.push(Real(new Decimal(1).div(dx)));
   lookup('^').fn(s);
