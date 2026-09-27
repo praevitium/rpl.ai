@@ -1325,9 +1325,7 @@ class App {
       const tag = e.target?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       const openK = (e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k';
-      const openSlash = e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey
-        && this.entry.buffer.length === 0;
-      if (openK || openSlash) {
+      if (openK) {
         e.preventDefault();
         e.stopPropagation();
         this.commandPalette.open();

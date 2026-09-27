@@ -128,7 +128,7 @@ concrete improvements:
   indices into the alternating matched/unmatched text runs the overlay
   renders) is a DOM-free matcher+ranker+navigator unit-tested in
   `tests/test-op-search.mjs`.  Overlay ships as `www/src/ui/command-palette.js`:
-  `/` on an empty command line (or Ctrl/Cmd-K) opens it, typing filters
+  Ctrl/Cmd-K opens it (`/` always types, so a line can start with division), typing filters
   `allOps()`, Enter runs the highlighted op, Esc closes.
 - **Contextual help.**  Hovering a command name in the command line
   shows `NAME — AUR one-liner` (`www/src/ui/hover-help.js`), and so
