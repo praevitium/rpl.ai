@@ -42,7 +42,9 @@ export function stackWordAtEvent(ev) {
   return ev.target.closest?.('.value-text') ? textWordAtPoint(ev.clientX, ev.clientY) : null;
 }
 
-export function installCommandHover(host, wordAtEvent) {
+const HIDE_GRACE_MS = 450;
+
+export function installCommandHover(host, wordAtEvent, { onOpenReference } = {}) {
   let entries = null;
   loadCommandReference().then((m) => { entries = m; }).catch(() => {});
 
@@ -51,18 +53,27 @@ export function installCommandHover(host, wordAtEvent) {
   tip.setAttribute('role', 'tooltip');
   document.body.appendChild(tip);
 
-  let timer = null;
+  let showTimer = null;
+  let hideTimer = null;
+  let shownWord = null;
   let mutedTitle = null;
-  const hide = () => {
-    clearTimeout(timer);
+  const hideNow = () => {
+    clearTimeout(showTimer);
+    clearTimeout(hideTimer);
     tip.classList.add('hidden');
+    shownWord = null;
     if (mutedTitle) {
       mutedTitle.el.title = mutedTitle.title;
       mutedTitle = null;
     }
   };
-  const show = (ev) => {
-    const text = commandHelpText(wordAtEvent(ev), entries);
+  const hideSoon = () => {
+    clearTimeout(showTimer);
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(hideNow, HIDE_GRACE_MS);
+  };
+  const show = (ev, word) => {
+    const text = commandHelpText(word, entries);
     if (!text) return;
     const titled = ev.target.closest?.('[title]');
     if (titled) {
@@ -70,16 +81,36 @@ export function installCommandHover(host, wordAtEvent) {
       titled.title = '';
     }
     tip.textContent = text;
+    if (onOpenReference) {
+      const open = document.createElement('button');
+      open.type = 'button';
+      open.className = 'cmd-hover-ref';
+      open.textContent = 'Reference ›';
+      tip.appendChild(open);
+    }
+    shownWord = word;
     tip.classList.remove('hidden');
     tip.style.left = `${Math.max(8, Math.min(ev.clientX + 12, window.innerWidth - 8 - tip.offsetWidth))}px`;
     tip.style.top = `${ev.clientY + 18}px`;
   };
 
   host.addEventListener('mousemove', (ev) => {
-    hide();
-    timer = setTimeout(() => show(ev), HOVER_DELAY_MS);
+    const word = wordAtEvent(ev);
+    if (word && word === shownWord) { clearTimeout(hideTimer); return; }
+    clearTimeout(showTimer);
+    if (shownWord) hideSoon();
+    if (word) showTimer = setTimeout(() => { hideNow(); show(ev, word); }, HOVER_DELAY_MS);
   });
-  host.addEventListener('mouseleave', hide);
-  host.addEventListener('keydown', hide);
-  window.addEventListener('scroll', hide, true);
+  host.addEventListener('mouseleave', hideSoon);
+  host.addEventListener('keydown', hideNow);
+  tip.addEventListener('mouseenter', () => clearTimeout(hideTimer));
+  tip.addEventListener('mouseleave', hideSoon);
+  tip.addEventListener('mousedown', (ev) => ev.preventDefault());
+  tip.addEventListener('click', (ev) => {
+    if (!ev.target.closest('.cmd-hover-ref')) return;
+    const word = shownWord;
+    hideNow();
+    onOpenReference?.(word);
+  });
+  window.addEventListener('scroll', hideNow, true);
 }

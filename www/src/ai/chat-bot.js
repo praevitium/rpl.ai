@@ -1179,8 +1179,16 @@ export class ChatBot {
     this._newChatBtn.textContent = '✱ New';
     this._newChatBtn.addEventListener('click', () => this._newChat());
 
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'cb-newchat-btn';
+    copyBtn.title = 'Copy the conversation as text';
+    copyBtn.textContent = 'Copy';
+    copyBtn.addEventListener('click', () => this._copyTranscript(copyBtn));
+
     header.appendChild(this._statusEl);
     header.appendChild(betaBadge);
+    header.appendChild(copyBtn);
     header.appendChild(this._newChatBtn);
 
     this._loadBtn = document.createElement('button');
@@ -1340,6 +1348,13 @@ export class ChatBot {
 
       const btnRow = document.createElement('div');
       btnRow.className = 'cb-remote-btns';
+      if (!isActive) {
+        const connectBtn = document.createElement('button');
+        connectBtn.type = 'button';
+        connectBtn.className = 'cb-remote-btn cb-remote-btn-primary';
+        connectBtn.textContent = 'Connect';
+        btnRow.appendChild(connectBtn);
+      }
       const editBtn = document.createElement('button');
       editBtn.type = 'button';
       editBtn.className = 'cb-remote-btn';
@@ -1648,6 +1663,18 @@ export class ChatBot {
    *  generation, clears history + the visible bubble list, and re-shows
    *  the starter chips.  The model itself stays loaded — this is purely
    *  a conversation reset, not a model reset. */
+  async _copyTranscript(button) {
+    const text = this._messagesEl?.innerText.trim() ?? '';
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      button.textContent = 'Copied';
+    } catch {
+      button.textContent = 'Copy failed';
+    }
+    setTimeout(() => { button.textContent = 'Copy'; }, 1500);
+  }
+
   _newChat() {
     dlog('newChat: reset (was generating=', this._generating,
          'history len=', this._history.length, ')');

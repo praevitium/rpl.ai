@@ -82,6 +82,7 @@ export class GraphView {
         <div class="pl-kinds" role="group" aria-label="Plot type">${PLOT_KINDS.map(([kind, label, title]) => `<button type="button" class="chip" data-kind="${kind}" title="${escapeHtml(title)}" aria-pressed="${kind === 'function'}">${escapeHtml(label)}</button>`).join('')}</div>
         <div class="sec-h">Traces<button type="button" class="btn ghost" data-gr="from" title="Plot stack level 1">${icon('plus', 'sm')}Level 1</button></div>
         <div class="gr-exprs" aria-label="Traces"></div>
+        <div class="gr-data" hidden><span>Plot the data in</span><button type="button" class="btn" data-gr="data-level1">Level 1</button><button type="button" class="btn" data-gr="data-sigma">ΣDAT</button></div>
         <form class="gr-add">
           <input type="text" class="gr-add-x" spellcheck="false" autocomplete="off" placeholder="SIN(X)" aria-label="Expression" />
           <input type="text" class="gr-add-y hidden" spellcheck="false" autocomplete="off" placeholder="COS(T)" aria-label="Y expression" />
@@ -120,6 +121,8 @@ export class GraphView {
       else if (act === 'reset') this.resetView();
       else if (act === 'trace') this.setTraceMode(!this.tracing);
       else if (act === 'from') this.loadFromStack(1);
+      else if (act === 'data-level1') this.loadData(this._kind, this.app?.stack?.depth ? this.app.stack.peek(1) : null);
+      else if (act === 'data-sigma') this.loadData(this._kind, varRecall('ΣDAT'));
     });
     this.el.querySelector('.pl-range').addEventListener('change', (ev) => {
       const input = ev.target.closest?.('input[data-rng]');
@@ -145,6 +148,10 @@ export class GraphView {
       }
       const row = ev.target.closest?.('.gr-trace');
       if (row?.dataset.trace) this._selectTrace(row.dataset.trace);
+    });
+    this._exprs.addEventListener('change', (ev) => {
+      const box = ev.target.closest?.('input[data-act="toggle"]');
+      if (box) this.toggleTrace(box.dataset.trace);
     });
     this._exprs.addEventListener('input', (ev) => {
       const input = ev.target.closest?.('input.gr-expr');
@@ -217,6 +224,8 @@ export class GraphView {
     if (spec) {
       const fields = spec.fields || [];
       const yField = fields.find(f => f.key === 'exprY');
+      this._form.hidden = !fields.length;
+      this.el.querySelector('.gr-data').hidden = !!fields.length;
       this._addY.classList.toggle('hidden', !yField);
       this._addX.placeholder = fields[0]?.placeholder || 'data from stack / ΣDAT';
       if (yField) {
@@ -583,8 +592,8 @@ export class GraphView {
       return `
       <div class="gr-trace ${t.enabled ? '' : 'off'}${t.id === this._selectedId ? ' selected' : ''}"
            data-trace="${t.id}">
-        <button type="button" class="gr-swatch" data-trace="${t.id}" data-act="toggle"
-                style="--swatch:${t.color}" title="Toggle" aria-label="Toggle"></button>
+        <input type="checkbox" class="gr-show" data-trace="${t.id}" data-act="toggle" ${t.enabled ? 'checked' : ''}
+               style="accent-color:${t.color}" title="Show or hide this trace" aria-label="Show ${escapeHtml(t.label || t.expr || t.kind)}">
         ${body}
         <button type="button" class="mini" data-trace="${t.id}" data-act="push" title="Push it onto the stack" aria-label="Push onto the stack">${icon('down', 'sm')}</button>
         <button type="button" class="mini" data-trace="${t.id}" data-act="remove" title="Remove" aria-label="Remove">${icon('x', 'sm')}</button>

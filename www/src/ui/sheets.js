@@ -3,6 +3,7 @@ import { escapeHtml } from './display.js';
 import { KEYMAP, CONTEXT_LABELS, chordText, isMacPlatform } from './actions.js';
 import { STORAGE_KEY as STACK_STORAGE_KEY, BACKUPS_KEY } from '../rpl/persist.js';
 import { UI_PREFS_KEY, THEMES, TUTOR_STYLES } from './ui-prefs.js';
+import { state as calcState } from '../rpl/state.js';
 
 const THEME_LABELS = Object.freeze({ auto: 'Match system', graphite: 'Graphite (dark)', paper: 'Paper (light)', classic: 'Classic LCD' });
 const CHAT_CONSENT_KEY = 'rpl5050.chatbot.consented.v1';
@@ -46,7 +47,6 @@ export class Sheets {
       this.el.className = 'sheet-wrap';
       this.el.addEventListener('mousedown', (e) => { if (e.target === this.el) this.close(); });
       this.el.addEventListener('click', (e) => this._onClick(e));
-      this.el.addEventListener('change', (e) => this._onChange(e));
       this.host.appendChild(this.el);
     }
     this._render();
@@ -70,13 +70,14 @@ export class Sheets {
   _settingsPageHtml() {
     const { app } = this;
     if (this.page === 'appearance') {
-      const tgl = (on) => `<button type="button" class="tgl" role="switch" aria-pressed="${on}"></button>`;
+      const tgl = (setting, on, label) => `<button type="button" class="tgl" role="switch" aria-pressed="${on}" aria-label="${escapeHtml(label)}" data-sh="toggle" data-setting="${setting}"></button>`;
       return `<h4>Appearance</h4><p>How the calculator looks. Muscle memory — key positions and behavior — never changes.</p>
         <div class="set stack"><b>Theme</b><span>Graphite and Paper follow your system by default; Classic LCD reimagines the original 128×80 display.</span>
           <div class="chipset" role="radiogroup" aria-label="Theme">${THEMES.map((t) => `<button type="button" class="chip${app.prefs.theme === t ? ' on' : ''}" data-sh="theme" data-theme="${t}" role="radio" aria-checked="${app.prefs.theme === t}">${escapeHtml(THEME_LABELS[t])}</button>`).join('')}</div>
         </div>
-        <div class="set"><b>Keypad F-key labels in Minimal view</b><span>Keep the soft-menu row visible for menu work.</span>${tgl(app.prefs.minimalMenu)}</div>
-        <div class="set"><b>Keyboard-shortcut hints</b><span>Show each key's physical-keyboard shortcut while typing.</span>${tgl(app.prefs.hints)}</div>`;
+        <div class="set"><b>Pretty math</b><span>Show expressions, matrices and lists on the stack in textbook form.</span>${tgl('textbook', !!calcState.textbookMode, 'Pretty math')}</div>
+        <div class="set"><b>Keypad F-key labels in Minimal view</b><span>Keep the soft-menu row visible for menu work.</span>${tgl('minimalMenu', app.prefs.minimalMenu, 'Menu keys in Minimal view')}</div>
+        <div class="set"><b>Keyboard-shortcut hints</b><span>Show each key's physical-keyboard shortcut on the keypad.</span>${tgl('hints', app.prefs.hints, 'Keyboard-shortcut hints')}</div>`;
     }
     if (this.page === 'assistant') {
       const consented = (() => { try { return localStorage.getItem(CHAT_CONSENT_KEY) === '1'; } catch { return false; } })();
@@ -132,6 +133,7 @@ export class Sheets {
       case 'theme': app.setTheme(b.dataset.theme); this._render(); return;
       case 'open-assistant': this.close(); app.drawers.open('assistant'); return;
       case 'tutor-style': app.setTutorStyle(b.dataset.style); this._render(); return;
+      case 'toggle': this._toggle(b.dataset.setting, b.getAttribute('aria-pressed') !== 'true'); this._render(); return;
       case 'backup': app.exportSnapshot(); return;
       case 'restore': this._pickRestore(); return;
       case 'reset': this._confirmReset = true; this._render(); return;
@@ -139,9 +141,11 @@ export class Sheets {
     }
   }
 
-  _onChange(e) {
-    const t = e.target;
-    if (t.matches?.('[role="switch"]')) return;
+  _toggle(setting, on) {
+    const { app } = this;
+    if (setting === 'textbook') app.setTextbook(on);
+    else if (setting === 'minimalMenu') app.setMinimalMenu(on);
+    else if (setting === 'hints') { app.setPrefs({ hints: on }); app.keypad.update(); }
   }
 
   _pickRestore() {

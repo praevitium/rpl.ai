@@ -464,7 +464,7 @@ export class Drawers {
     return `<div class="vr${isDir ? ' dir' : ''}" draggable="true" data-drag-name="${n}" data-dw="var" data-name="${n}" role="button" tabindex="0" title="${isDir ? `Open ${n}` : `${n}: click to ${value.type === TYPES.PROGRAM ? 'run' : 'put on the stack'}`}">
       <span class="grip" aria-hidden="true">${icon('grip', 'sm')}</span>
       <div class="main"><div class="nm">${isDir ? icon('folder', 'sm') : ''}<span class="nm-text">${n}</span><span class="badge">${escapeHtml(isDir ? 'Folder' : typeName(value))}</span></div><div class="pv">${escapeHtml(preview.length > 120 ? `${preview.slice(0, 119)}…` : preview)}</div></div>
-      <div class="acts">${acts}<button type="button" class="mini" data-dw="var-rename" data-name="${n}" title="Rename ${n}" aria-label="Rename ${n}">${icon('edit', 'sm')}</button><button type="button" class="mini" data-dw="var-download" data-name="${n}" title="Download ${n}" aria-label="Download ${n}">${icon('down', 'sm')}</button><button type="button" class="mini danger" data-dw="var-delete" data-name="${n}" title="Delete ${n} (undoable)" aria-label="Delete ${n}">${icon('trash', 'sm')}</button></div>
+      <div class="acts">${acts}<button type="button" class="mini" data-dw="var-move" data-name="${n}" title="Move ${n} to another folder or place" aria-label="Move ${n}">${icon('folder', 'sm')}</button><button type="button" class="mini" data-dw="var-rename" data-name="${n}" title="Rename ${n}" aria-label="Rename ${n}">${icon('edit', 'sm')}</button><button type="button" class="mini" data-dw="var-download" data-name="${n}" title="Download ${n}" aria-label="Download ${n}">${icon('down', 'sm')}</button><button type="button" class="mini danger" data-dw="var-delete" data-name="${n}" title="Delete ${n} (undoable)" aria-label="Delete ${n}">${icon('trash', 'sm')}</button></div>
     </div>`;
   }
 
@@ -620,6 +620,7 @@ export class Drawers {
       case 'var-rcl': e.stopPropagation(); this._recallVar(name); return;
       case 'var-edit': e.stopPropagation(); app.editVariable(name); return;
       case 'var-rename': e.stopPropagation(); this._beginRename(t.closest('.vr'), name); return;
+      case 'var-move': e.stopPropagation(); this._moveMenu(t, name); return;
       case 'var-download': e.stopPropagation(); this._download(name); return;
       case 'var-delete': e.stopPropagation(); this._deleteVar(name); return;
       case 'vars-newdir': this._newFolder(t); return;
@@ -862,6 +863,29 @@ export class Drawers {
       app.entry._dropNoOpUndoStep();
       app.notifyError(`Move failed: ${e.message}`);
     }
+  }
+
+  _moveMenu(anchor, name) {
+    const path = currentPath();
+    const entries = [...calcState.current.entries.entries()];
+    const keys = entries.map(([key]) => key);
+    const at = keys.indexOf(name);
+    const targets = {
+      ...(path.length > 1 ? { up: { label: `Up to ${path.at(-2)}`, kind: 'crumb', index: path.length - 2 } } : {}),
+      ...Object.fromEntries(entries.filter(([key, v]) => v.type === TYPES.DIRECTORY && key !== name)
+        .map(([key]) => [`into:${key}`, { label: `Into ${key}`, kind: 'into', name: key }])),
+      ...(at > 0 ? { earlier: { label: 'Earlier in the list', kind: 'reorder', name: keys[at - 1], zone: 'before' } } : {}),
+      ...(at < keys.length - 1 ? { later: { label: 'Later in the list', kind: 'reorder', name: keys[at + 1], zone: 'after' } } : {}),
+    };
+    const html = `<h6>Move ${escapeHtml(name)}</h6>${Object.entries(targets).map(([value, t]) => `<button type="button" class="opt" data-v="${escapeHtml(value)}"><span class="ck">${icon(t.kind === 'reorder' ? (value === 'earlier' ? 'up' : 'down') : 'folder', 'sm')}</span><b>${escapeHtml(t.label)}</b></button>`).join('')}`;
+    this.app.popover.open(anchor, html, {
+      label: `Move ${name}`,
+      onClick: (target) => {
+        this.app.popover.close({ restoreFocus: false });
+        const chosen = targets[target.dataset.v];
+        if (chosen) this._performDrop(name, chosen);
+      },
+    });
   }
 
   _bindGrip(grip) {

@@ -119,8 +119,9 @@ class App {
       onDeleteEmpty: () => this._runChord('Delete'),
     });
     this.input.attachEditorChrome();
-    installCommandHover(this.display.cmdline, entryWordAtEvent(this.entry));
-    installCommandHover(this.display.stackView, stackWordAtEvent);
+    const openReference = (word) => this.drawers.showReference(word.toUpperCase());
+    installCommandHover(this.display.cmdline, entryWordAtEvent(this.entry), { onOpenReference: openReference });
+    installCommandHover(this.display.stackView, stackWordAtEvent, { onOpenReference: openReference });
 
     this._applyPrefs();
     this.showMenu(this.prefs.menu ?? (varOrder().length ? 'VARS' : 'STACK'), { remember: false });
@@ -219,6 +220,10 @@ class App {
     this._applyPrefs();
     this.renderAll();
     if (on) this.toast('Minimal view. Press it again, or the corner button, to return.', { action: 'Leave', onAction: () => this.setMinimal(false) });
+  }
+
+  setTextbook(on) {
+    this.entry.safeRun(() => lookup(on ? 'TEXTBOOK' : 'FLAT').fn(this.stack, this.entry));
   }
 
   setMinimalMenu(on) {
@@ -914,7 +919,7 @@ class App {
       title: 'Pretty math: show expressions, matrices and lists in textbook form',
       toggle: true,
       on: () => calcState.textbookMode,
-      onPress: () => this.entry.safeRun(() => lookup(calcState.textbookMode ? 'FLAT' : 'TEXTBOOK').fn(this.stack, this.entry)),
+      onPress: () => this.setTextbook(!calcState.textbookMode),
     });
     this.menuKind = 'MODES';
     this.menuAll = slots;

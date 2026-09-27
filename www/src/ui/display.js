@@ -148,6 +148,7 @@ export class Display {
     this._nextId = 1;
     this._dragLevel = null;
     this._live = null;
+    this._more = null;
     this._installHandlers();
   }
 
@@ -197,6 +198,7 @@ export class Display {
       this._dragLevel = null;
       view.querySelectorAll('.dragging, .drag-over').forEach((el) => el.classList.remove('dragging', 'drag-over'));
     });
+    view.addEventListener('scroll', () => this._updateMore(), { passive: true });
     this.statusLine?.addEventListener?.('click', (ev) => {
       const el = ev.target.closest?.('[data-status]');
       if (el) this.onStatusAction?.(el.dataset.status, el.dataset, el);
@@ -230,6 +232,7 @@ export class Display {
     if (!depth && !this.ghosts?.length) {
       view.innerHTML = this.emptyHtml;
       view.dataset.empty = '1';
+      this._updateMore();
       return;
     }
     delete view.dataset.empty;
@@ -263,6 +266,23 @@ export class Display {
     if (selected) selected.scrollIntoView?.({ block: 'nearest' });
     else view.scrollTop = view.scrollHeight;
     if (!this.ghosts && !this.marks && before.size && !prefersReducedMotion()) this._animate(before);
+    this._updateMore();
+  }
+
+  _updateMore() {
+    const view = this.stackView;
+    if (!view?.parentElement) return;
+    const above = [...view.querySelectorAll('.st-row[data-key]')].filter((row) => row.offsetTop + row.offsetHeight <= view.scrollTop + 1).length;
+    if (!this._more) {
+      this._more = document.createElement('button');
+      this._more.type = 'button';
+      this._more.className = 'st-more';
+      this._more.addEventListener('click', () => view.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' }));
+      view.parentElement.appendChild(this._more);
+    }
+    this._more.hidden = !above;
+    this._more.textContent = `${above} more level${above === 1 ? '' : 's'} above`;
+    this._more.style.top = `${view.offsetTop + 6}px`;
   }
 
   _animate(before) {
