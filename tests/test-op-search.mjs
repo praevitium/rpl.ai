@@ -272,3 +272,19 @@ import { assert } from './helpers.mjs';
   assert(highlightMatches('A<B', 'A') === '<mark>A</mark>&lt;B',
     'highlightMatches: escapes unmatched HTML');
 }
+
+{
+  const { wordBeforeCursor, completions, isInsideAlgebraic } = await import('../www/src/ui/autocomplete.js');
+  const at = wordBeforeCursor('2 3 SW', 6);
+  assert(at?.word === 'SW' && at.from === 4, 'wordBeforeCursor: the word ending at the cursor and where it starts');
+  assert(wordBeforeCursor('`SI', 3)?.word === 'SI', 'wordBeforeCursor: an algebraic quote starts a word');
+  assert(wordBeforeCursor('"SW', 3) === null, 'wordBeforeCursor: nothing inside a string');
+  assert(wordBeforeCursor('2 ', 2) === null, 'wordBeforeCursor: nothing right after a space');
+  const rows = completions('SW', { names: allOps() });
+  assert(rows[0].name === 'SWAP' && rows.length <= 6, 'completions: the shortest prefix match ranks first, at most six rows');
+  const mine = completions('MY', { names: allOps(), variables: ['MYVAR'] });
+  assert(mine[0].name === 'MYVAR' && mine[0].kind === 'variable', 'completions: variables are offered alongside commands');
+  assert(completions('→NU', { names: allOps() })[0].name === '→NUM', 'completions: arrow commands complete from their own spelling');
+  assert(!completions('NU', { names: allOps() }).some((r) => r.name.includes('->')), 'completions: ASCII arrow aliases are not offered twice');
+  assert(isInsideAlgebraic('2 `SI', 3) && !isInsideAlgebraic('`X` SI', 4), 'isInsideAlgebraic: counts the quotes before the word');
+}

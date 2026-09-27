@@ -106,3 +106,41 @@ import { assert } from './helpers.mjs';
   const value = withScratchState(() => 42);
   assert(value === 42, 'withScratchState returns the body\'s value');
 }
+
+{
+  const { previewCommand, isPreviewable } = await import('../www/src/rpl/scratch.js');
+  const { Real, Str } = await import('../www/src/rpl/types.js');
+  const a = Real(1);
+  const b = Real(2);
+  const live = [a, b];
+  const swap = previewCommand('SWAP', live);
+  assert(swap.ok && swap.consumed === 2 && swap.results[0] === b && swap.results[1] === a,
+    'previewCommand: SWAP consumes two levels and returns them swapped');
+  assert(live[0] === a && live[1] === b && live.length === 2, 'previewCommand: the live stack copy is left untouched');
+  const dup = previewCommand('DUP', live);
+  assert(dup.ok && dup.consumed === 0 && dup.results.length === 1 && dup.results[0] === b,
+    'previewCommand: DUP consumes nothing and adds a copy of level 1');
+  const bad = previewCommand('SIN', [Str('hi')]);
+  assert(bad && bad.ok === false && /Bad argument type/.test(bad.error), 'previewCommand: an error comes back as a message');
+  assert(previewCommand('STO', live) === null && !isPreviewable('PURGE') && !isPreviewable('HEX') && !isPreviewable('RAND'),
+    'previewCommand: commands that write variables or modes, or are random, are not previewed');
+  assert(isPreviewable('SIN') && isPreviewable('+') && isPreviewable('ROLL'), 'isPreviewable: stack and math commands are');
+}
+
+{
+  const { previewCommand, isPreviewable } = await import('../www/src/rpl/scratch.js');
+  const { allOps } = await import('../www/src/rpl/ops.js');
+  const { parseEntry } = await import('../www/src/rpl/parser.js');
+  const { captureCalcState } = await import('../www/src/rpl/state.js');
+  const stateText = () => JSON.stringify(captureCalcState(), (k, v) => (typeof v === 'bigint' ? String(v) : v));
+  const writers = new Set();
+  for (const source of ['1 2 3', '{ 1 2 3 } 2', '"abc" 2', '[[1 2][3 4]] 2', '`X^2` `X`', '(1,2) 3', '#FFh 4', '1_m 2_ft']) {
+    const live = parseEntry(source);
+    for (const name of allOps().filter(isPreviewable)) {
+      const before = stateText();
+      previewCommand(name, live);
+      if (stateText() !== before) writers.add(name);
+    }
+  }
+  assert(writers.size === 0, `previewCommand: no previewable command changes calculator state (${[...writers].join(', ') || 'none'})`);
+}

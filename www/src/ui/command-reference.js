@@ -56,9 +56,19 @@ function cleanInline(html) {
   return decodeEntities(String(html).replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
 }
 
+function fewestStackInputs(html) {
+  const inputRows = [...String(html).matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)]
+    .map((row) => [...row[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((cell) => cleanInline(cell[1])))
+    .filter((cells) => cells.includes('→'))
+    .map((cells) => cells.slice(0, cells.indexOf('→')).filter((cell) => cell && cell !== '(nothing)'));
+  const isVariadic = (cell) => /\.\.\.|…/.test(cell.replace(/\{[^}]*\}|\[[^\]]*\]|«[^»]*»|\([^)]*\)/g, ''));
+  if (!inputRows.length || inputRows.some((cells) => cells.some(isVariadic))) return null;
+  return Math.min(...inputRows.map((cells) => cells.length));
+}
+
 /** Parse the whole reference document into a Map keyed by upper-cased
  *  command name.  Each entry:
- *    { name, inApp, type, description, input, output, io, flags,
+ *    { name, inApp, type, description, input, output, io, inputs, flags,
  *      example, seeAlso: string[] }
  *  Text fields are '' when the section lacks them.  First heading wins
  *  on duplicate names (mirrors command-help.js). */
@@ -78,7 +88,7 @@ export function parseCommandReference(html) {
     const body = src.slice(bodyStart, bodyEnd);
     const entry = {
       name, inApp: /class="in-app"/.test(h[1]),
-      type: '', description: '', input: '', output: '', io: '', flags: '',
+      type: '', description: '', input: '', output: '', io: '', inputs: null, flags: '',
       example: '', seeAlso: [],
     };
     // A few manual pages run two commands together under one heading
@@ -92,7 +102,10 @@ export function parseCommandReference(html) {
         case 'description':  first('description', text); break;
         case 'input':        first('input', text); break;
         case 'output':       first('output', text); break;
-        case 'input-output': first('io', text); break;
+        case 'input-output':
+          if (!entry.io) entry.inputs = fewestStackInputs(f[2]);
+          first('io', text);
+          break;
         case 'flags':        first('flags', text); break;
         case 'example':
         case 'result':

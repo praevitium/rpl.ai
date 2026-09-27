@@ -5,9 +5,10 @@ import { Keypad } from './ui/keyboard.js';
 import { MenuBar } from './ui/menubar.js';
 import { AppBar } from './ui/appbar.js';
 import { Drawers, CATEGORIES, familyCommands, UNIT_SYMBOLS, signatureOf } from './ui/drawer.js';
-import { describeError } from './ui/errors.js';
+import { describeError, ERROR_KINDS } from './ui/errors.js';
 import { errorBannerHtml, haltedBannerHtml } from './ui/banner.js';
 import { InputArea } from './ui/input-area.js';
+import { Autocomplete } from './ui/autocomplete.js';
 import { Palette } from './ui/palette.js';
 import { Popover } from './ui/popover.js';
 import { Toasts } from './ui/toast.js';
@@ -32,7 +33,7 @@ import {
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook } from './rpl/ops.js';
-import { evalScratch } from './rpl/scratch.js';
+import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
   isMatrix, isVector, isReal, isInteger,
@@ -73,6 +74,8 @@ class App {
     this.errorBanner = null;
     this._errorShown = '';
     this._noticeShown = '';
+    this.preview = null;
+    this._lineEmpty = true;
 
     this.popover = new Popover($('layPop'));
     this.toasts = new Toasts($('toasts'));
@@ -84,6 +87,7 @@ class App {
     this.keypad = new Keypad({ el: $('keys'), app: this });
     this.menubar = new MenuBar({ el: $('menubar'), app: this });
     this.input = new InputArea({ top: $('inputTop'), body: $('inputBody'), hint: $('inputHint'), cmdline: $('cmdline'), app: this });
+    this.autocomplete = new Autocomplete({ host: $('input'), cmdline: $('cmdline'), app: this });
     this.palette = new Palette({ host: $('layPal'), app: this });
     this.sheets = new Sheets({ host: $('laySheet'), app: this });
 
@@ -150,6 +154,7 @@ class App {
   }
 
   _onStackChange() {
+    this._dropPreview();
     if (this.selection != null) {
       const clamped = clampLevel(this.selection, this.stack.depth);
       this.selection = clamped || null;
@@ -167,6 +172,7 @@ class App {
   }
 
   _onEntryChange() {
+    this.clearPreview();
     if (this.entry.error !== this._errorShown) this._showError(this.entry.error);
     if (this.entry.notice && this.entry.notice !== this._noticeShown) this.toast(this.entry.notice);
     this._noticeShown = this.entry.notice;
@@ -174,6 +180,9 @@ class App {
     if (this.entry.buffer && this.selection != null) this.clearSelection();
     this.input.render();
     this.keypad.update();
+    this.autocomplete.update();
+    const lineEmpty = !this.entry.buffer.trim();
+    if (lineEmpty !== this._lineEmpty) { this._lineEmpty = lineEmpty; this.menubar.render(); }
   }
 
   _onStateChange() {
@@ -239,6 +248,7 @@ class App {
   /* ---------------- banners: errors that explain, halted programs ---------------- */
 
   _showError(message) {
+    this._dropPreview();
     this._errorShown = message;
     this.errorBanner = message ? describeError(message, {
       failure: this.entry.failure,
@@ -246,10 +256,7 @@ class App {
       depth: this.stack.depth,
       line: this.entry.buffer,
       describe: describeValue,
-      signatureOf: (name) => {
-        const entry = this.reference ? findReferenceEntry(this.reference, name) : null;
-        return entry ? signatureOf(entry) : '';
-      },
+      commandInfo: (name) => this.commandInfo(name),
     }) : null;
     const levels = this.errorBanner?.culpritLevels ?? [];
     this.display.marks = levels.length ? Object.fromEntries(levels.map((l) => [l, 'culprit'])) : null;
@@ -339,7 +346,7 @@ class App {
         return v === undefined ? undefined : format(v, displayOpts());
       },
       lookupCommand: (name) => {
-        const entry = this.reference ? findReferenceEntry(this.reference, name) : null;
+        const entry = this.commandInfo(name)?.entry;
         const registered = lookup(name) != null;
         if (!entry) return { text: '', registered, name: String(name ?? '') };
         return { text: formatReferenceEntry(entry), registered: registered || entry.inApp, name: entry.name };
@@ -796,7 +803,9 @@ class App {
     const names = familyCommands(family);
     const slots = names.map((name) => ({
       label: name,
+      command: name,
       title: this._commandTitle(name),
+      blockedReason: () => this._tooFewArgumentsReason(name),
       onPress: () => this.runCommandFromUI(name),
       onPressL: () => { this.entry.type(`${this.entry.buffer && !/\s$/.test(this.entry.buffer) ? ' ' : ''}${name} `); this.entry.focus(); },
       onPressR: () => this.drawers.showReference(name),
@@ -813,8 +822,62 @@ class App {
   }
 
   _commandTitle(name) {
+    const info = this.commandInfo(name);
+    return info ? `${name}: ${shortDescription(info.entry, 100)} · ↰ types it · ↱ opens the reference` : `${name} · ↰ types it · ↱ opens the reference`;
+  }
+
+  commandInfo(name) {
     const entry = this.reference ? findReferenceEntry(this.reference, name) : null;
-    return entry ? `${name}: ${shortDescription(entry, 100)} · ↰ types it · ↱ opens the reference` : `${name} · ↰ types it · ↱ opens the reference`;
+    return entry && { entry, signature: signatureOf(entry), inputs: entry.inputs };
+  }
+
+  _tooFewArgumentsReason(name) {
+    const inputs = this.commandInfo(name)?.inputs;
+    const depth = this.stack.depth;
+    if (inputs == null || inputs <= depth || this.entry.buffer.trim()) return '';
+    return ERROR_KINDS.tooFew.title({ command: name, args: inputs, depth });
+  }
+
+  previewSoftKey(i) {
+    const command = this.menuView().slots[i]?.command;
+    if (command) this.previewCommand(command);
+    else this.clearPreview();
+  }
+
+  previewCommand(name) {
+    const idle = !this.entry.buffer.trim() && this.selection == null && !this.errorBanner && this.inputMode === 'rpl' && !this.layer();
+    const outcome = idle ? previewCommand(name, this.stack.save()) : null;
+    if (!outcome) { this.clearPreview(); return; }
+    this.preview = name;
+    const d = this.display;
+    d.previewFails = !outcome.ok;
+    if (outcome.ok) {
+      d.marks = Object.fromEntries(Array.from({ length: outcome.consumed }, (_, i) => [i + 1, 'arg']));
+      d.ghosts = outcome.results;
+      d.previewLabel = `PREVIEW · ${name}`;
+    } else {
+      const levels = this.stack.snapshot().slice(0, 3);
+      const desc = describeError(outcome.error, {
+        failure: { op: name, levels }, stack: levels, depth: this.stack.depth,
+        describe: describeValue, commandInfo: (n) => this.commandInfo(n),
+      });
+      d.marks = Object.fromEntries(desc.culpritLevels.map((l) => [l, 'culprit']));
+      d.ghosts = null;
+      d.previewLabel = desc.title;
+    }
+    d.renderStack(this.stack);
+  }
+
+  clearPreview() {
+    if (!this.preview) return;
+    this._dropPreview();
+    this.display.renderStack(this.stack);
+  }
+
+  _dropPreview() {
+    if (!this.preview) return;
+    this.preview = null;
+    Object.assign(this.display, { marks: null, ghosts: null, previewLabel: '', previewFails: false });
   }
 
   showModesMenu(opts = {}) {

@@ -401,6 +401,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .keysline { font: 13px/1.8 var(--font-mono); color: var(--ink2); }
 .kc { display: inline-block; padding: 1px 6px; margin: 0 1px; border-radius: 5px; border: 1px solid var(--line2); border-bottom-width: 2px; background: var(--r1); font: 500 11.5px/1.5 var(--font-mono); color: var(--ink); }
 .st-preview-label { position: sticky; bottom: 0; align-self: center; font: 600 10.5px/1 var(--font-mono); letter-spacing: .06em; color: var(--accent); background: var(--well); padding: 6px 10px; border-radius: 999px; border: 1px solid var(--accent-line); margin: 6px 0; z-index: 3; }
+.st-preview-label.fails { color: var(--danger); border-color: color-mix(in oklab, var(--danger) 55%, transparent); }
 
 .st-val .matrix-grid { display: inline-grid; grid-template-columns: repeat(var(--mcols, 1), max-content); align-items: center; column-gap: .9em; row-gap: .15em; padding: .2em .5em; position: relative; font-family: var(--font-mono); line-height: 1.15; }
 .st-val .matrix-grid::before, .st-val .matrix-grid::after { content: ""; position: absolute; top: 0; bottom: 0; width: .45em; border: 1.5px solid currentColor; }
@@ -469,8 +470,10 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .ac-row b { font: 600 13px/1.2 var(--font-mono); color: var(--ink); }
 .ac-row b mark { background: transparent; color: var(--accent); }
 .ac-row span { font-size: 12px; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ac-row em { font: normal 11px/1 var(--font-mono); color: var(--ink3); white-space: nowrap; }
+.ac-row em { font: normal 11px/1 var(--font-mono); color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 36ch; }
 .ac-foot { display: flex; justify-content: space-between; gap: 10px; padding: 7px 12px; border-top: 1px solid var(--line); font: 11px/1.2 var(--font-ui); color: var(--ink3); }
+@container app (max-width: 719px) { .ac-row { grid-template-columns: minmax(56px, max-content) minmax(0, 1fr); } .ac-row span { display: none; } .ac-row em { max-width: none; } }
+@container app (max-width: 520px) { .ac-foot { display: none; } }
 
 .menubar { flex: none; display: flex; align-items: stretch; gap: 6px; padding: 6px 10px 8px; background: var(--chrome); min-width: 0; }
 .mb-menu { flex: none; display: flex; align-items: center; gap: 6px; border: 1px solid var(--line2); background: var(--r1); color: var(--ink); border-radius: 9px; padding: 0 9px; font: 600 11px/1 var(--font-mono); letter-spacing: .04em; max-width: 136px; }

@@ -2,11 +2,27 @@ import { icon } from './icons.js';
 import { escapeHtml } from './display.js';
 import { MENU_GROUPS, menuById } from './menus.js';
 
+const PREVIEW_HOVER_MS = 220;
+
 export class MenuBar {
   constructor({ el, app }) {
     this.el = el;
     this.app = app;
+    this._previewTimer = 0;
     el.addEventListener('mousedown', (e) => { if (e.target.closest('.sk')) e.preventDefault(); });
+    el.addEventListener('pointerover', (e) => {
+      const sk = e.target.closest('.sk[data-i]');
+      if (sk && e.pointerType === 'mouse') this._schedulePreview(Number(sk.dataset.i));
+    });
+    el.addEventListener('pointerout', (e) => {
+      const sk = e.target.closest('.sk[data-i]');
+      if (sk && !sk.contains(e.relatedTarget)) this._endPreview();
+    });
+    el.addEventListener('focusin', (e) => {
+      const sk = e.target.closest('.sk[data-i]');
+      if (sk?.matches(':focus-visible')) this._schedulePreview(Number(sk.dataset.i));
+    });
+    el.addEventListener('focusout', () => this._endPreview());
     el.addEventListener('pointerdown', (e) => {
       const sk = e.target.closest('.sk[data-i]');
       if (!sk || e.button !== 0 || sk.disabled) return;
@@ -24,7 +40,18 @@ export class MenuBar {
     });
   }
 
+  _schedulePreview(i) {
+    clearTimeout(this._previewTimer);
+    this._previewTimer = setTimeout(() => this.app.previewSoftKey(i), PREVIEW_HOVER_MS);
+  }
+
+  _endPreview() {
+    clearTimeout(this._previewTimer);
+    this.app.clearPreview();
+  }
+
   _press(sk) {
+    this._endPreview();
     sk.classList.add('pressed');
     setTimeout(() => sk.classList.remove('pressed'), 90);
     this.app.pressSoftKey(Number(sk.dataset.i));

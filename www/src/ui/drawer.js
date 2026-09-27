@@ -191,6 +191,7 @@ export class Drawers {
     this.el.addEventListener('input', (e) => this._onInput(e));
     this.el.addEventListener('submit', (e) => this._onSubmit(e));
     this.el.addEventListener('keydown', (e) => this._onKeyDown(e));
+    this._bindRunPreviews();
     this._bindVarsDrag();
     subscribeState(() => {
       if (this.current === 'vars') this._renderVarsList();
@@ -200,6 +201,23 @@ export class Drawers {
   }
 
   get prefs() { return this.app.prefs; }
+
+  _bindRunPreviews() {
+    const runButton = (e) => e.target.closest?.('[data-dw="cmd-run"], [data-dw="ref-run"]');
+    this.el.addEventListener('pointerover', (e) => {
+      const run = runButton(e);
+      if (run && e.pointerType === 'mouse') this.app.previewCommand(run.dataset.cmd);
+    });
+    this.el.addEventListener('pointerout', (e) => {
+      const run = runButton(e);
+      if (run && !run.contains(e.relatedTarget)) this.app.clearPreview();
+    });
+    this.el.addEventListener('focusin', (e) => {
+      const run = runButton(e);
+      if (run?.matches(':focus-visible')) this.app.previewCommand(run.dataset.cmd);
+    });
+    this.el.addEventListener('focusout', (e) => { if (runButton(e)) this.app.clearPreview(); });
+  }
 
   isOpen() { return this.current !== null; }
 
@@ -390,7 +408,7 @@ export class Drawers {
       <div class="ref-top"><button type="button" class="mini" data-dw="ref-back" title="Back" aria-label="Back">${icon('chl', 'sm')}</button><h4>${escapeHtml(entry?.name ?? name)}</h4>${entry?.type ? `<span class="badge">${escapeHtml(entry.type)}</span>` : ''}</div>
       ${entry ? `<div class="sum">${escapeHtml(shortDescription(entry, 400))}</div>` : ''}
       ${sig ? `<div><div class="lbl">Stack</div><pre class="ref-sig">${escapeHtml(entry.io.replace(/`/g, "'"))}</pre></div>` : ''}
-      <div class="acts">${available ? `<button type="button" class="btn pri" data-dw="ref-run">${icon('play', 'sm')}Run ${escapeHtml(name)}</button><button type="button" class="btn" data-dw="ref-insert">Insert in the command line</button>` : `<span class="badge">Not available in rpl.ai</span>`}<button type="button" class="btn ghost" data-dw="ref-ask">${icon('spark', 'sm')}Ask about it</button></div>
+      <div class="acts">${available ? `<button type="button" class="btn pri" data-dw="ref-run" data-cmd="${escapeHtml(name)}">${icon('play', 'sm')}Run ${escapeHtml(name)}</button><button type="button" class="btn" data-dw="ref-insert">Insert in the command line</button>` : `<span class="badge">Not available in rpl.ai</span>`}<button type="button" class="btn ghost" data-dw="ref-ask">${icon('spark', 'sm')}Ask about it</button></div>
       <div class="ref-doc"></div>
     </div>`;
     const doc = body.querySelector('.ref-doc');

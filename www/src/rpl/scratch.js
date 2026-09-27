@@ -51,3 +51,34 @@ export function evalScratch(text, { liveItems = [], displayOpts, maxLevels = 8 }
     }
   });
 }
+
+const STATE_READ_ONLY_CATEGORIES = new Set([
+  'Stack', 'Arithmetic', 'Trig / log / exp / hyperbolic', 'Complex / coordinates',
+  'Comparisons / logic', 'Integer / number theory', 'Special functions',
+  'Vectors / matrices', 'Lists / strings', 'Units', 'Types & tags',
+]);
+const WRITES_STATE_OR_RANDOM = new Set([
+  'UNDO', 'REDO', 'LASTSTACK', 'LASTARG', 'LAST', 'RAND', 'RDZ', 'RANM',
+  'DEG', 'RAD', 'GRAD', 'GRD', 'RECT', 'CYLIN', 'SPHERE', 'CMPLX', 'MODSTO',
+]);
+
+export function isPreviewable(name) {
+  const op = lookup(name);
+  return !!op && STATE_READ_ONLY_CATEGORIES.has(op.category) && !WRITES_STATE_OR_RANDOM.has(String(name).toUpperCase());
+}
+
+export function previewCommand(name, liveItems = []) {
+  if (!isPreviewable(name)) return null;
+  const op = lookup(name);
+  const stack = new Stack();
+  stack.restore(liveItems);
+  try {
+    stack.runOp(() => op.fn(stack));
+  } catch (e) {
+    return { ok: false, error: (e && typeof e === 'object' && e.message != null) ? String(e.message) : String(e) };
+  }
+  const after = stack.save();
+  let kept = 0;
+  while (kept < liveItems.length && kept < after.length && liveItems[kept] === after[kept]) kept++;
+  return { ok: true, consumed: liveItems.length - kept, results: after.slice(kept) };
+}

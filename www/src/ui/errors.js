@@ -8,8 +8,6 @@ const NUMBER_WORDS = Object.freeze(['no values', 'one value', 'two values', 'thr
 
 const valuesText = (n) => NUMBER_WORDS[n] ?? `${n} values`;
 
-/** Split "EVAL: SIN: Bad argument type: expected real, got string" into
- *  the commands that were running, the core message and its detail. */
 export function parseErrorMessage(message) {
   const text = String(message ?? '').trim();
   const parts = text.split(': ');
@@ -20,15 +18,6 @@ export function parseErrorMessage(message) {
   const detail = [trailing, ...parts.slice(at + 1)].filter(Boolean).join(': ');
   const commands = parts.slice(0, at);
   return { commands, command: commands.at(-1) ?? null, core, detail };
-}
-
-/** Inputs a command takes, read from the first line of its stack
- *  diagram ("z1 z2 → z1 + z2" is 2); null when the diagram is variadic
- *  or unknown. */
-export function argumentCount(signature) {
-  const left = String(signature ?? '').split('→')[0].trim();
-  if (!left || /\.\.\.|…/.test(left)) return null;
-  return left.split(/\s+/).length;
 }
 
 const article = (noun) => (/^[aeiou]/i.test(noun) ? `an ${noun}` : `a ${noun}`);
@@ -119,19 +108,13 @@ export const ERROR_KINDS = Object.freeze({
   },
 });
 
-/** Everything the banner needs, from the flashed message plus what the
- *  failing command saw.  `failure` is { op, levels } captured at the
- *  throw (levels are the top of the stack, level 1 first); `stack` is
- *  the rolled-back stack's top levels; `line` is what is left in the
- *  command line; `describe(value)` returns
- *  { type, text } for one value; `signatureOf(name)` returns the first
- *  line of a command's stack diagram or ''. */
-export function describeError(message, { failure = null, stack = [], depth = 0, line = '', describe, signatureOf = () => '' } = {}) {
+export function describeError(message, { failure = null, stack = [], depth = 0, line = '', describe, commandInfo = () => null } = {}) {
   const parsed = parseErrorMessage(message);
   const kind = Object.entries(ERROR_KINDS).find(([, k]) => k.match(parsed))[0];
   const command = parsed.command ?? failure?.op ?? null;
-  const signature = command ? signatureOf(command) : '';
-  const args = argumentCount(signature);
+  const info = command ? commandInfo(command) : null;
+  const signature = info?.signature ?? '';
+  const args = info?.inputs ?? null;
   const seen = failure && (!parsed.command || failure.op === parsed.command) ? failure.levels : [];
   const count = Math.min(seen.length, args ?? Math.min(seen.length, 2));
   const onStack = count > 0 && seen.slice(0, count).every((v, i) => stack[i] === v);

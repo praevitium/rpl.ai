@@ -58,6 +58,16 @@ const REF = parseCommandReference(HTML);
   assert(root && !root.inApp, 'ROOT is indexed but flagged not-in-app');
 }
 
+{
+  const inputs = (name) => findReferenceEntry(REF, name).inputs;
+  assert(inputs('SIN') === 1 && inputs('+') === 2 && inputs('DEPTH') === 0,
+         'parseCommandReference: inputs counts the stack arguments of the shortest form');
+  assert(inputs('TRN') === 1 && inputs('RSWP') === 3 && inputs('DOT') === 2,
+         'parseCommandReference: inputs counts diagram cells, so [[ matrix ]] and "nrow i" are one input each');
+  assert(inputs('ROLL') === null && inputs('DROPN') === null,
+         'parseCommandReference: inputs is null for a variadic stack diagram');
+}
+
 // →LIST's manual page runs into ΔLIST's under one heading; the first
 // description must win so →LIST doesn't describe list differences.
 {

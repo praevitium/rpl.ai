@@ -135,6 +135,7 @@ export class Display {
     this.marks = null;
     this.ghosts = null;
     this.previewLabel = '';
+    this.previewFails = false;
     this.emptyHtml = '';
     this.rowActionsHtml = null;
     this.onRowClick = null;
@@ -253,7 +254,7 @@ export class Display {
     });
     if (this.previewLabel) {
       const label = document.createElement('div');
-      label.className = 'st-preview-label';
+      label.className = `st-preview-label${this.previewFails ? ' fails' : ''}`;
       label.textContent = this.previewLabel;
       frag.appendChild(label);
     }

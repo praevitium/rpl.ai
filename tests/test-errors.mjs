@@ -1,5 +1,5 @@
 import { assert } from './helpers.mjs';
-import { ERROR_KINDS, parseErrorMessage, argumentCount, describeError } from '../www/src/ui/errors.js';
+import { ERROR_KINDS, parseErrorMessage, describeError } from '../www/src/ui/errors.js';
 import { errorBannerHtml, haltedBannerHtml } from '../www/src/ui/banner.js';
 import { describeValue } from '../www/src/ui/display.js';
 import { Str, Real, Name } from '../www/src/rpl/types.js';
@@ -19,15 +19,12 @@ import { Str, Real, Name } from '../www/src/rpl/types.js';
     'parseErrorMessage: a message with no known core keeps its text');
 }
 
-{
-  assert(argumentCount('z → sin z') === 1, 'argumentCount: one input');
-  assert(argumentCount('z1 z2 → z1 + z2') === 2, 'argumentCount: two inputs');
-  assert(argumentCount('objn ... obj1 n → objn–1 ... obj1 objn') === null, 'argumentCount: variadic diagrams are unknown');
-  assert(argumentCount('') === null, 'argumentCount: no diagram, unknown');
-}
-
-const signatures = { SIN: 'z → sin z', '+': 'z1 z2 → z1 + z2', '/': 'z1 z2 → z1 / z2' };
-const ctx = (extra = {}) => ({ describe: describeValue, signatureOf: (n) => signatures[n] ?? '', ...extra });
+const COMMANDS = {
+  SIN: { signature: 'z → sin z', inputs: 1 },
+  '+': { signature: 'z1 z2 → z1 + z2', inputs: 2 },
+  '/': { signature: 'z1 z2 → z1 / z2', inputs: 2 },
+};
+const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMMANDS[n] ?? null, ...extra });
 
 {
   const samples = {
