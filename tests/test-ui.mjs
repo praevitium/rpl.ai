@@ -1453,3 +1453,13 @@ setAngle('RAD');
   assert(loadUiPrefs(saved).theme === 'classic' && loadUiPrefs(saved).minimal === false,
     'loadUiPrefs: saved rplai.ui wins over leftover legacy keys');
 }
+
+{
+  const { EquationEditor } = await import('../www/src/ui/equation-editor.js');
+  const { MatrixEditor } = await import('../www/src/ui/matrix-editor.js');
+  const WRITER_CONTRACT = ['load', 'value', 'clear', 'isEmpty', 'snapshot', 'restore', 'menu', 'focus', 'commit'];
+  for (const [id, Writer] of [['equation', EquationEditor], ['matrix', MatrixEditor]]) {
+    const missing = WRITER_CONTRACT.filter((name) => typeof Writer.prototype[name] !== 'function');
+    assert(!missing.length, `the ${id} writer implements load, value, clear, isEmpty, snapshot, restore, menu, focus and commit${missing.length ? ` (missing ${missing.join(', ')})` : ''}`);
+  }
+}

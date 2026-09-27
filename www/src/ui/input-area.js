@@ -11,7 +11,7 @@ export const WRITERS = Object.freeze([
 const HINTS = Object.freeze({
   rpl: ['Enter runs', '⇧Enter new line', 'start with ? to ask the assistant'],
   equation: ['/ fraction · ^ power · ( group', 'Tab next box', '⇧← ⇧→ select', 'Enter pushes', 'Esc cancels'],
-  matrix: ['Tab next cell', 'Enter pushes', 'paste a spreadsheet range'],
+  matrix: ['Tab next cell', '⇧Enter next row', 'Enter pushes', 'Esc cancels'],
 });
 
 export class InputArea {

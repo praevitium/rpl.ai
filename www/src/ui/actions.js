@@ -108,6 +108,7 @@ export const KEYMAP = Object.freeze([
   { context: 'equation', chord: 'Shift+ArrowRight', action: 'eqw.extend', arg: 1 },
   { context: 'equation', chord: 'Enter', action: 'writer.commit' },
   { context: 'matrix', chord: 'Tab', action: 'matrix.nextCell' },
+  { context: 'matrix', chord: 'Enter', action: 'writer.commit' },
   { context: 'plot', chord: 'ArrowLeft', action: 'plot.pan' },
   { context: 'plot', chord: 'ArrowRight', action: 'plot.pan' },
   { context: 'plot', chord: 'ArrowUp', action: 'plot.pan' },

@@ -560,9 +560,13 @@ class App {
     if (edit?.kind === 'var') this.toast(`Stored ${edit.name}`);
   }
 
+  _writer() {
+    return { equation: this.equationEditor, matrix: this.matrixEditor }[this.inputMode] ?? null;
+  }
+
   cancelWriter() {
     const mode = this.inputMode;
-    const writer = mode === 'equation' ? this.equationEditor : this.matrixEditor;
+    const writer = this._writer();
     if (writer.collapseSelection?.()) return;
     const edit = this.pendingEdit;
     const saved = writer.snapshot();
@@ -629,8 +633,7 @@ class App {
   }
 
   commitEntry() {
-    if (this.inputMode === 'equation') { this.equationEditor.commit(); return; }
-    if (this.inputMode === 'matrix') { this.matrixEditor.push(); return; }
+    if (this.inputMode !== 'rpl') { this._writer().commit(); return; }
     const text = this.entry.buffer.trimStart();
     if (text.startsWith('?')) {
       const question = text.slice(1).trim();
@@ -692,10 +695,10 @@ class App {
       eqw.focus();
     } else if (mode === 'matrix') {
       if (!this.matrixEditor) this.matrixEditor = new MatrixEditor({ app: this });
-      if (value) this.matrixEditor.loadValue(value);
       this.inputMode = 'matrix';
       this.input.show('matrix', this.matrixEditor.el);
-      this.matrixEditor.focusGrid();
+      if (value) this.matrixEditor.load(value);
+      this.matrixEditor.focus();
     } else {
       this.inputMode = 'rpl';
       this._eqwSlots = null;
@@ -734,7 +737,7 @@ class App {
     let ctx = null;
     if (this.selection != null && this.stack.depth) ctx = { key: `LVL${this.selection}`, title: `LEVEL ${this.selection}`, short: `LVL ${this.selection}`, items: this._levelSlots() };
     else if (this.inputMode === 'equation' && this.equationEditor) ctx = { key: 'EQW', title: 'EQUATION', short: 'EQW', items: this._eqwSlots ?? this.equationEditor.menu() };
-    else if (this.inputMode === 'matrix' && this.matrixEditor) ctx = { key: 'MTRW', title: 'MATRIX', short: 'MTRW', items: this.matrixEditor.menuSlots() };
+    else if (this.inputMode === 'matrix' && this.matrixEditor) ctx = { key: 'MTRW', title: 'MATRIX', short: 'MTRW', items: this.matrixEditor.menu() };
     if (ctx) {
       if (ctx.key !== this._ctxKey) { this._ctxKey = ctx.key; this._ctxPage = 0; }
       const { view, page } = computeMenuPage(ctx.items, this._ctxPage, 6);
@@ -1138,6 +1141,7 @@ class App {
         return true;
       case 'ui.escape': return this._escape();
       case 'writer.commit': this.commitEntry(); return true;
+      case 'matrix.nextCell': this.matrixEditor.focus(); return true;
       case 'eqw.fraction': this.equationEditor.pressFace('÷'); return true;
       case 'eqw.power': this.equationEditor.pressFace('yˣ'); return true;
       case 'eqw.group': this.equationEditor.pressFace('( )'); return true;
