@@ -20,7 +20,7 @@ import { isNum, isVar, isNeg, isBin, isFn } from './algebra.js';
 // family names that contain spaces are wrapped in SINGLE quotes so
 // the whole stack can live inside a double-quoted SVG attribute
 // without needing entity-escaping.
-const FONT_STACK = "ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
+const FONT_STACK = "'IBM Plex Mono', 'RPL Symbols', 'IBM Plex Sans', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
 const DEFAULT_SIZE = 24;
 
 // Font-metric approximations.  A 24px monospace glyph is ~14.4px wide

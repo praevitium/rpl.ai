@@ -41,6 +41,7 @@ const FILES = [
   './test-plot-engine.mjs',
   './test-equation-editor.mjs',
   './test-matrix-editor.mjs',
+  './test-fonts.mjs',
 ];
 
 const perFile = [];

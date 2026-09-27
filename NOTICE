@@ -35,8 +35,17 @@ GMP / MPFR / MPFI  (transitively compiled into Giac's WebAssembly)
   Role:       Arbitrary-precision arithmetic libraries used by Giac.
 
 -----------------------------------------------------------------
-KaTeX  (to be added; used for textbook-style math rendering)
+KaTeX
+  Location:   www/vendor/katex/
   Upstream:   https://github.com/KaTeX/KaTeX
-  License:    MIT License
-  Role:       Renders LaTeX produced by Giac into HTML/MathML for the
-              stack display and result popups.
+  License:    MIT License (fonts: SIL Open Font License 1.1)
+  Role:       Renders LaTeX in the assistant's replies. Its Main font
+              also supplies the ∠ glyph for the interface.
+
+-----------------------------------------------------------------
+IBM Plex Sans and IBM Plex Mono
+  Location:   www/fonts/ (split woff2 subsets: Latin-1, Greek, Pi)
+  Copyright:  © 2017 IBM Corp. with Reserved Font Name "Plex"
+  License:    SIL Open Font License 1.1 (www/fonts/OFL.txt)
+  Upstream:   https://github.com/IBM/plex
+  Role:       Interface, stack and keypad typefaces.

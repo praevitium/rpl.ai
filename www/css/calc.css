@@ -33,8 +33,8 @@
   --radius-screen:  10px;
   --radius-key:     6px;
 
-  --font-lcd: "Menlo", "Consolas", "DejaVu Sans Mono", monospace;
-  --font-ui:  "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-lcd: "IBM Plex Mono", "RPL Symbols", "IBM Plex Sans", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-ui:  "IBM Plex Sans", "RPL Symbols", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --focus-ring: #67e8f9;
 }
