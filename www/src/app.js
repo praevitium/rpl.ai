@@ -1518,3 +1518,18 @@ window.calc_reset = function calc_reset() {
 giac.init().catch((e) => {
   console.error('[giac] init failed:', e);
 });
+
+function installOfflineCache(app) {
+  if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
+  navigator.serviceWorker.register('sw.js').then((reg) => {
+    const announceWaitingUpdate = () => {
+      if (reg.waiting && navigator.serviceWorker.controller) {
+        app.entry.flashNotice('An update is ready: it loads the next time rpl.ai opens');
+      }
+    };
+    announceWaitingUpdate();
+    reg.addEventListener('updatefound', () => reg.installing?.addEventListener('statechange', announceWaitingUpdate));
+  }).catch((e) => console.warn('[offline] service worker registration failed:', e));
+}
+
+installOfflineCache(window.__hp50);

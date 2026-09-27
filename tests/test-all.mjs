@@ -42,6 +42,7 @@ const FILES = [
   './test-equation-editor.mjs',
   './test-matrix-editor.mjs',
   './test-fonts.mjs',
+  './test-offline.mjs',
 ];
 
 const perFile = [];

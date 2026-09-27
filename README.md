@@ -171,7 +171,8 @@ npm run serve    # http://localhost:5050
 
 The calculator is the static files in `www/`; any static web server can host
 it. Browsers won't run it from `file://`, because ES modules and the Giac
-WebAssembly need http(s).
+WebAssembly need http(s). Once loaded it works offline and can be installed
+from the browser.
 
 ---
 

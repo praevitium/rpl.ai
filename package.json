@@ -6,6 +6,8 @@
   "scripts": {
     "test": "node tests/test-all.mjs",
     "build-info": "node scripts/gen-build-info.mjs",
+    "postbuild-info": "npm run precache",
+    "precache": "node scripts/gen-precache.mjs",
     "update-hp50-badges": "node scripts/update-hp50-badges.mjs",
     "reflow-hp50-commands": "node scripts/reflow-hp50-commands.mjs",
     "screenshots": "node scripts/screenshots.mjs",

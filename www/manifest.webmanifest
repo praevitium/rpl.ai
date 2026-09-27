@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "rpl.ai",
+  "short_name": "rpl.ai",
+  "description": "The HP 48/49/50 RPL calculator: stack, User-RPL, a computer algebra system, units, plotting and an assistant.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f1115",
+  "theme_color": "#13161b",
+  "categories": ["education", "productivity", "utilities"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

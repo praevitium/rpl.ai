@@ -42,7 +42,9 @@ it, and a directory's name enters it, as on the HP 50g. Every keypad
 key can be reached with Tab and pressed with Enter or Space, carries a
 spoken name, and shows a focus ring; motion stops when the system asks
 for reduced motion. `√` can be typed in an algebraic. The page has a
-favicon. The Tauri desktop shell is gone: rpl.ai is a web app.
+favicon. The Tauri desktop shell is gone: rpl.ai is a web app that
+installs from the browser and, once loaded, runs offline, because a
+service worker caches every file, the CAS included.
 
 ---
 
