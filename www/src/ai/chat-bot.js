@@ -2026,6 +2026,7 @@ export class ChatBot {
       dwarn('runLoop: snapshotState threw:', err);
     }
     let mutated = false;
+    const history = this._history;
 
     // Inject current calculator state into the user message so every
     // turn starts with fresh stack/dir context.
@@ -2137,7 +2138,7 @@ export class ChatBot {
         this._finaliseStreamBubble(bubble, textEl, errDisplay, null);
         if (cleaned) this._history.push({ role: 'assistant', content: cleaned });
         dwarn('runLoop: generate threw:', err.message);
-        return;
+        return this._closeInterruptedTurn(history, mutated && snapshot, lastBubble);
       }
       watchdog.stop();
 
@@ -2150,7 +2151,7 @@ export class ChatBot {
         const visiblePart = idx >= 0 ? cleaned.slice(0, idx).trim() : cleaned.trim();
         this._finaliseStreamBubble(bubble, textEl, visiblePart, null, { state: 'stopped' });
         dlog('runLoop: stale after generate, finalised stopped bubble');
-        return;
+        return this._closeInterruptedTurn(history, mutated && snapshot, lastBubble);
       }
 
       stalled = watchdog.isStalled();
@@ -2262,7 +2263,7 @@ export class ChatBot {
       if (stale()) {
         dlog('runLoop: stale after tool dispatch, exit (skipped',
              toolCalls.length - i - 1, 'remaining call(s))');
-        return;
+        return this._closeInterruptedTurn(history, (mutated || outcome.mutated) && snapshot, outcome.card ?? lastBubble);
       }
       if (outcome.mutated) mutated = true;
       if (outcome.card) lastBubble = outcome.card;
@@ -2303,6 +2304,12 @@ export class ChatBot {
       this._renderChips(lastSuggestions, lastBubble);
     }
     dlog(`runLoop: turnId=`, turnId, `complete after ${outerIter + 1} iter(s)`);
+  }
+
+  _closeInterruptedTurn(history, undoSnapshot, lastBubble) {
+    if (history !== this._history) return;
+    if (history.at(-1)?.role === 'user') history.push({ role: 'assistant', content: '(reply interrupted)' });
+    if (undoSnapshot) this._addUndoRow(undoSnapshot, lastBubble);
   }
 
   /** Execute a parsed tool call through the registry and append a
