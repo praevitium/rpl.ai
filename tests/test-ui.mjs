@@ -485,6 +485,31 @@ import { assert, assertThrows } from './helpers.mjs';
   }
 
   {
+    const { resetHome, currentPath } = await import('../www/src/rpl/state.js');
+    resetHome();
+    const s = new Stack();
+    const e = new Entry(s);
+    e.flashError = () => {};
+    e.buffer = '4700 `TYPEDRA` STO « 2 * » `TYPEDDBL` STO `TYPEDDIR` CRDIR'; e.enter();
+    e.buffer = 'TYPEDRA'; e.enter();
+    assert(s.depth === 1 && format(s.peek(1)) === '4700', 'typing a variable name recalls its value');
+    e.buffer = 'TYPEDDBL'; e.enter();
+    assert(s.depth === 1 && format(s.peek(1)) === '9400', 'typing a program name runs it');
+    e.buffer = 'TYPEDDIR'; e.enter();
+    assert(currentPath().join('/') === 'HOME/TYPEDDIR', 'typing a directory name enters it');
+    e.buffer = 'TYPEDNOPE'; e.enter();
+    assert(s.depth === 2 && s.peek(1).type === 'name' && s.peek(1).id === 'TYPEDNOPE',
+      'typing an undefined name leaves the name on the stack');
+    let flashed = '';
+    e.flashError = (err) => { flashed = err.message; };
+    e.buffer = '« 1 "a" - » `TYPEDBAD` STO'; e.enter();
+    e.buffer = 'TYPEDBAD'; e.enter();
+    assert(flashed === 'TYPEDBAD: -: Bad argument type' && s.depth === 2,
+      'a failing typed program name is blamed in the error and rolls the stack back');
+    resetHome();
+  }
+
+  {
     const { resetHome } = await import('../www/src/rpl/state.js');
     resetHome();
     const s = new Stack();

@@ -38,7 +38,12 @@ undo history. Coordinate, number-format, wordsize, base, textbook,
 approximate, and complex modes and user flags survive a reload, not
 just the angle. Clicking the command line takes the keyboard back from
 the equation writer. `'QZ' STO` explains that names are quoted with
-backticks. The page has a favicon.
+backticks. Typing a variable's name recalls it, a program's name runs
+it, and a directory's name enters it, as on the HP 50g. Every keypad
+key can be reached with Tab and pressed with Enter or Space, carries a
+spoken name, and shows a focus ring; motion stops when the system asks
+for reduced motion. `√` can be typed in an algebraic. The page has a
+favicon.
 
 ---
 

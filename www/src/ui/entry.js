@@ -624,7 +624,7 @@ export class Entry {
    *  name prefixed — so "Bad argument type" becomes "SIN: Bad argument
    *  type" by the time it reaches flashError / the LCD.  The pre-existing
    *  stack-rollback in safeRun still kicks in; we only tag the message. */
-  _runOpTagged(opName) {
+  _runOpTagged(opName, tag = opName) {
     const op = lookup(opName);
     if (!op) throw new RPLError(`Undefined: ${opName}`);
     try {
@@ -632,7 +632,7 @@ export class Entry {
     } catch (e) {
       if (e instanceof RPLAbort) throw e;
       const msg = (e && typeof e === 'object' && e.message != null) ? e.message : String(e);
-      throw new RPLError(`${opName}: ${msg}`);
+      throw new RPLError(`${tag}: ${msg}`);
     }
   }
 
@@ -689,6 +689,7 @@ export class Entry {
     try {
       for (const v of parseEntry(raw)) {
         if (v?.type === 'name' && !v.quoted && lookup(v.id)) this._runOpTagged(v.id);
+        else if (v?.type === 'name' && !v.quoted) { this.stack.push(v); this._runOpTagged('EVAL', v.id); }
         else this.stack.push(v);
       }
     } catch (e) {
