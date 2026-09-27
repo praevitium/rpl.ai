@@ -3,9 +3,9 @@
   "version": "0.4.1",
   "identifier": "com.rpl5050.rplai",
   "build": {
-    "beforeBuildCommand": "node scripts/build-frontend-dist.mjs",
-    "beforeDevCommand": { "script": "node scripts/build-frontend-dist.mjs", "wait": true },
-    "frontendDist": "../www-dist"
+    "beforeBuildCommand": "",
+    "beforeDevCommand": "",
+    "frontendDist": "../www"
   },
   "app": {
     "withGlobalTauri": true,

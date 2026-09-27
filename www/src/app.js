@@ -30,7 +30,7 @@ import {
   loadCommandReference, findReferenceEntry, formatReferenceEntry, searchCommands,
 } from './ui/command-reference.js';
 import {
-  isProgram, isDirectory, isList, isName, isString, isTagged, Real,
+  isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic, Real,
 } from './rpl/types.js';
 import './rpl/ops.js';                     // register ops as side effect
 import {
@@ -41,12 +41,16 @@ import { giac } from './rpl/cas/giac-engine.mjs';
 import { FULL as BUILD_FULL } from './build-info.js';
 import { ChatBot } from './ai/chat-bot.js';
 import { CommandPalette } from './ui/command-palette.js';
-import { installCommandHover } from './ui/hover-help.js';
+import { installCommandHover, entryWordAtEvent, stackWordAtEvent } from './ui/hover-help.js';
+
 
 class App {
   constructor() {
     this.stack = new Stack();
     this.entry = new Entry(this.stack);
+    this.entry._view?.dom?.addEventListener('focusin', () => {
+      this.equationEditor?.blurEquation();
+    });
 
     const versionEl = document.getElementById('versionLabel');
     if (versionEl) versionEl.textContent = BUILD_FULL;
@@ -58,7 +62,6 @@ class App {
       menuBar:    document.getElementById('menuBar'),
       suspendedProgram: document.getElementById('suspendedProgram'),
     });
-
     // Shift state.  `shift` is one of:
     //   null         — no shift active
     //   'shiftL'     — next key takes its left (orange) shifted meaning
@@ -315,7 +318,8 @@ class App {
       onArrowLeftEmpty: () => this.prevMenuPage(),
       onArrowRightEmpty:() => { this.stack.depth >= 2 ? this.swapTop() : this.nextMenuPage(); },
     });
-    installCommandHover(this.display.cmdline, this.entry);
+    installCommandHover(this.display.cmdline, entryWordAtEvent(this.entry));
+    installCommandHover(this.display.stackView, stackWordAtEvent);
 
     this.display.renderStack(this.stack);
     this.display.renderCmdline(this.entry);
@@ -809,6 +813,11 @@ class App {
     if (this._pendingEditValue !== null && this._pendingEditValue !== undefined) {
       return;
     }
+    const top = this.stack.peek(1);
+    if (isSymbolic(top) || isName(top)) {
+      this.openEquationEditor({ fromLevel1: true });
+      return;
+    }
     this.entry._snapForUndo();
     const v = this.stack.pop();
     this._pendingEditValue = v;
@@ -824,6 +833,10 @@ class App {
    *  populated by editLevel1, restore the popped value to the stack;
    *  otherwise behave exactly like Entry.cancel. */
   cancelEntry() {
+    if (this.equationEditor?.isLineEditing()) {
+      this.equationEditor.cancelLineEdit();
+      return;
+    }
     if (this._pendingEditValue !== null && this._pendingEditValue !== undefined) {
       this.stack.push(this._pendingEditValue);
       this._pendingEditValue = null;
@@ -845,6 +858,10 @@ class App {
    *  (Backspace → DROP, etc.) until the user explicitly re-engages
    *  the editor. */
   commitEntry() {
+    if (this.equationEditor?.isLineEditing()) {
+      this.equationEditor.commitLineEdit();
+      return;
+    }
     // `?<text>` escape prefix — route the rest of the buffer to the
     // chatbot as if the user had typed it into the chat input.  This
     // turns the entry line into a quick "ask the assistant" affordance
@@ -988,11 +1005,7 @@ class App {
     // Save the outgoing soft menu so we can restore it on exit.  A user
     // who'd opened VARS shouldn't lose it after one interactive-stack
     // round-trip.
-    this._interactive = {
-      prevMenuAll:  this.menuAll,
-      prevMenuPage: this.menuPage,
-      prevMenuKind: this.menuKind,
-    };
+    this._interactive = this._saveMenu();
     const initial = Math.max(1, Math.min(startLevel | 0, this.stack.depth));
     this.display.selectedLevel = initial;
     const refresh = () => {
@@ -1081,17 +1094,64 @@ class App {
 
   _exitInteractiveStack() {
     if (!this._interactive) return;
-    const { prevMenuAll, prevMenuPage, prevMenuKind, _cleanup } = this._interactive;
-    _cleanup();
-    // Restore the pre-existing menu (or clear if none).
-    if (prevMenuAll && prevMenuAll.length) {
-      this.menuKind = prevMenuKind;
-      this.menuAll  = prevMenuAll;
-      this.menuPage = prevMenuPage;
+    const saved = this._interactive;
+    const cleanup = saved._cleanup;
+    cleanup();
+    this._restoreMenu(saved);
+  }
+
+  _saveMenu() {
+    return {
+      prevMenuAll: this.menuAll,
+      prevMenuPage: this.menuPage,
+      prevMenuKind: this.menuKind,
+    };
+  }
+
+  _restoreMenu(saved) {
+    if (saved?.prevMenuAll?.length) {
+      this.menuKind = saved.prevMenuKind;
+      this.menuAll = saved.prevMenuAll;
+      this.menuPage = saved.prevMenuPage;
       this._renderMenuPage();
     } else {
       this.clearMenu();
     }
+  }
+
+  openEquationEditor({ fromLevel1 = false } = {}) {
+    if (!this.sidePanel) return;
+    if (this.entry.buffer.length > 0) {
+      this.commitEntry();
+      if (this.entry.buffer.length > 0) return;
+    }
+    if (this._interactive) this._exitInteractiveStack();
+    let value = null;
+    let replacesLevel1 = false;
+    if (fromLevel1 && this.stack.depth >= 1) {
+      const top = this.stack.peek(1);
+      if (isSymbolic(top) || isName(top)) {
+        value = top;
+        replacesLevel1 = true;
+      }
+    }
+    this.sidePanel.open('equation');
+    const editor = this.equationEditor;
+    if (value) editor.open({ value, replacesLevel1 });
+  }
+
+  activateEquationKeys() {
+    const editor = this.equationEditor;
+    if (!editor?.isOpen() || !editor._focused) return;
+    if (this.menuKind !== 'EQW') this._eqwMenu = this._saveMenu();
+    this.setMenu(editor.menuSlots(), 'EQW');
+    this.entry.blur();
+  }
+
+  deactivateEquationKeys() {
+    if (this.menuKind !== 'EQW') return;
+    this._restoreMenu(this._eqwMenu);
+    this._eqwMenu = null;
   }
 
   /* ================================================================
@@ -1153,6 +1213,16 @@ class App {
       case 'shiftL': return this.setShift('shiftL');
       case 'shiftR': return this.setShift('shiftR');
       case 'alpha':  return this.setShift('alpha');
+    }
+
+    if (this.equationEditor?.ownsKeyboard()) {
+      this.equationEditor.pressKeypad(key, this.shift);
+      const locked =
+        this.shift === 'alphaLock' ||
+        this.shift === 'shiftLLock' ||
+        this.shift === 'shiftRLock';
+      if (this.shift && !locked) this.setShift(null);
+      return;
     }
 
     // Alpha typing.  If alpha shift is active and the pressed key has
@@ -1250,6 +1320,7 @@ class App {
   ---------------------------------------------------------------- */
   _installKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
+      if (this.equationEditor?.ownsKeyboard()) return;
       if (!this.commandPalette || this.commandPalette.isOpen()) return;
       const tag = e.target?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
@@ -1275,6 +1346,11 @@ class App {
       // handler below only fires for keys CM declined or for events
       // dispatched while the editor isn't focused.
       if (e.defaultPrevented) return;
+
+      if (this.equationEditor?.ownsKeyboard()) {
+        if (this.equationEditor.handleKeyDown(e)) return e.preventDefault();
+        if (!/^F[1-6]$/.test(e.key)) return;
+      }
 
       const focused = this.entry.hasFocus();
 
@@ -1426,7 +1502,7 @@ window.__hp50 = new App();
 
 /** Wipe all persisted settings and reload the page.  Covers every
  *  localStorage key the app writes: calculator state, side-panel
- *  layout, chrome mode, AI model choice, remote endpoint config,
+ *  layout, chrome mode, AI endpoint config,
  *  consent flags, etc.  Exposed as a global so users can run it from
  *  the DevTools console (the previous double-click-version shortcut
  *  has been repurposed to open DevTools itself). */
@@ -1435,9 +1511,7 @@ window.calc_reset = function calc_reset() {
     'hp50.state',
     'hp50.ui.sidePanel',
     'hp50.ui.chrome',
-    'rpl5050.chatbot.modelId',
     'rpl5050.chatbot.consented.v1',
-    'rpl5050.chatbot.migrated.dropPremium.v1',
     'rpl5050.chatbot.remote',
   ];
   try { for (const k of KEYS) localStorage.removeItem(k); }

@@ -1,6 +1,5 @@
 /* =================================================================
-   RemoteLLM — drop-in replacement for LLM that talks to an HTTP
-   endpoint instead of running WebLLM in a worker.
+   RemoteLLM — talks to an Ollama or OpenAI-compatible HTTP endpoint.
 
    Two wire protocols, picked at load() time:
 
@@ -13,26 +12,34 @@
        resident between turns, and read real prompt/eval token counts.
 
      OpenAI-compatible (`POST /v1/chat/completions`) — any other server
-       that mirrors that subset of the OpenAI API.
+       that mirrors that subset of the OpenAI API. */
 
-   Public surface mirrors LLM so chat-bot.js can swap one for the
-   other without conditional plumbing:
-     status, statusMsg, loadedModelId, lastStats, contextTokens,
-     supportsTools, supportsThinking
-     onStatus(fn), onProgress(fn), onStats(fn)
-     load(modelId), generate(messages, {onToken, onThinking, maxTokens,
-     tools}) → { toolCalls }, abort()
+/** True for ollama.com and its subdomains. Those hosts are Ollama Cloud:
+ *  HTTPS, OpenAI-compatible `/v1`, and a bearer API key. */
+export function isOllamaCloudUrl(url) {
+  try {
+    const parsed = new URL(String(url).includes('://') ? String(url) : `http://${url}`);
+    const host = parsed.hostname.toLowerCase();
+    return host === 'ollama.com' || host.endsWith('.ollama.com');
+  } catch {
+    return false;
+  }
+}
 
-   Progress events never fire (no weights to download); the onProgress
-   subscription exists only so the consumer doesn't special-case which
-   impl it has. */
+function canonicalEndpoint(typed) {
+  let s = String(typed || '').trim().replace(/\/+$/, '');
+  if (s && isOllamaCloudUrl(s) && s.startsWith('http://')) {
+    s = `https://${s.slice('http://'.length)}`;
+  }
+  return s;
+}
 
 /** Normalize a user-typed base URL into the OpenAI-compatible base
  *  (with `/v1` suffix).  Accepts `http://host:port`, `…/v1`, or
  *  `…/api` (Ollama-native root) and returns `…/v1` in all cases.
- *  Trailing slashes are stripped. */
+ *  Trailing slashes are stripped. Ollama Cloud is forced to https. */
 export function toOpenAIBase(typed) {
-  let s = (typed || '').replace(/\/+$/, '');
+  let s = canonicalEndpoint(typed);
   if (!s) return '';               // preserve empty so callers can detect "unset"
   s = s.replace(/\/api$/, '');     // Ollama-native root → server root
   if (!/\/v1$/.test(s)) s += '/v1';
@@ -42,10 +49,18 @@ export function toOpenAIBase(typed) {
 /** Normalize a user-typed base URL into the Ollama-native server root
  *  (no `/v1`, no `/api`).  Call sites append `/api/<endpoint>`. */
 export function toOllamaBase(typed) {
-  return (typed || '')
-    .replace(/\/+$/, '')
+  return canonicalEndpoint(typed)
     .replace(/\/v1$/, '')
     .replace(/\/api$/, '');
+}
+
+/** Headers for an Ollama or OpenAI-compatible request. A non-empty key
+ *  is sent as `Authorization: Bearer`. Local Ollama is left anonymous. */
+export function bearerHeaders(apiKey, extra = {}) {
+  const headers = { ...extra };
+  const key = String(apiKey || '').trim();
+  if (key) headers.Authorization = `Bearer ${key}`;
+  return headers;
 }
 
 /** Pull complete SSE data frames out of an accumulating stream buffer.
@@ -103,7 +118,6 @@ export function summarizeRun({
     ? (outputTokens / (decodeMs / 1000))
     : null;
   return {
-    id: 0,
     inputChars,
     inputMessages,
     inputTokens,
@@ -114,7 +128,6 @@ export function summarizeRun({
     decodeTps,
     finishReason,
     aborted,
-    runtimeStats: null,
   };
 }
 
@@ -175,7 +188,6 @@ export class RemoteLLM {
     this._status    = 'idle';
     this._statusMsg = '';
     this._statusListeners   = new Set();
-    this._progressListeners = new Set();
     this._statsListeners    = new Set();
     this._lastStats         = null;
 
@@ -183,6 +195,7 @@ export class RemoteLLM {
     this._loadedModelId  = null;
     this._requestedContext = opts.contextTokens ?? null;
     this._think = opts.think !== false;
+    this._apiKey = String(opts.apiKey || '').trim();
     // Filled by load(): whether the server is Ollama, what the model
     // can do, and the context window we'll actually run with.
     this._isOllama = false;
@@ -205,15 +218,13 @@ export class RemoteLLM {
   get supportsTools() { return this._isOllama && this._capabilities.includes('tools'); }
   get supportsThinking() { return this._isOllama && this._capabilities.includes('thinking'); }
   get thinkEnabled() { return this._think; }
-  get options() { return { contextTokens: this._requestedContext, think: this._think }; }
+  get options() {
+    return { contextTokens: this._requestedContext, think: this._think, apiKey: this._apiKey };
+  }
 
   onStatus(fn) {
     this._statusListeners.add(fn);
     return () => this._statusListeners.delete(fn);
-  }
-  onProgress(fn) {
-    this._progressListeners.add(fn);
-    return () => this._progressListeners.delete(fn);
   }
   onStats(fn) {
     this._statsListeners.add(fn);
@@ -223,7 +234,7 @@ export class RemoteLLM {
   /** Probe the configured endpoint and mark ready.  modelId is the
    *  model name the server will route requests to (e.g. "llama3.2").
    *  We don't pre-load weights — the server keeps them resident. */
-  async load(modelId /* , opts = {} */) {
+  async load(modelId) {
     if (!modelId) {
       return Promise.reject(new Error('load() requires a modelId'));
     }
@@ -242,7 +253,7 @@ export class RemoteLLM {
       const ollamaBase = toOllamaBase(this._endpoint);
       let isOllama = false;
       try {
-        const v = await fetch(ollamaBase + '/api/version', { method: 'GET' });
+        const v = await this._fetch(ollamaBase + '/api/version', { method: 'GET' });
         if (v.ok) {
           const body = await v.json().catch(() => null);
           isOllama = !!(body && typeof body.version === 'string');
@@ -251,7 +262,7 @@ export class RemoteLLM {
 
       let shown = null;
       if (isOllama) {
-        const r = await fetch(ollamaBase + '/api/show', {
+        const r = await this._fetch(ollamaBase + '/api/show', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: modelId }),
@@ -275,7 +286,8 @@ export class RemoteLLM {
                     'num_ctx=', this._contextTokens);
       } else {
         // OpenAI-compatible: GET /models is the lightest probe.
-        const resp = await fetch(this._endpoint + '/models', { method: 'GET' });
+        const resp = await this._fetch(this._endpoint + '/models', { method: 'GET' });
+        if (resp.status === 401) throw new Error('HTTP 401 — check the API key');
         if (!resp.ok) {
           throw new Error(`HTTP ${resp.status} from ${this._endpoint}/models`);
         }
@@ -490,9 +502,16 @@ export class RemoteLLM {
     }
   }
 
+  _fetch(url, init = {}) {
+    return fetch(url, {
+      ...init,
+      headers: bearerHeaders(this._apiKey, init.headers),
+    });
+  }
+
   _post(path, body, ollama) {
     const base = ollama ? toOllamaBase(this._endpoint) : this._endpoint;
-    return fetch(base + path, {
+    return this._fetch(base + path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

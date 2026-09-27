@@ -44,14 +44,18 @@ import {
 import { parseHpText } from '../rpl/hp-text.js';
 import { CommandHelp } from './command-help.js';
 import { GraphView } from './graph-view.js';
-import { EquationEditor } from './equation-editor.js';
 import { MatrixEditor } from './matrix-editor.js';
+import { EquationEditor } from './equation-editor.js';
 
 const EDITOR_TABS = {
   equation: {
     takesStack: true,
-    dest: 'formula editor',
-    create(app) { return new EquationEditor({ app }); },
+    dest: 'equation writer',
+    create(app) {
+      const editor = new EquationEditor({ app });
+      app.equationEditor = editor;
+      return editor;
+    },
   },
   matrix: {
     takesStack: true,
@@ -495,6 +499,7 @@ export class SidePanel {
   }
 
   close() {
+    if (this.tab === 'equation') this._editors.equation?.blurEquation();
     this.el.classList.add('hidden');
     if (this.commandHelp) this.commandHelp.hide();
     this._saveUIState();
@@ -517,6 +522,7 @@ export class SidePanel {
   }
 
   setTab(tab) {
+    const previous = this.tab;
     this.tab = tab;
     this.el.querySelectorAll('.sp-tab').forEach(b => {
       b.classList.toggle('active', b.dataset.tab === tab);
@@ -544,6 +550,12 @@ export class SidePanel {
       tab === 'files'    ? 'Filter files…'    :
                            'Filter characters…';
     this._render();
+    if (tab === 'equation') {
+      const editor = this._editor('equation');
+      if (!editor.isOpen()) editor.open();
+    } else if (previous === 'equation') {
+      this._editors.equation?.blurEquation();
+    }
     this._saveUIState();
     if (this.app?.display && this.app.stack) this.app.display.renderStack(this.app.stack);
   }
@@ -1127,6 +1139,10 @@ export class SidePanel {
   _handleAction(action, value, btn) {
     const { entry, stack } = this.app;
     if (action === 'op') {
+      if (this.app.equationEditor?.ownsKeyboard()) {
+        this.app.equationEditor.pressCommand(value);
+        return;
+      }
       const op = lookup(value);
       if (!op) { entry.flashError({ message: `${value}: not yet implemented` }); return; }
       // Mirror keypad behaviour exactly — clicks on a panel command
@@ -1155,6 +1171,10 @@ export class SidePanel {
       return;
     }
     if (action === 'char') {
+      if (this.app.equationEditor?.ownsKeyboard()) {
+        this.app.equationEditor.typeText(value);
+        return;
+      }
       entry.type(value);
       return;
     }
@@ -1444,8 +1464,7 @@ export class SidePanel {
     let st;
     try { st = JSON.parse(raw); } catch { return; }
     if (!st || typeof st !== 'object') return;
-    const savedTab = st.tab === 'write' ? 'equation' : st.tab;
-    const tab = VALID_TABS.has(savedTab) ? savedTab : 'ai';
+    const tab = VALID_TABS.has(st.tab) ? st.tab : 'ai';
     if (st.historySort === 'newest' || st.historySort === 'oldest') {
       this.historySort = st.historySort;
       const lbl = this.el.querySelector('.sp-sort');

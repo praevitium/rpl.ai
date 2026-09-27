@@ -43,7 +43,6 @@ echo "Syncing from ${REMOTE_HOST}:${PROJECT_PATH}/ ..."
 rsync -avz --delete \
   --exclude='.git/' \
   --exclude='node_modules/' \
-  --exclude='www-dist/' \
   --exclude='target/' \
   "${REMOTE_HOST}:${PROJECT_PATH}/" \
   "${LOCAL_DIR}/"

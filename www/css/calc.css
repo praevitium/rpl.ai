@@ -223,6 +223,10 @@ body {
   min-width: 0;
 }
 
+.eqw-caret { animation: eqw-blink 1s steps(1) infinite; }
+@keyframes eqw-blink { 50% { opacity: 0; } }
+.eqw-inverse { color: var(--screen-bg); }
+
 .stack-row {
   display: flex;
   gap: 10px;
@@ -1668,10 +1672,6 @@ body.mode-minimal .keypad {
   user-select: none;
 }
 
-/* "Pick a different model" affordance — same visual weight as the
-   load button, just an additional path so the user can switch
-   models after one is loaded.  Hidden until either a model is
-   ready (header surfaces it) or a load fails. */
 .cb-switch-model-btn {
   flex: 0 0 auto;
   margin: 6px 10px 0;
@@ -1693,11 +1693,7 @@ body.mode-minimal .keypad {
 .cb-switch-model-btn.hidden { display: none; }
 .cb-picker.hidden            { display: none; }
 
-/* ---- Model picker ----
-   Vertical card list shown when no model is loaded, or when the user
-   asks to switch.  Each row is clickable; the active row gets a
-   left-border accent.  Sized to fit inside the messages-list area
-   without crowding. */
+/* ---- Endpoint panel ---- */
 .cb-picker {
   flex: 1 1 auto;
   min-height: 0;
@@ -1714,10 +1710,6 @@ body.mode-minimal .keypad {
 .cb-inner:has(> .cb-picker:not(.hidden)) > .cb-stats {
   display: none;
 }
-/* Picker header — blurb on the left, close (×) button on the right.
-   Close is always visible so the user can back out without making
-   a selection (e.g. they opened the picker to compare options but
-   decided to keep the current model). */
 .cb-picker-head {
   display: flex;
   align-items: flex-start;
@@ -1747,14 +1739,6 @@ body.mode-minimal .keypad {
 }
 .cb-picker-close:hover  { background: #2b313c; color: #e5ecf7; border-color: rgba(255,255,255,.25); }
 .cb-picker-close:active { background: #1a1f2a; }
-.cb-picker-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
 .cb-picker-select {
   width: 100%;
   background: #0f131c;
@@ -1771,30 +1755,6 @@ body.mode-minimal .keypad {
   outline: none;
   border-color: rgba(103, 232, 249, .55);
 }
-.cb-picker-detail {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-top: 8px;
-}
-.cb-picker-detail .cb-picker-note {
-  flex: 1 1 auto;
-  margin-top: 0;
-}
-.cb-picker-load-btn {
-  flex: 0 0 auto;
-  background: #2b313c;
-  border: 1px solid rgba(255,255,255,.14);
-  color: #c8cedb;
-  font-size: 13px;
-  padding: 5px 12px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background .12s, border-color .12s;
-}
-.cb-picker-load-btn:hover    { background: #363e4f; border-color: rgba(110, 219, 143, .5); color: #fff; }
-.cb-picker-load-btn:active   { background: #1a1f2a; }
-.cb-picker-load-btn:disabled { opacity: .55; cursor: default; }
 .cb-picker-row {
   padding: 8px 10px;
   background: #1f2433;
@@ -1835,14 +1795,7 @@ body.mode-minimal .keypad {
   line-height: 1.35;
 }
 
-/* ---- Remote-endpoint section in the picker ----
-   Sits below the local-model list as a separate block: heading,
-   then either the saved-row + edit/remove buttons, or an "Add"
-   button that swaps in the inline URL/model-name form. */
 .cb-remote-section {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px dashed rgba(255,255,255,.10);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1945,38 +1898,6 @@ body.mode-minimal .keypad {
 }
 .cb-newchat-btn:hover  { background: #2b313c; border-color: rgba(255,255,255,.25); color: #e5ecf7; }
 .cb-newchat-btn:active { background: #1a1f2a; }
-
-/* ---- Download progress ---- */
-.cb-progress {
-  flex: 0 0 auto;
-  padding: 6px 10px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  border-bottom: 1px solid rgba(255,255,255,.06);
-}
-.cb-progress.hidden { display: none; }
-.cb-progress-bar {
-  height: 4px;
-  background: rgba(255,255,255,.1);
-  border-radius: 2px;
-  overflow: hidden;
-}
-.cb-progress-fill {
-  height: 100%;
-  background: #e6a64a;
-  border-radius: 2px;
-  transition: width .15s;
-  width: 0%;
-}
-.cb-progress-label {
-  font-size: 13px;
-  color: #8a93a4;
-  font-family: var(--font-lcd);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 /* ---- Load button ---- */
 .cb-load-btn {
@@ -2435,7 +2356,7 @@ body.mode-minimal .keypad {
 /* The side-panel-body needs to flex when the AI tab is active */
 .side-panel-body:has(.cb-panel-wrap),
 .side-panel-body:has(.gr-view),
-.side-panel-body:has(.eq-editor),
+.side-panel-body:has(.eqw-editor),
 .side-panel-body:has(.mx-editor) {
   display: flex;
   flex-direction: column;
@@ -2443,7 +2364,7 @@ body.mode-minimal .keypad {
   overflow: hidden;
 }
 
-.gr-view, .eq-editor, .mx-editor {
+.gr-view, .eqw-editor, .mx-editor {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -2460,8 +2381,7 @@ body.mode-minimal .keypad {
   border-bottom: 1px solid rgba(255,255,255,.06);
 }
 
-.ed-toolbar button, .gr-toolbar button,
-.eq-palette button, .gr-add button {
+.ed-toolbar button, .gr-toolbar button, .gr-add button {
   background: #20242c;
   border: 1px solid #3a4252;
   color: #e7ebf2;
@@ -2471,7 +2391,7 @@ body.mode-minimal .keypad {
   cursor: pointer;
 }
 .ed-toolbar button:hover,
-.gr-toolbar button:hover, .eq-palette button:hover, .gr-add button:hover {
+.gr-toolbar button:hover, .gr-add button:hover {
   background: #2b313c;
   color: #fff;
 }
@@ -2481,37 +2401,7 @@ body.mode-minimal .keypad {
   color: #fff;
 }
 
-.eq-preview {
-  margin: 10px 8px 6px;
-  min-height: 88px;
-  padding: 12px 14px;
-  background: #f4f1e6;
-  color: #1a1d18;
-  border-radius: 8px;
-  border: 1px solid #cfc8b0;
-  overflow: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.eq-preview.empty { color: #6d6758; }
-.eq-preview.error { border-color: #c45c5c; }
-.eq-preview svg { max-width: 100%; height: auto; }
-.eq-placeholder { font-size: 13px; text-align: center; line-height: 1.4; }
-
-.eq-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 0 8px 6px;
-}
-.eq-field-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: .7px;
-  color: #7d8596;
-}
-.eq-input, .gr-add input, .mx-cell, .mx-dim input {
+.gr-add input, .mx-cell, .mx-dim input {
   background: #15181f;
   border: 1px solid #3a4252;
   color: #e7ebf2;
@@ -2521,27 +2411,120 @@ body.mode-minimal .keypad {
   border-radius: 4px;
   outline: none;
 }
-.eq-input:focus, .gr-add input:focus, .mx-cell:focus, .mx-dim input:focus {
+.gr-add input:focus, .mx-cell:focus, .mx-dim input:focus {
   border-color: rgba(103, 232, 249, .5);
 }
 
-.eq-status, .mx-status, .gr-readout {
+.mx-status, .gr-readout {
   min-height: 18px;
   padding: 0 10px 6px;
   font-size: 12px;
   color: #8b93a4;
 }
-.eq-status.error, .mx-status.error { color: #f0a0a0; }
+.mx-status.error { color: #f0a0a0; }
 
-.eq-palette {
+.eqw-editor { background: transparent; }
+.eqw-palette {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.eqw-featured, .eqw-palette-group { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.eqw-more { display: none; flex-direction: column; gap: 6px; max-height: 38vh; overflow: auto; }
+.eqw-editor.eqw-more-open .eqw-more { display: flex; }
+.eqw-palette-label {
+  flex: 1 0 100%;
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #8b93a4;
+}
+.eqw-palette button {
+  min-width: 34px;
+  background: #20242c;
+  border: 1px solid #3a4252;
+  color: #e7ebf2;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.eqw-palette button:hover { background: #2b313c; color: #fff; }
+.eqw-more-toggle { margin-left: auto; }
+.eqw-focus-note {
+  margin: 8px 12px 0;
+  font-size: 12px;
+  letter-spacing: .01em;
+  color: #8b93a4;
+}
+.eqw-editor.eqw-live .eqw-focus-note { color: #9be7f5; }
+.eqw-view {
+  flex: 1 1 auto;
+  overflow: auto;
+  min-height: 160px;
+  margin: 8px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 2px dashed rgba(255,255,255,.22);
+  cursor: pointer;
+  opacity: .62;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.04) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #8fa084, #7d8e72);
+  color: var(--screen-text);
+  font-size: clamp(18px, 2.4vh, 28px);
+}
+.eqw-editor.eqw-live .eqw-view {
+  opacity: 1;
+  cursor: text;
+  border: 2px solid rgba(103, 232, 249, .95);
+  box-shadow: 0 0 0 4px rgba(103, 232, 249, .2);
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.02) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #c5d4b4, #b7c6a6);
+}
+.eqw-view:not(.eqw-focused) .eqw-caret { animation: none; opacity: .3; }
+
+.mx-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.mx-bar-main, .mx-bar-tools {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  padding: 8px;
-  border-top: 1px solid rgba(255,255,255,.06);
+  gap: 6px;
+  align-items: center;
 }
-.eq-palette button { font-family: var(--font-ui); min-width: 40px; }
-
+.mx-bar-gap { flex: 1 1 8px; }
+.mx-bar button {
+  background: #20242c;
+  border: 1px solid #3a4252;
+  color: #e7ebf2;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.mx-bar button:hover { background: #2b313c; color: #fff; }
+.mx-btn-primary {
+  background: #243044;
+  border-color: rgba(103, 232, 249, .4);
+  color: #f4fbff;
+}
+.mx-btn-primary:hover { background: #2c3b52; }
+.mx-sep {
+  width: 1px;
+  align-self: stretch;
+  min-height: 18px;
+  background: rgba(255,255,255,.08);
+  margin: 0 2px;
+}
 .mx-dim {
   display: flex;
   align-items: center;
@@ -2550,27 +2533,64 @@ body.mode-minimal .keypad {
   color: #cdd3de;
 }
 .mx-dim input { width: 52px; padding: 4px 6px; }
+.mx-vector {
+  padding: 3px 8px 3px 6px;
+  border-radius: 999px;
+  border: 1px solid #3a4252;
+  background: #20242c;
+}
+.mx-vector[hidden] { display: none; }
 .mx-scroll {
   flex: 1 1 auto;
   overflow: auto;
-  padding: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 18px 14px;
 }
+.mx-sheet {
+  position: relative;
+  padding: 12px 22px;
+  border-radius: 12px;
+  background: #12151b;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+}
+.mx-sheet::before, .mx-sheet::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  width: 9px;
+  border: 1.5px solid #9aa3b5;
+}
+.mx-sheet::before { left: 7px; border-right: 0; border-radius: 4px 0 0 4px; }
+.mx-sheet::after { right: 7px; border-left: 0; border-radius: 0 4px 4px 0; }
 .mx-table {
-  border-collapse: collapse;
-  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 5px 4px;
 }
 .mx-table th {
-  font-size: 11px;
-  color: #7d8596;
+  font-size: 10px;
+  letter-spacing: .04em;
+  color: #6d7586;
   font-weight: 600;
-  padding: 4px 6px;
+  padding: 0 2px;
   text-align: center;
 }
-.mx-table td { padding: 2px; }
 .mx-cell {
-  width: 72px;
+  width: 4.8em;
   text-align: right;
-  padding: 6px 7px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  background: #1a1e27;
+}
+.mx-cell:focus {
+  background: #1e2633;
+  box-shadow: 0 0 0 1px rgba(103, 232, 249, .45);
+}
+.mx-status {
+  border-top: 1px solid rgba(255,255,255,.05);
+  padding: 8px 12px 10px;
 }
 
 .gr-modes { display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 auto; }

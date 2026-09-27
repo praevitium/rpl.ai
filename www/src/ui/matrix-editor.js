@@ -1,9 +1,10 @@
 import { escapeHtml } from './display.js';
 import { parseEntry } from '../rpl/parser.js';
 import { format } from '../rpl/formatter.js';
+import { Var, parseAlgebra } from '../rpl/algebra.js';
 import {
-  Matrix, Vector, Real,
-  isMatrix, isVector, isList, isNumber, isSymbolic,
+  Matrix, Vector, Real, Symbolic,
+  isMatrix, isVector, isList, isNumber, isSymbolic, isName, isValidHpIdentifier,
 } from '../rpl/types.js';
 
 export const MATRIX_MAX = 50;
@@ -80,6 +81,20 @@ export function insertCol(grid, at) {
   });
 }
 
+export function transposeGrid(grid) {
+  const rows = grid.length;
+  const cols = grid[0]?.length || 0;
+  if (!rows || !cols) return grid.map(row => row.slice());
+  return Array.from({ length: cols }, (_, c) =>
+    Array.from({ length: rows }, (_, r) => grid[r][c] ?? ''));
+}
+
+export function isVectorShape(grid) {
+  const rows = grid.length;
+  const cols = grid[0]?.length || 0;
+  return rows === 1 || cols === 1;
+}
+
 export function deleteCol(grid, at) {
   const cols = grid[0]?.length || 1;
   if (cols <= 1) return grid;
@@ -100,7 +115,9 @@ export function parseMatrixCell(text) {
   }
   const v = values[0];
   if (isNumber(v) || isSymbolic(v)) return v;
-  throw new Error(`expected a number, got ${v?.type}`);
+  if (isName(v) && (v.id === '∞' || isValidHpIdentifier(v.id))) return Symbolic(Var(v.id));
+  try { return Symbolic(parseAlgebra(t)); }
+  catch (e) { throw new Error(e.message || `expected a number, got ${v?.type}`); }
 }
 
 export function gridToMatrix(grid) {
@@ -119,6 +136,7 @@ export function gridToMatrix(grid) {
 export function gridToValue(grid, { asVector = false } = {}) {
   const m = gridToMatrix(grid);
   if (asVector && m.rows.length === 1) return Vector(m.rows[0]);
+  if (asVector && m.rows[0].length === 1) return Vector(m.rows.map(row => row[0]));
   return m;
 }
 
@@ -192,21 +210,36 @@ export class MatrixEditor {
     this.el = document.createElement('div');
     this.el.className = 'mx-editor';
     this.el.innerHTML = `
-      <div class="ed-toolbar">
-        <label class="mx-dim">Rows <input type="number" class="mx-rows" min="1" max="${MATRIX_MAX}" value="${MATRIX_DEFAULT}" /></label>
-        <label class="mx-dim">Cols <input type="number" class="mx-cols" min="1" max="${MATRIX_MAX}" value="${MATRIX_DEFAULT}" /></label>
-        <button type="button" data-mx="id" title="Identity">I</button>
-        <button type="button" data-mx="zero" title="Fill with zeros">0</button>
-        <button type="button" data-mx="insRow" title="Insert row at the focused cell">+row</button>
-        <button type="button" data-mx="delRow" title="Delete focused row">-row</button>
-        <button type="button" data-mx="insCol" title="Insert column at the focused cell">+col</button>
-        <button type="button" data-mx="delCol" title="Delete focused column">-col</button>
-        <button type="button" data-mx="load" title="Copy stack level 1 into the grid">From stack</button>
-        <button type="button" data-mx="push" title="Push this matrix onto the stack">To stack</button>
-        <button type="button" data-mx="clear" title="Clear cells">Clear</button>
+      <div class="mx-bar">
+        <div class="mx-bar-main">
+          <label class="mx-dim">Rows <input type="number" class="mx-rows" min="1" max="${MATRIX_MAX}" value="${MATRIX_DEFAULT}" /></label>
+          <label class="mx-dim">Cols <input type="number" class="mx-cols" min="1" max="${MATRIX_MAX}" value="${MATRIX_DEFAULT}" /></label>
+          <label class="mx-dim mx-vector" hidden><input type="checkbox" class="mx-as-vector" /> Vector</label>
+          <span class="mx-bar-gap"></span>
+          <button type="button" class="mx-btn" data-mx="load" title="Copy stack level 1 into the grid">From stack</button>
+          <button type="button" class="mx-btn mx-btn-primary" data-mx="push" title="Push this matrix onto the stack">To stack</button>
+        </div>
+        <div class="mx-bar-tools">
+          <button type="button" data-mx="id" title="Identity">I</button>
+          <button type="button" data-mx="zero" title="Fill with zeros">0</button>
+          <button type="button" data-mx="transpose" title="Swap rows and columns">T</button>
+          <span class="mx-sep"></span>
+          <button type="button" data-mx="insRow" title="Insert row at the focused cell">+row</button>
+          <button type="button" data-mx="delRow" title="Delete focused row">−row</button>
+          <button type="button" data-mx="insCol" title="Insert column at the focused cell">+col</button>
+          <button type="button" data-mx="delCol" title="Delete focused column">−col</button>
+          <span class="mx-sep"></span>
+          <button type="button" data-mx="sym" data-sym="π" title="Insert π into the focused cell">π</button>
+          <button type="button" data-mx="sym" data-sym="i" title="Insert i into the focused cell">i</button>
+          <button type="button" data-mx="sym" data-sym="∞" title="Insert ∞ into the focused cell">∞</button>
+          <span class="mx-sep"></span>
+          <button type="button" data-mx="clear" title="Clear cells">Clear</button>
+        </div>
       </div>
       <div class="mx-scroll">
-        <table class="mx-table"></table>
+        <div class="mx-sheet">
+          <table class="mx-table"></table>
+        </div>
       </div>
       <div class="mx-status" role="status"></div>
     `;
@@ -214,6 +247,8 @@ export class MatrixEditor {
     this._status = this.el.querySelector('.mx-status');
     this._rowsIn = this.el.querySelector('.mx-rows');
     this._colsIn = this.el.querySelector('.mx-cols');
+    this._vectorLabel = this.el.querySelector('.mx-vector');
+    this._vectorBox = this.el.querySelector('.mx-as-vector');
     this._bind();
     this._renderGrid();
   }
@@ -223,8 +258,10 @@ export class MatrixEditor {
       const btn = ev.target.closest?.('button[data-mx]');
       if (!btn) return;
       const act = btn.dataset.mx;
-      if (act === 'id') this.fillIdentity();
+      if (act === 'sym') this.insertSymbol(btn.dataset.sym);
+      else if (act === 'id') this.fillIdentity();
       else if (act === 'zero') this.fillZeros();
+      else if (act === 'transpose') this.transpose();
       else if (act === 'insRow') this.insertRowAtFocus();
       else if (act === 'delRow') this.deleteRowAtFocus();
       else if (act === 'insCol') this.insertColAtFocus();
@@ -235,11 +272,18 @@ export class MatrixEditor {
     });
     const onDim = () => {
       this.grid = resizeGrid(this.grid, this._rowsIn.value, this._colsIn.value);
-      if (this.grid.length !== 1) this._asVector = false;
+      if (!isVectorShape(this.grid)) this._asVector = false;
       this._renderGrid();
     };
     this._rowsIn.addEventListener('change', onDim);
     this._colsIn.addEventListener('change', onDim);
+    this._vectorBox.addEventListener('change', () => {
+      this._asVector = this._vectorBox.checked && isVectorShape(this.grid);
+      this._noteShape();
+    });
+    this.el.querySelector('.mx-bar').addEventListener('mousedown', (ev) => {
+      if (ev.target.closest('button')) ev.preventDefault();
+    });
     this._table.addEventListener('keydown', (ev) => this._onKey(ev));
     this._table.addEventListener('focusin', (ev) => {
       const cell = ev.target.closest?.('input.mx-cell');
@@ -331,10 +375,40 @@ export class MatrixEditor {
     if (select) next.select();
   }
 
+  insertSymbol(text) {
+    const r = Math.min(this._focusR, this.grid.length - 1);
+    const c = Math.min(this._focusC, (this.grid[0]?.length || 1) - 1);
+    const input = this._table.querySelector(`input.mx-cell[data-r="${r}"][data-c="${c}"]`);
+    const cur = this.grid[r][c] ?? '';
+    if (input && document.activeElement === input) {
+      const start = input.selectionStart ?? cur.length;
+      const end = input.selectionEnd ?? start;
+      const next = cur.slice(0, start) + text + cur.slice(end);
+      this.grid[r][c] = next;
+      input.value = next;
+      const pos = start + text.length;
+      input.setSelectionRange(pos, pos);
+      return;
+    }
+    this.grid[r][c] = cur + text;
+    this._renderGrid();
+    this._focusCell(r, c);
+  }
+
+  transpose() {
+    this.grid = transposeGrid(this.grid);
+    if (!isVectorShape(this.grid)) this._asVector = false;
+    const r = this._focusC;
+    const c = this._focusR;
+    this._renderGrid();
+    this._focusCell(r, c);
+    this._noteShape();
+  }
+
   insertRowAtFocus() {
     const at = this._focusR;
     this.grid = insertRow(this.grid, at);
-    this._asVector = false;
+    if (!isVectorShape(this.grid)) this._asVector = false;
     this._renderGrid();
     this._focusCell(at, this._focusC);
   }
@@ -363,6 +437,20 @@ export class MatrixEditor {
   _syncDimInputs() {
     this._rowsIn.value = String(this.grid.length);
     this._colsIn.value = String(this.grid[0]?.length || 1);
+    const vector = isVectorShape(this.grid);
+    this._vectorLabel.hidden = !vector;
+    if (!vector) this._asVector = false;
+    this._vectorBox.checked = this._asVector;
+  }
+
+  _noteShape() {
+    const rows = this.grid.length;
+    const cols = this.grid[0]?.length || 1;
+    const asVector = this._asVector && isVectorShape(this.grid);
+    this._status.textContent = asVector
+      ? `Vector of ${Math.max(rows, cols)}`
+      : `${rows} × ${cols} matrix`;
+    this._status.classList.remove('error');
   }
 
   _renderGrid() {
@@ -391,12 +479,14 @@ export class MatrixEditor {
     this.grid = identityGrid(this.grid.length, this.grid[0]?.length || 1);
     this._asVector = false;
     this._renderGrid();
+    this._noteShape();
   }
 
   fillZeros() {
     this.grid = zerosGrid(this.grid.length, this.grid[0]?.length || 1);
-    if (this.grid.length !== 1) this._asVector = false;
+    if (!isVectorShape(this.grid)) this._asVector = false;
     this._renderGrid();
+    this._noteShape();
   }
 
   clear() {
@@ -419,7 +509,7 @@ export class MatrixEditor {
       this.app?.entry?.flashError?.({ message: 'Matrix: that stack level is not a matrix, vector, list, or number' });
       return true;
     }
-    this._asVector = isVector(top) || (isList(top) && top.items.every(isNumber));
+    this._asVector = isVector(top) || (isList(top) && top.items.every(isNumber) && !top.items.some(isList));
     this.grid = grid;
     this._renderGrid();
     this._status.textContent = `Copied L${level} (${grid.length} × ${grid[0].length})`;

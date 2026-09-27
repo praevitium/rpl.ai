@@ -319,6 +319,69 @@ export function layoutAst(ast, size = DEFAULT_SIZE) {
   return lay(ast, 0, size);
 }
 
+function placeholderBox(size) {
+  const side = 0.5 * size;
+  return {
+    width: side,
+    ascent: side * 0.8,
+    descent: side * 0.2,
+    draw(x, by) {
+      const y = by - side * 0.8;
+      return `<rect class="eqw-hole" x="${fmt(x)}" y="${fmt(y)}" width="${fmt(side)}" height="${fmt(side)}" fill="currentColor"/>`;
+    },
+  };
+}
+
+function caretBox(size) {
+  const w = 0.45 * size;
+  const h = 0.7 * size;
+  return {
+    width: w,
+    ascent: h * 0.75,
+    descent: h * 0.1,
+    draw(x, by) {
+      const top = by - h * 0.55;
+      const mid = by + h * 0.05;
+      const bot = by + h * 0.35;
+      return `<polygon class="eqw-caret" points="${fmt(x)},${fmt(mid)} ${fmt(x + w)},${fmt(top)} ${fmt(x + w)},${fmt(bot)}" fill="currentColor"/>`;
+    },
+  };
+}
+
+function integralBox(lo, hi, size) {
+  const glyph = textBox('∫', size * 1.7);
+  const limW = Math.max(lo.width, hi.width);
+  const width = glyph.width + limW;
+  const ascent = Math.max(glyph.ascent, hi.ascent + hi.descent + glyph.ascent * 0.15);
+  const descent = Math.max(glyph.descent, lo.ascent + lo.descent);
+  return {
+    width, ascent, descent,
+    draw(x, by) {
+      const hiBy = by - glyph.ascent + hi.descent;
+      const loBy = by + lo.ascent * 0.15;
+      return glyph.draw(x, by) + hi.draw(x + glyph.width, hiBy) + lo.draw(x + glyph.width, loBy);
+    },
+  };
+}
+
+function sigmaBox(below, above, size) {
+  const glyph = textBox('Σ', size * 1.35);
+  const width = Math.max(glyph.width, below.width, above.width);
+  const ascent = glyph.ascent + above.ascent + above.descent;
+  const descent = glyph.descent + below.ascent + below.descent;
+  return {
+    width, ascent, descent,
+    draw(x, by) {
+      const gx = x + (width - glyph.width) / 2;
+      const ax = x + (width - above.width) / 2;
+      const bx = x + (width - below.width) / 2;
+      const aboveBy = by - glyph.ascent + above.descent * 0.2;
+      const belowBy = by + glyph.descent + below.ascent;
+      return above.draw(ax, aboveBy) + glyph.draw(gx, by) + below.draw(bx, belowBy);
+    },
+  };
+}
+
 function lay(ast, parentPrec, size) {
   if (!ast) return textBox('', size);
   if (ast.kind === 'num') return textBox(ast.digits ?? String(ast.value), size);
@@ -333,6 +396,39 @@ function lay(ast, parentPrec, size) {
   }
 
   if (isFn(ast)) {
+    if (ast.name === 'EXP' && ast.args.length === 1) {
+      const exp = lay(ast.args[0], 0, size * SUP_SCALE);
+      return supBox(textBox('e', size), exp);
+    }
+    if (ast.name === 'FACT' && ast.args.length === 1) {
+      const argAst = ast.args[0];
+      const arg = lay(argAst, 0, size);
+      const bare = isNum(argAst) || isVar(argAst) || isFn(argAst);
+      return rowBox([bare ? arg : parenBox(arg), textBox('!', size)]);
+    }
+    if (ast.name === 'DERIV' && ast.args.length === 2) {
+      const v = lay(ast.args[1], 0, size);
+      const body = parenBox(lay(ast.args[0], 0, size));
+      const frac = fracBox(textBox('∂', size), rowBox([textBox('∂', size), v]), size);
+      return rowBox([frac, body]);
+    }
+    if (ast.name === 'INTEG' && ast.args.length === 4) {
+      const body = lay(ast.args[0], 0, size);
+      const v = lay(ast.args[1], 0, size);
+      const lo = lay(ast.args[2], 0, size * SUP_SCALE);
+      const hi = lay(ast.args[3], 0, size * SUP_SCALE);
+      return rowBox([integralBox(lo, hi, size), body, textBox('d', size), v]);
+    }
+    if (ast.name === 'Σ' && ast.args.length === 4) {
+      const bodyAst = ast.args[0];
+      const body = lay(bodyAst, 0, size);
+      const v = lay(ast.args[1], 0, size * SUP_SCALE);
+      const lo = lay(ast.args[2], 0, size * SUP_SCALE);
+      const hi = lay(ast.args[3], 0, size * SUP_SCALE);
+      const below = rowBox([v, textBox('=', size * SUP_SCALE), lo]);
+      const sum = isBin(bodyAst) && (bodyAst.op === '+' || bodyAst.op === '-') ? parenBox(body) : body;
+      return rowBox([sigmaBox(below, hi, size), sum]);
+    }
     // √ radical.  SQRT(x) draws a hook-and-vinculum over the radicand
     // instead of the literal text `SQRT(x)`.  The shape composes with
     // fractions, exponents, etc. — SQRT((X+1)/2) correctly draws the
@@ -461,4 +557,171 @@ export function astToSvg(ast, opts = {}) {
     `height="${fmt(height)}" viewBox="0 0 ${fmt(width)} ${fmt(height)}"` +
     ` fill="currentColor"${colorAttr}>${inner}</svg>`;
   return { svg, width, height };
+}
+
+const EQW_READING = {
+  frac: [0, 1], pow: [0, 1], sqrt: [0], xroot: [1, 0], exp: [0], neg: [0],
+  fact: [0], paren: [0], deriv: [1, 0], integ: [2, 3, 0, 1], sigma: [1, 2, 3, 0],
+};
+
+function eqwItemKey(rowKey, index) {
+  return rowKey === '' ? String(index) : `${rowKey}.${index}`;
+}
+
+function eqwTrack(box, key, kind, rects) {
+  return {
+    width: box.width,
+    ascent: box.ascent,
+    descent: box.descent,
+    draw(x, by) {
+      rects.set(key, {
+        x,
+        y: by - box.ascent,
+        w: box.width,
+        h: box.ascent + box.descent,
+        kind,
+      });
+      return box.draw(x, by);
+    },
+  };
+}
+
+function eqwRowHas(row, ops) {
+  return row.some(item => item.t === 'op' && ops.includes(item.op));
+}
+
+function layEqwSlot(row, rowKey, size, caret, rects) {
+  return layEqwRow(row, rowKey, size, caret, rects);
+}
+
+function layEqwRow(row, rowKey, size, caret, rects) {
+  return rowBox(row.map((item, index) => {
+    return layEqwItem(item, eqwItemKey(rowKey, index), size, caret, rects);
+  }));
+}
+
+function layEqwItem(item, key, size, caret, rects) {
+  if (item.t === 'hole') {
+    const box = key === caret ? caretBox(size) : placeholderBox(size);
+    return eqwTrack(box, key, 'hole', rects);
+  }
+  if (item.t === 'num' || item.t === 'name') {
+    const text = textBox(item.text || '', size);
+    const box = key === caret ? rowBox([text, caretBox(size)]) : text;
+    return eqwTrack(box, key, 'leaf', rects);
+  }
+  if (item.t === 'op') {
+    const glyph = item.op === '*' ? '·' : item.op;
+    const box = (item.op === '+' || item.op === '-' || item.op === '=')
+      ? opSepBox(glyph, size)
+      : textBox(glyph, size);
+    return eqwTrack(box, key, 'op', rects);
+  }
+  const slots = item.slots.map((slot, index) => {
+    return layEqwSlot(slot, `${key}.${index}`, size, caret, rects);
+  });
+  let box;
+  if (item.t === 'frac') box = fracBox(slots[0], slots[1], size);
+  else if (item.t === 'pow') {
+    const base = (item.slots[0].length !== 1 || ['frac', 'neg', 'pow', 'fact'].includes(item.slots[0][0]?.t))
+      ? parenBox(slots[0])
+      : slots[0];
+    box = supBox(base, layEqwSlot(item.slots[1], `${key}.1`, size * SUP_SCALE, caret, rects));
+  }
+  else if (item.t === 'sqrt') box = radicalBox(slots[0], size);
+  else if (item.t === 'xroot') {
+    const index = layEqwSlot(item.slots[1], `${key}.1`, size * SUP_SCALE, caret, rects);
+    box = radicalBox(slots[0], size, index);
+  }
+  else if (item.t === 'exp') {
+    box = supBox(textBox('e', size), layEqwSlot(item.slots[0], `${key}.0`, size * SUP_SCALE, caret, rects));
+  }
+  else if (item.t === 'neg') {
+    const arg = eqwRowHas(item.slots[0], ['+', '-']) ? parenBox(slots[0]) : slots[0];
+    box = rowBox([textBox('-', size), arg]);
+  }
+  else if (item.t === 'fact') {
+    const bare = item.slots[0].length === 1 && ['num', 'name', 'hole', 'paren', 'fn'].includes(item.slots[0][0]?.t);
+    box = rowBox([bare ? slots[0] : parenBox(slots[0]), textBox('!', size)]);
+  }
+  else if (item.t === 'paren') box = parenBox(slots[0]);
+  else if (item.t === 'fn') {
+    const args = [];
+    slots.forEach((slot, index) => {
+      if (index) args.push(textBox(', ', size));
+      args.push(slot);
+    });
+    box = rowBox([textBox(item.name, size), parenBox(rowBox(args))]);
+  }
+  else if (item.t === 'deriv') {
+    const v = slots[1];
+    const frac = fracBox(textBox('∂', size), rowBox([textBox('∂', size), v]), size);
+    box = rowBox([frac, parenBox(slots[0])]);
+  }
+  else if (item.t === 'integ') {
+    const lo = layEqwSlot(item.slots[2], `${key}.2`, size * SUP_SCALE, caret, rects);
+    const hi = layEqwSlot(item.slots[3], `${key}.3`, size * SUP_SCALE, caret, rects);
+    box = rowBox([integralBox(lo, hi, size), slots[0], textBox('d', size), slots[1]]);
+  }
+  else if (item.t === 'sigma') {
+    const small = size * SUP_SCALE;
+    const v = layEqwSlot(item.slots[1], `${key}.1`, small, caret, rects);
+    const lo = layEqwSlot(item.slots[2], `${key}.2`, small, caret, rects);
+    const hi = layEqwSlot(item.slots[3], `${key}.3`, small, caret, rects);
+    const body = eqwRowHas(item.slots[0], ['+', '-']) ? parenBox(slots[0]) : slots[0];
+    box = rowBox([sigmaBox(rowBox([v, textBox('=', small), lo]), hi, size), body]);
+  }
+  else box = slots.length ? rowBox(slots) : textBox('?', size);
+  return eqwTrack(box, key, 'struct', rects);
+}
+
+function eqwUnion(rects, selected) {
+  let union = null;
+  for (let index = selected.from; index <= selected.to; index++) {
+    const key = selected.row === '' ? String(index) : `${selected.row}.${index}`;
+    const rect = rects.get(key);
+    if (!rect) continue;
+    if (!union) union = { ...rect };
+    else {
+      const x2 = Math.max(union.x + union.w, rect.x + rect.w);
+      const y2 = Math.max(union.y + union.h, rect.y + rect.h);
+      union.x = Math.min(union.x, rect.x);
+      union.y = Math.min(union.y, rect.y);
+      union.w = x2 - union.x;
+      union.h = y2 - union.y;
+    }
+  }
+  return union;
+}
+
+export function eqwToSvg(root, opts = {}) {
+  const size = opts.size ?? DEFAULT_SIZE;
+  const pad = opts.padding ?? 6;
+  const rects = new Map();
+  const caret = opts.caret ?? null;
+  const boxed = opts.boxed ?? null;
+  const selected = opts.selected ?? null;
+  const clipId = opts.clipId || 'eqw-sel';
+  const content = layEqwRow(root, '', size, caret, rects);
+  const width = content.width + pad * 2;
+  const height = content.ascent + content.descent + pad * 2;
+  const baseline = pad + content.ascent;
+  let inner = content.draw(pad, baseline);
+  if (boxed && rects.has(boxed)) {
+    const rect = rects.get(boxed);
+    inner += `<rect class="eqw-clear" x="${fmt(rect.x - 1)}" y="${fmt(rect.y - 1)}" width="${fmt(rect.w + 2)}" height="${fmt(rect.h + 2)}" fill="none" stroke="currentColor" stroke-width="1.5"/>`;
+  }
+  if (selected) {
+    const union = eqwUnion(rects, selected);
+    if (union) {
+      const again = content.draw(pad, baseline);
+      inner += `<defs><clipPath id="${clipId}"><rect x="${fmt(union.x - 1)}" y="${fmt(union.y - 1)}" width="${fmt(union.w + 2)}" height="${fmt(union.h + 2)}"/></clipPath></defs>`;
+      inner += `<g clip-path="url(#${clipId})"><rect x="${fmt(union.x - 1)}" y="${fmt(union.y - 1)}" width="${fmt(union.w + 2)}" height="${fmt(union.h + 2)}" fill="currentColor"/><g class="eqw-inverse">${again}</g></g>`;
+    }
+  }
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${fmt(width)}" ` +
+    `height="${fmt(height)}" viewBox="0 0 ${fmt(width)} ${fmt(height)}" ` +
+    `fill="currentColor">${inner}</svg>`;
+  return { svg, width, height, rects };
 }

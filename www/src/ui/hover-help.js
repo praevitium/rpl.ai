@@ -24,7 +24,25 @@ export function commandHelpText(word, entries) {
   return summary ? `${word.toUpperCase()} — ${summary}` : word.toUpperCase();
 }
 
-export function installCommandHover(host, entry) {
+function textWordAtPoint(x, y) {
+  const caret = document.caretPositionFromPoint?.(x, y);
+  if (caret) return commandWordAt(caret.offsetNode.textContent, caret.offset);
+  const range = document.caretRangeFromPoint?.(x, y);
+  return range ? commandWordAt(range.startContainer.textContent, range.startOffset) : null;
+}
+
+export function entryWordAtEvent(entry) {
+  return (ev) => {
+    const pos = entry.posAtCoords(ev.clientX, ev.clientY);
+    return pos == null ? null : commandWordAt(entry.buffer, pos);
+  };
+}
+
+export function stackWordAtEvent(ev) {
+  return ev.target.closest?.('.value-text') ? textWordAtPoint(ev.clientX, ev.clientY) : null;
+}
+
+export function installCommandHover(host, wordAtEvent) {
   let entries = null;
   loadCommandReference().then((m) => { entries = m; }).catch(() => {});
 
@@ -34,23 +52,32 @@ export function installCommandHover(host, entry) {
   document.body.appendChild(tip);
 
   let timer = null;
+  let mutedTitle = null;
   const hide = () => {
     clearTimeout(timer);
     tip.classList.add('hidden');
+    if (mutedTitle) {
+      mutedTitle.el.title = mutedTitle.title;
+      mutedTitle = null;
+    }
   };
-  const showAt = (x, y) => {
-    const pos = entry.posAtCoords(x, y);
-    const text = pos == null ? null : commandHelpText(commandWordAt(entry.buffer, pos), entries);
-    if (!text) { hide(); return; }
+  const show = (ev) => {
+    const text = commandHelpText(wordAtEvent(ev), entries);
+    if (!text) return;
+    const titled = ev.target.closest?.('[title]');
+    if (titled) {
+      mutedTitle = { el: titled, title: titled.title };
+      titled.title = '';
+    }
     tip.textContent = text;
     tip.classList.remove('hidden');
-    tip.style.left = `${Math.max(8, Math.min(x + 12, window.innerWidth - 8 - tip.offsetWidth))}px`;
-    tip.style.top = `${y + 18}px`;
+    tip.style.left = `${Math.max(8, Math.min(ev.clientX + 12, window.innerWidth - 8 - tip.offsetWidth))}px`;
+    tip.style.top = `${ev.clientY + 18}px`;
   };
 
   host.addEventListener('mousemove', (ev) => {
     hide();
-    timer = setTimeout(() => showAt(ev.clientX, ev.clientY), HOVER_DELAY_MS);
+    timer = setTimeout(() => show(ev), HOVER_DELAY_MS);
   });
   host.addEventListener('mouseleave', hide);
   host.addEventListener('keydown', hide);

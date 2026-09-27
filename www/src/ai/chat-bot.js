@@ -57,61 +57,24 @@
         that restores the step-1 snapshot.
    ================================================================= */
 
-import { LLM } from './llm.js';
-import { RemoteLLM, toOpenAIBase, toOllamaBase } from './remote-llm.js';
+import { RemoteLLM, toOpenAIBase, toOllamaBase, isOllamaCloudUrl, bearerHeaders } from './remote-llm.js';
 import { buildSystemPrompt, TOOL_SCHEMAS } from './system-prompt.js';
 
 // Diagnostic logging — every flow-control transition in this module
 // goes through these helpers so the console transcript reads as a
 // single chronological narrative.  Filter the DevTools console by
 // `[ChatBot]` to see the entire chat lifecycle for a session.
-//
-// The prefix is intentional: `[ChatBot]` for orchestration code in
-// this file, `[LLM]` for the main-thread worker bridge in llm.js,
-// `[llm-worker]` for the worker itself.  Together those three tags
-// cover every JS-level transition between "user typed" and "tokens
-// rendered" — useful when a turn appears to hang and you need to
-// localise where in the chain it stopped.
 function dlog(...args)  { /* eslint-disable-next-line no-console */ console.log('[ChatBot]', ...args); }
 function dwarn(...args) { /* eslint-disable-next-line no-console */ console.warn('[ChatBot]', ...args); }
 function dgroup(label)  { /* eslint-disable-next-line no-console */ console.groupCollapsed('[ChatBot]', label); }
 function dgroupEnd()    { /* eslint-disable-next-line no-console */ console.groupEnd(); }
 
-// Hard cap on LLM iterations per user turn.  A single user message
-// kicks off an agentic loop: the model emits prose + tool calls, the
-// orchestrator dispatches them, folds the results into history, and
-// re-prompts.  The loop ends when the model emits no tool calls (its
-// "workflow complete" signal) or this cap fires.  Small in-browser
-// models get six — enough for read → decide → write → verify and
-// tight enough to bail when they loop; remote (Ollama) models get
-// room for genuine multi-step work: look up a command, dry-run a
-// candidate, fix it, run it, check the result.
-const MAX_TURN_ITERATIONS = 6;
-const MAX_TURN_ITERATIONS_REMOTE = 12;
+const MAX_TURN_ITERATIONS = 12;
 
-// Per-reply token cap.  In-browser models are slow and prone to
-// repetition loops, so their cap stays tight.  A remote model gets a
-// generous cap: Ollama thinking models spend thousands of tokens on
-// hidden reasoning before the visible answer, and a worked olympiad
-// solution is long — the context window and the stall watchdog are
-// the real bounds.
-const MAX_REPLY_TOKENS = 512;
-const MAX_REPLY_TOKENS_REMOTE = 16384;
+// Thinking models spend thousands of tokens on hidden reasoning before the visible answer.
+const MAX_REPLY_TOKENS = 16384;
 
-// Stall timeout (ms) for the single combined LLM call.  WebLLM 0.2.x
-// has a known failure mode where chat.completions.create can wedge
-// in its prefill path with no tokens, no error, no done — the main-
-// thread promise hangs and the user sees a forever-streaming bubble.
-//
-// This is a *stall* timeout, not a wall-clock cap: the timer resets
-// on every streamed token, so a model that's just slow but producing
-// output runs to completion.  Only true silence triggers the abort.
-//
-// On stall: _llm.abort() is fired, which makes the worker break out
-// of its for-await loop and post `done`.  _runLoop's fullText-handling
-// code then degrades gracefully — finalises whatever prose streamed
-// (with a "(reply stalled)" hint), and skips tool dispatch since an
-// empty/partial fullText doesn't yield a parseable JSON brace block.
+// Reset on every streamed token or thinking chunk; only silence aborts.
 const STALL_TIMEOUT_MS = 45000;
 
 // Reserve for the model's own response — we don't want the prompt to
@@ -122,24 +85,6 @@ const STALL_TIMEOUT_MS = 45000;
 // without bumping into the model's hard context cap.
 const RESPONSE_RESERVE_CHARS = 4000;
 
-// Per-model history budget, in characters of prompt (system + kept
-// history).  Computed from the active model's contextTokens entry in
-// MODELS, minus a reserve for the response itself.  See callers
-// (_trimHistoryForBudget, _renderStats) — both call effectiveBudget()
-// fresh each turn so a model swap mid-session updates the cap.
-//
-// Why a budget at all: every LLM turn rebuilds the entire prompt
-// from scratch (no KV-cache reuse across calls — see resetChat() in
-// the worker).  Prefill cost grows roughly quadratically with input
-// length, so an unbounded conversation makes each turn slower than
-// the last.  Capping the prompt keeps turn latency stable AND
-// guarantees we never exceed the configured context window.
-//
-// Why per-model: each MODELS entry has its own contextTokens (see
-// the catalog).  A 2K-context model like TinyLlama gets a tiny
-// budget; a 16K-context model like Llama 3.2 3B gets nearly 12K
-// chars to play with.  Computing this dynamically means the trimmer
-// matches whatever the user picked from the picker.
 export function effectiveBudget(llm) {
   const ctxTokens = activeContextTokens(llm);
   // Tokens → chars: rough 4 chars/token for English / Latin-script.
@@ -692,58 +637,6 @@ const STARTER_CHIPS = [
   'Invert the matrix [[1,2],[3,4]]',
 ];
 
-/* ---- Model catalog ------------------------------------------------
-   Curated subset of WebLLM's prebuiltAppConfig.model_list (see
-   https://github.com/mlc-ai/web-llm/blob/main/src/config.ts) chosen
-   to span small-fast → large-smart so users with different hardware
-   can pick what fits.  All entries are q4f16_1 quantization (the
-   standard for WebGPU); all are instruction-tuned (no base models).
-
-   Per-entry fields:
-     id, label, size, note — self-explanatory.
-     isDefault              — sticky-default for first-time mount.
-     contextTokens          — context_window_size we pass to
-                              CreateMLCEngine.  Each value is chosen
-                              to be at-or-below the model's known
-                              wasm-library compile-time max while
-                              giving us enough headroom to fit our
-                              ~3K-token system prompt + several turns
-                              of history.  Tune individual entries up
-                              if a model is silently truncating the
-                              system prompt; tune down if a model
-                              fails to load with "kv_cache too large".
-
-   Adding/removing models: paste a `model_id:` line from the WebLLM
-   config and fill in the fields above.  Sizes are approximate
-   download size (≈ on-disk Cache Storage size after download), not
-   VRAM requirement.
-
-   --- Why these contextTokens values, briefly ---
-   We're in testing phase comparing models, so we want each one
-   running at "as much context as it can actually use" rather than
-   the lowest common denominator.  WebLLM's compile-time defaults
-   tend to be 4K for browser memory safety, well below most modern
-   models' native maxes (32K-128K).  These values try to surface
-   each model's real capability while staying inside what the
-   prebuilt wasm libs were compiled for and what typical browser
-   WebGPU contexts (~6 GB VRAM) can hold.
-
-   If a model fails to load with "kv_cache too large" or similar,
-   drop its value to 4096; if a model silently misbehaves on long
-   prompts (e.g. the system prompt gets clipped), bump it up.
-   ------------------------------------------------------------------ */
-const MODELS = [
-  // Code-tuned variants
-  { id: 'Qwen2.5-Coder-0.5B-Instruct-q4f16_1-MLC',    label: 'Qwen2.5 Coder 0.5B',     size: '~400 MB',  contextTokens: 4096, note: 'Smallest — fast but weakest reasoning; code-tuned' },
-  { id: 'Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC',    label: 'Qwen2.5 Coder 1.5B',     size: '~1.0 GB',  contextTokens: 4096, note: 'Default — code-tuned, fits the prebuilt 4K library', isDefault: true },
-  { id: 'Qwen3-0.6B-q4f16_1-MLC',                     label: 'Qwen3 0.6B',             size: '~500 MB',  contextTokens: 4096, note: 'Newer Qwen generation — tiny' },
-  { id: 'Qwen2.5-Math-1.5B-Instruct-q4f16_1-MLC',     label: 'Qwen2.5 Math 1.5B',      size: '~1.1 GB',  contextTokens: 4096, note: 'Math-tuned — best small model for calculator work' },
-  { id: 'Qwen2-1.5B-Instruct-q4f16_1-MLC',            label: 'Qwen2 1.5B',             size: '~1.0 GB',  contextTokens: 4096, note: 'Original Qwen2 instruction-tuned' },
-  { id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',          label: 'Qwen2.5 1.5B',           size: '~1.0 GB',  contextTokens: 4096, note: 'Qwen2.5 base instruct (non-Coder)' },
-  { id: 'Qwen3-1.7B-q4f16_1-MLC',                     label: 'Qwen3 1.7B',             size: '~1.4 GB',  contextTokens: 4096, note: 'Newer Qwen generation, mid-size' },
-  { id: 'Qwen3-4B-q4f16_1-MLC',                       label: 'Qwen3 4B',               size: '~2.6 GB',  contextTokens: 4096, note: 'Strongest model that still fits a laptop GPU' },
-];
-
 /** Tool-name aliases for common synonyms small models reach for.
  *  Maps an emitted-but-unregistered name to the actual registry key.
  *  Resolved at dispatch time before the unknown-tool retry kicks in
@@ -829,33 +722,10 @@ export function resolveToolAlias(name) {
     : name;
 }
 
-/** Look up the per-model contextTokens for the currently-loaded model.
- *  Falls back to 4096 (a safe WebLLM default) when no model is loaded
- *  or the loaded id isn't in our catalog. */
 export function activeContextTokens(llm) {
-  const id = llm?.loadedModelId;
-  if (!id) return 4096;
-  // RemoteLLM exposes the server-side model name as loadedModelId and
-  // the context window it actually runs with (the num_ctx it requests
-  // from Ollama, clamped to the model's max).  Plain OpenAI-compat
-  // servers don't expose one, so fall back to the default.  Detected
-  // by duck-typing on `endpoint` — RemoteLLM has it, the worker LLM
-  // doesn't.
-  if (typeof llm?.endpoint === 'string') {
-    return llm.contextTokens || REMOTE_CONTEXT_TOKENS_DEFAULT;
-  }
-  const entry = MODELS.find((m) => m.id === id);
-  return entry?.contextTokens ?? 4096;
+  return llm?.contextTokens || REMOTE_CONTEXT_TOKENS_DEFAULT;
 }
 
-const DEFAULT_MODEL_ID  = MODELS.find((m) => m.isDefault)?.id ?? MODELS[0].id;
-const MODEL_STORAGE_KEY = 'rpl5050.chatbot.modelId';
-
-// Sentinel id used in MODEL_STORAGE_KEY to mean "use the saved remote
-// endpoint config" instead of one of the in-browser MODELS entries.
-// Picked to be obviously not a real WebLLM model id so the
-// `MODELS.find(...)` lookup safely returns undefined.
-const REMOTE_MODEL_ID    = '__remote__';
 const REMOTE_CONFIG_KEY  = 'rpl5050.chatbot.remote';
 // Default context window for remote models.  For Ollama this is the
 // num_ctx we REQUEST (Ollama's own default is small enough to truncate
@@ -866,8 +736,9 @@ const REMOTE_CONFIG_KEY  = 'rpl5050.chatbot.remote';
 const REMOTE_CONTEXT_TOKENS_DEFAULT = 16384;
 const REMOTE_CONTEXT_CHOICES = [8192, 16384, 32768, 65536];
 
-/** Saved remote config: { url, model, contextTokens, think }.  Older
- *  saves lack the last two; they default to 16K and thinking on. */
+/** Saved remote config: { url, model, contextTokens, think, apiKey }.
+ *  Older saves lack the last three; they default to 16K, thinking on,
+ *  and no key. Ollama Cloud (ollama.com) stores the bearer token here. */
 export function normalizeRemoteConfig(cfg) {
   if (!cfg || typeof cfg.url !== 'string' || typeof cfg.model !== 'string'
       || !cfg.url.trim() || !cfg.model.trim()) return null;
@@ -877,6 +748,7 @@ export function normalizeRemoteConfig(cfg) {
     model: cfg.model.trim(),
     contextTokens: Number.isFinite(ctx) && ctx > 0 ? ctx : REMOTE_CONTEXT_TOKENS_DEFAULT,
     think: cfg.think !== false,
+    apiKey: typeof cfg.apiKey === 'string' ? cfg.apiKey.trim() : '',
   };
 }
 
@@ -907,36 +779,55 @@ function clearRemoteConfig() {
  *
  *  Returns `{ models: [{id, size, params, quant}], source: 'ollama'|'openai' }`.
  *  Throws if neither probe returns a usable model list. */
-async function fetchRemoteModels(url) {
+async function fetchRemoteModels(url, apiKey = '') {
   const openaiBase = toOpenAIBase(url);
   const ollamaBase = toOllamaBase(url);
+  const headers = bearerHeaders(apiKey);
+  if (isOllamaCloudUrl(url) && !String(apiKey || '').trim()) {
+    throw new Error('Ollama Cloud needs an API key');
+  }
 
-  // Try Ollama native first — richer metadata and the URL shape most
-  // users will actually have configured for this app.
-  try {
-    const r = await fetch(ollamaBase + '/api/tags', { method: 'GET' });
-    if (r.ok) {
-      const body = await r.json();
-      const models = (body?.models ?? []).map((m) => ({
-        id:     m.name || m.model,
-        size:   typeof m.size === 'number' ? m.size : null,
-        params: m.details?.parameter_size ?? null,
-        quant:  m.details?.quantization_level ?? null,
-      })).filter((m) => m.id);
-      if (models.length) return { models, source: 'ollama' };
+  const fromOllama = async () => {
+    const r = await fetch(ollamaBase + '/api/tags', { method: 'GET', headers });
+    if (r.status === 401) throw new Error('HTTP 401 — check the API key');
+    if (!r.ok) return null;
+    const body = await r.json();
+    const models = (body?.models ?? []).map((m) => ({
+      id:     m.name || m.model,
+      size:   typeof m.size === 'number' ? m.size : null,
+      params: m.details?.parameter_size ?? null,
+      quant:  m.details?.quantization_level ?? null,
+    })).filter((m) => m.id);
+    return models.length ? { models, source: 'ollama' } : null;
+  };
+  const fromOpenAI = async () => {
+    const r2 = await fetch(openaiBase + '/models', { method: 'GET', headers });
+    if (r2.status === 401) throw new Error('HTTP 401 — check the API key');
+    if (!r2.ok) throw new Error(`HTTP ${r2.status} from ${openaiBase}/models`);
+    const body2 = await r2.json();
+    const models = (body2?.data ?? []).map((m) => ({
+      id: m.id, size: null, params: null, quant: null,
+    })).filter((m) => m.id);
+    if (!models.length) throw new Error('Endpoint returned no models');
+    return { models, source: 'openai' };
+  };
+
+  // Cloud's catalogue is the OpenAI /v1/models list. Local Ollama's
+  // /api/tags carries size and quantization, so it stays first there.
+  if (isOllamaCloudUrl(url)) {
+    try {
+      return await fromOpenAI();
+    } catch (err) {
+      const native = await fromOllama();
+      if (native) return native;
+      throw err;
     }
+  }
+  try {
+    const native = await fromOllama();
+    if (native) return native;
   } catch { /* fall through to OpenAI-compat probe */ }
-
-  // OpenAI-compat fallback.  No size/param/quant exposed by the spec —
-  // just id.  We still surface them so the user can pick a model.
-  const r2 = await fetch(openaiBase + '/models', { method: 'GET' });
-  if (!r2.ok) throw new Error(`HTTP ${r2.status} from ${openaiBase}/models`);
-  const body2 = await r2.json();
-  const models = (body2?.data ?? []).map((m) => ({
-    id: m.id, size: null, params: null, quant: null,
-  })).filter((m) => m.id);
-  if (!models.length) throw new Error('Endpoint returned no models');
-  return { models, source: 'openai' };
+  return fromOpenAI();
 }
 
 /** Format a byte count as a short human-readable string, e.g. 1.3 GB.
@@ -948,57 +839,12 @@ function formatBytes(n) {
   return (n / 1e3).toFixed(0) + ' KB';
 }
 
-// First-run consent gate.  The chatbot is a research preview that
-// downloads multi-GB model weights, runs WebGPU inference on the
-// user's device, and proposes calculator commands that mutate state.
-// We surface those facts in a one-time notice and require an
-// explicit Enable click before any of the chat UI mounts.  The flag
-// is versioned (`.v1`) so the notice can be re-shown if its terms
-// change materially in a future revision.
 const CONSENT_KEY = 'rpl5050.chatbot.consented.v1';
 function hasConsented() {
   try { return localStorage.getItem(CONSENT_KEY) === '1'; } catch { return false; }
 }
 function setConsented() {
   try { localStorage.setItem(CONSENT_KEY, '1'); } catch { /* private mode */ }
-}
-
-// One-shot migration key.  Premium-tier models (≥7B) consistently
-// stall in the WebLLM 0.2.x runtime — see the worker comment around
-// resetChat() — so we drop any previously-saved selection in that
-// tier exactly once and fall back to DEFAULT_MODEL_ID.  After this
-// runs, the user's explicit re-pick of a premium model from the
-// picker sticks (we don't re-migrate); the migration flag's purpose
-// is solely to break the "stall → reload → still 7B → stall again"
-// loop for users who picked a too-large model before we knew better.
-const PREMIUM_DROP_MIGRATION_KEY = 'rpl5050.chatbot.migrated.dropPremium.v1';
-const STALL_RISK_MODEL_IDS = [
-  'Qwen2.5-7B-Instruct-q4f16_1-MLC',
-  'Mistral-7B-Instruct-v0.3-q4f16_1-MLC',
-  'Llama-3.1-8B-Instruct-q4f16_1-MLC',
-];
-
-function loadSavedModelId() {
-  try {
-    if (!localStorage.getItem(PREMIUM_DROP_MIGRATION_KEY)) {
-      const saved = localStorage.getItem(MODEL_STORAGE_KEY);
-      if (saved && STALL_RISK_MODEL_IDS.includes(saved)) {
-        localStorage.removeItem(MODEL_STORAGE_KEY);
-        // eslint-disable-next-line no-console
-        console.warn(
-          '[ChatBot] migration: dropped saved model', saved,
-          '— premium-tier (≥7B) models stall on browser WebGPU.',
-          'Falling back to', DEFAULT_MODEL_ID + '.',
-          'Re-pick from the picker if you really want this model.',
-        );
-      }
-      localStorage.setItem(PREMIUM_DROP_MIGRATION_KEY, '1');
-    }
-    return localStorage.getItem(MODEL_STORAGE_KEY);
-  } catch { return null; }
-}
-function saveModelId(id) {
-  try { localStorage.setItem(MODEL_STORAGE_KEY, id); } catch { /* private mode */ }
 }
 
 /* ================================================================
@@ -1017,7 +863,7 @@ export class ChatBot {
   constructor({ tools, getContext }) {
     this._tools      = tools;
     this._getContext = getContext;
-    this._llm        = new LLM();
+    this._llm        = new RemoteLLM();
     this._history    = [];   // conversation turns (messages array)
     this._container  = null; // DOM element we're mounted into
     this._messagesEl = null; // scrollable message list
@@ -1025,7 +871,6 @@ export class ChatBot {
     this._sendBtn    = null;
     this._stopBtn    = null;
     this._statusEl   = null;
-    this._progressEl = null;
     this._generating = false;
     // Queue of user messages submitted while a turn is in progress.
     // Drained one-at-a-time by the active _submit() after its
@@ -1052,33 +897,18 @@ export class ChatBot {
     this._wireLLMListeners();
   }
 
-  /** Subscribe the ChatBot's status/progress/stats handlers to whatever
-   *  is currently in `this._llm`.  Called after construction and after
-   *  every swap between the local LLM (WebLLM worker) and a RemoteLLM
-   *  (HTTP endpoint) — both expose the same listener surface, but each
-   *  instance has its own listener set so we re-subscribe on swap. */
   _wireLLMListeners() {
     this._llm.onStatus((status, msg) => this._onStatus(status, msg));
-    this._llm.onProgress((info) => this._onProgress(info));
     this._llm.onStats((stats) => this._onStats(stats));
   }
 
-  /** Ensure `this._llm` is the right kind for the requested target.
-   *  `kind` is 'local' (WebLLM worker) or 'remote' (HTTP endpoint).
-   *  No-op if already the right kind AND, for remote, the configured
-   *  endpoint URL hasn't changed.  When swapping, aborts any in-flight
-   *  generation, recreates the instance, and re-wires listeners. */
-  _ensureLLMKind(kind, endpoint = '', opts = {}) {
-    const isRemote = this._llm instanceof RemoteLLM;
-    if (kind === 'remote') {
-      if (isRemote && this._llm.endpoint === toOpenAIBase(endpoint)
-          && this._llm.options.contextTokens === (opts.contextTokens ?? null)
-          && this._llm.options.think === (opts.think !== false)) return;
-    } else {
-      if (!isRemote) return;
-    }
+  _ensureRemoteLLM(endpoint, opts = {}) {
+    if (this._llm.endpoint === toOpenAIBase(endpoint)
+        && this._llm.options.contextTokens === (opts.contextTokens ?? null)
+        && this._llm.options.think === (opts.think !== false)
+        && this._llm.options.apiKey === String(opts.apiKey || '').trim()) return;
     try { this._llm.abort(); } catch { /* no-op */ }
-    this._llm = kind === 'remote' ? new RemoteLLM(endpoint, opts) : new LLM();
+    this._llm = new RemoteLLM(endpoint, opts);
     this._wireLLMListeners();
   }
 
@@ -1191,31 +1021,13 @@ export class ChatBot {
 
   /* ---- Lifecycle ---- */
 
-  /** Render the chat UI into `el`.  Call once.
-   *
-   *  Model load policy:
-   *   - First-ever mount with no saved model → show the picker;
-   *     don't auto-download anything.  The user picks explicitly so
-   *     they're not surprised by a several-hundred-MB download on
-   *     opening the panel.
-   *   - Mount with a saved model id in localStorage → auto-load
-   *     that model.  Subsequent loads of the same id hit Cache
-   *     Storage and complete in seconds.
-   *   - Saved id no longer in MODELS (e.g. user wiped their setting,
-   *     or we removed a model) → fall back to picker.
-   */
+  /** Render the chat UI into `el`.  Call once.  Connects to the saved
+   *  endpoint if there is one; otherwise opens the endpoint panel. */
   mount(el) {
     this._container = el;
     el.innerHTML = '';
     el.classList.add('cb-root');
 
-    // First-run consent gate.  Until the user has explicitly enabled
-    // the assistant, we render only the disclosure notice and an
-    // Enable button — no model picker, no streaming UI, no worker
-    // launch (the LLM instance exists but does nothing until load()
-    // is called).  Once the user accepts, the gate is replaced with
-    // the regular UI in-place; the consent flag is persisted in
-    // localStorage so the gate doesn't re-appear on every page load.
     if (!hasConsented()) {
       dlog('mount: consent not yet given — rendering gate');
       el.appendChild(this._buildConsentGate());
@@ -1223,39 +1035,33 @@ export class ChatBot {
     }
 
     el.appendChild(this._buildUI());
-    this._initialiseModelLoad();
+    this._connectSavedEndpoint();
   }
 
-  /** Resolve which model to load on first mount.  Pulled out of mount()
-   *  so the consent-gate Enable handler can call it after swapping in
-   *  the regular UI. */
-  _initialiseModelLoad() {
-    if (this._llm.status === 'idle') {
-      const saved = loadSavedModelId();
-      if (saved === REMOTE_MODEL_ID) {
-        const cfg = loadRemoteConfig();
-        if (cfg) {
-          this._startLoadRemote(cfg);
-          return;
-        }
-        // Saved sentinel but no config — fall through to picker.
-      }
-      const known = saved && MODELS.some((m) => m.id === saved);
-      if (known) {
-        this._startLoad(saved);
-      } else {
-        this._showPicker();
-      }
+  _connectSavedEndpoint() {
+    if (this._llm.status !== 'idle') return;
+    const cfg = loadRemoteConfig();
+    if (cfg) {
+      this._startLoadRemote(cfg);
+      return;
     }
+    this._statusEl.textContent = 'No endpoint configured';
+    this._statusEl.className = 'cb-status';
+    this._showPicker();
   }
 
-  /** First-run notice + Enable button.  Replaces the regular chat UI
-   *  until the user clicks Enable.  The notice covers the four
-   *  practical points a new user needs before the assistant runs:
-   *  research-preview status, on-device execution, weight-download
-   *  size, and the explicit-confirmation guarantee on mutating
-   *  actions.  Tone is professional / informational — no marketing,
-   *  no emoji garlands. */
+  _removeEndpointAndDisconnect() {
+    clearRemoteConfig();
+    this._llm.abort();
+    this._llm = new RemoteLLM();
+    this._wireLLMListeners();
+    this._statusEl.title = '';
+    this._loadBtn.classList.add('hidden');
+    this._switchModelBtn.classList.add('hidden');
+    this._setUIState('idle');
+    this._connectSavedEndpoint();
+  }
+
   _buildConsentGate() {
     const wrap = document.createElement('div');
     wrap.className = 'cb-consent';
@@ -1277,8 +1083,7 @@ export class ChatBot {
     list.className = 'cb-consent-list';
     const points = [
       'Replies come from a language model and may be wrong. The assistant checks its work on the calculator, but verify anything important.',
-      'By default inference runs locally in your browser via WebGPU and nothing leaves your machine. If you connect an Ollama / OpenAI-compatible endpoint, the conversation and calculator state are sent to that server.',
-      'The first time you select an in-browser model, its weights download from the WebLLM CDN (typically 0.4–2.5 GB). Subsequent sessions reuse the browser cache.',
+      'The assistant runs on an Ollama or OpenAI-compatible endpoint that you configure. The conversation and calculator state are sent to that server.',
       'The assistant runs calculator actions immediately — pushing values, running commands, storing variables, changing modes. Every action is shown as a card, and each turn has an Undo link that restores the calculator to how it was before.',
     ];
     for (const text of points) {
@@ -1306,7 +1111,7 @@ export class ChatBot {
       // mounted into _container, so just clear and rebuild.
       this._container.innerHTML = '';
       this._container.appendChild(this._buildUI());
-      this._initialiseModelLoad();
+      this._connectSavedEndpoint();
     });
     wrap.appendChild(button);
 
@@ -1319,12 +1124,6 @@ export class ChatBot {
     const root = document.createElement('div');
     root.className = 'cb-inner';
 
-    // — Header row: status text on the left, BETA badge in the
-    // middle, "New chat" button on the right.  Status indicates model
-    // load state; the BETA badge flags this whole feature as a
-    // research preview so users don't expect production-grade
-    // behaviour from a 1B-param on-device LLM; New chat resets the
-    // conversation in-place without unloading the model.
     const header = document.createElement('div');
     header.className = 'cb-header';
 
@@ -1348,42 +1147,20 @@ export class ChatBot {
     header.appendChild(betaBadge);
     header.appendChild(this._newChatBtn);
 
-    this._progressEl = document.createElement('div');
-    this._progressEl.className = 'cb-progress hidden';
-
-    const progressBar = document.createElement('div');
-    progressBar.className = 'cb-progress-bar';
-    this._progressBarFill = document.createElement('div');
-    this._progressBarFill.className = 'cb-progress-fill';
-    progressBar.appendChild(this._progressBarFill);
-    this._progressLabel = document.createElement('span');
-    this._progressLabel.className = 'cb-progress-label';
-    this._progressEl.appendChild(progressBar);
-    this._progressEl.appendChild(this._progressLabel);
-
-    // Load button — surfaced if a load fails.  Hidden by default;
-    // _onStatus('error') unhides it as "Retry".  Re-running the same
-    // model id retries; the picker is the way to switch models.
     this._loadBtn = document.createElement('button');
     this._loadBtn.className = 'cb-load-btn hidden';
     this._loadBtn.textContent = 'Retry';
-    this._loadBtn.title = 'Retry loading the selected model.';
+    this._loadBtn.title = 'Retry connecting to the endpoint.';
     this._loadBtn.addEventListener('click', () => {
-      const id = loadSavedModelId() ?? DEFAULT_MODEL_ID;
-      if (id === REMOTE_MODEL_ID) {
-        const cfg = loadRemoteConfig();
-        if (cfg) { this._startLoadRemote(cfg); return; }
-      }
-      this._startLoad(id);
+      const cfg = loadRemoteConfig();
+      if (cfg) this._startLoadRemote(cfg);
+      else this._showPicker();
     });
 
-    // "Pick a different model" affordance — visible alongside Retry
-    // on error, and also surfaced from the header once a model is
-    // ready so the user can switch later.
     this._switchModelBtn = document.createElement('button');
     this._switchModelBtn.className = 'cb-switch-model-btn hidden';
-    this._switchModelBtn.textContent = '⇄ Pick a different model';
-    this._switchModelBtn.title = 'Show the model picker.';
+    this._switchModelBtn.textContent = 'Endpoint settings';
+    this._switchModelBtn.title = 'Configure the Ollama / OpenAI-compatible endpoint.';
     this._switchModelBtn.addEventListener('click', () => this._showPicker());
 
     // — Picker (hidden by default; populated by _showPicker())
@@ -1446,7 +1223,6 @@ export class ChatBot {
     inputRow.appendChild(this._sendBtn);
 
     root.appendChild(header);
-    root.appendChild(this._progressEl);
     root.appendChild(this._loadBtn);
     root.appendChild(this._switchModelBtn);
     root.appendChild(this._pickerEl);
@@ -1459,116 +1235,34 @@ export class ChatBot {
     return root;
   }
 
-  /* ---- Model picker --------------------------------------------------
-     Renders MODELS as a vertical list.  Clicking a row picks + loads
-     that model and persists the selection to localStorage.  The
-     picker hides itself once loading begins; _showPicker() can be
-     called again from the header / error state to change models. */
-
   _showPicker() {
     if (!this._pickerEl) return;
     this._pickerEl.innerHTML = '';
     this._pickerEl.classList.remove('hidden');
 
-    // Header row with the blurb and a close button so the user can
-    // back out without selecting.  Dismiss is always allowed — even
-    // before any model has been loaded — but in that case the chat
-    // input stays disabled and the "Pick a model" button stays
-    // surfaced so they can re-open the picker.
     const head = document.createElement('div');
     head.className = 'cb-picker-head';
 
     const blurb = document.createElement('p');
     blurb.className = 'cb-picker-blurb';
-    blurb.textContent =
-      'Pick a model. Each runs entirely on your device via WebGPU. '
-      + 'First load downloads the weights (one-time per model) and caches them in the browser.';
+    blurb.textContent = loadRemoteConfig()
+      ? 'The assistant runs on the Ollama or OpenAI-compatible endpoint below.'
+      : 'Add an Ollama or OpenAI-compatible endpoint below to use the assistant.';
     head.appendChild(blurb);
 
     const closeBtn = document.createElement('button');
     closeBtn.type = 'button';
     closeBtn.className = 'cb-picker-close';
-    closeBtn.title = 'Dismiss the picker';
-    closeBtn.setAttribute('aria-label', 'Dismiss the picker');
+    closeBtn.title = 'Close endpoint settings';
+    closeBtn.setAttribute('aria-label', 'Close endpoint settings');
     closeBtn.textContent = '✕';
     closeBtn.addEventListener('click', () => this._dismissPicker());
     head.appendChild(closeBtn);
 
     this._pickerEl.appendChild(head);
 
-    const isLocalLLM = !(this._llm instanceof RemoteLLM);
-    const activeId = isLocalLLM
-      ? (this._llm.loadedModelId ?? loadSavedModelId())
-      : loadSavedModelId();
-
-    const select = document.createElement('select');
-    select.className = 'cb-picker-select';
-    for (const m of MODELS) {
-      const opt = document.createElement('option');
-      opt.value = m.id;
-      opt.textContent = `${m.label} — ${m.size}`;
-      if (m.id === activeId) opt.selected = true;
-      select.appendChild(opt);
-    }
-    // If activeId didn't match any option (e.g. remote, or stale id),
-    // <select> defaults to the first entry — we want that as the
-    // initial selection so the note row matches what's shown.
-    this._pickerEl.appendChild(select);
-
-    const detail = document.createElement('div');
-    detail.className = 'cb-picker-detail';
-    const note = document.createElement('div');
-    note.className = 'cb-picker-note';
-    detail.appendChild(note);
-
-    const loadBtn = document.createElement('button');
-    loadBtn.type = 'button';
-    loadBtn.className = 'cb-picker-load-btn';
-    detail.appendChild(loadBtn);
-    this._pickerEl.appendChild(detail);
-
-    const refreshDetail = () => {
-      const m = MODELS.find((x) => x.id === select.value) ?? MODELS[0];
-      const isActive = isLocalLLM && this._llm.loadedModelId === m.id;
-      note.textContent = isActive ? `${m.note} · loaded` : m.note;
-      loadBtn.textContent = isActive ? 'Loaded' : 'Load';
-      loadBtn.disabled = isActive;
-    };
-    select.addEventListener('change', refreshDetail);
-    refreshDetail();
-
-    loadBtn.addEventListener('click', () => {
-      if (this._generating) return;
-      const id = select.value;
-      if (isLocalLLM && id === this._llm.loadedModelId) {
-        this._pickerEl.classList.add('hidden');
-        return;
-      }
-      saveModelId(id);
-      this._pickerEl.classList.add('hidden');
-      // Reset the visible conversation when switching models —
-      // the new model has different priors and the prior chat
-      // history would be confusing in that context.
-      this._history = [];
-      if (this._messagesEl) this._messagesEl.innerHTML = '';
-      this._removeActiveChips();
-      this._startLoad(id);
-    });
-
     this._renderRemoteSection();
   }
-
-  /* ---- Remote-endpoint section ----------------------------------------
-     Lives under the local-model list inside the picker.  Two states:
-
-       - No saved config: a single "+ Add Ollama-compatible endpoint"
-         button that swaps into an inline form (URL + model name).
-       - Saved config:    a row showing the configured URL + model name
-         that loads on click, with edit/remove buttons.
-
-     Persistence is in localStorage under REMOTE_CONFIG_KEY; the
-     active-row indicator follows the same `cb-picker-row-active` class
-     the local list uses, so a remote row "looks active" identically. */
 
   _renderRemoteSection() {
     const wrap = document.createElement('div');
@@ -1576,14 +1270,11 @@ export class ChatBot {
 
     const heading = document.createElement('div');
     heading.className = 'cb-remote-heading';
-    heading.textContent = 'Or use Ollama / an OpenAI-compatible endpoint (recommended — bigger, smarter models)';
+    heading.textContent = 'Ollama / OpenAI-compatible endpoint';
     wrap.appendChild(heading);
 
     const cfg = loadRemoteConfig();
-    const savedId = loadSavedModelId();
-    const isActive = savedId === REMOTE_MODEL_ID
-      && this._llm instanceof RemoteLLM
-      && this._llm.loadedModelId === cfg?.model;
+    const isActive = !!cfg && this._llm.loadedModelId === cfg.model;
 
     if (cfg) {
       const row = document.createElement('div');
@@ -1604,10 +1295,11 @@ export class ChatBot {
 
       const note = document.createElement('div');
       note.className = 'cb-picker-note';
-      const knobs = `${(cfg.contextTokens ?? REMOTE_CONTEXT_TOKENS_DEFAULT) / 1024}K context · thinking ${cfg.think === false ? 'off' : 'on'}`;
+      const knobs = `${(cfg.contextTokens ?? REMOTE_CONTEXT_TOKENS_DEFAULT) / 1024}K context · thinking ${cfg.think === false ? 'off' : 'on'}`
+        + (cfg.apiKey ? ' · API key set' : '');
       note.textContent = isActive
-        ? `Custom endpoint · loaded · ${knobs}`
-        : `Custom endpoint — click to connect · ${knobs}`;
+        ? `Endpoint · connected · ${knobs}`
+        : `Endpoint — click to connect · ${knobs}`;
       row.appendChild(note);
 
       const btnRow = document.createElement('div');
@@ -1627,14 +1319,7 @@ export class ChatBot {
       removeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (this._generating) return;
-        clearRemoteConfig();
-        // If the removed endpoint was the active selection, fall back
-        // to the default local model so we don't end up with nothing
-        // selected.
-        if (loadSavedModelId() === REMOTE_MODEL_ID) {
-          saveModelId(DEFAULT_MODEL_ID);
-        }
-        this._showPicker();
+        this._removeEndpointAndDisconnect();
       });
       btnRow.appendChild(editBtn);
       btnRow.appendChild(removeBtn);
@@ -1643,7 +1328,6 @@ export class ChatBot {
       row.addEventListener('click', () => {
         if (this._generating) return;
         if (isActive) { this._pickerEl.classList.add('hidden'); return; }
-        saveModelId(REMOTE_MODEL_ID);
         this._pickerEl.classList.add('hidden');
         this._history = [];
         if (this._messagesEl) this._messagesEl.innerHTML = '';
@@ -1656,7 +1340,7 @@ export class ChatBot {
       const addBtn = document.createElement('button');
       addBtn.type = 'button';
       addBtn.className = 'cb-remote-add';
-      addBtn.textContent = '+ Add custom endpoint';
+      addBtn.textContent = '+ Add endpoint';
       addBtn.addEventListener('click', () => this._renderRemoteForm(null));
       wrap.appendChild(addBtn);
     }
@@ -1676,8 +1360,6 @@ export class ChatBot {
   _renderRemoteForm(seed) {
     if (!this._pickerEl) return;
 
-    // Replace the entire remote section; leave the local list above it
-    // alone so the user can still pick a local model from the form.
     const existing = this._pickerEl.querySelector('.cb-remote-section');
     if (existing) existing.remove();
 
@@ -1686,14 +1368,15 @@ export class ChatBot {
 
     const heading = document.createElement('div');
     heading.className = 'cb-remote-heading';
-    heading.textContent = seed ? 'Edit endpoint' : 'Add OpenAI-compatible endpoint';
+    heading.textContent = seed ? 'Edit endpoint' : 'Add Ollama / OpenAI-compatible endpoint';
     wrap.appendChild(heading);
 
     const help = document.createElement('div');
     help.className = 'cb-remote-help';
     help.textContent =
       'For local Ollama the URL is http://localhost:11434 — models you have pulled '
-      + 'appear below once it is reachable. Any OpenAI-compatible server also works. '
+      + 'appear below once it is reachable. Ollama Cloud is https://ollama.com/v1 and needs an API key. '
+      + 'Any OpenAI-compatible server also works. '
       + 'Ollama models that support tools and thinking get native tool calling and reasoning.';
     wrap.appendChild(help);
 
@@ -1711,6 +1394,19 @@ export class ChatBot {
     // appear in the dropdown without the user typing anything.
     urlInput.value = seed?.url ?? 'http://localhost:11434/v1';
     wrap.appendChild(urlInput);
+
+    const keyLabel = document.createElement('label');
+    keyLabel.className = 'cb-remote-label';
+    keyLabel.textContent = 'API key';
+    wrap.appendChild(keyLabel);
+    const keyInput = document.createElement('input');
+    keyInput.type = 'password';
+    keyInput.className = 'cb-remote-input';
+    keyInput.autocomplete = 'off';
+    keyInput.spellcheck = false;
+    keyInput.placeholder = 'Required for ollama.com';
+    keyInput.value = seed?.apiKey ?? '';
+    wrap.appendChild(keyInput);
 
     const modelLabel = document.createElement('label');
     modelLabel.className = 'cb-remote-label';
@@ -1793,7 +1489,7 @@ export class ChatBot {
       statusEl.textContent = 'Loading models…';
       errEl.textContent = '';
       try {
-        const { models, source } = await fetchRemoteModels(url);
+        const { models, source } = await fetchRemoteModels(url, keyInput.value.trim());
         if (myToken !== fetchToken) return;   // stale — newer fetch in flight
         models.sort((a, b) => a.id.localeCompare(b.id));
         modelSelect.innerHTML = '';
@@ -1830,6 +1526,7 @@ export class ChatBot {
       clearTimeout(debounceTimer);
       refreshModels(seed?.model);
     });
+    keyInput.addEventListener('change', () => refreshModels(modelSelect.value || seed?.model));
 
     const btnRow = document.createElement('div');
     btnRow.className = 'cb-remote-btns';
@@ -1853,13 +1550,17 @@ export class ChatBot {
         errEl.textContent = 'Pick a model from the dropdown.';
         return;
       }
+      const apiKey = keyInput.value.trim();
+      if (isOllamaCloudUrl(url) && !apiKey) {
+        errEl.textContent = 'Ollama Cloud needs an API key.';
+        return;
+      }
       const cfg = {
-        url: url.replace(/\/+$/, ''), model,
+        url: url.replace(/\/+$/, ''), model, apiKey,
         contextTokens: Number(ctxSelect.value) || REMOTE_CONTEXT_TOKENS_DEFAULT,
         think: thinkBox.checked,
       };
       saveRemoteConfig(cfg);
-      saveModelId(REMOTE_MODEL_ID);
       this._pickerEl.classList.add('hidden');
       this._history = [];
       if (this._messagesEl) this._messagesEl.innerHTML = '';
@@ -1893,19 +1594,14 @@ export class ChatBot {
     this._pickerEl?.classList.add('hidden');
   }
 
-  /** User-driven dismiss of the picker.  Hides the list and surfaces
-   *  the "Pick a model" button so they can re-open it.  Differs from
-   *  _hidePicker() (called as part of normal load flow) only in that
-   *  it always exposes the re-open button, even when no model is
-   *  loaded yet — otherwise the user could end up looking at an empty
-   *  panel with no way to bring the picker back. */
+  /** Unlike _hidePicker(), always surfaces the re-open button so a
+   *  dismissed panel can be brought back before anything connects. */
   _dismissPicker() {
     this._hidePicker();
     if (this._switchModelBtn) {
       this._switchModelBtn.classList.remove('hidden');
-      // Adapt the label to match what's loaded.
       this._switchModelBtn.textContent =
-        this._llm.loadedModelId ? '⇄ Pick a different model' : '⇄ Pick a model';
+        this._llm.loadedModelId ? 'Endpoint settings' : 'Configure endpoint';
     }
   }
 
@@ -1950,33 +1646,6 @@ export class ChatBot {
     this._inputEl?.focus();
   }
 
-  /* ---- Model loading ---- */
-
-  async _startLoad(modelId) {
-    if (!modelId) modelId = loadSavedModelId() ?? DEFAULT_MODEL_ID;
-    // If we were on a remote endpoint, swap back to the local LLM
-    // before loading.  Same listener wiring on both sides so the rest
-    // of the UI doesn't need to know which path we're on.
-    this._ensureLLMKind('local');
-    this._loadBtn.disabled = true;
-    this._loadBtn.textContent = 'Loading…';
-    this._loadBtn.classList.add('hidden');
-    this._switchModelBtn.classList.add('hidden');
-    this._hidePicker();
-    // Pass the catalog-defined contextTokens for this model so WebLLM
-    // configures the KV cache for the size we actually want, instead
-    // of falling back to the prebuilt-config default (typically 4K,
-    // too small for our system prompt + history).
-    const entry = MODELS.find((m) => m.id === modelId);
-    const contextTokens = entry?.contextTokens;
-    dlog('startLoad: modelId=', modelId, 'contextTokens=', contextTokens ?? '(default)');
-    try {
-      await this._llm.load(modelId, { contextTokens });
-    } catch (err) {
-      this._surfaceLoadFailure();
-    }
-  }
-
   _surfaceLoadFailure() {
     if (this._loadBtn) {
       this._loadBtn.disabled = false;
@@ -1987,18 +1656,14 @@ export class ChatBot {
     this._showPicker();
   }
 
-  /** Connect to a configured Ollama-compatible HTTP endpoint.  Mirrors
-   *  _startLoad's UI flow (hide picker, show progress, surface Retry on
-   *  failure) but routes through a RemoteLLM instance instead of the
-   *  WebLLM worker. */
   async _startLoadRemote(cfg) {
     if (!cfg?.url || !cfg?.model) {
       dwarn('startLoadRemote: missing url/model in cfg', cfg);
       this._showPicker();
       return;
     }
-    this._ensureLLMKind('remote', cfg.url.replace(/\/+$/, ''),
-                        { contextTokens: cfg.contextTokens, think: cfg.think });
+    this._ensureRemoteLLM(cfg.url.replace(/\/+$/, ''),
+                          { contextTokens: cfg.contextTokens, think: cfg.think, apiKey: cfg.apiKey });
     this._loadBtn.disabled = true;
     this._loadBtn.textContent = 'Loading…';
     this._loadBtn.classList.add('hidden');
@@ -2016,39 +1681,29 @@ export class ChatBot {
     if (status === 'loading') {
       this._statusEl.textContent = msg || 'Loading…';
       this._statusEl.className = 'cb-status cb-status-loading';
-      this._progressEl.classList.remove('hidden');
       this._loadBtn.classList.add('hidden');
       this._switchModelBtn.classList.add('hidden');
       this._hidePicker();
     } else if (status === 'ready') {
       const id    = this._llm.loadedModelId;
-      const entry = MODELS.find((m) => m.id === id);
-      const isRemote = this._llm instanceof RemoteLLM;
-      const label = isRemote
-        ? `${this._llm.isOllama ? 'Ollama' : 'Remote'}: ${id || 'Ready'}`
-        : (entry?.label ?? id ?? '');
-      if (isRemote) {
-        const caps = [];
-        if (this._llm.supportsTools) caps.push('native tools');
-        if (this._llm.supportsThinking) caps.push(this._llm.thinkEnabled ? 'thinking on' : 'thinking off');
-        if (this._llm.contextTokens) caps.push(`${Math.round(this._llm.contextTokens / 1024)}K context`);
-        this._statusEl.title = caps.length ? caps.join(' · ') : '';
-      } else {
-        this._statusEl.title = '';
-      }
-      this._statusEl.textContent = `● ${label || 'Ready'}`;
+      const label = `${this._llm.isOllama ? 'Ollama' : 'Remote'}: ${id || 'Ready'}`;
+      const caps = [];
+      if (this._llm.supportsTools) caps.push('native tools');
+      if (this._llm.supportsThinking) caps.push(this._llm.thinkEnabled ? 'thinking on' : 'thinking off');
+      if (this._llm.contextTokens) caps.push(`${Math.round(this._llm.contextTokens / 1024)}K context`);
+      this._statusEl.title = caps.length ? caps.join(' · ') : '';
+      this._statusEl.textContent = `● ${label}`;
       this._statusEl.className = 'cb-status cb-status-ready';
-      this._progressEl.classList.add('hidden');
       this._loadBtn.classList.add('hidden');
       this._switchModelBtn.classList.remove('hidden');
-      this._switchModelBtn.textContent = '⇄ Pick a different model';
+      this._switchModelBtn.textContent = 'Endpoint settings';
       this._sendBtn.disabled = false;
       this._hidePicker();
       // Greet on first ready, with starter chips so the user can jump
       // straight into a representative task.
       if (this._history.length === 0) {
         const greeting = this._addAssistantBubble(
-          `${label || 'Model'} ready. I can explain RPL and commands, work through maths ` +
+          `${label} ready. I can explain RPL and commands, work through maths ` +
           'problems, and drive the calculator for you — anything I change can be undone ' +
           'with one click. Pick a starter or type your own:',
         );
@@ -2057,20 +1712,12 @@ export class ChatBot {
     } else if (status === 'error') {
       this._statusEl.textContent = `✗ ${msg || 'Error'}`;
       this._statusEl.className = 'cb-status cb-status-error';
-      this._progressEl.classList.add('hidden');
       this._surfaceLoadFailure();
     }
   }
 
-  _onProgress({ file, progress }) {
-    const pct = Math.round(progress ?? 0);
-    this._progressBarFill.style.width = pct + '%';
-    const name = (file ?? '').split('/').pop();
-    this._progressLabel.textContent = name ? `${name} — ${pct}%` : `${pct}%`;
-  }
-
-  /** Per-turn stats handler.  Called once per successful generate
-   *  (the stats packet arrives just before `done` from the worker).
+  /** Per-turn stats handler.  Called once per completed generate()
+   *  with RemoteLLM's stats packet.
    *  Writes a one-line console summary and updates the inline stats
    *  element in the UI so the user sees the numbers without opening
    *  DevTools.  No state mutation — the cumulative session totals
@@ -2134,9 +1781,7 @@ export class ChatBot {
     // Context-budget arithmetic.  We report against the active
     // model's effectiveBudget — the same number that drives the
     // history trimmer — so the percentage tells the user how close
-    // they are to history actually getting dropped.  Each model in
-    // the catalog has its own contextTokens, so this number changes
-    // when the user switches models.
+    // they are to history actually getting dropped.
     const budgetChars  = effectiveBudget(this._llm);
     const ctxBudgetTok = Math.round(budgetChars / 4);
     const ctxPct       = ctxBudgetTok > 0
@@ -2246,15 +1891,6 @@ export class ChatBot {
      results are folded into history as prose notes and the model is
      re-invoked until it replies without tool calls (or the cap fires).
 
-     Single-call design: splitting reply, tool dispatch, and suggestion
-     into separate LLM calls would rebuild the full system-prompt +
-     history KV cache from scratch each time.  In browser WebGPU
-     (small/mid models, 1B-3B), each additional create() risks wedging
-     in WebLLM's incremental-prefill path ("Phase 2 silent for minutes,
-     zero GPU usage" — see the worker comment around resetChat()).  A
-     single streaming call avoids that stall surface, reduces prefill
-     cost, and keeps prose and tool call coherent.
-
      Display: the streaming bubble shows prose live, but the JSON
      portion is hidden as soon as the parser sees `{"name"` so the
      user never sees raw JSON in their chat.  Full text (incl. JSON)
@@ -2262,22 +1898,16 @@ export class ChatBot {
      reinforces the format on subsequent turns and gives the next-
      turn model a literal example of what it's expected to produce.
      Native tool calls are serialised into the same JSON-line shape
-     before the history push so both backends leave identical
-     transcripts. */
+     before the history push so native and JSON-line tool calls leave
+     identical transcripts. */
 
-  _isRemote() { return this._llm instanceof RemoteLLM; }
-
-  /** Per-backend knobs for a turn: prompt profile, native tools,
-   *  iteration cap, reply length. */
   _turnConfig() {
-    const remote = this._isRemote();
-    const nativeTools = remote && this._llm.supportsTools === true;
+    const nativeTools = this._llm.supportsTools === true;
     return {
-      remote,
       nativeTools,
-      systemPrompt: buildSystemPrompt({ profile: remote ? 'full' : 'compact', nativeTools }),
-      maxIterations: remote ? MAX_TURN_ITERATIONS_REMOTE : MAX_TURN_ITERATIONS,
-      maxTokens: remote ? MAX_REPLY_TOKENS_REMOTE : MAX_REPLY_TOKENS,
+      systemPrompt: buildSystemPrompt({ nativeTools }),
+      maxIterations: MAX_TURN_ITERATIONS,
+      maxTokens: MAX_REPLY_TOKENS,
     };
   }
 
@@ -2683,8 +2313,7 @@ export class ChatBot {
     // Why: Llama / Qwen / most chat templates expect strict
     // user-assistant alternation.  Two back-to-back assistant
     // messages (the model's reply with embedded JSON, then a
-    // separate tool-result note) trip the template — sometimes
-    // visible as MessageOrderError, more often as silent
+    // separate tool-result note) trip the template — silent
     // misbehaviour where the *next* turn produces empty / nonsense
     // output.  This was the cause of "prompts after the first tool
     // run don't work at all" reports: turn 2's prompt looked like
@@ -2836,10 +2465,10 @@ export class ChatBot {
       // active model's effective budget (i.e. the model's context
       // window minus the response reserve).  Send only the most
       // recent message so the turn at least happens; loud warning
-      // so the user can switch to a model with more context.
+      // so the user can raise the endpoint's Context setting.
       dwarn('history-trim: system prompt alone is', systemMsg.content?.length, 'chars',
             '(>= budget', totalBudget, ') — sending only the latest message;',
-            'consider switching to a model with a larger contextTokens setting');
+            'raise the endpoint Context setting');
       return this._history.slice(-1);
     }
     const kept = [];
@@ -2875,11 +2504,8 @@ export class ChatBot {
    *     the phase ran to completion or was aborted by the watchdog.
    *
    *  When `stallMs` of silence elapses with no tokens, the watchdog
-   *  fires _llm.abort() to break the worker's for-await stream.
-   *  That makes the worker post `done`, which resolves the generate
-   *  promise normally — so phases don't need a separate catch path
-   *  for stall, just a post-resolve isStalled() check if they want
-   *  to surface "stalled" in the UI.
+   *  fires _llm.abort(), which cancels the fetch; generate() resolves
+   *  normally with aborted stats, so callers only need isStalled().
    */
   _makeStallWatchdog(stallMs = STALL_TIMEOUT_MS) {
     dlog('watchdog: armed (stallMs=', stallMs, ')');
@@ -2913,7 +2539,7 @@ export class ChatBot {
     // cancels the *current* generate() call, the phase's post-resolve
     // code still runs, and _runLoop happily proceeds to the next
     // phase as if nothing happened.  With the bump, the chain is:
-    //   abort → worker breaks stream → main resolves generate →
+    //   abort → fetch aborts → generate resolves →
     //   phase's stale() check returns true → phase returns null →
     //   _runLoop's stale() check returns → _submit's finally runs →
     //   UI back to idle.

@@ -113,6 +113,8 @@ export const HP_TO_GIAC = Object.freeze({
   "Β": "Beta", // rare — carry through if someone uses the Greek name
   ERF: "erf", ERFC: "erfc",
   ARG: "arg", CONJ: "conj",
+  DERIV: "diff",
+  "Σ": "sum",
   // MOD, XROOT, ALOG, LNGAMMA, INTEG have non-trivial mappings —
   // handled as special cases in astToGiac, not via this table.
 });
@@ -128,6 +130,7 @@ export const GIAC_TO_HP = Object.freeze(
     // Aliases Giac emits that we route to the same HP canonical name:
     ["log", "LN"],          // natural log (only seen in `latex(...)` output)
     ["atan2", "ATAN2"],     // extended trig
+    ["integrate", "INTEG"],
     // Constants — left as lowercase identifiers for now; the AST layer
     // will wrap them as Var('pi') etc. and formatters downstream can
     // prettify.
@@ -224,8 +227,8 @@ function emitFn(ast) {
     return `ln(Gamma(${args[0]}))`;
   }
   if (hpName === "XROOT") {
-    // HP XROOT(n, x) = x^(1/n)  — HP arg order is n first, then x
-    return `((${args[1]})^(1/(${args[0]})))`;
+    // XROOT(radicand, index) = radicand^(1/index)
+    return `((${args[0]})^(1/(${args[1]})))`;
   }
   if (hpName === "MOD") {
     // HP MOD(a, b) — Giac has `irem` for integer remainder and `%` infix.

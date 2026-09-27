@@ -2,10 +2,10 @@ import { assert, assertThrows } from './helpers.mjs';
 import {
   emptyGrid, identityGrid, zerosGrid, clampDim, resizeGrid,
   parseMatrixCell, gridToMatrix, gridToValue, valueToGrid, pasteIntoGrid,
-  insertRow, deleteRow, insertCol, deleteCol, MATRIX_MAX,
+  insertRow, deleteRow, insertCol, deleteCol, transposeGrid, MATRIX_MAX,
 } from '../www/src/ui/matrix-editor.js';
 import {
-  Matrix, Vector, Real, Integer, RList, isMatrix, isInteger, isReal, isVector,
+  Matrix, Vector, Real, Integer, RList, isMatrix, isInteger, isReal, isVector, isSymbolic,
 } from '../www/src/rpl/types.js';
 
 {
@@ -51,7 +51,13 @@ import {
   assert(isMatrix(m) && m.rows.length === 2, 'gridToMatrix: 2x2');
   assert(Number(m.rows[0][0].value) === 1 || m.rows[0][0].value.toNumber?.() === 1,
     'gridToMatrix: (1,1) is 1');
-  assertThrows(() => gridToMatrix([['nope']]), /r1c1/, 'gridToMatrix: bad cell names slot');
+  assertThrows(() => gridToMatrix([['@']]), /r1c1/, 'gridToMatrix: bad cell names slot');
+  const named = parseMatrixCell('π');
+  assert(isSymbolic(named) && named.expr.name === 'π', 'parseMatrixCell: π is a symbolic name');
+  const imag = parseMatrixCell('i');
+  assert(isSymbolic(imag) && imag.expr.name === 'i', 'parseMatrixCell: i is a symbolic name');
+  const inf = parseMatrixCell('∞');
+  assert(isSymbolic(inf) && inf.expr.name === '∞', 'parseMatrixCell: ∞ is a symbolic name');
 }
 
 {
@@ -75,6 +81,12 @@ import {
   const grown = gridToValue([['1', '2'], ['3', '4']], { asVector: true });
   assert(isMatrix(grown) && grown.rows.length === 2,
     'gridToValue: asVector ignored once there is a second row');
+  const col = gridToValue([['1'], ['2'], ['3']], { asVector: true });
+  assert(isVector(col) && col.items.length === 3 && (Number(col.items[2].value) === 3 || col.items[2].value.toNumber?.() === 3),
+    'gridToValue: one column with asVector is a vector');
+  const colMat = gridToValue([['1'], ['2']], { asVector: false });
+  assert(isMatrix(colMat) && colMat.rows.length === 2 && colMat.rows[0].length === 1,
+    'gridToValue: one column without asVector stays a matrix');
 }
 
 {
@@ -130,4 +142,12 @@ import {
   assert(gone[0].length === 2 && gone[0][1] === 'b', 'deleteCol: removes the blank');
   const slim = [['x'], ['y']];
   assert(deleteCol(slim, 0) === slim, 'deleteCol: refuses last column');
+
+  const srcT = [['1', '2', '3'], ['4', '5', '6']];
+  const tr = transposeGrid(srcT);
+  assert(tr.length === 3 && tr[0].length === 2 && tr[0][1] === '4' && tr[2][0] === '3',
+    'transposeGrid: 2×3 becomes 3×2');
+  assert(srcT.length === 2 && srcT[0].length === 3, 'transposeGrid: does not mutate source');
+  const back = transposeGrid(tr);
+  assert(back[1][2] === '6', 'transposeGrid: twice returns the original arrangement');
 }

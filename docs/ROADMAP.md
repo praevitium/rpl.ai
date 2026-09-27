@@ -44,7 +44,7 @@ The substrate the roadmap builds on:
 
 ### 1. Close the last command-support gap cluster
 
-The command surface is complete: 452 HP50 ops are registered and
+The command surface is complete: 453 HP50 ops are registered and
 `COMMANDS.md` has no remaining `✗`. `JORDAN` pushes the minimal
 polynomial, the characteristic polynomial, the eigenvalue-tagged
 characteristic spaces, and the eigenvalue array. A single eigenvector
@@ -112,11 +112,11 @@ The keypad and interactive stack are feature-complete but the
 calculator is hard to drive without HP50 muscle-memory.  A few
 concrete improvements:
 
-- **Equation and matrix writers.**  Side-panel **ƒ𝑥** (equation) and
-  **⊞** (matrix) tabs: algebraic entry with a textbook pretty-print
-  preview (palette wraps the selection in fractions, powers, radicals,
-  and named functions) and a spreadsheet matrix grid that round-trips
-  `Matrix` / `Vector` values.  Push / Load talk to stack level 1.
+- **Equation and matrix writers.**  Right-shift on the `` ` `` key,
+  or ▼ on a Symbolic or Name, opens the HP 50g-style structural
+  equation writer in the side panel (**ƒ𝑥**). The stack stays on the
+  LCD. The **⊞** matrix grid round-trips `Matrix` / `Vector` values.
+  Push / Load talk to stack level 1.
 
 - **Command palette / fuzzy op search.**  `/<name>` opens an overlay,
   types filter the registered op list, Enter invokes the op (as if
@@ -131,8 +131,8 @@ concrete improvements:
   `/` on an empty command line (or Ctrl/Cmd-K) opens it, typing filters
   `allOps()`, Enter runs the highlighted op, Esc closes.
 - **Contextual help.**  Hovering a command name in the command line
-  shows `NAME — AUR one-liner` (`www/src/ui/hover-help.js`).  Still open:
-  the same tooltip over program tokens on the stack.  *Also shipped:*
+  shows `NAME — AUR one-liner` (`www/src/ui/hover-help.js`), and so
+  does hovering a command inside a program on the stack.  *Also shipped:*
   the right-click command-help popup (`www/src/ui/command-help.js`)
   serves the AUR reference per op; its doc-heading→command-key
   normalizer is now the pure, exported `headingKey` (strips the

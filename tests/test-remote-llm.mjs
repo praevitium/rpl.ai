@@ -1,5 +1,6 @@
 import {
-  toOpenAIBase, toOllamaBase, takeSSEFrames, takeNDJSONLines, summarizeRun, pickContextLength,
+  toOpenAIBase, toOllamaBase, isOllamaCloudUrl, bearerHeaders,
+  takeSSEFrames, takeNDJSONLines, summarizeRun, pickContextLength,
   chooseNumCtx, normalizeToolCall, RemoteLLM,
 } from '../www/src/ai/remote-llm.js';
 import { assert } from './helpers.mjs';
@@ -46,6 +47,25 @@ import { assert } from './helpers.mjs';
 {
   assert(toOpenAIBase('') === '',
          'toOpenAIBase preserves empty so callers can detect unset');
+}
+{
+  assert(isOllamaCloudUrl('https://ollama.com/v1') && isOllamaCloudUrl('http://ollama.com'),
+         'isOllamaCloudUrl matches ollama.com');
+  assert(!isOllamaCloudUrl('http://alpha:11434') && !isOllamaCloudUrl('http://localhost:11434'),
+         'isOllamaCloudUrl leaves a LAN or local Ollama host alone');
+  assert(toOpenAIBase('http://ollama.com') === 'https://ollama.com/v1',
+         'toOpenAIBase forces Ollama Cloud onto https://ollama.com/v1');
+  assert(toOpenAIBase('https://ollama.com/api/') === 'https://ollama.com/v1',
+         'toOpenAIBase folds an Ollama Cloud /api root to /v1');
+  assert(toOllamaBase('https://ollama.com/v1') === 'https://ollama.com',
+         'toOllamaBase strips /v1 from Ollama Cloud and keeps https');
+  assert(bearerHeaders('')['Authorization'] === undefined,
+         'bearerHeaders omits Authorization when there is no API key');
+  assert(bearerHeaders('secret', { 'Content-Type': 'application/json' }).Authorization === 'Bearer secret',
+         'bearerHeaders sends the API key as a Bearer token');
+  const cloud = new RemoteLLM('https://ollama.com/v1', { apiKey: 'secret', contextTokens: 16384 });
+  assert(cloud.endpoint === 'https://ollama.com/v1' && cloud.options.apiKey === 'secret',
+         'RemoteLLM keeps the Ollama Cloud endpoint and API key');
 }
 {
   assert(toOpenAIBase(null) === '' && toOpenAIBase(undefined) === '',
@@ -196,16 +216,14 @@ const frame = (obj) => 'data: ' + JSON.stringify(obj);
   assert(s.decodeTps === 50, 'summarizeRun decodeTps = tokens / (decodeMs/1000)');
 }
 
-// session300: passthrough fields and the fixed id/runtimeStats shape are
-// carried straight through so the onStats consumer sees the same object.
+// session300: passthrough fields are carried straight through so the
+// onStats consumer sees the same object.
 {
   const s = summarizeRun({
     t0: 0, firstTokenAt: 10, t1: 20,
     inputChars: 7, inputMessages: 2, outputChars: 9, outputTokens: 4,
     finishReason: 'length', aborted: true,
   });
-  assert(s.id === 0 && s.runtimeStats === null,
-         'summarizeRun fixes id=0 and runtimeStats=null');
   assert(s.inputChars === 7 && s.inputMessages === 2 &&
          s.outputChars === 9 && s.outputTokens === 4,
          'summarizeRun passes the counters through unchanged');
@@ -352,7 +370,7 @@ const frame = (obj) => 'data: ' + JSON.stringify(obj);
 
 // session339: the onStatus subscription contract — the listener fires on a
 // status change and the returned unsubscribe function removes it (the same
-// add/return-remover shape backs onProgress/onStats).
+// add/return-remover shape backs onStats).
 {
   const r = new RemoteLLM('http://h:1');
   const seen = [];

@@ -170,7 +170,7 @@ export const MAIN_KEYS = [
   //                              LASTARG instead so prior args are
   //                              reachable without a soft-menu dive.)
   //   EVAL:  —     / —          (PRG / CHARS replaced by side-panel tabs)
-  //   ':     —     / —          (MTRW / EQW out of scope)
+  //   ':     i     / EQW        (imaginary unit / equation writer)
   //   UNDO:  ∠     / REDO       (HP50 printed this position "SYMB"; the
   //                              CAS entry point lives in the side-panel
   //                              Commands tab.  UNDO is the more useful
@@ -190,14 +190,15 @@ export const MAIN_KEYS = [
   mk('EVAL',  { alpha: 'n', action: typeExecName('EVAL') }),
   // ` key — backtick-quote (primary), this app's remap of the HP50 `'`
   // key.  Backticks open/close algebraic entry; a literal `'` is typed
-  // via the shift-R on the `3` digit key.  Shift affordances stay as
-  // HP50 had them on the original tick key:
-  //   shift-L  i   imaginary-unit constant (for Complex literals)
-  //   shift-R  |   the "where" substitution operator (``X+1 | X=5``)
-  mk('`',     { alpha: 'o', shiftL: 'i', shiftR: '|',
+  // via the shift-R on the `3` digit key.  Shift-R opens the equation
+  // writer, as [RS][EQW] does on the HP 50g tick key.  The where-operator
+  // `|` moved to shift-R on 9.
+  //   shift-L  i    imaginary-unit constant (for Complex literals)
+  //   shift-R  EQW  equation writer
+  mk('`',     { alpha: 'o', shiftL: 'i', shiftR: 'EQW',
                 action:       type('`'),
                 shiftLAction: type('i'),
-                shiftRAction: type('|') }),
+                shiftRAction: (_e, _s, app) => app.openEquationEditor() }),
   // UNDO / REDO bypass execOp's pre-snap (which would otherwise
   // capture the current stack onto the undo history the very instant
   // we were about to step back, making the first UNDO a no-op — see
@@ -306,8 +307,9 @@ export const MAIN_KEYS = [
   // side-panel Commands tab (Trig / Exp / Log categories).  Physical
   // key types '8'.
   mk('8',   { kind: 'digit', action: type('8') }),
-  mk('9',   { kind: 'digit', shiftL: '', shiftR: '',
-              action: type('9') }),
+  mk('9',   { kind: 'digit', shiftL: '', shiftR: '|',
+              action: type('9'),
+              shiftRAction: type('|') }),
   mk('×',   { shiftL: '[ ]', shiftR: '" "',
               action: typeExec('*', '*'),
               shiftLAction: (e) => e.typeWithCursor('[ ]', 2),

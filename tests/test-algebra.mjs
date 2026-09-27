@@ -191,6 +191,22 @@ import { assert, assertThrows } from './helpers.mjs';
 }
 
 {
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('SIN(X)')));
+  s.push(Name('X'));
+  giac._clear();
+  giac._setFixture('diff(sin(X),X)', 'cos(X)');
+  lookup('∂').fn(s);
+  assert(s.depth === 1 && formatAlgebra(s.peek().expr) === 'COS(X)',
+         '∂: SIN(X) wrt X differentiates like DERIV');
+  giac._clear();
+  const bad = new Stack();
+  bad.push(RList([Integer(1n)]));
+  bad.push(Name('X'));
+  assertThrows(() => { lookup('∂').fn(bad); }, /Bad argument type/, '∂ on a List → Bad argument type');
+}
+
+{
   // format() of a Symbolic should render via formatAlgebra with tick
   // wrappers so the stack display uses HP50 style.
   const sym = Symbolic(parseAlgebra('2*X + 1'));
@@ -7982,4 +7998,36 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   for (const v of parseEntry(`\`${BIG}\``)) s.push(v);
   lookup('OBJ→').fn(s);
   assert(isInt(s.peek(2)) && s.peek(2).value === BigInt(BIG), 'OBJ→ on a big integer Symbolic pushes the exact Integer');
+}
+
+{
+  const deriv = parseAlgebra('DERIV(X^2,X)');
+  const integ = parseAlgebra('INTEG(X,X,0,1)');
+  const sum = parseAlgebra('Σ(K^2,K,1,N)');
+  assert(formatAlgebra(deriv) === 'DERIV(X^2,X)', 'parseAlgebra reads DERIV(X^2,X)');
+  assert(integ.name === 'INTEG' && integ.args.length === 4, 'parseAlgebra reads INTEG(X,X,0,1)');
+  assert(sum.name === 'Σ' && sum.args.length === 4, 'parseAlgebra reads Σ(K^2,K,1,N)');
+  assert(parseAlgebra('∞').name === '∞', 'parseAlgebra reads ∞');
+  const { astToGiac, giacToAst } = await import('../www/src/rpl/cas/giac-convert.mjs');
+  const { astToSvg } = await import('../www/src/rpl/pretty.js');
+  assert(astToGiac(deriv) === 'diff(X^2,X)', 'astToGiac emits diff for DERIV');
+  assert(astToGiac(integ) === 'integrate(X,X,0,1)', 'astToGiac emits integrate for INTEG');
+  assert(astToGiac(sum) === 'sum(K^2,K,1,N)', 'astToGiac emits sum for Σ');
+  assert(astEqual(giacToAst('diff(X^2,X)'), deriv), 'giacToAst maps diff back to DERIV');
+  assert(astEqual(giacToAst('integrate(X,X,0,1)'), integ), 'giacToAst maps integrate back to INTEG');
+  assert(astEqual(giacToAst('sum(K^2,K,1,N)'), sum), 'giacToAst maps sum back to Σ');
+  assert(astToGiac(parseAlgebra('XROOT(X,3)')) === '((X)^(1/(3)))',
+    'astToGiac XROOT(X,3) is the cube root of X');
+  const exp = astToSvg(parseAlgebra('EXP(X)'));
+  assert(exp.svg.includes('>e<') && !exp.svg.includes('>EXP<'),
+    'pretty draws EXP as e with a raised exponent');
+  const fact = astToSvg(parseAlgebra('FACT(X)'));
+  assert(fact.svg.includes('>!<') && !fact.svg.includes('>FACT<'),
+    'pretty draws FACT with a trailing !');
+  const integral = astToSvg(integ);
+  assert(integral.svg.includes('>∫<') && integral.svg.includes('>0<') && integral.svg.includes('>1<'),
+    'pretty draws 4-arg INTEG as ∫ with limits');
+  const sigma = astToSvg(sum);
+  assert(sigma.svg.includes('>Σ<') && sigma.svg.includes('>K<') && sigma.svg.includes('>N<'),
+    'pretty draws Σ with k=1 below and N above');
 }

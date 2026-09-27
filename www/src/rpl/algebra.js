@@ -178,7 +178,9 @@ export const KNOWN_FUNCTIONS = Object.freeze({
   // recognise `SUM(...)` and `INTEG(...)` as function calls so
   // symbolic results round-trip through the entry line.
   SUM:   { arity: 1 },
-  INTEG: { arity: 2 },
+  INTEG: { },
+  DERIV: { arity: 2 },
+  'Σ':   { arity: 4 },
   // Heaviside step and Dirac delta.  Heaviside has a well-defined
   // numeric evaluator (0 for x < 0, 1 for x ≥ 0).  Dirac is zero at
   // every non-zero real and a distribution at zero; we fold only the
@@ -529,6 +531,11 @@ export function parseAlgebra(src) {
       const e = parseE();
       expect(')');
       return e;
+    }
+
+    if (c === '∞') {
+      i++;
+      return Var('∞');
     }
 
     // A KNOWN_FUNCTIONS identifier followed by `(` parses as a function

@@ -45,6 +45,8 @@ register('->UNIT', (s) => OPS.get('→UNIT').fn(s));
    `→PRG` therefore still execute. */
 register('∫', (s) => { OPS.get('INTEG').fn(s); });
 
+register('∂', (s) => { OPS.get('DERIV').fn(s); });
+
 register('DERIVX', (s) => { OPS.get('DERVX').fn(s); });
 
 register('->LIST', _toListOp);

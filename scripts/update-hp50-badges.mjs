@@ -44,8 +44,11 @@ for (const [dispatch, doc] of ALIASES) {
   dispatchForDoc.set(String(doc).toUpperCase(), String(dispatch).toUpperCase());
 }
 
+const UI_COMMANDS = new Set(['EQW']);
+
 function isRegistered(display) {
   const key = commandKey(display);
+  if (UI_COMMANDS.has(key)) return true;
   if (registered.has(key)) return true;
   const alias = dispatchForDoc.get(key);
   return !!(alias && registered.has(alias));

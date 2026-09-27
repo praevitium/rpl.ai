@@ -110,7 +110,7 @@ modules — no build step, no framework.
 control flow (`IF` / `WHILE` / `DO` / `FOR` / `START` / `CASE` / `IFERR`),
 compiled local variable environments (`→ a b « … »`), and the
 suspended-execution substrate (`HALT` / `CONT` / `KILL`) are all working.
-The HP 50g command set is complete — 452 commands registered, with no
+The HP 50g command set is complete — 453 commands registered, with no
 remaining gaps outside the deliberate out-of-scope groups. See
 [docs/ROADMAP.md](docs/ROADMAP.md) for what's remaining and
 [docs/COMMANDS.md](docs/COMMANDS.md) for the current command inventory.
@@ -200,8 +200,8 @@ operands stack up; `*` consumes them and leaves `360`. Whitespace-separated
 input works too — `2 3 + 4 *` evaluates left-to-right and ends with `20` on
 the stack.
 
-**Symbolic algebra.** Push `'X^2-4'` and run `FACTOR` → `(X-2)*(X+2)`. Try
-`'SIN(X)' 'X' ∂` for a derivative, or `'X^2-4=0' 'X' SOLVE`. The CAS is
+**Symbolic algebra.** Push `` `X^2-4` `` and run `FACTOR` → `(X-2)*(X+2)`. Try
+`` `SIN(X)` `X` ∂ `` for a derivative, or `` `X^2-4=0` `X` SOLVE ``. The CAS is
 Giac, so most expressions you'd type into Xcas work here too.
 
 **Local variables.** The `→` binding must live inside a program. Enter
@@ -211,7 +211,7 @@ runs, and the frame is torn down on exit — leaving `5` (a + b) and `6`
 (a * b). Compiled locals are the normal way to give intermediate values names
 inside a program.
 
-**Store a program.** Type `« DUP * » 'SQ' STO`. Now `5 SQ` gives `25`. User-
+**Store a program.** Type `` « DUP * » `SQ` STO ``. Now `5 SQ` gives `25`. User-
 defined names sit in the same namespace as built-ins — same lookup, same
 EVAL, same right-click help.
 
@@ -234,16 +234,15 @@ test it, store it, run it), explains how it got there when asked, and
 works through maths / physics / finance problems using the calculator as
 its lab bench.
 
-Two ways to run it:
-
-- **In-browser (WebLLM)** — small models (0.5–2 B) downloaded once and run
-  on your GPU. Private and offline; best for quick calculator help.
-- **Ollama / OpenAI-compatible endpoint** — recommended. Point the picker
-  at `http://localhost:11434` and choose any pulled model. Ollama models
-  that advertise `tools` get native tool calling; models that advertise
-  `thinking` (Qwen3, DeepSeek-R1, gpt-oss, …) reason before answering (a
-  checkbox turns that off); the context window you pick is requested as
-  `num_ctx` so the assistant's system prompt is never truncated.
+The assistant runs against an Ollama or OpenAI-compatible endpoint.
+Add one in the ✦ tab (local Ollama is `http://localhost:11434`; Ollama
+Cloud is `https://ollama.com/v1` with an API key) and choose a model.
+Until an endpoint is configured, the tab asks for one.
+Ollama models that advertise `tools` get native tool calling; models that
+advertise `thinking` (Qwen3, DeepSeek-R1, gpt-oss, …) reason before
+answering (a checkbox turns that off); the context window you pick is
+requested as `num_ctx` so the assistant's system prompt is never
+truncated.
 
 **History.** Every entry from the current session is replayable from the
 history panel — click a prior result to push it back onto the stack.
@@ -298,9 +297,9 @@ shortcuts keep working.
 ### Resetting the calculator
 
 To wipe all persisted state — calculator stack and HOME directory,
-side-panel layout, chrome mode, AI model choice, remote-endpoint config,
-and consent flags — open the DevTools console (click the version label,
-or `F12` in a browser) and run:
+side-panel layout, chrome mode, the AI endpoint config, and the
+assistant consent flag — open the DevTools console (click the version
+label, or `F12` in a browser) and run:
 
 ```js
 calc_reset()

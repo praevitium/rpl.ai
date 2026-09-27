@@ -5,8 +5,9 @@ import {
   normalizeRpl, normalizeRemoteConfig, looksInfix,
 } from '../www/src/ai/chat-bot.js';
 import {
-  SYSTEM_PROMPT_COMBINED, SYSTEM_PROMPT_FULL, RPL_CATALOG, TOOL_SCHEMAS, buildSystemPrompt,
+  SYSTEM_PROMPT, RPL_CATALOG, TOOL_SCHEMAS, buildSystemPrompt,
 } from '../www/src/ai/system-prompt.js';
+import { RemoteLLM } from '../www/src/ai/remote-llm.js';
 import { hasOp } from '../www/src/rpl/ops.js';
 import { assert } from './helpers.mjs';
 import { readFileSync } from 'node:fs';
@@ -656,17 +657,13 @@ import { readFileSync } from 'node:fs';
 }
 
 
-// No model loaded → the safe WebLLM default (4096), and the budget is
-// that window in chars minus the response reserve (4096*4 - 4000).
 {
-  assert(activeContextTokens({}) === 4096,
-         'activeContextTokens falls back to 4096 with no model loaded');
-  assert(effectiveBudget({}) === 4096 * 4 - 4000,
+  assert(activeContextTokens(null) === 16384,
+         'activeContextTokens falls back to the remote default with no endpoint loaded');
+  assert(effectiveBudget(null) === 16384 * 4 - 4000,
          'effectiveBudget subtracts the response reserve from the char window');
 }
 
-// A remote endpoint (duck-typed by a string `endpoint`) uses its
-// probed contextTokens directly.
 {
   const remote = { loadedModelId: 'llama3', endpoint: 'http://x', contextTokens: 8000 };
   assert(activeContextTokens(remote) === 8000,
@@ -683,35 +680,7 @@ import { readFileSync } from 'node:fs';
          'activeContextTokens uses the remote default when unprobed');
 }
 
-// An in-browser id absent from the MODELS catalog falls back to 4096
-// (the worker-LLM branch has no `endpoint`).
 {
-  assert(activeContextTokens({ loadedModelId: 'not-a-real-model' }) === 4096,
-         'activeContextTokens falls back to 4096 for an unknown catalog id');
-}
-
-// session312: positive coverage for the in-catalog worker-model branch and
-// the effectiveBudget zero-floor — only the unknown-id `?? 4096` fallback and
-// the remote paths were pinned, leaving the catalog hit and the Math.max(0,…)
-// guard untested.
-{
-  // A worker LLM (no `endpoint`) whose id IS in MODELS resolves that
-  // entry's real contextTokens, not the 4096 fallback.
-  const worker = { loadedModelId: 'Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC' };
-  assert(activeContextTokens(worker) === 4096,
-         'activeContextTokens resolves an in-catalog worker model contextTokens');
-  assert(effectiveBudget(worker) === 4096 * 4 - 4000,
-         'effectiveBudget tracks an in-catalog worker model window');
-
-  // The remote branch is gated on a STRING `endpoint`; a worker LLM that
-  // happens to carry a contextTokens field still goes through the catalog,
-  // so that stray field is ignored.
-  const ducked = { loadedModelId: 'Qwen3-0.6B-q4f16_1-MLC', contextTokens: 999 };
-  assert(activeContextTokens(ducked) === 4096,
-         'activeContextTokens ignores a worker LLM contextTokens field (no endpoint → catalog wins)');
-
-  // A window smaller than the response reserve floors the budget at 0
-  // instead of going negative.
   const tiny = { loadedModelId: 'srv', endpoint: 'http://x', contextTokens: 500 };
   assert(activeContextTokens(tiny) === 500,
          'activeContextTokens passes through a tiny remote window');
@@ -719,7 +688,7 @@ import { readFileSync } from 'node:fs';
          'effectiveBudget floors at 0 when the window is below the response reserve');
 }
 
-// session426: the remote branch's `contextTokens || DEFAULT` falsy fallback was
+// session426: activeContextTokens' `contextTokens || DEFAULT` falsy fallback was
 // pinned only with `null`, which `||` and `??` treat alike — so a refactor
 // swapping `||` for `??` would pass every prior pin yet change behavior for a
 // server that probes a 0 / NaN window (`??` would surface 0 instead of falling
@@ -748,14 +717,14 @@ const registryToolNames = () =>
   Object.keys(ChatBot.prototype._buildRegistry.call({ _tools: {}, _getContext: () => ({}) }));
 
 // AI prompt <-> tool-registry sync guards.  The AVAILABLE TOOLS block in
-// SYSTEM_PROMPT_COMBINED is a hand-maintained contract the model emits
+// SYSTEM_PROMPT is a hand-maintained contract the model emits
 // verbatim; a tool name that drifts from chat-bot.js _buildRegistry, or
 // an advertised alias that no longer resolves, silently breaks dispatch.
 {
-  const head = SYSTEM_PROMPT_COMBINED.indexOf('AVAILABLE TOOLS');
-  const tail = SYSTEM_PROMPT_COMBINED.indexOf('EXAMPLES', head);
+  const head = SYSTEM_PROMPT.indexOf('AVAILABLE TOOLS');
+  const tail = SYSTEM_PROMPT.indexOf('EXAMPLES', head);
   const documented = [...new Set(
-    [...SYSTEM_PROMPT_COMBINED.slice(head, tail).matchAll(/"name":"([^"]+)"/g)]
+    [...SYSTEM_PROMPT.slice(head, tail).matchAll(/"name":"([^"]+)"/g)]
       .map((m) => m[1])
       .filter((n) => !n.includes('<')),
   )].sort();
@@ -794,9 +763,9 @@ const registryToolNames = () =>
 // the documented semantic from the prose and assert it matches the flag.
 {
   const reg = ChatBot.prototype._buildRegistry.call({ _tools: {}, _getContext: () => ({}) });
-  const head = SYSTEM_PROMPT_COMBINED.indexOf('AVAILABLE TOOLS');
-  const tail = SYSTEM_PROMPT_COMBINED.indexOf('EXAMPLES', head);
-  const block = SYSTEM_PROMPT_COMBINED.slice(head, tail);
+  const head = SYSTEM_PROMPT.indexOf('AVAILABLE TOOLS');
+  const tail = SYSTEM_PROMPT.indexOf('EXAMPLES', head);
+  const block = SYSTEM_PROMPT.slice(head, tail);
   let documentedCount = 0;
   for (const m of block.matchAll(/\{"name":"([^"]+)"[^\n]*\}\n\s+([^\n]+)/g)) {
     const name = m[1];
@@ -831,9 +800,9 @@ const registryToolNames = () =>
     assert(t.function.parameters?.type === 'object',
            `TOOL_SCHEMAS ${t.function.name} parameters is an object schema`);
   }
-  const head = SYSTEM_PROMPT_COMBINED.indexOf('AVAILABLE TOOLS');
-  const tail = SYSTEM_PROMPT_COMBINED.indexOf('EXAMPLES', head);
-  const block = SYSTEM_PROMPT_COMBINED.slice(head, tail);
+  const head = SYSTEM_PROMPT.indexOf('AVAILABLE TOOLS');
+  const tail = SYSTEM_PROMPT.indexOf('EXAMPLES', head);
+  const block = SYSTEM_PROMPT.slice(head, tail);
   for (const m of block.matchAll(/"name":"([^"]+)","arguments":\{([^}]*)\}/g)) {
     const schema = TOOL_SCHEMAS.find((t) => t.function.name === m[1]);
     const proseKeys = [...m[2].matchAll(/"([^"]+)":/g)].map((x) => x[1]).sort();
@@ -843,28 +812,16 @@ const registryToolNames = () =>
   }
 }
 
-// The full (Ollama) profile documents the same tools and keeps the
-// markers the orchestrator and these guards depend on.
 {
-  assert(SYSTEM_PROMPT_FULL !== SYSTEM_PROMPT_COMBINED, 'full and compact profiles differ');
-  const head = SYSTEM_PROMPT_FULL.indexOf('AVAILABLE TOOLS');
-  const tail = SYSTEM_PROMPT_FULL.indexOf('EXAMPLES', head);
-  assert(head > 0 && tail > head, 'full profile has AVAILABLE TOOLS and EXAMPLES markers');
-  const documented = [...new Set(
-    [...SYSTEM_PROMPT_FULL.slice(head, tail).matchAll(/"name":"([^"]+)"/g)]
-      .map((m) => m[1]).filter((n) => !n.includes('<')),
-  )].sort();
-  assert(documented.join(',') === registryToolNames().sort().join(','),
-         'full profile AVAILABLE TOOLS block documents exactly the live registry tool set');
-  assert(SYSTEM_PROMPT_FULL.includes(RPL_CATALOG), 'full profile embeds the RPL catalog');
-  assert(/evaluate/.test(SYSTEM_PROMPT_FULL) && /lookup_command/.test(SYSTEM_PROMPT_FULL),
-         'full profile teaches the dry-run and lookup workflow');
-  const native = buildSystemPrompt({ profile: 'full', nativeTools: true });
+  const head = SYSTEM_PROMPT.indexOf('AVAILABLE TOOLS');
+  const tail = SYSTEM_PROMPT.indexOf('EXAMPLES', head);
+  assert(head > 0 && tail > head, 'system prompt has AVAILABLE TOOLS and EXAMPLES markers');
+  assert(SYSTEM_PROMPT.includes(RPL_CATALOG), 'system prompt embeds the RPL catalog');
+  assert(/evaluate/.test(SYSTEM_PROMPT) && /lookup_command/.test(SYSTEM_PROMPT),
+         'system prompt teaches the dry-run and lookup workflow');
+  const native = buildSystemPrompt({ nativeTools: true });
   assert(/tool-calling interface/.test(native) && !/one JSON object per line/.test(native),
          'native-tools variant swaps the JSON-lines contract for the API interface');
-  const compactNative = buildSystemPrompt({ profile: 'compact', nativeTools: true });
-  assert(/tool-calling interface/.test(compactNative),
-         'compact profile also has a native-tools variant');
 }
 
 // session328: pin each documented tool's ARGUMENT NAMES against the keys its
@@ -880,9 +837,9 @@ const registryToolNames = () =>
 // no-op `_tools` so the side-effecting handlers run DOM-free, then assert the
 // advertised key set equals the read set per tool, in both directions.
 {
-  const head = SYSTEM_PROMPT_COMBINED.indexOf('AVAILABLE TOOLS');
-  const tail = SYSTEM_PROMPT_COMBINED.indexOf('EXAMPLES', head);
-  const block = SYSTEM_PROMPT_COMBINED.slice(head, tail);
+  const head = SYSTEM_PROMPT.indexOf('AVAILABLE TOOLS');
+  const tail = SYSTEM_PROMPT.indexOf('EXAMPLES', head);
+  const block = SYSTEM_PROMPT.slice(head, tail);
   const advertised = {};
   for (const m of block.matchAll(/"name":"([^"]+)","arguments":\{([^}]*)\}/g)) {
     const name = m[1];
@@ -1062,8 +1019,7 @@ const registryToolNames = () =>
 
   // Prompt side: the system prompt forbids the XML wrapper the header
   // used to describe, which is why the corrected wire format is bare JSON.
-  assert(/<tool_call>\s*tags/.test(SYSTEM_PROMPT_COMBINED) &&
-         /DO NOT/.test(SYSTEM_PROMPT_COMBINED),
+  assert(/Never wrap tool calls in .*<tool_call> tags/.test(SYSTEM_PROMPT),
          'session342: system prompt forbids <tool_call> tags (bare JSON objects only)');
 }
 
@@ -1207,6 +1163,55 @@ const registryToolNames = () =>
   assert(normalizeRemoteConfig({ url: '', model: 'm' }) === null
          && normalizeRemoteConfig(null) === null,
          'normalizeRemoteConfig rejects incomplete configs');
+  const cloud = normalizeRemoteConfig({ url: ' https://ollama.com/v1 ', model: 'qwen3', apiKey: ' secret ' });
+  assert(cloud.apiKey === 'secret' && cloud.url === 'https://ollama.com/v1',
+         'normalizeRemoteConfig keeps an Ollama Cloud API key');
+  assert(normalizeRemoteConfig({ url: 'http://alpha:11434', model: 'qwen3' }).apiKey === '',
+         'normalizeRemoteConfig defaults a missing API key to empty');
+}
+
+{
+  const saved = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = {
+    getItem: (k) => store.get(k) ?? null,
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: (k) => store.delete(k),
+  };
+  try {
+    const bot = new ChatBot({ tools: {}, getContext: () => ({}) });
+    let panelOpened = false;
+    let connectedTo = null;
+    bot._statusEl = {};
+    bot._showPicker = () => { panelOpened = true; };
+    bot._startLoadRemote = (cfg) => { connectedTo = cfg; };
+
+    bot._connectSavedEndpoint();
+    assert(bot._llm instanceof RemoteLLM && bot._statusEl.textContent === 'No endpoint configured'
+           && panelOpened && connectedTo === null,
+           'ChatBot with no saved endpoint reports No endpoint configured and opens the endpoint panel');
+
+    store.set('rpl5050.chatbot.remote', JSON.stringify({ url: 'http://localhost:11434', model: 'qwen3' }));
+    panelOpened = false;
+    bot._connectSavedEndpoint();
+    assert(connectedTo?.url === 'http://localhost:11434' && connectedTo.model === 'qwen3' && !panelOpened,
+           'ChatBot with a saved endpoint connects to it instead of opening the endpoint panel');
+
+    const connected = bot._llm;
+    connected._status = 'ready';
+    let aborted = false;
+    connected.abort = () => { aborted = true; };
+    bot._sendBtn = { disabled: false };
+    bot._loadBtn = bot._switchModelBtn = { classList: { add() {} } };
+    panelOpened = false;
+    bot._removeEndpointAndDisconnect();
+    assert(aborted && bot._llm !== connected && bot._llm.status === 'idle'
+           && bot._sendBtn.disabled && bot._statusEl.textContent === 'No endpoint configured'
+           && panelOpened && !store.has('rpl5050.chatbot.remote'),
+           'Removing the connected endpoint disconnects it, disables Send, and reopens the endpoint panel');
+  } finally {
+    globalThis.localStorage = saved;
+  }
 }
 
 /* looksInfix — the hint attached to a failed run/evaluate when the model

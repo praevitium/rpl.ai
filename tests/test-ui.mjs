@@ -1326,6 +1326,12 @@ setAngle('RAD');
   const down = ARROW_KEYS.find(k => k.primary === '▼');
   assert(down.shiftL === 'SST' && typeof down.shiftLAction === 'function',
     'keyboard: left-shift ▼ is the SST key');
+  const tick = MAIN_KEYS.find(k => k.primary === '`');
+  assert(tick.shiftR === 'EQW' && typeof tick.shiftRAction === 'function',
+    'keyboard: right shift on the ` key is EQW');
+  const nine = MAIN_KEYS.find(k => k.primary === '9');
+  assert(nine.shiftR === '|' && typeof nine.shiftRAction === 'function',
+    'keyboard: | is typed from 9 right shift');
 
   resetHome();
   try {
