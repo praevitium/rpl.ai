@@ -9,8 +9,8 @@ ordering inside its notes file (`COMMANDS.md`, `DATA_TYPES.md`,
 view — what the calculator should feel like six months from now, and
 which chunks of work get us there.
 
-The HP50 manuals in `docs/` (`HP50 Advanced Guide.pdf`, `HP50 User
-Guide.pdf`, `HP50 User Manual.pdf`) remain the fidelity reference.
+HP's HP 50g manuals (the User Guide, the Advanced User's Reference and
+the User Manual) remain the fidelity reference.
 
 ---
 

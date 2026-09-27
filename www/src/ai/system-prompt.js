@@ -2,8 +2,6 @@
    System prompt for the chat pipeline.
 
    Sources of truth this prompt was distilled from:
-     - docs/HP50 User Guide.pdf       — RPN vs ALG, the stack, display
-       modes, the CAS.
      - docs/COMMANDS.md               — inventory of every RPL command
        this implementation ships.  RPL_CATALOG is curated against it;
        tests/test-chatbot-parse.mjs asserts every catalog token is a
