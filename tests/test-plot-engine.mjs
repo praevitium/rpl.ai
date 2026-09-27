@@ -5,7 +5,7 @@ import {
   pixelToWorld, zoomView, panView, defaultView, boundsOfPoints,
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit, sampleDiffEq,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
-  evalTraceAtX, sampleTrace, traceInputError, traceFromInputs,
+  evalTraceAtX, sampleTrace, traceInputError, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace,
 } from '../www/src/ui/plot-engine.js';
 import { Matrix, Vector, Real, Integer, Symbolic, Program, RList, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
 import { lookup, setGraphicsHook } from '../www/src/rpl/ops.js';
@@ -279,6 +279,35 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   const param = sampleParametric(parsePlotExpr('X'), parsePlotExpr('2*X'), 0, 2, 3, {});
   assert(param[0][2][0] === 2 && param[0][2][1] === 4,
     'sampleParametric: X is the parameter too');
+}
+
+{
+  const sine = { kind: 'function', expr: 'SIN(X)', exprY: '' };
+  const polar = retypeTrace(sine, 'polar');
+  assert(polar.kind === 'polar' && polar.expr === 'SIN(X)',
+    'retypeTrace: a function becomes a polar trace of the same expression');
+  const param = retypeTrace(sine, 'parametric');
+  assert(param.kind === 'parametric' && param.expr === 'T' && param.exprY === 'SIN(X)',
+    'retypeTrace: a function becomes the parametric curve (T, f)');
+  assert(retypeTrace(param, 'function').expr === 'SIN(X)',
+    'retypeTrace: a parametric trace returns to a function of its y expression');
+  const ode = retypeTrace(sine, 'diffeq');
+  assert(ode.kind === 'diffeq' && ode.expr === 'SIN(X)' && ode.exprY === '0',
+    'retypeTrace: a function becomes dy/dx with initial y 0');
+  assert(retypeTrace(sine, 'function') === null && retypeTrace(sine, 'scatter') === null,
+    'retypeTrace: the same type or an expression-to-data switch changes nothing');
+
+  const data = Matrix([[Real(1), Real(2)], [Real(2), Real(3)], [Real(4), Real(4)]]);
+  const scatter = engineStackValueToTrace(data, 'scatter');
+  const bar = retypeTrace(scatter, 'bar');
+  assert(bar.kind === 'bar' && bar.points.length === 3 && bar.source === data,
+    'retypeTrace: scatter data re-plots as bars from the same source');
+  const hist = retypeTrace(bar, 'hist');
+  assert(hist.kind === 'hist' && hist.points.reduce((n, [, count]) => n + count, 0) === 3,
+    'retypeTrace: bar data re-plots as a histogram of its source');
+
+  assert(evalTraceAtX({ kind: 'function', expr: '1+COS(θ)', enabled: true }, 0) === 2,
+    'evalTraceAtX: a function written in θ keeps working after a polar trace is retyped');
 }
 
 {

@@ -2,7 +2,7 @@ import {
   TRACE_COLORS, TRACE_KINDS, nextTraceColor, defaultView, zoomView, panView,
   worldToPixel, pixelToWorld, niceTicks,
   sampleTrace, fitViewToTraces, evalTraceAtX,
-  stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs,
+  stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace,
 } from './plot-engine.js';
 import { escapeHtml } from './display.js';
 import { icon } from './icons.js';
@@ -46,6 +46,7 @@ export function makeTrace(partial = {}) {
     expr: partial.expr || '',
     exprY: partial.exprY || '',
     points: partial.points || null,
+    source: partial.source || null,
     label: partial.label || '',
     model: partial.model
       ? { kind: partial.model.kind, a: partial.model.a, b: partial.model.b }
@@ -109,7 +110,7 @@ export class GraphView {
   _bind() {
     this.el.querySelector('.pl-kinds').addEventListener('click', (ev) => {
       const btn = ev.target.closest?.('button[data-kind]');
-      if (btn) this.setKind(btn.dataset.kind);
+      if (btn) this.retypeSelectionAndSetKind(btn.dataset.kind);
     });
     this.el.addEventListener('click', (ev) => {
       const tool = ev.target.closest?.('[data-gr]');
@@ -235,7 +236,22 @@ export class GraphView {
         this._addY.setAttribute('aria-label', yField.aria);
       }
     }
+  }
+
+  retypeSelectionAndSetKind(kind) {
+    const composing = this._addX.value.trim() || this._addY.value.trim();
+    const t = composing ? null : this.traces.find(tr => tr.id === this._selectedId);
+    const retyped = t ? retypeTrace(t, kind) : null;
+    const leavesXYBounds = !!retyped && TRACE_KINDS[t.kind].data && !TRACE_KINDS[kind].data;
+    if (retyped) Object.assign(t, retyped);
+    this.setKind(kind);
+    if (!retyped) return;
     this._renderExprs();
+    if (leavesXYBounds) {
+      const { xmin, xmax } = defaultView();
+      this.view = { ...this.view, xmin, xmax };
+    }
+    this.fitView();
   }
 
   addFromInputs() {
@@ -388,6 +404,8 @@ export class GraphView {
     this._exprs.querySelectorAll('.gr-trace').forEach(row => {
       row.classList.toggle('selected', row.dataset.trace === id);
     });
+    const kind = this.traces.find(tr => tr.id === id)?.kind;
+    if (PLOT_KINDS.some(([k]) => k === kind)) this.setKind(kind);
   }
 
   _hoverOpts() {

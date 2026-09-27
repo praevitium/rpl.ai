@@ -19,6 +19,10 @@ const CONSTS = Object.freeze({
   e: Math.E,
 });
 
+function bindIndependentVariable(v) {
+  return { x: v, X: v, t: v, T: v, θ: v, theta: v };
+}
+
 export function nextTraceColor(index) {
   return TRACE_COLORS[index % TRACE_COLORS.length];
 }
@@ -81,7 +85,7 @@ export function sampleFunction(ast, xMin, xMax, n, env, opts = {}) {
   const pts = [];
   for (let i = 0; i < count; i++) {
     const x = xMin + dx * i;
-    const y = evalNumeric(ast, { ...env, x, X: x }, opts);
+    const y = evalNumeric(ast, { ...env, ...bindIndependentVariable(x) }, opts);
     pts.push([x, y]);
   }
   return segmentPoints(pts, jump);
@@ -93,7 +97,7 @@ export function samplePolar(ast, thetaMin, thetaMax, n, env, opts = {}) {
   const pts = [];
   for (let i = 0; i < count; i++) {
     const th = thetaMin + d * i;
-    const r = evalNumeric(ast, { ...env, t: th, T: th, θ: th, theta: th, x: th, X: th }, opts);
+    const r = evalNumeric(ast, { ...env, ...bindIndependentVariable(th) }, opts);
     if (!Number.isFinite(r)) { pts.push([NaN, NaN]); continue; }
     const rad = (opts.toRad || (x => x))(th);
     pts.push([r * Math.cos(rad), r * Math.sin(rad)]);
@@ -107,7 +111,7 @@ export function sampleParametric(astX, astY, tMin, tMax, n, env, opts = {}) {
   const pts = [];
   for (let i = 0; i < count; i++) {
     const t = tMin + dt * i;
-    const local = { ...env, t, T: t, x: t, X: t };
+    const local = { ...env, ...bindIndependentVariable(t) };
     pts.push([
       evalNumeric(astX, local, opts),
       evalNumeric(astY, local, opts),
@@ -317,7 +321,7 @@ function finitePts(pts) {
 }
 
 function odeSlope(ast, x, y, opts) {
-  return evalNumeric(ast, { x, X: x, y, Y: y }, opts || {});
+  return evalNumeric(ast, { ...bindIndependentVariable(x), y, Y: y }, opts || {});
 }
 
 function rk4Step(ast, x, y, h, opts) {
@@ -509,7 +513,7 @@ function parametricFromStack(v, below) {
 function pointsFromStack(kind, v) {
   const points = valueToPoints(v);
   if (!points || !points.length) return null;
-  return { kind, points, label: kind, expr: '', exprY: '' };
+  return { kind, points, label: kind, expr: '', exprY: '', source: v };
 }
 
 function pointsToStack(t) {
@@ -529,7 +533,7 @@ function histFromStack(v) {
     (hist.edges[i] + hist.edges[i + 1]) / 2,
     count,
   ]);
-  return { kind: 'hist', points, label: 'histogram', expr: '', exprY: '' };
+  return { kind: 'hist', points, label: 'histogram', expr: '', exprY: '', source: v };
 }
 
 function traceContext(view, opts = {}) {
@@ -572,7 +576,7 @@ export const TRACE_KINDS = Object.freeze({
     },
     evalAt(t, x, ctx) {
       if (!t.expr) return NaN;
-      return evalNumeric(parsePlotExpr(t.expr), { x, X: x }, ctx.angleOpts || {});
+      return evalNumeric(parsePlotExpr(t.expr), bindIndependentVariable(x), ctx.angleOpts || {});
     },
     fromStack(v) { return expressionFromStack('function', v); },
     toStack: expressionToStack,
@@ -703,7 +707,7 @@ export const TRACE_KINDS = Object.freeze({
       const model = t.model || ctx.fitModel;
       if (model) return evalFitModel(model, x);
       if (!t.expr) return NaN;
-      return evalNumeric(parsePlotExpr(t.expr), { x, X: x }, ctx.angleOpts || {});
+      return evalNumeric(parsePlotExpr(t.expr), bindIndependentVariable(x), ctx.angleOpts || {});
     },
     fromStack(v) { return expressionFromStack('fit', v); },
     toStack: expressionToStack,
@@ -729,9 +733,14 @@ export function sampleTraceForFit(t, view, opts = {}) {
   }
 }
 
+const EQUAL_AXES_MAX_STRETCH = 4;
+
 function withEqualAxes(view, width, height) {
   if (!(width > 0 && height > 0)) return view;
-  const unitsPerPixel = Math.max((view.xmax - view.xmin) / width, (view.ymax - view.ymin) / height);
+  const xUnitsPerPixel = (view.xmax - view.xmin) / width;
+  const yUnitsPerPixel = (view.ymax - view.ymin) / height;
+  const unitsPerPixel = Math.max(xUnitsPerPixel, yUnitsPerPixel);
+  if (unitsPerPixel > EQUAL_AXES_MAX_STRETCH * Math.min(xUnitsPerPixel, yUnitsPerPixel)) return view;
   const cx = (view.xmin + view.xmax) / 2;
   const cy = (view.ymin + view.ymax) / 2;
   const halfX = unitsPerPixel * width / 2;
@@ -755,7 +764,9 @@ export function fitViewToTraces(traces, view, opts = {}) {
   const ys = functions.flatMap((t) => sampleTraceForFit(t, across, opts));
   const all = ys.length ? boundsOfPoints([...xy, ...ys]) : data;
   const fitted = { xmin: data.xmin, xmax: data.xmax, ymin: all.ymin, ymax: all.ymax };
-  return shown.every((t) => kindSpec(t)?.equalAxes) ? withEqualAxes(fitted, opts.width, opts.height) : fitted;
+  const hasCurve = shown.some((t) => kindSpec(t)?.equalAxes);
+  const hasPointData = shown.some((t) => isDataTrace(t) && !kindSpec(t)?.equalAxes);
+  return hasCurve && !hasPointData ? withEqualAxes(fitted, opts.width, opts.height) : fitted;
 }
 
 export function evalTraceAtX(t, x, opts = {}) {
@@ -791,6 +802,19 @@ export function traceFromInputs(kind, expr, exprY) {
     label: spec?.label ? spec.label(t) : storedX,
     points: null,
   };
+}
+
+export function retypeTrace(t, kind) {
+  const from = kindSpec(t);
+  const to = TRACE_KINDS[kind];
+  if (!from || !to || t.kind === kind) return null;
+  if (from.fields && to.fields) {
+    const single = t.kind === 'parametric' ? t.exprY : t.expr;
+    if (!single) return null;
+    return kind === 'parametric' ? traceFromInputs(kind, 'T', single) : traceFromInputs(kind, single, '');
+  }
+  if (!from.fields && !to.fields && t.source && to.fromStack) return to.fromStack(t.source);
+  return null;
 }
 
 export function stackValueToTrace(v, preferredKind = 'function', below = null) {
