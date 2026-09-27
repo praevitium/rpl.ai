@@ -895,10 +895,11 @@ export class Drawers {
       ev.preventDefault();
       const startX = ev.clientX;
       const startW = this.el.getBoundingClientRect().width;
+      const growsLeft = document.documentElement.dataset.view === 'minimal';
       grip.classList.add('dragging');
       grip.setPointerCapture?.(ev.pointerId);
       const move = (e) => {
-        const w = Math.max(DRAWER_MIN_WIDTH, Math.min(DRAWER_MAX_WIDTH, startW + e.clientX - startX));
+        const w = Math.max(DRAWER_MIN_WIDTH, Math.min(DRAWER_MAX_WIDTH, startW + (e.clientX - startX) * (growsLeft ? -1 : 1)));
         this.el.style.setProperty('--drawer-w', `${w}px`);
       };
       const up = () => {
