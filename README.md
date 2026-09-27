@@ -87,7 +87,7 @@ what came out of that effort.
 
 ## What it is
 
-rpl.ai is a desktop RPL scientific calculator built for high-resolution
+rpl.ai is an RPL scientific calculator built for high-resolution
 screens, full keyboard-and-mouse input, and a comfortable side panel. It
 faithfully implements the HP 50g's User-RPL language and command surface, and
 replaces the original 128×80 LCD and aging CAS with a modern UI backed by
@@ -102,9 +102,8 @@ explorer, and session history. It's very much in the spirit of the HP-28's
 side panel — the original gangster of that design — and it's where features
 like graphing and the writers live, rather than as inline calculator prompts.
 
-The app runs as a native desktop window via [Tauri 2](https://tauri.app/) on
-macOS, Windows, and Linux. The entire frontend is plain HTML / CSS / ES
-modules — no build step, no framework.
+The app is plain HTML / CSS / ES modules that run in any modern browser —
+no build step, no framework.
 
 **Current status:** The stack engine, RPL parser/evaluator, structured
 control flow (`IF` / `WHILE` / `DO` / `FOR` / `START` / `CASE` / `IFERR`),
@@ -166,27 +165,13 @@ See [NOTICE](NOTICE) for full attribution and upstream pointers.
 ## Getting started
 
 ```bash
-# one-time setup
-npm install
-rustc --version   # Tauri requires a Rust toolchain — install via rustup if missing
-
-# run in a native Tauri window (hot reload + DevTools)
-npm run dev
-
-# produce a platform installer
-npm run build
+npm install      # one-time setup
+npm run serve    # http://localhost:5050
 ```
 
-Build output lands in `src-tauri/target/release/bundle/` — `.dmg` on macOS,
-`.msi` on Windows, `.deb` / `.AppImage` on Linux. For a detailed walk-through
-including common Tauri v1→v2 pitfalls, see
-[TAURI_QUICK_START.md](TAURI_QUICK_START.md) and
-[TAURI_SETUP.md](TAURI_SETUP.md).
-
-The frontend is pure static assets. You can also open
-[www/index.html](www/index.html) directly in a browser to use the calculator
-without Tauri, with the caveat that features depending on Tauri APIs (native
-menus, filesystem persistence) won't be wired up.
+The calculator is the static files in `www/`; any static web server can host
+it. Browsers won't run it from `file://`, because ES modules and the Giac
+WebAssembly need http(s).
 
 ---
 
@@ -264,9 +249,6 @@ The top brand row doubles as a control strip — each label is clickable:
   sessions.
 - **`AI-Assisted RPL Calculator` subtitle** — toggles the side panel
   (catalog, characters, files, history). Click again to close it.
-- **Version label** — toggles the native **DevTools** panel (desktop
-  Tauri build only). In a plain browser tab use `F12` / `Cmd+Option+I`
-  instead.
 
 ### Keyboard shortcuts
 
@@ -301,8 +283,8 @@ shortcuts keep working.
 
 To wipe all persisted state — calculator stack and HOME directory,
 side-panel layout, chrome mode, the AI endpoint config, and the
-assistant consent flag — open the DevTools console (click the version
-label, or `F12` in a browser) and run:
+assistant consent flag — open the browser's DevTools console (`F12` /
+`Cmd+Option+I`) and run:
 
 ```js
 calc_reset()
@@ -316,7 +298,7 @@ returning the calculator to a fresh boot state.
 ## Project layout
 
 ```
-www/                  Browser-loaded assets (Tauri frontendDist)
+www/                  The app: static files served as-is
   index.html          Calculator shell
   src/app.js          Bootstrap
   src/rpl/            Stack engine, parser, evaluator, formatter, persistence
@@ -325,7 +307,6 @@ www/                  Browser-loaded assets (Tauri frontendDist)
   src/ui/             Keyboard, display, interactive stack, side panel, entry
   vendor/             Vendored libraries (giac, decimal.js, fraction.js, complex.js, CodeMirror, KaTeX)
   css/                Styles
-src-tauri/            Rust/Tauri host (window config, icons, native glue)
 tests/                Node-based test suites
 docs/                 Reference notes, HP 50g documentation, roadmap
 ```

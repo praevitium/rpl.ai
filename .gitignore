@@ -32,19 +32,6 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Tauri
-src-tauri/target/
-src-tauri/dist/
-src-tauri/gen/
-.tauri/
-
-# Build artifacts
-bundle/
-*.dmg
-*.msi
-*.AppImage
-*.deb
-
 # Dev-loop scratch probes and stale backups
 tests/_probe_*.mjs
 *.bak

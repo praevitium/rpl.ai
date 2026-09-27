@@ -25,7 +25,7 @@
 //   add an opt-in "offload this one call" path via a worker later.
 //
 // Environment handling:
-//   Browser (Tauri webview):
+//   Browser:
 //     - Calls init() to load www/vendor/giac/giacwasm.js as a
 //       <script>, wait for emscripten's onRuntimeInitialized, then grab
 //       a synchronous cwrap of caseval.

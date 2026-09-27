@@ -13,28 +13,15 @@
     "preserve": "npm run build-info",
     "serve": "npx --yes live-server --port=5050 --host=0.0.0.0 --no-browser --entry-file=index.html www",
     "prebundle:vendor": "npm run build-info",
-    "bundle:vendor": "esbuild www/vendor/codemirror/src-entry.mjs --bundle --format=esm --outfile=www/vendor/codemirror/codemirror.bundle.js",
-    "tauri": "tauri",
-    "predev": "npm run build-info",
-    "dev": "tauri dev",
-    "prebuild": "npm run build-info",
-    "build": "tauri build",
-    "prebuild:macos": "npm run build-info",
-    "build:macos": "tauri build --target universal-apple-darwin",
-    "prebuild:windows": "npm run build-info",
-    "build:windows": "tauri build --target x86_64-pc-windows-msvc",
-    "prebuild:linux": "npm run build-info",
-    "build:linux": "tauri build --target x86_64-unknown-linux-gnu"
+    "bundle:vendor": "esbuild www/vendor/codemirror/src-entry.mjs --bundle --format=esm --outfile=www/vendor/codemirror/codemirror.bundle.js"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.0.0",
     "esbuild": "^0.28.0",
     "playwright-core": "^1.63.0"
   },
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/state": "^6.6.0",
-    "@codemirror/view": "^6.41.1",
-    "@tauri-apps/api": "^2.0.0"
+    "@codemirror/view": "^6.41.1"
   }
 }

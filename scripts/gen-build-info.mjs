@@ -1,4 +1,4 @@
-/* Runs as a `pre*` hook for serve/dev/build/bundle:vendor so every build
+/* Runs as a `pre*` hook for serve and bundle:vendor so every build
    pipeline picks up a fresh count without manual maintenance. */
 import { execSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';

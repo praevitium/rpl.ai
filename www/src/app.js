@@ -370,13 +370,8 @@ class App {
    *  set here so the first paint already matches whatever the user
    *  last chose — kept in memory only for now.
    *
-   *  Clicking the version label toggles the Tauri WebView's
-   *  DevTools panel (single-click — consistent with the brand and
-   *  model labels above it).  In a plain browser context the click
-   *  is a no-op (the browser already has F12 / Cmd+Option+I).
-   *  Settings reset has moved to the global `calc_reset()` function —
-   *  type it into the DevTools console to wipe localStorage and
-   *  reload. */
+   *  Settings reset is the global `calc_reset()` function — type it
+   *  into the DevTools console to wipe localStorage and reload. */
   _installChromeToggles() {
     const MODES = ['full', 'simple', 'minimal'];
     const CHROME_KEY = 'hp50.ui.chrome';
@@ -395,15 +390,6 @@ class App {
       if (!sp) return;
       if (sp.isOpen()) sp.close();
       else sp.open(sp.tab);
-    });
-    document.getElementById('versionLabel')?.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      // Tauri v2 with `withGlobalTauri: true` exposes invoke at
-      // window.__TAURI__.core.invoke; the matching Rust command is
-      // registered in src-tauri/src/main.rs.  In a plain browser tab
-      // the global is undefined and we silently no-op.
-      window.__TAURI__?.core?.invoke?.('toggle_devtools').catch(() => {});
     });
   }
 

@@ -8,7 +8,7 @@ These are house conventions, not project documentation. Follow them so they don'
 
 ## Find and verify
 
-- Boot the browser app with `npm run serve` (port 5050, root `www/`). The Tauri shell is `npm run dev`.
+- Boot the app with `npm run serve` (port 5050, root `www/`).
 - Validate one area with `node tests/test-<area>.mjs`. Run `npm test` only when the change crosses modules. The files share one calculator state, so a single file can fail because an earlier file left angle mode or a fit model behind; `tests/flake-bisect.mjs` hunts that.
 - A command lives in `www/src/rpl/ops/<family>.js`. Find it with `rg "register\\('SIN'" www/src/rpl/ops`. The `category` argument is the side-panel group. `www/src/rpl/ops.js` only re-exports the registry.
 - Find tests with `rg "\\bSIN\\b" tests`. Assert labels should name the command.
@@ -37,7 +37,7 @@ These are house conventions, not project documentation. Follow them so they don'
 - Work on the working branch; open PRs against the main branch — don't commit straight to it.
 - Commit only when asked.
 - After every commit, **push** the working branch.
-- After a significant chunk of work, **bump the version** (package.json, package-lock.json, src-tauri/Cargo.toml, src-tauri/Cargo.lock, src-tauri/tauri.conf.json, and the as-of / latest-release stamps in RELEASE_NOTES.md, docs/ROADMAP.md, docs/COMMANDS.md). Patch for a coherent feature; don't leave the bump uncommitted.
+- After a significant chunk of work, **bump the version** (package.json, package-lock.json, and the as-of / latest-release stamps in RELEASE_NOTES.md, docs/ROADMAP.md, docs/COMMANDS.md). Patch for a coherent feature; don't leave the bump uncommitted.
 - Commit subjects are **short and lowercase**, imperative mood, no scope prefix, no trailing period (e.g. `fix cursor`, `add katex support`), four or five words. Follow with a one- or two-sentence body. Never add trailers such as Co-Authored-By.
 - Keep each commit to one logical change.
 - When asked to "commit as you go", commit each coherent chunk as it lands and push at the end.

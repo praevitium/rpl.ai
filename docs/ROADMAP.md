@@ -35,8 +35,8 @@ The substrate the roadmap builds on:
 - **Interpreter.**  Generator-based `evalRange` supports HALT / CONT
   / KILL / RUN at any structural depth on the direct-EVAL path; the
   halted-program LIFO multi-slots suspended programs.
-- **Desktop shell.**  Tauri wrapper; CodeMirror editor is wired for
-  command-line entry.
+- **Web app.**  Static files that run in any modern browser;
+  CodeMirror editor is wired for command-line entry.
 
 ---
 
@@ -199,8 +199,7 @@ These are aspirational and not on any current queue:
   and the entry-line keystrokes that produced them.  Useful for
   coursework and support threads.
 - **Offline-first PWA.**  Service worker + cache manifest so the
-  calculator runs without network once loaded; pairs naturally with
-  the Tauri desktop build.
+  calculator runs without network once loaded.
 - **WebWorker-hosted CAS.**  Giac runs on the main thread today.
   Moving it to a worker would unblock the UI during long `FACTOR`
   or `SOLVE` calls; the tradeoff is reintroducing async plumbing

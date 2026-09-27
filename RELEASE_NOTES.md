@@ -6,7 +6,7 @@
 
 ## What is rpl.ai?
 
-rpl.ai is a modern, high-resolution desktop reimplementation of the HP 50g
+rpl.ai is a modern, high-resolution reimplementation of the HP 50g
 graphing calculator. It preserves everything that made the HP 50g exceptional
 — the RPN/RPL stack model, the User-RPL programming language, and the full
 AUR command surface — while replacing the original's 128×80 monochrome LCD
@@ -15,10 +15,9 @@ with a crisp, resizable UI and swapping its 1990s-era CAS for
 same symbolic engine Bernard Parisse (author of the HP 48/49/50g "erable" CAS)
 later used in Xcas and the HP Prime.
 
-The application runs as a native desktop window on macOS, Windows, and Linux
-via [Tauri 2](https://tauri.app/). The entire calculator frontend is plain
-HTML / CSS / ES modules — no build step, no framework, no bundler required for
-development.
+rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
+that run in any modern browser — no build step, no framework, no bundler
+required for development.
 
 ---
 
@@ -43,7 +42,7 @@ it, and a directory's name enters it, as on the HP 50g. Every keypad
 key can be reached with Tab and pressed with Enter or Space, carries a
 spoken name, and shows a focus ring; motion stops when the system asks
 for reduced motion. `√` can be typed in an algebraic. The page has a
-favicon.
+favicon. The Tauri desktop shell is gone: rpl.ai is a web app.
 
 ---
 
