@@ -11,7 +11,7 @@ import { icon } from './icons.js';
 import { escapeHtml, typeName } from './display.js';
 
 const PALETTE_ACTIONS = Object.freeze([
-  'settings.open', 'shortcuts.open', 'view.minimal', 'keypad.toggle', 'drawer.toggle',
+  'settings.open', 'shortcuts.open', 'view.minimal', 'keypad.toggle', 'drawer.toggle', 'assistant.tutor',
   'writer.equation', 'writer.matrix', 'assistant.ask', 'edit.undo', 'edit.redo', 'edit.paste',
 ]);
 

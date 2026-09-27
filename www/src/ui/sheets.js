@@ -2,7 +2,7 @@ import { icon } from './icons.js';
 import { escapeHtml } from './display.js';
 import { KEYMAP, CONTEXT_LABELS, chordText, isMacPlatform } from './actions.js';
 import { STORAGE_KEY as STACK_STORAGE_KEY, BACKUPS_KEY } from '../rpl/persist.js';
-import { UI_PREFS_KEY, THEMES } from './ui-prefs.js';
+import { UI_PREFS_KEY, THEMES, TUTOR_STYLES } from './ui-prefs.js';
 
 const THEME_LABELS = Object.freeze({ auto: 'Match system', graphite: 'Graphite (dark)', paper: 'Paper (light)', classic: 'Classic LCD' });
 const CHAT_CONSENT_KEY = 'rpl5050.chatbot.consented.v1';
@@ -84,6 +84,9 @@ export class Sheets {
       try { endpoint = JSON.parse(localStorage.getItem(CHAT_REMOTE_KEY) ?? 'null'); } catch { /* ignore */ }
       return `<h4>Assistant</h4><p>The assistant runs against an Ollama or OpenAI-compatible endpoint you choose — nothing is sent anywhere until you connect one.</p>
         <div class="set"><b>Status</b><span>${consented ? (endpoint?.url ? `Connected to ${escapeHtml(endpoint.url)}` : 'Enabled, no endpoint chosen yet') : 'Not yet enabled'}</span><button type="button" class="btn" data-sh="open-assistant">Open the Assistant tab</button></div>
+        <div class="set stack"><b>Tutor style</b><span>Socratic asks a question before each explanation and gives hints first; Direct explains every step plainly. Strong models tutor best.</span>
+          <div class="chipset" role="radiogroup" aria-label="Tutor style">${TUTOR_STYLES.map((style) => `<button type="button" class="chip${app.prefs.tutorStyle === style ? ' on' : ''}" data-sh="tutor-style" data-style="${style}" role="radio" aria-checked="${app.prefs.tutorStyle === style}">${style === 'socratic' ? 'Socratic' : 'Direct'}</button>`).join('')}</div>
+        </div>
         <h5>Diagnostics</h5>
         <p class="muted" style="color:var(--ink3);font-size:12.5px">If a local or LAN Ollama fails to connect, the Assistant tab explains why — a wrong origin, a plain-HTTP page under HTTPS, or nothing answering — and what to change. Ollama Cloud models need <code>ollama signin</code> on the machine running Ollama and a model name ending in <code>-cloud</code>; browsers cannot call ollama.com directly.</p>`;
     }
@@ -128,6 +131,7 @@ export class Sheets {
       case 'page': this.page = b.dataset.page; this._confirmReset = false; this._render(); return;
       case 'theme': app.setTheme(b.dataset.theme); this._render(); return;
       case 'open-assistant': this.close(); app.drawers.open('assistant'); return;
+      case 'tutor-style': app.setTutorStyle(b.dataset.style); this._render(); return;
       case 'backup': app.exportSnapshot(); return;
       case 'restore': this._pickRestore(); return;
       case 'reset': this._confirmReset = true; this._render(); return;

@@ -1226,3 +1226,41 @@ const registryToolNames = () =>
   assert(!looksInfix('`x^2+1` EVAL'), 'looksInfix leaves backtick algebraics alone');
   assert(!looksInfix('[1 -2 3] 10 -3 +'), 'looksInfix ignores negative literals');
 }
+
+{
+  const { checkTutorPlan } = await import('../www/src/ai/chat-bot.js');
+  const { buildSystemPrompt: build } = await import('../www/src/ai/system-prompt.js');
+  const calls = [];
+  const evaluate = (text) => { calls.push(text); return /BAD/.test(text) ? { ok: false, error: 'BAD: Undefined name' } : { ok: true, stack: ['1'] }; };
+  const plan = checkTutorPlan({
+    problem: 'How high does a ball thrown up at 12 m/s go?',
+    steps: [
+      { title: 'Name what you know', idea: 'At the top the speed is 0.', rpl: '', hints: ['What is the speed at the top?'] },
+      { title: 'Pick the equation', idea: 'Use v² = v0² − 2gh.', rpl: "'V^2=V0^2-2*G*H'", hints: ['a', 'b', 'c', 'd'] },
+      { title: 'Solve for h', idea: 'SOLVE rearranges it.', rpl: '`H` SOLVE' },
+    ],
+  }, evaluate);
+  assert(plan.accepted && plan.plan.steps.length === 3, 'checkTutorPlan accepts a well-formed plan');
+  assert(calls.length === 2 && calls[1] === `${calls[0]} \`H\` SOLVE`, 'checkTutorPlan dry-runs each step on top of the steps before it');
+  assert(plan.plan.steps[1].hints.length === 3 && plan.plan.steps[0].rpl === '', 'checkTutorPlan keeps at most three hints and allows thinking steps');
+  const failing = checkTutorPlan({ problem: 'p', steps: [{ title: 't', idea: 'i', rpl: '1' }, { title: 't', idea: 'i', rpl: 'BAD' }] }, evaluate);
+  assert(!failing.accepted && /step 2 \(BAD\)/.test(failing.error) && /Undefined name/.test(failing.error), 'checkTutorPlan names the step that fails and the calculator error');
+  assert(!checkTutorPlan({ steps: [{ title: 't', idea: 'i' }] }, evaluate).accepted, 'checkTutorPlan needs the problem');
+  assert(!checkTutorPlan({ problem: 'p', steps: [] }, evaluate).accepted, 'checkTutorPlan needs at least one step');
+  assert(!checkTutorPlan({ problem: 'p', steps: [{ title: 't' }] }, evaluate).accepted, 'checkTutorPlan needs every step to explain its idea');
+
+  const socratic = build({ tutor: { style: 'socratic' } });
+  const direct = build({ tutor: { style: 'direct' } });
+  assert(!build().includes('TUTOR MODE') && socratic.includes('TUTOR MODE') && direct.includes('TUTOR MODE'), 'buildSystemPrompt adds the tutor section only in Tutor mode');
+  assert(socratic.includes('guiding question') && !direct.includes('guiding question'), 'buildSystemPrompt: the Socratic style asks before it tells');
+}
+
+{
+  const { sameStackValue, stackCheck } = await import('../www/src/ai/tutor.js');
+  assert(sameStackValue('5.', '5') && sameStackValue('7.33944954128', '7.339449541280') && sameStackValue('`X^2`', '`X^2`'), 'sameStackValue matches HP reals, rounding noise and identical text');
+  assert(!sameStackValue('7.34', '7.3') && !sameStackValue('`X`', '`Y`'), 'sameStackValue tells different values apart');
+  assert(stackCheck(['9', '3'], ['9', '3']).ok, 'stackCheck passes when the levels the step produces match');
+  const off = stackCheck(['4', '3'], ['9', '3']);
+  assert(!off.ok && off.level === 1 && off.got === '4' && off.want === '9', 'stackCheck reports the first level that differs');
+  assert(!stackCheck([], ['9']).ok && stackCheck([], ['9']).got === null, 'stackCheck reports an empty level');
+}

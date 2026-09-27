@@ -297,6 +297,10 @@ export class Drawers {
       const focused = this.app.plotFocus;
       return `<button type="button" class="icon-btn sm" data-dw="plot-focus" title="${focused ? 'Back to the drawer' : 'Expand to fill the window'}" aria-label="${focused ? 'Back to the drawer' : 'Expand'}">${icon(focused ? 'collapse' : 'expand', 'sm')}</button><button type="button" class="icon-btn sm" data-dw="plot-full" title="Full screen" aria-label="Full screen">${icon('full', 'sm')}</button>`;
     }
+    if (id === 'assistant') {
+      const mode = this.prefs.assistantMode;
+      return `<div class="as-mode" role="radiogroup" aria-label="Assistant mode"><button type="button" data-dw="as-mode" data-mode="ask" role="radio" aria-checked="${mode === 'ask'}" title="Questions about RPL, maths and physics">Ask</button><button type="button" data-dw="as-mode" data-mode="tutor" role="radio" aria-checked="${mode === 'tutor'}" title="Walk me through a problem step by step">${icon('cap', 'sm')}Tutor</button></div>`;
+    }
     if (id === 'history') {
       return `<button type="button" class="icon-btn sm" data-dw="hist-sort" title="${this.prefs.historySort === 'newest' ? 'Newest first' : 'Oldest first'}: click to flip" aria-label="Sort">${icon(this.prefs.historySort === 'newest' ? 'down' : 'up', 'sm')}</button><button type="button" class="icon-btn sm" data-dw="hist-clear" title="Clear the history" aria-label="Clear the history">${icon('trash', 'sm')}</button>`;
     }
@@ -583,6 +587,7 @@ export class Drawers {
       case 'tab': this.open(t.dataset.drawerTab); return;
       case 'wide': app.setPrefs({ drawerWide: !this.prefs.drawerWide }); this.render(); return;
       case 'plot-focus': app.setPlotFocus(!app.plotFocus); return;
+      case 'as-mode': app.setAssistantMode(t.dataset.mode); return;
       case 'plot-full': this.graph.fullscreen(); return;
       case 'hist-sort': app.setPrefs({ historySort: this.prefs.historySort === 'newest' ? 'oldest' : 'newest' }); this.render(); return;
       case 'hist-clear': entry.clearHistory(); this._renderHistoryList(); app.toast('Cleared the history'); return;

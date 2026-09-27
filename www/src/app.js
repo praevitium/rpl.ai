@@ -96,6 +96,7 @@ class App {
       getContext: () => this._assistantContext(),
       onStatus: (status) => this.drawers?.setAssistantConnected(status === 'ready'),
     });
+    this.chatBot.setMode(this.prefs.assistantMode, { tutorStyle: this.prefs.tutorStyle });
     this.drawers = new Drawers({ rail: $('rail'), el: $('drawer'), scrim: $('scrim'), app: this });
     setGraphicsHook((kind, stack) => this.drawers.openGraph(kind, stack));
     loadCommandReference().then((m) => { this.reference = m; this.menubar.render(); }).catch(() => {});
@@ -328,6 +329,7 @@ class App {
         return this.entry.error || '';
       },
       evaluate: (text) => evalScratch(text, { liveItems: this.stack.save(), displayOpts: displayOpts() }),
+      evaluateOn: (text, liveItems) => evalScratch(text, { liveItems, displayOpts: displayOpts() }),
       appendToEditor: (text) => this.entry.type(text),
       clearEditor: () => this.entry.cancel(),
       getEditor: () => this.entry.buffer,
@@ -372,6 +374,17 @@ class App {
     };
   }
 
+  setAssistantMode(mode) {
+    this.setPrefs({ assistantMode: mode });
+    this.chatBot.setMode(this.prefs.assistantMode);
+    if (this.drawers.current === 'assistant') this.drawers.render();
+  }
+
+  setTutorStyle(style) {
+    this.setPrefs({ tutorStyle: style });
+    this.chatBot.setMode(this.chatBot.mode, { tutorStyle: this.prefs.tutorStyle });
+  }
+
   askAssistant(text = '') {
     this.drawers.open('assistant');
     const t = String(text).trim();
@@ -411,12 +424,12 @@ class App {
 
   _wireDisplay() {
     const d = this.display;
-    d.emptyHtml = `<div class="st-empty"><h5>The stack is empty</h5><p>Type a number and press Enter. Commands take their arguments from the stack and leave their results on it.</p><div class="keysline"><span class="kc">2</span> <span class="kc">Enter</span> <span class="kc">3</span> <span class="kc">+</span> → 5</div><div class="chipset" style="justify-content:center"><button type="button" class="chip" data-empty-act="equation">${icon('fx', 'sm')}Write an equation</button><button type="button" class="chip" data-empty-act="solve">Solve x² − 5x + 6 = 0</button><button type="button" class="chip" data-empty-act="plot">${icon('plot', 'sm')}Plot sin x</button><button type="button" class="chip" data-empty-act="ask">${icon('spark', 'sm')}Ask the assistant</button></div></div>`;
+    d.emptyHtml = `<div class="st-empty"><h5>The stack is empty</h5><p>Type a number and press Enter. Commands take their arguments from the stack and leave their results on it.</p><div class="keysline"><span class="kc">2</span> <span class="kc">Enter</span> <span class="kc">3</span> <span class="kc">+</span> → 5</div><div class="chipset" style="justify-content:center"><button type="button" class="chip" data-empty-act="equation">${icon('fx', 'sm')}Write an equation</button><button type="button" class="chip" data-empty-act="solve">Solve x² − 5x + 6 = 0</button><button type="button" class="chip" data-empty-act="plot">${icon('plot', 'sm')}Plot sin x</button><button type="button" class="chip" data-empty-act="tutor">${icon('cap', 'sm')}Walk me through a problem</button></div></div>`;
     d.onEmptyAction = (act) => {
       if (act === 'equation') this.setInputMode('equation');
       else if (act === 'solve') { this.entry.recall('`X^2-5*X+6=0` `X` SOLVE'); this.commitEntry(); }
       else if (act === 'plot') { this.entry.recall('`SIN(X)` FUNCTION'); this.commitEntry(); }
-      else if (act === 'ask') this.askAssistant();
+      else if (act === 'tutor') this.runAction('assistant.tutor');
     };
     d.rowActionsHtml = (level, value) => `<div class="st-acts" role="toolbar" aria-label="Level ${level} actions"><button type="button" data-row-act="edit" title="Edit (Enter)">${icon('edit', 'sm')}Edit</button><button type="button" data-row-act="pick" title="Copy it to level 1 (PICK)">Pick</button><button type="button" data-row-act="roll" title="Move it to level 1 (ROLL)">Roll</button>${isSymbolic(value) ? `<button type="button" data-row-act="plot" title="Plot it">${icon('plot', 'sm')}</button>` : ''}<button type="button" data-row-act="drop" title="Drop it (⌫)" aria-label="Drop">${icon('trash', 'sm')}</button><button type="button" data-row-act="more" title="More actions" aria-label="More actions">${icon('more', 'sm')}</button></div>`;
     d.onRowClick = (level) => this.selectLevel(this.selection === level ? null : level);
@@ -1108,6 +1121,7 @@ class App {
   runAction(id, arg) {
     switch (id) {
       case 'palette.open': this.popover.close({ restoreFocus: false }); this.palette.open(); return true;
+      case 'assistant.tutor': this.setAssistantMode('tutor'); this.askAssistant(); return true;
       case 'assistant.ask': {
         const text = this.entry.buffer.trim().replace(/^\?/, '').trim();
         if (text) this.entry.cancel();

@@ -1463,3 +1463,13 @@ setAngle('RAD');
     assert(!missing.length, `the ${id} writer implements load, value, clear, isEmpty, snapshot, restore, menu, focus and commit${missing.length ? ` (missing ${missing.join(', ')})` : ''}`);
   }
 }
+
+{
+  const { normalizeUiPrefs } = await import('../www/src/ui/ui-prefs.js');
+  const defaults = normalizeUiPrefs({});
+  assert(defaults.assistantMode === 'ask' && defaults.tutorStyle === 'socratic', 'ui prefs default to Ask mode with a Socratic tutor');
+  const saved = normalizeUiPrefs({ assistantMode: 'tutor', tutorStyle: 'direct' });
+  assert(saved.assistantMode === 'tutor' && saved.tutorStyle === 'direct', 'ui prefs keep the assistant mode and tutor style');
+  const junk = normalizeUiPrefs({ assistantMode: 'shout', tutorStyle: 42 });
+  assert(junk.assistantMode === 'ask' && junk.tutorStyle === 'socratic', 'ui prefs drop unknown assistant modes and tutor styles');
+}

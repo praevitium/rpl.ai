@@ -235,6 +235,33 @@ const TOOLS = [
     desc: 'Find commands by topic, partial name or description; returns ranked names with one-line descriptions and whether each is implemented here.  Read-only.  Use it when you know what you want to do but not which command does it, or to answer "is there a command for …".',
   },
   {
+    name: 'tutor_plan',
+    args: { problem: '<problem>', steps: '<array of steps: title, idea, rpl, keys, hints>' },
+    schema: {
+      type: 'object',
+      properties: {
+        problem: { type: 'string', description: 'The problem, restated in a sentence or two.' },
+        steps: {
+          type: 'array',
+          description: 'One to eight steps, in order.',
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string', description: 'A few words naming the move.' },
+              idea: { type: 'string', description: 'Markdown, two to four sentences: the idea behind the move.' },
+              rpl: { type: 'string', description: 'The exact RPL that performs the move on the stack the previous steps left, or an empty string for a thinking step.' },
+              keys: { type: 'string', description: 'Optional: the same move as space-separated keystrokes.' },
+              hints: { type: 'array', items: { type: 'string' }, description: 'One to three hints, each more specific than the last.' },
+            },
+            required: ['title', 'idea'],
+          },
+        },
+      },
+      required: ['problem', 'steps'],
+    },
+    desc: 'Tutor mode: show the student a walkthrough they work through on their own calculator, with Show me, I\'ll do it and hints on every step.  The calculator dry-runs every step\'s RPL in order before the student sees the plan and sends back the error if one fails.  Read-only: nothing changes until the student acts on a step.',
+  },
+  {
     name: 'get_stack',
     args: {},
     schema: { type: 'object', properties: {} },
@@ -327,12 +354,23 @@ ${toolLines}
      These render as clickable chips, NOT as actions.`;
 }
 
-export function buildSystemPrompt({ nativeTools = false } = {}) {
+function tutorSection(style) {
+  const socratic = style !== 'direct';
+  return `TUTOR MODE  (the student switched the assistant to Tutor: they want to learn to solve this themselves)
+- A new problem gets a walkthrough, not an answer.  Work the whole solution out privately first with \`evaluate\`, checking every number, then call \`tutor_plan\` once with two to six steps.
+- Each step is one move on the calculator: \`title\` in a few words; \`idea\` in two to four sentences of markdown giving the maths or physics behind the move${socratic ? ' and ending with a short question the student can answer before pressing anything' : ''}; \`rpl\` with the exact line that performs it on the stack the previous step left, or "" for a thinking step such as naming the knowns; \`hints\` with one to three hints, each more specific than the last, the first never giving the answer away.
+- Physics and applied problems: name the knowns and the unknown with units, choose the governing law, carry units through the calculation (12_m/s, 9.81_m/s^2), and finish with a step that checks the answer makes sense.
+- If tutor_plan comes back rejected, fix the failing step and call it again.  Once it is accepted, reply with one short sentence inviting the student to start step 1, and do not state the final answer.
+- When the student asks about a step, answer that question${socratic ? ' with a guiding question or a hint before any explanation' : ' plainly'}, and let them keep working; don't solve the remaining steps for them.
+- A question that isn't a problem to solve ("what does SOLVE return?") gets a normal answer.`;
+}
+
+export function buildSystemPrompt({ nativeTools = false, tutor = null } = {}) {
   return `You are the built-in assistant of an HP-50g–style RPN/RPL scientific calculator (a modern reimplementation: exact big-integer / rational / 15-digit decimal arithmetic, complex numbers, vectors, matrices, lists, strings, tagged values, units, user programs, a Giac-backed CAS for symbolic algebra and calculus, and a variable/directory tree).  The user sees a stack; level 1 is the top.  You have tools that read the calculator, dry-run RPL, look up the command reference, and execute RPL for real.  Everything you execute happens immediately — the user is never asked to confirm — and they can undo an entire turn with one click, so act decisively but correctly.
 
 WHAT YOU ARE FOR
 Be an expert calculator operator and a patient tutor at once.  Solve the user's actual problem — a computation, a multi-step derivation, a program to write, a "how do I …", a "why did this error" — using the calculator as your instrument.  Use what you know (mathematics, HP RPL idiom, numerical practice) AND what the tools tell you; when the two disagree, the calculator is the ground truth.
-
+${tutor ? `\n${tutorSection(tutor.style)}\n` : ''}
 HOW TO WORK  (this is the workflow of a pro)
 1. Read the [Calculator state] block at the top of the user's message — the live stack (level 1 first), modes, directory, variables, entry line, last error.  Most requests are about what is already there.
 2. Decide what kind of request it is:

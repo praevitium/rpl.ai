@@ -11,6 +11,8 @@
                                           returns the LCD error text or ''
        evaluate(text: string): object   — dry-run RPL on a scratch copy of the
                                           stack: ok + stack + depth, or ok:false + error
+       evaluateOn(text, items): object  — the same dry run on the given stack items
+                                          (Tutor checks a step against where it began)
        appendToEditor(text: string)     — insert at cursor, no commit
        clearEditor(): void              — empty the editor buffer
        getEditor(): string              — current editor contents
@@ -61,6 +63,7 @@ import {
   RemoteLLM, toOpenAIBase, toOllamaBase, isOllamaCloudUrl, bearerHeaders, explainConnectionError,
 } from './remote-llm.js';
 import { buildSystemPrompt, TOOL_SCHEMAS } from './system-prompt.js';
+import { TutorCard } from './tutor.js';
 
 // Diagnostic logging — every flow-control transition in this module
 // goes through these helpers so the console transcript reads as a
@@ -724,6 +727,31 @@ export function resolveToolAlias(name) {
     : name;
 }
 
+const TUTOR_MAX_STEPS = 8;
+
+export function checkTutorPlan(args, evaluate) {
+  const problem = String(args?.problem ?? '').trim();
+  const raw = Array.isArray(args?.steps) ? args.steps : [];
+  if (!problem) return { accepted: false, error: 'problem is missing: restate the problem in a sentence or two' };
+  if (!raw.length || raw.length > TUTOR_MAX_STEPS) return { accepted: false, error: `give between 1 and ${TUTOR_MAX_STEPS} steps` };
+  const steps = [];
+  let program = '';
+  for (const [i, step] of raw.entries()) {
+    const title = String(step?.title ?? '').trim();
+    const idea = String(step?.idea ?? '').trim();
+    if (!title || !idea) return { accepted: false, error: `step ${i + 1} needs a title and an idea` };
+    const rpl = normalizeRpl(String(step?.rpl ?? '').trim());
+    if (rpl) {
+      program = program ? `${program} ${rpl}` : rpl;
+      const outcome = evaluate(program);
+      if (!outcome?.ok) return { accepted: false, error: `step ${i + 1} (${rpl}) fails on the calculator after the steps before it: ${outcome?.error ?? 'unknown error'}` };
+    }
+    const hints = (Array.isArray(step?.hints) ? step.hints : []).map((h) => String(h ?? '').trim()).filter(Boolean).slice(0, 3);
+    steps.push({ title, idea, rpl, keys: String(step?.keys ?? '').trim(), hints });
+  }
+  return { accepted: true, plan: { problem, steps } };
+}
+
 export function activeContextTokens(llm) {
   return llm?.contextTokens || REMOTE_CONTEXT_TOKENS_DEFAULT;
 }
@@ -864,6 +892,8 @@ export class ChatBot {
     this._getContext = getContext;
     this._onStatusChange = onStatus;
     this._llm        = new RemoteLLM();
+    this.mode        = 'ask';
+    this.tutorStyle  = 'socratic';
     this._history    = [];   // conversation turns (messages array)
     this._container  = null; // DOM element we're mounted into
     this._messagesEl = null; // scrollable message list
@@ -975,6 +1005,12 @@ export class ChatBot {
         mutates: false,
         summary: ({ name } = {}) => ({ label: `lookup_command ${name ?? ''}`, code: '' }),
         handler: ({ name } = {}) => tools.lookupCommand(String(name ?? '')),
+      },
+      tutor_plan: {
+        mutates: false,
+        summary: () => ({ label: 'tutor_plan', code: '' }),
+        handler: (args = {}) => checkTutorPlan(args, (text) => tools.evaluate(text)),
+        card: (result) => (result?.accepted ? this._addTutorCard(result.plan) : null),
       },
       search_commands: {
         mutates: false,
@@ -1185,7 +1221,7 @@ export class ChatBot {
 
     this._inputEl = document.createElement('textarea');
     this._inputEl.className = 'cb-input';
-    this._inputEl.placeholder = 'Ask about RPL, commands, maths…';
+    this._inputEl.placeholder = this._placeholder();
     this._inputEl.rows = 1;          // height matches the send button (40px)
     this._inputEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -1912,11 +1948,39 @@ export class ChatBot {
      before the history push so native and JSON-line tool calls leave
      identical transcripts. */
 
+  setMode(mode, { tutorStyle } = {}) {
+    this.mode = mode === 'tutor' ? 'tutor' : 'ask';
+    if (tutorStyle) this.tutorStyle = tutorStyle;
+    if (this._inputEl) this._inputEl.placeholder = this._placeholder();
+  }
+
+  _placeholder() {
+    return this.mode === 'tutor' ? 'Paste a problem, or ask about a step…' : 'Ask about RPL, commands, maths…';
+  }
+
+  _addTutorCard(plan) {
+    const card = new TutorCard({
+      plan,
+      tools: {
+        run: (text) => this._tools.run(normalizeRpl(text)),
+        snapshot: () => this._tools.snapshotState(),
+        restore: (snap) => this._tools.restoreState(snap),
+        evaluateOn: (text, items) => this._tools.evaluateOn(normalizeRpl(text), items),
+        currentStack: () => this._getContext().stack,
+      },
+      renderMarkdown,
+      onFinish: (kind) => this._sendChip(kind === 'similar' ? 'Give me a similar problem to practise, and walk me through it.' : 'Recap the whole solution in a few lines.'),
+    });
+    this._messagesEl.appendChild(card.el);
+    this._scrollBottom();
+    return card.el;
+  }
+
   _turnConfig() {
     const nativeTools = this._llm.supportsTools === true;
     return {
       nativeTools,
-      systemPrompt: buildSystemPrompt({ nativeTools }),
+      systemPrompt: buildSystemPrompt({ nativeTools, tutor: this.mode === 'tutor' ? { style: this.tutorStyle } : null }),
       maxIterations: MAX_TURN_ITERATIONS,
       maxTokens: MAX_REPLY_TOKENS,
     };
@@ -2278,7 +2342,7 @@ export class ChatBot {
     let card = null;
     try {
       const { result, note } = await runOnce();
-      card = this._addToolTrace(summary, this._traceSummary(toolCall.name, result));
+      card = tool.card?.(result) ?? this._addToolTrace(summary, this._traceSummary(toolCall.name, result));
       dlog('dispatchTool: read', toolCall.name, 'note=', note);
     } catch (err) {
       card = this._addToolTrace(summary, `✗ ${err.message ?? 'failed'}`);
@@ -2307,6 +2371,8 @@ export class ChatBot {
         return `${r.depth ?? (r.stack ?? []).length} level${(r.depth ?? 0) === 1 ? '' : 's'}`;
       case 'get_editor':
         return r.buffer ? `"${r.buffer}"` : 'empty';
+      case 'tutor_plan':
+        return r.accepted ? `${r.plan.steps.length} steps` : `✗ ${r.error}`;
       default:
         return '';
     }
@@ -2371,6 +2437,11 @@ export class ChatBot {
                `Fix the RPL before trying again.${infixHint(code)})`;
       }
       return `(${verb} \`${code}\`. ${stackText(r.stack, r.depth)}.)`;
+    }
+    if (name === 'tutor_plan') {
+      return r.accepted
+        ? `(tutor_plan accepted: the student now sees ${r.plan.steps.length} steps and works through them with Show me or on their own keys. Don't reveal the final answer.)`
+        : `(tutor_plan REJECTED: ${r.error}. Fix that step and call tutor_plan again.)`;
     }
     if (name === 'evaluate') {
       const code = normalizeRpl(args.text);

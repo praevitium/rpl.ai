@@ -1,6 +1,7 @@
 export const ACTIONS = Object.freeze({
   'palette.open':      { label: 'Search commands, settings and help', surfaces: ['appbar.search'] },
   'assistant.ask':     { label: 'Ask the assistant', surfaces: ['input.ask', 'rail.assistant'] },
+  'assistant.tutor':   { label: 'Walk me through a problem (Tutor)', surfaces: ['stack.empty', 'drawer.assistant', 'palette'] },
   'writer.equation':   { label: 'Equation writer', surfaces: ['input.tabs', 'keypad.EQW'] },
   'writer.matrix':     { label: 'Matrix writer', surfaces: ['input.tabs'] },
   'writer.commit':     { label: 'Push what you wrote, or put it back in the level being edited', surfaces: ['input.go', 'menu.EQUATION', 'menu.MATRIX'] },

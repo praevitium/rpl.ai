@@ -4,6 +4,8 @@ export const THEMES = Object.freeze(['auto', 'graphite', 'paper', 'classic']);
 export const KEYPAD_LAYOUTS = Object.freeze(['full', 'compact', 'hidden']);
 export const DRAWER_IDS = Object.freeze(['assistant', 'catalog', 'vars', 'history', 'plot', 'chars']);
 const HISTORY_SORTS = Object.freeze(['newest', 'oldest']);
+export const ASSISTANT_MODES = Object.freeze(['ask', 'tutor']);
+export const TUTOR_STYLES = Object.freeze(['socratic', 'direct']);
 
 export const DEFAULT_UI_PREFS = Object.freeze({
   theme: 'auto',
@@ -17,6 +19,8 @@ export const DEFAULT_UI_PREFS = Object.freeze({
   hints: false,
   historySort: 'newest',
   menu: null,
+  assistantMode: 'ask',
+  tutorStyle: 'socratic',
 });
 
 const LEGACY_DRAWER_OF_TAB = Object.freeze({
@@ -41,6 +45,8 @@ export function normalizeUiPrefs(raw) {
   if (typeof raw.hints === 'boolean') p.hints = raw.hints;
   if (HISTORY_SORTS.includes(raw.historySort)) p.historySort = raw.historySort;
   if (typeof raw.menu === 'string' && /^[A-Z]{2,8}$/.test(raw.menu)) p.menu = raw.menu;
+  if (ASSISTANT_MODES.includes(raw.assistantMode)) p.assistantMode = raw.assistantMode;
+  if (TUTOR_STYLES.includes(raw.tutorStyle)) p.tutorStyle = raw.tutorStyle;
   return p;
 }
 
