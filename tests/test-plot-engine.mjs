@@ -253,6 +253,35 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
 }
 
 {
+  const circle = fitViewToTraces(
+    [{ kind: 'polar', expr: '1', enabled: true }],
+    defaultView(),
+    { angleOpts: { toRad: x => x }, thetaRange: { min: 0, max: 2 * Math.PI }, width: 400, height: 200 },
+  );
+  const unitsPerPixelX = (circle.xmax - circle.xmin) / 400;
+  const unitsPerPixelY = (circle.ymax - circle.ymin) / 200;
+  assert(Math.abs(unitsPerPixelX - unitsPerPixelY) < 1e-12 && circle.ymax > 1 && circle.ymin < -1,
+    'fitViewToTraces: a polar circle alone fits with equal axes so it stays round');
+
+  const mixed = fitViewToTraces(
+    [{ kind: 'polar', expr: '1', enabled: true }, { kind: 'function', expr: '5', enabled: true }],
+    defaultView(),
+    { angleOpts: { toRad: x => x }, thetaRange: { min: 0, max: 2 * Math.PI }, width: 400, height: 200 },
+  );
+  assert(mixed.ymax > 5 && mixed.xmax < 2,
+    'fitViewToTraces: a function beside a polar curve stays inside the fitted window');
+}
+
+{
+  const polar = samplePolar(parsePlotExpr('1+0*X'), 0, Math.PI, 5, {}, { toRad: x => x });
+  assert(polar.length === 1 && polar[0].length === 5,
+    'samplePolar: X is the angle, as HP polar plots use the independent variable X');
+  const param = sampleParametric(parsePlotExpr('X'), parsePlotExpr('2*X'), 0, 2, 3, {});
+  assert(param[0][2][0] === 2 && param[0][2][1] === 4,
+    'sampleParametric: X is the parameter too');
+}
+
+{
   const y = evalTraceAtX({ kind: 'function', expr: '2*X', enabled: true }, 3);
   assert(y === 6, 'evalTraceAtX: function');
   assert(Number.isNaN(evalTraceAtX({ kind: 'function', expr: 'X', enabled: false }, 3)),

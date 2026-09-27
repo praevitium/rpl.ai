@@ -93,7 +93,7 @@ export function samplePolar(ast, thetaMin, thetaMax, n, env, opts = {}) {
   const pts = [];
   for (let i = 0; i < count; i++) {
     const th = thetaMin + d * i;
-    const r = evalNumeric(ast, { ...env, t: th, T: th, θ: th, theta: th }, opts);
+    const r = evalNumeric(ast, { ...env, t: th, T: th, θ: th, theta: th, x: th, X: th }, opts);
     if (!Number.isFinite(r)) { pts.push([NaN, NaN]); continue; }
     const rad = (opts.toRad || (x => x))(th);
     pts.push([r * Math.cos(rad), r * Math.sin(rad)]);
@@ -107,7 +107,7 @@ export function sampleParametric(astX, astY, tMin, tMax, n, env, opts = {}) {
   const pts = [];
   for (let i = 0; i < count; i++) {
     const t = tMin + dt * i;
-    const local = { ...env, t, T: t };
+    const local = { ...env, t, T: t, x: t, X: t };
     pts.push([
       evalNumeric(astX, local, opts),
       evalNumeric(astY, local, opts),
@@ -580,6 +580,7 @@ export const TRACE_KINDS = Object.freeze({
   polar: {
     render: 'stroke',
     data: true,
+    equalAxes: true,
     editable: true,
     fitOnAdd: true,
     fields: [{ key: 'expr', placeholder: '1 + COS(θ)', aria: 'Expression' }],
@@ -599,6 +600,7 @@ export const TRACE_KINDS = Object.freeze({
   parametric: {
     render: 'stroke',
     data: true,
+    equalAxes: true,
     editable: true,
     fitOnAdd: true,
     fieldSep: ',',
@@ -727,23 +729,33 @@ export function sampleTraceForFit(t, view, opts = {}) {
   }
 }
 
+function withEqualAxes(view, width, height) {
+  if (!(width > 0 && height > 0)) return view;
+  const unitsPerPixel = Math.max((view.xmax - view.xmin) / width, (view.ymax - view.ymin) / height);
+  const cx = (view.xmin + view.xmax) / 2;
+  const cy = (view.ymin + view.ymax) / 2;
+  const halfX = unitsPerPixel * width / 2;
+  const halfY = unitsPerPixel * height / 2;
+  return { xmin: cx - halfX, xmax: cx + halfX, ymin: cy - halfY, ymax: cy + halfY };
+}
+
 export function fitViewToTraces(traces, view, opts = {}) {
   const v = view || defaultView();
-  const xy = [];
-  const yOnly = [];
-  for (const t of traces || []) {
-    if (!t || t.enabled === false) continue;
-    const pts = sampleTraceForFit(t, v, opts);
-    if (!pts.length) continue;
-    if (isDataTrace(t)) xy.push(...pts);
-    else yOnly.push(...pts);
-  }
-  if (xy.length) return boundsOfPoints(xy);
-  if (yOnly.length) {
-    const b = boundsOfPoints(yOnly);
+  const shown = (traces || []).filter((t) => t && t.enabled !== false);
+  const functions = shown.filter((t) => !isDataTrace(t));
+  const xy = shown.filter(isDataTrace).flatMap((t) => sampleTraceForFit(t, v, opts));
+  if (!xy.length) {
+    const ys = functions.flatMap((t) => sampleTraceForFit(t, v, opts));
+    if (!ys.length) return { xmin: v.xmin, xmax: v.xmax, ymin: v.ymin, ymax: v.ymax };
+    const b = boundsOfPoints(ys);
     return { xmin: v.xmin, xmax: v.xmax, ymin: b.ymin, ymax: b.ymax };
   }
-  return { xmin: v.xmin, xmax: v.xmax, ymin: v.ymin, ymax: v.ymax };
+  const data = boundsOfPoints(xy);
+  const across = { ...v, xmin: data.xmin, xmax: data.xmax };
+  const ys = functions.flatMap((t) => sampleTraceForFit(t, across, opts));
+  const all = ys.length ? boundsOfPoints([...xy, ...ys]) : data;
+  const fitted = { xmin: data.xmin, xmax: data.xmax, ymin: all.ymin, ymax: all.ymax };
+  return shown.every((t) => kindSpec(t)?.equalAxes) ? withEqualAxes(fitted, opts.width, opts.height) : fitted;
 }
 
 export function evalTraceAtX(t, x, opts = {}) {

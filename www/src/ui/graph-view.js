@@ -216,6 +216,7 @@ export class GraphView {
   }
 
   setKind(kind) {
+    if (kind !== this._kind) this._addY.value = '';
     this._kind = kind;
     this.el.querySelectorAll('.pl-kinds button').forEach(b => {
       b.setAttribute('aria-pressed', String(b.dataset.kind === kind));
@@ -228,6 +229,7 @@ export class GraphView {
       this.el.querySelector('.gr-data').hidden = !!fields.length;
       this._addY.classList.toggle('hidden', !yField);
       this._addX.placeholder = fields[0]?.placeholder || 'data from stack / ΣDAT';
+      if (fields.length) this._addX.setAttribute('aria-label', fields[0].aria);
       if (yField) {
         this._addY.placeholder = yField.placeholder;
         this._addY.setAttribute('aria-label', yField.aria);
@@ -282,9 +284,8 @@ export class GraphView {
       }));
     }
     this._selectedId = t.id;
-    this.fitView();
     this._renderExprs();
-    this.draw();
+    this.fitView();
   }
 
   _dataValue() {
@@ -297,11 +298,11 @@ export class GraphView {
   }
 
   applyPlotOp(kind, stack) {
-    this.setKind(kind);
     if (kind === 'draw') {
       this.draw();
       return;
     }
+    this.setKind(kind);
     const spec = TRACE_KINDS[kind];
     if (spec?.fields?.length) {
       const top = stack?.peek?.();
@@ -375,11 +376,9 @@ export class GraphView {
     const t = makeTrace(partial);
     this.traces.push(t);
     this._selectedId = t.id;
+    if (draw) this._renderExprs();
     if (fit || first) this.fitView();
-    if (draw) {
-      this._renderExprs();
-      this.draw();
-    }
+    else if (draw) this.draw();
     return t;
   }
 
@@ -565,6 +564,7 @@ export class GraphView {
       thetaRange: thetaRange(),
       tRange: { min: -10, max: 10 },
       width: wrap?.clientWidth || 240,
+      height: wrap?.clientHeight,
     });
     this.draw();
   }

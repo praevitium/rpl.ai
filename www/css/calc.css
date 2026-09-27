@@ -1010,6 +1010,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   background: var(--well);
 }
 .gr-param-sep { color: var(--ink3); padding: 0 2px; }
+.gr-expr:has(+ .gr-param-sep) { text-align: right; }
 .gr-add {
   display: flex;
   gap: 6px;
