@@ -38,6 +38,6 @@ These are house conventions, not project documentation. Follow them so they don'
 - Commit only when asked.
 - After every commit, **push** the working branch.
 - After a significant chunk of work, **bump the version** (package.json, package-lock.json, src-tauri/Cargo.toml, src-tauri/Cargo.lock, src-tauri/tauri.conf.json, and the as-of / latest-release stamps in RELEASE_NOTES.md, docs/ROADMAP.md, docs/COMMANDS.md). Patch for a coherent feature; don't leave the bump uncommitted.
-- Commit subjects are **short and lowercase**, imperative mood, no scope prefix, no trailing period (e.g. `fix cursor`, `add katex support`). Roughly four words; subject line only — never add a description body or trailers.
+- Commit subjects are **short and lowercase**, imperative mood, no scope prefix, no trailing period (e.g. `fix cursor`, `add katex support`), four or five words. Follow with a one- or two-sentence body. Never add trailers such as Co-Authored-By.
 - Keep each commit to one logical change.
 - When asked to "commit as you go", commit each coherent chunk as it lands and push at the end.
