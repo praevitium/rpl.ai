@@ -1018,7 +1018,10 @@ class App {
   }
 
   pressVariable(name, layer = null) {
-    if (this.entry.buffer.trim().length > 0) this.commitEntry();
+    if (this.entry.buffer.trim().length > 0) {
+      this.commitEntry();
+      if (this.entry.error) return;
+    }
     const v = varRecall(name);
     if (v === undefined) { this.entry.flashError({ message: `Undefined name: ${name}` }); return; }
     if (layer === 'L') {
