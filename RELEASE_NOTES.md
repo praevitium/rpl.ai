@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.5.3 (2026-09-29)
+**Latest release:** v0.5.4 (2026-09-29)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.5.4 — 2026-09-29
+
+The equation and matrix writers have a row of tap buttons with Backspace
+and Enter, and a stack level swipes away on a touch screen, with Undo. A
+code review removed about 17,000 lines of stale comments and dead code
+and fixed about 70 bugs, among them SUM adding a list as text, FROOTS on
+repeated roots, a variable named F, R, k, c or g losing to the built-in
+constant, keypad keys typing into the hidden command line from the matrix
+writer, and '√2' reading as a name. The assistant asks for a 32K context
+by default, and its connection form says when Safari, the browser's local
+network permission or ollama.com is the problem. The README now walks
+through installing rpl.ai and setting up Ollama, and lists the current
+limitations.
 
 ---
 
