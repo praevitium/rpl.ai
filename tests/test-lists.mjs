@@ -17,7 +17,7 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows } from './helpers.mjs';
+import { assert, assertThrows, runLine } from './helpers.mjs';
 
 /* List ops — GET / PUT / HEAD / TAIL / SUB / →LIST / LIST→ / POS. */
 
@@ -2005,4 +2005,28 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(s.depth === 1 && isReal(s.peek()) && s.peek().value.eq(100),
     'List EVAL error: list consumed, body pushes unwound, pre-existing Real(100) survives');
   resetHome();
+}
+
+/* ---- GET, PUT, GETI and PUTI: named collections, { n } and row-order
+        matrix positions, and flag -64 on wrap-around (AUR). ---- */
+{
+  const { testUserFlag } = await import('../www/src/rpl/state.js');
+  resetHome();
+  runLine('{ 10 20 30 } `L` STO');
+  assert(runLine('`L` 2 GET').peek().value === 20n, 'GET takes the name of a list');
+  const put = runLine('`L` 2 99 PUT');
+  assert(put.depth === 0 && varRecall('L').items[1].value === 99n, 'PUT on a name stores the new list back');
+  assert(runLine('{ 1 2 } { 2 } GET').peek().value === 2n, 'GET takes a position as { n }');
+  assert(runLine('[[ 1 2 ][ 3 4 ]] 3 GET').peek().value === 3n, 'GET counts a matrix in row order');
+  const geti = runLine('`L` 3 GETI');
+  assert(geti.peek(3).type === 'name' && geti.peek(2).value === 1n && testUserFlag(-64),
+    'GETI on a name returns the name and sets flag -64 when it wraps');
+  runLine('`L` 1 GETI');
+  assert(!testUserFlag(-64), 'GETI clears flag -64 when it does not wrap');
+  const puti = runLine('[ 1 2 3 ] { 2 } 7 PUTI');
+  assert(puti.peek(1).type === 'list' && puti.peek(1).items[0].value === 3n && puti.peek(2).items[1].value === 7n,
+    'PUTI keeps the { n } form for the next position');
+  const loop = runLine('« { 5 6 7 } 1 DO GETI ROT ROT UNTIL -64 FS? END DROP2 » EVAL');
+  assert(loop.depth === 3 && loop.peek().value === 7n, 'a DO GETI UNTIL -64 FS? loop stops after the last element');
+  varPurge('L');
 }

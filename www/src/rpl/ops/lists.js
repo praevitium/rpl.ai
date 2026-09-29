@@ -3,7 +3,8 @@ import { RPLError } from '../stack.js';
 import { Fn as AstFn, astEqual } from '../algebra.js';
 import { parseEntry as _parseEntryForObjTo } from '../parser.js';
 import { register, lookup, OPS } from './registry.js';
-import { _DOSUBS_STACK, _driveGen, _fromListOp, _fromStrOp, _isSymOperand, _scalarBinary, _symbolicDecompose, _toAst, _toCountN, _toIntIdx, _toListOp, _toStrOp, runDoList, runDoSubs, runMap, runSeq, runStream } from './internal.js';
+import { setUserFlag, clearUserFlag } from '../state.js';
+import { recallVar, storeVar, _DOSUBS_STACK, _driveGen, _fromListOp, _fromStrOp, _isSymOperand, _scalarBinary, _symbolicDecompose, _toAst, _toCountN, _toIntIdx, _toListOp, _toStrOp, runDoList, runDoSubs, runMap, runSeq, runStream } from './internal.js';
 
 
 
@@ -58,68 +59,85 @@ function _allEqual(xs, ys, eq = _rplEqual) {
 }
 
 
-function _seqIndex(idx, length) {
-  const n = _toIntIdx(idx);
-  if (n > length) throw new RPLError('Bad argument value');
-  return n;
+// GET, PUT, GETI and PUTI take a position as n, { n } or, in a matrix,
+// { row col } or n counted in row order.  The next position they return keeps
+// the form they were given.
+function _position(coll, idx) {
+  const cols = isMatrix(coll) ? coll.rows[0].length : 1;
+  const size = isMatrix(coll) ? coll.rows.length * cols : (isString(coll) ? coll.value : coll.items).length;
+  let k;
+  let form = 'n';
+  if (isList(idx) && idx.items.length === 2 && isMatrix(coll)) {
+    const r = _toIntIdx(idx.items[0]);
+    const c = _toIntIdx(idx.items[1]);
+    if (r > coll.rows.length || c > cols) throw new RPLError('Bad argument value');
+    k = (r - 1) * cols + c - 1;
+    form = 'rc';
+  } else if (isList(idx)) {
+    if (idx.items.length !== 1) throw new RPLError('Bad argument value');
+    k = _toIntIdx(idx.items[0]) - 1;
+    form = 'list';
+  } else {
+    k = _toIntIdx(idx) - 1;
+  }
+  if (k >= size) throw new RPLError('Bad argument value');
+  return { k, size, cols, form };
 }
 
-function _matrixIndex(m, idx) {
-  if (!isList(idx) || idx.items.length !== 2) throw new RPLError('Bad argument type');
-  const r = _toIntIdx(idx.items[0]);
-  const c = _toIntIdx(idx.items[1]);
-  if (r > m.rows.length || c > m.rows[r - 1].length) throw new RPLError('Bad argument value');
-  return [r, c];
+function _positionValue({ cols, form }, k) {
+  if (form === 'rc') return RList([Integer(BigInt(Math.floor(k / cols) + 1)), Integer(BigInt((k % cols) + 1))]);
+  const n = Integer(BigInt(k + 1));
+  return form === 'list' ? RList([n]) : n;
 }
 
-function _itemsWith(items, n, val) {
-  const out = [...items];
-  out[n - 1] = val;
-  return out;
+// Flag -64 reports whether the index wrapped back to the first element.
+function _nextPosition(pos) {
+  const wrapped = pos.k + 1 >= pos.size;
+  if (wrapped) setUserFlag(-64);
+  else clearUserFlag(-64);
+  return _positionValue(pos, wrapped ? 0 : pos.k + 1);
 }
 
-function _matrixWith(m, r, c, val) {
-  return Matrix(m.rows.map((row, i) => (i === r - 1 ? _itemsWith(row, c, val) : row)));
+function _elementAt(coll, k) {
+  if (isMatrix(coll)) return coll.rows[Math.floor(k / coll.rows[0].length)][k % coll.rows[0].length];
+  return isString(coll) ? Str(coll.value[k]) : coll.items[k];
 }
 
-function _nextIndex(n, length) {
-  return Integer(BigInt(n >= length ? 1 : n + 1));
+function _withElement(coll, k, val) {
+  if (isMatrix(coll)) {
+    const cols = coll.rows[0].length;
+    const r = Math.floor(k / cols);
+    return Matrix(coll.rows.map((row, i) => (i === r ? row.map((x, j) => (j === k % cols ? val : x)) : row)));
+  }
+  const items = coll.items.map((x, i) => (i === k ? val : x));
+  return isList(coll) ? RList(items) : Vector(items);
 }
 
-function _nextMatrixIndex(m, r, c) {
-  const [nr, nc] = c < m.rows[0].length ? [r, c + 1]
-                 : r < m.rows.length    ? [r + 1, 1]
-                 : [1, 1];
-  return RList([Integer(BigInt(nr)), Integer(BigInt(nc))]);
+// The collection can also be named: PUT and PUTI then store the result back.
+function _collection(v, { strings = false } = {}) {
+  const named = isName(v);
+  const coll = named ? recallVar(v.id) : v;
+  if (named && coll === undefined) throw new RPLError(`Undefined name: ${v.id}`);
+  if (!(isList(coll) || isVector(coll) || isMatrix(coll) || (strings && isString(coll)))) {
+    throw new RPLError('Bad argument type');
+  }
+  return { coll, name: named ? v : null };
 }
 
 
 register('GET', (s) => {
-  const [coll, idx] = s.popN(2);
-  if (isList(coll) || isVector(coll)) {
-    s.push(coll.items[_seqIndex(idx, coll.items.length) - 1]);
-  } else if (isMatrix(coll)) {
-    const [r, c] = _matrixIndex(coll, idx);
-    s.push(coll.rows[r - 1][c - 1]);
-  } else if (isString(coll)) {
-    s.push(Str(coll.value[_seqIndex(idx, coll.value.length) - 1]));
-  } else {
-    throw new RPLError('Bad argument type');
-  }
+  const [target, idx] = s.popN(2);
+  const { coll } = _collection(target, { strings: true });
+  s.push(_elementAt(coll, _position(coll, idx).k));
 }, { category: 'Lists / strings', categoryOrder: 0, label: "GET" });
 
 
 register('PUT', (s) => {
-  const [coll, idx, val] = s.popN(3);
-  if (isList(coll) || isVector(coll)) {
-    const items = _itemsWith(coll.items, _seqIndex(idx, coll.items.length), val);
-    s.push(isList(coll) ? RList(items) : Vector(items));
-  } else if (isMatrix(coll)) {
-    const [r, c] = _matrixIndex(coll, idx);
-    s.push(_matrixWith(coll, r, c, val));
-  } else {
-    throw new RPLError('Bad argument type');
-  }
+  const [target, idx, val] = s.popN(3);
+  const { coll, name } = _collection(target);
+  const result = _withElement(coll, _position(coll, idx).k, val);
+  if (name) storeVar(name.id, result);
+  else s.push(result);
 }, { category: 'Lists / strings', categoryOrder: 1, label: "PUT" });
 
 
@@ -447,42 +465,23 @@ register('STREAM', (s) => {
 
 
 register('GETI', (s) => {
-  const [coll, idx] = s.popN(2);
-  if (isList(coll) || isVector(coll) || isString(coll)) {
-    const seq = isString(coll) ? coll.value : coll.items;
-    const n = _seqIndex(idx, seq.length);
-    s.push(coll);
-    s.push(_nextIndex(n, seq.length));
-    s.push(isString(coll) ? Str(seq[n - 1]) : seq[n - 1]);
-    return;
-  }
-  if (isMatrix(coll)) {
-    const [r, c] = _matrixIndex(coll, idx);
-    s.push(coll);
-    s.push(_nextMatrixIndex(coll, r, c));
-    s.push(coll.rows[r - 1][c - 1]);
-    return;
-  }
-  throw new RPLError('Bad argument type');
+  const [target, idx] = s.popN(2);
+  const { coll, name } = _collection(target, { strings: true });
+  const pos = _position(coll, idx);
+  s.push(name ?? coll);
+  s.push(_nextPosition(pos));
+  s.push(_elementAt(coll, pos.k));
 }, { category: 'Lists / strings', categoryOrder: 2, label: "GETI" });
 
 
 register('PUTI', (s) => {
-  const [coll, idx, val] = s.popN(3);
-  if (isList(coll) || isVector(coll)) {
-    const n = _seqIndex(idx, coll.items.length);
-    const items = _itemsWith(coll.items, n, val);
-    s.push(isList(coll) ? RList(items) : Vector(items));
-    s.push(_nextIndex(n, coll.items.length));
-    return;
-  }
-  if (isMatrix(coll)) {
-    const [r, c] = _matrixIndex(coll, idx);
-    s.push(_matrixWith(coll, r, c, val));
-    s.push(_nextMatrixIndex(coll, r, c));
-    return;
-  }
-  throw new RPLError('Bad argument type');
+  const [target, idx, val] = s.popN(3);
+  const { coll, name } = _collection(target);
+  const pos = _position(coll, idx);
+  const result = _withElement(coll, pos.k, val);
+  if (name) storeVar(name.id, result);
+  s.push(name ?? result);
+  s.push(_nextPosition(pos));
 }, { category: 'Lists / strings', categoryOrder: 3, label: "PUTI" });
 
 
