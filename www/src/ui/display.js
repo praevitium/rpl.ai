@@ -208,18 +208,21 @@ export class Display {
       swipe = null;
       if (ev.pointerType === 'mouse' || !ev.isPrimary || ev.target.closest?.('.st-acts')) return;
       const row = ev.target.closest?.('.st-row[data-key]');
-      if (row) swipe = { row, id: ev.pointerId, pen: ev.pointerType === 'pen', x: ev.clientX, y: ev.clientY, dx: 0, active: false };
+      if (row) swipe = { row, id: ev.pointerId, pen: ev.pointerType === 'pen', x: ev.clientX, y: ev.clientY, lastX: ev.clientX, lastY: ev.clientY, dx: 0, active: false };
     });
-    // A pen starts the rows' native drag before it moves far enough to swipe,
-    // so a sideways start cancels the drag and a vertical one keeps it to reorder.
+    // A pen starts the rows' native drag before it moves far enough to swipe, and
+    // dragstart reports the press point, so the direction comes from the last move:
+    // a clearly vertical start keeps the drag to reorder, anything else swipes.
     view.addEventListener('dragstart', (ev) => {
       if (!swipe?.pen) return;
-      if (Math.abs(ev.clientY - swipe.y) >= Math.abs(ev.clientX - swipe.x)) { swipe = null; return; }
+      if (Math.abs(swipe.lastY - swipe.y) > Math.abs(swipe.lastX - swipe.x)) { swipe = null; return; }
       ev.preventDefault();
       ev.stopImmediatePropagation();
     }, true);
     view.addEventListener('pointermove', (ev) => {
       if (swipe?.id !== ev.pointerId) return;
+      swipe.lastX = ev.clientX;
+      swipe.lastY = ev.clientY;
       const dx = ev.clientX - swipe.x;
       if (!swipe.active) {
         if (Math.abs(ev.clientY - swipe.y) > 10) { swipe = null; return; }
