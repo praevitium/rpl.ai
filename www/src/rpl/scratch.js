@@ -31,16 +31,15 @@ export function evalScratch(text, { liveItems = [], displayOpts, maxLevels = 8 }
     try {
       const values = parseEntry(String(text ?? ''));
       for (const v of values) {
-        const op = (v?.type === 'name' && !v.quoted) ? lookup(v.id) : null;
-        if (op) {
-          try {
-            stack.runOp(() => op.fn(stack));
-          } catch (e) {
-            const msg = (e && typeof e === 'object' && e.message != null) ? e.message : String(e);
-            throw new RPLError(`${v.id}: ${msg}`);
-          }
-        } else {
-          stack.push(v);
+        const bare = v?.type === 'name' && !v.quoted;
+        const op = bare ? lookup(v.id) : null;
+        if (!op) stack.push(v);
+        if (!bare) continue;
+        try {
+          stack.runOp(() => (op ?? lookup('EVAL')).fn(stack));
+        } catch (e) {
+          const msg = (e && typeof e === 'object' && e.message != null) ? e.message : String(e);
+          throw new RPLError(`${v.id}: ${msg}`);
         }
       }
       return {

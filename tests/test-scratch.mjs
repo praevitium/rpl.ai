@@ -156,3 +156,9 @@ import { assert } from './helpers.mjs';
   assert(previewCommand('FACTORS', [Integer((2n ** 31n - 1n) * (2n ** 61n - 1n))]) === null && Date.now() - started < 2000,
     'previewCommand: FACTORS too slow to preview gives up instead of freezing the page');
 }
+
+{
+  const r = evalScratch('« → n « IF n 2 < THEN n ELSE n 1 - FIB n 2 - FIB + END » » `FIB` STO 10 FIB');
+  assert(r.ok && r.stack[0] === '55', 'evalScratch runs a program stored on the same line by its bare name, like the entry line');
+  assert(varRecall('FIB') === undefined, 'evalScratch rolls back the program it stored');
+}

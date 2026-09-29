@@ -64,6 +64,7 @@ import {
 } from './remote-llm.js';
 import { buildSystemPrompt, TOOL_SCHEMAS } from './system-prompt.js';
 import { TutorCard } from './tutor.js';
+import { hpCodesToGlyphs } from '../rpl/hp-text.js';
 
 // Diagnostic logging — every flow-control transition in this module
 // goes through these helpers so the console transcript reads as a
@@ -576,7 +577,7 @@ export function stripThinkBlocks(text) {
 export function normalizeRpl(text) {
   let s = String(text ?? '');
   if (!s) return s;
-  s = s.replace(/[‘’]/g, "'").replace(/[“”]/g, '"');
+  s = hpCodesToGlyphs(s.replace(/[‘’]/g, "'").replace(/[“”]/g, '"'));
   // Apostrophe-quoted algebraics → backticks, but only when the text
   // has no backticks of its own (mixed usage means the model knew the
   // convention and any remaining apostrophe is deliberate).

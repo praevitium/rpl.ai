@@ -39,9 +39,13 @@ function mapOutsideStrings(src, mapChar) {
   return out;
 }
 
-export function hpTextToSource(text) {
-  let src = String(text).replace(/^\uFEFF/, '').replace(/^\s*%%HP:[^;]*;/, '');
+export function hpCodesToGlyphs(src) {
   for (const [code, glyph] of T3_CODES) src = src.split(code).join(glyph);
+  return src;
+}
+
+export function hpTextToSource(text) {
+  const src = hpCodesToGlyphs(String(text).replace(/^\uFEFF/, '').replace(/^\s*%%HP:[^;]*;/, ''));
   return mapOutsideStrings(src, (c, s, i) => {
     if (c === "'") return { text: '`', next: i + 1 };
     if (c !== '@') return { text: c, next: i + 1 };

@@ -224,6 +224,9 @@ Left out on purpose:
 - FINANCE (TVMROOT, AMORT, and the rest of that menu)
 - TIME (DATE, TIME, TICKS, and the rest of that menu)
 - DEF
+- Screen and keyboard I/O inside programs (INPUT, INFORM, CHOOSE, DISP,
+  CLLCD, FREEZE, MSGBOX, WAIT, KEY, BEEP); programs read their arguments from
+  the stack, label results with →TAG and pause with PROMPT
 - LIB, LIBS, ATTACH, DETACH, and port management
 - OFF
 - Saturn assembly and System RPL
