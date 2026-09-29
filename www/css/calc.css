@@ -221,7 +221,8 @@ button { cursor: pointer; }
   touch-action: pan-x pan-y;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-@media (display-mode: standalone), (display-mode: fullscreen) {
+@media (display-mode: standalone) and (pointer: coarse),
+       (display-mode: fullscreen) and (pointer: coarse) {
   .app { padding-bottom: max(34px, env(safe-area-inset-bottom, 0px)); }
 }
 :root[data-installed] .app { padding-bottom: max(34px, env(safe-area-inset-bottom, 0px)); }

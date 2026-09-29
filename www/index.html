@@ -17,9 +17,9 @@
   addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.installPrompt = e; });
 </script>
 <script>
-  if (navigator.standalone || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches) {
-    document.documentElement.dataset.installed = 'true';
-  }
+  const touchInstall = matchMedia('(pointer: coarse)').matches
+    && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches);
+  if (navigator.standalone === true || touchInstall) document.documentElement.dataset.installed = 'true';
   const pinAppViewport = () => {
     const viewport = window.visualViewport;
     if (!viewport) return;
