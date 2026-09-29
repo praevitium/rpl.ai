@@ -1098,8 +1098,8 @@ import { assert, assertThrows } from './helpers.mjs';
   try { giacToAst('"X-1'); /* leading-only quote, parseAlgebra barfs */ }
   catch (e) { caught = e; }
   assert(caught !== null, 'giacToAst throws on unparseable Giac output');
-  assert(/Giac output did not parse/.test(caught.message),
-         `giacToAst error includes "Giac output did not parse": ${caught && caught.message}`);
+  assert(/Unsupported result/.test(caught.message),
+         `giacToAst error says the result is unsupported: ${caught && caught.message}`);
   assert(/"\\"X-1"/.test(caught.message) || caught.message.includes('"X-1'),
          `giacToAst error includes raw string: ${caught && caught.message}`);
 }
@@ -5201,18 +5201,18 @@ giac._setFixtures({
 // literal form.
 giac._clear();
 giac._setFixtures({
-  'laplace(HEAVISIDE(X),X,X)':          '1/X',
-  'laplace(HEAVISIDE(X-3),X,X)':        'exp(-3*X)/X',
-  'laplace(DIRAC(X),X,X)':              '1',
-  'laplace(DIRAC(X-3),X,X)':            'exp(-3*X)',
+  'laplace(Heaviside(X),X,X)':          '1/X',
+  'laplace(Heaviside(X-3),X,X)':        'exp(-3*X)/X',
+  'laplace(Dirac(X),X,X)':              '1',
+  'laplace(Dirac(X-3),X,X)':            'exp(-3*X)',
   'laplace(exp(2*X)*sin(X),X,X)':       '1/((X-2)^2+1)',
   // ILAP keys use the parenthesised-negative shape astToGiac emits
   // from Neg(Num(3)) inside a multiplication.
-  'ilaplace(exp((-3)*X)/X,X,X)':        'HEAVISIDE(X-3)',
-  'ilaplace(exp((-3)*X),X,X)':          'DIRAC(X-3)',
-  'ilaplace(1,X,X)':                    'DIRAC(X)',
-  'laplace(HEAVISIDE(X-2),X,X)':        'exp(-2*X)/X',
-  'ilaplace(exp((-2)*X)/X,X,X)':        'HEAVISIDE(X-2)',
+  'ilaplace(exp((-3)*X)/X,X,X)':        'Heaviside(X-3)',
+  'ilaplace(exp((-3)*X),X,X)':          'Dirac(X-3)',
+  'ilaplace(1,X,X)':                    'Dirac(X)',
+  'laplace(Heaviside(X-2),X,X)':        'exp(-2*X)/X',
+  'ilaplace(exp((-2)*X)/X,X,X)':        'Heaviside(X-2)',
 });
 
 {
@@ -8055,8 +8055,12 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   assert(astEqual(giacToAst('diff(X^2,X)'), deriv), 'giacToAst maps diff back to DERIV');
   assert(astEqual(giacToAst('integrate(X,X,0,1)'), integ), 'giacToAst maps integrate back to INTEG');
   assert(astEqual(giacToAst('sum(K^2,K,1,N)'), sum), 'giacToAst maps sum back to Σ');
-  assert(astToGiac(parseAlgebra('XROOT(X,3)')) === '((X)^(1/(3)))',
-    'astToGiac XROOT(X,3) is the cube root of X');
+  assert(astToGiac(parseAlgebra('XROOT(X,3)')) === 'surd(X,3)',
+    'astToGiac XROOT(X,3) is the real cube root of X');
+  assert(astEqual(giacToAst('surd(X,3)'), parseAlgebra('XROOT(X,3)')), 'giacToAst maps surd back to XROOT');
+  assert(astToGiac(parseAlgebra('MOD(X,3)')) === '((X)-(3)*floor((X)/(3)))',
+    'astToGiac MOD is floored, as HP MOD is');
+  assertThrows(() => astToGiac(parseAlgebra('X≠Y')), /Bad argument value/, 'astToGiac refuses ≠, which Giac reads as a test');
   const exp = astToSvg(parseAlgebra('EXP(X)'));
   assert(exp.svg.includes('>e<') && !exp.svg.includes('>EXP<'),
     'pretty draws EXP as e with a raised exponent');

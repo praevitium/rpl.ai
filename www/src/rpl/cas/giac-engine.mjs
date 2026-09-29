@@ -6,7 +6,7 @@
 
 import { stripGiacQuotes, stripGiacApproxSuffix } from "./giac-convert.mjs";
 import { state as calcState } from "../state.js";
-import { RPLInterrupt } from "../stack.js";
+import { RPLError, RPLInterrupt } from "../stack.js";
 
 const isBrowser =
   typeof globalThis.document !== "undefined" &&
@@ -93,14 +93,24 @@ class BrowserGiacEngine {
     return this._caseval !== null;
   }
 
+  // The build has C++ exception catching compiled out, so a Giac error
+  // unwinds out of ccall and leaves the wasm stack pointer behind; without
+  // the restore, repeated failures overflow the stack and kill the CAS.
   caseval(cmd) {
     if (casHeld) throw new RPLInterrupt();
     if (!this._caseval) {
       throw new Error("Giac not initialized — call await giac.init() first");
     }
     assertCommand(cmd);
-    this._syncAngleMode();
-    return normalize(this._caseval(cmd));
+    const sp = globalThis.Module.stackSave();
+    try {
+      this._syncAngleMode();
+      return normalize(this._caseval(cmd));
+    } catch {
+      globalThis.Module.stackRestore(sp);
+      this._angleSent = null;
+      throw new RPLError("Bad argument value");
+    }
   }
 }
 

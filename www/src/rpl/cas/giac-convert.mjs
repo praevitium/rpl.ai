@@ -73,6 +73,11 @@ const HP_TO_GIAC = Object.freeze({
   ARG: "arg", CONJ: "conj",
   DERIV: "diff",
   "Σ": "sum",
+  CEIL: "ceil",
+  EXPM: "expm1",
+  HEAVISIDE: "Heaviside", DIRAC: "Dirac",
+  SI: "Si", CI: "Ci", EI: "Ei",
+  PSI: "Psi", ZETA: "Zeta", LAMBERT: "LambertW",
 });
 
 const GIAC_TO_HP = Object.freeze(
@@ -80,6 +85,7 @@ const GIAC_TO_HP = Object.freeze(
     ...Object.entries(HP_TO_GIAC).map(([hp, g]) => [g, hp]),
     ["log", "LN"],
     ["integrate", "INTEG"],
+    ["surd", "XROOT"],
   ]),
 );
 
@@ -119,7 +125,10 @@ function emit(ast, parentPrec) {
     case "bin": {
       const p = PREC[ast.op];
       if (p === undefined) {
-        return `${emit(ast.l, 0)}${ast.op}${emit(ast.r, 0)}`;
+        // Giac reads ≠ as a structural test that answers true or false.
+        if (ast.op === "≠") throw new RPLError("Bad argument value");
+        const op = { "≤": "<=", "≥": ">=" }[ast.op] ?? ast.op;
+        return `${emit(ast.l, 0)}${op}${emit(ast.r, 0)}`;
       }
       const rightAssoc = ast.op === "^";
       const lPrec = rightAssoc ? p + 1 : p;
@@ -145,11 +154,12 @@ function emitFn(ast) {
     return `ln(Gamma(${args[0]}))`;
   }
   if (hpName === "XROOT") {
-    return `((${args[0]})^(1/(${args[1]})))`;
+    // surd is the real root, so an odd root of a negative number stays real.
+    return `surd(${args[0]},${args[1]})`;
   }
   if (hpName === "MOD") {
-    // irem truncates, so it agrees with HP MOD only for non-negative operands.
-    return `irem(${args[0]},${args[1]})`;
+    // HP MOD is floored; irem truncates and folds a symbolic MOD(X,3) to X.
+    return `((${args[0]})-(${args[1]})*floor((${args[0]})/(${args[1]})))`;
   }
   if (hpName === "INTEG") {
     return `integrate(${args.join(",")})`;
@@ -219,13 +229,20 @@ export function stripGiacQuotes(s) {
   return cur;
 }
 
-const GIAC_APPROX_SUFFIX = /^([^=]+)=(-?\d+(?:\.\d*)?(?:e[+-]?\d+)?)$/;
-const GIAC_CONSTANT_WORDS = /\b(?:pi|e|i|euler_gamma|infinity)\b|\b[a-z_]+(?=\()/g;
+// Giac follows an exact constant result with its approximation, as in
+// sqrt(2)=1.41421356237 or i*pi=3.14159265359*i.  A genuine equation such as
+// 3=3 or pi=3 has no decimal point on the right, so it is left alone.
+const GIAC_APPROX_NUM = String.raw`\d+(?:\.\d*)?(?:e[+-]?\d+)?`;
+const GIAC_APPROX_SUFFIX = new RegExp(
+  `^([^=]+)=(-?(?:${GIAC_APPROX_NUM}(?:[-+](?:${GIAC_APPROX_NUM}\\*)?i)?|(?:${GIAC_APPROX_NUM}\\*)?i|infinity))$`,
+);
+const GIAC_CONSTANT_WORDS = /\b(?:pi|e|i|euler_gamma|infinity)\b|\b[A-Za-z_][A-Za-z0-9_]*(?=\()/g;
 
 export function stripGiacApproxSuffix(s) {
   if (typeof s !== "string") return s;
   const m = GIAC_APPROX_SUFFIX.exec(s);
-  if (!m || /[a-zA-Z]/.test(m[1].replace(GIAC_CONSTANT_WORDS, ""))) return s;
+  if (!m || !/\.|infinity/.test(m[2]) || /^-?[\d.]+$/.test(m[1].trim())) return s;
+  if (/[a-zA-Z]/.test(m[1].replace(GIAC_CONSTANT_WORDS, ""))) return s;
   return m[1];
 }
 
@@ -247,23 +264,28 @@ export function giacToAst(giacStr) {
   }
 
   // Only names in call position are renamed; bare identifiers may be variables.
-  const mapped = s.replace(/([A-Za-z_][A-Za-z0-9_]*)\s*\(/g, (match, name) => {
-    const hp = GIAC_TO_HP[name];
-    return hp ? `${hp}(` : match;
-  });
+  const mapped = s
+    .replace(/([A-Za-z_][A-Za-z0-9_]*)\s*\(/g, (match, name) => {
+      const hp = GIAC_TO_HP[name];
+      return hp ? `${hp}(` : match;
+    })
+    .replace(/([A-Za-z0-9_.]+|\([^()]*\))!(?!=)/g, "FACT($1)");
 
   try {
     return parseAlgebra(mapped);
-  } catch (e) {
-    throw new Error(
-      `Giac output did not parse (${e.message}): ${JSON.stringify(giacStr)}`,
-    );
+  } catch {
+    throw new RPLError(`Unsupported result: ${giacStr}`);
   }
 }
 
-export class GiacResultError extends Error {
+const GIAC_RESULT_MESSAGES = {
+  unsupported: () => "Undefined result",
+  "runtime-error": (raw) => raw.replace(/^(GIAC_ERROR|Error):\s*/, "").replace(/\.$/, ""),
+};
+
+export class GiacResultError extends RPLError {
   constructor(raw, kind = "unsupported") {
-    super(`Giac returned ${kind} result: ${raw}`);
+    super(GIAC_RESULT_MESSAGES[kind]?.(raw) ?? `Unsupported result: ${raw}`);
     this.name = "GiacResultError";
     this.raw = raw;
     this.kind = kind;

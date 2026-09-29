@@ -780,21 +780,21 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   giac._clear();
   giac._setFixtures({
     'simplify(FLOOR(FLOOR(X)))': 'FLOOR(X)',
-    'simplify(CEIL(CEIL(X)))':   'CEIL(X)',
+    'simplify(ceil(ceil(X)))':   'ceil(X)',
     'simplify(IP(IP(X)))':       'IP(X)',
     'simplify(FP(FP(X)))':       'FP(X)',
     'simplify(sign(sign(X)))':   'sign(X)',
     'simplify(FP(FLOOR(X)))':    '0',
-    'simplify(FP(CEIL(X)))':     '0',
+    'simplify(FP(ceil(X)))':     '0',
     'simplify(FP(IP(X)))':       '0',
-    'simplify(FLOOR(CEIL(X)))':  'CEIL(X)',
-    'simplify(CEIL(FLOOR(X)))':  'FLOOR(X)',
+    'simplify(FLOOR(ceil(X)))':  'ceil(X)',
+    'simplify(ceil(FLOOR(X)))':  'FLOOR(X)',
     'simplify(IP(FLOOR(X)))':    'FLOOR(X)',
-    'simplify(IP(CEIL(X)))':     'CEIL(X)',
+    'simplify(IP(ceil(X)))':     'ceil(X)',
     'simplify(FLOOR(IP(X)))':    'IP(X)',
-    'simplify(CEIL(IP(X)))':     'IP(X)',
+    'simplify(ceil(IP(X)))':     'IP(X)',
     'simplify(FLOOR(FP(X)))':    'FLOOR(FP(X))',
-    'simplify(CEIL(FP(X)))':     'CEIL(FP(X))',
+    'simplify(ceil(FP(X)))':     'ceil(FP(X))',
   });
 
   const IDEMP = [
