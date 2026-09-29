@@ -13,12 +13,13 @@ import { giac } from '../rpl/cas/giac-engine.mjs';
 import { state as calcState, toRadians, fromRadians } from '../rpl/state.js';
 import { evalNumeric } from './plot-engine.js';
 import { escapeHtml } from './display.js';
+import { writerKeys } from './input-area.js';
 
-export const HOLE = Object.freeze({ t: 'hole' });
+const HOLE = Object.freeze({ t: 'hole' });
 
 const RELS = new Set(['=', '≠', '<', '>', '≤', '≥']);
 
-export const EQW_STRUCTS = Object.freeze({
+const EQW_STRUCTS = Object.freeze({
   frac:  Object.freeze({ reading: Object.freeze([0, 1]), wrap: 0, open: 0, after: 1, afterMode: 'insert' }),
   pow:   Object.freeze({ reading: Object.freeze([0, 1]), wrap: 0, open: 0, after: 1, afterMode: 'insert' }),
   sqrt:  Object.freeze({ reading: Object.freeze([0]), wrap: 0, open: 0, afterMode: 'select' }),
@@ -1530,6 +1531,14 @@ const INSIGHT_DELAY_MS = 200;
 const SELECTING_FACES = new Set(['⇧◀', '⇧▶', 'RS▲', 'RS◀', 'RS▶', '▲', '▼']);
 const INSIGHT_CAS_SOURCE_LIMIT = 160;
 const INSIGHT_CAS_TIMEOUT_MS = 3000;
+const TAP_KEYS = Object.freeze([
+  { face: '◀', icon: 'chl', title: 'Move left (←)' },
+  { face: '▶', icon: 'chr', title: 'Move right (→, Tab)' },
+  { face: '÷', label: 'a/b', title: 'Fraction (/)' },
+  { face: 'yˣ', label: 'xʸ', title: 'Power (^)' },
+  { face: '√x', label: '√', title: 'Square root' },
+  { face: '( )', label: '( )', title: 'Group (()' },
+]);
 const SIZE = Object.freeze({ normal: 28, big: 38 });
 
 const SELECTION_TOOLS = Object.freeze([
@@ -1681,6 +1690,7 @@ export class EquationEditor {
     this.textBox = this.el.querySelector('.eqw-text');
     this.textArea = this.el.querySelector('.eqw-ta');
     this.strip = this.el.querySelector('.eqw-ins');
+    this.canvas.after(writerKeys(TAP_KEYS, (face) => this.pressFace(face)));
     this.state = emptyEquation();
     this.big = false;
     this.showText = false;

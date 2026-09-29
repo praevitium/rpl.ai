@@ -14,6 +14,21 @@ const HINTS = Object.freeze({
   matrix: ['Tab next cell', '⇧Enter next row', 'Enter pushes', 'Esc cancels'],
 });
 
+export function writerKeys(keys, press) {
+  const bar = document.createElement('div');
+  bar.className = 'writer-keys';
+  bar.setAttribute('role', 'toolbar');
+  bar.setAttribute('aria-label', 'Writer keys');
+  const all = [...keys, { face: '⌫', icon: 'back', title: 'Backspace' }, { face: 'ENTER', icon: 'enter', title: 'Enter', go: true }];
+  bar.innerHTML = all.map((k) => `<button type="button" class="cmdline-go${k.go ? '' : ' cmdline-back'}" data-face="${escapeHtml(k.face)}" title="${escapeHtml(k.title)}" aria-label="${escapeHtml(k.title)}">${k.icon ? icon(k.icon, 'sm') : escapeHtml(k.label)}</button>`).join('');
+  bar.addEventListener('mousedown', (e) => e.preventDefault());
+  bar.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-face]');
+    if (b) press(b.dataset.face);
+  });
+  return bar;
+}
+
 export class InputArea {
   constructor({ top, body, hint, cmdline, app }) {
     this.top = top;
@@ -26,7 +41,7 @@ export class InputArea {
     this.go = document.createElement('button');
     this.go.type = 'button';
     this.go.className = 'cmdline-go';
-    this.go.title = 'Enter';
+    this.go.title = 'Enter (DUP on an empty line)';
     this.go.setAttribute('aria-label', 'Enter');
     this.go.innerHTML = icon('enter', 'sm');
     this.back = document.createElement('button');

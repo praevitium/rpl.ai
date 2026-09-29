@@ -1,4 +1,5 @@
 import { escapeHtml } from './display.js';
+import { writerKeys } from './input-area.js';
 import { parseEntry } from '../rpl/parser.js';
 import { format } from '../rpl/formatter.js';
 import { Var, parseAlgebra } from '../rpl/algebra.js';
@@ -206,6 +207,15 @@ const SYMBOLS = Object.freeze([
   Object.freeze({ text: '∞', title: 'Infinity' }),
 ]);
 
+const FACE_TEXT = Object.freeze({ '−': '-', '×': '*', '÷': '/', 'yˣ': '^', EEX: 'E', '+/-': '-', SPC: ' ' });
+const FACE_MOVES = Object.freeze({ '▲': [-1, 0], '▼': [1, 0], '◀': [0, -1], '▶': [0, 1] });
+const FACE_STEPS = Object.freeze({ TAB: 'next', '⇧TAB': 'prev', '⇧ENTER': 'down' });
+const TAP_KEYS = Object.freeze([
+  { face: '⇧TAB', icon: 'chl', title: 'Previous cell (⇧Tab)' },
+  { face: 'TAB', icon: 'chr', title: 'Next cell (Tab)' },
+  { face: '⇧ENTER', icon: 'down', title: 'Next row (⇧Enter)' },
+]);
+
 export class MatrixEditor {
   constructor({ app } = {}) {
     this.app = app;
@@ -215,9 +225,10 @@ export class MatrixEditor {
     this._focusC = 0;
     this.el = document.createElement('div');
     this.el.className = 'mx';
-    this.el.innerHTML = '<div class="mx-grid-wrap"><div class="mx-grid" role="grid" aria-label="Matrix cells"></div></div><div class="mx-foot mx-shape" role="status"></div>';
+    this.el.innerHTML = '<div class="mx-grid-wrap"><div class="mx-grid" role="grid" aria-label="Matrix cells"></div></div><div class="mx-foot" role="status"></div>';
     this._gridEl = this.el.querySelector('.mx-grid');
-    this._shape = this.el.querySelector('.mx-shape');
+    this._shape = this.el.querySelector('.mx-foot');
+    this.el.append(writerKeys(TAP_KEYS, (face) => this.pressFace(face)));
     this._gridEl.addEventListener('keydown', (e) => this._onKey(e));
     this._gridEl.addEventListener('paste', (e) => this._onPaste(e));
     this._gridEl.addEventListener('focusin', (e) => {
@@ -308,13 +319,32 @@ export class MatrixEditor {
     if (!this.load(stack.peek(1))) this.app.notifyError("Level 1 isn't a matrix, vector, list or number.");
   }
 
-  insertSymbol(text) {
+  pressFace(face) {
+    const move = FACE_MOVES[face];
+    if (/^F[1-6]$/.test(face)) this.app.pressSoftKey(Number(face[1]) - 1);
+    else if (face === 'PREV') this.app.prevMenuPage();
+    else if (face === 'NEXT') this.app.nextMenuPage();
+    else if (face === 'CAT') this.app.drawers.toggle('catalog');
+    else if (face === 'EQW') this.app.runAction('writer.equation');
+    else if (face === 'ENTER') this.app.commitEntry();
+    else if (move) this._focusCell(this._focusR + move[0], this._focusC + move[1], { select: true });
+    else if (FACE_STEPS[face]) this._focusCell(...this._step(FACE_STEPS[face], this._focusR, this._focusC), { select: true });
+    else if (face === '⌫') this._editCell('', { back: true });
+    else if (FACE_TEXT[face] || /^[0-9a-z.+π∞]$/.test(face)) this._editCell(FACE_TEXT[face] ?? face);
+    else this.app.notifyError(`${face} isn't available in the matrix writer.`);
+  }
+
+  insertSymbol(text) { this._editCell(text); }
+
+  _editCell(text, { back = false } = {}) {
     const r = Math.min(this._focusR, this.grid.length - 1);
     const c = Math.min(this._focusC, (this.grid[0]?.length || 1) - 1);
     const input = this._cell(r, c);
     const current = this.grid[r][c] ?? '';
-    const start = document.activeElement === input ? input.selectionStart ?? current.length : current.length;
-    const end = document.activeElement === input ? input.selectionEnd ?? start : start;
+    const focused = document.activeElement === input;
+    let start = focused ? input.selectionStart ?? current.length : current.length;
+    const end = focused ? input.selectionEnd ?? start : start;
+    if (back && start === end) start = Math.max(0, start - 1);
     this.grid[r][c] = current.slice(0, start) + text + current.slice(end);
     if (input) {
       input.value = this.grid[r][c];
@@ -367,13 +397,8 @@ export class MatrixEditor {
     const atEnd = cell.selectionStart === cell.value.length && cell.selectionEnd === cell.value.length;
     let next = null;
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); this.app.commitEntry(); return; }
-    if (e.key === 'Enter') next = [(r + 1) % rows, c];
-    else if (e.key === 'Tab' && !e.shiftKey && r === rows - 1 && c === cols - 1) {
-      this.grid = resizeGrid(this.grid, rows + 1, cols);
-      this.asVector = false;
-      this._renderGrid();
-      next = [rows, 0];
-    } else if (e.key === 'Tab') next = e.shiftKey ? (c > 0 ? [r, c - 1] : [(r - 1 + rows) % rows, cols - 1]) : (c < cols - 1 ? [r, c + 1] : [r + 1, 0]);
+    if (e.key === 'Enter') next = this._step('down', r, c);
+    else if (e.key === 'Tab') next = this._step(e.shiftKey ? 'prev' : 'next', r, c);
     else if (e.key === 'ArrowUp') next = [Math.max(0, r - 1), c];
     else if (e.key === 'ArrowDown') next = [Math.min(rows - 1, r + 1), c];
     else if (e.key === 'ArrowLeft' && atStart) next = c > 0 ? [r, c - 1] : [Math.max(0, r - 1), cols - 1];
@@ -382,6 +407,19 @@ export class MatrixEditor {
     e.preventDefault();
     e.stopPropagation();
     this._focusCell(next[0], next[1], { select: true });
+  }
+
+  _step(kind, r, c) {
+    const rows = this.grid.length;
+    const cols = this.grid[0].length;
+    if (kind === 'down') return [(r + 1) % rows, c];
+    if (kind === 'prev') return c > 0 ? [r, c - 1] : [(r - 1 + rows) % rows, cols - 1];
+    if (r === rows - 1 && c === cols - 1) {
+      this.grid = resizeGrid(this.grid, rows + 1, cols);
+      this._renderGrid();
+      return [rows, 0];
+    }
+    return c < cols - 1 ? [r, c + 1] : [r + 1, 0];
   }
 
   _onPaste(e) {
