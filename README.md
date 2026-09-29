@@ -202,8 +202,12 @@ it would leave on your stack; `→` opens its reference page.
 Browse, run, recall, edit, rename, move and download variables. Drag them to
 reorder, into folders or onto the breadcrumb. Back up the stack and the
 whole HOME tree to a JSON file and restore it, archive to backup ports, and
-import or export HP text files (`.rpl`). Paste a spreadsheet range into the
-matrix writer.
+import or export HP text files (`.rpl`).
+
+Copy a matrix or vector (`⌘C` on a selected level) and paste it into Excel,
+Google Sheets or Numbers: it arrives as cells. Copy a range of numbers from
+a spreadsheet and paste it on the command line, where it becomes a matrix
+(a vector for a single row), or into the matrix writer's cells.
 
 ![The Variables drawer](screenshots/variables.png)
 

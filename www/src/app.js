@@ -28,6 +28,7 @@ import {
   loadCommandReference, findReferenceEntry, formatReferenceEntry, searchCommands, shortDescription,
 } from './ui/command-reference.js';
 import { format, formatSource } from './rpl/formatter.js';
+import { spreadsheetHtml } from './rpl/hp-text.js';
 import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, currentPath,
@@ -556,7 +557,11 @@ class App {
       case 'eval': runOn('EVAL'); return;
       case 'num': runOn('→NUM'); return;
       case 'plot': this.clearSelection(); this.plotExpression(value.expr); return;
-      case 'copy': this.copyText(formatSource(value), `Copied level ${level}`); return;
+      case 'copy': {
+        const table = spreadsheetHtml(value);
+        this.copyText(formatSource(value), table ? `Copied level ${level}. It pastes into a spreadsheet as cells.` : `Copied level ${level}`, table);
+        return;
+      }
       case 'store': this._storePrompt(level, anchor); return;
       case 'ask': this.askAssistant(`Explain what is on level ${level} of my stack: ${formatSource(value)}`); return;
       case 'more': this._levelMenu(level, anchor); return;
@@ -566,7 +571,7 @@ class App {
   _levelMenu(level, anchor) {
     const value = this.stack.peek(level);
     const item = (act, ico, label, hint = '') => `<button type="button" class="opt" data-act="${act}"><span class="ck">${icon(ico, 'sm')}</span><b>${escapeHtml(label)}</b><em>${escapeHtml(hint)}</em></button>`;
-    const html = `<h6>Level ${level}</h6>${item('edit', 'edit', 'Edit', shortcutText('level.edit'))}${item('echo', 'chr', 'Copy into the command line')}${item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick'))}${item('roll', 'up', 'Move to level 1 (ROLL)')}${item('rolld', 'down', 'Move level 1 here (ROLLD)')}${item('eval', 'play', 'Evaluate (EVAL)')}${item('num', 'chr', 'To a number (→NUM)')}${isSymbolic(value) ? item('plot', 'plot', 'Plot it') : ''}${item('store', 'folder', 'Store in a variable…')}${item('copy', 'copy', 'Copy as text', shortcutText('level.copy'))}${item('ask', 'spark', 'Ask the assistant about it')}<hr>${item('drop', 'trash', 'Drop', shortcutText('level.drop'))}`;
+    const html = `<h6>Level ${level}</h6>${item('edit', 'edit', 'Edit', shortcutText('level.edit'))}${item('echo', 'chr', 'Copy into the command line')}${item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick'))}${item('roll', 'up', 'Move to level 1 (ROLL)')}${item('rolld', 'down', 'Move level 1 here (ROLLD)')}${item('eval', 'play', 'Evaluate (EVAL)')}${item('num', 'chr', 'To a number (→NUM)')}${isSymbolic(value) ? item('plot', 'plot', 'Plot it') : ''}${item('store', 'folder', 'Store in a variable…')}${item('copy', 'copy', 'Copy', shortcutText('level.copy'))}${item('ask', 'spark', 'Ask the assistant about it')}<hr>${item('drop', 'trash', 'Drop', shortcutText('level.drop'))}`;
     this.popover.open(anchor, html, {
       label: `Level ${level}`,
       onClick: (t) => { this.popover.close({ restoreFocus: false }); this.levelAction(t.dataset.act, level, anchor); },
@@ -601,9 +606,21 @@ class App {
     this.selectLevel(to);
   }
 
-  async copyText(text, message) {
-    try { await navigator.clipboard.writeText(text); this.toast(message); }
-    catch { this.notifyError('The clipboard is not available here.'); }
+  // With html, spreadsheets paste a table as cells while text editors get the text.
+  async copyText(text, message, html = '') {
+    try {
+      if (html && typeof ClipboardItem === 'function' && navigator.clipboard.write) {
+        await navigator.clipboard.write([new ClipboardItem({
+          'text/plain': new Blob([text], { type: 'text/plain' }),
+          'text/html': new Blob([html], { type: 'text/html' }),
+        })]);
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
+      this.toast(message);
+    } catch {
+      this.notifyError('The clipboard is not available here.');
+    }
   }
 
   editLevel(level) {

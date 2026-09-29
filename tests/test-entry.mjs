@@ -1679,6 +1679,13 @@ const _close = (a, b, eps = 1e-10) => Math.abs(Number(a) - Number(b)) < eps;
     'safeRun: reports a failed body and puts the stack back');
 }
 
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const e = new Entry(new Stack());
+  e.paste('1\t2\r\n3\t4\r\n');
+  assert(e.buffer === '[[ 1 2 ][ 3 4 ]]', 'paste: a spreadsheet range lands on the command line as a matrix');
+}
+
 // --- Cleanup shared state so later tests don't see stray bindings
 resetHome();
 setAngle('RAD');

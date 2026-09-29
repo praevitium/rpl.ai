@@ -1,5 +1,5 @@
 import { parseEntry } from '../rpl/parser.js';
-import { hpTextToSource } from '../rpl/hp-text.js';
+import { hpTextToSource, spreadsheetToSource } from '../rpl/hp-text.js';
 import { lookup } from '../rpl/ops.js';
 import { RPLAbort, RPLError, withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
 import { errorBeep } from './beep.js';
@@ -13,6 +13,8 @@ import {
 } from '../../vendor/codemirror/codemirror.bundle.js';
 
 const UNDO_WORD = /^(UNDO|LASTSTACK|REDO)$/i;
+
+const pastedSource = (text) => spreadsheetToSource(text) ?? hpTextToSource(text);
 
 function errorText(e) {
   return e && typeof e === 'object' && e.message != null ? String(e.message) : String(e);
@@ -113,7 +115,7 @@ export class Entry {
           drawSelection(),
           appKeys,
           keymap.of(defaultKeymap),
-          EditorView.clipboardInputFilter.of(hpTextToSource),
+          EditorView.clipboardInputFilter.of(pastedSource),
           // Paste and programmatic edits don't scroll to the caret the way
           // CM's own keys do, so every edit scrolls it into view.
           EditorState.transactionExtender.of((tr) => {
@@ -148,7 +150,7 @@ export class Entry {
   _emitHistory() { for (const fn of this._historyListeners) fn(this); }
 
   paste(text) {
-    this.type(hpTextToSource(text));
+    this.type(pastedSource(text));
   }
 
   type(text) {
