@@ -3,7 +3,7 @@ import { RPLError } from '../stack.js';
 import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory, isTagged } from '../types.js';
 import { archiveBackup, restoreBackup } from '../persist.js';
 import { register, lookup } from './registry.js';
-import { _coerceDirName, _coerceStorableName, _hp50TypeCode } from './internal.js';
+import { _coerceDirName, _coerceStorableName, _hp50TypeCode, recallVar, storeVar } from './internal.js';
 
 
 
@@ -15,11 +15,11 @@ function _asRPLError(fn) {
 }
 
 function _store(id, value) {
-  _asRPLError(() => varStore(id, value));
+  _asRPLError(() => storeVar(id, value));
 }
 
 function _recall(id) {
-  const v = varRecall(id);
+  const v = recallVar(id);
   if (v === undefined) throw new RPLError(`Undefined name: ${id}`);
   return v;
 }
@@ -191,7 +191,7 @@ register('ORDER', (s) => {
 register('MERGE', (s) => {
   const [arg] = s.popN(1);
   if (isDirectory(arg)) {
-    for (const [name, value] of arg.entries) _store(name, value);
+    for (const [name, value] of arg.entries) _asRPLError(() => varStore(name, value));
     return;
   }
   if (!isList(arg)) throw new RPLError('Bad argument type');
@@ -207,7 +207,7 @@ register('MERGE', (s) => {
   }
   for (let i = 0; i < items.length; i += 2) {
     const key = items[i];
-    _store(isName(key) ? key.id : key.value, items[i + 1]);
+    _asRPLError(() => varStore(isName(key) ? key.id : key.value, items[i + 1]));
   }
 }, { category: 'Variables / directories', categoryOrder: 11, label: "MERGE" });
 

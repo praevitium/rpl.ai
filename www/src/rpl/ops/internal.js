@@ -3,7 +3,7 @@ import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Nam
 import { RPLAbort, RPLError, setPushCoerce, checkTimeLimit } from '../stack.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars } from '../algebra.js';
 import { sameDims, scaleOf, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
-import { getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varPurge, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, setHalted } from '../state.js';
+import { getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, setHalted } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
 import { formatSource, DEFAULT_DISPLAY } from '../formatter.js';
@@ -682,12 +682,28 @@ function _pastCaseEnd(toks, from) {
 const _localFrames = [];
 
 
-function _localLookup(id) {
+function _localFrame(id) {
   for (let i = _localFrames.length - 1; i >= 0; i--) {
-    const f = _localFrames[i];
-    if (f.has(id)) return f.get(id);
+    if (_localFrames[i].has(id)) return _localFrames[i];
   }
   return undefined;
+}
+
+function _localLookup(id) {
+  return _localFrame(id)?.get(id);
+}
+
+// STO, RCL and the other commands that take a variable's name reach a local
+// variable first, as on the HP50.
+export function recallVar(id) {
+  const frame = _localFrame(id);
+  return frame ? frame.get(id) : varRecall(id);
+}
+
+export function storeVar(id, value) {
+  const frame = _localFrame(id);
+  if (frame) frame.set(id, value);
+  else varStore(id, value);
 }
 
 
@@ -855,21 +871,26 @@ function* evalToken(s, tok, depth) {
   if (isName(tok)) {
     if (tok.quoted) { s.push(tok); return; }
     const localVal = _localLookup(tok.id);
-    if (localVal !== undefined) {
-      yield* _evalValueGen(s, localVal, depth + 1);
-      return;
-    }
+    if (localVal !== undefined) { s.push(localVal); return; }
     const op = lookup(tok.id);
     if (op) { _dispatchOp(op, s, tok.id); return; }
     const bound = varRecall(tok.id);
-    if (bound !== undefined) {
-      yield* _evalValueGen(s, bound, depth + 1);
-    } else {
-      s.push(tok);
-    }
+    if (bound !== undefined) yield* _callGlobal(s, bound, depth + 1);
+    else s.push(tok);
     return;
   }
   s.push(tok);
+}
+
+
+// AUR EVAL table: a global's name, program or directory is evaluated; any
+// other content, an algebraic included, is put on the stack as it is.
+function* _callGlobal(s, bound, depth, isSubProgram = true) {
+  if (isName(bound) || isProgram(bound) || isDirectory(bound)) {
+    yield* _evalValueGen(s, bound, depth, isSubProgram);
+  } else {
+    s.push(bound);
+  }
 }
 
 
@@ -1097,18 +1118,19 @@ function* runStart(s, toks, openIdx, depth) {
 }
 
 
+// The counter is a local variable, so it never touches a global of the same
+// name, and storing into it inside the loop moves the loop on.
 function* runFor(s, toks, openIdx, depth) {
   const { a, b, intMode } = _popLoopBounds(s);
   const varTok = toks[openIdx + 1];
   if (!isName(varTok)) throw new RPLError('FOR needs a name');
-  const varName = varTok.id;
   const { closer, closerIdx } = _scanCounterCloser(toks, openIdx + 2, 'FOR');
-  const saved = varRecall(varName);
+  const frame = new Map([[varTok.id, null]]);
+  _localFrames.push(frame);
   try {
-    yield* runLoopBody(s, toks, openIdx + 2, closerIdx, closer, a, b, varName, intMode, depth);
+    yield* runLoopBody(s, toks, openIdx + 2, closerIdx, closer, a, b, { frame, name: varTok.id }, intMode, depth);
   } finally {
-    if (saved === undefined) varPurge(varName);
-    else varStore(varName, saved);
+    _localFrames.splice(_localFrames.lastIndexOf(frame), 1);
   }
   return _pastBlock(toks, closerIdx);
 }
@@ -1117,7 +1139,7 @@ function* runFor(s, toks, openIdx, depth) {
 // STEP pops the increment after each pass; a non-Integer step switches an Integer
 // loop to Real counting.  The loop ends once the counter passes the end value in
 // the step's direction; a zero step throws instead of looping forever.
-function* runLoopBody(s, toks, bodyFrom, bodyTo, closer, startVal, endVal, varName, intMode, depth) {
+function* runLoopBody(s, toks, bodyFrom, bodyTo, closer, startVal, endVal, local, intMode, depth) {
   let counter = startVal;
   let bound   = endVal;
   let mode    = intMode;
@@ -1127,10 +1149,20 @@ function* runLoopBody(s, toks, bodyFrom, bodyTo, closer, startVal, endVal, varNa
       throw new RPLError('Loop iteration limit');
     }
     checkTimeLimit();
-    if (varName !== null) {
-      varStore(varName, mode ? Integer(counter) : Real(counter));
+    let written = null;
+    if (local) {
+      written = mode ? Integer(counter) : Real(counter);
+      local.frame.set(local.name, written);
     }
     yield* evalRange(s, toks, bodyFrom, bodyTo, depth + 1);
+    const stored = local?.frame.get(local.name);
+    if (local && stored !== written) {
+      if (mode && isInteger(stored)) counter = stored.value;
+      else {
+        if (mode) { bound = Number(bound); mode = false; }
+        counter = isInteger(stored) ? Number(stored.value) : toRealOrThrow(stored);
+      }
+    }
     let step;
     if (closer === 'STEP') {
       const stepVal = s.pop();
@@ -1258,9 +1290,11 @@ export function* _evalValueGen(s, v, depth, isSubProgram = true) {
   }
 
   if (isName(v)) {
-    const bound = v.quoted ? undefined : (_localLookup(v.id) ?? varRecall(v.id));
+    const local = _localLookup(v.id);
+    if (local !== undefined) { s.push(local); return; }
+    const bound = varRecall(v.id);
     if (bound !== undefined) {
-      yield* _evalValueGen(s, bound, depth + 1, isSubProgram);
+      yield* _callGlobal(s, bound, depth + 1, isSubProgram);
       return;
     }
     // Under APPROX a constant folds even when quoted, so `PI` →NUM gives 3.14159….
@@ -1738,15 +1772,15 @@ export function* runSeq(s, depth) {
   const b = toRealOrThrow(end);
   const st = toRealOrThrow(step);
   if (st === 0) throw new RPLError('Bad argument value');
-  const varName = name.id;
-  const saved = varRecall(varName);
+  const frame = new Map([[name.id, null]]);
   const out = [];
   let iterations = 0;
+  _localFrames.push(frame);
   try {
     let i = a;
     while ((st > 0 && i <= b) || (st < 0 && i >= b)) {
       if (++iterations > MAX_LOOP_ITERATIONS) throw new RPLError('Loop iteration limit');
-      varStore(varName, Real(i));
+      frame.set(name.id, Real(i));
       const baseDepth = s.depth;
       yield* _evalValueGen(s, expr, depth + 1);
       const delta = s.depth - baseDepth;
@@ -1755,8 +1789,7 @@ export function* runSeq(s, depth) {
       i += st;
     }
   } finally {
-    if (saved === undefined) varPurge(varName);
-    else varStore(varName, saved);
+    _localFrames.splice(_localFrames.lastIndexOf(frame), 1);
   }
   s.push(RList(out));
 }

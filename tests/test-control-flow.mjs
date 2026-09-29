@@ -18,7 +18,7 @@ import {
   setApproxMode,
   setHalted, getHalted, clearHalted, clearAllHalted, haltedDepth,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows } from './helpers.mjs';
+import { assert, assertThrows, runLine } from './helpers.mjs';
 
 /* Control flow — IFT / IFTE, IF/THEN/ELSE/END, WHILE, DO/UNTIL, START,
    FOR/NEXT/STEP (incl. Integer-aware variant), IFERR. */
@@ -4262,9 +4262,8 @@ function collectSymLeaves(node, out) {
   varPurge('PNAME');
 }
 
-/* ---- Name-on-stack EVAL of a Tagged-wrapped Program lifts.
-        Composes the previous two cases: the EVAL entry is a Name,
-        the Name's binding is a Tagged-wrapped Program. ---- */
+/* ---- A global holding a Tagged object puts it on the stack: the AUR's
+        EVAL table evaluates a global's name, program or directory only. ---- */
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -4272,15 +4271,10 @@ function collectSymLeaves(node, out) {
     Tagged('mark', Program([ Integer(55n), Name('HALT'), Integer(66n) ])));
   s.push(Name('PTAG'));
   lookup('EVAL').fn(s);
-  assert(haltedDepth() === 1,
-    'session116: Name→Tagged→Program EVAL lifts HALT');
-  assert(s.depth === 1 && s.peek().value === 55n,
-    'session116: Name→Tagged-EVAL halted after pushing 55, before HALT');
-  lookup('CONT').fn(s);
-  assert(haltedDepth() === 0 && s.depth === 2 && s.peek().value === 66n,
-    'session116: CONT resumed Name→Tagged-EVAL through completion');
+  assert(haltedDepth() === 0 && s.depth === 1 && s.peek().type === 'tagged',
+    'EVAL of a name holding a tagged program pushes the tagged program');
   assert(localFramesDepth() === 0,
-    'session116: Name→Tagged-EVAL lift leaves no leaked local frames');
+    'EVAL of a name holding a tagged program leaves no local frames');
   varPurge('PTAG');
 }
 
@@ -7104,8 +7098,9 @@ for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
     'session151: START/STEP final stack [100,100,100] (3 iters at step=2)');
 }
 
-/* ---- HALT inside fully-closed FOR/STEP body: halts mid-iter,
-        loop var visible to varRecall ---- */
+/* ---- HALT inside fully-closed FOR/STEP body: halts mid-iter, and the
+        loop's local counter answers to its name while halted ---- */
+const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').fn(t); return t.peek().value; };
 {
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -7120,18 +7115,18 @@ for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
   assert(getHalted() !== null,
     'session151: HALT in fully-closed FOR/STEP body iter 1');
   // Loop var i is visible at suspension.
-  assert(varRecall('i')?.value === 1n,
+  assert(localI() === 1n,
     'session151: FOR loop var i=1 visible at iter 1 HALT');
   assert(s.depth === 1 && s.peek().value === 1n,
     'session151: FOR/STEP iter 1 stack: i pushed (1)');
   lookup('CONT').fn(s);
-  assert(varRecall('i')?.value === 2n,
+  assert(localI() === 2n,
     'session151: FOR loop var i=2 visible at iter 2 HALT');
   lookup('CONT').fn(s);
-  assert(varRecall('i')?.value === 3n,
+  assert(localI() === 3n,
     'session151: FOR loop var i=3 visible at iter 3 HALT');
   lookup('CONT').fn(s);
-  assert(varRecall('i')?.value === 4n,
+  assert(localI() === 4n,
     'session151: FOR loop var i=4 visible at iter 4 HALT');
   lookup('CONT').fn(s);
   assert(getHalted() === null,
@@ -7155,13 +7150,13 @@ for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
   lookup('EVAL').fn(s);
   assert(getHalted() !== null,
     'session151: HALT in FOR/STEP iter 1 before KILL');
-  assert(varRecall('i')?.value === 1n,
-    'session151: FOR/STEP loop var i shadows prior binding (1, not 99)');
+  assert(localI() === 1n && varRecall('i')?.value === 99n,
+    'session151: FOR/STEP loop var i shadows the global i without touching it');
   lookup('KILL').fn(s);
   assert(getHalted() === null,
     'session151: KILL of halted FOR/STEP clears the halt slot');
   assert(varRecall('i')?.value === 99n,
-    'session151: KILL of halted FOR/STEP runs the finally — restores prior i=99');
+    'session151: KILL of halted FOR/STEP leaves the global i=99');
   assert(localFramesDepth() === 0,
     'session151: KILL of halted FOR/STEP leaves no local-frame leak');
   varPurge('i');
@@ -7198,4 +7193,41 @@ for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
   assert(bad.peek(1).value === 0x203n, 'ERRN: Bad argument value is #203h, as on the HP50');
   const undef = run('« IFERR #204h DOERR THEN ERRM END »');
   assert(undef.peek(1).value === 'Undefined name', 'DOERR: #204h raises Undefined name');
+}
+
+/* ---- Local variables: STO, RCL and the storing commands reach a local
+        first, a FOR or SEQ counter is a local, and a local name recalls
+        its contents without evaluating them (AUR EVAL table). ---- */
+{
+  resetHome();
+  runLine('« → n « 0 → s « 1 n FOR i s i + `s` STO NEXT s » » » `SUMN` STO');
+  const s = runLine('10 SUMN');
+  assert(s.depth === 1 && s.peek().value === 55n && varRecall('s') === undefined,
+    'STO into a local updates it and creates no global');
+  const t = runLine('« 0 → s « 1 5 FOR i i `s` STO+ NEXT `s` INCR DROP s `s` RCL » » EVAL');
+  assert(t.depth === 2 && t.peek(1).value === 16n && t.peek(2).value === 16n && varRecall('s') === undefined,
+    'STO+, INCR and RCL work on a local');
+  varPurge('SUMN');
+}
+{
+  resetHome();
+  varStore('i', Integer(99n));
+  const s = runLine('« 1 3 FOR i i NEXT » EVAL');
+  assert(s.depth === 3 && s.peek().value === 3n && varRecall('i').value === 99n,
+    'a FOR counter is a local: the global i is untouched');
+  const t = runLine('« 1 10 FOR i i i 3 == « 20 `i` STO » IFT NEXT » EVAL');
+  assert(t.depth === 3 && t.peek().value === 3n,
+    'storing into the FOR counter moves the loop on');
+  const u = runLine('`i^2` `i` 1 3 1 SEQ');
+  assert(u.peek().items.length === 3 && varRecall('i').value === 99n,
+    'SEQ uses a local index');
+  varPurge('i');
+}
+{
+  resetHome();
+  const s = runLine('« « 1 2 + » → p « p » » EVAL');
+  assert(s.depth === 1 && s.peek().type === 'program',
+    'a local holding a program is recalled, not run');
+  const t = runLine('« « 1 2 + » → p « p EVAL » » EVAL');
+  assert(t.depth === 1 && t.peek().value === 3n, 'EVAL of the recalled program runs it');
 }

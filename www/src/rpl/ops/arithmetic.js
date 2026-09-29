@@ -2,11 +2,11 @@ import { RPLError } from '../stack.js';
 import { Integer, Matrix, isInteger, isReal, isVector, Vector, isMatrix, isSymbolic, Symbolic, isString, isBinaryInteger, isComplex, isName, Real, isRational, Rational, Complex, isUnit, Unit, toComplex, toRealOrThrow, toRealDecimal, BinaryInteger, isNumber, isList, RList, Str } from '../types.js';
 import { Bin as AstBin, formatAlgebra, Neg as AstNeg, Num as AstNum, Fn as AstFn, Var as AstVar } from '../algebra.js';
 import { formatReal, DEFAULT_DISPLAY, formatBinaryInteger } from '../formatter.js';
-import { getApproxMode, varRecall, varStore, getRealMaxExp, getWordsize, nextPrngUnit, seedPrng } from '../state.js';
+import { getApproxMode, getRealMaxExp, getWordsize, nextPrngUnit, seedPrng } from '../state.js';
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { inverseUexpr, powerUexpr } from '../units.js';
 import { register, lookup, OPS } from './registry.js';
-import { _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary } from './internal.js';
+import { _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, recallVar, storeVar } from './internal.js';
 
 
 
@@ -477,14 +477,14 @@ function _incrDecrOp(opSymbol) {
       throw new RPLError('Bad argument type');
     }
     const id = _coerceStorableName(nameVal);
-    const stored = varRecall(id);
+    const stored = recallVar(id);
     if (stored === undefined) throw new RPLError(`Undefined name: ${id}`);
     s.push(stored);
-    s.push(Real(1));
+    s.push(isInteger(stored) ? Integer(1n) : Real(1));
     // Looked up per call: + and - are registered further down this file.
     lookup(opSymbol).fn(s);
     const [result] = s.popN(1);
-    varStore(id, result);
+    storeVar(id, result);
     s.push(result);
   };
 }

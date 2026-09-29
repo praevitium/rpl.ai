@@ -1,8 +1,7 @@
 import { Real, isString, isName, isTagged, Tagged } from '../types.js';
 import { RPLError } from '../stack.js';
-import { varRecall } from '../state.js';
 import { register } from './registry.js';
-import { _hp50TypeCode } from './internal.js';
+import { _hp50TypeCode, recallVar } from './internal.js';
 
 
 
@@ -39,7 +38,7 @@ register('DTAG', (s) => {
 register('VTYPE', (s) => {
   const [nameV] = s.popN(1);
   if (!isName(nameV)) throw new RPLError('Bad argument type');
-  const stored = varRecall(nameV.id);
+  const stored = recallVar(nameV.id);
   if (stored === undefined) throw new RPLError(`Undefined name: ${nameV.id}`);
   s.push(Real(_hp50TypeCode(stored)));
 }, { category: 'Types & tags', categoryOrder: 2, label: "VTYPE" });

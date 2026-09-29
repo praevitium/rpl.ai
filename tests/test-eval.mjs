@@ -17,7 +17,7 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows } from './helpers.mjs';
+import { assert, assertThrows, runLine } from './helpers.mjs';
 
 /* EVAL, program execution, quoted-name fidelity, formatStackTop. */
 
@@ -270,8 +270,8 @@ import { assert, assertThrows } from './helpers.mjs';
   const s = new Stack();
   s.push(Name('X', { quoted: true }));
   lookup('EVAL').fn(s);
-  assert(s.depth === 1 && isName(s.peek()) && s.peek().id === 'X' && s.peek().quoted === true,
-         'EVAL of quoted Name pushes it back even when bound');
+  assert(s.depth === 1 && isReal(s.peek()) && s.peek().value.eq(999),
+         'EVAL of a quoted Name evaluates it, as on the HP50 (AUR EVAL)');
   // And unquoted still auto-RCLs — sanity check we didn't break that
   s.clear();
   s.push(Name('X'));
@@ -464,3 +464,20 @@ import { assert, assertThrows } from './helpers.mjs';
          'format(Program) regression — quoted + bare mix unchanged');
 }
 
+
+/* ---- Evaluating a global name follows the AUR EVAL table: a name or a
+        program in it is evaluated, anything else is put on the stack. ---- */
+{
+  resetHome();
+  varStore('X', Integer(5n));
+  varStore('A', parseEntry('`X+1`')[0]);
+  varStore('B', Name('X', { quoted: true }));
+  varStore('L', parseEntry('{ 1 2 + }')[0]);
+  const s = runLine('A B L');
+  assert(s.peek(3).type === 'symbolic', 'a global holding an algebraic pushes it unevaluated');
+  assert(s.peek(2).value === 5n, 'a global holding a name evaluates the name');
+  assert(s.peek(1).type === 'list' && s.peek(1).items.length === 3, 'a global holding a list pushes the list');
+  const t = runLine('`A` EVAL EVAL');
+  assert(isReal(t.peek()) || t.peek().type === 'integer', 'EVAL of the pushed algebraic then evaluates it');
+  resetHome();
+}

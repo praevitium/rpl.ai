@@ -147,3 +147,17 @@ export function runOpStack(opName, ...preStack) {
   lookup(opName).fn(s);
   return s.snapshot();
 }
+
+/**
+ * Runs `src` the way the command line does (a bare command runs, any other
+ * bare name is evaluated) on `s`, a fresh Stack by default.  Returns the stack.
+ */
+import { parseEntry } from '../www/src/rpl/parser.js';
+export function runLine(src, s = new Stack()) {
+  for (const v of parseEntry(src)) {
+    if (v?.type !== 'name' || v.quoted) { s.push(v); continue; }
+    if (!lookup(v.id)) s.push(v);
+    lookup(lookup(v.id) ? v.id : 'EVAL').fn(s);
+  }
+  return s;
+}
