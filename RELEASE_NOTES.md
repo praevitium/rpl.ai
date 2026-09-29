@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.5.4 (2026-09-29)
+**Latest release:** v0.6.0 (2026-09-29)
 
 ---
 
@@ -18,6 +18,20 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.0 — 2026-09-29
+
+Undo on a toast now reverses the step it names. After swiping a level
+away or storing a variable, the toast's Undo brings back the level or the
+old value, even with text on the command line or in a writer, where it
+used to undo the typing instead. In the matrix writer the keypad's UNDO
+and REDO work, and +/- negates the cell instead of typing a minus; after
+EEX it flips the exponent, as on the HP 50g. A pen can swipe a level away
+too, the "Stored level 1" toast no longer goes missing after an earlier
+error, and the assistant is told correctly that Undo this turn restores
+the command line.
 
 ---
 
