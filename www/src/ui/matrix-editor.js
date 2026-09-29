@@ -398,7 +398,13 @@ export class MatrixEditor {
     this._renderGrid();
   }
 
-  focus() { requestAnimationFrame(() => this._focusCell(this._focusR, this._focusC, { select: true })); }
+  // Focusing during the tap that opened the writer is what raises a phone's keyboard.
+  focus() {
+    this._focusCell(this._focusR, this._focusC, { select: true });
+    requestAnimationFrame(() => {
+      if (!this.el.contains(document.activeElement)) this._focusCell(this._focusR, this._focusC, { select: true });
+    });
+  }
 
   commit() {
     if (this.isEmpty()) { this.app.notifyError('Type some numbers first.'); return; }
@@ -630,7 +636,7 @@ export class MatrixEditor {
     const cols = this.grid[0]?.length || 1;
     this._gridEl.style.gridTemplateColumns = `repeat(${cols}, auto)`;
     this._gridEl.innerHTML = this.grid.map((row, r) => row.map((cell, c) => (
-      `<input class="mx-cell" data-r="${r}" data-c="${c}" value="${escapeHtml(cell ?? '')}" spellcheck="false" autocomplete="off" aria-label="Row ${r + 1}, column ${c + 1}">`
+      `<input class="mx-cell" data-r="${r}" data-c="${c}" value="${escapeHtml(cell ?? '')}" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done" aria-label="Row ${r + 1}, column ${c + 1}">`
     )).join('')).join('');
     this._noteShape();
   }

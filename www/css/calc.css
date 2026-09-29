@@ -918,6 +918,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .eqw-canvas.flash .eqw-hole, .eqw-canvas.flash .eqw-slot { animation: eqw-flash .45s 2; }
 @keyframes eqw-blink { 50% { opacity: 0; } }
 @keyframes eqw-flash { 50% { fill: var(--danger-dim); stroke: var(--danger); opacity: 1; } }
+.eqw-keys { position: absolute; top: 0; left: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; caret-color: transparent; }
 .eqw-text { margin: 0 12px 10px; }
 .eqw-ta { display: block; width: 100%; border: 1px solid var(--line2); border-radius: 8px; background: var(--r1); color: var(--ink); font: 13px/1.5 var(--font-mono); padding: 7px 9px; resize: none; outline: none; height: 34px; }
 .eqw-ta:focus { border-color: var(--accent-line); box-shadow: 0 0 0 2px var(--accent-dim); }

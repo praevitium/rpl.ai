@@ -1650,6 +1650,12 @@ class InsightWorker {
 
 const insightWorker = new InsightWorker();
 
+// A phone only raises its keyboard for a text field, so touch devices type into
+// a hidden one. The rest character gives Backspace something to delete.
+const SOFT_KEYS_REST = '\u200b';
+const EQW_LABEL = 'Equation. Type to build it: / makes a fraction, ^ a power, ( a group. Enter pushes it, Esc cancels.';
+const typesOnTouch = () => globalThis.matchMedia?.('(pointer: coarse)').matches === true;
+
 export class EquationEditor {
   constructor({ app } = {}) {
     this.app = app;
@@ -1657,8 +1663,9 @@ export class EquationEditor {
     this.el.className = 'eqw';
     this.el.tabIndex = 0;
     this.el.setAttribute('role', 'textbox');
-    this.el.setAttribute('aria-label', 'Equation. Type to build it: / makes a fraction, ^ a power, ( a group. Enter pushes it, Esc cancels.');
-    this.el.innerHTML = '<div class="eqw-canvas"></div><div class="eqw-text" hidden><textarea class="eqw-ta" rows="1" spellcheck="false" autocomplete="off" aria-label="The expression as text"></textarea></div><div class="eqw-ins" aria-live="polite"></div>';
+    this.el.setAttribute('aria-label', EQW_LABEL);
+    this.el.innerHTML = `<input class="eqw-keys" type="text" tabindex="-1" aria-label="${EQW_LABEL}" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done"><div class="eqw-canvas"></div><div class="eqw-text" hidden><textarea class="eqw-ta" rows="1" spellcheck="false" autocomplete="off" aria-label="The expression as text"></textarea></div><div class="eqw-ins" aria-live="polite"></div>`;
+    this.keys = this.el.querySelector('.eqw-keys');
     this.canvas = this.el.querySelector('.eqw-canvas');
     this.textBox = this.el.querySelector('.eqw-text');
     this.textArea = this.el.querySelector('.eqw-ta');
@@ -1679,6 +1686,11 @@ export class EquationEditor {
     this.canvas.addEventListener('scroll', () => { if (this.hasSelection() && this._toolsFor) this._placeTools(this._toolsFor); });
     this.el.addEventListener('mousedown', (e) => { if (e.target.closest('.ins, .eqw-tip')) e.preventDefault(); });
     this.el.addEventListener('click', (e) => this._onClick(e));
+    this._softKeys = SOFT_KEYS_REST;
+    this._composing = false;
+    this.keys.addEventListener('input', () => this._onSoftKeys());
+    this.keys.addEventListener('compositionstart', () => { this._composing = true; });
+    this.keys.addEventListener('compositionend', () => { this._composing = false; this._onSoftKeys(); });
     this.textArea.addEventListener('input', () => this._onTextInput());
     this.textArea.addEventListener('keydown', (e) => this._onTextKey(e));
     document.addEventListener('copy', (e) => this._onCopy(e, false));
@@ -1714,10 +1726,15 @@ export class EquationEditor {
     this._render();
   }
 
-  focus() { this.el.focus({ preventScroll: true }); }
+  focus() {
+    if (!typesOnTouch()) { this.el.focus({ preventScroll: true }); return; }
+    this._restSoftKeys();
+    this.keys.focus({ preventScroll: true });
+  }
 
   ownsKeyboard(target = document.activeElement) {
     if (!this.el.isConnected || target === this.textArea) return false;
+    if (target === this.keys) return true;
     const tag = target?.tagName;
     return !(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable);
   }
@@ -1970,7 +1987,28 @@ export class EquationEditor {
     const tool = e.target.closest('.eqw-tip [data-tool]');
     if (tool) { this._runTool(tool.dataset.tool); return; }
     const card = e.target.closest('.ins[data-i]');
-    if (card) this._applyInsight(Number(card.dataset.i));
+    if (card) { this._applyInsight(Number(card.dataset.i)); return; }
+    if (e.target.closest('.eqw-canvas')) this.focus();
+  }
+
+  // Keyboards that send text without key events (most on Android) are read
+  // from what changed in the hidden field.
+  _onSoftKeys() {
+    const now = this.keys.value;
+    const before = this._softKeys;
+    let same = 0;
+    while (same < before.length && same < now.length && before[same] === now[same]) same++;
+    for (let i = same; i < before.length; i++) this.pressFace('⌫');
+    for (const key of now.slice(same)) {
+      if (key !== SOFT_KEYS_REST) this.handleKey({ key });
+    }
+    this._softKeys = now;
+    if (!this._composing) this._restSoftKeys();
+  }
+
+  _restSoftKeys() {
+    this.keys.value = SOFT_KEYS_REST;
+    this._softKeys = SOFT_KEYS_REST;
   }
 
   _runTool(id) {
@@ -2148,7 +2186,7 @@ export class EquationEditor {
   _pointerDown(event) {
     if (event.button !== 0 || event.target.closest('.eqw-tip')) return;
     event.preventDefault();
-    this.focus();
+    if (event.pointerType === 'mouse') this.focus();
     const hit = this._hit(this._point(event));
     if (!hit) return;
     const path = hit.key.split('.').map(Number);
