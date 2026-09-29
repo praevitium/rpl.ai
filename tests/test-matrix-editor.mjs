@@ -2,7 +2,7 @@ import { assert, assertThrows } from './helpers.mjs';
 import {
   emptyGrid, identityGrid, zerosGrid, clampDim, resizeGrid,
   parseMatrixCell, gridToMatrix, gridToValue, valueToGrid, pasteIntoGrid,
-  insertRow, deleteRow, insertCol, deleteCol, transposeGrid, MATRIX_MAX, toggleCellSign,
+  insertRow, deleteRow, insertCol, deleteCol, transposeGrid, MATRIX_MAX, toggleCellSign, mapCaret,
 } from '../www/src/ui/matrix-editor.js';
 import {
   Matrix, Vector, Real, Integer, RList, isMatrix, isInteger, isReal, isVector, isSymbolic,
@@ -153,23 +153,30 @@ import {
 }
 
 {
-  assert(toggleCellSign('5') === '-5' && toggleCellSign('-5') === '5' && toggleCellSign('+5') === '-5',
-    'toggleCellSign: +/- negates a number');
-  assert(toggleCellSign('') === '-' && toggleCellSign('-') === '',
-    'toggleCellSign: +/- on an empty cell starts it with -, and takes it back');
-  assert(toggleCellSign('1E20') === '-1E20', 'toggleCellSign: a finished E-notation number is negated, not its exponent');
-  const typing = { inExponent: true };
-  assert(toggleCellSign('1E5', typing) === '1E-5' && toggleCellSign('1E-5', typing) === '1E5'
-    && toggleCellSign('1E+3', typing) === '1E-3' && toggleCellSign('1E', typing) === '1E-',
-    'toggleCellSign: while an exponent is typed, +/- flips it, as on the HP 50g');
-  assert(toggleCellSign('x2e', typing) === '-x2e' && toggleCellSign('-x2e') === 'x2e',
-    'toggleCellSign: a name ending in digit and E is negated as a name');
-  assert(toggleCellSign('(1,2)') === '(-1,-2)', 'toggleCellSign: +/- negates both parts of a complex cell');
-  assert(toggleCellSign('(2, ∠30)') === '(-2,∠30)', 'toggleCellSign: +/- negates only the magnitude of a polar complex');
-  assert(toggleCellSign('X+1') === '`-(X+1)`' && toggleCellSign('`-(X+1)`') === '`X+1`',
-    'toggleCellSign: +/- negates a whole expression and undoes it');
-  for (const cell of ['5', '1E20', '(1,2)', '(2, ∠30)', 'X+1', '`SIN(X)`', 'π']) {
+  const same = (text, expected, opts) => {
+    const got = toggleCellSign(text, opts);
+    assert(got === expected, `toggleCellSign: ${JSON.stringify(text)}${opts?.typing ? ' while typing' : ''} gives ${JSON.stringify(expected)} (got ${JSON.stringify(got)})`);
+  };
+  for (const [text, expected] of [
+    ['5', '-5'], ['-5', '5'], ['+5', '-5'], ['', '-'], ['-', ''], ['1E20', '-1E20'],
+    ['x2e', '-x2e'], ['`-x2e`', 'x2e'], ['`X`', '-X'],
+    ['X+1', '`-(X+1)`'], ['`-(X+1)`', '`X+1`'], ['(1,2)', '(-1,-2)'], ['(2, ∠30)', '(-2,∠30)'],
+  ]) same(text, expected);
+  const typing = { typing: true };
+  for (const [text, expected] of [
+    ['1E5', '1E-5'], ['1E-5', '1E5'], ['1E+3', '1E-3'], ['1E', '1E-'], ['(1,2E3', '(1,2E-3'],
+    ['5', '-5'], ['-5', '5'], ['', '-'], ['X+1', 'X-1'], ['X-1', 'X+1'], ['X*', 'X*-'], ['X*-', 'X*'],
+    ['(1,2', '(1,-2'], ['x2e', '-x2e'], ['SIN(X)', '`-(SIN(X))`'],
+  ]) same(text, expected, typing);
+  for (const cell of ['5', '1E20', '(1,2)', '(2, ∠30)', 'X+1', '`SIN(X)`', 'π', '`-x2e`']) {
     const negated = toggleCellSign(cell);
     assert(parseMatrixCell(negated) !== null, `toggleCellSign: ${cell} negated (${negated}) still parses`);
   }
+}
+
+{
+  assert(mapCaret('123', '-123', 1) === 2 && mapCaret('123', '-123', 3) === 4,
+    'mapCaret: a caret keeps its place after a leading minus');
+  assert(mapCaret('X+1', '`-(X+1)`', 1) === 4, 'mapCaret: a caret after X stays after X when the expression is wrapped');
+  assert(mapCaret('(1,2)', '(-1,-2)', 2) === 3, 'mapCaret: a caret after the real part stays after it in a negated complex');
 }

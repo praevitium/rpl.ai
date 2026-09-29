@@ -105,8 +105,8 @@ export function deleteCol(grid, at) {
   });
 }
 
-const NUMBER = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d*)?$/;
 const SCALAR = /^(?:(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d*)?(?:_.+)?|\p{L}[\p{L}\p{N}]*|∞)$/u;
+const TRAILING = /^(.*?)([+-]?)((?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d*)?|\p{L}[\p{L}\p{N}]*|∞)?$/u;
 
 function wrapsWhole(text) {
   let depth = 0;
@@ -117,21 +117,55 @@ function wrapsWhole(text) {
   return false;
 }
 
-// +/- negates the cell's value; while an exponent is being typed it flips
-// the exponent's sign instead, as on the HP 50g.
-export function toggleCellSign(text, { inExponent = false } = {}) {
-  const t = text.trim().replace(/^\+/, '');
+// While typing, +/- changes the sign of the operand being typed, or of its
+// exponent after EEX, as on the HP 50g; otherwise it negates the whole cell.
+export function toggleCellSign(text, { typing = false } = {}) {
+  if (!typing) return negateCell(text);
+  const [, head, sign, operand = ''] = text.match(TRAILING);
+  if (/^[\d.].*[eE]/.test(operand)) return head + sign + operand.replace(/([eE])(-?)\+?/, (_, e, minus) => (minus ? e : `${e}-`));
+  const afterTerm = /[\p{L}\p{N}.)∞]$/u.test(head);
+  if (sign === '-') return head + (afterTerm ? '+' : '') + operand;
+  if (sign === '+' || operand || !afterTerm) return `${head}-${operand}`;
+  return negateCell(text);
+}
+
+function negateCell(text) {
+  const t = text.trim().replace(/^[`'](.*)[`']$/, '$1').replace(/^\+/, '');
   const complex = t.match(/^\(([^,()]+),([^,()]+)\)$/);
   if (complex) {
     const im = complex[2].trim();
-    return `(${toggleCellSign(complex[1])},${im.startsWith('∠') ? im : toggleCellSign(im)})`;
+    return `(${negateCell(complex[1])},${im.startsWith('∠') ? im : negateCell(im)})`;
   }
-  if (inExponent && NUMBER.test(t) && /[eE]/.test(t)) return t.replace(/([eE])(-?)\+?/, (_, e, minus) => (minus ? e : `${e}-`));
   if (!t || t === '-') return t ? '' : '-';
   if (t.startsWith('-') && SCALAR.test(t.slice(1))) return t.slice(1);
   if (SCALAR.test(t)) return `-${t}`;
-  const expr = t.replace(/^[`'](.*)[`']$/, '$1');
-  return expr.startsWith('-(') && wrapsWhole(expr.slice(1)) ? `\`${expr.slice(2, -1)}\`` : `\`-(${expr})\``;
+  return t.startsWith('-(') && wrapsWhole(t.slice(1)) ? `\`${t.slice(2, -1)}\`` : `\`-(${t})\``;
+}
+
+// Where a caret in `before` lands in `after`, following the characters they share.
+export function mapCaret(before, after, caret) {
+  const lcs = Array.from({ length: before.length + 1 }, () => new Uint16Array(after.length + 1));
+  for (let i = before.length - 1; i >= 0; i--) {
+    for (let j = after.length - 1; j >= 0; j--) {
+      lcs[i][j] = before[i] === after[j] ? lcs[i + 1][j + 1] + 1 : Math.max(lcs[i + 1][j], lcs[i][j + 1]);
+    }
+  }
+  let i = 0;
+  let j = 0;
+  let mapped = 0;
+  while (i < caret && j < after.length) {
+    if (before[i] === after[j]) {
+      i++;
+      j++;
+      mapped = j;
+    } else if (lcs[i + 1][j] >= lcs[i][j + 1]) i++;
+    else j++;
+  }
+  return mapped;
+}
+
+function sameGrid(a, b) {
+  return a.length === b.length && a.every((row, r) => row.length === b[r].length && row.every((cell, c) => (cell ?? '') === (b[r][c] ?? '')));
 }
 
 export function parseMatrixCell(text) {
@@ -252,7 +286,8 @@ export class MatrixEditor {
     this._focusC = 0;
     this._past = [];
     this._future = [];
-    this._typingIn = null;
+    this._mergeCell = null;
+    this._typedCell = null;
     this.el = document.createElement('div');
     this.el.className = 'mx';
     this.el.innerHTML = '<div class="mx-grid-wrap"><div class="mx-grid" role="grid" aria-label="Matrix cells"></div></div><div class="mx-foot" role="status"></div>';
@@ -266,12 +301,15 @@ export class MatrixEditor {
       if (!cell) return;
       this._focusR = Number(cell.dataset.r);
       this._focusC = Number(cell.dataset.c);
-      this._typingIn = null;
+      this._mergeCell = null;
+      this._typedCell = null;
     });
     this._gridEl.addEventListener('input', (e) => {
       const cell = e.target.closest?.('input.mx-cell');
       if (!cell || !this.grid[cell.dataset.r]) return;
-      this._remember(`${cell.dataset.r},${cell.dataset.c}`);
+      const key = `${cell.dataset.r},${cell.dataset.c}`;
+      this._remember(key);
+      this._typedCell = key;
       this.grid[cell.dataset.r][cell.dataset.c] = cell.value;
       this._noteShape();
     });
@@ -281,12 +319,17 @@ export class MatrixEditor {
   load(value) {
     const grid = valueToGrid(value);
     if (!grid) return false;
+    this._forget();
+    this._show(value, grid);
+    return true;
+  }
+
+  _show(value, grid) {
     this.asVector = isVector(value) || (isList(value) && value.items.every(isNumber));
     this.grid = grid;
     this._focusR = 0;
     this._focusC = 0;
     this._renderGrid();
-    return true;
   }
 
   value() {
@@ -299,9 +342,7 @@ export class MatrixEditor {
     this.grid = emptyGrid(this.grid.length, this.grid[0]?.length || 1);
     this._focusR = 0;
     this._focusC = 0;
-    this._past = [];
-    this._future = [];
-    this._typingIn = null;
+    this._forget();
     this._renderGrid();
   }
 
@@ -318,26 +359,42 @@ export class MatrixEditor {
     to.push(this.snapshot());
     this.restore(from.pop());
     this._focusCell(this._focusR, this._focusC, { select: true });
-    this._typingIn = null;
+    this._mergeCell = null;
+    this._typedCell = null;
+    this.app.dismissError?.();
+    this.app.menubar?.render();
+    this._historyChanged();
   }
 
   // Typing in one cell is one undo step; every other change is a step of its own.
   _remember(cell = null) {
     this.app.dismissError?.();
-    if (cell && cell === this._typingIn) return;
+    if (cell && cell === this._mergeCell) return;
     this._past.push(this.snapshot());
     if (this._past.length > HISTORY_MAX) this._past.shift();
     this._future = [];
-    this._typingIn = cell;
+    this._mergeCell = cell;
+    this._historyChanged();
   }
+
+  _forget() {
+    this._past = [];
+    this._future = [];
+    this._mergeCell = null;
+    this._typedCell = null;
+    this._historyChanged();
+  }
+
+  _historyChanged() { this.app.appbar?.updateHistory(); }
 
   isEmpty() { return this.grid.every((row) => row.every((cell) => !String(cell ?? '').trim())); }
 
-  snapshot() { return { grid: this.grid.map((row) => row.slice()), asVector: this.asVector }; }
+  snapshot() { return { grid: this.grid.map((row) => row.slice()), asVector: this.asVector, focus: [this._focusR, this._focusC] }; }
 
   restore(saved) {
     this.grid = saved.grid.map((row) => row.slice());
     this.asVector = saved.asVector;
+    if (saved.focus) [this._focusR, this._focusC] = saved.focus;
     this._renderGrid();
   }
 
@@ -369,7 +426,7 @@ export class MatrixEditor {
       { label: 'ZERO', title: 'Fill with zeros', onPress: run(() => this.fill(zerosGrid)) },
       { label: 'VECT', title: 'Push a single row or column as a vector', toggle: true, on: () => this.asVector, onPress: run(() => this.toggleVector()) },
       { label: 'FROM1', title: 'Copy level 1 into the grid; Enter then pushes a new one', onPress: run(() => this.loadFromStack()) },
-      { label: 'CLEAR', title: 'Empty every cell', onPress: run(() => this.fill(emptyGrid)) },
+      { label: 'CLEAR', title: 'Empty every cell', onPress: run(() => { this.fill(emptyGrid); this._focusCell(0, 0); }) },
       ...SYMBOLS.map((s) => ({ label: s.text, title: `${s.title} in the focused cell`, onPress: () => this.insertSymbol(s.text) })),
     ];
   }
@@ -377,11 +434,11 @@ export class MatrixEditor {
   loadFromStack() {
     const { stack } = this.app;
     if (!stack.depth) { this.app.notifyError('The stack is empty.'); return; }
+    const value = stack.peek(1);
+    const grid = valueToGrid(value);
+    if (!grid) { this.app.notifyError("Level 1 isn't a matrix, vector, list or number."); return; }
     this._remember();
-    if (!this.load(stack.peek(1))) {
-      this._past.pop();
-      this.app.notifyError("Level 1 isn't a matrix, vector, list or number.");
-    }
+    this._show(value, grid);
   }
 
   pressFace(face) {
@@ -412,7 +469,7 @@ export class MatrixEditor {
     let start = focused ? input.selectionStart ?? current.length : current.length;
     const end = focused ? input.selectionEnd ?? start : start;
     if (back && start === end) start = Math.max(0, start - 1);
-    this._writeCell(r, c, current.slice(0, start) + text + current.slice(end), start + text.length);
+    this._writeCell(r, c, current.slice(0, start) + text + current.slice(end), [start + text.length, start + text.length]);
   }
 
   _toggleSign() {
@@ -422,31 +479,38 @@ export class MatrixEditor {
     const focused = document.activeElement === input;
     const start = focused ? input.selectionStart ?? old.length : old.length;
     const end = focused ? input.selectionEnd ?? start : start;
-    const inExponent = this._typingIn === `${r},${c}` && start === end && end === old.length;
-    const text = toggleCellSign(old, { inExponent });
-    if (old && start === 0 && end === old.length) this._writeCell(r, c, text, 0, text.length);
-    else this._writeCell(r, c, text, Math.max(0, Math.min(text.length, end + text.length - old.length)));
+    const typing = this._typedCell === `${r},${c}` && start === end && end === old.length;
+    const text = toggleCellSign(old, { typing });
+    const whole = start === 0 && end === old.length && start !== end;
+    const caret = mapCaret(old, text, end);
+    this._writeCell(r, c, text, whole ? [0, text.length] : [caret, caret], { typing: false });
   }
 
   _activeCell() {
     return [Math.min(this._focusR, this.grid.length - 1), Math.min(this._focusC, (this.grid[0]?.length || 1) - 1)];
   }
 
-  _writeCell(r, c, text, caret, caretEnd = caret) {
+  _writeCell(r, c, text, [start, end], { typing = true } = {}) {
     const input = this._cell(r, c);
     input?.focus();
-    this._remember(`${r},${c}`);
-    this.grid[r][c] = text;
+    const key = `${r},${c}`;
+    if (text !== (this.grid[r][c] ?? '')) {
+      this._remember(typing ? key : null);
+      this.grid[r][c] = text;
+    }
+    if (typing) this._typedCell = key;
     if (input) {
       input.value = text;
-      input.setSelectionRange(caret, caretEnd);
+      input.setSelectionRange(start, end);
     }
     this._noteShape();
   }
 
   transpose() {
+    const grid = transposeGrid(this.grid);
+    if (sameGrid(grid, this.grid)) return;
     this._remember();
-    this.grid = transposeGrid(this.grid);
+    this.grid = grid;
     [this._focusR, this._focusC] = [this._focusC, this._focusR];
     this._reshaped();
   }
@@ -467,15 +531,20 @@ export class MatrixEditor {
   }
 
   fill(makeGrid) {
+    const grid = makeGrid(this.grid.length, this.grid[0]?.length || 1);
+    if (sameGrid(grid, this.grid)) return;
     this._remember();
-    this.grid = makeGrid(this.grid.length, this.grid[0]?.length || 1);
+    this.grid = grid;
     this._reshaped();
   }
 
   toggleVector() {
+    if (!this.asVector && !isVectorShape(this.grid)) {
+      this.app.notifyError('Only a single row or column can be pushed as a vector.');
+      return;
+    }
     this._remember();
-    this.asVector = !this.asVector && isVectorShape(this.grid);
-    if (!this.asVector && !isVectorShape(this.grid)) this.app.notifyError('Only a single row or column can be pushed as a vector.');
+    this.asVector = !this.asVector;
     this._noteShape();
   }
 
@@ -530,9 +599,12 @@ export class MatrixEditor {
     e.preventDefault();
     const r = Number(cell.dataset.r);
     const c = Number(cell.dataset.c);
-    this._remember();
-    this.grid = pasteIntoGrid(this.grid, r, c, text);
-    this._renderGrid();
+    const grid = pasteIntoGrid(this.grid, r, c, text);
+    if (!sameGrid(grid, this.grid)) {
+      this._remember();
+      this.grid = grid;
+      this._renderGrid();
+    }
     this._focusCell(r, c);
   }
 

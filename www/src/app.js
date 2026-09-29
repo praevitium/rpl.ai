@@ -793,7 +793,11 @@ class App {
 
   _takeWriterText() {
     const writer = this._writer();
-    if (!writer || writer.isEmpty()) return '';
+    if (!writer) return '';
+    if (writer.isEmpty()) {
+      writer.clear();
+      return '';
+    }
     try {
       const text = formatSource(writer.value());
       writer.clear();
