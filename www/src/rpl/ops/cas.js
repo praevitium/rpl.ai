@@ -1,6 +1,6 @@
 import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isList, Real, Name, Integer, isComplex, Complex, isVector, Vector, isMatrix, Matrix, isValidHpIdentifier, isBinaryInteger, isRational } from '../types.js';
 import { giac } from '../cas/giac-engine.mjs';
-import { RPLError } from '../stack.js';
+import { RPLError, checkTimeLimit } from '../stack.js';
 import { buildGiacCmd, giacToAst, splitGiacList, astToGiac } from '../cas/giac-convert.mjs';
 import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, isKnownFunction } from '../algebra.js';
 import { getComplexMode, getCasVx, setCasVx } from '../state.js';
@@ -235,6 +235,7 @@ function _primeFactor(n) {
     factors.push({ p: 2n, e });
   }
   for (let p = 3n; p * p <= rem; p += 2n) {
+    checkTimeLimit();
     if (rem % p !== 0n) continue;
     let e = 0;
     while (rem % p === 0n) { rem /= p; e++; }

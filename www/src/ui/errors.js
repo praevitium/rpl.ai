@@ -1,7 +1,9 @@
+import { RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
+
 const CORE_MESSAGES = Object.freeze([
   'Too few arguments', 'Bad argument type', 'Bad argument value', 'Infinite result',
   'Invalid dimension', 'Inconsistent units', 'Undefined local name', 'Undefined name',
-  'CAS not ready',
+  'CAS not ready', 'Interrupted',
 ]);
 
 const NUMBER_WORDS = Object.freeze(['no values', 'one value', 'two values', 'three values', 'four values', 'five values']);
@@ -93,6 +95,12 @@ export const ERROR_KINDS = Object.freeze({
     title: () => 'The algebra engine is still loading.',
     detail: () => 'Giac loads in the background after start-up. Try again in a moment; nothing was lost.',
     fixes: () => [{ id: 'retry', label: 'Try again' }],
+  },
+  interrupted: {
+    match: (p) => p.core === 'Interrupted',
+    title: (c) => `${c.command ?? 'That command'} ran for ${RUN_TIME_LIMIT_MS / 1000} seconds, so it was stopped.`,
+    detail: () => "The page can't respond while a command runs, so a command that runs this long is stopped. The stack is back as it was. In a program, look for a loop that never ends.",
+    fixes: (c) => [...(c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []), { id: 'explain', label: 'Explain' }],
   },
   syntax: {
     match: (p) => /^(Invalid algebraic|Bad complex literal|Syntax error|Unknown token|Malformed|Unexpected|Missing object|Empty parse|Expected one object|Text after END|(IF|IFERR|WHILE|FOR|START|CASE|DO)\b)/.test(p.core),

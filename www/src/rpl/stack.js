@@ -329,3 +329,25 @@ export class RPLAbort extends Error {
 export class RPLHalt extends Error {
   constructor(msg = 'Halt') { super(msg); this.name = 'RPLHalt'; }
 }
+
+/* The page cannot take input while a command runs, so there is no ON key
+   to press; long loops call checkTimeLimit() instead.  RPLInterrupt is not
+   an RPLError, so IFERR cannot trap it and keep a runaway loop alive. */
+export class RPLInterrupt extends Error {
+  constructor(msg = 'Interrupted') { super(msg); this.name = 'RPLInterrupt'; }
+}
+
+export const RUN_TIME_LIMIT_MS = 10000;
+
+let _deadline = Infinity;
+let _ticks = 0;
+
+export function withTimeLimit(ms, fn) {
+  const outer = _deadline;
+  _deadline = Math.min(outer, Date.now() + ms);
+  try { return fn(); } finally { _deadline = outer; }
+}
+
+export function checkTimeLimit() {
+  if (_deadline !== Infinity && (++_ticks & 255) === 0 && Date.now() > _deadline) throw new RPLInterrupt();
+}

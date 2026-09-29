@@ -33,6 +33,7 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
     units: '+: Inconsistent units',
     undefinedName: 'Undefined name: FOO',
     casLoading: 'FACTOR: CAS not ready',
+    interrupted: 'EVAL: Interrupted',
     syntax: 'Invalid algebraic: Unexpected end of expression',
     other: 'Something new went wrong',
   };

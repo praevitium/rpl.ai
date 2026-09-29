@@ -144,3 +144,15 @@ import { assert } from './helpers.mjs';
   }
   assert(writers.size === 0, `previewCommand: no previewable command changes calculator state (${[...writers].join(', ') || 'none'})`);
 }
+
+{
+  const { previewCommand } = await import('../www/src/rpl/scratch.js');
+  const { parseEntry } = await import('../www/src/rpl/parser.js');
+  const { giac } = await import('../www/src/rpl/cas/giac-engine.mjs');
+  const calls = giac._callLogCopy().length;
+  assert(previewCommand('EGVL', parseEntry('[[1 2][3 4]]')) === null && giac._callLogCopy().length === calls,
+    'previewCommand: a command that needs the CAS is not previewed, and the CAS is not called');
+  const started = Date.now();
+  assert(previewCommand('FACTORS', [Integer((2n ** 31n - 1n) * (2n ** 61n - 1n))]) === null && Date.now() - started < 2000,
+    'previewCommand: FACTORS too slow to preview gives up instead of freezing the page');
+}

@@ -1,5 +1,5 @@
 import { isInteger, isReal, Symbolic, Integer, Real, RList, Complex, isList } from '../types.js';
-import { RPLError } from '../stack.js';
+import { RPLError, checkTimeLimit } from '../stack.js';
 import { Fn as AstFn, Bin as AstBin, Num as AstNum, Neg as AstNeg } from '../algebra.js';
 import { getCasModulo, setCasModulo } from '../state.js';
 import { giac } from '../cas/giac-engine.mjs';
@@ -714,7 +714,10 @@ function _nextPrimeBig(n) {
   let c = n + _ONE;
   if (c === _TWO) return _TWO;
   if ((c & _ONE) === _ZERO) c += _ONE;           // skip to odd
-  while (!_isPrimeBig(c)) c += _TWO;
+  while (!_isPrimeBig(c)) {
+    checkTimeLimit();
+    c += _TWO;
+  }
   return c;
 }
 
@@ -727,7 +730,10 @@ function _prevPrimeBig(n) {
   let c = n - _ONE;
   if ((c & _ONE) === _ZERO) c -= _ONE;           // skip to odd
   if (c < 3n) return _TWO;
-  while (c >= 3n && !_isPrimeBig(c)) c -= _TWO;
+  while (c >= 3n && !_isPrimeBig(c)) {
+    checkTimeLimit();
+    c -= _TWO;
+  }
   return c < _TWO ? _TWO : c;
 }
 
@@ -752,6 +758,7 @@ function _factorIntBig(n) {
   const wheelAdds = [4n, 2n, 4n, 2n, 4n, 6n, 2n, 6n];
   let p = 7n, w = 0;
   while (p * p <= n) {
+    checkTimeLimit();
     let k = _ZERO;
     while (n % p === _ZERO) { n /= p; k++; }
     if (k > _ZERO) out.push([p, k]);

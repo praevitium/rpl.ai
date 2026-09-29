@@ -7166,3 +7166,28 @@ for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
     'session151: KILL of halted FOR/STEP leaves no local-frame leak');
   varPurge('i');
 }
+
+/* ================================================================
+   Time limit — the page cannot take input while a program runs, so
+   a runaway one is interrupted instead of freezing it.
+   ================================================================ */
+{
+  const { withTimeLimit, RPLInterrupt } = await import('../www/src/rpl/stack.js');
+  const run = (src) => {
+    const s = new Stack();
+    s.push(parseEntry(src)[0]);
+    const started = Date.now();
+    let caught = null;
+    try { withTimeLimit(50, () => lookup('EVAL').fn(s)); } catch (e) { caught = e; }
+    return { s, caught, ms: Date.now() - started };
+  };
+  const nested = run('« 5 → n « 1 1000000 FOR i 1 1000000 FOR j NEXT NEXT » »');
+  assert(nested.caught instanceof RPLInterrupt && nested.ms < 2000 && nested.s.depth === 0 && localFramesDepth() === 0,
+    'time limit: EVAL interrupts a runaway nested loop and unwinds its locals');
+  const trapped = run('« IFERR 1 1000000 FOR i 1 1000000 FOR j NEXT NEXT THEN "trapped" END »');
+  assert(trapped.caught instanceof RPLInterrupt && trapped.s.depth === 0,
+    'time limit: IFERR cannot trap the interrupt');
+  const quick = run('« 1 100 FOR i NEXT 42 »');
+  assert(quick.caught === null && quick.s.peek(1)?.value === 42n,
+    'time limit: a program that finishes in time is unaffected');
+}

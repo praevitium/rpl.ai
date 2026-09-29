@@ -12,7 +12,7 @@
 import { parseEntry } from '../rpl/parser.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
 import { lookup } from '../rpl/ops.js';
-import { RPLAbort, RPLError } from '../rpl/stack.js';
+import { RPLAbort, RPLError, withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
 import { errorBeep } from './beep.js';
 import { Name } from '../rpl/types.js';
 import {
@@ -599,7 +599,7 @@ export class Entry {
    *  eats the args the op had popped before throwing. */
   safeRun(body, context = '') {
     const rollback = this.stack.save();
-    try { body(); }
+    try { withTimeLimit(RUN_TIME_LIMIT_MS, body); }
     catch (e) {
       if (e instanceof RPLAbort) {
         this.flashNotice('Program aborted');

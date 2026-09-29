@@ -1,6 +1,6 @@
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Name, Symbolic, Integer, Unit, isUnit, isBinaryInteger, isNumber, promoteNumericPair, Complex, Rational, isList, RList, isTagged, Tagged, isVector, Vector, isMatrix, Matrix, BinaryInteger, toRealOrThrow, isString, isValidHpIdentifier, isStorableHpName, isProgram, isDirectory, Str } from '../types.js';
-import { RPLError, setPushCoerce } from '../stack.js';
+import { RPLError, setPushCoerce, checkTimeLimit } from '../stack.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars } from '../algebra.js';
 import { sameDims, scaleOf, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
 import { getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varPurge, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, getHalted, clearPromptMessage, takeHalted, setHalted } from '../state.js';
@@ -759,7 +759,10 @@ export function unaryReal(name, fn) {
 export function _bigFactorial(n) {
   if (n < 0n) throw new RPLError('Bad argument value');
   let acc = 1n;
-  for (let i = 2n; i <= n; i++) acc *= i;
+  for (let i = 2n; i <= n; i++) {
+    checkTimeLimit();
+    acc *= i;
+  }
   return acc;
 }
 
@@ -1307,6 +1310,7 @@ function* evalRange(s, toks, from, to, depth) {
   }
   let i = from;
   while (i < to) {
+    checkTimeLimit();
     const tok = toks[i];
     const id = bareNameId(tok);
     if (id && CF_OPENERS.has(id)) {
@@ -1935,6 +1939,7 @@ function* runWhile(s, toks, openIdx, depth) {
     if (++iterations > MAX_LOOP_ITERATIONS) {
       throw new RPLError('WHILE loop iteration limit');
     }
+    checkTimeLimit();
     yield* evalRange(s, toks, openIdx + 1, repeatScan.idx, depth + 1);
     const test = s.pop();
     if (!isTruthy(test)) break;
@@ -1976,6 +1981,7 @@ function* runDo(s, toks, openIdx, depth) {
     if (++iterations > MAX_LOOP_ITERATIONS) {
       throw new RPLError('DO loop iteration limit');
     }
+    checkTimeLimit();
     yield* evalRange(s, toks, openIdx + 1, untilScan.idx, depth + 1);
     yield* evalRange(s, toks, untilScan.idx + 1, endIdx, depth + 1);
     const test = s.pop();
@@ -2099,6 +2105,7 @@ function* runLoopBody(s, toks, bodyFrom, bodyTo, closer, startVal, endVal, varNa
     if (++iterations > MAX_LOOP_ITERATIONS) {
       throw new RPLError('Loop iteration limit');
     }
+    checkTimeLimit();
     if (varName !== null) {
       varStore(varName, mode ? Integer(counter) : Real(counter));
     }

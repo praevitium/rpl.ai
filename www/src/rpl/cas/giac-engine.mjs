@@ -45,11 +45,21 @@
 
 import { stripGiacQuotes, stripGiacApproxSuffix } from "./giac-convert.mjs";
 import { state as calcState } from "../state.js";
+import { RPLInterrupt } from "../stack.js";
 
 const isBrowser =
   typeof globalThis !== "undefined" &&
   typeof globalThis.document !== "undefined" &&
   typeof globalThis.window !== "undefined";
+
+// Previews run a command speculatively on every hover.  A Giac call cannot
+// be interrupted, so while one is held the CAS refuses instead of starting.
+let casHeld = 0;
+
+export function withoutCas(fn) {
+  casHeld++;
+  try { return fn(); } finally { casHeld--; }
+}
 
 /* ------------------------------------------------------------------
    Browser: main-thread synchronous engine.
@@ -153,6 +163,7 @@ class BrowserGiacEngine {
   }
 
   caseval(cmd) {
+    if (casHeld) throw new RPLInterrupt();
     if (!this._resolved) {
       throw new Error("Giac not initialized — call await giac.init() first");
     }
@@ -215,6 +226,7 @@ class MockGiacEngine {
   }
 
   caseval(cmd) {
+    if (casHeld) throw new RPLInterrupt();
     if (typeof cmd !== "string") {
       throw new TypeError(`giac.caseval: expected string, got ${typeof cmd}`);
     }

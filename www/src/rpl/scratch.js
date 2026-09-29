@@ -10,11 +10,14 @@
    asking the user to confirm anything.
    ================================================================= */
 
-import { Stack, RPLError } from './stack.js';
+import { Stack, RPLError, RPLInterrupt, withTimeLimit, RUN_TIME_LIMIT_MS } from './stack.js';
 import { parseEntry } from './parser.js';
 import { lookup } from './ops.js';
 import { withScratchState } from './state.js';
 import { format } from './formatter.js';
+import { withoutCas } from './cas/giac-engine.mjs';
+
+const PREVIEW_TIME_LIMIT_MS = 150;
 
 /** Evaluate `text` on a scratch copy of `liveItems` (bottom-first, as
  *  Stack.save() returns).  Resolves to
@@ -24,7 +27,7 @@ import { format } from './formatter.js';
 export function evalScratch(text, { liveItems = [], displayOpts, maxLevels = 8 } = {}) {
   const stack = new Stack();
   stack.restore(liveItems);
-  return withScratchState(() => {
+  return withScratchState(() => withTimeLimit(RUN_TIME_LIMIT_MS, () => {
     try {
       const values = parseEntry(String(text ?? ''));
       for (const v of values) {
@@ -49,7 +52,7 @@ export function evalScratch(text, { liveItems = [], displayOpts, maxLevels = 8 }
       const error = (e && typeof e === 'object' && e.message != null) ? String(e.message) : String(e);
       return { ok: false, error };
     }
-  });
+  }));
 }
 
 const STATE_READ_ONLY_CATEGORIES = new Set([
@@ -73,8 +76,9 @@ export function previewCommand(name, liveItems = []) {
   const stack = new Stack();
   stack.restore(liveItems);
   try {
-    stack.runOp(() => op.fn(stack));
+    withoutCas(() => withTimeLimit(PREVIEW_TIME_LIMIT_MS, () => stack.runOp(() => op.fn(stack))));
   } catch (e) {
+    if (e instanceof RPLInterrupt) return null;
     return { ok: false, error: (e && typeof e === 'object' && e.message != null) ? String(e.message) : String(e) };
   }
   const after = stack.save();
