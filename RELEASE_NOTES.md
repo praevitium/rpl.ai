@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.2 (2026-09-29)
+**Latest release:** v0.6.3 (2026-09-29)
 
 ---
 
@@ -18,6 +18,17 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.3 — 2026-09-29
+
+On a phone or tablet, opening the equation or matrix writer brings up the
+device's keyboard, and tapping the equation does too. Typing works whether
+the keyboard sends key events or only text, as most Android keyboards do.
+While the keyboard is up, the calculator keypad steps aside so the writer
+stays in view. Matrix cells no longer auto-capitalize or autocorrect, since
+RPL names are case-sensitive.
 
 ---
 
