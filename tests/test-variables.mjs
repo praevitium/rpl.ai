@@ -1276,35 +1276,70 @@ const {
 /* ================================================================
    STOF / RCLF (flag set save/restore).
 
-   STOF: { n1 n2 … } → (clears all flags, sets exactly those in list)
-   RCLF: ( → { n1 n2 … } )  (pushes sorted list of currently-set flag
-                             numbers; empty flag set pushes {})
+   STOF: { n1 n2 … } → (sets exactly the listed flags, modes included)
+   RCLF: ( → { n1 n2 … } )  (the sorted numbers of every set flag,
+                             including the system flags that encode modes)
    ================================================================ */
+
+const { captureCalcState, restoreCalcState, setDisplay, getApproxMode } = await import('../www/src/rpl/state.js');
+const modesBeforeFlagTests = captureCalcState();
+const rclf = () => { const s = new Stack(); lookup('RCLF').fn(s); return s.peek(1).items.map(x => Number(x.value)); };
 
 {
   clearAllUserFlags();
-  const s = new Stack();
-  lookup('RCLF').fn(s);
-  assert(s.depth === 1 && s.peek(1).type === 'list'
-      && s.peek(1).items.length === 0,
-    'RCLF with no flags set pushes {}');
+  setAngle('RAD'); setWordsize(64); setDisplay('STD');
+  const nums = rclf();
+  assert(nums.every((n) => n < 0) && nums.includes(-17) && [-5, -6, -7, -8, -9, -10].every((n) => nums.includes(n)),
+    'RCLF with no user flags lists only the mode flags (RAD sets -17, wordsize 64 sets -5..-10)');
 }
 {
   clearAllUserFlags();
   setUserFlag(42);
-  setUserFlag(-17);
   setUserFlag(5);
   const s = new Stack();
   lookup('RCLF').fn(s);
   const list = s.peek(1);
-  assert(list.items.length === 3,
-    'RCLF pushes a list of the same length as the flag set');
   const nums = list.items.map(x => Number(x.value));
-  assert(JSON.stringify(nums) === JSON.stringify([-17, 5, 42]),
-    'RCLF sorts flag numbers ascending: -17 < 5 < 42');
+  assert(nums.filter((n) => n > 0).join() === '5,42',
+    'RCLF lists the set user flags');
+  assert(nums.every((n, i) => i === 0 || nums[i - 1] < n),
+    'RCLF sorts flag numbers ascending');
   assert(list.items.every(x => x.type === 'integer'),
     'RCLF pushes Integer-typed flag numbers');
   clearAllUserFlags();
+}
+{
+  setApproxMode(false);
+  setUserFlag(-105);
+  assert(getApproxMode(), '-105 SF switches to approximate mode');
+  clearUserFlag(-105);
+  assert(!getApproxMode(), '-105 CF switches back to exact mode');
+  setAngle('DEG');
+  assert(!testUserFlag(-17) && !testUserFlag(-18), 'DEG clears flags -17 and -18');
+  setUserFlag(-18);
+  assert(calcState.angle === 'GRD', '-18 SF from DEG selects GRD');
+  setUserFlag(-17);
+  assert(calcState.angle === 'RAD' && testUserFlag(-17) && !testUserFlag(-18), '-17 SF selects RAD, which clears -18');
+  setWordsize(64);
+  clearUserFlag(-10);
+  assert(calcState.wordsize === 32, '-10 CF halves wordsize 64 to 32 (flags -5..-10 hold wordsize - 1)');
+  setUserFlag(-10);
+  setDisplay('STD');
+  setUserFlag(-49);
+  assert(calcState.displayMode === 'FIX', '-49 SF selects FIX');
+  setUserFlag(-50);
+  assert(calcState.displayMode === 'ENG', '-49 and -50 set select ENG');
+  setDisplay('STD');
+}
+{
+  setAngle('RAD'); setWordsize(64);
+  const saved = rclf();
+  setAngle('DEG'); setWordsize(8); setApproxMode(true);
+  const s = new Stack();
+  s.push(RList(saved.map((n) => Integer(BigInt(n)))));
+  lookup('STOF').fn(s);
+  assert(calcState.angle === 'RAD' && calcState.wordsize === 64 && !getApproxMode(),
+    'STOF of an RCLF list puts the modes back');
 }
 {
   clearAllUserFlags();
@@ -1396,6 +1431,8 @@ const {
   catch (e) { assert(/Bad argument value/i.test(e.message),
     'STOF with non-integer Real → Bad argument value'); }
 }
+restoreCalcState(modesBeforeFlagTests);
+clearAllUserFlags();
 
 
 {

@@ -277,25 +277,77 @@ function _validFlag(n) {
   return k;
 }
 
-export function setUserFlag(n) {
-  const k = _validFlag(n);
-  if (state.userFlags.has(k)) return;
-  state.userFlags.add(k);
+// The system flags that encode a mode (AUR appendix C) read and write the
+// mode itself, so -17 SF selects RAD and RAD sets -17.  Each field is a
+// binary number whose lowest bit is flag -low.
+const BASE_CODES = ['d', 'o', 'b', 'h'];
+const COORD_CODES = { RECT: 0, CYLIN: 2, SPHERE: 3 };
+const ANGLE_CODES = { DEG: 0, RAD: 1, GRD: 2 };
+const MODE_FIELDS = [
+  { low: 5, bits: 6, get: () => state.wordsize - 1, set: (v) => setWordsize(v + 1) },
+  { low: 11, bits: 2, get: () => Math.max(0, BASE_CODES.indexOf(state.binaryBase)), set: (v) => setBinaryBase(BASE_CODES[v]) },
+  { low: 15, bits: 2, get: () => COORD_CODES[state.coordMode], set: (v) => setCoordMode(v & 2 ? (v & 1 ? 'SPHERE' : 'CYLIN') : 'RECT') },
+  { low: 17, bits: 2, get: () => ANGLE_CODES[state.angle], set: (v) => setAngle(v & 1 ? 'RAD' : v & 2 ? 'GRD' : 'DEG') },
+  { low: 45, bits: 4, get: () => Math.min(state.displayDigits, 11), set: (v) => _set('displayDigits', Math.min(v, 11)) },
+  { low: 49, bits: 2, get: () => DISPLAY_MODES.indexOf(state.displayMode), set: (v) => setDisplay(DISPLAY_MODES[v]) },
+  { low: 103, bits: 1, get: () => Number(state.complexMode), set: (v) => setComplexMode(v === 1) },
+  { low: 105, bits: 1, get: () => Number(state.approxMode), set: (v) => setApproxMode(v === 1) },
+];
+
+function _modeField(k) {
+  return k < 0 ? MODE_FIELDS.find((f) => -k >= f.low && -k < f.low + f.bits) : undefined;
+}
+
+export const isModeFlag = (n) => _modeField(n) !== undefined;
+
+function _writeFlag(k, on) {
+  const field = _modeField(k);
+  if (field) {
+    const bit = 1 << (-k - field.low);
+    const v = field.get();
+    field.set(on ? v | bit : v & ~bit);
+    return;
+  }
+  if (state.userFlags.has(k) === on) return;
+  if (on) state.userFlags.add(k);
+  else state.userFlags.delete(k);
   _emit();
 }
 
-export function clearUserFlag(n) {
-  const k = _validFlag(n);
-  if (!state.userFlags.has(k)) return;
-  state.userFlags.delete(k);
-  _emit();
-}
+export function setUserFlag(n) { _writeFlag(_validFlag(n), true); }
+
+export function clearUserFlag(n) { _writeFlag(_validFlag(n), false); }
 
 export function testUserFlag(n) {
   const k = _validFlag(n);
+  const field = _modeField(k);
+  if (field) return ((field.get() >> (-k - field.low)) & 1) === 1;
   return state.userFlags.has(k);
 }
 
+// Every set flag, mode flags included, in ascending order.
+export function setFlagNumbers() {
+  const nums = [...state.userFlags];
+  for (const f of MODE_FIELDS) {
+    const v = f.get();
+    for (let b = 0; b < f.bits; b++) if ((v >> b) & 1) nums.push(-(f.low + b));
+  }
+  return nums.sort((a, b) => a - b);
+}
+
+// STOF: exactly the listed flags end up set, so modes follow the list too.
+export function replaceFlags(nums) {
+  const want = new Set(nums.map(_validFlag));
+  for (const f of MODE_FIELDS) {
+    let v = 0;
+    for (let b = 0; b < f.bits; b++) if (want.has(-(f.low + b))) v |= 1 << b;
+    f.set(v);
+  }
+  state.userFlags = new Set([...want].filter((k) => !_modeField(k)));
+  _emit();
+}
+
+// Clears the flags that are not modes; the modes stay as they are.
 export function clearAllUserFlags() {
   if (state.userFlags.size === 0) return;
   state.userFlags.clear();

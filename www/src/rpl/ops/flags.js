@@ -1,6 +1,6 @@
 import { isInteger, isReal, RList, Integer, isList } from '../types.js';
 import { RPLError } from '../stack.js';
-import { state as _calcState, setUserFlag, clearUserFlag, testUserFlag, clearAllUserFlags } from '../state.js';
+import { setUserFlag, clearUserFlag, testUserFlag, setFlagNumbers, replaceFlags } from '../state.js';
 import { register } from './registry.js';
 import { FALSE, TRUE } from './internal.js';
 
@@ -71,15 +71,12 @@ register('FC?C', (s) => {
 // HP50 RCLF returns binary-integer bitmaps; here it is the ascending list of set
 // flag numbers, which STOF takes back.
 register('RCLF', (s) => {
-  const flags = [..._calcState.userFlags].sort((a, b) => a - b);
-  s.push(RList(flags.map(n => Integer(BigInt(n)))));
+  s.push(RList(setFlagNumbers().map(n => Integer(BigInt(n)))));
 }, { category: 'Flags', categoryOrder: 6, label: "RCLF" });
 
 
 register('STOF', (s) => {
   const [l] = s.popN(1);
   if (!isList(l)) throw new RPLError('Bad argument type');
-  const nums = l.items.map(_flagNumber);
-  clearAllUserFlags();
-  for (const n of nums) setUserFlag(n);
+  replaceFlags(l.items.map(_flagNumber));
 }, { category: 'Flags', categoryOrder: 7, label: "STOF" });

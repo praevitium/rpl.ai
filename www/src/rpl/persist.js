@@ -15,7 +15,7 @@
 
 import {
   state, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo,
-  ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX,
+  ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX, isModeFlag,
 } from './state.js';
 import { TYPES, Decimal, BIN_BASES } from './types.js';
 import { RPLError } from './stack.js';
@@ -110,7 +110,7 @@ function restoreModes(modes) {
     if (typeof modes[key] === 'boolean') state[key] = modes[key];
   }
   if (Array.isArray(modes.userFlags)) {
-    state.userFlags = new Set(modes.userFlags.filter((n) => Number.isInteger(n) && n !== 0 && n >= -128 && n <= 128));
+    state.userFlags = new Set(modes.userFlags.filter((n) => Number.isInteger(n) && n !== 0 && n >= -128 && n <= 128 && !isModeFlag(n)));
   }
 }
 
