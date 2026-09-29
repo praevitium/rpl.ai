@@ -268,7 +268,7 @@ const TOOLS = [
     name: 'clear_editor',
     args: {},
     schema: { type: 'object', properties: {} },
-    desc: 'Empty the entry-line buffer.  Executes immediately; Undo does not bring the text back.',
+    desc: 'Empty the entry-line buffer.  Executes immediately; Undo this turn brings the text back.',
   },
 ];
 

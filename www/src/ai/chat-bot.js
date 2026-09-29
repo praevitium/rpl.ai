@@ -1853,7 +1853,7 @@ export class ChatBot {
     const btn = button({
       className: 'cb-undo-btn',
       textContent: '↶ Undo this turn',
-      title: 'Restore the stack, variables and modes to how they were before the assistant acted',
+      title: 'Restore the stack, variables, modes and command line to how they were before the assistant acted',
     }, () => {
       try {
         this._tools.restoreState(snapshot);

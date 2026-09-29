@@ -561,6 +561,8 @@ const frame = (obj) => 'data: ' + JSON.stringify(obj);
            'explainConnectionError: a hosted page reaching localhost mentions the local network permission');
     msg = await explainConnectionError('http://localhost:11434', failed, 'http://localhost:5050', chrome);
     assert(!msg.includes('allow it'), 'explainConnectionError: a localhost page gets no permission hint');
+    assert(msg.includes('Check the address and port and that Ollama is running.'),
+           'explainConnectionError: the loopback hint reads as one sentence');
     msg = await explainConnectionError('http://alpha:11434', new Error('HTTP 401 — check the API key'), 'http://x');
     assert(msg === 'HTTP 401 — check the API key', 'explainConnectionError: other errors pass through unchanged');
   } finally {

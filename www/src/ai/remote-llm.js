@@ -85,7 +85,7 @@ export async function explainConnectionError(url, err, origin = globalThis.locat
   } catch {
     let pageIsLocal = false;
     try { pageIsLocal = isLoopbackHost(new URL(origin).hostname); } catch { /* no page origin */ }
-    return `Nothing answered at ${host}. Check the address and port, that Ollama is running`
+    return `Nothing answered at ${host}. Check the address and port${loopback ? ' and' : ','} that Ollama is running`
       + `${loopback ? '' : ', and that it listens on the network (OLLAMA_HOST=0.0.0.0)'}.`
       + (pageIsLocal ? '' : ' If the browser asked whether this site may reach apps on your device or local network, '
         + 'allow it; if you declined, change it in the site settings.');
