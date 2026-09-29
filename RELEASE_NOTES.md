@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.0 (2026-09-29)
+**Latest release:** v0.6.1 (2026-09-29)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.1 — 2026-09-29
+
+The matrix writer keeps its own undo history: UNDO and REDO step through
+its edits before touching the stack, and typing in one cell is one step.
+Its +/- negates a loaded number, name, expression or complex as a whole,
+and flips the exponent only while one is being typed. A toast's Undo,
+including the Variables drawer's, now acts only while its step is the
+latest, so it can no longer undo something newer. A pen can reorder stack
+rows again, and a variable soft key does nothing more when the text on
+the command line fails.
 
 ---
 
