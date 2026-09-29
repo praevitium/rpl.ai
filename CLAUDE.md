@@ -6,6 +6,12 @@ These are house conventions, not project documentation. Follow them so they don'
 
 **This is a living document.** When the user corrects you on style or working habits — especially something they've said more than once — add it here (and to memory) so it stops needing to be repeated.
 
+## Product direction
+
+- Preserve the HP 50g experience as closely as possible, but don't reproduce its bugs. Check HP behaviour against the AUR in `www/docs/hp50-commands.html`.
+- Break User-RPL compatibility when that makes sense, and record each break in RELEASE_NOTES.md and the command's reference entry.
+- Import and export should work with modern tools such as Excel, not only with the HP.
+
 ## Find and verify
 
 - Boot the app with `npm run serve` (port 5050, root `www/`).
@@ -38,7 +44,7 @@ These are house conventions, not project documentation. Follow them so they don'
 - Commit straight to main, then push main.
 - Commit only when asked.
 - **Restart the dev server before every push**, after committing: `pkill -f '[l]ive-server --port=5050'; setsid npm run serve >/dev/null 2>&1 < /dev/null &`. Its `preserve` step regenerates `build-info.js` and `precache.js`, so the app on port 5050 shows the build being pushed.
-- After a significant chunk of work, **bump the version** (package.json, package-lock.json, and the latest-release stamp in RELEASE_NOTES.md). Patch for a coherent feature; don't leave the bump uncommitted.
+- **Bump the version with every push** (package.json, package-lock.json, and the latest-release stamp and an entry in RELEASE_NOTES.md). Patch unless told otherwise; don't leave the bump uncommitted.
 - Commit subjects are **short and lowercase**, imperative mood, no scope prefix, no trailing period (e.g. `fix cursor`, `add katex support`), four or five words. Follow with a one- or two-sentence body. Never add trailers such as Co-Authored-By.
 - Keep each commit to one logical change.
 - When asked to "commit as you go", commit each coherent chunk as it lands and push at the end.
