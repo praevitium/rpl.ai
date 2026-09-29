@@ -68,9 +68,8 @@ it, and a directory's name enters it, as on the HP 50g. Every keypad
 key can be reached with Tab and pressed with Enter or Space, carries a
 spoken name, and shows a focus ring; motion stops when the system asks
 for reduced motion. `√` can be typed in an algebraic. The page has a
-favicon. The Tauri desktop shell is gone: rpl.ai is a web app that
-installs from the browser and, once loaded, runs offline, because a
-service worker caches every file, the CAS included.
+favicon. rpl.ai installs from the browser and, once loaded, runs
+offline, because a service worker caches every file, the CAS included.
 
 The whole interface is rebuilt as one system. An app bar holds the
 directory as a clickable path, the modes as chips whose menus explain
@@ -629,13 +628,6 @@ coercion — for each op.
 local storage across sessions, including all value types. State is restored
 automatically on launch.
 
-### Desktop shell
-
-The Tauri 2 window provides native menus, a resizable 600×900 default
-footprint, and platform-native installers (`.dmg` on macOS, `.msi` on
-Windows, `.deb` / `.AppImage` on Linux). The frontend also runs as a static
-web page (`www/index.html`) for browser-based use without the Tauri wrapper.
-
 ### AI assistant (beta)
 
 A side-panel chat interface connects to an LLM via `www/src/ai/` to answer
@@ -758,8 +750,7 @@ during long symbolic computations. The tradeoff is reintroducing async
 plumbing the op layer currently sidesteps cleanly.
 
 **Offline-first PWA.** Service worker + cache manifest so the calculator
-runs from cache without network after the first load. Pairs naturally with
-the existing Tauri desktop build.
+runs from cache without network after the first load.
 
 **Collaborative sessions.** Two users sharing the same home directory over
 WebSockets. All state already lives behind the `state` module — this is
