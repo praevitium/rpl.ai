@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# scripts/pre-commit.sh — minimal pre-commit gate for RPL5050.
+# utils/pre-commit.sh — minimal pre-commit gate for rpl.ai.
 #
 # Runs the cheap 5-ms sanity smoke first (so almost-everything-broken
 # changes fail fast), then the full test suite if --full is given.
 #
 # Usage:
-#   bash scripts/pre-commit.sh           # sanity smoke only (~5 ms)
-#   bash scripts/pre-commit.sh --full    # sanity + full suite
-#   bash scripts/pre-commit.sh --persist # also include persist suite
+#   bash utils/pre-commit.sh           # sanity smoke only (~5 ms)
+#   bash utils/pre-commit.sh --full    # sanity + full suite
+#   bash utils/pre-commit.sh --persist # also include persist suite
 #
 # Exit codes:
 #   0  — every gate green.
 #   1  — at least one gate red.  Stderr says which.
 #
 # Wire this in as a real git hook with:
-#   ln -sf ../../scripts/pre-commit.sh .git/hooks/pre-commit
-#   chmod +x scripts/pre-commit.sh
+#   ln -sf ../../utils/pre-commit.sh .git/hooks/pre-commit
+#   chmod +x utils/pre-commit.sh
 
 set -euo pipefail
 

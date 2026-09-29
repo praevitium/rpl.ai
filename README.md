@@ -2,41 +2,129 @@
 
 **The HP 48/49/50 RPL calculator, rebuilt for the screen in front of you.**
 
-rpl.ai is a complete, programmable RPL calculator that runs in any modern
-browser and keeps working offline. It implements the HP 50g's User-RPL
-language and command set: 453 commands, exact big-integer and rational
-arithmetic, units, lists, matrices, programs and directories. It swaps the
-128×80 LCD for a high-resolution stack, a real keyboard and mouse, and the
+rpl.ai is a programmable RPL calculator that runs in any modern browser and
+keeps working offline. It implements the HP 50g's User-RPL language and most
+of its command set: 447 commands, exact big-integer and rational arithmetic,
+units, lists, matrices, programs and directories. It swaps the 131×80 LCD
+for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
 computer algebra system. Giac is the work of Bernard Parisse, who also wrote
 the CAS inside the HP 49 and 50g.
 
-**[Open rpl.ai](https://praevitium.github.io/rpl.ai/)** and install it from
-the browser. After that it opens like any other app and needs no network.
+**[Open rpl.ai](https://praevitium.github.io/rpl.ai/)**. There is nothing to
+download, no account and no sign-up. Install it as an app from the Help menu
+and it opens like any other app, with no network needed.
 
 ![rpl.ai with the command reference open](screenshots/hero.png)
 
-- **Everything an HP 50g does, where you can see it.** Stack, soft menus,
-  shifted keys, VARS, CST, MODES, directories, `HALT`/`CONT` debugging and
-  the full command set, each reachable from a labelled control.
-- **Keyboard first, mouse friendly.** Type anywhere to enter. `/` divides,
+- **The HP 50g you know, where you can see it.** Stack, soft menus, shifted
+  keys, VARS, CST, MODES, directories and `HALT`/`CONT` debugging, each
+  reachable from a labelled control.
+- **Keyboard first, mouse and touch friendly.** Type anywhere to enter.
   `⌘K` (Ctrl+K) searches everything, and every soft key, level and menu
-  works with a click or a tap.
+  works with a click or a tap. Swipe a level sideways to drop it.
 - **An equation writer that thinks with you.** Type `(x^5-1)/(x-1)` and it
   typesets as you go. Underneath, it shows the value, a plot, the
   simplification, the factorisation, the derivative, the zeros and even
   removable singularities.
-- **Previews before you commit.** Hover a soft key or a search result to see
-  exactly what it will do to your stack, and why it would fail if it can't
-  run.
+- **Previews before you commit.** Hover a soft key to see what it will do to
+  your stack, and why it would fail if it can't run.
 - **Errors that explain themselves.** "SIN can't use a string." The
-  offending level is outlined and one-click fixes are offered, with nothing
+  offending level is outlined, one-click fixes are offered, and nothing is
   lost.
 - **A tutor, not just an answer engine.** The optional assistant turns a
   physics or maths problem into steps you work through on your own stack.
-  It checks each step and gives hints before it gives answers.
-- **Installable and offline.** Pure static files, no build step and no
-  server. Once loaded it runs without a network and installs as an app.
+  It checks each step and gives hints before it gives answers. It runs on a
+  model you choose, on your own computer or through Ollama's cloud.
+- **Installable and offline.** Plain static files with no server behind
+  them. Once loaded, it runs without a network.
+
+**Contents:** [Get started](#get-started) ·
+[Five minutes with RPL](#five-minutes-with-rpl) · [Tour](#tour) ·
+[Set up the assistant](#set-up-the-assistant) ·
+[Limitations](#limitations) · [For developers](#for-developers) ·
+[Why this exists](#why-this-exists)
+
+---
+
+## Get started
+
+1. **Open [praevitium.github.io/rpl.ai](https://praevitium.github.io/rpl.ai/)**
+   in Chrome, Edge, Firefox or Safari, on a computer, tablet or phone.
+2. **Install it (optional).** Choose Help › Install as an app. The browser
+   asks you to confirm, or rpl.ai tells you where the browser keeps its
+   install command:
+   - Chrome and Edge: the install icon at the right of the address bar.
+   - Safari on a Mac: File › Add to Dock.
+   - iPhone and iPad: Share › Add to Home Screen.
+   - Android: the browser menu's Add to Home screen or Install app.
+   - Firefox can't install web apps, but rpl.ai works in a Firefox tab,
+     offline included.
+3. **Take the tour.** A short tour runs the first time. Replay it from
+   Help › Take the tour.
+
+After the first visit, rpl.ai runs offline. When you are online it checks
+for a new version, and an installed copy offers to reload when one is
+ready.
+
+Your stack, variables and settings stay in this browser on this device.
+Nothing is uploaded. To move them to another browser or keep a copy, use
+Back up everything in the Variables drawer, and Restore from file on the
+other side.
+
+### Five minutes with RPL
+
+RPL puts the numbers first and the operation last. Each value goes on the
+**stack**, and a command takes its arguments from the bottom of it.
+
+- **Arithmetic.** Type `24` Enter `15` Enter, then press × on the keypad
+  (or type `*` and Enter) for `360`. A whole line works too:
+  `2 3 + 4 *` gives `20`.
+- **Algebra.** Push `` `X^2-4` `` and run `FACTOR` for `(X−2)(X+2)`, or
+  `` `X^2-5*X+6=0` `X` SOLVE `` for `{ X=2 X=3 }`. Or press `⌘E`, type
+  `x^2-5x+6=0`, and click the Solve card.
+- **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
+  then gives `25`, and SQUARE appears on the VARS menu. A stored program
+  runs by name like a built-in. Built-in names such as `SQ` are reserved.
+- **Local variables.** `« 2 3 → a b « a b + a b * » » EVAL` leaves `5` and
+  `6`.
+- **Units.** `100_km 2_h /` gives `50._km/h`; then `1_m/s CONVERT` gives
+  `13.8888888889_m/s`.
+- **The stack.** Click a level to select it; its actions appear on the row
+  and in the menu bar. Double-click edits it in the right writer. Drag rows
+  to reorder them.
+
+### Keyboard
+
+On Windows and Linux, ⌘ is Ctrl and ⌥ is Alt.
+
+| Keys | Does |
+|---|---|
+| `⌘K` | Search commands, settings, variables and help |
+| `⌘E` · `⇧⌘M` | Equation writer · Matrix writer (press again to carry it to the command line) |
+| `⌘I` | Ask the assistant (or start a line with `?`) |
+| `F1`–`F6` · PgUp/PgDn | Soft keys · menu pages |
+| `↑` · `↓` on an empty line | Select level 1 · edit level 1 |
+| Enter · ⌫ · `→` on an empty line | DUP · DROP · SWAP |
+| With a level selected | `↑` `↓` move the selection · `⌘↑` `⌘↓` move the level · Enter edits · ⌫ drops · `⌘C` copies · `⌘D` picks |
+| `⌘Z` · `⇧⌘Z` | Undo · redo (text when the line has text, otherwise the stack) |
+| `⌘\` · `⌘;` · `⇧⌘F` | Tools drawer · keypad · Minimal view |
+| `⌘,` · `⌘/` | Settings · every shortcut, grouped by where it applies |
+| Tab | Complete a command or variable name; next box or next cell in the writers |
+| Esc | Close, deselect, dismiss, or cancel with Undo |
+
+Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
+
+### Touch
+
+- The on-screen keypad has the HP 50g's layout, shift keys included.
+- Swipe a stack level left or right to drop it. The toast's Undo brings it
+  back.
+- ⌫ and Enter sit beside the command line. ⌫ deletes a character, or drops
+  level 1 when the line is empty.
+- The equation writer has its own row of buttons (move, fraction, power,
+  root and parentheses), and so does the matrix writer (previous cell, next
+  cell and next row), each with ⌫ and Enter.
 
 ---
 
@@ -46,13 +134,19 @@ the browser. After that it opens like any other app and needs no network.
 
 Type maths the way you'd say it: `/` makes a fraction, `^` an exponent,
 `(` a group that closes itself, `sqrt(` or `sin(` a function, and `pi`
-becomes π. Tab leaves a box. The insight strip underneath recomputes as you
-type, and one click applies a result or opens the plot. Select any part with
-a click, a drag or ⇧← ⇧→, and a toolbar evaluates, simplifies, expands,
-factors or differentiates just that part. Enter pushes the expression, or
-replaces the level you were editing. Esc cancels, with Undo.
+becomes π. After a filled exponent, `+`, `-` and `=` carry on after the
+power, so `(x^5-1)/(x-1)` types as written; Tab leaves any box. Click to
+place the cursor. Select a part with a drag, `↑`, ⇧← ⇧→, or a click on a
+fraction bar or root sign, and a toolbar evaluates, simplifies, expands,
+factors or differentiates just that part.
 
-![The equation writer and its insight strip](screenshots/equation-writer.png)
+The insight strip underneath recomputes as you type, and one click applies
+a result or opens the plot. Its algebra runs in the background, so typing
+never waits on it, and a result that takes more than 3 seconds is skipped.
+Enter pushes the expression, or replaces the level you were editing. Esc
+cancels, with Undo. Switch to RPL and the formula moves to the command line.
+
+![The equation writer, its tap buttons and insight strip](screenshots/equation-writer.png)
 
 ### Walk me through a problem
 
@@ -60,15 +154,19 @@ In Tutor mode the assistant plans a solution as a few steps, and the
 calculator dry-runs every step before you see it. Each step explains the idea
 and shows the keystrokes. Press **Show me** to watch it happen, or
 **I'll do it** to press the keys yourself; the tutor checks your stack and
-says what's off. Hints come in stages. Choose Socratic or Direct in Settings.
+says what's off. Hints come in stages. Start it from the Tutor switch in the
+assistant, or Walk me through a problem in the Help menu. Choose Socratic or
+Direct in Settings.
 
 ![A tutor walkthrough of a projectile problem](screenshots/tutor.png)
 
 ### Know what a key will do
 
-Hover a soft key (or move through search results) and the stack shows the
-arguments it will take and the results it will leave, computed on a copy of
-your stack. Keys that need more arguments than the stack holds are dimmed.
+Hover a soft key or a Catalog Run button and the stack shows the arguments
+it will take and the results it will leave, computed on a copy of your
+stack. If it would fail, the culprit level is outlined and the reason shown.
+Keys that need more arguments than the stack holds are dimmed. Previews
+cover quick stack commands; algebra commands are not previewed.
 
 ![Previewing ROT before pressing it](screenshots/preview.png)
 
@@ -77,7 +175,7 @@ your stack. Keys that need more arguments than the stack holds are dimmed.
 Every error says what happened, why, and where. The culprit level is
 outlined, the command's stack diagram is quoted, and fixes are one click
 away: drop the bad value, swap levels, open the reference, or ask the
-assistant to explain.
+assistant to explain. A failed command leaves the stack as it was.
 
 ![An error banner with fixes](screenshots/errors.png)
 
@@ -94,16 +192,18 @@ window, or go full screen.
 ### Search everything
 
 `⌘K` finds commands (by name, description or topic), settings, modes, menus,
-variables and constants. The selected command shows what it would leave on
-your stack; `→` opens its reference page.
+variables and constants. For quick commands, the selected result shows what
+it would leave on your stack; `→` opens its reference page.
 
 ![Search with a result preview](screenshots/palette.png)
 
 ### Variables and directories
 
-Browse, run, recall, edit, rename, move and download variables. Drag them
-between folders or onto the breadcrumb, archive the whole HOME tree to
-backup ports, and import or export HP text files (`.rpl`).
+Browse, run, recall, edit, rename, move and download variables. Drag them to
+reorder, into folders or onto the breadcrumb. Back up the stack and the
+whole HOME tree to a JSON file and restore it, archive to backup ports, and
+import or export HP text files (`.rpl`). Paste a spreadsheet range into the
+matrix writer.
 
 ![The Variables drawer](screenshots/variables.png)
 
@@ -119,7 +219,8 @@ highlighted. Continue, Step or Stop from the banner (or `CONT`, `SST`,
 
 Graphite and Paper follow your system's dark or light setting; Classic LCD
 reimagines the original display. Minimal view strips everything back to the
-status line, the stack and the command line (`⇧⌘F`).
+status line, the stack and the command line (`⇧⌘F`); a setting keeps the
+soft keys.
 
 | Classic LCD | Paper |
 |:---:|:---:|
@@ -131,114 +232,278 @@ status line, the stack and the command line (`⇧⌘F`).
 
 ---
 
-## Getting started
+## Set up the assistant
 
-Open [praevitium.github.io/rpl.ai](https://praevitium.github.io/rpl.ai/)
-and install it: Help › Install as an app, or the browser's own Install
-(Chrome and Edge), File › Add to Dock (Safari on a Mac) or Share › Add to
-Home Screen (iPhone and iPad). From then on it opens like any other app and
-runs offline. A short tour runs on first launch; replay it from Help › Take
-the tour.
+The calculator needs none of this. The assistant is optional, and nothing
+leaves your browser until you connect a model.
 
-To work on it:
+It works with [Ollama](https://ollama.com), a free app that runs AI models
+on your own computer, and with other OpenAI-compatible servers. Each turn it
+reads the live stack, modes and variables, looks commands up in the built-in
+HP 50g reference, and dry-runs RPL on a scratch copy of the calculator
+before acting for real. Every action is shown as a card, and each turn can
+be undone in one click. Error banners and stack levels hand their context to
+it with Explain or Ask.
+
+Setup takes about ten minutes plus the model download. Ollama has to run on
+a computer (Mac, Windows or Linux); phones and tablets connect to one.
+
+### 1. Install Ollama
+
+- **macOS** (Sonoma 14 or newer): download
+  [Ollama.dmg](https://ollama.com/download/Ollama.dmg), drag Ollama to
+  Applications and open it. When it first opens, let it install the
+  command-line tool. A llama icon appears in the menu bar.
+- **Windows** (10 22H2 or newer): run
+  [OllamaSetup.exe](https://ollama.com/download/OllamaSetup.exe). No
+  administrator rights are needed. Ollama then runs in the background, with
+  an icon in the system tray. Open a *new* PowerShell or Terminal window
+  afterwards so the `ollama` command is found.
+- **Linux**: in a terminal, run
+  ```sh
+  curl -fsSL https://ollama.com/install.sh | sh
+  ```
+  It asks for your sudo password. If it says zstd is required, install it
+  (`sudo apt-get install zstd`, `sudo dnf install zstd` or
+  `sudo pacman -S zstd`) and run it again. On systems with systemd it
+  installs and starts a service named `ollama`; without systemd, start
+  Ollama yourself with `ollama serve`.
+
+To check it, open <http://localhost:11434>. It should say
+**Ollama is running**.
+
+### 2. Get a model
+
+The assistant works best with a model that supports **tools**, and larger
+models follow RPL better. Pick one:
+
+| Model | Where it runs | What you need |
+|---|---|---|
+| `qwen3.5` | your computer | about 14 GB of GPU memory or Mac unified memory |
+| `gemma4` | your computer | about 12 GB |
+| `gpt-oss:20b` | your computer | about 16 GB |
+| `qwen3.5:cloud`, `gpt-oss:120b-cloud` | Ollama's servers | an ollama.com account; see [Cloud models](#cloud-models) |
+
+Download a local one with, for example:
+
+```sh
+ollama pull qwen3.5
+```
+
+`ollama ls` lists your models, and `ollama show <model>` lists `tools`
+under Capabilities when the model supports them. Avoid older models such as
+`llama3.1`, `llama3.2` and `mistral`; Ollama itself flags them as poor at
+this kind of tool use. On a computer without a capable GPU, local models
+are slow; a cloud model is the better choice there.
+
+### 3. Let rpl.ai talk to Ollama
+
+Ollama answers only web pages it trusts. It trusts `localhost` out of the
+box, so it needs to be told about the hosted app. Set `OLLAMA_ORIGINS` to
+exactly `https://praevitium.github.io`: no `/rpl.ai`, no trailing slash.
+(For more than one origin, separate them with commas and no spaces; a
+malformed entry can stop Ollama from starting.) Then **quit Ollama
+completely and start it again**. A running Ollama doesn't see the change.
+
+- **macOS**: in Terminal, run
+  ```sh
+  launchctl setenv OLLAMA_ORIGINS "https://praevitium.github.io"
+  ```
+  Then click the menu-bar icon, choose **Quit Ollama**, and open Ollama
+  again from Applications. This setting is lost when you restart or log
+  out, and Ollama starts at login without it, so after a restart run the
+  line again and quit and reopen Ollama.
+- **Windows**: quit Ollama from the tray icon. Open Settings (Windows 11)
+  or Control Panel (Windows 10), search for "environment variables", and
+  choose **Edit environment variables for your account**. Click **New**,
+  enter the name `OLLAMA_ORIGINS` and the value
+  `https://praevitium.github.io`, and click OK. Start Ollama again from the
+  Start menu.
+- **Linux** (systemd service): run `sudo systemctl edit ollama`. In the
+  editor, between the two `###` comment lines near the top, type
+  ```ini
+  [Service]
+  Environment="OLLAMA_ORIGINS=https://praevitium.github.io"
+  ```
+  Save, exit, and run `sudo systemctl restart ollama`. If `OLLAMA_ORIGINS`
+  is already set there, add the origin to that value instead.
+- **Running `ollama serve` yourself** (macOS or Linux):
+  `OLLAMA_ORIGINS=https://praevitium.github.io ollama serve`.
+
+To confirm it worked, run this (on Windows, type `curl.exe`):
+
+```sh
+curl -i -H "Origin: https://praevitium.github.io" http://localhost:11434/api/version
+```
+
+A reply with `Access-Control-Allow-Origin: https://praevitium.github.io`
+means it worked. `403 Forbidden` means Ollama wasn't restarted or the value
+is mistyped.
+
+Don't use `OLLAMA_ORIGINS=*`: it lets every website you visit use your
+Ollama.
+
+### 4. Connect
+
+1. In rpl.ai, choose Help › Ask the assistant (`⌘I`) and click
+   **Enable assistant**.
+2. Click **+ Add endpoint**. The address is already
+   `http://localhost:11434/v1`; your models appear in the list once Ollama
+   answers.
+3. Pick a model and click **Add & connect**.
+
+The first time, your browser may ask whether the page may reach other apps
+and services on this device (Chrome, Edge and Firefox word it slightly
+differently). Choose **Allow**; the connection needs it. If you blocked it,
+click the icon to the left of the address, allow **Apps on device** (or
+**Local network access**) and reload.
+
+**Safari, and every browser on iPhone and iPad, can't do this step.** They
+block a secure page from calling `http://localhost`, with no prompt and no
+setting to change it. Use Chrome, Edge or Firefox on the computer, or run
+rpl.ai yourself (below).
+
+The assistant asks for a 32K-token context by default. On a computer with
+little memory, choose 8K or 16K under Context in the endpoint settings.
+Thinking models reason before answering unless you turn that off there.
+Ollama models that support tools get native tool calling; others write
+their tool calls as text.
+
+### Cloud models
+
+Ollama can run very large models on its own servers, so your computer only
+relays the requests. rpl.ai still talks to **your** Ollama, which needs the
+steps above.
+
+1. Create a free account at [ollama.com](https://ollama.com).
+2. On the computer running Ollama, run `ollama signin` and approve the
+   connection in the browser window it opens. (On a Mac or Windows PC, the
+   Ollama app's Settings can sign you in too.)
+3. Add a cloud model so it shows in rpl.ai's list. This fetches only a tiny
+   placeholder:
+   ```sh
+   ollama pull qwen3.5:cloud
+   ```
+   Cloud model names end in `-cloud` or `:cloud`. Browse them at
+   [ollama.com/search?c=cloud](https://ollama.com/search?c=cloud).
+4. In rpl.ai, open the endpoint settings and pick the cloud model.
+
+The free plan includes a small monthly allowance; more use needs credits or
+a paid plan ([pricing](https://ollama.com/pricing)). Ollama says it doesn't
+store cloud prompts or train on them. Local models never leave your
+computer.
+
+rpl.ai can't use Ollama's hosted API (`https://ollama.com/v1`) directly.
+Browsers can't call it from a web page, and Ollama asks that API keys stay
+out of browser code. The app says so if you try.
+
+### Other setups
+
+- **Run rpl.ai yourself.** With [Node.js](https://nodejs.org) installed,
+  clone this repository, run `npm install` once and `npm run serve`, and
+  open **http://localhost:5050**. From `localhost` every browser works,
+  Safari included, and Ollama needs no `OLLAMA_ORIGINS`.
+- **Ollama on another computer.** On that computer, turn on
+  Settings › Expose Ollama to the network (Mac and Windows app), or add
+  `Environment="OLLAMA_HOST=0.0.0.0:11434"` to the Linux service. Connect
+  to `http://<its address>:11434`. A secure page can't call a plain-HTTP
+  address on your network, so either open rpl.ai over plain HTTP from a
+  server you run (and add that page's origin to `OLLAMA_ORIGINS`), or put
+  Ollama behind HTTPS. Anyone on your network can use an exposed Ollama.
+- **Other OpenAI-compatible servers** work if they accept requests from a
+  web page. Put an API key in the endpoint settings if the server needs
+  one.
+
+### If it doesn't connect
+
+The endpoint form explains the failure it sees:
+
+| It says | Do this |
+|---|---|
+| answered but refused this page's origin | Set `OLLAMA_ORIGINS` (step 3), then quit and restart Ollama |
+| Nothing answered | Check that Ollama is running (<http://localhost:11434>), and allow the browser's prompt about apps on this device |
+| Safari … blocks HTTPS pages | Use Chrome, Edge or Firefox, or run rpl.ai yourself |
+| served over HTTPS … blocks plain-HTTP requests | See "Ollama on another computer" above |
+| `unauthorized` from a cloud model | Run `ollama signin` on the computer running Ollama |
+
+---
+
+## Limitations
+
+rpl.ai aims to keep everything that makes the HP 50g good, without its
+bugs, and to go beyond it where a modern screen helps. It isn't finished,
+and these are the gaps worth knowing about.
+
+**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 447. The
+Catalog and the command reference mark what is available. Not there yet:
+
+- program I/O: INPUT, INFORM, CHOOSE, DISP, CLLCD, FREEZE, MSGBOX, WAIT,
+  KEY and BEEP. Programs read their arguments from the stack, label results
+  with `→TAG` and pause with `PROMPT`.
+- PICT and the plot-setup commands (PVIEW, ERASE, AXES, XRNG, YRNG, STEQ and
+  the rest)
+- the ΣDAT commands (Σ+, CLΣ, XCOL, YCOL, NDIST and the rest)
+- MENU and TMENU, UNROT, CLVAR, DEF and DEFINE
+- parts of the CAS, such as TAYLR, SERIES, DESOLVE, LINSOLVE, LDEC and
+  ZEROS (SOLVE and ISOL are here)
+
+**Left out on purpose.** USER mode and key assignments, ENTRY mode, the
+NUM.SLV solver screens, FINANCE, TIME, OFF, libraries (LIB, ATTACH and
+port management other than ARCHIVE and RESTORE), Saturn assembly and
+System RPL, and IR and serial transfer.
+
+**Behaviour that differs from the HP 50g.**
+
+- Statistics commands take a vector, or a matrix of columns, from the stack
+  instead of reading ΣDAT.
+- Plot commands open the plot view instead of drawing into PICT.
+- There is no ON key to break a running program. A command or program that
+  runs longer than 10 seconds is stopped, the stack is put back, and the
+  error says why. A loop stops after 1,000,000 passes.
+- Some finer points still differ and are being fixed: system flags such as
+  `-105 SF` don't yet switch the modes, `FOR` counters are ordinary
+  variables rather than locals, and `'X' EVAL` returns the name instead of
+  its value.
+
+**The algebra engine.** Giac is not the HP 49/50's CAS, so answers can come
+back in a different but equivalent form. It is an 11.8 MB download, fetched
+once. One CAS command, such as factoring a huge polynomial, can't be
+interrupted: the page stops responding until it finishes. The equation
+writer's insights and the previews never wait on it.
+
+**Your data.** The stack and variables live in this browser's storage on
+this device. They don't sync, and clearing the site's data, or closing a
+private window, erases them. Back them up with Back up everything in the
+Variables drawer.
+
+**The assistant.** It is only as good as the model you connect, and small
+models make mistakes in RPL; check its work, and use Undo freely. It needs
+Ollama or a compatible server, it can't use ollama.com's API directly, and
+Safari and iPhone or iPad browsers can't reach a local Ollama from the
+hosted app.
+
+**Browsers.** Firefox runs rpl.ai but can't install it as an app. The first
+visit needs a network connection; after that it works offline.
+
+---
+
+## For developers
 
 ```bash
 npm install      # one-time setup
 npm run serve    # http://localhost:5050
 ```
 
-The app is the static files in `www/`, and any static web server can host
-them. Browsers won't run it from `file://`, because ES modules and the Giac
-WebAssembly need http(s). Every push to `main` publishes `www/` to GitHub
-Pages.
+The app is the static files in `www/`: plain ES modules with no bundler.
+`www/precache.js` and `www/src/build-info.js` are generated by
+`npm run build-info`, which `npm install`, `npm run serve` and the Pages
+deploy run for you; they are not checked in. Any static web server can
+host `www/` after that. Browsers won't run it from `file://`, because ES
+modules and the Giac WebAssembly need http(s), and they install it and keep
+it offline only over https or on localhost. Every push to `main` publishes
+`www/` to GitHub Pages.
 
-### Five minutes with RPL
-
-- **Stack arithmetic.** `24` Enter `15` Enter `*` leaves `360`. A whole
-  line works too: `2 3 + 4 *` gives `20`.
-- **Algebra.** Push `` `X^2-4` `` and run `FACTOR` for `(X−2)(X+2)`, or
-  `` `X^2-5*X+6=0` `X` SOLVE `` for `{ X=2 X=3 }`. Or press `⌘E`, type
-  `x^2-5x+6=0`, and click the Solve card.
-- **Programs.** `` « DUP * » `SQ` STO `` stores a program; `5 SQ` then gives
-  `25`, and SQ appears on the VARS menu. User programs and built-ins share
-  one namespace.
-- **Local variables.** `« 2 3 → a b « a b + a b * » » EVAL` leaves `5` and
-  `6`.
-- **Units.** `100_km 2_h /` gives `50_km/h`; `1_km/h CONVERT` converts.
-- **The stack.** Click a level to select it; its actions appear on the row
-  and in the menu bar. Double-click edits it in the right writer. Drag rows
-  to reorder them.
-
-### Keyboard
-
-| Keys | Does |
-|---|---|
-| `⌘K` / Ctrl+K | Search commands, settings, variables and help |
-| `⌘E` · `⇧⌘M` | Equation writer · Matrix writer |
-| `⌘I` | Ask the assistant (or start a line with `?`) |
-| `F1`–`F6` · PgUp/PgDn | Soft keys · menu pages |
-| `↑` · `↓` on an empty line | Select level 1 · edit level 1 |
-| Enter · ⌫ · `→` on an empty line | DUP · DROP · SWAP |
-| `⌘Z` · `⇧⌘Z` | Undo · redo (text when the line has text, otherwise the stack) |
-| `⌘\` · `⌘;` · `⇧⌘F` | Tools drawer · keypad · Minimal view |
-| Tab | Complete a command name, or leave a box in the equation writer |
-| Esc | Close, deselect, dismiss, or cancel with Undo |
-
-Hold ⌥ (Alt) to see each keypad key's keyboard shortcut. `⌘/` lists every
-shortcut, grouped by where it applies.
-
-### The assistant
-
-The assistant is optional and uses a model you choose: any Ollama or
-OpenAI-compatible endpoint. Nothing is sent anywhere until you connect one.
-Each turn it reads the live stack, modes and variables, and looks commands
-up in the built-in HP 50g reference. It dry-runs RPL on a scratch copy of the
-calculator, then acts for real. Every action is shown as a card, and each
-turn can be undone in one click. Error banners and stack levels can hand
-their context to it with Explain or Ask.
-
-- Local Ollama is `http://localhost:11434`. When opening rpl.ai from another
-  machine, add its address to `OLLAMA_ORIGINS` where Ollama runs.
-- For Ollama's cloud models, run `ollama signin` on the machine running
-  Ollama and choose a model whose name ends in `-cloud`. Browsers can't call
-  ollama.com directly.
-- Models that advertise tools get native tool calling, and reasoning models
-  think before answering. Strong models tutor best.
-
----
-
-## What's implemented
-
-The stack engine, the RPL parser and evaluator, structured control flow
-(`IF`, `WHILE`, `DO`, `FOR`, `START`, `CASE`, `IFERR`), compiled local
-environments (`→ a b « … »`) and suspended execution (`HALT`, `CONT`, `SST`,
-`KILL`) are complete. The HP 50g command set is covered: 453 commands.
-Shipped commands are the `register` calls under `www/src/rpl/ops/`.
-
-Left out on purpose:
-
-- USER mode and keyboard assignments
-- ENTRY mode
-- S.SLV (algebraic solver screens)
-- NUM.SLV (numeric solver screens)
-- FINANCE (TVMROOT, AMORT, and the rest of that menu)
-- TIME (DATE, TIME, TICKS, and the rest of that menu)
-- DEF
-- Screen and keyboard I/O inside programs (INPUT, INFORM, CHOOSE, DISP,
-  CLLCD, FREEZE, MSGBOX, WAIT, KEY, BEEP); programs read their arguments from
-  the stack, label results with →TAG and pause with PROMPT
-- LIB, LIBS, ATTACH, DETACH, and port management
-- OFF
-- Saturn assembly and System RPL
-- hardware and IR/serial communication
-
-The guiding principle is **functionality over compatibility**: where a
-modern interaction is clearer than an original calculator prompt, the modern
-one wins, and the keys keep their muscle memory.
-
----
-
-## Project layout
+### Project layout
 
 ```
 www/                  The app: static files served as-is
@@ -248,28 +513,43 @@ www/                  The app: static files served as-is
   src/rpl/            Stack engine, parser, evaluator, formatter, persistence
   src/rpl/ops/        Command families; src/rpl/ops.js re-exports the registry
   src/rpl/cas/        Giac adapter and AST↔Giac conversion
-  src/ui/             Stack display, input and writers, menus, keypad, drawers, search
+  src/ui/             Stack display, input and writers, menus, keypad, drawers, plots, search
   src/ai/             Assistant: chat, tools, tutor, endpoint client
   css/                Design tokens, themes and components
-  vendor/             Giac, decimal.js, fraction.js, complex.js, CodeMirror, KaTeX
+  docs/               HP 50g command reference behind the Catalog and help
+  fonts/              IBM Plex subsets
+  icons/, manifest.webmanifest   App icons and install manifest
+  hp50-all.json       Example variables loaded on first launch
+  vendor/             Giac, decimal.js, fraction.js, complex.js, CodeMirror, KaTeX, Mermaid
 tests/                Node test suites, one area per file
-scripts/              Build info, offline precache, README screenshots
+scripts/              Build info, offline precache, README screenshots, command-reference upkeep
 screenshots/          Images used above
+utils/                Pre-commit hook: sanity smoke, optional full and persist suites
+.github/workflows/    Publishes www/ to GitHub Pages on every push to main
 ```
 
-## Testing
+Shipped commands are the `register` calls under `www/src/rpl/ops/`.
+
+### Testing
 
 The tests are plain Node ES modules with no framework:
 
 ```bash
-npm test                          # everything
-node tests/test-equation-editor.mjs   # one area
-node tests/flake-scan.mjs         # repeat runs to catch order sensitivity
+npm test                                  # every area except persistence
+node tests/test-persist.mjs               # save, load, export and backups
+node tests/test-equation-editor.mjs       # one area
+node tests/flake-scan.mjs                 # rerun the suite to catch flaky results
+node tests/flake-bisect.mjs --label "…"   # find the file order that breaks an assertion
 ```
 
-`npm run screenshots` regenerates the images in this README
-(`RPLAI_SCREENSHOT_LLM` and `RPLAI_SCREENSHOT_MODEL` add the assistant
-scene).
+In Node the CAS answers come from Giac fixtures each test registers; the
+real Giac WebAssembly runs only in the browser.
+
+`npm run screenshots` regenerates the images in this README. It drives a
+local Chrome through Playwright (`CHROME_PATH` points it at another
+browser). Name scenes to redo only those: `npm run screenshots -- hero
+phone`. `RPLAI_SCREENSHOT_LLM` and `RPLAI_SCREENSHOT_MODEL` add the
+assistant scene.
 
 What changed is in [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
@@ -280,7 +560,7 @@ What changed is in [RELEASE_NOTES.md](RELEASE_NOTES.md).
 I've always loved the HP 48/49/50 interface. RPL's stack makes a calculation
 read the way you'd work it by hand: operands first, then the operation. User
 programs are first-class: store one under a name and it behaves exactly like
-a built-in. The hardware aged. Emulators kept the 128×80 screen, and the HP
+a built-in. The hardware aged. Emulators kept the 131×80 screen, and the HP
 Prime left too much of the language behind. I wanted RPL with a big screen,
 a real keyboard, deep undo and a proper file manager. When AI-assisted
 development made a project of this scope practical, rpl.ai is what came out
@@ -298,7 +578,10 @@ rpl.ai bundles or depends on:
   **[complex.js](https://github.com/rawify/Complex.js)** (MIT): decimal,
   rational and complex arithmetic
 - **[CodeMirror 6](https://codemirror.net/)** (MIT): the command line
-- **[KaTeX](https://katex.org/)** (MIT): math in the assistant's replies
+- **[KaTeX](https://katex.org/)** (MIT): math in the assistant's replies,
+  and the ∠ glyph
+- **[Mermaid](https://mermaid.js.org/)** (MIT): diagrams in the assistant's
+  replies
 - **[IBM Plex](https://www.ibm.com/plex/)** (OFL): the typefaces
 
 See [NOTICE](NOTICE) for full attribution.

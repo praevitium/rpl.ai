@@ -1,7 +1,7 @@
-rp5050ai — RPL Scientific Calculator
-=====================================
+rpl.ai — RPL Scientific Calculator
+==================================
 
-rp5050ai is licensed under the GNU General Public License v3.0 or later.
+rpl.ai is licensed under the GNU General Public License v3.0 or later.
 See LICENSE for the full text. SPDX-License-Identifier: GPL-3.0-or-later.
 
 This distribution bundles the following third-party components.
@@ -25,7 +25,7 @@ Giac / Xcas
   so for an HP 50g emulator, Giac is the most lineage-appropriate
   open-source CAS available.
 
-  Because Giac is GPL-3.0+, rp5050ai as a whole is distributed under
+  Because Giac is GPL-3.0+, rpl.ai as a whole is distributed under
   GPL-3.0-or-later. You may not relicense this project under a more
   permissive license while Giac remains bundled.
 
@@ -33,6 +33,39 @@ Giac / Xcas
 GMP / MPFR / MPFI  (transitively compiled into Giac's WebAssembly)
   License:    GNU Lesser General Public License (LGPL)
   Role:       Arbitrary-precision arithmetic libraries used by Giac.
+
+-----------------------------------------------------------------
+decimal.js
+  Location:   www/vendor/decimal.js/
+  Copyright:  © Michael Mclaughlin
+  License:    MIT License (www/vendor/decimal.js/LICENSE)
+  Upstream:   https://github.com/MikeMcl/decimal.js
+  Role:       Decimal arithmetic for real numbers.
+
+-----------------------------------------------------------------
+Fraction.js and Complex.js
+  Location:   www/vendor/fraction.js/, www/vendor/complex.js/
+  Copyright:  © Robert Eisele
+  License:    MIT License (LICENSE in each folder)
+  Upstream:   https://github.com/rawify/Fraction.js
+              https://github.com/rawify/Complex.js
+  Role:       Rational and complex arithmetic.
+
+-----------------------------------------------------------------
+CodeMirror 6
+  Location:   www/vendor/codemirror/
+  Copyright:  © Marijn Haverbeke and others
+  License:    MIT License
+  Upstream:   https://codemirror.net/
+  Role:       The command-line editor.
+
+-----------------------------------------------------------------
+Mermaid
+  Location:   www/vendor/mermaid/
+  Copyright:  © Knut Sveidqvist
+  License:    MIT License (www/vendor/mermaid/LICENSE)
+  Upstream:   https://mermaid.js.org/
+  Role:       Diagrams in the assistant's replies.
 
 -----------------------------------------------------------------
 KaTeX

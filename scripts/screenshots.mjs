@@ -59,7 +59,8 @@ async function casReady(page) {
   });
 }
 
-const prefs = (extra = {}) => ({ tourSeen: true, ...extra });
+const prefs = (extra = {}) => ({ tourSeen: true, menu: 'STACK', ...extra });
+const saveUi = (ui) => localStorage.setItem('rplai.ui', JSON.stringify(ui));
 
 const SCENES = [
   {
@@ -78,17 +79,15 @@ const SCENES = [
     async setup(page) {
       await casReady(page);
       await page.evaluate(() => window.__hp50.setInputMode('equation'));
-      await page.keyboard.type('(x^5');
-      await page.keyboard.press('Tab');
-      await page.keyboard.type('-1)/(x-1');
+      await page.keyboard.type('(x^5-1)/(x-1');
       await page.waitForTimeout(1200);
     },
   },
   {
     name: 'tutor',
     viewport: { width: 1440, height: 900 },
-    init: () => {
-      localStorage.setItem('rplai.ui', JSON.stringify({ tourSeen: true }));
+    init: (ui) => {
+      localStorage.setItem('rplai.ui', JSON.stringify(ui));
       localStorage.setItem('rpl5050.chatbot.consented.v1', '1');
     },
     async setup(page) {
@@ -153,9 +152,9 @@ const SCENES = [
     viewport: { width: 1280, height: 800 },
     async setup(page) {
       await casReady(page);
-      await enter(page, "'X^3-6*X^2+11*X-6=0'", "'X'");
+      await enter(page, '12', '5');
       await page.keyboard.press('ControlOrMeta+k');
-      await page.keyboard.type('solv', { delay: 40 });
+      await page.keyboard.type('power', { delay: 40 });
       await page.waitForTimeout(300);
     },
   },
@@ -171,7 +170,6 @@ const SCENES = [
   {
     name: 'classic',
     viewport: { width: 1280, height: 800 },
-    init: (ui) => localStorage.setItem('rplai.ui', JSON.stringify(ui)),
     initArg: prefs({ theme: 'classic' }),
     async setup(page) {
       await casReady(page);
@@ -192,7 +190,6 @@ const SCENES = [
   {
     name: 'minimal',
     viewport: { width: 1280, height: 800 },
-    init: (ui) => localStorage.setItem('rplai.ui', JSON.stringify(ui)),
     initArg: prefs({ minimal: true }),
     async setup(page) {
       await casReady(page);
@@ -248,8 +245,7 @@ function frameHtml(png, { width, height }, phone) {
 
 async function capture(browser, base, scene) {
   const context = await browser.newContext({ viewport: scene.viewport, deviceScaleFactor: SCALE, colorScheme: scene.scheme ?? 'dark' });
-  if (scene.init) await context.addInitScript(scene.init, scene.initArg);
-  else await context.addInitScript((ui) => localStorage.setItem('rplai.ui', JSON.stringify(ui)), prefs());
+  await context.addInitScript(scene.init ?? saveUi, scene.initArg ?? prefs());
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));

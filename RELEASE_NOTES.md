@@ -9,7 +9,7 @@
 rpl.ai is a modern, high-resolution reimplementation of the HP 50g
 graphing calculator. It preserves everything that made the HP 50g exceptional
 — the RPN/RPL stack model, the User-RPL programming language, and the full
-AUR command surface — while replacing the original's 128×80 monochrome LCD
+AUR command surface — while replacing the original's 131×80 monochrome LCD
 with a crisp, resizable UI and swapping its 1990s-era CAS for
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html), the
 same symbolic engine Bernard Parisse (author of the HP 48/49/50g "erable" CAS)
