@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.5.2 (2026-09-29)
+**Latest release:** v0.5.3 (2026-09-29)
 
 ---
 
@@ -18,6 +18,14 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.5.3 — 2026-09-29
+
+rpl.ai is online at https://praevitium.github.io/rpl.ai/ and installs
+straight from there, with nothing to download or run first. Every push
+to main republishes it, and installed copies offer the update.
 
 ---
 
