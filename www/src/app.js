@@ -477,6 +477,10 @@ class App {
     d.onRowDoubleClick = (level) => this.editLevel(level);
     d.onRowAction = (level, act, el) => this.levelAction(act, level, el);
     d.onRowMove = (from, to) => this._moveLevel(from, to);
+    d.onRowSwipe = (level) => {
+      this.levelAction('drop', level);
+      this.toast(`Dropped level ${level}`, { action: 'Undo', onAction: () => this.runAction('edit.undo') });
+    };
     d.onStatusAction = (kind, data, el) => {
       if (kind === 'mode') this.appbar.openModeMenu(data.mode, el);
       else if (kind === 'path') this.navigateToPathSegment(Number(data.index));

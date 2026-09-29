@@ -142,6 +142,7 @@ export class Display {
     this.onRowDoubleClick = null;
     this.onRowAction = null;
     this.onRowMove = null;
+    this.onRowSwipe = null;
     this.onStatusAction = null;
     this.onEmptyAction = null;
     this._ids = new WeakMap();
@@ -154,8 +155,8 @@ export class Display {
 
   _installHandlers() {
     const view = this.stackView;
-    if (!view || typeof view.addEventListener !== 'function') return;
     view.addEventListener('click', (ev) => {
+      if (performance.now() - this._swipedAt < 400) return;
       const empty = ev.target.closest?.('[data-empty-act]');
       if (empty) { this.onEmptyAction?.(empty.dataset.emptyAct, empty); return; }
       const row = ev.target.closest?.('.st-row[data-level]');
@@ -198,11 +199,66 @@ export class Display {
       this._dragLevel = null;
       view.querySelectorAll('.dragging, .drag-over').forEach((el) => el.classList.remove('dragging', 'drag-over'));
     });
+    this._installSwipe(view);
     view.addEventListener('scroll', () => this._updateMore(), { passive: true });
+    const statusAction = (el) => this.onStatusAction?.(el.dataset.status, el.dataset, el);
     this.statusLine?.addEventListener?.('click', (ev) => {
       const el = ev.target.closest?.('[data-status]');
-      if (el) this.onStatusAction?.(el.dataset.status, el.dataset, el);
+      if (el) statusAction(el);
     });
+    this.statusLine?.addEventListener?.('keydown', (ev) => {
+      const el = (ev.key === 'Enter' || ev.key === ' ') && ev.target.closest?.('[data-status][role="button"]');
+      if (!el) return;
+      ev.preventDefault();
+      statusAction(el);
+    });
+  }
+
+  _installSwipe(view) {
+    this._swipedAt = -Infinity;
+    let swipe = null;
+    view.addEventListener('pointerdown', (ev) => {
+      if (ev.pointerType === 'mouse' || !ev.isPrimary || ev.target.closest?.('.st-acts')) return;
+      const row = ev.target.closest?.('.st-row[data-key]');
+      if (row) swipe = { row, id: ev.pointerId, x: ev.clientX, y: ev.clientY, dx: 0, active: false };
+    });
+    view.addEventListener('pointermove', (ev) => {
+      if (swipe?.id !== ev.pointerId) return;
+      const dx = ev.clientX - swipe.x;
+      if (!swipe.active) {
+        if (Math.abs(ev.clientY - swipe.y) > 10) { swipe = null; return; }
+        if (Math.abs(dx) < 10) return;
+        swipe.active = true;
+        swipe.row.setPointerCapture?.(ev.pointerId);
+        swipe.row.classList.add('swiping');
+      }
+      swipe.dx = dx;
+      const width = swipe.row.offsetWidth || 1;
+      swipe.row.style.transform = `translateX(${dx}px)`;
+      swipe.row.style.opacity = String(1 - Math.min(0.6, Math.abs(dx) / width));
+      swipe.row.classList.toggle('swipe-armed', Math.abs(dx) > swipeThreshold(width));
+    });
+    const end = (ev) => {
+      if (swipe?.id !== ev.pointerId) return;
+      const { row, dx, active } = swipe;
+      swipe = null;
+      if (!active) return;
+      this._swipedAt = performance.now();
+      const width = row.offsetWidth || 1;
+      const drop = ev.type === 'pointerup' && Math.abs(dx) > swipeThreshold(width);
+      const to = drop ? Math.sign(dx) * width : 0;
+      const settle = () => {
+        row.classList.remove('swiping', 'swipe-armed');
+        row.style.transform = '';
+        row.style.opacity = '';
+        if (drop) this.onRowSwipe?.(Number(row.dataset.level));
+      };
+      if (prefersReducedMotion() || !row.animate) { settle(); return; }
+      const anim = row.animate([{ transform: `translateX(${dx}px)` }, { transform: `translateX(${to}px)`, opacity: drop ? 0 : 1 }], { duration: 160, easing: 'ease-out', fill: 'forwards' });
+      anim.onfinish = () => { anim.cancel(); settle(); };
+    };
+    view.addEventListener('pointerup', end);
+    view.addEventListener('pointercancel', end);
   }
 
   _idOf(value) {
