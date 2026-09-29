@@ -52,6 +52,10 @@ const isBrowser =
   typeof globalThis.document !== "undefined" &&
   typeof globalThis.window !== "undefined";
 
+// A worker (the equation writer's insights) loads its own copy with
+// importScripts, so a slow call there can be cut off by terminating it.
+const isWorker = typeof globalThis.importScripts === "function";
+
 // Previews run a command speculatively on every hover.  A Giac call cannot
 // be interrupted, so while one is held the CAS refuses instead of starting.
 let casHeld = 0;
@@ -117,15 +121,15 @@ class BrowserGiacEngine {
         // shim before the wasm script attaches so those lookups resolve.
         // Idempotent: don't clobber if a richer UI object is already
         // present (e.g. embedded inside a larger Xcas page).
-        if (!window.UI) {
-          window.UI = {
+        if (!globalThis.UI) {
+          globalThis.UI = {
             warnpy: false,            // suppress Python-warning channel
             Datestart: Date.now(),    // baseline for emscripten timing
           };
         }
 
-        // Emscripten reads window.Module before giacwasm.js attaches.
-        window.Module = {
+        // Emscripten reads the global Module before giacwasm.js attaches.
+        globalThis.Module = {
           noExitRuntime: true,
           print: function (_t) { /* silent; uncomment for debug */ },
           printErr: function (_t) { /* silent; uncomment for debug */ },
@@ -135,7 +139,7 @@ class BrowserGiacEngine {
           },
           onRuntimeInitialized: () => {
             try {
-              this._caseval = window.Module.cwrap("caseval", "string", ["string"]);
+              this._caseval = globalThis.Module.cwrap("caseval", "string", ["string"]);
               this._resolved = true;
               resolve();
             } catch (e) {
@@ -146,6 +150,10 @@ class BrowserGiacEngine {
             reject(new Error(`Giac aborted: ${(reason && reason.message) || reason}`));
           },
         };
+        if (isWorker) {
+          importScripts("/vendor/giac/giacwasm.js");
+          return;
+        }
         const script = document.createElement("script");
         script.src = "/vendor/giac/giacwasm.js";
         script.async = true;
@@ -257,7 +265,7 @@ class MockGiacEngine {
    Singleton export.
    ------------------------------------------------------------------ */
 
-export const giac = isBrowser ? new BrowserGiacEngine() : new MockGiacEngine();
+export const giac = isBrowser || isWorker ? new BrowserGiacEngine() : new MockGiacEngine();
 
 // Named exports for environment-specific access in tests. Production
 // code should only import { giac }.

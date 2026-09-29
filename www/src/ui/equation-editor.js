@@ -7,6 +7,7 @@ import { Symbolic, Name, Real, isSymbolic, isNumber, isName, isInteger, isReal, 
 import { format } from '../rpl/formatter.js';
 import { RPLError, Stack } from '../rpl/stack.js';
 import { lookup } from '../rpl/ops.js';
+import { parseEntry } from '../rpl/parser.js';
 import { _astToRplValue } from '../rpl/ops/internal.js';
 import { giac } from '../rpl/cas/giac-engine.mjs';
 import { state as calcState, toRadians, fromRadians } from '../rpl/state.js';
@@ -1415,6 +1416,10 @@ export function equationInsights(ast, { variable = primaryVariable(ast), numeric
   return out;
 }
 
+export function writerInsights(ast, variable, cas) {
+  return equationInsights(ast, { variable, numeric: (a, env) => evalNumeric(a, env, angleOpts()), cas });
+}
+
 export function applyOpsToAst(ast, ops) {
   const stack = new Stack();
   stack.push(Symbolic(ast));
@@ -1524,6 +1529,7 @@ export function physicalFace(event) {
 const INSIGHT_DELAY_MS = 200;
 const SELECTING_FACES = new Set(['⇧◀', '⇧▶', 'RS▲', 'RS◀', 'RS▶', '▲', '▼']);
 const INSIGHT_CAS_SOURCE_LIMIT = 160;
+const INSIGHT_CAS_TIMEOUT_MS = 3000;
 const SIZE = Object.freeze({ normal: 28, big: 38 });
 
 const SELECTION_TOOLS = Object.freeze([
@@ -1577,6 +1583,90 @@ function sparklineSvg(ast, variable) {
 function insightNote(title, text) {
   return `<div class="ins-note"><small>${escapeHtml(title)}</small><span>${escapeHtml(text)}</span></div>`;
 }
+
+function loadingNote() {
+  return insightNote('Algebra engine', 'Loading. Simplify, factor and solve appear here when it is ready.');
+}
+
+function reviveInsight(insight) {
+  if (insight.kind !== 'solve') return insight;
+  try { return { ...insight, value: parseEntry(insight.value)[0] }; }
+  catch { return null; }
+}
+
+class InsightWorker {
+  constructor() {
+    this.worker = null;
+    this.ready = false;
+    this.broken = typeof Worker !== 'function';
+    this.running = null;
+    this.queued = null;
+    this.seq = 0;
+  }
+
+  request(ast, variable) {
+    this.queued?.resolve(null);
+    const modes = { angle: calcState.angle, approxMode: calcState.approxMode, complexMode: calcState.complexMode, casVx: calcState.casVx };
+    return new Promise((resolve, reject) => {
+      this.queued = { ast, variable, modes, resolve, reject };
+      this._pump();
+    });
+  }
+
+  _pump() {
+    if (!this.worker) this._spawn();
+    if (!this.ready || this.running || !this.queued) return;
+    const job = this.queued;
+    this.queued = null;
+    job.id = ++this.seq;
+    job.timer = setTimeout(() => this._stop(job), INSIGHT_CAS_TIMEOUT_MS);
+    this.running = job;
+    this.worker.postMessage({ id: job.id, ast: job.ast, variable: job.variable, modes: job.modes });
+  }
+
+  _spawn() {
+    this.ready = false;
+    this.worker = new Worker(new URL('./insight-worker.js', import.meta.url));
+    this.worker.onmessage = ({ data }) => this._receive(data);
+    this.worker.onerror = () => this._fail();
+  }
+
+  _receive(data) {
+    if (data.ready) { this.ready = true; this._pump(); return; }
+    if (data.failed) { this._fail(); return; }
+    const job = this.running;
+    if (job?.id !== data.id) return;
+    clearTimeout(job.timer);
+    this.running = null;
+    if (data.error) job.reject(new Error(data.error));
+    else job.resolve(data.insights.map(reviveInsight).filter(Boolean));
+    this._pump();
+  }
+
+  _stop(job) {
+    if (this.running !== job) return;
+    this.running = null;
+    this.worker.terminate();
+    this.worker = null;
+    job.reject(new Error('The algebra engine took too long'));
+    if (this.queued) this._pump();
+  }
+
+  _fail() {
+    this.broken = true;
+    this.worker?.terminate();
+    this.worker = null;
+    for (const job of [this.running, this.queued]) {
+      if (!job) continue;
+      clearTimeout(job.timer);
+      job.reject(new Error('The insight worker failed'));
+    }
+    this.running = null;
+    this.queued = null;
+  }
+}
+
+const insightWorker = new InsightWorker();
 
 export class EquationEditor {
   constructor({ app } = {}) {
@@ -2007,18 +2097,30 @@ export class EquationEditor {
     try { ast = toAst(state.root); }
     catch (error) { this._showInsightNote('Not finished', error.message); return; }
     const source = formatAlgebra(ast);
-    const cas = giac.isReady() && source.length <= INSIGHT_CAS_SOURCE_LIMIT;
-    const key = `${source}|${cas}|${calcState.angle}|${calcState.casVx}`;
+    const variable = primaryVariable(ast, calcState.casVx);
+    const offPage = !insightWorker.broken;
+    const cas = source.length <= INSIGHT_CAS_SOURCE_LIMIT && (offPage || giac.isReady());
+    const key = `${source}|${cas}|${offPage}|${calcState.angle}|${calcState.casVx}`;
     if (key === this._insightFor) return;
     this._insightFor = key;
-    this.insights = equationInsights(ast, {
-      variable: primaryVariable(ast, calcState.casVx),
-      numeric: (a, env) => evalNumeric(a, env, angleOpts()),
-      cas,
+    if (!cas || !offPage) {
+      this._showInsights(writerInsights(ast, variable, cas), { note: giac.isReady() ? '' : loadingNote() });
+      return;
+    }
+    this._showInsights(writerInsights(ast, variable, false), { pending: true, note: insightWorker.ready ? '' : loadingNote() });
+    insightWorker.request(ast, variable).then((insights) => {
+      if (insights && key === this._insightFor) this._showInsights(insights);
+    }, () => {
+      if (key !== this._insightFor) return;
+      if (insightWorker.broken) this.refreshInsights();
+      else this._showInsights(this.insights, { note: insightNote('Skipped', 'The algebra engine took too long on this one.') });
     });
-    const cards = this.insights.map((insight, i) => this._insightHtml(insight, i)).join('');
-    const loading = giac.isReady() ? '' : insightNote('Algebra engine', 'Loading. Simplify, factor and solve appear here when it is ready.');
-    this.strip.innerHTML = cards + loading || insightNote('Nothing to add', 'The CAS has no simpler form for this one.');
+  }
+
+  _showInsights(insights, { pending = false, note = '' } = {}) {
+    this.insights = insights;
+    const cards = insights.map((insight, i) => this._insightHtml(insight, i)).join('');
+    this.strip.innerHTML = cards + note || (pending ? '' : insightNote('Nothing to add', 'The CAS has no simpler form for this one.'));
   }
 
   _showInsightNote(title, text) {
