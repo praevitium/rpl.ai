@@ -207,8 +207,14 @@ export class Display {
     view.addEventListener('pointerdown', (ev) => {
       if (ev.pointerType === 'mouse' || !ev.isPrimary || ev.target.closest?.('.st-acts')) return;
       const row = ev.target.closest?.('.st-row[data-key]');
-      if (row) swipe = { row, id: ev.pointerId, x: ev.clientX, y: ev.clientY, dx: 0, active: false };
+      if (row) swipe = { row, id: ev.pointerId, pen: ev.pointerType === 'pen', x: ev.clientX, y: ev.clientY, dx: 0, active: false };
     });
+    // A pen press would start the rows' native drag before it moves far enough to swipe.
+    view.addEventListener('dragstart', (ev) => {
+      if (!swipe?.pen) return;
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+    }, true);
     view.addEventListener('pointermove', (ev) => {
       if (swipe?.id !== ev.pointerId) return;
       const dx = ev.clientX - swipe.x;
