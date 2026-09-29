@@ -29,6 +29,12 @@ export class InputArea {
     this.go.title = 'Enter';
     this.go.setAttribute('aria-label', 'Enter');
     this.go.innerHTML = icon('enter', 'sm');
+    this.back = document.createElement('button');
+    this.back.type = 'button';
+    this.back.className = 'cmdline-go cmdline-back';
+    this.back.title = 'Backspace (DROP on an empty line)';
+    this.back.setAttribute('aria-label', 'Backspace');
+    this.back.innerHTML = icon('back', 'sm');
     this.badge = document.createElement('span');
     this.badge.className = 'cmdline-badge';
     this.badge.textContent = 'ASK ✦';
@@ -40,16 +46,16 @@ export class InputArea {
       if (b.dataset.in === 'ask') app.runAction('assistant.ask');
       else app.setInputMode(b.dataset.in);
     });
-    this.go.addEventListener('mousedown', (e) => e.preventDefault());
+    for (const button of [this.go, this.back]) button.addEventListener('mousedown', (e) => e.preventDefault());
     this.go.addEventListener('click', () => app.commitEntry());
+    this.back.addEventListener('click', () => app.backspace());
     cmdline.addEventListener('mousedown', (e) => {
       if (e.target === cmdline) { e.preventDefault(); app.entry.focus(); }
     });
   }
 
   attachEditorChrome() {
-    this.cmdline.appendChild(this.badge);
-    this.cmdline.appendChild(this.go);
+    this.cmdline.append(this.badge, this.back, this.go);
   }
 
   render() {

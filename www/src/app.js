@@ -712,6 +712,11 @@ class App {
     this.entry.cancel();
   }
 
+  backspace() {
+    if (this.selection != null) this.levelAction('drop');
+    else this.entry.backspace();
+  }
+
   swapTop() {
     if (this.stack.depth < 2) { this.entry.flashError({ message: 'SWAP needs two values; the stack has one.' }); return; }
     this.entry._snapForUndo();
