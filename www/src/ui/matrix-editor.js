@@ -104,6 +104,15 @@ export function deleteCol(grid, at) {
   });
 }
 
+// As on the HP 50g, +/- after EEX flips the exponent's sign.
+export function toggleCellSign(text) {
+  const complex = text.match(/^\(([^,()]+),([^,()]+)\)$/);
+  if (complex) return `(${toggleCellSign(complex[1].trim())},${toggleCellSign(complex[2].trim())})`;
+  const exp = text.match(/^(.*[\d.][eE])([+-]?)(\d*)$/);
+  if (exp) return `${exp[1]}${exp[2] === '-' ? '' : '-'}${exp[3]}`;
+  return text.startsWith('-') ? text.slice(1) : `-${text}`;
+}
+
 export function parseMatrixCell(text) {
   const t = String(text ?? '').trim();
   if (t === '') return Real(0);
@@ -204,7 +213,7 @@ const SYMBOLS = Object.freeze([
   Object.freeze({ text: '∞', title: 'Infinity' }),
 ]);
 
-const FACE_TEXT = Object.freeze({ '−': '-', '×': '*', '÷': '/', 'yˣ': '^', EEX: 'E', '+/-': '-', SPC: ' ' });
+const FACE_TEXT = Object.freeze({ '−': '-', '×': '*', '÷': '/', 'yˣ': '^', EEX: 'E', SPC: ' ' });
 const FACE_MOVES = Object.freeze({ '▲': [-1, 0], '▼': [1, 0], '◀': [0, -1], '▶': [0, 1] });
 const FACE_STEPS = Object.freeze({ TAB: 'next', '⇧TAB': 'prev', '⇧ENTER': 'down' });
 const TAP_KEYS = Object.freeze([
@@ -324,9 +333,12 @@ export class MatrixEditor {
     else if (face === 'CAT') this.app.drawers.toggle('catalog');
     else if (face === 'EQW') this.app.runAction('writer.equation');
     else if (face === 'ENTER') this.app.commitEntry();
+    else if (face === 'UNDO') this.app.runAction('edit.undo');
+    else if (face === 'REDO') this.app.runAction('edit.redo');
     else if (move) this._focusCell(this._focusR + move[0], this._focusC + move[1], { select: true });
     else if (FACE_STEPS[face]) this._focusCell(...this._step(FACE_STEPS[face], this._focusR, this._focusC), { select: true });
     else if (face === '⌫') this._editCell('', { back: true });
+    else if (face === '+/-') this._toggleSign();
     else if (FACE_TEXT[face] || /^[0-9a-z.+π∞]$/.test(face)) this._editCell(FACE_TEXT[face] ?? face);
     else this.app.notifyError(`${face} isn't available in the matrix writer.`);
   }
@@ -334,20 +346,35 @@ export class MatrixEditor {
   insertSymbol(text) { this._editCell(text); }
 
   _editCell(text, { back = false } = {}) {
-    const r = Math.min(this._focusR, this.grid.length - 1);
-    const c = Math.min(this._focusC, (this.grid[0]?.length || 1) - 1);
+    const [r, c] = this._activeCell();
     const input = this._cell(r, c);
     const current = this.grid[r][c] ?? '';
     const focused = document.activeElement === input;
     let start = focused ? input.selectionStart ?? current.length : current.length;
     const end = focused ? input.selectionEnd ?? start : start;
     if (back && start === end) start = Math.max(0, start - 1);
-    this.grid[r][c] = current.slice(0, start) + text + current.slice(end);
+    this._writeCell(r, c, current.slice(0, start) + text + current.slice(end), start + text.length);
+  }
+
+  _toggleSign() {
+    const [r, c] = this._activeCell();
+    const text = toggleCellSign(this.grid[r][c] ?? '');
+    this._writeCell(r, c, text, text.length);
+  }
+
+  _activeCell() {
+    return [Math.min(this._focusR, this.grid.length - 1), Math.min(this._focusC, (this.grid[0]?.length || 1) - 1)];
+  }
+
+  _writeCell(r, c, text, caret) {
+    this.grid[r][c] = text;
+    const input = this._cell(r, c);
     if (input) {
-      input.value = this.grid[r][c];
+      input.value = text;
       input.focus();
-      input.setSelectionRange(start + text.length, start + text.length);
+      input.setSelectionRange(caret, caret);
     }
+    this._noteShape();
   }
 
   transpose() {

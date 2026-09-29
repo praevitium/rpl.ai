@@ -2,7 +2,7 @@ import { assert, assertThrows } from './helpers.mjs';
 import {
   emptyGrid, identityGrid, zerosGrid, clampDim, resizeGrid,
   parseMatrixCell, gridToMatrix, gridToValue, valueToGrid, pasteIntoGrid,
-  insertRow, deleteRow, insertCol, deleteCol, transposeGrid, MATRIX_MAX,
+  insertRow, deleteRow, insertCol, deleteCol, transposeGrid, MATRIX_MAX, toggleCellSign,
 } from '../www/src/ui/matrix-editor.js';
 import {
   Matrix, Vector, Real, Integer, RList, isMatrix, isInteger, isReal, isVector, isSymbolic,
@@ -150,4 +150,15 @@ import {
   assert(srcT.length === 2 && srcT[0].length === 3, 'transposeGrid: does not mutate source');
   const back = transposeGrid(tr);
   assert(back[1][2] === '6', 'transposeGrid: twice returns the original arrangement');
+}
+
+{
+  assert(toggleCellSign('5') === '-5' && toggleCellSign('-5') === '5' && toggleCellSign('') === '-',
+    'toggleCellSign: +/- negates a cell, or starts one with -');
+  assert(toggleCellSign('1E5') === '1E-5' && toggleCellSign('1E-5') === '1E5' && toggleCellSign('1E') === '1E-',
+    'toggleCellSign: +/- after EEX flips the exponent, as on the HP 50g');
+  assert(toggleCellSign('(1,2)') === '(-1,-2)', 'toggleCellSign: +/- negates both parts of a complex cell');
+  for (const cell of ['5', '1E5', '(1,2)']) {
+    assert(parseMatrixCell(toggleCellSign(cell)) !== null, `toggleCellSign: ${cell} negated still parses`);
+  }
 }
