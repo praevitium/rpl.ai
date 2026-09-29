@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.5.1 (2026-09-27)
+**Latest release:** v0.5.2 (2026-09-29)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.5.2 — 2026-09-29
+
+A runaway command no longer freezes the page: one that runs past 10
+seconds stops with an explanation and the stack put back, and IFERR
+can't trap the stop. The equation writer's insights make their CAS
+calls in a background worker that gives up after 3 seconds, so typing
+(x+1)^3000 leaves the page responsive, and hover previews skip commands
+that need the CAS or factor slowly. A single CAS command still runs to
+completion. A backspace button sits beside Enter on the command line,
+so it stays with the keypad hidden; on an empty line it drops level 1.
+Switching from the equation or matrix writer to RPL carries the formula
+or matrix into the command line, so an edit can continue as text.
 
 ---
 
