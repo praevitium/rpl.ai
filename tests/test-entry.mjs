@@ -1691,3 +1691,24 @@ resetHome();
 setAngle('RAD');
 resetBinaryState();
 
+
+/* A command line holding FOR … NEXT, IF … END or → runs as one program, as
+   on the HP50, instead of leaving the keywords on the stack as names. */
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  resetHome();
+  const s = new Stack();
+  const e = new Entry(s);
+  e.buffer = '1 3 FOR i i NEXT';
+  e.enter();
+  assert(!e.error && s.depth === 3 && s.peek().value === 3n, 'FOR … NEXT typed on the command line runs');
+  e.buffer = '→ a b « a b * »';
+  e.enter();
+  assert(!e.error && s.depth === 2 && s.peek().value === 6n, '→ typed on the command line binds locals');
+  e.buffer = '1 IF 0 THEN 5 END';
+  e.enter();
+  assert(!e.error && s.depth === 3 && s.peek().value === 1n, 'IF … END typed on the command line runs');
+  e.buffer = '1 3 FOR i 1 0 / NEXT';
+  e.enter();
+  assert(/Infinite result/.test(e.error) && s.depth === 3, 'an error in a command-line loop restores the stack');
+}

@@ -4,7 +4,7 @@
 
 import { Stack, RPLError, RPLAbort, RPLInterrupt, withTimeLimit, RUN_TIME_LIMIT_MS } from './stack.js';
 import { parseEntry } from './parser.js';
-import { lookup } from './ops.js';
+import { lookup, isProgramLine, runProgramLine } from './ops.js';
 import { withScratchState } from './state.js';
 import { format } from './formatter.js';
 import { withoutCas } from './cas/giac-engine.mjs';
@@ -35,7 +35,9 @@ export function evalScratch(text, { liveItems = [], displayOpts, maxLevels = 8 }
   });
   return withScratchState(() => withTimeLimit(RUN_TIME_LIMIT_MS, () => {
     try {
-      for (const v of parseEntry(String(text ?? ''))) {
+      const values = parseEntry(String(text ?? ''));
+      if (isProgramLine(values)) runProgramLine(stack, values);
+      else for (const v of values) {
         const bare = v?.type === 'name' && !v.quoted;
         const op = bare ? lookup(v.id) : null;
         if (!op) stack.push(v);

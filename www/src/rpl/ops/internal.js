@@ -1,5 +1,5 @@
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
-import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Name, Symbolic, Integer, Unit, isUnit, isBinaryInteger, isNumber, promoteNumericPair, Complex, Rational, isList, RList, isTagged, Tagged, isVector, Vector, isMatrix, Matrix, BinaryInteger, toRealOrThrow, isString, isValidHpIdentifier, isStorableHpName, isProgram, isDirectory, Str } from '../types.js';
+import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Name, Symbolic, Integer, Unit, isUnit, isBinaryInteger, isNumber, promoteNumericPair, Complex, Rational, isList, RList, isTagged, Tagged, isVector, Vector, isMatrix, Matrix, BinaryInteger, toRealOrThrow, isString, isValidHpIdentifier, isStorableHpName, isProgram, isDirectory, Str, Program } from '../types.js';
 import { RPLAbort, RPLError, setPushCoerce, checkTimeLimit } from '../stack.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars } from '../algebra.js';
 import { sameDims, scaleOf, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
@@ -616,6 +616,20 @@ const CF_INNERS  = new Set(['THEN', 'ELSE', 'REPEAT', 'UNTIL']);
 function bareNameId(tok) {
   if (!isName(tok) || tok.quoted) return null;
   return tok.id.toUpperCase();
+}
+
+
+// A command line holding a program structure or → runs as one program, as on
+// the HP50, instead of pushing FOR, NEXT and the rest as names.
+export function isProgramLine(values) {
+  return values.some((v) => {
+    const id = bareNameId(v);
+    return id !== null && (CF_OPENERS.has(id) || id === '→' || id === '->');
+  });
+}
+
+export function runProgramLine(s, values) {
+  runSuspendable(_evalValueGen(s, Program(values), 0, false));
 }
 
 

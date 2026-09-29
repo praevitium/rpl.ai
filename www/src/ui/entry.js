@@ -1,6 +1,6 @@
 import { parseEntry } from '../rpl/parser.js';
 import { hpTextToSource, spreadsheetToSource } from '../rpl/hp-text.js';
-import { lookup } from '../rpl/ops.js';
+import { lookup, isProgramLine, runProgramLine } from '../rpl/ops.js';
 import { RPLAbort, RPLError, withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
 import { errorBeep } from './beep.js';
 import {
@@ -460,7 +460,9 @@ export class Entry {
   // An ABORT still commits the entry: it lands in history and the buffer clears.
   _commitEntry(raw) {
     try {
-      for (const v of parseEntry(raw)) {
+      const values = parseEntry(raw);
+      if (isProgramLine(values)) this.stack.runOp(() => runProgramLine(this.stack, values));
+      else for (const v of values) {
         if (v?.type === 'name' && !v.quoted && lookup(v.id)) this._runOpTagged(v.id);
         else if (v?.type === 'name' && !v.quoted) { this.stack.push(v); this._runOpTagged('EVAL', v.id); }
         else this.stack.push(v);
