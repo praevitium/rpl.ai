@@ -671,3 +671,19 @@ function vals(s) {
   assert(isInteger(sr.peek()),
     'session376: setPushCoerce(non-function) resets the hook to identity (push no longer coerces)');
 }
+
+{
+  const s = new Stack();
+  assert(s.undoMark() === null, 'undoMark: null with no undo history');
+  s.push(Integer(1n));
+  s.saveForUndo();
+  const mark = s.undoMark();
+  s.push(Integer(2n));
+  assert(s.undoMark() === mark, 'undoMark: unchanged by a push that saved no step');
+  s.saveForUndo();
+  assert(s.undoMark() !== mark, 'undoMark: changes when a newer step is saved');
+  s.undo();
+  assert(s.undoMark() === mark, 'undoMark: back to the earlier step after UNDO');
+  s.undo();
+  assert(s.undoMark() === null, 'undoMark: null once every step is undone');
+}

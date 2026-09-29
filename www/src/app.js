@@ -334,13 +334,22 @@ class App {
 
   toast(message, opts) { this.toasts.show(message, opts); }
 
-  // A toast's Undo reverses its own step, never the text being typed.
-  _undoToast(message) {
-    this.toast(message, { action: 'Undo', onAction: () => this._undoStackStep() });
+  // A toast's Undo reverses its own step, never the text being typed, and
+  // only while that step is still the latest one.
+  undoToast(message) {
+    const mark = this.stack.undoMark();
+    this.toast(message, { action: 'Undo', onAction: () => {
+      if (this.stack.undoMark() === mark) this._undoStackStep();
+      else this.notifyError('Something has changed since, so that Undo no longer applies. Use Undo in the toolbar to step back.');
+    } });
   }
 
   _undoStackStep() {
-    try { this.entry.performUndo(); } catch (e) { this.entry.flashError(e); }
+    try { this.entry.performUndo(); this.dismissError(); } catch (e) { this.entry.flashError(e); }
+  }
+
+  _redoStackStep() {
+    try { this.entry.performRedo(); this.dismissError(); } catch (e) { this.entry.flashError(e); }
   }
 
   notifyError(message) { this.toasts.show(message, { error: true, timeout: 5200 }); }
@@ -465,7 +474,7 @@ class App {
     this.entry._snapForUndo();
     try {
       await importFromFile(file, this.stack);
-      this._undoToast(`Restored from ${file.name}`);
+      this.undoToast(`Restored from ${file.name}`);
     } catch (e) {
       this.entry._dropNoOpUndoStep();
       this.notifyError(`Couldn't restore ${file.name}: ${e.message}`);
@@ -488,7 +497,7 @@ class App {
     d.onRowMove = (from, to) => this._moveLevel(from, to);
     d.onRowSwipe = (level) => {
       this.levelAction('drop', level);
-      this._undoToast(`Dropped level ${level}`);
+      this.undoToast(`Dropped level ${level}`);
     };
     d.onStatusAction = (kind, data, el) => {
       if (kind === 'mode') this.appbar.openModeMenu(data.mode, el);
@@ -565,7 +574,7 @@ class App {
       try {
         varStore(name, value);
         this.popover.close();
-        this._undoToast(`Stored in ${name}`);
+        this.undoToast(`Stored in ${name}`);
       } catch (err) {
         this.entry._dropNoOpUndoStep();
         this.notifyError(`Couldn't store in “${name}”: ${err.message}`);
@@ -631,7 +640,7 @@ class App {
     else this.stack.push(value);
     this._endEdit();
     this.setInputMode('rpl');
-    if (edit?.kind === 'var') this._undoToast(`Stored ${edit.name}`);
+    if (edit?.kind === 'var') this.undoToast(`Stored ${edit.name}`);
   }
 
   _writer() {
@@ -671,7 +680,7 @@ class App {
   pushFromWriter(value, message) {
     this.entry._snapForUndo();
     this.stack.push(value);
-    this._undoToast(message);
+    this.undoToast(message);
   }
 
   plotExpression(ast) {
@@ -703,7 +712,7 @@ class App {
       }
     } else if (edit.kind === 'var' && added === 1) {
       varStore(edit.name, this.stack.pop());
-      this._undoToast(`Stored ${edit.name}`);
+      this.undoToast(`Stored ${edit.name}`);
     }
     this._endEdit();
   }
@@ -1015,7 +1024,7 @@ class App {
     if (layer === 'L') {
       if (this.stack.depth < 1) { this.entry.flashError({ message: `STO ${name} needs a value on level 1; the stack is empty.` }); return; }
       const stored = this.entry.safeRun(() => { this.entry._snapForUndo(); varStore(name, this.stack.pop()); }, 'STO');
-      if (stored) this._undoToast(`Stored level 1 in ${name}`);
+      if (stored) this.undoToast(`Stored level 1 in ${name}`);
       return;
     }
     if (layer === 'R') { this._pushValue(v); return; }
@@ -1227,7 +1236,7 @@ class App {
       case 'edit.redo':
         if (this.inputMode === 'equation' && this.equationEditor.canRedo()) { this.equationEditor.pressFace('REDO'); return true; }
         if (this.inputMode === 'rpl' && this.entry.buffer.length) { this.entry.redoText(); return true; }
-        try { this.entry.performRedo(); } catch (e) { this.entry.flashError(e); }
+        this._redoStackStep();
         return true;
       case 'edit.paste':
         navigator.clipboard?.readText?.().then((text) => { if (text) this.entry.paste(text); })

@@ -162,6 +162,11 @@ export class Stack {
     this.restore(this._redoStack.pop());
   }
 
+  // Identifies the latest undo step; it changes when a step is added or undone.
+  undoMark() {
+    return this._undoStack[this._undoStack.length - 1] ?? null;
+  }
+
   undoTopMatchesCurrent() {
     const top = this._undoStack[this._undoStack.length - 1];
     return !!top && top.length === this._items.length && top.every((v, i) => v === this._items[i]);

@@ -674,7 +674,7 @@ export class Drawers {
     app.entry._snapForUndo();
     try {
       varPurge(name);
-      app.toast(`Deleted ${name}`, { action: 'Undo', onAction: () => app.runAction('edit.undo') });
+      app.undoToast(`Deleted ${name}`);
     } catch (e) {
       app.entry._dropNoOpUndoStep();
       app.notifyError(v.type === TYPES.DIRECTORY
@@ -694,7 +694,7 @@ export class Drawers {
       const dir = form.elements.name.value.trim();
       if (!isStorableHpName(dir)) { app.notifyError(`“${dir}” isn't a valid name. Use letters and digits, starting with a letter.`); return; }
       app.entry._snapForUndo();
-      try { makeSubdir(dir); app.popover.close(); app.toast(`Created ${dir}`, { action: 'Undo', onAction: () => app.runAction('edit.undo') }); }
+      try { makeSubdir(dir); app.popover.close(); app.undoToast(`Created ${dir}`); }
       catch (err) { app.entry._dropNoOpUndoStep(); app.notifyError(err.message); }
     });
   }
@@ -710,7 +710,7 @@ export class Drawers {
         if (value?.type === TYPES.DIRECTORY) value.parent = calcState.current;
         app.entry._snapForUndo();
         varStore(name, value);
-        app.toast(`Added ${name}`, { action: 'Undo', onAction: () => app.runAction('edit.undo') });
+        app.undoToast(`Added ${name}`);
       } catch (e) {
         app.notifyError(`Upload failed: ${e.message}`);
       }
@@ -741,7 +741,7 @@ export class Drawers {
     app.entry._snapForUndo();
     try {
       restoreBackup(port, name, app.stack);
-      app.toast(`Restored :${key}`, { action: 'Undo', onAction: () => app.runAction('edit.undo') });
+      app.undoToast(`Restored :${key}`);
     } catch (e) {
       app.entry._dropNoOpUndoStep();
       app.notifyError(`Restore failed: ${e.message}`);
