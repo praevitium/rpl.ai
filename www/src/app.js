@@ -509,7 +509,7 @@ class App {
     };
     switch (act) {
       case 'edit': this.editLevel(level); return;
-      case 'echo': this.clearSelection(); this.entry.type(`${this.entry.buffer && !/\s$/.test(this.entry.buffer) ? ' ' : ''}${formatSource(value)}`); this.entry.focus(); return;
+      case 'echo': this.clearSelection(); this._typeIntoLine(formatSource(value)); this.entry.focus(); return;
       case 'pick': run(() => this.stack.push(value)); this.selectLevel(level + 1); return;
       case 'roll': run(() => moveLevel(this.stack, level, 1)); this.selectLevel(1); return;
       case 'rolld': run(() => moveLevel(this.stack, 1, level)); this.selectLevel(level); return;
@@ -750,7 +750,26 @@ class App {
     for (let i = 0; i < stepsUp; i++) goUp();
   }
 
-  setInputMode(mode, { value = null } = {}) {
+  _typeIntoLine(text) {
+    this.entry.type(`${this.entry.buffer && !/\s$/.test(this.entry.buffer) ? ' ' : ''}${text}`);
+  }
+
+  _takeWriterText() {
+    const writer = this._writer();
+    if (!writer || writer.isEmpty()) return '';
+    try {
+      const text = formatSource(writer.value());
+      writer.clear();
+      return text;
+    } catch {
+      this.toast(this.inputMode === 'equation'
+        ? 'The equation has an empty box, so it stays in the equation writer.'
+        : "The matrix isn't complete, so it stays in the matrix writer.");
+      return '';
+    }
+  }
+
+  setInputMode(mode, { value = null, carry = false } = {}) {
     if (mode === 'equation') {
       if (!this.equationEditor) this.equationEditor = new EquationEditor({ app: this });
       const eqw = this.equationEditor;
@@ -766,9 +785,11 @@ class App {
       if (value) this.matrixEditor.load(value);
       this.matrixEditor.focus();
     } else {
+      const text = carry ? this._takeWriterText() : '';
       this.inputMode = 'rpl';
       this._eqwSlots = null;
       this.input.show('rpl');
+      if (text) this._typeIntoLine(text);
       this.entry.focus();
     }
     this._ctxPage = 0;
@@ -1193,13 +1214,13 @@ class App {
         return true;
       }
       case 'writer.equation': {
-        if (this.inputMode === 'equation') { this.setInputMode('rpl'); return true; }
+        if (this.inputMode === 'equation') { this.setInputMode('rpl', { carry: true }); return true; }
         if (this.selection != null && (isSymbolic(this.stack.peek(this.selection)) || isName(this.stack.peek(this.selection)))) this.editLevel(this.selection);
         else this.setInputMode('equation');
         return true;
       }
       case 'writer.matrix': {
-        if (this.inputMode === 'matrix') { this.setInputMode('rpl'); return true; }
+        if (this.inputMode === 'matrix') { this.setInputMode('rpl', { carry: true }); return true; }
         if (this.selection != null && (isMatrix(this.stack.peek(this.selection)) || isVector(this.stack.peek(this.selection)))) this.editLevel(this.selection);
         else this.setInputMode('matrix');
         return true;

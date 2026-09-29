@@ -44,7 +44,7 @@ export class InputArea {
       const b = e.target.closest('[data-in]');
       if (!b) return;
       if (b.dataset.in === 'ask') app.runAction('assistant.ask');
-      else app.setInputMode(b.dataset.in);
+      else app.setInputMode(b.dataset.in, { carry: true });
     });
     for (const button of [this.go, this.back]) button.addEventListener('mousedown', (e) => e.preventDefault());
     this.go.addEventListener('click', () => app.commitEntry());
