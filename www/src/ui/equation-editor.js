@@ -2030,6 +2030,7 @@ export class EquationEditor {
       this.textArea.value = text;
       this.textArea.classList.remove('bad');
     }
+    this.app?.appbar?.updateHistory();
     this._scheduleInsights();
   }
 

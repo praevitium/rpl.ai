@@ -36,7 +36,7 @@ export class AppBar {
       return `${i ? '<span class="sep" aria-hidden="true">›</span>' : ''}<button type="button" data-act="crumb" data-i="${i}" aria-current="${last}" title="${last ? `You are in ${escapeHtml(seg)}` : `Go to ${escapeHtml(seg)}`}">${escapeHtml(seg)}</button>`;
     }).join('');
     const chips = MODES.map((m) => `<button type="button" class="mode-chip" data-act="mode" data-m="${m.id}" title="${escapeHtml(m.title)}: ${escapeHtml(m.chip())}. Click to change." aria-haspopup="menu" aria-expanded="false">${escapeHtml(m.chip())}${icon('chd')}</button>`).join('');
-    const { stack, prefs } = this.app;
+    const { prefs } = this.app;
     this.el.innerHTML = `
       <button type="button" class="icon-btn narrow-only" data-act="drawer.toggle" title="Tools${kbd('drawer.toggle')}" aria-label="Tools">${icon('grid')}</button>
       <div class="brand"><svg aria-hidden="true"><use href="#i-mark"/></svg><span class="word">rpl<span class="ai">.ai</span></span></div>
@@ -45,13 +45,18 @@ export class AppBar {
       <div class="modes" role="group" aria-label="Calculator modes">${chips}<button type="button" class="mode-chip summary" data-act="modes-all" title="Calculator modes" aria-haspopup="menu" aria-expanded="false">${escapeHtml(modesSummary())}${icon('chd')}</button></div>
       <div class="sp"></div>
       <button type="button" class="search-btn" data-act="palette.open" title="Search commands, settings, variables and help${kbd('palette.open')}">${icon('search', 'sm')}<span>Search commands, settings…</span><span class="kbd">${escapeHtml(shortcutText('palette.open'))}</span></button>
-      <button type="button" class="icon-btn wide-only" data-act="edit.undo" title="Undo${kbd('edit.undo')}" aria-label="Undo" ${stack.hasUndo() ? '' : 'disabled'}>${icon('undo')}</button>
-      <button type="button" class="icon-btn wide-only" data-act="edit.redo" title="Redo${kbd('edit.redo')}" aria-label="Redo" ${stack.hasRedo() ? '' : 'disabled'}>${icon('redo')}</button>
+      <button type="button" class="icon-btn wide-only" data-act="edit.undo" title="Undo${kbd('edit.undo')}" aria-label="Undo" ${this.app.canUndo() ? '' : 'disabled'}>${icon('undo')}</button>
+      <button type="button" class="icon-btn wide-only" data-act="edit.redo" title="Redo${kbd('edit.redo')}" aria-label="Redo" ${this.app.canRedo() ? '' : 'disabled'}>${icon('redo')}</button>
       <button type="button" class="icon-btn wide-only" data-act="keypad.toggle" aria-pressed="${prefs.keypad !== 'hidden'}" title="Keypad${kbd('keypad.toggle')}" aria-label="Keypad">${icon('keypad')}</button>
       <button type="button" class="icon-btn wide-only" data-act="view.minimal" title="Minimal view: status line, stack and command line only${kbd('view.minimal')}" aria-label="Minimal view">${icon('screen')}</button>
       <button type="button" class="icon-btn wide-only" data-act="settings.open" title="Settings${kbd('settings.open')}" aria-label="Settings">${icon('sliders')}</button>
       <button type="button" class="icon-btn wide-only" data-act="help" title="Help and keyboard shortcuts" aria-label="Help" aria-haspopup="menu" aria-expanded="false">${icon('help')}</button>
       <button type="button" class="icon-btn narrow-only" data-act="more" title="More" aria-label="More" aria-haspopup="menu" aria-expanded="false">${icon('more')}</button>`;
+  }
+
+  updateHistory() {
+    this.el.querySelector('[data-act="edit.undo"]')?.toggleAttribute('disabled', !this.app.canUndo());
+    this.el.querySelector('[data-act="edit.redo"]')?.toggleAttribute('disabled', !this.app.canRedo());
   }
 
   openModeMenu(id, anchor) {

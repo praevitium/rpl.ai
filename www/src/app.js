@@ -340,8 +340,20 @@ class App {
     const mark = this.stack.undoMark();
     this.toast(message, { action: 'Undo', onAction: () => {
       if (this.stack.undoMark() === mark) this._undoStackStep();
-      else this.notifyError('Something has changed since, so that Undo no longer applies. Use Undo in the toolbar to step back.');
+      else this.notifyError('Something has changed since, so that Undo no longer applies. Use Undo to step back.');
     } });
+  }
+
+  canUndo() {
+    return (this.inputMode === 'equation' && !!this.equationEditor?.canUndo())
+      || (this.inputMode === 'matrix' && !!this.matrixEditor?.canUndo())
+      || this.stack.hasUndo();
+  }
+
+  canRedo() {
+    return (this.inputMode === 'equation' && !!this.equationEditor?.canRedo())
+      || (this.inputMode === 'matrix' && !!this.matrixEditor?.canRedo())
+      || this.stack.hasRedo();
   }
 
   _undoStackStep() {
@@ -820,6 +832,7 @@ class App {
     this._ctxPage = 0;
     this.menubar.render();
     this.keypad.update();
+    this.appbar.updateHistory();
     this.renderStatus();
   }
 
@@ -1346,7 +1359,8 @@ class App {
 
     if (inField) {
       const fieldSafe = /^Mod\+(K|I|E|\\|;|,|\/)$|^Mod\+Shift\+(F|M)$|^F\d$|^(Shift|Alt)\+F\d$/.test(chord)
-        || (/^Page(Up|Down)$/.test(chord) && !!target.closest?.('.mx, .eqw'));
+        || (/^Page(Up|Down)$/.test(chord) && !!target.closest?.('.mx, .eqw'))
+        || (/^Mod\+(Shift\+Z|Z|Y)$/.test(chord) && !!target.closest?.('.mx-cell'));
       const escapeSafe = chord === 'Escape' && (!target.value || this.inputMode !== 'rpl');
       if (!fieldSafe && !escapeSafe) return;
     }
