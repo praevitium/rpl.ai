@@ -125,6 +125,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - The equation writer has its own row of buttons (move, fraction, power,
   root and parentheses), and so does the matrix writer (previous cell, next
   cell and next row), each with ⌫ and Enter.
+- Opening the equation or matrix writer brings up your phone's keyboard, and
+  so does tapping the equation. While the keyboard is up, the calculator
+  keypad steps aside so the writer stays in view.
 
 ---
 

@@ -19,6 +19,10 @@
   const touchInstall = matchMedia('(pointer: coarse)').matches
     && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches);
   if (navigator.standalone === true || touchInstall) document.documentElement.dataset.installed = 'true';
+  // A touch screen that loses a quarter of its height has its keyboard up, and the
+  // calculator keypad makes way for it.
+  const coarsePointer = matchMedia('(pointer: coarse)');
+  let fullHeight = 0;
   const pinAppViewport = () => {
     const viewport = window.visualViewport;
     if (!viewport) return;
@@ -27,11 +31,13 @@
     root.style.setProperty('--app-top', `${viewport.offsetTop}px`);
     root.style.setProperty('--app-width', `${viewport.width}px`);
     root.style.setProperty('--app-height', `${viewport.height}px`);
+    fullHeight = Math.max(fullHeight, viewport.height);
+    root.toggleAttribute('data-keyboard', coarsePointer.matches && viewport.height < fullHeight * 0.75);
   };
   pinAppViewport();
   window.visualViewport?.addEventListener('resize', pinAppViewport);
   window.visualViewport?.addEventListener('scroll', pinAppViewport);
-  addEventListener('orientationchange', pinAppViewport);
+  addEventListener('orientationchange', () => { fullHeight = 0; pinAppViewport(); });
   document.addEventListener('touchmove', (event) => {
     if (event.touches.length > 1 && event.cancelable) event.preventDefault();
   }, { passive: false });

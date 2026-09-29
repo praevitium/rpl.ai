@@ -1770,6 +1770,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .cmd-hover.hidden { display: none; }
 .cmd-hover-ref { display: block; margin-top: 4px; padding: 0; border: 0; background: none; color: var(--accent); font: 600 12px/1.4 var(--font-ui); }
 
+:root[data-keyboard] .keys { display: none; }
+
 .app, .app * { touch-action: pan-x pan-y; }
 .app .gr-canvas { touch-action: none; }
 .app .st-row[data-key] { touch-action: pan-y; }
