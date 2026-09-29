@@ -1233,11 +1233,13 @@ class App {
       case 'shortcuts.open': this.sheets.openShortcuts(); return true;
       case 'edit.undo':
         if (this.inputMode === 'equation' && this.equationEditor.canUndo()) { this.equationEditor.pressFace('UNDO'); return true; }
+        if (this.inputMode === 'matrix' && this.matrixEditor.canUndo()) { this.matrixEditor.undo(); return true; }
         if (this.inputMode === 'rpl' && this.entry.buffer.length) { this.entry.undoText(); return true; }
         this._undoStackStep();
         return true;
       case 'edit.redo':
         if (this.inputMode === 'equation' && this.equationEditor.canRedo()) { this.equationEditor.pressFace('REDO'); return true; }
+        if (this.inputMode === 'matrix' && this.matrixEditor.canRedo()) { this.matrixEditor.redo(); return true; }
         if (this.inputMode === 'rpl' && this.entry.buffer.length) { this.entry.redoText(); return true; }
         this._redoStackStep();
         return true;

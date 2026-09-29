@@ -153,12 +153,23 @@ import {
 }
 
 {
-  assert(toggleCellSign('5') === '-5' && toggleCellSign('-5') === '5' && toggleCellSign('') === '-',
-    'toggleCellSign: +/- negates a cell, or starts one with -');
-  assert(toggleCellSign('1E5') === '1E-5' && toggleCellSign('1E-5') === '1E5' && toggleCellSign('1E') === '1E-',
-    'toggleCellSign: +/- after EEX flips the exponent, as on the HP 50g');
+  assert(toggleCellSign('5') === '-5' && toggleCellSign('-5') === '5' && toggleCellSign('+5') === '-5',
+    'toggleCellSign: +/- negates a number');
+  assert(toggleCellSign('') === '-' && toggleCellSign('-') === '',
+    'toggleCellSign: +/- on an empty cell starts it with -, and takes it back');
+  assert(toggleCellSign('1E20') === '-1E20', 'toggleCellSign: a finished E-notation number is negated, not its exponent');
+  const typing = { inExponent: true };
+  assert(toggleCellSign('1E5', typing) === '1E-5' && toggleCellSign('1E-5', typing) === '1E5'
+    && toggleCellSign('1E+3', typing) === '1E-3' && toggleCellSign('1E', typing) === '1E-',
+    'toggleCellSign: while an exponent is typed, +/- flips it, as on the HP 50g');
+  assert(toggleCellSign('x2e', typing) === '-x2e' && toggleCellSign('-x2e') === 'x2e',
+    'toggleCellSign: a name ending in digit and E is negated as a name');
   assert(toggleCellSign('(1,2)') === '(-1,-2)', 'toggleCellSign: +/- negates both parts of a complex cell');
-  for (const cell of ['5', '1E5', '(1,2)']) {
-    assert(parseMatrixCell(toggleCellSign(cell)) !== null, `toggleCellSign: ${cell} negated still parses`);
+  assert(toggleCellSign('(2, ∠30)') === '(-2,∠30)', 'toggleCellSign: +/- negates only the magnitude of a polar complex');
+  assert(toggleCellSign('X+1') === '`-(X+1)`' && toggleCellSign('`-(X+1)`') === '`X+1`',
+    'toggleCellSign: +/- negates a whole expression and undoes it');
+  for (const cell of ['5', '1E20', '(1,2)', '(2, ∠30)', 'X+1', '`SIN(X)`', 'π']) {
+    const negated = toggleCellSign(cell);
+    assert(parseMatrixCell(negated) !== null, `toggleCellSign: ${cell} negated (${negated}) still parses`);
   }
 }

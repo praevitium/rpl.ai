@@ -10,6 +10,7 @@ import {
 
 export const MATRIX_MAX = 50;
 const MATRIX_DEFAULT = 3;
+const HISTORY_MAX = 100;
 
 function makeGrid(rows, cols, cell) {
   return Array.from({ length: clampDim(rows) }, (_, i) => Array.from({ length: clampDim(cols) }, (_, j) => cell(i, j)));
@@ -104,13 +105,33 @@ export function deleteCol(grid, at) {
   });
 }
 
-// As on the HP 50g, +/- after EEX flips the exponent's sign.
-export function toggleCellSign(text) {
-  const complex = text.match(/^\(([^,()]+),([^,()]+)\)$/);
-  if (complex) return `(${toggleCellSign(complex[1].trim())},${toggleCellSign(complex[2].trim())})`;
-  const exp = text.match(/^(.*[\d.][eE])([+-]?)(\d*)$/);
-  if (exp) return `${exp[1]}${exp[2] === '-' ? '' : '-'}${exp[3]}`;
-  return text.startsWith('-') ? text.slice(1) : `-${text}`;
+const NUMBER = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d*)?$/;
+const SCALAR = /^(?:(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d*)?(?:_.+)?|\p{L}[\p{L}\p{N}]*|∞)$/u;
+
+function wrapsWhole(text) {
+  let depth = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '(') depth++;
+    else if (text[i] === ')' && --depth === 0) return i === text.length - 1;
+  }
+  return false;
+}
+
+// +/- negates the cell's value; while an exponent is being typed it flips
+// the exponent's sign instead, as on the HP 50g.
+export function toggleCellSign(text, { inExponent = false } = {}) {
+  const t = text.trim().replace(/^\+/, '');
+  const complex = t.match(/^\(([^,()]+),([^,()]+)\)$/);
+  if (complex) {
+    const im = complex[2].trim();
+    return `(${toggleCellSign(complex[1])},${im.startsWith('∠') ? im : toggleCellSign(im)})`;
+  }
+  if (inExponent && NUMBER.test(t) && /[eE]/.test(t)) return t.replace(/([eE])(-?)\+?/, (_, e, minus) => (minus ? e : `${e}-`));
+  if (!t || t === '-') return t ? '' : '-';
+  if (t.startsWith('-') && SCALAR.test(t.slice(1))) return t.slice(1);
+  if (SCALAR.test(t)) return `-${t}`;
+  const expr = t.replace(/^[`'](.*)[`']$/, '$1');
+  return expr.startsWith('-(') && wrapsWhole(expr.slice(1)) ? `\`${expr.slice(2, -1)}\`` : `\`-(${expr})\``;
 }
 
 export function parseMatrixCell(text) {
@@ -229,6 +250,9 @@ export class MatrixEditor {
     this.asVector = false;
     this._focusR = 0;
     this._focusC = 0;
+    this._past = [];
+    this._future = [];
+    this._typingIn = null;
     this.el = document.createElement('div');
     this.el.className = 'mx';
     this.el.innerHTML = '<div class="mx-grid-wrap"><div class="mx-grid" role="grid" aria-label="Matrix cells"></div></div><div class="mx-foot" role="status"></div>';
@@ -242,10 +266,12 @@ export class MatrixEditor {
       if (!cell) return;
       this._focusR = Number(cell.dataset.r);
       this._focusC = Number(cell.dataset.c);
+      this._typingIn = null;
     });
     this._gridEl.addEventListener('input', (e) => {
       const cell = e.target.closest?.('input.mx-cell');
       if (!cell || !this.grid[cell.dataset.r]) return;
+      this._remember(`${cell.dataset.r},${cell.dataset.c}`);
       this.grid[cell.dataset.r][cell.dataset.c] = cell.value;
       this._noteShape();
     });
@@ -273,7 +299,36 @@ export class MatrixEditor {
     this.grid = emptyGrid(this.grid.length, this.grid[0]?.length || 1);
     this._focusR = 0;
     this._focusC = 0;
+    this._past = [];
+    this._future = [];
+    this._typingIn = null;
     this._renderGrid();
+  }
+
+  canUndo() { return this._past.length > 0; }
+
+  canRedo() { return this._future.length > 0; }
+
+  undo() { this._travel(this._past, this._future); }
+
+  redo() { this._travel(this._future, this._past); }
+
+  _travel(from, to) {
+    if (!from.length) return;
+    to.push(this.snapshot());
+    this.restore(from.pop());
+    this._focusCell(this._focusR, this._focusC, { select: true });
+    this._typingIn = null;
+  }
+
+  // Typing in one cell is one undo step; every other change is a step of its own.
+  _remember(cell = null) {
+    this.app.dismissError?.();
+    if (cell && cell === this._typingIn) return;
+    this._past.push(this.snapshot());
+    if (this._past.length > HISTORY_MAX) this._past.shift();
+    this._future = [];
+    this._typingIn = cell;
   }
 
   isEmpty() { return this.grid.every((row) => row.every((cell) => !String(cell ?? '').trim())); }
@@ -314,7 +369,7 @@ export class MatrixEditor {
       { label: 'ZERO', title: 'Fill with zeros', onPress: run(() => this.fill(zerosGrid)) },
       { label: 'VECT', title: 'Push a single row or column as a vector', toggle: true, on: () => this.asVector, onPress: run(() => this.toggleVector()) },
       { label: 'FROM1', title: 'Copy level 1 into the grid; Enter then pushes a new one', onPress: run(() => this.loadFromStack()) },
-      { label: 'CLEAR', title: 'Empty every cell', onPress: run(() => this.clear()) },
+      { label: 'CLEAR', title: 'Empty every cell', onPress: run(() => this.fill(emptyGrid)) },
       ...SYMBOLS.map((s) => ({ label: s.text, title: `${s.title} in the focused cell`, onPress: () => this.insertSymbol(s.text) })),
     ];
   }
@@ -322,7 +377,11 @@ export class MatrixEditor {
   loadFromStack() {
     const { stack } = this.app;
     if (!stack.depth) { this.app.notifyError('The stack is empty.'); return; }
-    if (!this.load(stack.peek(1))) this.app.notifyError("Level 1 isn't a matrix, vector, list or number.");
+    this._remember();
+    if (!this.load(stack.peek(1))) {
+      this._past.pop();
+      this.app.notifyError("Level 1 isn't a matrix, vector, list or number.");
+    }
   }
 
   pressFace(face) {
@@ -358,45 +417,63 @@ export class MatrixEditor {
 
   _toggleSign() {
     const [r, c] = this._activeCell();
-    const text = toggleCellSign(this.grid[r][c] ?? '');
-    this._writeCell(r, c, text, text.length);
+    const input = this._cell(r, c);
+    const old = this.grid[r][c] ?? '';
+    const focused = document.activeElement === input;
+    const start = focused ? input.selectionStart ?? old.length : old.length;
+    const end = focused ? input.selectionEnd ?? start : start;
+    const inExponent = this._typingIn === `${r},${c}` && start === end && end === old.length;
+    const text = toggleCellSign(old, { inExponent });
+    if (old && start === 0 && end === old.length) this._writeCell(r, c, text, 0, text.length);
+    else this._writeCell(r, c, text, Math.max(0, Math.min(text.length, end + text.length - old.length)));
   }
 
   _activeCell() {
     return [Math.min(this._focusR, this.grid.length - 1), Math.min(this._focusC, (this.grid[0]?.length || 1) - 1)];
   }
 
-  _writeCell(r, c, text, caret) {
-    this.grid[r][c] = text;
+  _writeCell(r, c, text, caret, caretEnd = caret) {
     const input = this._cell(r, c);
+    input?.focus();
+    this._remember(`${r},${c}`);
+    this.grid[r][c] = text;
     if (input) {
       input.value = text;
-      input.focus();
-      input.setSelectionRange(caret, caret);
+      input.setSelectionRange(caret, caretEnd);
     }
     this._noteShape();
   }
 
   transpose() {
+    this._remember();
     this.grid = transposeGrid(this.grid);
     [this._focusR, this._focusC] = [this._focusC, this._focusR];
     this._reshaped();
   }
 
-  insertRowAtFocus() { this.grid = insertRow(this.grid, this._focusR); this._reshaped(); }
+  insertRowAtFocus() { this._reshape(insertRow(this.grid, this._focusR)); }
 
-  deleteRowAtFocus() { this.grid = deleteRow(this.grid, this._focusR); this._reshaped(); }
+  deleteRowAtFocus() { this._reshape(deleteRow(this.grid, this._focusR)); }
 
-  insertColAtFocus() { this.grid = insertCol(this.grid, this._focusC); this._reshaped(); }
+  insertColAtFocus() { this._reshape(insertCol(this.grid, this._focusC)); }
 
-  deleteColAtFocus() { this.grid = deleteCol(this.grid, this._focusC); this._reshaped(); }
+  deleteColAtFocus() { this._reshape(deleteCol(this.grid, this._focusC)); }
+
+  _reshape(grid) {
+    if (grid === this.grid) return;
+    this._remember();
+    this.grid = grid;
+    this._reshaped();
+  }
 
   fill(makeGrid) {
+    this._remember();
     this.grid = makeGrid(this.grid.length, this.grid[0]?.length || 1);
     this._reshaped();
   }
 
   toggleVector() {
+    this._remember();
     this.asVector = !this.asVector && isVectorShape(this.grid);
     if (!this.asVector && !isVectorShape(this.grid)) this.app.notifyError('Only a single row or column can be pushed as a vector.');
     this._noteShape();
@@ -438,6 +515,7 @@ export class MatrixEditor {
     if (kind === 'down') return [(r + 1) % rows, c];
     if (kind === 'prev') return c > 0 ? [r, c - 1] : [(r - 1 + rows) % rows, cols - 1];
     if (r === rows - 1 && c === cols - 1) {
+      this._remember();
       this.grid = resizeGrid(this.grid, rows + 1, cols);
       this._renderGrid();
       return [rows, 0];
@@ -452,6 +530,7 @@ export class MatrixEditor {
     e.preventDefault();
     const r = Number(cell.dataset.r);
     const c = Number(cell.dataset.c);
+    this._remember();
     this.grid = pasteIntoGrid(this.grid, r, c, text);
     this._renderGrid();
     this._focusCell(r, c);
