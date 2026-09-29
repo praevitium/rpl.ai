@@ -682,8 +682,12 @@ function vals(s) {
   assert(s.undoMark() === mark, 'undoMark: unchanged by a push that saved no step');
   s.saveForUndo();
   assert(s.undoMark() !== mark, 'undoMark: changes when a newer step is saved');
+  const newer = s.undoMark();
   s.undo();
   assert(s.undoMark() === mark, 'undoMark: back to the earlier step after UNDO');
+  s.redo();
+  assert(s.undoMark() === newer, 'undoMark: REDO puts the same step back');
+  s.undo();
   s.undo();
   assert(s.undoMark() === null, 'undoMark: null once every step is undone');
 }

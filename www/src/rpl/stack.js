@@ -150,16 +150,20 @@ export class Stack {
     return this._redoStack.length > 0;
   }
 
+  // Redo puts the undone step itself back, so undoMark() survives an undo and redo.
   undo() {
     if (!this.hasUndo()) throw new RPLError('No undo available');
-    this._redoStack.push(this._items.slice());
-    this.restore(this._undoStack.pop());
+    const step = this._undoStack.pop();
+    this._redoStack.push({ items: this._items.slice(), step });
+    this.restore(step);
   }
 
   redo() {
     if (!this.hasRedo()) throw new RPLError('No redo available');
-    this._undoStack.push(this._items.slice());
-    this.restore(this._redoStack.pop());
+    const { items, step } = this._redoStack.pop();
+    const unchanged = step.length === this._items.length && step.every((v, i) => v === this._items[i]);
+    this._undoStack.push(unchanged ? step : this._items.slice());
+    this.restore(items);
   }
 
   // Identifies the latest undo step; it changes when a step is added or undone.
