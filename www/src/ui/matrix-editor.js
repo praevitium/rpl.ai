@@ -9,25 +9,22 @@ import {
 } from '../rpl/types.js';
 
 export const MATRIX_MAX = 50;
-export const MATRIX_DEFAULT = 3;
+const MATRIX_DEFAULT = 3;
+
+function makeGrid(rows, cols, cell) {
+  return Array.from({ length: clampDim(rows) }, (_, i) => Array.from({ length: clampDim(cols) }, (_, j) => cell(i, j)));
+}
 
 export function emptyGrid(rows, cols) {
-  const r = clampDim(rows);
-  const c = clampDim(cols);
-  return Array.from({ length: r }, () => Array.from({ length: c }, () => ''));
+  return makeGrid(rows, cols, () => '');
 }
 
 export function identityGrid(rows, cols = rows) {
-  const r = clampDim(rows);
-  const c = clampDim(cols);
-  return Array.from({ length: r }, (_, i) =>
-    Array.from({ length: c }, (_, j) => (i === j ? '1' : '0')));
+  return makeGrid(rows, cols, (i, j) => (i === j ? '1' : '0'));
 }
 
 export function zerosGrid(rows, cols) {
-  const r = clampDim(rows);
-  const c = clampDim(cols);
-  return Array.from({ length: r }, () => Array.from({ length: c }, () => '0'));
+  return makeGrid(rows, cols, () => '0');
 }
 
 export function clampDim(n) {
@@ -90,7 +87,7 @@ export function transposeGrid(grid) {
     Array.from({ length: rows }, (_, r) => grid[r][c] ?? ''));
 }
 
-export function isVectorShape(grid) {
+function isVectorShape(grid) {
   const rows = grid.length;
   const cols = grid[0]?.length || 0;
   return rows === 1 || cols === 1;
@@ -249,7 +246,7 @@ export class MatrixEditor {
   load(value) {
     const grid = valueToGrid(value);
     if (!grid) return false;
-    this.asVector = isVector(value) || (isList(value) && value.items.every(isNumber) && !value.items.some(isList));
+    this.asVector = isVector(value) || (isList(value) && value.items.every(isNumber));
     this.grid = grid;
     this._focusR = 0;
     this._focusC = 0;
@@ -379,7 +376,6 @@ export class MatrixEditor {
   }
 
   _reshaped() {
-    if (!isVectorShape(this.grid)) this.asVector = false;
     this._renderGrid();
     this._focusCell(this._focusR, this._focusC);
   }
@@ -430,7 +426,6 @@ export class MatrixEditor {
     const r = Number(cell.dataset.r);
     const c = Number(cell.dataset.c);
     this.grid = pasteIntoGrid(this.grid, r, c, text);
-    if (this.grid.length !== 1) this.asVector = false;
     this._renderGrid();
     this._focusCell(r, c);
   }
@@ -453,6 +448,7 @@ export class MatrixEditor {
   }
 
   _renderGrid() {
+    if (!isVectorShape(this.grid)) this.asVector = false;
     const cols = this.grid[0]?.length || 1;
     this._gridEl.style.gridTemplateColumns = `repeat(${cols}, auto)`;
     this._gridEl.innerHTML = this.grid.map((row, r) => row.map((cell, c) => (

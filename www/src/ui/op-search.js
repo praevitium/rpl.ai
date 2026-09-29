@@ -1,26 +1,5 @@
-/* =================================================================
-   Fuzzy op-name search — the matching/ranking core behind the
-   command palette (ROADMAP §6).  Pure functions over the op-name
-   list `allOps()` returns; no DOM.  `/<name>` opens the palette and
-   each keystroke calls `searchOps` to filter + rank the registry.
-
-   Split out of the (still-to-build) overlay so the scoring can be
-   unit tested without a render surface — same pattern as paging.js.
-   ================================================================= */
-
 const EXACT = 1000;
 
-/** Score a single op `name` against `query`.
-
- *  Returns a non-negative score when every query character appears in
- *  `name` in order (a subsequence match), or -1 when it doesn't.  A
- *  higher score is a better match.  Matching is case-insensitive.
- *
- *  Bonuses, strongest first: an exact hit short-circuits to EXACT; a
- *  match on the first character anchors the name; each character that
- *  continues a contiguous run scores progressively more, so tightly
- *  packed matches outrank scattered ones; shorter names break ties by
- *  a small length bonus. */
 export function fuzzyScore(query, name) {
   const q = String(query).toUpperCase();
   const n = String(name).toUpperCase();
@@ -46,12 +25,7 @@ export function fuzzyScore(query, name) {
   return score;
 }
 
-/** The indices in `name` of the characters that `query` matches, using
- *  the same greedy left-to-right subsequence walk as `fuzzyScore`, so a
- *  highlight built from these positions lines up with what the score
- *  rewarded.  Returns ascending indices into the original `name` (one
- *  per query character), or `[]` when `query` is empty or not a
- *  subsequence.  Matching is case-insensitive. */
+// The same greedy walk as fuzzyScore, so a highlight lines up with what was scored.
 export function matchPositions(query, name) {
   const q = String(query == null ? '' : query).toUpperCase();
   const n = String(name == null ? '' : name);
@@ -67,14 +41,6 @@ export function matchPositions(query, name) {
   return qi < q.length ? [] : hits;
 }
 
-/** Split `name` into consecutive matched/unmatched runs for the
- *  overlay to render, given the matched-character `positions` from
- *  `matchPositions`.  Returns an array of `{ text, match }` segments
- *  whose `text` concatenates back to `name`, with adjacent matched
- *  indices merged into one `match: true` run and the gaps emitted as
- *  `match: false` runs.  An empty `name` yields `[]`; an empty or
- *  missing `positions` yields a single unmatched run of the whole name.
- *  Out-of-range or non-finite positions are ignored. */
 export function highlightSegments(name, positions) {
   const n = String(name == null ? '' : name);
   if (n === '') return [];
@@ -101,10 +67,6 @@ export function highlightSegments(name, positions) {
   return segments;
 }
 
-/** Filter + rank `names` against `query`.  An empty/whitespace query
- *  returns a copy of `names` unchanged (the palette's resting view).
- *  Otherwise only subsequence matches survive, sorted by descending
- *  score with an alphabetical tie-break so the order is stable. */
 export function searchOps(query, names) {
   const list = Array.isArray(names) ? names : [];
   const q = String(query == null ? '' : query).trim();
@@ -120,12 +82,7 @@ export function searchOps(query, names) {
   return scored.map((e) => e.name);
 }
 
-/** Move the palette's highlighted index by `delta` over a result list
- *  of `length` rows, wrapping at both ends (ArrowDown past the bottom
- *  lands on the first row; ArrowUp past the top lands on the last).
- *  An empty list has no selection, so the result is -1.  A negative
- *  `index` is the "nothing selected yet" sentinel: the first ArrowDown
- *  snaps to the first row and the first ArrowUp to the last. */
+// A negative index means nothing is selected yet: down lands on the first row, up on the last.
 export function moveSelection(index, delta, length) {
   const n = Math.trunc(Number(length));
   if (!Number.isFinite(n) || n <= 0) return -1;

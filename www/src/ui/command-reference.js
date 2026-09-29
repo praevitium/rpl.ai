@@ -1,13 +1,4 @@
-/* =================================================================
-   Command reference as plain text — the AI assistant's lookup surface.
-
-   command-help.js parses docs/hp50-commands.html into DOM fragments
-   for the on-screen popup.  This module parses the same file into a
-   plain-text index (no DOM, so it also runs under Node) so the chat
-   assistant can look up what a command does, what it expects on the
-   stack, and what it returns, then hand that text to the model.
-   ================================================================= */
-
+// Parses the manual into plain text without the DOM, so it also runs under Node.
 import { ALIASES, headingKey } from './command-help.js';
 import { fuzzyScore } from './op-search.js';
 
@@ -20,10 +11,6 @@ export function decodeEntities(s) {
     .replace(/&([a-zA-Z]+);/g, (m, n) => (n in ENTITIES ? ENTITIES[n] : m));
 }
 
-/** Flatten one `<dd class="cmd-field …">` body to readable text.
- *  Paragraphs, list items and `<pre>` lines each land on their own
- *  line; `cmd-io` tables become `args → results` rows and `cmd-kv`
- *  tables become `Command: … / Result: …` lines. */
 export function htmlToText(html) {
   let s = String(html ?? '');
   s = s.replace(/<table class="cmd-io">[\s\S]*?<\/table>/g, (t) => {
@@ -66,12 +53,6 @@ function fewestStackInputs(html) {
   return Math.min(...inputRows.map((cells) => cells.length));
 }
 
-/** Parse the whole reference document into a Map keyed by upper-cased
- *  command name.  Each entry:
- *    { name, inApp, type, description, input, output, io, inputs, flags,
- *      example, seeAlso: string[] }
- *  Text fields are '' when the section lacks them.  First heading wins
- *  on duplicate names (mirrors command-help.js). */
 export function parseCommandReference(html) {
   const map = new Map();
   const src = String(html ?? '');
@@ -91,9 +72,7 @@ export function parseCommandReference(html) {
       type: '', description: '', input: '', output: '', io: '', inputs: null, flags: '',
       example: '', seeAlso: [],
     };
-    // A few manual pages run two commands together under one heading
-    // (→LIST's section also carries ΔLIST's OCR'd page), so single-
-    // valued fields keep their FIRST occurrence; examples accumulate.
+    // Some sections run two manual pages together (→LIST carries ΔLIST's), so single-valued fields keep their first value.
     const first = (field, text) => { if (!entry[field]) entry[field] = text; };
     for (const f of body.matchAll(/<dd class="cmd-field cmd-field-([a-z-]+)">([\s\S]*?)<\/dd>/g)) {
       const text = htmlToText(f[2]);
@@ -125,8 +104,6 @@ export function parseCommandReference(html) {
   return map;
 }
 
-/** Resolve a user/model-typed name against the index, falling back
- *  through the command-help alias table (SQRT → √, INTEG → ∫, …). */
 export function findReferenceEntry(entries, name) {
   const key = String(name ?? '').trim().toUpperCase();
   if (!key) return null;
@@ -143,9 +120,7 @@ function clip(text, max) {
   return t.length <= max ? t : t.slice(0, max - 1).trimEnd() + '…';
 }
 
-/** Compact one-entry text for the model.  `maxChars` bounds the whole
- *  block so a long HP manual page (STO, SOLVE) can't swallow the
- *  context budget; description keeps most of the room. */
+// maxChars keeps a long manual page (STO, SOLVE) from swallowing the assistant's context.
 export function formatReferenceEntry(entry, { maxChars = 1200 } = {}) {
   if (!entry) return '';
   const lines = [`${entry.name}${entry.type ? ` (${entry.type})` : ''}${entry.inApp ? '' : ' — NOT implemented in this calculator'}`];
@@ -160,7 +135,6 @@ export function formatReferenceEntry(entry, { maxChars = 1200 } = {}) {
   return clip(lines.join('\n'), maxChars);
 }
 
-/** One-line teaser for search-result rows. */
 export function shortDescription(entry, max = 110) {
   const d = String(entry?.description ?? '').replace(/^[^:]{0,40}:\s+/, '');
   return clip(d.split(/(?<=\.)\s/)[0] || d, max);
@@ -178,29 +152,10 @@ function keywords(query) {
     .map((w) => w.trim()).filter((w) => w.length > 1 && !STOP.has(w));
 }
 
-// Crude stem so "matrix" meets "matrices" and "derivative" meets
-// "derivatives": compare the first five letters.
+// Crude stem so "matrix" meets "matrices": compare the first five letters.
 const stem = (w) => w.slice(0, 5);
 const escapeRe = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/** Rank commands against a free-text query.
- *
- *  Signals, combined additively so a name hit still wins over a
- *  description-only hit:
- *    - fuzzy subsequence match of the query (and of each keyword)
- *      against the command name — op-search's scorer; an exact name is
- *      unbeatable,
- *    - a keyword that is a prefix of the name or vice versa ("deriv" ~
- *      "derivative"),
- *    - whole-word keyword hits in the reference description; the first
- *      sentence counts double,
- *    - a category whose title shares a stem with a keyword contributes
- *      every op in that category (lets "matrix commands" work).
- *
- *  `names` is the app's registered op list (allOps()); `entries` the
- *  parsed reference (may be null when the doc hasn't loaded); and
- *  `categories` the side-panel {title: [ops]} map.  Returns up to
- *  `limit` rows `{ name, score, inApp, description, category }`. */
 export function searchCommands(query, { names = [], entries = null, categories = {}, limit = 12 } = {}) {
   const q = String(query ?? '').trim();
   const words = keywords(q);
@@ -245,9 +200,7 @@ export function searchCommands(query, { names = [], entries = null, categories =
       if (pts) bump(key, pts + (e.inApp ? 2 : 0));
     }
   }
-  // Commands this calculator doesn't implement only surface on a
-  // strong name match — worth reporting ("STORE isn't here, STO is"),
-  // not worth flooding the list with manual-only entries.
+  // Manual-only commands surface only on a strong match, so they don't flood the list.
   const registered = new Set(names.map((n) => n.toUpperCase()));
   const rows = [...scores.entries()]
     .map(([name, score]) => {
@@ -266,7 +219,6 @@ export function searchCommands(query, { names = [], entries = null, categories =
 
 let _loadPromise = null;
 
-/** Fetch + parse docs/hp50-commands.html once (browser only). */
 export function loadCommandReference() {
   if (_loadPromise) return _loadPromise;
   _loadPromise = (async () => {

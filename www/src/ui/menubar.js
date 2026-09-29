@@ -66,7 +66,7 @@ export class MenuBar {
       let cls = '';
       if (slot.variable && layer === 'L') { label = `STO▸${slot.label}`; cls = 'l'; }
       if (slot.variable && layer === 'R') { label = `RCL ${slot.label}`; cls = 'r'; }
-      const on = slot.toggle && (typeof slot.on === 'function' ? slot.on() : slot.on);
+      const on = slot.toggle && slot.on();
       const blocked = slot.blockedReason?.() ?? '';
       const title = blocked || slot.title || slot.label;
       return `<button type="button" class="sk ${cls}${slot.dir ? ' dir' : ''}${slot.toggle ? ' tog' : ''}${on ? ' on' : ''}${blocked ? ' blocked' : ''}" data-i="${i}" title="${escapeHtml(title)} (F${i + 1})"><span class="lbl">${escapeHtml(label)}</span><span class="fk" aria-hidden="true">F${i + 1}</span></button>`;

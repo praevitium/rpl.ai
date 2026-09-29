@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black" />
 <meta name="color-scheme" content="dark light" />
 <title>rpl.ai</title>
+<meta name="description" content="The HP 48/49/50 RPL calculator: stack, User-RPL, a computer algebra system, units, plotting and an assistant." />
 <script>
   try {
     const ui = JSON.parse(localStorage.getItem('rplai.ui') || '{}');
@@ -15,8 +16,6 @@
     if (ui.minimal === true) document.documentElement.dataset.view = 'minimal';
   } catch {}
   addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.installPrompt = e; });
-</script>
-<script>
   const touchInstall = matchMedia('(pointer: coarse)').matches
     && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches);
   if (navigator.standalone === true || touchInstall) document.documentElement.dataset.installed = 'true';

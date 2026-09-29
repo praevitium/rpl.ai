@@ -1,21 +1,9 @@
-/* =================================================================
-   RemoteLLM — talks to an Ollama or OpenAI-compatible HTTP endpoint.
+/* RemoteLLM talks to an Ollama or OpenAI-compatible HTTP endpoint.  A
+   server that answers Ollama's /api/version gets the native /api/chat
+   protocol, which sizes num_ctx itself (Ollama's small default context
+   silently truncates the system prompt) and passes tools and think when
+   the model supports them; anything else gets /v1/chat/completions. */
 
-   Two wire protocols, picked at load() time:
-
-     Ollama native (`POST /api/chat`) — used when the server answers
-       Ollama's `/api/show`.  This is the path that makes Ollama work
-       well: we size `num_ctx` ourselves (Ollama's default context is
-       small enough to silently truncate our system prompt), pass
-       `tools` for native tool calling and `think` for reasoning models
-       when the model advertises those capabilities, keep the model
-       resident between turns, and read real prompt/eval token counts.
-
-     OpenAI-compatible (`POST /v1/chat/completions`) — any other server
-       that mirrors that subset of the OpenAI API. */
-
-/** True for ollama.com and its subdomains. Those hosts are Ollama Cloud:
- *  HTTPS, OpenAI-compatible `/v1`, and a bearer API key. */
 export function isOllamaCloudUrl(url) {
   try {
     const parsed = new URL(String(url).includes('://') ? String(url) : `http://${url}`);
@@ -26,6 +14,18 @@ export function isOllamaCloudUrl(url) {
   }
 }
 
+// Browsers treat loopback as a secure origin, so an https page may call it over plain http.
+function isLoopbackHost(hostname) {
+  return hostname === 'localhost' || hostname.endsWith('.localhost')
+    || hostname === '[::1]' || /^127(\.\d{1,3}){3}$/.test(hostname);
+}
+
+// WebKit is the exception: Safari and every iOS browser treat http://localhost as mixed content.
+function isWebKitBrowser(userAgent) {
+  return /iPhone|iPad|iPod/.test(userAgent)
+    || (/Version\/[\d.]+.*Safari\//.test(userAgent) && !/Chrome|Chromium|Android/.test(userAgent));
+}
+
 function canonicalEndpoint(typed) {
   let s = String(typed || '').trim().replace(/\/+$/, '');
   if (s && isOllamaCloudUrl(s) && s.startsWith('http://')) {
@@ -34,54 +34,66 @@ function canonicalEndpoint(typed) {
   return s;
 }
 
-/** Normalize a user-typed base URL into the OpenAI-compatible base
- *  (with `/v1` suffix).  Accepts `http://host:port`, `…/v1`, or
- *  `…/api` (Ollama-native root) and returns `…/v1` in all cases.
- *  Trailing slashes are stripped. Ollama Cloud is forced to https. */
+/** The OpenAI-compatible base (`…/v1`) for a bare host, `…/v1` or Ollama's `…/api`. */
 export function toOpenAIBase(typed) {
   let s = canonicalEndpoint(typed);
-  if (!s) return '';               // preserve empty so callers can detect "unset"
-  s = s.replace(/\/api$/, '');     // Ollama-native root → server root
+  if (!s) return '';
+  s = s.replace(/\/api$/, '');
   if (!/\/v1$/.test(s)) s += '/v1';
   return s;
 }
 
-/** Normalize a user-typed base URL into the Ollama-native server root
- *  (no `/v1`, no `/api`).  Call sites append `/api/<endpoint>`. */
+/** The Ollama server root; callers append `/api/<endpoint>`. */
 export function toOllamaBase(typed) {
   return canonicalEndpoint(typed)
     .replace(/\/v1$/, '')
     .replace(/\/api$/, '');
 }
 
+export function ollamaCloudAdvice(origin = globalThis.location?.origin ?? '') {
+  return 'Browsers can\'t call ollama.com\'s API from a web page, and Ollama asks that API keys stay out of browser code. '
+    + 'Cloud models work through your own Ollama instead: run `ollama signin` on that machine, '
+    + 'pick a model whose name ends in -cloud or :cloud, and connect to that Ollama here (for example http://localhost:11434), '
+    + `adding this page's origin${origin ? ` (${origin})` : ''} to OLLAMA_ORIGINS there.`;
+}
+
 /** Browsers report a refused origin, a closed port and a bad host all as
  *  "Failed to fetch"; a no-cors probe separates "answered" from "nothing there". */
-export async function explainConnectionError(url, err, origin = globalThis.location?.origin ?? '') {
+export async function explainConnectionError(url, err, origin = globalThis.location?.origin ?? '',
+  userAgent = globalThis.navigator?.userAgent ?? '') {
   if (!(err instanceof TypeError)) return err?.message ?? String(err);
-  if (isOllamaCloudUrl(url)) {
-    return 'ollama.com does not accept requests from a web page (it sends no CORS headers). '
-      + 'Run cloud models through your own Ollama instead: run `ollama signin` there, '
-      + 'then choose a model whose name ends in -cloud.';
-  }
+  if (isOllamaCloudUrl(url)) return ollamaCloudAdvice(origin);
   const base = toOllamaBase(url);
   let host = base;
-  try { host = new URL(base).host; } catch { /* keep the typed text */ }
-  if (origin.startsWith('https:') && base.startsWith('http:')) {
+  let loopback = false;
+  try {
+    const parsed = new URL(base);
+    host = parsed.host;
+    loopback = isLoopbackHost(parsed.hostname);
+  } catch { /* keep the typed text */ }
+  const plainFromHttps = origin.startsWith('https:') && base.startsWith('http:');
+  if (plainFromHttps && !loopback) {
     return `This page is served over HTTPS, so the browser blocks plain-HTTP requests to ${host}. `
       + 'Open the app over http, or serve the endpoint over https.';
+  }
+  if (plainFromHttps && isWebKitBrowser(userAgent)) {
+    return `Safari, and every browser on iPhone and iPad, blocks HTTPS pages from calling ${host} over plain HTTP. `
+      + 'Use Chrome, Edge or Firefox on a computer, or run rpl.ai from localhost (npm run serve).';
   }
   try {
     await fetch(`${base}/api/version`, { mode: 'no-cors' });
   } catch {
-    return `Nothing answered at ${host}. Check the address and port, that Ollama is running, `
-      + 'and that it listens on the network (OLLAMA_HOST=0.0.0.0).';
+    let pageIsLocal = false;
+    try { pageIsLocal = isLoopbackHost(new URL(origin).hostname); } catch { /* no page origin */ }
+    return `Nothing answered at ${host}. Check the address and port, that Ollama is running`
+      + `${loopback ? '' : ', and that it listens on the network (OLLAMA_HOST=0.0.0.0)'}.`
+      + (pageIsLocal ? '' : ' If the browser asked whether this site may reach apps on your device or local network, '
+        + 'allow it; if you declined, change it in the site settings.');
   }
   return `${host} answered but refused this page's origin (${origin}). `
     + `Add ${origin} to OLLAMA_ORIGINS where Ollama runs, then restart Ollama.`;
 }
 
-/** Headers for an Ollama or OpenAI-compatible request. A non-empty key
- *  is sent as `Authorization: Bearer`. Local Ollama is left anonymous. */
 export function bearerHeaders(apiKey, extra = {}) {
   const headers = { ...extra };
   const key = String(apiKey || '').trim();
@@ -89,31 +101,22 @@ export function bearerHeaders(apiKey, extra = {}) {
   return headers;
 }
 
-/** Pull complete SSE data frames out of an accumulating stream buffer.
- *  Each returned frame is the JSON text following a `data:` prefix on a
- *  newline-terminated line; blank lines, non-`data:` lines, and the
- *  `[DONE]` sentinel are skipped.  The unconsumed tail (an incomplete
- *  final line that hasn't seen its newline yet) is returned as `rest` to
- *  carry into the next read.  JSON parsing stays at the call site so a
- *  malformed frame can be logged in context. */
+/** Complete `data:` payloads from an SSE buffer (blank lines and [DONE]
+ *  skipped); the unfinished last line comes back as `rest`. */
 export function takeSSEFrames(buffer) {
   const frames = [];
   let nl;
   while ((nl = buffer.indexOf('\n')) >= 0) {
     const line = buffer.slice(0, nl).trim();
     buffer = buffer.slice(nl + 1);
-    if (!line) continue;
     if (!line.startsWith('data:')) continue;
     const data = line.slice(5).trim();
-    if (data === '[DONE]') continue;
-    frames.push(data);
+    if (data !== '[DONE]') frames.push(data);
   }
   return { frames, rest: buffer };
 }
 
-/** Pull complete newline-delimited JSON lines out of an accumulating
- *  stream buffer (Ollama's /api/chat streaming format).  Same contract
- *  as takeSSEFrames: complete lines out, unconsumed tail back. */
+/** Complete lines of Ollama's NDJSON stream; the unfinished tail comes back as `rest`. */
 export function takeNDJSONLines(buffer) {
   const lines = [];
   let nl;
@@ -125,57 +128,37 @@ export function takeNDJSONLines(buffer) {
   return { lines, rest: buffer };
 }
 
-/** Assemble the post-stream stats object from a run's raw measurements.
- *  Derives totalMs/ttftMs and the decode throughput (tokens per second
- *  over the decode window) from the three timestamps; `firstTokenAt`
- *  null means no token ever arrived, so ttft and decodeTps stay null.
- *  A zero-length decode window yields null decodeTps (no divide-by-zero).
- *  `inputTokens` is the server-reported prompt token count when known
- *  (Ollama), else null — the UI falls back to a chars/4 estimate. */
+/** `firstTokenAt` null means no token arrived; `inputTokens` is the
+ *  server's prompt count when it reports one (Ollama), else null. */
 export function summarizeRun({
   t0, firstTokenAt, t1,
   inputChars, inputMessages, outputChars, outputTokens,
   finishReason, aborted, inputTokens = null,
 }) {
-  const totalMs   = t1 - t0;
-  const ttftMs    = firstTokenAt !== null ? firstTokenAt - t0 : null;
-  const decodeMs  = firstTokenAt !== null ? t1 - firstTokenAt : null;
-  const decodeTps = (decodeMs && decodeMs > 0)
-    ? (outputTokens / (decodeMs / 1000))
-    : null;
+  const decodeMs = firstTokenAt !== null ? t1 - firstTokenAt : null;
   return {
     inputChars,
     inputMessages,
     inputTokens,
     outputTokens,
     outputChars,
-    totalMs,
-    ttftMs,
-    decodeTps,
+    totalMs: t1 - t0,
+    ttftMs: firstTokenAt !== null ? firstTokenAt - t0 : null,
+    decodeTps: decodeMs > 0 ? outputTokens / (decodeMs / 1000) : null,
     finishReason,
     aborted,
   };
 }
 
-/** Pick the model's max context length out of Ollama's `/api/show`
- *  `model_info` map.  The key is arch-prefixed and varies by model
- *  (e.g. `qwen2.context_length`), so we match whichever key ends in
- *  `.context_length`.  Returns the positive token count, or null when
- *  no usable entry is present. */
+// Ollama's model_info key is prefixed with the architecture: `qwen2.context_length`.
 export function pickContextLength(modelInfo) {
   const info = modelInfo ?? {};
   const ctxKey = Object.keys(info).find((k) => k.endsWith('.context_length'));
-  if (ctxKey && typeof info[ctxKey] === 'number' && info[ctxKey] > 0) {
-    return info[ctxKey];
-  }
-  return null;
+  return ctxKey && typeof info[ctxKey] === 'number' && info[ctxKey] > 0 ? info[ctxKey] : null;
 }
 
-/** Decide the `num_ctx` to request from Ollama.  We ask for the user's
- *  configured window (default REMOTE_CONTEXT_TOKENS_DEFAULT in chat-
- *  bot.js), clamped to what the model supports and floored so the
- *  system prompt always fits.  Kept constant across a session because
- *  Ollama reloads the model whenever num_ctx changes. */
+/** Floored at 8K so the system prompt fits, capped at the model's maximum.
+ *  It must not change mid-session: Ollama reloads the model when num_ctx does. */
 export function chooseNumCtx(requested, modelMax) {
   const MIN = 8192;
   let n = Number.isFinite(requested) && requested > 0 ? Math.round(requested) : MIN;
@@ -184,9 +167,8 @@ export function chooseNumCtx(requested, modelMax) {
   return n;
 }
 
-/** Normalise one Ollama `message.tool_calls[]` entry (or an OpenAI-
- *  style one with stringified arguments) into `{ name, arguments }`.
- *  Returns null when the entry carries no usable function name. */
+/** `{ name, arguments }` from an Ollama tool call or an OpenAI one with
+ *  stringified arguments; null when there is no function name. */
 export function normalizeToolCall(tc) {
   const fn = tc?.function ?? tc;
   const name = fn?.name;
@@ -202,14 +184,38 @@ export function normalizeToolCall(tc) {
 const now = () => (typeof performance !== 'undefined' && performance.now)
   ? performance.now() : Date.now();
 
+const httpError = (status, text) => new Error(`HTTP ${status}${text ? `: ${text.slice(0, 200)}` : ''}`);
+
+function callListener(label, fn, value) {
+  try { fn?.(value); } catch (err) {
+    console.warn(`[RemoteLLM] ${label} threw:`, err);
+  }
+}
+
+function parseChunk(text, kind) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.warn(`[RemoteLLM] dropped malformed ${kind}:`, text.slice(0, 200));
+    return null;
+  }
+}
+
+async function readStream(resp, onText) {
+  if (!resp.body) throw new Error('Streaming response has no body');
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) return;
+    onText(decoder.decode(value, { stream: true }));
+  }
+}
+
 export class RemoteLLM {
-  /** `opts.contextTokens` — context window to request from Ollama
-   *  (num_ctx) and to budget history against; `opts.think` — let a
-   *  thinking-capable model reason before answering (default true). */
+  /** `opts`: contextTokens (the num_ctx to request and the history budget),
+   *  think (let a thinking model reason first; default true), apiKey. */
   constructor(endpoint = '', opts = {}) {
-    // Always store the OpenAI-compat base (with /v1).  /chat/completions
-    // and /models are appended directly; Ollama-native calls derive the
-    // server root via toOllamaBase().
     this._endpoint  = toOpenAIBase(endpoint);
     this._status    = 'idle';
     this._statusMsg = '';
@@ -217,22 +223,16 @@ export class RemoteLLM {
     this._statsListeners    = new Set();
     this._lastStats         = null;
 
-    this._loadingModelId = null;
     this._loadedModelId  = null;
     this._requestedContext = opts.contextTokens ?? null;
     this._think = opts.think !== false;
     this._apiKey = String(opts.apiKey || '').trim();
-    // Filled by load(): whether the server is Ollama, what the model
-    // can do, and the context window we'll actually run with.
     this._isOllama = false;
     this._capabilities = [];
-    this._modelMaxContext = null;
     this._contextTokens = null;
 
     this._abortCtrl = null;
   }
-
-  /* ---- Public API ---- */
 
   get status()    { return this._status; }
   get statusMsg() { return this._statusMsg; }
@@ -257,98 +257,75 @@ export class RemoteLLM {
     return () => this._statsListeners.delete(fn);
   }
 
-  /** Probe the configured endpoint and mark ready.  modelId is the
-   *  model name the server will route requests to (e.g. "llama3.2").
-   *  We don't pre-load weights — the server keeps them resident. */
+  /** Probes the endpoint and the model; the server keeps the weights resident. */
   async load(modelId) {
-    if (!modelId) {
-      return Promise.reject(new Error('load() requires a modelId'));
-    }
-    if (!this._endpoint) {
-      return Promise.reject(new Error('Endpoint URL not configured'));
-    }
-    if (this._status === 'ready' && this._loadedModelId === modelId) {
-      return;
-    }
-    this._loadingModelId = modelId;
+    if (!modelId) throw new Error('load() requires a modelId');
+    if (!this._endpoint) throw new Error('Endpoint URL not configured');
+    if (this._status === 'ready' && this._loadedModelId === modelId) return;
     this._setStatus('loading', `Connecting to ${this._endpoint}…`);
     try {
-      // Ollama first: /api/version proves it's Ollama, then /api/show
-      // tells us everything we need (context length, capabilities) and
-      // proves the model exists.
       const ollamaBase = toOllamaBase(this._endpoint);
-      let isOllama = false;
-      try {
-        const v = await this._fetch(ollamaBase + '/api/version', { method: 'GET' });
-        if (v.ok) {
-          const body = await v.json().catch(() => null);
-          isOllama = !!(body && typeof body.version === 'string');
-        }
-      } catch { isOllama = false; }
-
-      let shown = null;
-      if (isOllama) {
-        const r = await this._fetch(ollamaBase + '/api/show', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: modelId }),
-        });
-        if (r.status === 404) {
-          throw new Error(`Model "${modelId}" is not available on the server (pull it first)`);
-        }
-        if (!r.ok) throw new Error(`HTTP ${r.status} from ${ollamaBase}/api/show`);
-        shown = await r.json();
-      }
-
+      const shown = (await this._answersAsOllama(ollamaBase)) ? await this._showModel(ollamaBase, modelId) : null;
       if (shown) {
         this._isOllama = true;
         this._capabilities = Array.isArray(shown.capabilities) ? shown.capabilities : [];
-        this._modelMaxContext = pickContextLength(shown.model_info);
-        this._contextTokens = chooseNumCtx(this._requestedContext, this._modelMaxContext);
-        // eslint-disable-next-line no-console
+        const maxContext = pickContextLength(shown.model_info);
+        this._contextTokens = chooseNumCtx(this._requestedContext, maxContext);
         console.log('[RemoteLLM] Ollama model', modelId,
                     'capabilities=', this._capabilities,
-                    'maxContext=', this._modelMaxContext,
+                    'maxContext=', maxContext,
                     'num_ctx=', this._contextTokens);
       } else {
-        // OpenAI-compatible: GET /models is the lightest probe.
         const resp = await this._fetch(this._endpoint + '/models', { method: 'GET' });
         if (resp.status === 401) throw new Error('HTTP 401 — check the API key');
-        if (!resp.ok) {
-          throw new Error(`HTTP ${resp.status} from ${this._endpoint}/models`);
-        }
+        if (!resp.ok) throw new Error(`HTTP ${resp.status} from ${this._endpoint}/models`);
         try {
           const body = await resp.json();
           const ids = (body?.data ?? []).map((m) => m.id).filter(Boolean);
           if (ids.length && !ids.includes(modelId)) {
-            // eslint-disable-next-line no-console
-            console.warn('[RemoteLLM] model', modelId,
-                         'not in /models response; available:', ids);
+            console.warn('[RemoteLLM] model', modelId, 'not in /models response; available:', ids);
           }
-        } catch { /* not JSON / unexpected shape — ignore */ }
+        } catch { /* not a model list: the chat request will tell */ }
         this._isOllama = false;
         this._capabilities = [];
         this._contextTokens = this._requestedContext || null;
       }
 
-      this._loadedModelId  = modelId;
-      this._loadingModelId = null;
+      this._loadedModelId = modelId;
       this._setStatus('ready', this._isOllama ? 'Ready (Ollama)' : 'Ready (remote)');
     } catch (err) {
-      this._loadingModelId = null;
-      const why = await explainConnectionError(this._endpoint, err);
-      this._setStatus('error', err instanceof TypeError ? why : `Remote endpoint unreachable: ${why}`);
+      this._setStatus('error', await explainConnectionError(this._endpoint, err));
       throw err;
     }
   }
 
-  /** Stream one reply.  Resolves to `{ toolCalls }` — native tool
-   *  calls the model made (Ollama only; empty otherwise).  `onToken`
-   *  receives visible text, `onThinking` a thinking model's hidden
-   *  reasoning (Ollama only). */
+  async _answersAsOllama(base) {
+    try {
+      const r = await this._fetch(base + '/api/version', { method: 'GET' });
+      const body = r.ok ? await r.json().catch(() => null) : null;
+      return typeof body?.version === 'string';
+    } catch {
+      return false;
+    }
+  }
+
+  async _showModel(base, modelId) {
+    const r = await this._fetch(base + '/api/show', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: modelId }),
+    });
+    if (r.status === 404) {
+      throw new Error(`Model "${modelId}" is not available on the server (pull it first)`);
+    }
+    if (!r.ok) throw new Error(`HTTP ${r.status} from ${base}/api/show`);
+    return r.json();
+  }
+
+  /** Streams one reply and resolves to `{ toolCalls, finishReason }`; native
+   *  tool calls and `onThinking` reasoning come only from Ollama. */
   async generate(messages, { onToken, onThinking, maxTokens, tools } = {}) {
     if (this._status !== 'ready') {
-      // eslint-disable-next-line no-console
       console.warn('[RemoteLLM] generate rejected: status=', this._status);
       throw new Error('Model not ready');
     }
@@ -358,23 +335,20 @@ export class RemoteLLM {
       finishReason: null, aborted: false, inputTokens: null, toolCalls: [],
       inputChars: messages.reduce((n, m) => n + (m.content?.length ?? 0), 0),
     };
+    const firstToken = () => {
+      if (run.firstTokenAt === null) run.firstTokenAt = now();
+    };
     const emit = (text) => {
       if (typeof text !== 'string' || !text) return;
-      if (run.firstTokenAt === null) run.firstTokenAt = now();
+      firstToken();
       run.outputChars += text.length;
       run.outputTokens++;
-      try { onToken?.(text); } catch (err) {
-        // eslint-disable-next-line no-console
-        console.warn('[RemoteLLM] onToken threw:', err);
-      }
+      callListener('onToken', onToken, text);
     };
     const think = (text) => {
       if (typeof text !== 'string' || !text) return;
-      if (run.firstTokenAt === null) run.firstTokenAt = now();
-      try { onThinking?.(text); } catch (err) {
-        // eslint-disable-next-line no-console
-        console.warn('[RemoteLLM] onThinking threw:', err);
-      }
+      firstToken();
+      callListener('onThinking', onThinking, text);
     };
 
     try {
@@ -384,38 +358,21 @@ export class RemoteLLM {
         await this._streamOpenAI(messages, { maxTokens, emit, run });
       }
     } catch (err) {
-      if (err.name === 'AbortError' || this._abortCtrl?.signal.aborted) {
-        run.aborted = true;
-      } else {
-        this._abortCtrl = null;
-        throw err;
-      }
+      if (err.name !== 'AbortError' && !this._abortCtrl?.signal.aborted) throw err;
+      run.aborted = true;
     } finally {
       this._abortCtrl = null;
     }
 
-    const stats = summarizeRun({
-      t0: run.t0, firstTokenAt: run.firstTokenAt, t1: now(),
-      inputChars: run.inputChars, inputMessages: messages.length,
-      outputChars: run.outputChars, outputTokens: run.outputTokens,
-      finishReason: run.finishReason, aborted: run.aborted,
-      inputTokens: run.inputTokens,
-    });
+    const stats = summarizeRun({ ...run, t1: now(), inputMessages: messages.length });
     this._lastStats = stats;
-    for (const fn of this._statsListeners) {
-      try { fn(stats); } catch (err) {
-        // eslint-disable-next-line no-console
-        console.warn('[RemoteLLM] stats listener threw:', err);
-      }
-    }
+    for (const fn of this._statsListeners) callListener('stats listener', fn, stats);
     return { toolCalls: run.toolCalls, finishReason: run.finishReason };
   }
 
   abort() {
-    try { this._abortCtrl?.abort(); } catch { /* no-op */ }
+    this._abortCtrl?.abort();
   }
-
-  /* ---- Internal ---- */
 
   async _streamOllama(messages, { maxTokens, tools, emit, think, run }) {
     const body = {
@@ -431,49 +388,33 @@ export class RemoteLLM {
     if (tools?.length && this.supportsTools) body.tools = tools;
     if (this.supportsThinking) body.think = this._think;
 
-    let resp = await this._post('/api/chat', body, /* ollama */ true);
-    if (!resp.ok) {
-      const text = await resp.text().catch(() => '');
-      // A server that lies about tool support: retry once without.
-      if (body.tools && /does not support tools/i.test(text)) {
-        // eslint-disable-next-line no-console
-        console.warn('[RemoteLLM] model rejected tools; retrying without');
-        this._capabilities = this._capabilities.filter((c) => c !== 'tools');
-        delete body.tools;
-        resp = await this._post('/api/chat', body, true);
-      }
-      if (!resp.ok) {
-        const t2 = body.tools ? text : await resp.text().catch(() => text);
-        throw new Error(`HTTP ${resp.status}${t2 ? `: ${t2.slice(0, 200)}` : ''}`);
-      }
+    const url = `${toOllamaBase(this._endpoint)}/api/chat`;
+    let resp = await this._post(url, body);
+    let errText = resp.ok ? '' : await resp.text().catch(() => '');
+    // Some models claim tool support and then reject tools: retry once without.
+    if (!resp.ok && body.tools && /does not support tools/i.test(errText)) {
+      console.warn('[RemoteLLM] model rejected tools; retrying without');
+      this._capabilities = this._capabilities.filter((c) => c !== 'tools');
+      delete body.tools;
+      resp = await this._post(url, body);
+      if (!resp.ok) errText = await resp.text().catch(() => errText);
     }
-    if (!resp.body) throw new Error('Streaming response has no body');
+    if (!resp.ok) throw httpError(resp.status, errText);
 
-    const reader  = resp.body.getReader();
-    const decoder = new TextDecoder();
     let buffer = '';
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const { lines, rest } = takeNDJSONLines(buffer);
+    await readStream(resp, (text) => {
+      const { lines, rest } = takeNDJSONLines(buffer + text);
       buffer = rest;
       for (const line of lines) {
-        let chunk;
-        try { chunk = JSON.parse(line); } catch {
-          // eslint-disable-next-line no-console
-          console.warn('[RemoteLLM] dropped malformed NDJSON line:', line.slice(0, 200));
-          continue;
-        }
+        const chunk = parseChunk(line, 'NDJSON line');
+        if (!chunk) continue;
         if (chunk.error) throw new Error(String(chunk.error));
         const msg = chunk.message ?? {};
-        if (typeof msg.thinking === 'string' && msg.thinking) think(msg.thinking);
-        if (typeof msg.content === 'string' && msg.content) emit(msg.content);
-        if (Array.isArray(msg.tool_calls)) {
-          for (const tc of msg.tool_calls) {
-            const norm = normalizeToolCall(tc);
-            if (norm) run.toolCalls.push(norm);
-          }
+        think(msg.thinking);
+        emit(msg.content);
+        for (const tc of Array.isArray(msg.tool_calls) ? msg.tool_calls : []) {
+          const norm = normalizeToolCall(tc);
+          if (norm) run.toolCalls.push(norm);
         }
         if (chunk.done) {
           run.finishReason = chunk.done_reason ?? 'stop';
@@ -481,11 +422,11 @@ export class RemoteLLM {
           if (typeof chunk.eval_count === 'number' && chunk.eval_count > 0) run.outputTokens = chunk.eval_count;
         }
       }
-    }
+    });
   }
 
   async _streamOpenAI(messages, { maxTokens, emit, run }) {
-    const resp = await this._post('/chat/completions', {
+    const resp = await this._post(`${this._endpoint}/chat/completions`, {
       model: this._loadedModelId,
       messages,
       stream: true,
@@ -494,39 +435,22 @@ export class RemoteLLM {
       max_tokens: maxTokens || 1024,
       frequency_penalty: 0.5,
       presence_penalty: 0,
-    }, /* ollama */ false);
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => '');
-      throw new Error(`HTTP ${resp.status}${body ? `: ${body.slice(0, 200)}` : ''}`);
-    }
-    if (!resp.body) throw new Error('Streaming response has no body');
+    });
+    if (!resp.ok) throw httpError(resp.status, await resp.text().catch(() => ''));
 
-    const reader  = resp.body.getReader();
-    const decoder = new TextDecoder();
     let buffer = '';
-    // SSE: `data: <json>\n\n`; some servers use a single newline;
-    // [DONE] marks end-of-stream in the OpenAI dialect.
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const { frames, rest } = takeSSEFrames(buffer);
+    await readStream(resp, (text) => {
+      const { frames, rest } = takeSSEFrames(buffer + text);
       buffer = rest;
       for (const data of frames) {
-        let chunk;
-        try { chunk = JSON.parse(data); } catch {
-          // eslint-disable-next-line no-console
-          console.warn('[RemoteLLM] dropped malformed SSE frame:', data.slice(0, 200));
-          continue;
-        }
-        const text = chunk.choices?.[0]?.delta?.content;
-        if (typeof text === 'string' && text.length > 0) emit(text);
-        const fr = chunk.choices?.[0]?.finish_reason;
-        if (fr) run.finishReason = fr;
-        const usage = chunk.usage;
-        if (usage && typeof usage.prompt_tokens === 'number') run.inputTokens = usage.prompt_tokens;
+        const chunk = parseChunk(data, 'SSE frame');
+        if (!chunk) continue;
+        const choice = chunk.choices?.[0];
+        emit(choice?.delta?.content);
+        if (choice?.finish_reason) run.finishReason = choice.finish_reason;
+        if (typeof chunk.usage?.prompt_tokens === 'number') run.inputTokens = chunk.usage.prompt_tokens;
       }
-    }
+    });
   }
 
   _fetch(url, init = {}) {
@@ -536,9 +460,8 @@ export class RemoteLLM {
     });
   }
 
-  _post(path, body, ollama) {
-    const base = ollama ? toOllamaBase(this._endpoint) : this._endpoint;
-    return this._fetch(base + path, {
+  _post(url, body) {
+    return this._fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

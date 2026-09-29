@@ -551,6 +551,16 @@ const frame = (obj) => 'data: ' + JSON.stringify(obj);
            'explainConnectionError: ollama.com explains CORS and the -cloud route');
     msg = await explainConnectionError('http://alpha:11434', failed, 'https://calc.example.com');
     assert(msg.includes('HTTPS'), 'explainConnectionError: an https page calling http explains the mixed-content block');
+    const safari = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
+    const chrome = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
+    msg = await explainConnectionError('http://localhost:11434', failed, 'https://praevitium.github.io', safari);
+    assert(msg.startsWith('Safari') && msg.includes('npm run serve'),
+           'explainConnectionError: Safari on an https page is told it blocks http://localhost');
+    msg = await explainConnectionError('http://localhost:11434', failed, 'https://praevitium.github.io', chrome);
+    assert(msg.startsWith('Nothing answered at localhost:11434') && msg.includes('allow it'),
+           'explainConnectionError: a hosted page reaching localhost mentions the local network permission');
+    msg = await explainConnectionError('http://localhost:11434', failed, 'http://localhost:5050', chrome);
+    assert(!msg.includes('allow it'), 'explainConnectionError: a localhost page gets no permission hint');
     msg = await explainConnectionError('http://alpha:11434', new Error('HTTP 401 — check the API key'), 'http://x');
     assert(msg === 'HTTP 401 — check the API key', 'explainConnectionError: other errors pass through unchanged');
   } finally {

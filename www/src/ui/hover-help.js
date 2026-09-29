@@ -4,7 +4,6 @@ import { loadCommandReference, findReferenceEntry, shortDescription } from './co
 const WORD_BREAK = /[\s{}[\]()"`«»,]/;
 const HOVER_DELAY_MS = 400;
 
-/** The whitespace/delimiter-bounded word around `pos`, or null inside a string. */
 export function commandWordAt(text, pos) {
   const src = String(text ?? '');
   if (pos < 0 || pos > src.length) return null;
@@ -16,7 +15,6 @@ export function commandWordAt(text, pos) {
   return from === to ? null : src.slice(from, to);
 }
 
-/** `NAME — AUR one-liner` for a registered command, else null. */
 export function commandHelpText(word, entries) {
   if (!word || !lookup(word)) return null;
   const ref = entries ? findReferenceEntry(entries, word) : null;

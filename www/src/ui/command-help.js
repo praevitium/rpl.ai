@@ -1,16 +1,4 @@
-/* =================================================================
-   Command reference sections.
-
-   Lazily fetches docs/hp50-commands.html on the first request and
-   parses each <h2 id="cmd-…"> block out of it; the Catalog drawer
-   renders the matching block inline.
-   ================================================================= */
-
-/* Panel-name → doc-heading aliases.  The HP50 manual headings use the
-   Unicode glyphs (√, –, ≤, …) while the panel labels keep ASCII /
-   mnemonic forms (SQRT, -, <=, …).  When a direct lookup misses,
-   `show()` falls back through this table.  Keep both sides upper-case
-   so the existing key normalization stays one-step. */
+// Command names whose manual heading is spelled differently (√ for SQRT, PCAR for CHARPOL).
 export const ALIASES = new Map([
   ['SQRT',    '√'],
   ['-',       '–'],
@@ -38,22 +26,11 @@ export const ALIASES = new Map([
   ['DLIST',   'ΔLIST'],
 ]);
 
-/** Derive the bare command key a help-doc `<h2>` heading is filed
- *  under.  The HP50 reference headings carry a trailing parenthetical
- *  gloss — "!(Factorial)", "==(Logical Equality)" — that isn't part of
- *  the dispatchable symbol; strip it (and surrounding whitespace) so
- *  the section map keys on "!" / "==".  Headings with no parenthetical
- *  pass through trimmed; empty/whitespace/nullish input yields ''. */
+// Headings carry a gloss, like "!(Factorial)", that isn't part of the command name.
 export function headingKey(raw) {
   return String(raw == null ? '' : raw).trim().replace(/\s*\(.*\)\s*$/, '').trim();
 }
 
-/** Visited-name history transition for the Catalog's reference view.  Truncates any forward
- *  entries and appends `name`, advancing the cursor — unless `name` is
- *  already the current entry, in which case history and cursor are
- *  returned unchanged (re-issuing the current name is a no-op).  Pure:
- *  returns a fresh `{ history, idx }` on append, the same references on
- *  no-op. */
 export function pushHistory(history, idx, name) {
   if (history[idx] === name) return { history, idx };
   const next = history.slice(0, idx + 1);
@@ -74,16 +51,10 @@ async function _loadSections() {
     const map = new Map();
     const headings = doc.querySelectorAll('h2[id^="cmd-"]');
     for (const h2 of headings) {
-      // The h2's first text node is the displayed name (before the
-      // in-app/not-in-app badge spans).  May be like "!(Factorial)" or
-      // "==(Logical Equality)" — strip the parenthetical to get the
-      // bare command symbol the panel knows about.
-      const raw = (h2.firstChild?.textContent ?? '').trim();
-      if (!raw) continue;
-      const key = headingKey(raw);
+      const key = headingKey(h2.firstChild?.textContent);
       if (!key) continue;
       const upper = key.toUpperCase();
-      if (map.has(upper)) continue;             // first wins on collisions
+      if (map.has(upper)) continue;
       const frag = document.createDocumentFragment();
       const headerClone = h2.cloneNode(true);
       headerClone.querySelectorAll('.back').forEach(b => b.remove());
@@ -96,9 +67,6 @@ async function _loadSections() {
       }
       map.set(upper, frag);
     }
-    // Second pass: linkify See-Also tokens.  Done now so each cloned
-    // fragment served to the popup already has the cross-links — the
-    // popup itself just intercepts clicks and re-shows.
     for (const frag of map.values()) {
       for (const dd of frag.querySelectorAll('.cmd-field-see-also')) {
         for (const p of dd.querySelectorAll('p')) {
@@ -119,11 +87,10 @@ async function _loadSections() {
     }
     _sectionsByName = map;
   })();
+  _loadPromise.catch(() => { _loadPromise = null; });
   return _loadPromise;
 }
 
-/** The reference section for `name` (alias-aware) as a fresh fragment,
- *  or null when the manual has no entry for it. */
 export async function referenceSection(name) {
   await _loadSections();
   const key = String(name ?? '').toUpperCase();

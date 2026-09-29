@@ -1,6 +1,5 @@
-/* The equation writer's insight strip makes its CAS calls here, on a
-   second copy of Giac, because a call cannot be interrupted: on the page it
-   would freeze everything, while here the writer just terminates us. */
+// A Giac call cannot be interrupted, so the insight strip runs its CAS work on
+// this second copy, which the writer terminates when a call takes too long.
 
 const ready = Promise.all([
   import('../rpl/cas/giac-engine.mjs').then(({ giac }) => giac.init()),

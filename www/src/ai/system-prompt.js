@@ -1,26 +1,9 @@
-/* =================================================================
-   System prompt for the chat pipeline.
+/* The prompt text lives in template literals, and the calculator quotes
+   algebraics with backticks, so every literal backtick is written \\\`:
+   an unescaped one silently ends the literal.  Run `node --check` after
+   editing.  RPL_CATALOG tokens must be registered ops and TOOLS must
+   match ChatBot._buildRegistry; tests check both. */
 
-   Sources of truth this prompt was distilled from:
-     - the registered ops.  RPL_CATALOG is a curated subset;
-       tests/test-chatbot-parse.mjs asserts every catalog token is a
-       registered op.
-     - chat-bot.js _buildRegistry()  — the tools the orchestrator
-       exposes.  The AVAILABLE TOOLS section and TOOL_SCHEMAS below
-       MUST stay in sync with that registry (tests enforce it).
-
-   BACKTICK ESCAPING: these are JS template literals and the calculator
-   uses BACKTICKS as its algebraic delimiter, so every literal backtick
-   in prompt text is written \\\`.  Run `node --check` after editing —
-   an unescaped backtick silently ends the literal mid-prompt.
-   ================================================================= */
-
-// Curated RPL command catalog — a substantial subset of what's
-// shipped, organised by the menu groupings the user-facing
-// documentation uses.  Goal: give the model enough to (a) explain what
-// a command does in prose, and (b) construct the right RPL text inside
-// a `run` tool call for the requests calculator users actually make.
-// lookup_command / search_commands reach everything not listed here.
 export const RPL_CATALOG = `RPL is RPN-postfix.  Examples: 5 3 +  (not 5 + 3),  10 FACT  (factorial),  \`SIN(X)\` \`X\` DERIV  (derivative).
 
 HOW THE STACK WORKS
@@ -68,7 +51,7 @@ STACK MANIPULATION
   PICK PICK3 UNPICK ROLL ROLLD NIP    n-deep pick/roll (n PICK copies level n to level 1; n ROLL moves level n to level 1; n ROLLD moves level 1 down to level n)
   CLEAR DEPTH                empty-stack / depth-query
   UNDO LASTSTACK REDO        multi-level stack history
-  LASTARG LAST               recall last arguments / last command result
+  LASTARG LAST               recall the last command's arguments (LAST is the same command)
 
 VARIABLES & DIRECTORIES (operate in the current directory)
   STO     value \`NAME\` STO — store value into NAME (value on level 2, name on level 1)
@@ -93,7 +76,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   PARTFRAC PROPFRAC          partial-fraction / proper-fraction decomposition
   DERIV                      \`expr\` \`var\` DERIV — derivative w.r.t. var.  Example: \`SIN(X)\` \`X\` DERIV → \`COS(X)\`
   DERVX INTVX                derivative / antiderivative w.r.t. the current CAS variable
-  INTEG                      \`expr\` \`var\` INTEG — indefinite integral.  Definite form: \`expr\` \`var=a..b\` INTEG
+  INTEG                      \`expr\` \`var\` INTEG — indefinite integral.  Definite: \`expr\` \`var\` INTEG a b PREVAL (F(b) - F(a))
   SOLVE                      \`eq\` \`var\` SOLVE — solve an equation.  Example: \`X^2-5*X+6=0\` \`X\` SOLVE → { \`X=2\` \`X=3\` }
   LIMIT (alias lim)          \`expr\` \`var=value\` LIMIT — limit at a point
   SUBST                      \`expr\` \`var=value\` SUBST — substitute
@@ -140,15 +123,15 @@ CONTAINERS
   ΣLIST ΔLIST ΠLIST           sum / differences / product over a list
 
 UNITS  (built-in: m kg s A K mol cd  cm mm km in ft yd mi  g mg lb oz  ms us ns min h d yr  L mL  Hz N J W Pa kPa bar atm V Ω C — combine with * / ^, e.g. 9.81_m/s^2)
-  →UNIT                      bare-number \`unit-expr\` →UNIT — attach a unit; literal form 5_km, 9.81_m/s^2
+  →UNIT                      x 1_unit →UNIT — attach a unit (5 1_km →UNIT gives 5_km); literal form 5_km, 9.81_m/s^2
   UVAL UBASE CONVERT         extract value / convert to base SI / convert to compatible unit (5_km 1_mi CONVERT).  mph, °C/°F are not units here — convert arithmetically.
 
 PROGRAMS & CONTROL FLOW
   « ... »                    program literal; EVAL runs it, « … » \`NAME\` STO saves it, and typing NAME runs the saved program
   IF ... THEN ... [ELSE ...] END         conditional
   CASE ... THEN ... END ... END
-  FOR i a b « ... » NEXT/STEP            counted loop with bound variable (a b FOR i … NEXT)
-  START a b « ... » NEXT/STEP            counted loop, no bound variable
+  a b FOR i ... NEXT/STEP                counted loop with bound variable (a b FOR i … NEXT)
+  a b START ... NEXT/STEP                counted loop, no bound variable
   WHILE ... REPEAT ... END
   DO ... UNTIL ... END
   IFT IFTE                   stack-based conditionals (no body program)
@@ -165,10 +148,10 @@ COMPARISON / LOGIC  (results are 1 / 0)
   AND OR XOR NOT             logic on 1/0 (and bitwise on binary integers)
 
 STATISTICS
-  MEAN MEDIAN SDEV VAR STD CORR COV TOT
+  MEAN MEDIAN SDEV VAR CORR COV TOT        take a vector or a matrix of columns, not a list
   ΣX ΣY ΣX2 ΣY2 ΣXY  (and SX SY SX2 SY2 SXY ASCII aliases; the sum-of-squares ops are spelled with an ASCII 2, not a superscript ²)    summation accumulators
   BESTFIT LINFIT EXPFIT LOGFIT PWRFIT     curve fitting
-  PREDV PREDX PREVAL                       predictions
+  PREDV PREDX                              predictions
   RAND RDZ                   pseudo-random / seed
   UTPN UTPC UTPF UTPT        upper-tail probabilities (normal / chi² / F / Student-t)
 
@@ -184,7 +167,7 @@ TYPES / REFLECTION
 DISPLAY / NUMBER MODES
   STD                        standard format (up to 12 significant digits, no trailing zeros)
   n FIX                      fixed n decimals
-  n SCI                      scientific (n significant digits + power of 10)
+  n SCI                      scientific (n decimal places + power of 10)
   n ENG                      engineering (powers of 10 in multiples of 3)
   TEXTBOOK                   pretty-print mode
   RAD DEG GRD                angle mode
@@ -192,12 +175,7 @@ DISPLAY / NUMBER MODES
   CYLIN SPHERE RECT          coordinate-system mode for Complex / Vector display
 `;
 
-/* ---- Tool contract -------------------------------------------------
-   One description per tool, rendered two ways: as the AVAILABLE TOOLS
-   prose block (JSON-lines mode) and as OpenAI/Ollama function schemas
-   (native mode).  Keep names/args in lockstep with chat-bot.js
-   _buildRegistry — tests compare them. */
-
+// Rendered as the AVAILABLE TOOLS prose (JSON-lines mode) and as native function schemas.
 const TOOLS = [
   {
     name: 'run',
@@ -260,7 +238,7 @@ const TOOLS = [
     name: 'get_stack',
     args: {},
     schema: { type: 'object', properties: {} },
-    desc: 'Read the full calculator state: every stack level, modes, current directory, variable names, entry line, last error.  Read-only.  The [Calculator state] block already gives you the top of the stack each turn — call this only when you need more than it shows.',
+    desc: 'Read the calculator state as it is now: the top stack levels and the total depth, modes, current directory, variable names, entry line, last error.  Read-only.  The [Calculator state] block already gives you the same at the start of each turn — call this only when you need it again after acting.',
   },
   {
     name: 'get_vars',
@@ -290,12 +268,10 @@ const TOOLS = [
     name: 'clear_editor',
     args: {},
     schema: { type: 'object', properties: {} },
-    desc: 'Empty the entry-line buffer.  Executes immediately (undoable).',
+    desc: 'Empty the entry-line buffer.  Executes immediately; Undo does not bring the text back.',
   },
 ];
 
-/** OpenAI-style function schemas for backends with native tool
- *  calling (Ollama /api/chat `tools`). */
 export const TOOL_SCHEMAS = TOOLS.map((t) => ({
   type: 'function',
   function: { name: t.name, description: t.desc, parameters: t.schema },
@@ -310,14 +286,14 @@ function toolsBlock() {
 const RPL_SYNTAX_NOTES = `RPL SYNTAX ESSENTIALS (what the entry line accepts)
 - Tokens are whitespace-separated; commas also separate ([1,2,3] = [1 2 3]).  Bare words that name a command execute it; anything else is a literal or a Name.
 - BARE RPL IS POSTFIX: 10 321 ^ 1 -   (never bare infix like 10^321-1).  To evaluate an infix formula, wrap it in backticks and append EVAL — \`(10*(10^321-1)/9)-321\` EVAL — or →NUM when you want a decimal.
-- EXACTNESS: integer literals combined with + - * / ^ FACT COMB MOD etc. in RPN are EXACT big integers / rationals (10 322 ^ 10 - 9 / 321 - is the full 322-digit number; 50 FACT is exact).  A backtick algebraic EVALs to a 12-significant-digit Real (\`10^40\` EVAL → 1E40) or stays symbolic — so for number theory, digit sums, huge factorials, exact rationals: use RPN on integer literals, not backticks.
+- EXACTNESS: in EXACT mode (the default; the [Calculator state] block shows the CAS mode) integer literals combined with + - * / ^ FACT COMB MOD etc. in RPN are EXACT big integers / rationals (10 322 ^ 10 - 9 / 321 - is the full 322-digit number; 50 FACT is exact).  In APPROX mode they become 12-significant-digit Reals (10 40 ^ → 1E40), and so does a backtick algebraic under EVAL (\`10^40\` EVAL → 1E40) unless it stays symbolic — so for number theory, digit sums, huge factorials, exact rationals: use RPN on integer literals in EXACT mode, not backticks.
 - Numbers: 3  -2.5  1E6  (exact integers stay exact: 10 FACT is a big integer).  Complex: (1,2).  Binary integers: #FF (current base) #FFh #1010b #17o #255d.  Units: 5_km  9.81_m/s^2  (underscore attaches the unit).
 - Strings: "text".  Lists: { 1 2 3 }.  Vectors: [ 1 2 3 ].  Matrices: [[ 1 2 ][ 3 4 ]].  Tagged: :label:5.
-- Algebraics / Names in BACKTICKS: \`X^2+1\`  \`SIN(X)\`  \`A\`  \`X^2-5*X+6=0\`  \`X=2\`  \`X=0..1\`.  Inside backticks use ASCII operators + - * / ^ and function calls SIN(X) SQRT(X) LN(X) EXP(X) ABS(X) COMB(N,K) — no glyphs (√ ² ∞ ≈ ·).  \`π\`, \`e\`, \`i\` are the constants.  If you write apostrophes 'X' by habit the calculator converts them, but prefer backticks.
+- Algebraics / Names in BACKTICKS: \`X^2+1\`  \`SIN(X)\`  \`A\`  \`X^2-5*X+6=0\`  \`X=2\`.  Inside backticks use ASCII operators + - * / ^ and function calls SIN(X) SQRT(X) LN(X) EXP(X) ABS(X) COMB(N,K) — no glyphs (√ ² ∞ ≈ ·).  \`π\`, \`e\`, \`i\` are the constants.  If you write apostrophes 'X' by habit the calculator converts them, but prefer backticks.
 - Programs: « body » (or << body >>).  Control flow lives INSIDE a program: IF cond THEN … ELSE … END,  1 10 FOR i … NEXT (or … STEP),  1 10 START … NEXT,  WHILE … REPEAT … END,  DO … UNTIL … END,  IFERR … THEN … END.  Run one with EVAL; save with « … » \`NAME\` STO.
 - Locals: « → a b « a b + » » — the → names MUST be followed by a « » program (or a backticked algebraic) that is their scope; \`→ s 1 s SIZE …\` without the inner « » is an error.  Locals are read-only: \`x\` STO inside the body creates a GLOBAL variable, it does not update the local.  Keep running totals on the stack instead — « 0 1 100 FOR k k + NEXT » sums 1..100 — or use recursion: « → n « IF n 2 < THEN 1 ELSE n 1 - FIB n 2 - FIB + END » » \`FIB\` STO.
 - Idioms (all verified): « { } 1 30 FOR n n ISPRIME? IF THEN n + END NEXT » EVAL → primes ≤ 30;  \`k^2\` \`k\` 1 5 1 SEQ → { 1 4 9 16 25 };  { 1 2 3 } « DUP * » MAP ΣLIST → 14;  digit sum: « 12345 →STR → s « 0 1 s SIZE FOR i s i i SUB STR→ + NEXT » » EVAL → 15  (strings: →STR, STR→, SIZE, s i j SUB = characters i..j 1-based; GET is for lists/vectors, not strings).
-- Naming: never name a local or variable after a command or constant (SUM, MEAN, LIST, N?, i, e, k, c, g …) — the command wins and you get baffling errors like "MEAN: Bad argument type"; use acc, tot, s, idx, cnt.  Names cannot contain ? .
+- Naming: never name a local or variable after a command or constant (SUM, MEAN, LIST, N?, i, e, k, c, g …) — the command wins and you get baffling errors like "MEAN: Bad argument type"; use acc, total, s, idx, cnt (tot is the TOT command: command names ignore case).  Names cannot contain ? .
 - \`evaluate\` has no memory between calls (every side effect is rolled back): put a whole scratch computation on ONE line, wrapped in « … » EVAL whenever it uses locals or control flow — « 10 322 ^ 10 - 9 / 321 - →STR → s « 0 1 s SIZE FOR i s i i SUB STR→ + NEXT » » EVAL → 342 — and read the result.
 - RUNNING A STORED PROGRAM / READING A VARIABLE: a bare user name runs a stored program or recalls a stored value, as on the HP 50g, in \`run\` and \`evaluate\` alike (\`10 FIB\`, \`SMEAN\`); a backticked \`NAME\` pushes the name itself, and \`NAME\` RCL recalls without evaluating.  To test a program, store and call it on ONE \`evaluate\` line: « … » \`FIB\` STO 10 FIB.
 - No screen or keyboard I/O inside programs: INPUT, INFORM, CHOOSE, DISP, CLLCD, FREEZE, MSGBOX, WAIT, KEY and BEEP don't exist here, and an unknown word is silently pushed as a Name.  A program takes its inputs from the stack and leaves its results there; label a result with →TAG (12 "Area" →TAG) and pause with a message using PROMPT.
@@ -328,7 +304,7 @@ const RPL_SYNTAX_NOTES = `RPL SYNTAX ESSENTIALS (what the entry line accepts)
 
 const HARD_RULES = `- Emit only RPL the calculator can parse and execute; when unsure a symbol parses, spell it as the named command from the catalog or look it up.
 - Never wrap tool calls in \`\`\`json fences or <tool_call> tags.
-- Never echo the [Calculator state — …] block back unless the user asked about one of its fields.
+- Never echo the [Calculator state] block back unless the user asked about one of its fields.
 - If a tool result says something failed, do NOT retry the identical call — read the error, fix the RPL (or the approach) and try once more, or explain what went wrong.
 - Ambiguous request that refers to something not present ("use my list" with no list on the stack)?  Ask one short clarifying question and emit no tool calls.
 - Something the calculator can't do?  Say so in one sentence — don't substitute a different action.`;
@@ -406,7 +382,7 @@ COMMON PITFALLS
 - FACT is factorial; FACTOR factorises an algebraic expression.
 - Binary ops use level 2 OP level 1: to compute 10 - 3 push 10 then 3 then \`-\`; "3 minus the top of the stack" needs SWAP first.
 - STO takes the value on level 2 and the backticked name on level 1; a bare backticked name is the Name object, not its value (RCL fetches the value).
-- SOLVE returns a list of solutions; DERIV / INTEG take the expression on level 2 and the backticked variable on level 1; definite integrals use \`X=a..b\`.
+- SOLVE returns a list of solutions; DERIV / INTEG take the expression on level 2 and the backticked variable on level 1; for a definite integral follow INTEG with a b PREVAL.
 - \`X\` and \`x\` are different variables; the CAS default is lowercase \`x\`.
 - In EXACT mode results like SQRT(2) stay symbolic — append →NUM (or use APPROX) when the user wants decimals.  Angle mode matters for trig; check it before trusting SIN/COS results.
 - Lists distribute: { 1 2 3 } 2 * → { 2 4 6 }.  n →LIST bundles the top n levels; DEPTH →LIST bundles the whole stack.
@@ -443,15 +419,15 @@ ROLLD takes n from level 1 and rolls the remaining top n levels DOWN — the old
 SUGGEST: ["show me ROLL", "roll my stack down by 3", "what does PICK do?"]
 
 User: write a program that computes the mean of the numbers on the stack
-Plan: bundle the stack into a list, then MEAN.  Testing it first.
-{"name":"evaluate","arguments":{"text":"1 2 3 4 « DEPTH →LIST MEAN » EVAL"}}
+Plan: bundle the stack into a vector, then MEAN.  Testing it first.
+{"name":"evaluate","arguments":{"text":"1 2 3 4 « DEPTH →ARRY MEAN » EVAL"}}
 [result: (evaluate … → 1: 2.5)]
 Works — storing it as SMEAN.
-{"name":"run","arguments":{"text":"« DEPTH →LIST MEAN » \`SMEAN\` STO"}}
+{"name":"run","arguments":{"text":"« DEPTH →ARRY MEAN » \`SMEAN\` STO"}}
 [result: (Ran … Stack now: … )]
 Stored **SMEAN**: push your numbers, then type \`SMEAN\` (or press its VAR key) and the mean replaces them on level 1.
 \`\`\`
-« DEPTH →LIST MEAN »
+« DEPTH →ARRY MEAN »
 \`\`\`
 SUGGEST: ["try it on 10 20 30", "make it leave the numbers on the stack", "add a median version"]
 

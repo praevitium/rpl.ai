@@ -7,7 +7,7 @@ import {
 import { escapeHtml } from './display.js';
 import { icon } from './icons.js';
 import { isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
-import { varRecall, getLastFitModel, toRadians, fromRadians } from '../rpl/state.js';
+import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians } from '../rpl/state.js';
 
 export { stackValueToTrace, traceToStackValues };
 
@@ -30,13 +30,12 @@ function angleOpts() {
 }
 
 function thetaRange() {
-  const rad = toRadians(1);
-  if (Math.abs(rad - Math.PI / 180) < 1e-9) return { min: 0, max: 360 };
-  if (Math.abs(rad - Math.PI / 200) < 1e-9) return { min: 0, max: 400 };
-  return { min: 0, max: 2 * Math.PI };
+  return { min: 0, max: { DEG: 360, GRD: 400 }[calcState.angle] ?? 2 * Math.PI };
 }
 
-export function makeTrace(partial = {}) {
+const isData = (v) => isMatrix(v) || isVector(v) || isList(v);
+
+function makeTrace(partial = {}) {
   const id = partial.id || `t${++_traceSeq}`;
   return {
     id,
@@ -122,7 +121,7 @@ export class GraphView {
       else if (act === 'reset') this.resetView();
       else if (act === 'trace') this.setTraceMode(!this.tracing);
       else if (act === 'from') this.loadFromStack(1);
-      else if (act === 'data-level1') this.loadData(this._kind, this.app?.stack?.depth ? this.app.stack.peek(1) : null);
+      else if (act === 'data-level1') this.loadData(this._kind, this.app.stack.peek(1));
       else if (act === 'data-sigma') this.loadData(this._kind, varRecall('ΣDAT'));
     });
     this.el.querySelector('.pl-range').addEventListener('change', (ev) => {
@@ -222,20 +221,21 @@ export class GraphView {
     this.el.querySelectorAll('.pl-kinds button').forEach(b => {
       b.setAttribute('aria-pressed', String(b.dataset.kind === kind));
     });
-    const spec = TRACE_KINDS[kind];
-    if (spec) {
-      const fields = spec.fields || [];
-      const yField = fields.find(f => f.key === 'exprY');
-      this._form.hidden = !fields.length;
-      this.el.querySelector('.gr-data').hidden = !!fields.length;
-      this._addY.classList.toggle('hidden', !yField);
-      this._addX.placeholder = fields[0]?.placeholder || 'data from stack / ΣDAT';
-      if (fields.length) this._addX.setAttribute('aria-label', fields[0].aria);
-      if (yField) {
-        this._addY.placeholder = yField.placeholder;
-        this._addY.setAttribute('aria-label', yField.aria);
-      }
+    const fields = TRACE_KINDS[kind].fields || [];
+    const yField = fields.find(f => f.key === 'exprY');
+    this._form.hidden = !fields.length;
+    this.el.querySelector('.gr-data').hidden = !!fields.length;
+    this._addY.classList.toggle('hidden', !yField);
+    this._addX.placeholder = fields[0]?.placeholder || 'data from stack / ΣDAT';
+    if (fields.length) this._addX.setAttribute('aria-label', fields[0].aria);
+    if (yField) {
+      this._addY.placeholder = yField.placeholder;
+      this._addY.setAttribute('aria-label', yField.aria);
     }
+  }
+
+  _fail(message) {
+    this.app.entry.flashError({ message: `Plot: ${message}` });
   }
 
   retypeSelectionAndSetKind(kind) {
@@ -265,10 +265,7 @@ export class GraphView {
     const exprY = this._addY.value.trim();
     if (!expr) return;
     const err = traceInputError(kind, { expr, exprY }, { adding: true });
-    if (err) {
-      this.app?.entry?.flashError?.({ message: `Graph: ${err}` });
-      return;
-    }
+    if (err) { this._fail(err); return; }
     this._addTrace(traceFromInputs(kind, expr, exprY), { fit: !!spec.fitOnAdd });
     this._addX.value = '';
     this._addY.value = '';
@@ -276,15 +273,9 @@ export class GraphView {
 
   loadData(kind, value) {
     const v = value || this._dataValue();
-    if (!v) {
-      this.app?.entry?.flashError?.({ message: 'Graph: no ΣDAT and stack top is not data' });
-      return;
-    }
+    if (!v) { this._fail('no ΣDAT, and level 1 is not data'); return; }
     const spec = TRACE_KINDS[kind]?.fromStack(v);
-    if (!spec) {
-      this.app?.entry?.flashError?.({ message: 'Graph: no numeric points' });
-      return;
-    }
+    if (!spec) { this._fail('no numeric points'); return; }
     if (kind === 'hist') {
       this._addTrace(spec, { fit: true });
       return;
@@ -305,12 +296,8 @@ export class GraphView {
   }
 
   _dataValue() {
-    const stack = this.app?.stack;
-    if (stack && stack.depth >= 1) {
-      const top = stack.peek();
-      if (isMatrix(top) || isVector(top) || isList(top)) return top;
-    }
-    return varRecall('ΣDAT');
+    const top = this.app.stack.peek();
+    return isData(top) ? top : varRecall('ΣDAT');
   }
 
   applyPlotOp(kind, stack) {
@@ -320,55 +307,30 @@ export class GraphView {
     }
     this.setKind(kind);
     const spec = TRACE_KINDS[kind];
-    if (spec?.fields?.length) {
-      const top = stack?.peek?.();
-      if (!isSymbolic(top)) {
-        this.app?.entry?.flashError?.({ message: `Graph: ${kind} expects a Symbolic on the stack` });
-        return;
-      }
-      const below = stack.depth >= 2 ? stack.peek(2) : null;
-      const built = stackValueToTrace(top, kind, below);
-      if (!built) {
-        this.app?.entry?.flashError?.({ message: `Graph: ${kind} expects a Symbolic on the stack` });
-        return;
-      }
-      const err = traceInputError(kind, built, { adding: true });
-      if (err) {
-        this.app?.entry?.flashError?.({ message: `Graph: ${err}` });
-        return;
-      }
-      this._addTrace(built, { fit: !!spec.fitOnAdd });
+    const top = stack.peek();
+    if (!spec.fields?.length) {
+      this.loadData(kind, isData(top) ? top : varRecall('ΣDAT'));
       return;
     }
-    const top = stack?.peek?.();
-    const data = (top && (isMatrix(top) || isVector(top) || isList(top)))
-      ? top : varRecall('ΣDAT');
-    this.loadData(kind, data);
+    const built = isSymbolic(top) ? stackValueToTrace(top, kind, stack.depth >= 2 ? stack.peek(2) : null) : null;
+    if (!built) { this._fail(`${kind.toUpperCase()} needs an expression on level 1`); return; }
+    const err = traceInputError(kind, built, { adding: true });
+    if (err) { this._fail(err); return; }
+    this._addTrace(built, { fit: !!spec.fitOnAdd });
   }
 
-  loadFromStack(level = 1) {
-    const stack = this.app?.stack;
-    if (!stack || stack.depth < 1) {
-      this.app?.entry?.flashError?.({ message: 'Graph: empty stack' });
-      return true;
-    }
-    if (level < 1 || level > stack.depth) return true;
-    const v = stack.peek(level);
-    const below = stack.depth >= level + 1 ? stack.peek(level + 1) : null;
-    const spec = stackValueToTrace(v, this._kind, below);
-    if (!spec) {
-      this.app?.entry?.flashError?.({ message: 'Graph: stack value is not an expression or data' });
-      return true;
-    }
+  loadFromStack(level) {
+    const { stack } = this.app;
+    if (!stack.depth) { this._fail('the stack is empty'); return; }
+    if (level > stack.depth) return;
+    const below = stack.depth > level ? stack.peek(level + 1) : null;
+    const spec = stackValueToTrace(stack.peek(level), this._kind, below);
+    if (!spec) { this._fail(`level ${level} is not an expression or data`); return; }
     const err = traceInputError(spec.kind, spec, { adding: true });
-    if (err) {
-      this.app?.entry?.flashError?.({ message: `Graph: ${err}` });
-      return true;
-    }
+    if (err) { this._fail(err); return; }
     this.setKind(spec.kind);
     this._addTrace(spec, { fit: true });
-    this._readout.textContent = `Copied L${level}`;
-    return true;
+    this._readout.textContent = `Added level ${level}`;
   }
 
   pushTrace(id) {
@@ -376,14 +338,11 @@ export class GraphView {
     if (!t) return;
     try {
       const values = traceToStackValues(t);
-      if (!values.length) {
-        this.app?.entry?.flashError?.({ message: 'Graph: nothing to push' });
-        return;
-      }
+      if (!values.length) { this._fail('nothing to push'); return; }
       this.app.commitEntryAndPush(values);
       this._readout.textContent = `Pushed ${t.label || t.kind}`;
     } catch (e) {
-      this.app?.entry?.flashError?.({ message: `Graph: ${e.message}` });
+      this._fail(e.message);
     }
   }
 
@@ -492,15 +451,16 @@ export class GraphView {
     if (document.fullscreenElement) { document.exitFullscreen?.(); return; }
     const request = this._box.requestFullscreen?.();
     const fallback = () => {
-      this.app?.setPlotFocus?.(true);
-      this.app?.toast?.("Full screen isn't allowed here, so the plot fills the window instead.");
+      this.app.setPlotFocus(true);
+      this.app.toast("Full screen isn't allowed here, so the plot fills the window instead.");
     };
     if (request?.catch) request.catch(fallback);
     else if (!request) fallback();
   }
 
   _applyRange(input) {
-    const value = Number(String(input.value).trim());
+    const text = String(input.value).trim();
+    const value = text ? Number(text) : NaN;
     const next = { ...this.view, [input.dataset.rng]: value };
     const valid = Number.isFinite(value) && next.xmin < next.xmax && next.ymin < next.ymax;
     input.classList.toggle('bad', !valid);
@@ -747,12 +707,9 @@ export class GraphView {
   _drawBars(ctx, t, segs, width, height) {
     const view = this.view;
     ctx.save();
-    ctx.fillStyle = t.color;
-    const pts = [];
-    for (const seg of segs || []) {
-      for (const p of seg) pts.push(p);
-    }
+    const pts = segs.flat();
     ctx.fillStyle = this._traceColor(t);
+    ctx.globalAlpha = 0.85;
     const barW = pts.length > 1
       ? Math.abs(worldToPixel(pts[1][0], 0, view, width, height)[0]
         - worldToPixel(pts[0][0], 0, view, width, height)[0]) * 0.7
@@ -762,7 +719,6 @@ export class GraphView {
       const [px, py] = worldToPixel(x, y, view, width, height);
       const top = Math.min(py, y0);
       const h = Math.abs(py - y0);
-      ctx.globalAlpha = 0.85;
       ctx.fillRect(px - barW / 2, top, barW, Math.max(1, h));
     }
     ctx.restore();
@@ -775,6 +731,3 @@ function fmtAxis(n) {
   if (a !== 0 && (a >= 1e5 || a < 1e-3)) return n.toExponential(2);
   return String(Number(n.toPrecision(6)));
 }
-
-
-

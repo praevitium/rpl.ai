@@ -1,16 +1,8 @@
-/* =================================================================
-   Scratch (dry-run) evaluation for the AI assistant.
+/* Dry runs for the AI assistant: an RPL line runs exactly as ENTER would,
+   on a copy of the live stack, and every STO, mode change and flag flip
+   is rolled back afterwards. */
 
-   Runs an RPL line exactly the way ENTER would — literals push, bare
-   names that resolve to ops execute — but against a throwaway Stack
-   seeded with a copy of the live one, inside withScratchState so any
-   STO / mode change / flag flip is rolled back afterwards.  The
-   assistant uses this to compute intermediate values, preview what a
-   proposed `run` would do, and catch parse / argument errors before
-   asking the user to confirm anything.
-   ================================================================= */
-
-import { Stack, RPLError, RPLInterrupt, withTimeLimit, RUN_TIME_LIMIT_MS } from './stack.js';
+import { Stack, RPLError, RPLAbort, RPLInterrupt, withTimeLimit, RUN_TIME_LIMIT_MS } from './stack.js';
 import { parseEntry } from './parser.js';
 import { lookup } from './ops.js';
 import { withScratchState } from './state.js';
@@ -19,37 +11,41 @@ import { withoutCas } from './cas/giac-engine.mjs';
 
 const PREVIEW_TIME_LIMIT_MS = 150;
 
-/** Evaluate `text` on a scratch copy of `liveItems` (bottom-first, as
- *  Stack.save() returns).  Resolves to
- *    { ok: true,  stack: string[], depth }   formatted, level 1 first
- *    { ok: false, error }
- *  Never throws for RPL errors; only a broken caller contract does. */
+const errorText = (e) => ((e && typeof e === 'object' && e.message != null) ? String(e.message) : String(e));
+
+// Like Entry._runOpTagged: errors carry the command name, but ABORT passes through untouched.
+function runTagged(stack, name, op) {
+  try {
+    stack.runOp(() => op.fn(stack));
+  } catch (e) {
+    if (e instanceof RPLAbort) throw e;
+    throw new RPLError(`${name}: ${errorText(e)}`);
+  }
+}
+
+/** Resolves to { ok: true, stack: formatted strings (level 1 first), depth }
+ *  or { ok: false, error }.  `liveItems` is bottom-first, as Stack.save() returns. */
 export function evalScratch(text, { liveItems = [], displayOpts, maxLevels = 8 } = {}) {
   const stack = new Stack();
   stack.restore(liveItems);
+  const result = () => ({
+    ok: true,
+    stack: stack.snapshot().slice(0, maxLevels).map((v) => format(v, displayOpts)),
+    depth: stack.depth,
+  });
   return withScratchState(() => withTimeLimit(RUN_TIME_LIMIT_MS, () => {
     try {
-      const values = parseEntry(String(text ?? ''));
-      for (const v of values) {
+      for (const v of parseEntry(String(text ?? ''))) {
         const bare = v?.type === 'name' && !v.quoted;
         const op = bare ? lookup(v.id) : null;
         if (!op) stack.push(v);
-        if (!bare) continue;
-        try {
-          stack.runOp(() => (op ?? lookup('EVAL')).fn(stack));
-        } catch (e) {
-          const msg = (e && typeof e === 'object' && e.message != null) ? e.message : String(e);
-          throw new RPLError(`${v.id}: ${msg}`);
-        }
+        if (bare) runTagged(stack, v.id, op ?? lookup('EVAL'));
       }
-      return {
-        ok: true,
-        stack: stack.snapshot().slice(0, maxLevels).map((v) => format(v, displayOpts)),
-        depth: stack.depth,
-      };
+      return result();
     } catch (e) {
-      const error = (e && typeof e === 'object' && e.message != null) ? String(e.message) : String(e);
-      return { ok: false, error };
+      // The entry line treats ABORT as a notice, not an error, and keeps the stack it left.
+      if (e instanceof RPLAbort) return result();
+      return { ok: false, error: errorText(e) };
     }
   }));
 }
@@ -78,7 +74,7 @@ export function previewCommand(name, liveItems = []) {
     withoutCas(() => withTimeLimit(PREVIEW_TIME_LIMIT_MS, () => stack.runOp(() => op.fn(stack))));
   } catch (e) {
     if (e instanceof RPLInterrupt) return null;
-    return { ok: false, error: (e && typeof e === 'object' && e.message != null) ? String(e.message) : String(e) };
+    return { ok: false, error: errorText(e) };
   }
   const after = stack.save();
   let kept = 0;

@@ -1,19 +1,3 @@
-/* =================================================================
-   Short audio beep for error flashes.
-
-   Approximates the HP50's piezo buzzer tone — a square-wave chirp
-   around 1 kHz, ~125 ms long with tiny attack / release ramps to
-   avoid the click you get from a hard start/stop on a square wave.
-
-   A single AudioContext is created lazily on first beep.  All
-   browsers require a user-gesture to unlock audio; we rely on the
-   fact that error beeps always follow a key press or click, so the
-   context is always unlocked by the time we play.
-
-   Silently no-ops in non-browser environments (node tests) where
-   AudioContext is undefined.
-   ================================================================= */
-
 let _ctx = null;
 
 function getCtx() {
@@ -40,7 +24,8 @@ export function errorBeep() {
   const dur = 0.125;
   const atk = 0.004;
   const rel = 0.012;
-  const peak = 0.12;                              // modest — piezos are quiet
+  const peak = 0.12;
+  // Ramp in and out: a hard-edged square wave clicks.
   gain.gain.setValueAtTime(0, now);
   gain.gain.linearRampToValueAtTime(peak, now + atk);
   gain.gain.setValueAtTime(peak, now + dur - rel);

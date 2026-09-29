@@ -658,9 +658,9 @@ import { readFileSync } from 'node:fs';
 
 
 {
-  assert(activeContextTokens(null) === 16384,
+  assert(activeContextTokens(null) === 32768,
          'activeContextTokens falls back to the remote default with no endpoint loaded');
-  assert(effectiveBudget(null) === 16384 * 4 - 4000,
+  assert(effectiveBudget(null) === 32768 * 4 - 4000,
          'effectiveBudget subtracts the response reserve from the char window');
 }
 
@@ -673,10 +673,10 @@ import { readFileSync } from 'node:fs';
 }
 
 // A remote endpoint that never reported contextTokens falls back to
-// the generous remote default (16384).
+// the generous remote default (32768).
 {
   const remote = { loadedModelId: 'llama3', endpoint: 'http://x', contextTokens: null };
-  assert(activeContextTokens(remote) === 16384,
+  assert(activeContextTokens(remote) === 32768,
          'activeContextTokens uses the remote default when unprobed');
 }
 
@@ -696,13 +696,13 @@ import { readFileSync } from 'node:fs';
 // the generous remote default, distinguishing `||` from `??`.
 {
   const zero = { loadedModelId: 'srv', endpoint: 'http://x', contextTokens: 0 };
-  assert(activeContextTokens(zero) === 16384,
+  assert(activeContextTokens(zero) === 32768,
          'activeContextTokens folds a remote 0 context window to the remote default (|| not ??)');
-  assert(effectiveBudget(zero) === 16384 * 4 - 4000,
+  assert(effectiveBudget(zero) === 32768 * 4 - 4000,
          'effectiveBudget sizes the default window when a remote reports 0 tokens');
 
   const nan = { loadedModelId: 'srv', endpoint: 'http://x', contextTokens: NaN };
-  assert(activeContextTokens(nan) === 16384,
+  assert(activeContextTokens(nan) === 32768,
          'activeContextTokens folds a remote NaN context window to the remote default');
 }
 
@@ -1157,10 +1157,10 @@ const registryToolNames = () =>
   const c = normalizeRemoteConfig({ url: ' http://x:11434/ ', model: ' m ' });
   assert(c.url === 'http://x:11434/' && c.model === 'm',
          'normalizeRemoteConfig trims url and model');
-  assert(c.contextTokens === 16384 && c.think === true,
-         'normalizeRemoteConfig defaults context to 16K and thinking on');
-  const c2 = normalizeRemoteConfig({ url: 'http://x', model: 'm', contextTokens: '32768', think: false });
-  assert(c2.contextTokens === 32768 && c2.think === false,
+  assert(c.contextTokens === 32768 && c.think === true,
+         'normalizeRemoteConfig defaults context to 32K and thinking on');
+  const c2 = normalizeRemoteConfig({ url: 'http://x', model: 'm', contextTokens: '65536', think: false });
+  assert(c2.contextTokens === 65536 && c2.think === false,
          'normalizeRemoteConfig keeps explicit context and thinking values');
   assert(normalizeRemoteConfig({ url: '', model: 'm' }) === null
          && normalizeRemoteConfig(null) === null,

@@ -1,6 +1,6 @@
 import { Stack } from './rpl/stack.js';
 import { Entry } from './ui/entry.js';
-import { Display, escapeHtml, describeValue, suspendedProgramHtml } from './ui/display.js';
+import { Display, escapeHtml, describeValue, suspendedProgramHtml, binaryBaseLabel } from './ui/display.js';
 import { Keypad } from './ui/keyboard.js';
 import { MenuBar } from './ui/menubar.js';
 import { AppBar } from './ui/appbar.js';
@@ -14,7 +14,7 @@ import { Popover } from './ui/popover.js';
 import { Toasts } from './ui/toast.js';
 import { Sheets } from './ui/sheets.js';
 import { Tour } from './ui/tour.js';
-import { chordFromEvent, findBinding } from './ui/actions.js';
+import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
 import { MENU_FAMILIES, menuById } from './ui/menus.js';
 import { MODES } from './ui/modes.js';
@@ -22,7 +22,7 @@ import { computeMenuPage } from './ui/paging.js';
 import { clampLevel, dropLevel, moveLevel, replaceLevel } from './ui/stack-levels.js';
 import { icon } from './ui/icons.js';
 import { installCommandHover, entryWordAtEvent, stackWordAtEvent } from './ui/hover-help.js';
-import { EquationEditor } from './ui/equation-editor.js';
+import { EquationEditor, keypadFace } from './ui/equation-editor.js';
 import { MatrixEditor } from './ui/matrix-editor.js';
 import {
   loadCommandReference, findReferenceEntry, formatReferenceEntry, searchCommands, shortDescription,
@@ -312,17 +312,17 @@ class App {
     const desc = this.errorBanner;
     const message = this.entry.error;
     switch (id) {
-      case 'drop':
-        this.dismissError();
-        this.entry._snapForUndo();
-        try { dropLevel(this.stack, 1); } catch (err) { this.entry.flashError(err); }
-        return;
+      case 'drop': this.dismissError(); this.levelAction('drop', 1); return;
       case 'swap': this.dismissError(); this.swapTop(); return;
       case 'help': this.drawers.showReference(arg ?? desc?.command); return;
       case 'explain': this._explainError(message); return;
       case 'edit-line': this.entry.focus(); return;
       case 'vars': this.drawers.open('vars'); return;
-      case 'retry': this.dismissError(); this.commitEntry(); return;
+      case 'retry':
+        this.dismissError();
+        if (!this.entry.buffer.trim() && desc?.command && lookup(desc.command)) this.entry.execOp(desc.command);
+        else this.commitEntry();
+        return;
     }
   }
 
@@ -333,6 +333,10 @@ class App {
   }
 
   toast(message, opts) { this.toasts.show(message, opts); }
+
+  _storedToast(name, message = `Stored ${name}`) {
+    this.toast(message, { action: 'Undo', onAction: () => this.runAction('edit.undo') });
+  }
 
   notifyError(message) { this.toasts.show(message, { error: true, timeout: 5200 }); }
 
@@ -361,12 +365,12 @@ class App {
         return { text: formatReferenceEntry(entry), registered: registered || entry.inApp, name: entry.name };
       },
       searchCommands: (query) => searchCommands(query, { names: allOps(), entries: this.reference, categories: CATEGORIES, limit: 12 }),
-      snapshotState: () => ({ stack: this.stack.save(), calc: captureCalcState() }),
+      snapshotState: () => ({ stack: this.stack.save(), calc: captureCalcState(), editor: this.entry.buffer }),
       restoreState: (snap) => {
-        this.entry.cancel();
         this.entry._snapForUndo();
         this.stack.restore(snap.stack);
         restoreCalcState(snap.calc);
+        this.entry.recall(snap.editor ?? '');
       },
     };
   }
@@ -381,7 +385,7 @@ class App {
       angleMode: st.angle,
       displayMode: st.displayMode === 'STD' ? 'STD' : `${st.displayMode} ${st.displayDigits}`,
       exactMode: st.approxMode ? 'APPROX' : 'EXACT',
-      base: { d: 'DEC', h: 'HEX', o: 'OCT', b: 'BIN' }[st.binaryBase] ?? 'DEC',
+      base: binaryBaseLabel(st.binaryBase) ?? 'DEC',
       casVar: st.casVx,
       dir: currentPath().join('/') || 'HOME',
       vars: varList().slice(0, 40),
@@ -511,17 +515,22 @@ class App {
       this.entry._snapForUndo();
       try { fn(); } catch (e) { this.entry._dropNoOpUndoStep(); this.entry.flashError(e); }
     };
+    const runOn = (op) => {
+      this.clearSelection();
+      this.entry._snapForUndo();
+      this.entry.safeRun(() => { moveLevel(this.stack, level, 1); lookup(op).fn(this.stack, this.entry); }, op);
+    };
     switch (act) {
       case 'edit': this.editLevel(level); return;
-      case 'echo': this.clearSelection(); this._typeIntoLine(formatSource(value)); this.entry.focus(); return;
+      case 'echo': this.clearSelection(); this.entry.typeToken(formatSource(value)); return;
       case 'pick': run(() => this.stack.push(value)); this.selectLevel(level + 1); return;
       case 'roll': run(() => moveLevel(this.stack, level, 1)); this.selectLevel(1); return;
       case 'rolld': run(() => moveLevel(this.stack, 1, level)); this.selectLevel(level); return;
       case 'drop': run(() => dropLevel(this.stack, level)); if (!this.stack.depth) this.clearSelection(); return;
-      case 'eval': this.clearSelection(); this.entry.safeRun(() => { moveLevel(this.stack, level, 1); lookup('EVAL').fn(this.stack, this.entry); }, 'EVAL'); return;
-      case 'num': this.clearSelection(); this.entry.safeRun(() => { moveLevel(this.stack, level, 1); lookup('→NUM').fn(this.stack, this.entry); }, '→NUM'); return;
+      case 'eval': runOn('EVAL'); return;
+      case 'num': runOn('→NUM'); return;
       case 'plot': this.clearSelection(); this.plotExpression(value.expr); return;
-      case 'copy': this._copyText(formatSource(value), `Copied level ${level}`); return;
+      case 'copy': this.copyText(formatSource(value), `Copied level ${level}`); return;
       case 'store': this._storePrompt(level, anchor); return;
       case 'ask': this.askAssistant(`Explain what is on level ${level} of my stack: ${formatSource(value)}`); return;
       case 'more': this._levelMenu(level, anchor); return;
@@ -531,7 +540,7 @@ class App {
   _levelMenu(level, anchor) {
     const value = this.stack.peek(level);
     const item = (act, ico, label, hint = '') => `<button type="button" class="opt" data-act="${act}"><span class="ck">${icon(ico, 'sm')}</span><b>${escapeHtml(label)}</b><em>${escapeHtml(hint)}</em></button>`;
-    const html = `<h6>Level ${level}</h6>${item('edit', 'edit', 'Edit', '↵')}${item('echo', 'chr', 'Copy into the command line')}${item('pick', 'copy', 'Copy to level 1 (PICK)')}${item('roll', 'up', 'Move to level 1 (ROLL)')}${item('rolld', 'down', 'Move level 1 here (ROLLD)')}${item('eval', 'play', 'Evaluate (EVAL)')}${item('num', 'chr', 'To a number (→NUM)')}${isSymbolic(value) ? item('plot', 'plot', 'Plot it') : ''}${item('store', 'folder', 'Store in a variable…')}${item('copy', 'copy', 'Copy as text')}${item('ask', 'spark', 'Ask the assistant about it')}<hr>${item('drop', 'trash', 'Drop', '⌫')}`;
+    const html = `<h6>Level ${level}</h6>${item('edit', 'edit', 'Edit', shortcutText('level.edit'))}${item('echo', 'chr', 'Copy into the command line')}${item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick'))}${item('roll', 'up', 'Move to level 1 (ROLL)')}${item('rolld', 'down', 'Move level 1 here (ROLLD)')}${item('eval', 'play', 'Evaluate (EVAL)')}${item('num', 'chr', 'To a number (→NUM)')}${isSymbolic(value) ? item('plot', 'plot', 'Plot it') : ''}${item('store', 'folder', 'Store in a variable…')}${item('copy', 'copy', 'Copy as text', shortcutText('level.copy'))}${item('ask', 'spark', 'Ask the assistant about it')}<hr>${item('drop', 'trash', 'Drop', shortcutText('level.drop'))}`;
     this.popover.open(anchor, html, {
       label: `Level ${level}`,
       onClick: (t) => { this.popover.close({ restoreFocus: false }); this.levelAction(t.dataset.act, level, anchor); },
@@ -566,7 +575,7 @@ class App {
     this.selectLevel(to);
   }
 
-  async _copyText(text, message) {
+  async copyText(text, message) {
     try { await navigator.clipboard.writeText(text); this.toast(message); }
     catch { this.notifyError('The clipboard is not available here.'); }
   }
@@ -617,7 +626,7 @@ class App {
     else this.stack.push(value);
     this._endEdit();
     this.setInputMode('rpl');
-    if (edit?.kind === 'var') this.toast(`Stored ${edit.name}`);
+    if (edit?.kind === 'var') this._storedToast(edit.name);
   }
 
   _writer() {
@@ -646,8 +655,12 @@ class App {
       this.input.render();
       this.renderStatus();
     };
-    if (edit) this.toast('Edit cancelled. The level is unchanged.', { action: 'Undo', onAction: reopen });
+    if (edit) this._toastEditCancelled(edit, reopen);
     else if (hadContent) this.toast(mode === 'equation' ? 'Discarded the equation' : 'Discarded the matrix', { action: 'Undo', onAction: reopen });
+  }
+
+  _toastEditCancelled(edit, reopen) {
+    this.toast(`Edit cancelled. ${edit.kind === 'var' ? edit.name : 'The level'} is unchanged.`, { action: 'Undo', onAction: reopen });
   }
 
   pushFromWriter(value, message) {
@@ -664,6 +677,7 @@ class App {
 
   commitEntryAndPush(values) {
     if (this.entry.buffer.trim()) this.entry.enter();
+    this.entry._snapForUndo();
     for (const value of Array.isArray(values) ? values : [values]) this.stack.push(value);
   }
 
@@ -684,17 +698,22 @@ class App {
       }
     } else if (edit.kind === 'var' && added === 1) {
       varStore(edit.name, this.stack.pop());
-      this.toast(`Stored ${edit.name}`);
+      this._storedToast(edit.name);
     }
     this._endEdit();
   }
 
   cancelEdit() {
-    if (!this.pendingEdit) return false;
+    const edit = this.pendingEdit;
+    const text = this.entry.buffer;
     this.entry.cancel();
     this._endEdit();
-    if (this.inputMode !== 'rpl') this.setInputMode('rpl');
-    return true;
+    this._toastEditCancelled(edit, () => {
+      this.pendingEdit = edit;
+      this.entry.recall(text);
+      this.renderStatus();
+      this.input.render();
+    });
   }
 
   commitEntry() {
@@ -706,14 +725,9 @@ class App {
       this.askAssistant(question);
       return;
     }
-    if (this.pendingEdit && this.inputMode === 'rpl') { this._commitEdit(); return; }
+    if (this.pendingEdit) { this._commitEdit(); return; }
     this.entry.enter();
     if (this.entry.error) this.entry.focus();
-  }
-
-  cancelEntry() {
-    if (this.cancelEdit()) return;
-    this.entry.cancel();
   }
 
   backspace() {
@@ -722,7 +736,6 @@ class App {
   }
 
   swapTop() {
-    if (this.stack.depth < 2) { this.entry.flashError({ message: 'SWAP needs two values; the stack has one.' }); return; }
     this.entry._snapForUndo();
     this.entry.safeRun(() => lookup('SWAP').fn(this.stack, this.entry), 'SWAP');
   }
@@ -736,13 +749,11 @@ class App {
 
   insertUnit(unit) {
     const e = this.entry;
-    if (e.buffer.trim()) { e.type(`_${unit}`); e.focus(); return; }
+    if (e.buffer.trim()) { e.type(`_${unit}`); return; }
     const top = this.stack.depth ? this.stack.peek(1) : null;
     e.recall(top && (isReal(top) || isInteger(top)) ? `1_${unit} *` : `1_${unit}`);
     this.commitEntry();
   }
-
-  echoStackLevel(level) { this.levelAction('echo', level); }
 
   navigateToPathSegment(index) {
     const path = currentPath();
@@ -752,10 +763,6 @@ class App {
     if (this.entry.buffer.trim()) this.commitEntry();
     if (index === 0) { goHome(); return; }
     for (let i = 0; i < stepsUp; i++) goUp();
-  }
-
-  _typeIntoLine(text) {
-    this.entry.type(`${this.entry.buffer && !/\s$/.test(this.entry.buffer) ? ' ' : ''}${text}`);
   }
 
   _takeWriterText() {
@@ -793,7 +800,7 @@ class App {
       this.inputMode = 'rpl';
       this._eqwSlots = null;
       this.input.show('rpl');
-      if (text) this._typeIntoLine(text);
+      if (text) this.entry.typeToken(text);
       this.entry.focus();
     }
     this._ctxPage = 0;
@@ -802,10 +809,7 @@ class App {
     this.renderStatus();
   }
 
-  openEquationEditor({ fromLevel1 = false } = {}) {
-    if (fromLevel1 && this.stack.depth && (isSymbolic(this.stack.peek(1)) || isName(this.stack.peek(1)))) this.editLevel(1);
-    else this.setInputMode('equation');
-  }
+  openEquationEditor() { this.runAction('writer.equation'); }
 
   showMenu(id, { remember = true } = {}) {
     if (this.selection != null) this.clearSelection();
@@ -816,11 +820,11 @@ class App {
     if (remember) this.setPrefs({ menu: this.menuKind });
   }
 
-  setMenu(slots, kind = null) {
+  setMenu(slots, kind = null, { preservePage = false } = {}) {
     if (kind === 'EQW') { this._eqwSlots = slots; this._ctxPage = 0; this.menubar.render(); return; }
     this.menuKind = kind;
     this.menuAll = Array.isArray(slots) ? slots.slice() : [];
-    this.menuPage = 0;
+    if (!preservePage) this.menuPage = 0;
     this.menubar.render();
   }
 
@@ -882,7 +886,7 @@ class App {
         ? { label: 'PLOT', title: 'Plot it', onPress: act('plot') }
         : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },
       { label: '→NUM', title: 'Evaluate to a number', onPress: act('num') },
-      { label: 'STO…', title: 'Store it in a variable', onPress: () => this.levelAction('store', level) },
+      { label: 'STO…', title: 'Store it in a variable', onPress: act('store') },
       { label: 'COPY', title: 'Copy to the clipboard', onPress: act('copy') },
       { label: 'ASK ✦', title: 'Ask the assistant about it', onPress: act('ask') },
       { label: 'DONE', title: 'Clear the selection (Esc)', onPress: () => this.clearSelection() },
@@ -895,10 +899,10 @@ class App {
     const slots = names.map((name) => ({
       label: name,
       command: name,
-      title: this.commandTitle(name),
+      title: `${this.commandTitle(name)} · ↰ types it · ↱ opens the reference`,
       blockedReason: () => this._tooFewArgumentsReason(name),
       onPress: () => this.runCommandFromUI(name),
-      onPressL: () => { this.entry.type(`${this.entry.buffer && !/\s$/.test(this.entry.buffer) ? ' ' : ''}${name} `); this.entry.focus(); },
+      onPressL: () => this.entry.typeToken(`${name} `),
       onPressR: () => this.drawers.showReference(name),
     }));
     if (family.id === 'UNITS') {
@@ -906,15 +910,12 @@ class App {
         slots.push({ label: unit, title: `Attach _${unit} to the number you are typing, or to level 1`, onPress: () => this.insertUnit(unit) });
       }
     }
-    this.menuKind = family.id;
-    this.menuAll = slots;
-    this.menuPage = 0;
-    this.menubar.render();
+    this.setMenu(slots, family.id);
   }
 
   commandTitle(name) {
     const info = this.commandInfo(name);
-    return info ? `${name}: ${shortDescription(info.entry, 100)} · ↰ types it · ↱ opens the reference` : `${name} · ↰ types it · ↱ opens the reference`;
+    return info ? `${name}: ${shortDescription(info.entry, 100)}` : name;
   }
 
   commandInfo(name) {
@@ -985,9 +986,8 @@ class App {
   }
 
   showModesMenu(opts = {}) {
-    const prevPage = this.menuPage;
     const slots = MODES.flatMap((m) => m.options.map((o) => ({
-      label: m.id === 'base' ? ({ h: 'HEX', d: 'DEC', o: 'OCT', b: 'BIN' })[o.value] : m.id === 'fmt' || m.id === 'coord' ? o.value.slice(0, 5) : o.value,
+      label: m.id === 'base' ? binaryBaseLabel(o.value) : m.id === 'fmt' || m.id === 'coord' ? o.value.slice(0, 5) : o.value,
       title: `${m.title}: ${o.label}. ${o.detail}`,
       toggle: true,
       on: () => m.current() === o.value,
@@ -1000,10 +1000,7 @@ class App {
       on: () => calcState.textbookMode,
       onPress: () => this.setTextbook(!calcState.textbookMode),
     });
-    this.menuKind = 'MODES';
-    this.menuAll = slots;
-    this.menuPage = opts.preservePage ? prevPage : 0;
-    this.menubar.render();
+    this.setMenu(slots, 'MODES', opts);
   }
 
   pressVariable(name, layer = null) {
@@ -1013,24 +1010,24 @@ class App {
     if (layer === 'L') {
       if (this.stack.depth < 1) { this.entry.flashError({ message: `STO ${name} needs a value on level 1; the stack is empty.` }); return; }
       this.entry.safeRun(() => { this.entry._snapForUndo(); varStore(name, this.stack.pop()); }, 'STO');
-      this.toast(`Stored level 1 in ${name}`);
+      if (!this.entry.error) this._storedToast(name, `Stored level 1 in ${name}`);
       return;
     }
-    if (layer === 'R') { this.entry._snapForUndo(); this.stack.push(v); return; }
+    if (layer === 'R') { this._pushValue(v); return; }
     if (isDirectory(v)) {
       if (!goInto(name)) this.entry.flashError({ message: `Cannot open ${name}` });
       return;
     }
+    this._pushValue(v, isProgram(v) ? name : null);
+  }
+
+  _pushValue(value, runAs = null) {
     this.entry._snapForUndo();
-    if (isProgram(v)) {
-      this.entry.safeRun(() => { this.stack.push(v); lookup('EVAL').fn(this.stack, this.entry); }, name);
-      return;
-    }
-    this.stack.push(v);
+    if (runAs) this.entry.safeRun(() => { this.stack.push(value); lookup('EVAL').fn(this.stack, this.entry); }, runAs);
+    else this.stack.push(value);
   }
 
   showVarsMenu(opts = {}) {
-    const prevPage = this.menuPage;
     const slots = varOrder().map((id) => {
       const v = varRecall(id);
       const dir = isDirectory(v);
@@ -1044,20 +1041,14 @@ class App {
         onPressR: dir ? null : () => this.pressVariable(id, 'R'),
       };
     });
-    this.menuKind = 'VARS';
-    this.menuAll = slots;
-    this.menuPage = opts.preservePage ? prevPage : 0;
-    this.menubar.render();
+    this.setMenu(slots, 'VARS', opts);
   }
 
   showCustomMenu() {
     if (this.entry.buffer.trim().length > 0) this.commitEntry();
     const cst = varRecall('CST');
-    if (cst === undefined || !isList(cst)) {
-      this.menuKind = 'CST';
-      this.menuAll = [];
-      this.menuPage = 0;
-      this.menubar.render();
+    if (!isList(cst)) {
+      this.setMenu([], 'CST');
       this.toast(cst === undefined
         ? 'CST is empty. Store a list of commands or names in CST, for example { SOLVE FACTOR } `CST` STO.'
         : 'CST must hold a list, for example { SOLVE FACTOR }.');
@@ -1065,26 +1056,19 @@ class App {
     }
     const slots = cst.items.map((item) => {
       const label = customMenuLabel(item);
-      const [target, tag] = customMenuTarget(item);
+      const target = isTagged(item) ? item.value : item;
       return {
         label,
         title: `${label} · ↰ types it · ↱ recalls it`,
         onPress: () => {
           if (this.entry.buffer.trim().length > 0) this.commitEntry();
-          if (isProgram(target) || isName(target)) {
-            this.entry.safeRun(() => { this.stack.push(target); lookup('EVAL').fn(this.stack, this.entry); }, label);
-          } else {
-            this.stack.push(target);
-          }
+          this._pushValue(target, isProgram(target) || isName(target) ? label : null);
         },
-        onPressL: () => this.entry.type(tag || label),
-        onPressR: () => { if (this.entry.buffer.trim().length > 0) this.commitEntry(); this.stack.push(target); },
+        onPressL: () => this.entry.type(label),
+        onPressR: () => { if (this.entry.buffer.trim().length > 0) this.commitEntry(); this._pushValue(target); },
       };
     });
-    this.menuKind = 'CST';
-    this.menuAll = slots;
-    this.menuPage = 0;
-    this.menubar.render();
+    this.setMenu(slots, 'CST');
   }
 
   layer() {
@@ -1119,7 +1103,7 @@ class App {
 
   keyCaption(key) {
     if (this.selection != null) return { '▲': 'UP', '▼': 'DOWN', ENTER: 'EDIT', '⌫': 'DROP', ON: 'DONE' }[key.primary] ?? '';
-    if (this.inputMode !== 'rpl') return { ENTER: 'PUSH', ON: 'BACK' }[key.primary] ?? '';
+    if (this.inputMode !== 'rpl') return { ENTER: this.pendingEdit ? (this.pendingEdit.kind === 'var' ? 'STORE' : 'REPLACE') : 'PUSH', ON: 'CANCEL' }[key.primary] ?? '';
     const depth = this.stack.depth;
     if (this.entry.buffer.length) return key.primary === 'ON' ? 'CANCEL' : '';
     if (key.primary === 'ENTER' && depth) return 'DUP';
@@ -1139,13 +1123,9 @@ class App {
       label: `${key.primary} key layers`,
       onClick: (t) => {
         this.popover.close({ restoreFocus: false });
-        const layer = t.dataset.v;
-        const saved = this.shift;
-        this.shift = layer === 'L' ? 'shiftL' : layer === 'R' ? 'shiftR' : layer === 'A' ? 'alpha' : null;
+        this.shift = { L: 'shiftL', R: 'shiftR', A: 'alpha' }[t.dataset.v] ?? null;
         this.handleKey(key);
-        if (this.shift) this.shift = saved;
-        this.keypad.update();
-        this.renderStatus();
+        this.setShift(null);
       },
     });
   }
@@ -1159,21 +1139,21 @@ class App {
       this.clearSelection();
     }
 
-    if (this.inputMode === 'equation') {
+    if (this.inputMode !== 'rpl') {
       if (key.primary === 'ON' && !this.shift) { this.runAction('ui.escape'); return; }
-      this.equationEditor.pressKeypad(key, this.shift);
+      if (this.inputMode === 'equation') this.equationEditor.pressKeypad(key, this.shift);
+      else this.matrixEditor.pressFace(keypadFace(key, this.shift));
       if (this.shift && !this.shiftLocked()) this.setShift(null);
       return;
     }
 
-    const alphaActive = this.shift === 'alpha' || this.shift === 'alphaLock';
-    if (alphaActive && key.alpha) {
+    const layer = this.layer();
+    if (layer === 'A' && key.alpha) {
       this.entry.type(key.alpha);
       if (this.shift === 'alpha') this.setShift(null);
       return;
     }
 
-    const layer = this.layer();
     const action =
       layer === 'L' && key.shiftLAction ? key.shiftLAction :
       layer === 'R' && key.shiftRAction ? key.shiftRAction :
@@ -1240,12 +1220,12 @@ class App {
         try { this.entry.performUndo(); } catch (e) { this.entry.flashError(e); }
         return true;
       case 'edit.redo':
-        if (this.inputMode === 'equation' && this.equationEditor.state.future.length) { this.equationEditor.pressFace('REDO'); return true; }
+        if (this.inputMode === 'equation' && this.equationEditor.canRedo()) { this.equationEditor.pressFace('REDO'); return true; }
         if (this.inputMode === 'rpl' && this.entry.buffer.length) { this.entry.redoText(); return true; }
         try { this.entry.performRedo(); } catch (e) { this.entry.flashError(e); }
         return true;
       case 'edit.paste':
-        navigator.clipboard?.readText?.().then((text) => { if (text) { this.entry.paste(text); this.entry.focus(); } })
+        navigator.clipboard?.readText?.().then((text) => { if (text) this.entry.paste(text); })
           .catch(() => this.notifyError('The clipboard is not available here. Click the command line and paste there.'));
         return true;
       case 'ui.escape': return this._escape();
@@ -1297,7 +1277,7 @@ class App {
     if (this.plotFocus) { this.setPlotFocus(false); return true; }
     if (document.activeElement?.closest?.('.pl-box')) { this.focusInput(); return true; }
     if (this.selection != null) { this.clearSelection(); return true; }
-    if (this.entry.error) { this.entry.error = ''; this.entry._emit(); return true; }
+    if (this.entry.error) { this.dismissError(); return true; }
     if (this.inputMode !== 'rpl') { this.cancelWriter(); return true; }
     if (this.pendingEdit) { this.cancelEdit(); return true; }
     if (this.entry.buffer.length) {
@@ -1336,7 +1316,7 @@ class App {
     if (tag === 'BUTTON' && (e.key === 'Enter' || e.key === ' ')) return;
     if (chord === 'Mod+V' && (inEditor || this.inputMode !== 'rpl')) return;
 
-    if (this.inputMode === 'equation' && this.equationEditor.ownsKeyboard(target)) {
+    if (this.inputMode === 'equation' && !target?.closest?.('.pl-box') && this.equationEditor.ownsKeyboard(target)) {
       const writerBinding = findBinding(chord, ['equation']);
       if (writerBinding) {
         if (this.runAction(writerBinding.action, writerBinding.arg) !== false) e.preventDefault();
@@ -1346,7 +1326,8 @@ class App {
     }
 
     if (inField) {
-      const fieldSafe = /^Mod\+(K|I|E|\\|;|,|\/)$|^Mod\+Shift\+(F|M)$|^F\d$|^(Shift|Alt)\+F\d$/.test(chord);
+      const fieldSafe = /^Mod\+(K|I|E|\\|;|,|\/)$|^Mod\+Shift\+(F|M)$|^F\d$|^(Shift|Alt)\+F\d$/.test(chord)
+        || (/^Page(Up|Down)$/.test(chord) && !!target.closest?.('.mx, .eqw'));
       const escapeSafe = chord === 'Escape' && (!target.value || this.inputMode !== 'rpl');
       if (!fieldSafe && !escapeSafe) return;
     }
@@ -1373,16 +1354,7 @@ function customMenuLabel(item) {
   return format(item);
 }
 
-function customMenuTarget(item) {
-  if (isTagged(item)) return [item.value, item.tag];
-  return [item, null];
-}
-
 window.__hp50 = new App();
-
-window.calc_reset = function calc_reset() {
-  window.__hp50.sheets.resetEverything();
-};
 
 giac.init().then(() => window.__hp50.equationEditor?.refreshInsights()).catch((e) => {
   console.error('[giac] init failed:', e);

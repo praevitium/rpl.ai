@@ -1,50 +1,25 @@
-/* Persistence: snapshot the calculator state to a JSON-safe shape
-   and rehydrate it later.
+/* Snapshots of the calculator state as JSON: the localStorage autosave,
+   the first-run seed (www/hp50-all.json), .json export / import, and the
+   named ARCHIVE / RESTORE backups all use snapshot() and rehydrate().
 
-   Drives four features:
-     - Autosave to localStorage so refreshing the page doesn't wipe
-       the stack and HOME directory.
-     - A first-run seed (`www/hp50-all.json`) when that store is empty.
-     - Export/import to a .json file the user can hand around or back
-       up.
-     - Named backups (`:n:name ARCHIVE` / `RESTORE`, ports 0-3), kept
-       together under one localStorage key.
+   Encoding:
+     BigInt    → { __t: 'bigint', v: '<digits>' }
+     Decimal   → { __t: 'decimal', v: '<toString()>' }   (Real payloads)
+     Map       → { __t: 'map', v: [[k, encV], ...] }
+     Directory → { type: 'directory', name, entries }   (parent dropped,
+                 relinked on decode)
+   Other objects are walked as plain objects and are not refrozen.
 
-   All go through `snapshot(stack)` and `rehydrate(snap, stack)` —
-   autosave stringifies the snapshot under a single key, backups store
-   one snapshot per `port:name`, and export wraps it in a download Blob.
-
-   Encoding rules (handled by encode/decode below):
-     - BigInt        → { __t: 'bigint', v: '<digits>' }
-     - Decimal       → { __t: 'decimal', v: '<toString()>' }
-                       (Real's payload is a decimal.js Decimal instance)
-     - Map           → { __t: 'map',    v: [[k, encV], ...] }
-     - Directory     → { type: 'directory', name, entries: <Map enc> }
-                       (parent pointer dropped; relinked on decode)
-     - Anything else → walked recursively through arrays / plain
-                       objects.  Frozen value objects are treated as
-                       plain objects; the rehydrated copies are NOT
-                       refrozen — ops never mutate them.
-
-   The snapshot carries a `version` tag.  Bump it whenever the on-disk
-   shape changes incompatibly so old saved state is rejected cleanly
-   instead of loading as garbage. */
+   Bump SCHEMA_VERSION whenever this shape changes incompatibly, so old
+   saves are rejected instead of loading as garbage. */
 
 import {
-  state, currentPath, goHome, goInto, notify,
-  setCasVx, resetCasVx,
-  setCasModulo, resetCasModulo,
-  COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX,
+  state, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo,
+  ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX,
 } from './state.js';
 import { TYPES, Decimal, BIN_BASES } from './types.js';
 import { RPLError } from './stack.js';
 import { formatHpText } from './hp-text.js';
-
-/* PRNG seed survives page reload.  `seedPrng(n)` does the zero-
-   avoidance + reduction to [1, PRNG_MOD-1].  Imported here to apply a
-   decoded snapshot's prngSeed through the canonical coerce + emit path
-   so listeners see exactly one state event when rehydrate runs. */
-import { seedPrng } from './state.js';
 import SEED_STATE from '../../hp50-all.json' with { type: 'json' };
 
 export const STORAGE_KEY = 'hp50.state';
@@ -53,7 +28,6 @@ export const SCHEMA_VERSION = 1;
 function encode(v) {
   if (v === null || v === undefined) return v;
   if (typeof v === 'bigint') return { __t: 'bigint', v: v.toString() };
-  // toString() round-trip preserves full 15-digit precision.
   if (v instanceof Decimal) return { __t: 'decimal', v: v.toString() };
   if (v instanceof Map) {
     return { __t: 'map', v: [...v].map(([k, x]) => [k, encode(x)]) };
@@ -62,8 +36,6 @@ function encode(v) {
   if (typeof v === 'object') {
     const out = {};
     for (const k of Object.keys(v)) {
-      // Skip Directory.parent — it's a back-pointer that creates a
-      // cycle and is reconstructed on decode by walking the tree.
       if (k === 'parent') continue;
       out[k] = encode(v[k]);
     }
@@ -88,16 +60,9 @@ function decode(v) {
   return v;
 }
 
-/** Public encode/decode shims so the Files tab (and any other UI that
- *  exports a single variable rather than the full snapshot) goes through
- *  the same Decimal / BigInt / Map handling that `snapshot()` uses.  The
- *  internal helpers stay private so this module's encoding contract has
- *  one entry point per direction. */
 export function encodeValue(v) { return encode(v); }
 export function decodeValue(v) { return decode(v); }
 
-/* Re-link parent pointers after decode so currentPath / goUp / goInto
-   all work as before. */
 function relinkParents(dir, parent = null) {
   dir.parent = parent;
   if (!(dir.entries instanceof Map)) return;
@@ -106,7 +71,6 @@ function relinkParents(dir, parent = null) {
   }
 }
 
-/** Build a JSON-safe snapshot of the calculator's persistent state. */
 export function snapshot(stack) {
   return {
     version: SCHEMA_VERSION,
@@ -123,22 +87,10 @@ export function snapshot(stack) {
       userFlags: [...state.userFlags],
     },
     home:    encode(state.home),
-    path:    currentPath(),                 // ['HOME', ...] segments
-    stack:   stack._items.map(encode),      // level-1-last order
-    // PRNG seed survives a page reload so seeded sequences resume
-    // where they left off.  BigInt is encoded via `encode()` as
-    // { __t: 'bigint', v: '<digits>' }.  Older snapshots that omit this
-    // key rehydrate with the current module seed untouched (see below).
+    path:    currentPath(),
+    stack:   stack._items.map(encode),      // level 1 last
     prngSeed: encode(state.prngSeed),
-    // CAS main variable (VX / SVX) survives a page reload.  Plain
-    // string — no encoding helper needed.  Optional on decode (see
-    // rehydrate below) so older snapshots predating this field still
-    // load cleanly and reset VX to the default `'x'`.
     casVx: state.casVx,
-    // CAS MODULO state slot (MODSTO / ADDTMOD / SUBTMOD / MULTMOD /
-    // POWMOD).  BigInt → encoded as `{ __t: 'bigint', v: '<digits>' }`.
-    // Optional on decode — older snapshots predating this field reset
-    // MODULO to the default 13n, matching a fresh boot.
     casModulo: encode(state.casModulo),
   };
 }
@@ -162,50 +114,45 @@ function restoreModes(modes) {
   }
 }
 
-/** Restore from a snapshot.  Throws on shape/version mismatch.
- *  Mutates `state` in place and replaces the contents of `stack`. */
+function decodeCasModulo(snap) {
+  if (snap.casModulo === undefined || snap.casModulo === null) return 13n;
+  try {
+    const m = decode(snap.casModulo);
+    if (typeof m === 'bigint') return m;
+    console.warn('hp50 persist: bad casModulo type, resetting');
+  } catch (e) {
+    console.warn('hp50 persist: bad casModulo, ignoring', e);
+  }
+  return 13n;
+}
+
+// Everything that can throw runs before any state changes, so a bad
+// snapshot leaves the calculator as it was.
 export function rehydrate(snap, stack) {
   if (!snap || typeof snap !== 'object') throw new Error('snapshot: not an object');
   if (snap.version !== SCHEMA_VERSION) {
     throw new Error(`snapshot: unsupported version ${snap.version}`);
   }
-
   const home = decode(snap.home);
-  if (!home || home.type !== TYPES.DIRECTORY) {
+  if (!home || home.type !== TYPES.DIRECTORY || !(home.entries instanceof Map)) {
     throw new Error('snapshot: home is not a directory');
   }
-  relinkParents(home, null);
+  const items = Array.isArray(snap.stack) ? snap.stack.map(decode) : [];
 
-  // Replace HOME's contents in place so existing references in
-  // state.js (which captured _home at module load) keep pointing at
-  // the live root.  Walking the entries map is enough — name and
-  // type are invariants of HOME.
+  // Refill the live HOME in place: other modules hold references to it.
   state.home.entries.clear();
   for (const [k, v] of home.entries) state.home.entries.set(k, v);
-  // Re-link the freshly-installed children to the live HOME so
-  // goUp from a subdir lands on the real _home, not the throw-away
-  // decoded copy.
-  for (const child of state.home.entries.values()) {
-    if (child && child.type === TYPES.DIRECTORY) relinkParents(child, state.home);
-  }
+  relinkParents(state.home);
 
-  // Snap to HOME, then descend along the saved path (skipping
-  // segment 0 which is HOME itself).  Silently stop if a segment is
-  // missing — the directory may have been purged in another tab.
+  // A saved path segment may no longer exist; stop at the deepest one found.
   goHome();
   const path = Array.isArray(snap.path) ? snap.path : ['HOME'];
   for (let i = 1; i < path.length; i++) {
     if (!goInto(path[i])) break;
   }
 
-  state.angle = snap.angle === 'DEG' || snap.angle === 'RAD' || snap.angle === 'GRD'
-    ? snap.angle : 'RAD';
+  state.angle = ANGLE_MODES.includes(snap.angle) ? snap.angle : 'RAD';
 
-  // Restore the PRNG seed if the snapshot carries one.  Older v1
-  // snapshots that predate this field rehydrate without touching the
-  // seed — the module-local default (or whatever was set at run time)
-  // stays in place.  `seedPrng` handles the zero-avoidance and range
-  // reduction so bogus values can't pin the LCG to a fixed point.
   if (snap.prngSeed !== undefined && snap.prngSeed !== null) {
     try {
       const decoded = decode(snap.prngSeed);
@@ -213,62 +160,23 @@ export function rehydrate(snap, stack) {
         seedPrng(decoded);
       }
     } catch (e) {
-      // Silently ignore a malformed prngSeed — the rest of the snapshot
-      // is still worth restoring.  A note on snapshot bump: if we ever
-      // change the seed encoding, bump SCHEMA_VERSION so old blobs are
-      // rejected rather than silently losing seeded determinism.
       console.warn('hp50 persist: bad prngSeed in snapshot, ignoring', e);
     }
   }
 
-  // Optional CAS main variable (VX).  Older snapshots that lack this
-  // field reset VX to the default — matching what a fresh boot would
-  // do.  Non-string / empty values are treated as "not present" so a
-  // bad payload can't stash garbage into the slot.
-  //
-  // One-time migration: snapshots written before commit b227846
-  // ("everything lowercase by default") have casVx === 'X' baked in
-  // because that was the default at save time.  We rewrite that single
-  // pre-migration value to the new default 'x' so users who never
-  // explicitly ran SVX don't keep seeing the old uppercase.  Anyone
-  // who genuinely wants 'X' can re-run SVX after the upgrade.
-  if (typeof snap.casVx === 'string' && snap.casVx.length > 0) {
-    const incoming = snap.casVx === 'X' ? 'x' : snap.casVx;
-    try { setCasVx(incoming); }
-    catch (e) { console.warn('hp50 persist: bad casVx, ignoring', e); resetCasVx(); }
-  } else {
-    resetCasVx();
-  }
+  // Saves from before lowercase became the default carry casVx 'X'.
+  const vx = typeof snap.casVx === 'string' && snap.casVx.length > 0 ? snap.casVx : 'x';
+  setCasVx(vx === 'X' ? 'x' : vx);
 
-  // Optional CAS MODULO slot.  Older snapshots that lack this field
-  // reset MODULO to the default 13n — matching what a fresh boot would
-  // do.  Bad payloads (non-bigint after decode, or values that fail
-  // the setCasModulo guard) fall back to the default rather than
-  // pinning the slot to garbage.
-  if (snap.casModulo !== undefined && snap.casModulo !== null) {
-    try {
-      const m = decode(snap.casModulo);
-      if (typeof m === 'bigint') setCasModulo(m);
-      else { console.warn('hp50 persist: bad casModulo type, resetting'); resetCasModulo(); }
-    } catch (e) {
-      console.warn('hp50 persist: bad casModulo, ignoring', e); resetCasModulo();
-    }
-  } else {
-    resetCasModulo();
-  }
+  setCasModulo(decodeCasModulo(snap));
 
   restoreModes(snap.modes);
 
-  const items = Array.isArray(snap.stack) ? snap.stack.map(decode) : [];
   stack.restore(items);
-  // stack.restore emits its own event; one notify() covers angle +
-  // path + VARS-menu rebuild even when goHome was a no-op.
   notify();
 }
 
-/** Best-effort save — never throws (e.g. quota errors are swallowed
- *  with a console warn).  The user shouldn't see autosave failures
- *  break the calculator. */
+// Autosave must never break the calculator, so failures only warn.
 export function saveToLocalStorage(stack) {
   try {
     const json = JSON.stringify(snapshot(stack));
@@ -278,10 +186,8 @@ export function saveToLocalStorage(stack) {
   }
 }
 
-/** Returns true if a snapshot was loaded.  On any failure (no key,
- *  bad JSON, version mismatch) the bad key is dropped and the caller
- *  starts from the default empty state. */
-export function loadFromLocalStorage(stack) {
+// A snapshot that fails to load is dropped so the next start is clean.
+function loadFromLocalStorage(stack) {
   let raw;
   try { raw = localStorage.getItem(STORAGE_KEY); }
   catch { return false; }
@@ -302,9 +208,7 @@ export function loadInitialState(stack) {
   return 'seed';
 }
 
-/** Trigger a browser download of the current state as a JSON file.
- *  Returns the filename that was used. */
-export function exportToFile(stack, filename = defaultFilename()) {
+export function exportToFile(stack, filename = `hp50-${fileStamp()}.json`) {
   return downloadText(JSON.stringify(snapshot(stack), null, 2), filename, 'application/json');
 }
 
@@ -329,22 +233,23 @@ export function readFileText(file) {
   });
 }
 
-/** Read a File object the user picked, parse it, and rehydrate.
- *  Returns a Promise that resolves on success, rejects on failure. */
 export async function importFromFile(file, stack) {
   rehydrate(JSON.parse(await readFileText(file)), stack);
 }
 
-function defaultFilename() {
+function fileStamp() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, '0');
-  const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`
-              + `-${pad(d.getHours())}${pad(d.getMinutes())}`;
-  return `hp50-${stamp}.json`;
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`
+       + `-${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
+
+function safeFileName(name) {
+  return String(name).replace(/[^A-Za-z0-9_+\-]/g, '_') || 'var';
 }
 
 export const BACKUPS_KEY = 'hp50.backups';
-export const BACKUP_PORTS = Object.freeze(['0', '1', '2', '3']);
+const BACKUP_PORTS = Object.freeze(['0', '1', '2', '3']);
 
 function backupStorage() {
   const storage = globalThis.localStorage;
@@ -399,26 +304,8 @@ export function deleteBackup(port, name) {
   writeBackups(backups);
 }
 
-/* single-variable export / import
-   The Files tab supports exporting and importing one variable (or one
-   subdirectory) at a time, as opposed to the whole HOME-tree snapshot above.
-   The wire shape is intentionally distinct from `snapshot()` so a malformed
-   file can't be silently rehydrated as a full state replacement:
-
-     {
-       "version":  1,
-       "kind":     "variable",
-       "name":     "<name>",
-       "value":    <encode(value)>,
-     }
-
-   `value` carries the same `{__t: 'bigint'|'decimal'|'map', ...}` envelopes
-   that `snapshot()` uses, so Decimal / BigInt / Directory all round-trip
-   through `decode()` unchanged.  A Directory exports recursively (its
-   `.entries` are walked by `encode()` already). */
-
-/** Build the JSON-safe wire object for a single named variable.
- *  Exposed for tests; `exportVariableToFile` is the user-facing wrapper. */
+// A single exported variable gets its own `kind` so a stray file can never
+// be rehydrated as a full state replacement.
 export function snapshotVariable(name, value) {
   return {
     version: SCHEMA_VERSION,
@@ -428,11 +315,7 @@ export function snapshotVariable(name, value) {
   };
 }
 
-/** Inverse of `snapshotVariable`.  Returns `{ name, value }` with the
- *  value run through the same `decode()` the full-snapshot rehydrate
- *  uses (Decimal / BigInt / Map / Directory are all reconstructed).  A
- *  Directory's `.parent` is left null — the caller relinks before
- *  installing it under a live parent, the same way `rehydrate()` does. */
+// A Directory value comes back with a null parent; the caller links it in.
 export function rehydrateVariable(snap) {
   if (!snap || typeof snap !== 'object') {
     throw new Error('variable: not an object');
@@ -447,43 +330,21 @@ export function rehydrateVariable(snap) {
     throw new Error('variable: missing name');
   }
   const value = decode(snap.value);
-  // Re-link the parent chain on a freshly-decoded directory subtree —
-  // top-level parent is null because the caller hasn't installed it yet.
   if (value && value.type === TYPES.DIRECTORY) {
     relinkParents(value, null);
   }
   return { name: snap.name, value };
 }
 
-/** Trigger a browser download of one named variable as a JSON file.
- *  Filename defaults to `hp50-var-<name>-<stamp>.json` so the user can
- *  tell single-variable dumps from the full snapshot at a glance.
- *  Returns the filename that was used. */
-export function exportVariableToFile(name, value, filename = defaultVariableFilename(name)) {
+export function exportVariableToFile(name, value, filename = `hp50-var-${safeFileName(name)}-${fileStamp()}.json`) {
   return downloadText(JSON.stringify(snapshotVariable(name, value), null, 2), filename, 'application/json');
 }
 
 /** Download `value` (a Directory exports as `DIR … END`) as `<name>.rpl` in HP text format. */
 export function exportHpTextFile(name, value) {
-  const safe = String(name).replace(/[^A-Za-z0-9_+\-]/g, '_') || 'var';
-  return downloadText(formatHpText(value), `${safe}.rpl`, 'text/plain');
+  return downloadText(formatHpText(value), `${safeFileName(name)}.rpl`, 'text/plain');
 }
 
-/** Read a File object the user picked, parse it, and return
- *  `{ name, value }`.  Does NOT install the variable anywhere — the
- *  caller decides whether to overwrite, rename, or refuse on conflict.
- *  Returns a Promise that resolves on success and rejects on failure. */
 export async function parseVariableFile(file) {
   return rehydrateVariable(JSON.parse(await readFileText(file)));
-}
-
-function defaultVariableFilename(name) {
-  // Strip path-unfriendly characters so a variable called `→FOO` lands
-  // as `hp50-var-FOO-...json` rather than something the OS flags.
-  const safe = String(name).replace(/[^A-Za-z0-9_+\-]/g, '_') || 'var';
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`
-              + `-${pad(d.getHours())}${pad(d.getMinutes())}`;
-  return `hp50-var-${safe}-${stamp}.json`;
 }

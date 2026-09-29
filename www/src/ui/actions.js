@@ -195,12 +195,9 @@ export function chordText(chord, mac = isMacPlatform()) {
   return [...ordered.map((m) => (m === 'Mod' ? 'Ctrl' : m)), keyText].join('+');
 }
 
-function bindingsFor(actionId, context = null) {
-  return KEYMAP.filter((b) => b.action === actionId && (!context || b.context === context));
-}
-
 export function shortcutText(actionId, mac = isMacPlatform()) {
-  const first = bindingsFor(actionId).find((b) => b.context === 'global') ?? bindingsFor(actionId)[0];
+  const bindings = KEYMAP.filter((b) => b.action === actionId);
+  const first = bindings.find((b) => b.context === 'global') ?? bindings[0];
   return first ? chordText(first.chord, mac) : '';
 }
 

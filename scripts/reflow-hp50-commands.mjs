@@ -1,8 +1,5 @@
 #!/usr/bin/env node
-/* The script is idempotent — it only matches bare `<pre>` (no
-   attributes) and the reflowed output uses `<pre class="cmd-mono">`,
-   so re-running is a no-op once the file is converted. */
-
+// Idempotent: only bare <pre> blocks are rewritten, and the output uses <pre class="cmd-mono">.
 import { fileURLToPath } from 'node:url';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -10,8 +7,7 @@ import path from 'node:path';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HTML_PATH = path.resolve(HERE, '../www/docs/hp50-commands.html');
 
-// `Access:` is intentionally omitted — it documents the physical-keypad
-// shortcut path, meaningless on a virtual calc, so it's silently dropped.
+// `Access:` is left out: it lists physical-keypad paths, which mean nothing here.
 const KNOWN_LABELS = new Set([
   'Type', 'Description', 'Flags',
   'Input/Output', 'Input', 'Output', 'Example',
@@ -27,8 +23,7 @@ function parseSections(body) {
   const lines = body.split('\n');
   let i = 0;
   while (i < lines.length && lines[i].trim() === '') i++;
-  // The first non-empty line is the bare command name (already shown
-  // in the h2 above) — skip it unless it happens to look like a label.
+  // The first line repeats the command name from the h2.
   if (i < lines.length && !labelRe.test(lines[i])) i++;
 
   const sections = [];
@@ -37,15 +32,12 @@ function parseSections(body) {
     if (m) {
       const label = m[1];
       const rest = lines[i].slice(m[0].length);
-      // Pad the first content line with spaces equal to where the
-      // continuation lines start, so common-indent stripping treats
-      // the whole section uniformly.
+      // Indent the first line like its continuations so commonIndent strips them alike.
       const padMatch = /^(\s*)(.*)$/.exec(rest);
       const baseIndent = m[0].length + padMatch[1].length;
       const collected = [' '.repeat(baseIndent) + padMatch[2]];
       i++;
-      // Break on ANY label (known or excluded) — otherwise a dropped
-      // section like Access would smear into the previous field's body.
+      // Stop at any label, known or not, so a dropped section doesn't join the previous one.
       while (i < lines.length) {
         if (labelRe.test(lines[i])) break;
         collected.push(lines[i]);
@@ -96,7 +88,6 @@ function groupLines(lines) {
   };
   for (const l of lines) {
     if (l.trim() === '') {
-      // Blanks inside a mono run stay (table header / blank / rows).
       if (cur && cur.kind === 'mono') cur.lines.push(l);
       else close();
       continue;
@@ -172,17 +163,9 @@ function renderGroup(group, label) {
   return renderProseGroup(group.lines);
 }
 
-/* Sections that almost always carry PDF-faithful layout — Example's
-   code listings rarely have the multi-space cue the line classifier
-   uses, so forcing it to a single <pre> keeps the indentation intact.
-   `Input/Output:` is handled separately (its mono groups become
-   <table>s — see buildIOTable). */
+// Example listings rarely have the multi-space cue isMonoLine looks for, so keep them verbatim.
 const VERBATIM_LABELS = new Set(['Example']);
 
-/* Stack-diagram blocks have a header row of "Level k/Argument k" /
-   "Level 1/Item 1" titles, then data rows with `→` separating inputs
-   from outputs.  Cells are 2+ space–separated.  Returns null when
-   the body doesn't have an arrow row (caller should keep <pre>). */
 function buildIOTable(text) {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length);
   if (lines.length < 1) return null;
@@ -193,12 +176,10 @@ function buildIOTable(text) {
     if (idx !== -1) { arrowCol = idx; break; }
   }
   if (arrowCol === -1) return null;
-  // Treat the first row as a header iff it has no arrow.
   const hasHeader = !rows[0].includes('→');
   const header = hasHeader ? [...rows[0]] : null;
   const dataRows = (hasHeader ? rows.slice(1) : rows).map(r => [...r]);
-  // Slot an empty cell into the header at the arrow column so its
-  // input/output titles line up with the data row's split.
+  // The header has no arrow cell; add one so its titles line up with the data columns.
   if (header) {
     while (header.length < arrowCol) header.push('');
     header.splice(arrowCol, 0, '');
@@ -216,9 +197,7 @@ function buildIOTable(text) {
         + header.map((c, i) => `<th${cellAttr(i)}>${c}</th>`).join('')
         + '</tr></thead>';
   }
-  // Some I/O blocks include `Example N: …` annotation rows after the
-  // stack diagram.  Those don't carry a `→`, so we span them across
-  // the full width instead of slotting their text into the first cell.
+  // Rows without an arrow are notes such as `Example 1: …`; span them across the table.
   out += '<tbody>'
        + dataRows.map(r => {
            if (r[arrowCol] !== '→') {
@@ -231,9 +210,6 @@ function buildIOTable(text) {
   return out;
 }
 
-/* Many Example bodies are a stack of `Label:  value` pairs (Example N,
-   Command, Result, …).  Render those as a small two-column table rather
-   than a wall of preformatted text. */
 const KV_LABEL_RE = /^\s*(Example \d+|Example|Command|Result|Results|Output|Input):\s*(.*)$/;
 function buildKVTable(text) {
   const lines = text.split('\n').map(l => l.replace(/\s+$/, ''));
@@ -248,7 +224,7 @@ function buildKVTable(text) {
     } else if (cur) {
       cur.value = (cur.value + ' ' + l.trim()).trim();
     } else {
-      return null;             // text before any label — abort
+      return null;
     }
   }
   if (cur) items.push(cur);
@@ -265,11 +241,7 @@ function buildKVTable(text) {
   return out + '</tbody></table>';
 }
 
-/* Catches PDF-extracted multi-column blocks that aren't I/O stack
-   diagrams (no `→`) and aren't code listings (no `«»` / backtick).
-   Cells separated by 3+ spaces; first row becomes <thead>.  Rejects
-   anything where rows disagree on cell count (likely formula
-   fragments, not a table). */
+// Rows that disagree on cell count are usually formula fragments, not a table.
 function buildGenericTable(text) {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length);
   if (lines.length < 2) return null;
@@ -286,11 +258,7 @@ function buildGenericTable(text) {
   return `<table class="cmd-tbl">${thead}${tbody}</table>`;
 }
 
-/* When the line classifier splits an I/O section into multiple groups
-   (because some PDF-extracted formula fragment landed on a non-mono
-   line), we end up with several <table>s and stray <p>/<pre>s inside
-   one Input/Output <dd>.  Merge them into a single table whose stray
-   prose becomes full-width span rows. */
+// A formula fragment on a prose line splits an I/O section into several pieces; rejoin them as one table.
 function mergeIOFragments(bodyHtml) {
   const items = [];
   for (const m of bodyHtml.matchAll(/<(table|p|pre)\b[^>]*>[\s\S]*?<\/\1>/g)) {

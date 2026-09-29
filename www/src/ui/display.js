@@ -1,40 +1,24 @@
-/* =================================================================
-   Render the stack and command line onto the LCD DOM nodes.
-   ================================================================= */
-
 import { format, formatStackTop, DEFAULT_DISPLAY } from '../rpl/formatter.js';
 import { astToSvg } from '../rpl/pretty.js';
 import { TYPES, isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
-import { state as calcState } from '../rpl/state.js';
+import { state as calcState, currentPath } from '../rpl/state.js';
 import { icon } from './icons.js';
 
-/** Escape the four characters that bite when interpolating plain text
- *  into HTML.  The formatter never emits raw markup, but the cell /
- *  list / path renderers route every formatted value through this so a
- *  future change can't leak a `<` or `&` into the LCD DOM. */
 export function escapeHtml(text) {
   return String(text)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-/** Map a BinaryInteger display-base key (h/d/o/b) to its annunciator
- *  label.  Returns undefined for any unknown / cleared key, which the
- *  caller treats as "hide the annunciator". */
 export function binaryBaseLabel(base) {
   return { h: 'HEX', d: 'DEC', o: 'OCT', b: 'BIN' }[base];
 }
 
-/** Build the number-display-mode annunciator label: 'STD' (the bare
- *  mode, ignoring digits) or `<MODE> <digits>` for FIX / SCI / ENG.  A
- *  falsy mode defaults to STD; the mode is upper-cased. */
 export function displayModeLabel(mode, digits) {
   const m = String(mode || 'STD').toUpperCase();
   return m === 'STD' ? 'STD' : `${m} ${digits}`;
 }
 
-/** Map a coordinate mode (RECT/CYLIN/SPHERE) to its display glyph,
- *  defaulting to the rectangular 'XYZ' for any unknown mode. */
 export function coordModeGlyph(mode) {
   return { RECT: 'XYZ', CYLIN: 'R∠Z', SPHERE: 'R∠∠' }[mode] || 'XYZ';
 }
@@ -89,8 +73,6 @@ export function typeName(value) {
 
 const clipText = (text, max = 28) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
 
-/** "the string "hi"", "a 2×3 matrix", "the real number 5." — how an
- *  error banner names a value. */
 export function describeValue(value) {
   const type = typeName(value);
   const shown = clipText(format(value));
@@ -109,7 +91,6 @@ export function describeValue(value) {
   }
 }
 
-/** The halted program with the next instruction wrapped in <mark>. */
 export function suspendedProgramHtml(halted, display = DEFAULT_DISPLAY) {
   const text = suspendedProgramText(halted, display);
   if (!text) return '';
@@ -121,9 +102,15 @@ export function suspendedProgramHtml(halted, display = DEFAULT_DISPLAY) {
   return `${escapeHtml(text.slice(0, at))}<mark>${escapeHtml(next || 'end')}</mark>${escapeHtml(rest.slice(end))}`;
 }
 
-const MARK_TAGS = Object.freeze({ arg: 'argument', gone: 'removed', culprit: 'this one', 'culprit-prev': 'wrong type' });
+const MARK_TAGS = Object.freeze({ arg: 'argument', culprit: 'this one' });
+
+const MODE_NAMES = Object.freeze({
+  angle: 'angle', fmt: 'number format', exact: 'exact or approximate',
+  complex: 'real or complex', coord: 'coordinates', base: 'integer base',
+});
 
 const prefersReducedMotion = () => !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+const swipeThreshold = (width) => Math.min(120, width * 0.35);
 
 export class Display {
   constructor({ stackView, cmdline, statusLine }) {
@@ -402,23 +389,20 @@ export class Display {
     return flat;
   }
 
-  /** Textbook 2D matrix / vector: a CSS grid of cells between bracket
-   *  pseudo-elements.  A vector of equal-length vectors (how the parser
-   *  reads `[[1 2][3 4]]`) lays out as a matrix; a vector of scalars is
-   *  a single row. */
+  // A vector of equal-length vectors (how the parser reads [[1 2][3 4]]) lays out as a matrix.
   _renderTextbookGrid(val) {
     let rows;
     if (isMatrix(val)) {
-      rows = val.rows.map(r => r.slice());
+      rows = val.rows;
     } else if (
       isVector(val) &&
       val.items.length > 0 &&
       val.items.every(it => isVector(it)) &&
       val.items.every(it => it.items.length === val.items[0].items.length)
     ) {
-      rows = val.items.map(v => v.items.slice());
+      rows = val.items.map(v => v.items);
     } else {
-      rows = [val.items.slice()];
+      rows = [val.items];
     }
     const ncols = rows.reduce((m, r) => Math.max(m, r.length), 0);
     const cells = rows.map(r => {
@@ -451,25 +435,24 @@ export class Display {
     this.cmdline.classList.toggle('empty', entry.buffer.length === 0);
   }
 
-  renderStatus({ classic = false, minimal = false, shift = null, halted = null, busy = false, editing = null } = {}) {
+  renderStatus({ classic = false, minimal = false, shift = null, halted = null, editing = null } = {}) {
     const el = this.statusLine;
     if (!el) return;
-    const path = Array.isArray(calcState.path) ? calcState.path : null;
     const layer = shift?.startsWith('shiftL') ? 'l' : shift?.startsWith('shiftR') ? 'r' : shift?.startsWith('alpha') ? 'a' : '';
     const locked = !!shift?.endsWith('Lock');
-    const pathHtml = this._pathHtml();
+    const pathHtml = pathSegmentsHtml(currentPath());
     const minimalButtons = minimal
       ? `<button type="button" class="ann-btn" data-status="fullscreen" title="Full screen" aria-label="Full screen">${icon('full', 'sm')}</button><button type="button" class="ann-btn" data-status="leave-minimal" title="Leave minimal view" aria-label="Leave minimal view">${icon('collapse', 'sm')}</button>`
       : '';
     if (classic) {
-      const g = (items, cls = '', mode = '') => `<div class="ann-g ${cls}"${mode ? ` data-status="mode" data-mode="${mode}" role="button" tabindex="0" title="Change ${mode}"` : ''}>${items.map(([t, on, c]) => `<span class="${on ? 'on' : ''} ${c || ''}">${t}</span>`).join('')}</div>`;
+      const g = (items, cls = '', mode = '') => `<div class="ann-g ${cls}"${mode ? ` data-status="mode" data-mode="${mode}" role="button" tabindex="0" title="Change ${MODE_NAMES[mode]}"` : ''}>${items.map(([t, on, c]) => `<span class="${on ? 'on' : ''} ${c || ''}">${t}</span>`).join('')}</div>`;
       el.innerHTML = [
         g([['↰', layer === 'l', 'l'], ['↱', layer === 'r'], ['α', layer === 'a']]),
         g([['RAD', calcState.angle === 'RAD'], ['DEG', calcState.angle === 'DEG'], ['GRD', calcState.angle === 'GRD']], '', 'angle'),
         g([['XYZ', calcState.coordMode === 'RECT'], ['R∠Z', calcState.coordMode === 'CYLIN'], ['R∠∠', calcState.coordMode === 'SPHERE']], 'opt', 'coord'),
         g([['=', !calcState.approxMode], ['~', calcState.approxMode]], '', 'exact'),
         g([['ℝ', !calcState.complexMode], ['ℂ', calcState.complexMode]], '', 'complex'),
-        g([['HALT', !!halted], ['⧗', busy, 'bz']], 'opt'),
+        g([['HALT', !!halted]], 'opt'),
         `<div class="ann-path">${pathHtml}</div>`,
         minimal ? `<div class="ann-g" style="gap:0">${minimalButtons}</div>` : '',
       ].join('');
@@ -487,7 +470,7 @@ export class Display {
       ].filter(([, t]) => t);
       const layerMark = layer ? `<span class="ann-m ${layer}">${{ l: '↰', r: '↱', a: 'α' }[layer]}${locked ? ' LOCK' : ''}</span>` : '';
       const haltMark = halted ? '<span class="ann-m l">HALT</span>' : '';
-      el.innerHTML = `<div class="ann-status">${modes.map(([m, t]) => `<button type="button" class="ann-m" data-status="mode" data-mode="${m}" title="Change ${m === 'fmt' ? 'number format' : m === 'exact' ? 'exact or approximate' : m === 'complex' ? 'real or complex' : m}">${escapeHtml(t)}</button>`).join('')}${layerMark}${haltMark}<span class="ann-sp"></span><span class="ann-path">${pathHtml}</span>${minimalButtons}</div>`;
+      el.innerHTML = `<div class="ann-status">${modes.map(([m, t]) => `<button type="button" class="ann-m" data-status="mode" data-mode="${m}" title="Change ${MODE_NAMES[m]}">${escapeHtml(t)}</button>`).join('')}${layerMark}${haltMark}<span class="ann-sp"></span><span class="ann-path">${pathHtml}</span>${minimalButtons}</div>`;
       el.className = 'status-line';
       return;
     }
@@ -498,11 +481,6 @@ export class Display {
     if (editing) pills.push(`<span class="pill e">EDITING LEVEL ${editing}</span>`);
     el.innerHTML = pills.join('');
     el.className = pills.length ? 'status-line has-pills' : 'status-line';
-    void path;
-  }
-
-  _pathHtml() {
-    return pathSegmentsHtml(currentPathSegments());
   }
 
   announce(text) {
@@ -518,17 +496,8 @@ export class Display {
   }
 }
 
-/** `{ HOME WORK A }` with every ancestor segment as a clickable
- *  `data-status="path"` button and the current (last) segment as a
- *  plain span — you're already there, so it isn't a target. */
 export function pathSegmentsHtml(segments) {
   return `{ ${segments.map((name, i) => (i === segments.length - 1
     ? `<span>${escapeHtml(name)}</span>`
     : `<button type="button" data-status="path" data-index="${i}" title="Go to ${escapeHtml(name)}">${escapeHtml(name)}</button>`)).join(' ')} }`;
-}
-
-function currentPathSegments() {
-  const segs = [];
-  for (let dir = calcState.current; dir; dir = dir.parent) segs.unshift(dir.name);
-  return segs.length ? segs : ['HOME'];
 }

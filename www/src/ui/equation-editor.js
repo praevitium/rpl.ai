@@ -40,7 +40,7 @@ export const EQW_CMDS = Object.freeze([
   'TCOLLECT', 'TEXPAND', 'TLIN', 'TSIMP',
 ]);
 
-export const EQW_ACTION_OPS = Object.freeze({
+const EQW_ACTION_OPS = Object.freeze({
   EVAL: Object.freeze(['EVAL', 'SIMPLIFY']),
   '→NUM': Object.freeze(['EVAL', 'SIMPLIFY', '→NUM']),
   FACTO: Object.freeze(['FACTOR']),
@@ -50,11 +50,11 @@ export const EQW_ACTION_OPS = Object.freeze({
 
 export const EQW_APP_FACES = new Set([
   'ENTER', 'ON', 'EVAL', '→NUM', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6',
-  'PREV', 'NEXT', 'CAT', 'COPY', 'CUT', 'PASTE',
+  'PREV', 'NEXT', 'CAT', 'EQW', 'COPY', 'CUT', 'PASTE',
 ]);
 
 export const EQW_UNAVAILABLE_FACES = new Set([
-  'LASTARG', 'VARS', 'HOME', 'STO', 'RCL', 'CST', 'SST', '`', '|', 'EQW',
+  'LASTARG', 'VARS', 'HOME', 'STO', 'RCL', 'CST', 'SST', '`', '|',
   '∠', '#', "'", '[ ]', '" "', '{ }', '« »', '_', '::', '↵', '→', 'SPC',
   'CONT', '↰', '↱',
 ]);
@@ -76,7 +76,7 @@ const FN_FACE = {
 };
 
 const NAME_KIND = {
-  SQRT: 'sqrt', EXP: 'exp', XROOT: 'xroot', FACT: 'fact', DERIV: 'deriv', 'Σ': 'sigma',
+  SQRT: 'sqrt', EXP: 'exp', XROOT: 'xroot', FACT: 'fact', DERIV: 'deriv', INTEG: 'integ', 'Σ': 'sigma',
 };
 
 const STRUCT_FACE = {
@@ -129,13 +129,18 @@ function makeFn(name, slotRows) {
   return makeStruct('fn', slotRows, { name: String(name).toUpperCase() });
 }
 
+function withSlot(item, index, items) {
+  const slots = item.slots.slice();
+  slots[index] = freezeRow(items);
+  return Object.freeze({ ...item, slots: Object.freeze(slots) });
+}
+
 function readingOf(item) {
-  if (item.t === 'fn') return item.slots.map((_, index) => index);
   return EQW_STRUCTS[item.t]?.reading || item.slots.map((_, index) => index);
 }
 
 function specOf(item) {
-  return item.t === 'fn' ? EQW_STRUCTS.fn : EQW_STRUCTS[item.t];
+  return EQW_STRUCTS[item.t];
 }
 
 export function emptyEquation() {
@@ -204,18 +209,15 @@ function updateItem(root, path, fn) {
     return freezeRow(row);
   }
   const item = row[index];
-  const slots = item.slots.slice();
-  slots[path[1]] = updateItem(slots[path[1]], path.slice(2), fn);
-  row[index] = Object.freeze({ ...item, slots: Object.freeze(slots) });
+  row[index] = withSlot(item, path[1], updateItem(item.slots[path[1]], path.slice(2), fn));
   return freezeRow(row);
 }
 
 function normalizeOne(item) {
-  if (!item) return item;
   if (item.t === 'paren' && !item.typed && !item.mark) {
     const inner = normalizeItems(item.slots[0]);
     if (inner.length === 1 && inner[0].t !== 'op') return inner[0];
-    return Object.freeze({ ...item, slots: Object.freeze([freezeRow(inner)]) });
+    return withSlot(item, 0, inner);
   }
   if (item.slots) {
     const slots = item.slots.map(slot => freezeRow(normalizeItems(slot)));
@@ -225,11 +227,7 @@ function normalizeOne(item) {
 }
 
 function normalizeItems(items) {
-  const out = [];
-  for (const item of items) {
-    if (!item) continue;
-    out.push(normalizeOne(item));
-  }
+  const out = items.filter(Boolean).map(normalizeOne);
   while (out[0]?.t === 'op' && out[0].op === '+') out.shift();
   if (out[0]?.t === 'op' && out[0].op === '-' && out[1] && out[1].t !== 'op') {
     const neg = makeStruct('neg', [[out[1]]]);
@@ -251,11 +249,7 @@ function setRow(root, rowKey, items) {
   if (!rowKey) return row;
   const parts = rowKey.split('.').map(Number);
   const slot = parts.pop();
-  return updateItem(root, parts, (item) => {
-    const slots = item.slots.slice();
-    slots[slot] = row;
-    return Object.freeze({ ...item, slots: Object.freeze(slots) });
-  });
+  return updateItem(root, parts, (item) => withSlot(item, slot, row));
 }
 
 function findMark(root, row = root, prefix = []) {
@@ -321,7 +315,7 @@ function parseProduct(items, from, to) {
     kind: 'product',
     from,
     to: to - 1,
-    kids: factors.map(([startAt, endAt]) => parseAtom(startAt)),
+    kids: factors.map(([startAt]) => parseAtom(startAt)),
   };
 }
 
@@ -665,7 +659,7 @@ function selectOwning(state, rowKey) {
   parts.pop();
   const item = getItem(state.root, parts);
   const index = parts[parts.length - 1];
-  const parentKey = parts.length <= 1 ? '' : parts.slice(0, -1).join('.');
+  const parentKey = rowKeyOf(parts);
   if (item?.t === 'paren' && !item.typed) {
     const row = rowByKey(state.root, parentKey);
     const cover = findCover(row, index, index);
@@ -717,10 +711,7 @@ function shrink(state) {
   if (target.mode === 'insert') return move(state, { mode: 'clear', path: target.path });
   if (target.mode !== 'select') return state;
   const row = rowByKey(state.root, target.row);
-  const cover = findCover(row, target.from, target.to);
-  const node = cover.node.from === target.from && cover.node.to === target.to
-    ? cover.node
-    : cover.node;
+  const { node } = findCover(row, target.from, target.to);
   if (node.kind === 'atom' && node.from === target.from && node.to === target.to) {
     const item = row[node.from];
     if (item.t === 'num' || item.t === 'name' || item.t === 'hole') {
@@ -732,9 +723,16 @@ function shrink(state) {
     const kid = node.kids[0];
     return landSelect(state, target.row, kid.from, kid.to);
   }
-  const kid = (cover.node.kids || []).find(child => child.from >= target.from && child.to <= target.to);
+  const kid = (node.kids || []).find(child => child.from >= target.from && child.to <= target.to);
   if (kid) return landSelect(state, target.row, kid.from, kid.to);
   return state;
+}
+
+function kidBeside(kids, target, dir) {
+  const covered = kids.filter(kid => kid.to >= target.from && kid.from <= target.to);
+  const edge = dir > 0 ? covered[covered.length - 1] : covered[0];
+  const index = kids.findIndex(kid => kid.from === edge.from && kid.to === edge.to);
+  return kids[index + dir];
 }
 
 function siblingSpan(state, dir) {
@@ -744,11 +742,7 @@ function siblingSpan(state, dir) {
   const cover = findCover(row, target.from, target.to);
   const parent = cover.node.from === target.from && cover.node.to === target.to ? cover.parent : cover.node;
   if (parent?.kids) {
-    const kids = parent.kids;
-    const covered = kids.filter(kid => kid.to >= target.from && kid.from <= target.to);
-    const edge = dir > 0 ? covered[covered.length - 1] : covered[0];
-    const index = kids.findIndex(kid => kid.from === edge.from && kid.to === edge.to);
-    const next = kids[index + dir];
+    const next = kidBeside(parent.kids, target, dir);
     if (next) return { rowKey: target.row, from: next.from, to: next.to };
     return { parent: true, rowKey: target.row, from: parent.from, to: parent.to };
   }
@@ -791,7 +785,6 @@ function moveSide(state, dir) {
   if (jump.slot !== undefined) return selectSlotRoot(state, jump.owner, jump.slot);
   if (jump.root) return state;
   if (jump.owner) return selectOwning(state, state.target.row);
-  if (jump.parent) return landSelect(state, jump.rowKey, jump.from, jump.to);
   return landSelect(state, jump.rowKey, jump.from, jump.to);
 }
 
@@ -800,9 +793,7 @@ function extendRun(state, dir) {
   if (target.mode !== 'select') {
     const all = stops(state.root);
     const path = dir < 0 ? all[0] : all[all.length - 1];
-    if (!path) return state;
-    const item = getItem(state.root, path);
-    return move(state, { mode: item.t === 'hole' ? 'insert' : 'clear', path });
+    return path ? move(state, stopTarget(state.root, path)) : state;
   }
   const row = rowByKey(state.root, target.row);
   const cover = findCover(row, target.from, target.to);
@@ -810,11 +801,7 @@ function extendRun(state, dir) {
     ? cover.parent
     : (cover.node.kind === 'sum' || cover.node.kind === 'product' ? cover.node : null);
   if (!parent) return state;
-  const kids = parent.kids;
-  const covered = kids.filter(kid => kid.to >= target.from && kid.from <= target.to);
-  const edge = dir > 0 ? covered[covered.length - 1] : covered[0];
-  const index = kids.findIndex(kid => kid.from === edge.from && kid.to === edge.to);
-  const next = kids[index + dir];
+  const next = kidBeside(parent.kids, target, dir);
   if (!next) return state;
   const from = Math.min(target.from, next.from);
   const to = Math.max(target.to, next.to);
@@ -837,17 +824,14 @@ function selectAll(state) {
   return move(state, { mode: 'select', row: '', from: node.from, to: node.to });
 }
 
-function putLeaf(state, item, { overtype = false } = {}) {
+function putLeaf(state, item) {
   const path = state.target.path;
   const rowKey = rowKeyOf(path);
   const index = path[path.length - 1];
   const typingKey = `${path.join('.')}:${item.t}`;
-  const root = setRow(state.root, rowKey, rowByKey(state.root, rowKey).slice().map((entry, at) => {
-    return at === index ? item : entry;
-  }));
+  const root = setRow(state.root, rowKey, rowByKey(state.root, rowKey).map((entry, at) => (at === index ? item : entry)));
   const kept = stops(root).find(stop => stop.join('.') === path.join('.')) || path;
-  const mode = overtype ? 'insert' : 'insert';
-  return step(state, { root, target: { mode, path: kept }, lastFace: state.lastFace }, typingKey);
+  return step(state, { root, target: { mode: 'insert', path: kept }, lastFace: state.lastFace }, typingKey);
 }
 
 function insertAfter(state, extras, lastFace) {
@@ -874,33 +858,18 @@ function typeGlyph(state, text, kind) {
     const widened = insertAfterSelection(state, [opTok('*'), holeMark('insert')]);
     return typeGlyph(widened, text, kind);
   }
+  const typed = { ...state, lastFace: text };
+  const leaf = kind === 'num' ? numLeaf(text === 'EEX' ? '1E' : text) : nameLeaf(text);
   const item = getItem(state.root, target.path);
-  if (target.mode === 'clear' && item.t !== 'hole') {
-    const leaf = kind === 'num' ? numLeaf(text === 'EEX' ? '1E' : text) : nameLeaf(text);
-    return putLeaf({ ...state, lastFace: text }, leaf, { overtype: true });
-  }
-  if (item.t === 'hole' || target.mode === 'clear') {
-    const leaf = kind === 'num'
-      ? numLeaf(text === 'EEX' ? '1E' : text)
-      : nameLeaf(text);
-    return putLeaf({ ...state, lastFace: text }, leaf);
-  }
+  if (target.mode === 'clear' || item.t === 'hole') return putLeaf(typed, leaf);
   if (kind === 'num' && item.t === 'num') {
     const next = text === 'EEX'
       ? (item.text.includes('E') ? null : `${item.text}E`)
       : `${item.text}${text}`;
-    if (next && /^\d*\.?\d*(?:E-?\d*)?$/.test(next)) {
-      return putLeaf({ ...state, lastFace: text }, numLeaf(next));
-    }
+    if (next && /^\d*\.?\d*(?:E-?\d*)?$/.test(next)) return putLeaf(typed, numLeaf(next));
   }
-  if (kind === 'name' && item.t === 'name' && target.mode === 'insert') {
-    return putLeaf({ ...state, lastFace: text }, nameLeaf(item.text + text));
-  }
-  if (kind === 'name' && item.t === 'num') return implicitMul({ ...state, lastFace: text }, nameLeaf(text));
-  if ((kind === 'num' || kind === 'const') && (item.t === 'num' || item.t === 'name')) {
-    return implicitMul({ ...state, lastFace: text }, kind === 'num' ? numLeaf(text === 'EEX' ? '1E' : text) : nameLeaf(text));
-  }
-  return implicitMul({ ...state, lastFace: text }, nameLeaf(text));
+  if (kind === 'name' && item.t === 'name') return putLeaf(typed, nameLeaf(item.text + text));
+  return implicitMul(typed, leaf);
 }
 
 function typeConstant(state, text) {
@@ -910,8 +879,7 @@ function typeConstant(state, text) {
     return typeGlyph(widened, text, 'name');
   }
   const item = getItem(state.root, target.path);
-  if (item.t === 'hole') return putLeaf(state, nameLeaf(text));
-  if (target.mode === 'clear') return putLeaf(state, nameLeaf(text), { overtype: true });
+  if (target.mode === 'clear' || item.t === 'hole') return putLeaf(state, nameLeaf(text));
   return implicitMul(state, nameLeaf(text));
 }
 
@@ -936,28 +904,21 @@ function emptyStruct(kind, name) {
   return makeStruct(kind, Array.from({ length: count }, () => [HOLE]), extra);
 }
 
-function openStruct(state, kind, name) {
+function openedStruct(kind, name) {
   const blank = emptyStruct(kind, name);
-  const spec = specOf(blank);
-  const slots = blank.slots.slice();
-  slots[spec.open] = freezeRow([holeMark('insert')]);
-  const item = Object.freeze({ ...blank, slots: Object.freeze(slots) });
+  return withSlot(blank, specOf(blank).open, [holeMark('insert')]);
+}
+
+function openStruct(state, kind, name) {
   const { rowKey, from, to } = spanOf(state);
-  return replaceSpan(state, rowKey, from, to, [item], null, kind);
+  return replaceSpan(state, rowKey, from, to, [openedStruct(kind, name)], null, kind);
 }
 
 function wrapStruct(state, kind, name, slotItems) {
   const blank = emptyStruct(kind, name);
   const spec = specOf(blank);
-  const slots = blank.slots.slice();
-  slots[spec.wrap] = freezeRow(slotItems);
-  let item = Object.freeze({ ...blank, slots: Object.freeze(slots) });
-  if (spec.afterMode === 'select') item = marked(item, 'select');
-  else {
-    const next = item.slots.slice();
-    next[spec.after] = freezeRow([holeMark('insert')]);
-    item = Object.freeze({ ...item, slots: Object.freeze(next) });
-  }
+  const wrapped = withSlot(blank, spec.wrap, slotItems);
+  const item = spec.afterMode === 'select' ? marked(wrapped, 'select') : withSlot(wrapped, spec.after, [holeMark('insert')]);
   const { rowKey, from, to } = spanOf(state);
   return replaceSpan(state, rowKey, from, to, [item], null, kind);
 }
@@ -974,12 +935,7 @@ function structureKey(state, kind, name) {
   if (target.mode === 'insert') {
     const item = getItem(state.root, target.path);
     if (item.t === 'hole') return openStruct(state, kind, name);
-    const created = emptyStruct(kind, name);
-    const spec = specOf(created);
-    const slots = created.slots.slice();
-    slots[spec.open] = freezeRow([holeMark('insert')]);
-    const opened = Object.freeze({ ...created, slots: Object.freeze(slots) });
-    return insertAfter(state, [opTok('*'), opened], kind);
+    return insertAfter(state, [opTok('*'), openedStruct(kind, name)], kind);
   }
   return wrapStruct(state, kind, name, targetItems(state));
 }
@@ -1064,8 +1020,7 @@ function comma(state) {
     const spec = KNOWN_FUNCTIONS[found.item.name];
     const variadic = !spec || spec.arity === undefined;
     if (variadic) {
-      const slots = found.item.slots.concat([freezeRow([holeMark('insert')])]);
-      const root = updateItem(state.root, found.path, () => Object.freeze({ ...found.item, slots: Object.freeze(slots) }));
+      const root = updateItem(state.root, found.path, (item) => withSlot(item, item.slots.length, [holeMark('insert')]));
       return finishMarked(state, root, null, ',');
     }
   }
@@ -1241,6 +1196,24 @@ function isLetterFace(face) {
 
 const KEEPS_WORD_OPEN = new Set(['⌫', 'DEL']);
 
+// + − = < > typed at the end of a filled exponent continue after the power, so
+// x^5-1 reads as x⁵ − 1; an empty exponent keeps them (x^-2).
+function leaveExponent(state) {
+  if (state.target.mode !== 'insert') return state;
+  let path = state.target.path;
+  while (path.length > 1) {
+    const parts = rowKeyOf(path).split('.').map(Number);
+    const slot = parts.pop();
+    const owner = getItem(state.root, parts);
+    const row = owner.slots[slot];
+    if (path.at(-1) !== row.length - 1 || row.at(-1).t === 'hole') return state;
+    if (owner.t === 'pow' && slot === 1) return move(state, { mode: 'insert', path: parts });
+    if (owner.t !== 'neg') return state;
+    path = parts;
+  }
+  return state;
+}
+
 export function pressEquationKey(state, face) {
   if (face === 'UNDO') return undoState(state);
   if (face === 'REDO') return redoState(state);
@@ -1267,7 +1240,7 @@ export function pressEquationKey(state, face) {
   if (face === 'EEX' || /^[0-9.]$/.test(face)) return typeGlyph(state, face, 'num');
   if (isLetterFace(face)) return typeGlyph(state, face, 'name');
   const op = { '+': '+', '−': '-', '-': '-', '×': '*', '*': '*', '≠': '≠', '=': '=', '≤': '≤', '<': '<', '≥': '≥', '>': '>' }[face];
-  if (op) return operate(state, op);
+  if (op) return operate(op === '*' ? state : leaveExponent(state), op);
   if (face === '÷') return structureKey(state, 'frac');
   if (face === 'yˣ') return structureKey(state, 'pow');
   if (face === 'x²') return postfix(state, makeStruct('pow', [targetItems(state), [numLeaf('2')]]));
@@ -1454,13 +1427,13 @@ export function pasteText(state, text) {
   return replaceTarget(state, [...fromAst(ast)]);
 }
 
-export function placeCursor(state, path) {
+function placeCursor(state, path) {
   const item = getItem(state.root, path);
   if (!item || item.t === 'op') return state;
   return move(state, { mode: 'insert', path });
 }
 
-export function selectBetween(state, pathA, pathB) {
+function selectBetween(state, pathA, pathB) {
   if (pathA.join('.') === pathB.join('.')) return placeCursor(state, pathA);
   const rowA = rowKeyOf(pathA);
   const rowB = rowKeyOf(pathB);
@@ -1731,6 +1704,8 @@ export class EquationEditor {
 
   canUndo() { return this.state.history.length > 0; }
 
+  canRedo() { return this.state.future.length > 0; }
+
   snapshot() { return { state: this.state }; }
 
   restore(saved) {
@@ -1774,7 +1749,7 @@ export class EquationEditor {
   pressFace(face) {
     if (!face || face === 'NOOP') return;
     if (EQW_APP_FACES.has(face)) { this._appFace(face); return; }
-    if (EQW_UNAVAILABLE_FACES.has(face)) { this.app.notifyError(`${face} isn't part of the equation writer.`); return; }
+    if (EQW_UNAVAILABLE_FACES.has(face)) { this.app.notifyError(`${face} isn't available in the equation writer.`); return; }
     try { this.state = pressEquationKey(this.state, face); }
     catch (error) { this.app.notifyError(error.message); return; }
     this._selecting = SELECTING_FACES.has(face);
@@ -1825,7 +1800,7 @@ export class EquationEditor {
     const back = { label: '◀ BACK', title: 'Back to the equation menu', onPress: () => this.app.setMenu(null, 'EQW') };
     this.app.setMenu([back, ...EQW_CMDS.map((name) => ({
       label: name,
-      title: this.app.commandTitle?.(name) ?? name,
+      title: this.app.commandTitle(name),
       onPress: () => { this.transformWith([name]); this.app.setMenu(null, 'EQW'); },
     }))], 'EQW');
   }
@@ -1945,10 +1920,7 @@ export class EquationEditor {
   }
 
   _writeClipboard(text) {
-    if (text == null) return;
-    const write = navigator.clipboard?.writeText?.(text);
-    if (!write) { this.app.notifyError('The clipboard is not available here.'); return; }
-    write.then(() => this.app.toast('Copied')).catch(() => this.app.notifyError('The clipboard is not available here.'));
+    if (text != null) this.app.copyText(text, 'Copied');
   }
 
   _pasteText(text) {
@@ -2028,6 +2000,7 @@ export class EquationEditor {
     if (face === 'PREV') { this.app.prevMenuPage(); return; }
     if (face === 'NEXT') { this.app.nextMenuPage(); return; }
     if (face === 'CAT') { this.app.drawers.toggle('catalog'); return; }
+    if (face === 'EQW') { this.app.runAction('writer.equation'); return; }
     if (face === 'ENTER') { this.app.commitEntry(); return; }
     if (face === 'ON') { this.app.runAction('ui.escape'); return; }
     if (face === 'EVAL' || face === '→NUM') { this.transform(face); return; }
@@ -2038,7 +2011,6 @@ export class EquationEditor {
 
   _render() {
     this.el.querySelector('.eqw-tip')?.remove();
-    this.el.classList.toggle('big', this.big);
     const target = this.state.target;
     const drawn = eqwToSvg(this.state.root, {
       size: this.big ? SIZE.big : SIZE.normal,

@@ -1,7 +1,8 @@
 export {
-  register, lookup, hasOp, allOps, opCategories,
+  lookup, hasOp, allOps, opCategories,
 } from './ops/registry.js';
-export { singleStepMode, stepIntoMode, localFramesDepth, dosubsStackDepth, setGraphicsHook } from './ops/internal.js';
+export { singleStepMode, stepIntoMode, localFramesDepth, dosubsStackDepth } from './ops/internal.js';
+export { setGraphicsHook } from './ops/graphics.js';
 import './ops/stack.js';
 import './ops/arithmetic.js';
 import './ops/complex.js';

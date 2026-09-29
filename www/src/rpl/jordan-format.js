@@ -1,16 +1,9 @@
 import { RList, Vector, Tagged, Integer, isReal, isInteger, isRational } from './types.js';
 import { format } from './formatter.js';
 
-/* JORDAN output shaping (HP50 AUR §3-122).  Pure, CAS-independent
-   builders.  spacesFromJordan reads the transition matrix and the
-   Jordan form; charSpaceList and eigenvalueArray wrap those chains
-   into the level-2 list and the level-1 eigenvalue array.
-
-   Level 2 is "a list of characteristic spaces tagged by the
-   corresponding eigenvalue (either a vector or a list of Jordan chains,
-   each of them ending with an 'Eigen:'-tagged eigenvector)".  The AUR
-   worked example `JORDAN([[1,1],[1,1]])` returns the level-2 List
-   `{ 0: [1,-1]  2: [1,1] }` — an RList of Tagged vectors. */
+/* JORDAN output (HP50 AUR §3-122): level 2 lists the characteristic
+   spaces tagged by eigenvalue, each a vector or a list of Jordan chains
+   ending in an `Eigen:`-tagged eigenvector, e.g. { 0: [1,-1]  2: [1,1] }. */
 
 function numericValue(v) {
   if (isInteger(v)) return Number(v.value);

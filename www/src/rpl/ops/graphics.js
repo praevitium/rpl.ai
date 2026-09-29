@@ -1,11 +1,15 @@
 import { RPLError } from '../stack.js';
 import { register } from './registry.js';
-import { _graphicsHook } from './internal.js';
 
 
+let _graphicsHook = null;
+
+export function setGraphicsHook(fn) {
+  _graphicsHook = typeof fn === 'function' ? fn : null;
+}
 
 function _requestPlot(kind, s) {
-  if (typeof _graphicsHook !== 'function') {
+  if (!_graphicsHook) {
     throw new RPLError('No graphics view');
   }
   _graphicsHook(kind, s);

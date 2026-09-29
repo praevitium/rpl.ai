@@ -3649,3 +3649,13 @@ function _approxMatEqual(A, B, tol) {
     'session058: BESTFIT does not overwrite lastFitModel');
   calcState.lastFitModel = null;
 }
+
+{
+  const { evalScratch } = await import('../www/src/rpl/scratch.js');
+  const err = (line) => evalScratch(line).error ?? '';
+  assert(['1E400 HERMITE', '1E400 LEGENDRE', '1E400 TCHEB', '1E400 IDN', '1E400 HILBERT'].every((l) => /Bad argument value/.test(err(l))),
+    'HERMITE, LEGENDRE, TCHEB, IDN, HILBERT: a size too large to count is a bad value, not an endless loop');
+  assert(/Insufficient memory/.test(err('2000 2000 * IDN')) && /Insufficient memory/.test(err('{ 1001 1000 } RANM')),
+    'IDN, RANM: more than a million cells is refused');
+  assert(evalScratch('[ (3,4) ] ABS').stack?.[0] === '5.', 'ABS: the norm of a complex vector');
+}

@@ -1,7 +1,6 @@
-/* HP text transfer format: the `%%HP: T(3)A(R)F(.);` source files the
-   calculator and the Connectivity Kit exchange.  Algebraics are quoted
-   with apostrophes there, while this app uses backticks; T(3) spells
-   non-ASCII glyphs as backslash codes; `@` starts a comment. */
+/* HP text transfer files (`%%HP: T(3)A(R)F(.);`): algebraics are quoted
+   with apostrophes there but backticks here, T(3) spells glyphs as
+   backslash codes, and `@` starts a comment. */
 
 import { parseEntry } from './parser.js';
 import { formatSource } from './formatter.js';
@@ -86,7 +85,6 @@ function readDirectory(items, at, name) {
   return [dir, i + 1];
 }
 
-/** One object: a Directory when the text is `DIR … END`, otherwise the single value it holds. */
 export function parseHpText(text, name) {
   const items = parseEntry(hpTextToSource(text));
   if (items.length === 0) throw new RPLError('Empty file');

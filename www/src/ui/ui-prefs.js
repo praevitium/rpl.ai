@@ -1,6 +1,7 @@
 export const UI_PREFS_KEY = 'rplai.ui';
 
 export const THEMES = Object.freeze(['auto', 'graphite', 'paper', 'classic']);
+export const THEME_LABELS = Object.freeze({ auto: 'Match system', graphite: 'Graphite (dark)', paper: 'Paper (light)', classic: 'Classic LCD' });
 const KEYPAD_LAYOUTS = Object.freeze(['full', 'compact', 'hidden']);
 const DRAWER_IDS = Object.freeze(['assistant', 'catalog', 'vars', 'history', 'plot', 'chars']);
 const HISTORY_SORTS = Object.freeze(['newest', 'oldest']);

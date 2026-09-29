@@ -1,10 +1,11 @@
-import { allOps, lookup } from '../rpl/ops.js';
+import { allOps } from '../rpl/ops.js';
 import { state as calcState } from '../rpl/state.js';
 import { TYPES } from '../rpl/types.js';
 import { searchCommands, findReferenceEntry, shortDescription, loadCommandReference } from './command-reference.js';
 import { fuzzyScore, matchPositions, highlightSegments, moveSelection } from './op-search.js';
 import { ACTIONS, shortcutText } from './actions.js';
 import { MODES } from './modes.js';
+import { THEMES, THEME_LABELS } from './ui-prefs.js';
 import { MENU_FAMILIES, OWN_MENUS } from './menus.js';
 import { CATEGORIES, CHAR_GROUPS, signatureOf } from './drawer.js';
 import { icon } from './icons.js';
@@ -119,7 +120,6 @@ export class Palette {
         detail: [sig, entry ? shortDescription(entry, 90) : ''].filter(Boolean).join(' · '),
         run: () => this.app.runCommandFromUI(name),
         open: () => this.app.drawers.showReference(name),
-        available: !!lookup(name),
       };
     })]);
     const scored = (items) => items
@@ -131,8 +131,9 @@ export class Palette {
       kind: 'action', title: ACTIONS[id].label, icon: 'sliders', shortcut: shortcutText(id),
       keywords: id.replace(/[.]/g, ' '), run: () => this.app.runAction(id),
     }));
-    const themeRows = [['auto', 'Theme: match the system'], ['graphite', 'Theme: Graphite (dark)'], ['paper', 'Theme: Paper (light)'], ['classic', 'Theme: Classic LCD']]
-      .map(([value, title]) => ({ kind: 'action', title, icon: 'sliders', keywords: 'appearance color dark light lcd', run: () => this.app.setTheme(value) }));
+    const themeRows = THEMES.map((value) => ({
+      kind: 'action', title: `Theme: ${THEME_LABELS[value]}`, icon: 'sliders', keywords: 'appearance color dark light lcd', run: () => this.app.setTheme(value),
+    }));
     const modeRows = MODES.flatMap((m) => m.options.map((o) => ({
       kind: 'mode', title: `${m.title}: ${o.label}`, icon: 'check', detail: o.detail,
       keywords: `${o.value} mode`, current: m.current() === o.value, run: () => m.set(o.value),
@@ -144,14 +145,14 @@ export class Palette {
     }));
     groups.push(['Menus', scored(menus)]);
     const vars = [...calcState.current.entries.entries()].map(([name, value]) => ({
-      kind: 'variable', title: name, mono: true, icon: value.type === TYPES.DIRECTORY ? 'folder' : 'folder',
+      kind: 'variable', title: name, mono: true, icon: 'folder',
       detail: value.type === TYPES.DIRECTORY ? 'Folder' : typeName(value),
       run: () => this.app.pressVariable(name),
     }));
     groups.push(['Variables', scored(vars)]);
-    const constants = (CHAR_GROUPS.Constants ?? []).map(([label, text, title]) => ({
-      kind: 'constant', title: `${label}`, mono: true, detail: title, icon: 'omega', keywords: title,
-      run: () => this.app.entry.type(text),
+    const constants = CHAR_GROUPS.Constants.map(([label, text, title]) => ({
+      kind: 'constant', title: label, mono: true, detail: title, icon: 'omega', keywords: title,
+      run: () => this.app.drawers.insertText(text),
     }));
     if (q) groups.push(['Constants', scored(constants)]);
     const nonEmpty = groups.filter(([, items]) => items.length);

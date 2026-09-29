@@ -6,7 +6,9 @@ const NETWORK_FIRST_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 const networkFirst = NETWORK_FIRST_HOSTS.has(self.location.hostname);
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(files)));
+  // Skip the HTTP cache: GitHub Pages lets browsers reuse files for 10 minutes, so a new version could precache old copies.
+  const fresh = files.map((file) => new Request(file, { cache: 'reload' }));
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(fresh)));
 });
 
 self.addEventListener('activate', (event) => {

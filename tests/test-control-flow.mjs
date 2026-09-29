@@ -7191,3 +7191,11 @@ for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
   assert(quick.caught === null && quick.s.peek(1)?.value === 42n,
     'time limit: a program that finishes in time is unaffected');
 }
+
+{
+  const run = (src) => { const s = new Stack(); for (const v of parseEntry(src)) s.push(v); lookup('EVAL').fn(s); return s; };
+  const bad = run('« IFERR -1 FACT THEN ERRN END »');
+  assert(bad.peek(1).value === 0x203n, 'ERRN: Bad argument value is #203h, as on the HP50');
+  const undef = run('« IFERR #204h DOERR THEN ERRM END »');
+  assert(undef.peek(1).value === 'Undefined name', 'DOERR: #204h raises Undefined name');
+}

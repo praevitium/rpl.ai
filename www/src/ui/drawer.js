@@ -118,10 +118,7 @@ export const CHAR_GROUPS = {
   ],
 };
 
-/** The "Other" bucket: every registered op not already shown under a
- *  named category, minus the ASCII arrow aliases (`->NUM`), which each
- *  have a Unicode form in their proper category.  `registered` and
- *  `seen` are upper-cased sets; `filter` is a lower-cased substring. */
+// ASCII arrow aliases (->NUM) are left out: each has a Unicode form in its own category.
 export function uncategorizedOps(registered, seen, filter = '') {
   return [...registered]
     .filter(n => !seen.has(n))
@@ -130,8 +127,6 @@ export function uncategorizedOps(registered, seen, filter = '') {
     .sort();
 }
 
-/** Drop zone for a row hovered during a drag: folders split into
- *  before / into / after (25 / 50 / 25 %), other rows into halves. */
 export function dropZoneForFraction(frac, isDir) {
   if (isDir) {
     if (frac < 0.25) return 'before';
@@ -147,6 +142,14 @@ export function familyCommands(family) {
     return uncategorizedOps(new Set(allOps()), seen);
   }
   return _opCategories[family.category] ?? [];
+}
+
+export function pickFile(accept, onFile) {
+  const picker = document.createElement('input');
+  picker.type = 'file';
+  picker.accept = accept;
+  picker.addEventListener('change', () => { const f = picker.files?.[0]; if (f) onFile(f); });
+  picker.click();
 }
 
 export function signatureOf(entry) {
@@ -194,8 +197,9 @@ export class Drawers {
     this._bindRunPreviews();
     this._bindVarsDrag();
     subscribeState(() => {
-      if (this.current === 'vars') this._renderVarsList();
-      if (this.current === 'vars') this._renderHeadSub();
+      if (this.current !== 'vars') return;
+      this._renderVarsList();
+      this._renderHeadSub();
     });
     app.entry.subscribeHistory(() => { if (this.current === 'history') this._renderHistoryList(); });
   }
@@ -235,7 +239,7 @@ export class Drawers {
     this.current = null;
     this.app.setPrefs({ drawer: null });
     this.render();
-    if (leaving === 'plot') this.app.setPlotFocus?.(false);
+    if (leaving === 'plot') this.app.setPlotFocus(false);
   }
 
   toggle(id = null) {
@@ -243,8 +247,6 @@ export class Drawers {
     if (!target || this.current === target) { this.close(); return; }
     this.open(target);
   }
-
-  refresh() { if (this.current) this._renderBody(); }
 
   get graph() {
     if (!this._graph) this._graph = new GraphView({ app: this.app });
@@ -254,6 +256,13 @@ export class Drawers {
   openGraph(kind, stack) {
     this.open('plot');
     this.graph.applyPlotOp(kind, stack);
+  }
+
+  insertText(text) {
+    const { app } = this;
+    if (app.inputMode === 'equation') app.equationEditor.typeText(text);
+    else if (app.inputMode === 'matrix') app.matrixEditor.insertSymbol(text);
+    else app.entry.type(text);
   }
 
   showReference(name) {
@@ -352,7 +361,7 @@ export class Drawers {
     body.innerHTML = '';
     body.appendChild(this.graph.el);
     this.graph.el.classList.add('fill');
-    this.graph.resize?.();
+    this.graph.resize();
   }
 
   async _ensureReference() {
@@ -499,7 +508,7 @@ export class Drawers {
     const rows = ordered.filter((s) => !q || s.toLowerCase().includes(q));
     const errors = entry.getErrorLog().slice().reverse().filter((e) => !q || `${e.message} ${e.input}`.toLowerCase().includes(q));
     const errHtml = errors.length
-      ? `<div class="sec-h">Errors<button type="button" data-dw="errors-clear">Clear</button></div>${errors.map((e) => `<div class="hr err"${e.input ? ` data-dw="hist-recall" data-text="${escapeHtml(e.input)}" role="button" tabindex="0" title="Put it back in the command line"` : ''}><div class="in-t">${escapeHtml(e.input || e.message)}</div><div class="out">${escapeHtml(e.input ? e.message : '')} · ${escapeHtml(new Date(e.at).toLocaleTimeString())}</div><div class="acts">${e.input ? `<button type="button" class="mini" data-dw="hist-recall" data-text="${escapeHtml(e.input)}" title="Recall" aria-label="Recall">${icon('undo', 'sm')}</button>` : ''}<button type="button" class="mini" data-dw="err-explain" data-text="${escapeHtml(`${e.input ? `${e.input}: ` : ''}${e.message}`)}" title="Ask the assistant what went wrong" aria-label="Explain">${icon('spark', 'sm')}</button></div></div>`).join('')}`
+      ? `<div class="sec-h">Errors<button type="button" data-dw="errors-clear">Clear</button></div>${errors.map((e) => `<div class="hr err"${e.input ? ` data-dw="hist-recall" data-text="${escapeHtml(e.input)}" role="button" tabindex="0" title="Put it back in the command line"` : ''}><div class="in-t">${escapeHtml(e.input || e.message)}</div><div class="out">${e.input ? `${escapeHtml(e.message)} · ` : ''}${escapeHtml(new Date(e.at).toLocaleTimeString())}</div><div class="acts">${e.input ? `<button type="button" class="mini" data-dw="hist-recall" data-text="${escapeHtml(e.input)}" title="Recall" aria-label="Recall">${icon('undo', 'sm')}</button>` : ''}<button type="button" class="mini" data-dw="err-explain" data-text="${escapeHtml(`${e.input ? `${e.input}: ` : ''}${e.message}`)}" title="Ask the assistant what went wrong" aria-label="Explain">${icon('spark', 'sm')}</button></div></div>`).join('')}`
       : '';
     const histHtml = rows.length
       ? `<div class="sec-h">Entries</div>${rows.map((t) => `<div class="hr" data-dw="hist-recall" data-text="${escapeHtml(t)}" role="button" tabindex="0" title="Put it back in the command line"><div class="in-t">${escapeHtml(t)}</div><div class="acts"><button type="button" class="mini" data-dw="hist-run" data-text="${escapeHtml(t)}" title="Run it again" aria-label="Run again">${icon('play', 'sm')}</button><button type="button" class="mini danger" data-dw="hist-delete" data-text="${escapeHtml(t)}" title="Delete" aria-label="Delete">${icon('x', 'sm')}</button></div></div>`).join('')}`
@@ -602,13 +611,9 @@ export class Drawers {
         this._renderBody();
         return;
       case 'ref-run': app.runCommandFromUI(this.cat.ref); return;
-      case 'ref-insert': entry.type(`${entry.buffer && !/\s$/.test(entry.buffer) ? ' ' : ''}${this.cat.ref} `); entry.focus(); return;
+      case 'ref-insert': entry.typeToken(`${this.cat.ref} `); return;
       case 'ref-ask': app.askAssistant(`Explain the ${this.cat.ref} command: what it takes from the stack, what it returns, and a short example I can try.`); return;
-      case 'char':
-        if (app.inputMode === 'equation') app.equationEditor.typeText(t.dataset.text);
-        else if (app.inputMode === 'matrix') app.matrixEditor.insertSymbol(t.dataset.text);
-        else entry.type(t.dataset.text);
-        return;
+      case 'char': this.insertText(t.dataset.text); return;
       case 'hist-recall': entry.recall(t.dataset.text); entry.focus(); return;
       case 'hist-run': e.stopPropagation(); entry.recall(t.dataset.text); app.commitEntry(); return;
       case 'hist-delete': e.stopPropagation(); entry.removeHistory(t.dataset.text); this._renderHistoryList(); return;
@@ -694,17 +699,9 @@ export class Drawers {
     });
   }
 
-  _pickFile(accept, onFile) {
-    const picker = document.createElement('input');
-    picker.type = 'file';
-    picker.accept = accept;
-    picker.addEventListener('change', () => { const f = picker.files?.[0]; if (f) onFile(f); });
-    picker.click();
-  }
-
   _upload() {
     const { app } = this;
-    this._pickFile('application/json,.json,.rpl,.txt,text/plain', async (file) => {
+    pickFile('application/json,.json,.rpl,.txt,text/plain', async (file) => {
       try {
         const { name, value } = /\.json$/i.test(file.name)
           ? await parseVariableFile(file)
@@ -733,7 +730,7 @@ export class Drawers {
   }
 
   _import() {
-    this._pickFile('application/json,.json', (file) => this.app.importSnapshotFromFile(file));
+    pickFile('application/json,.json', (file) => this.app.importSnapshotFromFile(file));
   }
 
   _restoreBackup(key) {
@@ -907,7 +904,7 @@ export class Drawers {
         window.removeEventListener('pointermove', move);
         window.removeEventListener('pointerup', up);
         this.app.setPrefs({ drawerWidth: Math.round(this.el.getBoundingClientRect().width), drawerWide: false });
-        this._graph?.resize?.();
+        this._graph?.resize();
       };
       window.addEventListener('pointermove', move);
       window.addEventListener('pointerup', up);

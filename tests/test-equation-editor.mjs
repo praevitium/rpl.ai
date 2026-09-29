@@ -455,3 +455,15 @@ function same(state, source, label) {
 function replaceSelection(state, ast) {
   return replaceTarget(state, [...fromAst(ast)]);
 }
+
+{
+  const typed = (faces) => formatAlgebra(toAst(faces.reduce((s, f) => pressEquationKey(s, f), emptyEquation()).root));
+  assert(typed(['( )', 'x', 'yˣ', '5', '-', '1', ')', '÷', '( )', 'x', '-', '1', ')']) === '(x^5 - 1)/(x - 1)',
+    'equation writer: - after a filled exponent continues after the power, so (x^5-1)/(x-1) types as written');
+  assert(typed(['3', 'x', 'yˣ', '2', '+', '1']) === '3*x^2 + 1' && typed(['x', 'yˣ', '2', '=', '4']) === 'x^2 = 4',
+    'equation writer: + and = leave the exponent without regrouping a product');
+  assert(typed(['x', 'yˣ', '-', '2', '+', '1']) === 'x^(-2) + 1',
+    'equation writer: - in an empty exponent stays there, and + after it leaves');
+  assert(typed(['x', 'yˣ', '2', '×', 'n']) === 'x^(2*n)' && typed(['x', 'yˣ', '( )', 'n', '+', '1', ')']) === 'x^(n + 1)',
+    'equation writer: × and a group keep typing inside the exponent');
+}

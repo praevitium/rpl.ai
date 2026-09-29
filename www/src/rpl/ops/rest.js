@@ -1,61 +1,42 @@
-import { isBinaryInteger, Real, isInteger, isReal, BinaryInteger, Integer, Symbolic, Matrix } from '../types.js';
+import { isInteger, isReal, Integer, Symbolic, Matrix } from '../types.js';
 import { RPLError } from '../stack.js';
-import { getBinaryBase, REAL_MAX_EXP_MIN, REAL_MAX_EXP_MAX, setRealMaxExp, getRealMaxExp, getCasVx } from '../state.js';
+import { REAL_MAX_EXP_MIN, REAL_MAX_EXP_MAX, setRealMaxExp, getRealMaxExp, getCasVx } from '../state.js';
 import { giac } from '../cas/giac-engine.mjs';
 import { giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
-import { register, lookup, OPS } from './registry.js';
-import { _astToRplValue, _cToPOp, _cToROp, _colCompose, _colDecompose, _fromArrayOp, _fromListOp, _fromStrOp, _fromVecOp, _hmsToHours, _hmsUnary, _hoursToHms, _mask, _matrixToGiacStr, _pToCOp, _popSquareMatrix, _rToCOp, _rowCompose, _rowDecompose, _toArrayOp, _toListOp, _toStrOp, _toV2Op, _toV3Op, unaryReal } from './internal.js';
+import { register, lookup } from './registry.js';
+import { _astToRplValue, _cToPOp, _cToROp, _colCompose, _colDecompose, _fromArrayOp, _fromListOp, _fromStrOp, _fromVecOp, _matrixToGiacStr, _pToCOp, _popSquareMatrix, _rToCOp, _rowCompose, _rowDecompose, _toArrayOp, _toListOp, _toStrOp, _toV2Op, _toV3Op } from './internal.js';
 
 
-// ASCII-friendly aliases matching what a user can type from a keyboard.
-register('R->D', unaryReal(r => r * 180 / Math.PI));
+// ASCII spellings of arrow commands run the canonical op.
+const alias = (name) => (s) => lookup(name).fn(s);
 
-register('D->R', unaryReal(d => d * Math.PI / 180));
+register('R->D', alias('R→D'));
 
-// Ascii alias — so users on keyboards without `→` can type `->NUM` or
-// `NUM` and still reach the op via the entry line.  Mirrors the style
-// used for `→LIST`, `→STR` elsewhere in the registry.
-register('->NUM', (s, entry) => { OPS.get('→NUM').fn(s, entry); });
+register('D->R', alias('D→R'));
 
-register('B->R', (s) => {          // ASCII alias
-  const v = s.pop();
-  if (!isBinaryInteger(v)) throw new RPLError('Bad argument type');
-  s.push(Real(Number(v.value & _mask())));
-});
+register('->NUM', alias('→NUM'));
 
-register('R->B', (s) => {          // ASCII alias
-  const v = s.pop();
-  let n;
-  if (isInteger(v))       n = v.value;
-  else if (isReal(v))     n = BigInt(v.value.trunc().toFixed(0));
-  else throw new RPLError('Bad argument type');
-  const m = _mask();
-  const payload = n & m;
-  const base = getBinaryBase() || 'h';
-  s.push(BinaryInteger(payload, base));
-});
+register('B->R', alias('B→R'));
 
-register('->UNIT', (s) => OPS.get('→UNIT').fn(s));
+register('R->B', alias('R→B'));
+
+register('->UNIT', alias('→UNIT'));
 
 
-/* The HP50 token `∫` decompiles to the integration function.  The AUR
-   shows it as a 4-arg form (lower upper integrand var → ∫); this app
-   only ships the 2-arg INTEG semantics so we register the glyph as an
-   alias for INTEG.  Programs that produce `∫` from the keyboard or via
-   `→PRG` therefore still execute. */
-register('∫', (s) => { OPS.get('INTEG').fn(s); });
+// HP50's ∫ takes four arguments; here the glyph is INTEG's two-argument form.
+register('∫', alias('INTEG'));
 
-register('∂', (s) => { OPS.get('DERIV').fn(s); });
+register('∂', alias('DERIV'));
 
-register('DERIVX', (s) => { OPS.get('DERVX').fn(s); });
+register('DERIVX', alias('DERVX'));
 
 register('->LIST', _toListOp);
 
 register('LIST->', _fromListOp);
 
-register('OBJ->', (s) => OPS.get('OBJ→').fn(s));
+register('OBJ->', alias('OBJ→'));
 
-register('->PRG', (s) => OPS.get('→PRG').fn(s));
+register('->PRG', alias('→PRG'));
 
 register('->ARRY', _toArrayOp);
 
@@ -76,14 +57,8 @@ register('R->C', _rToCOp);
 register('C->R', _cToROp);
 
 
-/* --------------- STMXE / RCMXE — configure max Real exponent --------
-   rpl5050 extension (no HP50 equivalent).  `STMXE` pops an Integer or
-   Real from level 1, validates it, and sets `realMaxExp` — the exponent
-   magnitude that defines both MAXR/MINR and the Decimal overflow limit.
-   `RCMXE` pushes the current setting as an Integer.
-
-   Legal range: REAL_MAX_EXP_MIN (10) .. REAL_MAX_EXP_MAX (9e15).
-   ---------------------------------------------------------------- */
+// STMXE / RCMXE set and recall the Real exponent limit behind MAXR, MINR and
+// overflow (not an HP50 command).
 register('STMXE', (s) => {
   const v = s.pop();
   let n;
@@ -101,17 +76,17 @@ register('RCMXE', (s) => {
   s.push(Integer(BigInt(getRealMaxExp())));
 });
 
-register('->HMS', _hmsUnary('->HMS', (h) => _hoursToHms(h)));
+register('->HMS', alias('→HMS'));
 
-register('HMS->', _hmsUnary('HMS->', (h) => _hmsToHours(h)));
+register('HMS->', alias('HMS→'));
 
-register('->Q', (s) => { lookup('→Q').fn(s); });
+register('->Q', alias('→Q'));
 
-register('Q->', (s) => { lookup('Q→').fn(s); });
+register('Q->', alias('Q→'));
 
-register('D->HMS', _hmsUnary('D->HMS', (h) => _hoursToHms(h)));
+register('D->HMS', alias('D→HMS'));
 
-register('HMS->D', _hmsUnary('HMS->D', (h) => _hmsToHours(h)));
+register('HMS->D', alias('HMS→D'));
 
 register('ROW->', _rowDecompose);
 
@@ -121,47 +96,27 @@ register('COL->', _colDecompose);
 
 register('->COL', _colCompose);
 
-register('->Qπ', (s) => { lookup('→Qπ').fn(s); });
+register('->Qπ', alias('→Qπ'));
 
-register('->TAG', (s) => { lookup('→TAG').fn(s); });
+register('->TAG', alias('→TAG'));
 
 register('C->P', _cToPOp);
 
 register('P->C', _pToCOp);
 
 
-/* `PMINI` — minimal polynomial of a square matrix (HP50 AUR §3-172).
-   Sibling of PCAR: same `_popSquareMatrix` validator and
-   `_matrixToGiacStr` serialization, routed through Giac `pmin(M,vx)`
-   instead of `charpoly`.  Returns a Symbolic in the CAS variable; it is
-   also JORDAN's level-4 output.  No-fallback: `!giac.isReady()` ⇒
-   `CAS not ready`. */
+// Minimal polynomial of a square matrix, in the CAS variable.
 register('PMINI', (s) => {
   const { matrix } = _popSquareMatrix(s);
   if (!giac.isReady()) throw new RPLError('CAS not ready');
   const vx = getCasVx();
   const matStr = _matrixToGiacStr(matrix);
   s.push(Symbolic(giacToAst(giac.caseval(`pmin(${matStr},${vx})`))));
-});
+}, { category: 'Vectors / matrices', categoryOrder: 55, label: "PMINI" });
 
 
-/* ------------------------------------------------------------------
-   SCHUR   (HP50 AUR §3-218)
-   Schur decomposition of a square matrix.
-
-     Input :  level 1 = [[ M ]]   (n × n)
-     Output:  level 2 = [[ Q ]]   (orthogonal / unitary)
-              level 1 = [[ T ]]   (upper quasi-triangular)
-   such that  M = Q · T · TRN(Q).
-
-   Giac exposes `SCHUR(A) = hessenberg(A,-1)`, returning the pair
-   `[P, B]` with `B = inv(P)·A·P`.  P is orthogonal, so `inv(P) =
-   TRN(P)` and the identity matches HP50's Q / T exactly (P↔Q, B↔T).
-   Both matrices flow through the same `_matrixToGiacStr` /
-   `_astToRplValue` pipeline as EGV; a non-pair / non-matrix shape from
-   Giac surfaces `Bad argument value`.  No-fallback: `!giac.isReady()`
-   ⇒ `CAS not ready`.
-   ------------------------------------------------------------------ */
+// Giac's SCHUR(A) returns [P, B] with B = inv(P)·A·P and P orthogonal, which is
+// HP50's Q (level 2) and T (level 1).
 register('SCHUR', (s) => {
   const { matrix } = _popSquareMatrix(s);
   if (!giac.isReady()) throw new RPLError('CAS not ready');
@@ -179,4 +134,4 @@ register('SCHUR', (s) => {
   };
   s.push(toMatrix(pair[0]));
   s.push(toMatrix(pair[1]));
-});
+}, { category: 'Vectors / matrices', categoryOrder: 56, label: "SCHUR" });

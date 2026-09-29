@@ -1,43 +1,23 @@
 import { isInteger, isBinaryInteger, isReal, BinaryInteger, Real } from '../types.js';
 import { RPLError } from '../stack.js';
-import { setWordsize, getWordsize, getBinaryBase, setBinaryBase, setTextbookMode, setDisplay } from '../state.js';
+import { setWordsize, getWordsize, getWordsizeMask, getBinaryBase, setBinaryBase, setTextbookMode, setDisplay } from '../state.js';
 import { register } from './registry.js';
-import { _mask } from './internal.js';
 
 
-
-/* ------------------------------------------------------------------
-   STWS / RCWS — Binary integer wordsize control.
-
-     STWS  ( n -- )       set wordsize to n bits (1..64, clamped).  HP50
-                          accepts a Real, Integer, or BinaryInteger here;
-                          we convert via the usual numeric coercion.
-     RCWS  ( -- bin )     recall wordsize as a BinaryInteger in the
-                          current display base (or hex when the display
-                          override is null).  HP50 behavior matches.
-
-   HEX / DEC / OCT / BIN — display-base modes.  Each sets the global
-   `state.binaryBase` override so every BinInt renders in that base AND
-   pads to the current wordsize.  There's no "un-set" op today — the
-   user issues a different base or keeps the current one.
-   ------------------------------------------------------------------ */
 
 register('STWS', (s) => {
   const v = s.pop();
   let n;
-  if (isInteger(v))           n = Number(v.value);
-  else if (isBinaryInteger(v)) n = Number(v.value);
-  else if (isReal(v))         n = v.value.toNumber();
+  if (isInteger(v) || isBinaryInteger(v)) n = Number(v.value);
+  else if (isReal(v))                     n = v.value.toNumber();
   else throw new RPLError('Bad argument type');
   if (!Number.isFinite(n)) throw new RPLError('Bad argument value');
   setWordsize(Math.trunc(n));
 }, { category: 'Display / base', categoryOrder: 13, label: "STWS" });
 
 
+// In the display base, so HEX mode gives #40h rather than #64d.
 register('RCWS', (s) => {
-  // HP50 returns the wordsize as a Binary Integer; base follows the
-  // display override when set, else hex.  (A user in HEX mode wants
-  // `#40h` back from RCWS, not `#64d`.)
   s.push(BinaryInteger(BigInt(getWordsize()), getBinaryBase() || 'h'));
 }, { category: 'Display / base', categoryOrder: 14, label: "RCWS" });
 
@@ -50,157 +30,67 @@ register('OCT', () => { setBinaryBase('o'); }, { category: 'Display / base', cat
 
 register('BIN', () => { setBinaryBase('b'); }, { category: 'Display / base', categoryOrder: 9, label: "BIN" });
 
-/** CLB — clear display-base override.  After CLB, each BinInt
- *  renders in its stored base (HP50 default behavior before any
- *  HEX/DEC/OCT/BIN has been issued).  Padding to STWS is also
- *  dropped — the address hasn't been mode-locked, so minimum-
- *  width rendering is used.  (HP50 firmware doesn't ship this
- *  exact name; the closest built-in is clearing flag -67.  We use
- *  CLB for brevity — `CLear Binary mode`.) */
+// Not an HP50 command: each BinInt goes back to its own base, unpadded.
 register('CLB', () => { setBinaryBase(null); }, { category: 'Display / base', categoryOrder: 10, label: "CLB" });
 
 
-/* ------------------------------------------------------------------
-   TEXTBOOK / FLAT — toggle 2D pretty-print of Symbolic stack rows.
-
-   TEXTBOOK  ( --- )   Enable pretty-print for Symbolic values.  After
-                       TEXTBOOK, each stack row holding a Symbolic
-                       renders via src/rpl/pretty.js's astToSvg (SVG)
-                       instead of the flat-text formatter.  Other
-                       value types are unaffected.
-   FLAT      ( --- )   Return to flat-text rendering for everything.
-
-   HP50 expresses the same thing via system flag -80 — we provide
-   named ops for discoverability / keypad-reachability without taking
-   a position on flag numbers yet.  The flag-bit wiring can land
-   alongside once flags land as a feature. */
 register('TEXTBOOK', () => { setTextbookMode(true); }, { category: 'Display / base', categoryOrder: 0, label: "TEXTBOOK" });
 
 register('FLAT',     () => { setTextbookMode(false); }, { category: 'Display / base', categoryOrder: 1, label: "FLAT" });
 
 
-/* ------------------------------------------------------------------
-   B→R and R→B — BinaryInteger ↔ Real conversion.
-
-     B→R  ( bin -- real )   push the BinInt's value as a Real.  For
-                            wide BinInts the Number coercion loses
-                            precision above 2^53, matching the HP50's
-                            12-digit decimal limit behavior.
-     R→B  ( x   -- bin )    push x as a BinInt at the current wordsize.
-                            x may be Real or Integer.  The low ws bits
-                            become the payload; negatives wrap (two's-
-                            complement style) which matches HP50's
-                            truncation behavior.  Base follows the
-                            display override (or 'h' if none).
-   ------------------------------------------------------------------ */
-
 register('B→R', (s) => {
   const v = s.pop();
   if (!isBinaryInteger(v)) throw new RPLError('Bad argument type');
-  s.push(Real(Number(v.value & _mask())));
+  s.push(Real(Number(v.value & getWordsizeMask())));
 }, { category: 'Display / base', categoryOrder: 11, label: "B→R" });
 
 
+// Masking a negative BigInt yields its two's-complement low bits.
 register('R→B', (s) => {
   const v = s.pop();
   let n;
   if (isInteger(v))       n = v.value;
   else if (isReal(v))     n = BigInt(v.value.trunc().toFixed(0));
   else throw new RPLError('Bad argument type');
-  const m = _mask();
-  // Mask: for negatives, JS BigInt AND with a positive mask gives the
-  // two's-complement low bits already (because BigInt is arbitrary-
-  // precision signed), so `n & m` is what we want.
-  const payload = n & m;
-  const base = getBinaryBase() || 'h';
-  s.push(BinaryInteger(payload, base));
+  s.push(BinaryInteger(n & getWordsizeMask(), getBinaryBase() || 'h'));
 }, { category: 'Display / base', categoryOrder: 12, label: "R→B" });
 
-
-/* --------------- BinaryInteger shift / rotate ---------------
-   HP50 AUR §10.1.  All 9 ops take a BinInt and return a BinInt; the
-   display base is inherited from the input, and the value is masked
-   to the current wordsize (STWS, default 64).  Mixed operands /
-   wrong type throws 'Bad argument type'.
-
-     SL   ( bin → bin' )   shift left by 1 bit (bit lost off top)
-     SR   ( bin → bin' )   shift right by 1 bit (zero fill at top)
-     ASR  ( bin → bin' )   shift right preserving sign-bit (top bit)
-     RL   ( bin → bin' )   rotate left by 1 bit
-     RR   ( bin → bin' )   rotate right by 1 bit
-     SLB  ( bin → bin' )   shift left by 8 bits (1 byte)
-     SRB  ( bin → bin' )   shift right by 8 bits (1 byte)
-     RLB  ( bin → bin' )   rotate left by 8 bits
-     RRB  ( bin → bin' )   rotate right by 8 bits
-
-   Sign-bit handling in ASR: if the MSB of the wordsize is set, the
-   right-shifted result keeps that bit set (i.e. arithmetic shift of a
-   two's-complement value).  Wordsize 1 is a degenerate case — ASR is
-   effectively a no-op there; we treat it that way.
-   ---------------------------------------------------------------- */
 
 function _requireBinInt(v) {
   if (!isBinaryInteger(v)) throw new RPLError('Bad argument type');
 }
 
 
-// Shift left by `k` bits.  Bits shifted off the high end are discarded
-// via the wordsize mask.
 function _shiftLeft(v, k) {
   _requireBinInt(v);
-  const m = _mask();
-  const out = (v.value << BigInt(k)) & m;
-  return BinaryInteger(out, v.base);
+  return BinaryInteger((v.value << BigInt(k)) & getWordsizeMask(), v.base);
 }
 
 
-// Logical shift right by `k` bits.  High bits become 0.
 function _shiftRight(v, k) {
   _requireBinInt(v);
-  const m = _mask();
-  const out = (v.value & m) >> BigInt(k);
-  return BinaryInteger(out, v.base);
+  return BinaryInteger((v.value & getWordsizeMask()) >> BigInt(k), v.base);
 }
 
 
-// Arithmetic shift right by 1 bit — preserves the sign bit (MSB).
+// Arithmetic shift right: the wordsize's top bit is kept.
 function _asr1(v) {
   _requireBinInt(v);
-  const m = _mask();
-  const w = BigInt(getWordsize());
-  if (w <= 1n) return BinaryInteger(v.value & m, v.base);
-  const msb = (v.value & m) >> (w - 1n);                // 0n or 1n
-  let out = (v.value & m) >> 1n;
-  if (msb === 1n) out |= (1n << (w - 1n));
-  return BinaryInteger(out & m, v.base);
+  const val = v.value & getWordsizeMask();
+  const signBit = 1n << BigInt(getWordsize() - 1);
+  return BinaryInteger((val >> 1n) | (val & signBit), v.base);
 }
 
 
-// Rotate left by `k` bits.
-function _rotateLeft(v, k) {
+// Rotates left by k bits within the wordsize; a negative k rotates right.
+function _rotate(v, k) {
   _requireBinInt(v);
-  const m = _mask();
+  const m = getWordsizeMask();
   const w = BigInt(getWordsize());
-  const shift = BigInt(k) % w;
-  if (shift === 0n) return BinaryInteger(v.value & m, v.base);
+  const shift = ((BigInt(k) % w) + w) % w;
   const val = v.value & m;
-  const left = (val << shift) & m;
-  const right = val >> (w - shift);
-  return BinaryInteger((left | right) & m, v.base);
-}
-
-
-// Rotate right by `k` bits.
-function _rotateRight(v, k) {
-  _requireBinInt(v);
-  const m = _mask();
-  const w = BigInt(getWordsize());
-  const shift = BigInt(k) % w;
-  if (shift === 0n) return BinaryInteger(v.value & m, v.base);
-  const val = v.value & m;
-  const right = val >> shift;
-  const left = (val << (w - shift)) & m;
-  return BinaryInteger((right | left) & m, v.base);
+  return BinaryInteger(((val << shift) | (val >> (w - shift))) & m, v.base);
 }
 
 
@@ -214,31 +104,16 @@ register('SLB', (s) => { const v = s.pop(); s.push(_shiftLeft(v, 8)); }, { categ
 
 register('SRB', (s) => { const v = s.pop(); s.push(_shiftRight(v, 8)); }, { category: 'Display / base', categoryOrder: 21, label: "SRB" });
 
-register('RL',  (s) => { const v = s.pop(); s.push(_rotateLeft(v, 1)); }, { category: 'Display / base', categoryOrder: 18, label: "RL" });
+register('RL',  (s) => { const v = s.pop(); s.push(_rotate(v, 1)); }, { category: 'Display / base', categoryOrder: 18, label: "RL" });
 
-register('RR',  (s) => { const v = s.pop(); s.push(_rotateRight(v, 1)); }, { category: 'Display / base', categoryOrder: 19, label: "RR" });
+register('RR',  (s) => { const v = s.pop(); s.push(_rotate(v, -1)); }, { category: 'Display / base', categoryOrder: 19, label: "RR" });
 
-register('RLB', (s) => { const v = s.pop(); s.push(_rotateLeft(v, 8)); }, { category: 'Display / base', categoryOrder: 22, label: "RLB" });
+register('RLB', (s) => { const v = s.pop(); s.push(_rotate(v, 8)); }, { category: 'Display / base', categoryOrder: 22, label: "RLB" });
 
-register('RRB', (s) => { const v = s.pop(); s.push(_rotateRight(v, 8)); }, { category: 'Display / base', categoryOrder: 23, label: "RRB" });
+register('RRB', (s) => { const v = s.pop(); s.push(_rotate(v, -8)); }, { category: 'Display / base', categoryOrder: 23, label: "RRB" });
 
 
-/* --------------- STD / FIX / SCI / ENG — number-format modes ---------
-   HP50 AUR §3.2.  Each op routes through `setDisplay()` so the state
-   emitter fires — the LCD renderer reads `state.displayMode` /
-   `state.displayDigits` before each stack repaint, and the status-line
-   annunciator updates via the same subscribe path.  `→STR` and any
-   other op that passes the state's display mode to `format()` sees
-   the same update.
-
-     STD                     ( — )       set mode = STD, digits ignored
-     FIX    ( n → )                      set mode = FIX, digits = clamp(n, 0, 11)
-     SCI    ( n → )                      set mode = SCI, digits = clamp(n, 0, 11)
-     ENG    ( n → )                      set mode = ENG, digits = clamp(n, 0, 11)
-
-   Non-integer Real and negative digits throw Bad argument value.
-   ----------------------------------------------------------------- */
-
+// Digits are capped at 11, as on the HP50.
 function _popNumDigits(s) {
   const [n] = s.popN(1);
   let d;
@@ -250,7 +125,7 @@ function _popNumDigits(s) {
     throw new RPLError('Bad argument type');
   }
   if (d < 0) throw new RPLError('Bad argument value');
-  if (d > 11) d = 11;                               // HP50 cap
+  if (d > 11) d = 11;
   return d;
 }
 

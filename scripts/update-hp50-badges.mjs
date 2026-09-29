@@ -1,9 +1,5 @@
 #!/usr/bin/env node
-/* The original generator that produced hp50-commands.html isn't checked
-   in, so this script edits the existing markup in place.  Pure regex
-   updates (no DOM library) — the markup the generator emits is regular
-   enough that a few targeted patterns suffice. */
-
+// The generator behind hp50-commands.html isn't checked in, so this edits its regular markup in place.
 import { fileURLToPath } from 'node:url';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -15,9 +11,6 @@ const HTML_PATH = path.resolve(HERE, '../www/docs/hp50-commands.html');
 
 const registered = new Set(allOps().map(s => s.toUpperCase()));
 
-// HP50 reference docs encode `<`, `>`, etc. as HTML entities in the
-// h2 display text (e.g. `&lt;(Less than)`).  We have to decode before
-// looking up the registry, since ops are registered as raw chars.
 function decodeEntities(s) {
   return s
     .replace(/&lt;/g,   '<')
@@ -30,15 +23,12 @@ function decodeEntities(s) {
 }
 
 function commandKey(display) {
-  // Strip the parenthetical disambiguator the generator appends to
-  // symbol commands (e.g. `!(Factorial)` → `!`).  Decode entities and
-  // upper-case so the match is symmetric with `register()`.
+  // Symbol headings carry a name in parentheses, e.g. `!(Factorial)` is `!`.
   const stripped = display.replace(/\s*\(.*\)\s*$/, '').trim();
   return decodeEntities(stripped).toUpperCase();
 }
 
-// Manual headings use glyphs (`√`) where the registry uses mnemonics
-// (`SQRT`). Invert command-help ALIASES so those headings stay in-app.
+// Headings use glyphs (`√`) where the registry uses mnemonics (`SQRT`).
 const dispatchForDoc = new Map();
 for (const [dispatch, doc] of ALIASES) {
   dispatchForDoc.set(String(doc).toUpperCase(), String(dispatch).toUpperCase());
@@ -74,8 +64,6 @@ if (h2Count === 0) {
   process.exit(1);
 }
 
-// The lead anchor (id='top') has no `cmd-` prefix; only links pointing
-// at command sections are touched.
 html = html.replace(
   /<a href="(#cmd-[^"]+)"(?:\s+class='notinapp')?>([^<]+)<\/a>/g,
   (m, href, label) => {

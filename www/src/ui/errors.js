@@ -26,8 +26,6 @@ const article = (noun) => (/^[aeiou]/i.test(noun) ? `an ${noun}` : `a ${noun}`);
 
 const sentence = (text) => (/[.!?]$/.test(text) ? text : `${text}.`);
 
-function levelWord(level) { return `level ${level}`; }
-
 export const ERROR_KINDS = Object.freeze({
   tooFew: {
     match: (p) => p.core === 'Too few arguments',
@@ -48,13 +46,13 @@ export const ERROR_KINDS = Object.freeze({
     },
     detail: (c) => {
       const takes = c.signature ? `${c.command} takes ${c.signature}.` : '';
-      const seen = c.culprits.map((x) => `${levelWord(x.level)} is ${x.text}`).join(', ');
+      const seen = c.culprits.map((x) => `level ${x.level} is ${x.text}`).join(', ');
       const want = c.detail ? ` (${c.detail})` : '';
       const here = seen ? ` ${sentence(`Here ${seen}${want}`)}` : want ? ` ${sentence(want.trim())}` : '';
       return `${takes}${here}`.trim() || 'The value on the stack is the wrong kind of object for this command.';
     },
     fixes: (c) => [
-      ...(c.onStack ? [{ id: 'drop', label: `Drop ${levelWord(1)}` }] : c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []),
+      ...(c.onStack ? [{ id: 'drop', label: 'Drop level 1' }] : c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []),
       ...(c.onStack && c.depth >= 2 && c.args !== 1 ? [{ id: 'swap', label: 'Swap levels 1 and 2' }] : []),
       ...(c.command ? [{ id: 'help', label: `${c.command} reference` }] : []),
       { id: 'explain', label: 'Explain' },
@@ -75,7 +73,7 @@ export const ERROR_KINDS = Object.freeze({
   dimension: {
     match: (p) => p.core === 'Invalid dimension',
     title: (c) => `${c.command ?? 'That command'}: the sizes don't match.`,
-    detail: (c) => sentence(`Vectors and matrices need compatible dimensions for ${c.command ?? 'this'}${c.culprits.length ? `. Here ${c.culprits.map((x) => `${levelWord(x.level)} is ${x.text}`).join(', ')}` : ''}`),
+    detail: (c) => sentence(`Vectors and matrices need compatible dimensions for ${c.command ?? 'this'}${c.culprits.length ? `. Here ${c.culprits.map((x) => `level ${x.level} is ${x.text}`).join(', ')}` : ''}`),
     fixes: (c) => [...(c.command ? [{ id: 'help', label: `${c.command} reference` }] : []), { id: 'explain', label: 'Explain' }],
   },
   units: {
@@ -118,17 +116,16 @@ export const ERROR_KINDS = Object.freeze({
 
 export function describeError(message, { failure = null, stack = [], depth = 0, line = '', describe, commandInfo = () => null } = {}) {
   const parsed = parseErrorMessage(message);
-  const kind = Object.entries(ERROR_KINDS).find(([, k]) => k.match(parsed))[0];
+  const [kind, spec] = Object.entries(ERROR_KINDS).find(([, k]) => k.match(parsed));
   const command = parsed.command ?? failure?.op ?? null;
   const info = command ? commandInfo(command) : null;
   const signature = info?.signature ?? '';
   const args = info?.inputs ?? null;
   const seen = failure && (!parsed.command || failure.op === parsed.command) ? failure.levels : [];
-  const count = Math.min(seen.length, args ?? Math.min(seen.length, 2));
+  const count = Math.min(seen.length, args ?? 2);
   const onStack = count > 0 && seen.slice(0, count).every((v, i) => stack[i] === v);
   const culprits = seen.slice(0, count).map((value, i) => ({ level: i + 1, ...describe(value) }));
   const ctx = { ...parsed, message: String(message ?? ''), command, signature, args, depth, culprits, onStack, hasLine: !!String(line).trim() };
-  const spec = ERROR_KINDS[kind];
   return {
     kind,
     command,

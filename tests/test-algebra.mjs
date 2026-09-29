@@ -8057,4 +8057,6 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'algebraic entry reads √( as SQRT');
   assert(format(parseEntry('`2*√X`')[0]) === '`2*SQRT(X)`',
     'algebraic entry reads a bare √X as SQRT of the next term');
+  assert(format(parseEntry('`√2`')[0]) === '`SQRT(2)`',
+    'algebraic entry reads a lone √2 as SQRT, not as a name');
 }

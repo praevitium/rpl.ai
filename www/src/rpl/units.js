@@ -1,33 +1,13 @@
-/* Units: dimensional catalog + unit-expression algebra.
+/* Unit catalog and unit-expression algebra.  A uexpr is a canonical
+   frozen list of [symbol, exponent] pairs, sorted by symbol with zero
+   exponents dropped, so equality is a pairwise scan.  Each catalog entry
+   has a scale to SI base units and a dims vector over BASE_SYMBOLS.
+   Units are purely multiplicative: affine temperatures (°C, °F) would
+   need an offset as well. */
 
-   An HP50 Unit value pairs a number with a unit expression:
-       9.8_m/s^2        value = 9.8,  uexpr = [[m,1],[s,-2]]
-       1_kg*m/s^2       value = 1,    uexpr = [[kg,1],[m,1],[s,-2]]
-       273.15_K         value = 273.15, uexpr = [[K,1]]
+const BASE_SYMBOLS = Object.freeze(['m', 'kg', 's', 'A', 'K', 'mol', 'cd']);
+const BASE_DIMS_LEN = BASE_SYMBOLS.length;
 
-   The unit expression is a canonical, frozen array of [symbol, exponent]
-   tuples, sorted alphabetically by symbol, with zero-exponent factors
-   dropped.  This canonicalisation lets us test equality with a cheap
-   pairwise scan and keeps formatting deterministic.
-
-   Every symbol in the catalog has:
-     scale — the multiplier to its SI-base equivalent (km → 1000, ft → 0.3048).
-     dims  — a length-7 vector of base-dimension exponents:
-             [length, mass, time, current, temperature, amount, luminous].
-   `dimsOf(uexpr)` sums the per-factor dims; `scaleOf(uexpr)` multiplies
-   the per-factor scales.  `sameDims` is the basis for dimensional
-   compatibility checks used by `+`/`-` and CONVERT.
-
-   First-pass scope: purely multiplicative units.  Affine temperature
-   (°C/°F) is out — that needs offset+scale per unit, not just scale. */
-
-// Base dimension order, fixed for the lifetime of the program.
-// When adding a new fundamental dimension (e.g. information/bit) the
-// catalog entries must all grow the same column.
-const BASE_DIMS_LEN = 7;
-const ZERO_DIMS = Object.freeze([0, 0, 0, 0, 0, 0, 0]);
-
-// Shorthand for dim vectors so catalog entries stay one-line.
 const D_L   = Object.freeze([1, 0, 0, 0, 0, 0, 0]);
 const D_M   = Object.freeze([0, 1, 0, 0, 0, 0, 0]);
 const D_T   = Object.freeze([0, 0, 1, 0, 0, 0, 0]);
@@ -46,7 +26,7 @@ const D_Ohm = Object.freeze([2, 1, -3, -2, 0, 0, 0]); // resistance
 const D_Q   = Object.freeze([0, 0, 1, 1, 0, 0, 0]);   // charge (C)
 
 export const UNIT_CATALOG = new Map([
-  // ---- SI base units (canonical: scale 1) ----
+  // ---- SI base units ----
   ['m',   { scale: 1,                 dims: D_L }],
   ['kg',  { scale: 1,                 dims: D_M }],
   ['s',   { scale: 1,                 dims: D_T }],
@@ -98,10 +78,6 @@ export const UNIT_CATALOG = new Map([
   ['C',   { scale: 1,                 dims: D_Q }],    // coulomb
 ]);
 
-export function isKnownUnit(sym) { return UNIT_CATALOG.has(sym); }
-
-/** Canonical uexpr: sort, merge, drop zero-exponent factors.  Throws on
- *  unknown symbols. */
 export function normalizeUexpr(factors) {
   const merged = new Map();
   for (const [sym, exp] of factors) {
@@ -128,8 +104,7 @@ export function uexprEqual(a, b) {
   return true;
 }
 
-/** Sum dimension-vectors across the factors. */
-export function dimsOf(uexpr) {
+function dimsOf(uexpr) {
   const d = new Array(BASE_DIMS_LEN).fill(0);
   for (const [sym, exp] of uexpr) {
     const c = UNIT_CATALOG.get(sym);
@@ -138,7 +113,6 @@ export function dimsOf(uexpr) {
   return d;
 }
 
-/** Multiplier from this uexpr to SI-base units. */
 export function scaleOf(uexpr) {
   let s = 1;
   for (const [sym, exp] of uexpr) {
@@ -154,32 +128,18 @@ export function sameDims(a, b) {
   return true;
 }
 
-/** Reduce a uexpr to its SI base symbols.  Returns the base uexpr AND
- *  the numerical factor needed to preserve the value — the caller
- *  multiplies value by it:  ubase(1_km) → { scale: 1000, uexpr: [[m,1]] }. */
+// 1_km → { scale: 1000, uexpr: [['m', 1]] }; the caller multiplies the value by scale.
 export function toBaseUexpr(uexpr) {
   const dims = dimsOf(uexpr);
-  const scale = scaleOf(uexpr);
-  const BASE_ORDER = ['m', 'kg', 's', 'A', 'K', 'mol', 'cd'];
-  const base = BASE_ORDER
-    .map((sym, i) => [sym, dims[i]])
-    .filter(([, e]) => e !== 0);
-  return { scale, uexpr: normalizeUexpr(base) };
+  const base = BASE_SYMBOLS.map((sym, i) => [sym, dims[i]]);
+  return { scale: scaleOf(uexpr), uexpr: normalizeUexpr(base) };
 }
 
-/* parser
-
-   Grammar (right of the underscore):
-     uexpr  := factor ( ('*' | '/') factor )*
-     factor := SYMBOL ( '^' ('-'|'+')? DIGITS )?
-             | '(' uexpr ')'
-
-   Convention: '/' inverts only the IMMEDIATELY following factor
-   (HP50 / left-to-right reading).  `m/s*s` therefore parses as
-   (m/s)*s → m, not m/(s*s).  Parens group the enclosed sub-expression
-   so '/(a*b)' inverts both a and b — this is what the formatter emits
-   when a denominator has more than one factor, so a unit expression
-   always round-trips through parse/format. */
+/* uexpr  := factor ( ('*' | '/') factor )*
+   factor := SYMBOL ( '^' ('-'|'+')? DIGITS )? | '(' uexpr ')'
+   '/' inverts only the next factor, reading left to right as the HP50
+   does, so m/s*s is m.  formatUnitExpr parenthesizes a denominator with
+   several factors so its output parses back unchanged. */
 
 export function parseUnitExpr(src) {
   const n = src.length;
@@ -193,9 +153,6 @@ export function parseUnitExpr(src) {
       else throw new Error(`Unclosed '(' in unit expression: ${src}`);
       return sub;
     }
-    // Accept Latin letters plus common unit glyphs (Ω, μ, °).  The
-    // catalog controls which symbols are legal; the regex is just the
-    // lexer's "here's a symbol-looking token" rule.
     const m = src.slice(i).match(/^[A-Za-zΩμ°]+/);
     if (!m) throw new Error(`Bad unit expression near '${src[i]}': ${src}`);
     const sym = m[0];
@@ -208,7 +165,6 @@ export function parseUnitExpr(src) {
       exp = parseInt(em[0], 10);
       i += em[0].length;
     }
-    if (!UNIT_CATALOG.has(sym)) throw new Error(`Unknown unit: ${sym}`);
     return normalizeUexpr([[sym, exp]]);
   }
 
@@ -229,13 +185,6 @@ export function parseUnitExpr(src) {
   return readExpr(undefined);
 }
 
-/* formatter
-
-   Display style mirrors how the user typed it: positive factors first,
-   joined by '*', then '/' + negative factors with positive exponents.
-   Multiple negative factors get parens so the output round-trips through
-   parseUnitExpr without sign drift. */
-
 export function formatUnitExpr(uexpr) {
   if (uexpr.length === 0) return '';
   const pos = uexpr.filter(([, e]) => e > 0);
@@ -247,5 +196,3 @@ export function formatUnitExpr(uexpr) {
   if (pos.length === 0) return neg.length === 1 ? '1/' + ns : `1/(${ns})`;
   return ps + '/' + (neg.length === 1 ? ns : `(${ns})`);
 }
-
-export { ZERO_DIMS, BASE_DIMS_LEN };

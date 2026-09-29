@@ -313,11 +313,7 @@ export function sampleFit(model, xMin, xMax, n) {
 }
 
 function finitePts(pts) {
-  const out = [];
-  for (const p of pts) {
-    if (p && Number.isFinite(p[0]) && Number.isFinite(p[1])) out.push(p);
-  }
-  return out;
+  return pts.filter((p) => p && Number.isFinite(p[0]) && Number.isFinite(p[1]));
 }
 
 function odeSlope(ast, x, y, opts) {
@@ -402,8 +398,7 @@ function plotConstant(src) {
 }
 
 function diffeqInitialY(t) {
-  const raw = t?.exprY == null || String(t.exprY).trim() === '' ? '0' : String(t.exprY).trim();
-  return plotConstant(raw);
+  return plotConstant(String(t?.exprY ?? '').trim() || '0');
 }
 
 function functionLabel(t) {
@@ -423,23 +418,16 @@ function diffeqSteps(ctx) {
 }
 
 function plotFieldError(fields, values, adding) {
-  for (const field of fields || []) {
+  for (const field of fields) {
     const raw = String(values?.[field.key] ?? '').trim();
-    if (!raw) {
-      if (!adding || field.optional || field.key !== 'exprY') continue;
-      try {
-        parsePlotExpr(raw);
-      } catch (e) {
-        return e.message;
-      }
-      continue;
-    }
+    const required = adding && !field.optional && field.key === 'exprY';
+    if (!raw && !required) continue;
     try {
       parsePlotExpr(raw);
     } catch (e) {
       return e.message;
     }
-    if (field.constant && !Number.isFinite(plotConstant(raw))) {
+    if (raw && field.constant && !Number.isFinite(plotConstant(raw))) {
       return 'initial value is not a number';
     }
   }
@@ -449,8 +437,7 @@ function plotFieldError(fields, values, adding) {
 function diffeqFromStack(v, below) {
   const expr = valueToEquationDraft(v);
   if (!expr) return null;
-  const drafted = valueToEquationDraft(below);
-  const exprY = drafted || '0';
+  const exprY = valueToEquationDraft(below) || '0';
   return {
     kind: 'diffeq',
     expr,
@@ -492,7 +479,7 @@ function expressionFromStack(kind, v) {
 }
 
 function expressionToStack(t) {
-  if (!t || !t.expr) return [];
+  if (!t?.expr) return [];
   return [equationToSymbolic(t.expr)];
 }
 
@@ -570,8 +557,8 @@ export const TRACE_KINDS = Object.freeze({
       const view = ctx.view;
       return sampleFunction(
         parsePlotExpr(t.expr), view.xmin, view.xmax,
-        Math.max(2, ctx.width | 0), ctx.env || {},
-        { ...(ctx.angleOpts || {}), ySpan: view.ymax - view.ymin },
+        Math.max(2, ctx.width | 0), ctx.env,
+        { ...ctx.angleOpts, ySpan: view.ymax - view.ymin },
       );
     },
     evalAt(t, x, ctx) {
@@ -591,10 +578,10 @@ export const TRACE_KINDS = Object.freeze({
     label: functionLabel,
     sample(t, ctx) {
       if (!t.expr) return [];
-      const th = ctx.thetaRange || { min: 0, max: 2 * Math.PI };
+      const th = ctx.thetaRange;
       return samplePolar(
         parsePlotExpr(t.expr), th.min, th.max, 720,
-        ctx.env || {}, ctx.angleOpts || {},
+        ctx.env, ctx.angleOpts,
       );
     },
     evalAt() { return NaN; },
@@ -615,10 +602,10 @@ export const TRACE_KINDS = Object.freeze({
     label: parametricLabel,
     sample(t, ctx) {
       if (!t.expr || !t.exprY) return [];
-      const tr = ctx.tRange || { min: -10, max: 10 };
+      const tr = ctx.tRange;
       return sampleParametric(
         parsePlotExpr(t.expr), parsePlotExpr(t.exprY),
-        tr.min, tr.max, 480, ctx.env || {}, ctx.angleOpts || {},
+        tr.min, tr.max, 480, ctx.env, ctx.angleOpts,
       );
     },
     evalAt() { return NaN; },
@@ -672,7 +659,7 @@ export const TRACE_KINDS = Object.freeze({
       return sampleDiffEq(
         parsePlotExpr(t.expr), y0,
         view.xmin, view.xmax, diffeqSteps(ctx),
-        ctx.angleOpts || {},
+        ctx.angleOpts,
       );
     },
     evalAt(t, x, ctx) {
@@ -790,9 +777,8 @@ export function traceFromInputs(kind, expr, exprY) {
   const spec = TRACE_KINDS[kind];
   const yField = spec?.fields?.find(f => f.key === 'exprY');
   const typedY = String(exprY ?? '').trim();
-  const storedY = yField
-    ? (typedY || (yField.optional ? (yField.blank ?? '') : typedY))
-    : '';
+  const blankY = yField?.optional ? yField.blank ?? '' : '';
+  const storedY = yField ? typedY || blankY : '';
   const storedX = String(expr ?? '').trim();
   const t = { expr: storedX, exprY: storedY };
   return {
