@@ -334,8 +334,13 @@ class App {
 
   toast(message, opts) { this.toasts.show(message, opts); }
 
-  _storedToast(name, message = `Stored ${name}`) {
-    this.toast(message, { action: 'Undo', onAction: () => this.runAction('edit.undo') });
+  // A toast's Undo reverses its own step, never the text being typed.
+  _undoToast(message) {
+    this.toast(message, { action: 'Undo', onAction: () => this._undoStackStep() });
+  }
+
+  _undoStackStep() {
+    try { this.entry.performUndo(); } catch (e) { this.entry.flashError(e); }
   }
 
   notifyError(message) { this.toasts.show(message, { error: true, timeout: 5200 }); }
@@ -460,7 +465,7 @@ class App {
     this.entry._snapForUndo();
     try {
       await importFromFile(file, this.stack);
-      this.toast(`Restored from ${file.name}`, { action: 'Undo', onAction: () => this.runAction('edit.undo') });
+      this._undoToast(`Restored from ${file.name}`);
     } catch (e) {
       this.entry._dropNoOpUndoStep();
       this.notifyError(`Couldn't restore ${file.name}: ${e.message}`);
@@ -483,7 +488,7 @@ class App {
     d.onRowMove = (from, to) => this._moveLevel(from, to);
     d.onRowSwipe = (level) => {
       this.levelAction('drop', level);
-      this.toast(`Dropped level ${level}`, { action: 'Undo', onAction: () => this.runAction('edit.undo') });
+      this._undoToast(`Dropped level ${level}`);
     };
     d.onStatusAction = (kind, data, el) => {
       if (kind === 'mode') this.appbar.openModeMenu(data.mode, el);
@@ -560,7 +565,7 @@ class App {
       try {
         varStore(name, value);
         this.popover.close();
-        this.toast(`Stored in ${name}`, { action: 'Undo', onAction: () => this.runAction('edit.undo') });
+        this._undoToast(`Stored in ${name}`);
       } catch (err) {
         this.entry._dropNoOpUndoStep();
         this.notifyError(`Couldn't store in “${name}”: ${err.message}`);
@@ -626,7 +631,7 @@ class App {
     else this.stack.push(value);
     this._endEdit();
     this.setInputMode('rpl');
-    if (edit?.kind === 'var') this._storedToast(edit.name);
+    if (edit?.kind === 'var') this._undoToast(`Stored ${edit.name}`);
   }
 
   _writer() {
@@ -666,7 +671,7 @@ class App {
   pushFromWriter(value, message) {
     this.entry._snapForUndo();
     this.stack.push(value);
-    this.toast(message, { action: 'Undo', onAction: () => { try { this.entry.performUndo(); } catch (e) { this.entry.flashError(e); } } });
+    this._undoToast(message);
   }
 
   plotExpression(ast) {
@@ -698,7 +703,7 @@ class App {
       }
     } else if (edit.kind === 'var' && added === 1) {
       varStore(edit.name, this.stack.pop());
-      this._storedToast(edit.name);
+      this._undoToast(`Stored ${edit.name}`);
     }
     this._endEdit();
   }
@@ -1009,8 +1014,8 @@ class App {
     if (v === undefined) { this.entry.flashError({ message: `Undefined name: ${name}` }); return; }
     if (layer === 'L') {
       if (this.stack.depth < 1) { this.entry.flashError({ message: `STO ${name} needs a value on level 1; the stack is empty.` }); return; }
-      this.entry.safeRun(() => { this.entry._snapForUndo(); varStore(name, this.stack.pop()); }, 'STO');
-      if (!this.entry.error) this._storedToast(name, `Stored level 1 in ${name}`);
+      const stored = this.entry.safeRun(() => { this.entry._snapForUndo(); varStore(name, this.stack.pop()); }, 'STO');
+      if (stored) this._undoToast(`Stored level 1 in ${name}`);
       return;
     }
     if (layer === 'R') { this._pushValue(v); return; }
@@ -1217,7 +1222,7 @@ class App {
       case 'edit.undo':
         if (this.inputMode === 'equation' && this.equationEditor.canUndo()) { this.equationEditor.pressFace('UNDO'); return true; }
         if (this.inputMode === 'rpl' && this.entry.buffer.length) { this.entry.undoText(); return true; }
-        try { this.entry.performUndo(); } catch (e) { this.entry.flashError(e); }
+        this._undoStackStep();
         return true;
       case 'edit.redo':
         if (this.inputMode === 'equation' && this.equationEditor.canRedo()) { this.equationEditor.pressFace('REDO'); return true; }

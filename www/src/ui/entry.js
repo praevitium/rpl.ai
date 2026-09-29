@@ -388,17 +388,21 @@ export class Entry {
 
   // A failed command leaves its arguments on the stack, as on the HP 50g.
   // ABORT is the exception: the stack stays as the program left it.
+  // True when the body ran to completion.
   safeRun(body, context = '') {
     const rollback = this.stack.save();
-    try { withTimeLimit(RUN_TIME_LIMIT_MS, body); }
-    catch (e) {
+    try {
+      withTimeLimit(RUN_TIME_LIMIT_MS, body);
+      return true;
+    } catch (e) {
       if (e instanceof RPLAbort) {
         this.flashNotice('Program aborted');
-        return;
+        return false;
       }
       this.stack.restore(rollback);
       this._dropNoOpUndoStep();
       this.flashError(context ? new RPLError(`${context}: ${errorText(e)}`) : e);
+      return false;
     }
   }
 

@@ -1669,6 +1669,16 @@ const _close = (a, b, eps = 1e-10) => Math.abs(Number(a) - Number(b)) < eps;
   assert(e.buffer === '1E5' && e.cursor === 3, 'eex: cursor right of E → left segment carries the E, no-op');
 }
 
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const s = new Stack();
+  const e = new Entry(s);
+  s.push(Integer(7n));
+  assert(e.safeRun(() => s.push(Integer(8n))) === true && s.depth === 2, 'safeRun: reports a body that completes');
+  assert(e.safeRun(() => { s.pop(); throw new RPLError('Bad argument type'); }, 'STO') === false && s.depth === 2,
+    'safeRun: reports a failed body and puts the stack back');
+}
+
 // --- Cleanup shared state so later tests don't see stray bindings
 resetHome();
 setAngle('RAD');
