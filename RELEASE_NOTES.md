@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.3 (2026-09-29)
+**Latest release:** v0.6.4 (2026-09-29)
 
 ---
 
@@ -18,6 +18,17 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.4 — 2026-09-29
+
+Connecting the assistant to Ollama on this computer from the hosted app
+no longer sits on "Loading models…" forever. Chrome 142 and later, Edge
+and Firefox 153 and later hold those requests until you answer a prompt
+about letting the page access apps and services on this device; the
+endpoint form and the status line now say so, and if the page was
+blocked earlier they say how to allow it again.
 
 ---
 
