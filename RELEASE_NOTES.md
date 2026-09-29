@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.1 (2026-09-29)
+**Latest release:** v0.6.2 (2026-09-29)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.2 — 2026-09-29
+
+Copy a matrix or vector and paste it into Excel, Google Sheets or Numbers:
+it arrives as cells. A range of numbers copied from a spreadsheet pastes
+onto the command line as a matrix, or a vector for one row. A sideways pen
+swipe drops a stack level again, which 0.6.1 had broken. The toolbar's
+Undo and Redo follow the equation and matrix writers' own histories, and
+Ctrl+Z in a matrix cell steps through the writer's history. The matrix
+writer starts a fresh history for each level it loads, skips no-op steps
+and returns focus to the changed cell on undo. Its +/- while typing
+changes the sign of the number being typed, or its exponent after EEX,
+instead of wrapping the whole cell. A toast's Undo still applies after
+Undo then Redo.
 
 ---
 
