@@ -20,6 +20,37 @@ function isLoopbackHost(hostname) {
     || hostname === '[::1]' || /^127(\.\d{1,3}){3}$/.test(hostname);
 }
 
+function isPrivateHost(hostname) {
+  return isLoopbackHost(hostname) || hostname.endsWith('.local')
+    || /^(10|192\.168|172\.(1[6-9]|2\d|3[01]))\./.test(hostname);
+}
+
+export const LOCAL_ACCESS_ASKING = 'Waiting for your browser: if it asks whether this page may access apps and services on this device, choose Allow.';
+export const LOCAL_ACCESS_BLOCKED = 'Your browser is blocking this page from reaching apps on this device. '
+  + 'Click the icon to the left of the address, allow Apps on device (Local network access in older Chrome, '
+  + 'Device apps and services in Firefox), then try again.';
+
+// Chrome 142+ and Firefox 153+ hold a public page's requests to this device or the
+// local network until the user answers a permission prompt. Null where that doesn't apply.
+export async function localAccessPermission(url, origin = globalThis.location?.origin ?? '') {
+  let target;
+  let page;
+  try {
+    target = new URL(toOllamaBase(url)).hostname;
+    page = new URL(origin).hostname;
+  } catch {
+    return null;
+  }
+  if (!isPrivateHost(target) || isLoopbackHost(page)) return null;
+  const names = isLoopbackHost(target) ? ['loopback-network', 'local-network-access'] : ['local-network', 'local-network-access'];
+  for (const name of names) {
+    try {
+      return (await globalThis.navigator.permissions.query({ name })).state;
+    } catch { /* this browser names it differently, or has no such permission */ }
+  }
+  return null;
+}
+
 // WebKit is the exception: Safari and every iOS browser treat http://localhost as mixed content.
 function isWebKitBrowser(userAgent) {
   return /iPhone|iPad|iPod/.test(userAgent)
@@ -79,6 +110,12 @@ export async function explainConnectionError(url, err, origin = globalThis.locat
   if (plainFromHttps && isWebKitBrowser(userAgent)) {
     return `Safari, and every browser on iPhone and iPad, blocks HTTPS pages from calling ${host} over plain HTTP. `
       + 'Use Chrome, Edge or Firefox on a computer, or run rpl.ai from localhost (npm run serve).';
+  }
+  const access = await localAccessPermission(url, origin);
+  if (access === 'denied') return LOCAL_ACCESS_BLOCKED;
+  if (access === 'prompt') {
+    return 'Your browser asked whether this page may access apps and services on this device, '
+      + 'and the request stopped without an answer. Try again and choose Allow.';
   }
   try {
     await fetch(`${base}/api/version`, { mode: 'no-cors' });
@@ -263,6 +300,12 @@ export class RemoteLLM {
     if (!this._endpoint) throw new Error('Endpoint URL not configured');
     if (this._status === 'ready' && this._loadedModelId === modelId) return;
     this._setStatus('loading', `Connecting to ${this._endpoint}…`);
+    const access = await localAccessPermission(this._endpoint);
+    if (access === 'denied') {
+      this._setStatus('error', LOCAL_ACCESS_BLOCKED);
+      throw new Error(LOCAL_ACCESS_BLOCKED);
+    }
+    if (access === 'prompt') this._setStatus('loading', LOCAL_ACCESS_ASKING);
     try {
       const ollamaBase = toOllamaBase(this._endpoint);
       const shown = (await this._answersAsOllama(ollamaBase)) ? await this._showModel(ollamaBase, modelId) : null;

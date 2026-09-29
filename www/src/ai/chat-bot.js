@@ -42,6 +42,7 @@
 
 import {
   RemoteLLM, toOpenAIBase, toOllamaBase, isOllamaCloudUrl, ollamaCloudAdvice, bearerHeaders, explainConnectionError,
+  localAccessPermission, LOCAL_ACCESS_ASKING, LOCAL_ACCESS_BLOCKED,
 } from './remote-llm.js';
 import { buildSystemPrompt, TOOL_SCHEMAS } from './system-prompt.js';
 import { TutorCard } from './tutor.js';
@@ -982,7 +983,14 @@ export class ChatBot {
         return;
       }
       modelSelect.disabled = true;
-      statusEl.textContent = 'Loading models…';
+      const access = await localAccessPermission(url);
+      if (myToken !== fetchToken) return;
+      if (access === 'denied') {
+        resetModels();
+        errEl.textContent = LOCAL_ACCESS_BLOCKED;
+        return;
+      }
+      statusEl.textContent = access === 'prompt' ? LOCAL_ACCESS_ASKING : 'Loading models…';
       try {
         const { models, source } = await fetchRemoteModels(url, keyInput.value.trim());
         if (myToken !== fetchToken) return;

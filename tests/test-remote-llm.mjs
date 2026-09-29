@@ -2,6 +2,7 @@ import {
   toOpenAIBase, toOllamaBase, isOllamaCloudUrl, bearerHeaders,
   takeSSEFrames, takeNDJSONLines, summarizeRun, pickContextLength,
   chooseNumCtx, normalizeToolCall, RemoteLLM, explainConnectionError,
+  localAccessPermission, LOCAL_ACCESS_BLOCKED,
 } from '../www/src/ai/remote-llm.js';
 import { assert } from './helpers.mjs';
 
@@ -567,5 +568,45 @@ const frame = (obj) => 'data: ' + JSON.stringify(obj);
     assert(msg === 'HTTP 401 — check the API key', 'explainConnectionError: other errors pass through unchanged');
   } finally {
     globalThis.fetch = origFetch;
+  }
+}
+
+{
+  const realNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  const withPermissions = (states) => Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: {
+      userAgent: '',
+      permissions: {
+        query: async ({ name }) => {
+          if (!(name in states)) throw new TypeError(`unknown permission ${name}`);
+          return { state: states[name] };
+        },
+      },
+    },
+  });
+  const hosted = 'https://praevitium.github.io';
+  const failed = new TypeError('Failed to fetch');
+  try {
+    withPermissions({ 'loopback-network': 'denied' });
+    assert(await localAccessPermission('http://localhost:11434/v1', hosted) === 'denied',
+      'localAccessPermission: a hosted page reaching localhost reads the loopback-network permission');
+    assert(await localAccessPermission('http://localhost:11434', 'http://localhost:5050') === null,
+      'localAccessPermission: a page on localhost needs no permission');
+    assert(await localAccessPermission('https://api.example.com/v1', hosted) === null,
+      'localAccessPermission: a public server needs no permission');
+    assert(await explainConnectionError('http://localhost:11434', failed, hosted, 'Chrome') === LOCAL_ACCESS_BLOCKED,
+      'explainConnectionError: a blocked local-network permission says how to allow it');
+    withPermissions({ 'local-network-access': 'prompt' });
+    assert(await localAccessPermission('http://127.0.0.1:11434', hosted) === 'prompt',
+      'localAccessPermission: falls back to the name Chrome 142 to 144 use');
+    assert((await explainConnectionError('http://localhost:11434', failed, hosted, 'Chrome')).includes('choose Allow'),
+      'explainConnectionError: an unanswered permission prompt says to try again and allow it');
+    withPermissions({ 'local-network': 'granted' });
+    assert(await localAccessPermission('http://192.168.1.20:11434', hosted) === 'granted',
+      'localAccessPermission: a LAN address reads the local-network permission');
+  } finally {
+    if (realNavigator) Object.defineProperty(globalThis, 'navigator', realNavigator);
+    else delete globalThis.navigator;
   }
 }

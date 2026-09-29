@@ -427,8 +427,10 @@ The endpoint form explains the failure it sees:
 
 | It says | Do this |
 |---|---|
+| Waiting for your browser | Find the browser's prompt about apps and services on this device, near the address bar, and choose **Allow**. Until you answer it, nothing reaches Ollama |
+| Your browser is blocking this page | You chose Block earlier: click the icon to the left of the address, allow **Apps on device** (**Local network access** in older Chrome, **Device apps and services** in Firefox) and try again |
 | answered but refused this page's origin | Set `OLLAMA_ORIGINS` (step 3), then quit and restart Ollama |
-| Nothing answered | Check that Ollama is running (<http://localhost:11434>), and allow the browser's prompt about apps on this device |
+| Nothing answered | Check that Ollama is running (<http://localhost:11434>) |
 | Safari … blocks HTTPS pages | Use Chrome, Edge or Firefox, or run rpl.ai yourself |
 | served over HTTPS … blocks plain-HTTP requests | See "Ollama on another computer" above |
 | `unauthorized` from a cloud model | Run `ollama signin` on the computer running Ollama |
