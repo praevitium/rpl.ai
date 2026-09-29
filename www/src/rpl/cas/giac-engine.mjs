@@ -56,6 +56,11 @@ const isBrowser =
 // importScripts, so a slow call there can be cut off by terminating it.
 const isWorker = typeof globalThis.importScripts === "function";
 
+// Resolved from this module, not the page or the site root, so the page and
+// the worker both find Giac and the app can be served under /rpl.ai/.
+const GIAC_JS = new URL("../../../vendor/giac/giacwasm.js", import.meta.url).href;
+const GIAC_WASM = new URL("../../../vendor/giac/giacwasm.wasm", import.meta.url).href;
+
 // Previews run a command speculatively on every hover.  A Giac call cannot
 // be interrupted, so while one is held the CAS refuses instead of starting.
 let casHeld = 0;
@@ -75,10 +80,6 @@ export function withoutCas(fn) {
      3. Emscripten loads the .wasm (async network fetch + instantiate).
      4. onRuntimeInitialized fires; we cwrap caseval; init() resolves.
      5. Callers now have synchronous giac.caseval(cmd).
-
-   locateFile must return the path to giacwasm.wasm relative to the
-   document. The vendored blob lives at /vendor/giac/giacwasm.wasm
-   relative to the served www/ root, so that's the literal URL.
    ------------------------------------------------------------------ */
 
 class BrowserGiacEngine {
@@ -134,7 +135,7 @@ class BrowserGiacEngine {
           print: function (_t) { /* silent; uncomment for debug */ },
           printErr: function (_t) { /* silent; uncomment for debug */ },
           locateFile: function (name) {
-            if (name.endsWith(".wasm")) return "/vendor/giac/giacwasm.wasm";
+            if (name.endsWith(".wasm")) return GIAC_WASM;
             return name;
           },
           onRuntimeInitialized: () => {
@@ -151,11 +152,11 @@ class BrowserGiacEngine {
           },
         };
         if (isWorker) {
-          importScripts("/vendor/giac/giacwasm.js");
+          importScripts(GIAC_JS);
           return;
         }
         const script = document.createElement("script");
-        script.src = "/vendor/giac/giacwasm.js";
+        script.src = GIAC_JS;
         script.async = true;
         script.onerror = () => reject(new Error("Failed to load giacwasm.js"));
         document.head.appendChild(script);

@@ -11,6 +11,9 @@ arithmetic, units, lists, matrices, programs and directories. It swaps the
 computer algebra system. Giac is the work of Bernard Parisse, who also wrote
 the CAS inside the HP 49 and 50g.
 
+**[Open rpl.ai](https://praevitium.github.io/rpl.ai/)** and install it from
+the browser. After that it opens like any other app and needs no network.
+
 ![rpl.ai with the command reference open](screenshots/hero.png)
 
 - **Everything an HP 50g does, where you can see it.** Stack, soft menus,
@@ -130,6 +133,15 @@ status line, the stack and the command line (`⇧⌘F`).
 
 ## Getting started
 
+Open [praevitium.github.io/rpl.ai](https://praevitium.github.io/rpl.ai/)
+and install it: Help › Install as an app, or the browser's own Install
+(Chrome and Edge), File › Add to Dock (Safari on a Mac) or Share › Add to
+Home Screen (iPhone and iPad). From then on it opens like any other app and
+runs offline. A short tour runs on first launch; replay it from Help › Take
+the tour.
+
+To work on it:
+
 ```bash
 npm install      # one-time setup
 npm run serve    # http://localhost:5050
@@ -137,9 +149,8 @@ npm run serve    # http://localhost:5050
 
 The app is the static files in `www/`, and any static web server can host
 them. Browsers won't run it from `file://`, because ES modules and the Giac
-WebAssembly need http(s). After the first load it works offline, and the
-browser offers to install it as an app. A short tour runs on first launch;
-replay it from Help › Take the tour.
+WebAssembly need http(s). Every push to `main` publishes `www/` to GitHub
+Pages.
 
 ### Five minutes with RPL
 

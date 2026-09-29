@@ -41,6 +41,13 @@ function importGraph(entry) {
 }
 
 {
+  const rooted = [...files].filter((f) => /\.(m?js|html|css)$/.test(f) && !f.startsWith('vendor/')).flatMap((f) =>
+    [...readFileSync(join(WWW, f), 'utf8').matchAll(/['"`(]\/([^'"`)\s?#]+)/g)]
+      .filter((m) => files.has(m[1])).map((m) => `${f}: /${m[1]}`));
+  assert(rooted.length === 0, `app files reference each other relatively, so the app runs under /rpl.ai/${rooted.length ? `; rooted ${rooted.join(', ')}` : ''}`);
+}
+
+{
   const css = readFileSync(join(WWW, 'css/fonts.css'), 'utf8');
   const fonts = [...css.matchAll(/url\("\.\.\/([^"]+)"\)/g)].map((m) => m[1]);
   assert(fonts.length > 0 && fonts.every((f) => files.has(f)), 'precache holds every font fonts.css declares');
