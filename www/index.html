@@ -2,7 +2,10 @@
 <html lang="en" data-theme="auto">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
 <meta name="color-scheme" content="dark light" />
 <title>rpl.ai</title>
 <script>
@@ -12,6 +15,32 @@
     if (ui.minimal === true) document.documentElement.dataset.view = 'minimal';
   } catch {}
   addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.installPrompt = e; });
+</script>
+<script>
+  if (navigator.standalone || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches) {
+    document.documentElement.dataset.installed = 'true';
+  }
+  const pinAppViewport = () => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const root = document.documentElement;
+    root.style.setProperty('--app-left', `${viewport.offsetLeft}px`);
+    root.style.setProperty('--app-top', `${viewport.offsetTop}px`);
+    root.style.setProperty('--app-width', `${viewport.width}px`);
+    root.style.setProperty('--app-height', `${viewport.height}px`);
+  };
+  pinAppViewport();
+  window.visualViewport?.addEventListener('resize', pinAppViewport);
+  window.visualViewport?.addEventListener('scroll', pinAppViewport);
+  addEventListener('orientationchange', pinAppViewport);
+  document.addEventListener('touchmove', (event) => {
+    if (event.touches.length > 1 && event.cancelable) event.preventDefault();
+  }, { passive: false });
+  for (const type of ['gesturestart', 'gesturechange']) {
+    document.addEventListener(type, (event) => {
+      if (event.cancelable) event.preventDefault();
+    }, { passive: false });
+  }
 </script>
 <link rel="icon" href="favicon.ico" sizes="any" />
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />

@@ -178,11 +178,20 @@ html, body {
   margin: 0;
   height: 100%;
   overflow: hidden;
+  overscroll-behavior: none;
   background: var(--bg);
   color: var(--ink);
   font: 13px/1.4 var(--font-ui);
   -webkit-font-smoothing: antialiased;
+  text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
+  touch-action: pan-x pan-y;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  width: 100%;
 }
 
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -198,14 +207,24 @@ button { cursor: pointer; }
 
 .app {
   position: fixed;
-  inset: 0;
+  left: var(--app-left, 0px);
+  top: var(--app-top, 0px);
+  width: var(--app-width, 100%);
+  height: var(--app-height, 100dvh);
   display: grid;
   grid-template-rows: 48px minmax(0, 1fr);
   grid-template-columns: minmax(0, 1fr);
   container-type: inline-size;
   container-name: app;
+  overflow: hidden;
   background: var(--bg);
+  touch-action: pan-x pan-y;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  .app { padding-bottom: max(34px, env(safe-area-inset-bottom, 0px)); }
+}
+:root[data-installed] .app { padding-bottom: max(34px, env(safe-area-inset-bottom, 0px)); }
 
 .appbar {
   display: flex;
@@ -569,7 +588,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   .k .l { left: 4px; } .k .r { right: 4px; }
 }
 @container app (max-width: 520px) {
-  .kp { gap: 4px; padding: 5px 6px 8px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  .kp { gap: 4px; padding: 5px 6px 8px; }
   .kp-nav, .kp-main { gap: 4px; }
   .k { height: 39px; border-radius: 8px; }
   .k .p { font-size: 13px; }
@@ -1825,3 +1844,13 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 }
 .cmd-hover.hidden { display: none; }
 .cmd-hover-ref { display: block; margin-top: 4px; padding: 0; border: 0; background: none; color: var(--accent); font: 600 12px/1.4 var(--font-ui); cursor: pointer; }
+
+.app, .app * { touch-action: pan-x pan-y; }
+.app .gr-canvas { touch-action: none; }
+
+@media (pointer: coarse) {
+  input, textarea, select,
+  .cmdline, .cmdline .cm-editor, .cmdline .cm-content {
+    font-size: 16px !important;
+  }
+}
