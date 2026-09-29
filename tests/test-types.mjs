@@ -2007,7 +2007,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   assert(defaultFnEval('XROOT',[27, 3]) === 3,          'session105: XROOT(27,3) fold');
   assert(Math.abs(defaultFnEval('XROOT',[2, 2]) - Math.SQRT2) < 1e-12,
     'session105: XROOT(2,2) = √2');
-  assert(defaultFnEval('XROOT',[-8, 3]) === null,       'session105: XROOT negative radicand → null');
+  assert(defaultFnEval('XROOT',[-8, 3]) === -2,         'XROOT of a negative radicand with an odd index is real');
+  assert(defaultFnEval('XROOT',[-8, 2]) === null,       'XROOT of a negative radicand with an even index stays symbolic');
   assert(defaultFnEval('XROOT',[8, 0]) === null,        'session105: XROOT zero index → null');
 
   const CLUSTER_B = [

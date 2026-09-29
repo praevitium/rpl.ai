@@ -16,6 +16,9 @@ export function Num(v, real = false) {
 
 export const isRealNum = n => n.real === true || (n.digits === undefined && !Number.isInteger(n.value));
 
+// A folded approximate result keeps the HP50's 12 significant digits.
+const approxNum = (value, real) => Num(Number.isFinite(value) && (real || !Number.isInteger(value)) ? Number(value.toPrecision(12)) : value, real);
+
 // An approximate whole number keeps its point, as the HP50 shows 2.
 export function numText(n) {
   if (n.digits !== undefined) return n.digits;
@@ -127,8 +130,10 @@ export const KNOWN_FUNCTIONS = Object.freeze({
   ATANH: { arity: 1, eval: x => (x > -1 && x < 1) ? Math.atanh(x) : null },
   FACT: { arity: 1, eval: factorial },
   XROOT: { arity: 2, eval: (y, x) => {
-    if (!Number.isFinite(y) || !Number.isFinite(x) || x === 0 || y < 0) return null;
-    return Math.pow(y, 1 / x);
+    if (!Number.isFinite(y) || !Number.isFinite(x) || x === 0) return null;
+    if (y >= 0) return Math.pow(y, 1 / x);
+    // An odd root of a negative number is real, as XROOT on the stack gives.
+    return Number.isInteger(x) && x % 2 !== 0 ? -Math.pow(-y, 1 / x) : null;
   } },
   SUM:   { arity: 1 },
   INTEG: { },
@@ -366,14 +371,16 @@ export function parseAlgebra(src) {
 function foldNums(op, l, r) {
   if (!isNum(l) || !isNum(r)) return null;
   const real = isRealNum(l) || isRealNum(r);
+  let value;
   switch (op) {
-    case '+': return Num(l.value + r.value, real);
-    case '-': return Num(l.value - r.value, real);
-    case '*': return Num(l.value * r.value, real);
-    case '/': return r.value === 0 ? null : Num(l.value / r.value, real);
-    case '^': return Num(Math.pow(l.value, r.value), real);
+    case '+': value = l.value + r.value; break;
+    case '-': value = l.value - r.value; break;
+    case '*': value = l.value * r.value; break;
+    case '/': value = r.value === 0 ? NaN : l.value / r.value; break;
+    case '^': value = Math.pow(l.value, r.value); break;
     default:  return null;
   }
+  return Number.isNaN(value) ? null : approxNum(value, real);
 }
 
 // lookup(name) returns a number or a Num node, and fnEval(name, args, real) a
@@ -404,7 +411,7 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
     if (!folded) return Bin(ast.op, l, r);
     if (!binGate || isRealNum(l) || isRealNum(r)) return folded;
     const gated = binGate(ast.op, [l.value, r.value], folded.value);
-    return Number.isFinite(gated) ? Num(gated) : Bin(ast.op, l, r);
+    return Number.isFinite(gated) ? approxNum(gated, false) : Bin(ast.op, l, r);
   }
   if (ast.kind === 'fn') {
     const sum = ast.name === 'Σ' ? evalSum(ast.args, lookup, fnEval, binGate) : null;
@@ -413,7 +420,7 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
     if (evaldArgs.every(isNum)) {
       const real = evaldArgs.some(isRealNum);
       const result = fnEval(ast.name, evaldArgs.map(a => a.value), real);
-      if (Number.isFinite(result)) return Num(result, real);
+      if (Number.isFinite(result)) return approxNum(result, real);
     }
     return Fn(ast.name, evaldArgs);
   }
@@ -431,7 +438,7 @@ function evalSum([body, index, from, to], lookup, fnEval, binGate) {
   for (let k = lo; k <= hi; k++) {
     const term = evalAst(body, (name) => (name === index.name ? Number(k) : lookup(name)), fnEval, binGate);
     if (term?.kind !== 'num') return null;
-    total = exactIntFold('+', total, term) ?? Num(total.value + term.value, isRealNum(total) || isRealNum(term));
+    total = exactIntFold('+', total, term) ?? approxNum(total.value + term.value, isRealNum(total) || isRealNum(term));
   }
   return total;
 }

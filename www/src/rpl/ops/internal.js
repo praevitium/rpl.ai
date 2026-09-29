@@ -1203,15 +1203,13 @@ function* runLoopBody(s, toks, bodyFrom, bodyTo, closer, startVal, endVal, local
 }
 
 
-// Built-in constants, folded to numbers only under APPROX / →NUM.  Lookup tries
-// the exact spelling first (the physical constants are case-sensitive), then
-// upper case.
+// Built-in constants, folded to numbers only under APPROX / →NUM.  Names are
+// case-sensitive, as on the HP50: e is Euler's number and E an ordinary name.
 const SYM_CONSTANTS = Object.freeze({
   PI:   Real(Math.PI),
   'π':  Real(Math.PI),
   'Π':  Real(Math.PI),
-  E:    Real(Math.E),
-  I:    Complex(0, 1),
+  e:    Real(Math.E),
   i:    Complex(0, 1),
   // CODATA 2018 values, without units.
   c:    Real(299792458),              // speed of light, m/s (exact)
@@ -1259,16 +1257,13 @@ function _symConstantRpl(name) {
   if (Object.prototype.hasOwnProperty.call(SYM_CONSTANTS, name)) {
     return SYM_CONSTANTS[name];
   }
-  if (Object.prototype.hasOwnProperty.call(SYM_CONSTANTS, upper)) {
-    return SYM_CONSTANTS[upper];
-  }
-  return undefined;
+  return upper === 'PI' ? SYM_CONSTANTS.PI : undefined;
 }
 
 // The AST evaluator can only inline real numbers, so `i` stays symbolic there.
 function _symConstantValue(name) {
   const v = _symConstantRpl(name);
-  if (v && v.type === 'real' && v.value.isFinite()) return v.value.toNumber();
+  if (v && v.type === 'real' && v.value.isFinite()) return AstNum(v.value.toSignificantDigits(12).toNumber(), true);
   return undefined;
 }
 

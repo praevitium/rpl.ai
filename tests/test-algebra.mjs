@@ -2552,7 +2552,7 @@ giac._setFixtures({
   }
   {
     const { top } = runNum("`2^0.5`");
-    assert(isReal(top) && Math.abs(top.value - Math.SQRT2) < 1e-12,
+    assert(isReal(top) && Math.abs(top.value - Math.SQRT2) < 1e-11,
            `session041: EXACT '2^0.5' →NUM folds to SQRT(2) — got ${formatStackTop(top)}`);
   }
   {
