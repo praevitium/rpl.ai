@@ -4,12 +4,23 @@
 
 // A number past 2^53 keeps its exact `digits` (`value` is the nearest
 // double).  isNum() is false for it, so numeric folding leaves it alone.
-export function Num(v) {
+// `real` marks an approximate number such as 2.; a value with a fractional
+// part is approximate anyway.
+export function Num(v, real = false) {
   const value = Number(v);
   if (typeof v === 'bigint' && !Number.isSafeInteger(value)) {
     return Object.freeze({ kind: 'num', value, digits: v.toString() });
   }
-  return Object.freeze({ kind: 'num', value });
+  return Object.freeze(real ? { kind: 'num', value, real: true } : { kind: 'num', value });
+}
+
+export const isRealNum = n => n.real === true || (n.digits === undefined && !Number.isInteger(n.value));
+
+// An approximate whole number keeps its point, as the HP50 shows 2.
+export function numText(n) {
+  if (n.digits !== undefined) return n.digits;
+  const s = String(n.value);
+  return n.real && /^-?\d+$/.test(s) ? `${s}.` : s;
 }
 export function Var(name) {
   return Object.freeze({ kind: 'var', name: String(name) });
@@ -33,7 +44,7 @@ export const isNum = n => n && n.kind === 'num' && n.digits === undefined;
 const EXACT_POW_MAX = 4096;
 
 function exactInt(n) {
-  if (!n || n.kind !== 'num') return null;
+  if (!n || n.kind !== 'num' || n.real) return null;
   if (n.digits !== undefined) return BigInt(n.digits);
   return Number.isSafeInteger(n.value) ? BigInt(n.value) : null;
 }
@@ -59,7 +70,7 @@ export const isFn  = n => n && n.kind === 'fn';
 export function astEqual(a, b) {
   if (a === b) return true;
   if (!a || !b || a.kind !== b.kind) return false;
-  if (a.kind === 'num') return a.value === b.value && a.digits === b.digits;
+  if (a.kind === 'num') return a.value === b.value && a.digits === b.digits && !a.real === !b.real;
   if (a.kind === 'var') return a.name === b.name;
   if (a.kind === 'neg') return astEqual(a.arg, b.arg);
   if (a.kind === 'bin') {
@@ -294,7 +305,8 @@ export function parseAlgebra(src) {
       const m = s.slice(i).match(/^\d+\.?\d*(?:[eE][-+]?\d+)?|^\.\d+(?:[eE][-+]?\d+)?/);
       if (!m) throw new Error(`Bad number at pos ${i}`);
       i += m[0].length;
-      return Num(/^\d+$/.test(m[0]) ? BigInt(m[0]) : parseFloat(m[0]));
+      const whole = /^\d+$/.test(m[0]);
+      return Num(whole ? BigInt(m[0]) : parseFloat(m[0]), !whole);
     }
 
     if (c === '(') {
@@ -353,50 +365,55 @@ export function parseAlgebra(src) {
 
 function foldNums(op, l, r) {
   if (!isNum(l) || !isNum(r)) return null;
+  const real = isRealNum(l) || isRealNum(r);
   switch (op) {
-    case '+': return Num(l.value + r.value);
-    case '-': return Num(l.value - r.value);
-    case '*': return Num(l.value * r.value);
-    case '/': return r.value === 0 ? null : Num(l.value / r.value);
-    case '^': return Num(Math.pow(l.value, r.value));
+    case '+': return Num(l.value + r.value, real);
+    case '-': return Num(l.value - r.value, real);
+    case '*': return Num(l.value * r.value, real);
+    case '/': return r.value === 0 ? null : Num(l.value / r.value, real);
+    case '^': return Num(Math.pow(l.value, r.value), real);
     default:  return null;
   }
 }
 
-// lookup(name) and fnEval(name, args) return a number, or null to leave that
-// part symbolic.  binGate(op, args, folded), when given, returns the number a
-// fold should produce, or null to keep the operation (EXACT mode keeps 1/3).
+// lookup(name) returns a number or a Num node, and fnEval(name, args, real) a
+// number, or null to leave that part symbolic.  binGate(op, args, folded), when
+// given, returns the number a fold of exact numbers should produce, or null to
+// keep the operation (EXACT mode keeps 1/3).  A fold with an approximate
+// operand always happens and is approximate, as on the HP50.
 export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
   if (!ast) return ast;
   if (ast.kind === 'num') return ast;
   if (ast.kind === 'var') {
     const b = lookup(ast.name);
+    if (b?.kind === 'num') return b;
     if (!Number.isFinite(b)) return ast;
     return Num(b);
   }
   if (ast.kind === 'neg') {
     const a = evalAst(ast.arg, lookup, fnEval, binGate);
-    if (isNum(a)) return Num(-a.value);
+    if (isNum(a)) return Num(-a.value, a.real);
     return Neg(a);
   }
   if (ast.kind === 'bin') {
     const l = evalAst(ast.l, lookup, fnEval, binGate);
     const r = evalAst(ast.r, lookup, fnEval, binGate);
     const exact = exactIntFold(ast.op, l, r);
-    const folded = exact ?? foldNums(ast.op, l, r);
+    if (exact) return exact;
+    const folded = foldNums(ast.op, l, r);
     if (!folded) return Bin(ast.op, l, r);
-    if (!binGate) return folded;
+    if (!binGate || isRealNum(l) || isRealNum(r)) return folded;
     const gated = binGate(ast.op, [l.value, r.value], folded.value);
-    if (!Number.isFinite(gated)) return Bin(ast.op, l, r);
-    return exact && gated === exact.value ? exact : Num(gated);
+    return Number.isFinite(gated) ? Num(gated) : Bin(ast.op, l, r);
   }
   if (ast.kind === 'fn') {
     const sum = ast.name === 'Σ' ? evalSum(ast.args, lookup, fnEval, binGate) : null;
     if (sum) return sum;
     const evaldArgs = ast.args.map(a => evalAst(a, lookup, fnEval, binGate));
     if (evaldArgs.every(isNum)) {
-      const result = fnEval(ast.name, evaldArgs.map(a => a.value));
-      if (Number.isFinite(result)) return Num(result);
+      const real = evaldArgs.some(isRealNum);
+      const result = fnEval(ast.name, evaldArgs.map(a => a.value), real);
+      if (Number.isFinite(result)) return Num(result, real);
     }
     return Fn(ast.name, evaldArgs);
   }
@@ -414,7 +431,7 @@ function evalSum([body, index, from, to], lookup, fnEval, binGate) {
   for (let k = lo; k <= hi; k++) {
     const term = evalAst(body, (name) => (name === index.name ? Number(k) : lookup(name)), fnEval, binGate);
     if (term?.kind !== 'num') return null;
-    total = exactIntFold('+', total, term) ?? Num(total.value + term.value);
+    total = exactIntFold('+', total, term) ?? Num(total.value + term.value, isRealNum(total) || isRealNum(term));
   }
   return total;
 }
@@ -447,7 +464,7 @@ export const PREC = Object.freeze({
 function fmt(ast, parentPrec) {
   if (!ast) return '';
   if (ast.kind === 'num') {
-    const s = ast.digits ?? String(ast.value);
+    const s = numText(ast);
     // Only a power's base needs it: -3^X would read back as -(3^X).
     return parentPrec > 3 && s.startsWith('-') ? `(${s})` : s;
   }

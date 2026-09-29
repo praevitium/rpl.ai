@@ -273,10 +273,9 @@ import { assert, assertThrows } from './helpers.mjs';
   const out = s.peek();
   assert(isSymbolic(out) || (isInteger(out) && out.value === 2n) ||
          (isReal(out) && out.value.eq(2)),
-         "result is 2 (as Symbolic or Integer); got: " +
-         (isSymbolic(out) ? formatAlgebra(out.expr) : JSON.stringify(out)));
+         "result is 2 (as Symbolic or Integer); got: " + formatStackTop(out));
   const rendered = formatStackTop(out);
-  assert(rendered === '2.', `DERIV of 2*X+3 renders a plain number, not a wrapped one (got '${rendered}')`);
+  assert(rendered === '2', `DERIV of 2*X+3 renders an exact 2, not a wrapped one (got '${rendered}')`);
   giac._clear();
 }
 
@@ -544,9 +543,9 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(isSymbolic(s.peek()),
          'EVAL X+Y with only X bound → still Symbolic');
   const out = formatAlgebra(s.peek().expr);
-  // The partially-reduced form replaces X with its numeric value.
-  assert(out === '2 + Y',
-         `EVAL X+Y with X=2 → '${out}' (want '2 + Y')`);
+  // The partially-reduced form replaces X with its value, still approximate.
+  assert(out === '2. + Y',
+         `EVAL X+Y with X=2. → '${out}' (want '2. + Y')`);
 }
 {
   // SIN evaluation honors angle mode.  Bind X to 0; EVAL 'SIN(X)' = 0.
@@ -591,16 +590,13 @@ import { assert, assertThrows } from './helpers.mjs';
   setApproxMode(false);
 }
 {
-  // SQRT(9) with no var needed — evaluates purely by numeric fold.
-  // Actually this tests: Symbolic 'SQRT(9)' simplifies at parse time
-  // via simplifyFn → Num(3).  So by the time EVAL runs, the AST is
-  // already Num(3) and EVAL emits Real(3).
+  // SQRT(9) folds exactly, as on the HP50 in exact mode.
   resetHome();
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SQRT(9)')));
   lookup('EVAL').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(3),
-         `EVAL SQRT(9) → Real(3); got ${
+  assert(isInteger(s.peek()) && s.peek().value === 3n,
+         `EVAL SQRT(9) → Integer(3); got ${
            isReal(s.peek()) ? s.peek().value :
            isSymbolic(s.peek()) ? formatAlgebra(s.peek().expr) : 'other'}`);
 }
@@ -1423,22 +1419,33 @@ giac._setFixtures({
   'subst(X+Y+Z,X=1)':    'Y+Z+1',
   'subst(Y+Z+1,Y=2)':             'Z+3',
   'subst(Z+3,Z=3)':                        '6',
+  'subst(X^2+1,X=3.)':                     '10.0',
 });
 {
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('X^2 + 1')));
+  s.push(Name('X', { quoted: true }));
+  s.push(Integer(3n));
+  lookup('SUBST').fn(s);
+  assert(isInteger(s.peek()) && s.peek().value === 10n,
+         `SUBST 3-arg: X^2+1, X, 3 → 10 (got ${formatStackTop(s.peek())})`);
+}
+{
+  // An approximate value reaches Giac as 3., so the result is approximate too.
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2 + 1')));
   s.push(Name('X', { quoted: true }));
   s.push(Real(3));
   lookup('SUBST').fn(s);
   assert(isReal(s.peek()) && s.peek().value.eq(10),
-         `SUBST 3-arg: X^2+1, X, 3 → Real(10) (got ${JSON.stringify(s.peek())})`);
+         `SUBST 3-arg: X^2+1, X, 3. → 10. (got ${formatStackTop(s.peek())})`);
 }
 {
   // Partial: free var Y remains, result stays Symbolic.
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X + Y')));
   s.push(Name('X', { quoted: true }));
-  s.push(Real(2));
+  s.push(Integer(2n));
   lookup('SUBST').fn(s);
   assert(isSymbolic(s.peek()) &&
          formatAlgebra(s.peek().expr) === 'Y + 2',
@@ -1460,19 +1467,19 @@ giac._setFixtures({
   // { 'X' 2 'Y' 3 } substitutes both vars — X+Y → 5.
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X + Y')));
-  s.push(RList([Name('X', { quoted: true }), Real(2),
-                 Name('Y', { quoted: true }), Real(3)]));
+  s.push(RList([Name('X', { quoted: true }), Integer(2n),
+                 Name('Y', { quoted: true }), Integer(3n)]));
   lookup('SUBST').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(5),
-         `SUBST list form: X+Y with {X=2, Y=3} → 5 (got ${JSON.stringify(s.peek())})`);
+  assert(isInteger(s.peek()) && s.peek().value === 5n,
+         `SUBST list form: X+Y with {X=2, Y=3} → 5 (got ${formatStackTop(s.peek())})`);
 }
 {
   // Single-entry list form.
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2 - 4')));
-  s.push(RList([Name('X', { quoted: true }), Real(2)]));
+  s.push(RList([Name('X', { quoted: true }), Integer(2n)]));
   lookup('SUBST').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(0),
+  assert(isInteger(s.peek()) && s.peek().value === 0n,
          `SUBST list form: X^2-4 with {X=2} → 0`);
 }
 
@@ -1562,8 +1569,8 @@ giac._setFixtures({
   s.push(Symbolic(parseAlgebra('X^2 + 1')));
   s.push(Symbolic(parseAlgebra('X = 3')));
   lookup('SUBST').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(10),
-         `SUBST eqn form: X^2+1 with 'X=3' → 10 (got ${JSON.stringify(s.peek())})`);
+  assert(isInteger(s.peek()) && s.peek().value === 10n,
+         `SUBST eqn form: X^2+1 with 'X=3' → 10 (got ${formatStackTop(s.peek())})`);
 }
 {
   // Partial substitution leaves free variable.
@@ -1582,18 +1589,18 @@ giac._setFixtures({
   s.push(RList([Symbolic(parseAlgebra('X = 2')),
                  Symbolic(parseAlgebra('Y = 3'))]));
   lookup('SUBST').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(5),
-         `SUBST list of eqns: X+Y with {X=2, Y=3} → 5 (got ${JSON.stringify(s.peek())})`);
+  assert(isInteger(s.peek()) && s.peek().value === 5n,
+         `SUBST list of eqns: X+Y with {X=2, Y=3} → 5 (got ${formatStackTop(s.peek())})`);
 }
 {
   // List form also accepts alternating (name, value) pairs.
   // Regression: equation-entry dispatch must not break this path.
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X + Y')));
-  s.push(RList([Name('X', { quoted: true }), Real(2),
-                 Name('Y', { quoted: true }), Real(3)]));
+  s.push(RList([Name('X', { quoted: true }), Integer(2n),
+                 Name('Y', { quoted: true }), Integer(3n)]));
   lookup('SUBST').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(5),
+  assert(isInteger(s.peek()) && s.peek().value === 5n,
          `SUBST list pairs (regression): X+Y with {X=2, Y=3} → 5`);
 }
 {
@@ -1601,11 +1608,11 @@ giac._setFixtures({
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X + Y + Z')));
   s.push(RList([Symbolic(parseAlgebra('X = 1')),
-                 Name('Y', { quoted: true }), Real(2),
+                 Name('Y', { quoted: true }), Integer(2n),
                  Symbolic(parseAlgebra('Z = 3'))]));
   lookup('SUBST').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(6),
-         `SUBST mixed list: 1+2+3=6 (got ${JSON.stringify(s.peek())})`);
+  assert(isInteger(s.peek()) && s.peek().value === 6n,
+         `SUBST mixed list: 1+2+3=6 (got ${formatStackTop(s.peek())})`);
 }
 
 // FACTOR: non-monic rational-root + sum/diff of cubes
@@ -2423,18 +2430,18 @@ giac._setFixtures({
     setApproxMode(false);
     assert(getApproxMode() === false, 'EXACT: flag is false after setApproxMode(false)');
     // Integer-in, integer-out: still folds.
-    assert(evalExpr("`SQRT(9)`") === '3.',
-      `EXACT: SQRT(9) still folds to 3. — got ${evalExpr("`SQRT(9)`")}`);
-    assert(evalExpr("`LN(1)`") === '0.',
-      `EXACT: LN(1) still folds to 0. — got ${evalExpr("`LN(1)`")}`);
+    assert(evalExpr("`SQRT(9)`") === '3',
+      `EXACT: SQRT(9) folds to an exact 3 — got ${evalExpr("`SQRT(9)`")}`);
+    assert(evalExpr("`LN(1)`") === '0',
+      `EXACT: LN(1) folds to an exact 0 — got ${evalExpr("`LN(1)`")}`);
     // Integer-in, non-integer-out: stays symbolic.
     assert(evalExpr("`SQRT(2)`") === "`SQRT(2)`",
       `EXACT: SQRT(2) stays symbolic — got ${evalExpr("`SQRT(2)`")}`);
     assert(evalExpr("`LN(2)`") === "`LN(2)`",
       `EXACT: LN(2) stays symbolic — got ${evalExpr("`LN(2)`")}`);
-    // Non-integer-in: stays symbolic regardless of result.
-    assert(evalExpr("`SQRT(0.25)`") === "`SQRT(0.25)`",
-      `EXACT: SQRT(0.25) stays symbolic — got ${evalExpr("`SQRT(0.25)`")}`);
+    // An approximate argument folds to an approximate result.
+    assert(evalExpr("`SQRT(0.25)`") === '0.5',
+      `EXACT: SQRT(0.25) folds, since 0.25 is approximate — got ${evalExpr("`SQRT(0.25)`")}`);
   }
 
   {
@@ -2588,13 +2595,13 @@ giac._setFixtures({
   {
     const top = runEvalExact("`2+3`");
     // Integer-result-from-integer-inputs still folds under EXACT.
-    assert(isReal(top) && top.value.eq(5),
-           `session041: EXACT '2+3' EVAL folds to 5. — got ${formatStackTop(top)}`);
+    assert(isInteger(top) && top.value === 5n,
+           `session041: EXACT '2+3' EVAL folds to an exact 5 — got ${formatStackTop(top)}`);
   }
   {
     const top = runEvalExact("`1+0.5`");
-    assert(isSymbolic(top),
-           `session041: EXACT '1+0.5' EVAL stays symbolic (non-integer input) — got ${formatStackTop(top)}`);
+    assert(isReal(top) && top.value.eq(1.5),
+           `session041: EXACT '1+0.5' EVAL folds, since 0.5 is approximate — got ${formatStackTop(top)}`);
   }
   setApproxMode(false);
 }
@@ -3644,6 +3651,7 @@ function _assertRootsMatch(got, expected, name) {
 giac._clear();
 giac._setFixtures({
   'simplify(subst(X^2,X=3)-subst(X^2,X=0))':         '9',
+  'simplify(subst(X^2,X=3.)-subst(X^2,X=0.))':       '9.0',
   'simplify(subst(2*X+1,X=5)-subst(2*X+1,X=1))':     '8',
   'simplify(subst(X^3,X=2)-subst(X^3,X=1))':         '7',
   'simplify(subst(X^2,X=A)-subst(X^2,X=0))': 'A^2',
@@ -3654,33 +3662,33 @@ giac._setFixtures({
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2')));
-  s.push(Real(0));
-  s.push(Real(3));
+  s.push(Integer(0n));
+  s.push(Integer(3n));
   lookup('PREVAL').fn(s);
   const out = s.pop();
-  assert(isReal(out) && Math.abs(out.value - 9) < 1e-12,
+  assert(isInteger(out) && out.value === 9n,
     'session058: PREVAL X^2 from 0 to 3 → 9');
 }
 
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('2*X+1')));
-  s.push(Real(1));
-  s.push(Real(5));
+  s.push(Integer(1n));
+  s.push(Integer(5n));
   lookup('PREVAL').fn(s);
   const out = s.pop();
-  assert(isReal(out) && Math.abs(out.value - 8) < 1e-12,
+  assert(isInteger(out) && out.value === 8n,
     'session058: PREVAL 2X+1 from 1 to 5 → 8');
 }
 
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^3')));
-  s.push(RList([Real(1), Real(2)]));
+  s.push(RList([Integer(1n), Integer(2n)]));
   lookup('PREVAL').fn(s);
   const out = s.pop();
   // 2^3 - 1^3 = 7
-  assert(isReal(out) && Math.abs(out.value - 7) < 1e-12,
+  assert(isInteger(out) && out.value === 7n,
     'session058: PREVAL X^3 with {1 2} list → 7');
 }
 
@@ -3691,7 +3699,7 @@ giac._setFixtures({
   s.push(Integer(3n));
   lookup('PREVAL').fn(s);
   const out = s.pop();
-  assert(isReal(out) && Math.abs(out.value - 9) < 1e-12,
+  assert(isInteger(out) && out.value === 9n,
     'session058: PREVAL accepts Integer endpoints');
 }
 
@@ -3699,6 +3707,17 @@ giac._setFixtures({
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X^2')));
   s.push(Real(0));
+  s.push(Real(3));
+  lookup('PREVAL').fn(s);
+  const out = s.pop();
+  assert(isReal(out) && out.value.eq(9),
+    'PREVAL with approximate endpoints gives an approximate 9.');
+}
+
+{
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('X^2')));
+  s.push(Integer(0n));
   s.push(Symbolic(parseAlgebra('A')));
   lookup('PREVAL').fn(s);
   const out = s.pop();
@@ -3710,12 +3729,12 @@ giac._setFixtures({
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('5')));
-  s.push(Real(1));
-  s.push(Real(2));
+  s.push(Integer(1n));
+  s.push(Integer(2n));
   lookup('PREVAL').fn(s);
   const out = s.pop();
   // F = 5: F(b) - F(a) = 0
-  assert(isReal(out) && out.value.eq(0),
+  assert(isInteger(out) && out.value === 0n,
     'session058: PREVAL on constant F → 0');
 }
 
@@ -3727,11 +3746,11 @@ giac._setFixtures({
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('x+y')));
-  s.push(Real(0));
-  s.push(Real(1));
+  s.push(Integer(0n));
+  s.push(Integer(1n));
   lookup('PREVAL').fn(s);
   const out = s.pop();
-  assert(isReal(out) && Math.abs(out.value - 1) < 1e-12,
+  assert(isInteger(out) && out.value === 1n,
     'session076: PREVAL x+y from 0 to 1 → 1 (substitutes VX=x)');
 }
 
@@ -5493,11 +5512,11 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   );
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X+Y')));
-  s.push(Real(0));
-  s.push(Real(1));
+  s.push(Integer(0n));
+  s.push(Integer(1n));
   lookup('PREVAL').fn(s);
   const out = s.pop();
-  assert(isReal(out) && Math.abs(out.value - 1) < 1e-12,
+  assert(isInteger(out) && out.value === 1n,
     'session076: PREVAL with VX=Y substitutes Y (not the first free var)');
   resetCasVx();
 }
@@ -5949,7 +5968,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   assert(v && isVector(v) && v.items.length === 2,
          `session114: EGVL diag → Vector length ${v && v.items && v.items.length}`);
   const [e0, e1] = v.items;
-  assert(isReal(e0) && e0.value.eq(2) && isReal(e1) && e1.value.eq(5),
+  assert(isInteger(e0) && e0.value === 2n && isInteger(e1) && e1.value === 5n,
          `session114: EGVL diag values (${e0 && e0.value}, ${e1 && e1.value})`);
   giac._clear();
 }
@@ -6120,16 +6139,16 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   const evec = s.pop();
   assert(isVector(vals) && vals.items.length === 2,
          `session119: EGV diag eigenvalue vector length ${vals && vals.items && vals.items.length}`);
-  assert(isReal(vals.items[0]) && vals.items[0].value.eq(2) &&
-         isReal(vals.items[1]) && vals.items[1].value.eq(5),
+  assert(isInteger(vals.items[0]) && vals.items[0].value === 2n &&
+         isInteger(vals.items[1]) && vals.items[1].value === 5n,
          'session119: EGV diag eigenvalues = (2, 5)');
   assert(isMatrix(evec) && evec.rows.length === 2 && evec.rows[0].length === 2,
          'session119: EGV diag eigenvector matrix is 2×2');
   // P = identity → P[0][0]=1, P[0][1]=0, P[1][0]=0, P[1][1]=1.
-  assert(isReal(evec.rows[0][0]) && evec.rows[0][0].value.eq(1) &&
-         isReal(evec.rows[0][1]) && evec.rows[0][1].value.eq(0) &&
-         isReal(evec.rows[1][0]) && evec.rows[1][0].value.eq(0) &&
-         isReal(evec.rows[1][1]) && evec.rows[1][1].value.eq(1),
+  assert(isInteger(evec.rows[0][0]) && evec.rows[0][0].value === 1n &&
+         isInteger(evec.rows[0][1]) && evec.rows[0][1].value === 0n &&
+         isInteger(evec.rows[1][0]) && evec.rows[1][0].value === 0n &&
+         isInteger(evec.rows[1][1]) && evec.rows[1][1].value === 1n,
          'session119: EGV diag eigenvector matrix entries (P = I)');
   giac._clear();
 }
@@ -6149,8 +6168,8 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._setFixture('eigenvals([[5,0],[0,2]])', '[5,2]');
   lookup('EGV').fn(s);
   const vals = s.pop(); s.pop(); // discard matrix, we only check ordering here
-  assert(isReal(vals.items[0]) && vals.items[0].value.eq(5) &&
-         isReal(vals.items[1]) && vals.items[1].value.eq(2),
+  assert(isInteger(vals.items[0]) && vals.items[0].value === 5n &&
+         isInteger(vals.items[1]) && vals.items[1].value === 2n,
          'session119: EGV eigenvalue ordering matches eigenvals() output');
   giac._clear();
 }
@@ -6319,7 +6338,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     '-1');
   lookup('GREDUCE').fn(s);
   const r = s.peek();
-  assert(isReal(r) && r.value.eq(-1),
+  assert(isInteger(r) && r.value === -1n,
          `session119: GREDUCE worked-example → ${r && r.value} (want -1)`);
   giac._clear();
 }
@@ -6561,7 +6580,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   const v = s.pop();
   // _astToRplValue lifts Num(1) to Real(1) — that's the post-Giac numeric path.
   assert(isVector(v) && v.items.length === 1 &&
-         isReal(v.items[0]) && v.items[0].value.eq(1),
+         isInteger(v.items[0]) && v.items[0].value === 1n,
          `session124: GBASIS unit ideal → [1] (got ${v && v.items && v.items[0] && v.items[0].type})`);
   giac._clear();
 }
@@ -6795,7 +6814,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
   giac._setFixture('limit((X^2-1)/(X-1),X,1)', '2');
   lookup('LIMIT').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(2),
+  assert(isInteger(s.peek()) && s.peek().value === 2n,
          `session139: LIMIT (X^2-1)/(X-1) at X=1 → Real(${s.peek() && s.peek().value}) (want 2)`);
   giac._clear();
 }
@@ -6813,7 +6832,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
   giac._setFixture('limit(sin(X)/X,x,0)', '1');
   lookup('LIMIT').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(1),
+  assert(isInteger(s.peek()) && s.peek().value === 1n,
          `session139: LIMIT SIN(X)/X bare-value 0 → Real(${s.peek() && s.peek().value}) (want 1; uses VX)`);
   giac._clear();
 }
@@ -6867,7 +6886,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
   giac._setFixture('limit((X^2-1)/(X-1),X,1)', '2');
   lookup('lim').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(2),
+  assert(isInteger(s.peek()) && s.peek().value === 2n,
          `session139: lim alias delegates to LIMIT (got ${s.peek() && s.peek().value}; want 2)`);
   giac._clear();
 }
@@ -6884,7 +6903,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
   giac._setFixture('limit(1/X,x,(1/2))', '2');
   lookup('lim').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(2),
+  assert(isInteger(s.peek()) && s.peek().value === 2n,
          `session139: lim 1/X at X=1/2 (Rational point) → Real(${s.peek() && s.peek().value}) (want 2)`);
   giac._clear();
 }
@@ -6896,7 +6915,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
   giac._setFixture('limit(sin(X)/X,x,+infinity)', '0');
   lookup('LIMIT').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(0),
+  assert(isInteger(s.peek()) && s.peek().value === 0n,
          'LIMIT at Name(∞) maps the keypad glyph to Giac +infinity');
   giac._clear();
 }
@@ -6907,7 +6926,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
   giac._setFixture('limit(sin(X)/X,x,+infinity)', '0');
   lookup('LIMIT').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(0),
+  assert(isInteger(s.peek()) && s.peek().value === 0n,
          'LIMIT at Name(INFINITY) maps to Giac +infinity');
   giac._clear();
 }
@@ -6918,7 +6937,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
   giac._setFixture('limit(1/X,x,-infinity)', '0');
   lookup('LIMIT').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(0),
+  assert(isInteger(s.peek()) && s.peek().value === 0n,
          'LIMIT at Name(-∞) maps to Giac -infinity');
   giac._clear();
 }
@@ -6929,7 +6948,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
   giac._setFixture('limit(sin(X)/X,X,+infinity)', '0');
   lookup('LIMIT').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(0),
+  assert(isInteger(s.peek()) && s.peek().value === 0n,
          'LIMIT at Symbolic X=INFINITY maps the Var to Giac +infinity');
   giac._clear();
 }
@@ -6940,7 +6959,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
   giac._setFixture('limit(sin(X)/X,X,-infinity)', '0');
   lookup('LIMIT').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(0),
+  assert(isInteger(s.peek()) && s.peek().value === 0n,
          'LIMIT at Symbolic X=-INFINITY maps Neg(INFINITY) to Giac -infinity');
   giac._clear();
 }
@@ -7867,9 +7886,9 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   const Q = s.peek(2);
   assert(isMatrix(Q) && isMatrix(T), 'SCHUR results are both Matrix');
   assert(Q.rows.length === 2 && Q.rows[0].length === 2, 'SCHUR Q is 2x2');
-  assert(format(Q.rows[1][0]) === '0.' && format(Q.rows[0][0]) === '1.',
+  assert(format(Q.rows[1][0]) === '0' && format(Q.rows[0][0]) === '1',
          'SCHUR Q (level 2) = first Giac pair element P');
-  assert(format(T.rows[0][1]) === '6.' && format(T.rows[1][0]) === '0.',
+  assert(format(T.rows[0][1]) === '6' && format(T.rows[1][0]) === '0',
          'SCHUR T (level 1) = second Giac pair element B (upper quasi-triangular)');
   giac._clear();
 }

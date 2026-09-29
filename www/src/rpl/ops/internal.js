@@ -1,7 +1,7 @@
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Name, Symbolic, Integer, Unit, isUnit, isBinaryInteger, isNumber, promoteNumericPair, Complex, Rational, isList, RList, isTagged, Tagged, isVector, Vector, isMatrix, Matrix, BinaryInteger, toRealOrThrow, isString, isValidHpIdentifier, isStorableHpName, isProgram, isDirectory, Str, Program } from '../types.js';
 import { RPLAbort, RPLError, setPushCoerce, checkTimeLimit } from '../stack.js';
-import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars } from '../algebra.js';
+import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, isRealNum } from '../algebra.js';
 import { sameDims, scaleOf, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
 import { getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, setHalted } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
@@ -40,7 +40,7 @@ export function _toAst(v) {
   if (isSymbolic(v))   return v.expr;
   if (isName(v))       return AstVar(v.id);
   if (isInteger(v))    return AstNum(v.value);
-  if (isReal(v))       return AstNum(v.value.toNumber());
+  if (isReal(v))       return AstNum(v.value.toNumber(), true);
   if (isRational(v)) {
     return AstBin('/', AstNum(v.n), AstNum(v.d));
   }
@@ -48,14 +48,17 @@ export function _toAst(v) {
 }
 
 
+function _numToRpl(n, sign = 1) {
+  if (n.digits) return Integer(BigInt(sign) * BigInt(n.digits));
+  return isRealNum(n) ? Real(sign * n.value) : Integer(BigInt(sign * n.value));
+}
+
 export function _astToRplValue(ast) {
   if (!ast) return Name('', { quoted: true });
-  if (ast.kind === 'num') return ast.digits ? Integer(BigInt(ast.digits)) : Real(ast.value);
+  if (ast.kind === 'num') return _numToRpl(ast);
   if (ast.kind === 'var') return Name(ast.name, { quoted: true });
   // Giac returns negative literals as Neg(Num); land them as plain numbers.
-  if (ast.kind === 'neg' && ast.arg && ast.arg.kind === 'num') {
-    return ast.arg.digits ? Integer(-BigInt(ast.arg.digits)) : Real(-ast.arg.value);
-  }
+  if (ast.kind === 'neg' && ast.arg && ast.arg.kind === 'num') return _numToRpl(ast.arg, -1);
   return Symbolic(ast);
 }
 
@@ -1360,14 +1363,15 @@ function _evalSymbolic(v) {
   const approx = getApproxMode();
   const resolve = (name) => {
     const bound = _localLookup(name) ?? varRecall(name);
-    if (bound !== undefined) return isReal(bound) || isInteger(bound) ? _numVal(bound) : null;
+    if (bound !== undefined) return isReal(bound) || isInteger(bound) ? _toAst(bound) : null;
     return approx ? _symConstantValue(name) : undefined;
   };
   const binGate = approx
     ? null
     : (_op, args, result) => _approxGate(result, args);
   const reduced = algebraEvalAst(v.expr, resolve, _angleAwareFnEval, binGate);
-  return reduced && reduced.kind === 'num' ? _astToRplValue(reduced) : Symbolic(reduced);
+  const value = _astToRplValue(reduced);
+  return approx && isInteger(value) ? Real(value.value.toString()) : value;
 }
 
 
@@ -1384,7 +1388,7 @@ function _approxGate(result, args) {
   return null;
 }
 
-function _angleAwareFnEval(name, args) {
+function _angleAwareFnEval(name, args, real = false) {
   const x = args[0];
   let result;
   switch (args.length === 1 ? String(name).toUpperCase() : '') {
@@ -1396,7 +1400,7 @@ function _angleAwareFnEval(name, args) {
     case 'ATAN': result = fromRadians(Math.atan(x)); break;
     default:     result = algebraDefaultFnEval(name, args);
   }
-  return _approxGate(result, args);
+  return real ? result : _approxGate(result, args);
 }
 
 

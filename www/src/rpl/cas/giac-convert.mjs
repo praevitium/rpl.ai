@@ -3,7 +3,7 @@
 // Conversion between the algebra AST and the syntax Giac's caseval reads
 // and writes: the same infix surface, but with Giac's function names.
 
-import { parseAlgebra, Var, Neg } from "../algebra.js";
+import { parseAlgebra, Var, Neg, numText } from "../algebra.js";
 import { isValidHpIdentifier } from "../types.js";
 import { RPLError } from "../stack.js";
 
@@ -99,7 +99,7 @@ function emit(ast, parentPrec) {
   switch (ast.kind) {
     case "num": {
       // Wrapped like a Neg, so a negative base is not read as -(3^X).
-      const s = ast.digits ?? String(ast.value);
+      const s = numText(ast);
       return parentPrec >= 2 && s.startsWith("-") ? `(${s})` : s;
     }
     case "var":

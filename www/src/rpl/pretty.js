@@ -3,7 +3,7 @@
    Node and the browser.  A Box is { width, ascent, descent, draw(x, by) },
    and the boxes in a row share one baseline. */
 
-import { isNum, isVar, isNeg, isBin, isFn, PREC } from './algebra.js';
+import { isNum, isVar, isNeg, isBin, isFn, PREC, numText } from './algebra.js';
 
 // Single-quoted family names let the stack sit inside a double-quoted attribute.
 const FONT_STACK = "'IBM Plex Mono', 'RPL Symbols', 'IBM Plex Sans', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
@@ -312,7 +312,6 @@ function sumBox(body, v, lo, hi, size) {
   return rowBox([sigmaBox(below, hi, size), body]);
 }
 
-const numText = (ast) => ast.digits ?? String(ast.value);
 const isNegativeNum = (ast) => ast.kind === 'num' && numText(ast).startsWith('-');
 
 function lay(ast, parentPrec, size) {

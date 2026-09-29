@@ -1625,15 +1625,15 @@ import { assert } from './helpers.mjs';
     'session068: OBJ→ symbolic count is Integer(3) for a binary head');
 }
 
-// `'3+X' OBJ→`  →  Real(3)  'X'  '+'  3
+// `'3+X' OBJ→`  →  Integer(3)  'X'  '+'  3
 {
   const s = new Stack();
   s.push(parseEntry("`3+X`")[0]);
   lookup('OBJ→').fn(s);
   assert(s.depth === 4,
     'session068: OBJ→ on 3+X leaves 4 items');
-  assert(s._items[0].type === 'real' && s._items[0].value.eq(3),
-    'session068: OBJ→ 3+X left-arg unwraps to Real(3)');
+  assert(s._items[0].type === 'integer' && s._items[0].value === 3n,
+    'session068: OBJ→ 3+X left-arg unwraps to the exact integer 3');
   assert(s._items[1].type === 'name' && s._items[1].id === 'X',
     'session068: OBJ→ 3+X right-arg is Name(X)');
   assert(s._items[3].type === 'integer' && s._items[3].value === 3n,
@@ -1671,15 +1671,15 @@ import { assert } from './helpers.mjs';
     'session068: OBJ→ leaf Var count is 1');
 }
 
-// Leaf Num: Symbolic(Num) OBJ→  →  Real, 1
+// Leaf Num: Symbolic(Num) OBJ→  →  Integer, 1
 {
   const s = new Stack();
   s.push(Symbolic({ kind: 'num', value: 7 }));
   lookup('OBJ→').fn(s);
   assert(s.depth === 2,
     'session068: OBJ→ on leaf Symbolic(Num) leaves 2 items');
-  assert(s._items[0].type === 'real' && s._items[0].value.eq(7),
-    'session068: OBJ→ leaf Num unwraps to Real(7)');
+  assert(s._items[0].type === 'integer' && s._items[0].value === 7n,
+    'session068: OBJ→ leaf Num unwraps to the exact integer 7');
   assert(s._items[1].type === 'integer' && s._items[1].value === 1n,
     'session068: OBJ→ leaf Num count is 1');
 }
