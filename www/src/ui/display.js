@@ -203,7 +203,7 @@ export class Display {
     let swipe = null;
     view.addEventListener('pointerdown', (ev) => {
       swipe = null;
-      if (ev.pointerType === 'mouse' || !ev.isPrimary || ev.target.closest?.('.st-acts')) return;
+      if (this._dropping || ev.pointerType === 'mouse' || !ev.isPrimary || ev.target.closest?.('.st-acts')) return;
       const row = ev.target.closest?.('.st-row[data-key]');
       if (row) swipe = { row, id: ev.pointerId, pen: ev.pointerType === 'pen', x: ev.clientX, y: ev.clientY, lastX: ev.clientX, lastY: ev.clientY, dx: 0, active: false };
     });
@@ -243,7 +243,10 @@ export class Display {
       const width = row.offsetWidth || 1;
       const drop = ev.type === 'pointerup' && Math.abs(dx) > swipeThreshold(width);
       const to = drop ? Math.sign(dx) * width : 0;
+      // Until the drop lands, the levels are not final, so another swipe waits.
+      this._dropping = drop;
       const settle = () => {
+        this._dropping = false;
         row.classList.remove('swiping', 'swipe-armed');
         row.style.transform = '';
         row.style.opacity = '';
