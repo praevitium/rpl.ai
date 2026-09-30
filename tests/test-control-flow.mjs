@@ -7231,3 +7231,15 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   const t = runLine('« « 1 2 + » → p « p EVAL » » EVAL');
   assert(t.depth === 1 && t.peek().value === 3n, 'EVAL of the recalled program runs it');
 }
+
+/* A loop with a decimal step counts in decimal, so it lands on the end value and a downward loop ends on 0 exactly. */
+{
+  resetHome();
+  const values = (line) => runLine(line).snapshot().reverse().map((v) => format(v)).join(' ');
+  assert(values('« 0 0.3 FOR i i 0.1 STEP » EVAL') === '0. 0.1 0.2 0.3', '0 0.3 FOR with a 0.1 step reaches 0.3');
+  assert(values('« 1 0 FOR i i -0.1 STEP » EVAL') === '1 0.9 0.8 0.7 0.6 0.5 0.4 0.3 0.2 0.1 0.', 'a downward loop with a -0.1 step ends on 0 exactly');
+  assert(values('« 0 1 FOR i i 0.25 STEP » EVAL') === '0 0.25 0.5 0.75 1.', 'an integer start with a decimal step switches to decimal counting');
+  assert(values('« 1 3 FOR i i NEXT » EVAL') === '1 2 3' && values('« 1 4 FOR i i 1.5 STEP » EVAL') === '1 2.5 4.', 'integer loops and mixed steps still count as before');
+  assert(values('« 0 1 START 5 0.5 STEP » EVAL') === '5 5 5', 'START counts in decimal too');
+  assertThrows(() => runLine('« 0 1 FOR i i 0 STEP » EVAL'), /STEP of 0/, 'a zero decimal step is an error');
+}

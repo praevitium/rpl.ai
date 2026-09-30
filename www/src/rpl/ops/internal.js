@@ -1,5 +1,5 @@
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
-import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Name, Symbolic, Integer, Unit, isUnit, isBinaryInteger, isNumber, promoteNumericPair, Complex, Rational, isList, RList, isTagged, Tagged, isVector, Vector, isMatrix, Matrix, BinaryInteger, toRealOrThrow, isString, isValidHpIdentifier, isStorableHpName, isProgram, isDirectory, Str, Program } from '../types.js';
+import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Name, Symbolic, Integer, Unit, isUnit, isBinaryInteger, isNumber, promoteNumericPair, Complex, Rational, isList, RList, isTagged, Tagged, isVector, Vector, isMatrix, Matrix, BinaryInteger, toRealOrThrow, toRealDecimal, isString, isValidHpIdentifier, isStorableHpName, isProgram, isDirectory, Str, Program } from '../types.js';
 import { RPLAbort, RPLError, setPushCoerce, checkTimeLimit } from '../stack.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, isRealNum } from '../algebra.js';
 import { sameDims, scaleOf, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
@@ -1157,11 +1157,12 @@ function* runDo(s, toks, openIdx, depth) {
 }
 
 
-// Integer bounds keep the loop counter a BigInt; anything else counts in Reals.
+// Integer bounds keep the loop counter a BigInt; anything else counts in Decimal,
+// so 0 0.3 FOR with a 0.1 step reaches 0.3.
 function _popLoopBounds(s) {
   const [startVal, endVal] = s.popN(2);
   const intMode = isInteger(startVal) && isInteger(endVal);
-  const toBound = (v) => intMode ? v.value : Number(isInteger(v) ? v.value : toRealOrThrow(v));
+  const toBound = (v) => intMode ? v.value : toRealDecimal(v);
   return { a: toBound(startVal), b: toBound(endVal), intMode };
 }
 
@@ -1215,8 +1216,8 @@ function* runLoopBody(s, toks, bodyFrom, bodyTo, closer, startVal, endVal, local
     if (local && stored !== written) {
       if (mode && isInteger(stored)) counter = stored.value;
       else {
-        if (mode) { bound = Number(bound); mode = false; }
-        counter = isInteger(stored) ? Number(stored.value) : toRealOrThrow(stored);
+        if (mode) { bound = new Decimal(bound.toString()); mode = false; }
+        counter = toRealDecimal(stored);
       }
     }
     let step;
@@ -1226,18 +1227,23 @@ function* runLoopBody(s, toks, bodyFrom, bodyTo, closer, startVal, endVal, local
         step = stepVal.value;
       } else {
         if (mode) {
-          counter = Number(counter);
-          bound   = Number(bound);
+          counter = new Decimal(counter.toString());
+          bound   = new Decimal(bound.toString());
           mode    = false;
         }
-        step = Number(isInteger(stepVal) ? stepVal.value : toRealOrThrow(stepVal));
+        step = toRealDecimal(stepVal);
       }
-      if (mode ? step === 0n : step === 0) throw new RPLError('STEP of 0');
+      if (mode ? step === 0n : step.isZero()) throw new RPLError('STEP of 0');
     } else {
-      step = mode ? 1n : 1;
+      step = mode ? 1n : new Decimal(1);
     }
-    counter += step;
-    if (step > 0 ? counter > bound : counter < bound) break;
+    if (mode) {
+      counter += step;
+      if (step > 0n ? counter > bound : counter < bound) break;
+    } else {
+      counter = counter.plus(step);
+      if (step.isPositive() ? counter.gt(bound) : counter.lt(bound)) break;
+    }
   }
 }
 
