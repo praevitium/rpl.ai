@@ -22,7 +22,7 @@ import {
   getRealMaxExp, setRealMaxExp, resetRealMaxExp,
   REAL_MAX_EXP_DEFAULT, REAL_MAX_EXP_MIN, REAL_MAX_EXP_MAX,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows } from './helpers.mjs';
+import { assert, assertThrows, runLine } from './helpers.mjs';
 
 /* Numerics: basic arithmetic, complex, SQRT, stack ops, parser+format basics,
    trig, angle modes, R↔D, div-by-zero, FLOOR/CEIL/IP/FP/SIGN/MOD/MIN/MAX. */
@@ -7165,4 +7165,21 @@ function _arrayEq(a, b) {
   lookup('^').fn(s);
   const v = s.peek();
   assert(isComplex(v) && v.re === 0 && v.im === 1, `^ with a negative base and fractional exponent is complex (got ${v.re},${v.im})`);
+}
+
+/* An integer to a negative integer power is an exact fraction (a Real in APPROX mode), and 0 to a negative power is an infinite result. */
+{
+  const top = (line) => runLine(line).peek();
+  const frac = (v) => `${v.n}/${v.d}`;
+  resetHome();
+  assert(frac(top('2 -1 ^')) === '1/2', '2 -1 ^ gives 1/2');
+  assert(frac(top('-2 -3 ^')) === '-1/8', '-2 -3 ^ gives -1/8');
+  assert(top('1 -5 ^').value === 1n && top('-1 -3 ^').value === -1n, '1 and -1 to a negative power stay integers');
+  assert(top('10 -30 ^').type === 'rational' && top('10 -30 ^').d === 10n ** 30n, '10 -30 ^ is exact past the double range');
+  assertThrows(() => runLine('0 -1 ^'), /Infinite result/, '0 -1 ^ is an infinite result');
+  assertThrows(() => runLine('0. -1. ^'), /Infinite result/, '0. -1. ^ is an infinite result');
+  setApproxMode(true);
+  assert(top('2 -1 ^').type === 'real' && top('2 -1 ^').value.eq(0.5), 'APPROX 2 -1 ^ gives 0.5');
+  assert(top('10 -400 ^').value.eq('1e-400'), 'APPROX 10 -400 ^ keeps the exponent a double would lose');
+  setApproxMode(false);
 }

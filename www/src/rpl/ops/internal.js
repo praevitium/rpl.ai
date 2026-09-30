@@ -176,8 +176,8 @@ export function _scalarBinary(op, a, b) {
       }
       return Rational(p.a, p.b);
     }
-    const r = integerBinary(op, p.a, p.b);
-    return (typeof r === 'bigint') ? Integer(r) : Real(r);
+    if (op === '^' && p.b < 0n) return _integerReciprocalPower(p.a, p.b);
+    return Integer(integerBinary(op, p.a, p.b));
   }
   if (p.kind === 'rational') {
     if (getApproxMode()) {
@@ -402,7 +402,9 @@ function realBinary(op, a, b) {
     case '-': return a.minus(b);
     case '*': return a.times(b);
     case '/': return a.div(b);
-    case '^': return Decimal.pow(a, b);
+    case '^':
+      if (a.isZero() && b.isNegative()) throw new RPLError('Infinite result');
+      return Decimal.pow(a, b);
   }
   throw new RPLError('Unknown op ' + op);
 }
@@ -418,10 +420,17 @@ function integerBinary(op, a, b) {
       if (b === 0n) throw new RPLError('Infinite result');
       return a / b;
     case '^':
-      if (b < 0n) return Math.pow(Number(a), Number(b));
       return a ** b;
   }
   throw new RPLError('Unknown op ' + op);
+}
+
+// A negative integer exponent gives an exact fraction, or a Real in APPROX mode.
+function _integerReciprocalPower(a, b) {
+  if (a === 0n) throw new RPLError('Infinite result');
+  if (getApproxMode()) return Real(Decimal.pow(new Decimal(a.toString()), new Decimal(b.toString())));
+  const denominator = a ** -b;
+  return denominator === 1n || denominator === -1n ? Integer(denominator) : Rational(1n, denominator);
 }
 
 
