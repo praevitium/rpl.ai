@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.5 (2026-09-30)
+**Latest release:** v0.6.6 (2026-09-30)
 
 ---
 
@@ -18,6 +18,17 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.6 — 2026-09-30
+
+Short screens keep the command line and ENTER on screen, including phone
+landscape. Plot ticks, large matrix powers and determinants, and long
+stack commands finish instead of hanging. Recalled directories are copies,
+a directory cannot be stored inside itself, hover previews no longer
+change variables, a full browser store says so, and a dry-run CONT no
+longer resumes a halted program.
 
 ---
 
