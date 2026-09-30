@@ -159,6 +159,11 @@ export function niceNum(range, round) {
   return nice * Math.pow(10, exp);
 }
 
+// A span narrower than the spacing of doubles at its magnitude has no ticks to draw.
+export function hasUsableSpan(min, max) {
+  return max - min > Math.max(Math.abs(min), Math.abs(max)) * 1e-12;
+}
+
 export function niceTicks(min, max, maxTicks = 8) {
   if (!(max > min) || !Number.isFinite(min) || !Number.isFinite(max)) {
     return { ticks: [Number.isFinite(min) ? min : 0], step: 1 };
@@ -225,6 +230,11 @@ export function defaultView() {
   return { xmin: -10, xmax: 10, ymin: -10, ymax: 10 };
 }
 
+function widenedSpan(min, max) {
+  const pad = Math.max(1, Math.max(Math.abs(min), Math.abs(max)) * 1e-6);
+  return [min - pad, max + pad];
+}
+
 export function boundsOfPoints(points, padFrac = 0.08) {
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   for (const [x, y] of points) {
@@ -235,8 +245,8 @@ export function boundsOfPoints(points, padFrac = 0.08) {
     if (y > maxY) maxY = y;
   }
   if (!Number.isFinite(minX)) return defaultView();
-  if (minX === maxX) { minX -= 1; maxX += 1; }
-  if (minY === maxY) { minY -= 1; maxY += 1; }
+  if (!hasUsableSpan(minX, maxX)) [minX, maxX] = widenedSpan(minX, maxX);
+  if (!hasUsableSpan(minY, maxY)) [minY, maxY] = widenedSpan(minY, maxY);
   const dx = (maxX - minX) * padFrac;
   const dy = (maxY - minY) * padFrac;
   return { xmin: minX - dx, xmax: maxX + dx, ymin: minY - dy, ymax: maxY + dy };

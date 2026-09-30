@@ -1,6 +1,6 @@
 import {
   TRACE_COLORS, TRACE_KINDS, nextTraceColor, defaultView, zoomView, panView,
-  worldToPixel, pixelToWorld, niceTicks,
+  worldToPixel, pixelToWorld, niceTicks, hasUsableSpan,
   sampleTrace, fitViewToTraces, evalTraceAtX,
   stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace,
 } from './plot-engine.js';
@@ -462,7 +462,7 @@ export class GraphView {
     const text = String(input.value).trim();
     const value = text ? Number(text) : NaN;
     const next = { ...this.view, [input.dataset.rng]: value };
-    const valid = Number.isFinite(value) && next.xmin < next.xmax && next.ymin < next.ymax;
+    const valid = Number.isFinite(value) && hasUsableSpan(next.xmin, next.xmax) && hasUsableSpan(next.ymin, next.ymax);
     input.classList.toggle('bad', !valid);
     if (!valid) return;
     this.view = next;

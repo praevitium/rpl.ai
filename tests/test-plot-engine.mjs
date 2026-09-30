@@ -1,7 +1,7 @@
 import { assert, assertThrows } from './helpers.mjs';
 import {
   evalNumeric, lookupEnv, parsePlotExpr, sampleFunction, samplePolar,
-  sampleParametric, segmentPoints, niceTicks, niceNum, worldToPixel,
+  sampleParametric, segmentPoints, niceTicks, niceNum, hasUsableSpan, worldToPixel,
   pixelToWorld, zoomView, panView, defaultView, boundsOfPoints,
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit, sampleDiffEq,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
@@ -70,6 +70,21 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   const missing = niceTicks(Number.NaN, 1);
   assert(missing.ticks.length === 1 && missing.ticks[0] === 0,
     'niceTicks of a non-finite window does not loop');
+  assert(niceTicks(0, 10, 6).ticks.join() === '0,2,4,6,8,10', 'niceTicks: 0..10 steps by 2');
+  assert(niceTicks(-1, 1, 6).ticks.join() === '-1,-0.5,0,0.5,1', 'niceTicks: decimal steps carry no binary noise');
+}
+
+{
+  const narrow = niceTicks(5, 5.000000000000001);
+  assert(narrow.ticks.length <= 2, 'niceTicks: a span below the spacing of doubles returns at once instead of looping');
+  assert(niceTicks(1e16, 10000000000000002).ticks.length <= 2, 'niceTicks: 1E16 to 1E16+2 returns at once');
+  assert(niceTicks(0, 1e300, 8).ticks.length <= 32, 'niceTicks: a huge span stays bounded');
+  assert(niceTicks(-Infinity, Infinity).ticks.every(Number.isFinite), 'niceTicks: an infinite window yields only finite ticks');
+  const b = boundsOfPoints([[1, 1e16], [2, 10000000000000002]]);
+  assert(hasUsableSpan(b.ymin, b.ymax) && hasUsableSpan(b.xmin, b.xmax), 'boundsOfPoints: widens a span too small to draw');
+  assert(!hasUsableSpan(5, 5.000000000000001) && hasUsableSpan(0, 1e-300), 'hasUsableSpan: relative to the magnitude');
+  const single = boundsOfPoints([[3, 5]], 0);
+  assert(single.xmin === 2 && single.xmax === 4 && single.ymin === 4 && single.ymax === 6, 'boundsOfPoints: a single point gets a window of one either side');
 }
 
 {
