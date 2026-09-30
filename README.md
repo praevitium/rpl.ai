@@ -485,8 +485,9 @@ writer's insights and the previews never wait on it.
 
 **Your data.** The stack and variables live in this browser's storage on
 this device. They don't sync, and clearing the site's data, or closing a
-private window, erases them. Back them up with Back up everything in the
-Variables drawer.
+private window, erases them. If the browser blocks site data altogether,
+rpl.ai still runs but warns that nothing is being saved. Back them up with
+Back up everything in the Variables drawer.
 
 **The assistant.** It is only as good as the model you connect, and small
 models make mistakes in RPL; check its work, and use Undo freely. It needs

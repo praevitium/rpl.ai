@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.7 (2026-09-30)
+**Latest release:** v0.6.8 (2026-09-30)
 
 ---
 
@@ -18,6 +18,35 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.8 — 2026-09-30
+
+Exact results are right or absent. `100 EXP` used to give a 44-digit
+integer that was not e^100, `-30 EXP` gave 0, `30 TANH` gave 1, and
+`FACT(25)`, `COMB(60,30)` and `ALOG(30)` inside an algebraic lost their
+last digits. A function of an integer now folds only where its value is an
+integer (`0 EXP` is 1, `1 LN` is 0, `1000 LOG` is 3, `90 SIN` is 1 in
+degrees) and stays symbolic otherwise, ready for →NUM. ALOG, FACT, COMB and
+PERM are worked out in big integers, so `-2 ALOG` is the exact 1/100.
+
+Decimal results are exact too. `0.29 2 TRNC` gives 0.29 (it gave 0.28),
+`0.285 2 RND` gives 0.29, `123456789012345678. 10 MOD` is 8,
+`100000. LOG IP` is 5, and SINH keeps its digits near 0. In DEG and GRD
+`90. COS` and `180. SIN` are 0 instead of 6E-15, and `90. TAN` reports
+Infinite result, as the AUR describes.
+
+The assistant's dry runs leave nothing behind. A program that halted inside
+a local frame kept its variables visible to the next line, ARCHIVE wrote a
+real backup, and plot commands opened the real plot view. Hovering a
+command or soft key no longer saves the whole calculator state each time or
+redraws the stack twice.
+
+A directory stored from the stack, such as `` `D` RCL `B` STO ``, takes the
+name of its variable and can be left with UPDIR; before, entering the copy
+showed the old name and trapped you inside it. The app starts when the
+browser blocks site data, and warns that nothing is being saved.
 
 ---
 
