@@ -197,9 +197,12 @@ function _fromRadiansDecimal(d) {
 
 // `realFn` only folds EXACT Integer / Rational inputs; Reals go through the
 // Decimal `decimalFn`.  Out-of-domain Reals lift to complex only under CMPLX.
+const _isZero = (v) => (isInteger(v) ? v.value === 0n : isRational(v) ? v.n === 0n : isReal(v) && v.value.isZero());
+
 function _unaryCx(name, realFn, cxFn, decimalFn) {
   return _unaryOp(name, (v) => {
     if (isComplex(v)) return _complex(cxFn(v));
+    if ((name === 'LN' || name === 'LOG') && _isZero(v)) throw new RPLError('Infinite result');
     if (_isExact(v)) return _exactUnaryLift(name, realFn(toRealOrThrow(v)), v);
     const d = _toDecimal(v);
     const result = decimalFn(d);

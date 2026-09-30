@@ -7252,3 +7252,13 @@ function _arrayEq(a, b) {
   assert(top('"1 @ x\n2 +" STR→') === '3', 'STR→ drops @ comments too');
   assert(top('"a @ b"') === '"a @ b"', 'an @ inside a string is text');
 }
+
+/* LN and LOG of zero, exact or approximate, are an infinite result, as on the HP 50g; other arguments are unchanged. */
+{
+  resetHome();
+  for (const line of ['0 LN', '0. LN', '0 LOG', '0. LOG']) {
+    assertThrows(() => runLine(line), /Infinite result/, `${line} is an infinite result`);
+  }
+  const shown = (line) => format(runLine(line).peek());
+  assert(shown('1 LN') === '0' && shown('2 LN') === '`LN(2)`' && shown('1000 LOG') === '3', 'LN and LOG of other numbers are unchanged');
+}
