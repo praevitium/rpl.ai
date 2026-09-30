@@ -455,6 +455,9 @@ Catalog and the command reference mark what is available. Not there yet:
 - MENU and TMENU, UNROT, CLVAR, DEF and DEFINE
 - parts of the CAS, such as TAYLR, SERIES, DESOLVE, LINSOLVE, LDEC and
   ZEROS (SOLVE and ISOL are here)
+- most of the unit catalog: the SI base units and a few dozen common units
+  are here, but not temperatures (°C, °F), general SI prefixes or units
+  inside algebraics
 
 **Left out on purpose.** USER mode and key assignments, ENTRY mode, the
 NUM.SLV solver screens, FINANCE, TIME, OFF, libraries (LIB, ATTACH and
@@ -469,10 +472,10 @@ System RPL, and IR and serial transfer.
 - There is no ON key to break a running program. A command or program that
   runs longer than 10 seconds is stopped, the stack is put back, and the
   error says why. A loop stops after 1,000,000 passes.
-- Some finer points still differ and are being fixed: system flags such as
-  `-105 SF` don't yet switch the modes, `FOR` counters are ordinary
-  variables rather than locals, and `'X' EVAL` returns the name instead of
-  its value.
+- `RCLF` returns the numbers of the set flags as a list, and `STOF` takes
+  that list back, instead of the HP's binary-integer flag words.
+- A local variable is visible to programs called from its body; on the HP
+  only `←` names are.
 
 **The algebra engine.** Giac is not the HP 49/50's CAS, so answers can come
 back in a different but equivalent form. It is an 11.8 MB download, fetched
