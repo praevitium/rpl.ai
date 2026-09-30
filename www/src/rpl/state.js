@@ -147,6 +147,26 @@ export function toRadians(x) {
   }
 }
 
+// sin, cos or tan of an angle in the current mode.  A DEG or GRD angle is cut
+// into whole quadrants first, so 90 COS is exactly 0 rather than 6E-17.
+export function angleTrig(kind, x) {
+  const quadrant = { DEG: 90, GRD: 100 }[state.angle];
+  if (quadrant === undefined || !Number.isFinite(x)) return Math[kind](toRadians(x));
+  const turn = 4 * quadrant;
+  const r = ((x % turn) + turn) % turn;
+  const quarters = Math.floor(r / quadrant);
+  const t = r - quarters * quadrant;
+  if (t === 0) {
+    if (kind === 'tan') return quarters % 2 === 0 ? 0 : Infinity;
+    return (kind === 'sin' ? [0, 1, 0, -1] : [1, 0, -1, 0])[quarters];
+  }
+  const theta = t * Math.PI / (2 * quadrant);
+  const s = Math.sin(theta);
+  const c = Math.cos(theta);
+  const [sine, cosine] = [[s, c], [c, -s], [-s, -c], [-c, s]][quarters];
+  return kind === 'sin' ? sine : kind === 'cos' ? cosine : sine / cosine;
+}
+
 export function fromRadians(x) {
   switch (state.angle) {
     case 'DEG': return x * 180 / Math.PI;

@@ -3,7 +3,7 @@ import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Nam
 import { RPLAbort, RPLError, setPushCoerce, checkTimeLimit } from '../stack.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, isRealNum } from '../algebra.js';
 import { sameDims, scaleOf, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
-import { state as _calcState, getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, setHalted } from '../state.js';
+import { state as _calcState, getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
 import { formatSource, DEFAULT_DISPLAY } from '../formatter.js';
@@ -1448,9 +1448,9 @@ function _angleAwareFnEval(name, args, real = false) {
   if (exact !== null) return AstNum(exact);
   let result;
   switch (args.length === 1 ? String(name).toUpperCase() : '') {
-    case 'SIN':  result = Math.sin(toRadians(x)); break;
-    case 'COS':  result = Math.cos(toRadians(x)); break;
-    case 'TAN':  result = Math.tan(toRadians(x)); break;
+    case 'SIN':  result = angleTrig('sin', x); break;
+    case 'COS':  result = angleTrig('cos', x); break;
+    case 'TAN':  result = angleTrig('tan', x); break;
     case 'ASIN': result = fromRadians(Math.asin(x)); break;
     case 'ACOS': result = fromRadians(Math.acos(x)); break;
     case 'ATAN': result = fromRadians(Math.atan(x)); break;

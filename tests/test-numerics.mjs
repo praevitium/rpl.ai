@@ -7227,3 +7227,19 @@ function _arrayEq(a, b) {
   assert(shown('100000. LOG IP') === '5.' && shown('0.001 LOG') === '-3.', 'LOG of a power of ten is exact');
   assert(shown('1.2345678901E-10 SINH') === '0.00000000012345678901' && shown('0.5 SINH') === '0.521095305494', 'SINH keeps its digits near 0');
 }
+
+/* DEG and GRD trig are exact at whole quadrants, inside algebraics too. */
+{
+  const shown = (line) => format(runLine(line).peek()).replace(/\s+/g, '');
+  resetHome();
+  setApproxMode(false);
+  setAngle('DEG');
+  assert(shown('90. COS') === '0.' && shown('180. SIN') === '0.' && shown('720. SIN') === '0.' && shown('-90. SIN') === '-1.' && shown('270. COS') === '0.', 'DEG trig is exact at whole quadrants');
+  assert(shown('30. SIN') === '0.5' && shown('60. COS') === '0.5' && shown('45. TAN') === '1.' && shown('225. TAN') === '1.' && shown('-45. TAN') === '-1.', 'DEG trig keeps its usual values');
+  assertThrows(() => runLine('90. TAN'), /Infinite result/, 'TAN at an odd quadrant is an infinite result');
+  assert(shown('`COS(90.)` EVAL') === '0.' && shown('`SIN(180.)` EVAL') === '0.', 'DEG trig inside an algebraic is exact at quadrants too');
+  setAngle('GRD');
+  assert(shown('100. COS') === '0.' && shown('200. SIN') === '0.' && shown('50. TAN') === '1.', 'GRD trig is exact at whole quadrants');
+  setAngle('RAD');
+  assert(shown('1. SIN') === '0.841470984808' && shown('0. COS') === '1.', 'RAD trig is unchanged');
+}

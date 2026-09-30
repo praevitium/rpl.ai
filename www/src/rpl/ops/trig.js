@@ -157,12 +157,33 @@ function _cxAtan(z) {
 
 const _PI_D = new Decimal(Math.PI);
 
-function _toRadiansDecimal(d) {
-  switch (_calcState.angle) {
-    case 'DEG': return d.times(_PI_D).div(180);
-    case 'GRD': return d.times(_PI_D).div(200);
-    default:    return d;
+const _WIDE = Decimal.clone({ precision: 45, rounding: Decimal.ROUND_HALF_EVEN });
+const _PI_WIDE = new _WIDE('3.14159265358979323846264338327950288419716939937510');
+
+// sin, cos or tan of a Decimal angle in the current mode.  A DEG or GRD angle
+// is cut into whole quadrants exactly, so 90 COS is 0, and the rest is worked
+// to 45 digits before it is rounded.
+function _trigDecimal(kind, d) {
+  const quadrant = { DEG: 90, GRD: 100 }[_calcState.angle];
+  if (quadrant === undefined) return d[kind]();
+  if (!d.isFinite()) return new Decimal(NaN);
+  const x = new _WIDE(d);
+  let t = x.mod(quadrant);
+  if (t.isNegative()) t = t.plus(quadrant);
+  const quarters = x.minus(t).div(quadrant).mod(4).plus(4).mod(4).toNumber();
+  if (t.isZero()) {
+    if (kind === 'tan') {
+      if (quarters % 2) throw new RPLError('Infinite result');
+      return new Decimal(0);
+    }
+    return new Decimal((kind === 'sin' ? [0, 1, 0, -1] : [1, 0, -1, 0])[quarters]);
   }
+  const theta = t.times(_PI_WIDE).div(2 * quadrant);
+  const s = theta.sin();
+  const c = theta.cos();
+  const [sine, cosine] = [[s, c], [c, s.neg()], [s.neg(), c.neg()], [c.neg(), s]][quarters];
+  const wide = kind === 'sin' ? sine : kind === 'cos' ? cosine : sine.div(cosine);
+  return new Decimal(wide.toSignificantDigits(Decimal.precision, Decimal.rounding).toString());
 }
 
 function _fromRadiansDecimal(d) {
@@ -194,7 +215,7 @@ function _trigFwdCx(name, realFn, cxFn, decimalFn) {
   return _unaryOp(name, (v) => {
     if (isComplex(v)) return _complex(cxFn(v));
     if (_isExact(v)) return _exactUnaryLift(name, realFn(toRadians(toRealOrThrow(v))), v);
-    return Real(decimalFn(_toRadiansDecimal(_toDecimal(v))));
+    return Real(decimalFn(_toDecimal(v)));
   });
 }
 
@@ -273,11 +294,11 @@ register('ATANH', _unaryOp('ATANH', (v) => {
 }), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 17, label: "ATANH" });
 
 
-register('SIN', _trigFwdCx('SIN', Math.sin, _cxSin, d => d.sin()), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 0, label: "SIN" });
+register('SIN', _trigFwdCx('SIN', Math.sin, _cxSin, d => _trigDecimal('sin', d)), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 0, label: "SIN" });
 
-register('COS', _trigFwdCx('COS', Math.cos, _cxCos, d => d.cos()), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 1, label: "COS" });
+register('COS', _trigFwdCx('COS', Math.cos, _cxCos, d => _trigDecimal('cos', d)), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 1, label: "COS" });
 
-register('TAN', _trigFwdCx('TAN', Math.tan, _cxTan, d => d.tan()), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 2, label: "TAN" });
+register('TAN', _trigFwdCx('TAN', Math.tan, _cxTan, d => _trigDecimal('tan', d)), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 2, label: "TAN" });
 
 
 register('ASIN', _trigInvCx('ASIN', Math.asin, _cxAsin, d => d.asin()), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 3, label: "ASIN" });
