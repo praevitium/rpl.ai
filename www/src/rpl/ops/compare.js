@@ -8,10 +8,15 @@ import { FALSE, TRUE, _isSymOperand, _toAst, isTruthy } from './internal.js';
 
 
 
+// 3 and 3/1 are one exact number, but 2 and 2. differ: exact, approximate and complex numbers are three kinds.
+const NUMBER_KIND = Object.freeze({ integer: 'exact', rational: 'exact', real: 'real', complex: 'complex' });
+
 // Structural equality for ==, ≠ and SAME.  A BinaryInteger's base is
-// display-only, so only its value within the wordsize counts.
-function eqValues(a, b) {
+// display-only, so only its value within the wordsize counts.  SAME also asks
+// for the same kind of number: 2 and 2. are equal but not the same.
+function eqValues(a, b, strict = false) {
   if (isNumber(a) && isNumber(b)) {
+    if (strict && NUMBER_KIND[a.type] !== NUMBER_KIND[b.type]) return false;
     const p = promoteNumericPair(a, b);
     if (p.kind === 'complex')  return p.a.re === p.b.re && p.a.im === p.b.im;
     if (p.kind === 'integer')  return p.a === p.b;
@@ -24,32 +29,32 @@ function eqValues(a, b) {
   }
   if (isName(a) && isName(b)) return a.id === b.id;
   if (isString(a) && isString(b)) return a.value === b.value;
-  if (isList(a)   && isList(b))   return _eqArr(a.items, b.items);
-  if (isVector(a) && isVector(b)) return _eqArr(a.items, b.items);
+  if (isList(a)   && isList(b))   return _eqArr(a.items, b.items, strict);
+  if (isVector(a) && isVector(b)) return _eqArr(a.items, b.items, strict);
   if (isMatrix(a) && isMatrix(b)) {
     if (a.rows.length !== b.rows.length) return false;
     for (let i = 0; i < a.rows.length; i++) {
-      if (!_eqArr(a.rows[i], b.rows[i])) return false;
+      if (!_eqArr(a.rows[i], b.rows[i], strict)) return false;
     }
     return true;
   }
   if (isSymbolic(a) && isSymbolic(b)) return astEqual(a.expr, b.expr);
   if (isTagged(a)   && isTagged(b)) {
-    return a.tag === b.tag && eqValues(a.value, b.value);
+    return a.tag === b.tag && eqValues(a.value, b.value, strict);
   }
   // Same unit expression, not just the same dimension: 1_m == 100_cm is false.
   if (isUnit(a) && isUnit(b)) return a.value === b.value && uexprEqual(a.uexpr, b.uexpr);
-  if (isProgram(a) && isProgram(b)) return _eqArr(a.tokens, b.tokens);
+  if (isProgram(a) && isProgram(b)) return _eqArr(a.tokens, b.tokens, strict);
   // Directories are containers, not values: each is equal only to itself.
   if (isDirectory(a) && isDirectory(b)) return a === b;
   return false;
 }
 
 
-function _eqArr(a, b) {
+function _eqArr(a, b, strict) {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
-    if (!eqValues(a[i], b[i])) return false;
+    if (!eqValues(a[i], b[i], strict)) return false;
   }
   return true;
 }
@@ -102,7 +107,7 @@ register('==', (s) => {
 
 register('SAME', (s) => {
   const [a, b] = s.popN(2);
-  s.push(eqValues(a, b) ? TRUE : FALSE);
+  s.push(eqValues(a, b, true) ? TRUE : FALSE);
 }, { category: 'Comparisons / logic', categoryOrder: 2, label: "SAME" });
 
 

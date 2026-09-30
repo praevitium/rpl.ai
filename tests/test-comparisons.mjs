@@ -17,7 +17,7 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows } from './helpers.mjs';
+import { assert, assertThrows, runLine } from './helpers.mjs';
 
 /* Comparisons (==, ≠, <, >, ≤, ≥), logical ops (AND/OR/XOR/NOT), TRUE/FALSE. */
 
@@ -1483,4 +1483,12 @@ import { assert, assertThrows } from './helpers.mjs';
   lookup('<').fn(s);
   assert(s.peek().value.eq(1),
     'session355: Rational(-5/2) < Integer(-2) → 1 (Q × Z both negative; -2.5 < -2 via cross-multiply)');
+}
+
+/* SAME asks for the same kind of number as well as the same value, so 2 and 2. are equal but not the same, while 3 and 3/1 are one exact number. */
+{
+  const flag = (line) => runLine(line).peek().value.toNumber();
+  assert(flag('2 2. SAME') === 0 && flag('2 2. ==') === 1, '2 2. SAME is 0 where 2 2. == is 1');
+  assert(flag('2 2 SAME') === 1 && flag('2. 2. SAME') === 1 && flag('2 (2,0) SAME') === 0, 'SAME of equal numbers of one kind is 1, of a complex and a real 0');
+  assert(flag('{ 1 2 } { 1 2. } SAME') === 0 && flag('{ 1 2 } { 1 2 } SAME') === 1 && flag('{ 1 2 } { 1 2. } ==') === 1, 'SAME looks inside a list for the kind of each number');
 }

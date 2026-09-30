@@ -2381,17 +2381,16 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session110: Rational(1,2) == Real(0.5) → 1 (real-kind promotion)`);
   }
 
-  // SAME follows the same comparator — pin that Rational×Real SAME
-  // also returns 1.  (Contrast: SAME #10h Integer(16) = 0 because
-  // BinInt is OUT of isNumber; Rational is IN.)
+  // SAME also asks for the same kind of number, so an exact 1/2 and the
+  // approximate 0.5 are equal (==) but not the same.
   {
     const s = new Stack();
     s.push(Rational(1, 2));
     s.push(Real(0.5));
     lookup('SAME').fn(s);
     const v = s.peek();
-    assert(isReal(v) && v.value.eq(1),
-      `session110: SAME Rational(1,2) Real(0.5) → 1 (Rational is in isNumber lattice)`);
+    assert(isReal(v) && v.value.eq(0),
+      `SAME Rational(1,2) Real(0.5) → 0 (exact and approximate are different kinds)`);
   }
 
   // Rational × Complex with zero imaginary — promoteNumericPair goes
