@@ -7183,3 +7183,32 @@ function _arrayEq(a, b) {
   assert(top('10 -400 ^').value.eq('1e-400'), 'APPROX 10 -400 ^ keeps the exponent a double would lose');
   setApproxMode(false);
 }
+
+/* EXACT mode folds a function of an integer only where its value is an integer: a double near a whole number proves nothing (EXP(100) is a whole double, EXP(-30) is within 1E-12 of 0). */
+{
+  const shown = (line) => format(runLine(line).peek()).replace(/\s+/g, '');
+  const powerOfTen = (n) => `1${'0'.repeat(n)}`;
+  resetHome();
+  setApproxMode(false);
+  setAngle('RAD');
+  assert(['100 EXP', '-30 EXP', '36 EXP'].every((l, i) => shown(l) === ['`EXP(100)`', '`EXP(-30)`', '`EXP(36)`'][i]), 'EXP of an integer stays symbolic instead of folding a double that happens to be whole');
+  assert(shown('0 EXP') === '1' && shown('1 LN') === '0' && shown('0 SINH') === '0' && shown('0 COSH') === '1' && shown('0 TANH') === '0' && shown('1 ACOSH') === '0', 'EXP, LN, SINH, COSH, TANH and ACOSH still fold at the arguments where they are integers');
+  assert(shown('30 TANH') === '`TANH(30)`' && shown('-50 TANH') === '`TANH(-50)`' && shown('50 SINH') === '`SINH(50)`' && shown('-100 COSH') === '`COSH(-100)`', 'hyperbolic functions of a large integer stay symbolic');
+  assert(shown('30 ALOG') === powerOfTen(30) && shown('23 ALOG') === powerOfTen(23) && shown('-2 ALOG') === '1/100', 'ALOG of an integer is the exact power of ten');
+  assert(shown('1000 LOG') === '3' && shown('1 LOG') === '0' && shown('999 LOG') === '`LOG(999)`', 'LOG folds only for a power of ten');
+  setAngle('DEG');
+  assert(shown('90 TAN') === '`TAN(90)`' && shown('45 TAN') === '1' && shown('180 TAN') === '0', 'TAN at an odd multiple of 90 degrees is not a number');
+  assert(shown('90 SIN') === '1' && shown('180 COS') === '-1' && shown('1 ASIN') === '90' && shown('1 ATAN') === '45', 'trig folds at the special angles in DEG');
+  setAngle('RAD');
+  assert(shown('`FACT(25)` EVAL') === '15511210043330985984000000' && shown('`FACT(30)` EVAL') === '265252859812191058636308480000000', 'FACT inside an algebraic keeps every digit');
+  assert(shown('`COMB(60,30)` EVAL') === '118264581564861424' && shown('`PERM(30,20)` EVAL') === '73096577329197271449600000', 'COMB and PERM inside an algebraic keep every digit');
+  assert(shown('`ALOG(30)` EVAL') === powerOfTen(30) && shown('`FACT(5)+1` EVAL') === '121', 'ALOG and FACT inside an algebraic fold exactly');
+  assert(shown('`EXP(100)` EVAL') === '`EXP(100)`' && shown('`EXP(-30)` EVAL') === '`EXP(-30)`' && shown('`TANH(30)` EVAL') === '`TANH(30)`', 'EXP and TANH inside an algebraic stay symbolic');
+  assert(shown('`EXP(0)` EVAL') === '1' && shown('`LN(1)` EVAL') === '0' && shown('`SQRT(1000000)` EVAL') === '1000', 'the algebraic folds that are exact still happen');
+  setAngle('DEG');
+  assert(shown('`TAN(90)` EVAL') === '`TAN(90)`' && shown('`SIN(180)` EVAL') === '0', 'a DEG algebraic folds sin 180 but not tan 90');
+  setAngle('RAD');
+  setApproxMode(true);
+  assert(shown('`LN(2)` EVAL').startsWith('0.69314718') && shown('`EXP(-30)` EVAL').startsWith('9.35762'), 'APPROX still folds every function to a decimal');
+  setApproxMode(false);
+}

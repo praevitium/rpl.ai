@@ -6588,18 +6588,15 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session145: ALOG(Integer(3)) → Integer(1000) (10^3=1000 integer-clean; closes ALOG positive-integer trio); got ${v?.type}(${v?.value?.toString?.()})`);
   }
 
-  // ALOG(Integer(-1)) → Symbolic ALOG(-1).  10^-1 = 0.1 is not
-  // integer-clean (0.1 cannot collapse to integer 0 — the diff is
-  // exactly 0.1, way over the 1e-12 tolerance); negative side of
-  // the ALOG fold on a negative-integer operand.
+  // ALOG(Integer(-1)) is the exact fraction 1/10, as on the HP 50g: a power of ten
+  // stays exact instead of collapsing to a double.
   {
     const s = new Stack();
     s.push(Integer(-1n));
     lookup('ALOG').fn(s);
     const v = s.peek();
-    assert(v?.type === 'symbolic' && v.expr?.kind === 'fn' && v.expr.name === 'ALOG'
-        && v.expr.args[0]?.kind === 'num' && v.expr.args[0].value === -1,
-      `session145: ALOG(Integer(-1)) → Symbolic ALOG(-1) (10^-1=0.1 not integer-clean; pins negative-integer-operand fall-through); got ${v?.type} expr=${JSON.stringify(v?.expr)}`);
+    assert(v?.type === 'rational' && v.n === 1n && v.d === 10n,
+      `ALOG(Integer(-1)) → exact 1/10; got ${v?.type} ${v?.n}/${v?.d}`);
   }
 
   // Rational arm — Rational(1,1) → 1.0 (the numeric path divides

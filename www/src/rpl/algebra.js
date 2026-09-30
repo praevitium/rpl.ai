@@ -384,7 +384,7 @@ function foldNums(op, l, r) {
 }
 
 // lookup(name) returns a number or a Num node, and fnEval(name, args, real) a
-// number, or null to leave that part symbolic.  binGate(op, args, folded), when
+// number or Num node, or null to leave that part symbolic.  binGate(op, args, folded), when
 // given, returns the number a fold of exact numbers should produce, or null to
 // keep the operation (EXACT mode keeps 1/3).  A fold with an approximate
 // operand always happens and is approximate, as on the HP50.
@@ -420,6 +420,7 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
     if (evaldArgs.every(isNum)) {
       const real = evaldArgs.some(isRealNum);
       const result = fnEval(ast.name, evaldArgs.map(a => a.value), real);
+      if (result?.kind === 'num') return result;
       if (Number.isFinite(result)) return approxNum(result, real);
     }
     return Fn(ast.name, evaldArgs);

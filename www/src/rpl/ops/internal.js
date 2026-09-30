@@ -3,7 +3,7 @@ import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Nam
 import { RPLAbort, RPLError, setPushCoerce, checkTimeLimit } from '../stack.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, isRealNum } from '../algebra.js';
 import { sameDims, scaleOf, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
-import { getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, setHalted } from '../state.js';
+import { state as _calcState, getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, setHalted } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
 import { formatSource, DEFAULT_DISPLAY } from '../formatter.js';
@@ -468,14 +468,44 @@ export function _decimalFrobeniusNorm(items) {
 }
 
 
-// EXACT mode keeps LN(2)-style results symbolic but folds integer results such
-// as LN(1) = 0; the 1e-12 tolerance matches _approxGate.
-export function _exactUnaryLift(fnName, yScalar, v) {
-  if (Number.isFinite(yScalar)) {
-    const rounded = Math.round(yScalar);
-    if (Math.abs(yScalar - rounded) < 1e-12) {
-      return Integer(BigInt(rounded));
+const _isPowerOfTen = (n, d) => (n === 1n ? /^10*$/.test(d.toString()) : d === 1n && n > 0n && /^10*$/.test(n.toString()));
+
+// The arguments n/d at which a function gives an integer in EXACT mode.  A
+// double near an integer proves nothing: EXP(100) is an integer-valued double
+// and EXP(-30) is within 1e-12 of 0, yet neither is an integer.  Angles are
+// in the current angle mode.
+function _integerPoint(fnName, n, d) {
+  const at = (a, b = 1n) => n * b === a * d;
+  switch (fnName) {
+    case 'EXP': case 'SINH': case 'COSH': case 'TANH': case 'ASINH': case 'ATANH': case 'R→D': case 'D→R':
+      return n === 0n;
+    case 'LN': case 'ACOSH': return at(1n);
+    case 'LOG': return _isPowerOfTen(n, d);
+    case 'SIN': case 'COS': case 'TAN': {
+      const unit = { DEG: 45n, GRD: 50n }[_calcState.angle];
+      return n === 0n || (unit !== undefined && n % (unit * d) === 0n);
     }
+    case 'ASIN': case 'ACOS': return n === 0n || at(1n) || at(-1n) || at(1n, 2n) || at(-1n, 2n);
+    case 'ATAN': return n === 0n || at(1n) || at(-1n);
+    default: return true;
+  }
+}
+
+// Beyond this a double cannot tell an integer from a near miss, and TAN at an odd multiple of 90 degrees is a huge finite number.
+const EXACT_FOLD_LIMIT = 1e6;
+
+const EXACT_POWER_MAX = 1000n;
+
+// EXACT mode keeps LN(2)-style results symbolic but folds integer results such
+// as LN(1) = 0.
+export function _exactUnaryLift(fnName, yScalar, v) {
+  if (fnName === 'ALOG' && isInteger(v) && v.value >= -EXACT_POWER_MAX && v.value <= EXACT_POWER_MAX) {
+    return v.value >= 0n ? Integer(10n ** v.value) : Rational(1n, 10n ** -v.value);
+  }
+  if (Number.isFinite(yScalar) && Math.abs(yScalar) <= EXACT_FOLD_LIMIT) {
+    const rounded = Math.round(yScalar);
+    const [n, d] = isRational(v) ? [v.n, v.d] : [v.value, 1n];
+    if (Math.abs(yScalar - rounded) < 1e-12 && _integerPoint(fnName, n, d)) return Integer(BigInt(rounded));
   }
   return Symbolic(AstFn(fnName, [_toAst(v)]));
 }
@@ -1380,20 +1410,42 @@ function _evalSymbolic(v) {
 
 
 // EXACT mode keeps a numeric fold only when every argument and the result are
-// integers: SQRT(9) folds to 3, SQRT(2) stays symbolic.
+// integers a double holds exactly: SQRT(9) folds to 3, SQRT(2) stays symbolic.
 function _approxGate(result, args) {
   if (getApproxMode()) return result;
   if (result === null || result === undefined) return result;
   if (!Number.isFinite(result)) return result;
-  const allIntArgs = args.every(a => Number.isFinite(a) && Math.abs(a - Math.round(a)) < 1e-12);
-  if (!allIntArgs) return null;
+  const allIntArgs = args.every(a => Number.isSafeInteger(Math.round(a)) && Math.abs(a - Math.round(a)) < 1e-12);
+  if (!allIntArgs || Math.abs(result) > Number.MAX_SAFE_INTEGER) return null;
   const rounded = Math.round(result);
   if (Math.abs(result - rounded) < 1e-12) return rounded;
   return null;
 }
 
+const _fallingFactorial = (n, m) => {
+  let out = 1n;
+  for (let i = 0n; i < m; i++) out *= n - i;
+  return out;
+};
+
+// A double loses digits past 2^53, so these integer functions are worked out in BigInt.
+function _exactIntegerFn(name, args) {
+  if (!args.every(Number.isSafeInteger)) return null;
+  const [a, b] = args.map(BigInt);
+  const inRange = (n) => n >= 0n && n <= EXACT_POWER_MAX;
+  switch (name) {
+    case 'FACT': return args.length === 1 && inRange(a) ? _fallingFactorial(a, a) : null;
+    case 'PERM': return args.length === 2 && inRange(a) && b >= 0n && b <= a ? _fallingFactorial(a, b) : null;
+    case 'COMB': return args.length === 2 && inRange(a) && b >= 0n && b <= a ? _fallingFactorial(a, b) / _fallingFactorial(b, b) : null;
+    case 'ALOG': return args.length === 1 && inRange(a) ? 10n ** a : null;
+    default: return null;
+  }
+}
+
 function _angleAwareFnEval(name, args, real = false) {
   const x = args[0];
+  const exact = real ? null : _exactIntegerFn(String(name).toUpperCase(), args);
+  if (exact !== null) return AstNum(exact);
   let result;
   switch (args.length === 1 ? String(name).toUpperCase() : '') {
     case 'SIN':  result = Math.sin(toRadians(x)); break;
@@ -1404,7 +1456,9 @@ function _angleAwareFnEval(name, args, real = false) {
     case 'ATAN': result = fromRadians(Math.atan(x)); break;
     default:     result = algebraDefaultFnEval(name, args);
   }
-  return real ? result : _approxGate(result, args);
+  if (real) return result;
+  if (!getApproxMode() && args.length === 1 && Number.isSafeInteger(x) && !_integerPoint(String(name).toUpperCase(), BigInt(x), 1n)) return null;
+  return _approxGate(result, args);
 }
 
 
