@@ -151,12 +151,9 @@ export class Display {
       const level = Number(row.dataset.level);
       const act = ev.target.closest?.('[data-row-act]');
       if (act) { this.onRowAction?.(level, act.dataset.rowAct, act); return; }
+      // The first click re-renders the rows, so the browser's dblclick would land on a removed element.
+      if (ev.detail === 2 && !ev.target.closest?.('.st-acts')) { this.onRowDoubleClick?.(level); return; }
       this.onRowClick?.(level, ev);
-    });
-    view.addEventListener('dblclick', (ev) => {
-      if (ev.target.closest?.('.st-acts')) return;
-      const row = ev.target.closest?.('.st-row[data-level]');
-      if (row) this.onRowDoubleClick?.(Number(row.dataset.level));
     });
     view.addEventListener('dragstart', (ev) => {
       const row = ev.target.closest?.('.st-row[data-level]');
