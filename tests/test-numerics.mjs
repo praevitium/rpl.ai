@@ -7262,3 +7262,20 @@ function _arrayEq(a, b) {
   const shown = (line) => format(runLine(line).peek());
   assert(shown('1 LN') === '0' && shown('2 LN') === '`LN(2)`' && shown('1000 LOG') === '3', 'LN and LOG of other numbers are unchanged');
 }
+
+/* A count of 12 makes RND and TRNC keep what the current display format shows. */
+{
+  const { setDisplay } = await import('../www/src/rpl/state.js');
+  const shown = (line) => format(runLine(line).peek());
+  try {
+    setDisplay('STD');
+    assert(shown('2. 3. / 12 RND') === '0.666666666667' && shown('1.23456789012345 12 TRNC') === '1.23456789012', 'in STD 12 keeps 12 significant digits');
+    setDisplay('FIX', 3);
+    assert(shown('2. 3. / 12 RND') === '0.667' && shown('2. 3. / 12 TRNC') === '0.666', 'in FIX 3 12 keeps three decimals');
+    setDisplay('SCI', 4);
+    assert(shown('2. 3. / 12 RND') === '0.66667', 'in SCI 4 12 keeps five significant digits');
+    assertThrows(() => runLine('3. 13 RND'), /Bad argument value/, 'a count of 13 is still refused');
+  } finally {
+    setDisplay('STD');
+  }
+}

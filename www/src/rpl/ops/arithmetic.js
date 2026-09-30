@@ -2,7 +2,7 @@ import { RPLError, checkTimeLimit } from '../stack.js';
 import { Integer, Matrix, isInteger, isReal, isVector, Vector, isMatrix, isSymbolic, Symbolic, isString, isBinaryInteger, isComplex, isName, Real, isRational, Rational, Complex, isUnit, Unit, toComplex, toRealOrThrow, toRealDecimal, BinaryInteger, isNumber, isList, RList, Str } from '../types.js';
 import { Bin as AstBin, formatAlgebra, Neg as AstNeg, Num as AstNum, Fn as AstFn, Var as AstVar } from '../algebra.js';
 import { formatReal, DEFAULT_DISPLAY, formatBinaryInteger } from '../formatter.js';
-import { getApproxMode, getRealMaxExp, getWordsize, nextPrngUnit, seedPrng } from '../state.js';
+import { state as _calcState, getApproxMode, getRealMaxExp, getWordsize, nextPrngUnit, seedPrng } from '../state.js';
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { inverseUexpr, powerUexpr } from '../units.js';
 import { register, lookup, OPS } from './registry.js';
@@ -528,9 +528,14 @@ register('MANT', _withTaggedUnary(_withListUnary(_withVMUnary((s) => {
 }))), { category: 'Arithmetic', categoryOrder: 25, label: "MANT" });
 
 
-// n >= 0 counts decimal places; n < 0 counts -n significant digits.
+// n >= 0 counts decimal places, n < 0 counts -n significant digits, and 12 keeps what the display format shows.
 function _roundReal(d, n, mode) {
   if (!d.isFinite()) return d;
+  if (n === 12) {
+    const { displayMode, displayDigits } = _calcState;
+    if (displayMode === 'FIX') return d.toDecimalPlaces(displayDigits, mode);
+    return d.toSignificantDigits(displayMode === 'STD' ? 12 : displayDigits + 1, mode);
+  }
   return n >= 0 ? d.toDecimalPlaces(n, mode) : d.toSignificantDigits(-n, mode);
 }
 
@@ -539,7 +544,7 @@ function _roundingOp(mode) {
     const nv = s.pop();
     const xv = s.pop();
     const n = Number(isInteger(nv) ? nv.value : toRealOrThrow(nv));
-    if (!Number.isInteger(n) || n < -11 || n > 11) {
+    if (!Number.isInteger(n) || n < -11 || n > 12) {
       throw new RPLError('Bad argument value');
     }
     if (isComplex(xv)) {
