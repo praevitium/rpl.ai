@@ -496,7 +496,7 @@ class App {
     }
     if (!this._autosaveFailed) {
       this._autosaveFailed = true;
-      this.notifyError('Autosave failed because browser storage is full. Export a backup before you reload, or the latest changes will be lost.');
+      this.notifyError('Autosave failed because browser storage is full or blocked. Export a backup before you reload, or the latest changes will be lost.');
     }
   }
 

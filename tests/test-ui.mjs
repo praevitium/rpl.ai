@@ -1178,6 +1178,17 @@ setAngle('RAD');
   const saved = memory({ [UI_PREFS_KEY]: JSON.stringify({ theme: 'classic' }), 'hp50.ui.chrome': 'minimal' });
   assert(loadUiPrefs(saved).theme === 'classic' && loadUiPrefs(saved).minimal === false,
     'loadUiPrefs: saved rplai.ui wins over leftover legacy keys');
+  const { saveUiPrefs } = await import('../www/src/ui/ui-prefs.js');
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new Error('SecurityError'); } });
+  try {
+    assert(JSON.stringify(loadUiPrefs()) === JSON.stringify(DEFAULT_UI_PREFS), 'loadUiPrefs: blocked site data gives the defaults instead of crashing the app');
+    saveUiPrefs(DEFAULT_UI_PREFS);
+    assert(true, 'saveUiPrefs: blocked site data is ignored');
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor);
+    else delete globalThis.localStorage;
+  }
 }
 
 {

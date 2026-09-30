@@ -790,5 +790,21 @@ function quotaError() {
   }
 }
 
+{
+  resetHome();
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new Error('SecurityError'); } });
+  try {
+    assert(saveToLocalStorage(new Stack()) === false, 'autosave returns false when site data is blocked');
+    assert(loadInitialState(new Stack()) === 'seed', 'a blocked store starts from the seed state');
+    assertThrows(() => listBackups(), /Backup storage unavailable/, 'backups report unavailable storage when site data is blocked');
+    assertThrows(() => archiveBackup('0', 'B', new Stack()), /Backup storage unavailable/, 'ARCHIVE reports unavailable storage when site data is blocked');
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor);
+    else delete globalThis.localStorage;
+    resetHome();
+  }
+}
+
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');
 process.exit(failed ? 1 : 0);

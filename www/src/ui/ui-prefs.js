@@ -33,6 +33,11 @@ function readJson(storage, key) {
   try { return JSON.parse(storage?.getItem(key) ?? 'null'); } catch { return null; }
 }
 
+// Blocked site data makes even reading globalThis.localStorage throw.
+function browserStorage() {
+  try { return globalThis.localStorage; } catch { return null; }
+}
+
 export function normalizeUiPrefs(raw) {
   const p = { ...DEFAULT_UI_PREFS };
   if (!raw || typeof raw !== 'object') return p;
@@ -69,7 +74,7 @@ function legacyUiPrefs(storage) {
   });
 }
 
-export function loadUiPrefs(storage = globalThis.localStorage) {
+export function loadUiPrefs(storage = browserStorage()) {
   const saved = readJson(storage, UI_PREFS_KEY);
   if (saved) return normalizeUiPrefs(saved);
   const legacy = legacyUiPrefs(storage);
@@ -82,6 +87,6 @@ export function loadUiPrefs(storage = globalThis.localStorage) {
   return legacy;
 }
 
-export function saveUiPrefs(prefs, storage = globalThis.localStorage) {
+export function saveUiPrefs(prefs, storage = browserStorage()) {
   try { storage?.setItem(UI_PREFS_KEY, JSON.stringify(normalizeUiPrefs(prefs))); } catch { /* quota or private mode */ }
 }

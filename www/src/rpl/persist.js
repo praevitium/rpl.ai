@@ -283,7 +283,8 @@ export const BACKUPS_KEY = 'hp50.backups';
 const BACKUP_PORTS = Object.freeze(['0', '1', '2', '3']);
 
 function backupStorage() {
-  const storage = globalThis.localStorage;
+  let storage = null;
+  try { storage = globalThis.localStorage; } catch { /* blocked site data */ }
   if (!storage) throw new RPLError('Backup storage unavailable');
   return storage;
 }
