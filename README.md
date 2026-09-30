@@ -68,9 +68,9 @@ for a new version, and an installed copy offers to reload when one is
 ready.
 
 Your stack, variables and settings stay in this browser on this device.
-Nothing is uploaded. To move them to another browser or keep a copy, use
-Back up everything in the Variables drawer, and Restore from file on the
-other side.
+Nothing is uploaded. Two windows of the same browser share them and stay in
+step. To move them to another browser or keep a copy, use Back up everything
+in the Variables drawer, and Restore from file on the other side.
 
 ### Five minutes with RPL
 

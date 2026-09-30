@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.8 (2026-09-30)
+**Latest release:** v0.6.9 (2026-09-30)
 
 ---
 
@@ -18,6 +18,32 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.9 — 2026-09-30
+
+Two windows of the same browser stay in step. A window adopts what another
+one saved, as it happens and again when you switch back to it, so a stale
+window can no longer overwrite the newer stack, variables and modes with
+its next autosave.
+
+The textbook view no longer misreads. `2*10^3` was drawn as 210³,
+`2*(1/2)` as 2½, `(A/B)^2` as A/B with a raised 2, `EXP(X)^2` as e^X² and
+`FACT(FACT(X))` as X!!. A number next to a term that starts like a number
+keeps its dot, and those bases and nested factorials are bracketed, in the
+stack and in the equation writer.
+
+Programs behave more like they do on the HP 50g. FOR and START loops with a
+decimal step count in decimal, so `0 0.3 FOR i … 0.1 STEP` reaches 0.3 and
+a loop counting down ends on 0. STR→ evaluates the string as if it were
+typed, so `"1 2 +" STR→` gives 3. A comment starting with @ runs to the
+end of the line and is dropped, in an entry, a program or a string of
+commands. IF, CASE, WHILE and DO take an algebraic test, as in `IF 'X>0'
+THEN`, and a comparison of two numbers inside an algebraic evaluates to 1.
+or 0. (`==` parses there now). SAME also asks for the same kind of number,
+so `2 2. SAME` is 0. `0 LN` and `0 LOG` are an infinite result, and RND
+and TRNC accept 12 to keep what the display format shows.
 
 ---
 
