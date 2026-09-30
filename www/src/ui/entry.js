@@ -153,10 +153,12 @@ export class Entry {
     this.type(pastedSource(text));
   }
 
+  // Typing over a selection replaces it, as in any text field.
   type(text) {
     this.error = '';
-    this.buffer = this.buffer.slice(0, this.cursor) + text + this.buffer.slice(this.cursor);
-    this.cursor += text.length;
+    const { from, to } = this._state.selection.main;
+    this.buffer = this.buffer.slice(0, from) + text + this.buffer.slice(to);
+    this.cursor = from + text.length;
     this._emit();
     this.focus();
   }
@@ -181,7 +183,8 @@ export class Entry {
   }
 
   _needsLeadingSpace() {
-    return this.cursor > 0 && !/\s/.test(this.buffer[this.cursor - 1]);
+    const { from } = this._state.selection.main;
+    return from > 0 && !/\s/.test(this.buffer[from - 1]);
   }
 
   typeOrExecFn(fnName) {
@@ -314,7 +317,12 @@ export class Entry {
       try { this.stack.drop(); } catch (e) { this._dropNoOpUndoStep(); this.flashError(e); }
       return;
     }
-    if (this.cursor > 0) {
+    const { from, to } = this._state.selection.main;
+    if (to > from) {
+      this.buffer = this.buffer.slice(0, from) + this.buffer.slice(to);
+      this.cursor = from;
+      this._emit();
+    } else if (this.cursor > 0) {
       this.buffer = this.buffer.slice(0, this.cursor - 1) + this.buffer.slice(this.cursor);
       this.cursor--;
       this._emit();

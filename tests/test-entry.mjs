@@ -1712,3 +1712,29 @@ resetBinaryState();
   e.enter();
   assert(/Infinite result/.test(e.error) && s.depth === 3, 'an error in a command-line loop restores the stack');
 }
+
+/* Typing over a selection replaces it, the keypad backspace deletes it, and a command typed over it spaces from the text before it. */
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const select = (e, anchor, head) => e._dispatch({ selection: { anchor, head } });
+  let e = new Entry(new Stack());
+  e.buffer = '123xy45';
+  select(e, 3, 5);
+  e.type('9');
+  assert(e.buffer === '123945' && e.cursor === 4, 'typing over a selection replaces it and puts the cursor after the new text');
+  select(e, 5, 1);
+  e.backspace();
+  assert(e.buffer === '15' && e.cursor === 1, 'backspace deletes a whole selection, backwards or forwards');
+  e.buffer = '1 23';
+  select(e, 2, 4);
+  e.typeToken('DUP');
+  assert(e.buffer === '1 DUP', 'a command typed over a selection after a space adds no extra space');
+  e.buffer = 'ab';
+  select(e, 1, 2);
+  e.typeToken('X');
+  assert(e.buffer === 'a X', 'a command typed over a selection after text gets its leading space');
+  e.buffer = 'abc';
+  e.cursor = 3;
+  e.backspace();
+  assert(e.buffer === 'ab', 'backspace with no selection still deletes one character');
+}
