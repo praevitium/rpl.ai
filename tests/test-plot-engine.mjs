@@ -61,6 +61,15 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(step > 0, 'niceTicks: positive step');
   assert(ticks[0] >= 0 && ticks[ticks.length - 1] <= 10 + step, 'niceTicks: in range');
   assert(niceNum(10, true) === 10, 'niceNum: 10 rounds to 10');
+  const far = niceTicks(1e20, 1e20 + 1e5);
+  assert(far.ticks.length > 0 && far.ticks.length <= 12 && far.ticks.every(Number.isFinite),
+    'niceTicks returns a finite tick list far from zero');
+  const neg = niceTicks(-1e20 - 1e5, -1e20);
+  assert(neg.ticks.length > 0 && neg.ticks.every(Number.isFinite),
+    'niceTicks returns a finite tick list far below zero');
+  const missing = niceTicks(Number.NaN, 1);
+  assert(missing.ticks.length === 1 && missing.ticks[0] === 0,
+    'niceTicks of a non-finite window does not loop');
 }
 
 {

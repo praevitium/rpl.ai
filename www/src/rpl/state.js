@@ -8,6 +8,9 @@ export const ANGLE_MODES = Object.freeze(['RAD', 'DEG', 'GRD']);
 export const COORD_MODES = Object.freeze(['RECT', 'CYLIN', 'SPHERE']);
 
 const _listeners = new Set();
+let _noteBatch = 0;
+let _notePending = false;
+let _scratchDepth = 0;
 
 const _home = Directory({ name: 'HOME' });
 
@@ -46,10 +49,35 @@ export const state = {
   promptMessage: null,
 };
 
-function _emit() {
+function _dispatchState() {
   for (const fn of _listeners) {
     try { fn(state); } catch (e) { console.error('state listener', e); }
   }
+}
+
+function _emit() {
+  if (_noteBatch > 0) {
+    _notePending = true;
+    return;
+  }
+  _dispatchState();
+}
+
+export function batchStateNotifications(fn) {
+  _noteBatch++;
+  try {
+    return fn();
+  } finally {
+    _noteBatch--;
+    if (_noteBatch === 0 && _notePending) {
+      _notePending = false;
+      _dispatchState();
+    }
+  }
+}
+
+export function inScratchState() {
+  return _scratchDepth > 0;
 }
 
 function _set(key, value) {
@@ -422,6 +450,17 @@ export function resetPrng() {
 
 export function getPrngSeed() { return state.prngSeed; }
 
+function _directoryReaches(dir, target, seen) {
+  if (!dir || dir.type !== TYPES.DIRECTORY) return false;
+  if (dir === target) return true;
+  if (seen.has(dir)) return false;
+  seen.add(dir);
+  for (const value of dir.entries.values()) {
+    if (_directoryReaches(value, target, seen)) return true;
+  }
+  return false;
+}
+
 // The HP50 refuses to overwrite a subdirectory with STO.  Errors here are
 // plain; the ops wrap them in RPLError.
 export function varStore(id, value) {
@@ -429,6 +468,9 @@ export function varStore(id, value) {
   const existing = state.current.entries.get(key);
   if (existing && existing.type === TYPES.DIRECTORY) {
     throw new Error(`Directory not allowed: ${key}`);
+  }
+  if (value && value.type === TYPES.DIRECTORY && _directoryReaches(value, state.current, new Set())) {
+    throw new Error('Cannot store a directory inside itself');
   }
   state.current.entries.set(key, value);
   _emit();
@@ -652,16 +694,24 @@ export function restoreLastError(rec) {
 // values; restoring refills HOME in place so references to state.home stay
 // valid.
 
-function _cloneDir(dir, newParent = null) {
+function _cloneDir(dir, newParent = null, seen = null) {
+  const bag = seen ?? new Map();
+  const already = bag.get(dir);
+  if (already) return already;
   const clone = Directory({ name: dir.name, parent: newParent });
+  bag.set(dir, clone);
   for (const [key, value] of dir.entries) {
     if (value && value.type === TYPES.DIRECTORY) {
-      clone.entries.set(key, _cloneDir(value, clone));
+      clone.entries.set(key, _cloneDir(value, clone, bag));
     } else {
       clone.entries.set(key, value);
     }
   }
   return clone;
+}
+
+export function cloneDirectory(dir) {
+  return _cloneDir(dir);
 }
 
 function _walkPath(root, names) {
@@ -728,7 +778,11 @@ export function clearVarUndo() {
   _varRedoStack = [];
 }
 
-function _sameDir(a, b) {
+function _sameDir(a, b, seen = new Map()) {
+  if (a === b) return true;
+  const prior = seen.get(a);
+  if (prior) return prior === b;
+  seen.set(a, b);
   if (a.entries.size !== b.entries.size) return false;
   const other = [...b.entries];
   let i = 0;
@@ -737,7 +791,7 @@ function _sameDir(a, b) {
     if (key !== otherKey) return false;
     const isDir = value?.type === TYPES.DIRECTORY;
     if (isDir !== (otherValue?.type === TYPES.DIRECTORY)) return false;
-    if (isDir ? !_sameDir(value, otherValue) : value !== otherValue) return false;
+    if (isDir ? !_sameDir(value, otherValue, seen) : value !== otherValue) return false;
   }
   return true;
 }
@@ -802,9 +856,15 @@ export function restoreCalcState(snap) {
 
 export function withScratchState(fn) {
   const snap = captureCalcState();
+  const pendingBefore = _notePending;
+  _scratchDepth++;
+  _noteBatch++;
   try {
     return fn();
   } finally {
+    _notePending = pendingBefore;
+    _noteBatch--;
+    _scratchDepth--;
     restoreCalcState(snap);
   }
 }

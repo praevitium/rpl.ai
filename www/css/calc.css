@@ -271,7 +271,7 @@ button { cursor: pointer; }
 .drawer-grip:hover::after, .drawer-grip.dragging::after { opacity: 1; }
 
 .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-.work { flex: 1; display: flex; flex-direction: column; min-height: 0; min-width: 0; position: relative; container-type: inline-size; container-name: work; }
+.work { flex: 1; display: flex; flex-direction: column; min-height: 0; min-width: 0; position: relative; overflow: hidden; container-type: inline-size; container-name: work; }
 .keys { flex: none; background: var(--chrome); border-top: 1px solid var(--line); }
 .keys.kp-hidden { display: none; }
 
@@ -585,6 +585,44 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 @media (max-height: 760px) {
   .k { height: 40px; }
   .sk { height: 34px; }
+}
+@media (max-height: 780px) {
+  .well { min-height: 0; }
+  .k { height: clamp(22px, 5.2dvh, 42px); }
+  .sk { height: 32px; }
+  .kp { gap: 4px; padding: 4px 6px 6px; }
+  .kp-nav, .kp-main { gap: 4px; }
+  .input { padding: 4px 8px; gap: 4px; }
+  .menubar { padding: 4px 8px 6px; }
+  .cmdline { min-height: 36px; padding-top: 6px; padding-bottom: 6px; }
+}
+@media (max-height: 480px) {
+  .app { grid-template-rows: 40px minmax(0, 1fr); }
+  .kp-nav { display: none; }
+  .k { height: clamp(26px, 7.2dvh, 36px); }
+  .k .l, .k .r, .k .a { display: none; }
+}
+@media (max-height: 560px) and (min-width: 640px) {
+  .app-main { flex-direction: row; }
+  .keys {
+    display: flex;
+    flex-direction: column;
+    width: clamp(280px, 38vw, 360px);
+    border-top: 0;
+    border-left: 1px solid var(--line);
+    min-height: 0;
+    overflow: hidden;
+  }
+  .keys .kp { flex: 1; min-height: 0; padding: 4px; gap: 4px; }
+  .keys .kp:not(.compact) { grid-template-rows: minmax(0, 2fr) minmax(0, 7fr); }
+  .keys .kp.compact { grid-template-rows: minmax(0, 1fr); }
+  .keys .kp:not(.compact) .kp-nav {
+    display: grid;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    min-height: 0;
+  }
+  .keys .kp-main { grid-template-rows: repeat(7, minmax(0, 1fr)); min-height: 0; }
+  .keys .k { height: 100%; min-height: 0; max-height: 46px; }
 }
 
 .layer { position: absolute; inset: 0; pointer-events: none; z-index: 70; }

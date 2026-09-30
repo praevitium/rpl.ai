@@ -11,6 +11,7 @@ import { format, formatStackTop } from '../www/src/rpl/formatter.js';
 import {
   state as calcState, setAngle, cycleAngle, toRadians, fromRadians,
   varStore, varRecall, varList, varPurge, resetHome, currentPath,
+  saveVarStateForUndo,
   setLastError, clearLastError, getLastError,
   goHome, goUp, goInto, makeSubdir,
   setWordsize, getWordsize, getWordsizeMask,
@@ -1893,4 +1894,60 @@ clearAllUserFlags();
   s.push(Integer(5n));
   assertThrows(() => lookup('MERGE').fn(s), /Bad argument/,
                'session054: MERGE Integer arg throws');
+}
+
+{
+  resetHome();
+  makeSubdir('SUB');
+  goInto('SUB');
+  varStore('N', Integer(5n));
+  goHome();
+  const live = varRecall('SUB');
+  const s = new Stack();
+  s.push(Name('SUB', { quoted: true }));
+  lookup('RCL').fn(s);
+  const copy = s.peek();
+  assert(isDirectory(copy) && copy !== live, 'RCL of a directory returns a copy');
+  assert(copy.entries.get('N') === live.entries.get('N'), 'RCL copy shares the stored leaf');
+  copy.entries.set('Z', Integer(1n));
+  assert(!live.entries.has('Z'), 'mutating a recalled directory does not change the stored one');
+  resetHome();
+}
+
+{
+  resetHome();
+  makeSubdir('SUB');
+  goInto('SUB');
+  const s = new Stack();
+  s.push(calcState.current);
+  s.push(Name('INNER', { quoted: true }));
+  assertThrows(() => lookup('STO').fn(s), /Cannot store a directory inside itself/,
+    'STO of the current directory into itself throws');
+  saveVarStateForUndo();
+  resetHome();
+}
+
+{
+  resetHome();
+  makeSubdir('SUB');
+  const s = new Stack();
+  s.push(Name('SUB', { quoted: true }));
+  lookup('RCL').fn(s);
+  goInto('SUB');
+  s.push(Name('INNER', { quoted: true }));
+  lookup('STO').fn(s);
+  const inner = varRecall('INNER');
+  assert(isDirectory(inner) && inner !== calcState.current, 'STO of a recalled copy inside the directory succeeds');
+  saveVarStateForUndo();
+  resetHome();
+}
+
+{
+  resetHome();
+  makeSubdir('SUB');
+  const sub = varRecall('SUB');
+  sub.entries.set('LOOP', sub);
+  saveVarStateForUndo();
+  sub.entries.delete('LOOP');
+  resetHome();
 }

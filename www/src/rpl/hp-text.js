@@ -100,10 +100,12 @@ export function parseHpText(text, name) {
   return items[0];
 }
 
-function formatDirectoryBody(dir, indent) {
+function formatDirectoryBody(dir, indent, seen = new Set()) {
+  if (seen.has(dir)) return 'DIR\n' + indent + 'END';
+  seen.add(dir);
   const lines = ['DIR'];
   for (const [key, value] of dir.entries) {
-    const body = isDirectory(value) ? formatDirectoryBody(value, `${indent}  `) : formatSource(value);
+    const body = isDirectory(value) ? formatDirectoryBody(value, `${indent}  `, seen) : formatSource(value);
     lines.push(`${indent}  ${key} ${body}`);
   }
   lines.push(`${indent}END`);

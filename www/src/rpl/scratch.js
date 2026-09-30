@@ -73,13 +73,15 @@ export function previewCommand(name, liveItems = []) {
   const stack = new Stack();
   stack.restore(liveItems);
   try {
-    withoutCas(() => withTimeLimit(PREVIEW_TIME_LIMIT_MS, () => stack.runOp(() => op.fn(stack))));
+    return withScratchState(() => {
+      withoutCas(() => withTimeLimit(PREVIEW_TIME_LIMIT_MS, () => stack.runOp(() => op.fn(stack))));
+      const after = stack.save();
+      let kept = 0;
+      while (kept < liveItems.length && kept < after.length && liveItems[kept] === after[kept]) kept++;
+      return { ok: true, consumed: liveItems.length - kept, results: after.slice(kept) };
+    });
   } catch (e) {
     if (e instanceof RPLInterrupt) return null;
     return { ok: false, error: errorText(e) };
   }
-  const after = stack.save();
-  let kept = 0;
-  while (kept < liveItems.length && kept < after.length && liveItems[kept] === after[kept]) kept++;
-  return { ok: true, consumed: liveItems.length - kept, results: after.slice(kept) };
 }

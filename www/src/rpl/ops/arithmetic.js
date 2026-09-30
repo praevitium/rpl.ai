@@ -42,9 +42,19 @@ function _matMul(aRows, bRows) {
 function _matrixPow(m, n) {
   const dim = m.rows.length;
   if (dim === 0 || (m.rows[0]?.length ?? 0) !== dim) throw new RPLError('Invalid dimension');
-  let acc = m.rows.map((_, i) => m.rows.map((__, j) => (i === j ? Integer(1n) : Integer(0n))));
-  for (let k = 0; k < n; k++) acc = _matMul(acc, m.rows);
-  return Matrix(acc);
+  if (!Number.isSafeInteger(n) || n < 0) throw new RPLError('Bad argument value');
+  if (n === 0) {
+    return Matrix(m.rows.map((_, i) => m.rows.map((__, j) => (i === j ? Integer(1n) : Integer(0n)))));
+  }
+  let base = m.rows;
+  let exp = n;
+  let result = null;
+  while (exp > 0) {
+    if (exp & 1) result = result ? _matMul(result, base) : base.map((row) => row.slice());
+    exp = Math.floor(exp / 2);
+    if (exp > 0) base = _matMul(base, base);
+  }
+  return Matrix(result);
 }
 
 

@@ -16,8 +16,8 @@
 
 import { Stack, setPushCoerce } from '../www/src/rpl/stack.js';
 import { lookup } from '../www/src/rpl/ops.js';
-import { Real, Integer, Rational, Complex, BinaryInteger, Symbolic, Str, isInteger, isReal, isComplex, isBinaryInteger, isSymbolic } from '../www/src/rpl/types.js';
-import { setApproxMode } from '../www/src/rpl/state.js';
+import { Real, Integer, Rational, Complex, BinaryInteger, Symbolic, Str, Program, Name, isInteger, isReal, isComplex, isBinaryInteger, isSymbolic } from '../www/src/rpl/types.js';
+import { setApproxMode, subscribe, varStore, varRecall, varPurge } from '../www/src/rpl/state.js';
 import { parseAlgebra } from '../www/src/rpl/algebra.js';
 import { assert, assertThrows } from './helpers.mjs';
 
@@ -690,4 +690,43 @@ function vals(s) {
   s.undo();
   s.undo();
   assert(s.undoMark() === null, 'undoMark: null once every step is undone');
+}
+
+{
+  const s = new Stack();
+  let emits = 0;
+  s.subscribe(() => { emits++; });
+  s.runOp(() => {
+    s.push(Integer(1n));
+    s.push(Integer(2n));
+  });
+  assert(emits === 1 && s.depth === 2, 'runOp emits once when a command pushes twice');
+
+  s.clear();
+  s.push(Program([
+    Integer(1n), Integer(100n), Name('START'),
+    Integer(1n), Name('NEXT'),
+  ]));
+  emits = 0;
+  s.runOp(() => lookup('EVAL').fn(s));
+  assert(emits === 1 && s.depth === 100, 'runOp emits once for a 100-pass loop');
+}
+
+{
+  const previousA = varRecall('RUNOP_A');
+  const previousB = varRecall('RUNOP_B');
+  let notes = 0;
+  const off = subscribe(() => { notes++; });
+  const s = new Stack();
+  s.runOp(() => {
+    varStore('RUNOP_A', Integer(1n));
+    varStore('RUNOP_B', Integer(2n));
+  });
+  off();
+  assert(notes === 1 && varRecall('RUNOP_A')?.value === 1n && varRecall('RUNOP_B')?.value === 2n,
+    'runOp notifies state once for several stores');
+  if (previousA === undefined) varPurge('RUNOP_A');
+  else varStore('RUNOP_A', previousA);
+  if (previousB === undefined) varPurge('RUNOP_B');
+  else varStore('RUNOP_B', previousB);
 }

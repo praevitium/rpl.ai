@@ -472,10 +472,32 @@ class App {
     const schedule = () => {
       if (pending) return;
       pending = true;
-      queueMicrotask(() => { pending = false; saveToLocalStorage(this.stack); });
+      queueMicrotask(() => {
+        pending = false;
+        this._noteAutosave(saveToLocalStorage(this.stack));
+      });
     };
     this.stack.subscribe(schedule);
     subscribeState(schedule);
+  }
+
+  _noteAutosave(result) {
+    if (result === true) {
+      this._autosaveFailed = false;
+      return;
+    }
+    if (result === 'trimmed') {
+      this._autosaveFailed = false;
+      if (!this._autosaveTrimmed) {
+        this._autosaveTrimmed = true;
+        this.toast('Older backups were cleared so this session could be saved.');
+      }
+      return;
+    }
+    if (!this._autosaveFailed) {
+      this._autosaveFailed = true;
+      this.notifyError('Autosave failed because browser storage is full. Export a backup before you reload, or the latest changes will be lost.');
+    }
   }
 
   exportSnapshot() {

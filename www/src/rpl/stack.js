@@ -1,3 +1,5 @@
+import { batchStateNotifications } from './state.js';
+
 // APPROX mode coerces values as they enter the stack; ops/internal.js installs
 // the hook.  pushMany and the shuffling methods bypass it: they move values
 // already on the stack, so a DUP keeps an Integer that predates APPROX.
@@ -13,6 +15,8 @@ export class Stack {
     this._undoStack = [];
     this._redoStack = [];
     this._lastArgs = null;
+    this._holdEmit = 0;
+    this._emitPending = false;
   }
 
   subscribe(fn) {
@@ -20,6 +24,13 @@ export class Stack {
     return () => this._listeners.delete(fn);
   }
   _emit() {
+    if (this._holdEmit > 0) {
+      this._emitPending = true;
+      return;
+    }
+    this._flushEmit();
+  }
+  _flushEmit() {
     for (const fn of this._listeners) {
       try { fn(this); } catch (e) { console.error('stack listener', e); }
     }
@@ -186,7 +197,16 @@ export class Stack {
   // previous record.
   runOp(fn) {
     const prior = this._items.slice();
-    fn();
+    this._holdEmit++;
+    try {
+      batchStateNotifications(fn);
+    } finally {
+      this._holdEmit--;
+      if (this._holdEmit === 0 && this._emitPending) {
+        this._emitPending = false;
+        this._flushEmit();
+      }
+    }
     const cur = this._items;
     let k = 0;
     const lim = Math.min(prior.length, cur.length);

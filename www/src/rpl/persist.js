@@ -25,19 +25,30 @@ import SEED_STATE from '../../hp50-all.json' with { type: 'json' };
 export const STORAGE_KEY = 'hp50.state';
 export const SCHEMA_VERSION = 1;
 
-function encode(v) {
+function encode(v, seen) {
   if (v === null || v === undefined) return v;
   if (typeof v === 'bigint') return { __t: 'bigint', v: v.toString() };
   if (v instanceof Decimal) return { __t: 'decimal', v: v.toString() };
   if (v instanceof Map) {
-    return { __t: 'map', v: [...v].map(([k, x]) => [k, encode(x)]) };
+    const bag = seen ?? new WeakSet();
+    return { __t: 'map', v: [...v].map(([k, x]) => [k, encode(x, bag)]) };
   }
-  if (Array.isArray(v)) return v.map(encode);
+  if (Array.isArray(v)) {
+    const bag = seen ?? new WeakSet();
+    return v.map((item) => encode(item, bag));
+  }
   if (typeof v === 'object') {
+    const bag = seen ?? new WeakSet();
+    if (v.type === TYPES.DIRECTORY) {
+      if (bag.has(v)) {
+        return { type: TYPES.DIRECTORY, name: v.name, entries: { __t: 'map', v: [] } };
+      }
+      bag.add(v);
+    }
     const out = {};
     for (const k of Object.keys(v)) {
       if (k === 'parent') continue;
-      out[k] = encode(v[k]);
+      out[k] = encode(v[k], bag);
     }
     return out;
   }
@@ -63,11 +74,13 @@ function decode(v) {
 export function encodeValue(v) { return encode(v); }
 export function decodeValue(v) { return decode(v); }
 
-function relinkParents(dir, parent = null) {
+function relinkParents(dir, parent = null, seen = new Set()) {
+  if (!dir || seen.has(dir)) return;
+  seen.add(dir);
   dir.parent = parent;
   if (!(dir.entries instanceof Map)) return;
   for (const child of dir.entries.values()) {
-    if (child && child.type === TYPES.DIRECTORY) relinkParents(child, dir);
+    if (child && child.type === TYPES.DIRECTORY) relinkParents(child, dir, seen);
   }
 }
 
@@ -176,13 +189,31 @@ export function rehydrate(snap, stack) {
   notify();
 }
 
-// Autosave must never break the calculator, so failures only warn.
+// Never throws. true when stored, 'trimmed' when backups were dropped, false otherwise.
 export function saveToLocalStorage(stack) {
+  let json;
   try {
-    const json = JSON.stringify(snapshot(stack));
-    localStorage.setItem(STORAGE_KEY, json);
+    json = JSON.stringify(snapshot(stack));
   } catch (e) {
     console.warn('hp50 autosave failed:', e);
+    return false;
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY, json);
+    return true;
+  } catch (e) {
+    if (!(e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014))) {
+      console.warn('hp50 autosave failed:', e);
+      return false;
+    }
+    try { localStorage.removeItem(BACKUPS_KEY); } catch { }
+    try {
+      localStorage.setItem(STORAGE_KEY, json);
+      return 'trimmed';
+    } catch (e2) {
+      console.warn('hp50 autosave failed:', e2);
+      return false;
+    }
   }
 }
 

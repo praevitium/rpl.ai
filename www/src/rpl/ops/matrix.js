@@ -71,23 +71,50 @@ register('TRN', (s) => {
 }, { category: 'Vectors / matrices', categoryOrder: 1, label: "TRN" });
 
 
-// Cofactor expansion through _scalarBinary, so Integer and Symbolic entries stay exact.
+function _scalarIsZero(v) {
+  if (!v) return false;
+  if (v.type === 'integer') return v.value === 0n;
+  if (v.type === 'real') return v.value.isZero();
+  if (v.type === 'rational') return v.n === 0n;
+  if (v.type === 'complex') return v.re === 0 && v.im === 0;
+  return false;
+}
+
+function _scalarZero(sample) {
+  if (!sample || sample.type === 'integer' || sample.type === 'symbolic' || sample.type === 'name') {
+    return Integer(0n);
+  }
+  return _scalarBinary('-', sample, sample);
+}
+
 function _det(rows) {
   const n = rows.length;
   if (n === 1) return rows[0][0];
-  if (n === 2) {
-    const ad = _scalarBinary('*', rows[0][0], rows[1][1]);
-    const bc = _scalarBinary('*', rows[0][1], rows[1][0]);
-    return _scalarBinary('-', ad, bc);
+  const a = rows.map((row) => row.slice());
+  let sign = 1;
+  let denom = null;
+  for (let k = 0; k < n - 1; k++) {
+    let pivot = k;
+    while (pivot < n && _scalarIsZero(a[pivot][k])) pivot++;
+    if (pivot === n) return _scalarZero(a[k][k]);
+    if (pivot !== k) {
+      const swapped = a[k];
+      a[k] = a[pivot];
+      a[pivot] = swapped;
+      sign = -sign;
+    }
+    for (let i = k + 1; i < n; i++) {
+      for (let j = k + 1; j < n; j++) {
+        const num = _scalarBinary('-',
+          _scalarBinary('*', a[k][k], a[i][j]),
+          _scalarBinary('*', a[i][k], a[k][j]));
+        a[i][j] = denom === null ? num : _scalarBinary('/', num, denom);
+      }
+    }
+    denom = a[k][k];
   }
-  let det = null;
-  for (let j = 0; j < n; j++) {
-    const minor = rows.slice(1).map(row => row.filter((_, k) => k !== j));
-    const cof = _det(minor);
-    let term = _scalarBinary('*', rows[0][j], cof);
-    if ((j & 1) === 1) term = _scalarBinary('-', Real(0), term);
-    det = (det === null) ? term : _scalarBinary('+', det, term);
-  }
+  let det = a[n - 1][n - 1];
+  if (sign < 0) det = _scalarBinary('-', _scalarZero(det), det);
   return det;
 }
 

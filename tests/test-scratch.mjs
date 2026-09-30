@@ -1,10 +1,12 @@
-import { evalScratch } from '../www/src/rpl/scratch.js';
+import { evalScratch, previewCommand } from '../www/src/rpl/scratch.js';
 import {
   state, varStore, varRecall, varPurge, setAngle, setDisplay, setBinaryBase,
   captureCalcState, restoreCalcState, withScratchState, testUserFlag,
-  currentPath, goHome,
+  currentPath, goHome, getHalted, clearHalted,
 } from '../www/src/rpl/state.js';
-import { Real, Integer } from '../www/src/rpl/types.js';
+import { Real, Integer, Name, Program, RList, isReal } from '../www/src/rpl/types.js';
+import { Stack } from '../www/src/rpl/stack.js';
+import { lookup } from '../www/src/rpl/ops.js';
 import { assert } from './helpers.mjs';
 
 /* Scratch (dry-run) evaluation — the AI assistant's sandbox.  It must
@@ -161,4 +163,46 @@ import { assert } from './helpers.mjs';
   const r = evalScratch('« → n « IF n 2 < THEN n ELSE n 1 - FIB n 2 - FIB + END » » `FIB` STO 10 FIB');
   assert(r.ok && r.stack[0] === '55', 'evalScratch runs a program stored on the same line by its bare name, like the entry line');
   assert(varRecall('FIB') === undefined, 'evalScratch rolls back the program it stored');
+}
+
+{
+  const previous = varRecall('X');
+  if (previous !== undefined) varPurge('X');
+  varStore('X', Real(10));
+  const shown = previewCommand('INCR', [Name('X', { quoted: true })]);
+  const next = shown?.ok ? shown.results[shown.results.length - 1] : null;
+  assert(shown?.ok && isReal(next) && next.value.eq(11), 'INCR preview shows the next value');
+  assert(varRecall('X').value.eq(10), 'INCR preview does not change X');
+  varPurge('X');
+  const listed = previewCommand('DOLIST', [
+    RList([Integer(1n), Integer(2n)]),
+    Program([Name('X', { quoted: true }), Name('STO')]),
+  ]);
+  assert(listed, 'DOLIST is previewable');
+  assert(varRecall('X') === undefined, 'DOLIST preview does not store X');
+  if (previous !== undefined) varStore('X', previous);
+}
+
+{
+  const before = getHalted();
+  const s = new Stack();
+  s.push(Program([
+    Integer(1n), Integer(2n), Name('+'),
+    Name('HALT'),
+    Integer(3n), Name('*'),
+  ]));
+  lookup('EVAL').fn(s);
+  const halted = getHalted();
+  try {
+    const outcome = evalScratch('CONT');
+    assert(!outcome.ok && /Cannot dry-run a halted program/.test(outcome.error),
+      'evalScratch CONT does not resume a halted program');
+    assert(getHalted() === halted, 'a dry-run CONT leaves the halted program in place');
+    assert(s.depth === 1 && s.peek().value === 3n, 'a dry-run CONT leaves the stack at the halt');
+    lookup('CONT').fn(s);
+    assert(s.depth === 1 && s.peek().value === 9n && getHalted() === before,
+      'CONT after a dry run still finishes the halted program');
+  } finally {
+    if (getHalted() === halted) clearHalted();
+  }
 }

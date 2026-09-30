@@ -22,6 +22,7 @@ import {
 import {
   snapshot, rehydrate, encodeValue, decodeValue, loadInitialState, STORAGE_KEY,
   BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup,
+  saveToLocalStorage,
 } from '../www/src/rpl/persist.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import { varRecall } from '../www/src/rpl/state.js';
@@ -722,6 +723,71 @@ assert(isReal(mat.rows[0][1]) && mat.rows[0][1].value.eq(2) &&
   setCoordMode('RECT'); setDisplay('STD'); setWordsize(WORDSIZE_DEFAULT); setBinaryBase('d');
   setTextbookMode(true); setApproxMode(false); setComplexMode(false); clearUserFlag(5);
   resetHome();
+}
+
+{
+  resetHome();
+  makeSubdir('SUB');
+  const sub = varRecall('SUB');
+  sub.entries.set('LOOP', sub);
+  const started = Date.now();
+  const encoded = encodeValue(calcState.home);
+  assert(Date.now() - started < 1000 && encoded?.type === 'directory',
+    'encode finishes when a directory contains itself');
+  sub.entries.delete('LOOP');
+  resetHome();
+}
+
+function quotaError() {
+  const err = new Error('quota');
+  err.name = 'QuotaExceededError';
+  return err;
+}
+
+{
+  resetHome();
+  const s = new Stack();
+  s.push(Integer(1n));
+  const saved = globalThis.localStorage;
+  const store = new Map();
+  store.set(BACKUPS_KEY, '{}');
+  let stateWrites = 0;
+  globalThis.localStorage = {
+    getItem: (k) => store.get(k) ?? null,
+    setItem: (k, v) => {
+      if (k === STORAGE_KEY && stateWrites === 0) {
+        stateWrites++;
+        throw quotaError();
+      }
+      store.set(k, String(v));
+    },
+    removeItem: (k) => store.delete(k),
+  };
+  try {
+    const result = saveToLocalStorage(s);
+    assert(result === 'trimmed', 'a full store drops backups and saves on retry');
+    assert(!store.has(BACKUPS_KEY), 'the backup key is removed when storage is full');
+    assert(store.has(STORAGE_KEY), 'the snapshot lands after backups are cleared');
+  } finally {
+    globalThis.localStorage = saved;
+    resetHome();
+  }
+}
+
+{
+  resetHome();
+  const saved = globalThis.localStorage;
+  globalThis.localStorage = {
+    getItem: () => null,
+    setItem: () => { throw quotaError(); },
+    removeItem: () => {},
+  };
+  try {
+    assert(saveToLocalStorage(new Stack()) === false, 'autosave returns false when storage stays full');
+  } finally {
+    globalThis.localStorage = saved;
+    resetHome();
+  }
 }
 
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');

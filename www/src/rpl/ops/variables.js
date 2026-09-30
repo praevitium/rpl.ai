@@ -1,4 +1,4 @@
-import { varStore, varRecall, varPurge, varOrder, makeSubdir, goUp, goHome, currentPath, state as _calcState, reorderCurrentEntries } from '../state.js';
+import { varStore, varRecall, varPurge, varOrder, makeSubdir, goUp, goHome, currentPath, state as _calcState, reorderCurrentEntries, cloneDirectory } from '../state.js';
 import { RPLError } from '../stack.js';
 import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory, isTagged } from '../types.js';
 import { archiveBackup, restoreBackup } from '../persist.js';
@@ -21,6 +21,7 @@ function _store(id, value) {
 function _recall(id) {
   const v = recallVar(id);
   if (v === undefined) throw new RPLError(`Undefined name: ${id}`);
+  if (isDirectory(v)) return cloneDirectory(v);
   return v;
 }
 

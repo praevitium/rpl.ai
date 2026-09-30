@@ -160,15 +160,29 @@ export function niceNum(range, round) {
 }
 
 export function niceTicks(min, max, maxTicks = 8) {
-  if (!(max > min)) return { ticks: [min], step: 1 };
+  if (!(max > min) || !Number.isFinite(min) || !Number.isFinite(max)) {
+    return { ticks: [Number.isFinite(min) ? min : 0], step: 1 };
+  }
   const range = niceNum(max - min, false);
-  const step = niceNum(range / Math.max(1, maxTicks - 1), true);
+  let step = niceNum(range / Math.max(1, maxTicks - 1), true);
+  const scale = Math.max(Math.abs(min), Math.abs(max), 1);
+  const ulp = Math.max(Number.EPSILON * scale, Number.MIN_VALUE);
+  if (!(step > 0) || !Number.isFinite(step) || step < ulp * 2) {
+    return { ticks: [min, max], step: max - min };
+  }
   const start = Math.ceil(min / step) * step;
   const ticks = [];
-  for (let v = start; v <= max + step * 0.5; v += step) {
+  const cap = Math.max(1, maxTicks) + 2;
+  let prev = -Infinity;
+  for (let i = 0; i < cap; i++) {
+    const v = start + i * step;
+    if (!(v > prev)) break;
+    prev = v;
+    if (v > max + step * 0.5) break;
     const t = Number(v.toPrecision(12));
     if (t >= min - step * 1e-6 && t <= max + step * 1e-6) ticks.push(t);
   }
+  if (ticks.length === 0) ticks.push(min);
   return { ticks, step };
 }
 

@@ -250,7 +250,7 @@ import { assert, assertThrows } from './helpers.mjs';
 /* ================================================================
    DOT / CROSS / IDN / NORM / DET / INV matrix ops.
 
-   DET uses cofactor expansion (symbolic-safe via _scalarBinary).
+   DET stays exact for integer and decimal entries (symbolic-safe via _scalarBinary).
    INV uses Gauss-Jordan with partial pivoting — numeric only.
    ================================================================ */
 {
@@ -410,6 +410,81 @@ import { assert, assertThrows } from './helpers.mjs';
     const s = new Stack();
     s.push(Matrix([[Real(1), Real(2), Real(3)], [Real(4), Real(5), Real(6)]]));
     assertThrows(() => lookup('DET').fn(s), /dimension/i, 'DET on non-square matrix throws Invalid dimension');
+  }
+  {
+    const s = new Stack();
+    s.push(Matrix([[Integer(0n), Integer(1n)], [Integer(1n), Integer(0n)]]));
+    lookup('DET').fn(s);
+    assert(isInteger(s.peek()) && s.peek().value === -1n, 'DET [[0 1][1 0]] → -1');
+  }
+  {
+    const s = new Stack();
+    s.push(Matrix([[Integer(1n), Integer(2n)], [Integer(2n), Integer(4n)]]));
+    lookup('DET').fn(s);
+    assert(isInteger(s.peek()) && s.peek().value === 0n, 'DET of a singular integer matrix is 0');
+  }
+  {
+    const s = new Stack();
+    s.push(Matrix([
+      [Integer(6n), Integer(1n), Integer(1n)],
+      [Integer(4n), Integer(-2n), Integer(5n)],
+      [Integer(2n), Integer(8n), Integer(7n)],
+    ]));
+    lookup('DET').fn(s);
+    assert(isInteger(s.peek()) && s.peek().value === -306n, 'DET integer 3×3 → -306');
+  }
+  {
+    const n = 12;
+    const rows = [];
+    for (let i = 0; i < n; i++) {
+      const row = [];
+      for (let j = 0; j < n; j++) row.push(Integer(i === j ? BigInt(i + 1) : 0n));
+      rows.push(row);
+    }
+    const s = new Stack();
+    s.push(Matrix(rows));
+    const started = Date.now();
+    lookup('DET').fn(s);
+    const elapsed = Date.now() - started;
+    let expected = 1n;
+    for (let i = 1; i <= n; i++) expected *= BigInt(i);
+    assert(elapsed < 1000 && isInteger(s.peek()) && s.peek().value === expected,
+      `DET of a 12×12 diagonal finishes with ${expected} (took ${elapsed}ms, got ${s.peek()?.value})`);
+  }
+  {
+    const s = new Stack();
+    s.push(Matrix([[Integer(1n), Integer(1n)], [Integer(0n), Integer(1n)]]));
+    s.push(Integer(10n));
+    const started = Date.now();
+    lookup('^').fn(s);
+    const elapsed = Date.now() - started;
+    const m = s.peek();
+    assert(elapsed < 1000 && isMatrix(m)
+      && m.rows[0][0].value === 1n && m.rows[0][1].value === 10n
+      && m.rows[1][0].value === 0n && m.rows[1][1].value === 1n,
+      `[[1 1][0 1]] ^ 10 → [[1 10][0 1]] quickly (took ${elapsed}ms)`);
+  }
+  {
+    const n = 6;
+    const rows = [];
+    for (let i = 0; i < n; i++) {
+      rows.push(Array.from({ length: n }, (_, j) => Integer(i === j ? 2n : 1n)));
+    }
+    const s = new Stack();
+    s.push(Matrix(rows));
+    s.push(Integer(10n));
+    const started = Date.now();
+    lookup('^').fn(s);
+    const elapsed = Date.now() - started;
+    assert(elapsed < 1000 && isMatrix(s.peek()) && s.peek().rows.length === 6,
+      `6×6 ^ 10 finishes quickly (took ${elapsed}ms)`);
+  }
+  {
+    const s = new Stack();
+    s.push(Matrix([[Integer(1n)]]));
+    s.push(Integer(2n ** 53n));
+    assertThrows(() => lookup('^').fn(s), /Bad argument value/,
+      'matrix power rejects an exponent past 2^53');
   }
 
   {
