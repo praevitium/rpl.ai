@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.4 (2026-09-29)
+**Latest release:** v0.6.5 (2026-09-30)
 
 ---
 
@@ -18,6 +18,39 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.5 — 2026-09-30
+
+Programs behave the way they do on the HP 50g. STO, RCL, STO+, INCR and
+the other storing commands work on local variables, so the usual running
+total `→ n « 0 → s « 1 n FOR i s i + 's' STO NEXT s » »` gives 55 for 10
+instead of 0 and no stray global. FOR and SEQ counters are true locals:
+a global of the same name is left alone, and storing into the counter
+ends the loop early. Evaluating a name follows the HP: `'X' EVAL` gives
+X's value, a variable holding an algebraic or a list puts it on the stack
+as it is, and a local variable holding a program is recalled, not run.
+FOR, IF, CASE, WHILE, DO and → typed straight on the command line now run
+instead of leaving their keywords on the stack.
+
+System flags switch the modes they stand for, so `-105 SF` turns on
+approximate mode and `-17 FS?` tells whether you are in radians; RCLF and
+STOF carry the modes with them. GET, PUT, GETI and PUTI take a variable's
+name, a `{ n }` position and a matrix position counted in row order, and
+GETI and PUTI set flag -64 when they wrap, so `DO GETI … UNTIL -64 FS?
+END` loops stop.
+
+Evaluating an algebraic keeps integers exact (`'2+3'` gives 5, not 5.)
+and always works out approximate numbers, which exact mode used to leave
+alone (`'2.5*2'` gives 5.); a real such as 2. keeps its point inside an
+expression. CAS errors can be caught with IFERR and read plainly, and a
+long run of failed CAS commands no longer wears out the algebra engine.
+MOD, XROOT of a negative number, HEAVISIDE, DIRAC and the other special
+functions reach the CAS correctly, and →NUM no longer treats ordinary
+names such as r, f or E as physical constants. Programs that relied on the
+old behaviour may need an EVAL or →NUM where a variable used to be
+evaluated for them.
 
 ---
 
