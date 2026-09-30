@@ -220,7 +220,7 @@ function _trigInvCx(name, realFn, cxFn, decimalFn) {
 register('LN',   _unaryCx('LN',   Math.log,   _cxLn,   d => d.ln()), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 6, label: "LN" });
 
 register('LOG',  _unaryCx('LOG',  Math.log10, (z) => _cxDiv(_cxLn(z), _cx(Math.LN10, 0)),
-                                              d => d.ln().div(new Decimal(Math.LN10))), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 7, label: "LOG" });
+                                              d => d.log(10)), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 7, label: "LOG" });
 
 register('EXP',  _unaryCx('EXP',  Math.exp,   _cxExp,  d => d.exp()), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 8, label: "EXP" });
 
@@ -231,8 +231,13 @@ register('ALOG', _unaryCx('ALOG', (x) => Math.pow(10, x),
 
 // Decimal's own sinh/cosh/tanh are Taylor series that hang for |x| > ~1e5, so
 // build them from exp (which overflows quickly); tanh is ±1 to 15 digits past 50.
+// Below 1 sinh's own series is used: exp(x) - exp(-x) would cancel every digit.
 register('SINH',  _unaryCx('SINH',  Math.sinh,  _cxSinh,
-  d => { const ex = d.exp(), enx = d.negated().exp(); return ex.minus(enx).div(2); }), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 12, label: "SINH" });
+  d => {
+    if (d.abs().lt(1)) return d.sinh();
+    const ex = d.exp(), enx = d.negated().exp();
+    return ex.minus(enx).div(2);
+  }), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 12, label: "SINH" });
 
 register('COSH',  _unaryCx('COSH',  Math.cosh,  _cxCosh,
   d => { const ex = d.exp(), enx = d.negated().exp(); return ex.plus(enx).div(2); }), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 13, label: "COSH" });

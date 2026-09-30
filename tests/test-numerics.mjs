@@ -7212,3 +7212,18 @@ function _arrayEq(a, b) {
   assert(shown('`LN(2)` EVAL').startsWith('0.69314718') && shown('`EXP(-30)` EVAL').startsWith('9.35762'), 'APPROX still folds every function to a decimal');
   setApproxMode(false);
 }
+
+/* RND, TRNC, MOD, LOG and SINH work in decimal, not doubles. */
+{
+  const shown = (line) => format(runLine(line).peek()).replace(/\s+/g, '');
+  resetHome();
+  setApproxMode(false);
+  setAngle('RAD');
+  assert(shown('0.29 2 TRNC') === '0.29' && shown('-0.29 2 TRNC') === '-0.29' && shown('5.5 0 TRNC') === '5.', 'TRNC keeps the digits it is told to keep');
+  assert(shown('0.285 2 RND') === '0.29' && shown('1.005 2 RND') === '1.01' && shown('-2.675 2 RND') === '-2.68' && shown('-5.5 0 RND') === '-6.', 'RND rounds a decimal half away from zero');
+  assert(shown('123456 -2 RND') === '120000.' && shown('0.000123456 -3 RND') === '0.000123' && shown('123456 -2 TRNC') === '120000.', 'a negative count of RND and TRNC is significant digits');
+  assert(shown('(1.005,2.675) 2 RND') === '(1.01,2.68)', 'RND rounds both parts of a complex number');
+  assert(shown('123456789012345678. 10 MOD') === '8.' && shown('-5.5 3 MOD') === '0.5' && shown('5.5 -3 MOD') === '-0.5' && shown('5.5 3 MOD') === '2.5', 'MOD of a Real is the exact remainder with the divisor\'s sign');
+  assert(shown('100000. LOG IP') === '5.' && shown('0.001 LOG') === '-3.', 'LOG of a power of ten is exact');
+  assert(shown('1.2345678901E-10 SINH') === '0.00000000012345678901' && shown('0.5 SINH') === '0.521095305494', 'SINH keeps its digits near 0');
+}

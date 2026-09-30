@@ -427,7 +427,8 @@ register('SIGN', _withTaggedUnary(_withListUnary((s) => {
 
 function _hp50ModDecimal(a, b) {
   if (b.isZero()) throw new RPLError('Infinite result');
-  return a.minus(b.times(a.div(b).floor()));
+  const r = a.mod(b);
+  return !r.isZero() && r.isNegative() !== b.isNegative() ? r.plus(b) : r;
 }
 
 
@@ -506,11 +507,6 @@ register('INCR', _incrDecrOp('+'), { category: 'Arithmetic', categoryOrder: 31, 
 register('DECR', _incrDecrOp('-'), { category: 'Arithmetic', categoryOrder: 30, label: "DECR" });
 
 
-function _xponOf(x) {
-  if (x === 0) return 0;
-  return Math.floor(Math.log10(Math.abs(x)));
-}
-
 // Decimal, not a JS double: Reals reach exponents of ±999.
 function _xponMantArg(v) {
   if (!isReal(v) && !isInteger(v)) throw new RPLError('Bad argument type');
@@ -532,24 +528,13 @@ register('MANT', _withTaggedUnary(_withListUnary(_withVMUnary((s) => {
 }))), { category: 'Arithmetic', categoryOrder: 25, label: "MANT" });
 
 
-function _roundHalfAwayFromZero(x, n) {
-  const p = Math.pow(10, n);
-  return (x >= 0 ? Math.floor(x * p + 0.5) : -Math.floor(-x * p + 0.5)) / p;
-}
-
-function _truncTowardZero(x, n) {
-  const p = Math.pow(10, n);
-  return Math.trunc(x * p) / p;
-}
-
 // n >= 0 counts decimal places; n < 0 counts -n significant digits.
-function _applyRoundReal(x, n, fn) {
-  if (n >= 0) return fn(x, n);
-  if (x === 0) return 0;
-  return fn(x, -n - 1 - _xponOf(x));
+function _roundReal(d, n, mode) {
+  if (!d.isFinite()) return d;
+  return n >= 0 ? d.toDecimalPlaces(n, mode) : d.toSignificantDigits(-n, mode);
 }
 
-function _roundingOp(fn) {
+function _roundingOp(mode) {
   return (s) => {
     const nv = s.pop();
     const xv = s.pop();
@@ -558,8 +543,8 @@ function _roundingOp(fn) {
       throw new RPLError('Bad argument value');
     }
     if (isComplex(xv)) {
-      s.push(Complex(_applyRoundReal(xv.re, n, fn),
-                     _applyRoundReal(xv.im, n, fn)));
+      const part = (x) => _roundReal(new Decimal(String(x)), n, mode).toNumber();
+      s.push(Complex(part(xv.re), part(xv.im)));
       return;
     }
     if (isInteger(xv) && n >= 0) {
@@ -567,8 +552,7 @@ function _roundingOp(fn) {
       return;
     }
     if (!isReal(xv) && !isInteger(xv)) throw new RPLError('Bad argument type');
-    const x = isInteger(xv) ? Number(xv.value) : xv.value.toNumber();
-    s.push(Real(_applyRoundReal(x, n, fn)));
+    s.push(Real(_roundReal(_toDecimal(xv), n, mode)));
   };
 }
 
@@ -579,8 +563,8 @@ function _unwrapNumericLiteral(v) {
   return isReal(literal) || isInteger(literal) ? literal : v;
 }
 
-function _roundingCommand(name, fn) {
-  const numeric = _roundingOp(fn);
+function _roundingCommand(name, mode) {
+  const numeric = _roundingOp(mode);
   return _withTaggedBinary(_withListBinary((s) => {
     const [xv, nv] = s.popN(2).map(_unwrapNumericLiteral);
     if (_isSymOperand(xv) || _isSymOperand(nv)) {
@@ -593,11 +577,11 @@ function _roundingCommand(name, fn) {
   }));
 }
 
-register('RND',  _roundingCommand('RND',  _roundHalfAwayFromZero), { category: 'Arithmetic', categoryOrder: 18, label: "RND" });
+register('RND',  _roundingCommand('RND',  Decimal.ROUND_HALF_UP), { category: 'Arithmetic', categoryOrder: 18, label: "RND" });
 
-register('TRNC', _roundingCommand('TRNC', _truncTowardZero), { category: 'Arithmetic', categoryOrder: 19, label: "TRNC" });
+register('TRNC', _roundingCommand('TRNC', Decimal.ROUND_DOWN), { category: 'Arithmetic', categoryOrder: 19, label: "TRNC" });
 
-register('TRUNC', _roundingCommand('TRUNC', _truncTowardZero), { category: 'Arithmetic', categoryOrder: 20, label: "TRUNC" });
+register('TRUNC', _roundingCommand('TRUNC', Decimal.ROUND_DOWN), { category: 'Arithmetic', categoryOrder: 20, label: "TRUNC" });
 
 
 function _percentAst(kind, l, r) {
