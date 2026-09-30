@@ -850,6 +850,9 @@ export function captureCalcState() {
 }
 
 export function restoreCalcState(snap) {
+  for (const record of state.haltedStack) {
+    if (!snap.haltedStack.includes(record)) _closeRecord(record);
+  }
   _restoreVarSnapshot(snap.vars);
   Object.assign(state, snap.scalars);
   state.userFlags = new Set(snap.userFlags);

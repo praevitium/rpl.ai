@@ -1,4 +1,4 @@
-import { varStore, varRecall, varPurge, varOrder, makeSubdir, goUp, goHome, currentPath, state as _calcState, reorderCurrentEntries, cloneDirectory } from '../state.js';
+import { varStore, varRecall, varPurge, varOrder, makeSubdir, goUp, goHome, currentPath, state as _calcState, reorderCurrentEntries, cloneDirectory, inScratchState } from '../state.js';
 import { RPLError } from '../stack.js';
 import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory, isTagged } from '../types.js';
 import { archiveBackup, restoreBackup } from '../persist.js';
@@ -230,7 +230,7 @@ function _popBackupObject(s) {
 
 register('ARCHIVE', (s) => {
   const { port, name } = _popBackupObject(s);
-  archiveBackup(port, name, s);
+  if (!inScratchState()) archiveBackup(port, name, s);
 }, { category: 'Variables / directories', categoryOrder: 19, label: "ARCHIVE" });
 
 register('RESTORE', (s) => {

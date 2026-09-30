@@ -1,4 +1,5 @@
 import { RPLError } from '../stack.js';
+import { inScratchState } from '../state.js';
 import { register } from './registry.js';
 
 
@@ -9,6 +10,7 @@ export function setGraphicsHook(fn) {
 }
 
 function _requestPlot(kind, s) {
+  if (inScratchState()) return;
   if (!_graphicsHook) {
     throw new RPLError('No graphics view');
   }

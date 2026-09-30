@@ -206,3 +206,34 @@ import { assert } from './helpers.mjs';
     if (getHalted() === halted) clearHalted();
   }
 }
+
+/* A dry run that halts inside a local frame must not leave the frame behind for the next line. */
+{
+  const before = getHalted();
+  const outcome = evalScratch('« 5 → a « HALT a » » EVAL');
+  assert(outcome.ok && getHalted() === before, 'a dry run may halt a program, and the halt is discarded with it');
+  assert(evalScratch('a').stack[0] === 'a', 'the local variables of a halted dry run are released');
+}
+
+/* Dry runs have no effect outside the calculator: no backups are written and no plot view opens. */
+{
+  const saved = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  const store = new Map();
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) },
+  });
+  const { setGraphicsHook } = await import('../www/src/rpl/ops.js');
+  let plots = 0;
+  setGraphicsHook(() => { plots++; });
+  try {
+    assert(evalScratch(":0: 'BK' ARCHIVE").ok && store.size === 0, 'a dry-run ARCHIVE writes no backup');
+    assert(evalScratch("'X^2' FUNCTION").ok && plots === 0, 'a dry-run plot command does not drive the plot view');
+    lookup('FUNCTION').fn(new Stack());
+    assert(plots === 1, 'the same plot command outside a dry run reaches the plot view');
+  } finally {
+    setGraphicsHook(null);
+    if (saved) Object.defineProperty(globalThis, 'localStorage', saved);
+    else delete globalThis.localStorage;
+  }
+}
