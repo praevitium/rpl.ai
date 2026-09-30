@@ -120,8 +120,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - The on-screen keypad has the HP 50g's layout, shift keys included.
 - Swipe a stack level left or right to drop it. The toast's Undo brings it
   back.
-- ⌫ and Enter sit beside the command line. ⌫ deletes a character, or drops
-  level 1 when the line is empty.
+- ⌫ and Enter sit beside the command line. ⌫ deletes a character (or the
+  selected text), or drops level 1 when the line is empty.
 - The equation writer has its own row of buttons (move, fraction, power,
   root and parentheses), and so does the matrix writer (previous cell, next
   cell and next row), each with ⌫ and Enter.

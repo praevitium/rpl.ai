@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.6 (2026-09-30)
+**Latest release:** v0.6.7 (2026-09-30)
 
 ---
 
@@ -18,6 +18,32 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.7 — 2026-09-30
+
+The equation and matrix writers keep their button row on a short phone.
+The stack gives up room first and the keypad shrinks and scrolls, where it
+used to sit on top of the buttons.
+
+UNROT (ROT the other way) and CLVAR (purge every variable and empty
+directory here, keeping directories that hold something) are new. An
+integer to a negative integer power is exact, as on the HP 50g: `2 -1 ^`
+gives 1/2, or 0.5 in approximate mode, and `0 -1 ^` is an infinite result,
+for reals as well.
+
+The determinant of a symbolic matrix is the cofactor polynomial again;
+0.6.6 turned a 3×3 into a fraction with its top-left entry underneath,
+which is undefined when that entry is zero. Matrix products and
+determinants that are too big to finish stop at the ten-second limit
+instead of freezing the page. A plot of points sharing one huge
+coordinate, or a typed range too narrow to draw, is widened or refused.
+
+Double-clicking a stack level edits it again. A quick second swipe no
+longer drops the level that slid into the first one's place. Typing over
+selected text on the command line replaces it, and ⌫ on the keypad
+deletes the selection.
 
 ---
 
