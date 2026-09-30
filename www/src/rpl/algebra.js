@@ -250,6 +250,7 @@ export function parseAlgebra(src) {
     skip();
     if (s[i] === '<' && s[i + 1] === '=') { i += 2; return Bin('≤', left, parseE()); }
     if (s[i] === '>' && s[i + 1] === '=') { i += 2; return Bin('≥', left, parseE()); }
+    if (s[i] === '=' && s[i + 1] === '=') { i += 2; return Bin('==', left, parseE()); }
     if ('=≠<>≤≥'.includes(s[i])) {
       const op = s[i]; i++;
       return Bin(op, left, parseE());
@@ -368,8 +369,15 @@ export function parseAlgebra(src) {
   return ast;
 }
 
+// A comparison of two numbers is a truth value, 1. or 0., as the comparison commands give; = stays an equation.
+const COMPARISONS = Object.freeze({
+  '<': (a, b) => a < b, '>': (a, b) => a > b, '≤': (a, b) => a <= b, '≥': (a, b) => a >= b,
+  '≠': (a, b) => a !== b, '==': (a, b) => a === b,
+});
+
 function foldNums(op, l, r) {
   if (!isNum(l) || !isNum(r)) return null;
+  if (COMPARISONS[op]) return Num(COMPARISONS[op](l.value, r.value) ? 1 : 0, true);
   const real = isRealNum(l) || isRealNum(r);
   let value;
   switch (op) {
@@ -409,7 +417,7 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
     if (exact) return exact;
     const folded = foldNums(ast.op, l, r);
     if (!folded) return Bin(ast.op, l, r);
-    if (!binGate || isRealNum(l) || isRealNum(r)) return folded;
+    if (!binGate || COMPARISONS[ast.op] || isRealNum(l) || isRealNum(r)) return folded;
     const gated = binGate(ast.op, [l.value, r.value], folded.value);
     return Number.isFinite(gated) ? approxNum(gated, false) : Bin(ast.op, l, r);
   }
@@ -465,7 +473,7 @@ export function formatAlgebra(ast) {
 }
 
 export const PREC = Object.freeze({
-  '=': 0, '≠': 0, '<': 0, '>': 0, '≤': 0, '≥': 0,
+  '=': 0, '==': 0, '≠': 0, '<': 0, '>': 0, '≤': 0, '≥': 0,
   '+': 1, '-': 1, '*': 2, '/': 2, '^': 3,
 });
 

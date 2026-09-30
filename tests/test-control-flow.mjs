@@ -7243,3 +7243,18 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   assert(values('« 0 1 START 5 0.5 STEP » EVAL') === '5 5 5', 'START counts in decimal too');
   assertThrows(() => runLine('« 0 1 FOR i i 0 STEP » EVAL'), /STEP of 0/, 'a zero decimal step is an error');
 }
+
+/* IF, CASE, WHILE and DO evaluate an algebraic test to a number, as the AUR describes for IF. */
+{
+  resetHome();
+  runLine('5 `X` STO');
+  const top = (line) => format(runLine(line).peek());
+  assert(top('« IF `X>0` THEN 1 ELSE 2 END » EVAL') === '1' && top('« IF `X<0` THEN 1 ELSE 2 END » EVAL') === '2', 'IF takes an algebraic test');
+  assert(top('« CASE `X==5` THEN 11 END 99 END » EVAL') === '11', 'CASE takes an algebraic test');
+  assert(top('« 0 WHILE `X>0` REPEAT 1 + DUP 3 ≥ IF THEN 0 `X` STO END END » EVAL') === '3', 'WHILE takes an algebraic test');
+  runLine('5 `X` STO');
+  assertThrows(() => runLine('« IF `Q>0` THEN 1 END » EVAL'), /Undefined name: Q/, 'an algebraic test with an undefined name says which name');
+  assert(top('`X>0` EVAL') === '1.' && top('`X<0` EVAL') === '0.' && top('`X≠5` EVAL') === '0.' && top('`X==5` EVAL') === '1.', 'a comparison of two numbers in an algebraic is 1. or 0.');
+  assert(top('`Y>0` EVAL') === '`Y>0`' && top('`X=5` EVAL') === '`5 = 5`', 'a comparison with an unknown stays symbolic, and = stays an equation');
+  varPurge('X');
+}

@@ -1040,7 +1040,7 @@ function* runCase(s, toks, openIdx, depth) {
     const test = s.pop();
     const innerEnd = scanAtDepth0(toks, thenIdx + 1, null);
     const innerEndIdx = (innerEnd && innerEnd.kind === 'END') ? innerEnd.idx : bound;
-    if (isTruthy(test)) {
+    if (isTruthy(_testValue(test))) {
       yield* evalRange(s, toks, thenIdx + 1, innerEndIdx, depth + 1);
       return _pastCaseEnd(toks, innerEndIdx + 1);
     }
@@ -1050,12 +1050,23 @@ function* runCase(s, toks, openIdx, depth) {
 }
 
 
+// A test that is an algebraic is evaluated to a number first, as the AUR describes
+// for IF: IF `X>0` THEN needs no EVAL.
+function _testValue(v) {
+  if (!isSymbolic(v)) return v;
+  const value = _evalSymbolic(v);
+  if (!isSymbolic(value)) return value;
+  const free = [...algebraFreeVars(v.expr)][0];
+  throw new RPLError(free ? `Undefined name: ${free}` : 'Bad argument type');
+}
+
+
 function* runIf(s, toks, openIdx, depth) {
   const thenIdx = _scanRequired(toks, openIdx + 1, 'THEN', 'IF without THEN');
   yield* evalRange(s, toks, openIdx + 1, thenIdx, depth + 1);
   const test = s.pop();
   const { elseIdx, endIdx } = _scanElseEnd(toks, thenIdx, 'IF');
-  if (isTruthy(test)) {
+  if (isTruthy(_testValue(test))) {
     yield* evalRange(s, toks, thenIdx + 1, elseIdx >= 0 ? elseIdx : endIdx, depth + 1);
   } else if (elseIdx >= 0) {
     yield* evalRange(s, toks, elseIdx + 1, endIdx, depth + 1);
@@ -1132,7 +1143,7 @@ function* runWhile(s, toks, openIdx, depth) {
     checkTimeLimit();
     yield* evalRange(s, toks, openIdx + 1, repeatIdx, depth + 1);
     const test = s.pop();
-    if (!isTruthy(test)) break;
+    if (!isTruthy(_testValue(test))) break;
     yield* evalRange(s, toks, repeatIdx + 1, endIdx, depth + 1);
   }
   return _pastBlock(toks, endIdx);
@@ -1151,7 +1162,7 @@ function* runDo(s, toks, openIdx, depth) {
     yield* evalRange(s, toks, openIdx + 1, untilIdx, depth + 1);
     yield* evalRange(s, toks, untilIdx + 1, endIdx, depth + 1);
     const test = s.pop();
-    if (isTruthy(test)) break;
+    if (isTruthy(_testValue(test))) break;
   }
   return _pastBlock(toks, endIdx);
 }
