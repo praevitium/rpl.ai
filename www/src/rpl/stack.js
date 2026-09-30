@@ -1,11 +1,16 @@
-import { batchStateNotifications } from './state.js';
-
 // APPROX mode coerces values as they enter the stack; ops/internal.js installs
 // the hook.  pushMany and the shuffling methods bypass it: they move values
 // already on the stack, so a DUP keeps an Integer that predates APPROX.
 let _pushCoerce = (v) => v;
 export function setPushCoerce(fn) {
   _pushCoerce = (typeof fn === 'function') ? fn : ((v) => v);
+}
+
+// state.js installs this.  Importing state.js here would make types.js and
+// stack.js load in a cycle that fails for whichever module is loaded first.
+let _batchState = (fn) => fn();
+export function setStateBatcher(fn) {
+  _batchState = (typeof fn === 'function') ? fn : ((f) => f());
 }
 
 export class Stack {
@@ -206,7 +211,7 @@ export class Stack {
     const prior = this._items.slice();
     this._holdEmit++;
     try {
-      batchStateNotifications(fn);
+      _batchState(fn);
     } finally {
       this._holdEmit--;
       if (this._holdEmit === 0 && this._emitPending) {

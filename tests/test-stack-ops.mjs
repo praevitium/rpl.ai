@@ -739,3 +739,18 @@ function vals(s) {
   assert(items('7 1 2 3 UNROT').join() === '7,3,1,2', 'UNROT leaves the levels below the top three alone');
   assertThrows(() => runLine('1 2 UNROT'), /Too few arguments/, 'UNROT needs three objects');
 }
+
+/* A cycle between stack.js, types.js and state.js would break whichever of them a page or test imports first. */
+{
+  const { execFileSync } = await import('node:child_process');
+  const loads = (file) => {
+    const url = new URL(`../www/src/rpl/${file}`, import.meta.url).href;
+    try {
+      execFileSync(process.execPath, ['--input-type=module', '-e', `await import(${JSON.stringify(url)})`], { stdio: 'pipe' });
+      return true;
+    } catch { return false; }
+  };
+  for (const file of ['types.js', 'stack.js', 'state.js', 'formatter.js', 'ops.js']) {
+    assert(loads(file), `${file} loads first in a fresh process`);
+  }
+}

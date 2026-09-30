@@ -2,6 +2,7 @@
    helpers so subscribers fire once per change. */
 
 import { Directory, TYPES, BIN_BASES } from './types.js';
+import { setStateBatcher } from './stack.js';
 
 // RAD first: it is the boot default here, although the HP50 boots in DEG.
 export const ANGLE_MODES = Object.freeze(['RAD', 'DEG', 'GRD']);
@@ -75,6 +76,8 @@ export function batchStateNotifications(fn) {
     }
   }
 }
+
+setStateBatcher(batchStateNotifications);
 
 export function inScratchState() {
   return _scratchDepth > 0;
