@@ -46,7 +46,7 @@ TRIG (uses the active angle mode RAD/DEG/GRD)
   D→R R→D                    convert degrees↔radians
 
 STACK MANIPULATION
-  DUP DROP SWAP OVER ROT     classic 1-arg / 2-arg ops
+  DUP DROP SWAP OVER ROT UNROT   classic 1-arg / 2-arg ops (UNROT sends level 1 down to level 3)
   DUP2 DROP2 DROPN DUPN      pluralised / n-arg variants
   PICK PICK3 UNPICK ROLL ROLLD NIP    n-deep pick/roll (n PICK copies level n to level 1; n ROLL moves level n to level 1; n ROLLD moves level 1 down to level n)
   CLEAR DEPTH                empty-stack / depth-query
@@ -57,6 +57,7 @@ VARIABLES & DIRECTORIES (operate in the current directory)
   STO     value \`NAME\` STO — store value into NAME (value on level 2, name on level 1)
   RCL     \`NAME\` RCL — push the value of NAME onto the stack
   PURGE   \`NAME\` PURGE — delete the variable
+  CLVAR   delete every variable and empty subdirectory in the current dir (destructive: don't run it unasked)
   VARS    push a list of all variable names in the current dir
   ORDER   reorder VARS list
   STO+ STO- STO* STO/        in-place arithmetic update

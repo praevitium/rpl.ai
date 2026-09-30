@@ -19,7 +19,7 @@ import { lookup } from '../www/src/rpl/ops.js';
 import { Real, Integer, Rational, Complex, BinaryInteger, Symbolic, Str, Program, Name, isInteger, isReal, isComplex, isBinaryInteger, isSymbolic } from '../www/src/rpl/types.js';
 import { setApproxMode, subscribe, varStore, varRecall, varPurge } from '../www/src/rpl/state.js';
 import { parseAlgebra } from '../www/src/rpl/algebra.js';
-import { assert, assertThrows } from './helpers.mjs';
+import { assert, assertThrows, runLine } from './helpers.mjs';
 
 /* Helper: return an array of .value fields from level-N-down to level-1.
    Reads via peek() so we don't touch stack._items directly from tests. */
@@ -729,4 +729,13 @@ function vals(s) {
   else varStore('RUNOP_A', previousA);
   if (previousB === undefined) varPurge('RUNOP_B');
   else varStore('RUNOP_B', previousB);
+}
+
+/* UNROT is ROT the other way: level 1 goes to level 3 (AUR example 333 22 1 UNROT gives 1 333 22). */
+{
+  const items = (line) => runLine(line).snapshot().map((v) => v.value).reverse();
+  assert(items('333 22 1 UNROT').join() === '1,333,22', 'UNROT: 333 22 1 becomes 1 333 22');
+  assert(items('1 2 3 UNROT ROT').join() === '1,2,3', 'UNROT undoes ROT');
+  assert(items('7 1 2 3 UNROT').join() === '7,3,1,2', 'UNROT leaves the levels below the top three alone');
+  assertThrows(() => runLine('1 2 UNROT'), /Too few arguments/, 'UNROT needs three objects');
 }

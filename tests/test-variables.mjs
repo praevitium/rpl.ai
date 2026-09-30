@@ -18,7 +18,7 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows } from './helpers.mjs';
+import { assert, assertThrows, runLine } from './helpers.mjs';
 
 /* Variables — STO / RCL / PURGE / VARS + directory nav (CRDIR / UPDIR / HOME /
    PATH) + subdir protection + variable/directory state UNDO. */
@@ -1949,5 +1949,18 @@ clearAllUserFlags();
   sub.entries.set('LOOP', sub);
   saveVarStateForUndo();
   sub.entries.delete('LOOP');
+  resetHome();
+}
+
+/* CLVAR purges every variable and empty subdirectory of the current directory and keeps subdirectories that hold something. */
+{
+  resetHome();
+  runLine('1 `A` STO 2 `B` STO `EMPTY` CRDIR `FULL` CRDIR FULL 3 `C` STO UPDIR');
+  runLine('CLVAR');
+  assert(varList().join() === 'FULL', 'CLVAR keeps only the subdirectory that holds something');
+  runLine('FULL CLVAR');
+  assert(varList().length === 0, 'CLVAR empties the current directory');
+  runLine('UPDIR');
+  assert(varList().join() === 'FULL', 'CLVAR does not touch the parent directory');
   resetHome();
 }

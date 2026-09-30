@@ -29,6 +29,8 @@ register('OVER',  (s) => s.over(), { category: 'Stack', categoryOrder: 9, label:
 
 register('ROT',   (s) => s.rot(), { category: 'Stack', categoryOrder: 11, label: "ROT" });
 
+register('UNROT', (s) => s.unrot(), { category: 'Stack', categoryOrder: 11.5, label: "UNROT" });
+
 register('DUP2',  (s) => s.dup2(), { category: 'Stack', categoryOrder: 1, label: "DUP2" });
 
 register('DROP2', (s) => s.drop2(), { category: 'Stack', categoryOrder: 6, label: "DROP2" });

@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 447 commands, exact big-integer and rational arithmetic,
+of its command set: 449 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -443,7 +443,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 447. The
+**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 449. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - program I/O: INPUT, INFORM, CHOOSE, DISP, CLLCD, FREEZE, MSGBOX, WAIT,
@@ -452,7 +452,7 @@ Catalog and the command reference mark what is available. Not there yet:
 - PICT and the plot-setup commands (PVIEW, ERASE, AXES, XRNG, YRNG, STEQ and
   the rest)
 - the ΣDAT commands (Σ+, CLΣ, XCOL, YCOL, NDIST and the rest)
-- MENU and TMENU, UNROT, CLVAR, DEF and DEFINE
+- MENU and TMENU, DEF and DEFINE
 - parts of the CAS, such as TAYLR, SERIES, DESOLVE, LINSOLVE, LDEC and
   ZEROS (SOLVE and ISOL are here)
 - most of the unit catalog: the SI base units and a few dozen common units

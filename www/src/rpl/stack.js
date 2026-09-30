@@ -98,6 +98,13 @@ export class Stack {
     this._emit();
   }
 
+  unrot() {
+    const n = this._items.length;
+    if (n < 3) throw new RPLError('Too few arguments');
+    this._items.splice(n - 3, 0, this._items.pop());
+    this._emit();
+  }
+
   over() {
     const n = this._items.length;
     if (n < 2) throw new RPLError('Too few arguments');

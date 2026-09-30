@@ -56,6 +56,15 @@ register('PURGE', (s) => {
 }, { category: 'Variables / directories', categoryOrder: 2, label: "PURGE" });
 
 
+// Subdirectories that still hold something stay, as on the HP50.
+register('CLVAR', () => {
+  for (const id of varOrder()) {
+    const entry = _calcState.current.entries.get(id);
+    if (!(isDirectory(entry) && entry.entries.size > 0)) varPurge(id);
+  }
+}, { category: 'Variables / directories', categoryOrder: 21, label: "CLVAR" });
+
+
 // Newest first, like the names on the HP50's VAR menu.
 register('VARS', (s) => {
   s.push(RList(varOrder().reverse().map(id => Name(id))));
