@@ -314,6 +314,21 @@ function sumBox(body, v, lo, hi, size) {
 
 const isNegativeNum = (ast) => ast.kind === 'num' && numText(ast).startsWith('-');
 
+// True when the drawn expression begins with a digit or a fraction, so a number written
+// against it would read as one figure (2 10³ as 210³) or as a mixed number (2 1/2).
+function startsLikeNumber(ast) {
+  if (ast.kind === 'num') return true;
+  if (isBin(ast)) {
+    if (ast.op === '/') return true;
+    if (ast.op === '^') return !isBin(ast.l) && startsLikeNumber(ast.l);
+    return ast.op === '*' && startsLikeNumber(ast.l);
+  }
+  return isFn(ast) && ast.name === 'FACT' && ast.args[0]?.kind === 'num' && !isNegativeNum(ast.args[0]);
+}
+
+// A fraction or an exponential drawn as a base would swallow the exponent that follows it.
+const needsBaseParens = (ast) => (isBin(ast) && ast.op === '/') || (isFn(ast) && ast.name === 'EXP' && ast.args.length === 1);
+
 function lay(ast, parentPrec, size) {
   if (!ast) return textBox('', size);
   if (ast.kind === 'num') {
@@ -338,7 +353,7 @@ function lay(ast, parentPrec, size) {
     }
     if (name === 'FACT' && args.length === 1) {
       const a = args[0];
-      const bare = (a.kind === 'num' && !isNegativeNum(a)) || isVar(a) || isFn(a);
+      const bare = (a.kind === 'num' && !isNegativeNum(a)) || isVar(a) || (isFn(a) && a.name !== 'FACT');
       return factBox(arg(0), bare, size);
     }
     if (name === 'DERIV' && args.length === 2) {
@@ -370,15 +385,16 @@ function lay(ast, parentPrec, size) {
     }
 
     if (op === '^') {
-      const box = supBox(lay(l, p + 1, size), lay(r, 0, size * SUP_SCALE));
+      const base = needsBaseParens(l) ? parenBox(lay(l, 0, size)) : lay(l, p + 1, size);
+      const box = supBox(base, lay(r, 0, size * SUP_SCALE));
       return p < parentPrec ? parenBox(box) : box;
     }
 
     const lBox = lay(l, p, size);
     const rBox = lay(r, p + 1, size);
-    // 2*X reads 2X and X*(Y+1) reads X(Y+1), but 2*3 keeps its dot so it cannot read as 23.
-    const rightInParens = isNeg(r) || (isBin(r) && PREC[r.op] < p + 1);
-    const juxtapose = op === '*' && ((isNum(l) && r.kind !== 'num') || rightInParens);
+    // 2*X reads 2X and X*(Y+1) reads X(Y+1), but 2*3 and 2*10^3 keep their dot so they cannot read as 23 and 210³.
+    const rightInParens = isNeg(r) || (isBin(r) && r.op !== '/' && PREC[r.op] < p + 1);
+    const juxtapose = op === '*' && ((isNum(l) && !startsLikeNumber(r)) || rightInParens);
     const box = rowBox(juxtapose ? [lBox, rBox] : [lBox, opBox(op, size), rBox]);
     return p < parentPrec ? parenBox(box) : box;
   }
@@ -438,11 +454,17 @@ function layEqwSlot(row, rowKey, size, caret, rects, { bareParen = false } = {})
   return layEqwRow(row, rowKey, size, caret, rects);
 }
 
+// As startsLikeNumber does for an AST: 2 next to 10³, 3! or a fraction would read as a figure or a mixed number.
+function itemStartsLikeNumber(item) {
+  const sole = item.slots?.[0]?.length === 1 ? item.slots[0][0].t : null;
+  return item.t === 'frac' || ((item.t === 'pow' || item.t === 'fact') && sole === 'num');
+}
+
 function isImpliedProduct(row, index) {
   const item = row[index];
   const next = row[index + 1];
   return item.t === 'op' && item.op === '*' && row[index - 1]?.t === 'num'
-    && !!next && next.t !== 'num' && next.t !== 'op' && next.t !== 'hole';
+    && !!next && next.t !== 'num' && next.t !== 'op' && next.t !== 'hole' && !itemStartsLikeNumber(next);
 }
 
 function layEqwRow(row, rowKey, size, caret, rects) {
@@ -472,7 +494,7 @@ function layEqwItem(item, key, size, caret, rects) {
   let box;
   if (item.t === 'frac') box = fracBox(bare(0), bare(1), size);
   else if (item.t === 'pow') {
-    const base = sole === null || ['frac', 'neg', 'pow', 'fact'].includes(sole) ? parenBox(slot(0)) : slot(0);
+    const base = sole === null || ['frac', 'neg', 'pow', 'fact', 'exp'].includes(sole) ? parenBox(slot(0)) : slot(0);
     box = supBox(base, bare(1, small));
   }
   else if (item.t === 'sqrt') box = radicalBox(bare(0), size);

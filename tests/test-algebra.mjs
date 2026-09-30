@@ -8083,3 +8083,19 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   assert(format(parseEntry('`√2`')[0]) === '`SQRT(2)`',
     'algebraic entry reads a lone √2 as SQRT, not as a name');
 }
+
+/* The textbook layout never lets 2*10^3 read as 210³ or 2*(1/2) as 2½, and it brackets a fraction, an exponential or a factorial that a raised exponent or a ! would attach to. */
+{
+  const { astToSvg, eqwToSvg } = await import('../www/src/rpl/pretty.js');
+  const { fromAst } = await import('../www/src/ui/equation-editor.js');
+  const facts = (svg) => ({ dot: svg.includes('>·<'), bars: (svg.match(/<line/g) || []).length, parens: (svg.match(/<path/g) || []).length / 2 });
+  const layouts = { textbook: (src) => facts(astToSvg(parseAlgebra(src)).svg), writer: (src) => facts(eqwToSvg(fromAst(parseAlgebra(src))).svg) };
+  for (const [name, draw] of Object.entries(layouts)) {
+    assert(draw('2*10^3').dot && draw('2*10^X').dot && draw('2*FACT(3)').dot, `${name}: a number times a power of a number or a factorial keeps its dot`);
+    assert(draw('2*(1/2)').dot && draw('2*(1/2)').bars === 1, `${name}: a number times a fraction keeps its dot`);
+    assert(!draw('3*X').dot && !draw('2*X^2').dot && !draw('2*SQRT(X)').dot, `${name}: a number times a letter is still written as 2X`);
+    assert(draw('(A/B)^2').parens === 1 && draw('(A/B)^2').bars === 1, `${name}: a fraction raised to a power is bracketed`);
+    assert(draw('EXP(X)^2').parens === 1 && draw('FACT(FACT(X))').parens === 1, `${name}: EXP(X)^2 and FACT(FACT(X)) are bracketed`);
+    assert(draw('X^2').parens === 0 && draw('FACT(X)').parens === 0 && draw('FACT(3)').parens === 0, `${name}: plain powers and factorials stay unbracketed`);
+  }
+}
