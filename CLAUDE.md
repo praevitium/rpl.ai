@@ -41,6 +41,7 @@ These are house conventions, not project documentation. Follow them so they don'
 
 ## Commits
 
+- **Pull before you start.** Fetch and rebase onto origin/main before editing or committing. Main moves, and a commit on a stale base will not fast-forward.
 - Commit straight to main, then push main.
 - Commit only when asked.
 - **Restart the dev server before every push**, after committing: `pkill -f '[l]ive-server --port=5050'; setsid npm run serve >/dev/null 2>&1 < /dev/null &`. Its `preserve` step regenerates `build-info.js` and `precache.js`, so the app on port 5050 shows the build being pushed.
