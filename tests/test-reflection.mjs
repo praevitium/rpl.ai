@@ -17,7 +17,7 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
 } from '../www/src/rpl/state.js';
-import { assert } from './helpers.mjs';
+import { assert, runLine } from './helpers.mjs';
 
 /* Reflection ops — TYPE, OBJ→. */
 
@@ -3351,4 +3351,13 @@ function _roundTripProgram(prog) {
   } finally {
     setApproxMode(prevApprox);
   }
+}
+
+/* STR→ evaluates the string as if it were typed on the command line, so a string of commands runs. */
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top('"1 2 +" STR→') === '3' && top('"3" STR→') === '3', 'STR→ runs the commands in the string');
+  assert(top('"{ 1 2 }" STR→') === '{ 1 2 }' && top('"« 1 2 + »" STR→') === '« 1 2 + »', 'STR→ of a list or a program leaves the object');
+  assert(top('"IF 1 THEN 7 END" STR→') === '7', 'STR→ runs a structure');
+  assert(top('"ZZZQ" STR→') === 'ZZZQ' && top('"`X+1`" STR→') === '`X + 1`', 'STR→ leaves an unknown name or an algebraic');
 }

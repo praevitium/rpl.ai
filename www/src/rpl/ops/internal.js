@@ -1646,7 +1646,13 @@ export const _fromStrOp = (s) => {
   const [v] = s.popN(1);
   if (!isString(v)) throw new RPLError('Bad argument type');
   const parsed = _parseEntryForObjTo(v.value);
-  for (const item of parsed) s.push(item);
+  if (isProgramLine(parsed)) { runProgramLine(s, parsed); return; }
+  for (const item of parsed) {
+    if (!isName(item) || item.quoted) { s.push(item); continue; }
+    const op = lookup(item.id);
+    if (!op) s.push(item);
+    (op ?? lookup('EVAL')).fn(s);
+  }
 };
 
 
