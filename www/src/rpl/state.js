@@ -801,13 +801,16 @@ function _sameDir(a, b, seen = new Map()) {
   return true;
 }
 
+function _varStateMatches(snap) {
+  const path = _pathNamesToCurrent();
+  return path.length === snap.path.length
+    && path.every((name, i) => name === snap.path[i])
+    && _sameDir(state.home, snap.home);
+}
+
 export function varStateMatchesUndoTop() {
   const top = _varUndoStack[_varUndoStack.length - 1];
-  if (!top) return false;
-  const path = _pathNamesToCurrent();
-  return path.length === top.path.length
-    && path.every((name, i) => name === top.path[i])
-    && _sameDir(state.home, top.home);
+  return !!top && _varStateMatches(top);
 }
 
 export function dropVarUndoTop() {
@@ -862,6 +865,17 @@ export function restoreCalcState(snap) {
   _emit();
 }
 
+function _calcStateMatches(snap) {
+  return CAPTURED_SCALARS.every((k) => state[k] === snap.scalars[k])
+    && state.userFlags.size === snap.userFlags.size
+    && [...state.userFlags].every((flag) => snap.userFlags.has(flag))
+    && state.haltedStack.length === snap.haltedStack.length
+    && state.haltedStack.every((record, i) => record === snap.haltedStack[i])
+    && _varStateMatches(snap.vars);
+}
+
+// A run that changed nothing restores nothing, so it wakes no subscriber and
+// leaves the directory objects alone.
 export function withScratchState(fn) {
   const snap = captureCalcState();
   const pendingBefore = _notePending;
@@ -873,6 +887,6 @@ export function withScratchState(fn) {
     _notePending = pendingBefore;
     _noteBatch--;
     _scratchDepth--;
-    restoreCalcState(snap);
+    if (!_calcStateMatches(snap)) restoreCalcState(snap);
   }
 }

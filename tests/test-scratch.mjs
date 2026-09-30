@@ -2,7 +2,7 @@ import { evalScratch, previewCommand } from '../www/src/rpl/scratch.js';
 import {
   state, varStore, varRecall, varPurge, setAngle, setDisplay, setBinaryBase,
   captureCalcState, restoreCalcState, withScratchState, testUserFlag,
-  currentPath, goHome, getHalted, clearHalted,
+  currentPath, goHome, getHalted, clearHalted, subscribe,
 } from '../www/src/rpl/state.js';
 import { Real, Integer, Name, Program, RList, isReal } from '../www/src/rpl/types.js';
 import { Stack } from '../www/src/rpl/stack.js';
@@ -236,4 +236,17 @@ import { assert } from './helpers.mjs';
     if (saved) Object.defineProperty(globalThis, 'localStorage', saved);
     else delete globalThis.localStorage;
   }
+}
+
+/* A dry run or hover preview that leaves the calculator as it found it wakes no subscriber, so it costs no autosave and no redraw. */
+{
+  let notes = 0;
+  const off = subscribe(() => { notes++; });
+  previewCommand('SIN', [Real(1)]);
+  evalScratch('1 2 +');
+  const kept = state.home;
+  evalScratch('5 `SCRATCHV` STO');
+  off();
+  assert(notes === 1 && varRecall('SCRATCHV') === undefined && state.home === kept,
+    'only a dry run that changed something restores state, and it does so once');
 }
