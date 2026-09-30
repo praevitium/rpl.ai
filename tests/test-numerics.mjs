@@ -7243,3 +7243,12 @@ function _arrayEq(a, b) {
   setAngle('RAD');
   assert(shown('1. SIN') === '0.841470984808' && shown('0. COS') === '1.', 'RAD trig is unchanged');
 }
+
+/* @ starts a comment that runs to the end of the line, in an entry, in a program and in a string of commands, but not inside a string. */
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top('1 2 + @ a comment') === '3', 'an @ comment at the end of an entry is dropped');
+  assert(top('« 1 @ note\n2 + » EVAL') === '3', 'an @ comment inside a program ends at the line break');
+  assert(top('"1 @ x\n2 +" STR→') === '3', 'STR→ drops @ comments too');
+  assert(top('"a @ b"') === '"a @ b"', 'an @ inside a string is text');
+}

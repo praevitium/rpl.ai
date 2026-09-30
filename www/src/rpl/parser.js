@@ -20,6 +20,11 @@ function tokenize(src) {
 
     if (isSpace(c)) { i++; continue; }
 
+    if (c === '@') {
+      while (i < n && src[i] !== '\n' && src[i] !== '\r') i++;
+      continue;
+    }
+
     if (c === '"') {
       let j = i + 1, str = '';
       while (j < n && src[j] !== '"') {
