@@ -1212,3 +1212,11 @@ setAngle('RAD');
   const { normalizeUiPrefs } = await import('../www/src/ui/ui-prefs.js');
   assert(normalizeUiPrefs({}).tourSeen === false && normalizeUiPrefs({ tourSeen: true }).tourSeen === true, 'ui prefs remember that the tour was seen');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/\.keys \{[^}]*flex: 0 1 auto;[^}]*overflow-y: auto/.test(css), 'the keypad shrinks and scrolls instead of covering the work area');
+  assert(/\.work \{[^}]*min-height: auto;/.test(css) && !/\.work \{[^}]*overflow: hidden/.test(css), 'the work area never shrinks below its writer and buttons');
+  assert(/\.well \{ flex: 1 1 96px;/.test(css) && /@media \(max-height: 780px\) \{\s*\.well \{ flex-basis: 0px;/.test(css), 'the stack gives up room first, with a definite basis so its rows do not inflate the work area');
+  assert(/@media \(max-height: 560px\) and \(min-width: 640px\) \{\s*\.app-main \{ flex-direction: row; \}/.test(css), 'a short wide screen puts the keypad beside the work area');
+}
