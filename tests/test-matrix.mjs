@@ -3734,3 +3734,65 @@ function _approxMatEqual(A, B, tol) {
     'IDN, RANM: more than a million cells is refused');
   assert(evalScratch('[ (3,4) ] ABS').stack?.[0] === '5.', 'ABS: the norm of a complex vector');
 }
+
+/* DET switches to elimination from 6×6, matrix powers square-and-multiply, and both stop at the time limit. */
+{
+  const { Rational } = await import('../www/src/rpl/types.js');
+  const { withTimeLimit } = await import('../www/src/rpl/stack.js');
+  const { Var: AstVar } = await import('../www/src/rpl/algebra.js');
+  const run = (op, ...args) => { const s = new Stack(); for (const a of args) s.push(a); lookup(op).fn(s); return s.peek(); };
+  const ints = (rows) => Matrix(rows.map((r) => r.map((x) => Integer(BigInt(x)))));
+  const permutationDet = (m) => {
+    const n = m.length;
+    const go = (row, used) => {
+      if (row === n) return 1n;
+      let sum = 0n;
+      for (let j = 0; j < n; j++) {
+        if (used & (1 << j)) continue;
+        const sign = (BigInt(popcountAbove(used, j)) % 2n) === 0n ? 1n : -1n;
+        sum += sign * BigInt(m[row][j]) * go(row + 1, used | (1 << j));
+      }
+      return sum;
+    };
+    const popcountAbove = (used, j) => { let c = 0; for (let k = j + 1; k < n; k++) if (used & (1 << k)) c++; return c; };
+    return go(0, 0);
+  };
+
+  const vander = run('VANDERMONDE', Vector([1, 2, 3, 4, 5, 6, 7].map((x) => Integer(BigInt(x)))));
+  const vdet = run('DET', vander);
+  assert(isInteger(vdet) && vdet.value === 24883200n, 'DET of a 7×7 Vandermonde matrix is the exact product 1!2!3!4!5!6!');
+
+  const grid = Array.from({ length: 7 }, (_, i) => Array.from({ length: 7 }, (_, j) => ((i * 5 + j * 3 + i * j * j) % 11) - 5));
+  const det7 = run('DET', ints(grid));
+  assert(isInteger(det7) && det7.value === permutationDet(grid), 'DET of a 7×7 integer matrix agrees with the permutation expansion');
+  assert(run('DET', ints([[1, 2, 3, 4, 5, 6], [2, 4, 6, 8, 10, 12], [1, 0, 1, 0, 1, 0], [3, 1, 4, 1, 5, 9], [2, 7, 1, 8, 2, 8], [1, 8, 2, 8, 4, 5]])).value === 0n, 'DET of a singular 6×6 integer matrix is 0');
+
+  const diag = [2.5, 2, 1.5, 4, 0.5, 3];
+  const upper = Matrix(diag.map((d, i) => diag.map((_, j) => (j < i ? Real(0) : j === i ? Real(d) : Real(j + 1)))));
+  const realDet = run('DET', upper);
+  assert(isReal(realDet) && realDet.value.eq(45), 'DET of a 6×6 real triangular matrix is the product of its diagonal');
+  const half = Matrix(Array.from({ length: 6 }, (_, i) => Array.from({ length: 6 }, (_, j) => (i === j ? Rational(1n, 2n) : Integer(0n)))));
+  const ratDet = run('DET', half);
+  assert(ratDet.type === 'rational' && ratDet.n === 1n && ratDet.d === 64n, 'DET of a 6×6 matrix of exact fractions stays an exact fraction');
+  const swapped = ints([[0, 1, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0], [0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 1]]);
+  assert(run('DET', swapped).value === -1n, 'DET counts a row swap in elimination');
+  const third = Matrix(Array.from({ length: 3 }, (_, i) => Array.from({ length: 3 }, (_, j) => (i === j ? Rational(1n, 2n) : Integer(0n)))));
+  const thirdDet = run('DET', third);
+  assert(thirdDet.type === 'rational' && thirdDet.n === 1n && thirdDet.d === 8n, 'DET of a 3×3 matrix of exact fractions stays an exact fraction');
+  const { evalScratch } = await import('../www/src/rpl/scratch.js');
+  const symbolic = evalScratch("[[ 'A' 'B' 'C' ][ 'D' 'E' 'F' ][ 'G' 'H' 'I' ]] DET").stack[0];
+  assert(!symbolic.includes('/') && symbolic.startsWith("`'A'*("), 'DET of a symbolic 3×3 is the cofactor polynomial, not a fraction');
+
+  const started = Date.now();
+  const identity = run('IDN', Integer(3n));
+  assert(String(run('^', identity, Integer(100000000n)).rows[2][2].value) === '1' && Date.now() - started < 1000, 'a matrix power by squaring is instant for a huge exponent');
+  const fib = run('^', ints([[1, 1], [1, 0]]), Integer(10n));
+  assert(fib.rows.map((r) => r.map((x) => x.value).join()).join('|') === '89,55|55,34', 'M^10 of the Fibonacci matrix');
+  assert(run('^', ints([[2, 0], [0, 3]]), Integer(0n)).rows.map((r) => r.map((x) => x.value).join()).join('|') === '1,0|0,1', 'M^0 is the identity');
+
+  const big = ints(Array.from({ length: 300 }, (_, i) => Array.from({ length: 300 }, (_, j) => (i + j) % 7)));
+  const t0 = Date.now();
+  assertThrows(() => withTimeLimit(60, () => run('*', big, big)), /Interrupted/, 'a matrix product past the time limit is interrupted');
+  assert(Date.now() - t0 < 3000, 'the interrupt lands promptly, not after the whole product');
+  assertThrows(() => withTimeLimit(60, () => run('DET', Matrix(Array.from({ length: 11 }, (_, i) => Array.from({ length: 11 }, (_, j) => Symbolic(AstVar('A' + i + 'x' + j))))))), /Interrupted/, 'DET of a big symbolic matrix is interrupted instead of freezing the page');
+}

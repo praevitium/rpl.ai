@@ -1,4 +1,4 @@
-import { RPLError } from '../stack.js';
+import { RPLError, checkTimeLimit } from '../stack.js';
 import { Integer, Matrix, isInteger, isReal, isVector, Vector, isMatrix, isSymbolic, Symbolic, isString, isBinaryInteger, isComplex, isName, Real, isRational, Rational, Complex, isUnit, Unit, toComplex, toRealOrThrow, toRealDecimal, BinaryInteger, isNumber, isList, RList, Str } from '../types.js';
 import { Bin as AstBin, formatAlgebra, Neg as AstNeg, Num as AstNum, Fn as AstFn, Var as AstVar } from '../algebra.js';
 import { formatReal, DEFAULT_DISPLAY, formatBinaryInteger } from '../formatter.js';
@@ -29,6 +29,7 @@ function _matMul(aRows, bRows) {
   for (let i = 0; i < ar; i++) {
     const row = new Array(bc);
     for (let j = 0; j < bc; j++) {
+      checkTimeLimit();
       const parts = new Array(ac);
       for (let k = 0; k < ac; k++) parts[k] = _scalarBinary('*', aRows[i][k], bRows[k][j]);
       row[j] = _scalarSum(parts);

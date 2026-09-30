@@ -1,4 +1,4 @@
-import { isVector, RList, Real, isMatrix, isString, Integer, isList, isProgram, Matrix, Vector, isInteger, isReal, isComplex, isSymbolic, Symbolic } from '../types.js';
+import { isVector, RList, Real, isMatrix, isString, Integer, isList, isProgram, Matrix, Vector, isInteger, isReal, isComplex, isRational, isSymbolic, Symbolic } from '../types.js';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { nextPrngInt9, getCasVx } from '../state.js';
 import { giac } from '../cas/giac-engine.mjs';
@@ -71,51 +71,87 @@ register('TRN', (s) => {
 }, { category: 'Vectors / matrices', categoryOrder: 1, label: "TRN" });
 
 
-function _scalarIsZero(v) {
-  if (!v) return false;
-  if (v.type === 'integer') return v.value === 0n;
-  if (v.type === 'real') return v.value.isZero();
-  if (v.type === 'rational') return v.n === 0n;
-  if (v.type === 'complex') return v.re === 0 && v.im === 0;
-  return false;
-}
-
-function _scalarZero(sample) {
-  if (!sample || sample.type === 'integer' || sample.type === 'symbolic' || sample.type === 'name') {
-    return Integer(0n);
-  }
-  return _scalarBinary('-', sample, sample);
-}
-
-function _det(rows) {
+// Cofactor expansion through _scalarBinary, so Integer and Symbolic entries stay exact.
+function _detCofactor(rows) {
+  checkTimeLimit();
   const n = rows.length;
   if (n === 1) return rows[0][0];
-  const a = rows.map((row) => row.slice());
-  let sign = 1;
-  let denom = null;
+  if (n === 2) {
+    const ad = _scalarBinary('*', rows[0][0], rows[1][1]);
+    const bc = _scalarBinary('*', rows[0][1], rows[1][0]);
+    return _scalarBinary('-', ad, bc);
+  }
+  let det = null;
+  for (let j = 0; j < n; j++) {
+    const minor = rows.slice(1).map(row => row.filter((_, k) => k !== j));
+    const cof = _detCofactor(minor);
+    const term = _scalarBinary('*', rows[0][j], cof);
+    det = (det === null) ? term : _scalarBinary((j & 1) === 1 ? '-' : '+', det, term);
+  }
+  return det;
+}
+
+// Cofactor expansion is O(n!), so bigger numeric matrices are eliminated instead.
+const ELIMINATION_MIN = 6;
+
+// Fraction-free (Bareiss) elimination: every division is exact, so an integer matrix gives an integer.
+function _detBareiss(rows) {
+  const n = rows.length;
+  const a = rows.map((row) => row.map((x) => x.value));
+  let sign = 1n;
+  let prev = 1n;
   for (let k = 0; k < n - 1; k++) {
-    let pivot = k;
-    while (pivot < n && _scalarIsZero(a[pivot][k])) pivot++;
-    if (pivot === n) return _scalarZero(a[k][k]);
-    if (pivot !== k) {
-      const swapped = a[k];
-      a[k] = a[pivot];
-      a[pivot] = swapped;
+    if (a[k][k] === 0n) {
+      const p = a.findIndex((row, i) => i > k && row[k] !== 0n);
+      if (p < 0) return 0n;
+      [a[k], a[p]] = [a[p], a[k]];
       sign = -sign;
     }
     for (let i = k + 1; i < n; i++) {
-      for (let j = k + 1; j < n; j++) {
-        const num = _scalarBinary('-',
-          _scalarBinary('*', a[k][k], a[i][j]),
-          _scalarBinary('*', a[i][k], a[k][j]));
-        a[i][j] = denom === null ? num : _scalarBinary('/', num, denom);
-      }
+      checkTimeLimit();
+      for (let j = k + 1; j < n; j++) a[i][j] = (a[i][j] * a[k][k] - a[i][k] * a[k][j]) / prev;
     }
-    denom = a[k][k];
+    prev = a[k][k];
   }
-  let det = a[n - 1][n - 1];
-  if (sign < 0) det = _scalarBinary('-', _scalarZero(det), det);
+  return sign * a[n - 1][n - 1];
+}
+
+function _entryMagnitude(x) {
+  if (isRational(x)) return Math.abs(Number(x.n) / Number(x.d));
+  return _magEntry(x);
+}
+
+// Gaussian elimination with partial pivoting; entries are combined by _scalarBinary.
+function _detGauss(rows) {
+  const n = rows.length;
+  const a = rows.map((row) => [...row]);
+  const zero = rows.some((row) => row.some((x) => isReal(x) || isComplex(x))) ? Real(0) : Integer(0n);
+  let det = Integer(1n);
+  for (let k = 0; k < n; k++) {
+    let p = k;
+    for (let i = k + 1; i < n; i++) if (_entryMagnitude(a[i][k]) > _entryMagnitude(a[p][k])) p = i;
+    if (_entryMagnitude(a[p][k]) === 0) return zero;
+    if (p !== k) {
+      [a[k], a[p]] = [a[p], a[k]];
+      det = _scalarBinary('*', det, Integer(-1n));
+    }
+    det = _scalarBinary('*', det, a[k][k]);
+    for (let i = k + 1; i < n; i++) {
+      checkTimeLimit();
+      const factor = _scalarBinary('/', a[i][k], a[k][k]);
+      for (let j = k + 1; j < n; j++) a[i][j] = _scalarBinary('-', a[i][j], _scalarBinary('*', factor, a[k][j]));
+    }
+  }
   return det;
+}
+
+const _isNumericEntry = (x) => isInteger(x) || isReal(x) || isRational(x) || isComplex(x);
+
+function _det(rows) {
+  if (rows.length >= ELIMINATION_MIN && rows.every((row) => row.every(_isNumericEntry))) {
+    return rows.every((row) => row.every(isInteger)) ? Integer(_detBareiss(rows)) : _detGauss(rows);
+  }
+  return _detCofactor(rows);
 }
 
 
