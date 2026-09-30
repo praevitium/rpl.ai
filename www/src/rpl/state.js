@@ -472,10 +472,12 @@ export function varStore(id, value) {
   if (existing && existing.type === TYPES.DIRECTORY) {
     throw new Error(`Directory not allowed: ${key}`);
   }
-  if (value && value.type === TYPES.DIRECTORY && _directoryReaches(value, state.current, new Set())) {
-    throw new Error('Cannot store a directory inside itself');
+  let stored = value;
+  if (value && value.type === TYPES.DIRECTORY) {
+    if (_directoryReaches(value, state.current, new Set())) throw new Error('Cannot store a directory inside itself');
+    stored = _cloneDir(value, state.current, null, key);
   }
-  state.current.entries.set(key, value);
+  state.current.entries.set(key, stored);
   _emit();
 }
 
@@ -697,11 +699,11 @@ export function restoreLastError(rec) {
 // values; restoring refills HOME in place so references to state.home stay
 // valid.
 
-function _cloneDir(dir, newParent = null, seen = null) {
+function _cloneDir(dir, newParent = null, seen = null, name = dir.name) {
   const bag = seen ?? new Map();
   const already = bag.get(dir);
   if (already) return already;
-  const clone = Directory({ name: dir.name, parent: newParent });
+  const clone = Directory({ name, parent: newParent });
   bag.set(dir, clone);
   for (const [key, value] of dir.entries) {
     if (value && value.type === TYPES.DIRECTORY) {

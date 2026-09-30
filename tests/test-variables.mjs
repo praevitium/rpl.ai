@@ -1964,3 +1964,20 @@ clearAllUserFlags();
   assert(varList().join() === 'FULL', 'CLVAR does not touch the parent directory');
   resetHome();
 }
+
+/* A directory stored from the stack is named after its variable, hangs off the current directory and shares nothing with the value it came from. */
+{
+  resetHome();
+  runLine('`D` CRDIR D 1 `A` STO `SD` CRDIR SD 5 `Z` STO UPDIR UPDIR');
+  runLine('`D` RCL DUP `B` STO `C` STO');
+  runLine('B');
+  assert(currentPath().join('/') === 'HOME/B', 'a directory stored from a copy takes the name of its variable');
+  runLine('SD');
+  assert(currentPath().join('/') === 'HOME/B/SD', 'its subdirectories keep their place under it');
+  runLine('UPDIR UPDIR');
+  assert(currentPath().join('/') === 'HOME', 'UPDIR climbs out of a stored copy');
+  runLine('B 2 `A` STO UPDIR');
+  const a = (dir) => varRecall(dir).entries.get('A').value;
+  assert(a('B') === 2n && a('C') === 1n && a('D') === 1n, 'storing the same recalled directory under two names makes two independent copies');
+  resetHome();
+}
