@@ -189,6 +189,9 @@ export function rehydrate(snap, stack) {
   notify();
 }
 
+// What this window last wrote to the store or read from it.
+let _storedJson = null;
+
 // Never throws. true when stored, 'trimmed' when backups were dropped, false otherwise.
 export function saveToLocalStorage(stack) {
   let json;
@@ -200,6 +203,7 @@ export function saveToLocalStorage(stack) {
   }
   try {
     localStorage.setItem(STORAGE_KEY, json);
+    _storedJson = json;
     return true;
   } catch (e) {
     if (!(e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014))) {
@@ -209,6 +213,7 @@ export function saveToLocalStorage(stack) {
     try { localStorage.removeItem(BACKUPS_KEY); } catch { }
     try {
       localStorage.setItem(STORAGE_KEY, json);
+      _storedJson = json;
       return 'trimmed';
     } catch (e2) {
       console.warn('hp50 autosave failed:', e2);
@@ -225,12 +230,30 @@ function loadFromLocalStorage(stack) {
   if (!raw) return false;
   try {
     rehydrate(JSON.parse(raw), stack);
+    _storedJson = raw;
     return true;
   } catch (e) {
     console.warn('hp50 load failed, clearing:', e);
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
     return false;
   }
+}
+
+// Loads what another window saved since this one last wrote or read the
+// store, so this window's next save does not overwrite it.
+export function adoptStoredState(stack) {
+  let raw;
+  try { raw = localStorage.getItem(STORAGE_KEY); }
+  catch { return false; }
+  if (!raw || raw === _storedJson) return false;
+  try {
+    rehydrate(JSON.parse(raw), stack);
+  } catch (e) {
+    console.warn('hp50 sync failed:', e);
+    return false;
+  }
+  _storedJson = raw;
+  return true;
 }
 
 export function loadInitialState(stack) {

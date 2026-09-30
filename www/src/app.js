@@ -41,7 +41,7 @@ import {
   isMatrix, isVector, isReal, isInteger, Symbolic,
 } from './rpl/types.js';
 import { UNIT_CATALOG } from './rpl/units.js';
-import { loadInitialState, saveToLocalStorage, exportToFile, importFromFile } from './rpl/persist.js';
+import { loadInitialState, adoptStoredState, saveToLocalStorage, exportToFile, importFromFile, STORAGE_KEY } from './rpl/persist.js';
 import { giac } from './rpl/cas/giac-engine.mjs';
 import { ChatBot } from './ai/chat-bot.js';
 
@@ -479,6 +479,18 @@ class App {
     };
     this.stack.subscribe(schedule);
     subscribeState(schedule);
+    const adopt = (announce) => {
+      if (adoptStoredState(this.stack) && announce) this.toast('Updated from another window.');
+    };
+    let recent = [];
+    addEventListener('storage', (e) => {
+      if (e.key !== STORAGE_KEY) return;
+      const now = Date.now();
+      recent = recent.filter((t) => now - t < 2000);
+      if (recent.push(now) <= 20) adopt(false);
+    });
+    addEventListener('focus', () => adopt(true));
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') adopt(true); });
   }
 
   _noteAutosave(result) {

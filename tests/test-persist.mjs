@@ -22,7 +22,7 @@ import {
 import {
   snapshot, rehydrate, encodeValue, decodeValue, loadInitialState, STORAGE_KEY,
   BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup,
-  saveToLocalStorage,
+  saveToLocalStorage, adoptStoredState,
 } from '../www/src/rpl/persist.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import { varRecall } from '../www/src/rpl/state.js';
@@ -801,6 +801,40 @@ function quotaError() {
     assertThrows(() => archiveBackup('0', 'B', new Stack()), /Backup storage unavailable/, 'ARCHIVE reports unavailable storage when site data is blocked');
   } finally {
     if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor);
+    else delete globalThis.localStorage;
+    resetHome();
+  }
+}
+
+/* A window adopts what another window saved, so its own next save does not overwrite it. */
+{
+  resetHome();
+  const saved = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  const store = new Map();
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) },
+  });
+  try {
+    const mine = new Stack();
+    mine.push(Integer(1n));
+    saveToLocalStorage(mine);
+    assert(adoptStoredState(mine) === false, 'a window has nothing to adopt after its own save');
+    const theirs = new Stack();
+    theirs.push(Integer(7n));
+    theirs.push(Integer(8n));
+    store.set(STORAGE_KEY, JSON.stringify(snapshot(theirs)));
+    assert(adoptStoredState(mine) === true && mine.depth === 2 && mine.peek().value === 8n, 'a window adopts the state another window saved');
+    assert(adoptStoredState(mine) === false, 'the adopted state is not adopted twice');
+    mine.push(Integer(9n));
+    saveToLocalStorage(mine);
+    assert(adoptStoredState(mine) === false && mine.depth === 3, 'a window never adopts its own later save');
+    store.set(STORAGE_KEY, '{ not json');
+    assert(adoptStoredState(mine) === false && mine.depth === 3, 'a broken saved state is left alone');
+    store.delete(STORAGE_KEY);
+    assert(adoptStoredState(mine) === false, 'an empty store is not adopted');
+  } finally {
+    if (saved) Object.defineProperty(globalThis, 'localStorage', saved);
     else delete globalThis.localStorage;
     resetHome();
   }
