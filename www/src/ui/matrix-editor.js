@@ -3,6 +3,7 @@ import { writerKeys } from './input-area.js';
 import { parseEntry } from '../rpl/parser.js';
 import { format } from '../rpl/formatter.js';
 import { Var, parseAlgebra } from '../rpl/algebra.js';
+import { sheetNumber } from '../rpl/sheet.js';
 import {
   Matrix, Vector, Real, Symbolic,
   isMatrix, isVector, isList, isNumber, isSymbolic, isName, isValidHpIdentifier,
@@ -237,21 +238,25 @@ function padRow(row, cols) {
   return out;
 }
 
-export function pasteIntoGrid(grid, startR, startC, text) {
+function pastedCells(text) {
   const raw = String(text ?? '').replace(/\r\n|\r/g, '\n');
-  if (!/[\t\n]/.test(raw)) return grid;
+  if (!/[\t\n]/.test(raw)) return null;
   const lines = raw.split('\n');
   if (lines.length && lines[lines.length - 1] === '') lines.pop();
-  const parsed = lines.map(line => line.split('\t'));
-  if (!parsed.length) return grid;
+  return lines.map(line => line.split('\t'));
+}
+
+// Cells that fall outside the 50 × 50 limit are left out.
+export function pasteIntoGrid(grid, startR, startC, text) {
+  const parsed = pastedCells(text);
+  if (!parsed?.length) return grid;
   const r0 = Math.max(0, startR | 0);
   const c0 = Math.max(0, startC | 0);
-  const needR = r0 + parsed.length;
-  const needC = Math.max(grid[0]?.length || 1, ...parsed.map(row => c0 + row.length));
-  const next = resizeGrid(grid, Math.max(grid.length, needR), needC);
-  for (let i = 0; i < parsed.length; i++) {
-    for (let j = 0; j < parsed[i].length; j++) {
-      next[r0 + i][c0 + j] = parsed[i][j];
+  const needC = parsed.reduce((w, row) => Math.max(w, c0 + row.length), grid[0]?.length || 1);
+  const next = resizeGrid(grid, Math.max(grid.length, r0 + parsed.length), needC);
+  for (let i = 0; i < parsed.length && r0 + i < next.length; i++) {
+    for (let j = 0; j < parsed[i].length && c0 + j < next[0].length; j++) {
+      next[r0 + i][c0 + j] = sheetNumber(parsed[i][j]) ?? parsed[i][j];
     }
   }
   return next;
@@ -610,6 +615,11 @@ export class MatrixEditor {
       this._remember();
       this.grid = grid;
       this._renderGrid();
+    }
+    const cells = pastedCells(text);
+    const width = cells.reduce((w, row) => Math.max(w, row.length), 0);
+    if (r + cells.length > MATRIX_MAX || c + width > MATRIX_MAX) {
+      this._noteShape(`The writer holds ${MATRIX_MAX} × ${MATRIX_MAX} at most, so the rest of the range was left out.`);
     }
     this._focusCell(r, c);
   }

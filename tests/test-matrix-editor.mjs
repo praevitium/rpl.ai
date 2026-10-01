@@ -120,6 +120,14 @@ import {
     'pasteIntoGrid: grows to fit');
   assert(grown[0][0] === 'a' && grown[0][1] === 'b' && grown[1][0] === 'c',
     'pasteIntoGrid: grown cells');
+  const numbers = pasteIntoGrid([['', ''], ['', '']], 0, 0, '(300.00)\t$1,5\n12,5\tabc');
+  assert(numbers[0][0] === '-300.00' && numbers[0][1] === '1.5' && numbers[1][0] === '12.5' && numbers[1][1] === 'abc',
+    'pasteIntoGrid: accounting negatives, currency and decimal commas are read as numbers, other text is kept');
+  const tall = pasteIntoGrid([['']], 0, 0, Array.from({ length: 60 }, (_, i) => `${i}\t${i}`).join('\n'));
+  assert(tall.length === 50 && tall.every((row) => row.length === 2) && tall[49][0] === '49',
+    'pasteIntoGrid: rows past the 50-row limit are left out instead of throwing');
+  const wide = pasteIntoGrid([['']], 0, 0, `${Array.from({ length: 55 }, (_, i) => i).join('\t')}\n1`);
+  assert(wide.length === 2 && wide.every((row) => row.length === 50), 'pasteIntoGrid: columns past the 50-column limit are left out and the grid stays rectangular');
 }
 
 {
