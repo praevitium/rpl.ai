@@ -28,7 +28,7 @@ import {
   loadCommandReference, findReferenceEntry, formatReferenceEntry, searchCommands, shortDescription,
 } from './ui/command-reference.js';
 import { format, formatSource } from './rpl/formatter.js';
-import { spreadsheetHtml } from './rpl/hp-text.js';
+import { spreadsheetHtml } from './rpl/sheet.js';
 import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, currentPath,

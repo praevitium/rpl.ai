@@ -1,5 +1,6 @@
 import { parseEntry } from '../rpl/parser.js';
-import { hpTextToSource, spreadsheetToSource } from '../rpl/hp-text.js';
+import { hpTextToSource } from '../rpl/hp-text.js';
+import { spreadsheetToSource } from '../rpl/sheet.js';
 import { lookup, isProgramLine, runProgramLine } from '../rpl/ops.js';
 import { RPLAbort, RPLError, withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
 import { errorBeep } from './beep.js';

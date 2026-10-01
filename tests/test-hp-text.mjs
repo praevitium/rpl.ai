@@ -1,11 +1,7 @@
-import {
-  hpTextToSource, parseHpText, formatHpText, HP_TEXT_HEADER, spreadsheetToSource, spreadsheetHtml,
-} from '../www/src/rpl/hp-text.js';
+import { hpTextToSource, parseHpText, formatHpText, HP_TEXT_HEADER } from '../www/src/rpl/hp-text.js';
 import { parseEntry } from '../www/src/rpl/parser.js';
 import { formatSource } from '../www/src/rpl/formatter.js';
-import {
-  Str, isDirectory, isProgram, isString, isSymbolic, isTagged, Matrix, Vector, Integer, Real, Rational, Complex,
-} from '../www/src/rpl/types.js';
+import { Str, isDirectory, isProgram, isString, isSymbolic, isTagged } from '../www/src/rpl/types.js';
 import { assert, assertThrows } from './helpers.mjs';
 
 const LIBRARY = `%%HP: T(3)A(R)F(.);
@@ -68,24 +64,3 @@ assertThrows(() => parseHpText('1 2'), /Expected one object, found 2/, 'parseHpT
 assertThrows(() => parseHpText('@ only a comment'), /Empty file/, 'parseHpText: a file with no object is rejected');
 assertThrows(() => parseHpText('DIR SUB 1 END', 'N'), /expected a variable name/,
   'parseHpText: a DIR entry cannot take a command name such as SUB');
-
-{
-  const matrix = spreadsheetToSource('1\t2\r\n3\t4\r\n');
-  assert(matrix === '[[ 1 2 ][ 3 4 ]]' && formatSource(parseEntry(matrix)[0]) === '[[ 1 2 ][ 3 4 ]]',
-    'spreadsheetToSource: an Excel range becomes a matrix');
-  assert(spreadsheetToSource('1\t2\t3') === '[ 1 2 3 ]', 'spreadsheetToSource: a single row becomes a vector');
-  assert(formatSource(parseEntry(spreadsheetToSource('1,234.5\t12.5%\n-7\t'))[0]) === '[[ 1234.5 0.125 ][ -7 0 ]]',
-    'spreadsheetToSource: thousands separators and percentages are read, and an empty cell is 0');
-  assert(spreadsheetToSource('x\ty\n1\t2') === null, 'spreadsheetToSource: a range with text cells stays text');
-  assert(spreadsheetToSource('5\r\n') === null && spreadsheetToSource('1\n2\n3') === null,
-    'spreadsheetToSource: text without tabs is not a range');
-}
-
-{
-  const html = spreadsheetHtml(Matrix([[Integer(1n), Real(2.5)], [Rational(1n, 4n), Complex(1, -2)]]));
-  assert(html === '<table><tr><td>1</td><td>2.5</td></tr><tr><td>0.25</td><td>1-2i</td></tr></table>',
-    'spreadsheetHtml: a matrix becomes a table of spreadsheet numbers');
-  assert(spreadsheetHtml(Vector([Integer(1n), Integer(2n)])) === '<table><tr><td>1</td><td>2</td></tr></table>',
-    'spreadsheetHtml: a vector becomes one row');
-  assert(spreadsheetHtml(Integer(5n)) === '', 'spreadsheetHtml: other values have no table');
-}
