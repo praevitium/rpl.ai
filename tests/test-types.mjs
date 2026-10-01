@@ -67,7 +67,7 @@ import { assert, assertThrows, runOp } from './helpers.mjs';
     s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]));
     lookup('ABS').fn(s);
     const got = s.peek().value;
-    assert(Math.abs(got - Math.sqrt(30)) < 1e-12,
+    assert(Math.abs(got - Math.sqrt(30)) < 1e-10,
       `ABS Matrix → Frobenius norm ≈ √30 (got ${got})`);
   }
 
@@ -3096,9 +3096,9 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     ':k:Real(1) TANH → :k:tanh(1) ≈ 0.7616');
 
   // Inverse hyperbolic on Tagged Real (real-domain).
-  assertTaggedRealClose('ASINH', 'v', Real(2), Math.asinh(2), 1e-12,
+  assertTaggedRealClose('ASINH', 'v', Real(2), Math.asinh(2), 1e-10,
     ':v:Real(2) ASINH → :v:asinh(2) ≈ 1.4436');
-  assertTaggedRealClose('ACOSH', 'v', Real(2), Math.acosh(2), 1e-12,
+  assertTaggedRealClose('ACOSH', 'v', Real(2), Math.acosh(2), 1e-10,
     ':v:Real(2) ACOSH → :v:acosh(2) ≈ 1.3170');
   assertTaggedRealClose('ATANH', 'v', Real(0.5), Math.atanh(0.5), 1e-12,
     ':v:Real(0.5) ATANH → :v:atanh(0.5) ≈ 0.5493');
@@ -3160,7 +3160,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     s.push(RList([Real(0), Real(1)]));
     lookup('SINH').fn(s);
     const v = s.peek();
-    assert(v.items[0].value.eq(0) && Math.abs(v.items[1].value.toNumber() - Math.sinh(1)) < 1e-12,
+    assert(v.items[0].value.eq(0) && Math.abs(v.items[1].value.toNumber() - Math.sinh(1)) < 1e-10,
       `session120: SINH({0 1}) → {0 sinh(1)} (got ${v?.items?.map(x => x.value?.toString()).join(',')})`);
   }
 
@@ -3179,7 +3179,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     assert(v.value && v.value.type === 'list' && v.value.items.length === 2,
       `session120: :lbl:{0 1} SINH inner is 2-element list (got ${v?.value?.type})`);
     assert(v.value.items[0].value.eq(0)
-        && Math.abs(v.value.items[1].value.toNumber() - Math.sinh(1)) < 1e-12,
+        && Math.abs(v.value.items[1].value.toNumber() - Math.sinh(1)) < 1e-10,
       `session120: :lbl:{0 1} SINH → :lbl:{0 sinh(1)} (Tagged-outer-of-List unwrap order)`);
   }
 
@@ -5544,7 +5544,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       const items = v.value.items;
       assert(isReal(items[0]) && items[0].value.eq(0),
         `session140: ASIN :a:Vector(0, 1) item[0] = Real(0) (clean asin(0)=0 fold)`);
-      assert(isReal(items[1]) && Math.abs(Number(items[1].value) - Math.PI / 2) < 1e-12,
+      assert(isReal(items[1]) && Math.abs(Number(items[1].value) - Math.PI / 2) < 1e-10,
         `session140: ASIN :a:Vector(0, 1) item[1] ≈ π/2 (RAD; got ${items[1]?.value?.toString()})`);
     }
 
@@ -5562,7 +5562,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       const items = v.value.items;
       assert(isReal(items[0]) && items[0].value.eq(0),
         `session140: ACOS :a:Vector(1, 0) item[0] = Real(0) (acos(1)=0 fold)`);
-      assert(isReal(items[1]) && Math.abs(Number(items[1].value) - Math.PI / 2) < 1e-12,
+      assert(isReal(items[1]) && Math.abs(Number(items[1].value) - Math.PI / 2) < 1e-10,
         `session140: ACOS :a:Vector(1, 0) item[1] ≈ π/2 (RAD; got ${items[1]?.value?.toString()})`);
     }
 
@@ -5578,8 +5578,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
         `session140: ASIN :m:Matrix([[0,1],[-1,0]]) preserves outer tag + Matrix shape`);
       const r = v.value.rows;
       assert(r[0][0].value.eq(0)
-          && Math.abs(Number(r[0][1].value) - Math.PI / 2) < 1e-12
-          && Math.abs(Number(r[1][0].value) - (-Math.PI / 2)) < 1e-12
+          && Math.abs(Number(r[0][1].value) - Math.PI / 2) < 1e-10
+          && Math.abs(Number(r[1][0].value) - (-Math.PI / 2)) < 1e-10
           && r[1][1].value.eq(0),
         `session140: ASIN :m:Matrix([[0,1],[-1,0]]) → :m:Matrix([[0,π/2],[-π/2,0]]) (Matrix-axis wrapper-VM on ASIN; outer tag preserved)`);
     }
@@ -5641,8 +5641,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
         `session140: ACOS :m:Matrix([[1,0],[-1,1]]) preserves outer tag + Matrix shape`);
       const r = v.value.rows;
       assert(r[0][0].value.eq(0)
-          && Math.abs(Number(r[0][1].value) - Math.PI / 2) < 1e-12
-          && Math.abs(Number(r[1][0].value) - Math.PI) < 1e-12
+          && Math.abs(Number(r[0][1].value) - Math.PI / 2) < 1e-10
+          && Math.abs(Number(r[1][0].value) - Math.PI) < 1e-10
           && r[1][1].value.eq(0),
         `session140: ACOS :m:Matrix([[1,0],[-1,1]]) → :m:Matrix([[0,π/2],[π,0]]) (ACOS Matrix-axis; closes the inverse-trig pair on M)`);
     }
@@ -5717,8 +5717,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       lookup('ARG').fn(s);
       const v = s.peek();
       assert(isVector(v) && !isTagged(v) && v.items.length === 2
-          && isReal(v.items[0]) && Math.abs(Number(v.items[0].value) - Math.atan2(4, 3)) < 1e-12
-          && isReal(v.items[1]) && Math.abs(Number(v.items[1].value) - Math.PI / 2) < 1e-12,
+          && isReal(v.items[0]) && Math.abs(Number(v.items[0].value) - Math.atan2(4, 3)) < 1e-10
+          && isReal(v.items[1]) && Math.abs(Number(v.items[1].value) - Math.PI / 2) < 1e-10,
         `session140: ARG Vector(Complex(3,4), Complex(0,1)) → Vector(atan2(4,3), π/2) (bespoke per-element ARG, Complex axis); got ${v?.items?.map(x => `${x.type}(${x.value?.toString()})`).join(',')}`);
     }
 
@@ -5733,10 +5733,10 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       assert(isMatrix(v) && !isTagged(v) && v.rows.length === 2,
         `session140: ARG Matrix preserves Matrix kind, no Tagged on bare-M`);
       const r = v.rows;
-      assert(Math.abs(Number(r[0][0].value) - Math.PI / 2) < 1e-12
+      assert(Math.abs(Number(r[0][0].value) - Math.PI / 2) < 1e-10
           && r[0][1].value.eq(0)
-          && Math.abs(Number(r[1][0].value) - Math.PI) < 1e-12
-          && Math.abs(Number(r[1][1].value) - (-Math.PI / 2)) < 1e-12,
+          && Math.abs(Number(r[1][0].value) - Math.PI) < 1e-10
+          && Math.abs(Number(r[1][1].value) - (-Math.PI / 2)) < 1e-10,
         `session140: ARG Matrix([[i,1],[-1,-i]]) → Matrix([[π/2,0],[π,-π/2]]) (bespoke per-element ARG, Matrix axis with mixed Complex/Real); got ${r?.map(row => row.map(x => x.value?.toString()).join(',')).join('|')}`);
     }
 
@@ -5752,8 +5752,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       assert(isTagged(v) && v.tag === 'v' && isVector(v.value),
         `session140: ARG :v:Vector(Complex(3,4), Complex(0,1)) preserves tag + V shape (got tag=${v?.tag} inner=${v?.value?.type})`);
       const items = v.value.items;
-      assert(isReal(items[0]) && Math.abs(Number(items[0].value) - Math.atan2(4, 3)) < 1e-12
-          && isReal(items[1]) && Math.abs(Number(items[1].value) - Math.PI / 2) < 1e-12,
+      assert(isReal(items[0]) && Math.abs(Number(items[0].value) - Math.atan2(4, 3)) < 1e-10
+          && isReal(items[1]) && Math.abs(Number(items[1].value) - Math.PI / 2) < 1e-10,
         `session140: ARG :v:Vector(Complex(3,4), Complex(0,1)) → :v:Vector(atan2(4,3), π/2) (Tagged-of-V composition through 2-deep wrapper with bespoke V dispatch inside)`);
     }
 
@@ -7765,8 +7765,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     const v = s.peek();
     const item = v?.items?.[0];
     assert(isList(v) && v.items.length === 1 && isComplex(item)
-        && Math.abs(item.re - 0) < 1e-12
-        && Math.abs(Math.abs(item.im) - Math.PI / 2) < 1e-12,
+        && Math.abs(item.re - 0) < 1e-10
+        && Math.abs(Math.abs(item.im) - Math.PI / 2) < 1e-10,
       `session158: ACOSH {Real(0)} → {Complex(0, ±π/2)} (out-of-domain Real→Complex bypass composes per element through bare _withListUnary; mirror of session 150 bare-scalar out-of-domain pin lifted onto L axis); got items=${v?.items?.map(x => x?.type === 'complex' ? `Complex(${x.re},${x.im})` : `${x?.type}(${x?.value?.toString?.()})`).join(',')}`);
   }
 
@@ -7783,8 +7783,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     const v = s.peek();
     const item = v?.items?.[0];
     assert(isList(v) && v.items.length === 1 && isComplex(item)
-        && Math.abs(item.re - 0.5493061443340548) < 1e-12
-        && Math.abs(Math.abs(item.im) - Math.PI / 2) < 1e-12,
+        && Math.abs(item.re - 0.5493061443340548) < 1e-10
+        && Math.abs(Math.abs(item.im) - Math.PI / 2) < 1e-10,
       `session158: ATANH {Real(2)} → {Complex(atanh(2)-iπ/2)} (out-of-domain Real→Complex bypass composes per element through bare _withListUnary on direct-registered ATANH); got items=${v?.items?.map(x => x?.type === 'complex' ? `Complex(${x.re},${x.im})` : `${x?.type}(${x?.value?.toString?.()})`).join(',')}`);
   }
 
@@ -7807,8 +7807,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     const item1 = v?.items?.[1];
     assert(isList(v) && v.items.length === 2
         && isInteger(item0) && item0.value === 0n
-        && isComplex(item1) && Math.abs(item1.re - 0) < 1e-12
-            && Math.abs(Math.abs(item1.im) - Math.PI / 2) < 1e-12,
+        && isComplex(item1) && Math.abs(item1.re - 0) < 1e-10
+            && Math.abs(Math.abs(item1.im) - Math.PI / 2) < 1e-10,
       `session158: ACOSH {Integer(1) Real(0)} → {Integer(0) Complex(0, ±π/2)} (HETEROGENEOUS per-element domain dispatch under bare List: in-domain Integer fold + out-of-domain Real bypass within the same wrapper invocation; pins per-element domain-check independence); got items=${v?.items?.map(x => x?.type === 'complex' ? `Complex(${x.re},${x.im})` : `${x?.type}(${x?.value?.toString?.()})`).join(',')}`);
   }
 
@@ -7827,8 +7827,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     const item1 = okShape && v.value.items[1];
     assert(okShape && isReal(item0) && item0.value.eq(0)
         && isComplex(item1)
-        && Math.abs(item1.re - 0.5493061443340548) < 1e-12
-        && Math.abs(Math.abs(item1.im) - Math.PI / 2) < 1e-12,
+        && Math.abs(item1.re - 0.5493061443340548) < 1e-10
+        && Math.abs(Math.abs(item1.im) - Math.PI / 2) < 1e-10,
       `session158: ATANH :h:{Real(0) Real(2)} → :h:{Real(0) Complex(atanh(2)-iπ/2)} (HETEROGENEOUS in-domain/out-of-domain per element under Tagged-of-List composition — closes ACOSH/ATANH heterogeneous axis on the T+L composition); got tag=${v?.tag} items=${v?.value?.items?.map(x => x?.type === 'complex' ? `Complex(${x.re},${x.im})` : `${x?.type}(${x?.value?.toString?.()})`).join(',')}`);
   }
 
@@ -8931,7 +8931,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       assert(isList(v) && v.items.length === 2
           && isReal(v.items[0]) && v.items[0].value.eq(expect0)
           && isReal(v.items[1])
-          && Math.abs(v.items[1].value.toNumber() - expect1) < 1e-12,
+          && Math.abs(v.items[1].value.toNumber() - expect1) < 1e-10,
         `session171: { Real(0) Real(1) } ${op} → { Real(${expect0}) Real(${opLower}(1)) } (heterogeneous-output-value pin under bare _withListUnary on forward-hyperbolic ${op} axis — distinct values per List position pin per-element wrapper dispatch; mirror of s120 SINH bare-List heterogeneous value pin lifted onto ${op}; type+length-only s120 sweep on ${op} did not pin distinct output values); got items=${v?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
     }
 
@@ -8945,7 +8945,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
           && isList(v.value) && v.value.items.length === 2
           && isReal(v.value.items[0]) && v.value.items[0].value.eq(expect0)
           && isReal(v.value.items[1])
-          && Math.abs(v.value.items[1].value.toNumber() - expect1) < 1e-12,
+          && Math.abs(v.value.items[1].value.toNumber() - expect1) < 1e-10,
         `session171: :h:{ Real(0) Real(1) } ${op} → :h:{ Real(${expect0}) Real(${opLower}(1)) } (heterogeneous-output-value pin under Tagged-of-List composition on forward-hyperbolic ${op} — outer tag preserved + distinct values per List position; mirror of s120 SINH Tagged-of-List heterogeneous value pin lifted onto ${op}; closes the forward-hyperbolic SINH/COSH/TANH/ASINH four-op family on the T+L heterogeneous-output value-pin axis); got tag=${v?.tag} items=${v?.value?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
     }
   }
@@ -9092,7 +9092,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
             `session173: { Real(0) } ${op} → { Real(...) } shape (n=1 single-element boundary on bare _withListUnary on inverse-trig ${op}; pins per-element fold runs through the wrapper for n=1 — guards against singleton bypass refactor); got items=${v?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
           if (op === 'ACOS') {
             // value-precise: π/2 RAD (set above).
-            assert(Math.abs(v.items[0].value.toNumber() - Math.PI / 2) < 1e-12,
+            assert(Math.abs(v.items[0].value.toNumber() - Math.PI / 2) < 1e-10,
               `session173: { Real(0) } ACOS → { Real(π/2) } in RAD (n=1 single-element value-precise pin; acos(0)=π/2 — non-identity fold outlier in the inverse-trig family, mirror of session 171 COSH outlier and session 173 Cluster 1 COS outlier); got ${v.items[0].value?.toString?.()}`);
           } else {
             // value-precise: 0 (asin(0)=0, atan(0)=0; angle-mode-independent).
@@ -9112,7 +9112,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
               && isReal(v.value.items[0]),
             `session173: :t:{ Real(0) } ${op} → :t:{ Real(...) } shape (n=1 single-element under Tagged-of-List composition on inverse-trig ${op}; outer tag preserved + inner per-element fold for the singleton — closes the inverse-trig ASIN/ACOS/ATAN trio on the T+L n=1 boundary); got tag=${v?.tag} items=${v?.value?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
           if (op === 'ACOS') {
-            assert(Math.abs(v.value.items[0].value.toNumber() - Math.PI / 2) < 1e-12,
+            assert(Math.abs(v.value.items[0].value.toNumber() - Math.PI / 2) < 1e-10,
               `session173: :t:{ Real(0) } ACOS → :t:{ Real(π/2) } in RAD (n=1 T+L value-precise pin; acos(0)=π/2 fold via per-element wrapper dispatch under Tagged peel); got ${v.value.items[0].value?.toString?.()}`);
           } else {
             assert(v.value.items[0].value.eq(0),
@@ -9169,7 +9169,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
         assert(isList(v) && v.items.length === 2
             && isReal(v.items[0]) && v.items[0].value.eq(expect0)
             && isReal(v.items[1])
-            && Math.abs(v.items[1].value.toNumber() - expect1) < 1e-12,
+            && Math.abs(v.items[1].value.toNumber() - expect1) < 1e-10,
           `session175r: { Real(0) Real(1) } ${op} RAD → { Real(${expect0}) Real(${opLower}(1)) } (heterogeneous-output-value pin under bare _withListUnary on forward-trig ${op} — distinct values per List position; COS is the outlier with expect0=1 not 0; mirror of s171 COSH/TANH/ASINH pattern lifted onto the forward-trig trio; re-land of session175 pin that did not persist — T-003); got items=${v?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
       }
 
@@ -9183,7 +9183,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
             && isList(v.value) && v.value.items.length === 2
             && isReal(v.value.items[0]) && v.value.items[0].value.eq(expect0)
             && isReal(v.value.items[1])
-            && Math.abs(v.value.items[1].value.toNumber() - expect1) < 1e-12,
+            && Math.abs(v.value.items[1].value.toNumber() - expect1) < 1e-10,
           `session175r: :h:{ Real(0) Real(1) } ${op} RAD → :h:{ Real(${expect0}) Real(${opLower}(1)) } (T+L heterogeneous-output-value pin — outer tag preserved + distinct values per List position via 3-deep wrapper; closes forward-trig ${op} on the T+L heterogeneous-output value-pin axis; re-land T-003); got tag=${v?.tag} items=${v?.value?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
       }
     }
@@ -9209,9 +9209,9 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
         const v = s.peek();
         assert(isList(v) && v.items.length === 2
             && isReal(v.items[0])
-            && Math.abs(v.items[0].value.toNumber() - expect0) < 1e-12
+            && Math.abs(v.items[0].value.toNumber() - expect0) < 1e-10
             && isReal(v.items[1])
-            && Math.abs(v.items[1].value.toNumber() - expect1) < 1e-12,
+            && Math.abs(v.items[1].value.toNumber() - expect1) < 1e-10,
           `session175r: { Real(0) Real(1) } ${op} RAD → { Real(${opLower}(0)) Real(${opLower}(1)) } (heterogeneous-output-value pin under bare _withListUnary on inverse-trig ${op} — ACOS is FLIPPED: item[0]=π/2, item[1]=0; re-land of session175 pin that did not persist — T-003); got items=${v?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
       }
 
@@ -9224,9 +9224,9 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
         assert(isTagged(v) && v.tag === 'i'
             && isList(v.value) && v.value.items.length === 2
             && isReal(v.value.items[0])
-            && Math.abs(v.value.items[0].value.toNumber() - expect0) < 1e-12
+            && Math.abs(v.value.items[0].value.toNumber() - expect0) < 1e-10
             && isReal(v.value.items[1])
-            && Math.abs(v.value.items[1].value.toNumber() - expect1) < 1e-12,
+            && Math.abs(v.value.items[1].value.toNumber() - expect1) < 1e-10,
           `session175r: :i:{ Real(0) Real(1) } ${op} RAD → :i:{ Real(${opLower}(0)) Real(${opLower}(1)) } (T+L heterogeneous-output-value pin — outer tag preserved; ACOS FLIPPED pattern preserved under Tagged dispatch; closes inverse-trig ${op} on the T+L heterogeneous-output value-pin axis; re-land T-003); got tag=${v?.tag} items=${v?.value?.items?.map(x => `${x.type}(${x.value?.toString?.()})`).join(',')}`);
       }
     }
@@ -10193,7 +10193,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     const v = runOp('ZETA', RList([Integer(2n)]));
     const a = v?.items?.[0];
     assert(isList(v) && v.items.length === 1 &&
-           isReal(a) && Math.abs(a.value.toNumber() - Math.PI ** 2 / 6) < 1e-12,
+           isReal(a) && Math.abs(a.value.toNumber() - Math.PI ** 2 / 6) < 1e-10,
       `session212: { Integer(2) } ZETA → { Real(ζ(2)) } (bare-List; got ${a?.value?.toNumber()})`);
   }
 
@@ -10202,7 +10202,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     const v = runOp('ZETA', Vector([Integer(2n), Integer(0n)]));
     const a = v?.items?.[0], b = v?.items?.[1];
     assert(isVector(v) && v.items.length === 2 &&
-           isReal(a) && Math.abs(a.value.toNumber() - Math.PI ** 2 / 6) < 1e-12 &&
+           isReal(a) && Math.abs(a.value.toNumber() - Math.PI ** 2 / 6) < 1e-10 &&
            isReal(b) && b.value.toNumber() === -0.5,
       `session212: [ Integer(2) Integer(0) ] ZETA → [ Real(ζ(2)) Real(-0.5) ] (V; got [${a?.value?.toNumber()}, ${b?.value?.toNumber()}])`);
   }
@@ -10212,7 +10212,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     const v = runOp('ZETA', Matrix([[Integer(2n)]]));
     const cell = v?.rows?.[0]?.[0];
     assert(isMatrix(v) && v.rows.length === 1 && v.rows[0].length === 1 &&
-           isReal(cell) && Math.abs(cell.value.toNumber() - Math.PI ** 2 / 6) < 1e-12,
+           isReal(cell) && Math.abs(cell.value.toNumber() - Math.PI ** 2 / 6) < 1e-10,
       `session212: [[ Integer(2) ]] ZETA → [[ Real(ζ(2)) ]] (M; got ${cell?.value?.toNumber()})`);
   }
 

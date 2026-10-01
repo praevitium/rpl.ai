@@ -163,7 +163,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   const s = new Stack();
   s.push(Real(1));
   lookup('ASIN').fn(s);
-  assert(Math.abs(s.peek().value - Math.PI / 2) < 1e-12, 'ASIN(1) in RAD = pi/2');
+  assert(Math.abs(s.peek().value - Math.PI / 2) < 1e-10, 'ASIN(1) in RAD = pi/2');
 }
 
 // DEG/RAD/GRD ops set the mode from RPL code
@@ -2596,8 +2596,8 @@ setAngle('rad');
   lookup('P→C').fn(s);
   const r = s.pop();
   assert(isComplex(r)
-         && Math.abs(r.re) < 1e-12
-         && Math.abs(r.im - 2) < 1e-12,
+         && Math.abs(r.re) < 1e-10
+         && Math.abs(r.im - 2) < 1e-10,
     'session055: P→C(2, π/2) = 2i in RAD');
 }
 
@@ -2911,9 +2911,9 @@ for (const src of ['`RND(X,2)`', '`TRNC(X,1)`']) {
   lookup('ARG').fn(s);
   const v = s.peek();
   assert(v.type === 'vector'
-      && Math.abs(v.items[0].value - 0) < 1e-12
-      && Math.abs(v.items[1].value - Math.PI) < 1e-12
-      && Math.abs(v.items[2].value - Math.PI / 2) < 1e-12,
+      && Math.abs(v.items[0].value - 0) < 1e-10
+      && Math.abs(v.items[1].value - Math.PI) < 1e-10
+      && Math.abs(v.items[2].value - Math.PI / 2) < 1e-10,
     'session062: ARG on Vector element-wise in RAD mode');
 }
 {
@@ -2923,10 +2923,10 @@ for (const src of ['`RND(X,2)`', '`TRNC(X,1)`']) {
   lookup('ARG').fn(s);
   const m = s.peek();
   assert(m.type === 'matrix'
-      && Math.abs(m.rows[0][0].value - 0) < 1e-12
-      && Math.abs(m.rows[0][1].value - Math.PI) < 1e-12
-      && Math.abs(m.rows[1][0].value - Math.PI / 2) < 1e-12
-      && Math.abs(m.rows[1][1].value - 0) < 1e-12,
+      && Math.abs(m.rows[0][0].value - 0) < 1e-10
+      && Math.abs(m.rows[0][1].value - Math.PI) < 1e-10
+      && Math.abs(m.rows[1][0].value - Math.PI / 2) < 1e-10
+      && Math.abs(m.rows[1][1].value - 0) < 1e-10,
     'session062: ARG on Matrix element-wise');
 }
 {
@@ -2936,7 +2936,7 @@ for (const src of ['`RND(X,2)`', '`TRNC(X,1)`']) {
   lookup('ARG').fn(s);
   const t = s.peek();
   assert(t.type === 'tagged' && t.tag === 'phase'
-      && isReal(t.value) && Math.abs(t.value.value - Math.PI / 2) < 1e-12,
+      && isReal(t.value) && Math.abs(t.value.value - Math.PI / 2) < 1e-10,
     'session062: ARG on Tagged preserves tag');
 }
 
@@ -4749,7 +4749,7 @@ setAngle('RAD');
   const s = new Stack();
   s.push(Real(0.5));
   lookup('GAMMA').fn(s);
-  assert(isReal(s.peek()) && _approx(s.peek().value, Math.sqrt(Math.PI), 1e-12),
+  assert(isReal(s.peek()) && _approx(s.peek().value, Math.sqrt(Math.PI), 1e-10),
     'session068: GAMMA(0.5) = √π');
 }
 {
@@ -4844,7 +4844,7 @@ setAngle('RAD');
   const s = new Stack();
   s.push(Integer(5n));
   lookup('LNGAMMA').fn(s);
-  assert(_approx(s.peek().value, Math.log(24), 1e-12),
+  assert(_approx(s.peek().value, Math.log(24), 1e-10),
     'session068: LNGAMMA(5) = ln(24)');
 }
 {
@@ -4873,7 +4873,7 @@ setAngle('RAD');
   lookup('LNGAMMA').fn(s);
   const v = s.peek();
   assert(v.type === 'tagged' && v.tag === 'logΓ'
-    && _approx(v.value.value, Math.log(362880), 1e-12),
+    && _approx(v.value.value, Math.log(362880), 1e-10),
     'session068: LNGAMMA preserves Tagged label');
 }
 {
@@ -6609,7 +6609,7 @@ function _arrayEq(a, b) {
   s.push(Real(2));
   lookup('ZETA').fn(s);
   // ζ(2) = π²/6 to double precision.
-  assert(isReal(s.peek()) && Math.abs(s.peek().value - Math.PI * Math.PI / 6) < 1e-12,
+  assert(isReal(s.peek()) && Math.abs(s.peek().value - Math.PI * Math.PI / 6) < 1e-10,
     'session086: ZETA(2) = π²/6');
 }
 {
@@ -6617,7 +6617,7 @@ function _arrayEq(a, b) {
   s.push(Real(4));
   lookup('ZETA').fn(s);
   // ζ(4) = π⁴/90.
-  assert(Math.abs(s.peek().value - Math.pow(Math.PI, 4) / 90) < 1e-12,
+  assert(Math.abs(s.peek().value - Math.pow(Math.PI, 4) / 90) < 1e-10,
     'session086: ZETA(4) = π⁴/90');
 }
 {
@@ -6691,8 +6691,8 @@ function _arrayEq(a, b) {
   lookup('ZETA').fn(s);
   const items = s.peek().items;
   assert(items.length === 2
-      && Math.abs(items[0].value - Math.PI * Math.PI / 6) < 1e-12
-      && Math.abs(items[1].value - Math.pow(Math.PI, 4) / 90) < 1e-12,
+      && Math.abs(items[0].value - Math.PI * Math.PI / 6) < 1e-10
+      && Math.abs(items[1].value - Math.pow(Math.PI, 4) / 90) < 1e-10,
     'session086: ZETA distributes over RList');
 }
 {
@@ -6702,7 +6702,7 @@ function _arrayEq(a, b) {
   lookup('ZETA').fn(s);
   const v = s.peek();
   assert(v.type === 'tagged' && v.tag === 'Z'
-      && Math.abs(v.value.value - Math.pow(Math.PI, 4) / 90) < 1e-12,
+      && Math.abs(v.value.value - Math.pow(Math.PI, 4) / 90) < 1e-10,
     'session086: ZETA preserves tag wrapper');
 }
 
@@ -6718,7 +6718,7 @@ function _arrayEq(a, b) {
   s.push(Real(1));
   lookup('LAMBERT').fn(s);
   // Ω constant — W(1) = 0.5671432904097838729999686622…
-  assert(Math.abs(s.peek().value - 0.5671432904097838) < 1e-14,
+  assert(Math.abs(s.peek().value - 0.5671432904097838) < 1e-10,
     'session086: LAMBERT(1) = Ω (omega constant)');
 }
 {
@@ -6734,8 +6734,9 @@ function _arrayEq(a, b) {
   s.push(Real(-1 / Math.E));
   lookup('LAMBERT').fn(s);
   // Branch point — Puiseux seeding lets Halley hit -1 exactly.
-  assert(s.peek().value.eq(-1),
-    'session086: LAMBERT(-1/e) = -1 exactly (branch point)');
+  // A Real keeps 12 digits, so the input sits 4E-13 off the branch point and W is 1.5E-6 from -1.
+  assert(Math.abs(s.peek().value.toNumber() + 1) < 1e-5,
+    'session086: LAMBERT(-1/e) = -1 at the branch point');
 }
 
 // LAMBERT — bare-Integer operands exercise the `isInteger` arm of
@@ -6753,7 +6754,7 @@ function _arrayEq(a, b) {
   s.push(Integer(1n));
   lookup('LAMBERT').fn(s);
   // Ω constant via the integer arm.
-  assert(isReal(s.peek()) && Math.abs(s.peek().value - 0.5671432904097838) < 1e-14,
+  assert(isReal(s.peek()) && Math.abs(s.peek().value - 0.5671432904097838) < 1e-10,
     'session296: LAMBERT(Integer(1)) = Ω (omega constant)');
 }
 {
@@ -6761,7 +6762,7 @@ function _arrayEq(a, b) {
   s.push(Integer(3n));
   lookup('LAMBERT').fn(s);
   const w = s.peek().value;
-  assert(isReal(s.peek()) && Math.abs(w * Math.exp(w) - 3) < 1e-12,
+  assert(isReal(s.peek()) && Math.abs(w * Math.exp(w) - 3) < 1e-10,
     'session296: LAMBERT(Integer(3)) inverse property W·e^W = 3');
 }
 
@@ -6772,7 +6773,7 @@ function _arrayEq(a, b) {
     s.push(Real(x));
     lookup('LAMBERT').fn(s);
     const w = s.peek().value;
-    assert(Math.abs(w * Math.exp(w) - x) < 1e-12 * Math.max(1, Math.abs(x)),
+    assert(Math.abs(w * Math.exp(w) - x) < 1e-10 * Math.max(1, Math.abs(x)),
       `session086: LAMBERT inverse property W·e^W = x for x=${x}`);
   }
 }
@@ -6884,7 +6885,7 @@ function _arrayEq(a, b) {
   s.push(Real(1));
   lookup('Ei').fn(s);
   // Ei(1) = 1.8951178163559368…  (A&S Table 5.1)
-  assert(isReal(s.peek()) && Math.abs(s.peek().value - 1.8951178163559368) < 1e-12,
+  assert(isReal(s.peek()) && Math.abs(s.peek().value - 1.8951178163559368) < 1e-10,
     'session109: Ei(1) = 1.89511781635…');
 }
 {
@@ -6900,7 +6901,7 @@ function _arrayEq(a, b) {
   s.push(Real(-1));
   lookup('Ei').fn(s);
   // Ei(-1) = -0.21938393439552029…  (E1 small-|x| series branch)
-  assert(Math.abs(s.peek().value - (-0.21938393439552029)) < 1e-13,
+  assert(Math.abs(s.peek().value - (-0.21938393439552029)) < 1e-10,
     'session109: Ei(-1) = -0.219383934…');
 }
 {
@@ -6948,7 +6949,7 @@ function _arrayEq(a, b) {
   lookup('Ei').fn(s);
   const v = s.peek();
   assert(v.type === 'tagged' && v.tag === 'E'
-      && Math.abs(v.value.value - 1.8951178163559368) < 1e-12,
+      && Math.abs(v.value.value - 1.8951178163559368) < 1e-10,
     'session109: Ei preserves tag wrapper');
 }
 {
@@ -6958,8 +6959,8 @@ function _arrayEq(a, b) {
   lookup('Ei').fn(s);
   const items = s.peek().items;
   assert(items.length === 2
-      && Math.abs(items[0].value - 1.8951178163559368) < 1e-12
-      && Math.abs(items[1].value - (-0.21938393439552029)) < 1e-13,
+      && Math.abs(items[0].value - 1.8951178163559368) < 1e-10
+      && Math.abs(items[1].value - (-0.21938393439552029)) < 1e-10,
     'session109: Ei distributes over RList');
 }
 
@@ -6976,7 +6977,7 @@ function _arrayEq(a, b) {
   s.push(Real(1));
   lookup('Si').fn(s);
   // Si(1) = 0.9460830703671831…  (A&S Table 5.3)
-  assert(Math.abs(s.peek().value - 0.9460830703671831) < 1e-13,
+  assert(Math.abs(s.peek().value - 0.9460830703671831) < 1e-10,
     'session109: Si(1) = 0.946083070…');
 }
 {
@@ -6992,7 +6993,7 @@ function _arrayEq(a, b) {
   s.push(Real(10));
   lookup('Si').fn(s);
   // Si(10) = 1.6583475942188738…  (CF branch)
-  assert(Math.abs(s.peek().value - 1.6583475942188738) < 1e-12,
+  assert(Math.abs(s.peek().value - 1.6583475942188738) < 1e-10,
     'session109: Si(10) = 1.658347594…');
 }
 {
@@ -7001,7 +7002,7 @@ function _arrayEq(a, b) {
   s.push(Real(-5));
   lookup('Si').fn(s);
   // Si(5) = 1.5499312449446743…
-  assert(Math.abs(s.peek().value - (-1.5499312449446743)) < 1e-12,
+  assert(Math.abs(s.peek().value - (-1.5499312449446743)) < 1e-10,
     'session109: Si(-5) = -Si(5) (odd parity across CF branch)');
 }
 {
@@ -7026,7 +7027,7 @@ function _arrayEq(a, b) {
   lookup('Si').fn(s);
   const v = s.peek();
   assert(v.type === 'tagged' && v.tag === 'T'
-      && Math.abs(v.value.value - 0.9460830703671831) < 1e-13,
+      && Math.abs(v.value.value - 0.9460830703671831) < 1e-10,
     'session109: Si preserves tag wrapper');
 }
 
@@ -7108,7 +7109,7 @@ function _arrayEq(a, b) {
   const s = new Stack();
   s.push(Integer(1n));
   lookup('Ei').fn(s);
-  assert(isReal(s.peek()) && Math.abs(s.peek().value - 1.8951178163559368) < 1e-12,
+  assert(isReal(s.peek()) && Math.abs(s.peek().value - 1.8951178163559368) < 1e-10,
     'session382: Ei(Integer 1) = 1.89511781635… via the integer arm');
 }
 {
@@ -7136,7 +7137,7 @@ function _arrayEq(a, b) {
   const s = new Stack();
   s.push(Integer(-5n));
   lookup('Si').fn(s);
-  assert(isReal(s.peek()) && Math.abs(s.peek().value - (-1.5499312449446743)) < 1e-12,
+  assert(isReal(s.peek()) && Math.abs(s.peek().value - (-1.5499312449446743)) < 1e-10,
     'session382: Si(Integer -5) = -Si(5) (odd parity, integer arm across CF branch)');
 }
 {
@@ -7223,7 +7224,7 @@ function _arrayEq(a, b) {
   assert(shown('0.285 2 RND') === '0.29' && shown('1.005 2 RND') === '1.01' && shown('-2.675 2 RND') === '-2.68' && shown('-5.5 0 RND') === '-6.', 'RND rounds a decimal half away from zero');
   assert(shown('123456 -2 RND') === '120000.' && shown('0.000123456 -3 RND') === '0.000123' && shown('123456 -2 TRNC') === '120000.', 'a negative count of RND and TRNC is significant digits');
   assert(shown('(1.005,2.675) 2 RND') === '(1.01,2.68)', 'RND rounds both parts of a complex number');
-  assert(shown('123456789012345678. 10 MOD') === '8.' && shown('-5.5 3 MOD') === '0.5' && shown('5.5 -3 MOD') === '-0.5' && shown('5.5 3 MOD') === '2.5', 'MOD of a Real is the exact remainder with the divisor\'s sign');
+  assert(shown('1E15 7 MOD') === '6.' && shown('-5.5 3 MOD') === '0.5' && shown('5.5 -3 MOD') === '-0.5' && shown('5.5 3 MOD') === '2.5', 'MOD of a Real is the exact remainder with the divisor\'s sign');
   assert(shown('100000. LOG IP') === '5.' && shown('0.001 LOG') === '-3.', 'LOG of a power of ten is exact');
   assert(shown('1.2345678901E-10 SINH') === '0.00000000012345678901' && shown('0.5 SINH') === '0.521095305494', 'SINH keeps its digits near 0');
 }
@@ -7278,4 +7279,15 @@ function _arrayEq(a, b) {
   } finally {
     setDisplay('STD');
   }
+}
+
+/* A Real keeps 12 significant digits and a Complex part too, as on the HP 50g, so what is shown is what is stored. */
+{
+  resetHome();
+  const shown = (line) => format(runLine(line).peek());
+  assert(Real('0.123456789012345').value.toString() === '0.123456789012' && Real('123456789012345678').value.toString() === '123456789012000000', 'a Real is rounded to 12 significant digits when it is made');
+  assert(shown('1 3. / 3 *') === '0.999999999999' && shown('1 3. / 3 * IP') === '0.' && shown('1 3. / 3 * 1 ==') === '0.', '1 3. / 3 * is 0.999999999999 and acts like it');
+  assert(shown('0.1 0.2 + 0.3 ==') === '1.' && shown('1E15 1 +') === '1E15', 'sums of decimals stay exact and a 16-digit sum rounds');
+  assert(shown('1 3. / →STR STR→') === '0.333333333333' && shown('1 3. / DUP →STR STR→ ==') === '1.', 'a Real survives →STR and STR→ unchanged');
+  assert(Complex(0.1 + 0.2, 1 / 3).re === 0.3 && Complex(0, 1 / 3).im === 0.333333333333, 'the parts of a Complex are rounded to 12 digits');
 }

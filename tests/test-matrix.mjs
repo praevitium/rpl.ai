@@ -363,7 +363,7 @@ import { assert, assertThrows } from './helpers.mjs';
     const s = new Stack();
     s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]));
     lookup('NORM').fn(s);
-    assert(Math.abs(s.peek().value - Math.sqrt(30)) < 1e-12,
+    assert(Math.abs(s.peek().value - Math.sqrt(30)) < 1e-10,
       `NORM frobenius [[1 2][3 4]] → √30 (got ${s.peek()?.value})`);
   }
 
@@ -3346,7 +3346,7 @@ function _approxMatEqual(A, B, tol) {
     'session057: MAD Matrix → length-2 Vector');
   assert(Math.abs(v.items[0].value - 2 / 3) < 1e-12,
     `session057: MAD col1 = 2/3, got ${v.items[0].value}`);
-  assert(Math.abs(v.items[1].value - 20 / 3) < 1e-12,
+  assert(Math.abs(v.items[1].value - 20 / 3) < 1e-10,
     `session057: MAD col2 = 20/3, got ${v.items[1].value}`);
 }
 

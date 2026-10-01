@@ -54,7 +54,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   const s = new Stack();
   s.push(Name('PI'));
   lookup('EVAL').fn(s);
-  assert(s.depth === 1 && isReal(s.peek()) && s.peek().value.eq(Math.PI),
+  assert(s.depth === 1 && isReal(s.peek()) && s.peek().value.eq(Real(Math.PI).value),
          'EVAL of bound Name(PI) pushes Real(pi)');
 }
 

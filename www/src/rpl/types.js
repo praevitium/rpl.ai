@@ -29,13 +29,16 @@ export const TYPES = Object.freeze({
 
 export const BIN_BASES = Object.freeze(['h', 'd', 'o', 'b']);
 
+const REAL_DIGITS = 12;
+
 // The payload is always a Decimal.  The HP50 has no NaN, so a NaN result
 // must surface as an error rather than a value.
 export function Real(n) {
-  const d = (n instanceof Decimal) ? n : new Decimal(n);
+  let d = (n instanceof Decimal) ? n : new Decimal(n);
   if (d.isNaN()) {
     throw new TypeError(`Real() does not accept NaN (from ${n})`);
   }
+  if (d.isFinite() && d.sd(true) > REAL_DIGITS) d = d.toSignificantDigits(REAL_DIGITS, Decimal.ROUND_HALF_UP);
   return Object.freeze({ type: TYPES.REAL, value: d });
 }
 
@@ -78,11 +81,16 @@ export function BinaryInteger(n, base = 'h') {
   return Object.freeze({ type: TYPES.BININT, value, base: b });
 }
 
+const roundPart = (x) => {
+  const n = Number(x);
+  return Number.isFinite(n) ? Number(n.toPrecision(REAL_DIGITS)) : n;
+};
+
 export function Complex(re, im) {
   return Object.freeze({
     type: TYPES.COMPLEX,
-    re: Number(re),
-    im: Number(im),
+    re: roundPart(re),
+    im: roundPart(im),
   });
 }
 

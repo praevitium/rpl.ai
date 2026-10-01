@@ -91,7 +91,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   const s = new Stack();
   s.push(Name('PI'));
   lookup('RCL').fn(s);
-  assert(s.depth === 1 && isReal(s.peek()) && Math.abs(s.peek().value - Math.PI) < 1e-15,
+  assert(s.depth === 1 && isReal(s.peek()) && Math.abs(s.peek().value - Math.PI) < 1e-10,
          'RCL pushes PI value');
 }
 
