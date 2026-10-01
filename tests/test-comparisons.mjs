@@ -513,7 +513,8 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   }
 
   // -------- session287: ordered comparators are scalar-only --------
-  // DATA_TYPES documents L/V/M/T/U as `✗` on `<`/`>`/`≤`/`≥`:
+  // DATA_TYPES documents L/V/M/T/U as `✗` on `<`/`>`/`≤`/`≥` (a Unit
+  // compares only with another Unit, converted to common units):
   // `comparePair` accepts only `isNumber` (+ BinInt-coerce, String-lex,
   // Sy-lift); List/Vector/Matrix/Tagged/Unit all reach the `!isNumber`
   // guard and throw.  Only String×Real (s087) and String-lex (s102) were
@@ -525,11 +526,11 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
       [() => Vector([Real(1)]),    'Vector'],
       [() => Matrix([[Real(1)]]),  'Matrix'],
       [() => Tagged('x', Real(1)), 'Tagged'],
-      [() => Unit(1, 'm'),         'Unit'],
+      [() => Unit(1, [['m', 1]]),  'Unit'],
     ];
     for (const [mk, label] of cases) {
       assertThrows(
-        () => { const s = new Stack(); s.push(mk()); s.push(label === 'Unit' ? Unit(2, 'm') : Real(2)); lookup(op).fn(s); },
+        () => { const s = new Stack(); s.push(mk()); s.push(Real(2)); lookup(op).fn(s); },
         /Bad argument type/,
         `session287: ${label} ${op} → Bad argument type (comparePair is scalar-only)`
       );

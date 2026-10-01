@@ -11131,13 +11131,13 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     assertThrows(() => lookup(op).fn(s), /Bad argument type/i,
       `session253: :x:R(1) R(2) ${op} → 'Bad argument type' (T=✗; Tagged not unwrapped by comparePair)`);
   }
-  // U=✗ — Unit is not isNumber; dimensional compare is not supported on < > ≤ ≥.
-  for (const op of ops) {
+  // U — a Unit orders against another Unit, converted to common units (AUR).
+  for (const [op, expected] of [['<', 1], ['>', 0], ['≤', 1], ['≥', 0]]) {
     const s = new Stack();
     s.push(Unit(1, [['m', 1]]));
     s.push(Unit(2, [['m', 1]]));
-    assertThrows(() => lookup(op).fn(s), /Bad argument type/i,
-      `session253: 1_m 2_m ${op} → 'Bad argument type' (U=✗; Unit not handled by comparePair)`);
+    lookup(op).fn(s);
+    assert(s.peek().value.eq(expected), `session253: 1_m 2_m ${op} → ${expected} (a Unit compares with a Unit)`);
   }
 }
 
@@ -11498,13 +11498,13 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   }
   {
     const s = new Stack(); s.push(U1); s.push(U2);
-    assertThrows(() => lookup('MIN').fn(s), /Bad argument type/i,
-      'session263: 1_m 2_m MIN → Bad argument type (U=✗; _minMaxScalar requires isNumber; Unit not in isNumber)');
+    lookup('MIN').fn(s);
+    assert(s.peek() === U1, 'session263: 1_m 2_m MIN → 1_m (AUR: MIN and MAX take two units and return the one they pick)');
   }
   {
     const s = new Stack(); s.push(U1); s.push(U2);
-    assertThrows(() => lookup('MAX').fn(s), /Bad argument type/i,
-      'session263: 1_m 2_m MAX → Bad argument type (U=✗; same _minMaxScalar guard as MIN)');
+    lookup('MAX').fn(s);
+    assert(s.peek() === U2, 'session263: 1_m 2_m MAX → 2_m (same unit pick as MIN)');
   }
   {
     const s = new Stack(); s.push(U1); s.push(U2);

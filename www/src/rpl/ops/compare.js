@@ -2,9 +2,9 @@ import { isNumber, promoteNumericPair, isBinaryInteger, isName, isString, isList
 import { getWordsizeMask } from '../state.js';
 import { RPLError } from '../stack.js';
 import { Bin as AstBin, astEqual } from '../algebra.js';
-import { uexprEqual } from '../units.js';
+import { uexprEqual, sameDims } from '../units.js';
 import { register } from './registry.js';
-import { FALSE, TRUE, _isSymOperand, _toAst, isTruthy } from './internal.js';
+import { FALSE, TRUE, _inUnit, _isSymOperand, _toAst, isTruthy } from './internal.js';
 
 
 
@@ -42,8 +42,11 @@ function eqValues(a, b, strict = false) {
   if (isTagged(a)   && isTagged(b)) {
     return a.tag === b.tag && eqValues(a.value, b.value, strict);
   }
-  // Same unit expression, not just the same dimension: 1_m == 100_cm is false.
-  if (isUnit(a) && isUnit(b)) return a.value === b.value && uexprEqual(a.uexpr, b.uexpr);
+  // == converts, so 1_m == 100_cm; SAME wants the same unit expression.
+  if (isUnit(a) && isUnit(b)) {
+    if (uexprEqual(a.uexpr, b.uexpr)) return a.value === b.value;
+    return !strict && sameDims(a.uexpr, b.uexpr) && _inUnit(a, b.uexpr) === b.value;
+  }
   if (isProgram(a) && isProgram(b)) return _eqArr(a.tokens, b.tokens, strict);
   // Directories are containers, not values: each is equal only to itself.
   if (isDirectory(a) && isDirectory(b)) return a === b;
@@ -131,6 +134,11 @@ function comparePair(s, cmp, op) {
   if (_trySymCompare(s, a, b, op)) return;
   if (isString(a) && isString(b)) {
     s.push(cmp(a.value, b.value) ? TRUE : FALSE);
+    return;
+  }
+  if (isUnit(a) && isUnit(b)) {
+    if (!sameDims(a.uexpr, b.uexpr)) throw new RPLError('Inconsistent units');
+    s.push(cmp(_inUnit(a, b.uexpr), b.value) ? TRUE : FALSE);
     return;
   }
   if (!isNumber(a) || !isNumber(b)) throw new RPLError('Bad argument type');

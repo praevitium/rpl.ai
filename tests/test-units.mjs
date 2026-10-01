@@ -113,8 +113,8 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   s.push(parseEntry('500_m')[0]);
   lookup('+').fn(s);
   const r = s.peek();
-  assert(isUnit(r) && r.uexpr[0][0] === 'km' && Math.abs(r.value - 1.5) < 1e-12,
-         `1_km + 500_m → 1.5_km (got ${JSON.stringify(r)})`);
+  assert(isUnit(r) && r.uexpr[0][0] === 'm' && r.value === 1500,
+         `1_km + 500_m → 1500_m (the sum is in level 1's unit; got ${JSON.stringify(r)})`);
 }
 {
   const s = new Stack();
@@ -308,8 +308,8 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   s.push(parseEntry('500_m')[0]);
   lookup('-').fn(s);
   const r = s.peek();
-  assert(isUnit(r) && r.uexpr[0][0] === 'km' && Math.abs(r.value - 0.5) < 1e-12,
-    `session137: 1_km - 500_m → 0.5_km (subtraction mirror of existing + cross-scale pin; got ${JSON.stringify(r)})`);
+  assert(isUnit(r) && r.uexpr[0][0] === 'm' && r.value === 500,
+    `session137: 1_km - 500_m → 500_m (subtraction mirror of the + cross-scale pin; got ${JSON.stringify(r)})`);
 }
 
 {
@@ -512,11 +512,21 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 
 {
   const unitLine = (src) => formatSource(runLine(src).peek());
-  assert(unitLine('0.03_ft DUP -') === '0._ft' && unitLine('1_ft 12_in -') === '0._ft' && unitLine('0.1_m 0.2_m + 0.3_m ==') === '1.',
+  assert(unitLine('5_ft 9_in +') === '69._in' && unitLine('25_ft 8_in -') === '292._in',
+    'AUR: 5_ft 9_in + is 69_in and 25_ft 8_in - is 292_in (the result is in level 1\'s unit)');
+  assert(unitLine('0.03_ft DUP -') === '0._ft' && unitLine('1_ft 12_in -') === '0._in' && unitLine('0.1_m 0.2_m + 0.3_m ==') === '1.',
     'a unit magnitude has 12 digits, so a value minus itself or its conversion is zero');
   assert(unitLine('3_yd 1_ft CONVERT IP') === '9._ft' && unitLine('1_km 1000_m CONVERT') === '1000._m',
     'CONVERT rounds to 12 digits, so 3_yd 1_ft CONVERT IP is 9');
+  assert(unitLine('1_m 100_cm ==') === '1.' && unitLine('1_m 100_cm SAME') === '0.' && unitLine('1_m 1_s ==') === '0.' && unitLine('1_m 1_s ≠') === '1.',
+    '== converts units while SAME wants the same ones, and different dimensions are never equal');
+  assert(unitLine('1_m 50_cm >') === '1.' && unitLine('50_cm 1_m <') === '1.' && unitLine('1_ft 12_in ≤') === '1.',
+    '< > ≤ ≥ convert both units');
+  assertThrows(() => runLine('1_m 1_s <'), /Inconsistent units/, 'ordering units of different dimensions is Inconsistent units');
   assert(unitLine('0.5_1/m') === '0.5_1/m' && unitLine('2_m INV DUP ->STR STR→ DROP') === '0.5_1/m',
     'a unit with only a denominator (1/m) enters, prints and reads back');
   assert(unitLine('2_m 1 2 / *') === '1._m', 'a rational multiplies a unit');
+  assert(unitLine('1_m 9_cm MAX') === '1._m' && unitLine('1_m 9_cm MIN') === '9._cm' && unitLine('9_cm 1_m MAX') === '1._m',
+    'AUR: 1_m 9_cm MAX is 1_m and MIN is 9_cm, each in the unit it was given');
+  assertThrows(() => runLine('1_m 1_s MAX'), /Inconsistent units/, 'MAX of units of different dimensions is Inconsistent units');
 }

@@ -115,12 +115,14 @@ export function _inUnit(u, to) {
 }
 
 
+// Unlike the quantities of its operands, the sum of two units is in level 1's:
+// 5_ft 9_in + is 69_in.
 function _unitBinary(op, a, b) {
   if (op === '+' || op === '-') {
     if (!isUnit(a) || !isUnit(b)) throw new RPLError('Bad argument type');
     if (!sameDims(a.uexpr, b.uexpr)) throw new RPLError('Inconsistent units');
-    const inA = _inUnit(b, a.uexpr);
-    return _makeUnit(op === '+' ? a.value + inA : a.value - inA, a.uexpr);
+    const inB = _inUnit(a, b.uexpr);
+    return _makeUnit(op === '+' ? inB + b.value : inB - b.value, b.uexpr);
   }
   if (op === '*') {
     if (isUnit(a) && isUnit(b)) return _makeUnit(a.value * b.value, multiplyUexpr(a.uexpr, b.uexpr));

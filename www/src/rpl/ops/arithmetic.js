@@ -4,9 +4,9 @@ import { Bin as AstBin, formatAlgebra, Neg as AstNeg, Num as AstNum, Fn as AstFn
 import { formatReal, DEFAULT_DISPLAY, formatBinaryInteger } from '../formatter.js';
 import { state as _calcState, getApproxMode, getRealMaxExp, getWordsize, nextPrngUnit, seedPrng } from '../state.js';
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
-import { inverseUexpr, powerUexpr } from '../units.js';
+import { inverseUexpr, powerUexpr, sameDims } from '../units.js';
 import { register, lookup, OPS } from './registry.js';
-import { _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, recallVar, storeVar } from './internal.js';
+import { _inUnit, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, recallVar, storeVar } from './internal.js';
 
 
 
@@ -461,6 +461,12 @@ function _minMax(s, wantMin, name) {
   const [a, b] = s.popN(2);
   if (_isSymOperand(a) || _isSymOperand(b)) {
     s.push(Symbolic(AstFn(name, _astPair(a, b))));
+    return;
+  }
+  if (isUnit(a) && isUnit(b)) {
+    if (!sameDims(a.uexpr, b.uexpr)) throw new RPLError('Inconsistent units');
+    const diff = _inUnit(a, b.uexpr) - b.value;
+    s.push((wantMin ? diff <= 0 : diff >= 0) ? a : b);
     return;
   }
   if (!isNumber(a) || !isNumber(b)) throw new RPLError('Bad argument type');
