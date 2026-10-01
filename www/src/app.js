@@ -714,18 +714,31 @@ class App {
   _beginEdit(edit) {
     if (this.entry.buffer.trim()) this.commitEntry();
     if (this.entry.buffer.trim()) return;
-    this.pendingEdit = edit;
     const { value } = edit;
-    if (isSymbolic(value) || (isName(value) && edit.kind === 'level')) {
-      this.setInputMode('equation', { value });
-    } else if (isMatrix(value) || isVector(value)) {
-      this.setInputMode('matrix', { value });
-    } else {
+    const mode = isSymbolic(value) || (isName(value) && edit.kind === 'level') ? 'equation'
+      : isMatrix(value) || isVector(value) ? 'matrix' : 'rpl';
+    const writer = { equation: this.equationEditor, matrix: this.matrixEditor }[mode];
+    const replaced = writer && !writer.isEmpty() ? { saved: writer.snapshot(), edit: this.pendingEdit } : null;
+    this.pendingEdit = edit;
+    if (mode === 'rpl') {
       this.setInputMode('rpl');
       this.entry.recall(formatSource(value));
+    } else {
+      this.setInputMode(mode, { value });
     }
     this.renderStatus();
     this.input.render();
+    if (replaced) {
+      this.toast(`Replaced the ${mode}`, { action: 'Undo', onAction: () => this._reopenWriter(mode, replaced.saved, replaced.edit) });
+    }
+  }
+
+  _reopenWriter(mode, saved, edit) {
+    this.pendingEdit = edit;
+    this.setInputMode(mode);
+    this._writer().restore(saved);
+    this.input.render();
+    this.renderStatus();
   }
 
   _endEdit() {
@@ -766,13 +779,7 @@ class App {
     writer.clear();
     if (edit) this._endEdit();
     this.setInputMode('rpl');
-    const reopen = () => {
-      if (edit) this.pendingEdit = edit;
-      this.setInputMode(mode);
-      writer.restore(saved);
-      this.input.render();
-      this.renderStatus();
-    };
+    const reopen = () => this._reopenWriter(mode, saved, edit);
     if (edit) this._toastEditCancelled(edit, reopen);
     else if (hadContent) this.toast(mode === 'equation' ? 'Discarded the equation' : 'Discarded the matrix', { action: 'Undo', onAction: reopen });
   }
