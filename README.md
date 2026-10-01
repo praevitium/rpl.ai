@@ -207,10 +207,20 @@ reorder, into folders or onto the breadcrumb. Back up the stack and the
 whole HOME tree to a JSON file and restore it, archive to backup ports, and
 import or export HP text files (`.rpl`).
 
-Copy a matrix or vector (`⌘C` on a selected level) and paste it into Excel,
-Google Sheets or Numbers: it arrives as cells. Copy a range of numbers from
-a spreadsheet and paste it on the command line, where it becomes a matrix
-(a vector for a single row), or into the matrix writer's cells.
+Copy a matrix, vector or list (`⌘C` on a selected level) and paste it into
+Excel, Google Sheets or Numbers: it arrives as cells. Copy a range of
+numbers from a spreadsheet and paste it on the command line, where it
+becomes a matrix (a vector for a single row), or into the matrix writer's
+cells. Currency, percentages, accounting negatives such as `(300.00)` and
+the separators of other locales (`1.234,56`) are read as numbers.
+
+Spreadsheet files work too. Download a matrix, vector or list as `.csv` or
+`.tsv` from its download button in the Variables drawer, or with **Download
+as CSV** in a stack level's menu. Upload a `.csv`, `.tsv`, `.rpl`, `.txt` or
+`.json` file in the drawer, or drop one anywhere on the calculator to put it
+on the stack. A table of numbers becomes a matrix (a vector for one row), a
+text row above numbers is taken as a header and skipped, and a table with
+other text becomes a list of rows.
 
 ![The Variables drawer](screenshots/variables.png)
 
@@ -487,7 +497,9 @@ writer's insights and the previews never wait on it.
 this device. They don't sync, and clearing the site's data, or closing a
 private window, erases them. If the browser blocks site data altogether,
 rpl.ai still runs but warns that nothing is being saved. Back them up with
-Back up everything in the Variables drawer.
+Back up everything in the Variables drawer. Spreadsheets exchange CSV and
+TSV files and copied cells; Excel's own `.xlsx` files can't be read or
+written yet, so save the sheet as CSV first.
 
 **The assistant.** It is only as good as the model you connect, and small
 models make mistakes in RPL; check its work, and use Undo freely. It needs

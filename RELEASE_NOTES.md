@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.9 (2026-09-30)
+**Latest release:** v0.6.10 (2026-10-01)
 
 ---
 
@@ -18,6 +18,54 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.10 — 2026-10-01
+
+A number is what it shows. Real numbers and the parts of complex numbers
+keep 12 significant digits, as on the HP 50g, instead of 15 digits that the
+display rounded away. `1. 3. / 3. *` was shown as 1. while its IP was 0 and
+an edit that changed nothing changed the value; it is now 0.999999999999,
+as on the calculator, and `2. SQRT SQ` is 1.99999999999. This breaks the
+15-digit results of earlier releases, so a program that relied on them
+rounds at 12. Working inside one command still uses 15 digits.
+
+The display formats follow the AUR. FIX n switches to scientific form when
+the value needs more than 12 digits or would show as zero, instead of
+printing a long string of digits or a bare `0.00`; FIX 0 keeps its point
+(`3.`), SCI 0 shows `1.E2`, and ENG n shows n+1 digits with an exponent
+that is a multiple of 3 (`103.6` in ENG 0 is `100.E0`). Complex parts and
+unit magnitudes are formatted the same way.
+
+Spreadsheets and files. Matrices, vectors and lists download as `.csv` or
+`.tsv`, from the download button of a variable in the Variables drawer
+(which also offers `.json` and `.rpl` now) or with Download as CSV in a
+stack level's menu. A `.csv`, `.tsv`, `.rpl`, `.txt` or `.json` file
+uploads in the drawer, named after the file, or drops anywhere on the
+calculator to land on the stack. A CSV of numbers is a matrix (a vector for
+one row), a row of text above numbers is a header and is skipped, and a
+table with other text is a list of rows; commas, semicolons and tabs are
+told apart, and decimal commas are read. Pasted cells read currency,
+percentages, accounting negatives such as `(300.00)`, a lone dash as zero
+and the separators of other locales (`1.234,56`, `1 234,56`), on the
+command line and in the matrix writer. Pasting more than 50 rows or columns
+into the matrix writer threw or built a jagged matrix; the rest of the
+range is now left out, and the writer says so. A tab-indented program is
+still pasted as text.
+
+Units follow the AUR. `5_ft 9_in +` is `69_in` and `25_ft 8_in -` is
+`292_in`: the result is in level 1's unit (it was level 2's). `==` and the
+ordering comparisons convert, so `1_m 100_cm ==` is 1 (it was 0) and
+`1_m 50_cm >` is 1 (it was an error); units of different dimensions are
+never equal, and ordering them is Inconsistent units. MIN and MAX take two units. Unit
+magnitudes keep 12 digits, so `0.03_ft DUP -` is 0 (it was 3.5E-18_ft) and
+`3_yd 1_ft CONVERT IP` is 9 (it was 8). `0.5_1/m` enters and prints
+back, and an exact fraction multiplies a unit.
+
+Editing a stack level while the matrix or equation writer already holds
+something no longer replaces it silently: a toast says so and Undo brings
+it back.
 
 ---
 
