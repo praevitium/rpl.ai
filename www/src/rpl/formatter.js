@@ -112,25 +112,17 @@ function formatCmpxComp(n, d) {
 }
 
 // Reals hold a Decimal, which renders beyond IEEE range; Complex, Unit
-// and Vector components are still JS numbers.
+// and Vector components are JS numbers, shown through the same Decimal rules.
 export function formatReal(n, d) {
   if (n instanceof Decimal) return _formatRealDecimal(n, d);
-  const num = n;
-  if (!Number.isFinite(num)) return num > 0 ? '∞' : '-∞';
-  switch (d.mode) {
-    case 'FIX': return num.toFixed(d.digits);
-    case 'SCI': return num.toExponential(d.digits);
-    case 'ENG': return formatEng(num, d.digits);
-    case 'STD':
-    default:
-      return formatStd(num);
-  }
+  if (!Number.isFinite(n)) return n > 0 ? '∞' : '-∞';
+  return _formatRealDecimal(new Decimal(String(n)), d);
 }
 
 function _formatRealDecimal(d, display) {
   if (!d.isFinite()) return d.isPositive() ? '∞' : '-∞';
   switch (display.mode) {
-    case 'FIX': return d.toFixed(display.digits);
+    case 'FIX': return _fixDecimal(d, display.digits);
     case 'SCI': return _sciDecimal(d, display.digits);
     case 'ENG': return _engDecimal(d, display.digits);
     case 'STD':
@@ -163,33 +155,30 @@ function _stdDecimal(d) {
   return _normExp(s);
 }
 
+// A whole mantissa keeps its point, as the HP50 shows 1.E2.
 function _sciDecimal(d, digits) {
-  return _normExp(d.toExponential(digits));
+  const s = _normExp(d.toExponential(digits, Decimal.ROUND_HALF_UP));
+  return digits === 0 ? s.replace('E', '.E') : s;
 }
 
+// FIX n shows n decimals, but a number that needs more than 12 digits, or a
+// nonzero one that would round to zero, is shown in scientific form instead.
+function _fixDecimal(d, digits) {
+  const rounded = d.toDecimalPlaces(digits, Decimal.ROUND_HALF_UP);
+  const intDigits = rounded.e >= 0 ? rounded.e + 1 : 1;
+  if (!d.isZero() && (rounded.isZero() || intDigits + digits > 12)) return _sciDecimal(d, digits);
+  return rounded.toFixed(digits) + (digits === 0 ? '.' : '');
+}
+
+// ENG n shows n+1 significant digits with an exponent that is a multiple of 3.
 function _engDecimal(d, digits) {
-  if (d.isZero()) return new Decimal(0).toFixed(digits) + 'E0';
-  const exp3 = Math.floor(d.e / 3) * 3;
-  const mant = d.dividedBy(Decimal.pow(10, exp3));
-  return `${mant.toFixed(digits)}E${exp3}`;
-}
-
-function formatStd(n) {
-  if (n === 0) return '0.';
-  const abs = Math.abs(n);
-  if (abs >= 1e12 || abs < 1e-11) {
-    return n.toExponential().replace('e+', 'E').replace('e', 'E');
-  }
-  let s = n.toPrecision(12);
-  if (s.includes('.')) s = s.replace(/0+$/, '').replace(/\.$/, '.');
-  return s;
-}
-
-function formatEng(n, digits) {
-  if (n === 0) return (0).toFixed(digits) + 'E0';
-  const exp = Math.floor(Math.log10(Math.abs(n)) / 3) * 3;
-  const mant = n / Math.pow(10, exp);
-  return `${mant.toFixed(digits)}E${exp}`;
+  const sig = digits + 1;
+  if (d.isZero()) return `0${digits ? `.${'0'.repeat(digits)}` : '.'}E0`;
+  const rounded = d.toSignificantDigits(sig, Decimal.ROUND_HALF_UP);
+  const exp3 = Math.floor(rounded.e / 3) * 3;
+  const decimals = Math.max(0, sig - (rounded.e - exp3 + 1));
+  const mant = rounded.times(Decimal.pow(10, -exp3));
+  return `${mant.toFixed(decimals)}${decimals === 0 ? '.' : ''}E${exp3}`;
 }
 
 // Unlike the HP50, never zero-padded to the wordsize: #502h stays #502h.

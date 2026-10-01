@@ -7291,3 +7291,14 @@ function _arrayEq(a, b) {
   assert(shown('1 3. / →STR STR→') === '0.333333333333' && shown('1 3. / DUP →STR STR→ ==') === '1.', 'a Real survives →STR and STR→ unchanged');
   assert(Complex(0.1 + 0.2, 1 / 3).re === 0.3 && Complex(0, 1 / 3).im === 0.333333333333, 'the parts of a Complex are rounded to 12 digits');
 }
+
+/* FIX, SCI and ENG follow the AUR, for Reals and for the parts of a Complex alike. */
+{
+  const shown = (value, mode, digits) => format(Real(value), { mode, digits });
+  assert(shown('103.6', 'FIX', 4) === '103.6000' && shown('103.6', 'SCI', 4) === '1.0360E2' && shown('103.6', 'ENG', 4) === '103.60E0', 'the AUR examples for FIX 4, SCI 4 and ENG 4 of 103.6');
+  assert(shown('103.6', 'ENG', 0) === '100.E0' && shown('12345', 'ENG', 2) === '12.3E3' && shown('999.7', 'ENG', 2) === '1.00E3', 'ENG n shows n+1 significant digits');
+  assert(shown('103.6', 'FIX', 0) === '104.' && shown('5', 'FIX', 0) === '5.' && shown('103.6', 'SCI', 0) === '1.E2', 'a whole mantissa keeps its point');
+  assert(shown('0.001', 'FIX', 2) === '1.00E-3' && shown('-0.001', 'FIX', 2) === '-1.00E-3' && shown('0', 'FIX', 2) === '0.00', 'FIX shows a nonzero value that would round to zero in scientific form');
+  assert(shown('123456789012', 'FIX', 2) === '1.23E11' && shown('103.6', 'FIX', 11) === '1.03600000000E2' && shown('5', 'FIX', 11) === '5.00000000000', 'FIX shows more than 12 digits in scientific form');
+  assert(format(Complex(103.6, -0.001), { mode: 'FIX', digits: 2 }) === '(103.60, -1.00E-3)' && format(Complex(103.6, 0), { mode: 'SCI', digits: 2 }) === '(1.04E2, 0.00E0)', 'the parts of a Complex are formatted like Reals');
+}
