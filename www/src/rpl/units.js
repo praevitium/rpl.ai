@@ -136,7 +136,7 @@ export function toBaseUexpr(uexpr) {
 }
 
 /* uexpr  := factor ( ('*' | '/') factor )*
-   factor := SYMBOL ( '^' ('-'|'+')? DIGITS )? | '(' uexpr ')'
+   factor := SYMBOL ( '^' ('-'|'+')? DIGITS )? | '(' uexpr ')' | '1'
    '/' inverts only the next factor, reading left to right as the HP50
    does, so m/s*s is m.  formatUnitExpr parenthesizes a denominator with
    several factors so its output parses back unchanged. */
@@ -153,6 +153,7 @@ export function parseUnitExpr(src) {
       else throw new Error(`Unclosed '(' in unit expression: ${src}`);
       return sub;
     }
+    if (src[i] === '1' && !/^\d/.test(src.slice(i + 1))) { i++; return normalizeUexpr([]); }
     const m = src.slice(i).match(/^[A-Za-zΩμ°]+/);
     if (!m) throw new Error(`Bad unit expression near '${src[i]}': ${src}`);
     const sym = m[0];

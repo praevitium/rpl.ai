@@ -1,8 +1,8 @@
 import { isUnit, Real, Unit } from '../types.js';
 import { RPLError } from '../stack.js';
-import { toBaseUexpr, sameDims, uexprEqual, scaleOf } from '../units.js';
+import { toBaseUexpr, sameDims } from '../units.js';
 import { register } from './registry.js';
-import { _makeUnit, _numVal } from './internal.js';
+import { _inUnit, _makeUnit, _numVal } from './internal.js';
 
 
 
@@ -28,13 +28,10 @@ register('→UNIT', (s) => {
 }, { category: 'Units', categoryOrder: 2, label: "→UNIT" });
 
 
-// Only the second unit's expression matters, not its value.  Identical
-// units skip the scale arithmetic, so 1_m 1_m CONVERT stays exactly 1_m.
+// Only the second unit's expression matters, not its value.
 register('CONVERT', (s) => {
   const [u1, u2] = s.popN(2);
   if (!isUnit(u1) || !isUnit(u2)) throw new RPLError('Bad argument type');
   if (!sameDims(u1.uexpr, u2.uexpr)) throw new RPLError('Inconsistent units');
-  if (uexprEqual(u1.uexpr, u2.uexpr)) { s.push(u1); return; }
-  const val = u1.value * scaleOf(u1.uexpr) / scaleOf(u2.uexpr);
-  s.push(Unit(val, u2.uexpr));
+  s.push(Unit(_inUnit(u1, u2.uexpr), u2.uexpr));
 }, { category: 'Units', categoryOrder: 3, label: "CONVERT" });

@@ -2,7 +2,7 @@ import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Name, Symbolic, Integer, Unit, isUnit, isBinaryInteger, isNumber, promoteNumericPair, Complex, Rational, isList, RList, isTagged, Tagged, isVector, Vector, isMatrix, Matrix, BinaryInteger, toRealOrThrow, toRealDecimal, isString, isValidHpIdentifier, isStorableHpName, isProgram, isDirectory, Str, Program } from '../types.js';
 import { RPLAbort, RPLError, setPushCoerce, checkTimeLimit } from '../stack.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, isRealNum } from '../algebra.js';
-import { sameDims, scaleOf, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
+import { sameDims, scaleOf, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
 import { state as _calcState, getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
@@ -96,8 +96,9 @@ export function _symbolicDecompose(v) {
 
 
 export function _numVal(v) {
-  if (isReal(v))    return v.value.toNumber();
-  if (isInteger(v)) return Number(v.value);
+  if (isReal(v))     return v.value.toNumber();
+  if (isInteger(v))  return Number(v.value);
+  if (isRational(v)) return Number(v.n) / Number(v.d);
   throw new RPLError('Bad argument type');
 }
 
@@ -107,13 +108,19 @@ export function _makeUnit(value, uexpr) {
 }
 
 
+// u's magnitude in the units `to`, rounded to 12 digits like every other
+// number so that 12_in and 1_ft agree.
+export function _inUnit(u, to) {
+  return uexprEqual(u.uexpr, to) ? u.value : Unit(u.value * scaleOf(u.uexpr) / scaleOf(to), to).value;
+}
+
+
 function _unitBinary(op, a, b) {
   if (op === '+' || op === '-') {
     if (!isUnit(a) || !isUnit(b)) throw new RPLError('Bad argument type');
     if (!sameDims(a.uexpr, b.uexpr)) throw new RPLError('Inconsistent units');
-    const inA = b.value * scaleOf(b.uexpr) / scaleOf(a.uexpr);
-    const val = op === '+' ? a.value + inA : a.value - inA;
-    return _makeUnit(val, a.uexpr);
+    const inA = _inUnit(b, a.uexpr);
+    return _makeUnit(op === '+' ? a.value + inA : a.value - inA, a.uexpr);
   }
   if (op === '*') {
     if (isUnit(a) && isUnit(b)) return _makeUnit(a.value * b.value, multiplyUexpr(a.uexpr, b.uexpr));

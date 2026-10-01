@@ -81,7 +81,7 @@ export function BinaryInteger(n, base = 'h') {
   return Object.freeze({ type: TYPES.BININT, value, base: b });
 }
 
-const roundPart = (x) => {
+export const roundPart = (x) => {
   const n = Number(x);
   return Number.isFinite(n) ? Number(n.toPrecision(REAL_DIGITS)) : n;
 };
@@ -166,7 +166,7 @@ export function Tagged(tag, value) {
 
 // uexpr is a canonical [symbol, exponent] list from units.js normalizeUexpr.
 export function Unit(value, uexpr) {
-  return Object.freeze({ type: TYPES.UNIT, value: Number(value), uexpr });
+  return Object.freeze({ type: TYPES.UNIT, value: roundPart(value), uexpr });
 }
 
 export function Directory({ name = 'HOME', parent = null, entries = null } = {}) {

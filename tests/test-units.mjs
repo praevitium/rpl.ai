@@ -4,13 +4,13 @@ import {
   Real, Integer, Unit, isReal, isUnit, isInteger,
 } from '../www/src/rpl/types.js';
 import { parseEntry } from '../www/src/rpl/parser.js';
-import { format } from '../www/src/rpl/formatter.js';
+import { format, formatSource } from '../www/src/rpl/formatter.js';
 import {
   parseUnitExpr, formatUnitExpr, normalizeUexpr,
   multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr,
   sameDims, scaleOf, toBaseUexpr, uexprEqual,
 } from '../www/src/rpl/units.js';
-import { assert, assertThrows } from './helpers.mjs';
+import { assert, assertThrows, runLine } from './helpers.mjs';
 
 {
   const u = parseUnitExpr('m');
@@ -508,4 +508,15 @@ import { assert, assertThrows } from './helpers.mjs';
   const empty = normalizeUexpr([]);
   assert(empty.length === 0 && Object.isFrozen(empty),
     `session422: normalizeUexpr([]) → frozen empty uexpr`);
+}
+
+{
+  const unitLine = (src) => formatSource(runLine(src).peek());
+  assert(unitLine('0.03_ft DUP -') === '0._ft' && unitLine('1_ft 12_in -') === '0._ft' && unitLine('0.1_m 0.2_m + 0.3_m ==') === '1.',
+    'a unit magnitude has 12 digits, so a value minus itself or its conversion is zero');
+  assert(unitLine('3_yd 1_ft CONVERT IP') === '9._ft' && unitLine('1_km 1000_m CONVERT') === '1000._m',
+    'CONVERT rounds to 12 digits, so 3_yd 1_ft CONVERT IP is 9');
+  assert(unitLine('0.5_1/m') === '0.5_1/m' && unitLine('2_m INV DUP ->STR STR→ DROP') === '0.5_1/m',
+    'a unit with only a denominator (1/m) enters, prints and reads back');
+  assert(unitLine('2_m 1 2 / *') === '1._m', 'a rational multiplies a unit');
 }
