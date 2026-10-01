@@ -17,9 +17,10 @@ import {
   state, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo,
   ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX, isModeFlag,
 } from './state.js';
-import { TYPES, Decimal, BIN_BASES } from './types.js';
+import { TYPES, Decimal, BIN_BASES, isStorableHpName } from './types.js';
 import { RPLError } from './stack.js';
-import { formatHpText } from './hp-text.js';
+import { formatHpText, parseHpText } from './hp-text.js';
+import { formatDelimited, importTable } from './sheet.js';
 import SEED_STATE from '../../hp50-all.json' with { type: 'json' };
 
 export const STORAGE_KEY = 'hp50.state';
@@ -400,6 +401,47 @@ export function exportHpTextFile(name, value) {
   return downloadText(formatHpText(value), `${safeFileName(name)}.rpl`, 'text/plain');
 }
 
-export async function parseVariableFile(file) {
-  return rehydrateVariable(JSON.parse(await readFileText(file)));
+const TABLE_FORMATS = Object.freeze({
+  csv: { delimiter: ',', type: 'text/csv' },
+  tsv: { delimiter: '\t', type: 'text/tab-separated-values' },
+});
+
+/** Download a matrix, vector or list as `<name>.csv` or `<name>.tsv`. */
+export function exportTableFile(name, value, format = 'csv') {
+  const { delimiter, type } = TABLE_FORMATS[format];
+  const text = formatDelimited(value, delimiter);
+  if (text === null) throw new Error('only a matrix, vector or list can be saved as a table');
+  return downloadText(text, `${safeFileName(name)}.${format}`, type);
+}
+
+// `sales 2025.csv` becomes sales_2025, `2025.csv` D2025, and a file named
+// after a command gets a trailing `_`.
+export function fileVariableName(filename) {
+  const base = filename.replace(/\.[^.]*$/, '').replace(/[^A-Za-z0-9Α-Ωα-ω_]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 64);
+  const name = /^[A-Za-zΑ-Ωα-ω]/.test(base) ? base : `D${base}`;
+  return isStorableHpName(name) ? name : `${name}_`;
+}
+
+function readTable(text, kind) {
+  const { value, header } = importTable(text, kind === 'tsv' || kind === 'txt' ? '\t' : undefined);
+  return { value, note: header ? `Skipped the header row (${header.join(', ')}).` : '' };
+}
+
+/** Read an uploaded or dropped file: a table (.csv, .tsv), an HP text file (.rpl, .txt) or an exported variable (.json). */
+export async function readUpload(file) {
+  const kind = /\.([^.]+)$/.exec(file.name)?.[1].toLowerCase();
+  const text = await readFileText(file);
+  if (kind === 'json') {
+    const snap = JSON.parse(text);
+    if (snap?.home && snap?.stack) throw new Error('this is a full backup; restore it with Restore from file in the Variables drawer');
+    return { ...rehydrateVariable(snap), note: '' };
+  }
+  const name = fileVariableName(file.name);
+  if (kind === 'csv' || kind === 'tsv') return { name, ...readTable(text, kind) };
+  try {
+    return { name, value: parseHpText(text, name), note: '' };
+  } catch (e) {
+    if (kind === 'txt' && text.includes('\t') && /^Expected one object/.test(e.message)) return { name, ...readTable(text, kind) };
+    throw e;
+  }
 }

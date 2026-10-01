@@ -8,10 +8,10 @@ import { TYPES, isStorableHpName } from '../rpl/types.js';
 import { UNIT_CATALOG } from '../rpl/units.js';
 import { format } from '../rpl/formatter.js';
 import {
-  exportVariableToFile, parseVariableFile, exportHpTextFile, readFileText,
+  exportVariableToFile, exportHpTextFile, exportTableFile, readUpload,
   listBackups, archiveBackup, restoreBackup, deleteBackup,
 } from '../rpl/persist.js';
-import { parseHpText } from '../rpl/hp-text.js';
+import { isTable } from '../rpl/sheet.js';
 import { referenceSection, pushHistory } from './command-help.js';
 import { loadCommandReference, findReferenceEntry, shortDescription, searchCommands } from './command-reference.js';
 import { matchPositions, highlightSegments } from './op-search.js';
@@ -143,6 +143,8 @@ export function familyCommands(family) {
   }
   return _opCategories[family.category] ?? [];
 }
+
+const UPLOAD_ACCEPT = '.json,.rpl,.txt,.csv,.tsv,application/json,text/plain,text/csv,text/tab-separated-values';
 
 export function pickFile(accept, onFile) {
   const picker = document.createElement('input');
@@ -438,7 +440,7 @@ export class Drawers {
   _renderVars(body) {
     body.innerHTML = `<div class="path-bar" data-path-bar></div><div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="vars" placeholder="Filter variables" aria-label="Filter variables" value="${escapeHtml(this.varsQuery)}" autocomplete="off" spellcheck="false"></label></div><div class="dw-list vr-list"></div><div class="vars-foot">
       <button type="button" class="btn" data-dw="vars-newdir">${icon('folder', 'sm')}New folder</button>
-      <button type="button" class="btn" data-dw="vars-upload" title="Add a variable from a .json file or an HP text file (.rpl / .txt, named after the file)">${icon('up', 'sm')}Upload</button>
+      <button type="button" class="btn" data-dw="vars-upload" title="Add a variable from a spreadsheet file (.csv, .tsv), an HP text file (.rpl, .txt) or a .json file; it is named after the file">${icon('up', 'sm')}Upload</button>
       <button type="button" class="btn" data-dw="vars-export-rpl" title="Download this directory as an HP text file (DIR … END)">${icon('down', 'sm')}Export .rpl</button>
       <button type="button" class="btn ghost" data-dw="vars-export" title="Download the stack and the whole HOME tree as JSON">${icon('down', 'sm')}Back up everything</button>
       <button type="button" class="btn ghost" data-dw="vars-import" title="Replace the stack and HOME tree from a JSON backup (undoable)">${icon('up', 'sm')}Restore from file</button>
@@ -626,7 +628,7 @@ export class Drawers {
       case 'var-edit': e.stopPropagation(); app.editVariable(name); return;
       case 'var-rename': e.stopPropagation(); this._beginRename(t.closest('.vr'), name); return;
       case 'var-move': e.stopPropagation(); this._moveMenu(t, name); return;
-      case 'var-download': e.stopPropagation(); this._download(name); return;
+      case 'var-download': e.stopPropagation(); this._downloadMenu(t, name); return;
       case 'var-delete': e.stopPropagation(); this._deleteVar(name); return;
       case 'vars-newdir': this._newFolder(t); return;
       case 'vars-upload': this._upload(); return;
@@ -660,10 +662,32 @@ export class Drawers {
     app.stack.push(v);
   }
 
-  _download(name) {
+  _downloadMenu(anchor, name) {
     const v = calcState.current.entries.get(name);
     if (v === undefined) return;
-    try { this.app.toast(`Saved ${exportVariableToFile(name, v)}`); }
+    const formats = [
+      ['json', 'rpl.ai file (.json)'],
+      ['rpl', 'HP text (.rpl)'],
+      ...(isTable(v) ? [['csv', 'Spreadsheet (.csv)'], ['tsv', 'Tab-separated (.tsv)']] : []),
+    ];
+    const html = `<h6>Download ${escapeHtml(name)}</h6>${formats.map(([id, label]) => `<button type="button" class="opt" data-v="${id}"><span class="ck">${icon('down', 'sm')}</span><b>${escapeHtml(label)}</b></button>`).join('')}`;
+    this.app.popover.open(anchor, html, {
+      label: `Download ${name}`,
+      onClick: (target) => {
+        this.app.popover.close({ restoreFocus: false });
+        this._download(name, v, target.dataset.v);
+      },
+    });
+  }
+
+  _download(name, value, format) {
+    const save = {
+      json: () => exportVariableToFile(name, value),
+      rpl: () => exportHpTextFile(name, value),
+      csv: () => exportTableFile(name, value, 'csv'),
+      tsv: () => exportTableFile(name, value, 'tsv'),
+    }[format];
+    try { this.app.toast(`Saved ${save()}`); }
     catch (e) { this.app.notifyError(`Download failed: ${e.message}`); }
   }
 
@@ -701,26 +725,18 @@ export class Drawers {
 
   _upload() {
     const { app } = this;
-    pickFile('application/json,.json,.rpl,.txt,text/plain', async (file) => {
+    pickFile(UPLOAD_ACCEPT, async (file) => {
       try {
-        const { name, value } = /\.json$/i.test(file.name)
-          ? await parseVariableFile(file)
-          : this._readHpTextUpload(file.name, await readFileText(file));
+        const { name, value, note } = await readUpload(file);
         if (calcState.current.entries.has(name)) { app.notifyError(`${name} already exists here. Rename or delete it first.`); return; }
         if (value?.type === TYPES.DIRECTORY) value.parent = calcState.current;
         app.entry._snapForUndo();
         varStore(name, value);
-        app.undoToast(`Added ${name}`);
+        app.undoToast(`Added ${name}${note ? `. ${note}` : ''}`);
       } catch (e) {
         app.notifyError(`Upload failed: ${e.message}`);
       }
     });
-  }
-
-  _readHpTextUpload(filename, text) {
-    const name = filename.replace(/\.[^.]*$/, '');
-    if (!isStorableHpName(name)) throw new Error(`${filename}: rename the file to a valid variable name`);
-    return { name, value: parseHpText(text, name) };
   }
 
   _exportRpl() {

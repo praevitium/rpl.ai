@@ -28,7 +28,7 @@ import {
   loadCommandReference, findReferenceEntry, formatReferenceEntry, searchCommands, shortDescription,
 } from './ui/command-reference.js';
 import { format, formatSource } from './rpl/formatter.js';
-import { spreadsheetHtml } from './rpl/sheet.js';
+import { spreadsheetHtml, isTable } from './rpl/sheet.js';
 import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, currentPath,
@@ -41,7 +41,9 @@ import {
   isMatrix, isVector, isReal, isInteger, Symbolic,
 } from './rpl/types.js';
 import { UNIT_CATALOG } from './rpl/units.js';
-import { loadInitialState, adoptStoredState, saveToLocalStorage, exportToFile, importFromFile, STORAGE_KEY } from './rpl/persist.js';
+import {
+  loadInitialState, adoptStoredState, saveToLocalStorage, exportToFile, importFromFile, exportTableFile, readUpload, STORAGE_KEY,
+} from './rpl/persist.js';
 import { giac } from './rpl/cas/giac-engine.mjs';
 import { ChatBot } from './ai/chat-bot.js';
 
@@ -131,6 +133,7 @@ class App {
     if (this.prefs.drawer) this.drawers.open(this.prefs.drawer);
     this._installKeyboard();
     this._installAutosave();
+    this._installFileDrop();
     this.renderAll();
     if (!this.prefs.tourSeen) setTimeout(() => this.tour.start(), 700);
   }
@@ -528,6 +531,38 @@ class App {
     }
   }
 
+  async putFileOnStack(file) {
+    try {
+      const { value, note } = await readUpload(file);
+      if (isDirectory(value)) throw new Error('a directory belongs in the Variables drawer (Upload)');
+      if (this.entry.buffer.trim()) this.commitEntry();
+      this.entry._snapForUndo();
+      this.stack.push(value);
+      this.undoToast(`Put ${file.name} on the stack${note ? `. ${note}` : ''}`);
+    } catch (e) {
+      this.notifyError(`Couldn't read ${file.name}: ${e.message}`);
+    }
+  }
+
+  _installFileDrop() {
+    let depth = 0;
+    const carriesFiles = (e) => e.dataTransfer?.types?.includes('Files');
+    const end = () => { depth = 0; document.body.classList.remove('file-drag'); };
+    document.addEventListener('dragenter', (e) => {
+      if (!carriesFiles(e)) return;
+      depth++;
+      document.body.classList.add('file-drag');
+    });
+    document.addEventListener('dragleave', (e) => { if (carriesFiles(e) && --depth <= 0) end(); });
+    document.addEventListener('dragover', (e) => { if (carriesFiles(e)) e.preventDefault(); });
+    document.addEventListener('drop', async (e) => {
+      if (!carriesFiles(e)) return;
+      e.preventDefault();
+      end();
+      for (const file of [...e.dataTransfer.files]) await this.putFileOnStack(file);
+    });
+  }
+
   _wireDisplay() {
     const d = this.display;
     d.emptyHtml = `<div class="st-empty"><h5>The stack is empty</h5><p>Type a number and press Enter. Commands take their arguments from the stack and leave their results on it.</p><div class="keysline"><span class="kc">2</span> <span class="kc">Enter</span> <span class="kc">3</span> <span class="kc">+</span> → 5</div><div class="chipset" style="justify-content:center"><button type="button" class="chip" data-empty-act="equation">${icon('fx', 'sm')}Write an equation</button><button type="button" class="chip" data-empty-act="solve">Solve x² − 5x + 6 = 0</button><button type="button" class="chip" data-empty-act="plot">${icon('plot', 'sm')}Plot sin x</button><button type="button" class="chip" data-empty-act="tutor">${icon('cap', 'sm')}Walk me through a problem</button></div></div>`;
@@ -596,6 +631,7 @@ class App {
         this.copyText(formatSource(value), table ? `Copied level ${level}. It pastes into a spreadsheet as cells.` : `Copied level ${level}`, table);
         return;
       }
+      case 'csv': this._saveTable(level); return;
       case 'store': this._storePrompt(level, anchor); return;
       case 'ask': this.askAssistant(`Explain what is on level ${level} of my stack: ${formatSource(value)}`); return;
       case 'more': this._levelMenu(level, anchor); return;
@@ -605,11 +641,16 @@ class App {
   _levelMenu(level, anchor) {
     const value = this.stack.peek(level);
     const item = (act, ico, label, hint = '') => `<button type="button" class="opt" data-act="${act}"><span class="ck">${icon(ico, 'sm')}</span><b>${escapeHtml(label)}</b><em>${escapeHtml(hint)}</em></button>`;
-    const html = `<h6>Level ${level}</h6>${item('edit', 'edit', 'Edit', shortcutText('level.edit'))}${item('echo', 'chr', 'Copy into the command line')}${item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick'))}${item('roll', 'up', 'Move to level 1 (ROLL)')}${item('rolld', 'down', 'Move level 1 here (ROLLD)')}${item('eval', 'play', 'Evaluate (EVAL)')}${item('num', 'chr', 'To a number (→NUM)')}${isSymbolic(value) ? item('plot', 'plot', 'Plot it') : ''}${item('store', 'folder', 'Store in a variable…')}${item('copy', 'copy', 'Copy', shortcutText('level.copy'))}${item('ask', 'spark', 'Ask the assistant about it')}<hr>${item('drop', 'trash', 'Drop', shortcutText('level.drop'))}`;
+    const html = `<h6>Level ${level}</h6>${item('edit', 'edit', 'Edit', shortcutText('level.edit'))}${item('echo', 'chr', 'Copy into the command line')}${item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick'))}${item('roll', 'up', 'Move to level 1 (ROLL)')}${item('rolld', 'down', 'Move level 1 here (ROLLD)')}${item('eval', 'play', 'Evaluate (EVAL)')}${item('num', 'chr', 'To a number (→NUM)')}${isSymbolic(value) ? item('plot', 'plot', 'Plot it') : ''}${item('store', 'folder', 'Store in a variable…')}${item('copy', 'copy', 'Copy', shortcutText('level.copy'))}${isTable(value) ? item('csv', 'down', 'Download as CSV') : ''}${item('ask', 'spark', 'Ask the assistant about it')}<hr>${item('drop', 'trash', 'Drop', shortcutText('level.drop'))}`;
     this.popover.open(anchor, html, {
       label: `Level ${level}`,
       onClick: (t) => { this.popover.close({ restoreFocus: false }); this.levelAction(t.dataset.act, level, anchor); },
     });
+  }
+
+  _saveTable(level) {
+    try { this.toast(`Saved ${exportTableFile(`level${level}`, this.stack.peek(level))}`); }
+    catch (e) { this.notifyError(`Download failed: ${e.message}`); }
   }
 
   _storePrompt(level, anchor) {
