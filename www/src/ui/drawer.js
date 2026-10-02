@@ -145,7 +145,7 @@ export function familyCommands(family) {
   return _opCategories[family.category] ?? [];
 }
 
-const UPLOAD_ACCEPT = '.json,.rpl,.txt,.csv,.tsv,application/json,text/plain,text/csv,text/tab-separated-values';
+const UPLOAD_ACCEPT = '.json,.rpl,.txt,.csv,.tsv,.xlsx,application/json,text/plain,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 export function pickFile(accept, onFile) {
   const picker = document.createElement('input');
@@ -441,7 +441,7 @@ export class Drawers {
   _renderVars(body) {
     body.innerHTML = `<div class="path-bar" data-path-bar></div><div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="vars" placeholder="Filter variables" aria-label="Filter variables" value="${escapeHtml(this.varsQuery)}" autocomplete="off" spellcheck="false"></label></div><div class="dw-list vr-list"></div><div class="vars-foot">
       <button type="button" class="btn" data-dw="vars-newdir">${icon('folder', 'sm')}New folder</button>
-      <button type="button" class="btn" data-dw="vars-upload" title="Add a variable from a spreadsheet file (.csv, .tsv), an HP text file (.rpl, .txt) or a .json file; it is named after the file">${icon('up', 'sm')}Upload</button>
+      <button type="button" class="btn" data-dw="vars-upload" title="Add a variable from a spreadsheet file (.csv, .tsv, .xlsx), an HP text file (.rpl, .txt) or a .json file; it is named after the file">${icon('up', 'sm')}Upload</button>
       <button type="button" class="btn" data-dw="vars-export-rpl" title="Download this directory as an HP text file (DIR … END)">${icon('down', 'sm')}Export .rpl</button>
       <button type="button" class="btn ghost" data-dw="vars-export" title="Download the stack and the whole HOME tree as JSON">${icon('down', 'sm')}Back up everything</button>
       <button type="button" class="btn ghost" data-dw="vars-import" title="Replace the stack and HOME tree from a JSON backup (undoable)">${icon('up', 'sm')}Restore from file</button>
@@ -669,7 +669,7 @@ export class Drawers {
     const formats = [
       ['json', 'rpl.ai file (.json)'],
       ['rpl', 'HP text (.rpl)'],
-      ...(isTable(v) ? [['csv', 'Spreadsheet (.csv)'], ['tsv', 'Tab-separated (.tsv)']] : []),
+      ...(isTable(v) ? [['csv', 'Spreadsheet (.csv)'], ['tsv', 'Tab-separated (.tsv)'], ['xlsx', 'Excel workbook (.xlsx)']] : []),
     ];
     const html = `<h6>Download ${escapeHtml(name)}</h6>${formats.map(([id, label]) => `<button type="button" class="opt" data-v="${id}"><span class="ck">${icon('down', 'sm')}</span><b>${escapeHtml(label)}</b></button>`).join('')}`;
     this.app.popover.open(anchor, html, {
@@ -687,6 +687,7 @@ export class Drawers {
       rpl: () => exportHpTextFile(name, value),
       csv: () => exportTableFile(name, value, 'csv'),
       tsv: () => exportTableFile(name, value, 'tsv'),
+      xlsx: () => exportTableFile(name, value, 'xlsx'),
     }[format];
     try { this.app.toast(`Saved ${save()}`); }
     catch (e) { this.app.notifyError(`Download failed: ${e.message}`); }

@@ -715,7 +715,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .toast.err { background: var(--danger); color: #fff; }
 .toast button { border: 0; background: color-mix(in oklab, var(--bg) 18%, transparent); border-radius: 6px; padding: 5px 8px; font: 600 11.5px/1 var(--font-ui); }
 
-body.file-drag::after { content: "Drop a .csv, .tsv, .rpl or .txt file to put it on the stack"; position: fixed; inset: 10px; z-index: var(--z-sheet); display: grid; place-items: center; padding: 24px; text-align: center; border: 2px dashed var(--accent-line); border-radius: 16px; background: color-mix(in oklab, var(--bg) 84%, transparent); color: var(--accent); font: 600 15px/1.4 var(--font-ui); pointer-events: none; }
+body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to put it on the stack"; position: fixed; inset: 10px; z-index: var(--z-sheet); display: grid; place-items: center; padding: 24px; text-align: center; border: 2px dashed var(--accent-line); border-radius: 16px; background: color-mix(in oklab, var(--bg) 84%, transparent); color: var(--accent); font: 600 15px/1.4 var(--font-ui); pointer-events: none; }
 
 .li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 8px 12px 8px 14px; border: 0; background: transparent; text-align: left; border-top: 1px solid var(--line); width: 100%; color: var(--ink); }
 .li:hover { background: var(--r1); }

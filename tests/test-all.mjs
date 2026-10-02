@@ -32,6 +32,7 @@ const FILES = [
   './test-jordan.mjs',
   './test-hp-text.mjs',
   './test-sheet.mjs',
+  './test-xlsx.mjs',
   './test-stack-ops.mjs',
   './test-stats.mjs',
   './test-arrow-aliases.mjs',

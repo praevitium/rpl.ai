@@ -146,7 +146,11 @@ function headerRow(cells) {
 // The contents of a CSV or TSV file: a matrix, or a list of rows when a cell
 // holds text. A header row over numbers is skipped and returned.
 export function importTable(text, delimiter) {
-  const rows = parseDelimited(text, delimiter);
+  return importCells(parseDelimited(text, delimiter));
+}
+
+// The same for rows of cell text, which may differ in length.
+export function importCells(rows) {
   if (!rows.length) throw new Error('the file has no data');
   const width = rows.reduce((w, row) => Math.max(w, row.length), 0);
   if (rows.length * width > SHEET_MAX_CELLS) throw new Error(`more than ${SHEET_MAX_CELLS} cells`);
@@ -186,6 +190,12 @@ export function formatDelimited(value, delimiter = ',') {
   };
   const text = `${rows.map((row) => row.map(field).join(delimiter)).join('\n')}\n`;
   return /[^\x00-\x7F]/.test(text) ? `\uFEFF${text}` : text;
+}
+
+// Rows of { text, number } for buildXlsx: numbers stay numbers, all else is text.
+export function xlsxRows(value) {
+  const rows = tableRows(value);
+  return rows && rows.map((row) => row.map((v) => ({ text: sheetCell(v), number: isInteger(v) || isReal(v) || isRational(v) })));
 }
 
 // Spreadsheets take an HTML table from the clipboard as cells.

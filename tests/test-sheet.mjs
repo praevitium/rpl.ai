@@ -1,7 +1,9 @@
+import { readFileSync } from 'node:fs';
 import {
-  sheetNumber, parseDelimited, spreadsheetToSource, importTable, formatDelimited, spreadsheetHtml, isTable,
+  sheetNumber, parseDelimited, spreadsheetToSource, importTable, importCells, formatDelimited, spreadsheetHtml, isTable, xlsxRows,
   SHEET_MAX_CELLS,
 } from '../www/src/rpl/sheet.js';
+import { buildXlsx } from '../www/src/rpl/xlsx.js';
 import { readUpload, fileVariableName } from '../www/src/rpl/persist.js';
 import { parseEntry } from '../www/src/rpl/parser.js';
 import { formatSource } from '../www/src/rpl/formatter.js';
@@ -149,6 +151,29 @@ const src = (text) => formatSource(parseEntry(text)[0]);
 }
 
 {
+  const m = Matrix([[Integer(1n), Real(2.5)], [Rational(1n, 3n), Complex(1, -2)]]);
+  const rows = xlsxRows(m);
+  assert(JSON.stringify(rows) === JSON.stringify([[{ text: '1', number: true }, { text: '2.5', number: true }],
+    [{ text: '0.333333333333', number: true }, { text: '1-2i', number: false }]]),
+    'xlsxRows: integers, reals and rationals are numbers, a complex number is text');
+  assert(xlsxRows(Integer(5n)) === null && xlsxRows(RList([])) === null, 'xlsxRows: other values are not tables');
+  assert(JSON.stringify(xlsxRows(RList([Str('a'), Name('X'), Integer(2n)]))) === JSON.stringify([[
+    { text: 'a', number: false }, { text: 'X', number: false }, { text: '2', number: true }]]),
+    'xlsxRows: a list is one row of numbers and text');
+  const upload = (name, bytes) => readUpload(new File([bytes], name));
+  const sheet = await upload('grid.xlsx', buildXlsx(xlsxRows(Matrix([[Integer(1n), Real(2.5)], [Integer(-3n), Real(0.125)]]))));
+  assert(sheet.name === 'grid' && formatSource(sheet.value) === '[[ 1 2.5 ][ -3 0.125 ]]' && sheet.note === '',
+    'readUpload: a workbook this app wrote reads back as the same matrix, named after the file');
+  const openpyxl = await upload('Sales Q1.xlsx', readFileSync(new URL('./fixtures/openpyxl.xlsx', import.meta.url)));
+  assert(openpyxl.name === 'Sales_Q1' && formatSource(openpyxl.value) === '{ { "name" "qty" "price" } { "apple" 3 1.25 } { "pear" 5 0.5 } }'
+    && openpyxl.note === 'Read the first of 2 sheets, Data.',
+    'readUpload: a workbook with text is a list of rows, and the note says only its first sheet was read');
+  const inline = await upload('xy.xlsx', readFileSync(new URL('./fixtures/inline.xlsx', import.meta.url)));
+  assert(formatSource(inline.value) === '[[ 1 2 ][ 3 4 ]]' && inline.note === 'Skipped the header row (x, y).', 'readUpload: a text row above numbers in a workbook is a header');
+  let bad = null;
+  try { await upload('notes.xlsx', new TextEncoder().encode('this is not a workbook, only some text in a file')); } catch (e) { bad = e; }
+  assert(bad && /not an \.xlsx file/.test(bad.message), 'readUpload: a file that is not a workbook is refused');
+  assert(formatSource(importCells([['1', '2'], ['3']]).value) === '[[ 1 2 ][ 3 0 ]]', 'importCells: rows of different lengths are padded');
   assert(spreadsheetToSource('1\t2\n'.repeat(300000)) === null, 'spreadsheetToSource: a column far taller than the cell limit stays text, without overflowing the stack');
   assertThrows(() => importTable('1,2\n'.repeat(300000)), /more than 100000 cells/, 'importTable: a file far taller than the cell limit is refused with a message');
 }
