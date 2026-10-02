@@ -8,10 +8,9 @@ import { TYPES, isStorableHpName } from '../rpl/types.js';
 import { unitInfo } from '../rpl/units.js';
 import { format } from '../rpl/formatter.js';
 import {
-  exportVariableToFile, exportHpTextFile, exportTableFile, readUpload,
+  exportHpTextFile, readUpload,
   listBackups, archiveBackup, restoreBackup, deleteBackup,
 } from '../rpl/persist.js';
-import { isTable } from '../rpl/sheet.js';
 import { referenceSection, pushHistory } from './command-help.js';
 import { loadCommandReference, findReferenceEntry, shortDescription, searchCommands } from './command-reference.js';
 import { matchPositions, highlightSegments } from './op-search.js';
@@ -629,7 +628,7 @@ export class Drawers {
       case 'var-edit': e.stopPropagation(); app.editVariable(name); return;
       case 'var-rename': e.stopPropagation(); this._beginRename(t.closest('.vr'), name); return;
       case 'var-move': e.stopPropagation(); this._moveMenu(t, name); return;
-      case 'var-download': e.stopPropagation(); this._downloadMenu(t, name); return;
+      case 'var-download': e.stopPropagation(); app.downloadMenu(t, name, calcState.current.entries.get(name)); return;
       case 'var-delete': e.stopPropagation(); this._deleteVar(name); return;
       case 'vars-newdir': this._newFolder(t); return;
       case 'vars-upload': this._upload(); return;
@@ -661,36 +660,6 @@ export class Drawers {
     if (app.entry.buffer.trim()) app.commitEntry();
     app.entry._snapForUndo();
     app.stack.push(v);
-  }
-
-  _downloadMenu(anchor, name) {
-    const v = calcState.current.entries.get(name);
-    if (v === undefined) return;
-    const formats = [
-      ['json', 'rpl.ai file (.json)'],
-      ['rpl', 'HP text (.rpl)'],
-      ...(isTable(v) ? [['csv', 'Spreadsheet (.csv)'], ['tsv', 'Tab-separated (.tsv)'], ['xlsx', 'Excel workbook (.xlsx)']] : []),
-    ];
-    const html = `<h6>Download ${escapeHtml(name)}</h6>${formats.map(([id, label]) => `<button type="button" class="opt" data-v="${id}"><span class="ck">${icon('down', 'sm')}</span><b>${escapeHtml(label)}</b></button>`).join('')}`;
-    this.app.popover.open(anchor, html, {
-      label: `Download ${name}`,
-      onClick: (target) => {
-        this.app.popover.close({ restoreFocus: false });
-        this._download(name, v, target.dataset.v);
-      },
-    });
-  }
-
-  _download(name, value, format) {
-    const save = {
-      json: () => exportVariableToFile(name, value),
-      rpl: () => exportHpTextFile(name, value),
-      csv: () => exportTableFile(name, value, 'csv'),
-      tsv: () => exportTableFile(name, value, 'tsv'),
-      xlsx: () => exportTableFile(name, value, 'xlsx'),
-    }[format];
-    try { this.app.toast(`Saved ${save()}`); }
-    catch (e) { this.app.notifyError(`Download failed: ${e.message}`); }
   }
 
   _deleteVar(name) {

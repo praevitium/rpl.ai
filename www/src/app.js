@@ -28,7 +28,7 @@ import {
   loadCommandReference, findReferenceEntry, formatReferenceEntry, searchCommands, shortDescription,
 } from './ui/command-reference.js';
 import { format, formatSource } from './rpl/formatter.js';
-import { spreadsheetHtml, isTable } from './rpl/sheet.js';
+import { spreadsheetHtml } from './rpl/sheet.js';
 import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, currentPath,
@@ -42,7 +42,7 @@ import {
 } from './rpl/types.js';
 import { unitInfo } from './rpl/units.js';
 import {
-  loadInitialState, adoptStoredState, saveToLocalStorage, exportToFile, importFromFile, exportTableFile, readUpload, STORAGE_KEY,
+  loadInitialState, adoptStoredState, saveToLocalStorage, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
 } from './rpl/persist.js';
 import { giac } from './rpl/cas/giac-engine.mjs';
 import { ChatBot } from './ai/chat-bot.js';
@@ -631,7 +631,7 @@ class App {
         this.copyText(formatSource(value), table ? `Copied level ${level}. It pastes into a spreadsheet as cells.` : `Copied level ${level}`, table);
         return;
       }
-      case 'csv': this._saveTable(level); return;
+      case 'download': this.downloadMenu(anchor, `level${level}`, value); return;
       case 'store': this._storePrompt(level, anchor); return;
       case 'ask': this.askAssistant(`Explain what is on level ${level} of my stack: ${formatSource(value)}`); return;
       case 'more': this._levelMenu(level, anchor); return;
@@ -641,16 +641,23 @@ class App {
   _levelMenu(level, anchor) {
     const value = this.stack.peek(level);
     const item = (act, ico, label, hint = '') => `<button type="button" class="opt" data-act="${act}"><span class="ck">${icon(ico, 'sm')}</span><b>${escapeHtml(label)}</b><em>${escapeHtml(hint)}</em></button>`;
-    const html = `<h6>Level ${level}</h6>${item('edit', 'edit', 'Edit', shortcutText('level.edit'))}${item('echo', 'chr', 'Copy into the command line')}${item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick'))}${item('roll', 'up', 'Move to level 1 (ROLL)')}${item('rolld', 'down', 'Move level 1 here (ROLLD)')}${item('eval', 'play', 'Evaluate (EVAL)')}${item('num', 'chr', 'To a number (→NUM)')}${isSymbolic(value) ? item('plot', 'plot', 'Plot it') : ''}${item('store', 'folder', 'Store in a variable…')}${item('copy', 'copy', 'Copy', shortcutText('level.copy'))}${isTable(value) ? item('csv', 'down', 'Download as CSV') : ''}${item('ask', 'spark', 'Ask the assistant about it')}<hr>${item('drop', 'trash', 'Drop', shortcutText('level.drop'))}`;
+    const html = `<h6>Level ${level}</h6>${item('edit', 'edit', 'Edit', shortcutText('level.edit'))}${item('echo', 'chr', 'Copy into the command line')}${item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick'))}${item('roll', 'up', 'Move to level 1 (ROLL)')}${item('rolld', 'down', 'Move level 1 here (ROLLD)')}${item('eval', 'play', 'Evaluate (EVAL)')}${item('num', 'chr', 'To a number (→NUM)')}${isSymbolic(value) ? item('plot', 'plot', 'Plot it') : ''}${item('store', 'folder', 'Store in a variable…')}${item('copy', 'copy', 'Copy', shortcutText('level.copy'))}${item('download', 'down', 'Download as…')}${item('ask', 'spark', 'Ask the assistant about it')}<hr>${item('drop', 'trash', 'Drop', shortcutText('level.drop'))}`;
     this.popover.open(anchor, html, {
       label: `Level ${level}`,
       onClick: (t) => { this.popover.close({ restoreFocus: false }); this.levelAction(t.dataset.act, level, anchor); },
     });
   }
 
-  _saveTable(level) {
-    try { this.toast(`Saved ${exportTableFile(`level${level}`, this.stack.peek(level))}`); }
-    catch (e) { this.notifyError(`Download failed: ${e.message}`); }
+  downloadMenu(anchor, name, value) {
+    const items = downloadFormats(value).map(([format, label]) => `<button type="button" class="opt" data-v="${format}"><span class="ck">${icon('down', 'sm')}</span><b>${escapeHtml(label)}</b></button>`).join('');
+    this.popover.open(anchor, `<h6>Download ${escapeHtml(name)}</h6>${items}`, {
+      label: `Download ${name}`,
+      onClick: (target) => {
+        this.popover.close({ restoreFocus: false });
+        try { this.toast(`Saved ${downloadValue(name, value, target.dataset.v)}`); }
+        catch (e) { this.notifyError(`Download failed: ${e.message}`); }
+      },
+    });
   }
 
   _storePrompt(level, anchor) {

@@ -4,7 +4,7 @@ import {
   SHEET_MAX_CELLS,
 } from '../www/src/rpl/sheet.js';
 import { buildXlsx } from '../www/src/rpl/xlsx.js';
-import { readUpload, fileVariableName } from '../www/src/rpl/persist.js';
+import { readUpload, fileVariableName, downloadFormats } from '../www/src/rpl/persist.js';
 import { parseEntry } from '../www/src/rpl/parser.js';
 import { formatSource } from '../www/src/rpl/formatter.js';
 import {
@@ -160,6 +160,10 @@ const src = (text) => formatSource(parseEntry(text)[0]);
   assert(JSON.stringify(xlsxRows(RList([Str('a'), Name('X'), Integer(2n)]))) === JSON.stringify([[
     { text: 'a', number: false }, { text: 'X', number: false }, { text: '2', number: true }]]),
     'xlsxRows: a list is one row of numbers and text');
+  const formats = (v) => downloadFormats(v).map(([format]) => format).join(' ');
+  assert(formats(m) === 'json rpl csv tsv xlsx' && formats(Vector([Integer(1n)])) === 'json rpl csv tsv xlsx' && formats(RList([Integer(1n)])) === 'json rpl csv tsv xlsx'
+    && formats(Integer(5n)) === 'json rpl' && formats(Str('x')) === 'json rpl',
+    'downloadFormats: a table adds CSV, TSV and Excel to the .json and .rpl every value has');
   const upload = (name, bytes) => readUpload(new File([bytes], name));
   const sheet = await upload('grid.xlsx', buildXlsx(xlsxRows(Matrix([[Integer(1n), Real(2.5)], [Integer(-3n), Real(0.125)]]))));
   assert(sheet.name === 'grid' && formatSource(sheet.value) === '[[ 1 2.5 ][ -3 0.125 ]]' && sheet.note === '',

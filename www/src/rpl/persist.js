@@ -423,6 +423,26 @@ export function exportTableFile(name, value, format = 'csv') {
   return downloadFile(text, file, type);
 }
 
+const DOWNLOADS = Object.freeze([
+  ['json', 'rpl.ai file (.json)'],
+  ['rpl', 'HP text (.rpl)'],
+  ['csv', 'Spreadsheet (.csv)', true],
+  ['tsv', 'Tab-separated (.tsv)', true],
+  ['xlsx', 'Excel workbook (.xlsx)', true],
+]);
+
+/** The file formats a value can be downloaded in, as [extension, label]; tables add the spreadsheet ones. */
+export function downloadFormats(value) {
+  return DOWNLOADS.filter(([, , table]) => !table || isTable(value)).map(([format, label]) => [format, label]);
+}
+
+/** Download `value` as `<name>.<format>` and return the file name. */
+export function downloadValue(name, value, format) {
+  if (format === 'json') return exportVariableToFile(name, value);
+  if (format === 'rpl') return exportHpTextFile(name, value);
+  return exportTableFile(name, value, format);
+}
+
 // `sales 2025.csv` becomes sales_2025, `2025.csv` D2025, and a file named
 // after a command gets a trailing `_`.
 export function fileVariableName(filename) {
