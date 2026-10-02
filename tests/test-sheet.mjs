@@ -147,3 +147,8 @@ const src = (text) => formatSource(parseEntry(text)[0]);
     delete globalThis.FileReader;
   }
 }
+
+{
+  assert(spreadsheetToSource('1\t2\n'.repeat(300000)) === null, 'spreadsheetToSource: a column far taller than the cell limit stays text, without overflowing the stack');
+  assertThrows(() => importTable('1,2\n'.repeat(300000)), /more than 100000 cells/, 'importTable: a file far taller than the cell limit is refused with a message');
+}

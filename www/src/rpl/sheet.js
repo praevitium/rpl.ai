@@ -129,7 +129,7 @@ function listSource(cells) {
 export function spreadsheetToSource(text) {
   const rows = String(text).replace(/\r\n?/g, '\n').replace(/\n+$/, '').split('\n').map((line) => line.split('\t'));
   if (!rows.some((row) => row.length > 1)) return null;
-  const cols = Math.max(...rows.map((row) => row.length));
+  const cols = rows.reduce((w, row) => Math.max(w, row.length), 0);
   if (rows.length * cols > SHEET_MAX_CELLS) return null;
   const numbers = rows.map((row) => Array.from({ length: cols }, (_, c) => blankToZero(row[c] ?? '')));
   return numbers.some((row) => row.includes(null)) ? null : numericSource(numbers);
@@ -148,7 +148,7 @@ function headerRow(cells) {
 export function importTable(text, delimiter) {
   const rows = parseDelimited(text, delimiter);
   if (!rows.length) throw new Error('the file has no data');
-  const width = Math.max(...rows.map((row) => row.length));
+  const width = rows.reduce((w, row) => Math.max(w, row.length), 0);
   if (rows.length * width > SHEET_MAX_CELLS) throw new Error(`more than ${SHEET_MAX_CELLS} cells`);
   const cells = rows.map((row) => Array.from({ length: width }, (_, c) => (row[c] ?? '').trim()));
   const header = headerRow(cells);
