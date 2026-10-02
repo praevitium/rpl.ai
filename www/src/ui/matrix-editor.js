@@ -172,15 +172,15 @@ function sameGrid(a, b) {
 export function parseMatrixCell(text) {
   const t = String(text ?? '').trim();
   if (t === '') return Real(0);
-  const values = parseEntry(t);
-  if (values.length !== 1) {
-    throw new Error(`expected one value, got ${values.length}`);
-  }
-  const v = values[0];
-  if (isNumber(v) || isSymbolic(v)) return v;
-  if (isName(v) && (v.id === '∞' || isValidHpIdentifier(v.id))) return Symbolic(Var(v.id));
+  let values;
+  try { values = parseEntry(t); } catch { values = []; }
+  const v = values.length === 1 ? values[0] : null;
+  if (v && (isNumber(v) || isSymbolic(v))) return v;
+  if (v && isName(v) && (v.id === '∞' || isValidHpIdentifier(v.id))) return Symbolic(Var(v.id));
   try { return Symbolic(parseAlgebra(t)); }
-  catch (e) { throw new Error(e.message || `expected a number, got ${v?.type}`); }
+  catch (e) {
+    throw new Error(values.length > 1 ? `expected one value, got ${values.length}` : e.message || `expected a number, got ${v?.type}`);
+  }
 }
 
 export function gridToMatrix(grid) {

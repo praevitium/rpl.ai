@@ -5,7 +5,7 @@ import {
   insertRow, deleteRow, insertCol, deleteCol, transposeGrid, MATRIX_MAX, toggleCellSign, mapCaret,
 } from '../www/src/ui/matrix-editor.js';
 import {
-  Matrix, Vector, Real, Integer, RList, isMatrix, isInteger, isReal, isVector, isSymbolic,
+  Matrix, Vector, Real, Integer, RList, isMatrix, isInteger, isReal, isRational, isVector, isSymbolic,
 } from '../www/src/rpl/types.js';
 
 {
@@ -42,6 +42,11 @@ import {
   assert(isInteger(parseMatrixCell('4')), 'parseMatrixCell: integer');
   const z = parseMatrixCell('');
   assert(isReal(z) && z.value.toNumber() === 0, 'parseMatrixCell: empty → Real(0)');
+  const half = parseMatrixCell('1/2');
+  assert(isRational(half) && half.n === 1n && half.d === 2n && isRational(parseMatrixCell('-3/4')),
+    'parseMatrixCell: a fraction is an exact rational');
+  assert(isSymbolic(parseMatrixCell('sin(x)')) && isSymbolic(parseMatrixCell('x+1')) && isSymbolic(parseMatrixCell('cos(2*pi)')),
+    'parseMatrixCell: an algebraic expression, such as sin(x), is a symbolic cell');
   assertThrows(() => parseMatrixCell('1 2'), /expected one value/,
     'parseMatrixCell: two tokens rejected');
 }
