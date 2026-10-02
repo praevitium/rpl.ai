@@ -5,7 +5,7 @@ import {
   getDirectoryByPath, moveCurrentEntry, reorderCurrentEntry, renameCurrentEntry,
 } from '../rpl/state.js';
 import { TYPES, isStorableHpName } from '../rpl/types.js';
-import { UNIT_CATALOG } from '../rpl/units.js';
+import { unitInfo } from '../rpl/units.js';
 import { format } from '../rpl/formatter.js';
 import {
   exportVariableToFile, exportHpTextFile, exportTableFile, readUpload,
@@ -27,9 +27,10 @@ export const UNIT_SYMBOLS = Object.freeze([
   's', 'ms', 'us', 'ns', 'min', 'h', 'd', 'yr',
   'L', 'mL',
   'A', 'K', 'mol', 'cd',
-  'Hz', 'N', 'J', 'W',
-  'Pa', 'kPa', 'bar', 'atm',
+  'Hz', 'N', 'kN', 'lbf', 'J', 'kJ', 'W', 'kW', 'hp',
+  'Pa', 'kPa', 'bar', 'atm', 'psi',
   'V', 'Ω', 'ohm', 'C',
+  'gal', 'mph',
 ]);
 
 const _opCategories = opCategories();
@@ -399,7 +400,7 @@ export class Drawers {
     const family = MENU_FAMILIES.find((f) => f.id === this.cat.family);
     const names = familyCommands(family);
     const units = family.id === 'UNITS'
-      ? `<div class="sec-h">Insert a unit</div><div class="unit-grid">${UNIT_SYMBOLS.filter((u) => UNIT_CATALOG.has(u)).map((u) => `<button type="button" data-dw="unit" data-unit="${escapeHtml(u)}" title="Attach _${escapeHtml(u)} to the number you are typing, or to level 1">${escapeHtml(u)}</button>`).join('')}</div>`
+      ? `<div class="sec-h">Insert a unit</div><div class="unit-grid">${UNIT_SYMBOLS.filter(unitInfo).map((u) => `<button type="button" data-dw="unit" data-unit="${escapeHtml(u)}" title="Attach _${escapeHtml(u)} to the number you are typing, or to level 1">${escapeHtml(u)}</button>`).join('')}</div>`
       : '';
     list.innerHTML = `<div class="cat-crumb"><button type="button" class="mini" data-dw="cat-back" title="All families" aria-label="All families">${icon('chl', 'sm')}</button><b>${escapeHtml(family.title)}</b><span class="badge">${names.length}</span></div>${names.map((n) => this._cmdRow(n)).join('')}${units}`;
   }

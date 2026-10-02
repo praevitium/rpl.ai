@@ -24,7 +24,7 @@ import { escapeHtml, binaryBaseLabel, displayModeLabel, coordModeGlyph, suspende
 import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '../www/src/ui/drawer.js';
 import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
-import { UNIT_CATALOG } from '../www/src/rpl/units.js';
+import { unitInfo } from '../www/src/rpl/units.js';
 import { commandWordAt, commandHelpText } from '../www/src/ui/hover-help.js';
 import { parseCommandReference } from '../www/src/ui/command-reference.js';
 import { assert, assertThrows } from './helpers.mjs';
@@ -256,7 +256,7 @@ import { assert, assertThrows } from './helpers.mjs';
      `_renderCommands` (side-panel.js ~767) classifies every CATEGORIES
      entry into one of three buttons: a registered op (looked up
      case-insensitively via `registered.has(name.toUpperCase())`), a
-     unit-insert button (`UNIT_CATALOG.has(name)`), or — neither — a
+     unit-insert button (`unitInfo(name)`, which reads an SI prefix), or — neither — a
      greyed `sp-cmd-stub` "not yet implemented" button.  The shape pins
      above only spot-check two anchors, so a renamed/removed op or a typo
      in CATEGORIES would silently become a dead stub button with no test
@@ -265,7 +265,7 @@ import { assert, assertThrows } from './helpers.mjs';
      category.  These guard that every catalog button stays live. */
   const liveOps = new Set(allOps().map(s => s.toUpperCase()));
   const classify = (name) =>
-    UNIT_CATALOG.has(name) ? 'unit'
+    unitInfo(name) ? 'unit'
       : liveOps.has(name.toUpperCase()) ? 'op'
         : 'stub';
   const stubs = [];

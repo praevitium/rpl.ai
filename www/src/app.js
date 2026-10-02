@@ -40,7 +40,7 @@ import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
   isMatrix, isVector, isReal, isInteger, Symbolic,
 } from './rpl/types.js';
-import { UNIT_CATALOG } from './rpl/units.js';
+import { unitInfo } from './rpl/units.js';
 import {
   loadInitialState, adoptStoredState, saveToLocalStorage, exportToFile, importFromFile, exportTableFile, readUpload, STORAGE_KEY,
 } from './rpl/persist.js';
@@ -1036,7 +1036,7 @@ class App {
       onPressR: () => this.drawers.showReference(name),
     }));
     if (family.id === 'UNITS') {
-      for (const unit of UNIT_SYMBOLS.filter((u) => UNIT_CATALOG.has(u))) {
+      for (const unit of UNIT_SYMBOLS.filter(unitInfo)) {
         slots.push({ label: unit, title: `Attach _${unit} to the number you are typing, or to level 1`, onPress: () => this.insertUnit(unit) });
       }
     }

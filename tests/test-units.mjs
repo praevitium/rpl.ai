@@ -530,3 +530,27 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     'AUR: 1_m 9_cm MAX is 1_m and MIN is 9_cm, each in the unit it was given');
   assertThrows(() => runLine('1_m 1_s MAX'), /Inconsistent units/, 'MAX of units of different dimensions is Inconsistent units');
 }
+
+{
+  const unitLine = (src) => formatSource(runLine(src).peek());
+  assert(unitLine('5_kJ 1_J CONVERT') === '5000._J' && unitLine('1_MHz 1_Hz CONVERT') === '1000000._Hz'
+    && unitLine('1_hPa 1_Pa CONVERT') === '100._Pa' && unitLine('3_dm 1_cm CONVERT') === '30._cm'
+    && unitLine('1_dam 1_m CONVERT') === '10._m' && unitLine('1_Dm 1_m CONVERT') === '10._m',
+    'an SI prefix goes before a prefixable unit: kJ, MHz, hPa, dm, dam and the HP\'s D for deka');
+  assert(unitLine('1_\u03BCm 1_nm CONVERT') === '1000._nm' && unitLine('1_\u00B5s 1_us CONVERT') === '1._us'
+    && unitLine('1_uA 1_A CONVERT') === '0.000001_A' && unitLine('1_k\u2126 1_\u03A9 CONVERT') === '1000._\u03A9',
+    'micro is \u03BC, the micro sign \u00B5 or u, and the ohm sign is the Greek capital omega');
+  assert(unitLine('5_min 1_s CONVERT') === '300._s' && unitLine('1_mi 1_m CONVERT') === '1609.344_m' && unitLine('1_cd UBASE') === '1._cd',
+    'a listed unit wins over a prefix: min is the minute, mi the mile and cd the candela');
+  for (const bad of ['5_zork', '5_mn', '5_mh', '5_kft', '5_kmin']) {
+    assertThrows(() => runLine(bad), /Unknown unit/, `${bad} is not a unit: a prefix only goes before a prefixable one`);
+  }
+  assert(unitLine('5_kJ UBASE') === '5000._kg*m^2/s^2' && unitLine('1_kJ 500_J +') === '1500._J' && unitLine('1_kW 1000_W ==') === '1.',
+    'a prefixed unit has its dimensions and scale for UBASE, sums and comparisons');
+  assert(unitLine('1_lbf 1_N CONVERT') === '4.44822161526_N' && unitLine('1_psi 1_Pa CONVERT') === '6894.75729317_Pa'
+    && unitLine('1_gal 1_L CONVERT') === '3.785411784_L' && unitLine('1_mph 1_kph CONVERT') === '1.609344_kph'
+    && unitLine('1_hp 1_W CONVERT') === '745.699871582_W' && unitLine('1_kWh 1_MJ CONVERT') === '3.6_MJ'
+    && unitLine('1_acre 1_ha CONVERT') === '0.40468564224_ha' && unitLine('1_cal 1_J CONVERT') === '4.1868_J',
+    'common US and engineering units: lbf, psi, gal, mph, hp, kWh, acre and cal');
+  assertThrows(() => runLine('1_lbf 1_kg CONVERT'), /Inconsistent units/, 'a force does not convert to a mass');
+}
