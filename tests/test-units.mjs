@@ -554,3 +554,24 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     'common US and engineering units: lbf, psi, gal, mph, hp, kWh, acre and cal');
   assertThrows(() => runLine('1_lbf 1_kg CONVERT'), /Inconsistent units/, 'a force does not convert to a mass');
 }
+
+{
+  const unitLine = (src) => formatSource(runLine(src).peek());
+  assert(unitLine('100_°C 1_°F CONVERT') === '212._°F' && unitLine('32_°F 1_°C CONVERT') === '0._°C'
+    && unitLine('-40_°C 1_°F CONVERT') === '-40._°F' && unitLine('300_K 1_°C CONVERT') === '26.85_°C'
+    && unitLine('0_°C 1_K CONVERT') === '273.15_K' && unitLine('0_°F 1_°R CONVERT') === '459.67_°R',
+    'a bare °C or °F converts as a thermometer reading: 100_°C is 212_°F, 0_°C is 273.15_K');
+  assert(unitLine('0_°C UBASE') === '273.15_K' && unitLine('100_°F UBASE') === '310.927777778_K' && unitLine('37_degC 1_degF CONVERT') === '98.6_degF',
+    'UBASE turns a thermometer reading into kelvin, and degC and degF spell the units without a degree sign');
+  assert(unitLine('0_°C 273.15_K ==') === '1.' && unitLine('20_°C 68_°F ==') === '1.' && unitLine('30_°C 80_°F <') === '0.'
+    && unitLine('50_°F 5_°C MIN') === '5._°C',
+    'comparisons and MIN read temperatures as thermometer readings');
+  assert(unitLine('10_°C 5_°C +') === '15._°C' && unitLine('10_°C 5_°C -') === '5._°C' && unitLine('10_K 5_°R +') === '23._°R'
+    && unitLine('20_°C 2 *') === '40._°C',
+    'sums and differences of temperatures have no additive constant, and a product scales the degrees');
+  for (const bad of ['10_°C 5_K +', '1_°C 1_°F +', '10_K 5_°C -']) {
+    assertThrows(() => runLine(bad), /Inconsistent units/, `${bad} mixes a thermometer scale with another: Inconsistent units`);
+  }
+  assert(unitLine('5_°C/min 1_K/s CONVERT') === '0.0833333333333_K/s',
+    'a temperature inside a compound unit is a difference, so it has no offset');
+}

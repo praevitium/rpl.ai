@@ -1,6 +1,6 @@
 import { isUnit, Real, Unit } from '../types.js';
 import { RPLError } from '../stack.js';
-import { toBaseUexpr, sameDims } from '../units.js';
+import { toBaseUexpr, sameDims, convertValue } from '../units.js';
 import { register } from './registry.js';
 import { _inUnit, _makeUnit, _numVal } from './internal.js';
 
@@ -16,8 +16,8 @@ register('UVAL', (s) => {
 register('UBASE', (s) => {
   const [u] = s.popN(1);
   if (!isUnit(u)) throw new RPLError('Bad argument type');
-  const { scale, uexpr } = toBaseUexpr(u.uexpr);
-  s.push(_makeUnit(u.value * scale, uexpr));
+  const { uexpr } = toBaseUexpr(u.uexpr);
+  s.push(_makeUnit(convertValue(u.value, u.uexpr, uexpr), uexpr));
 }, { category: 'Units', categoryOrder: 1, label: "UBASE" });
 
 

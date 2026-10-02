@@ -2,7 +2,7 @@ import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Name, Symbolic, Integer, Unit, isUnit, isBinaryInteger, isNumber, promoteNumericPair, Complex, Rational, isList, RList, isTagged, Tagged, isVector, Vector, isMatrix, Matrix, BinaryInteger, toRealOrThrow, toRealDecimal, isString, isValidHpIdentifier, isStorableHpName, isProgram, isDirectory, Str, Program } from '../types.js';
 import { RPLAbort, RPLError, setPushCoerce, checkTimeLimit } from '../stack.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, isRealNum } from '../algebra.js';
-import { sameDims, scaleOf, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
+import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
 import { state as _calcState, getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
@@ -110,8 +110,8 @@ export function _makeUnit(value, uexpr) {
 
 // u's magnitude in the units `to`, rounded to 12 digits like every other
 // number so that 12_in and 1_ft agree.
-export function _inUnit(u, to) {
-  return uexprEqual(u.uexpr, to) ? u.value : Unit(u.value * scaleOf(u.uexpr) / scaleOf(to), to).value;
+export function _inUnit(u, to, options) {
+  return uexprEqual(u.uexpr, to) ? u.value : Unit(convertValue(u.value, u.uexpr, to, options), to).value;
 }
 
 
@@ -120,8 +120,8 @@ export function _inUnit(u, to) {
 function _unitBinary(op, a, b) {
   if (op === '+' || op === '-') {
     if (!isUnit(a) || !isUnit(b)) throw new RPLError('Bad argument type');
-    if (!sameDims(a.uexpr, b.uexpr)) throw new RPLError('Inconsistent units');
-    const inB = _inUnit(a, b.uexpr);
+    if (!sameDims(a.uexpr, b.uexpr) || !temperaturesAdd(a.uexpr, b.uexpr)) throw new RPLError('Inconsistent units');
+    const inB = _inUnit(a, b.uexpr, { difference: true });
     return _makeUnit(op === '+' ? inB + b.value : inB - b.value, b.uexpr);
   }
   if (op === '*') {

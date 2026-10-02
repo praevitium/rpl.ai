@@ -3,8 +3,9 @@
    exponents dropped, so equality is a pairwise scan.  Each catalog entry
    has a scale to SI base units and a dims vector over BASE_SYMBOLS; an SI
    prefix may stand before a `prefixable` one (kJ, MHz, uA).  Units are
-   purely multiplicative: affine temperatures (°C, °F) would need an offset
-   as well. */
+   multiplicative except a bare °C or °F, a thermometer reading whose zero
+   is the entry's `offset` in kelvin; inside any other expression a
+   temperature is a difference. */
 
 const BASE_SYMBOLS = Object.freeze(['m', 'kg', 's', 'A', 'K', 'mol', 'cd']);
 const BASE_DIMS_LEN = BASE_SYMBOLS.length;
@@ -48,6 +49,12 @@ export const UNIT_CATALOG = new Map([
   ['s',   { scale: 1,                 dims: D_T,   prefixable: true }],
   ['A',   { scale: 1,                 dims: D_I,   prefixable: true }],
   ['K',   { scale: 1,                 dims: D_TH,  prefixable: true }],
+  ['°C',  { scale: 1,                 dims: D_TH,  offset: 273.15 }],
+  ['°F',  { scale: 5 / 9,             dims: D_TH,  offset: 459.67 * 5 / 9 }],
+  ['°R',  { scale: 5 / 9,             dims: D_TH }],
+  ['degC', { scale: 1,                dims: D_TH,  offset: 273.15 }],
+  ['degF', { scale: 5 / 9,            dims: D_TH,  offset: 459.67 * 5 / 9 }],
+  ['degR', { scale: 5 / 9,            dims: D_TH }],
   ['mol', { scale: 1,                 dims: D_N,   prefixable: true }],
   ['cd',  { scale: 1,                 dims: D_J,   prefixable: true }],
 
@@ -224,6 +231,32 @@ export function scaleOf(uexpr) {
     s *= Math.pow(unitInfo(sym).scale, exp);
   }
   return s;
+}
+
+// The entry of a bare temperature unit (K, °C, °F, °R), else null.
+function simpleTemperature(uexpr) {
+  if (uexpr.length !== 1 || uexpr[0][1] !== 1) return null;
+  const info = unitInfo(uexpr[0][0]);
+  return info.dims === D_TH ? info : null;
+}
+
+// Whether x_from + y_to is allowed for temperatures: both absolute (K, °R),
+// both °C or both °F, as the AUR says for +, -, %CH and %T.
+export function temperaturesAdd(from, to) {
+  const a = simpleTemperature(from);
+  const b = simpleTemperature(to);
+  if (!a || !b) return true;
+  return (a.offset === undefined && b.offset === undefined) || from[0][0] === to[0][0];
+}
+
+// `value` of the units `from`, in the units `to`.  Bare temperatures convert as
+// thermometer readings (100_°C is 212_°F) unless `difference` says they are
+// differences, as for + and -.
+export function convertValue(value, from, to, { difference = false } = {}) {
+  const a = difference ? null : simpleTemperature(from);
+  const b = difference ? null : simpleTemperature(to);
+  if (a && b) return (value * a.scale + (a.offset ?? 0) - (b.offset ?? 0)) / b.scale;
+  return value * scaleOf(from) / scaleOf(to);
 }
 
 export function sameDims(a, b) {

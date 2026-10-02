@@ -26,7 +26,7 @@ export const UNIT_SYMBOLS = Object.freeze([
   'kg', 'g', 'mg', 'lb', 'oz',
   's', 'ms', 'us', 'ns', 'min', 'h', 'd', 'yr',
   'L', 'mL',
-  'A', 'K', 'mol', 'cd',
+  'A', 'K', '°C', '°F', 'mol', 'cd',
   'Hz', 'N', 'kN', 'lbf', 'J', 'kJ', 'W', 'kW', 'hp',
   'Pa', 'kPa', 'bar', 'atm', 'psi',
   'V', 'Ω', 'ohm', 'C',
