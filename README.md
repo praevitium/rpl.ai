@@ -79,7 +79,7 @@ RPL puts the numbers first and the operation last. Each value goes on the
 
 - **Arithmetic.** Type `24` Enter `15` Enter, then press × on the keypad
   (or type `*` and Enter) for `360`. A whole line works too:
-  `2 3 + 4 *` gives `20`.
+  `2 3 + 4 *` gives `20`. Fractions stay exact: `1/3 2/5 +` gives `11/15`.
 - **Algebra.** Push `` `X^2-4` `` and run `FACTOR` for `(X−2)(X+2)`, or
   `` `X^2-5*X+6=0` `X` SOLVE `` for `{ X=2 X=3 }`. Or press `⌘E`, type
   `x^2-5x+6=0`, and click the Solve card.
@@ -89,7 +89,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
 - **Local variables.** `« 2 3 → a b « a b + a b * » » EVAL` leaves `5` and
   `6`.
 - **Units.** `100_km 2_h /` gives `50._km/h`; then `1_m/s CONVERT` gives
-  `13.8888888889_m/s`.
+  `13.8888888889_m/s`. SI prefixes work on SI units (`5_kJ`, `1_MHz`,
+  `3_uA`), and a bare `°C` or `°F` converts as a thermometer reading:
+  `100_°C 1_°F CONVERT` gives `212._°F`.
 - **The stack.** Click a level to select it; its actions appear on the row
   and in the menu bar. Double-click edits it in the right writer. Drag rows
   to reorder them.
@@ -214,13 +216,15 @@ becomes a matrix (a vector for a single row), or into the matrix writer's
 cells. Currency, percentages, accounting negatives such as `(300.00)` and
 the separators of other locales (`1.234,56`) are read as numbers.
 
-Spreadsheet files work too. Download a matrix, vector or list as `.csv` or
-`.tsv` from its download button in the Variables drawer, or with **Download
-as CSV** in a stack level's menu. Upload a `.csv`, `.tsv`, `.rpl`, `.txt` or
+Spreadsheet files work too. Download a matrix, vector or list as `.csv`,
+`.tsv` or Excel's `.xlsx` from its download button in the Variables drawer,
+or with **Download as…** in a stack level's menu, which offers `.rpl` and
+`.json` for any value. Upload a `.csv`, `.tsv`, `.xlsx`, `.rpl`, `.txt` or
 `.json` file in the drawer, or drop one anywhere on the calculator to put it
 on the stack. A table of numbers becomes a matrix (a vector for one row), a
 text row above numbers is taken as a header and skipped, and a table with
-other text becomes a list of rows.
+other text becomes a list of rows. From a workbook rpl.ai reads the first
+sheet's used range; dates arrive as Excel's serial numbers.
 
 ![The Variables drawer](screenshots/variables.png)
 
@@ -465,9 +469,9 @@ Catalog and the command reference mark what is available. Not there yet:
 - MENU and TMENU, DEF and DEFINE
 - parts of the CAS, such as TAYLR, SERIES, DESOLVE, LINSOLVE, LDEC and
   ZEROS (SOLVE and ISOL are here)
-- most of the unit catalog: the SI base units and a few dozen common units
-  are here, but not temperatures (°C, °F), general SI prefixes or units
-  inside algebraics
+- most of the unit catalog: the SI units with their prefixes, the
+  temperatures and about 90 common units are here, but not the angle units
+  (°, rad, grad), the rarer ones, or units inside algebraics
 
 **Left out on purpose.** USER mode and key assignments, ENTRY mode, the
 NUM.SLV solver screens, FINANCE, TIME, OFF, libraries (LIB, ATTACH and
@@ -497,9 +501,9 @@ writer's insights and the previews never wait on it.
 this device. They don't sync, and clearing the site's data, or closing a
 private window, erases them. If the browser blocks site data altogether,
 rpl.ai still runs but warns that nothing is being saved. Back them up with
-Back up everything in the Variables drawer. Spreadsheets exchange CSV and
-TSV files and copied cells; Excel's own `.xlsx` files can't be read or
-written yet, so save the sheet as CSV first.
+Back up everything in the Variables drawer. Spreadsheets exchange CSV, TSV
+and `.xlsx` files and copied cells; of a workbook only the first sheet is
+read, and formulas arrive as their last calculated values.
 
 **The assistant.** It is only as good as the model you connect, and small
 models make mistakes in RPL; check its work, and use Undo freely. It needs

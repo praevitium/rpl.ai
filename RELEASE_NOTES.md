@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.10 (2026-10-01)
+**Latest release:** v0.6.11 (2026-10-02)
 
 ---
 
@@ -18,6 +18,45 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.11 — 2026-10-02
+
+Units take SI prefixes and temperatures. `5_kJ`, `1_MHz`, `3_kW`, `100_nF`
+and `1_uA` were all Unknown unit; a prefix now goes before any SI unit
+(micro is μ, µ or u, and D is the HP's deka), and the catalog gains about
+fifty units, among them lbf, psi, gal, mph, hp, kWh, acre and nmi. A bare
+°C or °F is a thermometer reading, as the AUR describes: `100_°C 1_°F
+CONVERT` is `212_°F`, UBASE gives kelvin, and comparisons convert. Sums and
+differences treat temperatures as differences, and accept only two absolute
+temperatures (K, °R), two °C or two °F; `10_°C 5_K +` is Inconsistent
+units. `degC`, `degF` and `degR` spell the units without the degree sign.
+
+Excel workbooks. A matrix, vector or list downloads as `.xlsx` from its
+download button in the Variables drawer, and a `.xlsx` file uploads in the
+drawer or drops anywhere on the calculator, as a matrix or, when a cell
+holds text, a list of rows. rpl.ai reads the first sheet's used range
+and says when the workbook has more; formulas arrive as their last
+calculated values and dates as Excel's serial numbers. The zip container
+and the sheet cells are written and read in a small module with no
+library, and the tests read workbooks written by openpyxl and XlsxWriter.
+
+One download menu. A stack level's menu and the Variables drawer open the
+same Download as… list: `.json` and `.rpl` for any value, plus CSV, TSV and
+Excel for a matrix, vector or list. A program or a number on the stack can
+be saved as HP text for the first time.
+
+Fractions are exact in text. `1/3` typed without spaces is the rational,
+as it is shown; it used to be the integer 1 and a name `/3`, so editing a
+rational level, `->STR` then `STR→`, and saving an `.rpl` turned `1/3` into
+two objects. This changes the meaning of such a token. In approximate mode
+it is a real number, and `1/0` is Infinite result. The matrix writer takes
+`1/2` and `sin(x)` in a cell; both were rejected.
+
+Pasting a spreadsheet column of more than about 125,000 rows, or opening
+such a file, no longer overflows the stack: a paste stays text and a file
+is refused with the cell-limit message.
 
 ---
 
