@@ -1,9 +1,9 @@
 import {
-  Real, Integer, BinaryInteger, Complex, Str, Name, RList, Vector, Matrix, Program,
-  Symbolic, Unit, Tagged, isValidHpIdentifier,
+  Real, Integer, Rational, BinaryInteger, Complex, Str, Name, RList, Vector, Matrix, Program,
+  Symbolic, Unit, Tagged, isValidHpIdentifier, Decimal,
 } from './types.js';
 import { RPLError } from './stack.js';
-import { getWordsizeMask, state as _state, toRadians } from './state.js';
+import { getApproxMode, getWordsizeMask, state as _state, toRadians } from './state.js';
 import { parseAlgebra } from './algebra.js';
 import { parseUnitExpr } from './units.js';
 
@@ -107,6 +107,12 @@ function tokenize(src) {
     }
 
     const rest = src.slice(i);
+    // 1/3 with no spaces is an exact fraction, the form a rational is shown and saved in.
+    const fraction = rest.match(/^[-+]?\d+\/\d+(?=$|[\s{}[\]()"`«»]|<<|>>)/);
+    if (fraction) {
+      tokens.push({ kind: 'fraction', text: fraction[0] });
+      i += fraction[0].length; continue;
+    }
     const m = rest.match(/^[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/);
     if (m && (m[0].match(/[0-9]/))) {
       i += m[0].length;
@@ -176,6 +182,14 @@ export function parseEntry(src) {
         if (/^[-+]?\d+$/.test(text)) return Integer(text);
         // Real()'s Decimal reads 1E400 exactly; parseFloat would give Infinity.
         return Real(text);
+      }
+
+      case 'fraction': {
+        const [num, den] = t.text.split('/').map(BigInt);
+        if (den === 0n) throw new RPLError('Infinite result');
+        if (getApproxMode()) return Real(new Decimal(num.toString()).div(den.toString()));
+        const r = Rational(num, den);
+        return r.d === 1n ? Integer(r.n) : r;
       }
 
       case 'unit': {
