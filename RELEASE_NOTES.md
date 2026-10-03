@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.11 (2026-10-02)
+**Latest release:** v0.6.12 (2026-10-03)
 
 ---
 
@@ -20,6 +20,47 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.12 — 2026-10-03
+
+Copy as LaTeX. A stack level's menu has Copy as LaTeX for any value, and in
+the equation writer the left-shift layer of the COPY soft key copies the
+selection, or the whole expression. Quotients become `\frac`, powers
+superscripts, roots `\sqrt`, and Σ and ∫ become `\sum` and `\int`; Greek
+names and subscripts are set properly, a matrix is `bmatrix`, a rational a
+fraction and a unit upright text, so `9.8_m/s^2` copies as
+`9.8\,\mathrm{m}\,\mathrm{s}^{-2}`. Parentheses appear wherever dropping
+them would change the meaning (`\sin\left(X\right)\,Y`, not `\sin\,X\,Y`),
+and a sum or a Σ that something follows is fenced off. Programs, directories
+and graphics have no LaTeX form. KaTeX, the strictest common renderer, takes
+every test case and 20,000 random expressions, and a round trip of 25,000
+random ones confirms the parentheses keep their value.
+
+The UNITS menu has the HP 50g's categories. LENG, AREA, VOL, TIME, SPEED,
+MASS, FORCE, ENRG, POWR, PRESS, TEMP, ELEC, LIGHT and RAD each open a page of
+keys, 131 in all with the common prefixed ones such as kΩ, μF and kPa; only
+49 units had keys before, and the Catalog's unit grid groups the same way.
+As on the HP, a unit key multiplies level 1 by the unit, so keys build
+compound units, ↰ converts level 1 to it and ↱ divides by it: `5` ft then
+↰ m gives `1.524_m`. While you type, a unit key appends `_ft` and ↱ appends
+`/s`. A unit key used to push a fresh `1_m` when level 1 was already a unit;
+it now multiplies. The shortcut sheet no longer says the shifted soft keys
+only store and recall, and the assistant stopped telling people that mph and
+degrees are not units.
+
+Units take fractional powers. `9_m SQRT` is `3._m^.5`, `9_m^2 SQRT` is
+`3._m`, XROOT takes the x-th root of a unit, and `x_unit y ^` takes any real
+power, with exponents kept to 12 digits. A unit that overflows is Infinite
+result instead of an infinite magnitude.
+
+SIGN, RND and TRNC accept units: SIGN gives the sign of the number, RND and
+TRNC round it. `%` takes a unit and a plain number, and `%T` and `%CH` take
+two units, treat temperatures as differences and return a plain number, as
+the AUR describes.
+
+`(1_m,2_s)` and `(1abc,2)` were read as `(1,2)`, because each part went
+through parseFloat and lost its tail. A part must now be a plain number or a
+fraction, and anything else is a bad complex literal.
 
 ## v0.6.11 — 2026-10-02
 
