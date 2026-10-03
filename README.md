@@ -151,6 +151,13 @@ never waits on it, and a result that takes more than 3 seconds is skipped.
 Enter pushes the expression, or replaces the level you were editing. Esc
 cancels, with Undo. Switch to RPL and the formula moves to the command line.
 
+To use a formula in a document, **Copy as LaTeX** in a stack level's menu
+copies any value as LaTeX source, and the ↰ layer of the writer's COPY soft
+key copies the selection, or the whole expression. Quotients become `\frac`,
+roots `\sqrt`, and Σ and ∫ become `\sum` and `\int`; matrices become
+`bmatrix`, rationals fractions and units upright text. Programs, directories
+and graphics have no LaTeX form, and LaTeX isn't read back in.
+
 ![The equation writer, its tap buttons and insight strip](screenshots/equation-writer.png)
 
 ### Walk me through a problem

@@ -29,6 +29,7 @@ import {
 } from './ui/command-reference.js';
 import { format, formatSource } from './rpl/formatter.js';
 import { spreadsheetHtml } from './rpl/sheet.js';
+import { toLatex } from './rpl/latex.js';
 import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, currentPath,
@@ -631,6 +632,12 @@ class App {
         this.copyText(formatSource(value), table ? `Copied level ${level}. It pastes into a spreadsheet as cells.` : `Copied level ${level}`, table);
         return;
       }
+      case 'latex': {
+        const latex = toLatex(value);
+        if (latex === null) this.notifyError(`Level ${level} has no LaTeX form.`);
+        else this.copyText(latex, `Copied level ${level} as LaTeX`);
+        return;
+      }
       case 'download': this.downloadMenu(anchor, `level${level}`, value); return;
       case 'store': this._storePrompt(level, anchor); return;
       case 'ask': this.askAssistant(`Explain what is on level ${level} of my stack: ${formatSource(value)}`); return;
@@ -641,7 +648,7 @@ class App {
   _levelMenu(level, anchor) {
     const value = this.stack.peek(level);
     const item = (act, ico, label, hint = '') => `<button type="button" class="opt" data-act="${act}"><span class="ck">${icon(ico, 'sm')}</span><b>${escapeHtml(label)}</b><em>${escapeHtml(hint)}</em></button>`;
-    const html = `<h6>Level ${level}</h6>${item('edit', 'edit', 'Edit', shortcutText('level.edit'))}${item('echo', 'chr', 'Copy into the command line')}${item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick'))}${item('roll', 'up', 'Move to level 1 (ROLL)')}${item('rolld', 'down', 'Move level 1 here (ROLLD)')}${item('eval', 'play', 'Evaluate (EVAL)')}${item('num', 'chr', 'To a number (→NUM)')}${isSymbolic(value) ? item('plot', 'plot', 'Plot it') : ''}${item('store', 'folder', 'Store in a variable…')}${item('copy', 'copy', 'Copy', shortcutText('level.copy'))}${item('download', 'down', 'Download as…')}${item('ask', 'spark', 'Ask the assistant about it')}<hr>${item('drop', 'trash', 'Drop', shortcutText('level.drop'))}`;
+    const html = `<h6>Level ${level}</h6>${item('edit', 'edit', 'Edit', shortcutText('level.edit'))}${item('echo', 'chr', 'Copy into the command line')}${item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick'))}${item('roll', 'up', 'Move to level 1 (ROLL)')}${item('rolld', 'down', 'Move level 1 here (ROLLD)')}${item('eval', 'play', 'Evaluate (EVAL)')}${item('num', 'chr', 'To a number (→NUM)')}${isSymbolic(value) ? item('plot', 'plot', 'Plot it') : ''}${item('store', 'folder', 'Store in a variable…')}${item('copy', 'copy', 'Copy', shortcutText('level.copy'))}${toLatex(value) === null ? '' : item('latex', 'copy', 'Copy as LaTeX')}${item('download', 'down', 'Download as…')}${item('ask', 'spark', 'Ask the assistant about it')}<hr>${item('drop', 'trash', 'Drop', shortcutText('level.drop'))}`;
     this.popover.open(anchor, html, {
       label: `Level ${level}`,
       onClick: (t) => { this.popover.close({ restoreFocus: false }); this.levelAction(t.dataset.act, level, anchor); },
@@ -1024,7 +1031,7 @@ class App {
         : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },
       { label: '→NUM', title: 'Evaluate to a number', onPress: act('num') },
       { label: 'STO…', title: 'Store it in a variable', onPress: act('store') },
-      { label: 'COPY', title: 'Copy to the clipboard', onPress: act('copy') },
+      { label: 'COPY', title: 'Copy to the clipboard · ↰ copies it as LaTeX', onPress: act('copy'), onPressL: act('latex') },
       { label: 'ASK ✦', title: 'Ask the assistant about it', onPress: act('ask') },
       { label: 'DONE', title: 'Clear the selection (Esc)', onPress: () => this.clearSelection() },
     ];

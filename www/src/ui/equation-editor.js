@@ -5,6 +5,7 @@ import {
 import { eqwToSvg, astToSvg } from '../rpl/pretty.js';
 import { Symbolic, Name, Real, isSymbolic, isNumber, isName, isInteger, isReal, isList, Integer } from '../rpl/types.js';
 import { format } from '../rpl/formatter.js';
+import { astLatex } from '../rpl/latex.js';
 import { RPLError, Stack } from '../rpl/stack.js';
 import { lookup } from '../rpl/ops.js';
 import { parseEntry } from '../rpl/parser.js';
@@ -1805,7 +1806,7 @@ export class EquationEditor {
       ...inserts.slice(0, 6),
       slot('TEXT', 'Show the expression as text under the equation', () => this.toggleText(), { toggle: true, on: () => this.showText }),
       slot('BIG', 'Bigger type', () => this.toggleBig(), { toggle: true, on: () => this.big }),
-      slot('COPY', 'Copy the selection, or the whole expression, as text', () => this.copy()),
+      slot('COPY', 'Copy the selection, or the whole expression, as text · ↰ copies it as LaTeX', () => this.copy(), { onPressL: () => this.copyLatex() }),
       slot('PASTE', 'Paste text in place of the selection', () => this.paste()),
       slot('CMDS', 'More algebra commands for the selection or the expression', () => this.showCommands()),
       slot('DONE', 'Push it to the stack (Enter)', () => this.app.commitEntry()),
@@ -1884,6 +1885,11 @@ export class EquationEditor {
 
   copy() { this._writeClipboard(this._selectionText()); }
 
+  copyLatex() {
+    const ast = this._selectionAst();
+    if (ast) this.app.copyText(astLatex(ast), 'Copied as LaTeX');
+  }
+
   cut() {
     const text = this._selectionText();
     if (text == null) return;
@@ -1931,9 +1937,14 @@ export class EquationEditor {
     }
   }
 
-  _selectionText() {
-    try { return formatAlgebra(this.hasSelection() ? targetAst(this.state) : toAst(completeWord(this.state).root)); }
+  _selectionAst() {
+    try { return this.hasSelection() ? targetAst(this.state) : toAst(completeWord(this.state).root); }
     catch { this.app.notifyError('Finish the expression first: fill every box.'); return null; }
+  }
+
+  _selectionText() {
+    const ast = this._selectionAst();
+    return ast && formatAlgebra(ast);
   }
 
   _writeClipboard(text) {
