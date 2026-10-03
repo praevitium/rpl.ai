@@ -4,7 +4,7 @@ import { Bin as AstBin, formatAlgebra, Neg as AstNeg, Num as AstNum, Fn as AstFn
 import { formatReal, DEFAULT_DISPLAY, formatBinaryInteger } from '../formatter.js';
 import { state as _calcState, getApproxMode, getRealMaxExp, getWordsize, nextPrngUnit, seedPrng } from '../state.js';
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
-import { inverseUexpr, powerUexpr, sameDims } from '../units.js';
+import { inverseUexpr, powerUexpr, sameDims, temperaturesAdd } from '../units.js';
 import { register, lookup, OPS } from './registry.js';
 import { _inUnit, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, recallVar, storeVar } from './internal.js';
 
@@ -413,6 +413,7 @@ _registerRounder('FP', (x) => x - Math.trunc(x), { category: 'Arithmetic', categ
 
 
 function _signScalar(v) {
+  if (isUnit(v))     return Real(Math.sign(v.value));
   if (isReal(v))     return Real(v.value.isNegative() ? -1 : v.value.isZero() ? 0 : 1);
   if (isInteger(v))  return Integer(v.value === 0n ? 0n : v.value > 0n ? 1n : -1n);
   if (isRational(v)) return Integer(v.n === 0n ? 0n : v.n > 0n ? 1n : -1n);
@@ -572,6 +573,10 @@ function _roundingOp(mode) {
       s.push(Complex(part(xv.re), part(xv.im)));
       return;
     }
+    if (isUnit(xv)) {
+      s.push(Unit(_roundReal(new Decimal(String(xv.value)), n, mode).toNumber(), xv.uexpr));
+      return;
+    }
     if (isInteger(xv) && n >= 0) {
       s.push(xv);
       return;
@@ -616,6 +621,21 @@ function _percentAst(kind, l, r) {
                           AstBin('-', r, l)), l);
 }
 
+// % takes one unit and keeps it; %T and %CH take two, convert the second to the
+// first's units (temperatures as differences) and return a plain number.
+function _percentUnits(x, y, computeNumeric, ratio) {
+  if (!ratio) {
+    if (isUnit(x) === isUnit(y)) throw new RPLError('Bad argument type');
+    const unit = isUnit(x) ? x : y;
+    const [xn, yn] = [x, y].map((v) => (isUnit(v) ? v.value : toRealOrThrow(v)));
+    return _makeUnit(computeNumeric(xn, yn), unit.uexpr);
+  }
+  if (!isUnit(x) || !isUnit(y)) throw new RPLError('Bad argument type');
+  if (!sameDims(x.uexpr, y.uexpr) || !temperaturesAdd(x.uexpr, y.uexpr)) throw new RPLError('Inconsistent units');
+  if (x.value === 0) throw new RPLError('Infinite result');
+  return Real(computeNumeric(x.value, _inUnit(y, x.uexpr, { difference: true })));
+}
+
 function _percentOp(kind, computeNumeric, errorsOnZeroX) {
   return _withTaggedBinary(_withListBinary((s) => {
     const y = s.pop();
@@ -623,6 +643,10 @@ function _percentOp(kind, computeNumeric, errorsOnZeroX) {
     if (_isSymOperand(x) || _isSymOperand(y)) {
       const [l, r] = _astPair(x, y);
       s.push(Symbolic(_percentAst(kind, l, r)));
+      return;
+    }
+    if (isUnit(x) || isUnit(y)) {
+      s.push(_percentUnits(x, y, computeNumeric, errorsOnZeroX));
       return;
     }
     const xn = toRealOrThrow(x);

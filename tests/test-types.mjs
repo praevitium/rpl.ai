@@ -11460,8 +11460,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // SIGN — _signScalar isReal/isInteger/isRational/isComplex only; no isUnit branch
   {
     const s = new Stack(); s.push(U1);
-    assertThrows(() => lookup('SIGN').fn(s), /Bad argument type/i,
-      'session263: 1_m SIGN → Bad argument type (U=✗; _signScalar no isUnit branch)');
+    lookup('SIGN').fn(s);
+    assert(s.peek().value.eq(1), 'session263: 1_m SIGN → 1 (AUR: the sign of the number of a unit)');
   }
   // ARG — _argScalar isReal/isInteger only; no isUnit branch
   {
@@ -11524,13 +11524,13 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   }
   {
     const s = new Stack(); s.push(U1); s.push(U2);
-    assertThrows(() => lookup('%T').fn(s), /Bad argument type/i,
-      'session263: 1_m 2_m %T → Bad argument type (U=✗; same toRealOrThrow path as %)');
+    lookup('%T').fn(s);
+    assert(s.peek().value.eq(200), 'session263: 1_m 2_m %T → 200 (AUR: two units are converted, and the result is a plain number)');
   }
   {
     const s = new Stack(); s.push(U1); s.push(U2);
-    assertThrows(() => lookup('%CH').fn(s), /Bad argument type/i,
-      'session263: 1_m 2_m %CH → Bad argument type (U=✗; same toRealOrThrow path as %)');
+    lookup('%CH').fn(s);
+    assert(s.peek().value.eq(100), 'session263: 1_m 2_m %CH → 100 (AUR: the change from 1 m to 2 m is 100%)');
   }
 }
 

@@ -593,3 +593,20 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     assertThrows(() => runLine(overflow), /Infinite result/, `${overflow} is Infinite result, not an infinite unit`);
   }
 }
+
+{
+  const unitLine = (src) => formatSource(runLine(src).peek());
+  assert(unitLine('32_ft SIGN') === '1.' && unitLine('-5_m SIGN') === '-1.' && unitLine('0_m SIGN') === '0.',
+    'AUR: SIGN of a unit is the sign of its number, as a plain real');
+  assert(unitLine('5.678_m 1 RND') === '5.7_m' && unitLine('5.678_m 1 TRNC') === '5.6_m' && unitLine('5.678_m -2 TRNC') === '5.6_m' && unitLine('5.678_m 0 RND') === '6._m',
+    'AUR: RND and TRNC round or truncate the number of a unit');
+  assert(unitLine('15 176_kg %') === '26.4_kg' && unitLine('100_°C 50 %') === '50._°C' && unitLine('50 3_m %') === '1.5_m',
+    'AUR: % takes a unit and a number, and keeps the unit');
+  assertThrows(() => runLine('3_m 4_m %'), /Bad argument type/, 'two units are not a percentage');
+  assert(unitLine('1_m 500_cm %CH') === '400.' && unitLine('1_m 500_cm %T') === '500.' && unitLine('100_K 150_K %CH') === '50.' && unitLine('100_K 50_K %T') === '50.',
+    'AUR: %CH and %T of two units convert the second and return a plain number');
+  assertThrows(() => runLine('10_°C 20_K %CH'), /Inconsistent units/, '%CH of a Celsius and a kelvin temperature is Inconsistent units');
+  assertThrows(() => runLine('1_m 1_s %T'), /Inconsistent units/, '%T of different dimensions is Inconsistent units');
+  assertThrows(() => runLine('0_m 5_m %CH'), /Infinite result/, '%CH from a zero unit is Infinite result');
+  assertThrows(() => runLine('5_m 2 %T'), /Bad argument type/, '%T of a unit and a number is Bad argument type');
+}
