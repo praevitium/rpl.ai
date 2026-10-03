@@ -164,7 +164,7 @@ function actionLabel(id) {
     'drawer.toggle': 'Show or hide the drawer', 'keypad.toggle': 'Show or hide the keypad',
     'view.minimal': 'Minimal view', 'settings.open': 'Settings', 'shortcuts.open': 'Keyboard shortcuts',
     'ui.escape': 'Cancel, close, or dismiss', 'menu.prev': 'Previous menu page', 'menu.next': 'Next menu page',
-    'softkey.press': 'Soft key', 'softkey.store': 'Soft key, ↰ store', 'softkey.recall': 'Soft key, ↱ recall',
+    'softkey.press': 'Soft key', 'softkey.store': 'Soft key, ↰ layer', 'softkey.recall': 'Soft key, ↱ layer',
     'line.newline': 'New line', 'stack.dup': 'DUP', 'stack.drop': 'DROP', 'stack.swap': 'SWAP',
     'level.selectFirst': 'Select level 1', 'level.editFirst': 'Edit level 1', 'level.up': 'Move selection up',
     'level.down': 'Move selection down', 'level.rollUp': 'Move the level up', 'level.rollDown': 'Move the level down',
