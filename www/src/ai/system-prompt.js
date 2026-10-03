@@ -123,9 +123,9 @@ CONTAINERS
   SEQ DOLIST DOSUBS STREAM MAP    list combinators (body programs in « »)
   ΣLIST ΔLIST ΠLIST           sum / differences / product over a list
 
-UNITS  (built-in: m kg s A K mol cd  cm mm km in ft yd mi  g mg lb oz  ms us ns min h d yr  L mL  Hz N J W Pa kPa bar atm V Ω C — combine with * / ^, e.g. 9.81_m/s^2)
+UNITS  (built-in: SI units m kg s A K mol cd Hz N J W Pa V Ω C F with prefixes, as in 5_kJ 1_MHz 3_uA; also cm mm km in ft yd mi nmi  g mg lb oz  ms min h d yr  L mL gal  mph kph  lbf cal Btu Wh hp bar atm psi  °C °F — combine with * / ^, e.g. 9.81_m/s^2)
   →UNIT                      x 1_unit →UNIT — attach a unit (5 1_km →UNIT gives 5_km); literal form 5_km, 9.81_m/s^2
-  UVAL UBASE CONVERT         extract value / convert to base SI / convert to compatible unit (5_km 1_mi CONVERT).  mph, °C/°F are not units here — convert arithmetically.
+  UVAL UBASE CONVERT         extract value / convert to base SI / convert to compatible unit (5_km 1_mi CONVERT; 100_°C 1_°F CONVERT gives 212._°F).  A bare °C or °F is a temperature reading; in + and - it counts as a difference.
 
 PROGRAMS & CONTROL FLOW
   « ... »                    program literal; EVAL runs it, « … » \`NAME\` STO saves it, and typing NAME runs the saved program
