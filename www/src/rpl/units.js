@@ -190,11 +190,14 @@ export function unitInfo(sym) {
   return prefixed.get(sym);
 }
 
+// Exponents may be fractions (the root of 9_m is 3_m^.5), kept to 12 digits so that .1 * 3 equals .3.
+const exact = (x) => Number(x.toPrecision(12));
+
 export function normalizeUexpr(factors) {
   const merged = new Map();
   for (const [sym, exp] of factors) {
     if (!unitInfo(sym)) throw new Error(`Unknown unit: ${sym}`);
-    merged.set(sym, (merged.get(sym) ?? 0) + exp);
+    merged.set(sym, exact((merged.get(sym) ?? 0) + exp));
   }
   const out = [...merged.entries()]
     .filter(([, e]) => e !== 0)
@@ -220,7 +223,7 @@ function dimsOf(uexpr) {
   const d = new Array(BASE_DIMS_LEN).fill(0);
   for (const [sym, exp] of uexpr) {
     const c = unitInfo(sym);
-    for (let i = 0; i < BASE_DIMS_LEN; i++) d[i] += c.dims[i] * exp;
+    for (let i = 0; i < BASE_DIMS_LEN; i++) d[i] = exact(d[i] + c.dims[i] * exp);
   }
   return d;
 }
@@ -273,7 +276,7 @@ export function toBaseUexpr(uexpr) {
 }
 
 /* uexpr  := factor ( ('*' | '/') factor )*
-   factor := SYMBOL ( '^' ('-'|'+')? DIGITS )? | '(' uexpr ')' | '1'
+   factor := SYMBOL ( '^' ('-'|'+')? NUMBER )? | '(' uexpr ')' | '1'
    '/' inverts only the next factor, reading left to right as the HP50
    does, so m/s*s is m.  formatUnitExpr parenthesizes a denominator with
    several factors so its output parses back unchanged. */
@@ -299,9 +302,9 @@ export function parseUnitExpr(text) {
     let exp = 1;
     if (src[i] === '^') {
       i++;
-      const em = src.slice(i).match(/^[-+]?\d+/);
+      const em = src.slice(i).match(/^[-+]?(?:\d+\.?\d*|\.\d+)/);
       if (!em) throw new Error(`Bad exponent in unit expression: ${src}`);
-      exp = parseInt(em[0], 10);
+      exp = Number(em[0]);
       i += em[0].length;
     }
     return normalizeUexpr([[sym, exp]]);
@@ -328,7 +331,7 @@ export function formatUnitExpr(uexpr) {
   if (uexpr.length === 0) return '';
   const pos = uexpr.filter(([, e]) => e > 0);
   const neg = uexpr.filter(([, e]) => e < 0);
-  const fmt = ([s, e]) => Math.abs(e) === 1 ? s : `${s}^${Math.abs(e)}`;
+  const fmt = ([s, e]) => Math.abs(e) === 1 ? s : `${s}^${String(Math.abs(e)).replace(/^0\./, '.')}`;
   const ps = pos.map(fmt).join('*');
   const ns = neg.map(fmt).join('*');
   if (neg.length === 0) return ps;

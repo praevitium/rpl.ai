@@ -575,3 +575,21 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(unitLine('5_°C/min 1_K/s CONVERT') === '0.0833333333333_K/s',
     'a temperature inside a compound unit is a difference, so it has no offset');
 }
+
+{
+  const unitLine = (src) => formatSource(runLine(src).peek());
+  assert(unitLine('9_m^2 SQRT') === '3._m' && unitLine('9_m SQRT') === '3._m^.5' && unitLine('4_m SQRT SQ') === '4._m' && unitLine('16_m^4 SQRT SQRT') === '2._m',
+    'AUR: the root of a unit halves its exponents, so 9_m^2 SQRT is 3_m and 9_m SQRT is 3_m^.5');
+  assertThrows(() => runLine('-9_m SQRT'), /Bad argument value/, 'the root of a negative unit is Bad argument value');
+  assert(unitLine('27_m 3 XROOT') === '3._m^.333333333333' && unitLine('8_m^3 3 XROOT') === '2._m',
+    'AUR: XROOT of a unit takes the x-th root of its exponents');
+  assert(unitLine('4_m 0.5 ^') === '2._m^.5' && unitLine('4_m 1 2 / ^') === '2._m^.5' && unitLine('4_m^2 0.5 ^') === '2._m' && unitLine('2_m^.5 2 ^') === '4._m'
+    && unitLine('1_m^.5 1_m^.5 *') === '1._m',
+    'AUR: x_unit y ^ takes a fractional power, and fractional exponents add up');
+  assert(unitLine('2_m^.5 DUP ->STR STR→ SAME') === '1.' && formatUnitExpr(parseUnitExpr('1/m^.5')) === '1/m^.5' && formatUnitExpr(parseUnitExpr('m^1.5*s^-0.5')) === 'm^1.5/s^.5'
+    && sameDims(parseUnitExpr('m^.5*m^.5'), parseUnitExpr('m')) && sameDims(parseUnitExpr('m^.1*m^.2*m^.3'), parseUnitExpr('m^.6')),
+    'a fractional unit exponent prints without its zero, reads back, and compares by dimension');
+  for (const overflow of ['1E308_m 10 *', '1E200_m SQ', '0_m -1 ^', '1E308_m 1E308_m *']) {
+    assertThrows(() => runLine(overflow), /Infinite result/, `${overflow} is Infinite result, not an infinite unit`);
+  }
+}

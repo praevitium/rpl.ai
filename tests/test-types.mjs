@@ -11423,8 +11423,9 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   // SQRT — toRealOrThrow rejects Unit (no isUnit branch in _sqrtScalar)
   {
     const s = new Stack(); s.push(U1);
-    assertThrows(() => lookup('SQRT').fn(s), /Bad argument type/i,
-      'session263: 1_m SQRT → Bad argument type (U=✗; toRealOrThrow rejects Unit)');
+    lookup('SQRT').fn(s);
+    assert(s.peek().value === 1 && s.peek().uexpr[0][0] === 'm' && s.peek().uexpr[0][1] === 0.5,
+      'session263: 1_m SQRT → 1_m^.5 (AUR: the root of a unit halves its exponents)');
   }
   // SIN — representative for trig/hyp group (_unaryCx → toRealOrThrow)
   {

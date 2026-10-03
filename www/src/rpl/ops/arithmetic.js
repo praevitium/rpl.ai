@@ -6,7 +6,7 @@ import { state as _calcState, getApproxMode, getRealMaxExp, getWordsize, nextPrn
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { inverseUexpr, powerUexpr, sameDims } from '../units.js';
 import { register, lookup, OPS } from './registry.js';
-import { _inUnit, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, recallVar, storeVar } from './internal.js';
+import { _inUnit, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, recallVar, storeVar } from './internal.js';
 
 
 
@@ -268,7 +268,7 @@ register('SQ', _withTaggedUnary(_withListUnary((s) => {
     v.re * v.re - v.im * v.im,
     2 * v.re * v.im,
   ));
-  else if (isUnit(v)) s.push(Unit(v.value * v.value, powerUexpr(v.uexpr, 2)));
+  else if (isUnit(v)) s.push(_makeUnit(v.value * v.value, powerUexpr(v.uexpr, 2)));
   else if (isMatrix(v)) s.push(Matrix(_matMul(v.rows, v.rows)));
   else throw new RPLError('Bad argument type');
 })), { category: 'Arithmetic', categoryOrder: 8, label: "SQ" });
@@ -277,6 +277,11 @@ register('SQ', _withTaggedUnary(_withListUnary((s) => {
 register('SQRT', _withTaggedUnary(_withListUnary(_withVMUnary((s) => {
   const v = s.pop();
   if (_isSymOperand(v))  { s.push(Symbolic(AstFn('SQRT', [_toAst(v)]))); return; }
+  if (isUnit(v)) {
+    if (v.value < 0) throw new RPLError('Bad argument value');
+    s.push(_makeUnit(Math.sqrt(v.value), powerUexpr(v.uexpr, 0.5)));
+    return;
+  }
   if (isComplex(v) || (isReal(v) && v.value.isNegative()) ||
       (isInteger(v) && v.value < 0n) ||
       (isRational(v) && v.n < 0n)) {
@@ -324,6 +329,15 @@ register('XROOT', _withTaggedBinary(_withListBinary((s) => {
   const [y, x] = s.popN(2);
   if (_isSymOperand(y) || _isSymOperand(x)) {
     s.push(Symbolic(AstFn('XROOT', _astPair(y, x))));
+    return;
+  }
+  if (isUnit(y)) {
+    const n = _numVal(x);
+    if (n === 0) throw new RPLError('Infinite result');
+    const odd = Number.isInteger(n) && Math.abs(n) % 2 === 1;
+    if (y.value < 0 && !odd) throw new RPLError('Bad argument value');
+    const root = Math.pow(Math.abs(y.value), 1 / n);
+    s.push(_makeUnit(y.value < 0 ? -root : root, powerUexpr(y.uexpr, 1 / n)));
     return;
   }
   const dx = _toDecimal(x);

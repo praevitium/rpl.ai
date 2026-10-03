@@ -104,6 +104,7 @@ export function _numVal(v) {
 
 
 export function _makeUnit(value, uexpr) {
+  if (!Number.isFinite(value)) throw new RPLError('Infinite result');
   return uexpr.length === 0 ? Real(value) : Unit(value, uexpr);
 }
 
@@ -144,14 +145,10 @@ function _unitBinary(op, a, b) {
   }
   if (op === '^') {
     if (!isUnit(a)) throw new RPLError('Bad argument type');
-    // Unit exponents must stay integers; the unit algebra has no fractional powers.
-    const n = isInteger(b) ? Number(b.value)
-            : isReal(b)    ? b.value.toNumber()
-            : NaN;
-    if (!Number.isFinite(n) || !Number.isInteger(n)) {
-      throw new RPLError('Bad argument value');
-    }
-    return _makeUnit(Math.pow(a.value, n), powerUexpr(a.uexpr, n));
+    const n = _numVal(b);
+    const value = Math.pow(a.value, n);
+    if (Number.isNaN(value)) throw new RPLError('Bad argument value');
+    return _makeUnit(value, powerUexpr(a.uexpr, n));
   }
   throw new RPLError('Bad argument type');
 }
