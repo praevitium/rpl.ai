@@ -610,3 +610,12 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assertThrows(() => runLine('0_m 5_m %CH'), /Infinite result/, '%CH from a zero unit is Infinite result');
   assertThrows(() => runLine('5_m 2 %T'), /Bad argument type/, '%T of a unit and a number is Bad argument type');
 }
+
+{
+  const unitLine = (src) => formatSource(runLine(src).peek());
+  assertThrows(() => runLine('(1_m, 2_s)'), /Bad complex literal/, 'a complex literal with units is refused, not read as (1, 2)');
+  assertThrows(() => runLine('(1abc, 2)'), /Bad complex literal/, 'a complex part with trailing text is refused');
+  assertThrows(() => runLine('(1.5E, 2)'), /Bad complex literal/, 'a complex part with a broken exponent is refused');
+  assert(unitLine('(1/2, 3)') === '(0.5, 3)' && unitLine('(1.5E-3, -2)') === '(0.0015, -2)' && unitLine('(.5, 5.)') === '(0.5, 5)',
+    'a complex part may be a fraction or a number with an exponent');
+}

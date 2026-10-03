@@ -7,6 +7,14 @@ import { getApproxMode, getWordsizeMask, state as _state, toRadians } from './st
 import { parseAlgebra } from './algebra.js';
 import { parseUnitExpr } from './units.js';
 
+// A part of (re, im): a plain number or a fraction.  parseFloat would read 1_m as 1 and 1/2 as 1.
+function complexPart(text) {
+  const t = text.trim();
+  const fraction = /^([-+]?\d+)\/(\d+)$/.exec(t);
+  if (fraction) return Number(fraction[1]) / Number(fraction[2]);
+  return /^[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?$/.test(t) ? Number(t) : NaN;
+}
+
 function tokenize(src) {
   const tokens = [];
   let i = 0;
@@ -233,16 +241,16 @@ export function parseEntry(src) {
         }
         const m = imText.match(/^[∠<]\s*(.*)$/);
         if (m) {
-          const r = parseFloat(reText);
-          const theta = parseFloat(m[1]);
+          const r = complexPart(reText);
+          const theta = complexPart(m[1]);
           if (!Number.isFinite(r) || !Number.isFinite(theta)) {
             throw new RPLError(`Bad complex literal: (${t.text})`);
           }
           const rad = toRadians(theta);
           return Complex(r * Math.cos(rad), r * Math.sin(rad));
         }
-        const reN = parseFloat(reText);
-        const imN = parseFloat(imText);
+        const reN = complexPart(reText);
+        const imN = complexPart(imText);
         // (x), left over when an unquoted SIN(x) splits, must not become Complex(NaN, 0).
         if (!Number.isFinite(reN) || !Number.isFinite(imN)) {
           throw new RPLError(`Bad complex literal: (${t.text})`);
