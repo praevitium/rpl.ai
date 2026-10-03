@@ -91,7 +91,11 @@ RPL puts the numbers first and the operation last. Each value goes on the
 - **Units.** `100_km 2_h /` gives `50._km/h`; then `1_m/s CONVERT` gives
   `13.8888888889_m/s`. SI prefixes work on SI units (`5_kJ`, `1_MHz`,
   `3_uA`), and a bare `°C` or `°F` converts as a thermometer reading:
-  `100_°C 1_°F CONVERT` gives `212._°F`.
+  `100_°C 1_°F CONVERT` gives `212._°F`. The UNITS menu groups the units as
+  on the HP 50g (LENG, AREA, VOL, TIME, SPEED, MASS, FORCE, ENRG, POWR, PRESS,
+  TEMP, ELEC, LIGHT, RAD), with a key for each. A unit key multiplies level 1
+  by the unit, ↰ converts level 1 to it and ↱ divides by it, so `5` ft then
+  ↰ m gives `1.524_m`.
 - **The stack.** Click a level to select it; its actions appear on the row
   and in the menu bar. Double-click edits it in the right writer. Drag rows
   to reorder them.

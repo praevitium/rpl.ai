@@ -24,6 +24,25 @@ export const MENU_FAMILIES = Object.freeze([
   { id: 'MORE', short: 'MORE', title: 'Everything else', category: 'Other' },
 ]);
 
+// The UNITS menu's keys, grouped and named as on the HP 50g. A key is any unit
+// expression the parser reads, which is how area and volume get squares and cubes.
+export const UNIT_GROUPS = Object.freeze([
+  { id: 'LENG', title: 'Length', units: ['m', 'cm', 'mm', 'km', 'μm', 'nm', 'in', 'ft', 'yd', 'mi', 'nmi', 'mil', 'au', 'ly', 'pc'] },
+  { id: 'AREA', title: 'Area', units: ['m^2', 'cm^2', 'mm^2', 'km^2', 'in^2', 'ft^2', 'yd^2', 'mi^2', 'ha', 'acre'] },
+  { id: 'VOL', title: 'Volume', units: ['m^3', 'cm^3', 'in^3', 'ft^3', 'L', 'mL', 'gal', 'qt', 'pt', 'cup', 'ozfl', 'tbsp', 'tsp', 'galUK', 'bbl'] },
+  { id: 'TIME', title: 'Time', units: ['s', 'ms', 'us', 'ns', 'min', 'h', 'd', 'yr', 'Hz', 'kHz', 'MHz', 'GHz'] },
+  { id: 'SPEED', title: 'Speed', units: ['m/s', 'ft/s', 'kph', 'mph', 'knot'] },
+  { id: 'MASS', title: 'Mass and amount', units: ['kg', 'g', 'mg', 'lb', 'oz', 'ton', 'tonne', 'ct', 'grain', 'ozt', 'lbt', 'slug', 'mol'] },
+  { id: 'FORCE', title: 'Force', units: ['N', 'kN', 'lbf', 'kip', 'kgf', 'dyn'] },
+  { id: 'ENRG', title: 'Energy', units: ['J', 'kJ', 'MJ', 'cal', 'kcal', 'Btu', 'eV', 'Wh', 'kWh', 'erg', 'ftlbf'] },
+  { id: 'POWR', title: 'Power', units: ['W', 'mW', 'kW', 'MW', 'GW', 'hp'] },
+  { id: 'PRESS', title: 'Pressure', units: ['Pa', 'hPa', 'kPa', 'MPa', 'bar', 'atm', 'psi', 'torr', 'mmHg', 'inHg'] },
+  { id: 'TEMP', title: 'Temperature', units: ['K', '°C', '°F', '°R'] },
+  { id: 'ELEC', title: 'Electricity', units: ['A', 'mA', 'V', 'mV', 'kV', 'Ω', 'kΩ', 'MΩ', 'C', 'F', 'μF', 'nF', 'pF', 'H', 'mH', 'S', 'T', 'Wb'] },
+  { id: 'LIGHT', title: 'Light', units: ['cd', 'lm', 'lx'] },
+  { id: 'RAD', title: 'Radiation', units: ['Bq', 'Gy', 'Sv'] },
+]);
+
 export const OWN_MENUS = Object.freeze([
   { id: 'VARS', short: 'VARS', title: 'Variables in this directory' },
   { id: 'CST', short: 'CST', title: 'Your custom menu (CST)' },

@@ -4,7 +4,7 @@ import { Display, escapeHtml, describeValue, suspendedProgramHtml, binaryBaseLab
 import { Keypad } from './ui/keyboard.js';
 import { MenuBar } from './ui/menubar.js';
 import { AppBar } from './ui/appbar.js';
-import { Drawers, CATEGORIES, familyCommands, UNIT_SYMBOLS, signatureOf } from './ui/drawer.js';
+import { Drawers, CATEGORIES, familyCommands, signatureOf } from './ui/drawer.js';
 import { describeError, ERROR_KINDS } from './ui/errors.js';
 import { errorBannerHtml, haltedBannerHtml } from './ui/banner.js';
 import { InputArea } from './ui/input-area.js';
@@ -16,7 +16,7 @@ import { Sheets } from './ui/sheets.js';
 import { Tour } from './ui/tour.js';
 import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
-import { MENU_FAMILIES, menuById } from './ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, menuById } from './ui/menus.js';
 import { MODES } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
 import { clampLevel, dropLevel, moveLevel, replaceLevel } from './ui/stack-levels.js';
@@ -39,9 +39,8 @@ import { lookup, allOps, setGraphicsHook } from './rpl/ops.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
-  isMatrix, isVector, isReal, isInteger, Symbolic,
+  isMatrix, isVector, isReal, isInteger, isRational, isUnit, Symbolic,
 } from './rpl/types.js';
-import { unitInfo } from './rpl/units.js';
 import {
   loadInitialState, adoptStoredState, saveToLocalStorage, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
 } from './rpl/persist.js';
@@ -886,11 +885,23 @@ class App {
     this.entry.typeOrExecFn(name);
   }
 
-  insertUnit(unit) {
+  // As on the HP 50g, a unit key multiplies level 1 by the unit, a left-shifted
+  // one converts level 1 to it and a right-shifted one divides by it.
+  insertUnit(unit, mode = 'times') {
     const e = this.entry;
-    if (e.buffer.trim()) { e.type(`_${unit}`); return; }
+    const typed = e.buffer.trim();
+    if (mode !== 'convert' && typed) {
+      e.type(mode === 'divide' ? (typed.includes('_') ? `/${unit}` : `_1/${unit}`) : `_${unit}`);
+      return;
+    }
+    if (typed) {
+      this.commitEntry();
+      if (e.buffer.trim()) return;
+    }
     const top = this.stack.depth ? this.stack.peek(1) : null;
-    e.recall(top && (isReal(top) || isInteger(top)) ? `1_${unit} *` : `1_${unit}`);
+    const scalable = top && (isReal(top) || isInteger(top) || isRational(top) || isUnit(top));
+    const line = { times: scalable ? `1_${unit} *` : `1_${unit}`, divide: scalable ? `1_${unit} /` : `1_1/${unit}`, convert: `1_${unit} CONVERT` };
+    e.recall(line[mode]);
     this.commitEntry();
   }
 
@@ -1050,11 +1061,23 @@ class App {
       onPressR: () => this.drawers.showReference(name),
     }));
     if (family.id === 'UNITS') {
-      for (const unit of UNIT_SYMBOLS.filter(unitInfo)) {
-        slots.push({ label: unit, title: `Attach _${unit} to the number you are typing, or to level 1`, onPress: () => this.insertUnit(unit) });
+      for (const group of UNIT_GROUPS) {
+        slots.push({ label: group.id, title: `${group.title}: ${group.units.length} units`, onPress: () => this._showUnitMenu(group) });
       }
     }
     this.setMenu(slots, family.id);
+  }
+
+  _showUnitMenu(group) {
+    const back = { label: '◀ BACK', title: 'Back to the Units menu', onPress: () => this._showFamilyMenu('UNITS') };
+    const keys = group.units.map((unit) => ({
+      label: unit,
+      title: `Attach _${unit} to the number you are typing, or multiply level 1 by it · ↰ converts level 1 to ${unit} · ↱ divides by ${unit}`,
+      onPress: () => this.insertUnit(unit),
+      onPressL: () => this.insertUnit(unit, 'convert'),
+      onPressR: () => this.insertUnit(unit, 'divide'),
+    }));
+    this.setMenu([back, ...keys], 'UNITS');
   }
 
   commandTitle(name) {

@@ -5,7 +5,7 @@ import {
   Real, Integer, BinaryInteger, Complex, Name, Str, Directory, Program, Tagged,
   RList, Vector, Matrix,
   isReal, isInteger, isBinaryInteger, isComplex, isDirectory, isProgram, isName,
-  isString,
+  isString, isUnit,
 } from '../www/src/rpl/types.js';
 import { parseEntry } from '../www/src/rpl/parser.js';
 import { format, formatStackTop } from '../www/src/rpl/formatter.js';
@@ -24,7 +24,8 @@ import { escapeHtml, binaryBaseLabel, displayModeLabel, coordModeGlyph, suspende
 import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '../www/src/ui/drawer.js';
 import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
-import { unitInfo } from '../www/src/rpl/units.js';
+import { unitInfo, UNIT_CATALOG, parseUnitExpr, sameDims } from '../www/src/rpl/units.js';
+import { UNIT_GROUPS } from '../www/src/ui/menus.js';
 import { commandWordAt, commandHelpText } from '../www/src/ui/hover-help.js';
 import { parseCommandReference } from '../www/src/ui/command-reference.js';
 import { assert, assertThrows } from './helpers.mjs';
@@ -288,6 +289,21 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(catKeys.filter(k => k !== 'Units')
            .every(k => CATEGORIES[k].every(n => classify(n) === 'op')),
                                              'CATEGORIES: unit-insert buttons are confined to the Units category');
+
+  const unitKeys = UNIT_GROUPS.flatMap((g) => g.units);
+  assert(UNIT_GROUPS.length === 14 && new Set(UNIT_GROUPS.map((g) => g.id)).size === 14 && UNIT_GROUPS.every((g) => /^[A-Z]{3,5}$/.test(g.id) && g.title && g.units.length >= 3),
+    'UNIT_GROUPS: fourteen groups with HP-style soft key names, titles and at least three units each');
+  assert(new Set(unitKeys).size === unitKeys.length, 'UNIT_GROUPS: no unit key appears in two groups');
+  assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),
+    'UNIT_GROUPS: every key makes a unit object when attached to a number');
+  const ONE_QUANTITY = ['LENG', 'AREA', 'VOL', 'SPEED', 'FORCE', 'ENRG', 'POWR', 'PRESS', 'TEMP'];
+  const mixed = UNIT_GROUPS.filter((g) => ONE_QUANTITY.includes(g.id) && !g.units.every((key) => sameDims(parseUnitExpr(key), parseUnitExpr(g.units[0])))).map((g) => g.id);
+  assert(mixed.length === 0, `UNIT_GROUPS: the keys of a length, area, volume, speed, force, energy, power, pressure or temperature group all measure it (got ${mixed})`);
+  const ALIASES_OF_KEYS = ['ohm', 'l', 'degC', 'degF', 'degR'];
+  const unreachable = [...UNIT_CATALOG.keys()].filter((sym) => !unitKeys.includes(sym) && !ALIASES_OF_KEYS.includes(sym));
+  assert(unreachable.length === 0, `UNIT_GROUPS: every catalog unit but an alias has a key (missing ${unreachable.join(', ')})`);
+  assert(unitKeys.filter(unitInfo).every((key) => CATEGORIES.Units.includes(key)) && !unitKeys.some((key) => /[\/^]/.test(key) && CATEGORIES.Units.includes(key)),
+    'UNIT_GROUPS: the Catalog lists every plain unit key and no product or quotient');
 
   const charKeys = Object.keys(CHAR_GROUPS);
   assert(charKeys.length >= 4 && charKeys.includes('Constants'),

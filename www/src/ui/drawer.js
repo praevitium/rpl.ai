@@ -17,20 +17,10 @@ import { matchPositions, highlightSegments } from './op-search.js';
 import { GraphView } from './graph-view.js';
 import { icon } from './icons.js';
 import { escapeHtml, typeName } from './display.js';
-import { MENU_FAMILIES } from './menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS } from './menus.js';
 import { shortcutText } from './actions.js';
 
-export const UNIT_SYMBOLS = Object.freeze([
-  'm', 'cm', 'mm', 'km', 'in', 'ft', 'yd', 'mi',
-  'kg', 'g', 'mg', 'lb', 'oz',
-  's', 'ms', 'us', 'ns', 'min', 'h', 'd', 'yr',
-  'L', 'mL',
-  'A', 'K', '°C', '°F', 'mol', 'cd',
-  'Hz', 'N', 'kN', 'lbf', 'J', 'kJ', 'W', 'kW', 'hp',
-  'Pa', 'kPa', 'bar', 'atm', 'psi',
-  'V', 'Ω', 'ohm', 'C',
-  'gal', 'mph',
-]);
+const UNIT_SYMBOLS = Object.freeze([...new Set(UNIT_GROUPS.flatMap((g) => g.units))].filter(unitInfo));
 
 const _opCategories = opCategories();
 export const CATEGORIES = {
@@ -399,7 +389,7 @@ export class Drawers {
     const family = MENU_FAMILIES.find((f) => f.id === this.cat.family);
     const names = familyCommands(family);
     const units = family.id === 'UNITS'
-      ? `<div class="sec-h">Insert a unit</div><div class="unit-grid">${UNIT_SYMBOLS.filter(unitInfo).map((u) => `<button type="button" data-dw="unit" data-unit="${escapeHtml(u)}" title="Attach _${escapeHtml(u)} to the number you are typing, or to level 1">${escapeHtml(u)}</button>`).join('')}</div>`
+      ? UNIT_GROUPS.map((g) => `<div class="sec-h">Insert a unit: ${escapeHtml(g.title)}</div><div class="unit-grid">${g.units.map((u) => `<button type="button" data-dw="unit" data-unit="${escapeHtml(u)}" title="Attach _${escapeHtml(u)} to the number you are typing, or to level 1">${escapeHtml(u)}</button>`).join('')}</div>`).join('')
       : '';
     list.innerHTML = `<div class="cat-crumb"><button type="button" class="mini" data-dw="cat-back" title="All families" aria-label="All families">${icon('chl', 'sm')}</button><b>${escapeHtml(family.title)}</b><span class="badge">${names.length}</span></div>${names.map((n) => this._cmdRow(n)).join('')}${units}`;
   }
