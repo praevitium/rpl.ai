@@ -123,7 +123,7 @@ function functionLatex(ast, parent, power) {
       case 'INTEG': return args.length === 4
         ? `\\int_{${parts[2]}}^{${parts[3]}} ${bodyLatex(args[0])}\\,d${b}`
         : `\\int ${bodyLatex(args[0])}\\,d${b}`;
-      case 'Σ': return `\\sum_{${a}=${b}}^{${parts[2]}} ${bodyLatex(args[3])}`;
+      case 'Σ': return `\\sum_{${b}=${parts[2]}}^{${parts[3]}} ${bodyLatex(args[0])}`;
       default:
     }
   }
@@ -534,7 +534,8 @@ export function latexToAst(source) {
       return { index, from };
     });
     if (!lower || !upper) fail('A sum needs both limits, like \\sum_{i=1}^{n}');
-    return Fn('Σ', [lower.index, lower.from, upper, parseProduct()]);
+    const body = parseProduct();
+    return Fn('Σ', [body, lower.index, lower.from, upper]);
   }
 
   function isDifferential(k) {

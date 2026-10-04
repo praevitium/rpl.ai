@@ -1,5 +1,5 @@
 import { astLatex, latexToAst, latexToSource, looksLikeLatex, parseMath, toLatex } from '../www/src/rpl/latex.js';
-import { astEqual, formatAlgebra, parseAlgebra } from '../www/src/rpl/algebra.js';
+import { astEqual, evalAst, formatAlgebra, parseAlgebra } from '../www/src/rpl/algebra.js';
 import { parseEntry } from '../www/src/rpl/parser.js';
 import { BinaryInteger, Directory, Integer, Real, Str, Unit } from '../www/src/rpl/types.js';
 import { getBinaryBase, setBinaryBase } from '../www/src/rpl/state.js';
@@ -78,10 +78,10 @@ const value = (text) => toLatex(parseEntry(text)[0]);
     ['INTEG(X^2,X,0,1)', raw`\int_{0}^{1} X^{2}\,dX`, 'INTEG with limits'],
     ['INTEG(X,X)', raw`\int X\,dX`, 'INTEG without limits'],
     ['INTEG(X+1,X,0,1)', raw`\int_{0}^{1} \left(X + 1\right)\,dX`, 'a sum under INTEG is parenthesized'],
-    ['Σ(K,1,10,K^2)', raw`\sum_{K=1}^{10} K^{2}`, 'Σ'],
-    ['Σ(K,1,N,K+1)', raw`\sum_{K=1}^{N} \left(K + 1\right)`, 'a sum under Σ is parenthesized'],
-    ['Σ(K,1,N,K)+1', raw`\left(\sum_{K=1}^{N} K\right) + 1`, 'a Σ followed by a term is fenced off'],
-    ['2*Σ(K,1,N,K)+1', raw`\left(2\sum_{K=1}^{N} K\right) + 1`, 'a product ending in Σ is fenced off'],
+    ['Σ(K^2,K,1,10)', raw`\sum_{K=1}^{10} K^{2}`, 'Σ takes the body first, then the index and its limits'],
+    ['Σ(K+1,K,1,N)', raw`\sum_{K=1}^{N} \left(K + 1\right)`, 'a sum under Σ is parenthesized'],
+    ['Σ(K,K,1,N)+1', raw`\left(\sum_{K=1}^{N} K\right) + 1`, 'a Σ followed by a term is fenced off'],
+    ['2*Σ(K,K,1,N)+1', raw`\left(2\sum_{K=1}^{N} K\right) + 1`, 'a product ending in Σ is fenced off'],
     ['1+INTEG(X,X,0,1)', raw`1 + \int_{0}^{1} X\,dX`, 'an INTEG that ends the expression is not fenced'],
     ['INTEG(X,X,0,1)=1/2', raw`\int_{0}^{1} X\,dX = \frac{1}{2}`, 'an INTEG before = is not fenced'],
   ];
@@ -185,8 +185,8 @@ const value = (text) => toLatex(parseEntry(text)[0]);
     [raw`(n+1)!`, 'FACT(n + 1)', 'a factorial'],
     [raw`\binom{n}{k}`, 'COMB(n,k)', 'a binomial coefficient'],
     [raw`\overline{z}`, 'CONJ(z)', 'a bar is the conjugate'],
-    [raw`\sum_{i=1}^{n} i^{2}`, 'Σ(i,1,n,i^2)', 'a sum with its limits'],
-    [raw`\sum_{k=0}^{9}k+1`, 'Σ(k,0,9,k) + 1', 'a sum takes the next term only'],
+    [raw`\sum_{i=1}^{n} i^{2}`, 'Σ(i^2,i,1,n)', 'a sum with its limits, body first as the app writes Σ'],
+    [raw`\sum_{k=0}^{9}k+1`, 'Σ(k,k,0,9) + 1', 'a sum takes the next term only'],
     [raw`\int_{0}^{1} x^{2}\,dx`, 'INTEG(x^2,x,0,1)', 'a definite integral'],
     [raw`\int \sin x\,dx`, 'INTEG(SIN(x),x)', 'an indefinite integral'],
     [raw`\int_0^1 \frac{1}{x}\,dx`, 'INTEG(1/x,x,0,1)', 'unbraced limits and a fraction inside an integral'],
@@ -233,7 +233,7 @@ const value = (text) => toLatex(parseEntry(text)[0]);
 {
   const corpus = [
     'X^2+1', '(X+1)*(X-1)', 'SQRT(X^2+1)/2', 'SIN(X)^2+COS(X)^2', 'EXP(-X^2)', 'LN(X+1)', 'ABS(X-1)', 'X^(Y+1)', '(A+B)/(C-D)',
-    'Σ(K,1,N,K^2)', 'Σ(I,0,N,A*I)', 'INTEG(SIN(X),X,0,1)', 'INTEG(X^2+1,X)', 'INTEG(1/X,X,1,E)', 'XROOT(X,3)', 'COMB(N,2)', 'FACT(N)', 'FACT(N+1)',
+    'Σ(K^2,K,1,N)', 'Σ(A*I,I,0,N)', 'INTEG(SIN(X),X,0,1)', 'INTEG(X^2+1,X)', 'INTEG(1/X,X,1,E)', 'XROOT(X,3)', 'COMB(N,2)', 'FACT(N)', 'FACT(N+1)',
     'A*B*C', 'A/B/C', 'A-(B-C)', 'A-B-C', 'A-B+C', '-X^2', '(-X)^2', '-X*Y', 'X*(-Y)', 'X^2=4', 'X<=Y', 'X≠Y', '2*π*R', 'A*(B+C)', '(A+B)*C',
     'A^B^C', '(A^B)^C', 'SIN(2*X)', 'SIN(X+1)', 'COS(X)*SIN(X)', 'TAN(X)/X', 'ATAN(X)', 'ASIN(X/2)', 'SINH(X)', 'LOG(X)', 'FLOOR(X)', 'CEIL(X+1)',
     'CONJ(Z)', 'MIN(A,B)', 'MAX(A,B)', 'GCD(A,B)', 'LCM(A,B)', 'MOD(A,B)', 'ABC+1', 'R1*R2/(R1+R2)', 'DERIV(X^2,X)', 'DERIV(SIN(X)*X,X)',
@@ -256,4 +256,11 @@ const value = (text) => toLatex(parseEntry(text)[0]);
   assert(formatAlgebra(parseMath(raw`\frac{x}{2}`)) === 'x/2' && formatAlgebra(parseMath('x/2')) === 'x/2', 'parseMath reads LaTeX or algebra');
   assert(latexToSource(raw`\frac{x^{2}}{2}`) === '`x^2/2`' && latexToSource(raw`\pi`) === null && latexToSource('3 4 +') === null && latexToSource('« \\pi 2 * »') === null && latexToSource(raw`\lim x`) === null,
     'pasted LaTeX becomes a quoted algebraic on the command line, and anything else is left alone');
+}
+
+{
+  const sum = evalAst(latexToAst(raw`\sum_{k=1}^{4} k^{2}`), () => undefined);
+  assert(sum.kind === 'num' && sum.value === 30, 'a pasted \\sum evaluates as the sum it spells (1+4+9+16 = 30)');
+  assert(algebra('Σ(K^2,K,1,4)') === raw`\sum_{K=1}^{4} K^{2}` && evalAst(parseAlgebra('Σ(K^2,K,1,4)'), () => undefined).value === 30,
+    'Copy as LaTeX writes the sum the app evaluates, not one with the body as its index');
 }
