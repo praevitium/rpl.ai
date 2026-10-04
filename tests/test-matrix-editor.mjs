@@ -56,7 +56,8 @@ import {
   assert(isMatrix(m) && m.rows.length === 2, 'gridToMatrix: 2x2');
   assert(Number(m.rows[0][0].value) === 1 || m.rows[0][0].value.toNumber?.() === 1,
     'gridToMatrix: (1,1) is 1');
-  assertThrows(() => gridToMatrix([['@']]), /r1c1/, 'gridToMatrix: bad cell names slot');
+  const bad = assertThrows(() => gridToMatrix([['1', '2'], ['3', '2+']]), /^Row 2, column 2 isn't a number or an expression: 2\+$/, 'gridToMatrix: a bad cell is named by row and column in words');
+  assert(bad?.cell?.join() === '1,1', 'gridToMatrix: the error carries the cell, so the writer can focus it');
   const named = parseMatrixCell('π');
   assert(isSymbolic(named) && named.expr.name === 'π', 'parseMatrixCell: π is a symbolic name');
   const imag = parseMatrixCell('i');

@@ -205,8 +205,8 @@ export function gridToMatrix(grid) {
   }
   const rows = grid.map((row, i) => row.map((cell, j) => {
     try { return parseMatrixCell(cell); }
-    catch (e) {
-      throw new Error(`r${i + 1}c${j + 1}: ${e.message}`);
+    catch {
+      throw Object.assign(new Error(`Row ${i + 1}, column ${j + 1} isn't a number or an expression: ${String(cell).trim()}`), { cell: [i, j] });
     }
   }));
   return Matrix(rows);
@@ -435,6 +435,7 @@ export class MatrixEditor {
     let value;
     try { value = this.value(); }
     catch (e) {
+      if (e.cell) this._focusCell(...e.cell, { select: true });
       this._noteShape(e.message);
       this.app.notifyError(e.message);
       return;
