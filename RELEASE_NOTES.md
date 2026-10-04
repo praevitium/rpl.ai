@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.14 (2026-10-04)
+**Latest release:** v0.6.15 (2026-10-04)
 
 ---
 
@@ -20,6 +20,39 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.15 — 2026-10-04
+
+User functions. DEFINE works as the AUR describes: `'A=2*X' DEFINE` stores
+`2*X` in A, and `'F(X)=X^2+1' DEFINE` makes the user function `« → X 'X^2+1'
+»` in F. Any NAME(args) in an algebraic is now a call, where it used to be
+refused as an invalid algebraic: `'F(3)' EVAL` gives `10`, `'F(A+1)' EVAL`
+gives `(A+1)^2+1`, a stored variable in the argument is used, and `'F(X)'`
+plots as its body. Any other stored program can be called the same way and
+must leave one result, so `« SQ » 'Q' STO 'Q(5)' EVAL` gives `25`. A user
+function keeps its case, so f and F are different, and a function that calls
+itself forever stops with EVAL recursion too deep.
+
+The matrix writer pushes what you typed. `1 Tab 2 Enter` gave `[[ 1 2 0. ]]`,
+padded to the writer's three columns; empty columns at the end are now left
+off, as empty rows already were. ⇧Enter starts the next row in the column the
+row began in, as in a spreadsheet, and adds a row at the bottom where it used
+to wrap to the top. VECT takes a single typed row in a larger grid, the writer
+goes back to 3 by 3 after pushing a bigger matrix, and the footer shows the
+size Enter will push. EEX on an empty cell types `1E`, +/- after it signs the
+exponent, the keypad's ( ), comma, ∠, DEL and CLEAR work in a cell, and a cell
+that doesn't read is named in words and gets the cursor.
+
+Sums copy and paste the right way round. The app writes a sum as Σ(body,
+index, from, to), but Copy as LaTeX took the first argument for the index, so
+a sum built in the writer copied as nonsense, and pasted `\sum` LaTeX built
+sums the same wrong way. Both now follow the order the app evaluates and
+draws.
+
+In HEX mode a number that a trailing b or d can't end, such as `#1AB` or
+`#2B`, is read as hex instead of failing as a malformed binary number.
+Otherwise the trailing letter is still the base, as the AUR says, so `#1B` is
+binary 1 and `#1Bh` is hex.
 
 ## v0.6.14 — 2026-10-04
 
