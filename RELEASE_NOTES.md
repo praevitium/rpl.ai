@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.12 (2026-10-03)
+**Latest release:** v0.6.13 (2026-10-04)
 
 ---
 
@@ -20,6 +20,45 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.13 — 2026-10-04
+
+IFERR hands the failing command's arguments back. After an error in the trap
+clause, the arguments of the command that failed are on the stack, and so is
+whatever the clause had computed before it, as the AUR describes: `IFERR a b /
+THEN LSQ END`, the AUR's own example, now finds a and b for LSQ. The stack
+used to roll back to where IFERR began, so a handler had nothing to work
+with; a program that counted on that roll-back now needs a DROP2 or a DROPN in
+its THEN clause. An EVAL or IFT inside a trap leaves the stack where the
+command failed too; outside a trap, a failing EVAL still puts the stack back
+as it found it.
+
+Spreadsheet columns paste as columns. A single column copied from Excel,
+Sheets, Numbers or Calc used to paste as separate numbers, because plain text
+can't tell a column from typed lines. The clipboard's HTML flavour can, so it
+now becomes an n by 1 matrix, on the command line and in the matrix writer.
+That flavour also carries each number at the exact value the sheet stores
+(Excel's `x:num`, Calc's `sdval`, Sheets' `data-sheets-value`), so a cell
+showing 3.14 no longer pastes 3.14 in place of 3.14159265358979.
+
+More commands take units. RE gives the number of a unit, SIZE counts the parts
+of a unit as the AUR counts them, the derivative of a unit is 0, SORT orders a
+list of units, and UVAL and UBASE keep a tag and map over a list; all of these
+were Bad argument type. SORT also orders names, and lists by their first
+element. SIZE now gives the digits of an integer, the objects of an
+algebraic, and 1 for a type it doesn't list (a Real used to be Bad argument
+type). UFACT, TDELTA and TINC, the three unit commands the app lacked, are
+added.
+
+Malformed unit literals are errors. `1_`, `1_m*`, `1_*m`, `1_m//s` and `1_1`
+were read as a plain number or as the unit they half spelled. A second unit
+key while typing `5_m` appends `*s` instead of `_s`, which did not read.
+
+The soft keys wrap. On a narrow screen a long name such as ISPRIME? or
+LASTSTACK shows over two lines where it was cut to ISP…. Of the labels in every
+menu, 94 were cut at 390 px wide and 178 at 360 px; now 3 and 10 are. The
+UNITS menu opens on its categories with the commands after them, as the HP's
+does, and the stack level menu is grouped by what each item does.
 
 ## v0.6.12 — 2026-10-03
 
