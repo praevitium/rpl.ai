@@ -2,7 +2,7 @@ import { assert, assertThrows } from './helpers.mjs';
 import {
   emptyGrid, identityGrid, zerosGrid, clampDim, resizeGrid,
   parseMatrixCell, gridToMatrix, gridToValue, valueToGrid, pasteIntoGrid,
-  insertRow, deleteRow, insertCol, deleteCol, transposeGrid, MATRIX_MAX, toggleCellSign, mapCaret,
+  insertRow, deleteRow, insertCol, deleteCol, transposeGrid, MATRIX_MAX, toggleCellSign, mapCaret, trimGrid, eexText,
 } from '../www/src/ui/matrix-editor.js';
 import {
   Matrix, Vector, Real, Integer, RList, isMatrix, isInteger, isReal, isRational, isVector, isSymbolic,
@@ -192,4 +192,21 @@ import {
     'mapCaret: a caret keeps its place after a leading minus');
   assert(mapCaret('X+1', '`-(X+1)`', 1) === 4, 'mapCaret: a caret after X stays after X when the expression is wrapped');
   assert(mapCaret('(1,2)', '(-1,-2)', 2) === 3, 'mapCaret: a caret after the real part stays after it in a negated complex');
+}
+
+{
+  const shape = (grid) => `${grid.length}x${grid[0].length}`;
+  assert(shape(trimGrid([['1', '2', ''], ['', '', ''], ['', '', '']])) === '1x2', 'trimGrid: one typed row of two pushes a 1 by 2, not a padded 1 by 3');
+  assert(shape(trimGrid([['1', '', ''], ['', '', '3'], ['', '', '']])) === '2x3', 'trimGrid: a cell typed further out keeps the columns and rows before it');
+  assert(shape(trimGrid([['1', '', ''], ['2', ' ', ''], ['', '', '']])) === '2x1', 'trimGrid: blank text counts as empty');
+  assert(shape(trimGrid([['', ''], ['', '']])) === '1x1', 'trimGrid: an empty grid keeps one cell');
+  const zeros = trimGrid([['0', '0', '0'], ['0', '0', '0']]);
+  assert(shape(zeros) === '2x3' && gridToValue(trimGrid([['1', '2', ''], ['3', '', '']])).rows.map((r) => r.length).join() === '2,2',
+    'trimGrid: typed zeros stay, and an inner empty cell is still 0');
+}
+
+{
+  assert(eexText('') === '1E' && eexText('2+') === '1E', 'eexText: EEX where no number is types 1E');
+  assert(eexText('2') === 'E' && eexText('2.') === 'E' && eexText('.5') === 'E', 'eexText: EEX after a number types E');
+  assert(eexText('2E') === '' && eexText('2E-3') === '' && eexText('1.5e3') === '', 'eexText: a number with an exponent already gets no second one');
 }

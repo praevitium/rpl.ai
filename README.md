@@ -133,10 +133,13 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - ⌫ and Enter sit beside the command line. ⌫ deletes a character (or the
   selected text), or drops level 1 when the line is empty.
 - A long soft-key name such as `ISPRIME?` wraps onto two lines on a narrow
-  screen instead of being cut off.
+  screen instead of being cut off, and the longest take three lines of a
+  smaller face.
 - The equation writer has its own row of buttons (move, fraction, power,
   root and parentheses), and so does the matrix writer (previous cell, next
-  cell and next row), each with ⌫ and Enter.
+  cell and next row), each with ⌫ and Enter. The matrix writer pushes only
+  what you typed, leaving off empty rows and columns at the end, and next row
+  goes back to the column the row started in, as in a spreadsheet.
 - Opening the equation or matrix writer brings up your phone's keyboard, and
   so does tapping the equation. While the keyboard is up, the calculator
   keypad steps aside so the writer stays in view.
