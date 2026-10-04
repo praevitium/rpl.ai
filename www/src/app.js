@@ -891,7 +891,8 @@ class App {
     const e = this.entry;
     const typed = e.buffer.trim();
     if (mode !== 'convert' && typed) {
-      e.type(mode === 'divide' ? (typed.includes('_') ? `/${unit}` : `_1/${unit}`) : `_${unit}`);
+      const withUnit = typed.includes('_');
+      e.type(mode === 'divide' ? (withUnit ? `/${unit}` : `_1/${unit}`) : (withUnit ? `*${unit}` : `_${unit}`));
       return;
     }
     if (typed) {
