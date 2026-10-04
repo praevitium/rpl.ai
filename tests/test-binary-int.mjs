@@ -1074,3 +1074,15 @@ setBinaryBase(null);
   resetBinaryState();
 }
 
+
+{
+  const saved = getBinaryBase();
+  setBinaryBase('h');
+  const read = (src) => { const v = parseEntry(src)[0]; return `${v.value}${v.base}`; };
+  assert(read('#1B') === '1b' && read('#101b') === '5b' && read('#12d') === '12d', 'AUR: in HEX mode a trailing b or d is still the base letter');
+  assert(read('#1AB') === '427h' && read('#FFD') === '4093h' && read('#2B') === '43h', 'in HEX mode a number the base letter cannot end is read as hex');
+  assert(read('#1Bh') === '27h' && read('#FF') === '255h', 'an h suffix or no letter at all is hex');
+  setBinaryBase('d');
+  assertThrows(() => parseEntry('#1AB'), /Malformed b-base integer/, 'outside HEX mode #1AB stays a malformed binary number');
+  setBinaryBase(saved);
+}

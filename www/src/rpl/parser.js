@@ -15,6 +15,8 @@ function complexPart(text) {
   return /^[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?$/.test(t) ? Number(t) : NaN;
 }
 
+const BASE_DIGITS = Object.freeze({ h: /^[0-9A-Fa-f]+$/, d: /^[0-9]+$/, o: /^[0-7]+$/, b: /^[01]+$/ });
+
 function tokenize(src) {
   const tokens = [];
   let i = 0;
@@ -74,7 +76,8 @@ function tokenize(src) {
     }
 
     // A trailing d or b is read as the base letter although both are hex
-    // digits; with no base letter the current display base applies.
+    // digits, as the AUR says; with no base letter the current display base
+    // applies.  In HEX mode a number the letter can't end, such as #1AB, is hex.
     if (c === '#') {
       let j = i + 1;
       while (j < n && /[0-9A-Fa-fHhOo]/.test(src[j])) j++;
@@ -89,6 +92,10 @@ function tokenize(src) {
         baseLetter = last;
         if (digits.length === 0) {
           throw new RPLError('Malformed binary integer');
+        }
+        if (_state.binaryBase === 'h' && !BASE_DIGITS[baseLetter].test(digits) && BASE_DIGITS.h.test(atom)) {
+          digits = atom;
+          baseLetter = 'h';
         }
       } else {
         digits = atom;
@@ -278,13 +285,7 @@ export function parseEntry(src) {
 
       case 'binInt': {
         const radix = { h: 16, d: 10, o: 8, b: 2 }[t.base];
-        const valid = {
-          h: /^[0-9A-Fa-f]+$/,
-          d: /^[0-9]+$/,
-          o: /^[0-7]+$/,
-          b: /^[01]+$/,
-        }[t.base];
-        if (!valid.test(t.digits)) {
+        if (!BASE_DIGITS[t.base].test(t.digits)) {
           throw new RPLError(`Malformed ${t.base}-base integer: #${t.digits}${t.base}`);
         }
         let big;
