@@ -647,7 +647,29 @@ class App {
   _levelMenu(level, anchor) {
     const value = this.stack.peek(level);
     const item = (act, ico, label, hint = '') => `<button type="button" class="opt" data-act="${act}"><span class="ck">${icon(ico, 'sm')}</span><b>${escapeHtml(label)}</b><em>${escapeHtml(hint)}</em></button>`;
-    const html = `<h6>Level ${level}</h6>${item('edit', 'edit', 'Edit', shortcutText('level.edit'))}${item('echo', 'chr', 'Copy into the command line')}${item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick'))}${item('roll', 'up', 'Move to level 1 (ROLL)')}${item('rolld', 'down', 'Move level 1 here (ROLLD)')}${item('eval', 'play', 'Evaluate (EVAL)')}${item('num', 'chr', 'To a number (→NUM)')}${isSymbolic(value) ? item('plot', 'plot', 'Plot it') : ''}${item('store', 'folder', 'Store in a variable…')}${item('copy', 'copy', 'Copy', shortcutText('level.copy'))}${toLatex(value) === null ? '' : item('latex', 'copy', 'Copy as LaTeX')}${item('download', 'down', 'Download as…')}${item('ask', 'spark', 'Ask the assistant about it')}<hr>${item('drop', 'trash', 'Drop', shortcutText('level.drop'))}`;
+    const groups = [
+      [item('edit', 'edit', 'Edit', shortcutText('level.edit'))],
+      [
+        item('echo', 'chr', 'Copy into the command line'),
+        item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick')),
+        item('roll', 'up', 'Move to level 1 (ROLL)'),
+        item('rolld', 'down', 'Move level 1 here (ROLLD)'),
+      ],
+      [
+        item('eval', 'play', 'Evaluate (EVAL)'),
+        item('num', 'chr', 'To a number (→NUM)'),
+        isSymbolic(value) ? item('plot', 'plot', 'Plot it') : '',
+        item('ask', 'spark', 'Ask the assistant about it'),
+      ],
+      [
+        item('store', 'folder', 'Store in a variable…'),
+        item('copy', 'copy', 'Copy', shortcutText('level.copy')),
+        toLatex(value) === null ? '' : item('latex', 'copy', 'Copy as LaTeX'),
+        item('download', 'down', 'Download as…'),
+      ],
+      [item('drop', 'trash', 'Drop', shortcutText('level.drop'))],
+    ];
+    const html = `<h6>Level ${level}</h6>${groups.map((group) => group.join('')).join('<hr>')}`;
     this.popover.open(anchor, html, {
       label: `Level ${level}`,
       onClick: (t) => { this.popover.close({ restoreFocus: false }); this.levelAction(t.dataset.act, level, anchor); },
