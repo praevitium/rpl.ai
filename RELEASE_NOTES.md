@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.13 (2026-10-04)
+**Latest release:** v0.6.14 (2026-10-04)
 
 ---
 
@@ -20,6 +20,41 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.14 — 2026-10-04
+
+Angle units. The catalog gains `°`, `r`, `grad`, `arcmin`, `arcs` and `sr`,
+with angle as a base dimension of its own as on the HP 50g, so `1_° UBASE`
+gives `0.0174532925199_r` and `100_grad 1_° CONVERT` gives `90._°`. The UNITS
+menu has the ANGL category between ELEC and LIGHT. SIN, COS and TAN take an
+angle unit, which overrides the angle mode as the AUR says: `30_° SIN` is
+`0.5` in DEG, RAD and GRD alike, and whole quadrants are exact, so `90_° COS`
+is `0` and `100_grad SIN` is `1`. A unit that is not an angle is Bad argument
+type.
+
+The command line reads apostrophes. `'X^2+1'` and `5 'A' STO` now mean what
+they do on the HP 50g; the ` key still stands in for the ' key, and either
+closes its own kind. They used to make a name with the apostrophes inside it,
+which STO refused with a hint to use backticks. A function key typed inside an
+open apostrophe types its name, as it does inside backticks, and an apostrophe
+in a string or a comment is still just text.
+
+Paste LaTeX. A formula copied from a paper, a chat or a notebook pastes into
+the equation writer, or onto the command line, as the expression it spells:
+fractions, roots with an index, powers, subscripts, Greek letters, `\sin` and
+the other functions, bars and floor and ceiling brackets, factorials,
+`\binom`, `\sum`, `\int` with its `dx`, `\frac{d}{dx}` and `\frac{d^2}{dx^2}`,
+with `$…$` or `\(…\)` dropped. It reads as TeX does: `2x` is 2·x, `\sin 2x` is
+sin(2x), `x^23` is x² times 3, and `\sin^{-1}` is the inverse function, as on
+a calculator. Copy as LaTeX followed by a paste returns the same expression
+for every one of 85 cases tested. Limits, matrices and unknown commands are
+refused with a message naming the command. Copy as LaTeX now writes a Greek
+name with digits as `\theta_{1}` rather than `\theta 1`.
+
+No soft key label is cut. Names of nine letters or more take three lines of a
+smaller face, and so do names of seven letters on the narrowest phones; of the
+labels in every menu, none is cut now at 320, 360, 390 or 412 px wide (3, 10
+and 34 were, at 390, 360 and 320).
 
 ## v0.6.13 — 2026-10-04
 
