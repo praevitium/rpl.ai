@@ -307,10 +307,11 @@ import { assert, assertThrows } from './helpers.mjs';
          'parseAlgebra(sin(X)) uppercases fn name');
 }
 {
-  // Non-whitelisted identifier followed by '(' is an error — the outer
-  // parser falls back to quoted Name.  Here we check the inner parser
-  // throws so parser.js's try/catch fires.
-  assertThrows(() => { parseAlgebra('FOO(X)'); }, null, 'parseAlgebra(FOO(X)) throws (FOO not whitelisted)');
+  // Any NAME(args) is a call, as on the HP 50g; a user function keeps its case.
+  const call = parseAlgebra('foo(X,2)');
+  assert(call.kind === 'fn' && call.name === 'foo' && call.args.length === 2 && formatAlgebra(call) === 'foo(X,2)',
+    'parseAlgebra(foo(X,2)) is a call to the user function foo, case kept');
+  assertThrows(() => parseAlgebra('SIN(X,2)'), /SIN expects 1/, 'a built-in function still checks its number of arguments');
 }
 
 // parseAlgebra accepts `SIN(X` as `SIN(X)` — mirrors parser.js's

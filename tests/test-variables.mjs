@@ -7,7 +7,7 @@ import {
   isString,
 } from '../www/src/rpl/types.js';
 import { parseEntry } from '../www/src/rpl/parser.js';
-import { format, formatStackTop } from '../www/src/rpl/formatter.js';
+import { format, formatStackTop, formatSource } from '../www/src/rpl/formatter.js';
 import {
   state as calcState, setAngle, cycleAngle, toRadians, fromRadians,
   varStore, varRecall, varList, varPurge, resetHome, currentPath,
@@ -1979,5 +1979,31 @@ clearAllUserFlags();
   runLine('B 2 `A` STO UPDIR');
   const a = (dir) => varRecall(dir).entries.get('A').value;
   assert(a('B') === 2n && a('C') === 1n && a('D') === 1n, 'storing the same recalled directory under two names makes two independent copies');
+  resetHome();
+}
+
+{
+  resetHome();
+  const s = new Stack();
+  const line = (src) => { runLine(src, s); const out = s.snapshot().reverse().map((v) => formatSource(v)).join(' '); while (s.depth) s.pop(); return out; };
+  line('`F(X)=X^2+1` DEFINE');
+  assert(formatSource(varRecall('F')) === '« → X `X^2 + 1` »', 'AUR: DEFINE of F(X)=… stores the program « → X `X^2+1` »');
+  assert(line('`F(3)` EVAL') === '10' && line('`F(2)+F(3)` EVAL') === '15', 'a user function called with numbers evaluates');
+  assert(line('`F(A+1)` EVAL') === '`(A + 1)^2 + 1`', 'a user function called with an expression puts it in place of the argument');
+  assert(line('5 `A` STO `F(A)` EVAL') === '26' && line('`F(A)` →NUM') === '26.', 'a stored variable in the argument is used, and →NUM gives a real');
+  line('`G(X,Y)=2*X+3/Y` DEFINE');
+  assert(line('`G(1,3)` EVAL') === '3' && formatSource(varRecall('G')) === '« → X Y `2*X + 3/Y` »', 'AUR: DEFINE of A(X,Y)=2*X+3/Y, called with two arguments');
+  assert(line('`B=2*X` DEFINE `B` RCL') === '`2*X`' && line('`C=7` DEFINE `C` RCL') === '7', 'AUR: DEFINE of name=exp stores the expression in the name');
+  line('`f(x)=x^3` DEFINE');
+  assert(line('`f(2)+F(2)` EVAL') === '13', 'f and F are different functions');
+  assert(line('« → n « n 1 + » » `H` STO `H(4)` EVAL `H(Z)` EVAL') === '5 `Z + 1`' && line('« SQ » `Q` STO `Q(5)` EVAL') === '25',
+    'any stored program can be called in an algebraic, with numbers or names');
+  assertThrows(() => runLine('« DROP 1 2 » `W` STO `W(5)` EVAL', new Stack()), /W must leave one result/, 'a called program must leave one result');
+  assertThrows(() => runLine('`K(N)=N*K(N-1)` DEFINE `K(3)` EVAL', new Stack()), /recursion too deep/, 'a function that calls itself forever stops with an error');
+  assertThrows(() => runLine('`SIN(X)=2` DEFINE', new Stack()), /Invalid name: SIN/, 'DEFINE refuses a built-in name');
+  assertThrows(() => runLine('`P(X,X)=1` DEFINE', new Stack()), /Bad argument value/, 'DEFINE refuses an argument named twice');
+  assertThrows(() => runLine('`P(2)=1` DEFINE', new Stack()), /Bad argument type/, 'DEFINE needs names as the arguments');
+  assertThrows(() => runLine('`X+1` DEFINE', new Stack()), /Bad argument type/, 'DEFINE needs an equation');
+  assert(line('`U(X)` EVAL') === '`U(X)`', 'a call to a name with no program stays symbolic');
   resetHome();
 }

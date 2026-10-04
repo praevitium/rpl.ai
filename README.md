@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 452 commands, exact big-integer and rational arithmetic,
+of its command set: 453 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -90,6 +90,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   runs by name like a built-in. Built-in names such as `SQ` are reserved.
 - **Local variables.** `« 2 3 → a b « a b + a b * » » EVAL` leaves `5` and
   `6`.
+- **User functions.** `'F(X)=X^2+1' DEFINE` stores `« → X 'X^2+1' »` in F, as
+  on the HP 50g. Then `'F(3)' EVAL` gives `10`, `'F(A+1)' EVAL` gives
+  `(A+1)^2+1`, and `'F(X)'` plots. Any stored program can be called this way
+  inside an algebraic.
 - **Units.** `100_km 2_h /` gives `50._km/h`; then `1_m/s CONVERT` gives
   `13.8888888889_m/s`. SI prefixes work on SI units (`5_kJ`, `1_MHz`,
   `3_uA`), and a bare `°C` or `°F` converts as a thermometer reading:
@@ -498,7 +502,7 @@ Catalog and the command reference mark what is available. Not there yet:
 - PICT and the plot-setup commands (PVIEW, ERASE, AXES, XRNG, YRNG, STEQ and
   the rest)
 - the ΣDAT commands (Σ+, CLΣ, XCOL, YCOL, NDIST and the rest)
-- MENU and TMENU, DEF and DEFINE
+- MENU and TMENU, and DEF
 - parts of the CAS, such as TAYLR, SERIES, DESOLVE, LINSOLVE, LDEC and
   ZEROS (SOLVE and ISOL are here)
 - most of the unit catalog: the SI units with their prefixes, the

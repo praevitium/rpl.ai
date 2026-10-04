@@ -6,6 +6,7 @@ import {
   toRealOrThrow, Matrix, Real,
 } from '../rpl/types.js';
 import { evalFitModel } from '../rpl/state.js';
+import { _expandUserCalls } from '../rpl/ops/internal.js';
 import { equationToSymbolic, valueToEquationDraft } from './equation-editor.js';
 
 export { evalFitModel };
@@ -73,8 +74,9 @@ export function evalNumeric(ast, env, opts = {}) {
   return isNum(node) && Number.isFinite(node.value) ? node.value : NaN;
 }
 
+// A user function such as one DEFINE made is plotted through its body.
 export function parsePlotExpr(src) {
-  return parseAlgebra(String(src).trim());
+  return _expandUserCalls(parseAlgebra(String(src).trim()));
 }
 
 export function sampleFunction(ast, xMin, xMax, n, env, opts = {}) {

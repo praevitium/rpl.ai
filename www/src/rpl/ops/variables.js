@@ -1,9 +1,9 @@
 import { varStore, varRecall, varPurge, varOrder, makeSubdir, goUp, goHome, currentPath, state as _calcState, reorderCurrentEntries, cloneDirectory, inScratchState } from '../state.js';
 import { RPLError } from '../stack.js';
-import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory, isTagged } from '../types.js';
+import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory, isTagged, isSymbolic, Program, Symbolic } from '../types.js';
 import { archiveBackup, restoreBackup } from '../persist.js';
 import { register, lookup } from './registry.js';
-import { _coerceDirName, _coerceStorableName, _hp50TypeCode, recallVar, storeVar } from './internal.js';
+import { _astToRplValue, _coerceDirName, _coerceStorableName, _hp50TypeCode, recallVar, storeVar } from './internal.js';
 
 
 
@@ -40,6 +40,22 @@ register('STO', (s) => {
   const [value, nameVal] = s.popN(2);
   _forEachName(nameVal, (n) => _store(_coerceStorableName(n), value));
 }, { category: 'Variables / directories', categoryOrder: 0, label: "STO" });
+
+
+// AUR: `A=2*X` stores 2*X in A, and `A(X,Y)=2*X+3/Y` makes the user function
+// « → X Y `2*X+3/Y` » in A, which an algebraic then calls as A(1,2).
+register('DEFINE', (s) => {
+  const v = s.peek();
+  const ast = isSymbolic(v) ? v.expr : null;
+  if (ast?.kind !== 'bin' || ast.op !== '=') throw new RPLError('Bad argument type');
+  const { l, r } = ast;
+  const params = l.kind === 'fn' ? l.args : null;
+  if (l.kind !== 'var' && !params?.every((p) => p.kind === 'var')) throw new RPLError('Bad argument type');
+  if (params && new Set(params.map((p) => p.name)).size !== params.length) throw new RPLError('Bad argument value');
+  const value = params ? Program([Name('→'), ...params.map((p) => Name(p.name)), Symbolic(r)]) : _astToRplValue(r);
+  _store(_coerceStorableName(Name(l.name)), isName(value) ? Symbolic(r) : value);
+  s.pop();
+}, { category: 'Variables / directories', categoryOrder: 22, label: "DEFINE" });
 
 
 register('RCL', (s) => {

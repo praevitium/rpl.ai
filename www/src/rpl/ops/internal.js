@@ -1,7 +1,7 @@
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Name, Symbolic, Integer, Unit, isUnit, isBinaryInteger, isNumber, promoteNumericPair, Complex, Rational, isList, RList, isTagged, Tagged, isVector, Vector, isMatrix, Matrix, BinaryInteger, toRealOrThrow, toRealDecimal, isString, isValidHpIdentifier, isStorableHpName, isProgram, isDirectory, Str, Program } from '../types.js';
-import { RPLAbort, RPLError, setPushCoerce, checkTimeLimit } from '../stack.js';
-import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, isRealNum } from '../algebra.js';
+import { RPLAbort, RPLError, Stack, setPushCoerce, checkTimeLimit } from '../stack.js';
+import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, isRealNum, isKnownFunction } from '../algebra.js';
 import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
 import { state as _calcState, getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
@@ -1441,10 +1441,86 @@ function _evalSymbolic(v) {
   const binGate = approx
     ? null
     : (_op, args, result) => _approxGate(result, args);
-  const reduced = algebraEvalAst(v.expr, resolve, _angleAwareFnEval, binGate);
+  const reduced = algebraEvalAst(_expandUserCalls(v.expr), resolve, _angleAwareFnEval, binGate);
   const value = _astToRplValue(reduced);
   return approx && isInteger(value) ? Real(value.value.toString()) : value;
 }
+
+
+// A function DEFINE made, « → X Y `body` », taking `arity` arguments: its names and body.
+function _definedFunction(name, arity) {
+  if (isKnownFunction(name)) return null;
+  const bound = _localLookup(name) ?? varRecall(name);
+  if (!isProgram(bound)) return null;
+  const [arrow, ...rest] = bound.tokens;
+  const names = rest.slice(0, -1);
+  const body = rest[rest.length - 1];
+  const shaped = isName(arrow) && (arrow.id === '→' || arrow.id === '->') && isSymbolic(body) && typeof body.expr === 'object'
+    && names.length === arity && names.every((n) => isName(n) && !n.quoted);
+  return shaped ? { names: names.map((n) => n.id), expr: body.expr } : null;
+}
+
+function _substitute(ast, bindings) {
+  switch (ast.kind) {
+    case 'var': return bindings.get(ast.name) ?? ast;
+    case 'neg': return AstNeg(_substitute(ast.arg, bindings));
+    case 'bin': return AstBin(ast.op, _substitute(ast.l, bindings), _substitute(ast.r, bindings));
+    case 'fn': return AstFn(ast.name, ast.args.map((a) => _substitute(a, bindings)));
+    default: return ast;
+  }
+}
+
+// F(A+1) becomes F's body with A+1 in place of its argument, as EVAL does on
+// the HP 50g.  A call back into a function being expanded is left for the
+// numeric call below, so a recursive definition doesn't unfold forever.
+export function _expandUserCalls(ast, open = new Set()) {
+  switch (ast.kind) {
+    case 'neg': return AstNeg(_expandUserCalls(ast.arg, open));
+    case 'bin': return AstBin(ast.op, _expandUserCalls(ast.l, open), _expandUserCalls(ast.r, open));
+    case 'fn': {
+      const args = ast.args.map((a) => _expandUserCalls(a, open));
+      if (open.has(ast.name)) return AstFn(ast.name, args);
+      const fn = _definedFunction(ast.name, args.length);
+      if (fn) {
+        const body = _substitute(fn.expr, new Map(fn.names.map((name, k) => [name, args[k]])));
+        return _expandUserCalls(body, new Set([...open, ast.name]));
+      }
+      if (args.every((a) => a.kind === 'num')) return AstFn(ast.name, args);
+      let result = null;
+      try { result = _callUserProgram(ast.name, args.map(_astToRplValue)); }
+      catch (e) { if (!(e instanceof RPLError) || /recursion/.test(e.message)) throw e; }
+      return result ?? AstFn(ast.name, args);
+    }
+    default: return ast;
+  }
+}
+
+let _userCallDepth = 0;
+
+// A program stored in a variable and called in an algebraic, F(3), runs on its
+// own stack with the arguments on it and must leave one result.
+function _callUserProgram(name, values) {
+  if (isKnownFunction(name)) return null;
+  const program = _localLookup(name) ?? varRecall(name);
+  if (!isProgram(program)) return null;
+  if (_userCallDepth >= MAX_EVAL_DEPTH) throw new RPLError('EVAL recursion too deep');
+  const s = new Stack();
+  for (const v of values) s.push(v);
+  _userCallDepth++;
+  try {
+    _driveGen(_evalValueGen(s, program, 1), `${name}()`);
+  } finally {
+    _userCallDepth--;
+  }
+  if (s.depth !== 1) throw new RPLError(`${name} must leave one result`);
+  const result = s.pop();
+  if (isInteger(result)) return AstNum(result.value);
+  if (isReal(result)) return AstNum(result.value.toNumber(), true);
+  if (isName(result)) return AstVar(result.id);
+  return isSymbolic(result) && typeof result.expr === 'object' ? result.expr : null;
+}
+
+const _numberValue = (x, real) => (!real && Number.isSafeInteger(x) ? Integer(BigInt(x)) : Real(x));
 
 
 // EXACT mode keeps a numeric fold only when every argument and the result are
@@ -1492,7 +1568,11 @@ function _angleAwareFnEval(name, args, real = false) {
     case 'ASIN': result = fromRadians(Math.asin(x)); break;
     case 'ACOS': result = fromRadians(Math.acos(x)); break;
     case 'ATAN': result = fromRadians(Math.atan(x)); break;
-    default:     result = algebraDefaultFnEval(name, args);
+    default: {
+      const call = _callUserProgram(name, args.map((a) => _numberValue(a, real)));
+      if (call) return call;
+      result = algebraDefaultFnEval(name, args);
+    }
   }
   if (real) return result;
   if (!getApproxMode() && args.length === 1 && Number.isSafeInteger(x) && !_integerPoint(String(name).toUpperCase(), BigInt(x), 1n)) return null;

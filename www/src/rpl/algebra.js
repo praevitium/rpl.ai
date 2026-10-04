@@ -34,10 +34,11 @@ export function Neg(arg) {
 export function Bin(op, l, r) {
   return Object.freeze({ kind: 'bin', op, l, r });
 }
+// A built-in function's name is upper-cased; a user function keeps its case, as F and f are different variables.
 export function Fn(name, args) {
   return Object.freeze({
     kind: 'fn',
-    name: String(name).toUpperCase(),
+    name: isKnownFunction(name) ? String(name).toUpperCase() : String(name),
     args: Object.freeze([...args]),
   });
 }
@@ -332,14 +333,14 @@ export function parseAlgebra(src) {
       return Fn('SQRT', [parseP()]);
     }
 
-    // Only known names parse as calls: FOO(X) could be meant as a product,
-    // so it fails here and parser.js falls back to a quoted Name.
+    // NAME(args) is a call, as on the HP 50g: a built-in function, or a user
+    // function such as one DEFINE makes.
     if (/[A-Za-zΑ-Ωα-ω]/.test(c)) {
       const m = s.slice(i).match(/^[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω0-9]*/);
       i += m[0].length;
       const ident = m[0];
       skip();
-      if (s[i] === '(' && isKnownFunction(ident)) {
+      if (s[i] === '(') {
         i++;
         const args = [];
         args.push(parseE());
@@ -428,7 +429,7 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
     if (evaldArgs.every(isNum)) {
       const real = evaldArgs.some(isRealNum);
       const result = fnEval(ast.name, evaldArgs.map(a => a.value), real);
-      if (result?.kind === 'num') return result;
+      if (result?.kind) return result;
       if (Number.isFinite(result)) return approxNum(result, real);
     }
     return Fn(ast.name, evaldArgs);

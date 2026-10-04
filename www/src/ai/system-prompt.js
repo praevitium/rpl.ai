@@ -57,6 +57,7 @@ VARIABLES & DIRECTORIES (operate in the current directory)
   STO     value \`NAME\` STO — store value into NAME (value on level 2, name on level 1)
   RCL     \`NAME\` RCL — push the value of NAME onto the stack
   PURGE   \`NAME\` PURGE — delete the variable
+  DEFINE  \`F(X)=X^2+1\` DEFINE — make the user function F; then \`F(3)\` EVAL gives 10 (any stored program is callable as F(args) in an algebraic)
   CLVAR   delete every variable and empty subdirectory in the current dir (destructive: don't run it unasked)
   VARS    push a list of all variable names in the current dir
   ORDER   reorder VARS list
