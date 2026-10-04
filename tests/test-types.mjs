@@ -11480,8 +11480,9 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   }
   {
     const s = new Stack(); s.push(U1);
-    assertThrows(() => lookup('RE').fn(s), /Bad argument type/i,
-      'session263: 1_m RE → Bad argument type (U=✗; _reScalar no isUnit branch)');
+    lookup('RE').fn(s);
+    assert(isReal(s.peek()) && s.peek().value.toNumber() === 1,
+      'session263: 1_m RE → 1 (the AUR gives x_unit → x)');
   }
   {
     const s = new Stack(); s.push(U1);

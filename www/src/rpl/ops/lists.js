@@ -4,7 +4,8 @@ import { Fn as AstFn, astEqual } from '../algebra.js';
 import { parseEntry as _parseEntryForObjTo } from '../parser.js';
 import { register, lookup, OPS } from './registry.js';
 import { setUserFlag, clearUserFlag } from '../state.js';
-import { recallVar, storeVar, _DOSUBS_STACK, _driveGen, _fromListOp, _fromStrOp, _isSymOperand, _scalarBinary, _symbolicDecompose, _toAst, _toCountN, _toIntIdx, _toListOp, _toStrOp, runDoList, runDoSubs, runMap, runSeq, runStream } from './internal.js';
+import { sameDims } from '../units.js';
+import { recallVar, storeVar, _DOSUBS_STACK, _driveGen, _fromListOp, _fromStrOp, _inUnit, _isSymOperand, _scalarBinary, _symbolicDecompose, _toAst, _toCountN, _toIntIdx, _toListOp, _toStrOp, runDoList, runDoSubs, runMap, runSeq, runStream } from './internal.js';
 
 
 
@@ -266,11 +267,23 @@ function _sortKey(v) {
   return null;
 }
 
+// Strings and names go by character code, lists by their first element, and
+// units by value once converted to a common unit.
 function _rplCompare(a, b) {
   const an = _sortKey(a), bn = _sortKey(b);
   if (an !== null && bn !== null) return an < bn ? -1 : an > bn ? 1 : 0;
   if (isString(a) && isString(b)) {
     return a.value < b.value ? -1 : a.value > b.value ? 1 : 0;
+  }
+  if (isName(a) && isName(b)) return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  if (isList(a) && isList(b)) {
+    if (!a.items.length || !b.items.length) throw new RPLError('Bad argument value');
+    return _rplCompare(a.items[0], b.items[0]);
+  }
+  if (isUnit(a) && isUnit(b)) {
+    if (!sameDims(a.uexpr, b.uexpr)) throw new RPLError('Inconsistent units');
+    const x = _inUnit(a, b.uexpr);
+    return x < b.value ? -1 : x > b.value ? 1 : 0;
   }
   throw new RPLError('Bad argument type');
 }

@@ -468,6 +468,14 @@ export function freeVars(ast, out = new Set()) {
   return out;
 }
 
+// The objects an algebraic holds, as SIZE counts them: X+1 is X 1 +, so 3.
+export function astSize(ast) {
+  if (ast.kind === 'neg') return 1 + astSize(ast.arg);
+  if (ast.kind === 'bin') return 1 + astSize(ast.l) + astSize(ast.r);
+  if (ast.kind === 'fn') return 1 + ast.args.reduce((n, a) => n + astSize(a), 0);
+  return 1;
+}
+
 export function formatAlgebra(ast) {
   return fmt(ast, 0);
 }

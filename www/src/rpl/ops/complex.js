@@ -1,4 +1,4 @@
-import { isReal, Real, isInteger, isComplex, Symbolic, isVector, Vector, isMatrix, Matrix, isRational, Complex, Integer } from '../types.js';
+import { isReal, Real, isInteger, isComplex, Symbolic, isVector, Vector, isMatrix, Matrix, isRational, isUnit, Complex, Integer } from '../types.js';
 import { fromRadians, setCoordMode, toggleComplexMode, getComplexMode } from '../state.js';
 import { Fn as AstFn } from '../algebra.js';
 import { RPLError } from '../stack.js';
@@ -37,6 +37,7 @@ function _conjScalar(v) {
 function _reScalar(v) {
   if (isReal(v) || isInteger(v) || isRational(v)) return v;
   if (isComplex(v)) return Real(v.re);
+  if (isUnit(v)) return Real(v.value);
   if (_isSymOperand(v)) return Symbolic(AstFn('RE', [_toAst(v)]));
   throw new RPLError('Bad argument type');
 }

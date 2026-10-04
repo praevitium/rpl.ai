@@ -2221,12 +2221,10 @@ function _roundTripProgram(prog) {
   assert(s.peek().type === 'integer' && s.peek().value === 1n,
     'session088: SIZE on single-token program returns 1');
 
-  // Error on non-program type (regression guard: Real still bad-arg)
-  let caught = null;
+  // A type the AUR does not list for SIZE returns 1 (a program is counted above).
   s.push(Real(1.0));
-  try { lookup('SIZE').fn(s); } catch (e) { caught = e; }
-  assert(caught && /Bad argument type/.test(caught.message),
-    'session088: SIZE on Real still throws Bad argument type');
+  lookup('SIZE').fn(s);
+  assert(s.peek().value === 1n, 'SIZE on a Real is 1, as the AUR gives for a type it does not list');
 }
 
 {

@@ -1,5 +1,7 @@
-import { isVector, RList, Real, isMatrix, isString, Integer, isList, isProgram, Matrix, Vector, isInteger, isReal, isComplex, isRational, isSymbolic, Symbolic } from '../types.js';
+import { isVector, RList, Real, isMatrix, isString, Integer, isList, isProgram, Matrix, Vector, isInteger, isReal, isComplex, isRational, isSymbolic, isUnit, Symbolic } from '../types.js';
 import { RPLError, checkTimeLimit } from '../stack.js';
+import { astSize } from '../algebra.js';
+import { unitSize } from '../units.js';
 import { nextPrngInt9, getCasVx } from '../state.js';
 import { giac } from '../cas/giac-engine.mjs';
 import { giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
@@ -57,7 +59,10 @@ register('SIZE', (s) => {
   if (isString(v)) { s.push(Integer(BigInt(v.value.length))); return; }
   if (isList(v))   { s.push(Integer(BigInt(v.items.length))); return; }
   if (isProgram(v)) { s.push(Integer(BigInt(v.tokens.length))); return; }
-  throw new RPLError('Bad argument type');
+  if (isInteger(v)) { s.push(Integer(BigInt((v.value < 0n ? -v.value : v.value).toString().length))); return; }
+  if (isSymbolic(v) && typeof v.expr === 'object') { s.push(Integer(BigInt(astSize(v.expr)))); return; }
+  if (isUnit(v)) { s.push(Integer(BigInt(unitSize(v.uexpr)))); return; }
+  s.push(Integer(1n));
 }, { category: 'Vectors / matrices', categoryOrder: 0, label: "SIZE" });
 
 

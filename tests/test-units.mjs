@@ -8,7 +8,7 @@ import { format, formatSource } from '../www/src/rpl/formatter.js';
 import {
   parseUnitExpr, formatUnitExpr, normalizeUexpr,
   multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr,
-  sameDims, scaleOf, toBaseUexpr, uexprEqual,
+  sameDims, scaleOf, toBaseUexpr, uexprEqual, unitSize,
 } from '../www/src/rpl/units.js';
 import { assert, assertThrows, runLine } from './helpers.mjs';
 
@@ -627,4 +627,30 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   }
   assert(line('1_/m') === '1._1/m' && line('1_(m)') === '1._m' && line('1_m/(s*kg)') === '1._m/(kg*s)' && line('1_m/m') === '1.',
     'a leading slash, parentheses and a cancelled unit still read');
+  assert(unitSize(parseUnitExpr('m')) === 3 && unitSize(parseUnitExpr('km')) === 5 && unitSize(parseUnitExpr('m^2')) === 5
+    && unitSize(parseUnitExpr('m/s^2')) === 7 && unitSize(parseUnitExpr('kg*m/s^2')) === 11 && unitSize(parseUnitExpr('1/s')) === 5
+    && unitSize(parseUnitExpr('min')) === 3 && unitSize(parseUnitExpr('mmHg')) === 3,
+    'unitSize counts the scalar, the underscore, each name, 2 per prefix, and each operator and exponent');
+  assert(line('5_m SIZE') === '3' && line('5_km SIZE') === '5' && line('9.8_m/s^2 SIZE') === '7',
+    'AUR: SIZE of a unit object counts its parts');
+  assert(line('5.5 SIZE') === '1' && line('(1,2) SIZE') === '1' && line('`X` SIZE') === '1' && line(':a:5 SIZE') === '1',
+    'AUR: SIZE of a type it does not list is 1');
+  assert(line('12345 SIZE') === '5' && line('-12345 SIZE') === '5' && line('0 SIZE') === '1',
+    'AUR: SIZE of an integer is its number of digits');
+  assert(line('`X+1` SIZE') === '3' && line('`SIN(X)` SIZE') === '2' && line('`A+B*C` SIZE') === '5' && line('`-X` SIZE') === '2',
+    'AUR: SIZE of an algebraic counts its objects, so X+1 is X 1 + and 3');
+  assert(line('5_m RE') === '5.' && line('{ 5_m 6_s } RE') === '{ 5. 6. }' && line(':a:5_m RE') === ':a:5.',
+    'AUR: RE of a unit is its number');
+  assert(line('5_m `X` DERIV') === '0.' && line('5_m `X` ∂') === '0.', 'AUR: the derivative of a unit by a name is 0');
+  assert(line('{ 3_m 1_m 2_m } SORT') === '{ 1._m 2._m 3._m }' && line('{ 3_ft 1_m 2_in } SORT') === '{ 2._in 3._ft 1._m }'
+    && line('{ 10_°C 50_°F 280_K } SORT') === '{ 280._K 10._°C 50._°F }',
+    'AUR: SORT orders unit objects by value, converting them to a common unit');
+  assertThrows(() => runLine('{ 3_m 1_s } SORT'), /Inconsistent units/, 'SORT of incompatible units is Inconsistent units');
+  assertThrows(() => runLine('{ 3 1_m } SORT'), /Bad argument type/, 'SORT of a number and a unit is Bad argument type');
+  assert(line('{ `B` `A` `C` } SORT') === '{ `A` `B` `C` }' && line('{ { 3 "c" } { 1 "a" } { 2 "b" } } SORT') === '{ { 1 "a" } { 2 "b" } { 3 "c" } }',
+    'AUR: SORT also orders names by character code and lists by their first element');
+  assertThrows(() => runLine('{ { } { 1 } } SORT'), /Bad argument value/, 'SORT of an empty list among lists is Bad argument value');
+  assert(line(':a:5_km UBASE') === ':a:5000._m' && line(':a:5_km UVAL') === ':a:5.' && line('{ 5_km 2_mi } UBASE') === '{ 5000._m 3218.688_m }'
+    && line('{ 5_km 2_mi } UVAL') === '{ 5. 2. }',
+    'UBASE and UVAL are functions: they keep a tag and map over a list');
 }

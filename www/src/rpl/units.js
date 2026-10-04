@@ -353,3 +353,15 @@ export function formatUnitExpr(uexpr) {
   if (pos.length === 0) return neg.length === 1 ? '1/' + ns : `1/(${ns})`;
   return ps + '/' + (neg.length === 1 ? ns : `(${ns})`);
 }
+
+const hasPrefix = (sym) => SI_PREFIXES.some(([p]) => sym.startsWith(p) && UNIT_CATALOG.get(sym.slice(p.length))?.prefixable);
+
+// What SIZE counts in a unit object (AUR): the scalar and the underscore,
+// each name, 2 for a prefix, and 1 for each operator and exponent.
+export function unitSize(uexpr) {
+  const side = (factors) => factors.reduce((n, [sym, e]) => n + 1 + (hasPrefix(sym) ? 2 : 0) + (Math.abs(e) === 1 ? 0 : 2), 0);
+  const pos = uexpr.filter(([, e]) => e > 0);
+  const neg = uexpr.filter(([, e]) => e < 0);
+  const operators = Math.max(pos.length - 1, 0) + Math.max(neg.length - 1, 0) + (neg.length ? 1 : 0);
+  return 2 + side(pos) + side(neg) + operators + (neg.length && !pos.length ? 1 : 0);
+}

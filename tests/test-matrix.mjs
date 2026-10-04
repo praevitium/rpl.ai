@@ -65,11 +65,12 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(s.peek().value === 4n,
       `SIZE { 1 2 3 4 } → 4, got ${formatStackTop(s.peek())}`);
   }
-  // SIZE on unsupported type → Bad argument type.
+  // The AUR: any object type SIZE does not list returns 1.
   {
     const s = new Stack();
     s.push(Real(42));
-    assertThrows(() => lookup('SIZE').fn(s), /Bad argument/, 'SIZE on Real throws Bad argument type');
+    lookup('SIZE').fn(s);
+    assert(s.peek().value === 1n, 'SIZE on a Real is 1, as the AUR gives for a type it does not list');
   }
 
   // TRN transposes a 2x3 → 3x2 matrix, preserving element values.

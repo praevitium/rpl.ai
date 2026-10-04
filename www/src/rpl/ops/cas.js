@@ -1,4 +1,4 @@
-import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isList, Real, Name, Integer, isComplex, Complex, isVector, Vector, isMatrix, Matrix, isValidHpIdentifier, isBinaryInteger, isRational } from '../types.js';
+import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isList, Real, Name, Integer, isComplex, Complex, isVector, Vector, isMatrix, Matrix, isValidHpIdentifier, isBinaryInteger, isRational, isUnit } from '../types.js';
 import { giac } from '../cas/giac-engine.mjs';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { buildGiacCmd, giacToAst, splitGiacList, astToGiac } from '../cas/giac-convert.mjs';
@@ -203,7 +203,7 @@ register('DERIV', (s) => {
     _pushCasResult(s, _casEval(expr.expr, (e) => `diff(${e},${varName})`, [varName]));
     return;
   }
-  if (isReal(expr) || isInteger(expr)) {
+  if (isReal(expr) || isInteger(expr) || isUnit(expr)) {
     s.push(Real(0));
     return;
   }

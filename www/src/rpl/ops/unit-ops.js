@@ -2,23 +2,23 @@ import { isUnit, Real, Unit } from '../types.js';
 import { RPLError } from '../stack.js';
 import { toBaseUexpr, sameDims, convertValue } from '../units.js';
 import { register } from './registry.js';
-import { _inUnit, _makeUnit, _numVal } from './internal.js';
+import { _inUnit, _makeUnit, _numVal, _withListUnary, _withTaggedUnary } from './internal.js';
 
 
 
-register('UVAL', (s) => {
+register('UVAL', _withTaggedUnary(_withListUnary((s) => {
   const [u] = s.popN(1);
   if (!isUnit(u)) throw new RPLError('Bad argument type');
   s.push(Real(u.value));
-}, { category: 'Units', categoryOrder: 0, label: "UVAL" });
+})), { category: 'Units', categoryOrder: 0, label: "UVAL" });
 
 
-register('UBASE', (s) => {
+register('UBASE', _withTaggedUnary(_withListUnary((s) => {
   const [u] = s.popN(1);
   if (!isUnit(u)) throw new RPLError('Bad argument type');
   const { uexpr } = toBaseUexpr(u.uexpr);
   s.push(_makeUnit(convertValue(u.value, u.uexpr, uexpr), uexpr));
-}, { category: 'Units', categoryOrder: 1, label: "UBASE" });
+})), { category: 'Units', categoryOrder: 1, label: "UBASE" });
 
 
 register('→UNIT', (s) => {
