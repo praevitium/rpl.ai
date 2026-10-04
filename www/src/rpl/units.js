@@ -7,34 +7,36 @@
    is the entry's `offset` in kelvin; inside any other expression a
    temperature is a difference. */
 
-const BASE_SYMBOLS = Object.freeze(['m', 'kg', 's', 'A', 'K', 'mol', 'cd']);
+const BASE_SYMBOLS = Object.freeze(['m', 'kg', 's', 'A', 'K', 'mol', 'cd', 'r']);
 const BASE_DIMS_LEN = BASE_SYMBOLS.length;
 
-const D_L   = Object.freeze([1, 0, 0, 0, 0, 0, 0]);
-const D_M   = Object.freeze([0, 1, 0, 0, 0, 0, 0]);
-const D_T   = Object.freeze([0, 0, 1, 0, 0, 0, 0]);
-const D_I   = Object.freeze([0, 0, 0, 1, 0, 0, 0]);
-const D_TH  = Object.freeze([0, 0, 0, 0, 1, 0, 0]);
-const D_N   = Object.freeze([0, 0, 0, 0, 0, 1, 0]);
-const D_J   = Object.freeze([0, 0, 0, 0, 0, 0, 1]);
-const D_L2  = Object.freeze([2, 0, 0, 0, 0, 0, 0]);   // area
-const D_L3  = Object.freeze([3, 0, 0, 0, 0, 0, 0]);   // volume
-const D_v   = Object.freeze([1, 0, -1, 0, 0, 0, 0]);  // speed
-const D_Gy  = Object.freeze([2, 0, -2, 0, 0, 0, 0]);  // absorbed dose (Gy, Sv)
-const D_lx  = Object.freeze([-2, 0, 0, 0, 0, 0, 1]);  // illuminance
-const D_Cap = Object.freeze([-2, -1, 4, 2, 0, 0, 0]); // capacitance (F)
-const D_Ind = Object.freeze([2, 1, -2, -2, 0, 0, 0]); // inductance (H)
-const D_Gs  = Object.freeze([-2, -1, 3, 2, 0, 0, 0]); // conductance (S)
-const D_B   = Object.freeze([0, 1, -2, -1, 0, 0, 0]); // magnetic flux density (T)
-const D_Wb  = Object.freeze([2, 1, -2, -1, 0, 0, 0]); // magnetic flux (Wb)
-const D_iT  = Object.freeze([0, 0, -1, 0, 0, 0, 0]);  // frequency (Hz)
-const D_F   = Object.freeze([1, 1, -2, 0, 0, 0, 0]);  // force (N)
-const D_E   = Object.freeze([2, 1, -2, 0, 0, 0, 0]);  // energy (J)
-const D_P   = Object.freeze([2, 1, -3, 0, 0, 0, 0]);  // power (W)
-const D_Pa  = Object.freeze([-1, 1, -2, 0, 0, 0, 0]); // pressure
-const D_V   = Object.freeze([2, 1, -3, -1, 0, 0, 0]); // voltage
-const D_Ohm = Object.freeze([2, 1, -3, -2, 0, 0, 0]); // resistance
-const D_Q   = Object.freeze([0, 0, 1, 1, 0, 0, 0]);   // charge (C)
+const D_L   = Object.freeze([1, 0, 0, 0, 0, 0, 0, 0]);
+const D_M   = Object.freeze([0, 1, 0, 0, 0, 0, 0, 0]);
+const D_T   = Object.freeze([0, 0, 1, 0, 0, 0, 0, 0]);
+const D_I   = Object.freeze([0, 0, 0, 1, 0, 0, 0, 0]);
+const D_TH  = Object.freeze([0, 0, 0, 0, 1, 0, 0, 0]);
+const D_N   = Object.freeze([0, 0, 0, 0, 0, 1, 0, 0]);
+const D_J   = Object.freeze([0, 0, 0, 0, 0, 0, 1, 0]);
+const D_L2  = Object.freeze([2, 0, 0, 0, 0, 0, 0, 0]);   // area
+const D_L3  = Object.freeze([3, 0, 0, 0, 0, 0, 0, 0]);   // volume
+const D_v   = Object.freeze([1, 0, -1, 0, 0, 0, 0, 0]);  // speed
+const D_Gy  = Object.freeze([2, 0, -2, 0, 0, 0, 0, 0]);  // absorbed dose (Gy, Sv)
+const D_lx  = Object.freeze([-2, 0, 0, 0, 0, 0, 1, 0]);  // illuminance
+const D_Cap = Object.freeze([-2, -1, 4, 2, 0, 0, 0, 0]); // capacitance (F)
+const D_Ind = Object.freeze([2, 1, -2, -2, 0, 0, 0, 0]); // inductance (H)
+const D_Gs  = Object.freeze([-2, -1, 3, 2, 0, 0, 0, 0]); // conductance (S)
+const D_B   = Object.freeze([0, 1, -2, -1, 0, 0, 0, 0]); // magnetic flux density (T)
+const D_Wb  = Object.freeze([2, 1, -2, -1, 0, 0, 0, 0]); // magnetic flux (Wb)
+const D_iT  = Object.freeze([0, 0, -1, 0, 0, 0, 0, 0]);  // frequency (Hz)
+const D_F   = Object.freeze([1, 1, -2, 0, 0, 0, 0, 0]);  // force (N)
+const D_E   = Object.freeze([2, 1, -2, 0, 0, 0, 0, 0]);  // energy (J)
+const D_P   = Object.freeze([2, 1, -3, 0, 0, 0, 0, 0]);  // power (W)
+const D_Pa  = Object.freeze([-1, 1, -2, 0, 0, 0, 0, 0]); // pressure
+const D_V   = Object.freeze([2, 1, -3, -1, 0, 0, 0, 0]); // voltage
+const D_Ohm = Object.freeze([2, 1, -3, -2, 0, 0, 0, 0]); // resistance
+const D_Q   = Object.freeze([0, 0, 1, 1, 0, 0, 0, 0]);   // charge (C)
+const D_Ang = Object.freeze([0, 0, 0, 0, 0, 0, 0, 1]);   // plane angle (r)
+const D_Sr  = Object.freeze([0, 0, 0, 0, 0, 0, 0, 2]);   // solid angle (sr)
 
 const FT = 0.3048;
 const LB = 0.45359237;
@@ -163,6 +165,14 @@ export const UNIT_CATALOG = new Map([
   ['Sv',  { scale: 1,                 dims: D_Gy,  prefixable: true }],
   ['lm',  { scale: 1,                 dims: D_J,   prefixable: true }],
   ['lx',  { scale: 1,                 dims: D_lx,  prefixable: true }],
+
+  // ---- Angle: a base dimension of its own, as on the HP 50g ----
+  ['r',   { scale: 1,                 dims: D_Ang }],
+  ['°',   { scale: Math.PI / 180,     dims: D_Ang }],
+  ['grad', { scale: Math.PI / 200,    dims: D_Ang }],
+  ['arcmin', { scale: Math.PI / 10800, dims: D_Ang }],
+  ['arcs', { scale: Math.PI / 648000, dims: D_Ang }],
+  ['sr',  { scale: 1,                 dims: D_Sr }],
 ]);
 
 // 'da' stands before 'd' so that dam reads as deka-metre; D is the HP's deka.

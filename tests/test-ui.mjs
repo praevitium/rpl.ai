@@ -291,8 +291,8 @@ import { assert, assertThrows } from './helpers.mjs';
                                              'CATEGORIES: unit-insert buttons are confined to the Units category');
 
   const unitKeys = UNIT_GROUPS.flatMap((g) => g.units);
-  assert(UNIT_GROUPS.length === 14 && new Set(UNIT_GROUPS.map((g) => g.id)).size === 14 && UNIT_GROUPS.every((g) => /^[A-Z]{3,5}$/.test(g.id) && g.title && g.units.length >= 3),
-    'UNIT_GROUPS: fourteen groups with HP-style soft key names, titles and at least three units each');
+  assert(UNIT_GROUPS.length === 15 && new Set(UNIT_GROUPS.map((g) => g.id)).size === 15 && UNIT_GROUPS.every((g) => /^[A-Z]{3,5}$/.test(g.id) && g.title && g.units.length >= 3),
+    'UNIT_GROUPS: fifteen groups with HP-style soft key names, titles and at least three units each');
   assert(new Set(unitKeys).size === unitKeys.length, 'UNIT_GROUPS: no unit key appears in two groups');
   assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),
     'UNIT_GROUPS: every key makes a unit object when attached to a number');

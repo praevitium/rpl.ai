@@ -39,6 +39,7 @@ export const UNIT_GROUPS = Object.freeze([
   { id: 'PRESS', title: 'Pressure', units: ['Pa', 'hPa', 'kPa', 'MPa', 'bar', 'atm', 'psi', 'torr', 'mmHg', 'inHg'] },
   { id: 'TEMP', title: 'Temperature', units: ['K', '°C', '°F', '°R'] },
   { id: 'ELEC', title: 'Electricity', units: ['A', 'mA', 'V', 'mV', 'kV', 'Ω', 'kΩ', 'MΩ', 'C', 'F', 'μF', 'nF', 'pF', 'H', 'mH', 'S', 'T', 'Wb'] },
+  { id: 'ANGL', title: 'Angle', units: ['°', 'r', 'grad', 'arcmin', 'arcs', 'sr'] },
   { id: 'LIGHT', title: 'Light', units: ['cd', 'lm', 'lx'] },
   { id: 'RAD', title: 'Radiation', units: ['Bq', 'Gy', 'Sv'] },
 ]);

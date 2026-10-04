@@ -671,3 +671,30 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assertThrows(() => runLine('5_m 2_s TDELTA'), /Inconsistent units/, 'TDELTA of unrelated units is Inconsistent units');
   assertThrows(() => runLine('5_m 2 TINC'), /Bad argument type/, 'TINC of a unit and a plain number is Bad argument type');
 }
+
+{
+  const line = (src) => runLine(src).snapshot().map((v) => formatSource(v)).join(' ');
+  assert(line('1_° UBASE') === '0.0174532925199_r' && line('180_° 1_r CONVERT') === '3.14159265359_r' && line('1_r 1_° CONVERT') === '57.2957795131_°'
+    && line('100_grad 1_° CONVERT') === '90._°' && line('1_arcmin 1_arcs CONVERT') === '60._arcs' && line('1_sr UBASE') === '1._r^2',
+    'AUR: the angle units ° r grad arcmin arcs and sr convert among themselves, and a steradian is a square radian');
+  assertThrows(() => runLine('1_° 1_m CONVERT'), /Inconsistent units/, 'an angle does not convert to a length');
+  assert(line('30_° 2 *') === '60._°' && line('1_° 1_° +') === '2._°' && line('3_° 1_arcmin /') === '3._°/arcmin',
+    'angle units take part in arithmetic like any other');
+  runLine('DEG');
+  const degrees = line('30_° SIN') + ' ' + line('1_r SIN') + ' ' + line('100_grad SIN');
+  runLine('GRD');
+  const grads = line('30_° SIN') + ' ' + line('1_r SIN') + ' ' + line('100_grad SIN');
+  runLine('RAD');
+  const radians = line('30_° SIN') + ' ' + line('1_r SIN') + ' ' + line('100_grad SIN');
+  assert(degrees === grads && grads === radians && radians === '0.5 0.841470984808 1.',
+    'AUR: an angle unit overrides the angle mode of SIN');
+  assert(line('90_° COS') === '0.' && line('180_° SIN') === '0.' && line('270_° COS') === '0.' && line('720_° COS') === '1.' && line('-90_° SIN') === '-1.'
+    && line('100_grad COS') === '0.' && line('5400_arcmin SIN') === '1.' && line('324000_arcs SIN') === '1.',
+    'COS and SIN of whole quadrants given in degrees, grads, arc minutes or arc seconds are exact in every angle mode');
+  assert(line('45_° TAN') === '1.' && line('0.5_r TAN') === '0.546302489844' && line('{ 30_° 60_° } COS') === '{ 0.866025403784 0.5 }' && line(':a:60_° COS') === ':a:0.5',
+    'TAN and COS accept an angle unit, map over a list and keep a tag');
+  assertThrows(() => runLine('90_° TAN'), /Infinite result/, 'TAN of a right angle in degrees is an Infinite result');
+  assertThrows(() => runLine('1_m SIN'), /Bad argument type/, 'SIN of a length is Bad argument type');
+  assertThrows(() => runLine('1_s^-1 COS'), /Bad argument type/, 'COS of a frequency is Bad argument type');
+  assertThrows(() => runLine('1_sr TAN'), /Bad argument type/, 'TAN of a solid angle is Bad argument type');
+}

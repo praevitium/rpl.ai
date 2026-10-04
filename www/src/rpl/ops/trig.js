@@ -1,5 +1,6 @@
 import { setAngle, state as _calcState, getApproxMode, getComplexMode, toRadians, fromRadians } from '../state.js';
-import { Symbolic, toRealOrThrow, Real, isComplex, Complex, isInteger, isRational, isReal } from '../types.js';
+import { Symbolic, toRealOrThrow, Real, isComplex, Complex, isInteger, isRational, isReal, isUnit } from '../types.js';
+import { convertValue, parseUnitExpr, sameDims } from '../units.js';
 import { Fn as AstFn } from '../algebra.js';
 import { RPLError } from '../stack.js';
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
@@ -160,11 +161,11 @@ const _PI_D = new Decimal(Math.PI);
 const _WIDE = Decimal.clone({ precision: 45, rounding: Decimal.ROUND_HALF_EVEN });
 const _PI_WIDE = new _WIDE('3.14159265358979323846264338327950288419716939937510');
 
-// sin, cos or tan of a Decimal angle in the current mode.  A DEG or GRD angle
-// is cut into whole quadrants exactly, so 90 COS is 0, and the rest is worked
-// to 45 digits before it is rounded.
-function _trigDecimal(kind, d) {
-  const quadrant = { DEG: 90, GRD: 100 }[_calcState.angle];
+// sin, cos or tan of a Decimal angle in an angle mode, the current one unless
+// given.  A DEG or GRD angle is cut into whole quadrants exactly, so 90 COS is
+// 0, and the rest is worked to 45 digits before it is rounded.
+function _trigDecimal(kind, d, mode = _calcState.angle) {
+  const quadrant = { DEG: 90, GRD: 100 }[mode];
   if (quadrant === undefined) return d[kind]();
   if (!d.isFinite()) return new Decimal(NaN);
   const x = new _WIDE(d);
@@ -213,10 +214,30 @@ function _unaryCx(name, realFn, cxFn, decimalFn) {
 }
 
 
+const _RADIAN = parseUnitExpr('r');
+const _ANGLE_UNIT_MODES = new Map([
+  ['°', { mode: 'DEG', per: 1 }], ['arcmin', { mode: 'DEG', per: 60 }],
+  ['arcs', { mode: 'DEG', per: 3600 }], ['grad', { mode: 'GRD', per: 1 }],
+]);
+
+// An angle unit overrides the angle mode.  Degrees, arc minutes and arc seconds
+// are worked in DEG and grads in GRD so that whole quadrants stay exact; any
+// other angle goes through radians.
+function _unitAngle(u) {
+  if (!sameDims(u.uexpr, _RADIAN)) throw new RPLError('Bad argument type');
+  const known = u.uexpr.length === 1 && u.uexpr[0][1] === 1 ? _ANGLE_UNIT_MODES.get(u.uexpr[0][0]) : undefined;
+  if (known) return { mode: known.mode, angle: new Decimal(u.value).div(known.per) };
+  return { mode: 'RAD', angle: new Decimal(convertValue(u.value, u.uexpr, _RADIAN)) };
+}
+
 // Complex arguments are taken in radians whatever the angle mode.
 function _trigFwdCx(name, realFn, cxFn, decimalFn) {
   return _unaryOp(name, (v) => {
     if (isComplex(v)) return _complex(cxFn(v));
+    if (isUnit(v)) {
+      const { mode, angle } = _unitAngle(v);
+      return Real(decimalFn(angle, mode));
+    }
     if (_isExact(v)) return _exactUnaryLift(name, realFn(toRadians(toRealOrThrow(v))), v);
     return Real(decimalFn(_toDecimal(v)));
   });
@@ -297,11 +318,11 @@ register('ATANH', _unaryOp('ATANH', (v) => {
 }), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 17, label: "ATANH" });
 
 
-register('SIN', _trigFwdCx('SIN', Math.sin, _cxSin, d => _trigDecimal('sin', d)), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 0, label: "SIN" });
+register('SIN', _trigFwdCx('SIN', Math.sin, _cxSin, (d, mode) => _trigDecimal('sin', d, mode)), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 0, label: "SIN" });
 
-register('COS', _trigFwdCx('COS', Math.cos, _cxCos, d => _trigDecimal('cos', d)), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 1, label: "COS" });
+register('COS', _trigFwdCx('COS', Math.cos, _cxCos, (d, mode) => _trigDecimal('cos', d, mode)), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 1, label: "COS" });
 
-register('TAN', _trigFwdCx('TAN', Math.tan, _cxTan, d => _trigDecimal('tan', d)), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 2, label: "TAN" });
+register('TAN', _trigFwdCx('TAN', Math.tan, _cxTan, (d, mode) => _trigDecimal('tan', d, mode)), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 2, label: "TAN" });
 
 
 register('ASIN', _trigInvCx('ASIN', Math.asin, _cxAsin, d => d.asin()), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 3, label: "ASIN" });
