@@ -1807,7 +1807,7 @@ export class EquationEditor {
       slot('TEXT', 'Show the expression as text under the equation', () => this.toggleText(), { toggle: true, on: () => this.showText }),
       slot('BIG', 'Bigger type', () => this.toggleBig(), { toggle: true, on: () => this.big }),
       slot('COPY', 'Copy the selection, or the whole expression, as text · ↰ copies it as LaTeX', () => this.copy(), { onPressL: () => this.copyLatex() }),
-      slot('PASTE', 'Paste text in place of the selection', () => this.paste()),
+      slot('PASTE', 'Paste a formula, as text or LaTeX, in place of the selection', () => this.paste()),
       slot('CMDS', 'More algebra commands for the selection or the expression', () => this.showCommands()),
       slot('DONE', 'Push it to the stack (Enter)', () => this.app.commitEntry()),
       ...inserts.slice(6),

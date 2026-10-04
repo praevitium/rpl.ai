@@ -77,7 +77,7 @@ export class MenuBar {
       const on = slot.toggle && slot.on();
       const blocked = slot.blockedReason?.() ?? '';
       const title = blocked || slot.title || slot.label;
-      return `<button type="button" class="sk ${cls}${slot.dir ? ' dir' : ''}${slot.toggle ? ' tog' : ''}${on ? ' on' : ''}${blocked ? ' blocked' : ''}" data-i="${i}" title="${escapeHtml(title)} (F${i + 1})"><span class="lbl">${labelHtml(label)}</span><span class="fk" aria-hidden="true">F${i + 1}</span></button>`;
+      return `<button type="button" class="sk ${cls}${slot.dir ? ' dir' : ''}${slot.toggle ? ' tog' : ''}${on ? ' on' : ''}${blocked ? ' blocked' : ''}" data-i="${i}" title="${escapeHtml(title)} (F${i + 1})"><span class="lbl${label.length > 8 ? ' longer' : label.length > 6 ? ' long' : ''}">${labelHtml(label)}</span><span class="fk" aria-hidden="true">F${i + 1}</span></button>`;
     }).join('');
     const pages = view.pages;
     const dots = pages <= 1 ? '' : pages <= 6
