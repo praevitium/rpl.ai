@@ -1,9 +1,9 @@
-import { astLatex, toLatex } from '../www/src/rpl/latex.js';
-import { parseAlgebra } from '../www/src/rpl/algebra.js';
+import { astLatex, latexToAst, latexToSource, looksLikeLatex, parseMath, toLatex } from '../www/src/rpl/latex.js';
+import { astEqual, formatAlgebra, parseAlgebra } from '../www/src/rpl/algebra.js';
 import { parseEntry } from '../www/src/rpl/parser.js';
 import { BinaryInteger, Directory, Integer, Real, Str, Unit } from '../www/src/rpl/types.js';
 import { getBinaryBase, setBinaryBase } from '../www/src/rpl/state.js';
-import { assert } from './helpers.mjs';
+import { assert, assertThrows } from './helpers.mjs';
 
 const raw = String.raw;
 const algebra = (text) => astLatex(parseAlgebra(text));
@@ -150,4 +150,110 @@ const value = (text) => toLatex(parseEntry(text)[0]);
   assert(toLatex(Directory({ name: 'PROJ' })) === null, 'toLatex: a directory has no LaTeX form');
   assert(toLatex({ type: 'grob' }) === null, 'toLatex: a graphics object has no LaTeX form');
   assert(toLatex(Integer(0)) === '0', 'toLatex: zero is not mistaken for a missing value');
+}
+
+{
+  const read = (latex) => formatAlgebra(latexToAst(latex));
+  const cases = [
+    [raw`\frac{x^{2}+1}{2}`, '(x^2 + 1)/2', 'a fraction is a quotient'],
+    [raw`\sqrt{x+1}`, 'SQRT(x + 1)', '\\sqrt is SQRT'],
+    [raw`\sqrt[3]{x}`, 'XROOT(x,3)', 'a root with an index is XROOT'],
+    [raw`\sqrt x`, 'SQRT(x)', 'a root of a single token needs no braces'],
+    [raw`x^2y`, 'x^2*y', 'an unbraced superscript is one token and the next factor multiplies'],
+    [raw`x^23`, 'x^2*3', 'TeX takes one digit for an unbraced superscript'],
+    [raw`\frac12`, '1/2', 'a fraction of two single digits'],
+    [raw`2\pi r`, '2*π*r', 'juxtaposition multiplies, \\pi is π'],
+    [raw`2\times3\div4 \cdot 5`, '2*3/4*5', 'times, div and cdot are operators'],
+    [raw`\sin x`, 'SIN(x)', 'a function takes the factor after it'],
+    [raw`\sin 2x`, 'SIN(2*x)', 'a function takes the whole run of factors'],
+    [raw`\sin x\cos x`, 'SIN(x)*COS(x)', 'the next function ends the run'],
+    [raw`\sin x + \cos y`, 'SIN(x) + COS(y)', 'a sum ends the run'],
+    [raw`\sin^{2}x`, 'SIN(x)^2', 'a power on the function name applies to the call'],
+    [raw`\sin\left(x+1\right)^{2}`, 'SIN(x + 1)^2', 'a power after the parentheses applies to the call'],
+    [raw`\sin^{-1}x`, 'ASIN(x)', 'sin to the -1 is the inverse function, as on a calculator'],
+    [raw`\cot x`, '1/TAN(x)', 'cotangent is the reciprocal of the tangent'],
+    [raw`\ln x`, 'LN(x)', '\\ln'],
+    [raw`\log x`, 'LOG(x)', '\\log is the common logarithm'],
+    [raw`\log_{2}x`, 'LN(x)/LN(2)', 'a logarithm to another base is a quotient of natural logarithms'],
+    [raw`\log_{10}x`, 'LOG(x)', 'a logarithm to base 10 is LOG'],
+    [raw`e^{-x^{2}}`, 'EXP(-x^2)', 'e to a power is EXP'],
+    [raw`\exp\left(x\right)`, 'EXP(x)', '\\exp'],
+    [raw`\left|x-1\right|`, 'ABS(x - 1)', 'sized bars are ABS'],
+    [raw`|x|+|y|`, 'ABS(x) + ABS(y)', 'plain bars are ABS'],
+    [raw`||x|-1|`, 'ABS(ABS(x) - 1)', 'bars nest'],
+    [raw`\lfloor x\rfloor + \lceil x\rceil`, 'FLOOR(x) + CEIL(x)', 'floor and ceiling brackets'],
+    [raw`(n+1)!`, 'FACT(n + 1)', 'a factorial'],
+    [raw`\binom{n}{k}`, 'COMB(n,k)', 'a binomial coefficient'],
+    [raw`\overline{z}`, 'CONJ(z)', 'a bar is the conjugate'],
+    [raw`\sum_{i=1}^{n} i^{2}`, 'Σ(i,1,n,i^2)', 'a sum with its limits'],
+    [raw`\sum_{k=0}^{9}k+1`, 'Σ(k,0,9,k) + 1', 'a sum takes the next term only'],
+    [raw`\int_{0}^{1} x^{2}\,dx`, 'INTEG(x^2,x,0,1)', 'a definite integral'],
+    [raw`\int \sin x\,dx`, 'INTEG(SIN(x),x)', 'an indefinite integral'],
+    [raw`\int_0^1 \frac{1}{x}\,dx`, 'INTEG(1/x,x,0,1)', 'unbraced limits and a fraction inside an integral'],
+    [raw`\frac{d}{dx}\left(x^{2}\right)`, 'DERIV(x^2,x)', 'a derivative of the factor after it'],
+    [raw`\frac{d^{2}}{dx^{2}} x^{3}`, 'DERIV(DERIV(x^3,x),x)', 'a second derivative'],
+    [raw`\frac{dy}{dx}`, 'd*y/(d*x)', 'dy over dx with no operand stays a quotient'],
+    [raw`x^{2}-5x+6=0`, 'x^2 - 5*x + 6 = 0', 'an equation'],
+    [raw`a \le b`, 'a≤b', 'a comparison'],
+    [raw`\alpha+\beta`, 'α + β', 'Greek letters'],
+    [raw`\theta_{1}`, 'θ1', 'a numeric subscript joins the name'],
+    [raw`A_{12}`, 'A12', 'a longer subscript'],
+    [raw`\mathrm{rate}\cdot 2`, 'rate*2', 'an upright word is one name'],
+    [raw`\operatorname{lcm}(4,6)`, 'LCM(4,6)', '\\operatorname names a function'],
+    [raw`\min(a,b)`, 'MIN(a,b)', 'a function of two arguments'],
+    [raw`\Gamma(x)`, 'GAMMA(x)', 'Γ with an argument is the gamma function'],
+    [raw`\Gamma`, 'Γ', 'Γ alone is a letter'],
+    [raw`1\,000x`, '1000*x', 'a thin space between digit groups is a thousands separator'],
+    [raw`$\frac{1}{2}$`, '1/2', 'dollar signs are dropped'],
+    [raw`\(x^{2}\)`, 'x^2', 'math parentheses are dropped'],
+    [raw`\[ \displaystyle x^{2} \]`, 'x^2', 'display brackets and \\displaystyle are dropped'],
+    [raw`\bigl(a+b\bigr)^2`, '(a + b)^2', 'sizing commands are ignored'],
+    [raw`\infty`, '∞', '\\infty'],
+  ];
+  for (const [latex, expected, label] of cases) assert(read(latex) === expected, `latexToAst: ${label} (${latex} gave ${(() => { try { return read(latex); } catch (e) { return e.message; } })()})`);
+
+  const refusals = [
+    [raw`\lim_{x\to 0} x`, /Can't read \\lim/, 'a limit'],
+    [raw`\foo`, /Can't read \\foo/, 'an unknown command'],
+    [raw`\constructor`, /Can't read \\constructor/, 'a command named like an object property'],
+    [raw`\frac{1}{`, /ends too soon/, 'an unclosed group'],
+    [raw`\int x^2`, /differential/, 'an integral without its differential'],
+    [raw`\int_0 x\,dx`, /both limits/, 'an integral with one limit'],
+    [raw`\sum i`, /both limits/, 'a sum without limits'],
+    [raw`x_{i+1}`, /subscript/, 'a subscript that is not a name'],
+    [raw`a = b = c`, /Only one comparison/, 'a chain of comparisons'],
+    [raw`\min x`, /MIN takes 2 arguments/, 'a function with the wrong number of arguments'],
+    [raw`\begin{bmatrix} 1 \end{bmatrix}`, /Can't read \\begin/, 'a matrix'],
+    [raw`a \\ b`, /Can't read \\\\/, 'a line break'],
+    ['', /no formula/, 'nothing at all'],
+  ];
+  for (const [latex, pattern, label] of refusals) assertThrows(() => latexToAst(latex), pattern, `latexToAst refuses ${label}`);
+}
+
+{
+  const corpus = [
+    'X^2+1', '(X+1)*(X-1)', 'SQRT(X^2+1)/2', 'SIN(X)^2+COS(X)^2', 'EXP(-X^2)', 'LN(X+1)', 'ABS(X-1)', 'X^(Y+1)', '(A+B)/(C-D)',
+    'Σ(K,1,N,K^2)', 'Σ(I,0,N,A*I)', 'INTEG(SIN(X),X,0,1)', 'INTEG(X^2+1,X)', 'INTEG(1/X,X,1,E)', 'XROOT(X,3)', 'COMB(N,2)', 'FACT(N)', 'FACT(N+1)',
+    'A*B*C', 'A/B/C', 'A-(B-C)', 'A-B-C', 'A-B+C', '-X^2', '(-X)^2', '-X*Y', 'X*(-Y)', 'X^2=4', 'X<=Y', 'X≠Y', '2*π*R', 'A*(B+C)', '(A+B)*C',
+    'A^B^C', '(A^B)^C', 'SIN(2*X)', 'SIN(X+1)', 'COS(X)*SIN(X)', 'TAN(X)/X', 'ATAN(X)', 'ASIN(X/2)', 'SINH(X)', 'LOG(X)', 'FLOOR(X)', 'CEIL(X+1)',
+    'CONJ(Z)', 'MIN(A,B)', 'MAX(A,B)', 'GCD(A,B)', 'LCM(A,B)', 'MOD(A,B)', 'ABC+1', 'R1*R2/(R1+R2)', 'DERIV(X^2,X)', 'DERIV(SIN(X)*X,X)',
+    '1/2', 'X/2', '2/X', '3*X^2', '3*X', 'X*3', '2^X', 'EXP(X)', 'EXP(1)', 'SQRT(2)', 'SQRT(X)^2', 'SQRT(X+SQRT(Y))', 'α+β', 'θ1*2', 'A*B/C', 'A/(B*C)',
+    'X^-1', '10^3', 'LN(X)^2', 'SIN(X)^-1', 'ERF(X)', 'GAMMA(X)', 'ZETA(2)', 'RE(Z)', 'IM(Z)', 'ARG(Z)', 'SIGN(X)', 'HEAVISIDE(X)',
+    '(X+1)^2/(X-1)^2', 'ABS(ABS(X)-1)',
+  ];
+  const differs = corpus.filter((text) => {
+    const ast = parseAlgebra(text);
+    try { return !astEqual(latexToAst(astLatex(ast)), ast); } catch { return true; }
+  });
+  assert(differs.length === 0, `Copy as LaTeX then reading it back gives the same expression (differs: ${differs.join(', ')})`);
+  assert(formatAlgebra(latexToAst(algebra('ALOG(X)'))) === '10^X', 'ALOG(X) copied as LaTeX reads back as the equal 10^X');
+  assert(algebra('θ1*2') === raw`\theta_{1} \cdot 2`, 'a Greek name with digits is written with a subscript');
+}
+
+{
+  assert(!looksLikeLatex('X^2+1') && !looksLikeLatex('SIN(X)/2') && !looksLikeLatex('3 4 +'), 'plain algebra and RPL do not look like LaTeX');
+  assert(looksLikeLatex(raw`\frac{1}{2}`) && looksLikeLatex('x^{2}') && looksLikeLatex('$x^2$') && looksLikeLatex(raw`\(x\)`), 'a command, a braced script or math delimiters look like LaTeX');
+  assert(formatAlgebra(parseMath(raw`\frac{x}{2}`)) === 'x/2' && formatAlgebra(parseMath('x/2')) === 'x/2', 'parseMath reads LaTeX or algebra');
+  assert(latexToSource(raw`\frac{x^{2}}{2}`) === '`x^2/2`' && latexToSource(raw`\pi`) === null && latexToSource('3 4 +') === null && latexToSource('« \\pi 2 * »') === null && latexToSource(raw`\lim x`) === null,
+    'pasted LaTeX becomes a quoted algebraic on the command line, and anything else is left alone');
 }

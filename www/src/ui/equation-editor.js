@@ -5,7 +5,7 @@ import {
 import { eqwToSvg, astToSvg } from '../rpl/pretty.js';
 import { Symbolic, Name, Real, isSymbolic, isNumber, isName, isInteger, isReal, isList, Integer } from '../rpl/types.js';
 import { format } from '../rpl/formatter.js';
-import { astLatex } from '../rpl/latex.js';
+import { astLatex, parseMath } from '../rpl/latex.js';
 import { RPLError, Stack } from '../rpl/stack.js';
 import { lookup } from '../rpl/ops.js';
 import { parseEntry } from '../rpl/parser.js';
@@ -1424,7 +1424,7 @@ export function cutTarget(state) {
 }
 
 export function pasteText(state, text) {
-  const ast = parseAlgebra(String(text ?? '').trim());
+  const ast = parseMath(String(text ?? '').trim());
   return replaceTarget(state, [...fromAst(ast)]);
 }
 
@@ -1980,7 +1980,7 @@ export class EquationEditor {
   _onTextInput() {
     const text = this.textArea.value.trim();
     try {
-      this.state = text ? replaceWhole(this.state, parseAlgebra(text), 'text') : pressEquationKey(this.state, 'CLEAR');
+      this.state = text ? replaceWhole(this.state, parseMath(text), 'text') : pressEquationKey(this.state, 'CLEAR');
       this.textArea.classList.remove('bad');
     } catch {
       this.textArea.classList.add('bad');

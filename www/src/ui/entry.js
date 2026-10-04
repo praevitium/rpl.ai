@@ -1,5 +1,6 @@
 import { parseEntry, endsInQuote } from '../rpl/parser.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
+import { latexToSource } from '../rpl/latex.js';
 import { spreadsheetToSource, htmlTableToSource } from '../rpl/sheet.js';
 import { lookup, isProgramLine, runProgramLine } from '../rpl/ops.js';
 import { RPLAbort, RPLError, withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
@@ -15,7 +16,7 @@ import {
 
 const UNDO_WORD = /^(UNDO|LASTSTACK|REDO)$/i;
 
-const pastedSource = (text) => spreadsheetToSource(text) ?? hpTextToSource(text);
+const pastedSource = (text) => latexToSource(text) ?? spreadsheetToSource(text) ?? hpTextToSource(text);
 
 function errorText(e) {
   return e && typeof e === 'object' && e.message != null ? String(e.message) : String(e);

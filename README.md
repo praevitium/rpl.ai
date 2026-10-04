@@ -166,7 +166,16 @@ copies any value as LaTeX source, and the ↰ layer of the writer's COPY soft
 key copies the selection, or the whole expression. Quotients become `\frac`,
 roots `\sqrt`, and Σ and ∫ become `\sum` and `\int`; matrices become
 `bmatrix`, rationals fractions and units upright text. Programs, directories
-and graphics have no LaTeX form, and LaTeX isn't read back in.
+and graphics have no LaTeX form.
+
+The other way works for formulas: paste LaTeX into the writer, or onto the
+command line, and it is read as the expression it spells. Fractions, roots,
+powers, Greek letters, `\sin`, `\ln`, bars, factorials, `\binom`, `\sum`,
+`\int` with its `dx`, and `\frac{d}{dx}` all come across, and `$…$` or
+`\(…\)` around it is dropped. As in TeX, `2x` is 2·x and `\sin 2x` is
+sin(2x), and `\sin^{-1}` is the inverse function, as on a calculator. Limits,
+matrices and anything else the algebra has no word for are refused with a
+message saying which command it could not read.
 
 ![The equation writer, its tap buttons and insight strip](screenshots/equation-writer.png)
 
