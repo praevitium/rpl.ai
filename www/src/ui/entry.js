@@ -1,6 +1,6 @@
 import { parseEntry } from '../rpl/parser.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
-import { spreadsheetToSource } from '../rpl/sheet.js';
+import { spreadsheetToSource, htmlTableToSource } from '../rpl/sheet.js';
 import { lookup, isProgramLine, runProgramLine } from '../rpl/ops.js';
 import { RPLAbort, RPLError, withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
 import { errorBeep } from './beep.js';
@@ -117,6 +117,15 @@ export class Entry {
           appKeys,
           keymap.of(defaultKeymap),
           EditorView.clipboardInputFilter.of(pastedSource),
+          EditorView.domEventHandlers({
+            paste: (event) => {
+              const source = htmlTableToSource(event.clipboardData?.getData('text/html') ?? '');
+              if (source === null) return false;
+              event.preventDefault();
+              this.type(source);
+              return true;
+            },
+          }),
           // Paste and programmatic edits don't scroll to the caret the way
           // CM's own keys do, so every edit scrolls it into view.
           EditorState.transactionExtender.of((tr) => {

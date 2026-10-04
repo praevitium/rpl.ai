@@ -135,6 +135,113 @@ export function spreadsheetToSource(text) {
   return numbers.some((row) => row.includes(null)) ? null : numericSource(numbers);
 }
 
+const HTML_ENTITIES = { nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+
+function htmlText(markup) {
+  const decoded = markup.replace(/<br\s*\/?>/gi, ' ').replace(/<[^<>]*>/g, '').replace(/&(?:#(\d+)|#x([0-9a-f]+)|(\w+));/gi, (entity, dec, hex, name) => {
+    try { return dec || hex ? String.fromCodePoint(dec ? Number(dec) : parseInt(hex, 16)) : HTML_ENTITIES[name.toLowerCase()] ?? entity; }
+    catch { return entity; }
+  });
+  return decoded.replace(/[\s ]+/g, ' ').trim();
+}
+
+// Excel, Calc and Sheets keep a number's exact value next to the rounded text they show.
+function exactNumber(tag) {
+  const value = /\bx:num="([^"]+)"/i.exec(tag)?.[1]
+    ?? /\bsdval="([^"]+)"/i.exec(tag)?.[1]
+    ?? /data-sheets-value="[^"]*?(?:&quot;|")3(?:&quot;|"):\s*([-\d.eE+]+)/i.exec(tag)?.[1];
+  return value !== undefined && /^-?(?:\d+\.?\d*|\.\d+)(?:E[-+]?\d+)?$/i.test(value) ? value : null;
+}
+
+// Comments, styles and scripts hold no cells. Everything is found by index, not by a
+// pattern that can backtrack, so a broken page can't hang a paste.
+function withoutBlocks(html) {
+  const lower = html.toLowerCase();
+  const opening = /<!--|<style\b|<script\b/g;
+  let out = '';
+  let at = 0;
+  for (let m = opening.exec(lower); m; m = opening.exec(lower)) {
+    const comment = m[0] === '<!--';
+    const end = lower.indexOf(comment ? '-->' : `</${m[0].slice(1)}`, m.index + m[0].length);
+    out += html.slice(at, m.index);
+    if (end === -1) return out;
+    at = comment ? end + 3 : lower.indexOf('>', end) + 1 || lower.length;
+    opening.lastIndex = at;
+  }
+  return out + html.slice(at);
+}
+
+// The index of the > that ends a tag, skipping any inside quoted attribute values.
+function tagEnd(markup, from) {
+  let quote = '';
+  for (let i = from; i < markup.length; i++) {
+    const c = markup[i];
+    if (quote) { if (c === quote) quote = ''; } else if (c === '"' || c === "'") quote = c;
+    else if (c === '>') return i;
+  }
+  return -1;
+}
+
+// The first table of the clipboard's HTML flavour, as rows of { text, exact } cells.
+function htmlTableRows(html) {
+  const markup = withoutBlocks(html);
+  const rows = [];
+  let row = null;
+  let cell = null;
+  let depth = 0;
+  const endCell = (to) => {
+    if (cell) row.push({ text: htmlText(markup.slice(cell.from, to)), exact: exactNumber(cell.tag) });
+    cell = null;
+  };
+  const endRow = (to) => {
+    endCell(to);
+    if (row) rows.push(row);
+    row = null;
+  };
+  for (let i = markup.indexOf('<'); i !== -1;) {
+    const end = tagEnd(markup, i + 1);
+    if (end === -1) break;
+    const found = /^<(\/?)(table|tr|td|th)(?=[\s/>])/i.exec(markup.slice(i, i + 12));
+    if (found) {
+      const [, closing, name] = found;
+      const kind = name.toLowerCase();
+      if (kind === 'table') {
+        depth += closing ? -1 : 1;
+        if (depth <= 0) break;
+      } else if (depth === 1 && kind === 'tr') {
+        endRow(i);
+        if (!closing) row = [];
+      } else if (depth === 1 && closing) {
+        endCell(i);
+      } else if (depth === 1) {
+        endCell(i);
+        row ??= [];
+        cell = { from: end + 1, tag: markup.slice(i, end) };
+      }
+    }
+    i = markup.indexOf('<', end + 1);
+  }
+  endRow(markup.length);
+  return rows.length ? rows : null;
+}
+
+// The same table as tab-separated text, each number at its exact value.
+export function htmlTableToText(html) {
+  const rows = htmlTableRows(String(html));
+  return rows?.length ? rows.map((row) => row.map(({ text, exact }) => exact ?? text).join('\t')).join('\n') : null;
+}
+
+// A range of numbers copied from a spreadsheet, read from the clipboard's HTML
+// flavour: a single column, which plain text can't tell from typed lines, and
+// every number at full precision rather than as rounded as the sheet shows it.
+export function htmlTableToSource(html) {
+  const rows = htmlTableRows(String(html));
+  if (!rows || rows.length * (rows[0]?.length ?? 0) < 2 || rows.length * rows[0].length > SHEET_MAX_CELLS) return null;
+  if (rows.some((row) => row.length !== rows[0].length)) return null;
+  const numbers = rows.map((row) => row.map(({ text, exact }) => exact ?? blankToZero(text)));
+  return numbers.some((row) => row.includes(null)) ? null : numericSource(numbers);
+}
+
 // A first row of text over rows of numbers is a header, not data.
 function headerRow(cells) {
   const isText = (c) => c !== '' && sheetNumber(c) === null;

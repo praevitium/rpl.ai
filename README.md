@@ -223,9 +223,12 @@ import or export HP text files (`.rpl`).
 Copy a matrix, vector or list (`⌘C` on a selected level) and paste it into
 Excel, Google Sheets or Numbers: it arrives as cells. Copy a range of
 numbers from a spreadsheet and paste it on the command line, where it
-becomes a matrix (a vector for a single row), or into the matrix writer's
-cells. Currency, percentages, accounting negatives such as `(300.00)` and
-the separators of other locales (`1.234,56`) are read as numbers.
+becomes a matrix (a vector for a single row, a one-column matrix for a
+single column), or into the matrix writer's cells. Excel, Sheets and Calc
+paste each number at the exact value the sheet holds, not as rounded as the
+cell shows it. Currency, percentages, accounting negatives such as
+`(300.00)` and the separators of other locales (`1.234,56`) are read as
+numbers.
 
 Spreadsheet files work too. Download a matrix, vector or list as `.csv`,
 `.tsv` or Excel's `.xlsx` from its download button in the Variables drawer,

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import {
   sheetNumber, parseDelimited, spreadsheetToSource, importTable, importCells, formatDelimited, spreadsheetHtml, isTable, xlsxRows,
-  SHEET_MAX_CELLS,
+  SHEET_MAX_CELLS, htmlTableToSource, htmlTableToText,
 } from '../www/src/rpl/sheet.js';
 import { buildXlsx } from '../www/src/rpl/xlsx.js';
 import { readUpload, fileVariableName, downloadFormats } from '../www/src/rpl/persist.js';
@@ -180,4 +180,35 @@ const src = (text) => formatSource(parseEntry(text)[0]);
   assert(formatSource(importCells([['1', '2'], ['3']]).value) === '[[ 1 2 ][ 3 0 ]]', 'importCells: rows of different lengths are padded');
   assert(spreadsheetToSource('1\t2\n'.repeat(300000)) === null, 'spreadsheetToSource: a column far taller than the cell limit stays text, without overflowing the stack');
   assertThrows(() => importTable('1,2\n'.repeat(300000)), /more than 100000 cells/, 'importTable: a file far taller than the cell limit is refused with a message');
+}
+
+{
+  const excel = (rows) => `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta name=Generator content="Microsoft Excel 15"><style><!--table {mso-displayed-decimal-separator:"\.";} .xl65 {mso-number-format:Fixed;}--></style></head><body><table border=0 cellpadding=0 cellspacing=0 width=64 style='border-collapse:collapse;width:48pt'><!--StartFragment--><col width=64 style='width:48pt'>${rows}<!--EndFragment--></table></body></html>`;
+  const cell = (value, attributes = 'x:num') => `<tr height=20 style='height:15.0pt'><td height=20 class=xl65 align=right style='height:15.0pt' ${attributes}>${value}</td></tr>`;
+  assert(htmlTableToSource(excel(cell('1') + cell('2.5') + cell('3.14', 'x:num="3.1415926535897931"'))) === '[[ 1 ][ 2.5 ][ 3.1415926535897931 ]]',
+    'htmlTableToSource: one column from Excel is a column matrix, with each number at the exact value Excel keeps beside its text');
+  assert(htmlTableToSource(excel(cell('7'))) === null && htmlTableToSource(excel(cell('a', 'x:str') + cell('b', 'x:str'))) === null,
+    'htmlTableToSource: one cell, or a column with text, is left to the plain text paste');
+  assert(htmlTableToSource(excel(cell('1', '') + cell('') + cell('&nbsp;') + cell('$1,234.50') + cell('12%'))) === '[[ 1 ][ 0 ][ 0 ][ 1234.50 ][ 12E-2 ]]',
+    'htmlTableToSource: blank cells are 0 and currency and percentages are read as in a pasted range');
+  assert(htmlTableToSource('<table><tr><td>1</td><td>2</td></tr><tr><td>3</td><td>4</td></tr></table>') === '[[ 1 2 ][ 3 4 ]]'
+    && htmlTableToSource('<TABLE><TR><TD>1</TD><TD>2</TD><TD>3</TD></TR></TABLE>') === '[ 1 2 3 ]',
+    'htmlTableToSource: a range is a matrix and a single row a vector, whatever the tag case');
+  assert(htmlTableToSource('<table><tr><td>1</td><td>2</td></tr><tr><td>3</td></tr></table>') === null
+    && htmlTableToSource('<p>1</p><p>2</p>') === null && htmlTableToSource('') === null && htmlTableToSource(undefined) === null,
+    'htmlTableToSource: ragged rows, text without a table and nothing at all are left alone');
+  assert(htmlTableToSource('<table><tr><td><span style="color:red">4</span></td></tr><tr><td>1&nbsp;000</td></tr><tr><td>&#53;</td></tr></table>') === '[[ 4 ][ 1000 ][ 5 ]]',
+    'htmlTableToSource: markup inside a cell, a non-breaking thousands space and numeric entities are read');
+  assert(htmlTableToSource('<!--[if gte mso 9]><table><tr><td>9</td><td>9</td></tr></table><![endif]--><style>table td { color: red }</style><table><tr><td>1</td></tr><tr><td>2</td></tr></table>') === '[[ 1 ][ 2 ]]',
+    'htmlTableToSource: comments and style blocks are not tables');
+  const sheets = `<meta charset='utf-8'><google-sheets-html-origin><style type="text/css"><!--td {border: 1px solid #ccc;}--></style><table xmlns="http://www.w3.org/1999/xhtml" cellspacing="0" cellpadding="0" dir="ltr" border="1"><colgroup><col width="100"/></colgroup><tbody><tr style="height:21px;"><td style="text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:3.14159265358979}" data-sheets-formula="=IF(A1>2,PI(),0)">3.14</td></tr><tr style="height:21px;"><td style="text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:42}">42</td></tr></tbody></table>`;
+  assert(htmlTableToSource(sheets) === '[[ 3.14159265358979 ][ 42 ]]', 'htmlTableToSource: Google Sheets keeps exact numbers in data-sheets-value, and a > inside an attribute does not end the tag');
+  const calc = '<table cellspacing="0" border="0"><colgroup width="85"></colgroup><tr><td align="right" sdval="0.333333333333333" sdnum="1033;0;0.00">0.33</td></tr><tr><td align="right" sdval="7" sdnum="1033;">7</td></tr></table>';
+  assert(htmlTableToSource(calc) === '[[ 0.333333333333333 ][ 7 ]]', 'htmlTableToSource: LibreOffice Calc keeps exact numbers in sdval');
+  assert(htmlTableToSource(`<table>${'<tr><td>1</td></tr>'.repeat(SHEET_MAX_CELLS + 1)}</table>`) === null,
+    'htmlTableToSource: a table past the cell limit stays text');
+  assert(htmlTableToText(excel(cell('1') + cell('2.5') + cell('3.14', 'x:num="3.1415926535897931"'))) === '1\n2.5\n3.1415926535897931'
+    && htmlTableToText('<table><tr><td>a</td><td x:num="2.50">2.5</td></tr><tr><td>b</td><td>3</td></tr></table>') === 'a\t2.50\nb\t3'
+    && htmlTableToText('<p>no table</p>') === null && htmlTableToText('') === null,
+    'htmlTableToText: a table as tab-separated text with the exact numbers, or null without one');
 }

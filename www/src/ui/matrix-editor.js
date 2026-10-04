@@ -3,7 +3,7 @@ import { writerKeys } from './input-area.js';
 import { parseEntry } from '../rpl/parser.js';
 import { format } from '../rpl/formatter.js';
 import { Var, parseAlgebra } from '../rpl/algebra.js';
-import { sheetNumber } from '../rpl/sheet.js';
+import { sheetNumber, htmlTableToText } from '../rpl/sheet.js';
 import {
   Matrix, Vector, Real, Symbolic,
   isMatrix, isVector, isList, isNumber, isSymbolic, isName, isValidHpIdentifier,
@@ -605,7 +605,7 @@ export class MatrixEditor {
 
   _onPaste(e) {
     const cell = e.target.closest?.('input.mx-cell');
-    const text = e.clipboardData?.getData('text/plain') ?? '';
+    const text = htmlTableToText(e.clipboardData?.getData('text/html') ?? '') ?? e.clipboardData?.getData('text/plain') ?? '';
     if (!cell || !/[\t\n\r]/.test(text)) return;
     e.preventDefault();
     const r = Number(cell.dataset.r);
