@@ -126,6 +126,8 @@ CONTAINERS
 UNITS  (built-in: SI units m kg s A K mol cd Hz N J W Pa V Ω C F with prefixes, as in 5_kJ 1_MHz 3_uA; also cm mm km in ft yd mi nmi  g mg lb oz  ms min h d yr  L mL gal  mph kph  lbf cal Btu Wh hp bar atm psi  °C °F — combine with * / ^, e.g. 9.81_m/s^2)
   →UNIT                      x 1_unit →UNIT — attach a unit (5 1_km →UNIT gives 5_km); literal form 5_km, 9.81_m/s^2
   UVAL UBASE CONVERT         extract value / convert to base SI / convert to compatible unit (5_km 1_mi CONVERT; 100_°C 1_°F CONVERT gives 212._°F).  A bare °C or °F is a temperature reading; in + and - it counts as a difference.
+  UFACT                      factor a unit out of another (1_W 1_N UFACT gives 1_N*m/s)
+  TDELTA TINC                temperature change between two readings (100_°C 32_°F TDELTA gives 100_°C) / a reading plus an increment (20_°C 9_°F TINC gives 25_°C)
 
 PROGRAMS & CONTROL FLOW
   « ... »                    program literal; EVAL runs it, « … » \`NAME\` STO saves it, and typing NAME runs the saved program
