@@ -4,6 +4,14 @@ import { MENU_GROUPS, menuById } from './menus.js';
 
 const PREVIEW_HOVER_MS = 220;
 
+// A name of six to eight letters may break halfway on a narrow screen, so DUPDUP
+// wraps as DUP and DUP; a longer one fills the first line and wraps from there.
+function labelHtml(label) {
+  if (label.length < 6 || label.length > 8 || /\s/.test(label)) return escapeHtml(label);
+  const half = Math.ceil(label.length / 2);
+  return `${escapeHtml(label.slice(0, half))}<wbr>${escapeHtml(label.slice(half))}`;
+}
+
 export class MenuBar {
   constructor({ el, app }) {
     this.el = el;
@@ -69,7 +77,7 @@ export class MenuBar {
       const on = slot.toggle && slot.on();
       const blocked = slot.blockedReason?.() ?? '';
       const title = blocked || slot.title || slot.label;
-      return `<button type="button" class="sk ${cls}${slot.dir ? ' dir' : ''}${slot.toggle ? ' tog' : ''}${on ? ' on' : ''}${blocked ? ' blocked' : ''}" data-i="${i}" title="${escapeHtml(title)} (F${i + 1})"><span class="lbl">${escapeHtml(label)}</span><span class="fk" aria-hidden="true">F${i + 1}</span></button>`;
+      return `<button type="button" class="sk ${cls}${slot.dir ? ' dir' : ''}${slot.toggle ? ' tog' : ''}${on ? ' on' : ''}${blocked ? ' blocked' : ''}" data-i="${i}" title="${escapeHtml(title)} (F${i + 1})"><span class="lbl">${labelHtml(label)}</span><span class="fk" aria-hidden="true">F${i + 1}</span></button>`;
     }).join('');
     const pages = view.pages;
     const dots = pages <= 1 ? '' : pages <= 6
