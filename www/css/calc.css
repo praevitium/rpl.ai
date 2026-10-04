@@ -509,7 +509,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   .mb-menu .short { display: inline; }
   .mb-dots { display: none; }
   .mb-keys { gap: 3px; }
-  .sk { font-size: 10.5px; height: 36px; padding: 0 2px; }
+  .sk { font-size: 10.5px; height: 36px; padding: 0 1px; }
+  .sk .lbl { white-space: normal; overflow-wrap: anywhere; line-height: 1.1; text-align: center; letter-spacing: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
   .mb-pg button { width: 20px; }
 }
 
