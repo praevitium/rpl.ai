@@ -619,3 +619,12 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(unitLine('(1/2, 3)') === '(0.5, 3)' && unitLine('(1.5E-3, -2)') === '(0.0015, -2)' && unitLine('(.5, 5.)') === '(0.5, 5)',
     'a complex part may be a fraction or a number with an exponent');
 }
+
+{
+  const line = (src) => runLine(src).snapshot().map((v) => formatSource(v)).join(' ');
+  for (const bad of ['1_', '1_m*', '1_m/', '1_*m', '1_m//s', '1_m*/s', '1_1', '1_m**2']) {
+    assertThrows(() => runLine(bad), /Bad unit expression|Missing unit/, `${bad} is a malformed unit literal, not a unit it half reads`);
+  }
+  assert(line('1_/m') === '1._1/m' && line('1_(m)') === '1._m' && line('1_m/(s*kg)') === '1._m/(kg*s)' && line('1_m/m') === '1.',
+    'a leading slash, parentheses and a cancelled unit still read');
+}

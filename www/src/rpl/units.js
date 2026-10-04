@@ -275,11 +275,12 @@ export function toBaseUexpr(uexpr) {
   return { scale: scaleOf(uexpr), uexpr: normalizeUexpr(base) };
 }
 
-/* uexpr  := factor ( ('*' | '/') factor )*
+/* uexpr  := '/'? factor ( ('*' | '/') factor )*
    factor := SYMBOL ( '^' ('-'|'+')? NUMBER )? | '(' uexpr ')' | '1'
    '/' inverts only the next factor, reading left to right as the HP50
    does, so m/s*s is m.  formatUnitExpr parenthesizes a denominator with
-   several factors so its output parses back unchanged. */
+   several factors so its output parses back unchanged.  An operator needs
+   a factor on its right, and a unit needs at least one symbol. */
 
 export function parseUnitExpr(text) {
   const src = text.normalize('NFKC');
@@ -313,17 +314,31 @@ export function parseUnitExpr(text) {
   function readExpr(stopChar) {
     let result = normalizeUexpr([]);
     let invertNext = false;
+    let expectFactor = false;
+    let first = true;
     while (i < n && src[i] !== stopChar) {
       const c = src[i];
-      if (c === '*') { invertNext = false; i++; continue; }
-      if (c === '/') { invertNext = true;  i++; continue; }
+      if (c === '*' || c === '/') {
+        // Only a leading '/' may stand without a factor before it, as in 1_/s.
+        if (expectFactor || (first && c === '*')) throw new Error(`Bad unit expression near '${c}': ${src}`);
+        invertNext = c === '/';
+        expectFactor = true;
+        first = false;
+        i++;
+        continue;
+      }
       const factor = readFactor();
       result = multiplyUexpr(result, invertNext ? inverseUexpr(factor) : factor);
       invertNext = false;
+      expectFactor = false;
+      first = false;
     }
+    if (expectFactor) throw new Error(`Bad unit expression, an operator needs a unit after it: ${src}`);
     return result;
   }
 
+  if (!src) throw new Error('Missing unit after the underscore');
+  if (!/[A-Za-zΩμ°]/.test(src)) throw new Error(`Bad unit expression, there is no unit in '${src}'`);
   return readExpr(undefined);
 }
 
