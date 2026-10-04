@@ -20,6 +20,7 @@ export class Stack {
     this._undoStack = [];
     this._redoStack = [];
     this._lastArgs = null;
+    this.trapDepth = 0;            // IFERR trap clauses running; in one, a failing command gives back its arguments
     this._holdEmit = 0;
     this._emitPending = false;
   }

@@ -578,14 +578,15 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
          'IFERR success path without ELSE keeps trap result (10, 3)');
 }
 
-// IFERR: error in trap → stack rolled back, THEN runs
+// IFERR: error in trap → the failing command's arguments are back, THEN runs
 {
   resetHome();
   clearLastError();
   const s = new Stack();
   // << 10 IFERR 1 0 / THEN 999 END >>
-  //   10 left alone; 1 0 / errors; stack rolls back to pre-IFERR (10 on top);
-  //   THEN runs, pushing 999.  Final: 10 999.
+  //   10 left alone; 1 0 / errors and gives 1 and 0 back (AUR: the arguments
+  //   of the command that caused the error return to the stack);
+  //   THEN runs, pushing 999.  Final: 10 1 0 999.
   s.push(Program([
     Integer(10),
     Name('IFERR'), Integer(1), Integer(0), Name('/'),
@@ -593,8 +594,62 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     Name('END'),
   ]));
   lookup('EVAL').fn(s);
-  assert(s.depth === 2 && s.peek(2).value === 10n && s.peek(1).value === 999n,
-         'IFERR error path rolls back trap residue + runs THEN');
+  assert(s.depth === 4 && s.peek(4).value === 10n && s.peek(3).value === 1n && s.peek(2).value === 0n && s.peek(1).value === 999n,
+         'IFERR error path returns the failing command\'s arguments + runs THEN');
+}
+
+// IFERR: what the trap clause did before the error stays on the stack
+{
+  resetHome();
+  clearLastError();
+  const s = new Stack();
+  // << 5 IFERR 1 2 + "A" - THEN DROP2 "failed" END >>
+  //   1 2 + leaves 3; 3 "A" - errors and gives 3 and "A" back; DROP2 removes them.
+  s.push(Program([
+    Integer(5),
+    Name('IFERR'), Integer(1), Integer(2), Name('+'), Str('A'), Name('-'),
+    Name('THEN'), Name('DROP2'), Str('failed'),
+    Name('END'),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 2 && s.peek(2).value === 5n && s.peek(1).value === 'failed',
+         'IFERR error path keeps what the trap computed before the error: 3 "A" were there for DROP2');
+}
+
+// IFERR: the AUR's own example, « → a b « IFERR a b / THEN LSQ END » »
+{
+  resetHome();
+  clearLastError();
+  const s = new Stack();
+  const [a, b] = [Str('a'), Integer(2)];
+  s.push(a); s.push(b);
+  s.push(Program([
+    Name('\u2192'), Name('x'), Name('y'),
+    Program([
+      Name('IFERR'), Name('x'), Name('y'), Name('/'),
+      Name('THEN'), Name('SWAP'),
+      Name('END'),
+    ]),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 2 && s.peek(2).value === 2n && s.peek(1).value === 'a',
+         'IFERR: a failed a b / hands a and b back to the THEN clause, where SWAP finds both');
+}
+
+// IFERR: an error inside a program the trap calls leaves the stack where its command failed
+{
+  resetHome();
+  clearLastError();
+  const s = new Stack();
+  // << IFERR << 1 2 + "x" - >> EVAL THEN "caught" END >>
+  s.push(Program([
+    Name('IFERR'), Program([Integer(1), Integer(2), Name('+'), Str('x'), Name('-')]), Name('EVAL'),
+    Name('THEN'), Str('caught'),
+    Name('END'),
+  ]));
+  lookup('EVAL').fn(s);
+  assert(s.depth === 3 && s.peek(3).value === 3n && s.peek(2).value === 'x' && s.peek(1).value === 'caught',
+         'IFERR: an error in a called program leaves the stack as its failing command found it');
 }
 
 // IFERR: error with ELSE — ELSE is NOT run when the trap errored
@@ -610,7 +665,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     Name('END'),
   ]));
   lookup('EVAL').fn(s);
-  assert(s.depth === 1 && s.peek().value === 7n,
+  assert(s.depth === 3 && s.peek().value === 7n,
          'IFERR error path runs THEN, not ELSE');
 }
 
@@ -644,7 +699,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     Name('END'),
   ]));
   lookup('EVAL').fn(s);
-  assert(s.depth === 1 && s.peek().type === 'string' &&
+  assert(s.depth === 3 && s.peek().type === 'string' &&
          s.peek().value === 'Infinite result',
          'ERRM inside THEN returns "Infinite result"');
 }
@@ -660,7 +715,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     Name('END'),
   ]));
   lookup('EVAL').fn(s);
-  assert(s.depth === 1 && isBinaryInteger(s.peek()) &&
+  assert(s.depth === 3 && isBinaryInteger(s.peek()) &&
          s.peek().value === 0x305n && s.peek().base === 'h',
          'ERRN returns the mapped HP50-ish code for "Infinite result" (#305h)');
 }
@@ -750,10 +805,12 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     Name('END'),
   ]));
   lookup('EVAL').fn(s);
-  // After nesting: trap left 1 then inner's "inner"; ELSE runs → pushes "outer-ok".
-  // Expected: 1, "inner", "outer-ok"
-  assert(s.depth === 3 &&
-         s.peek(3).value === 1n &&
+  // After nesting: trap left 1, then the inner trap's 1 and 0 (the arguments of
+  // the failed /) and "inner"; ELSE runs → pushes "outer-ok".
+  assert(s.depth === 5 &&
+         s.peek(5).value === 1n &&
+         s.peek(4).value === 1n &&
+         s.peek(3).value === 0n &&
          s.peek(2).value === 'inner' &&
          s.peek(1).value === 'outer-ok',
          'nested IFERR: inner catches, outer runs ELSE');
@@ -791,7 +848,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     }
     s.push(v);
   }
-  assert(s.depth === 1 && s.peek().type === 'string' &&
+  assert(s.depth === 3 && s.peek().type === 'string' &&
          s.peek().value === 'Infinite result',
          'parsed IFERR/THEN/ELSE/END picks ERRM on error');
 }
@@ -806,7 +863,8 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   // Outer trap: bind name NOPE, RCL it → "Undefined name: NOPE".  Inside
   // outer's THEN clause: an inner IFERR deliberately triggers 1/0, reads
   // ERRM into the stack, and the outer's THEN then reads its own ERRM.
-  // Expected top-of-stack after evaluation:
+  // Expected top-of-stack after evaluation (the failed RCL gave 'NOPE' back and
+  // the failed / gave 1 and 0 back, below both messages):
   //   level 2: "Infinite result"   (inner's caught error)
   //   level 1: "Undefined name: NOPE"  (outer's caught error, preserved
   //            across the inner IFERR)
@@ -821,7 +879,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     Name('END'),
   ]));
   lookup('EVAL').fn(s);
-  assert(s.depth === 2 &&
+  assert(s.depth === 5 &&
          s.peek(2).value === 'Infinite result' &&
          s.peek(1).value === 'Undefined name: NOPE',
          'nested IFERR: outer ERRM survives inner trap via last-error restore');
@@ -1137,7 +1195,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     Name('END'),
   ]));
   lookup('EVAL').fn(s);
-  assert(s.depth === 1 && s.peek().type === 'string' && s.peek().value === 'oops',
+  assert(s.depth === 2 && s.peek().type === 'string' && s.peek().value === 'oops',
     'session053: IFERR traps DOERR; ERRM returns the custom message');
 }
 
@@ -2172,7 +2230,7 @@ function collectSymLeaves(node, out) {
     ]),
   ]));
   lookup('EVAL').fn(s);
-  assert(s.depth === 1 && s.peek().value === 7n,
+  assert(s.depth === 3 && s.peek().value === 7n,
     'session073: outer → local still visible after nested RPLError unwinds IFERR');
 }
 
@@ -2514,7 +2572,7 @@ function collectSymLeaves(node, out) {
     Str('caught'),
   ]));
   lookup('EVAL').fn(s);
-  assert(s.depth === 1 && s.peek().type === 'string' && s.peek().value === 'caught',
+  assert(s.depth === 3 && s.peek().type === 'string' && s.peek().value === 'caught',
     'session077: IFERR auto-closes without END; THEN clause fires on throw');
 }
 
@@ -2565,8 +2623,8 @@ function collectSymLeaves(node, out) {
     Str('ok'),
   ]));
   lookup('EVAL').fn(s);
-  // THEN runs with post-error snapshot restored — "err" only.
-  assert(s.depth === 1 && s.peek().value === 'err',
+  // THEN runs above the failed / and its arguments.
+  assert(s.depth === 3 && s.peek().value === 'err',
     'session077: IFERR/THEN/ELSE auto-close picks THEN clause on error');
 }
 
@@ -2606,7 +2664,7 @@ function collectSymLeaves(node, out) {
     Integer(99n), Integer(100n), Name('*'),
   ]));
   lookup('EVAL').fn(s);
-  assert(s.depth === 1 && s.peek().value === 9900n,
+  assert(s.depth === 3 && s.peek().value === 9900n,
     'session077: IFERR auto-close absorbs trailing tokens into the handler clause');
 }
 
@@ -2622,7 +2680,7 @@ function collectSymLeaves(node, out) {
     }
     s.push(v);
   }
-  assert(s.depth === 1 && s.peek().type === 'string' &&
+  assert(s.depth === 3 && s.peek().type === 'string' &&
          s.peek().value === 'Infinite result',
     'session077: parsed source `<< IFERR 1 0 / THEN ERRM >>` auto-closes and runs');
 }
@@ -6138,9 +6196,9 @@ for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
   lookup('EVAL').fn(s);
   assert(getHalted() !== null,
     'session141: HALT in IFERR THEN suspends');
-  // Stack rolled back to pre-IFERR state (10) before THEN started.
-  assert(s.depth === 1 && s.peek().value === 10n,
-    'session141: HALT-in-IFERR-THEN sees the rolled-back trap stack');
+  // The failed / gave its arguments back, so THEN starts above 10 1 0.
+  assert(s.depth === 3 && s.peek(3).value === 10n,
+    'session141: HALT-in-IFERR-THEN sees the failing command\'s arguments');
   // last-error is the trapped error during the halt window — the
   // restoreLastError in runIfErr's finally has NOT run yet (yield is
   // not a return).  ERRM / ERRN / ERR0 inside the resumed THEN body
@@ -6155,9 +6213,9 @@ for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
   // last-error (null on entry — there was no outer error).
   assert(getLastError() === null,
     'session141: IFERR finally restores outer last-error after CONT');
-  assert(s.depth === 2 && s.peek().value === 99n,
+  assert(s.depth === 4 && s.peek().value === 99n,
     'session141: HALT-in-THEN CONT pushes the post-HALT 99');
-  assert(s.peek(2).value === 10n,
+  assert(s.peek(4).value === 10n,
     'session141: pre-IFERR stack preserved beneath THEN result');
   assert(localFramesDepth() === 0,
     'session141: HALT-in-IFERR-THEN leaves no local-frame leak');
@@ -6210,14 +6268,14 @@ for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
   const banner = getPromptMessage();
   assert(banner && banner.type === 'string' && banner.value === 'wait',
     'session141: PROMPT-in-THEN banner is the popped message');
-  assert(s.depth === 0,
-    'session141: PROMPT-in-THEN consumed the message before yield');
+  assert(s.depth === 2,
+    'session141: PROMPT-in-THEN consumed the message before yield (the failed / left 1 0)');
   lookup('CONT').fn(s);
   assert(getHalted() === null,
     'session141: CONT after PROMPT-in-THEN completes the program');
   assert(getPromptMessage() === null,
     'session141: CONT clears the PROMPT banner');
-  assert(s.depth === 1 && s.peek().value === 99n,
+  assert(s.depth === 3 && s.peek().value === 99n,
     'session141: PROMPT-in-THEN CONT pushes the post-PROMPT 99');
   assert(getLastError() === null,
     'session141: IFERR finally restores outer last-error after PROMPT/CONT');
@@ -6254,8 +6312,8 @@ for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
   resetHome(); clearAllHalted();
   const s = new Stack();
   // « 5 IFERR HALT "boom" DOERR THEN 7 END »
-  // Trap halts → CONT resumes → DOERR throws → catch → stack rolls
-  // back to pre-IFERR (5) → THEN runs (push 7).
+  // Trap halts → CONT resumes → DOERR throws and gives "boom" back → catch →
+  // THEN runs (push 7).
   s.push(Program([
     Integer(5),
     Name('IFERR'), Name('HALT'), Str('boom'), Name('DOERR'),
@@ -6270,10 +6328,10 @@ for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
   lookup('CONT').fn(s);
   assert(getHalted() === null,
     'session141: CONT runs DOERR → catch → THEN to completion');
-  assert(s.depth === 2 && s.peek().value === 7n,
+  assert(s.depth === 3 && s.peek().value === 7n,
     'session141: post-HALT DOERR triggered THEN clause');
-  assert(s.peek(2).value === 5n,
-    'session141: catch rolled back trap residue → 5 preserved');
+  assert(s.peek(3).value === 5n,
+    'session141: the stack below the trap → 5 preserved');
   assert(getLastError() === null,
     'session141: outer last-error restored after THEN finishes');
 }
@@ -6324,9 +6382,9 @@ for (const inner of ['THEN', 'ELSE', 'REPEAT', 'UNTIL']) {
   lookup('CONT').fn(s);
   assert(getHalted() === null,
     'session141: CONT completes auto-closed IFERR THEN after HALT');
-  assert(s.depth === 2 && s.peek().value === 7n,
+  assert(s.depth === 4 && s.peek().value === 7n,
     'session141: auto-closed THEN CONT pushes the post-HALT 7');
-  assert(s.peek(2).value === 10n,
+  assert(s.peek(4).value === 10n,
     'session141: pre-IFERR stack preserved beneath auto-closed THEN result');
   assert(getLastError() === null,
     'session141: auto-closed IFERR finally restores outer last-error');

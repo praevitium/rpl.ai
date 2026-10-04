@@ -957,17 +957,30 @@ function* _callGlobal(s, bound, depth, isSubProgram = true) {
 
 
 // Prefixes op errors with the command name (`+: Too few arguments`) unless the
-// message already carries one.
+// message already carries one.  In an IFERR trap clause the command that fails
+// first gives its arguments back, as the AUR describes; the error is then marked
+// settled (keepsTrapStack), so an EVAL or IFT running it leaves the stack there.
 function _dispatchOp(op, s, name) {
+  const before = s.trapDepth > 0 ? s.save() : null;
   try {
     op.fn(s);
   } catch (e) {
+    if (before && e instanceof RPLError && !e.argsReturned) {
+      s.restore(before);
+      e.argsReturned = true;
+    }
     if (e instanceof RPLError && !/^[^\s:]+:\s/.test(e.message)) {
-      throw new RPLError(`${name}: ${e.message}`);
+      const named = new RPLError(`${name}: ${e.message}`);
+      named.argsReturned = e.argsReturned;
+      throw named;
     }
     throw e;
   }
 }
+
+// Outside a trap a failing EVAL or IFT puts the stack back as it found it; inside
+// one, the failing command's arguments are what the trap's handler should see.
+export const keepsTrapStack = (e) => e instanceof RPLAbort || e.argsReturned === true;
 
 
 function* runControl(s, toks, i, depth) {
@@ -1081,24 +1094,26 @@ function* runIf(s, toks, openIdx, depth) {
 }
 
 
-// IFERR trap THEN handler [ELSE normal] END.  A caught RPLError rolls the stack
-// back to IFERR entry and is visible to ERRM / ERRN only inside the handler, so
-// an outer trap keeps its own error.  ABORT and internal errors pass through.
+// IFERR trap THEN handler [ELSE normal] END.  A caught RPLError leaves the stack
+// as the failing command found it, with that command's arguments back on it, and
+// is visible to ERRM / ERRN only inside the handler, so an outer trap keeps its
+// own error.  ABORT and internal errors pass through.
 function* runIfErr(s, toks, openIdx, depth) {
   const thenIdx = _scanRequired(toks, openIdx + 1, 'THEN', 'IFERR without THEN');
   const { elseIdx, endIdx } = _scanElseEnd(toks, thenIdx, 'IFERR');
-  const snap = s.save();
   const savedOuterError = getLastError();
   let caught = null;
+  s.trapDepth++;
   try {
     yield* evalRange(s, toks, openIdx + 1, thenIdx, depth + 1);
   } catch (e) {
     if (!(e instanceof RPLError)) throw e;
     caught = e;
+  } finally {
+    s.trapDepth--;
   }
 
   if (caught) {
-    s.restore(snap);
     setLastError(caught);
     try {
       yield* evalRange(s, toks, thenIdx + 1, (elseIdx >= 0 ? elseIdx : endIdx), depth + 1);
@@ -1120,7 +1135,7 @@ export function* runIft(s, depth) {
     const [test, action] = s.popN(2);
     if (isTruthy(test)) yield* _evalValueGen(s, action, depth + 1);
   } catch (e) {
-    if (!(e instanceof RPLAbort)) s.restore(snap);
+    if (!keepsTrapStack(e)) s.restore(snap);
     throw e;
   }
 }
@@ -1132,7 +1147,7 @@ export function* runIfte(s, depth) {
     const [test, tAction, fAction] = s.popN(3);
     yield* _evalValueGen(s, isTruthy(test) ? tAction : fAction, depth + 1);
   } catch (e) {
-    if (!(e instanceof RPLAbort)) s.restore(snap);
+    if (!keepsTrapStack(e)) s.restore(snap);
     throw e;
   }
 }

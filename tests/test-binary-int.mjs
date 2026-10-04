@@ -299,7 +299,7 @@ setBinaryBase(null);
     Name('END'),
   ]));
   lookup('EVAL').fn(s);
-  assert(s.depth === 1 && isBinaryInteger(s.peek()) &&
+  assert(s.depth === 3 && isBinaryInteger(s.peek()) &&
          s.peek().value === 0x303n && s.peek().base === 'h',
          `BinInt / 0 → ERRN = #303h (got ${s.peek().value.toString(16)}h)`);
   resetBinaryState();

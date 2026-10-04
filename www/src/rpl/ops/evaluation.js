@@ -2,7 +2,7 @@ import { setApproxMode, getApproxMode, getLastError, clearLastError } from '../s
 import { RPLAbort, RPLError } from '../stack.js';
 import { Str, BinaryInteger, isInteger, isBinaryInteger, isReal, Program, isString, Integer } from '../types.js';
 import { register } from './registry.js';
-import { _driveGen, _evalValueGen, _toCountN, runIft, runIfte, runSuspendable } from './internal.js';
+import { _driveGen, _evalValueGen, _toCountN, keepsTrapStack, runIft, runIfte, runSuspendable } from './internal.js';
 
 
 
@@ -14,7 +14,7 @@ function evalOp(s) {
   try {
     runSuspendable(_evalValueGen(s, v, 0, false));
   } catch (e) {
-    if (!(e instanceof RPLAbort)) s.restore(snap);
+    if (!keepsTrapStack(e)) s.restore(snap);
     throw e;
   }
 }
@@ -45,7 +45,7 @@ function driveRestoring(s, gen, caller) {
   try {
     _driveGen(gen, caller);
   } catch (e) {
-    if (!(e instanceof RPLAbort)) s.restore(snap);
+    if (!keepsTrapStack(e)) s.restore(snap);
     throw e;
   }
 }
