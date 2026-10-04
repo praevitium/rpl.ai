@@ -1,7 +1,7 @@
 import { lookup } from '../rpl/ops.js';
 import { loadCommandReference, findReferenceEntry, shortDescription } from './command-reference.js';
 
-const WORD_BREAK = /[\s{}[\]()"`«»,]/;
+const WORD_BREAK = /[\s{}[\]()"`'«»,]/;
 const HOVER_DELAY_MS = 400;
 
 export function commandWordAt(text, pos) {

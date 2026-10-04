@@ -1738,3 +1738,40 @@ resetBinaryState();
   e.backspace();
   assert(e.buffer === 'ab', 'backspace with no selection still deletes one character');
 }
+
+/* The HP 50g quotes with apostrophes; the ` key stands in for its ' key, and the command line reads either. */
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const { endsInQuote } = await import('../www/src/rpl/parser.js');
+  const { formatAlgebra } = await import('../www/src/rpl/algebra.js');
+  const one = (src) => parseEntry(src)[0];
+  assert(isSymbolic(one("'X^2+1'")) && formatAlgebra(one("'X^2+1'").expr) === formatAlgebra(one('`X^2+1`').expr),
+    "an algebraic in apostrophes is the same Symbolic as in backticks: 'X^2+1'");
+  assert(isName(one("'A'")) && one("'A'").quoted && one("'A'").id === 'A', "'A' is a quoted Name");
+  assert(parseEntry("'X + 1' 'Y'").length === 2 && isSymbolic(one("'X + 1'")), 'an apostrophe algebraic may hold spaces and be followed by another object');
+  assert(parseEntry("{ 'A' 'B' } 5_m'C'").map((v) => v.type).join() === 'list,unit,name' && parseEntry('A\'B\'').map((v) => v.type).join() === 'name,name',
+    'an apostrophe ends a unit or a name without a space before it');
+  assert(isName(one('`A\'B`')) && one('`A\'B`').id === "A'B", 'an apostrophe inside backticks is part of the quoted text');
+  assert(isSymbolic(one("'X+1")) && parseEntry("'").length === 1, 'an unclosed apostrophe closes at the end of the line, as an unclosed backtick does');
+  assert(parseEntry('"it\'s" \'Z\'').map((v) => v.type).join() === 'string,name' && parseEntry("@ it's\n'Z'").length === 1,
+    'an apostrophe inside a string or a comment is ordinary text');
+
+  const s = new Stack();
+  const run = (src) => { const e = new Entry(s); e.buffer = src; e.enter(); return e; };
+  run("5 'A' STO");
+  run("'A+1' EVAL");
+  assert(s.depth === 1 && s.peek().value === 6n, "typed on the command line, 5 'A' STO then 'A+1' EVAL gives 6");
+
+  assert(endsInQuote("'X") && endsInQuote('`X') && !endsInQuote("'X'") && !endsInQuote('`X`') && endsInQuote("'X` "),
+    'endsInQuote: a quote opened with either character stays open until that same character');
+  assert(!endsInQuote('"it\'s"') && !endsInQuote("@ it's") && endsInQuote("\"a\" 'X") && endsInQuote("2 'SI"),
+    'endsInQuote: apostrophes in strings and comments do not open a quote');
+  const e = new Entry(new Stack());
+  e.buffer = "'X^2+";
+  e.cursor = e.buffer.length;
+  e.typeOrExecFn('SIN');
+  assert(e.buffer === "'X^2+SIN(", 'a function key inside an apostrophe quote types its name');
+  e.buffer = "'X' ";
+  e.cursor = e.buffer.length;
+  assert(e.isAlgebraic() === false, 'after the closing apostrophe the line is no longer algebraic');
+}

@@ -1,4 +1,4 @@
-import { parseEntry } from '../rpl/parser.js';
+import { parseEntry, endsInQuote } from '../rpl/parser.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
 import { spreadsheetToSource, htmlTableToSource } from '../rpl/sheet.js';
 import { lookup, isProgramLine, runProgramLine } from '../rpl/ops.js';
@@ -178,9 +178,7 @@ export class Entry {
   }
 
   isAlgebraic() {
-    let count = 0;
-    for (const ch of this.buffer) if (ch === '`') count++;
-    return (count % 2) === 1;
+    return endsInQuote(this.buffer);
   }
 
   isEditing() {

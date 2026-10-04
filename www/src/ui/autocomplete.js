@@ -1,4 +1,5 @@
 import { allOps } from '../rpl/ops.js';
+import { endsInQuote } from '../rpl/parser.js';
 import { varOrder, varRecall } from '../rpl/state.js';
 import { shortDescription } from './command-reference.js';
 import { fuzzyScore, matchPositions, highlightSegments } from './op-search.js';
@@ -40,7 +41,7 @@ export function completions(word, { names = [], variables = [] } = {}) {
 }
 
 export function isInsideAlgebraic(text, offset) {
-  return (String(text ?? '').slice(0, offset).match(/[`']/g) ?? []).length % 2 === 1;
+  return endsInQuote(String(text ?? '').slice(0, offset));
 }
 
 export class Autocomplete {

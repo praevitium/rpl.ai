@@ -3782,7 +3782,7 @@ function _approxMatEqual(A, B, tol) {
   assert(thirdDet.type === 'rational' && thirdDet.n === 1n && thirdDet.d === 8n, 'DET of a 3×3 matrix of exact fractions stays an exact fraction');
   const { evalScratch } = await import('../www/src/rpl/scratch.js');
   const symbolic = evalScratch("[[ 'A' 'B' 'C' ][ 'D' 'E' 'F' ][ 'G' 'H' 'I' ]] DET").stack[0];
-  assert(!symbolic.includes('/') && symbolic.startsWith("`'A'*("), 'DET of a symbolic 3×3 is the cofactor polynomial, not a fraction');
+  assert(symbolic === '`A*(E*I - F*H) - B*(D*I - F*G) + C*(D*H - E*G)`', 'DET of a symbolic 3×3 is the cofactor polynomial, not a fraction');
 
   const started = Date.now();
   const identity = run('IDN', Integer(3n));

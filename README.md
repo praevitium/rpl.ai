@@ -81,8 +81,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   (or type `*` and Enter) for `360`. A whole line works too:
   `2 3 + 4 *` gives `20`. Fractions stay exact: `1/3 2/5 +` gives `11/15`.
 - **Algebra.** Push `` `X^2-4` `` and run `FACTOR` for `(X−2)(X+2)`, or
-  `` `X^2-5*X+6=0` `X` SOLVE `` for `{ X=2 X=3 }`. Or press `⌘E`, type
-  `x^2-5x+6=0`, and click the Solve card.
+  `` `X^2-5*X+6=0` `X` SOLVE `` for `{ X=2 X=3 }`. The ` key stands in for
+  the HP's ' key, and the command line reads apostrophes too: `'X^2-4'`
+  is the same object. Or press `⌘E`, type `x^2-5x+6=0`, and click the Solve
+  card.
 - **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
   then gives `25`, and SQUARE appears on the VARS menu. A stored program
   runs by name like a built-in. Built-in names such as `SQ` are reserved.

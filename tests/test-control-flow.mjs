@@ -5568,10 +5568,8 @@ const { getPromptMessage, clearPromptMessage }
 {
   resetHome();
   const s = new Stack();
-  // Stack-based version (no quoted names — Program-body parser leaves
-  // tick-quoted names with the apostrophes baked into the id; we use
-  // pure stack-effect logic instead, which is closed-over by the
-  // auto-close path the same way):
+  // Stack-based version (no quoted names; pure stack-effect logic is
+  // closed-over by the auto-close path the same way):
   // Stack starts empty; the program puts 0 on the stack and increments
   // until DUP < 4 is false → final value 4.  The outer `>>` is
   // intentionally missing — the program parser auto-closes; the inner

@@ -98,10 +98,10 @@ function tokenize(src) {
       i = j; continue;
     }
 
-    // The HP50 quotes with apostrophes; backticks leave ' free as an ordinary character.
-    if (c === '`') {
+    // The HP50 quotes with apostrophes; the ` key stands in for its ' key, and either closes its own kind.
+    if (c === '`' || c === "'") {
       let j = i + 1, sym = '';
-      while (j < n && src[j] !== '`') sym += src[j++];
+      while (j < n && src[j] !== c) sym += src[j++];
       tokens.push({ kind: 'quotedName', text: sym });
       i = (j < n) ? j + 1 : n; continue;
     }
@@ -128,7 +128,7 @@ function tokenize(src) {
         i++;
         let j = i;
         // A program closer ends the unit (1_m»), but parentheses stay in it: kg/(m*s).
-        while (j < n && !isSpace(src[j]) && !'{}[]"`«»'.includes(src[j])) {
+        while (j < n && !isSpace(src[j]) && !'{}[]"`\'«»'.includes(src[j])) {
           if ((src[j] === '<' && src[j + 1] === '<') ||
               (src[j] === '>' && src[j + 1] === '>')) break;
           j++;
@@ -161,7 +161,7 @@ function tokenize(src) {
     // Parentheses end an identifier, so an unquoted SIN(x) splits instead of
     // minting a bogus Name; an embedded << or >> closes the program (X>>).
     let j = i;
-    while (j < n && !isSpace(src[j]) && !'{}[]()"`«»'.includes(src[j])) {
+    while (j < n && !isSpace(src[j]) && !'{}[]()"`\'«»'.includes(src[j])) {
       if (j > i && ((src[j] === '<' && src[j + 1] === '<') ||
                     (src[j] === '>' && src[j + 1] === '>'))) break;
       j++;
@@ -172,8 +172,26 @@ function tokenize(src) {
   return tokens;
 }
 
+// Whether src ends inside an open quote, where a function key types NAME( instead of running.
+export function endsInQuote(src) {
+  let quote = null;
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (quote) {
+      if (c === quote) quote = null;
+    } else if (c === '`' || c === "'") {
+      quote = c;
+    } else if (c === '"') {
+      for (i++; i < src.length && src[i] !== '"'; i++) if (src[i] === '\\') i++;
+    } else if (c === '@') {
+      while (i < src.length && src[i] !== '\n' && src[i] !== '\r') i++;
+    }
+  }
+  return quote !== null;
+}
+
 /** One value per top-level object, in entry order.  Unclosed brackets,
- *  strings and backticks close at the end of the input. */
+ *  strings and quotes close at the end of the input. */
 export function parseEntry(src) {
   const toks = tokenize(src);
   let idx = 0;
