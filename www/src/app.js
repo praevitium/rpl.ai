@@ -1061,12 +1061,10 @@ class App {
       onPressL: () => this.entry.typeToken(`${name} `),
       onPressR: () => this.drawers.showReference(name),
     }));
-    if (family.id === 'UNITS') {
-      for (const group of UNIT_GROUPS) {
-        slots.push({ label: group.id, title: `${group.title}: ${group.units.length} units`, onPress: () => this._showUnitMenu(group) });
-      }
-    }
-    this.setMenu(slots, family.id);
+    const groups = family.id === 'UNITS'
+      ? UNIT_GROUPS.map((group) => ({ label: group.id, title: `${group.title}: ${group.units.length} units`, onPress: () => this._showUnitMenu(group) }))
+      : [];
+    this.setMenu([...groups, ...slots], family.id);
   }
 
   _showUnitMenu(group) {
