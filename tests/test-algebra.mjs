@@ -312,6 +312,14 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(call.kind === 'fn' && call.name === 'foo' && call.args.length === 2 && formatAlgebra(call) === 'foo(X,2)',
     'parseAlgebra(foo(X,2)) is a call to the user function foo, case kept');
   assertThrows(() => parseAlgebra('SIN(X,2)'), /SIN expects 1/, 'a built-in function still checks its number of arguments');
+  const ifte = parseAlgebra('IFTE(X<=1,1,X*2)');
+  assert(ifte.kind === 'fn' && ifte.name === 'IFTE' && ifte.args[0].op === '≤' && formatAlgebra(ifte) === 'IFTE(X≤1,1,X*2)',
+    'parseAlgebra reads a comparison as a function argument, as IFTE needs');
+  assertThrows(() => parseAlgebra('(X=Y)+1'), null, 'a comparison inside parentheses is still refused');
+  let calls = 0;
+  const counted = (name, args) => { calls++; return null; };
+  const picked = evalAst(parseAlgebra('IFTE(2>1,5,UNDEF(3))'), () => undefined, counted);
+  assert(picked.kind === 'num' && picked.value === 5 && calls === 0, 'evalAst works out only the IFTE branch its test picks');
 }
 
 // parseAlgebra accepts `SIN(X` as `SIN(X)` — mirrors parser.js's

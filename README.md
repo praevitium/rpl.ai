@@ -93,7 +93,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
 - **User functions.** `'F(X)=X^2+1' DEFINE` stores `« → X 'X^2+1' »` in F, as
   on the HP 50g. Then `'F(3)' EVAL` gives `10`, `'F(A+1)' EVAL` gives
   `(A+1)^2+1`, and `'F(X)'` plots. Any stored program can be called this way
-  inside an algebraic.
+  inside an algebraic. IFTE picks a branch inside an algebraic too, so a
+  function can call itself: `'R(N)=IFTE(N<=1,1,N*R(N-1))' DEFINE` then
+  `'R(10)' EVAL` gives `3628800`.
 - **Units.** `100_km 2_h /` gives `50._km/h`; then `1_m/s CONVERT` gives
   `13.8888888889_m/s`. SI prefixes work on SI units (`5_kJ`, `1_MHz`,
   `3_uA`), and a bare `°C` or `°F` converts as a thermometer reading:

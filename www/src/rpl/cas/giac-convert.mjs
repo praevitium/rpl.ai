@@ -73,6 +73,7 @@ const HP_TO_GIAC = Object.freeze({
   ARG: "arg", CONJ: "conj",
   DERIV: "diff",
   "Σ": "sum",
+  IFTE: "ifte",
   CEIL: "ceil",
   EXPM: "expm1",
   HEAVISIDE: "Heaviside", DIRAC: "Dirac",

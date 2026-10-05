@@ -137,6 +137,8 @@ export const KNOWN_FUNCTIONS = Object.freeze({
     return Number.isInteger(x) && x % 2 !== 0 ? -Math.pow(-y, 1 / x) : null;
   } },
   SUM:   { arity: 1 },
+  // Evaluated lazily by evalAst: only the branch the test picks is worked out.
+  IFTE:  { arity: 3 },
   INTEG: { },
   DERIV: { arity: 2 },
   'Σ':   { arity: 4 },
@@ -229,7 +231,8 @@ export function isKnownFunction(name) {
 }
 
 // Throws on malformed input, and parser.js then keeps the text as a quoted
-// Name.  A comparison is only read at the top level, so (X=Y)+1 is refused.
+// Name.  A comparison is read at the top level and as a function argument,
+// as in IFTE(X>0,X,-X), so (X=Y)+1 is still refused.
 export function parseAlgebra(src) {
   const s = String(src);
   let i = 0;
@@ -343,11 +346,11 @@ export function parseAlgebra(src) {
       if (s[i] === '(') {
         i++;
         const args = [];
-        args.push(parseE());
+        args.push(parseEq());
         skip();
         while (s[i] === ',') {
           i++;
-          args.push(parseE());
+          args.push(parseEq());
           skip();
         }
         expect(')');
@@ -423,6 +426,7 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
     return Number.isFinite(gated) ? approxNum(gated, false) : Bin(ast.op, l, r);
   }
   if (ast.kind === 'fn') {
+    if (ast.name === 'IFTE' && ast.args.length === 3) return evalIfte(ast.args, lookup, fnEval, binGate);
     const sum = ast.name === 'Σ' ? evalSum(ast.args, lookup, fnEval, binGate) : null;
     if (sum) return sum;
     const evaldArgs = ast.args.map(a => evalAst(a, lookup, fnEval, binGate));
@@ -435,6 +439,14 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
     return Fn(ast.name, evaldArgs);
   }
   return ast;
+}
+
+// A test that folds to a number picks one branch, which is all that is worked
+// out, so a recursive user function stops at its base case.
+function evalIfte([test, then, otherwise], lookup, fnEval, binGate) {
+  const t = evalAst(test, lookup, fnEval, binGate);
+  if (isNum(t)) return evalAst(t.value !== 0 ? then : otherwise, lookup, fnEval, binGate);
+  return Fn('IFTE', [t, then, otherwise]);
 }
 
 const SUM_TERMS_MAX = 100000;

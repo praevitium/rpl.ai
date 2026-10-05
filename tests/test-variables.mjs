@@ -2007,3 +2007,18 @@ clearAllUserFlags();
   assert(line('`U(X)` EVAL') === '`U(X)`', 'a call to a name with no program stays symbolic');
   resetHome();
 }
+
+{
+  resetHome();
+  const s = new Stack();
+  const line = (src) => { runLine(src, s); const out = s.snapshot().reverse().map((v) => formatSource(v)).join(' '); while (s.depth) s.pop(); return out; };
+  line('`R(N)=IFTE(N<=1,1,N*R(N-1))` DEFINE');
+  assert(line('`R(5)` EVAL') === '120' && line('`R(25)` EVAL') === '15511210043330985984000000',
+    'a user function can recurse through IFTE, and stays exact past 2^53');
+  line('`FIB(N)=IFTE(N<2,N,FIB(N-1)+FIB(N-2))` DEFINE');
+  assert(line('`FIB(15)` EVAL') === '610', 'a doubly recursive user function');
+  assert(line('`R(Z)` EVAL') === '`IFTE(Z≤1,1,Z*R(Z - 1))`', 'with a symbolic argument the definition unfolds once and stops');
+  assert(line('-3 `X` STO `IFTE(X>0,X,-X)` EVAL') === '3' && line('`IFTE(Y>0,Y,-Y)` EVAL') === '`IFTE(Y>0,Y,-Y)`',
+    'IFTE in an algebraic picks a branch when its test folds, and stays symbolic when it does not');
+  resetHome();
+}
