@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.15 (2026-10-04)
+**Latest release:** v0.6.16 (2026-10-05)
 
 ---
 
@@ -20,6 +20,35 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.16 — 2026-10-05
+
+The whole HP 50g unit catalog. The units the app still lacked are added: `Å`,
+`fermi`, the micron `μ`, `ftUS`, `miUS`, `chain`, `rd`, `fath`, `Mpc` and
+`lyr`; the are `a` and the barn `b`; `st`, `galC`, `ozUK`, `cu`, `bu`, `pk`
+and `fbm`; `c` and `ga`; `t`, `tonUK` and `u`; `gf` and `pdl`; `Kcal` and
+`therm`; `inH2O`; `Fdy` and `mho`; `ph`, `fc`, `sb`, `flam` and `lam`; `rad`,
+`rem`, `Ci` and `R`; and the poise `P` and stokes `St`, which take prefixes,
+so `1_cP` and `1_cSt` work. The UNITS menu gains the VISC category, and the
+other categories gain their new keys. Definitions follow the current standards
+where the HP's table predates them, so the therm is 100,000 Btu and the
+faraday is 96485.3321233 C.
+
+Units that cancel leave a number. A literal such as `1_m/m` made a unit object
+that showed `1.` but that `+` refused; it is now the real number 1, as `2_m
+2_m /` already gave.
+
+IFTE in algebraics. `'IFTE(X>0,X,-X)'` works inside an algebraic, in plots and
+in the equation writer, and only the branch the test picks is worked out. A
+comparison may now be a function argument, so a DEFINE'd function can call
+itself: `'R(N)=IFTE(N<=1,1,N*R(N-1))' DEFINE` then `'R(25)' EVAL` gives
+15511210043330985984000000, exactly.
+
+Three equation writer slips are fixed. `x=3=4` is refused with a message where
+the writer quietly pushed `x=3`; digits typed after a name join it, so `x1` is
+a name, as on the HP, rather than `x*1`; and a number ending in a point, such
+as `3.`, is the real it spells instead of an incomplete box. `2 EEX 3` is now
+the real `2000.`, as `2E3` is on the command line.
 
 ## v0.6.15 — 2026-10-04
 
