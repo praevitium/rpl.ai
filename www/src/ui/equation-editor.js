@@ -501,10 +501,8 @@ function itemToAst(item) {
   if (item.t === 'num') {
     const text = item.text;
     if (/^\d+$/.test(text)) return Num(BigInt(text));
-    if (!/^\d*\.?\d+(?:E-?\d+)?$/i.test(text) || /E-?$/.test(text) || text === '' || text === '.') {
-      throw new RPLError('Incomplete Subexpression');
-    }
-    return Num(Number(text));
+    if (!/^(?:\d+\.?\d*|\.\d+)(?:E-?\d+)?$/i.test(text)) throw new RPLError('Incomplete Subexpression');
+    return Num(Number(text), true);
   }
   if (item.t === 'name') return Var(item.text);
   if (item.t === 'paren' || item.t === 'neg') {
@@ -530,6 +528,9 @@ function itemToAst(item) {
 
 export function toAst(row) {
   if (!row || !row.length) throw new RPLError('Incomplete Subexpression');
+  if (row.filter((item) => item.t === 'op' && RELS.has(item.op)).length > 1) {
+    throw new RPLError('Only one = or comparison fits in an expression');
+  }
   return nodeToAst(row, parseRel(row, 0, row.length));
 }
 
@@ -870,6 +871,8 @@ function typeGlyph(state, text, kind) {
     if (next && /^\d*\.?\d*(?:E-?\d*)?$/.test(next)) return putLeaf(typed, numLeaf(next));
   }
   if (kind === 'name' && item.t === 'name') return putLeaf(typed, nameLeaf(item.text + text));
+  // A digit after a typed name joins it, so X1 is a name as on the HP, not X*1.
+  if (kind === 'num' && /^\d$/.test(text) && item.t === 'name' && /^[A-Za-z]/.test(item.text)) return putLeaf(typed, nameLeaf(item.text + text));
   return implicitMul(typed, leaf);
 }
 

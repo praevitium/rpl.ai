@@ -471,3 +471,15 @@ function replaceSelection(state, ast) {
   assert(typed(['x', 'yˣ', '2', '×', 'n']) === 'x^(2*n)' && typed(['x', 'yˣ', '( )', 'n', '+', '1', ')']) === 'x^(n + 1)',
     'equation writer: × and a group keep typing inside the exponent');
 }
+
+{
+  assertThrows(() => toAst(press(emptyEquation(), 'x', '=', '3', '=', '4').root), /Only one = or comparison/,
+    'EQW refuses x=3=4 instead of pushing x=3');
+  assert(textOf(press(emptyEquation(), 'x', '1')) === 'x1' && textOf(press(emptyEquation(), 'x', '1', '2', '+', 'y')) === 'x12 + y',
+    'EQW digits typed after a name join it, so x1 is a name as on the HP, not x*1');
+  assert(textOf(press(emptyEquation(), '2', 'x')) === '2*x', 'EQW a name typed after a number still multiplies');
+  const point = toAst(press(emptyEquation(), '3', '.').root);
+  assert(point.kind === 'num' && point.value === 3 && point.real === true, 'EQW a number ending in a point is the real 3.');
+  const eex = toAst(press(emptyEquation(), '2', 'EEX', '3').root);
+  assert(eex.kind === 'num' && eex.value === 2000 && eex.real === true, 'EQW 2 EEX 3 is the real 2000., as 2E3 is on the command line');
+}
