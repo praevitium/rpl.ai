@@ -291,15 +291,15 @@ import { assert, assertThrows } from './helpers.mjs';
                                              'CATEGORIES: unit-insert buttons are confined to the Units category');
 
   const unitKeys = UNIT_GROUPS.flatMap((g) => g.units);
-  assert(UNIT_GROUPS.length === 15 && new Set(UNIT_GROUPS.map((g) => g.id)).size === 15 && UNIT_GROUPS.every((g) => /^[A-Z]{3,5}$/.test(g.id) && g.title && g.units.length >= 3),
-    'UNIT_GROUPS: fifteen groups with HP-style soft key names, titles and at least three units each');
+  assert(UNIT_GROUPS.length === 16 && new Set(UNIT_GROUPS.map((g) => g.id)).size === 16 && UNIT_GROUPS.every((g) => /^[A-Z]{3,5}$/.test(g.id) && g.title && g.units.length >= 3),
+    'UNIT_GROUPS: the HP 50g\'s sixteen groups, with soft key names, titles and at least three units each');
   assert(new Set(unitKeys).size === unitKeys.length, 'UNIT_GROUPS: no unit key appears in two groups');
   assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),
     'UNIT_GROUPS: every key makes a unit object when attached to a number');
-  const ONE_QUANTITY = ['LENG', 'AREA', 'VOL', 'SPEED', 'FORCE', 'ENRG', 'POWR', 'PRESS', 'TEMP'];
+  const ONE_QUANTITY = ['LENG', 'AREA', 'VOL', 'FORCE', 'ENRG', 'POWR', 'PRESS', 'TEMP'];
   const mixed = UNIT_GROUPS.filter((g) => ONE_QUANTITY.includes(g.id) && !g.units.every((key) => sameDims(parseUnitExpr(key), parseUnitExpr(g.units[0])))).map((g) => g.id);
-  assert(mixed.length === 0, `UNIT_GROUPS: the keys of a length, area, volume, speed, force, energy, power, pressure or temperature group all measure it (got ${mixed})`);
-  const ALIASES_OF_KEYS = ['ohm', 'l', 'degC', 'degF', 'degR'];
+  assert(mixed.length === 0, `UNIT_GROUPS: the keys of a length, area, volume, force, energy, power, pressure or temperature group all measure it (got ${mixed})`);
+  const ALIASES_OF_KEYS = ['ohm', 'l', 'degC', 'degF', 'degR', 'lyr', 'cu'];
   const unreachable = [...UNIT_CATALOG.keys()].filter((sym) => !unitKeys.includes(sym) && !ALIASES_OF_KEYS.includes(sym));
   assert(unreachable.length === 0, `UNIT_GROUPS: every catalog unit but an alias has a key (missing ${unreachable.join(', ')})`);
   assert(unitKeys.filter(unitInfo).every((key) => CATEGORIES.Units.includes(key)) && !unitKeys.some((key) => /[\/^]/.test(key) && CATEGORIES.Units.includes(key)),

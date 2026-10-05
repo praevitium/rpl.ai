@@ -698,3 +698,26 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assertThrows(() => runLine('1_s^-1 COS'), /Bad argument type/, 'COS of a frequency is Bad argument type');
   assertThrows(() => runLine('1_sr TAN'), /Bad argument type/, 'TAN of a solid angle is Bad argument type');
 }
+
+{
+  const line = (src) => runLine(src).snapshot().map((v) => formatSource(v)).join(' ');
+  const value = (src) => line(`${src} UVAL`);
+  const cases = [
+    ['1_Å 1_m CONVERT', '0.0000000001'], ['1_fermi 1_m CONVERT', '1E-15'], ['1_μ 1_μm CONVERT', '1.'], ['1_ftUS 1_ft CONVERT', '1.000002'],
+    ['1_miUS 1_m CONVERT', '1609.34721869'], ['1_chain 1_ftUS CONVERT', '66.'], ['1_rd 1_ftUS CONVERT', '16.5'], ['1_fath 1_ftUS CONVERT', '6.'],
+    ['1_Mpc 1_pc CONVERT', '1000000.'], ['1_lyr 1_ly CONVERT', '1.'], ['1_a 1_m^2 CONVERT', '100.'], ['1_b 1_m^2 CONVERT', '1E-28'],
+    ['1_galC 1_galUK CONVERT', '1.'], ['1_ozUK 1_mL CONVERT', '28.4130625'], ['1_cu 1_cup CONVERT', '1.'], ['1_bu 1_L CONVERT', '35.2390701669'],
+    ['4_pk 1_bu CONVERT', '1.'], ['1_fbm 1_in^3 CONVERT', '144.'], ['1_st 1_m^3 CONVERT', '1.'], ['1_c 1_m/s CONVERT', '299792458.'],
+    ['1_ga 1_m/s^2 CONVERT', '9.80665'], ['1_t 1_kg CONVERT', '1000.'], ['1_tonUK 1_lb CONVERT', '2240.'], ['1_u 1_kg CONVERT', '1.6605390666E-27'],
+    ['1_gf 1_N CONVERT', '0.00980665'], ['1_pdl 1_N CONVERT', '0.138254954376'], ['1_Kcal 1_cal CONVERT', '1000.'], ['1_therm 1_Btu CONVERT', '100000.'],
+    ['1_inH2O 1_Pa CONVERT', '248.84'], ['1_Fdy 1_C CONVERT', '96485.3321233'], ['1_mho 1_S CONVERT', '1.'], ['1_fc 1_lx CONVERT', '10.7639104167'],
+    ['1_ph 1_lx CONVERT', '10000.'], ['1_lam 1_cd/m^2 CONVERT', '3183.09886184'], ['1_rad 1_Gy CONVERT', '0.01'], ['1_rem 1_mSv CONVERT', '10.'],
+    ['1_Ci 1_GBq CONVERT', '37.'], ['1_mCi 1_Bq CONVERT', '37000000.'], ['1_R 1_C/kg CONVERT', '0.000258'], ['1_P 1_Pa*s CONVERT', '0.1'],
+    ['1_cP 1_mPa*s CONVERT', '1.'], ['1_St 1_m^2/s CONVERT', '0.0001'], ['1_cSt 1_mm^2/s CONVERT', '1.'],
+  ];
+  const wrong = cases.filter(([src, expected]) => value(src) !== expected).map(([src, expected]) => `${src} gave ${value(src)}, not ${expected}`);
+  assert(wrong.length === 0, `the rest of the HP 50g unit catalog converts as its table defines (${wrong.join('; ')})`);
+  assertThrows(() => runLine('1_P 1_St CONVERT'), /Inconsistent units/, 'dynamic and kinematic viscosity do not convert into each other');
+  assert(line('1_m/m') === '1.' && line('1_m/m TYPE') === '0.' && line('1_m/m 2 +') === '3.' && line('6_kg*m/(m*kg) 2 /') === '3.',
+    'units that cancel in a literal leave a plain real number, as 2_m 2_m / does');
+}

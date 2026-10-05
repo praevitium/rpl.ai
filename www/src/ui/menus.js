@@ -27,21 +27,22 @@ export const MENU_FAMILIES = Object.freeze([
 // The UNITS menu's keys, grouped and named as on the HP 50g. A key is any unit
 // expression the parser reads, which is how area and volume get squares and cubes.
 export const UNIT_GROUPS = Object.freeze([
-  { id: 'LENG', title: 'Length', units: ['m', 'cm', 'mm', 'km', 'μm', 'nm', 'in', 'ft', 'yd', 'mi', 'nmi', 'mil', 'au', 'ly', 'pc'] },
-  { id: 'AREA', title: 'Area', units: ['m^2', 'cm^2', 'mm^2', 'km^2', 'in^2', 'ft^2', 'yd^2', 'mi^2', 'ha', 'acre'] },
-  { id: 'VOL', title: 'Volume', units: ['m^3', 'cm^3', 'in^3', 'ft^3', 'L', 'mL', 'gal', 'qt', 'pt', 'cup', 'ozfl', 'tbsp', 'tsp', 'galUK', 'bbl'] },
+  { id: 'LENG', title: 'Length', units: ['m', 'cm', 'mm', 'km', 'μm', 'nm', 'in', 'ft', 'yd', 'mi', 'nmi', 'mil', 'au', 'ly', 'pc', 'Mpc', 'Å', 'fermi', 'μ', 'ftUS', 'miUS', 'chain', 'rd', 'fath'] },
+  { id: 'AREA', title: 'Area', units: ['m^2', 'cm^2', 'mm^2', 'km^2', 'in^2', 'ft^2', 'yd^2', 'mi^2', 'miUS^2', 'ha', 'a', 'acre', 'b'] },
+  { id: 'VOL', title: 'Volume', units: ['m^3', 'cm^3', 'in^3', 'ft^3', 'yd^3', 'L', 'mL', 'gal', 'qt', 'pt', 'cup', 'ozfl', 'tbsp', 'tsp', 'galUK', 'galC', 'ozUK', 'bbl', 'bu', 'pk', 'fbm', 'st'] },
   { id: 'TIME', title: 'Time', units: ['s', 'ms', 'us', 'ns', 'min', 'h', 'd', 'yr', 'Hz', 'kHz', 'MHz', 'GHz'] },
-  { id: 'SPEED', title: 'Speed', units: ['m/s', 'ft/s', 'kph', 'mph', 'knot'] },
-  { id: 'MASS', title: 'Mass and amount', units: ['kg', 'g', 'mg', 'lb', 'oz', 'ton', 'tonne', 'ct', 'grain', 'ozt', 'lbt', 'slug', 'mol'] },
-  { id: 'FORCE', title: 'Force', units: ['N', 'kN', 'lbf', 'kip', 'kgf', 'dyn'] },
-  { id: 'ENRG', title: 'Energy', units: ['J', 'kJ', 'MJ', 'cal', 'kcal', 'Btu', 'eV', 'Wh', 'kWh', 'erg', 'ftlbf'] },
+  { id: 'SPEED', title: 'Speed', units: ['m/s', 'cm/s', 'ft/s', 'kph', 'mph', 'knot', 'c', 'ga'] },
+  { id: 'MASS', title: 'Mass and amount', units: ['kg', 'g', 'mg', 'lb', 'oz', 'ton', 'tonUK', 'tonne', 't', 'ct', 'grain', 'ozt', 'lbt', 'slug', 'u', 'mol'] },
+  { id: 'FORCE', title: 'Force', units: ['N', 'kN', 'lbf', 'kip', 'kgf', 'gf', 'dyn', 'pdl'] },
+  { id: 'ENRG', title: 'Energy', units: ['J', 'kJ', 'MJ', 'cal', 'Kcal', 'Btu', 'eV', 'MeV', 'Wh', 'kWh', 'erg', 'ftlbf', 'therm'] },
   { id: 'POWR', title: 'Power', units: ['W', 'mW', 'kW', 'MW', 'GW', 'hp'] },
-  { id: 'PRESS', title: 'Pressure', units: ['Pa', 'hPa', 'kPa', 'MPa', 'bar', 'atm', 'psi', 'torr', 'mmHg', 'inHg'] },
+  { id: 'PRESS', title: 'Pressure', units: ['Pa', 'hPa', 'kPa', 'MPa', 'bar', 'atm', 'psi', 'torr', 'mmHg', 'inHg', 'inH2O'] },
   { id: 'TEMP', title: 'Temperature', units: ['K', '°C', '°F', '°R'] },
-  { id: 'ELEC', title: 'Electricity', units: ['A', 'mA', 'V', 'mV', 'kV', 'Ω', 'kΩ', 'MΩ', 'C', 'F', 'μF', 'nF', 'pF', 'H', 'mH', 'S', 'T', 'Wb'] },
+  { id: 'ELEC', title: 'Electricity', units: ['A', 'mA', 'V', 'mV', 'kV', 'Ω', 'kΩ', 'MΩ', 'C', 'Fdy', 'F', 'μF', 'nF', 'pF', 'H', 'mH', 'S', 'mho', 'T', 'Wb'] },
   { id: 'ANGL', title: 'Angle', units: ['°', 'r', 'grad', 'arcmin', 'arcs', 'sr'] },
-  { id: 'LIGHT', title: 'Light', units: ['cd', 'lm', 'lx'] },
-  { id: 'RAD', title: 'Radiation', units: ['Bq', 'Gy', 'Sv'] },
+  { id: 'LIGHT', title: 'Light', units: ['cd', 'lm', 'lx', 'ph', 'fc', 'sb', 'flam', 'lam'] },
+  { id: 'RAD', title: 'Radiation', units: ['Bq', 'Ci', 'Gy', 'rad', 'Sv', 'rem', 'R'] },
+  { id: 'VISC', title: 'Viscosity', units: ['P', 'cP', 'St', 'cSt'] },
 ]);
 
 export const OWN_MENUS = Object.freeze([

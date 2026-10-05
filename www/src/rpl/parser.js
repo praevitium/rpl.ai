@@ -233,7 +233,8 @@ export function parseEntry(src) {
         if (!Number.isFinite(numValue)) {
           throw new RPLError('Bad numeric part in unit literal');
         }
-        return Unit(numValue, uexpr);
+        // Units that cancel, as in 1_m/m, leave a plain number, as arithmetic on units does.
+        return uexpr.length ? Unit(numValue, uexpr) : Real(numValue);
       }
 
       case 'complex': {

@@ -35,6 +35,10 @@ const D_Pa  = Object.freeze([-1, 1, -2, 0, 0, 0, 0, 0]); // pressure
 const D_V   = Object.freeze([2, 1, -3, -1, 0, 0, 0, 0]); // voltage
 const D_Ohm = Object.freeze([2, 1, -3, -2, 0, 0, 0, 0]); // resistance
 const D_Q   = Object.freeze([0, 0, 1, 1, 0, 0, 0, 0]);   // charge (C)
+const D_a   = Object.freeze([1, 0, -2, 0, 0, 0, 0, 0]);  // acceleration
+const D_Vis = Object.freeze([-1, 1, -1, 0, 0, 0, 0, 0]); // dynamic viscosity (P)
+const D_KVi = Object.freeze([2, 0, -1, 0, 0, 0, 0, 0]);  // kinematic viscosity (St)
+const D_Xr  = Object.freeze([0, -1, 1, 1, 0, 0, 0, 0]);  // exposure (R)
 const D_Ang = Object.freeze([0, 0, 0, 0, 0, 0, 0, 1]);   // plane angle (r)
 const D_Sr  = Object.freeze([0, 0, 0, 0, 0, 0, 0, 2]);   // solid angle (sr)
 
@@ -43,6 +47,9 @@ const LB = 0.45359237;
 const G0 = 9.80665;
 const GAL = 3.785411784e-3;
 const FTLBF = FT * LB * G0;
+const FTUS = 1200 / 3937;
+const BTU = 1055.05585262;
+const FT2 = FT * FT;
 
 export const UNIT_CATALOG = new Map([
   // ---- SI base units ----
@@ -73,10 +80,22 @@ export const UNIT_CATALOG = new Map([
   ['au',  { scale: 149597870700,      dims: D_L }],
   ['ly',  { scale: 9460730472580800,  dims: D_L }],
   ['pc',  { scale: 3.0856775814913673e16, dims: D_L }],
+  ['Mpc', { scale: 3.0856775814913673e22, dims: D_L }],
+  ['lyr', { scale: 9460730472580800,  dims: D_L }],    // the HP's name for ly
+  ['Å',   { scale: 1e-10,             dims: D_L }],
+  ['fermi', { scale: 1e-15,           dims: D_L }],
+  ['μ',   { scale: 1e-6,              dims: D_L }],    // micron
+  ['ftUS', { scale: FTUS,             dims: D_L }],
+  ['miUS', { scale: 5280 * FTUS,      dims: D_L }],
+  ['chain', { scale: 66 * FTUS,       dims: D_L }],
+  ['rd',  { scale: 16.5 * FTUS,       dims: D_L }],
+  ['fath', { scale: 6 * FTUS,         dims: D_L }],
 
   // ---- Area ----
   ['ha',  { scale: 1e4,               dims: D_L2 }],
   ['acre', { scale: 4046.8564224,     dims: D_L2 }],
+  ['a',   { scale: 100,               dims: D_L2 }],   // are
+  ['b',   { scale: 1e-28,             dims: D_L2 }],   // barn
 
   // ---- Mass ----
   ['g',   { scale: 0.001,             dims: D_M,   prefixable: true }],
@@ -90,6 +109,9 @@ export const UNIT_CATALOG = new Map([
   ['ozt', { scale: 0.0311034768,      dims: D_M }],
   ['lbt', { scale: 0.3732417216,      dims: D_M }],
   ['slug', { scale: LB * G0 / FT,     dims: D_M }],
+  ['t',   { scale: 1000,              dims: D_M }],
+  ['tonUK', { scale: 2240 * LB,       dims: D_M }],
+  ['u',   { scale: 1.66053906660e-27, dims: D_M }],
 
   // ---- Time ----
   ['ms',  { scale: 1e-3,              dims: D_T }],
@@ -104,6 +126,8 @@ export const UNIT_CATALOG = new Map([
   ['mph', { scale: 0.44704,           dims: D_v }],
   ['kph', { scale: 1000 / 3600,       dims: D_v }],
   ['knot', { scale: 1852 / 3600,      dims: D_v }],
+  ['c',   { scale: 299792458,         dims: D_v }],
+  ['ga',  { scale: G0,                dims: D_a }],
 
   // ---- Volume ----
   ['L',   { scale: 1e-3,              dims: D_L3,  prefixable: true }],
@@ -118,6 +142,13 @@ export const UNIT_CATALOG = new Map([
   ['tsp', { scale: GAL / 768,         dims: D_L3 }],
   ['galUK', { scale: 4.54609e-3,      dims: D_L3 }],
   ['bbl', { scale: 42 * GAL,          dims: D_L3 }],
+  ['st',  { scale: 1,                 dims: D_L3 }],   // stere
+  ['galC', { scale: 4.54609e-3,       dims: D_L3 }],
+  ['ozUK', { scale: 2.84130625e-5,    dims: D_L3 }],
+  ['cu',  { scale: GAL / 16,          dims: D_L3 }],   // the HP's name for cup
+  ['bu',  { scale: 0.03523907016688,  dims: D_L3 }],
+  ['pk',  { scale: 0.00880976754172,  dims: D_L3 }],
+  ['fbm', { scale: 144 * 0.0254 ** 3, dims: D_L3 }],
 
   // ---- Force ----
   ['N',   { scale: 1,                 dims: D_F,   prefixable: true }],
@@ -125,15 +156,19 @@ export const UNIT_CATALOG = new Map([
   ['kip', { scale: 1000 * LB * G0,    dims: D_F }],
   ['kgf', { scale: G0,                dims: D_F }],
   ['dyn', { scale: 1e-5,              dims: D_F }],
+  ['gf',  { scale: G0 / 1000,         dims: D_F }],
+  ['pdl', { scale: LB * FT,           dims: D_F }],
 
   // ---- Energy and power ----
   ['J',   { scale: 1,                 dims: D_E,   prefixable: true }],
   ['cal', { scale: 4.1868,            dims: D_E,   prefixable: true }],
-  ['Btu', { scale: 1055.05585262,     dims: D_E }],
+  ['Btu', { scale: BTU,               dims: D_E }],
   ['eV',  { scale: 1.602176634e-19,   dims: D_E,   prefixable: true }],
   ['Wh',  { scale: 3600,              dims: D_E,   prefixable: true }],
   ['erg', { scale: 1e-7,              dims: D_E }],
   ['ftlbf', { scale: FTLBF,           dims: D_E }],
+  ['Kcal', { scale: 4186.8,           dims: D_E }],
+  ['therm', { scale: 1e5 * BTU,       dims: D_E }],
   ['W',   { scale: 1,                 dims: D_P,   prefixable: true }],
   ['hp',  { scale: 33000 * FTLBF / 60, dims: D_P }],
 
@@ -146,6 +181,7 @@ export const UNIT_CATALOG = new Map([
   ['torr', { scale: 101325 / 760,     dims: D_Pa }],
   ['mmHg', { scale: 133.322387415,    dims: D_Pa }],
   ['inHg', { scale: 3386.388640341,   dims: D_Pa }],
+  ['inH2O', { scale: 248.84,          dims: D_Pa }],
 
   // ---- Electricity and magnetism ----
   ['Hz',  { scale: 1,                 dims: D_iT,  prefixable: true }],
@@ -158,6 +194,8 @@ export const UNIT_CATALOG = new Map([
   ['S',   { scale: 1,                 dims: D_Gs,  prefixable: true }],
   ['T',   { scale: 1,                 dims: D_B,   prefixable: true }],
   ['Wb',  { scale: 1,                 dims: D_Wb,  prefixable: true }],
+  ['Fdy', { scale: 96485.3321233100184, dims: D_Q }],  // faraday
+  ['mho', { scale: 1,                 dims: D_Gs }],
 
   // ---- Radiation and light ----
   ['Bq',  { scale: 1,                 dims: D_iT,  prefixable: true }],
@@ -165,6 +203,19 @@ export const UNIT_CATALOG = new Map([
   ['Sv',  { scale: 1,                 dims: D_Gy,  prefixable: true }],
   ['lm',  { scale: 1,                 dims: D_J,   prefixable: true }],
   ['lx',  { scale: 1,                 dims: D_lx,  prefixable: true }],
+  ['ph',  { scale: 1e4,               dims: D_lx }],
+  ['fc',  { scale: 1 / FT2,           dims: D_lx }],
+  ['sb',  { scale: 1e4,               dims: D_lx }],   // luminance, cd/m^2, shares lux's dims
+  ['flam', { scale: 1 / (Math.PI * FT2), dims: D_lx }],
+  ['lam', { scale: 1e4 / Math.PI,     dims: D_lx }],
+  ['rad', { scale: 0.01,              dims: D_Gy }],   // the dose, not the radian (r)
+  ['rem', { scale: 0.01,              dims: D_Gy,  prefixable: true }],
+  ['Ci',  { scale: 3.7e10,            dims: D_iT,  prefixable: true }],
+  ['R',   { scale: 2.58e-4,           dims: D_Xr,  prefixable: true }],
+
+  // ---- Viscosity ----
+  ['P',   { scale: 0.1,               dims: D_Vis, prefixable: true }],
+  ['St',  { scale: 1e-4,              dims: D_KVi, prefixable: true }],
 
   // ---- Angle: a base dimension of its own, as on the HP 50g ----
   ['r',   { scale: 1,                 dims: D_Ang }],
@@ -306,7 +357,7 @@ export function parseUnitExpr(text) {
       return sub;
     }
     if (src[i] === '1' && !/^\d/.test(src.slice(i + 1))) { i++; return normalizeUexpr([]); }
-    const m = src.slice(i).match(/^[A-Za-zΩμ°]+/);
+    const m = src.slice(i).match(/^[A-Za-zΩμ°Å][A-Za-z0-9Ωμ°Å]*/);
     if (!m) throw new Error(`Bad unit expression near '${src[i]}': ${src}`);
     const sym = m[0];
     i += sym.length;
@@ -348,7 +399,7 @@ export function parseUnitExpr(text) {
   }
 
   if (!src) throw new Error('Missing unit after the underscore');
-  if (!/[A-Za-zΩμ°]/.test(src)) throw new Error(`Bad unit expression, there is no unit in '${src}'`);
+  if (!/[A-Za-zΩμ°Å]/.test(src)) throw new Error(`Bad unit expression, there is no unit in '${src}'`);
   return readExpr(undefined);
 }
 
