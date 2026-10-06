@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.19 (2026-10-06)
+**Latest release:** v0.6.20 (2026-10-06)
 
 ---
 
@@ -20,6 +20,42 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.20 — 2026-10-06
+
+The HP's statistics matrix. `Σ+` adds a data point to the reserved variable
+ΣDAT, as a real, a vector, a matrix of rows, or, once ΣDAT has m columns, m
+separate reals: `CLΣ [ 2 3 4 ] Σ+ 3 1 7 Σ+` builds `[[ 2 3 4 ][ 3 1 7 ]]`,
+as the AUR's example says. `Σ-` gives the last point back and removes it,
+`CLΣ` purges ΣDAT, `RCLΣ` and `STOΣ` recall and store it. The statistics
+commands read ΣDAT whenever level 1 holds no array, so `5 Σ+ 7 Σ+ 9 Σ+ MEAN`
+gives `7.`, and a one-column matrix gives a number rather than a one-element
+vector, as on the HP. `XCOL`, `YCOL` and `COLΣ` pick the independent and
+dependent columns, kept in ΣPAR as `{ xcol ycol intercept slope model }`;
+the fits, `LR` and `BESTFIT` store their coefficients and model there, `LR`
+pushes them tagged as `:Intercept:` and `:Slope:`, `ΣLINE` gives the model's
+formula, and `PREDY` (the same as PREDV) predicts from it. BESTFIT now makes
+its pick the current model, as the AUR describes, and pushes the fit the way
+LINFIT does. `TRAN` is the plain transpose beside `TRN`. The app now has 469
+commands.
+
+Fixed:
+
+- On a phone, a window a quarter shorter hid the keypad whether or not the
+  keyboard was up, and it stayed hidden (W-M15). The keypad now makes way
+  only while something editable has the focus, and comes back when the
+  focus leaves.
+- `→ROW` and `ROW→`, `→COL` and `COL→` were the wrong way round: as the AUR
+  says, `→ROW` takes a matrix apart into its rows and `ROW→` puts rows
+  together. Programs that used them need swapping.
+- `TRN` did not conjugate complex entries; it is the conjugate transpose as
+  the AUR defines it, and `TRAN` is the plain one.
+- `HORNER` pushed its point above the remainder; the AUR's order is
+  quotient, point, remainder, with P(r) on level 1.
+- An array divided by a square matrix solves the system, `[5 10]
+  [[2 1][1 3]] /` gives `[ 1. 3. ]`, as the AUR describes.
+- A fitted model showed its coefficients with 17 digits
+  (`0.16666666666666696 + 2*X`); they are rounded to 12.
 
 ## v0.6.19 — 2026-10-06
 
