@@ -19,9 +19,14 @@
   const touchInstall = matchMedia('(pointer: coarse)').matches
     && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches);
   if (navigator.standalone === true || touchInstall) document.documentElement.dataset.installed = 'true';
-  // A touch screen that loses a quarter of its height has its keyboard up, and the
-  // calculator keypad makes way for it.
+  // A touch screen that loses a quarter of its height while something editable has
+  // the focus has its keyboard up, and the calculator keypad makes way for it.  With
+  // nothing to type into, a shorter window is simply the new full height.
   const coarsePointer = matchMedia('(pointer: coarse)');
+  const editing = () => {
+    const el = document.activeElement;
+    return !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+  };
   let fullHeight = 0;
   const pinAppViewport = () => {
     const viewport = window.visualViewport;
@@ -31,12 +36,13 @@
     root.style.setProperty('--app-top', `${viewport.offsetTop}px`);
     root.style.setProperty('--app-width', `${viewport.width}px`);
     root.style.setProperty('--app-height', `${viewport.height}px`);
-    fullHeight = Math.max(fullHeight, viewport.height);
-    root.toggleAttribute('data-keyboard', coarsePointer.matches && viewport.height < fullHeight * 0.75);
+    fullHeight = editing() ? Math.max(fullHeight, viewport.height) : viewport.height;
+    root.toggleAttribute('data-keyboard', coarsePointer.matches && editing() && viewport.height < fullHeight * 0.75);
   };
   pinAppViewport();
   window.visualViewport?.addEventListener('resize', pinAppViewport);
   window.visualViewport?.addEventListener('scroll', pinAppViewport);
+  document.addEventListener('focusout', () => setTimeout(pinAppViewport, 0));
   addEventListener('orientationchange', () => { fullHeight = 0; pinAppViewport(); });
   document.addEventListener('touchmove', (event) => {
     if (event.touches.length > 1 && event.cancelable) event.preventDefault();
