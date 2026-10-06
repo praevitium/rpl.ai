@@ -81,6 +81,8 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   INTEG                      \`expr\` \`var\` INTEG — indefinite integral.  Definite: \`expr\` \`var\` INTEG a b PREVAL (F(b) - F(a))
   SOLVE                      \`eq\` \`var\` SOLVE — solve an equation.  Example: \`X^2-5*X+6=0\` \`X\` SOLVE → { \`X=2\` \`X=3\` }
   LIMIT (alias lim)          \`expr\` \`var=value\` LIMIT — limit at a point
+  ZEROS                      \`expr\` \`var\` ZEROS — the roots as plain values, each once: \`X^3-X^2-8*X+12\` \`X\` ZEROS → { -3 2 }
+  TAYLR TAYLOR0              \`expr\` \`var\` n TAYLR — Taylor polynomial at 0, n counted from the lowest power; \`expr\` TAYLOR0 is order 4 in VX
   SUBST                      \`expr\` \`var=value\` SUBST — substitute
   LAPLACE ILAP               Laplace transform / inverse
   TEXPAND TLIN TSIMP TCOLLECT EXPLN COSSIN LIN     trig/exp/log rewrites

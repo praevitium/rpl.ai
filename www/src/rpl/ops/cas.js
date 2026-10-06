@@ -2,8 +2,8 @@ import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isLis
 import { giac } from '../cas/giac-engine.mjs';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { buildGiacCmd, giacToAst, splitGiacList, astToGiac } from '../cas/giac-convert.mjs';
-import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, isKnownFunction } from '../algebra.js';
-import { getComplexMode, getCasVx, setCasVx } from '../state.js';
+import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction } from '../algebra.js';
+import { getComplexMode, getCasVx, setCasVx, getApproxMode } from '../state.js';
 import { register, lookup } from './registry.js';
 import { _astToRplValue, _pushCasResult, _isSymOperand, _toAst, _withListUnary, _withTaggedUnary, _withVMUnary } from './internal.js';
 
@@ -151,6 +151,33 @@ register('SOLVE', (s) => {
 register('ISOL', lookup('SOLVE').fn, { category: 'CAS / symbolic', categoryOrder: 10, label: "ISOL" });
 
 
+function _casValue(ast) {
+  const leaf = ast.kind === 'neg' ? ast.arg : ast;
+  return leaf.kind === 'num' || ast.kind === 'var' ? _astToRplValue(ast) : Symbolic(ast);
+}
+
+// Real roots in increasing order, as the AUR lists them; anything else keeps Giac's order.
+function _byValue(roots) {
+  const values = roots.map((r) => algebraEvalAst(r, (name) => (name === 'π' ? Math.PI : undefined)));
+  if (!values.every((v) => astIsNum(v) && Number.isFinite(v.value))) return roots;
+  return roots.map((r, i) => [r, values[i].value]).sort((a, b) => a[1] - b[1]).map(([r]) => r);
+}
+
+// AUR: the zeros of an expression, each once and without SOLVE's X= in front.
+register('ZEROS', (s) => {
+  const [exprArg, varArg] = s.popN(2);
+  const varName = _varName(varArg);
+  let ast = _astArg(exprArg);
+  if (ast.kind === 'bin' && ast.op === '=') ast = AstBin('-', ast.l, ast.r);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const zeros = getComplexMode() ? 'czeros' : 'zeros';
+  const raw = giac.caseval(buildGiacCmd(ast, (e) => (getApproxMode() ? `evalf(${zeros}(${e},${varName}))` : `${zeros}(${e},${varName})`), [varName]));
+  const trimmed = String(raw).trim();
+  const roots = (splitGiacList(raw) ?? (trimmed ? [trimmed] : [])).map((r) => giacToAst(r));
+  s.push(RList(_byValue(roots).map(_casValue)));
+}, { category: 'CAS / symbolic', categoryOrder: 10.5, label: "ZEROS" });
+
+
 register('SUBST', (s) => {
   const top = s.peek();
   if (isList(top)) {
@@ -237,6 +264,66 @@ function _vxForm(opName) {
 register('INTVX', _vxForm('INTEG'), { category: 'CAS / symbolic', categoryOrder: 3, label: "INTVX" });
 
 register('DERVX', _vxForm('DERIV'), { category: 'CAS / symbolic', categoryOrder: 1, label: "DERVX" });
+
+
+// The power of the variable in one term of a polynomial from Giac: 3*X^2 is 2, 1/X is -1, LN(X) is NaN.
+function _termPower(ast, x) {
+  if (!algebraFreeVars(ast).has(x)) return 0;
+  if (ast.kind === 'var') return 1;
+  if (ast.kind === 'neg') return _termPower(ast.arg, x);
+  if (ast.kind !== 'bin') return NaN;
+  if (ast.op === '*') return _termPower(ast.l, x) + _termPower(ast.r, x);
+  if (ast.op === '/') return _termPower(ast.l, x) - _termPower(ast.r, x);
+  const k = ast.r.kind === 'neg' ? -ast.r.arg.value : ast.r.value;
+  return ast.op === '^' && !algebraFreeVars(ast.r).has(x) ? _termPower(ast.l, x) * k : NaN;
+}
+
+const _negated = (t) => (t.kind === 'neg' ? t.arg : AstNeg(t));
+
+function _sumTerms(ast) {
+  if (ast.kind !== 'bin' || (ast.op !== '+' && ast.op !== '-')) return [ast];
+  const right = _sumTerms(ast.r);
+  return [..._sumTerms(ast.l), ...(ast.op === '-' ? right.map(_negated) : right)];
+}
+
+const _sumOf = (terms) => terms.reduce((acc, t) => (t.kind === 'neg' ? AstBin('-', acc, t.arg) : AstBin('+', acc, t)));
+
+const TAYLOR_MAX_ORDER = 100;
+
+function _taylorOrder(v) {
+  if (!isInteger(v) && !isReal(v)) throw new RPLError('Bad argument type');
+  const n = Number(v.value.toString());
+  if (!Number.isInteger(n) || n < 0 || n > TAYLOR_MAX_ORDER) throw new RPLError('Bad argument value');
+  return n;
+}
+
+// AUR: the order is relative, the gap between the highest and lowest power, so
+// X*EXP(X) to order 2 is X+X^2+1/2*X^3 and SIN(X)/X^3 to order 2 is 1/X^2-1/6.
+// Giac's order is absolute, and an order of 0 means its default of 5.
+function _taylor(ast, x, n) {
+  const series = (order) => _casEval(ast, (e) => `series(${e},${x}=0,${order},polynom)`, [x]);
+  let order = Math.max(n, 1);
+  let result = series(order);
+  if (astIsNum(result) && result.value === 0) result = series(order += 10);
+  let powers = _sumTerms(result).map((t) => _termPower(t, x));
+  if (powers.some(Number.isNaN) || algebraFreeVars(result).has('undef')) throw new RPLError('No Taylor polynomial at 0');
+  const top = Math.min(...powers) + n;
+  if (top > order) {
+    result = series(top);
+    powers = _sumTerms(result).map((t) => _termPower(t, x));
+  }
+  return _sumOf(_sumTerms(result).filter((_, i) => powers[i] <= top));
+}
+
+register('TAYLR', (s) => {
+  const [expr, varArg, orderArg] = s.popN(3);
+  const varName = _varName(varArg);
+  _pushCasResult(s, _taylor(_astArg(expr), varName, _taylorOrder(orderArg)));
+}, { category: 'CAS / symbolic', categoryOrder: 3.5, label: "TAYLR" });
+
+register('TAYLOR0', (s) => {
+  _pushCasResult(s, _taylor(_astArg(s.pop()), getCasVx(), 4));
+}, { category: 'CAS / symbolic', categoryOrder: 34.5, label: "TAYLOR0" });
 
 
 // Rebuilds the tree bottom-up and offers each rebuilt node to `rewrite`.

@@ -27,7 +27,7 @@ import {
   evalAst, freeVars, defaultFnEval,
 } from '../www/src/rpl/algebra.js';
 import { giac } from '../www/src/rpl/cas/giac-engine.mjs';
-import { assert, assertThrows } from './helpers.mjs';
+import { assert, assertThrows, runLine } from './helpers.mjs';
 
 /* Symbolic algebra — parser, simplify, DERIV, EXPAND, COLLECT, FACTOR,
    SUBST, SOLVE, textbook-mode pretty-print, EXACT/APPROX numeric-eval,
@@ -8108,3 +8108,43 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     assert(draw('X^2').parens === 0 && draw('FACT(X)').parens === 0 && draw('FACT(3)').parens === 0, `${name}: plain powers and factorials stay unbracketed`);
   }
 }
+
+{
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
+  giac._clear();
+  giac._setFixtures({
+    'series(1+sin(X)^2,X=0,5,polynom)': '1+X^2-1/3*X^4',
+    'series(X*exp(X),X=0,2,polynom)': 'X+X^2',
+    'series(X*exp(X),X=0,3,polynom)': 'X+X^2+1/2*X^3',
+    'series(sin(X)/X^3,X=0,2,polynom)': '1/X^2-1/6+1/120*X^2',
+    'series(X^3*cos(X),X=0,2,polynom)': '0',
+    'series(X^3*cos(X),X=0,12,polynom)': 'X^3-1/2*X^5+1/24*X^7-1/720*X^9+1/40320*X^11',
+    'series(exp(X),X=0,1,polynom)': '1+X',
+    'series(ln(X),X=0,3,polynom)': 'ln(X)',
+    'series(cos(x),x=0,4,polynom)': '1-1/2*x^2+1/24*x^4',
+  });
+  assert(line("'1+SIN(X)^2' 'X' 5 TAYLR") === '`1 + X^2 - 1/3*X^4`', 'TAYLR: the AUR example, 1+SIN(X)^2 to order 5');
+  assert(line("'X*EXP(X)' 'X' 2 TAYLR") === '`X + X^2 + 1/2*X^3`' && line("'X^3*COS(X)' 'X' 2 TAYLR") === '`X^3 - 1/2*X^5`',
+    'TAYLR: the order counts from the lowest power, as the AUR defines it');
+  assert(line("'SIN(X)/X^3' 'X' 2 TAYLR") === '`1/X^2 - 1/6`' && line("'EXP(X)' 'X' 0 TAYLR") === '1',
+    'TAYLR: a pole at 0 keeps its negative powers, and order 0 is the leading term');
+  assertThrows(() => runLine("'LN(X)' 'X' 3 TAYLR"), /No Taylor polynomial at 0/, 'TAYLR: LN(X) has no Taylor polynomial at 0');
+  assertThrows(() => runLine("'EXP(X)' 'X' -1 TAYLR"), /Bad argument value/, 'TAYLR: a negative order is a Bad argument value');
+  assert(line("'COS(x)' TAYLOR0") === '`1 - 1/2*x^2 + 1/24*x^4`', 'TAYLOR0: the fourth-order Taylor polynomial in VX');
+  giac._setFixtures({
+    'zeros(X^3-X^2-8*X+12,X)': '[2,-3]',
+    'zeros(X^2-4,X)': '[2,-2]',
+    'zeros(X^2+1,X)': '[]',
+    'zeros(X^2-X-1,X)': '[1/2*(√5+1),1/2*(-√5+1)]',
+  });
+  assert(line("'X^3-X^2-8*X+12' 'X' ZEROS") === '{ -3 2 }' && line("'X^2=4' 'X' ZEROS") === '{ -2 2 }',
+    'ZEROS: the AUR example gives each root once, in increasing order, and an equation works too');
+  assert(line("'X^2+1' 'X' ZEROS") === '{  }' && line("'X^2-X-1' 'X' ZEROS") === '{ `1/2*(-SQRT(5) + 1)` `1/2*(SQRT(5) + 1)` }',
+    'ZEROS: no real roots is an empty list, and exact roots stay exact');
+  setComplexMode(true);
+  giac._setFixture('czeros(X^2+1,X)', '[-i,i]');
+  assert(line("'X^2+1' 'X' ZEROS").split(' ').length === 4, 'ZEROS: complex mode looks for complex roots');
+  setComplexMode(false);
+  giac._clear();
+}
+
