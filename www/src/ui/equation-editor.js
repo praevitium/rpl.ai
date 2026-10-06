@@ -1876,6 +1876,14 @@ export class EquationEditor {
     for (const char of String(text)) this.pressFace(char);
   }
 
+  // A UNITS menu key attaches its unit to the number being typed, 5_m, as it does on the command line.
+  typeUnit(unit, mode) {
+    if (mode === 'convert') { this.app.notifyError('CONVERT works on the stack; in the writer a unit key attaches its unit.'); return; }
+    const compound = /[*/^]/.test(unit);
+    const faces = [...unit].map((c) => ({ '*': '×', '/': '÷', '^': 'yˣ' })[c] ?? c);
+    for (const face of [...(mode === 'divide' ? ['÷', '1'] : []), '_', ...(compound ? ['( )', ...faces, ')'] : faces)]) this.pressFace(face);
+  }
+
   pressCommand(name) {
     if (EQW_CMDS.includes(name)) { this.transformWith([name]); return; }
     if (isKnownFunction(name)) { this.pressFace(name); return; }

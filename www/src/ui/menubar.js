@@ -12,6 +12,8 @@ function labelHtml(label) {
   return `${escapeHtml(label.slice(0, half))}<wbr>${escapeHtml(label.slice(half))}`;
 }
 
+const WRITER_MENUS = Object.freeze({ EQW: { short: 'EQW', title: 'The equation writer menu' }, MTRW: { short: 'MTRW', title: 'The matrix writer menu' } });
+
 export class MenuBar {
   constructor({ el, app }) {
     this.el = el;
@@ -87,9 +89,11 @@ export class MenuBar {
   }
 
   openPicker(anchor) {
-    const current = this.app.menuKind;
-    const html = MENU_GROUPS.map((g) => `<h6>${escapeHtml(g.title)}</h6><div class="grid">${g.ids.map((id) => {
-      const m = menuById(id);
+    const current = this.app._menuPinned ? this.app.menuKind : this.app.writerMenuId() ?? this.app.menuKind;
+    const writer = this.app.writerMenuId();
+    const groups = writer ? [{ title: 'Writer', ids: [writer] }, ...MENU_GROUPS] : MENU_GROUPS;
+    const html = groups.map((g) => `<h6>${escapeHtml(g.title)}</h6><div class="grid">${g.ids.map((id) => {
+      const m = menuById(id) ?? WRITER_MENUS[id];
       return `<button type="button" data-v="${id}" class="${id === current ? 'on' : ''}" title="${escapeHtml(m.title)}">${escapeHtml(m.short)}</button>`;
     }).join('')}</div>`).join('');
     this.app.popover.open(anchor, html, {

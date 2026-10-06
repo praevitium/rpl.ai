@@ -910,6 +910,7 @@ class App {
   // As on the HP 50g, a unit key multiplies level 1 by the unit, a left-shifted
   // one converts level 1 to it and a right-shifted one divides by it.
   insertUnit(unit, mode = 'times') {
+    if (this.inputMode === 'equation') { this.equationEditor.typeUnit(unit, mode); return; }
     const e = this.entry;
     const typed = e.buffer.trim();
     if (mode !== 'convert' && typed) {
@@ -981,6 +982,7 @@ class App {
       this.entry.focus();
     }
     this._ctxPage = 0;
+    this._menuPinned = false;
     this.menubar.render();
     this.keypad.update();
     this.appbar.updateHistory();
@@ -989,8 +991,17 @@ class App {
 
   openEquationEditor() { this.runAction('writer.equation'); }
 
+  // The menu a writer puts up, or null; choosing another menu pins it in its place until the writer closes.
+  writerMenuId() {
+    if (this.inputMode === 'equation' && this.equationEditor) return 'EQW';
+    if (this.inputMode === 'matrix' && this.matrixEditor) return 'MTRW';
+    return null;
+  }
+
   showMenu(id, { remember = true } = {}) {
     if (this.selection != null) this.clearSelection();
+    if (id === 'EQW' || id === 'MTRW') { this._menuPinned = false; this._ctxPage = 0; this.menubar.render(); return; }
+    this._menuPinned = !!this.writerMenuId();
     if (id === 'VARS') this.showVarsMenu();
     else if (id === 'CST') this.showCustomMenu();
     else if (id === 'MODES') this.showModesMenu();
@@ -1009,6 +1020,7 @@ class App {
   menuView() {
     let ctx = null;
     if (this.selection != null && this.stack.depth) ctx = { key: `LVL${this.selection}`, title: `LEVEL ${this.selection}`, short: `LVL ${this.selection}`, items: this._levelSlots() };
+    else if (this._menuPinned && this.writerMenuId()) ctx = null;
     else if (this.inputMode === 'equation' && this.equationEditor) ctx = { key: 'EQW', title: 'EQUATION', short: 'EQW', items: this._eqwSlots ?? this.equationEditor.menu() };
     else if (this.inputMode === 'matrix' && this.matrixEditor) ctx = { key: 'MTRW', title: 'MATRIX', short: 'MTRW', items: this.matrixEditor.menu() };
     if (ctx) {

@@ -109,7 +109,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   overrides the angle mode: `30_° SIN` gives `0.5` whatever DEG, RAD or GRD
   says. Units work inside algebraics too, with a compound unit in
   parentheses: store `2_s` in `T` and `'9.81_(m/s^2)*T^2/2' EVAL` gives
-  `19.62_m`. In the equation writer, `_` after a number starts its unit.
+  `19.62_m`. In the equation writer, `_` after a number starts its unit, and
+  the UNITS menu keys type their unit after the number too: pick a menu from
+  the menu bar while a writer is open and it takes the writer's place until
+  you pick EQW or MTRW again.
 - **The stack.** Click a level to select it; its actions appear on the row
   and in the menu bar. Double-click edits it in the right writer. Drag rows
   to reorder them.
