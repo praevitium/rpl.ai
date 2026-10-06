@@ -8158,3 +8158,12 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
+{
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
+  giac._clear();
+  giac._setFixtures({ 'solve(sin(X)-1,X)': '[1/2*pi]', 'zeros(cos(X),X)': '[1/2*pi,(-1)/2*pi]' });
+  assert(line("'SIN(X)=1' 'X' SOLVE") === '{ `X = 1/2*π` }', 'SOLVE shows Giac\'s pi as π, as the rest of the app does');
+  assert(line("'COS(X)' 'X' ZEROS") === '{ `(-1)/2*π` `1/2*π` }', 'ZEROS orders roots that involve π by value');
+  giac._clear();
+}
+

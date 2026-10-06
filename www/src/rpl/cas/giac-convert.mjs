@@ -266,12 +266,14 @@ export function giacToAst(giacStr) {
     throw new GiacResultError(s, "runtime-error");
   }
 
-  // Only names in call position are renamed; bare identifiers may be variables.
+  // Only names in call position are renamed; bare identifiers may be variables,
+  // except pi, which Giac reads as the constant whatever a user stored in it.
   const mapped = s
     .replace(/([A-Za-z_][A-Za-z0-9_]*)\s*\(/g, (match, name) => {
       const hp = GIAC_TO_HP[name];
       return hp ? `${hp}(` : match;
     })
+    .replace(/\bpi\b/g, "π")
     .replace(/([A-Za-z0-9_.]+|\([^()]*\))!(?!=)/g, "FACT($1)");
 
   try {
