@@ -156,7 +156,8 @@ COMPARISON / LOGIC  (results are 1 / 0)
   AND OR XOR NOT             logic on 1/0 (and bitwise on binary integers)
 
 STATISTICS
-  MEAN MEDIAN SDEV VAR CORR COV TOT        take a vector or a matrix of columns, not a list
+  MEAN MEDIAN SDEV VAR CORR COV TOT        take a vector or a matrix of columns from level 1 (not a list), or read the statistics matrix when level 1 isn't an array
+  Σ+ Σ- CLΣ RCLΣ STOΣ NΣ ΣX ΣY ΣXY         the HP's statistics matrix: CLΣ then 5 Σ+ 7 Σ+ 9 Σ+ MEAN gives 7.; [ 1 2 ] Σ+ adds a row; XCOL YCOL COLΣ pick the columns; LR gives :Intercept: :Slope:, ΣLINE the model formula, PREDY (PREDV) a prediction
   ΣX ΣY ΣX2 ΣY2 ΣXY  (and SX SY SX2 SY2 SXY ASCII aliases; the sum-of-squares ops are spelled with an ASCII 2, not a superscript ²)    summation accumulators
   BESTFIT LINFIT EXPFIT LOGFIT PWRFIT     curve fitting
   PREDV PREDX                              predictions

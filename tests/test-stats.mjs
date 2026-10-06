@@ -24,7 +24,8 @@ import {
   Real, Integer, Complex, BinaryInteger, Str, Vector, Matrix,
   isReal, isInteger, isVector, isComplex,
 } from '../www/src/rpl/types.js';
-import { assert, assertThrows } from './helpers.mjs';
+import { assert, assertThrows, runLine } from './helpers.mjs';
+import { format } from '../www/src/rpl/formatter.js';
 
 /* Dataset from HP50 AUR §18.2 example (simplified):
      X = [1, 2, 3, 4]
@@ -158,8 +159,8 @@ function makeXYMatrix() {
 
   const u = new Stack();
   u.push(Real(5));
-  assertThrows(() => lookup('NΣ').fn(u), /Bad argument type/,
-    'session064: NΣ on Real → Bad argument type');
+  assertThrows(() => lookup('NΣ').fn(u), /Nonexistent ΣDAT/,
+    'session064: NΣ on Real → Nonexistent ΣDAT, since a non-array on level 1 means read ΣDAT');
 
   const w = new Stack();
   w.push(Matrix([[Str('oops')]]));
@@ -209,8 +210,8 @@ function makeXYMatrix() {
   // Non-Matrix → Bad argument type (the `!isMatrix(M)` guard).
   const s = new Stack();
   s.push(Real(5));
-  assertThrows(() => lookup('ΣXY').fn(s), /Bad argument type/,
-    'session127: ΣXY on Real → Bad argument type');
+  assertThrows(() => lookup('ΣXY').fn(s), /Nonexistent ΣDAT/,
+    'session127: ΣXY on Real → Nonexistent ΣDAT, since a non-array on level 1 means read ΣDAT');
 }
 {
   // 1-col Matrix → Invalid dimension (needs ≥2 cols).
@@ -236,15 +237,15 @@ function makeXYMatrix() {
 {
   const s = new Stack();
   s.push(Real(5));
-  assertThrows(() => lookup('ΣX2').fn(s), /Bad argument type/,
-    'session127: ΣX2 on Real → Bad argument type');
+  assertThrows(() => lookup('ΣX2').fn(s), /Nonexistent ΣDAT/,
+    'session127: ΣX2 on Real → Nonexistent ΣDAT, since a non-array on level 1 means read ΣDAT');
 }
 
 {
   const s = new Stack();
   s.push(Real(5));
-  assertThrows(() => lookup('MAXΣ').fn(s), /Bad argument type/,
-    'session127: MAXΣ on Real → Bad argument type (bottom-of-fn fallthrough)');
+  assertThrows(() => lookup('MAXΣ').fn(s), /Nonexistent ΣDAT/,
+    'session127: MAXΣ on Real → Nonexistent ΣDAT, since a non-array on level 1 means read ΣDAT (bottom-of-fn fallthrough)');
 }
 
 {
@@ -471,8 +472,8 @@ function makeXYMatrix() {
 {
   const s = new Stack();
   s.push(Real(5));
-  assertThrows(() => lookup('SX').fn(s), /Bad argument type/,
-    'session137: SX (ASCII) on Real → Bad argument type (alias inherits ΣX type guard)');
+  assertThrows(() => lookup('SX').fn(s), /Nonexistent ΣDAT/,
+    'session137: SX (ASCII) on Real → Nonexistent ΣDAT, since a non-array on level 1 means read ΣDAT (alias inherits ΣX type guard)');
 }
 
 /* ---- SY2 (alias of ΣY2) rejects 1-col Matrix → Invalid dimension ---- */
@@ -487,15 +488,15 @@ function makeXYMatrix() {
 {
   const s = new Stack();
   s.push(Real(5));
-  assertThrows(() => lookup('SXY').fn(s), /Bad argument type/,
-    'session137: SXY (ASCII) on Real → Bad argument type (alias inherits ΣXY type guard)');
+  assertThrows(() => lookup('SXY').fn(s), /Nonexistent ΣDAT/,
+    'session137: SXY (ASCII) on Real → Nonexistent ΣDAT, since a non-array on level 1 means read ΣDAT (alias inherits ΣXY type guard)');
 }
 
 {
   const s = new Stack();
   s.push(Real(5));
-  assertThrows(() => lookup('MAXS').fn(s), /Bad argument type/,
-    'session137: MAXS (ASCII) on Real → Bad argument type (alias inherits MAXΣ type guard)');
+  assertThrows(() => lookup('MAXS').fn(s), /Nonexistent ΣDAT/,
+    'session137: MAXS (ASCII) on Real → Nonexistent ΣDAT, since a non-array on level 1 means read ΣDAT (alias inherits MAXΣ type guard)');
 }
 
 {
@@ -508,8 +509,8 @@ function makeXYMatrix() {
 {
   const s = new Stack();
   s.push(Real(5));
-  assertThrows(() => lookup('MINS').fn(s), /Bad argument type/,
-    'session137: MINS (ASCII) on Real → Bad argument type (alias inherits MINΣ type guard)');
+  assertThrows(() => lookup('MINS').fn(s), /Nonexistent ΣDAT/,
+    'session137: MINS (ASCII) on Real → Nonexistent ΣDAT, since a non-array on level 1 means read ΣDAT (alias inherits MINΣ type guard)');
 }
 
 {
@@ -560,15 +561,15 @@ function makeXYMatrix() {
 {
   const s = new Stack();
   s.push(Real(5));
-  assertThrows(() => lookup('NSIGMA').fn(s), /Bad argument type/,
-    'session147: NSIGMA on Real → Bad argument type (bottom-of-fn fallthrough at ops.js:12177; canonical-name reject was unpinned)');
+  assertThrows(() => lookup('NSIGMA').fn(s), /Nonexistent ΣDAT/,
+    'session147: NSIGMA on Real → Nonexistent ΣDAT, since a non-array on level 1 means read ΣDAT (bottom-of-fn fallthrough at ops.js:12177; canonical-name reject was unpinned)');
 }
 
 {
   const s = new Stack();
   s.push(Real(5));
-  assertThrows(() => lookup('NΣ').fn(s), /Bad argument type/,
-    'session147: NΣ on Real → Bad argument type (symbol-alias delegates to NSIGMA at ops.js:12179; alias-arm reject was unpinned)');
+  assertThrows(() => lookup('NΣ').fn(s), /Nonexistent ΣDAT/,
+    'session147: NΣ on Real → Nonexistent ΣDAT, since a non-array on level 1 means read ΣDAT (symbol-alias delegates to NSIGMA at ops.js:12179; alias-arm reject was unpinned)');
 }
 
 {
@@ -581,22 +582,22 @@ function makeXYMatrix() {
 {
   const s = new Stack();
   s.push(Real(5));
-  assertThrows(() => lookup('MEAN').fn(s), /Bad argument type/,
-    'session147: MEAN on Real → Bad argument type (bottom-of-fn fallthrough at ops.js:10260; the file only had the positive XY-matrix MEAN pin)');
+  assertThrows(() => lookup('MEAN').fn(s), /Nonexistent ΣDAT/,
+    'session147: MEAN on Real → Nonexistent ΣDAT, since a non-array on level 1 means read ΣDAT (bottom-of-fn fallthrough at ops.js:10260; the file only had the positive XY-matrix MEAN pin)');
 }
 
 {
   const s = new Stack();
   s.push(Real(5));
-  assertThrows(() => lookup('VAR').fn(s), /Bad argument type/,
-    'session147: VAR on Real → Bad argument type (bottom-of-fn fallthrough at ops.js:10270; VAR rejection was unpinned)');
+  assertThrows(() => lookup('VAR').fn(s), /Nonexistent ΣDAT/,
+    'session147: VAR on Real → Nonexistent ΣDAT, since a non-array on level 1 means read ΣDAT (bottom-of-fn fallthrough at ops.js:10270; VAR rejection was unpinned)');
 }
 
 {
   const s = new Stack();
   s.push(Real(5));
-  assertThrows(() => lookup('SDEV').fn(s), /Bad argument type/,
-    'session147: SDEV on Real → Bad argument type (bottom-of-fn fallthrough at ops.js:10280; SDEV rejection was unpinned — closes MEAN/VAR/SDEV reject trio)');
+  assertThrows(() => lookup('SDEV').fn(s), /Nonexistent ΣDAT/,
+    'session147: SDEV on Real → Nonexistent ΣDAT, since a non-array on level 1 means read ΣDAT (bottom-of-fn fallthrough at ops.js:10280; SDEV rejection was unpinned — closes MEAN/VAR/SDEV reject trio)');
 }
 
 {
@@ -712,8 +713,8 @@ function makeXYMatrix() {
 {
   const s = new Stack();
   s.push(Real(5));
-  assertThrows(() => lookup('SX2').fn(s), /Bad argument type/,
-    'session357: SX2 (ASCII) on Real → Bad argument type (alias inherits ΣX2 _statsVectorOrMatrixCol0 type guard)');
+  assertThrows(() => lookup('SX2').fn(s), /Nonexistent ΣDAT/,
+    'session357: SX2 (ASCII) on Real → Nonexistent ΣDAT, since a non-array on level 1 means read ΣDAT (alias inherits ΣX2 _statsVectorOrMatrixCol0 type guard)');
 }
 {
   const s = new Stack();
@@ -741,3 +742,27 @@ function makeXYMatrix() {
   assertThrows(() => lookup('SY2').fn(s), /Bad argument type/,
     'session357: SY2 (ASCII) on Vector → Bad argument type (alias inherits ΣY2 require-Matrix guard, reached before the 2-col check)');
 }
+
+{
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
+  assert(line('CLΣ [ 2 3 4 ] Σ+ 3 1 7 Σ+ RCLΣ CLΣ') === '[[ 2 3 4 ][ 3 1 7 ]]',
+    'Σ+: the AUR example, a vector then three separate reals, builds ΣDAT row by row');
+  assert(line('CLΣ 5 Σ+ 7 Σ+ 9 Σ+ MEAN NΣ RCLΣ CLΣ') === '[[ 5 ][ 7 ][ 9 ]] | 3. | 7.',
+    'Σ+ with reals makes a one-column ΣDAT that MEAN and NΣ read when level 1 holds no array');
+  assert(line('CLΣ [1 2] Σ+ [2 4] Σ+ Σ- RCLΣ CLΣ') === '[[ 1 2 ]] | [ 2 4 ]' && line('CLΣ 5 Σ+ Σ-') === '5',
+    'Σ- gives the last data point back and removes it, as a number when ΣDAT has one column');
+  assertThrows(() => runLine('CLΣ 5 Σ+ Σ- Σ-'), /Nonexistent ΣDAT/, 'Σ- on an emptied ΣDAT is Nonexistent ΣDAT');
+  assertThrows(() => runLine('CLΣ [1 2] Σ+ [1 2 3] Σ+'), /Invalid dimension/, 'Σ+ refuses a point with the wrong number of coordinates');
+  assertThrows(() => runLine('CLΣ "x" Σ+'), /Bad argument type/, 'Σ+ refuses a string');
+  assert(line('[[1 2][3 4]] STOΣ RCLΣ CLΣ') === '[[ 1 2 ][ 3 4 ]]', 'STOΣ stores ΣDAT and RCLΣ recalls it');
+  assertThrows(() => runLine('CLΣ RCLΣ'), /Nonexistent ΣDAT/, 'RCLΣ without ΣDAT is Nonexistent ΣDAT');
+  assertThrows(() => runLine('CLΣ MEAN'), /Nonexistent ΣDAT/, 'MEAN with nothing on the stack reads ΣDAT and reports it missing');
+  assert(line("CLΣ [1 2 3] Σ+ [2 4 9] Σ+ [3 6 27] Σ+ 3 YCOL ΣY ΣXY 1 3 COLΣ CORR 'ΣPAR' RCL CLΣ 'ΣPAR' PURGE") === '{ 1. 3. 0. 0. LINFIT } | 0.960768922831 | 102. | 39.',
+    'YCOL and COLΣ pick the columns the sums and CORR use, through ΣPAR');
+  assert(line("CLΣ [1 2] Σ+ [2 4.5] Σ+ [3 6] Σ+ LR ΣLINE 4 PREDY 'ΣPAR' RCL CLΣ 'ΣPAR' PURGE") === '{ 1. 2. 0.166666666667 2. LINFIT } | 8.16666666667 | `0.166666666667 + 2*X` | Slope: 2. | Intercept: 0.166666666667',
+    'LR gives the tagged intercept and slope, stores them in ΣPAR, and ΣLINE and PREDY use them');
+  assert(line("[[1 2][2 4][3 6]] LINFIT DROP DROP 'ΣPAR' RCL 'ΣPAR' PURGE") === '{ 1. 2. 0. 2. LINFIT }', 'LINFIT records its coefficients and model in ΣPAR');
+  assert(line("[[1 2][2 4.5][3 6]] BESTFIT SWAP 'ΣPAR' RCL 5 GET 'ΣPAR' PURGE") === 'LOGFIT | `1.99429442294 + 3.63727210215*LN(X)` | 0.999977549954',
+    'BESTFIT makes its pick the current model and shows it with 12 digits');
+}
+

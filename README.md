@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 457 commands, exact big-integer and rational arithmetic,
+of its command set: 469 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -503,7 +503,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 457. The
+**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 469. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - program I/O: INPUT, INFORM, CHOOSE, DISP, CLLCD, FREEZE, MSGBOX, WAIT,
@@ -511,7 +511,7 @@ Catalog and the command reference mark what is available. Not there yet:
   with `→TAG` and pause with `PROMPT`.
 - PICT and the plot-setup commands (PVIEW, ERASE, AXES, XRNG, YRNG, STEQ and
   the rest)
-- the ΣDAT commands (Σ+, CLΣ, XCOL, YCOL, NDIST and the rest)
+- BINS, NDIST, UTPN and the other distribution commands
 - MENU and TMENU, and DEF
 - parts of the CAS, such as DESOLVE, LINSOLVE and LDEC (SOLVE, ISOL,
   ZEROS, TAYLR, TAYLOR0 and SERIES are here). Symbolic commands such as EXPAND
@@ -525,8 +525,10 @@ System RPL, and IR and serial transfer.
 
 **Behaviour that differs from the HP 50g.**
 
-- Statistics commands take a vector, or a matrix of columns, from the stack
-  instead of reading ΣDAT.
+- Statistics commands take a vector, or a matrix of columns, from level 1
+  when one is there, and read ΣDAT otherwise; `Σ+` fills ΣDAT as on the HP.
+- BESTFIT pushes the model it picked and its correlation, as LINFIT does,
+  as well as making it the current one.
 - Plot commands open the plot view instead of drawing into PICT.
 - There is no ON key to break a running program. A command or program that
   runs longer than 10 seconds is stopped, the stack is put back, and the

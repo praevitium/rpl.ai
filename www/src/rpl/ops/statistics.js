@@ -1,12 +1,12 @@
-import { isReal, isInteger, isComplex, Complex, Real, Vector, isVector, isMatrix, Symbolic, Str, isBinaryInteger } from '../types.js';
+import { isReal, isInteger, isComplex, Complex, Real, Vector, isVector, isMatrix, Matrix, Symbolic, isBinaryInteger, isList, RList, isName, isString, Name, Tagged } from '../types.js';
 import { RPLError } from '../stack.js';
 import { Var as AstVar, Bin as AstBin, Num as AstNum, Fn as AstFn } from '../algebra.js';
-import { setLastFitModel, FIT_KINDS, evalFitModel, getLastFitModel } from '../state.js';
-import { register } from './registry.js';
+import { setLastFitModel, FIT_KINDS, evalFitModel, getLastFitModel, varRecall, varStore, varPurge } from '../state.js';
+import { register, lookup } from './registry.js';
 
-// These ops take the data as an argument instead of reading ΣDAT.  In a
-// Matrix each column is a variable and each row an observation; a Vector is
-// a single variable.
+// These ops take the data from level 1 when an array is there, and read the
+// reserved variable ΣDAT otherwise, as on the HP.  In a Matrix each column is
+// a variable and each row an observation; a Vector is a single variable.
 
 function _statsNumericEntry(x) {
   if (isReal(x))    return x.value.toNumber();
@@ -17,6 +17,60 @@ function _statsNumericEntry(x) {
 function _statsNumbers(items) {
   if (items.length === 0) throw new RPLError('Bad argument value');
   return items.map(_statsNumericEntry);
+}
+
+function _sigmaData() {
+  const data = varRecall('ΣDAT');
+  if (data === undefined) throw new RPLError('Nonexistent ΣDAT');
+  if (!isMatrix(data) && !isVector(data)) throw new RPLError('Invalid ΣDATA');
+  return data;
+}
+
+function _popData(s) {
+  const top = s.depth ? s.peek(1) : null;
+  return isVector(top) || isMatrix(top) ? s.pop() : _sigmaData();
+}
+
+// ΣPAR holds { xcol ycol intercept slope model }, as on the HP; XCOL, YCOL,
+// the fits and LR each set their part of it.
+const _sigmaParDefault = () => [Real(1), Real(2), Real(0), Real(0), Name('LINFIT')];
+
+function _sigmaPar() {
+  const par = varRecall('ΣPAR');
+  const items = isList(par) ? par.items : [];
+  return _sigmaParDefault().map((v, i) => items[i] ?? v);
+}
+
+function _setSigmaPar(changes) {
+  const items = _sigmaPar();
+  for (const [i, v] of Object.entries(changes)) items[i] = v;
+  varStore('ΣPAR', RList(items));
+}
+
+function _columnIndex(v) {
+  const n = isReal(v) || isInteger(v) ? Number(v.value.toString()) : NaN;
+  if (!Number.isInteger(n) || n < 1) throw new RPLError('Invalid ΣPAR');
+  return n - 1;
+}
+
+// The independent and dependent columns, 0-based, from XCOL and YCOL.
+function _dataColumns() {
+  const [x, y] = _sigmaPar();
+  return [_columnIndex(x), _columnIndex(y)];
+}
+
+const FIT_NAMES = { LINFIT: 'LIN', LOGFIT: 'LOG', EXPFIT: 'EXP', PWRFIT: 'PWR' };
+
+function _parModelKind() {
+  const model = _sigmaPar()[4];
+  const kind = FIT_NAMES[isName(model) ? model.id : isString(model) ? model.value : ''];
+  if (!kind) throw new RPLError('Invalid ΣPAR');
+  return kind;
+}
+
+function _rememberFit(kind, a, b) {
+  setLastFitModel(kind, a, b);
+  _setSigmaPar({ 2: Real(a), 3: Real(b), 4: Name(`${kind}FIT`) });
 }
 
 function _sumOfArr(a) { let s = 0; for (const x of a) s += x; return s; }
@@ -85,18 +139,19 @@ function _madItems(items) {
   return _meanArr(xs.map((x) => Math.abs(x - mean)));
 }
 
+// AUR: one result per column as a vector, or the result itself for a single column.
 function _perColumn(M, reduce) {
   if (M.rows.length === 0) throw new RPLError('Bad argument value');
   const n = M.rows[0].length;
   const out = new Array(n);
   for (let j = 0; j < n; j++) out[j] = reduce(M.rows.map((row) => row[j]));
-  return Vector(out);
+  return n === 1 ? out[0] : Vector(out);
 }
 
 // A Vector gives one result, a Matrix a Vector of per-column results.
 function _columnStat(reduce, wrapVectorResult = (r) => r) {
   return (s) => {
-    const [v] = s.popN(1);
+    const v = _popData(s);
     if (isVector(v)) s.push(wrapVectorResult(reduce(v.items)));
     else if (isMatrix(v)) s.push(_perColumn(v, reduce));
     else throw new RPLError('Bad argument type');
@@ -115,28 +170,22 @@ register('SDEV', _columnStat(_asReal((items) => Math.sqrt(_varItems(items)))), {
 
 register('MEDIAN', _columnStat(_asReal(_medianItems)), { category: 'Statistics', categoryOrder: 1, label: "MEDIAN" });
 
-// m×2 Matrix with m >= 2: column 1 is X, column 2 is Y.
+// A Matrix with at least two rows: the XCOL column is X, the YCOL column is Y.
 function _twoColsOrThrow(M) {
-  if (!isMatrix(M)) throw new RPLError('Bad argument type');
-  const m = M.rows.length;
-  if (m < 2) throw new RPLError('Bad argument value');
-  if (M.rows[0].length !== 2) throw new RPLError('Invalid dimension');
-  const X = new Array(m), Y = new Array(m);
-  for (let i = 0; i < m; i++) {
-    X[i] = _statsNumericEntry(M.rows[i][0]);
-    Y[i] = _statsNumericEntry(M.rows[i][1]);
-  }
-  return { X, Y };
+  _requireXY(M);
+  if (M.rows.length < 2) throw new RPLError('Bad argument value');
+  const [xcol, ycol] = _dataColumns();
+  return { X: _matStatsCol(M, xcol), Y: _matStatsCol(M, ycol) };
 }
 
 register('COV', (s) => {
-  const [M] = s.popN(1);
+  const M = _popData(s);
   const { X, Y } = _twoColsOrThrow(M);
   s.push(Real(_covArr(X, Y)));
 }, { category: 'Statistics', categoryOrder: 23, label: "COV" });
 
 register('CORR', (s) => {
-  const [M] = s.popN(1);
+  const M = _popData(s);
   const { X, Y } = _twoColsOrThrow(M);
   const vX = _varArr(X), vY = _varArr(Y);
   if (vX === 0 || vY === 0) throw new RPLError('Infinite result');
@@ -149,21 +198,26 @@ function _matStatsCol(M, j) {
 }
 
 // ΣX, ΣX2 and NΣ also take a Vector; the sums involving Y need a Matrix
-// with at least two columns.
+// with the XCOL and YCOL columns in it.
 function _xColumn(v) {
   if (isVector(v)) return _statsNumbers(v.items);
-  if (isMatrix(v)) return _matStatsCol(v, 0);
-  throw new RPLError('Bad argument type');
+  if (!isMatrix(v)) throw new RPLError('Bad argument type');
+  if (v.rows.length === 0) throw new RPLError('Bad argument value');
+  const [xcol] = _dataColumns();
+  if (xcol >= v.rows[0].length) throw new RPLError('Invalid dimension');
+  return _matStatsCol(v, xcol);
 }
 
 function _requireXY(M) {
   if (!isMatrix(M)) throw new RPLError('Bad argument type');
   if (M.rows.length === 0) throw new RPLError('Bad argument value');
-  if (M.rows[0].length < 2) throw new RPLError('Invalid dimension');
+  if (Math.max(..._dataColumns()) >= M.rows[0].length) throw new RPLError('Invalid dimension');
 }
 
+const _yColumn = (M) => _matStatsCol(M, _dataColumns()[1]);
+
 function _countOp(s) {
-  const [M] = s.popN(1);
+  const M = _popData(s);
   let n;
   if (isVector(M)) n = M.items.length;
   else if (isMatrix(M)) n = M.rows.length;
@@ -177,7 +231,7 @@ register('NSIGMA', _countOp, { category: 'Statistics', categoryOrder: 5, label: 
 register('NΣ', _countOp, { category: 'Statistics', categoryOrder: 19, label: "NΣ" });
 
 function _sumXOp(s) {
-  const [v] = s.popN(1);
+  const v = _popData(s);
   s.push(Real(_sumOfArr(_xColumn(v))));
 }
 
@@ -186,7 +240,7 @@ register('ΣX', _sumXOp, { category: 'Statistics', categoryOrder: 14, label: "Σ
 register('SX', _sumXOp, { category: 'Statistics', categoryOrder: 9, label: "SX" });
 
 function _sumX2Op(s) {
-  const [v] = s.popN(1);
+  const v = _popData(s);
   const X = _xColumn(v);
   s.push(Real(_sumOfProd(X, X)));
 }
@@ -196,9 +250,9 @@ register('ΣX2', _sumX2Op, { category: 'Statistics', categoryOrder: 15, label: "
 register('SX2', _sumX2Op, { category: 'Statistics', categoryOrder: 10, label: "SX2" });
 
 function _sumYOp(s) {
-  const [M] = s.popN(1);
+  const M = _popData(s);
   _requireXY(M);
-  s.push(Real(_sumOfArr(_matStatsCol(M, 1))));
+  s.push(Real(_sumOfArr(_yColumn(M))));
 }
 
 register('ΣY', _sumYOp, { category: 'Statistics', categoryOrder: 16, label: "ΣY" });
@@ -206,9 +260,9 @@ register('ΣY', _sumYOp, { category: 'Statistics', categoryOrder: 16, label: "Σ
 register('SY', _sumYOp, { category: 'Statistics', categoryOrder: 11, label: "SY" });
 
 function _sumY2Op(s) {
-  const [M] = s.popN(1);
+  const M = _popData(s);
   _requireXY(M);
-  const Y = _matStatsCol(M, 1);
+  const Y = _yColumn(M);
   s.push(Real(_sumOfProd(Y, Y)));
 }
 
@@ -217,9 +271,9 @@ register('ΣY2', _sumY2Op, { category: 'Statistics', categoryOrder: 17, label: "
 register('SY2', _sumY2Op, { category: 'Statistics', categoryOrder: 12, label: "SY2" });
 
 function _sumXYOp(s) {
-  const [M] = s.popN(1);
+  const M = _popData(s);
   _requireXY(M);
-  s.push(Real(_sumOfProd(_matStatsCol(M, 0), _matStatsCol(M, 1))));
+  s.push(Real(_sumOfProd(_xColumn(M), _yColumn(M))));
 }
 
 register('ΣXY', _sumXYOp, { category: 'Statistics', categoryOrder: 18, label: "ΣXY" });
@@ -284,7 +338,7 @@ function _fit(kind, M) {
 }
 
 function _modelToSym(kind, a, b) {
-  const X = AstVar('X'), A = AstNum(a), B = AstNum(b);
+  const X = AstVar('X'), A = AstNum(Number(a.toPrecision(12))), B = AstNum(Number(b.toPrecision(12)));
   switch (kind) {
     case 'LIN': return Symbolic(AstBin('+', A, AstBin('*', B, X)));
     case 'LOG': return Symbolic(AstBin('+', A, AstBin('*', B, AstFn('LN', [X]))));
@@ -295,10 +349,10 @@ function _modelToSym(kind, a, b) {
 
 function _fitOp(kind) {
   return (s) => {
-    const [M] = s.popN(1);
+    const M = _popData(s);
     const { a, b, r } = _fit(kind, M);
     if (!Number.isFinite(a) || !Number.isFinite(b)) throw new RPLError('Infinite result');
-    setLastFitModel(kind, a, b);
+    _rememberFit(kind, a, b);
     s.push(_modelToSym(kind, a, b));
     s.push(Real(r));
   };
@@ -312,21 +366,23 @@ register('EXPFIT', _fitOp('EXP'), { category: 'Statistics', categoryOrder: 26, l
 
 register('PWRFIT', _fitOp('PWR'), { category: 'Statistics', categoryOrder: 27, label: "PWRFIT" });
 
-// BESTFIT names the family with the largest |r| (ties go to the earlier one)
-// and leaves the model PREDV / PREDX use unchanged.
+// AUR: BESTFIT picks the family with the largest |r| (ties go to the earlier
+// one) and makes it the model PREDV, PREDX and ΣLINE use, pushing the fit as LINFIT would.
 register('BESTFIT', (s) => {
-  const [M] = s.popN(1);
+  const M = _popData(s);
   let best = null;
   for (const kind of FIT_KINDS) {
-    let r;
-    try { ({ r } = _fit(kind, M)); } catch (_) { continue; }
-    if (!best || Math.abs(r) > Math.abs(best.r)) best = { kind, r };
+    let fit;
+    try { fit = _fit(kind, M); } catch (_) { continue; }
+    if (!best || Math.abs(fit.r) > Math.abs(best.r)) best = { kind, ...fit };
   }
   if (!best) {
     _fit('LIN', M);   // rethrows the underlying error
     throw new RPLError('Bad argument value');
   }
-  s.push(Str(best.kind));
+  _rememberFit(best.kind, best.a, best.b);
+  s.push(_modelToSym(best.kind, best.a, best.b));
+  s.push(Real(best.r));
 }, { category: 'Statistics', categoryOrder: 28, label: "BESTFIT" });
 
 register('MAD', _columnStat(_asReal(_madItems)), { category: 'Statistics', categoryOrder: 4, label: "MAD" });
@@ -338,10 +394,13 @@ function _fitScalar(v) {
   throw new RPLError('Bad argument type');
 }
 
+// The last fit, or the coefficients and model ΣPAR holds, which a program may have stored itself.
 function _lastFitModel() {
   const model = getLastFitModel();
-  if (!model) throw new RPLError('Undefined name');
-  return model;
+  if (model) return model;
+  if (varRecall('ΣPAR') === undefined) throw new RPLError('Undefined name');
+  const [, , a, b] = _sigmaPar();
+  return { kind: _parModelKind(), a: _statsNumericEntry(a), b: _statsNumericEntry(b) };
 }
 
 // Solves y = f(x) for x; null where the model has no real inverse.
@@ -371,3 +430,76 @@ register('PREDX', (s) => {
   if (x === null || !Number.isFinite(x)) throw new RPLError('Infinite result');
   s.push(Real(x));
 }, { category: 'Statistics', categoryOrder: 30, label: "PREDX" });
+
+register('PREDY', lookup('PREDV').fn, { category: 'Statistics', categoryOrder: 31, label: "PREDY" });
+
+// AUR: LR fits the model ΣPAR names and gives its intercept and slope, tagged.
+register('LR', (s) => {
+  const M = _popData(s);
+  const kind = _parModelKind();
+  const { a, b } = _fit(kind, M);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) throw new RPLError('Infinite result');
+  _rememberFit(kind, a, b);
+  s.push(Tagged('Intercept', Real(a)));
+  s.push(Tagged('Slope', Real(b)));
+}, { category: 'Statistics', categoryOrder: 32, label: "LR" });
+
+register('ΣLINE', (s) => {
+  const [, , a, b] = _sigmaPar();
+  s.push(_modelToSym(_parModelKind(), _statsNumericEntry(a), _statsNumericEntry(b)));
+}, { category: 'Statistics', categoryOrder: 33, label: "ΣLINE" });
+
+// ΣDAT keeps n data points of m coordinates as an n×m matrix of reals.
+function _sigmaRows() {
+  const data = varRecall('ΣDAT');
+  if (data === undefined) return null;
+  if (!isMatrix(data) || !data.rows.every((row) => row.every((x) => isReal(x) || isInteger(x)))) throw new RPLError('Invalid ΣDATA');
+  return data.rows;
+}
+
+const _realRow = (row) => row.every((x) => isReal(x) || isInteger(x));
+
+// AUR: a real, a vector or a matrix of rows adds data points; once ΣDAT has m
+// columns a point can also be m separate reals, the last one on level 1.
+register('Σ+', (s) => {
+  const existing = _sigmaRows();
+  const m = existing?.[0]?.length ?? 0;
+  const v = s.pop();
+  let rows;
+  if (isMatrix(v)) rows = v.rows;
+  else if (isVector(v)) rows = [v.items];
+  else if (isReal(v) || isInteger(v)) rows = [m > 1 ? [...s.popN(m - 1), v] : [v]];
+  else throw new RPLError('Bad argument type');
+  if (!rows.every(_realRow)) throw new RPLError('Bad argument type');
+  const width = existing ? m : rows[0].length;
+  if (!rows.every((row) => row.length === width)) throw new RPLError('Invalid dimension');
+  varStore('ΣDAT', Matrix([...(existing ?? []), ...rows]));
+}, { category: 'Statistics', categoryOrder: 34, label: "Σ+" });
+
+register('Σ-', (s) => {
+  const rows = _sigmaRows();
+  if (!rows?.length) throw new RPLError('Nonexistent ΣDAT');
+  const last = rows[rows.length - 1];
+  if (rows.length > 1) varStore('ΣDAT', Matrix(rows.slice(0, -1)));
+  else varPurge('ΣDAT');
+  s.push(last.length === 1 ? last[0] : Vector(last));
+}, { category: 'Statistics', categoryOrder: 35, label: "Σ-" });
+
+register('CLΣ', () => { varPurge('ΣDAT'); }, { category: 'Statistics', categoryOrder: 36, label: "CLΣ" });
+
+register('RCLΣ', (s) => {
+  const data = varRecall('ΣDAT');
+  if (data === undefined) throw new RPLError('Nonexistent ΣDAT');
+  s.push(data);
+}, { category: 'Statistics', categoryOrder: 37, label: "RCLΣ" });
+
+register('STOΣ', (s) => { varStore('ΣDAT', s.pop()); }, { category: 'Statistics', categoryOrder: 38, label: "STOΣ" });
+
+register('XCOL', (s) => { _setSigmaPar({ 0: Real(_columnIndex(s.pop()) + 1) }); }, { category: 'Statistics', categoryOrder: 39, label: "XCOL" });
+
+register('YCOL', (s) => { _setSigmaPar({ 1: Real(_columnIndex(s.pop()) + 1) }); }, { category: 'Statistics', categoryOrder: 40, label: "YCOL" });
+
+register('COLΣ', (s) => {
+  const [x, y] = s.popN(2);
+  _setSigmaPar({ 0: Real(_columnIndex(x) + 1), 1: Real(_columnIndex(y) + 1) });
+}, { category: 'Statistics', categoryOrder: 41, label: "COLΣ" });

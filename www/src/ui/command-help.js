@@ -3,6 +3,7 @@ export const ALIASES = new Map([
   ['SQRT',    '√'],
   ['-',       '–'],
   ['HMS-',    'HMS–'],
+  ['Σ-',      'Σ–'],
   ['ROW-',    'ROW–'],
   ['COL-',    'COL–'],
   ['STO-',    'STO–'],
