@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.17 (2026-10-06)
+**Latest release:** v0.6.18 (2026-10-06)
 
 ---
 
@@ -20,6 +20,30 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.18 — 2026-10-06
+
+SERIES. `'LN(X)' 'X=1' 2 SERIES` gives `{ :Limit:0 :Equiv:h :Expans:h-1/2*h^2
+:Remain:h^3 }` and `h=X-1`, as the AUR describes: the limit at the point, the
+leading term, the expansion in a small h and the order of its remainder. The
+variable alone means the point 0, a bare value is the point in the formula's
+only variable, and `X=∞` or `X=-∞` expands at infinity with `h=1/X`. The app
+now has 457 commands.
+
+EVAL evaluates as the HP does. A variable that holds an algebraic or a name
+is substituted and evaluated in turn: with `Y+1` in X, `'X^2' EVAL` gives
+`(Y+1)^2`, and with 2 in Y as well it gives 9; a variable that refers to
+itself is substituted once. Fractions are worked exactly in EXACT mode:
+`'1/3+1/6' EVAL` gives `1/2`, `'2/4' EVAL` gives `1/2`, `'(2/3)^-2' EVAL`
+gives `9/4`, and `'1/3' EVAL` lands as the fraction 1/3 rather than an
+algebraic, so `3 *` gives 1.
+
+Equation writer:
+
+- `2e-3`, `2e3` and `2E+3` typed with the letter key read as scientific
+  notation, as they would on a keyboard; `2e` times x is still 2·e·x.
+- The insight strip works a formula with units out: `5_m+3_ft` offers
+  `19.4041994751_ft`, and one click replaces the formula with it.
 
 ## v0.6.17 — 2026-10-06
 
