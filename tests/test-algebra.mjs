@@ -8182,3 +8182,27 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     'a variable that refers to itself is substituted once, and a stored name is substituted');
 }
 
+{
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
+  giac._clear();
+  giac._setFixtures({
+    'series(ln(1+h),h=0,2)': 'h-1/2*h^2+h^3*order_size(h)', 'limit(ln(X),X,1)': '0',
+    'series(sin(h)/h,h=0,3)': '1-1/6*h^2+h^4*order_size(h)', 'limit(sin(X)/X,X,0)': '1',
+    'series(1/(1/h),h=0,2)': 'h', 'limit(1/X,X,+infinity)': '0',
+    'series(h^2,h=0,5)': 'h^2', 'limit(X^2,X,0)': '0',
+    'series(sin(π/2+h),h=0,3)': '1-1/2*h^2+h^4*order_size(h)', 'limit(sin(X),X,π/2)': '1',
+  });
+  assert(line("'LN(X)' 'X=1' 2 SERIES") === '`h = X - 1` | { :Limit:0 :Equiv:`h` :Expans:`h - 1/2*h^2` :Remain:`h^3` }',
+    'SERIES: the AUR example, LN(X) at X=1 to order 2, as {Limit Equiv Expans Remain} and h=X-1');
+  assert(line("'SIN(X)/X' 'X' 3 SERIES") === '`h = X` | { :Limit:1 :Equiv:1 :Expans:`1 - 1/6*h^2` :Remain:`h^4` }',
+    'SERIES: the variable alone means the point 0, and the leading term is the equivalent');
+  assert(line("'1/X' 'X=∞' 2 SERIES") === '`h = 1/X` | { :Limit:0 :Equiv:`h` :Expans:`h` :Remain:0 }',
+    'SERIES: at infinity h is 1/X, and an exact expansion has no remainder');
+  assert(line("'X^2' 0 5 SERIES") === '`h = X` | { :Limit:0 :Equiv:`h^2` :Expans:`h^2` :Remain:0 }',
+    'SERIES: a bare point is taken in the expression\'s only variable');
+  assert(line("'SIN(X)' 'X=π/2' 3 SERIES") === '`h = X - π/2` | { :Limit:1 :Equiv:1 :Expans:`1 - 1/2*h^2` :Remain:`h^4` }',
+    'SERIES: a symbolic point such as π/2 works');
+  assertThrows(() => runLine("'LN(X)' 'X' 0 SERIES"), /Bad argument value/, 'SERIES: an order below 1 is refused');
+  giac._clear();
+}
+

@@ -1500,7 +1500,7 @@ function _definedFunction(name, arity) {
   return shaped ? { names: names.map((n) => n.id), expr: body.expr } : null;
 }
 
-function _substitute(ast, bindings) {
+export function _substitute(ast, bindings) {
   switch (ast.kind) {
     case 'var': return bindings.get(ast.name) ?? ast;
     case 'neg': return AstNeg(_substitute(ast.arg, bindings));

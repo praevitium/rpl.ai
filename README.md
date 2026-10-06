@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 456 commands, exact big-integer and rational arithmetic,
+of its command set: 457 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -85,7 +85,8 @@ RPL puts the numbers first and the operation last. Each value goes on the
   the HP's ' key, and the command line reads apostrophes too: `'X^2-4'`
   is the same object. Or press `⌘E`, type `x^2-5x+6=0`, and click the Solve
   card. `` `EXP(X)` `X` 3 TAYLR `` gives the Taylor polynomial
-  `1+X+1/2*X^2+1/6*X^3`, and ZEROS lists the roots on their own.
+  `1+X+1/2*X^2+1/6*X^3`, SERIES expands around any point with the limit and
+  remainder, and ZEROS lists the roots on their own.
 - **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
   then gives `25`, and SQUARE appears on the VARS menu. A stored program
   runs by name like a built-in. Built-in names such as `SQ` are reserved.
@@ -498,7 +499,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 456. The
+**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 457. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - program I/O: INPUT, INFORM, CHOOSE, DISP, CLLCD, FREEZE, MSGBOX, WAIT,
@@ -508,8 +509,8 @@ Catalog and the command reference mark what is available. Not there yet:
   the rest)
 - the ΣDAT commands (Σ+, CLΣ, XCOL, YCOL, NDIST and the rest)
 - MENU and TMENU, and DEF
-- parts of the CAS, such as SERIES, DESOLVE, LINSOLVE and LDEC (SOLVE,
-  ISOL, ZEROS, TAYLR and TAYLOR0 are here). Symbolic commands such as EXPAND
+- parts of the CAS, such as DESOLVE, LINSOLVE and LDEC (SOLVE, ISOL,
+  ZEROS, TAYLR, TAYLOR0 and SERIES are here). Symbolic commands such as EXPAND
   and SOLVE refuse an algebraic with units in it, which EVAL and →NUM work
   out.
 

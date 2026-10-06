@@ -1,11 +1,11 @@
-import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isList, Real, Name, Integer, isComplex, Complex, isVector, Vector, isMatrix, Matrix, isValidHpIdentifier, isBinaryInteger, isRational, isUnit } from '../types.js';
+import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isList, Real, Name, Integer, isComplex, Complex, isVector, Vector, isMatrix, Matrix, isValidHpIdentifier, isBinaryInteger, isRational, isUnit, Tagged } from '../types.js';
 import { giac } from '../cas/giac-engine.mjs';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { buildGiacCmd, giacToAst, splitGiacList, astToGiac } from '../cas/giac-convert.mjs';
 import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction } from '../algebra.js';
 import { getComplexMode, getCasVx, setCasVx, getApproxMode } from '../state.js';
 import { register, lookup } from './registry.js';
-import { _astToRplValue, _pushCasResult, _isSymOperand, _toAst, _withListUnary, _withTaggedUnary, _withVMUnary } from './internal.js';
+import { _astToRplValue, _pushCasResult, _isSymOperand, _toAst, _substitute, _withListUnary, _withTaggedUnary, _withVMUnary } from './internal.js';
 
 
 
@@ -330,6 +330,55 @@ register('TAYLR', (s) => {
   const varName = _varName(varArg);
   _pushCasResult(s, _taylor(_astArg(expr), varName, _taylorOrder(orderArg)));
 }, { category: 'CAS / symbolic', categoryOrder: 3.5, label: "TAYLR" });
+
+const _infinitySign = (ast) => {
+  const inf = (a) => a.kind === 'var' && /^(∞|\+∞|INFINITY|\+INFINITY)$/i.test(a.name);
+  if (inf(ast)) return 1;
+  if ((ast.kind === 'neg' && inf(ast.arg)) || (ast.kind === 'var' && /^(-∞|-INFINITY)$/i.test(ast.name))) return -1;
+  return 0;
+};
+
+// AUR: the variable means the point 0, X=a the point a, and a bare value the point a in VX.
+function _seriesPoint(v, expr) {
+  if (isName(v) && !_infinitySign(AstVar(v.id))) return { varName: v.id, point: AstNum(0n) };
+  const ast = _astArg(v);
+  if (ast.kind === 'bin' && ast.op === '=' && ast.l.kind === 'var') return { varName: ast.l.name, point: ast.r };
+  return { varName: _vxFor(expr), point: ast };
+}
+
+// AUR: SERIES gives {{Limit: Equiv: Expans: Remain:} h=X-a}: the limit at the
+// point, the leading term, the expansion in a small h and its remainder's order.
+register('SERIES', (s) => {
+  const [exprArg, pointArg, orderArg] = s.popN(3);
+  const expr = _astArg(exprArg);
+  const n = _taylorOrder(orderArg);
+  if (n < 1) throw new RPLError('Bad argument value');
+  const { varName: x, point } = _seriesPoint(pointArg, expr);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const h = AstVar('h');
+  const sign = _infinitySign(point);
+  const atZero = astIsNum(point) && point.value === 0;
+  const inH = sign ? AstBin('/', AstNum(sign > 0 ? 1n : -1n), h) : atZero ? h : AstBin('+', point, h);
+  const shifted = _substitute(expr, new Map([[x, inH]]));
+  const raw = String(giac.caseval(buildGiacCmd(shifted, (e) => `series(${e},h=0,${n})`, ['h'])));
+  if (!raw || /undef|rror/i.test(raw)) throw new RPLError('No series at that point');
+  const tail = raw.match(/(?:h(?:\^\(?(-?\d+)\)?)?\*)?order_size\(h\)/);
+  const expans = giacToAst(raw.replace(/[-+]?(?:h(?:\^\(?-?\d+\)?)?\*)?order_size\(h\)$/, '') || '0');
+  const remainder = tail ? (tail[1] !== undefined ? Number(tail[1]) : tail[0].startsWith('h') ? 1 : 0) : null;
+  const terms = _sumTerms(expans);
+  const powers = terms.map((t) => _termPower(t, 'h'));
+  const lowest = powers.reduce((best, p, i) => (p < powers[best] ? i : best), 0);
+  const limitCmd = buildGiacCmd(expr, (e) => `limit(${e},${x},${sign ? `${sign > 0 ? '+' : '-'}infinity` : astToGiac(point)})`, [x]);
+  const limit = giacToAst(giac.caseval(limitCmd));
+  const back = sign ? AstBin('/', AstNum(sign > 0 ? 1n : -1n), AstVar(x)) : atZero ? AstVar(x) : AstBin('-', AstVar(x), point);
+  s.push(RList([
+    Tagged('Limit', _casValue(limit)),
+    Tagged('Equiv', _casValue(terms[lowest])),
+    Tagged('Expans', _casValue(expans)),
+    Tagged('Remain', remainder === null ? Integer(0n) : Symbolic(AstBin('^', h, AstNum(BigInt(remainder))))),
+  ]));
+  s.push(Symbolic(AstBin('=', h, back)));
+}, { category: 'CAS / symbolic', categoryOrder: 3.6, label: "SERIES" });
 
 register('TAYLOR0', (s) => {
   const ast = _astArg(s.pop());
