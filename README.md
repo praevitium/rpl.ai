@@ -530,6 +530,10 @@ System RPL, and IR and serial transfer.
   that list back, instead of the HP's binary-integer flag words.
 - A local variable is visible to programs called from its body; on the HP
   only `←` names are.
+- Inside an algebraic a unit runs to the next operator, so a compound unit
+  goes in parentheses: `'9.81_(m/s^2)*T'`. `'5_m/s'` is 5 m divided by a
+  variable `s`.
+- `ZEROS` always returns a list, even of one root.
 
 **The algebra engine.** Giac is not the HP 49/50's CAS, so answers can come
 back in a different but equivalent form. It is an 11.8 MB download, fetched
