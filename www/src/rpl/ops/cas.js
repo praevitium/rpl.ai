@@ -253,10 +253,20 @@ register('INTEG', (s) => {
 }, { category: 'CAS / symbolic', categoryOrder: 2, label: "INTEG" });
 
 
+const _CONSTANT_NAMES = new Set(['π', 'e', 'i', '∞']);
+
+// VX, or the only variable of an expression that lacks VX, so `X^2` DERVX
+// differentiates by X while VX is still the default x.
+function _vxFor(ast) {
+  const vx = getCasVx();
+  const names = ast ? [...algebraFreeVars(ast)].filter((name) => !_CONSTANT_NAMES.has(name)) : [];
+  return names.length === 1 && names[0] !== vx ? names[0] : vx;
+}
+
 function _vxForm(opName) {
   return (s) => {
     if (s.depth < 1) throw new RPLError('Too few arguments');
-    s.push(Name(getCasVx()));
+    s.push(Name(_vxFor(_toAst(s.peek()))));
     lookup(opName).fn(s);
   };
 }
@@ -322,7 +332,8 @@ register('TAYLR', (s) => {
 }, { category: 'CAS / symbolic', categoryOrder: 3.5, label: "TAYLR" });
 
 register('TAYLOR0', (s) => {
-  _pushCasResult(s, _taylor(_astArg(s.pop()), getCasVx(), 4));
+  const ast = _astArg(s.pop());
+  _pushCasResult(s, _taylor(ast, _vxFor(ast), 4));
 }, { category: 'CAS / symbolic', categoryOrder: 34.5, label: "TAYLOR0" });
 
 
@@ -449,9 +460,7 @@ register('PREVAL', (s) => {
   }
   const [fVal, aVal, bVal] = s.popN(3);
   if (!isSymbolic(fVal)) throw new RPLError('Bad argument type');
-  const vars = algebraFreeVars(fVal.expr);
-  const vx = getCasVx();
-  const varName = !vars.has(vx) && vars.size === 1 ? [...vars][0] : vx;
+  const varName = _vxFor(fVal.expr);
   const endpointAst = (v) => (isBinaryInteger(v) ? AstNum(v.value) : _astArg(v));
   const aAst = endpointAst(aVal);
   const bAst = endpointAst(bVal);
@@ -737,10 +746,9 @@ register('COSSIN', _casUnary('tan2sincos'), { category: 'CAS / symbolic', catego
 register('LIN', _casUnary('lin'), { category: 'CAS / symbolic', categoryOrder: 35, label: "LIN" });
 
 
-// A bare point is approached by VX.  Names go through astToGiac so that
+// A bare point is approached by VX, or by the expression's only variable.  Names go through astToGiac so that
 // ∞ and INFINITY become Giac's ±infinity.
-function _limitPoint(v) {
-  const vx = getCasVx();
+function _limitPoint(v, vx) {
   if (isSymbolic(v)) {
     const ast = v.expr;
     if (ast.kind !== 'bin' || ast.op !== '=') return { varName: vx, valGiac: astToGiac(ast) };
@@ -758,7 +766,7 @@ register('LIMIT', (s) => {
   const [exprArg, pointArg] = s.popN(2);
   if (!_isSymOperand(exprArg)) throw new RPLError('Bad argument type');
   if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const { varName, valGiac } = _limitPoint(pointArg);
+  const { varName, valGiac } = _limitPoint(pointArg, _vxFor(_toAst(exprArg)));
   const cmd = buildGiacCmd(_toAst(exprArg), (e) => `limit(${e},${varName},${valGiac})`, [varName]);
   _pushCasResult(s, giacToAst(giac.caseval(cmd)));
 }, { category: 'CAS / symbolic', categoryOrder: 34, label: "LIMIT" });

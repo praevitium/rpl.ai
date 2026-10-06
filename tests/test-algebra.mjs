@@ -6829,20 +6829,20 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
 }
 
 {
-  // VX defaults to 'x' (rpl5050 lowercase deviation from HP50 — see
-  // state.js casVx slot).  Bare-value pointArg should resolve to that
-  // variable; the cmd uses lowercase x but the integrand still spells
-  // X explicitly, so the substitution finds nothing and Giac collapses
-  // the Symbolic to whatever the fixture returns.  We exercise the
-  // VX-default path here, not the algebraic resolution semantics.
+  // VX defaults to 'x', so a bare point is approached by the expression's
+  // only variable when VX isn't in it, and by VX otherwise.
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('SIN(X)/X')));
   s.push(Integer(0n));
   giac._clear();
-  giac._setFixture('limit(sin(X)/X,x,0)', '1');
+  giac._setFixtures({ 'limit(sin(X)/X,X,0)': '1', 'limit(A*x+B*X,x,0)': '0' });
   lookup('LIMIT').fn(s);
   assert(isInteger(s.peek()) && s.peek().value === 1n,
-         `session139: LIMIT SIN(X)/X bare-value 0 → Real(${s.peek() && s.peek().value}) (want 1; uses VX)`);
+         `LIMIT SIN(X)/X at a bare 0 approaches X, its only variable (got ${s.peek() && s.peek().value})`);
+  s.push(Symbolic(parseAlgebra('A*x+B*X')));
+  s.push(Integer(0n));
+  lookup('LIMIT').fn(s);
+  assert(isInteger(s.peek()) && s.peek().value === 0n, 'LIMIT at a bare point approaches VX when the expression has it');
   giac._clear();
 }
 
@@ -6910,7 +6910,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   s.push(Symbolic(parseAlgebra('1/X')));
   s.push(Rational(1n, 2n));
   giac._clear();
-  giac._setFixture('limit(1/X,x,(1/2))', '2');
+  giac._setFixture('limit(1/X,X,(1/2))', '2');
   lookup('lim').fn(s);
   assert(isInteger(s.peek()) && s.peek().value === 2n,
          `session139: lim 1/X at X=1/2 (Rational point) → Real(${s.peek() && s.peek().value}) (want 2)`);
@@ -6922,7 +6922,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   s.push(Symbolic(parseAlgebra('SIN(X)/X')));
   s.push(Name('∞'));
   giac._clear();
-  giac._setFixture('limit(sin(X)/X,x,+infinity)', '0');
+  giac._setFixture('limit(sin(X)/X,X,+infinity)', '0');
   lookup('LIMIT').fn(s);
   assert(isInteger(s.peek()) && s.peek().value === 0n,
          'LIMIT at Name(∞) maps the keypad glyph to Giac +infinity');
@@ -6933,7 +6933,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   s.push(Symbolic(parseAlgebra('SIN(X)/X')));
   s.push(Name('INFINITY'));
   giac._clear();
-  giac._setFixture('limit(sin(X)/X,x,+infinity)', '0');
+  giac._setFixture('limit(sin(X)/X,X,+infinity)', '0');
   lookup('LIMIT').fn(s);
   assert(isInteger(s.peek()) && s.peek().value === 0n,
          'LIMIT at Name(INFINITY) maps to Giac +infinity');
@@ -6944,7 +6944,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   s.push(Symbolic(parseAlgebra('1/X')));
   s.push(Name('-∞'));
   giac._clear();
-  giac._setFixture('limit(1/X,x,-infinity)', '0');
+  giac._setFixture('limit(1/X,X,-infinity)', '0');
   lookup('LIMIT').fn(s);
   assert(isInteger(s.peek()) && s.peek().value === 0n,
          'LIMIT at Name(-∞) maps to Giac -infinity');
@@ -6977,7 +6977,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   s.push(Symbolic(parseAlgebra('1/X')));
   s.push(Integer(0n));
   giac._clear();
-  giac._setFixture('limit(1/X,x,0)', '+infinity');
+  giac._setFixture('limit(1/X,X,0)', '+infinity');
   lookup('LIMIT').fn(s);
   assert(isSymbolic(s.peek()) && s.peek().expr.kind === 'var' && s.peek().expr.name === '∞',
          'LIMIT result +infinity lands as Symbolic ∞');
@@ -6988,7 +6988,7 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   s.push(Symbolic(parseAlgebra('1/X')));
   s.push(Name('-∞'));
   giac._clear();
-  giac._setFixture('limit(1/X,x,-infinity)', '-infinity');
+  giac._setFixture('limit(1/X,X,-infinity)', '-infinity');
   lookup('LIMIT').fn(s);
   const ast = s.peek() && s.peek().expr;
   assert(isSymbolic(s.peek()) && ast && ast.kind === 'neg'
@@ -8145,6 +8145,16 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._setFixture('czeros(X^2+1,X)', '[-i,i]');
   assert(line("'X^2+1' 'X' ZEROS").split(' ').length === 4, 'ZEROS: complex mode looks for complex roots');
   setComplexMode(false);
+  giac._clear();
+}
+
+{
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
+  giac._clear();
+  giac._setFixtures({ 'diff(X^2,X)': '2*X', 'diff(x*Y,x)': 'Y', 'series(cos(X),X=0,4,polynom)': '1-1/2*X^2+1/24*X^4' });
+  assert(line("'X^2' DERVX") === '`2*X`' && line("'COS(X)' TAYLOR0") === '`1 - 1/2*X^2 + 1/24*X^4`',
+    'DERVX and TAYLOR0 work in the only variable of an expression that lacks VX (x)');
+  assert(line("'x*Y' DERVX") === '`Y`', 'DERVX keeps VX when the expression has it');
   giac._clear();
 }
 
