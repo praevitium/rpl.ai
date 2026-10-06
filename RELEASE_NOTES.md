@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.18 (2026-10-06)
+**Latest release:** v0.6.19 (2026-10-06)
 
 ---
 
@@ -20,6 +20,27 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.19 — 2026-10-06
+
+Download or copy a plot. Two buttons on the plot canvas copy it as an image
+and download it as a PNG, named after the first trace, at the screen's pixel
+density.
+
+Unit keys in the equation writer. A menu picked from the menu bar while a
+writer is open now takes the writer's menu's place, and the picker lists EQW
+or MTRW to bring it back. With the UNITS menu up, a unit key attaches its
+unit to the number being typed, so 5 then LENG m gives `5_m` and a compound
+unit such as m/s is bracketed; the ↱ layer divides by the unit.
+
+Fixed:
+
+- A matrix cell takes `2,500`, `10%`, `$1,234.50` and `12,5` as a
+  spreadsheet writes them, and `1+2i` as a complex number, whether typed or
+  pasted one at a time; a pasted range already did (W-M6).
+- `'1/0' EVAL` kept `1/0`; it now gives the HP's Infinite result, as does
+  `0^-1` or a division that folds to zero. A division by zero with a name in
+  it, `X/0`, stays symbolic.
 
 ## v0.6.18 — 2026-10-06
 
