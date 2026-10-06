@@ -1,4 +1,5 @@
 import { assert, assertThrows } from './helpers.mjs';
+import { format } from '../www/src/rpl/formatter.js';
 import {
   emptyGrid, identityGrid, zerosGrid, clampDim, resizeGrid,
   parseMatrixCell, gridToMatrix, gridToValue, valueToGrid, pasteIntoGrid,
@@ -211,3 +212,13 @@ import {
   assert(eexText('2') === 'E' && eexText('2.') === 'E' && eexText('.5') === 'E', 'eexText: EEX after a number types E');
   assert(eexText('2E') === '' && eexText('2E-3') === '' && eexText('1.5e3') === '', 'eexText: a number with an exponent already gets no second one');
 }
+
+{
+  const cell = (text) => format(parseMatrixCell(text));
+  assert(cell('2,500') === '2500' && cell('10%') === '0.1' && cell('$1,234.50') === '1234.5' && cell('12,5') === '12.5',
+    'parseMatrixCell reads spreadsheet number formats: thousands separators, percentages, currency and a decimal comma (W-M6)');
+  assert(cell('1+2i') === '(1, 2)' && cell('1-2i') === '(1, -2)' && cell('2i') === '(0, 2)' && cell('-i') === '(0, -1)' && cell('2.5 - i') === '(2.5, -1)',
+    'parseMatrixCell reads a+bi as a complex number');
+  assert(cell('(1,2)') === '(1, 2)' && cell('1/2') === '1/2' && cell('i') === '`i`', 'a complex literal, a fraction and the name i are unchanged');
+}
+

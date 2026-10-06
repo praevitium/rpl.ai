@@ -5,7 +5,7 @@ import { format } from '../rpl/formatter.js';
 import { Var, parseAlgebra } from '../rpl/algebra.js';
 import { sheetNumber, htmlTableToText } from '../rpl/sheet.js';
 import {
-  Matrix, Vector, Real, Symbolic,
+  Matrix, Vector, Real, Complex, Symbolic,
   isMatrix, isVector, isList, isNumber, isSymbolic, isName, isValidHpIdentifier,
 } from '../rpl/types.js';
 
@@ -185,6 +185,15 @@ function sameGrid(a, b) {
   return a.length === b.length && a.every((row, r) => row.length === b[r].length && row.every((cell, c) => (cell ?? '') === (b[r][c] ?? '')));
 }
 
+// 1+2i, -3i or 2.5-i as a spreadsheet or textbook writes a complex number.
+function complexCell(text) {
+  const m = /^([-+]?(?:\d+\.?\d*|\.\d+)(?:E[-+]?\d+)?)?([-+](?:\d+\.?\d*|\.\d+)?(?:E[-+]?\d+)?)?[ij]$/i.exec(text.replace(/\s+/g, ''));
+  if (!m || (!m[1] && !m[2])) return null;
+  const unit = (sign) => Number(`${sign}1`);
+  if (!m[2]) return Complex(0, /^[-+]?$/.test(m[1]) ? unit(m[1]) : Number(m[1]));
+  return Complex(Number(m[1] ?? 0), /^[-+]$/.test(m[2]) ? unit(m[2]) : Number(m[2]));
+}
+
 export function parseMatrixCell(text) {
   const t = String(text ?? '').trim();
   if (t === '') return Real(0);
@@ -193,6 +202,11 @@ export function parseMatrixCell(text) {
   const v = values.length === 1 ? values[0] : null;
   if (v && (isNumber(v) || isSymbolic(v))) return v;
   if (v && isName(v) && (v.id === '∞' || isValidHpIdentifier(v.id))) return Symbolic(Var(v.id));
+  // 2,500, 10% and $1,234.50 as a spreadsheet writes them, and 1+2i.
+  const sheet = sheetNumber(t);
+  if (sheet) return parseEntry(sheet)[0];
+  const z = complexCell(t);
+  if (z) return z;
   try { return Symbolic(parseAlgebra(t)); }
   catch (e) {
     throw new Error(values.length > 1 ? `expected one value, got ${values.length}` : e.message || `expected a number, got ${v?.type}`);
