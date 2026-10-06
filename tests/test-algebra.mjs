@@ -4,7 +4,7 @@ import {
   Real, Integer, BinaryInteger, Complex, Name, Str, Directory, Program, Tagged,
   RList, Vector, Matrix,
   isReal, isInteger, isBinaryInteger, isComplex, isDirectory, isProgram, isName,
-  isString, isVector, isMatrix, isList,
+  isString, isVector, isMatrix, isList, isRational,
   Symbolic, isSymbolic,
 } from '../www/src/rpl/types.js';
 import { parseEntry } from '../www/src/rpl/parser.js';
@@ -2598,8 +2598,8 @@ giac._setFixtures({
   }
   {
     const top = runEvalExact("`1/3`");
-    assert(isSymbolic(top),
-           `session041: EXACT '1/3' EVAL stays symbolic — got ${formatStackTop(top)}`);
+    assert(isRational(top) && top.n === 1n && top.d === 3n,
+           `session041: EXACT '1/3' EVAL is the exact fraction 1/3 — got ${formatStackTop(top)}`);
   }
   {
     const top = runEvalExact("`2+3`");
@@ -8165,5 +8165,20 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   assert(line("'SIN(X)=1' 'X' SOLVE") === '{ `X = 1/2*π` }', 'SOLVE shows Giac\'s pi as π, as the rest of the app does');
   assert(line("'COS(X)' 'X' ZEROS") === '{ `(-1)/2*π` `1/2*π` }', 'ZEROS orders roots that involve π by value');
   giac._clear();
+}
+
+{
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
+  setApproxMode(false);
+  assert(line("'1/3+1/6' EVAL") === '1/2' && line("'2/4' EVAL") === '1/2' && line("'1/3*3' EVAL") === '1' && line("'(2/3)^-2' EVAL") === '9/4',
+    'EVAL works fractions exactly in EXACT mode, as the HP does: 1/3+1/6 is 1/2');
+  assert(line("'1/3+X' EVAL") === '`1/3 + X`' && line("'0.5/3' EVAL") === '0.166666666667', 'a fraction next to a name stays, and a real operand makes the fold approximate');
+  setApproxMode(true);
+  assert(line("'1/3+1/6' EVAL") === '0.5', 'in APPROX mode the fraction folds to a real');
+  setApproxMode(false);
+  assert(line("'Y+1' 'X' STO 'X^2' EVAL 'X' PURGE") === '`(Y + 1)^2`' && line("'Y+1' 'X' STO 2 'Y' STO 'X^2' EVAL { X Y } PURGE") === '9',
+    'EVAL substitutes a variable that holds an algebraic, and the variables inside it in turn');
+  assert(line("'X+1' 'X' STO 'X^2' EVAL 'X' PURGE") === '`(X + 1)^2`' && line("'Z' 'X' STO 'X^2' EVAL 'X' PURGE") === '`Z^2`',
+    'a variable that refers to itself is substituted once, and a stored name is substituted');
 }
 

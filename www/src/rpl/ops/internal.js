@@ -1,7 +1,7 @@
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Name, Symbolic, Integer, Unit, isUnit, isBinaryInteger, isNumber, promoteNumericPair, Complex, Rational, isList, RList, isTagged, Tagged, isVector, Vector, isMatrix, Matrix, BinaryInteger, toRealOrThrow, toRealDecimal, isString, isValidHpIdentifier, isStorableHpName, isProgram, isDirectory, Str, Program } from '../types.js';
 import { RPLAbort, RPLError, Stack, setPushCoerce, checkTimeLimit } from '../stack.js';
-import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, UnitNode as AstUnit, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, hasUnits, isRealNum, isKnownFunction } from '../algebra.js';
+import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, UnitNode as AstUnit, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, hasUnits, exactRational, isRealNum, isKnownFunction } from '../algebra.js';
 import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
 import { state as _calcState, getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
@@ -61,6 +61,8 @@ export function _astToRplValue(ast) {
   if (ast.kind === 'var') return Name(ast.name, { quoted: true });
   // Giac returns negative literals as Neg(Num); land them as plain numbers.
   if (ast.kind === 'neg' && ast.arg && ast.arg.kind === 'num') return _numToRpl(ast.arg, -1);
+  const fraction = exactRational(ast);
+  if (fraction && fraction[1] !== 1n) return Rational(fraction[0], fraction[1]);
   return Symbolic(ast);
 }
 
@@ -1435,10 +1437,17 @@ export function* _evalValueGen(s, v, depth, isSubProgram = true) {
 // ('1/3' stays '1/3').
 function _evalSymbolic(v) {
   const approx = getApproxMode();
+  // A variable holding an algebraic or a name is substituted and evaluated in
+  // turn, as on the HP; one that refers back to itself stays a name.
+  const resolving = new Set();
   const resolve = (name) => {
     const bound = _localLookup(name) ?? varRecall(name);
-    if (bound !== undefined) return isReal(bound) || isInteger(bound) || isUnit(bound) ? _toAst(bound) : null;
-    return approx ? _symConstantValue(name) : undefined;
+    if (bound === undefined) return approx ? _symConstantValue(name) : undefined;
+    if (isReal(bound) || isInteger(bound) || isUnit(bound) || isRational(bound)) return _toAst(bound);
+    if (!isSymbolic(bound) && !isName(bound)) return null;
+    if (resolving.has(name)) return null;
+    resolving.add(name);
+    try { return evalNode(_expandUserCalls(_toAst(bound))); } finally { resolving.delete(name); }
   };
   const binGate = approx
     ? null

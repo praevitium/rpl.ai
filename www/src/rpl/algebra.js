@@ -83,6 +83,51 @@ function exactIntFold(op, l, r) {
     default:  return null;
   }
 }
+// An exact fraction in the tree: an integer, int/int, or the negative of one, as [n, d].
+export function exactRational(n) {
+  const x = exactInt(n);
+  if (x !== null) return [x, 1n];
+  if (n?.kind === 'neg') {
+    const r = exactRational(n.arg);
+    return r && [-r[0], r[1]];
+  }
+  if (n?.kind !== 'bin' || n.op !== '/') return null;
+  const a = exactInt(n.l);
+  const b = exactInt(n.r);
+  return a !== null && b !== null && b !== 0n ? [a, b] : null;
+}
+
+const bigAbs = (x) => (x < 0n ? -x : x);
+const bigGcd = (a, b) => (b === 0n ? a : bigGcd(b, a % b));
+
+function rationalNode(n, d) {
+  if (d < 0n) { n = -n; d = -d; }
+  const g = bigGcd(bigAbs(n), d);
+  n /= g; d /= g;
+  if (d === 1n) return Num(n);
+  const abs = Bin('/', Num(bigAbs(n)), Num(d));
+  return n < 0n ? Neg(abs) : abs;
+}
+
+// Fraction arithmetic in EXACT mode, so 1/3+1/6 is 1/2 and 2/4 is 1/2, as on the HP.
+function exactRationalFold(op, l, r) {
+  const a = exactRational(l);
+  const b = exactRational(r);
+  if (!a || !b) return null;
+  switch (op) {
+    case '+': return rationalNode(a[0] * b[1] + b[0] * a[1], a[1] * b[1]);
+    case '-': return rationalNode(a[0] * b[1] - b[0] * a[1], a[1] * b[1]);
+    case '*': return rationalNode(a[0] * b[0], a[1] * b[1]);
+    case '/': return b[0] === 0n ? null : rationalNode(a[0] * b[1], a[1] * b[0]);
+    case '^': {
+      if (b[1] !== 1n || bigAbs(b[0]) > BigInt(EXACT_POW_MAX) || (b[0] < 0n && a[0] === 0n)) return null;
+      const e = bigAbs(b[0]);
+      return b[0] < 0n ? rationalNode(a[1] ** e, a[0] ** e) : rationalNode(a[0] ** e, a[1] ** e);
+    }
+    default: return null;
+  }
+}
+
 export const isVar = n => n && n.kind === 'var';
 export const isNeg = n => n && n.kind === 'neg';
 export const isBin = n => n && n.kind === 'bin';
@@ -442,7 +487,7 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
   if (ast.kind === 'num') return ast;
   if (ast.kind === 'var') {
     const b = lookup(ast.name);
-    if (b?.kind === 'num' || b?.kind === 'unit') return b;
+    if (b?.kind) return b;
     if (!Number.isFinite(b)) return ast;
     return Num(b);
   }
@@ -454,7 +499,7 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
   if (ast.kind === 'bin') {
     const l = evalAst(ast.l, lookup, fnEval, binGate);
     const r = evalAst(ast.r, lookup, fnEval, binGate);
-    const exact = exactIntFold(ast.op, l, r);
+    const exact = exactIntFold(ast.op, l, r) ?? (binGate ? exactRationalFold(ast.op, l, r) : null);
     if (exact) return exact;
     const folded = foldNums(ast.op, l, r);
     if (!folded) return Bin(ast.op, l, r);
