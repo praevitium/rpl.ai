@@ -8,6 +8,7 @@ import { escapeHtml } from './display.js';
 import { icon } from './icons.js';
 import { isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians } from '../rpl/state.js';
+import { downloadFile } from '../rpl/persist.js';
 
 export { stackValueToTrace, traceToStackValues };
 
@@ -74,6 +75,8 @@ export class GraphView {
             <button type="button" data-gr="fit" title="Fit the traces" aria-label="Fit">${icon('fit', 'sm')}</button>
             <button type="button" data-gr="reset" title="Reset the view (0)" aria-label="Reset">${icon('target', 'sm')}</button>
             <button type="button" data-gr="trace" title="Trace (T): arrows move along the curve" aria-label="Trace" aria-pressed="false">${icon('trace', 'sm')}</button>
+            <button type="button" data-gr="copy" title="Copy the plot as an image" aria-label="Copy as image">${icon('copy', 'sm')}</button>
+            <button type="button" data-gr="png" title="Download the plot as a PNG" aria-label="Download as PNG">${icon('down', 'sm')}</button>
           </div>
         </div>
         <div class="gr-readout" aria-live="polite">${IDLE_READOUT}</div>
@@ -120,6 +123,8 @@ export class GraphView {
       else if (act === 'fit') this.fitView();
       else if (act === 'reset') this.resetView();
       else if (act === 'trace') this.setTraceMode(!this.tracing);
+      else if (act === 'png') this.downloadPng();
+      else if (act === 'copy') this.copyPng();
       else if (act === 'from') this.loadFromStack(1);
       else if (act === 'data-level1') this.loadData(this._kind, this.app.stack.peek(1));
       else if (act === 'data-sigma') this.loadData(this._kind, varRecall('ΣDAT'));
@@ -445,6 +450,32 @@ export class GraphView {
     this._readout.textContent = this.tracing ? this._readoutAt(this.traceX) : IDLE_READOUT;
     if (this.tracing) this.focus();
     this.draw();
+  }
+
+  // The canvas as drawn, without the hover readout, at the screen's pixel density.
+  _png() {
+    this._hover = null;
+    this.draw();
+    return new Promise((resolve, reject) => this._canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('The plot could not be drawn'))), 'image/png'));
+  }
+
+  _fileName() {
+    const first = this.traces.find((t) => t.enabled && t.expr);
+    const stem = first ? first.expr.replace(/[^A-Za-z0-9+\-^]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40) : '';
+    return `plot${stem ? `-${stem}` : ''}.png`;
+  }
+
+  async downloadPng() {
+    try { this.app.toast(`Saved ${downloadFile(await this._png(), this._fileName(), 'image/png')}`); }
+    catch (e) { this.app.notifyError(`Download failed: ${e.message}`); }
+  }
+
+  async copyPng() {
+    try {
+      if (typeof ClipboardItem !== 'function' || !navigator.clipboard?.write) throw new Error('this browser cannot copy images');
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': await this._png() })]);
+      this.app.toast('Copied the plot as an image');
+    } catch (e) { this.app.notifyError(`Copy failed: ${e.message}`); }
   }
 
   fullscreen() {

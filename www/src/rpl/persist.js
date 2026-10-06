@@ -268,7 +268,7 @@ export function exportToFile(stack, filename = `hp50-${fileStamp()}.json`) {
   return downloadFile(JSON.stringify(snapshot(stack), null, 2), filename, 'application/json');
 }
 
-function downloadFile(data, filename, type) {
+export function downloadFile(data, filename, type) {
   const url = URL.createObjectURL(new Blob([data], { type }));
   const a = document.createElement('a');
   a.href = url;

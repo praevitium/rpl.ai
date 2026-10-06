@@ -229,7 +229,8 @@ assistant to explain. A failed command leaves the stack as it was.
 histogram plots. Traces have checkboxes and editable expressions. Zoom, fit
 and reset are on the canvas, the window is typed in directly, and Trace mode
 (`T`) walks a cursor along the curves with live readouts. Expand to fill the
-window, or go full screen.
+window, or go full screen. Two more canvas buttons copy the plot as an image
+and download it as a PNG, at the screen's pixel density.
 
 ![Three traces in trace mode](screenshots/plot.png)
 
