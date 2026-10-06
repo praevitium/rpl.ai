@@ -111,6 +111,8 @@ function emit(ast, parentPrec) {
     }
     case "var":
       return infGiacFromName(ast.name) || ast.name;
+    case "unit":
+      throw new RPLError("Units can't go to the algebra engine");
     case "neg": {
       const inf = ast.arg && ast.arg.kind === "var" && infGiacFromName(ast.arg.name);
       if (inf === "+infinity") {

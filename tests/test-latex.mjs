@@ -264,3 +264,9 @@ const value = (text) => toLatex(parseEntry(text)[0]);
   assert(algebra('Σ(K^2,K,1,4)') === raw`\sum_{K=1}^{4} K^{2}` && evalAst(parseAlgebra('Σ(K^2,K,1,4)'), () => undefined).value === 30,
     'Copy as LaTeX writes the sum the app evaluates, not one with the body as its index');
 }
+
+{
+  assert(algebra('5_m+3_ft') === raw`5\,\mathrm{m} + 3\,\mathrm{ft}` && algebra('(5_m)^2') === raw`\left(5\,\mathrm{m}\right)^{2}` && algebra('9.81_(m/s^2)') === raw`9.81\,\mathrm{m}\,\mathrm{s}^{-2}`,
+    'Copy as LaTeX writes a unit inside an algebraic as a quantity, bracketed as a power base');
+}
+

@@ -1,7 +1,7 @@
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Name, Symbolic, Integer, Unit, isUnit, isBinaryInteger, isNumber, promoteNumericPair, Complex, Rational, isList, RList, isTagged, Tagged, isVector, Vector, isMatrix, Matrix, BinaryInteger, toRealOrThrow, toRealDecimal, isString, isValidHpIdentifier, isStorableHpName, isProgram, isDirectory, Str, Program } from '../types.js';
 import { RPLAbort, RPLError, Stack, setPushCoerce, checkTimeLimit } from '../stack.js';
-import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, isRealNum, isKnownFunction } from '../algebra.js';
+import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, UnitNode as AstUnit, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, hasUnits, isRealNum, isKnownFunction } from '../algebra.js';
 import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
 import { state as _calcState, getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
@@ -44,6 +44,7 @@ export function _toAst(v) {
   if (isRational(v)) {
     return AstBin('/', AstNum(v.n), AstNum(v.d));
   }
+  if (isUnit(v))       return AstUnit(v.value, v.uexpr);
   return null;
 }
 
@@ -56,6 +57,7 @@ function _numToRpl(n, sign = 1) {
 export function _astToRplValue(ast) {
   if (!ast) return Name('', { quoted: true });
   if (ast.kind === 'num') return _numToRpl(ast);
+  if (ast.kind === 'unit') return Unit(ast.value, ast.uexpr);
   if (ast.kind === 'var') return Name(ast.name, { quoted: true });
   // Giac returns negative literals as Neg(Num); land them as plain numbers.
   if (ast.kind === 'neg' && ast.arg && ast.arg.kind === 'num') return _numToRpl(ast.arg, -1);
@@ -159,13 +161,13 @@ export function _scalarBinary(op, a, b) {
   if (isBinaryInteger(a) || isBinaryInteger(b)) {
     throw new RPLError('Bad argument type');
   }
-  if (isUnit(a) || isUnit(b)) return _unitBinary(op, a, b);
   if (_isSymOperand(a) || _isSymOperand(b)) {
     const l = _toAst(a);
     const r = _toAst(b);
     if (l && r) return Symbolic(AstBin(op, l, r));
     throw new RPLError('Bad argument type');
   }
+  if (isUnit(a) || isUnit(b)) return _unitBinary(op, a, b);
   if (!isNumber(a) || !isNumber(b)) throw new RPLError('Bad argument type');
   const p = promoteNumericPair(a, b);
   if (p.kind === 'complex') {
@@ -1435,17 +1437,46 @@ function _evalSymbolic(v) {
   const approx = getApproxMode();
   const resolve = (name) => {
     const bound = _localLookup(name) ?? varRecall(name);
-    if (bound !== undefined) return isReal(bound) || isInteger(bound) ? _toAst(bound) : null;
+    if (bound !== undefined) return isReal(bound) || isInteger(bound) || isUnit(bound) ? _toAst(bound) : null;
     return approx ? _symConstantValue(name) : undefined;
   };
   const binGate = approx
     ? null
     : (_op, args, result) => _approxGate(result, args);
-  const reduced = algebraEvalAst(_expandUserCalls(v.expr), resolve, _angleAwareFnEval, binGate);
+  const evalNode = (ast) => algebraEvalAst(ast, resolve, _angleAwareFnEval, binGate);
+  const reduced = _foldUnits(evalNode(_expandUserCalls(v.expr)), evalNode);
   const value = _astToRplValue(reduced);
   return approx && isInteger(value) ? Real(value.value.toString()) : value;
 }
 
+
+const _isLeaf = (a) => a.kind === 'num' || a.kind === 'unit';
+
+// What the commands make of numbers and units, worked on a stack of their own: 2_m*3 is 6_m.
+function _applyToLeaves(name, args) {
+  const s = new Stack();
+  for (const a of args) s.push(_astToRplValue(a));
+  lookup(name).fn(s);
+  return _toAst(s.pop());
+}
+
+// Unit arithmetic inside an algebraic is left to the commands, so it converts
+// and checks units exactly as they do on the stack; Inconsistent units stops EVAL.
+// A part whose units cancel, or an IFTE test they decide, goes back to evalNode.
+function _foldUnits(ast, evalNode) {
+  if (ast.kind === 'unit' || !hasUnits(ast)) return ast;
+  if (ast.kind === 'fn' && ast.name === 'IFTE' && ast.args.length === 3) {
+    const test = _foldUnits(ast.args[0], evalNode);
+    if (test.kind === 'num') return _foldUnits(evalNode(test.value !== 0 ? ast.args[1] : ast.args[2]), evalNode);
+  }
+  const fold = (a) => _foldUnits(a, evalNode);
+  const args = ast.kind === 'bin' ? [fold(ast.l), fold(ast.r)] : ast.kind === 'neg' ? [fold(ast.arg)] : ast.args.map(fold);
+  const rebuilt = ast.kind === 'bin' ? AstBin(ast.op, ...args) : ast.kind === 'neg' ? AstNeg(args[0]) : AstFn(ast.name, args);
+  if (!args.some((a) => a.kind === 'unit')) return args.some(hasUnits) ? rebuilt : evalNode(rebuilt);
+  const name = ast.kind === 'bin' ? ast.op : ast.kind === 'neg' ? 'NEG' : ast.name;
+  if (!args.every(_isLeaf) || name === '=' || !lookup(name)) return rebuilt;
+  return _applyToLeaves(name, args) ?? rebuilt;
+}
 
 // A function DEFINE made, « → X Y `body` », taking `arity` arguments: its names and body.
 function _definedFunction(name, arity) {

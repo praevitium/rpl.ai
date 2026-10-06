@@ -105,7 +105,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
   multiplies level 1 by the unit, ↰ converts level 1 to it and ↱ divides by
   it, so `5` ft then ↰ m gives `1.524_m`. SIN, COS and TAN take an angle unit, which
   overrides the angle mode: `30_° SIN` gives `0.5` whatever DEG, RAD or GRD
-  says.
+  says. Units work inside algebraics too, with a compound unit in
+  parentheses: store `2_s` in `T` and `'9.81_(m/s^2)*T^2/2' EVAL` gives
+  `19.62_m`. In the equation writer, `_` after a number starts its unit.
 - **The stack.** Click a level to select it; its actions appear on the row
   and in the menu bar. Double-click edits it in the right writer. Drag rows
   to reorder them.
@@ -495,7 +497,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 452. The
+**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 453. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - program I/O: INPUT, INFORM, CHOOSE, DISP, CLLCD, FREEZE, MSGBOX, WAIT,
@@ -506,9 +508,8 @@ Catalog and the command reference mark what is available. Not there yet:
 - the ΣDAT commands (Σ+, CLΣ, XCOL, YCOL, NDIST and the rest)
 - MENU and TMENU, and DEF
 - parts of the CAS, such as TAYLR, SERIES, DESOLVE, LINSOLVE, LDEC and
-  ZEROS (SOLVE and ISOL are here)
-- units inside algebraics (the HP 50g's whole unit catalog is here, with SI
-  prefixes, but a unit object can't sit inside `'X*5_m'`)
+  ZEROS (SOLVE and ISOL are here). Symbolic commands such as EXPAND and
+  SOLVE refuse an algebraic with units in it, which EVAL and →NUM work out.
 
 **Left out on purpose.** USER mode and key assignments, ENTRY mode, the
 NUM.SLV solver screens, FINANCE, TIME, OFF, libraries (LIB, ATTACH and

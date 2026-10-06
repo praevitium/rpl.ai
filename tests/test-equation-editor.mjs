@@ -16,6 +16,7 @@ import { lookup } from '../www/src/rpl/ops.js';
 import { giac } from '../www/src/rpl/cas/giac-engine.mjs';
 import { buildGiacCmd } from '../www/src/rpl/cas/giac-convert.mjs';
 import { setApproxMode, getApproxMode } from '../www/src/rpl/state.js';
+import { format } from '../www/src/rpl/formatter.js';
 
 function press(state, ...faces) {
   return faces.reduce((next, face) => pressEquationKey(next, face), state);
@@ -483,3 +484,28 @@ function replaceSelection(state, ast) {
   const eex = toAst(press(emptyEquation(), '2', 'EEX', '3').root);
   assert(eex.kind === 'num' && eex.value === 2000 && eex.real === true, 'EQW 2 EEX 3 is the real 2000., as 2E3 is on the command line');
 }
+
+{
+  assert(textOf(press(emptyEquation(), '5', '_', 'm', '+', '3', '_', 'f', 't')) === '5._m + 3._ft',
+    'EQW _ after a number starts its unit and the letters after it spell the unit');
+  assert(textOf(press(emptyEquation(), '5', '_', 'm', 'yˣ', '2')) === '5._m^2' && textOf(press(emptyEquation(), '5', '_', 's', 'yˣ', '−', '1')) === '5._(1/s)',
+    'EQW yˣ and − after a unit give the unit its power, so 5_m^2 is five square metres');
+  assert(textOf(press(emptyEquation(), '9', '.', '8', '_', '( )', 'm', '÷', 's', 'yˣ', '2', ')', '×', 'T')) === '9.8_(m/s^2)*T',
+    'EQW a unit in parentheses takes ÷ and yˣ until it closes, then × multiplies again');
+  assert(textOf(press(emptyEquation(), '5', '_', 'm', '×', 'x')) === '5._m*x' && textOf(press(emptyEquation(), '5', '_', 'm', '+/-')) === '-5._m',
+    'EQW × after a unit multiplies, and +/- negates the quantity');
+  assertThrows(() => press(emptyEquation(), '_'), /A unit goes right after a number/, 'EQW _ with no number before it is refused');
+  assertThrows(() => press(emptyEquation(), 'x', '_'), /A unit goes right after a number/, 'EQW _ after a name is refused');
+  assertThrows(() => toAst(press(emptyEquation(), '5', '_', 'f', 'o', 'o').root), /Unknown unit: foo/, 'EQW an unknown unit is named when the equation is read');
+  assertThrows(() => toAst(press(emptyEquation(), '5', '_').root), /Missing unit/, 'EQW a bare underscore is a missing unit');
+  for (const src of ['5_m + 3_ft', '(-5_m)*X', 'X*9.81_(m/s^2)', '(5_m)^2', 'SIN(30_°)']) {
+    same(equationFromValue(Symbolic(parseAlgebra(src))), src, `EQW edits ${src} and gives it back unchanged`);
+  }
+  assert(format(valueFromEquation(press(emptyEquation(), '5', '_', 'm').root)) === '5._m',
+    'EQW a lone unit quantity goes to the stack as a unit object');
+  assert(!equationInsights(parseAlgebra('9.81_(m/s^2)*T'), { cas: false }).some((insight) => insight.kind === 'plot'),
+    'EQW offers no plot for an expression with units, which a plot cannot show');
+  assert(physicalFace({ key: '_', ctrlKey: false, metaKey: false, altKey: false, shiftKey: true }) === '_' && physicalFace({ key: 'µ', ctrlKey: false, metaKey: false, altKey: false, shiftKey: false }) === 'μ',
+    'EQW the keyboard types _ and the micro sign for units');
+}
+

@@ -3,7 +3,7 @@
    Node and the browser.  A Box is { width, ascent, descent, draw(x, by) },
    and the boxes in a row share one baseline. */
 
-import { isNum, isVar, isNeg, isBin, isFn, PREC, numText } from './algebra.js';
+import { isNum, isVar, isNeg, isBin, isFn, PREC, numText, unitNodeText } from './algebra.js';
 
 // Single-quoted family names let the stack sit inside a double-quoted attribute.
 const FONT_STACK = "'IBM Plex Mono', 'RPL Symbols', 'IBM Plex Sans', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
@@ -337,6 +337,10 @@ function lay(ast, parentPrec, size) {
     return parentPrec > 3 && isNegativeNum(ast) ? parenBox(box) : box;
   }
   if (isVar(ast)) return textBox(ast.name, size);
+  if (ast.kind === 'unit') {
+    const box = textBox(unitNodeText(ast), size);
+    return parentPrec > 3 ? parenBox(box) : box;
+  }
 
   if (isNeg(ast)) {
     const inner = lay(ast.arg, 3, size);
@@ -463,7 +467,7 @@ function itemStartsLikeNumber(item) {
 function isImpliedProduct(row, index) {
   const item = row[index];
   const next = row[index + 1];
-  return item.t === 'op' && item.op === '*' && row[index - 1]?.t === 'num'
+  return item.t === 'op' && item.op === '*' && row[index - 1]?.t === 'num' && !row[index - 1].text.includes('_')
     && !!next && next.t !== 'num' && next.t !== 'op' && next.t !== 'hole' && !itemStartsLikeNumber(next);
 }
 

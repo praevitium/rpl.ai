@@ -161,6 +161,10 @@ export function astLatex(ast, parent = 0) {
       return parent > 1 && latex.startsWith('-') ? paren(latex) : latex;
     }
     case 'var': return nameLatex(ast.name);
+    case 'unit': {
+      const latex = `${numberLatex(String(ast.value))}\\,${unitLatex(ast.uexpr)}`;
+      return parent > 2 ? paren(latex) : latex;
+    }
     case 'neg': {
       const latex = `-${astLatex(ast.arg, 3)}`;
       return parent > 1 ? paren(latex) : latex;

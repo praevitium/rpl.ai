@@ -1,9 +1,9 @@
 import {
   parseAlgebra, formatAlgebra, isKnownFunction, KNOWN_FUNCTIONS, freeVars, astEqual,
-  Num, Var, Neg, Bin, Fn, isNum, isVar, isNeg, isBin, isFn,
+  Num, Var, Neg, Bin, Fn, UnitNode, unitSuffix, hasUnits, isNum, isVar, isNeg, isBin, isFn,
 } from '../rpl/algebra.js';
 import { eqwToSvg, astToSvg } from '../rpl/pretty.js';
-import { Symbolic, Name, Real, isSymbolic, isNumber, isName, isInteger, isReal, isList, Integer } from '../rpl/types.js';
+import { Symbolic, Name, Real, isSymbolic, isNumber, isName, isInteger, isReal, isList, isUnit, Integer } from '../rpl/types.js';
 import { format } from '../rpl/formatter.js';
 import { astLatex, parseMath } from '../rpl/latex.js';
 import { RPLError, Stack } from '../rpl/stack.js';
@@ -56,7 +56,7 @@ export const EQW_APP_FACES = new Set([
 
 export const EQW_UNAVAILABLE_FACES = new Set([
   'LASTARG', 'VARS', 'HOME', 'STO', 'RCL', 'CST', 'SST', '`', '|',
-  '∠', '#', "'", '[ ]', '" "', '{ }', '« »', '_', '::', '↵', '→', 'SPC',
+  '∠', '#', "'", '[ ]', '" "', '{ }', '« »', '::', '↵', '→', 'SPC',
   'CONT', '↰', '↱',
 ]);
 
@@ -64,7 +64,7 @@ const MODEL_LABELS = new Set([
   ...'0123456789', '.', 'EEX', '+', '−', '-', '×', '*', '÷', '/',
   'yˣ', 'eˣ', 'LN', '√x', 'x²', 'ⁿ√y', 'SIN', 'COS', 'TAN', 'ASIN', 'ACOS',
   'ATAN', 'ABS', 'ARG', 'LOG', '10ˣ', 'ALOG', 'Σ', '∂', '∫', '1/x', '+/-',
-  '( )', ')', ',', '!', 'π', '∞', 'i', 'e',
+  '( )', ')', ',', '!', 'π', '∞', 'i', 'e', '_',
   '▲', '▼', '◀', '▶', 'RS▲', 'RS◀', 'RS▶',
   '⌫', 'DEL', 'CLEAR', 'UNDO', 'REDO',
   '≠', '=', '≤', '<', '≥', '>',
@@ -388,6 +388,10 @@ function astToItems(ast) {
     if (ast.value < 0) return [makeStruct('neg', [[numLeaf(String(-ast.value))]])];
     return [numLeaf(String(ast.value))];
   }
+  if (ast.kind === 'unit') {
+    const leaf = numLeaf(`${Math.abs(ast.value)}_${unitSuffix(ast.uexpr)}`);
+    return ast.value < 0 ? [makeStruct('neg', [[leaf]])] : [leaf];
+  }
   if (isVar(ast)) return [nameLeaf(ast.name)];
   if (isNeg(ast)) return [makeStruct('neg', [astToItems(ast.arg)])];
   if (isBin(ast) && (ast.op === '+' || ast.op === '-')) return flattenAdd(ast);
@@ -500,6 +504,7 @@ function itemToAst(item) {
   if (!item || item.t === 'hole') throw new RPLError('Incomplete Subexpression');
   if (item.t === 'num') {
     const text = item.text;
+    if (text.includes('_')) return unitLeafAst(text);
     if (/^\d+$/.test(text)) return Num(BigInt(text));
     if (!/^(?:\d+\.?\d*|\.\d+)(?:E-?\d+)?$/i.test(text)) throw new RPLError('Incomplete Subexpression');
     return Num(Number(text), true);
@@ -524,6 +529,14 @@ function itemToAst(item) {
     return Fn(name, [toAst(item.slots[0]), variable, toAst(item.slots[2]), toAst(item.slots[3])]);
   }
   throw new RPLError('Result not editable in EQW');
+}
+
+function unitLeafAst(text) {
+  let ast;
+  try { ast = parseAlgebra(text); }
+  catch (error) { throw new RPLError(error.message.replace(/ at pos \d+$/, '')); }
+  if (ast.kind !== 'unit') throw new RPLError('Incomplete Subexpression');
+  return ast;
 }
 
 export function toAst(row) {
@@ -553,6 +566,7 @@ function valueToAst(value) {
   if (isInteger(value)) return Num(value.value);
   if (isReal(value)) return Num(value.value);
   if (isName(value)) return Var(value.id);
+  if (isUnit(value)) return UnitNode(value.value, value.uexpr);
   throw new RPLError('Result not editable in EQW');
 }
 
@@ -876,6 +890,37 @@ function typeGlyph(state, text, kind) {
   return implicitMul(typed, leaf);
 }
 
+const UNIT_FACES = { '×': '*', '÷': '/', 'yˣ': '^', '−': '-', '-': '-', '( )': '(', ')': ')' };
+
+// Whether the text after the _ can still grow into a unit: a name with its power, m^-2, or a group, (m/s.
+function unitPrefix(units) {
+  if (!units.startsWith('(')) return /^(?:[A-Za-zΩμ°Å][A-Za-z0-9Ωμ°Å]*(?:\^[-+]?(?:\d+\.?\d*|\.\d*)?)?)?$/.test(units);
+  let depth = 0;
+  for (let at = 0; at < units.length; at++) {
+    if (at > 0 && depth === 0) return false;
+    depth += units[at] === '(' ? 1 : units[at] === ')' ? -1 : 0;
+  }
+  return true;
+}
+
+// Keys after 5_ spell its unit while they can, so 5_m^2 stays one number and 5_(m/s) takes the / in.
+function typeUnit(state, face) {
+  if (state.target.mode !== 'insert') return null;
+  const item = getItem(state.root, state.target.path);
+  const char = /^[A-Za-z0-9.ΩμÅ°]$/.test(face) ? face : UNIT_FACES[face];
+  if (item?.t !== 'num' || !item.text.includes('_') || !char) return null;
+  const text = item.text + char;
+  return unitPrefix(text.slice(text.indexOf('_') + 1)) ? putLeaf({ ...state, lastFace: face }, numLeaf(text)) : null;
+}
+
+function startUnit(state) {
+  const item = state.target.mode === 'insert' ? getItem(state.root, state.target.path) : null;
+  if (item?.t !== 'num' || item.text.includes('_') || !/\d\.?$/.test(item.text)) {
+    throw new RPLError('A unit goes right after a number, as in 5_m');
+  }
+  return putLeaf({ ...state, lastFace: '_' }, numLeaf(`${item.text}_`));
+}
+
 function typeConstant(state, text) {
   const target = state.target;
   if (target.mode === 'select') {
@@ -1148,7 +1193,7 @@ function toggleNeg(state) {
   const target = state.target;
   if (target.mode === 'insert') {
     const item = getItem(state.root, target.path);
-    if (item.t === 'num' && item.text.includes('E')) {
+    if (item.t === 'num' && item.text.includes('E') && !item.text.includes('_')) {
       const text = item.text.includes('E-') ? item.text.replace('E-', 'E') : item.text.replace('E', 'E-');
       return putLeaf(state, numLeaf(text));
     }
@@ -1222,6 +1267,9 @@ export function pressEquationKey(state, face) {
   if (face === 'UNDO') return undoState(state);
   if (face === 'REDO') return redoState(state);
   if (face === 'CLEAR') return clearAll(state);
+  const unit = typeUnit(state, face);
+  if (unit) return unit;
+  if (face === '_') return startUnit(state);
   if (!KEEPS_WORD_OPEN.has(face) && !isLetterFace(face) && !/^[0-9]$/.test(face)) state = completeWord(state);
   if (face === '⌫') return backspace(state);
   if (face === 'DEL') return deleteTarget(state);
@@ -1358,7 +1406,7 @@ export function equationInsights(ast, { variable = primaryVariable(ast), numeric
     const value = numeric(equation ? Bin('-', ast.l, ast.r) : ast, {});
     if (Number.isFinite(value)) out.push({ kind: 'value', label: equation ? 'Left − right' : 'Value', done: 'Replaced with its value', value });
   }
-  if (names.length === 1 && !relation) out.push({ kind: 'plot', label: `Plot in ${variable}`, variable, ast });
+  if (names.length === 1 && !relation && !hasUnits(ast)) out.push({ kind: 'plot', label: `Plot in ${variable}`, variable, ast });
   if (!cas || !names.length) return out;
   const seen = [ast];
   const offer = (label, done, compute) => {
@@ -1497,6 +1545,7 @@ export function physicalFace(event) {
     '/': '÷', '÷': '÷', '^': 'yˣ', '!': '!', '(': '( )', ')': ')', ',': ',',
     '=': '=', '<': '<', '>': '>', '≠': '≠', '≤': '≤', '≥': '≥',
     '√': '√x', '²': 'x²', 'π': 'π', '∞': '∞', '∫': '∫', '∂': '∂',
+    '_': '_', 'µ': 'μ', '°': '°', 'Å': 'Å',
   };
   if (map[event.key]) return map[event.key];
   if (event.key === '.' || /^[0-9]$/.test(event.key) || isLetterFace(event.key)) return event.key;

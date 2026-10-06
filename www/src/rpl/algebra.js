@@ -2,6 +2,8 @@
    numeric evaluation.  Symbolic work (EXPAND, DERIV, SOLVE, ...) goes to
    Giac through cas/giac-convert.mjs. */
 
+import { formatUnitExpr, parseUnitExpr, uexprEqual } from './units.js';
+
 // A number past 2^53 keeps its exact `digits` (`value` is the nearest
 // double).  isNum() is false for it, so numeric folding leaves it alone.
 // `real` marks an approximate number such as 2.; a value with a fractional
@@ -25,6 +27,21 @@ export function numText(n) {
   const s = String(n.value);
   return n.real && /^-?\d+$/.test(s) ? `${s}.` : s;
 }
+// A unit object inside an algebraic, 5_m or 9.81_(m/s^2), its number kept to 12 digits like a Unit's.
+export function UnitNode(value, uexpr) {
+  return Object.freeze({ kind: 'unit', value: Number(Number(value).toPrecision(12)), uexpr });
+}
+
+// m, or (m/s^2) for a unit with operators in it, so the text after the _ parses back as one unit.
+export function unitSuffix(uexpr) {
+  const units = formatUnitExpr(uexpr);
+  return /[*/]/.test(units) ? `(${units})` : units;
+}
+
+export function unitNodeText(n) {
+  return `${numText(Num(n.value, true))}_${unitSuffix(n.uexpr)}`;
+}
+
 export function Var(name) {
   return Object.freeze({ kind: 'var', name: String(name) });
 }
@@ -76,6 +93,7 @@ export function astEqual(a, b) {
   if (!a || !b || a.kind !== b.kind) return false;
   if (a.kind === 'num') return a.value === b.value && a.digits === b.digits && !a.real === !b.real;
   if (a.kind === 'var') return a.name === b.name;
+  if (a.kind === 'unit') return a.value === b.value && uexprEqual(a.uexpr, b.uexpr);
   if (a.kind === 'neg') return astEqual(a.arg, b.arg);
   if (a.kind === 'bin') {
     return a.op === b.op && astEqual(a.l, b.l) && astEqual(a.r, b.r);
@@ -249,6 +267,21 @@ export function parseAlgebra(src) {
     throw new Error(`Expected '${ch}' at pos ${i}`);
   }
 
+  // The units after 5_: one unit with its power, 5_m^2, or any unit expression in parentheses, 5_(m/s).
+  function readUnit() {
+    if (s[i] === '(') {
+      const close = s.indexOf(')', i);
+      if (close < 0) throw new Error(`Unclosed unit at pos ${i}`);
+      const text = s.slice(i + 1, close);
+      i = close + 1;
+      return text;
+    }
+    const m = s.slice(i).match(/^[A-Za-zΩμ°Å][A-Za-z0-9Ωμ°Å]*(?:\^[-+]?(?:\d+\.?\d*|\.\d+))?/);
+    if (!m) throw new Error(`Missing unit after the underscore at pos ${i}`);
+    i += m[0].length;
+    return m[0];
+  }
+
   function parseEq() {
     const left = parseE();
     skip();
@@ -315,6 +348,10 @@ export function parseAlgebra(src) {
       const m = s.slice(i).match(/^\d+\.?\d*(?:[eE][-+]?\d+)?|^\.\d+(?:[eE][-+]?\d+)?/);
       if (!m) throw new Error(`Bad number at pos ${i}`);
       i += m[0].length;
+      if (s[i] === '_') {
+        i++;
+        return UnitNode(parseFloat(m[0]), parseUnitExpr(readUnit()));
+      }
       const whole = /^\d+$/.test(m[0]);
       return Num(whole ? BigInt(m[0]) : parseFloat(m[0]), !whole);
     }
@@ -405,7 +442,7 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
   if (ast.kind === 'num') return ast;
   if (ast.kind === 'var') {
     const b = lookup(ast.name);
-    if (b?.kind === 'num') return b;
+    if (b?.kind === 'num' || b?.kind === 'unit') return b;
     if (!Number.isFinite(b)) return ast;
     return Num(b);
   }
@@ -481,6 +518,13 @@ export function freeVars(ast, out = new Set()) {
   return out;
 }
 
+export function hasUnits(ast) {
+  if (ast.kind === 'unit') return true;
+  if (ast.kind === 'neg') return hasUnits(ast.arg);
+  if (ast.kind === 'bin') return hasUnits(ast.l) || hasUnits(ast.r);
+  return ast.kind === 'fn' && ast.args.some(hasUnits);
+}
+
 // The objects an algebraic holds, as SIZE counts them: X+1 is X 1 +, so 3.
 export function astSize(ast) {
   if (ast.kind === 'neg') return 1 + astSize(ast.arg);
@@ -506,6 +550,11 @@ function fmt(ast, parentPrec) {
     return parentPrec > 3 && s.startsWith('-') ? `(${s})` : s;
   }
   if (ast.kind === 'var') return ast.name;
+  if (ast.kind === 'unit') {
+    // A power's base needs it, so (5._m)^2 doesn't read back as 5 square metres.
+    const s = unitNodeText(ast);
+    return parentPrec > 3 ? `(${s})` : s;
+  }
   if (ast.kind === 'neg') {
     const inner = fmt(ast.arg, 3);
     const s = `-${inner}`;

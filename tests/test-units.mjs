@@ -721,3 +721,23 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(line('1_m/m') === '1.' && line('1_m/m TYPE') === '0.' && line('1_m/m 2 +') === '3.' && line('6_kg*m/(m*kg) 2 /') === '3.',
     'units that cancel in a literal leave a plain real number, as 2_m 2_m / does');
 }
+
+{
+  const line = (src) => runLine(src).snapshot().map((v) => formatSource(v)).join(' ');
+  assert(line("'X*5_m'") === '`X*5._m`' && line("'9.81_(m/s^2)*T'") === '`9.81_(m/s^2)*T`' && line("'(5_m)^2'") === '`(5._m)^2`' && line("'5_m^2'") === '`5._m^2`',
+    'a unit object sits inside an algebraic, with a compound unit in parentheses so it reads back the same');
+  assert(line("'5_m+3_ft' EVAL") === '19.4041994751_ft' && line("'2*(3_m+1_ft)' EVAL") === '21.68503937_ft' && line("'SQRT(2_m*8_m)' EVAL") === '4._m',
+    'EVAL works units in an algebraic as + * and SQRT do on the stack, converting to the right-hand unit');
+  assert(line("'(5_m)^2' EVAL") === '25._m^2' && line("'5_m/1_m+1' EVAL") === '6.' && line("'SIN(30_°)+1' EVAL") === '1.5' && line("'-(5_m)+2_m' EVAL") === '-3._m',
+    'EVAL squares a unit, folds units that cancel into the number around them and takes SIN of an angle unit');
+  assertThrows(() => runLine("'5_m+3_s' EVAL"), /Inconsistent units/, 'EVAL of a length plus a time is Inconsistent units');
+  assert(line("'IFTE(5_m>3_ft,X+1,2)' EVAL") === '`X + 1`' && line("'IFTE(5_m<3_ft,X+1,2_s)' EVAL") === '2._s',
+    'IFTE in an algebraic compares units and picks its branch');
+  assert(line("5_m 'UA' STO 'UA*2' EVAL 'UA' PURGE") === '10._m' && line("5_m 'UA' STO 'UA+3_ft' →NUM 'UA' PURGE") === '19.4041994751_ft',
+    'EVAL and →NUM substitute a variable that holds a unit object');
+  assert(line("5_m 'X' *") === '`5._m*X`' && line("'5_m*X' EVAL") === '`5._m*X`',
+    'a unit times a name is a symbolic product, as on the HP 50g');
+  assertThrows(() => runLine("'5_m*X' EXPAND"), /Units can't go to the algebra engine/, 'EXPAND refuses an algebraic with units instead of dropping them');
+  assertThrows(() => runLine("'5_foo'"), /Unknown unit: foo/, 'an unknown unit in an algebraic is refused when it is typed');
+}
+
