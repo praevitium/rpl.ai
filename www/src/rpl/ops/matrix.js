@@ -1,4 +1,4 @@
-import { isVector, RList, Real, isMatrix, isString, Integer, isList, isProgram, Matrix, Vector, isInteger, isReal, isComplex, isRational, isSymbolic, isUnit, Symbolic } from '../types.js';
+import { isVector, RList, Real, isMatrix, isString, Integer, isList, isProgram, Matrix, Vector, isInteger, isReal, isComplex, Complex, isRational, isSymbolic, isUnit, Symbolic } from '../types.js';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { astSize } from '../algebra.js';
 import { unitSize } from '../units.js';
@@ -66,14 +66,22 @@ register('SIZE', (s) => {
 }, { category: 'Vectors / matrices', categoryOrder: 0, label: "SIZE" });
 
 
-register('TRN', (s) => {
-  const [m] = s.popN(1);
-  if (!isMatrix(m)) throw new RPLError('Bad argument type');
-  const rows = m.rows.length;
-  const cols = rows > 0 ? m.rows[0].length : 0;
-  if (rows === 0 || cols === 0) { s.push(m); return; }
-  s.push(Matrix(_transpose(m.rows)));
-}, { category: 'Vectors / matrices', categoryOrder: 1, label: "TRN" });
+// AUR: TRN is the conjugate transpose, TRAN the plain one.
+function _transposeOp(conjugate) {
+  return (s) => {
+    const [m] = s.popN(1);
+    if (!isMatrix(m)) throw new RPLError('Bad argument type');
+    const rows = m.rows.length;
+    const cols = rows > 0 ? m.rows[0].length : 0;
+    if (rows === 0 || cols === 0) { s.push(m); return; }
+    const entry = (x) => (conjugate && isComplex(x) ? Complex(x.re, -x.im) : x);
+    s.push(Matrix(_transpose(m.rows).map((row) => row.map(entry))));
+  };
+}
+
+register('TRN', _transposeOp(true), { category: 'Vectors / matrices', categoryOrder: 1, label: "TRN" });
+
+register('TRAN', _transposeOp(false), { category: 'Vectors / matrices', categoryOrder: 1.5, label: "TRAN" });
 
 
 // Cofactor expansion through _scalarBinary, so Integer and Symbolic entries stay exact.
@@ -641,13 +649,14 @@ register('AUGMENT', (s) => {
   throw new RPLError('Bad argument type');
 }, { category: 'Vectors / matrices', categoryOrder: 18, label: "AUGMENT" });
 
-register('ROW→',  _rowDecompose, { category: 'Vectors / matrices', categoryOrder: 24, label: "ROW→" });
+// AUR: →ROW takes a matrix apart into its rows and ROW→ puts rows back together, as →COL and COL→ do with columns.
+register('→ROW',  _rowDecompose, { category: 'Vectors / matrices', categoryOrder: 24, label: "→ROW" });
 
-register('→ROW',  _rowCompose, { category: 'Vectors / matrices', categoryOrder: 25, label: "→ROW" });
+register('ROW→',  _rowCompose, { category: 'Vectors / matrices', categoryOrder: 25, label: "ROW→" });
 
-register('COL→',  _colDecompose, { category: 'Vectors / matrices', categoryOrder: 26, label: "COL→" });
+register('→COL',  _colDecompose, { category: 'Vectors / matrices', categoryOrder: 26, label: "→COL" });
 
-register('→COL',  _colCompose, { category: 'Vectors / matrices', categoryOrder: 27, label: "→COL" });
+register('COL→',  _colCompose, { category: 'Vectors / matrices', categoryOrder: 27, label: "COL→" });
 
 
 register('RSWP', (s) => {

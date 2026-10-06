@@ -2663,15 +2663,15 @@ giac._setFixtures({
   s.push(RList([Integer(1n), Integer(-6n), Integer(11n), Integer(-6n)]));
   s.push(Integer(1n));
   lookup('HORNER').fn(s);
-  assert(s.depth === 3, 'session053: HORNER leaves quotient, remainder, a');
-  const a = s.peek(1);
-  const r = s.peek(2);
+  assert(s.depth === 3, 'session053: HORNER leaves quotient, a, remainder');
+  const r = s.peek(1);
+  const a = s.peek(2);
   const q = s.peek(3);
   assert(q.type === 'list', 'session053: HORNER quotient is list');
   assert(q.items.map(i => i.value).join(',') === '1,-5,6',
     'session053: HORNER quotient of x³-6x²+11x-6 by (x-1) = x²-5x+6');
   assert(r.value === 0n, 'session053: HORNER remainder at root = 0');
-  assert(a.value === 1n, 'session053: HORNER pushes `a` on top');
+  assert(a.value === 1n, 'session053: HORNER pushes `a` under the remainder, as the AUR lists them');
 }
 
 {
@@ -2680,7 +2680,7 @@ giac._setFixtures({
   s.push(RList([Integer(2n), Integer(-3n), Integer(1n)]));
   s.push(Integer(2n));
   lookup('HORNER').fn(s);
-  assert(s.peek(2).value === 3n, 'session053: HORNER remainder = p(a)');
+  assert(s.peek(1).value === 3n, 'session053: HORNER remainder = p(a) on level 1');
 }
 
 {
@@ -2732,7 +2732,7 @@ giac._setFixtures({
   // Now stack has the poly list.  Evaluate at x = 3 via HORNER.
   s.push(Integer(3n));
   lookup('HORNER').fn(s);
-  assert(s.peek(2).value === 0n,
+  assert(s.peek(1).value === 0n,
     'session053: PCOEF|HORNER at root → remainder 0');
 }
 

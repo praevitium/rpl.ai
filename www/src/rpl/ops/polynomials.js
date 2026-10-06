@@ -43,8 +43,8 @@ register('HORNER', (s) => {
   const [coefs, a] = _popPolyAndPoint(s);
   const { q, r } = _hornerDivide(coefs, a);
   s.push(RList(q));
-  s.push(r);
   s.push(a);
+  s.push(r);
 }, { category: 'Polynomials', categoryOrder: 3, label: "HORNER" });
 
 

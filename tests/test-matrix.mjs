@@ -8,6 +8,7 @@ import {
 } from '../www/src/rpl/types.js';
 import { parseEntry } from '../www/src/rpl/parser.js';
 import { format, formatStackTop } from '../www/src/rpl/formatter.js';
+import { formatAlgebra } from '../www/src/rpl/algebra.js';
 import {
   state as calcState, setAngle, cycleAngle, toRadians, fromRadians,
   varStore, varRecall, varList, varPurge, resetHome, currentPath,
@@ -17,7 +18,7 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows } from './helpers.mjs';
+import { assert, assertThrows, runLine } from './helpers.mjs';
 
 /* Vector / Matrix ops — SIZE / TRN / DET / INV / DOT / CROSS / NORM / IDN. */
 
@@ -1712,7 +1713,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
 }
 
 /* ================================================================
-   ROW→ / →ROW / COL→ / →COL (matrix row/col decompose/compose),
+   →ROW / ROW→ / →COL / COL→ (matrix row/col decompose/compose),
    RSWP / CSWP / RCI / RCIJ (elementary row ops).  Complements the
    ROW+ / ROW- / COL+ / COL- edit cluster.
    ================================================================ */
@@ -1746,41 +1747,41 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Matrix([[Real(1), Real(2), Real(3)], [Real(4), Real(5), Real(6)]]));
-    lookup('ROW→').fn(s);
-    assert(s.depth === 3, `session051: ROW→ on 2×3 pushes 3 stack items (got depth ${s.depth})`);
+    lookup('→ROW').fn(s);
+    assert(s.depth === 3, `session051: →ROW on 2×3 pushes 3 stack items (got depth ${s.depth})`);
     const cnt = s.pop();
     assert(cnt.type === 'real' && cnt.value.eq(2),
-      'session051: ROW→ count is 2. on a 2×3 matrix');
+      'session051: →ROW count is 2. on a 2×3 matrix');
     const row2 = s.pop();
     const row1 = s.pop();
     assert(vecMatches(row1, [1, 2, 3]) && vecMatches(row2, [4, 5, 6]),
-      'session051: ROW→ pushes rows in top-to-bottom order');
+      'session051: →ROW pushes rows in top-to-bottom order');
   }
 
   // 1×1 edge case.
   {
     const s = new Stack();
     s.push(Matrix([[Real(42)]]));
-    lookup('ROW→').fn(s);
+    lookup('→ROW').fn(s);
     const cnt = s.pop();
     const row = s.pop();
     assert(cnt.type === 'real' && cnt.value.eq(1) && vecMatches(row, [42]),
-      'session051: ROW→ on 1×1 gives [42] 1.');
+      'session051: →ROW on 1×1 gives [42] 1.');
   }
 
-  // ROW→ on Vector throws.
+  // →ROW on Vector throws.
   {
     const s = new Stack();
     s.push(Vector([Real(1), Real(2)]));
-    assertThrows(() => lookup('ROW→').fn(s), /Bad argument/, 'session051: ROW→ on Vector throws');
+    assertThrows(() => lookup('→ROW').fn(s), /Bad argument/, 'session051: →ROW on Vector throws');
   }
 
-  // ASCII alias ROW->.
+  // ASCII alias ->ROW.
   {
     const s = new Stack();
     s.push(Matrix([[Real(7), Real(8)], [Real(9), Real(10)]]));
-    lookup('ROW->').fn(s);
-    assert(s.depth === 3, 'session051: ROW-> ASCII alias matches ROW→');
+    lookup('->ROW').fn(s);
+    assert(s.depth === 3, 'session051: ->ROW ASCII alias matches →ROW');
   }
 
 
@@ -1791,21 +1792,21 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     s.push(Vector([Real(4), Real(5), Real(6)]));
     s.push(Vector([Real(7), Real(8), Real(9)]));
     s.push(Integer(3));
-    lookup('→ROW').fn(s);
+    lookup('ROW→').fn(s);
     const out = s.peek();
     assert(matMatches(out, [[1,2,3],[4,5,6],[7,8,9]]),
-      'session051: →ROW assembles 3 row vectors + 3 → 3×3');
+      'session051: ROW→ assembles 3 row vectors + 3 → 3×3');
   }
 
-  // Round-trip: ROW→ then →ROW recovers the original.
+  // Round-trip: →ROW then ROW→ recovers the original.
   {
     const s = new Stack();
     s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)], [Real(5), Real(6)]]));
-    lookup('ROW→').fn(s);
     lookup('→ROW').fn(s);
+    lookup('ROW→').fn(s);
     const out = s.peek();
     assert(matMatches(out, [[1,2],[3,4],[5,6]]),
-      'session051: ROW→ then →ROW round-trips a matrix');
+      'session051: →ROW then ROW→ round-trips a matrix');
   }
 
   // Non-integer count throws.
@@ -1813,7 +1814,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     const s = new Stack();
     s.push(Vector([Real(1), Real(2)]));
     s.push(Real(1.5));
-    assertThrows(() => lookup('→ROW').fn(s), /Bad argument/, 'session051: →ROW with non-integer Real count throws');
+    assertThrows(() => lookup('ROW→').fn(s), /Bad argument/, 'session051: ROW→ with non-integer Real count throws');
   }
 
   // Mismatched row length throws.
@@ -1822,7 +1823,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     s.push(Vector([Real(1), Real(2), Real(3)]));
     s.push(Vector([Real(4), Real(5)]));                 // shorter
     s.push(Integer(2));
-    assertThrows(() => lookup('→ROW').fn(s), /Invalid dimension/, 'session051: →ROW mismatched row lengths throws');
+    assertThrows(() => lookup('ROW→').fn(s), /Invalid dimension/, 'session051: ROW→ mismatched row lengths throws');
   }
 
   // Non-Vector argument throws.
@@ -1831,25 +1832,25 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     s.push(Real(1));
     s.push(Real(2));
     s.push(Integer(2));
-    assertThrows(() => lookup('→ROW').fn(s), /Bad argument/, 'session051: →ROW on non-vector args throws');
+    assertThrows(() => lookup('ROW→').fn(s), /Bad argument/, 'session051: ROW→ on non-vector args throws');
   }
 
-  // ASCII alias ->ROW.
+  // ASCII alias ROW->.
   {
     const s = new Stack();
     s.push(Vector([Real(1), Real(2)]));
     s.push(Vector([Real(3), Real(4)]));
     s.push(Integer(2));
-    lookup('->ROW').fn(s);
+    lookup('ROW->').fn(s);
     assert(matMatches(s.peek(), [[1,2],[3,4]]),
-      'session051: ->ROW ASCII alias matches →ROW');
+      'session051: ROW-> ASCII alias matches ROW→');
   }
 
   // Count < 1 throws.
   {
     const s = new Stack();
     s.push(Integer(0));
-    assertThrows(() => lookup('→ROW').fn(s), /Bad argument value/, 'session051: →ROW count 0 throws');
+    assertThrows(() => lookup('ROW→').fn(s), /Bad argument value/, 'session051: ROW→ count 0 throws');
   }
 
 
@@ -1857,31 +1858,31 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Matrix([[Real(1), Real(2), Real(3)], [Real(4), Real(5), Real(6)]]));
-    lookup('COL→').fn(s);
-    assert(s.depth === 4, 'session051: COL→ on 2×3 pushes 4 stack items');
+    lookup('→COL').fn(s);
+    assert(s.depth === 4, 'session051: →COL on 2×3 pushes 4 stack items');
     const cnt = s.pop();
     const col3 = s.pop();
     const col2 = s.pop();
     const col1 = s.pop();
     assert(cnt.type === 'real' && cnt.value.eq(3),
-      'session051: COL→ count is 3. on a 2×3 matrix');
+      'session051: →COL count is 3. on a 2×3 matrix');
     assert(vecMatches(col1, [1, 4]) && vecMatches(col2, [2, 5]) && vecMatches(col3, [3, 6]),
-      'session051: COL→ pushes columns in left-to-right order');
+      'session051: →COL pushes columns in left-to-right order');
   }
 
-  // ASCII alias COL->.
+  // ASCII alias ->COL.
   {
     const s = new Stack();
     s.push(Matrix([[Real(11), Real(12)], [Real(13), Real(14)]]));
-    lookup('COL->').fn(s);
-    assert(s.depth === 3, 'session051: COL-> ASCII alias matches COL→');
+    lookup('->COL').fn(s);
+    assert(s.depth === 3, 'session051: ->COL ASCII alias matches →COL');
   }
 
-  // COL→ on non-Matrix throws.
+  // →COL on non-Matrix throws.
   {
     const s = new Stack();
     s.push(Real(3));
-    assertThrows(() => lookup('COL→').fn(s), /Bad argument/, 'session051: COL→ on Real throws');
+    assertThrows(() => lookup('→COL').fn(s), /Bad argument/, 'session051: →COL on Real throws');
   }
 
 
@@ -1891,19 +1892,19 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     s.push(Vector([Real(1), Real(3)]));      // col 1
     s.push(Vector([Real(2), Real(4)]));      // col 2
     s.push(Integer(2));
-    lookup('→COL').fn(s);
+    lookup('COL→').fn(s);
     assert(matMatches(s.peek(), [[1,2],[3,4]]),
-      'session051: →COL assembles columns into 2×2');
+      'session051: COL→ assembles columns into 2×2');
   }
 
-  // Round-trip COL→ then →COL.
+  // Round-trip →COL then COL→.
   {
     const s = new Stack();
     s.push(Matrix([[Real(10), Real(20), Real(30)], [Real(40), Real(50), Real(60)]]));
-    lookup('COL→').fn(s);
     lookup('→COL').fn(s);
+    lookup('COL→').fn(s);
     assert(matMatches(s.peek(), [[10,20,30],[40,50,60]]),
-      'session051: COL→ then →COL round-trips a matrix');
+      'session051: →COL then COL→ round-trips a matrix');
   }
 
   // Mismatched column heights throws.
@@ -1912,86 +1913,86 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     s.push(Vector([Real(1), Real(2)]));
     s.push(Vector([Real(3), Real(4), Real(5)]));
     s.push(Integer(2));
-    assertThrows(() => lookup('→COL').fn(s), /Invalid dimension/, 'session051: →COL mismatched column heights throws');
+    assertThrows(() => lookup('COL→').fn(s), /Invalid dimension/, 'session051: COL→ mismatched column heights throws');
   }
 
-  // ASCII alias ->COL.
+  // ASCII alias COL->.
   {
     const s = new Stack();
     s.push(Vector([Real(1), Real(2)]));
     s.push(Vector([Real(3), Real(4)]));
     s.push(Integer(2));
-    lookup('->COL').fn(s);
+    lookup('COL->').fn(s);
     assert(matMatches(s.peek(), [[1,3],[2,4]]),
-      'session051: ->COL ASCII alias matches →COL');
+      'session051: COL-> ASCII alias matches COL→');
   }
 
   // session391: rejection-path closure for the four row/col ASCII aliases.
-  // session051 gave →ROW/→COL/ROW→/COL→ their own rejection pins but the
-  // `->ROW`/`->COL`/`ROW->`/`COL->` aliases had happy-path coverage only.
+  // session051 gave ROW→/COL→/→ROW/→COL their own rejection pins but the
+  // `ROW->`/`COL->`/`->ROW`/`->COL` aliases had happy-path coverage only.
   // Each alias is registered with the SAME fn instance as its canonical
   // (`_rowCompose`/`_colCompose`/`_rowDecompose`/`_colDecompose`), so it
   // rejects identically — pin both the shared-instance identity and the
   // rejects so a refactor that splits the alias into its own
   // implementation and drops a guard is caught.
   {
-    assert(lookup('->ROW').fn === lookup('→ROW').fn
-        && lookup('->COL').fn === lookup('→COL').fn
-        && lookup('ROW->').fn === lookup('ROW→').fn
-        && lookup('COL->').fn === lookup('COL→').fn,
+    assert(lookup('ROW->').fn === lookup('ROW→').fn
+        && lookup('COL->').fn === lookup('COL→').fn
+        && lookup('->ROW').fn === lookup('→ROW').fn
+        && lookup('->COL').fn === lookup('→COL').fn,
       'session391: row/col ASCII aliases share the canonical fn instance');
 
-    // ->ROW mirrors →ROW's four rejects (compose path).
+    // ROW-> mirrors ROW→'s four rejects (compose path).
     {
       const s = new Stack();
       s.push(Vector([Real(1)]));
       s.push(Real(1.5));
-      assertThrows(() => lookup('->ROW').fn(s), /Bad argument type/,
-        'session391: ->ROW non-integer count → Bad argument type');
+      assertThrows(() => lookup('ROW->').fn(s), /Bad argument type/,
+        'session391: ROW-> non-integer count → Bad argument type');
     }
     {
       const s = new Stack();
       s.push(Integer(0));
-      assertThrows(() => lookup('->ROW').fn(s), /Bad argument value/,
-        'session391: ->ROW count 0 → Bad argument value');
+      assertThrows(() => lookup('ROW->').fn(s), /Bad argument value/,
+        'session391: ROW-> count 0 → Bad argument value');
     }
     {
       const s = new Stack();
       s.push(Vector([Real(1), Real(2)]));
       s.push(Vector([Real(1)]));
       s.push(Integer(2));
-      assertThrows(() => lookup('->ROW').fn(s), /Invalid dimension/,
-        'session391: ->ROW mismatched row lengths → Invalid dimension');
+      assertThrows(() => lookup('ROW->').fn(s), /Invalid dimension/,
+        'session391: ROW-> mismatched row lengths → Invalid dimension');
     }
     {
       const s = new Stack();
       s.push(Real(1));
       s.push(Real(2));
       s.push(Integer(2));
-      assertThrows(() => lookup('->ROW').fn(s), /Bad argument type/,
-        'session391: ->ROW non-vector args → Bad argument type');
+      assertThrows(() => lookup('ROW->').fn(s), /Bad argument type/,
+        'session391: ROW-> non-vector args → Bad argument type');
     }
-    // ->COL mirrors →COL's mismatched-height reject (compose path).
+    // COL-> mirrors COL→'s mismatched-height reject (compose path).
     {
       const s = new Stack();
       s.push(Vector([Real(1), Real(2)]));
       s.push(Vector([Real(1)]));
       s.push(Integer(2));
-      assertThrows(() => lookup('->COL').fn(s), /Invalid dimension/,
-        'session391: ->COL mismatched column heights → Invalid dimension');
+      assertThrows(() => lookup('COL->').fn(s), /Invalid dimension/,
+        'session391: COL-> mismatched column heights → Invalid dimension');
     }
-    // ROW-> / COL-> mirror ROW→/COL→'s non-Matrix rejects (decompose path).
+    // ->ROW / ->COL mirror →ROW/→COL's non-Matrix rejects (decompose path).
     {
       const s = new Stack();
       s.push(Vector([Real(1), Real(2)]));
-      assertThrows(() => lookup('ROW->').fn(s), /Bad argument type/,
-        'session391: ROW-> on Vector → Bad argument type');
+      assertThrows(() => lookup('->ROW').fn(s), /Bad argument type/,
+        'session391: ->ROW on Vector → Bad argument type');
     }
     {
       const s = new Stack();
       s.push(Real(5));
-      assertThrows(() => lookup('COL->').fn(s), /Bad argument type/,
-        'session391: COL-> on Real → Bad argument type');
+      assertThrows(() => lookup('->COL').fn(s), /Bad argument type/,
+        'session391: ->COL on Real → Bad argument type');
     }
   }
 
@@ -2279,7 +2280,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Real(42));
-    assertThrows(() => lookup('TOT').fn(s), /Bad argument/, 'session052: TOT on Real throws');
+    assertThrows(() => lookup('TOT').fn(s), /Nonexistent ΣDAT/, 'session052: TOT on Real reads ΣDAT and reports it missing');
   }
 
 
@@ -2412,7 +2413,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Real(1));
-    assertThrows(() => lookup('SDEV').fn(s), /Bad argument/, 'session052: SDEV on Real throws');
+    assertThrows(() => lookup('SDEV').fn(s), /Nonexistent ΣDAT/, 'session052: SDEV on Real reads ΣDAT and reports it missing');
   }
 
 
@@ -2616,7 +2617,8 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(1), Real(2), Real(3)],
     [Real(4), Real(5), Real(6)],
   ]));
-  assertThrows(() => lookup('COV').fn(s), /dimension/i, 'session053: COV 3-col matrix throws Invalid dimension');
+  lookup('COV').fn(s);
+  assert(isReal(s.peek()), 'session053: COV on a 3-column matrix uses the XCOL and YCOL columns, 1 and 2 by default');
 }
 
 {
@@ -2881,9 +2883,10 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(4), Real(8)],
   ]));
   lookup('BESTFIT').fn(s);
+  s.pop();
   const out = s.pop();
-  assert(isString(out) && out.value === 'LIN',
-    'session054: BESTFIT linear data → "LIN"');
+  assert(isSymbolic(out) && formatAlgebra(out.expr) === '0 + 2*X' && calcState.lastFitModel?.kind === 'LIN',
+    'session054: BESTFIT linear data picks LINFIT, pushes its model and makes it the current one');
 }
 
 {
@@ -2895,9 +2898,11 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(4), Real(Math.exp(4))],
   ]));
   lookup('BESTFIT').fn(s);
+  s.pop();
   const out = s.pop();
-  assert(isString(out) && out.value === 'EXP',
-    'session054: BESTFIT exponential data → "EXP"');
+  assert(isSymbolic(out) && /^1\.?\*EXP\(1\.?\*X\)$/.test(formatAlgebra(out.expr)) && calcState.lastFitModel?.kind === 'EXP',
+    `session054: BESTFIT exponential data picks EXPFIT (got ${formatAlgebra(out.expr)})`);
+  calcState.lastFitModel = null;
 }
 
 /* ================================================================
@@ -3354,7 +3359,7 @@ function _approxMatEqual(A, B, tol) {
 {
   const s = new Stack();
   s.push(Real(5));
-  assertThrows(() => lookup('MAD').fn(s), /Bad argument type/, 'session057: MAD on Real throws Bad argument type');
+  assertThrows(() => lookup('MAD').fn(s), /Nonexistent ΣDAT/, 'session057: MAD on Real reads ΣDAT and reports it missing');
 }
 
 {
@@ -3670,16 +3675,18 @@ function _approxMatEqual(A, B, tol) {
   // Tests run sequentially and share calcState — clear the slot
   // explicitly.
   calcState.lastFitModel = null;
+  varPurge('ΣPAR');
   const s = new Stack();
   s.push(Real(1));
-  assertThrows(() => lookup('PREDV').fn(s), /Undefined name/, 'session058: PREDV with no fit throws Undefined name');
+  assertThrows(() => lookup('PREDV').fn(s), /Undefined name/, 'session058: PREDV with no fit and no ΣPAR throws Undefined name');
 }
 
 {
   calcState.lastFitModel = null;
+  varPurge('ΣPAR');
   const s = new Stack();
   s.push(Real(1));
-  assertThrows(() => lookup('PREDX').fn(s), /Undefined name/, 'session058: PREDX with no fit throws Undefined name');
+  assertThrows(() => lookup('PREDX').fn(s), /Undefined name/, 'session058: PREDX with no fit and no ΣPAR throws Undefined name');
 }
 
 {
@@ -3712,7 +3719,7 @@ function _approxMatEqual(A, B, tol) {
   const before = calcState.lastFitModel;
   assert(before && before.kind === 'LIN',
     'session058: LINFIT seeded lastFitModel');
-  // BESTFIT with different data — confirm the LIN slot stays.
+  // AUR: BESTFIT makes the best family the current model.
   const s2 = new Stack();
   s2.push(Matrix([
     [Real(1), Real(Math.exp(1))],
@@ -3721,8 +3728,8 @@ function _approxMatEqual(A, B, tol) {
   ]));
   lookup('BESTFIT').fn(s2);
   s2.pop();
-  assert(calcState.lastFitModel === before,
-    'session058: BESTFIT does not overwrite lastFitModel');
+  assert(calcState.lastFitModel !== before && calcState.lastFitModel.kind === 'EXP',
+    'session058: BESTFIT makes its pick the model PREDV uses');
   calcState.lastFitModel = null;
 }
 
@@ -3797,3 +3804,17 @@ function _approxMatEqual(A, B, tol) {
   assert(Date.now() - t0 < 3000, 'the interrupt lands promptly, not after the whole product');
   assertThrows(() => withTimeLimit(60, () => run('DET', Matrix(Array.from({ length: 11 }, (_, i) => Array.from({ length: 11 }, (_, j) => Symbolic(AstVar('A' + i + 'x' + j))))))), /Interrupted/, 'DET of a big symbolic matrix is interrupted instead of freezing the page');
 }
+
+{
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
+  assert(line('[[(1,2) 3][4 5]] TRN') === '[[ (1, -2) 4 ][ 3 5 ]]' && line('[[(1,2) 3][4 5]] TRAN') === '[[ (1, 2) 4 ][ 3 5 ]]',
+    'TRN is the conjugate transpose and TRAN the plain one, as the AUR defines them');
+  assert(line('[5 10] [[2 1][1 3]] /') === '[ 1. 3. ]' && line('[[5][10]] [[2 1][1 3]] /') === '[[ 1. ][ 3. ]]',
+    'an array divided by a square matrix solves the system, as the AUR says');
+  assertThrows(() => runLine('[[2 1][1 3]] [5 10] /'), /Bad argument type/, 'a matrix divided by a vector is still refused');
+  assert(line('[[1 2][3 4]] →ROW') === '2. | [ 3 4 ] | [ 1 2 ]' && line('[1 2] [3 4] 2 ROW→') === '[[ 1 2 ][ 3 4 ]]',
+    '→ROW takes a matrix apart and ROW→ puts rows together, the AUR way round');
+  assert(line('[[1 2][3 4]] →COL') === '2. | [ 2 4 ] | [ 1 3 ]' && line('[1 3] [2 4] 2 COL→') === '[[ 1 2 ][ 3 4 ]]',
+    '→COL takes a matrix apart and COL→ puts columns together');
+}
+

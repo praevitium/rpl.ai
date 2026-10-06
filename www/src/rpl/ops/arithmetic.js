@@ -90,6 +90,15 @@ function binaryMath(op) {
       return;
     }
 
+    // AUR: an array B divided by a square matrix A solves AX = B, so X is INV(A)*B.
+    if (op === '/' && (isMatrix(a) || isVector(a)) && isMatrix(b)) {
+      s.push(b);
+      lookup('INV').fn(s);
+      s.push(a);
+      lookup('*').fn(s);
+      return;
+    }
+
     if (isMatrix(a) && isMatrix(b)) {
       const ar = a.rows.length, ac = a.rows[0]?.length ?? 0;
       const br = b.rows.length, bc = b.rows[0]?.length ?? 0;

@@ -88,13 +88,13 @@ register('D->HMS', alias('D→HMS'));
 
 register('HMS->D', alias('HMS→D'));
 
-register('ROW->', _rowDecompose);
+register('ROW->', _rowCompose);
 
-register('->ROW', _rowCompose);
+register('->ROW', _rowDecompose);
 
-register('COL->', _colDecompose);
+register('COL->', _colCompose);
 
-register('->COL', _colCompose);
+register('->COL', _colDecompose);
 
 register('->Qπ', alias('→Qπ'));
 
