@@ -509,3 +509,14 @@ function replaceSelection(state, ast) {
     'EQW the keyboard types _ and the micro sign for units');
 }
 
+{
+  assert(textOf(press(emptyEquation(), '1', '+', '2', 'RS▲', '×', '3')) === '(1 + 2)*3' && textOf(press(emptyEquation(), 'x', '+', '1', '▲', '▲', '×', '3')) === '(x + 1)*3',
+    'EQW × on a selected sum multiplies the whole sum, not its last term');
+  const lifted = (src, ...keys) => textOf(press(equationFromValue(Symbolic(parseAlgebra(src))), ...keys));
+  assert(lifted('(x+1)/4*5', '◀', '◀', '⌫', '⌫', '⌫') === '(x + 1)*5' && lifted('3-(x+1)/4', '⌫', '⌫') === '3 - (x + 1)',
+    'EQW removing a fraction keeps its sum together next to × or after −');
+  assert(lifted('2+(x+1)/4', '⌫', '⌫') === '2 + x + 1', 'EQW a sum lifted out after + needs no brackets');
+  const eex = toAst(press(emptyEquation(), '2', 'EEX', '−', '3').root);
+  assert(eex.kind === 'num' && eex.value === 0.002, 'EQW − straight after EEX makes the exponent negative, as 2E-3');
+}
+

@@ -913,6 +913,13 @@ function typeUnit(state, face) {
   return unitPrefix(text.slice(text.indexOf('_') + 1)) ? putLeaf({ ...state, lastFace: face }, numLeaf(text)) : null;
 }
 
+// − straight after EEX makes the exponent negative, as typing 2E-3 does.
+function exponentSign(state, face) {
+  if ((face !== '−' && face !== '-') || state.target.mode !== 'insert') return null;
+  const item = getItem(state.root, state.target.path);
+  return item?.t === 'num' && item.text.endsWith('E') && !item.text.includes('_') ? putLeaf(state, numLeaf(`${item.text}-`)) : null;
+}
+
 function startUnit(state) {
   const item = state.target.mode === 'insert' ? getItem(state.root, state.target.path) : null;
   if (item?.t !== 'num' || item.text.includes('_') || !/\d\.?$/.test(item.text)) {
@@ -1017,6 +1024,9 @@ function operate(state, op) {
   }
   const { rowKey, from, to } = spanOf(state);
   const row = rowByKey(state.root, rowKey);
+  if (op === '*' && itemsAreSum(row.slice(from, to + 1))) {
+    return replaceSpan(state, rowKey, from, to, [makeParen(row.slice(from, to + 1), false), opTok('*'), holeMark('insert')], null, op);
+  }
   const cover = findCover(row, from, to);
   const parent = cover.node.from === from && cover.node.to === to ? cover.parent : null;
   const factor = parent?.kind === 'product' && parent.kids.some(kid => kid.from === from && kid.to === to);
@@ -1144,7 +1154,9 @@ function backspaceStructure(state, rowKey) {
     const last = kept[kept.length - 1];
     kept[kept.length - 1] = marked(last, last.t === 'hole' || last.t === 'num' || last.t === 'name' ? 'insert' : 'select');
     const row = rowByKey(state.root, parentKey).slice();
-    row.splice(index, 1, ...kept);
+    // A sum lifted out between × or after − keeps its brackets: 3-(x+1)/4 loses the fraction as 3-(x+1).
+    const binds = ['*', '-'].includes(row[index - 1]?.op) || row[index + 1]?.op === '*';
+    row.splice(index, 1, ...(binds && itemsAreSum(kept) ? [makeParen(kept, false)] : kept));
     return finishMarked(state, setRow(state.root, parentKey, row));
   }
   return moveSide(state, -1);
@@ -1267,7 +1279,7 @@ export function pressEquationKey(state, face) {
   if (face === 'UNDO') return undoState(state);
   if (face === 'REDO') return redoState(state);
   if (face === 'CLEAR') return clearAll(state);
-  const unit = typeUnit(state, face);
+  const unit = typeUnit(state, face) ?? exponentSign(state, face);
   if (unit) return unit;
   if (face === '_') return startUnit(state);
   if (!KEEPS_WORD_OPEN.has(face) && !isLetterFace(face) && !/^[0-9]$/.test(face)) state = completeWord(state);
