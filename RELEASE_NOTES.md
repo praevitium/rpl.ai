@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.16 (2026-10-05)
+**Latest release:** v0.6.17 (2026-10-06)
 
 ---
 
@@ -20,6 +20,49 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.17 — 2026-10-06
+
+Units inside algebraics. A unit object can sit in an algebraic, as on the HP
+50g: `'X*5_m'`, `'5_m+3_ft'` or `'9.81_(m/s^2)*T^2/2'`. EVAL and →NUM work
+the units out exactly as the stack commands do, converting to the right-hand
+unit, so `'5_m+3_ft' EVAL` gives `19.4041994751_ft` and a length plus a time
+is Inconsistent units. A variable that holds a unit object is substituted,
+so with `2_s` in `T` the formula above gives `19.62_m`; units that cancel
+fold into the number around them, and IFTE compares units to pick its
+branch. `5_m 'X' *` now gives the algebraic `'5_m*X'` instead of an error.
+Inside an algebraic a unit runs to the next operator, so a compound unit
+goes in parentheses, and the app writes it that way: `'5_m/s'` is 5 m
+divided by a variable `s`. In the equation writer, `_` after a number
+starts its unit (the keypad's ↱ − or the `_` key), letters and `^` spell it,
+and a `(` group takes `*` and `/`. Copy as LaTeX writes such a quantity as
+`5\,\mathrm{m}`. Symbolic commands such as EXPAND and SOLVE refuse an
+algebraic with units rather than drop them.
+
+TAYLR, TAYLOR0 and ZEROS. `'EXP(X)' 'X' 3 TAYLR` gives the Taylor
+polynomial `1+X+1/2*X^2+1/6*X^3` at 0. As the AUR defines it, the order is
+relative, counted from the lowest power, so `'X*EXP(X)' 'X' 2 TAYLR` is
+`X+X^2+1/2*X^3` and a pole keeps its negative powers; coefficients come
+reduced (`-1/3*X^4` where the AUR's example prints `-8/4!*X^4`). TAYLOR0 is
+the fourth-order polynomial in VX. ZEROS lists each root once, in
+increasing order, without SOLVE's `X=`: `'X^3-X^2-8*X+12' 'X' ZEROS` gives
+`{ -3 2 }`. Unlike the HP, it always returns a list, even of one root. The
+app now has 456 commands.
+
+Fixed:
+
+- DERVX, INTVX, TAYLOR0, PREVAL and LIMIT at a bare point used VX, which
+  is `x` by default, even for an expression in `X`, so `'X^2' DERVX` gave 0.
+  They now use the expression's only variable when VX isn't in it.
+- Results from the algebra engine printed `pi`; they now show π, as
+  everything else does (`X = 1/2*π`).
+- In the equation writer, × on a selected sum multiplied only its last term
+  (`1+2` then ×3 gave `1+2*3`); removing a fraction or power around a sum
+  next to × or after − merged it into its neighbours (`3-(x+1)/4` became
+  `3-x+1`); and − straight after EEX was refused instead of making the
+  exponent negative.
+- The assistant was told that mph, °C and °F are not units and converted
+  them by hand.
 
 ## v0.6.16 — 2026-10-05
 
