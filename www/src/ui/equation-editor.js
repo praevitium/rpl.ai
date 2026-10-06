@@ -864,6 +864,23 @@ function implicitMul(state, leaf) {
   return insertAfter(state, [opTok('*'), markedLeaf], null);
 }
 
+// 2e3, 2e-3 and 2E+3 typed with the letter key read as 2E3, 2E-3 and 2E3, as on a keyboard.
+function sciNotation(state, digit) {
+  if (state.target.mode !== 'insert') return null;
+  const path = state.target.path;
+  const rowKey = rowKeyOf(path);
+  const index = path[path.length - 1];
+  const row = rowByKey(state.root, rowKey);
+  const signed = row[index].t === 'hole' && ['-', '+'].includes(row[index - 1]?.op);
+  const at = signed ? index - 2 : index;
+  const [num, star, e] = [row[at - 2], row[at - 1], row[at]];
+  if (e?.t !== 'name' || !/^[eE]$/.test(e.text) || star?.op !== '*' || num?.t !== 'num' || /[E_]/.test(num.text)) return null;
+  const sign = signed && row[index - 1].op === '-' ? '-' : '';
+  const merged = row.slice();
+  merged.splice(at - 2, index - at + 3, marked(numLeaf(`${num.text}E${sign}${digit}`), 'insert'));
+  return finishMarked({ ...state, lastFace: digit }, setRow(state.root, rowKey, merged));
+}
+
 function typeGlyph(state, text, kind) {
   const target = state.target;
   if (target.mode === 'select') {
@@ -876,6 +893,8 @@ function typeGlyph(state, text, kind) {
   }
   const typed = { ...state, lastFace: text };
   const leaf = kind === 'num' ? numLeaf(text === 'EEX' ? '1E' : text) : nameLeaf(text);
+  const sci = kind === 'num' && /^\d$/.test(text) ? sciNotation(state, text) : null;
+  if (sci) return sci;
   const item = getItem(state.root, target.path);
   if (target.mode === 'clear' || item.t === 'hole') return putLeaf(typed, leaf);
   if (kind === 'num' && item.t === 'num') {

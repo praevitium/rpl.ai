@@ -520,3 +520,11 @@ function replaceSelection(state, ast) {
   assert(eex.kind === 'num' && eex.value === 0.002, 'EQW − straight after EEX makes the exponent negative, as 2E-3');
 }
 
+{
+  const sci = (...keys) => toAst(press(emptyEquation(), ...keys).root);
+  assert(sci('2', 'e', '−', '3').value === 0.002 && sci('2', 'e', '3').value === 2000 && sci('2', 'E', '+', '3').value === 2000,
+    'EQW 2e-3, 2e3 and 2E+3 typed with the letter key read as scientific notation (W-M11)');
+  assert(textOf(press(emptyEquation(), '2', 'e', '×', 'x')) === '2*e*x' && textOf(press(emptyEquation(), 'x', 'e', '3')) === 'xe3' && textOf(press(emptyEquation(), '2', 'e', '−', '3', '+', '1')) === '0.002 + 1',
+    'EQW 2e stays 2·e until a digit follows, and xe3 is a name');
+}
+
