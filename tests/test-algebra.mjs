@@ -8206,3 +8206,11 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   giac._clear();
 }
 
+{
+  assertThrows(() => runLine("'1/0' EVAL"), /Infinite result/, "EVAL of 1/0 is the HP's Infinite result, not a 1/0 to keep");
+  assertThrows(() => runLine("'1/(2-2)' →NUM"), /Infinite result/, '→NUM of a division that folds to zero is Infinite result too');
+  assertThrows(() => runLine("'0^-1' EVAL"), /Infinite result/, 'EVAL of 0^-1 is Infinite result');
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
+  assert(line("'X/0' EVAL") === '`X/0`' && line("'1/X' EVAL") === '`1/X`', 'a division by zero with a name in it stays symbolic');
+}
+

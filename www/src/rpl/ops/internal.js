@@ -1454,10 +1454,23 @@ function _evalSymbolic(v) {
     : (_op, args, result) => _approxGate(result, args);
   const evalNode = (ast) => algebraEvalAst(ast, resolve, _angleAwareFnEval, binGate);
   const reduced = _foldUnits(evalNode(_expandUserCalls(v.expr)), evalNode);
+  _checkInfinite(reduced);
   const value = _astToRplValue(reduced);
   return approx && isInteger(value) ? Real(value.value.toString()) : value;
 }
 
+
+// A division by zero left in the result is the Infinite result the HP raises, not a 1/0 to keep.
+function _checkInfinite(ast) {
+  if (ast.kind === 'neg') return _checkInfinite(ast.arg);
+  if (ast.kind === 'fn') return ast.args.forEach(_checkInfinite);
+  if (ast.kind !== 'bin') return;
+  _checkInfinite(ast.l);
+  _checkInfinite(ast.r);
+  const zero = (a) => a.kind === 'num' && a.value === 0;
+  const negative = (a) => (a.kind === 'num' && a.value < 0) || (a.kind === 'neg' && a.arg.kind === 'num');
+  if ((ast.op === '/' && _isLeaf(ast.l) && zero(ast.r)) || (ast.op === '^' && zero(ast.l) && negative(ast.r))) throw new RPLError('Infinite result');
+}
 
 const _isLeaf = (a) => a.kind === 'num' || a.kind === 'unit';
 
