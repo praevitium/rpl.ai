@@ -1437,6 +1437,13 @@ export function equationInsights(ast, { variable = primaryVariable(ast), numeric
     const value = numeric(equation ? Bin('-', ast.l, ast.r) : ast, {});
     if (Number.isFinite(value)) out.push({ kind: 'value', label: equation ? 'Left − right' : 'Value', done: 'Replaced with its value', value });
   }
+  // A quantity with units is worked out as EVAL does on the stack: 5_m+3_ft is 19.4041994751_ft.
+  if (!names.length && !relation && hasUnits(ast)) {
+    try {
+      const next = valueToAst(runOps([Symbolic(ast)], ['EVAL']));
+      if (!astEqual(ast, next)) out.push({ kind: 'replace', label: 'Value', done: 'Replaced with its value', ast: next });
+    } catch { /* inconsistent units, no insight */ }
+  }
   if (names.length === 1 && !relation && !hasUnits(ast)) out.push({ kind: 'plot', label: `Plot in ${variable}`, variable, ast });
   if (!cas || !names.length) return out;
   const seen = [ast];

@@ -528,3 +528,10 @@ function replaceSelection(state, ast) {
     'EQW 2e stays 2·e until a digit follows, and xe3 is a name');
 }
 
+{
+  const value = (src) => equationInsights(parseAlgebra(src), { cas: false }).find((i) => i.label === 'Value');
+  assert(formatAlgebra(value('5_m+3_ft').ast) === '19.4041994751_ft' && formatAlgebra(value('SIN(30_°)').ast) === '0.5',
+    'EQW the insight strip works a quantity with units out as EVAL does');
+  assert(!value('5_m+3_s') && !value('5_m*X') && !value('5_m'), 'EQW no value insight for inconsistent units, a formula with a name, or a plain quantity');
+}
+
