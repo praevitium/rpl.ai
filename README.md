@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 469 commands, exact big-integer and rational arithmetic,
+of its command set: 474 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -97,7 +97,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
   `(A+1)^2+1`, and `'F(X)'` plots. Any stored program can be called this way
   inside an algebraic. IFTE picks a branch inside an algebraic too, so a
   function can call itself: `'R(N)=IFTE(N<=1,1,N*R(N-1))' DEFINE` then
-  `'R(10)' EVAL` gives `3628800`.
+  `'R(10)' EVAL` gives `3628800`. Tests combine with AND, OR, XOR and NOT:
+  `'X>1 AND X<5'` is an algebraic, and `'X^2>4' 'X' SOLVE` gives
+  `{ X<-2 X>2 }`.
 - **Units.** `100_km 2_h /` gives `50._km/h`; then `1_m/s CONVERT` gives
   `13.8888888889_m/s`. SI prefixes work on SI units (`5_kJ`, `1_MHz`,
   `3_uA`), and a bare `°C` or `°F` converts as a thermometer reading:
@@ -503,7 +505,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 469. The
+**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 474. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - program I/O: INPUT, INFORM, CHOOSE, DISP, CLLCD, FREEZE, MSGBOX, WAIT,
@@ -511,7 +513,6 @@ Catalog and the command reference mark what is available. Not there yet:
   with `→TAG` and pause with `PROMPT`.
 - PICT and the plot-setup commands (PVIEW, ERASE, AXES, XRNG, YRNG, STEQ and
   the rest)
-- BINS, NDIST, UTPN and the other distribution commands
 - MENU and TMENU, and DEF
 - parts of the CAS, such as DESOLVE, LINSOLVE and LDEC (SOLVE, ISOL,
   ZEROS, TAYLR, TAYLOR0 and SERIES are here). Symbolic commands such as EXPAND

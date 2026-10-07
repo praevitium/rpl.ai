@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.20 (2026-10-06)
+**Latest release:** v0.6.21 (2026-10-07)
 
 ---
 
@@ -20,6 +20,42 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.21 — 2026-10-07
+
+Logic inside algebraics. `AND`, `OR`, `XOR` and `NOT` are operators in an
+algebraic, with the AUR's precedence: comparisons bind tighter than NOT and
+AND, which bind tighter than OR and XOR. So `'X>1 AND X<5'` is a test that
+EVAL works out once X has a value, `'NOT (A AND B)'` keeps its parentheses,
+and `'IFTE(X>0 AND Y>0,1,0)'` chooses as expected. On the stack `AND`, `OR`,
+`XOR` and `NOT` build such an algebraic from a symbolic argument, as the
+AUR's stack diagrams show: `'X>1' 'X<2' AND` gives `'X>1 AND X<2'`. The CAS
+reads and writes them, so `'X^2>4' 'X' SOLVE` gives `{ X<-2 X>2 }` and
+`'X^2-4<0' 'X' SOLVE` gives `{ X>-2 AND X<2 }`; the equation writer shows
+them, and Copy as LaTeX writes ∧, ∨, ⊻ and ¬. A comparison in parentheses
+can be an operand, `'(X<Y)+1'`, where an equation still cannot.
+
+`∫` on the stack is the AUR's definite integral: lower limit, upper limit,
+integrand and variable, so `1 2 '10*X' 'X' ∫` gives `15` and
+`0 'π' 'SIN(X)' 'X' ∫` gives `2`. It used to be a second name for the
+two-argument INTEG; a program that used it that way needs INTEG.
+
+More statistics: `BINS` sorts the independent column of ΣDAT into frequency
+bins, `NDIST` is the normal density from a mean and a variance, and `PVAR`,
+`PSDEV` and `PCOV` are the population variance, standard deviation and
+covariance. The app now has 474 commands.
+
+Fixed:
+
+- When the equation writer or the keyboard shrank the stack view, level 1
+  scrolled out of sight (W-M16). A view that was at its bottom stays there.
+- `LAPLACE` and `ILAP` asked Giac to transform into the variable they
+  transformed from. The transform variable is now its own, renamed back
+  afterwards, so `'EXP(-2*X)' LAPLACE` gives `1/(X+2)` and `'1/(X+2)' ILAP`
+  gives `EXP(-2*X)` back.
+- `SOLVE` of an inequality wrapped each condition as `X = (X>2)`.
+- In the Catalog and the palette, LR and three other commands showed the
+  manual's column headings (`Level 1/Argument 1`) as their signature.
 
 ## v0.6.20 — 2026-10-06
 

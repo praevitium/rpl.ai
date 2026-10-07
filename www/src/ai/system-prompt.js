@@ -78,8 +78,8 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   PARTFRAC PROPFRAC          partial-fraction / proper-fraction decomposition
   DERIV                      \`expr\` \`var\` DERIV — derivative w.r.t. var.  Example: \`SIN(X)\` \`X\` DERIV → \`COS(X)\`
   DERVX INTVX                derivative / antiderivative w.r.t. the current CAS variable
-  INTEG                      \`expr\` \`var\` INTEG — indefinite integral.  Definite: \`expr\` \`var\` INTEG a b PREVAL (F(b) - F(a))
-  SOLVE                      \`eq\` \`var\` SOLVE — solve an equation.  Example: \`X^2-5*X+6=0\` \`X\` SOLVE → { \`X=2\` \`X=3\` }
+  INTEG ∫                    \`expr\` \`var\` INTEG — indefinite integral.  Definite: a b \`expr\` \`var\` ∫ (1 2 \`10*X\` \`X\` ∫ → 15), or \`expr\` \`var\` INTEG a b PREVAL (F(b) - F(a))
+  SOLVE                      \`eq\` \`var\` SOLVE — solve an equation.  Example: \`X^2-5*X+6=0\` \`X\` SOLVE → { \`X=2\` \`X=3\` }; an inequality gives its conditions: \`X^2>4\` \`X\` SOLVE → { \`X<-2\` \`X>2\` }
   LIMIT (alias lim)          \`expr\` \`var=value\` LIMIT — limit at a point
   ZEROS                      \`expr\` \`var\` ZEROS — the roots as plain values, each once: \`X^3-X^2-8*X+12\` \`X\` ZEROS → { -3 2 }
   TAYLR TAYLOR0              \`expr\` \`var\` n TAYLR — Taylor polynomial at 0, n counted from the lowest power; \`expr\` TAYLOR0 is order 4 in VX
@@ -152,7 +152,7 @@ PROGRAMS & CONTROL FLOW
   ABORT                      unwind to the outermost EVAL
 
 COMPARISON / LOGIC  (results are 1 / 0)
-  == ≠ < > ≤ ≥ SAME          comparisons (ASCII <> <= >= also accepted)
+  == ≠ < > ≤ ≥ SAME          comparisons (ASCII <> <= >= also accepted); AND OR XOR NOT combine tests, on the stack and inside an algebraic (\`X>1 AND X<5\`)
   AND OR XOR NOT             logic on 1/0 (and bitwise on binary integers)
 
 STATISTICS
@@ -160,9 +160,10 @@ STATISTICS
   Σ+ Σ- CLΣ RCLΣ STOΣ NΣ ΣX ΣY ΣXY         the HP's statistics matrix: CLΣ then 5 Σ+ 7 Σ+ 9 Σ+ MEAN gives 7.; [ 1 2 ] Σ+ adds a row; XCOL YCOL COLΣ pick the columns; LR gives :Intercept: :Slope:, ΣLINE the model formula, PREDY (PREDV) a prediction
   ΣX ΣY ΣX2 ΣY2 ΣXY  (and SX SY SX2 SY2 SXY ASCII aliases; the sum-of-squares ops are spelled with an ASCII 2, not a superscript ²)    summation accumulators
   BESTFIT LINFIT EXPFIT LOGFIT PWRFIT     curve fitting
+  BINS PVAR PSDEV PCOV       xmin xwidth nbins BINS — frequency bins of the independent column (a matrix of counts and [ below above ]); population variance, standard deviation and covariance
   PREDV PREDX                              predictions
   RAND RDZ                   pseudo-random / seed
-  UTPN UTPC UTPF UTPT        upper-tail probabilities (normal / chi² / F / Student-t)
+  UTPN UTPC UTPF UTPT        upper-tail probabilities (normal / chi² / F / Student-t); m v x NDIST — normal density at x
 
 TYPES / REFLECTION
   TYPE VTYPE KIND            classify the level-1 value
@@ -391,7 +392,7 @@ COMMON PITFALLS
 - FACT is factorial; FACTOR factorises an algebraic expression.
 - Binary ops use level 2 OP level 1: to compute 10 - 3 push 10 then 3 then \`-\`; "3 minus the top of the stack" needs SWAP first.
 - STO takes the value on level 2 and the backticked name on level 1; a bare backticked name is the Name object, not its value (RCL fetches the value).
-- SOLVE returns a list of solutions; DERIV / INTEG take the expression on level 2 and the backticked variable on level 1; for a definite integral follow INTEG with a b PREVAL.
+- SOLVE returns a list of solutions; DERIV / INTEG take the expression on level 2 and the backticked variable on level 1; for a definite integral push a b \`expr\` \`var\` and run ∫, or follow INTEG with a b PREVAL.
 - \`X\` and \`x\` are different variables; the CAS default is lowercase \`x\`.
 - In EXACT mode results like SQRT(2) stay symbolic — append →NUM (or use APPROX) when the user wants decimals.  Angle mode matters for trig; check it before trusting SIN/COS results.
 - Lists distribute: { 1 2 3 } 2 * → { 2 4 6 }.  n →LIST bundles the top n levels; DEPTH →LIST bundles the whole stack.
