@@ -144,8 +144,10 @@ export function pickFile(accept, onFile) {
   picker.click();
 }
 
+// The manual's column headings (Level 1/Argument 1) are skipped, and a lone arrow takes its result line.
 export function signatureOf(entry) {
-  const first = String(entry?.io ?? '').split('\n')[0].replace(/`/g, "'").trim();
+  const lines = String(entry?.io ?? '').split('\n').filter((l) => !/^Level\s*\S*\/(Argument|Item)/.test(l));
+  const first = (lines[0] === '→' ? lines.slice(0, 2).join(' ') : lines[0] ?? '').replace(/`/g, "'").trim();
   return first.length > 42 ? `${first.slice(0, 41)}…` : first;
 }
 
