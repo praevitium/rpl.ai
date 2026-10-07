@@ -411,7 +411,7 @@ function relSide(ast) {
 }
 
 function termItems(node, asRight) {
-  if (asRight && isAddLike(node)) return [makeParen(fromAst(node), false)];
+  if ((asRight && isAddLike(node)) || (isBin(node) && RELS.has(node.op))) return [makeParen(fromAst(node), false)];
   if (isNeg(node)) return [makeStruct('neg', [astToItems(node.arg)])];
   return astToItems(node);
 }

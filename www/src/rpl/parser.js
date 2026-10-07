@@ -302,7 +302,7 @@ export function parseEntry(src) {
       case 'quotedName': {
         const body = t.text;
         const looksAlgebraic =
-          /[+\-*/^()=≠<>≤≥√]/.test(body) || /^[\d.]/.test(body);
+          /[+\-*/^()=≠<>≤≥√]/.test(body) || /^[\d.]/.test(body) || /\b(AND|OR|XOR|NOT)\b/i.test(body);
         if (looksAlgebraic) {
           try {
             return Symbolic(parseAlgebra(body));

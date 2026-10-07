@@ -8,7 +8,7 @@ import {
   isReal, isInteger, isRational, isComplex, isString, isName, isSymbolic, isList, isVector,
   isMatrix, isTagged, isUnit, isBinaryInteger,
 } from './types.js';
-import { Num, Var, Neg, Bin, Fn, numText, PREC, KNOWN_FUNCTIONS, isKnownFunction, parseAlgebra, formatAlgebra } from './algebra.js';
+import { Num, Var, Neg, Bin, Fn, numText, PREC, KNOWN_FUNCTIONS, LOGIC_ARITY, isKnownFunction, parseAlgebra, formatAlgebra } from './algebra.js';
 import { formatBinaryInteger } from './formatter.js';
 
 const GREEK = Object.freeze({
@@ -119,6 +119,16 @@ function functionLatex(ast, parent, power) {
       case 'CEIL': return `\\left\\lceil ${a}\\right\\rceil`;
       case 'COMB': return `\\binom{${a}}{${b}}`;
       case 'PSI': return args.length === 2 ? `\\psi^{(${b})}${paren(a)}` : `\\psi${paren(a)}`;
+      case 'AND': case 'OR': case 'XOR': {
+        const glyph = { AND: '\\land', OR: '\\lor', XOR: '\\veebar' }[name];
+        const side = (latex, node) => (node.kind === 'fn' && LOGIC_ARITY[node.name] && node.name !== name ? paren(latex) : latex);
+        const latex = `${side(a, args[0])} ${glyph} ${side(b, args[1])}`;
+        return parent > 0 ? paren(latex) : latex;
+      }
+      case 'NOT': {
+        const grouped = (args[0].kind === 'bin' && RELATIONS[args[0].op]) || (args[0].kind === 'fn' && LOGIC_ARITY[args[0].name]);
+        return `\\lnot ${grouped ? paren(a) : a}`;
+      }
       case 'DERIV': return `\\frac{d}{d${b}}${paren(a)}`;
       case 'INTEG': return args.length === 4
         ? `\\int_{${parts[2]}}^{${parts[3]}} ${bodyLatex(args[0])}\\,d${b}`

@@ -1493,3 +1493,11 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(flag('2 2 SAME') === 1 && flag('2. 2. SAME') === 1 && flag('2 (2,0) SAME') === 0, 'SAME of equal numbers of one kind is 1, of a complex and a real 0');
   assert(flag('{ 1 2 } { 1 2. } SAME') === 0 && flag('{ 1 2 } { 1 2 } SAME') === 1 && flag('{ 1 2 } { 1 2. } ==') === 1, 'SAME looks inside a list for the kind of each number');
 }
+
+/* A symbolic argument turns AND, OR, XOR and NOT into an algebraic, as the AUR's stack diagrams show. */
+{
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
+  assert(line("'X>1' 'X<2' AND") === '`X>1 AND X<2`' && line("3 'X>1' OR") === '`3 OR X>1`' && line("'A' 'B' XOR") === '`A XOR B`' && line("'X>1' NOT") === '`NOT X>1`',
+    'AND, OR, XOR and NOT with a symbolic argument build the algebraic the AUR shows');
+  assertThrows(() => runLine("'X>1' \"a\" AND"), /Bad argument type/, 'AND of a symbolic and a string is Bad argument type');
+}

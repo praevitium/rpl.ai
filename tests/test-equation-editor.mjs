@@ -232,6 +232,7 @@ function same(state, source, label) {
     'A/(B*C)', '(-X)^2', '-X*Y', 'SIN(X)^2', 'SQRT(X)', 'XROOT(X,3)', 'EXP(X)',
     'FACT(X)', 'A=B', 'DERIV(X^2,X)', 'INTEG(X,X,0,1)', 'Σ(K^2,K,1,N)',
     '12345678901234567890',
+    'X>1 AND X<5', 'NOT (A AND B)', '(A OR B) AND C', 'A XOR B', '(X<Y)+1',
   ];
   for (const source of samples) {
     const ast = parseAlgebra(source);

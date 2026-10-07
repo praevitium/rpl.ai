@@ -1,7 +1,7 @@
 import { isNumber, promoteNumericPair, isBinaryInteger, isName, isString, isList, isVector, isMatrix, isSymbolic, isTagged, isUnit, isProgram, isDirectory, Symbolic, Integer, BinaryInteger } from '../types.js';
 import { getWordsizeMask } from '../state.js';
 import { RPLError } from '../stack.js';
-import { Bin as AstBin, astEqual } from '../algebra.js';
+import { Bin as AstBin, Fn as AstFn, astEqual } from '../algebra.js';
 import { uexprEqual, sameDims } from '../units.js';
 import { register } from './registry.js';
 import { FALSE, TRUE, _inUnit, _isSymOperand, _toAst, isTruthy } from './internal.js';
@@ -173,9 +173,9 @@ register('≥',  (s) => comparePair(s, (a, b) => a >= b, '≥'), { category: 'Co
 register('>=', (s) => comparePair(s, (a, b) => a >= b, '≥'), { category: 'Comparisons / logic', categoryOrder: 10, label: ">=" });
 
 
-// Bitwise on two BinaryIntegers (the HP50 overloads these names), boolean
-// otherwise.
-function binaryLogic(bitwise) {
+// Bitwise on two BinaryIntegers (the HP50 overloads these names), symbolic
+// with an algebraic or a name (X>1 AND X<2), boolean otherwise.
+function binaryLogic(name, bitwise) {
   return (s) => {
     const [a, b] = s.popN(2);
     if (isBinaryInteger(a) && isBinaryInteger(b)) {
@@ -186,15 +186,22 @@ function binaryLogic(bitwise) {
     if (isBinaryInteger(a) || isBinaryInteger(b)) {
       throw new RPLError('Bad argument type');
     }
+    if (_isSymOperand(a) || _isSymOperand(b)) {
+      const l = _toAst(a);
+      const r = _toAst(b);
+      if (!l || !r) throw new RPLError('Bad argument type');
+      s.push(Symbolic(AstFn(name, [l, r])));
+      return;
+    }
     s.push(bitwise(Number(isTruthy(a)), Number(isTruthy(b))) ? TRUE : FALSE);
   };
 }
 
-register('AND', binaryLogic((x, y) => x & y), { category: 'Comparisons / logic', categoryOrder: 11, label: "AND" });
+register('AND', binaryLogic('AND', (x, y) => x & y), { category: 'Comparisons / logic', categoryOrder: 11, label: "AND" });
 
-register('OR',  binaryLogic((x, y) => x | y), { category: 'Comparisons / logic', categoryOrder: 12, label: "OR" });
+register('OR',  binaryLogic('OR', (x, y) => x | y), { category: 'Comparisons / logic', categoryOrder: 12, label: "OR" });
 
-register('XOR', binaryLogic((x, y) => x ^ y), { category: 'Comparisons / logic', categoryOrder: 13, label: "XOR" });
+register('XOR', binaryLogic('XOR', (x, y) => x ^ y), { category: 'Comparisons / logic', categoryOrder: 13, label: "XOR" });
 
 
 register('NOT', (s) => {
@@ -204,6 +211,7 @@ register('NOT', (s) => {
     s.push(BinaryInteger((v.value & m) ^ m, v.base));
     return;
   }
+  if (_isSymOperand(v)) { s.push(Symbolic(AstFn('NOT', [_toAst(v)]))); return; }
   s.push(isTruthy(v) ? FALSE : TRUE);
 }, { category: 'Comparisons / logic', categoryOrder: 14, label: "NOT" });
 

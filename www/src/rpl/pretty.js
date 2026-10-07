@@ -3,7 +3,7 @@
    Node and the browser.  A Box is { width, ascent, descent, draw(x, by) },
    and the boxes in a row share one baseline. */
 
-import { isNum, isVar, isNeg, isBin, isFn, PREC, numText, unitNodeText } from './algebra.js';
+import { isNum, isVar, isNeg, isBin, isFn, PREC, LOGIC_PREC, LOGIC_ARITY, numText, unitNodeText } from './algebra.js';
 
 // Single-quoted family names let the stack sit inside a double-quoted attribute.
 const FONT_STACK = "'IBM Plex Mono', 'RPL Symbols', 'IBM Plex Sans', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
@@ -376,6 +376,14 @@ function lay(ast, parentPrec, size) {
     }
     if (name === 'XROOT' && args.length === 2) {
       return radicalBox(arg(0), size, arg(1, small));
+    }
+    if (LOGIC_PREC[name] !== undefined && args.length === LOGIC_ARITY[name]) {
+      // X>1 AND X<2 reads as the HP writes it; a looser logic inside gets brackets.
+      const side = (i, prec) => (isFn(args[i]) && LOGIC_PREC[args[i].name] < prec ? parenBox(lay(args[i], prec, size)) : lay(args[i], prec, size));
+      const box = name === 'NOT'
+        ? rowBox([textBox('NOT', size), gapBox(size * 0.3), side(0, 0)])
+        : rowBox([side(0, LOGIC_PREC[name]), opSepBox(name, size), side(1, LOGIC_PREC[name] + 1)]);
+      return LOGIC_PREC[name] < parentPrec ? parenBox(box) : box;
     }
     return callBox(name, args.map((_, i) => arg(i)), size);
   }

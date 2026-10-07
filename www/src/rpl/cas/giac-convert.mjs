@@ -167,6 +167,10 @@ function emitFn(ast) {
   if (hpName === "INTEG") {
     return `integrate(${args.join(",")})`;
   }
+  if (hpName === "NOT" && args.length === 1) return `not(${args[0]})`;
+  if ((hpName === "AND" || hpName === "OR" || hpName === "XOR") && args.length === 2) {
+    return `((${args[0]}) ${hpName.toLowerCase()} (${args[1]}))`;
+  }
 
   const giacName = HP_TO_GIAC[hpName] ?? ast.name;
   return `${giacName}(${args.join(",")})`;
@@ -267,13 +271,15 @@ export function giacToAst(giacStr) {
   }
 
   // Only names in call position are renamed; bare identifiers may be variables,
-  // except pi, which Giac reads as the constant whatever a user stored in it.
+  // except pi, which Giac reads as the constant whatever a user stored in it,
+  // and the logic words, which the algebra spells in capitals.
   const mapped = s
     .replace(/([A-Za-z_][A-Za-z0-9_]*)\s*\(/g, (match, name) => {
       const hp = GIAC_TO_HP[name];
       return hp ? `${hp}(` : match;
     })
     .replace(/\bpi\b/g, "π")
+    .replace(/\b(and|or|xor|not)\b/g, (word) => word.toUpperCase())
     .replace(/([A-Za-z0-9_.]+|\([^()]*\))!(?!=)/g, "FACT($1)");
 
   try {

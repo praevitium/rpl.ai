@@ -270,3 +270,10 @@ const value = (text) => toLatex(parseEntry(text)[0]);
     'Copy as LaTeX writes a unit inside an algebraic as a quantity, bracketed as a power base');
 }
 
+
+{
+  assert(algebra('X>1 AND X<5') === raw`X > 1 \land X < 5` && algebra('A OR B') === raw`A \lor B` && algebra('A XOR B') === raw`A \veebar B`,
+    'Copy as LaTeX writes AND, OR and XOR as the logic symbols');
+  assert(algebra('NOT (A AND B)') === raw`\lnot \left(A \land B\right)` && algebra('NOT X>1') === raw`\lnot \left(X > 1\right)` && algebra('(A OR B) AND C') === raw`\left(A \lor B\right) \land C`,
+    'Copy as LaTeX brackets what NOT and a mixed logic expression group');
+}

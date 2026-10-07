@@ -173,6 +173,10 @@ function factorial(n) {
 // arguments and returns null to leave the call symbolic; a spec without
 // `arity` takes a variable number of arguments.
 export const KNOWN_FUNCTIONS = Object.freeze({
+  AND:  { arity: 2, eval: (a, b) => (Number(a) !== 0 && Number(b) !== 0 ? 1 : 0) },
+  OR:   { arity: 2, eval: (a, b) => (Number(a) !== 0 || Number(b) !== 0 ? 1 : 0) },
+  XOR:  { arity: 2, eval: (a, b) => ((Number(a) !== 0) !== (Number(b) !== 0) ? 1 : 0) },
+  NOT:  { arity: 1, eval: a => (Number(a) === 0 ? 1 : 0) },
   LN:   { arity: 1, eval: x => x > 0 ? Math.log(x) : null },
   LOG:  { arity: 1, eval: x => x > 0 ? Math.log10(x) : null },
   EXP:  { arity: 1, eval: x => Math.exp(x) },
@@ -294,8 +298,9 @@ export function isKnownFunction(name) {
 }
 
 // Throws on malformed input, and parser.js then keeps the text as a quoted
-// Name.  A comparison is read at the top level and as a function argument,
-// as in IFTE(X>0,X,-X), so (X=Y)+1 is still refused.
+// Name.  A comparison or logic test is read anywhere, as in IFTE(X>0,X,-X)
+// and (X>0 OR Y>0) AND Z; an equation only at the top level and as a
+// function argument, so (X=Y)+1 is still refused.
 export function parseAlgebra(src) {
   const s = String(src);
   let i = 0;
@@ -325,6 +330,35 @@ export function parseAlgebra(src) {
     if (!m) throw new Error(`Missing unit after the underscore at pos ${i}`);
     i += m[0].length;
     return m[0];
+  }
+
+  // AUR precedence: comparisons bind tighter than AND and NOT, which bind tighter than OR and XOR.
+  function parseOr() {
+    let left = parseAnd();
+    for (;;) {
+      skip();
+      const word = s.slice(i).match(/^(OR|XOR)\b/i);
+      if (!word) return left;
+      i += word[0].length;
+      left = Fn(word[1].toUpperCase(), [left, parseAnd()]);
+    }
+  }
+
+  function parseAnd() {
+    let left = parseNot();
+    for (;;) {
+      skip();
+      if (!/^AND\b/i.test(s.slice(i))) return left;
+      i += 3;
+      left = Fn('AND', [left, parseNot()]);
+    }
+  }
+
+  function parseNot() {
+    skip();
+    if (!/^NOT\b/i.test(s.slice(i))) return parseEq();
+    i += 3;
+    return Fn('NOT', [parseNot()]);
   }
 
   function parseEq() {
@@ -403,8 +437,9 @@ export function parseAlgebra(src) {
 
     if (c === '(') {
       i++;
-      const e = parseE();
+      const e = parseOr();
       expect(')');
+      if (e.kind === 'bin' && e.op === '=') throw new Error(`An equation cannot be an operand at pos ${i}`);
       return e;
     }
 
@@ -428,11 +463,11 @@ export function parseAlgebra(src) {
       if (s[i] === '(') {
         i++;
         const args = [];
-        args.push(parseEq());
+        args.push(parseOr());
         skip();
         while (s[i] === ',') {
           i++;
-          args.push(parseEq());
+          args.push(parseOr());
           skip();
         }
         expect(')');
@@ -449,7 +484,7 @@ export function parseAlgebra(src) {
     throw new Error(`Unexpected character '${c}' at pos ${i}`);
   }
 
-  const ast = parseEq();
+  const ast = parseOr();
   skip();
   if (i !== n) throw new Error(`Trailing input at pos ${i}: '${s.slice(i)}'`);
   return ast;
@@ -513,7 +548,7 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
     if (sum) return sum;
     const evaldArgs = ast.args.map(a => evalAst(a, lookup, fnEval, binGate));
     if (evaldArgs.every(isNum)) {
-      const real = evaldArgs.some(isRealNum);
+      const real = evaldArgs.some(isRealNum) || ast.name in LOGIC_ARITY;
       const result = fnEval(ast.name, evaldArgs.map(a => a.value), real);
       if (result?.kind) return result;
       if (Number.isFinite(result)) return approxNum(result, real);
@@ -579,8 +614,12 @@ export function astSize(ast) {
 }
 
 export function formatAlgebra(ast) {
-  return fmt(ast, 0);
+  return fmt(ast, LOGIC_PREC.OR);
 }
+
+// Below every arithmetic and comparison level: X>1 AND X<2 needs no brackets.
+export const LOGIC_PREC = Object.freeze({ OR: -2, XOR: -2, AND: -1, NOT: -1 });
+export const LOGIC_ARITY = Object.freeze({ AND: 2, OR: 2, XOR: 2, NOT: 1 });
 
 export const PREC = Object.freeze({
   '=': 0, '==': 0, '≠': 0, '<': 0, '>': 0, '≤': 0, '≥': 0,
@@ -606,7 +645,12 @@ function fmt(ast, parentPrec) {
     return parentPrec >= 2 ? `(${s})` : s;
   }
   if (ast.kind === 'fn') {
-    const inside = ast.args.map(a => fmt(a, 0)).join(',');
+    const logic = LOGIC_PREC[ast.name];
+    if (logic !== undefined && ast.args.length === LOGIC_ARITY[ast.name]) {
+      const text = ast.name === 'NOT' ? `NOT ${fmt(ast.args[0], 0)}` : `${fmt(ast.args[0], logic)} ${ast.name} ${fmt(ast.args[1], logic + 1)}`;
+      return logic < parentPrec ? `(${text})` : text;
+    }
+    const inside = ast.args.map(a => fmt(a, LOGIC_PREC.OR)).join(',');
     return `${ast.name}(${inside})`;
   }
   if (ast.kind === 'bin') {
