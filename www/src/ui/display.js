@@ -185,6 +185,14 @@ export class Display {
     });
     this._installSwipe(view);
     view.addEventListener('scroll', () => this._updateMore(), { passive: true });
+    // A view that shrinks under a writer or the keyboard keeps level 1 in sight (W-M16).
+    if (typeof ResizeObserver === 'function') {
+      let viewport = view.clientHeight;
+      new ResizeObserver(() => {
+        if (view.scrollTop + viewport >= view.scrollHeight - 2) view.scrollTop = view.scrollHeight;
+        viewport = view.clientHeight;
+      }).observe(view);
+    }
     const statusAction = (el) => this.onStatusAction?.(el.dataset.status, el.dataset, el);
     this.statusLine?.addEventListener?.('click', (ev) => {
       const el = ev.target.closest?.('[data-status]');
