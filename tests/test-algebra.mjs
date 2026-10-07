@@ -178,8 +178,8 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 // mention. INTVX/DERVX push Name(VX) then delegate to INTEG/DERIV, so a
 // non-symbolic operand falls through every accepted-type branch to the
 // final `Bad argument type` throw BEFORE any Giac call; the empty stack
-// hits the wrapper's depth guard. `∫` is the raw 2-arg INTEG alias, so it
-// needs both operands and rejects a non-symbolic expr the same way.
+// hits the wrapper's depth guard. `∫` is the AUR's definite integral, so it
+// needs four operands and rejects a non-symbolic integrand the same way.
 {
   const bad = [
     ['Vector', () => Vector([Real(1), Real(2)])],
@@ -198,19 +198,29 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     assertThrows(() => { lookup(op).fn(empty); }, /Too few arguments/,
                  `session315: ${op} on empty stack → Too few arguments`);
   }
-  // `∫` is the 2-arg INTEG alias: bad expr (var = Name) rejects pre-Giac.
+  // `∫` takes lower limit, upper limit, integrand and 'name': a bad integrand or variable rejects pre-Giac.
   for (const [label, make] of bad) {
     const s = new Stack();
+    s.push(Integer(0n));
+    s.push(Integer(1n));
     s.push(make());
     s.push(Name('X'));
     assertThrows(() => { lookup('∫').fn(s); }, /Bad argument type/,
-                 `session315: ∫ on ${label} expr → Bad argument type`);
+                 `session315: ∫ on ${label} integrand → Bad argument type`);
   }
-  // `∫` with only one operand hits INTEG's 2-arg pop guard.
-  const oneArg = new Stack();
-  oneArg.push(Vector([Real(1), Real(2)]));
-  assertThrows(() => { lookup('∫').fn(oneArg); }, /Too few arguments/,
-               'session315: ∫ with a single operand → Too few arguments');
+  const badVar = new Stack();
+  badVar.push(Integer(0n));
+  badVar.push(Integer(1n));
+  badVar.push(Symbolic(parseAlgebra('X^2')));
+  badVar.push(Real(3));
+  assertThrows(() => { lookup('∫').fn(badVar); }, /Bad argument type/,
+               'session315: ∫ with a number for the variable → Bad argument type');
+  // The old two-operand form, integrand and variable alone, is Too few arguments.
+  const twoArgs = new Stack();
+  twoArgs.push(Symbolic(parseAlgebra('X^2')));
+  twoArgs.push(Name('X'));
+  assertThrows(() => { lookup('∫').fn(twoArgs); }, /Too few arguments/,
+               'session315: ∫ with the integrand and variable alone → Too few arguments');
 }
 
 {
@@ -3842,35 +3852,35 @@ giac._setFixtures({
    LAPLACE / ILAP basic rules.
    ================================================================ */
 
-// LAPLACE / ILAP route through Giac's `laplace` / `ilaplace` (with
-// `X` as both input and output variable, per the HP50 "in place"
-// idiom).  Bulk-register the fixtures the LAPLACE/ILAP/HEAVISIDE/DIRAC
+// LAPLACE / ILAP route through Giac's `laplace` / `ilaplace` with
+// `rplS` as the output variable, renamed back to the input variable
+// afterwards, per the HP50 "in place" idiom.  Bulk-register the fixtures the LAPLACE/ILAP/HEAVISIDE/DIRAC
 // test clusters below expect.  Each value is a Giac-parseable string in
 // the exact structural shape the assertions below check for — `1/X`,
 // `1/X^2`, `2/X^3`, … — so the mocked engine returns what the tests
 // assert on.
 giac._clear();
 giac._setFixtures({
-  'laplace(1,X,X)':         '1/X',
-  'laplace(X,X,X)':         '1/X^2',
-  'laplace(X^2,X,X)':       '2/X^3',
-  'laplace(exp(2*X),X,X)':  '1/(X-2)',
-  'laplace(sin(3*X),X,X)':  '3/(X^2+9)',
-  'laplace(cos(X),X,X)':    'X/(X^2+1)',
-  'laplace(1+X,X,X)':       '1/X+1/X^2',
-  'laplace(5*sin(X),X,X)':  '5*(1/(X^2+1))',
-  'laplace(sin(X),X,X)':    '1/(X^2+1)',
-  'ilaplace(1/X,X,X)':      '1',
-  'ilaplace(1/X^2,X,X)':    'X',
-  'ilaplace(1/(X-3),X,X)':  'exp(3*X)',
-  'ilaplace(1/(X^2+1),X,X)': 'sin(X)',
+  'laplace(1,X,rplS)':         '1/rplS',
+  'laplace(X,X,rplS)':         '1/rplS^2',
+  'laplace(X^2,X,rplS)':       '2/rplS^3',
+  'laplace(exp(2*X),X,rplS)':  '1/(rplS-2)',
+  'laplace(sin(3*X),X,rplS)':  '3/(rplS^2+9)',
+  'laplace(cos(X),X,rplS)':    'rplS/(rplS^2+1)',
+  'laplace(1+X,X,rplS)':       '1/rplS+1/rplS^2',
+  'laplace(5*sin(X),X,rplS)':  '5*(1/(rplS^2+1))',
+  'laplace(sin(X),X,rplS)':    '1/(rplS^2+1)',
+  'ilaplace(1/X,X,rplS)':      '1',
+  'ilaplace(1/X^2,X,rplS)':    'rplS',
+  'ilaplace(1/(X-3),X,rplS)':  'exp(3*rplS)',
+  'ilaplace(1/(X^2+1),X,rplS)': 'sin(rplS)',
 });
 
 // Constant-input LAPLACE picks the variable from VX.  rpl5050 ships
 // VX='x' (lowercase deviation from HP50; see state.js casVx slot),
 // so this test exercises the default-VX path with the lowercase
 // fixture below and asserts the lowercase variable in the result.
-giac._setFixture('laplace(1,x,x)', '1/x');
+giac._setFixture('laplace(1,x,rplS)', '1/rplS');
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1')));
@@ -5210,18 +5220,18 @@ giac._setFixtures({
 // literal form.
 giac._clear();
 giac._setFixtures({
-  'laplace(Heaviside(X),X,X)':          '1/X',
-  'laplace(Heaviside(X-3),X,X)':        'exp(-3*X)/X',
-  'laplace(Dirac(X),X,X)':              '1',
-  'laplace(Dirac(X-3),X,X)':            'exp(-3*X)',
-  'laplace(exp(2*X)*sin(X),X,X)':       '1/((X-2)^2+1)',
+  'laplace(Heaviside(X),X,rplS)':          '1/rplS',
+  'laplace(Heaviside(X-3),X,rplS)':        'exp(-3*rplS)/rplS',
+  'laplace(Dirac(X),X,rplS)':              '1',
+  'laplace(Dirac(X-3),X,rplS)':            'exp(-3*rplS)',
+  'laplace(exp(2*X)*sin(X),X,rplS)':       '1/((rplS-2)^2+1)',
   // ILAP keys use the parenthesised-negative shape astToGiac emits
   // from Neg(Num(3)) inside a multiplication.
-  'ilaplace(exp((-3)*X)/X,X,X)':        'Heaviside(X-3)',
-  'ilaplace(exp((-3)*X),X,X)':          'Dirac(X-3)',
-  'ilaplace(1,X,X)':                    'Dirac(X)',
-  'laplace(Heaviside(X-2),X,X)':        'exp(-2*X)/X',
-  'ilaplace(exp((-2)*X)/X,X,X)':        'Heaviside(X-2)',
+  'ilaplace(exp((-3)*X)/X,X,rplS)':        'Heaviside(rplS-3)',
+  'ilaplace(exp((-3)*X),X,rplS)':          'Dirac(rplS-3)',
+  'ilaplace(1,X,rplS)':                    'Dirac(rplS)',
+  'laplace(Heaviside(X-2),X,rplS)':        'exp(-2*rplS)/rplS',
+  'ilaplace(exp((-2)*X)/X,X,rplS)':        'Heaviside(rplS-2)',
 });
 
 {
@@ -5312,7 +5322,7 @@ giac._setFixtures({
 // Constant-input ILAP picks the variable from VX (default 'x').
 // Mirror the LAPLACE(1) story above: register the lowercase fixture
 // and assert the lowercase variable in the result.
-giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
+giac._setFixture('ilaplace(1,x,rplS)', 'Dirac(rplS)');
 {
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('1')));
@@ -5516,8 +5526,8 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
     '1',
   );
   giac._setFixture(
-    'laplace(A*T,T,T)',
-    'A/T^2',
+    'laplace(A*T,T,rplS)',
+    'A/rplS^2',
   );
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X+Y')));
@@ -8214,3 +8224,68 @@ giac._setFixture('ilaplace(1,x,x)', 'Dirac(x)');
   assert(line("'X/0' EVAL") === '`X/0`' && line("'1/X' EVAL") === '`1/X`', 'a division by zero with a name in it stays symbolic');
 }
 
+
+/* AND, OR, XOR and NOT inside algebraics, with the AUR's precedence: comparisons, then NOT and AND, then OR and XOR. */
+{
+  const round = (src) => formatAlgebra(parseAlgebra(src));
+  assert(round('X>1 AND X<5') === 'X>1 AND X<5' && round('NOT X>1 OR Y') === 'NOT X>1 OR Y' && round('A OR B AND C') === 'A OR B AND C',
+    'logic operators parse infix and print back without spare parentheses');
+  assert(round('(A OR B) AND C') === '(A OR B) AND C' && round('NOT (A AND B)') === 'NOT (A AND B)' && round('A AND (B OR C)') === 'A AND (B OR C)',
+    'parentheses that change the grouping of a logic expression are kept');
+  assert(round('AND(X>1,X<2)') === 'X>1 AND X<2' && round('NOT(X)') === 'NOT X' && round('x and y') === 'x AND y',
+    'the function spellings AND(a,b) and NOT(a) and lowercase words read as the same operators');
+  assert(round('ANDY+1') === 'ANDY + 1' && round('ORB') === 'ORB', 'a name that starts with a logic word is still a name');
+  assert(round('(X<Y)+1') === '(X<Y) + 1', 'a comparison in parentheses can be an operand');
+  assertThrows(() => parseAlgebra('(X=Y)+1'), /equation/, 'an equation in parentheses is still not an operand');
+  assertThrows(() => runLine("'A OR'"), /Invalid algebraic/, "'A OR' is a malformed algebraic, not a name");
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
+  assert(line("'1 AND 0' EVAL") === '0.' && line("'1 OR 0' EVAL") === '1.' && line("'1 XOR 1' EVAL") === '0.' && line("'NOT 0' EVAL") === '1.',
+    'logic operators on numbers evaluate to the truth values 1. and 0.');
+  assert(line("3 'X' STO 'X>1 AND X<5' EVAL 'X' PURGE") === '1.' && line("7 'X' STO 'IFTE(X>1 AND X<5,1,0)' EVAL 'X' PURGE") === '0',
+    'a stored value decides a logic test, alone and inside IFTE');
+  assert(line("'X>1 AND X<5' EVAL") === '`X>1 AND X<5`' && line("'(3<4)+1' EVAL") === '2.',
+    'a test with a free name stays symbolic; a parenthesized comparison folds');
+  const { buildGiacCmd } = await import('../www/src/rpl/cas/giac-convert.mjs');
+  const giacText = (src) => buildGiacCmd(parseAlgebra(src), (e) => e, []);
+  assert(giacText('X>1 AND X<5') === '((X>1) and (X<5))' && giacText('NOT (A OR B)') === 'not(((A) or (B)))' && giacText('A XOR B') === '((A) xor (B))',
+    'logic operators reach Giac as its and, or, xor and not');
+}
+
+/* SOLVE of an inequality gives the conditions Giac finds, as they are, not X = condition. */
+{
+  const roots = (src, key, reply) => {
+    giac._clear();
+    giac._setFixture(key, reply);
+    const out = runLine(`'${src}' 'X' SOLVE`).peek();
+    giac._clear();
+    return out.items.map((v) => format(v)).join(' | ');
+  };
+  assert(roots('X^2>4', 'solve(X^2>4,X)', '[X<-2,X>2]') === '`X<-2` | `X>2`', 'SOLVE of X^2>4 is the list { X<-2 X>2 }');
+  assert(roots('X^2-4<0', 'solve(X^2-4<0,X)', '[((X>-2) and (X<2))]') === '`X>-2 AND X<2`', 'SOLVE of a two-sided condition is one AND test');
+  assert(roots('X^2-4', 'solve(X^2-4,X)', '[2,-2]') === '`X = 2` | `X = -2`', 'SOLVE of an equation still gives X = root');
+}
+
+/* ∫ on the stack is the AUR's definite integral: lower limit, upper limit, integrand and variable. */
+{
+  giac._clear();
+  giac._setFixtures({
+    'simplify(subst(integrate(10*X,X),X=2)-subst(integrate(10*X,X),X=1))': '15',
+    'simplify(subst(integrate(sin(X),X),X=π)-subst(integrate(sin(X),X),X=0))': '2',
+  });
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
+  assert(line("1 2 '10*X' 'X' ∫") === '15' && line("0 'π' 'SIN(X)' 'X' ∫") === '2', '1 2 10*X X ∫ is 15 and the integral of SIN from 0 to π is 2');
+  giac._clear();
+}
+
+/* LAPLACE and ILAP transform to a variable of their own, so an X in the expression is not captured. */
+{
+  giac._clear();
+  giac._setFixtures({ 'laplace(exp((-2)*X),X,rplS)': '1/(rplS+2)', 'ilaplace(1/(X+2),X,rplS)': 'exp(-2*rplS)' });
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
+  assert(line("'EXP(-2*X)' LAPLACE") === '`1/(X + 2)`', 'LAPLACE of EXP(-2*X) is 1/(X+2), with the X of the result the transform variable');
+  assert(/^`EXP\(\(?-2\)?\*X\)`$/.test(line("'1/(X+2)' ILAP")), 'ILAP of 1/(X+2) is EXP(-2*X)');
+  giac._setFixtures({ 'laplace(X^N,X,rplS)': 'integrate(X^N*exp(-X*rplS),X,0,+infinity)', 'laplace(X^N*t,X,rplS)': 'integrate(X^N*t*exp(-X*rplS),X,0,+infinity)' });
+  assert(line("'X^N' LAPLACE") === '`INTEG(t^N*EXP((-t)*X),t,0,infinity)`' && line("'X^N*t' LAPLACE") === '`INTEG(τ^N*t*EXP((-τ)*X),τ,0,infinity)`',
+    'a transform left as an integral keeps its dummy variable apart from the transform variable, under a name the expression does not use');
+  giac._clear();
+}

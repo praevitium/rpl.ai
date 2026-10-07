@@ -24,7 +24,6 @@ register('->UNIT', alias('→UNIT'));
 
 
 // HP50's ∫ takes four arguments; here the glyph is INTEG's two-argument form.
-register('∫', alias('INTEG'));
 
 register('∂', alias('DERIV'));
 

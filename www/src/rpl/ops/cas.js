@@ -2,7 +2,7 @@ import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isLis
 import { giac } from '../cas/giac-engine.mjs';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { buildGiacCmd, giacToAst, splitGiacList, astToGiac } from '../cas/giac-convert.mjs';
-import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction } from '../algebra.js';
+import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction, LOGIC_ARITY } from '../algebra.js';
 import { getComplexMode, getCasVx, setCasVx, getApproxMode } from '../state.js';
 import { register, lookup } from './registry.js';
 import { _astToRplValue, _pushCasResult, _isSymOperand, _toAst, _substitute, _withListUnary, _withTaggedUnary, _withVMUnary } from './internal.js';
@@ -142,8 +142,12 @@ register('SOLVE', (s) => {
   // Some builds return a lone root without the list brackets.
   const trimmed = String(raw).trim();
   const roots = splitGiacList(raw) ?? (trimmed ? [trimmed] : []);
-  s.push(RList(roots.map((r) => Symbolic(AstBin('=', AstVar(varName), giacToAst(r))))));
+  // An inequality solves to conditions such as X<-2, which stand on their own.
+  const isCondition = (root) => (root.kind === 'bin' && root.op in COMPARISON_OPS) || (root.kind === 'fn' && root.name in LOGIC_ARITY);
+  s.push(RList(roots.map(giacToAst).map((root) => Symbolic(isCondition(root) ? root : AstBin('=', AstVar(varName), root)))));
 }, { category: 'CAS / symbolic', categoryOrder: 9, label: "SOLVE" });
+
+const COMPARISON_OPS = { '<': 1, '>': 1, '≤': 1, '≥': 1, '≠': 1, '==': 1 };
 
 
 // Giac has no isolate, so ISOL returns every branch SOLVE finds rather
@@ -272,6 +276,19 @@ function _vxForm(opName) {
 }
 
 register('INTVX', _vxForm('INTEG'), { category: 'CAS / symbolic', categoryOrder: 3, label: "INTVX" });
+
+// AUR: ∫ takes the lower limit, the upper limit, the integrand and the name, and
+// gives the definite integral; INTEG is the antiderivative.
+register('∫', (s) => {
+  const [lower, upper, integrand, varArg] = s.popN(4);
+  const varName = _varName(varArg);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const endpoint = (v) => (isBinaryInteger(v) ? AstNum(v.value) : _astArg(v));
+  const a = astToGiac(endpoint(lower));
+  const b = astToGiac(endpoint(upper));
+  const cmd = buildGiacCmd(_astArg(integrand), (e) => `simplify(subst(integrate(${e},${varName}),${varName}=${b})-subst(integrate(${e},${varName}),${varName}=${a}))`, [varName]);
+  _pushCasResult(s, giacToAst(giac.caseval(cmd)));
+}, { category: 'CAS / symbolic', categoryOrder: 2.5, label: "∫" });
 
 register('DERVX', _vxForm('DERIV'), { category: 'CAS / symbolic', categoryOrder: 1, label: "DERVX" });
 
@@ -568,15 +585,19 @@ function _lapVarName(ast) {
   return vars.size === 0 || vars.has(vx) ? vx : [...vars][0];
 }
 
-// The HP50 transforms in place (X -> X), so the same name is passed as
-// both Giac variables.
+// The HP50 transforms in place (X -> X).  Giac needs a target variable of its
+// own, or laplace(f,X,X) reads as a substitution, so the result is renamed back.
 function _laplaceOp(giacFn) {
   return (s) => {
     const [v] = s.popN(1);
     if (!_isSymOperand(v)) throw new RPLError('Bad argument type');
     const expr = _toAst(v);
     const x = _lapVarName(expr);
-    _pushCasResult(s, _casEval(expr, (e) => `${giacFn}(${e},${x},${x})`, [x]));
+    const result = _casEval(expr, (e) => `${giacFn}(${e},${x},rplS)`, [x]);
+    // A transform Giac leaves as an integral keeps x as its dummy variable, which moves to a fresh name.
+    const names = algebraFreeVars(result);
+    const dummy = ['t', 'τ', 'u'].find((n) => n !== x && !names.has(n));
+    _pushCasResult(s, _substitute(result, new Map([['rplS', AstVar(x)], [x, AstVar(dummy)]])));
   };
 }
 
