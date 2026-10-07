@@ -766,3 +766,24 @@ function makeXYMatrix() {
     'BESTFIT makes its pick the current model and shows it with 12 digits');
 }
 
+
+/* BINS sorts the independent column into frequency bins, the AUR example included. */
+{
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
+  const data = '7 2 3 1 4 6 9 0 1 1 3 5 13 2 6 9 5 8 5'.split(' ').map((x) => `${x} Σ+`).join(' ');
+  assert(line(`CLΣ ${data} 1 2 5 BINS CLΣ`) === '[ 1. 1. ] | [[ 5. ][ 3. ][ 5. ][ 2. ][ 2. ]]',
+    'BINS: the AUR example sorts 19 values into 5 bins of width 2 from 1, with one value below and one above');
+  assertThrows(() => runLine('CLΣ 1 2 5 BINS'), /Nonexistent ΣDAT/, 'BINS without ΣDAT is Nonexistent ΣDAT');
+  assertThrows(() => runLine('CLΣ 5 Σ+ 1 0 5 BINS'), /Bad argument value/, 'BINS refuses a zero bin width');
+  runLine('CLΣ');
+}
+
+/* PVAR, PSDEV and PCOV divide by n where VAR, SDEV and COV divide by n - 1. */
+{
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
+  assert(line('[1 2 3 4] PVAR [1 2 3 4] VAR') === '1.66666666667 | 1.25' && line('[1 2 3 4] PSDEV') === '1.11803398875',
+    'PVAR and PSDEV of 1 2 3 4 are 1.25 and its square root, where VAR is 5/3');
+  assert(line('[[1 2][2 4][3 6]] PVAR') === '[ 0.666666666667 2.66666666667 ]' && line('[[1 2][2 4][3 6]] PCOV [[1 2][2 4][3 6]] COV') === '2. | 1.33333333333',
+    'PVAR works each column, and PCOV is the population covariance of the data columns');
+  assert(line('[5] PVAR') === '0.' && line("CLΣ 2 Σ+ 4 Σ+ PSDEV CLΣ") === '1.', 'one observation has no spread, and PSDEV reads ΣDAT like SDEV');
+}

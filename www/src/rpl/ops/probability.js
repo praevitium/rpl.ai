@@ -84,6 +84,16 @@ function _erfc(x) {
 }
 
 
+// AUR: NDIST ( m v x → the normal density at x ) for the mean m and variance v.
+register('NDIST', (s) => {
+  const [mu, var2, x] = s.popN(3);
+  const m = _realArg(mu);
+  const V = _realArg(var2);
+  const X = _realArg(x);
+  if (!(V > 0) || !Number.isFinite(V)) throw new RPLError('Bad argument value');
+  s.push(Real(Math.exp(-((X - m) ** 2) / (2 * V)) / Math.sqrt(2 * Math.PI * V)));
+}, { category: 'Probability / combinatorics', categoryOrder: 2.5, label: "NDIST" });
+
 // UTPN ( μ σ² x → P(X > x) ) for X ~ Normal(μ, σ²).
 register('UTPN', (s) => {
   const [mu, var2, x] = s.popN(3);

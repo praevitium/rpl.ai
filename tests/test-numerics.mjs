@@ -7302,3 +7302,11 @@ function _arrayEq(a, b) {
   assert(shown('123456789012', 'FIX', 2) === '1.23E11' && shown('103.6', 'FIX', 11) === '1.03600000000E2' && shown('5', 'FIX', 11) === '5.00000000000', 'FIX shows more than 12 digits in scientific form');
   assert(format(Complex(103.6, -0.001), { mode: 'FIX', digits: 2 }) === '(103.60, -1.00E-3)' && format(Complex(103.6, 0), { mode: 'SCI', digits: 2 }) === '(1.04E2, 0.00E0)', 'the parts of a Complex are formatted like Reals');
 }
+
+/* NDIST is the normal density the AUR defines, from the mean and the variance. */
+{
+  const density = (m, v, x) => { const s = new Stack(); s.push(Real(m)); s.push(Real(v)); s.push(Real(x)); lookup('NDIST').fn(s); return s.pop().value.toNumber(); };
+  assert(_approx(density(0, 1, 0), 0.398942280401, 1e-11) && _approx(density(0, 1, 1), 0.241970724519, 1e-11) && _approx(density(5, 4, 9), 0.0269954832566, 1e-12),
+    'NDIST(0,1,0) is 1/√(2π), NDIST(0,1,1) the density one sigma out, and NDIST(5,4,9) the N(5,2²) density at 9');
+  assertThrows(() => density(0, 0, 1), /Bad argument value/, 'NDIST refuses a variance that is not positive');
+}

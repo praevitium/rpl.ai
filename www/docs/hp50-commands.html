@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>810 commands extracted from the HP 50g Advanced User's Reference Manual. 450 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>810 commands extracted from the HP 50g Advanced User's Reference Manual. 455 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -134,7 +134,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-BEEP" class='notinapp'>BEEP</a>
 <a href="#cmd-BESTFIT">BESTFIT</a>
 <a href="#cmd-BIN">BIN</a>
-<a href="#cmd-BINS" class='notinapp'>BINS</a>
+<a href="#cmd-BINS">BINS</a>
 <a href="#cmd-BLANK" class='notinapp'>BLANK</a>
 <a href="#cmd-BOX" class='notinapp'>BOX</a>
 <a href="#cmd-BUFLEN" class='notinapp'>BUFLEN</a>
@@ -449,7 +449,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-MSOLVR" class='notinapp'>MSOLVR</a>
 <a href="#cmd-MULTMOD">MULTMOD</a>
 <a href="#cmd-MUSER" class='notinapp'>MUSER</a>
-<a href="#cmd-NDIST" class='notinapp'>NDIST</a>
+<a href="#cmd-NDIST">NDIST</a>
 <a href="#cmd-NDUPN">NDUPN</a>
 <a href="#cmd-NEG">NEG</a>
 <a href="#cmd-NEWOB">NEWOB</a>
@@ -481,7 +481,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-PCAR">PCAR</a>
 <a href="#cmd-PCOEF">PCOEF</a>
 <a href="#cmd-PCONTOUR" class='notinapp'>PCONTOUR</a>
-<a href="#cmd-PCOV" class='notinapp'>PCOV</a>
+<a href="#cmd-PCOV">PCOV</a>
 <a href="#cmd-PDIM" class='notinapp'>PDIM</a>
 <a href="#cmd-PERINFO" class='notinapp'>PERINFO</a>
 <a href="#cmd-PERM">PERM</a>
@@ -523,7 +523,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-PRST" class='notinapp'>PRST</a>
 <a href="#cmd-PRSTC" class='notinapp'>PRSTC</a>
 <a href="#cmd-PRVAR" class='notinapp'>PRVAR</a>
-<a href="#cmd-PSDEV" class='notinapp'>PSDEV</a>
+<a href="#cmd-PSDEV">PSDEV</a>
 <a href="#cmd-PSI">PSI</a>
 <a href="#cmd-PTAYL">PTAYL</a>
 <a href="#cmd-PTPROP" class='notinapp'>PTPROP</a>
@@ -531,7 +531,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-PUSH" class='notinapp'>PUSH</a>
 <a href="#cmd-PUT">PUT</a>
 <a href="#cmd-PUTI">PUTI</a>
-<a href="#cmd-PVAR" class='notinapp'>PVAR</a>
+<a href="#cmd-PVAR">PVAR</a>
 <a href="#cmd-PVARS" class='notinapp'>PVARS</a>
 <a href="#cmd-PVIEW" class='notinapp'>PVIEW</a>
 <a href="#cmd-PWRFIT">PWRFIT</a>
@@ -2114,7 +2114,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>DEC, HEX, OCT, STWS, RCWS</p>
   </dd>
 </dl>
-<h2 id="cmd-BINS">BINS <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-BINS">BINS <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 149 · printed page 3-29</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -10419,7 +10419,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <table class="cmd-io"><thead><tr><th>Level 1/Argument 1</th><th class="cmd-io-arrow"></th><th>Level 1/Item 1</th></tr></thead><tbody><tr><td>n</td><td class="cmd-io-arrow">→</td><td></td></tr></tbody></table>
   </dd>
 </dl>
-<h2 id="cmd-NDIST">NDIST <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-NDIST">NDIST <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 274 · printed page 3-154</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -11202,7 +11202,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>BAR, CONIC, DIFFEQ, FUNCTION, GRIDMAP, HISTOGRAM, PARAMETRIC, PARSURFACE, POLAR, SCATTER, SLOPEFIELD, TRUTH, WIREFRAME, YSLICE</p>
   </dd>
 </dl>
-<h2 id="cmd-PCOV">PCOV <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PCOV">PCOV <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 286 · printed page 3-166</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -12210,7 +12210,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>CR, DELAY, OLDPRT, PR1, PRLCD, PRST, PRSTC</p>
   </dd>
 </dl>
-<h2 id="cmd-PSDEV">PSDEV <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PSDEV">PSDEV <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 301 · printed page 3-181</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -12434,7 +12434,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>GET, GETI, PUT</p>
   </dd>
 </dl>
-<h2 id="cmd-PVAR">PVAR <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PVAR">PVAR <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 305 · printed page 3-185</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>

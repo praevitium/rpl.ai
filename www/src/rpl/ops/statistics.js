@@ -168,6 +168,16 @@ register('VAR', _columnStat(_asReal(_varItems)), { category: 'Statistics', categ
 
 register('SDEV', _columnStat(_asReal((items) => Math.sqrt(_varItems(items)))), { category: 'Statistics', categoryOrder: 3, label: "SDEV" });
 
+// The population forms divide by n where VAR, SDEV and COV divide by n - 1.
+const _populationItems = (items) => {
+  const xs = _statsNumbers(items);
+  return xs.length === 1 ? 0 : _varArr(xs) * (xs.length - 1) / xs.length;
+};
+
+register('PVAR', _columnStat(_asReal(_populationItems)), { category: 'Statistics', categoryOrder: 2.5, label: "PVAR" });
+
+register('PSDEV', _columnStat(_asReal((items) => Math.sqrt(_populationItems(items)))), { category: 'Statistics', categoryOrder: 3.5, label: "PSDEV" });
+
 register('MEDIAN', _columnStat(_asReal(_medianItems)), { category: 'Statistics', categoryOrder: 1, label: "MEDIAN" });
 
 // A Matrix with at least two rows: the XCOL column is X, the YCOL column is Y.
@@ -183,6 +193,12 @@ register('COV', (s) => {
   const { X, Y } = _twoColsOrThrow(M);
   s.push(Real(_covArr(X, Y)));
 }, { category: 'Statistics', categoryOrder: 23, label: "COV" });
+
+register('PCOV', (s) => {
+  const M = _popData(s);
+  const { X, Y } = _twoColsOrThrow(M);
+  s.push(Real(_covArr(X, Y) * (X.length - 1) / X.length));
+}, { category: 'Statistics', categoryOrder: 23.5, label: "PCOV" });
 
 register('CORR', (s) => {
   const M = _popData(s);
@@ -498,6 +514,26 @@ register('STOΣ', (s) => { varStore('ΣDAT', s.pop()); }, { category: 'Statistic
 register('XCOL', (s) => { _setSigmaPar({ 0: Real(_columnIndex(s.pop()) + 1) }); }, { category: 'Statistics', categoryOrder: 39, label: "XCOL" });
 
 register('YCOL', (s) => { _setSigmaPar({ 1: Real(_columnIndex(s.pop()) + 1) }); }, { category: 'Statistics', categoryOrder: 40, label: "YCOL" });
+
+// AUR: xmin xwidth nbins BINS sorts the XCOL column of ΣDAT into nbins bins of
+// width xwidth from xmin, as a one-column matrix of counts, plus the counts below and above.
+register('BINS', (s) => {
+  const [xminArg, widthArg, nbinsArg] = s.popN(3);
+  const xmin = _statsNumericEntry(xminArg);
+  const width = _statsNumericEntry(widthArg);
+  const nbins = _statsNumericEntry(nbinsArg);
+  if (!(width > 0) || !Number.isInteger(nbins) || nbins < 1) throw new RPLError('Bad argument value');
+  const counts = new Array(nbins).fill(0);
+  let below = 0, above = 0;
+  for (const x of _xColumn(_sigmaData())) {
+    const bin = Math.floor((x - xmin) / width);
+    if (x < xmin) below++;
+    else if (bin >= nbins) above++;
+    else counts[bin]++;
+  }
+  s.push(Matrix(counts.map((c) => [Real(c)])));
+  s.push(Vector([Real(below), Real(above)]));
+}, { category: 'Statistics', categoryOrder: 42, label: "BINS" });
 
 register('COLΣ', (s) => {
   const [x, y] = s.popN(2);
