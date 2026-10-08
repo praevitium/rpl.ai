@@ -385,7 +385,9 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .st-row.swiping { transition: none; background: var(--danger-dim); }
 .st-row.swipe-armed { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--danger) 60%, transparent); }
 .st-lvl { font: 500 12px/1 var(--font-mono); color: var(--ink3); text-align: right; user-select: none; }
-.st-val { justify-self: end; max-width: 100%; min-width: 0; overflow: hidden; font: 1em/1.3 var(--font-mono); white-space: nowrap; text-align: right; padding: 1px 0; color: var(--stack-ink); display: flex; justify-content: flex-end; align-items: center; }
+.st-val { justify-self: end; max-width: 100%; min-width: 0; overflow: auto hidden; font: 1em/1.3 var(--font-mono); white-space: nowrap; text-align: right; padding: 1px 0; color: var(--stack-ink); display: flex; align-items: center; }
+/* A child pushed right by its margin, not by justify-content, so a wide matrix overflows to the right and scrolls (W-L31). */
+.st-val > * { margin-left: auto; }
 .st-val .value-text { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .st-row.sel .st-val .value-text { white-space: pre-wrap; overflow-wrap: anywhere; text-overflow: clip; }
 .st-val.textbook svg { max-width: 100%; height: auto; display: block; }
