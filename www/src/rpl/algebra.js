@@ -24,7 +24,7 @@ const approxNum = (value, real) => Num(Number.isFinite(value) && (real || !Numbe
 // An approximate whole number keeps its point, as the HP50 shows 2.
 export function numText(n) {
   if (n.digits !== undefined) return n.digits;
-  const s = String(n.value);
+  const s = String(n.value).replace('e+', 'E').replace('e-', 'E-');
   return n.real && /^-?\d+$/.test(s) ? `${s}.` : s;
 }
 // A unit object inside an algebraic, 5_m or 9.81_(m/s^2), its number kept to 12 digits like a Unit's.

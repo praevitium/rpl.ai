@@ -1,5 +1,5 @@
 import {
-  parseAlgebra, formatAlgebra, isKnownFunction, KNOWN_FUNCTIONS, freeVars, astEqual,
+  parseAlgebra, formatAlgebra, isKnownFunction, KNOWN_FUNCTIONS, freeVars, astEqual, numText,
   Num, Var, Neg, Bin, Fn, UnitNode, unitSuffix, hasUnits, isNum, isVar, isNeg, isBin, isFn,
 } from '../rpl/algebra.js';
 import { eqwToSvg, astToSvg } from '../rpl/pretty.js';
@@ -385,8 +385,8 @@ function astToItems(ast) {
   if (!ast) return [HOLE];
   if (ast.kind === 'num') {
     if (ast.digits) return [numLeaf(ast.digits)];
-    if (ast.value < 0) return [makeStruct('neg', [[numLeaf(String(-ast.value))]])];
-    return [numLeaf(String(ast.value))];
+    if (ast.value < 0) return [makeStruct('neg', [[numLeaf(numText(Num(-ast.value, ast.real)))]])];
+    return [numLeaf(numText(ast))];
   }
   if (ast.kind === 'unit') {
     const leaf = numLeaf(`${Math.abs(ast.value)}_${unitSuffix(ast.uexpr)}`);
@@ -506,7 +506,7 @@ function itemToAst(item) {
     const text = item.text;
     if (text.includes('_')) return unitLeafAst(text);
     if (/^\d+$/.test(text)) return Num(BigInt(text));
-    if (!/^(?:\d+\.?\d*|\.\d+)(?:E-?\d+)?$/i.test(text)) throw new RPLError('Incomplete Subexpression');
+    if (!/^(?:\d+\.?\d*|\.\d+)(?:E[-+]?\d+)?$/i.test(text)) throw new RPLError('Incomplete Subexpression');
     return Num(Number(text), true);
   }
   if (item.t === 'name') return Var(item.text);
@@ -572,7 +572,7 @@ function valueToAst(value) {
 
 export function valueFromEquation(root) {
   const ast = toAst(root);
-  if (ast.kind === 'num' && Number.isInteger(ast.value) && ast.digits === undefined) {
+  if (ast.kind === 'num' && !ast.real && Number.isInteger(ast.value) && ast.digits === undefined) {
     return Integer(BigInt(ast.value));
   }
   return _astToRplValue(ast);

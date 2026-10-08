@@ -536,3 +536,12 @@ function replaceSelection(state, ast) {
   assert(!value('5_m+3_s') && !value('5_m*X') && !value('5_m'), 'EQW no value insight for inconsistent units, a formula with a name, or a plain quantity');
 }
 
+
+/* A real at or past 1E21 keeps the E spelling through the writer, and a whole real stays a real (W-L19). */
+{
+  const back = (src) => format(valueFromEquation(fromAst(parseAlgebra(src))));
+  assert(back('2.5E22') === '2.5E22' && back('1E21') === '1E21' && back('-3E25') === '-3E25' && back('2.5E22*X') === '`2.5E22*X`',
+    'EQW pushes back a real of 1E21 or more as the HP spells it');
+  assert(back('5.') === '5.' && back('5') === '5' && back('123456789012345678901234') === '123456789012345678901234',
+    'EQW keeps 5. a real, 5 an integer and a long integer exact');
+}
