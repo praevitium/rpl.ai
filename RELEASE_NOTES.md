@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.21 (2026-10-07)
+**Latest release:** v0.6.22 (2026-10-08)
 
 ---
 
@@ -20,6 +20,26 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.22 — 2026-10-08
+
+The HP's algebraic integral. `'∫(0,1,X^2,X)'` reads and prints as the AUR
+writes it, lower limit, upper limit, integrand and variable, and a
+four-argument INTEG prints the same way. `→NUM` works such an integral out
+numerically to 12 digits, `'∫(0,π,SIN(X),X)' →NUM` gives `2.`, while EVAL in
+EXACT mode leaves it as it is for the CAS. An integrand that cannot be
+evaluated at a point, `1/X` from 0, stays symbolic.
+
+Fixed:
+
+- The equation writer could not push back a real of 1E21 or more
+  (W-L19): `2.5E22` came out as `2.5e+22` and was refused. Such a number
+  keeps the HP's spelling, in the writer and in an algebraic's text, and a
+  whole real such as `5.` stays a real instead of becoming an integer.
+- A matrix wider than the stack was cut off on the left (W-L31). It now
+  starts at the left of its level and scrolls sideways.
+- LINFIT, EXPFIT, LOGFIT and PWRFIT showed the manual's "None" as their
+  stack signature in the Catalog and the palette.
 
 ## v0.6.21 — 2026-10-07
 

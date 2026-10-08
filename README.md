@@ -99,7 +99,8 @@ RPL puts the numbers first and the operation last. Each value goes on the
   function can call itself: `'R(N)=IFTE(N<=1,1,N*R(N-1))' DEFINE` then
   `'R(10)' EVAL` gives `3628800`. Tests combine with AND, OR, XOR and NOT:
   `'X>1 AND X<5'` is an algebraic, and `'X^2>4' 'X' SOLVE` gives
-  `{ X<-2 X>2 }`.
+  `{ X<-2 X>2 }`. A definite integral is written as on the HP,
+  `'∫(0,1,X^2,X)'`, and →NUM works it out numerically.
 - **Units.** `100_km 2_h /` gives `50._km/h`; then `1_m/s CONVERT` gives
   `13.8888888889_m/s`. SI prefixes work on SI units (`5_kJ`, `1_MHz`,
   `3_uA`), and a bare `°C` or `°F` converts as a thermometer reading:
