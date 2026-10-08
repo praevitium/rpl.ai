@@ -146,7 +146,7 @@ function same(state, source, label) {
 
 {
   const state = press(emptyEquation(), '∫', '0', '▶', '1', '▶', 't', '×', 'SIN', 't', '▶', 't');
-  same(state, 'INTEG(t*SIN(t),t,0,1)',
+  same(state, '∫(0,1,t*SIN(t),t)',
     'EQW ► fills ∫ slots in lower, upper, integrand, variable order and SIN(t◄)► reaches d■');
 }
 
@@ -289,7 +289,7 @@ function same(state, source, label) {
     'EQW a pasted sum inside a product gets parentheses (UG 2-27)');
   const latex = pasteText(emptyEquation(), String.raw`\frac{-b+\sqrt{b^{2}-4ac}}{2a}`);
   assert(textOf(latex) === '(-b + SQRT(b^2 - 4*a*c))/(2*a)', 'EQW pasted LaTeX is read as the formula it spells');
-  assert(textOf(pasteText(emptyEquation(), String.raw`$\int_{0}^{1}x^{2}\,dx$`)) === 'INTEG(x^2,x,0,1)', 'EQW pasted LaTeX may keep its dollar signs');
+  assert(textOf(pasteText(emptyEquation(), String.raw`$\int_{0}^{1}x^{2}\,dx$`)) === '∫(0,1,x^2,x)', 'EQW pasted LaTeX may keep its dollar signs');
   assertThrows(() => pasteText(emptyEquation(), String.raw`\lim_{x\to 0}x`), /Can't read/, 'EQW pasting LaTeX it cannot read raises an error to report');
 }
 

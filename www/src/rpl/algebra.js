@@ -453,6 +453,16 @@ export function parseAlgebra(src) {
       return Fn('SQRT', [parseP()]);
     }
 
+    // The AUR's definite integral, ∫(lower,upper,integrand,name), is INTEG(integrand,name,lower,upper) inside.
+    if (c === '∫') {
+      i++;
+      expect('(');
+      const args = [parseOr()];
+      for (let k = 1; k < 4; k++) { expect(','); args.push(parseOr()); }
+      expect(')');
+      return Fn('INTEG', [args[2], args[3], args[0], args[1]]);
+    }
+
     // NAME(args) is a call, as on the HP 50g: a built-in function, or a user
     // function such as one DEFINE makes.
     if (/[A-Za-zΑ-Ωα-ω]/.test(c)) {
@@ -546,6 +556,8 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
     if (ast.name === 'IFTE' && ast.args.length === 3) return evalIfte(ast.args, lookup, fnEval, binGate);
     const sum = ast.name === 'Σ' ? evalSum(ast.args, lookup, fnEval, binGate) : null;
     if (sum) return sum;
+    const integral = ast.name === 'INTEG' && ast.args.length === 4 && !binGate ? evalInteg(ast.args, lookup, fnEval) : null;
+    if (integral) return integral;
     const evaldArgs = ast.args.map(a => evalAst(a, lookup, fnEval, binGate));
     if (evaldArgs.every(isNum)) {
       const real = evaldArgs.some(isRealNum) || ast.name in LOGIC_ARITY;
@@ -567,6 +579,36 @@ function evalIfte([test, then, otherwise], lookup, fnEval, binGate) {
 }
 
 const SUM_TERMS_MAX = 100000;
+
+// →NUM works a definite integral out by adaptive Simpson's rule; EVAL in EXACT mode leaves it to the CAS.
+const INTEG_EVALS_MAX = 200000;
+
+function evalInteg([body, index, from, to], lookup, fnEval) {
+  if (!isVar(index)) return null;
+  const lo = evalAst(from, lookup, fnEval, null);
+  const hi = evalAst(to, lookup, fnEval, null);
+  if (!isNum(lo) || !isNum(hi)) return null;
+  let evals = 0;
+  const f = (x) => {
+    evals++;
+    const y = evalAst(body, (name) => (name === index.name ? x : lookup(name)), fnEval, null);
+    return y?.kind === 'num' ? Number(y.value) : NaN;
+  };
+  const simpson = (a, b, fa, fm, fb) => (b - a) / 6 * (fa + 4 * fm + fb);
+  const refine = (a, b, fa, fm, fb, whole, tol, depth) => {
+    const m = (a + b) / 2;
+    const flm = f((a + m) / 2), frm = f((m + b) / 2);
+    const left = simpson(a, m, fa, flm, fm), right = simpson(m, b, fm, frm, fb);
+    const delta = left + right - whole;
+    if (depth > 40 || evals > INTEG_EVALS_MAX || Math.abs(delta) <= 15 * tol) return left + right + delta / 15;
+    return refine(a, m, fa, flm, fm, left, tol / 2, depth + 1) + refine(m, b, fm, frm, fb, right, tol / 2, depth + 1);
+  };
+  const a = Number(lo.value), b = Number(hi.value);
+  const fa = f(a), fm = f((a + b) / 2), fb = f(b);
+  const whole = simpson(a, b, fa, fm, fb);
+  const result = refine(a, b, fa, fm, fb, whole, 1e-13 * Math.max(1, Math.abs(whole)), 0);
+  return Number.isFinite(result) ? approxNum(result, true) : null;
+}
 
 function evalSum([body, index, from, to], lookup, fnEval, binGate) {
   if (!isVar(index)) return null;
@@ -650,6 +692,7 @@ function fmt(ast, parentPrec) {
       const text = ast.name === 'NOT' ? `NOT ${fmt(ast.args[0], 0)}` : `${fmt(ast.args[0], logic)} ${ast.name} ${fmt(ast.args[1], logic + 1)}`;
       return logic < parentPrec ? `(${text})` : text;
     }
+    if (ast.name === 'INTEG' && ast.args.length === 4) return `∫(${[2, 3, 0, 1].map((k) => fmt(ast.args[k], LOGIC_PREC.OR)).join(',')})`;
     const inside = ast.args.map(a => fmt(a, LOGIC_PREC.OR)).join(',');
     return `${ast.name}(${inside})`;
   }

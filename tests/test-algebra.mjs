@@ -8285,7 +8285,23 @@ giac._setFixture('ilaplace(1,x,rplS)', 'Dirac(rplS)');
   assert(line("'EXP(-2*X)' LAPLACE") === '`1/(X + 2)`', 'LAPLACE of EXP(-2*X) is 1/(X+2), with the X of the result the transform variable');
   assert(/^`EXP\(\(?-2\)?\*X\)`$/.test(line("'1/(X+2)' ILAP")), 'ILAP of 1/(X+2) is EXP(-2*X)');
   giac._setFixtures({ 'laplace(X^N,X,rplS)': 'integrate(X^N*exp(-X*rplS),X,0,+infinity)', 'laplace(X^N*t,X,rplS)': 'integrate(X^N*t*exp(-X*rplS),X,0,+infinity)' });
-  assert(line("'X^N' LAPLACE") === '`INTEG(t^N*EXP((-t)*X),t,0,infinity)`' && line("'X^N*t' LAPLACE") === '`INTEG(τ^N*t*EXP((-τ)*X),τ,0,infinity)`',
+  assert(line("'X^N' LAPLACE") === '`∫(0,infinity,t^N*EXP((-t)*X),t)`' && line("'X^N*t' LAPLACE") === '`∫(0,infinity,τ^N*t*EXP((-τ)*X),τ)`',
     'a transform left as an integral keeps its dummy variable apart from the transform variable, under a name the expression does not use');
   giac._clear();
+}
+
+/* The AUR's algebraic integral, ∫(lower,upper,integrand,name), and its numeric evaluation under →NUM. */
+{
+  const round = (src) => formatAlgebra(parseAlgebra(src));
+  assert(round('∫(0,1,X^2,X)') === '∫(0,1,X^2,X)' && round('INTEG(X^2,X,0,1)') === '∫(0,1,X^2,X)' && round('INTEG(X^2,X)') === 'INTEG(X^2,X)',
+    'a definite integral prints as the HP writes it, an indefinite one stays INTEG');
+  assert(astEqual(parseAlgebra('∫(0,1,X^2,X)'), parseAlgebra('INTEG(X^2,X,0,1)')), 'the ∫ form reads as the four-argument INTEG');
+  assertThrows(() => parseAlgebra('∫(X^2,X)'), null, '∫ takes four arguments');
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
+  assert(line("'∫(0,1,X^2,X)' →NUM") === '0.333333333333' && line("'∫(0,π,SIN(X),X)' →NUM") === '2.' && line("'∫(1,0,X^2,X)' →NUM") === '-0.333333333333',
+    '→NUM works a definite integral out numerically');
+  assert(line("2 'A' STO '∫(0,A,X,X)' →NUM 'A' PURGE") === '2.' && line("'∫(0,1,X^2,X)' EVAL") === '`∫(0,1,X^2,X)`',
+    'the limits may be names, and EVAL in exact mode leaves the integral to the CAS');
+  assert(line("'∫(0,1,1/X,X)' →NUM") === '`∫(0,1,1/X,X)`' && line("'∫(0,1,EXP(-X^2),X)' →NUM") === '0.746824132812',
+    'an integrand with a pole stays symbolic, and the error function integral comes out to 12 digits');
 }
