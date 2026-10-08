@@ -4,7 +4,7 @@ import {
   formatReferenceEntry, shortDescription, searchCommands,
 } from '../www/src/ui/command-reference.js';
 import { allOps, hasOp } from '../www/src/rpl/ops.js';
-import { CATEGORIES } from '../www/src/ui/drawer.js';
+import { CATEGORIES, signatureOf } from '../www/src/ui/drawer.js';
 import { assert } from './helpers.mjs';
 
 /* Command-reference text index — what the AI assistant's lookup_command
@@ -163,4 +163,10 @@ const REF = parseCommandReference(HTML);
   assert(REF.get('COL–')?.inApp && REF.get('ROW–')?.inApp
       && REF.get('HMS–')?.inApp && REF.get('STO–')?.inApp,
          'en-dash COL– / ROW– / HMS– / STO– headings are flagged in-app');
+}
+
+/* The palette's stack signature is the manual's first stack line, without its column headings or a bare None. */
+{
+  assert(signatureOf(REF.get('LR')) === '→ Intercept: x1 Slope: x2' && signatureOf(REF.get('SQ')) === 'z → z2' && signatureOf(REF.get('PWRFIT')) === '' && signatureOf(REF.get('MINEHUNT')) === '',
+    'signatureOf skips Level n/Argument n headings and the manual\'s None');
 }
