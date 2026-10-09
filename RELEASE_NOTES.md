@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.22 (2026-10-08)
+**Latest release:** v0.6.23 (2026-10-09)
 
 ---
 
@@ -20,6 +20,24 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.23 — 2026-10-09
+
+EVAL of an algebraic integral asks the CAS, as the HP does: `'∫(0,1,X^2,X)'
+EVAL` gives `1/3`, `'1+∫(0,1,X^2,X)' EVAL` gives `4/3`, and one the CAS
+cannot work out stays as it is. Giac's infinity comes back as `∞` inside a
+result too, so a transform left as an integral reads `∫(0,∞,…)`.
+
+Fixed:
+
+- In the equation writer, pasting at the caret replaced the item before it
+  (W-L21). The pasted expression now follows that item as a factor, as
+  typing does, with a pasted sum in parentheses.
+- After ◀ into a fraction, root or other box, ▶ could not leave it
+  (W-L22). Past the last leaf of a box it now steps out to the structure
+  that holds it, so `+ 1` follows the fraction.
+- On a touch screen the writers' keys and the command line's buttons were
+  30 pixels tall (W-L30); they are finger-sized now.
 
 ## v0.6.22 — 2026-10-08
 

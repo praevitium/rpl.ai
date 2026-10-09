@@ -78,7 +78,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   PARTFRAC PROPFRAC          partial-fraction / proper-fraction decomposition
   DERIV                      \`expr\` \`var\` DERIV — derivative w.r.t. var.  Example: \`SIN(X)\` \`X\` DERIV → \`COS(X)\`
   DERVX INTVX                derivative / antiderivative w.r.t. the current CAS variable
-  INTEG ∫                    \`expr\` \`var\` INTEG — indefinite integral.  Definite: a b \`expr\` \`var\` ∫ (1 2 \`10*X\` \`X\` ∫ → 15), the algebraic \`∫(0,1,X^2,X)\` →NUM (numeric), or \`expr\` \`var\` INTEG a b PREVAL (F(b) - F(a))
+  INTEG ∫                    \`expr\` \`var\` INTEG — indefinite integral.  Definite: a b \`expr\` \`var\` ∫ (1 2 \`10*X\` \`X\` ∫ → 15), the algebraic \`∫(0,1,X^2,X)\` EVAL (CAS, 1/3) or →NUM (numeric), or \`expr\` \`var\` INTEG a b PREVAL (F(b) - F(a))
   SOLVE                      \`eq\` \`var\` SOLVE — solve an equation.  Example: \`X^2-5*X+6=0\` \`X\` SOLVE → { \`X=2\` \`X=3\` }; an inequality gives its conditions: \`X^2>4\` \`X\` SOLVE → { \`X<-2\` \`X>2\` }
   LIMIT (alias lim)          \`expr\` \`var=value\` LIMIT — limit at a point
   ZEROS                      \`expr\` \`var\` ZEROS — the roots as plain values, each once: \`X^3-X^2-8*X+12\` \`X\` ZEROS → { -3 2 }
