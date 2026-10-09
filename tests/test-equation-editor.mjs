@@ -545,3 +545,14 @@ function replaceSelection(state, ast) {
   assert(back('5.') === '5.' && back('5') === '5' && back('123456789012345678901234') === '123456789012345678901234',
     'EQW keeps 5. a real, 5 an integer and a long integer exact');
 }
+
+/* Pasting at a caret follows the item there as a factor (W-L21), and ▶ past the last leaf of a box steps out of it (W-L22). */
+{
+  const typed = press(emptyEquation(), 'x', '+', '2');
+  assert(textOf(pasteText(typed, 'y')) === 'x + 2*y' && textOf(pasteText(typed, 'a+b')) === 'x + 2*(a + b)' && textOf(pasteText(emptyEquation(), 'a+b')) === 'a + b',
+    'EQW a paste at the caret keeps the item before it, bracketing a pasted sum');
+  assert(textOf(pasteText(press(emptyEquation(), 'a', '×', 'b', '◀'), 'c')) === 'a*c', 'EQW a paste over a cleared item still replaces it');
+  const inBox = press(emptyEquation(), 'x', '÷', '2', '◀', '◀', '◀', '▶');
+  assert(inBox.target.mode === 'clear' && textOf(press(inBox, '▶', '+', '1')) === 'x/2 + 1', 'EQW ▶ at the last leaf of a denominator steps out to the fraction, so + 1 follows it');
+  assert(textOf(press(press(emptyEquation(), 'x', '÷', '2'), '▶', '+', '1')) === 'x/2 + 1', 'EQW ▶ from the caret in a denominator does the same');
+}

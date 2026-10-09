@@ -790,7 +790,8 @@ function moveSide(state, dir) {
     }
     const next = all[index + dir];
     if (next && (target.mode === 'clear' || dir > 0)) return move(state, stopTarget(state.root, next));
-    if (target.mode === 'insert' && dir > 0) {
+    // Past the last leaf of a box, ▶ steps out to the structure that holds it (W-L22).
+    if (dir > 0 && (target.mode === 'insert' || target.path.length > 1)) {
       const at = target.path.at(-1);
       return parentOfSpan(state, rowKeyOf(target.path), at, at);
     }
@@ -1514,7 +1515,13 @@ export function cutTarget(state) {
 
 export function pasteText(state, text) {
   const ast = parseMath(String(text ?? '').trim());
-  return replaceTarget(state, [...fromAst(ast)]);
+  const items = [...fromAst(ast)];
+  const at = state.target.mode === 'insert' ? getItem(state.root, state.target.path) : null;
+  if (!at || at.t === 'hole') return replaceTarget(state, items);
+  // At a caret after a leaf the pasted expression follows it as a factor, as typing would (W-L21).
+  const extras = isAddLike(ast) ? [makeParen(items, false)] : items;
+  extras[extras.length - 1] = marked(extras[extras.length - 1], 'select');
+  return insertAfter(state, [opTok('*'), ...extras], null);
 }
 
 function placeCursor(state, path) {
