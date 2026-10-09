@@ -1827,4 +1827,7 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   .cmdline, .cmdline .cm-editor, .cmdline .cm-content {
     font-size: 16px !important;
   }
+  /* Finger-sized tap targets for the writers' keys and the command line's buttons (W-L30). */
+  .writer-keys .cmdline-go { height: 40px; min-width: 40px; }
+  .cmdline-go { min-width: 40px; height: 32px; }
 }
