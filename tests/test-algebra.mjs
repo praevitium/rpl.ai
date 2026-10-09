@@ -8285,7 +8285,7 @@ giac._setFixture('ilaplace(1,x,rplS)', 'Dirac(rplS)');
   assert(line("'EXP(-2*X)' LAPLACE") === '`1/(X + 2)`', 'LAPLACE of EXP(-2*X) is 1/(X+2), with the X of the result the transform variable');
   assert(/^`EXP\(\(?-2\)?\*X\)`$/.test(line("'1/(X+2)' ILAP")), 'ILAP of 1/(X+2) is EXP(-2*X)');
   giac._setFixtures({ 'laplace(X^N,X,rplS)': 'integrate(X^N*exp(-X*rplS),X,0,+infinity)', 'laplace(X^N*t,X,rplS)': 'integrate(X^N*t*exp(-X*rplS),X,0,+infinity)' });
-  assert(line("'X^N' LAPLACE") === '`∫(0,infinity,t^N*EXP((-t)*X),t)`' && line("'X^N*t' LAPLACE") === '`∫(0,infinity,τ^N*t*EXP((-τ)*X),τ)`',
+  assert(line("'X^N' LAPLACE") === '`∫(0,∞,t^N*EXP((-t)*X),t)`' && line("'X^N*t' LAPLACE") === '`∫(0,∞,τ^N*t*EXP((-τ)*X),τ)`',
     'a transform left as an integral keeps its dummy variable apart from the transform variable, under a name the expression does not use');
   giac._clear();
 }
@@ -8300,8 +8300,19 @@ giac._setFixture('ilaplace(1,x,rplS)', 'Dirac(rplS)');
   const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
   assert(line("'∫(0,1,X^2,X)' →NUM") === '0.333333333333' && line("'∫(0,π,SIN(X),X)' →NUM") === '2.' && line("'∫(1,0,X^2,X)' →NUM") === '-0.333333333333',
     '→NUM works a definite integral out numerically');
-  assert(line("2 'A' STO '∫(0,A,X,X)' →NUM 'A' PURGE") === '2.' && line("'∫(0,1,X^2,X)' EVAL") === '`∫(0,1,X^2,X)`',
-    'the limits may be names, and EVAL in exact mode leaves the integral to the CAS');
+  assert(line("2 'A' STO '∫(0,A,X,X)' →NUM 'A' PURGE") === '2.' && line("'∫(0,1,1/X,X)' EVAL") === '`∫(0,1,1/X,X)`',
+    'the limits may be names, and EVAL keeps an integral the CAS cannot work out');
+  giac._clear();
+  giac._setFixtures({ 'simplify(subst(integrate(X^2,X),X=1)-subst(integrate(X^2,X),X=0))': '1/3' });
+  assert(line("'∫(0,1,X^2,X)' EVAL") === '1/3' && line("'1+∫(0,1,X^2,X)' EVAL") === '4/3', 'EVAL hands a definite integral to the CAS and folds the result into the expression');
+  giac._clear();
   assert(line("'∫(0,1,1/X,X)' →NUM") === '`∫(0,1,1/X,X)`' && line("'∫(0,1,EXP(-X^2),X)' →NUM") === '0.746824132812',
     'an integrand with a pole stays symbolic, and the error function integral comes out to 12 digits');
+}
+
+/* Giac's infinity is the app's ∞, inside a result as well as alone. */
+{
+  const { giacToAst } = await import('../www/src/rpl/cas/giac-convert.mjs');
+  assert(formatAlgebra(giacToAst('integrate(X^N*exp(-X*S),X,0,+infinity)')) === '∫(0,∞,X^N*EXP((-X)*S),X)' && formatAlgebra(giacToAst('-infinity')) === '-∞' && formatAlgebra(giacToAst('1/infinity')) === '1/∞',
+    'infinity inside a Giac result reads as ∞');
 }

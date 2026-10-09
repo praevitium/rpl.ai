@@ -279,6 +279,7 @@ export function giacToAst(giacStr) {
       return hp ? `${hp}(` : match;
     })
     .replace(/\bpi\b/g, "π")
+    .replace(/\+?\binfinity\b/g, "∞")
     .replace(/\b(and|or|xor|not)\b/g, (word) => word.toUpperCase())
     .replace(/([A-Za-z0-9_.]+|\([^()]*\))!(?!=)/g, "FACT($1)");
 
