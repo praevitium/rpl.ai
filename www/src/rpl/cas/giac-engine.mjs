@@ -45,9 +45,9 @@ class BrowserGiacEngine {
     this._angleSent = null;
   }
 
-  // Giac has no gradians, so GRD symbolic work runs in degrees.
+  // Giac has no gradians, so GRD symbolic work runs in radians, as the HP's CAS does.
   _syncAngleMode() {
-    const want = calcState.angle === "RAD" ? 1 : 0;
+    const want = calcState.angle === "DEG" ? 0 : 1;
     if (this._angleSent === want) return;
     this._caseval(`angle_radian:=${want}`);
     this._angleSent = want;
