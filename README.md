@@ -100,8 +100,8 @@ RPL puts the numbers first and the operation last. Each value goes on the
   `'R(10)' EVAL` gives `3628800`. Tests combine with AND, OR, XOR and NOT:
   `'X>1 AND X<5'` is an algebraic, and `'X^2>4' 'X' SOLVE` gives
   `{ X<-2 X>2 }`. A definite integral is written as on the HP,
-  `'∫(0,1,X^2,X)'`; EVAL asks the CAS for it and →NUM works it out
-  numerically.
+  `'∫(0,1,X^2,X)'`, and a derivative as `'∂X(X^2)'`; EVAL asks the CAS for
+  them and →NUM works the integral out numerically.
 - **Units.** `100_km 2_h /` gives `50._km/h`; then `1_m/s CONVERT` gives
   `13.8888888889_m/s`. SI prefixes work on SI units (`5_kJ`, `1_MHz`,
   `3_uA`), and a bare `°C` or `°F` converts as a thermometer reading:

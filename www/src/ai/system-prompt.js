@@ -76,7 +76,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   EXPAND COLLECT             algebraic rewrites
   FACTOR                     ALGEBRAIC FACTORISATION; \`X^2-1\` FACTOR → \`(X-1)*(X+1)\`.  Use for "factor x^2-1", "factorise (x-1)(x+1)*x".  ⚠ NOT FACT (that's factorial). Mnemonic: FACT ends in T (like "ten!"); FACTOR has more letters (like a factored expression has more terms).
   PARTFRAC PROPFRAC          partial-fraction / proper-fraction decomposition
-  DERIV                      \`expr\` \`var\` DERIV — derivative w.r.t. var.  Example: \`SIN(X)\` \`X\` DERIV → \`COS(X)\`
+  DERIV                      \`expr\` \`var\` DERIV — derivative w.r.t. var.  Example: \`SIN(X)\` \`X\` DERIV → \`COS(X)\`; the algebraic form \`∂X(X^2)\` EVAL → \`2*X\`
   DERVX INTVX                derivative / antiderivative w.r.t. the current CAS variable
   INTEG ∫                    \`expr\` \`var\` INTEG — indefinite integral.  Definite: a b \`expr\` \`var\` ∫ (1 2 \`10*X\` \`X\` ∫ → 15), the algebraic \`∫(0,1,X^2,X)\` EVAL (CAS, 1/3) or →NUM (numeric), or \`expr\` \`var\` INTEG a b PREVAL (F(b) - F(a))
   SOLVE                      \`eq\` \`var\` SOLVE — solve an equation.  Example: \`X^2-5*X+6=0\` \`X\` SOLVE → { \`X=2\` \`X=3\` }; an inequality gives its conditions: \`X^2>4\` \`X\` SOLVE → { \`X<-2\` \`X>2\` }

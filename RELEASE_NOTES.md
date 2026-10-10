@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.23 (2026-10-09)
+**Latest release:** v0.6.24 (2026-10-10)
 
 ---
 
@@ -20,6 +20,26 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.24 — 2026-10-10
+
+The HP's algebraic derivative. `'∂X(X^2)'` reads and prints as the AUR
+writes it, and a two-argument DERIV prints the same way. EVAL hands a
+derivative, and an indefinite integral, to the CAS: `'∂X(X^2)' EVAL` gives
+`2*X` and `'INTEG(COS(X),X)' EVAL` gives `SIN(X)`. The variable of a
+derivative or integral is bound, so a value stored in X stays out of the
+body and applies to the result: with 3 in X, `'∂X(X^2)' EVAL` gives `6`.
+
+Fixed:
+
+- In GRD mode the CAS worked in degrees, so `'SIN(X)' 'X' DERIV` gave
+  `π/180*COS(X)`. Giac has no gradians; symbolic work now runs in radians
+  there, as the HP's CAS does. DEG mode still works in degrees.
+- In the matrix writer, ◀ in the first cell jumped to the end of the row
+  and ▶ in the last cell to the start of it (W-L28). The corners stay put;
+  the other edges still move to the previous or next row.
+- Tapping the menu bar's page arrows on a phone closed the keyboard, as the
+  arrow took the focus from the command line.
 
 ## v0.6.23 — 2026-10-09
 
