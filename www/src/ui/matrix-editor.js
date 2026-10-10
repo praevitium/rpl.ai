@@ -635,8 +635,8 @@ export class MatrixEditor {
     }
     if (e.key === 'ArrowUp') next = [Math.max(0, r - 1), c];
     else if (e.key === 'ArrowDown') next = [Math.min(rows - 1, r + 1), c];
-    else if (e.key === 'ArrowLeft' && atStart) next = c > 0 ? [r, c - 1] : [Math.max(0, r - 1), cols - 1];
-    else if (e.key === 'ArrowRight' && atEnd) next = c < cols - 1 ? [r, c + 1] : [Math.min(rows - 1, r + 1), 0];
+    else if (e.key === 'ArrowLeft' && atStart) next = c > 0 ? [r, c - 1] : r > 0 ? [r - 1, cols - 1] : null;
+    else if (e.key === 'ArrowRight' && atEnd) next = c < cols - 1 ? [r, c + 1] : r < rows - 1 ? [r + 1, 0] : null;
     if (!next) return;
     e.preventDefault();
     e.stopPropagation();
