@@ -1454,7 +1454,7 @@ function _evalSymbolic(v) {
     : (_op, args, result) => _approxGate(result, args);
   const evalNode = (ast) => algebraEvalAst(ast, resolve, _angleAwareFnEval, binGate);
   const folded = _foldUnits(evalNode(_expandUserCalls(v.expr)), evalNode);
-  const integrated = _casIntegrals(folded);
+  const integrated = _casCalculus(folded);
   const reduced = integrated === folded ? folded : evalNode(integrated);
   _checkInfinite(reduced);
   const value = _astToRplValue(reduced);
@@ -1462,26 +1462,30 @@ function _evalSymbolic(v) {
 }
 
 
-// EVAL hands a definite integral it still holds to the CAS, as the HP does; one the CAS cannot work out stays as it is.
-function _casIntegrals(ast) {
+// EVAL hands a derivative or integral it still holds to the CAS, as the HP does; one the CAS cannot work out stays as it is.
+const CAS_CALCULUS = { DERIV: { arity: 2, op: 'DERIV' }, INTEG: { arity: 2, op: 'INTEG' } };
+
+function _casCalculus(ast) {
   if (ast.kind === 'neg') {
-    const arg = _casIntegrals(ast.arg);
+    const arg = _casCalculus(ast.arg);
     return arg === ast.arg ? ast : AstNeg(arg);
   }
   if (ast.kind === 'bin') {
-    const l = _casIntegrals(ast.l), r = _casIntegrals(ast.r);
+    const l = _casCalculus(ast.l), r = _casCalculus(ast.r);
     return l === ast.l && r === ast.r ? ast : AstBin(ast.op, l, r);
   }
   if (ast.kind !== 'fn') return ast;
-  const args = ast.args.map(_casIntegrals);
+  const args = ast.args.map(_casCalculus);
   const rebuilt = args.every((a, i) => a === ast.args[i]) ? ast : AstFn(ast.name, args);
-  if (ast.name !== 'INTEG' || args.length !== 4 || args[1].kind !== 'var') return rebuilt;
+  const definite = ast.name === 'INTEG' && args.length === 4;
+  const form = definite ? { arity: 4, op: '∫' } : CAS_CALCULUS[ast.name];
+  if (!form || args.length !== form.arity || args[1].kind !== 'var') return rebuilt;
   const s = new Stack();
   try {
-    for (const a of [args[2], args[3]]) s.push(_astToRplValue(a));
+    if (definite) for (const a of [args[2], args[3]]) s.push(_astToRplValue(a));
     s.push(Symbolic(args[0]));
     s.push(Name(args[1].name));
-    lookup('∫').fn(s);
+    lookup(form.op).fn(s);
     return _toAst(s.pop());
   } catch {
     return rebuilt;

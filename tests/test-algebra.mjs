@@ -8062,7 +8062,7 @@ giac._setFixture('ilaplace(1,x,rplS)', 'Dirac(rplS)');
   const deriv = parseAlgebra('DERIV(X^2,X)');
   const integ = parseAlgebra('INTEG(X,X,0,1)');
   const sum = parseAlgebra('Σ(K^2,K,1,N)');
-  assert(formatAlgebra(deriv) === 'DERIV(X^2,X)', 'parseAlgebra reads DERIV(X^2,X)');
+  assert(formatAlgebra(deriv) === '∂X(X^2)', 'parseAlgebra reads DERIV(X^2,X) and prints it as the HP does');
   assert(integ.name === 'INTEG' && integ.args.length === 4, 'parseAlgebra reads INTEG(X,X,0,1)');
   assert(sum.name === 'Σ' && sum.args.length === 4, 'parseAlgebra reads Σ(K^2,K,1,N)');
   assert(parseAlgebra('∞').name === '∞', 'parseAlgebra reads ∞');
@@ -8315,4 +8315,22 @@ giac._setFixture('ilaplace(1,x,rplS)', 'Dirac(rplS)');
   const { giacToAst } = await import('../www/src/rpl/cas/giac-convert.mjs');
   assert(formatAlgebra(giacToAst('integrate(X^N*exp(-X*S),X,0,+infinity)')) === '∫(0,∞,X^N*EXP((-X)*S),X)' && formatAlgebra(giacToAst('-infinity')) === '-∞' && formatAlgebra(giacToAst('1/infinity')) === '1/∞',
     'infinity inside a Giac result reads as ∞');
+}
+
+/* The AUR's derivative ∂X(expr) reads and prints as the HP writes it, and EVAL hands it, and an indefinite integral, to the CAS. */
+{
+  const round = (src) => formatAlgebra(parseAlgebra(src));
+  assert(round('∂X(X^2)+1') === '∂X(X^2) + 1' && round('∂ab(ab^2*Y)') === '∂ab(ab^2*Y)' && round('DERIV(X^2,Y+1)') === 'DERIV(X^2,Y + 1)',
+    'a derivative prints as ∂X(...) when its variable is a name');
+  assert(astEqual(parseAlgebra('∂X(X^2)'), parseAlgebra('DERIV(X^2,X)')), 'the ∂ form reads as the two-argument DERIV');
+  assertThrows(() => parseAlgebra('∂(X^2)'), null, '∂ needs its variable');
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
+  giac._clear();
+  giac._setFixtures({ 'diff(X^2,X)': '2*X', 'integrate(X^2,X)': 'X^3/3', 'simplify(subst(integrate(X^2,X),X=1)-subst(integrate(X^2,X),X=0))': '1/3' });
+  assert(line("'∂X(X^2)' EVAL") === '`2*X`' && line("'1+∂X(X^2)' EVAL") === '`1 + 2*X`' && line("'INTEG(X^2,X)' EVAL") === '`X^3/3`',
+    'EVAL differentiates and integrates through the CAS');
+  assert(line("3 'X' STO '∂X(X^2)' EVAL 'X' PURGE") === '6' && line("3 'X' STO '∫(0,1,X^2,X)' EVAL 'X' PURGE") === '1/3' && line("3 'X' STO '∫(0,1,X^2,X)' →NUM 'X' PURGE") === '0.333333333333',
+    'a value stored in the bound variable stays out of the body and applies to the result');
+  giac._clear();
+  assert(line("'∂X(1/X)' EVAL") === '`∂X(1/X)`', 'a derivative the CAS cannot give stays as it is');
 }

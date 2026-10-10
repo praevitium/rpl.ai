@@ -453,6 +453,18 @@ export function parseAlgebra(src) {
       return Fn('SQRT', [parseP()]);
     }
 
+    // The AUR's derivative, ∂X(expr), is DERIV(expr,X) inside.
+    if (c === '∂') {
+      i++;
+      const m = s.slice(i).match(/^[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω0-9]*/);
+      if (!m) throw new Error(`Missing variable after ∂ at pos ${i}`);
+      i += m[0].length;
+      expect('(');
+      const body = parseOr();
+      expect(')');
+      return Fn('DERIV', [body, Var(m[0])]);
+    }
+
     // The AUR's definite integral, ∫(lower,upper,integrand,name), is INTEG(integrand,name,lower,upper) inside.
     if (c === '∫') {
       i++;
@@ -556,8 +568,14 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
     if (ast.name === 'IFTE' && ast.args.length === 3) return evalIfte(ast.args, lookup, fnEval, binGate);
     const sum = ast.name === 'Σ' ? evalSum(ast.args, lookup, fnEval, binGate) : null;
     if (sum) return sum;
-    const integral = ast.name === 'INTEG' && ast.args.length === 4 && !binGate ? evalInteg(ast.args, lookup, fnEval) : null;
-    if (integral) return integral;
+    const calculus = (ast.name === 'DERIV' && ast.args.length === 2) || (ast.name === 'INTEG' && (ast.args.length === 2 || ast.args.length === 4));
+    if (calculus && isVar(ast.args[1])) {
+      // The variable of a derivative or integral is bound, so a value stored in it stays out of the body.
+      const shadow = (name) => (name === ast.args[1].name ? undefined : lookup(name));
+      const args = [evalAst(ast.args[0], shadow, fnEval, binGate), ast.args[1], ...ast.args.slice(2).map(a => evalAst(a, lookup, fnEval, binGate))];
+      const integral = args.length === 4 && !binGate ? evalInteg(args, lookup, fnEval) : null;
+      return integral ?? Fn(ast.name, args);
+    }
     const evaldArgs = ast.args.map(a => evalAst(a, lookup, fnEval, binGate));
     if (evaldArgs.every(isNum)) {
       const real = evaldArgs.some(isRealNum) || ast.name in LOGIC_ARITY;
@@ -693,6 +711,7 @@ function fmt(ast, parentPrec) {
       return logic < parentPrec ? `(${text})` : text;
     }
     if (ast.name === 'INTEG' && ast.args.length === 4) return `∫(${[2, 3, 0, 1].map((k) => fmt(ast.args[k], LOGIC_PREC.OR)).join(',')})`;
+    if (ast.name === 'DERIV' && ast.args.length === 2 && ast.args[1].kind === 'var') return `∂${ast.args[1].name}(${fmt(ast.args[0], LOGIC_PREC.OR)})`;
     const inside = ast.args.map(a => fmt(a, LOGIC_PREC.OR)).join(',');
     return `${ast.name}(${inside})`;
   }
