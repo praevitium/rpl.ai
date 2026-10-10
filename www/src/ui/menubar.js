@@ -19,7 +19,8 @@ export class MenuBar {
     this.el = el;
     this.app = app;
     this._previewTimer = 0;
-    el.addEventListener('mousedown', (e) => { if (e.target.closest('.sk')) e.preventDefault(); });
+    // The keys and the page arrows leave the focus where it is, so a phone's keyboard stays up.
+    el.addEventListener('mousedown', (e) => { if (e.target.closest('.sk, .mb-pg button')) e.preventDefault(); });
     el.addEventListener('pointerover', (e) => {
       const sk = e.target.closest('.sk[data-i]');
       if (sk && e.pointerType === 'mouse') this._schedulePreview(Number(sk.dataset.i));
