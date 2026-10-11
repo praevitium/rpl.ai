@@ -4,12 +4,17 @@ import { MENU_GROUPS, menuById } from './menus.js';
 
 const PREVIEW_HOVER_MS = 220;
 
-// A name of six to eight letters may break halfway on a narrow screen, so DUPDUP
-// wraps as DUP and DUP; a longer one fills the first line and wraps from there.
+// Greek letters run wider than the mono face's Latin ones.
+const letterWidth = (s) => [...s].reduce((n, c) => n + (/[Α-Ωα-ω]/.test(c) ? 1.2 : 1), 0);
+
+// On a narrow screen a long name may break into even lines, so DUPDUP wraps as DUP and DUP.
+// --w, the widest word, and --n, the widest line, let the CSS fit the face to the key.
 function labelHtml(label) {
-  if (label.length < 6 || label.length > 8 || /\s/.test(label)) return escapeHtml(label);
-  const half = Math.ceil(label.length / 2);
-  return `${escapeHtml(label.slice(0, half))}<wbr>${escapeHtml(label.slice(half))}`;
+  const rows = /\s/.test(label) || label.length <= 5 ? 1 : label.length <= 10 ? 2 : 3;
+  const size = Math.ceil(label.length / rows);
+  const lines = Array.from({ length: rows }, (_, i) => label.slice(i * size, (i + 1) * size));
+  const widest = (parts) => Math.max(...parts.flatMap((part) => part.split(/\s+/)).map(letterWidth));
+  return `<span class="lbl" style="--w:${widest([label])};--n:${widest(lines)}">${lines.map(escapeHtml).join('<wbr>')}</span>`;
 }
 
 const WRITER_MENUS = Object.freeze({ EQW: { short: 'EQW', title: 'The equation writer menu' }, MTRW: { short: 'MTRW', title: 'The matrix writer menu' } });
@@ -80,7 +85,7 @@ export class MenuBar {
       const on = slot.toggle && slot.on();
       const blocked = slot.blockedReason?.() ?? '';
       const title = blocked || slot.title || slot.label;
-      return `<button type="button" class="sk ${cls}${slot.dir ? ' dir' : ''}${slot.toggle ? ' tog' : ''}${on ? ' on' : ''}${blocked ? ' blocked' : ''}" data-i="${i}" title="${escapeHtml(title)} (F${i + 1})"><span class="lbl${label.length > 8 ? ' longer' : label.length > 6 ? ' long' : ''}">${labelHtml(label)}</span><span class="fk" aria-hidden="true">F${i + 1}</span></button>`;
+      return `<button type="button" class="sk ${cls}${slot.dir ? ' dir' : ''}${slot.toggle ? ' tog' : ''}${on ? ' on' : ''}${blocked ? ' blocked' : ''}" data-i="${i}" title="${escapeHtml(title)} (F${i + 1})">${labelHtml(label)}<span class="fk" aria-hidden="true">F${i + 1}</span></button>`;
     }).join('');
     const pages = view.pages;
     const dots = pages <= 1 ? '' : pages <= 6

@@ -149,9 +149,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   back.
 - ⌫ and Enter sit beside the command line. ⌫ deletes a character (or the
   selected text), or drops level 1 when the line is empty.
-- A long soft-key name such as `ISPRIME?` wraps onto two lines on a narrow
-  screen instead of being cut off, and the longest take three lines of a
-  smaller face.
+- On a narrow screen each soft-key name is sized to its key, so `SPEED`
+  stays on one line, and a long name such as `ISPRIME?` breaks into even
+  lines instead of being cut off.
 - The equation writer has its own row of buttons (move, fraction, power,
   root and parentheses), and so does the matrix writer (previous cell, next
   cell and next row), each with ⌫ and Enter. The matrix writer pushes only
