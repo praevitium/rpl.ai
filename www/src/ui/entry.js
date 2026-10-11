@@ -22,6 +22,22 @@ function errorText(e) {
   return e && typeof e === 'object' && e.message != null ? String(e.message) : String(e);
 }
 
+// True while the command line is still inside an object: a quote, string, program, list, vector or
+// complex number, a unit after _, or an exponent waiting for its sign. The HP's keys type there.
+export function inOpenObject(text) {
+  let quote = null, string = false, depth = 0;
+  for (const c of text) {
+    if (string) { if (c === '"') string = false; continue; }
+    if (quote) { if (c === quote) quote = null; continue; }
+    if (c === '"') string = true;
+    else if (c === "'" || c === '`') quote = c;
+    else if ('«{[('.includes(c)) depth++;
+    else if ('»}])'.includes(c)) depth = Math.max(0, depth - 1);
+  }
+  const last = text.match(/\S*$/)[0];
+  return string || quote !== null || depth > 0 || last.includes('_') || /^[-+]?(\d+\.?\d*|\.\d+)[eE]$/.test(last);
+}
+
 function pushCapped(list, item, max) {
   list.push(item);
   if (list.length > max) list.splice(0, list.length - max);
@@ -204,6 +220,21 @@ export class Entry {
   typeOrExecName(opName) {
     if (this.isEditing()) this.typeToken(`${opName} `);
     else this.execOp(opName);
+  }
+
+  // The phone's key strip works like the HP's keys: it enters the line and runs, unless an object is still open.
+  pressOperator(char, opName) {
+    if (this._typingAtCursor()) this.type(char);
+    else this.execOp(opName);
+  }
+
+  pressCommand(opName) {
+    if (this._typingAtCursor()) this.typeToken(`${opName} `);
+    else this.execOp(opName);
+  }
+
+  _typingAtCursor() {
+    return inOpenObject(this.buffer.slice(0, this.cursor));
   }
 
   typeWithCursor(text, backUp = 0) {

@@ -154,6 +154,51 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(e.buffer === '(X)', `cursor-placement lets next char land inside: '${e.buffer}'`);
   }
 
+  {
+    const { inOpenObject } = await import('../www/src/ui/entry.js');
+    const open = ['«', '« 2', '{ 1', '[ 1 2', '(1,', '"ab', "'X", '5_m', '1E', '2.5e', '-.5E'];
+    const closed = ['', '4', '3 4', '« 2 »', '{ 1 }', '"a+b"', "'X+1'", '5_m 2', '1E5', 'SIN'];
+    assert(open.every(inOpenObject), 'inOpenObject is true inside quotes, strings, brackets, units and exponents');
+    assert(!closed.some(inOpenObject), 'inOpenObject is false once every object is closed');
+  }
+  {
+    const s = new Stack();
+    s.push(Real(3));
+    const e = new Entry(s);
+    e.type('4');
+    e.pressOperator('+', '+');
+    assert(s.depth === 1 && s.peek().value.eq(7) && e.buffer === '', 'pressOperator enters the line and runs +');
+  }
+  {
+    const s = new Stack();
+    const e = new Entry(s);
+    e.typeWithCursor('«  »', 2);
+    e.type('2');
+    e.pressOperator('*', '*');
+    assert(e.buffer === '« 2* »' && s.depth === 0, `pressOperator types inside a program → '${e.buffer}'`);
+  }
+  {
+    const e = new Entry(new Stack());
+    e.type('5_m');
+    e.pressOperator('/', '/');
+    e.type('s');
+    assert(e.buffer === '5_m/s', `pressOperator types into a unit → '${e.buffer}'`);
+    e.buffer = '1E'; e.cursor = 2;
+    e.pressOperator('-', '-');
+    assert(e.buffer === '1E-', `pressOperator types an exponent's sign → '${e.buffer}'`);
+  }
+  {
+    const s = new Stack();
+    s.push(Real(1));
+    const e = new Entry(s);
+    e.type('2');
+    e.pressCommand('SWAP');
+    assert(s.depth === 2 && s.peek().value.eq(1) && e.buffer === '', 'pressCommand enters the line and runs SWAP');
+    e.type('{ 1');
+    e.pressCommand('DROP');
+    assert(e.buffer === '{ 1 DROP ' && s.depth === 2, `pressCommand types inside a list → '${e.buffer}'`);
+  }
+
   // Full flow: type `'X^2 + 2*X + 1'` and commit — this is exactly
   // what the on-screen keyboard now produces for the sequence:
   //   '  X  yˣ  2  SPC  +  SPC  2  ×  X  SPC  +  SPC  1  '  ENTER

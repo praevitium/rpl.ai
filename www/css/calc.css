@@ -463,6 +463,13 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .cmdline-go { flex: none; height: 26px; border-radius: 7px; border: 0; background: var(--accent); color: var(--accent-ink); font: 600 11px/1 var(--font-mono); padding: 0 9px; display: flex; align-items: center; gap: 5px; align-self: center; }
 .cmdline-go:hover { filter: brightness(1.06); }
 .cmdline-back { background: var(--r1); color: var(--ink2); box-shadow: inset 0 0 0 1px var(--line2); }
+/* Shown only while a phone's keyboard is up (data-keyboard), where the keypad has stepped aside. */
+.key-strip { display: none; }
+:root[data-keyboard] .key-strip:not([hidden]) { display: flex; gap: 6px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; padding: 8px 0 2px; }
+.key-strip::-webkit-scrollbar { display: none; }
+.key-strip button { flex: none; min-width: 44px; height: 40px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--key-line); background: var(--key); box-shadow: var(--shadow-1); color: var(--key-ink); font: 600 14px/1 var(--font-mono); -webkit-tap-highlight-color: transparent; }
+.key-strip button.op { font-size: 18px; }
+.key-strip button:active { transform: translateY(1px); }
 .writer-keys { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; padding: 0 10px 8px; }
 .writer-keys .cmdline-go { height: 30px; min-width: 34px; justify-content: center; font-size: 12px; }
 .mx .writer-keys { padding: 0; }

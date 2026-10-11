@@ -160,6 +160,11 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - Opening the equation or matrix writer brings up your phone's keyboard, and
   so does tapping the equation. While the keyboard is up, the calculator
   keypad steps aside so the writer stays in view.
+- While the phone's keyboard is up on the command line, a strip above it
+  holds the keys a phone keyboard lacks. `+`, `−`, `×`, `÷`, `yˣ`, `SWAP` and
+  `DROP` enter the line and run at once, as on the HP, but type into an open
+  program, list, quote or unit. The strip also has UNDO, the RPL delimiters,
+  `_`, `→` and `π`.
 - In the equation writer, a drag scrolls a long formula; touch and hold,
   then drag, to select part of it.
 

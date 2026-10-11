@@ -29,6 +29,34 @@ export function writerKeys(keys, press) {
   return bar;
 }
 
+// Above a phone's keyboard, the keys it lacks: HP operators and stack commands that run at once, and RPL's delimiters.
+const STRIP_KEYS = Object.freeze([
+  { label: '+', op: '+' }, { label: '−', op: '-' }, { label: '×', op: '*' }, { label: '÷', op: '/' }, { label: 'yˣ', op: '^' },
+  { label: 'SWAP', command: 'SWAP' }, { label: 'DROP', command: 'DROP' }, { label: 'UNDO', action: 'edit.undo' },
+  { label: "' '", text: "''", back: 1 }, { label: '« »', text: '«  »', back: 2 }, { label: '{ }', text: '{ }', back: 2 },
+  { label: '[ ]', text: '[ ]', back: 2 }, { label: '( )', text: '()', back: 1 }, { label: '_', text: '_' },
+  { label: '→', text: '→' }, { label: 'π', text: 'π' },
+]);
+
+function keyStrip(app) {
+  const strip = document.createElement('div');
+  strip.className = 'key-strip';
+  strip.setAttribute('role', 'toolbar');
+  strip.setAttribute('aria-label', 'RPL keys');
+  strip.innerHTML = STRIP_KEYS.map((k, i) => `<button type="button" data-k="${i}"${k.op ? ' class="op"' : ''}>${escapeHtml(k.label)}</button>`).join('');
+  strip.addEventListener('mousedown', (e) => e.preventDefault());
+  strip.addEventListener('click', (e) => {
+    const key = STRIP_KEYS[e.target.closest('[data-k]')?.dataset.k];
+    if (!key) return;
+    const { entry } = app;
+    if (key.op) entry.pressOperator(key.op, key.op);
+    else if (key.command) entry.pressCommand(key.command);
+    else if (key.action) app.runAction(key.action);
+    else entry.typeWithCursor(key.text, key.back ?? 0);
+  });
+  return strip;
+}
+
 export class InputArea {
   constructor({ top, body, hint, cmdline, app }) {
     this.top = top;
@@ -71,6 +99,8 @@ export class InputArea {
 
   attachEditorChrome() {
     this.cmdline.append(this.badge, this.back, this.go);
+    this.strip = keyStrip(this.app);
+    this.cmdline.after(this.strip);
   }
 
   render() {
@@ -96,6 +126,7 @@ export class InputArea {
     if (this._writerEl && this._writerEl !== writerEl) this._writerEl.remove();
     this._writerEl = writerEl;
     this.cmdline.hidden = mode !== 'rpl';
+    if (this.strip) this.strip.hidden = mode !== 'rpl';
     if (writerEl && writerEl.parentNode !== this.body) this.body.appendChild(writerEl);
     this.render();
   }
