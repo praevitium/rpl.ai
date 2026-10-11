@@ -100,6 +100,7 @@ export class AppBar {
     const drawer = (id, ico, label) => `<button type="button" class="opt" data-act="drawer.open" data-drawer="${id}"><span class="ck">${icon(ico, 'sm')}</span><b>${escapeHtml(label)}</b><em></em></button>`;
     const minimal = this.app.prefs.minimal;
     const drawerItems = withDrawers ? [
+      item('palette.open', 'search', 'Search commands'),
       drawer('vars', 'folder', 'Variables'),
       drawer('history', 'clock', 'History'),
       drawer('plot', 'plot', 'Plot'),

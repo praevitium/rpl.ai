@@ -305,8 +305,9 @@ highlighted. Continue, Step or Stop from the banner (or `CONT`, `SST`,
 Graphite and Paper follow your system's dark or light setting; Classic LCD
 reimagines the original display. Minimal view strips everything back to the
 status line, the stack and the command line (`⇧⌘F`); a setting keeps the
-soft keys. On a phone, the menu button on the status line reaches Undo, the
-drawers, full screen and Settings, and the button beside it leaves.
+soft keys. On a phone, the menu button on the status line reaches Undo,
+command search, the drawers, full screen and Settings, and the button beside
+it leaves.
 
 | Classic LCD | Paper |
 |:---:|:---:|

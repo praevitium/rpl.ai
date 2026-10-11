@@ -1,5 +1,5 @@
 export const ACTIONS = Object.freeze({
-  'palette.open':      { label: 'Search commands, settings and help', surfaces: ['appbar.search'] },
+  'palette.open':      { label: 'Search commands, settings and help', surfaces: ['appbar.search', 'status.minimal'] },
   'assistant.ask':     { label: 'Ask the assistant', surfaces: ['input.ask', 'rail.assistant'] },
   'assistant.tutor':   { label: 'Walk me through a problem (Tutor)', surfaces: ['stack.empty', 'drawer.assistant', 'palette'] },
   'writer.equation':   { label: 'Equation writer', surfaces: ['input.tabs', 'keypad.EQW'] },
