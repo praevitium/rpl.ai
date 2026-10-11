@@ -171,6 +171,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   `_`, `→` and `π`.
 - In the equation writer, a drag scrolls a long formula; touch and hold,
   then drag, to select part of it.
+- A phone's back button closes the open menu, search, sheet, writer or
+  drawer first, and leaves the app only when nothing is open.
 
 ---
 

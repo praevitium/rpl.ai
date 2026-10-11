@@ -134,6 +134,7 @@ class App {
     this._installKeyboard();
     this._installAutosave();
     this._installFileDrop();
+    this._installBackButton();
     this.renderAll();
     if (!this.prefs.tourSeen) setTimeout(() => this.tour.start(), 700);
   }
@@ -1496,9 +1497,37 @@ class App {
       return true;
     }
     if (this.shift) { this.setShift(null); return true; }
-    const overlay = this.prefs.minimal || window.innerWidth < 980;
-    if (this.drawers.isOpen() && overlay) { this.drawers.close(); return true; }
+    if (this._drawerCoversStack()) { this.drawers.close(); return true; }
     return true;
+  }
+
+  _drawerCoversStack() {
+    return this.drawers.isOpen() && (this.prefs.minimal || window.innerWidth < 980);
+  }
+
+  // A phone's back button closes the top overlay before it leaves the app: an overlay holds one history entry.
+  _installBackButton() {
+    const overlays = [
+      [() => this.popover.isOpen(), () => this.popover.close()],
+      [() => this.palette.isOpen(), () => this.palette.close()],
+      [() => this.sheets.isOpen(), () => this.sheets.close()],
+      [() => this.inputMode !== 'rpl', () => this.cancelWriter()],
+      [() => this._drawerCoversStack(), () => this.drawers.close()],
+    ];
+    const top = () => overlays.find(([isOpen]) => isOpen());
+    let ignorePop = false;
+    const sync = () => {
+      if (ignorePop) return;
+      const guarded = history.state?.rplOverlay === true;
+      if (top() && !guarded) history.pushState({ rplOverlay: true }, '');
+      else if (!top() && guarded) { ignorePop = true; history.back(); }
+    };
+    window.addEventListener('popstate', () => {
+      if (ignorePop) { ignorePop = false; return; }
+      top()?.[1]();
+      sync();
+    });
+    for (const type of ['click', 'keyup', 'pointerup']) document.addEventListener(type, () => setTimeout(sync), true);
   }
 
   _installKeyboard() {
