@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.35 (2026-10-11)
+**Latest release:** v0.6.36 (2026-10-11)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.36 — 2026-10-11
+
+The README opens with an At a glance table of what rpl.ai does, from exact
+arithmetic and the CAS to units, statistics, programming, plots and data
+exchange, and has an On a phone section with a new screenshot of Minimal
+view on a phone. No change to the app.
 
 ## v0.6.35 — 2026-10-11
 
