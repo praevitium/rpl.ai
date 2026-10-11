@@ -375,13 +375,15 @@ function infixHint(code) {
     : '';
 }
 
+// One per strength: exact arithmetic, calculus, units, linear algebra, statistics, programs, and a live RPN demo.
 const STARTER_CHIPS = [
-  'Solve X^2-3*X+2 = 0 for X',
-  'Differentiate x^3+3*x+1',
-  'Is 1234567 prime? If not, factor it',
-  'Write a program that sums the stack',
-  'What does ROLLD do?',
-  'Invert the matrix [[1,2],[3,4]]',
+  'Compute 100! exactly and sum its digits',
+  'Integrate x^2*sin(x) and check it by differentiating',
+  'A car stops from 100 km/h in 40 m. How many g is that?',
+  'Solve x+y+z=6, 2y+5z=-4, 2x+5y-z=27',
+  'Fit a line through (1,2.1) (2,3.9) (3,6.2) (4,7.8)',
+  'Write a program for the nth Fibonacci number',
+  'Show me how RPN works, step by step on my stack',
 ];
 
 // Names small models use for the real tools.  Ambiguous ones (a bare "add"
