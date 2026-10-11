@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.32 (2026-10-11)
+**Latest release:** v0.6.33 (2026-10-11)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.33 — 2026-10-11
+
+- A phone's keyboard labels its Enter key Go on the command line, since
+  Enter there runs the line rather than starting a new one.
+- Command search no longer shows keyboard shortcuts and its arrow and Esc
+  hints on a touch screen.
 
 ## v0.6.32 — 2026-10-11
 
