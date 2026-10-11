@@ -36,11 +36,31 @@ and it opens like any other app, with no network needed.
   physics or maths problem into steps you work through on your own stack.
   It checks each step and gives hints before it gives answers. It runs on a
   model you choose, on your own computer or through Ollama's cloud.
+- **At home on a phone.** The HP keypad, or a Minimal view with just the
+  stack, ⌫ and Enter; a strip of RPL keys above the phone's keyboard;
+  finger-sized controls; and a back button that closes what's open first.
 - **Installable and offline.** Plain static files with no server behind
   them. Once loaded, it runs without a network.
 
+## At a glance
+
+| Area | What you get |
+|---|---|
+| **Numbers** | Exact big integers and fractions (`100 FACT` gives all 158 digits, `1/3 2/5 +` gives `11/15`), 12-digit reals, complex numbers, and binary integers in any base |
+| **Algebra and calculus** | The Giac CAS behind SOLVE, FACTOR, EXPAND, PARTFRAC, DERIV, INTEG, TAYLR, SERIES, LAPLACE and ILAP, with `∫` and `∂` written inside algebraics |
+| **Units** | The HP 50g's whole unit catalog with SI prefixes, CONVERT and UBASE, and units inside algebraics |
+| **Linear algebra** | Vectors and matrices with DET, INV, RANK, LU, QR, SCHUR, CHOLESKY, EGV and LINSOLVE, and a matrix writer that pastes from spreadsheets |
+| **Statistics** | ΣDAT and Σ+, MEAN, SDEV, LINFIT, BESTFIT and BINS, and distributions such as NDIST and UTPN |
+| **Programming** | User RPL with `« »`, IF, CASE, FOR, WHILE and IFERR, local variables, recursion, DEFINE, directories, and HALT, SST and DBUG for debugging |
+| **Plots** | FUNCTION, POLAR, PARAMETRIC, DIFFEQ, scatter, bar and histogram plots, with trace, zoom and PNG export |
+| **Data in and out** | Copy and paste with Excel, Google Sheets and Numbers; CSV, TSV, `.xlsx`, JSON and HP `.rpl` files; LaTeX copied out and pasted in |
+| **Input** | Keyboard first with `⌘K` search, the HP 50g keypad on screen, and a phone layout with its own key strip |
+| **Assistant** | Optional. A model you run with Ollama explains, solves, writes programs and tutors, acting on your stack with one-click undo |
+| **Where it runs** | Any modern browser, installable as an app, offline after the first visit, with no account; your data stays in the browser |
+
 **Contents:** [Get started](#get-started) ·
-[Five minutes with RPL](#five-minutes-with-rpl) · [Tour](#tour) ·
+[Five minutes with RPL](#five-minutes-with-rpl) · [Keyboard](#keyboard) ·
+[On a phone](#on-a-phone) · [Tour](#tour) ·
 [Set up the assistant](#set-up-the-assistant) ·
 [Limitations](#limitations) · [For developers](#for-developers) ·
 [Why this exists](#why-this-exists)
@@ -143,14 +163,19 @@ On Windows and Linux, ⌘ is Ctrl and ⌥ is Alt.
 
 Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 
-### Touch
+### On a phone
+
+| HP keypad | Minimal view |
+|:---:|:---:|
+| ![rpl.ai on a phone](screenshots/phone.png) | ![Minimal view on a phone, with a level's actions open](screenshots/phone-minimal.png) |
 
 - The on-screen keypad has the HP 50g's layout, shift keys included, and
   its keys work like the HP's: with `4` on the command line, + or SIN enters
   it and runs at once. Inside a quote, string, program, list or unit they
   type. The command menus' soft keys do the same; the catalog types.
-- Swipe a stack level left or right to drop it. The toast's Undo brings it
-  back.
+- Tap a stack level for its actions: Edit, Pick (DUP on level 1), Roll
+  (SWAP on level 2), Drop, and ⋯ for EVAL, →NUM, copy, store and the rest.
+  Swipe a level left or right to drop it; the toast's Undo brings it back.
 - ⌫ and Enter sit beside the command line. ⌫ deletes a character (or the
   selected text), or drops level 1 when the line is empty.
 - On a narrow screen each soft-key name is sized to its key, so `SPEED`
@@ -171,6 +196,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   `_`, `→` and `π`.
 - In the equation writer, a drag scrolls a long formula; touch and hold,
   then drag, to select part of it.
+- In Minimal view, ⌫ and Enter stay beside the command line, the menu
+  button on the status line reaches Undo, command search, the drawers, the
+  soft keys, full screen and Settings, and the button beside it leaves.
 - A phone's back button closes the open menu, search, sheet, writer or
   drawer first, and leaves the app only when nothing is open.
 
@@ -307,17 +335,13 @@ highlighted. Continue, Step or Stop from the banner (or `CONT`, `SST`,
 Graphite and Paper follow your system's dark or light setting; Classic LCD
 reimagines the original display. Minimal view strips everything back to the
 status line, the stack and the command line (`⇧⌘F`); a setting keeps the
-soft keys. On a phone, ⌫ and Enter stay beside the command line, the menu
-button on the status line reaches Undo, command search, the drawers, the
-soft keys, full screen and Settings, and the button beside it leaves.
+soft keys. On a phone it has a menu of its own (see [On a phone](#on-a-phone)).
 
 | Classic LCD | Paper |
 |:---:|:---:|
 | ![Classic LCD theme](screenshots/classic.png) | ![Paper theme with the catalog](screenshots/paper.png) |
 
-| Minimal view | Phone |
-|:---:|:---:|
-| ![Minimal view](screenshots/minimal.png) | ![rpl.ai on a phone](screenshots/phone.png) |
+![Minimal view](screenshots/minimal.png)
 
 ---
 
