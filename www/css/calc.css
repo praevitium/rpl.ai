@@ -1875,6 +1875,8 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   .st-acts { left: 8px; }
   .st-acts button { min-width: 40px; min-height: 40px; justify-content: center; font-size: 13px; }
   .mini, .icon-btn.sm { width: 40px; height: 40px; }
+  .btn, .dw-tabs button, .path-bar button { min-height: 40px; }
+  .field, .backup-new input, .backup-new select { height: 40px; }
   /* Six finger-sized actions don't fit beside a name at 320 px, so they get a line of their own. */
   .vr .main, .vr .acts { grid-column: 2 / -1; }
   .vr .acts { justify-content: flex-end; margin: -4px -4px -6px 0; }
