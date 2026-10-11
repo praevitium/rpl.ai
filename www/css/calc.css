@@ -1687,6 +1687,10 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   word-break: break-all;
 }
 .cb-tool-trace-outcome { color: var(--ink2); }
+.cb-pause { align-items: center; }
+.cb-pause-count { color: var(--ink2); font-variant-numeric: tabular-nums; }
+.cb-pause-skip { appearance: none; border: 1px solid var(--line2); background: transparent; color: var(--ink2); font-size: 12px; border-radius: 999px; padding: 3px 10px; }
+.cb-pause-skip:hover { background: var(--r1); color: var(--ink); }
 .cb-undo-row {
   align-self: flex-start;
   margin: 2px 0 6px;

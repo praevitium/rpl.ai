@@ -62,6 +62,7 @@ function button(props, onClick) {
 }
 
 const MAX_TURN_ITERATIONS = 12;
+const MAX_PAUSE_SECONDS = 10;
 const MAX_ATTEMPTS = 2;
 
 // Thinking models spend thousands of tokens on hidden reasoning before the visible answer.
@@ -434,6 +435,9 @@ export const TOOL_ALIASES = Object.freeze({
   'find_command':       'search_commands',
   'find_commands':      'search_commands',
   'list_commands':      'search_commands',
+  'wait':               'pause',
+  'sleep':              'pause',
+  'delay':              'pause',
 });
 
 // Own-property check: a model calling "toString" must not reach Object.prototype.
@@ -703,7 +707,45 @@ export class ChatBot {
           return { success: true, buffer: tools.getEditor() };
         },
       },
+      pause: {
+        mutates: false,
+        handler: ({ seconds, note } = {}) => this._pause(seconds, note),
+        card: (result) => result.el,
+      },
     };
+  }
+
+  // Holds the turn so the user can follow a step; Continue or Stop ends it early.
+  _pause(seconds, note) {
+    const total = Math.min(MAX_PAUSE_SECONDS, Math.max(1, Math.round(Number(seconds) || 3)));
+    const runId = this._runId;
+    const count = elem('span', { className: 'cb-pause-count' });
+    const skip = button({ className: 'cb-pause-skip', textContent: 'Continue' });
+    const el = elem('div', { className: 'cb-tool-trace cb-pause' });
+    el.append(
+      elem('span', { className: 'cb-tool-trace-icon', textContent: '‖' }),
+      elem('span', { className: 'cb-tool-trace-name', textContent: String(note ?? '').trim() || 'Pausing so you can follow along' }),
+      count, skip,
+    );
+    this._place(el);
+    const started = Date.now();
+    return new Promise((resolve) => {
+      const finish = (skipped) => {
+        clearInterval(timer);
+        skip.remove();
+        count.remove();
+        resolve({ seconds: total, waited: Math.round((Date.now() - started) / 1000), skipped, el });
+      };
+      const tick = () => {
+        const left = total - Math.floor((Date.now() - started) / 1000);
+        if (this._runId !== runId) finish(true);
+        else if (left <= 0) finish(false);
+        else count.textContent = `${left} s`;
+      };
+      const timer = setInterval(tick, 200);
+      skip.addEventListener('click', () => finish(true));
+      tick();
+    });
   }
 
   mount(el) {
@@ -1684,6 +1726,9 @@ export class ChatBot {
       return r.exists
         ? `(${r.name} = ${r.value}.)`
         : `(${r.name} is not defined.)`;
+    }
+    if (name === 'pause') {
+      return r.skipped ? `(Paused; the user moved on after ${r.waited} s.)` : `(Paused ${r.seconds} s.)`;
     }
     return `(${name} returned: ${JSON.stringify(result)})`;
   }

@@ -281,6 +281,12 @@ const TOOLS = [
     schema: { type: 'object', properties: {} },
     desc: 'Empty the entry-line buffer.  Executes immediately; Undo this turn brings the text back.',
   },
+  {
+    name: 'pause',
+    args: { seconds: '<1-10>', note: '<what to look at>' },
+    schema: { type: 'object', properties: { seconds: { type: 'number', description: 'How long to wait, 1 to 10 seconds.' }, note: { type: 'string', description: 'A few words on what to look at, e.g. "Level 1 now holds the discriminant".' } }, required: ['seconds'] },
+    desc: 'Wait before your next step so the user can follow along, showing your note and a countdown; the user can tap Continue to go on sooner.  Read-only: nothing on the calculator changes.  Use it in a step-by-step demonstration, after a `run` whose result the user should look at; not after reads, and not at the end of a turn.',
+  },
 ];
 
 export const TOOL_SCHEMAS = TOOLS.map((t) => ({
@@ -375,7 +381,7 @@ REPLY STYLE
 - Markdown is rendered: short paragraphs, bullet lists, \`inline code\` for RPL, fenced blocks for programs, $…$ / $$…$$ for maths (KaTeX), \`\`\`mermaid fences for diagrams if genuinely useful.
 - Be concise and concrete.  Lead with the answer or the action; add explanation in proportion to what the user asked.  A one-line request deserves a one-line reply.
 - When you teach, show the actual keystrokes/RPL the user could type themselves.
-- SHOW YOUR WORK when asked ("show me", "how did you get that", "explain", "walk me through it") — and proactively for anything non-obvious: numbered steps, each with the RPL you ran (or would run), what was on the stack after it, and the one-line reason.  Your evaluate/run traces are visible to the user, so refer to them ("as the second dry-run shows…").  For a live demo ("show me on my stack", "demo it"), \`run\` ONE step per reply — the loop re-invokes you after each — so the user watches the stack change at every step; never bundle a demo into a single line.  Summarise at the end.  After a non-trivial answer, one SUGGEST chip may be "show me how you got that".
+- SHOW YOUR WORK when asked ("show me", "how did you get that", "explain", "walk me through it") — and proactively for anything non-obvious: numbered steps, each with the RPL you ran (or would run), what was on the stack after it, and the one-line reason.  Your evaluate/run traces are visible to the user, so refer to them ("as the second dry-run shows…").  For a live demo ("show me on my stack", "demo it"), \`run\` ONE step per reply — the loop re-invokes you after each — so the user watches the stack change at every step; never bundle a demo into a single line.  After a step the user should study, call \`pause\` (two to five seconds) with a note saying what to look at, so they can follow along before the next step.  Summarise at the end.  After a non-trivial answer, one SUGGEST chip may be "show me how you got that".
 - Don't narrate the tools ("I will now call get_stack") — just do it; if you want the user to know why, one clause is enough ("Checking the reference first…").
 - Never fabricate calculator output.  Results you quote come from a tool result in this conversation.
 

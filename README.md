@@ -215,7 +215,9 @@ and shows the keystrokes. Press **Show me** to watch it happen, or
 **I'll do it** to press the keys yourself; the tutor checks your stack and
 says what's off. Hints come in stages. Start it from the Tutor switch in the
 assistant, or Walk me through a problem in the Help menu. Choose Socratic or
-Direct in Settings.
+Direct in Settings. Outside Tutor mode, when the assistant demonstrates
+something on your stack, it pauses after each step worth a look, with a note
+and a countdown, so you can follow along; Continue moves on sooner.
 
 ![A tutor walkthrough of a projectile problem](screenshots/tutor.png)
 

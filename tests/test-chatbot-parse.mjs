@@ -708,8 +708,9 @@ import { readFileSync } from 'node:fs';
 
 // Canonical tool set pulled from the LIVE registry — chat-bot.js
 // _buildRegistry is the documented single source of truth.  It reads only
-// this._tools / this._getContext, so a minimal fake `this` extracts the
-// keys without constructing a ChatBot (DOM-free).  Both sync guards below
+// this._tools / this._getContext (and this._pause when the pause tool runs),
+// so a minimal fake `this` extracts the keys without constructing a ChatBot
+// (DOM-free).  Both sync guards below
 // derive from this instead of a hand-copied literal, so a tool added to
 // the registry but not the prompt (or vice versa) fails the suite — the
 // exact drift these guards promise to catch.
@@ -850,6 +851,7 @@ const registryToolNames = () =>
   const reg = ChatBot.prototype._buildRegistry.call({
     _tools: toolsProxy,
     _getContext: () => ({ stack: [], angleMode: 0, displayMode: 0, dir: [] }),
+    _pause: () => ({}),
   });
   let pairs = 0;
   for (const [name, tool] of Object.entries(reg)) {
@@ -1045,6 +1047,7 @@ const registryToolNames = () =>
   const reg = ChatBot.prototype._buildRegistry.call({
     _tools: toolsProxy,
     _getContext: () => ({ stack: [], angleMode: '', displayMode: '', dir: '' }),
+    _pause: () => ({}),
   });
   for (const t of Object.values(reg)) t.handler({});
   // The turn loop reaches into the bag directly for the whole-calculator
@@ -1096,6 +1099,7 @@ const registryToolNames = () =>
   const reg = ChatBot.prototype._buildRegistry.call({
     _tools: new Proxy({}, { get() { return () => undefined; } }),
     _getContext: () => ctxProxy,
+    _pause: () => ({}),
   });
   for (const t of Object.values(reg)) t.handler({});
   assert(accessed.size >= 4,
