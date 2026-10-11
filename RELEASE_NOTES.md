@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.28 (2026-10-11)
+**Latest release:** v0.6.29 (2026-10-11)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.29 — 2026-10-11
+
+The on-screen keypad's operator keys work like the HP 50g's. With a number
+on the command line, `+`, `−`, `×`, `÷`, `yˣ` and the comparison keys enter
+the line and run at once, so `3` ENTER `4` `+` gives 7 without a second
+ENTER. Inside a quote, string, program, list or vector they type, as on the
+HP, and `×` and `÷` still type into a unit after `_`. Before, they typed
+whenever the command line held text. The other keypad keys, such as SIN and
+STO, and keys typed on a phone's or computer's keyboard are unchanged:
+`1/3` or `X*2` typed there still lands on the line as text.
 
 ## v0.6.28 — 2026-10-11
 
