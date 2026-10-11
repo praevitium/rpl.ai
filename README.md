@@ -187,8 +187,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   it and runs at once. Inside a quote, string, program, list or unit they
   type. The command menus' soft keys do the same; the catalog types.
 - Tap a stack level for its actions: Edit, Pick (DUP on level 1), Roll
-  (SWAP on level 2), Drop, and ⋯ for EVAL, →NUM, copy, store and the rest.
-  Swipe a level left or right to drop it; the toast's Undo brings it back.
+  (SWAP on level 2), Drop, and ⋯ for EVAL, →NUM, copy, share, store and the
+  rest. Swipe a level left or right to drop it; the toast's Undo brings it back.
 - ⌫ and Enter sit beside the command line. ⌫ deletes a character (or the
   selected text), or drops level 1 when the line is empty.
 - On a narrow screen each soft-key name is sized to its key, so `SPEED`
@@ -209,12 +209,14 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   holds the keys a phone keyboard lacks. `+`, `−`, `×`, `÷`, `yˣ`, `SWAP` and
   `DROP` enter the line and run at once, as on the HP, but type into an open
   program, list, quote or unit. The strip also has UNDO, the RPL delimiters,
-  `_`, `→` and `π`.
+  `_`, `→` and `π`, and fades at an edge while more keys lie past it.
 - In the equation writer, a drag scrolls a long formula; touch and hold,
   then drag, to select part of it.
 - In Minimal view, ⌫ and Enter stay beside the command line, the menu
   button on the status line reaches Undo, command search, the drawers, the
   soft keys, full screen and Settings, and the button beside it leaves.
+- The Variables drawer's buttons are finger-sized, on a line under each
+  variable's name.
 - A phone's back button closes the open menu, search, sheet, writer or
   drawer first, and leaves the app only when nothing is open.
 
