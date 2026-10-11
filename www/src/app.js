@@ -431,6 +431,12 @@ class App {
     return !!(globalThis.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone);
   }
 
+  // Firefox on a computer can't install web apps, so it gets no Install button.
+  offersInstall() {
+    const desktopFirefox = /Firefox\//.test(navigator.userAgent) && !/Android/.test(navigator.userAgent);
+    return window.isSecureContext && !this.installedHere && !this.isInstalledApp() && !desktopFirefox;
+  }
+
   installApp() {
     const prompt = window.installPrompt;
     if (prompt) {
@@ -1620,5 +1626,7 @@ installOfflineCache(window.__hp50);
 
 window.addEventListener('appinstalled', () => {
   window.installPrompt = null;
+  window.__hp50.installedHere = true;
+  window.__hp50.appbar.render();
   window.__hp50.toast('Installed. rpl.ai now opens in its own window and works offline.');
 });

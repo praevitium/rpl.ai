@@ -254,6 +254,8 @@ button { cursor: pointer; }
 .icon-btn.sm { width: 28px; height: 28px; border-radius: 7px; }
 .search-btn { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink3); font: 12.5px/1 var(--font-ui); min-width: 0; flex: 0 1 250px; }
 .search-btn:hover { border-color: var(--line2); color: var(--ink2); }
+.install-btn { flex: none; display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px 0 10px; border-radius: 8px; border: 0; background: var(--accent); color: var(--accent-ink); font: 600 12.5px/1 var(--font-ui); }
+.install-btn:hover { filter: brightness(1.06); }
 .search-btn span:not(.kbd) { flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kbd { font: 500 10.5px/1 var(--font-mono); color: var(--ink3); border: 1px solid var(--line2); border-bottom-width: 2px; padding: 2px 5px; border-radius: 4px; white-space: nowrap; background: transparent; }
 .appbar .narrow-only { display: none; }
@@ -295,6 +297,12 @@ button { cursor: pointer; }
   .search-btn span, .search-btn .kbd { display: none; }
   .appbar .wide-only { display: none; }
 }
+@container app (max-width: 479px) {
+  .install-btn { width: 34px; padding: 0; justify-content: center; }
+  .install-btn span { display: none; }
+}
+/* On the smallest phones the directory name needs the room; Install stays in the ⋯ menu. */
+@container app (max-width: 339px) { .install-btn { display: none; } }
 @container app (max-width: 719px) {
   .mode-chip:not(.summary) { display: none; }
   .mode-chip.summary { display: flex; }
