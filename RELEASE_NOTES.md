@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.30 (2026-10-11)
+**Latest release:** v0.6.31 (2026-10-11)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.31 — 2026-10-11
+
+The command menus' soft keys work like the keypad's keys and the HP 50g's:
+with a number on the command line, the SIN soft key in the TRIG menu enters
+it and takes its sine at once, instead of typing SIN after it. Inside a
+quote a soft key types its call, and inside a program or list its name. The
+catalog's run buttons and the command search still type a command while the
+line has text, as the HP's catalog does.
 
 ## v0.6.30 — 2026-10-11
 
