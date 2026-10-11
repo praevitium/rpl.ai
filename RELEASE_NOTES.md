@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.40 (2026-10-11)
+**Latest release:** v0.6.41 (2026-10-11)
 
 ---
 
@@ -18,6 +18,17 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.41 — 2026-10-11
+
+On a phone, the drawers' tabs, folder path, filter field, buttons and backup
+form are 40 px tall, so each takes a finger. The plot toolbar gains Share
+where the device can share images, sending the plot as a PNG. On touch
+screens its tools are 40 px, in two columns so all eight fit a short plot,
+and anywhere a plot is too short for the toolbar, the toolbar scrolls instead
+of hiding its last buttons.
 
 ---
 
