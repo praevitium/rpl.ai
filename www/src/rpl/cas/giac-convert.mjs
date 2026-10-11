@@ -186,7 +186,7 @@ export function buildGiacCmd(exprAst, buildCmd, extraVars = []) {
 
 // Some builds print lists with a type tag, as list[1,2] instead of [1,2].
 function stripListTag(s) {
-  const m = s.match(/^(list|seq|set|poly1)\[/);
+  const m = s.match(/^(list|seq|set|poly1|matrix)\[/);
   return m ? s.slice(m[1].length) : s;
 }
 

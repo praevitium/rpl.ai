@@ -8334,3 +8334,12 @@ giac._setFixture('ilaplace(1,x,rplS)', 'Dirac(rplS)');
   giac._clear();
   assert(line("'∂X(1/X)' EVAL") === '`∂X(1/X)`', 'a derivative the CAS cannot give stays as it is');
 }
+
+/* SCHUR reads the matrix[ tag real Giac puts on its first result. */
+{
+  giac._clear();
+  giac._setFixture('SCHUR([[1,2],[3,4]])', 'list[matrix[[1,0],[0,1]],[[5,6],[0,7]]]');
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
+  assert(line('[[1 2][3 4]] SCHUR') === '[[ 5 6 ][ 0 7 ]] | [[ 1 0 ][ 0 1 ]]', 'SCHUR splits list[matrix[…],[…]] into Q and T');
+  giac._clear();
+}
