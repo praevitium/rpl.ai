@@ -1853,4 +1853,7 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   .ann-status .ann-path { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* Keyboard shortcuts mean nothing on a touch screen. */
   .pop .opt em, .pal .kbd, .pal-foot { display: none; }
+  /* A selected level's actions are finger-sized, and start further left so six fit at 320 px. */
+  .st-acts { left: 8px; }
+  .st-acts button { min-width: 40px; min-height: 40px; justify-content: center; font-size: 13px; }
 }
