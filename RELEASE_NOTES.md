@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.38 (2026-10-11)
+**Latest release:** v0.6.39 (2026-10-11)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.39 — 2026-10-11
+
+On short phone screens the keypad's labels no longer collide with the key
+faces. At 660 px tall or less the captions under the faces (DUP, DROP, NEG
+and the like) give way, and at 580 px or less so do the shift labels in the
+corners; pressing a shift key still shows the shifted names on the faces.
 
 ## v0.6.38 — 2026-10-11
 
