@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.41 (2026-10-11)
+**Latest release:** v0.6.42 (2026-10-11)
 
 ---
 
@@ -18,6 +18,18 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.42 — 2026-10-11
+
+On a phone, the app bar's directory crumb, mode chip and buttons are 40 px
+tall, and 40 px square once the bar is 380 px wide; the bar keeps its
+height. ⌫ and Enter beside the command line are 40 px square too, reaching
+into the line's padding so the line keeps its height. Each variable in the
+Variables drawer gains Share where the device has a share sheet, sending the
+same text a stack level's Share does, and on touch the row's buttons shrink a
+little rather than overflow the narrowest drawer.
 
 ---
 
