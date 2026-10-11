@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.34 (2026-10-11)
+**Latest release:** v0.6.35 (2026-10-11)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.35 — 2026-10-11
+
+- A phone's back button closes the open menu, command search, sheet, writer
+  or drawer first, as an app's does, instead of leaving rpl.ai. With
+  nothing open it leaves as before.
+- A selected stack level's Edit, Pick, Roll, Plot, Drop and More buttons
+  are finger-sized on a touch screen (40 px instead of 27), and all six fit
+  on a 320 px phone.
 
 ## v0.6.34 — 2026-10-11
 
