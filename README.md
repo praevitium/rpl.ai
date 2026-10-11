@@ -189,8 +189,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - Tap a stack level for its actions: Edit, Pick (DUP on level 1), Roll
   (SWAP on level 2), Drop, and ⋯ for EVAL, →NUM, copy, share, store and the
   rest. Swipe a level left or right to drop it; the toast's Undo brings it back.
-- ⌫ and Enter sit beside the command line. ⌫ deletes a character (or the
-  selected text), or drops level 1 when the line is empty.
+- ⌫ and Enter sit beside the command line, finger-sized. ⌫ deletes a
+  character (or the selected text), or drops level 1 when the line is empty.
 - On a narrow screen each soft-key name is sized to its key, so `SPEED`
   stays on one line, and a long name such as `ISPRIME?` breaks into even
   lines instead of being cut off.
@@ -215,9 +215,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - In Minimal view, ⌫ and Enter stay beside the command line, the menu
   button on the status line reaches Undo, command search, the drawers, the
   soft keys, full screen and Settings, and the button beside it leaves.
-- The drawers' tabs, fields and buttons are finger-sized, with the Variables
-  drawer's buttons on a line under each variable's name, and the plot's tools
-  sit in two columns of finger-sized buttons.
+- The app bar's buttons, the drawers' tabs, fields and buttons, and the
+  plot's tools (in two columns) are finger-sized. The Variables drawer puts
+  each variable's buttons on a line under its name, Share among them where
+  the phone has a share sheet.
 - A phone's back button closes the open menu, search, sheet, writer or
   drawer first, and leaves the app only when nothing is open.
 
