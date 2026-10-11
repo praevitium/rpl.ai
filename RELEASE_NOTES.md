@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.26 (2026-10-11)
+**Latest release:** v0.6.27 (2026-10-11)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.27 — 2026-10-11
+
+Fixed:
+
+- A line starting with `?` asks the assistant, but the first question after
+  opening the app stayed in the assistant's input box while the endpoint
+  connected, and needed a second Enter. It now goes out as soon as the
+  assistant is ready, unless you change it first. The same goes for asking
+  about an error or a stack level.
 
 ## v0.6.26 — 2026-10-11
 
