@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.36 (2026-10-11)
+**Latest release:** v0.6.37 (2026-10-11)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.37 — 2026-10-11
+
+- Installing rpl.ai is easier to find. A browser tab shows a green Install
+  button in the top bar (a download arrow on a phone), which installs the
+  app where the browser can and otherwise says how, for example Share › Add
+  to Home Screen on an iPhone. The installed app, desktop Firefox and the
+  smallest phones don't show it; there Install stays in the ⋯ menu. The
+  README now starts with an install tip and a browser-by-browser table.
+- In landscape, a phone's notch no longer covers the status line, the
+  stack, the command line or the keypad.
 
 ## v0.6.36 — 2026-10-11
 
