@@ -466,10 +466,7 @@ class App {
     this.drawers.open('assistant');
     const t = String(text).trim();
     if (!t) return;
-    requestAnimationFrame(() => {
-      if (this.chatBot._llm?.loadedModelId) this.chatBot.sendUserMessage(t);
-      else this.chatBot.setDraft(t);
-    });
+    requestAnimationFrame(() => this.chatBot.ask(t));
   }
 
   _installAutosave() {

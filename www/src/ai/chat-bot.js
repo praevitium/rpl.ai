@@ -579,6 +579,7 @@ export class ChatBot {
     this._statusEl   = null;
     this._generating = false;
     this._queue = [];
+    this._pendingAsk = null;
     // Every turn, Stop and New chat bump it; a turn that sees a newer id unwinds quietly.
     this._runId = 0;
     this._registry = this._buildRegistry();
@@ -770,6 +771,7 @@ export class ChatBot {
       setConsented();
       this._container.innerHTML = '';
       this._container.appendChild(this._buildUI());
+      if (this._pendingAsk) this.setDraft(this._pendingAsk);
       this._connectSavedEndpoint();
     }));
     return wrap;
@@ -1162,7 +1164,8 @@ export class ChatBot {
       this._switchModelBtn.textContent = 'Endpoint settings';
       this._sendBtn.disabled = false;
       this._hidePicker();
-      if (this._history.length === 0) {
+      if (this._pendingAsk) this._sendPendingAsk();
+      else if (this._history.length === 0) {
         this._greetWithStarterChips(
           `${label} ready. I can explain RPL and commands, work through maths ` +
           'problems, and drive the calculator for you — anything I change can be undone ' +
@@ -1220,6 +1223,22 @@ export class ChatBot {
     this._inputEl.value = String(text ?? '');
     this._inputEl.focus();
     this._inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  // A question asked from the calculator goes out as soon as the endpoint is ready,
+  // unless the user has changed the draft by then.
+  ask(text) {
+    const t = String(text ?? '').trim();
+    if (!t) return;
+    if (this._llm.status === 'ready') { this.sendUserMessage(t); return; }
+    this._pendingAsk = t;
+    this.setDraft(t);
+  }
+
+  _sendPendingAsk() {
+    const t = this._pendingAsk;
+    this._pendingAsk = null;
+    if (t && this._inputEl?.value.trim() === t) this.sendUserMessage(t);
   }
 
   // Sends as if typed: queued while a turn runs, ignored before consent or mount.

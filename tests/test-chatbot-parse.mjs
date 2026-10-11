@@ -1216,6 +1216,27 @@ const registryToolNames = () =>
   }
 }
 
+{
+  const bot = new ChatBot({ tools: {}, getContext: () => ({}) });
+  const sent = [];
+  bot._inputEl = { value: '', focus() {}, dispatchEvent() {} };
+  bot.sendUserMessage = (t) => { sent.push(t); };
+  bot.ask('what is 2+2');
+  assert(sent.length === 0 && bot._inputEl.value === 'what is 2+2',
+         'ask while the endpoint connects leaves the question as the draft');
+  bot._llm._status = 'ready';
+  bot._sendPendingAsk();
+  assert(sent.join() === 'what is 2+2', 'ask sends the question once the endpoint is ready');
+  bot._llm._status = 'loading';
+  bot.ask('what is 3+3');
+  bot._inputEl.value = 'what is 4+4';
+  bot._sendPendingAsk();
+  assert(sent.length === 1, 'ask does not send a question the user has since edited');
+  bot._llm._status = 'ready';
+  bot.ask('and 5+5');
+  assert(sent.at(-1) === 'and 5+5', 'ask sends at once when the endpoint is ready');
+}
+
 /* looksInfix — the hint attached to a failed run/evaluate when the model
    wrote an infix formula as bare RPL. */
 {
