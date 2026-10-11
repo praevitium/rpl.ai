@@ -556,3 +556,15 @@ function replaceSelection(state, ast) {
   assert(inBox.target.mode === 'clear' && textOf(press(inBox, '▶', '+', '1')) === 'x/2 + 1', 'EQW ▶ at the last leaf of a denominator steps out to the fraction, so + 1 follows it');
   assert(textOf(press(press(emptyEquation(), 'x', '÷', '2'), '▶', '+', '1')) === 'x/2 + 1', 'EQW ▶ from the caret in a denominator does the same');
 }
+
+/* Option on a Mac and AltGr elsewhere type the writer's symbols; Alt with a plain letter stays a shortcut (W-L23). */
+{
+  const key = (k, mods = {}) => physicalFace({ key: k, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...mods });
+  const altGr = { ctrlKey: true, altKey: true, getModifierState: (m) => m === 'AltGraph' };
+  assert(key('√', { altKey: true }) === '√x' && key('π', { altKey: true }) === 'π' && key('≤', { altKey: true }) === '≤' && key('∑', { altKey: true }) === 'Σ' && key('±', { altKey: true }) === '+/-',
+    'EQW Option-key symbols map to the writer keys they spell');
+  assert(key('≥', altGr) === '≥' && key('∞', altGr) === '∞', 'EQW AltGr symbols are typed too');
+  assert(key('v', { altKey: true }) === null && key('5', { altKey: true }) === null && key('π', { altKey: true, metaKey: true }) === null && key('/', { ctrlKey: true }) === null,
+    'EQW Alt with a letter or digit, and Cmd or Ctrl shortcuts, are left to the browser');
+  assert(key('å', { altKey: true }) === 'UNAVAILABLE', 'EQW a symbol the writer has no key for says so');
+}

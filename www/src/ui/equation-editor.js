@@ -1569,8 +1569,14 @@ export function isEquationFace(face) {
   return face === 'const:i' || MODEL_LABELS.has(face) || isLetterFace(face) || isKnownFunction(face);
 }
 
+// Option on a Mac, and AltGr elsewhere, type symbols such as √, π and ≤ rather than shortcuts (W-L23).
+function typedWithOption(event) {
+  const option = event.altKey || event.getModifierState?.('AltGraph');
+  return option && !event.metaKey && event.key?.length === 1 && !/^[A-Za-z0-9]$/.test(event.key);
+}
+
 export function physicalFace(event) {
-  if (event.altKey || event.ctrlKey || event.metaKey) return null;
+  if ((event.altKey || event.ctrlKey || event.metaKey) && !typedWithOption(event)) return null;
   if (event.shiftKey && event.key === 'ArrowDown') return 'NOOP';
   const moves = {
     ArrowUp: event.shiftKey ? 'RS▲' : '▲',
@@ -1589,8 +1595,8 @@ export function physicalFace(event) {
     '+': '+', '-': '−', '−': '−', '*': '×', '×': '×', '·': '×',
     '/': '÷', '÷': '÷', '^': 'yˣ', '!': '!', '(': '( )', ')': ')', ',': ',',
     '=': '=', '<': '<', '>': '>', '≠': '≠', '≤': '≤', '≥': '≥',
-    '√': '√x', '²': 'x²', 'π': 'π', '∞': '∞', '∫': '∫', '∂': '∂',
-    '_': '_', 'µ': 'μ', '°': '°', 'Å': 'Å',
+    '√': '√x', '²': 'x²', 'π': 'π', '∞': '∞', '∫': '∫', '∂': '∂', '∑': 'Σ', '±': '+/-',
+    '_': '_', 'µ': 'μ', '°': '°', 'Å': 'Å', '∆': 'Δ', 'Ω': 'Ω',
   };
   if (map[event.key]) return map[event.key];
   if (event.key === '.' || /^[0-9]$/.test(event.key) || isLetterFace(event.key)) return event.key;
