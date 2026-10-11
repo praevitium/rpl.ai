@@ -1847,6 +1847,8 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   /* On a phone, full screen moves into the menu so the menu and leave buttons fit at 320 px. */
   .ann-btn[data-status="fullscreen"] { display: none; }
   :root[data-view="minimal"] .toasts { top: 62px; }
+  /* Without the keypad, a phone needs ⌫ and Enter beside the command line once its keyboard is down. */
+  :root[data-view="minimal"] .cmdline-go { display: flex; }
   button.ann-m { min-height: 40px; padding: 0 6px; }
   .ann-status .ann-path { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* Keyboard shortcuts mean nothing on a touch screen. */
