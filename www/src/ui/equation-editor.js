@@ -2220,10 +2220,14 @@ export class EquationEditor {
 
   _scrollToCaret(rect) {
     if (!rect || !this.el.isConnected) return;
-    const x = this._svgOrigin().x + rect.x;
+    const origin = this._svgOrigin();
     const margin = 16;
-    if (x < this.canvas.scrollLeft + margin) this.canvas.scrollLeft = Math.max(0, x - margin);
-    else if (x + rect.w > this.canvas.scrollLeft + this.canvas.clientWidth - margin) this.canvas.scrollLeft = x + rect.w - this.canvas.clientWidth + margin;
+    const keepInView = (start, size, scroll, view) => {
+      if (start < this.canvas[scroll] + margin) this.canvas[scroll] = Math.max(0, start - margin);
+      else if (start + size > this.canvas[scroll] + view - margin) this.canvas[scroll] = start + size - view + margin;
+    };
+    keepInView(origin.x + rect.x, rect.w, 'scrollLeft', this.canvas.clientWidth);
+    keepInView(origin.y + rect.y, rect.h, 'scrollTop', this.canvas.clientHeight);
   }
 
   _scheduleInsights() {
