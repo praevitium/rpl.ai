@@ -619,6 +619,9 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   .menubar { padding: 4px 8px 6px; }
   .cmdline { min-height: 36px; padding-top: 6px; padding-bottom: 6px; }
 }
+/* Short keys have no room under the face for a caption, or beside it for the shift labels; a shift still shows them on the faces. */
+@media (max-height: 660px) { .k .cap { display: none; } }
+@media (max-height: 580px) { .k .l, .k .r { display: none; } }
 @media (max-height: 480px) {
   .app { grid-template-rows: 40px minmax(0, 1fr); }
   .kp-nav { display: none; }
