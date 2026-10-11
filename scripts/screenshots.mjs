@@ -232,6 +232,18 @@ const SCENES = [
       await enter(page, "'X^2-4'", 'FACTOR', '355', '113', '/', "'√2'", '→NUM');
     },
   },
+  {
+    name: 'phone-minimal',
+    viewport: { width: 390, height: 844 },
+    phone: true,
+    touch: true,
+    initArg: prefs({ minimal: true, minimalMenu: true }),
+    async setup(page) {
+      await casReady(page);
+      await enter(page, "'X^3-6*X^2+11*X-6'", 'FACTOR', '1/3', '2/5', '+', '100_km', '2_h', '/', '2', '100', '^');
+      await page.evaluate(() => window.__hp50.selectLevel(3));
+    },
+  },
 ];
 
 function frameHtml(png, { width, height }, phone) {
@@ -244,7 +256,7 @@ function frameHtml(png, { width, height }, phone) {
 }
 
 async function capture(browser, base, scene) {
-  const context = await browser.newContext({ viewport: scene.viewport, deviceScaleFactor: SCALE, colorScheme: scene.scheme ?? 'dark' });
+  const context = await browser.newContext({ viewport: scene.viewport, deviceScaleFactor: SCALE, colorScheme: scene.scheme ?? 'dark', hasTouch: !!scene.touch, isMobile: !!scene.touch });
   await context.addInitScript(scene.init ?? saveUi, scene.initArg ?? prefs());
   const page = await context.newPage();
   const errors = [];
