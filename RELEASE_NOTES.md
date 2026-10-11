@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.37 (2026-10-11)
+**Latest release:** v0.6.38 (2026-10-11)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.38 — 2026-10-11
+
+Landscape phones:
+
+- With the keyboard up, only about 190 px are left. While you type, the mode
+  tabs, the hint line, the writers' insight strip, the soft keys and Minimal
+  view's status line step aside, so level 1 shows above the command line and
+  the equation and matrix writers keep their keys in view. Before, no stack
+  level showed, the writers' keys fell under the keyboard, and in Minimal view
+  the equation writer covered the status line.
+- The keypad's captions (DUP, DROP, SWAP, EDIT, SELECT, NEG) no longer
+  overlap the key faces on the short landscape keys.
 
 ## v0.6.37 — 2026-10-11
 
