@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.24 (2026-10-10)
+**Latest release:** v0.6.25 (2026-10-11)
 
 ---
 
@@ -20,6 +20,34 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.25 — 2026-10-11
+
+`LINSOLVE` solves a system of linear equations, as the AUR describes:
+`[ 'X+Y=3' 'X-Y=1' ] [ X Y ] LINSOLVE` leaves the system as a list on level
+3, the pivots of the Gaussian reduction on level 2 and `[ 'X=2' 'Y=1' ]` on
+level 1. Lists work as well as arrays, an expression without `=` is set
+equal to zero, coefficients can be symbolic, a variable the system leaves
+free stays out of the solution, and a system with no solution gives `[ ]`.
+The app now has 475 commands.
+
+Fixed:
+
+- `SCHUR` failed on every matrix with the real algebra engine, which tags
+  its first result `matrix[…]`. That tag is now read like Giac's other list
+  tags.
+- The equation writer ignored the symbols macOS types with Option, and
+  AltGr elsewhere, such as √, π, ≤ and ∑ (W-L23). They now act as their
+  keys do.
+- A tall formula left the caret below the visible part of the equation
+  writer (W-L24). The writer now scrolls up and down to the caret as well as
+  sideways.
+- On a touch screen a drag in the equation writer never selected anything
+  (W-L25). A drag still scrolls a long formula; touch and hold, then drag, to
+  select.
+- On a 320-pixel phone the selection toolbar ran off the left of the
+  screen. It now wraps to fit, and a number too long for its matrix cell
+  ends in an ellipsis instead of being cut off.
 
 ## v0.6.24 — 2026-10-10
 

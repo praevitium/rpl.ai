@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 474 commands, exact big-integer and rational arithmetic,
+of its command set: 475 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -160,6 +160,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - Opening the equation or matrix writer brings up your phone's keyboard, and
   so does tapping the equation. While the keyboard is up, the calculator
   keypad steps aside so the writer stays in view.
+- In the equation writer, a drag scrolls a long formula; touch and hold,
+  then drag, to select part of it.
 
 ---
 
@@ -173,7 +175,8 @@ becomes π. After a filled exponent, `+`, `-` and `=` carry on after the
 power, so `(x^5-1)/(x-1)` types as written; Tab leaves any box. Click to
 place the cursor. Select a part with a drag, `↑`, ⇧← ⇧→, or a click on a
 fraction bar or root sign, and a toolbar evaluates, simplifies, expands,
-factors or differentiates just that part.
+factors or differentiates just that part. On a Mac, Option types the
+symbols it has, such as √, π, ≤ and ∑.
 
 The insight strip underneath recomputes as you type, and one click applies
 a result or opens the plot. Its algebra runs in the background, so typing
@@ -507,7 +510,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 474. The
+**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 475. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - program I/O: INPUT, INFORM, CHOOSE, DISP, CLLCD, FREEZE, MSGBOX, WAIT,
@@ -516,7 +519,7 @@ Catalog and the command reference mark what is available. Not there yet:
 - PICT and the plot-setup commands (PVIEW, ERASE, AXES, XRNG, YRNG, STEQ and
   the rest)
 - MENU and TMENU, and DEF
-- parts of the CAS, such as DESOLVE, LINSOLVE and LDEC (SOLVE, ISOL,
+- parts of the CAS, such as DESOLVE and LDEC (SOLVE, ISOL, LINSOLVE,
   ZEROS, TAYLR, TAYLOR0 and SERIES are here). Symbolic commands such as EXPAND
   and SOLVE refuse an algebraic with units in it, which EVAL and →NUM work
   out.
