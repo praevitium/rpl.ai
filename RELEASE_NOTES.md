@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.31 (2026-10-11)
+**Latest release:** v0.6.32 (2026-10-11)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.32 — 2026-10-11
+
+Minimal view on a phone reaches more without leaving it:
+
+- The status line's menu opens command search, and shows or hides the soft
+  keys, which before only Settings could do.
+- ⌫ and Enter stay beside the command line on a touch screen, so a number
+  can be entered or level 1 dropped with the phone's keyboard down. On a
+  computer Minimal view still hides them.
 
 ## v0.6.31 — 2026-10-11
 
