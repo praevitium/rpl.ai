@@ -6,7 +6,7 @@ import {
 } from '../rpl/state.js';
 import { TYPES, isStorableHpName } from '../rpl/types.js';
 import { unitInfo } from '../rpl/units.js';
-import { format } from '../rpl/formatter.js';
+import { format, formatSource } from '../rpl/formatter.js';
 import {
   exportHpTextFile, readUpload,
   listBackups, archiveBackup, restoreBackup, deleteBackup,
@@ -465,10 +465,11 @@ export class Drawers {
     const acts = isDir
       ? `<button type="button" class="mini" data-dw="var-open" data-name="${n}" title="Open ${n}" aria-label="Open ${n}">${icon('chr', 'sm')}</button>`
       : `<button type="button" class="mini" data-dw="var-rcl" data-name="${n}" title="Recall ${n} without running it" aria-label="Recall ${n}">${icon('down', 'sm')}</button><button type="button" class="mini" data-dw="var-edit" data-name="${n}" title="Edit ${n}" aria-label="Edit ${n}">${icon('edit', 'sm')}</button>`;
+    const share = !isDir && typeof navigator.share === 'function' ? `<button type="button" class="mini" data-dw="var-share" data-name="${n}" title="Share ${n}" aria-label="Share ${n}">${icon('share', 'sm')}</button>` : '';
     return `<div class="vr${isDir ? ' dir' : ''}" draggable="true" data-drag-name="${n}" data-dw="var" data-name="${n}" role="button" tabindex="0" title="${isDir ? `Open ${n}` : `${n}: click to ${value.type === TYPES.PROGRAM ? 'run' : 'put on the stack'}`}">
       <span class="grip" aria-hidden="true">${icon('grip', 'sm')}</span>
       <div class="main"><div class="nm">${isDir ? icon('folder', 'sm') : ''}<span class="nm-text">${n}</span><span class="badge">${escapeHtml(isDir ? 'Folder' : typeName(value))}</span></div><div class="pv">${escapeHtml(preview.length > 120 ? `${preview.slice(0, 119)}…` : preview)}</div></div>
-      <div class="acts">${acts}<button type="button" class="mini" data-dw="var-move" data-name="${n}" title="Move ${n} to another folder or place" aria-label="Move ${n}">${icon('folder', 'sm')}</button><button type="button" class="mini" data-dw="var-rename" data-name="${n}" title="Rename ${n}" aria-label="Rename ${n}">${icon('edit', 'sm')}</button><button type="button" class="mini" data-dw="var-download" data-name="${n}" title="Download ${n}" aria-label="Download ${n}">${icon('down', 'sm')}</button><button type="button" class="mini danger" data-dw="var-delete" data-name="${n}" title="Delete ${n} (undoable)" aria-label="Delete ${n}">${icon('trash', 'sm')}</button></div>
+      <div class="acts">${acts}<button type="button" class="mini" data-dw="var-move" data-name="${n}" title="Move ${n} to another folder or place" aria-label="Move ${n}">${icon('folder', 'sm')}</button><button type="button" class="mini" data-dw="var-rename" data-name="${n}" title="Rename ${n}" aria-label="Rename ${n}">${icon('edit', 'sm')}</button>${share}<button type="button" class="mini" data-dw="var-download" data-name="${n}" title="Download ${n}" aria-label="Download ${n}">${icon('down', 'sm')}</button><button type="button" class="mini danger" data-dw="var-delete" data-name="${n}" title="Delete ${n} (undoable)" aria-label="Delete ${n}">${icon('trash', 'sm')}</button></div>
     </div>`;
   }
 
@@ -621,6 +622,7 @@ export class Drawers {
       case 'var-edit': e.stopPropagation(); app.editVariable(name); return;
       case 'var-rename': e.stopPropagation(); this._beginRename(t.closest('.vr'), name); return;
       case 'var-move': e.stopPropagation(); this._moveMenu(t, name); return;
+      case 'var-share': e.stopPropagation(); app.shareText(formatSource(calcState.current.entries.get(name))); return;
       case 'var-download': e.stopPropagation(); app.downloadMenu(t, name, calcState.current.entries.get(name)); return;
       case 'var-delete': e.stopPropagation(); this._deleteVar(name); return;
       case 'vars-newdir': this._newFolder(t); return;

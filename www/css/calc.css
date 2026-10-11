@@ -1884,8 +1884,10 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   /* Under 380 px the directory name needs the width. */
   @container app (min-width: 380px) { .appbar .icon-btn, .search-btn, .install-btn { min-width: 40px; } }
   /* Six finger-sized actions don't fit beside a name at 320 px, so they get a line of their own. */
-  .vr .main, .vr .acts { grid-column: 2 / -1; }
+  .vr .main { grid-column: 2 / -1; }
+  .vr .acts { grid-column: 1 / -1; }
   .vr .acts { justify-content: flex-end; margin: -4px -4px -6px 0; }
+  .vr .acts .mini { flex: 0 1 auto; min-width: 34px; }
 }
 
 /* A landscape phone with its keyboard up has about 190px left: while typing, only the stack, the line or writer and its keys stay. */
