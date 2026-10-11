@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.29 (2026-10-11)
+**Latest release:** v0.6.30 (2026-10-11)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.30 — 2026-10-11
+
+The rest of the on-screen keypad now works like the HP 50g's too. With a
+number on the command line, function keys such as SIN, √x and LOG, and
+command keys such as STO, RCL, EVAL and →NUM, enter the line and run at
+once: `0` SIN gives 0, and `5 'A'` STO stores. Inside a quote a function key
+types its call, `SIN(`, and inside a string, program or list a key types its
+name, as before. The menu keys, the catalog and keyboard typing are
+unchanged.
 
 ## v0.6.29 — 2026-10-11
 
