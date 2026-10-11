@@ -145,10 +145,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 
 ### Touch
 
-- The on-screen keypad has the HP 50g's layout, shift keys included. Its
-  operator keys (+ − × ÷ yˣ and the comparisons) work like the HP's: with
-  `4` on the command line, + enters it and adds at once. Inside a quote,
-  string, program, list or unit they type.
+- The on-screen keypad has the HP 50g's layout, shift keys included, and
+  its keys work like the HP's: with `4` on the command line, + or SIN enters
+  it and runs at once. Inside a quote, string, program, list or unit they
+  type.
 - Swipe a stack level left or right to drop it. The toast's Undo brings it
   back.
 - ⌫ and Enter sit beside the command line. ⌫ deletes a character (or the

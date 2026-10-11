@@ -25,11 +25,10 @@ const chs    =                      (e) => e.toggleSign();
 const eex    =                      (e) => e.eex();
 const cancel =                  (_e, _s, app) => app.runAction('ui.escape');
 
-// Operator keys enter the command line and run, as on the HP, but type inside an open object.
-// The other command keys type while the command line has text and run on an empty line.
+// As on the HP, these enter the command line and run, but type inside an open object.
 const typeExec     = (ch, op) =>    (e) => e.pressOperator(ch, op);
-const typeExecFn   = fn =>          (e) => e.typeOrExecFn(fn);
-const typeExecName = op =>          (e) => e.typeOrExecName(op);
+const typeExecFn   = fn =>          (e) => e.pressFunction(fn);
+const typeExecName = op =>          (e) => e.pressCommand(op);
 
 export const SOFT_KEYS = [
   mk('F1', { alpha: 'a', className: 'menu', action: (e, s, app) => app.pressSoftKey(0) }),

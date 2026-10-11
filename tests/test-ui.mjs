@@ -1016,10 +1016,10 @@ setAngle('RAD');
       'SST key steps: the suspended program advances to the next token');
 
     const editing = new Entry(new Stack());
-    editing.type('1');
+    editing.type('« 1');
     down.shiftLAction(editing);
-    assert(editing.buffer === '1 SST ',
-      'SST key types the name while the command line is open');
+    assert(editing.buffer === '« 1 SST ',
+      'SST key types the name inside a program on the command line');
   } finally {
     resetHome();
   }

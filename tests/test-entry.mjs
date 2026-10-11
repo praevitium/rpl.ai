@@ -199,8 +199,8 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(e.buffer === '{ 1 DROP ' && s.depth === 2, `pressCommand types inside a list → '${e.buffer}'`);
   }
   {
-    const { MAIN_KEYS } = await import('../www/src/ui/keyboard.js');
-    const key = (primary) => MAIN_KEYS.find((k) => k.primary === primary);
+    const { MAIN_KEYS, NAV_KEYS } = await import('../www/src/ui/keyboard.js');
+    const key = (primary) => [...MAIN_KEYS, ...NAV_KEYS].find((k) => k.primary === primary);
     const s = new Stack();
     s.push(Real(3));
     const e = new Entry(s);
@@ -210,9 +210,20 @@ import { assert, assertThrows } from './helpers.mjs';
     e.type('« 2');
     key('×').action(e, null, null);
     assert(e.buffer === '« 2*' && s.depth === 1, `keypad × types inside a program → '${e.buffer}'`);
-    e.recall('30');
+    e.recall('0');
     key('SIN').action(e, null, null);
-    assert(e.buffer === '30 SIN ' && s.depth === 1, `keypad SIN still types while the line has text → '${e.buffer}'`);
+    assert(e.buffer === '' && s.depth === 2 && format(s.peek()) === '0', 'keypad SIN enters 0 and takes its sine at once');
+    e.recall('`X+');
+    key('SIN').action(e, null, null);
+    assert(e.buffer === '`X+SIN(', `keypad SIN types a call inside a quote → '${e.buffer}'`);
+    e.recall('«  »'); e.cursor = 2;
+    key('SIN').action(e, null, null);
+    assert(e.buffer === '« SIN  »' && s.depth === 2, `keypad SIN types its name inside a program → '${e.buffer}'`);
+    e.recall('5 `KPTEST`');
+    key('STO').action(e, null, null);
+    assert(e.buffer === '' && e.error === '' && s.depth === 2, 'keypad STO enters 5 `KPTEST` and stores at once');
+    e.recall('`KPTEST`');
+    e.pressCommand('PURGE');
   }
 
   // Full flow: type `'X^2 + 2*X + 1'` and commit — this is exactly

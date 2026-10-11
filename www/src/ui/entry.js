@@ -217,7 +217,7 @@ export class Entry {
     else this.execOp(opName);
   }
 
-  // The keypad's operator keys and the phone's key strip work like the HP's keys: they enter the line and run,
+  // The keypad and the phone's key strip work like the HP's keys: they enter the line and run,
   // unless an object is still open.
   pressOperator(char, opName) {
     if (this._typingAtCursor()) this.type(char);
@@ -227,6 +227,11 @@ export class Entry {
   pressCommand(opName) {
     if (this._typingAtCursor()) this.typeToken(`${opName} `);
     else this.execOp(opName);
+  }
+
+  pressFunction(fnName) {
+    if (this.isAlgebraic()) this.type(fnName + '(');
+    else this.pressCommand(fnName);
   }
 
   _typingAtCursor() {
