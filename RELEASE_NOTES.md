@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.25 (2026-10-11)
+**Latest release:** v0.6.26 (2026-10-11)
 
 ---
 
@@ -20,6 +20,33 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.26 — 2026-10-11
+
+rpl.ai works better as a phone app, above all in Minimal view or with the
+keypad hidden. While the phone's keyboard is up on the command line, a
+strip above it holds the keys a phone keyboard lacks: `+`, `−`, `×`, `÷`,
+`yˣ`, `SWAP` and `DROP` enter the line and run at once, as on the HP, so
+`3` Enter `4` `+` gives 7. Inside an open program, list, vector, quote or
+unit they type instead, so `«  »` with `2` `×` gives `« 2* »` and `5_m` `÷`
+`s` gives `5_m/s`. The strip also has UNDO, the RPL delimiters, `_`, `→`
+and `π`.
+
+Fixed:
+
+- In Minimal view on a phone, the status line's buttons were about 25 px
+  wide, and at 320 px the leave button was pushed off the screen. They are
+  now finger-sized, and a menu button opens Undo, Redo, the Variables,
+  History, Plot and Characters drawers, full screen and Settings, which a
+  phone could not reach in Minimal view before.
+- Toasts in Minimal view covered the status line, hiding the very buttons
+  the Minimal view toast points to. They now sit below it, and turning
+  Minimal view or the keypad on or off replaces the last such toast instead
+  of stacking another.
+- On a phone 320 to 360 px wide, most four- and five-letter soft-key names
+  broke with a letter left over, such as `ROL`/`L` and `UND`/`O`. Each name
+  is now sized to its key: it keeps to one line while that fits, and a long
+  one breaks into even lines.
 
 ## v0.6.25 — 2026-10-11
 
