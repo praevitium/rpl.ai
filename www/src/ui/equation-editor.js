@@ -1605,6 +1605,8 @@ export function physicalFace(event) {
 }
 
 const INSIGHT_DELAY_MS = 200;
+const LONG_PRESS_MS = 350;
+const TOUCH_SLOP_PX = 8;
 const SELECTING_FACES = new Set(['⇧◀', '⇧▶', 'RS▲', 'RS◀', 'RS▶', '▲', '▼']);
 const INSIGHT_CAS_SOURCE_LIMIT = 160;
 const INSIGHT_CAS_TIMEOUT_MS = 3000;
@@ -1784,9 +1786,14 @@ export class EquationEditor {
     this._rects = null;
     this._drag = null;
     this._selecting = false;
+    this._press = null;
     this.canvas.addEventListener('pointerdown', (e) => this._pointerDown(e));
     this.canvas.addEventListener('pointermove', (e) => this._pointerMove(e));
-    this.canvas.addEventListener('pointerup', () => { this._drag = null; });
+    this.canvas.addEventListener('pointerup', () => this._endDrag());
+    this.canvas.addEventListener('pointercancel', () => this._endDrag());
+    // On a touch screen a drag scrolls the formula; a long press first starts a selection instead (W-L25).
+    this.canvas.addEventListener('touchmove', (e) => { if (this._press?.selecting) e.preventDefault(); }, { passive: false });
+    this.canvas.addEventListener('contextmenu', (e) => { if (this._press) e.preventDefault(); });
     this.canvas.addEventListener('scroll', () => { if (this.hasSelection() && this._toolsFor) this._placeTools(this._toolsFor); });
     this.el.addEventListener('mousedown', (e) => { if (e.target.closest('.ins, .eqw-tip')) e.preventDefault(); });
     this.el.addEventListener('click', (e) => this._onClick(e));
@@ -2323,13 +2330,38 @@ export class EquationEditor {
     this._selecting = this.state.target.mode === 'select';
     this._drag = path;
     this.canvas.setPointerCapture?.(event.pointerId);
+    if (event.pointerType === 'touch') this._holdToSelect(event, path);
     this._render();
+  }
+
+  _holdToSelect(event, path) {
+    clearTimeout(this._press?.timer);
+    const press = { x: event.clientX, y: event.clientY, selecting: false };
+    press.timer = setTimeout(() => {
+      if (this._press !== press || !this._drag) return;
+      press.selecting = true;
+      this.state = landSelect(this.state, rowKeyOf(path), path.at(-1), path.at(-1));
+      this._selecting = true;
+      this._render();
+    }, LONG_PRESS_MS);
+    this._press = press;
+  }
+
+  _endDrag() {
+    clearTimeout(this._press?.timer);
+    this._press = null;
+    this._drag = null;
   }
 
   _pointerMove(event) {
     if (!this._drag) return;
+    if (this._press && !this._press.selecting) {
+      if (Math.hypot(event.clientX - this._press.x, event.clientY - this._press.y) > TOUCH_SLOP_PX) this._endDrag();
+      return;
+    }
     const hit = this._hit(this._point(event));
     if (!hit || (hit.rect.kind !== 'leaf' && hit.rect.kind !== 'hole')) return;
+    if (this._press && hit.key === this._drag.join('.')) return;
     const next = selectBetween(this.state, this._drag, hit.key.split('.').map(Number));
     if (JSON.stringify(next.target) === JSON.stringify(this.state.target)) return;
     this.state = next;
