@@ -954,8 +954,8 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 .pl-box:fullscreen { border-radius: 0; border: 0; }
 .gr-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; cursor: grab; }
 .gr-canvas:active { cursor: grabbing; }
-.pl-tools { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 2px; padding: 3px; border-radius: 10px; background: color-mix(in oklab, var(--panel) 88%, transparent); border: 1px solid var(--line2); box-shadow: var(--shadow-1); }
-.pl-tools button { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: var(--ink2); }
+.pl-tools { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; max-height: calc(100% - 16px); overflow-y: auto; scrollbar-width: none; gap: 2px; padding: 3px; border-radius: 10px; background: color-mix(in oklab, var(--panel) 88%, transparent); border: 1px solid var(--line2); box-shadow: var(--shadow-1); }
+.pl-tools button { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: var(--ink2); }
 .pl-tools button:hover { background: var(--r2); color: var(--ink); }
 .pl-tools button[aria-pressed="true"] { color: var(--accent); background: var(--accent-dim); }
 .gr-readout { min-height: 18px; padding: 0 2px 4px; font: 11.5px/1.4 var(--font-mono); color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

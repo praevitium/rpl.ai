@@ -26,6 +26,10 @@ const PLOT_KINDS = Object.freeze([
 const RANGE_FIELDS = Object.freeze([['xmin', 'x from'], ['xmax', 'x to'], ['ymin', 'y from'], ['ymax', 'y to']]);
 const IDLE_READOUT = 'Hover, or press T to trace · drag to pan · scroll to zoom';
 
+function canSharePng() {
+  return typeof navigator.canShare === 'function' && navigator.canShare({ files: [new File([''], 'plot.png', { type: 'image/png' })] });
+}
+
 function angleOpts() {
   return { toRad: toRadians, fromRad: fromRadians };
 }
@@ -77,6 +81,7 @@ export class GraphView {
             <button type="button" data-gr="trace" title="Trace (T): arrows move along the curve" aria-label="Trace" aria-pressed="false">${icon('trace', 'sm')}</button>
             <button type="button" data-gr="copy" title="Copy the plot as an image" aria-label="Copy as image">${icon('copy', 'sm')}</button>
             <button type="button" data-gr="png" title="Download the plot as a PNG" aria-label="Download as PNG">${icon('down', 'sm')}</button>
+            ${canSharePng() ? `<button type="button" data-gr="share" title="Share the plot as an image" aria-label="Share">${icon('share', 'sm')}</button>` : ''}
           </div>
         </div>
         <div class="gr-readout" aria-live="polite">${IDLE_READOUT}</div>
@@ -125,6 +130,7 @@ export class GraphView {
       else if (act === 'trace') this.setTraceMode(!this.tracing);
       else if (act === 'png') this.downloadPng();
       else if (act === 'copy') this.copyPng();
+      else if (act === 'share') this.sharePng();
       else if (act === 'from') this.loadFromStack(1);
       else if (act === 'data-level1') this.loadData(this._kind, this.app.stack.peek(1));
       else if (act === 'data-sigma') this.loadData(this._kind, varRecall('ΣDAT'));
@@ -476,6 +482,19 @@ export class GraphView {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': await this._png() })]);
       this.app.toast('Copied the plot as an image');
     } catch (e) { this.app.notifyError(`Copy failed: ${e.message}`); }
+  }
+
+  // Built synchronously so share() still runs inside the tap, which Safari requires.
+  _pngFile() {
+    this._hover = null;
+    this.draw();
+    const bytes = Uint8Array.from(atob(this._canvas.toDataURL('image/png').split(',')[1]), (c) => c.charCodeAt(0));
+    return new File([bytes], this._fileName(), { type: 'image/png' });
+  }
+
+  async sharePng() {
+    try { await navigator.share({ files: [this._pngFile()] }); }
+    catch (e) { if (e.name !== 'AbortError') this.app.notifyError(`Share failed: ${e.message}`); }
   }
 
   fullscreen() {
