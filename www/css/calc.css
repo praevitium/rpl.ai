@@ -1858,7 +1858,8 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   }
   /* Finger-sized tap targets for the writers' keys and the command line's buttons (W-L30). */
   .writer-keys .cmdline-go { height: 40px; min-width: 40px; }
-  .cmdline-go { min-width: 40px; height: 32px; }
+  /* 40 px tall, reaching into the command line's padding so the line keeps its height. */
+  .cmdline .cmdline-go { min-width: 40px; height: 40px; margin: -4px 0; }
   /* In minimal view the status line holds the only buttons a phone has. */
   .ann-btn, :root[data-theme="classic"] .ann-btn { flex: none; width: 40px; height: 40px; opacity: 1; }
   .ann-btn { color: var(--ink2); }
