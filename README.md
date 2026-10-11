@@ -12,8 +12,13 @@ computer algebra system. Giac is the work of Bernard Parisse, who also wrote
 the CAS inside the HP 49 and 50g.
 
 **[Open rpl.ai](https://praevitium.github.io/rpl.ai/)**. There is nothing to
-download, no account and no sign-up. Install it as an app from the Help menu
-and it opens like any other app, with no network needed.
+download, no account and no sign-up.
+
+> [!TIP]
+> **Install it as an app.** Open rpl.ai and press the green **Install**
+> button in its top bar. It then opens from your home screen, dock or Start
+> menu in its own window, like any other app, and works with no network.
+> [How to install, browser by browser](#install-it-as-an-app).
 
 ![rpl.ai with the command reference open](screenshots/hero.png)
 
@@ -71,17 +76,25 @@ and it opens like any other app, with no network needed.
 
 1. **Open [praevitium.github.io/rpl.ai](https://praevitium.github.io/rpl.ai/)**
    in Chrome, Edge, Firefox or Safari, on a computer, tablet or phone.
-2. **Install it (optional).** Choose Help › Install as an app. The browser
-   asks you to confirm, or rpl.ai tells you where the browser keeps its
-   install command:
-   - Chrome and Edge: the install icon at the right of the address bar.
-   - Safari on a Mac: File › Add to Dock.
-   - iPhone and iPad: Share › Add to Home Screen.
-   - Android: the browser menu's Add to Home screen or Install app.
-   - Firefox can't install web apps, but rpl.ai works in a Firefox tab,
-     offline included.
+2. **Install it (optional).** Press **Install** in the top bar, as below.
 3. **Take the tour.** A short tour runs the first time. Replay it from
    Help › Take the tour.
+
+### Install it as an app
+
+Press the green **Install** button at the top of rpl.ai (a download arrow on
+a phone; on the smallest phones, ⋯ › Install as an app). The browser asks
+you to confirm, or rpl.ai tells you where it keeps its install command:
+
+| Browser | How to install |
+|---|---|
+| Chrome or Edge, on a computer or Android | Press Install and confirm, or use the install icon at the right of the address bar |
+| Safari on a Mac | File › Add to Dock |
+| iPhone and iPad, in any browser | Share › Add to Home Screen |
+| Other Android browsers | The browser menu's Install app or Add to Home screen |
+| Firefox on a computer | Firefox can't install web apps; rpl.ai works in a Firefox tab, offline included |
+
+The installed app has no Install button.
 
 After the first visit, rpl.ai runs offline. When you are online it checks
 for a new version, and an installed copy offers to reload when one is
