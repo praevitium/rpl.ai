@@ -39,6 +39,16 @@ These are house conventions, not project documentation. Follow them so they don'
 - **Don't touch generated or gitignored files** by hand — fix the generator instead.
 - **No emojis** in code, comments, or commit messages unless they already exist in the file you're editing.
 
+## Task discipline
+
+- Work in small, focused tasks: one primary output, one to three files, and a clear definition of done. Prefer incomplete but correct over ambitious but wrong. If a task spans several layers or would take a person more than 15 to 30 minutes, propose a breakdown first.
+- Before editing, restate the task and its definition of done, name the files you will touch and those you won't, and read the relevant code. Ask when a requirement is ambiguous; don't invent APIs, schemas, configs or requirements.
+- Stay strictly in scope: the smallest correct change, no unrelated improvements, no growing the feature. Once a contract is set, don't redefine it mid-task to make later code work.
+- Keep a short todo list and update it as you go.
+- After a change, run the relevant verification and report the real result. Never claim success without evidence; summarise what changed and any risks or follow-ups.
+- If context is filling up or you are losing track, stop and propose splitting the work or starting a fresh session.
+- Done means the output matches the spec, verification ran and passed (or the failures are reported), and nothing out of scope changed.
+
 ## Commits
 
 - **Pull before you start.** Fetch and rebase onto origin/main before editing or committing. Main moves, and a commit on a stale base will not fast-forward.
