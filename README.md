@@ -215,8 +215,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - In Minimal view, ⌫ and Enter stay beside the command line, the menu
   button on the status line reaches Undo, command search, the drawers, the
   soft keys, full screen and Settings, and the button beside it leaves.
-- The Variables drawer's buttons are finger-sized, on a line under each
-  variable's name.
+- The drawers' tabs, fields and buttons are finger-sized, with the Variables
+  drawer's buttons on a line under each variable's name, and the plot's tools
+  sit in two columns of finger-sized buttons.
 - A phone's back button closes the open menu, search, sheet, writer or
   drawer first, and leaves the app only when nothing is open.
 
@@ -298,8 +299,9 @@ assistant to explain. A failed command leaves the stack as it was.
 histogram plots. Traces have checkboxes and editable expressions. Zoom, fit
 and reset are on the canvas, the window is typed in directly, and Trace mode
 (`T`) walks a cursor along the curves with live readouts. Expand to fill the
-window, or go full screen. Two more canvas buttons copy the plot as an image
-and download it as a PNG, at the screen's pixel density.
+window, or go full screen. More canvas buttons copy the plot as an image,
+download it as a PNG at the screen's pixel density, and, where the device
+can share images, share it.
 
 ![Three traces in trace mode](screenshots/plot.png)
 
