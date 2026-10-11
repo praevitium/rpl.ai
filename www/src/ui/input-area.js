@@ -54,6 +54,13 @@ function keyStrip(app) {
     else if (key.action) app.runAction(key.action);
     else entry.typeWithCursor(key.text, key.back ?? 0);
   });
+  const markHiddenKeys = () => {
+    const { scrollLeft, scrollWidth, clientWidth } = strip;
+    strip.classList.toggle('more-l', scrollLeft > 1);
+    strip.classList.toggle('more-r', scrollLeft + clientWidth < scrollWidth - 1);
+  };
+  strip.addEventListener('scroll', markHiddenKeys, { passive: true });
+  new ResizeObserver(markHiddenKeys).observe(strip);
   return strip;
 }
 
