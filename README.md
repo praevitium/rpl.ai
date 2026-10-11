@@ -148,7 +148,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - The on-screen keypad has the HP 50g's layout, shift keys included, and
   its keys work like the HP's: with `4` on the command line, + or SIN enters
   it and runs at once. Inside a quote, string, program, list or unit they
-  type.
+  type. The command menus' soft keys do the same; the catalog types.
 - Swipe a stack level left or right to drop it. The toast's Undo brings it
   back.
 - ⌫ and Enter sit beside the command line. ⌫ deletes a character (or the

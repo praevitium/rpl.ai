@@ -900,11 +900,13 @@ class App {
     this.entry.safeRun(() => lookup('SWAP').fn(this.stack, this.entry), 'SWAP');
   }
 
-  runCommandFromUI(name) {
+  // A soft key runs at once like the HP's keys; the catalog and the search type while the line has text.
+  runCommandFromUI(name, { asKey = false } = {}) {
     if (this.inputMode === 'equation') { this.equationEditor.pressCommand(name); return; }
     if (this.selection != null) this.clearSelection();
     if (!lookup(name)) { this.entry.flashError({ message: `${name} isn't available in rpl.ai` }); return; }
-    this.entry.typeOrExecFn(name);
+    if (asKey) this.entry.pressFunction(name);
+    else this.entry.typeOrExecFn(name);
   }
 
   // As on the HP 50g, a unit key multiplies level 1 by the unit, a left-shifted
@@ -1091,7 +1093,7 @@ class App {
       command: name,
       title: `${this.commandTitle(name)} · ↰ types it · ↱ opens the reference`,
       blockedReason: () => this._tooFewArgumentsReason(name),
-      onPress: () => this.runCommandFromUI(name),
+      onPress: () => this.runCommandFromUI(name, { asKey: true }),
       onPressL: () => this.entry.typeToken(`${name} `),
       onPressR: () => this.drawers.showReference(name),
     }));
