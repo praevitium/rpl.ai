@@ -77,9 +77,10 @@ in the Variables drawer, and Restore from file on the other side.
 RPL puts the numbers first and the operation last. Each value goes on the
 **stack**, and a command takes its arguments from the bottom of it.
 
-- **Arithmetic.** Type `24` Enter `15` Enter, then press × on the keypad
-  (or type `*` and Enter) for `360`. A whole line works too:
-  `2 3 + 4 *` gives `20`. Fractions stay exact: `1/3 2/5 +` gives `11/15`.
+- **Arithmetic.** Type `24` Enter `15`, then press × on the keypad for
+  `360`: as on the HP, the key enters 15 and multiplies at once. Typed on a
+  keyboard, `*` is just text, so a whole line works too: `2 3 + 4 *` Enter
+  gives `20`. Fractions stay exact: `1/3 2/5 +` gives `11/15`.
 - **Algebra.** Push `` `X^2-4` `` and run `FACTOR` for `(X−2)(X+2)`, or
   `` `X^2-5*X+6=0` `X` SOLVE `` for `{ X=2 X=3 }`. The ` key stands in for
   the HP's ' key, and the command line reads apostrophes too: `'X^2-4'`
@@ -144,7 +145,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 
 ### Touch
 
-- The on-screen keypad has the HP 50g's layout, shift keys included.
+- The on-screen keypad has the HP 50g's layout, shift keys included. Its
+  operator keys (+ − × ÷ yˣ and the comparisons) work like the HP's: with
+  `4` on the command line, + enters it and adds at once. Inside a quote,
+  string, program, list or unit they type.
 - Swipe a stack level left or right to drop it. The toast's Undo brings it
   back.
 - ⌫ and Enter sit beside the command line. ⌫ deletes a character (or the

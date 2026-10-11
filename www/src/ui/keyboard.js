@@ -25,8 +25,9 @@ const chs    =                      (e) => e.toggleSign();
 const eex    =                      (e) => e.eex();
 const cancel =                  (_e, _s, app) => app.runAction('ui.escape');
 
-// While the command line has text these type into it; on an empty line they run the command.
-const typeExec     = (ch, op) =>    (e) => e.typeOrExec(ch, op);
+// Operator keys enter the command line and run, as on the HP, but type inside an open object.
+// The other command keys type while the command line has text and run on an empty line.
+const typeExec     = (ch, op) =>    (e) => e.pressOperator(ch, op);
 const typeExecFn   = fn =>          (e) => e.typeOrExecFn(fn);
 const typeExecName = op =>          (e) => e.typeOrExecName(op);
 

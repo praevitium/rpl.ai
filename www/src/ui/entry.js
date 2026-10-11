@@ -202,11 +202,6 @@ export class Entry {
     return this.buffer.length > 0;
   }
 
-  typeOrExec(char, opName) {
-    if (this.isEditing()) this.type(char);
-    else this.execOp(opName ?? char);
-  }
-
   _needsLeadingSpace() {
     const { from } = this._state.selection.main;
     return from > 0 && !/\s/.test(this.buffer[from - 1]);
@@ -222,7 +217,8 @@ export class Entry {
     else this.execOp(opName);
   }
 
-  // The phone's key strip works like the HP's keys: it enters the line and runs, unless an object is still open.
+  // The keypad's operator keys and the phone's key strip work like the HP's keys: they enter the line and run,
+  // unless an object is still open.
   pressOperator(char, opName) {
     if (this._typingAtCursor()) this.type(char);
     else this.execOp(opName);

@@ -27,7 +27,7 @@ import { assert, assertThrows } from './helpers.mjs';
    These tests exercise the Entry layer (no DOM required).  They
    prove that:
      • isAlgebraic() tracks odd/even tick-count correctly,
-     • typeOrExec() types inside `'…'` but runs the op outside,
+     • pressOperator() types inside `'…'` but runs the op outside,
      • typeOrExecFn() types `FN(` inside `'…'` but runs the fn outside,
      • the full "type characters → ENTER → ops on the stack" path
        produces a valid Symbolic AST that FACTOR/SOLVE/DERIV can
@@ -86,16 +86,16 @@ import { assert, assertThrows } from './helpers.mjs';
     const s = new Stack();
     const e = new Entry(s);
     e.type("`"); e.type('3');
-    e.typeOrExec('+', '+');
-    assert(e.buffer === "`3+", `typeOrExec in algebraic → buffer='${e.buffer}'`);
-    assert(s.depth === 0, 'typeOrExec in algebraic → stack untouched');
+    e.pressOperator('+', '+');
+    assert(e.buffer === "`3+", `pressOperator in algebraic → buffer='${e.buffer}'`);
+    assert(s.depth === 0, 'pressOperator in algebraic → stack untouched');
   }
   {
     const s = new Stack();
     s.push(Real(3)); s.push(Real(4));
     const e = new Entry(s);
-    e.typeOrExec('+', '+');
-    assert(s.depth === 1 && s.peek().value.eq(7), 'typeOrExec outside → exec +');
+    e.pressOperator('+', '+');
+    assert(s.depth === 1 && s.peek().value.eq(7), 'pressOperator outside → exec +');
   }
 
   {
@@ -198,27 +198,43 @@ import { assert, assertThrows } from './helpers.mjs';
     e.pressCommand('DROP');
     assert(e.buffer === '{ 1 DROP ' && s.depth === 2, `pressCommand types inside a list → '${e.buffer}'`);
   }
+  {
+    const { MAIN_KEYS } = await import('../www/src/ui/keyboard.js');
+    const key = (primary) => MAIN_KEYS.find((k) => k.primary === primary);
+    const s = new Stack();
+    s.push(Real(3));
+    const e = new Entry(s);
+    e.type('4');
+    key('+').action(e, null, null);
+    assert(s.depth === 1 && s.peek().value.eq(7) && e.buffer === '', 'keypad + enters 4 and adds at once, as on the HP');
+    e.type('« 2');
+    key('×').action(e, null, null);
+    assert(e.buffer === '« 2*' && s.depth === 1, `keypad × types inside a program → '${e.buffer}'`);
+    e.recall('30');
+    key('SIN').action(e, null, null);
+    assert(e.buffer === '30 SIN ' && s.depth === 1, `keypad SIN still types while the line has text → '${e.buffer}'`);
+  }
 
   // Full flow: type `'X^2 + 2*X + 1'` and commit — this is exactly
   // what the on-screen keyboard now produces for the sequence:
   //   '  X  yˣ  2  SPC  +  SPC  2  ×  X  SPC  +  SPC  1  '  ENTER
-  // Each operator key is routed through typeOrExec and types the
+  // Each operator key is routed through pressOperator and types the
   // character because isAlgebraic() is true between the two ticks.
   {
     const s = new Stack();
     const e = new Entry(s);
     e.type("`");
     e.type('X');
-    e.typeOrExec('^', '^');   // yˣ while algebraic → types `^`
+    e.pressOperator('^', '^');   // yˣ while algebraic → types `^`
     e.type('2');
     e.type(' ');
-    e.typeOrExec('+', '+');   // + key while algebraic → types `+`
+    e.pressOperator('+', '+');   // + key while algebraic → types `+`
     e.type(' ');
     e.type('2');
-    e.typeOrExec('*', '*');   // × key while algebraic → types `*`
+    e.pressOperator('*', '*');   // × key while algebraic → types `*`
     e.type('X');
     e.type(' ');
-    e.typeOrExec('+', '+');
+    e.pressOperator('+', '+');
     e.type(' ');
     e.type('1');
     e.type("`");
@@ -242,7 +258,7 @@ import { assert, assertThrows } from './helpers.mjs';
     const s = new Stack();
     const e = new Entry(s);
     for (const ch of "`X^2 + 2*X + 1`") {
-      if ('+-*/^'.includes(ch)) e.typeOrExec(ch, ch);
+      if ('+-*/^'.includes(ch)) e.pressOperator(ch, ch);
       else e.type(ch);
     }
     e.enter();
@@ -261,7 +277,7 @@ import { assert, assertThrows } from './helpers.mjs';
     giac._clear();
     giac._setFixture('solve(X^2-4,X)', '[2,-2]');
     for (const ch of "`X^2 - 4` `X` SOLVE") {
-      if ('+-*/^'.includes(ch) && e.isAlgebraic()) e.typeOrExec(ch, ch);
+      if ('+-*/^'.includes(ch) && e.isAlgebraic()) e.pressOperator(ch, ch);
       else e.type(ch);
     }
     e.enter();
@@ -281,7 +297,7 @@ import { assert, assertThrows } from './helpers.mjs';
     giac._clear();
     giac._setFixture('diff(sin(X^2),X)', '2*X*cos(X^2)');
     for (const ch of "`SIN(X^2)` `X` DERIV") {
-      if ('+-*/^'.includes(ch) && e.isAlgebraic()) e.typeOrExec(ch, ch);
+      if ('+-*/^'.includes(ch) && e.isAlgebraic()) e.pressOperator(ch, ch);
       else e.type(ch);
     }
     e.enter();
@@ -315,7 +331,7 @@ import { assert, assertThrows } from './helpers.mjs';
     const s = new Stack();
     s.push(Real(2)); s.push(Real(5));
     const e = new Entry(s);
-    e.typeOrExec('+', '+');
+    e.pressOperator('+', '+');
     assert(s.depth === 1 && s.peek().value.eq(7), 'non-algebraic + still exec');
   }
 }
