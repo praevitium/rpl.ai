@@ -623,7 +623,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   .app { grid-template-rows: 40px minmax(0, 1fr); }
   .kp-nav { display: none; }
   .k { height: clamp(26px, 7.2dvh, 36px); }
-  .k .l, .k .r, .k .a { display: none; }
+  .k .l, .k .r, .k .a, .k .cap { display: none; }
 }
 @media (max-height: 560px) and (min-width: 640px) {
   .app-main { flex-direction: row; }
@@ -1868,4 +1868,11 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   /* A selected level's actions are finger-sized, and start further left so six fit at 320 px. */
   .st-acts { left: 8px; }
   .st-acts button { min-width: 40px; min-height: 40px; justify-content: center; font-size: 13px; }
+}
+
+/* A landscape phone with its keyboard up has about 190px left: while typing, only the stack, the line or writer and its keys stay. */
+@media (max-height: 300px) {
+  :root[data-keyboard] .input-top, :root[data-keyboard] .input-hint, :root[data-keyboard] .eqw-ins,
+  :root[data-keyboard] .mx-foot, :root[data-keyboard] .status-line, :root[data-keyboard] .menubar, :root[data-keyboard] .st-more { display: none; }
+  :root[data-keyboard] .mx-grid-wrap { max-height: 76px; }
 }
