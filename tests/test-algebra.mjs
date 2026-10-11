@@ -8335,6 +8335,33 @@ giac._setFixture('ilaplace(1,x,rplS)', 'Dirac(rplS)');
   assert(line("'∂X(1/X)' EVAL") === '`∂X(1/X)`', 'a derivative the CAS cannot give stays as it is');
 }
 
+/* LINSOLVE: the AUR's three results, the system, the pivots of the Gaussian reduction and the solution, from Giac's lu and linsolve. */
+{
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
+  giac._clear();
+  giac._setFixtures({
+    'lu(delcols(syst2mat([X+Y-3,X-Y-1],[X,Y]),2))[2]': '[[1,1],[0,-2]]',
+    'linsolve([X+Y-3,X-Y-1],[X,Y])': '[2,1]',
+    'lu(delcols(syst2mat([X+Y-3,2*X+2*Y-6],[X,Y]),2))[2]': '[[1,1],[0,0]]',
+    'linsolve([X+Y-3,2*X+2*Y-6],[X,Y])': '[-Y+3,Y]',
+    'lu(delcols(syst2mat([X+Y-3,X+Y-4],[X,Y]),2))[2]': '[[1,1],[0,0]]',
+    'linsolve([X+Y-3,X+Y-4],[X,Y])': '[]',
+    'lu(delcols(syst2mat([A*X+Y-3,X-Y-1],[X,Y]),2))[2]': '[[1,-1],[0,1+A]]',
+    'linsolve([A*X+Y-3,X-Y-1],[X,Y])': '[4/(A+1),(-A+3)/(A+1)]',
+    'lu(delcols(syst2mat([X-5],[X]),1))[2]': '[[1]]',
+    'linsolve([X-5],[X])': '[5]',
+  });
+  assert(line("[ 'X+Y=3' 'X-Y=1' ] [ X Y ] LINSOLVE") === '[ `X = 2` `Y = 1` ] | { 1 -2 } | { [ `X + Y = 3` `X - Y = 1` ] [ X Y ] }',
+    'LINSOLVE pushes the system as a list, the pivots, and the solution as equations');
+  assert(line("[ 'X+Y=3' '2*X+2*Y=6' ] [ X Y ] LINSOLVE UNROT DROP2") === '[ `X = -Y + 3` ]' && line("[ 'X+Y=3' 'X+Y=4' ] [ X Y ] LINSOLVE UNROT DROP2") === '[  ]',
+    'LINSOLVE leaves a free variable out of the solution, and a system with no solution gives an empty vector');
+  assert(line("[ 'A*X+Y=3' 'X-Y=1' ] [ X Y ] LINSOLVE ROT DROP") === '[ `X = 4/(A + 1)` `Y = (-A + 3)/(A + 1)` ] | { 1 `1 + A` }',
+    'LINSOLVE solves a system with a symbolic coefficient, whose pivots are symbolic too');
+  assert(line("{ 'X-5' } { X } LINSOLVE UNROT DROP2") === '[ `X = 5` ]', 'LINSOLVE takes lists too, and an expression is set equal to zero');
+  assertThrows(() => runLine("[ 'X=1' ] [ 3 ] LINSOLVE"), /Bad argument type/, 'LINSOLVE refuses a number as a variable');
+  giac._clear();
+}
+
 /* SCHUR reads the matrix[ tag real Giac puts on its first result. */
 {
   giac._clear();

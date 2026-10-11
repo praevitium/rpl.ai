@@ -154,6 +154,27 @@ const COMPARISON_OPS = { '<': 1, '>': 1, '≤': 1, '≥': 1, '≠': 1, '==': 1 }
 // than the HP50's single equation with sign placeholders.
 register('ISOL', lookup('SOLVE').fn, { category: 'CAS / symbolic', categoryOrder: 10, label: "ISOL" });
 
+// LINSOLVE ( [eqs] [vars] → { [eqs] [vars] } { pivots } [solution] ). The pivots are those of the CAS's
+// Gaussian reduction, a free variable stays out of the solution, and a system with no solution gives [ ].
+register('LINSOLVE', (s) => {
+  const [eqsArg, varsArg] = s.popN(2);
+  const items = (v) => (isVector(v) || isList(v) ? v.items : [v]);
+  const asZero = (e) => (e.kind === 'bin' && e.op === '=' ? AstBin('-', e.l, e.r) : e);
+  const eqs = items(eqsArg).map((e) => astToGiac(asZero(_astArg(e))));
+  const vars = items(varsArg).map(_varName);
+  if (!eqs.length || !vars.length) throw new RPLError('Bad argument value');
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const system = `[${eqs.join(',')}],[${vars.map((v) => astToGiac(AstVar(v))).join(',')}]`;
+  const reduced = splitGiacList(giac.caseval(`lu(delcols(syst2mat(${system}),${vars.length}))[2]`)) ?? [];
+  const pivots = reduced.map((row) => (splitGiacList(row) ?? []).find((cell) => !/^-?0(\.0*)?$/.test(cell))).filter(Boolean);
+  const values = splitGiacList(giac.caseval(`linsolve(${system})`)) ?? [];
+  const solution = values.map(giacToAst).map((value, i) => AstBin('=', AstVar(vars[i]), value))
+    .filter((eq) => !(eq.r.kind === 'var' && eq.r.name === eq.l.name));
+  s.push(RList([eqsArg, varsArg]));
+  s.push(RList(pivots.map((p) => _casValue(giacToAst(p)))));
+  s.push(Vector(solution.map(Symbolic)));
+}, { category: 'CAS / symbolic', categoryOrder: 9.5, label: "LINSOLVE" });
+
 
 function _casValue(ast) {
   const leaf = ast.kind === 'neg' ? ast.arg : ast;
