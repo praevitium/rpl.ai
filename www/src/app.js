@@ -644,6 +644,7 @@ class App {
         else this.copyText(latex, `Copied level ${level} as LaTeX`);
         return;
       }
+      case 'share': this.shareText(formatSource(value)); return;
       case 'download': this.downloadMenu(anchor, `level${level}`, value); return;
       case 'store': this._storePrompt(level, anchor); return;
       case 'ask': this.askAssistant(`Explain what is on level ${level} of my stack: ${formatSource(value)}`); return;
@@ -672,6 +673,7 @@ class App {
         item('store', 'folder', 'Store in a variable…'),
         item('copy', 'copy', 'Copy', shortcutText('level.copy')),
         toLatex(value) === null ? '' : item('latex', 'copy', 'Copy as LaTeX'),
+        typeof navigator.share === 'function' ? item('share', 'share', 'Share…') : '',
         item('download', 'down', 'Download as…'),
       ],
       [item('drop', 'trash', 'Drop', shortcutText('level.drop'))],
@@ -738,6 +740,11 @@ class App {
     } catch {
       this.notifyError('The clipboard is not available here.');
     }
+  }
+
+  async shareText(text) {
+    try { await navigator.share({ text }); }
+    catch (e) { if (e.name !== 'AbortError') this.notifyError(`Couldn't share: ${e.message}`); }
   }
 
   editLevel(level) {
