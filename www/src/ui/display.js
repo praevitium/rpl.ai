@@ -462,7 +462,7 @@ export class Display {
     const locked = !!shift?.endsWith('Lock');
     const pathHtml = pathSegmentsHtml(currentPath());
     const minimalButtons = minimal
-      ? `<button type="button" class="ann-btn" data-status="fullscreen" title="Full screen" aria-label="Full screen">${icon('full', 'sm')}</button><button type="button" class="ann-btn" data-status="leave-minimal" title="Leave minimal view" aria-label="Leave minimal view">${icon('collapse', 'sm')}</button>`
+      ? `<button type="button" class="ann-btn" data-status="menu" title="Menu" aria-label="Menu" aria-haspopup="menu">${icon('more', 'sm')}</button><button type="button" class="ann-btn" data-status="fullscreen" title="Full screen" aria-label="Full screen">${icon('full', 'sm')}</button><button type="button" class="ann-btn" data-status="leave-minimal" title="Leave minimal view" aria-label="Leave minimal view">${icon('collapse', 'sm')}</button>`
       : '';
     if (classic) {
       const g = (items, cls = '', mode = '') => `<div class="ann-g ${cls}"${mode ? ` data-status="mode" data-mode="${mode}" role="button" tabindex="0" title="Change ${MODE_NAMES[mode]}"` : ''}>${items.map(([t, on, c]) => `<span class="${on ? 'on' : ''} ${c || ''}">${t}</span>`).join('')}</div>`;

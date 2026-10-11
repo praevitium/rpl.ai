@@ -90,13 +90,29 @@ export class AppBar {
     });
   }
 
-  _helpMenu(anchor, withAppItems = false) {
+  // Minimal view has no app bar or rail, so its status-line menu also opens the drawers.
+  openAppMenu(anchor, { drawers = false } = {}) {
+    this._helpMenu(anchor, true, drawers);
+  }
+
+  _helpMenu(anchor, withAppItems = false, withDrawers = false) {
     const item = (action, ico, label) => `<button type="button" class="opt" data-act="${action}"><span class="ck">${icon(ico, 'sm')}</span><b>${escapeHtml(label)}</b><em>${escapeHtml(shortcutText(action))}</em></button>`;
+    const drawer = (id, ico, label) => `<button type="button" class="opt" data-act="drawer.open" data-drawer="${id}"><span class="ck">${icon(ico, 'sm')}</span><b>${escapeHtml(label)}</b><em></em></button>`;
+    const minimal = this.app.prefs.minimal;
+    const drawerItems = withDrawers ? [
+      drawer('vars', 'folder', 'Variables'),
+      drawer('history', 'clock', 'History'),
+      drawer('plot', 'plot', 'Plot'),
+      drawer('chars', 'omega', 'Characters'),
+      '<hr>',
+    ].join('') : '';
     const appItems = withAppItems ? [
       item('edit.undo', 'undo', 'Undo'),
       item('edit.redo', 'redo', 'Redo'),
-      item('keypad.toggle', 'keypad', this.app.prefs.keypad === 'hidden' ? 'Show keypad' : 'Hide keypad'),
-      item('view.minimal', 'screen', 'Minimal view'),
+      drawerItems,
+      minimal ? '' : item('keypad.toggle', 'keypad', this.app.prefs.keypad === 'hidden' ? 'Show keypad' : 'Hide keypad'),
+      item('view.minimal', 'screen', minimal ? 'Leave minimal view' : 'Minimal view'),
+      withDrawers && document.fullscreenEnabled && !this.app.isInstalledApp() ? item('view.fullscreen', 'full', 'Full screen') : '',
       item('settings.open', 'sliders', 'Settings'),
       '<hr>',
     ].join('') : '';
@@ -105,7 +121,8 @@ export class AppBar {
       label: 'Help',
       onClick: (target) => {
         this.app.popover.close({ restoreFocus: false });
-        this.app.runAction(target.dataset.act);
+        if (target.dataset.drawer) this.app.drawers.open(target.dataset.drawer);
+        else this.app.runAction(target.dataset.act);
       },
     });
   }

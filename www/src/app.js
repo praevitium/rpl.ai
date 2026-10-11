@@ -234,7 +234,8 @@ class App {
     this.setPrefs({ minimal: !!on });
     this._applyPrefs();
     this.renderAll();
-    if (on) this.toast('Minimal view. Press it again, or the corner button, to return.', { action: 'Leave', onAction: () => this.setMinimal(false) });
+    if (on) this.toast('Minimal view. The buttons at the top right open the menu or bring everything back.', { action: 'Leave', onAction: () => this.setMinimal(false), key: 'view' });
+    else this.toasts.dismiss('view');
   }
 
   setTextbook(on) {
@@ -251,7 +252,8 @@ class App {
     this.setPrefs({ keypad: layout });
     this.keypad.update();
     this.appbar.render();
-    if (layout === 'hidden') this.toast('Keypad hidden', { action: 'Show', onAction: () => this.setKeypadLayout(this._lastKeypad ?? 'full') });
+    if (layout === 'hidden') this.toast('Keypad hidden', { action: 'Show', onAction: () => this.setKeypadLayout(this._lastKeypad ?? 'full'), key: 'view' });
+    else this.toasts.dismiss('view');
   }
 
   setPlotFocus(on) {
@@ -584,8 +586,9 @@ class App {
     d.onStatusAction = (kind, data, el) => {
       if (kind === 'mode') this.appbar.openModeMenu(data.mode, el);
       else if (kind === 'path') this.navigateToPathSegment(Number(data.index));
-      else if (kind === 'fullscreen') document.documentElement.requestFullscreen?.().catch(() => this.notifyError('Full screen is not available here.'));
+      else if (kind === 'fullscreen') this.runAction('view.fullscreen');
       else if (kind === 'leave-minimal') this.setMinimal(false);
+      else if (kind === 'menu') this.appbar.openAppMenu(el, { drawers: true });
     };
   }
 
@@ -1415,6 +1418,7 @@ class App {
       case 'drawer.toggle': this.drawers.toggle(); return true;
       case 'keypad.toggle': this.setKeypadLayout(this.prefs.keypad === 'hidden' ? (this._lastKeypad ?? 'full') : 'hidden'); return true;
       case 'view.minimal': this.setMinimal(!this.prefs.minimal); return true;
+      case 'view.fullscreen': document.documentElement.requestFullscreen?.().catch(() => this.notifyError('Full screen is not available here.')); return true;
       case 'settings.open': this.sheets.openSettings(); return true;
       case 'shortcuts.open': this.sheets.openShortcuts(); return true;
       case 'edit.undo':
