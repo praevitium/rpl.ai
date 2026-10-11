@@ -214,6 +214,9 @@ button { cursor: pointer; }
   overflow: hidden;
   background: var(--bg);
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* A landscape phone's notch and rounded corners stay clear on both sides. */
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 :root[data-installed] .app { padding-bottom: max(34px, env(safe-area-inset-bottom, 0px)); }
 
@@ -224,6 +227,7 @@ button { cursor: pointer; }
   padding: 0 10px;
   padding-left: max(10px, env(safe-area-inset-left));
   padding-right: max(10px, env(safe-area-inset-right));
+  margin: 0 calc(-1 * env(safe-area-inset-right, 0px)) 0 calc(-1 * env(safe-area-inset-left, 0px));
   background: var(--chrome);
   border-bottom: 1px solid var(--line);
   min-width: 0;
