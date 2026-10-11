@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.33 (2026-10-11)
+**Latest release:** v0.6.34 (2026-10-11)
 
 ---
 
@@ -20,6 +20,14 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.34 — 2026-10-11
+
+The assistant's starter suggestions show more of what the calculator does:
+100! exactly with its digit sum, an integral checked by differentiating, a
+braking distance in g with units, a system of three linear equations, a
+line fitted to data, a Fibonacci program, and a step-by-step RPN demo on
+your own stack.
 
 ## v0.6.33 — 2026-10-11
 
