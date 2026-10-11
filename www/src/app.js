@@ -1418,6 +1418,7 @@ class App {
       case 'keypad.toggle': this.setKeypadLayout(this.prefs.keypad === 'hidden' ? (this._lastKeypad ?? 'full') : 'hidden'); return true;
       case 'view.minimal': this.setMinimal(!this.prefs.minimal); return true;
       case 'view.fullscreen': document.documentElement.requestFullscreen?.().catch(() => this.notifyError('Full screen is not available here.')); return true;
+      case 'view.minimalMenu': this.setMinimalMenu(!this.prefs.minimalMenu); return true;
       case 'settings.open': this.sheets.openSettings(); return true;
       case 'shortcuts.open': this.sheets.openShortcuts(); return true;
       case 'edit.undo':

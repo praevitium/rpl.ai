@@ -306,8 +306,8 @@ Graphite and Paper follow your system's dark or light setting; Classic LCD
 reimagines the original display. Minimal view strips everything back to the
 status line, the stack and the command line (`⇧⌘F`); a setting keeps the
 soft keys. On a phone, ⌫ and Enter stay beside the command line, the menu
-button on the status line reaches Undo, command search, the drawers, full
-screen and Settings, and the button beside it leaves.
+button on the status line reaches Undo, command search, the drawers, the
+soft keys, full screen and Settings, and the button beside it leaves.
 
 | Classic LCD | Paper |
 |:---:|:---:|

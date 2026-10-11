@@ -9,6 +9,7 @@ export const ACTIONS = Object.freeze({
   'keypad.toggle':     { label: 'Show or hide the keypad', surfaces: ['appbar.keypad', 'keypad.head'] },
   'view.minimal':      { label: 'Minimal view: status line, stack and command line', surfaces: ['appbar.minimal', 'status.minimal', 'settings.appearance'] },
   'view.fullscreen':   { label: 'Full screen', surfaces: ['status.minimal'] },
+  'view.minimalMenu':  { label: 'Soft keys in minimal view', surfaces: ['status.minimal', 'settings.appearance'] },
   'settings.open':     { label: 'Settings', surfaces: ['appbar.settings'] },
   'shortcuts.open':    { label: 'Keyboard shortcuts', surfaces: ['appbar.help'] },
   'help.tour':         { label: 'Take the tour', surfaces: ['appbar.help', 'palette'] },

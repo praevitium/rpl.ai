@@ -113,6 +113,7 @@ export class AppBar {
       drawerItems,
       minimal ? '' : item('keypad.toggle', 'keypad', this.app.prefs.keypad === 'hidden' ? 'Show keypad' : 'Hide keypad'),
       item('view.minimal', 'screen', minimal ? 'Leave minimal view' : 'Minimal view'),
+      withDrawers && minimal ? item('view.minimalMenu', 'menu', this.app.prefs.minimalMenu ? 'Hide soft keys' : 'Show soft keys') : '',
       withDrawers && document.fullscreenEnabled && !this.app.isInstalledApp() ? item('view.fullscreen', 'full', 'Full screen') : '',
       item('settings.open', 'sliders', 'Settings'),
       '<hr>',
