@@ -1877,6 +1877,9 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   .mini, .icon-btn.sm { width: 40px; height: 40px; }
   .btn, .dw-tabs button, .path-bar button { min-height: 40px; }
   .field, .backup-new input, .backup-new select { height: 40px; }
+  /* Two columns keep all eight finger-sized tools in a 220 px plot. */
+  .pl-tools { display: grid; grid-template-columns: repeat(2, 40px); }
+  .pl-tools button { width: 40px; height: 40px; }
   /* Six finger-sized actions don't fit beside a name at 320 px, so they get a line of their own. */
   .vr .main, .vr .acts { grid-column: 2 / -1; }
   .vr .acts { justify-content: flex-end; margin: -4px -4px -6px 0; }
