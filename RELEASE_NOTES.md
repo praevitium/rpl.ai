@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.27 (2026-10-11)
+**Latest release:** v0.6.28 (2026-10-11)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.28 — 2026-10-11
+
+The assistant can pause. When it demonstrates something on your stack step
+by step, it can wait one to ten seconds after a step worth a look, showing a
+note on what to look at and a countdown, so you can follow along before the
+next step runs. Continue moves on sooner, and Stop ends the turn as before.
 
 ## v0.6.27 — 2026-10-11
 
