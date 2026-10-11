@@ -133,6 +133,8 @@ export class Entry {
           drawSelection(),
           appKeys,
           keymap.of(defaultKeymap),
+          // A phone's Enter key runs the line here, so it says go rather than new line.
+          EditorView.contentAttributes.of({ enterkeyhint: 'go' }),
           EditorView.clipboardInputFilter.of(pastedSource),
           EditorView.domEventHandlers({
             paste: (event) => {
