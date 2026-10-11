@@ -2221,7 +2221,11 @@ export class EquationEditor {
     const half = tip.offsetWidth / 2 + 4;
     const left = Math.min(Math.max(half, origin.x + union.x + union.w / 2), this.el.clientWidth - half);
     tip.style.left = `${left}px`;
-    tip.style.top = `${origin.y + union.y - 6}px`;
+    // A narrow phone wraps the tools; with no room on screen above the selection they go below it.
+    const above = origin.y + union.y - 6;
+    const below = this.el.getBoundingClientRect().top + above < tip.offsetHeight;
+    tip.classList.toggle('below', below);
+    tip.style.top = `${below ? origin.y + union.y + union.h + 6 : above}px`;
     this._toolsFor = union;
   }
 
