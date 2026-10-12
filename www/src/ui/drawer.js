@@ -201,6 +201,7 @@ export class Drawers {
     this.el.addEventListener('input', (e) => this._onInput(e));
     this.el.addEventListener('submit', (e) => this._onSubmit(e));
     this.el.addEventListener('keydown', (e) => this._onKeyDown(e));
+    this._bindSheetDrag();
     this._bindRunPreviews();
     this._bindVarsDrag();
     subscribeState(() => {
@@ -877,6 +878,49 @@ export class Drawers {
         if (chosen) this._performDrop(name, chosen);
       },
     });
+  }
+
+  // On a phone the drawer is a bottom sheet: dragging its tabs or title down closes it, as sheets do.
+  _bindSheetDrag() {
+    let drag = null;
+    let dragged = false;
+    this.el.addEventListener('pointerdown', (ev) => {
+      dragged = false;
+      drag = ev.pointerType === 'touch' && ev.isPrimary && this.el.offsetTop > 0 && ev.target.closest('.dw-tabs, .dw-head')
+        ? { id: ev.pointerId, x: ev.clientX, y: ev.clientY, dy: 0, active: false }
+        : null;
+    });
+    this.el.addEventListener('pointermove', (ev) => {
+      if (drag?.id !== ev.pointerId) return;
+      const dy = ev.clientY - drag.y;
+      if (!drag.active) {
+        if (Math.abs(ev.clientX - drag.x) > 10) { drag = null; return; }
+        if (dy < 10) return;
+        drag.active = true;
+        this.el.setPointerCapture?.(ev.pointerId);
+        this.el.style.transition = 'none';
+      }
+      drag.dy = Math.max(0, dy);
+      this.el.style.transform = `translateY(${drag.dy}px)`;
+    });
+    const end = (ev) => {
+      if (drag?.id !== ev.pointerId) return;
+      const { active, dy } = drag;
+      drag = null;
+      if (!active) return;
+      dragged = true;
+      this.el.style.transition = '';
+      this.el.style.transform = '';
+      if (ev.type === 'pointerup' && dy > Math.min(120, this.el.offsetHeight / 4)) this.close();
+    };
+    this.el.addEventListener('pointerup', end);
+    this.el.addEventListener('pointercancel', end);
+    this.el.addEventListener('click', (ev) => {
+      if (!dragged) return;
+      dragged = false;
+      ev.preventDefault();
+      ev.stopPropagation();
+    }, true);
   }
 
   _bindGrip(grip) {

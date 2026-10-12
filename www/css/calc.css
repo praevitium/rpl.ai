@@ -1875,6 +1875,7 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 .app, .app * { touch-action: pan-x pan-y; }
 .app .gr-canvas { touch-action: none; }
 .app .st-row[data-key] { touch-action: pan-y; }
+.app .dw-tabs, .app .dw-head { touch-action: pan-x; }
 
 @media (pointer: coarse) {
   input, textarea, select,
