@@ -1340,7 +1340,7 @@ export class ChatBot {
   }
 
   _placeholder() {
-    return this.mode === 'tutor' ? 'Paste a problem, or ask about a step…' : 'Ask about RPL, commands, maths…';
+    return this.mode === 'tutor' ? 'Paste a problem…' : 'Ask about RPL, maths…';
   }
 
   _addTutorCard(plan) {
