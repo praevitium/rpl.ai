@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.45 (2026-10-12)
+**Latest release:** v0.6.46 (2026-10-12)
 
 ---
 
@@ -18,6 +18,16 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.46 — 2026-10-12
+
+A too-few-arguments error now counts the stack the failing command saw. With
+four values on the stack, the line CLEAR DROP used to report "DROP needs one
+value; the stack has four values", counting the values the failed line puts
+back; it now says "the stack had none". The same holds when the command fails
+inside a program or a line with IF, FOR and the like.
 
 ---
 
