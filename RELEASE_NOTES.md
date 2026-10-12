@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.62 (2026-10-12)
+**Latest release:** v0.6.63 (2026-10-12)
 
 ---
 
@@ -18,6 +18,20 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.63 — 2026-10-12
+
+A menu or form that is open when a phone's keyboard comes up now moves above
+it: the Variables drawer's New folder used to keep its name field and Create
+button behind the keyboard, so you typed blind. On a phone a unit inserted
+from the Catalog's Units page now leaves a toast whose More reopens the
+Catalog with that unit in view, so 9.81, m and s make 9.81_m*s in a few taps;
+the Characters drawer's More now returns to the character you picked too. The
+Units page's buttons are 40 px square on touch (they were 25 by 24 px), and in
+minimal view the "this one" and "argument" marks on a failing command's levels
+no longer run into the level number.
 
 ---
 
