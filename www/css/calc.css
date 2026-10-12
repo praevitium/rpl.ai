@@ -897,6 +897,8 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 :root[data-view="minimal"] .st-row { padding-left: 12px; padding-right: 22px; min-height: 44px; }
 :root[data-view="minimal"] .st-lvl { font-size: 14px; }
 :root[data-view="minimal"] .toasts { top: 48px; }
+/* The tutor's step toast waits for Check, so it steps aside while a menu is open instead of covering its first rows. */
+body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 :root[data-view="minimal"] .drawer { position: absolute; left: auto; right: 0; top: 0; bottom: 0; width: min(var(--drawer-w, 400px), calc(100% - 48px)); height: auto; border-left: 1px solid var(--line); border-right: 0; border-radius: 0; box-shadow: var(--shadow-3); transform: none; visibility: visible; transition: none; }
 :root[data-view="minimal"] .drawer:not(.open) { display: none; }
 :root[data-view="minimal"] .dw-tabs { display: flex; }
