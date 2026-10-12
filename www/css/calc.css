@@ -358,7 +358,7 @@ button { cursor: pointer; }
 .mini:hover { background: var(--r2); color: var(--ink); }
 .mini.danger:hover { color: var(--danger); background: var(--danger-dim); }
 
-.well { flex: 1 1 96px; min-height: 96px; position: relative; display: flex; flex-direction: column; background: var(--well); color: var(--stack-ink); }
+.well { flex: 1 1 96px; min-height: 96px; position: relative; overflow: hidden; display: flex; flex-direction: column; background: var(--well); color: var(--stack-ink); }
 .status-line { display: none; align-items: center; justify-content: flex-end; gap: 6px; padding: 8px 12px 0; flex-wrap: wrap; position: relative; z-index: 3; }
 .status-line.has-pills { display: flex; }
 .status-line .pill { font: 600 10px/1 var(--font-mono); letter-spacing: .06em; padding: 5px 8px; border-radius: 999px; background: var(--r2); color: var(--ink2); }
@@ -1946,9 +1946,12 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   .vr .acts .mini { flex: 0 1 auto; min-width: 34px; }
 }
 
+/* With the keyboard up the writer leaves the stack some room: its insights wait for the keyboard to go, and a tall formula scrolls. */
+:root[data-keyboard] .eqw-ins { display: none; }
+:root[data-keyboard] .eqw-canvas { max-height: calc(var(--app-height, 100dvh) * .4); }
 /* A landscape phone with its keyboard up has about 190px left: while typing, only the stack, the line or writer and its keys stay. */
 @media (max-height: 300px) {
-  :root[data-keyboard] .input-top, :root[data-keyboard] .input-hint, :root[data-keyboard] .eqw-ins,
+  :root[data-keyboard] .input-top, :root[data-keyboard] .input-hint,
   :root[data-keyboard] .mx-foot, :root[data-keyboard] .status-line, :root[data-keyboard] .menubar, :root[data-keyboard] .st-more { display: none; }
   :root[data-keyboard] .mx-grid-wrap { max-height: 76px; }
 }
