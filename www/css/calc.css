@@ -967,8 +967,9 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   padding: 0;
   overflow: hidden;
 }
-.gr-view { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; height: 100%; }
-.pl-main { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; padding: 10px 12px 0; gap: 6px; }
+/* A short drawer (landscape, or a phone keyboard up) scrolls rather than letting the plot's minimum height cover the side panel. */
+.gr-view { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; height: 100%; overflow-y: auto; }
+.pl-main { flex: 1 0 auto; display: flex; flex-direction: column; padding: 10px 12px 0; gap: 6px; }
 .pl-box { position: relative; flex: 1 1 auto; min-height: 220px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line2); background: var(--plot-bg); outline: none; }
 .pl-box:focus-visible { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-dim); }
 .pl-box:fullscreen { border-radius: 0; border: 0; }
