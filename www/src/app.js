@@ -1561,9 +1561,9 @@ class App {
     return true;
   }
 
-  // Where the drawer covers the command line, doing a tutor step yourself puts the drawer away until Check.
+  // Where the drawer hides the command line, doing a tutor step yourself puts the drawer away until Check.
   _practiseTutorStep(step, check) {
-    if (!this._drawerCoversStack()) return;
+    if (!this.drawers.hidesInput()) return;
     this.drawers.close();
     this.toast(`${step.title}. Keys: ${step.keys || step.rpl}`, {
       action: 'Check', key: 'tutor', timeout: Infinity,

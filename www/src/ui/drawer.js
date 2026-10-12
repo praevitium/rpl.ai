@@ -233,6 +233,21 @@ export class Drawers {
 
   isOpen() { return this.current !== null; }
 
+  hidesInput() {
+    const input = this.isOpen() && document.getElementById('input')?.getBoundingClientRect();
+    if (!input) return false;
+    const d = this.el.getBoundingClientRect();
+    const x = input.left + input.width / 2, y = input.top + input.height / 2;
+    return x >= d.left && x <= d.right && y >= d.top && y <= d.bottom;
+  }
+
+  // A step that lands in an input the drawer hides closes the drawer, as the HP's CHARS (ECHO1) and CAT (OK) return to the stack.
+  _reveal() {
+    if (!this.hidesInput()) return false;
+    this.close();
+    return true;
+  }
+
   open(id) {
     if (!DRAWERS.some((d) => d.id === id)) return;
     this.current = id;
@@ -613,26 +628,26 @@ export class Drawers {
       case 'cat-family': this.cat.family = t.dataset.family; this._renderCatalogList(); this._body().scrollTop = 0; return;
       case 'cat-back': this.cat.family = null; this._renderCatalogList(); return;
       case 'cmd': this.showReference(t.dataset.cmd); return;
-      case 'cmd-run': e.stopPropagation(); app.runCommandFromUI(t.dataset.cmd); return;
-      case 'unit': app.insertUnit(t.dataset.unit); return;
+      case 'cmd-run': e.stopPropagation(); app.runCommandFromUI(t.dataset.cmd); this._reveal(); return;
+      case 'unit': app.insertUnit(t.dataset.unit); this._reveal(); return;
       case 'ref-back':
         if (this.cat.idx > 0) { this.cat.idx -= 1; this.cat.ref = this.cat.history[this.cat.idx]; }
         else { this.cat.ref = null; this.cat.history = []; this.cat.idx = -1; }
         this._renderBody();
         return;
-      case 'ref-run': app.runCommandFromUI(this.cat.ref); return;
-      case 'ref-insert': entry.typeToken(`${this.cat.ref} `); return;
+      case 'ref-run': app.runCommandFromUI(this.cat.ref); this._reveal(); return;
+      case 'ref-insert': entry.typeToken(`${this.cat.ref} `); this._reveal(); return;
       case 'ref-ask': app.askAssistant(`Explain the ${this.cat.ref} command: what it takes from the stack, what it returns, and a short example I can try.`); return;
-      case 'char': this.insertText(t.dataset.text); return;
-      case 'hist-recall': entry.recall(t.dataset.text); entry.focus(); return;
-      case 'hist-run': e.stopPropagation(); entry.recall(t.dataset.text); app.commitEntry(); return;
+      case 'char': this.insertText(t.dataset.text); this._reveal(); return;
+      case 'hist-recall': entry.recall(t.dataset.text); entry.focus(); this._reveal(); return;
+      case 'hist-run': e.stopPropagation(); entry.recall(t.dataset.text); app.commitEntry(); this._reveal(); return;
       case 'hist-delete': e.stopPropagation(); entry.removeHistory(t.dataset.text); this._renderHistoryList(); return;
       case 'errors-clear': entry.clearErrorLog(); this._renderHistoryList(); return;
       case 'err-explain': e.stopPropagation(); app.askAssistant(`I got this error on the calculator: ${t.dataset.text}. What went wrong and how do I fix it?`); return;
       case 'path': app.navigateToPathSegment(Number(t.dataset.index)); return;
       case 'var': this._activateVar(name); return;
       case 'var-open': e.stopPropagation(); this._activateVar(name); return;
-      case 'var-rcl': e.stopPropagation(); this._recallVar(name); return;
+      case 'var-rcl': e.stopPropagation(); this._recallVar(name); this._reveal(); return;
       case 'var-edit': e.stopPropagation(); app.editVariable(name); return;
       case 'var-rename': e.stopPropagation(); this._beginRename(t.closest('.vr'), name); return;
       case 'var-move': e.stopPropagation(); this._moveMenu(t, name); return;
@@ -658,8 +673,9 @@ export class Drawers {
       goInto(name);
       return;
     }
-    if (app.entry.isAlgebraic()) { app.entry.type(name); return; }
-    app.pressVariable(name);
+    if (app.entry.isAlgebraic()) app.entry.type(name);
+    else app.pressVariable(name);
+    this._reveal();
   }
 
   _recallVar(name) {
