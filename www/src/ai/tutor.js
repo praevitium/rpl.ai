@@ -22,11 +22,12 @@ export function stackCheck(current, expected, levels = 3) {
 }
 
 export class TutorCard {
-  constructor({ plan, tools, renderMarkdown, onFinish }) {
+  constructor({ plan, tools, renderMarkdown, onFinish, onMine = null }) {
     this.plan = plan;
     this.tools = tools;
     this.renderMarkdown = renderMarkdown;
     this.onFinish = onFinish;
+    this.onMine = onMine;
     this.current = 0;
     this.done = new Set();
     this.hintsShown = new Map();
@@ -77,7 +78,7 @@ export class TutorCard {
     switch (button.dataset.tut) {
       case 'open': if (!this.finished) this.current = i; break;
       case 'show': this._show(i, step); break;
-      case 'mine': this.doingIt.add(i); break;
+      case 'mine': this.doingIt.add(i); this.onMine?.(i, step); break;
       case 'check': this._check(i, step); break;
       case 'hint': this.hintsShown.set(i, (this.hintsShown.get(i) ?? 0) + 1); break;
       case 'next': this._complete(i); break;
@@ -96,6 +97,13 @@ export class TutorCard {
     const error = this.tools.run(step.rpl);
     if (error) this.feedback.set(i, { ok: false, text: `That didn't run: ${error}` });
     else this._complete(i);
+  }
+
+  check(i) {
+    this._check(i, this.plan.steps[i]);
+    this.render();
+    const step = this.el.querySelector('.tut-step.cur');
+    (step?.querySelector('.tut-fb') ?? step)?.scrollIntoView?.({ block: 'nearest' });
   }
 
   _check(i, step) {

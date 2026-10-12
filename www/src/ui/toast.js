@@ -15,7 +15,8 @@ export class Toasts {
     t.querySelector('button')?.addEventListener('click', () => { remove(); onAction?.(); });
     this.el.appendChild(t);
     while (this.el.children.length > 3) this.el.firstElementChild.remove();
-    setTimeout(remove, action ? Math.max(timeout, 5000) : timeout);
+    const life = action ? Math.max(timeout, 5000) : timeout;
+    if (Number.isFinite(life)) setTimeout(remove, life);
   }
 
   dismiss(key) {

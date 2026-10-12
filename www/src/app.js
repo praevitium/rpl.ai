@@ -101,6 +101,7 @@ class App {
       tools: this._assistantTools(),
       getContext: () => this._assistantContext(),
       onStatus: (status) => this.drawers?.setAssistantConnected(status === 'ready'),
+      onTutorMine: (step, check) => this._practiseTutorStep(step, check),
     });
     this.chatBot.setMode(this.prefs.assistantMode, { tutorStyle: this.prefs.tutorStyle });
     this.drawers = new Drawers({ rail: $('rail'), el: $('drawer'), scrim: $('scrim'), app: this });
@@ -1558,6 +1559,16 @@ class App {
     if (this.shift) { this.setShift(null); return true; }
     if (this._drawerCoversStack()) { this.drawers.close(); return true; }
     return true;
+  }
+
+  // Where the drawer covers the command line, doing a tutor step yourself puts the drawer away until Check.
+  _practiseTutorStep(step, check) {
+    if (!this._drawerCoversStack()) return;
+    this.drawers.close();
+    this.toast(`${step.title}. Keys: ${step.keys || step.rpl}`, {
+      action: 'Check', key: 'tutor', timeout: Infinity,
+      onAction: () => { this.drawers.open('assistant'); check(); },
+    });
   }
 
   _drawerCoversStack() {
