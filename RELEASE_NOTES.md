@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.56 (2026-10-12)
+**Latest release:** v0.6.57 (2026-10-12)
 
 ---
 
@@ -18,6 +18,20 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.57 — 2026-10-12
+
+Hold a finger on a stack level to open its menu: the level is selected and
+its ⋯ menu opens, so VIEW, LEVEL, KEEP and the rest are one gesture away on a
+phone. Lifting the finger over the menu doesn't pick an item, and on touch the
+stack no longer starts a text selection (the menu has Copy). Opening any menu
+now closes the hint shown on entering minimal view or hiding the keypad, which
+sat over the menu's first rows and hid Undo. On a phone narrower than 360 px
+the minimal status line's modes share the room the hidden path leaves, up to
+40 px each: 36 px at 320 and 39 px at 340 instead of 32, while the display
+format keeps its whole label.
 
 ---
 
