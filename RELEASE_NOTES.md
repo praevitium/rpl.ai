@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.52 (2026-10-12)
+**Latest release:** v0.6.53 (2026-10-12)
 
 ---
 
@@ -18,6 +18,20 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.53 — 2026-10-12
+
+A level's ⋯ menu and soft keys have the HP interactive stack's VIEW, which
+shows the value full size in a sheet: a long number such as 100! in full,
+wrapped, and a formula or matrix wider than the screen at a readable size,
+scrolling both ways, where the stack would shrink or cut it. In the Variables
+drawer a long name no longer cuts its type badge down to a stray letter: the
+badge moves under the name, and on a touch screen the name wraps to show in
+full. A variable's Recall button now has the Enter icon, as does a plot
+trace's push button, and Rename has its own text-field icon, so no two of a
+variable's buttons look alike on a phone, where there are no hover titles.
 
 ---
 
