@@ -407,8 +407,8 @@ import { assert, assertThrows } from './helpers.mjs';
     e.flashError = (err) => { flashed = err.message; };
     e.buffer = '« 1 "a" - » `TYPEDBAD` STO'; e.enter();
     e.buffer = 'TYPEDBAD'; e.enter();
-    assert(flashed === 'TYPEDBAD: -: Bad argument type' && s.depth === 2,
-      'a failing typed program name is blamed in the error and rolls the stack back');
+    assert(flashed === 'TYPEDBAD: -: Bad argument type' && s.depth === 4 && format(s.peek(1)) === '"a"',
+      'a failing typed program name is blamed in the error, and - gets its 1 and "a" back, as on the HP');
     resetHome();
   }
 

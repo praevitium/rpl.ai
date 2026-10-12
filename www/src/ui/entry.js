@@ -2,7 +2,7 @@ import { parseEntry, endsInQuote } from '../rpl/parser.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
 import { latexToSource } from '../rpl/latex.js';
 import { spreadsheetToSource, htmlTableToSource } from '../rpl/sheet.js';
-import { lookup, isProgramLine, runProgramLine } from '../rpl/ops.js';
+import { lookup, isProgramLine, runProgramLine, keepsFailureStack } from '../rpl/ops.js';
 import { RPLAbort, RPLError, withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
 import { errorBeep } from './beep.js';
 import {
@@ -52,6 +52,7 @@ export class Entry {
     this._state = EditorState.create({ doc: '' });
     this._view = null;
     this.error = '';
+    this.errorLine = '';
     this._listeners = new Set();
     this._historyListeners = new Set();
     this._history = [];
@@ -294,7 +295,7 @@ export class Entry {
   }
 
   _recordError(message) {
-    pushCapped(this._errorLog, { message, input: this.buffer.trim(), at: Date.now() }, Entry.ERROR_LOG_MAX);
+    pushCapped(this._errorLog, { message, input: this.buffer.trim() || this.errorLine, at: Date.now() }, Entry.ERROR_LOG_MAX);
     this._emitHistory();
   }
 
@@ -439,10 +440,11 @@ export class Entry {
     this.type('E');
   }
 
-  // A failed command leaves its arguments on the stack, as on the HP 50g.
-  // ABORT is the exception: the stack stays as the program left it.
-  // True when the body ran to completion.
-  safeRun(body, context = '') {
+  // A failed command leaves its arguments on the stack, as on the HP 50g.  With
+  // keepPartial (the command line) what ran before it stays, as on the HP;
+  // otherwise the whole action is undone.  ABORT keeps the stack as the program
+  // left it.  True when the body ran to completion.
+  safeRun(body, context = '', { keepPartial = false } = {}) {
     const rollback = this.stack.save();
     try {
       withTimeLimit(RUN_TIME_LIMIT_MS, body);
@@ -453,7 +455,7 @@ export class Entry {
         return false;
       }
       if (!this.failure && e.depth != null) this.failure = { op: null, levels: [], depth: e.depth };
-      this.stack.restore(rollback);
+      if (!keepPartial) this.stack.restore(rollback);
       this._dropNoOpUndoStep();
       this.flashError(context ? new RPLError(`${context}: ${errorText(e)}`) : e);
       return false;
@@ -470,13 +472,14 @@ export class Entry {
   _runOpTagged(opName, tag = opName) {
     const op = lookup(opName);
     if (!op) throw new RPLError(`Undefined: ${opName}`);
+    const before = this.stack.save();
     const seen = this.stack.snapshot().slice(0, 3);
-    const depth = this.stack.depth;
     try {
       this.stack.runOp(() => op.fn(this.stack, this));
     } catch (e) {
       if (e instanceof RPLAbort) throw e;
-      this.failure = { op: tag, levels: seen, depth: e.depth ?? depth };
+      if (!keepsFailureStack(e)) this.stack.restore(before);
+      this.failure = { op: tag, levels: seen, depth: e.depth ?? before.length };
       throw new RPLError(`${tag}: ${errorText(e)}`);
     }
   }
@@ -507,13 +510,15 @@ export class Entry {
     this.safeRun(() => {
       this._commitEntry(raw);
       this._emit();
-    });
+    }, '', { keepPartial: true });
   }
 
-  // An ABORT still commits the entry: it lands in history and the buffer clears.
+  // A syntax error keeps the line for editing.  Once the line runs it is used up,
+  // as on the HP, even when it fails or aborts; a failure keeps it on the error
+  // (e.line) for Fix the line.
   _commitEntry(raw) {
+    const values = parseEntry(raw);
     try {
-      const values = parseEntry(raw);
       if (isProgramLine(values)) this.stack.runOp(() => runProgramLine(this.stack, values));
       else for (const v of values) {
         if (v?.type === 'name' && !v.quoted && lookup(v.id)) this._runOpTagged(v.id);
@@ -521,10 +526,11 @@ export class Entry {
         else this.stack.push(v);
       }
     } catch (e) {
-      if (e instanceof RPLAbort) this._clearCommittedBuffer(raw);
+      if (e instanceof Error && !(e instanceof RPLAbort)) e.line = raw;
       throw e;
+    } finally {
+      this._clearCommittedBuffer(raw);
     }
-    this._clearCommittedBuffer(raw);
   }
 
   _clearCommittedBuffer(raw) {
@@ -539,12 +545,13 @@ export class Entry {
     this.safeRun(() => {
       if (this.buffer.trim().length > 0) this._commitEntry(this.buffer.trim());
       this._runOpTagged(name);
-    });
+    }, '', { keepPartial: true });
     this._emit();
   }
 
   flashError(e) {
     this.error = errorText(e);
+    this.errorLine = e?.line ?? '';
     this._recordError(this.error);
     this.notice = '';
     clearTimeout(this._noticeTimer);

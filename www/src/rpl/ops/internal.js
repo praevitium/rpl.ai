@@ -961,16 +961,17 @@ function* _callGlobal(s, bound, depth, isSubProgram = true) {
 
 
 // Prefixes op errors with the command name (`+: Too few arguments`) and the
-// stack depth the command saw, unless the message already carries a name.  In an IFERR trap clause the command that fails
-// first gives its arguments back, as the AUR describes; the error is then marked
-// settled (keepsTrapStack), so an EVAL or IFT running it leaves the stack there.
+// stack depth the command saw, unless the message already carries a name.  As on
+// the HP, the command that fails gives its arguments back and what ran before it
+// stays; the error is then marked settled (keepsFailureStack), so an EVAL, IFT or
+// IFERR running it leaves the stack there.
 function _dispatchOp(op, s, name) {
-  const before = s.trapDepth > 0 ? s.save() : null;
-  const depth = s.depth;
+  const before = s.save();
+  const depth = before.length;
   try {
     op.fn(s);
   } catch (e) {
-    if (before && e instanceof RPLError && !e.argsReturned) {
+    if (e instanceof RPLError && !e.argsReturned) {
       s.restore(before);
       e.argsReturned = true;
     }
@@ -984,9 +985,8 @@ function _dispatchOp(op, s, name) {
   }
 }
 
-// Outside a trap a failing EVAL or IFT puts the stack back as it found it; inside
-// one, the failing command's arguments are what the trap's handler should see.
-export const keepsTrapStack = (e) => e instanceof RPLAbort || e.argsReturned === true;
+// Any other error puts the stack back as the EVAL or IFT found it.
+export const keepsFailureStack = (e) => e instanceof RPLAbort || e.argsReturned === true;
 
 
 function* runControl(s, toks, i, depth) {
@@ -1109,14 +1109,11 @@ function* runIfErr(s, toks, openIdx, depth) {
   const { elseIdx, endIdx } = _scanElseEnd(toks, thenIdx, 'IFERR');
   const savedOuterError = getLastError();
   let caught = null;
-  s.trapDepth++;
   try {
     yield* evalRange(s, toks, openIdx + 1, thenIdx, depth + 1);
   } catch (e) {
     if (!(e instanceof RPLError)) throw e;
     caught = e;
-  } finally {
-    s.trapDepth--;
   }
 
   if (caught) {
@@ -1141,7 +1138,7 @@ export function* runIft(s, depth) {
     const [test, action] = s.popN(2);
     if (isTruthy(test)) yield* _evalValueGen(s, action, depth + 1);
   } catch (e) {
-    if (!keepsTrapStack(e)) s.restore(snap);
+    if (!keepsFailureStack(e)) s.restore(snap);
     throw e;
   }
 }
@@ -1153,7 +1150,7 @@ export function* runIfte(s, depth) {
     const [test, tAction, fAction] = s.popN(3);
     yield* _evalValueGen(s, isTruthy(test) ? tAction : fAction, depth + 1);
   } catch (e) {
-    if (!keepsTrapStack(e)) s.restore(snap);
+    if (!keepsFailureStack(e)) s.restore(snap);
     throw e;
   }
 }

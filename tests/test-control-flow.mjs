@@ -542,11 +542,11 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   // Pin the HP50 error-message shape on the START div-by-zero surface.
   assert(/Infinite result/.test(err.message),
     'session122: START div-by-zero raises "Infinite result"');
-  // EVAL's snapshot is post-pop, so on error the erroring Program is
-  // consumed and only the pre-EVAL Real(100) remains.
-  assert(s.depth === 1, 'stack restored to post-pop depth after START error (Program consumed)');
-  assert(isReal(s.peek(1)) && s.peek(1).value.eq(100),
-         'pre-existing Real(100) preserved after rollback');
+  // As on the HP, the Program is consumed and the stack stays where the loop got
+  // to, with / given back its 1 and 0.
+  assert(s.depth === 3, 'START error keeps the stack the loop got to (Program consumed)');
+  assert(isReal(s.peek(3)) && s.peek(3).value.eq(100),
+         'pre-existing Real(100) preserved under the / arguments');
 }
 
 /* ================================================================

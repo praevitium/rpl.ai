@@ -123,8 +123,8 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(s.depth === 1 && s.peek().value === 20n, 'QUAD(5) via nested EVAL = 20');
 }
 
-// Atomicity: an error mid-program unwinds the body's partial pushes,
-// but the EVAL'd Program itself stays popped (ship-prep 2026-04-25-r3).
+// As on the HP, an error mid-program keeps what ran before the failing command,
+// which gets its arguments back; the EVAL'd Program stays popped.
 {
   resetHome();
   const s = new Stack();
@@ -134,11 +134,10 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   //   pushes 1, runs +, pushes 1, pushes 0, runs /  → division by zero
   s.push(Program([Integer(1), Name('+'), Integer(1), Integer(0), Name('/')]));
   assertThrows(() => lookup('EVAL').fn(s), null, 'program with 1/0 throws');
-  // Post-pop snapshot was [Real(100), Real(1)]; restore() walks back to
-  // that on the throw -- the Program is consumed (ship-prep r3 change).
-  assert(s.depth === 2, 'on error, stack restored to post-pop depth (2)');
-  assert(isReal(s.peek(2)) && s.peek(2).value.eq(100), 'level 2 preserved (Real(100))');
-  assert(isReal(s.peek(1)) && s.peek(1).value.eq(1),   'level 1 preserved (Real(1))');
+  assert(s.depth === 4, 'on error, the stack keeps 100, the 1 + result and the / arguments (4)');
+  assert(isReal(s.peek(4)) && s.peek(4).value.eq(100), 'level 4 preserved (Real(100))');
+  assert(isReal(s.peek(3)) && s.peek(3).value.eq(2), 'level 3 is 1 + 1, which ran before the error');
+  assert(Number(s.peek(2).value) === 1 && Number(s.peek(1).value) === 0, 'levels 2 and 1 are the 1 and 0 / gave back');
 }
 
 {

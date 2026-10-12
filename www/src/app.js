@@ -282,7 +282,7 @@ class App {
       failure: this.entry.failure,
       stack: this.stack.snapshot().slice(0, 3),
       depth: this.stack.depth,
-      line: this.entry.buffer,
+      line: this.entry.buffer || this.entry.errorLine,
       describe: describeValue,
       commandInfo: (name) => this.commandInfo(name),
     }) : null;
@@ -332,7 +332,7 @@ class App {
       case 'swap': this.dismissError(); this.swapTop(); return;
       case 'help': this.drawers.showReference(arg ?? desc?.command); return;
       case 'explain': this._explainError(message); return;
-      case 'edit-line': this.entry.focus(); return;
+      case 'edit-line': if (!this.entry.buffer.trim() && this.entry.errorLine) this.entry.recall(this.entry.errorLine); else this.entry.focus(); return;
       case 'vars': this.drawers.open('vars'); return;
       case 'retry':
         this.dismissError();

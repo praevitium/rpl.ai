@@ -53,8 +53,9 @@ import { assert, assertThrows } from './helpers.mjs';
     e.buffer = '"a" SIN';
     e.enter();
     const [logged] = e.getErrorLog();
-    assert(logged?.message.startsWith('SIN: Bad argument type') && logged.input === '"a" SIN' && emitted === 1,
-      'error log records the message and the command line that raised it');
+    assert(logged?.message.startsWith('SIN: Bad argument type') && logged.input === '"a" SIN' && emitted === 2
+        && e.getHistory().at(-1) === '"a" SIN' && e.buffer === '' && e.errorLine === '"a" SIN',
+      'error log records the message and the command line that raised it, which goes to history like any line, as on the HP');
     e.buffer = '1 2 +';
     e.enter();
     e.buffer = '« 3 ABORT » EVAL';
@@ -75,14 +76,21 @@ import { assert, assertThrows } from './helpers.mjs';
     const e = new Entry(s);
     const line = (text) => { s.restore([]); for (const n of [1, 2, 3, 4]) s.push(Real(n)); e.buffer = text; e.enter(); };
     line('CLEAR DROP');
-    assert(s.depth === 4 && e.failure?.op === 'DROP' && e.failure.depth === 0,
-      'CLEAR DROP: the failed line puts four values back, and the failure records that DROP saw none');
+    assert(s.depth === 0 && e.failure?.op === 'DROP' && e.failure.depth === 0 && e.buffer === '',
+      'CLEAR DROP: the stack stays cleared, as on the HP, the line is used up, and the failure records that DROP saw none');
     line('« CLEAR DROP » EVAL');
-    assert(s.depth === 4 && e.failure?.depth === 0,
-      'CLEAR DROP inside an evaluated program: the failure records the depth DROP saw');
+    assert(s.depth === 0 && e.failure?.depth === 0,
+      'CLEAR DROP inside an evaluated program: the stack stays where the program got to');
     line('1 IF THEN CLEAR DROP END');
-    assert(s.depth === 4 && e.failure?.depth === 0,
-      'CLEAR DROP inside a program line: the failure records the depth DROP saw');
+    assert(s.depth === 0 && e.failure?.depth === 0,
+      'CLEAR DROP inside a program line: the stack stays where the line got to');
+    line('5 6 + 7 "x" - 8');
+    assert(s.depth === 7 && format(s.peek(1)) === '"x"' && format(s.peek(3)) === '11' && e.errorLine === '5 6 + 7 "x" - 8',
+      'a line failing at -: what ran before stays, - gets its arguments back and 8 never runs');
+    line('DROP DROP DROP DROP DROP');
+    assert(s.depth === 0 && e.stack.hasUndo(), 'four DROPs run before the fifth fails; Undo still has the stack from before the line');
+    e.performUndo();
+    assert(s.depth === 4, 'Undo after a failed line brings back the stack from before it');
     clearTimeout(e._noticeTimer);
   }
 
@@ -1798,7 +1806,8 @@ resetBinaryState();
   assert(!e.error && s.depth === 3 && s.peek().value === 1n, 'IF … END typed on the command line runs');
   e.buffer = '1 3 FOR i 1 0 / NEXT';
   e.enter();
-  assert(/Infinite result/.test(e.error) && s.depth === 3, 'an error in a command-line loop restores the stack');
+  assert(/Infinite result/.test(e.error) && s.depth === 5 && e.buffer === '',
+    'an error in a command-line loop keeps the stack the loop got to, with / given back its 1 and 0, as on the HP');
 }
 
 /* Typing over a selection replaces it, the keypad backspace deletes it, and a command typed over it spaces from the text before it. */

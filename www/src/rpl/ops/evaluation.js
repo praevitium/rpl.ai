@@ -2,19 +2,19 @@ import { setApproxMode, getApproxMode, getLastError, clearLastError } from '../s
 import { RPLAbort, RPLError } from '../stack.js';
 import { Str, BinaryInteger, isInteger, isBinaryInteger, isReal, Program, isString, Integer } from '../types.js';
 import { register } from './registry.js';
-import { _driveGen, _evalValueGen, _toCountN, keepsTrapStack, runIft, runIfte, runSuspendable } from './internal.js';
+import { _driveGen, _evalValueGen, _toCountN, keepsFailureStack, runIft, runIfte, runSuspendable } from './internal.js';
 
 
 
-// The snapshot is taken after the pop, so a failing program is consumed while its
-// partial pushes are undone.  ABORT keeps the stack as it was at the abort.
+// The snapshot is taken after the pop, so a failing program is consumed.  A failing
+// command or ABORT inside it leaves the stack where the program got to.
 function evalOp(s) {
   const v = s.pop();
   const snap = s.save();
   try {
     runSuspendable(_evalValueGen(s, v, 0, false));
   } catch (e) {
-    if (!keepsTrapStack(e)) s.restore(snap);
+    if (!keepsFailureStack(e)) s.restore(snap);
     throw e;
   }
 }
@@ -45,7 +45,7 @@ function driveRestoring(s, gen, caller) {
   try {
     _driveGen(gen, caller);
   } catch (e) {
-    if (!keepsTrapStack(e)) s.restore(snap);
+    if (!keepsFailureStack(e)) s.restore(snap);
     throw e;
   }
 }

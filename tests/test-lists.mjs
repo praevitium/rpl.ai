@@ -1992,8 +1992,8 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     'List EVAL: quoted Name stays a quoted Name (matches program-body semantics)');
 }
 
-// Error in a list item rolls back to the post-pop snapshot — the list
-// itself is consumed (R-009 generalization), partial pushes unwound.
+// Error in a list item keeps what ran before it, as a program does on the HP;
+// the list itself is consumed and / gets its arguments back.
 {
   resetHome();
   const s = new Stack();
@@ -2002,8 +2002,8 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   let threw = false;
   try { lookup('EVAL').fn(s); } catch (_e) { threw = true; }
   assert(threw, 'List EVAL with 1/0 throws');
-  assert(s.depth === 1 && isReal(s.peek()) && s.peek().value.eq(100),
-    'List EVAL error: list consumed, body pushes unwound, pre-existing Real(100) survives');
+  assert(s.depth === 3 && isReal(s.peek(3)) && s.peek(3).value.eq(100),
+    'List EVAL error: list consumed, / gets back its 1 and 0, pre-existing Real(100) survives');
   resetHome();
 }
 
