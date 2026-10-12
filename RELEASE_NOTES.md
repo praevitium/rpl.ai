@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.64 (2026-10-12)
+**Latest release:** v0.6.65 (2026-10-12)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.65 — 2026-10-12
+
+On a phone the matrix writer's Enter works like the HP MatrixWriter's ENTER:
+after you type in a cell, your keyboard's Enter stores it and moves to the
+next cell, adding a row after the last one, and on a cell you haven't typed
+in it puts the matrix on the stack, so 1 Enter 2 Enter Enter enters
+[[ 1 2 ]]. Before, the first Enter put whatever was typed so far on the
+stack. A computer keyboard's Enter still enters the matrix at once.
+
+The matrix writer's hint no longer tells a phone to press Tab, which a phone
+keyboard lacks; on touch it names the › key, which adds a row from the last
+cell. Its next-row key shows a down chevron beside ‹ and › instead of the
+download icon, and on touch its cells are 40 px tall instead of 32.
 
 ---
 
