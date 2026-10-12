@@ -193,7 +193,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   interactive stack's VIEW, which shows the level full size (a long number
   in full, a formula or matrix that scrolls both ways; pinch to zoom) with Edit, Copy and
   Share under it, and →LIST, DUPN, DRPN
-  and KEEP for levels 1 to the one you tapped (also on the level's soft keys). Swipe a level left or right to drop it; the
+  and KEEP for levels 1 to the one you tapped, and LEVEL to push its number (also on the level's soft keys). Swipe a level left or right to drop it; the
   toast's Undo brings it back.
   A level too wide for the screen, such as a big matrix, fades at the edge
   it continues past; drag it sideways to read the rest.
@@ -237,6 +237,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   the x and y under it and each curve's value there, and with Trace on it
   moves the trace cursor there. The plot's tools fold into one ⋯ button,
   leaving the plot to your fingers, and the plot types scroll in one row.
+  In a short plot drawer, in landscape or with the keyboard up, the drawer
+  scrolls, so the field you type in stays in view.
 - Settings › Appearance sets the stack's text size, from Small to Larger,
   pretty math included. On Android it can also make the keys vibrate briefly
   as a finger presses them.
