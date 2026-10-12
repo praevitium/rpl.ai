@@ -252,7 +252,7 @@ export class Drawers {
     if (!DRAWERS.some((d) => d.id === id)) return;
     this.current = id;
     this.app.setPrefs({ drawer: id, lastDrawer: id });
-    for (const key of ['view', 'tutor']) this.app.toasts?.dismiss(key);
+    for (const key of ['view', 'tutor', 'drawer']) this.app.toasts?.dismiss(key);
     this.render();
     this._focusDefault();
   }
@@ -638,7 +638,7 @@ export class Drawers {
       case 'ref-run': app.runCommandFromUI(this.cat.ref); this._reveal(); return;
       case 'ref-insert': entry.typeToken(`${this.cat.ref} `); this._reveal(); return;
       case 'ref-ask': app.askAssistant(`Explain the ${this.cat.ref} command: what it takes from the stack, what it returns, and a short example I can try.`); return;
-      case 'char': this.insertText(t.dataset.text); this._reveal(); return;
+      case 'char': this._insertChar(t.dataset.text); return;
       case 'hist-recall': entry.recall(t.dataset.text); entry.focus(); this._reveal(); return;
       case 'hist-run': e.stopPropagation(); entry.recall(t.dataset.text); app.commitEntry(); this._reveal(); return;
       case 'hist-delete': e.stopPropagation(); entry.removeHistory(t.dataset.text); this._renderHistoryList(); return;
@@ -676,6 +676,12 @@ export class Drawers {
     if (app.entry.isAlgebraic()) app.entry.type(name);
     else app.pressVariable(name);
     this._reveal();
+  }
+
+  // Like the HP's ECHO, More brings the characters back for the next one.
+  _insertChar(text) {
+    this.insertText(text);
+    if (this._reveal()) this.app.toast(`Added ${text}`, { action: 'More', key: 'drawer', onAction: () => this.open('chars') });
   }
 
   _recallVar(name) {
