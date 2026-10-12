@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.42 (2026-10-11)
+**Latest release:** v0.6.43 (2026-10-12)
 
 ---
 
@@ -18,6 +18,18 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.43 — 2026-10-12
+
+On a phone, the soft keys are 40 px tall whenever the keypad is hidden or in
+minimal view; short screens used to shrink them to make room for a keypad that
+wasn't there. Settings › Appearance gains Vibrate on key presses on touch
+phones that support it (Android), a 10 ms buzz when a finger presses a keypad
+key, soft key, strip key or the keys beside the command line; it is off by
+default. The Settings sheet's page tabs and chips are 40 px tall on touch, and
+each switch takes taps a little beyond its edge.
 
 ---
 
