@@ -886,7 +886,8 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 :root[data-view="minimal"] .input-top,
 :root[data-view="minimal"] .input-hint,
 :root[data-view="minimal"] .cmdline-go { display: none; }
-:root[data-view="minimal"]:not([data-minimal-menu="on"]) .menubar { display: none; }
+/* A writer brings its soft keys, as on the HP: the matrix writer has no other +ROW or +COL on a phone. */
+:root[data-view="minimal"]:not([data-minimal-menu="on"]) .work:not(:has(#input .mx, #input .eqw)) .menubar { display: none; }
 :root[data-view="minimal"] .work { background: var(--well); }
 :root[data-view="minimal"] .well { background: transparent; }
 :root[data-view="minimal"] .status-line { display: flex; padding: 0; justify-content: stretch; }
