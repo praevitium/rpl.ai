@@ -77,7 +77,8 @@ export class Sheets {
         </div>
         <div class="set"><b>Pretty math</b><span>Show expressions, matrices and lists on the stack in textbook form.</span>${tgl('textbook', !!calcState.textbookMode, 'Pretty math')}</div>
         <div class="set"><b>Soft keys in Minimal view</b><span>Keep the soft-menu row visible for menu work.</span>${tgl('minimalMenu', app.prefs.minimalMenu, 'Soft keys in Minimal view')}</div>
-        <div class="set"><b>Keyboard-shortcut hints</b><span>Show each key's physical-keyboard shortcut on the keypad.</span>${tgl('hints', app.prefs.hints, 'Keyboard-shortcut hints')}</div>`;
+        <div class="set"><b>Keyboard-shortcut hints</b><span>Show each key's physical-keyboard shortcut on the keypad.</span>${tgl('hints', app.prefs.hints, 'Keyboard-shortcut hints')}</div>${typeof navigator.vibrate === 'function' && matchMedia('(pointer: coarse)').matches ? `
+        <div class="set"><b>Vibrate on key presses</b><span>A short buzz when a finger presses a key, where the phone supports it.</span>${tgl('haptics', app.prefs.haptics, 'Vibrate on key presses')}</div>` : ''}`;
     }
     if (this.page === 'assistant') {
       const consented = (() => { try { return localStorage.getItem(CHAT_CONSENT_KEY) === '1'; } catch { return false; } })();
@@ -148,6 +149,7 @@ export class Sheets {
     if (setting === 'textbook') app.setTextbook(on);
     else if (setting === 'minimalMenu') app.setMinimalMenu(on);
     else if (setting === 'hints') { app.setPrefs({ hints: on }); app.keypad.update(); }
+    else if (setting === 'haptics') app.setPrefs({ haptics: on });
   }
 
   resetEverything() {

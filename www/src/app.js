@@ -135,6 +135,7 @@ class App {
     this._installAutosave();
     this._installFileDrop();
     this._installBackButton();
+    this._installHaptics();
     this.renderAll();
     if (!this.prefs.tourSeen) setTimeout(() => this.tour.start(), 700);
   }
@@ -1519,6 +1520,13 @@ class App {
   }
 
   // A phone's back button closes the top overlay before it leaves the app: an overlay holds one history entry.
+  _installHaptics() {
+    if (typeof navigator.vibrate !== 'function') return;
+    document.addEventListener('pointerdown', (e) => {
+      if (this.prefs.haptics && e.pointerType === 'touch' && e.target.closest?.('.k, .sk, .key-strip button, .cmdline-go')) navigator.vibrate(10);
+    }, { passive: true });
+  }
+
   _installBackButton() {
     const overlays = [
       [() => this.popover.isOpen(), () => this.popover.close()],

@@ -18,6 +18,7 @@ export const DEFAULT_UI_PREFS = Object.freeze({
   drawerWide: false,
   drawerWidth: null,
   hints: false,
+  haptics: false,
   historySort: 'newest',
   menu: null,
   assistantMode: 'ask',
@@ -50,6 +51,7 @@ export function normalizeUiPrefs(raw) {
   if (typeof raw.drawerWide === 'boolean') p.drawerWide = raw.drawerWide;
   if (Number.isFinite(raw.drawerWidth)) p.drawerWidth = raw.drawerWidth;
   if (typeof raw.hints === 'boolean') p.hints = raw.hints;
+  if (typeof raw.haptics === 'boolean') p.haptics = raw.haptics;
   if (HISTORY_SORTS.includes(raw.historySort)) p.historySort = raw.historySort;
   if (typeof raw.menu === 'string' && /^[A-Z]{2,8}$/.test(raw.menu)) p.menu = raw.menu;
   if (ASSISTANT_MODES.includes(raw.assistantMode)) p.assistantMode = raw.assistantMode;
