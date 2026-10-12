@@ -10,6 +10,12 @@ import { pickFile } from './drawer.js';
 
 
 const SETTINGS_PAGES = Object.freeze(['appearance', 'assistant', 'data']);
+const VIEW_ZOOM_MIN = 0.4;
+const VIEW_ZOOM_MAX = 4;
+
+export function clampViewZoom(zoom) {
+  return Math.min(VIEW_ZOOM_MAX, Math.max(VIEW_ZOOM_MIN, zoom));
+}
 
 export class Sheets {
   constructor({ host, app }) {
@@ -46,6 +52,7 @@ export class Sheets {
     const view = this.el.querySelector('.sheet-view');
     markScrollEdges(view);
     view.addEventListener('scroll', () => markScrollEdges(view), { passive: true });
+    zoomOnPinch(view);
   }
 
   _open(kind) {
@@ -181,6 +188,42 @@ export class Sheets {
     try { for (const k of KEYS) localStorage.removeItem(k); } catch { /* private mode: nothing to clear */ }
     location.reload();
   }
+}
+
+// Two fingers (or a trackpad pinch) zoom the value about the point between them; one finger still scrolls.
+function zoomOnPinch(view) {
+  const value = view.firstElementChild;
+  const scroller = view.closest('.sheet-c');
+  let zoom = 1, pinch = null;
+  const zoomAbout = (next, x, y) => {
+    next = clampViewZoom(next);
+    const ratio = next / zoom;
+    zoom = next;
+    value.style.zoom = String(zoom);
+    const r = view.getBoundingClientRect(), s = scroller.getBoundingClientRect();
+    view.scrollLeft = (view.scrollLeft + x - r.left) * ratio - (x - r.left);
+    scroller.scrollTop = (scroller.scrollTop + y - s.top) * ratio - (y - s.top);
+    markScrollEdges(view);
+  };
+  const fingers = (ev) => {
+    const [a, b] = ev.touches;
+    return { gap: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
+  };
+  const start = (ev) => { pinch = ev.touches.length === 2 ? { gap: fingers(ev).gap, zoom } : null; };
+  view.addEventListener('touchstart', start, { passive: true });
+  view.addEventListener('touchend', start, { passive: true });
+  view.addEventListener('touchcancel', start, { passive: true });
+  view.addEventListener('touchmove', (ev) => {
+    if (!pinch?.gap || ev.touches.length !== 2) return;
+    ev.preventDefault();
+    const f = fingers(ev);
+    zoomAbout(pinch.zoom * f.gap / pinch.gap, f.x, f.y);
+  }, { passive: false });
+  view.addEventListener('wheel', (ev) => {
+    if (!ev.ctrlKey) return;
+    ev.preventDefault();
+    zoomAbout(zoom * Math.exp(-ev.deltaY / 100), ev.clientX, ev.clientY);
+  }, { passive: false });
 }
 
 function actionLabel(id) {

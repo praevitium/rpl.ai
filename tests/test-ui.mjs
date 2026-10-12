@@ -568,6 +568,13 @@ import { assert, assertThrows } from './helpers.mjs';
     assertThrows(() => keepLevels(s, 3), null, 'keepLevels: a level past the depth throws');
   }
 
+  // A pinch in VIEW zooms the value between 0.4x and 4x.
+  {
+    const { clampViewZoom } = await import('../www/src/ui/sheets.js');
+    assert(clampViewZoom(1.5) === 1.5, 'VIEW zoom: an in-range pinch passes through');
+    assert(clampViewZoom(9) === 4 && clampViewZoom(0.1) === 0.4, 'VIEW zoom: a pinch stops at 4x and 0.4x');
+  }
+
   // dropLevel out-of-range throws
   {
     const s = new Stack();
