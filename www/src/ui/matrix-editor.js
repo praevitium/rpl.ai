@@ -312,6 +312,7 @@ const SYMBOLS = Object.freeze([
 const FACE_TEXT = Object.freeze({ '−': '-', '×': '*', '÷': '/', 'yˣ': '^', SPC: ' ', ',': ',', '∠': '∠' });
 const FACE_MOVES = Object.freeze({ '▲': [-1, 0], '▼': [1, 0], '◀': [0, -1], '▶': [0, 1] });
 const FACE_STEPS = Object.freeze({ TAB: 'next', '⇧TAB': 'prev', '⇧ENTER': 'down' });
+const onTouch = () => globalThis.matchMedia?.('(pointer: coarse)').matches === true;
 const TAP_KEYS = Object.freeze([
   { face: '⇧TAB', icon: 'chl', title: 'Previous cell (⇧Tab)' },
   { face: 'TAB', icon: 'chr', title: 'Next cell (Tab)' },
@@ -717,7 +718,7 @@ export class MatrixEditor {
     const rows = shape.length;
     const cols = shape[0]?.length || 1;
     const kind = this.asVector && isVectorShape(shape) ? `vector of ${Math.max(rows, cols)}` : `${rows} × ${cols} matrix`;
-    this._shape.textContent = error || `${kind} · Tab on the last cell adds a row · paste a spreadsheet range`;
+    this._shape.textContent = error || `${kind} · ${onTouch() ? '›' : 'Tab'} on the last cell adds a row · paste a spreadsheet range`;
     this._shape.classList.toggle('error', !!error);
   }
 
