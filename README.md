@@ -189,7 +189,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   type. The command menus' soft keys do the same; the catalog types.
 - Tap a stack level for its actions, on a line under it so they never cover
   the value: Edit, Pick (DUP on level 1), Roll (SWAP on level 2), Drop, and ⋯
-  for EVAL, →NUM, copy, share, store and the rest, including the HP
+  (or hold a finger on the level) for EVAL, →NUM, copy, share, store and the rest, including the HP
   interactive stack's VIEW, which shows the level full size (a long number
   in full, a formula or matrix that scrolls both ways; pinch to zoom) with Edit, Copy and
   Share under it, and →LIST, DUPN, DRPN
