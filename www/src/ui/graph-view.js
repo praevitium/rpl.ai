@@ -25,7 +25,8 @@ const PLOT_KINDS = Object.freeze([
 ]);
 const RANGE_FIELDS = Object.freeze([['xmin', 'x from'], ['xmax', 'x to'], ['ymin', 'y from'], ['ymax', 'y to']]);
 const TAP_SLOP_PX = 6;
-const IDLE_READOUT = globalThis.matchMedia?.('(pointer: coarse)').matches
+const TOUCH = !!globalThis.matchMedia?.('(pointer: coarse)').matches;
+const IDLE_READOUT = TOUCH
   ? 'Tap to read values · drag to pan · pinch to zoom'
   : 'Hover, or press T to trace · drag to pan · scroll to zoom';
 
@@ -77,7 +78,8 @@ export class GraphView {
       <div class="pl-main">
         <div class="pl-box" tabindex="0" role="application" aria-label="Plot. Arrows pan, plus and minus zoom, 0 resets, T traces, F goes full screen.">
           <canvas class="gr-canvas" aria-hidden="true"></canvas>
-          <div class="pl-tools" role="toolbar" aria-label="Plot tools">
+          <div class="pl-tools${TOUCH ? ' folded' : ''}" role="toolbar" aria-label="Plot tools">
+            <button type="button" class="pl-fold" data-gr="fold" title="Plot tools" aria-label="Plot tools" aria-expanded="${!TOUCH}">${icon('more', 'sm')}</button>
             <button type="button" data-gr="zin" title="Zoom in (+)" aria-label="Zoom in">${icon('plus', 'sm')}</button>
             <button type="button" data-gr="zout" title="Zoom out (−)" aria-label="Zoom out">${icon('minus', 'sm')}</button>
             <button type="button" data-gr="fit" title="Fit the traces" aria-label="Fit">${icon('fit', 'sm')}</button>
@@ -132,6 +134,7 @@ export class GraphView {
       else if (act === 'fit') this.fitView();
       else if (act === 'reset') this.resetView();
       else if (act === 'trace') this.setTraceMode(!this.tracing);
+      else if (act === 'fold') this._toggleTools(tool);
       else if (act === 'png') this.downloadPng();
       else if (act === 'copy') this.copyPng();
       else if (act === 'share') this.sharePng();
@@ -241,6 +244,12 @@ export class GraphView {
 
     this._ro = new ResizeObserver(() => this.draw());
     this._ro.observe(this._box);
+  }
+
+  // On a phone the tools fold into one button so they leave the plot to the fingers.
+  _toggleTools(fold) {
+    const folded = fold.parentElement.classList.toggle('folded');
+    fold.setAttribute('aria-expanded', String(!folded));
   }
 
   // One pointer pans and two pinch; each change of fingers starts afresh from the

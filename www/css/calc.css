@@ -962,6 +962,7 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 .pl-tools button { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: var(--ink2); }
 .pl-tools button:hover { background: var(--r2); color: var(--ink); }
 .pl-tools button[aria-pressed="true"] { color: var(--accent); background: var(--accent-dim); }
+.pl-tools .pl-fold { display: none; }
 .gr-readout { min-height: 18px; padding: 0 2px 4px; font: 11.5px/1.4 var(--font-mono); color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pl-side { flex: none; max-height: 46%; overflow-y: auto; border-top: 1px solid var(--line); padding-bottom: 8px; }
 .pl-kinds { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px 12px 2px; }
@@ -1890,6 +1891,10 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   /* Two columns keep all eight finger-sized tools in a 220 px plot. */
   .pl-tools { display: grid; grid-template-columns: repeat(2, 40px); }
   .pl-tools button { width: 40px; height: 40px; }
+  .pl-tools .pl-fold { display: grid; grid-column: 1 / -1; width: auto; }
+  .pl-tools .pl-fold[aria-expanded="true"] { color: var(--accent); background: var(--accent-dim); }
+  .pl-tools.folded { grid-template-columns: 40px; }
+  .pl-tools.folded > :not(.pl-fold) { display: none; }
   .sheet-nav button, .chip, .toast button { min-height: 40px; }
   /* Seven 40 px plot kinds would take three rows on a phone; they scroll sideways in one. */
   .pl-kinds { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
