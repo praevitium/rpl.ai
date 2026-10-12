@@ -829,6 +829,9 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 .vr .main { min-width: 0; display: grid; gap: 2px; }
 .vr .nm { font: 600 13px/1.2 var(--font-mono); color: var(--ink); display: flex; gap: 8px; align-items: center; min-width: 0; overflow: hidden; }
 .vr .nm .i { color: var(--ink3); }
+/* A badge that doesn't fit beside the name goes under it rather than being cut to a letter. */
+.vr .nm { flex-wrap: wrap; row-gap: 3px; }
+.vr .nm-text { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vr .pv { font: 12px/1.3 var(--font-mono); color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vr .acts { display: flex; opacity: 0; transition: opacity .12s; }
 .vr:hover .acts, .vr:focus-within .acts { opacity: 1; }
@@ -1925,6 +1928,8 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   /* Six finger-sized actions don't fit beside a name at 320 px, so they get a line of their own. */
   .vr .main { grid-column: 2 / -1; }
   .vr .acts { grid-column: 1 / -1; }
+  /* With the actions on their own line the name has the width to show in full. */
+  .vr .nm-text { white-space: normal; overflow-wrap: anywhere; }
   .vr .acts { justify-content: flex-end; margin: -4px -4px -6px 0; }
   .vr .acts .mini { flex: 0 1 auto; min-width: 34px; }
 }
