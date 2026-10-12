@@ -202,6 +202,7 @@ export class Display {
         if (view.scrollTop + viewport >= view.scrollHeight - 2) view.scrollTop = view.scrollHeight;
         viewport = view.clientHeight;
         this._markWideLevels();
+        this._updateMore();
       }).observe(view);
     }
     const statusAction = (el) => this.onStatusAction?.(el.dataset.status, el.dataset, el);
