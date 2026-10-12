@@ -7,6 +7,9 @@ export class Popover {
     this.el = null;
     this.anchor = null;
     this._onClose = null;
+    this._point = null;
+    // A phone keyboard shrinks the window under an open popover, which would leave its fields behind the keyboard.
+    this._onResize = () => { if (this.el) this._place(this._point); };
     this._onDocDown = (e) => {
       if (!this.el) return;
       if (this.el.contains(e.target) || this.anchor?.contains?.(e.target)) return;
@@ -40,6 +43,7 @@ export class Popover {
     this.anchor = anchor ?? null;
     this._onClose = onClose;
     anchor?.setAttribute?.('aria-expanded', 'true');
+    this._point = point;
     this._place(point);
     if (onClick) {
       el.addEventListener('click', (e) => {
@@ -49,6 +53,7 @@ export class Popover {
     }
     document.addEventListener('pointerdown', this._onDocDown, true);
     document.addEventListener('keydown', this._onKey, true);
+    window.addEventListener('resize', this._onResize);
     requestAnimationFrame(() => {
       const first = el.querySelector('.opt.on') ?? el.querySelector(FOCUSABLE);
       first?.focus({ preventScroll: true });
@@ -81,6 +86,7 @@ export class Popover {
     this.el = null;
     document.removeEventListener('pointerdown', this._onDocDown, true);
     document.removeEventListener('keydown', this._onKey, true);
+    window.removeEventListener('resize', this._onResize);
     const anchor = this.anchor;
     this.anchor = null;
     anchor?.setAttribute?.('aria-expanded', 'false');
