@@ -1947,9 +1947,10 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   .vr .acts .mini { flex: 0 1 auto; min-width: 34px; }
 }
 
-/* With the keyboard up the writer leaves the stack some room: its insights wait for the keyboard to go, and a tall formula scrolls. */
-:root[data-keyboard] .eqw-ins { display: none; }
+/* With the keyboard up the writers leave the stack some room: their hints wait for the keyboard to go, and a tall formula or matrix scrolls. */
+:root[data-keyboard] .eqw-ins, :root[data-keyboard] .mx-foot:not(.error) { display: none; }
 :root[data-keyboard] .eqw-canvas { max-height: calc(var(--app-height, 100dvh) * .4); }
+:root[data-keyboard] .mx-grid-wrap { max-height: calc(var(--app-height, 100dvh) * .35); }
 /* A landscape phone with its keyboard up has about 190px left: while typing, only the stack, the line or writer and its keys stay. */
 @media (max-height: 300px) {
   :root[data-keyboard] .input-top, :root[data-keyboard] .input-hint,
