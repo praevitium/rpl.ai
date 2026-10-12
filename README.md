@@ -187,10 +187,11 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   its keys work like the HP's: with `4` on the command line, + or SIN enters
   it and runs at once. Inside a quote, string, program, list or unit they
   type. The command menus' soft keys do the same; the catalog types.
-- Tap a stack level for its actions: Edit, Pick (DUP on level 1), Roll
-  (SWAP on level 2), Drop, and ⋯ for EVAL, →NUM, copy, share, store and the
-  rest, including the HP interactive stack's →LIST, DUPN, DRPN and KEEP for
-  levels 1 to the one you tapped. Swipe a level left or right to drop it; the
+- Tap a stack level for its actions, on a line under it so they never cover
+  the value: Edit, Pick (DUP on level 1), Roll (SWAP on level 2), Drop, and ⋯
+  for EVAL, →NUM, copy, share, store and the rest, including the HP
+  interactive stack's →LIST, DUPN, DRPN and KEEP for levels 1 to the one you
+  tapped (also on the level's soft keys). Swipe a level left or right to drop it; the
   toast's Undo brings it back.
   A level too wide for the screen, such as a big matrix, fades at the edge
   it continues past; drag it sideways to read the rest.
