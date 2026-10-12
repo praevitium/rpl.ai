@@ -519,9 +519,10 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .sk.empty { opacity: .35; cursor: default; }
 .sk.blocked { opacity: .45; }
 .sk.l { color: var(--amber); } .sk.r { color: var(--coral); }
-.mb-pg { flex: none; display: flex; align-items: center; gap: 2px; }
-.mb-pg button { width: 26px; height: 38px; border: 0; background: transparent; color: var(--ink2); border-radius: 7px; display: grid; place-items: center; padding: 0; }
-.mb-pg button:hover { background: var(--r1); color: var(--ink); }
+.mb-pg { flex: none; display: flex; align-items: stretch; gap: 6px; }
+.mb-pg button { min-width: 44px; border: 1px solid var(--line2); background: var(--r1); color: var(--ink); border-radius: 9px; display: grid; place-items: center; padding: 0 6px; font: 600 11px/1 var(--font-mono); letter-spacing: .04em; }
+.mb-pg button:hover { background: var(--r2); }
+.mb-pg button.l { color: var(--amber); }
 .mb-pg button:disabled { opacity: .3; cursor: default; background: transparent; }
 .mb-dots { display: flex; gap: 3px; align-items: center; font: 600 10px/1 var(--font-mono); color: var(--ink3); }
 .mb-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink4); display: block; }
@@ -536,7 +537,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   .sk { font-size: 10.5px; height: 36px; padding: 0 1px; container-type: inline-size; }
   /* The mono face is .6em a letter. A label keeps to one line while that fits at 9px, and otherwise breaks into lines. */
   .sk .lbl { white-space: normal; overflow-wrap: anywhere; line-height: 1.1; text-align: center; letter-spacing: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; font-size: clamp(7px, max(100cqi / var(--w) / .62, min(100cqi / var(--n) / .6, 9px)), 1em); }
-  .mb-pg button { width: 20px; }
+  .mb-pg button { min-width: 40px; padding: 0 4px; }
 }
 
 .kp-head { display: none; align-items: center; justify-content: space-between; padding: 10px 12px 2px; }

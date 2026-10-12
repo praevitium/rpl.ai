@@ -50,8 +50,7 @@ export class MenuBar {
       if (sk) { if (e.detail === 0 && !sk.disabled) this._press(sk); return; }
       const b = e.target.closest('[data-mb]');
       if (!b) return;
-      if (b.dataset.mb === 'prev') app.prevMenuPage();
-      else if (b.dataset.mb === 'next') app.nextMenuPage();
+      if (b.dataset.mb === 'next') this._nxt();
       else if (b.dataset.mb === 'pick') this.openPicker(b);
     });
   }
@@ -64,6 +63,15 @@ export class MenuBar {
   _endPreview() {
     clearTimeout(this._previewTimer);
     this.app.clearPreview();
+  }
+
+  // As on the HP, NXT wraps round the pages and left-shift NXT is PREV.
+  _nxt() {
+    const { app } = this;
+    const back = app.layer() === 'L';
+    if (app.shift && !app.shiftLocked()) app.setShift(null);
+    if (back) app.prevMenuPage();
+    else app.nextMenuPage();
   }
 
   _press(sk) {
@@ -91,7 +99,9 @@ export class MenuBar {
     const dots = pages <= 1 ? '' : pages <= 6
       ? Array.from({ length: pages }, (_, i) => `<i class="${i === view.page ? 'on' : ''}"></i>`).join('')
       : `${view.page + 1}/${pages}`;
-    this.el.innerHTML = `<button type="button" class="mb-menu" data-mb="pick" title="Choose a menu: VARS, CST, MODES and every command family" aria-haspopup="menu" aria-expanded="false">${icon('menu', 'sm')}<span class="full">${escapeHtml(view.title)}</span><span class="short">${escapeHtml(view.short)}</span>${pages > 1 ? `<sup>${view.page + 1}/${pages}</sup>` : ''}</button><div class="mb-keys">${keys}</div><div class="mb-pg"><button type="button" data-mb="prev" ${pages > 1 ? '' : 'disabled'} title="Previous page (PgUp)" aria-label="Previous page">${icon('chl', 'sm')}</button><div class="mb-dots" aria-label="Page ${view.page + 1} of ${pages}">${dots}</div><button type="button" data-mb="next" ${pages > 1 ? '' : 'disabled'} title="Next page (PgDn)" aria-label="Next page">${icon('chr', 'sm')}</button></div>`;
+    this.el.innerHTML = `<button type="button" class="mb-menu" data-mb="pick" title="Choose a menu: VARS, CST, MODES and every command family" aria-haspopup="menu" aria-expanded="false">${icon('menu', 'sm')}<span class="full">${escapeHtml(view.title)}</span><span class="short">${escapeHtml(view.short)}</span>${pages > 1 ? `<sup>${view.page + 1}/${pages}</sup>` : ''}</button><div class="mb-keys">${keys}</div><div class="mb-pg"><div class="mb-dots" aria-label="Page ${view.page + 1} of ${pages}">${dots}</div>${layer === 'L'
+      ? `<button type="button" class="l" data-mb="next" ${pages > 1 ? '' : 'disabled'} title="Previous page (PgUp)" aria-label="Previous page">PREV</button>`
+      : `<button type="button" data-mb="next" ${pages > 1 ? '' : 'disabled'} title="Next page, round to the first after the last (PgDn); left-shift NXT goes back" aria-label="Next page">NXT</button>`}</div>`;
   }
 
   openPicker(anchor) {
