@@ -223,6 +223,8 @@ class App {
     else delete root.dataset.view;
     if (this.prefs.minimalMenu) root.dataset.minimalMenu = 'on';
     else delete root.dataset.minimalMenu;
+    if (this.prefs.stackSize === 'normal') delete root.dataset.stackSize;
+    else root.dataset.stackSize = this.prefs.stackSize;
   }
 
   setTheme(theme) {
@@ -230,6 +232,12 @@ class App {
     this._applyPrefs();
     this.renderAll();
     this.drawers.graph?.draw?.();
+  }
+
+  setStackSize(size) {
+    this.setPrefs({ stackSize: size });
+    this._applyPrefs();
+    this.renderAll();
   }
 
   setMinimal(on) {

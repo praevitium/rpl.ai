@@ -2,7 +2,7 @@ import { icon } from './icons.js';
 import { escapeHtml } from './display.js';
 import { ACTIONS, KEYMAP, CONTEXT_LABELS, chordText, isMacPlatform } from './actions.js';
 import { STORAGE_KEY as STACK_STORAGE_KEY, BACKUPS_KEY } from '../rpl/persist.js';
-import { UI_PREFS_KEY, THEMES, THEME_LABELS, TUTOR_STYLES } from './ui-prefs.js';
+import { UI_PREFS_KEY, THEMES, THEME_LABELS, STACK_SIZES, STACK_SIZE_LABELS, TUTOR_STYLES } from './ui-prefs.js';
 import { REMOTE_CONFIG_KEY as CHAT_REMOTE_KEY, CONSENT_KEY as CHAT_CONSENT_KEY } from '../ai/chat-bot.js';
 import { state as calcState } from '../rpl/state.js';
 import { VERSION, BUILD, SHA } from '../build-info.js';
@@ -75,6 +75,9 @@ export class Sheets {
         <div class="set stack"><b>Theme</b><span>Graphite and Paper follow your system by default; Classic LCD reimagines the original 131×80 display.</span>
           <div class="chipset" role="radiogroup" aria-label="Theme">${THEMES.map((t) => `<button type="button" class="chip${app.prefs.theme === t ? ' on' : ''}" data-sh="theme" data-theme="${t}" role="radio" aria-checked="${app.prefs.theme === t}">${escapeHtml(THEME_LABELS[t])}</button>`).join('')}</div>
         </div>
+        <div class="set stack"><b>Stack text size</b><span>How large the stack's values are drawn, pretty math included.</span>
+          <div class="chipset" role="radiogroup" aria-label="Stack text size">${STACK_SIZES.map((s) => `<button type="button" class="chip${app.prefs.stackSize === s ? ' on' : ''}" data-sh="stack-size" data-size="${s}" role="radio" aria-checked="${app.prefs.stackSize === s}">${STACK_SIZE_LABELS[s]}</button>`).join('')}</div>
+        </div>
         <div class="set"><b>Pretty math</b><span>Show expressions, matrices and lists on the stack in textbook form.</span>${tgl('textbook', !!calcState.textbookMode, 'Pretty math')}</div>
         <div class="set"><b>Soft keys in Minimal view</b><span>Keep the soft-menu row visible for menu work.</span>${tgl('minimalMenu', app.prefs.minimalMenu, 'Soft keys in Minimal view')}</div>
         <div class="set"><b>Keyboard-shortcut hints</b><span>Show each key's physical-keyboard shortcut on the keypad.</span>${tgl('hints', app.prefs.hints, 'Keyboard-shortcut hints')}</div>${typeof navigator.vibrate === 'function' && matchMedia('(pointer: coarse)').matches ? `
@@ -133,6 +136,7 @@ export class Sheets {
       case 'close': this.close(); return;
       case 'page': this.page = b.dataset.page; this._confirmReset = false; this._render(); return;
       case 'theme': app.setTheme(b.dataset.theme); this._render(); return;
+      case 'stack-size': app.setStackSize(b.dataset.size); this._render(); return;
       case 'open-assistant': this.close(); app.drawers.open('assistant'); return;
       case 'tutor-style': app.setTutorStyle(b.dataset.style); this._render(); return;
       case 'toggle': this._toggle(b.dataset.setting, b.getAttribute('aria-pressed') !== 'true'); this._render(); return;

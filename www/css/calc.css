@@ -381,7 +381,10 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .ann-g span { opacity: .11; transition: opacity .18s; }
 .ann-g span.on { opacity: 1; }
 
-.stack-view { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; display: flex; flex-direction: column; overscroll-behavior: contain; scrollbar-width: thin; font-size: var(--stack-size); padding: 4px 0 6px; }
+.stack-view { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; display: flex; flex-direction: column; overscroll-behavior: contain; scrollbar-width: thin; font-size: calc(var(--stack-size) * var(--stack-scale, 1)); padding: 4px 0 6px; }
+:root[data-stack-size="small"] { --stack-scale: .85; }
+:root[data-stack-size="large"] { --stack-scale: 1.2; }
+:root[data-stack-size="larger"] { --stack-scale: 1.4; }
 .st-spacer { flex: 1; }
 .st-more { position: absolute; left: 50%; transform: translateX(-50%); z-index: 4; font: 600 10.5px/1 var(--font-mono); letter-spacing: .04em; color: var(--ink2); background: color-mix(in oklab, var(--panel) 92%, transparent); border: 1px solid var(--line2); border-radius: 999px; padding: 6px 10px; box-shadow: var(--shadow-1); }
 .st-more:hover { color: var(--ink); }

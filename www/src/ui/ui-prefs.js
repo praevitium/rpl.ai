@@ -2,6 +2,8 @@ export const UI_PREFS_KEY = 'rplai.ui';
 
 export const THEMES = Object.freeze(['auto', 'graphite', 'paper', 'classic']);
 export const THEME_LABELS = Object.freeze({ auto: 'Match system', graphite: 'Graphite (dark)', paper: 'Paper (light)', classic: 'Classic LCD' });
+export const STACK_SIZES = Object.freeze(['small', 'normal', 'large', 'larger']);
+export const STACK_SIZE_LABELS = Object.freeze({ small: 'Small', normal: 'Normal', large: 'Large', larger: 'Larger' });
 const KEYPAD_LAYOUTS = Object.freeze(['full', 'compact', 'hidden']);
 const DRAWER_IDS = Object.freeze(['assistant', 'catalog', 'vars', 'history', 'plot', 'chars']);
 const HISTORY_SORTS = Object.freeze(['newest', 'oldest']);
@@ -19,6 +21,7 @@ export const DEFAULT_UI_PREFS = Object.freeze({
   drawerWidth: null,
   hints: false,
   haptics: false,
+  stackSize: 'normal',
   historySort: 'newest',
   menu: null,
   assistantMode: 'ask',
@@ -52,6 +55,7 @@ export function normalizeUiPrefs(raw) {
   if (Number.isFinite(raw.drawerWidth)) p.drawerWidth = raw.drawerWidth;
   if (typeof raw.hints === 'boolean') p.hints = raw.hints;
   if (typeof raw.haptics === 'boolean') p.haptics = raw.haptics;
+  if (STACK_SIZES.includes(raw.stackSize)) p.stackSize = raw.stackSize;
   if (HISTORY_SORTS.includes(raw.historySort)) p.historySort = raw.historySort;
   if (typeof raw.menu === 'string' && /^[A-Z]{2,8}$/.test(raw.menu)) p.menu = raw.menu;
   if (ASSISTANT_MODES.includes(raw.assistantMode)) p.assistantMode = raw.assistantMode;
