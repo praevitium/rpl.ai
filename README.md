@@ -227,7 +227,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   the phone has a share sheet.
 - On a plot, two fingers pinch to zoom and one drags to pan; a tap shows
   the x and y under it and each curve's value there, and with Trace on it
-  moves the trace cursor there. The plot types scroll in one row.
+  moves the trace cursor there. The plot's tools fold into one ⋯ button,
+  leaving the plot to your fingers, and the plot types scroll in one row.
 - Settings › Appearance sets the stack's text size, from Small to Larger,
   pretty math included. On Android it can also make the keys vibrate briefly
   as a finger presses them.
