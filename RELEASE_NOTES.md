@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.54 (2026-10-12)
+**Latest release:** v0.6.55 (2026-10-12)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.55 — 2026-10-12
+
+Pinch a level's VIEW to zoom it: two fingers scale the value from 0.4x to 4x
+about the point between them, so a big matrix fits the screen or a small
+exponent grows readable, and one finger still scrolls. A trackpad pinch does
+the same on a desktop. With a phone's keyboard up, the matrix writer now
+behaves like the equation writer: its grid scrolls inside 35% of the visible
+height and its hints wait for the keyboard to go, so the soft keys stay on
+screen and the stack keeps a line. The "more levels above" pill no longer
+covers the status line's EDITING LEVEL pill when an edit starts.
 
 ---
 
