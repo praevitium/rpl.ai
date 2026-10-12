@@ -1876,7 +1876,9 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   .ann-status { gap: 0; }
   button.ann-m { min-height: 40px; min-width: 32px; padding: 0 4px; white-space: nowrap; }
   @container app (min-width: 360px) { button.ann-m { min-width: 40px; } }
-  .ann-status .ann-path { min-width: 0; flex-shrink: 100; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ann-status .ann-path { display: block; min-width: 0; flex-shrink: 100; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Narrower, the path would show only a clipped brace. */
+  @container app (max-width: 389px) { .ann-status .ann-path { display: none; } }
   /* Keyboard shortcuts mean nothing on a touch screen. */
   .pop .opt em, .pal .kbd, .pal-foot { display: none; }
   /* A selected level's actions are finger-sized, and start further left so six fit at 320 px. */
