@@ -452,6 +452,7 @@ export class Entry {
         this.flashNotice('Program aborted');
         return false;
       }
+      if (!this.failure && e.depth != null) this.failure = { op: null, levels: [], depth: e.depth };
       this.stack.restore(rollback);
       this._dropNoOpUndoStep();
       this.flashError(context ? new RPLError(`${context}: ${errorText(e)}`) : e);
@@ -470,11 +471,12 @@ export class Entry {
     const op = lookup(opName);
     if (!op) throw new RPLError(`Undefined: ${opName}`);
     const seen = this.stack.snapshot().slice(0, 3);
+    const depth = this.stack.depth;
     try {
       this.stack.runOp(() => op.fn(this.stack, this));
     } catch (e) {
       if (e instanceof RPLAbort) throw e;
-      this.failure = { op: tag, levels: seen };
+      this.failure = { op: tag, levels: seen, depth: e.depth ?? depth };
       throw new RPLError(`${tag}: ${errorText(e)}`);
     }
   }

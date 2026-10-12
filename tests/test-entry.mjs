@@ -73,6 +73,22 @@ import { assert, assertThrows } from './helpers.mjs';
   {
     const s = new Stack();
     const e = new Entry(s);
+    const line = (text) => { s.restore([]); for (const n of [1, 2, 3, 4]) s.push(Real(n)); e.buffer = text; e.enter(); };
+    line('CLEAR DROP');
+    assert(s.depth === 4 && e.failure?.op === 'DROP' && e.failure.depth === 0,
+      'CLEAR DROP: the failed line puts four values back, and the failure records that DROP saw none');
+    line('« CLEAR DROP » EVAL');
+    assert(s.depth === 4 && e.failure?.depth === 0,
+      'CLEAR DROP inside an evaluated program: the failure records the depth DROP saw');
+    line('1 IF THEN CLEAR DROP END');
+    assert(s.depth === 4 && e.failure?.depth === 0,
+      'CLEAR DROP inside a program line: the failure records the depth DROP saw');
+    clearTimeout(e._noticeTimer);
+  }
+
+  {
+    const s = new Stack();
+    const e = new Entry(s);
     e.buffer = '1 2 « 3 ABORT 4 » EVAL';
     e.enter();
     assert(s.depth === 3 && format(s.peek()) === '3',

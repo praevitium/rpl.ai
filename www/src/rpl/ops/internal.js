@@ -960,12 +960,13 @@ function* _callGlobal(s, bound, depth, isSubProgram = true) {
 }
 
 
-// Prefixes op errors with the command name (`+: Too few arguments`) unless the
-// message already carries one.  In an IFERR trap clause the command that fails
+// Prefixes op errors with the command name (`+: Too few arguments`) and the
+// stack depth the command saw, unless the message already carries a name.  In an IFERR trap clause the command that fails
 // first gives its arguments back, as the AUR describes; the error is then marked
 // settled (keepsTrapStack), so an EVAL or IFT running it leaves the stack there.
 function _dispatchOp(op, s, name) {
   const before = s.trapDepth > 0 ? s.save() : null;
+  const depth = s.depth;
   try {
     op.fn(s);
   } catch (e) {
@@ -976,6 +977,7 @@ function _dispatchOp(op, s, name) {
     if (e instanceof RPLError && !/^[^\s:]+:\s/.test(e.message)) {
       const named = new RPLError(`${name}: ${e.message}`);
       named.argsReturned = e.argsReturned;
+      named.depth = depth;
       throw named;
     }
     throw e;

@@ -20,6 +20,7 @@ const COMMANDS = {
   SIN: { signature: 'z → sin z', inputs: 1 },
   '+': { signature: 'z1 z2 → z1 + z2', inputs: 2 },
   '/': { signature: 'z1 z2 → z1 / z2', inputs: 2 },
+  DROP: { signature: 'obj → ', inputs: 1 },
 };
 const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMMANDS[n] ?? null, ...extra });
 
@@ -73,6 +74,15 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
 
   const few = describeError('+: Too few arguments', ctx({ depth: 1 }));
   assert(few.title === '+ needs two values; the stack has one value.', 'describeError: too few arguments counts what is missing');
+  const rolledBack = describeError('DROP: Too few arguments', ctx({ failure: { op: 'DROP', levels: [], depth: 0 }, depth: 4 }));
+  assert(rolledBack.title === 'DROP needs one value; the stack had none.',
+    'describeError: DROP after CLEAR counts the stack DROP saw, not the four values the rollback put back');
+  const inProgram = describeError('P: DROP: Too few arguments', ctx({ failure: { op: 'P', levels: [], depth: 0 }, depth: 2 }));
+  assert(inProgram.title === 'DROP needs one value; the stack had none.',
+    'describeError: DROP failing inside program P counts the stack it saw');
+  const stale = describeError('DROP: Too few arguments', ctx({ failure: { op: 'SIN', levels: [], depth: 3 }, depth: 0 }));
+  assert(stale.title === 'DROP needs one value; the stack has none.',
+    "describeError: DROP ignores the depth recorded for another command's failure");
 }
 
 {

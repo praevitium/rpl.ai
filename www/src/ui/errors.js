@@ -31,7 +31,8 @@ export const ERROR_KINDS = Object.freeze({
     match: (p) => p.core === 'Too few arguments',
     title: (c) => {
       const cmd = c.command ?? 'That command';
-      return c.args ? `${cmd} needs ${valuesText(c.args)}; the stack has ${c.depth ? valuesText(c.depth) : 'none'}.` : `${cmd} needs more values than the stack holds.`;
+      if (!c.args) return `${cmd} needs more values than the stack holds.`;
+      return `${cmd} needs ${valuesText(c.args)}; the stack ${c.seenDepth === c.depth ? 'has' : 'had'} ${c.seenDepth ? valuesText(c.seenDepth) : 'none'}.`;
     },
     detail: (c) => (c.signature ? `${c.command} takes ${c.signature}. Put the missing value on the stack first, then run it again.` : 'Put the missing values on the stack first, then run it again.'),
     fixes: (c) => [{ id: 'edit-line', label: c.hasLine ? 'Fix the line' : 'Type a value' }, ...(c.command ? [{ id: 'help', label: `${c.command} reference` }] : [])],
@@ -125,7 +126,9 @@ export function describeError(message, { failure = null, stack = [], depth = 0, 
   const count = Math.min(seen.length, args ?? 2);
   const onStack = count > 0 && seen.slice(0, count).every((v, i) => stack[i] === v);
   const culprits = seen.slice(0, count).map((value, i) => ({ level: i + 1, ...describe(value) }));
-  const ctx = { ...parsed, message: String(message ?? ''), command, signature, args, depth, culprits, onStack, hasLine: !!String(line).trim() };
+  const failedHere = failure && (failure.op == null || parsed.commands.includes(failure.op));
+  const seenDepth = failedHere && failure.depth != null ? failure.depth : depth;
+  const ctx = { ...parsed, message: String(message ?? ''), command, signature, args, depth, seenDepth, culprits, onStack, hasLine: !!String(line).trim() };
   return {
     kind,
     command,
