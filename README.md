@@ -221,10 +221,12 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   soft keys, full screen and Settings, and the button beside it leaves.
 - The app bar's buttons, the drawers' tabs, fields and buttons, the
   Settings sheet, the plot's tools (in two columns), the suggestion chips,
-  the toasts' buttons and the minimal status line's modes are finger-sized,
-  and so are the soft keys while the keypad is hidden. The Variables drawer puts
+  the toasts' buttons, the writer tabs and Ask, and the minimal status line's
+  modes are finger-sized, and so are the soft keys while the keypad is hidden. The Variables drawer puts
   each variable's buttons on a line under its name, Share among them where
   the phone has a share sheet.
+- On a plot, two fingers pinch to zoom and one drags to pan; a tap shows
+  the x and y under it and each curve's value there.
 - Settings › Appearance sets the stack's text size, from Small to Larger,
   pretty math included. On Android it can also make the keys vibrate briefly
   as a finger presses them.
