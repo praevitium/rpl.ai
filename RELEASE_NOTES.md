@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.61 (2026-10-12)
+**Latest release:** v0.6.62 (2026-10-12)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.62 — 2026-10-12
+
+On a phone, where a drawer hides the command line, the drawer's actions now
+show their result: inserting a character or unit, running or inserting a
+command from the Catalog, recalling or rerunning a History line and recalling
+a variable close the drawer, as the HP's CHARS and CAT return to the stack
+(opening a folder keeps it open). They used to happen out of sight. After a
+character, a toast's More brings the Characters drawer back with its filter,
+like the HP's ECHO beside ECHO1. The tutor's Show me does the same on a
+phone: the step plays out on the stack, and the note's Continue brings the
+card back at the next step. On a tablet or desktop, where the drawer leaves
+the command line in view, nothing closes.
 
 ---
 
