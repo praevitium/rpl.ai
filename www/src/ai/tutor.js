@@ -22,12 +22,13 @@ export function stackCheck(current, expected, levels = 3) {
 }
 
 export class TutorCard {
-  constructor({ plan, tools, renderMarkdown, onFinish, onMine = null }) {
+  constructor({ plan, tools, renderMarkdown, onFinish, onMine = null, onShow = null }) {
     this.plan = plan;
     this.tools = tools;
     this.renderMarkdown = renderMarkdown;
     this.onFinish = onFinish;
     this.onMine = onMine;
+    this.onShow = onShow;
     this.current = 0;
     this.done = new Set();
     this.hintsShown = new Map();
@@ -96,7 +97,7 @@ export class TutorCard {
     if (moved) this.tools.restore(start);
     const error = this.tools.run(step.rpl);
     if (error) this.feedback.set(i, { ok: false, text: `That didn't run: ${error}` });
-    else this._complete(i);
+    else { this._complete(i); this.onShow?.(i, step); }
   }
 
   check(i) {

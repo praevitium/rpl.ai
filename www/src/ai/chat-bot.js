@@ -569,11 +569,12 @@ function setConsented() {
 }
 
 export class ChatBot {
-  constructor({ tools, getContext, onStatus = null, onTutorMine = null }) {
+  constructor({ tools, getContext, onStatus = null, onTutorMine = null, onTutorShow = null }) {
     this._tools      = tools;
     this._getContext = getContext;
     this._onStatusChange = onStatus;
     this._onTutorMine = onTutorMine;
+    this._onTutorShow = onTutorShow;
     this._llm        = new RemoteLLM();
     this.mode        = 'ask';
     this.tutorStyle  = 'socratic';
@@ -1357,6 +1358,7 @@ export class ChatBot {
       renderMarkdown,
       onFinish: (kind) => this._sendChip(kind === 'similar' ? 'Give me a similar problem to practise, and walk me through it.' : 'Recap the whole solution in a few lines.'),
       onMine: (i, step) => this._onTutorMine?.(step, () => card.check(i)),
+      onShow: (i, step) => this._onTutorShow?.(step),
     });
     return this._place(card.el);
   }
