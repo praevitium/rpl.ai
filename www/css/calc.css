@@ -302,7 +302,7 @@ button { cursor: pointer; }
   .install-btn span { display: none; }
 }
 /* On the smallest phones the directory name needs the room; Install stays in the ⋯ menu. */
-@container app (max-width: 339px) { .install-btn { display: none; } .appbar .sp { min-width: 0; } }
+@container app (max-width: 359px) { .install-btn { display: none; } .appbar .sp { min-width: 0; } }
 @container app (max-width: 719px) {
   .mode-chip:not(.summary) { display: none; }
   .mode-chip.summary { display: flex; }
@@ -1910,15 +1910,17 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   /* Short screens shrink the soft keys to make room for the keypad; without it they can take a finger. */
   :root[data-view="minimal"] .sk, .app:has(.keys.kp-hidden) .sk { height: 40px; }
   .crumbs button, .mode-chip, .appbar .icon-btn, .search-btn, .install-btn { min-height: 40px; }
-  /* Under 380 px the directory name needs the width. */
-  @container app (min-width: 380px) { .appbar .icon-btn, .search-btn, .install-btn { min-width: 40px; } }
+  /* Under 384 px the directory name needs the width. */
+  @container app (min-width: 384px) { .appbar .icon-btn, .search-btn, .install-btn { min-width: 40px; } }
   /* Narrower, they stay 34 px wide but take a finger in the bar's padding and the gap after the modes. */
-  @container app (max-width: 379px) {
+  @container app (max-width: 383px) {
     .appbar > button:first-child, .appbar > button:last-child, .appbar .sp + button, .appbar .sp + .install-btn + .search-btn { position: relative; }
     .appbar > button:first-child::before, .appbar .sp + button::before { content: ""; position: absolute; inset: 0 0 0 -6px; }
     .appbar > button:last-child::before { content: ""; position: absolute; inset: 0 -6px 0 0; }
   }
-  @container app (max-width: 339px) { .appbar .sp + .install-btn + .search-btn::before { content: ""; position: absolute; inset: 0 0 0 -6px; } }
+  @container app (max-width: 359px) { .appbar .sp + .install-btn + .search-btn::before { content: ""; position: absolute; inset: 0 0 0 -6px; } }
+  /* Between Install and More, Search has no gap to reach into, so it takes width from the spacers. */
+  @container app (min-width: 360px) and (max-width: 383px) { .appbar .sp { min-width: 0; } .search-btn { min-width: 40px; } }
   /* Six finger-sized actions don't fit beside a name at 320 px, so they get a line of their own. */
   .vr .main { grid-column: 2 / -1; }
   .vr .acts { grid-column: 1 / -1; }
