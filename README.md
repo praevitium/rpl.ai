@@ -215,10 +215,13 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - In Minimal view, ⌫ and Enter stay beside the command line, the menu
   button on the status line reaches Undo, command search, the drawers, the
   soft keys, full screen and Settings, and the button beside it leaves.
-- The app bar's buttons, the drawers' tabs, fields and buttons, and the
-  plot's tools (in two columns) are finger-sized. The Variables drawer puts
+- The app bar's buttons, the drawers' tabs, fields and buttons, the
+  Settings sheet and the plot's tools (in two columns) are finger-sized, and
+  so are the soft keys while the keypad is hidden. The Variables drawer puts
   each variable's buttons on a line under its name, Share among them where
   the phone has a share sheet.
+- On Android, Settings › Appearance can make the keys vibrate briefly as a
+  finger presses them.
 - A phone's back button closes the open menu, search, sheet, writer or
   drawer first, and leaves the app only when nothing is open.
 
