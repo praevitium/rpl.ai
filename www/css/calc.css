@@ -1936,8 +1936,11 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   .gr-readout { white-space: normal; }
   .tgl::before { content: ""; position: absolute; inset: -10px -4px; }
   /* The writer tabs and Ask take a finger in the gaps around them, so the stack keeps its height. */
-  .in-tabs button, .in-ask { position: relative; }
-  .in-tabs button::before, .in-ask::before { content: ""; position: absolute; inset: -8px 0 -7px; }
+  .in-tabs button, .as-mode button, .in-ask { position: relative; }
+  .in-tabs button::before, .as-mode button::before, .in-ask::before { content: ""; position: absolute; inset: -8px 0 -7px; }
+  .cb-newchat-btn, .cb-switch-model-btn, .cb-stop-btn, .cb-chip { min-height: 40px; }
+  .cb-input { min-height: 40px; padding: 10px; }
+  .cb-send-btn { width: 40px; height: 40px; }
   /* Too narrow for its own label, the editing note would show one letter; the status line's pill says it. */
   @container app (max-width: 429px) { .in-status { visibility: hidden; } }
   /* Short screens shrink the soft keys to make room for the keypad; without it they can take a finger. */
