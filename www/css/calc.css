@@ -1900,6 +1900,8 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   /* The writer tabs and Ask take a finger in the gaps around them, so the stack keeps its height. */
   .in-tabs button, .in-ask { position: relative; }
   .in-tabs button::before, .in-ask::before { content: ""; position: absolute; inset: -8px 0 -7px; }
+  /* Too narrow for its own label, the editing note would show one letter; the status line's pill says it. */
+  @container app (max-width: 429px) { .in-status { visibility: hidden; } }
   /* Short screens shrink the soft keys to make room for the keypad; without it they can take a finger. */
   :root[data-view="minimal"] .sk, .app:has(.keys.kp-hidden) .sk { height: 40px; }
   .crumbs button, .mode-chip, .appbar .icon-btn, .search-btn, .install-btn { min-height: 40px; }
