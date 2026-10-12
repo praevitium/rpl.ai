@@ -299,7 +299,10 @@ cover quick stack commands; algebra commands are not previewed.
 Every error says what happened, why, and where. The culprit level is
 outlined, the command's stack diagram is quoted, and fixes are one click
 away: drop the bad value, swap levels, open the reference, or ask the
-assistant to explain. A failed command leaves the stack as it was.
+assistant to explain. A failed command gives its arguments back. As on the
+HP, what ran before it in the line or program stays, the rest doesn't run and
+the line is used up; Fix the line brings it back, and Undo restores the stack
+from before it.
 
 ![An error banner with fixes](screenshots/errors.png)
 
