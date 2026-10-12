@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.50 (2026-10-12)
+**Latest release:** v0.6.51 (2026-10-12)
 
 ---
 
@@ -18,6 +18,24 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.51 — 2026-10-12
+
+Stack levels keep their full height when the stack holds more than fits, so a
+matrix or a textbook fraction no longer draws over the levels next to it, on a
+phone with a writer open or on a desktop with a tall stack; the view scrolls
+instead, and the "more levels above" pill counts what is hidden. A level wider
+than the stack, such as a five-column matrix on a 320 px phone, fades at the
+edge it continues past, as the key strip does, instead of ending in half a
+digit; drag it sideways to read the rest. A command on a deep stack no longer
+stalls while the levels animate into place: the animation measured each row
+after starting the one before, laying the whole stack out once per row, so a
+command on a 1,000-level stack took 6 s and now takes a quarter of a second.
+In Chrome a browser tab no longer offers Install once rpl.ai is installed: it
+asks getInstalledRelatedApps, and the manifest lists the app as its own
+related web app.
 
 ---
 
