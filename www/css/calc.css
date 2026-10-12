@@ -1978,4 +1978,9 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   :root[data-keyboard] .input-top, :root[data-keyboard] .input-hint,
   :root[data-keyboard] .mx-foot, :root[data-keyboard] .status-line, :root[data-keyboard] .menubar, :root[data-keyboard] .st-more { display: none; }
   :root[data-keyboard] .mx-grid-wrap { max-height: 76px; }
+  :root[data-keyboard] .dw-head { display: none; }
+}
+/* Typing in a drawer on a short screen leaves its content the room its tabs and the assistant's status took. */
+@media (max-height: 400px) {
+  :root[data-keyboard] .dw-tabs, :root[data-keyboard] .cb-header { display: none; }
 }
