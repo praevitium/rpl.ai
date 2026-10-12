@@ -1906,6 +1906,9 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   /* Keyboard shortcuts mean nothing on a touch screen. */
   .pop .opt em, .pal .kbd, .pal-foot { display: none; }
   .pop .opt, .pop .grid button, .pop .layers button { min-height: 40px; }
+  /* History entries show in full (up to six lines), as variable names do, and a section's text button takes a finger without making its header taller. */
+  .hr .in-t, .hr .out { white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; }
+  .sec-h button { min-height: 40px; margin: -12px 0; padding: 0 8px; }
   /* Links in a reference page or About answer a finger-sized tap without moving the text around them. */
   .ref-doc .cmd-help-link, .ref-link { position: relative; }
   .ref-doc .cmd-help-link::before, .ref-link::before { content: ''; position: absolute; inset: -11px -4px; }
