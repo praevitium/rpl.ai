@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.48 (2026-10-12)
+**Latest release:** v0.6.49 (2026-10-12)
 
 ---
 
@@ -18,6 +18,18 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.49 — 2026-10-12
+
+With Trace on, a tap or click on a plot moves the trace cursor to that x, and a
+drag still pans. On touch, the plot's seven types sit in one row that scrolls
+sideways instead of wrapping to three rows on a narrow phone, with the chosen
+type scrolled into sight, and the plot's hint and readouts wrap onto a second
+line instead of losing their end. Under 380 px on touch, the app bar's first
+and last buttons and the button after the modes take a 40 px tap through hit
+areas in the bar's padding and the gap beside them, while staying 34 px wide.
 
 ---
 
