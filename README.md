@@ -210,7 +210,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   what you typed, leaving off empty rows and columns at the end, and next row
   goes back to the column the row started in, as in a spreadsheet. Its menu
   has the HP's ←WID and WID→, which make the cells narrower or wider so a
-  long number shows in full.
+  long number shows in full. As with the HP's ENTER, your keyboard's Enter
+  stores what you typed in a cell and moves to the next one, and on a cell
+  you haven't typed in it puts the matrix on the stack, so 1 Enter 2 Enter
+  Enter enters [[ 1 2 ]].
 - Opening the equation or matrix writer brings up your phone's keyboard, and
   so does tapping the equation. While the keyboard is up, the calculator
   keypad steps aside so the writer stays in view.
@@ -234,8 +237,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   +ROW, +COL and TRN are a tap away.
 - The app bar's buttons, the drawers' tabs, fields and buttons, the
   Settings sheet, the plot's tools (in two columns), the suggestion chips,
-  the toasts' buttons, the writer tabs and Ask, the assistant's controls and
-  the minimal status line's modes are finger-sized, and so are the soft keys while the keypad is hidden. The Variables drawer puts
+  the toasts' buttons, the writer tabs and Ask, the matrix writer's cells,
+  the assistant's controls and the minimal status line's modes are
+  finger-sized, and so are the soft keys while the keypad is hidden. The Variables drawer puts
   each variable's buttons on a line under its name, Share among them where
   the phone has a share sheet, and the History drawer shows each entry in
   full. A drawer opens as a sheet from the bottom; drag its tabs or title
