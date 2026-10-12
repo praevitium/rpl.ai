@@ -676,7 +676,7 @@ class App {
     const cell = document.createElement('div');
     cell.className = 'st-val';
     this.display._fillValue(cell, this.stack.peek(level), 30);
-    this.sheets.openView(`Level ${level}`, cell.outerHTML);
+    this.sheets.openView(`Level ${level}`, cell.outerHTML, level);
   }
 
   _levelMenu(level, anchor) {

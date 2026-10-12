@@ -1,5 +1,5 @@
 import { icon } from './icons.js';
-import { escapeHtml } from './display.js';
+import { escapeHtml, markScrollEdges } from './display.js';
 import { ACTIONS, KEYMAP, CONTEXT_LABELS, chordText, isMacPlatform } from './actions.js';
 import { STORAGE_KEY as STACK_STORAGE_KEY, BACKUPS_KEY } from '../rpl/persist.js';
 import { UI_PREFS_KEY, THEMES, THEME_LABELS, STACK_SIZES, STACK_SIZE_LABELS, TUTOR_STYLES } from './ui-prefs.js';
@@ -40,9 +40,12 @@ export class Sheets {
 
   openAbout() { this._open('about'); }
 
-  openView(title, html) {
-    this.view = { title, html };
+  openView(title, html, level) {
+    this.view = { title, html, level };
     this._open('view');
+    const view = this.el.querySelector('.sheet-view');
+    markScrollEdges(view);
+    view.addEventListener('scroll', () => markScrollEdges(view), { passive: true });
   }
 
   _open(kind) {
@@ -69,7 +72,9 @@ export class Sheets {
       return;
     }
     if (this.kind === 'view') {
-      this.el.innerHTML = sheet(escapeHtml(this.view.title), `<div class="sheet-view">${this.view.html}</div>`);
+      const act = (name, ico, label) => `<button type="button" class="btn" data-sh="view-act" data-act="${name}">${icon(ico, 'sm')}${label}</button>`;
+      const acts = [act('edit', 'edit', 'Edit'), act('copy', 'copy', 'Copy'), typeof navigator.share === 'function' ? act('share', 'share', 'Share') : ''].join('');
+      this.el.innerHTML = sheet(escapeHtml(this.view.title), `<div class="sheet-view">${this.view.html}</div><div class="sheet-view-acts">${acts}</div>`);
       return;
     }
     const nav = SETTINGS_PAGES.map((p) => `<button type="button" data-sh="page" data-page="${p}" aria-pressed="${p === this.page}">${icon({ appearance: 'sliders', assistant: 'spark', data: 'folder' }[p], 'sm')}${{ appearance: 'Appearance', assistant: 'Assistant', data: 'Data' }[p]}</button>`).join('');
@@ -143,6 +148,12 @@ export class Sheets {
     const { app } = this;
     switch (b.dataset.sh) {
       case 'close': this.close(); return;
+      case 'view-act': {
+        const { level } = this.view;
+        if (b.dataset.act === 'edit') this.close();
+        app.levelAction(b.dataset.act, level);
+        return;
+      }
       case 'page': this.page = b.dataset.page; this._confirmReset = false; this._render(); return;
       case 'theme': app.setTheme(b.dataset.theme); this._render(); return;
       case 'stack-size': app.setStackSize(b.dataset.size); this._render(); return;
