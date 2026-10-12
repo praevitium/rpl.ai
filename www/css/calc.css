@@ -1889,6 +1889,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   }
   /* Finger-sized tap targets for the writers' keys and the command line's buttons (W-L30). */
   .writer-keys .cmdline-go { height: 40px; min-width: 40px; }
+  .mx-cell { height: 40px; }
   /* 40 px tall, reaching into the command line's padding so the line keeps its height. */
   .cmdline .cmdline-go { min-width: 40px; height: 40px; margin: -4px 0; }
   /* In minimal view the status line holds the only buttons a phone has. */
