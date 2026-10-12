@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.47 (2026-10-12)
+**Latest release:** v0.6.48 (2026-10-12)
 
 ---
 
@@ -18,6 +18,20 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.48 — 2026-10-12
+
+Plots on a phone zoom with two fingers: pinch about any point to zoom in or
+out, and the point between your fingers follows them, while one finger still
+pans. A tap on a plot now keeps its readout (x, y and each curve's value
+there) instead of clearing it as the finger lifts, and the plot's hint on a
+phone reads "Tap to read values · drag to pan · pinch to zoom". On touch, the
+RPL, Equation and Matrix tabs and Ask take a 40 px tap through hit areas in
+the gaps around them, so the stack keeps its height. In minimal view the
+status line's directory path ends in an ellipsis instead of a clipped glyph,
+and steps aside on screens under 390 px wide.
 
 ---
 
