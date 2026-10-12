@@ -1,8 +1,9 @@
 const FOCUSABLE = 'button:not([disabled]), input, select, [tabindex="0"]';
 
 export class Popover {
-  constructor(host) {
+  constructor(host, { onOpen = null } = {}) {
     this.host = host;
+    this._onOpen = onOpen;
     this.el = null;
     this.anchor = null;
     this._onClose = null;
@@ -28,6 +29,7 @@ export class Popover {
 
   open(anchor, html, { onClick = null, onClose = null, className = '', label = 'Menu', point = null } = {}) {
     this.close({ restoreFocus: false });
+    this._onOpen?.();
     const el = document.createElement('div');
     el.className = `pop ${className}`.trim();
     el.setAttribute('role', 'menu');

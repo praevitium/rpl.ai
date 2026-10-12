@@ -81,7 +81,8 @@ class App {
     this.preview = null;
     this._lineEmpty = true;
 
-    this.popover = new Popover($('layPop'));
+    // A view's hint toast would sit over the menu's first rows.
+    this.popover = new Popover($('layPop'), { onOpen: () => this.toasts?.dismiss('view') });
     this.toasts = new Toasts($('toasts'));
     this.display = new Display({
       stackView: $('stackView'), cmdline: $('cmdline'), statusLine: $('statusLine'),
