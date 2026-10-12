@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.57 (2026-10-12)
+**Latest release:** v0.6.58 (2026-10-12)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.58 — 2026-10-12
+
+A command's reference page in the Catalog now fits the drawer. It used to
+take the width of its widest table or stack line, so on a phone (and in the
+desktop drawer) the description of INTEG, →LIST, CONVERT or DOLIST ran off
+the right edge; now the text wraps and a wide input/output table scrolls on
+its own, fading at the edge it continues past. A double tap on a level's VIEW
+zooms it to 2x about the finger, and the next one back, beside pinch zoom.
+On touch the command links in a reference page answer a finger-sized tap;
+they were 17 px tall.
 
 ---
 
