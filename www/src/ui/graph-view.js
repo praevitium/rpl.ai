@@ -675,7 +675,7 @@ export class GraphView {
         <input type="checkbox" class="gr-show" data-trace="${t.id}" data-act="toggle" ${t.enabled ? 'checked' : ''}
                style="accent-color:${t.color}" title="Show or hide this trace" aria-label="Show ${escapeHtml(t.label || t.expr || t.kind)}">
         ${body}
-        <button type="button" class="mini" data-trace="${t.id}" data-act="push" title="Push it onto the stack" aria-label="Push onto the stack">${icon('down', 'sm')}</button>
+        <button type="button" class="mini" data-trace="${t.id}" data-act="push" title="Push it onto the stack" aria-label="Push onto the stack">${icon('enter', 'sm')}</button>
         <button type="button" class="mini" data-trace="${t.id}" data-act="remove" title="Remove" aria-label="Remove">${icon('x', 'sm')}</button>
       </div>`;
     }).join('') || '<div class="gr-empty">Select an expression on the stack and press PLOT, add level 1 here, or type one below.</div>';
