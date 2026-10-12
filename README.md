@@ -190,6 +190,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - Tap a stack level for its actions: Edit, Pick (DUP on level 1), Roll
   (SWAP on level 2), Drop, and ⋯ for EVAL, →NUM, copy, share, store and the
   rest. Swipe a level left or right to drop it; the toast's Undo brings it back.
+  A level too wide for the screen, such as a big matrix, fades at the edge
+  it continues past; drag it sideways to read the rest.
 - ⌫ and Enter sit beside the command line, finger-sized. ⌫ deletes a
   character (or the selected text), or drops level 1 when the line is empty.
 - On a narrow screen each soft-key name is sized to its key, so `SPEED`
