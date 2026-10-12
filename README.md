@@ -237,7 +237,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   the phone has a share sheet, and the History drawer shows each entry in
   full. A drawer opens as a sheet from the bottom; drag its tabs or title
   down to close it. In minimal view it opens at the side; drag its title
-  right to close it.
+  right to close it. Running a command from the Catalog, recalling a History
+  line or a variable, or picking a character closes the drawer so you see
+  the result, as the HP's catalog does; after a character, More brings the
+  Characters back for the next one.
 - On a plot, two fingers pinch to zoom and one drags to pan; a tap shows
   the x and y under it and each curve's value there, and with Trace on it
   moves the trace cursor there. The plot's tools fold into one ⋯ button,
@@ -296,7 +299,8 @@ calculator dry-runs every step before you see it. Each step explains the idea
 and shows the keystrokes. Press **Show me** to watch it happen, or
 **I'll do it** to press the keys yourself; the tutor checks your stack and
 says what's off. On a phone, I'll do it puts the assistant away so you can
-type, and a note with the step's keys brings it back when you tap Check. Hints come in stages. Start it from the Tutor switch in the
+type, and a note with the step's keys brings it back when you tap Check;
+Show me puts it away too, so you see the step land on the stack. Hints come in stages. Start it from the Tutor switch in the
 assistant, or Walk me through a problem in the Help menu. Choose Socratic or
 Direct in Settings. Outside Tutor mode, when the assistant demonstrates
 something on your stack, it pauses after each step worth a look, with a note
