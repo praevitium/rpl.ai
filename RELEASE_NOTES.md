@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.58 (2026-10-12)
+**Latest release:** v0.6.59 (2026-10-12)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.59 — 2026-10-12
+
+With a phone's keyboard up, the assistant keeps its conversation in view: its
+endpoint button and token counts wait for the keyboard to go, where before
+they left the messages 14 px at 320 px wide and pushed the input below the
+screen. On a phone the drawer is a sheet from the bottom, and dragging its
+tabs or title down past a quarter of its height now closes it, as sheets do;
+a shorter drag springs back. The History drawer shows each entry and error
+in full on a phone, up to six lines, instead of cutting it short, and the
+Errors header's Clear takes a finger.
 
 ---
 
