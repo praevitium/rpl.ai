@@ -190,11 +190,11 @@ export class Sheets {
   }
 }
 
-// Two fingers (or a trackpad pinch) zoom the value about the point between them; one finger still scrolls.
+// Two fingers (or a trackpad pinch) zoom the value about the point between them, and a double tap toggles 2x about the finger; one finger still scrolls.
 function zoomOnPinch(view) {
   const value = view.firstElementChild;
   const scroller = view.closest('.sheet-c');
-  let zoom = 1, pinch = null;
+  let zoom = 1, pinch = null, pinched = false, tap = null;
   const zoomAbout = (next, x, y) => {
     next = clampViewZoom(next);
     const ratio = next / zoom;
@@ -209,7 +209,10 @@ function zoomOnPinch(view) {
     const [a, b] = ev.touches;
     return { gap: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
   };
-  const start = (ev) => { pinch = ev.touches.length === 2 ? { gap: fingers(ev).gap, zoom } : null; };
+  const start = (ev) => {
+    if (ev.type === 'touchstart') pinched = ev.touches.length > 1;
+    pinch = ev.touches.length === 2 ? { gap: fingers(ev).gap, zoom } : null;
+  };
   view.addEventListener('touchstart', start, { passive: true });
   view.addEventListener('touchend', start, { passive: true });
   view.addEventListener('touchcancel', start, { passive: true });
@@ -219,6 +222,12 @@ function zoomOnPinch(view) {
     const f = fingers(ev);
     zoomAbout(pinch.zoom * f.gap / pinch.gap, f.x, f.y);
   }, { passive: false });
+  view.addEventListener('pointerup', (ev) => {
+    if (ev.pointerType !== 'touch' || pinched) { tap = null; return; }
+    const again = tap && ev.timeStamp - tap.t < 350 && Math.hypot(ev.clientX - tap.x, ev.clientY - tap.y) < 30;
+    tap = again ? null : { t: ev.timeStamp, x: ev.clientX, y: ev.clientY };
+    if (again) zoomAbout(zoom > 1 ? 1 : 2, ev.clientX, ev.clientY);
+  });
   view.addEventListener('wheel', (ev) => {
     if (!ev.ctrlKey) return;
     ev.preventDefault();
