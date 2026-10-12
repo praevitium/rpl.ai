@@ -1903,6 +1903,8 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   /* A selected level's actions are finger-sized, and start further left so six fit at 320 px. */
   /* Finger-sized, the toolbar would cover the value it acts on, so it takes a line of its own under it. */
   .st-acts { position: static; transform: none; grid-column: 1 / -1; justify-content: space-between; margin-top: 2px; box-shadow: none; }
+  /* A held finger opens the level's menu (Copy is there), not a text selection. */
+  .st-row { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
   .st-acts button { min-width: 40px; min-height: 40px; justify-content: center; font-size: 13px; }
   .mini, .icon-btn.sm { width: 40px; height: 40px; }
   .btn, .dw-tabs button, .path-bar button { min-height: 40px; }

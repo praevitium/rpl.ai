@@ -118,6 +118,7 @@ const MODE_NAMES = Object.freeze({
 
 const prefersReducedMotion = () => !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 const swipeThreshold = (width) => Math.min(120, width * 0.35);
+const LONG_PRESS_MS = 450;
 
 export class Display {
   constructor({ stackView, cmdline, statusLine }) {
@@ -191,6 +192,7 @@ export class Display {
       view.querySelectorAll('.dragging, .drag-over').forEach((el) => el.classList.remove('dragging', 'drag-over'));
     });
     this._installSwipe(view);
+    this._installLongPress(view);
     view.addEventListener('scroll', () => this._updateMore(), { passive: true });
     view.addEventListener('scroll', (ev) => {
       if (ev.target.classList?.contains('st-val')) markScrollEdges(ev.target);
@@ -238,6 +240,7 @@ export class Display {
     }, true);
     view.addEventListener('pointermove', (ev) => {
       if (swipe?.id !== ev.pointerId) return;
+      if (this._held) { swipe = null; return; }
       swipe.lastX = ev.clientX;
       swipe.lastY = ev.clientY;
       const dx = ev.clientX - swipe.x;
@@ -278,6 +281,45 @@ export class Display {
     };
     view.addEventListener('pointerup', end);
     view.addEventListener('pointercancel', end);
+  }
+
+  // A finger held on a level opens its menu. iOS fires no contextmenu for a touch, so a timer stands in;
+  // on Android whichever comes first opens it and the native menu stays shut.
+  _installLongPress(view) {
+    this._held = false;
+    let hold = null;
+    const cancel = () => { clearTimeout(hold?.timer); hold = null; };
+    const fire = () => {
+      const level = hold.level;
+      cancel();
+      this._held = true;
+      this.onRowHold?.(level);
+    };
+    // The finger lifts over the menu it opened, and that release is no tap on the menu.
+    const doc = view.ownerDocument;
+    doc?.addEventListener('pointerdown', () => { this._held = false; }, true);
+    doc?.addEventListener('click', (ev) => {
+      if (!this._held) return;
+      this._held = false;
+      ev.preventDefault();
+      ev.stopPropagation();
+    }, true);
+    view.addEventListener('pointerdown', (ev) => {
+      cancel();
+      if (ev.pointerType !== 'touch' || !ev.isPrimary || ev.target.closest?.('.st-acts')) return;
+      const row = ev.target.closest?.('.st-row[data-key]');
+      if (row) hold = { level: Number(row.dataset.level), x: ev.clientX, y: ev.clientY, timer: setTimeout(fire, LONG_PRESS_MS) };
+    });
+    view.addEventListener('pointermove', (ev) => {
+      if (hold && Math.hypot(ev.clientX - hold.x, ev.clientY - hold.y) > 10) cancel();
+    });
+    view.addEventListener('pointerup', cancel);
+    view.addEventListener('pointercancel', cancel);
+    view.addEventListener('contextmenu', (ev) => {
+      if (!hold && !this._held) return;
+      ev.preventDefault();
+      if (hold) fire();
+    });
   }
 
   _idOf(value) {

@@ -591,6 +591,10 @@ class App {
     d.rowActionsHtml = (level, value) => `<div class="st-acts" role="toolbar" aria-label="Level ${level} actions"><button type="button" data-row-act="edit" title="Edit (Enter)">${icon('edit', 'sm')}Edit</button><button type="button" data-row-act="pick" title="Copy it to level 1 (PICK)">Pick</button><button type="button" data-row-act="roll" title="Move it to level 1 (ROLL)">Roll</button>${isSymbolic(value) ? `<button type="button" data-row-act="plot" title="Plot it">${icon('plot', 'sm')}</button>` : ''}<button type="button" data-row-act="drop" title="Drop it (⌫)" aria-label="Drop">${icon('trash', 'sm')}</button><button type="button" data-row-act="more" title="More actions" aria-label="More actions">${icon('more', 'sm')}</button></div>`;
     d.onRowClick = (level) => this.selectLevel(this.selection === level ? null : level);
     d.onRowDoubleClick = (level) => this.editLevel(level);
+    d.onRowHold = (level) => {
+      this.selectLevel(level);
+      this.levelAction('more', level, this.display.stackView.querySelector('.st-row.sel [data-row-act="more"]'));
+    };
     d.onRowAction = (level, act, el) => this.levelAction(act, level, el);
     d.onRowMove = (from, to) => this._moveLevel(from, to);
     d.onRowSwipe = (level) => {
