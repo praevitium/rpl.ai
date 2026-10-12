@@ -348,6 +348,7 @@ export class MatrixEditor {
       if (!this._tabbing) this._runC = this._focusC;
       this._mergeCell = null;
       this._typedCell = null;
+      cell.enterKeyHint = 'done';
     });
     this._gridEl.addEventListener('input', (e) => {
       const cell = e.target.closest?.('input.mx-cell');
@@ -355,6 +356,7 @@ export class MatrixEditor {
       const key = `${cell.dataset.r},${cell.dataset.c}`;
       this._remember(key);
       this._typedCell = key;
+      if (onTouch()) cell.enterKeyHint = 'next';
       this.grid[cell.dataset.r][cell.dataset.c] = cell.value;
       this._noteShape();
     });
@@ -641,7 +643,14 @@ export class MatrixEditor {
     const atStart = cell.selectionStart === 0 && cell.selectionEnd === 0;
     const atEnd = cell.selectionStart === cell.value.length && cell.selectionEnd === cell.value.length;
     let next = null;
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); this.app.commitEntry(); return; }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      // A phone's Enter works like the HP MatrixWriter's ENTER: it stores what was typed and moves on, and enters the matrix otherwise.
+      if (onTouch() && this._typedCell === `${r},${c}`) this._moveBy('next', r, c);
+      else this.app.commitEntry();
+      return;
+    }
     if (e.key === 'Enter' || e.key === 'Tab') {
       e.preventDefault();
       e.stopPropagation();
