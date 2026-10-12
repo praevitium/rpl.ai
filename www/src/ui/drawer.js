@@ -887,32 +887,36 @@ export class Drawers {
     let dragged = false;
     this.el.addEventListener('pointerdown', (ev) => {
       dragged = false;
-      drag = ev.pointerType === 'touch' && ev.isPrimary && this.el.offsetTop > 0 && ev.target.closest('.dw-tabs, .dw-head')
-        ? { id: ev.pointerId, x: ev.clientX, y: ev.clientY, dy: 0, active: false }
-        : null;
+      const axis = ev.pointerType === 'touch' && ev.isPrimary ? this._dragAxis(ev.target) : null;
+      drag = axis ? { axis, id: ev.pointerId, x: ev.clientX, y: ev.clientY, d: 0, active: false } : null;
     });
     this.el.addEventListener('pointermove', (ev) => {
       if (drag?.id !== ev.pointerId) return;
-      const dy = ev.clientY - drag.y;
+      const [along, across] = drag.axis === 'y'
+        ? [ev.clientY - drag.y, ev.clientX - drag.x]
+        : [ev.clientX - drag.x, ev.clientY - drag.y];
       if (!drag.active) {
-        if (Math.abs(ev.clientX - drag.x) > 10) { drag = null; return; }
-        if (dy < 10) return;
+        if (Math.abs(across) > 10) { drag = null; return; }
+        if (along < 10) return;
         drag.active = true;
         this.el.setPointerCapture?.(ev.pointerId);
         this.el.style.transition = 'none';
       }
-      drag.dy = Math.max(0, dy);
-      this.el.style.transform = `translateY(${drag.dy}px)`;
+      drag.d = Math.max(0, along);
+      this.el.style.transform = `translate${drag.axis.toUpperCase()}(${drag.d}px)`;
     });
     const end = (ev) => {
       if (drag?.id !== ev.pointerId) return;
-      const { active, dy } = drag;
+      const { axis, active, d } = drag;
       drag = null;
       if (!active) return;
       dragged = true;
+      const from = this.el.style.transform;
       this.el.style.transition = '';
       this.el.style.transform = '';
-      if (ev.type === 'pointerup' && dy > Math.min(120, this.el.offsetHeight / 4)) this.close();
+      const size = axis === 'y' ? this.el.offsetHeight : this.el.offsetWidth;
+      if (ev.type === 'pointerup' && d > Math.min(120, size / 4)) this.close();
+      else this.el.animate?.([{ transform: from }, { transform: 'none' }], { duration: 180, easing: 'ease-out' });
     };
     this.el.addEventListener('pointerup', end);
     this.el.addEventListener('pointercancel', end);
@@ -922,6 +926,13 @@ export class Drawers {
       ev.preventDefault();
       ev.stopPropagation();
     }, true);
+  }
+
+  // A bottom sheet drags down by its tabs or title. Minimal view's side panel drags right by its title only, since its tabs scroll sideways.
+  _dragAxis(target) {
+    if (this.el.offsetTop > 0) return target.closest('.dw-tabs, .dw-head') ? 'y' : null;
+    const sidePanel = document.documentElement.dataset.view === 'minimal' && this.el.offsetLeft > 0;
+    return sidePanel && target.closest('.dw-head') ? 'x' : null;
   }
 
   _bindGrip(grip) {
