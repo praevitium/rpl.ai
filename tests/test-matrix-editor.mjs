@@ -4,6 +4,7 @@ import {
   emptyGrid, identityGrid, zerosGrid, clampDim, resizeGrid,
   parseMatrixCell, gridToMatrix, gridToValue, valueToGrid, pasteIntoGrid,
   insertRow, deleteRow, insertCol, deleteCol, transposeGrid, MATRIX_MAX, toggleCellSign, mapCaret, trimGrid, eexText,
+  nextCellWidth,
 } from '../www/src/ui/matrix-editor.js';
 import {
   Matrix, Vector, Real, Integer, RList, isMatrix, isInteger, isReal, isRational, isVector, isSymbolic,
@@ -13,6 +14,14 @@ import {
   assert(clampDim(0) === 1, 'clampDim: floor 1');
   assert(clampDim(MATRIX_MAX + 9) === MATRIX_MAX, 'clampDim: cap');
   assert(clampDim(3.9) === 3, 'clampDim: floor');
+}
+
+{
+  assert(nextCellWidth(56, 1) === 72, 'WID→: a 56 px phone cell steps to 72');
+  assert(nextCellWidth(72, -1) === 56, '←WID: a 72 px cell steps to 56');
+  assert(nextCellWidth(60, 1) === 72 && nextCellWidth(60, -1) === 56, 'WID: an odd width steps to its neighbours');
+  assert(nextCellWidth(176, 1) === undefined, 'WID→: stops at the widest');
+  assert(nextCellWidth(40, -1) === undefined, '←WID: stops at the narrowest');
 }
 
 {

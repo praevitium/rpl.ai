@@ -12,6 +12,7 @@ import {
 export const MATRIX_MAX = 50;
 const MATRIX_DEFAULT = 3;
 const HISTORY_MAX = 100;
+const CELL_WIDTHS = Object.freeze([40, 56, 72, 96, 128, 176]);
 
 function makeGrid(rows, cols, cell) {
   return Array.from({ length: clampDim(rows) }, (_, i) => Array.from({ length: clampDim(cols) }, (_, j) => cell(i, j)));
@@ -27,6 +28,11 @@ export function identityGrid(rows, cols = rows) {
 
 export function zerosGrid(rows, cols) {
   return makeGrid(rows, cols, () => '0');
+}
+
+// The HP's ←WID and WID→ step the cell width; undefined at either end.
+export function nextCellWidth(now, step) {
+  return step > 0 ? CELL_WIDTHS.find((w) => w > now) : CELL_WIDTHS.findLast((w) => w < now);
 }
 
 export function clampDim(n) {
@@ -470,10 +476,18 @@ export class MatrixEditor {
       { label: 'IDN', title: 'Fill with the identity', onPress: run(() => this.fill(identityGrid)) },
       { label: 'ZERO', title: 'Fill with zeros', onPress: run(() => this.fill(zerosGrid)) },
       { label: 'VECT', title: 'Push a single row or column as a vector', toggle: true, on: () => this.asVector, onPress: run(() => this.toggleVector()) },
+      { label: '←WID', title: 'Make the cells narrower', onPress: () => this.widen(-1) },
+      { label: 'WID→', title: 'Make the cells wider, so long numbers show in full', onPress: () => this.widen(1) },
       { label: 'FROM1', title: 'Copy level 1 into the grid; Enter then pushes a new one', onPress: run(() => this.loadFromStack()) },
       { label: 'CLEAR', title: 'Empty every cell', onPress: run(() => { this.fill(emptyGrid); this._focusCell(0, 0); }) },
       ...SYMBOLS.map((s) => ({ label: s.text, title: `${s.title} in the focused cell`, onPress: () => this.insertSymbol(s.text) })),
     ];
+  }
+
+  widen(step) {
+    const now = this._gridEl.querySelector('.mx-cell')?.offsetWidth;
+    const next = now && nextCellWidth(now, step);
+    if (next) this._gridEl.style.setProperty('--mx-w', `${next}px`);
   }
 
   loadFromStack() {
