@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.59 (2026-10-12)
+**Latest release:** v0.6.60 (2026-10-12)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.60 — 2026-10-12
+
+In minimal view a drawer opens as a panel at the side, and dragging its title
+bar right now moves it with the finger and closes it past a quarter of its
+width, as the bottom sheet closes when dragged down; a shorter drag springs
+back. The assistant's input placeholders are shorter ("Ask about RPL,
+maths…" and "Paste a problem…"), since on a phone at 320 and 360 px they
+wrapped to a second line that the one-line input cut off. On touch the
+assistant's controls take a finger: Ask and Tutor reach into the drawer head
+like the writer tabs, and Copy, New, Endpoint settings, Stop, the starter
+chips, the input and Send are 40 px tall. Opening a drawer now dismisses the
+minimal-view and keypad-hidden hints, which stay five seconds and covered a
+freshly opened drawer's tabs and title in minimal view.
 
 ---
 
