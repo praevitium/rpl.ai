@@ -1647,6 +1647,15 @@ function installOfflineCache(app) {
 
 installOfflineCache(window.__hp50);
 
+// A browser tab can't tell the app is installed, except through this (Chrome only).
+if (navigator.getInstalledRelatedApps && !window.__hp50.isInstalledApp()) {
+  navigator.getInstalledRelatedApps().then((apps) => {
+    if (!apps.length) return;
+    window.__hp50.installedHere = true;
+    window.__hp50.appbar.render();
+  }).catch(() => {});
+}
+
 window.addEventListener('appinstalled', () => {
   window.installPrompt = null;
   window.__hp50.installedHere = true;

@@ -94,7 +94,8 @@ you to confirm, or rpl.ai tells you where it keeps its install command:
 | Other Android browsers | The browser menu's Install app or Add to Home screen |
 | Firefox on a computer | Firefox can't install web apps; rpl.ai works in a Firefox tab, offline included |
 
-The installed app has no Install button.
+The installed app has no Install button, and in Chrome neither does a
+browser tab once the app is installed.
 
 After the first visit, rpl.ai runs offline. When you are online it checks
 for a new version, and an installed copy offers to reload when one is
