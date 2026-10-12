@@ -1,5 +1,5 @@
 import { icon } from './icons.js';
-import { escapeHtml } from './display.js';
+import { escapeHtml, markScrollEdges } from './display.js';
 import { shortcutText } from './actions.js';
 
 const WRITERS = Object.freeze([
@@ -54,11 +54,7 @@ function keyStrip(app) {
     else if (key.action) app.runAction(key.action);
     else entry.typeWithCursor(key.text, key.back ?? 0);
   });
-  const markHiddenKeys = () => {
-    const { scrollLeft, scrollWidth, clientWidth } = strip;
-    strip.classList.toggle('more-l', scrollLeft > 1);
-    strip.classList.toggle('more-r', scrollLeft + clientWidth < scrollWidth - 1);
-  };
+  const markHiddenKeys = () => markScrollEdges(strip);
   strip.addEventListener('scroll', markHiddenKeys, { passive: true });
   new ResizeObserver(markHiddenKeys).observe(strip);
   return strip;

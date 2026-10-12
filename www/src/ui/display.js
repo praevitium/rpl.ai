@@ -10,6 +10,13 @@ export function escapeHtml(text) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// Classes for edge fades on a sideways scroller, showing which way there is more.
+export function markScrollEdges(el) {
+  const { scrollLeft, scrollWidth, clientWidth } = el;
+  el.classList.toggle('more-l', scrollLeft > 1);
+  el.classList.toggle('more-r', scrollLeft + clientWidth < scrollWidth - 1);
+}
+
 export function binaryBaseLabel(base) {
   return { h: 'HEX', d: 'DEC', o: 'OCT', b: 'BIN' }[base];
 }
@@ -185,12 +192,16 @@ export class Display {
     });
     this._installSwipe(view);
     view.addEventListener('scroll', () => this._updateMore(), { passive: true });
+    view.addEventListener('scroll', (ev) => {
+      if (ev.target.classList?.contains('st-val')) markScrollEdges(ev.target);
+    }, { capture: true, passive: true });
     // A view that shrinks under a writer or the keyboard keeps level 1 in sight (W-M16).
     if (typeof ResizeObserver === 'function') {
       let viewport = view.clientHeight;
       new ResizeObserver(() => {
         if (view.scrollTop + viewport >= view.scrollHeight - 2) view.scrollTop = view.scrollHeight;
         viewport = view.clientHeight;
+        this._markWideLevels();
       }).observe(view);
     }
     const statusAction = (el) => this.onStatusAction?.(el.dataset.status, el.dataset, el);
@@ -329,7 +340,12 @@ export class Display {
     if (selected) selected.scrollIntoView?.({ block: 'nearest' });
     else view.scrollTop = view.scrollHeight;
     if (!this.ghosts && !this.marks && before.size && !prefersReducedMotion()) this._animate(before);
+    this._markWideLevels();
     this._updateMore();
+  }
+
+  _markWideLevels() {
+    this.stackView.querySelectorAll('.st-val').forEach(markScrollEdges);
   }
 
   _updateMore() {
