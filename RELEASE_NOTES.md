@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.63 (2026-10-12)
+**Latest release:** v0.6.64 (2026-10-12)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.64 — 2026-10-12
+
+In minimal view a writer now brings its soft keys with it, as on the HP: with
+the equation writer open they read SIMP, EXPA, FACTO, d/dX, SOLVE and →NUM,
+and with the matrix writer +ROW, −ROW, +COL, −COL, TRN and DONE. A phone had
+no other way to add a row or a column there, since the writer's hint relies
+on a Tab key. On touch the equation writer's selection tools (Evaluate,
+Simplify, Expand, Factor, d/dX, the square root and Delete) are 40 px; they
+were 24 px tall and the root 23 px wide. With a phone keyboard up, command
+search fills the space above it, and in landscape its rows drop their
+description line, so 5 results show in portrait instead of 4 and 2 in
+landscape instead of 1.
 
 ---
 
