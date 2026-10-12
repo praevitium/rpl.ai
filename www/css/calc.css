@@ -1963,6 +1963,8 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 :root[data-keyboard] .eqw-ins, :root[data-keyboard] .mx-foot:not(.error) { display: none; }
 :root[data-keyboard] .eqw-canvas { max-height: calc(var(--app-height, 100dvh) * .4); }
 :root[data-keyboard] .mx-grid-wrap { max-height: calc(var(--app-height, 100dvh) * .35); }
+/* The assistant keeps its conversation in view the same way: the endpoint button and token counts wait for the keyboard to go. */
+:root[data-keyboard] .cb-switch-model-btn, :root[data-keyboard] .cb-stats { display: none; }
 /* A landscape phone with its keyboard up has about 190px left: while typing, only the stack, the line or writer and its keys stay. */
 @media (max-height: 300px) {
   :root[data-keyboard] .input-top, :root[data-keyboard] .input-hint,
