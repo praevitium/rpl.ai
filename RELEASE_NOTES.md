@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.53 (2026-10-12)
+**Latest release:** v0.6.54 (2026-10-12)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.54 — 2026-10-12
+
+With a phone's keyboard up, a tall formula in the equation writer no longer
+crowds everything else out: the writer stops at 40% of the visible height and
+scrolls, and its insights wait until the keyboard goes down. Before, the stack
+shrank to nothing, the soft keys went off the bottom of the screen and the
+status line drew over the writer tabs and Ask. VIEW's sheet has Edit, Copy
+and Share (where the phone has a share sheet) under the value, and fades at
+the edge a wide value continues past, as the stack does. On a phone the
+Settings rows that end in a button (back up, install, restore, reset, open
+the assistant) put the button under the description instead of squeezing the
+text into a narrow column.
 
 ---
 
