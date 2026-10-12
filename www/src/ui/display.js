@@ -364,9 +364,11 @@ export class Display {
     this._more.style.top = `${view.offsetTop + 6}px`;
   }
 
+  // Measure every row before starting any animation: a measurement after one starts lays out the whole stack again.
   _animate(before) {
+    const after = this._positions();
     for (const row of this.stackView.querySelectorAll('.st-row[data-key]')) {
-      const top = row.getBoundingClientRect().top;
+      const top = after.get(row.dataset.key);
       const old = before.get(row.dataset.key);
       if (old == null) {
         row.animate?.([{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
