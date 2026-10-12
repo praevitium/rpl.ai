@@ -1894,6 +1894,8 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   /* Seven 40 px plot kinds would take three rows on a phone; they scroll sideways in one. */
   .pl-kinds { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .pl-kinds .chip { flex: none; }
+  /* A phone shows the plot's hint and readouts in full, on two lines if need be. */
+  .gr-readout { white-space: normal; }
   .tgl::before { content: ""; position: absolute; inset: -10px -4px; }
   /* The writer tabs and Ask take a finger in the gaps around them, so the stack keeps its height. */
   .in-tabs button, .in-ask { position: relative; }
