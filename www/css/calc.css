@@ -1899,6 +1899,7 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   @container app (max-width: 389px) { .ann-status .ann-path { display: none; } }
   /* Keyboard shortcuts mean nothing on a touch screen. */
   .pop .opt em, .pal .kbd, .pal-foot { display: none; }
+  .pop .opt, .pop .grid button, .pop .layers button { min-height: 40px; }
   /* A selected level's actions are finger-sized, and start further left so six fit at 320 px. */
   /* Finger-sized, the toolbar would cover the value it acts on, so it takes a line of its own under it. */
   .st-acts { position: static; transform: none; grid-column: 1 / -1; justify-content: space-between; margin-top: 2px; box-shadow: none; }
