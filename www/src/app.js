@@ -649,6 +649,7 @@ class App {
       case 'dupn': runOnLevels('DUPN'); return;
       case 'dropn': runOnLevels('DROPN'); return;
       case 'keep': run(() => keepLevels(this.stack, level)); this.clearSelection(); return;
+      case 'level': run(() => this.stack.push(Integer(level))); this.selectLevel(level + 1); return;
       case 'eval': runOn('EVAL'); return;
       case 'num': runOn('→NUM'); return;
       case 'plot': this.clearSelection(); this.plotExpression(value.expr); return;
@@ -695,6 +696,7 @@ class App {
         item('dupn', 'copy', `Copy levels 1–${level} (DUPN)`),
         item('dropn', 'trash', `Drop levels 1–${level} (DRPN)`),
         item('keep', 'check', `Keep levels 1–${level} only (KEEP)`),
+        item('level', 'enter', `Push the level number, ${level} (LEVEL)`),
       ],
       [
         item('eval', 'play', 'Evaluate (EVAL)'),
@@ -1126,6 +1128,7 @@ class App {
       { label: 'DUPN', title: `Copy levels 1–${level}`, onPress: act('dupn') },
       { label: 'DRPN', title: `Drop levels 1–${level}`, onPress: act('dropn') },
       { label: 'KEEP', title: `Keep levels 1–${level} only`, onPress: act('keep') },
+      { label: 'LEVEL', title: `Push the level number, ${level}`, onPress: act('level') },
       isSymbolic(value)
         ? { label: 'PLOT', title: 'Plot it', onPress: act('plot') }
         : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },
