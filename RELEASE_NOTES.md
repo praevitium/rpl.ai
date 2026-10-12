@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.49 (2026-10-12)
+**Latest release:** v0.6.50 (2026-10-12)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.50 — 2026-10-12
+
+On a phone the plot's tools start folded into one ⋯ button in the corner,
+which unfolds them, so on a 320 px phone they cover about 4% of the plot
+instead of a third and a finger landing there pinches or pans; desktop keeps
+the open toolbar. A long directory name in the app bar ends in an ellipsis
+instead of being cut mid-letter, and under 340 px the bar's spacers give way
+first so HOME shows whole. While editing a level on a phone under 430 px, the
+input row's editing note no longer shows as a lone letter between the writer
+tabs and Ask; the status line's EDITING LEVEL pill already says it.
 
 ---
 
