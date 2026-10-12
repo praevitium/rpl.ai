@@ -216,7 +216,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   keypad steps aside so the writer stays in view.
 - In landscape, where the keyboard leaves little room, the tabs, hints and
   soft keys also step aside while you type, so level 1 and the writers' keys
-  stay in view.
+  stay in view. Typing in a drawer on a short screen hides its tabs and the
+  assistant's status line, and in landscape its title too, so the
+  conversation or list keeps its room.
 - While the phone's keyboard is up on the command line, a strip above it
   holds the keys a phone keyboard lacks. `+`, `−`, `×`, `÷`, `yˣ`, `SWAP` and
   `DROP` enter the line and run at once, as on the HP, but type into an open
@@ -293,7 +295,8 @@ In Tutor mode the assistant plans a solution as a few steps, and the
 calculator dry-runs every step before you see it. Each step explains the idea
 and shows the keystrokes. Press **Show me** to watch it happen, or
 **I'll do it** to press the keys yourself; the tutor checks your stack and
-says what's off. Hints come in stages. Start it from the Tutor switch in the
+says what's off. On a phone, I'll do it puts the assistant away so you can
+type, and a note with the step's keys brings it back when you tap Check. Hints come in stages. Start it from the Tutor switch in the
 assistant, or Walk me through a problem in the Help menu. Choose Socratic or
 Direct in Settings. Outside Tutor mode, when the assistant demonstrates
 something on your stack, it pauses after each step worth a look, with a note
