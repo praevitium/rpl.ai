@@ -1890,9 +1890,11 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   :root[data-view="minimal"] .toasts { top: 62px; }
   /* Without the keypad, a phone needs ⌫ and Enter beside the command line once its keyboard is down. */
   :root[data-view="minimal"] .cmdline-go { display: flex; }
-  /* Six modes and two buttons fill a 320 px status line, so the gaps go and the modes reach 40 px from 360 px. */
+  /* Six modes and two buttons fill a 320 px status line, so the gaps go and the modes share the room the path leaves, up to 40 px. */
   .ann-status { gap: 0; }
-  button.ann-m { min-height: 40px; min-width: 32px; padding: 0 4px; white-space: nowrap; }
+  button.ann-m { flex: 1 1 32px; min-height: 40px; min-width: 32px; max-width: 40px; padding: 0 4px; white-space: nowrap; }
+  /* The format mode sizes to its label as before, so FIX 11 stays whole. */
+  button.ann-m[data-mode="fmt"] { flex: 0 1 auto; max-width: none; }
   @container app (min-width: 360px) { button.ann-m { min-width: 40px; } }
   .ann-status .ann-path { display: block; min-width: 0; flex-shrink: 100; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* Narrower, the path would show only a clipped brace. */
