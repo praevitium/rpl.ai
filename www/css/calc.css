@@ -1883,7 +1883,8 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   /* Keyboard shortcuts mean nothing on a touch screen. */
   .pop .opt em, .pal .kbd, .pal-foot { display: none; }
   /* A selected level's actions are finger-sized, and start further left so six fit at 320 px. */
-  .st-acts { left: 8px; }
+  /* Finger-sized, the toolbar would cover the value it acts on, so it takes a line of its own under it. */
+  .st-acts { position: static; transform: none; grid-column: 1 / -1; justify-content: space-between; margin-top: 2px; box-shadow: none; }
   .st-acts button { min-width: 40px; min-height: 40px; justify-content: center; font-size: 13px; }
   .mini, .icon-btn.sm { width: 40px; height: 40px; }
   .btn, .dw-tabs button, .path-bar button { min-height: 40px; }
