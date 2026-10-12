@@ -232,7 +232,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   the toasts' buttons, the writer tabs and Ask, and the minimal status line's
   modes are finger-sized, and so are the soft keys while the keypad is hidden. The Variables drawer puts
   each variable's buttons on a line under its name, Share among them where
-  the phone has a share sheet.
+  the phone has a share sheet, and the History drawer shows each entry in
+  full. A drawer opens as a sheet from the bottom; drag its tabs or title
+  down to close it.
 - On a plot, two fingers pinch to zoom and one drags to pan; a tap shows
   the x and y under it and each curve's value there, and with Trace on it
   moves the trace cursor there. The plot's tools fold into one ⋯ button,
