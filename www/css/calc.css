@@ -1900,6 +1900,13 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   .crumbs button, .mode-chip, .appbar .icon-btn, .search-btn, .install-btn { min-height: 40px; }
   /* Under 380 px the directory name needs the width. */
   @container app (min-width: 380px) { .appbar .icon-btn, .search-btn, .install-btn { min-width: 40px; } }
+  /* Narrower, they stay 34 px wide but take a finger in the bar's padding and the gap after the modes. */
+  @container app (max-width: 379px) {
+    .appbar > button:first-child, .appbar > button:last-child, .appbar .sp + button, .appbar .sp + .install-btn + .search-btn { position: relative; }
+    .appbar > button:first-child::before, .appbar .sp + button::before { content: ""; position: absolute; inset: 0 0 0 -6px; }
+    .appbar > button:last-child::before { content: ""; position: absolute; inset: 0 -6px 0 0; }
+  }
+  @container app (max-width: 339px) { .appbar .sp + .install-btn + .search-btn::before { content: ""; position: absolute; inset: 0 0 0 -6px; } }
   /* Six finger-sized actions don't fit beside a name at 320 px, so they get a line of their own. */
   .vr .main { grid-column: 2 / -1; }
   .vr .acts { grid-column: 1 / -1; }
