@@ -1,5 +1,5 @@
 import {
-  TRACE_COLORS, TRACE_KINDS, nextTraceColor, defaultView, zoomView, panView,
+  TRACE_COLORS, TRACE_KINDS, nextTraceColor, defaultView, zoomView, panView, pinchView,
   worldToPixel, pixelToWorld, niceTicks, hasUsableSpan,
   sampleTrace, fitViewToTraces, evalTraceAtX,
   stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace,
@@ -24,7 +24,9 @@ const PLOT_KINDS = Object.freeze([
   ['hist', 'Histogram', 'Histogram from ΣDAT or the stack'],
 ]);
 const RANGE_FIELDS = Object.freeze([['xmin', 'x from'], ['xmax', 'x to'], ['ymin', 'y from'], ['ymax', 'y to']]);
-const IDLE_READOUT = 'Hover, or press T to trace · drag to pan · scroll to zoom';
+const IDLE_READOUT = globalThis.matchMedia?.('(pointer: coarse)').matches
+  ? 'Tap to read values · drag to pan · pinch to zoom'
+  : 'Hover, or press T to trace · drag to pan · scroll to zoom';
 
 function canSharePng() {
   return typeof navigator.canShare === 'function' && navigator.canShare({ files: [new File([''], 'plot.png', { type: 'image/png' })] });
@@ -64,6 +66,7 @@ export class GraphView {
     this.view = defaultView();
     this.traces = [];
     this._drag = null;
+    this._pointers = new Map();
     this._hover = null;
     this.tracing = false;
     this.traceX = null;
@@ -183,21 +186,29 @@ export class GraphView {
     canvas.addEventListener('pointerdown', (ev) => {
       this.focus();
       canvas.setPointerCapture(ev.pointerId);
-      this._drag = { x: ev.offsetX, y: ev.offsetY, view: { ...this.view } };
+      this._pointers.set(ev.pointerId, [ev.offsetX, ev.offsetY]);
+      this._startGesture();
       this._hover = null;
       this.draw();
     });
     canvas.addEventListener('pointerup', (ev) => {
-      this._drag = null;
-      this._hoverFromEvent(ev);
+      this._pointers.delete(ev.pointerId);
+      this._startGesture();
+      if (!this._drag) this._hoverFromEvent(ev);
     });
-    canvas.addEventListener('pointercancel', () => {
-      this._drag = null;
+    canvas.addEventListener('pointercancel', (ev) => {
+      this._pointers.delete(ev.pointerId);
+      this._startGesture();
       this._clearHover();
     });
     canvas.addEventListener('pointermove', (ev) => {
       const rect = canvas.getBoundingClientRect();
-      if (this._drag) {
+      if (this._pointers.has(ev.pointerId)) this._pointers.set(ev.pointerId, [ev.offsetX, ev.offsetY]);
+      if (this._drag?.ids) {
+        const to = this._drag.ids.map((id) => this._pointers.get(id));
+        this.view = pinchView(this._drag.view, this._drag.from, to, rect.width, rect.height);
+        this.draw();
+      } else if (this._drag) {
         const [x0, y0] = pixelToWorld(this._drag.x, this._drag.y, this._drag.view, rect.width, rect.height);
         const [x1, y1] = pixelToWorld(ev.offsetX, ev.offsetY, this._drag.view, rect.width, rect.height);
         this.view = panView(this._drag.view, x0 - x1, y0 - y1);
@@ -206,8 +217,9 @@ export class GraphView {
         this._hoverFromEvent(ev);
       }
     });
-    canvas.addEventListener('pointerleave', () => {
-      if (!this._drag) this._clearHover();
+    // A finger leaves as it lifts, so a tap's readout stays until the next touch.
+    canvas.addEventListener('pointerleave', (ev) => {
+      if (!this._drag && ev.pointerType !== 'touch') this._clearHover();
     });
     canvas.addEventListener('wheel', (ev) => {
       ev.preventDefault();
@@ -224,6 +236,15 @@ export class GraphView {
 
     this._ro = new ResizeObserver(() => this.draw());
     this._ro.observe(this._box);
+  }
+
+  // One pointer pans and two pinch; each change of fingers starts afresh from the
+  // current view so the plot doesn't jump.
+  _startGesture() {
+    const [a, b] = this._pointers.entries();
+    if (!a) this._drag = null;
+    else if (b) this._drag = { ids: [a[0], b[0]], from: [a[1], b[1]], view: { ...this.view } };
+    else this._drag = { x: a[1][0], y: a[1][1], view: { ...this.view } };
   }
 
   setKind(kind) {

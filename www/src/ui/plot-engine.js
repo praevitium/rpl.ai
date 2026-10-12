@@ -228,6 +228,18 @@ export function panView(view, dxWorld, dyWorld) {
   };
 }
 
+// Two fingers moved from `from` to `to` (pixel pairs): the view scales by how far
+// they spread, and the point under their first midpoint follows their midpoint.
+export function pinchView(view, from, to, width, height) {
+  const mid = ([a, b]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const spread = ([a, b]) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  if (!spread(from) || !spread(to)) return view;
+  const [wx, wy] = pixelToWorld(...mid(from), view, width, height);
+  const zoomed = zoomView(view, wx, wy, spread(from) / spread(to));
+  const [vx, vy] = pixelToWorld(...mid(to), zoomed, width, height);
+  return panView(zoomed, wx - vx, wy - vy);
+}
+
 export function defaultView() {
   return { xmin: -10, xmax: 10, ymin: -10, ymax: 10 };
 }

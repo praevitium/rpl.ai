@@ -2,7 +2,7 @@ import { assert, assertThrows } from './helpers.mjs';
 import {
   evalNumeric, lookupEnv, parsePlotExpr, sampleFunction, samplePolar,
   sampleParametric, segmentPoints, niceTicks, niceNum, hasUsableSpan, worldToPixel,
-  pixelToWorld, zoomView, panView, defaultView, boundsOfPoints,
+  pixelToWorld, zoomView, panView, pinchView, defaultView, boundsOfPoints,
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit, sampleDiffEq,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
   evalTraceAtX, sampleTrace, traceInputError, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace,
@@ -97,6 +97,17 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(z.xmin === -5 && z.xmax === 5, 'zoomView: toward origin');
   const p = panView(view, 1, -2);
   assert(p.xmin === -9 && p.ymin === -12, 'panView: shifts');
+  const near = (a, b) => Math.abs(a - b) < 1e-9;
+  const spread = pinchView(view, [[50, 100], [150, 100]], [[0, 100], [200, 100]], 200, 200);
+  assert(near(spread.xmin, -5) && near(spread.xmax, 5) && near(spread.ymin, -5) && near(spread.ymax, 5),
+    'pinchView: fingers spreading to twice the distance about the centre zoom in twice');
+  const slide = pinchView(view, [[50, 100], [150, 100]], [[70, 100], [170, 100]], 200, 200);
+  assert(near(slide.xmin, -12) && near(slide.xmax, 8) && near(slide.ymin, -10),
+    'pinchView: two fingers sliding 20 px right pan the plot with them');
+  const pinchIn = pinchView(view, [[0, 0], [100, 100]], [[25, 25], [75, 75]], 200, 200);
+  assert(near(pinchIn.xmax - pinchIn.xmin, 40) && near(pinchIn.xmin, -15) && near(pinchIn.ymax, 15),
+    'pinchView: pinching to half the distance zooms out about the midpoint (-5, 5)');
+  assert(pinchView(view, [[10, 10], [10, 10]], [[0, 0], [40, 40]], 200, 200) === view, 'pinchView: two fingers on one spot leave the view');
 }
 
 {
