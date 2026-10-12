@@ -40,6 +40,11 @@ export class Sheets {
 
   openAbout() { this._open('about'); }
 
+  openView(title, html) {
+    this.view = { title, html };
+    this._open('view');
+  }
+
   _open(kind) {
     this.kind = kind;
     if (!this.el) {
@@ -61,6 +66,10 @@ export class Sheets {
     }
     if (this.kind === 'about') {
       this.el.innerHTML = sheet('About rpl.ai', this._aboutHtml());
+      return;
+    }
+    if (this.kind === 'view') {
+      this.el.innerHTML = sheet(escapeHtml(this.view.title), `<div class="sheet-view">${this.view.html}</div>`);
       return;
     }
     const nav = SETTINGS_PAGES.map((p) => `<button type="button" data-sh="page" data-page="${p}" aria-pressed="${p === this.page}">${icon({ appearance: 'sliders', assistant: 'spark', data: 'folder' }[p], 'sm')}${{ appearance: 'Appearance', assistant: 'Assistant', data: 'Data' }[p]}</button>`).join('');

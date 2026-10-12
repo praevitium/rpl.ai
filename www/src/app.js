@@ -639,6 +639,7 @@ class App {
     };
     switch (act) {
       case 'edit': this.editLevel(level); return;
+      case 'view': this._viewLevel(level); return;
       case 'echo': this.clearSelection(); this.entry.typeToken(formatSource(value)); return;
       case 'pick': run(() => this.stack.push(value)); this.selectLevel(level + 1); return;
       case 'roll': run(() => moveLevel(this.stack, level, 1)); this.selectLevel(1); return;
@@ -670,11 +671,19 @@ class App {
     }
   }
 
+  // The HP interactive stack's VIEW: the value at a readable size, scrolling both ways, where the stack would shrink or cut it.
+  _viewLevel(level) {
+    const cell = document.createElement('div');
+    cell.className = 'st-val';
+    this.display._fillValue(cell, this.stack.peek(level), 30);
+    this.sheets.openView(`Level ${level}`, cell.outerHTML);
+  }
+
   _levelMenu(level, anchor) {
     const value = this.stack.peek(level);
     const item = (act, ico, label, hint = '') => `<button type="button" class="opt" data-act="${act}"><span class="ck">${icon(ico, 'sm')}</span><b>${escapeHtml(label)}</b><em>${escapeHtml(hint)}</em></button>`;
     const groups = [
-      [item('edit', 'edit', 'Edit', shortcutText('level.edit'))],
+      [item('edit', 'edit', 'Edit', shortcutText('level.edit')), item('view', 'expand', 'View full size (VIEW)')],
       [
         item('echo', 'chr', 'Copy into the command line'),
         item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick')),
@@ -1112,6 +1121,7 @@ class App {
       { label: 'ROLL', title: 'Move it to level 1', onPress: act('roll') },
       { label: 'ROLLD', title: 'Move level 1 here', onPress: act('rolld') },
       { label: 'DROP', title: 'Remove it (⌫)', onPress: act('drop') },
+      { label: 'VIEW', title: 'Show it full size', onPress: act('view') },
       { label: '→LIST', title: `Make a list of levels 1–${level}`, onPress: act('tolist') },
       { label: 'DUPN', title: `Copy levels 1–${level}`, onPress: act('dupn') },
       { label: 'DRPN', title: `Drop levels 1–${level}`, onPress: act('dropn') },

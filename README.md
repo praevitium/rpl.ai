@@ -190,8 +190,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - Tap a stack level for its actions, on a line under it so they never cover
   the value: Edit, Pick (DUP on level 1), Roll (SWAP on level 2), Drop, and ⋯
   for EVAL, →NUM, copy, share, store and the rest, including the HP
-  interactive stack's →LIST, DUPN, DRPN and KEEP for levels 1 to the one you
-  tapped (also on the level's soft keys). Swipe a level left or right to drop it; the
+  interactive stack's VIEW, which shows the level full size (a long number
+  in full, a formula or matrix that scrolls both ways), and →LIST, DUPN, DRPN
+  and KEEP for levels 1 to the one you tapped (also on the level's soft keys). Swipe a level left or right to drop it; the
   toast's Undo brings it back.
   A level too wide for the screen, such as a big matrix, fades at the edge
   it continues past; drag it sideways to read the rest.
