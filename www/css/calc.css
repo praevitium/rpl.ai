@@ -482,9 +482,9 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .key-strip { display: none; }
 :root[data-keyboard] .key-strip:not([hidden]) { display: flex; gap: 6px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; padding: 8px 0 2px; }
 .key-strip::-webkit-scrollbar { display: none; }
-.key-strip.more-r, .st-val.more-r, .sheet-view.more-r { mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
-.key-strip.more-l, .st-val.more-l, .sheet-view.more-l { mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent); }
-.key-strip.more-l.more-r, .st-val.more-l.more-r, .sheet-view.more-l.more-r { mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
+.key-strip.more-r, .st-val.more-r, .sheet-view.more-r, .ref-table.more-r { mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
+.key-strip.more-l, .st-val.more-l, .sheet-view.more-l, .ref-table.more-l { mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent); }
+.key-strip.more-l.more-r, .st-val.more-l.more-r, .sheet-view.more-l.more-r, .ref-table.more-l.more-r { mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
 .key-strip button { flex: none; min-width: 44px; height: 40px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--key-line); background: var(--key); box-shadow: var(--shadow-1); color: var(--key-ink); font: 600 14px/1 var(--font-mono); -webkit-tap-highlight-color: transparent; }
 .key-strip button.op { font-size: 18px; }
 .key-strip button:active { transform: translateY(1px); }
@@ -797,7 +797,9 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 .unit-grid button { border: 1px solid var(--line); background: var(--r1); border-radius: 7px; padding: 5px 8px; font: 500 12px/1 var(--font-mono); color: var(--ink); }
 .unit-grid button:hover { border-color: var(--accent-line); }
 
-.ref { padding: 12px 16px 18px; display: grid; gap: 12px; }
+.ref { padding: 12px 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.ref-sig { white-space: pre-wrap; overflow-wrap: anywhere; }
+.ref-table { overflow-x: auto; }
 .ref-top { display: flex; align-items: center; gap: 8px; }
 .ref-top h4 { margin: 0; font: 600 24px/1 var(--font-mono); letter-spacing: -0.01em; flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .ref .sum { font-size: 14px; color: var(--ink); line-height: 1.45; }
@@ -807,7 +809,7 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 .ref-doc h2 { display: none; }
 .ref-doc .meta { color: var(--ink3); font-size: 12px; margin: 0 0 8px; }
 .ref-doc pre { background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 0; font: 12.5px/1.45 var(--font-mono); color: var(--ink); white-space: pre-wrap; overflow-x: auto; }
-.ref-doc .cmd-body { display: grid; grid-template-columns: 1fr; row-gap: 4px; margin: 0; }
+.ref-doc .cmd-body { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 4px; margin: 0; }
 .ref-doc .cmd-label { font: 600 10px/1 var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--ink3); margin-top: 10px; }
 .ref-doc .cmd-field { margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink2); }
 .ref-doc .cmd-field p { margin: 0 0 6px; }

@@ -16,7 +16,7 @@ import { loadCommandReference, findReferenceEntry, shortDescription, searchComma
 import { matchPositions, highlightSegments } from './op-search.js';
 import { GraphView } from './graph-view.js';
 import { icon } from './icons.js';
-import { escapeHtml, typeName } from './display.js';
+import { escapeHtml, typeName, markScrollEdges } from './display.js';
 import { MENU_FAMILIES, UNIT_GROUPS } from './menus.js';
 import { shortcutText } from './actions.js';
 
@@ -135,6 +135,18 @@ export function familyCommands(family) {
 }
 
 const UPLOAD_ACCEPT = '.json,.rpl,.txt,.csv,.tsv,.xlsx,application/json,text/plain,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+// A manual table wider than the drawer scrolls on its own, fading at the edge it continues past.
+function scrollWideTables(doc) {
+  for (const table of doc.querySelectorAll('table')) {
+    const wrap = document.createElement('div');
+    wrap.className = 'ref-table';
+    table.before(wrap);
+    wrap.append(table);
+    markScrollEdges(wrap);
+    wrap.addEventListener('scroll', () => markScrollEdges(wrap), { passive: true });
+  }
+}
 
 export function pickFile(accept, onFile) {
   const picker = document.createElement('input');
@@ -423,7 +435,7 @@ export class Drawers {
     try {
       const frag = await referenceSection(name);
       if (this.cat.ref !== name) return;
-      if (frag) doc.appendChild(frag);
+      if (frag) { doc.appendChild(frag); scrollWideTables(doc); }
       else doc.innerHTML = `<p class="ref-empty">The HP 50g manual has no page for ${escapeHtml(name)}.</p>`;
     } catch (e) {
       doc.innerHTML = `<p class="ref-empty">Couldn't load the reference: ${escapeHtml(e.message)}</p>`;
