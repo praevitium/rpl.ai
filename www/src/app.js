@@ -1112,6 +1112,10 @@ class App {
       { label: 'ROLL', title: 'Move it to level 1', onPress: act('roll') },
       { label: 'ROLLD', title: 'Move level 1 here', onPress: act('rolld') },
       { label: 'DROP', title: 'Remove it (⌫)', onPress: act('drop') },
+      { label: '→LIST', title: `Make a list of levels 1–${level}`, onPress: act('tolist') },
+      { label: 'DUPN', title: `Copy levels 1–${level}`, onPress: act('dupn') },
+      { label: 'DRPN', title: `Drop levels 1–${level}`, onPress: act('dropn') },
+      { label: 'KEEP', title: `Keep levels 1–${level} only`, onPress: act('keep') },
       isSymbolic(value)
         ? { label: 'PLOT', title: 'Plot it', onPress: act('plot') }
         : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },
