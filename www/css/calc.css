@@ -236,7 +236,7 @@ button { cursor: pointer; }
 .brand svg { width: 22px; height: 22px; }
 .brand .ai { color: var(--amber); }
 .crumbs { display: flex; align-items: center; min-width: 0; flex: 0 1 auto; overflow: hidden; }
-.crumbs button { border: 0; background: transparent; font: 500 12.5px/1 var(--font-mono); color: var(--ink2); padding: 7px 6px; border-radius: 6px; white-space: nowrap; }
+.crumbs button { border: 0; background: transparent; font: 500 12.5px/1 var(--font-mono); color: var(--ink2); padding: 7px 6px; border-radius: 6px; white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .crumbs button:hover { background: var(--r1); color: var(--ink); }
 .crumbs button[aria-current="true"] { color: var(--ink); cursor: default; }
 .crumbs button[aria-current="true"]:hover { background: transparent; }
@@ -302,7 +302,7 @@ button { cursor: pointer; }
   .install-btn span { display: none; }
 }
 /* On the smallest phones the directory name needs the room; Install stays in the ⋯ menu. */
-@container app (max-width: 339px) { .install-btn { display: none; } }
+@container app (max-width: 339px) { .install-btn { display: none; } .appbar .sp { min-width: 0; } }
 @container app (max-width: 719px) {
   .mode-chip:not(.summary) { display: none; }
   .mode-chip.summary { display: flex; }
