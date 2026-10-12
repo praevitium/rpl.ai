@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.43 (2026-10-12)
+**Latest release:** v0.6.44 (2026-10-12)
 
 ---
 
@@ -18,6 +18,18 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.44 — 2026-10-12
+
+The soft keys' two page arrows are now one NXT key, as on the HP: it turns
+to the next page and comes back round to the first after the last. With left
+shift it reads PREV and goes back, and the shift clears unless it is locked.
+PgDn and PgUp still turn the page. Settings › Appearance gains Stack text
+size (Small, Normal, Large or Larger), which scales the stack's text and its
+pretty math; it was chosen over pinch zoom, which would scale the keypad and
+the rest of the fixed layout off the screen.
 
 ---
 
