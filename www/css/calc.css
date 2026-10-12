@@ -799,7 +799,8 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 
 .ref { padding: 12px 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 .ref-sig { white-space: pre-wrap; overflow-wrap: anywhere; }
-.ref-table { overflow-x: auto; }
+.ref-table { overflow-x: auto; margin: 4px 0; }
+.ref-doc .ref-table > table { margin: 0; }
 .ref-top { display: flex; align-items: center; gap: 8px; }
 .ref-top h4 { margin: 0; font: 600 24px/1 var(--font-mono); letter-spacing: -0.01em; flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .ref .sum { font-size: 14px; color: var(--ink); line-height: 1.45; }
