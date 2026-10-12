@@ -237,6 +237,7 @@ export class Drawers {
     if (!DRAWERS.some((d) => d.id === id)) return;
     this.current = id;
     this.app.setPrefs({ drawer: id, lastDrawer: id });
+    this.app.toasts?.dismiss('view');
     this.render();
     this._focusDefault();
   }
