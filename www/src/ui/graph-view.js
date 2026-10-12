@@ -24,6 +24,7 @@ const PLOT_KINDS = Object.freeze([
   ['hist', 'Histogram', 'Histogram from ΣDAT or the stack'],
 ]);
 const RANGE_FIELDS = Object.freeze([['xmin', 'x from'], ['xmax', 'x to'], ['ymin', 'y from'], ['ymax', 'y to']]);
+const TAP_SLOP_PX = 6;
 const IDLE_READOUT = globalThis.matchMedia?.('(pointer: coarse)').matches
   ? 'Tap to read values · drag to pan · pinch to zoom'
   : 'Hover, or press T to trace · drag to pan · scroll to zoom';
@@ -192,9 +193,13 @@ export class GraphView {
       this.draw();
     });
     canvas.addEventListener('pointerup', (ev) => {
+      const drag = this._drag;
+      const tap = drag && !drag.ids && Math.hypot(ev.offsetX - drag.x, ev.offsetY - drag.y) < TAP_SLOP_PX;
       this._pointers.delete(ev.pointerId);
       this._startGesture();
-      if (!this._drag) this._hoverFromEvent(ev);
+      if (this._drag) return;
+      if (this.tracing && tap) this._traceTo(ev.offsetX);
+      else this._hoverFromEvent(ev);
     });
     canvas.addEventListener('pointercancel', (ev) => {
       this._pointers.delete(ev.pointerId);
@@ -415,6 +420,13 @@ export class GraphView {
     const [wx, wy] = pixelToWorld(ev.offsetX, ev.offsetY, this.view, rect.width, rect.height);
     this._hover = { x: wx, y: wy };
     this._readout.textContent = this._readoutAt(wx, wy);
+    this.draw();
+  }
+
+  _traceTo(px) {
+    const rect = this._canvas.getBoundingClientRect();
+    [this.traceX] = pixelToWorld(px, 0, this.view, rect.width, rect.height);
+    this._readout.textContent = this._readoutAt(this.traceX);
     this.draw();
   }
 
