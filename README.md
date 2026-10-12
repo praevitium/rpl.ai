@@ -225,10 +225,13 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   program, list, quote or unit. The strip also has UNDO, the RPL delimiters,
   `_`, `→` and `π`, and fades at an edge while more keys lie past it.
 - In the equation writer, a drag scrolls a long formula; touch and hold,
-  then drag, to select part of it.
+  then drag, to select part of it, and the tools over the selection
+  (Evaluate, Simplify, Factor and the rest) take a finger.
 - In Minimal view, ⌫ and Enter stay beside the command line, the menu
   button on the status line reaches Undo, command search, the drawers, the
-  soft keys, full screen and Settings, and the button beside it leaves.
+  soft keys, full screen and Settings, and the button beside it leaves. A
+  writer brings its soft keys with it, as on the HP, so the matrix writer's
+  +ROW, +COL and TRN are a tap away.
 - The app bar's buttons, the drawers' tabs, fields and buttons, the
   Settings sheet, the plot's tools (in two columns), the suggestion chips,
   the toasts' buttons, the writer tabs and Ask, the assistant's controls and
