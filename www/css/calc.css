@@ -896,6 +896,7 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 :root[data-view="minimal"] .stack-view { --stack-size: 21px; }
 :root[data-view="minimal"] .st-row { padding-left: 12px; padding-right: 22px; min-height: 44px; }
 :root[data-view="minimal"] .st-lvl { font-size: 14px; }
+:root[data-view="minimal"] .st-tag { left: 50px; }
 :root[data-view="minimal"] .toasts { top: 48px; }
 /* The tutor's step toast waits for Check, so it steps aside while a menu is open instead of covering its first rows. */
 body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
