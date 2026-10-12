@@ -200,7 +200,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   root and parentheses), and so does the matrix writer (previous cell, next
   cell and next row), each with ⌫ and Enter. The matrix writer pushes only
   what you typed, leaving off empty rows and columns at the end, and next row
-  goes back to the column the row started in, as in a spreadsheet.
+  goes back to the column the row started in, as in a spreadsheet. Its menu
+  has the HP's ←WID and WID→, which make the cells narrower or wider so a
+  long number shows in full.
 - Opening the equation or matrix writer brings up your phone's keyboard, and
   so does tapping the equation. While the keyboard is up, the calculator
   keypad steps aside so the writer stays in view.
@@ -218,8 +220,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   button on the status line reaches Undo, command search, the drawers, the
   soft keys, full screen and Settings, and the button beside it leaves.
 - The app bar's buttons, the drawers' tabs, fields and buttons, the
-  Settings sheet and the plot's tools (in two columns) are finger-sized, and
-  so are the soft keys while the keypad is hidden. The Variables drawer puts
+  Settings sheet, the plot's tools (in two columns), the suggestion chips,
+  the toasts' buttons and the minimal status line's modes are finger-sized,
+  and so are the soft keys while the keypad is hidden. The Variables drawer puts
   each variable's buttons on a line under its name, Share among them where
   the phone has a share sheet.
 - Settings › Appearance sets the stack's text size, from Small to Larger,
