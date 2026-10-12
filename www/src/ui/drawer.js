@@ -629,7 +629,7 @@ export class Drawers {
       case 'cat-back': this.cat.family = null; this._renderCatalogList(); return;
       case 'cmd': this.showReference(t.dataset.cmd); return;
       case 'cmd-run': e.stopPropagation(); app.runCommandFromUI(t.dataset.cmd); this._reveal(); return;
-      case 'unit': app.insertUnit(t.dataset.unit); this._reveal(); return;
+      case 'unit': this._insertWithMore(`_${t.dataset.unit}`, () => app.insertUnit(t.dataset.unit), `[data-dw="unit"][data-unit="${CSS.escape(t.dataset.unit)}"]`); return;
       case 'ref-back':
         if (this.cat.idx > 0) { this.cat.idx -= 1; this.cat.ref = this.cat.history[this.cat.idx]; }
         else { this.cat.ref = null; this.cat.history = []; this.cat.idx = -1; }
@@ -638,7 +638,7 @@ export class Drawers {
       case 'ref-run': app.runCommandFromUI(this.cat.ref); this._reveal(); return;
       case 'ref-insert': entry.typeToken(`${this.cat.ref} `); this._reveal(); return;
       case 'ref-ask': app.askAssistant(`Explain the ${this.cat.ref} command: what it takes from the stack, what it returns, and a short example I can try.`); return;
-      case 'char': this._insertChar(t.dataset.text); return;
+      case 'char': this._insertWithMore(t.dataset.text, () => this.insertText(t.dataset.text), `[data-dw="char"][data-text="${CSS.escape(t.dataset.text)}"]`); return;
       case 'hist-recall': entry.recall(t.dataset.text); entry.focus(); this._reveal(); return;
       case 'hist-run': e.stopPropagation(); entry.recall(t.dataset.text); app.commitEntry(); this._reveal(); return;
       case 'hist-delete': e.stopPropagation(); entry.removeHistory(t.dataset.text); this._renderHistoryList(); return;
@@ -678,10 +678,15 @@ export class Drawers {
     this._reveal();
   }
 
-  // Like the HP's ECHO, More brings the characters back for the next one.
-  _insertChar(text) {
-    this.insertText(text);
-    if (this._reveal()) this.app.toast(`Added ${text}`, { action: 'More', key: 'drawer', onAction: () => this.open('chars') });
+  // Like the HP's ECHO, More brings the drawer back where the pick was made, for the next one.
+  _insertWithMore(label, insert, selector) {
+    const drawer = this.current;
+    insert();
+    if (!this._reveal()) return;
+    this.app.toast(`Added ${label}`, { action: 'More', key: 'drawer', onAction: () => {
+      this.open(drawer);
+      this.el.querySelector(selector)?.scrollIntoView({ block: 'center' });
+    } });
   }
 
   _recallVar(name) {
