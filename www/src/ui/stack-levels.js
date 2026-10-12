@@ -20,6 +20,14 @@ export function dropLevel(stack, level) {
   stack._emit();
 }
 
+// The HP interactive stack's KEEP: levels 1 to level stay, everything above goes.
+export function keepLevels(stack, level) {
+  if (level < 1 || level > stack.depth) throw new Error('Too few arguments');
+  if (level === stack.depth) return;
+  stack._items.splice(0, stack.depth - level);
+  stack._emit();
+}
+
 export function moveLevel(stack, from, to) {
   const depth = stack.depth;
   if (from < 1 || from > depth || to < 1 || to > depth) throw new Error('Too few arguments');

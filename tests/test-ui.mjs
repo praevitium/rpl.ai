@@ -461,7 +461,7 @@ import { assert, assertThrows } from './helpers.mjs';
    ================================================================= */
 {
   const {
-    clampLevel, rollLevel, rollDownToLevel, dropLevel, moveLevel, replaceLevel,
+    clampLevel, rollLevel, rollDownToLevel, dropLevel, keepLevels, moveLevel, replaceLevel,
   } = await import('../www/src/ui/stack-levels.js');
 
   // clampLevel bounds
@@ -551,6 +551,21 @@ import { assert, assertThrows } from './helpers.mjs';
     const top = s.snapshot();
     assert(s.depth === 3 && top[0].value.eq(40) && top[1].value.eq(30) && top[2].value.eq(10),
            'dropLevel: removes level 3 without touching level 1');
+  }
+
+  // keepLevels keeps levels 1..n and drops everything above them.
+  {
+    const s = new Stack();
+    s.push(Real(10)); s.push(Real(20)); s.push(Real(30)); s.push(Real(40));
+    keepLevels(s, 2);
+    const top = s.snapshot();
+    assert(s.depth === 2 && top[0].value.eq(40) && top[1].value.eq(30), 'keepLevels: keeps levels 1 and 2, drops 3 and 4');
+    let emits = 0;
+    const off = s.subscribe(() => { emits++; });
+    keepLevels(s, 2);
+    off();
+    assert(s.depth === 2 && emits === 0, 'keepLevels: keeping every level changes nothing');
+    assertThrows(() => keepLevels(s, 3), null, 'keepLevels: a level past the depth throws');
   }
 
   // dropLevel out-of-range throws

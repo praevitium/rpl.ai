@@ -19,7 +19,7 @@ import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
 import { MENU_FAMILIES, UNIT_GROUPS, menuById } from './ui/menus.js';
 import { MODES } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
-import { clampLevel, dropLevel, moveLevel, replaceLevel } from './ui/stack-levels.js';
+import { clampLevel, dropLevel, keepLevels, moveLevel, replaceLevel } from './ui/stack-levels.js';
 import { icon } from './ui/icons.js';
 import { installCommandHover, entryWordAtEvent, stackWordAtEvent } from './ui/hover-help.js';
 import { EquationEditor, keypadFace } from './ui/equation-editor.js';
@@ -39,7 +39,7 @@ import { lookup, allOps, setGraphicsHook } from './rpl/ops.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
-  isMatrix, isVector, isReal, isInteger, isRational, isUnit, Symbolic,
+  isMatrix, isVector, isReal, isInteger, isRational, isUnit, Symbolic, Integer,
 } from './rpl/types.js';
 import {
   loadInitialState, adoptStoredState, saveToLocalStorage, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
@@ -632,6 +632,11 @@ class App {
       this.entry._snapForUndo();
       this.entry.safeRun(() => { moveLevel(this.stack, level, 1); lookup(op).fn(this.stack, this.entry); }, op);
     };
+    const runOnLevels = (op) => {
+      this.clearSelection();
+      this.entry._snapForUndo();
+      this.entry.safeRun(() => { this.stack.push(Integer(level)); lookup(op).fn(this.stack, this.entry); }, op);
+    };
     switch (act) {
       case 'edit': this.editLevel(level); return;
       case 'echo': this.clearSelection(); this.entry.typeToken(formatSource(value)); return;
@@ -639,6 +644,10 @@ class App {
       case 'roll': run(() => moveLevel(this.stack, level, 1)); this.selectLevel(1); return;
       case 'rolld': run(() => moveLevel(this.stack, 1, level)); this.selectLevel(level); return;
       case 'drop': run(() => dropLevel(this.stack, level)); if (!this.stack.depth) this.clearSelection(); return;
+      case 'tolist': runOnLevels('→LIST'); return;
+      case 'dupn': runOnLevels('DUPN'); return;
+      case 'dropn': runOnLevels('DROPN'); return;
+      case 'keep': run(() => keepLevels(this.stack, level)); this.clearSelection(); return;
       case 'eval': runOn('EVAL'); return;
       case 'num': runOn('→NUM'); return;
       case 'plot': this.clearSelection(); this.plotExpression(value.expr); return;
@@ -671,6 +680,12 @@ class App {
         item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick')),
         item('roll', 'up', 'Move to level 1 (ROLL)'),
         item('rolld', 'down', 'Move level 1 here (ROLLD)'),
+      ],
+      [
+        item('tolist', 'chr', `Make a list of levels 1–${level} (→LIST)`),
+        item('dupn', 'copy', `Copy levels 1–${level} (DUPN)`),
+        item('dropn', 'trash', `Drop levels 1–${level} (DRPN)`),
+        item('keep', 'check', `Keep levels 1–${level} only (KEEP)`),
       ],
       [
         item('eval', 'play', 'Evaluate (EVAL)'),

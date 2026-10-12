@@ -189,7 +189,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   type. The command menus' soft keys do the same; the catalog types.
 - Tap a stack level for its actions: Edit, Pick (DUP on level 1), Roll
   (SWAP on level 2), Drop, and ⋯ for EVAL, →NUM, copy, share, store and the
-  rest. Swipe a level left or right to drop it; the toast's Undo brings it back.
+  rest, including the HP interactive stack's →LIST, DUPN, DRPN and KEEP for
+  levels 1 to the one you tapped. Swipe a level left or right to drop it; the
+  toast's Undo brings it back.
   A level too wide for the screen, such as a big matrix, fades at the edge
   it continues past; drag it sideways to read the rest.
 - ⌫ and Enter sit beside the command line, finger-sized. ⌫ deletes a
