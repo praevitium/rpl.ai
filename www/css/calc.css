@@ -1933,6 +1933,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   .pl-tools.folded { grid-template-columns: 40px; }
   .pl-tools.folded > :not(.pl-fold) { display: none; }
   .sheet-nav button, .chip, .toast button { min-height: 40px; }
+  .unit-grid button { min-width: 40px; min-height: 40px; }
   /* Seven 40 px plot kinds would take three rows on a phone; they scroll sideways in one. */
   .pl-kinds { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .pl-kinds .chip { flex: none; }
