@@ -316,7 +316,7 @@ const onTouch = () => globalThis.matchMedia?.('(pointer: coarse)').matches === t
 const TAP_KEYS = Object.freeze([
   { face: '⇧TAB', icon: 'chl', title: 'Previous cell (⇧Tab)' },
   { face: 'TAB', icon: 'chr', title: 'Next cell (Tab)' },
-  { face: '⇧ENTER', icon: 'down', title: 'Next row (⇧Enter)' },
+  { face: '⇧ENTER', icon: 'chd', title: 'Next row (⇧Enter)' },
 ]);
 
 export class MatrixEditor {
