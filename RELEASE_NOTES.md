@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.44 (2026-10-12)
+**Latest release:** v0.6.45 (2026-10-12)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.45 — 2026-10-12
+
+The matrix writer's menu gains the HP's ←WID and WID→, which make the cells
+narrower or wider in steps from 40 to 176 px, so a long real such as
+3.14159265359 shows in full on a phone instead of ending in an ellipsis. On
+touch, the minimal status line's modes are at least 32 px wide, and 40 px
+from 360 px, where the one-glyph ℝ and = were 20 px; the directory path gives
+way first so every mode stays on one line. Chips (the welcome suggestions,
+plot types, error fixes and tutor steps) and a toast's action button are
+40 px tall on touch.
 
 ---
 
