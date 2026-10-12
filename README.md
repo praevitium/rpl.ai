@@ -193,7 +193,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   character (or the selected text), or drops level 1 when the line is empty.
 - On a narrow screen each soft-key name is sized to its key, so `SPEED`
   stays on one line, and a long name such as `ISPRIME?` breaks into even
-  lines instead of being cut off.
+  lines instead of being cut off. NXT at the end of the soft keys turns the
+  page and comes back round to the first, and with left shift it reads PREV
+  and goes back, as on the HP.
 - The equation writer has its own row of buttons (move, fraction, power,
   root and parentheses), and so does the matrix writer (previous cell, next
   cell and next row), each with ⌫ and Enter. The matrix writer pushes only
@@ -220,8 +222,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   so are the soft keys while the keypad is hidden. The Variables drawer puts
   each variable's buttons on a line under its name, Share among them where
   the phone has a share sheet.
-- On Android, Settings › Appearance can make the keys vibrate briefly as a
-  finger presses them.
+- Settings › Appearance sets the stack's text size, from Small to Larger,
+  pretty math included. On Android it can also make the keys vibrate briefly
+  as a finger presses them.
 - A phone's back button closes the open menu, search, sheet, writer or
   drawer first, and leaves the app only when nothing is open.
 
