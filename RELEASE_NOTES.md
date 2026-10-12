@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.51 (2026-10-12)
+**Latest release:** v0.6.52 (2026-10-12)
 
 ---
 
@@ -18,6 +18,20 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.52 — 2026-10-12
+
+The app bar keeps HOME (or the current directory's name) whole on phones from
+340 to 383 px wide, where it used to end in an ellipsis: Install moves into
+the ⋯ menu under 360 px instead of 340, the bar's buttons grow to 40 px only
+from 384 px, and Search takes a 40 px tap at every width. A level's ⋯ menu
+and its soft keys gain the rest of the HP interactive stack: →LIST, DUPN,
+DRPN and KEEP act on levels 1 to the one you chose, each undoable. On a touch
+screen a selected level's toolbar sits on a line under the value instead of
+floating over it, so a tall fraction or a wide matrix stays readable while you
+act on it.
 
 ---
 
