@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.55 (2026-10-12)
+**Latest release:** v0.6.56 (2026-10-12)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.56 — 2026-10-12
+
+A selected level has the HP interactive stack's LEVEL, which pushes the
+level's number and keeps the same value selected; it follows KEEP on the
+level's soft keys and in its ⋯ menu. In a short plot drawer, in landscape or
+with a phone's keyboard up, the plot no longer draws over the plot types,
+the traces and the expression field: the drawer scrolls instead, so the
+field you tap stays in view while you type. On a phone every popover menu
+(a level's ⋯ menu, the minimal view's menu, the app bar's ⋯ menu, the modes
+and Download as…) has 40 px rows instead of 29 px ones.
 
 ---
 
