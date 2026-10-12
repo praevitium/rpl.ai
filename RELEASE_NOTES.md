@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.46 (2026-10-12)
+**Latest release:** v0.6.47 (2026-10-12)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.47 — 2026-10-12
+
+When a command fails part way through a line or a program, the stack now ends
+up as it does on the HP 50g: everything that ran before the failing command
+stays, the failing command gets its arguments back, and nothing after it runs.
+With 1 2 3 4 on the stack, CLEAR DROP leaves the stack empty, and
+5 6 + 7 "x" - 8 leaves 11, 7 and "x" on top. Before, the app put back the
+stack from before the whole line, and a failing EVAL put back the stack it
+found. The command line is used up, as on the HP, and lands in the command
+history; Fix the line brings it back to edit, and Undo restores the stack from
+before it. A line that doesn't parse still stays on the command line and runs
+nothing. Actions on a stack level, such as Pick, Roll or a level's menu
+commands, are still undone whole when they fail.
 
 ---
 
