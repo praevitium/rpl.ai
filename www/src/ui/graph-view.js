@@ -252,12 +252,22 @@ export class GraphView {
     else this._drag = { x: a[1][0], y: a[1][1], view: { ...this.view } };
   }
 
+  // On a phone the kinds scroll in one row; keep the chosen one in sight.
+  _revealKind() {
+    const row = this.el.querySelector('.pl-kinds');
+    const chip = row.querySelector('[aria-pressed="true"]');
+    if (!chip || row.scrollWidth <= row.clientWidth) return;
+    const r = row.getBoundingClientRect(), c = chip.getBoundingClientRect();
+    if (c.left < r.left || c.right > r.right) row.scrollLeft += c.left - r.left - (r.width - c.width) / 2;
+  }
+
   setKind(kind) {
     if (kind !== this._kind) this._addY.value = '';
     this._kind = kind;
     this.el.querySelectorAll('.pl-kinds button').forEach(b => {
       b.setAttribute('aria-pressed', String(b.dataset.kind === kind));
     });
+    this._revealKind();
     const fields = TRACE_KINDS[kind].fields || [];
     const yField = fields.find(f => f.key === 'exprY');
     this._form.hidden = !fields.length;
