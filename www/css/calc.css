@@ -1904,6 +1904,9 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
   /* Keyboard shortcuts mean nothing on a touch screen. */
   .pop .opt em, .pal .kbd, .pal-foot { display: none; }
   .pop .opt, .pop .grid button, .pop .layers button { min-height: 40px; }
+  /* Links in a reference page or About answer a finger-sized tap without moving the text around them. */
+  .ref-doc .cmd-help-link, .ref-link { position: relative; }
+  .ref-doc .cmd-help-link::before, .ref-link::before { content: ''; position: absolute; inset: -11px -4px; }
   /* A selected level's actions are finger-sized, and start further left so six fit at 320 px. */
   /* Finger-sized, the toolbar would cover the value it acts on, so it takes a line of its own under it. */
   .st-acts { position: static; transform: none; grid-column: 1 / -1; justify-content: space-between; margin-top: 2px; box-shadow: none; }
