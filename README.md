@@ -229,12 +229,13 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   soft keys, full screen and Settings, and the button beside it leaves.
 - The app bar's buttons, the drawers' tabs, fields and buttons, the
   Settings sheet, the plot's tools (in two columns), the suggestion chips,
-  the toasts' buttons, the writer tabs and Ask, and the minimal status line's
-  modes are finger-sized, and so are the soft keys while the keypad is hidden. The Variables drawer puts
+  the toasts' buttons, the writer tabs and Ask, the assistant's controls and
+  the minimal status line's modes are finger-sized, and so are the soft keys while the keypad is hidden. The Variables drawer puts
   each variable's buttons on a line under its name, Share among them where
   the phone has a share sheet, and the History drawer shows each entry in
   full. A drawer opens as a sheet from the bottom; drag its tabs or title
-  down to close it.
+  down to close it. In minimal view it opens at the side; drag its title
+  right to close it.
 - On a plot, two fingers pinch to zoom and one drags to pan; a tap shows
   the x and y under it and each curve's value there, and with Trace on it
   moves the trace cursor there. The plot's tools fold into one ⋯ button,
