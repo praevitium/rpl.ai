@@ -239,8 +239,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   down to close it. In minimal view it opens at the side; drag its title
   right to close it. Running a command from the Catalog, recalling a History
   line or a variable, or picking a character closes the drawer so you see
-  the result, as the HP's catalog does; after a character, More brings the
-  Characters back for the next one.
+  the result, as the HP's catalog does; after a character or a unit, More
+  brings the drawer back at it for the next one.
 - On a plot, two fingers pinch to zoom and one drags to pan; a tap shows
   the x and y under it and each curve's value there, and with Trace on it
   moves the trace cursor there. The plot's tools fold into one ⋯ button,
