@@ -230,7 +230,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   a list they type their command between spaces, as the HP's program mode
   does, and inside a quote or unit the operators type their character. The
   strip also has UNDO, the RPL delimiters, `_`, `→` and `π`, and fades at an
-  edge while more keys lie past it.
+  edge while more keys lie past it. Inside a program `→` stands apart too,
+  so `→ X « X SQ »` binds X (elsewhere it begins a name such as `→NUM`),
+  and `« »`, `{ }` and `[ ]` start a word of their own after a name or
+  number.
 - In the equation writer, a drag scrolls a long formula; touch and hold,
   then drag, to select part of it, and the tools over the selection
   (Evaluate, Simplify, Factor and the rest) take a finger.
@@ -244,7 +247,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   START, FOR, NEXT, STEP, DO, UNTIL, WHILE and REPEAT between spaces, and
   opens `« »` first on a bare line. With the left shift a key types its
   whole structure (`IF THEN END`, `FOR NEXT`), with the right shift the
-  other form (`IF THEN ELSE END`, `FOR STEP`).
+  other form (`IF THEN ELSE END`, `FOR STEP`). With no shift key to hand,
+  hold a finger on IF, CASE, IFERR, START, FOR, DO or WHILE to pick its
+  whole structure.
 - The app bar's buttons, the drawers' tabs, fields and buttons, the
   Settings sheet, the plot's tools (in two columns), the suggestion chips,
   the toasts' buttons, the writer tabs and Ask, the matrix writer's cells,
