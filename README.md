@@ -56,7 +56,7 @@ download, no account and no sign-up.
 | **Units** | The HP 50g's whole unit catalog with SI prefixes, CONVERT and UBASE, and units inside algebraics |
 | **Linear algebra** | Vectors and matrices with DET, INV, RANK, LU, QR, SCHUR, CHOLESKY, EGV and LINSOLVE, and a matrix writer that pastes from spreadsheets |
 | **Statistics** | ΣDAT and Σ+, MEAN, SDEV, LINFIT, BESTFIT and BINS, and distributions such as NDIST and UTPN |
-| **Programming** | User RPL with `« »`, IF, CASE, FOR, WHILE and IFERR, local variables, recursion, DEFINE, directories, and HALT, SST and DBUG for debugging |
+| **Programming** | User RPL with `« »`, IF, CASE, FOR, WHILE and IFERR (typed from the HP's BRCH menu), local variables, recursion, DEFINE, directories, and HALT, SST and DBUG for debugging |
 | **Plots** | FUNCTION, POLAR, PARAMETRIC, DIFFEQ, scatter, bar and histogram plots, with trace, zoom and PNG export |
 | **Data in and out** | Copy and paste with Excel, Google Sheets and Numbers; CSV, TSV, `.xlsx`, JSON and HP `.rpl` files; LaTeX copied out and pasted in |
 | **Input** | Keyboard first with `⌘K` search, the HP 50g keypad on screen, and a phone layout with its own key strip |
@@ -238,7 +238,13 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   button on the status line reaches Undo, command search, the drawers, the
   soft keys, full screen and Settings, and the button beside it leaves. A
   writer brings its soft keys with it, as on the HP, so the matrix writer's
-  +ROW, +COL and TRN are a tap away.
+  +ROW, +COL and TRN are a tap away, and a menu picked from command search
+  turns the soft keys on.
+- The BRCH menu, as on the HP, types IF, THEN, ELSE, END, CASE, IFERR,
+  START, FOR, NEXT, STEP, DO, UNTIL, WHILE and REPEAT between spaces, and
+  opens `« »` first on a bare line. With the left shift a key types its
+  whole structure (`IF THEN END`, `FOR NEXT`), with the right shift the
+  other form (`IF THEN ELSE END`, `FOR STEP`).
 - The app bar's buttons, the drawers' tabs, fields and buttons, the
   Settings sheet, the plot's tools (in two columns), the suggestion chips,
   the toasts' buttons, the writer tabs and Ask, the matrix writer's cells,
