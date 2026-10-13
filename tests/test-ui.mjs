@@ -1252,14 +1252,15 @@ setAngle('RAD');
 {
   const { TOUR_STEPS } = await import('../www/src/ui/tour.js');
   const html = readFileSync(new URL('../www/index.html', import.meta.url), 'utf8');
-  const appbar = readFileSync(new URL('../www/src/ui/appbar.js', import.meta.url), 'utf8');
-  const missing = TOUR_STEPS.filter(({ target }) => {
-    const [id, inner] = target.slice(1).split(' ');
-    return !html.includes(`id="${id}"`) || (inner && !appbar.includes(`class="${inner.slice(1)}"`));
-  }).map((s) => s.target);
+  const markup = ['appbar.js', 'display.js'].map((f) => readFileSync(new URL(`../www/src/ui/${f}`, import.meta.url), 'utf8')).join('');
+  const missing = TOUR_STEPS.flatMap(({ target }) => target.split(', ')).filter((part) => {
+    const [id, inner] = part.slice(1).split(' ');
+    return !html.includes(`id="${id}"`) || (inner && !markup.includes(inner.startsWith('.') ? `class="${inner.slice(1)}"` : inner.slice(1, -1)));
+  });
   assert(!missing.length, `every tour step points at markup the app renders${missing.length ? ` (missing ${missing.join(', ')})` : ''}`);
   const { normalizeUiPrefs } = await import('../www/src/ui/ui-prefs.js');
   assert(normalizeUiPrefs({}).tourSeen === false && normalizeUiPrefs({ tourSeen: true }).tourSeen === true, 'ui prefs remember that the tour was seen');
+  assert(TOUR_STEPS.every((s) => !/click|hover|\bTab\b|F1/i.test(s.touch ?? s.text)), 'tour: on touch no step speaks of clicks, hovering, Tab or F keys');
   const { cardPoint } = await import('../www/src/ui/tour.js');
   const rect = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height });
   assert(cardPoint(rect(8, 206, 304, 46), 294, 180, 320, 640).y === 252, 'tour: a phone card goes under the command line it explains');
