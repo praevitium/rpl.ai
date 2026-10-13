@@ -371,7 +371,8 @@ button { cursor: pointer; }
 .ann-status { display: flex; align-items: center; gap: 2px; width: 100%; padding: 6px 12px 8px 14px; border-bottom: 1px dashed var(--line2); font: 600 12.5px/1 var(--font-mono); letter-spacing: .06em; color: var(--ink2); }
 .ann-m { border: 0; background: transparent; letter-spacing: inherit; padding: 5px 7px; border-radius: 6px; }
 button.ann-m:hover { background: var(--r1); color: var(--ink); }
-.ann-m.l { color: var(--amber); } .ann-m.r { color: var(--coral); } .ann-m.a { color: var(--blue); }
+.ann-m.l, .ann-m.e { color: var(--amber); } .ann-m.r { color: var(--coral); } .ann-m.a { color: var(--blue); }
+.ann-m.e { display: inline-flex; align-items: center; gap: 2px; padding: 0 4px; }
 .ann-sp { flex: 1; }
 .ann-path { font-weight: 500; color: var(--ink2); padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; gap: 6px; align-items: center; }
 .ann-path button { border: 0; background: transparent; padding: 3px 4px; border-radius: 5px; }
@@ -1911,7 +1912,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   button.ann-m { flex: 1 1 32px; min-height: 40px; min-width: 32px; max-width: 40px; padding: 0 4px; white-space: nowrap; }
   /* The format mode sizes to its label as before, so FIX 11 stays whole. */
   button.ann-m[data-mode="fmt"] { flex: 0 1 auto; max-width: none; }
-  @container app (min-width: 360px) { button.ann-m { min-width: 40px; } }
+  @container app (min-width: 360px) { button.ann-m { min-width: 40px; } .ann-status:has(> span.ann-m) button.ann-m { min-width: 36px; } }
   .ann-status .ann-path { display: block; min-width: 0; flex-shrink: 100; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* Narrower, the path would show only a clipped brace. */
   @container app (max-width: 389px) { .ann-status .ann-path { display: none; } }

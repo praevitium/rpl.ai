@@ -551,7 +551,8 @@ export class Display {
       ].filter(([, t]) => t);
       const layerMark = layer ? `<span class="ann-m ${layer}">${{ l: '↰', r: '↱', a: 'α' }[layer]}${locked ? ' LOCK' : ''}</span>` : '';
       const haltMark = halted ? '<span class="ann-m l">HALT</span>' : '';
-      el.innerHTML = `<div class="ann-status">${modes.map(([m, t]) => `<button type="button" class="ann-m" data-status="mode" data-mode="${m}" title="Change ${MODE_NAMES[m]}">${escapeHtml(t)}</button>`).join('')}${layerMark}${haltMark}<span class="ann-sp"></span><span class="ann-path">${pathHtml}</span>${minimalButtons}</div>`;
+      const editMark = editing ? `<span class="ann-m e" title="Editing level ${editing}: Enter replaces it" aria-label="Editing level ${editing}">${icon('edit', 'sm')}${editing}</span>` : '';
+      el.innerHTML = `<div class="ann-status">${modes.map(([m, t]) => `<button type="button" class="ann-m" data-status="mode" data-mode="${m}" title="Change ${MODE_NAMES[m]}">${escapeHtml(t)}</button>`).join('')}${layerMark}${haltMark}${editMark}<span class="ann-sp"></span><span class="ann-path">${pathHtml}</span>${minimalButtons}</div>`;
       el.className = 'status-line';
       return;
     }
