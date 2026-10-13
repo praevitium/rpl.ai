@@ -252,7 +252,8 @@ button { cursor: pointer; }
 .icon-btn[aria-pressed="true"] { color: var(--accent); }
 .icon-btn:disabled { opacity: .35; cursor: default; background: transparent; }
 .icon-btn.sm { width: 28px; height: 28px; border-radius: 7px; }
-.search-btn { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink3); font: 12.5px/1 var(--font-ui); min-width: 0; flex: 0 1 250px; }
+/* A shrink weight this large makes the search box give way before the directory name does. */
+.search-btn { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink3); font: 12.5px/1 var(--font-ui); min-width: 0; flex: 0 10000 250px; }
 .search-btn:hover { border-color: var(--line2); color: var(--ink2); }
 .install-btn { flex: none; display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px 0 10px; border-radius: 8px; border: 0; background: var(--accent); color: var(--accent-ink); font: 600 12.5px/1 var(--font-ui); }
 .install-btn:hover { filter: brightness(1.06); }
@@ -306,8 +307,9 @@ button { cursor: pointer; }
 @container app (max-width: 719px) {
   .mode-chip:not(.summary) { display: none; }
   .mode-chip.summary { display: flex; }
-  .brand .word { display: none; }
 }
+/* The six mode chips take the room the wordmark had, so it comes back a little wider. */
+@container app (max-width: 779px) { .brand .word { display: none; } }
 @container app (max-width: 520px) {
   .drawer { width: 100%; top: auto; height: 90%; border-right: 0; border-radius: 16px 16px 0 0; transform: translateY(104%); }
   .appbar { gap: 2px; padding: 0 6px; }
