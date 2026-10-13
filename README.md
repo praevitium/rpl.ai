@@ -155,7 +155,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
   you pick EQW or MTRW again.
 - **The stack.** Click a level to select it; its actions appear on the row
   and in the menu bar. Double-click edits it in the right writer. Drag rows
-  to reorder them.
+  to reorder them. A program opens for editing laid out over lines, each
+  structure (IF, CASE, FOR, WHILE and the rest) starting a line and nested
+  programs indented, with room for it to show.
 
 ### Keyboard
 
@@ -197,7 +199,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   and KEEP for levels 1 to the one you tapped, and LEVEL to push its number (also on the level's soft keys). Swipe a level left or right to drop it; the
   toast's Undo brings it back.
   A level too wide for the screen, such as a big matrix, fades at the edge
-  it continues past; drag it sideways to read the rest.
+  it continues past; drag it sideways to read the rest. On a phone the
+  command line wraps a long line rather than scrolling it out of sight, and
+  in minimal view an amber pencil and the level number on the status line
+  say a level is being edited, so Enter replaces it.
 - ⌫ and Enter sit beside the command line, finger-sized. ⌫ deletes a
   character (or the selected text), or drops level 1 when the line is empty.
 - On a narrow screen each soft-key name is sized to its key, so `SPEED`
