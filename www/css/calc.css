@@ -1601,10 +1601,12 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   color: var(--accent);
 }
 .cb-bubble .katex { color: var(--ink); font-size: 1.05em; }
+/* KaTeX's struts reach a few px past the line box; with only overflow-x set they turned into a vertical scrollbar. */
 .cb-bubble .cb-math-display {
   display: block;
-  overflow-x: auto;
-  margin: 8px 0;
+  overflow: auto hidden;
+  padding: 4px 0;
+  margin: 4px 0;
   text-align: center;
 }
 .cb-bubble .cb-math-display .katex-display { margin: 0; }
