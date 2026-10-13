@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.70 (2026-10-13)
+**Latest release:** v0.6.71 (2026-10-13)
 
 ---
 
@@ -18,6 +18,27 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.71 — 2026-10-13
+
+On a phone the command line wraps a long line. A program opened for editing
+used to show as one line about 700 px wide in a 200 px box, a few words at a
+time; it now wraps over up to four lines, and the box always shows whole
+lines, including minimal view's taller ones. The desktop keeps its single
+scrolling line.
+
+EDIT lays a program out over lines, from a stack level or a variable: each
+structure word (IF, THEN, ELSE, END, FOR, NEXT, CASE and the rest) starts a
+line, a CASE's tests take a line each, and nested programs are indented.
+While a program is being edited, the command line grows to 40% of the
+screen to show it. Enter reads it back as the same program.
+
+In minimal view, the status line shows an amber pencil and the level number
+while a stack level is being edited, as the full view's Editing level pill
+does, so it is clear that Enter replaces the level rather than pushing a new
+one.
 
 ---
 
