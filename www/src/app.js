@@ -968,7 +968,7 @@ class App {
 
   // As on the HP 50g, a unit key multiplies level 1 by the unit, a left-shifted
   // one converts level 1 to it and a right-shifted one divides by it. In a program
-  // it types that, unless it can attach to the number being typed.
+  // it types that, unless it can attach to the number being typed. Returns what it typed.
   insertUnit(unit, mode = 'times') {
     if (this.inputMode === 'equation') { this.equationEditor.typeUnit(unit, mode); return; }
     const e = this.entry;
@@ -977,13 +977,15 @@ class App {
     const word = before.match(/[^\s«{]*$/)[0];
     const number = /^[-+]?\.?\d/.test(word);
     if (inProgramEntry(before.slice(0, before.length - word.length)) && (number ? mode === 'convert' : inProgramEntry(before))) {
-      e.typeToken(`1_${unit} ${{ times: '*', divide: '/', convert: 'CONVERT' }[mode]} `);
-      return;
+      const text = `1_${unit} ${{ times: '*', divide: '/', convert: 'CONVERT' }[mode]}`;
+      e.typeToken(`${text} `);
+      return text;
     }
     if (mode !== 'convert' && typed) {
       const withUnit = word.includes('_');
-      e.type(mode === 'divide' ? (withUnit ? `/${unit}` : `_1/${unit}`) : (withUnit ? `*${unit}` : `_${unit}`));
-      return;
+      const text = mode === 'divide' ? (withUnit ? `/${unit}` : `_1/${unit}`) : (withUnit ? `*${unit}` : `_${unit}`);
+      e.type(text);
+      return text;
     }
     if (typed) {
       this.commitEntry();

@@ -682,9 +682,9 @@ export class Drawers {
   // Like the HP's ECHO, More brings the drawer back where the pick was made, for the next one.
   _insertWithMore(label, insert, selector) {
     const drawer = this.current;
-    insert();
+    const typed = insert();
     if (!this._reveal()) return;
-    this.app.toast(`Added ${label}`, { action: 'More', key: 'drawer', onAction: () => {
+    this.app.toast(`Added ${typed || label}`, { action: 'More', key: 'drawer', onAction: () => {
       this.open(drawer);
       this.el.querySelector(selector)?.scrollIntoView({ block: 'center' });
     } });
