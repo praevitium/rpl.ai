@@ -649,7 +649,7 @@ export class Drawers {
       case 'var': this._activateVar(name); return;
       case 'var-open': e.stopPropagation(); this._activateVar(name); return;
       case 'var-rcl': e.stopPropagation(); this._recallVar(name); this._reveal(); return;
-      case 'var-edit': e.stopPropagation(); app.editVariable(name); return;
+      case 'var-edit': e.stopPropagation(); app.editVariable(name); this._reveal(); return;
       case 'var-rename': e.stopPropagation(); this._beginRename(t.closest('.vr'), name); return;
       case 'var-move': e.stopPropagation(); this._moveMenu(t, name); return;
       case 'var-share': e.stopPropagation(); app.shareText(formatSource(calcState.current.entries.get(name))); return;
