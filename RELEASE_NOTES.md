@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.68 (2026-10-13)
+**Latest release:** v0.6.69 (2026-10-13)
 
 ---
 
@@ -18,6 +18,15 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.69 — 2026-10-13
+
+Formulas set on their own line in the assistant's answers no longer show a
+scrollbar. KaTeX draws a few pixels past each line, and the box that lets a
+wide formula scroll sideways was scrolling vertically too; it now scrolls
+only sideways, and only when the formula is wider than the bubble.
 
 ---
 
