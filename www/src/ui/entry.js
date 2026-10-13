@@ -255,6 +255,16 @@ export class Entry {
     return inOpenObject(this.buffer.slice(0, this.cursor));
   }
 
+  // A BRCH key types a program structure's words between spaces, with the cursor after the first.
+  // Structures run only inside a program, so a bare line gets one opened first.
+  typeStructure(words) {
+    if (!inOpenObject(this.buffer.slice(0, this.cursor))) this.typeWithCursor(`${this._needsLeadingSpace() ? ' ' : ''}«  »`, 2);
+    const text = `${words.join('  ')} `;
+    this.typeToken(text);
+    this.cursor -= text.length - words[0].length - 1;
+    this._emit();
+  }
+
   typeWithCursor(text, backUp = 0) {
     this.type(text);
     if (backUp > 0) {

@@ -205,6 +205,20 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(e.buffer === '« 2 * 1 +  »', `pressOperator keeps a program's tokens apart → '${e.buffer}'`);
   }
   {
+    const e = new Entry(new Stack());
+    e.typeStructure(['IF', 'THEN', 'ELSE', 'END']);
+    assert(e.buffer === '« IF  THEN  ELSE  END  »' && e.cursor === 5, `BRCH: a structure on a bare line opens a program, cursor after IF → '${e.buffer}' at ${e.cursor}`);
+    e.type('X 0 >');
+    assert(e.buffer.startsWith('« IF X 0 > THEN'), `BRCH: the test goes after IF → '${e.buffer}'`);
+    const f = new Entry(new Stack());
+    f.typeWithCursor('«  »', 2);
+    f.type('1');
+    f.typeStructure(['FOR', 'NEXT']);
+    assert(f.buffer === '« 1 FOR  NEXT  »' && f.cursor === 8, `BRCH: inside a program a structure joins the tokens, cursor after FOR → '${f.buffer}' at ${f.cursor}`);
+    f.typeStructure(['STEP']);
+    assert(f.buffer === '« 1 FOR STEP  NEXT  »', `BRCH: a single word types between spaces → '${f.buffer}'`);
+  }
+  {
     const { inProgramEntry } = await import('../www/src/ui/entry.js');
     assert(['«', '« 2', '{ 1', '« [ 1 2 ] 3', '« 1 « 2'].every(inProgramEntry), 'inProgramEntry is true inside a program or a list');
     assert(!['', '3', "« 'X", '« "a', '« 5_m', '« 1E', '« [ 1', '« (1,', '« 2 »'].some(inProgramEntry), 'inProgramEntry is false in an algebraic, string, unit, exponent, vector or complex number, or outside');

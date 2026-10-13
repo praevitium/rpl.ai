@@ -16,7 +16,7 @@ import { Sheets } from './ui/sheets.js';
 import { Tour } from './ui/tour.js';
 import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
-import { MENU_FAMILIES, UNIT_GROUPS, menuById } from './ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, BRANCH_KEYS, menuById } from './ui/menus.js';
 import { MODES } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
 import { clampLevel, dropLevel, keepLevels, moveLevel, replaceLevel } from './ui/stack-levels.js';
@@ -1063,6 +1063,7 @@ class App {
     if (id === 'VARS') this.showVarsMenu();
     else if (id === 'CST') this.showCustomMenu();
     else if (id === 'MODES') this.showModesMenu();
+    else if (id === 'BRCH') this.showBranchMenu();
     else this._showFamilyMenu(id);
     if (remember) this.setPrefs({ menu: this.menuKind });
   }
@@ -1265,6 +1266,19 @@ class App {
       onPress: () => this.setTextbook(!calcState.textbookMode),
     });
     this.setMenu(slots, 'MODES', opts);
+  }
+
+  showBranchMenu() {
+    const type = (words) => () => this.entry.typeStructure(words);
+    const also = (words, shift) => (words ? `; ${shift} types ${words.join(' … ')}` : '');
+    const slots = BRANCH_KEYS.map(([word, left, right]) => ({
+      label: word,
+      title: `Type ${word}${also(left, '⇦')}${also(right, '⇨')}`,
+      onPress: type([word]),
+      onPressL: left && type(left),
+      onPressR: right && type(right),
+    }));
+    this.setMenu(slots, 'BRCH');
   }
 
   pressVariable(name, layer = null) {

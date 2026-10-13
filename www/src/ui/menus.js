@@ -49,12 +49,28 @@ export const OWN_MENUS = Object.freeze([
   { id: 'VARS', short: 'VARS', title: 'Variables in this directory' },
   { id: 'CST', short: 'CST', title: 'Your custom menu (CST)' },
   { id: 'MODES', short: 'MODES', title: 'Calculator modes' },
+  { id: 'BRCH', short: 'BRCH', title: 'Program structures (IF, FOR, WHILE…)' },
+]);
+
+// The HP's PRG BRCH keys: each types its word, ⇦ its whole structure and ⇨ the structure's other form.
+export const BRANCH_KEYS = Object.freeze([
+  ['IF', ['IF', 'THEN', 'END'], ['IF', 'THEN', 'ELSE', 'END']],
+  ['THEN'], ['ELSE'], ['END'],
+  ['CASE', ['CASE', 'THEN', 'END', 'END'], ['THEN', 'END']],
+  ['IFERR', ['IFERR', 'THEN', 'END'], ['IFERR', 'THEN', 'ELSE', 'END']],
+  ['START', ['START', 'NEXT'], ['START', 'STEP']],
+  ['FOR', ['FOR', 'NEXT'], ['FOR', 'STEP']],
+  ['NEXT'], ['STEP'],
+  ['DO', ['DO', 'UNTIL', 'END']],
+  ['UNTIL'],
+  ['WHILE', ['WHILE', 'REPEAT', 'END']],
+  ['REPEAT'],
 ]);
 
 export const MENU_GROUPS = Object.freeze([
   { title: 'Yours', ids: ['VARS', 'CST', 'MODES'] },
   { title: 'Math', ids: ['ARITH', 'TRIG', 'CPLX', 'CAS', 'POLY', 'MATRIX', 'STAT', 'INTEGER', 'PROB', 'SPECIAL', 'LOGIC'] },
-  { title: 'Data and programs', ids: ['STACK', 'LIST', 'MEMORY', 'PROGRAM', 'CONTROL', 'TYPES', 'UNITS', 'FLAGS', 'DISPLAY', 'PLOT', 'SYSTEM', 'MORE'] },
+  { title: 'Data and programs', ids: ['STACK', 'LIST', 'MEMORY', 'PROGRAM', 'BRCH', 'CONTROL', 'TYPES', 'UNITS', 'FLAGS', 'DISPLAY', 'PLOT', 'SYSTEM', 'MORE'] },
 ]);
 
 export function menuById(id) {
