@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.71 (2026-10-13)
+**Latest release:** v0.6.72 (2026-10-13)
 
 ---
 
@@ -18,6 +18,31 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.72 — 2026-10-13
+
+A program pasted from Notes or a messaging app reads its curly quotes “ ” and
+‘ ’ as the straight quotes the HP uses, so “hello” is a string and ‘X^2’ an
+algebraic; before, they were read as names. Inside a straight-quoted string
+they stay text.
+
+On a phone, a variable's Edit button in the Variables drawer now closes the
+drawer, as Recall does, so the value being edited is in sight on the
+command line; before, it opened under the drawer.
+
+A phone's back button cancels a level or variable edit, as the HP's ON
+does, instead of leaving the app, and minimal view's pencil mark is a button
+that cancels it too; Undo on the toast brings the edit back. A variable edit
+now gets the mark and the full view's Editing pill, which names the
+variable.
+
+A variable's key (its soft key, its row in the Variables drawer or a
+command search result) types its name inside an open program, list or
+quote, and in a program ⇦ and ⇨ type a STO or RCL of it, as on the HP.
+Before, it entered the half-typed line, and ⇦ stored the unfinished
+program over the variable.
 
 ---
 
