@@ -1,5 +1,5 @@
 import { Stack } from './rpl/stack.js';
-import { Entry } from './ui/entry.js';
+import { Entry, inProgramEntry } from './ui/entry.js';
 import { Display, escapeHtml, describeValue, suspendedProgramHtml, binaryBaseLabel } from './ui/display.js';
 import { Keypad } from './ui/keyboard.js';
 import { MenuBar } from './ui/menubar.js';
@@ -967,13 +967,21 @@ class App {
   }
 
   // As on the HP 50g, a unit key multiplies level 1 by the unit, a left-shifted
-  // one converts level 1 to it and a right-shifted one divides by it.
+  // one converts level 1 to it and a right-shifted one divides by it. In a program
+  // it types that, unless it can attach to the number being typed.
   insertUnit(unit, mode = 'times') {
     if (this.inputMode === 'equation') { this.equationEditor.typeUnit(unit, mode); return; }
     const e = this.entry;
     const typed = e.buffer.trim();
+    const before = e.buffer.slice(0, e.cursor);
+    const word = before.match(/[^\s«{]*$/)[0];
+    const number = /^[-+]?\.?\d/.test(word);
+    if (inProgramEntry(before.slice(0, before.length - word.length)) && (number ? mode === 'convert' : inProgramEntry(before))) {
+      e.typeToken(`1_${unit} ${{ times: '*', divide: '/', convert: 'CONVERT' }[mode]} `);
+      return;
+    }
     if (mode !== 'convert' && typed) {
-      const withUnit = typed.includes('_');
+      const withUnit = word.includes('_');
       e.type(mode === 'divide' ? (withUnit ? `/${unit}` : `_1/${unit}`) : (withUnit ? `*${unit}` : `_${unit}`));
       return;
     }
