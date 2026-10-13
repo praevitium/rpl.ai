@@ -141,7 +141,10 @@ export class Palette {
     groups.push(['Settings and modes', scored([...actions, ...themeRows, ...modeRows])]);
     const menus = [...OWN_MENUS, ...MENU_FAMILIES].map((m) => ({
       kind: 'menu', title: `${m.short} menu`, detail: m.title, icon: 'menu', keywords: m.title,
-      run: () => this.app.showMenu(m.id),
+      run: () => {
+        this.app.showMenu(m.id);
+        if (this.app.prefs.minimal) this.app.setMinimalMenu(true);
+      },
     }));
     groups.push(['Menus', scored(menus)]);
     const vars = [...calcState.current.entries.entries()].map(([name, value]) => ({
