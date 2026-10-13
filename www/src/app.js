@@ -1342,7 +1342,7 @@ class App {
   }
 
   showCustomMenu() {
-    if (this.entry.buffer.trim().length > 0) this.commitEntry();
+    if (this.entry.buffer.trim().length > 0 && !this.entry._typingAtCursor()) this.commitEntry();
     const cst = varRecall('CST');
     if (!isList(cst)) {
       this.setMenu([], 'CST');
@@ -1358,14 +1358,28 @@ class App {
         label,
         title: `${label} · ↰ types it · ↱ recalls it`,
         onPress: () => {
+          if (this._typeCustomItem(target)) return;
           if (this.entry.buffer.trim().length > 0) this.commitEntry();
           this._pushValue(target, isProgram(target) || isName(target) ? label : null);
         },
-        onPressL: () => this.entry.type(label),
-        onPressR: () => { if (this.entry.buffer.trim().length > 0) this.commitEntry(); this._pushValue(target); },
+        onPressL: () => { if (!this._typeCustomItem(target)) this.entry.typeToken(`${customMenuSource(target)} `); },
+        onPressR: () => {
+          if (this._typeCustomItem(target, 'R')) return;
+          if (this.entry.buffer.trim().length > 0) this.commitEntry();
+          this._pushValue(target);
+        },
       };
     });
     this.setMenu(slots, 'CST');
+  }
+
+  // Inside an open object a CST key types its item, as the HP's keys do; false when it should run.
+  _typeCustomItem(target, layer = null) {
+    if (!this.entry._typingAtCursor()) return false;
+    const source = customMenuSource(target);
+    if (isName(target) && lookup(source) && varRecall(source) === undefined) this.entry.pressFunction(source);
+    else this.entry.typeVariable(source, isName(target) ? layer : null);
+    return true;
   }
 
   layer() {
@@ -1701,6 +1715,10 @@ function customMenuLabel(item) {
   if (isName(item)) return item.id;
   if (isString(item)) return item.value;
   return format(item);
+}
+
+function customMenuSource(target) {
+  return isName(target) ? target.id : formatSource(target);
 }
 
 window.__hp50 = new App();
