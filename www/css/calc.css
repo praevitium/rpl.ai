@@ -520,7 +520,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .sk:active, .sk.pressed { transform: translateY(1px); }
 .sk .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .sk .fk { position: absolute; bottom: 2px; right: 5px; font: 500 8.5px/1 var(--font-mono); color: var(--ink3); opacity: 0; transition: opacity .12s; }
-.menubar:hover .sk .fk { opacity: 1; }
+@media (hover: hover) { .menubar:hover .sk .fk { opacity: 1; } }
 .sk.dir { border-top-left-radius: 4px; }
 .sk.dir::before { content: ""; position: absolute; left: 6px; top: -1px; width: 30%; height: 3px; border-radius: 0 0 3px 3px; background: var(--ink3); }
 .sk.tog.on::after { content: ""; position: absolute; right: 6px; top: 6px; width: 5px; height: 5px; border-radius: 1px; background: var(--accent); }
