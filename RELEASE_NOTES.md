@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.65 (2026-10-12)
+**Latest release:** v0.6.66 (2026-10-13)
 
 ---
 
@@ -18,6 +18,25 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.66 — 2026-10-13
+
+The tour's card no longer sits on the thing it explains. It hid a phone's
+soft keys and half its command line, and on a computer the tool rail's
+buttons; it now goes below, above or beside its target, and inside it only
+when the target is big enough to hold it, as the stack is.
+
+On a phone the tour speaks of taps, not clicks, Tab, F keys or hovering, and
+it now shows the Tools button, which it used to skip because the tool rail is
+hidden there. In Minimal view it adds the status line's modes and its menu,
+so it has four steps instead of two.
+
+In landscape with the keyboard up, the equation and matrix writers' keys sit
+beside the formula or matrix instead of under it. On a 360 px tall phone
+they used to run off the bottom of the screen; now the whole writer fits, and
+the matrix shows two full rows of cells instead of one and a half.
 
 ---
 
