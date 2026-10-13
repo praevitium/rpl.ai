@@ -147,7 +147,7 @@ export const MAIN_KEYS = [
               shiftRAction: type('|') }),
   mk('×',   { shiftL: '[ ]', shiftR: '" "',
               action: typeExec('*', '*'),
-              shiftLAction: (e) => e.typeWithCursor('[ ]', 2),
+              shiftLAction: (e) => e.typeObject('[ ]', 2),
               shiftRAction: (e) => e.typeWithCursor('""', 1) }),
 
   mk('↰', { className: 'shift-l-key', kind: 'shiftL' }),
@@ -168,8 +168,8 @@ export const MAIN_KEYS = [
              shiftRAction: type("'") }),
   mk('+',  { shiftL: '{ }', shiftR: '« »',
              action: typeExec('+', '+'),
-             shiftLAction: (e) => e.typeWithCursor('{ }', 2),
-             shiftRAction: (e) => e.typeWithCursor('«  »', 2) }),
+             shiftLAction: (e) => e.typeObject('{ }', 2),
+             shiftRAction: (e) => e.typeObject('«  »', 2) }),
 
   mk('ON',    { kind: 'cancel', action: cancel,
                 shiftL: 'CONT',

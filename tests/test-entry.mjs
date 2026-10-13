@@ -217,6 +217,22 @@ import { assert, assertThrows } from './helpers.mjs';
   }
   {
     const e = new Entry(new Stack());
+    e.typeWithCursor('«  »', 2);
+    e.pressArrow();
+    e.type('X');
+    e.typeObject('«  »', 2);
+    assert(e.buffer === '« → X «  » »', `typeObject: a program after a word starts a word of its own → '${e.buffer}'`);
+    const f = new Entry(new Stack());
+    f.typeObject('[ ]', 2);
+    f.typeObject('[ ]', 2);
+    assert(f.buffer === '[[ ] ]', `typeObject: a row typed just inside a vector stays beside its bracket → '${f.buffer}'`);
+    const g = new Entry(new Stack());
+    g.type('"a');
+    g.typeObject('{ }', 2);
+    assert(g.buffer === '"a{ }', `typeObject: inside a string it types as it is → '${g.buffer}'`);
+  }
+  {
+    const e = new Entry(new Stack());
     e.typeStructure(['IF', 'THEN', 'ELSE', 'END']);
     assert(e.buffer === '« IF  THEN  ELSE  END  »' && e.cursor === 5, `BRCH: a structure on a bare line opens a program, cursor after IF → '${e.buffer}' at ${e.cursor}`);
     e.type('X 0 >');

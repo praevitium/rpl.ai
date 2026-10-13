@@ -206,6 +206,13 @@ export class Entry {
     this.focus();
   }
 
+  // A program, list or vector typed after a word starts a word of its own, as in the HP's program-entry mode.
+  typeObject(text, backUp) {
+    const before = this.buffer.slice(0, this.cursor);
+    const glued = /[^\s«{[(]$/.test(before) && !scanOpen(before).literal;
+    this.typeWithCursor(`${glued ? ' ' : ''}${text}`, backUp);
+  }
+
   typeToken(text) {
     this.type(`${this._needsLeadingSpace() ? ' ' : ''}${text}`);
   }
@@ -265,7 +272,7 @@ export class Entry {
   // A BRCH key types a program structure's words between spaces, with the cursor after the first.
   // Structures run only inside a program, so a bare line gets one opened first.
   typeStructure(words) {
-    if (!inOpenObject(this.buffer.slice(0, this.cursor))) this.typeWithCursor(`${this._needsLeadingSpace() ? ' ' : ''}«  »`, 2);
+    if (!inOpenObject(this.buffer.slice(0, this.cursor))) this.typeObject('«  »', 2);
     const text = `${words.join('  ')} `;
     this.typeToken(text);
     this.cursor -= text.length - words[0].length - 1;
