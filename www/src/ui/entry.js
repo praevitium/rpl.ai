@@ -22,20 +22,33 @@ function errorText(e) {
   return e && typeof e === 'object' && e.message != null ? String(e.message) : String(e);
 }
 
-// True while the command line is still inside an object: a quote, string, program, list, vector or
-// complex number, a unit after _, or an exponent waiting for its sign. The HP's keys type there.
-export function inOpenObject(text) {
-  let quote = null, string = false, depth = 0;
+function scanOpen(text) {
+  const open = [];
+  let quote = null, string = false;
   for (const c of text) {
     if (string) { if (c === '"') string = false; continue; }
     if (quote) { if (c === quote) quote = null; continue; }
     if (c === '"') string = true;
     else if (c === "'" || c === '`') quote = c;
-    else if ('«{[('.includes(c)) depth++;
-    else if ('»}])'.includes(c)) depth = Math.max(0, depth - 1);
+    else if ('«{[('.includes(c)) open.push(c);
+    else if ('»}])'.includes(c)) open.pop();
   }
   const last = text.match(/\S*$/)[0];
-  return string || quote !== null || depth > 0 || last.includes('_') || /^[-+]?(\d+\.?\d*|\.\d+)[eE]$/.test(last);
+  const literal = string || quote !== null || last.includes('_') || /^[-+]?(\d+\.?\d*|\.\d+)[eE]$/.test(last);
+  return { innermost: open.at(-1), literal };
+}
+
+// True while the command line is still inside an object: a quote, string, program, list, vector or
+// complex number, a unit after _, or an exponent waiting for its sign. The HP's keys type there.
+export function inOpenObject(text) {
+  const { innermost, literal } = scanOpen(text);
+  return literal || innermost !== undefined;
+}
+
+// The HP's program-entry mode: in a program or a list an operator key types its command, not a character.
+export function inProgramEntry(text) {
+  const { innermost, literal } = scanOpen(text);
+  return !literal && (innermost === '«' || innermost === '{');
 }
 
 function pushCapped(list, item, max) {
@@ -223,7 +236,8 @@ export class Entry {
   // The keypad and the phone's key strip work like the HP's keys: they enter the line and run,
   // unless an object is still open.
   pressOperator(char, opName) {
-    if (this._typingAtCursor()) this.type(char);
+    if (inProgramEntry(this.buffer.slice(0, this.cursor))) this.typeToken(`${char} `);
+    else if (this._typingAtCursor()) this.type(char);
     else this.execOp(opName);
   }
 

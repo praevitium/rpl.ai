@@ -199,7 +199,19 @@ import { assert, assertThrows } from './helpers.mjs';
     e.typeWithCursor('«  »', 2);
     e.type('2');
     e.pressOperator('*', '*');
-    assert(e.buffer === '« 2* »' && s.depth === 0, `pressOperator types inside a program → '${e.buffer}'`);
+    assert(e.buffer === '« 2 *  »' && s.depth === 0, `pressOperator types its command inside a program → '${e.buffer}'`);
+    e.type('1');
+    e.pressOperator('+', '+');
+    assert(e.buffer === '« 2 * 1 +  »', `pressOperator keeps a program's tokens apart → '${e.buffer}'`);
+  }
+  {
+    const { inProgramEntry } = await import('../www/src/ui/entry.js');
+    assert(['«', '« 2', '{ 1', '« [ 1 2 ] 3', '« 1 « 2'].every(inProgramEntry), 'inProgramEntry is true inside a program or a list');
+    assert(!['', '3', "« 'X", '« "a', '« 5_m', '« 1E', '« [ 1', '« (1,', '« 2 »'].some(inProgramEntry), 'inProgramEntry is false in an algebraic, string, unit, exponent, vector or complex number, or outside');
+    const e = new Entry(new Stack());
+    e.type("« 'X");
+    e.pressOperator('+', '+');
+    assert(e.buffer === "« 'X+", `pressOperator types a character into an algebraic inside a program → '${e.buffer}'`);
   }
   {
     const e = new Entry(new Stack());
@@ -233,7 +245,7 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(s.depth === 1 && s.peek().value.eq(7) && e.buffer === '', 'keypad + enters 4 and adds at once, as on the HP');
     e.type('« 2');
     key('×').action(e, null, null);
-    assert(e.buffer === '« 2*' && s.depth === 1, `keypad × types inside a program → '${e.buffer}'`);
+    assert(e.buffer === '« 2 * ' && s.depth === 1, `keypad × types its command inside a program, as the HP's program mode does → '${e.buffer}'`);
     e.recall('0');
     key('SIN').action(e, null, null);
     assert(e.buffer === '' && s.depth === 2 && format(s.peek()) === '0', 'keypad SIN enters 0 and takes its sine at once');
