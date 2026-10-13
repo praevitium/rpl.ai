@@ -1359,6 +1359,7 @@ class App {
         title: `${label} · ↰ types it · ↱ recalls it`,
         onPress: () => {
           if (this._typeCustomItem(target)) return;
+          if (customCommand(target)) { this.runCommandFromUI(target.id, { asKey: true }); return; }
           if (this.entry.buffer.trim().length > 0) this.commitEntry();
           this._pushValue(target, isProgram(target) || isName(target) ? label : null);
         },
@@ -1376,9 +1377,8 @@ class App {
   // Inside an open object a CST key types its item, as the HP's keys do; false when it should run.
   _typeCustomItem(target, layer = null) {
     if (!this.entry._typingAtCursor()) return false;
-    const source = customMenuSource(target);
-    if (isName(target) && lookup(source) && varRecall(source) === undefined) this.entry.pressFunction(source);
-    else this.entry.typeVariable(source, isName(target) ? layer : null);
+    if (customCommand(target)) this.entry.pressFunction(target.id);
+    else this.entry.typeVariable(customMenuSource(target), isName(target) ? layer : null);
     return true;
   }
 
@@ -1719,6 +1719,11 @@ function customMenuLabel(item) {
 
 function customMenuSource(target) {
   return isName(target) ? target.id : formatSource(target);
+}
+
+// A built-in command in CST, such as SIN, reads as a name; its key runs the command unless a variable shadows it.
+function customCommand(target) {
+  return isName(target) && lookup(target.id) && varRecall(target.id) === undefined;
 }
 
 window.__hp50 = new App();
