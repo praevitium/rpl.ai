@@ -1297,6 +1297,7 @@ class App {
   }
 
   pressVariable(name, layer = null) {
+    if (this.entry.typeVariable(name, layer)) return;
     if (this.entry.buffer.trim().length > 0) {
       this.commitEntry();
       if (this.entry.error) return;

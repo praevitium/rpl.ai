@@ -258,6 +258,16 @@ export class Entry {
     else this.type('→');
   }
 
+  // As on the HP, a variable's key types its name inside an open object, and in a program ⇦ and ⇨
+  // type a STO or RCL of it. Returns false when the key should run instead.
+  typeVariable(name, layer = null) {
+    const before = this.buffer.slice(0, this.cursor);
+    if (inProgramEntry(before)) this.typeToken(layer === 'L' ? `\`${name}\` STO ` : layer === 'R' ? `\`${name}\` RCL ` : `${name} `);
+    else if (inOpenObject(before)) this.type(name);
+    else return false;
+    return true;
+  }
+
   pressCommand(opName) {
     if (this._typingAtCursor()) this.typeToken(`${opName} `);
     else this.execOp(opName);

@@ -218,6 +218,19 @@ import { assert, assertThrows } from './helpers.mjs';
   {
     const e = new Entry(new Stack());
     e.typeWithCursor('«  »', 2);
+    e.type('2');
+    assert(e.typeVariable('PF') && e.buffer === '« 2 PF  »', `typeVariable types a name inside a program → '${e.buffer}'`);
+    assert(e.typeVariable('PF', 'L') && e.buffer === '« 2 PF `PF` STO  »', `typeVariable: ⇦ in a program types a STO of it → '${e.buffer}'`);
+    const f = new Entry(new Stack());
+    f.type("'X+");
+    assert(f.typeVariable('PF', 'L') && f.buffer === "'X+PF", `typeVariable types a bare name into an algebraic → '${f.buffer}'`);
+    const g = new Entry(new Stack());
+    g.type('3');
+    assert(!g.typeVariable('PF') && g.buffer === '3', 'typeVariable leaves a line outside any object to run');
+  }
+  {
+    const e = new Entry(new Stack());
+    e.typeWithCursor('«  »', 2);
     e.pressArrow();
     e.type('X');
     e.typeObject('«  »', 2);
