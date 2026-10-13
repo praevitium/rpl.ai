@@ -43,8 +43,29 @@ export function hpCodesToGlyphs(src) {
   return src;
 }
 
+// Notes and messaging apps curl the quotes in a program they pass on. The HP has no curly quotes, so they
+// read as straight ones, but inside a straight-quoted string they are text.
+function straightenQuotes(src) {
+  let out = '';
+  let closer = null;
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (closer) {
+      if (c === '\\' && i + 1 < src.length) { out += c + src[++i]; continue; }
+      if (c === closer || c === '"') { out += '"'; closer = null; continue; }
+      out += c;
+    } else if (c === '"' || c === '“' || c === '”') {
+      out += '"';
+      closer = c === '"' ? '"' : '”';
+    } else {
+      out += c === '‘' || c === '’' ? "'" : c;
+    }
+  }
+  return out;
+}
+
 export function hpTextToSource(text) {
-  const src = hpCodesToGlyphs(String(text).replace(/^\uFEFF/, '').replace(/^\s*%%HP:[^;]*;/, ''));
+  const src = hpCodesToGlyphs(straightenQuotes(String(text).replace(/^\uFEFF/, '').replace(/^\s*%%HP:[^;]*;/, '')));
   return mapOutsideStrings(src, (c, s, i) => {
     if (c === "'") return { text: '`', next: i + 1 };
     if (c !== '@') return { text: c, next: i + 1 };

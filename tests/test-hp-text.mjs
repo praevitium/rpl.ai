@@ -24,6 +24,10 @@ END`;
     'hpTextToSource: drops the header, decodes T(3) codes, and turns apostrophes into backticks');
   assert(hpTextToSource('1 @ note @ 2 @ to end\n3').replace(/\s+/g, ' ').trim() === '1 2 3',
     'hpTextToSource: @ comments end at the next @ or the line end');
+  assert(hpTextToSource('“don’t” SIZE') === '"don’t" SIZE' && hpTextToSource('« → X ‘X^2+1’ »') === '« → X `X^2+1` »',
+    'hpTextToSource: curly quotes from a messaging app read as a string and an algebraic');
+  assert(hpTextToSource('"He said “hi”" SIZE') === '"He said “hi”" SIZE',
+    'hpTextToSource: curly quotes inside a straight-quoted string stay text');
   assert(hpTextToSource(`"it's @ here"`) === `"it's @ here"`,
     'hpTextToSource: apostrophes and @ inside a string are kept');
 }
