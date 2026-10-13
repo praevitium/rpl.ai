@@ -1984,7 +1984,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 @media (max-height: 300px) {
   :root[data-keyboard] .input-top, :root[data-keyboard] .input-hint,
   :root[data-keyboard] .mx-foot, :root[data-keyboard] .status-line, :root[data-keyboard] .menubar, :root[data-keyboard] .st-more { display: none; }
-  :root[data-keyboard] .mx-grid-wrap { max-height: 76px; }
+  :root[data-keyboard] .mx-grid-wrap { max-height: 92px; }
+  :root[data-keyboard] .mx, :root[data-keyboard] .eqw { grid-template-columns: 1fr auto; align-items: end; }
   :root[data-keyboard] .dw-head, :root[data-keyboard] .pal-row .d { display: none; }
   :root[data-keyboard] .pal-row { padding-block: 0; }
   :root[data-keyboard] .pal-row .t { grid-row: 1 / 3; }
