@@ -77,8 +77,9 @@ download, no account and no sign-up.
 1. **Open [praevitium.github.io/rpl.ai](https://praevitium.github.io/rpl.ai/)**
    in Chrome, Edge, Firefox or Safari, on a computer, tablet or phone.
 2. **Install it (optional).** Press **Install** in the top bar, as below.
-3. **Take the tour.** A short tour runs the first time. Replay it from
-   Help › Take the tour.
+3. **Take the tour.** A short tour runs the first time and points at the
+   controls your screen shows, on a phone and in Minimal view too. Replay it
+   from Help › Take the tour, or from the ⋯ menu on a phone.
 
 ### Install it as an app
 
@@ -218,8 +219,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   so does tapping the equation. While the keyboard is up, the calculator
   keypad steps aside so the writer stays in view.
 - In landscape, where the keyboard leaves little room, the tabs, hints and
-  soft keys also step aside while you type, so level 1 and the writers' keys
-  stay in view. Typing in a drawer on a short screen hides its tabs and the
+  soft keys also step aside while you type, and the writers' keys move
+  beside the formula or matrix, so level 1 and the whole writer stay in
+  view. Typing in a drawer on a short screen hides its tabs and the
   assistant's status line, and in landscape its title too, so the
   conversation or list keeps its room.
 - While the phone's keyboard is up on the command line, a strip above it
