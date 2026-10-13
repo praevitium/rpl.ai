@@ -177,7 +177,7 @@ export const MAIN_KEYS = [
   mk('0',     { kind: 'digit', shiftL: '∞',   shiftR: '→',
                 action:       type('0'),
                 shiftLAction: type('∞'),
-                shiftRAction: type('→') }),
+                shiftRAction: (e) => e.pressArrow() }),
   mk('.',     { kind: 'digit', shiftL: '::',  shiftR: '↵',
                 action:       type('.'),
                 shiftLAction: type('::'),

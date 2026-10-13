@@ -241,6 +241,13 @@ export class Entry {
     else this.execOp(opName);
   }
 
+  // In a program → starts a local-variable structure, so it stands apart like the HP's;
+  // elsewhere it begins a name such as →NUM.
+  pressArrow() {
+    if (inProgramEntry(this.buffer.slice(0, this.cursor))) this.typeToken('→ ');
+    else this.type('→');
+  }
+
   pressCommand(opName) {
     if (this._typingAtCursor()) this.typeToken(`${opName} `);
     else this.execOp(opName);

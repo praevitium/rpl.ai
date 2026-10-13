@@ -206,6 +206,17 @@ import { assert, assertThrows } from './helpers.mjs';
   }
   {
     const e = new Entry(new Stack());
+    e.typeWithCursor('«  »', 2);
+    e.pressArrow();
+    e.type('X');
+    assert(e.buffer === '« → X »', `pressArrow starts a local-variable structure inside a program → '${e.buffer}'`);
+    const f = new Entry(new Stack());
+    f.pressArrow();
+    f.type('NUM');
+    assert(f.buffer === '→NUM', `pressArrow begins a name outside a program → '${f.buffer}'`);
+  }
+  {
+    const e = new Entry(new Stack());
     e.typeStructure(['IF', 'THEN', 'ELSE', 'END']);
     assert(e.buffer === '« IF  THEN  ELSE  END  »' && e.cursor === 5, `BRCH: a structure on a bare line opens a program, cursor after IF → '${e.buffer}' at ${e.cursor}`);
     e.type('X 0 >');

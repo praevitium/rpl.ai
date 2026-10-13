@@ -35,7 +35,7 @@ const STRIP_KEYS = Object.freeze([
   { label: 'SWAP', command: 'SWAP' }, { label: 'DROP', command: 'DROP' }, { label: 'UNDO', action: 'edit.undo' },
   { label: "' '", text: "''", back: 1 }, { label: '« »', text: '«  »', back: 2 }, { label: '{ }', text: '{ }', back: 2 },
   { label: '[ ]', text: '[ ]', back: 2 }, { label: '( )', text: '()', back: 1 }, { label: '_', text: '_' },
-  { label: '→', text: '→' }, { label: 'π', text: 'π' },
+  { label: '→', arrow: true }, { label: 'π', text: 'π' },
 ]);
 
 function keyStrip(app) {
@@ -52,6 +52,7 @@ function keyStrip(app) {
     if (key.op) entry.pressOperator(key.op, key.op);
     else if (key.command) entry.pressCommand(key.command);
     else if (key.action) app.runAction(key.action);
+    else if (key.arrow) entry.pressArrow();
     else entry.typeWithCursor(key.text, key.back ?? 0);
   });
   const markHiddenKeys = () => markScrollEdges(strip);
