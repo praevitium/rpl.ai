@@ -1260,6 +1260,13 @@ setAngle('RAD');
   assert(!missing.length, `every tour step points at markup the app renders${missing.length ? ` (missing ${missing.join(', ')})` : ''}`);
   const { normalizeUiPrefs } = await import('../www/src/ui/ui-prefs.js');
   assert(normalizeUiPrefs({}).tourSeen === false && normalizeUiPrefs({ tourSeen: true }).tourSeen === true, 'ui prefs remember that the tour was seen');
+  const { cardPoint } = await import('../www/src/ui/tour.js');
+  const rect = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height });
+  assert(cardPoint(rect(8, 206, 304, 46), 294, 180, 320, 640).y === 252, 'tour: a phone card goes under the command line it explains');
+  assert(cardPoint(rect(0, 590, 320, 50), 294, 200, 320, 640).y + 6 + 200 <= 590, 'tour: a phone card goes over the soft keys at the bottom');
+  assert(cardPoint(rect(0, 48, 64, 852), 320, 171, 1440, 900).x === 70, 'tour: a card goes beside the tall, narrow rail');
+  const inside = cardPoint(rect(64, 48, 1030, 678), 320, 191, 1440, 900);
+  assert(inside.x === 419 && inside.y + 6 === 138, 'tour: a card sits inside a stack big enough to hold it');
 }
 
 {

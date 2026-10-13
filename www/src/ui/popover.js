@@ -61,6 +61,11 @@ export class Popover {
     return el;
   }
 
+  moveTo(point) {
+    this._point = point;
+    if (this.el) this._place(point);
+  }
+
   _place(point) {
     const el = this.el;
     const margin = 8;

@@ -9,6 +9,21 @@ export const TOUR_STEPS = Object.freeze([
   Object.freeze({ target: '#rail', title: 'Tools', text: 'The assistant and its tutor, the catalog of every command, your variables, history, plots and special characters.' }),
 ]);
 
+const GAP = 6;
+const MARGIN = 8;
+
+// Where Popover should put a w × h card so it doesn't hide the target it explains: below or above it,
+// inside it when the target is big enough, else beside it. Popover places a card GAP below its point.
+export function cardPoint(box, w, h, vw, vh) {
+  const x = box.left + Math.max(0, (box.width - w) / 2);
+  if (box.bottom + GAP + h <= vh - MARGIN) return { x, y: box.bottom };
+  if (box.top - GAP - h >= MARGIN) return { x, y: box.top - h - 2 * GAP };
+  if (box.width >= w + 2 * MARGIN && box.height >= h + 2 * MARGIN) return { x, y: box.top + Math.min((box.height - h) / 2, 90) - GAP };
+  if (box.right + GAP + w <= vw - MARGIN) return { x: box.right + GAP, y: box.top - GAP };
+  if (box.left - GAP - w >= MARGIN) return { x: box.left - GAP - w, y: box.top - GAP };
+  return { x, y: box.top - GAP };
+}
+
 function visibleTarget(step) {
   const el = document.querySelector(step.target);
   return el && el.getClientRects().length ? el : null;
@@ -33,13 +48,11 @@ export class Tour {
     const target = visibleTarget(step);
     if (!target) { this._advance(); return; }
     const last = this.index === this.steps.length - 1;
-    const box = target.getBoundingClientRect();
     target.classList.add('tour-spot');
     const html = `<div class="tour-card"><small>${this.index + 1} of ${this.steps.length}</small><b>${escapeHtml(step.title)}</b><p>${escapeHtml(step.text)}</p><div class="tour-acts"><button type="button" class="btn pri" data-v="next">${last ? 'Done' : 'Next'}</button><button type="button" class="btn ghost" data-v="skip">Skip the tour</button></div></div>`;
-    this.app.popover.open(target, html, {
+    const card = this.app.popover.open(target, html, {
       className: 'tour',
       label: `Tour: ${step.title}`,
-      point: { x: box.left + Math.max(0, Math.min(box.width - 320, box.width / 2 - 160)), y: box.top + Math.min(box.height, 180) / 2 },
       onClick: (button) => {
         if (button.dataset.v === 'next') this._advance();
         else this.app.popover.close({ restoreFocus: false });
@@ -49,6 +62,7 @@ export class Tour {
         if (!this._moving) this.app.setPrefs({ tourSeen: true });
       },
     });
+    this.app.popover.moveTo(cardPoint(target.getBoundingClientRect(), card.offsetWidth, card.offsetHeight, window.innerWidth, window.innerHeight));
   }
 
   _advance() {
