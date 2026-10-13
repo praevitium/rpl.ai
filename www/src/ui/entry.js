@@ -15,6 +15,7 @@ import {
 } from '../../vendor/codemirror/codemirror.bundle.js';
 
 const UNDO_WORD = /^(UNDO|LASTSTACK|REDO)$/i;
+const onTouch = () => globalThis.matchMedia?.('(pointer: coarse)').matches === true;
 
 const pastedSource = (text) => latexToSource(text) ?? spreadsheetToSource(text) ?? hpTextToSource(text);
 
@@ -149,6 +150,8 @@ export class Entry {
           keymap.of(defaultKeymap),
           // A phone's Enter key runs the line here, so it says go rather than new line.
           EditorView.contentAttributes.of({ enterkeyhint: 'go' }),
+          // A phone shows a few words of a line, so a long one wraps rather than scrolling out of sight.
+          ...(onTouch() ? [EditorView.lineWrapping] : []),
           EditorView.clipboardInputFilter.of(pastedSource),
           EditorView.domEventHandlers({
             paste: (event) => {
