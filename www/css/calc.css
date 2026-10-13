@@ -470,9 +470,9 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .cmdline:focus-within { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-dim); }
 .cmdline.editing { border-color: color-mix(in oklab, var(--amber) 60%, transparent); box-shadow: 0 0 0 3px var(--amber-dim); }
 /* A program opened for editing is laid out over lines, so it gets room to show them. */
-.cmdline.editing .cm-scroller { max-height: max(96px, calc(var(--app-height, 100dvh) * .4)); }
+.cmdline.editing .cm-scroller { max-height: max(4lh, calc(var(--app-height, 100dvh) * .4)); }
 .cmdline .cm-editor { flex: 1; min-width: 0; background: transparent; color: inherit; font: inherit; outline: none !important; }
-.cmdline .cm-scroller { font: inherit; line-height: inherit; overflow-x: auto; scrollbar-width: none; max-height: 96px; }
+.cmdline .cm-scroller { font: inherit; line-height: inherit; overflow-x: auto; scrollbar-width: none; max-height: 96px; max-height: 4lh; }
 .cmdline .cm-scroller::-webkit-scrollbar { display: none; }
 .cmdline .cm-content { padding: 0; caret-color: var(--accent); }
 .cmdline .cm-line { padding: 0; }
