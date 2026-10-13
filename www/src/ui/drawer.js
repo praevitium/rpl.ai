@@ -476,6 +476,7 @@ export class Drawers {
     const list = body?.querySelector('.vr-list');
     if (!bar || !list) return;
     const path = currentPath();
+    bar.hidden = path.length < 2;
     bar.innerHTML = path.map((seg, i) => `${i ? '<span class="sep" aria-hidden="true">›</span>' : ''}<button type="button" data-dw="path" data-index="${i}" aria-current="${i === path.length - 1}" title="${i === path.length - 1 ? `You are in ${escapeHtml(seg)}` : `Go to ${escapeHtml(seg)}; drop a variable here to move it`}">${escapeHtml(seg)}</button>`).join('');
     const q = this.varsQuery.trim().toLowerCase();
     const entries = [...calcState.current.entries.entries()].filter(([name]) => !q || name.toLowerCase().includes(q));
