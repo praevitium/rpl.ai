@@ -191,7 +191,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   it and runs at once. Inside a quote, string, program, list or unit they
   type. The command menus' soft keys do the same; the catalog types. A
   variable's key types its name inside a program, list or quote, and in a
-  program ⇦ and ⇨ type a STO or RCL of it, as on the HP.
+  program ⇦ and ⇨ type a STO or RCL of it, as on the HP. So does a CST
+  key, whose command (such as SIN) runs on a bare line, and in a program
+  the UNITS keys type `1_m *`, `1_m CONVERT` (⇦) or `1_m /` (⇨), or attach
+  the unit to the number you are typing.
 - Tap a stack level for its actions, on a line under it so they never cover
   the value: Edit, Pick (DUP on level 1), Roll (SWAP on level 2), Drop, and ⋯
   (or hold a finger on the level) for EVAL, →NUM, copy, share, store and the rest, including the HP
