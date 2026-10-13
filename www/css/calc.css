@@ -1912,7 +1912,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   /* Narrower, the path would show only a clipped brace. */
   @container app (max-width: 389px) { .ann-status .ann-path { display: none; } }
   /* Keyboard shortcuts mean nothing on a touch screen. */
-  .pop .opt em, .pal .kbd, .pal-foot { display: none; }
+  .pop .opt em, .pal .kbd, .pal-foot, .search-btn .kbd { display: none; }
   .pop .opt, .pop .grid button, .pop .layers button { min-height: 40px; }
   /* History entries show in full (up to six lines), as variable names do, and a section's text button takes a finger without making its header taller. */
   .hr .in-t, .hr .out { white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; }
