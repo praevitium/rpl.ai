@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.66 (2026-10-13)
+**Latest release:** v0.6.67 (2026-10-13)
 
 ---
 
@@ -18,6 +18,26 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.67 — 2026-10-13
+
+The app bar no longer cuts the directory name to H… or HO…. It did on touch
+screens from 720 to 759 px wide, in landscape on many phones, and on tablets
+and computers from 980 px up, an iPad in landscape among them. The search box
+now gives way first, and the rpl.ai wordmark waits for 780 px. A long path
+still ends in an ellipsis, but each folder keeps more of its name.
+
+Inside a program or a list, the keypad's and the phone key strip's
+operators (+, −, ×, ÷, yˣ and the comparisons) type their command between
+spaces, as the HP's program-entry mode does. Typing 2 × 1 + used to give
+« 2*1+ », which read as 2 and a name *1+; it now gives « 2 * 1 + ». Inside a
+quote, a string, a unit or an exponent they still type their character.
+
+On touch screens the app bar's search box no longer shows its Ctrl+K hint,
+which spilled over the box on a tablet, as the menus and command search
+already hide theirs.
 
 ---
 
