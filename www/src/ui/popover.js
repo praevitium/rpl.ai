@@ -30,7 +30,7 @@ export class Popover {
 
   isOpen() { return !!this.el; }
 
-  open(anchor, html, { onClick = null, onClose = null, className = '', label = 'Menu', point = null } = {}) {
+  open(anchor, html, { onClick = null, onClose = null, className = '', label = 'Menu', point = null, keepFocus = false } = {}) {
     this.close({ restoreFocus: false });
     this._onOpen?.();
     const el = document.createElement('div');
@@ -54,6 +54,8 @@ export class Popover {
     document.addEventListener('pointerdown', this._onDocDown, true);
     document.addEventListener('keydown', this._onKey, true);
     window.addEventListener('resize', this._onResize);
+    // Opened while typing, it leaves the focus on the line so a phone's keyboard stays up.
+    if (keepFocus) { el.addEventListener('mousedown', (e) => e.preventDefault()); return el; }
     requestAnimationFrame(() => {
       const first = el.querySelector('.opt.on') ?? el.querySelector(FOCUSABLE);
       first?.focus({ preventScroll: true });

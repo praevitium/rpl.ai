@@ -1,5 +1,5 @@
 import { icon } from './icons.js';
-import { escapeHtml } from './display.js';
+import { escapeHtml, LONG_PRESS_MS } from './display.js';
 import { MENU_GROUPS, menuById } from './menus.js';
 
 const PREVIEW_HOVER_MS = 220;
@@ -43,8 +43,19 @@ export class MenuBar {
       const sk = e.target.closest('.sk[data-i]');
       if (!sk || e.button !== 0 || sk.disabled) return;
       e.preventDefault();
-      this._press(sk);
+      if (e.pointerType === 'touch' && this.app.menuView().slots[sk.dataset.i]?.onHold) this._startHold(sk, e);
+      else this._press(sk);
     });
+    el.addEventListener('pointermove', (e) => {
+      if (this._hold && Math.hypot(e.clientX - this._hold.x, e.clientY - this._hold.y) > 10) this._endHold();
+    });
+    el.addEventListener('pointerup', () => {
+      const sk = this._hold?.sk;
+      this._endHold();
+      if (sk) this._press(sk);
+    });
+    el.addEventListener('pointercancel', () => this._endHold());
+    el.addEventListener('contextmenu', (e) => { if (e.target.closest('.sk[data-i]')) e.preventDefault(); });
     el.addEventListener('click', (e) => {
       const sk = e.target.closest('.sk[data-i]');
       if (sk) { if (e.detail === 0 && !sk.disabled) this._press(sk); return; }
@@ -72,6 +83,22 @@ export class MenuBar {
     if (app.shift && !app.shiftLocked()) app.setShift(null);
     if (back) app.prevMenuPage();
     else app.nextMenuPage();
+  }
+
+  // A key with more to offer (a BRCH word's whole structures) acts on a quick tap and offers the rest to a held finger.
+  _startHold(sk, e) {
+    this._endHold();
+    const i = Number(sk.dataset.i);
+    const timer = setTimeout(() => {
+      this._hold = null;
+      this.app.menuView().slots[i]?.onHold(sk);
+    }, LONG_PRESS_MS);
+    this._hold = { sk, x: e.clientX, y: e.clientY, timer };
+  }
+
+  _endHold() {
+    clearTimeout(this._hold?.timer);
+    this._hold = null;
   }
 
   _press(sk) {

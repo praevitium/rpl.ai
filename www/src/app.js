@@ -1277,8 +1277,22 @@ class App {
       onPress: type([word]),
       onPressL: left && type(left),
       onPressR: right && type(right),
+      onHold: left && ((anchor) => this._structureMenu([left, right].filter(Boolean), anchor)),
     }));
     this.setMenu(slots, 'BRCH');
+  }
+
+  // A phone with the keypad hidden has no shift, so a finger held on a BRCH key offers what ⇦ and ⇨ type.
+  _structureMenu(forms, anchor) {
+    const html = forms.map((words, i) => `<button type="button" class="opt" data-v="${i}"><span class="ck">${i ? '⇨' : '⇦'}</span><b>${escapeHtml(words.join(' … '))}</b></button>`).join('');
+    this.popover.open(anchor, html, {
+      label: 'Structures',
+      keepFocus: true,
+      onClick: (target) => {
+        this.popover.close({ restoreFocus: false });
+        this.entry.typeStructure(forms[Number(target.dataset.v)]);
+      },
+    });
   }
 
   pressVariable(name, layer = null) {
