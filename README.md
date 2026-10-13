@@ -189,7 +189,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - The on-screen keypad has the HP 50g's layout, shift keys included, and
   its keys work like the HP's: with `4` on the command line, + or SIN enters
   it and runs at once. Inside a quote, string, program, list or unit they
-  type. The command menus' soft keys do the same; the catalog types.
+  type. The command menus' soft keys do the same; the catalog types. A
+  variable's key types its name inside a program, list or quote, and in a
+  program ⇦ and ⇨ type a STO or RCL of it, as on the HP.
 - Tap a stack level for its actions, on a line under it so they never cover
   the value: Edit, Pick (DUP on level 1), Roll (SWAP on level 2), Drop, and ⋯
   (or hold a finger on the level) for EVAL, →NUM, copy, share, store and the rest, including the HP
@@ -201,8 +203,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   A level too wide for the screen, such as a big matrix, fades at the edge
   it continues past; drag it sideways to read the rest. On a phone the
   command line wraps a long line rather than scrolling it out of sight, and
-  in minimal view an amber pencil and the level number on the status line
-  say a level is being edited, so Enter replaces it.
+  in minimal view an amber pencil on the status line (with the level number
+  for a stack level) says a level or variable is being edited, so Enter
+  puts it back; tap the pencil to cancel. A program pasted from Notes or a
+  messaging app reads its curly quotes as the HP's straight ones.
 - ⌫ and Enter sit beside the command line, finger-sized. ⌫ deletes a
   character (or the selected text), or drops level 1 when the line is empty.
 - On a narrow screen each soft-key name is sized to its key, so `SPEED`
@@ -265,8 +269,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   full. A drawer opens as a sheet from the bottom; drag its tabs or title
   down to close it. In minimal view it opens at the side; drag its title
   right to close it. Running a command from the Catalog, recalling a History
-  line or a variable, or picking a character closes the drawer so you see
-  the result, as the HP's catalog does; after a character or a unit, More
+  line or a variable, editing a variable, or picking a character closes the
+  drawer so you see the result, as the HP's catalog does; after a character or a unit, More
   brings the drawer back at it for the next one.
 - On a plot, two fingers pinch to zoom and one drags to pan; a tap shows
   the x and y under it and each curve's value there, and with Trace on it
@@ -278,7 +282,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   pretty math included. On Android it can also make the keys vibrate briefly
   as a finger presses them.
 - A phone's back button closes the open menu, search, sheet, writer or
-  drawer first, and leaves the app only when nothing is open.
+  drawer first, then cancels an edit as the HP's ON does, and leaves the
+  app only when nothing is open.
 
 ---
 
