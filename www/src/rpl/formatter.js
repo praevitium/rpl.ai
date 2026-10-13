@@ -52,6 +52,60 @@ export function formatSource(v, display = DEFAULT_DISPLAY) {
   return format(v, display);
 }
 
+const OPENERS = new Set(['IF', 'IFERR', 'WHILE', 'DO', 'START', 'FOR', 'CASE']);
+const CLAUSES = new Set(['THEN', 'ELSE', 'REPEAT', 'UNTIL']);
+const CLOSERS = new Set(['END', 'NEXT', 'STEP']);
+
+// EDIT's layout: each structure starts a line, its clauses and closing word line up under it,
+// a CASE's tests take a line each, and a nested program that spans lines is indented.
+export function formatProgramLines(v, display = DEFAULT_DISPLAY) {
+  const body = programBody(v.tokens, display);
+  if (body.length <= 1) return formatSource(v, display);
+  return [`« ${body[0]}`, ...body.slice(1).map((l) => `  ${l}`), '»'].join('\n');
+}
+
+function programBody(tokens, display) {
+  const lines = [];
+  const open = [];
+  let line = null;
+  const startLine = (depth) => { line = { depth, words: [] }; lines.push(line); };
+  const add = (word, depth = open.length) => { if (!line) startLine(depth); line.words.push(word); };
+  for (const t of tokens) {
+    const word = isName(t) && !t.quoted ? t.id.toUpperCase() : null;
+    const top = open.at(-1);
+    if (OPENERS.has(word)) {
+      startLine(open.length);
+      add(t.id);
+      open.push(word);
+      if (word === 'CASE') line = null;
+    } else if (word === 'THEN' && top === 'CASE') {
+      add(t.id);
+      open.push('CASE THEN');
+    } else if (word === 'END' && top === 'CASE THEN') {
+      open.pop();
+      add(t.id);
+      line = null;
+    } else if (CLAUSES.has(word) && top) {
+      startLine(open.length - 1);
+      add(t.id);
+    } else if (CLOSERS.has(word) && top) {
+      open.pop();
+      startLine(open.length);
+      add(t.id);
+      line = null;
+    } else if (isProgram(t) && formatProgramLines(t, display).includes('\n')) {
+      for (const text of formatProgramLines(t, display).split('\n')) {
+        startLine(open.length);
+        add(text);
+      }
+      line = null;
+    } else {
+      add(formatSource(t, display));
+    }
+  }
+  return lines.map((l) => '  '.repeat(l.depth) + l.words.join(' '));
+}
+
 export function formatStackTop(v, display = DEFAULT_DISPLAY) {
   return format(v, display, { context: 'stack' });
 }

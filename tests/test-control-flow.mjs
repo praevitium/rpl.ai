@@ -7,7 +7,7 @@ import {
   isString,
 } from '../www/src/rpl/types.js';
 import { parseEntry } from '../www/src/rpl/parser.js';
-import { format, formatStackTop } from '../www/src/rpl/formatter.js';
+import { format, formatStackTop, formatSource, formatProgramLines } from '../www/src/rpl/formatter.js';
 import {
   state as calcState, setAngle, cycleAngle, toRadians, fromRadians,
   varStore, varRecall, varList, varPurge, resetHome, currentPath,
@@ -7313,4 +7313,17 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   assert(top('`X>0` EVAL') === '1.' && top('`X<0` EVAL') === '0.' && top('`X≠5` EVAL') === '0.' && top('`X==5` EVAL') === '1.', 'a comparison of two numbers in an algebraic is 1. or 0.');
   assert(top('`Y>0` EVAL') === '`Y>0`' && top('`X=5` EVAL') === '`5 = 5`', 'a comparison with an unknown stays symbolic, and = stays an equation');
   varPurge('X');
+}
+
+/* EDIT lays a program out over lines: structures start a line and the layout reads back as the same program. */
+{
+  const laid = (src) => formatProgramLines(parseEntry(src)[0]);
+  const same = (src) => formatSource(parseEntry(laid(src))[0]) === formatSource(parseEntry(src)[0]);
+  assert(laid('« 2 * »') === '« 2 * »' && laid('« → X « X SQ » »') === '« → X « X SQ » »', 'formatProgramLines keeps a program with no structure on one line');
+  assert(laid('« → N « 1 1 N FOR I I * NEXT IF DUP 100 > THEN "big" ELSE "small" END » »') === '« → N\n  « 1 1 N\n    FOR I I *\n    NEXT\n    IF DUP 100 >\n    THEN "big"\n    ELSE "small"\n    END\n  »\n»',
+    'formatProgramLines starts each structure word on a line and indents a nested program');
+  assert(laid('« CASE DUP 0 < THEN "neg" END "zero" END »') === '« CASE\n    DUP 0 < THEN "neg" END\n    "zero"\n  END\n»', 'formatProgramLines gives each CASE test a line of its own');
+  assert(['« → N « 1 1 N FOR I I * NEXT IF DUP 100 > THEN "big" ELSE "small" END » »', '« CASE X 0 < THEN IF Y THEN 1 END END END »',
+    '« 1 10 START DUP 1 + 2 STEP »', '« DO 1 - DUP UNTIL DUP 0 ≤ END »', '« WHILE DUP 0 > REPEAT 1 - END DROP »', '« IFERR 1 0 / THEN DROP2 "err" END »'].every(same),
+    'formatProgramLines reads back as the same program');
 }

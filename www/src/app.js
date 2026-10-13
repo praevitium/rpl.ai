@@ -27,7 +27,7 @@ import { MatrixEditor } from './ui/matrix-editor.js';
 import {
   loadCommandReference, findReferenceEntry, formatReferenceEntry, searchCommands, shortDescription,
 } from './ui/command-reference.js';
-import { format, formatSource } from './rpl/formatter.js';
+import { format, formatSource, formatProgramLines } from './rpl/formatter.js';
 import { spreadsheetHtml } from './rpl/sheet.js';
 import { toLatex } from './rpl/latex.js';
 import {
@@ -813,7 +813,7 @@ class App {
     this.pendingEdit = edit;
     if (mode === 'rpl') {
       this.setInputMode('rpl');
-      this.entry.recall(formatSource(value));
+      this.entry.recall(isProgram(value) ? formatProgramLines(value) : formatSource(value));
     } else {
       this.setInputMode(mode, { value });
     }
