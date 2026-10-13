@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.72 (2026-10-13)
+**Latest release:** v0.6.73 (2026-10-13)
 
 ---
 
@@ -18,6 +18,31 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.73 — 2026-10-13
+
+The CST menu works inside a half-typed program, as the HP's does: opening it
+no longer enters the unfinished line, and its keys type their item (a
+command such as SIN, a name, a number), with ⇨ typing a RCL of a variable.
+In a quote a command key types SIN( as the MTH keys do. Before, they entered
+the half-typed program and ran on it.
+
+A CST key holding a built-in command, such as { SIN }, now runs the command
+like the menus' keys; it used to push the name 'SIN'. A variable of the same
+name still wins.
+
+Inside a program or list the UNITS keys, and the units on the Catalog's
+Units page, type the HP's program-entry forms: 1_m * for the key, 1_m
+CONVERT with ⇦ and 1_m / with ⇨. Right after a number they still attach the
+unit (2_m), and they attach it to the number at the cursor rather than to
+the first unit on the line. Before, they typed a stray _m that didn't read
+as a unit. The Catalog's toast now names what was typed.
+
+On a phone the soft keys no longer show the F1 to F6 hints after the first
+tap; they are for a computer keyboard, and appear only where the pointer
+can hover.
 
 ---
 
