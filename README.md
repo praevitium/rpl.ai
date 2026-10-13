@@ -226,9 +226,11 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   conversation or list keeps its room.
 - While the phone's keyboard is up on the command line, a strip above it
   holds the keys a phone keyboard lacks. `+`, `−`, `×`, `÷`, `yˣ`, `SWAP` and
-  `DROP` enter the line and run at once, as on the HP, but type into an open
-  program, list, quote or unit. The strip also has UNDO, the RPL delimiters,
-  `_`, `→` and `π`, and fades at an edge while more keys lie past it.
+  `DROP` enter the line and run at once, as on the HP. Inside a program or
+  a list they type their command between spaces, as the HP's program mode
+  does, and inside a quote or unit the operators type their character. The
+  strip also has UNDO, the RPL delimiters, `_`, `→` and `π`, and fades at an
+  edge while more keys lie past it.
 - In the equation writer, a drag scrolls a long formula; touch and hold,
   then drag, to select part of it, and the tools over the selection
   (Evaluate, Simplify, Factor and the rest) take a finger.
