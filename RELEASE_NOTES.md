@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.67 (2026-10-13)
+**Latest release:** v0.6.68 (2026-10-13)
 
 ---
 
@@ -18,6 +18,27 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.68 — 2026-10-13
+
+A BRCH menu, as on the HP's PRG BRCH, types the program structures: IF,
+THEN, ELSE, END, CASE, IFERR, START, FOR, NEXT, STEP, DO, UNTIL, WHILE and
+REPEAT, each between spaces, opening `« »` first when the line holds no
+program. With the left shift a key types its whole structure with the cursor
+after its first word (IF THEN END, FOR NEXT, DO UNTIL END, WHILE REPEAT
+END), and with the right shift the other form (IF THEN ELSE END, START STEP,
+FOR STEP). A phone user had to spell each word on the keyboard before. Find
+it in the menu picker under Data and programs, or search for "structures".
+
+In Minimal view with the soft keys off, picking a menu from command search
+changed the menu but kept the menu bar hidden, so nothing seemed to happen;
+it now turns the soft keys on.
+
+At HOME the Variables drawer no longer repeats HOME in a path row under its
+title. That row only shows in a subdirectory, where it goes somewhere, which
+gives the list another line on a short screen.
 
 ---
 
