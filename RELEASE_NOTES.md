@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.69 (2026-10-13)
+**Latest release:** v0.6.70 (2026-10-13)
 
 ---
 
@@ -18,6 +18,26 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.70 — 2026-10-13
+
+Local variables typed on a phone work. Inside a program the `→` key (the
+key strip's, or the keypad's right-shifted 0) now types between spaces, as
+the HP's program-entry mode does, so `→ X « X SQ »` binds X; it used to
+glue onto the name after it and make the name `→X`. Outside a program `→`
+still begins a name such as `→NUM`.
+
+A finger held on a BRCH soft key (IF, CASE, IFERR, START, FOR, DO, WHILE)
+offers the whole structures its shifted layers type, such as IF … THEN …
+END and IF … THEN … ELSE … END, so a phone with the keypad hidden reaches
+them without a shift key. A quick tap still types the word, and the
+phone's keyboard stays up throughout.
+
+The `« »`, `{ }` and `[ ]` keys, on the keypad and the key strip, start a
+word of their own after a name or number, as the BRCH keys already did, so
+a program typed on a phone reads `→ X « X SQ »` rather than `→ X« X SQ »`.
 
 ---
 
