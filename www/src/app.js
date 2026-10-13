@@ -160,7 +160,7 @@ class App {
       minimal: this.prefs.minimal,
       shift: this.shift,
       halted: calcState.halted ? calcState.halted.kind : null,
-      editing: this.pendingEdit?.kind === 'level' ? this.pendingEdit.level : null,
+      editing: this.pendingEdit ? this.pendingEdit.level ?? this.pendingEdit.name : null,
     });
   }
 
@@ -609,6 +609,7 @@ class App {
       else if (kind === 'fullscreen') this.runAction('view.fullscreen');
       else if (kind === 'leave-minimal') this.setMinimal(false);
       else if (kind === 'menu') this.appbar.openAppMenu(el, { drawers: true });
+      else if (kind === 'cancel-edit') this.cancelEdit();
     };
   }
 
@@ -1619,6 +1620,8 @@ class App {
       [() => this.sheets.isOpen(), () => this.sheets.close()],
       [() => this.inputMode !== 'rpl', () => this.cancelWriter()],
       [() => this._drawerCoversStack(), () => this.drawers.close()],
+      // As the HP's ON cancels an edit, so does a phone's back button.
+      [() => !!this.pendingEdit, () => this.cancelEdit()],
     ];
     const top = () => overlays.find(([isOpen]) => isOpen());
     let ignorePop = false;

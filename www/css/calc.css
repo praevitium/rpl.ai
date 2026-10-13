@@ -1911,8 +1911,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   .ann-status { gap: 0; }
   button.ann-m { flex: 1 1 32px; min-height: 40px; min-width: 32px; max-width: 40px; padding: 0 4px; white-space: nowrap; }
   /* The format mode sizes to its label as before, so FIX 11 stays whole. */
-  button.ann-m[data-mode="fmt"] { flex: 0 1 auto; max-width: none; }
-  @container app (min-width: 360px) { button.ann-m { min-width: 40px; } .ann-status:has(> span.ann-m) button.ann-m { min-width: 36px; } }
+  button.ann-m[data-mode="fmt"], button.ann-m.e { flex: 0 1 auto; max-width: none; }
+  @container app (min-width: 360px) { button.ann-m { min-width: 40px; } .ann-status:has(> .ann-m:not([data-mode])) button.ann-m { min-width: 36px; } }
   .ann-status .ann-path { display: block; min-width: 0; flex-shrink: 100; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* Narrower, the path would show only a clipped brace. */
   @container app (max-width: 389px) { .ann-status .ann-path { display: none; } }

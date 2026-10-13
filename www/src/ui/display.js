@@ -116,6 +116,8 @@ const MODE_NAMES = Object.freeze({
   complex: 'real or complex', coord: 'coordinates', base: 'integer base',
 });
 
+const editTarget = (editing) => (typeof editing === 'number' ? `level ${editing}` : editing);
+
 const prefersReducedMotion = () => !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 const swipeThreshold = (width) => Math.min(120, width * 0.35);
 export const LONG_PRESS_MS = 450;
@@ -551,7 +553,7 @@ export class Display {
       ].filter(([, t]) => t);
       const layerMark = layer ? `<span class="ann-m ${layer}">${{ l: '↰', r: '↱', a: 'α' }[layer]}${locked ? ' LOCK' : ''}</span>` : '';
       const haltMark = halted ? '<span class="ann-m l">HALT</span>' : '';
-      const editMark = editing ? `<span class="ann-m e" title="Editing level ${editing}: Enter replaces it" aria-label="Editing level ${editing}">${icon('edit', 'sm')}${editing}</span>` : '';
+      const editMark = editing ? `<button type="button" class="ann-m e" data-status="cancel-edit" title="Editing ${escapeHtml(editTarget(editing))}: tap to cancel" aria-label="Cancel editing ${escapeHtml(editTarget(editing))}">${icon('edit', 'sm')}${typeof editing === 'number' ? editing : ''}</button>` : '';
       el.innerHTML = `<div class="ann-status">${modes.map(([m, t]) => `<button type="button" class="ann-m" data-status="mode" data-mode="${m}" title="Change ${MODE_NAMES[m]}">${escapeHtml(t)}</button>`).join('')}${layerMark}${haltMark}${editMark}<span class="ann-sp"></span><span class="ann-path">${pathHtml}</span>${minimalButtons}</div>`;
       el.className = 'status-line';
       return;
@@ -560,7 +562,7 @@ export class Display {
     if (layer === 'l') pills.push(`<span class="pill l">↰ ${locked ? 'LOCKED' : 'SHIFT'}</span>`);
     if (layer === 'r') pills.push(`<span class="pill r">↱ ${locked ? 'LOCKED' : 'SHIFT'}</span>`);
     if (layer === 'a') pills.push(`<span class="pill a">α ${locked ? 'LOCKED' : 'ALPHA'}</span>`);
-    if (editing) pills.push(`<span class="pill e">EDITING LEVEL ${editing}</span>`);
+    if (editing) pills.push(`<span class="pill e">EDITING ${escapeHtml(editTarget(editing).toUpperCase())}</span>`);
     el.innerHTML = pills.join('');
     el.className = pills.length ? 'status-line has-pills' : 'status-line';
   }

@@ -715,6 +715,11 @@ import { assert, assertThrows } from './helpers.mjs';
     'renderStatus: HALT stays ghosted when nothing is halted');
   d.renderStatus({ editing: 3 });
   assert(statusLine.innerHTML.includes('EDITING LEVEL 3'), 'renderStatus: editing a level shows a pill');
+  d.renderStatus({ editing: 'PF' });
+  assert(statusLine.innerHTML.includes('EDITING PF'), 'renderStatus: editing a variable names it in the pill');
+  d.renderStatus({ minimal: true, editing: 3 });
+  assert(/<button type="button" class="ann-m e" data-status="cancel-edit"[^>]*>.*3<\/button>/.test(statusLine.innerHTML),
+    'renderStatus: minimal view marks a level edit with a button that cancels it');
   d.renderStatus({ shift: 'shiftLLock' });
   assert(statusLine.innerHTML.includes('LOCKED') && statusLine.innerHTML.includes('↰'),
     'renderStatus: a locked shift layer shows its glyph and LOCKED');
