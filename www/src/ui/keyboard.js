@@ -1,5 +1,6 @@
 import { icon } from './icons.js';
 import { escapeHtml } from './display.js';
+import { holdToClear } from './input-area.js';
 
 // Alpha a..z runs along the keypad's rows: a..f across the top row, g..l across the second,
 // then m..z on the main keys (LASTARG=m … ÷=z). Unlike the HP 50g it types
@@ -280,6 +281,7 @@ export class Keypad {
     const el = document.createElement('button');
     el.type = 'button';
     const entry = { el, key };
+    if (key.kind === 'back') holdToClear(el, this.app);
     const press = () => {
       el.classList.add('pressed');
       setTimeout(() => el.classList.remove('pressed'), 80);

@@ -1630,6 +1630,11 @@ class App {
     }
   }
 
+  clearLine(text = this.entry.buffer) {
+    this.entry.cancel();
+    this.toast('Cleared the command line', { action: 'Undo', onAction: () => this.entry.recall(text) });
+  }
+
   _escape() {
     if (this.popover.isOpen()) { this.popover.close(); return true; }
     if (this.sheets.isOpen()) { this.sheets.close(); return true; }
@@ -1639,12 +1644,7 @@ class App {
     if (this.entry.error) { this.dismissError(); return true; }
     if (this.inputMode !== 'rpl') { this.cancelWriter(); return true; }
     if (this.pendingEdit) { this.cancelEdit(); return true; }
-    if (this.entry.buffer.length) {
-      const text = this.entry.buffer;
-      this.entry.cancel();
-      this.toast('Cleared the command line', { action: 'Undo', onAction: () => this.entry.recall(text) });
-      return true;
-    }
+    if (this.entry.buffer.length) { this.clearLine(); return true; }
     if (this.shift) { this.setShift(null); return true; }
     if (this._drawerCoversStack()) { this.drawers.close(); return true; }
     return true;

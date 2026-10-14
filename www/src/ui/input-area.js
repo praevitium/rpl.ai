@@ -1,5 +1,5 @@
 import { icon } from './icons.js';
-import { escapeHtml, markScrollEdges } from './display.js';
+import { escapeHtml, markScrollEdges, LONG_PRESS_MS } from './display.js';
 import { shortcutText } from './actions.js';
 
 const WRITERS = Object.freeze([
@@ -13,6 +13,31 @@ const HINTS = Object.freeze({
   equation: ['/ fraction · ^ power · ( group', 'Tab next box', '⇧← ⇧→ select', 'Enter pushes', 'Esc cancels'],
   matrix: ['Tab next cell', '⇧Enter next row', 'Enter pushes', 'Esc cancels'],
 });
+
+// Holding ⌫ clears the whole line, with Undo, wherever a quick press deletes a character from it.
+export function holdToClear(el, app) {
+  let hold = null;
+  let held = false;
+  const cancel = () => { clearTimeout(hold?.timer); hold = null; };
+  const fire = () => {
+    const { text } = hold;
+    cancel();
+    held = true;
+    if (app.entry.buffer) app.clearLine(text);
+  };
+  const swallow = (ev) => { ev.preventDefault(); ev.stopImmediatePropagation(); };
+  el.addEventListener('pointerdown', (ev) => {
+    cancel();
+    held = false;
+    const clears = app.inputMode === 'rpl' && app.selection == null && !app.shift && app.entry.buffer;
+    if (ev.button === 0 && clears) hold = { text: app.entry.buffer, timer: setTimeout(fire, LONG_PRESS_MS) };
+  }, { capture: true });
+  for (const type of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(type, cancel);
+  el.addEventListener('contextmenu', (ev) => {
+    if (hold) { swallow(ev); fire(); } else if (held) swallow(ev);
+  }, { capture: true });
+  el.addEventListener('click', (ev) => { if (held) { held = false; swallow(ev); } }, { capture: true });
+}
 
 export function writerKeys(keys, press) {
   const bar = document.createElement('div');
@@ -80,7 +105,7 @@ export class InputArea {
     this.back = document.createElement('button');
     this.back.type = 'button';
     this.back.className = 'cmdline-go cmdline-back';
-    this.back.title = 'Backspace (DROP on an empty line)';
+    this.back.title = 'Backspace (hold to clear the line)';
     this.back.setAttribute('aria-label', 'Backspace');
     this.back.innerHTML = icon('back', 'sm');
     this.badge = document.createElement('span');
@@ -96,6 +121,7 @@ export class InputArea {
     });
     for (const button of [this.go, this.back]) button.addEventListener('mousedown', (e) => e.preventDefault());
     this.go.addEventListener('click', () => app.commitEntry());
+    holdToClear(this.back, app);
     this.back.addEventListener('click', () => app.backspace());
     cmdline.addEventListener('mousedown', (e) => {
       if (e.target === cmdline) { e.preventDefault(); app.entry.focus(); }

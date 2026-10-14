@@ -27,6 +27,7 @@ import { allOps } from '../www/src/rpl/ops.js';
 import { unitInfo, UNIT_CATALOG, parseUnitExpr, sameDims } from '../www/src/rpl/units.js';
 import { UNIT_GROUPS } from '../www/src/ui/menus.js';
 import { commandWordAt, commandHelpText } from '../www/src/ui/hover-help.js';
+import { holdToClear } from '../www/src/ui/input-area.js';
 import { parseCommandReference } from '../www/src/ui/command-reference.js';
 import { assert, assertThrows } from './helpers.mjs';
 
@@ -1308,4 +1309,35 @@ setAngle('RAD');
   assert(/@media \(hover: hover\) \{\s*\.vr \{ grid-template-columns: 18px minmax\(0, 1fr\); \}\s*\.vr \.acts \{ position: absolute;/.test(css), 'Variables: with a mouse the hidden row actions float over the row, so they leave the name its width');
   const drawerSource = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
   assert(!/data-dw="var-(rcl|move|share)"/.test(drawerSource), 'Variables: rows have no Recall, Move or Share button (tap the name, drag, or share the stack level)');
+}
+
+{
+  const button = () => {
+    const on = {};
+    return { addEventListener: (type, fn) => { (on[type] ??= []).push(fn); }, fire: (type, ev = {}) => {
+      const e = { button: 0, prevented: false, stopped: false, preventDefault() { this.prevented = true; }, stopImmediatePropagation() { this.stopped = true; }, ...ev };
+      for (const fn of on[type] ?? []) { if (e.stopped) break; fn(e); }
+      return e;
+    } };
+  };
+  const fakeApp = (over = {}) => ({ inputMode: 'rpl', selection: null, shift: null, entry: { buffer: '12 34' }, cleared: [], clearLine(text) { this.cleared.push(text); this.entry.buffer = ''; }, ...over });
+  let app = fakeApp();
+  let el = button();
+  holdToClear(el, app);
+  el.fire('pointerdown');
+  app.entry.buffer = '12 3';
+  const menu = el.fire('contextmenu');
+  assert(app.cleared[0] === '12 34' && menu.prevented && menu.stopped, '⌫ held: a long press clears the line, Undo bringing back what it held before the press, and no key-layers menu opens');
+  assert(el.fire('click').stopped, '⌫ held: the release after clearing does not also delete a character');
+  app = fakeApp({ selection: 1 });
+  el = button();
+  holdToClear(el, app);
+  el.fire('pointerdown');
+  assert(!el.fire('contextmenu').stopped && !app.cleared.length, '⌫ held: with a level selected, ⌫ drops it and a hold clears nothing');
+  app = fakeApp();
+  el = button();
+  holdToClear(el, app);
+  el.fire('pointerdown');
+  el.fire('pointerup');
+  assert(!el.fire('contextmenu').stopped && !el.fire('click').stopped && !app.cleared.length, '⌫ held: a quick press only deletes, and a right-click still shows the layers');
 }
