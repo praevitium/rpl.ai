@@ -1985,6 +1985,11 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 :root[data-keyboard] .eqw-ins, :root[data-keyboard] .mx-foot:not(.error) { display: none; }
 :root[data-keyboard] .eqw-canvas { max-height: calc(var(--app-height, 100dvh) * .4); }
 :root[data-keyboard] .mx-grid-wrap { max-height: calc(var(--app-height, 100dvh) * .35); }
+/* Typing at a PROMPT, the halt banner keeps to one row of title and icon keys, so level 1 stays in view. */
+:root[data-keyboard] .bn.halt { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding-block: 6px; }
+:root[data-keyboard] .bn.halt :is(.bn-ico, .bn-prog), :root[data-keyboard] .bn.halt .bn-f span { display: none; }
+:root[data-keyboard] .bn.halt .bn-f { grid-column: 2; grid-row: 1; flex-wrap: nowrap; margin-top: 0; }
+:root[data-keyboard] .bn.halt .bn-f .chip { min-width: 40px; justify-content: center; padding-inline: 0; }
 /* The assistant keeps its conversation in view the same way: the endpoint button and token counts wait for the keyboard to go. */
 :root[data-keyboard] .cb-switch-model-btn, :root[data-keyboard] .cb-stats { display: none; }
 /* A landscape phone with its keyboard up has about 190px left: while typing, only the stack, the line or writer and its keys stay. */
