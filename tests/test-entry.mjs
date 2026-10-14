@@ -964,8 +964,8 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(e.buffer === '3 -1.5' && e.cursor === 6,
       `"3 1.5" CHS flips only the current token → "3 -1.5", got "${e.buffer}"`);
     e.toggleSign();
-    assert(e.buffer === '3 1.5' && e.cursor === 4,
-      `"3 -1.5" CHS round-trips → "3 1.5", got "${e.buffer}"`);
+    assert(e.buffer === '3 1.5' && e.cursor === 5,
+      `"3 -1.5" CHS round-trips → "3 1.5" with the cursor still after it, got "${e.buffer}" at ${e.cursor}`);
   }
   {
     const e = mk('3 1E7');
@@ -1899,7 +1899,22 @@ resetBinaryState();
   e.buffer = 'abc';
   e.cursor = 3;
   e.backspace();
-  assert(e.buffer === 'ab', 'backspace with no selection still deletes one character');
+  assert(e.buffer === 'ab' && e.cursor === 2, 'backspace with no selection deletes one character and keeps the cursor at the end');
+  e.backspace();
+  assert(e.buffer === 'a' && e.cursor === 1, 'a second backspace deletes the last character again, not the one before it');
+  e.buffer = 'abcd';
+  e.cursor = 2;
+  e.backspace();
+  assert(e.buffer === 'acd' && e.cursor === 1, 'backspace inside the line deletes the character before the cursor');
+  e.buffer = '12';
+  e.cursor = 2;
+  e.toggleSign();
+  e.toggleSign();
+  assert(e.buffer === '12' && e.cursor === 2, '+/- twice at the end of a number leaves the cursor at the end');
+  e.buffer = '1E-5';
+  e.cursor = 4;
+  e.toggleSign();
+  assert(e.buffer === '1E5' && e.cursor === 3, '+/- that removes an exponent sign keeps the cursor after the exponent');
 }
 
 /* The HP 50g quotes with apostrophes; the ` key stands in for its ' key, and the command line reads either. */

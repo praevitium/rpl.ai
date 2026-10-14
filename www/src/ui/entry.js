@@ -426,8 +426,8 @@ export class Entry {
       this.cursor = from;
       this._emit();
     } else if (this.cursor > 0) {
-      this.buffer = this.buffer.slice(0, this.cursor - 1) + this.buffer.slice(this.cursor);
-      this.cursor--;
+      const at = this.cursor;
+      this._dispatch({ changes: { from: at - 1, to: at }, selection: { anchor: at - 1 } });
       this._emit();
     }
   }
@@ -467,8 +467,9 @@ export class Entry {
       const afterE = eIdx + 1;
       const ch = t[afterE];
       if (ch === '-') {
+        const at = this.cursor;
         this.buffer = t.slice(0, afterE) + t.slice(afterE + 1);
-        if (this.cursor > afterE) this.cursor -= 1;
+        if (at > afterE) this.cursor = at - 1;
       } else if (ch === '+') {
         this.buffer = t.slice(0, afterE) + '-' + t.slice(afterE + 1);
       } else {
@@ -480,8 +481,9 @@ export class Entry {
     }
 
     if (t[startTok] === '-') {
+      const at = this.cursor;
       this.buffer = t.slice(0, startTok) + t.slice(startTok + 1);
-      this.cursor -= 1;
+      this.cursor = at - 1;
     } else if (t[startTok] === '+') {
       this.buffer = t.slice(0, startTok) + '-' + t.slice(startTok + 1);
     } else {
