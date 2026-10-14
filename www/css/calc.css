@@ -757,6 +757,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .set > :last-child { grid-row: 1 / span 2; grid-column: 2; }
 .set.stack { grid-template-columns: minmax(0, 1fr); }
 .set.stack > :last-child { grid-row: auto; grid-column: 1; margin-top: 8px; }
+.set:has(> .tgl) { cursor: pointer; }
 /* On a phone a button beside the text squeezes it into a narrow column, so it goes under it. */
 @container app (max-width: 479px) {
   .set:has(> .btn:last-child) { grid-template-columns: minmax(0, 1fr); }

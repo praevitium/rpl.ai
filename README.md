@@ -298,7 +298,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   scrolls, so the field you type in stays in view.
 - Settings › Appearance sets the stack's text size, from Small to Larger,
   pretty math included. On Android it can also make the keys vibrate briefly
-  as a finger presses them.
+  as a finger presses them. A tap anywhere on a switch's row flips it.
 - A phone's back button closes the open menu, search, sheet, writer or
   drawer first, then cancels an edit as the HP's ON does, and leaves the
   app only when nothing is open.

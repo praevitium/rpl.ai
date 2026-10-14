@@ -1397,3 +1397,15 @@ setAngle('RAD');
     Object.assign(globalThis, { document: savedDoc, requestAnimationFrame: savedRaf, cancelAnimationFrame: savedCaf });
   }
 }
+
+{
+  const { Sheets } = await import('../www/src/ui/sheets.js');
+  const flips = [];
+  const tgl = { dataset: { sh: 'toggle', setting: 'textbook' }, getAttribute: () => 'false' };
+  const sheet = { el: { contains: () => true }, app: {}, _toggle: (setting, on) => flips.push(`${setting}=${on}`), _render: () => {} };
+  const tap = (target) => Sheets.prototype._onClick.call(sheet, { target });
+  tap({ closest: (sel) => (sel === '.set' ? { querySelector: (q) => (q === ':scope > .tgl' ? tgl : null) } : null) });
+  assert(flips[0] === 'textbook=true', 'Settings: a tap on a switch row\'s title or description flips its switch, as a phone\'s settings do');
+  tap({ closest: (sel) => (sel === '.set' ? { querySelector: () => null } : null) });
+  assert(flips.length === 1, 'Settings: a tap on a row without a switch changes nothing');
+}

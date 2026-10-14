@@ -156,7 +156,7 @@ export class Sheets {
   }
 
   _onClick(e) {
-    const b = e.target.closest('[data-sh]');
+    const b = e.target.closest('[data-sh]') ?? e.target.closest('.set')?.querySelector(':scope > .tgl');
     if (!b || !this.el.contains(b)) return;
     const { app } = this;
     switch (b.dataset.sh) {
