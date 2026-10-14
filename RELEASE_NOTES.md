@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.82 (2026-10-14)
+**Latest release:** v0.6.83 (2026-10-14)
 
 ---
 
@@ -18,6 +18,23 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.83 — 2026-10-14
+
+Each variable in the Variables drawer has fewer buttons: Edit, Rename,
+Download and Delete, or Open, Rename, Download and Delete for a folder.
+Recall is gone because tapping the name already puts the value on the
+stack. Move is gone because a variable drags into a folder, onto the
+breadcrumb or to a new place in the list. Share is gone too; a stack
+level's menu still shares a value. Tapping a program's name still runs it;
+to put it on the stack unrun, press ↱ and then its soft key, or use `RCL`.
+
+With a mouse, the hidden buttons no longer narrow the row. They kept their
+width while invisible, so a narrow drawer cut names, type badges and values
+to a few letters (`Integ…`). They now appear over the end of the row on
+hover or keyboard focus, and the name, badge and value use the full width.
 
 ---
 
