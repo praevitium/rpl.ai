@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.80 (2026-10-14)
+**Latest release:** v0.6.81 (2026-10-14)
 
 ---
 
@@ -18,6 +18,26 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.81 — 2026-10-14
+
+`LASTARG` works as on the HP 50g. Every command a program runs saves its
+arguments, so `« * LASTARG »` gives back what `*` took rather than the
+arguments of whatever ran before the program, and after a program
+`LASTARG` gives the arguments of its last command, as the AUR says. Each
+command now saves the levels the AUR lists as its inputs: `DUP`, `OVER`,
+`DUP2` and `PICK` save what they read (they used to save nothing), a
+command whose result is its argument unchanged (`5 ABS`) saves it, and a
+command that fails saves what it took, so `3 0 /` then `LASTARG` brings
+back 3 and 0. Commands that take nothing, such as `DEPTH`, keep the saved
+arguments, and with flag -55 set nothing is saved.
+
+With α on the keypad, every letter is now on a key: a to f run along the
+top row (VARS to CAT) and g to l along the second (HOME to ▶), then m to z
+on the keys below as before. a to f used to sit on the F1 to F6 soft keys,
+which the keypad doesn't have.
 
 ---
 
