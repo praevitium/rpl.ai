@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.81 (2026-10-14)
+**Latest release:** v0.6.82 (2026-10-14)
 
 ---
 
@@ -18,6 +18,31 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.82 — 2026-10-14
+
+A new compact keypad for phones: five rows of six keys holding what an RPN
+session reaches for most, in about half the height of the full keypad
+(225 px instead of 397 on a 390 × 844 phone), so the stack gets the rest.
+
+    ↰    ↱    α    `    UNDO  ⌫
+    SWAP 7    8    9    yˣ    ÷
+    DROP 4    5    6    √x    ×
+    +/-  1    2    3    1/x   −
+    EEX  0    .    SPC  ENTER +
+
+Shifts carry the rest: EVAL and EQW on `, REDO on UNDO, OVER and ROT on
+SWAP, DUP and CLEAR on DROP, SIN, COS and TAN (and their inverses) on 7, 8
+and 9, and the full keypad's shifts on the other keys. Under α every key
+but α, ⌫, SPC and ENTER types a letter, a to z along the rows. Choose it
+from Compact keypad in the ⋯ menu or Keypad in Settings, both new; the
+Full, Compact and Hide switch on the keypad itself only shows on wide
+screens. The old compact layout, the full keypad with its top rows hidden,
+is gone.
+
+`10 20 « * LASTARG + / »` gives 20/3, as on the HP; a test now pins it.
 
 ---
 
