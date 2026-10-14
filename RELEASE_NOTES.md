@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.73 (2026-10-13)
+**Latest release:** v0.6.74 (2026-10-14)
 
 ---
 
@@ -18,6 +18,26 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.74 — 2026-10-14
+
+Inside a half-typed program, list or quote the MODES keys type their
+command, as the HP's do: DEG, RAD, GRD, STD, FIX, SCI, ENG, EXACT, APPROX,
+RECT, CYLIN, SPHERE, HEX, DEC, OCT and BIN, and -103 SF or -103 CF for
+CMPLX and REAL (the CMPLX command on its own toggles). Before, they changed
+the calculator's mode and typed nothing.
+
+A program on the stack can be debugged from its level's ⋯ menu: Debug step
+by step (DBUG) halts it with the banner's Continue, Step and Stop, so a
+phone with the keypad hidden no longer needs command search to start
+DBUG.
+
+On a phone, while the keyboard is up at a PROMPT, the halt banner keeps to
+one row: the prompt beside Continue, Step and Stop as icon keys, without
+the program listing. Two stack levels now stay in view in portrait, where
+the banner used to cover them all.
 
 ---
 
