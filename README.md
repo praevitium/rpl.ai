@@ -194,10 +194,11 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   program ⇦ and ⇨ type a STO or RCL of it, as on the HP. So does a CST
   key, whose command (such as SIN) runs on a bare line, and in a program
   the UNITS keys type `1_m *`, `1_m CONVERT` (⇦) or `1_m /` (⇨), or attach
-  the unit to the number you are typing.
+  the unit to the number you are typing. The MODES keys type their command
+  there too (`DEG`, `FIX`, `HEX`) rather than changing the mode.
 - Tap a stack level for its actions, on a line under it so they never cover
   the value: Edit, Pick (DUP on level 1), Roll (SWAP on level 2), Drop, and ⋯
-  (or hold a finger on the level) for EVAL, →NUM, copy, share, store and the rest, including the HP
+  (or hold a finger on the level) for EVAL, →NUM, copy, share, store and the rest (and, for a program, Debug), including the HP
   interactive stack's VIEW, which shows the level full size (a long number
   in full, a formula or matrix that scrolls both ways; pinch or double-tap to zoom) with Edit, Copy and
   Share under it, and →LIST, DUPN, DRPN
@@ -418,7 +419,10 @@ sheet's used range; dates arrive as Excel's serial numbers.
 
 `HALT` suspends a program and shows it with the next instruction
 highlighted. Continue, Step or Stop from the banner (or `CONT`, `SST`,
-`KILL`). `PROMPT` shows its message and waits for your input.
+`KILL`). `PROMPT` shows its message and waits for your input; on a phone,
+while you type the answer, the banner shrinks to one row so the stack
+stays in view. A program on the stack can be stepped from the start with
+`DBUG`, or with Debug in its level's ⋯ menu.
 
 ![A halted program](screenshots/debugging.png)
 
