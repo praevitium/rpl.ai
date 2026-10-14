@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.86 (2026-10-14)
+**Latest release:** v0.6.87 (2026-10-14)
 
 ---
 
@@ -18,6 +18,26 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.87 — 2026-10-14
+
+Restoring a backup on a phone now shows what came back. Choose a file in
+Settings › Data and the sheet closes on success, so the restored stack
+and its Undo note are in view; before, the full-screen sheet stayed open
+over them. Restore from file and a named backup in the Variables drawer
+close the drawer the same way when it covers the command line. A file
+that can't be read still leaves Settings open with the reason.
+
+The number format menu's Digits grid now lists every count from 0 to 11,
+the range the AUR gives FIX, SCI and ENG, in two rows of six. It used to
+offer 0, 2, 3, 4, 6, 8 and 11, so FIX 5 had to be typed.
+
+On a phone the app bar's modes button (RAD · STD · EXACT) shows the same
+Digits grid under FIX, SCI and ENG. Before, only minimal view's status
+line offered a digit count, so a phone in normal view could not choose
+one from a menu at all.
 
 ---
 
