@@ -183,7 +183,7 @@ export class Entry {
 
   focus() { this._view?.focus(); }
 
-  // Which keyboard a phone offers the line: none while the calc keypad types, a number pad, or letters.
+  // A phone offers the line no keyboard while the calc keypad types.
   setPhoneKeyboard(mode) {
     const dom = this._view?.contentDOM;
     if (!dom) return;

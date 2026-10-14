@@ -273,26 +273,17 @@ class App {
   }
 
   // On a phone the calc keypad does the typing while it shows, so the editables ask for no system
-  // keyboard; with the keypad hidden the line asks for the number pad, as the HP's unshifted keys are
-  // digits, and the key strip's ABC switches to letters. The equation writer always takes letters.
-  phoneKeyboard(editor = 'line') {
+  // keyboard; with it hidden they take the phone's usual one, as none offers letters and digits at once.
+  phoneKeyboard() {
     if (!matchMedia('(pointer: coarse)').matches) return null;
-    if (this.prefs.keypad !== 'hidden' && !this.prefs.minimal) return 'none';
-    return editor === 'equation' || this.alphaKeyboard ? 'text' : 'decimal';
+    return this.prefs.keypad !== 'hidden' && !this.prefs.minimal ? 'none' : null;
   }
 
   _applyPhoneKeyboard() {
-    this.entry.setPhoneKeyboard(this.phoneKeyboard());
-    this.matrixEditor?.setPhoneKeyboard(this.phoneKeyboard());
-    this.equationEditor?.setPhoneKeyboard(this.phoneKeyboard('equation'));
-  }
-
-  // A phone reads inputmode when an editable takes focus, so the switch lets go of it and takes it back.
-  toggleAlphaKeyboard() {
-    this.alphaKeyboard = !this.alphaKeyboard;
-    this._applyPhoneKeyboard();
-    const el = document.activeElement;
-    if (el && el !== document.body) { el.blur(); el.focus({ preventScroll: true }); }
+    const mode = this.phoneKeyboard();
+    this.entry.setPhoneKeyboard(mode);
+    this.matrixEditor?.setPhoneKeyboard(mode);
+    this.equationEditor?.setPhoneKeyboard(mode);
   }
 
   setPlotFocus(on) {

@@ -1840,11 +1840,11 @@ export class EquationEditor {
   focus() {
     if (!typesOnTouch()) { this.el.focus({ preventScroll: true }); return; }
     this._restSoftKeys();
-    this.setPhoneKeyboard(this.app.phoneKeyboard?.('equation'));
+    this.setPhoneKeyboard(this.app.phoneKeyboard?.());
     this.keys.focus({ preventScroll: true });
   }
 
-  // Which keyboard a phone offers the writer: none while the calc keypad types, else letters.
+  // A phone offers the writer no keyboard while the calc keypad types.
   setPhoneKeyboard(mode) {
     if (mode) this.keys.inputMode = mode;
     else this.keys.removeAttribute('inputmode');

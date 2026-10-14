@@ -463,7 +463,7 @@ export class MatrixEditor {
 
   typedCellFocused() { return this._typedCell === `${this._focusR},${this._focusC}`; }
 
-  // Which keyboard a phone offers the cells: none while the calc keypad types, a number pad, or letters.
+  // A phone offers the cells no keyboard while the calc keypad types.
   setPhoneKeyboard(mode) {
     for (const cell of this._gridEl.querySelectorAll('input.mx-cell')) {
       if (mode) cell.inputMode = mode;

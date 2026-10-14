@@ -232,10 +232,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   a cell and moves to the next one, and on a cell you haven't typed in it
   puts the matrix on the stack, so 1 Enter 2 Enter Enter enters [[ 1 2 ]].
 - With the keypad hidden, opening the equation or matrix writer brings up
-  your phone's keyboard (letters for the equation writer, the number pad for
-  matrix cells), and so does tapping the equation; while the keypad shows,
-  its keys type into the writer instead. While the keyboard is up, the
-  calculator keypad steps aside so the writer stays in view.
+  your phone's keyboard, and so does tapping the equation; while the keypad
+  shows, its keys type into the writer instead. While the keyboard is up,
+  the calculator keypad steps aside so the writer stays in view.
 - In landscape, where the keyboard leaves little room, the tabs, hints and
   soft keys also step aside while you type, and the writers' keys move
   beside the formula or matrix, so level 1 and the whole writer stay in
@@ -251,10 +250,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   edge while more keys lie past it. Inside a program `→` stands apart too,
   so `→ X « X SQ »` binds X (elsewhere it begins a name such as `→NUM`),
   and `« »`, `{ }` and `[ ]` start a word of their own after a name or
-  number. With the keypad hidden, or in minimal view, the command line asks
-  the phone for its number pad, as a calculator should, and the strip's ABC
-  key switches to letters for names and commands, with 123 to switch back,
-  like the HP's ALPHA; the matrix writer's cells follow the same choice.
+  number.
 - In the equation writer, a drag scrolls a long formula; touch and hold,
   then drag, to select part of it, and the tools over the selection
   (Evaluate, Simplify, Factor and the rest) take a finger.
