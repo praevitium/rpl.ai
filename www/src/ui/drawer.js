@@ -743,7 +743,7 @@ export class Drawers {
   }
 
   _import() {
-    pickFile('application/json,.json', (file) => this.app.importSnapshotFromFile(file));
+    pickFile('application/json,.json', async (file) => { if (await this.app.importSnapshotFromFile(file)) this._reveal(); });
   }
 
   _restoreBackup(key) {
@@ -755,6 +755,7 @@ export class Drawers {
     try {
       restoreBackup(port, name, app.stack);
       app.undoToast(`Restored :${key}`);
+      this._reveal();
     } catch (e) {
       app.entry._dropNoOpUndoStep();
       app.notifyError(`Restore failed: ${e.message}`);

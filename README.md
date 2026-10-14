@@ -287,7 +287,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   shows each entry in full. A drawer opens as a sheet from the bottom; drag its tabs or title
   down to close it. In minimal view it opens at the side; drag its title
   right to close it. Running a command from the Catalog, recalling a History
-  line or a variable, editing a variable, or picking a character closes the
+  line or a variable, editing a variable, restoring a backup, or picking a character closes the
   drawer so you see the result, as the HP's catalog does; after a character or a unit, More
   brings the drawer back at it for the next one.
 - On a plot, two fingers pinch to zoom and one drags to pan; a tap shows

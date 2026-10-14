@@ -177,7 +177,7 @@ export class Sheets {
       case 'toggle': this._toggle(b.dataset.setting, b.getAttribute('aria-pressed') !== 'true'); this._render(); return;
       case 'backup': app.exportSnapshot(); return;
       case 'install': app.runAction('app.install'); return;
-      case 'restore': pickFile('application/json,.json', (f) => app.importSnapshotFromFile(f)); return;
+      case 'restore': pickFile('application/json,.json', async (f) => { if (await app.importSnapshotFromFile(f)) this.close(); }); return;
       case 'reset': this._confirmReset = true; this._render(); return;
       case 'reset-confirm': this.resetEverything(); return;
     }

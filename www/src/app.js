@@ -574,9 +574,11 @@ class App {
     try {
       await importFromFile(file, this.stack);
       this.undoToast(`Restored from ${file.name}`);
+      return true;
     } catch (e) {
       this.entry._dropNoOpUndoStep();
       this.notifyError(`Couldn't restore ${file.name}: ${e.message}`);
+      return false;
     }
   }
 
