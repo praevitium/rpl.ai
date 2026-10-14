@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.84 (2026-10-14)
+**Latest release:** v0.6.85 (2026-10-14)
 
 ---
 
@@ -18,6 +18,27 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.85 — 2026-10-14
+
+Share a stack level from a phone and the message now carries a link as
+well as the value. Opening the link starts rpl.ai with the value on the
+command line and a note to check it; nothing runs until you press Enter,
+so a shared program arrives as a program, not as something it did. The
+value travels in the link's fragment, which never reaches a server, and
+values over 4,000 characters are shared as text only.
+
+On a touch screen the hint row under the command line and the writers
+(Tab next cell, ⇧Enter next row, Esc cancels) is hidden in landscape too,
+as it already was on a narrow phone. Those hints are for a keyboard, and
+in landscape their row was taking the space of the only stack level
+showing above an open matrix writer.
+
+In landscape the compact keypad keeps its shift labels (SIN, COS and TAN
+on 7, 8 and 9, DUP on DROP, OVER on SWAP), at 7 px, with a panel at
+least 300 px wide so a pair such as DEL and CLEAR keeps a gap.
 
 ---
 
