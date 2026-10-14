@@ -90,12 +90,13 @@ export class AppBar {
   _openAllModes(anchor) {
     const html = MODES.map((m) => {
       const current = m.current();
-      return `<h6>${escapeHtml(m.title)}</h6><div class="grid">${m.options.map((o) => `<button type="button" data-m="${m.id}" data-v="${escapeHtml(o.value)}" class="${o.value === current ? 'on' : ''}" title="${escapeHtml(o.detail)}">${escapeHtml(m.id === 'base' ? binaryBaseLabel(o.value) : o.value)}</button>`).join('')}</div>`;
+      return `<h6>${escapeHtml(m.title)}</h6><div class="grid">${m.options.map((o) => `<button type="button" data-m="${m.id}" data-v="${escapeHtml(o.value)}" class="${o.value === current ? 'on' : ''}" title="${escapeHtml(o.detail)}">${escapeHtml(m.id === 'base' ? binaryBaseLabel(o.value) : o.value)}</button>`).join('')}</div>${digitsHtml(m, current, '')}`;
     }).join('');
     this.app.popover.open(anchor, html, {
       label: 'Calculator modes',
       onClick: (target) => {
-        modeById(target.dataset.m)?.set(target.dataset.v);
+        const digits = target.dataset.digits;
+        modeById(target.dataset.m)?.set(target.dataset.v, digits == null ? undefined : Number(digits));
         this._openAllModes(anchor);
       },
     });

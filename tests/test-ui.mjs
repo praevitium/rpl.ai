@@ -1431,4 +1431,6 @@ setAngle('RAD');
   assert(DISPLAY_DIGITS_CHOICES.join() === Array.from({ length: 12 }, (_, i) => i).join(), 'number format: the Digits grid offers every count from 0 to 11, the range the AUR gives FIX, SCI and ENG');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/\.pop \.grid\.digits \{ grid-template-columns: repeat\(6, minmax\(0, 1fr\)\); \}/.test(css), 'number format: the twelve digit counts sit in two rows of six');
+  const appbar = readFileSync(new URL('../www/src/ui/appbar.js', import.meta.url), 'utf8');
+  assert((appbar.match(/digitsHtml\(/g) ?? []).length === 3, 'number format: the all-modes menu shows the same digit grid as the number format menu, so a phone in normal view can pick FIX 5');
 }

@@ -299,6 +299,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - Settings › Appearance sets the stack's text size, from Small to Larger,
   pretty math included. On Android it can also make the keys vibrate briefly
   as a finger presses them. A tap anywhere on a switch's row flips it.
+- The modes button in the app bar (RAD · STD · EXACT), and each mode on
+  minimal view's status line, sets FIX, SCI or ENG with any digit count
+  from 0 to 11, so a phone needs no typed `5 FIX`.
 - A phone's back button closes the open menu, search, sheet, writer or
   drawer first, then cancels an edit as the HP's ON does, and leaves the
   app only when nothing is open.
