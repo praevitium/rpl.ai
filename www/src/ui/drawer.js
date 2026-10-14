@@ -16,7 +16,7 @@ import { loadCommandReference, findReferenceEntry, shortDescription, searchComma
 import { matchPositions, highlightSegments } from './op-search.js';
 import { GraphView } from './graph-view.js';
 import { icon } from './icons.js';
-import { escapeHtml, typeName, markScrollEdges } from './display.js';
+import { escapeHtml, typeName, markScrollEdges, LONG_PRESS_MS } from './display.js';
 import { MENU_FAMILIES, UNIT_GROUPS } from './menus.js';
 import { shortcutText } from './actions.js';
 
@@ -806,24 +806,27 @@ export class Drawers {
 
   _bindVarsDrag() {
     const el = this.el;
-    const clear = () => el.querySelectorAll('.drop-before, .drop-after, .drop-into, .drop-end, .dragging').forEach((n) => n.classList.remove('drop-before', 'drop-after', 'drop-into', 'drop-end', 'dragging'));
-    const targetAt = (ev) => {
-      const crumb = ev.target.closest?.('.path-bar button[data-index]');
+    const clearMarks = () => el.querySelectorAll('.drop-before, .drop-after, .drop-into, .drop-end').forEach((n) => n.classList.remove('drop-before', 'drop-after', 'drop-into', 'drop-end'));
+    const clear = () => { clearMarks(); el.querySelectorAll('.dragging').forEach((n) => n.classList.remove('dragging')); };
+    const mark = (target) => { clearMarks(); target?.el.classList.add(`drop-${target.zone}`); };
+    const targetAt = (node, y) => {
+      const crumb = node?.closest?.('.path-bar button[data-index]');
       if (crumb && crumb.getAttribute('aria-current') !== 'true') return { kind: 'crumb', index: Number(crumb.dataset.index), el: crumb, zone: 'into' };
-      const row = ev.target.closest?.('.vr[data-drag-name]');
+      const row = node?.closest?.('.vr[data-drag-name]');
       if (row) {
         const name = row.dataset.dragName;
         if (name === this._dragName) return null;
         const rect = row.getBoundingClientRect();
-        const zone = dropZoneForFraction(rect.height ? (ev.clientY - rect.top) / rect.height : 0.5, row.classList.contains('dir'));
+        const zone = dropZoneForFraction(rect.height ? (y - rect.top) / rect.height : 0.5, row.classList.contains('dir'));
         return { kind: zone === 'into' ? 'into' : 'reorder', name, zone, el: row };
       }
-      const list = ev.target.closest?.('.vr-list');
+      const list = node?.closest?.('.vr-list');
       return list ? { kind: 'end', el: list, zone: 'end' } : null;
     };
     el.addEventListener('dragstart', (ev) => {
       const row = ev.target.closest?.('.vr[data-drag-name]');
       if (!row) return;
+      if (this._dragName) { ev.preventDefault(); return; }
       this._dragName = row.dataset.dragName;
       row.classList.add('dragging');
       try { ev.dataTransfer.setData('text/plain', this._dragName); ev.dataTransfer.effectAllowed = 'move'; }
@@ -832,21 +835,82 @@ export class Drawers {
     el.addEventListener('dragend', () => { this._dragName = null; clear(); });
     el.addEventListener('dragover', (ev) => {
       if (!this._dragName) return;
-      const target = targetAt(ev);
-      el.querySelectorAll('.drop-before, .drop-after, .drop-into, .drop-end').forEach((n) => n.classList.remove('drop-before', 'drop-after', 'drop-into', 'drop-end'));
-      if (!target) return;
-      ev.preventDefault();
-      target.el.classList.add(`drop-${target.zone}`);
+      const target = targetAt(ev.target, ev.clientY);
+      mark(target);
+      if (target) ev.preventDefault();
     });
     el.addEventListener('drop', (ev) => {
       if (!this._dragName) return;
       ev.preventDefault();
-      const target = targetAt(ev);
+      const target = targetAt(ev.target, ev.clientY);
       const name = this._dragName;
       this._dragName = null;
       clear();
       if (target) this._performDrop(name, target);
     });
+    this._bindVarsTouchDrag(targetAt, mark, clear);
+  }
+
+  // A finger drags a variable by its grip at once, or by the rest of the row after a hold, since a plain swipe scrolls the list.
+  _bindVarsTouchDrag(targetAt, mark, clear) {
+    const el = this.el;
+    let touch = null;
+    const end = () => { clearTimeout(touch?.timer); cancelAnimationFrame(touch?.raf); touch = null; };
+    const begin = () => {
+      touch.active = true;
+      this._dragName = touch.name;
+      touch.row.classList.add('dragging');
+    };
+    const aim = () => {
+      touch.target = targetAt(document.elementFromPoint(touch.x, touch.y), touch.y);
+      mark(touch.target);
+    };
+    // A finger held near the drawer's top or bottom edge scrolls the list, so a folder or crumb out of view can be reached.
+    const scroll = () => {
+      touch.raf = 0;
+      const box = touch.scroller.getBoundingClientRect();
+      const step = touch.y < box.top + 40 ? -8 : touch.y > box.bottom - 40 ? 8 : 0;
+      const before = touch.scroller.scrollTop;
+      touch.scroller.scrollTop += step;
+      if (touch.scroller.scrollTop === before) return;
+      aim();
+      touch.raf = requestAnimationFrame(scroll);
+    };
+    el.addEventListener('touchstart', (ev) => {
+      end();
+      const row = ev.touches.length === 1 && !ev.target.closest('.acts') && ev.target.closest('.vr[data-drag-name]:not(.editing)');
+      if (!row) return;
+      const { clientX: x, clientY: y } = ev.touches[0];
+      touch = { row, name: row.dataset.dragName, scroller: row.closest('.dw-body') ?? row.parentElement, x0: x, y0: y, x, y, active: false, target: null, raf: 0 };
+      if (ev.target.closest('.grip')) begin();
+      else touch.timer = setTimeout(begin, LONG_PRESS_MS);
+    }, { passive: true });
+    el.addEventListener('touchmove', (ev) => {
+      if (!touch) return;
+      const { clientX: x, clientY: y } = ev.touches[0];
+      if (!touch.active) {
+        if (Math.hypot(x - touch.x0, y - touch.y0) > 10) end();
+        return;
+      }
+      ev.preventDefault();
+      Object.assign(touch, { x, y });
+      aim();
+      if (!touch.raf) scroll();
+    }, { passive: false });
+    el.addEventListener('touchend', (ev) => {
+      if (!touch?.active) { end(); return; }
+      ev.preventDefault();
+      const { name, target } = touch;
+      end();
+      this._dragName = null;
+      clear();
+      if (target) this._performDrop(name, target);
+    });
+    el.addEventListener('touchcancel', () => {
+      if (touch?.active) { this._dragName = null; clear(); }
+      end();
+    });
+    el.addEventListener('contextmenu', (ev) => { if (touch) ev.preventDefault(); });
   }
 
   _performDrop(name, target) {

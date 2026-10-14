@@ -403,7 +403,8 @@ it would leave on your stack; `→` opens its reference page.
 ### Variables and directories
 
 Browse, run, edit, rename and download variables. Drag them to reorder,
-into folders or onto the breadcrumb. Back up the stack and the
+into folders or onto the breadcrumb; on a phone, drag a row by its grip, or
+touch and hold it first, and the list scrolls when you near its edge. Back up the stack and the
 whole HOME tree to a JSON file and restore it, archive to backup ports, and
 import or export HP text files (`.rpl`).
 

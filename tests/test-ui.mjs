@@ -1346,3 +1346,54 @@ setAngle('RAD');
   el.fire('pointerup');
   assert(!el.fire('contextmenu').stopped && !el.fire('click').stopped && !app.cleared.length, '⌫ held: a quick press only deletes, and a right-click still shows the layers');
 }
+
+{
+  const { Drawers } = await import('../www/src/ui/drawer.js');
+  const { LONG_PRESS_MS } = await import('../www/src/ui/display.js');
+  const on = {};
+  const fire = (type, ev) => {
+    const e = { prevented: false, preventDefault() { this.prevented = true; }, ...ev };
+    for (const fn of on[type] ?? []) fn(e);
+    return e;
+  };
+  const node = (classes, parent = null) => ({ classes, parent, dataset: {}, classList: { add: (c) => classes.push(c) }, closest(sel) {
+    for (let n = this; n; n = n.parent) if (sel.split(/\s*,\s*/).some((s) => n.classes.includes(s.match(/^\.?([\w-]+)/)?.[1] ?? s))) return n;
+    return null;
+  } });
+  const body = Object.assign(node(['dw-body']), { scrollTop: 0, getBoundingClientRect: () => ({ top: 0, bottom: 1000 }) });
+  const row = node(['vr'], body);
+  row.dataset.dragName = 'A';
+  const grip = node(['grip'], row);
+  const text = node(['nm'], row);
+  const folder = node(['vr', 'dir']);
+  const drops = [];
+  const host = { el: { addEventListener: (type, fn) => { (on[type] ??= []).push(fn); } }, _dragName: null, _performDrop: (name, target) => drops.push(`${name}>${target.name}`) };
+  const savedDoc = globalThis.document;
+  globalThis.document = { elementFromPoint: () => folder };
+  const { requestAnimationFrame: savedRaf, cancelAnimationFrame: savedCaf } = globalThis;
+  globalThis.requestAnimationFrame = () => 0;
+  globalThis.cancelAnimationFrame = () => {};
+  const timers = [];
+  const realTimeout = globalThis.setTimeout;
+  globalThis.setTimeout = (fn, ms) => { timers.push({ fn, ms }); return timers.length; };
+  try {
+    Drawers.prototype._bindVarsTouchDrag.call(host, (n) => (n === folder ? { kind: 'into', name: 'SUB1', zone: 'into', el: folder } : null), () => {}, () => {});
+    const at = (target, y = 100) => ({ target, touches: [{ clientX: 50, clientY: y }] });
+    fire('touchstart', at(text));
+    assert(timers.at(-1)?.ms === LONG_PRESS_MS && host._dragName === null, 'Variables, touch: a finger on a row picks it up only after a hold');
+    fire('touchmove', at(text, 130));
+    assert(!fire('touchend', at(text)).prevented && !drops.length, 'Variables, touch: a swipe before the hold scrolls the list and moves nothing');
+    fire('touchstart', at(text));
+    timers.at(-1).fn();
+    assert(host._dragName === 'A' && row.classes.includes('dragging'), 'Variables, touch: after the hold the row is picked up');
+    assert(fire('touchmove', at(text, 300)).prevented, 'Variables, touch: a picked-up row stops the list scrolling under the finger');
+    assert(fire('touchend', at(text)).prevented && drops[0] === 'A>SUB1' && host._dragName === null, 'Variables, touch: letting go over a folder moves the variable into it, with no click after');
+    fire('touchstart', at(grip));
+    fire('touchmove', at(grip, 300));
+    fire('touchend', at(grip));
+    assert(drops[1] === 'A>SUB1', 'Variables, touch: the grip drags at once, with no hold');
+  } finally {
+    globalThis.setTimeout = realTimeout;
+    Object.assign(globalThis, { document: savedDoc, requestAnimationFrame: savedRaf, cancelAnimationFrame: savedCaf });
+  }
+}
