@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.83 (2026-10-14)
+**Latest release:** v0.6.84 (2026-10-14)
 
 ---
 
@@ -18,6 +18,27 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.84 — 2026-10-14
+
+On a wide screen the panels and the keypad dock on either side. The rail
+with its drawer (Assistant, Catalog, Variables, History, Plot, Chars) can
+sit on the left or the right, and so can the keypad, in any combination.
+A new dock button in the drawer's header and in the keypad's header flips
+each one; Settings, Appearance has Panels side and Keypad side; and search
+lists "Panels: dock on the right" and the rest. The choice is saved. A
+drawer docked on the right resizes from its left edge, and in a window too
+narrow to dock it slides in from the right. Phones and Minimal view are
+unchanged.
+
+Hold ⌫ to clear the command line, on the keypad or beside the line. A
+quick press still deletes one character. The line clears with the same
+Undo note as Esc, and Undo brings back the whole line, including the
+character the press removed. Holding ⌫ does nothing extra while a level is
+selected, a shift is on, or a writer is open; with the line empty, a
+long press shows the key's layers as before.
 
 ---
 
