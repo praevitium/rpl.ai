@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.77 (2026-10-14)
+**Latest release:** v0.6.78 (2026-10-14)
 
 ---
 
@@ -18,6 +18,26 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.78 — 2026-10-14
+
+The keypad's ⌫ key, on a phone or clicked on a computer, deleted the last
+character but left the cursor one short, so the next ⌫ took the character
+before the last one. It now deletes at the cursor in one step, and +/-
+keeps the cursor in place when it removes a minus sign the same way.
+
+On a phone the equation writer's eight keys (‹ › a/b xʸ √ ( ) ⌫ and
+Enter) share one row from 320 px up, growing to 56 px where there is room,
+instead of Enter dropping to a row of its own; the matrix writer's keys
+grow the same way.
+
+The number pad and the key strip's ABC key from 0.6.76 are gone: no phone
+keyboard offers letters and digits at once, so with the keypad hidden, or
+in minimal view, the command line, the matrix cells and the equation writer
+bring up the phone's usual keyboard again. The keypad still keeps it down
+while it shows.
 
 ---
 
