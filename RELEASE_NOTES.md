@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.79 (2026-10-14)
+**Latest release:** v0.6.80 (2026-10-14)
 
 ---
 
@@ -18,6 +18,25 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.80 — 2026-10-14
+
+On a phone the keypad's bottom row (ON to ENTER) no longer scrolls out of
+reach while the matrix or equation writer is open: when the writer needs
+the room, every key gives up the same height, down to 26 px, and the keys
+grow back when the writer closes. On a 390 × 844 phone the keys go from 39
+to 36 px with a three-row matrix.
+
+The halt banner has a fourth key, Step into (`SST↓`), beside Step: Step
+runs a called program as one step, Step into walks through it. With the
+phone's keyboard up the four keys are 40 px icons on one row, at 320 px
+too.
+
+In landscape with the keyboard up, a halted program's banner takes the row
+the key strip would, so one stack level stays in view while you answer a
+PROMPT.
 
 ---
 
