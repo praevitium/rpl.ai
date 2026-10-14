@@ -218,7 +218,6 @@ button { cursor: pointer; }
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
 }
-:root[data-installed] .app { padding-bottom: max(34px, env(safe-area-inset-bottom, 0px)); }
 
 .appbar {
   display: flex;
