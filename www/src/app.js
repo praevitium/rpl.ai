@@ -1267,7 +1267,10 @@ class App {
       title: `${m.title}: ${o.label}. ${o.detail}`,
       toggle: true,
       on: () => m.current() === o.value,
-      onPress: () => m.set(o.value),
+      onPress: () => {
+        if (this.entry._typingAtCursor()) this.entry.typeToken(`${modeCommand(m, o)} `);
+        else m.set(o.value);
+      },
     })));
     slots.splice(12, 0, {
       label: 'TXTBK',
@@ -1725,6 +1728,13 @@ function customMenuLabel(item) {
   if (isName(item)) return item.id;
   if (isString(item)) return item.value;
   return format(item);
+}
+
+// What a MODES key types inside a program; CMPLX on its own toggles, so the domain keys set flag -103.
+function modeCommand(mode, option) {
+  if (mode.id === 'complex') return `-103 ${option.value === 'CMPLX' ? 'SF' : 'CF'}`;
+  if (mode.id === 'base') return binaryBaseLabel(option.value);
+  return option.value;
 }
 
 function customMenuSource(target) {
