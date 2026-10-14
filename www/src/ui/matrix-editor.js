@@ -463,6 +463,14 @@ export class MatrixEditor {
 
   typedCellFocused() { return this._typedCell === `${this._focusR},${this._focusC}`; }
 
+  // Which keyboard a phone offers the cells: none while the calc keypad types, a number pad, or letters.
+  setPhoneKeyboard(mode) {
+    for (const cell of this._gridEl.querySelectorAll('input.mx-cell')) {
+      if (mode) cell.inputMode = mode;
+      else cell.removeAttribute('inputmode');
+    }
+  }
+
   commit() {
     if (this.isEmpty()) { this.app.notifyError('Type some numbers first.'); return; }
     let value;
@@ -742,9 +750,10 @@ export class MatrixEditor {
   _renderGrid() {
     if (!isVectorShape(trimGrid(this.grid))) this.asVector = false;
     const cols = this.grid[0]?.length || 1;
+    const keyboard = this.app.phoneKeyboard?.();
     this._gridEl.style.gridTemplateColumns = `repeat(${cols}, auto)`;
     this._gridEl.innerHTML = this.grid.map((row, r) => row.map((cell, c) => (
-      `<input class="mx-cell" data-r="${r}" data-c="${c}" value="${escapeHtml(cell ?? '')}" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done" aria-label="Row ${r + 1}, column ${c + 1}">`
+      `<input class="mx-cell" data-r="${r}" data-c="${c}" value="${escapeHtml(cell ?? '')}" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done"${keyboard ? ` inputmode="${keyboard}"` : ''} aria-label="Row ${r + 1}, column ${c + 1}">`
     )).join('')).join('');
     this._noteShape();
   }

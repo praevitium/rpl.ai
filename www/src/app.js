@@ -132,6 +132,7 @@ class App {
     installCommandHover(this.display.stackView, stackWordAtEvent, { onOpenReference: openReference });
 
     this._applyPrefs();
+    this._applyPhoneKeyboard();
     this.showMenu(this.prefs.menu ?? (varOrder().length ? 'VARS' : 'STACK'), { remember: false });
     if (this.prefs.drawer) this.drawers.open(this.prefs.drawer);
     this._installKeyboard();
@@ -246,6 +247,7 @@ class App {
   setMinimal(on) {
     this.setPrefs({ minimal: !!on });
     this._applyPrefs();
+    this._applyPhoneKeyboard();
     this.renderAll();
     if (on) this.toast('Minimal view. The buttons at the top right open the menu or bring everything back.', { action: 'Leave', onAction: () => this.setMinimal(false), key: 'view' });
     else this.toasts.dismiss('view');
@@ -264,9 +266,33 @@ class App {
     if (layout !== 'hidden') this._lastKeypad = layout;
     this.setPrefs({ keypad: layout });
     this.keypad.update();
+    this._applyPhoneKeyboard();
     this.appbar.render();
     if (layout === 'hidden') this.toast('Keypad hidden', { action: 'Show', onAction: () => this.setKeypadLayout(this._lastKeypad ?? 'full'), key: 'view' });
     else this.toasts.dismiss('view');
+  }
+
+  // On a phone the calc keypad does the typing while it shows, so the editables ask for no system
+  // keyboard; with the keypad hidden the line asks for the number pad, as the HP's unshifted keys are
+  // digits, and the key strip's ABC switches to letters. The equation writer always takes letters.
+  phoneKeyboard(editor = 'line') {
+    if (!matchMedia('(pointer: coarse)').matches) return null;
+    if (this.prefs.keypad !== 'hidden' && !this.prefs.minimal) return 'none';
+    return editor === 'equation' || this.alphaKeyboard ? 'text' : 'decimal';
+  }
+
+  _applyPhoneKeyboard() {
+    this.entry.setPhoneKeyboard(this.phoneKeyboard());
+    this.matrixEditor?.setPhoneKeyboard(this.phoneKeyboard());
+    this.equationEditor?.setPhoneKeyboard(this.phoneKeyboard('equation'));
+  }
+
+  // A phone reads inputmode when an editable takes focus, so the switch lets go of it and takes it back.
+  toggleAlphaKeyboard() {
+    this.alphaKeyboard = !this.alphaKeyboard;
+    this._applyPhoneKeyboard();
+    const el = document.activeElement;
+    if (el && el !== document.body) { el.blur(); el.focus({ preventScroll: true }); }
   }
 
   setPlotFocus(on) {

@@ -31,6 +31,7 @@ export function writerKeys(keys, press) {
 
 // Above a phone's keyboard, the keys it lacks: HP operators and stack commands that run at once, and RPL's delimiters.
 const STRIP_KEYS = Object.freeze([
+  { label: 'ABC', alpha: true },
   { label: '+', op: '+' }, { label: '−', op: '-' }, { label: '×', op: '*' }, { label: '÷', op: '/' }, { label: 'yˣ', op: '^' },
   { label: 'SWAP', command: 'SWAP' }, { label: 'DROP', command: 'DROP' }, { label: 'UNDO', action: 'edit.undo' },
   { label: "' '", text: "''", back: 1 }, { label: '« »', object: '«  »', back: 2 }, { label: '{ }', object: '{ }', back: 2 },
@@ -43,12 +44,19 @@ function keyStrip(app) {
   strip.className = 'key-strip';
   strip.setAttribute('role', 'toolbar');
   strip.setAttribute('aria-label', 'RPL keys');
-  strip.innerHTML = STRIP_KEYS.map((k, i) => `<button type="button" data-k="${i}"${k.op ? ' class="op"' : ''}>${escapeHtml(k.label)}</button>`).join('');
+  strip.innerHTML = STRIP_KEYS.map((k, i) => `<button type="button" data-k="${i}"${k.op ? ' class="op"' : ''}${k.alpha ? ' aria-pressed="false"' : ''}>${escapeHtml(k.label)}</button>`).join('');
   strip.addEventListener('mousedown', (e) => e.preventDefault());
   strip.addEventListener('click', (e) => {
     const key = STRIP_KEYS[e.target.closest('[data-k]')?.dataset.k];
     if (!key) return;
     const { entry } = app;
+    if (key.alpha) {
+      app.toggleAlphaKeyboard();
+      const b = e.target.closest('[data-k]');
+      b.textContent = app.alphaKeyboard ? '123' : 'ABC';
+      b.setAttribute('aria-pressed', String(app.alphaKeyboard));
+      return;
+    }
     if (key.op) entry.pressOperator(key.op, key.op);
     else if (key.command) entry.pressCommand(key.command);
     else if (key.action) app.runAction(key.action);

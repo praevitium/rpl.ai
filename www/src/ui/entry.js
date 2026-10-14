@@ -183,6 +183,14 @@ export class Entry {
 
   focus() { this._view?.focus(); }
 
+  // Which keyboard a phone offers the line: none while the calc keypad types, a number pad, or letters.
+  setPhoneKeyboard(mode) {
+    const dom = this._view?.contentDOM;
+    if (!dom) return;
+    if (mode) dom.setAttribute('inputmode', mode);
+    else dom.removeAttribute('inputmode');
+  }
+
   undoText() { if (this._view) cmUndo(this._view); }
   redoText() { if (this._view) cmRedo(this._view); }
 
