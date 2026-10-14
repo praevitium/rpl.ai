@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.74 (2026-10-14)
+**Latest release:** v0.6.75 (2026-10-14)
 
 ---
 
@@ -18,6 +18,18 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.75 — 2026-10-14
+
+In the matrix writer, Enter on a computer keyboard now works as the HP
+MatrixWriter's ENTER does, as a phone's Enter has since 0.6.65: it stores
+what you typed in the cell and moves to the next one, and on a cell you
+haven't typed in it puts the matrix on the stack, so 1 Enter 2 Enter Enter
+enters [[ 1 2 ]]. Before, Enter put the matrix on the stack at once,
+spreadsheet-style. ⇧Enter still moves to the next row and Tab to the next
+cell, and the DONE soft key pushes at any time.
 
 ---
 
