@@ -242,6 +242,10 @@ export class Keypad {
     this.kp = el.querySelector('.kp');
     NAV_ORDER.forEach((key) => this._add(el.querySelector('.kp-nav'), key));
     MAIN_KEYS.forEach((key) => this._add(el.querySelector('.kp-main'), key));
+    if (typeof ResizeObserver === 'function') {
+      const fit = new ResizeObserver(() => this.fit());
+      for (const child of el.parentElement?.children ?? []) fit.observe(child);
+    }
     el.querySelector('.kp-head').addEventListener('click', (e) => {
       const b = e.target.closest('[data-kp]');
       if (b) app.setKeypadLayout(b.dataset.kp);
@@ -277,7 +281,29 @@ export class Keypad {
     this.buttons.push(entry);
   }
 
+  // When a writer or banner leaves the keypad less than its height, every key gives up the same
+  // amount, down to 26 px, rather than the bottom row scrolling out of reach. A squeeze shows up as
+  // the keypad's own resize; the room coming back does not, so every update refits, once a frame.
+  fit() {
+    const { el } = this;
+    el.style.removeProperty('--key-h');
+    const over = el.scrollHeight - el.clientHeight;
+    if (over <= 0) return;
+    const keys = this.buttons.map((b) => b.el).filter((k) => k.offsetParent);
+    const rows = new Set(keys.map((k) => k.offsetTop)).size;
+    if (!rows) return;
+    const height = keys[0].getBoundingClientRect().height;
+    el.style.setProperty('--key-h', `${Math.max(26, Math.floor(height - over / rows))}px`);
+  }
+
+  _scheduleFit() {
+    if (this._fitPending || typeof requestAnimationFrame !== 'function') return;
+    this._fitPending = true;
+    requestAnimationFrame(() => { this._fitPending = false; this.fit(); });
+  }
+
   update() {
+    this._scheduleFit();
     const { app } = this;
     const layout = app.prefs.keypad;
     this.compact = layout === 'compact';

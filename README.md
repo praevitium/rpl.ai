@@ -234,8 +234,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   puts the matrix on the stack, so 1 Enter 2 Enter Enter enters [[ 1 2 ]].
 - With the keypad hidden, opening the equation or matrix writer brings up
   your phone's keyboard, and so does tapping the equation; while the keypad
-  shows, its keys type into the writer instead. While the keyboard is up,
-  the calculator keypad steps aside so the writer stays in view.
+  shows, its keys type into the writer instead, and when the writer needs
+  the room its keys get shorter rather than the bottom row scrolling out of
+  reach. While the keyboard is up, the calculator keypad steps aside so the
+  writer stays in view.
 - In landscape, where the keyboard leaves little room, the tabs, hints and
   soft keys also step aside while you type, and the writers' keys move
   beside the formula or matrix, so level 1 and the whole writer stay in
