@@ -1409,3 +1409,19 @@ setAngle('RAD');
   tap({ closest: (sel) => (sel === '.set' ? { querySelector: () => null } : null) });
   assert(flips.length === 1, 'Settings: a tap on a row without a switch changes nothing');
 }
+
+{
+  const { installHint } = await import('../www/src/ui/appbar.js');
+  const UA = {
+    androidChrome: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36',
+    androidFirefox: 'Mozilla/5.0 (Android 14; Mobile; rv:131.0) Gecko/131.0 Firefox/131.0',
+    iphoneChrome: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/129.0.6668.69 Mobile/15E148 Safari/604.1',
+    macSafari: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15',
+    desktopFirefox: 'Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0',
+  };
+  assert([UA.androidChrome, UA.androidFirefox].every((ua) => /Install app or Add to Home screen/.test(installHint(ua)) && !/Apps ›|Firefox can/.test(installHint(ua))),
+    'install note: an Android browser, Firefox included, is pointed at its menu\'s Install app or Add to Home screen, not a computer\'s Apps menu');
+  assert(installHint(UA.iphoneChrome) === 'Tap Share, then Add to Home Screen.' && installHint(UA.macSafari, true) === 'Tap Share, then Add to Home Screen.',
+    'install note: any browser on an iPhone or iPad uses Share › Add to Home Screen');
+  assert(/Add to Dock/.test(installHint(UA.macSafari)) && /Firefox can’t install/.test(installHint(UA.desktopFirefox)), 'install note: Safari on a Mac adds to the Dock, and Firefox on a computer cannot install');
+}

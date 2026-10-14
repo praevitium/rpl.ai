@@ -22,6 +22,14 @@ function modeMenuHtml(mode) {
   return `<h6>${escapeHtml(mode.title)}</h6>${rows}${digits}`;
 }
 
+// Where each browser keeps its install command, for when it offers no install prompt (README's install table).
+export function installHint(ua, iPadOS = false) {
+  if (iPadOS || /iPad|iPhone|iPod/.test(ua)) return 'Tap Share, then Add to Home Screen.';
+  if (/Android/.test(ua)) return 'The browser hasn’t offered an install on this page. Open its menu and choose Install app or Add to Home screen; if rpl.ai is already installed, the menu offers to open it instead.';
+  if (/Safari\//.test(ua) && !/Chrome|Chromium|Edg\//.test(ua)) return 'In Safari, choose File › Add to Dock.';
+  return 'The browser hasn’t offered an install on this page. If rpl.ai is already installed, the address bar shows Open in app. Otherwise reload once and try again, or use Apps › Install rpl.ai in the browser menu. Firefox can’t install web apps.';
+}
+
 export class AppBar {
   constructor({ el, app }) {
     this.el = el;

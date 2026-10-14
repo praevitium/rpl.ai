@@ -3,7 +3,7 @@ import { Entry, inProgramEntry } from './ui/entry.js';
 import { Display, escapeHtml, describeValue, suspendedProgramHtml, binaryBaseLabel } from './ui/display.js';
 import { Keypad } from './ui/keyboard.js';
 import { MenuBar } from './ui/menubar.js';
-import { AppBar } from './ui/appbar.js';
+import { AppBar, installHint } from './ui/appbar.js';
 import { Drawers, CATEGORIES, familyCommands, signatureOf } from './ui/drawer.js';
 import { describeError, ERROR_KINDS } from './ui/errors.js';
 import { errorBannerHtml, haltedBannerHtml } from './ui/banner.js';
@@ -497,13 +497,8 @@ class App {
       this.toast(`Browsers only install apps served over https or from localhost, and this page comes from http://${location.host}. Open it as http://localhost:${location.port || 80} on this machine, or serve it over https.`, { timeout: 12000 });
       return;
     }
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const safari = /Safari\//.test(navigator.userAgent) && !/Chrome|Chromium|Edg\//.test(navigator.userAgent);
-    this.toast(ios
-      ? 'In Safari, tap Share, then Add to Home Screen.'
-      : safari
-        ? 'In Safari, choose File › Add to Dock.'
-        : 'The browser hasn’t offered an install on this page. If rpl.ai is already installed, the address bar shows Open in app. Otherwise reload once and try again, or use Apps › Install rpl.ai in the browser menu. Firefox can’t install web apps.', { timeout: 12000 });
+    const iPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    this.toast(installHint(navigator.userAgent, iPadOS), { timeout: 12000 });
   }
 
   setAssistantMode(mode) {
