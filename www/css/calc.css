@@ -1893,8 +1893,10 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   .cmdline, .cmdline .cm-editor, .cmdline .cm-content {
     font-size: 16px !important;
   }
-  /* Finger-sized tap targets for the writers' keys and the command line's buttons (W-L30). */
-  .writer-keys .cmdline-go { height: 40px; min-width: 40px; }
+  /* Finger-sized tap targets for the writers' keys and the command line's buttons (W-L30). The
+     equation writer's eight keys share one row from 320 px up, growing to 56 px where there is room. */
+  .writer-keys { flex-wrap: nowrap; gap: 4px; padding: 0 6px 8px; }
+  .writer-keys .cmdline-go { flex: 1 1 40px; height: 40px; min-width: 32px; max-width: 56px; padding: 0 4px; }
   .mx-cell { height: 40px; }
   /* 40 px tall, reaching into the command line's padding so the line keeps its height. */
   .cmdline .cmdline-go { min-width: 40px; height: 40px; margin: -4px 0; }
@@ -1997,6 +1999,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   :root[data-keyboard] .mx-foot, :root[data-keyboard] .status-line, :root[data-keyboard] .menubar, :root[data-keyboard] .st-more { display: none; }
   :root[data-keyboard] .mx-grid-wrap { max-height: 92px; }
   :root[data-keyboard] .mx, :root[data-keyboard] .eqw { grid-template-columns: 1fr auto; align-items: end; }
+  :root[data-keyboard] .writer-keys .cmdline-go { flex: none; width: 40px; }
   :root[data-keyboard] .dw-head, :root[data-keyboard] .pal-row .d { display: none; }
   :root[data-keyboard] .pal-row { padding-block: 0; }
   :root[data-keyboard] .pal-row .t { grid-row: 1 / 3; }
