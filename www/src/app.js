@@ -1429,7 +1429,11 @@ class App {
 
   keyCaption(key) {
     if (this.selection != null) return { '▲': 'UP', '▼': 'DOWN', ENTER: 'EDIT', '⌫': 'DROP', ON: 'DONE' }[key.primary] ?? '';
-    if (this.inputMode !== 'rpl') return { ENTER: this.pendingEdit ? (this.pendingEdit.kind === 'var' ? 'STORE' : 'REPLACE') : 'PUSH', ON: 'CANCEL' }[key.primary] ?? '';
+    if (this.inputMode !== 'rpl') {
+      const enter = this.inputMode === 'matrix' && this.matrixEditor.typedCellFocused() ? 'NEXT'
+        : this.pendingEdit ? (this.pendingEdit.kind === 'var' ? 'STORE' : 'REPLACE') : 'PUSH';
+      return { ENTER: enter, ON: 'CANCEL' }[key.primary] ?? '';
+    }
     const depth = this.stack.depth;
     if (this.entry.buffer.length) return key.primary === 'ON' ? 'CANCEL' : '';
     if (key.primary === 'ENTER' && depth) return 'DUP';

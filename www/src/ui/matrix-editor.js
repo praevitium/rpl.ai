@@ -349,6 +349,7 @@ export class MatrixEditor {
       this._mergeCell = null;
       this._typedCell = null;
       cell.enterKeyHint = 'done';
+      this.app.keypad?.update();
     });
     this._gridEl.addEventListener('input', (e) => {
       const cell = e.target.closest?.('input.mx-cell');
@@ -356,6 +357,7 @@ export class MatrixEditor {
       const key = `${cell.dataset.r},${cell.dataset.c}`;
       this._remember(key);
       this._typedCell = key;
+      this.app.keypad?.update();
       if (onTouch()) cell.enterKeyHint = 'next';
       this.grid[cell.dataset.r][cell.dataset.c] = cell.value;
       this._noteShape();
@@ -453,6 +455,14 @@ export class MatrixEditor {
     });
   }
 
+  // Every Enter works like the HP MatrixWriter's ENTER: it stores what was typed and moves on, and enters the matrix otherwise.
+  enter() {
+    if (this.typedCellFocused()) this._moveBy('next', this._focusR, this._focusC);
+    else this.app.commitEntry();
+  }
+
+  typedCellFocused() { return this._typedCell === `${this._focusR},${this._focusC}`; }
+
   commit() {
     if (this.isEmpty()) { this.app.notifyError('Type some numbers first.'); return; }
     let value;
@@ -510,7 +520,7 @@ export class MatrixEditor {
     else if (face === 'NEXT') this.app.nextMenuPage();
     else if (face === 'CAT') this.app.drawers.toggle('catalog');
     else if (face === 'EQW') this.app.runAction('writer.equation');
-    else if (face === 'ENTER') this.app.commitEntry();
+    else if (face === 'ENTER') this.enter();
     else if (face === 'UNDO') this.app.runAction('edit.undo');
     else if (face === 'REDO') this.app.runAction('edit.redo');
     else if (move) this._focusCell(this._focusR + move[0], this._focusC + move[1], { select: true });
@@ -646,9 +656,7 @@ export class MatrixEditor {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       e.stopPropagation();
-      // Enter works like the HP MatrixWriter's ENTER: it stores what was typed and moves on, and enters the matrix otherwise.
-      if (this._typedCell === `${r},${c}`) this._moveBy('next', r, c);
-      else this.app.commitEntry();
+      this.enter();
       return;
     }
     if (e.key === 'Enter' || e.key === 'Tab') {
