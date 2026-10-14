@@ -1071,6 +1071,12 @@ import { assert, assertThrows } from './helpers.mjs';
       'LASTARG after a program gives the arguments of its last command');
     assert(run('5 6', '« 3 4 * DROP » EVAL', 'LASTARG').join() === '5,6,12',
       'LASTARG after a program that ends with DROP gives the dropped value');
+    const s = new Stack();
+    const e = new Entry(s);
+    e.type('10 20'); e.enter();
+    e.type('« * LASTARG + / » EVAL'); e.enter();
+    assert(s.depth === 1 && format(s.peek(1)) === '20/3',
+      '10 20 « * LASTARG + / » gives 200 / 30 = 20/3');
   }
   // Each command saves the levels the AUR lists as its inputs, including stack
   // commands that only read (DUP, OVER, PICK), a result identical to its
