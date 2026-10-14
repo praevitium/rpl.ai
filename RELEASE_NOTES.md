@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.85 (2026-10-14)
+**Latest release:** v0.6.86 (2026-10-14)
 
 ---
 
@@ -18,6 +18,27 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.86 — 2026-10-14
+
+Variables move with a finger again. On a phone, drag a row in the
+Variables drawer by its grip, or touch and hold the row first, then drop
+it on a folder, between two rows or on a breadcrumb; near the drawer's
+top or bottom edge the list scrolls to bring a far folder into reach. A
+plain swipe still scrolls the list and a tap still recalls the variable.
+Before this, a finger only scrolled, so with Move gone from the rows
+there was no way to move a variable on a phone.
+
+When the browser offers no install prompt, the Install button's note now
+gives each phone the steps that work there: Share › Add to Home Screen in
+any browser on an iPhone or iPad (it used to send you to Safari), and the
+browser menu's Install app or Add to Home screen on Android, where it used
+to name a computer's Apps menu and say that Firefox can't install.
+
+In Settings a tap on a switch's title or description flips it, as a
+phone's own settings do, rather than only a tap on the small switch.
 
 ---
 
