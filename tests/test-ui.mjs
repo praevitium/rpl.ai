@@ -1306,6 +1306,8 @@ setAngle('RAD');
   assert(/@media \(max-height: 560px\) and \(min-width: 640px\) \{\s*\.app-main \{ flex-direction: row; \}/.test(css), 'a short wide screen puts the keypad beside the work area');
   assert(/:root\[data-panels-side="right"\] \.rail \{ order: 3;/.test(css) && /:root\[data-panels-side="right"\] \.drawer \{ order: 2;/.test(css) && /:root\[data-keypad-side="left"\] \.keys \{ order: -1;/.test(css),
     'desktop: the panels dock on the right and the keypad on the left by flex order alone');
+  const touchBlock = css.slice(css.indexOf('@media (pointer: coarse) {'));
+  assert(/^@media \(pointer: coarse\) \{[^@]*\n  \.input-hint \{ display: none; \}/.test(touchBlock), 'touch: the keyboard-only hint row (Tab, ⇧Enter, Esc) is hidden in every orientation, so landscape gives it to the stack');
   assert(/@media \(hover: hover\) \{\s*\.vr \{ grid-template-columns: 18px minmax\(0, 1fr\); \}\s*\.vr \.acts \{ position: absolute;/.test(css), 'Variables: with a mouse the hidden row actions float over the row, so they leave the name its width');
   const drawerSource = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
   assert(!/data-dw="var-(rcl|move|share)"/.test(drawerSource), 'Variables: rows have no Recall, Move or Share button (tap the name, drag, or share the stack level)');
