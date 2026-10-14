@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.78 (2026-10-14)
+**Latest release:** v0.6.79 (2026-10-14)
 
 ---
 
@@ -18,6 +18,18 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.79 — 2026-10-14
+
+⌫ on an empty line no longer drops level 1: the keypad's ⌫, the ⌫ beside
+the command line on a phone and a computer keyboard's Backspace all leave
+the stack alone once the line is empty, so one tap too many while deleting
+costs nothing. The HP's ⌫ does drop; DROP stays on the STACK menu, the key
+strip above a phone's keyboard and a level's menu, and ⌫ still removes a
+selected level. The keypad's ⌫ no longer reads DROP on an empty line, and
+the shortcuts sheet no longer lists it.
 
 ---
 
