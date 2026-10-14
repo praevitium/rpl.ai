@@ -966,10 +966,13 @@ function* _callGlobal(s, bound, depth, isSubProgram = true) {
 // stays; the error is then marked settled (keepsFailureStack), so an EVAL, IFT or
 // IFERR running it leaves the stack there.
 function _dispatchOp(op, s, name) {
-  const before = s.save();
+  const args = s.beginArgs();
+  const before = args.prior;
   const depth = before.length;
+  let ok = false;
   try {
     op.fn(s);
+    ok = true;
   } catch (e) {
     if (e instanceof RPLError && !e.argsReturned) {
       s.restore(before);
@@ -982,6 +985,8 @@ function _dispatchOp(op, s, name) {
       throw named;
     }
     throw e;
+  } finally {
+    s.endArgs(args, ok);
   }
 }
 

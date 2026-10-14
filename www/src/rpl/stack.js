@@ -13,6 +13,12 @@ export function setStateBatcher(fn) {
   _batchState = (typeof fn === 'function') ? fn : ((f) => f());
 }
 
+// Flag -55 set turns the saving of last arguments off; state.js supplies the test.
+let _savesLastArgs = () => true;
+export function setLastArgsGate(fn) {
+  _savesLastArgs = (typeof fn === 'function') ? fn : () => true;
+}
+
 export class Stack {
   constructor() {
     this._items = [];              // _items[len-1] is level 1
@@ -20,6 +26,8 @@ export class Stack {
     this._undoStack = [];
     this._redoStack = [];
     this._lastArgs = null;
+    this._argsTick = 0;
+    this._touched = Infinity;
     this._holdEmit = 0;
     this._emitPending = false;
   }
@@ -45,7 +53,13 @@ export class Stack {
 
   peek(level = 1) {
     if (level < 1) throw new RangeError('level must be >= 1');
+    this._touch(this._items.length - level);
     return this._items[this._items.length - level];
+  }
+
+  // The lowest index a running command read or took, for its last arguments.
+  _touch(index) {
+    if (index < this._touched) this._touched = Math.max(0, index);
   }
 
   // Level 1 first.
@@ -65,6 +79,7 @@ export class Stack {
 
   pop() {
     if (this._items.length === 0) throw new RPLError('Too few arguments');
+    this._touch(this._items.length - 1);
     const v = this._items.pop();
     this._emit();
     return v;
@@ -73,6 +88,7 @@ export class Stack {
   // Returns [level n, ..., level 1].
   popN(n) {
     if (this._items.length < n) throw new RPLError('Too few arguments');
+    this._touch(this._items.length - n);
     const out = this._items.splice(this._items.length - n, n);
     this._emit();
     return out;
@@ -84,6 +100,7 @@ export class Stack {
   }
 
   dup()  { if (!this.depth) throw new RPLError('Too few arguments');
+           this._touch(this._items.length - 1);
            this._items.push(this._items[this._items.length - 1]); this._emit(); }
 
   drop() { this.pop(); }
@@ -113,6 +130,7 @@ export class Stack {
   over() {
     const n = this._items.length;
     if (n < 2) throw new RPLError('Too few arguments');
+    this._touch(n - 2);
     this._items.push(this._items[n - 2]);
     this._emit();
   }
@@ -121,6 +139,7 @@ export class Stack {
     if (level < 1) throw new RPLError('Bad argument value');
     const n = this._items.length;
     if (n < level) throw new RPLError('Too few arguments');
+    this._touch(n - level);
     this._items.push(this._items[n - level]);
     this._emit();
   }
@@ -128,6 +147,7 @@ export class Stack {
   dup2() {
     const n = this._items.length;
     if (n < 2) throw new RPLError('Too few arguments');
+    this._touch(n - 2);
     this._items.push(this._items[n - 2], this._items[n - 1]);
     this._emit();
   }
@@ -203,28 +223,51 @@ export class Stack {
     this._undoStack.pop();
   }
 
-  // LASTARG records what the op consumed or replaced (everything past the
-  // common prefix of the before and after stacks), so no op declares its
-  // arity.  Ops that only grow the stack (DUP, LASTARG itself) keep the
-  // previous record.
+  // LASTARG gets what the op read, took or replaced: the stack from the lowest
+  // level it touched, or where the before and after stacks first differ,
+  // whichever is deeper, so no op declares its arity.  Ops that leave the stack
+  // below their results alone (LASTARG itself, DEPTH) keep the previous
+  // record, and an op that ran a program (EVAL, a program line) keeps the
+  // record of the last command inside it, as on the HP.
   runOp(fn) {
-    const prior = this._items.slice();
+    const args = this.beginArgs();
+    let ok = false;
     this._holdEmit++;
     try {
       _batchState(fn);
+      ok = true;
     } finally {
       this._holdEmit--;
       if (this._holdEmit === 0 && this._emitPending) {
         this._emitPending = false;
         this._flushEmit();
       }
+      this.endArgs(args, ok);
     }
+  }
+
+  beginArgs() {
+    const args = { prior: this._items.slice(), tick: this._argsTick, outer: this._touched };
+    this._touched = Infinity;
+    return args;
+  }
+
+  // A failed op saves what it took, as the HP saves arguments before it runs a
+  // command, so LASTARG brings back what 3 0 / took. The outer op sees what this
+  // one touched either way.
+  endArgs(args, succeeded) {
+    const touched = this._touched;
+    this._touched = Math.min(args.outer, touched);
+    if (this._argsTick !== args.tick || !_savesLastArgs()) return;
+    const { prior } = args;
     const cur = this._items;
     let k = 0;
-    const lim = Math.min(prior.length, cur.length);
+    const lim = succeeded ? Math.min(prior.length, cur.length) : 0;
     while (k < lim && prior[k] === cur[k]) k++;
-    const consumed = prior.slice(k);
-    if (consumed.length > 0) this._lastArgs = consumed;
+    k = Math.min(succeeded ? k : Infinity, touched);
+    if (k >= prior.length) return;
+    this._lastArgs = prior.slice(k);
+    this._argsTick++;
   }
 
   hasLastArgs() {

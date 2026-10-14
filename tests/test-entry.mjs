@@ -1054,6 +1054,43 @@ import { assert, assertThrows } from './helpers.mjs';
         && val(s.peek(2)) === 10 && val(s.peek(1)) === 20,
       'session046(entry): args repeated across chained LASTARG');
   }
+  // As on the HP, every command a program runs saves its arguments, so LASTARG
+  // inside a program, or after it, gives back what the last command took.
+  {
+    const run = (...lines) => {
+      const s = new Stack();
+      const e = new Entry(s);
+      for (const line of lines) { e.type(line); e.enter(); }
+      return s.save().map(val);
+    };
+    assert(run('1 2 +', '3 4 « * LASTARG » EVAL').join() === '3,12,3,4',
+      'LASTARG inside a program gives the arguments of the * before it');
+    assert(run('1 2 +', "« * LASTARG » 'P' STO", '3 4 P').join() === '3,12,3,4',
+      'LASTARG inside a stored program gives the arguments of the * before it, not of STO');
+    assert(run('3 4 « * » EVAL', 'LASTARG').join() === '12,3,4',
+      'LASTARG after a program gives the arguments of its last command');
+    assert(run('5 6', '« 3 4 * DROP » EVAL', 'LASTARG').join() === '5,6,12',
+      'LASTARG after a program that ends with DROP gives the dropped value');
+  }
+  // Each command saves the levels the AUR lists as its inputs, including stack
+  // commands that only read (DUP, OVER, PICK), a result identical to its
+  // argument, and a command that fails; flag -55 set saves nothing.
+  {
+    const run = (...lines) => {
+      const s = new Stack();
+      const e = new Entry(s);
+      for (const line of lines) { e.type(line); e.enter(); }
+      return s.save().map(val).join();
+    };
+    assert(run('7 DUP', 'LASTARG') === '7,7,7', 'LASTARG after DUP gives its argument');
+    assert(run('1 2 OVER', 'LASTARG') === '1,2,1,1,2', 'LASTARG after OVER gives both levels it read');
+    assert(run('1 2 DROP', 'LASTARG') === '1,2', 'LASTARG after DROP brings the dropped level back');
+    assert(run('1 2 3 3 PICK', 'LASTARG') === '1,2,3,1,1,2,3,3', 'LASTARG after PICK gives objn … obj1 n, as the AUR lists its inputs');
+    assert(run('5 ABS', 'LASTARG') === '5,5', 'LASTARG after a result identical to its argument still gives the argument');
+    assert(run('1 2 +', '3 0 /', 'LASTARG') === '3,3,0,3,0', 'LASTARG after a failing command gives what it took');
+    assert(run('1 2 + 9 DEPTH', 'LASTARG') === '3,9,2,1,2', 'DEPTH takes no arguments and keeps the saved ones');
+    assert(run('1 2 +', '-55 SF', '3 4 *', 'LASTARG', '-55 CF') === '3,12,1,2', 'with flag -55 set no arguments are saved');
+  }
 }
 
 /* ============================================================

@@ -1340,10 +1340,10 @@ import { assert, runLine } from './helpers.mjs';
 {
   const s = new Stack();
   s.push(Real(7));
-  s.runOp(() => lookup('DUP').fn(s));   // prior=[7], cur=[7,7]; diff = []
-  try { lookup('LASTARG').fn(s); assert(false, 'DUP consumed 0 → LASTARG empty'); }
-  catch (e) { assert(/No last arguments/i.test(e.message),
-    'session046: LASTARG after DUP (no consumed args) → No last arguments'); }
+  s.runOp(() => lookup('DUP').fn(s));
+  lookup('LASTARG').fn(s);
+  assert(s.depth === 3 && s.peek(1).value.eq(7),
+    'LASTARG after DUP gives the object DUP read, its one input in the AUR');
 }
 
 {
