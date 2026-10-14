@@ -319,7 +319,8 @@ export class Drawers {
     const tabs = `<div class="dw-tabs" role="tablist">${DRAWERS.map((d) => `<button type="button" data-dw="tab" data-drawer-tab="${d.id}" aria-pressed="${d.id === id}">${icon(d.icon, 'sm')}${escapeHtml(d.short ?? d.label)}</button>`).join('')}</div>`;
     const extra = this._headActions(id);
     const wideBtn = id === 'assistant' || id === 'plot' ? '' : `<button type="button" class="icon-btn sm" data-dw="wide" title="${this.prefs.drawerWide ? 'Narrower' : 'Wider'}" aria-label="${this.prefs.drawerWide ? 'Narrower' : 'Wider'}">${icon(this.prefs.drawerWide ? 'collapse' : 'expand', 'sm')}</button>`;
-    this.el.innerHTML = `<div class="drawer-grip" aria-hidden="true"></div>${tabs}<div class="dw-head"><div class="dw-title">${icon(meta.icon)}<span>${escapeHtml(meta.label)}</span><small class="dw-sub"></small></div>${extra}${wideBtn}<button type="button" class="icon-btn sm" data-dw="close" title="Close${shortcutText('drawer.toggle') ? ` (${shortcutText('drawer.toggle')})` : ''}" aria-label="Close">${icon('x', 'sm')}</button></div><div class="dw-body"></div>`;
+    const dockBtn = `<button type="button" class="icon-btn sm" data-dw="dock" title="Dock the panels on the other side" aria-label="Dock the panels on the other side">${icon('dock', 'sm')}</button>`;
+    this.el.innerHTML = `<div class="drawer-grip" aria-hidden="true"></div>${tabs}<div class="dw-head"><div class="dw-title">${icon(meta.icon)}<span>${escapeHtml(meta.label)}</span><small class="dw-sub"></small></div>${extra}${wideBtn}${dockBtn}<button type="button" class="icon-btn sm" data-dw="close" title="Close${shortcutText('drawer.toggle') ? ` (${shortcutText('drawer.toggle')})` : ''}" aria-label="Close">${icon('x', 'sm')}</button></div><div class="dw-body"></div>`;
     this._bindGrip(this.el.querySelector('.drawer-grip'));
     this._renderHeadSub();
     this._renderBody();
@@ -620,6 +621,7 @@ export class Drawers {
       case 'close': this.close(); return;
       case 'tab': this.open(t.dataset.drawerTab); return;
       case 'wide': app.setPrefs({ drawerWide: !this.prefs.drawerWide }); this.render(); return;
+      case 'dock': app.runAction('panels.side'); return;
       case 'plot-focus': app.setPlotFocus(!app.plotFocus); return;
       case 'as-mode': app.setAssistantMode(t.dataset.mode); return;
       case 'plot-full': this.graph.fullscreen(); return;
@@ -934,7 +936,7 @@ export class Drawers {
       ev.preventDefault();
       const startX = ev.clientX;
       const startW = this.el.getBoundingClientRect().width;
-      const growsLeft = document.documentElement.dataset.view === 'minimal';
+      const growsLeft = document.documentElement.dataset.view === 'minimal' || this.prefs.panelsSide === 'right';
       grip.classList.add('dragging');
       grip.setPointerCapture?.(ev.pointerId);
       const move = (e) => {

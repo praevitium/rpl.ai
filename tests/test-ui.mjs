@@ -1226,6 +1226,10 @@ setAngle('RAD');
   };
   assert(JSON.stringify(normalizeUiPrefs({ theme: 'neon', keypad: 'huge', drawer: 'nope', hints: 'yes' })) === JSON.stringify(DEFAULT_UI_PREFS),
     'normalizeUiPrefs: unknown values fall back to the defaults');
+  const docked = normalizeUiPrefs({ panelsSide: 'right', keypadSide: 'left' });
+  assert(docked.panelsSide === 'right' && docked.keypadSide === 'left', 'normalizeUiPrefs: the panels and keypad keep the sides they were docked on');
+  const undocked = normalizeUiPrefs({ panelsSide: 'top', keypadSide: 3 });
+  assert(undocked.panelsSide === 'left' && undocked.keypadSide === 'right', 'normalizeUiPrefs: an unknown side docks the panels left and the keypad right');
   const legacy = memory({ 'hp50.ui.sidePanel': JSON.stringify({ open: true, tab: 'files', historySort: 'oldest', width: 420 }), 'hp50.ui.chrome': 'minimal' });
   const prefs = loadUiPrefs(legacy);
   assert(prefs.minimal === true && prefs.drawer === 'vars' && prefs.lastDrawer === 'vars' && prefs.historySort === 'oldest' && prefs.drawerWidth === 420,
@@ -1299,6 +1303,8 @@ setAngle('RAD');
   assert(/\.work \{[^}]*min-height: auto;/.test(css) && !/\.work \{[^}]*overflow: hidden/.test(css), 'the work area never shrinks below its writer and buttons');
   assert(/\.well \{ flex: 1 1 96px;/.test(css) && /@media \(max-height: 780px\) \{\s*\.well \{ flex-basis: 0px;/.test(css), 'the stack gives up room first, with a definite basis so its rows do not inflate the work area');
   assert(/@media \(max-height: 560px\) and \(min-width: 640px\) \{\s*\.app-main \{ flex-direction: row; \}/.test(css), 'a short wide screen puts the keypad beside the work area');
+  assert(/:root\[data-panels-side="right"\] \.rail \{ order: 3;/.test(css) && /:root\[data-panels-side="right"\] \.drawer \{ order: 2;/.test(css) && /:root\[data-keypad-side="left"\] \.keys \{ order: -1;/.test(css),
+    'desktop: the panels dock on the right and the keypad on the left by flex order alone');
   assert(/@media \(hover: hover\) \{\s*\.vr \{ grid-template-columns: 18px minmax\(0, 1fr\); \}\s*\.vr \.acts \{ position: absolute;/.test(css), 'Variables: with a mouse the hidden row actions float over the row, so they leave the name its width');
   const drawerSource = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
   assert(!/data-dw="var-(rcl|move|share)"/.test(drawerSource), 'Variables: rows have no Recall, Move or Share button (tap the name, drag, or share the stack level)');

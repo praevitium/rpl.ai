@@ -229,6 +229,8 @@ class App {
     else delete root.dataset.minimalMenu;
     if (this.prefs.stackSize === 'normal') delete root.dataset.stackSize;
     else root.dataset.stackSize = this.prefs.stackSize;
+    root.dataset.panelsSide = this.prefs.panelsSide;
+    root.dataset.keypadSide = this.prefs.keypadSide;
   }
 
   setTheme(theme) {
@@ -255,6 +257,11 @@ class App {
 
   setTextbook(on) {
     this.entry.safeRun(() => lookup(on ? 'TEXTBOOK' : 'FLAT').fn(this.stack, this.entry));
+  }
+
+  setDockSide(part, side) {
+    this.setPrefs(part === 'keypad' ? { keypadSide: side } : { panelsSide: side });
+    this._applyPrefs();
   }
 
   setMinimalMenu(on) {
@@ -1560,6 +1567,8 @@ class App {
       case 'drawer.toggle': this.drawers.toggle(); return true;
       case 'keypad.toggle': this.setKeypadLayout(this.prefs.keypad === 'hidden' ? (this._lastKeypad ?? 'full') : 'hidden'); return true;
       case 'keypad.compact': this.setKeypadLayout(this.prefs.keypad === 'compact' ? 'full' : 'compact'); return true;
+      case 'keypad.side': this.setDockSide('keypad', this.prefs.keypadSide === 'left' ? 'right' : 'left'); return true;
+      case 'panels.side': this.setDockSide('panels', this.prefs.panelsSide === 'left' ? 'right' : 'left'); return true;
       case 'view.minimal': this.setMinimal(!this.prefs.minimal); return true;
       case 'view.fullscreen': document.documentElement.requestFullscreen?.().catch(() => this.notifyError('Full screen is not available here.')); return true;
       case 'view.minimalMenu': this.setMinimalMenu(!this.prefs.minimalMenu); return true;

@@ -2,7 +2,7 @@ import { icon } from './icons.js';
 import { escapeHtml, markScrollEdges } from './display.js';
 import { ACTIONS, KEYMAP, CONTEXT_LABELS, chordText, isMacPlatform } from './actions.js';
 import { STORAGE_KEY as STACK_STORAGE_KEY, BACKUPS_KEY } from '../rpl/persist.js';
-import { UI_PREFS_KEY, THEMES, THEME_LABELS, STACK_SIZES, STACK_SIZE_LABELS, TUTOR_STYLES, KEYPAD_LAYOUTS, KEYPAD_LABELS } from './ui-prefs.js';
+import { UI_PREFS_KEY, THEMES, THEME_LABELS, STACK_SIZES, STACK_SIZE_LABELS, TUTOR_STYLES, KEYPAD_LAYOUTS, KEYPAD_LABELS, SIDES, SIDE_LABELS } from './ui-prefs.js';
 import { REMOTE_CONFIG_KEY as CHAT_REMOTE_KEY, CONSENT_KEY as CHAT_CONSENT_KEY } from '../ai/chat-bot.js';
 import { state as calcState } from '../rpl/state.js';
 import { VERSION, BUILD, SHA } from '../build-info.js';
@@ -91,6 +91,7 @@ export class Sheets {
   _settingsPageHtml() {
     const { app } = this;
     if (this.page === 'appearance') {
+      const sides = (part, current) => `<div class="chipset" role="radiogroup" aria-label="${part === 'keypad' ? 'Keypad side' : 'Panels side'}">${SIDES.map((s) => `<button type="button" class="chip${current === s ? ' on' : ''}" data-sh="dock" data-part="${part}" data-side="${s}" role="radio" aria-checked="${current === s}">${SIDE_LABELS[s]}</button>`).join('')}</div>`;
       const tgl = (setting, on, label) => `<button type="button" class="tgl" role="switch" aria-pressed="${on}" aria-label="${escapeHtml(label)}" data-sh="toggle" data-setting="${setting}"></button>`;
       return `<h4>Appearance</h4><p>How the calculator looks. Muscle memory — key positions and behavior — never changes.</p>
         <div class="set stack"><b>Theme</b><span>Graphite and Paper follow your system by default; Classic LCD reimagines the original 131×80 display.</span>
@@ -102,6 +103,8 @@ export class Sheets {
         <div class="set stack"><b>Keypad</b><span>Compact keeps the keys an RPN session reaches for most, in five rows.</span>
           <div class="chipset" role="radiogroup" aria-label="Keypad">${KEYPAD_LAYOUTS.map((k) => `<button type="button" class="chip${app.prefs.keypad === k ? ' on' : ''}" data-sh="keypad" data-layout="${k}" role="radio" aria-checked="${app.prefs.keypad === k}">${KEYPAD_LABELS[k]}</button>`).join('')}</div>
         </div>
+        <div class="set stack dock-set"><b>Panels side</b><span>Which side the rail and its drawer (Catalog, Variables, History…) dock on.</span>${sides('panels', app.prefs.panelsSide)}</div>
+        <div class="set stack dock-set"><b>Keypad side</b><span>Which side of the stack the keypad docks on.</span>${sides('keypad', app.prefs.keypadSide)}</div>
         <div class="set"><b>Pretty math</b><span>Show expressions, matrices and lists on the stack in textbook form.</span>${tgl('textbook', !!calcState.textbookMode, 'Pretty math')}</div>
         <div class="set"><b>Soft keys in Minimal view</b><span>Keep the soft-menu row visible for menu work.</span>${tgl('minimalMenu', app.prefs.minimalMenu, 'Soft keys in Minimal view')}</div>
         <div class="set"><b>Keyboard-shortcut hints</b><span>Show each key's physical-keyboard shortcut on the keypad.</span>${tgl('hints', app.prefs.hints, 'Keyboard-shortcut hints')}</div>${typeof navigator.vibrate === 'function' && matchMedia('(pointer: coarse)').matches ? `
@@ -168,6 +171,7 @@ export class Sheets {
       case 'theme': app.setTheme(b.dataset.theme); this._render(); return;
       case 'stack-size': app.setStackSize(b.dataset.size); this._render(); return;
       case 'keypad': app.setKeypadLayout(b.dataset.layout); this._render(); return;
+      case 'dock': app.setDockSide(b.dataset.part, b.dataset.side); this._render(); return;
       case 'open-assistant': this.close(); app.drawers.open('assistant'); return;
       case 'tutor-style': app.setTutorStyle(b.dataset.style); this._render(); return;
       case 'toggle': this._toggle(b.dataset.setting, b.getAttribute('aria-pressed') !== 'true'); this._render(); return;

@@ -8,6 +8,8 @@ export const ACTIONS = Object.freeze({
   'drawer.toggle':     { label: 'Show or hide the tools drawer', surfaces: ['rail', 'drawer.close'] },
   'keypad.toggle':     { label: 'Show or hide the keypad', surfaces: ['appbar.keypad', 'keypad.head'] },
   'keypad.compact':    { label: 'Compact or full keypad', surfaces: ['appbar.more', 'keypad.head', 'settings.appearance'] },
+  'keypad.side':       { label: 'Dock the keypad on the other side', surfaces: ['keypad.head', 'settings.appearance', 'palette'] },
+  'panels.side':       { label: 'Dock the panels on the other side', surfaces: ['drawer.head', 'settings.appearance', 'palette'] },
   'view.minimal':      { label: 'Minimal view: status line, stack and command line', surfaces: ['appbar.minimal', 'status.minimal', 'settings.appearance'] },
   'view.fullscreen':   { label: 'Full screen', surfaces: ['status.minimal'] },
   'view.minimalMenu':  { label: 'Soft keys in minimal view', surfaces: ['status.minimal', 'settings.appearance'] },

@@ -6,6 +6,8 @@ export const STACK_SIZES = Object.freeze(['small', 'normal', 'large', 'larger'])
 export const STACK_SIZE_LABELS = Object.freeze({ small: 'Small', normal: 'Normal', large: 'Large', larger: 'Larger' });
 export const KEYPAD_LAYOUTS = Object.freeze(['full', 'compact', 'hidden']);
 export const KEYPAD_LABELS = Object.freeze({ full: 'Full', compact: 'Compact', hidden: 'Hidden' });
+export const SIDES = Object.freeze(['left', 'right']);
+export const SIDE_LABELS = Object.freeze({ left: 'Left', right: 'Right' });
 const DRAWER_IDS = Object.freeze(['assistant', 'catalog', 'vars', 'history', 'plot', 'chars']);
 const HISTORY_SORTS = Object.freeze(['newest', 'oldest']);
 const ASSISTANT_MODES = Object.freeze(['ask', 'tutor']);
@@ -16,6 +18,8 @@ export const DEFAULT_UI_PREFS = Object.freeze({
   minimal: false,
   minimalMenu: false,
   keypad: 'full',
+  keypadSide: 'right',
+  panelsSide: 'left',
   drawer: null,
   lastDrawer: 'catalog',
   drawerWide: false,
@@ -50,6 +54,8 @@ export function normalizeUiPrefs(raw) {
   if (typeof raw.minimal === 'boolean') p.minimal = raw.minimal;
   if (typeof raw.minimalMenu === 'boolean') p.minimalMenu = raw.minimalMenu;
   if (KEYPAD_LAYOUTS.includes(raw.keypad)) p.keypad = raw.keypad;
+  if (SIDES.includes(raw.keypadSide)) p.keypadSide = raw.keypadSide;
+  if (SIDES.includes(raw.panelsSide)) p.panelsSide = raw.panelsSide;
   if (raw.drawer === null || DRAWER_IDS.includes(raw.drawer)) p.drawer = raw.drawer ?? null;
   if (DRAWER_IDS.includes(raw.lastDrawer)) p.lastDrawer = raw.lastDrawer;
   if (typeof raw.drawerWide === 'boolean') p.drawerWide = raw.drawerWide;

@@ -444,6 +444,11 @@ reimagines the original display. Minimal view strips everything back to the
 status line, the stack and the command line (`⇧⌘F`); a setting keeps the
 soft keys. On a phone it has a menu of its own (see [On a phone](#on-a-phone)).
 
+On a wide screen the tools rail with its drawer and the keypad each dock on
+the left or the right. Flip one with the dock button in its header, choose
+Panels side and Keypad side in Settings, or search for "dock". The drawer
+then resizes from its inner edge.
+
 | Classic LCD | Paper |
 |:---:|:---:|
 | ![Classic LCD theme](screenshots/classic.png) | ![Paper theme with the catalog](screenshots/paper.png) |

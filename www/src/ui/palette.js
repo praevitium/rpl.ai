@@ -5,7 +5,7 @@ import { searchCommands, findReferenceEntry, shortDescription, loadCommandRefere
 import { fuzzyScore, matchPositions, highlightSegments, moveSelection } from './op-search.js';
 import { ACTIONS, shortcutText } from './actions.js';
 import { MODES } from './modes.js';
-import { THEMES, THEME_LABELS } from './ui-prefs.js';
+import { THEMES, THEME_LABELS, SIDES } from './ui-prefs.js';
 import { MENU_FAMILIES, OWN_MENUS } from './menus.js';
 import { CATEGORIES, CHAR_GROUPS, signatureOf } from './drawer.js';
 import { icon } from './icons.js';
@@ -138,7 +138,12 @@ export class Palette {
       kind: 'mode', title: `${m.title}: ${o.label}`, icon: 'check', detail: o.detail,
       keywords: `${o.value} mode`, current: m.current() === o.value, run: () => m.set(o.value),
     })));
-    groups.push(['Settings and modes', scored([...actions, ...themeRows, ...modeRows])]);
+    const docks = !this.app.prefs.minimal && window.innerWidth >= 980 ? [['panels', 'Panels', 'panelsSide'], ['keypad', 'Keypad', 'keypadSide']] : [];
+    const dockRows = docks.flatMap(([part, name, pref]) => SIDES.map((side) => ({
+      kind: 'mode', title: `${name}: dock on the ${side}`, icon: 'check', keywords: 'dock side layout move rail drawer',
+      current: this.app.prefs[pref] === side, run: () => this.app.setDockSide(part, side),
+    })));
+    groups.push(['Settings and modes', scored([...actions, ...themeRows, ...modeRows, ...dockRows])]);
     const menus = [...OWN_MENUS, ...MENU_FAMILIES].map((m) => ({
       kind: 'menu', title: `${m.short} menu`, detail: m.title, icon: 'menu', keywords: m.title,
       run: () => {

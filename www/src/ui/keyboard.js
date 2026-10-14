@@ -260,7 +260,7 @@ export class Keypad {
     this.el = el;
     this.app = app;
     this.buttons = [];
-    el.innerHTML = `<div class="kp-head"><b>Keypad</b><div class="minseg" role="group" aria-label="Keypad layout"><button type="button" data-kp="full">Full</button><button type="button" data-kp="compact">Compact</button><button type="button" data-kp="hidden">Hide</button></div></div><div class="kp"><div class="kp-nav"></div><div class="kp-main"></div><div class="kp-compact"></div></div>`;
+    el.innerHTML = `<div class="kp-head"><b>Keypad</b><div class="minseg" role="group" aria-label="Keypad layout"><button type="button" data-kp="full">Full</button><button type="button" data-kp="compact">Compact</button><button type="button" data-kp="hidden">Hide</button></div><button type="button" class="icon-btn sm" data-kp-dock title="Dock the keypad on the other side" aria-label="Dock the keypad on the other side">${icon('dock', 'sm')}</button></div><div class="kp"><div class="kp-nav"></div><div class="kp-main"></div><div class="kp-compact"></div></div>`;
     this.kp = el.querySelector('.kp');
     NAV_ORDER.forEach((key) => this._add(el.querySelector('.kp-nav'), key));
     MAIN_KEYS.forEach((key) => this._add(el.querySelector('.kp-main'), key));
@@ -272,6 +272,7 @@ export class Keypad {
     el.querySelector('.kp-head').addEventListener('click', (e) => {
       const b = e.target.closest('[data-kp]');
       if (b) app.setKeypadLayout(b.dataset.kp);
+      if (e.target.closest('[data-kp-dock]')) app.runAction('keypad.side');
     });
   }
 
