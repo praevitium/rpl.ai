@@ -646,8 +646,8 @@ export class MatrixEditor {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       e.stopPropagation();
-      // A phone's Enter works like the HP MatrixWriter's ENTER: it stores what was typed and moves on, and enters the matrix otherwise.
-      if (onTouch() && this._typedCell === `${r},${c}`) this._moveBy('next', r, c);
+      // Enter works like the HP MatrixWriter's ENTER: it stores what was typed and moves on, and enters the matrix otherwise.
+      if (this._typedCell === `${r},${c}`) this._moveBy('next', r, c);
       else this.app.commitEntry();
       return;
     }
