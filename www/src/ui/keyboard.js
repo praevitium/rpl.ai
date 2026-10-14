@@ -1,7 +1,8 @@
 import { icon } from './icons.js';
 import { escapeHtml } from './display.js';
 
-// Alpha a..z runs across the first 26 keys (F1=a … ÷=z). Unlike the HP 50g it types
+// Alpha a..z runs along the keypad's rows: a..f across the top row, g..l across the second,
+// then m..z on the main keys (LASTARG=m … ÷=z). Unlike the HP 50g it types
 // lowercase; op lookup is case-insensitive, so `sin` and SIN run the same command.
 function mk(primary, opts = {}) {
   return {
@@ -31,45 +32,45 @@ const typeExecFn   = fn =>          (e) => e.pressFunction(fn);
 const typeExecName = op =>          (e) => e.pressCommand(op);
 
 export const SOFT_KEYS = [
-  mk('F1', { alpha: 'a', className: 'menu', action: (e, s, app) => app.pressSoftKey(0) }),
-  mk('F2', { alpha: 'b', className: 'menu', action: (e, s, app) => app.pressSoftKey(1) }),
-  mk('F3', { alpha: 'c', className: 'menu', action: (e, s, app) => app.pressSoftKey(2) }),
-  mk('F4', { alpha: 'd', className: 'menu', action: (e, s, app) => app.pressSoftKey(3) }),
-  mk('F5', { alpha: 'e', className: 'menu', action: (e, s, app) => app.pressSoftKey(4) }),
-  mk('F6', { alpha: 'f', className: 'menu', action: (e, s, app) => app.pressSoftKey(5) }),
+  mk('F1', { className: 'menu', action: (e, s, app) => app.pressSoftKey(0) }),
+  mk('F2', { className: 'menu', action: (e, s, app) => app.pressSoftKey(1) }),
+  mk('F3', { className: 'menu', action: (e, s, app) => app.pressSoftKey(2) }),
+  mk('F4', { className: 'menu', action: (e, s, app) => app.pressSoftKey(3) }),
+  mk('F5', { className: 'menu', action: (e, s, app) => app.pressSoftKey(4) }),
+  mk('F6', { className: 'menu', action: (e, s, app) => app.pressSoftKey(5) }),
 ];
 
 export const NAV_KEYS = [
-  mk('VARS', { alpha: 'g', action: (e, s, app) => app.showVarsMenu() }),
-  mk('PREV', { alpha: 'h', action: (e, s, app) => app.prevMenuPage() }),
-  mk('NEXT', { alpha: 'i', action: (e, s, app) => app.nextMenuPage() }),
-  mk('HOME', { alpha: 'j', action: typeExecName('HOME') }),
-  mk('STO',  { alpha: 'k', action: typeExecName('STO') }),
-  mk('RCL',  { alpha: 'l', action: typeExecName('RCL') }),
+  mk('VARS', { alpha: 'a', action: (e, s, app) => app.showVarsMenu() }),
+  mk('PREV', { alpha: 'b', action: (e, s, app) => app.prevMenuPage() }),
+  mk('NEXT', { alpha: 'c', action: (e, s, app) => app.nextMenuPage() }),
+  mk('HOME', { alpha: 'g', action: typeExecName('HOME') }),
+  mk('STO',  { alpha: 'h', action: typeExecName('STO') }),
+  mk('RCL',  { alpha: 'i', action: typeExecName('RCL') }),
 ];
 
 export const ARROW_KEYS = [
-  mk('CST', { kind: 'menu', className: 'cst-key',
+  mk('CST', { alpha: 'd', kind: 'menu', className: 'cst-key',
               action: (_e, _s, app) => app.showCustomMenu() }),
-  mk('▲', { kind: 'arrow', className: 'arrow-up',
+  mk('▲', { alpha: 'e', kind: 'arrow', className: 'arrow-up',
             action: (e, _s, app) => {
               if (e.buffer.length === 0) app.selectLevel(1);
               else e.cursorUp();
             } }),
-  mk('CAT', { kind: 'cat', className: 'cat-key',
+  mk('CAT', { alpha: 'f', kind: 'cat', className: 'cat-key',
               action: (_e, _s, app) => app.drawers.toggle('catalog') }),
-  mk('◀', { kind: 'arrow', className: 'arrow-left',
+  mk('◀', { alpha: 'j', kind: 'arrow', className: 'arrow-left',
             action: (e, _s, app) => {
               if (e.buffer.length > 0) e.cursorLeft();
               else app.prevMenuPage();
             } }),
-  mk('▶', { kind: 'arrow', className: 'arrow-right',
+  mk('▶', { alpha: 'l', kind: 'arrow', className: 'arrow-right',
             action: (e, _s, app) => {
               if (e.buffer.length > 0) e.cursorRight();
               else if (app.stack.depth >= 2) app.swapTop();
               else app.nextMenuPage();
             } }),
-  mk('▼', { kind: 'arrow', className: 'arrow-down', shiftL: 'SST',
+  mk('▼', { alpha: 'k', kind: 'arrow', className: 'arrow-down', shiftL: 'SST',
             action: (e, _s, app) => {
               if (e.buffer.length > 0) e.cursorDown();
               else if (app.stack.depth >= 1) app.editLevel(1);

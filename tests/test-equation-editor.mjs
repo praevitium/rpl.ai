@@ -316,7 +316,7 @@ function same(state, source, label) {
 {
   const sqrt = MAIN_KEYS.find(key => key.primary === '√x');
   const up = ARROW_KEYS.find(key => key.primary === '▲');
-  const letter = SOFT_KEYS[0];
+  const letter = NAV_KEYS[0];
   assert(keypadFace(sqrt, 'shiftR') === 'ⁿ√y', 'EQW keypadFace resolves √x+RS to ⁿ√y');
   assert(keypadFace(up, 'shiftR') === 'RS▲', 'EQW keypadFace resolves ▲+RS to RS▲');
   assert(keypadFace(letter, 'alpha') === 'a', 'EQW keypadFace resolves alpha to the letter');

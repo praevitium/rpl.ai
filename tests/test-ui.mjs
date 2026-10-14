@@ -932,7 +932,7 @@ setAngle('RAD');
    precedent: fixed grid sizes (the physical HP50 layout — 6 soft,
    6 nav, 6 arrow-cluster, 5×7 main), the nine-field `mk` contract on
    every entry, the per-grid primaries/kinds, and the header's
-   "alpha a..z maps to the first 26 keys, F1=a … ÷=z" invariant.
+   "alpha a..z runs along the keypad's rows" invariant.
    ================================================================ */
 {
   // Fixed grid sizes — faithful to the physical hardware (header §10-14).
@@ -964,19 +964,19 @@ setAngle('RAD');
     [k.action, k.shiftLAction, k.shiftRAction].every(a => a === null || typeof a === 'function')),
                                      'keyboard: every action slot is null or a function');
 
-  // Soft row: F1..F6, alpha a..f, all menu-styled op keys with a handler.
+  // Soft row: F1..F6, all menu-styled op keys with a handler; the menu bar holds them, so no letters.
   assert(SOFT_KEYS.map(k => k.primary).join(',') === 'F1,F2,F3,F4,F5,F6',
                                      'keyboard: SOFT_KEYS primaries are F1..F6 in order');
-  assert(SOFT_KEYS.map(k => k.alpha).join('') === 'abcdef',
-                                     'keyboard: SOFT_KEYS alpha letters are a..f');
+  assert(SOFT_KEYS.every(k => k.alpha === ''),
+                                     'keyboard: SOFT_KEYS carry no alpha letters');
   assert(SOFT_KEYS.every(k => k.kind === 'op' && k.className === 'menu' && typeof k.action === 'function'),
                                      'keyboard: SOFT_KEYS are menu-class op keys, each with an action');
 
-  // Nav block: the renamed HOME/VARS/STO/RCL + PREV/NEXT paging, alpha g..l.
+  // Nav block: the renamed HOME/VARS/STO/RCL + PREV/NEXT paging.
   assert(NAV_KEYS.map(k => k.primary).join(',') === 'VARS,PREV,NEXT,HOME,STO,RCL',
                                      'keyboard: NAV_KEYS primaries in row-major order');
-  assert(NAV_KEYS.map(k => k.alpha).join('') === 'ghijkl',
-                                     'keyboard: NAV_KEYS alpha letters are g..l');
+  assert(NAV_KEYS.map(k => k.alpha).join('') === 'abcghi',
+                                     'keyboard: NAV_KEYS alpha letters are a, b, c and g, h, i');
 
   // Arrow cluster: CST + 4-way diamond + CAT, each distinctly kinded and
   // CSS-positioned (the className drives the inverted-T placement).
@@ -987,18 +987,22 @@ setAngle('RAD');
   assert(ARROW_KEYS.every(k => k.className.length > 0),
                                      'keyboard: every arrow-cluster key has a positioning className');
 
-  // The header invariant: alpha a..z maps to the first 26 alpha-bearing
-  // keys in declaration order across the three typing grids (the arrow
-  // cluster has no alpha), with F1=a and ÷=z.
-  const alphaSeq = [...SOFT_KEYS, ...NAV_KEYS, ...MAIN_KEYS]
-    .map(k => k.alpha).filter(a => a !== '');
+  // The header invariant: alpha a..z runs along the keypad as it is laid out,
+  // a..f across the top row (VARS PREV NEXT CST ▲ CAT), g..l across the second
+  // (HOME STO RCL ◀ ▼ ▶), then m..z on the main keys, with ÷=z.
+  const [V, P, N, H, S, R] = NAV_KEYS;
+  const [CST, UP, CAT, LEFT, RIGHT, DOWN] = ARROW_KEYS;
+  const onScreen = [V, P, N, CST, UP, CAT, H, S, R, LEFT, DOWN, RIGHT, ...MAIN_KEYS];
+  const alphaSeq = onScreen.map(k => k.alpha).filter(a => a !== '');
   assert(alphaSeq.join('') === 'abcdefghijklmnopqrstuvwxyz',
-                                     'keyboard: alpha labels form a..z across soft+nav+main');
+                                     'keyboard: alpha labels form a..z along the keypad rows');
+  assert(onScreen.slice(0, 12).every(k => k.alpha),
+                                     'keyboard: every key of the top two rows types a letter');
   assert(new Set(alphaSeq).size === 26,
                                      'keyboard: the 26 alpha letters are unique');
-  const zKey = [...SOFT_KEYS, ...NAV_KEYS, ...MAIN_KEYS].find(k => k.alpha === 'z');
+  const zKey = MAIN_KEYS.find(k => k.alpha === 'z');
   assert(zKey && zKey.primary === '÷',
-                                     'keyboard: the z alpha key is ÷ (header: F1=a … ÷=z)');
+                                     'keyboard: the z alpha key is ÷');
 
   // No two physical keys share a primary label across the whole layout.
   const primaries = allKeys.map(k => k.primary);
