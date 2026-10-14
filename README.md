@@ -195,7 +195,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   For more of the stack, choose Compact keypad from the ⋯ menu (or Keypad
   in Settings): five rows of the keys an RPN session reaches for most,
   with SWAP, DROP and UNDO beside the digits, SIN, COS and TAN on the
-  shifted 7, 8 and 9, and under α the whole pad running a to z.
+  shifted 7, 8 and 9, and under α the whole pad running a to z. Its keys
+  name their shifts in landscape too.
   The command menus' soft keys do the same; the catalog types. A
   variable's key types its name inside a program, list or quote, and in a
   program ⇦ and ⇨ type a STO or RCL of it, as on the HP. So does a CST
