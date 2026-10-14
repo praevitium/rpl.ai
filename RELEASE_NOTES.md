@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.75 (2026-10-14)
+**Latest release:** v0.6.76 (2026-10-14)
 
 ---
 
@@ -18,6 +18,29 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.76 — 2026-10-14
+
+On a phone, typing on the calculator keypad no longer brings up the phone's
+keyboard: the first key typed used to summon it, and it hid the keypad.
+While the keypad shows, the command line, the matrix writer's cells and the
+equation writer ask the phone for no keyboard, so the keypad does all the
+typing; hide the keypad to type with the phone's keyboard.
+
+With the keypad hidden, or in minimal view, the command line asks the phone
+for its number pad
+rather than the letters keyboard, as a calculator should (no phone keyboard
+shows both at once), and the key strip above it gets an ABC key that
+switches to letters for names and commands, with 123 to switch back, like
+the HP's ALPHA. The matrix writer's cells follow the same choice; the
+equation writer keeps the letters keyboard.
+
+In the matrix writer the writer's own Enter key and the keypad's ENTER now
+follow the same rule as a keyboard's Enter: store the typed cell and move
+on, and push the matrix from an untyped cell. The keypad's ENTER caption
+reads NEXT while a typed cell waits.
 
 ---
 
