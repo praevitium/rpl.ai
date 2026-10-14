@@ -279,9 +279,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   the toasts' buttons, the writer tabs and Ask, the matrix writer's cells,
   the assistant's controls and the minimal status line's modes are
   finger-sized, and so are the soft keys while the keypad is hidden. The Variables drawer puts
-  each variable's buttons on a line under its name, Share among them where
-  the phone has a share sheet, and the History drawer shows each entry in
-  full. A drawer opens as a sheet from the bottom; drag its tabs or title
+  each variable's buttons on a line under its name, and the History drawer
+  shows each entry in full. A drawer opens as a sheet from the bottom; drag its tabs or title
   down to close it. In minimal view it opens at the side; drag its title
   right to close it. Running a command from the Catalog, recalling a History
   line or a variable, editing a variable, or picking a character closes the
@@ -399,8 +398,8 @@ it would leave on your stack; `→` opens its reference page.
 
 ### Variables and directories
 
-Browse, run, recall, edit, rename, move and download variables. Drag them to
-reorder, into folders or onto the breadcrumb. Back up the stack and the
+Browse, run, edit, rename and download variables. Drag them to reorder,
+into folders or onto the breadcrumb. Back up the stack and the
 whole HOME tree to a JSON file and restore it, archive to backup ports, and
 import or export HP text files (`.rpl`).
 

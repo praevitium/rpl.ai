@@ -1299,4 +1299,6 @@ setAngle('RAD');
   assert(/\.work \{[^}]*min-height: auto;/.test(css) && !/\.work \{[^}]*overflow: hidden/.test(css), 'the work area never shrinks below its writer and buttons');
   assert(/\.well \{ flex: 1 1 96px;/.test(css) && /@media \(max-height: 780px\) \{\s*\.well \{ flex-basis: 0px;/.test(css), 'the stack gives up room first, with a definite basis so its rows do not inflate the work area');
   assert(/@media \(max-height: 560px\) and \(min-width: 640px\) \{\s*\.app-main \{ flex-direction: row; \}/.test(css), 'a short wide screen puts the keypad beside the work area');
+  const drawerSource = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  assert(!/data-dw="var-(rcl|move|share)"/.test(drawerSource), 'Variables: rows have no Recall, Move or Share button (tap the name, drag, or share the stack level)');
 }

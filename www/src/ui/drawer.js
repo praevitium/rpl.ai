@@ -1,12 +1,12 @@
 import { allOps, lookup, opCategories } from '../rpl/ops.js';
 import {
   state as calcState, subscribe as subscribeState,
-  varRecall, varStore, varPurge, goInto, currentPath, makeSubdir,
+  varStore, varPurge, goInto, currentPath, makeSubdir,
   getDirectoryByPath, moveCurrentEntry, reorderCurrentEntry, renameCurrentEntry,
 } from '../rpl/state.js';
 import { TYPES, isStorableHpName } from '../rpl/types.js';
 import { unitInfo } from '../rpl/units.js';
-import { format, formatSource } from '../rpl/formatter.js';
+import { format } from '../rpl/formatter.js';
 import {
   exportHpTextFile, readUpload,
   listBackups, archiveBackup, restoreBackup, deleteBackup,
@@ -494,12 +494,11 @@ export class Drawers {
     const preview = isDir ? `${value.entries.size} item${value.entries.size === 1 ? '' : 's'}` : format(value);
     const acts = isDir
       ? `<button type="button" class="mini" data-dw="var-open" data-name="${n}" title="Open ${n}" aria-label="Open ${n}">${icon('chr', 'sm')}</button>`
-      : `<button type="button" class="mini" data-dw="var-rcl" data-name="${n}" title="Recall ${n} without running it" aria-label="Recall ${n}">${icon('enter', 'sm')}</button><button type="button" class="mini" data-dw="var-edit" data-name="${n}" title="Edit ${n}" aria-label="Edit ${n}">${icon('edit', 'sm')}</button>`;
-    const share = !isDir && typeof navigator.share === 'function' ? `<button type="button" class="mini" data-dw="var-share" data-name="${n}" title="Share ${n}" aria-label="Share ${n}">${icon('share', 'sm')}</button>` : '';
+      : `<button type="button" class="mini" data-dw="var-edit" data-name="${n}" title="Edit ${n}" aria-label="Edit ${n}">${icon('edit', 'sm')}</button>`;
     return `<div class="vr${isDir ? ' dir' : ''}" draggable="true" data-drag-name="${n}" data-dw="var" data-name="${n}" role="button" tabindex="0" title="${isDir ? `Open ${n}` : `${n}: click to ${value.type === TYPES.PROGRAM ? 'run' : 'put on the stack'}`}">
       <span class="grip" aria-hidden="true">${icon('grip', 'sm')}</span>
       <div class="main"><div class="nm">${isDir ? icon('folder', 'sm') : ''}<span class="nm-text">${n}</span><span class="badge">${escapeHtml(isDir ? 'Folder' : typeName(value))}</span></div><div class="pv">${escapeHtml(preview.length > 120 ? `${preview.slice(0, 119)}…` : preview)}</div></div>
-      <div class="acts">${acts}<button type="button" class="mini" data-dw="var-move" data-name="${n}" title="Move ${n} to another folder or place" aria-label="Move ${n}">${icon('folder', 'sm')}</button><button type="button" class="mini" data-dw="var-rename" data-name="${n}" title="Rename ${n}" aria-label="Rename ${n}">${icon('rename', 'sm')}</button>${share}<button type="button" class="mini" data-dw="var-download" data-name="${n}" title="Download ${n}" aria-label="Download ${n}">${icon('down', 'sm')}</button><button type="button" class="mini danger" data-dw="var-delete" data-name="${n}" title="Delete ${n} (undoable)" aria-label="Delete ${n}">${icon('trash', 'sm')}</button></div>
+      <div class="acts">${acts}<button type="button" class="mini" data-dw="var-rename" data-name="${n}" title="Rename ${n}" aria-label="Rename ${n}">${icon('rename', 'sm')}</button><button type="button" class="mini" data-dw="var-download" data-name="${n}" title="Download ${n}" aria-label="Download ${n}">${icon('down', 'sm')}</button><button type="button" class="mini danger" data-dw="var-delete" data-name="${n}" title="Delete ${n} (undoable)" aria-label="Delete ${n}">${icon('trash', 'sm')}</button></div>
     </div>`;
   }
 
@@ -648,11 +647,8 @@ export class Drawers {
       case 'path': app.navigateToPathSegment(Number(t.dataset.index)); return;
       case 'var': this._activateVar(name); return;
       case 'var-open': e.stopPropagation(); this._activateVar(name); return;
-      case 'var-rcl': e.stopPropagation(); this._recallVar(name); this._reveal(); return;
       case 'var-edit': e.stopPropagation(); app.editVariable(name); this._reveal(); return;
       case 'var-rename': e.stopPropagation(); this._beginRename(t.closest('.vr'), name); return;
-      case 'var-move': e.stopPropagation(); this._moveMenu(t, name); return;
-      case 'var-share': e.stopPropagation(); app.shareText(formatSource(calcState.current.entries.get(name))); return;
       case 'var-download': e.stopPropagation(); app.downloadMenu(t, name, calcState.current.entries.get(name)); return;
       case 'var-delete': e.stopPropagation(); this._deleteVar(name); return;
       case 'vars-newdir': this._newFolder(t); return;
@@ -688,15 +684,6 @@ export class Drawers {
       this.open(drawer);
       this.el.querySelector(selector)?.scrollIntoView({ block: 'center' });
     } });
-  }
-
-  _recallVar(name) {
-    const { app } = this;
-    const v = varRecall(name);
-    if (v === undefined) return;
-    if (app.entry.buffer.trim()) app.commitEntry();
-    app.entry._snapForUndo();
-    app.stack.push(v);
   }
 
   _deleteVar(name) {
@@ -884,29 +871,6 @@ export class Drawers {
       app.entry._dropNoOpUndoStep();
       app.notifyError(`Move failed: ${e.message}`);
     }
-  }
-
-  _moveMenu(anchor, name) {
-    const path = currentPath();
-    const entries = [...calcState.current.entries.entries()];
-    const keys = entries.map(([key]) => key);
-    const at = keys.indexOf(name);
-    const targets = {
-      ...(path.length > 1 ? { up: { label: `Up to ${path.at(-2)}`, kind: 'crumb', index: path.length - 2 } } : {}),
-      ...Object.fromEntries(entries.filter(([key, v]) => v.type === TYPES.DIRECTORY && key !== name)
-        .map(([key]) => [`into:${key}`, { label: `Into ${key}`, kind: 'into', name: key }])),
-      ...(at > 0 ? { earlier: { label: 'Earlier in the list', kind: 'reorder', name: keys[at - 1], zone: 'before' } } : {}),
-      ...(at < keys.length - 1 ? { later: { label: 'Later in the list', kind: 'reorder', name: keys[at + 1], zone: 'after' } } : {}),
-    };
-    const html = `<h6>Move ${escapeHtml(name)}</h6>${Object.entries(targets).map(([value, t]) => `<button type="button" class="opt" data-v="${escapeHtml(value)}"><span class="ck">${icon(t.kind === 'reorder' ? (value === 'earlier' ? 'up' : 'down') : 'folder', 'sm')}</span><b>${escapeHtml(t.label)}</b></button>`).join('')}`;
-    this.app.popover.open(anchor, html, {
-      label: `Move ${name}`,
-      onClick: (target) => {
-        this.app.popover.close({ restoreFocus: false });
-        const chosen = targets[target.dataset.v];
-        if (chosen) this._performDrop(name, chosen);
-      },
-    });
   }
 
   // On a phone the drawer is a bottom sheet: dragging its tabs or title down closes it, as sheets do.
