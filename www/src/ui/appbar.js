@@ -9,6 +9,11 @@ const kbd = (actionId) => {
   return text ? ` (${text})` : '';
 };
 
+function digitsHtml(mode, current, heading) {
+  if (!mode.digits || current === 'STD') return '';
+  return `${heading}<div class="grid digits">${DISPLAY_DIGITS_CHOICES.map((d) => `<button type="button" data-m="${mode.id}" data-digits="${d}" data-v="${current}" class="${d === calcState.displayDigits ? 'on' : ''}" aria-label="${current} ${d}">${d}</button>`).join('')}</div>`;
+}
+
 function modeMenuHtml(mode) {
   const current = mode.current();
   const rows = mode.options.map((o) => `
@@ -16,10 +21,7 @@ function modeMenuHtml(mode) {
       <span class="ck">${o.value === current ? icon('check', 'sm') : ''}</span><b>${escapeHtml(o.label)}</b><em>${escapeHtml(o.value.length > 1 ? o.value : '')}</em>
       <span>${escapeHtml(o.detail)}</span>
     </button>`).join('');
-  const digits = mode.digits && current !== 'STD'
-    ? `<hr><h6>Digits</h6><div class="grid">${DISPLAY_DIGITS_CHOICES.map((d) => `<button type="button" data-digits="${d}" data-v="${current}" class="${d === calcState.displayDigits ? 'on' : ''}">${d}</button>`).join('')}</div>`
-    : '';
-  return `<h6>${escapeHtml(mode.title)}</h6>${rows}${digits}`;
+  return `<h6>${escapeHtml(mode.title)}</h6>${rows}${digitsHtml(mode, current, '<hr><h6>Digits</h6>')}`;
 }
 
 // Where each browser keeps its install command, for when it offers no install prompt (README's install table).

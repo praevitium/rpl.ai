@@ -1425,3 +1425,10 @@ setAngle('RAD');
     'install note: any browser on an iPhone or iPad uses Share › Add to Home Screen');
   assert(/Add to Dock/.test(installHint(UA.macSafari)) && /Firefox can’t install/.test(installHint(UA.desktopFirefox)), 'install note: Safari on a Mac adds to the Dock, and Firefox on a computer cannot install');
 }
+
+{
+  const { DISPLAY_DIGITS_CHOICES } = await import('../www/src/ui/modes.js');
+  assert(DISPLAY_DIGITS_CHOICES.join() === Array.from({ length: 12 }, (_, i) => i).join(), 'number format: the Digits grid offers every count from 0 to 11, the range the AUR gives FIX, SCI and ENG');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/\.pop \.grid\.digits \{ grid-template-columns: repeat\(6, minmax\(0, 1fr\)\); \}/.test(css), 'number format: the twelve digit counts sit in two rows of six');
+}

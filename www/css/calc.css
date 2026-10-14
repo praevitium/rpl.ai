@@ -697,6 +697,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .pop .opt em:empty { display: none; }
 .pop hr { border: 0; border-top: 1px solid var(--line); margin: 5px 4px; }
 .pop .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 2px; }
+.pop .grid.digits { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .pop .grid button { border: 1px solid var(--line); background: var(--r1); border-radius: 8px; padding: 8px 6px; font: 600 10.5px/1.1 var(--font-mono); letter-spacing: .04em; text-align: center; color: var(--ink); }
 .pop .grid button:hover { border-color: var(--accent-line); }
 .pop .grid button.on { background: var(--accent-dim); border-color: var(--accent-line); color: var(--accent); }

@@ -4,7 +4,7 @@ import {
 } from '../rpl/state.js';
 import { binaryBaseLabel, coordModeGlyph, displayModeLabel } from './display.js';
 
-export const DISPLAY_DIGITS_CHOICES = Object.freeze([0, 2, 3, 4, 6, 8, 11]);
+export const DISPLAY_DIGITS_CHOICES = Object.freeze([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
 
 export const MODES = Object.freeze([
   {
