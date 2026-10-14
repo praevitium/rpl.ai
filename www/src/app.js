@@ -659,6 +659,7 @@ class App {
       case 'keep': run(() => keepLevels(this.stack, level)); this.clearSelection(); return;
       case 'level': run(() => this.stack.push(Integer(level))); this.selectLevel(level + 1); return;
       case 'eval': runOn('EVAL'); return;
+      case 'debug': runOn('DBUG'); return;
       case 'num': runOn('→NUM'); return;
       case 'plot': this.clearSelection(); this.plotExpression(value.expr); return;
       case 'copy': {
@@ -708,6 +709,7 @@ class App {
       ],
       [
         item('eval', 'play', 'Evaluate (EVAL)'),
+        isProgram(value) ? item('debug', 'step', 'Debug step by step (DBUG)') : '',
         item('num', 'chr', 'To a number (→NUM)'),
         isSymbolic(value) ? item('plot', 'plot', 'Plot it') : '',
         item('ask', 'spark', 'Ask the assistant about it'),
