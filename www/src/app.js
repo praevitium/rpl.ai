@@ -1454,7 +1454,6 @@ class App {
     const depth = this.stack.depth;
     if (this.entry.buffer.length) return key.primary === 'ON' ? 'CANCEL' : '';
     if (key.primary === 'ENTER' && depth) return 'DUP';
-    if (key.primary === '⌫' && depth) return 'DROP';
     if (key.primary === '▲' && depth) return 'SELECT';
     if (key.primary === '▼' && depth) return 'EDIT';
     if (key.primary === '▶' && depth > 1) return 'SWAP';
@@ -1603,10 +1602,6 @@ class App {
       case 'stack.dup':
         if (this._keyRepeat) return true;
         this.entry.enter();
-        return true;
-      case 'stack.drop':
-        if (this._keyRepeat) return true;
-        this.entry.backspace();
         return true;
       case 'stack.swap': if (this.stack.depth < 2) { this.nextMenuPage(); return true; } this.swapTop(); return true;
       case 'level.selectFirst': if (!this.stack.depth) return true; this.selectLevel(1); return true;

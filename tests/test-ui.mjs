@@ -363,7 +363,7 @@ import { assert, assertThrows } from './helpers.mjs';
     assertThrows(() => e.performRedo(), /no redo/i, 'performRedo with empty history reports No redo');
   }
 
-  // Pure stack mutations (physical Backspace→DROP, ▶ SWAP, interactive-
+  // Pure stack mutations (▶ SWAP, interactive-
   // stack PICK/ROLL/ROLLD/DROP, ▼ editLevel1) must push both the
   // stack undo slot and the var-state undo slot, or performUndo will
   // trip "No undo available" from the var-state side even when the
@@ -376,7 +376,7 @@ import { assert, assertThrows } from './helpers.mjs';
     s.push(Real(1));
     s.push(Real(2));
     const e = new Entry(s);
-    e._snapForUndo();                 // what swapTop / backspace should do
+    e._snapForUndo();                 // what swapTop should do
     s.drop();                          // stack-only mutation, no var change
     assert(s.depth === 1, 'pre-undo sanity: { 1 } after DROP');
     e.performUndo();

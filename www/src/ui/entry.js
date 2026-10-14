@@ -415,11 +415,7 @@ export class Entry {
 
   backspace() {
     this.error = '';
-    if (this.buffer.length === 0) {
-      this._snapForUndo();
-      try { this.stack.drop(); } catch (e) { this._dropNoOpUndoStep(); this.flashError(e); }
-      return;
-    }
+    if (this.buffer.length === 0) return;
     const { from, to } = this._state.selection.main;
     if (to > from) {
       this.buffer = this.buffer.slice(0, from) + this.buffer.slice(to);

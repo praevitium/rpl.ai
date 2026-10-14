@@ -170,7 +170,7 @@ On Windows and Linux, ⌘ is Ctrl and ⌥ is Alt.
 | `⌘I` | Ask the assistant (or start a line with `?`) |
 | `F1`–`F6` · PgUp/PgDn | Soft keys · menu pages |
 | `↑` · `↓` on an empty line | Select level 1 · edit level 1 |
-| Enter · ⌫ · `→` on an empty line | DUP · DROP · SWAP |
+| Enter · `→` on an empty line | DUP · SWAP |
 | With a level selected | `↑` `↓` move the selection · `⌘↑` `⌘↓` move the level · Enter edits · ⌫ drops · `⌘C` copies · `⌘D` picks |
 | `⌘Z` · `⇧⌘Z` | Undo · redo (text when the line has text, otherwise the stack) |
 | `⌘\` · `⌘;` · `⇧⌘F` | Tools drawer · keypad · Minimal view |
@@ -215,7 +215,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   puts it back; tap the pencil to cancel. A program pasted from Notes or a
   messaging app reads its curly quotes as the HP's straight ones.
 - ⌫ and Enter sit beside the command line, finger-sized. ⌫ deletes a
-  character (or the selected text), or drops level 1 when the line is empty.
+  character or the selected text, and leaves the stack alone on an empty
+  line.
 - On a narrow screen each soft-key name is sized to its key, so `SPEED`
   stays on one line, and a long name such as `ISPRIME?` breaks into even
   lines instead of being cut off. NXT at the end of the soft keys turns the
@@ -686,6 +687,9 @@ System RPL, and IR and serial transfer.
   goes in parentheses: `'9.81_(m/s^2)*T'`. `'5_m/s'` is 5 m divided by a
   variable `s`.
 - `ZEROS` always returns a list, even of one root.
+- ⌫ on an empty line leaves the stack alone, where the HP's drops level 1.
+  DROP is on the STACK menu, the key strip above a phone's keyboard and a
+  level's menu, and ⌫ still removes a selected level.
 
 **The algebra engine.** Giac is not the HP 49/50's CAS, so answers can come
 back in a different but equivalent form. It is an 11.8 MB download, fetched

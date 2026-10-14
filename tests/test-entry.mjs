@@ -1915,6 +1915,11 @@ resetBinaryState();
   e.cursor = 4;
   e.toggleSign();
   assert(e.buffer === '1E5' && e.cursor === 3, '+/- that removes an exponent sign keeps the cursor after the exponent');
+  e.cancel();
+  e.stack.push(Real(7));
+  e.stack.push(Real(8));
+  e.backspace();
+  assert(e.buffer === '' && e.stack.depth === 2 && e.stack.peek(1).value.eq(8), 'backspace on an empty line leaves the stack alone');
 }
 
 /* The HP 50g quotes with apostrophes; the ` key stands in for its ' key, and the command line reads either. */
