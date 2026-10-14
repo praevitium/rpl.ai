@@ -859,6 +859,14 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 .vr .acts { display: flex; opacity: 0; transition: opacity .12s; }
 .vr:hover .acts, .vr:focus-within .acts { opacity: 1; }
 @media (hover: none) { .vr .acts { opacity: 1; } .vr .grip { opacity: 1; } }
+/* With a mouse the actions float over the row's end, so while hidden they leave the name its width. */
+@media (hover: hover) {
+  .vr { grid-template-columns: 18px minmax(0, 1fr); }
+  .vr .acts { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding-left: 16px; background: linear-gradient(to right, transparent, var(--r1) 16px); pointer-events: none; }
+  .vr:focus-within .acts { opacity: 0; }
+  .vr:hover .acts, .vr:focus-visible .acts, .vr:has(:focus-visible) .acts { opacity: 1; pointer-events: auto; }
+  .vr.editing .acts { display: none; }
+}
 .vr.dir .nm { color: var(--ink); }
 .vr.editing .nm input { width: 100%; height: 26px; border-radius: 6px; border: 1px solid var(--accent-line); background: var(--field); color: var(--ink); font: 600 13px/1 var(--font-mono); padding: 0 6px; outline: none; }
 .vr.dragging { opacity: .4; }
