@@ -192,14 +192,35 @@ export const MAIN_KEYS = [
                 shiftRAction: typeExecName('→NUM') }),
 ];
 
+// The compact keypad: the keys an RPN session reaches for most, six by five, with
+// trig on the shifted 7 8 9. Under α its keys run a..z, skipping α ⌫ SPC ENTER.
+const main = (primary, opts) => ({ ...MAIN_KEYS.find((k) => k.primary === primary), ...opts });
+const shiftKey = (kind, alpha) => ({ ...MAIN_KEYS.find((k) => k.kind === kind), alpha });
+const trigDigit = (d, alpha, fn) => mk(d, { kind: 'digit', alpha, shiftL: fn, shiftR: `A${fn}`,
+  action: type(d), shiftLAction: typeExecFn(fn), shiftRAction: typeExecFn(`A${fn}`) });
+const stackKey = (name, alpha, left, right) => mk(name, { alpha, shiftL: left, shiftR: right,
+  action: typeExecName(name), shiftLAction: typeExecName(left), shiftRAction: typeExecName(right) });
+
+export const COMPACT_KEYS = [
+  shiftKey('shiftL', 'a'), shiftKey('shiftR', 'b'), main('α'),
+  main('`', { alpha: 'c', shiftL: 'EVAL', shiftLAction: typeExecName('EVAL') }),
+  main('UNDO', { alpha: 'd', shiftL: '', shiftLAction: null }),
+  main('⌫'),
+  stackKey('SWAP', 'e', 'OVER', 'ROT'), trigDigit('7', 'f', 'SIN'), trigDigit('8', 'g', 'COS'), trigDigit('9', 'h', 'TAN'),
+  main('yˣ', { alpha: 'i' }), main('÷', { alpha: 'j' }),
+  stackKey('DROP', 'k', 'DUP', 'CLEAR'), main('4', { alpha: 'l' }), main('5', { alpha: 'm' }), main('6', { alpha: 'n' }),
+  main('√x', { alpha: 'o' }), main('×', { alpha: 'p' }),
+  main('+/-', { alpha: 'q' }), main('1', { alpha: 'r' }), main('2', { alpha: 's' }), main('3', { alpha: 't' }),
+  main('1/x', { alpha: 'u' }), main('−', { alpha: 'v' }),
+  main('EEX', { alpha: 'w' }), main('0', { alpha: 'x' }), main('.', { alpha: 'y' }), main('SPC'), main('ENTER'),
+  main('+', { alpha: 'z' }),
+];
+
 const NAV_ORDER = [
   NAV_KEYS[0], NAV_KEYS[1], NAV_KEYS[2], ARROW_KEYS[0], ARROW_KEYS[1], ARROW_KEYS[2],
   NAV_KEYS[3], NAV_KEYS[4], NAV_KEYS[5], ARROW_KEYS[3], ARROW_KEYS[5], ARROW_KEYS[4],
 ];
 
-// The compact keypad hides the top two rows of five.
-const COMPACT_HIDDEN = new Set(MAIN_KEYS.slice(0, 10));
-const BACKSPACE_KEY = MAIN_KEYS.find((k) => k.kind === 'back');
 
 const FACE_ICONS = { '▲': 'tri-u', '▼': 'tri-d', '◀': 'tri-l', '▶': 'tri-r', '⌫': 'back', '↵': 'enter' };
 const SUPERSCRIPT_FACES = { 'yˣ': 'y<sup>x</sup>', 'eˣ': 'e<sup>x</sup>', '10ˣ': '10<sup>x</sup>', 'x²': 'x<sup>2</sup>', 'ⁿ√y': '<sup>n</sup>√y' };
@@ -239,10 +260,11 @@ export class Keypad {
     this.el = el;
     this.app = app;
     this.buttons = [];
-    el.innerHTML = `<div class="kp-head"><b>Keypad</b><div class="minseg" role="group" aria-label="Keypad layout"><button type="button" data-kp="full">Full</button><button type="button" data-kp="compact">Compact</button><button type="button" data-kp="hidden">Hide</button></div></div><div class="kp"><div class="kp-nav"></div><div class="kp-main"></div></div>`;
+    el.innerHTML = `<div class="kp-head"><b>Keypad</b><div class="minseg" role="group" aria-label="Keypad layout"><button type="button" data-kp="full">Full</button><button type="button" data-kp="compact">Compact</button><button type="button" data-kp="hidden">Hide</button></div></div><div class="kp"><div class="kp-nav"></div><div class="kp-main"></div><div class="kp-compact"></div></div>`;
     this.kp = el.querySelector('.kp');
     NAV_ORDER.forEach((key) => this._add(el.querySelector('.kp-nav'), key));
     MAIN_KEYS.forEach((key) => this._add(el.querySelector('.kp-main'), key));
+    COMPACT_KEYS.forEach((key) => this._add(el.querySelector('.kp-compact'), key));
     if (typeof ResizeObserver === 'function') {
       const fit = new ResizeObserver(() => this.fit());
       for (const child of el.parentElement?.children ?? []) fit.observe(child);
@@ -257,11 +279,10 @@ export class Keypad {
     const el = document.createElement('button');
     el.type = 'button';
     const entry = { el, key };
-    const effective = () => (this.compact && key.kind === 'cancel' ? BACKSPACE_KEY : key);
     const press = () => {
       el.classList.add('pressed');
       setTimeout(() => el.classList.remove('pressed'), 80);
-      this.app.handleKey(effective());
+      this.app.handleKey(key);
     };
     el.addEventListener('mousedown', (evt) => evt.preventDefault());
     el.addEventListener('pointerdown', (evt) => {
@@ -276,7 +297,7 @@ export class Keypad {
     });
     el.addEventListener('contextmenu', (evt) => {
       evt.preventDefault();
-      this.app.showKeyLayers(effective(), el);
+      this.app.showKeyLayers(key, el);
     });
     parent.appendChild(el);
     this.buttons.push(entry);
@@ -316,14 +337,13 @@ export class Keypad {
     this.kp.classList.toggle('hints', !!(app.prefs.hints || app.showKeyHints));
     this.kp.dataset.layer = layer ?? '';
     for (const entry of this.buttons) {
-      const { el, key: raw } = entry;
-      const key = this.compact && raw.kind === 'cancel' ? BACKSPACE_KEY : raw;
+      const { el, key } = entry;
       const modifier = KEY_CLASS[key.kind];
       const active = modifier && app.shiftKind() === key.kind;
       let face = key.primary;
       let flipped = false;
       let dim = false;
-      if (layer && !modifier) {
+      if (layer && (!modifier || (layer === 'A' && key.alpha))) {
         const alt = layer === 'L' ? key.shiftL : layer === 'R' ? key.shiftR : key.alpha;
         if (alt) { face = alt; flipped = true; } else dim = true;
       }
@@ -332,7 +352,7 @@ export class Keypad {
       const txt = !FACE_ICONS[face] && !SUPERSCRIPT_FACES[face] && face.length > 2;
       const long = face.length > 5;
       const cls = ['k', key.kind === 'digit' ? 'digit' : '', key.className === 'enter' ? 'enter' : '', modifier ?? '',
-        active ? 'active' : '', dim ? 'dim' : '', flipped ? 'flip' : '', COMPACT_HIDDEN.has(raw) ? 'hide-compact' : ''].filter(Boolean).join(' ');
+        active ? 'active' : '', dim ? 'dim' : '', flipped ? 'flip' : ''].filter(Boolean).join(' ');
       const html = `${!layer && key.shiftL && !modifier ? `<span class="l">${cornerHtml(key.shiftL)}</span>` : ''}${!layer && key.shiftR && !modifier ? `<span class="r">${cornerHtml(key.shiftR)}</span>` : ''}<span class="p${txt ? ' txt' : ''}${long ? ' long' : ''}${flipped ? ' lay' : ''}">${faceHtml(face)}</span>${caption ? `<span class="cap">${escapeHtml(caption)}</span>` : ''}${active && locked ? '<span class="lock">LOCK</span>' : ''}${hint ? `<span class="hint">${escapeHtml(hint)}</span>` : ''}`;
       if (el.className !== cls) el.className = cls;
       if (entry.html !== html) { el.innerHTML = html; entry.html = html; }

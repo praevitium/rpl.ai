@@ -1478,7 +1478,8 @@ class App {
   }
 
   handleKey(key) {
-    if (MODIFIER_KINDS.has(key.kind)) { this.setShift(key.kind); return; }
+    // A shift key with a letter on it (the compact keypad's) types the letter under α.
+    if (MODIFIER_KINDS.has(key.kind) && !(key.alpha && this.layer() === 'A')) { this.setShift(key.kind); return; }
 
     if (this.selection != null && !this.shift) {
       const sel = { '▲': 'level.up', '▼': 'level.down', ENTER: 'level.edit', '⌫': 'level.drop', ON: 'ui.escape' }[key.primary];
@@ -1558,6 +1559,7 @@ class App {
       }
       case 'drawer.toggle': this.drawers.toggle(); return true;
       case 'keypad.toggle': this.setKeypadLayout(this.prefs.keypad === 'hidden' ? (this._lastKeypad ?? 'full') : 'hidden'); return true;
+      case 'keypad.compact': this.setKeypadLayout(this.prefs.keypad === 'compact' ? 'full' : 'compact'); return true;
       case 'view.minimal': this.setMinimal(!this.prefs.minimal); return true;
       case 'view.fullscreen': document.documentElement.requestFullscreen?.().catch(() => this.notifyError('Full screen is not available here.')); return true;
       case 'view.minimalMenu': this.setMinimalMenu(!this.prefs.minimalMenu); return true;

@@ -22,7 +22,7 @@ import { computeMenuPage } from '../www/src/ui/paging.js';
 import { headingKey, ALIASES, pushHistory } from '../www/src/ui/command-help.js';
 import { escapeHtml, binaryBaseLabel, displayModeLabel, coordModeGlyph, suspendedProgramText } from '../www/src/ui/display.js';
 import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '../www/src/ui/drawer.js';
-import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName } from '../www/src/ui/keyboard.js';
+import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName, COMPACT_KEYS } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { unitInfo, UNIT_CATALOG, parseUnitExpr, sameDims } from '../www/src/rpl/units.js';
 import { UNIT_GROUPS } from '../www/src/ui/menus.js';
@@ -1003,6 +1003,20 @@ setAngle('RAD');
   const zKey = MAIN_KEYS.find(k => k.alpha === 'z');
   assert(zKey && zKey.primary === '÷',
                                      'keyboard: the z alpha key is ÷');
+
+  // The compact keypad: six by five, the RPN essentials, and a..z along its rows under α.
+  assert(COMPACT_KEYS.length === 30, 'keyboard: the compact keypad is 6 x 5 keys');
+  assert(COMPACT_KEYS.map(k => k.primary).join(' ') === '↰ ↱ α ` UNDO ⌫ SWAP 7 8 9 yˣ ÷ DROP 4 5 6 √x × +/- 1 2 3 1/x − EEX 0 . SPC ENTER +',
+                                     'keyboard: the compact keypad keeps the RPN essentials in reading order');
+  assert(COMPACT_KEYS.every(k => Object.keys(k).length === mkFields.length && mkFields.every(f => f in k)),
+                                     'keyboard: every compact key has exactly the 9 mk fields');
+  assert(COMPACT_KEYS.map(k => k.alpha).filter(Boolean).join('') === 'abcdefghijklmnopqrstuvwxyz',
+                                     'keyboard: under alpha the compact keys run a..z along the rows');
+  assert(COMPACT_KEYS.filter(k => !k.alpha).map(k => k.primary).join(' ') === 'α ⌫ SPC ENTER',
+                                     'keyboard: α, ⌫, SPC and ENTER keep their work under alpha');
+  const seven = COMPACT_KEYS.find(k => k.primary === '7');
+  assert(seven.shiftL === 'SIN' && seven.shiftR === 'ASIN' && typeof seven.shiftLAction === 'function',
+                                     'keyboard: the compact 7 carries SIN and ASIN on its shifts');
 
   // No two physical keys share a primary label across the whole layout.
   const primaries = allKeys.map(k => k.primary);

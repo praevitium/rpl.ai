@@ -7,6 +7,7 @@ export const ACTIONS = Object.freeze({
   'writer.commit':     { label: 'Push what you wrote, or put it back in the level being edited', surfaces: ['input.go', 'menu.EQUATION', 'menu.MATRIX'] },
   'drawer.toggle':     { label: 'Show or hide the tools drawer', surfaces: ['rail', 'drawer.close'] },
   'keypad.toggle':     { label: 'Show or hide the keypad', surfaces: ['appbar.keypad', 'keypad.head'] },
+  'keypad.compact':    { label: 'Compact or full keypad', surfaces: ['appbar.more', 'keypad.head', 'settings.appearance'] },
   'view.minimal':      { label: 'Minimal view: status line, stack and command line', surfaces: ['appbar.minimal', 'status.minimal', 'settings.appearance'] },
   'view.fullscreen':   { label: 'Full screen', surfaces: ['status.minimal'] },
   'view.minimalMenu':  { label: 'Soft keys in minimal view', surfaces: ['status.minimal', 'settings.appearance'] },

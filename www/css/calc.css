@@ -553,7 +553,9 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .kp { display: grid; gap: 6px; padding: 8px 10px 10px; }
 .kp-nav { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
 .kp-main { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
-.kp.compact .kp-nav, .kp.compact .k.hide-compact { display: none; }
+.kp-compact { display: none; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.kp.compact .kp-nav, .kp.compact .kp-main { display: none; }
+.kp.compact .kp-compact { display: grid; }
 .k { position: relative; height: var(--key-h, 46px); border-radius: 10px; border: 1px solid var(--key-line); background: var(--key); box-shadow: var(--shadow-1); color: var(--key-ink); padding: 0; display: grid; place-items: center; min-width: 0; user-select: none; -webkit-user-select: none; transition: transform .06s, filter .12s; }
 .k:active, .k.pressed { transform: translateY(1px); filter: brightness(1.12); }
 .k.digit { background: var(--key-digit); }
@@ -597,7 +599,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 }
 @container app (max-width: 719px) {
   .kp { gap: 5px; padding: 6px 8px 8px; }
-  .kp-nav, .kp-main { gap: 5px; }
+  .kp-nav, .kp-main, .kp-compact { gap: 5px; }
   .k { height: var(--key-h, 42px); border-radius: 9px; }
   .k .p { font-size: 14px; }
   .k .p.txt { font-size: 11px; }
@@ -606,7 +608,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 }
 @container app (max-width: 520px) {
   .kp { gap: 4px; padding: 5px 6px 8px; }
-  .kp-nav, .kp-main { gap: 4px; }
+  .kp-nav, .kp-main, .kp-compact { gap: 4px; }
   .k { height: var(--key-h, 39px); border-radius: 8px; }
   .k .p { font-size: 13px; }
   .k .p.txt { font-size: 9.5px; letter-spacing: 0; }
@@ -625,7 +627,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   .k { height: var(--key-h, clamp(22px, 5.2dvh, 42px)); }
   .sk { height: 32px; }
   .kp { gap: 4px; padding: 4px 6px 6px; }
-  .kp-nav, .kp-main { gap: 4px; }
+  .kp-nav, .kp-main, .kp-compact { gap: 4px; }
   .input { padding: 4px 8px; gap: 4px; }
   .menubar { padding: 4px 8px 6px; }
   .cmdline { min-height: 36px; padding-top: 6px; padding-bottom: 6px; }
@@ -659,6 +661,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
     min-height: 0;
   }
   .keys .kp-main { grid-template-rows: repeat(7, minmax(0, 1fr)); min-height: 0; }
+  .keys .kp-compact { grid-template-rows: repeat(5, minmax(0, 1fr)); min-height: 0; }
   .keys .k { height: 100%; min-height: 0; max-height: 46px; }
 }
 
