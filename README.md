@@ -56,7 +56,7 @@ download, no account and no sign-up.
 | **Units** | The HP 50g's whole unit catalog with SI prefixes, CONVERT and UBASE, and units inside algebraics |
 | **Linear algebra** | Vectors and matrices with DET, INV, RANK, LU, QR, SCHUR, CHOLESKY, EGV and LINSOLVE, and a matrix writer that pastes from spreadsheets |
 | **Statistics** | ΣDAT and Σ+, MEAN, SDEV, LINFIT, BESTFIT and BINS, and distributions such as NDIST and UTPN |
-| **Programming** | User RPL with `« »`, IF, CASE, FOR, WHILE and IFERR (typed from the HP's BRCH menu), local variables, recursion, DEFINE, directories, and HALT, SST and DBUG for debugging |
+| **Programming** | User RPL with `« »`, IF, CASE, FOR, WHILE and IFERR (typed from the HP's BRCH menu), local variables, recursion, DEFINE, directories, and HALT, SST, SST↓ and DBUG for debugging |
 | **Plots** | FUNCTION, POLAR, PARAMETRIC, DIFFEQ, scatter, bar and histogram plots, with trace, zoom and PNG export |
 | **Data in and out** | Copy and paste with Excel, Google Sheets and Numbers; CSV, TSV, `.xlsx`, JSON and HP `.rpl` files; LaTeX copied out and pasted in |
 | **Input** | Keyboard first with `⌘K` search, the HP 50g keypad on screen, and a phone layout with its own key strip |
@@ -425,10 +425,11 @@ sheet's used range; dates arrive as Excel's serial numbers.
 ### Debugging
 
 `HALT` suspends a program and shows it with the next instruction
-highlighted. Continue, Step or Stop from the banner (or `CONT`, `SST`,
-`KILL`). `PROMPT` shows its message and waits for your input; on a phone,
-while you type the answer, the banner shrinks to one row so the stack
-stays in view. A program on the stack can be stepped from the start with
+highlighted. Continue, Step, Step into or Stop from the banner (or `CONT`,
+`SST`, `SST↓`, `KILL`); Step runs a called program as one step, Step into
+walks through it. `PROMPT` shows its message and waits for your input; on
+a phone, while you type the answer, the banner shrinks to one row so the
+stack stays in view. A program on the stack can be stepped from the start with
 `DBUG`, or with Debug in its level's ⋯ menu.
 
 ![A halted program](screenshots/debugging.png)

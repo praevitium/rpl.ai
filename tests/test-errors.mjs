@@ -87,7 +87,7 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
 
 {
   const html = haltedBannerHtml({ kind: 'prompt', prompt: 'Enter R2 in kΩ', programHtml: '« R1 <mark>HALT</mark> »' });
-  assert(html.includes('Enter R2 in kΩ') && html.includes('data-bn="cont"') && html.includes('data-bn="sst"') && html.includes('data-bn="kill"'),
-    'haltedBannerHtml: shows the PROMPT text and Continue, Step and Stop');
+  assert(html.includes('Enter R2 in kΩ') && html.includes('data-bn="cont"') && html.includes('data-bn="sst"') && html.includes('data-bn="into"') && html.includes('data-bn="kill"'),
+    'haltedBannerHtml: shows the PROMPT text and Continue, Step, Step into and Stop');
   assert(haltedBannerHtml({ kind: 'halt', prompt: '<b>' }).includes('&lt;b&gt;'), 'haltedBannerHtml: prompt text is escaped');
 }

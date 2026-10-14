@@ -340,7 +340,8 @@ class App {
     if (!b) return;
     const act = b.dataset.bn;
     if (act === 'dismiss') { this.dismissError(); return; }
-    if (act === 'cont' || act === 'sst' || act === 'kill') { this.entry.execOp({ cont: 'CONT', sst: 'SST', kill: 'KILL' }[act]); return; }
+    const op = { cont: 'CONT', sst: 'SST', into: 'SST↓', kill: 'KILL' }[act];
+    if (op) { this.entry.execOp(op); return; }
     if (act === 'fix') this._runFix(b.dataset.fix, b.dataset.arg);
   }
 
