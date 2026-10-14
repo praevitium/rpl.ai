@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.76 (2026-10-14)
+**Latest release:** v0.6.77 (2026-10-14)
 
 ---
 
@@ -18,6 +18,16 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.77 — 2026-10-14
+
+The installed app no longer keeps a 34 px band empty under the keypad, or
+under the menu bar with the keypad hidden, on a phone. The band lifted the
+old ‹ and › pager keys clear of the home indicator; the one NXT key that
+replaced them in 0.6.44 is big enough to sit at the bottom edge, so only
+the phone's own safe-area inset remains.
 
 ---
 
