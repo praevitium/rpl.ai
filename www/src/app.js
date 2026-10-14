@@ -43,6 +43,7 @@ import {
 } from './rpl/types.js';
 import {
   loadInitialState, adoptStoredState, saveToLocalStorage, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
+  shareLink, sharedSource,
 } from './rpl/persist.js';
 import { giac } from './rpl/cas/giac-engine.mjs';
 import { ChatBot } from './ai/chat-bot.js';
@@ -141,7 +142,17 @@ class App {
     this._installBackButton();
     this._installHaptics();
     this.renderAll();
+    this._openSharedLink();
     if (!this.prefs.tourSeen) setTimeout(() => this.tour.start(), 700);
+  }
+
+  // A shared link only fills the command line, so nothing it carries runs until Enter.
+  _openSharedLink() {
+    const source = sharedSource(location.hash);
+    if (source === null) return;
+    history.replaceState(history.state, '', location.pathname + location.search);
+    this.entry.recall(source);
+    this.toast('Opened a shared value. Check it, then press Enter to put it on the stack.', { key: 'shared' });
   }
 
   renderAll() {
@@ -698,7 +709,11 @@ class App {
         else this.copyText(latex, `Copied level ${level} as LaTeX`);
         return;
       }
-      case 'share': this.shareText(formatSource(value)); return;
+      case 'share': {
+        const text = formatSource(value);
+        this.shareText(text, shareLink(text, location.href));
+        return;
+      }
       case 'download': this.downloadMenu(anchor, `level${level}`, value); return;
       case 'store': this._storePrompt(level, anchor); return;
       case 'ask': this.askAssistant(`Explain what is on level ${level} of my stack: ${formatSource(value)}`); return;
@@ -812,8 +827,8 @@ class App {
     }
   }
 
-  async shareText(text) {
-    try { await navigator.share({ text }); }
+  async shareText(text, url = null) {
+    try { await navigator.share(url ? { text, url } : { text }); }
     catch (e) { if (e.name !== 'AbortError') this.notifyError(`Couldn't share: ${e.message}`); }
   }
 

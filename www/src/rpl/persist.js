@@ -443,6 +443,23 @@ export function downloadValue(name, value, format) {
   return exportTableFile(name, value, format);
 }
 
+const SHARE_PARAM = 'rpl';
+export const SHARE_LINK_MAX = 4000;
+
+/** A link to `page` carrying `source` in its fragment, which never reaches a server; null when too long for a link. */
+export function shareLink(source, page) {
+  if (source.length > SHARE_LINK_MAX) return null;
+  const url = new URL(page);
+  url.hash = new URLSearchParams({ [SHARE_PARAM]: source }).toString();
+  return url.href;
+}
+
+/** The source a shared link carries in `hash`, or null. */
+export function sharedSource(hash) {
+  const source = new URLSearchParams(String(hash ?? '').replace(/^#/, '')).get(SHARE_PARAM);
+  return source && source.length <= SHARE_LINK_MAX ? source : null;
+}
+
 // `sales 2025.csv` becomes sales_2025, `2025.csv` D2025, and a file named
 // after a command gets a trailing `_`.
 export function fileVariableName(filename) {

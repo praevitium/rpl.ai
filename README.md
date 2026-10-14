@@ -210,7 +210,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   in full, a formula or matrix that scrolls both ways; pinch or double-tap to zoom) with Edit, Copy and
   Share under it, and →LIST, DUPN, DRPN
   and KEEP for levels 1 to the one you tapped, and LEVEL to push its number (also on the level's soft keys). Swipe a level left or right to drop it; the
-  toast's Undo brings it back.
+  toast's Undo brings it back. Share sends the value with a link; opening
+  the link starts rpl.ai with the value on the command line, where nothing
+  runs until you press Enter.
   A level too wide for the screen, such as a big matrix, fades at the edge
   it continues past; drag it sideways to read the rest. On a phone the
   command line wraps a long line rather than scrolling it out of sight, and

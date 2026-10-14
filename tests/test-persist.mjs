@@ -22,7 +22,7 @@ import {
 import {
   snapshot, rehydrate, encodeValue, decodeValue, loadInitialState, STORAGE_KEY,
   BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup,
-  saveToLocalStorage, adoptStoredState,
+  saveToLocalStorage, adoptStoredState, shareLink, sharedSource, SHARE_LINK_MAX,
 } from '../www/src/rpl/persist.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import { varRecall } from '../www/src/rpl/state.js';
@@ -838,6 +838,19 @@ function quotaError() {
     else delete globalThis.localStorage;
     resetHome();
   }
+}
+
+{
+  const page = 'https://praevitium.github.io/rpl.ai/#old';
+  for (const source of ["« 1 2 + 'X' STO »", '"a&b=c #x %20"', '[[ 1 2 ][ 3 4 ]]', '`X^2+1`', '1_m/s']) {
+    const link = shareLink(source, page);
+    assert(link.startsWith('https://praevitium.github.io/rpl.ai/#rpl=') && sharedSource(new URL(link).hash) === source,
+      `share link: ${source} comes back from the link's fragment unchanged`);
+  }
+  assert(shareLink('x'.repeat(SHARE_LINK_MAX + 1), page) === null, 'share link: a value too long for a link gets none');
+  assert(sharedSource('') === null && sharedSource('#other=1') === null && sharedSource('#rpl=') === null,
+    'share link: a page without a shared value opens as usual');
+  assert(sharedSource(`#rpl=${'x'.repeat(SHARE_LINK_MAX + 1)}`) === null, 'share link: an overlong shared value is ignored');
 }
 
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');
