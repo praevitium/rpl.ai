@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.89 (2026-10-15)
+**Latest release:** v0.6.90 (2026-10-15)
 
 ---
 
@@ -18,6 +18,25 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.90 — 2026-10-15
+
+Hold the installed app's icon for shortcuts straight to the equation
+writer, the matrix writer, Variables or command search, where the system
+offers app shortcuts (Android, and Chrome or Edge on a computer). Each
+opens rpl.ai at that place; a link can name nothing else.
+
+The equation writer's first opening in a session showed a blank area,
+with no box or caret to say where typing would go, until the first key.
+It now draws the empty formula from the start, as every later opening
+did.
+
+The empty stack's Solve x² − 5x + 6 = 0 and Plot sin x examples work
+with a writer open. Their Enter went to the open writer instead, which
+answered Type an expression first or Type some numbers first. They now
+run on the command line, and the writer keeps what you had typed in it.
 
 ---
 
