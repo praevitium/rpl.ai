@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.90 (2026-10-15)
+**Latest release:** v0.6.91 (2026-10-15)
 
 ---
 
@@ -20,6 +20,23 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.91 — 2026-10-15
+
+Command search remembers the commands you run from it. With nothing
+typed, its last eight come first under Recent commands, newest first, so
+on a phone with the keypad hidden or in minimal view a command you use
+often is two taps away; they keep across sessions.
+
+In Android's split screen, or any window that got shorter after a key
+was typed, the keypad disappeared as if the phone's keyboard had come up,
+and no keyboard came to replace it. Only a field that asks for the phone's
+keyboard now counts, so a shorter window keeps the keypad.
+
+On a phone the status bar takes the colour of the app's top edge in every
+look. It used to follow only the system's dark or light setting, so Paper
+on a dark phone had a dark bar over a light app, and in minimal view it
+now matches the stack.
 
 ## v0.6.90 — 2026-10-15
 
