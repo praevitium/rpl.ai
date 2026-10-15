@@ -252,7 +252,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   shows, its keys type into the writer instead, and when the writer needs
   the room its keys get shorter rather than the bottom row scrolling out of
   reach. While the keyboard is up, the calculator keypad steps aside so the
-  writer stays in view.
+  writer stays in view; a window that is only shorter, as in Android's split
+  screen, keeps the keypad.
 - In landscape, where the keyboard leaves little room, the tabs, hints and
   soft keys also step aside while you type, and the writers' keys move
   beside the formula or matrix, so level 1 and the whole writer stay in
@@ -406,7 +407,9 @@ can share images, share it.
 
 `⌘K` finds commands (by name, description or topic), settings, modes, menus,
 variables and constants. For quick commands, the selected result shows what
-it would leave on your stack; `→` opens its reference page.
+it would leave on your stack; `→` opens its reference page. With nothing
+typed, the commands you last ran from search come first, so on a phone
+without the keypad a command you use often is two taps away.
 
 ![Search with a result preview](screenshots/palette.png)
 
@@ -455,7 +458,8 @@ stack stays in view. A program on the stack can be stepped from the start with
 ### Three looks, and a Minimal view
 
 Graphite and Paper follow your system's dark or light setting; Classic LCD
-reimagines the original display. Minimal view strips everything back to the
+reimagines the original display. On a phone the status bar takes the colour
+of the look you pick. Minimal view strips everything back to the
 status line, the stack and the command line (`⇧⌘F`); a setting keeps the
 soft keys. On a phone it has a menu of its own (see [On a phone](#on-a-phone)).
 
