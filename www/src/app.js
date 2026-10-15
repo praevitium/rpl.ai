@@ -634,10 +634,16 @@ class App {
   _wireDisplay() {
     const d = this.display;
     d.emptyHtml = `<div class="st-empty"><h5>The stack is empty</h5><p>Type a number and press Enter. Commands take their arguments from the stack and leave their results on it.</p><div class="keysline"><span class="kc">2</span> <span class="kc">Enter</span> <span class="kc">3</span> <span class="kc">+</span> → 5</div><div class="chipset" style="justify-content:center"><button type="button" class="chip" data-empty-act="equation">${icon('fx', 'sm')}Write an equation</button><button type="button" class="chip" data-empty-act="solve">Solve x² − 5x + 6 = 0</button><button type="button" class="chip" data-empty-act="plot">${icon('plot', 'sm')}Plot sin x</button><button type="button" class="chip" data-empty-act="tutor">${icon('cap', 'sm')}Walk me through a problem</button></div></div>`;
+    // An example line runs on the command line; with a writer open, Enter would commit the writer instead.
+    const runExample = (line) => {
+      if (this.inputMode !== 'rpl') this.setInputMode('rpl');
+      this.entry.recall(line);
+      this.commitEntry();
+    };
     d.onEmptyAction = (act) => {
       if (act === 'equation') this.setInputMode('equation');
-      else if (act === 'solve') { this.entry.recall('`X^2-5*X+6=0` `X` SOLVE'); this.commitEntry(); }
-      else if (act === 'plot') { this.entry.recall('`SIN(X)` FUNCTION'); this.commitEntry(); }
+      else if (act === 'solve') runExample('`X^2-5*X+6=0` `X` SOLVE');
+      else if (act === 'plot') runExample('`SIN(X)` FUNCTION');
       else if (act === 'tutor') this.runAction('assistant.tutor');
     };
     d.rowActionsHtml = (level, value) => `<div class="st-acts" role="toolbar" aria-label="Level ${level} actions"><button type="button" data-row-act="edit" title="Edit (Enter)">${icon('edit', 'sm')}Edit</button><button type="button" data-row-act="pick" title="Copy it to level 1 (PICK)">Pick</button><button type="button" data-row-act="roll" title="Move it to level 1 (ROLL)">Roll</button>${isSymbolic(value) ? `<button type="button" data-row-act="plot" title="Plot it">${icon('plot', 'sm')}</button>` : ''}<button type="button" data-row-act="drop" title="Drop it (⌫)" aria-label="Drop">${icon('trash', 'sm')}</button><button type="button" data-row-act="more" title="More actions" aria-label="More actions">${icon('more', 'sm')}</button></div>`;

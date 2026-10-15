@@ -1489,3 +1489,10 @@ setAngle('RAD');
   const ctor = eqw.slice(eqw.indexOf('  constructor({ app } = {}) {'), eqw.indexOf('\n  load(value) {'));
   assert(/this\._render\(\);\s*\}\s*$/.test(ctor), 'equation writer: its first opening draws the empty box and caret, as every later one does (the canvas used to stay blank until the first key)');
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/const runExample = \(line\) => \{\s*if \(this\.inputMode !== 'rpl'\) this\.setInputMode\('rpl'\);/.test(appSrc)
+    && /act === 'solve'\) runExample\(/.test(appSrc) && /act === 'plot'\) runExample\(/.test(appSrc),
+    'empty stack: the Solve and Plot examples run on the command line even with a writer open (Enter used to commit the empty writer: "Type an expression first")');
+}
