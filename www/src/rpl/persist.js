@@ -460,6 +460,18 @@ export function sharedSource(hash) {
   return source && source.length <= SHARE_LINK_MAX ? source : null;
 }
 
+/** What another app shared to rpl.ai through the manifest's share_target, from the page's `search`, or null: the value of a shared rpl.ai link, else the text. */
+export function sharedText(search) {
+  const params = new URLSearchParams(String(search ?? ''));
+  const [url, text, title] = ['url', 'text', 'title'].map((key) => (params.get(key) ?? '').trim());
+  for (const fragment of `${url} ${text}`.match(/#\S+/g) ?? []) {
+    const source = sharedSource(fragment);
+    if (source !== null) return source;
+  }
+  const shared = text || title || url;
+  return shared && shared.length <= SHARE_LINK_MAX ? shared : null;
+}
+
 // `sales 2025.csv` becomes sales_2025, `2025.csv` D2025, and a file named
 // after a command gets a trailing `_`.
 export function fileVariableName(filename) {

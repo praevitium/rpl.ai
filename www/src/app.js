@@ -43,7 +43,7 @@ import {
 } from './rpl/types.js';
 import {
   loadInitialState, adoptStoredState, saveToLocalStorage, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
-  shareLink, sharedSource,
+  shareLink, sharedSource, sharedText,
 } from './rpl/persist.js';
 import { giac } from './rpl/cas/giac-engine.mjs';
 import { ChatBot } from './ai/chat-bot.js';
@@ -146,11 +146,13 @@ class App {
     if (!this.prefs.tourSeen) setTimeout(() => this.tour.start(), 700);
   }
 
-  // A shared link only fills the command line, so nothing it carries runs until Enter.
+  // A shared link, or text another app shares to rpl.ai, only fills the command
+  // line, so nothing it carries runs until Enter.
   _openSharedLink() {
-    const source = sharedSource(location.hash);
+    const fromLink = sharedSource(location.hash);
+    const source = fromLink ?? sharedText(location.search);
     if (source === null) return;
-    history.replaceState(history.state, '', location.pathname + location.search);
+    history.replaceState(history.state, '', location.pathname + (fromLink === null ? '' : location.search));
     this.entry.recall(source);
     this.toast('Opened a shared value. Check it, then press Enter to put it on the stack.', { key: 'shared' });
   }

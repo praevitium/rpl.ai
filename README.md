@@ -213,9 +213,12 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   and KEEP for levels 1 to the one you tapped, and LEVEL to push its number (also on the level's soft keys). Swipe a level left or right to drop it; the
   toast's Undo brings it back. Share sends the value with a link; opening
   the link starts rpl.ai with the value on the command line, where nothing
-  runs until you press Enter.
+  runs until you press Enter. On Android the installed app is also in other
+  apps' Share menus: text or an rpl.ai link shared to it lands on the
+  command line the same way.
   A level too wide for the screen, such as a big matrix, fades at the edge
-  it continues past; drag it sideways to read the rest. On a phone the
+  it continues past; drag it sideways to read the rest, or swipe its level
+  number to drop it. On a phone the
   command line wraps a long line rather than scrolling it out of sight, and
   in minimal view an amber pencil on the status line (with the level number
   for a stack level) says a level or variable is being edited, so Enter

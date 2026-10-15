@@ -22,7 +22,7 @@ import {
 import {
   snapshot, rehydrate, encodeValue, decodeValue, loadInitialState, STORAGE_KEY,
   BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup,
-  saveToLocalStorage, adoptStoredState, shareLink, sharedSource, SHARE_LINK_MAX,
+  saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX,
 } from '../www/src/rpl/persist.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import { varRecall } from '../www/src/rpl/state.js';
@@ -851,6 +851,16 @@ function quotaError() {
   assert(sharedSource('') === null && sharedSource('#other=1') === null && sharedSource('#rpl=') === null,
     'share link: a page without a shared value opens as usual');
   assert(sharedSource(`#rpl=${'x'.repeat(SHARE_LINK_MAX + 1)}`) === null, 'share link: an overlong shared value is ignored');
+  const link = shareLink('« 1 2 + »', page);
+  const search = (params) => `?${new URLSearchParams(params)}`;
+  assert(sharedText(search({ text: ' 3.14159 ' })) === '3.14159', 'share target: text shared from another app comes to the command line, trimmed');
+  assert(sharedText(search({ title: 'Note', text: '`X^2+1`' })) === '`X^2+1`' && sharedText(search({ title: '12.5' })) === '12.5',
+    'share target: the text wins over the title, which stands in when there is no text');
+  assert(sharedText(search({ text: '« 1 2 + »', url: link })) === '« 1 2 + »' && sharedText(search({ text: `See ${link}` })) === '« 1 2 + »',
+    'share target: an rpl.ai share link, as the url or inside the text, gives the value it carries');
+  assert(sharedText('') === null && sharedText('?utm_source=x') === null && sharedText(search({ text: '  ' })) === null,
+    'share target: a page opened without shared text opens as usual');
+  assert(sharedText(search({ text: 'x'.repeat(SHARE_LINK_MAX + 1) })) === null, 'share target: overlong shared text is ignored');
 }
 
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');

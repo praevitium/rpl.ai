@@ -70,6 +70,9 @@ assert(![...files].some((f) => /(^|\/)(README|LICENSE)/i.test(f) || f.endsWith('
     assert(files.has(ic.src) && size === ic.sizes, `manifest: ${ic.src} is precached and really ${ic.sizes}`);
   }
   assert(manifest.icons.some((i) => i.purpose === 'maskable'), 'manifest: has a maskable icon');
+  const target = manifest.share_target;
+  assert(target?.action === './' && target.method === 'GET' && target.params?.text === 'text' && target.params?.url === 'url',
+    'manifest: the installed app takes text shared from other apps as ./?text=…, which the service worker serves from its cache (ignoreSearch)');
 }
 
 {
