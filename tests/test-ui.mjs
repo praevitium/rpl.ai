@@ -1471,3 +1471,9 @@ setAngle('RAD');
   const { TOUR_STEPS } = await import('../www/src/ui/tour.js');
   assert(/swipe along the keys/.test(TOUR_STEPS.find((s) => s.title === 'Soft keys')?.touch ?? ''), 'tour: on a phone the soft-key step teaches the swipe that turns the page, beside NXT');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/\.app \.st-row\[data-key\] \.st-val:not\(\.more-l, \.more-r\) \{ touch-action: pan-y; \}/.test(css),
+    'stack, touch: a swipe that starts on a level\'s value drops it; only a value wider than its row keeps the sideways swipe to scroll');
+}
