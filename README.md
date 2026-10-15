@@ -229,7 +229,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   stays on one line, and a long name such as `ISPRIME?` breaks into even
   lines instead of being cut off. NXT at the end of the soft keys turns the
   page and comes back round to the first, and with left shift it reads PREV
-  and goes back, as on the HP.
+  and goes back, as on the HP. A finger swiped left along the soft keys
+  turns to the next page and swiped right goes back; a soft key acts as the
+  finger lifts, so a swipe presses nothing.
 - The equation writer has its own row of buttons (move, fraction, power,
   root and parentheses), and so does the matrix writer (previous cell, next
   cell and next row), each with ⌫ and Enter. The matrix writer pushes only

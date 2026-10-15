@@ -1441,3 +1441,28 @@ setAngle('RAD');
   assert(/\.lay-sheet:not\(:empty\) ~ #toasts \{ top: auto; bottom:/.test(css) && /id="laySheet"><\/div>\s*<div class="toasts" id="toasts"/.test(html),
     'toasts: while a sheet is open they sit at the bottom, clear of its title and page tabs, in every view (an id outranks minimal view\'s top rules)');
 }
+
+{
+  const { MenuBar } = await import('../www/src/ui/menubar.js');
+  const on = {};
+  const el = { addEventListener: (type, fn) => { (on[type] ??= []).push(fn); } };
+  const calls = [];
+  const app = { menuView: () => ({ slots: [{ label: 'DUP' }] }), nextMenuPage: () => calls.push('next'), prevMenuPage: () => calls.push('prev'), pressSoftKey: (i) => calls.push(`press ${i}`), clearPreview: () => {} };
+  new MenuBar({ el, app });
+  const sk = { dataset: { i: '0' }, disabled: false, classList: { add() {}, remove() {} } };
+  const target = { closest: (sel) => (sel === '.mb-keys' ? {} : sel.startsWith('.sk') ? sk : null) };
+  const fire = (type, x, y = 100) => { for (const fn of on[type] ?? []) fn({ type, pointerType: 'touch', pointerId: 1, button: 0, clientX: x, clientY: y, target, preventDefault() {} }); };
+  fire('pointerdown', 200);
+  assert(!calls.length, 'soft keys, touch: a finger presses a key as it lifts, not as it lands');
+  fire('pointerup', 202);
+  assert(calls.join() === 'press 0', 'soft keys, touch: a tap presses the key');
+  calls.length = 0;
+  fire('pointerdown', 200); fire('pointermove', 150); fire('pointermove', 100); fire('pointerup', 90);
+  assert(calls.join() === 'next', 'soft keys, touch: a swipe left turns to the next page, once, and presses nothing');
+  calls.length = 0;
+  fire('pointerdown', 100); fire('pointermove', 150); fire('pointerup', 150);
+  assert(calls.join() === 'prev', 'soft keys, touch: a swipe right turns back a page');
+  calls.length = 0;
+  fire('pointerdown', 100); fire('pointermove', 110, 160); fire('pointerup', 110, 160);
+  assert(!calls.length, 'soft keys, touch: a mostly vertical drag neither turns the page nor presses');
+}

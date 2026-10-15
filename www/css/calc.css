@@ -1965,6 +1965,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   .st-acts { position: static; transform: none; grid-column: 1 / -1; justify-content: space-between; margin-top: 2px; box-shadow: none; }
   /* A held finger opens a level's menu (Copy is there) or a key's, or picks up a variable, not a text selection. */
   .st-row, .sk, .vr { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  .mb-keys { touch-action: none; }
   .vr .grip { touch-action: none; }
   .st-acts button { min-width: 40px; min-height: 40px; justify-content: center; font-size: 13px; }
   .mini, .icon-btn.sm { width: 40px; height: 40px; }

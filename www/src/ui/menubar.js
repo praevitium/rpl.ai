@@ -3,6 +3,7 @@ import { escapeHtml, LONG_PRESS_MS } from './display.js';
 import { MENU_GROUPS, menuById } from './menus.js';
 
 const PREVIEW_HOVER_MS = 220;
+const SWIPE_PX = 32;
 
 // Greek letters run wider than the mono face's Latin ones.
 const letterWidth = (s) => [...s].reduce((n, c) => n + (/[Α-Ωα-ω]/.test(c) ? 1.2 : 1), 0);
@@ -40,21 +41,15 @@ export class MenuBar {
     });
     el.addEventListener('focusout', () => this._endPreview());
     el.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'touch' && e.target.closest('.mb-keys')) { e.preventDefault(); this._touchStart(e); return; }
       const sk = e.target.closest('.sk[data-i]');
       if (!sk || e.button !== 0 || sk.disabled) return;
       e.preventDefault();
-      if (e.pointerType === 'touch' && this.app.menuView().slots[sk.dataset.i]?.onHold) this._startHold(sk, e);
-      else this._press(sk);
+      this._press(sk);
     });
-    el.addEventListener('pointermove', (e) => {
-      if (this._hold && Math.hypot(e.clientX - this._hold.x, e.clientY - this._hold.y) > 10) this._endHold();
-    });
-    el.addEventListener('pointerup', () => {
-      const sk = this._hold?.sk;
-      this._endHold();
-      if (sk) this._press(sk);
-    });
-    el.addEventListener('pointercancel', () => this._endHold());
+    el.addEventListener('pointermove', (e) => this._touchMove(e));
+    el.addEventListener('pointerup', (e) => this._touchUp(e));
+    el.addEventListener('pointercancel', () => this._touchEnd());
     el.addEventListener('contextmenu', (e) => { if (e.target.closest('.sk[data-i]')) e.preventDefault(); });
     el.addEventListener('click', (e) => {
       const sk = e.target.closest('.sk[data-i]');
@@ -85,20 +80,43 @@ export class MenuBar {
     else app.nextMenuPage();
   }
 
-  // A key with more to offer (a BRCH word's whole structures) acts on a quick tap and offers the rest to a held finger.
-  _startHold(sk, e) {
-    this._endHold();
-    const i = Number(sk.dataset.i);
-    const timer = setTimeout(() => {
-      this._hold = null;
-      this.app.menuView().slots[i]?.onHold(sk);
-    }, LONG_PRESS_MS);
-    this._hold = { sk, x: e.clientX, y: e.clientY, timer };
+  // A finger presses a soft key as it lifts, so it can instead swipe along the row to turn the page (left for NXT,
+  // right for PREV) or hold a key with more to offer (a BRCH word's whole structures).
+  _touchStart(e) {
+    this._touchEnd();
+    const sk = e.target.closest('.sk[data-i]:not(:disabled)');
+    const t = { id: e.pointerId, sk, x: e.clientX, y: e.clientY, moved: false, done: false };
+    const i = Number(sk?.dataset.i);
+    if (sk && this.app.menuView().slots[i]?.onHold) {
+      t.timer = setTimeout(() => {
+        t.done = true;
+        this.app.menuView().slots[i]?.onHold(sk);
+      }, LONG_PRESS_MS);
+    }
+    this._touch = t;
   }
 
-  _endHold() {
-    clearTimeout(this._hold?.timer);
-    this._hold = null;
+  _touchMove(e) {
+    const t = this._touch;
+    if (t?.id !== e.pointerId || t.done) return;
+    const dx = e.clientX - t.x, dy = e.clientY - t.y;
+    if (Math.hypot(dx, dy) > 10) { t.moved = true; clearTimeout(t.timer); }
+    if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < 2 * Math.abs(dy)) return;
+    t.done = true;
+    if (dx < 0) this.app.nextMenuPage();
+    else this.app.prevMenuPage();
+  }
+
+  _touchUp(e) {
+    const t = this._touch;
+    if (t?.id !== e.pointerId) return;
+    this._touchEnd();
+    if (t.sk && !t.moved && !t.done) this._press(t.sk);
+  }
+
+  _touchEnd() {
+    clearTimeout(this._touch?.timer);
+    this._touch = null;
   }
 
   _press(sk) {
