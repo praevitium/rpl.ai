@@ -390,10 +390,10 @@ class App {
   toast(message, opts) { this.toasts.show(message, opts); }
 
   // A toast's Undo reverses its own step, never the text being typed, and
-  // only while that step is still the latest one.
+  // only while that step is still the latest one, so each replaces the last.
   undoToast(message) {
     const mark = this.stack.undoMark();
-    this.toast(message, { action: 'Undo', onAction: () => {
+    this.toast(message, { key: 'undo', action: 'Undo', onAction: () => {
       if (this.stack.undoMark() === mark) this._undoStackStep();
       else this.notifyError('Something has changed since, so that Undo no longer applies. Use Undo to step back.');
     } });

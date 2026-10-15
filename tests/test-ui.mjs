@@ -1477,3 +1477,9 @@ setAngle('RAD');
   assert(/\.app \.st-row\[data-key\] \.st-val:not\(\.more-l, \.more-r\) \{ touch-action: pan-y; \}/.test(css),
     'stack, touch: a swipe that starts on a level\'s value drops it; only a value wider than its row keeps the sideways swipe to scroll');
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/undoToast\(message\) \{[^}]*key: 'undo'/.test(appSrc),
+    'undo notes: each replaces the one before (an older one\'s Undo no longer applies), so swiping away three levels leaves one note over the stack, not three');
+}
