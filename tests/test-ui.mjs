@@ -1498,3 +1498,11 @@ setAngle('RAD');
     && /act === 'solve'\) runExample\(/.test(appSrc) && /act === 'plot'\) runExample\(/.test(appSrc),
     'empty stack: the Solve and Plot examples run on the command line even with a writer open (Enter used to commit the empty writer: "Type an expression first")');
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const applyPrefs = appSrc.slice(appSrc.indexOf('  _applyPrefs() {'), appSrc.indexOf('\n  setTheme('));
+  assert(/applyThemeColor\(\);\s*\}\s*$/.test(applyPrefs) && /matchMedia\('\(prefers-color-scheme: dark\)'\)\.addEventListener\('change', applyThemeColor\)/.test(appSrc)
+    && /dataset\.view === 'minimal' \? '\.work' : '#appbar'/.test(appSrc),
+    'status bar: theme-color takes the app\'s top edge (the app bar, or minimal view\'s stack) for every theme, and again when the system scheme flips (it used to follow only the system, so Paper on a dark phone had a dark bar)');
+}

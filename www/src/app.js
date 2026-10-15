@@ -140,6 +140,7 @@ class App {
     installCommandHover(this.display.stackView, stackWordAtEvent, { onOpenReference: openReference });
 
     this._applyPrefs();
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyThemeColor);
     this._applyPhoneKeyboard();
     this.showMenu(this.prefs.menu ?? (varOrder().length ? 'VARS' : 'STACK'), { remember: false });
     if (this.prefs.drawer) this.drawers.open(this.prefs.drawer);
@@ -259,6 +260,7 @@ class App {
     else root.dataset.stackSize = this.prefs.stackSize;
     root.dataset.panelsSide = this.prefs.panelsSide;
     root.dataset.keypadSide = this.prefs.keypadSide;
+    applyThemeColor();
   }
 
   setTheme(theme) {
@@ -1801,6 +1803,14 @@ function modeCommand(mode, option) {
   if (mode.id === 'complex') return `-103 ${option.value === 'CMPLX' ? 'SF' : 'CF'}`;
   if (mode.id === 'base') return binaryBaseLabel(option.value);
   return option.value;
+}
+
+// A phone's status bar and the browser's toolbar take the colour of the app's top edge, whatever the
+// theme: the app bar, or minimal view's stack. index.html's pair only knows the system's dark and light.
+function applyThemeColor() {
+  const top = document.querySelector(document.documentElement.dataset.view === 'minimal' ? '.work' : '#appbar');
+  const color = getComputedStyle(top).backgroundColor;
+  for (const meta of document.querySelectorAll('meta[name="theme-color"]')) meta.content = color;
 }
 
 function customMenuSource(target) {
