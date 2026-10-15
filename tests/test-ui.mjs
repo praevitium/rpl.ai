@@ -1483,3 +1483,9 @@ setAngle('RAD');
   assert(/undoToast\(message\) \{[^}]*key: 'undo'/.test(appSrc),
     'undo notes: each replaces the one before (an older one\'s Undo no longer applies), so swiping away three levels leaves one note over the stack, not three');
 }
+
+{
+  const eqw = readFileSync(new URL('../www/src/ui/equation-editor.js', import.meta.url), 'utf8');
+  const ctor = eqw.slice(eqw.indexOf('  constructor({ app } = {}) {'), eqw.indexOf('\n  load(value) {'));
+  assert(/this\._render\(\);\s*\}\s*$/.test(ctor), 'equation writer: its first opening draws the empty box and caret, as every later one does (the canvas used to stay blank until the first key)');
+}

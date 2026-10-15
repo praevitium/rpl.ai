@@ -1807,6 +1807,7 @@ export class EquationEditor {
     document.addEventListener('copy', (e) => this._onCopy(e, false));
     document.addEventListener('cut', (e) => this._onCopy(e, true));
     document.addEventListener('paste', (e) => this._onPaste(e));
+    this._render();
   }
 
   load(value) {
