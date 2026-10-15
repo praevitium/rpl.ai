@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.88 (2026-10-14)
+**Latest release:** v0.6.89 (2026-10-15)
 
 ---
 
@@ -18,6 +18,26 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.89 — 2026-10-15
+
+A stack level swipes away from wherever the finger starts on it, its value
+included. Since levels too wide for the screen learnt to scroll sideways,
+the browser had taken any sideways swipe that began on a value, so only a
+swipe from the level number or the gap beside it dropped the level. A
+value wider than its row, such as a big matrix, still scrolls under a
+finger; swipe its level number to drop it.
+
+Each Undo note replaces the one before it. Swiping away three levels on a
+phone left three notes over the top of the stack, and only the newest
+one's Undo still applied.
+
+On Android the installed app now appears in other apps' Share menus. Text
+shared to rpl.ai, or an rpl.ai link, opens on the command line, where
+nothing runs until you press Enter, as with a share link. The installed
+app reads it from its own cache, so the shared text never reaches a server.
 
 ---
 
