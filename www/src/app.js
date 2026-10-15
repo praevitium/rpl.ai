@@ -52,6 +52,13 @@ const $ = (id) => document.getElementById(id);
 
 const MODIFIER_KINDS = new Set(['shiftL', 'shiftR', 'alpha']);
 const DOUBLE_PRESS_MS = 300;
+// The installed app's icon shortcuts (the manifest's ./?open=…); a link can name nothing else.
+const APP_SHORTCUTS = new Map([
+  ['equation', (app) => app.setInputMode('equation')],
+  ['matrix', (app) => app.setInputMode('matrix')],
+  ['vars', (app) => app.drawers.open('vars')],
+  ['search', (app) => app.palette.open()],
+]);
 
 class App {
   constructor() {
@@ -143,6 +150,7 @@ class App {
     this._installHaptics();
     this.renderAll();
     this._openSharedLink();
+    this._openShortcut();
     if (!this.prefs.tourSeen) setTimeout(() => this.tour.start(), 700);
   }
 
@@ -155,6 +163,13 @@ class App {
     history.replaceState(history.state, '', location.pathname + (fromLink === null ? '' : location.search));
     this.entry.recall(source);
     this.toast('Opened a shared value. Check it, then press Enter to put it on the stack.', { key: 'shared' });
+  }
+
+  _openShortcut() {
+    const open = APP_SHORTCUTS.get(new URLSearchParams(location.search).get('open'));
+    if (!open) return;
+    history.replaceState(history.state, '', location.pathname);
+    open(this);
   }
 
   renderAll() {

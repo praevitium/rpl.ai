@@ -73,6 +73,11 @@ assert(![...files].some((f) => /(^|\/)(README|LICENSE)/i.test(f) || f.endsWith('
   const target = manifest.share_target;
   assert(target?.action === './' && target.method === 'GET' && target.params?.text === 'text' && target.params?.url === 'url',
     'manifest: the installed app takes text shared from other apps as ./?text=…, which the service worker serves from its cache (ignoreSearch)');
+  const appSrc = readFileSync(join(WWW, 'src/app.js'), 'utf8');
+  const opens = (manifest.shortcuts ?? []).map((s) => new URL(s.url, 'https://x/').searchParams.get('open'));
+  assert(opens.join() === 'equation,matrix,vars,search' && opens.every((o) => appSrc.includes(`['${o}', (app) =>`))
+    && manifest.shortcuts.every((s) => s.icons?.every((i) => files.has(i.src))),
+    'manifest: the app icon\'s shortcuts open the equation writer, the matrix writer, Variables and command search, each one the app knows, with a precached icon');
 }
 
 {

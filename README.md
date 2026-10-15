@@ -215,7 +215,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   the link starts rpl.ai with the value on the command line, where nothing
   runs until you press Enter. On Android the installed app is also in other
   apps' Share menus: text or an rpl.ai link shared to it lands on the
-  command line the same way.
+  command line the same way. Hold the installed app's icon for shortcuts
+  straight to the equation writer, the matrix writer, Variables or command
+  search (Android, and Chrome or Edge on a computer).
   A level too wide for the screen, such as a big matrix, fades at the edge
   it continues past; drag it sideways to read the rest, or swipe its level
   number to drop it. On a phone the
