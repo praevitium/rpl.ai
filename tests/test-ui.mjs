@@ -1506,3 +1506,22 @@ setAngle('RAD');
     && /dataset\.view === 'minimal' \? '\.work' : '#appbar'/.test(appSrc),
     'status bar: theme-color takes the app\'s top edge (the app bar, or minimal view\'s stack) for every theme, and again when the system scheme flips (it used to follow only the system, so Paper on a dark phone had a dark bar)');
 }
+
+{
+  const { normalizeUiPrefs } = await import('../www/src/ui/ui-prefs.js');
+  const kept = normalizeUiPrefs({ recentCommands: ['SWAP', 'SQ', 'SWAP', 7, '', 'A B', '→NUM', 'a', 'b', 'c', 'd', 'e', 'f'] }).recentCommands;
+  assert(JSON.stringify(kept) === JSON.stringify(['SWAP', 'SQ', '→NUM', 'a', 'b', 'c', 'd', 'e']) && normalizeUiPrefs({ recentCommands: 'SWAP' }).recentCommands.length === 0,
+    'normalizeUiPrefs: recent commands keep eight distinct names, newest first, and drop junk');
+  const { Palette } = await import('../www/src/ui/palette.js');
+  let prefs = normalizeUiPrefs({ minimal: true, recentCommands: ['SQ', 'NOSUCHCMD', 'SOLVE'] });
+  const ran = [];
+  const app = { get prefs() { return prefs; }, setPrefs: (patch) => { prefs = normalizeUiPrefs({ ...prefs, ...patch }); }, runCommandFromUI: (n) => ran.push(n), runAction: () => {}, drawers: {} };
+  const palette = new Palette({ host: null, app });
+  const titles = (groups) => groups.map(([title, items]) => `${title}: ${items.map((it) => it.title).join(' ')}`);
+  const [recent, commands] = titles(palette._items(''));
+  assert(recent === 'Recent commands: SQ SOLVE' && commands.startsWith('Commands: FACTOR DERIV'),
+    'command search: with nothing typed the commands run from it come first, without repeating in the starter list (unknown names are skipped)');
+  palette._items('').find(([title]) => title === 'Commands')[1].find((it) => it.title === 'DERIV').run();
+  assert(ran.join() === 'DERIV' && prefs.recentCommands.slice(0, 3).join() === 'DERIV,SQ,NOSUCHCMD', 'command search: a command run from it becomes the most recent');
+  assert(!palette._items('sw').some(([title]) => title === 'Recent commands'), 'command search: a typed query shows matches, not the recent list');
+}

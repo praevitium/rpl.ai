@@ -12,6 +12,7 @@ const DRAWER_IDS = Object.freeze(['assistant', 'catalog', 'vars', 'history', 'pl
 const HISTORY_SORTS = Object.freeze(['newest', 'oldest']);
 const ASSISTANT_MODES = Object.freeze(['ask', 'tutor']);
 export const TUTOR_STYLES = Object.freeze(['socratic', 'direct']);
+const RECENT_COMMANDS_MAX = 8;
 
 export const DEFAULT_UI_PREFS = Object.freeze({
   theme: 'auto',
@@ -32,6 +33,7 @@ export const DEFAULT_UI_PREFS = Object.freeze({
   assistantMode: 'ask',
   tutorStyle: 'socratic',
   tourSeen: false,
+  recentCommands: Object.freeze([]),
 });
 
 const LEGACY_DRAWER_OF_TAB = Object.freeze({
@@ -68,6 +70,9 @@ export function normalizeUiPrefs(raw) {
   if (ASSISTANT_MODES.includes(raw.assistantMode)) p.assistantMode = raw.assistantMode;
   if (TUTOR_STYLES.includes(raw.tutorStyle)) p.tutorStyle = raw.tutorStyle;
   if (typeof raw.tourSeen === 'boolean') p.tourSeen = raw.tourSeen;
+  if (Array.isArray(raw.recentCommands)) {
+    p.recentCommands = [...new Set(raw.recentCommands.filter((n) => typeof n === 'string' && /^\S{1,24}$/.test(n)))].slice(0, RECENT_COMMANDS_MAX);
+  }
   return p;
 }
 

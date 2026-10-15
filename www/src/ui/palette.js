@@ -17,6 +17,7 @@ const PALETTE_ACTIONS = Object.freeze([
 ]);
 
 const RESULT_CAP = 8;
+const STARTER_COMMANDS = Object.freeze(['SOLVE', 'FACTOR', 'DERIV', 'INTEG', 'CONVERT', 'ROLL', 'PICK', 'STO']);
 
 export function highlightMatches(text, query) {
   const segs = highlightSegments(text, matchPositions(query, text));
@@ -109,19 +110,22 @@ export class Palette {
   _items(query) {
     const q = query.trim();
     const groups = [];
-    const commands = q
-      ? searchCommands(q, { names: allOps(), entries: this.reference, categories: CATEGORIES, limit: RESULT_CAP })
-      : ['SOLVE', 'FACTOR', 'DERIV', 'INTEG', 'CONVERT', 'ROLL', 'PICK', 'STO'].map((name) => ({ name }));
-    groups.push(['Commands', commands.map(({ name }) => {
+    const commandRow = ({ name }) => {
       const entry = this.reference ? findReferenceEntry(this.reference, name) : null;
       const sig = entry ? signatureOf(entry) : '';
       return {
         kind: 'command', title: name, mono: true, icon: 'chr', reference: true,
         detail: [sig, entry ? shortDescription(entry, 90) : ''].filter(Boolean).join(' · '),
-        run: () => this.app.runCommandFromUI(name),
+        run: () => { this._remember(name); this.app.runCommandFromUI(name); },
         open: () => this.app.drawers.showReference(name),
       };
-    })]);
+    };
+    const recent = q ? [] : this.app.prefs.recentCommands.filter((name) => allOps().includes(name));
+    if (recent.length) groups.push(['Recent commands', recent.map((name) => commandRow({ name }))]);
+    const commands = q
+      ? searchCommands(q, { names: allOps(), entries: this.reference, categories: CATEGORIES, limit: RESULT_CAP })
+      : STARTER_COMMANDS.filter((name) => !recent.includes(name)).map((name) => ({ name }));
+    groups.push(['Commands', commands.map(commandRow)]);
     const scored = (items) => items
       .map((it) => ({ ...it, score: q ? Math.max(textScore(q, it.title), it.keywords ? textScore(q, it.keywords) - 100 : -1) : 0 }))
       .filter((it) => !q || it.score > 0)
@@ -202,6 +206,11 @@ export class Palette {
       if (preview) preview.textContent = on ? this.app.previewText(this.rows[this.index].title) : '';
       if (on) row.scrollIntoView({ block: 'nearest' });
     });
+  }
+
+  // Search is how a phone without the keypad reaches most commands, so the ones it ran come first next time.
+  _remember(name) {
+    this.app.setPrefs({ recentCommands: [name, ...this.app.prefs.recentCommands.filter((n) => n !== name)] });
   }
 
   _run(i, openReference) {
