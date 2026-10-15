@@ -1434,3 +1434,10 @@ setAngle('RAD');
   const appbar = readFileSync(new URL('../www/src/ui/appbar.js', import.meta.url), 'utf8');
   assert((appbar.match(/digitsHtml\(/g) ?? []).length === 3, 'number format: the all-modes menu shows the same digit grid as the number format menu, so a phone in normal view can pick FIX 5');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const html = readFileSync(new URL('../www/index.html', import.meta.url), 'utf8');
+  assert(/\.lay-sheet:not\(:empty\) ~ #toasts \{ top: auto; bottom:/.test(css) && /id="laySheet"><\/div>\s*<div class="toasts" id="toasts"/.test(html),
+    'toasts: while a sheet is open they sit at the bottom, clear of its title and page tabs, in every view (an id outranks minimal view\'s top rules)');
+}

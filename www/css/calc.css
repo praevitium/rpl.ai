@@ -783,6 +783,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 }
 
 .toasts { position: absolute; left: 50%; top: 58px; transform: translateX(-50%); z-index: var(--z-toast); display: grid; gap: 6px; justify-items: center; pointer-events: none; width: max-content; max-width: 92%; }
+/* Over an open sheet a note would cover its title and page tabs, so it sits at the bottom instead. */
+.lay-sheet:not(:empty) ~ #toasts { top: auto; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 .toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; background: var(--ink); color: var(--bg); border-radius: 10px; padding: 8px 8px 8px 12px; font: 500 12.5px/1.3 var(--font-ui); box-shadow: var(--shadow-2); animation: bn-in .2s; }
 .toast.err { background: var(--danger); color: #fff; }
 .toast button { border: 0; background: color-mix(in oklab, var(--bg) 18%, transparent); border-radius: 6px; padding: 5px 8px; font: 600 11.5px/1 var(--font-ui); }
