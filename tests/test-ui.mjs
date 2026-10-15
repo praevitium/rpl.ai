@@ -1466,3 +1466,8 @@ setAngle('RAD');
   fire('pointerdown', 100); fire('pointermove', 110, 160); fire('pointerup', 110, 160);
   assert(!calls.length, 'soft keys, touch: a mostly vertical drag neither turns the page nor presses');
 }
+
+{
+  const { TOUR_STEPS } = await import('../www/src/ui/tour.js');
+  assert(/swipe along the keys/.test(TOUR_STEPS.find((s) => s.title === 'Soft keys')?.touch ?? ''), 'tour: on a phone the soft-key step teaches the swipe that turns the page, beside NXT');
+}
