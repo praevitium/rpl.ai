@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.87 (2026-10-14)
+**Latest release:** v0.6.88 (2026-10-14)
 
 ---
 
@@ -18,6 +18,23 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.88 — 2026-10-14
+
+Swipe a finger along the soft keys to turn the page: to the left for the
+next page, as NXT does, and to the right for the one before, as PREV does,
+coming round at either end. On a touch screen a soft key now acts as the
+finger lifts rather than as it lands, so a swipe that starts on a key
+presses nothing; a tap runs the key as before, and a key with more to
+offer still offers it to a held finger. The tour's soft-key step mentions
+the swipe on a phone.
+
+While a sheet such as Settings, VIEW or About is open, notes appear at the
+bottom of the screen. On a phone they used to land across the sheet's
+title and page tabs, so an error from Settings › Data hid Appearance,
+Assistant and Data until it faded.
 
 ---
 
