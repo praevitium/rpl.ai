@@ -1440,6 +1440,8 @@ setAngle('RAD');
   const html = readFileSync(new URL('../www/index.html', import.meta.url), 'utf8');
   assert(/\.lay-sheet:not\(:empty\) ~ #toasts \{ top: auto; bottom:/.test(css) && /id="laySheet"><\/div>\s*<div class="toasts" id="toasts"/.test(html),
     'toasts: while a sheet is open they sit at the bottom, clear of its title and page tabs, in every view (an id outranks minimal view\'s top rules)');
+  assert(/const editing = \(\) => \{[^}]*el\.inputMode !== 'none'/.test(html),
+    'keyboard test: a field that asks for no keyboard (inputmode none while the keypad shows) never reads a shorter window as the keyboard, so split screen keeps the keypad');
 }
 
 {

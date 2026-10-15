@@ -21,11 +21,12 @@
   if (navigator.standalone === true || touchInstall) document.documentElement.dataset.installed = 'true';
   // A touch screen that loses a quarter of its height while something editable has
   // the focus has its keyboard up, and the calculator keypad makes way for it.  With
-  // nothing to type into, a shorter window is simply the new full height.
+  // nothing to type into, or a field that asks for no keyboard (the keypad's
+  // inputmode none), a shorter window is simply the new full height: split screen.
   const coarsePointer = matchMedia('(pointer: coarse)');
   const editing = () => {
     const el = document.activeElement;
-    return !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+    return !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) && el.inputMode !== 'none';
   };
   let fullHeight = 0;
   const pinAppViewport = () => {
