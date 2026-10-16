@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.94 (2026-10-16)
+**Latest release:** v0.6.95 (2026-10-16)
 
 ---
 
@@ -18,6 +18,31 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.95 — 2026-10-16
+
+A level you tap on a phone shows whole, its actions included. On a 320 px
+phone with the full keypad, the row of Edit, Pick and Roll under a
+selected level ran 8 px past the bottom of the stack (26 px at 280 px, as
+a fold's cover screen or a larger system text size gives), and level 1
+went out of sight: since 0.6.94 a level too tall to sit below the stack's
+faded top edge was shown from its top. A selected level that fits now
+shows whole, a taller one from its top, and the fade and the "more levels
+above" pill step aside for it instead of covering its value.
+
+The actions under a selected level now include View, the HP interactive
+stack's VIEW, which shows the level full size, one tap away instead of
+two. It shows wherever it fits: on phones 320 px wide or more, or 360 px
+for a formula, which also has Plot. On narrower screens View, and now
+Plot too, stay in the level's ⋯ menu; a formula's six buttons ran past
+the toolbar at 280 px.
+
+The "Keypad hidden" and minimal view notes go away at your first tap
+anywhere else, which still does what you tapped, rather than covering the
+top of the stack for five seconds. Their Show and Leave buttons work as
+before.
 
 ---
 
