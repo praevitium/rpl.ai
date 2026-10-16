@@ -1532,7 +1532,7 @@ setAngle('RAD');
   const fade = Number(displaySrc.match(/const TOP_FADE = (\d+);/)?.[1]);
   assert(fade === 36 && css.includes(`.stack-view.more-t { mask-image: linear-gradient(to bottom, transparent, #000 ${fade}px); }`)
     && new RegExp(`\\.stack-view \\{[^}]*scroll-padding-top: ${fade}px;`).test(css)
-    && /row\.offsetTop \+ row\.offsetHeight <= view\.scrollTop \+ TOP_FADE/.test(displaySrc) && /view\.classList\.toggle\('more-t', above > 0\)/.test(displaySrc),
+    && /const view = this\.stackView, edge = view\.scrollTop \+ TOP_FADE,/.test(displaySrc) && /row\.offsetTop \+ row\.offsetHeight <= edge/.test(displaySrc) && /view\.classList\.toggle\('more-t', above > 0\)/.test(displaySrc),
     'stack: with levels above, the top edge fades under the "more levels above" pill, which counts a level ending in the fade, and a level selected there scrolls clear of it (the pill used to sit on a half-shown level it did not count)');
 }
 
@@ -1586,8 +1586,20 @@ setAngle('RAD');
     && at(/this\._animate\(before, after\);/) < at(/markEdges\(\);/)
     && at(/markEdges\(\);/) < at(/this\._showMore\(more\);/)
     && /view\.addEventListener\('scroll', \(\) => \{\s*if \(this\._renderScroll\) return;[^}]*this\._updateMore\(\);/.test(displaySrc)
-    && /else if \(selected\?\.offsetHeight > view\.clientHeight - TOP_FADE\) view\.scrollTop = selected\.offsetTop - TOP_FADE;/.test(render),
-    'stack: a render measures everything (font size before the rows go, then positions, edge fades and the pill) before changing anything, and its own scroll does not measure again, so a key on a phone lays the page out once rather than five times; a selected level taller than the view still shows from its top');
+    && /else if \(selected\?\.offsetHeight > view\.clientHeight - TOP_FADE\) view\.scrollTop = tallLevelScroll\(view, selected\);/.test(render),
+    'stack: a render measures everything (font size before the rows go, then positions, edge fades and the pill) before changing anything, and its own scroll does not measure again, so a key on a phone lays the page out once rather than five times');
+}
+
+{
+  const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
+  const body = displaySrc.match(/function tallLevelScroll\(view, row\) \{([\s\S]*?)\n\}/)?.[1];
+  const scrollFor = (scrollTop, clientHeight, offsetTop, offsetHeight) => new Function('view', 'row', body)({ scrollTop, clientHeight }, { offsetTop, offsetHeight });
+  assert(body && scrollFor(189, 116, 225, 94) === 203 && scrollFor(150, 116, 225, 94) === 203 && scrollFor(210, 116, 200, 94) === 200
+    && scrollFor(190, 116, 200, 94) === 190 && scrollFor(260, 98, 280, 103) === 280 && scrollFor(0, 116, 300, 140) === 300,
+    'stack: a selected level too tall to sit below the top fade shows whole with its toolbar when it fits the view (at 320 px with the full keypad the toolbar under level 2 ran 8 px past the bottom, 26 px at 280), keeps its place when it is already whole, and shows from its top when taller than the view');
+  const measure = displaySrc.slice(displaySrc.indexOf('  _measureMore() {'), displaySrc.indexOf('\n  _showMore('));
+  assert(/const sel = view\.querySelector\('\.st-row\.sel'\);\s*if \(sel && sel\.offsetTop < edge && sel\.offsetTop \+ sel\.offsetHeight > edge\) return \{ above: 0, top \};/.test(measure),
+    'stack: the more-levels pill and the top fade give way to a selected level that reaches through them, rather than covering its value');
 }
 
 {

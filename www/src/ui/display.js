@@ -39,6 +39,12 @@ export function coordModeGlyph(mode) {
 const SUSPENDED_CONTEXT = 8;
 // The faded top edge of a stack with levels above it; calc.css .stack-view.more-t and its scroll-padding-top match.
 const TOP_FADE = 36;
+
+// A level that fits shows whole, its toolbar included; a taller one from its top. The fade gives way to it (_measureMore).
+function tallLevelScroll(view, row) {
+  const top = row.offsetTop, toEnd = top + row.offsetHeight - view.clientHeight;
+  return toEnd > top ? top : Math.min(Math.max(view.scrollTop, toEnd), top);
+}
 // Every level drawn costs layout on each command, so the stack draws the levels nearest level 1 and more on request.
 const LEVEL_WINDOW = 50;
 
@@ -411,8 +417,8 @@ export class Display {
     view.appendChild(frag);
     const selected = view.querySelector('.st-row.sel');
     if (this._anchor != null) view.scrollTop = view.scrollHeight - this._anchor;
-    // A selected level taller than the view shows from its top, clear of the fade (scrollIntoView would scroll the app too).
-    else if (selected?.offsetHeight > view.clientHeight - TOP_FADE) view.scrollTop = selected.offsetTop - TOP_FADE;
+    // scrollIntoView would keep a level too tall for the fade's padding under it, and scroll the app too.
+    else if (selected?.offsetHeight > view.clientHeight - TOP_FADE) view.scrollTop = tallLevelScroll(view, selected);
     else if (selected) selected.scrollIntoView?.({ block: 'nearest' });
     else view.scrollTop = view.scrollHeight;
     this._anchor = null;
@@ -457,11 +463,13 @@ export class Display {
     if (this.stackView?.parentElement) this._showMore(this._measureMore());
   }
 
-  // A level that ends inside the faded top edge, under the pill, can't be read, so it counts as above.
+  // A level that ends inside the faded top edge, under the pill, can't be read, so it counts as above; a selected level reaching through it puts both away.
   _measureMore() {
-    const view = this.stackView;
-    const above = [...view.querySelectorAll('.st-row[data-key]')].filter((row) => row.offsetTop + row.offsetHeight <= view.scrollTop + TOP_FADE).length;
-    return { above, top: view.offsetTop + 6 };
+    const view = this.stackView, edge = view.scrollTop + TOP_FADE, top = view.offsetTop + 6;
+    const sel = view.querySelector('.st-row.sel');
+    if (sel && sel.offsetTop < edge && sel.offsetTop + sel.offsetHeight > edge) return { above: 0, top };
+    const above = [...view.querySelectorAll('.st-row[data-key]')].filter((row) => row.offsetTop + row.offsetHeight <= edge).length;
+    return { above, top };
   }
 
   _showMore({ above, top }) {
