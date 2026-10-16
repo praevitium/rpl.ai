@@ -393,7 +393,9 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .ann-g span { opacity: .11; transition: opacity .18s; }
 .ann-g span.on { opacity: 1; }
 
-.stack-view { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; display: flex; flex-direction: column; overscroll-behavior: contain; scrollbar-width: thin; font-size: calc(var(--stack-size) * var(--stack-scale, 1)); padding: 4px 0 6px; }
+.stack-view { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; display: flex; flex-direction: column; overscroll-behavior: contain; scrollbar-width: thin; font-size: calc(var(--stack-size) * var(--stack-scale, 1)); padding: 4px 0 6px; scroll-padding-top: 36px; }
+/* Levels above fade out under the "more levels above" pill rather than show half a line behind it. */
+.stack-view.more-t { mask-image: linear-gradient(to bottom, transparent, #000 36px); }
 :root[data-stack-size="small"] { --stack-scale: .85; }
 :root[data-stack-size="large"] { --stack-scale: 1.2; }
 :root[data-stack-size="larger"] { --stack-scale: 1.4; }

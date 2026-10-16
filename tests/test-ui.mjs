@@ -1525,3 +1525,13 @@ setAngle('RAD');
   assert(ran.join() === 'DERIV' && prefs.recentCommands.slice(0, 3).join() === 'DERIV,SQ,NOSUCHCMD', 'command search: a command run from it becomes the most recent');
   assert(!palette._items('sw').some(([title]) => title === 'Recent commands'), 'command search: a typed query shows matches, not the recent list');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
+  const fade = Number(displaySrc.match(/const TOP_FADE = (\d+);/)?.[1]);
+  assert(fade === 36 && css.includes(`.stack-view.more-t { mask-image: linear-gradient(to bottom, transparent, #000 ${fade}px); }`)
+    && new RegExp(`\\.stack-view \\{[^}]*scroll-padding-top: ${fade}px;`).test(css)
+    && /row\.offsetTop \+ row\.offsetHeight <= view\.scrollTop \+ TOP_FADE/.test(displaySrc) && /view\.classList\.toggle\('more-t', above > 0\)/.test(displaySrc),
+    'stack: with levels above, the top edge fades under the "more levels above" pill, which counts a level ending in the fade, and a level selected there scrolls clear of it (the pill used to sit on a half-shown level it did not count)');
+}

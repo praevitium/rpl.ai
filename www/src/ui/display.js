@@ -31,6 +31,8 @@ export function coordModeGlyph(mode) {
 }
 
 const SUSPENDED_CONTEXT = 8;
+// The faded top edge of a stack with levels above it; calc.css .stack-view.more-t and its scroll-padding-top match.
+const TOP_FADE = 36;
 
 export function suspendedProgramText(halted, display = DEFAULT_DISPLAY) {
   if (!halted || !Array.isArray(halted.tokens)) return '';
@@ -393,10 +395,12 @@ export class Display {
     this.stackView.querySelectorAll('.st-val').forEach(markScrollEdges);
   }
 
+  // A level that ends inside the faded top edge, under the pill, can't be read, so it counts as above.
   _updateMore() {
     const view = this.stackView;
     if (!view?.parentElement) return;
-    const above = [...view.querySelectorAll('.st-row[data-key]')].filter((row) => row.offsetTop + row.offsetHeight <= view.scrollTop + 1).length;
+    const above = [...view.querySelectorAll('.st-row[data-key]')].filter((row) => row.offsetTop + row.offsetHeight <= view.scrollTop + TOP_FADE).length;
+    view.classList.toggle('more-t', above > 0);
     if (!this._more) {
       this._more = document.createElement('button');
       this._more.type = 'button';
