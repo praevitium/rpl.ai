@@ -135,8 +135,10 @@ export function formatReferenceEntry(entry, { maxChars = 1200 } = {}) {
   return clip(lines.join('\n'), maxChars);
 }
 
+// The manual's title ("LU Decomposition of a Square Matrix Command: Returns …") goes; a lead-in that runs on in
+// lower case ("Cartesian to Polar: converts …") stays, and one that introduces a list ends the sentence.
 export function shortDescription(entry, max = 110) {
-  const d = String(entry?.description ?? '').replace(/^[^:]{0,40}:\s+/, '');
+  const d = String(entry?.description ?? '').replace(/^[^:\n]{0,80}:\s+(?=[A-Z])/, '').replace(/:\n[\s\S]*/, '.');
   return clip(d.split(/(?<=\.)\s/)[0] || d, max);
 }
 

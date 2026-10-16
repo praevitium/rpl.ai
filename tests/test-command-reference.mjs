@@ -100,6 +100,14 @@ const REF = parseCommandReference(HTML);
   assert(formatReferenceEntry(null) === '', 'formatReferenceEntry tolerates null');
   assert(shortDescription(REF.get('FIX')).startsWith('Sets the number display format'),
          'shortDescription drops the manual\'s "Foo Command:" lead-in and keeps the first sentence');
+{
+  const short = (description) => shortDescription({ description });
+  assert(short('LU Decomposition of a Square Matrix Command: Returns the LU decomposition. More.') === 'Returns the LU decomposition.'
+    && short('Cartesian to Polar: converts a complex number into polar form.') === 'Cartesian to Polar: converts a complex number into polar form.'
+    && short('Sets exact (symbolic) evaluation mode: subsequent evaluations keep π.') === 'Sets exact (symbolic) evaluation mode: subsequent evaluations keep π.'
+    && short('Factorizes a polynomial or an integer:\n- The function expresses a polynomial as a product.') === 'Factorizes a polynomial or an integer.',
+    'shortDescription: a title of any length goes before a sentence, a lead-in that runs on in lower case stays, and a colon before a list ends the sentence (FACTOR read "- The function", EXACT lost its first half)');
+}
 }
 
 {
