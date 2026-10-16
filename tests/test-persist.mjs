@@ -860,7 +860,9 @@ function quotaError() {
     'share target: an rpl.ai share link, as the url or inside the text, gives the value it carries');
   assert(sharedText('') === null && sharedText('?utm_source=x') === null && sharedText(search({ text: '  ' })) === null,
     'share target: a page opened without shared text opens as usual');
-  assert(sharedText(search({ text: 'x'.repeat(SHARE_LINK_MAX + 1) })) === null, 'share target: overlong shared text is ignored');
+  const column = Array.from({ length: 900 }, (_, i) => (i * 1.25).toFixed(2)).join(' ');
+  assert(column.length > SHARE_LINK_MAX && sharedText(search({ text: column })) === column,
+    'share target: a long text (a column of data, a long program) comes to the command line whole, as a paste does; only rpl.ai\'s own links are capped');
 }
 
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');
