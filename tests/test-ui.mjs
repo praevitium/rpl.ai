@@ -1568,3 +1568,10 @@ setAngle('RAD');
     && /const count = above && above \+ this\._hidden;/.test(displaySrc),
     'stack: a deep stack draws the 50 levels nearest level 1 (2,000 levels took 6 s a command on a phone), with a row above them that shows 50 more while the levels in view stay put; a level selected deeper is drawn, and the pill counts the levels not drawn');
 }
+
+{
+  const paletteSrc = readFileSync(new URL('../www/src/ui/palette.js', import.meta.url), 'utf8');
+  const open = paletteSrc.slice(paletteSrc.indexOf('  open(seed = \'\') {'), paletteSrc.indexOf('\n  close() {'));
+  assert(/this\.app\.toasts\?\.dismiss\('view'\);/.test(open),
+    'command search: opening it puts away the "Keypad hidden" or minimal view hint, which sat over its search field for its first seconds, as a drawer or popover does');
+}
