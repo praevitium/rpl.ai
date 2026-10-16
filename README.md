@@ -222,7 +222,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   A level too wide for the screen, such as a big matrix, fades at the edge
   it continues past; drag it sideways to read the rest, or swipe its level
   number to drop it. The stack fades the same way at its top while levels
-  lie above, under a pill that counts them; tap it to go to the top. On a phone the
+  lie above, under a pill that counts them; tap it to go to the top. A deep
+  stack draws the 50 levels nearest level 1, so a command stays quick at any
+  depth; a row at the top shows 50 more. On a phone the
   command line wraps a long line rather than scrolling it out of sight, and
   in minimal view an amber pencil on the status line (with the level number
   for a stack level) says a level or variable is being edited, so Enter
@@ -313,7 +315,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   switch's row flips it.
 - The modes button in the app bar (RAD · STD · EXACT), and each mode on
   minimal view's status line, sets FIX, SCI or ENG with any digit count
-  from 0 to 11, so a phone needs no typed `5 FIX`.
+  from 0 to 11, so a phone needs no typed `5 FIX`. On a screen under 320 px
+  wide, such as a folding phone's cover screen or a phone set to a larger
+  text size, the button shortens (RAD · STD ·…) so the folder name, Ask and
+  the writers' keys stay on screen.
 - A phone's back button closes the open menu, search, sheet, writer or
   drawer first, then cancels an edit as the HP's ON does, and leaves the
   app only when nothing is open.
