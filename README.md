@@ -205,11 +205,12 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   the unit to the number you are typing. The MODES keys type their command
   there too (`DEG`, `FIX`, `HEX`) rather than changing the mode.
 - Tap a stack level for its actions, on a line under it so they never cover
-  the value: Edit, Pick (DUP on level 1), Roll (SWAP on level 2), Drop, and ⋯
-  (or hold a finger on the level) for EVAL, →NUM, copy, share, store and the rest (and, for a program, Debug), including the HP
+  the value: Edit, View, Pick (DUP on level 1), Roll (SWAP on level 2), Drop, and ⋯
+  (or hold a finger on the level) for EVAL, →NUM, copy, share, store and the rest (and, for a program, Debug). View is the HP
   interactive stack's VIEW, which shows the level full size (a long number
   in full, a formula or matrix that scrolls both ways; pinch or double-tap to zoom) with Edit, Copy and
-  Share under it, and →LIST, DUPN, DRPN
+  Share under it; on a screen under 320 px wide (360 for a formula, which
+  adds Plot) it waits in ⋯. ⋯ also has →LIST, DUPN, DRPN
   and KEEP for levels 1 to the one you tapped, and LEVEL to push its number (also on the level's soft keys). Swipe a level left or right to drop it; the
   toast's Undo brings it back. Share sends the value with a link; opening
   the link starts rpl.ai with the value on the command line, where nothing
@@ -222,7 +223,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   A level too wide for the screen, such as a big matrix, fades at the edge
   it continues past; drag it sideways to read the rest, or swipe its level
   number to drop it. The stack fades the same way at its top while levels
-  lie above, under a pill that counts them; tap it to go to the top. A deep
+  lie above, under a pill that counts them; tap it to go to the top. Both
+  step aside for a selected level, which shows whole with its actions
+  whenever it fits. A deep
   stack draws the 50 levels nearest level 1, so a command stays quick at any
   depth; a row at the top shows 50 more. On a phone the
   command line wraps a long line rather than scrolling it out of sight, and
