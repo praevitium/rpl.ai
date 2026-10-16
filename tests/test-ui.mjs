@@ -1602,6 +1602,12 @@ setAngle('RAD');
 }
 
 {
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/@container app \(max-width: 319px\) \{ \.st-acts \[data-row-act="view"\], \.st-acts \[data-row-act="plot"\] \{ display: none; \} \}/.test(css),
+    'stack: under 320 px a formula\'s Plot waits in the level\'s ⋯ menu with View, since six 40 px buttons ran 6 px past the toolbar at 280 px (20 px in minimal view)');
+}
+
+{
   const toastSrc = readFileSync(new URL('../www/src/ui/toast.js', import.meta.url), 'utf8');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/transient = false \} = \{\}\) \{/.test(toastSrc)

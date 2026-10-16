@@ -1994,7 +1994,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   /* VIEW joins them where it fits: from 320 px, or from 360 px beside a formula's Plot. */
   .st-acts [data-row-act="view"] { display: flex; }
   @container app (max-width: 359px) { .st-acts:has([data-row-act="plot"]) [data-row-act="view"] { display: none; } }
-  @container app (max-width: 319px) { .st-acts [data-row-act="view"] { display: none; } }
+  /* Under 320 px Plot waits in ⋯ too, or a formula's six buttons run past the toolbar. */
+  @container app (max-width: 319px) { .st-acts [data-row-act="view"], .st-acts [data-row-act="plot"] { display: none; } }
   .mini, .icon-btn.sm { width: 40px; height: 40px; }
   .btn, .dw-tabs button, .path-bar button { min-height: 40px; }
   .field, .backup-new input, .backup-new select { height: 40px; }
