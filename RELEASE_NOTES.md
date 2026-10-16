@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.95 (2026-10-16)
+**Latest release:** v0.6.96 (2026-10-16)
 
 ---
 
@@ -18,6 +18,28 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.96 — 2026-10-16
+
+A level you selected stays in view when you turn the phone or the keyboard
+comes up. With the keypad hidden or in minimal view, turning the phone with
+level 8 selected left it below the shorter landscape stack, out of sight;
+the stack now keeps the selected level in view through any change of size,
+as it already did when it was drawn, and keeps level 1 in view otherwise.
+
+Keys answer faster on a deep or busy stack. Every command used to rebuild
+every row of the stack; now the levels a command did not change keep their
+rows and only get their new level numbers. On a mid-range phone a key on 50
+formula levels takes 166 ms instead of 293, and 75 instead of 95 on a short
+stack.
+
+Command search leads each command with what it does. It used to show the
+command's stack diagram first, so on a phone 86 commands, INTEG, CONVERT,
+ROLL and PICK among them, showed only the diagram ("lower limit upper limit
+int…"). The description now comes first and the diagram after it, as in the
+Catalog.
 
 ---
 
