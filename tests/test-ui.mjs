@@ -1575,3 +1575,17 @@ setAngle('RAD');
   assert(/this\.app\.toasts\?\.dismiss\('view'\);/.test(open),
     'command search: opening it puts away the "Keypad hidden" or minimal view hint, which sat over its search field for its first seconds, as a drawer or popover does');
 }
+
+{
+  const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
+  const render = displaySrc.slice(displaySrc.indexOf('  renderStack(stack) {'), displaySrc.indexOf('\n  _olderButton() {'));
+  const at = (re) => render.search(re);
+  assert(at(/const svgSize = parseFloat\(getComputedStyle\(view\)\.fontSize\)/) < at(/view\.textContent = '';/)
+    && at(/const markEdges = this\._measureEdges\(\);/) > at(/const after = animate \? this\._positions\(\) : null;/)
+    && at(/this\._measureMore\(\)/) < at(/this\._animate\(before, after\);/)
+    && at(/this\._animate\(before, after\);/) < at(/markEdges\(\);/)
+    && at(/markEdges\(\);/) < at(/this\._showMore\(more\);/)
+    && /view\.addEventListener\('scroll', \(\) => \{ if \(!this\._renderScroll\) this\._updateMore\(\); \}/.test(displaySrc)
+    && /else if \(selected\?\.offsetHeight > view\.clientHeight - TOP_FADE\) view\.scrollTop = selected\.offsetTop - TOP_FADE;/.test(render),
+    'stack: a render measures everything (font size before the rows go, then positions, edge fades and the pill) before changing anything, and its own scroll does not measure again, so a key on a phone lays the page out once rather than five times; a selected level taller than the view still shows from its top');
+}

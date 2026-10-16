@@ -10,11 +10,16 @@ export function escapeHtml(text) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+const scrollEdges = (el) => [el.scrollLeft > 1, el.scrollLeft + el.clientWidth < el.scrollWidth - 1];
+
+function setScrollEdges(el, [left, right]) {
+  el.classList.toggle('more-l', left);
+  el.classList.toggle('more-r', right);
+}
+
 // Classes for edge fades on a sideways scroller, showing which way there is more.
 export function markScrollEdges(el) {
-  const { scrollLeft, scrollWidth, clientWidth } = el;
-  el.classList.toggle('more-l', scrollLeft > 1);
-  el.classList.toggle('more-r', scrollLeft + clientWidth < scrollWidth - 1);
+  setScrollEdges(el, scrollEdges(el));
 }
 
 export function binaryBaseLabel(base) {
@@ -204,7 +209,7 @@ export class Display {
     });
     this._installSwipe(view);
     this._installLongPress(view);
-    view.addEventListener('scroll', () => this._updateMore(), { passive: true });
+    view.addEventListener('scroll', () => { if (!this._renderScroll) this._updateMore(); }, { passive: true });
     view.addEventListener('scroll', (ev) => {
       if (ev.target.classList?.contains('st-val')) markScrollEdges(ev.target);
     }, { capture: true, passive: true });
@@ -214,8 +219,10 @@ export class Display {
       new ResizeObserver(() => {
         if (view.scrollTop + viewport >= view.scrollHeight - 2) view.scrollTop = view.scrollHeight;
         viewport = view.clientHeight;
-        this._markWideLevels();
-        this._updateMore();
+        const markEdges = this._measureEdges();
+        const more = this._measureMore();
+        markEdges();
+        this._showMore(more);
       }).observe(view);
     }
     const statusAction = (el) => this.onStatusAction?.(el.dataset.status, el.dataset, el);
@@ -352,6 +359,8 @@ export class Display {
     this._stack = stack;
     const view = this.stackView;
     const before = this._positions();
+    // Inside the app's size container a style read after the rows change lays the whole page out, so read it now.
+    const svgSize = parseFloat(getComputedStyle(view).fontSize) || 18;
     const values = stack.snapshot();
     const depth = values.length;
     this.displayOpts.mode = calcState.displayMode || 'STD';
@@ -368,7 +377,6 @@ export class Display {
       return;
     }
     delete view.dataset.empty;
-    const svgSize = parseFloat(getComputedStyle(view).fontSize) || 18;
     const frag = document.createDocumentFragment();
     const spacer = document.createElement('div');
     spacer.className = 'st-spacer';
@@ -397,12 +405,22 @@ export class Display {
     view.appendChild(frag);
     const selected = view.querySelector('.st-row.sel');
     if (this._anchor != null) view.scrollTop = view.scrollHeight - this._anchor;
+    // A selected level taller than the view shows from its top, clear of the fade (scrollIntoView would scroll the app too).
+    else if (selected?.offsetHeight > view.clientHeight - TOP_FADE) view.scrollTop = selected.offsetTop - TOP_FADE;
     else if (selected) selected.scrollIntoView?.({ block: 'nearest' });
     else view.scrollTop = view.scrollHeight;
     this._anchor = null;
-    if (!this.ghosts && !this.marks && before.size && !prefersReducedMotion()) this._animate(before);
-    this._markWideLevels();
-    this._updateMore();
+    // The scroll event this causes would measure the rows again for the pill, which the lines below do.
+    this._renderScroll = true;
+    requestAnimationFrame(() => { this._renderScroll = false; });
+    // Every measurement comes before any change, so the rows are laid out once, not once per change.
+    const animate = !this.ghosts && !this.marks && before.size && !prefersReducedMotion();
+    const after = animate ? this._positions() : null;
+    const markEdges = this._measureEdges();
+    const more = view.parentElement ? this._measureMore() : null;
+    if (animate) this._animate(before, after);
+    markEdges();
+    if (more) this._showMore(more);
   }
 
   _olderButton() {
@@ -421,15 +439,26 @@ export class Display {
     this.renderStack(this._stack);
   }
 
-  _markWideLevels() {
-    this.stackView.querySelectorAll('.st-val').forEach(markScrollEdges);
+  // Measures now and marks later, so a caller can take every measurement before changing anything.
+  _measureEdges() {
+    const vals = [...this.stackView.querySelectorAll('.st-val')];
+    const edges = vals.map(scrollEdges);
+    return () => vals.forEach((el, i) => setScrollEdges(el, edges[i]));
+  }
+
+  _updateMore() {
+    if (this.stackView?.parentElement) this._showMore(this._measureMore());
   }
 
   // A level that ends inside the faded top edge, under the pill, can't be read, so it counts as above.
-  _updateMore() {
+  _measureMore() {
     const view = this.stackView;
-    if (!view?.parentElement) return;
     const above = [...view.querySelectorAll('.st-row[data-key]')].filter((row) => row.offsetTop + row.offsetHeight <= view.scrollTop + TOP_FADE).length;
+    return { above, top: view.offsetTop + 6 };
+  }
+
+  _showMore({ above, top }) {
+    const view = this.stackView;
     view.classList.toggle('more-t', above > 0);
     const count = above && above + this._hidden;
     if (!this._more) {
@@ -441,12 +470,11 @@ export class Display {
     }
     this._more.hidden = !count;
     this._more.textContent = `${count.toLocaleString('en-US')} more level${count === 1 ? '' : 's'} above`;
-    this._more.style.top = `${view.offsetTop + 6}px`;
+    this._more.style.top = `${top}px`;
   }
 
   // Measure every row before starting any animation: a measurement after one starts lays out the whole stack again.
-  _animate(before) {
-    const after = this._positions();
+  _animate(before, after) {
     for (const row of this.stackView.querySelectorAll('.st-row[data-key]')) {
       const top = after.get(row.dataset.key);
       const old = before.get(row.dataset.key);
