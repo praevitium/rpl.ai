@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.93 (2026-10-15)
+**Latest release:** v0.6.94 (2026-10-16)
 
 ---
 
@@ -20,6 +20,24 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.94 — 2026-10-16
+
+Keys answer faster on a phone. Each key press laid the whole page out
+five times, because inside the app's resizing layout every change to the
+stack, its edge fades or the "more levels above" pill made the browser
+measure everything again. The stack now takes all its measurements before
+it changes anything, so a key lays the page out once: on a mid-range
+phone a key with the full keypad takes about a quarter less time.
+
+Closing the equation writer with the full keypad showing left level 1
+partly below the bottom edge of the stack, and if the window then got
+shorter, as when the phone's keyboard comes up, level 1 went out of view
+altogether. Level 1 now comes back where it was.
+
+For its first few seconds the "Keypad hidden" or minimal view note sat over
+the search field when command search was opened. Opening search now puts
+the note away, as opening a drawer or a menu already did.
 
 ## v0.6.93 — 2026-10-15
 
