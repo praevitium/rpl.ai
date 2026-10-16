@@ -225,11 +225,14 @@ export class Display {
     view.addEventListener('scroll', (ev) => {
       if (ev.target.classList?.contains('st-val')) markScrollEdges(ev.target);
     }, { capture: true, passive: true });
-    // A view that shrinks under a writer or the keyboard keeps level 1 in sight (W-M16). It goes by the distance from
-    // the bottom last seen, since a writer closing grows the view and the keypad's refit shrinks it again in one frame.
+    // A view that shrinks under a writer, the keyboard or a turned phone keeps the selected level, or else level 1, in
+    // sight (W-M16). Level 1 goes by the distance from the bottom last seen, since a writer closing grows the view and
+    // the keypad's refit shrinks it again in one frame.
     if (typeof ResizeObserver === 'function') {
       new ResizeObserver(() => {
-        if (this._fromBottom <= 2) view.scrollTop = view.scrollHeight;
+        const selected = view.querySelector('.st-row.sel');
+        if (selected) this._reveal(selected);
+        else if (this._fromBottom <= 2) view.scrollTop = view.scrollHeight;
         this._fromBottom = fromBottom(view);
         const markEdges = this._measureEdges();
         const more = this._measureMore();
@@ -417,9 +420,7 @@ export class Display {
     view.appendChild(frag);
     const selected = view.querySelector('.st-row.sel');
     if (this._anchor != null) view.scrollTop = view.scrollHeight - this._anchor;
-    // scrollIntoView would keep a level too tall for the fade's padding under it, and scroll the app too.
-    else if (selected?.offsetHeight > view.clientHeight - TOP_FADE) view.scrollTop = tallLevelScroll(view, selected);
-    else if (selected) selected.scrollIntoView?.({ block: 'nearest' });
+    else if (selected) this._reveal(selected);
     else view.scrollTop = view.scrollHeight;
     this._anchor = null;
     // The scroll event this causes would measure the rows again for the pill, which the lines below do.
@@ -457,6 +458,13 @@ export class Display {
     const vals = [...this.stackView.querySelectorAll('.st-val')];
     const edges = vals.map(scrollEdges);
     return () => vals.forEach((el, i) => setScrollEdges(el, edges[i]));
+  }
+
+  // scrollIntoView would keep a level too tall for the fade's padding under it, and scroll the app too.
+  _reveal(row) {
+    const view = this.stackView;
+    if (row.offsetHeight > view.clientHeight - TOP_FADE) view.scrollTop = tallLevelScroll(view, row);
+    else row.scrollIntoView?.({ block: 'nearest' });
   }
 
   _updateMore() {

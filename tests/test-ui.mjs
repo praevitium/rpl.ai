@@ -1586,7 +1586,8 @@ setAngle('RAD');
     && at(/this\._animate\(before, after\);/) < at(/markEdges\(\);/)
     && at(/markEdges\(\);/) < at(/this\._showMore\(more\);/)
     && /view\.addEventListener\('scroll', \(\) => \{\s*if \(this\._renderScroll\) return;[^}]*this\._updateMore\(\);/.test(displaySrc)
-    && /else if \(selected\?\.offsetHeight > view\.clientHeight - TOP_FADE\) view\.scrollTop = tallLevelScroll\(view, selected\);/.test(render),
+    && /else if \(selected\) this\._reveal\(selected\);/.test(render)
+    && /_reveal\(row\) \{\s*const view = this\.stackView;\s*if \(row\.offsetHeight > view\.clientHeight - TOP_FADE\) view\.scrollTop = tallLevelScroll\(view, row\);\s*else row\.scrollIntoView\?\.\(\{ block: 'nearest' \}\);/.test(displaySrc),
     'stack: a render measures everything (font size before the rows go, then positions, edge fades and the pill) before changing anything, and its own scroll does not measure again, so a key on a phone lays the page out once rather than five times');
 }
 
@@ -1631,8 +1632,8 @@ setAngle('RAD');
 
 {
   const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
-  assert(/new ResizeObserver\(\(\) => \{\s*if \(this\._fromBottom <= 2\) view\.scrollTop = view\.scrollHeight;\s*this\._fromBottom = fromBottom\(view\);/.test(displaySrc)
+  assert(/new ResizeObserver\(\(\) => \{\s*const selected = view\.querySelector\('\.st-row\.sel'\);\s*if \(selected\) this\._reveal\(selected\);\s*else if \(this\._fromBottom <= 2\) view\.scrollTop = view\.scrollHeight;\s*this\._fromBottom = fromBottom\(view\);/.test(displaySrc)
     && /if \(this\._renderScroll\) return;\s*this\._fromBottom = fromBottom\(view\);/.test(displaySrc)
     && /this\._fromBottom = fromBottom\(view\);\s*const markEdges = this\._measureEdges\(\);/.test(displaySrc),
-    'stack: level 1 stays in sight when the equation writer closes over the full keypad (the view grew, then shrank again in the same frame as the keys refit, and level 1 was left 13 px low), going by the distance from the bottom last seen on a scroll, render or resize');
+    'stack: level 1 stays in sight when the equation writer closes over the full keypad (the view grew, then shrank again in the same frame as the keys refit, and level 1 was left 13 px low), going by the distance from the bottom last seen on a scroll, render or resize; a selected level stays in sight instead, so turning the phone with level 8 selected no longer leaves it below a 216 px landscape view');
 }
