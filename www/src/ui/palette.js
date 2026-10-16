@@ -116,7 +116,7 @@ export class Palette {
       const sig = entry ? signatureOf(entry) : '';
       return {
         kind: 'command', title: name, mono: true, icon: 'chr', reference: true,
-        detail: [sig, entry ? shortDescription(entry, 90) : ''].filter(Boolean).join(' · '),
+        detail: [entry ? shortDescription(entry, 90) : '', sig].filter(Boolean).join(' · '),
         run: () => { this._remember(name); this.app.runCommandFromUI(name); },
         open: () => this.app.drawers.showReference(name),
       };

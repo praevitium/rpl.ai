@@ -1527,6 +1527,12 @@ setAngle('RAD');
 }
 
 {
+  const paletteSrc = readFileSync(new URL('../www/src/ui/palette.js', import.meta.url), 'utf8');
+  assert(/detail: \[entry \? shortDescription\(entry, 90\) : '', sig\]\.filter\(Boolean\)\.join\(' · '\),/.test(paletteSrc),
+    'command search: a command row reads its description before its stack diagram, so a phone shows what INTEG, CONVERT, ROLL or PICK does rather than "lower limit upper limit int…"');
+}
+
+{
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
   const fade = Number(displaySrc.match(/const TOP_FADE = (\d+);/)?.[1]);
