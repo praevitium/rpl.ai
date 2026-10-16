@@ -225,9 +225,11 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   number to drop it. The stack fades the same way at its top while levels
   lie above, under a pill that counts them; tap it to go to the top. Both
   step aside for a selected level, which shows whole with its actions
-  whenever it fits. A deep
-  stack draws the 50 levels nearest level 1, so a command stays quick at any
-  depth; a row at the top shows 50 more. On a phone the
+  whenever it fits, and stays in view when you turn the phone or the
+  keyboard comes up. A deep
+  stack draws the 50 levels nearest level 1, and a command redraws only the
+  levels it changed, so it stays quick at any depth; a row at the top shows
+  50 more. On a phone the
   command line wraps a long line rather than scrolling it out of sight, and
   in minimal view an amber pencil on the status line (with the level number
   for a stack level) says a level or variable is being edited, so Enter
