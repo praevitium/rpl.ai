@@ -1563,7 +1563,7 @@ setAngle('RAD');
     && /const shown = Math\.min\(depth, Math\.max\(this\.shownLevels, this\.selectedLevel \?\? 0\)\);/.test(displaySrc)
     && /if \(depth <= LEVEL_WINDOW\) this\.shownLevels = LEVEL_WINDOW;/.test(displaySrc)
     && /for \(let level = shown; level >= 1; level--\)/.test(displaySrc)
-    && /if \(this\._hidden\) frag\.appendChild\(this\._olderButton\(\)\);/.test(displaySrc)
+    && /if \(this\._hidden\) head\.appendChild\(this\._olderButton\(\)\);/.test(displaySrc)
     && /this\._anchor = view\.scrollHeight - view\.scrollTop;\s*this\.shownLevels \+= LEVEL_WINDOW;/.test(displaySrc)
     && /const count = above && above \+ this\._hidden;/.test(displaySrc),
     'stack: a deep stack draws the 50 levels nearest level 1 (2,000 levels took 6 s a command on a phone), with a row above them that shows 50 more while the levels in view stay put; a level selected deeper is drawn, and the pill counts the levels not drawn');
@@ -1580,7 +1580,7 @@ setAngle('RAD');
   const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
   const render = displaySrc.slice(displaySrc.indexOf('  renderStack(stack) {'), displaySrc.indexOf('\n  _olderButton() {'));
   const at = (re) => render.search(re);
-  assert(at(/const svgSize = parseFloat\(getComputedStyle\(view\)\.fontSize\)/) < at(/view\.textContent = '';/)
+  assert(at(/const svgSize = parseFloat\(getComputedStyle\(view\)\.fontSize\)/) < at(/const frag = this\._placeRows\(entries, svgSize\);/)
     && at(/const markEdges = this\._measureEdges\(\);/) > at(/const after = animate \? this\._positions\(\) : null;/)
     && at(/this\._measureMore\(\)/) < at(/this\._animate\(before, after\);/)
     && at(/this\._animate\(before, after\);/) < at(/markEdges\(\);/)
@@ -1628,6 +1628,16 @@ setAngle('RAD');
   const measure = displaySrc.slice(displaySrc.indexOf('  _measureMore() {'), displaySrc.indexOf('\n  _showMore('));
   assert(/const sel = view\.querySelector\('\.st-row\.sel'\);\s*if \(sel && sel\.offsetTop < edge && sel\.offsetTop \+ sel\.offsetHeight > edge\) return \{ above: 0, top \};/.test(measure),
     'stack: the more-levels pill and the top fade give way to a selected level that reaches through them, rather than covering its value');
+}
+
+{
+  const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
+  assert(/const rowSig = \(flat, svgSize\) => `\$\{svgSize\}\|\$\{calcState\.textbookMode \? 1 : 0\}\|\$\{flat\}`;/.test(displaySrc)
+    && /_reusable\(row, entry\) \{\s*return row\.className === 'st-row' && row\.dataset\.key === entry\.key && this\.selectedLevel !== entry\.level\s*&& this\._rowSigs\.get\(row\) === entry\.sig;/.test(displaySrc)
+    && /const old = view\.dataset\.empty \|\| this\.marks \? \[\] : \[\.\.\.view\.querySelectorAll\(':scope > \.st-row\[data-key\]'\)\];/.test(displaySrc)
+    && /this\._rowSigs\.set\(row, rowSig\(text, svgSize\)\);/.test(displaySrc)
+    && /kept\.forEach\(\(row, k\) => this\._relevel\(row, entries\[to \+ k\]\)\);/.test(displaySrc),
+    'stack: a render keeps the rows of levels the change did not reach (same value, text, size and textbook setting, not selected or marked) and only renumbers them, so a key on 50 formula levels takes half the time on a phone');
 }
 
 {

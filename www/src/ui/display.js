@@ -10,6 +10,8 @@ export function escapeHtml(text) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+const rowSig = (flat, svgSize) => `${svgSize}|${calcState.textbookMode ? 1 : 0}|${flat}`;
+const levelTitle = (level) => `Level ${level}. Click to select, double-click to edit, drag to move.`;
 const fromBottom = (view) => view.scrollHeight - view.scrollTop - view.clientHeight;
 const scrollEdges = (el) => [el.scrollLeft > 1, el.scrollLeft + el.clientWidth < el.scrollWidth - 1];
 
@@ -164,6 +166,7 @@ export class Display {
     this.onStatusAction = null;
     this.onEmptyAction = null;
     this._ids = new WeakMap();
+    this._rowSigs = new WeakMap();
     this._nextId = 1;
     this._dragLevel = null;
     this._live = null;
@@ -384,27 +387,24 @@ export class Display {
     if (depth <= LEVEL_WINDOW) this.shownLevels = LEVEL_WINDOW;
     const shown = Math.min(depth, Math.max(this.shownLevels, this.selectedLevel ?? 0));
     this._hidden = depth - shown;
-    view.textContent = '';
     if (!depth && !this.ghosts?.length) {
       view.innerHTML = this.emptyHtml;
       view.dataset.empty = '1';
       this._updateMore();
       return;
     }
-    delete view.dataset.empty;
-    const frag = document.createDocumentFragment();
-    const spacer = document.createElement('div');
-    spacer.className = 'st-spacer';
-    frag.appendChild(spacer);
-    if (this._hidden) frag.appendChild(this._olderButton());
+    const entries = [];
     const seen = new Map();
     for (let level = shown; level >= 1; level--) {
       const value = values[level - 1];
       const id = this._idOf(value);
       const n = (seen.get(id) ?? 0) + 1;
       seen.set(id, n);
-      frag.appendChild(this._row(value, level, `${id}.${n}`, svgSize));
+      const flat = formatStackTop(value, this.displayOpts);
+      entries.push({ value, level, key: `${id}.${n}`, flat, sig: rowSig(flat, svgSize) });
     }
+    const frag = this._placeRows(entries, svgSize);
+    delete view.dataset.empty;
     (this.ghosts ?? []).forEach((value, j, all) => {
       const row = this._row(value, all.length - j, null, svgSize);
       row.classList.add('ghost');
@@ -435,6 +435,45 @@ export class Display {
     if (animate) this._animate(before, after);
     markEdges();
     if (more) this._showMore(more);
+  }
+
+  // The levels above the first one a change reaches keep their rows, so a key lays out only the rows it touched.
+  // Returns the rows that go below the kept ones.
+  _placeRows(entries, svgSize) {
+    const view = this.stackView;
+    const old = view.dataset.empty || this.marks ? [] : [...view.querySelectorAll(':scope > .st-row[data-key]')];
+    const first = old.findIndex((row) => row.dataset.key === entries[0]?.key);
+    const from = Math.max(0, first);
+    const to = first >= 0 ? 0 : Math.max(0, entries.findIndex((e) => e.key === old[0]?.dataset.key));
+    let n = 0;
+    while (from + n < old.length && to + n < entries.length && this._reusable(old[from + n], entries[to + n])) n++;
+    const kept = old.slice(from, from + n);
+    const keep = new Set(kept);
+    for (const child of [...view.children]) if (!keep.has(child)) child.remove();
+    const head = document.createDocumentFragment();
+    const spacer = document.createElement('div');
+    spacer.className = 'st-spacer';
+    head.appendChild(spacer);
+    if (this._hidden) head.appendChild(this._olderButton());
+    for (const e of entries.slice(0, to)) head.appendChild(this._row(e.value, e.level, e.key, svgSize));
+    view.insertBefore(head, kept[0] ?? null);
+    kept.forEach((row, k) => this._relevel(row, entries[to + k]));
+    const tail = document.createDocumentFragment();
+    for (const e of entries.slice(to + n)) tail.appendChild(this._row(e.value, e.level, e.key, svgSize));
+    return tail;
+  }
+
+  _reusable(row, entry) {
+    return row.className === 'st-row' && row.dataset.key === entry.key && this.selectedLevel !== entry.level
+      && this._rowSigs.get(row) === entry.sig;
+  }
+
+  _relevel(row, { level, flat }) {
+    if (row.dataset.level === String(level)) return;
+    row.dataset.level = String(level);
+    row.querySelector('.st-lvl').textContent = String(level);
+    row.title = levelTitle(level);
+    row.setAttribute('aria-label', `Level ${level}: ${flat}`);
   }
 
   _olderButton() {
@@ -517,7 +556,7 @@ export class Display {
     if (key) {
       row.dataset.key = key;
       row.draggable = true;
-      row.title = `Level ${level}. Click to select, double-click to edit, drag to move.`;
+      row.title = levelTitle(level);
     }
     const mark = this.marks?.[level];
     if (mark && key) row.classList.add(mark);
@@ -532,6 +571,7 @@ export class Display {
     const cell = document.createElement('span');
     cell.className = 'st-val';
     const text = this._fillValue(cell, value, svgSize);
+    this._rowSigs.set(row, rowSig(text, svgSize));
     row.setAttribute('aria-label', `Level ${level}: ${text}`);
     row.append(lvl, tag, cell);
     if (selected && this.rowActionsHtml) row.insertAdjacentHTML('beforeend', this.rowActionsHtml(level, value));
