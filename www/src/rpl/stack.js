@@ -232,17 +232,26 @@ export class Stack {
   runOp(fn) {
     const args = this.beginArgs();
     let ok = false;
+    try {
+      this.holdEmit(() => _batchState(fn));
+      ok = true;
+    } finally {
+      this.endArgs(args, ok);
+    }
+  }
+
+  // Listeners hear once, after fn, however many times fn changes the stack: a
+  // line of a hundred numbers draws the stack once, not a hundred times.
+  holdEmit(fn) {
     this._holdEmit++;
     try {
-      _batchState(fn);
-      ok = true;
+      return fn();
     } finally {
       this._holdEmit--;
       if (this._holdEmit === 0 && this._emitPending) {
         this._emitPending = false;
         this._flushEmit();
       }
-      this.endArgs(args, ok);
     }
   }
 

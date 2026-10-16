@@ -577,11 +577,13 @@ export class Entry {
     const values = parseEntry(raw);
     try {
       if (isProgramLine(values)) this.stack.runOp(() => runProgramLine(this.stack, values));
-      else for (const v of values) {
-        if (v?.type === 'name' && !v.quoted && lookup(v.id)) this._runOpTagged(v.id);
-        else if (v?.type === 'name' && !v.quoted) { this.stack.push(v); this._runOpTagged('EVAL', v.id); }
-        else this.stack.push(v);
-      }
+      else this.stack.holdEmit(() => {
+        for (const v of values) {
+          if (v?.type === 'name' && !v.quoted && lookup(v.id)) this._runOpTagged(v.id);
+          else if (v?.type === 'name' && !v.quoted) { this.stack.push(v); this._runOpTagged('EVAL', v.id); }
+          else this.stack.push(v);
+        }
+      });
     } catch (e) {
       if (e instanceof Error && !(e instanceof RPLAbort)) e.line = raw;
       throw e;

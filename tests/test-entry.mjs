@@ -2001,3 +2001,19 @@ resetBinaryState();
   e.cursor = e.buffer.length;
   assert(e.isAlgebraic() === false, 'after the closing apostrophe the line is no longer algebraic');
 }
+
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const s = new Stack();
+  const e = new Entry(s);
+  let heard = 0;
+  s.subscribe(() => { heard++; });
+  e.buffer = Array.from({ length: 200 }, (_, i) => String(i)).join(' ');
+  e.enter();
+  assert(s.depth === 200 && heard === 1, 'a line of 200 numbers tells the stack listeners once, so the display draws the stack once (it drew it after every number: 200 numbers took 7 s)');
+  s.clear();
+  heard = 0;
+  e.buffer = '1 2 + 4 DROP DROP DROP 5';
+  e.enter();
+  assert(heard === 1 && s.depth === 0 && e.error.startsWith('DROP'), 'a line that fails part way still tells the listeners once, with the stack the HP leaves');
+}
