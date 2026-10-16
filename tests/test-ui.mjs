@@ -1543,3 +1543,15 @@ setAngle('RAD');
     && /_buzzError\(\) \{\s*if \(this\.prefs\.haptics && typeof navigator\.vibrate === 'function' && !testUserFlag\(-56\)\) navigator\.vibrate\(\[30, 60, 30\]\);/.test(appSrc),
     'errors: with key vibration on, a phone buzzes twice on an error, as the HP beeps, unless flag -56 (Error Beep) is set');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const appbarSrc = readFileSync(new URL('../www/src/ui/appbar.js', import.meta.url), 'utf8');
+  const bar = css.slice(css.indexOf('@container app (max-width: 319px) {\n  .crumbs'));
+  assert(/^@container app \(max-width: 319px\) \{\n  \.crumbs \{ flex-shrink: 0; max-width: 40%; \}\n  \.modes \{ flex-shrink: 1; min-width: 0; \}/.test(bar)
+    && /\.mode-chip\.summary span \{ overflow: hidden; text-overflow: ellipsis; \}\n  \.in-tabs \.i \{ display: none; \}/.test(bar)
+    && appbarSrc.includes('<span>${escapeHtml(modesSummary())}</span>')
+    && /@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}\s*button\.ann-m \{ min-width: 28px; \}/.test(css)
+    && css.includes('@container app (max-width: 319px) { .writer-keys { gap: 2px; padding: 0 4px 8px; } .writer-keys .cmdline-go { min-width: 26px; padding: 0; white-space: nowrap; } }'),
+    "narrow phones: under 320 px (a fold's cover screen, or a larger system text size) the directory name stays whole while the modes summary gives way, and Ask, minimal view's leave button and the equation writer's Enter stay on screen");
+}

@@ -52,7 +52,7 @@ export class AppBar {
       <div class="brand"><svg aria-hidden="true"><use href="#i-mark"/></svg><span class="word">rpl<span class="ai">.ai</span></span></div>
       <nav class="crumbs" aria-label="Directory">${crumbs}</nav>
       <div class="sp"></div>
-      <div class="modes" role="group" aria-label="Calculator modes">${chips}<button type="button" class="mode-chip summary" data-act="modes-all" title="Calculator modes" aria-haspopup="menu" aria-expanded="false">${escapeHtml(modesSummary())}${icon('chd')}</button></div>
+      <div class="modes" role="group" aria-label="Calculator modes">${chips}<button type="button" class="mode-chip summary" data-act="modes-all" title="Calculator modes" aria-haspopup="menu" aria-expanded="false"><span>${escapeHtml(modesSummary())}</span>${icon('chd')}</button></div>
       <div class="sp"></div>
       ${this.app.offersInstall() ? `<button type="button" class="install-btn" data-act="app.install" title="Install rpl.ai as an app: it opens in its own window and works offline" aria-label="Install rpl.ai as an app">${icon('down', 'sm')}<span>Install</span></button>` : ''}
       <button type="button" class="search-btn" data-act="palette.open" title="Search commands, settings, variables and help${kbd('palette.open')}">${icon('search', 'sm')}<span>Search commands, settings…</span><span class="kbd">${escapeHtml(shortcutText('palette.open'))}</span></button>

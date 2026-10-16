@@ -311,6 +311,15 @@ button { cursor: pointer; }
 }
 /* On the smallest phones the directory name needs the room; Install stays in the ⋯ menu. */
 @container app (max-width: 359px) { .install-btn { display: none; } .appbar .sp { min-width: 0; } }
+/* Under 320 px (a fold's cover screen, or a larger system text size) the modes summary gives way to the
+   directory name, and the writer tabs drop their icons so Ask stays on screen. */
+@container app (max-width: 319px) {
+  .crumbs { flex-shrink: 0; max-width: 40%; }
+  .modes { flex-shrink: 1; min-width: 0; }
+  .mode-chip.summary { min-width: 0; }
+  .mode-chip.summary span { overflow: hidden; text-overflow: ellipsis; }
+  .in-tabs .i { display: none; }
+}
 @container app (max-width: 719px) {
   .mode-chip:not(.summary) { display: none; }
   .mode-chip.summary { display: flex; }
@@ -1935,6 +1944,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
      equation writer's eight keys share one row from 320 px up, growing to 56 px where there is room. */
   .writer-keys { flex-wrap: nowrap; gap: 4px; padding: 0 6px 8px; }
   .writer-keys .cmdline-go { flex: 1 1 40px; height: 40px; min-width: 32px; max-width: 56px; padding: 0 4px; }
+  /* Under 320 px the eight keys keep their one row by giving up some width and gap. */
+  @container app (max-width: 319px) { .writer-keys { gap: 2px; padding: 0 4px 8px; } .writer-keys .cmdline-go { min-width: 26px; padding: 0; white-space: nowrap; } }
   .mx-cell { height: 40px; }
   /* 40 px tall, reaching into the command line's padding so the line keeps its height. */
   .cmdline .cmdline-go { min-width: 40px; height: 40px; margin: -4px 0; }
@@ -1952,6 +1963,12 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   /* The format mode sizes to its label as before, so FIX 11 stays whole. */
   button.ann-m[data-mode="fmt"], button.ann-m.e { flex: 0 1 auto; max-width: none; }
   @container app (min-width: 360px) { button.ann-m { min-width: 40px; } .ann-status:has(> .ann-m:not([data-mode])) button.ann-m { min-width: 36px; } }
+  /* Under 320 px the padding goes and the modes give a little, so the leave button stays on screen; FIX 11 takes two lines if it must. */
+  @container app (max-width: 319px) {
+    .ann-status { padding-left: 6px; padding-right: 4px; }
+    button.ann-m { min-width: 28px; }
+    button.ann-m[data-mode="fmt"] { white-space: normal; line-height: 1.1; }
+  }
   .ann-status .ann-path { display: block; min-width: 0; flex-shrink: 100; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* Narrower, the path would show only a clipped brace. */
   @container app (max-width: 389px) { .ann-status .ann-path { display: none; } }
