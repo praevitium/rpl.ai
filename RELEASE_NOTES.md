@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.91 (2026-10-15)
+**Latest release:** v0.6.92 (2026-10-15)
 
 ---
 
@@ -20,6 +20,29 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.92 — 2026-10-15
+
+A line of many values entered at once, such as a column of numbers pasted
+or shared from a note, drew the whole stack again after every value, so 200
+numbers took about 7 seconds on a computer and far longer on a phone. The
+stack is now drawn once, when the line ends: the same 200 numbers take a
+few hundredths of a second.
+
+Text shared to the installed app from another app over 4,000 characters
+used to open nothing, with no note. Shared text now reaches the command
+line at any length, as a paste does; only rpl.ai's own share links keep
+that limit.
+
+With Vibrate on key presses turned on, an error now buzzes the phone
+twice, as the HP 50g beeps on an error, and setting flag -56 (the HP's
+Error Beep flag) stops it, as it stops the HP's beep.
+
+While levels lie above the screen, the stack now fades out at its top
+under the "more levels above" pill, which counts a level hidden in the
+fade. The pill used to sit on a level that showed only half a line and
+was left out of the count, and a level selected there now scrolls clear
+of it.
 
 ## v0.6.91 — 2026-10-15
 
