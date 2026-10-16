@@ -1555,3 +1555,16 @@ setAngle('RAD');
     && css.includes('@container app (max-width: 319px) { .writer-keys { gap: 2px; padding: 0 4px 8px; } .writer-keys .cmdline-go { min-width: 26px; padding: 0; white-space: nowrap; } }'),
     "narrow phones: under 320 px (a fold's cover screen, or a larger system text size) the directory name stays whole while the modes summary gives way, and Ask, minimal view's leave button and the equation writer's Enter stay on screen");
 }
+
+{
+  const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
+  const window = Number(displaySrc.match(/const LEVEL_WINDOW = (\d+);/)?.[1]);
+  assert(window === 50
+    && /const shown = Math\.min\(depth, Math\.max\(this\.shownLevels, this\.selectedLevel \?\? 0\)\);/.test(displaySrc)
+    && /if \(depth <= LEVEL_WINDOW\) this\.shownLevels = LEVEL_WINDOW;/.test(displaySrc)
+    && /for \(let level = shown; level >= 1; level--\)/.test(displaySrc)
+    && /if \(this\._hidden\) frag\.appendChild\(this\._olderButton\(\)\);/.test(displaySrc)
+    && /this\._anchor = view\.scrollHeight - view\.scrollTop;\s*this\.shownLevels \+= LEVEL_WINDOW;/.test(displaySrc)
+    && /const count = above && above \+ this\._hidden;/.test(displaySrc),
+    'stack: a deep stack draws the 50 levels nearest level 1 (2,000 levels took 6 s a command on a phone), with a row above them that shows 50 more while the levels in view stay put; a level selected deeper is drawn, and the pill counts the levels not drawn');
+}

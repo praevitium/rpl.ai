@@ -409,6 +409,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 :root[data-stack-size="large"] { --stack-scale: 1.2; }
 :root[data-stack-size="larger"] { --stack-scale: 1.4; }
 .st-spacer { flex: 1; }
+.st-older { flex: none; align-self: center; margin: 4px 0 8px; }
 .st-more { position: absolute; left: 50%; transform: translateX(-50%); z-index: 4; font: 600 10.5px/1 var(--font-mono); letter-spacing: .04em; color: var(--ink2); background: color-mix(in oklab, var(--panel) 92%, transparent); border: 1px solid var(--line2); border-radius: 999px; padding: 6px 10px; box-shadow: var(--shadow-1); }
 .st-more:hover { color: var(--ink); }
 .st-row { position: relative; flex: none; display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 8px; padding: 6px 14px 6px 6px; min-height: 38px; border-radius: 8px; margin: 0 6px; transition: background .12s; cursor: default; }

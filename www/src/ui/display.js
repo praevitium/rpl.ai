@@ -33,6 +33,8 @@ export function coordModeGlyph(mode) {
 const SUSPENDED_CONTEXT = 8;
 // The faded top edge of a stack with levels above it; calc.css .stack-view.more-t and its scroll-padding-top match.
 const TOP_FADE = 36;
+// Every level drawn costs layout on each command, so the stack draws the levels nearest level 1 and more on request.
+const LEVEL_WINDOW = 50;
 
 export function suspendedProgramText(halted, display = DEFAULT_DISPLAY) {
   if (!halted || !Array.isArray(halted.tokens)) return '';
@@ -131,6 +133,10 @@ export class Display {
     this.statusLine = statusLine;
     this.displayOpts = { ...DEFAULT_DISPLAY };
     this.selectedLevel = null;
+    this.shownLevels = LEVEL_WINDOW;
+    this._hidden = 0;
+    this._anchor = null;
+    this._stack = null;
     this.marks = null;
     this.ghosts = null;
     this.previewLabel = '';
@@ -156,6 +162,7 @@ export class Display {
     const view = this.stackView;
     view.addEventListener('click', (ev) => {
       if (performance.now() - this._swipedAt < 400) return;
+      if (ev.target.closest?.('.st-older')) { this._showOlder(); return; }
       const empty = ev.target.closest?.('[data-empty-act]');
       if (empty) { this.onEmptyAction?.(empty.dataset.emptyAct, empty); return; }
       const row = ev.target.closest?.('.st-row[data-level]');
@@ -342,6 +349,7 @@ export class Display {
   }
 
   renderStack(stack) {
+    this._stack = stack;
     const view = this.stackView;
     const before = this._positions();
     const values = stack.snapshot();
@@ -349,6 +357,9 @@ export class Display {
     this.displayOpts.mode = calcState.displayMode || 'STD';
     this.displayOpts.digits = calcState.displayDigits ?? 12;
     if (this.selectedLevel != null && this.selectedLevel > depth) this.selectedLevel = depth || null;
+    if (depth <= LEVEL_WINDOW) this.shownLevels = LEVEL_WINDOW;
+    const shown = Math.min(depth, Math.max(this.shownLevels, this.selectedLevel ?? 0));
+    this._hidden = depth - shown;
     view.textContent = '';
     if (!depth && !this.ghosts?.length) {
       view.innerHTML = this.emptyHtml;
@@ -362,8 +373,9 @@ export class Display {
     const spacer = document.createElement('div');
     spacer.className = 'st-spacer';
     frag.appendChild(spacer);
+    if (this._hidden) frag.appendChild(this._olderButton());
     const seen = new Map();
-    for (let level = depth; level >= 1; level--) {
+    for (let level = shown; level >= 1; level--) {
       const value = values[level - 1];
       const id = this._idOf(value);
       const n = (seen.get(id) ?? 0) + 1;
@@ -384,11 +396,29 @@ export class Display {
     }
     view.appendChild(frag);
     const selected = view.querySelector('.st-row.sel');
-    if (selected) selected.scrollIntoView?.({ block: 'nearest' });
+    if (this._anchor != null) view.scrollTop = view.scrollHeight - this._anchor;
+    else if (selected) selected.scrollIntoView?.({ block: 'nearest' });
     else view.scrollTop = view.scrollHeight;
+    this._anchor = null;
     if (!this.ghosts && !this.marks && before.size && !prefersReducedMotion()) this._animate(before);
     this._markWideLevels();
     this._updateMore();
+  }
+
+  _olderButton() {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'chip st-older';
+    button.textContent = `Show ${Math.min(LEVEL_WINDOW, this._hidden)} more of ${this._hidden.toLocaleString('en-US')} levels`;
+    return button;
+  }
+
+  // The levels already in view stay where they are; the older ones arrive above them.
+  _showOlder() {
+    const view = this.stackView;
+    this._anchor = view.scrollHeight - view.scrollTop;
+    this.shownLevels += LEVEL_WINDOW;
+    this.renderStack(this._stack);
   }
 
   _markWideLevels() {
@@ -401,6 +431,7 @@ export class Display {
     if (!view?.parentElement) return;
     const above = [...view.querySelectorAll('.st-row[data-key]')].filter((row) => row.offsetTop + row.offsetHeight <= view.scrollTop + TOP_FADE).length;
     view.classList.toggle('more-t', above > 0);
+    const count = above && above + this._hidden;
     if (!this._more) {
       this._more = document.createElement('button');
       this._more.type = 'button';
@@ -408,8 +439,8 @@ export class Display {
       this._more.addEventListener('click', () => view.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' }));
       view.parentElement.appendChild(this._more);
     }
-    this._more.hidden = !above;
-    this._more.textContent = `${above} more level${above === 1 ? '' : 's'} above`;
+    this._more.hidden = !count;
+    this._more.textContent = `${count.toLocaleString('en-US')} more level${count === 1 ? '' : 's'} above`;
     this._more.style.top = `${view.offsetTop + 6}px`;
   }
 
