@@ -33,7 +33,7 @@ import { toLatex } from './rpl/latex.js';
 import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, currentPath,
-  goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage,
+  goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, testUserFlag,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook } from './rpl/ops.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
@@ -334,6 +334,7 @@ class App {
 
   _showError(message) {
     this._dropPreview();
+    if (message) this._buzzError();
     this._errorShown = message;
     this.errorBanner = message ? describeError(message, {
       failure: this.entry.failure,
@@ -1707,6 +1708,11 @@ class App {
     document.addEventListener('pointerdown', (e) => {
       if (this.prefs.haptics && e.pointerType === 'touch' && e.target.closest?.('.k, .sk, .key-strip button, .cmdline-go')) navigator.vibrate(10);
     }, { passive: true });
+  }
+
+  // The HP beeps on an error unless flag -56 (Error Beep) is set; with key vibration on, a phone buzzes twice.
+  _buzzError() {
+    if (this.prefs.haptics && typeof navigator.vibrate === 'function' && !testUserFlag(-56)) navigator.vibrate([30, 60, 30]);
   }
 
   _installBackButton() {

@@ -1535,3 +1535,11 @@ setAngle('RAD');
     && /row\.offsetTop \+ row\.offsetHeight <= view\.scrollTop \+ TOP_FADE/.test(displaySrc) && /view\.classList\.toggle\('more-t', above > 0\)/.test(displaySrc),
     'stack: with levels above, the top edge fades under the "more levels above" pill, which counts a level ending in the fade, and a level selected there scrolls clear of it (the pill used to sit on a half-shown level it did not count)');
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const showError = appSrc.slice(appSrc.indexOf('  _showError(message) {'), appSrc.indexOf('\n  renderBanner() {'));
+  assert(/if \(message\) this\._buzzError\(\);/.test(showError)
+    && /_buzzError\(\) \{\s*if \(this\.prefs\.haptics && typeof navigator\.vibrate === 'function' && !testUserFlag\(-56\)\) navigator\.vibrate\(\[30, 60, 30\]\);/.test(appSrc),
+    'errors: with key vibration on, a phone buzzes twice on an error, as the HP beeps, unless flag -56 (Error Beep) is set');
+}
