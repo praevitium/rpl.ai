@@ -215,12 +215,14 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   the link starts rpl.ai with the value on the command line, where nothing
   runs until you press Enter. On Android the installed app is also in other
   apps' Share menus: text or an rpl.ai link shared to it lands on the
-  command line the same way. Hold the installed app's icon for shortcuts
+  command line the same way, however long, so a column of numbers from a
+  note goes onto the stack with one Enter. Hold the installed app's icon for shortcuts
   straight to the equation writer, the matrix writer, Variables or command
   search (Android, and Chrome or Edge on a computer).
   A level too wide for the screen, such as a big matrix, fades at the edge
   it continues past; drag it sideways to read the rest, or swipe its level
-  number to drop it. On a phone the
+  number to drop it. The stack fades the same way at its top while levels
+  lie above, under a pill that counts them; tap it to go to the top. On a phone the
   command line wraps a long line rather than scrolling it out of sight, and
   in minimal view an amber pencil on the status line (with the level number
   for a stack level) says a level or variable is being edited, so Enter
@@ -306,7 +308,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   scrolls, so the field you type in stays in view.
 - Settings › Appearance sets the stack's text size, from Small to Larger,
   pretty math included. On Android it can also make the keys vibrate briefly
-  as a finger presses them. A tap anywhere on a switch's row flips it.
+  as a finger presses them, and buzz twice on an error, as the HP beeps (set
+  flag -56, the HP's Error Beep flag, to stop that). A tap anywhere on a
+  switch's row flips it.
 - The modes button in the app bar (RAD · STD · EXACT), and each mode on
   minimal view's status line, sets FIX, SCI or ENG with any digit count
   from 0 to 11, so a phone needs no typed `5 FIX`.
