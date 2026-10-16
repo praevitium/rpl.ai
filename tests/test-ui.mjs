@@ -1591,6 +1591,17 @@ setAngle('RAD');
 }
 
 {
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const touch = css.slice(css.indexOf('@media (pointer: coarse)'));
+  assert(/Edit<\/button><button type="button" data-row-act="view" title="View full size \(VIEW\)" aria-label="View">\$\{icon\('expand', 'sm'\)\}<\/button>/.test(appSrc)
+    && /\.st-acts \[data-row-act="view"\] \{ display: none; \}/.test(css.slice(0, css.indexOf('@media (pointer: coarse)')))
+    && /\.st-acts \[data-row-act="view"\] \{ display: flex; \}/.test(touch)
+    && /@container app \(max-width: 359px\) \{ \.st-acts:has\(\[data-row-act="plot"\]\) \[data-row-act="view"\] \{ display: none; \} \}/.test(touch),
+    'stack: a selected level\'s touch toolbar has a View button (the HP interactive stack\'s VIEW, a level full size) wherever it fits, from 320 px, or 360 px beside a formula\'s Plot; elsewhere VIEW stays in the level\'s ⋯ menu');
+}
+
+{
   const toastSrc = readFileSync(new URL('../www/src/ui/toast.js', import.meta.url), 'utf8');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/transient = false \} = \{\}\) \{/.test(toastSrc)
