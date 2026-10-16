@@ -10,6 +10,7 @@ export function escapeHtml(text) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+const fromBottom = (view) => view.scrollHeight - view.scrollTop - view.clientHeight;
 const scrollEdges = (el) => [el.scrollLeft > 1, el.scrollLeft + el.clientWidth < el.scrollWidth - 1];
 
 function setScrollEdges(el, [left, right]) {
@@ -140,6 +141,7 @@ export class Display {
     this.selectedLevel = null;
     this.shownLevels = LEVEL_WINDOW;
     this._hidden = 0;
+    this._fromBottom = 0;
     this._anchor = null;
     this._stack = null;
     this.marks = null;
@@ -209,16 +211,20 @@ export class Display {
     });
     this._installSwipe(view);
     this._installLongPress(view);
-    view.addEventListener('scroll', () => { if (!this._renderScroll) this._updateMore(); }, { passive: true });
+    view.addEventListener('scroll', () => {
+      if (this._renderScroll) return;
+      this._fromBottom = fromBottom(view);
+      this._updateMore();
+    }, { passive: true });
     view.addEventListener('scroll', (ev) => {
       if (ev.target.classList?.contains('st-val')) markScrollEdges(ev.target);
     }, { capture: true, passive: true });
-    // A view that shrinks under a writer or the keyboard keeps level 1 in sight (W-M16).
+    // A view that shrinks under a writer or the keyboard keeps level 1 in sight (W-M16). It goes by the distance from
+    // the bottom last seen, since a writer closing grows the view and the keypad's refit shrinks it again in one frame.
     if (typeof ResizeObserver === 'function') {
-      let viewport = view.clientHeight;
       new ResizeObserver(() => {
-        if (view.scrollTop + viewport >= view.scrollHeight - 2) view.scrollTop = view.scrollHeight;
-        viewport = view.clientHeight;
+        if (this._fromBottom <= 2) view.scrollTop = view.scrollHeight;
+        this._fromBottom = fromBottom(view);
         const markEdges = this._measureEdges();
         const more = this._measureMore();
         markEdges();
@@ -416,6 +422,7 @@ export class Display {
     // Every measurement comes before any change, so the rows are laid out once, not once per change.
     const animate = !this.ghosts && !this.marks && before.size && !prefersReducedMotion();
     const after = animate ? this._positions() : null;
+    this._fromBottom = fromBottom(view);
     const markEdges = this._measureEdges();
     const more = view.parentElement ? this._measureMore() : null;
     if (animate) this._animate(before, after);

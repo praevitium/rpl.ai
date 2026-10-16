@@ -1585,7 +1585,15 @@ setAngle('RAD');
     && at(/this\._measureMore\(\)/) < at(/this\._animate\(before, after\);/)
     && at(/this\._animate\(before, after\);/) < at(/markEdges\(\);/)
     && at(/markEdges\(\);/) < at(/this\._showMore\(more\);/)
-    && /view\.addEventListener\('scroll', \(\) => \{ if \(!this\._renderScroll\) this\._updateMore\(\); \}/.test(displaySrc)
+    && /view\.addEventListener\('scroll', \(\) => \{\s*if \(this\._renderScroll\) return;[^}]*this\._updateMore\(\);/.test(displaySrc)
     && /else if \(selected\?\.offsetHeight > view\.clientHeight - TOP_FADE\) view\.scrollTop = selected\.offsetTop - TOP_FADE;/.test(render),
     'stack: a render measures everything (font size before the rows go, then positions, edge fades and the pill) before changing anything, and its own scroll does not measure again, so a key on a phone lays the page out once rather than five times; a selected level taller than the view still shows from its top');
+}
+
+{
+  const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
+  assert(/new ResizeObserver\(\(\) => \{\s*if \(this\._fromBottom <= 2\) view\.scrollTop = view\.scrollHeight;\s*this\._fromBottom = fromBottom\(view\);/.test(displaySrc)
+    && /if \(this\._renderScroll\) return;\s*this\._fromBottom = fromBottom\(view\);/.test(displaySrc)
+    && /this\._fromBottom = fromBottom\(view\);\s*const markEdges = this\._measureEdges\(\);/.test(displaySrc),
+    'stack: level 1 stays in sight when the equation writer closes over the full keypad (the view grew, then shrank again in the same frame as the keys refit, and level 1 was left 13 px low), going by the distance from the bottom last seen on a scroll, render or resize');
 }
