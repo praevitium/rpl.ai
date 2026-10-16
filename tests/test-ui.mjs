@@ -1591,6 +1591,16 @@ setAngle('RAD');
 }
 
 {
+  const toastSrc = readFileSync(new URL('../www/src/ui/toast.js', import.meta.url), 'utf8');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/transient = false \} = \{\}\) \{/.test(toastSrc)
+    && /if \(transient\) \{\s*const away = \(ev\) => \{\s*if \(t\.isConnected && t\.contains\(ev\.target\)\) return;\s*remove\(\);\s*document\.removeEventListener\('pointerdown', away, true\);/.test(toastSrc)
+    && /document\.addEventListener\('pointerdown', away, true\);/.test(toastSrc)
+    && (appSrc.match(/key: 'view', transient: true \}/g) || []).length === 2,
+    'toasts: the Keypad hidden and minimal view hints go at the first tap anywhere else, which still does what it touched, instead of covering the top of the stack for five seconds; their own Show and Leave buttons still work');
+}
+
+{
   const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
   const body = displaySrc.match(/function tallLevelScroll\(view, row\) \{([\s\S]*?)\n\}/)?.[1];
   const scrollFor = (scrollTop, clientHeight, offsetTop, offsetHeight) => new Function('view', 'row', body)({ scrollTop, clientHeight }, { offsetTop, offsetHeight });

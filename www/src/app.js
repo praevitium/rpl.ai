@@ -281,7 +281,7 @@ class App {
     this._applyPrefs();
     this._applyPhoneKeyboard();
     this.renderAll();
-    if (on) this.toast('Minimal view. The buttons at the top right open the menu or bring everything back.', { action: 'Leave', onAction: () => this.setMinimal(false), key: 'view' });
+    if (on) this.toast('Minimal view. The buttons at the top right open the menu or bring everything back.', { action: 'Leave', onAction: () => this.setMinimal(false), key: 'view', transient: true });
     else this.toasts.dismiss('view');
   }
 
@@ -305,7 +305,7 @@ class App {
     this.keypad.update();
     this._applyPhoneKeyboard();
     this.appbar.render();
-    if (layout === 'hidden') this.toast('Keypad hidden', { action: 'Show', onAction: () => this.setKeypadLayout(this._lastKeypad ?? 'full'), key: 'view' });
+    if (layout === 'hidden') this.toast('Keypad hidden', { action: 'Show', onAction: () => this.setKeypadLayout(this._lastKeypad ?? 'full'), key: 'view', transient: true });
     else this.toasts.dismiss('view');
   }
 
