@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.92 (2026-10-15)
+**Latest release:** v0.6.93 (2026-10-15)
 
 ---
 
@@ -20,6 +20,28 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.93 — 2026-10-15
+
+On a screen under 320 px wide, such as a folding phone's cover screen or a
+phone set to a larger text size, Ask fell off the right edge, the folder
+name in the app bar shrank to nothing, minimal view's leave button and the
+equation writer's Enter were cut off. The modes button now shortens
+(RAD · STD ·…) before the folder name does, the writer tabs drop their
+icons, and the status line and writer keys tighten, so everything stays
+on screen down to 260 px.
+
+A deep stack made every command slow: each one laid out every level, so
+with 2,000 levels a command took about 6 seconds on a mid-range phone. The
+stack now draws the 50 levels nearest level 1, with a row above them that
+shows 50 more while the levels in view stay where they are, and a level
+selected deeper, with the ▲ key, is drawn too. A command takes about a
+quarter of a second at any depth.
+
+Command search, the Catalog and autocomplete now describe every command
+in a sentence. FACTOR read "- The function expresses…", EXACT lost its
+first half, and C→P, ERF and a dozen others started mid-sentence in
+lower case.
 
 ## v0.6.92 — 2026-10-15
 
