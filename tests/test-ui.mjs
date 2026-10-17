@@ -1887,4 +1887,5 @@ setAngle('RAD');
     && /showCustomMenu\(\{ commit = true \} = \{\}\) \{\s*if \(commit && this\.entry\.buffer/.test(appSrc) && /showPreviousMenu\(\{ commit = true \} = \{\}\) \{[\s\S]{0,160}?this\.showMenu\(prev, \{ commit \}\)/.test(appSrc),
     'MENU and TMENU show their menu through a hook without committing the line they run from (which would run it again), a temporary one under the kind TMENU');
   assert(/const list = isName\(cst\) \? varRecall\(cst\.id\) : cst;/.test(appSrc), 'the custom menu follows a name stored in CST to the list it holds, as the HP does');
+  assert(/\.pop \.opt, \.pop \.grid button, \.pop \.layers button, \.ac-row \{ min-height: 40px; \}/.test(readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8')), 'autocomplete rows take a finger on touch, as the popover rows do');
 }
