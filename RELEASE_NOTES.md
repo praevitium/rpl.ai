@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.107 (2026-10-17)
+**Latest release:** v0.6.108 (2026-10-17)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.108 — 2026-10-17
+
+Custom menu items take the HP's forms: `{ "label" object }` labels the
+key and acts with the object, and `{ "label" { object ⇦object ⇨object } }`
+gives the left- and right-shifted presses their own objects, which a
+finger held on the key offers on a phone. In minimal view with the soft
+keys hidden, `MENU` and `TMENU` showed nothing; they now turn the soft
+keys on, as a menu picked from command search does. The autocomplete
+puts the minimal view or Keypad hidden hint away as it opens: with the
+keyboard up the hint sat over its rows, and a tap meant for a row only
+dismissed the hint.
 
 ## v0.6.107 — 2026-10-17
 
