@@ -1985,11 +1985,17 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   /* The format mode sizes to its label as before, so FIX 11 stays whole. */
   button.ann-m[data-mode="fmt"], button.ann-m.e { flex: 0 1 auto; max-width: none; }
   @container app (min-width: 360px) { button.ann-m { min-width: 40px; } .ann-status:has(> .ann-m:not([data-mode])) button.ann-m { min-width: 36px; } }
+  /* HALT is an annunciator beside the modes, not a mode: small and tight, and the modes give as they do under 320 px. */
+  .ann-m.halt { padding: 0; font-size: 11px; letter-spacing: 0; }
+  .ann-status:has(.ann-m.halt) button.ann-m { min-width: 28px; }
+  @container app (max-width: 359px) { .ann-status:has(.ann-m.halt) { padding-left: 6px; padding-right: 4px; } }
   /* Under 320 px the padding goes and the modes give a little, so the leave button stays on screen; FIX 11 takes two lines if it must. */
   @container app (max-width: 319px) {
     .ann-status { padding-left: 6px; padding-right: 4px; }
-    /* The amber pencil of a level being edited is a seventh mode at 280 px, which the side padding pays for. */
-    .ann-status:has(.ann-m.e) { padding-left: 2px; padding-right: 2px; }
+    /* The amber pencil of a level being edited, or HALT, is a seventh mode at 280 px, which the side padding pays for. */
+    .ann-status:has(.ann-m.e, .ann-m.halt) { padding-left: 2px; padding-right: 2px; }
+    /* Both together leave no room for the exact mode. */
+    .ann-status:has(.ann-m.halt):has(.ann-m.e) button.ann-m[data-mode="exact"] { display: none; }
     button.ann-m { min-width: 28px; }
     button.ann-m[data-mode="fmt"] { white-space: normal; line-height: 1.1; }
   }

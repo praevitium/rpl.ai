@@ -344,7 +344,7 @@ import { assert, assertThrows } from './helpers.mjs';
     'touch: with key vibration on, a held finger buzzes once when it opens a level or soft-key menu, the whole-menu grid or the keypad key layers, starts a Variables drag or a writer selection, or clears the line');
   assert(/UNIT_GROUPS\.map\(\(group\) => \(\{ label: group\.id, dir: true,/.test(appSrc) && /\.pop \.grid button \{[^}]*overflow-wrap: anywhere;/.test(gridCss),
     'menus: the UNITS menu\'s group keys wear the folder tab, as submenu keys do on the HP, and a long name in the whole-menu grid wraps inside its key as it does on a narrow soft key');
-  assert(/@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}\s*\/\*[^*]*\*\/\s*\.ann-status:has\(\.ann-m\.e\) \{ padding-left: 2px; padding-right: 2px; \}/.test(gridCss),
+  assert(/@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}\s*\/\*[^*]*\*\/\s*\.ann-status:has\(\.ann-m\.e, \.ann-m\.halt\) \{ padding-left: 2px; padding-right: 2px; \}/.test(gridCss),
     'minimal view: with a level being edited, the status line gives up its side padding under 320 px, so the amber pencil no longer pushes the leave button 2 px off a 280 px screen');
   assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),
     'UNIT_GROUPS: every key makes a unit object when attached to a number');
@@ -1667,7 +1667,7 @@ setAngle('RAD');
   assert(/^@container app \(max-width: 319px\) \{\n  \.crumbs \{ flex-shrink: 0; max-width: 40%; \}\n  \.modes \{ flex-shrink: 1; min-width: 0; \}/.test(bar)
     && /\.mode-chip\.summary span \{ overflow: hidden; text-overflow: ellipsis; \}\n  \.in-tabs \.i \{ display: none; \}/.test(bar)
     && appbarSrc.includes('<span>${escapeHtml(modesSummary())}</span>')
-    && /@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}[\s\S]{0,240}?button\.ann-m \{ min-width: 28px; \}/.test(css)
+    && /@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}[\s\S]{0,480}?button\.ann-m \{ min-width: 28px; \}/.test(css)
     && css.includes('@container app (max-width: 319px) { .writer-keys { gap: 2px; padding: 0 4px 8px; } .writer-keys .cmdline-go { min-width: 26px; padding: 0; white-space: nowrap; } }'),
     "narrow phones: under 320 px (a fold's cover screen, or a larger system text size) the directory name stays whole while the modes summary gives way, and Ask, minimal view's leave button and the equation writer's Enter stay on screen");
 }
@@ -1924,4 +1924,13 @@ setAngle('RAD');
     'MSGBOX: its banner is the message with one OK key that continues the program, no program source or debugger keys');
   assert(/if \(id === 'PROMPT' \|\| id === 'MSGBOX'\) \{[\s\S]{0,200}?_markSuspend\(toks, i \+ 1, id === 'PROMPT' \? 'prompt' : 'msgbox'\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
     'MSGBOX halts a running program the way PROMPT does, under its own kind');
+}
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
+  assert(displaySrc.includes(`const haltMark = halted ? '<span class="ann-m l halt">HALT</span>' : '';`)
+    && /\.ann-m\.halt \{ padding: 0; font-size: 11px; letter-spacing: 0; \}\s*\.ann-status:has\(\.ann-m\.halt\) button\.ann-m \{ min-width: 28px; \}\s*@container app \(max-width: 359px\) \{ \.ann-status:has\(\.ann-m\.halt\) \{ padding-left: 6px; padding-right: 4px; \} \}/.test(css)
+    && /\.ann-status:has\(\.ann-m\.halt\):has\(\.ann-m\.e\) button\.ann-m\[data-mode="exact"\] \{ display: none; \}/.test(css),
+    'minimal view: the HALT annunciator is small and tight beside the modes, which give room as under 320 px, so the leave button stays on screen while a program is halted (it ended 21 px off a 280 px screen, 13 at 320); with a level being edited too, the exact mode gives way under 320 px');
 }
