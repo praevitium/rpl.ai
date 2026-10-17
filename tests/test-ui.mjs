@@ -25,7 +25,7 @@ import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '
 import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName, COMPACT_KEYS, holdToRepeat } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { unitInfo, UNIT_CATALOG, parseUnitExpr, sameDims } from '../www/src/rpl/units.js';
-import { UNIT_GROUPS } from '../www/src/ui/menus.js';
+import { UNIT_GROUPS, unitConversions } from '../www/src/ui/menus.js';
 import { commandWordAt, commandHelpText } from '../www/src/ui/hover-help.js';
 import { holdToClear } from '../www/src/ui/input-area.js';
 import { parseCommandReference } from '../www/src/ui/command-reference.js';
@@ -295,6 +295,21 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(UNIT_GROUPS.length === 16 && new Set(UNIT_GROUPS.map((g) => g.id)).size === 16 && UNIT_GROUPS.every((g) => /^[A-Z]{3,5}$/.test(g.id) && g.title && g.units.length >= 3),
     'UNIT_GROUPS: the HP 50g\'s sixteen groups, with soft key names, titles and at least three units each');
   assert(new Set(unitKeys).size === unitKeys.length, 'UNIT_GROUPS: no unit key appears in two groups');
+  const { parseUnitExpr, formatUnitExpr } = await import('../www/src/rpl/units.js');
+  const conversions = (u) => unitConversions(parseUnitExpr(u)).map(formatUnitExpr);
+  const km = conversions('km');
+  assert(km[0] === 'm' && km.includes('mi') && km.includes('ft') && !km.includes('km') && !km.includes('kg') && !km.includes('m^2') && new Set(km).size === km.length,
+    'unitConversions: a length lists every length key of the UNITS menu in menu order, itself left out, and nothing of another dimension');
+  assert(conversions('kph').join(' ') === 'm/s cm/s ft/s mph knot c' && conversions('N*m').at(-1) === 'kg*m^2/s^2' && conversions('ft/s^2').join(' ') === 'ga m/s^2',
+    'unitConversions: a speed keeps to the speed keys, and a unit whose SI base form is no key gets that form last (kg*m^2/s^2 for N*m)');
+  assert(conversions('°C').join(' ') === 'K °F °R' && conversions('m^2').includes('acre') && conversions('kg').includes('lb') && conversions('m^3').includes('L'),
+    'unitConversions: temperatures, areas, masses and volumes find their menu keys through the dimensions, so m^3 reaches L and gal');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/isUnit\(value\) \? item\('convert', 'chr', 'Convert to…'\) : ''/.test(appSrc) && /case 'convert': this\._convertMenu\(level, anchor\); return;/.test(appSrc)
+    && /unitConversions\(value\.uexpr\)/.test(appSrc) && /this\.stack\.push\(Unit\(1, targets\[/.test(appSrc) && /this\.stack\.runOp\(\(\) => lookup\('CONVERT'\)\.fn\(this\.stack, this\.entry\)\); \}, 'CONVERT'\)/.test(appSrc),
+    'stack: a unit level\'s ⋯ menu has Convert to…, whose rows show the level in each unit of its dimensions and run CONVERT with a 1 of that unit, so LASTARG and Undo see the HP\'s own command');
+  assert((appSrc.match(/this\.stack\.runOp\(\(\) => lookup\(op\)\.fn\(this\.stack, this\.entry\)\)/g) || []).length === 2,
+    'stack: a level menu\'s EVAL, →NUM, DBUG, →LIST, DUPN and DROPN run through Stack.runOp, so LASTARG gives their arguments as it does for a typed command');
   assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),
     'UNIT_GROUPS: every key makes a unit object when attached to a number');
   const ONE_QUANTITY = ['LENG', 'AREA', 'VOL', 'FORCE', 'ENRG', 'POWR', 'PRESS', 'TEMP'];

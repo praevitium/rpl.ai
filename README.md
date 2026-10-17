@@ -206,7 +206,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   there too (`DEG`, `FIX`, `HEX`) rather than changing the mode.
 - Tap a stack level for its actions, on a line under it so they never cover
   the value: Edit, View, Pick (DUP on level 1), Roll (SWAP on level 2), Drop, and ⋯
-  (or hold a finger on the level) for EVAL, →NUM, copy, share, store and the rest (and, for a program, Debug). View is the HP
+  (or hold a finger on the level) for EVAL, →NUM, copy, share, store and the rest (and, for a program, Debug; for a value
+  with units, Convert to…, which lists the value in every unit of the UNITS
+  menu with the same dimensions, `254._cm`, `100._in`, `2.54_m`…, and runs
+  CONVERT on the one you tap). View is the HP
   interactive stack's VIEW, which shows the level full size (a long number
   in full, a formula or matrix that scrolls both ways; pinch or double-tap to zoom) with Edit, Copy and
   Share under it; on a screen under 320 px wide (360 for a formula, which

@@ -16,7 +16,8 @@ import { Sheets } from './ui/sheets.js';
 import { Tour } from './ui/tour.js';
 import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
-import { MENU_FAMILIES, UNIT_GROUPS, BRANCH_KEYS, menuById } from './ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, BRANCH_KEYS, menuById, unitConversions } from './ui/menus.js';
+import { convertValue } from './rpl/units.js';
 import { MODES } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
 import { clampLevel, dropLevel, keepLevels, moveLevel, replaceLevel } from './ui/stack-levels.js';
@@ -39,7 +40,7 @@ import { lookup, allOps, setGraphicsHook } from './rpl/ops.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
-  isMatrix, isVector, isReal, isInteger, isRational, isUnit, Symbolic, Integer,
+  isMatrix, isVector, isReal, isInteger, isRational, isUnit, Symbolic, Integer, Unit,
 } from './rpl/types.js';
 import {
   loadInitialState, adoptStoredState, saveToLocalStorage, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
@@ -697,12 +698,12 @@ class App {
     const runOn = (op) => {
       this.clearSelection();
       this.entry._snapForUndo();
-      this.entry.safeRun(() => { moveLevel(this.stack, level, 1); lookup(op).fn(this.stack, this.entry); }, op);
+      this.entry.safeRun(() => { moveLevel(this.stack, level, 1); this.stack.runOp(() => lookup(op).fn(this.stack, this.entry)); }, op);
     };
     const runOnLevels = (op) => {
       this.clearSelection();
       this.entry._snapForUndo();
-      this.entry.safeRun(() => { this.stack.push(Integer(level)); lookup(op).fn(this.stack, this.entry); }, op);
+      this.entry.safeRun(() => { this.stack.push(Integer(level)); this.stack.runOp(() => lookup(op).fn(this.stack, this.entry)); }, op);
     };
     switch (act) {
       case 'edit': this.editLevel(level); return;
@@ -720,6 +721,7 @@ class App {
       case 'eval': runOn('EVAL'); return;
       case 'debug': runOn('DBUG'); return;
       case 'num': runOn('→NUM'); return;
+      case 'convert': this._convertMenu(level, anchor); return;
       case 'plot': this.clearSelection(); this.plotExpression(value.expr); return;
       case 'copy': {
         const table = spreadsheetHtml(value);
@@ -779,6 +781,7 @@ class App {
         item('eval', 'play', 'Evaluate (EVAL)'),
         isProgram(value) ? item('debug', 'step', 'Debug step by step (DBUG)') : '',
         item('num', 'chr', 'To a number (→NUM)'),
+        isUnit(value) ? item('convert', 'chr', 'Convert to…') : '',
         isSymbolic(value) ? item('plot', 'plot', 'Plot it') : '',
         item('ask', 'spark', 'Ask the assistant about it'),
       ],
@@ -796,6 +799,23 @@ class App {
     this.popover.open(anchor, html, {
       label: `Level ${level}`,
       onClick: (t) => { this.popover.close({ restoreFocus: false }); this.levelAction(t.dataset.act, level, anchor); },
+    });
+  }
+
+  // The HP's CONVERT with its target typed for you: the level in each unit of its dimensions, so a tap says 1_in CONVERT.
+  _convertMenu(level, anchor) {
+    const value = this.stack.peek(level);
+    const targets = unitConversions(value.uexpr);
+    if (!targets.length) { this.toast(`No other unit in the UNITS menu matches level ${level}`); return; }
+    const rows = targets.map((uexpr, i) => `<button type="button" class="opt" data-v="${i}"><span class="ck">${icon('chr', 'sm')}</span><b>${escapeHtml(format(Unit(convertValue(value.value, value.uexpr, uexpr), uexpr), this.display.displayOpts))}</b></button>`);
+    this.popover.open(anchor ?? this.display.stackView.querySelector('.st-row.sel'), `<h6>Convert level ${level} to</h6>${rows.join('')}`, {
+      label: `Convert level ${level}`,
+      onClick: (t) => {
+        this.popover.close({ restoreFocus: false });
+        this.clearSelection();
+        this.entry._snapForUndo();
+        this.entry.safeRun(() => { moveLevel(this.stack, level, 1); this.stack.push(Unit(1, targets[+t.dataset.v])); this.stack.runOp(() => lookup('CONVERT').fn(this.stack, this.entry)); }, 'CONVERT');
+      },
     });
   }
 

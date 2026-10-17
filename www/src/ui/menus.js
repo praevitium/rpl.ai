@@ -1,3 +1,5 @@
+import { parseUnitExpr, sameDims, uexprEqual, toBaseUexpr } from '../rpl/units.js';
+
 export const MENU_FAMILIES = Object.freeze([
   { id: 'STACK', short: 'STACK', title: 'Stack', category: 'Stack' },
   { id: 'ARITH', short: 'ARITH', title: 'Arithmetic', category: 'Arithmetic' },
@@ -44,6 +46,17 @@ export const UNIT_GROUPS = Object.freeze([
   { id: 'RAD', title: 'Radiation', units: ['Bq', 'Ci', 'Gy', 'rad', 'Sv', 'rem', 'R'] },
   { id: 'VISC', title: 'Viscosity', units: ['P', 'cP', 'St', 'cSt'] },
 ]);
+
+// Every UNITS key with uexpr's dimensions, in menu order, then the SI base form, the unit itself left out.
+export function unitConversions(uexpr) {
+  const targets = UNIT_GROUPS.flatMap((g) => g.units).map((u) => parseUnitExpr(u));
+  targets.push(toBaseUexpr(uexpr).uexpr);
+  const out = [];
+  for (const t of targets) {
+    if (sameDims(t, uexpr) && !uexprEqual(t, uexpr) && !out.some((o) => uexprEqual(o, t))) out.push(t);
+  }
+  return out;
+}
 
 export const OWN_MENUS = Object.freeze([
   { id: 'VARS', short: 'VARS', title: 'Variables in this directory' },
