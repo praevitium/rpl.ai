@@ -1006,6 +1006,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 :root[data-theme="classic"] .sk .fk { color: rgba(201, 214, 185, .5); }
 :root[data-theme="classic"] .sk.l { color: #f2c07a; } :root[data-theme="classic"] .sk.r { color: #f5a596; }
 :root[data-theme="classic"] .mb-menu { background: transparent; border-color: rgba(201, 214, 185, .25); }
+/* VIEW's sheet is no LCD, so the value takes the sheet's ink rather than the LCD's. */
+:root[data-theme="classic"] .sheet-view { --stack-ink: var(--ink); }
 :root[data-theme="classic"] .bn-prog { background: #b9c7a9; color: var(--lcd-ink); }
 :root[data-theme="classic"][data-view="minimal"] .work { padding: 14px; background: var(--bg); }
 :root[data-theme="classic"][data-view="minimal"] .well { border-radius: 16px 16px 0 0; box-shadow: none; background: transparent; }
@@ -2047,6 +2049,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
     .mb-menu .short { display: none; }
     .mb-keys { gap: 2px; }
     .mb-pg button { min-width: 36px; padding: 0 2px; }
+    .mb-menu { position: relative; }
+    .mb-menu::before { content: ""; position: absolute; inset: 0 -3px 0 -4px; }
   }
   /* Classic's annunciators are 11 px tall; each takes a finger across its row, half the gap to the next. */
   :root[data-theme="classic"] .ann-g[role="button"] { position: relative; }

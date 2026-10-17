@@ -1697,6 +1697,10 @@ setAngle('RAD');
     && /@container work \(max-width: 359px\) \{\s*\.mb-menu sup \{ display: none; \}\s*\.mb-pg button:has\(sup\) \{ align-content: center; gap: 3px; \}\s*\.mb-pg sup \{ display: block;/.test(touch)
     && /@container work \(max-width: 319px\) \{\s*\.menubar \{ gap: 3px; padding-left: 4px; padding-right: 4px; \}\s*\.mb-menu \.i \{ display: block; \}\s*\.mb-menu \.short \{ display: none; \}\s*\.mb-keys \{ gap: 2px; \}\s*\.mb-pg button \{ min-width: 36px; padding: 0 2px; \}/.test(touch),
     'soft keys, touch: under 360 px the page count moves from the menu button onto NXT, and under 320 px the menu button keeps only its icon, so the six soft keys stay 32 px wide (with a level selected they were 22 px at 280 and 29 at 320)');
+  assert(/:root\[data-theme="classic"\] \.sheet-view \{ --stack-ink: var\(--ink\); \}/.test(css),
+    'Classic theme: VIEW\'s sheet shows the value in the sheet\'s ink, not the LCD\'s dark green (on the dark sheet it was 1.3:1, unreadable)');
+  assert(/\.mb-menu \{ position: relative; \}\s*\.mb-menu::before \{ content: ""; position: absolute; inset: 0 -3px 0 -4px; \}/.test(touch.slice(touch.indexOf('@container work (max-width: 319px)'))),
+    'soft keys, touch: under 320 px the 29 px menu button takes a finger into the bar\'s padding and the gap beside it (36 px)');
   assert(/@container app \(max-width: 319px\) \{\s*:root\[data-theme="classic"\] \.menubar \{ margin-inline: -10px; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.menubar \{ margin: 0 -14px -14px; \}/.test(touch),
     'soft keys, touch, Classic theme: under 320 px the menu bar runs past the bezel to the screen edges, so its keys are 32 px at 280 too (they were 29, and 27 in minimal view)');
   assert(/:root\[data-theme="classic"\] \.ann-g\[role="button"\] \{ position: relative; \}\s*:root\[data-theme="classic"\] \.ann-g\[role="button"\]::before \{ content: ""; position: absolute; inset: -14px -7px; \}/.test(touch),
