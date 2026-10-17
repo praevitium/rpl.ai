@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.105 (2026-10-17)
+**Latest release:** v0.6.106 (2026-10-17)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.106 — 2026-10-17
+
+Hold the soft keys' menu button to go back to the menu you had before,
+one hold where the picker's Recent group was two taps; with nothing
+before it, a note says so. The whole-menu grid under a held NXT captions
+each row of six as a page, so it reads as the soft-key pages do. A line
+recalled with a held Enter, or a level echoed, into the middle of a typed
+line fused with the word under the cursor (7 8 with the cursor after the
+7 became 7 98); a token typed into a line now keeps a space on each side
+it needs.
 
 ## v0.6.105 — 2026-10-17
 
