@@ -317,6 +317,8 @@ import { assert, assertThrows } from './helpers.mjs';
     'stack: a selected unit level\'s soft keys have CONV, which opens the Convert to… list its ⋯ menu has');
   assert(/onHold: dir \? null : \(anchor\) => this\._heldKeyMenu\(\[\{ text: `Store level 1 in \$\{id\}`, run: \(\) => this\.pressVariable\(id, 'L'\) \}, \{ text: `Recall \$\{id\}`, run: \(\) => this\.pressVariable\(id, 'R'\) \}\], anchor, 'Variable'\)/.test(appSrc),
     'variables: a finger held on a variable\'s soft key offers the shifted key\'s Store level 1 and Recall, and a folder\'s key offers nothing');
+  assert(/\$\{isUnit\(value\) \? '<button type="button" data-row-act="convert" title="Convert to another unit \(CONVERT\)">Conv<\/button>' : ''\}/.test(appSrc),
+    'stack: a selected unit level\'s toolbar has Conv, which opens its Convert to… list as a formula\'s has Plot');
   assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),
     'UNIT_GROUPS: every key makes a unit object when attached to a number');
   const ONE_QUANTITY = ['LENG', 'AREA', 'VOL', 'FORCE', 'ENRG', 'POWR', 'PRESS', 'TEMP'];
@@ -1738,6 +1740,7 @@ setAngle('RAD');
     'classic: the halt banner\'s current word is dark on an amber block (amber on the LCD-green program box read at 1.1:1)');
   assert(/\.pal-row\.on \.d, \.ac-row\.on em \{ color: var\(--ink2\); \}/.test(css),
     'search: the highlighted command-search and autocomplete row\'s secondary text takes the brighter ink (--ink3 read at 4.0:1 on the row\'s fill in the dark look, 3.7 in Classic)');
+  assert(/@container app \(max-width: 359px\) \{ \.st-acts \[data-row-act="convert"\] \{ display: none; \} \}/.test(css), 'stack: a unit level\'s Conv button waits in ⋯ under 360 px, as Plot does under 320');
   assert(/\.mb-menu \{ position: relative; \}\s*\.mb-menu::before \{ content: ""; position: absolute; inset: 0 -3px 0 -4px; \}/.test(touch.slice(touch.indexOf('@container work (max-width: 319px)'))),
     'soft keys, touch: under 320 px the 29 px menu button takes a finger into the bar\'s padding and the gap beside it (36 px)');
   assert(/@container app \(max-width: 319px\) \{\s*:root\[data-theme="classic"\] \.menubar \{ margin-inline: -10px; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.menubar \{ margin: 0 -14px -14px; \}/.test(touch),

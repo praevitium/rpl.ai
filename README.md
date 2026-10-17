@@ -209,7 +209,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   finger on a unit key for its ⇦ and ⇨ forms. The MODES keys type their command
   there too (`DEG`, `FIX`, `HEX`) rather than changing the mode.
 - Tap a stack level for its actions, on a line under it so they never cover
-  the value: Edit, View, Pick (DUP on level 1), Roll (SWAP on level 2), Drop, and ⋯
+  the value: Edit, View, Pick (DUP on level 1), Roll (SWAP on level 2), Conv for
+  a value with units (from 360 px wide), Drop, and ⋯
   (or hold a finger on the level) for EVAL, →NUM, copy, share, store and the rest (and, for a program, Debug; for a value
   with units, Convert to…, which lists the value in every unit of the UNITS
   menu with the same dimensions, `254._cm`, `100._in`, `2.54_m`…, and runs
