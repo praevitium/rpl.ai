@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.104 (2026-10-17)
+**Latest release:** v0.6.105 (2026-10-17)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.105 — 2026-10-17
+
+Hold the Enter beside the command line to pick one of the last four lines
+you entered, as the HP's CMD offers; it goes back on an empty line or into
+the line you are typing. With key vibration on, a held finger buzzes once
+as it opens a level's menu, a soft key's or the whole-menu grid, the keypad
+key layers, picks up a variable, selects in the equation writer or clears
+the line, as a key buzzes on its press. In minimal view at 280 px the
+status line kept its side padding while a level was edited, so the amber
+pencil pushed the leave button 2 px off the screen; the padding goes while
+the pencil shows.
 
 ## v0.6.104 — 2026-10-17
 
