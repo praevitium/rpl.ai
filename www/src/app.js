@@ -1243,6 +1243,7 @@ class App {
         ? { label: 'PLOT', title: 'Plot it', onPress: act('plot') }
         : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },
       { label: '→NUM', title: 'Evaluate to a number', onPress: act('num') },
+      ...(isUnit(value) ? [{ label: 'CONV', title: 'Convert it to another unit (CONVERT)', onPress: act('convert') }] : []),
       { label: 'STO…', title: 'Store it in a variable', onPress: act('store') },
       { label: 'COPY', title: 'Copy to the clipboard · ↰ copies it as LaTeX', onPress: act('copy'), onPressL: act('latex') },
       { label: 'ASK ✦', title: 'Ask the assistant about it', onPress: act('ask') },
@@ -1276,6 +1277,7 @@ class App {
       onPress: () => this.insertUnit(unit),
       onPressL: () => this.insertUnit(unit, 'convert'),
       onPressR: () => this.insertUnit(unit, 'divide'),
+      onHold: (anchor) => this._heldKeyMenu([{ text: `Convert level 1 to ${unit}`, run: () => this.insertUnit(unit, 'convert') }, { text: `Divide by ${unit}`, run: () => this.insertUnit(unit, 'divide') }], anchor, 'Unit'),
     }));
     this.setMenu([back, ...keys], 'UNITS');
   }
@@ -1382,20 +1384,20 @@ class App {
       onPress: type([word]),
       onPressL: left && type(left),
       onPressR: right && type(right),
-      onHold: left && ((anchor) => this._structureMenu([left, right].filter(Boolean), anchor)),
+      onHold: left && ((anchor) => this._heldKeyMenu([left, right].filter(Boolean).map((words) => ({ text: words.join(' … '), run: type(words) })), anchor, 'Structures')),
     }));
     this.setMenu(slots, 'BRCH');
   }
 
-  // A phone with the keypad hidden has no shift, so a finger held on a BRCH key offers what ⇦ and ⇨ type.
-  _structureMenu(forms, anchor) {
-    const html = forms.map((words, i) => `<button type="button" class="opt" data-v="${i}"><span class="ck">${i ? '⇨' : '⇦'}</span><b>${escapeHtml(words.join(' … '))}</b></button>`).join('');
+  // A phone with the keypad hidden has no shift, so a finger held on a key offers what ⇦ and ⇨ would do with it.
+  _heldKeyMenu(options, anchor, label) {
+    const html = options.map((o, i) => `<button type="button" class="opt" data-v="${i}"><span class="ck">${i ? '⇨' : '⇦'}</span><b>${escapeHtml(o.text)}</b></button>`).join('');
     this.popover.open(anchor, html, {
-      label: 'Structures',
+      label,
       keepFocus: true,
       onClick: (target) => {
         this.popover.close({ restoreFocus: false });
-        this.entry.typeStructure(forms[Number(target.dataset.v)]);
+        options[Number(target.dataset.v)].run();
       },
     });
   }

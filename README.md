@@ -145,7 +145,8 @@ RPL puts the numbers first and the operation last. Each value goes on the
   on the HP 50g (LENG, AREA, VOL, TIME, SPEED, MASS, FORCE, ENRG, POWR, PRESS,
   TEMP, ELEC, ANGL, LIGHT, RAD, VISC), with a key for each. A unit key
   multiplies level 1 by the unit, ↰ converts level 1 to it and ↱ divides by
-  it, so `5` ft then ↰ m gives `1.524_m`. SIN, COS and TAN take an angle unit, which
+  it, so `5` ft then ↰ m gives `1.524_m`; a finger held on the key offers
+  both. SIN, COS and TAN take an angle unit, which
   overrides the angle mode: `30_° SIN` gives `0.5` whatever DEG, RAD or GRD
   says. Units work inside algebraics too, with a compound unit in
   parentheses: store `2_s` in `T` and `'9.81_(m/s^2)*T^2/2' EVAL` gives
@@ -202,14 +203,15 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   program ⇦ and ⇨ type a STO or RCL of it, as on the HP. So does a CST
   key, whose command (such as SIN) runs on a bare line, and in a program
   the UNITS keys type `1_m *`, `1_m CONVERT` (⇦) or `1_m /` (⇨), or attach
-  the unit to the number you are typing. The MODES keys type their command
+  the unit to the number you are typing; with no shift key to hand, hold a
+  finger on a unit key for its ⇦ and ⇨ forms. The MODES keys type their command
   there too (`DEG`, `FIX`, `HEX`) rather than changing the mode.
 - Tap a stack level for its actions, on a line under it so they never cover
   the value: Edit, View, Pick (DUP on level 1), Roll (SWAP on level 2), Drop, and ⋯
   (or hold a finger on the level) for EVAL, →NUM, copy, share, store and the rest (and, for a program, Debug; for a value
   with units, Convert to…, which lists the value in every unit of the UNITS
   menu with the same dimensions, `254._cm`, `100._in`, `2.54_m`…, and runs
-  CONVERT on the one you tap). View is the HP
+  CONVERT on the one you tap; the level's soft keys have it as CONV). View is the HP
   interactive stack's VIEW, which shows the level full size (a long number
   in full, a formula or matrix that scrolls both ways; pinch or double-tap to zoom) with Edit, Copy and
   Share under it; on a screen under 320 px wide (360 for a formula, which

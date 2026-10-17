@@ -310,6 +310,11 @@ import { assert, assertThrows } from './helpers.mjs';
     'stack: a unit level\'s ⋯ menu has Convert to…, whose rows show the level in each unit of its dimensions and run CONVERT with a 1 of that unit, so LASTARG and Undo see the HP\'s own command');
   assert((appSrc.match(/this\.stack\.runOp\(\(\) => lookup\(op\)\.fn\(this\.stack, this\.entry\)\)/g) || []).length === 2,
     'stack: a level menu\'s EVAL, →NUM, DBUG, →LIST, DUPN and DROPN run through Stack.runOp, so LASTARG gives their arguments as it does for a typed command');
+  assert(/onHold: \(anchor\) => this\._heldKeyMenu\(\[\{ text: `Convert level 1 to \$\{unit\}`, run: \(\) => this\.insertUnit\(unit, 'convert'\) \}, \{ text: `Divide by \$\{unit\}`, run: \(\) => this\.insertUnit\(unit, 'divide'\) \}\], anchor, 'Unit'\)/.test(appSrc)
+    && /onHold: left && \(\(anchor\) => this\._heldKeyMenu\(\[left, right\]\.filter\(Boolean\)\.map\(\(words\) => \(\{ text: words\.join\(' … '\), run: type\(words\) \}\)\), anchor, 'Structures'\)\)/.test(appSrc) && !/_structureMenu/.test(appSrc),
+    'units: a finger held on a UNITS soft key offers the shifted key\'s Convert and Divide through the held-key menu a BRCH key\'s structures use');
+  assert(/\.\.\.\(isUnit\(value\) \? \[\{ label: 'CONV', title: 'Convert it to another unit \(CONVERT\)', onPress: act\('convert'\) \}\] : \[\]\)/.test(appSrc),
+    'stack: a selected unit level\'s soft keys have CONV, which opens the Convert to… list its ⋯ menu has');
   assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),
     'UNIT_GROUPS: every key makes a unit object when attached to a number');
   const ONE_QUANTITY = ['LENG', 'AREA', 'VOL', 'FORCE', 'ENRG', 'POWR', 'PRESS', 'TEMP'];
