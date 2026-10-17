@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.103 (2026-10-17)
+**Latest release:** v0.6.104 (2026-10-17)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.104 — 2026-10-17
+
+A finger held on NXT lays every key of the menu out at once, so the 24
+lengths of the UNITS menu are one tap away instead of four pages; the key
+you tap runs as its soft key would, and the soft keys turn to its page.
+A key that opens a folder wears its tab there as on the soft keys, where
+the UNITS groups now wear it too, and a long name wraps inside its key. A
+selected level whose height had a fraction of a pixel showed with its
+bottom outline under the view's edge after a turn or when selected from a
+scrolled stack; it now sits whole.
 
 ## v0.6.103 — 2026-10-17
 
