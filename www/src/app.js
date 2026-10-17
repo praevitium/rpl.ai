@@ -1403,7 +1403,7 @@ class App {
 
   // A phone with the keypad hidden has no shift, so a finger held on a key offers what ⇦ and ⇨ would do with it.
   _heldKeyMenu(options, anchor, label) {
-    const html = options.map((o, i) => `<button type="button" class="opt" data-v="${i}"><span class="ck">${i ? '⇨' : '⇦'}</span><b>${escapeHtml(o.text)}</b></button>`).join('');
+    const html = options.map((o, i) => `<button type="button" class="opt" data-v="${i}"><span class="ck">${o.mark ?? (i ? '⇨' : '⇦')}</span><b>${escapeHtml(o.text)}</b></button>`).join('');
     this.popover.open(anchor, html, {
       label,
       keepFocus: true,
@@ -1412,6 +1412,13 @@ class App {
         options[Number(target.dataset.v)].run();
       },
     });
+  }
+
+  // The HP's CMD: the last four lines entered, newest first; one goes back on an empty line or into the line typed.
+  showLastLines(anchor) {
+    const lines = [...new Set(this.entry.getHistory().reverse())].slice(0, 4);
+    if (!lines.length) return;
+    this._heldKeyMenu(lines.map((line) => ({ text: line, mark: '', run: () => (this.entry.buffer ? this.entry.typeToken(line) : this.entry.recall(line)) })), anchor, 'Last lines');
   }
 
   pressVariable(name, layer = null) {

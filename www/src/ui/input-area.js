@@ -14,29 +14,40 @@ const HINTS = Object.freeze({
   matrix: ['Tab next cell', '⇧Enter next row', 'Enter pushes', 'Esc cancels'],
 });
 
-// Holding ⌫ clears the whole line, with Undo, wherever a quick press deletes a character from it.
-export function holdToClear(el, app) {
+// A button held acts instead of pressed: arm() says whether a press may become a hold and gives fire() what it
+// needs; the release's click is swallowed after a hold, and so is Android's long-press menu.
+function holdOn(el, app, arm, fire) {
   let hold = null;
   let held = false;
   const cancel = () => { clearTimeout(hold?.timer); hold = null; };
-  const fire = () => {
-    const { text } = hold;
+  const go = () => {
+    const { state } = hold;
     cancel();
     held = true;
-    if (app.entry.buffer) app.clearLine(text);
+    fire(state);
   };
   const swallow = (ev) => { ev.preventDefault(); ev.stopImmediatePropagation(); };
   el.addEventListener('pointerdown', (ev) => {
     cancel();
     held = false;
-    const clears = app.inputMode === 'rpl' && app.selection == null && !app.shift && app.entry.buffer;
-    if (ev.button === 0 && clears) hold = { text: app.entry.buffer, timer: setTimeout(fire, LONG_PRESS_MS) };
+    const state = ev.button === 0 && arm();
+    if (state) hold = { state, timer: setTimeout(go, LONG_PRESS_MS) };
   }, { capture: true });
   for (const type of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(type, cancel);
   el.addEventListener('contextmenu', (ev) => {
-    if (hold) { swallow(ev); fire(); } else if (held) swallow(ev);
+    if (hold) { swallow(ev); go(); } else if (held) swallow(ev);
   }, { capture: true });
   el.addEventListener('click', (ev) => { if (held) { held = false; swallow(ev); } }, { capture: true });
+}
+
+// Holding ⌫ clears the whole line, with Undo, wherever a quick press deletes a character from it.
+export function holdToClear(el, app) {
+  holdOn(el, app, () => app.inputMode === 'rpl' && app.selection == null && !app.shift && app.entry.buffer, (text) => { if (app.entry.buffer) app.clearLine(text); });
+}
+
+// Holding Enter beside the line offers the last lines entered, the HP's CMD, where a quick press enters the line.
+export function holdForLines(el, app) {
+  holdOn(el, app, () => app.inputMode === 'rpl' && app.entry.getHistory().length > 0, () => app.showLastLines(el));
 }
 
 export function writerKeys(keys, press) {
@@ -99,7 +110,7 @@ export class InputArea {
     this.go = document.createElement('button');
     this.go.type = 'button';
     this.go.className = 'cmdline-go';
-    this.go.title = 'Enter (DUP on an empty line)';
+    this.go.title = 'Enter (DUP on an empty line; hold for the last lines)';
     this.go.setAttribute('aria-label', 'Enter');
     this.go.innerHTML = icon('enter', 'sm');
     this.back = document.createElement('button');
@@ -121,6 +132,7 @@ export class InputArea {
     });
     for (const button of [this.go, this.back]) button.addEventListener('mousedown', (e) => e.preventDefault());
     this.go.addEventListener('click', () => app.commitEntry());
+    holdForLines(this.go, app);
     holdToClear(this.back, app);
     this.back.addEventListener('click', () => app.backspace());
     cmdline.addEventListener('mousedown', (e) => {

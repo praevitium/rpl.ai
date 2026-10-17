@@ -27,7 +27,7 @@ import { allOps } from '../www/src/rpl/ops.js';
 import { unitInfo, UNIT_CATALOG, parseUnitExpr, sameDims } from '../www/src/rpl/units.js';
 import { UNIT_GROUPS, unitConversions } from '../www/src/ui/menus.js';
 import { commandWordAt, commandHelpText } from '../www/src/ui/hover-help.js';
-import { holdToClear } from '../www/src/ui/input-area.js';
+import { holdToClear, holdForLines } from '../www/src/ui/input-area.js';
 import { parseCommandReference } from '../www/src/ui/command-reference.js';
 import { assert, assertThrows } from './helpers.mjs';
 
@@ -329,6 +329,10 @@ import { assert, assertThrows } from './helpers.mjs';
   const gridCss = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/class="\$\{on \? 'on' : ''\}\$\{slot\.dir \? ' dir' : ''\}"/.test(menubarAll) && /\.pop \.grid button\.dir::before \{ content: ""; position: absolute; left: 6px; top: -1px; width: 30%; height: 3px;/.test(gridCss),
     'menus: a folder key in the whole-menu grid wears the tab its soft key does');
+  const inputAreaSrc = readFileSync(new URL('../www/src/ui/input-area.js', import.meta.url), 'utf8');
+  assert(/showLastLines\(anchor\) \{\s*const lines = \[\.\.\.new Set\(this\.entry\.getHistory\(\)\.reverse\(\)\)\]\.slice\(0, 4\);\s*if \(!lines\.length\) return;\s*this\._heldKeyMenu\(lines\.map\(\(line\) => \(\{ text: line, mark: '', run: \(\) => \(this\.entry\.buffer \? this\.entry\.typeToken\(line\) : this\.entry\.recall\(line\)\) \}\)\), anchor, 'Last lines'\);/.test(appSrc)
+    && /holdForLines\(this\.go, app\);/.test(inputAreaSrc) && /<span class="ck">\$\{o\.mark \?\? \(i \? '⇨' : '⇦'\)\}<\/span>/.test(appSrc),
+    'command line: a finger held on the Enter beside the line offers the last four lines entered, newest first (the HP\'s CMD), which go back on an empty line or into the line being typed');
   assert(/UNIT_GROUPS\.map\(\(group\) => \(\{ label: group\.id, dir: true,/.test(appSrc) && /\.pop \.grid button \{[^}]*overflow-wrap: anywhere;/.test(gridCss),
     'menus: the UNITS menu\'s group keys wear the folder tab, as submenu keys do on the HP, and a long name in the whole-menu grid wraps inside its key as it does on a narrow soft key');
   assert(/@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}\s*\/\*[^*]*\*\/\s*\.ann-status:has\(\.ann-m\.e\) \{ padding-left: 2px; padding-right: 2px; \}/.test(gridCss),
@@ -1383,6 +1387,24 @@ setAngle('RAD');
   el.fire('pointerdown');
   el.fire('pointerup');
   assert(!el.fire('contextmenu').stopped && !el.fire('click').stopped && !app.cleared.length, '⌫ held: a quick press only deletes, and a right-click still shows the layers');
+  const linesApp = (history) => ({ inputMode: 'rpl', entry: { buffer: '', getHistory: () => history }, shown: 0, buzzed: 0, showLastLines() { this.shown++; }, buzzHold() { this.buzzed++; } });
+  app = linesApp(['1 2 +', '3 4 *']);
+  el = button();
+  holdForLines(el, app);
+  el.fire('pointerdown');
+  const linesMenu = el.fire('contextmenu');
+  assert(app.shown === 1 && linesMenu.prevented && el.fire('click').stopped, 'Enter held: a long press on the Enter beside the line offers the last lines, and the release enters nothing');
+  app = linesApp([]);
+  el = button();
+  holdForLines(el, app);
+  el.fire('pointerdown');
+  assert(!el.fire('contextmenu').stopped && !app.shown, 'Enter held: with no line entered yet a hold offers nothing');
+  app = linesApp(['1']);
+  el = button();
+  holdForLines(el, app);
+  el.fire('pointerdown');
+  el.fire('pointerup');
+  assert(!el.fire('click').stopped && !app.shown && !app.buzzed, 'Enter held: a quick press still enters the line');
 
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   let presses = 0;
