@@ -25,6 +25,11 @@ register('PROMPT', () => {
 }, { category: 'Control flow / debug', categoryOrder: 4, label: "PROMPT" });
 
 
+register('MSGBOX', () => {
+  throw new RPLError('MSGBOX: not inside a running program');
+}, { category: 'Control flow / debug', categoryOrder: 9, label: "MSGBOX" });
+
+
 // Resumes the most recently halted program, consuming any PROMPT banner.
 function resumeHalted() {
   if (inScratchState()) throw new RPLError('Cannot dry-run a halted program');

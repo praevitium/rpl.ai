@@ -7327,3 +7327,21 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
     '« 1 10 START DUP 1 + 2 STEP »', '« DO 1 - DUP UNTIL DUP 0 ≤ END »', '« WHILE DUP 0 > REPEAT 1 - END DROP »', '« IFERR 1 0 / THEN DROP2 "err" END »'].every(same),
     'formatProgramLines reads back as the same program');
 }
+
+{
+  resetHome(); clearAllHalted(); clearPromptMessage();
+  const s = new Stack();
+  s.push(Program([Str('Saved'), Name('MSGBOX'), Integer(7n)]));
+  lookup('EVAL').fn(s);
+  const halted = getHalted();
+  assert(halted && halted.kind === 'msgbox' && haltedDepth() === 1 && s.depth === 0, 'MSGBOX halts the program under its own kind, its message taken off the stack');
+  const msg = getPromptMessage();
+  assert(msg && msg.type === 'string' && msg.value === 'Saved', 'MSGBOX keeps the message for the banner');
+  lookup('CONT').fn(s);
+  assert(getPromptMessage() === null && getHalted() === null && s.depth === 1 && s.peek().value === 7n, 'OK (CONT) clears the message and runs on past MSGBOX');
+  assertThrows(() => lookup('MSGBOX').fn(new Stack()), /not inside a running program/i, 'MSGBOX on its own, like PROMPT, wants a running program');
+  const t = new Stack();
+  t.push(Program([Name('MSGBOX')]));
+  assertThrows(() => lookup('EVAL').fn(t), /MSGBOX: Too few arguments/, 'MSGBOX with nothing to show says so');
+  clearAllHalted(); clearPromptMessage();
+}

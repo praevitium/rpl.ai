@@ -13,6 +13,7 @@ const HALT_TITLES = Object.freeze({
 });
 
 export function haltedBannerHtml({ kind, prompt = '', programHtml = '' }) {
+  if (kind === 'msgbox') return `<div class="bn halt msgbox" role="status"><div class="bn-ico" aria-hidden="true">${icon('info', 'xs')}</div><div class="bn-t">${escapeHtml(prompt)}</div><div class="bn-f"><button type="button" class="chip pri" data-bn="cont" title="CONT" aria-label="OK">${icon('check', 'sm')}<span>OK</span></button></div></div>`;
   const title = HALT_TITLES[kind] ?? HALT_TITLES.halt;
   return `<div class="bn halt" role="status"><div class="bn-ico" aria-hidden="true">${icon('stop', 'xs')}</div><div class="bn-t">${escapeHtml(title)}${prompt ? ` · ${escapeHtml(prompt)}` : ''}</div>${programHtml ? `<div class="bn-prog">${programHtml}</div>` : ''}<div class="bn-f"><button type="button" class="chip pri" data-bn="cont" title="CONT" aria-label="Continue">${icon('play', 'sm')}<span>Continue</span></button><button type="button" class="chip" data-bn="sst" title="SST: run the next instruction" aria-label="Step">${icon('step', 'sm')}<span>Step</span></button><button type="button" class="chip" data-bn="into" title="SST↓: run the next instruction, stepping into a subroutine" aria-label="Step into">${icon('step-into', 'sm')}<span>Step into</span></button><button type="button" class="chip warn" data-bn="kill" title="KILL: abandon the program" aria-label="Stop">${icon('stop', 'sm')}<span>Stop</span></button></div></div>`;
 }

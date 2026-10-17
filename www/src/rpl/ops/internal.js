@@ -871,11 +871,11 @@ function* evalRange(s, toks, from, to, depth) {
       i++;
       continue;
     }
-    if (id === 'PROMPT') {
-      if (s.depth < 1) throw new RPLError('PROMPT: Too few arguments');
+    if (id === 'PROMPT' || id === 'MSGBOX') {
+      if (s.depth < 1) throw new RPLError(`${id}: Too few arguments`);
       const msg = s.pop();
       setPromptMessage(msg);
-      _markSuspend(toks, i + 1, 'prompt');
+      _markSuspend(toks, i + 1, id === 'PROMPT' ? 'prompt' : 'msgbox');
       yield;
       i++;
       continue;

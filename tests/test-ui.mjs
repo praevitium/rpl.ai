@@ -1915,3 +1915,11 @@ setAngle('RAD');
     && /onHold: shifted \? \(anchor\) => this\._heldKeyMenu\(\[\[left, '⇦'\], \[right, '⇨'\]\]\.filter\(\(\[t\]\) => t\)\.map\(\(\[t, mark\]\) => \(\{ text: customMenuLabel\(t\), mark, run: press\(t\) \}\)\), anchor, label\) : null,/.test(appSrc),
     'custom menu: a key with shifted objects presses them with ⇦ and ⇨ and offers them under a held finger, while a plain key keeps types-it and recalls-it');
 }
+
+{
+  const bannerSrc = readFileSync(new URL('../www/src/ui/banner.js', import.meta.url), 'utf8');
+  assert(/if \(kind === 'msgbox'\) return `<div class="bn halt msgbox" role="status">[\s\S]*?<div class="bn-t">\$\{escapeHtml\(prompt\)\}<\/div><div class="bn-f"><button type="button" class="chip pri" data-bn="cont" title="CONT" aria-label="OK">\$\{icon\('check', 'sm'\)\}<span>OK<\/span><\/button><\/div><\/div>`;/.test(bannerSrc),
+    'MSGBOX: its banner is the message with one OK key that continues the program, no program source or debugger keys');
+  assert(/if \(id === 'PROMPT' \|\| id === 'MSGBOX'\) \{[\s\S]{0,200}?_markSuspend\(toks, i \+ 1, id === 'PROMPT' \? 'prompt' : 'msgbox'\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
+    'MSGBOX halts a running program the way PROMPT does, under its own kind');
+}
