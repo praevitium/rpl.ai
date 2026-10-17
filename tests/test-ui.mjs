@@ -1690,3 +1690,11 @@ setAngle('RAD');
   fire('pointerdown', 200); fire('pointerup', 201);
   assert(!calls.some((c) => c.startsWith('preview')) && calls.at(-1) === 'press 0', 'soft keys, touch: a quick tap runs the key with no preview');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const touch = css.slice(css.indexOf('@media (pointer: coarse)'));
+  assert(/\n\.st-more \{[^}]*white-space: nowrap; \}/.test(css)
+    && /\.st-more::before \{ content: ""; position: absolute; inset: -7px -4px -10px; \}/.test(touch),
+    'stack: the more-levels pill stays on one line (it wrapped to two at 280 px, and a three-digit count would at 320) and takes a 40 px tap on touch, from the stack\'s top edge down, without looking bigger');
+}
