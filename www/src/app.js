@@ -1442,6 +1442,7 @@ class App {
         onPress: () => this.pressVariable(id),
         onPressL: dir ? null : () => this.pressVariable(id, 'L'),
         onPressR: dir ? null : () => this.pressVariable(id, 'R'),
+        onHold: dir ? null : (anchor) => this._heldKeyMenu([{ text: `Store level 1 in ${id}`, run: () => this.pressVariable(id, 'L') }, { text: `Recall ${id}`, run: () => this.pressVariable(id, 'R') }], anchor, 'Variable'),
       };
     });
     this.setMenu(slots, 'VARS', opts);

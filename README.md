@@ -200,7 +200,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   name their shifts in landscape too.
   The command menus' soft keys do the same; the catalog types. A
   variable's key types its name inside a program, list or quote, and in a
-  program ⇦ and ⇨ type a STO or RCL of it, as on the HP. So does a CST
+  program ⇦ and ⇨ type a STO or RCL of it, as on the HP; a finger held on
+  the key offers both, on a bare line too (store level 1 in it, or recall
+  it without running). So does a CST
   key, whose command (such as SIN) runs on a bare line, and in a program
   the UNITS keys type `1_m *`, `1_m CONVERT` (⇦) or `1_m /` (⇨), or attach
   the unit to the number you are typing; with no shift key to hand, hold a

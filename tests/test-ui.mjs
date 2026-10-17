@@ -315,6 +315,8 @@ import { assert, assertThrows } from './helpers.mjs';
     'units: a finger held on a UNITS soft key offers the shifted key\'s Convert and Divide through the held-key menu a BRCH key\'s structures use');
   assert(/\.\.\.\(isUnit\(value\) \? \[\{ label: 'CONV', title: 'Convert it to another unit \(CONVERT\)', onPress: act\('convert'\) \}\] : \[\]\)/.test(appSrc),
     'stack: a selected unit level\'s soft keys have CONV, which opens the Convert to… list its ⋯ menu has');
+  assert(/onHold: dir \? null : \(anchor\) => this\._heldKeyMenu\(\[\{ text: `Store level 1 in \$\{id\}`, run: \(\) => this\.pressVariable\(id, 'L'\) \}, \{ text: `Recall \$\{id\}`, run: \(\) => this\.pressVariable\(id, 'R'\) \}\], anchor, 'Variable'\)/.test(appSrc),
+    'variables: a finger held on a variable\'s soft key offers the shifted key\'s Store level 1 and Recall, and a folder\'s key offers nothing');
   assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),
     'UNIT_GROUPS: every key makes a unit object when attached to a number');
   const ONE_QUANTITY = ['LENG', 'AREA', 'VOL', 'FORCE', 'ENRG', 'POWR', 'PRESS', 'TEMP'];
@@ -1523,6 +1525,7 @@ setAngle('RAD');
 
 {
   const { TOUR_STEPS } = await import('../www/src/ui/tour.js');
+  assert(/held, a BRCH, UNITS or variable key offers what its shifted forms do/.test(TOUR_STEPS.find((s) => s.title === 'Soft keys')?.touch ?? ''), 'tour: on a phone the soft-key step teaches that a held BRCH, UNITS or variable key offers its shifted forms');
   assert(/swipe along the keys/.test(TOUR_STEPS.find((s) => s.title === 'Soft keys')?.touch ?? ''), 'tour: on a phone the soft-key step teaches the swipe that turns the page, beside NXT');
 }
 
