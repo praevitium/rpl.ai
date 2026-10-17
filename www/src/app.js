@@ -1276,7 +1276,7 @@ class App {
       onPressR: () => this.drawers.showReference(name),
     }));
     const groups = family.id === 'UNITS'
-      ? UNIT_GROUPS.map((group) => ({ label: group.id, title: `${group.title}: ${group.units.length} units`, onPress: () => this._showUnitMenu(group) }))
+      ? UNIT_GROUPS.map((group) => ({ label: group.id, dir: true, title: `${group.title}: ${group.units.length} units`, onPress: () => this._showUnitMenu(group) }))
       : [];
     this.setMenu([...groups, ...slots], family.id);
   }

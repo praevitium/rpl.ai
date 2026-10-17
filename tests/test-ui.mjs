@@ -326,6 +326,11 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(/const nxt = e\.pointerType === 'touch' && e\.target\.closest\('\[data-mb="next"\]:not\(:disabled\)'\);/.test(menubarAll) && /this\._nxtTimer = setTimeout\(\(\) => \{ this\._nxtHeld = true; this\.openAll\(button\); \}, LONG_PRESS_MS\);/.test(menubarAll)
     && /if \(b\.dataset\.mb === 'next'\) \{ if \(this\._nxtHeld\) this\._nxtHeld = false; else this\._nxt\(\); \}/.test(menubarAll) && /this\.app\.pressMenuSlot\(Number\(target\.dataset\.v\)\);/.test(menubarAll),
     'menus: a finger held on NXT lays every key of the menu out in a grid, a plain tap still turns the page, and a key tapped in the grid presses by its place');
+  const gridCss = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/class="\$\{on \? 'on' : ''\}\$\{slot\.dir \? ' dir' : ''\}"/.test(menubarAll) && /\.pop \.grid button\.dir::before \{ content: ""; position: absolute; left: 6px; top: -1px; width: 30%; height: 3px;/.test(gridCss),
+    'menus: a folder key in the whole-menu grid wears the tab its soft key does');
+  assert(/UNIT_GROUPS\.map\(\(group\) => \(\{ label: group\.id, dir: true,/.test(appSrc) && /\.pop \.grid button \{[^}]*overflow-wrap: anywhere;/.test(gridCss),
+    'menus: the UNITS menu\'s group keys wear the folder tab, as submenu keys do on the HP, and a long name in the whole-menu grid wraps inside its key as it does on a narrow soft key');
   assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),
     'UNIT_GROUPS: every key makes a unit object when attached to a number');
   const ONE_QUANTITY = ['LENG', 'AREA', 'VOL', 'FORCE', 'ENRG', 'POWR', 'PRESS', 'TEMP'];
