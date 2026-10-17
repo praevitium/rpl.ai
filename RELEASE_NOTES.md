@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.97 (2026-10-16)
+**Latest release:** v0.6.98 (2026-10-16)
 
 ---
 
@@ -18,6 +18,33 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.98 — 2026-10-16
+
+An error no longer pushes the command line out of sight while you type. With
+the phone's keyboard up, the error banner's explanation took most of what
+was left: in landscape and on a 280 px phone the line you were typing on,
+and the keys above the keyboard, ended up under the keyboard. With the
+keyboard up the banner now keeps to its title and its fixes (Fix the line
+and the rest), on one row in landscape, and the explanation comes back with
+the keyboard down. Typing puts the error away as before.
+
+The writers fit a narrow screen with the keyboard up. On a short screen the
+equation and matrix writers put their keys beside the formula or matrix,
+which suits landscape, but on a 280 px phone with the keyboard up it pushed
+the matrix off the left edge and the equation writer's keys off the right.
+Their keys now sit beside the writer only from 480 px wide.
+
+The app bar steps aside while you type on a short screen, as minimal view's
+status line already did. A landscape phone with the keypad hidden had 10 px
+of stack left above the command line; level 1 now shows whole.
+
+Share several levels at once. A level's ⋯ menu now offers Share levels 1–n
+beside Share, which sends their values one to a line, deepest first, with
+an rpl.ai link. Opening the link, or sharing the text to the installed app,
+puts them on the command line, and Enter rebuilds the stack.
 
 ---
 
