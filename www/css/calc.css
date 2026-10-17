@@ -554,6 +554,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .mb-pg button:hover { background: var(--r2); }
 .mb-pg button.l { color: var(--amber); }
 .mb-pg button:disabled { opacity: .3; cursor: default; background: transparent; }
+.mb-pg sup { display: none; }
 .mb-dots { display: flex; gap: 3px; align-items: center; font: 600 10px/1 var(--font-mono); color: var(--ink3); }
 .mb-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink4); display: block; }
 .mb-dots i.on { background: var(--accent); }
@@ -2025,6 +2026,19 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   @container app (max-width: 429px) { .in-status { visibility: hidden; } }
   /* Short screens shrink the soft keys to make room for the keypad; without it they can take a finger. */
   :root[data-view="minimal"] .sk, .app:has(.keys.kp-hidden) .sk { height: 40px; }
+  /* Under 360 px the page count moves from the menu button onto NXT, and under 320 the button keeps only its icon, so the six soft keys stay 32 px wide. */
+  @container work (max-width: 359px) {
+    .mb-menu sup { display: none; }
+    .mb-pg button:has(sup) { align-content: center; gap: 3px; }
+    .mb-pg sup { display: block; font: 600 8px/1 var(--font-mono); color: var(--ink3); }
+  }
+  @container work (max-width: 319px) {
+    .menubar { gap: 3px; padding-left: 4px; padding-right: 4px; }
+    .mb-menu .i { display: block; }
+    .mb-menu .short { display: none; }
+    .mb-keys { gap: 2px; }
+    .mb-pg button { min-width: 36px; padding: 0 2px; }
+  }
   .crumbs button, .mode-chip, .appbar .icon-btn, .search-btn, .install-btn { min-height: 40px; }
   /* Under 384 px the directory name needs the width. */
   @container app (min-width: 384px) { .appbar .icon-btn, .search-btn, .install-btn { min-width: 40px; } }

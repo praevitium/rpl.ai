@@ -1653,3 +1653,16 @@ setAngle('RAD');
     && /this\._fromBottom = fromBottom\(view\);\s*const markEdges = this\._measureEdges\(\);/.test(displaySrc),
     'stack: level 1 stays in sight when the equation writer closes over the full keypad (the view grew, then shrank again in the same frame as the keys refit, and level 1 was left 13 px low), going by the distance from the bottom last seen on a scroll, render or resize; a selected level stays in sight instead, so turning the phone with level 8 selected no longer leaves it below a 216 px landscape view');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const barSrc = readFileSync(new URL('../www/src/ui/menubar.js', import.meta.url), 'utf8');
+  const touch = css.slice(css.indexOf('@media (pointer: coarse)'));
+  assert(/const count = pages > 1 \? `<sup>\$\{view\.page \+ 1\}\/\$\{pages\}<\/sup>` : '';/.test(barSrc)
+    && /<span class="short">\$\{escapeHtml\(view\.short\)\}<\/span>\$\{count\}<\/button>/.test(barSrc)
+    && />PREV\$\{count\}<\/button>/.test(barSrc) && />NXT\$\{count\}<\/button>/.test(barSrc)
+    && /\.mb-pg sup \{ display: none; \}/.test(css.slice(0, css.indexOf('@media (pointer: coarse)')))
+    && /@container work \(max-width: 359px\) \{\s*\.mb-menu sup \{ display: none; \}\s*\.mb-pg button:has\(sup\) \{ align-content: center; gap: 3px; \}\s*\.mb-pg sup \{ display: block;/.test(touch)
+    && /@container work \(max-width: 319px\) \{\s*\.menubar \{ gap: 3px; padding-left: 4px; padding-right: 4px; \}\s*\.mb-menu \.i \{ display: block; \}\s*\.mb-menu \.short \{ display: none; \}\s*\.mb-keys \{ gap: 2px; \}\s*\.mb-pg button \{ min-width: 36px; padding: 0 2px; \}/.test(touch),
+    'soft keys, touch: under 360 px the page count moves from the menu button onto NXT, and under 320 px the menu button keeps only its icon, so the six soft keys stay 32 px wide (with a level selected they were 22 px at 280 and 29 at 320)');
+}

@@ -144,9 +144,10 @@ export class MenuBar {
     const dots = pages <= 1 ? '' : pages <= 6
       ? Array.from({ length: pages }, (_, i) => `<i class="${i === view.page ? 'on' : ''}"></i>`).join('')
       : `${view.page + 1}/${pages}`;
-    this.el.innerHTML = `<button type="button" class="mb-menu" data-mb="pick" title="Choose a menu: VARS, CST, MODES and every command family" aria-haspopup="menu" aria-expanded="false">${icon('menu', 'sm')}<span class="full">${escapeHtml(view.title)}</span><span class="short">${escapeHtml(view.short)}</span>${pages > 1 ? `<sup>${view.page + 1}/${pages}</sup>` : ''}</button><div class="mb-keys">${keys}</div><div class="mb-pg"><div class="mb-dots" aria-label="Page ${view.page + 1} of ${pages}">${dots}</div>${layer === 'L'
-      ? `<button type="button" class="l" data-mb="next" ${pages > 1 ? '' : 'disabled'} title="Previous page (PgUp)" aria-label="Previous page">PREV</button>`
-      : `<button type="button" data-mb="next" ${pages > 1 ? '' : 'disabled'} title="Next page, round to the first after the last (PgDn); left-shift NXT goes back" aria-label="Next page">NXT</button>`}</div>`;
+    const count = pages > 1 ? `<sup>${view.page + 1}/${pages}</sup>` : '';
+    this.el.innerHTML = `<button type="button" class="mb-menu" data-mb="pick" title="Choose a menu: VARS, CST, MODES and every command family" aria-haspopup="menu" aria-expanded="false">${icon('menu', 'sm')}<span class="full">${escapeHtml(view.title)}</span><span class="short">${escapeHtml(view.short)}</span>${count}</button><div class="mb-keys">${keys}</div><div class="mb-pg"><div class="mb-dots" aria-label="Page ${view.page + 1} of ${pages}">${dots}</div>${layer === 'L'
+      ? `<button type="button" class="l" data-mb="next" ${pages > 1 ? '' : 'disabled'} title="Previous page (PgUp)" aria-label="Previous page">PREV${count}</button>`
+      : `<button type="button" data-mb="next" ${pages > 1 ? '' : 'disabled'} title="Next page, round to the first after the last (PgDn); left-shift NXT goes back" aria-label="Next page">NXT${count}</button>`}</div>`;
   }
 
   openPicker(anchor) {
