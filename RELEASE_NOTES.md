@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.110 (2026-10-17)
+**Latest release:** v0.6.111 (2026-10-17)
 
 ---
 
@@ -20,6 +20,11 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.111 — 2026-10-17
+
+The README's command count follows the Catalog again: 479, where it had
+read 475 since 0.6.64 while MENU, TMENU, MSGBOX and INPUT arrived.
 
 ## v0.6.110 — 2026-10-17
 
