@@ -1665,7 +1665,8 @@ setAngle('RAD');
     && at(/markEdges\(\);/) < at(/this\._showMore\(more\);/)
     && /view\.addEventListener\('scroll', \(\) => \{\s*if \(this\._renderScroll\) return;[^}]*this\._updateMore\(\);/.test(displaySrc)
     && /else if \(selected\) this\._reveal\(selected\);/.test(render)
-    && /_reveal\(row\) \{\s*const view = this\.stackView;\s*if \(row\.offsetHeight > view\.clientHeight - TOP_FADE\) view\.scrollTop = tallLevelScroll\(view, row\);\s*else row\.scrollIntoView\?\.\(\{ block: 'nearest' \}\);/.test(displaySrc),
+    && /_reveal\(row\) \{\s*const view = this\.stackView, v = view\.getBoundingClientRect\(\), r = row\.getBoundingClientRect\(\);\s*if \(r\.height > v\.height - TOP_FADE\) view\.scrollTop = tallLevelScroll\(view, v, r\);\s*else if \(r\.bottom > v\.bottom\) view\.scrollTop \+= Math\.ceil\(r\.bottom - v\.bottom\);\s*else if \(r\.top < v\.top \+ TOP_FADE\) view\.scrollTop -= Math\.ceil\(v\.top \+ TOP_FADE - r\.top\);/.test(displaySrc)
+    && /function tallLevelScroll\(view, v, r\) \{\s*const at = r\.top - v\.top \+ view\.scrollTop, top = Math\.floor\(at\), toEnd = Math\.ceil\(at \+ r\.height - v\.height\);/.test(displaySrc),
     'stack: a render measures everything (font size before the rows go, then positions, edge fades and the pill) before changing anything, and its own scroll does not measure again, so a key on a phone lays the page out once rather than five times');
 }
 
@@ -1698,11 +1699,12 @@ setAngle('RAD');
 
 {
   const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
-  const body = displaySrc.match(/function tallLevelScroll\(view, row\) \{([\s\S]*?)\n\}/)?.[1];
-  const scrollFor = (scrollTop, clientHeight, offsetTop, offsetHeight) => new Function('view', 'row', body)({ scrollTop, clientHeight }, { offsetTop, offsetHeight });
+  const body = displaySrc.match(/function tallLevelScroll\(view, v, r\) \{([\s\S]*?)\n\}/)?.[1];
+  const scrollFor = (scrollTop, viewHeight, top, height) => new Function('view', 'v', 'r', body)({ scrollTop }, { top: 40, height: viewHeight }, { top: 40 + top - scrollTop, height });
   assert(body && scrollFor(189, 116, 225, 94) === 203 && scrollFor(150, 116, 225, 94) === 203 && scrollFor(210, 116, 200, 94) === 200
-    && scrollFor(190, 116, 200, 94) === 190 && scrollFor(260, 98, 280, 103) === 280 && scrollFor(0, 116, 300, 140) === 300,
-    'stack: a selected level too tall to sit below the top fade shows whole with its toolbar when it fits the view (at 320 px with the full keypad the toolbar under level 2 ran 8 px past the bottom, 26 px at 280), keeps its place when it is already whole, and shows from its top when taller than the view');
+    && scrollFor(190, 116, 200, 94) === 190 && scrollFor(260, 98, 280, 103) === 280 && scrollFor(0, 116, 300, 140) === 300
+    && scrollFor(241, 128, 472.47, 93.39) === 438 && scrollFor(241, 128, 472.9, 93.1) === 438 && scrollFor(0, 116, 300.6, 140) === 300,
+    'stack: a selected level too tall to sit below the top fade shows whole with its toolbar when it fits the view (at 320 px with the full keypad the toolbar under level 2 ran 8 px past the bottom, 26 px at 280), keeps its place when it is already whole, shows from its top when taller than the view, and rounds its fraction of a pixel outward (a turned 360 by 740 phone with the keypad hidden left 0.86 px of level 7, its bottom outline, under the view)');
   const measure = displaySrc.slice(displaySrc.indexOf('  _measureMore() {'), displaySrc.indexOf('\n  _showMore('));
   assert(/const sel = view\.querySelector\('\.st-row\.sel'\);\s*if \(sel && sel\.offsetTop < edge && sel\.offsetTop \+ sel\.offsetHeight > edge\) return \{ above: 0, top \};/.test(measure),
     'stack: the more-levels pill and the top fade give way to a selected level that reaches through them, rather than covering its value');

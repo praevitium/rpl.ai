@@ -43,8 +43,8 @@ const SUSPENDED_CONTEXT = 8;
 const TOP_FADE = 36;
 
 // A level that fits shows whole, its toolbar included; a taller one from its top. The fade gives way to it (_measureMore).
-function tallLevelScroll(view, row) {
-  const top = row.offsetTop, toEnd = top + row.offsetHeight - view.clientHeight;
+function tallLevelScroll(view, v, r) {
+  const at = r.top - v.top + view.scrollTop, top = Math.floor(at), toEnd = Math.ceil(at + r.height - v.height);
   return toEnd > top ? top : Math.min(Math.max(view.scrollTop, toEnd), top);
 }
 // Every level drawn costs layout on each command, so the stack draws the levels nearest level 1 and more on request.
@@ -499,11 +499,13 @@ export class Display {
     return () => vals.forEach((el, i) => setScrollEdges(el, edges[i]));
   }
 
-  // scrollIntoView would keep a level too tall for the fade's padding under it, and scroll the app too.
+  // Rects rounded outward, not offsets: a level's fractional height rounded away leaves its bottom edge under the
+  // view's, as scrollIntoView would, which also keeps a level too tall for the fade's padding under it and scrolls the app.
   _reveal(row) {
-    const view = this.stackView;
-    if (row.offsetHeight > view.clientHeight - TOP_FADE) view.scrollTop = tallLevelScroll(view, row);
-    else row.scrollIntoView?.({ block: 'nearest' });
+    const view = this.stackView, v = view.getBoundingClientRect(), r = row.getBoundingClientRect();
+    if (r.height > v.height - TOP_FADE) view.scrollTop = tallLevelScroll(view, v, r);
+    else if (r.bottom > v.bottom) view.scrollTop += Math.ceil(r.bottom - v.bottom);
+    else if (r.top < v.top + TOP_FADE) view.scrollTop -= Math.ceil(v.top + TOP_FADE - r.top);
   }
 
   _updateMore() {
