@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.106 (2026-10-17)
+**Latest release:** v0.6.107 (2026-10-17)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.107 — 2026-10-17
+
+A program can put up its own soft keys, as on the HP: `{ SIN COS } MENU`
+stores the list in CST and shows it (a name holding a list works too),
+`TMENU` shows a list without storing it, and `0 MENU` brings back the
+menu before. The HP's other menu numbers, which name its built-in menus,
+are not taken: `5 MENU` is a Bad argument value, and an argument that is
+no list is refused rather than stored in CST. With the phone's keyboard
+up, the autocomplete over the command line ran off the top of the screen
+when there was less room than its rows take, hiding the best match; it
+now caps itself to the room above the line and scrolls, the chosen row
+kept in view. Its rows take a finger on touch, 40 px tall like the
+popover rows.
 
 ## v0.6.106 — 2026-10-17
 
