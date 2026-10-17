@@ -120,6 +120,7 @@ class App {
       if (!list) this.showPreviousMenu({ commit: false });
       else if (temporary) this.setMenu(this._customMenuSlots(list), 'TMENU');
       else this.showMenu('CST', { commit: false });
+      if (this.prefs.minimal) this.setMinimalMenu(true);
     });
     loadCommandReference().then((m) => { this.reference = m; this.menubar.render(); }).catch(() => {});
 
