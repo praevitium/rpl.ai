@@ -2080,7 +2080,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 /* A landscape phone with its keyboard up has about 190px left: while typing, only the stack, the line or writer and its keys stay. */
 @media (max-height: 300px) {
   :root[data-keyboard] .input-top, :root[data-keyboard] .input-hint,
-  :root[data-keyboard] .mx-foot, :root[data-keyboard] .status-line, :root[data-keyboard] .menubar, :root[data-keyboard] .st-more { display: none; }
+  :root[data-keyboard] .mx-foot, :root[data-keyboard] .status-line, :root[data-keyboard] .appbar, :root[data-keyboard] .menubar, :root[data-keyboard] .st-more { display: none; }
+  :root[data-keyboard] .app { grid-template-rows: minmax(0, 1fr); }
   :root[data-keyboard] .mx-grid-wrap { max-height: 92px; }
   /* In landscape the writers' keys sit beside the formula or matrix; on a narrow screen they stay under it, or they push it off the edge. */
   @container app (min-width: 480px) {

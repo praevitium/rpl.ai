@@ -1717,3 +1717,11 @@ setAngle('RAD');
     && !/\n  :root\[data-keyboard\] \.mx, :root\[data-keyboard\] \.eqw \{ grid-template-columns/.test(short),
     'writers, keyboard up: their keys sit beside the formula or matrix only on a short screen at least 480 px wide; a 280 px phone with 270 px left keeps them under it (beside it, the matrix ran off the left edge and the equation writer\'s keys off the right)');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const short = css.slice(css.indexOf('@media (max-height: 300px) {\n  :root[data-keyboard] .input-top'));
+  assert(/:root\[data-keyboard\] \.status-line, :root\[data-keyboard\] \.appbar, :root\[data-keyboard\] \.menubar/.test(short)
+    && /:root\[data-keyboard\] \.app \{ grid-template-rows: minmax\(0, 1fr\); \}/.test(short),
+    'keyboard up on a short screen: the app bar steps aside while you type, as minimal view\'s status line does, so a landscape phone with the keypad hidden shows level 1 whole above the line (it had 10 px of stack) and a 568 by 120 view keeps the key strip on screen');
+}
