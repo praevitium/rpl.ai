@@ -294,6 +294,9 @@ import { assert, assertThrows } from './helpers.mjs';
   const unitKeys = UNIT_GROUPS.flatMap((g) => g.units);
   assert(UNIT_GROUPS.length === 16 && new Set(UNIT_GROUPS.map((g) => g.id)).size === 16 && UNIT_GROUPS.every((g) => /^[A-Z]{3,5}$/.test(g.id) && g.title && g.units.length >= 3),
     'UNIT_GROUPS: the HP 50g\'s sixteen groups, with soft key names, titles and at least three units each');
+  const menubarGrid = readFileSync(new URL('../www/src/ui/menubar.js', import.meta.url), 'utf8');
+  assert(/for \(let i = 0; i < view\.items\.length; i \+= 6\) pages\.push\(view\.items\.slice\(i, i \+ 6\)\.map\(\(slot, k\) => key\(slot, i \+ k\)\)\.join\(''\)\);/.test(menubarGrid) && /\$\{pages\.length > 1 \? `<h6>Page \$\{p \+ 1\}<\/h6>` : ''\}<div class="grid">\$\{keys\}<\/div>/.test(menubarGrid),
+    'menus: the whole-menu grid lays each soft-key page out as its own captioned row of six, so it reads as the pages do, with no caption on a one-page menu');
   assert(new Set(unitKeys).size === unitKeys.length, 'UNIT_GROUPS: no unit key appears in two groups');
   const { parseUnitExpr, formatUnitExpr } = await import('../www/src/rpl/units.js');
   const conversions = (u) => unitConversions(parseUnitExpr(u)).map(formatUnitExpr);

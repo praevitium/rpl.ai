@@ -183,12 +183,16 @@ export class MenuBar {
 
   openAll(anchor) {
     const view = this.app.menuView();
-    const keys = view.items.map((slot, i) => {
+    const key = (slot, i) => {
       if (!slot) return '';
       const on = typeof slot.on === 'function' ? slot.on() : !!slot.on;
       return `<button type="button" data-v="${i}" class="${on ? 'on' : ''}${slot.dir ? ' dir' : ''}" title="${escapeHtml(slot.title ?? '')}"${slot.blockedReason?.() ? ' disabled' : ''}>${escapeHtml(slot.label)}</button>`;
-    }).join('');
-    this.app.popover.open(anchor, `<h6>${escapeHtml(view.title)}</h6><div class="grid">${keys}</div>`, {
+    };
+    // Each row of six is one soft-key page, captioned so the grid reads as the pages do.
+    const pages = [];
+    for (let i = 0; i < view.items.length; i += 6) pages.push(view.items.slice(i, i + 6).map((slot, k) => key(slot, i + k)).join(''));
+    const grids = pages.map((keys, p) => `${pages.length > 1 ? `<h6>Page ${p + 1}</h6>` : ''}<div class="grid">${keys}</div>`).join('');
+    this.app.popover.open(anchor, `<h6>${escapeHtml(view.title)}</h6>${grids}`, {
       label: 'Every key',
       keepFocus: true,
       onClick: (target) => {
