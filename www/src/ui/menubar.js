@@ -94,6 +94,7 @@ export class MenuBar {
     if (slot?.onHold) {
       t.timer = setTimeout(() => {
         t.done = true;
+        this.app.buzzHold();
         this.app.menuView().slots[i]?.onHold(sk);
       }, LONG_PRESS_MS);
     } else if (slot?.command) {
@@ -165,7 +166,7 @@ export class MenuBar {
   _nxtHoldStart(button) {
     this._nxtHoldEnd();
     this._nxtHeld = false;
-    this._nxtTimer = setTimeout(() => { this._nxtHeld = true; this.openAll(button); }, LONG_PRESS_MS);
+    this._nxtTimer = setTimeout(() => { this._nxtHeld = true; this.app.buzzHold(); this.openAll(button); }, LONG_PRESS_MS);
   }
 
   _nxtHoldEnd() {

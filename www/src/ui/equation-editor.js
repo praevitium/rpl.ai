@@ -2352,6 +2352,7 @@ export class EquationEditor {
     press.timer = setTimeout(() => {
       if (this._press !== press || !this._drag) return;
       press.selecting = true;
+      this.app?.buzzHold();
       this.state = landSelect(this.state, rowKeyOf(path), path.at(-1), path.at(-1));
       this._selecting = true;
       this._render();

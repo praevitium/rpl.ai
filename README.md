@@ -338,9 +338,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   scrolls, so the field you type in stays in view.
 - Settings › Appearance sets the stack's text size, from Small to Larger,
   pretty math included. On Android it can also make the keys vibrate briefly
-  as a finger presses them, and buzz twice on an error, as the HP beeps (set
-  flag -56, the HP's Error Beep flag, to stop that). A tap anywhere on a
-  switch's row flips it.
+  as a finger presses them, once more as a held finger opens a menu or
+  clears the line, and twice on an error, as the HP beeps (set flag -56,
+  the HP's Error Beep flag, to stop that). A tap anywhere on a switch's row
+  flips it.
 - The modes button in the app bar (RAD · STD · EXACT), and each mode on
   minimal view's status line, sets FIX, SCI or ENG with any digit count
   from 0 to 11, so a phone needs no typed `5 FIX`. On a screen under 320 px

@@ -884,7 +884,7 @@ export class Drawers {
       const { clientX: x, clientY: y } = ev.touches[0];
       touch = { row, name: row.dataset.dragName, scroller: row.closest('.dw-body') ?? row.parentElement, x0: x, y0: y, x, y, active: false, target: null, raf: 0 };
       if (ev.target.closest('.grip')) begin();
-      else touch.timer = setTimeout(begin, LONG_PRESS_MS);
+      else touch.timer = setTimeout(() => { this.app.buzzHold(); begin(); }, LONG_PRESS_MS);
     }, { passive: true });
     el.addEventListener('touchmove', (ev) => {
       if (!touch) return;

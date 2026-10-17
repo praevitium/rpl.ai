@@ -654,6 +654,7 @@ class App {
     d.onRowClick = (level) => this.selectLevel(this.selection === level ? null : level);
     d.onRowDoubleClick = (level) => this.editLevel(level);
     d.onRowHold = (level) => {
+      this.buzzHold();
       this.selectLevel(level);
       this.levelAction('more', level, this.display.stackView.querySelector('.st-row.sel [data-row-act="more"]'));
     };
@@ -1556,6 +1557,7 @@ class App {
   }
 
   showKeyLayers(key, anchor) {
+    this.buzzHold();
     if (MODIFIER_KINDS.has(key.kind)) return;
     const row = (layer, label, name, desc, color) => `<button type="button" data-v="${layer}" ${label ? '' : 'disabled'}><small style="color:${color}">${name}</small><span><b>${escapeHtml(label || '—')}</b>${desc ? ` · ${escapeHtml(desc)}` : ''}</span></button>`;
     const html = `<h6>${escapeHtml(key.primary)} key</h6><div class="layers">${row('P', key.primary, 'KEY', '', 'var(--ink3)')}${row('L', key.shiftL, '↰ LEFT', '', 'var(--amber)')}${row('R', key.shiftR, '↱ RIGHT', '', 'var(--coral)')}${row('A', key.alpha, 'α ALPHA', 'types the letter', 'var(--blue)')}</div>`;
@@ -1759,6 +1761,11 @@ class App {
   }
 
   // The HP beeps on an error unless flag -56 (Error Beep) is set; with key vibration on, a phone buzzes twice.
+  // A held finger that opens a menu, starts a drag or clears the line says so, as a key does on its press.
+  buzzHold() {
+    if (this.prefs.haptics && typeof navigator.vibrate === 'function') navigator.vibrate(20);
+  }
+
   _buzzError() {
     if (this.prefs.haptics && typeof navigator.vibrate === 'function' && !testUserFlag(-56)) navigator.vibrate([30, 60, 30]);
   }

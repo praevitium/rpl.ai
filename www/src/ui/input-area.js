@@ -24,6 +24,7 @@ function holdOn(el, app, arm, fire) {
     const { state } = hold;
     cancel();
     held = true;
+    app.buzzHold();
     fire(state);
   };
   const swallow = (ev) => { ev.preventDefault(); ev.stopImmediatePropagation(); };

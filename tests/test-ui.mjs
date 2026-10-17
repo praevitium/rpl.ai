@@ -323,7 +323,7 @@ import { assert, assertThrows } from './helpers.mjs';
     && /pressSoftKey\(i, forcedLayer = null\) \{\s*this\._pressSlot\(this\.menuView\(\)\.slots\[i\], forcedLayer\);/.test(appSrc),
     'menus: a key pressed by its place in the whole menu turns the soft keys to its page and presses through the same path as a soft key');
   const menubarAll = readFileSync(new URL('../www/src/ui/menubar.js', import.meta.url), 'utf8');
-  assert(/const nxt = e\.pointerType === 'touch' && e\.target\.closest\('\[data-mb="next"\]:not\(:disabled\)'\);/.test(menubarAll) && /this\._nxtTimer = setTimeout\(\(\) => \{ this\._nxtHeld = true; this\.openAll\(button\); \}, LONG_PRESS_MS\);/.test(menubarAll)
+  assert(/const nxt = e\.pointerType === 'touch' && e\.target\.closest\('\[data-mb="next"\]:not\(:disabled\)'\);/.test(menubarAll) && /this\._nxtTimer = setTimeout\(\(\) => \{ this\._nxtHeld = true; this\.app\.buzzHold\(\); this\.openAll\(button\); \}, LONG_PRESS_MS\);/.test(menubarAll)
     && /if \(b\.dataset\.mb === 'next'\) \{ if \(this\._nxtHeld\) this\._nxtHeld = false; else this\._nxt\(\); \}/.test(menubarAll) && /this\.app\.pressMenuSlot\(Number\(target\.dataset\.v\)\);/.test(menubarAll),
     'menus: a finger held on NXT lays every key of the menu out in a grid, a plain tap still turns the page, and a key tapped in the grid presses by its place');
   const gridCss = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
@@ -333,6 +333,10 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(/showLastLines\(anchor\) \{\s*const lines = \[\.\.\.new Set\(this\.entry\.getHistory\(\)\.reverse\(\)\)\]\.slice\(0, 4\);\s*if \(!lines\.length\) return;\s*this\._heldKeyMenu\(lines\.map\(\(line\) => \(\{ text: line, mark: '', run: \(\) => \(this\.entry\.buffer \? this\.entry\.typeToken\(line\) : this\.entry\.recall\(line\)\) \}\)\), anchor, 'Last lines'\);/.test(appSrc)
     && /holdForLines\(this\.go, app\);/.test(inputAreaSrc) && /<span class="ck">\$\{o\.mark \?\? \(i \? '⇨' : '⇦'\)\}<\/span>/.test(appSrc),
     'command line: a finger held on the Enter beside the line offers the last four lines entered, newest first (the HP\'s CMD), which go back on an empty line or into the line being typed');
+  assert(/buzzHold\(\) \{\s*if \(this\.prefs\.haptics && typeof navigator\.vibrate === 'function'\) navigator\.vibrate\(20\);/.test(appSrc) && /d\.onRowHold = \(level\) => \{\s*this\.buzzHold\(\);/.test(appSrc) && /showKeyLayers\(key, anchor\) \{\s*this\.buzzHold\(\);/.test(appSrc)
+    && /this\._nxtHeld = true; this\.app\.buzzHold\(\); this\.openAll\(button\);/.test(menubarAll) && /t\.done = true;\s*this\.app\.buzzHold\(\);/.test(menubarAll)
+    && /setTimeout\(\(\) => \{ this\.app\.buzzHold\(\); begin\(\); \}, LONG_PRESS_MS\)/.test(readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8')) && /press\.selecting = true;\s*this\.app\?\.buzzHold\(\);/.test(readFileSync(new URL('../www/src/ui/equation-editor.js', import.meta.url), 'utf8')),
+    'touch: with key vibration on, a held finger buzzes once when it opens a level or soft-key menu, the whole-menu grid or the keypad key layers, starts a Variables drag or a writer selection, or clears the line');
   assert(/UNIT_GROUPS\.map\(\(group\) => \(\{ label: group\.id, dir: true,/.test(appSrc) && /\.pop \.grid button \{[^}]*overflow-wrap: anywhere;/.test(gridCss),
     'menus: the UNITS menu\'s group keys wear the folder tab, as submenu keys do on the HP, and a long name in the whole-menu grid wraps inside its key as it does on a narrow soft key');
   assert(/@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}\s*\/\*[^*]*\*\/\s*\.ann-status:has\(\.ann-m\.e\) \{ padding-left: 2px; padding-right: 2px; \}/.test(gridCss),
@@ -1367,14 +1371,14 @@ setAngle('RAD');
       return e;
     } };
   };
-  const fakeApp = (over = {}) => ({ inputMode: 'rpl', selection: null, shift: null, entry: { buffer: '12 34' }, cleared: [], clearLine(text) { this.cleared.push(text); this.entry.buffer = ''; }, ...over });
+  const fakeApp = (over = {}) => ({ inputMode: 'rpl', selection: null, shift: null, entry: { buffer: '12 34' }, cleared: [], buzzed: 0, clearLine(text) { this.cleared.push(text); this.entry.buffer = ''; }, buzzHold() { this.buzzed++; }, ...over });
   let app = fakeApp();
   let el = button();
   holdToClear(el, app);
   el.fire('pointerdown');
   app.entry.buffer = '12 3';
   const menu = el.fire('contextmenu');
-  assert(app.cleared[0] === '12 34' && menu.prevented && menu.stopped, '⌫ held: a long press clears the line, Undo bringing back what it held before the press, and no key-layers menu opens');
+  assert(app.cleared[0] === '12 34' && menu.prevented && menu.stopped && app.buzzed === 1, '⌫ held: a long press clears the line, Undo bringing back what it held before the press, no key-layers menu opens, and the hold buzzes once with key vibration on');
   assert(el.fire('click').stopped, '⌫ held: the release after clearing does not also delete a character');
   app = fakeApp({ selection: 1 });
   el = button();
@@ -1386,14 +1390,14 @@ setAngle('RAD');
   holdToClear(el, app);
   el.fire('pointerdown');
   el.fire('pointerup');
-  assert(!el.fire('contextmenu').stopped && !el.fire('click').stopped && !app.cleared.length, '⌫ held: a quick press only deletes, and a right-click still shows the layers');
+  assert(!el.fire('contextmenu').stopped && !el.fire('click').stopped && !app.cleared.length && !app.buzzed, '⌫ held: a quick press only deletes, buzzes as a key and not as a hold, and a right-click still shows the layers');
   const linesApp = (history) => ({ inputMode: 'rpl', entry: { buffer: '', getHistory: () => history }, shown: 0, buzzed: 0, showLastLines() { this.shown++; }, buzzHold() { this.buzzed++; } });
   app = linesApp(['1 2 +', '3 4 *']);
   el = button();
   holdForLines(el, app);
   el.fire('pointerdown');
   const linesMenu = el.fire('contextmenu');
-  assert(app.shown === 1 && linesMenu.prevented && el.fire('click').stopped, 'Enter held: a long press on the Enter beside the line offers the last lines, and the release enters nothing');
+  assert(app.shown === 1 && app.buzzed === 1 && linesMenu.prevented && el.fire('click').stopped, 'Enter held: a long press on the Enter beside the line offers the last lines, buzzes once, and the release enters nothing');
   app = linesApp([]);
   el = button();
   holdForLines(el, app);
@@ -1459,7 +1463,7 @@ setAngle('RAD');
   const text = node(['nm'], row);
   const folder = node(['vr', 'dir']);
   const drops = [];
-  const host = { el: { addEventListener: (type, fn) => { (on[type] ??= []).push(fn); } }, _dragName: null, _performDrop: (name, target) => drops.push(`${name}>${target.name}`) };
+  const host = { el: { addEventListener: (type, fn) => { (on[type] ??= []).push(fn); } }, _dragName: null, buzzed: 0, app: { buzzHold() { host.buzzed++; } }, _performDrop: (name, target) => drops.push(`${name}>${target.name}`) };
   const savedDoc = globalThis.document;
   globalThis.document = { elementFromPoint: () => folder };
   const { requestAnimationFrame: savedRaf, cancelAnimationFrame: savedCaf } = globalThis;
@@ -1477,7 +1481,7 @@ setAngle('RAD');
     assert(!fire('touchend', at(text)).prevented && !drops.length, 'Variables, touch: a swipe before the hold scrolls the list and moves nothing');
     fire('touchstart', at(text));
     timers.at(-1).fn();
-    assert(host._dragName === 'A' && row.classes.includes('dragging'), 'Variables, touch: after the hold the row is picked up');
+    assert(host._dragName === 'A' && row.classes.includes('dragging') && host.buzzed === 1, 'Variables, touch: after the hold the row is picked up, with one buzz');
     assert(fire('touchmove', at(text, 300)).prevented, 'Variables, touch: a picked-up row stops the list scrolling under the finger');
     assert(fire('touchend', at(text)).prevented && drops[0] === 'A>SUB1' && host._dragName === null, 'Variables, touch: letting go over a folder moves the variable into it, with no click after');
     fire('touchstart', at(grip));
