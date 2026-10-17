@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.101 (2026-10-17)
+**Latest release:** v0.6.102 (2026-10-17)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.102 — 2026-10-17
+
+A finger held on a variable's soft key offers Store level 1 in it (⇦) and
+Recall it (⇨), the HP's shifted variable keys, as held BRCH and UNITS keys
+offer theirs; the tour's soft-key card says so on a phone.
+
+In the dark and Classic looks the highlighted command-search and
+autocomplete row's description read at 4.0:1 and 3.7:1 against the row's
+lighter fill; it takes the brighter secondary ink there.
 
 ## v0.6.101 — 2026-10-17
 
