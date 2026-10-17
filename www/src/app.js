@@ -1194,7 +1194,7 @@ class App {
     const meta = menuById(this.menuKind) ?? { title: this.menuKind ?? 'MENU', short: this.menuKind ?? 'MENU' };
     const { view, page } = computeMenuPage(this.menuAll, this.menuPage, 6);
     this.menuPage = page;
-    return { title: meta.short === 'VARS' ? `VARS · ${currentPath().at(-1)}` : meta.short, short: meta.short, slots: view, page, pages: Math.max(1, Math.ceil(this.menuAll.length / 6)) };
+    return { title: meta.short === 'VARS' ? `VARS · ${currentPath().at(-1)}` : meta.short, short: meta.short, items: this.menuAll, slots: view, page, pages: Math.max(1, Math.ceil(this.menuAll.length / 6)) };
   }
 
   _inContextMenu() { return !!this._ctxKey; }
@@ -1212,8 +1212,20 @@ class App {
   }
 
   pressSoftKey(i, forcedLayer = null) {
-    const view = this.menuView();
-    const slot = view.slots[i];
+    this._pressSlot(this.menuView().slots[i], forcedLayer);
+  }
+
+  // A key picked from the whole-menu grid, by its place in the menu; the soft keys turn to its page first.
+  pressMenuSlot(index) {
+    const slot = this.menuView().items[index];
+    const page = Math.floor(index / 6);
+    if (this._inContextMenu()) this._ctxPage = page;
+    else this.menuPage = page;
+    this.menubar.render();
+    this._pressSlot(slot);
+  }
+
+  _pressSlot(slot, forcedLayer = null) {
     if (!slot) return;
     const layer = forcedLayer ?? this.layer();
     const handler = (layer === 'L' && slot.onPressL) || (layer === 'R' && slot.onPressR) || slot.onPress;

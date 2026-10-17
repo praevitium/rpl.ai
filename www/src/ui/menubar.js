@@ -41,6 +41,8 @@ export class MenuBar {
     });
     el.addEventListener('focusout', () => this._endPreview());
     el.addEventListener('pointerdown', (e) => {
+      const nxt = e.pointerType === 'touch' && e.target.closest('[data-mb="next"]:not(:disabled)');
+      if (nxt) { this._nxtHoldStart(nxt); return; }
       if (e.pointerType === 'touch' && e.target.closest('.mb-keys')) { e.preventDefault(); this._touchStart(e); return; }
       const sk = e.target.closest('.sk[data-i]');
       if (!sk || e.button !== 0 || sk.disabled) return;
@@ -48,15 +50,15 @@ export class MenuBar {
       this._press(sk);
     });
     el.addEventListener('pointermove', (e) => this._touchMove(e));
-    el.addEventListener('pointerup', (e) => this._touchUp(e));
-    el.addEventListener('pointercancel', () => this._touchEnd());
+    el.addEventListener('pointerup', (e) => { this._nxtHoldEnd(); this._touchUp(e); });
+    el.addEventListener('pointercancel', () => { this._nxtHoldEnd(); this._touchEnd(); });
     el.addEventListener('contextmenu', (e) => { if (e.target.closest('.sk[data-i]')) e.preventDefault(); });
     el.addEventListener('click', (e) => {
       const sk = e.target.closest('.sk[data-i]');
       if (sk) { if (e.detail === 0 && !sk.disabled) this._press(sk); return; }
       const b = e.target.closest('[data-mb]');
       if (!b) return;
-      if (b.dataset.mb === 'next') this._nxt();
+      if (b.dataset.mb === 'next') { if (this._nxtHeld) this._nxtHeld = false; else this._nxt(); }
       else if (b.dataset.mb === 'pick') this.openPicker(b);
     });
   }
@@ -157,6 +159,35 @@ export class MenuBar {
     this.el.innerHTML = `<button type="button" class="mb-menu" data-mb="pick" title="Choose a menu: VARS, CST, MODES and every command family" aria-haspopup="menu" aria-expanded="false">${icon('menu', 'sm')}<span class="full">${escapeHtml(view.title)}</span><span class="short">${escapeHtml(view.short)}</span>${count}</button><div class="mb-keys">${keys}</div><div class="mb-pg"><div class="mb-dots" aria-label="Page ${view.page + 1} of ${pages}">${dots}</div>${layer === 'L'
       ? `<button type="button" class="l" data-mb="next" ${pages > 1 ? '' : 'disabled'} title="Previous page (PgUp)" aria-label="Previous page">PREV${count}</button>`
       : `<button type="button" data-mb="next" ${pages > 1 ? '' : 'disabled'} title="Next page, round to the first after the last (PgDn); left-shift NXT goes back" aria-label="Next page">NXT${count}</button>`}</div>`;
+  }
+
+  // A finger held on NXT lays every key of the menu out at once, so a long menu is one tap, not a page hunt.
+  _nxtHoldStart(button) {
+    this._nxtHoldEnd();
+    this._nxtHeld = false;
+    this._nxtTimer = setTimeout(() => { this._nxtHeld = true; this.openAll(button); }, LONG_PRESS_MS);
+  }
+
+  _nxtHoldEnd() {
+    clearTimeout(this._nxtTimer);
+    this._nxtTimer = null;
+  }
+
+  openAll(anchor) {
+    const view = this.app.menuView();
+    const keys = view.items.map((slot, i) => {
+      if (!slot) return '';
+      const on = typeof slot.on === 'function' ? slot.on() : !!slot.on;
+      return `<button type="button" data-v="${i}" class="${on ? 'on' : ''}${slot.dir ? ' dir' : ''}" title="${escapeHtml(slot.title ?? '')}"${slot.blockedReason?.() ? ' disabled' : ''}>${escapeHtml(slot.label)}</button>`;
+    }).join('');
+    this.app.popover.open(anchor, `<h6>${escapeHtml(view.title)}</h6><div class="grid">${keys}</div>`, {
+      label: 'Every key',
+      keepFocus: true,
+      onClick: (target) => {
+        this.app.popover.close({ restoreFocus: false });
+        this.app.pressMenuSlot(Number(target.dataset.v));
+      },
+    });
   }
 
   openPicker(anchor) {

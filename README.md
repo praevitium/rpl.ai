@@ -259,6 +259,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   turns to the next page and swiped right goes back; a soft key acts as the
   finger lifts, so a swipe presses nothing. Hold a command's key to preview
   what it will do to the stack; it runs as you lift, unless you slide away.
+  Hold NXT to see every key of the menu at once and tap the one you want.
   Under 360 px the page count moves from the menu button onto NXT, and under
   320 the menu button keeps only its icon, so each soft key stays
   finger-wide. The menu button's list leads with the menus you used last.

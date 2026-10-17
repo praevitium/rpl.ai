@@ -319,6 +319,13 @@ import { assert, assertThrows } from './helpers.mjs';
     'variables: a finger held on a variable\'s soft key offers the shifted key\'s Store level 1 and Recall, and a folder\'s key offers nothing');
   assert(/\$\{isUnit\(value\) \? '<button type="button" data-row-act="convert" title="Convert to another unit \(CONVERT\)">Conv<\/button>' : ''\}/.test(appSrc),
     'stack: a selected unit level\'s toolbar has Conv, which opens its Convert to… list as a formula\'s has Plot');
+  assert(/items: this\.menuAll, slots: view, page,/.test(appSrc) && /pressMenuSlot\(index\) \{\s*const slot = this\.menuView\(\)\.items\[index\];\s*const page = Math\.floor\(index \/ 6\);/.test(appSrc)
+    && /pressSoftKey\(i, forcedLayer = null\) \{\s*this\._pressSlot\(this\.menuView\(\)\.slots\[i\], forcedLayer\);/.test(appSrc),
+    'menus: a key pressed by its place in the whole menu turns the soft keys to its page and presses through the same path as a soft key');
+  const menubarAll = readFileSync(new URL('../www/src/ui/menubar.js', import.meta.url), 'utf8');
+  assert(/const nxt = e\.pointerType === 'touch' && e\.target\.closest\('\[data-mb="next"\]:not\(:disabled\)'\);/.test(menubarAll) && /this\._nxtTimer = setTimeout\(\(\) => \{ this\._nxtHeld = true; this\.openAll\(button\); \}, LONG_PRESS_MS\);/.test(menubarAll)
+    && /if \(b\.dataset\.mb === 'next'\) \{ if \(this\._nxtHeld\) this\._nxtHeld = false; else this\._nxt\(\); \}/.test(menubarAll) && /this\.app\.pressMenuSlot\(Number\(target\.dataset\.v\)\);/.test(menubarAll),
+    'menus: a finger held on NXT lays every key of the menu out in a grid, a plain tap still turns the page, and a key tapped in the grid presses by its place');
   assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),
     'UNIT_GROUPS: every key makes a unit object when attached to a number');
   const ONE_QUANTITY = ['LENG', 'AREA', 'VOL', 'FORCE', 'ENRG', 'POWR', 'PRESS', 'TEMP'];
