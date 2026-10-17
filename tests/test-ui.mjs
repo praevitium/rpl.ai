@@ -1722,6 +1722,7 @@ setAngle('RAD');
     'soft keys, touch: under 360 px the page count moves from the menu button onto NXT, and under 320 px the menu button keeps only its icon, so the six soft keys stay 32 px wide (with a level selected they were 22 px at 280 and 29 at 320)');
   assert(/:root\[data-theme="classic"\] \.sheet-view \{ --stack-ink: var\(--ink\); \}/.test(css),
     'Classic theme: VIEW\'s sheet shows the value in the sheet\'s ink, not the LCD\'s dark green (on the dark sheet it was 1.3:1, unreadable)');
+  assert(/^  --lcd-dim: rgba\(28, 38, 24, \.8\);$/m.test(css), 'classic: the dim LCD ink reads at 4.8:1 at the LCD\'s darker edge and 5.5:1 at its centre (level numbers, tags and the writers\' notes read at 3.4:1 at .6)');
   assert((css.match(/^  --danger-ink: #1b1203;$/gm) || []).length === 1 && (css.match(/^  --danger-ink: #fff;$/gm) || []).length === 2
     && /\.bn-ico \{[^}]*background: var\(--danger\); color: var\(--danger-ink\);/.test(css) && /\.toast\.err \{ background: var\(--danger\); color: var\(--danger-ink\); \}/.test(css),
     'errors: an error toast and the error banner\'s icon take the ink their look\'s danger fill needs, dark on the dark and Classic looks\' salmon (white read at 2.7:1) and white on the light and Paper looks\' red');

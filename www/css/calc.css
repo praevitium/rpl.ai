@@ -162,7 +162,7 @@
   --key-line: #3d4450;
   --lcd: #b4c3a4;
   --lcd-ink: #1c2618;
-  --lcd-dim: rgba(28, 38, 24, .6);
+  --lcd-dim: rgba(28, 38, 24, .8);
   --stack-ink: var(--lcd-ink);
   --plot-bg: #b4c3a4;
   --plot-grid: rgba(28, 38, 24, .12);
