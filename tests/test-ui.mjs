@@ -1724,6 +1724,8 @@ setAngle('RAD');
     'errors: an error toast and the error banner\'s icon take the ink their look\'s danger fill needs, dark on the dark and Classic looks\' salmon (white read at 2.7:1) and white on the light and Paper looks\' red');
   assert(/:root\[data-theme="classic"\] \.bn-prog mark \{ background: var\(--amber\); color: #1b1203; \}/.test(css),
     'classic: the halt banner\'s current word is dark on an amber block (amber on the LCD-green program box read at 1.1:1)');
+  assert(/\.pal-row\.on \.d, \.ac-row\.on em \{ color: var\(--ink2\); \}/.test(css),
+    'search: the highlighted command-search and autocomplete row\'s secondary text takes the brighter ink (--ink3 read at 4.0:1 on the row\'s fill in the dark look, 3.7 in Classic)');
   assert(/\.mb-menu \{ position: relative; \}\s*\.mb-menu::before \{ content: ""; position: absolute; inset: 0 -3px 0 -4px; \}/.test(touch.slice(touch.indexOf('@container work (max-width: 319px)'))),
     'soft keys, touch: under 320 px the 29 px menu button takes a finger into the bar\'s padding and the gap beside it (36 px)');
   assert(/@container app \(max-width: 319px\) \{\s*:root\[data-theme="classic"\] \.menubar \{ margin-inline: -10px; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.menubar \{ margin: 0 -14px -14px; \}/.test(touch),
