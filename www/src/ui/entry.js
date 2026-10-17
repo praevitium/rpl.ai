@@ -224,8 +224,10 @@ export class Entry {
     this.typeWithCursor(`${glued ? ' ' : ''}${text}`, backUp);
   }
 
+  // A token lands with a space on each side it needs, so a line recalled or a level echoed into the middle of a
+  // line never fuses with the word under the cursor.
   typeToken(text) {
-    this.type(`${this._needsLeadingSpace() ? ' ' : ''}${text}`);
+    this.type(`${this._needsLeadingSpace() ? ' ' : ''}${text}${this._needsTrailingSpace(text) ? ' ' : ''}`);
   }
 
   isAlgebraic() {
@@ -239,6 +241,11 @@ export class Entry {
   _needsLeadingSpace() {
     const { from } = this._state.selection.main;
     return from > 0 && !/\s/.test(this.buffer[from - 1]);
+  }
+
+  _needsTrailingSpace(text) {
+    const { to } = this._state.selection.main;
+    return to < this.buffer.length && !/\s/.test(this.buffer[to]) && !/\s$/.test(text);
   }
 
   typeOrExecFn(fnName) {
