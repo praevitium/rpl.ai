@@ -7345,3 +7345,37 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   assertThrows(() => lookup('EVAL').fn(t), /MSGBOX: Too few arguments/, 'MSGBOX with nothing to show says so');
   clearAllHalted(); clearPromptMessage();
 }
+
+{
+  resetHome(); clearAllHalted(); clearPromptMessage();
+  const s = new Stack();
+  s.push(Program([Str('Name?'), Str('Bob'), Name('INPUT'), Str('Hi '), Name('SWAP'), Name('+')]));
+  lookup('EVAL').fn(s);
+  let halted = getHalted();
+  assert(halted && halted.kind === 'input' && halted.input.text === 'Bob' && halted.input.verify === false && haltedDepth() === 1 && s.depth === 0,
+    'INPUT halts the program under its own kind with the text to offer, both arguments taken off the stack');
+  assert(getPromptMessage()?.value === 'Name?', 'INPUT keeps its prompt for the banner');
+  s.push(Str('Bobby'));
+  lookup('CONT').fn(s);
+  assert(getHalted() === null && getPromptMessage() === null && s.depth === 1 && s.peek().value === 'Hi Bobby', 'the answer pushed as a string and CONT run the program on past INPUT');
+  s.push(parseEntry('« "N?" { "2" 0 V } INPUT STR→ 3 * »')[0]);
+  lookup('EVAL').fn(s);
+  halted = getHalted();
+  assert(halted?.input.text === '2' && halted.input.verify === true, "INPUT's list offers its string and V asks that the answer parse; the HP's cursor position is not taken");
+  s.push(Str('4'));
+  lookup('CONT').fn(s);
+  assert(s.depth === 2 && s.peek().value === 12n, 'STR→ reads the answer back');
+  s.push(parseEntry('« "N?" { } INPUT »')[0]);
+  lookup('EVAL').fn(s);
+  assert(getHalted()?.input.text === '', 'an INPUT list without a string offers an empty line');
+  clearAllHalted(); clearPromptMessage();
+  const t = new Stack();
+  t.push(Program([Str('N?'), Integer(5n), Name('INPUT')]));
+  assertThrows(() => lookup('EVAL').fn(t), /INPUT: Bad argument type/, 'INPUT wants a string or a list in level 1');
+  assert(getHalted() === null && getPromptMessage() === null, 'a refused INPUT leaves no halt and no message');
+  const u = new Stack();
+  u.push(Program([Str('N?'), Name('INPUT')]));
+  assertThrows(() => lookup('EVAL').fn(u), /INPUT: Too few arguments/, 'INPUT with one argument says so');
+  assertThrows(() => lookup('INPUT').fn(new Stack()), /not inside a running program/i, 'INPUT on its own, like PROMPT, wants a running program');
+  clearAllHalted(); clearPromptMessage();
+}

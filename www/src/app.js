@@ -40,8 +40,9 @@ import { lookup, allOps, setGraphicsHook, setMenuHook } from './rpl/ops.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
-  isMatrix, isVector, isReal, isInteger, isRational, isUnit, Symbolic, Integer, Unit,
+  isMatrix, isVector, isReal, isInteger, isRational, isUnit, Symbolic, Integer, Unit, Str,
 } from './rpl/types.js';
+import { parseEntry } from './rpl/parser.js';
 import {
   loadInitialState, adoptStoredState, saveToLocalStorage, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
   shareLink, sharedSource, sharedText,
@@ -250,6 +251,8 @@ class App {
     else if (this.menuKind === 'CST') this.showCustomMenu({ refresh: true });
     else this.menubar.render();
     this.display.renderStack(this.stack);
+    const halted = calcState.halted;
+    if (halted?.kind === 'input' && this._inputHalt !== halted) this._beginInput(halted);
   }
 
   setPrefs(patch) {
@@ -386,6 +389,9 @@ class App {
     if (!b) return;
     const act = b.dataset.bn;
     if (act === 'dismiss') { this.dismissError(); return; }
+    const input = calcState.halted?.kind === 'input';
+    if (act === 'ok' && input) { this._acceptInput(); return; }
+    if (act === 'kill' && input) this.entry.cancel();
     const op = { cont: 'CONT', sst: 'SST', into: 'SST↓', kill: 'KILL' }[act];
     if (op) { this.entry.execOp(op); return; }
     if (act === 'fix') this._runFix(b.dataset.fix, b.dataset.arg);
@@ -1042,8 +1048,25 @@ class App {
       return;
     }
     if (this.pendingEdit) { this._commitEdit(); return; }
+    if (calcState.halted?.kind === 'input') { this._acceptInput(); return; }
     this.entry.enter();
     if (this.entry.error) this.entry.focus();
+  }
+
+  // The line that ran the program clears once it ends, after this notification, so INPUT's text waits a tick.
+  _beginInput(halted) {
+    this._inputHalt = halted;
+    queueMicrotask(() => { if (calcState.halted === halted) this.entry.recall(halted.input.text); });
+  }
+
+  // Enter or OK hands the command line to the program waiting at INPUT, as a string; with V it has to parse first.
+  _acceptInput() {
+    const { input } = calcState.halted;
+    const text = this.entry.buffer;
+    if (input.verify) { try { parseEntry(text); } catch (e) { this.entry.flashError(e); return; } }
+    this.entry.cancel();
+    this.entry._snapForUndo();
+    this.entry.safeRun(() => { this.stack.push(Str(text)); lookup('CONT').fn(this.stack, this.entry); }, 'CONT', { keepPartial: true });
   }
 
   backspace() {

@@ -1920,7 +1920,8 @@ setAngle('RAD');
 
 {
   const bannerSrc = readFileSync(new URL('../www/src/ui/banner.js', import.meta.url), 'utf8');
-  assert(/if \(kind === 'msgbox'\) return `<div class="bn halt msgbox" role="status">[\s\S]*?<div class="bn-t">\$\{escapeHtml\(prompt\)\}<\/div><div class="bn-f"><button type="button" class="chip pri" data-bn="cont" title="CONT" aria-label="OK">\$\{icon\('check', 'sm'\)\}<span>OK<\/span><\/button><\/div><\/div>`;/.test(bannerSrc),
+  assert(/const key = \(bn, label, title, ico, cls = ''\) => `<button type="button" class="chip\$\{cls \? ` \$\{cls\}` : ''\}" data-bn="\$\{bn\}" title="\$\{title\}" aria-label="\$\{label\}">\$\{icon\(ico, 'sm'\)\}<span>\$\{label\}<\/span><\/button>`;/.test(bannerSrc)
+    && /if \(kind === 'msgbox'\) return `<div class="bn halt msgbox" role="status">[\s\S]*?\$\{message\}<div class="bn-f">\$\{key\('cont', 'OK', 'CONT', 'check', 'pri'\)\}<\/div><\/div>`;/.test(bannerSrc),
     'MSGBOX: its banner is the message with one OK key that continues the program, no program source or debugger keys');
   assert(/if \(id === 'PROMPT' \|\| id === 'MSGBOX'\) \{[\s\S]{0,200}?_markSuspend\(toks, i \+ 1, id === 'PROMPT' \? 'prompt' : 'msgbox'\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
     'MSGBOX halts a running program the way PROMPT does, under its own kind');
@@ -1940,4 +1941,17 @@ setAngle('RAD');
   assert(/const title = kind === 'prompt' && prompt \? prompt : `\$\{HALT_TITLES\[kind\] \?\? HALT_TITLES\.halt\}\$\{prompt \? ` · \$\{prompt\}` : ''\}`;/.test(bannerSrc)
     && /<div class="bn-t">\$\{escapeHtml\(title\)\}<\/div>/.test(bannerSrc),
     'PROMPT: its message is the banner\'s title, as MSGBOX\'s is, no longer an afterthought behind "The program is waiting for you"; the generic title stays for a PROMPT without a message');
+}
+
+{
+  const bannerSrc = readFileSync(new URL('../www/src/ui/banner.js', import.meta.url), 'utf8');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/if \(kind === 'input'\) return `<div class="bn halt input" role="status">[\s\S]*?\$\{message\}<div class="bn-f">\$\{key\('ok', 'OK', 'Enter: answer with the command line', 'check', 'pri'\)\}\$\{STOP_KEY\}<\/div><\/div>`;/.test(bannerSrc)
+    && /if \(calcState\.halted\?\.kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*this\.entry\.enter\(\);/.test(appSrc)
+    && /_beginInput\(halted\) \{\s*this\._inputHalt = halted;\s*queueMicrotask\(\(\) => \{ if \(calcState\.halted === halted\) this\.entry\.recall\(halted\.input\.text\); \}\);/.test(appSrc)
+    && /_acceptInput\(\) \{[\s\S]{0,200}?if \(input\.verify\) \{ try \{ parseEntry\(text\); \} catch \(e\) \{ this\.entry\.flashError\(e\); return; \} \}\s*this\.entry\.cancel\(\);\s*this\.entry\._snapForUndo\(\);\s*this\.entry\.safeRun\(\(\) => \{ this\.stack\.push\(Str\(text\)\); lookup\('CONT'\)\.fn\(this\.stack, this\.entry\); \}, 'CONT', \{ keepPartial: true \}\);/.test(appSrc)
+    && /if \(act === 'ok' && input\) \{ this\._acceptInput\(\); return; \}\s*if \(act === 'kill' && input\) this\.entry\.cancel\(\);/.test(appSrc),
+    'INPUT: its banner is the prompt with OK and Stop keys and no program source; the text it offers goes on the command line once the line that ran the program has cleared; Enter or OK hands the line back as a string (with V only once it parses) in one undo step with the continuation; Stop clears the line before KILL');
+  assert(/if \(id === 'INPUT'\) \{[\s\S]{0,260}?_markSuspend\(toks, i \+ 1, 'input', input\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
+    'INPUT halts a running program the way PROMPT does, carrying the text to offer');
 }

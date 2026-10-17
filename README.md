@@ -498,8 +498,12 @@ highlighted. Continue, Step, Step into or Stop from the banner (or `CONT`,
 walks through it. `PROMPT` shows its message and waits for your input; on
 a phone, while you type the answer, the banner shrinks to one row so the
 stack stays in view. `MSGBOX` shows its message with an OK key and goes
-on when you tap it. A program on the stack can be stepped from the start with
-`DBUG`, or with Debug in its level's ⋯ menu.
+on when you tap it. `INPUT` asks: its prompt is the banner, the text it
+offers is on the command line, and Enter or OK hands the line back to the
+program as a string (the HP's `V` option asks that it parse first; its
+cursor positions and entry modes are not taken). A program on the stack
+can be stepped from the start with `DBUG`, or with Debug in its level's ⋯
+menu.
 
 ![A halted program](screenshots/debugging.png)
 
@@ -733,9 +737,9 @@ and these are the gaps worth knowing about.
 **Commands.** The HP 50g manual lists 810 commands; rpl.ai has 475. The
 Catalog and the command reference mark what is available. Not there yet:
 
-- program I/O: INPUT, INFORM, CHOOSE, DISP, CLLCD, FREEZE, WAIT, KEY and
-  BEEP. Programs read their arguments from the stack, label results with
-  `→TAG`, pause with `PROMPT` and report with `MSGBOX`.
+- program I/O: INFORM, CHOOSE, DISP, CLLCD, FREEZE, WAIT, KEY and BEEP.
+  Programs read their arguments from the stack, label results with `→TAG`,
+  ask with `INPUT`, pause with `PROMPT` and report with `MSGBOX`.
 - PICT and the plot-setup commands (PVIEW, ERASE, AXES, XRNG, YRNG, STEQ and
   the rest)
 - MENU and TMENU, and DEF

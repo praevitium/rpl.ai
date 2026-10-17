@@ -880,6 +880,16 @@ function* evalRange(s, toks, from, to, depth) {
       i++;
       continue;
     }
+    if (id === 'INPUT') {
+      if (s.depth < 2) throw new RPLError('INPUT: Too few arguments');
+      const input = inputSpec(s.peek());
+      s.pop();
+      setPromptMessage(s.pop());
+      _markSuspend(toks, i + 1, 'input', input);
+      yield;
+      i++;
+      continue;
+    }
     const runner = id && SUSPENDABLE_OPS.get(id);
     if (runner) {
       yield* runner(s, depth);
@@ -898,11 +908,20 @@ function* evalRange(s, toks, from, to, depth) {
 }
 
 
+// INPUT's level 1 is the text to offer on the command line, alone or in a list that may add the HP's cursor position
+// and entry modes; of those only V, which asks that the answer parse, means anything here.
+function inputSpec(v) {
+  if (isString(v)) return { text: v.value, verify: false };
+  if (!isList(v)) throw new RPLError('INPUT: Bad argument type');
+  return { text: v.items.find(isString)?.value ?? '', verify: v.items.some((item) => isName(item) && item.id === 'V') };
+}
+
+
 // Where the program stopped, recorded just before each yield for the halted view.
 let _pendingSuspend = null;
 
-function _markSuspend(tokens, index, kind) {
-  _pendingSuspend = { tokens, index, kind };
+function _markSuspend(tokens, index, kind, input = null) {
+  _pendingSuspend = { tokens, index, kind, input };
 }
 
 function* _stepYield(tokens, index) {
@@ -920,9 +939,9 @@ export function runSuspendable(gen) {
   try {
     if (!gen.next().done) {
       halted = true;
-      const { tokens = null, index = null, kind = null } = _pendingSuspend ?? {};
+      const { tokens = null, index = null, kind = null, input = null } = _pendingSuspend ?? {};
       _pendingSuspend = null;
-      setHalted({ generator: gen, tokens, index, kind });
+      setHalted({ generator: gen, tokens, index, kind, input });
     }
   } finally {
     if (!halted) {

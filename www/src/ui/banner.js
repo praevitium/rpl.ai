@@ -12,10 +12,16 @@ const HALT_TITLES = Object.freeze({
   prompt: 'The program is waiting for you',
 });
 
+const key = (bn, label, title, ico, cls = '') => `<button type="button" class="chip${cls ? ` ${cls}` : ''}" data-bn="${bn}" title="${title}" aria-label="${label}">${icon(ico, 'sm')}<span>${label}</span></button>`;
+const STOP_KEY = key('kill', 'Stop', 'KILL: abandon the program', 'stop', 'warn');
+
+// MSGBOX and INPUT speak to the program's user: the message alone, with no program source or debugger keys.
 export function haltedBannerHtml({ kind, prompt = '', programHtml = '' }) {
-  if (kind === 'msgbox') return `<div class="bn halt msgbox" role="status"><div class="bn-ico" aria-hidden="true">${icon('info', 'xs')}</div><div class="bn-t">${escapeHtml(prompt)}</div><div class="bn-f"><button type="button" class="chip pri" data-bn="cont" title="CONT" aria-label="OK">${icon('check', 'sm')}<span>OK</span></button></div></div>`;
+  const message = `<div class="bn-t">${escapeHtml(prompt)}</div>`;
+  if (kind === 'msgbox') return `<div class="bn halt msgbox" role="status"><div class="bn-ico" aria-hidden="true">${icon('info', 'xs')}</div>${message}<div class="bn-f">${key('cont', 'OK', 'CONT', 'check', 'pri')}</div></div>`;
+  if (kind === 'input') return `<div class="bn halt input" role="status"><div class="bn-ico" aria-hidden="true">${icon('edit', 'xs')}</div>${message}<div class="bn-f">${key('ok', 'OK', 'Enter: answer with the command line', 'check', 'pri')}${STOP_KEY}</div></div>`;
   // A PROMPT speaks to the program's user, so its message is the title and the program's source stays out, as on the HP.
   const title = kind === 'prompt' && prompt ? prompt : `${HALT_TITLES[kind] ?? HALT_TITLES.halt}${prompt ? ` · ${prompt}` : ''}`;
   const program = kind === 'prompt' ? '' : programHtml;
-  return `<div class="bn halt" role="status"><div class="bn-ico" aria-hidden="true">${icon('stop', 'xs')}</div><div class="bn-t">${escapeHtml(title)}</div>${program ? `<div class="bn-prog">${program}</div>` : ''}<div class="bn-f"><button type="button" class="chip pri" data-bn="cont" title="CONT" aria-label="Continue">${icon('play', 'sm')}<span>Continue</span></button><button type="button" class="chip" data-bn="sst" title="SST: run the next instruction" aria-label="Step">${icon('step', 'sm')}<span>Step</span></button><button type="button" class="chip" data-bn="into" title="SST↓: run the next instruction, stepping into a subroutine" aria-label="Step into">${icon('step-into', 'sm')}<span>Step into</span></button><button type="button" class="chip warn" data-bn="kill" title="KILL: abandon the program" aria-label="Stop">${icon('stop', 'sm')}<span>Stop</span></button></div></div>`;
+  return `<div class="bn halt" role="status"><div class="bn-ico" aria-hidden="true">${icon('stop', 'xs')}</div><div class="bn-t">${escapeHtml(title)}</div>${program ? `<div class="bn-prog">${program}</div>` : ''}<div class="bn-f">${key('cont', 'Continue', 'CONT', 'play', 'pri')}${key('sst', 'Step', 'SST: run the next instruction', 'step')}${key('into', 'Step into', 'SST↓: run the next instruction, stepping into a subroutine', 'step-into')}${STOP_KEY}</div></div>`;
 }
