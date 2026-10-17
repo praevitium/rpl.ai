@@ -1167,7 +1167,7 @@ class App {
     else if (id === 'MODES') this.showModesMenu();
     else if (id === 'BRCH') this.showBranchMenu();
     else this._showFamilyMenu(id);
-    if (remember) this.setPrefs({ menu: this.menuKind });
+    if (remember) this.setPrefs({ menu: this.menuKind, recentMenus: [this.menuKind, ...this.prefs.recentMenus.filter((m) => m !== this.menuKind)] });
   }
 
   setMenu(slots, kind = null, { preservePage = false } = {}) {

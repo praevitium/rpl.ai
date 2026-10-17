@@ -162,7 +162,8 @@ export class MenuBar {
   openPicker(anchor) {
     const current = this.app._menuPinned ? this.app.menuKind : this.app.writerMenuId() ?? this.app.menuKind;
     const writer = this.app.writerMenuId();
-    const groups = writer ? [{ title: 'Writer', ids: [writer] }, ...MENU_GROUPS] : MENU_GROUPS;
+    const recent = this.app.prefs.recentMenus.filter((id) => id !== current && menuById(id));
+    const groups = [...(recent.length ? [{ title: 'Recent', ids: recent }] : []), ...(writer ? [{ title: 'Writer', ids: [writer] }] : []), ...MENU_GROUPS];
     const html = groups.map((g) => `<h6>${escapeHtml(g.title)}</h6><div class="grid">${g.ids.map((id) => {
       const m = menuById(id) ?? WRITER_MENUS[id];
       return `<button type="button" data-v="${id}" class="${id === current ? 'on' : ''}" title="${escapeHtml(m.title)}">${escapeHtml(m.short)}</button>`;

@@ -1567,6 +1567,14 @@ setAngle('RAD');
   const kept = normalizeUiPrefs({ recentCommands: ['SWAP', 'SQ', 'SWAP', 7, '', 'A B', '→NUM', 'a', 'b', 'c', 'd', 'e', 'f'] }).recentCommands;
   assert(JSON.stringify(kept) === JSON.stringify(['SWAP', 'SQ', '→NUM', 'a', 'b', 'c', 'd', 'e']) && normalizeUiPrefs({ recentCommands: 'SWAP' }).recentCommands.length === 0,
     'normalizeUiPrefs: recent commands keep eight distinct names, newest first, and drop junk');
+  assert(JSON.stringify(normalizeUiPrefs({ recentMenus: ['MATRIX', 'VARS', 'matrix', 'VARS', 7, 'TOOLONGNAME', 'CST', 'STAT', 'BRCH'] }).recentMenus) === JSON.stringify(['MATRIX', 'VARS', 'CST', 'STAT'])
+    && normalizeUiPrefs({}).recentMenus.length === 0,
+    'normalizeUiPrefs: recent menus keep four distinct ids, newest first, and drop junk');
+  assert(/if \(remember\) this\.setPrefs\(\{ menu: this\.menuKind, recentMenus: \[this\.menuKind, \.\.\.this\.prefs\.recentMenus\.filter\(\(m\) => m !== this\.menuKind\)\] \}\);/.test(readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8')),
+    'menus: showing a menu puts it first among the recent menus');
+  const menubarSrc = readFileSync(new URL('../www/src/ui/menubar.js', import.meta.url), 'utf8');
+  assert(/const recent = this\.app\.prefs\.recentMenus\.filter\(\(id\) => id !== current && menuById\(id\)\);/.test(menubarSrc) && /\{ title: 'Recent', ids: recent \}/.test(menubarSrc),
+    'menus: the menu picker leads with the menus used last, the current one left out');
   const { Palette } = await import('../www/src/ui/palette.js');
   let prefs = normalizeUiPrefs({ minimal: true, recentCommands: ['SQ', 'NOSUCHCMD', 'SOLVE'] });
   const ran = [];

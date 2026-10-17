@@ -260,7 +260,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   what it will do to the stack; it runs as you lift, unless you slide away.
   Under 360 px the page count moves from the menu button onto NXT, and under
   320 the menu button keeps only its icon, so each soft key stays
-  finger-wide.
+  finger-wide. The menu button's list leads with the menus you used last.
 - The equation writer has its own row of buttons (move, fraction, power,
   root and parentheses), and so does the matrix writer (previous cell, next
   cell and next row), each with ⌫ and Enter. The matrix writer pushes only
