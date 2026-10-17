@@ -1725,3 +1725,10 @@ setAngle('RAD');
     && /:root\[data-keyboard\] \.app \{ grid-template-rows: minmax\(0, 1fr\); \}/.test(short),
     'keyboard up on a short screen: the app bar steps aside while you type, as minimal view\'s status line does, so a landscape phone with the keypad hidden shows level 1 whole above the line (it had 10 px of stack) and a 568 by 120 view keeps the key strip on screen');
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/case 'sharen': \{\s*const text = Array\.from\(\{ length: level \}, \(_, i\) => formatSource\(this\.stack\.peek\(level - i\)\)\)\.join\('\\n'\);\s*this\.shareText\(text, shareLink\(text, location\.href\)\);/.test(appSrc)
+    && /typeof navigator\.share === 'function' && level > 1 \? item\('sharen', 'share', `Share levels 1–\$\{level\}…`\) : ''/.test(appSrc),
+    'stack: a level\'s ⋯ menu shares levels 1 to it as their source, deepest first and one to a line, with a link, so the link or the share target puts them on the command line and Enter rebuilds the stack');
+}

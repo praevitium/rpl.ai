@@ -737,6 +737,11 @@ class App {
         this.shareText(text, shareLink(text, location.href));
         return;
       }
+      case 'sharen': {
+        const text = Array.from({ length: level }, (_, i) => formatSource(this.stack.peek(level - i))).join('\n');
+        this.shareText(text, shareLink(text, location.href));
+        return;
+      }
       case 'download': this.downloadMenu(anchor, `level${level}`, value); return;
       case 'store': this._storePrompt(level, anchor); return;
       case 'ask': this.askAssistant(`Explain what is on level ${level} of my stack: ${formatSource(value)}`); return;
@@ -782,6 +787,7 @@ class App {
         item('copy', 'copy', 'Copy', shortcutText('level.copy')),
         toLatex(value) === null ? '' : item('latex', 'copy', 'Copy as LaTeX'),
         typeof navigator.share === 'function' ? item('share', 'share', 'Share…') : '',
+        typeof navigator.share === 'function' && level > 1 ? item('sharen', 'share', `Share levels 1–${level}…`) : '',
         item('download', 'down', 'Download as…'),
       ],
       [item('drop', 'trash', 'Drop', shortcutText('level.drop'))],
