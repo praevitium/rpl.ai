@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.102 (2026-10-17)
+**Latest release:** v0.6.103 (2026-10-17)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.103 — 2026-10-17
+
+The soft keys' menu list leads with the menus you used last, so a phone
+reaches VARS, UNITS or STAT again without a scroll. A selected value with
+units has Conv on its toolbar from 360 px wide, as a formula has Plot, which
+opens the same Convert to… list as its ⋯ menu and CONV soft key.
+
+In the Classic LCD look the dim ink of level numbers, tags and the writers'
+notes read at 3.4:1 on the LCD; it is darker now (5:1).
 
 ## v0.6.102 — 2026-10-17
 
