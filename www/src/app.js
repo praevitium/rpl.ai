@@ -247,6 +247,7 @@ class App {
     this.renderBanner();
     if (this.menuKind === 'VARS') this.showVarsMenu({ preservePage: true });
     else if (this.menuKind === 'MODES') this.showModesMenu({ preservePage: true });
+    else if (this.menuKind === 'CST') this.showCustomMenu({ refresh: true });
     else this.menubar.render();
     this.display.renderStack(this.stack);
   }
@@ -1481,19 +1482,20 @@ class App {
     this.setMenu(slots, 'VARS', opts);
   }
 
-  // MENU runs with the line still in hand, so it shows the menu without committing it again.
-  showCustomMenu({ commit = true } = {}) {
-    if (commit && this.entry.buffer.trim().length > 0 && !this.entry._typingAtCursor()) this.commitEntry();
+  // MENU runs with the line still in hand, so it shows the menu without committing it again; a refresh follows
+  // CST as it changes (STO, PURGE, UNDO) while the menu shows, keeping the page and saying nothing.
+  showCustomMenu({ commit = true, refresh = false } = {}) {
+    if (commit && !refresh && this.entry.buffer.trim().length > 0 && !this.entry._typingAtCursor()) this.commitEntry();
     const cst = varRecall('CST');
     const list = isName(cst) ? varRecall(cst.id) : cst;
     if (!isList(list)) {
-      this.setMenu([], 'CST');
-      this.toast(cst === undefined
+      this.setMenu([], 'CST', { preservePage: refresh });
+      if (!refresh) this.toast(cst === undefined
         ? 'CST is empty. Store a list of commands or names in CST, for example { SOLVE FACTOR } `CST` STO.'
         : 'CST must hold a list, for example { SOLVE FACTOR }.');
       return;
     }
-    this.setMenu(this._customMenuSlots(list), 'CST');
+    this.setMenu(this._customMenuSlots(list), 'CST', { preservePage: refresh });
   }
 
   _customMenuSlots(list) {

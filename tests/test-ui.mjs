@@ -1886,10 +1886,14 @@ setAngle('RAD');
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/setMenuHook\(\(list, temporary\) => \{\s*if \(!list\) this\.showPreviousMenu\(\{ commit: false \}\);\s*else if \(temporary\) this\.setMenu\(this\._customMenuSlots\(list\), 'TMENU'\);\s*else this\.showMenu\('CST', \{ commit: false \}\);/.test(appSrc)
-    && /showCustomMenu\(\{ commit = true \} = \{\}\) \{\s*if \(commit && this\.entry\.buffer/.test(appSrc) && /showPreviousMenu\(\{ commit = true \} = \{\}\) \{[\s\S]{0,160}?this\.showMenu\(prev, \{ commit \}\)/.test(appSrc),
+    && /showCustomMenu\(\{ commit = true, refresh = false \} = \{\}\) \{\s*if \(commit && !refresh && this\.entry\.buffer/.test(appSrc) && /showPreviousMenu\(\{ commit = true \} = \{\}\) \{[\s\S]{0,160}?this\.showMenu\(prev, \{ commit \}\)/.test(appSrc),
     'MENU and TMENU show their menu through a hook without committing the line they run from (which would run it again), a temporary one under the kind TMENU');
   assert(/else this\.showMenu\('CST', \{ commit: false \}\);\s*if \(this\.prefs\.minimal\) this\.setMinimalMenu\(true\);\s*\}\);/.test(appSrc),
     'MENU and TMENU turn the soft keys on in minimal view, as a menu picked from command search does, instead of showing nothing while they are hidden');
+  assert(/else if \(this\.menuKind === 'CST'\) this\.showCustomMenu\(\{ refresh: true \}\);/.test(appSrc)
+    && /showCustomMenu\(\{ commit = true, refresh = false \} = \{\}\) \{\s*if \(commit && !refresh && this\.entry\.buffer/.test(appSrc)
+    && /this\.setMenu\(\[\], 'CST', \{ preservePage: refresh \}\);\s*if \(!refresh\) this\.toast\(/.test(appSrc) && /this\.setMenu\(this\._customMenuSlots\(list\), 'CST', \{ preservePage: refresh \}\);/.test(appSrc),
+    'the CST soft keys follow CST as it changes (STO, PURGE, UNDO) while the menu shows, as the VARS keys do, keeping their page and without the empty-CST note');
   assert(/const list = isName\(cst\) \? varRecall\(cst\.id\) : cst;/.test(appSrc), 'the custom menu follows a name stored in CST to the list it holds, as the HP does');
   assert(/\.pop \.opt, \.pop \.grid button, \.pop \.layers button, \.ac-row \{ min-height: 40px; \}/.test(readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8')), 'autocomplete rows take a finger on touch, as the popover rows do');
 }
