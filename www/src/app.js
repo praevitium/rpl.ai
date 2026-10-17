@@ -36,7 +36,7 @@ import {
   varOrder, varList, varRecall, varStore, currentPath,
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, testUserFlag,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook } from './rpl/ops.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
@@ -116,6 +116,11 @@ class App {
     this.chatBot.setMode(this.prefs.assistantMode, { tutorStyle: this.prefs.tutorStyle });
     this.drawers = new Drawers({ rail: $('rail'), el: $('drawer'), scrim: $('scrim'), app: this });
     setGraphicsHook((kind, stack) => this.drawers.openGraph(kind, stack));
+    setMenuHook((list, temporary) => {
+      if (!list) this.showPreviousMenu({ commit: false });
+      else if (temporary) this.setMenu(this._customMenuSlots(list), 'TMENU');
+      else this.showMenu('CST', { commit: false });
+    });
     loadCommandReference().then((m) => { this.reference = m; this.menubar.render(); }).catch(() => {});
 
     this._wireDisplay();
@@ -1159,12 +1164,12 @@ class App {
     return null;
   }
 
-  showMenu(id, { remember = true } = {}) {
+  showMenu(id, { remember = true, commit = true } = {}) {
     if (this.selection != null) this.clearSelection();
     if (id === 'EQW' || id === 'MTRW') { this._menuPinned = false; this._ctxPage = 0; this.menubar.render(); return; }
     this._menuPinned = !!this.writerMenuId();
     if (id === 'VARS') this.showVarsMenu();
-    else if (id === 'CST') this.showCustomMenu();
+    else if (id === 'CST') this.showCustomMenu({ commit });
     else if (id === 'MODES') this.showModesMenu();
     else if (id === 'BRCH') this.showBranchMenu();
     else this._showFamilyMenu(id);
@@ -1172,9 +1177,9 @@ class App {
   }
 
   // The menu shown before this one, one hold away on a phone, where the picker's Recent group is two taps.
-  showPreviousMenu() {
+  showPreviousMenu({ commit = true } = {}) {
     const prev = this.prefs.recentMenus.find((id) => id !== this.menuKind);
-    if (prev) this.showMenu(prev);
+    if (prev) this.showMenu(prev, { commit });
     else this.toast('No menu before this one');
   }
 
@@ -1475,17 +1480,23 @@ class App {
     this.setMenu(slots, 'VARS', opts);
   }
 
-  showCustomMenu() {
-    if (this.entry.buffer.trim().length > 0 && !this.entry._typingAtCursor()) this.commitEntry();
+  // MENU runs with the line still in hand, so it shows the menu without committing it again.
+  showCustomMenu({ commit = true } = {}) {
+    if (commit && this.entry.buffer.trim().length > 0 && !this.entry._typingAtCursor()) this.commitEntry();
     const cst = varRecall('CST');
-    if (!isList(cst)) {
+    const list = isName(cst) ? varRecall(cst.id) : cst;
+    if (!isList(list)) {
       this.setMenu([], 'CST');
       this.toast(cst === undefined
         ? 'CST is empty. Store a list of commands or names in CST, for example { SOLVE FACTOR } `CST` STO.'
         : 'CST must hold a list, for example { SOLVE FACTOR }.');
       return;
     }
-    const slots = cst.items.map((item) => {
+    this.setMenu(this._customMenuSlots(list), 'CST');
+  }
+
+  _customMenuSlots(list) {
+    return list.items.map((item) => {
       const label = customMenuLabel(item);
       const target = isTagged(item) ? item.value : item;
       return {
@@ -1505,7 +1516,6 @@ class App {
         },
       };
     });
-    this.setMenu(slots, 'CST');
   }
 
   // Inside an open object a CST key types its item, as the HP's keys do; false when it should run.

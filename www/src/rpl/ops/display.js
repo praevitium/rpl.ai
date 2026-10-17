@@ -1,8 +1,38 @@
-import { isInteger, isBinaryInteger, isReal, BinaryInteger, Real } from '../types.js';
+import { isInteger, isBinaryInteger, isReal, isList, isName, BinaryInteger, Real } from '../types.js';
 import { RPLError } from '../stack.js';
-import { setWordsize, getWordsize, getWordsizeMask, getBinaryBase, setBinaryBase, setTextbookMode, setDisplay } from '../state.js';
+import { setWordsize, getWordsize, getWordsizeMask, getBinaryBase, setBinaryBase, setTextbookMode, setDisplay, varStore, varRecall, inScratchState } from '../state.js';
 import { register } from './registry.js';
 
+
+let _menuHook = null;
+
+export function setMenuHook(fn) {
+  _menuHook = typeof fn === 'function' ? fn : null;
+}
+
+// The HP numbers its built-in menus; here only 0, the menu before this one, is taken (null below).
+function _menuList(arg) {
+  if (isReal(arg) || isInteger(arg)) {
+    if (!(isReal(arg) ? arg.value.isZero() : arg.value === 0n)) throw new RPLError('Bad argument value');
+    return null;
+  }
+  const list = isName(arg) ? varRecall(arg.id) : arg;
+  if (!isList(list)) throw new RPLError('Bad argument type');
+  return list;
+}
+
+register('MENU', (s) => {
+  const [arg] = s.popN(1);
+  const list = _menuList(arg);
+  if (list) varStore('CST', arg);
+  if (!inScratchState()) _menuHook?.(list, false);
+}, { category: 'Display / base', categoryOrder: 24, label: "MENU" });
+
+register('TMENU', (s) => {
+  const [arg] = s.popN(1);
+  const list = _menuList(arg);
+  if (!inScratchState()) _menuHook?.(list, true);
+}, { category: 'Display / base', categoryOrder: 25, label: "TMENU" });
 
 
 register('STWS', (s) => {

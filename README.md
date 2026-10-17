@@ -207,7 +207,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   the UNITS keys type `1_m *`, `1_m CONVERT` (⇦) or `1_m /` (⇨), or attach
   the unit to the number you are typing; with no shift key to hand, hold a
   finger on a unit key for its ⇦ and ⇨ forms. The MODES keys type their command
-  there too (`DEG`, `FIX`, `HEX`) rather than changing the mode.
+  there too (`DEG`, `FIX`, `HEX`) rather than changing the mode. A program
+  can put up its own keys, as on the HP: `{ SIN COS } MENU` stores the list
+  in CST and shows it, `TMENU` shows one without storing it, and `0 MENU`
+  brings back the menu before (the HP's other menu numbers are not taken).
 - Tap a stack level for its actions, on a line under it so they never cover
   the value: Edit, View, Pick (DUP on level 1), Roll (SWAP on level 2), Conv for
   a value with units (from 360 px wide), Drop, and ⋯

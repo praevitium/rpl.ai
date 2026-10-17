@@ -2022,3 +2022,24 @@ clearAllUserFlags();
     'IFTE in an algebraic picks a branch when its test folds, and stays symbolic when it does not');
   resetHome();
 }
+
+{
+  const { setMenuHook } = await import('../www/src/rpl/ops.js');
+  const shown = [];
+  setMenuHook((list, temporary) => shown.push(`${list ? format(list) : 'last'}${temporary ? ' temporary' : ''}`));
+  resetHome();
+  runLine('{ SIN COS } MENU');
+  assert(format(varRecall('CST')) === '{ SIN COS }' && shown.at(-1) === '{ SIN COS }', 'MENU stores a list in CST and shows it as the custom menu');
+  runLine('{ 1 2 } TMENU');
+  assert(format(varRecall('CST')) === '{ SIN COS }' && shown.at(-1) === '{ 1 2 } temporary', 'TMENU shows a list without storing it in CST');
+  runLine('{ 3 4 } `MYM` STO `MYM` MENU');
+  assert(isName(varRecall('CST')) && varRecall('CST').id === 'MYM' && shown.at(-1) === '{ 3 4 }', 'MENU with a name stores the name in CST and shows the list it holds');
+  runLine('0 MENU');
+  assert(shown.at(-1) === 'last' && shown.length === 4, '0 MENU shows the menu before this one');
+  assertThrows(() => runLine('5 MENU'), /Bad argument value/i, 'MENU: the HP\'s built-in menu numbers are not taken');
+  assertThrows(() => runLine('"x" TMENU'), /Bad argument type/i, 'TMENU: a string is no menu');
+  assertThrows(() => runLine('`MYM` PURGE `MYM` TMENU'), /Bad argument type/i, 'TMENU: a name must hold a list');
+  assert(format(varRecall('CST')) === "'MYM'" || isName(varRecall('CST')), 'a refused argument leaves CST as it was');
+  setMenuHook(null);
+  resetHome();
+}

@@ -329,7 +329,7 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(/const held = e\.pointerType === 'touch' && e\.target\.closest\('\[data-mb="next"\]:not\(:disabled\), \[data-mb="pick"\]'\);/.test(menubarAll) && /this\._mbTimer = setTimeout\(\(\) => \{\s*this\._mbHeld = true;\s*this\.app\.buzzHold\(\);\s*if \(button\.dataset\.mb === 'next'\) this\.openAll\(button\);\s*else this\.app\.showPreviousMenu\(\);\s*\}, LONG_PRESS_MS\);/.test(menubarAll)
     && /if \(this\._mbHeld\) \{ this\._mbHeld = false; return; \}\s*if \(b\.dataset\.mb === 'next'\) this\._nxt\(\);\s*else if \(b\.dataset\.mb === 'pick'\) this\.openPicker\(b\);/.test(menubarAll) && /this\.app\.pressMenuSlot\(Number\(target\.dataset\.v\)\);/.test(menubarAll),
     'menus: a finger held on NXT lays every key of the menu out in a grid, a plain tap still turns the page, and a key tapped in the grid presses by its place');
-  assert(/showPreviousMenu\(\) \{\s*const prev = this\.prefs\.recentMenus\.find\(\(id\) => id !== this\.menuKind\);\s*if \(prev\) this\.showMenu\(prev\);\s*else this\.toast\('No menu before this one'\);/.test(appSrc),
+  assert(/showPreviousMenu\(\{ commit = true \} = \{\}\) \{\s*const prev = this\.prefs\.recentMenus\.find\(\(id\) => id !== this\.menuKind\);\s*if \(prev\) this\.showMenu\(prev, \{ commit \}\);\s*else this\.toast\('No menu before this one'\);/.test(appSrc),
     'menus: a finger held on the menu button goes back to the menu shown before, the picker\'s Recent group one hold away');
   const gridCss = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/class="\$\{on \? 'on' : ''\}\$\{slot\.dir \? ' dir' : ''\}"/.test(menubarAll) && /\.pop \.grid button\.dir::before \{ content: ""; position: absolute; left: 6px; top: -1px; width: 30%; height: 3px;/.test(gridCss),
@@ -1879,4 +1879,12 @@ setAngle('RAD');
   assert(fit(-26, 178, 150) === '146px/34', 'autocomplete: the chosen row scrolls into the capped list (150 + 30 - 146)');
   assert(fit(-148, 178, 0) === '30px/0', 'autocomplete: one whole row (30 px here, 40 on touch) remains in landscape with the keyboard up');
   assert(/\.ac \{[^}]*overflow: hidden auto;/.test(readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8')), 'autocomplete: the list scrolls when capped');
+}
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/setMenuHook\(\(list, temporary\) => \{\s*if \(!list\) this\.showPreviousMenu\(\{ commit: false \}\);\s*else if \(temporary\) this\.setMenu\(this\._customMenuSlots\(list\), 'TMENU'\);\s*else this\.showMenu\('CST', \{ commit: false \}\);/.test(appSrc)
+    && /showCustomMenu\(\{ commit = true \} = \{\}\) \{\s*if \(commit && this\.entry\.buffer/.test(appSrc) && /showPreviousMenu\(\{ commit = true \} = \{\}\) \{[\s\S]{0,160}?this\.showMenu\(prev, \{ commit \}\)/.test(appSrc),
+    'MENU and TMENU show their menu through a hook without committing the line they run from (which would run it again), a temporary one under the kind TMENU');
+  assert(/const list = isName\(cst\) \? varRecall\(cst\.id\) : cst;/.test(appSrc), 'the custom menu follows a name stored in CST to the list it holds, as the HP does');
 }
