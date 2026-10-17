@@ -32,8 +32,8 @@ download, no account and no sign-up.
   typesets as you go. Underneath, it shows the value, a plot, the
   simplification, the factorisation, the derivative, the zeros and even
   removable singularities.
-- **Previews before you commit.** Hover a soft key to see what it will do to
-  your stack, and why it would fail if it can't run.
+- **Previews before you commit.** Hover a soft key, or hold one on a phone,
+  to see what it will do to your stack, and why it would fail if it can't run.
 - **Errors that explain themselves.** "SIN can't use a string." The
   offending level is outlined, one-click fixes are offered, and nothing is
   lost.
@@ -245,7 +245,11 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   page and comes back round to the first, and with left shift it reads PREV
   and goes back, as on the HP. A finger swiped left along the soft keys
   turns to the next page and swiped right goes back; a soft key acts as the
-  finger lifts, so a swipe presses nothing.
+  finger lifts, so a swipe presses nothing. Hold a command's key to preview
+  what it will do to the stack; it runs as you lift, unless you slide away.
+  Under 360 px the page count moves from the menu button onto NXT, and under
+  320 the menu button keeps only its icon, so each soft key stays
+  finger-wide.
 - The equation writer has its own row of buttons (move, fraction, power,
   root and parentheses), and so does the matrix writer (previous cell, next
   cell and next row), each with ⌫ and Enter. The matrix writer pushes only
@@ -385,9 +389,10 @@ and a countdown, so you can follow along; Continue moves on sooner.
 
 ### Know what a key will do
 
-Hover a soft key or a Catalog Run button and the stack shows the arguments
-it will take and the results it will leave, computed on a copy of your
-stack. If it would fail, the culprit level is outlined and the reason shown.
+Hover a soft key or a Catalog Run button, or hold a finger on a soft key,
+and the stack shows the arguments it will take and the results it will
+leave, computed on a copy of your stack. On a phone the held key still runs
+as you lift your finger; slide it away to cancel. If it would fail, the culprit level is outlined and the reason shown.
 Keys that need more arguments than the stack holds are dimmed. Previews
 cover quick stack commands; algebra commands are not previewed.
 
