@@ -1709,3 +1709,11 @@ setAngle('RAD');
     && /@container app \(min-width: 480px\) \{\s*:root\[data-keyboard\] \.app:has\(\.bn\) \.key-strip \{ display: none; \}\s*:root\[data-keyboard\] \.bn:not\(\.halt\) \{ grid-template-columns: minmax\(0, 1fr\) auto auto; \}/.test(short),
     'errors, keyboard up: the banner keeps to its title and fixes (the explanation waits for the keyboard to go), and on a short landscape screen puts them on one row in the key strip\'s place, so the command line stays in view (it was pushed below the keyboard at 280 px and in landscape)');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const short = css.slice(css.indexOf('@media (max-height: 300px) {\n  :root[data-keyboard] .input-top'));
+  assert(/@container app \(min-width: 480px\) \{\s*:root\[data-keyboard\] \.mx, :root\[data-keyboard\] \.eqw \{ grid-template-columns: 1fr auto; align-items: end; \}\s*:root\[data-keyboard\] \.writer-keys \.cmdline-go \{ flex: none; width: 40px; \}\s*\}/.test(short)
+    && !/\n  :root\[data-keyboard\] \.mx, :root\[data-keyboard\] \.eqw \{ grid-template-columns/.test(short),
+    'writers, keyboard up: their keys sit beside the formula or matrix only on a short screen at least 480 px wide; a 280 px phone with 270 px left keeps them under it (beside it, the matrix ran off the left edge and the equation writer\'s keys off the right)');
+}

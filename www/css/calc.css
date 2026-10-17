@@ -2082,8 +2082,11 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   :root[data-keyboard] .input-top, :root[data-keyboard] .input-hint,
   :root[data-keyboard] .mx-foot, :root[data-keyboard] .status-line, :root[data-keyboard] .menubar, :root[data-keyboard] .st-more { display: none; }
   :root[data-keyboard] .mx-grid-wrap { max-height: 92px; }
-  :root[data-keyboard] .mx, :root[data-keyboard] .eqw { grid-template-columns: 1fr auto; align-items: end; }
-  :root[data-keyboard] .writer-keys .cmdline-go { flex: none; width: 40px; }
+  /* In landscape the writers' keys sit beside the formula or matrix; on a narrow screen they stay under it, or they push it off the edge. */
+  @container app (min-width: 480px) {
+    :root[data-keyboard] .mx, :root[data-keyboard] .eqw { grid-template-columns: 1fr auto; align-items: end; }
+    :root[data-keyboard] .writer-keys .cmdline-go { flex: none; width: 40px; }
+  }
   /* A halted program's keys take the room the key strip would, so one stack level stays in view. */
   :root[data-keyboard] .app:has(.bn.halt) .key-strip { display: none; }
   /* So does an error's title with its fixes beside it in landscape, so the command line stays in view. */
