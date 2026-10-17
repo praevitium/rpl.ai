@@ -214,7 +214,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   and KEEP for levels 1 to the one you tapped, and LEVEL to push its number (also on the level's soft keys). Swipe a level left or right to drop it; the
   toast's Undo brings it back. Share sends the value with a link; opening
   the link starts rpl.ai with the value on the command line, where nothing
-  runs until you press Enter. On Android the installed app is also in other
+  runs until you press Enter. Share levels 1–n, in the ⋯ of a deeper level,
+  sends them one to a line, deepest first, so Enter on the other end
+  rebuilds the stack. On Android the installed app is also in other
   apps' Share menus: text or an rpl.ai link shared to it lands on the
   command line the same way, however long, so a column of numbers from a
   note goes onto the stack with one Enter. Hold the installed app's icon for shortcuts
@@ -267,9 +269,12 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   reach. While the keyboard is up, the calculator keypad steps aside so the
   writer stays in view; a window that is only shorter, as in Android's split
   screen, keeps the keypad.
-- In landscape, where the keyboard leaves little room, the tabs, hints and
-  soft keys also step aside while you type, and the writers' keys move
-  beside the formula or matrix, so level 1 and the whole writer stay in
+- In landscape, where the keyboard leaves little room, the app bar, tabs,
+  hints and soft keys also step aside while you type, and the writers' keys
+  move beside the formula or matrix, so level 1 and the whole writer stay in
+  view; a narrow screen keeps them under it. With the keyboard up an error
+  keeps to its title and fixes (the explanation comes back with the
+  keyboard down), on one row in landscape, so the command line stays in
   view. Typing in a drawer on a short screen hides its tabs and the
   assistant's status line, and in landscape its title too, so the
   conversation or list keeps its room.
