@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.109 (2026-10-17)
+**Latest release:** v0.6.110 (2026-10-17)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.110 — 2026-10-17
+
+`INPUT` arrives: a program asks with a prompt and the text to offer, the
+prompt is the banner, the text is on the command line, and Enter or OK
+hand the line back to the program as a string. The HP's `V` option asks
+that the line parse first; its cursor positions and entry modes are not
+taken. In minimal view the HALT annunciator kept the desktop's padding
+and pushed the leave button off a phone's screen while a program was
+halted; it is small and tight beside the modes now, which give room as
+they do under 320 px, and with a level being edited too the exact mode
+gives way under 320 px. A `PROMPT` banner leads with its message, as the
+`MSGBOX` banner does, rather than tucking it behind "The program is
+waiting for you".
 
 ## v0.6.109 — 2026-10-17
 
