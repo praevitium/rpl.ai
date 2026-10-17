@@ -1698,3 +1698,14 @@ setAngle('RAD');
     && /\.st-more::before \{ content: ""; position: absolute; inset: -7px -4px -10px; \}/.test(touch),
     'stack: the more-levels pill stays on one line (it wrapped to two at 280 px, and a three-digit count would at 320) and takes a 40 px tap on touch, from the stack\'s top edge down, without looking bigger');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const short = css.slice(css.indexOf('@media (max-height: 300px) {\n  :root[data-keyboard] .input-top'));
+  assert(/:root\[data-keyboard\] \.bn:not\(\.halt\) \{ grid-template-columns: minmax\(0, 1fr\) auto; align-items: center; padding-block: 6px; \}/.test(css)
+    && /:root\[data-keyboard\] \.bn:not\(\.halt\) :is\(\.bn-ico, \.bn-d\) \{ display: none; \}/.test(css)
+    && /:root\[data-keyboard\] \.bn:not\(\.halt\) \.bn-f \{ grid-column: 1 \/ -1; flex-wrap: nowrap; overflow-x: auto;/.test(css)
+    && /:root\[data-keyboard\] \.app:has\(\.bn\.halt\) \.key-strip \{ display: none; \}/.test(short)
+    && /@container app \(min-width: 480px\) \{\s*:root\[data-keyboard\] \.app:has\(\.bn\) \.key-strip \{ display: none; \}\s*:root\[data-keyboard\] \.bn:not\(\.halt\) \{ grid-template-columns: minmax\(0, 1fr\) auto auto; \}/.test(short),
+    'errors, keyboard up: the banner keeps to its title and fixes (the explanation waits for the keyboard to go), and on a short landscape screen puts them on one row in the key strip\'s place, so the command line stays in view (it was pushed below the keyboard at 280 px and in landscape)');
+}

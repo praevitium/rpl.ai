@@ -2070,6 +2070,11 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 :root[data-keyboard] .bn.halt :is(.bn-ico, .bn-prog), :root[data-keyboard] .bn.halt .bn-f span { display: none; }
 :root[data-keyboard] .bn.halt .bn-f { grid-column: 2; grid-row: 1; flex-wrap: nowrap; margin-top: 0; }
 :root[data-keyboard] .bn.halt .bn-f .chip { min-width: 40px; justify-content: center; padding-inline: 0; }
+/* Typing after an error, the banner keeps to its title and fixes, so the command line stays in view; the explanation waits for the keyboard to go. */
+:root[data-keyboard] .bn:not(.halt) { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding-block: 6px; }
+:root[data-keyboard] .bn:not(.halt) :is(.bn-ico, .bn-d) { display: none; }
+:root[data-keyboard] .bn:not(.halt) .bn-x { grid-column: 2; }
+:root[data-keyboard] .bn:not(.halt) .bn-f { grid-column: 1 / -1; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-top: 2px; }
 /* The assistant keeps its conversation in view the same way: the endpoint button and token counts wait for the keyboard to go. */
 :root[data-keyboard] .cb-switch-model-btn, :root[data-keyboard] .cb-stats { display: none; }
 /* A landscape phone with its keyboard up has about 190px left: while typing, only the stack, the line or writer and its keys stay. */
@@ -2081,6 +2086,14 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   :root[data-keyboard] .writer-keys .cmdline-go { flex: none; width: 40px; }
   /* A halted program's keys take the room the key strip would, so one stack level stays in view. */
   :root[data-keyboard] .app:has(.bn.halt) .key-strip { display: none; }
+  /* So does an error's title with its fixes beside it in landscape, so the command line stays in view. */
+  @container app (min-width: 480px) {
+    :root[data-keyboard] .app:has(.bn) .key-strip { display: none; }
+    :root[data-keyboard] .bn:not(.halt) { grid-template-columns: minmax(0, 1fr) auto auto; }
+    :root[data-keyboard] .bn:not(.halt) .bn-t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    :root[data-keyboard] .bn:not(.halt) .bn-f { grid-column: 2; grid-row: 1; margin-top: 0; }
+    :root[data-keyboard] .bn:not(.halt) .bn-x { grid-column: 3; }
+  }
   :root[data-keyboard] .dw-head, :root[data-keyboard] .pal-row .d { display: none; }
   :root[data-keyboard] .pal-row { padding-block: 0; }
   :root[data-keyboard] .pal-row .t { grid-row: 1 / 3; }
