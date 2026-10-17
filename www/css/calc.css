@@ -1988,6 +1988,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   /* Under 320 px the padding goes and the modes give a little, so the leave button stays on screen; FIX 11 takes two lines if it must. */
   @container app (max-width: 319px) {
     .ann-status { padding-left: 6px; padding-right: 4px; }
+    /* The amber pencil of a level being edited is a seventh mode at 280 px, which the side padding pays for. */
+    .ann-status:has(.ann-m.e) { padding-left: 2px; padding-right: 2px; }
     button.ann-m { min-width: 28px; }
     button.ann-m[data-mode="fmt"] { white-space: normal; line-height: 1.1; }
   }

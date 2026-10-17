@@ -331,6 +331,8 @@ import { assert, assertThrows } from './helpers.mjs';
     'menus: a folder key in the whole-menu grid wears the tab its soft key does');
   assert(/UNIT_GROUPS\.map\(\(group\) => \(\{ label: group\.id, dir: true,/.test(appSrc) && /\.pop \.grid button \{[^}]*overflow-wrap: anywhere;/.test(gridCss),
     'menus: the UNITS menu\'s group keys wear the folder tab, as submenu keys do on the HP, and a long name in the whole-menu grid wraps inside its key as it does on a narrow soft key');
+  assert(/@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}\s*\/\*[^*]*\*\/\s*\.ann-status:has\(\.ann-m\.e\) \{ padding-left: 2px; padding-right: 2px; \}/.test(gridCss),
+    'minimal view: with a level being edited, the status line gives up its side padding under 320 px, so the amber pencil no longer pushes the leave button 2 px off a 280 px screen');
   assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),
     'UNIT_GROUPS: every key makes a unit object when attached to a number');
   const ONE_QUANTITY = ['LENG', 'AREA', 'VOL', 'FORCE', 'ENRG', 'POWR', 'PRESS', 'TEMP'];
@@ -1634,7 +1636,7 @@ setAngle('RAD');
   assert(/^@container app \(max-width: 319px\) \{\n  \.crumbs \{ flex-shrink: 0; max-width: 40%; \}\n  \.modes \{ flex-shrink: 1; min-width: 0; \}/.test(bar)
     && /\.mode-chip\.summary span \{ overflow: hidden; text-overflow: ellipsis; \}\n  \.in-tabs \.i \{ display: none; \}/.test(bar)
     && appbarSrc.includes('<span>${escapeHtml(modesSummary())}</span>')
-    && /@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}\s*button\.ann-m \{ min-width: 28px; \}/.test(css)
+    && /@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}[\s\S]{0,240}?button\.ann-m \{ min-width: 28px; \}/.test(css)
     && css.includes('@container app (max-width: 319px) { .writer-keys { gap: 2px; padding: 0 4px 8px; } .writer-keys .cmdline-go { min-width: 26px; padding: 0; white-space: nowrap; } }'),
     "narrow phones: under 320 px (a fold's cover screen, or a larger system text size) the directory name stays whole while the modes summary gives way, and Ask, minimal view's leave button and the equation writer's Enter stay on screen");
 }
