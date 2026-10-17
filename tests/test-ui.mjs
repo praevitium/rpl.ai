@@ -1665,6 +1665,14 @@ setAngle('RAD');
     && /@container work \(max-width: 359px\) \{\s*\.mb-menu sup \{ display: none; \}\s*\.mb-pg button:has\(sup\) \{ align-content: center; gap: 3px; \}\s*\.mb-pg sup \{ display: block;/.test(touch)
     && /@container work \(max-width: 319px\) \{\s*\.menubar \{ gap: 3px; padding-left: 4px; padding-right: 4px; \}\s*\.mb-menu \.i \{ display: block; \}\s*\.mb-menu \.short \{ display: none; \}\s*\.mb-keys \{ gap: 2px; \}\s*\.mb-pg button \{ min-width: 36px; padding: 0 2px; \}/.test(touch),
     'soft keys, touch: under 360 px the page count moves from the menu button onto NXT, and under 320 px the menu button keeps only its icon, so the six soft keys stay 32 px wide (with a level selected they were 22 px at 280 and 29 at 320)');
+  assert(/@container app \(max-width: 319px\) \{\s*:root\[data-theme="classic"\] \.menubar \{ margin-inline: -10px; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.menubar \{ margin: 0 -14px -14px; \}/.test(touch),
+    'soft keys, touch, Classic theme: under 320 px the menu bar runs past the bezel to the screen edges, so its keys are 32 px at 280 too (they were 29, and 27 in minimal view)');
+  assert(/:root\[data-theme="classic"\] \.ann-g\[role="button"\] \{ position: relative; \}\s*:root\[data-theme="classic"\] \.ann-g\[role="button"\]::before \{ content: ""; position: absolute; inset: -14px -7px; \}/.test(touch),
+    'Classic theme, touch: each mode annunciator takes a finger across its LCD row (they were 11 px tall, the only way to change a mode from minimal view\'s status line)');
+  const narrowClassic = css.slice(css.indexOf('@container work (max-width: 359px) {\n  :root[data-theme="classic"][data-view="minimal"]'));
+  assert(/^@container work \(max-width: 359px\) \{\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.status-line \{ gap: 8px; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.ann-g > span:not\(\.on\) \{ display: none; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.ann-g:not\(:has\(> \.on, > button\)\) \{ display: none; \}/.test(narrowClassic)
+    && /:root\[data-theme="classic"\]\[data-view="minimal"\] \.ann-path \{ display: block; min-width: 0; \}/.test(narrowClassic.slice(0, narrowClassic.indexOf('\n}\n'))),
+    'Classic theme, minimal view: on a phone under 390 px only the lit annunciators show, as on the HP\'s header, and the path ends in an ellipsis, so the menu and leave buttons stay on the line (at 280 and 300 px both were clipped off, leaving no way out of minimal view)');
 }
 
 {

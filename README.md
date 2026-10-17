@@ -482,8 +482,10 @@ stack stays in view. A program on the stack can be stepped from the start with
 ### Three looks, and a Minimal view
 
 Graphite and Paper follow your system's dark or light setting; Classic LCD
-reimagines the original display. On a phone the status bar takes the colour
-of the look you pick. Minimal view strips everything back to the
+reimagines the original display, whose annunciators you tap to change a
+mode. In minimal view on a phone under 390 px wide it shows only the lit
+ones, as the HP's own header does, so the menu and leave buttons stay in
+reach. On a phone the status bar takes the colour of the look you pick. Minimal view strips everything back to the
 status line, the stack and the command line (`⇧⌘F`); a setting keeps the
 soft keys. On a phone it has a menu of its own (see [On a phone](#on-a-phone)).
 

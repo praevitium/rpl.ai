@@ -1016,6 +1016,14 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 :root[data-theme="classic"][data-view="minimal"] .input { border-top-color: rgba(28, 38, 24, .35); background: transparent; }
 :root[data-theme="classic"][data-view="minimal"] .cmdline { background: transparent; box-shadow: none; }
 :root[data-theme="classic"][data-view="minimal"] .status-line { margin: 0 10px; padding: 12px 6px 8px; }
+/* On a phone narrower than 390 px every dim annunciator would push the path, then the menu and leave buttons, off the line, so only the lit ones show, as on the HP's own header. */
+@container work (max-width: 359px) {
+  :root[data-theme="classic"][data-view="minimal"] .status-line { gap: 8px; }
+  :root[data-theme="classic"][data-view="minimal"] .ann-g > span:not(.on) { display: none; }
+  :root[data-theme="classic"][data-view="minimal"] .ann-g:not(:has(> .on, > button)) { display: none; }
+  :root[data-theme="classic"][data-view="minimal"] .ann-g[role="button"] { min-width: 24px; justify-content: center; }
+  :root[data-theme="classic"][data-view="minimal"] .ann-path { display: block; min-width: 0; }
+}
 
 .dw-body:has(.cb-panel-wrap),
 .dw-body:has(.gr-view) {
@@ -2039,6 +2047,14 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
     .mb-menu .short { display: none; }
     .mb-keys { gap: 2px; }
     .mb-pg button { min-width: 36px; padding: 0 2px; }
+  }
+  /* Classic's annunciators are 11 px tall; each takes a finger across its row, half the gap to the next. */
+  :root[data-theme="classic"] .ann-g[role="button"] { position: relative; }
+  :root[data-theme="classic"] .ann-g[role="button"]::before { content: ""; position: absolute; inset: -14px -7px; }
+  /* Classic's bezel would take the width those keys need, so there the menu bar runs to the screen's edges. */
+  @container app (max-width: 319px) {
+    :root[data-theme="classic"] .menubar { margin-inline: -10px; }
+    :root[data-theme="classic"][data-view="minimal"] .menubar { margin: 0 -14px -14px; }
   }
   .crumbs button, .mode-chip, .appbar .icon-btn, .search-btn, .install-btn { min-height: 40px; }
   /* Under 384 px the directory name needs the width. */
