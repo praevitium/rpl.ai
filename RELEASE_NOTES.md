@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.98 (2026-10-16)
+**Latest release:** v0.6.99 (2026-10-17)
 
 ---
 
@@ -18,6 +18,28 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.99 — 2026-10-17
+
+The Classic LCD look now works on a narrow phone. In minimal view under
+390 px wide its status line ran out of room: at 280 and 300 px the menu and
+leave buttons were pushed off the end, leaving no way out of minimal view,
+and at 320 to 375 px the leave button and the folder path went. There it
+now shows only the lit annunciators, as the HP's own header does, and a
+long path ends in an ellipsis. The annunciators you tap to change a mode
+were 11 px tall; on a touch screen each now takes a finger across the
+LCD's row. Under 320 px Classic's soft keys were 29 px wide (27 in minimal
+view) where the other looks give them 32; the menu bar now runs past the
+bezel to the screen's edges, so they match.
+
+Hold one of the keypad's arrows and it repeats, as the HP's cursor keys do:
+along a long command line, through a formula or a matrix, or up and down the
+stack from an empty line. On an empty line ◀, ▶ and ▼ turn the menu page,
+swap or edit level 1, and a shifted arrow jumps, so those still happen once.
+On Android a long press on an arrow no longer opens its key layers while it
+repeats.
 
 ---
 
