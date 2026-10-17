@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.100 (2026-10-17)
+**Latest release:** v0.6.101 (2026-10-17)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.101 — 2026-10-17
+
+A finger held on a UNITS soft key offers what the shifted key does: Convert
+level 1 to the unit (⇦) or Divide by it (⇨), as a held BRCH key offers its
+structures, for a phone with no shift key to hand. A selected value with
+units has CONV among its soft keys, which opens the same Convert to… list as
+its ⋯ menu.
+
+In the dark and Classic looks, an error toast and the error banner's icon
+drew white on salmon (2.7:1); they take dark ink now, while the light and
+Paper looks keep white on their deeper red. In the Classic look the halt
+banner showed the program's current word in amber on the LCD-green program
+box (1.1:1, unreadable); it is an amber block with dark ink now.
 
 ## v0.6.100 — 2026-10-17
 
