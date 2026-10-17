@@ -255,6 +255,31 @@ function keyTitle(key, hint) {
   return `${bits.join(' · ')}. Right-click for every layer.`;
 }
 
+const REPEAT_DELAY_MS = 400;
+const REPEAT_MS = 80;
+
+// A held key repeats while canRepeat() holds, as the HP's cursor keys do. A long touch on Android
+// also asks for a context menu, which would open the key's layers mid-repeat.
+export function holdToRepeat(el, canRepeat, press) {
+  let timer = null;
+  const stop = () => { clearTimeout(timer); timer = null; };
+  const tick = (ms) => { timer = setTimeout(() => { if (canRepeat()) { press(); tick(REPEAT_MS); } else stop(); }, ms); };
+  el.addEventListener('pointerdown', (ev) => {
+    stop();
+    if (ev.button === 0 && canRepeat()) tick(REPEAT_DELAY_MS);
+  }, { capture: true });
+  for (const type of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(type, stop);
+  el.addEventListener('contextmenu', (ev) => { if (timer) { ev.preventDefault(); ev.stopImmediatePropagation(); } }, { capture: true });
+}
+
+// Arrows repeat where they move a cursor or walk the selected level; on an empty line ◀ ▶ ▼ turn
+// pages, swap or edit, and a shifted arrow jumps, all of which happen once.
+function arrowRepeats(key, app) {
+  if (app.shift) return false;
+  if (app.inputMode !== 'rpl' || app.entry.buffer) return true;
+  return key.primary === '▲' || (key.primary === '▼' && app.selection != null);
+}
+
 // Buttons are built once and relabeled in place, so focus on a key survives shift changes.
 export class Keypad {
   constructor({ el, app }) {
@@ -287,6 +312,7 @@ export class Keypad {
       setTimeout(() => el.classList.remove('pressed'), 80);
       this.app.handleKey(key);
     };
+    if (key.kind === 'arrow') holdToRepeat(el, () => arrowRepeats(key, this.app), press);
     el.addEventListener('mousedown', (evt) => evt.preventDefault());
     el.addEventListener('pointerdown', (evt) => {
       if (evt.button !== 0) return;

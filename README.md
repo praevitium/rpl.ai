@@ -240,7 +240,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - ⌫ and Enter sit beside the command line, finger-sized. ⌫ deletes a
   character or the selected text, and leaves the stack alone on an empty
   line. Hold ⌫, there or on the keypad, to clear the whole line; Undo in
-  the note that appears brings it back.
+  the note that appears brings it back. Hold one of the keypad's arrows and
+  it repeats, as the HP's cursor keys do: along a long line, through a
+  formula or matrix, or up and down the stack.
 - On a narrow screen each soft-key name is sized to its key, so `SPEED`
   stays on one line, and a long name such as `ISPRIME?` breaks into even
   lines instead of being cut off. NXT at the end of the soft keys turns the

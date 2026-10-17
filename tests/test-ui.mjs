@@ -22,7 +22,7 @@ import { computeMenuPage } from '../www/src/ui/paging.js';
 import { headingKey, ALIASES, pushHistory } from '../www/src/ui/command-help.js';
 import { escapeHtml, binaryBaseLabel, displayModeLabel, coordModeGlyph, suspendedProgramText } from '../www/src/ui/display.js';
 import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '../www/src/ui/drawer.js';
-import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName, COMPACT_KEYS } from '../www/src/ui/keyboard.js';
+import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName, COMPACT_KEYS, holdToRepeat } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { unitInfo, UNIT_CATALOG, parseUnitExpr, sameDims } from '../www/src/rpl/units.js';
 import { UNIT_GROUPS } from '../www/src/ui/menus.js';
@@ -1345,6 +1345,38 @@ setAngle('RAD');
   el.fire('pointerdown');
   el.fire('pointerup');
   assert(!el.fire('contextmenu').stopped && !el.fire('click').stopped && !app.cleared.length, '⌫ held: a quick press only deletes, and a right-click still shows the layers');
+
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  let presses = 0;
+  let allowed = true;
+  el = button();
+  holdToRepeat(el, () => allowed, () => { presses++; });
+  el.fire('pointerdown');
+  assert(el.fire('contextmenu').stopped, 'arrow held: an Android long-press menu does not open the layers while the key repeats');
+  await wait(700);
+  el.fire('pointerup');
+  const held = presses;
+  await wait(200);
+  assert(held >= 3 && presses === held, `arrow held: the key repeats after a pause and stops on release (${held})`);
+  presses = 0;
+  el.fire('pointerdown');
+  await wait(100);
+  el.fire('pointerup');
+  await wait(500);
+  assert(presses === 0 && !el.fire('contextmenu').stopped, 'arrow held: a quick tap does not repeat, and a right-click still shows the layers');
+  allowed = false;
+  el.fire('pointerdown');
+  await wait(600);
+  el.fire('pointerup');
+  assert(presses === 0, 'arrow held: no repeat where the arrow does not move a cursor (a shifted arrow, ▶ swapping on an empty line)');
+  allowed = true;
+  el.fire('pointerdown');
+  await wait(500);
+  allowed = false;
+  await wait(300);
+  const stopped = presses;
+  el.fire('pointerup');
+  assert(stopped >= 1 && presses === stopped, 'arrow held: the repeat stops once the arrow has nothing left to move (▼ walking off level 1)');
 }
 
 {
