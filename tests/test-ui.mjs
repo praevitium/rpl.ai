@@ -1934,3 +1934,10 @@ setAngle('RAD');
     && /\.ann-status:has\(\.ann-m\.halt\):has\(\.ann-m\.e\) button\.ann-m\[data-mode="exact"\] \{ display: none; \}/.test(css),
     'minimal view: the HALT annunciator is small and tight beside the modes, which give room as under 320 px, so the leave button stays on screen while a program is halted (it ended 21 px off a 280 px screen, 13 at 320); with a level being edited too, the exact mode gives way under 320 px');
 }
+
+{
+  const bannerSrc = readFileSync(new URL('../www/src/ui/banner.js', import.meta.url), 'utf8');
+  assert(/const title = kind === 'prompt' && prompt \? prompt : `\$\{HALT_TITLES\[kind\] \?\? HALT_TITLES\.halt\}\$\{prompt \? ` · \$\{prompt\}` : ''\}`;/.test(bannerSrc)
+    && /<div class="bn-t">\$\{escapeHtml\(title\)\}<\/div>/.test(bannerSrc),
+    'PROMPT: its message is the banner\'s title, as MSGBOX\'s is, no longer an afterthought behind "The program is waiting for you"; the generic title stays for a PROMPT without a message');
+}
