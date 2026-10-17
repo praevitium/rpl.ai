@@ -323,9 +323,11 @@ import { assert, assertThrows } from './helpers.mjs';
     && /pressSoftKey\(i, forcedLayer = null\) \{\s*this\._pressSlot\(this\.menuView\(\)\.slots\[i\], forcedLayer\);/.test(appSrc),
     'menus: a key pressed by its place in the whole menu turns the soft keys to its page and presses through the same path as a soft key');
   const menubarAll = readFileSync(new URL('../www/src/ui/menubar.js', import.meta.url), 'utf8');
-  assert(/const nxt = e\.pointerType === 'touch' && e\.target\.closest\('\[data-mb="next"\]:not\(:disabled\)'\);/.test(menubarAll) && /this\._nxtTimer = setTimeout\(\(\) => \{ this\._nxtHeld = true; this\.app\.buzzHold\(\); this\.openAll\(button\); \}, LONG_PRESS_MS\);/.test(menubarAll)
-    && /if \(b\.dataset\.mb === 'next'\) \{ if \(this\._nxtHeld\) this\._nxtHeld = false; else this\._nxt\(\); \}/.test(menubarAll) && /this\.app\.pressMenuSlot\(Number\(target\.dataset\.v\)\);/.test(menubarAll),
+  assert(/const held = e\.pointerType === 'touch' && e\.target\.closest\('\[data-mb="next"\]:not\(:disabled\), \[data-mb="pick"\]'\);/.test(menubarAll) && /this\._mbTimer = setTimeout\(\(\) => \{\s*this\._mbHeld = true;\s*this\.app\.buzzHold\(\);\s*if \(button\.dataset\.mb === 'next'\) this\.openAll\(button\);\s*else this\.app\.showPreviousMenu\(\);\s*\}, LONG_PRESS_MS\);/.test(menubarAll)
+    && /if \(this\._mbHeld\) \{ this\._mbHeld = false; return; \}\s*if \(b\.dataset\.mb === 'next'\) this\._nxt\(\);\s*else if \(b\.dataset\.mb === 'pick'\) this\.openPicker\(b\);/.test(menubarAll) && /this\.app\.pressMenuSlot\(Number\(target\.dataset\.v\)\);/.test(menubarAll),
     'menus: a finger held on NXT lays every key of the menu out in a grid, a plain tap still turns the page, and a key tapped in the grid presses by its place');
+  assert(/showPreviousMenu\(\) \{\s*const prev = this\.prefs\.recentMenus\.find\(\(id\) => id !== this\.menuKind\);\s*if \(prev\) this\.showMenu\(prev\);\s*else this\.toast\('No menu before this one'\);/.test(appSrc),
+    'menus: a finger held on the menu button goes back to the menu shown before, the picker\'s Recent group one hold away');
   const gridCss = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/class="\$\{on \? 'on' : ''\}\$\{slot\.dir \? ' dir' : ''\}"/.test(menubarAll) && /\.pop \.grid button\.dir::before \{ content: ""; position: absolute; left: 6px; top: -1px; width: 30%; height: 3px;/.test(gridCss),
     'menus: a folder key in the whole-menu grid wears the tab its soft key does');
@@ -334,7 +336,7 @@ import { assert, assertThrows } from './helpers.mjs';
     && /holdForLines\(this\.go, app\);/.test(inputAreaSrc) && /<span class="ck">\$\{o\.mark \?\? \(i \? '⇨' : '⇦'\)\}<\/span>/.test(appSrc),
     'command line: a finger held on the Enter beside the line offers the last four lines entered, newest first (the HP\'s CMD), which go back on an empty line or into the line being typed');
   assert(/buzzHold\(\) \{\s*if \(this\.prefs\.haptics && typeof navigator\.vibrate === 'function'\) navigator\.vibrate\(20\);/.test(appSrc) && /d\.onRowHold = \(level\) => \{\s*this\.buzzHold\(\);/.test(appSrc) && /showKeyLayers\(key, anchor\) \{\s*this\.buzzHold\(\);/.test(appSrc)
-    && /this\._nxtHeld = true; this\.app\.buzzHold\(\); this\.openAll\(button\);/.test(menubarAll) && /t\.done = true;\s*this\.app\.buzzHold\(\);/.test(menubarAll)
+    && /this\._mbHeld = true;\s*this\.app\.buzzHold\(\);/.test(menubarAll) && /t\.done = true;\s*this\.app\.buzzHold\(\);/.test(menubarAll)
     && /setTimeout\(\(\) => \{ this\.app\.buzzHold\(\); begin\(\); \}, LONG_PRESS_MS\)/.test(readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8')) && /press\.selecting = true;\s*this\.app\?\.buzzHold\(\);/.test(readFileSync(new URL('../www/src/ui/equation-editor.js', import.meta.url), 'utf8')),
     'touch: with key vibration on, a held finger buzzes once when it opens a level or soft-key menu, the whole-menu grid or the keypad key layers, starts a Variables drag or a writer selection, or clears the line');
   assert(/UNIT_GROUPS\.map\(\(group\) => \(\{ label: group\.id, dir: true,/.test(appSrc) && /\.pop \.grid button \{[^}]*overflow-wrap: anywhere;/.test(gridCss),

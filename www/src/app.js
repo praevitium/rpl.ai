@@ -1171,6 +1171,13 @@ class App {
     if (remember) this.setPrefs({ menu: this.menuKind, recentMenus: [this.menuKind, ...this.prefs.recentMenus.filter((m) => m !== this.menuKind)] });
   }
 
+  // The menu shown before this one, one hold away on a phone, where the picker's Recent group is two taps.
+  showPreviousMenu() {
+    const prev = this.prefs.recentMenus.find((id) => id !== this.menuKind);
+    if (prev) this.showMenu(prev);
+    else this.toast('No menu before this one');
+  }
+
   setMenu(slots, kind = null, { preservePage = false } = {}) {
     if (kind === 'EQW') { this._eqwSlots = slots; this._ctxPage = 0; this.menubar.render(); return; }
     this.menuKind = kind;

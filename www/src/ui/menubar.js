@@ -41,8 +41,8 @@ export class MenuBar {
     });
     el.addEventListener('focusout', () => this._endPreview());
     el.addEventListener('pointerdown', (e) => {
-      const nxt = e.pointerType === 'touch' && e.target.closest('[data-mb="next"]:not(:disabled)');
-      if (nxt) { this._nxtHoldStart(nxt); return; }
+      const held = e.pointerType === 'touch' && e.target.closest('[data-mb="next"]:not(:disabled), [data-mb="pick"]');
+      if (held) { this._mbHoldStart(held); return; }
       if (e.pointerType === 'touch' && e.target.closest('.mb-keys')) { e.preventDefault(); this._touchStart(e); return; }
       const sk = e.target.closest('.sk[data-i]');
       if (!sk || e.button !== 0 || sk.disabled) return;
@@ -50,15 +50,16 @@ export class MenuBar {
       this._press(sk);
     });
     el.addEventListener('pointermove', (e) => this._touchMove(e));
-    el.addEventListener('pointerup', (e) => { this._nxtHoldEnd(); this._touchUp(e); });
-    el.addEventListener('pointercancel', () => { this._nxtHoldEnd(); this._touchEnd(); });
+    el.addEventListener('pointerup', (e) => { this._mbHoldEnd(); this._touchUp(e); });
+    el.addEventListener('pointercancel', () => { this._mbHoldEnd(); this._touchEnd(); });
     el.addEventListener('contextmenu', (e) => { if (e.target.closest('.sk[data-i]')) e.preventDefault(); });
     el.addEventListener('click', (e) => {
       const sk = e.target.closest('.sk[data-i]');
       if (sk) { if (e.detail === 0 && !sk.disabled) this._press(sk); return; }
       const b = e.target.closest('[data-mb]');
       if (!b) return;
-      if (b.dataset.mb === 'next') { if (this._nxtHeld) this._nxtHeld = false; else this._nxt(); }
+      if (this._mbHeld) { this._mbHeld = false; return; }
+      if (b.dataset.mb === 'next') this._nxt();
       else if (b.dataset.mb === 'pick') this.openPicker(b);
     });
   }
@@ -162,16 +163,22 @@ export class MenuBar {
       : `<button type="button" data-mb="next" ${pages > 1 ? '' : 'disabled'} title="Next page, round to the first after the last (PgDn); left-shift NXT goes back" aria-label="Next page">NXT${count}</button>`}</div>`;
   }
 
-  // A finger held on NXT lays every key of the menu out at once, so a long menu is one tap, not a page hunt.
-  _nxtHoldStart(button) {
-    this._nxtHoldEnd();
-    this._nxtHeld = false;
-    this._nxtTimer = setTimeout(() => { this._nxtHeld = true; this.app.buzzHold(); this.openAll(button); }, LONG_PRESS_MS);
+  // A finger held on NXT lays every key of the menu out at once, so a long menu is one tap, not a page hunt; held on
+  // the menu button, it goes back to the menu shown before.
+  _mbHoldStart(button) {
+    this._mbHoldEnd();
+    this._mbHeld = false;
+    this._mbTimer = setTimeout(() => {
+      this._mbHeld = true;
+      this.app.buzzHold();
+      if (button.dataset.mb === 'next') this.openAll(button);
+      else this.app.showPreviousMenu();
+    }, LONG_PRESS_MS);
   }
 
-  _nxtHoldEnd() {
-    clearTimeout(this._nxtTimer);
-    this._nxtTimer = null;
+  _mbHoldEnd() {
+    clearTimeout(this._mbTimer);
+    this._mbTimer = null;
   }
 
   openAll(anchor) {
