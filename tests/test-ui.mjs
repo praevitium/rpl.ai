@@ -1690,6 +1690,8 @@ setAngle('RAD');
   const open = paletteSrc.slice(paletteSrc.indexOf('  open(seed = \'\') {'), paletteSrc.indexOf('\n  close() {'));
   assert(/this\.app\.toasts\?\.dismiss\('view'\);/.test(open),
     'command search: opening it puts away the "Keypad hidden" or minimal view hint, which sat over its search field for its first seconds, as a drawer or popover does');
+  assert(/if \(this\.el\.hidden\) this\.app\.toasts\?\.dismiss\('view'\);\s*this\.el\.hidden = false;/.test(readFileSync(new URL('../www/src/ui/autocomplete.js', import.meta.url), 'utf8')),
+    'autocomplete: opening the list puts the view hint away too, which sat over its rows with the keyboard up in minimal view, so a tap on a row hit the hint instead');
 }
 
 {

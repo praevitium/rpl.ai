@@ -102,6 +102,7 @@ export class Autocomplete {
       return `<div class="ac-row${i === this.index ? ' on' : ''}" role="option" aria-selected="${i === this.index}" data-i="${i}"><b>${label}</b><span>${escapeHtml(detail)}</span><em>${escapeHtml(info?.signature ?? '')}</em></div>`;
     }).join('');
     this.el.innerHTML = `${rowsHtml}<div class="ac-foot"><span>Tab completes · ↑↓ choose · → reference</span><span>Esc closes</span></div>`;
+    if (this.el.hidden) this.app.toasts?.dismiss('view');
     this.el.hidden = false;
     this._fit();
   }
