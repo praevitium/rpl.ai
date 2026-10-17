@@ -1787,6 +1787,8 @@ setAngle('RAD');
     'errors: an error toast and the error banner\'s icon take the ink their look\'s danger fill needs, dark on the dark and Classic looks\' salmon (white read at 2.7:1) and white on the light and Paper looks\' red');
   assert(/:root\[data-theme="classic"\] \.bn-prog mark \{ background: var\(--amber\); color: #1b1203; \}/.test(css),
     'classic: the halt banner\'s current word is dark on an amber block (amber on the LCD-green program box read at 1.1:1)');
+  assert(/const program = kind === 'prompt' \? '' : programHtml;/.test(readFileSync(new URL('../www/src/ui/banner.js', import.meta.url), 'utf8')),
+    'halt banner: a PROMPT shows its message and keys without the program\'s source, as the HP does; HALT and Step keep it');
   assert(/\.pal-row\.on \.d, \.ac-row\.on em \{ color: var\(--ink2\); \}/.test(css),
     'search: the highlighted command-search and autocomplete row\'s secondary text takes the brighter ink (--ink3 read at 4.0:1 on the row\'s fill in the dark look, 3.7 in Classic)');
   assert(/@container app \(max-width: 359px\) \{ \.st-acts \[data-row-act="convert"\] \{ display: none; \} \}/.test(css), 'stack: a unit level\'s Conv button waits in ⋯ under 360 px, as Plot does under 320');
