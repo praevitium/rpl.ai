@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.96 (2026-10-16)
+**Latest release:** v0.6.97 (2026-10-16)
 
 ---
 
@@ -18,6 +18,28 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.97 — 2026-10-16
+
+Soft keys stay finger-wide on narrow phones. With a level selected, the
+menu button (LVL 2 and its page count) and NXT took so much of the row that
+the six soft keys were 22 px wide at 280 px, a fold's cover screen or a
+phone with a larger system text size, and 29 px at 320. Under 360 px the
+page count now moves from the menu button onto NXT, and under 320 px the
+menu button shows only its icon, so every soft key is at least 32 px wide.
+
+Hold a soft key on a phone to see what it will do. A mouse hovering over a
+command's soft key has always previewed its result on the stack; a finger
+held on one now does the same. The key still runs as you lift your finger,
+and sliding away cancels it, so a slow tap works as before. The tour's
+soft-key step mentions it.
+
+The "more levels above" pill takes a finger. It was 25 px tall on touch; it
+now answers a tap anywhere in a 40 px band from the top edge of the stack
+without looking any bigger, and it stays on one line, where it used to wrap
+to two at 280 px.
 
 ---
 
