@@ -1865,3 +1865,18 @@ setAngle('RAD');
     && /typeof navigator\.share === 'function' && level > 1 \? item\('sharen', 'share', `Share levels 1–\$\{level\}…`\) : ''/.test(appSrc),
     'stack: a level\'s ⋯ menu shares levels 1 to it as their source, deepest first and one to a line, with a link, so the link or the share target puts them on the command line and Enter rebuilds the stack');
 }
+
+{
+  const { Autocomplete } = await import('../www/src/ui/autocomplete.js');
+  const fit = (top, height, onTop) => {
+    const el = { style: {}, scrollTop: 0, offsetHeight: height, getBoundingClientRect: () => ({ top, bottom: top + height }), querySelector: () => ({ offsetTop: onTop, offsetHeight: 30 }) };
+    Object.defineProperty(el, 'clientHeight', { get: () => Math.min(height, parseFloat(el.style.maxHeight) || Infinity) });
+    Autocomplete.prototype._fit.call({ el });
+    return `${el.style.maxHeight}/${el.scrollTop}`;
+  };
+  assert(fit(40, 178, 140) === '/0', 'autocomplete: with room above the line the list keeps its height and does not scroll');
+  assert(fit(-26, 178, 0) === '146px/0', 'autocomplete: 26 px over the top of the screen, the list is capped to the room above the line (152 - 6) with the first row in view');
+  assert(fit(-26, 178, 150) === '146px/34', 'autocomplete: the chosen row scrolls into the capped list (150 + 30 - 146)');
+  assert(fit(-148, 178, 0) === '30px/0', 'autocomplete: one whole row (30 px here, 40 on touch) remains in landscape with the keyboard up');
+  assert(/\.ac \{[^}]*overflow: hidden auto;/.test(readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8')), 'autocomplete: the list scrolls when capped');
+}

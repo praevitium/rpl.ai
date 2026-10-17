@@ -6,6 +6,7 @@ import { fuzzyScore, matchPositions, highlightSegments } from './op-search.js';
 import { escapeHtml, typeName } from './display.js';
 
 const MAX_ROWS = 6;
+const AC_MARGIN = 6;
 const WORD_BREAK = /[\s{}[\]()"'`«»,+\-*/^=<>|]/;
 const CLOSES_A_WORD = /^[\s)\]}»`']/;
 
@@ -102,6 +103,17 @@ export class Autocomplete {
     }).join('');
     this.el.innerHTML = `${rowsHtml}<div class="ac-foot"><span>Tab completes · ↑↓ choose · → reference</span><span>Esc closes</span></div>`;
     this.el.hidden = false;
+    this._fit();
+  }
+
+  // The phone's keyboard can leave less room above the line than the rows take: the list then scrolls, the chosen
+  // row in sight, instead of running off the top of the screen.
+  _fit() {
+    this.el.style.maxHeight = '';
+    const r = this.el.getBoundingClientRect(), on = this.el.querySelector('.on');
+    const oneRow = (on?.offsetHeight ?? 0) + this.el.offsetHeight - this.el.clientHeight;
+    if (r.top < AC_MARGIN) this.el.style.maxHeight = `${Math.max(r.bottom - AC_MARGIN, oneRow)}px`;
+    if (on) this.el.scrollTop = Math.max(0, on.offsetTop + on.offsetHeight - this.el.clientHeight);
   }
 
   close() {
