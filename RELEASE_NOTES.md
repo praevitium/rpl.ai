@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.99 (2026-10-17)
+**Latest release:** v0.6.100 (2026-10-17)
 
 ---
 
@@ -18,6 +18,23 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.100 — 2026-10-17
+
+A value with units can be converted from its ⋯ menu. Convert to… lists the
+value in every unit of the UNITS menu with the same dimensions, `254._cm`,
+`100._in`, `2.54_m` and so on, with the SI base form last where it is no
+menu key, and a tap runs the HP's CONVERT with a 1 of that unit, so LASTARG
+and Undo see the command as if you had typed `1_in CONVERT`. On a phone this
+spares typing the target unit; temperatures convert as readings, as CONVERT
+does.
+
+In the Classic LCD look, VIEW showed a value in the LCD's dark green on the
+dark sheet, about 1.3:1 and unreadable; the sheet now uses its own ink. On a
+screen under 320 px wide the soft keys' 29 px menu button takes a finger into
+the bar's edge and the gap beside it.
 
 ---
 
