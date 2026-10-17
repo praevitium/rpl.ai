@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.108 (2026-10-17)
+**Latest release:** v0.6.109 (2026-10-17)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.109 — 2026-10-17
+
+`MSGBOX` arrives: a program shows its message in a banner with one OK
+key and goes on when you tap it, the first of the HP's program I/O
+commands. With the custom menu shown, a new list stored in CST, a purge
+or an Undo left the old keys in place, still running the old items; the
+keys now follow CST as the VARS keys follow the variables. A `PROMPT`
+shows its message and keys without the program's source, as the HP
+does, so the banner takes less of a phone's screen; HALT and Step keep
+the source.
 
 ## v0.6.108 — 2026-10-17
 
