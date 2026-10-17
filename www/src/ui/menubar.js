@@ -81,17 +81,21 @@ export class MenuBar {
   }
 
   // A finger presses a soft key as it lifts, so it can instead swipe along the row to turn the page (left for NXT,
-  // right for PREV) or hold a key with more to offer (a BRCH word's whole structures).
+  // right for PREV) or hold a key with more to offer (a BRCH word's whole structures). Held on a command, a key
+  // previews its result as a mouse hovering does, and still runs as the finger lifts unless it slides away.
   _touchStart(e) {
     this._touchEnd();
     const sk = e.target.closest('.sk[data-i]:not(:disabled)');
-    const t = { id: e.pointerId, sk, x: e.clientX, y: e.clientY, moved: false, done: false };
+    const t = { id: e.pointerId, sk, x: e.clientX, y: e.clientY, moved: false, done: false, preview: false };
     const i = Number(sk?.dataset.i);
-    if (sk && this.app.menuView().slots[i]?.onHold) {
+    const slot = sk ? this.app.menuView().slots[i] : null;
+    if (slot?.onHold) {
       t.timer = setTimeout(() => {
         t.done = true;
         this.app.menuView().slots[i]?.onHold(sk);
       }, LONG_PRESS_MS);
+    } else if (slot?.command) {
+      t.timer = setTimeout(() => { t.preview = true; this.app.previewSoftKey(i); }, LONG_PRESS_MS);
     }
     this._touch = t;
   }
@@ -100,7 +104,11 @@ export class MenuBar {
     const t = this._touch;
     if (t?.id !== e.pointerId || t.done) return;
     const dx = e.clientX - t.x, dy = e.clientY - t.y;
-    if (Math.hypot(dx, dy) > 10) { t.moved = true; clearTimeout(t.timer); }
+    if (Math.hypot(dx, dy) > 10) {
+      t.moved = true;
+      clearTimeout(t.timer);
+      if (t.preview) { t.preview = false; this._endPreview(); }
+    }
     if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < 2 * Math.abs(dy)) return;
     t.done = true;
     if (dx < 0) this.app.nextMenuPage();
@@ -116,6 +124,7 @@ export class MenuBar {
 
   _touchEnd() {
     clearTimeout(this._touch?.timer);
+    if (this._touch?.preview) this._endPreview();
     this._touch = null;
   }
 

@@ -1666,3 +1666,27 @@ setAngle('RAD');
     && /@container work \(max-width: 319px\) \{\s*\.menubar \{ gap: 3px; padding-left: 4px; padding-right: 4px; \}\s*\.mb-menu \.i \{ display: block; \}\s*\.mb-menu \.short \{ display: none; \}\s*\.mb-keys \{ gap: 2px; \}\s*\.mb-pg button \{ min-width: 36px; padding: 0 2px; \}/.test(touch),
     'soft keys, touch: under 360 px the page count moves from the menu button onto NXT, and under 320 px the menu button keeps only its icon, so the six soft keys stay 32 px wide (with a level selected they were 22 px at 280 and 29 at 320)');
 }
+
+{
+  const { MenuBar } = await import('../www/src/ui/menubar.js');
+  const { LONG_PRESS_MS } = await import('../www/src/ui/display.js');
+  const on = {};
+  const el = { addEventListener: (type, fn) => { (on[type] ??= []).push(fn); } };
+  const calls = [];
+  const app = { menuView: () => ({ slots: [{ label: 'DUP', command: 'DUP' }] }), nextMenuPage: () => calls.push('next'), prevMenuPage: () => calls.push('prev'), pressSoftKey: (i) => calls.push(`press ${i}`), previewSoftKey: (i) => calls.push(`preview ${i}`), clearPreview: () => calls.push('clear') };
+  new MenuBar({ el, app });
+  const sk = { dataset: { i: '0' }, disabled: false, classList: { add() {}, remove() {} } };
+  const target = { closest: (sel) => (sel === '.mb-keys' ? {} : sel.startsWith('.sk') ? sk : null) };
+  const fire = (type, x, y = 100) => { for (const fn of on[type] ?? []) fn({ type, pointerType: 'touch', pointerId: 1, button: 0, clientX: x, clientY: y, target, preventDefault() {} }); };
+  const hold = () => new Promise((r) => setTimeout(r, LONG_PRESS_MS + 50));
+  fire('pointerdown', 200); await hold();
+  assert(calls.join() === 'preview 0', 'soft keys, touch: a finger held on a command\'s key previews its result on the stack, as a mouse hovering does');
+  fire('pointerup', 201);
+  assert(calls[0] === 'preview 0' && calls.at(-1) === 'press 0' && calls.includes('clear'), 'soft keys, touch: lifting the held finger puts the preview away and runs the key');
+  calls.length = 0;
+  fire('pointerdown', 200); await hold(); fire('pointermove', 200, 60); fire('pointerup', 200, 60);
+  assert(calls.join() === 'preview 0,clear', 'soft keys, touch: sliding the held finger away puts the preview away and runs nothing');
+  calls.length = 0;
+  fire('pointerdown', 200); fire('pointerup', 201);
+  assert(!calls.some((c) => c.startsWith('preview')) && calls.at(-1) === 'press 0', 'soft keys, touch: a quick tap runs the key with no preview');
+}
