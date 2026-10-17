@@ -25,7 +25,7 @@ import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '
 import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName, COMPACT_KEYS, holdToRepeat } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { unitInfo, UNIT_CATALOG, parseUnitExpr, sameDims } from '../www/src/rpl/units.js';
-import { UNIT_GROUPS, unitConversions } from '../www/src/ui/menus.js';
+import { UNIT_GROUPS, unitConversions, customMenuEntry, customMenuLabel } from '../www/src/ui/menus.js';
 import { commandWordAt, commandHelpText } from '../www/src/ui/hover-help.js';
 import { holdToClear, holdForLines } from '../www/src/ui/input-area.js';
 import { parseCommandReference } from '../www/src/ui/command-reference.js';
@@ -1892,4 +1892,22 @@ setAngle('RAD');
     'MENU and TMENU turn the soft keys on in minimal view, as a menu picked from command search does, instead of showing nothing while they are hidden');
   assert(/const list = isName\(cst\) \? varRecall\(cst\.id\) : cst;/.test(appSrc), 'the custom menu follows a name stored in CST to the list it holds, as the HP does');
   assert(/\.pop \.opt, \.pop \.grid button, \.pop \.layers button, \.ac-row \{ min-height: 40px; \}/.test(readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8')), 'autocomplete rows take a finger on touch, as the popover rows do');
+}
+
+{
+  const [cst] = parseEntry('{ SIN { "Sq" « SQ » } { "Tri" { « 1 + » « 10 + » « 100 + » } } { "Two" { 1 2 } } { 1 2 3 } :Tag:7 { "One" { 5 } } }');
+  const e = (i) => { const { label, main, left, right } = customMenuEntry(cst.items[i]); return `${label}|${format(main)}|${left ? format(left) : '-'}|${right ? format(right) : '-'}`; };
+  assert(e(0) === 'SIN|SIN|-|-', 'custom menu: an object on its own is its own label and action');
+  assert(e(1) === 'Sq|« SQ »|-|-', 'custom menu: { "label" action } labels the key and acts with the object, as on the HP');
+  assert(e(2) === 'Tri|« 1 + »|« 10 + »|« 100 + »', 'custom menu: { "label" { action ⇦action ⇨action } } gives the shifted keys their own objects');
+  assert(e(3) === 'Two|1|2|-', 'custom menu: a two-object action list leaves the right shift empty');
+  assert(e(4) === '{ 1 2 3 }|{ 1 2 3 }|-|-', 'custom menu: a three-element list is a value, not a pair');
+  assert(e(5) === 'Tag|7|-|-', 'custom menu: a tagged item keeps its tag as the label');
+  assert(e(6) === 'One|{ 5 }|-|-', 'custom menu: a one-object action list is a list value, as on the HP');
+  assert(customMenuLabel(cst.items[1].items[0]) === 'Sq' && customMenuLabel(cst.items[0]) === 'SIN', 'custom menu: a string label reads as its text, a name as its id');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/const \{ label, main, left, right \} = customMenuEntry\(item\);\s*const shifted = !!\(left \|\| right\);/.test(appSrc)
+    && /onPressL: shifted \? press\(left\) :/.test(appSrc) && /onPressR: shifted \? press\(right\) :/.test(appSrc)
+    && /onHold: shifted \? \(anchor\) => this\._heldKeyMenu\(\[\[left, '⇦'\], \[right, '⇨'\]\]\.filter\(\(\[t\]\) => t\)\.map\(\(\[t, mark\]\) => \(\{ text: customMenuLabel\(t\), mark, run: press\(t\) \}\)\), anchor, label\) : null,/.test(appSrc),
+    'custom menu: a key with shifted objects presses them with ⇦ and ⇨ and offers them under a held finger, while a plain key keeps types-it and recalls-it');
 }

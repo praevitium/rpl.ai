@@ -211,6 +211,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   can put up its own keys, as on the HP: `{ SIN COS } MENU` stores the list
   in CST and shows it, `TMENU` shows one without storing it, and `0 MENU`
   brings back the menu before (the HP's other menu numbers are not taken).
+  An item can be `{ "label" object }` or `{ "label" { object ⇦object
+  ⇨object } }`, as on the HP; a finger held on the key offers the shifted
+  objects.
 - Tap a stack level for its actions, on a line under it so they never cover
   the value: Edit, View, Pick (DUP on level 1), Roll (SWAP on level 2), Conv for
   a value with units (from 360 px wide), Drop, and ⋯

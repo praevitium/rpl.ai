@@ -1,4 +1,6 @@
 import { parseUnitExpr, sameDims, uexprEqual, toBaseUexpr } from '../rpl/units.js';
+import { isList, isName, isString, isTagged } from '../rpl/types.js';
+import { format } from '../rpl/formatter.js';
 
 export const MENU_FAMILIES = Object.freeze([
   { id: 'STACK', short: 'STACK', title: 'Stack', category: 'Stack' },
@@ -90,3 +92,18 @@ export function menuById(id) {
   return OWN_MENUS.find((m) => m.id === id) ?? MENU_FAMILIES.find((m) => m.id === id) ?? null;
 }
 
+export function customMenuLabel(item) {
+  if (isTagged(item)) return item.tag || format(item.value);
+  if (isName(item)) return item.id;
+  if (isString(item)) return item.value;
+  return format(item);
+}
+
+// The HP's custom menu takes an object on its own, { "label" action } or { "label" { action ⇦action ⇨action } }.
+export function customMenuEntry(item) {
+  const pair = !isTagged(item) && isList(item) && item.items.length === 2 ? item.items : null;
+  if (!pair) return { label: customMenuLabel(item), main: isTagged(item) ? item.value : item, left: null, right: null };
+  const [label, action] = pair;
+  const acts = isList(action) && (action.items.length === 2 || action.items.length === 3) ? action.items : [action];
+  return { label: customMenuLabel(label), main: acts[0], left: acts[1] ?? null, right: acts[2] ?? null };
+}

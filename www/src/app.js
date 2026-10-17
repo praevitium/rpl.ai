@@ -16,7 +16,7 @@ import { Sheets } from './ui/sheets.js';
 import { Tour } from './ui/tour.js';
 import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
-import { MENU_FAMILIES, UNIT_GROUPS, BRANCH_KEYS, menuById, unitConversions } from './ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, BRANCH_KEYS, menuById, unitConversions, customMenuEntry, customMenuLabel } from './ui/menus.js';
 import { convertValue } from './rpl/units.js';
 import { MODES } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
@@ -1498,23 +1498,26 @@ class App {
 
   _customMenuSlots(list) {
     return list.items.map((item) => {
-      const label = customMenuLabel(item);
-      const target = isTagged(item) ? item.value : item;
+      const { label, main, left, right } = customMenuEntry(item);
+      const shifted = !!(left || right);
+      const press = (target) => () => {
+        if (!target || this._typeCustomItem(target)) return;
+        if (customCommand(target)) { this.runCommandFromUI(target.id, { asKey: true }); return; }
+        if (this.entry.buffer.trim().length > 0) this.commitEntry();
+        this._pushValue(target, isProgram(target) || isName(target) ? label : null);
+      };
+      const hint = (mark, target) => (target ? ` · ${mark} ${customMenuLabel(target)}` : '');
       return {
         label,
-        title: `${label} · ↰ types it · ↱ recalls it`,
-        onPress: () => {
-          if (this._typeCustomItem(target)) return;
-          if (customCommand(target)) { this.runCommandFromUI(target.id, { asKey: true }); return; }
+        title: shifted ? `${label}${hint('↰', left)}${hint('↱', right)}` : `${label} · ↰ types it · ↱ recalls it`,
+        onPress: press(main),
+        onPressL: shifted ? press(left) : () => { if (!this._typeCustomItem(main)) this.entry.typeToken(`${customMenuSource(main)} `); },
+        onPressR: shifted ? press(right) : () => {
+          if (this._typeCustomItem(main, 'R')) return;
           if (this.entry.buffer.trim().length > 0) this.commitEntry();
-          this._pushValue(target, isProgram(target) || isName(target) ? label : null);
+          this._pushValue(main);
         },
-        onPressL: () => { if (!this._typeCustomItem(target)) this.entry.typeToken(`${customMenuSource(target)} `); },
-        onPressR: () => {
-          if (this._typeCustomItem(target, 'R')) return;
-          if (this.entry.buffer.trim().length > 0) this.commitEntry();
-          this._pushValue(target);
-        },
+        onHold: shifted ? (anchor) => this._heldKeyMenu([[left, '⇦'], [right, '⇨']].filter(([t]) => t).map(([t, mark]) => ({ text: customMenuLabel(t), mark, run: press(t) })), anchor, label) : null,
       };
     });
   }
@@ -1868,13 +1871,6 @@ class App {
       e.preventDefault();
     }
   }
-}
-
-function customMenuLabel(item) {
-  if (isTagged(item)) return item.tag || format(item.value);
-  if (isName(item)) return item.id;
-  if (isString(item)) return item.value;
-  return format(item);
 }
 
 // What a MODES key types inside a program; CMPLX on its own toggles, so the domain keys set flag -103.
