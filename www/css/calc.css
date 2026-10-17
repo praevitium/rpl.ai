@@ -28,6 +28,7 @@
   --blue-dim: rgba(111, 176, 242, .16);
   --danger: #ff6f61;
   --danger-dim: rgba(255, 111, 97, .12);
+  --danger-ink: #1b1203;
   --ok: #86d49d;
   --key: linear-gradient(#262b33, #20242b);
   --key-digit: linear-gradient(#323843, #2b313b);
@@ -77,6 +78,7 @@
   --blue-dim: rgba(42, 112, 196, .10);
   --danger: #c93a2c;
   --danger-dim: rgba(201, 58, 44, .08);
+  --danger-ink: #fff;
   --ok: #2f7d45;
   --key: linear-gradient(#ffffff, #f6f7f4);
   --key-digit: linear-gradient(#ffffff, #fbfbfa);
@@ -119,6 +121,7 @@
     --blue-dim: rgba(42, 112, 196, .10);
     --danger: #c93a2c;
     --danger-dim: rgba(201, 58, 44, .08);
+  --danger-ink: #fff;
     --ok: #2f7d45;
     --key: linear-gradient(#ffffff, #f6f7f4);
     --key-digit: linear-gradient(#ffffff, #fbfbfa);
@@ -462,7 +465,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .banner:empty { display: none; }
 .bn { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 4px 10px; align-items: start; margin: 8px 10px 0; padding: 10px 10px 10px 12px; border-radius: 12px; border: 1px solid color-mix(in oklab, var(--danger) 45%, transparent); background: color-mix(in oklab, var(--danger) 9%, var(--panel)); animation: bn-in .22s var(--ease); }
 .bn.halt { border-color: color-mix(in oklab, var(--amber) 45%, transparent); background: color-mix(in oklab, var(--amber) 9%, var(--panel)); }
-.bn-ico { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--danger); color: #fff; font: 700 13px/1 var(--font-ui); margin-top: 1px; }
+.bn-ico { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--danger); color: var(--danger-ink); font: 700 13px/1 var(--font-ui); margin-top: 1px; }
 .bn.halt .bn-ico { background: var(--amber); color: #1b1203; }
 .bn-t { font: 600 13px/1.35 var(--font-ui); color: var(--ink); overflow-wrap: anywhere; }
 .bn-t code, .bn-d code { font: 12px var(--font-mono); background: var(--r2); padding: 1px 5px; border-radius: 4px; }
@@ -800,7 +803,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 /* Over an open sheet a note would cover its title and page tabs, so it sits at the bottom instead. */
 .lay-sheet:not(:empty) ~ #toasts { top: auto; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 .toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; background: var(--ink); color: var(--bg); border-radius: 10px; padding: 8px 8px 8px 12px; font: 500 12.5px/1.3 var(--font-ui); box-shadow: var(--shadow-2); animation: bn-in .2s; }
-.toast.err { background: var(--danger); color: #fff; }
+.toast.err { background: var(--danger); color: var(--danger-ink); }
 .toast button { border: 0; background: color-mix(in oklab, var(--bg) 18%, transparent); border-radius: 6px; padding: 5px 8px; font: 600 11.5px/1 var(--font-ui); }
 
 body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to put it on the stack"; position: fixed; inset: 10px; z-index: var(--z-sheet); display: grid; place-items: center; padding: 24px; text-align: center; border: 2px dashed var(--accent-line); border-radius: 16px; background: color-mix(in oklab, var(--bg) 84%, transparent); color: var(--accent); font: 600 15px/1.4 var(--font-ui); pointer-events: none; }
@@ -1009,6 +1012,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 /* VIEW's sheet is no LCD, so the value takes the sheet's ink rather than the LCD's. */
 :root[data-theme="classic"] .sheet-view { --stack-ink: var(--ink); }
 :root[data-theme="classic"] .bn-prog { background: #b9c7a9; color: var(--lcd-ink); }
+/* The LCD-green program box drowns amber ink, so the current word becomes an amber block. */
+:root[data-theme="classic"] .bn-prog mark { background: var(--amber); color: #1b1203; }
 :root[data-theme="classic"][data-view="minimal"] .work { padding: 14px; background: var(--bg); }
 :root[data-theme="classic"][data-view="minimal"] .well { border-radius: 16px 16px 0 0; box-shadow: none; background: transparent; }
 :root[data-theme="classic"][data-view="minimal"] .well::after { display: none; }

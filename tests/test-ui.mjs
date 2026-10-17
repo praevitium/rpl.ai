@@ -1714,6 +1714,11 @@ setAngle('RAD');
     'soft keys, touch: under 360 px the page count moves from the menu button onto NXT, and under 320 px the menu button keeps only its icon, so the six soft keys stay 32 px wide (with a level selected they were 22 px at 280 and 29 at 320)');
   assert(/:root\[data-theme="classic"\] \.sheet-view \{ --stack-ink: var\(--ink\); \}/.test(css),
     'Classic theme: VIEW\'s sheet shows the value in the sheet\'s ink, not the LCD\'s dark green (on the dark sheet it was 1.3:1, unreadable)');
+  assert((css.match(/^  --danger-ink: #1b1203;$/gm) || []).length === 1 && (css.match(/^  --danger-ink: #fff;$/gm) || []).length === 2
+    && /\.bn-ico \{[^}]*background: var\(--danger\); color: var\(--danger-ink\);/.test(css) && /\.toast\.err \{ background: var\(--danger\); color: var\(--danger-ink\); \}/.test(css),
+    'errors: an error toast and the error banner\'s icon take the ink their look\'s danger fill needs, dark on the dark and Classic looks\' salmon (white read at 2.7:1) and white on the light and Paper looks\' red');
+  assert(/:root\[data-theme="classic"\] \.bn-prog mark \{ background: var\(--amber\); color: #1b1203; \}/.test(css),
+    'classic: the halt banner\'s current word is dark on an amber block (amber on the LCD-green program box read at 1.1:1)');
   assert(/\.mb-menu \{ position: relative; \}\s*\.mb-menu::before \{ content: ""; position: absolute; inset: 0 -3px 0 -4px; \}/.test(touch.slice(touch.indexOf('@container work (max-width: 319px)'))),
     'soft keys, touch: under 320 px the 29 px menu button takes a finger into the bar\'s padding and the gap beside it (36 px)');
   assert(/@container app \(max-width: 319px\) \{\s*:root\[data-theme="classic"\] \.menubar \{ margin-inline: -10px; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.menubar \{ margin: 0 -14px -14px; \}/.test(touch),
