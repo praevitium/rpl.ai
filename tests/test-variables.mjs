@@ -1802,8 +1802,8 @@ clearAllUserFlags();
   resetHome();
   const s = new Stack();
   s.push(Name('MISSING'));
-  assertThrows(() => lookup('VTYPE').fn(s), /Undefined name/,
-               'session053: VTYPE undefined name throws');
+  lookup('VTYPE').fn(s);
+  assert(s.depth === 1 && s.peek().value.eq(-1), 'VTYPE of a name with no variable gives -1, as the AUR says, rather than an error');
 }
 
 {

@@ -39,8 +39,7 @@ register('VTYPE', (s) => {
   const [nameV] = s.popN(1);
   if (!isName(nameV)) throw new RPLError('Bad argument type');
   const stored = recallVar(nameV.id);
-  if (stored === undefined) throw new RPLError(`Undefined name: ${nameV.id}`);
-  s.push(Real(_hp50TypeCode(stored)));
+  s.push(Real(stored === undefined ? -1 : _hp50TypeCode(stored)));
 }, { category: 'Types & tags', categoryOrder: 2, label: "VTYPE" });
 
 

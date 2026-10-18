@@ -588,8 +588,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   resetHome();
   const s = new Stack();
   s.push(Name('NOPE_XYZ', { quoted: true }));
-  assertThrows(() => lookup('VTYPE').fn(s), /Undefined name/i,
-    'session068: VTYPE on undefined name → Undefined name');
+  lookup('VTYPE').fn(s);
+  assert(s.peek().value.eq(-1), 'session068: VTYPE on an undefined name gives -1 (AUR)');
 }
 
 {
