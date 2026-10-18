@@ -999,6 +999,11 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 :root[data-theme="classic"] .st-preview-label { background: #b9c7a9; color: var(--lcd-ink); border-color: rgba(28, 38, 24, .4); }
 :root[data-theme="classic"] .status-line { display: flex; justify-content: flex-start; gap: 14px; padding: 9px 12px 7px; margin: 0 8px; border-bottom: 1px dashed rgba(28, 38, 24, .28); font: 600 10.5px/1 var(--font-mono); letter-spacing: .05em; color: var(--lcd-ink); text-shadow: 1px 1.2px 0 rgba(28, 38, 24, .14); flex-wrap: nowrap; overflow: hidden; }
 :root[data-theme="classic"] .ann-g span.l.on { color: #7a4a00; }
+/* Classic's editing pencil sits in the LCD header: small in full view, a finger's height in minimal view beside Menu and Leave; under 320 px with HALT lit too, the = annunciator gives way, as the other looks' does. */
+:root[data-theme="classic"] .status-line .ann-m.e { font: inherit; color: #7a4a00; padding: 0 2px; }
+:root[data-theme="classic"] .status-line .ann-m.e .i { width: 12px; height: 12px; }
+:root[data-theme="classic"]:not([data-view="minimal"]) .status-line .ann-m.e { height: 11px; min-height: 0; min-width: 0; }
+@container app (max-width: 319px) { :root[data-theme="classic"] .status-line:has(.ann-m.e):has(.ann-g.opt:not([data-mode]) > .on) .ann-g[data-mode="exact"] { display: none; } }
 :root[data-theme="classic"] .ann-path { margin-left: auto; color: var(--lcd-ink); padding: 0; }
 :root[data-theme="classic"] .ann-path button:hover { background: rgba(28, 38, 24, .1); color: var(--lcd-ink); }
 :root[data-theme="classic"] .ann-btn { color: var(--lcd-ink); opacity: .45; }

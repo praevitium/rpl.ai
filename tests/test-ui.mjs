@@ -772,6 +772,16 @@ import { assert, assertThrows } from './helpers.mjs';
   d.renderStatus({ minimal: true, editing: 3 });
   assert(/<button type="button" class="ann-m e" data-status="cancel-edit"[^>]*>.*3<\/button>/.test(statusLine.innerHTML),
     'renderStatus: minimal view marks a level edit with a button that cancels it');
+  d.renderStatus({ classic: true, minimal: true, editing: 3 });
+  assert(/<button type="button" class="ann-m e" data-status="cancel-edit"[^>]*>.*3<\/button><div class="ann-path">/.test(statusLine.innerHTML),
+    'renderStatus: the Classic LCD header marks a level edit with the same cancel button, before the path (it showed nothing: its renderer returned before the pencil or the pill were built)');
+  d.renderStatus({ classic: true, editing: 'PF' });
+  assert(/aria-label="Cancel editing PF"/.test(statusLine.innerHTML), 'renderStatus: Classic full view marks a variable edit the same way');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/:root\[data-theme="classic"\] \.status-line \.ann-m\.e \{ font: inherit; color: #7a4a00; padding: 0 2px; \}/.test(css)
+    && /:root\[data-theme="classic"\]:not\(\[data-view="minimal"\]\) \.status-line \.ann-m\.e \{ height: 11px; min-height: 0; min-width: 0; \}/.test(css)
+    && /@container app \(max-width: 319px\) \{ :root\[data-theme="classic"\] \.status-line:has\(\.ann-m\.e\):has\(\.ann-g\.opt:not\(\[data-mode\]\) > \.on\) \.ann-g\[data-mode="exact"\] \{ display: none; \} \}/.test(css),
+    "renderStatus: Classic's pencil is header-sized in full view and finger-sized in minimal view, and under 320 px with HALT lit too the = annunciator gives way (the Leave button ran 5 px off a 280 px screen)");
   d.renderStatus({ shift: 'shiftLLock' });
   assert(statusLine.innerHTML.includes('LOCKED') && statusLine.innerHTML.includes('↰'),
     'renderStatus: a locked shift layer shows its glyph and LOCKED');

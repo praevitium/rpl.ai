@@ -655,6 +655,7 @@ export class Display {
     const minimalButtons = minimal
       ? `<button type="button" class="ann-btn" data-status="menu" title="Menu" aria-label="Menu" aria-haspopup="menu">${icon('more', 'sm')}</button><button type="button" class="ann-btn" data-status="fullscreen" title="Full screen" aria-label="Full screen">${icon('full', 'sm')}</button><button type="button" class="ann-btn" data-status="leave-minimal" title="Leave minimal view" aria-label="Leave minimal view">${icon('collapse', 'sm')}</button>`
       : '';
+    const editMark = editing ? `<button type="button" class="ann-m e" data-status="cancel-edit" title="Editing ${escapeHtml(editTarget(editing))}: tap to cancel" aria-label="Cancel editing ${escapeHtml(editTarget(editing))}">${icon('edit', 'sm')}${typeof editing === 'number' ? editing : ''}</button>` : '';
     if (classic) {
       const g = (items, cls = '', mode = '') => `<div class="ann-g ${cls}"${mode ? ` data-status="mode" data-mode="${mode}" role="button" tabindex="0" title="Change ${MODE_NAMES[mode]}"` : ''}>${items.map(([t, on, c]) => `<span class="${on ? 'on' : ''} ${c || ''}">${t}</span>`).join('')}</div>`;
       el.innerHTML = [
@@ -664,6 +665,7 @@ export class Display {
         g([['=', !calcState.approxMode], ['~', calcState.approxMode]], '', 'exact'),
         g([['ℝ', !calcState.complexMode], ['ℂ', calcState.complexMode]], '', 'complex'),
         g([['HALT', !!halted]], 'opt'),
+        editMark,
         `<div class="ann-path">${pathHtml}</div>`,
         minimal ? `<div class="ann-g" style="gap:0">${minimalButtons}</div>` : '',
       ].join('');
@@ -681,7 +683,6 @@ export class Display {
       ].filter(([, t]) => t);
       const layerMark = layer ? `<span class="ann-m ${layer}">${{ l: '↰', r: '↱', a: 'α' }[layer]}${locked ? ' LOCK' : ''}</span>` : '';
       const haltMark = halted ? '<span class="ann-m l halt">HALT</span>' : '';
-      const editMark = editing ? `<button type="button" class="ann-m e" data-status="cancel-edit" title="Editing ${escapeHtml(editTarget(editing))}: tap to cancel" aria-label="Cancel editing ${escapeHtml(editTarget(editing))}">${icon('edit', 'sm')}${typeof editing === 'number' ? editing : ''}</button>` : '';
       el.innerHTML = `<div class="ann-status">${modes.map(([m, t]) => `<button type="button" class="ann-m" data-status="mode" data-mode="${m}" title="Change ${MODE_NAMES[m]}">${escapeHtml(t)}</button>`).join('')}${layerMark}${haltMark}${editMark}<span class="ann-sp"></span><span class="ann-path">${pathHtml}</span>${minimalButtons}</div>`;
       el.className = 'status-line';
       return;
