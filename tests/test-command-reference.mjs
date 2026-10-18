@@ -178,3 +178,19 @@ const REF = parseCommandReference(HTML);
   assert(signatureOf(REF.get('LR')) === '→ Intercept: x1 Slope: x2' && signatureOf(REF.get('SQ')) === 'z → z2' && signatureOf(REF.get('PWRFIT')) === '' && signatureOf(REF.get('MINEHUNT')) === '',
     'signatureOf skips Level n/Argument n headings and the manual\'s None');
 }
+
+/* The manual's PDF ran fifteen entries into the one before them (→DATE under DATE, RREF under the CAS rref), so a
+   page carried two commands and a lookup of the second found the first.  Each heading now holds one command, and
+   where a CAS alias shares a classic command's letters the classic entry wins, in the text index and in the drawer's
+   section loader alike. */
+{
+  const doubled = HTML.split('<h2 id="cmd-').slice(1).filter((sec) => sec.split('cmd-label-type').length > 2).map((sec) => sec.slice(0, sec.indexOf('"')));
+  assert(doubled.length === 0, `every reference section describes one command (${doubled.join(', ')})`);
+  assert(REF.get('DATE')?.description.startsWith('Date Command: Returns the system date') && REF.get('→DATE')?.description.startsWith('Set Date Command: Sets the system date'),
+    '→DATE has a page of its own under DATE');
+  assert(REF.get('RREF')?.name === 'RREF' && REF.get('QR')?.name === 'QR' && REF.get('PSI')?.name === 'PSI' && REF.get('NEXT')?.description.startsWith('NEXT Command: Ends definite loop'),
+    'RREF, QR and PSI index the classic commands, not the CAS rref, qr and Psi, and NEXT the command, not the NEXT operation');
+  const helpSrc = readFileSync(new URL('../www/src/ui/command-help.js', import.meta.url), 'utf8');
+  assert(/const prior = named\.get\(upper\);\s*if \(prior && !\(key === upper && prior !== upper\)\) continue;\s*named\.set\(upper, key\);/.test(helpSrc),
+    "the drawer's section loader keeps the classic command's section over a CAS alias of the same letters");
+}

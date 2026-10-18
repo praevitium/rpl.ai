@@ -63,7 +63,8 @@ export function parseCommandReference(html) {
     const name = headingKey(rawName);
     if (!name) continue;
     const key = name.toUpperCase();
-    if (map.has(key)) continue;
+    const prior = map.get(key);
+    if (prior && !(name === key && prior.name !== key)) continue;
     const bodyStart = h.index + h[0].length;
     const bodyEnd = i + 1 < heads.length ? heads[i + 1].index : src.length;
     const body = src.slice(bodyStart, bodyEnd);

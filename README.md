@@ -750,7 +750,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 493. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 493. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - program I/O: KEY. Programs read their arguments from the stack, label

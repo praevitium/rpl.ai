@@ -49,13 +49,15 @@ async function _loadSections() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
     const doc = new DOMParser().parseFromString(text, 'text/html');
-    const map = new Map();
+    const map = new Map(), named = new Map();
     const headings = doc.querySelectorAll('h2[id^="cmd-"]');
     for (const h2 of headings) {
       const key = headingKey(h2.firstChild?.textContent);
       if (!key) continue;
       const upper = key.toUpperCase();
-      if (map.has(upper)) continue;
+      const prior = named.get(upper);
+      if (prior && !(key === upper && prior !== upper)) continue;
+      named.set(upper, key);
       const frag = document.createDocumentFragment();
       const headerClone = h2.cloneNode(true);
       headerClone.querySelectorAll('.back').forEach(b => b.remove());
