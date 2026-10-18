@@ -1,4 +1,4 @@
-import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isList, Real, Name, Integer, isComplex, Complex, isVector, Vector, isMatrix, Matrix, isValidHpIdentifier, isBinaryInteger, isRational, isUnit, Tagged } from '../types.js';
+import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isList, Real, Name, Integer, isComplex, Complex, isVector, Vector, isMatrix, Matrix, isCasIdentifier, isBinaryInteger, isRational, isUnit, Tagged } from '../types.js';
 import { giac } from '../cas/giac-engine.mjs';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { buildGiacCmd, giacToAst, splitGiacList, astToGiac } from '../cas/giac-convert.mjs';
@@ -533,7 +533,7 @@ register('VX', (s) => {
 
 register('SVX', (s) => {
   const name = _varName(s.pop());
-  if (!isValidHpIdentifier(name)) throw new RPLError(`Invalid name: ${name}`);
+  if (!isCasIdentifier(name)) throw new RPLError(`Invalid name: ${name}`);
   setCasVx(name);
 }, { category: 'CAS / symbolic', categoryOrder: 41, label: "SVX" });
 

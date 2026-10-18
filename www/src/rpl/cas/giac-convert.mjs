@@ -4,13 +4,13 @@
 // and writes: the same infix surface, but with Giac's function names.
 
 import { parseAlgebra, Var, Neg, numText } from "../algebra.js";
-import { isValidHpIdentifier } from "../types.js";
+import { isCasIdentifier } from "../types.js";
 import { RPLError } from "../stack.js";
 
-// A name that is not a valid HP identifier could carry a character Giac
-// reads specially (`#` starts a comment) into the command.
+// A name that is not a valid HP identifier, or holds a %, could carry a
+// character Giac reads specially (`#` starts a comment) into the command.
 function assertValidCasName(name) {
-  if (!isValidHpIdentifier(name)) throw new RPLError(`Invalid name: ${name}`);
+  if (!isCasIdentifier(name)) throw new RPLError(`Invalid name: ${name}`);
 }
 
 function infGiacFromName(name) {

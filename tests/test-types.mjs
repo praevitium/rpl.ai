@@ -5,7 +5,7 @@ import {
   RList, Vector, Matrix, Symbolic,
   isReal, isInteger, isRational, isBinaryInteger, isComplex, isDirectory, isProgram, isName,
   isString, isNumber, isTagged, isList, isVector, isMatrix, isSymbolic, promoteNumericPair, Decimal,
-  isValidHpIdentifier, isReservedHpName, isStorableHpName, registerReservedName,
+  isValidHpIdentifier, isCasIdentifier, isReservedHpName, isStorableHpName, registerReservedName,
   TYPES,
 } from '../www/src/rpl/types.js';
 import { readFileSync } from 'node:fs';
@@ -1837,6 +1837,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   assert(isValidHpIdentifier('Ω'),     'isValid: Greek Omega (U+03A9)');
   assert(isValidHpIdentifier('Xα2_y'), 'isValid: mixed Greek/ASCII/digits/_');
   assert(isValidHpIdentifier('A'.repeat(127)), 'isValid: 127 chars (max)');
+  assert(isValidHpIdentifier('I%YR') && !isValidHpIdentifier('%A'), 'isValid: % after the first letter, as in the TVM solver\'s I%YR');
+  assert(isCasIdentifier('X_1') && !isCasIdentifier('I%YR'), 'isCasIdentifier: a name bound for Giac, which reads % as its remainder, keeps to letters, digits and _');
 
   assert(!isValidHpIdentifier(''),       '!isValid: empty string');
   assert(!isValidHpIdentifier('1X'),     '!isValid: leading digit');
