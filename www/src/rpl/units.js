@@ -254,6 +254,7 @@ export function unitInfo(sym) {
 // Exponents may be fractions (the root of 9_m is 3_m^.5), kept to 12 digits so that .1 * 3 equals .3.
 const exact = (x) => Number(x.toPrecision(12));
 
+// Factors keep the order they were typed or multiplied in, as the HP's do (N*m, not m*N); uexprEqual ignores it.
 export function normalizeUexpr(factors) {
   const merged = new Map();
   for (const [sym, exp] of factors) {
@@ -262,7 +263,6 @@ export function normalizeUexpr(factors) {
   }
   const out = [...merged.entries()]
     .filter(([, e]) => e !== 0)
-    .sort(([a], [b]) => a.localeCompare(b))
     .map(([s, e]) => Object.freeze([s, e]));
   return Object.freeze(out);
 }
@@ -273,11 +273,8 @@ export function divideUexpr(a, b)    { return multiplyUexpr(a, inverseUexpr(b));
 export function powerUexpr(a, n)     { return normalizeUexpr(a.map(([s, e]) => [s, e * n])); }
 
 export function uexprEqual(a, b) {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i][0] !== b[i][0] || a[i][1] !== b[i][1]) return false;
-  }
-  return true;
+  const exps = new Map(a);
+  return a.length === b.length && b.every(([sym, exp]) => exps.get(sym) === exp);
 }
 
 function dimsOf(uexpr) {
@@ -332,7 +329,7 @@ export function sameDims(a, b) {
 // 1_km → { scale: 1000, uexpr: [['m', 1]] }; the caller multiplies the value by scale.
 export function toBaseUexpr(uexpr) {
   const dims = dimsOf(uexpr);
-  const base = BASE_SYMBOLS.map((sym, i) => [sym, dims[i]]);
+  const base = BASE_SYMBOLS.map((sym, i) => [sym, dims[i]]).sort(([a], [b]) => a.localeCompare(b));
   return { scale: scaleOf(uexpr), uexpr: normalizeUexpr(base) };
 }
 

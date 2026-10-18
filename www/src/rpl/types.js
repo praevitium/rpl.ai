@@ -169,7 +169,7 @@ export function Tagged(tag, value) {
   return Object.freeze({ type: TYPES.TAGGED, tag: String(tag), value });
 }
 
-// uexpr is a canonical [symbol, exponent] list from units.js normalizeUexpr.
+// uexpr is a [symbol, exponent] list from units.js normalizeUexpr, in the order the factors were written.
 export function Unit(value, uexpr) {
   return Object.freeze({ type: TYPES.UNIT, value: roundPart(value), uexpr });
 }

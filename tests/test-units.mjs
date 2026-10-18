@@ -490,9 +490,9 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(dropped.length === 0,
     `session422: normalizeUexpr drops a factor that merges to exponent 0 ([m,1],[m,-1] → [])`);
 
-  const sorted = normalizeUexpr([['s', -2], ['kg', 1], ['m', 1]]);
-  assert(sorted.map(([s]) => s).join(',') === 'kg,m,s',
-    `session422: normalizeUexpr sorts factors alphabetically by symbol`);
+  const ordered = normalizeUexpr([['s', -2], ['kg', 1], ['m', 1]]);
+  assert(ordered.map(([s]) => s).join(',') === 's,kg,m' && uexprEqual(ordered, normalizeUexpr([['m', 1], ['kg', 1], ['s', -2]])),
+    'normalizeUexpr keeps the factors in the order written, as the HP does, and uexprEqual ignores the order');
 
   const frozen = normalizeUexpr([['m', 1], ['s', -1]]);
   assert(Object.isFrozen(frozen) && Object.isFrozen(frozen[0]),
@@ -625,7 +625,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   for (const bad of ['1_', '1_m*', '1_m/', '1_*m', '1_m//s', '1_m*/s', '1_1', '1_m**2']) {
     assertThrows(() => runLine(bad), /Bad unit expression|Missing unit/, `${bad} is a malformed unit literal, not a unit it half reads`);
   }
-  assert(line('1_/m') === '1._1/m' && line('1_(m)') === '1._m' && line('1_m/(s*kg)') === '1._m/(kg*s)' && line('1_m/m') === '1.',
+  assert(line('1_/m') === '1._1/m' && line('1_(m)') === '1._m' && line('1_m/(s*kg)') === '1._m/(s*kg)' && line('1_m/m') === '1.',
     'a leading slash, parentheses and a cancelled unit still read');
   assert(unitSize(parseUnitExpr('m')) === 3 && unitSize(parseUnitExpr('km')) === 5 && unitSize(parseUnitExpr('m^2')) === 5
     && unitSize(parseUnitExpr('m/s^2')) === 7 && unitSize(parseUnitExpr('kg*m/s^2')) === 11 && unitSize(parseUnitExpr('1/s')) === 5
@@ -657,8 +657,11 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 
 {
   const line = (src) => runLine(src).snapshot().map((v) => formatSource(v)).join(' ');
-  assert(line('1_W 1_N UFACT') === '1._m*N/s' && line('1_W 1_kN UFACT') === '0.001_kN*m/s' && line('1_J 1_W UFACT') === '1._s*W' && line('1_N 1_kg UFACT') === '1._kg*m/s^2',
+  assert(line('1_W 1_N UFACT') === '1._N*m/s' && line('1_W 1_kN UFACT') === '0.001_kN*m/s' && line('1_J 1_W UFACT') === '1._W*s' && line('1_N 1_kg UFACT') === '1._kg*m/s^2',
     'AUR: UFACT factors the level 1 unit out of the level 2 unit, so 1_W 1_N UFACT is 1_N*m/s');
+  assert(line('1_N*m') === '1._N*m' && line('5_N 2_m *') === '10._N*m' && line('1_W*h') === '1._W*h' && line('3_ft*lbf 1_N*m CONVERT') === '4.06745384499_N*m'
+    && line('1_W UBASE') === '1._kg*m^2/s^3' && line('1_N*m 1_m*N +') === '2._m*N' && line('1_N*m 1_m*N SAME') === '1.',
+    'units keep the order they were typed or multiplied in, as on the HP (N*m, W*h, a CONVERT to N*m), where they were sorted to m*N and h*W; UBASE keeps the HP\'s kg*m^2/s^3');
   assert(line('5_m 1_cm UFACT') === '500._cm' && line('100_km/h 1_m UFACT') === '27.7777777778_m/s' && line('5_m 1_s UFACT') === '5._m',
     'UFACT of a unit that divides it with nothing left over is a conversion, and one that does not divide it leaves a remainder in base units');
   assertThrows(() => runLine('3 1_m UFACT'), /Bad argument type/, 'UFACT needs two unit objects');
