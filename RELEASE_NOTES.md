@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.137 (2026-10-18)
+**Latest release:** v0.6.138 (2026-10-18)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.138 — 2026-10-18
+
+A window with the keypad under the stack and less than about 576 px tall
+now shows the compact keypad, as the user chose, and the full keypad comes
+back when the window grows; the Keypad setting stays Full. A half-height
+split screen at 412 by 457 had 18 px of stack under the full keypad and
+now has two levels. UTPN used an approximation good to about seven digits,
+so `0 1 1.96 UTPN` gave 0.024997892964; it now gives the HP's
+0.0249978951482. The PROB menu opens with the HP's MTH PROB keys in its
+order: COMB PERM ! RAND RDZ, then UTPC UTPF UTPN UTPT and NDIST.
 
 ---
 
