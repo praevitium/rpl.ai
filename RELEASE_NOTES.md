@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.111 (2026-10-17)
+**Latest release:** v0.6.112 (2026-10-17)
 
 ---
 
@@ -20,6 +20,21 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.112 — 2026-10-17
+
+`CHOOSE` arrives: a program lists its choices in a popover above its
+banner, a tap answers with the choice (or the second object of a
+`{ display result }` pair) and 1, Cancel answers 0, and with no
+highlighted choice the list is for looking at, as on the HP. Answering
+an `INPUT`, or OK on a `MSGBOX`, took an undo step of its own, so UNDO
+after a program that asked twice put back the stack between its answers
+with the program gone; the answers now belong to the program's run, which
+UNDO takes back whole, as the HP's LAST STACK does. In the Classic look
+the HALT annunciator never showed on a phone, where that look drops its
+optional annunciators under 560 px; lit, it now shows in minimal view at
+every width, the dim annunciators giving way to it as they do under
+360 px.
 
 ## v0.6.111 — 2026-10-17
 
