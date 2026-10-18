@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.112 (2026-10-17)
+**Latest release:** v0.6.113 (2026-10-17)
 
 ---
 
@@ -20,6 +20,11 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.113 — 2026-10-17
+
+A test file carried one block twice after the 0.6.112 release; the copy
+is gone. Nothing in the app changed.
 
 ## v0.6.112 — 2026-10-17
 
