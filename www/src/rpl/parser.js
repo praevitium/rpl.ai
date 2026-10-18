@@ -229,7 +229,7 @@ export function parseEntry(src) {
 
       case 'fraction': {
         const [num, den] = t.text.split('/').map(BigInt);
-        if (den === 0n) throw new RPLError('Infinite result');
+        if (den === 0n) throw new RPLError(num === 0n ? 'Undefined result' : 'Infinite result');
         if (getApproxMode()) return Real(new Decimal(num.toString()).div(den.toString()));
         const r = Rational(num, den);
         return r.d === 1n ? Integer(r.n) : r;

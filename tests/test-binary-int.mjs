@@ -277,31 +277,10 @@ setBinaryBase(null);
          'left-operand base wins: #1d + #FFh → result base d');
   s.clear();
 
-  // Division by zero throws 'Division by zero' (0x303), NOT the
-  // 'Infinite result' (0x305) that fires for Real /0 — the split
-  // along the integer/float family line matches HP50.
   s.pushMany([BinaryInteger(1n, 'h'), BinaryInteger(0n, 'h')]);
-  let msg = null;
-  try { lookup('/').fn(s); } catch (e) { msg = e.message; }
-  assert(msg === 'Division by zero',
-         `BinInt / #0h error message: '${msg}' (want 'Division by zero')`);
-  resetBinaryState();
-}
-// ERRN after BinInt / 0 returns 0x303 (not 0x305).
-{
-  resetBinaryState();
-  resetHome();
-  clearLastError();
-  const s = new Stack();
-  s.push(Program([
-    Name('IFERR'), BinaryInteger(1n, 'h'), BinaryInteger(0n, 'h'), Name('/'),
-    Name('THEN'), Name('ERRN'),
-    Name('END'),
-  ]));
-  lookup('EVAL').fn(s);
-  assert(s.depth === 3 && isBinaryInteger(s.peek()) &&
-         s.peek().value === 0x303n && s.peek().base === 'h',
-         `BinInt / 0 → ERRN = #303h (got ${s.peek().value.toString(16)}h)`);
+  lookup('/').fn(s);
+  assert(s.depth === 1 && isBinaryInteger(s.peek()) && s.peek().value === 0n,
+         'AUR: a divisor of zero returns # 0, so #1h #0h / gives #0h, where it said Division by zero');
   resetBinaryState();
 }
 
@@ -749,8 +728,8 @@ setBinaryBase(null);
   resetBinaryState();
   const s = new Stack();
   s.pushMany([BinaryInteger(0xFFn, 'h'), Real(0.5)]);  // 0.5 → 0
-  assertThrows(() => lookup('/').fn(s), /Division by zero/,
-               'session045: #FFh 0.5 / → Division by zero (0.5 truncates to 0)');
+  lookup('/').fn(s);
+  assert(s.peek().value === 0n, 'session045: #FFh 0.5 / → #0h (0.5 truncates to 0, and a divisor of zero returns # 0)');
   resetBinaryState();
 }
 

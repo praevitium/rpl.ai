@@ -2251,19 +2251,14 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   }
   setWordsize(wsEntry);
 
-  // Division by zero: #5h / Integer(0) throws Division by zero
-  // (routed through binIntBinary after coercion — distinct from
-  // the Real-path 'Infinite result').
-  assertThrows(
-    () => {
-      const s = new Stack();
-      s.push(BinaryInteger(5n, 'h'));
-      s.push(Integer(0n));
-      lookup('/').fn(s);
-    },
-    /Division by zero/,
-    'session110: #5h / Integer(0) → Division by zero (BinInt branch)'
-  );
+  {
+    const s = new Stack();
+    s.push(BinaryInteger(5n, 'h'));
+    s.push(Integer(0n));
+    lookup('/').fn(s);
+    assert(isBinaryInteger(s.peek()) && s.peek().value === 0n,
+      'session110: #5h / Integer(0) → #0h (the AUR: a divisor of zero returns # 0)');
+  }
 
   // Complex still rejected on either side — BinInt promotion is
   // integer-only.  `_scalarBinaryMixed` falls through to the generic
@@ -2798,9 +2793,6 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     assert(isInteger(v) && v.value === 2n,
       `session115: Rational(1,2) / Rational(1,4) → Integer(2) (integer collapse)`);
   }
-  // Q / Z(0) — Fraction.js throws "Division by Zero" — the BigInt-backed
-  // library does NOT return the Real-path's "Infinite result" because the
-  // rational dispatch is entered before the Real branch.
   assertThrows(
     () => {
       const s = new Stack();
@@ -2808,8 +2800,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       s.push(Integer(0n));
       lookup('/').fn(s);
     },
-    /Division by Zero/,
-    'session115: Rational(3,2) / Integer(0) → Division by Zero (Fraction.js path)'
+    /^Infinite result$/,
+    'session115: Rational(3,2) / Integer(0) → Infinite result, where Fraction.js\'s own Division by Zero leaked out'
   );
 
   // Q ^ Z integer exponent — exact-stays-exact path via Fraction.pow.

@@ -262,6 +262,19 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assertThrows(() => { lookup('/').fn(s); }, null, '1/0 throws');
 }
 
+// The HP's error list: 0/0 is an Undefined result (#304h), any other x/0 an Infinite result (#305h).
+{
+  for (const [line, message] of [['0 0 /', 'Undefined result'], ['0. 0 /', 'Undefined result'], ['(0,0) (0,0) /', 'Undefined result'],
+    ["'0/0' EVAL", 'Undefined result'], ['0/0', 'Undefined result'], ['0_m 0 /', 'Undefined result'],
+    ['1 0 /', 'Infinite result'], ['1/3 0 /', 'Infinite result'], ['(1,0) 0 /', 'Infinite result']]) {
+    assertThrows(() => runLine(line), new RegExp(`^${message}$`), `${line} is an ${message}, where 0/0 was an Infinite result and 1/3 0 / a Division by Zero`);
+  }
+  clearLastError();
+  try { runLine('0 0 /'); } catch (e) { setLastError(e); }
+  assert(getLastError()?.number === 0x304, `0 0 / sets ERRN to #304h (got ${getLastError()?.number})`);
+  clearLastError();
+}
+
 
 // FLOOR / CEIL / IP / FP / SIGN / MOD / MIN / MAX
 

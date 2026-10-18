@@ -112,6 +112,9 @@ export function _makeUnit(value, uexpr) {
   return uexpr.length === 0 ? Real(value) : Unit(value, uexpr);
 }
 
+// The HP's error list: 0/0 is an Undefined result, any other x/0 an Infinite result.
+const _divisionByZero = (dividendIsZero) => new RPLError(dividendIsZero ? 'Undefined result' : 'Infinite result');
+
 
 // u's magnitude in the units `to`, rounded to 12 digits like every other
 // number so that 12_in and 1_ft agree.
@@ -136,15 +139,15 @@ function _unitBinary(op, a, b) {
   }
   if (op === '/') {
     if (isUnit(a) && isUnit(b)) {
-      if (b.value === 0) throw new RPLError('Infinite result');
+      if (b.value === 0) throw _divisionByZero(a.value === 0);
       return _makeUnit(a.value / b.value, divideUexpr(a.uexpr, b.uexpr));
     }
     if (isUnit(a)) {
       const bv = _numVal(b);
-      if (bv === 0) throw new RPLError('Infinite result');
+      if (bv === 0) throw _divisionByZero(a.value === 0);
       return _makeUnit(a.value / bv, a.uexpr);
     }
-    if (b.value === 0) throw new RPLError('Infinite result');
+    if (b.value === 0) throw _divisionByZero(_numVal(a) === 0);
     return _makeUnit(_numVal(a) / b.value, inverseUexpr(b.uexpr));
   }
   if (op === '^') {
@@ -215,7 +218,10 @@ function _rationalBinary(op, a, b) {
     case '+': r = fa.add(fb); break;
     case '-': r = fa.sub(fb); break;
     case '*': r = fa.mul(fb); break;
-    case '/': r = fa.div(fb); break;
+    case '/':
+      if (fb.n === 0n) throw _divisionByZero(fa.n === 0n);
+      r = fa.div(fb);
+      break;
     case '^': {
       if (fb.d === 1n) { r = fa.pow(fb); break; }
       // A fractional exponent stays symbolic in EXACT mode so 2^(1/3) remains exact.
@@ -377,9 +383,8 @@ export function binIntBinary(op, a, b) {
     case '-': r = av - bv; break;
     case '*': r = av * bv; break;
     case '/':
-      // The integer error family (0x303), not the Real 'Infinite result'.
-      if (bv === 0n) throw new RPLError('Division by zero');
-      r = av / bv;
+      // The AUR: "A divisor of zero returns # 0."
+      r = bv === 0n ? 0n : av / bv;
       break;
     case '^':
       r = _modPow(av, bv, m + 1n);
@@ -406,7 +411,7 @@ function _modPow(x, e, n) {
 
 
 function realBinary(op, a, b) {
-  if (op === '/' && b.isZero()) throw new RPLError('Infinite result');
+  if (op === '/' && b.isZero()) throw _divisionByZero(a.isZero());
   switch (op) {
     case '+': return a.plus(b);
     case '-': return a.minus(b);
@@ -427,7 +432,7 @@ function integerBinary(op, a, b) {
     case '-': return a - b;
     case '*': return a * b;
     case '/':
-      if (b === 0n) throw new RPLError('Infinite result');
+      if (b === 0n) throw _divisionByZero(a === 0n);
       return a / b;
     case '^':
       return a ** b;
@@ -446,7 +451,7 @@ function _integerReciprocalPower(a, b) {
 
 function complexBinary(op, a, b) {
   if (op === '/' && b.re === 0 && b.im === 0) {
-    throw new RPLError('Infinite result');
+    throw _divisionByZero(a.re === 0 && a.im === 0);
   }
   const ca = new Complex$(a);
   const cb = new Complex$(b);
@@ -1622,7 +1627,7 @@ function _casCalculus(ast) {
   }
 }
 
-// A division by zero left in the result is the Infinite result the HP raises, not a 1/0 to keep.
+// A division by zero left in the result raises the HP's error, not a 1/0 to keep.
 function _checkInfinite(ast) {
   if (ast.kind === 'neg') return _checkInfinite(ast.arg);
   if (ast.kind === 'fn') return ast.args.forEach(_checkInfinite);
@@ -1631,7 +1636,8 @@ function _checkInfinite(ast) {
   _checkInfinite(ast.r);
   const zero = (a) => a.kind === 'num' && a.value === 0;
   const negative = (a) => (a.kind === 'num' && a.value < 0) || (a.kind === 'neg' && a.arg.kind === 'num');
-  if ((ast.op === '/' && _isLeaf(ast.l) && zero(ast.r)) || (ast.op === '^' && zero(ast.l) && negative(ast.r))) throw new RPLError('Infinite result');
+  if (ast.op === '/' && _isLeaf(ast.l) && zero(ast.r)) throw _divisionByZero(zero(ast.l));
+  if (ast.op === '^' && zero(ast.l) && negative(ast.r)) throw new RPLError('Infinite result');
 }
 
 const _isLeaf = (a) => a.kind === 'num' || a.kind === 'unit';
