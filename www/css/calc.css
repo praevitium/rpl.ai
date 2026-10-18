@@ -2115,10 +2115,11 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 :root[data-keyboard] .eqw-ins, :root[data-keyboard] .mx-foot:not(.error) { display: none; }
 :root[data-keyboard] .eqw-canvas { max-height: calc(var(--app-height, 100dvh) * .4); }
 :root[data-keyboard] .mx-grid-wrap { max-height: calc(var(--app-height, 100dvh) * .35); }
-/* Typing at a PROMPT, the halt banner keeps to one row of title and icon keys, so level 1 stays in view. */
-:root[data-keyboard] .bn.halt { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding-block: 6px; }
+/* Typing at a PROMPT, the halt banner keeps to one row of title and icon keys, so level 1 stays in view; the keys drop under a message that would get less than 140px beside them (four keys left a PROMPT's message 48px at 280). */
+:root[data-keyboard] .bn.halt { display: flex; flex-wrap: wrap; align-items: center; padding-block: 6px; }
 :root[data-keyboard] .bn.halt :is(.bn-ico, .bn-prog), :root[data-keyboard] .bn.halt .bn-f span { display: none; }
-:root[data-keyboard] .bn.halt .bn-f { grid-column: 2; grid-row: 1; flex-wrap: nowrap; margin-top: 0; }
+:root[data-keyboard] .bn.halt .bn-t { flex: 1 1 140px; }
+:root[data-keyboard] .bn.halt .bn-f { flex: none; flex-wrap: nowrap; margin-top: 0; }
 :root[data-keyboard] .bn.halt .bn-f .chip { min-width: 40px; justify-content: center; padding-inline: 0; }
 /* Typing after an error, the banner keeps to its title and fixes, so the command line stays in view; the explanation waits for the keyboard to go. */
 :root[data-keyboard] .bn:not(.halt) { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding-block: 6px; }

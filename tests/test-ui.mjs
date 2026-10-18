@@ -1849,6 +1849,14 @@ setAngle('RAD');
 
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/:root\[data-keyboard\] \.bn\.halt \{ display: flex; flex-wrap: wrap; align-items: center; padding-block: 6px; \}/.test(css)
+    && /:root\[data-keyboard\] \.bn\.halt \.bn-t \{ flex: 1 1 140px; \}/.test(css)
+    && /:root\[data-keyboard\] \.bn\.halt \.bn-f \{ flex: none; flex-wrap: nowrap; margin-top: 0; \}/.test(css),
+    'halts, keyboard up: the banner is a wrapping row, its message taking at least 140 px beside the keys or the whole row above them (a grid gave a PROMPT\'s message 48 px beside its four keys at 280 px, so a long message grew the banner to 380 px and pushed the command line under the keyboard)');
+}
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const short = css.slice(css.indexOf('@media (max-height: 300px) {\n  :root[data-keyboard] .input-top'));
   assert(/@container app \(min-width: 480px\) \{\s*:root\[data-keyboard\] \.mx, :root\[data-keyboard\] \.eqw \{ grid-template-columns: 1fr auto; align-items: end; \}\s*:root\[data-keyboard\] \.writer-keys \.cmdline-go \{ flex: none; width: 40px; \}\s*\}/.test(short)
     && !/\n  :root\[data-keyboard\] \.mx, :root\[data-keyboard\] \.eqw \{ grid-template-columns/.test(short),
