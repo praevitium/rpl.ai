@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.121 (2026-10-18)
+**Latest release:** v0.6.122 (2026-10-18)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.122 — 2026-10-18
+
+A `CHOOSE` list longer than the screen opened scrolled to its top, so a
+choice marked further down (`15 CHOOSE` of twenty) was out of view until
+you scrolled; the list now opens with the marked row in the middle of
+view. The arrow keys move the mark through the list, as the HP's do: the
+keypad's ▲ and ▼, or a keyboard's, step it, stop at the ends and bring
+the list back if it was put away, and Enter answers with it. The OK,
+Cancel and Reset keys of an `INFORM` form, and the Edit, Copy and Share
+keys of a level's View sheet, now sit in a footer that stays in view
+while the fields or the value scroll, so a long form on a phone no
+longer hides OK under its twelfth field.
 
 ## v0.6.121 — 2026-10-18
 
