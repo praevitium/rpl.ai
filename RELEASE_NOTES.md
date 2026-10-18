@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.113 (2026-10-17)
+**Latest release:** v0.6.114 (2026-10-17)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.114 — 2026-10-17
+
+`DISP`, `CLLCD` and `FREEZE` arrive: a program writes messages on a
+seven-line display above the command line, `CLLCD` blanks it, and the
+text goes when the program ends or pauses unless `FREEZE` keeps it until
+the next key, so the HP's `"Working" 1 DISP` and `CLLCD "Enter data" 1
+DISP 7 FREEZE HALT` idioms read as they do on the HP. A `CHOOSE`, `INPUT`
+or `MSGBOX` reached while single-stepping ran the rest of the program at
+full speed once answered; the answer now steps on with SST or SST↓. With
+the keyboard up at 280 px a tall `CHOOSE` list covered its own prompt and
+the command line; a list asked to sit above its banner now gives up
+height rather than cover it.
 
 ## v0.6.113 — 2026-10-17
 
