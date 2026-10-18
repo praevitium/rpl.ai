@@ -40,3 +40,18 @@ const top = (s) => Number(s.peek().value);
   runLine("'I%YR' PURGE");
 }
 
+{
+  const levels = (s) => [3, 2, 1].map((k) => Number(s.peek(k).value));
+  runLine("TVMEND 6.5 'I%YR' STO 200000 'PV' STO -1264.13604699 'PMT' STO 12 'PYR' STO");
+  let [prin, int, bal] = levels(runLine('12 AMORT'));
+  assert(near(prin, -2235.45093797, 1e-5) && near(int, -12934.1816259, 1e-5) && near(bal, 197764.549062, 1e-5) && near(prin + int, -1264.13604699 * 12, 1e-5),
+    `AMORT splits a mortgage's first year into principal and interest and gives the balance left (${prin}, ${int}, ${bal})`);
+  [prin, int, bal] = levels(runLine('360 AMORT'));
+  assert(near(prin, -200000, 1e-3) && near(bal, 0, 1e-3), `after the last payment the principal is the loan and nothing is left (${prin}, ${bal})`);
+  [prin, int, bal] = levels(runLine("0 'I%YR' STO -555.555555556 'PMT' STO 12 AMORT"));
+  assert(int === 0 && near(bal, 200000 - 555.555555556 * 12, 1e-5), `at a zero rate no payment goes to interest (${int}, ${bal})`);
+  assertThrows(() => runLine('-1 AMORT'), /AMORT: Bad argument value/, 'AMORT wants a count of payments');
+  runLine("{ PV PMT PYR } PURGE");
+  assertThrows(() => runLine('12 AMORT'), /AMORT: Undefined Name PV/, 'AMORT names the first TVM variable it lacks');
+  runLine("'I%YR' PURGE");
+}
