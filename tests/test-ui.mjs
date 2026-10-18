@@ -2074,10 +2074,12 @@ setAngle('RAD');
     && /function informText\(v\) \{\s*return !v \|\| \(isName\(v\) && v\.id === 'NOVAL'\) \? '' : formatSource\(v\);/.test(appSrc)
     && /function informValue\(text, field\) \{[\s\S]*?if \(objects\.length !== 1\) return 'One object per field';\s*if \(field\.types\.length && !field\.types\.includes\(_hp50TypeCode\(objects\[0\]\)\)\) return/.test(appSrc)
     && /openInform\(form\) \{\s*this\.form = form;\s*this\._open\('inform'\);/.test(sheetsSrc)
-    && /<label class="inf-field"><span>\$\{escapeHtml\(f\.label\)\}<\/span><input type="text" data-inf="\$\{n\+\+\}" value="\$\{escapeHtml\(f\.text\)\}" placeholder="\$\{escapeHtml\(f\.help\)\}"/.test(sheetsSrc)
+    && /<label class="inf-field"><span>\$\{escapeHtml\(f\.label\)\}<\/span><input type="text" data-inf="\$\{n\}" value="\$\{escapeHtml\(f\.text\)\}" placeholder="\$\{escapeHtml\(f\.help\)\}"/.test(sheetsSrc)
     && /\$\{act\('inform-ok', 'check', 'OK', ' pri'\)\}\$\{act\('inform-cancel', 'x', 'Cancel'\)\}\$\{act\('inform-reset', 'undo', 'Reset'\)\}/.test(sheetsSrc)
     && /case 'inform-ok': app\.acceptInform\(\); return;\s*case 'inform-cancel': app\.cancelInform\(\); return;\s*case 'inform-reset': this\._informReset\(\); return;/.test(sheetsSrc)
     && /_onKeyDown\(e\) \{\s*if \(this\.kind !== 'inform' \|\| e\.key !== 'Enter' \|\| !e\.target\.matches\('input\[data-inf\]'\)\) return;[\s\S]*?if \(next\) next\.focus\(\);\s*else this\.app\.acceptInform\(\);/.test(sheetsSrc)
+    && /const last = fields\.filter\(Boolean\)\.length - 1;/.test(sheetsSrc)
+    && /data-inf="\$\{n\}"[^>]*enterkeyhint="\$\{n\+\+ === last \? 'done' : 'next'\}"/.test(sheetsSrc)
     && /if \(id === 'INFORM'\) \{[\s\S]{0,400}?_markSuspend\(toks, i \+ 1, 'inform', inform\);/.test(internalSrc)
     && /\.inf-fields \{ display: grid; grid-template-columns: repeat\(var\(--inf-cols, 1\), minmax\(0, 1fr\)\);/.test(css)
     && /@container app \(max-width: 479px\) \{ \.inf-fields \{ grid-template-columns: minmax\(0, 1fr\); \} \.inf-blank \{ display: none; \} \}/.test(css),

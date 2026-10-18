@@ -86,9 +86,10 @@ export class Sheets {
     }
     if (this.kind === 'inform') {
       const { title, columns, fields } = this.form;
+      const last = fields.filter(Boolean).length - 1;
       let n = 0;
       const field = (f) => (f
-        ? `<label class="inf-field"><span>${escapeHtml(f.label)}</span><input type="text" data-inf="${n++}" value="${escapeHtml(f.text)}" placeholder="${escapeHtml(f.help)}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>`
+        ? `<label class="inf-field"><span>${escapeHtml(f.label)}</span><input type="text" data-inf="${n}" value="${escapeHtml(f.text)}" placeholder="${escapeHtml(f.help)}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="${n++ === last ? 'done' : 'next'}"></label>`
         : '<div class="inf-blank"></div>');
       const act = (name, ico, label, cls = '') => `<button type="button" class="btn${cls}" data-sh="${name}">${icon(ico, 'sm')}${label}</button>`;
       this.el.innerHTML = sheet(escapeHtml(title || 'Form'), `<div class="inf-fields" style="--inf-cols:${columns}">${fields.map(field).join('')}</div><div class="sheet-view-acts">${act('inform-ok', 'check', 'OK', ' pri')}${act('inform-cancel', 'x', 'Cancel')}${act('inform-reset', 'undo', 'Reset')}</div>`);
