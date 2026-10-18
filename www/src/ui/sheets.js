@@ -46,6 +46,11 @@ export class Sheets {
 
   openAbout() { this._open('about'); }
 
+  openInform(form) {
+    this.form = form;
+    this._open('inform');
+  }
+
   openView(title, html, level) {
     this.view = { title, html, level };
     this._open('view');
@@ -62,6 +67,7 @@ export class Sheets {
       this.el.className = 'sheet-wrap';
       this.el.addEventListener('mousedown', (e) => { if (e.target === this.el) this.close(); });
       this.el.addEventListener('click', (e) => this._onClick(e));
+      this.el.addEventListener('keydown', (e) => this._onKeyDown(e));
       this.host.appendChild(this.el);
     }
     this._render();
@@ -76,6 +82,16 @@ export class Sheets {
     }
     if (this.kind === 'about') {
       this.el.innerHTML = sheet('About rpl.ai', this._aboutHtml());
+      return;
+    }
+    if (this.kind === 'inform') {
+      const { title, columns, fields } = this.form;
+      let n = 0;
+      const field = (f) => (f
+        ? `<label class="inf-field"><span>${escapeHtml(f.label)}</span><input type="text" data-inf="${n++}" value="${escapeHtml(f.text)}" placeholder="${escapeHtml(f.help)}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>`
+        : '<div class="inf-blank"></div>');
+      const act = (name, ico, label, cls = '') => `<button type="button" class="btn${cls}" data-sh="${name}">${icon(ico, 'sm')}${label}</button>`;
+      this.el.innerHTML = sheet(escapeHtml(title || 'Form'), `<div class="inf-fields" style="--inf-cols:${columns}">${fields.map(field).join('')}</div><div class="sheet-view-acts">${act('inform-ok', 'check', 'OK', ' pri')}${act('inform-cancel', 'x', 'Cancel')}${act('inform-reset', 'undo', 'Reset')}</div>`);
       return;
     }
     if (this.kind === 'view') {
@@ -161,6 +177,9 @@ export class Sheets {
     const { app } = this;
     switch (b.dataset.sh) {
       case 'close': this.close(); return;
+      case 'inform-ok': app.acceptInform(); return;
+      case 'inform-cancel': app.cancelInform(); return;
+      case 'inform-reset': this._informReset(); return;
       case 'view-act': {
         const { level } = this.view;
         if (b.dataset.act === 'edit') this.close();
@@ -181,6 +200,24 @@ export class Sheets {
       case 'reset': this._confirmReset = true; this._render(); return;
       case 'reset-confirm': this.resetEverything(); return;
     }
+  }
+
+  _informReset() {
+    const fields = this.form.fields.filter(Boolean);
+    for (const input of this.el.querySelectorAll('input[data-inf]')) {
+      input.value = fields[Number(input.dataset.inf)].reset;
+      input.setCustomValidity('');
+    }
+  }
+
+  // Enter in a form field moves on to the next, and from the last answers the form, as the HP's ENTER does.
+  _onKeyDown(e) {
+    if (this.kind !== 'inform' || e.key !== 'Enter' || !e.target.matches('input[data-inf]')) return;
+    e.preventDefault();
+    const inputs = [...this.el.querySelectorAll('input[data-inf]')];
+    const next = inputs[inputs.indexOf(e.target) + 1];
+    if (next) next.focus();
+    else this.app.acceptInform();
   }
 
   _toggle(setting, on) {

@@ -7530,3 +7530,44 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   assert(getHalted()?.kind === 'step' && u.depth === 1 && Number(u.peek().value) === 5, 'the wait over, SST runs one instruction and halts again');
   clearAllHalted(); clearPromptMessage(); touchLcd();
 }
+
+{
+  resetHome(); clearAllHalted(); clearPromptMessage();
+  const s = new Stack();
+  s.push(parseEntry('« "The Title" { { "ONE" "Name?" 2 } { } { "TWO" "Age?" } { "THREE" "Lucky numbers?" 5 } } { 2 } { NOVAL NOVAL { 1 2 3 } } { "Charlotte" NOVAL { 4 5 6 } } INFORM »')[0]);
+  lookup('EVAL').fn(s);
+  const halted = getHalted();
+  const d = halted?.dialog;
+  assert(halted?.kind === 'inform' && s.depth === 0 && haltedDepth() === 1 && d.title === 'The Title' && d.columns === 2 && d.fields.length === 4 && d.fields[1] === null
+    && d.fields[0].label === 'ONE' && d.fields[0].help === 'Name?' && d.fields[0].types.join() === '2' && d.fields[2].help === 'Age?' && d.fields[2].types.length === 0 && d.fields[3].types.join() === '5'
+    && d.resets.length === 3 && d.init.length === 3 && d.init[0].value === 'Charlotte' && d.init[1].id === 'NOVAL',
+    "INFORM halts the program under its own kind with the AUR's example parsed: the title, four fields (a label, its help and its types, an empty list a blank), two columns, three reset and three initial values with NOVAL as the name NOVAL, all five arguments taken off the stack");
+  assert(getPromptMessage()?.value === 'The Title', 'INFORM keeps its title for the banner');
+  s.push(parseEntry('{ "Charlotte" 33 { 4 5 6 } }')[0]);
+  s.push(Integer(1n));
+  lookup('CONT').fn(s);
+  assert(getHalted() === null && s.depth === 2 && s.peek().value === 1n && s.peek(2).items.length === 3, 'the values and 1 pushed, CONT runs the program on past INFORM');
+  s.push(parseEntry('« "T" { "A" } 1 { } { } INFORM »')[0]);
+  lookup('EVAL').fn(s);
+  assert(getHalted()?.dialog.columns === 1 && getHalted().dialog.fields[0].label === 'A' && getHalted().dialog.init.length === 0, 'a bare column count and empty reset and initial lists are taken');
+  s.push(Integer(0n));
+  lookup('CONT').fn(s);
+  assert(getHalted() === null && s.depth === 3 && s.peek().value === 0n, 'Cancel pushes 0 and the program goes on');
+  const t = new Stack();
+  t.push(parseEntry('« 5 { "A" } 1 { } { } INFORM »')[0]);
+  assertThrows(() => lookup('EVAL').fn(t), /INFORM: Bad argument type/, 'INFORM wants a string title');
+  t.push(parseEntry('« "T" { 5 } 1 { } { } INFORM »')[0]);
+  assertThrows(() => lookup('EVAL').fn(t), /INFORM: Bad argument type/, 'a field is a label or a list led by one');
+  t.push(parseEntry('« "T" { "A" } "x" { } { } INFORM »')[0]);
+  assertThrows(() => lookup('EVAL').fn(t), /INFORM: Bad argument type/, 'the format is a count or a list');
+  t.push(parseEntry('« "T" { "A" } 1 { } INFORM »')[0]);
+  assertThrows(() => lookup('EVAL').fn(t), /INFORM: Too few arguments/, 'INFORM with four arguments says so');
+  assert(getHalted() === null && getPromptMessage() === null, 'a refused INFORM leaves no halt and no message');
+  assertThrows(() => lookup('INFORM').fn(new Stack()), /not inside a running program/i, 'INFORM on its own, like PROMPT, wants a running program');
+  const u = new Stack();
+  lookup('NOVAL').fn(u);
+  u.push(parseEntry('NOVAL')[0]);
+  lookup('SAME').fn(u);
+  assert(u.depth === 1 && Number(u.peek().value) === 1, 'NOVAL pushes the name NOVAL, the object the word typed gives');
+  clearAllHalted(); clearPromptMessage();
+}

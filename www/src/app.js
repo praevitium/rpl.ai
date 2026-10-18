@@ -37,10 +37,11 @@ import {
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook, setMenuHook } from './rpl/ops.js';
+import { _hp50TypeCode } from './rpl/ops/internal.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
-  isMatrix, isVector, isReal, isInteger, isRational, isUnit, Symbolic, Integer, Real, Unit, Str,
+  isMatrix, isVector, isReal, isInteger, isRational, isUnit, Symbolic, Integer, Real, Unit, Str, Name, RList,
 } from './rpl/types.js';
 import { parseEntry } from './rpl/parser.js';
 import {
@@ -397,7 +398,8 @@ class App {
     if (act === 'ok' && kind === 'input') { this._acceptInput(); return; }
     if (act === 'cont' && kind === 'msgbox') { this._continueProgram(); return; }
     if (act === 'choose' && kind === 'choose') { this.showChooseList(); return; }
-    if (act === 'cancel' && kind === 'choose') { this._continueProgram(Integer(0n)); return; }
+    if (act === 'form' && kind === 'inform') { this.showInformSheet(); return; }
+    if (act === 'cancel' && (kind === 'choose' || kind === 'inform')) { this._continueProgram(Integer(0n)); return; }
     if (act === 'enter' && kind === 'wait') { this._answerKey(hpKeyCode('ENTER')); return; }
     if (act === 'kill' && kind === 'input') this.entry.cancel();
     const op = { cont: 'CONT', sst: 'SST', into: 'SST↓', kill: 'KILL' }[act];
@@ -1069,6 +1071,7 @@ class App {
     queueMicrotask(() => {
       if (calcState.halted !== halted) return;
       if (halted.kind === 'input') this.entry.recall(halted.dialog.text);
+      else if (halted.kind === 'inform') this.showInformSheet();
       else this.showChooseList();
     });
   }
@@ -1083,6 +1086,7 @@ class App {
   // A CHOOSE's list goes with its dialog: the banner's keys sit on the popover's anchor, where a press leaves it open.
   _endDialog() {
     if (this._dialogHalt.kind === 'choose') this.popover.close({ restoreFocus: false });
+    if (this._dialogHalt.kind === 'inform' && this.sheets.kind === 'inform') this.sheets.close();
     clearTimeout(this._waitTimer);
     this._dialogHalt = null;
   }
@@ -1097,6 +1101,37 @@ class App {
     });
     this._heldKeyMenu(rows, $('banner').querySelector('.bn'), 'Choose', { above: true });
   }
+
+  // INFORM's form in a sheet: a label and an input per field, its help as the placeholder and its initial value as
+  // source; a form closed without answering reopens from the banner.
+  showInformSheet() {
+    const { title, fields, columns, resets, init } = calcState.halted.dialog;
+    let n = 0;
+    const rows = fields.map((f) => {
+      if (!f) return null;
+      const row = { ...f, text: informText(init[n]), reset: informText(resets[n]) };
+      n++;
+      return row;
+    });
+    this.sheets.openInform({ title, columns, fields: rows });
+  }
+
+  // OK parses each field, an empty one giving NOVAL, checks it against the field's types and answers with the values
+  // and 1; a field that fails keeps the form open with the complaint on it.
+  acceptInform() {
+    const fields = calcState.halted.dialog.fields.filter(Boolean);
+    const values = [];
+    for (const input of this.sheets.el.querySelectorAll('input[data-inf]')) {
+      const text = input.value.trim();
+      const value = text ? informValue(text, fields[Number(input.dataset.inf)]) : Name('NOVAL');
+      if (typeof value === 'string') { input.setCustomValidity(value); input.reportValidity(); input.focus(); return; }
+      input.setCustomValidity('');
+      values.push(value);
+    }
+    this._continueProgram(RList(values), Integer(1n));
+  }
+
+  cancelInform() { this._continueProgram(Integer(0n)); }
 
   // Enter or OK hands the command line to the program waiting at INPUT, as a string; with V it has to parse first.
   _acceptInput() {
@@ -1956,6 +1991,20 @@ class App {
       e.preventDefault();
     }
   }
+}
+
+// INFORM's values as the form shows them: NOVAL, the HP's empty field, shows as nothing.
+function informText(v) {
+  return !v || (isName(v) && v.id === 'NOVAL') ? '' : formatSource(v);
+}
+
+// A field's text as one object of a type the field takes, or the complaint to show on the field.
+function informValue(text, field) {
+  let objects;
+  try { objects = parseEntry(text); } catch (e) { return e.message; }
+  if (objects.length !== 1) return 'One object per field';
+  if (field.types.length && !field.types.includes(_hp50TypeCode(objects[0]))) return `Not a type this field takes (${field.types.join(', ')})`;
+  return objects[0];
 }
 
 // What a MODES key types inside a program; CMPLX on its own toggles, so the domain keys set flag -103.

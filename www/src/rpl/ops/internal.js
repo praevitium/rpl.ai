@@ -910,6 +910,17 @@ function* evalRange(s, toks, from, to, depth) {
       i++;
       continue;
     }
+    if (id === 'INFORM') {
+      if (s.depth < 5) throw new RPLError('INFORM: Too few arguments');
+      const inform = informSpec(s.peek(5), s.peek(4), s.peek(3), s.peek(2), s.peek());
+      const title = s.peek(5);
+      s.popN(5);
+      setPromptMessage(title);
+      _markSuspend(toks, i + 1, 'inform', inform);
+      yield;
+      i++;
+      continue;
+    }
     const runner = id && SUSPENDABLE_OPS.get(id);
     if (runner) {
       yield* runner(s, depth);
@@ -957,6 +968,25 @@ function waitSpec(v) {
   if (n > 0) return { seconds: Math.min(n, WAIT_MAX_SECONDS) };
   if (n === 0 || n === -1) return { key: true, menu: n === -1 };
   throw new RPLError('WAIT: Bad argument value');
+}
+
+
+// INFORM's form: a title, fields that are a label or { "label" "help" types... } (an empty list a blank), the column
+// count alone or in { columns tabs }, and the reset and initial values, which NOVAL stands in for.
+function informSpec(title, fields, format, resets, init) {
+  if (!isString(title) || !isList(fields) || !isList(resets) || !isList(init)) throw new RPLError('INFORM: Bad argument type');
+  const columns = isList(format) ? format.items[0] : format;
+  if (columns !== undefined && !(isReal(columns) || isInteger(columns))) throw new RPLError('INFORM: Bad argument type');
+  const spec = fields.items.map((f) => {
+    if (isString(f)) return { label: f.value, help: '', types: [] };
+    if (!isList(f)) throw new RPLError('INFORM: Bad argument type');
+    if (f.items.length === 0) return null;
+    const [label, ...rest] = f.items;
+    const help = isString(rest[0]) ? rest.shift().value : '';
+    if (!isString(label) || !rest.every((t) => isReal(t) || isInteger(t))) throw new RPLError('INFORM: Bad argument type');
+    return { label: label.value, help, types: rest.map((t) => Number(t.value)) };
+  });
+  return { title: title.value, fields: spec, columns: columns === undefined ? 1 : Math.max(1, Math.trunc(Number(columns.value))), resets: resets.items, init: init.items };
 }
 
 

@@ -1967,7 +1967,7 @@ setAngle('RAD');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/if \(kind === 'input'\) return `<div class="bn halt input" role="status">[\s\S]*?\$\{message\}<div class="bn-f">\$\{key\('ok', 'OK', 'Enter: answer with the command line', 'check', 'pri'\)\}\$\{STOP_KEY\}<\/div><\/div>`;/.test(bannerSrc)
     && /if \(calcState\.halted\?\.kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(this\._answerKey\(hpKeyCode\('ENTER'\)\)\) return;\s*this\.entry\.enter\(\);/.test(appSrc)
-    && /_beginDialog\(halted\) \{\s*this\._dialogHalt = halted;\s*if \(halted\.kind === 'wait'\) \{ this\._beginWait\(halted\); return; \}\s*queueMicrotask\(\(\) => \{\s*if \(calcState\.halted !== halted\) return;\s*if \(halted\.kind === 'input'\) this\.entry\.recall\(halted\.dialog\.text\);\s*else this\.showChooseList\(\);/.test(appSrc)
+    && /_beginDialog\(halted\) \{\s*this\._dialogHalt = halted;\s*if \(halted\.kind === 'wait'\) \{ this\._beginWait\(halted\); return; \}\s*queueMicrotask\(\(\) => \{\s*if \(calcState\.halted !== halted\) return;\s*if \(halted\.kind === 'input'\) this\.entry\.recall\(halted\.dialog\.text\);\s*else if \(halted\.kind === 'inform'\) this\.showInformSheet\(\);\s*else this\.showChooseList\(\);/.test(appSrc)
     && /_acceptInput\(\) \{[\s\S]{0,200}?if \(dialog\.verify\) \{ try \{ parseEntry\(text\); \} catch \(e\) \{ this\.entry\.flashError\(e\); return; \} \}\s*this\.entry\.cancel\(\);\s*this\._continueProgram\(Str\(text\)\);/.test(appSrc)
     && /_continueProgram\(\.\.\.answers\) \{\s*const op = \{ over: 'SST', into: 'SST↓' \}\[calcState\.halted\.stepping\] \?\? 'CONT';\s*if \(calcState\.halted\.kind !== 'wait'\) touchLcd\(\);\s*this\.entry\.safeRun\(\(\) => \{ for \(const a of answers\) this\.stack\.push\(a\); lookup\(op\)\.fn\(this\.stack, this\.entry\); \}, op, \{ keepPartial: true \}\);/.test(appSrc)
     && /const stepping = _singleStepMode \? \(_stepInto \? 'into' : 'over'\) : null;\s*_pendingSuspend = \{ tokens, index, kind, dialog, stepping \};/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
@@ -1989,9 +1989,9 @@ setAngle('RAD');
     && /showChooseList\(\) \{\s*const \{ items, pos \} = calcState\.halted\.dialog;[\s\S]{0,400}?mark: i \+ 1 === pos \? icon\('check', 'sm'\) : '', run: \(\) => \(pos \? this\._continueProgram\(value, Integer\(1n\)\) : this\._continueProgram\(Integer\(0n\)\)\)[\s\S]{0,200}?this\._heldKeyMenu\(rows, \$\('banner'\)\.querySelector\('\.bn'\), 'Choose', \{ above: true \}\);/.test(appSrc)
     && /_heldKeyMenu\(options, anchor, label, \{ above = false \} = \{\}\) \{[\s\S]{0,400}?keepFocus: true,\s*above,/.test(appSrc)
     && /if \(\(this\._above \|\| top \+ h > vh - margin\) && r\.top - h - 6 >= margin\) top = r\.top - h - 6;/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8'))
-    && /if \(act === 'choose' && kind === 'choose'\) \{ this\.showChooseList\(\); return; \}\s*if \(act === 'cancel' && kind === 'choose'\) \{ this\._continueProgram\(Integer\(0n\)\); return; \}/.test(appSrc)
+    && /if \(act === 'choose' && kind === 'choose'\) \{ this\.showChooseList\(\); return; \}\s*if \(act === 'form' && kind === 'inform'\) \{ this\.showInformSheet\(\); return; \}\s*if \(act === 'cancel' && \(kind === 'choose' \|\| kind === 'inform'\)\) \{ this\._continueProgram\(Integer\(0n\)\); return; \}/.test(appSrc)
     && /if \(this\._dialogHalt && this\._dialogHalt !== halted\) this\._endDialog\(\);\s*if \(halted\?\.dialog && this\._dialogHalt !== halted\) this\._beginDialog\(halted\);/.test(appSrc)
-    && /_endDialog\(\) \{\s*if \(this\._dialogHalt\.kind === 'choose'\) this\.popover\.close\(\{ restoreFocus: false \}\);\s*clearTimeout\(this\._waitTimer\);\s*this\._dialogHalt = null;/.test(appSrc)
+    && /_endDialog\(\) \{\s*if \(this\._dialogHalt\.kind === 'choose'\) this\.popover\.close\(\{ restoreFocus: false \}\);\s*if \(this\._dialogHalt\.kind === 'inform' && this\.sheets\.kind === 'inform'\) this\.sheets\.close\(\);\s*clearTimeout\(this\._waitTimer\);\s*this\._dialogHalt = null;/.test(appSrc)
     && /if \(id === 'CHOOSE'\) \{[\s\S]{0,300}?_markSuspend\(toks, i \+ 1, 'choose', choose\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
     "CHOOSE: its banner is the prompt with Choose, Cancel and Stop keys; the choices open in the held-key popover above the banner (below the chip it covered Stop and the command line), the highlighted one marked, a tap answering with the choice and 1 (0 when none is highlighted), Cancel with 0, and the list goes when its dialog ends (a press on the banner's keys leaves a popover anchored to the banner open); it halts a running program the way INPUT does, carrying its choices");
 }
@@ -2048,4 +2048,27 @@ setAngle('RAD');
     && /halted: calcState\.halted && calcState\.halted\.kind !== 'wait' \? calcState\.halted\.kind : null,/.test(appSrc)
     && /if \(id === 'WAIT'\) \{[\s\S]{0,300}?_markSuspend\(toks, i \+ 1, 'wait', wait\);/.test(internalSrc),
     "WAIT: a timed wait shows how long with a Stop key and goes on by itself after its seconds (no key press for the display, whose message stays); a key wait says Press a key with Enter and Stop, and any keypad key, soft key (F1 to F6), character typed on a keyboard (a hardware keyboard's keydown ahead of its chords, a phone keyboard's text through the editor's input handler) or Enter, from the chip, the line's Enter or the keyboard (ahead of the empty line's Enter chord), answers with its HP code; -1 shows the soft keys in minimal view; the status line lights no HALT for a wait");
+}
+
+{
+  const bannerSrc = readFileSync(new URL('../www/src/ui/banner.js', import.meta.url), 'utf8');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  const internalSrc = readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/if \(kind === 'inform'\) return `<div class="bn halt inform" role="status">[\s\S]*?<div class="bn-t">\$\{escapeHtml\(prompt \|\| 'Form'\)\}<\/div><div class="bn-f">\$\{key\('form', 'Fill in', [^}]*?'edit', 'pri'\)\}\$\{key\('cancel', 'Cancel', [^}]*?'x'\)\}\$\{STOP_KEY\}/.test(bannerSrc)
+    && /showInformSheet\(\) \{\s*const \{ title, fields, columns, resets, init \} = calcState\.halted\.dialog;[\s\S]*?this\.sheets\.openInform\(\{ title, columns, fields: rows \}\);/.test(appSrc)
+    && /acceptInform\(\) \{[\s\S]*?const value = text \? informValue\(text, fields\[Number\(input\.dataset\.inf\)\]\) : Name\('NOVAL'\);\s*if \(typeof value === 'string'\) \{ input\.setCustomValidity\(value\); input\.reportValidity\(\); input\.focus\(\); return; \}[\s\S]*?this\._continueProgram\(RList\(values\), Integer\(1n\)\);/.test(appSrc)
+    && /cancelInform\(\) \{ this\._continueProgram\(Integer\(0n\)\); \}/.test(appSrc)
+    && /function informText\(v\) \{\s*return !v \|\| \(isName\(v\) && v\.id === 'NOVAL'\) \? '' : formatSource\(v\);/.test(appSrc)
+    && /function informValue\(text, field\) \{[\s\S]*?if \(objects\.length !== 1\) return 'One object per field';\s*if \(field\.types\.length && !field\.types\.includes\(_hp50TypeCode\(objects\[0\]\)\)\) return/.test(appSrc)
+    && /openInform\(form\) \{\s*this\.form = form;\s*this\._open\('inform'\);/.test(sheetsSrc)
+    && /<label class="inf-field"><span>\$\{escapeHtml\(f\.label\)\}<\/span><input type="text" data-inf="\$\{n\+\+\}" value="\$\{escapeHtml\(f\.text\)\}" placeholder="\$\{escapeHtml\(f\.help\)\}"/.test(sheetsSrc)
+    && /\$\{act\('inform-ok', 'check', 'OK', ' pri'\)\}\$\{act\('inform-cancel', 'x', 'Cancel'\)\}\$\{act\('inform-reset', 'undo', 'Reset'\)\}/.test(sheetsSrc)
+    && /case 'inform-ok': app\.acceptInform\(\); return;\s*case 'inform-cancel': app\.cancelInform\(\); return;\s*case 'inform-reset': this\._informReset\(\); return;/.test(sheetsSrc)
+    && /_onKeyDown\(e\) \{\s*if \(this\.kind !== 'inform' \|\| e\.key !== 'Enter' \|\| !e\.target\.matches\('input\[data-inf\]'\)\) return;[\s\S]*?if \(next\) next\.focus\(\);\s*else this\.app\.acceptInform\(\);/.test(sheetsSrc)
+    && /if \(id === 'INFORM'\) \{[\s\S]{0,400}?_markSuspend\(toks, i \+ 1, 'inform', inform\);/.test(internalSrc)
+    && /\.inf-fields \{ display: grid; grid-template-columns: repeat\(var\(--inf-cols, 1\), minmax\(0, 1fr\)\);/.test(css)
+    && /@container app \(max-width: 479px\) \{ \.inf-fields \{ grid-template-columns: minmax\(0, 1fr\); \} \.inf-blank \{ display: none; \} \}/.test(css),
+    "INFORM: its banner is the title with Fill in, Cancel and Stop keys; the form opens in a sheet with a label and a 40 px input per field, the help as the placeholder and the initial value as source, in the form's columns on a wide screen and one on a phone; OK parses each field (an empty one NOVAL), checks the field's types and answers with the values and 1, a failing field keeping the form open with the complaint on it; Cancel answers 0, Reset puts the reset values back, Enter moves to the next field and from the last answers; the sheet goes with its dialog and the banner's Fill in reopens it");
 }

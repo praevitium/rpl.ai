@@ -1,6 +1,6 @@
 import { RPLAbort, RPLError } from '../stack.js';
 import { getHalted, clearPromptMessage, takeHalted, clearHalted, inScratchState } from '../state.js';
-import { isProgram, isTagged } from '../types.js';
+import { isProgram, isTagged, Name } from '../types.js';
 import { register, lookup } from './registry.js';
 import { runSuspendable, withStepMode } from './internal.js';
 
@@ -43,6 +43,17 @@ register('CHOOSE', () => {
 register('WAIT', () => {
   throw new RPLError('WAIT: not inside a running program');
 }, { category: 'Control flow / debug', categoryOrder: 12, label: "WAIT" });
+
+
+register('INFORM', () => {
+  throw new RPLError('INFORM: not inside a running program');
+}, { category: 'Control flow / debug', categoryOrder: 13, label: "INFORM" });
+
+
+// The HP's NOVAL object, INFORM's empty field, is the name NOVAL here.
+register('NOVAL', (s) => {
+  s.push(Name('NOVAL'));
+}, { category: 'Control flow / debug', categoryOrder: 14, label: "NOVAL" });
 
 
 // Resumes the most recently halted program, consuming any PROMPT banner.
