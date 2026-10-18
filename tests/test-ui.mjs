@@ -397,6 +397,12 @@ import { assert, assertThrows } from './helpers.mjs';
       'PROB menu: the HP\'s MTH PROB keys in its order, COMB PERM ! RAND RDZ, then UTPC UTPF UTPN UTPT and NDIST, where ! RAND and RDZ were only in ARITH');
   }
   {
+    const { TIME_GROUPS } = await import('../www/src/ui/menus.js');
+    assert(TIME_GROUPS.map((g) => `${g.id}: ${g.commands.join(' ')}`).join(' / ') === 'ALRM: ACK ACKALL STOALARM RCLALARM DELALARM FINDALARM'
+      && TIME_GROUPS[0].commands.every((n) => lookup(n)) && /TIME: \(\) => this\._groupKeys\(TIME_GROUPS, 'TIME'\),/.test(appSrc),
+      'TIME menu: an ALRM folder of the HP\'s alarm commands leads the clock keys');
+  }
+  {
     const { VECTOR_KEYS, menuById, MENU_GROUPS } = await import('../www/src/ui/menus.js');
     const math = MENU_GROUPS.find((g) => g.title === 'Math').ids;
     assert(VECTOR_KEYS.join(' ') === 'ABS DOT CROSS V→ →V2 →V3 RECT CYLIN SPHERE' && VECTOR_KEYS.every((n) => lookup(n))

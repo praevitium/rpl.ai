@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 488 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 494 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -89,8 +89,8 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-qmark-Undefined" class='notinapp'>?(Undefined)</a>
 <a href="#cmd-ABCUV" class='notinapp'>ABCUV</a>
 <a href="#cmd-ABS">ABS</a>
-<a href="#cmd-ACK" class='notinapp'>ACK</a>
-<a href="#cmd-ACKALL" class='notinapp'>ACKALL</a>
+<a href="#cmd-ACK">ACK</a>
+<a href="#cmd-ACKALL">ACKALL</a>
 <a href="#cmd-ACOS">ACOS</a>
 <a href="#cmd-ACOS2S">ACOS2S</a>
 <a href="#cmd-ACOSH">ACOSH</a>
@@ -202,7 +202,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-DEFINE">DEFINE</a>
 <a href="#cmd-DEG">DEG</a>
 <a href="#cmd-DEGREE" class='notinapp'>DEGREE</a>
-<a href="#cmd-DELALARM" class='notinapp'>DELALARM</a>
+<a href="#cmd-DELALARM">DELALARM</a>
 <a href="#cmd-DELAY" class='notinapp'>DELAY</a>
 <a href="#cmd-DELKEYS" class='notinapp'>DELKEYS</a>
 <a href="#cmd-DEPND" class='notinapp'>DEPND</a>
@@ -291,7 +291,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-FDISTRIB" class='notinapp'>FDISTRIB</a>
 <a href="#cmd-FFT" class='notinapp'>FFT</a>
 <a href="#cmd-FILER" class='notinapp'>FILER</a>
-<a href="#cmd-FINDALARM" class='notinapp'>FINDALARM</a>
+<a href="#cmd-FINDALARM">FINDALARM</a>
 <a href="#cmd-FINISH" class='notinapp'>FINISH</a>
 <a href="#cmd-FIX">FIX</a>
 <a href="#cmd-FLASHEVAL" class='notinapp'>FLASHEVAL</a>
@@ -550,7 +550,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-RCI">RCI</a>
 <a href="#cmd-RCIJ">RCIJ</a>
 <a href="#cmd-RCL">RCL</a>
-<a href="#cmd-RCLALARM" class='notinapp'>RCLALARM</a>
+<a href="#cmd-RCLALARM">RCLALARM</a>
 <a href="#cmd-RCLF">RCLF</a>
 <a href="#cmd-RCLKEYS" class='notinapp'>RCLKEYS</a>
 <a href="#cmd-RCLMENU" class='notinapp'>RCLMENU</a>
@@ -666,7 +666,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-STO-mul">STO*</a>
 <a href="#cmd-STO-plus">STO+</a>
 <a href="#cmd-STO-div">STO/</a>
-<a href="#cmd-STOALARM" class='notinapp'>STOALARM</a>
+<a href="#cmd-STOALARM">STOALARM</a>
 <a href="#cmd-STOF">STOF</a>
 <a href="#cmd-STOKEYS" class='notinapp'>STOKEYS</a>
 <a href="#cmd-STORE" class='notinapp'>STORE</a>
@@ -946,7 +946,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>NEG, SIGN</p>
   </dd>
 </dl>
-<h2 id="cmd-ACK">ACK <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-ACK">ACK <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 125 · printed page 3-5</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -971,7 +971,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>ACKALL</p>
   </dd>
 </dl>
-<h2 id="cmd-ACKALL">ACKALL <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-ACKALL">ACKALL <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 126 · printed page 3-6</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -3774,7 +3774,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <table class="cmd-kv"><tbody><tr><th>Command</th><td>DEGREE(x^2-17=x^3+2*X)</td></tr><tr><th>Result</th><td>3</td></tr></tbody></table>
   </dd>
 </dl>
-<h2 id="cmd-DELALARM">DELALARM <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-DELALARM">DELALARM <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 173 · printed page 3-53</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -6045,7 +6045,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>None</p>
   </dd>
 </dl>
-<h2 id="cmd-FINDALARM">FINDALARM <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-FINDALARM">FINDALARM <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 207 · printed page 3-87</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -12995,7 +12995,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>STO</p>
   </dd>
 </dl>
-<h2 id="cmd-RCLALARM">RCLALARM <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-RCLALARM">RCLALARM <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 313 · printed page 3-193</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -15730,7 +15730,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>DEFINE, RCL, →, </p>
   </dd>
 </dl>
-<h2 id="cmd-STOALARM">STOALARM <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-STOALARM">STOALARM <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 356 · printed page 3-236</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -15741,7 +15741,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dd class="cmd-field cmd-field-description">
     <p>Store Alarm Command: Stores an alarm in the system alarm list and returns its alarm index number. If the argument is a real number xtime, the alarm date will be the current system date by default. If objaction is a string, the alarm is an appointment alarm, and the string is the alarm message. If objaction is any other object type, the alarm is a control alarm, and the object is executed when the alarm comes due. xrepeat is the repeat interval for the alarm in clock ticks, where 8192 ticks equals 1 second.</p>
     <p>nindex is a real integer identifying the alarm based on its chronological position in the system alarm list.</p>
-  </dd>
+  <p>In rpl.ai an alarm keeps a message only: an action that isn't a string is refused with Bad argument type, and an alarm comes due only while the app is open.</p></dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
     <p>Date Format (–42), Repeat Alarms Not Rescheduled (–43), Acknowledged Alarms Saved (–44)</p>

@@ -3,6 +3,7 @@ import { lookup } from '../www/src/rpl/ops.js';
 import { _setClock } from '../www/src/rpl/ops/time.js';
 import { isBinaryInteger } from '../www/src/rpl/types.js';
 import { setUserFlag, clearUserFlag } from '../www/src/rpl/state.js';
+import { snapshot, rehydrate } from '../www/src/rpl/persist.js';
 import { assert, assertThrows, runLine } from './helpers.mjs';
 
 const top = (s) => s.peek();
@@ -79,4 +80,34 @@ const pad = (n) => String(n).padStart(2, '0');
   }
   assertThrows(() => lookup('TSTR').fn(new Stack()), /Too few arguments/, 'TSTR with nothing says so');
   assert(['DATE', 'TIME', 'TICKS', 'TSTR', 'DATE+', 'DDAYS', '→HMS', 'HMS→', 'HMS+', 'HMS-'].every((n) => lookup(n).category === 'Time / dates'), 'the clock and the HMS commands share the Time / dates family, the HP TIME menu');
+}
+
+{
+  // Appointment alarms: kept soonest first, the index being the place in that list.
+  const now = new Date(2026, 9, 18, 12, 0, 0).getTime();
+  _setClock(() => now);
+  const vals = (s) => s.snapshot().reverse().map((v) => v.type === 'list' ? `{ ${v.items.map((x) => x.type === 'string' ? `"${x.value}"` : Number(x.value)).join(' ')} }` : Number(v.value)).join(' | ');
+  runLine('0 DELALARM');
+  assert(vals(runLine('{ 10.182026 15.2530 "Call" } STOALARM')) === '1', 'STOALARM stores an alarm and gives its index');
+  assert(vals(runLine('{ 10.182026 9 "Past" } STOALARM')) === '1', 'an earlier alarm takes index 1');
+  assert(vals(runLine('2 RCLALARM')) === '{ 10.182026 15.253 "Call" 0 }', `RCLALARM gives { date time message repeat } (got ${vals(runLine('2 RCLALARM'))})`);
+  assert(vals(runLine('0 FINDALARM { 10.182026 13 } FINDALARM 10.192026 FINDALARM')) === '1 | 2 | 0', '0 FINDALARM finds the past-due alarm, a date and time the first due after it, a later date none');
+  runLine('ACK');
+  assert(vals(runLine('1 RCLALARM')) === '{ 10.182026 15.253 "Call" 0 }' && vals(runLine('0 FINDALARM')) === '0', 'ACK deletes the oldest past-due alarm while flag -44 is clear');
+  runLine('{ 10.182026 11 "Every minute" 491520 } STOALARM DROP ACK');
+  assert(vals(runLine('1 RCLALARM')) === '{ 10.182026 12.01 "Every minute" 491520 }', 'ACK moves a repeating alarm to its next time after now');
+  assert(vals(runLine('16.3 STOALARM 3 RCLALARM')).endsWith('{ 10.182026 16.3 "" 0 }'), 'a time alone is today, with an empty message');
+  assertThrows(() => runLine('{ 10.182026 15 « 1 » } STOALARM'), /Bad argument type/, 'STOALARM takes a message, not an object to run (no control alarms)');
+  assertThrows(() => runLine('9 RCLALARM'), /Nonexistent alarm/, 'RCLALARM of a missing index says Nonexistent alarm');
+  setUserFlag(-44);
+  runLine('{ 10.182026 8 "A" } STOALARM { 10.182026 7 "B" } STOALARM DROP2 ACKALL');
+  assert(vals(runLine('0 FINDALARM')) === '0' && vals(runLine('1 RCLALARM')) === '{ 10.182026 7 "B" 0 }', 'ACKALL with flag -44 set keeps the acknowledged alarms, no longer past due');
+  clearUserFlag(-44);
+  const saved = JSON.parse(JSON.stringify(snapshot(new Stack())));
+  runLine('0 DELALARM');
+  rehydrate(saved, new Stack());
+  assert(vals(runLine('1 RCLALARM')) === '{ 10.182026 7 "B" 0 }', 'alarms are saved with the calculator and come back with it');
+  runLine('0 DELALARM');
+  assert(vals(runLine('0 FINDALARM')) === '0' && (() => { try { runLine('1 RCLALARM'); return false; } catch { return true; } })(), '0 DELALARM deletes every alarm');
+  _setClock(null);
 }

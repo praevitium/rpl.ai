@@ -70,6 +70,11 @@ export const CAS_GROUPS = Object.freeze([
   { id: 'EXP&LN', title: 'Exponentials and logarithms', commands: ['EXPLN', 'LIN', 'LNCOLLECT', 'TEXPAND', 'TSIMP'] },
 ]);
 
+// The HP's TIME menu's ALRM folder: the appointment alarms.
+export const TIME_GROUPS = Object.freeze([
+  { id: 'ALRM', title: 'Alarms', commands: ['ACK', 'ACKALL', 'STOALARM', 'RCLALARM', 'DELALARM', 'FINDALARM'] },
+]);
+
 // The HP's MTH MATR folders, MAKE NORM FACTR COL ROW, with the commands of each that the app has; LSQ follows them.
 export const MATRIX_GROUPS = Object.freeze([
   { id: 'MAKE', title: 'Make matrices', commands: ['CON', 'IDN', 'TRN', 'RDM', 'RANM', 'SIZE', 'VANDERMONDE', 'HILBERT', 'AUGMENT'] },

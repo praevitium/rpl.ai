@@ -1,7 +1,7 @@
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
-import { isReal, isInteger, Real, BinaryInteger, Str } from '../types.js';
+import { isReal, isInteger, isList, isString, Real, BinaryInteger, Str, RList } from '../types.js';
 import { RPLError } from '../stack.js';
-import { testUserFlag, getBinaryBase } from '../state.js';
+import { testUserFlag, getBinaryBase, getAlarms, setAlarms } from '../state.js';
 import { register } from './registry.js';
 
 
@@ -94,3 +94,109 @@ register('DDAYS', (s) => {
   const start = parseDate(from);
   s.push(Real(Math.round((parseDate(to) - start) / DAY_MS)));
 }, { ...TIME, categoryOrder: 6, label: 'DDAYS' });
+
+
+// Appointment alarms, as the user chose: STOALARM takes a message, never an object to run, and alarms come due
+// only while the app is open. An alarm's index is its place in the list, soonest first.
+const TICK_MS = 1000 / 8192;
+const ALARM = { category: 'Time / dates' };
+
+function localDue(date, time) {
+  const d = new Date(parseDate(date));
+  const [h, m, sec] = time === undefined ? [0, 0, 0] : parseTime(time);
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h, m, sec).getTime();
+}
+
+function todayAt(time) {
+  const now = new Date(_now());
+  const [h, m, sec] = parseTime(time);
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, sec).getTime();
+}
+
+function alarmAt(n) {
+  const i = Number(number(n)) - 1;
+  const alarm = getAlarms()[i];
+  if (!Number.isInteger(i) || !alarm) throw new RPLError('Nonexistent alarm');
+  return i;
+}
+
+const pastDue = (a) => !a.ack && a.due <= _now();
+
+// A repeating alarm moves to its next time after now unless flag -43 is set; a done one goes unless flag -44 keeps it.
+function acknowledge(alarm) {
+  if (alarm.repeat > 0 && !testUserFlag(-43)) {
+    const step = alarm.repeat * TICK_MS;
+    return { ...alarm, due: alarm.due + Math.max(1, Math.ceil((_now() - alarm.due + 1) / step)) * step };
+  }
+  return testUserFlag(-44) ? { ...alarm, ack: true } : null;
+}
+
+register('STOALARM', (s) => {
+  const [arg] = s.popN(1);
+  let due, message = '', repeat = 0;
+  if (isList(arg)) {
+    const [date, time, action, every] = arg.items;
+    if (arg.items.length < 2 || arg.items.length > 4) throw new RPLError('Bad argument value');
+    due = localDue(date, time);
+    if (action !== undefined) {
+      if (!isString(action)) throw new RPLError('Bad argument type');
+      message = action.value;
+    }
+    if (every !== undefined) {
+      repeat = Number(number(every));
+      if (repeat < 0) throw new RPLError('Bad argument value');
+    }
+  } else {
+    due = todayAt(arg);
+  }
+  const alarm = { due, message, repeat, ack: false };
+  setAlarms([...getAlarms(), alarm]);
+  s.push(Real(getAlarms().indexOf(alarm) + 1));
+}, { ...ALARM, categoryOrder: 20, label: 'STOALARM' });
+
+register('RCLALARM', (s) => {
+  const [n] = s.popN(1);
+  const alarm = getAlarms()[alarmAt(n)];
+  const d = new Date(alarm.due);
+  const time = Real(new Decimal(`${d.getHours()}.${pad(d.getMinutes())}${pad(d.getSeconds())}`));
+  s.push(RList([dateReal(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())), time, Str(alarm.message), Real(alarm.repeat)]));
+}, { ...ALARM, categoryOrder: 21, label: 'RCLALARM' });
+
+register('DELALARM', (s) => {
+  const [n] = s.popN(1);
+  if (Number(number(n)) === 0) { setAlarms([]); return; }
+  const i = alarmAt(n);
+  setAlarms(getAlarms().filter((_, k) => k !== i));
+}, { ...ALARM, categoryOrder: 22, label: 'DELALARM' });
+
+register('FINDALARM', (s) => {
+  const [arg] = s.popN(1);
+  const alarms = getAlarms();
+  let i;
+  if (isList(arg)) {
+    const from = localDue(arg.items[0], arg.items[1]);
+    i = alarms.findIndex((a) => a.due >= from);
+  } else if (Number(number(arg)) === 0) {
+    i = alarms.findIndex(pastDue);
+  } else {
+    const from = localDue(arg);
+    i = alarms.findIndex((a) => a.due >= from);
+  }
+  s.push(Real(i + 1));
+}, { ...ALARM, categoryOrder: 23, label: 'FINDALARM' });
+
+register('ACK', () => {
+  const alarms = getAlarms();
+  const i = alarms.findIndex(pastDue);
+  if (i < 0) return;
+  const next = acknowledge(alarms[i]);
+  setAlarms(alarms.flatMap((a, k) => (k !== i ? [a] : next ? [next] : [])));
+}, { ...ALARM, categoryOrder: 24, label: 'ACK' });
+
+register('ACKALL', () => {
+  setAlarms(getAlarms().flatMap((a) => {
+    if (!pastDue(a)) return [a];
+    const next = acknowledge(a);
+    return next ? [next] : [];
+  }));
+}, { ...ALARM, categoryOrder: 25, label: 'ACKALL' });

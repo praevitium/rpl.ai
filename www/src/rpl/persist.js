@@ -107,8 +107,11 @@ export function snapshot(stack) {
     prngSeed: encode(state.prngSeed),
     casVx: state.casVx,
     casModulo: encode(state.casModulo),
+    alarms: state.alarms,
   };
 }
+
+const validAlarm = (a) => a && Number.isFinite(a.due) && typeof a.message === 'string' && Number.isFinite(a.repeat) && a.repeat >= 0;
 
 function restoreModes(modes) {
   if (!modes || typeof modes !== 'object') return;
@@ -186,6 +189,8 @@ export function rehydrate(snap, stack) {
   setCasModulo(decodeCasModulo(snap));
 
   restoreModes(snap.modes);
+  state.alarms = (Array.isArray(snap.alarms) ? snap.alarms.filter(validAlarm) : [])
+    .map((a) => ({ due: a.due, message: a.message, repeat: a.repeat, ack: !!a.ack })).sort((a, b) => a.due - b.due);
 
   stack.restore(items);
   notify();

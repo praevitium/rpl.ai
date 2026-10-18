@@ -3,7 +3,7 @@ import { RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
 const CORE_MESSAGES = Object.freeze([
   'Too few arguments', 'Bad argument type', 'Bad argument value', 'Infinite result',
   'Invalid dimension', 'Inconsistent units', 'Undefined local name', 'Undefined name',
-  'CAS not ready', 'Interrupted', 'Nonexistent ΣDAT',
+  'CAS not ready', 'Interrupted', 'Nonexistent ΣDAT', 'Nonexistent alarm',
 ]);
 
 const NUMBER_WORDS = Object.freeze(['no values', 'one value', 'two values', 'three values', 'four values', 'five values']);

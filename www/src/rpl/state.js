@@ -49,6 +49,8 @@ export const state = {
   haltedStack: [],
   promptMessage: null,
   lcd: null,
+  // Appointment alarms, soonest first: { due (ms), message, repeat (ticks, 8192 a second), ack }.
+  alarms: [],
 };
 
 function _dispatchState() {
@@ -319,6 +321,13 @@ export function settleLcd() { if (state.lcd && !state.lcd.frozen) { state.lcd = 
 export function touchLcd() { if (state.lcd) { state.lcd = null; _emit(); } }
 
 export function getLcd() { return state.lcd; }
+
+export function getAlarms() { return state.alarms; }
+
+export function setAlarms(list) {
+  state.alarms = [...list].sort((a, b) => a.due - b.due);
+  _emit();
+}
 
 export function setCasVx(name) {
   if (typeof name !== 'string' || name.length === 0) {

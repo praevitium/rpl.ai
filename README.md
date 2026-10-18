@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 500 commands, exact big-integer and rational arithmetic,
+of its command set: 506 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -809,18 +809,20 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 500. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 506. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - program I/O: KEY. Programs read their arguments from the stack, label
   results with `→TAG`, ask with `INPUT`, `CHOOSE` and `INFORM`, pause with
   `PROMPT` or `WAIT`, report with `MSGBOX`, write on the display with
   `DISP` and sound a tone with `BEEP`.
-- setting the clock: `→DATE`, `→TIME` and `CLKADJ`, and alarms (`STOALARM`,
-  `RCLALARM`, `DELALARM`, `FINDALARM`, `ACK`, `ACKALL`). The clock is the
+- setting the clock: `→DATE`, `→TIME` and `CLKADJ`. The clock is the
   device's own; `DATE`, `TIME`, `TICKS` and `TSTR` read it, and `DATE+`
   and `DDAYS` count days, with flags -41 and -42 for the formats, which
-  the TIME menu's 24H and D.M.Y keys set.
+  the TIME menu's 24H and D.M.Y keys set. Its ALRM folder keeps
+  appointment alarms: `{ 10.192026 9.3 "Dentist" } STOALARM` stores one
+  and gives its index, and `RCLALARM`, `DELALARM`, `FINDALARM`, `ACK` and
+  `ACKALL` work on the list, which is saved with the stack.
 - PICT and the plot-setup commands (PVIEW, ERASE, AXES, XRNG, YRNG, STEQ and
   the rest)
 - the HP's numbered menus for MENU and TMENU (a list, a name holding one
@@ -839,6 +841,8 @@ System RPL, and IR and serial transfer.
 
 - `BEEP` doesn't hold the program while its tone plays; tones in a row still
   sound one after another.
+- Alarms carry a message only: `STOALARM` refuses an object to run (the
+  HP's control alarms), and an alarm comes due only while the app is open.
 - BESTFIT pushes the model it picked and its correlation, as LINFIT does,
   as well as making it the current one.
 - Plot commands open the plot view instead of drawing into PICT.
