@@ -7,7 +7,7 @@ import { state as _calcState, getApproxMode, getWordsizeMask, setPromptMessage, 
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
 import { formatSource, DEFAULT_DISPLAY } from '../formatter.js';
-import { parseEntry as _parseEntryForObjTo } from '../parser.js';
+import { parseEntry as _parseEntryForObjTo, polarVector } from '../parser.js';
 import { astToGiac } from '../cas/giac-convert.mjs';
 import { lookup } from './registry.js';
 
@@ -1982,23 +1982,43 @@ export const _fromStrOp = (s) => {
 };
 
 
+// In CYLIN or SPHERE mode →V2, →V3 and V→ take and give a vector's polar parts, as the AUR says.
+const _polarMode = () => _calcState.coordMode !== 'RECT';
+const _allReal = (vs) => vs.every((v) => isReal(v) || isInteger(v));
+
 export const _toV2Op = (s) => {
   const [x, y] = s.popN(2);
-  s.push(Vector([x, y]));
+  s.push(_polarMode() && _allReal([x, y]) ? polarVector(_coerceRealComponent(x), _coerceRealComponent(y)) : Vector([x, y]));
 };
 
 
 export const _toV3Op = (s) => {
-  const [x, y, z] = s.popN(3);
-  s.push(Vector([x, y, z]));
+  const parts = s.popN(3);
+  if (!_polarMode() || !_allReal(parts)) { s.push(Vector(parts)); return; }
+  const [r, theta, third] = parts.map(_coerceRealComponent);
+  s.push(polarVector(r, theta, third, _calcState.coordMode === 'SPHERE'));
 };
 
 
 export const _fromVecOp = (s) => {
   const [v] = s.popN(1);
   if (!isVector(v)) throw new RPLError('Bad argument type');
+  const n = v.items.length;
+  if (_polarMode() && (n === 2 || n === 3) && _allReal(v.items)) {
+    for (const part of _polarParts(v.items.map(_coerceRealComponent))) s.push(Real(part));
+    return;
+  }
   for (const item of v.items) s.push(item);
 };
+
+
+function _polarParts([x, y, z]) {
+  const theta = fromRadians(Math.atan2(y, x));
+  if (z === undefined) return [Math.hypot(x, y), theta];
+  if (_calcState.coordMode === 'CYLIN') return [Math.hypot(x, y), theta, z];
+  const rho = Math.hypot(x, y, z);
+  return [rho, theta, rho === 0 ? 0 : fromRadians(Math.acos(z / rho))];
+}
 
 
 function _coerceRealComponent(v) {

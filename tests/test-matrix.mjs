@@ -16,7 +16,7 @@ import {
   goHome, goUp, goInto, makeSubdir,
   setWordsize, getWordsize, getWordsizeMask,
   setBinaryBase, getBinaryBase, resetBinaryState,
-  setApproxMode,
+  setApproxMode, setCoordMode,
 } from '../www/src/rpl/state.js';
 import { assert, assertThrows, runLine } from './helpers.mjs';
 
@@ -3832,3 +3832,24 @@ function _approxMatEqual(A, B, tol) {
     '→COL takes a matrix apart and COL→ puts columns together');
 }
 
+{
+  // The AUR: in CYLIN and SPHERE mode →V2, →V3 and V→ take and give a vector's polar parts.
+  const saved = [calcState.angle, calcState.coordMode];
+  const nums = (src) => runLine(src).snapshot().reverse().map((v) => (v.items ?? [v]).map((x) => +Number(x.value).toFixed(9)).join(' ')).join(' | ');
+  setAngle('DEG');
+  setCoordMode('CYLIN');
+  assert(nums('2 90 →V2') === '0 2' && nums('2 90 5 →V3') === '0 2 5',
+    '→V2 and →V3 in CYLIN read r and θ (2 90 →V2 is [ 2 ∠90 ], stored as [ 0 2 ])');
+  assert(nums('[ 3 4 ] V→') === '5 | 53.130102354' && nums('[ 3 4 7 ] V→') === '5 | 53.130102354 | 7',
+    'V→ in CYLIN gives r and θ (and z): [ 3 4 ] V→ gives 5 and 53.1301023542');
+  assert(nums('[ 1 2 3 4 ] V→') === '1 | 2 | 3 | 4' && format(runLine("'X' 'Y' →V2").peek()) === '[ `X` `Y` ]',
+    'a vector of four or more elements, or symbolic parts, stays rectangular in CYLIN');
+  setCoordMode('SPHERE');
+  assert(nums('1 0 90 →V3') === '1 0 0' && nums('[ 0 0 2 ] V→') === '2 | 0 | 0' && nums('[ 1 0 0 ] V→') === '1 | 0 | 90',
+    '→V3 and V→ in SPHERE use ρ, θ and φ from +z');
+  setCoordMode('RECT');
+  assert(nums('1 2 →V2') === '1 2' && nums('[ 3 4 ] V→') === '3 | 4',
+    '→V2 and V→ in RECT stay rectangular');
+  setAngle(saved[0]);
+  setCoordMode(saved[1]);
+}
