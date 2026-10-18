@@ -146,6 +146,13 @@ RPL puts the numbers first and the operation last. Each value goes on the
   quickest way on a phone. The Σ+, Σ-, CLΣ and STOΣ keys say how many points
   ΣDAT holds, and a statistics command run with an array on the stack but no
   ΣDAT offers to store it there.
+- **Bases.** `#FFh` is a binary integer; `HEX`, `DEC`, `OCT` and `BIN` show
+  them in another base, and `8 STWS` sets the word size, so `#81h RL` gives
+  `#3h`. The BASE menu holds them as the HP's does, with folders for
+  LOGIC (AND, OR, XOR, NOT), BIT (RL, SL, ASR, SR, RR) and BYTE (RLB, SLB,
+  SRB, RRB). A mode key there or in any menu (HEX, DEG, RECT) shows a mark
+  while its mode is on, and on a phone the modes summary names the base,
+  polar coordinates and complex mode whenever they aren't the defaults.
 - **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
   then gives `25`, and SQUARE appears on the VARS menu. A stored program
   runs by name like a built-in. Built-in names such as `SQ` are reserved.

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.129 (2026-10-18)
+**Latest release:** v0.6.130 (2026-10-18)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.130 — 2026-10-18
+
+On a phone the app bar shows only a modes summary, and it named just the
+angle, number format and exact mode, so HEX, BIN or OCT, polar
+coordinates and complex mode were nowhere in sight. The summary now names
+each of them whenever it isn't the default, in the HP header's order:
+RAD · R∠Z · HEX · STD · ℂ · EXACT. A BASE menu joins the menu picker as
+the HP's: HEX DEC OCT BIN R→B B→R, folders for LOGIC, BIT and BYTE with a
+BACK key, then STWS and RCWS. The DEG, RAD, GRAD, RECT, CYLIN, SPHERE,
+HEX, DEC, OCT and BIN keys in any menu now show a mark while their mode
+is on, as the HP's DEG■ and HEX■ do.
 
 ## v0.6.129 — 2026-10-18
 
