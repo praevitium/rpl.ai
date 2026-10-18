@@ -432,6 +432,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .st-val > * { margin-left: auto; }
 .st-val .value-text { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .st-row.sel .st-val .value-text { white-space: pre-wrap; overflow-wrap: anywhere; text-overflow: clip; }
+.st-val .value-text.num { white-space: normal; overflow-wrap: anywhere; }
 .st-val .value-text.tagged { display: flex; }
 .st-val .value-text.tagged > * { overflow: hidden; text-overflow: ellipsis; }
 .st-val .value-text.tagged .tag-name { flex-shrink: 1000000; min-width: 5ch; }

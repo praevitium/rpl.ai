@@ -2247,4 +2247,7 @@ setAngle('RAD');
     && /\.st-val \.value-text\.tagged \.tag-name \{ flex-shrink: 1000000; min-width: 5ch; \}/.test(cssSrc)
     && /\.st-row\.sel \.st-val \.value-text\.tagged, \.sheet-view \.st-val \.value-text\.tagged \{ display: block; \}/.test(cssSrc),
     'tagged levels: a long tag gives way to its value, down to five characters, so a phone shows "Total pri…: 123.456" rather than the tag alone; a selected level and VIEW show both whole');
+  assert(/\} else if \(isNumber\(value\) \|\| isBinaryInteger\(value\) \|\| isUnit\(value\)\) \{[^}]*span\.classList\.add\('num'\);\s*flat\.split\(\/\(\?=E\)\/\)\.forEach\(\(part, i\) => span\.append\(\.\.\.\(i \? \[document\.createElement\('wbr'\)\] : \[\]\), part\)\);/.test(displaySrc)
+    && /\.st-val \.value-text\.num \{ white-space: normal; overflow-wrap: anywhere; \}/.test(cssSrc),
+    'numbers on the stack: a real, integer, complex, binary integer or unit too wide for a phone wraps, breaking before its exponent first, where an ellipsis hid -1.23456789012E-100\'s exponent in minimal view at 280 and 320 px');
 }

@@ -1,6 +1,6 @@
 import { format, formatStackTop, DEFAULT_DISPLAY } from '../rpl/formatter.js';
 import { astToSvg } from '../rpl/pretty.js';
-import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged } from '../rpl/types.js';
+import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isBinaryInteger, isUnit } from '../rpl/types.js';
 import { state as calcState, currentPath } from '../rpl/state.js';
 import { icon } from './icons.js';
 
@@ -605,6 +605,10 @@ export class Display {
         rest.className = 'tag-value';
         rest.textContent = flat.slice(label.length - 2);
         span.append(name, rest);
+      } else if (isNumber(value) || isBinaryInteger(value) || isUnit(value)) {
+        // A number wraps, breaking before an exponent first, where an ellipsis would hide its exponent or last digits.
+        span.classList.add('num');
+        flat.split(/(?=E)/).forEach((part, i) => span.append(...(i ? [document.createElement('wbr')] : []), part));
       } else {
         span.textContent = flat;
       }
