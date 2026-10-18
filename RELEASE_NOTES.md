@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.127 (2026-10-18)
+**Latest release:** v0.6.128 (2026-10-18)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.128 — 2026-10-18
+
+The statistics commands now read only the stored ΣDAT, as on the HP.
+MEAN, SDEV, TOT, MEDIAN, LR, the fits, the sums and the plots used to
+take a vector or matrix from level 1 as their data when one was there,
+so a mean left on the stack became the next command's data. An array on
+level 1 is now left alone: store data with `STOΣ` or `Σ+` first. This
+breaks programs that relied on the old behaviour, such as
+`« DEPTH →ARRY MEAN »`; `→ARRY STOΣ MEAN` does what it did.
 
 ## v0.6.127 — 2026-10-18
 
