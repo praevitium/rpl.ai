@@ -3,7 +3,7 @@ import {
   Symbolic, Unit, Tagged, isValidHpIdentifier, Decimal,
 } from './types.js';
 import { RPLError } from './stack.js';
-import { getApproxMode, getWordsizeMask, state as _state, toRadians } from './state.js';
+import { getApproxMode, getWordsizeMask, state as _state, angleTrig } from './state.js';
 import { parseAlgebra } from './algebra.js';
 import { parseUnitExpr } from './units.js';
 
@@ -180,6 +180,16 @@ function tokenize(src) {
 }
 
 // Whether src ends inside an open quote, where a function key types NAME( instead of running.
+// [ r ∠θ ], [ r ∠θ z ] or, spherical, [ ρ ∠θ ∠φ ] (φ from +z) as the rectangular vector the HP stores, angles in the
+// current mode; angleTrig makes 90° land on 0 exactly.
+export function polarVector(r, theta, third, spherical = false) {
+  const x = r * angleTrig('cos', theta), y = r * angleTrig('sin', theta);
+  if (third === undefined) return Vector([Real(x), Real(y)]);
+  if (!spherical) return Vector([Real(x), Real(y), Real(third)]);
+  const sinPhi = angleTrig('sin', third);
+  return Vector([Real(x * sinPhi), Real(y * sinPhi), Real(r * angleTrig('cos', third))]);
+}
+
 export function endsInQuote(src) {
   let quote = null;
   for (let i = 0; i < src.length; i++) {
@@ -272,8 +282,7 @@ export function parseEntry(src) {
           if (!Number.isFinite(r) || !Number.isFinite(theta)) {
             throw new RPLError(`Bad complex literal: (${t.text})`);
           }
-          const rad = toRadians(theta);
-          return Complex(r * Math.cos(rad), r * Math.sin(rad));
+          return Complex(r * angleTrig('cos', theta), r * angleTrig('sin', theta));
         }
         const reN = complexPart(reText);
         const imN = complexPart(imText);
@@ -374,27 +383,13 @@ export function parseEntry(src) {
       const num = (t) => parseFloat(t.text);
       const len = collected.length;
       if (len === 2 && isNum(collected[0]) && isAngle(collected[1])) {
-        const r = num(collected[0]);
-        const theta = toRadians(num(collected[1]));
-        return Vector([Real(r * Math.cos(theta)), Real(r * Math.sin(theta))]);
+        return polarVector(num(collected[0]), num(collected[1]));
       }
       if (len === 3 && isNum(collected[0]) && isAngle(collected[1]) && isNum(collected[2])) {
-        const r = num(collected[0]);
-        const theta = toRadians(num(collected[1]));
-        const z = num(collected[2]);
-        return Vector([Real(r * Math.cos(theta)), Real(r * Math.sin(theta)), Real(z)]);
+        return polarVector(num(collected[0]), num(collected[1]), num(collected[2]));
       }
-      // ρ ∠θ ∠φ: θ is the azimuth, φ the polar angle from +z.
       if (len === 3 && isNum(collected[0]) && isAngle(collected[1]) && isAngle(collected[2])) {
-        const rho = num(collected[0]);
-        const theta = toRadians(num(collected[1]));
-        const phi   = toRadians(num(collected[2]));
-        const sinPhi = Math.sin(phi);
-        return Vector([
-          Real(rho * sinPhi * Math.cos(theta)),
-          Real(rho * sinPhi * Math.sin(theta)),
-          Real(rho * Math.cos(phi)),
-        ]);
+        return polarVector(num(collected[0]), num(collected[1]), num(collected[2]), true);
       }
       if (collected.some(isAngle)) {
         throw new RPLError('Bad polar vector literal');

@@ -1676,6 +1676,9 @@ const _close = (a, b, eps = 1e-10) => Math.abs(Number(a) - Number(b)) < eps;
   assert(v.type === 'vector' && v.items.length === 2
       && _close(v.items[0].value, 0) && _close(v.items[1].value, 1),
     '[ 1 ∠90 ] in DEG → [ 0 1 ]');
+  const c = parseEntry('(1, ∠90)')[0];
+  assert(v.items[0].value.isZero() && v.items[1].value.eq(1) && c.re === 0 && c.im === 1,
+    '[ 1 ∠90 ] and (1, ∠90) in DEG land on 0 exactly, as the HP\'s degree trig does, not 6.12323399574E-17');
 }
 {
   setAngle('RAD');
