@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.128 (2026-10-18)
+**Latest release:** v0.6.129 (2026-10-18)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.129 — 2026-10-18
+
+After a point entered as separate numbers, `3 1 7 Σ+`, LASTARG gave back
+the three numbers; it now gives the vector `[ 3 1 7 ]`, as the AUR says.
+A statistics command that finds no ΣDAT now says so in words, and when
+level 1 holds a vector or matrix the error offers Store level 1 in ΣDAT,
+which runs STOΣ and the command again as one step with one Undo. The
+STAT menu's STOΣ key now says how many points ΣDAT holds, as Σ+, Σ- and
+CLΣ do.
 
 ## v0.6.128 — 2026-10-18
 

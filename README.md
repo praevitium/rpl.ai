@@ -142,7 +142,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   the XCOL column against the YCOL column, and `BARPLOT` and `HISTPLOT` the
   XCOL column. The STAT menu opens on the HP's folders: DATA (Σ+, Σ-, CLΣ),
   ΣPAR, 1VAR, PLOT, FIT and SUMS.
-  On a phone, the Σ+, Σ- and CLΣ keys say how many points ΣDAT holds.
+  Once ΣDAT exists, `3 1 7 Σ+` adds a point from separate numbers, the
+  quickest way on a phone. The Σ+, Σ-, CLΣ and STOΣ keys say how many points
+  ΣDAT holds, and a statistics command run with an array on the stack but no
+  ΣDAT offers to store it there.
 - **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
   then gives `25`, and SQUARE appears on the VARS menu. A stored program
   runs by name like a built-in. Built-in names such as `SQ` are reserved.
