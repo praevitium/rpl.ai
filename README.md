@@ -169,7 +169,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
 - **Complex numbers.** `(3,4)` is 3+4i and `(2,∠1.5)` is typed in polar
   form; `CYLIN` shows them that way. The CMPLX menu leads with the HP's
   RE IM C→R R→C ABS ARG, then SIGN NEG CONJ, then the coordinate modes, and
-  an integer power is exact, so `(1,1) 2 ^` gives `(0, 2)`.
+  an integer power is exact, so `(1,1) 2 ^` gives `(0, 2)`. LN and LOG of a
+  negative real give its principal complex value with CMPLX on or off, as on
+  the HP: `-1. LN` gives `(0, 3.14159265359)`. The TRIG menu opens on the
+  HP's HYP folder: SINH ASINH COSH ACOSH TANH ATANH, then EXPM and LNP1.
 - **Matrices.** `[[ 2 1 ][ 1 3 ]] DET` gives 5, `INV`, `EGV` and `LU` work
   on it, and `→NUM` gives every entry its number. The MATRIX menu opens as
   the HP's MTH MATR does, on MAKE, NORM, FACTR, COL and ROW folders and
@@ -333,8 +336,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   what it will do to the stack; it runs as you lift, unless you slide away.
   Hold NXT to see every key of the menu at once, each row of six one page,
   and tap the one you want; a key that opens a folder or a unit group wears
-  a tab, as its soft key does. Hold the menu button to go back to the menu
-  you had before.
+  a tab, as its soft key does. Inside a folder the menu button names it,
+  TRIG · HYP, or just HYP on a phone. Hold the menu button to go back to the
+  menu you had before.
   Under 360 px the page count moves from the menu button onto NXT, and under
   320 the menu button keeps only its icon, so each soft key stays
   finger-wide. The menu button's list leads with the menus you used last.
