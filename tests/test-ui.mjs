@@ -386,6 +386,14 @@ import { assert, assertThrows } from './helpers.mjs';
       'BASE menu: the HP\'s HEX DEC OCT BIN R→B B→R, then its LOGIC, BIT and BYTE folders, each with a BACK key, and STWS and RCWS, all registered commands, in the picker\'s Math group');
   }
   {
+    const { VECTOR_KEYS, menuById, MENU_GROUPS } = await import('../www/src/ui/menus.js');
+    const math = MENU_GROUPS.find((g) => g.title === 'Math').ids;
+    assert(VECTOR_KEYS.join(' ') === 'ABS DOT CROSS V→ →V2 →V3 RECT CYLIN SPHERE' && VECTOR_KEYS.every((n) => lookup(n))
+      && menuById('VECTOR')?.short === 'VECTR' && math.indexOf('VECTOR') === math.indexOf('MATRIX') + 1
+      && /else if \(id === 'VECTOR'\) this\.setMenu\(VECTOR_KEYS\.map\(\(key\) => this\._commandSlot\(key\)\), 'VECTOR'\);/.test(appSrc),
+      'VECTOR menu: the HP\'s MTH VECTR keys, ABS DOT CROSS V→ →V2 →V3 and the RECT CYLIN SPHERE modes (marked while on), after MATRIX in the picker\'s Math group');
+  }
+  {
     const { MENU_FAMILIES } = await import('../www/src/ui/menus.js');
     const cplx = MENU_FAMILIES.find((f) => f.id === 'CPLX');
     assert(cplx.keys.join(' ') === 'RE IM C→R R→C ABS ARG SIGN NEG CONJ C→P P→C CMPLX RECT CYLIN SPHERE CMPLX?' && cplx.keys.every((n) => lookup(n))

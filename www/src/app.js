@@ -16,7 +16,7 @@ import { Sheets } from './ui/sheets.js';
 import { Tour } from './ui/tour.js';
 import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
-import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel } from './ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, VECTOR_KEYS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel } from './ui/menus.js';
 import { convertValue } from './rpl/units.js';
 import { MODES } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
@@ -1382,6 +1382,7 @@ class App {
     else if (id === 'MODES') this.showModesMenu();
     else if (id === 'BRCH') this.showBranchMenu();
     else if (id === 'BASE') this.showBaseMenu();
+    else if (id === 'VECTOR') this.setMenu(VECTOR_KEYS.map((key) => this._commandSlot(key)), 'VECTOR');
     else this._showFamilyMenu(id);
     if (remember) this.setPrefs({ menu: this.menuKind, recentMenus: [this.menuKind, ...this.prefs.recentMenus.filter((m) => m !== this.menuKind)] });
   }
