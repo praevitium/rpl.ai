@@ -30,6 +30,7 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
     badType: 'SIN: Bad argument type: expected real, got string',
     badValue: 'ASIN: Bad argument value',
     infinite: '/: Infinite result',
+    undefinedResult: 'LNP1: Undefined result',
     dimension: '+: Invalid dimension',
     units: '+: Inconsistent units',
     undefinedName: 'Undefined name: FOO',

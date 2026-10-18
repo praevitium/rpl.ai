@@ -2506,7 +2506,14 @@ setAngle('rad');
   setComplexMode(false);
   const s = new Stack();
   s.push(Real(-1));
-  assertThrows(() => { lookup('LN').fn(s); }, /Bad argument value/, 'session054: LN(-1) throws under CMPLX OFF');
+  lookup('LN').fn(s);
+  const r = s.pop();
+  assert(isComplex(r) && Math.abs(r.re) < 1e-12 && Math.abs(r.im - Math.PI) < 1e-12,
+    'LN(-1.) gives the principal value (0, π) with CMPLX off too, as the HP does and as ASIN and ACOS do, where it said Bad argument value');
+  const l = runLine('-100. LOG').peek();
+  assert(isComplex(l) && Math.abs(l.re - 2) < 1e-12 && Math.abs(l.im - Math.PI / Math.LN10) < 1e-11, 'LOG of a negative real is complex too');
+  assertThrows(() => runLine('-2. LNP1'), /Undefined result/, 'LNP1 below -1 is an Undefined Result, as the AUR says');
+  assertThrows(() => runLine('-1. LNP1'), /Infinite result/, 'LNP1 at -1 is an Infinite Result');
 }
 
 {
@@ -2555,10 +2562,10 @@ setAngle('rad');
   setComplexMode(false);
   const s = new Stack();
   s.push(Real(-10));
-  const logErr = assertThrows(() => lookup('LOG').fn(s), /Bad argument value/,
-    'session054: LOG(-10) CMPLX OFF throws clean RPL error');
-  assert(logErr && logErr.name !== 'TypeError',
-    'session054: LOG(-10) CMPLX OFF error is an RPL error, not a native TypeError');
+  lookup('LOG').fn(s);
+  const r = s.pop();
+  assert(isComplex(r) && Math.abs(r.re - 1) < 1e-9 && Math.abs(r.im - Math.PI / Math.LN10) < 1e-9,
+    'LOG(-10) under CMPLX OFF gives the same principal value, as the HP does');
 }
 
 /* ================================================================

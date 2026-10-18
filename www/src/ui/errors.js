@@ -3,7 +3,7 @@ import { RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
 const CORE_MESSAGES = Object.freeze([
   'Too few arguments', 'Bad argument type', 'Bad argument value', 'Infinite result',
   'Invalid dimension', 'Inconsistent units', 'Undefined local name', 'Undefined name',
-  'CAS not ready', 'Interrupted', 'Nonexistent ΣDAT', 'Nonexistent alarm',
+  'CAS not ready', 'Interrupted', 'Nonexistent ΣDAT', 'Nonexistent alarm', 'Undefined result',
 ]);
 
 const NUMBER_WORDS = Object.freeze(['no values', 'one value', 'two values', 'three values', 'four values', 'five values']);
@@ -70,6 +70,12 @@ export const ERROR_KINDS = Object.freeze({
     title: (c) => `${c.command ?? 'That'} would give an infinite result.`,
     detail: () => 'Division by zero, or a function at its pole. The stack is back as it was.',
     fixes: (c) => [...(c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []), { id: 'explain', label: 'Explain' }],
+  },
+  undefinedResult: {
+    match: (p) => p.core === 'Undefined result',
+    title: (c) => `${c.command ?? 'That function'} has no value there.`,
+    detail: () => "The argument is outside the function's domain. The stack is back as it was.",
+    fixes: (c) => [...(c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []), ...(c.command ? [{ id: 'help', label: `${c.command} reference` }] : []), { id: 'explain', label: 'Explain' }],
   },
   dimension: {
     match: (p) => p.core === 'Invalid dimension',

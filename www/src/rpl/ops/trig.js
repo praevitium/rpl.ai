@@ -1,4 +1,4 @@
-import { setAngle, state as _calcState, getApproxMode, getComplexMode, toRadians, fromRadians } from '../state.js';
+import { setAngle, state as _calcState, getApproxMode, toRadians, fromRadians } from '../state.js';
 import { Symbolic, toRealOrThrow, Real, isComplex, Complex, isInteger, isRational, isReal, isUnit } from '../types.js';
 import { convertValue, parseUnitExpr, sameDims } from '../units.js';
 import { Fn as AstFn } from '../algebra.js';
@@ -51,7 +51,8 @@ function _complexAngle(z) {
 // Real-only: the HP50 has no complex LNP1 / EXPM.
 register('LNP1', _unaryOp('LNP1', (v) => {
   const x = toRealOrThrow(v);
-  if (x <= -1) throw new RPLError('Infinite result');
+  if (x < -1) throw new RPLError('Undefined result');
+  if (x === -1) throw new RPLError('Infinite result');
   return Real(Math.log1p(x));
 }), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 10, label: "LNP1" });
 
@@ -197,7 +198,8 @@ function _fromRadiansDecimal(d) {
 
 
 // `realFn` only folds EXACT Integer / Rational inputs; Reals go through the
-// Decimal `decimalFn`.  Out-of-domain Reals lift to complex only under CMPLX.
+// Decimal `decimalFn`.  An out-of-domain Real lifts to its principal complex
+// value, as the HP's LN and LOG do and as ASIN and ACOS do here.
 const _isZero = (v) => (isInteger(v) ? v.value === 0n : isRational(v) ? v.n === 0n : isReal(v) && v.value.isZero());
 
 function _unaryCx(name, realFn, cxFn, decimalFn) {
@@ -208,8 +210,7 @@ function _unaryCx(name, realFn, cxFn, decimalFn) {
     const d = _toDecimal(v);
     const result = decimalFn(d);
     if (result.isFinite()) return Real(result);
-    if (getComplexMode()) return _complex(cxFn({ re: d.toNumber(), im: 0 }));
-    throw new RPLError('Bad argument value');
+    return _complex(cxFn({ re: d.toNumber(), im: 0 }));
   });
 }
 
