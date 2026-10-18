@@ -895,7 +895,7 @@ const CAPTURED_SCALARS = [
   'angle', 'coordMode', 'displayMode', 'displayDigits', 'lastError',
   'wordsize', 'binaryBase', 'textbookMode', 'approxMode', 'complexMode',
   'lastFitModel', 'casVx', 'casModulo', 'halted', 'promptMessage', 'prngSeed',
-  'realMaxExp', 'lcd',
+  'realMaxExp', 'lcd', 'alarms',
 ];
 
 export function captureCalcState() {

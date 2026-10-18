@@ -250,3 +250,16 @@ import { assert } from './helpers.mjs';
   assert(notes === 1 && varRecall('SCRATCHV') === undefined && state.home === kept,
     'only a dry run that changed something restores state, and it does so once');
 }
+
+{
+  const before = state.alarms;
+  const s = new Stack();
+  s.push(RList([Real(1.01203), Real(9)]));
+  lookup('STOALARM').fn(s);
+  const kept = state.alarms;
+  evalScratch('0 DELALARM');
+  evalScratch('{ 1.012031 9 "x" } STOALARM');
+  assert(kept !== before && state.alarms === kept && kept.length === 1,
+    'a dry run of DELALARM or STOALARM leaves the alarm list as it was, where 0 DELALARM deleted every alarm for real');
+  state.alarms = before;
+}
