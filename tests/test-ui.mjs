@@ -360,7 +360,7 @@ import { assert, assertThrows } from './helpers.mjs';
     `STAT_GROUPS: the folders hold every statistics command once, spelt as the HP spells it, in the HP's folder order, PLOT holding the three statistics plots (missing ${statNames.filter((n) => !inFolders.includes(n) && !aliases.includes(n))})`);
   assert(/STAT: \(\) => this\._groupKeys\(STAT_GROUPS, 'STAT'\),/.test(appSrc)
     && /_groupKeys\(groups, familyId\) \{\s*return groups\.map\(\(group\) => \(\{ label: group\.id, dir: true, .*?onPress: \(\) => this\._showGroupMenu\(group, familyId\) \}\)\);/.test(appSrc)
-    && /_showGroupMenu\(group, familyId\) \{\s*const back = \{ label: '◀ BACK', title: `Back to the \$\{menuById\(familyId\)\.title\} menu`, onPress: \(\) => this\._showFamilyMenu\(familyId\) \};\s*this\.setMenu\(\[back, \.\.\.group\.commands\.map\(\(name\) => this\._commandSlot\(name\)\)\], familyId\);/.test(appSrc),
+    && /_showGroupMenu\(group, familyId\) \{\s*const back = \{ label: '◀ BACK', title: `Back to the \$\{menuById\(familyId\)\.title\} menu`, onPress: \(\) => this\._showFamilyMenu\(familyId\) \};\s*this\.setMenu\(\[back, \.\.\.group\.commands\.map\(\(name\) => this\._commandSlot\(name\)\)\], familyId, \{ folder: group\.id \}\);/.test(appSrc),
     'STAT menu: it opens on the HP\'s folders, DATA, ΣPAR, 1VAR, PLOT, FIT and SUMS, whose keys run, type and look up their commands as the flat list\'s do, with a BACK key');
   const casNames = allOps().filter((n) => lookup(n).category === 'CAS / symbolic');
   assert(CAS_GROUPS.map((g) => g.id).join(' ') === 'ALG CALC S.SLV TRIG EXP&LN'
@@ -368,6 +368,11 @@ import { assert, assertThrows } from './helpers.mjs';
     && CAS_GROUPS.every((g) => g.commands.every((n) => casNames.includes(n) && new Set(g.commands).size === g.commands.length))
     && /CAS: \(\) => this\._groupKeys\(CAS_GROUPS, 'CAS'\),/.test(appSrc),
     `CAS menu: it opens on folders after the HP's CAS menus, ALG as the HP has it (COLLECT EXPAND FACTOR LNCOLLECT LIN PARTFRAC SOLVE SUBST TEXPAND), then CALC, S.SLV, TRIG and EXP&LN, every key a CAS command, so a phone reaches algebra in two taps instead of paging through nine (unknown ${CAS_GROUPS.flatMap((g) => g.commands).filter((n) => !casNames.includes(n))})`);
+  assert(/this\.menuFolder = folder;/.test(appSrc)
+    && /const inside = this\.menuFolder \?\? \(meta\.short === 'VARS' \? currentPath\(\)\.at\(-1\) : null\);\s*return \{ title: inside \? `\$\{meta\.short\} · \$\{inside\}` : meta\.short, short: this\.menuFolder \?\? meta\.short,/.test(appSrc)
+    && /this\.setMenu\(\[back, \.\.\.keys\], 'UNITS', \{ folder: group\.id \}\);/.test(appSrc)
+    && /this\.setMenu\(\[back, \.\.\.group\.commands\.map\(\(name\) => this\._commandSlot\(name\)\)\], 'BASE', \{ folder: group\.id \}\);/.test(appSrc),
+    'menu button: inside a folder it names the folder (TRIG · HYP, or HYP where it is short), as VARS names its directory, where it named only the family');
   {
     const { TRIG_GROUPS } = await import('../www/src/ui/menus.js');
     assert(TRIG_GROUPS.map((g) => `${g.id}: ${g.commands.join(' ')}`).join(' / ') === 'HYP: SINH ASINH COSH ACOSH TANH ATANH EXPM LNP1'

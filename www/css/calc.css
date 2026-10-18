@@ -551,7 +551,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 @container app (max-width: 520px) { .ac-foot { display: none; } }
 
 .menubar { flex: none; display: flex; align-items: stretch; gap: 6px; padding: 6px 10px 8px; background: var(--chrome); min-width: 0; }
-.mb-menu { flex: none; display: flex; align-items: center; gap: 6px; border: 1px solid var(--line2); background: var(--r1); color: var(--ink); border-radius: 9px; padding: 0 9px; font: 600 11px/1 var(--font-mono); letter-spacing: .04em; max-width: 136px; }
+.mb-menu { flex: none; display: flex; align-items: center; gap: 6px; border: 1px solid var(--line2); background: var(--r1); color: var(--ink); border-radius: 9px; padding: 0 9px; font: 600 11px/1 var(--font-mono); letter-spacing: .04em; max-width: 160px; }
 .mb-menu:hover, .mb-menu[aria-expanded="true"] { background: var(--r2); }
 .mb-menu span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mb-menu sup { font: 600 9px/1 var(--font-mono); color: var(--ink3); margin-left: -2px; }

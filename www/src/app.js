@@ -1437,9 +1437,10 @@ class App {
     else this.toast('No menu before this one');
   }
 
-  setMenu(slots, kind = null, { preservePage = false } = {}) {
+  setMenu(slots, kind = null, { preservePage = false, folder = null } = {}) {
     if (kind === 'EQW') { this._eqwSlots = slots; this._ctxPage = 0; this.menubar.render(); return; }
     this.menuKind = kind;
+    this.menuFolder = folder;
     this.menuAll = Array.isArray(slots) ? slots.slice() : [];
     if (!preservePage) this.menuPage = 0;
     this.menubar.render();
@@ -1461,7 +1462,8 @@ class App {
     const meta = menuById(this.menuKind) ?? { title: this.menuKind ?? 'MENU', short: this.menuKind ?? 'MENU' };
     const { view, page } = computeMenuPage(this.menuAll, this.menuPage, 6);
     this.menuPage = page;
-    return { title: meta.short === 'VARS' ? `VARS · ${currentPath().at(-1)}` : meta.short, short: meta.short, items: this.menuAll, slots: view, page, pages: Math.max(1, Math.ceil(this.menuAll.length / 6)) };
+    const inside = this.menuFolder ?? (meta.short === 'VARS' ? currentPath().at(-1) : null);
+    return { title: inside ? `${meta.short} · ${inside}` : meta.short, short: this.menuFolder ?? meta.short, items: this.menuAll, slots: view, page, pages: Math.max(1, Math.ceil(this.menuAll.length / 6)) };
   }
 
   _inContextMenu() { return !!this._ctxKey; }
@@ -1594,7 +1596,7 @@ class App {
 
   _showGroupMenu(group, familyId) {
     const back = { label: '◀ BACK', title: `Back to the ${menuById(familyId).title} menu`, onPress: () => this._showFamilyMenu(familyId) };
-    this.setMenu([back, ...group.commands.map((name) => this._commandSlot(name))], familyId);
+    this.setMenu([back, ...group.commands.map((name) => this._commandSlot(name))], familyId, { folder: group.id });
     if (group.commands.includes('MODSTO')) this.toast(`${modulusNote()}; MODSTO sets it.`, { key: 'modulus', transient: true });
   }
 
@@ -1649,7 +1651,7 @@ class App {
       onPressR: () => this.insertUnit(unit, 'divide'),
       onHold: (anchor) => this._heldKeyMenu([{ text: `Convert level 1 to ${unit}`, run: () => this.insertUnit(unit, 'convert') }, { text: `Divide by ${unit}`, run: () => this.insertUnit(unit, 'divide') }], anchor, 'Unit'),
     }));
-    this.setMenu([back, ...keys], 'UNITS');
+    this.setMenu([back, ...keys], 'UNITS', { folder: group.id });
   }
 
   commandTitle(name) {
@@ -1752,7 +1754,7 @@ class App {
       title: `${group.title}: ${group.commands.join(' ')}`,
       onPress: () => {
         const back = { label: '◀ BACK', title: 'Back to the BASE menu', onPress: () => this.showBaseMenu() };
-        this.setMenu([back, ...group.commands.map((name) => this._commandSlot(name))], 'BASE');
+        this.setMenu([back, ...group.commands.map((name) => this._commandSlot(name))], 'BASE', { folder: group.id });
       },
     });
     this.setMenu(BASE_KEYS.map((key) => {
