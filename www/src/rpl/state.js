@@ -48,6 +48,7 @@ export const state = {
   halted: null,
   haltedStack: [],
   promptMessage: null,
+  lcd: null,
 };
 
 function _dispatchState() {
@@ -295,6 +296,29 @@ export function setPromptMessage(v) { _set('promptMessage', v); }
 export function getPromptMessage() { return state.promptMessage; }
 
 export function clearPromptMessage() { _set('promptMessage', null); }
+
+// The seven-line display a program writes on with DISP. The text goes when the program ends or pauses, unless FREEZE
+// keeps it until the next key press.
+export const LCD_LINES = 7;
+
+export function setLcdLine(n, text) {
+  const parts = text.split('\n').slice(0, LCD_LINES - n + 1);
+  const prev = state.lcd?.lines ?? [];
+  const lines = Array.from({ length: Math.max(prev.length, n - 1 + parts.length) }, (_, i) => prev[i] ?? '');
+  parts.forEach((part, i) => { lines[n - 1 + i] = part; });
+  state.lcd = { lines, frozen: state.lcd?.frozen ?? false };
+  _emit();
+}
+
+export function clearLcd() { state.lcd = { lines: [], frozen: false }; _emit(); }
+
+export function freezeLcd() { if (state.lcd && !state.lcd.frozen) { state.lcd = { ...state.lcd, frozen: true }; _emit(); } }
+
+export function settleLcd() { if (state.lcd && !state.lcd.frozen) { state.lcd = null; _emit(); } }
+
+export function touchLcd() { if (state.lcd) { state.lcd = null; _emit(); } }
+
+export function getLcd() { return state.lcd; }
 
 export function setCasVx(name) {
   if (typeof name !== 'string' || name.length === 0) {
@@ -598,6 +622,7 @@ export function resetHome() {
   state.halted = null;
   state.haltedStack.length = 0;
   state.promptMessage = null;
+  state.lcd = null;
   _emit();
 }
 
@@ -861,7 +886,7 @@ const CAPTURED_SCALARS = [
   'angle', 'coordMode', 'displayMode', 'displayDigits', 'lastError',
   'wordsize', 'binaryBase', 'textbookMode', 'approxMode', 'complexMode',
   'lastFitModel', 'casVx', 'casModulo', 'halted', 'promptMessage', 'prngSeed',
-  'realMaxExp',
+  'realMaxExp', 'lcd',
 ];
 
 export function captureCalcState() {

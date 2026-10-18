@@ -6,6 +6,14 @@ export function errorBannerHtml(desc) {
   return `<div class="bn" role="alert"><div class="bn-ico" aria-hidden="true">!</div><div class="bn-t">${escapeHtml(desc.title)}</div><button type="button" class="icon-btn sm bn-x" data-bn="dismiss" title="Dismiss (Esc)" aria-label="Dismiss">${icon('x', 'sm')}</button>${desc.detail ? `<div class="bn-d">${escapeHtml(desc.detail)}</div>` : ''}${fixes ? `<div class="bn-f">${fixes}</div>` : ''}</div>`;
 }
 
+// The seven-line display a program writes on with DISP, shown down to its last line with text.
+export function lcdHtml(lcd) {
+  const lines = lcd?.lines ?? [];
+  const last = lines.findLastIndex((line) => line);
+  if (last < 0) return '';
+  return `<div class="lcd" role="status" aria-label="Program display">${lines.slice(0, last + 1).map((line) => `<div>${escapeHtml(line ?? '')}</div>`).join('')}</div>`;
+}
+
 const HALT_TITLES = Object.freeze({
   halt: 'Program halted',
   step: 'Stepping through the program',

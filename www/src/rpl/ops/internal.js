@@ -3,7 +3,7 @@ import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Nam
 import { RPLAbort, RPLError, Stack, setPushCoerce, checkTimeLimit } from '../stack.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, UnitNode as AstUnit, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, hasUnits, exactRational, isRealNum, isKnownFunction } from '../algebra.js';
 import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
-import { state as _calcState, getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted } from '../state.js';
+import { state as _calcState, getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
 import { formatSource, DEFAULT_DISPLAY } from '../formatter.js';
@@ -956,6 +956,7 @@ function* _stepYield(tokens, index) {
 
 // Runs a program generator until it yields or finishes.  A yield parks the live
 // generator on the halted stack; any other exit unwinds leftover local frames.
+// Either way an unfrozen DISP display goes, as the HP's does when the keyboard is ready.
 export function runSuspendable(gen) {
   const framesAtEntry = _localFrames.length;
   let halted = false;
@@ -967,6 +968,7 @@ export function runSuspendable(gen) {
       setHalted({ generator: gen, tokens, index, kind, dialog, stepping });
     }
   } finally {
+    settleLcd();
     if (!halted) {
       _pendingSuspend = null;
       while (_localFrames.length > framesAtEntry) _localFrames.pop();

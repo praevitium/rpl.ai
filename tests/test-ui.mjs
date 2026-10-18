@@ -1950,7 +1950,7 @@ setAngle('RAD');
     && /if \(calcState\.halted\?\.kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*this\.entry\.enter\(\);/.test(appSrc)
     && /_beginDialog\(halted\) \{\s*this\._dialogHalt = halted;\s*queueMicrotask\(\(\) => \{\s*if \(calcState\.halted !== halted\) return;\s*if \(halted\.kind === 'input'\) this\.entry\.recall\(halted\.dialog\.text\);\s*else this\.showChooseList\(\);/.test(appSrc)
     && /_acceptInput\(\) \{[\s\S]{0,200}?if \(dialog\.verify\) \{ try \{ parseEntry\(text\); \} catch \(e\) \{ this\.entry\.flashError\(e\); return; \} \}\s*this\.entry\.cancel\(\);\s*this\._continueProgram\(Str\(text\)\);/.test(appSrc)
-    && /_continueProgram\(\.\.\.answers\) \{\s*const op = \{ over: 'SST', into: 'SST↓' \}\[calcState\.halted\.stepping\] \?\? 'CONT';\s*this\.entry\.safeRun\(\(\) => \{ for \(const a of answers\) this\.stack\.push\(a\); lookup\(op\)\.fn\(this\.stack, this\.entry\); \}, op, \{ keepPartial: true \}\);/.test(appSrc)
+    && /_continueProgram\(\.\.\.answers\) \{\s*const op = \{ over: 'SST', into: 'SST↓' \}\[calcState\.halted\.stepping\] \?\? 'CONT';\s*touchLcd\(\);\s*this\.entry\.safeRun\(\(\) => \{ for \(const a of answers\) this\.stack\.push\(a\); lookup\(op\)\.fn\(this\.stack, this\.entry\); \}, op, \{ keepPartial: true \}\);/.test(appSrc)
     && /const stepping = _singleStepMode \? \(_stepInto \? 'into' : 'over'\) : null;\s*_pendingSuspend = \{ tokens, index, kind, dialog, stepping \};/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
     && /if \(act === 'ok' && kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(act === 'cont' && kind === 'msgbox'\) \{ this\._continueProgram\(\); return; \}[\s\S]{0,300}?if \(act === 'kill' && kind === 'input'\) this\.entry\.cancel\(\);/.test(appSrc),
     "INPUT: its banner is the prompt with OK and Stop keys and no program source; the text it offers goes on the command line once the line that ran the program has cleared; Enter or OK hands the line back as a string (with V only once it parses) and goes on without an undo step of its own, as MSGBOX's OK does, so UNDO after the program takes the whole run back rather than stopping between its answers, and a dialog reached while stepping steps on with SST or SST↓ rather than running the program out; Stop clears the line before KILL");
@@ -1989,4 +1989,17 @@ setAngle('RAD');
     && /el\.style\.maxHeight = '';\s*const w = el\.offsetWidth;\s*let h = el\.offsetHeight;[\s\S]{0,200}?const above = r\.top - 6 - margin;\s*if \(this\._above && h > above && above >= MIN_ABOVE\) \{ el\.style\.maxHeight = `\$\{above\}px`; h = el\.offsetHeight; \}/.test(popSrc)
     && /if \(\(this\._above \|\| top \+ h > vh - margin\) && r\.top - h - 6 >= margin\) top = r\.top - h - 6;/.test(popSrc),
     "popover: asked to sit above its anchor, it gives up height (down to 100 px) rather than cover the anchor, so CHOOSE's eight rows keep clear of the prompt with the keyboard up at 280 px, where the list covered the banner and the command line");
+}
+
+{
+  const bannerSrc = readFileSync(new URL('../www/src/ui/banner.js', import.meta.url), 'utf8');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const entrySrc = readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/export function lcdHtml\(lcd\) \{\s*const lines = lcd\?\.lines \?\? \[\];\s*const last = lines\.findLastIndex\(\(line\) => line\);\s*if \(last < 0\) return '';/.test(bannerSrc)
+    && /renderBanner\(\) \{\s*const el = \$\('banner'\);\s*const lcd = lcdHtml\(getLcd\(\)\);\s*if \(this\.errorBanner\) \{ el\.innerHTML = lcd \+ errorBannerHtml\(this\.errorBanner\); return; \}/.test(appSrc)
+    && /enter\(\) \{\s*this\.error = '';\s*this\.failure = null;\s*touchLcd\(\);/.test(entrySrc) && /execOp\(name\) \{\s*this\.error = '';\s*this\.failure = null;\s*touchLcd\(\);/.test(entrySrc)
+    && /\} finally \{\s*settleLcd\(\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
+    && /\.lcd \{ margin: 8px 10px 0; padding: 8px 12px;[^}]*font: 13px\/1\.45 var\(--font-mono\);/.test(css) && /:root\[data-keyboard\] \.lcd \{ max-height: calc\(3 \* 1\.45em \+ 18px\); overflow-y: auto; \}/.test(css),
+    "DISP: a program's display lines show in the banner slot above the command line, down to the last line with text, in the stack's mono ink (three lines with the keyboard up); an unfrozen display goes when the program ends or pauses, a frozen one at the next Enter, command or dialog answer");
 }

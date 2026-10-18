@@ -7438,3 +7438,47 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   assert(getHalted()?.kind === 'input' && getHalted().stepping === null, 'a dialog reached at full speed records no stepping');
   clearAllHalted(); clearPromptMessage();
 }
+
+{
+  resetHome(); clearAllHalted(); clearPromptMessage();
+  const { getLcd, touchLcd } = await import('../www/src/rpl/state.js');
+  const s = new Stack();
+  s.push(parseEntry('« CLLCD "Working" 1 DISP "Done" 3 DISP »')[0]);
+  lookup('EVAL').fn(s);
+  assert(getLcd() === null && s.depth === 0, 'DISP text goes when the program ends without FREEZE');
+  s.push(parseEntry('« "Hello" 1 DISP 7 FREEZE »')[0]);
+  lookup('EVAL').fn(s);
+  assert(getLcd()?.frozen === true && getLcd().lines[0] === 'Hello', 'FREEZE keeps the display after the program ends');
+  touchLcd();
+  assert(getLcd() === null, 'the next key press clears a frozen display');
+  s.push(Str('Hi'));
+  s.push(Integer(2n));
+  lookup('DISP').fn(s);
+  assert(getLcd()?.lines[1] === 'Hi' && getLcd().lines[0] === '' && getLcd().frozen === false, 'DISP from the keyboard writes its line and stays, the line above it blank, no program ending to clear it');
+  s.push(Str('a\nb'));
+  s.push(Integer(3n));
+  lookup('DISP').fn(s);
+  assert(getLcd().lines[2] === 'a' && getLcd().lines[3] === 'b', 'a text of several lines continues down the display');
+  s.push(Integer(7n));
+  s.push(Integer(9n));
+  lookup('DISP').fn(s);
+  assert(getLcd().lines[6] === '7', 'a line past the seventh writes on the seventh, an object in the display format');
+  lookup('CLLCD').fn(s);
+  assert(getLcd()?.lines.length === 0, 'CLLCD blanks the display');
+  s.push(parseEntry('« "Enter data" 1 DISP 7 FREEZE HALT 5 »')[0]);
+  lookup('EVAL').fn(s);
+  assert(getHalted()?.kind === 'halt' && getLcd()?.lines[0] === 'Enter data', "a frozen display stays through a HALT, the HP's prompting idiom");
+  lookup('KILL').fn(s);
+  touchLcd();
+  s.push(parseEntry('« "Gone" 1 DISP HALT »')[0]);
+  lookup('EVAL').fn(s);
+  assert(getHalted()?.kind === 'halt' && getLcd() === null, 'an unfrozen display goes when the program pauses');
+  lookup('KILL').fn(s);
+  const t = new Stack();
+  t.push(Str('x'));
+  t.push(Str('1'));
+  assertThrows(() => lookup('DISP').fn(t), /Bad argument type/, 'DISP wants a number for the line');
+  assertThrows(() => lookup('DISP').fn(new Stack()), /Too few arguments/, 'DISP with nothing says so');
+  assertThrows(() => lookup('FREEZE').fn(new Stack()), /Too few arguments/, 'FREEZE wants its area number');
+  touchLcd(); clearAllHalted(); clearPromptMessage();
+}

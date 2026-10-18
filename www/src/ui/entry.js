@@ -7,7 +7,7 @@ import { RPLAbort, RPLError, withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/sta
 import { errorBeep } from './beep.js';
 import {
   saveVarStateForUndo, undoVarState, redoVarState,
-  hasVarRedo, varStateMatchesUndoTop, dropVarUndoTop,
+  hasVarRedo, varStateMatchesUndoTop, dropVarUndoTop, touchLcd,
 } from '../rpl/state.js';
 import {
   EditorState, EditorView, Transaction, keymap, drawSelection,
@@ -551,6 +551,7 @@ export class Entry {
   enter() {
     this.error = '';
     this.failure = null;
+    touchLcd();
     const raw = this.buffer.trim();
     const words = raw ? raw.split(/\s+/) : [];
     // A line of only UNDO/REDO words walks the undo history directly: the
@@ -607,6 +608,7 @@ export class Entry {
   execOp(name) {
     this.error = '';
     this.failure = null;
+    touchLcd();
     this._snapForUndo();
     this.safeRun(() => {
       if (this.buffer.trim().length > 0) this._commitEntry(this.buffer.trim());

@@ -6,7 +6,7 @@ import { MenuBar } from './ui/menubar.js';
 import { AppBar, installHint } from './ui/appbar.js';
 import { Drawers, CATEGORIES, familyCommands, signatureOf } from './ui/drawer.js';
 import { describeError, ERROR_KINDS } from './ui/errors.js';
-import { errorBannerHtml, haltedBannerHtml } from './ui/banner.js';
+import { errorBannerHtml, haltedBannerHtml, lcdHtml } from './ui/banner.js';
 import { InputArea } from './ui/input-area.js';
 import { Autocomplete } from './ui/autocomplete.js';
 import { Palette } from './ui/palette.js';
@@ -34,7 +34,7 @@ import { toLatex } from './rpl/latex.js';
 import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, currentPath,
-  goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, testUserFlag,
+  goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook, setMenuHook } from './rpl/ops.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
@@ -365,18 +365,19 @@ class App {
 
   renderBanner() {
     const el = $('banner');
-    if (this.errorBanner) { el.innerHTML = errorBannerHtml(this.errorBanner); return; }
+    const lcd = lcdHtml(getLcd());
+    if (this.errorBanner) { el.innerHTML = lcd + errorBannerHtml(this.errorBanner); return; }
     const halted = calcState.halted;
     if (halted) {
       const prompt = getPromptMessage();
-      el.innerHTML = haltedBannerHtml({
+      el.innerHTML = lcd + haltedBannerHtml({
         kind: halted.kind,
         prompt: prompt == null ? '' : isString(prompt) ? prompt.value : format(prompt),
         programHtml: suspendedProgramHtml(halted, this.display.displayOpts),
       });
       return;
     }
-    el.innerHTML = '';
+    el.innerHTML = lcd;
   }
 
   dismissError() {
@@ -1097,6 +1098,7 @@ class App {
   // back, as the HP's LAST STACK does. A dialog reached while stepping steps on, as the HP's SST would.
   _continueProgram(...answers) {
     const op = { over: 'SST', into: 'SST↓' }[calcState.halted.stepping] ?? 'CONT';
+    touchLcd();
     this.entry.safeRun(() => { for (const a of answers) this.stack.push(a); lookup(op).fn(this.stack, this.entry); }, op, { keepPartial: true });
   }
 
