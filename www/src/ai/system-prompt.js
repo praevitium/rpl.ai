@@ -130,6 +130,7 @@ CONTAINERS
   ROW+ ROW- COL+ COL- CSWP RSWP RCI RCIJ      row / column manipulation
   SEQ DOLIST DOSUBS STREAM MAP    list combinators (body programs in « »)
   ΣLIST ΔLIST ΠLIST           sum / differences / product over a list
+  ADD                         add two lists pair by pair, or a number to each element ({ 1 2 } { 10 20 } ADD gives { 11 22 }; + appends)
 
 UNITS  (built-in: SI units m kg s A K mol cd Hz N J W Pa V Ω C F with prefixes, as in 5_kJ 1_MHz 3_uA; also cm mm km in ft yd mi nmi  g mg lb oz  ms min h d yr  L mL gal  mph kph  lbf cal Btu Wh hp bar atm psi  °C °F  angles ° r grad arcmin arcs sr, and the rest of the HP 50g catalog (Å ftUS miUS chain c ga t u gf therm inH2O Ci rem P St …) — combine with * / ^, e.g. 9.81_m/s^2.  Units also sit inside algebraics, a compound unit in parentheses: 2_s \`T\` STO \`9.81_(m/s^2)*T^2/2\` EVAL gives 19.62_m)
   →UNIT                      x 1_unit →UNIT — attach a unit (5 1_km →UNIT gives 5_km); literal form 5_km, 9.81_m/s^2

@@ -1736,6 +1736,16 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     'list-distribute: {0 1 2} NEG → {0 -1 -2}');
 }
 
+{
+  const text = (src) => format(runLine(src).peek());
+  assert(text('{ 1 2 3 } { 10 20 30 } ADD') === '{ 11 22 33 }', 'ADD: two lists add pair by pair');
+  assert(text('{ 1 2 3 } 5 ADD') === '{ 6 7 8 }' && text('5 { 1 2 3 } ADD') === '{ 6 7 8 }', 'ADD: a non-list adds to every element, on either level');
+  assert(text('{ { 1 } "a" } { 2 "b" } ADD') === '{ { 1 2 } "ab" }', 'ADD: each pair goes through +, so a list element appends and strings join');
+  assert(runLine('{ } { } ADD').peek().items.length === 0, 'ADD: two empty lists give an empty list');
+  assertThrows(() => runLine('{ 1 2 } { 1 2 3 } ADD'), 'Invalid dimension', 'ADD: lists of different lengths are refused');
+  assertThrows(() => runLine('1 2 ADD'), 'Bad argument type', 'ADD: needs a list on one level');
+}
+
 // ---- `+` on a list is HP50 concatenation, NOT element-wise (AUR §3-7) ----
 //      {1 2 3} 2 +    → {1 2 3 2}        (append)
 //      2 {1 2 3} +    → {2 1 2 3}        (prepend)

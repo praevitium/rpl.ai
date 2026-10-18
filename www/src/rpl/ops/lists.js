@@ -341,6 +341,21 @@ register('ΣLIST', _foldListOp('+', Real(0)), { category: 'Lists / strings', cat
 
 register('ΠLIST', _foldListOp('*', Real(1)), { category: 'Lists / strings', categoryOrder: 20, label: "ΠLIST" });
 
+register('ADD', (s) => {
+  const [a, b] = s.popN(2);
+  if (!isList(a) && !isList(b)) throw new RPLError('Bad argument type');
+  if (isList(a) && isList(b) && a.items.length !== b.items.length) throw new RPLError('Invalid dimension');
+  const at = (v, i) => isList(v) ? v.items[i] : v;
+  const plus = lookup('+');
+  const sums = (isList(a) ? a : b).items.map((_, i) => {
+    s.push(at(a, i));
+    s.push(at(b, i));
+    plus.fn(s);
+    return s.pop();
+  });
+  s.push(RList(sums));
+}, { category: 'Lists / strings', categoryOrder: 21.5, label: "ADD" });
+
 register('SLIST', _foldListOp('+', Real(0)), { category: 'Lists / strings', categoryOrder: 24, label: "SLIST" });
 
 register('PLIST', _foldListOp('*', Real(1)), { category: 'Lists / strings', categoryOrder: 23, label: "PLIST" });
