@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.122 (2026-10-18)
+**Latest release:** v0.6.123 (2026-10-18)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.123 — 2026-10-18
+
+After the phone turned, an open popover placed itself before the app had
+followed the new height, so a `CHOOSE` list sat over its banner's
+Choose, Cancel and Stop keys or shrank to a sliver at the top; popovers
+now place themselves a moment later, against the settled layout. The
+`CHOOSE` choice the AUR calls highlighted now carries a highlight bar
+as well as its check mark, and stays in view through a turn. A letter
+typed on an empty line while the list is open, on the phone's keyboard
+or on the keypad under α, moves the highlight to the next choice that
+starts with it.
 
 ## v0.6.122 — 2026-10-18
 
