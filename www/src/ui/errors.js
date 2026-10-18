@@ -29,6 +29,8 @@ const article = (noun) => (/^[aeiou]/i.test(noun) ? `an ${noun}` : `a ${noun}`);
 
 const sentence = (text) => (/[.!?]$/.test(text) ? text : `${text}.`);
 
+const evaluates = (c) => ['EVAL', '→NUM'].includes(c.command);
+
 export const ERROR_KINDS = Object.freeze({
   raised: {
     match: (p) => p.command === 'DOERR' && !['Too few arguments', 'Bad argument type'].includes(p.core),
@@ -80,11 +82,17 @@ export const ERROR_KINDS = Object.freeze({
     detail: () => 'Division by zero, or a function at its pole. The stack is back as it was.',
     fixes: (c) => [...(c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []), { id: 'explain', label: 'Explain' }],
   },
+  zeroOverZero: {
+    match: (p) => p.core === 'Undefined result' && p.command === '/',
+    title: () => '0/0 has no value.',
+    detail: () => 'Zero divided by zero is undefined, as on the HP. The stack is back as it was.',
+    fixes: (c) => [...(c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []), { id: 'explain', label: 'Explain' }],
+  },
   undefinedResult: {
     match: (p) => p.core === 'Undefined result',
-    title: (c) => `${c.command ?? 'That function'} has no value there.`,
-    detail: () => "The argument is outside the function's domain. The stack is back as it was.",
-    fixes: (c) => [...(c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []), ...(c.command ? [{ id: 'help', label: `${c.command} reference` }] : []), { id: 'explain', label: 'Explain' }],
+    title: (c) => (evaluates(c) ? 'That expression has no value.' : `${c.command ?? 'That function'} has no value there.`),
+    detail: (c) => `${evaluates(c) ? 'Part of it, such as a 0/0, is undefined' : "The argument is outside the function's domain"}. The stack is back as it was.`,
+    fixes: (c) => [...(c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []), ...(c.command && !evaluates(c) ? [{ id: 'help', label: `${c.command} reference` }] : []), { id: 'explain', label: 'Explain' }],
   },
   dimension: {
     match: (p) => p.core === 'Invalid dimension',

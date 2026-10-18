@@ -25,12 +25,24 @@ const COMMANDS = {
 const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMMANDS[n] ?? null, ...extra });
 
 {
+  const zero = describeError('/: Undefined result', ctx({ line: '0 0 /' }));
+  assert(zero.title === '0/0 has no value.' && /Zero divided by zero/.test(zero.detail),
+    'the 0/0 banner names 0/0, where it said / has no value there and spoke of one argument outside a domain');
+  const expr = describeError('EVAL: Undefined result', ctx());
+  assert(expr.title === 'That expression has no value.' && !expr.fixes.some((f) => f.id === 'help'),
+    "an expression's Undefined result is the expression's, not EVAL's, with no EVAL reference to offer");
+  assert(describeError('LNP1: Undefined result', ctx()).title === 'LNP1 has no value there.',
+    'a function outside its domain keeps its own banner');
+}
+
+{
   const samples = {
     raised: 'EVAL: DOERR: Disk full',
     tooFew: '+: Too few arguments',
     badType: 'SIN: Bad argument type: expected real, got string',
     badValue: 'ASIN: Bad argument value',
     infinite: '/: Infinite result',
+    zeroOverZero: '/: Undefined result',
     undefinedResult: 'LNP1: Undefined result',
     dimension: '+: Invalid dimension',
     units: '+: Inconsistent units',
