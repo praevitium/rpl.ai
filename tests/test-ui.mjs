@@ -2335,9 +2335,9 @@ setAngle('RAD');
     && /\.st-val \.value-text\.tagged \.tag-name \{ flex-shrink: 1000000; min-width: 5ch; \}/.test(cssSrc)
     && /\.st-row\.sel \.st-val \.value-text\.tagged, \.sheet-view \.st-val \.value-text\.tagged \{ display: block; \}/.test(cssSrc),
     'tagged levels: a long tag gives way to its value, down to five characters, so a phone shows "Total pri…: 123.456" rather than the tag alone; a selected level and VIEW show both whole');
-  assert(/\} else if \(isNumber\(value\) \|\| isBinaryInteger\(value\) \|\| isUnit\(value\)\) \{[^}]*span\.classList\.add\('num'\);\s*flat\.split\(\/\(\?=E\)\/\)\.forEach\(\(part, i\) => span\.append\(\.\.\.\(i \? \[document\.createElement\('wbr'\)\] : \[\]\), part\)\);/.test(displaySrc)
+  assert(/\} else if \(isNumber\(value\) \|\| isBinaryInteger\(value\) \|\| isUnit\(value\)\) \{[^}]*span\.classList\.add\('num'\);\s*flat\.split\(isUnit\(value\) \? \/\(\?=\[E_\]\)\|\(\?<=\[\*\/\]\)\(\?!\[\^\(\]\*\\\)\)\/ : \/\(\?=E\)\/\)\.forEach\(\(part, i\) => span\.append\(\.\.\.\(i \? \[document\.createElement\('wbr'\)\] : \[\]\), part\)\);/.test(displaySrc)
     && /\.st-val \.value-text\.num \{ white-space: normal; overflow-wrap: anywhere; \}/.test(cssSrc),
-    'numbers on the stack: a real, integer, complex, binary integer or unit too wide for a phone wraps, breaking before its exponent first, where an ellipsis hid -1.23456789012E-100\'s exponent in minimal view at 280 and 320 px');
+    'numbers on the stack: a real, integer, complex, binary integer or unit too wide for a phone wraps, breaking before its exponent first, where an ellipsis hid -1.23456789012E-100\'s exponent in minimal view at 280 and 320 px, and a unit before its _ and after a * or /, where 1_V UBASE broke inside s^3');
   assert(/const MIN_FORMULA_SCALE = 0\.75;/.test(displaySrc)
     && /const \{ svg, width \} = astToSvg\(value\.expr, \{ size: svgSize \}\);\s*cell\.innerHTML = svg;\s*cell\.firstElementChild\.style\.minWidth = `\$\{Math\.round\(width \* MIN_FORMULA_SCALE\)\}px`;/.test(displaySrc),
     'formulas on the stack: a long one shrinks to fit only to three quarters of its size, then fades at its edge and scrolls sideways as a wide matrix does, where (X+Y)^6 expanded shrank to a third at 280 px');

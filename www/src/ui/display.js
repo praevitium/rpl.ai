@@ -616,9 +616,10 @@ export class Display {
         rest.textContent = flat.slice(label.length - 2);
         span.append(name, rest);
       } else if (isNumber(value) || isBinaryInteger(value) || isUnit(value)) {
-        // A number wraps, breaking before an exponent first, where an ellipsis would hide its exponent or last digits.
+        // A number wraps, breaking before an exponent first, where an ellipsis would hide its exponent or last digits;
+        // a unit also breaks before its _ and after a * or / outside parentheses, never inside s^3 or (A*s^3).
         span.classList.add('num');
-        flat.split(/(?=E)/).forEach((part, i) => span.append(...(i ? [document.createElement('wbr')] : []), part));
+        flat.split(isUnit(value) ? /(?=[E_])|(?<=[*/])(?![^(]*\))/ : /(?=E)/).forEach((part, i) => span.append(...(i ? [document.createElement('wbr')] : []), part));
       } else {
         span.textContent = flat;
       }
