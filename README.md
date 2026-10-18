@@ -284,7 +284,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   number to drop it. A tagged value with a long tag shortens the tag, not
   the value: `Total pri…: 123.456`. A number too wide for its line wraps
   rather than lose its exponent or last digits, breaking before the
-  exponent first. The stack fades the same way at its top while levels
+  exponent first. Above level 1, as on the HP, a long list keeps to one
+  line, and so does a matrix of more than three rows, in its typed form;
+  tap the level, or VIEW it, to see it whole. The stack fades the same way at its top while levels
   lie above, under a pill that counts them; tap it to go to the top. Both
   step aside for a selected level, which shows whole with its actions
   whenever it fits, and stays in view when you turn the phone or the

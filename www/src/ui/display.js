@@ -10,7 +10,11 @@ export function escapeHtml(text) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-const rowSig = (flat, svgSize) => `${svgSize}|${calcState.textbookMode ? 1 : 0}|${flat}`;
+const rowSig = (flat, svgSize, oneLine) => `${svgSize}|${calcState.textbookMode ? 1 : 0}|${oneLine ? 1 : 0}|${flat}`;
+// Above level 1, as on the HP, a list keeps to one line, and so does a matrix taller than this, in its typed form.
+const DEEP_GRID_ROWS = 3;
+const gridRows = (v) => isMatrix(v) ? v.rows.length : isVector(v) && v.items.every(isVector) ? v.items.length : 1;
+const oneLine = (value, level) => level > 1 && calcState.textbookMode && (isList(value) || gridRows(value) > DEEP_GRID_ROWS);
 const levelTitle = (level) => `Level ${level}. Click to select, double-click to edit, drag to move.`;
 const fromBottom = (view) => view.scrollHeight - view.scrollTop - view.clientHeight;
 const scrollEdges = (el) => [el.scrollLeft > 1, el.scrollLeft + el.clientWidth < el.scrollWidth - 1];
@@ -403,7 +407,7 @@ export class Display {
       const n = (seen.get(id) ?? 0) + 1;
       seen.set(id, n);
       const flat = formatStackTop(value, this.displayOpts);
-      entries.push({ value, level, key: `${id}.${n}`, flat, sig: rowSig(flat, svgSize) });
+      entries.push({ value, level, key: `${id}.${n}`, flat, sig: rowSig(flat, svgSize, oneLine(value, level)) });
     }
     const frag = this._placeRows(entries, svgSize);
     delete view.dataset.empty;
@@ -574,16 +578,18 @@ export class Display {
     tag.textContent = (mark && key && MARK_TAGS[mark]) || typeName(value);
     const cell = document.createElement('span');
     cell.className = 'st-val';
-    const text = this._fillValue(cell, value, svgSize);
-    this._rowSigs.set(row, rowSig(text, svgSize));
+    const short = !selected && oneLine(value, level);
+    const text = this._fillValue(cell, value, svgSize, short);
+    this._rowSigs.set(row, rowSig(text, svgSize, short));
     row.setAttribute('aria-label', `Level ${level}: ${text}`);
     row.append(lvl, tag, cell);
     if (selected && this.rowActionsHtml) row.insertAdjacentHTML('beforeend', this.rowActionsHtml(level, value));
     return row;
   }
 
-  _fillValue(cell, value, svgSize) {
+  _fillValue(cell, value, svgSize, short = false) {
     const flat = formatStackTop(value, this.displayOpts);
+    if (short) cell.classList.add('one-line');
     if (calcState.textbookMode && isSymbolic(value)) {
       const { svg, width } = astToSvg(value.expr, { size: svgSize });
       cell.innerHTML = svg;
@@ -592,7 +598,7 @@ export class Display {
     } else if (calcState.textbookMode && isList(value)) {
       cell.innerHTML = this._renderTextbookList(value, svgSize);
       cell.classList.add('textbook');
-    } else if (calcState.textbookMode && (isMatrix(value) || isVector(value))) {
+    } else if (calcState.textbookMode && (isMatrix(value) || isVector(value)) && !short) {
       cell.innerHTML = this._renderTextbookGrid(value);
       cell.classList.add('textbook');
     } else {

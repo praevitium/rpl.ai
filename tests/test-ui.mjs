@@ -1836,12 +1836,12 @@ setAngle('RAD');
 
 {
   const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
-  assert(/const rowSig = \(flat, svgSize\) => `\$\{svgSize\}\|\$\{calcState\.textbookMode \? 1 : 0\}\|\$\{flat\}`;/.test(displaySrc)
+  assert(/const rowSig = \(flat, svgSize, oneLine\) => `\$\{svgSize\}\|\$\{calcState\.textbookMode \? 1 : 0\}\|\$\{oneLine \? 1 : 0\}\|\$\{flat\}`;/.test(displaySrc)
     && /_reusable\(row, entry\) \{\s*return row\.className === 'st-row' && row\.dataset\.key === entry\.key && this\.selectedLevel !== entry\.level\s*&& this\._rowSigs\.get\(row\) === entry\.sig;/.test(displaySrc)
     && /const old = view\.dataset\.empty \|\| this\.marks \? \[\] : \[\.\.\.view\.querySelectorAll\(':scope > \.st-row\[data-key\]'\)\];/.test(displaySrc)
-    && /this\._rowSigs\.set\(row, rowSig\(text, svgSize\)\);/.test(displaySrc)
+    && /this\._rowSigs\.set\(row, rowSig\(text, svgSize, short\)\);/.test(displaySrc)
     && /kept\.forEach\(\(row, k\) => this\._relevel\(row, entries\[to \+ k\]\)\);/.test(displaySrc),
-    'stack: a render keeps the rows of levels the change did not reach (same value, text, size and textbook setting, not selected or marked) and only renumbers them, so a key on 50 formula levels takes half the time on a phone');
+    'stack: a render keeps the rows of levels the change did not reach (same value, text, size, textbook setting and one-line form, not selected or marked) and only renumbers them, so a key on 50 formula levels takes half the time on a phone');
 }
 
 {
@@ -2269,4 +2269,11 @@ setAngle('RAD');
   assert(/const MIN_FORMULA_SCALE = 0\.75;/.test(displaySrc)
     && /const \{ svg, width \} = astToSvg\(value\.expr, \{ size: svgSize \}\);\s*cell\.innerHTML = svg;\s*cell\.firstElementChild\.style\.minWidth = `\$\{Math\.round\(width \* MIN_FORMULA_SCALE\)\}px`;/.test(displaySrc),
     'formulas on the stack: a long one shrinks to fit only to three quarters of its size, then fades at its edge and scrolls sideways as a wide matrix does, where (X+Y)^6 expanded shrank to a third at 280 px');
+  assert(/const DEEP_GRID_ROWS = 3;/.test(displaySrc)
+    && /const oneLine = \(value, level\) => level > 1 && calcState\.textbookMode && \(isList\(value\) \|\| gridRows\(value\) > DEEP_GRID_ROWS\);/.test(displaySrc)
+    && /sig: rowSig\(flat, svgSize, oneLine\(value, level\)\)/.test(displaySrc)
+    && /const short = !selected && oneLine\(value, level\);\s*const text = this\._fillValue\(cell, value, svgSize, short\);\s*this\._rowSigs\.set\(row, rowSig\(text, svgSize, short\)\);/.test(displaySrc)
+    && /\(isMatrix\(value\) \|\| isVector\(value\)\) && !short\) \{/.test(displaySrc)
+    && /\.st-val\.one-line \.list-inline \{ flex-wrap: nowrap; \}/.test(cssSrc) && /\.st-val\.one-line \.value-text \{ flex: none; overflow: visible; \}/.test(cssSrc),
+    'deeper levels: above level 1 a list keeps to one line and a matrix of more than 3 rows shows in its typed form, fading at the edge, while level 1, a selected level and VIEW show them whole, where a 30-item list and a 6x3 matrix took 185 px each at 280 px');
 }

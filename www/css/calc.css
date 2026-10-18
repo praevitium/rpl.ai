@@ -466,6 +466,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .st-val .list-inline .lcell-sym { display: inline-flex; align-items: center; }
 .st-val .list-inline .lcell:not(:last-of-type) { margin-right: .5em; }
 .st-val .list-inline .lsep { display: contents; }
+.st-val.one-line .list-inline { flex-wrap: nowrap; }
+.st-val.one-line .value-text { flex: none; overflow: visible; }
 
 
 .banner:empty { display: none; }
