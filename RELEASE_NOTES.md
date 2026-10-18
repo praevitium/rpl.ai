@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.114 (2026-10-17)
+**Latest release:** v0.6.115 (2026-10-17)
 
 ---
 
@@ -20,6 +20,28 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.115 — 2026-10-17
+
+`WAIT` arrives: `x WAIT` pauses a program for x seconds with the display
+it wrote kept on screen, and `0 WAIT` (or `-1 WAIT`, which brings the
+soft keys up in minimal view) waits for a key and returns its HP key
+code, so `"Press 1 to add" 1 DISP 0 WAIT IF 92.1 SAME THEN + ELSE - END`
+reads as it does on the HP. A keypad key answers with its row, column
+and plane (92.1 for 1, 105.2 for left-shift ENTER), a soft key with 11.1
+to 16.1, Enter with 105.1 from the banner's chip, the line's Enter or a
+keyboard's, and a character typed on a phone's or computer's keyboard as
+the keypad key that types it. Keys rpl.ai adds beside the HP's VAR, STO
+and NXT take the codes of the HP's APPS, MODE and TOOL row (HOME 21.1,
+PREV 22.1, RCL 23.1, CST 24.1, CAT 26.1), and the compact keypad's SWAP
+and DROP answer as ▶ and ⌫ do. A timed wait shows how long with a Stop
+key, the status line lights no HALT for a wait, and outside a program
+`WAIT` errors as `PROMPT` does. With the keyboard up, a halt banner's
+keys now drop under a long message instead of squeezing it beside them:
+a PROMPT's four keys left its message 48 px at 280 px, so a long one grew
+the banner to 380 px and pushed the command line under the keyboard. A
+`DISP` line longer than the screen wraps as the command line does, rather
+than scrolling off the right edge unseen.
 
 ## v0.6.114 — 2026-10-17
 
