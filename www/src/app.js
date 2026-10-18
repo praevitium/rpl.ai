@@ -1094,9 +1094,10 @@ class App {
   }
 
   // A dialog's answer belongs to the program's run, so it adds no undo step: UNDO afterwards takes the whole run
-  // back, as the HP's LAST STACK does.
+  // back, as the HP's LAST STACK does. A dialog reached while stepping steps on, as the HP's SST would.
   _continueProgram(...answers) {
-    this.entry.safeRun(() => { for (const a of answers) this.stack.push(a); lookup('CONT').fn(this.stack, this.entry); }, 'CONT', { keepPartial: true });
+    const op = { over: 'SST', into: 'SST↓' }[calcState.halted.stepping] ?? 'CONT';
+    this.entry.safeRun(() => { for (const a of answers) this.stack.push(a); lookup(op).fn(this.stack, this.entry); }, op, { keepPartial: true });
   }
 
   backspace() {

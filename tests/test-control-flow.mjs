@@ -7413,3 +7413,28 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   assertThrows(() => lookup('CHOOSE').fn(new Stack()), /not inside a running program/i, 'CHOOSE on its own, like PROMPT, wants a running program');
   clearAllHalted(); clearPromptMessage();
 }
+
+{
+  resetHome(); clearAllHalted(); clearPromptMessage();
+  const s = new Stack();
+  s.push(parseEntry('« "Pick" { 7 8 } 1 CHOOSE DROP 5 6 »')[0]);
+  lookup('DBUG').fn(s);
+  for (let i = 0; i < 6 && getHalted()?.kind !== 'choose'; i++) lookup('SST').fn(s);
+  assert(getHalted()?.kind === 'choose' && getHalted().stepping === 'over', 'a CHOOSE reached by SST records that the program was being stepped');
+  s.push(Integer(8n));
+  s.push(Integer(1n));
+  lookup('SST').fn(s);
+  assert(getHalted()?.kind === 'step' && s.depth === 1 && s.peek().value === 8n, 'the answer followed by SST runs one instruction (DROP) and halts again, rather than running the program out');
+  lookup('KILL').fn(s);
+  const t = new Stack();
+  t.push(parseEntry('« "Pick" { 7 8 } 1 CHOOSE »')[0]);
+  lookup('DBUG').fn(t);
+  for (let i = 0; i < 6 && getHalted()?.kind !== 'choose'; i++) lookup('SST↓').fn(t);
+  assert(getHalted()?.stepping === 'into', 'a dialog reached by SST↓ remembers stepping into subroutines');
+  lookup('KILL').fn(t);
+  const u = new Stack();
+  u.push(parseEntry('« "Q" "" INPUT »')[0]);
+  lookup('EVAL').fn(u);
+  assert(getHalted()?.kind === 'input' && getHalted().stepping === null, 'a dialog reached at full speed records no stepping');
+  clearAllHalted(); clearPromptMessage();
+}

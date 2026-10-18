@@ -938,11 +938,13 @@ function chooseSpec(list, pos) {
 }
 
 
-// Where the program stopped, recorded just before each yield for the halted view; a dialog's details ride along.
+// Where the program stopped, recorded just before each yield for the halted view; a dialog's details ride along, and
+// whether the program was being stepped, so that its answer steps on rather than running free.
 let _pendingSuspend = null;
 
 function _markSuspend(tokens, index, kind, dialog = null) {
-  _pendingSuspend = { tokens, index, kind, dialog };
+  const stepping = _singleStepMode ? (_stepInto ? 'into' : 'over') : null;
+  _pendingSuspend = { tokens, index, kind, dialog, stepping };
 }
 
 function* _stepYield(tokens, index) {
@@ -960,9 +962,9 @@ export function runSuspendable(gen) {
   try {
     if (!gen.next().done) {
       halted = true;
-      const { tokens = null, index = null, kind = null, dialog = null } = _pendingSuspend ?? {};
+      const { tokens = null, index = null, kind = null, dialog = null, stepping = null } = _pendingSuspend ?? {};
       _pendingSuspend = null;
-      setHalted({ generator: gen, tokens, index, kind, dialog });
+      setHalted({ generator: gen, tokens, index, kind, dialog, stepping });
     }
   } finally {
     if (!halted) {
