@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.119 (2026-10-17)
+**Latest release:** v0.6.120 (2026-10-18)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.120 — 2026-10-18
+
+A History row tapped while the matrix or equation writer was open put its
+line on the command line hidden under the writer, and its Run pushed the
+writer's content instead of running the line; the writer now steps aside
+with the Undo note a program's `INPUT` gives, so the line shows and runs.
+`INPUT`'s `α` option locks alpha on the keypad while the program waits, as
+on the HP, and the lock goes with the answer (a lock you had on already
+stays). Enter on an empty command line is the OK of a `CHOOSE` (it answers
+with the highlighted choice, or 0 when none is highlighted) and of a
+`MSGBOX`, as the HP's ENTER is, so a phone keyboard's Go answers the
+dialog instead of duplicating level 1 behind it; a typed line still runs.
 
 ## v0.6.119 — 2026-10-17
 
