@@ -137,7 +137,7 @@ class App {
 
     this.entry.attach($('cmdline'), {
       onCommit: () => { if (this._answerKey(hpKeyCode('ENTER')) || this._enterAnswersDialog()) return; if (!this._runChord('Enter')) this.commitEntry(); },
-      onType: (text) => this._answerKey(typedKeyCode(text)),
+      onType: (text) => this._answerKey(typedKeyCode(text)) || this._jumpChoice(text),
       onCancel: () => this.runAction('ui.escape'),
       onArrowUpEmpty: () => this._moveChoice(-1) || this._runChord('ArrowUp'),
       onArrowDownEmpty: () => this._moveChoice(1) || this._runChord('ArrowDown'),
@@ -1132,6 +1132,17 @@ class App {
     return true;
   }
 
+  // A letter typed on an empty line while the list is open moves the highlight to the next choice starting with it.
+  _jumpChoice(letter) {
+    const dialog = calcState.halted?.kind === 'choose' ? calcState.halted.dialog : null;
+    if (!dialog?.pos || this.popover.el !== this._chooseList || this.entry.buffer.trim() || !/^\p{L}$/u.test(letter)) return false;
+    const n = dialog.items.length;
+    const starts = (i) => chooseEntry(dialog.items[i]).label.trimStart().toUpperCase().startsWith(letter.toUpperCase());
+    const next = Array.from({ length: n }, (_, k) => (dialog.pos + k) % n).find(starts);
+    if (next !== undefined) this._markChoice(next + 1);
+    return true;
+  }
+
   // The highlighted choice, as the AUR has it, is the row with the check mark and the highlight bar.
   _markChoice(pos) {
     calcState.halted.dialog.pos = pos;
@@ -1796,7 +1807,7 @@ class App {
 
     const layer = this.layer();
     if (layer === 'A' && key.alpha) {
-      this.entry.type(key.alpha);
+      if (!this._jumpChoice(key.alpha)) this.entry.type(key.alpha);
       if (this.shift === 'alpha') this.setShift(null);
       return;
     }

@@ -2033,6 +2033,9 @@ setAngle('RAD');
     && /class="opt\$\{o\.on \? ' on' : ''\}" data-v="\$\{i\}"/.test(appSrc)
     && /this\._place\(this\._point\);\s*this\.el\.querySelector\('\.opt\.on'\)\?\.scrollIntoView\(\{ block: 'nearest' \}\);/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8')),
     'CHOOSE: the highlighted choice, as the AUR has it, carries the highlight bar as well as the check mark, and stays in view when the popover is placed again after a turn');
+  assert(/_jumpChoice\(letter\) \{\s*const dialog = calcState\.halted\?\.kind === 'choose' \? calcState\.halted\.dialog : null;\s*if \(!dialog\?\.pos \|\| this\.popover\.el !== this\._chooseList \|\| this\.entry\.buffer\.trim\(\) \|\| !\/\^\\p\{L\}\$\/u\.test\(letter\)\) return false;[\s\S]{0,300}?const next = Array\.from\(\{ length: n \}, \(_, k\) => \(dialog\.pos \+ k\) % n\)\.find\(starts\);\s*if \(next !== undefined\) this\._markChoice\(next \+ 1\);\s*return true;/.test(appSrc)
+    && /if \(layer === 'A' && key\.alpha\) \{\s*if \(!this\._jumpChoice\(key\.alpha\)\) this\.entry\.type\(key\.alpha\);/.test(appSrc),
+    'CHOOSE: a letter typed on an empty line with the list open, on a keyboard or on the keypad under alpha, moves the highlight to the next choice starting with it, wrapping; with the list put away or a line typed it types as usual');
 }
 
 {
@@ -2092,7 +2095,7 @@ setAngle('RAD');
     && /handleKey\(key\) \{[\s\S]{0,400}?if \(this\._answerKey\(hpKeyCode\(key\.primary, this\.layer\(\)\)\)\) return;/.test(appSrc)
     && /pressSoftKey\(i, forcedLayer = null\) \{\s*if \(this\._answerKey\(hpKeyCode\(`F\$\{i \+ 1\}`, forcedLayer \?\? this\.layer\(\)\)\)\) return;/.test(appSrc)
     && /if \(this\._answerKey\(hpKeyCode\('ENTER'\)\)\) return;\s*this\.entry\.enter\(\);/.test(appSrc)
-    && /onCommit: \(\) => \{ if \(this\._answerKey\(hpKeyCode\('ENTER'\)\) \|\| this\._enterAnswersDialog\(\)\) return; if \(!this\._runChord\('Enter'\)\) this\.commitEntry\(\); \},\s*onType: \(text\) => this\._answerKey\(typedKeyCode\(text\)\),/.test(appSrc)
+    && /onCommit: \(\) => \{ if \(this\._answerKey\(hpKeyCode\('ENTER'\)\) \|\| this\._enterAnswersDialog\(\)\) return; if \(!this\._runChord\('Enter'\)\) this\.commitEntry\(\); \},\s*onType: \(text\) => this\._answerKey\(typedKeyCode\(text\)\) \|\| this\._jumpChoice\(text\),/.test(appSrc)
     && /EditorView\.inputHandler\.of\(\(_view, _from, _to, text\) => onType\?\.\(text\) === true\),/.test(readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8'))
     && /if \(e\.key\.length === 1 && !e\.ctrlKey && !e\.metaKey && !e\.altKey && !inField && this\._answerKey\(typedKeyCode\(e\.key\)\)\) \{ e\.preventDefault\(\); return; \}\s*const binding = findBinding\(chord,/.test(appSrc)
     && /_beginWait\(halted\) \{\s*const \{ seconds, menu \} = halted\.dialog;\s*if \(menu && this\.prefs\.minimal\) this\.setMinimalMenu\(true\);\s*if \(seconds\) this\._waitTimer = setTimeout\(\(\) => \{ if \(calcState\.halted === halted\) this\._continueProgram\(\); \}, seconds \* 1000\);/.test(appSrc)
