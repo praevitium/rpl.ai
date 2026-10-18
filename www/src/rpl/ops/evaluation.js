@@ -2,7 +2,7 @@ import { setApproxMode, getApproxMode, getLastError, clearLastError } from '../s
 import { RPLAbort, RPLError } from '../stack.js';
 import { Str, BinaryInteger, isInteger, isBinaryInteger, isReal, Program, isString, Integer } from '../types.js';
 import { register } from './registry.js';
-import { _driveGen, _evalValueGen, _toCountN, keepsFailureStack, runIft, runIfte, runSuspendable } from './internal.js';
+import { _driveGen, _evalValueGen, _toCountN, _withVMUnary, keepsFailureStack, runIft, runIfte, runSuspendable } from './internal.js';
 
 
 
@@ -27,7 +27,8 @@ register('APPROX', () => { setApproxMode(true); }, { category: 'Evaluation / pro
 register('EXACT',  () => { setApproxMode(false); }, { category: 'Evaluation / program', categoryOrder: 5, label: "EXACT" });
 
 
-register('→NUM', (s) => {
+// An array's entries each become numbers, as on the HP: [ 1/2 `π` ] →NUM gives [ .5 3.14159265359 ].
+register('→NUM', _withVMUnary((s) => {
   const prev = getApproxMode();
   setApproxMode(true);
   try {
@@ -35,7 +36,7 @@ register('→NUM', (s) => {
   } finally {
     setApproxMode(prev);
   }
-}, { category: 'Evaluation / program', categoryOrder: 1, label: "→NUM" });
+}), { category: 'Evaluation / program', categoryOrder: 1, label: "→NUM" });
 
 
 // IFT / IFTE reached by name rather than inside a program body.  The snapshot

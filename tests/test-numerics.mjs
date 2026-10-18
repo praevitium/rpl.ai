@@ -7320,3 +7320,13 @@ function _arrayEq(a, b) {
   assert(big.im === 0 && big.re === -1125899906840000, `^: (1,1)^100 is -2^50 to 12 digits with no stray imaginary part (got ${parts(big)})`);
   assert(Math.abs(top('(1,1) 0.5 ^').re - 1.09868411347) < 1e-11, '^: a fractional power of a complex number still takes the principal root');
 }
+
+{
+  // →NUM gives every entry of an array its number, as the HP does, where it left exact entries alone.
+  const show = (line) => format(runLine(line).peek());
+  assert(show('[ 1 2 ] →NUM') === '[ 1. 2. ]', `→NUM turns an integer vector's entries into reals (got ${show('[ 1 2 ] →NUM')})`);
+  assert(show('[ 1/2 `π` ] →NUM') === '[ 0.5 3.14159265359 ]', `→NUM evaluates a vector's fractions and constants (got ${show('[ 1/2 `π` ] →NUM')})`);
+  assert(show('[[ 1/2 1 ][ 2 3 ]] →NUM') === '[[ 0.5 1. ][ 2. 3. ]]', `→NUM reaches every entry of a matrix (got ${show('[[ 1/2 1 ][ 2 3 ]] →NUM')})`);
+  assert(show('[[ 1 2 ][ 3 4 ]] →NUM DET') === '-2.', 'a determinant of a →NUM matrix is a real');
+  assert(show('[ `X` 2 ] →NUM') === '[ `X` 2. ]', '→NUM leaves an undefined name in an array symbolic');
+}
