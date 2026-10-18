@@ -1981,3 +1981,9 @@ setAngle('RAD');
   assert(/@container work \(max-width: 560px\) \{\s*:root\[data-theme="classic"\] \.ann-g\.opt \{ display: none; \}\s*\/\*[^*]*\*\/\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.ann-g\.opt:not\(\[data-mode\]\):has\(> \.on\) \{ display: flex; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.status-line:has\(\.ann-g\.opt:not\(\[data-mode\]\) > \.on\) \.ann-g > span:not\(\.on\) \{ display: none; \}/.test(css),
     "Classic minimal view: a lit HALT shows at every width under 560 px, where the .opt groups are otherwise dropped, the dim annunciators giving way to it as they do under 360 px (the line overflowed by 13 px at 390 with them shown)");
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/@container work \(max-width: 560px\) \{\s*:root\[data-theme="classic"\] \.ann-g\.opt \{ display: none; \}\s*\/\*[^*]*\*\/\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.ann-g\.opt:not\(\[data-mode\]\):has\(> \.on\) \{ display: flex; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.status-line:has\(\.ann-g\.opt:not\(\[data-mode\]\) > \.on\) \.ann-g > span:not\(\.on\) \{ display: none; \}/.test(css),
+    "Classic minimal view: a lit HALT shows at every width under 560 px, where the .opt groups are otherwise dropped, the dim annunciators giving way to it as they do under 360 px (the line overflowed by 13 px at 390 with them shown)");
+}
