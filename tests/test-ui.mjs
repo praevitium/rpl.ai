@@ -1875,6 +1875,8 @@ setAngle('RAD');
     && /:root:is\(\[data-keyboard\], \[data-short\]\) \.mx-grid-wrap \{ max-height: calc\(var\(--app-height, 100dvh\) \* \.35\); \}/.test(css)
     && !/:root\[data-keyboard\] \.eqw-ins/.test(css),
     'short windows: under 400 px the root carries data-short and the keyboard-up forms apply without a keyboard, so the writers\' hints and the banners\' explanations and icons wait (in a split screen at 360x370 the equation writer\'s hints pushed the soft keys 14 px under the edge; at 280x300 the matrix writer 16 px and a halt banner 5 px, the line\'s Enter with them)');
+  assert(/:root\[data-short\]:not\(\[data-keyboard\]\) \.bn \.bn-t \{ max-height: 2\.7em; overflow-y: auto; \}/.test(css),
+    "short windows: a banner's message keeps to two lines and scrolls where no keyboard hides the app bar (Classic's narrower banner wrapped a long PROMPT to three lines at 280x300 and pushed the soft keys 6 px off)");
 }
 
 {
