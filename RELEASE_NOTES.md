@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.116 (2026-10-17)
+**Latest release:** v0.6.117 (2026-10-17)
 
 ---
 
@@ -20,6 +20,24 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.117 — 2026-10-17
+
+`BEEP` arrives: `n x BEEP` sounds a tone of n hertz for x seconds, with
+the HP's limits (a frequency that doesn't round into 1 to 15000 Hz is
+skipped, a duration over 1200 s is cut to 1200), and under flag -56,
+which silences the error beep, it stays quiet too. Unlike the HP, the
+program runs on while a tone plays; a row of BEEPs still plays as a
+tune, each tone after the last. In a window under 400 px tall without a
+keyboard, Android's split screen or a landscape phone, the writers'
+hints and the full halt and error banners pushed the soft keys and the
+line's Enter past the bottom edge (the equation writer by 14 px at
+360x370, the matrix writer by 16 px and a halt banner by 5 px at
+280x300). Such a window now takes the compact forms the keyboard-up
+layout already had: the hints wait, a tall formula or matrix scrolls,
+and a banner keeps to one row of title and keys. `INFORM`'s fields tell
+a phone keyboard what Enter does, Next on a field and Done on the last,
+as the matrix writer's cells and the command line's Go do.
 
 ## v0.6.116 — 2026-10-17
 
