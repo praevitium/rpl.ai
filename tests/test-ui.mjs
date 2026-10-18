@@ -2133,3 +2133,11 @@ setAngle('RAD');
     && /case 'hist-recall': app\.recallLine\(t\.dataset\.text, 'the line from History'\); this\._reveal\(\); return;\s*case 'hist-run': e\.stopPropagation\(\); app\.recallLine\(t\.dataset\.text, 'the line from History'\); app\.commitEntry\(\); this\._reveal\(\); return;/.test(drawerSrc),
     "History's recall and Run put an open writer aside with its Undo note, as INPUT does, so the line lands where it can be seen and Run runs it rather than committing the writer");
 }
+
+{
+  const indexSrc = readFileSync(new URL('../www/index.html', import.meta.url), 'utf8');
+  const cssSrc = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/const arrived = keyboard && !root\.hasAttribute\('data-keyboard'\);\s*root\.toggleAttribute\('data-keyboard', keyboard\);[\s\S]{0,200}?if \(arrived\) document\.activeElement\.scrollIntoView\(\{ block: 'nearest' \}\);/.test(indexSrc)
+    && /\.dw-body \{[^}]*scroll-padding-block: 10px;/.test(cssSrc),
+    "the field being typed into scrolls into view as the keyboard arrives, with a margin inside a drawer (the Variables drawer's backup name sat under the keyboard)");
+}

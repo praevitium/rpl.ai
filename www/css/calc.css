@@ -347,7 +347,7 @@ button { cursor: pointer; }
 :root[data-view="minimal"] .drawer [data-dw="dock"], :root[data-view="minimal"] .set.dock-set { display: none; }
 @container app (max-width: 979px) { .set.dock-set { display: none; } }
 @container app (min-width: 521px) and (max-width: 979px) { .drawer-grip { display: block; } }
-.dw-body { flex: 1; overflow-y: auto; min-height: 0; overscroll-behavior: contain; display: flex; flex-direction: column; }
+.dw-body { flex: 1; overflow-y: auto; min-height: 0; overscroll-behavior: contain; scroll-padding-block: 10px; display: flex; flex-direction: column; }
 .dw-body > .fill { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .dw-tools { display: flex; gap: 8px; align-items: center; padding: 10px 12px 6px; flex: none; }
 .field { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink3); flex: 1; min-width: 0; }

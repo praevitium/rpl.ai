@@ -38,7 +38,11 @@
     root.style.setProperty('--app-width', `${viewport.width}px`);
     root.style.setProperty('--app-height', `${viewport.height}px`);
     fullHeight = editing() ? Math.max(fullHeight, viewport.height) : viewport.height;
-    root.toggleAttribute('data-keyboard', coarsePointer.matches && editing() && viewport.height < fullHeight * 0.75);
+    const keyboard = coarsePointer.matches && editing() && viewport.height < fullHeight * 0.75;
+    const arrived = keyboard && !root.hasAttribute('data-keyboard');
+    root.toggleAttribute('data-keyboard', keyboard);
+    // The field being typed into keeps its place on screen as the keyboard arrives (a drawer's last row went under it).
+    if (arrived) document.activeElement.scrollIntoView({ block: 'nearest' });
     // A window under 400px (a phone's split screen or landscape) is as tight as one with the keyboard up.
     root.toggleAttribute('data-short', viewport.height < 400);
   };
