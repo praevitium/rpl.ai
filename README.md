@@ -139,7 +139,7 @@ RPL puts the numbers first and the operation last. Each value goes on the
   and slope 1.94, and `5 PREDY` gives 9.85. `SCATRPLOT` plots the points,
   the XCOL column against the YCOL column, and `BARPLOT` and `HISTPLOT` the
   XCOL column. The STAT menu opens on the HP's folders: DATA (Σ+, Σ-, CLΣ),
-  ΣPAR, 1VAR, FIT and SUMS.
+  ΣPAR, 1VAR, PLOT, FIT and SUMS.
   On a phone, the Σ+, Σ- and CLΣ keys say how many points ΣDAT holds.
 - **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
   then gives `25`, and SQUARE appears on the VARS menu. A stored program

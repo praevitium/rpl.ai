@@ -353,11 +353,12 @@ import { assert, assertThrows } from './helpers.mjs';
   const statNames = allOps().filter((n) => lookup(n).category === 'Statistics');
   const inFolders = STAT_GROUPS.flatMap((g) => g.commands);
   const aliases = ['NSIGMA', 'SX', 'SX2', 'SY', 'SY2', 'SXY', 'MAXS', 'MINS'];
-  assert(inFolders.every((n) => statNames.includes(n)) && statNames.every((n) => inFolders.includes(n) || aliases.includes(n)) && new Set(inFolders).size === inFolders.length,
-    `STAT_GROUPS: the folders hold every statistics command once, spelt as the HP spells it (missing ${statNames.filter((n) => !inFolders.includes(n) && !aliases.includes(n))})`);
+  assert(STAT_GROUPS.map((g) => g.id).join(' ') === 'DATA ΣPAR 1VAR PLOT FIT SUMS'
+    && inFolders.every((n) => statNames.includes(n) || ['BARPLOT', 'HISTPLOT', 'SCATRPLOT'].includes(n)) && statNames.every((n) => inFolders.includes(n) || aliases.includes(n)) && new Set(inFolders).size === inFolders.length,
+    `STAT_GROUPS: the folders hold every statistics command once, spelt as the HP spells it, in the HP's folder order, PLOT holding the three statistics plots (missing ${statNames.filter((n) => !inFolders.includes(n) && !aliases.includes(n))})`);
   assert(/STAT: \(\) => STAT_GROUPS\.map\(\(group\) => \(\{ label: group\.id, dir: true, .*?onPress: \(\) => this\._showStatMenu\(group\) \}\)\),/.test(appSrc)
     && /_showStatMenu\(group\) \{\s*const back = \{ label: '◀ BACK', title: 'Back to the Statistics menu', onPress: \(\) => this\._showFamilyMenu\('STAT'\) \};\s*this\.setMenu\(\[back, \.\.\.group\.commands\.map\(\(name\) => this\._commandSlot\(name\)\)\], 'STAT'\);/.test(appSrc),
-    'STAT menu: it opens on the HP\'s folders, DATA, ΣPAR, 1VAR, FIT and SUMS, whose keys run, type and look up their commands as the flat list\'s do, with a BACK key');
+    'STAT menu: it opens on the HP\'s folders, DATA, ΣPAR, 1VAR, PLOT, FIT and SUMS, whose keys run, type and look up their commands as the flat list\'s do, with a BACK key');
   assert(/const SIGMA_DATA_KEYS = \['Σ\+', 'Σ-', 'CLΣ'\];/.test(appSrc) && /onPress: \(\) => \(SIGMA_DATA_KEYS\.includes\(name\) \? this\._runSigmaDataKey\(name\) :/.test(appSrc)
     && /_runSigmaDataKey\(name\) \{\s*const mark = this\.stack\.undoMark\(\);\s*this\.runCommandFromUI\(name, \{ asKey: true \}\);\s*if \(this\.stack\.undoMark\(\) === mark \|\| this\.entry\.error\) return;/.test(appSrc)
     && /this\.undoToast\(rows \? `ΣDAT: \$\{rows\} point\$\{rows === 1 \? '' : 's'\}` : 'ΣDAT is empty'\);/.test(appSrc),

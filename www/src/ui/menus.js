@@ -51,11 +51,12 @@ export const UNIT_GROUPS = Object.freeze([
   { id: 'VISC', title: 'Viscosity', units: ['P', 'cP', 'St', 'cSt'] },
 ]);
 
-// The HP's STAT menu opens on these folders (its PLOT folder's commands aren't here yet); the whole family follows.
+// The HP's STAT menu opens on these folders; the whole family follows.
 export const STAT_GROUPS = Object.freeze([
   { id: 'DATA', title: 'The statistics matrix', commands: ['Σ+', 'Σ-', 'CLΣ', 'RCLΣ', 'STOΣ'] },
   { id: 'ΣPAR', title: 'Columns and fit model', commands: ['XCOL', 'YCOL', 'COLΣ', 'LINFIT', 'LOGFIT', 'EXPFIT', 'PWRFIT', 'BESTFIT'] },
   { id: '1VAR', title: 'One-variable statistics', commands: ['TOT', 'MEAN', 'SDEV', 'MAXΣ', 'MINΣ', 'BINS', 'VAR', 'PSDEV', 'PVAR', 'MEDIAN', 'MAD'] },
+  { id: 'PLOT', title: 'Plots of ΣDAT', commands: ['BARPLOT', 'HISTPLOT', 'SCATRPLOT'] },
   { id: 'FIT', title: 'Fits and predictions', commands: ['ΣLINE', 'LR', 'PREDX', 'PREDY', 'CORR', 'COV', 'PCOV', 'PREDV'] },
   { id: 'SUMS', title: 'Sums', commands: ['ΣX', 'ΣY', 'ΣX2', 'ΣY2', 'ΣXY', 'NΣ'] },
 ]);
