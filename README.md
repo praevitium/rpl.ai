@@ -273,8 +273,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   note goes onto the stack with one Enter. Hold the installed app's icon for shortcuts
   straight to the equation writer, the matrix writer, Variables or command
   search (Android, and Chrome or Edge on a computer).
-  A level too wide for the screen, such as a big matrix, fades at the edge
-  it continues past; drag it sideways to read the rest, or swipe its level
+  A level too wide for the screen, such as a big matrix, or a long formula
+  once it has shrunk to three quarters of its size, fades at the edge it
+  continues past; drag it sideways to read the rest, or swipe its level
   number to drop it. A tagged value with a long tag shortens the tag, not
   the value: `Total pri…: 123.456`. A number too wide for its line wraps
   rather than lose its exponent or last digits, breaking before the

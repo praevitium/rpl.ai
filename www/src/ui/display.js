@@ -49,6 +49,8 @@ function tallLevelScroll(view, v, r) {
 }
 // Every level drawn costs layout on each command, so the stack draws the levels nearest level 1 and more on request.
 const LEVEL_WINDOW = 50;
+// A long formula shrinks to fit only this far; past it, it keeps a readable size and scrolls sideways as a wide matrix does.
+const MIN_FORMULA_SCALE = 0.75;
 
 export function suspendedProgramText(halted, display = DEFAULT_DISPLAY) {
   if (!halted || !Array.isArray(halted.tokens)) return '';
@@ -583,7 +585,9 @@ export class Display {
   _fillValue(cell, value, svgSize) {
     const flat = formatStackTop(value, this.displayOpts);
     if (calcState.textbookMode && isSymbolic(value)) {
-      cell.innerHTML = astToSvg(value.expr, { size: svgSize }).svg;
+      const { svg, width } = astToSvg(value.expr, { size: svgSize });
+      cell.innerHTML = svg;
+      cell.firstElementChild.style.minWidth = `${Math.round(width * MIN_FORMULA_SCALE)}px`;
       cell.classList.add('textbook');
     } else if (calcState.textbookMode && isList(value)) {
       cell.innerHTML = this._renderTextbookList(value, svgSize);
