@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.142 (2026-10-18)
+**Latest release:** v0.6.143 (2026-10-18)
 
 ---
 
@@ -18,6 +18,23 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.143 — 2026-10-18
+
+ERRN gives the HP's error numbers: Undefined result is #304h, Invalid
+dimension #501h and Inconsistent units #B02h, where each gave #0h, the
+number of no error at all, and a string DOERR gives #70000h, as the AUR
+says. The directory errors take the HP's numbers too (Directory not allowed
+#12Ah, Directory not empty #12Bh, Name conflict #13Ch); Name conflict used
+to share #501h with Invalid dimension. DOERR reads the same table, so
+`#501h DOERR` raises Invalid dimension. An error a program raises itself
+with DOERR shows its own message as the banner's title, where it showed
+EVAL: DOERR: in front, and `"" DOERR` no longer says the program ran for 10
+seconds. The LOGIC menu follows the HP's PRG TEST pages, `== ≠ < > ≤ ≥`,
+then AND OR XOR NOT SAME TYPE, then SF CF FS? FC? FS?C FC?C, where the
+ASCII forms `<>`, `<=` and `>=` split `<` from `>` across its first pages.
 
 ---
 
