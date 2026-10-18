@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.140 (2026-10-18)
+**Latest release:** v0.6.141 (2026-10-18)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.141 — 2026-10-18
+
+PROOT, PCOEF, PEVAL, PTAYL and HORNER take the HP's coefficient and root
+arrays, so the AUR's examples work: `[ 2 -3 4 -5 ] PCOEF` gives
+`[ 1 2 -25 -26 120 ]` and `8 PEVAL` then gives 3432, where each said Bad
+argument type. Lists still work, and a result keeps the form it was given.
+IEGCD now leaves the gcd on level 3 and the coefficients below it, as the AUR
+orders them, so `18 24 IEGCD` gives 6 -1 1; it used to leave the gcd on
+level 1. The INTGR menu opens on the HP's ARITH folders, INTEG and MODUL,
+then DIVIS, FACTORS and PROPFRAC, where its 30 keys ran over five pages.
+Opening MODUL says the modulus its commands use, and its MODSTO key says
+the new one, since a phone shows no CAS modes.
 
 ---
 
