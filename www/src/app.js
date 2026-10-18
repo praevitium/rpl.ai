@@ -1119,7 +1119,7 @@ class App {
   showChooseList() {
     const { items, pos } = calcState.halted.dialog;
     const rows = items.map((item, i) => ({ text: chooseEntry(item).label, mark: i + 1 === pos ? icon('check', 'sm') : '', on: i + 1 === pos, run: () => this._answerChoice(i + 1) }));
-    this._chooseList = this._heldKeyMenu(rows, $('banner').querySelector('.bn'), pos ? 'Choose' : 'View', { above: true, onArrow: pos ? (d) => this._moveChoice(d) : null });
+    this._chooseList = this._heldKeyMenu(rows, $('banner').querySelector('.bn'), pos ? 'Choose' : 'View', { above: true, onArrow: pos ? (d) => this._moveChoice(d) : null, className: 'choose' });
     this._revealChoice(true);
   }
 
@@ -1604,13 +1604,14 @@ class App {
   }
 
   // A phone with the keypad hidden has no shift, so a finger held on a key offers what ⇦ and ⇨ would do with it.
-  _heldKeyMenu(options, anchor, label, { above = false, onArrow = null } = {}) {
+  _heldKeyMenu(options, anchor, label, { above = false, onArrow = null, className = '' } = {}) {
     const html = options.map((o, i) => `<button type="button" class="opt${o.on ? ' on' : ''}" data-v="${i}"><span class="ck">${o.mark ?? (i ? '⇨' : '⇦')}</span><b>${escapeHtml(o.text)}</b></button>`).join('');
     return this.popover.open(anchor, html, {
       label,
       keepFocus: true,
       above,
       onArrow,
+      className,
       onClick: (target) => {
         this.popover.close({ restoreFocus: false });
         options[Number(target.dataset.v)].run();

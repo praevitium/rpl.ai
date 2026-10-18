@@ -2004,8 +2004,8 @@ setAngle('RAD');
   assert(pair.label === 'Large' && pair.value.value === 2n && plain.label === 'X' && plain.value.id === 'X' && triple.label === '{ 1 2 3 }' && triple.value.items.length === 3,
     'CHOOSE: a { display result } pair shows the first and returns the second, while any other object, a longer list included, shows as itself and is the result');
   assert(/if \(kind === 'choose'\) return `<div class="bn halt choose" role="status">[\s\S]*?<div class="bn-t">\$\{escapeHtml\(prompt \|\| \(dialog\?\.pos \? 'Choose' : 'View'\)\)\}<\/div><div class="bn-f">\$\{dialog\?\.pos \? key\('choose', 'Choose', [^)]*'menu', 'pri'\) : key\('choose', 'View', [^)]*'menu', 'pri'\)\}\$\{key\('cancel', 'Cancel', [^)]*'x'\)\}\$\{STOP_KEY\}<\/div><\/div>`;/.test(bannerSrc)
-    && /showChooseList\(\) \{\s*const \{ items, pos \} = calcState\.halted\.dialog;[\s\S]{0,400}?mark: i \+ 1 === pos \? icon\('check', 'sm'\) : '', on: i \+ 1 === pos, run: \(\) => this\._answerChoice\(i \+ 1\)[\s\S]{0,200}?this\._chooseList = this\._heldKeyMenu\(rows, \$\('banner'\)\.querySelector\('\.bn'\), pos \? 'Choose' : 'View', \{ above: true, onArrow: pos \? \(d\) => this\._moveChoice\(d\) : null \}\);\s*this\._revealChoice\(true\);/.test(appSrc)
-    && /_heldKeyMenu\(options, anchor, label, \{ above = false, onArrow = null \} = \{\}\) \{[\s\S]{0,400}?keepFocus: true,\s*above,\s*onArrow,/.test(appSrc)
+    && /showChooseList\(\) \{\s*const \{ items, pos \} = calcState\.halted\.dialog;[\s\S]{0,400}?mark: i \+ 1 === pos \? icon\('check', 'sm'\) : '', on: i \+ 1 === pos, run: \(\) => this\._answerChoice\(i \+ 1\)[\s\S]{0,200}?this\._chooseList = this\._heldKeyMenu\(rows, \$\('banner'\)\.querySelector\('\.bn'\), pos \? 'Choose' : 'View', \{ above: true, onArrow: pos \? \(d\) => this\._moveChoice\(d\) : null, className: 'choose' \}\);\s*this\._revealChoice\(true\);/.test(appSrc)
+    && /_heldKeyMenu\(options, anchor, label, \{ above = false, onArrow = null, className = '' \} = \{\}\) \{[\s\S]{0,400}?keepFocus: true,\s*above,\s*onArrow,\s*className,/.test(appSrc)
     && /if \(\(this\._above \|\| top \+ h > vh - margin\) && r\.top - h - 6 >= margin\) top = r\.top - h - 6;/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8'))
     && /if \(act === 'choose' && kind === 'choose'\) \{ this\.showChooseList\(\); return; \}\s*if \(act === 'form' && kind === 'inform'\) \{ this\.showInformSheet\(\); return; \}\s*if \(act === 'cancel' && \(kind === 'choose' \|\| kind === 'inform'\)\) \{ this\._continueProgram\(Integer\(0n\)\); return; \}/.test(appSrc)
     && /if \(this\._dialogHalt && this\._dialogHalt !== halted\) this\._endDialog\(\);\s*if \(halted\?\.dialog && this\._dialogHalt !== halted\) this\._beginDialog\(halted\);/.test(appSrc)
@@ -2036,6 +2036,8 @@ setAngle('RAD');
   assert(/_jumpChoice\(letter\) \{\s*const dialog = calcState\.halted\?\.kind === 'choose' \? calcState\.halted\.dialog : null;\s*if \(!dialog\?\.pos \|\| this\.popover\.el !== this\._chooseList \|\| this\.entry\.buffer\.trim\(\) \|\| !\/\^\\p\{L\}\$\/u\.test\(letter\)\) return false;[\s\S]{0,300}?const next = Array\.from\(\{ length: n \}, \(_, k\) => \(dialog\.pos \+ k\) % n\)\.find\(starts\);\s*if \(next !== undefined\) this\._markChoice\(next \+ 1\);\s*return true;/.test(appSrc)
     && /if \(layer === 'A' && key\.alpha\) \{\s*if \(!this\._jumpChoice\(key\.alpha\)\) this\.entry\.type\(key\.alpha\);/.test(appSrc),
     'CHOOSE: a letter typed on an empty line with the list open, on a keyboard or on the keypad under alpha, moves the highlight to the next choice starting with it, wrapping; with the list put away or a line typed it types as usual');
+  assert(/\.pop\.choose \.opt b \{ white-space: normal; overflow-wrap: anywhere; \}/.test(readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8')),
+    "CHOOSE: a long choice wraps in the list instead of losing its end to an ellipsis (at 280 px a choice was cut)");
 }
 
 {

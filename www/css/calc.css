@@ -717,6 +717,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .pop .opt .ck { grid-column: 1; color: var(--accent); font-weight: 700; display: grid; place-items: center; }
 .pop .opt em { font: normal 10.5px/1 var(--font-mono); color: var(--ink3); white-space: nowrap; }
 .pop .opt em:empty { display: none; }
+/* A program's choices wrap rather than lose their ends: on a phone a cut choice can't be read any other way. */
+.pop.choose .opt b { white-space: normal; overflow-wrap: anywhere; }
 .pop hr { border: 0; border-top: 1px solid var(--line); margin: 5px 4px; }
 .pop .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 2px; }
 .pop .grid.digits { grid-template-columns: repeat(6, minmax(0, 1fr)); }
