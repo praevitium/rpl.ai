@@ -773,6 +773,17 @@ function withEqualAxes(view, width, height) {
   return { xmin: cx - halfX, xmax: cx + halfX, ymin: cy - halfY, ymax: cy + halfY };
 }
 
+// The plot tools sit over the top right corner, where the data's last or highest point lands, so a fitted view
+// leaves them room at the right or at the top, whichever costs less. A function's x range is the user's to keep,
+// so only data widens it, and a function gives up no more than a quarter of the height.
+function clearOfTools(view, { width, height, tools }, dataX) {
+  if (!(width > 0 && height > 0 && tools?.width > 0 && tools?.height > 0)) return view;
+  const right = tools.width / width, top = tools.height / height;
+  if (dataX && right <= top && right < 0.5) return { ...view, xmax: view.xmax + (view.xmax - view.xmin) * right / (1 - right) };
+  if (top < (dataX ? 0.5 : 0.25)) return { ...view, ymax: view.ymax + (view.ymax - view.ymin) * top / (1 - top) };
+  return view;
+}
+
 export function fitViewToTraces(traces, view, opts = {}) {
   const v = view || defaultView();
   const shown = (traces || []).filter((t) => t && t.enabled !== false);
@@ -782,7 +793,7 @@ export function fitViewToTraces(traces, view, opts = {}) {
     const ys = functions.flatMap((t) => sampleTraceForFit(t, v, opts));
     if (!ys.length) return { xmin: v.xmin, xmax: v.xmax, ymin: v.ymin, ymax: v.ymax };
     const b = boundsOfPoints(ys);
-    return { xmin: v.xmin, xmax: v.xmax, ymin: b.ymin, ymax: b.ymax };
+    return clearOfTools({ xmin: v.xmin, xmax: v.xmax, ymin: b.ymin, ymax: b.ymax }, opts, false);
   }
   const data = boundsOfPoints(xy);
   const across = { ...v, xmin: data.xmin, xmax: data.xmax };
@@ -791,7 +802,7 @@ export function fitViewToTraces(traces, view, opts = {}) {
   const fitted = { xmin: data.xmin, xmax: data.xmax, ymin: all.ymin, ymax: all.ymax };
   const hasCurve = shown.some((t) => kindSpec(t)?.equalAxes);
   const hasPointData = shown.some((t) => isDataTrace(t) && !kindSpec(t)?.equalAxes);
-  return hasCurve && !hasPointData ? withEqualAxes(fitted, opts.width, opts.height) : fitted;
+  return hasCurve && !hasPointData ? withEqualAxes(fitted, opts.width, opts.height) : clearOfTools(fitted, opts, true);
 }
 
 export function evalTraceAtX(t, x, opts = {}) {

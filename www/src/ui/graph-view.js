@@ -645,8 +645,18 @@ export class GraphView {
       tRange: { min: -10, max: 10 },
       width: wrap?.clientWidth || 240,
       height: wrap?.clientHeight,
+      tools: this._toolsCorner(wrap),
     });
     this.draw();
+  }
+
+  // The room the tools take from the plot's top right corner, with a small gap.
+  _toolsCorner(wrap) {
+    const tools = this.el.querySelector('.pl-tools');
+    if (!wrap || !tools?.offsetParent) return null;
+    const box = wrap.getBoundingClientRect();
+    const r = tools.getBoundingClientRect();
+    return { width: box.right - r.left + 4, height: r.bottom - box.top + 4 };
   }
 
   _traceColor(t) {

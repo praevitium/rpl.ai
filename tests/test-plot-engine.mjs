@@ -327,6 +327,22 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
     'fitViewToTraces: a function beside a polar curve stays inside the fitted window');
 }
 
+{
+  const points = [{ kind: 'scatter', points: [[1, 2], [5, 10]], enabled: true }];
+  const px = (v, x, w) => (x - v.xmin) / (v.xmax - v.xmin) * w;
+  const py = (v, y, h) => (v.ymax - y) / (v.ymax - v.ymin) * h;
+  const phone = fitViewToTraces(points, defaultView(), { width: 300, height: 300, tools: { width: 56, height: 56 } });
+  assert(px(phone, 5, 300) <= 300 - 56 || py(phone, 10, 300) >= 56,
+    `fitViewToTraces: on a phone the last and highest point stays clear of the corner's tools button (${px(phone, 5, 300).toFixed(1)}, ${py(phone, 10, 300).toFixed(1)})`);
+  const wide = fitViewToTraces(points, defaultView(), { width: 500, height: 300, tools: { width: 44, height: 260 } });
+  assert(px(wide, 5, 500) <= 500 - 44 && wide.ymax < 11,
+    `fitViewToTraces: on a wide screen the last point stays left of the tools column (${px(wide, 5, 500).toFixed(1)} of ${500 - 44} px)`);
+  const view = { xmin: -10, xmax: 10, ymin: -5, ymax: 5 };
+  const fn = fitViewToTraces([{ kind: 'function', expr: 'SIN(X)', enabled: true }], view, { angleOpts: { toRad: (x) => x }, width: 500, height: 300, tools: { width: 44, height: 260 } });
+  assert(fn.xmin === -10 && fn.xmax === 10 && fn.ymax < 1.2, 'fitViewToTraces: a function keeps its x range beside the tools column, and its height');
+  const fnPhone = fitViewToTraces([{ kind: 'function', expr: 'SIN(X)', enabled: true }], view, { angleOpts: { toRad: (x) => x }, width: 300, height: 300, tools: { width: 56, height: 56 } });
+  assert(fnPhone.xmin === -10 && fnPhone.xmax === 10 && py(fnPhone, 1, 300) >= 56, 'fitViewToTraces: on a phone a function\'s peak stays below the tools button, its x range kept');
+}
 
 {
   const polar = samplePolar(parsePlotExpr('1+0*X'), 0, Math.PI, 5, {}, { toRad: x => x });
