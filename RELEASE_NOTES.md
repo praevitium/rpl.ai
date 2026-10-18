@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.136 (2026-10-18)
+**Latest release:** v0.6.137 (2026-10-18)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.137 — 2026-10-18
+
+Above level 1, as on the HP, a long list now keeps to one line and a
+matrix of more than three rows shows on one line in its typed form, both
+fading at the edge; level 1, a selected level and VIEW still show them
+whole. A 30-item list had filled half a phone's stack from level 6.
+CROSS takes two-element vectors as the AUR says, reading [ d1 d2 ] as
+[ d1 d2 0 ]. In CYLIN and SPHERE modes →V2 and →V3 read their numbers as
+polar parts and V→ gives them back, so `2 90 →V2` in DEG is `[ 2 ∠90 ]`;
+it had built `[ 2 90 ]`. Polar literals use degree-exact trig, so
+`[ 1 ∠90 ]` is `[ 0. 1. ]`, not 6.12323399574E-17 for the zero. A
+VECTOR menu after MATRIX holds the HP's MTH VECTR keys, ABS DOT CROSS V→
+→V2 →V3, then RECT, CYLIN and SPHERE, marked while on.
 
 ---
 
