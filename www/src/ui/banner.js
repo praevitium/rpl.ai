@@ -23,8 +23,18 @@ const HALT_TITLES = Object.freeze({
 const key = (bn, label, title, ico, cls = '') => `<button type="button" class="chip${cls ? ` ${cls}` : ''}" data-bn="${bn}" title="${title}" aria-label="${label}">${icon(ico, 'sm')}<span>${label}</span></button>`;
 const STOP_KEY = key('kill', 'Stop', 'KILL: abandon the program', 'stop', 'warn');
 
+// WAIT's pause: a timed one says how long, a key wait asks for a key, its Enter chip the ENTER key (105.1).
+function waitBannerHtml({ seconds }) {
+  if (seconds) {
+    const s = Math.round(seconds * 100) / 100;
+    return `<div class="bn halt wait" role="status"><div class="bn-ico" aria-hidden="true">${icon('clock', 'xs')}</div><div class="bn-t">Waiting ${s} second${s === 1 ? '' : 's'}</div><div class="bn-f">${STOP_KEY}</div></div>`;
+  }
+  return `<div class="bn halt wait" role="status"><div class="bn-ico" aria-hidden="true">${icon('keypad', 'xs')}</div><div class="bn-t">Press a key</div><div class="bn-f">${key('enter', 'Enter', 'The ENTER key (105.1)', 'enter', 'pri')}${STOP_KEY}</div></div>`;
+}
+
 // MSGBOX and INPUT speak to the program's user: the message alone, with no program source or debugger keys.
-export function haltedBannerHtml({ kind, prompt = '', programHtml = '' }) {
+export function haltedBannerHtml({ kind, prompt = '', programHtml = '', dialog = null }) {
+  if (kind === 'wait') return waitBannerHtml(dialog);
   const message = `<div class="bn-t">${escapeHtml(prompt)}</div>`;
   if (kind === 'msgbox') return `<div class="bn halt msgbox" role="status"><div class="bn-ico" aria-hidden="true">${icon('info', 'xs')}</div>${message}<div class="bn-f">${key('cont', 'OK', 'CONT', 'check', 'pri')}</div></div>`;
   if (kind === 'input') return `<div class="bn halt input" role="status"><div class="bn-ico" aria-hidden="true">${icon('edit', 'xs')}</div>${message}<div class="bn-f">${key('ok', 'OK', 'Enter: answer with the command line', 'check', 'pri')}${STOP_KEY}</div></div>`;

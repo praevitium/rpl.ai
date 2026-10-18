@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 483 commands, exact big-integer and rational arithmetic,
+of its command set: 484 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -506,7 +506,11 @@ choices in a popover: a tap answers with the choice (or the second object
 of a `{ display result }` pair) and 1, Cancel with 0. `DISP` writes a
 message on one of seven display lines above the command line and `CLLCD`
 blanks them; the text goes when the program ends or pauses unless `FREEZE`
-keeps it until the next key. A program on the stack can be stepped from
+keeps it until the next key. `WAIT` pauses a program for a number of
+seconds, or with 0 (or -1, which brings the soft keys up in minimal view)
+waits for a key and returns its HP key code: 92.1 for the 1 key, on the
+keypad or typed, 11.1 for the first soft key, 105.1 for Enter or the Enter
+chip on its banner. The display stays through a `WAIT`. A program on the stack can be stepped from
 the start with `DBUG`, or with Debug in its level's ⋯ menu.
 
 ![A halted program](screenshots/debugging.png)
@@ -738,16 +742,17 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 483. The
+**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 484. The
 Catalog and the command reference mark what is available. Not there yet:
 
-- program I/O: INFORM, WAIT, KEY and BEEP. Programs read their arguments
-  from the stack, label results with `→TAG`, ask with `INPUT` and `CHOOSE`,
-  pause with `PROMPT`, report with `MSGBOX` and write on the display with
-  `DISP`.
+- program I/O: INFORM, KEY and BEEP. Programs read their arguments from
+  the stack, label results with `→TAG`, ask with `INPUT` and `CHOOSE`,
+  pause with `PROMPT` or `WAIT`, report with `MSGBOX` and write on the
+  display with `DISP`.
 - PICT and the plot-setup commands (PVIEW, ERASE, AXES, XRNG, YRNG, STEQ and
   the rest)
-- MENU and TMENU, and DEF
+- the HP's numbered menus for MENU and TMENU (a list, a name holding one
+  or 0 work), and DEF
 - parts of the CAS, such as DESOLVE and LDEC (SOLVE, ISOL, LINSOLVE,
   ZEROS, TAYLR, TAYLOR0 and SERIES are here). Symbolic commands such as EXPAND
   and SOLVE refuse an algebraic with units in it, which EVAL and →NUM work

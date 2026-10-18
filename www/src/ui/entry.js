@@ -110,7 +110,7 @@ export class Entry {
   }
 
   attach(parent, { onCommit, onCancel, onArrowUpEmpty, onArrowDownEmpty,
-                   onArrowLeftEmpty, onArrowRightEmpty, onBackspaceEmpty, onDeleteEmpty } = {}) {
+                   onArrowLeftEmpty, onArrowRightEmpty, onBackspaceEmpty, onDeleteEmpty, onType } = {}) {
     if (this._view) return;
     const isEmpty = () => this._view.state.doc.length === 0;
     const delegateIfEmpty = (cb) => () => {
@@ -148,6 +148,8 @@ export class Entry {
           drawSelection(),
           appKeys,
           keymap.of(defaultKeymap),
+          // A program waiting at 0 WAIT takes a typed character as its key.
+          EditorView.inputHandler.of((_view, _from, _to, text) => onType?.(text) === true),
           // A phone's Enter key runs the line here, so it says go rather than new line.
           EditorView.contentAttributes.of({ enterkeyhint: 'go' }),
           // A phone shows a few words of a line, so a long one wraps rather than scrolling out of sight.

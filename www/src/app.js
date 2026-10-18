@@ -1,7 +1,7 @@
 import { Stack } from './rpl/stack.js';
 import { Entry, inProgramEntry } from './ui/entry.js';
 import { Display, escapeHtml, describeValue, suspendedProgramHtml, binaryBaseLabel } from './ui/display.js';
-import { Keypad } from './ui/keyboard.js';
+import { Keypad, hpKeyCode, typedKeyCode } from './ui/keyboard.js';
 import { MenuBar } from './ui/menubar.js';
 import { AppBar, installHint } from './ui/appbar.js';
 import { Drawers, CATEGORIES, familyCommands, signatureOf } from './ui/drawer.js';
@@ -40,7 +40,7 @@ import { lookup, allOps, setGraphicsHook, setMenuHook } from './rpl/ops.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
-  isMatrix, isVector, isReal, isInteger, isRational, isUnit, Symbolic, Integer, Unit, Str,
+  isMatrix, isVector, isReal, isInteger, isRational, isUnit, Symbolic, Integer, Real, Unit, Str,
 } from './rpl/types.js';
 import { parseEntry } from './rpl/parser.js';
 import {
@@ -133,7 +133,8 @@ class App {
     subscribeState(() => this._onStateChange());
 
     this.entry.attach($('cmdline'), {
-      onCommit: () => { if (!this._runChord('Enter')) this.commitEntry(); },
+      onCommit: () => { if (this._answerKey(hpKeyCode('ENTER'))) return; if (!this._runChord('Enter')) this.commitEntry(); },
+      onType: (text) => this._answerKey(typedKeyCode(text)),
       onCancel: () => this.runAction('ui.escape'),
       onArrowUpEmpty: () => this._runChord('ArrowUp'),
       onArrowDownEmpty: () => this._runChord('ArrowDown'),
@@ -197,7 +198,7 @@ class App {
       classic: this.prefs.theme === 'classic',
       minimal: this.prefs.minimal,
       shift: this.shift,
-      halted: calcState.halted ? calcState.halted.kind : null,
+      halted: calcState.halted && calcState.halted.kind !== 'wait' ? calcState.halted.kind : null,
       editing: this.pendingEdit ? this.pendingEdit.level ?? this.pendingEdit.name : null,
     });
   }
@@ -372,6 +373,7 @@ class App {
       const prompt = getPromptMessage();
       el.innerHTML = lcd + haltedBannerHtml({
         kind: halted.kind,
+        dialog: halted.dialog,
         prompt: prompt == null ? '' : isString(prompt) ? prompt.value : format(prompt),
         programHtml: suspendedProgramHtml(halted, this.display.displayOpts),
       });
@@ -396,6 +398,7 @@ class App {
     if (act === 'cont' && kind === 'msgbox') { this._continueProgram(); return; }
     if (act === 'choose' && kind === 'choose') { this.showChooseList(); return; }
     if (act === 'cancel' && kind === 'choose') { this._continueProgram(Integer(0n)); return; }
+    if (act === 'enter' && kind === 'wait') { this._answerKey(hpKeyCode('ENTER')); return; }
     if (act === 'kill' && kind === 'input') this.entry.cancel();
     const op = { cont: 'CONT', sst: 'SST', into: 'SST↓', kill: 'KILL' }[act];
     if (op) { this.entry.execOp(op); return; }
@@ -1054,6 +1057,7 @@ class App {
     }
     if (this.pendingEdit) { this._commitEdit(); return; }
     if (calcState.halted?.kind === 'input') { this._acceptInput(); return; }
+    if (this._answerKey(hpKeyCode('ENTER'))) return;
     this.entry.enter();
     if (this.entry.error) this.entry.focus();
   }
@@ -1061,6 +1065,7 @@ class App {
   // The line that ran the program clears once it ends, after this notification, so a dialog opens a tick later.
   _beginDialog(halted) {
     this._dialogHalt = halted;
+    if (halted.kind === 'wait') { this._beginWait(halted); return; }
     queueMicrotask(() => {
       if (calcState.halted !== halted) return;
       if (halted.kind === 'input') this.entry.recall(halted.dialog.text);
@@ -1068,9 +1073,17 @@ class App {
     });
   }
 
+  // A timed WAIT goes on by itself; -1 WAIT shows the soft keys, the HP's menu, in minimal view.
+  _beginWait(halted) {
+    const { seconds, menu } = halted.dialog;
+    if (menu && this.prefs.minimal) this.setMinimalMenu(true);
+    if (seconds) this._waitTimer = setTimeout(() => { if (calcState.halted === halted) this._continueProgram(); }, seconds * 1000);
+  }
+
   // A CHOOSE's list goes with its dialog: the banner's keys sit on the popover's anchor, where a press leaves it open.
   _endDialog() {
     if (this._dialogHalt.kind === 'choose') this.popover.close({ restoreFocus: false });
+    clearTimeout(this._waitTimer);
     this._dialogHalt = null;
   }
 
@@ -1094,11 +1107,21 @@ class App {
     this._continueProgram(Str(text));
   }
 
+  // A key pressed while a program waits at 0 WAIT answers it with the key's code, as the HP's keyboard would.
+  _answerKey(code) {
+    const halted = calcState.halted;
+    if (halted?.kind !== 'wait' || !halted.dialog.key || code == null) return false;
+    if (this.shift && !this.shiftLocked()) this.setShift(null);
+    this._continueProgram(Real(code));
+    return true;
+  }
+
   // A dialog's answer belongs to the program's run, so it adds no undo step: UNDO afterwards takes the whole run
-  // back, as the HP's LAST STACK does. A dialog reached while stepping steps on, as the HP's SST would.
+  // back, as the HP's LAST STACK does. A dialog reached while stepping steps on, as the HP's SST would. The end of
+  // a WAIT is no key press for the display: its message stays.
   _continueProgram(...answers) {
     const op = { over: 'SST', into: 'SST↓' }[calcState.halted.stepping] ?? 'CONT';
-    touchLcd();
+    if (calcState.halted.kind !== 'wait') touchLcd();
     this.entry.safeRun(() => { for (const a of answers) this.stack.push(a); lookup(op).fn(this.stack, this.entry); }, op, { keepPartial: true });
   }
 
@@ -1283,6 +1306,7 @@ class App {
   }
 
   pressSoftKey(i, forcedLayer = null) {
+    if (this._answerKey(hpKeyCode(`F${i + 1}`, forcedLayer ?? this.layer()))) return;
     this._pressSlot(this.menuView().slots[i], forcedLayer);
   }
 
@@ -1655,6 +1679,7 @@ class App {
   handleKey(key) {
     // A shift key with a letter on it (the compact keypad's) types the letter under α.
     if (MODIFIER_KINDS.has(key.kind) && !(key.alpha && this.layer() === 'A')) { this.setShift(key.kind); return; }
+    if (this._answerKey(hpKeyCode(key.primary, this.layer()))) return;
 
     if (this.selection != null && !this.shift) {
       const sel = { '▲': 'level.up', '▼': 'level.down', ENTER: 'level.edit', '⌫': 'level.drop', ON: 'ui.escape' }[key.primary];
@@ -1917,6 +1942,7 @@ class App {
       if (!fieldSafe && !escapeSafe) return;
     }
 
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !inField && this._answerKey(typedKeyCode(e.key))) { e.preventDefault(); return; }
     const binding = findBinding(chord, inField ? this._keyContexts().filter((c) => c === 'global' || c === 'selection') : this._keyContexts());
     if (binding) {
       if (this.runAction(binding.action, binding.arg) !== false) e.preventDefault();

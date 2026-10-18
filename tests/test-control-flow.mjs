@@ -7482,3 +7482,51 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   assertThrows(() => lookup('FREEZE').fn(new Stack()), /Too few arguments/, 'FREEZE wants its area number');
   touchLcd(); clearAllHalted(); clearPromptMessage();
 }
+
+{
+  resetHome(); clearAllHalted(); clearPromptMessage();
+  const { getLcd, touchLcd } = await import('../www/src/rpl/state.js');
+  const s = new Stack();
+  s.push(parseEntry('« "Working" 1 DISP 2 WAIT "Done" 2 DISP 7 FREEZE »')[0]);
+  lookup('EVAL').fn(s);
+  const halted = getHalted();
+  assert(halted?.kind === 'wait' && halted.dialog.seconds === 2 && !halted.dialog.key && s.depth === 0 && haltedDepth() === 1,
+    'x WAIT pauses the program under its own kind, carrying the seconds, the argument taken off the stack');
+  assert(getLcd()?.lines[0] === 'Working' && getLcd().frozen === false, 'the display stays through a WAIT, where other pauses let an unfrozen display go');
+  lookup('CONT').fn(s);
+  assert(getHalted() === null && s.depth === 0 && getLcd()?.lines[1] === 'Done' && getLcd().frozen === true, 'CONT runs the program on past WAIT with nothing pushed, the display written on further');
+  touchLcd();
+  s.push(parseEntry('5')[0]);
+  s.push(parseEntry('3')[0]);
+  s.push(parseEntry('« "Press 1 to add" 1 DISP 0 WAIT IF 92.1 SAME THEN + ELSE - END »')[0]);
+  lookup('EVAL').fn(s);
+  assert(getHalted()?.kind === 'wait' && getHalted().dialog.key === true && getHalted().dialog.menu === false && getLcd()?.lines[0] === 'Press 1 to add',
+    '0 WAIT waits for a key, its message kept on the display');
+  s.push(parseEntry('92.1')[0]);
+  lookup('CONT').fn(s);
+  assert(getHalted() === null && s.depth === 1 && Number(s.peek().value) === 8 && getLcd() === null,
+    "the key's code pushed, CONT runs on: 92.1, the 1 key, adds as the AUR's example reads, and the display goes with the program's end");
+  s.push(parseEntry('« -1 WAIT »')[0]);
+  lookup('EVAL').fn(s);
+  assert(getHalted()?.dialog.key === true && getHalted().dialog.menu === true, '-1 WAIT waits for a key with the menu shown');
+  s.push(parseEntry('11.1')[0]);
+  lookup('CONT').fn(s);
+  assert(getHalted() === null && s.depth === 2 && Number(s.peek().value) === 11.1, 'a soft key answers with its code, 11.1 for the first');
+  const t = new Stack();
+  t.push(parseEntry('« "2" WAIT »')[0]);
+  assertThrows(() => lookup('EVAL').fn(t), /WAIT: Bad argument type/, 'WAIT wants a number');
+  t.push(parseEntry('« -2 WAIT »')[0]);
+  assertThrows(() => lookup('EVAL').fn(t), /WAIT: Bad argument value/, 'a negative count other than -1 is refused');
+  t.push(parseEntry('« WAIT »')[0]);
+  assertThrows(() => lookup('EVAL').fn(t), /WAIT: Too few arguments/, 'WAIT with nothing says so');
+  assert(getHalted() === null, 'a refused WAIT leaves no halt');
+  assertThrows(() => lookup('WAIT').fn(new Stack()), /not inside a running program/i, 'WAIT on its own, like PROMPT, wants a running program');
+  const u = new Stack();
+  u.push(parseEntry('« 1 WAIT 5 6 »')[0]);
+  lookup('DBUG').fn(u);
+  for (let i = 0; i < 6 && getHalted()?.kind !== 'wait'; i++) lookup('SST').fn(u);
+  assert(getHalted()?.kind === 'wait' && getHalted().stepping === 'over', 'a WAIT reached by SST records that the program was being stepped');
+  lookup('SST').fn(u);
+  assert(getHalted()?.kind === 'step' && u.depth === 1 && Number(u.peek().value) === 5, 'the wait over, SST runs one instruction and halts again');
+  clearAllHalted(); clearPromptMessage(); touchLcd();
+}

@@ -22,7 +22,7 @@ import { computeMenuPage } from '../www/src/ui/paging.js';
 import { headingKey, ALIASES, pushHistory } from '../www/src/ui/command-help.js';
 import { escapeHtml, binaryBaseLabel, displayModeLabel, coordModeGlyph, suspendedProgramText } from '../www/src/ui/display.js';
 import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '../www/src/ui/drawer.js';
-import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName, COMPACT_KEYS, holdToRepeat } from '../www/src/ui/keyboard.js';
+import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName, COMPACT_KEYS, holdToRepeat, hpKeyCode, typedKeyCode } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { unitInfo, UNIT_CATALOG, parseUnitExpr, sameDims } from '../www/src/rpl/units.js';
 import { UNIT_GROUPS, unitConversions, customMenuEntry, customMenuLabel } from '../www/src/ui/menus.js';
@@ -323,7 +323,7 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(/\$\{isUnit\(value\) \? '<button type="button" data-row-act="convert" title="Convert to another unit \(CONVERT\)">Conv<\/button>' : ''\}/.test(appSrc),
     'stack: a selected unit level\'s toolbar has Conv, which opens its Convert to… list as a formula\'s has Plot');
   assert(/items: this\.menuAll, slots: view, page,/.test(appSrc) && /pressMenuSlot\(index\) \{\s*const slot = this\.menuView\(\)\.items\[index\];\s*const page = Math\.floor\(index \/ 6\);/.test(appSrc)
-    && /pressSoftKey\(i, forcedLayer = null\) \{\s*this\._pressSlot\(this\.menuView\(\)\.slots\[i\], forcedLayer\);/.test(appSrc),
+    && /pressSoftKey\(i, forcedLayer = null\) \{\s*if \(this\._answerKey\(hpKeyCode\(`F\$\{i \+ 1\}`, forcedLayer \?\? this\.layer\(\)\)\)\) return;\s*this\._pressSlot\(this\.menuView\(\)\.slots\[i\], forcedLayer\);/.test(appSrc),
     'menus: a key pressed by its place in the whole menu turns the soft keys to its page and presses through the same path as a soft key');
   const menubarAll = readFileSync(new URL('../www/src/ui/menubar.js', import.meta.url), 'utf8');
   assert(/const held = e\.pointerType === 'touch' && e\.target\.closest\('\[data-mb="next"\]:not\(:disabled\), \[data-mb="pick"\]'\);/.test(menubarAll) && /this\._mbTimer = setTimeout\(\(\) => \{\s*this\._mbHeld = true;\s*this\.app\.buzzHold\(\);\s*if \(button\.dataset\.mb === 'next'\) this\.openAll\(button\);\s*else this\.app\.showPreviousMenu\(\);\s*\}, LONG_PRESS_MS\);/.test(menubarAll)
@@ -1955,12 +1955,12 @@ setAngle('RAD');
   const bannerSrc = readFileSync(new URL('../www/src/ui/banner.js', import.meta.url), 'utf8');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/if \(kind === 'input'\) return `<div class="bn halt input" role="status">[\s\S]*?\$\{message\}<div class="bn-f">\$\{key\('ok', 'OK', 'Enter: answer with the command line', 'check', 'pri'\)\}\$\{STOP_KEY\}<\/div><\/div>`;/.test(bannerSrc)
-    && /if \(calcState\.halted\?\.kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*this\.entry\.enter\(\);/.test(appSrc)
-    && /_beginDialog\(halted\) \{\s*this\._dialogHalt = halted;\s*queueMicrotask\(\(\) => \{\s*if \(calcState\.halted !== halted\) return;\s*if \(halted\.kind === 'input'\) this\.entry\.recall\(halted\.dialog\.text\);\s*else this\.showChooseList\(\);/.test(appSrc)
+    && /if \(calcState\.halted\?\.kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(this\._answerKey\(hpKeyCode\('ENTER'\)\)\) return;\s*this\.entry\.enter\(\);/.test(appSrc)
+    && /_beginDialog\(halted\) \{\s*this\._dialogHalt = halted;\s*if \(halted\.kind === 'wait'\) \{ this\._beginWait\(halted\); return; \}\s*queueMicrotask\(\(\) => \{\s*if \(calcState\.halted !== halted\) return;\s*if \(halted\.kind === 'input'\) this\.entry\.recall\(halted\.dialog\.text\);\s*else this\.showChooseList\(\);/.test(appSrc)
     && /_acceptInput\(\) \{[\s\S]{0,200}?if \(dialog\.verify\) \{ try \{ parseEntry\(text\); \} catch \(e\) \{ this\.entry\.flashError\(e\); return; \} \}\s*this\.entry\.cancel\(\);\s*this\._continueProgram\(Str\(text\)\);/.test(appSrc)
-    && /_continueProgram\(\.\.\.answers\) \{\s*const op = \{ over: 'SST', into: 'SST↓' \}\[calcState\.halted\.stepping\] \?\? 'CONT';\s*touchLcd\(\);\s*this\.entry\.safeRun\(\(\) => \{ for \(const a of answers\) this\.stack\.push\(a\); lookup\(op\)\.fn\(this\.stack, this\.entry\); \}, op, \{ keepPartial: true \}\);/.test(appSrc)
+    && /_continueProgram\(\.\.\.answers\) \{\s*const op = \{ over: 'SST', into: 'SST↓' \}\[calcState\.halted\.stepping\] \?\? 'CONT';\s*if \(calcState\.halted\.kind !== 'wait'\) touchLcd\(\);\s*this\.entry\.safeRun\(\(\) => \{ for \(const a of answers\) this\.stack\.push\(a\); lookup\(op\)\.fn\(this\.stack, this\.entry\); \}, op, \{ keepPartial: true \}\);/.test(appSrc)
     && /const stepping = _singleStepMode \? \(_stepInto \? 'into' : 'over'\) : null;\s*_pendingSuspend = \{ tokens, index, kind, dialog, stepping \};/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
-    && /if \(act === 'ok' && kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(act === 'cont' && kind === 'msgbox'\) \{ this\._continueProgram\(\); return; \}[\s\S]{0,300}?if \(act === 'kill' && kind === 'input'\) this\.entry\.cancel\(\);/.test(appSrc),
+    && /if \(act === 'ok' && kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(act === 'cont' && kind === 'msgbox'\) \{ this\._continueProgram\(\); return; \}[\s\S]{0,400}?if \(act === 'kill' && kind === 'input'\) this\.entry\.cancel\(\);/.test(appSrc),
     "INPUT: its banner is the prompt with OK and Stop keys and no program source; the text it offers goes on the command line once the line that ran the program has cleared; Enter or OK hands the line back as a string (with V only once it parses) and goes on without an undo step of its own, as MSGBOX's OK does, so UNDO after the program takes the whole run back rather than stopping between its answers, and a dialog reached while stepping steps on with SST or SST↓ rather than running the program out; Stop clears the line before KILL");
   assert(/if \(id === 'INPUT'\) \{[\s\S]{0,260}?_markSuspend\(toks, i \+ 1, 'input', input\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
     'INPUT halts a running program the way PROMPT does, carrying the text to offer');
@@ -1980,7 +1980,7 @@ setAngle('RAD');
     && /if \(\(this\._above \|\| top \+ h > vh - margin\) && r\.top - h - 6 >= margin\) top = r\.top - h - 6;/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8'))
     && /if \(act === 'choose' && kind === 'choose'\) \{ this\.showChooseList\(\); return; \}\s*if \(act === 'cancel' && kind === 'choose'\) \{ this\._continueProgram\(Integer\(0n\)\); return; \}/.test(appSrc)
     && /if \(this\._dialogHalt && this\._dialogHalt !== halted\) this\._endDialog\(\);\s*if \(halted\?\.dialog && this\._dialogHalt !== halted\) this\._beginDialog\(halted\);/.test(appSrc)
-    && /_endDialog\(\) \{\s*if \(this\._dialogHalt\.kind === 'choose'\) this\.popover\.close\(\{ restoreFocus: false \}\);\s*this\._dialogHalt = null;/.test(appSrc)
+    && /_endDialog\(\) \{\s*if \(this\._dialogHalt\.kind === 'choose'\) this\.popover\.close\(\{ restoreFocus: false \}\);\s*clearTimeout\(this\._waitTimer\);\s*this\._dialogHalt = null;/.test(appSrc)
     && /if \(id === 'CHOOSE'\) \{[\s\S]{0,300}?_markSuspend\(toks, i \+ 1, 'choose', choose\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
     "CHOOSE: its banner is the prompt with Choose, Cancel and Stop keys; the choices open in the held-key popover above the banner (below the chip it covered Stop and the command line), the highlighted one marked, a tap answering with the choice and 1 (0 when none is highlighted), Cancel with 0, and the list goes when its dialog ends (a press on the banner's keys leaves a popover anchored to the banner open); it halts a running program the way INPUT does, carrying its choices");
 }
@@ -2007,8 +2007,34 @@ setAngle('RAD');
   assert(/export function lcdHtml\(lcd\) \{\s*const lines = lcd\?\.lines \?\? \[\];\s*const last = lines\.findLastIndex\(\(line\) => line\);\s*if \(last < 0\) return '';/.test(bannerSrc)
     && /renderBanner\(\) \{\s*const el = \$\('banner'\);\s*const lcd = lcdHtml\(getLcd\(\)\);\s*if \(this\.errorBanner\) \{ el\.innerHTML = lcd \+ errorBannerHtml\(this\.errorBanner\); return; \}/.test(appSrc)
     && /enter\(\) \{\s*this\.error = '';\s*this\.failure = null;\s*touchLcd\(\);/.test(entrySrc) && /execOp\(name\) \{\s*this\.error = '';\s*this\.failure = null;\s*touchLcd\(\);/.test(entrySrc)
-    && /\} finally \{\s*settleLcd\(\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
+    && /\} finally \{\s*if \(!waiting\) settleLcd\(\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
     && /\.lcd \{ margin: 8px 10px 0; padding: 8px 12px;[^}]*font: 13px\/1\.45 var\(--font-mono\);/.test(css) && /:root\[data-keyboard\] \.lcd \{ max-height: calc\(3 \* 1\.45em \+ 18px\); overflow-y: auto; \}/.test(css)
     && /\.lcd > div \{ min-height: 1\.45em; white-space: pre-wrap; overflow-wrap: anywhere; \}/.test(css),
     "DISP: a program's display lines show in the banner slot above the command line, down to the last line with text, in the stack's mono ink (three lines with the keyboard up, a line longer than the screen wrapping as the command line does rather than scrolling off the edge unseen); an unfrozen display goes when the program ends or pauses, a frozen one at the next Enter, command or dialog answer");
+}
+
+{
+  const bannerSrc = readFileSync(new URL('../www/src/ui/banner.js', import.meta.url), 'utf8');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const internalSrc = readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8');
+  assert(hpKeyCode('1') === 92.1 && hpKeyCode('F3') === 13.1 && hpKeyCode('ENTER', 'L') === 105.2 && hpKeyCode('SIN', 'R') === 53.3 && hpKeyCode('7', 'A') === 72.4
+    && hpKeyCode('ON') === 101.1 && hpKeyCode('▲') === 25.1 && hpKeyCode('◀') === 34.1 && hpKeyCode('VARS') === 31.1 && hpKeyCode('NEXT') === 33.1 && hpKeyCode('HOME') === 21.1
+    && hpKeyCode('SWAP') === 36.1 && hpKeyCode('DROP') === 45.1 && hpKeyCode('nope') === null && hpKeyCode('1', 'X') === 92.1
+    && typedKeyCode('1') === 92.1 && typedKeyCode('+') === 95.1 && typedKeyCode('-') === 85.1 && typedKeyCode(' ') === 104.1 && typedKeyCode('a') === 31.4 && typedKeyCode('A') === 31.4 && typedKeyCode('z') === 65.4 && typedKeyCode('ab') === null && typedKeyCode('?') === null,
+    "WAIT key codes: a key's HP 50g row and column with the plane after the point (1 unshifted, 2 left, 3 right, 4 alpha); VARS and NEXT are the HP's VAR and NXT, a key the HP lacks takes a code of its APPS row, the compact keypad's SWAP and DROP are the ▶ and ⌫ keys that do their work on an empty line, and a character typed on a keyboard is the keypad key that types it, a letter's under α");
+  assert(/if \(kind === 'wait'\) return waitBannerHtml\(dialog\);/.test(bannerSrc)
+    && /function waitBannerHtml\(\{ seconds \}\) \{\s*if \(seconds\) \{[\s\S]*?Waiting \$\{s\} second\$\{s === 1 \? '' : 's'\}<\/div><div class="bn-f">\$\{STOP_KEY\}<\/div>/.test(bannerSrc)
+    && /<div class="bn-t">Press a key<\/div><div class="bn-f">\$\{key\('enter', 'Enter', [^}]*?'enter', 'pri'\)\}\$\{STOP_KEY\}/.test(bannerSrc)
+    && /if \(act === 'enter' && kind === 'wait'\) \{ this\._answerKey\(hpKeyCode\('ENTER'\)\); return; \}/.test(appSrc)
+    && /_answerKey\(code\) \{\s*const halted = calcState\.halted;\s*if \(halted\?\.kind !== 'wait' \|\| !halted\.dialog\.key \|\| code == null\) return false;[\s\S]*?this\._continueProgram\(Real\(code\)\);\s*return true;/.test(appSrc)
+    && /handleKey\(key\) \{[\s\S]{0,400}?if \(this\._answerKey\(hpKeyCode\(key\.primary, this\.layer\(\)\)\)\) return;/.test(appSrc)
+    && /pressSoftKey\(i, forcedLayer = null\) \{\s*if \(this\._answerKey\(hpKeyCode\(`F\$\{i \+ 1\}`, forcedLayer \?\? this\.layer\(\)\)\)\) return;/.test(appSrc)
+    && /if \(this\._answerKey\(hpKeyCode\('ENTER'\)\)\) return;\s*this\.entry\.enter\(\);/.test(appSrc)
+    && /onCommit: \(\) => \{ if \(this\._answerKey\(hpKeyCode\('ENTER'\)\)\) return; if \(!this\._runChord\('Enter'\)\) this\.commitEntry\(\); \},\s*onType: \(text\) => this\._answerKey\(typedKeyCode\(text\)\),/.test(appSrc)
+    && /EditorView\.inputHandler\.of\(\(_view, _from, _to, text\) => onType\?\.\(text\) === true\),/.test(readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8'))
+    && /if \(e\.key\.length === 1 && !e\.ctrlKey && !e\.metaKey && !e\.altKey && !inField && this\._answerKey\(typedKeyCode\(e\.key\)\)\) \{ e\.preventDefault\(\); return; \}\s*const binding = findBinding\(chord,/.test(appSrc)
+    && /_beginWait\(halted\) \{\s*const \{ seconds, menu \} = halted\.dialog;\s*if \(menu && this\.prefs\.minimal\) this\.setMinimalMenu\(true\);\s*if \(seconds\) this\._waitTimer = setTimeout\(\(\) => \{ if \(calcState\.halted === halted\) this\._continueProgram\(\); \}, seconds \* 1000\);/.test(appSrc)
+    && /halted: calcState\.halted && calcState\.halted\.kind !== 'wait' \? calcState\.halted\.kind : null,/.test(appSrc)
+    && /if \(id === 'WAIT'\) \{[\s\S]{0,300}?_markSuspend\(toks, i \+ 1, 'wait', wait\);/.test(internalSrc),
+    "WAIT: a timed wait shows how long with a Stop key and goes on by itself after its seconds (no key press for the display, whose message stays); a key wait says Press a key with Enter and Stop, and any keypad key, soft key (F1 to F6), character typed on a keyboard (a hardware keyboard's keydown ahead of its chords, a phone keyboard's text through the editor's input handler) or Enter, from the chip, the line's Enter or the keyboard (ahead of the empty line's Enter chord), answers with its HP code; -1 shows the soft keys in minimal view; the status line lights no HALT for a wait");
 }

@@ -901,6 +901,15 @@ function* evalRange(s, toks, from, to, depth) {
       i++;
       continue;
     }
+    if (id === 'WAIT') {
+      if (s.depth < 1) throw new RPLError('WAIT: Too few arguments');
+      const wait = waitSpec(s.peek());
+      s.pop();
+      _markSuspend(toks, i + 1, 'wait', wait);
+      yield;
+      i++;
+      continue;
+    }
     const runner = id && SUSPENDABLE_OPS.get(id);
     if (runner) {
       yield* runner(s, depth);
@@ -938,6 +947,19 @@ function chooseSpec(list, pos) {
 }
 
 
+// WAIT's argument: seconds to pause for (as many as a timer can take), 0 to wait for a key, or -1 to do so with
+// the menu shown.
+const WAIT_MAX_SECONDS = 2147483;
+
+function waitSpec(v) {
+  if (!(isReal(v) || isInteger(v))) throw new RPLError('WAIT: Bad argument type');
+  const n = Number(v.value);
+  if (n > 0) return { seconds: Math.min(n, WAIT_MAX_SECONDS) };
+  if (n === 0 || n === -1) return { key: true, menu: n === -1 };
+  throw new RPLError('WAIT: Bad argument value');
+}
+
+
 // Where the program stopped, recorded just before each yield for the halted view; a dialog's details ride along, and
 // whether the program was being stepped, so that its answer steps on rather than running free.
 let _pendingSuspend = null;
@@ -956,19 +978,22 @@ function* _stepYield(tokens, index) {
 
 // Runs a program generator until it yields or finishes.  A yield parks the live
 // generator on the halted stack; any other exit unwinds leftover local frames.
-// Either way an unfrozen DISP display goes, as the HP's does when the keyboard is ready.
+// Either way an unfrozen DISP display goes, as the HP's does when the keyboard is ready, except at a WAIT, whose
+// message the pause is for.
 export function runSuspendable(gen) {
   const framesAtEntry = _localFrames.length;
   let halted = false;
+  let waiting = false;
   try {
     if (!gen.next().done) {
       halted = true;
       const { tokens = null, index = null, kind = null, dialog = null, stepping = null } = _pendingSuspend ?? {};
       _pendingSuspend = null;
+      waiting = kind === 'wait';
       setHalted({ generator: gen, tokens, index, kind, dialog, stepping });
     }
   } finally {
-    settleLcd();
+    if (!waiting) settleLcd();
     if (!halted) {
       _pendingSuspend = null;
       while (_localFrames.length > framesAtEntry) _localFrames.pop();

@@ -236,6 +236,40 @@ const PHYSICAL_HINTS = Object.freeze({
 const MODIFIER_KEY_NAMES = Object.freeze({ shiftL: 'Left shift', shiftR: 'Right shift', alpha: 'Alpha' });
 const KEY_NAMES = Object.freeze({ '⌫': 'Backspace', '▲': 'Up', '▼': 'Down', '◀': 'Left', '▶': 'Right' });
 
+// The HP 50g's key codes for WAIT, row and column as rc: rows 4 to 10 match the HP keyboard, VARS, STO and NEXT are
+// its VAR, STO and NXT, the keys rpl.ai adds beside them take the codes of its APPS, MODE and TOOL row, and the
+// compact keypad's SWAP and DROP are the ▶ and ⌫ keys that do their work on an empty line.
+const KEY_CODES = Object.freeze({
+  F1: 11, F2: 12, F3: 13, F4: 14, F5: 15, F6: 16,
+  HOME: 21, PREV: 22, RCL: 23, CST: 24, '▲': 25, CAT: 26,
+  VARS: 31, STO: 32, NEXT: 33, '◀': 34, '▼': 35, '▶': 36,
+  LASTARG: 41, EVAL: 42, '`': 43, UNDO: 44, '⌫': 45,
+  'yˣ': 51, '√x': 52, SIN: 53, COS: 54, TAN: 55,
+  EEX: 61, '+/-': 62, x: 63, '1/x': 64, '÷': 65,
+  'α': 71, 7: 72, 8: 73, 9: 74, '×': 75,
+  '↰': 81, 4: 82, 5: 83, 6: 84, '−': 85,
+  '↱': 91, 1: 92, 2: 93, 3: 94, '+': 95,
+  ON: 101, 0: 102, '.': 103, SPC: 104, ENTER: 105,
+  SWAP: 36, DROP: 45,
+});
+const KEY_PLANES = Object.freeze({ L: 2, R: 3, A: 4 });
+
+export function hpKeyCode(primary, layer = null) {
+  const rc = KEY_CODES[primary];
+  return rc == null ? null : Number(`${rc}.${KEY_PLANES[layer] ?? 1}`);
+}
+
+// A character typed on a keyboard while a program waits for a key: the keypad key that types it, a letter's under α.
+const TYPED_KEYS = Object.freeze({ '+': '+', '-': '−', '*': '×', '/': '÷', '^': 'yˣ', ' ': 'SPC', '.': '.' });
+
+export function typedKeyCode(text) {
+  if (typeof text !== 'string' || text.length !== 1) return null;
+  if (/[0-9]/.test(text)) return hpKeyCode(text);
+  if (TYPED_KEYS[text]) return hpKeyCode(TYPED_KEYS[text]);
+  const key = [...NAV_KEYS, ...ARROW_KEYS, ...MAIN_KEYS].find((k) => k.alpha === text.toLowerCase());
+  return key ? hpKeyCode(key.primary, 'A') : null;
+}
+
 function faceHtml(label) {
   if (FACE_ICONS[label]) return icon(FACE_ICONS[label]);
   if (SUPERSCRIPT_FACES[label]) return SUPERSCRIPT_FACES[label];
