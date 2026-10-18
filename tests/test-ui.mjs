@@ -460,6 +460,12 @@ import { assert, assertThrows } from './helpers.mjs';
   }
   {
     const { MENU_FAMILIES } = await import('../www/src/ui/menus.js');
+    const logic = MENU_FAMILIES.find((f) => f.id === 'LOGIC');
+    assert(logic.keys.join(' ') === '== ≠ < > ≤ ≥ AND OR XOR NOT SAME TYPE SF CF FS? FC? FS?C FC?C' && logic.keys.every((n) => lookup(n)),
+      'LOGIC menu: the HP\'s PRG TEST pages, == ≠ < > ≤ ≥ / AND OR XOR NOT SAME TYPE / SF CF FS? FC? FS?C FC?C, where the ASCII forms <> <= >= split < from > across pages');
+  }
+  {
+    const { MENU_FAMILIES } = await import('../www/src/ui/menus.js');
     const types = MENU_FAMILIES.find((f) => f.id === 'TYPES');
     assert(types.keys.join(' ') === 'OBJ→ →ARRY →LIST →STR →TAG →UNIT C→R R→C NUM CHR DTAG EQ→ TYPE VTYPE' && types.keys.every((n) => lookup(n)),
       'TYPES menu: the HP\'s PRG TYPE keys, OBJ→ →ARRY →LIST →STR →TAG →UNIT / C→R R→C NUM CHR DTAG EQ→ / TYPE VTYPE, so a phone converts between types from one menu');

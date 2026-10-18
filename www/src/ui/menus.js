@@ -9,7 +9,7 @@ export const MENU_FAMILIES = Object.freeze([
   { id: 'TVM', short: 'TVM', title: 'Time value of money', category: 'Finance' },
   { id: 'TRIG', short: 'TRIG', title: 'Trig, log and exp', category: 'Trig / log / exp / hyperbolic' },
   { id: 'CPLX', short: 'CMPLX', title: 'Complex numbers', category: 'Complex / coordinates', keys: ['RE', 'IM', 'C→R', 'R→C', 'ABS', 'ARG', 'SIGN', 'NEG', 'CONJ', 'C→P', 'P→C', 'CMPLX', 'RECT', 'CYLIN', 'SPHERE', 'CMPLX?'] },
-  { id: 'LOGIC', short: 'LOGIC', title: 'Comparisons and logic', category: 'Comparisons / logic' },
+  { id: 'LOGIC', short: 'LOGIC', title: 'Comparisons and logic', category: 'Comparisons / logic', keys: ['==', '≠', '<', '>', '≤', '≥', 'AND', 'OR', 'XOR', 'NOT', 'SAME', 'TYPE', 'SF', 'CF', 'FS?', 'FC?', 'FS?C', 'FC?C'] },
   { id: 'INTEGER', short: 'INTGR', title: 'Integers', category: 'Integer / number theory', keys: ['DIVIS', 'FACTORS', 'PROPFRAC'] },
   { id: 'PROB', short: 'PROB', title: 'Probability', category: 'Probability / combinatorics', keys: ['COMB', 'PERM', '!', 'RAND', 'RDZ', 'UTPC', 'UTPF', 'UTPN', 'UTPT', 'NDIST'] },
   { id: 'POLY', short: 'POLY', title: 'Polynomials', category: 'Polynomials' },
