@@ -10,7 +10,7 @@ export const MENU_FAMILIES = Object.freeze([
   { id: 'TRIG', short: 'TRIG', title: 'Trig, log and exp', category: 'Trig / log / exp / hyperbolic' },
   { id: 'CPLX', short: 'CMPLX', title: 'Complex numbers', category: 'Complex / coordinates', keys: ['RE', 'IM', 'C→R', 'R→C', 'ABS', 'ARG', 'SIGN', 'NEG', 'CONJ', 'C→P', 'P→C', 'CMPLX', 'RECT', 'CYLIN', 'SPHERE', 'CMPLX?'] },
   { id: 'LOGIC', short: 'LOGIC', title: 'Comparisons and logic', category: 'Comparisons / logic' },
-  { id: 'INTEGER', short: 'INTGR', title: 'Integers', category: 'Integer / number theory' },
+  { id: 'INTEGER', short: 'INTGR', title: 'Integers', category: 'Integer / number theory', keys: ['DIVIS', 'FACTORS', 'PROPFRAC'] },
   { id: 'PROB', short: 'PROB', title: 'Probability', category: 'Probability / combinatorics', keys: ['COMB', 'PERM', '!', 'RAND', 'RDZ', 'UTPC', 'UTPF', 'UTPN', 'UTPT', 'NDIST'] },
   { id: 'POLY', short: 'POLY', title: 'Polynomials', category: 'Polynomials' },
   { id: 'CAS', short: 'CAS', title: 'Algebra (CAS)', category: 'CAS / symbolic' },
@@ -68,6 +68,12 @@ export const CAS_GROUPS = Object.freeze([
   { id: 'S.SLV', title: 'Symbolic solver', commands: ['ISOL', 'LINSOLVE', 'SOLVE', 'ZEROS', 'ROOT'] },
   { id: 'TRIG', title: 'Trig rewrites', commands: ['HALFTAN', 'TAN2SC', 'TAN2SC2', 'TCOLLECT', 'TEXPAND', 'TLIN', 'ACOS2S', 'ASIN2C', 'ASIN2T', 'ATAN2S', 'TAN2CS2', 'COSSIN'] },
   { id: 'EXP&LN', title: 'Exponentials and logarithms', commands: ['EXPLN', 'LIN', 'LNCOLLECT', 'TEXPAND', 'TSIMP'] },
+]);
+
+// The HP's ARITH menu's INTEGER and MODULO folders, under its own key faces; DIVIS, FACTORS and PROPFRAC follow them.
+export const INTEGER_GROUPS = Object.freeze([
+  { id: 'INTEG', title: 'Integers', commands: ['EULER', 'IABCUV', 'ICHINREM', 'IDIV2', 'IEGCD', 'IQUOT', 'IREMAINDER', 'ISPRIME?', 'NEXTPRIME', 'PA2B2', 'PREVPRIME'] },
+  { id: 'MODUL', title: 'Modular arithmetic', commands: ['ADDTMOD', 'DIVMOD', 'DIV2MOD', 'EXPANDMOD', 'FACTORMOD', 'GCDMOD', 'INVMOD', 'MOD', 'MODSTO', 'MULTMOD', 'POWMOD', 'SUBTMOD'] },
 ]);
 
 // The HP's TIME menu's ALRM folder: the appointment alarms.
