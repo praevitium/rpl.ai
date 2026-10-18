@@ -5,6 +5,7 @@ import { format } from '../rpl/formatter.js';
 export const MENU_FAMILIES = Object.freeze([
   { id: 'STACK', short: 'STACK', title: 'Stack', category: 'Stack' },
   { id: 'ARITH', short: 'ARITH', title: 'Arithmetic', category: 'Arithmetic' },
+  { id: 'TIME', short: 'TIME', title: 'Time and dates', category: 'Time / dates' },
   { id: 'TRIG', short: 'TRIG', title: 'Trig, log and exp', category: 'Trig / log / exp / hyperbolic' },
   { id: 'CPLX', short: 'CMPLX', title: 'Complex numbers', category: 'Complex / coordinates' },
   { id: 'LOGIC', short: 'LOGIC', title: 'Comparisons and logic', category: 'Comparisons / logic' },
@@ -84,7 +85,7 @@ export const BRANCH_KEYS = Object.freeze([
 
 export const MENU_GROUPS = Object.freeze([
   { title: 'Yours', ids: ['VARS', 'CST', 'MODES'] },
-  { title: 'Math', ids: ['ARITH', 'TRIG', 'CPLX', 'CAS', 'POLY', 'MATRIX', 'STAT', 'INTEGER', 'PROB', 'SPECIAL', 'LOGIC'] },
+  { title: 'Math', ids: ['ARITH', 'TIME', 'TRIG', 'CPLX', 'CAS', 'POLY', 'MATRIX', 'STAT', 'INTEGER', 'PROB', 'SPECIAL', 'LOGIC'] },
   { title: 'Data and programs', ids: ['STACK', 'LIST', 'MEMORY', 'PROGRAM', 'BRCH', 'CONTROL', 'TYPES', 'UNITS', 'FLAGS', 'DISPLAY', 'PLOT', 'SYSTEM', 'MORE'] },
 ]);
 

@@ -16,6 +16,7 @@ import './ops/variables.js';
 import './ops/evaluation.js';
 import './ops/compare.js';
 import './ops/display.js';
+import './ops/time.js';
 import './ops/unit-ops.js';
 import './ops/cas.js';
 import './ops/lists.js';

@@ -695,13 +695,13 @@ function _hmsBinary(fn) {
 }
 
 
-register('→HMS',  _hmsUnary('→HMS',  _hoursToHms), { category: 'Arithmetic', categoryOrder: 34, label: "→HMS" });
+register('→HMS',  _hmsUnary('→HMS',  _hoursToHms), { category: 'Time / dates', categoryOrder: 7, label: "→HMS" });
 
-register('HMS→',  _hmsUnary('HMS→',  _hmsToHours), { category: 'Arithmetic', categoryOrder: 35, label: "HMS→" });
+register('HMS→',  _hmsUnary('HMS→',  _hmsToHours), { category: 'Time / dates', categoryOrder: 8, label: "HMS→" });
 
-register('HMS+',  _hmsBinary((a, b) => a + b), { category: 'Arithmetic', categoryOrder: 32, label: "HMS+" });
+register('HMS+',  _hmsBinary((a, b) => a + b), { category: 'Time / dates', categoryOrder: 9, label: "HMS+" });
 
-register('HMS-',  _hmsBinary((a, b) => a - b), { category: 'Arithmetic', categoryOrder: 33, label: "HMS-" });
+register('HMS-',  _hmsBinary((a, b) => a - b), { category: 'Time / dates', categoryOrder: 10, label: "HMS-" });
 
 
 // HP50 AUR §10.1: a Real/Integer meeting a BinInt is truncated toward zero,

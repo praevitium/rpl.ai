@@ -19,6 +19,7 @@ const FILES = [
   './test-eval.mjs',
   './test-control-flow.mjs',
   './test-binary-int.mjs',
+  './test-time.mjs',
   './test-algebra.mjs',
   './test-entry.mjs',
   './test-matrix.mjs',
