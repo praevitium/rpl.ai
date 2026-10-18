@@ -186,6 +186,11 @@ RPL puts the numbers first and the operation last. Each value goes on the
   runs by name like a built-in. Built-in names such as `SQ` are reserved.
 - **Local variables.** `« 2 3 → a b « a b + a b * » » EVAL` leaves `5` and
   `6`.
+- **Errors in programs.** `« IFERR 1 0 / THEN ERRN END » EVAL` traps the
+  error and gives `#773d`, the HP's `#305h` for Infinite result, as the
+  common errors all carry the HP's numbers; `"Disk full" DOERR` raises a
+  program's own, shown as its banner's title. The LOGIC menu follows the HP's PRG TEST pages:
+  `== ≠ < > ≤ ≥`, then AND OR XOR NOT SAME TYPE, then the flag tests.
 - **User functions.** `'F(X)=X^2+1' DEFINE` stores `« → X 'X^2+1' »` in F, as
   on the HP 50g. Then `'F(3)' EVAL` gives `10`, `'F(A+1)' EVAL` gives
   `(A+1)^2+1`, and `'F(X)'` plots. Any stored program can be called this way
