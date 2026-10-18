@@ -2088,8 +2088,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
     .mb-menu::before { content: ""; position: absolute; inset: 0 -3px 0 -4px; }
   }
   /* Classic's annunciators are 11 px tall; each takes a finger across its row, half the gap to the next. */
-  :root[data-theme="classic"] .ann-g[role="button"] { position: relative; }
-  :root[data-theme="classic"] .ann-g[role="button"]::before { content: ""; position: absolute; inset: -14px -7px; }
+  :root[data-theme="classic"] .ann-g[role="button"], :root[data-theme="classic"] .status-line .ann-m.e { position: relative; }
+  :root[data-theme="classic"] .ann-g[role="button"]::before, :root[data-theme="classic"] .status-line .ann-m.e::before { content: ""; position: absolute; inset: -14px -7px; }
   /* Classic's bezel would take the width those keys need, so there the menu bar runs to the screen's edges. */
   @container app (max-width: 319px) {
     :root[data-theme="classic"] .menubar { margin-inline: -10px; }

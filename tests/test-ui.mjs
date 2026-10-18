@@ -780,8 +780,9 @@ import { assert, assertThrows } from './helpers.mjs';
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/:root\[data-theme="classic"\] \.status-line \.ann-m\.e \{ font: inherit; color: #7a4a00; padding: 0 2px; \}/.test(css)
     && /:root\[data-theme="classic"\]:not\(\[data-view="minimal"\]\) \.status-line \.ann-m\.e \{ height: 11px; min-height: 0; min-width: 0; \}/.test(css)
-    && /@container app \(max-width: 319px\) \{ :root\[data-theme="classic"\] \.status-line:has\(\.ann-m\.e\):has\(\.ann-g\.opt:not\(\[data-mode\]\) > \.on\) \.ann-g\[data-mode="exact"\] \{ display: none; \} \}/.test(css),
-    "renderStatus: Classic's pencil is header-sized in full view and finger-sized in minimal view, and under 320 px with HALT lit too the = annunciator gives way (the Leave button ran 5 px off a 280 px screen)");
+    && /@container app \(max-width: 319px\) \{ :root\[data-theme="classic"\] \.status-line:has\(\.ann-m\.e\):has\(\.ann-g\.opt:not\(\[data-mode\]\) > \.on\) \.ann-g\[data-mode="exact"\] \{ display: none; \} \}/.test(css)
+    && /:root\[data-theme="classic"\] \.ann-g\[role="button"\]::before, :root\[data-theme="classic"\] \.status-line \.ann-m\.e::before \{ content: ""; position: absolute; inset: -14px -7px; \}/.test(css),
+    "renderStatus: Classic's pencil is header-sized in full view and finger-sized in minimal view, and under 320 px with HALT lit too the = annunciator gives way (the Leave button ran 5 px off a 280 px screen); in full view the 11 px pencil takes the finger-sized tap the Classic mode annunciators have");
   d.renderStatus({ shift: 'shiftLLock' });
   assert(statusLine.innerHTML.includes('LOCKED') && statusLine.innerHTML.includes('↰'),
     'renderStatus: a locked shift layer shows its glyph and LOCKED');
@@ -1806,8 +1807,8 @@ setAngle('RAD');
     'soft keys, touch: under 320 px the 29 px menu button takes a finger into the bar\'s padding and the gap beside it (36 px)');
   assert(/@container app \(max-width: 319px\) \{\s*:root\[data-theme="classic"\] \.menubar \{ margin-inline: -10px; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.menubar \{ margin: 0 -14px -14px; \}/.test(touch),
     'soft keys, touch, Classic theme: under 320 px the menu bar runs past the bezel to the screen edges, so its keys are 32 px at 280 too (they were 29, and 27 in minimal view)');
-  assert(/:root\[data-theme="classic"\] \.ann-g\[role="button"\] \{ position: relative; \}\s*:root\[data-theme="classic"\] \.ann-g\[role="button"\]::before \{ content: ""; position: absolute; inset: -14px -7px; \}/.test(touch),
-    'Classic theme, touch: each mode annunciator takes a finger across its LCD row (they were 11 px tall, the only way to change a mode from minimal view\'s status line)');
+  assert(/:root\[data-theme="classic"\] \.ann-g\[role="button"\], :root\[data-theme="classic"\] \.status-line \.ann-m\.e \{ position: relative; \}\s*:root\[data-theme="classic"\] \.ann-g\[role="button"\]::before, :root\[data-theme="classic"\] \.status-line \.ann-m\.e::before \{ content: ""; position: absolute; inset: -14px -7px; \}/.test(touch),
+    'Classic theme, touch: each mode annunciator takes a finger across its LCD row (they were 11 px tall, the only way to change a mode from minimal view\'s status line), and so does the editing pencil in full view');
   const narrowClassic = css.slice(css.indexOf('@container work (max-width: 359px) {\n  :root[data-theme="classic"][data-view="minimal"]'));
   assert(/^@container work \(max-width: 359px\) \{\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.status-line \{ gap: 8px; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.ann-g > span:not\(\.on\) \{ display: none; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.ann-g:not\(:has\(> \.on, > button\)\) \{ display: none; \}/.test(narrowClassic)
     && /:root\[data-theme="classic"\]\[data-view="minimal"\] \.ann-path \{ display: block; min-width: 0; \}/.test(narrowClassic.slice(0, narrowClassic.indexOf('\n}\n'))),
