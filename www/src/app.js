@@ -1118,9 +1118,9 @@ class App {
   // choice and 1, as the HP's OK does, or with 0 when no choice is highlighted and the list is for looking at.
   showChooseList() {
     const { items, pos } = calcState.halted.dialog;
-    const rows = items.map((item, i) => ({ text: chooseEntry(item).label, mark: i + 1 === pos ? icon('check', 'sm') : '', run: () => this._answerChoice(i + 1) }));
+    const rows = items.map((item, i) => ({ text: chooseEntry(item).label, mark: i + 1 === pos ? icon('check', 'sm') : '', on: i + 1 === pos, run: () => this._answerChoice(i + 1) }));
     this._chooseList = this._heldKeyMenu(rows, $('banner').querySelector('.bn'), pos ? 'Choose' : 'View', { above: true, onArrow: pos ? (d) => this._moveChoice(d) : null });
-    this._revealChoice(pos, true);
+    this._revealChoice(true);
   }
 
   // The arrow keys move the highlight through a CHOOSE box's list, as the HP's do, or bring back a list put away.
@@ -1128,14 +1128,22 @@ class App {
     const dialog = calcState.halted?.kind === 'choose' ? calcState.halted.dialog : null;
     if (!dialog?.pos) return false;
     if (!this.popover.el || this.popover.el !== this._chooseList) { this.showChooseList(); return true; }
-    dialog.pos = Math.max(1, Math.min(dialog.items.length, dialog.pos + d));
-    this.popover.el.querySelectorAll('.opt .ck').forEach((ck, i) => { ck.innerHTML = i + 1 === dialog.pos ? icon('check', 'sm') : ''; });
-    this._revealChoice(dialog.pos, false);
+    this._markChoice(Math.max(1, Math.min(dialog.items.length, dialog.pos + d)));
     return true;
   }
 
-  _revealChoice(pos, center) {
-    this.popover.el?.querySelector(`.opt[data-v="${pos - 1}"]`)?.scrollIntoView({ block: center ? 'center' : 'nearest' });
+  // The highlighted choice, as the AUR has it, is the row with the check mark and the highlight bar.
+  _markChoice(pos) {
+    calcState.halted.dialog.pos = pos;
+    this.popover.el.querySelectorAll('.opt').forEach((row, i) => {
+      row.classList.toggle('on', i + 1 === pos);
+      row.querySelector('.ck').innerHTML = i + 1 === pos ? icon('check', 'sm') : '';
+    });
+    this._revealChoice(false);
+  }
+
+  _revealChoice(center) {
+    this.popover.el?.querySelector('.opt.on')?.scrollIntoView({ block: center ? 'center' : 'nearest' });
   }
 
   // INFORM's form in a sheet: a label and an input per field, its help as the placeholder and its initial value as
@@ -1586,7 +1594,7 @@ class App {
 
   // A phone with the keypad hidden has no shift, so a finger held on a key offers what ⇦ and ⇨ would do with it.
   _heldKeyMenu(options, anchor, label, { above = false, onArrow = null } = {}) {
-    const html = options.map((o, i) => `<button type="button" class="opt" data-v="${i}"><span class="ck">${o.mark ?? (i ? '⇨' : '⇦')}</span><b>${escapeHtml(o.text)}</b></button>`).join('');
+    const html = options.map((o, i) => `<button type="button" class="opt${o.on ? ' on' : ''}" data-v="${i}"><span class="ck">${o.mark ?? (i ? '⇨' : '⇦')}</span><b>${escapeHtml(o.text)}</b></button>`).join('');
     return this.popover.open(anchor, html, {
       label,
       keepFocus: true,

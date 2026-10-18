@@ -12,7 +12,11 @@ export class Popover {
     this._point = null;
     // A phone keyboard or a turn resizes the window under an open popover. The app's height follows on the visual
     // viewport's resize, after this one, so the popover places itself a frame later, against the settled layout.
-    this._onResize = () => requestAnimationFrame(() => { if (this.el) this._place(this._point); });
+    this._onResize = () => requestAnimationFrame(() => {
+      if (!this.el) return;
+      this._place(this._point);
+      this.el.querySelector('.opt.on')?.scrollIntoView({ block: 'nearest' });
+    });
     this._onDocDown = (e) => {
       if (!this.el) return;
       if (this.el.contains(e.target) || this.anchor?.contains?.(e.target)) return;
