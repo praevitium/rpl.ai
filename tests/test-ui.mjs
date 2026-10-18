@@ -2008,6 +2008,7 @@ setAngle('RAD');
     && /renderBanner\(\) \{\s*const el = \$\('banner'\);\s*const lcd = lcdHtml\(getLcd\(\)\);\s*if \(this\.errorBanner\) \{ el\.innerHTML = lcd \+ errorBannerHtml\(this\.errorBanner\); return; \}/.test(appSrc)
     && /enter\(\) \{\s*this\.error = '';\s*this\.failure = null;\s*touchLcd\(\);/.test(entrySrc) && /execOp\(name\) \{\s*this\.error = '';\s*this\.failure = null;\s*touchLcd\(\);/.test(entrySrc)
     && /\} finally \{\s*settleLcd\(\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
-    && /\.lcd \{ margin: 8px 10px 0; padding: 8px 12px;[^}]*font: 13px\/1\.45 var\(--font-mono\);/.test(css) && /:root\[data-keyboard\] \.lcd \{ max-height: calc\(3 \* 1\.45em \+ 18px\); overflow-y: auto; \}/.test(css),
-    "DISP: a program's display lines show in the banner slot above the command line, down to the last line with text, in the stack's mono ink (three lines with the keyboard up); an unfrozen display goes when the program ends or pauses, a frozen one at the next Enter, command or dialog answer");
+    && /\.lcd \{ margin: 8px 10px 0; padding: 8px 12px;[^}]*font: 13px\/1\.45 var\(--font-mono\);/.test(css) && /:root\[data-keyboard\] \.lcd \{ max-height: calc\(3 \* 1\.45em \+ 18px\); overflow-y: auto; \}/.test(css)
+    && /\.lcd > div \{ min-height: 1\.45em; white-space: pre-wrap; overflow-wrap: anywhere; \}/.test(css),
+    "DISP: a program's display lines show in the banner slot above the command line, down to the last line with text, in the stack's mono ink (three lines with the keyboard up, a line longer than the screen wrapping as the command line does rather than scrolling off the edge unseen); an unfrozen display goes when the program ends or pauses, a frozen one at the next Enter, command or dialog answer");
 }

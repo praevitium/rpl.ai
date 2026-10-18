@@ -464,8 +464,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 
 .banner:empty { display: none; }
 /* The seven-line display a program writes on with DISP, over the stack as on the HP. */
-.lcd { margin: 8px 10px 0; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--well); font: 13px/1.45 var(--font-mono); color: var(--stack-ink); overflow-x: auto; }
-.lcd > div { min-height: 1.45em; white-space: pre; }
+.lcd { margin: 8px 10px 0; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--well); font: 13px/1.45 var(--font-mono); color: var(--stack-ink); }
+.lcd > div { min-height: 1.45em; white-space: pre-wrap; overflow-wrap: anywhere; }
 :root[data-theme="classic"] .lcd { background: #b9c7a9; border-color: transparent; color: var(--lcd-ink); }
 :root[data-keyboard] .lcd { max-height: calc(3 * 1.45em + 18px); overflow-y: auto; }
 .bn { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 4px 10px; align-items: start; margin: 8px 10px 0; padding: 10px 10px 10px 12px; border-radius: 12px; border: 1px solid color-mix(in oklab, var(--danger) 45%, transparent); background: color-mix(in oklab, var(--danger) 9%, var(--panel)); animation: bn-in .22s var(--ease); }
