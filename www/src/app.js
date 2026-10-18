@@ -982,6 +982,12 @@ class App {
     else this._writer().focus();
   }
 
+  // A line handed to the command line, from History say, goes where INPUT's text does: a writer steps aside, Undo at hand.
+  recallLine(text, why) {
+    if (this.inputMode !== 'rpl') this._closeWriter((mode) => `Put the ${mode} aside for ${why}`);
+    this.entry.recall(text);
+  }
+
   cancelWriter() {
     if (this._writer().collapseSelection?.()) return;
     this._closeWriter((mode) => `Discarded the ${mode}`);

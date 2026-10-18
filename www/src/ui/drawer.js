@@ -641,8 +641,8 @@ export class Drawers {
       case 'ref-insert': entry.typeToken(`${this.cat.ref} `); this._reveal(); return;
       case 'ref-ask': app.askAssistant(`Explain the ${this.cat.ref} command: what it takes from the stack, what it returns, and a short example I can try.`); return;
       case 'char': this._insertWithMore(t.dataset.text, () => this.insertText(t.dataset.text), `[data-dw="char"][data-text="${CSS.escape(t.dataset.text)}"]`); return;
-      case 'hist-recall': entry.recall(t.dataset.text); entry.focus(); this._reveal(); return;
-      case 'hist-run': e.stopPropagation(); entry.recall(t.dataset.text); app.commitEntry(); this._reveal(); return;
+      case 'hist-recall': app.recallLine(t.dataset.text, 'the line from History'); this._reveal(); return;
+      case 'hist-run': e.stopPropagation(); app.recallLine(t.dataset.text, 'the line from History'); app.commitEntry(); this._reveal(); return;
       case 'hist-delete': e.stopPropagation(); entry.removeHistory(t.dataset.text); this._renderHistoryList(); return;
       case 'errors-clear': entry.clearErrorLog(); this._renderHistoryList(); return;
       case 'err-explain': e.stopPropagation(); app.askAssistant(`I got this error on the calculator: ${t.dataset.text}. What went wrong and how do I fix it?`); return;

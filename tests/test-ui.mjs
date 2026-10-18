@@ -2113,3 +2113,11 @@ setAngle('RAD');
   assert(/if \(halted\?\.kind === 'prompt' && this\._promptHalt !== halted\) \{\s*this\._promptHalt = halted;\s*if \(this\.inputMode !== 'rpl'\) this\._closeWriter\(\(mode\) => `Put the \$\{mode\} aside for the program's PROMPT`\);/.test(appSrc),
     "PROMPT: a program's prompt wants the command line, so an open writer steps aside with its Undo note, as it does for INPUT");
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  assert(/recallLine\(text, why\) \{\s*if \(this\.inputMode !== 'rpl'\) this\._closeWriter\(\(mode\) => `Put the \$\{mode\} aside for \$\{why\}`\);\s*this\.entry\.recall\(text\);/.test(appSrc)
+    && /case 'hist-recall': app\.recallLine\(t\.dataset\.text, 'the line from History'\); this\._reveal\(\); return;\s*case 'hist-run': e\.stopPropagation\(\); app\.recallLine\(t\.dataset\.text, 'the line from History'\); app\.commitEntry\(\); this\._reveal\(\); return;/.test(drawerSrc),
+    "History's recall and Run put an open writer aside with its Undo note, as INPUT does, so the line lands where it can be seen and Run runs it rather than committing the writer");
+}
