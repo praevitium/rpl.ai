@@ -767,6 +767,9 @@ class App {
       case 'eval': runOn('EVAL'); return;
       case 'debug': runOn('DBUG'); return;
       case 'num': runOn('→NUM'); return;
+      case 'inv': runOn('INV'); return;
+      case 'det': runOn('DET'); return;
+      case 'trn': runOn('TRN'); return;
       case 'convert': this._convertMenu(level, anchor); return;
       case 'plot': this.clearSelection(); this.plotExpression(value.expr); return;
       case 'copy': {
@@ -828,6 +831,8 @@ class App {
         isProgram(value) ? item('debug', 'step', 'Debug step by step (DBUG)') : '',
         item('num', 'chr', 'To a number (→NUM)'),
         isUnit(value) ? item('convert', 'chr', 'Convert to…') : '',
+        isMatrix(value) && value.rows.length === value.rows[0]?.length ? item('inv', 'chr', 'Inverse (INV)') + item('det', 'chr', 'Determinant (DET)') : '',
+        isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') : '',
         isSymbolic(value) ? item('plot', 'plot', 'Plot it') : '',
         item('ask', 'spark', 'Ask the assistant about it'),
       ],

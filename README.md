@@ -163,7 +163,8 @@ RPL puts the numbers first and the operation last. Each value goes on the
 - **Matrices.** `[[ 2 1 ][ 1 3 ]] DET` gives 5, `INV`, `EGV` and `LU` work
   on it, and `→NUM` gives every entry its number. The MATRIX menu opens as
   the HP's MTH MATR does, on MAKE, NORM, FACTR, COL and ROW folders and
-  then LSQ.
+  then LSQ. A matrix level's ⋯ menu has Inverse and Determinant when it is
+  square, and Transpose.
 - **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
   then gives `25`, and SQUARE appears on the VARS menu. A stored program
   runs by name like a built-in. Built-in names such as `SQ` are reserved.
