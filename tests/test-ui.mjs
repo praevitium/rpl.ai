@@ -357,10 +357,10 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(/STAT: \(\) => STAT_GROUPS\.map\(\(group\) => \(\{ label: group\.id, dir: true, .*?onPress: \(\) => this\._showStatMenu\(group\) \}\)\),/.test(appSrc)
     && /_showStatMenu\(group\) \{\s*const back = \{ label: '◀ BACK', title: 'Back to the Statistics menu', onPress: \(\) => this\._showFamilyMenu\('STAT'\) \};\s*this\.setMenu\(\[back, \.\.\.group\.commands\.map\(\(name\) => this\._commandSlot\(name\)\)\], 'STAT'\);/.test(appSrc),
     'STAT menu: it opens on the HP\'s folders, DATA, ΣPAR, 1VAR, PLOT, FIT and SUMS, whose keys run, type and look up their commands as the flat list\'s do, with a BACK key');
-  assert(/const SIGMA_DATA_KEYS = \['Σ\+', 'Σ-', 'CLΣ'\];/.test(appSrc) && /onPress: \(\) => \(SIGMA_DATA_KEYS\.includes\(name\) \? this\._runSigmaDataKey\(name\) :/.test(appSrc)
-    && /_runSigmaDataKey\(name\) \{\s*const mark = this\.stack\.undoMark\(\);\s*this\.runCommandFromUI\(name, \{ asKey: true \}\);\s*if \(this\.stack\.undoMark\(\) === mark \|\| this\.entry\.error\) return;/.test(appSrc)
-    && /this\.undoToast\(rows \? `ΣDAT: \$\{rows\} point\$\{rows === 1 \? '' : 's'\}` : 'ΣDAT is empty'\);/.test(appSrc),
-    'STAT menu: a Σ+, Σ- or CLΣ key that ran says how many points ΣDAT holds now, with Undo, since the stack alone shows nothing; typed into a program or failing, it says nothing');
+  assert(/const SIGMA_DATA_KEYS = \['Σ\+', 'Σ-', 'CLΣ', 'STOΣ'\];/.test(appSrc) && /onPress: \(\) => \(SIGMA_DATA_KEYS\.includes\(name\) \? this\._runSigmaDataKey\(name\) :/.test(appSrc)
+    && /_runSigmaDataKey\(name\) \{\s*const mark = this\.stack\.undoMark\(\);\s*this\.runCommandFromUI\(name, \{ asKey: true \}\);\s*if \(this\.stack\.undoMark\(\) === mark \|\| this\.entry\.error\) return;\s*this\.undoToast\(sigmaDataNote\(varRecall\('ΣDAT'\)\)\);/.test(appSrc)
+    && /return points \? `ΣDAT: \$\{points\} point\$\{points === 1 \? '' : 's'\}` : 'ΣDAT is empty';/.test(appSrc),
+    'STAT menu: a Σ+, Σ-, CLΣ or STOΣ key that ran says how many points ΣDAT holds now, with Undo, since the stack alone shows nothing; typed into a program or failing, it says nothing');
   assert(/@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}\s*\/\*[^*]*\*\/\s*\.ann-status:has\(\.ann-m\.e, \.ann-m\.halt\) \{ padding-left: 2px; padding-right: 2px; \}/.test(gridCss),
     'minimal view: with a level being edited, the status line gives up its side padding under 320 px, so the amber pencil no longer pushes the leave button 2 px off a 280 px screen');
   assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),

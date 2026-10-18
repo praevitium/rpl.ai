@@ -65,7 +65,13 @@ const APP_SHORTCUTS = new Map([
 ]);
 
 const TVM_VARIABLES = ['N', 'I%YR', 'PV', 'PMT', 'FV', 'PYR'];
-const SIGMA_DATA_KEYS = ['Σ+', 'Σ-', 'CLΣ'];
+const SIGMA_DATA_KEYS = ['Σ+', 'Σ-', 'CLΣ', 'STOΣ'];
+
+function sigmaDataNote(data) {
+  if (data !== undefined && !isMatrix(data) && !isVector(data)) return `ΣDAT holds ${describeValue(data).text}, not data`;
+  const points = isMatrix(data) ? data.rows.length : data?.items.length ?? 0;
+  return points ? `ΣDAT: ${points} point${points === 1 ? '' : 's'}` : 'ΣDAT is empty';
+}
 
 class App {
   constructor() {
@@ -1497,9 +1503,7 @@ class App {
     const mark = this.stack.undoMark();
     this.runCommandFromUI(name, { asKey: true });
     if (this.stack.undoMark() === mark || this.entry.error) return;
-    const data = varRecall('ΣDAT');
-    const rows = isMatrix(data) ? data.rows.length : 0;
-    this.undoToast(rows ? `ΣDAT: ${rows} point${rows === 1 ? '' : 's'}` : 'ΣDAT is empty');
+    this.undoToast(sigmaDataNote(varRecall('ΣDAT')));
   }
 
   _showStatMenu(group) {
