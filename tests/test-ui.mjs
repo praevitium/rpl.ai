@@ -1969,7 +1969,7 @@ setAngle('RAD');
   assert(/if \(kind === 'choose'\) return `<div class="bn halt choose" role="status">[\s\S]*?<div class="bn-t">\$\{escapeHtml\(prompt \|\| 'Choose'\)\}<\/div><div class="bn-f">\$\{key\('choose', 'Choose', [^)]*'menu', 'pri'\)\}\$\{key\('cancel', 'Cancel', [^)]*'x'\)\}\$\{STOP_KEY\}<\/div><\/div>`;/.test(bannerSrc)
     && /showChooseList\(\) \{\s*const \{ items, pos \} = calcState\.halted\.dialog;[\s\S]{0,400}?mark: i \+ 1 === pos \? icon\('check', 'sm'\) : '', run: \(\) => \(pos \? this\._continueProgram\(value, Integer\(1n\)\) : this\._continueProgram\(Integer\(0n\)\)\)[\s\S]{0,200}?this\._heldKeyMenu\(rows, \$\('banner'\)\.querySelector\('\.bn'\), 'Choose', \{ above: true \}\);/.test(appSrc)
     && /_heldKeyMenu\(options, anchor, label, \{ above = false \} = \{\}\) \{[\s\S]{0,400}?keepFocus: true,\s*above,/.test(appSrc)
-    && /if \(\(this\._above \|\| top \+ h > vh - margin\) && r\.top - h - 6 > margin\) top = r\.top - h - 6;/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8'))
+    && /if \(\(this\._above \|\| top \+ h > vh - margin\) && r\.top - h - 6 >= margin\) top = r\.top - h - 6;/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8'))
     && /if \(act === 'choose' && kind === 'choose'\) \{ this\.showChooseList\(\); return; \}\s*if \(act === 'cancel' && kind === 'choose'\) \{ this\._continueProgram\(Integer\(0n\)\); return; \}/.test(appSrc)
     && /if \(this\._dialogHalt && this\._dialogHalt !== halted\) this\._endDialog\(\);\s*if \(halted\?\.dialog && this\._dialogHalt !== halted\) this\._beginDialog\(halted\);/.test(appSrc)
     && /_endDialog\(\) \{\s*if \(this\._dialogHalt\.kind === 'choose'\) this\.popover\.close\(\{ restoreFocus: false \}\);\s*this\._dialogHalt = null;/.test(appSrc)
@@ -1981,4 +1981,12 @@ setAngle('RAD');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/@container work \(max-width: 560px\) \{\s*:root\[data-theme="classic"\] \.ann-g\.opt \{ display: none; \}\s*\/\*[^*]*\*\/\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.ann-g\.opt:not\(\[data-mode\]\):has\(> \.on\) \{ display: flex; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.status-line:has\(\.ann-g\.opt:not\(\[data-mode\]\) > \.on\) \.ann-g > span:not\(\.on\) \{ display: none; \}/.test(css),
     "Classic minimal view: a lit HALT shows at every width under 560 px, where the .opt groups are otherwise dropped, the dim annunciators giving way to it as they do under 360 px (the line overflowed by 13 px at 390 with them shown)");
+}
+
+{
+  const popSrc = readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8');
+  assert(/const MIN_ABOVE = 100;/.test(popSrc)
+    && /el\.style\.maxHeight = '';\s*const w = el\.offsetWidth;\s*let h = el\.offsetHeight;[\s\S]{0,200}?const above = r\.top - 6 - margin;\s*if \(this\._above && h > above && above >= MIN_ABOVE\) \{ el\.style\.maxHeight = `\$\{above\}px`; h = el\.offsetHeight; \}/.test(popSrc)
+    && /if \(\(this\._above \|\| top \+ h > vh - margin\) && r\.top - h - 6 >= margin\) top = r\.top - h - 6;/.test(popSrc),
+    "popover: asked to sit above its anchor, it gives up height (down to 100 px) rather than cover the anchor, so CHOOSE's eight rows keep clear of the prompt with the keyboard up at 280 px, where the list covered the banner and the command line");
 }
