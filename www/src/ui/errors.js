@@ -3,7 +3,7 @@ import { RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
 const CORE_MESSAGES = Object.freeze([
   'Too few arguments', 'Bad argument type', 'Bad argument value', 'Infinite result',
   'Invalid dimension', 'Inconsistent units', 'Undefined local name', 'Undefined name',
-  'CAS not ready', 'Interrupted',
+  'CAS not ready', 'Interrupted', 'Nonexistent ΣDAT',
 ]);
 
 const NUMBER_WORDS = Object.freeze(['no values', 'one value', 'two values', 'three values', 'four values', 'five values']);
@@ -107,6 +107,18 @@ export const ERROR_KINDS = Object.freeze({
     detail: (c) => `${c.message}. The line is still in the command line to fix.`,
     fixes: () => [{ id: 'edit-line', label: 'Fix the line' }, { id: 'explain', label: 'Explain' }],
   },
+  sigmaData: {
+    match: (p) => p.core === 'Nonexistent ΣDAT',
+    title: (c) => `${c.command ?? 'That command'} reads its data from ΣDAT, and there is none.`,
+    detail: (c) => (c.storesTop
+      ? `Level 1 holds ${c.top.text}, but as on the HP the statistics commands read only ΣDAT. Store it there with STOΣ, or add points with Σ+.`
+      : 'Add points with Σ+, or store a matrix of data with STOΣ.'),
+    fixes: (c) => [
+      ...(c.storesTop ? [{ id: 'stosigma', label: 'Store level 1 in ΣDAT' }] : []),
+      ...(c.command ? [{ id: 'help', label: `${c.command} reference` }] : []),
+      { id: 'explain', label: 'Explain' },
+    ],
+  },
   other: {
     match: () => true,
     title: (c) => c.message,
@@ -128,7 +140,9 @@ export function describeError(message, { failure = null, stack = [], depth = 0, 
   const culprits = seen.slice(0, count).map((value, i) => ({ level: i + 1, ...describe(value) }));
   const failedHere = failure && (failure.op == null || parsed.commands.includes(failure.op));
   const seenDepth = failedHere && failure.depth != null ? failure.depth : depth;
-  const ctx = { ...parsed, message: String(message ?? ''), command, signature, args, depth, seenDepth, culprits, onStack, hasLine: !!String(line).trim() };
+  const top = stack.length ? describe(stack[0]) : null;
+  const storesTop = /^(Vector|Matrix)$/.test(top?.type) && !!command && !['RCLΣ', 'Σ-'].includes(command);
+  const ctx = { ...parsed, message: String(message ?? ''), command, signature, args, depth, seenDepth, culprits, onStack, top, storesTop, hasLine: !!String(line).trim() };
   return {
     kind,
     command,

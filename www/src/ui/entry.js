@@ -610,14 +610,15 @@ export class Entry {
     this.resetBuffer('');
   }
 
-  execOp(name) {
+  // Several names run as one step, with one Undo.
+  execOp(...names) {
     this.error = '';
     this.failure = null;
     touchLcd();
     this._snapForUndo();
     this.safeRun(() => {
       if (this.buffer.trim().length > 0) this._commitEntry(this.buffer.trim());
-      this._runOpTagged(name);
+      for (const name of names) this._runOpTagged(name);
     }, '', { keepPartial: true });
     this._emit();
   }

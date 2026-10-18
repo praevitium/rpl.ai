@@ -2,7 +2,7 @@ import { assert } from './helpers.mjs';
 import { ERROR_KINDS, parseErrorMessage, describeError } from '../www/src/ui/errors.js';
 import { errorBannerHtml, haltedBannerHtml } from '../www/src/ui/banner.js';
 import { describeValue } from '../www/src/ui/display.js';
-import { Str, Real, Name } from '../www/src/rpl/types.js';
+import { Str, Real, Name, Vector } from '../www/src/rpl/types.js';
 
 {
   const p = parseErrorMessage('SIN: Bad argument type: expected real, got string');
@@ -36,6 +36,7 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
     casLoading: 'FACTOR: CAS not ready',
     interrupted: 'EVAL: Interrupted',
     syntax: 'Invalid algebraic: Unexpected end of expression',
+    sigmaData: 'MEAN: Nonexistent ΣDAT',
     other: 'Something new went wrong',
   };
   assert(Object.keys(samples).sort().join() === Object.keys(ERROR_KINDS).sort().join(),
@@ -90,4 +91,16 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   assert(html.includes('Enter R2 in kΩ') && html.includes('data-bn="cont"') && html.includes('data-bn="sst"') && html.includes('data-bn="into"') && html.includes('data-bn="kill"'),
     'haltedBannerHtml: shows the PROMPT text and Continue, Step, Step into and Stop');
   assert(haltedBannerHtml({ kind: 'halt', prompt: '<b>' }).includes('&lt;b&gt;'), 'haltedBannerHtml: prompt text is escaped');
+}
+
+{
+  const v = Vector([Real(1), Real(2), Real(3)]);
+  const fixIds = (d) => d.fixes.map((f) => f.id).join(',');
+  const withData = describeError('MEAN: Nonexistent ΣDAT', ctx({ stack: [v], depth: 1 }));
+  const bare = describeError('MEAN: Nonexistent ΣDAT', ctx());
+  const recall = describeError('RCLΣ: Nonexistent ΣDAT', ctx({ stack: [v], depth: 1 }));
+  assert(withData.kind === 'sigmaData' && fixIds(withData) === 'stosigma,help,explain' && /a vector of 3/.test(withData.detail) && /MEAN reads its data from ΣDAT/.test(withData.title),
+    `describeError: a statistics command without ΣDAT names ΣDAT and offers to store level 1 there when it holds an array (${withData.detail})`);
+  assert(fixIds(bare) === 'help,explain' && fixIds(recall) === 'help,explain',
+    'describeError: no Store level 1 fix with nothing to store, or for RCLΣ, which only reads ΣDAT back');
 }

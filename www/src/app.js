@@ -426,6 +426,7 @@ class App {
       case 'explain': this._explainError(message); return;
       case 'edit-line': if (!this.entry.buffer.trim() && this.entry.errorLine) this.entry.recall(this.entry.errorLine); else this.entry.focus(); return;
       case 'vars': this.drawers.open('vars'); return;
+      case 'stosigma': this.dismissError(); this.entry.execOp('STOΣ', desc.command); return;
       case 'retry':
         this.dismissError();
         if (!this.entry.buffer.trim() && desc?.command && lookup(desc.command)) this.entry.execOp(desc.command);

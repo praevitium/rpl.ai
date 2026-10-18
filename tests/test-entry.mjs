@@ -812,6 +812,19 @@ import { assert, assertThrows } from './helpers.mjs';
   {
     resetHome();
     const s = new Stack();
+    s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]));
+    const e = new Entry(s);
+    e.execOp('STOΣ', 'MEAN');
+    const mean = format(s.peek(1));
+    e.performUndo();
+    assert(mean === '[ 2. 3. ]' && s.depth === 1 && isMatrix(s.peek(1)) && varRecall('ΣDAT') === undefined,
+      `execOp with two names runs both as one step, so one Undo takes both back (${mean})`);
+    clearTimeout(e._noticeTimer);
+  }
+
+  {
+    resetHome();
+    const s = new Stack();
     s.push(Real(3));
     const e = new Entry(s);
     e.type('4');              // non-empty buffer
