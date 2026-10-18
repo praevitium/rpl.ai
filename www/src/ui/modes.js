@@ -86,8 +86,12 @@ export function modeById(id) {
   return MODES.find((m) => m.id === id) ?? null;
 }
 
+// A phone shows only this summary, so it names the coordinates, base and complex mode whenever they aren't the
+// defaults, in the HP header's order.
 export function modesSummary() {
-  const angle = calcState.angle;
+  const coord = calcState.coordMode === 'RECT' ? null : coordModeGlyph(calcState.coordMode);
+  const base = binaryBaseLabel(calcState.binaryBase);
   const fmt = displayModeLabel(calcState.displayMode, calcState.displayDigits);
-  return `${angle} · ${fmt} · ${calcState.approxMode ? 'APPROX' : 'EXACT'}`;
+  return [calcState.angle, coord, base === 'DEC' ? null : base, fmt, calcState.complexMode ? 'ℂ' : null, calcState.approxMode ? 'APPROX' : 'EXACT']
+    .filter(Boolean).join(' · ');
 }

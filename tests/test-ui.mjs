@@ -1565,6 +1565,17 @@ setAngle('RAD');
 }
 
 {
+  const { modesSummary } = await import('../www/src/ui/modes.js');
+  const { setBinaryBase, setCoordMode, setComplexMode } = await import('../www/src/rpl/state.js');
+  const plain = modesSummary();
+  setBinaryBase('h'); setCoordMode('CYLIN'); setComplexMode(true);
+  const changed = modesSummary();
+  setBinaryBase('d'); setCoordMode('RECT'); setComplexMode(false);
+  assert(plain === 'RAD · STD · EXACT' && changed === 'RAD · R∠Z · HEX · STD · ℂ · EXACT' && modesSummary() === plain,
+    `modes summary: a phone's only mode display names the coordinates, base and complex mode when they aren't the defaults, in the HP header's order (${plain} / ${changed})`);
+}
+
+{
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const html = readFileSync(new URL('../www/index.html', import.meta.url), 'utf8');
   assert(/\.lay-sheet:not\(:empty\) ~ #toasts \{ top: auto; bottom:/.test(css) && /id="laySheet"><\/div>\s*<div class="toasts" id="toasts"/.test(html),
