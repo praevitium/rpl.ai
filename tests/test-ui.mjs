@@ -405,6 +405,11 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(TIME_GROUPS[0].commands.map((n) => KEY_LABELS[n] ?? n).join(' ') === 'ACK ACKAL STOAL RCLAL DELAL FINDA'
       && /label: KEY_LABELS\[name\] \?\? name,\s*command: name,/.test(appSrc),
       'ALRM keys: the HP\'s five-letter faces, where STOALARM broke across a phone key as STOA and LARM; the key still runs and types the full name');
+    assert(/const wait = msToNextAlarm\(\);\s*if \(wait !== null\) this\._alarmTimer = setTimeout\(\(\) => this\._watchAlarms\(\), Math\.min\(wait \+ 20, ALARM_WAIT_MAX_MS\)\);/.test(appSrc)
+      && /const fresh = document\.visibilityState === 'visible' && Date\.now\(\) - alarm\.due < ALARM_FRESH_MS;\s*if \(fresh && !testUserFlag\(-57\)\) \{\s*alarmBeep\(\);/.test(appSrc)
+      && /action: 'ACK', onAction: acknowledgeOldest, key: 'alarm', timeout: Infinity, transient: true/.test(appSrc)
+      && /this\._watchAlarms\(\);\s*document\.addEventListener\('visibilitychange', \(\) => this\._watchAlarms\(\)\);/.test(appSrc),
+      'alarms come due while the app is open: a timer to the next one, a note with ACK, a buzz and tone unless flag -57 is set, and one missed while closed or hidden shown as past due');
   }
   {
     const { VECTOR_KEYS, menuById, MENU_GROUPS } = await import('../www/src/ui/menus.js');
@@ -2237,7 +2242,7 @@ setAngle('RAD');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const beepSrc = readFileSync(new URL('../www/src/ui/beep.js', import.meta.url), 'utf8');
   const displaySrc = readFileSync(new URL('../www/src/rpl/ops/display.js', import.meta.url), 'utf8');
-  assert(/import \{ beep \} from '\.\/ui\/beep\.js';/.test(appSrc) && /\n    setBeepHook\(beep\);\n/.test(appSrc)
+  assert(/import \{ beep, alarmBeep \} from '\.\/ui\/beep\.js';/.test(appSrc) && /\n    setBeepHook\(beep\);\n/.test(appSrc)
     && /export function beep\(hz, seconds\) \{[\s\S]*?const at = Math\.max\(ctx\.currentTime, _queueEnd\);\s*_queueEnd = at \+ seconds;\s*play\(hz, seconds, at\);/.test(beepSrc)
     && /export function errorBeep\(\) \{\s*play\(1000, 0\.125\);/.test(beepSrc)
     && /register\('BEEP', \(s\) => \{[\s\S]*?testUserFlag\(-56\) \|\| inScratchState\(\)\) return;\s*_beepHook\?\.\(freq, dur\);[\s\S]*?categoryOrder: 29/.test(displaySrc),

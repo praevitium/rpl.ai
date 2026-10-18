@@ -1,6 +1,6 @@
 import { Stack } from '../www/src/rpl/stack.js';
 import { lookup } from '../www/src/rpl/ops.js';
-import { _setClock } from '../www/src/rpl/ops/time.js';
+import { _setClock, pastDueAlarm, msToNextAlarm, acknowledgeOldest } from '../www/src/rpl/ops/time.js';
 import { isBinaryInteger } from '../www/src/rpl/types.js';
 import { setUserFlag, clearUserFlag } from '../www/src/rpl/state.js';
 import { snapshot, rehydrate } from '../www/src/rpl/persist.js';
@@ -109,5 +109,11 @@ const pad = (n) => String(n).padStart(2, '0');
   assert(vals(runLine('1 RCLALARM')) === '{ 10.182026 7 "B" 0 }', 'alarms are saved with the calculator and come back with it');
   runLine('0 DELALARM');
   assert(vals(runLine('0 FINDALARM')) === '0' && (() => { try { runLine('1 RCLALARM'); return false; } catch { return true; } })(), '0 DELALARM deletes every alarm');
+  assert(pastDueAlarm() === null && msToNextAlarm() === null, 'with no alarms none is past due and none is next');
+  runLine('{ 10.182026 11.59 "Lunch" } STOALARM { 10.182026 12.0005 "Call" } STOALARM DROP2');
+  assert(pastDueAlarm()?.message === 'Lunch' && msToNextAlarm() === 5000, `the app's watch: Lunch is past due and Call comes due in 5 s (got ${pastDueAlarm()?.message}, ${msToNextAlarm()})`);
+  acknowledgeOldest();
+  assert(pastDueAlarm() === null && vals(runLine('1 RCLALARM')) === '{ 10.182026 12.0005 "Call" 0 }', 'the note\'s ACK acknowledges the oldest past-due alarm, as ACK does');
+  runLine('0 DELALARM');
   _setClock(null);
 }

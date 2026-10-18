@@ -37,7 +37,8 @@ import {
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook, setMenuHook, setBeepHook } from './rpl/ops.js';
-import { beep } from './ui/beep.js';
+import { beep, alarmBeep } from './ui/beep.js';
+import { pastDueAlarm, msToNextAlarm, acknowledgeOldest } from './rpl/ops/time.js';
 import { _hp50TypeCode } from './rpl/ops/internal.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
@@ -69,6 +70,8 @@ const APP_SHORTCUTS = new Map([
 const SHORT_WINDOW = globalThis.matchMedia?.('(max-height: 575px) and (max-width: 639px)');
 const TVM_VARIABLES = ['N', 'I%YR', 'PV', 'PMT', 'FV', 'PYR'];
 const SIGMA_DATA_KEYS = ['Σ+', 'Σ-', 'CLΣ', 'STOΣ'];
+const ALARM_FRESH_MS = 60000;
+const ALARM_WAIT_MAX_MS = 3600000;
 // The mode commands whose keys mark the mode in force, as the HP's DEG■ and HEX■ do: [state field, value].
 const MODE_KEYS = Object.freeze({
   DEG: ['angle', 'DEG'], RAD: ['angle', 'RAD'], GRAD: ['angle', 'GRD'], GRD: ['angle', 'GRD'],
@@ -183,6 +186,8 @@ class App {
     this.renderAll();
     this._openSharedLink();
     this._openShortcut();
+    this._watchAlarms();
+    document.addEventListener('visibilitychange', () => this._watchAlarms());
     if (!this.prefs.tourSeen) setTimeout(() => this.tour.start(), 700);
   }
 
@@ -195,6 +200,30 @@ class App {
     history.replaceState(history.state, '', location.pathname + (fromLink === null ? '' : location.search));
     this.entry.recall(source);
     this.toast('Opened a shared value. Check it, then press Enter to put it on the stack.', { key: 'shared' });
+  }
+
+  // As the user chose, an alarm comes due only while the app is open: a note with its message, a buzz and a tone
+  // (flag -57, the HP's Alarm Beep off, stops both). One that came due while the app was closed or hidden is past due.
+  _watchAlarms() {
+    clearTimeout(this._alarmTimer);
+    const wait = msToNextAlarm();
+    if (wait !== null) this._alarmTimer = setTimeout(() => this._watchAlarms(), Math.min(wait + 20, ALARM_WAIT_MAX_MS));
+    this._showAlarm();
+  }
+
+  _showAlarm() {
+    const alarm = pastDueAlarm();
+    const id = alarm && `${alarm.due}|${alarm.message}`;
+    if (id === this._alarmShown) return;
+    this._alarmShown = id;
+    if (!alarm) { this.toasts.dismiss('alarm'); return; }
+    const fresh = document.visibilityState === 'visible' && Date.now() - alarm.due < ALARM_FRESH_MS;
+    if (fresh && !testUserFlag(-57)) {
+      alarmBeep();
+      navigator.vibrate?.([200, 100, 200, 100, 200]);
+    }
+    const what = alarm.message || `the alarm set for ${new Date(alarm.due).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+    this.toast(`${fresh ? 'Alarm' : 'Past due'}: ${what}`, { action: 'ACK', onAction: acknowledgeOldest, key: 'alarm', timeout: Infinity, transient: true });
   }
 
   _openShortcut() {
@@ -274,6 +303,7 @@ class App {
     else if (this.menuKind === 'CST') this.showCustomMenu({ refresh: true });
     else this.menubar.render();
     this.display.renderStack(this.stack);
+    this._watchAlarms();
     const halted = calcState.halted;
     if (this._dialogHalt && this._dialogHalt !== halted) this._endDialog();
     if (halted?.dialog && this._dialogHalt !== halted) this._beginDialog(halted);

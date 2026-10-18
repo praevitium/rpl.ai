@@ -122,6 +122,13 @@ function alarmAt(n) {
 
 const pastDue = (a) => !a.ack && a.due <= _now();
 
+export const pastDueAlarm = () => getAlarms().find(pastDue) ?? null;
+
+export function msToNextAlarm() {
+  const next = getAlarms().find((a) => !a.ack && a.due > _now());
+  return next ? next.due - _now() : null;
+}
+
 // A repeating alarm moves to its next time after now unless flag -43 is set; a done one goes unless flag -44 keeps it.
 function acknowledge(alarm) {
   if (alarm.repeat > 0 && !testUserFlag(-43)) {
@@ -185,13 +192,15 @@ register('FINDALARM', (s) => {
   s.push(Real(i + 1));
 }, { ...ALARM, categoryOrder: 23, label: 'FINDALARM' });
 
-register('ACK', () => {
+export function acknowledgeOldest() {
   const alarms = getAlarms();
   const i = alarms.findIndex(pastDue);
   if (i < 0) return;
   const next = acknowledge(alarms[i]);
   setAlarms(alarms.flatMap((a, k) => (k !== i ? [a] : next ? [next] : [])));
-}, { ...ALARM, categoryOrder: 24, label: 'ACK' });
+}
+
+register('ACK', acknowledgeOldest, { ...ALARM, categoryOrder: 24, label: 'ACK' });
 
 register('ACKALL', () => {
   setAlarms(getAlarms().flatMap((a) => {

@@ -48,3 +48,9 @@ export function beep(hz, seconds) {
   _queueEnd = at + seconds;
   play(hz, seconds, at);
 }
+
+export function alarmBeep() {
+  const ctx = getCtx();
+  if (!ctx) return;
+  for (let i = 0; i < 3; i++) play(2048, 0.1, ctx.currentTime + i * 0.2);
+}
