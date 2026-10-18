@@ -401,6 +401,10 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(TIME_GROUPS.map((g) => `${g.id}: ${g.commands.join(' ')}`).join(' / ') === 'ALRM: ACK ACKALL STOALARM RCLALARM DELALARM FINDALARM'
       && TIME_GROUPS[0].commands.every((n) => lookup(n)) && /TIME: \(\) => this\._groupKeys\(TIME_GROUPS, 'TIME'\),/.test(appSrc),
       'TIME menu: an ALRM folder of the HP\'s alarm commands leads the clock keys');
+    const { KEY_LABELS } = await import('../www/src/ui/menus.js');
+    assert(TIME_GROUPS[0].commands.map((n) => KEY_LABELS[n] ?? n).join(' ') === 'ACK ACKAL STOAL RCLAL DELAL FINDA'
+      && /label: KEY_LABELS\[name\] \?\? name,\s*command: name,/.test(appSrc),
+      'ALRM keys: the HP\'s five-letter faces, where STOALARM broke across a phone key as STOA and LARM; the key still runs and types the full name');
   }
   {
     const { VECTOR_KEYS, menuById, MENU_GROUPS } = await import('../www/src/ui/menus.js');

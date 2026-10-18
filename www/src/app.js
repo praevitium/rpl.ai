@@ -16,7 +16,7 @@ import { Sheets } from './ui/sheets.js';
 import { Tour } from './ui/tour.js';
 import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
-import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, TIME_GROUPS, VECTOR_KEYS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel } from './ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, TIME_GROUPS, KEY_LABELS, VECTOR_KEYS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel } from './ui/menus.js';
 import { convertValue } from './rpl/units.js';
 import { MODES } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
@@ -1531,7 +1531,7 @@ class App {
   _commandSlot(name) {
     const mode = MODE_KEYS[name];
     return {
-      label: name,
+      label: KEY_LABELS[name] ?? name,
       command: name,
       title: `${this.commandTitle(name)} · ↰ types it · ↱ opens the reference`,
       blockedReason: () => this._tooFewArgumentsReason(name),
