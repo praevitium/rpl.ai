@@ -132,7 +132,8 @@ RPL puts the numbers first and the operation last. Each value goes on the
   -1264.13604699, the monthly payment, and stores it in PMT. `TVMBEG` and
   `TVMEND` put the payments at each period's start or end (flag -14), and
   `12 AMORT` splits the first twelve payments into principal and interest
-  and gives the balance left. The TVM menu holds all four.
+  and gives the balance left. The TVM menu holds all four, and a key for
+  each variable stores level 1 in it; ⇦ solves for it and ⇨ recalls it.
 - **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
   then gives `25`, and SQUARE appears on the VARS menu. A stored program
   runs by name like a built-in. Built-in names such as `SQ` are reserved.

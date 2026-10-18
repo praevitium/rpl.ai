@@ -64,6 +64,8 @@ const APP_SHORTCUTS = new Map([
   ['search', (app) => app.palette.open()],
 ]);
 
+const TVM_VARIABLES = ['N', 'I%YR', 'PV', 'PMT', 'FV', 'PYR'];
+
 class App {
   constructor() {
     this.stack = new Stack();
@@ -1479,8 +1481,49 @@ class App {
     }));
     const groups = family.id === 'UNITS'
       ? UNIT_GROUPS.map((group) => ({ label: group.id, dir: true, title: `${group.title}: ${group.units.length} units`, onPress: () => this._showUnitMenu(group) }))
-      : [];
+      : family.id === 'TVM' ? TVM_VARIABLES.map((id) => this._tvmKey(id)) : [];
     this.setMenu([...groups, ...slots], family.id);
+  }
+
+  // The HP's solver menus: a TVM variable's key stores level 1 in it, ⇦ solves for it and ⇨ recalls it; inside a
+  // program it types the same as words.
+  _tvmKey(id) {
+    const run = {
+      store: () => {
+        if (!this.stack.depth) { this.entry.flashError({ message: `${id} needs a value on level 1; the stack is empty.` }); return; }
+        const value = this.stack.peek();
+        if (this.entry.safeRun(() => { this.entry._snapForUndo(); varStore(id, this.stack.pop()); }, 'STO')) this.undoToast(`${id}: ${format(value)}`);
+      },
+      solve: () => {
+        this.entry._snapForUndo();
+        this.entry.safeRun(() => { this.stack.push(Name(id, { quoted: true })); this.stack.runOp(() => lookup('TVMROOT').fn(this.stack, this.entry)); }, 'TVMROOT');
+      },
+      recall: () => {
+        const value = varRecall(id);
+        if (value === undefined) this.entry.flashError({ message: `${id} has no value yet` });
+        else this._pushValue(value);
+      },
+    };
+    const words = { store: 'STO', solve: 'TVMROOT', recall: 'RCL' };
+    const act = (kind) => () => {
+      if (inProgramEntry(this.entry.buffer.slice(0, this.entry.cursor))) { this.entry.typeToken(`\`${id}\` ${words[kind]} `); return; }
+      if (this.entry.buffer.trim()) { this.commitEntry(); if (this.entry.error) return; }
+      run[kind]();
+    };
+    const solve = id === 'PYR' ? null : act('solve');
+    const choices = [
+      { text: `Store level 1 in ${id}`, mark: '', run: act('store') },
+      ...(solve ? [{ text: `Solve for ${id}`, mark: '⇦', run: solve }] : []),
+      { text: `Recall ${id}`, mark: '⇨', run: act('recall') },
+    ];
+    return {
+      label: id,
+      title: `${id}: stores level 1 in it${solve ? ' · ↰ solves for it' : ''} · ↱ recalls it`,
+      onPress: act('store'),
+      onPressL: solve,
+      onPressR: act('recall'),
+      onHold: (anchor) => this._heldKeyMenu(choices, anchor, id),
+    };
   }
 
   _showUnitMenu(group) {
