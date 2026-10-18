@@ -2209,3 +2209,9 @@ setAngle('RAD');
     && /\.dw-body \{[^}]*scroll-padding-block: 10px;/.test(cssSrc),
     "the field being typed into scrolls into view as the keyboard arrives, with a margin inside a drawer (the Variables drawer's backup name sat under the keyboard)");
 }
+
+{
+  const cssSrc = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/\.st-val \.list-inline \.lcell:not\(:last-of-type\) \{ margin-right: \.5em; \}/.test(cssSrc) && /\.st-val \.list-inline \.lsep \{ display: contents; \}/.test(cssSrc),
+    'textbook list: the space between items rides on the item before it, so a long list wrapped on a phone starts every line flush rather than some half a space in');
+}

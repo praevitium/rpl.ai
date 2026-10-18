@@ -459,7 +459,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .st-val .list-inline { font-family: var(--font-mono); display: inline-flex; align-items: center; flex-wrap: wrap; gap: .1em 0; }
 .st-val .list-inline .lcell { white-space: nowrap; }
 .st-val .list-inline .lcell-sym { display: inline-flex; align-items: center; }
-.st-val .list-inline .lsep { margin: 0 .25em; }
+.st-val .list-inline .lcell:not(:last-of-type) { margin-right: .5em; }
+.st-val .list-inline .lsep { display: contents; }
 
 
 .banner:empty { display: none; }
