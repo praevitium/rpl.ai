@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.120 (2026-10-18)
+**Latest release:** v0.6.121 (2026-10-18)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.121 — 2026-10-18
+
+`ROOT` arrives, the HP's numeric root finder: `` `COS(X)=X` `X` 1 ROOT ``
+gives 0.739085133215 and stores it in X; a program can stand in for the
+expression, two or three guesses bracket the search, an equation is solved
+as its difference, and the HP's Bad Guess(es) and Constant? errors and its
+extremum when no sign change exists are kept. A field at the bottom of a
+drawer, such as the Variables drawer's backup name, went under the phone
+keyboard as it came up, or was left cut at the edge; the field being typed
+into now scrolls into view as the keyboard arrives, with a margin inside
+drawers. A `CHOOSE` with position 0, which the HP shows for looking at (OK
+gives 0), now says View on its banner key and list title instead of
+Choose, so nobody takes it for a choice.
 
 ## v0.6.120 — 2026-10-18
 
