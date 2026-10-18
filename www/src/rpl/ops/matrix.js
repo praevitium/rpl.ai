@@ -188,14 +188,18 @@ register('DOT', (s) => {
 }, { category: 'Vectors / matrices', categoryOrder: 9, label: "DOT" });
 
 
+// A two-element vector counts as [ d1 d2 0 ], as the AUR says.
+const _crossOperand = (v) => {
+  if (v.items.length === 2) return [...v.items, Integer(0)];
+  if (v.items.length !== 3) throw new RPLError('Invalid dimension');
+  return v.items;
+};
+
 register('CROSS', (s) => {
   const [a, b] = s.popN(2);
   if (!isVector(a) || !isVector(b)) throw new RPLError('Bad argument type');
-  if (a.items.length !== 3 || b.items.length !== 3) {
-    throw new RPLError('Invalid dimension');
-  }
-  const [a0, a1, a2] = a.items;
-  const [b0, b1, b2] = b.items;
+  const [a0, a1, a2] = _crossOperand(a);
+  const [b0, b1, b2] = _crossOperand(b);
   const c0 = _scalarBinary('-',
     _scalarBinary('*', a1, b2),
     _scalarBinary('*', a2, b1));

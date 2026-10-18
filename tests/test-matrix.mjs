@@ -309,11 +309,23 @@ function stat(op, s) {
       `CROSS [1 2 3] × [4 5 6] → [-3 6 -3], got [${v.items.map(x=>x.value).join(' ')}]`);
   }
   {
-    // CROSS requires length 3.
+    // The AUR: a two-element vector counts as [ d1 d2 0 ].
     const s = new Stack();
     s.push(Vector([Real(1), Real(2)]));
     s.push(Vector([Real(3), Real(4)]));
-    assertThrows(() => lookup('CROSS').fn(s), /dimension/i, 'CROSS on length-2 vectors throws Invalid dimension');
+    lookup('CROSS').fn(s);
+    const v = s.peek();
+    assert(v.items.length === 3 && v.items[0].value.eq(0) && v.items[1].value.eq(0) && v.items[2].value.eq(-2),
+      `CROSS [1 2] × [3 4] → [0 0 -2], got [${v.items.map(x=>x.value).join(' ')}]`);
+    s.push(Vector([Real(1), Real(2)]));
+    s.push(Vector([Real(3), Real(4), Real(5)]));
+    lookup('CROSS').fn(s);
+    const w = s.peek();
+    assert(w.items[0].value.eq(10) && w.items[1].value.eq(-5) && w.items[2].value.eq(-2),
+      `CROSS [1 2] × [3 4 5] → [10 -5 -2], got [${w.items.map(x=>x.value).join(' ')}]`);
+    s.push(Vector([Real(1), Real(2), Real(3), Real(4)]));
+    s.push(Vector([Real(3), Real(4), Real(5)]));
+    assertThrows(() => lookup('CROSS').fn(s), /dimension/i, 'CROSS on a four-element vector throws Invalid dimension');
   }
 
   {
