@@ -26,6 +26,7 @@ export class Stack {
     this._undoStack = [];
     this._redoStack = [];
     this._lastArgs = null;
+    this._argsAs = null;
     this._argsTick = 0;
     this._touched = Infinity;
     this._holdEmit = 0;
@@ -256,9 +257,16 @@ export class Stack {
   }
 
   beginArgs() {
-    const args = { prior: this._items.slice(), tick: this._argsTick, outer: this._touched };
+    const args = { prior: this._items.slice(), tick: this._argsTick, outer: this._touched, argsAs: this._argsAs };
     this._touched = Infinity;
+    this._argsAs = null;
     return args;
+  }
+
+  // What LASTARG brings back after the running command succeeds, when that
+  // isn't what it took: Σ+ given m reals saves them as one vector, as the AUR says.
+  saveArgsAs(values) {
+    this._argsAs = values;
   }
 
   // A failed op saves what it took, as the HP saves arguments before it runs a
@@ -266,8 +274,15 @@ export class Stack {
   // one touched either way.
   endArgs(args, succeeded) {
     const touched = this._touched;
+    const argsAs = this._argsAs;
     this._touched = Math.min(args.outer, touched);
+    this._argsAs = args.argsAs;
     if (this._argsTick !== args.tick || !_savesLastArgs()) return;
+    if (succeeded && argsAs) {
+      this._lastArgs = argsAs.slice();
+      this._argsTick++;
+      return;
+    }
     const { prior } = args;
     const cur = this._items;
     let k = 0;

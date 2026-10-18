@@ -739,6 +739,15 @@ function makeXYMatrix() {
   const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
   assert(line('CLΣ [ 2 3 4 ] Σ+ 3 1 7 Σ+ RCLΣ CLΣ') === '[[ 2 3 4 ][ 3 1 7 ]]',
     'Σ+: the AUR example, a vector then three separate reals, builds ΣDAT row by row');
+  const lastArgs = (src) => {
+    const s = runLine(src);
+    s.runOp(() => lookup('Σ+').fn(s));
+    return s.getLastArgs().map((v) => format(v)).join(' | ');
+  };
+  const reals = lastArgs('CLΣ [ 2 3 4 ] Σ+ 3 1 7'), vector = lastArgs('[ 5 6 7 ]'), single = lastArgs('CLΣ 5');
+  runLine('CLΣ');
+  assert(reals === '[ 3 1 7 ]' && vector === '[ 5 6 7 ]' && single === '5',
+    `Σ+: LASTARG returns the point as a vector whether it came as m reals or a vector, as the AUR says (${reals} / ${vector} / ${single})`);
   assert(line('CLΣ 5 Σ+ 7 Σ+ 9 Σ+ MEAN NΣ RCLΣ CLΣ') === '[[ 5 ][ 7 ][ 9 ]] | 3. | 7.',
     'Σ+ with reals makes a one-column ΣDAT that MEAN and NΣ read');
   assert(line('CLΣ [1 2] Σ+ [2 4] Σ+ Σ- RCLΣ CLΣ') === '[[ 1 2 ]] | [ 2 4 ]' && line('CLΣ 5 Σ+ Σ-') === '5',

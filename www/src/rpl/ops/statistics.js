@@ -496,6 +496,7 @@ register('Σ+', (s) => {
   const width = existing ? m : rows[0].length;
   if (!rows.every((row) => row.length === width)) throw new RPLError('Invalid dimension');
   varStore('ΣDAT', Matrix([...(existing ?? []), ...rows]));
+  if (m > 1 && !isMatrix(v) && !isVector(v)) s.saveArgsAs([Vector(rows[0])]);
 }, { category: 'Statistics', categoryOrder: 34, label: "Σ+" });
 
 register('Σ-', (s) => {
