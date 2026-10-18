@@ -130,11 +130,15 @@ function _factorsToAst(factors) {
 
 
 // The AUR: a list of equations and expressions is each solved for the same variable, giving a list of lists.
+const _solveEach = (exprArg, varFor) => (isList(exprArg) ? RList(exprArg.items.map((e) => _solveFor(e, varFor(e)))) : _solveFor(exprArg, varFor(exprArg)));
+
 register('SOLVE', (s) => {
   const [exprArg, varArg] = s.popN(2);
   const varName = _varName(varArg);
-  s.push(isList(exprArg) ? RList(exprArg.items.map((e) => _solveFor(e, varName))) : _solveFor(exprArg, varName));
+  s.push(_solveEach(exprArg, () => varName));
 }, { category: 'CAS / symbolic', categoryOrder: 9, label: "SOLVE" });
+
+register('SOLVEVX', (s) => { s.push(_solveEach(s.pop(), (e) => _vxFor(_toAst(e)))); }, { category: 'CAS / symbolic', categoryOrder: 9.5, label: "SOLVEVX" });
 
 function _solveFor(exprArg, varName) {
   let ast = _astArg(exprArg);

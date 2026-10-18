@@ -1849,6 +1849,18 @@ giac._setFixtures({
   giac._clear();
 }
 {
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('X^2 - 4')));
+  giac._clear();
+  giac._setFixture('solve(X^2-4,X)', '[2,-2]');
+  lookup('SOLVEVX').fn(s);
+  const roots = s.peek();
+  assert(s.depth === 1 && isList(roots) && roots.items.map((e) => formatAlgebra(e.expr)).join(', ') === 'X = 2, X = -2',
+         'AUR: SOLVEVX solves for the current variable, or for the only variable while VX is the default x, as DERVX does');
+  assertThrows(() => lookup('SOLVEVX').fn(new Stack()), 'Too few arguments', 'SOLVEVX on an empty stack is Too few arguments');
+  giac._clear();
+}
+{
   // Bare equation form `X-1=0` — the smallest reproducer of the user-
   // reported "SOLVE returns { }" bug.  After the equation→expression
   // rewrite, Giac sees `solve(X-1-0,X)` and gives `[1]`.
