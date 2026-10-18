@@ -252,7 +252,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   menu with the same dimensions, `254._cm`, `100._in`, `2.54_m`…, and runs
   CONVERT on the one you tap; the level's soft keys have it as CONV). View is the HP
   interactive stack's VIEW, which shows the level full size (a long number
-  in full, a formula or matrix that scrolls both ways; pinch or double-tap to zoom) with Edit, Copy and
+  in full, a long list wrapped to the screen, a formula or matrix that scrolls both ways; pinch or double-tap to zoom) with Edit, Copy and
   Share under it; on a screen under 320 px wide (360 for a formula, which
   adds Plot) it waits in ⋯. ⋯ also has →LIST, DUPN, DRPN
   and KEEP for levels 1 to the one you tapped, and LEVEL to push its number (also on the level's soft keys). Swipe a level left or right to drop it; the

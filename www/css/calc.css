@@ -775,6 +775,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .sheet-view { display: flex; overflow-x: auto; font-size: 26px; padding: 12px 0; }
 .sheet-view .st-val { display: block; flex: 1 1 auto; margin: 0 auto; max-width: none; overflow: visible; text-align: center; white-space: normal; }
 .sheet-view .st-val.textbook { flex: none; }
+.sheet-view .st-val.textbook:has(> .list-inline) { flex: 0 1 auto; min-width: 0; }
 .sheet-view .st-val.textbook svg { max-width: none; }
 .sheet-view .st-val > * { margin-left: 0; }
 .sheet-view .st-val .value-text { white-space: pre-wrap; overflow-wrap: anywhere; overflow: visible; }

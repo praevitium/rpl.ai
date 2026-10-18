@@ -2215,3 +2215,9 @@ setAngle('RAD');
   assert(/\.st-val \.list-inline \.lcell:not\(:last-of-type\) \{ margin-right: \.5em; \}/.test(cssSrc) && /\.st-val \.list-inline \.lsep \{ display: contents; \}/.test(cssSrc),
     'textbook list: the space between items rides on the item before it, so a long list wrapped on a phone starts every line flush rather than some half a space in');
 }
+
+{
+  const cssSrc = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/\.sheet-view \.st-val\.textbook \{ flex: none; \}\n\.sheet-view \.st-val\.textbook:has\(> \.list-inline\) \{ flex: 0 1 auto; min-width: 0; \}/.test(cssSrc),
+    'VIEW: a long list wraps to the sheet as it does on the stack, where it ran off a phone on one line, while formulas and matrices keep their width and scroll sideways');
+}
