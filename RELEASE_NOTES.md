@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.143 (2026-10-18)
+**Latest release:** v0.6.144 (2026-10-18)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.144 — 2026-10-18
+
+Units keep the order they were typed or multiplied in, as the HP's do:
+`1_N*m` stays `1._N*m`, `5_N 2_m *` gives `10._N*m` and
+`3_ft*lbf 1_N*m CONVERT` gives `4.06745384499_N*m`, where each was sorted to
+m*N. UFACT gives the AUR's `1._N*m/s` for `1_W 1_N UFACT`, UBASE still gives
+`kg*m^2/s^3`, and SAME treats N*m and m*N as one unit. The where operator
+`|` (↱9) puts values in for names without the CAS and simplifies nothing:
+`'X^2+Y' { X 2 Y 3 } |` gives `'2^2+3'`, which EVAL makes 7, and every name
+takes its value at once, so `{ X Y Y X }` swaps X and Y. A unit too wide for
+a phone line wraps between its factors, before its `_` and after a `*` or
+`/` outside parentheses, where `1_V UBASE` broke inside `s^3`.
 
 ---
 
