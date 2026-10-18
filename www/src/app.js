@@ -16,7 +16,7 @@ import { Sheets } from './ui/sheets.js';
 import { Tour } from './ui/tour.js';
 import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
-import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, BRANCH_KEYS, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel } from './ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel } from './ui/menus.js';
 import { convertValue } from './rpl/units.js';
 import { MODES } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
@@ -1370,6 +1370,7 @@ class App {
     else if (id === 'CST') this.showCustomMenu({ commit });
     else if (id === 'MODES') this.showModesMenu();
     else if (id === 'BRCH') this.showBranchMenu();
+    else if (id === 'BASE') this.showBaseMenu();
     else this._showFamilyMenu(id);
     if (remember) this.setPrefs({ menu: this.menuKind, recentMenus: [this.menuKind, ...this.prefs.recentMenus.filter((m) => m !== this.menuKind)] });
   }
@@ -1656,6 +1657,22 @@ class App {
       onPress: () => this.setTextbook(!calcState.textbookMode),
     });
     this.setMenu(slots, 'MODES', opts);
+  }
+
+  showBaseMenu() {
+    const folder = (group) => ({
+      label: group.id,
+      dir: true,
+      title: `${group.title}: ${group.commands.join(' ')}`,
+      onPress: () => {
+        const back = { label: '◀ BACK', title: 'Back to the BASE menu', onPress: () => this.showBaseMenu() };
+        this.setMenu([back, ...group.commands.map((name) => this._commandSlot(name))], 'BASE');
+      },
+    });
+    this.setMenu(BASE_KEYS.map((key) => {
+      const group = BASE_GROUPS.find((g) => g.id === key);
+      return group ? folder(group) : this._commandSlot(key);
+    }), 'BASE');
   }
 
   showBranchMenu() {

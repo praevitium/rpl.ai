@@ -61,6 +61,14 @@ export const STAT_GROUPS = Object.freeze([
   { id: 'SUMS', title: 'Sums', commands: ['ΣX', 'ΣY', 'ΣX2', 'ΣY2', 'ΣXY', 'NΣ'] },
 ]);
 
+// The HP's BASE menu: the bases and conversions, then folders of bitwise logic and of bit and byte moves.
+export const BASE_KEYS = Object.freeze(['HEX', 'DEC', 'OCT', 'BIN', 'R→B', 'B→R', 'LOGIC', 'BIT', 'BYTE', 'STWS', 'RCWS']);
+export const BASE_GROUPS = Object.freeze([
+  { id: 'LOGIC', title: 'Bitwise logic', commands: ['AND', 'OR', 'XOR', 'NOT'] },
+  { id: 'BIT', title: 'Bit shifts and rotations', commands: ['RL', 'SL', 'ASR', 'SR', 'RR'] },
+  { id: 'BYTE', title: 'Byte shifts and rotations', commands: ['RLB', 'SLB', 'SRB', 'RRB'] },
+]);
+
 // Every UNITS key with uexpr's dimensions, in menu order, then the SI base form, the unit itself left out.
 export function unitConversions(uexpr) {
   const targets = UNIT_GROUPS.flatMap((g) => g.units).map((u) => parseUnitExpr(u));
@@ -77,6 +85,7 @@ export const OWN_MENUS = Object.freeze([
   { id: 'CST', short: 'CST', title: 'Your custom menu (CST)' },
   { id: 'MODES', short: 'MODES', title: 'Calculator modes' },
   { id: 'BRCH', short: 'BRCH', title: 'Program structures (IF, FOR, WHILE…)' },
+  { id: 'BASE', short: 'BASE', title: 'Integer bases and bits' },
 ]);
 
 // The HP's PRG BRCH keys: each types its word, ⇦ its whole structure and ⇨ the structure's other form.
@@ -96,7 +105,7 @@ export const BRANCH_KEYS = Object.freeze([
 
 export const MENU_GROUPS = Object.freeze([
   { title: 'Yours', ids: ['VARS', 'CST', 'MODES'] },
-  { title: 'Math', ids: ['ARITH', 'TIME', 'TVM', 'TRIG', 'CPLX', 'CAS', 'POLY', 'MATRIX', 'STAT', 'INTEGER', 'PROB', 'SPECIAL', 'LOGIC'] },
+  { title: 'Math', ids: ['ARITH', 'TIME', 'TVM', 'TRIG', 'CPLX', 'CAS', 'POLY', 'MATRIX', 'STAT', 'INTEGER', 'BASE', 'PROB', 'SPECIAL', 'LOGIC'] },
   { title: 'Data and programs', ids: ['STACK', 'LIST', 'MEMORY', 'PROGRAM', 'BRCH', 'CONTROL', 'TYPES', 'UNITS', 'FLAGS', 'DISPLAY', 'PLOT', 'SYSTEM', 'MORE'] },
 ]);
 

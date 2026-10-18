@@ -361,6 +361,14 @@ import { assert, assertThrows } from './helpers.mjs';
     && /_runSigmaDataKey\(name\) \{\s*const mark = this\.stack\.undoMark\(\);\s*this\.runCommandFromUI\(name, \{ asKey: true \}\);\s*if \(this\.stack\.undoMark\(\) === mark \|\| this\.entry\.error\) return;\s*this\.undoToast\(sigmaDataNote\(varRecall\('ΣDAT'\)\)\);/.test(appSrc)
     && /return points \? `ΣDAT: \$\{points\} point\$\{points === 1 \? '' : 's'\}` : 'ΣDAT is empty';/.test(appSrc),
     'STAT menu: a Σ+, Σ-, CLΣ or STOΣ key that ran says how many points ΣDAT holds now, with Undo, since the stack alone shows nothing; typed into a program or failing, it says nothing');
+  {
+    const { BASE_KEYS, BASE_GROUPS, menuById, MENU_GROUPS } = await import('../www/src/ui/menus.js');
+    const names = [...BASE_KEYS.filter((k) => !BASE_GROUPS.some((g) => g.id === k)), ...BASE_GROUPS.flatMap((g) => g.commands)];
+    assert(BASE_KEYS.join(' ') === 'HEX DEC OCT BIN R→B B→R LOGIC BIT BYTE STWS RCWS' && BASE_GROUPS.map((g) => `${g.id}: ${g.commands.join(' ')}`).join(' / ') === 'LOGIC: AND OR XOR NOT / BIT: RL SL ASR SR RR / BYTE: RLB SLB SRB RRB'
+      && names.every((n) => lookup(n)) && menuById('BASE') && MENU_GROUPS.find((g) => g.title === 'Math').ids.includes('BASE')
+      && /else if \(id === 'BASE'\) this\.showBaseMenu\(\);/.test(appSrc) && /const back = \{ label: '◀ BACK', title: 'Back to the BASE menu', onPress: \(\) => this\.showBaseMenu\(\) \};/.test(appSrc),
+      'BASE menu: the HP\'s HEX DEC OCT BIN R→B B→R, then its LOGIC, BIT and BYTE folders, each with a BACK key, and STWS and RCWS, all registered commands, in the picker\'s Math group');
+  }
   assert(/@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}\s*\/\*[^*]*\*\/\s*\.ann-status:has\(\.ann-m\.e, \.ann-m\.halt\) \{ padding-left: 2px; padding-right: 2px; \}/.test(gridCss),
     'minimal view: with a level being edited, the status line gives up its side padding under 320 px, so the amber pencil no longer pushes the leave button 2 px off a 280 px screen');
   assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),
@@ -1556,15 +1564,6 @@ setAngle('RAD');
 }
 
 {
-  const { DISPLAY_DIGITS_CHOICES } = await import('../www/src/ui/modes.js');
-  assert(DISPLAY_DIGITS_CHOICES.join() === Array.from({ length: 12 }, (_, i) => i).join(), 'number format: the Digits grid offers every count from 0 to 11, the range the AUR gives FIX, SCI and ENG');
-  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/\.pop \.grid\.digits \{ grid-template-columns: repeat\(6, minmax\(0, 1fr\)\); \}/.test(css), 'number format: the twelve digit counts sit in two rows of six');
-  const appbar = readFileSync(new URL('../www/src/ui/appbar.js', import.meta.url), 'utf8');
-  assert((appbar.match(/digitsHtml\(/g) ?? []).length === 3, 'number format: the all-modes menu shows the same digit grid as the number format menu, so a phone in normal view can pick FIX 5');
-}
-
-{
   const { modesSummary } = await import('../www/src/ui/modes.js');
   const { setBinaryBase, setCoordMode, setComplexMode } = await import('../www/src/rpl/state.js');
   const plain = modesSummary();
@@ -1573,6 +1572,15 @@ setAngle('RAD');
   setBinaryBase('d'); setCoordMode('RECT'); setComplexMode(false);
   assert(plain === 'RAD · STD · EXACT' && changed === 'RAD · R∠Z · HEX · STD · ℂ · EXACT' && modesSummary() === plain,
     `modes summary: a phone's only mode display names the coordinates, base and complex mode when they aren't the defaults, in the HP header's order (${plain} / ${changed})`);
+}
+
+{
+  const { DISPLAY_DIGITS_CHOICES } = await import('../www/src/ui/modes.js');
+  assert(DISPLAY_DIGITS_CHOICES.join() === Array.from({ length: 12 }, (_, i) => i).join(), 'number format: the Digits grid offers every count from 0 to 11, the range the AUR gives FIX, SCI and ENG');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/\.pop \.grid\.digits \{ grid-template-columns: repeat\(6, minmax\(0, 1fr\)\); \}/.test(css), 'number format: the twelve digit counts sit in two rows of six');
+  const appbar = readFileSync(new URL('../www/src/ui/appbar.js', import.meta.url), 'utf8');
+  assert((appbar.match(/digitsHtml\(/g) ?? []).length === 3, 'number format: the all-modes menu shows the same digit grid as the number format menu, so a phone in normal view can pick FIX 5');
 }
 
 {
