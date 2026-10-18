@@ -258,6 +258,10 @@ class App {
     const halted = calcState.halted;
     if (this._dialogHalt && this._dialogHalt !== halted) this._endDialog();
     if (halted?.dialog && this._dialogHalt !== halted) this._beginDialog(halted);
+    if (halted?.kind === 'prompt' && this._promptHalt !== halted) {
+      this._promptHalt = halted;
+      if (this.inputMode !== 'rpl') this._closeWriter((mode) => `Put the ${mode} aside for the program's PROMPT`);
+    }
   }
 
   setPrefs(patch) {

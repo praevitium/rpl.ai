@@ -2107,3 +2107,9 @@ setAngle('RAD');
     && /_closeWriter\(message\) \{[\s\S]*?writer\.clear\(\);\s*if \(edit\) this\._endEdit\(\);\s*this\.setInputMode\('rpl'\);[\s\S]*?else if \(hadContent\) this\.toast\(message\(mode\), \{ action: 'Undo', onAction: reopen \}\);/.test(appSrc),
     "INPUT with a writer open: the matrix or equation writer steps aside (its content and any edit a tap of Undo away, as when it is cancelled) so the program's text lands on a command line the user can see and answer");
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/if \(halted\?\.kind === 'prompt' && this\._promptHalt !== halted\) \{\s*this\._promptHalt = halted;\s*if \(this\.inputMode !== 'rpl'\) this\._closeWriter\(\(mode\) => `Put the \$\{mode\} aside for the program's PROMPT`\);/.test(appSrc),
+    "PROMPT: a program's prompt wants the command line, so an open writer steps aside with its Undo note, as it does for INPUT");
+}
