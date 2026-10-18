@@ -79,6 +79,19 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
          'SQRT(-4) = (0, 2)');
 }
 
+// Exact roots, as in the HP's exact mode: √ takes square factors out, and ^ and XROOT give an exact root.
+{
+  const out = (line) => format(runLine(line).peek());
+  for (const [line, want] of [['8 √', '`2*SQRT(2)`'], ['12 √', '`2*SQRT(3)`'], ['8/9 √', '`2*SQRT(2)/3`'], ['1/2 √', '`SQRT(2)/2`'],
+    ['4 √', '2'], ['1/4 √', '1/2'], ['2 √', '`SQRT(2)`'], ['2 101 ^ √', '`1125899906842624*SQRT(2)`'],
+    ['4 1/2 ^', '2'], ['27 2/3 ^', '9'], ['4 -1/2 ^', '1/2'], ['2 3/2 ^', '`2*SQRT(2)`'], ['2 -1/2 ^', '`SQRT(2)/2`'],
+    ['2 1/3 ^', '`2^(1/3)`'], ['-8 1/3 ^', '`(-8)^(1/3)`'], ['27 3 XROOT', '3'], ['-8 3 XROOT', '-2'], ['1/8 3 XROOT', '1/2'],
+    ['2 3 XROOT', '1.25992104989'], ['8 3. XROOT', '2.']]) {
+    assert(out(line) === want, `${line} gives ${want} (got ${out(line)}), where √8 and 4^(1/2) stayed whole and 27 3 XROOT gave 3.`);
+  }
+  assertThrows(() => runLine('0 -1/2 ^'), /^Infinite result$/, '0 -1/2 ^ is an Infinite result');
+}
+
 // Stack ops
 {
   const s = new Stack();
@@ -7189,7 +7202,7 @@ function _arrayEq(a, b) {
   const s = new Stack();
   s.push(Integer(-8n)); s.push(Integer(3n));
   lookup('XROOT').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(-2), 'XROOT takes the real odd root of a negative number');
+  assert(isInteger(s.peek()) && s.peek().value === -2n, 'XROOT takes the real odd root of a negative number, exact for an exact root');
 }
 {
   const s = new Stack();

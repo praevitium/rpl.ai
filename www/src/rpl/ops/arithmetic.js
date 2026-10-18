@@ -6,7 +6,7 @@ import { state as _calcState, getApproxMode, getRealMaxExp, getWordsize, nextPrn
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { inverseUexpr, powerUexpr, sameDims, temperaturesAdd } from '../units.js';
 import { register, lookup, OPS } from './registry.js';
-import { _inUnit, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, recallVar, storeVar } from './internal.js';
+import { _inUnit, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, exactSqrt, exactXroot, recallVar, storeVar } from './internal.js';
 
 
 
@@ -299,17 +299,8 @@ register('SQRT', _withTaggedUnary(_withListUnary(_withVMUnary((s) => {
     const re = Math.sqrt((r + c.re) / 2);
     const im = Math.sign(c.im || 1) * Math.sqrt((r - c.re) / 2);
     s.push(Complex(re, im));
-  } else if (isRational(v) && !getApproxMode()) {
-    const sn = _exactSqrtBigInt(v.n);
-    const sd = _exactSqrtBigInt(v.d);
-    if (sn !== null && sd !== null) {
-      if (sd === 1n) s.push(Integer(sn));
-      else           s.push(Rational(sn, sd));
-    } else s.push(Symbolic(AstFn('SQRT', [_toAst(v)])));
-  } else if (isInteger(v) && !getApproxMode()) {
-    const sn = _exactSqrtBigInt(v.value);
-    if (sn !== null) s.push(Integer(sn));
-    else             s.push(Symbolic(AstFn('SQRT', [_toAst(v)])));
+  } else if ((isInteger(v) || isRational(v)) && !getApproxMode()) {
+    s.push(exactSqrt(v));
   } else {
     s.push(Real(_toDecimal(v).sqrt()));
   }
@@ -317,21 +308,6 @@ register('SQRT', _withTaggedUnary(_withListUnary(_withVMUnary((s) => {
 
 // The character picker inserts `√`; without this, ENTER on it pushes Name('√').
 register('√', (s) => { OPS.get('SQRT').fn(s); }, { category: 'Arithmetic', categoryOrder: 10, label: "√" });
-
-
-function _exactSqrtBigInt(n) {
-  if (n < 0n) return null;
-  if (n < 2n) return n;
-  let x = 1n;
-  const bits = n.toString(2).length;
-  x <<= BigInt((bits + 1) >> 1);
-  let prev;
-  do {
-    prev = x;
-    x = (x + n / x) >> 1n;
-  } while (x < prev);
-  return prev * prev === n ? prev : null;
-}
 
 
 register('XROOT', _withTaggedBinary(_withListBinary((s) => {
@@ -349,6 +325,8 @@ register('XROOT', _withTaggedBinary(_withListBinary((s) => {
     s.push(_makeUnit(y.value < 0 ? -root : root, powerUexpr(y.uexpr, 1 / n)));
     return;
   }
+  const exact = !getApproxMode() && (isInteger(y) || isRational(y)) && isInteger(x) && x.value > 0n && exactXroot(y, x.value);
+  if (exact) { s.push(exact); return; }
   const dx = _toDecimal(x);
   if (dx.isZero()) throw new RPLError('Infinite result');
   const isOddRootOfNegative = ((isInteger(y) && y.value < 0n) || (isReal(y) && y.value.isNegative()))

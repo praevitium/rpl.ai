@@ -1933,9 +1933,8 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   s.push(Integer(3n));
   lookup('XROOT').fn(s);
   const out = s.peek();
-  assert(Math.abs(out.items[0].value - 2) < 1e-10
-      && Math.abs(out.items[1].value - 3) < 1e-10,
-    'list-distribute: {8 27} 3 XROOT → {2 3}');
+  assert(out.items.every(isInteger) && out.items.map((v) => v.value).join(' ') === '2 3',
+    'list-distribute: {8 27} 3 XROOT → {2 3}, exact integers since the roots are exact');
 }
 
 /* ================================================================

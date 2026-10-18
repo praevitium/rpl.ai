@@ -210,6 +210,78 @@ export function _scalarBinary(op, a, b) {
 }
 
 
+const _fraction = (v) => (isInteger(v) ? new Fraction(v.value, 1n) : new Fraction(v.n, v.d));
+
+function _fractionValue(f) {
+  return f.d === 1n ? Integer(f.s * f.n) : Rational(f.s * f.n, f.d);
+}
+
+// The integer k-th root of n ≥ 0 when n is a perfect k-th power, else null.
+function _exactRoot(n, k) {
+  if (n < 2n) return n;
+  const bits = BigInt(n.toString(2).length);
+  if (k >= bits) return null;
+  let x = 1n << ((bits + k - 1n) / k);
+  for (;;) {
+    const next = ((k - 1n) * x + n / x ** (k - 1n)) / k;
+    if (next >= x) break;
+    x = next;
+  }
+  return x ** k === n ? x : null;
+}
+
+// f's exact k-th root, -2 for -8 and k = 3, or null.
+function _fractionRoot(f, k) {
+  if (f.s < 0n && k % 2n === 0n) return null;
+  const rn = _exactRoot(f.n, k), rd = _exactRoot(f.d, k);
+  return rn === null || rd === null ? null : new Fraction(f.s * rn, rd);
+}
+
+// n = a²·b, with the square factors that trial division up to 10^4 finds, and a square remainder, taken out.
+function _squareFactor(n) {
+  let a = 1n, b = 1n, m = n;
+  for (let d = 2n; d * d <= m && d <= 10000n; d++) {
+    let e = 0n;
+    while (m % d === 0n) { m /= d; e++; }
+    a *= d ** (e / 2n);
+    b *= d ** (e % 2n);
+  }
+  const r = _exactRoot(m, 2n);
+  return r === null ? { a, b: b * m } : { a: a * r, b };
+}
+
+// c·√b as the HP writes it: 2*√2, √2/2 or 2*√2/3.
+function _radicalAst(c, b) {
+  const root = AstFn('SQRT', [AstNum(b)]);
+  const top = c.n === 1n ? root : AstBin('*', AstNum(c.n), root);
+  return c.d === 1n ? top : AstBin('/', top, AstNum(c.d));
+}
+
+// x^e for a non-negative fraction x when the root is exact (4^(1/2) is 2) or a square root (8^(1/2) is 2*√2), else null.
+function _exactPower(x, e) {
+  if (x.s < 0n) return null;
+  const p = e.s * e.n;
+  const root = _fractionRoot(x, e.d);
+  if (root) {
+    if (root.n === 0n && p < 0n) throw _divisionByZero(false);
+    return _fractionValue(root.pow(new Fraction(p, 1n)));
+  }
+  if (e.d !== 2n) return null;
+  const { a, b } = _squareFactor(x.n * x.d);
+  return Symbolic(_radicalAst(x.pow(new Fraction((p - 1n) / 2n, 1n)).mul(new Fraction(a, x.d)), b));
+}
+
+// The HP's exact √ of a non-negative integer or fraction: 2, 1/2, 2*√2 or √2/3.
+export function exactSqrt(v) {
+  return _exactPower(_fraction(v), new Fraction(1n, 2n));
+}
+
+// The k-th root of an integer or fraction when it is exact, -2 for -8 and k = 3, else null.
+export function exactXroot(v, k) {
+  const root = _fractionRoot(_fraction(v), k);
+  return root && _fractionValue(root);
+}
+
 function _rationalBinary(op, a, b) {
   const fa = new Fraction(a.n, a.d);
   const fb = new Fraction(b.n, b.d);
@@ -224,8 +296,10 @@ function _rationalBinary(op, a, b) {
       break;
     case '^': {
       if (fb.d === 1n) { r = fa.pow(fb); break; }
-      // A fractional exponent stays symbolic in EXACT mode so 2^(1/3) remains exact.
+      // A fractional exponent stays symbolic in EXACT mode so 2^(1/3) remains exact, unless the root comes out.
       if (!getApproxMode()) {
+        const exact = _exactPower(fa, fb);
+        if (exact) return exact;
         const signedBaseN = fa.s * fa.n;
         const signedExpN = fb.s * fb.n;
         const baseAst = a.d === 1n
@@ -239,9 +313,7 @@ function _rationalBinary(op, a, b) {
     }
     default: throw new RPLError('Bad argument type');
   }
-  const signedN = r.s * r.n;
-  if (r.d === 1n) return Integer(signedN);
-  return Rational(signedN, r.d);
+  return _fractionValue(r);
 }
 
 

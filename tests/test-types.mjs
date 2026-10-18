@@ -10709,8 +10709,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     s.push(Integer(2n));        // x (degree, level 1)
     lookup('XROOT').fn(s);
     const v = s.peek();
-    assert(v.type === 'real' && Math.abs(v.value.toNumber() - 0.5) < 1e-12,
-      `session240: XROOT Rational(1,4) Integer(2) → Real(0.5) (radicand Q accepted via ^; got ${v.value})`);
+    assert(isRational(v) && v.n === 1n && v.d === 2n,
+      `session240: XROOT Rational(1,4) Integer(2) → 1/2, exact for an exact root (got ${v.type})`);
   }
 }
 
