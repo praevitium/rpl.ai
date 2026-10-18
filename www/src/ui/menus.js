@@ -61,6 +61,15 @@ export const STAT_GROUPS = Object.freeze([
   { id: 'SUMS', title: 'Sums', commands: ['ΣX', 'ΣY', 'ΣX2', 'ΣY2', 'ΣXY', 'NΣ'] },
 ]);
 
+// The HP's CAS menus as folders: ALG as the HP has it, and of S.SLV, CALC, TRIG and EXP&LN the commands the app has.
+export const CAS_GROUPS = Object.freeze([
+  { id: 'ALG', title: 'Algebra', commands: ['COLLECT', 'EXPAND', 'FACTOR', 'LNCOLLECT', 'LIN', 'PARTFRAC', 'SOLVE', 'SUBST', 'TEXPAND'] },
+  { id: 'CALC', title: 'Calculus', commands: ['DERVX', 'INTVX', 'LIM', 'SERIES', 'TAYLOR0', 'TAYLR', 'DERIV', '∫', 'PREVAL', 'LAPLACE', 'ILAP'] },
+  { id: 'S.SLV', title: 'Symbolic solver', commands: ['ISOL', 'LINSOLVE', 'SOLVE', 'ZEROS', 'ROOT'] },
+  { id: 'TRIG', title: 'Trig rewrites', commands: ['HALFTAN', 'TAN2SC', 'TAN2SC2', 'TCOLLECT', 'TEXPAND', 'TLIN', 'ACOS2S', 'ASIN2C', 'ASIN2T', 'ATAN2S', 'TAN2CS2', 'COSSIN'] },
+  { id: 'EXP&LN', title: 'Exponentials and logarithms', commands: ['EXPLN', 'LIN', 'LNCOLLECT', 'TEXPAND', 'TSIMP'] },
+]);
+
 // The HP's BASE menu: the bases and conversions, then folders of bitwise logic and of bit and byte moves.
 export const BASE_KEYS = Object.freeze(['HEX', 'DEC', 'OCT', 'BIN', 'R→B', 'B→R', 'LOGIC', 'BIT', 'BYTE', 'STWS', 'RCWS']);
 export const BASE_GROUPS = Object.freeze([

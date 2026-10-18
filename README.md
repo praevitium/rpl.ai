@@ -125,7 +125,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   remainder, and ZEROS lists the roots on their own. `ROOT` finds one
   numerically from a guess: `` `COS(X)=X` `X` 1 ROOT `` gives
   0.739085133215 and stores it in X, and a program can stand in for the
-  expression.
+  expression. `COLLECT` factors over the integers only, so `` `X^2-2` ``
+  stays whole where FACTOR splits it with √2. The CAS menu opens on folders
+  after the HP's CAS menus: ALG (COLLECT, EXPAND, FACTOR, LNCOLLECT, LIN,
+  PARTFRAC, SOLVE, SUBST, TEXPAND), CALC, S.SLV, TRIG and EXP&LN.
 - **Money.** `TVMROOT` solves the HP's time-value-of-money variables N,
   I%YR, PV, PMT and FV for the one named. With 360 in `N`, 6.5 in `I%YR`,
   200000 in `PV`, 0 in `FV` and 12 in `PYR`, `` `PMT` TVMROOT `` gives
