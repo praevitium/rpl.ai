@@ -25,7 +25,7 @@ import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '
 import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName, COMPACT_KEYS, holdToRepeat, hpKeyCode, typedKeyCode } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { unitInfo, UNIT_CATALOG, parseUnitExpr, sameDims } from '../www/src/rpl/units.js';
-import { UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, unitConversions, customMenuEntry, customMenuLabel } from '../www/src/ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, unitConversions, customMenuEntry, customMenuLabel } from '../www/src/ui/menus.js';
 import { commandWordAt, commandHelpText } from '../www/src/ui/hover-help.js';
 import { holdToClear, holdForLines } from '../www/src/ui/input-area.js';
 import { parseCommandReference } from '../www/src/ui/command-reference.js';
@@ -364,6 +364,11 @@ import { assert, assertThrows } from './helpers.mjs';
     && CAS_GROUPS.every((g) => g.commands.every((n) => casNames.includes(n) && new Set(g.commands).size === g.commands.length))
     && /CAS: \(\) => this\._groupKeys\(CAS_GROUPS, 'CAS'\),/.test(appSrc),
     `CAS menu: it opens on folders after the HP's CAS menus, ALG as the HP has it (COLLECT EXPAND FACTOR LNCOLLECT LIN PARTFRAC SOLVE SUBST TEXPAND), then CALC, S.SLV, TRIG and EXP&LN, every key a CAS command, so a phone reaches algebra in two taps instead of paging through nine (unknown ${CAS_GROUPS.flatMap((g) => g.commands).filter((n) => !casNames.includes(n))})`);
+  const matrixFamily = MENU_FAMILIES.find((f) => f.id === 'MATRIX');
+  assert(MATRIX_GROUPS.map((g) => g.id).join(' ') === 'MAKE NORM FACTR COL ROW' && matrixFamily.keys.join(' ') === 'LSQ'
+    && MATRIX_GROUPS.every((g) => g.commands.every((n) => lookup(n)))
+    && /MATRIX: \(\) => this\._groupKeys\(MATRIX_GROUPS, 'MATRIX'\),/.test(appSrc),
+    'MATRIX menu: it opens as the HP\'s MTH MATR does, MAKE NORM FACTR COL ROW folders and then LSQ, every folder key a registered command, so a phone reaches a column or a factorization in two taps');
   assert(/const SIGMA_DATA_KEYS = \['Σ\+', 'Σ-', 'CLΣ', 'STOΣ'\];/.test(appSrc) && /onPress: \(\) => \(SIGMA_DATA_KEYS\.includes\(name\) \? this\._runSigmaDataKey\(name\) :/.test(appSrc)
     && /_runSigmaDataKey\(name\) \{\s*const mark = this\.stack\.undoMark\(\);\s*this\.runCommandFromUI\(name, \{ asKey: true \}\);\s*if \(this\.stack\.undoMark\(\) === mark \|\| this\.entry\.error\) return;\s*this\.undoToast\(sigmaDataNote\(varRecall\('ΣDAT'\)\)\);/.test(appSrc)
     && /return points \? `ΣDAT: \$\{points\} point\$\{points === 1 \? '' : 's'\}` : 'ΣDAT is empty';/.test(appSrc),

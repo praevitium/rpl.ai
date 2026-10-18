@@ -160,6 +160,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   form; `CYLIN` shows them that way. The CMPLX menu leads with the HP's
   RE IM C→R R→C ABS ARG, then SIGN NEG CONJ, then the coordinate modes, and
   an integer power is exact, so `(1,1) 2 ^` gives `(0, 2)`.
+- **Matrices.** `[[ 2 1 ][ 1 3 ]] DET` gives 5, `INV`, `EGV` and `LU` work
+  on it, and `→NUM` gives every entry its number. The MATRIX menu opens as
+  the HP's MTH MATR does, on MAKE, NORM, FACTR, COL and ROW folders and
+  then LSQ.
 - **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
   then gives `25`, and SQUARE appears on the VARS menu. A stored program
   runs by name like a built-in. Built-in names such as `SQ` are reserved.

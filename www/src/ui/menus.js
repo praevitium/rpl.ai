@@ -15,7 +15,7 @@ export const MENU_FAMILIES = Object.freeze([
   { id: 'POLY', short: 'POLY', title: 'Polynomials', category: 'Polynomials' },
   { id: 'CAS', short: 'CAS', title: 'Algebra (CAS)', category: 'CAS / symbolic' },
   { id: 'SPECIAL', short: 'SPECL', title: 'Special functions', category: 'Special functions' },
-  { id: 'MATRIX', short: 'MATRX', title: 'Vectors and matrices', category: 'Vectors / matrices' },
+  { id: 'MATRIX', short: 'MATRX', title: 'Vectors and matrices', category: 'Vectors / matrices', keys: ['LSQ'] },
   { id: 'LIST', short: 'LIST', title: 'Lists and strings', category: 'Lists / strings' },
   { id: 'STAT', short: 'STAT', title: 'Statistics', category: 'Statistics' },
   { id: 'PLOT', short: 'PLOT', title: 'Plotting', category: 'Graphics' },
@@ -68,6 +68,15 @@ export const CAS_GROUPS = Object.freeze([
   { id: 'S.SLV', title: 'Symbolic solver', commands: ['ISOL', 'LINSOLVE', 'SOLVE', 'ZEROS', 'ROOT'] },
   { id: 'TRIG', title: 'Trig rewrites', commands: ['HALFTAN', 'TAN2SC', 'TAN2SC2', 'TCOLLECT', 'TEXPAND', 'TLIN', 'ACOS2S', 'ASIN2C', 'ASIN2T', 'ATAN2S', 'TAN2CS2', 'COSSIN'] },
   { id: 'EXP&LN', title: 'Exponentials and logarithms', commands: ['EXPLN', 'LIN', 'LNCOLLECT', 'TEXPAND', 'TSIMP'] },
+]);
+
+// The HP's MTH MATR folders, MAKE NORM FACTR COL ROW, with the commands of each that the app has; LSQ follows them.
+export const MATRIX_GROUPS = Object.freeze([
+  { id: 'MAKE', title: 'Make matrices', commands: ['CON', 'IDN', 'TRN', 'RDM', 'RANM', 'SIZE', 'VANDERMONDE', 'HILBERT', 'AUGMENT'] },
+  { id: 'NORM', title: 'Norms and measures', commands: ['ABS', 'RNRM', 'CNRM', 'COND', 'RANK', 'DET', 'TRACE'] },
+  { id: 'FACTR', title: 'Factorizations', commands: ['LU', 'LQ', 'QR', 'SCHUR', 'CHOLESKY'] },
+  { id: 'COL', title: 'Columns', commands: ['→COL', 'COL→', 'COL+', 'COL-', 'CSWP'] },
+  { id: 'ROW', title: 'Rows', commands: ['→ROW', 'ROW→', 'ROW+', 'ROW-', 'RCI', 'RCIJ', 'RSWP'] },
 ]);
 
 // The HP's BASE menu: the bases and conversions, then folders of bitwise logic and of bit and byte moves.
