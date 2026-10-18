@@ -1546,7 +1546,7 @@ class App {
 
   commandInfo(name) {
     const entry = this.reference ? findReferenceEntry(this.reference, name) : null;
-    return entry && { entry, signature: signatureOf(entry), inputs: entry.inputs };
+    return entry && { entry, signature: signatureOf(entry), inputs: lookup(name)?.inputs ?? entry.inputs };
   }
 
   _tooFewArgumentsReason(name) {

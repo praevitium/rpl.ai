@@ -44,6 +44,7 @@ function solve(t, id, begin) {
 
 // The HP's time value of money: the variable named on level 1 is solved from the others and stored back.
 register('TVMROOT', (s) => {
+  if (s.depth < 1) throw new RPLError('Too few arguments');
   const name = s.peek();
   if (!isName(name)) throw new RPLError('TVMROOT: Bad argument type');
   if (!SOLVABLE.includes(name.id)) throw new RPLError('TVMROOT: Bad argument value');
@@ -58,6 +59,7 @@ register('TVMROOT', (s) => {
 // The first n payments split into what went to principal and what to interest, with the balance left, signed as
 // PV is; I%YR, PV, PMT and PYR come from their variables.
 register('AMORT', (s) => {
+  if (s.depth < 1) throw new RPLError('Too few arguments');
   const count = s.peek();
   if (!(isReal(count) || isInteger(count))) throw new RPLError('AMORT: Bad argument type');
   const n = Number(count.value);

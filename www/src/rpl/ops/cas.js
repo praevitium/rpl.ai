@@ -578,6 +578,7 @@ register('EXLR', (s) => {
 
 
 register('LNAME', (s) => {
+  if (s.depth < 1) throw new RPLError('Too few arguments');
   const v = s.peek();
   if (!isSymbolic(v)) throw new RPLError('Bad argument type');
   const names = new Set();

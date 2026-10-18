@@ -178,7 +178,8 @@ register('PVAR', _columnStat(_asReal(_populationItems)), { category: 'Statistics
 
 register('PSDEV', _columnStat(_asReal((items) => Math.sqrt(_populationItems(items)))), { category: 'Statistics', categoryOrder: 3.5, label: "PSDEV" });
 
-register('MEDIAN', _columnStat(_asReal(_medianItems)), { category: 'Statistics', categoryOrder: 1, label: "MEDIAN" });
+// The AUR's MEDIAN wants an array; this one reads ΣDAT without one, as MEAN does, so its key needs no argument.
+register('MEDIAN', _columnStat(_asReal(_medianItems)), { category: 'Statistics', categoryOrder: 1, label: "MEDIAN", inputs: 0 });
 
 // A Matrix with at least two rows: the XCOL column is X, the YCOL column is Y.
 function _twoColsOrThrow(M) {

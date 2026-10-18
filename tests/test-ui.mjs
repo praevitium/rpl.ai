@@ -348,6 +348,8 @@ import { assert, assertThrows } from './helpers.mjs';
     && /onPress: act\('store'\),\s*onPressL: solve,\s*onPressR: act\('recall'\),/.test(appSrc) && /const solve = id === 'PYR' \? null : act\('solve'\);/.test(appSrc)
     && /if \(inProgramEntry\(this\.entry\.buffer\.slice\(0, this\.entry\.cursor\)\)\) \{ this\.entry\.typeToken\(`\\`\$\{id\}\\` \$\{words\[kind\]\} `\); return; \}/.test(appSrc),
     'TVM menu: each variable\'s key stores level 1 in it, ⇦ solves for it (PYR has no solve) and ⇨ recalls it, as the HP\'s solver menus do; inside a program it types the words instead');
+  assert(/inputs: lookup\(name\)\?\.inputs \?\? entry\.inputs/.test(appSrc),
+    'soft keys: a command\'s own argument count wins over the AUR\'s, so MEDIAN, which reads ΣDAT, no longer shows blocked on an empty stack');
   assert(/@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}\s*\/\*[^*]*\*\/\s*\.ann-status:has\(\.ann-m\.e, \.ann-m\.halt\) \{ padding-left: 2px; padding-right: 2px; \}/.test(gridCss),
     'minimal view: with a level being edited, the status line gives up its side padding under 320 px, so the amber pencil no longer pushes the leave button 2 px off a 280 px screen');
   assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),
