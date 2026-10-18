@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.141 (2026-10-18)
+**Latest release:** v0.6.142 (2026-10-18)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.142 — 2026-10-18
+
+LN and LOG of a negative real give its principal complex value with CMPLX
+off too, as the HP's do and as ASIN and ACOS already did: `-1. LN` gives
+`(0, 3.14159265359)` and `-100. LOG` gives `(2, 1.36437635384)`, where they
+said Bad argument value. This reverses the earlier rule that only CMPLX mode
+lifted them. LNP1 below -1 is an Undefined result, as the AUR says, with its
+own error banner, where it said Infinite result. The TRIG menu opens on the
+HP's HYP folder, SINH ASINH COSH ACOSH TANH ATANH EXPM LNP1, where the
+hyperbolics sat on its third page. Inside a menu folder the menu button
+names it, TRIG · HYP or just HYP on a phone, as VARS names its directory,
+and the wide button has room for INTGR · MODUL and VARS · CIRCUITS.
 
 ---
 
