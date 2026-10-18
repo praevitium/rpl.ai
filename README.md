@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 507 commands, exact big-integer and rational arithmetic,
+of its command set: 508 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -123,16 +123,18 @@ RPL puts the numbers first and the operation last. Each value goes on the
   is the same object. Or press `⌘E`, type `x^2-5x+6=0`, and click the Solve
   card. `` `EXP(X)` `X` 3 TAYLR `` gives the Taylor polynomial
   `1+X+1/2*X^2+1/6*X^3`, SERIES expands around any point with the limit and
-  remainder, and ZEROS lists the roots on their own. `ROOT` finds one
-  numerically from a guess: `` `COS(X)=X` `X` 1 ROOT `` gives
-  0.739085133215 and stores it in X, and a program can stand in for the
-  expression. `COLLECT` factors over the integers only, so `` `X^2-2` ``
-  stays whole where FACTOR splits it with √2. The where operator `|` (↱9)
-  puts values in without the CAS and simplifies nothing:
-  `` `X^2+Y` { X 2 Y 3 } | `` gives `2^2+3`, which EVAL makes 7. The CAS
-  menu opens on folders after the HP's CAS menus: ALG (COLLECT, EXPAND,
-  FACTOR, LNCOLLECT, LIN, PARTFRAC, SOLVE, SUBST, TEXPAND), CALC, S.SLV,
-  TRIG and EXP&LN.
+  remainder, and ZEROS lists the roots on their own. SOLVEVX solves for the
+  current variable, or the only one there is: `` `T^2=9` SOLVEVX `` gives
+  `{ T=-3 T=3 }`. Both solvers take a list of equations too and solve each
+  one. `ROOT` finds a root numerically from a guess:
+  `` `COS(X)=X` `X` 1 ROOT `` gives 0.739085133215 and stores it in X, and a
+  program can stand in for the expression. `COLLECT` factors over the
+  integers only, so `` `X^2-2` `` stays whole where FACTOR splits it with
+  √2. The where operator `|` (↱9) puts values in without the CAS and
+  simplifies nothing: `` `X^2+Y` { X 2 Y 3 } | `` gives `2^2+3`, which
+  EVAL makes 7. The CAS menu opens on folders after the HP's CAS menus:
+  ALG (COLLECT, EXPAND, FACTOR, LNCOLLECT, LIN, PARTFRAC, SOLVE, SUBST,
+  TEXPAND), CALC, S.SLV, TRIG and EXP&LN.
 - **Money.** `TVMROOT` solves the HP's time-value-of-money variables N,
   I%YR, PV, PMT and FV for the one named. With 360 in `N`, 6.5 in `I%YR`,
   200000 in `PV`, 0 in `FV` and 12 in `PYR`, `` `PMT` TVMROOT `` gives
@@ -831,7 +833,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 507. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 508. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - program I/O: KEY. Programs read their arguments from the stack, label
@@ -854,10 +856,10 @@ Catalog and the command reference mark what is available. Not there yet:
   the rest)
 - the HP's numbered menus for MENU and TMENU (a list, a name holding one
   or 0 work), and DEF
-- parts of the CAS, such as DESOLVE and LDEC (SOLVE, ISOL, LINSOLVE, ROOT,
-  ZEROS, TAYLR, TAYLOR0 and SERIES are here). Symbolic commands such as EXPAND
-  and SOLVE refuse an algebraic with units in it, which EVAL and →NUM work
-  out.
+- parts of the CAS, such as DESOLVE and LDEC (SOLVE, SOLVEVX, ISOL,
+  LINSOLVE, ROOT, ZEROS, TAYLR, TAYLOR0 and SERIES are here). Symbolic
+  commands such as EXPAND and SOLVE refuse an algebraic with units in it,
+  which EVAL and →NUM work out.
 
 **Left out on purpose.** USER mode and key assignments, ENTRY mode, the
 NUM.SLV solver screens, FINANCE, TIME, OFF, libraries (LIB, ATTACH and
