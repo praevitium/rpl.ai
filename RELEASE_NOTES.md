@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.133 (2026-10-18)
+**Latest release:** v0.6.134 (2026-10-18)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.134 — 2026-10-18
+
+TSTR rounded a time to the second before checking it, so `DATE TIME TSTR`
+failed with Bad argument value in the last half second of every minute; it
+now drops the fraction, as the AUR's HH.MMSSs form implies, and the date
+commands drop digits past the year the same way. The TIME menu's second page
+gets 24H and D.M.Y keys for the clock and date formats (flags -41 and -42),
+marked while set, the choices the HP offers in its Set time, date form;
+inside a program they type the flag command. A number too wide for its stack
+line on a narrow phone, such as `-1.23456789012E-100` in minimal view at
+320 px, ended in an ellipsis that hid its exponent or last digits; it now
+wraps, breaking before the exponent first.
 
 ---
 
