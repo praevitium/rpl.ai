@@ -2033,3 +2033,20 @@ resetBinaryState();
   e.enter();
   assert(heard === 1 && s.depth === 0 && e.error.startsWith('DROP'), 'a line that fails part way still tells the listeners once, with the stack the HP leaves');
 }
+
+/* A stale error goes with the next action that changes the stack, whatever starts it: an entry from a writer, a level's menu. */
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const s = new Stack();
+  const e = new Entry(s);
+  let heard = 0;
+  e.subscribe(() => heard++);
+  e.buffer = '5 1 0 /';
+  e.enter();
+  const failed = /Infinite result/.test(e.error);
+  heard = 0;
+  e._snapForUndo();
+  s.push(Integer(7n));
+  assert(failed && e.error === '' && heard === 1 && s.depth === 4,
+    'the next action after an error starts with the error cleared, so a writer entry or a level action no longer leaves the old message up');
+}

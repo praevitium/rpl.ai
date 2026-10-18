@@ -317,9 +317,12 @@ export class Entry {
     }
   }
 
+  // Every action that changes the stack or the variables starts here, and the error before it no longer applies:
+  // the HP's message goes at the next key.
   _snapForUndo() {
     this.stack.saveForUndo();
     saveVarStateForUndo();
+    if (this.error) { this.error = ''; this._emit(); }
   }
 
   performUndo() {
