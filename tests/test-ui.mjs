@@ -406,10 +406,17 @@ import { assert, assertThrows } from './helpers.mjs';
       && /label: KEY_LABELS\[name\] \?\? name,\s*command: name,/.test(appSrc),
       'ALRM keys: the HP\'s five-letter faces, where STOALARM broke across a phone key as STOA and LARM; the key still runs and types the full name');
     assert(/const wait = msToNextAlarm\(\);\s*if \(wait !== null\) this\._alarmTimer = setTimeout\(\(\) => this\._watchAlarms\(\), Math\.min\(wait \+ 20, ALARM_WAIT_MAX_MS\)\);/.test(appSrc)
-      && /const fresh = document\.visibilityState === 'visible' && Date\.now\(\) - alarm\.due < ALARM_FRESH_MS;\s*if \(fresh && !testUserFlag\(-57\)\) \{\s*alarmBeep\(\);/.test(appSrc)
+      && /const fresh = document\.visibilityState === 'visible' && Date\.now\(\) - alarm\.due < ALARM_FRESH_MS;\s*if \(fresh && !quiet && !testUserFlag\(-57\)\) \{\s*alarmBeep\(\);/.test(appSrc)
       && /action: 'ACK', onAction: acknowledgeOldest, key: 'alarm', timeout: Infinity, transient: true/.test(appSrc)
       && /this\._watchAlarms\(\);\s*document\.addEventListener\('visibilitychange', \(\) => this\._watchAlarms\(\)\);/.test(appSrc),
       'alarms come due while the app is open: a timer to the next one, a note with ACK, a buzz and tone unless flag -57 is set, and one missed while closed or hidden shown as past due');
+    const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
+    const cssSrc = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+    assert(/const alarmMark = alarm \? `<button type="button" class="\$\{minimal \|\| classic \? 'ann-m' : 'pill'\} alarm" data-status="alarm"/.test(displaySrc)
+      && /\$\{layerMark\}\$\{haltMark\}\$\{alarmMark\}\$\{editMark\}/.test(displaySrc) && /if \(alarm\) pills\.push\(alarmMark\);/.test(displaySrc)
+      && /alarm: !!pastDueAlarm\(\),/.test(appSrc) && /else if \(kind === 'alarm'\) \{ this\._alarmShown = null; this\._showAlarm\(\{ quiet: true \}\); \}/.test(appSrc)
+      && /\.ann-status:has\(\.ann-m\.e, \.ann-m\.halt, \.ann-m\.alarm\) \{ padding-left: 2px; padding-right: 2px; \}/.test(cssSrc),
+      'alert annunciator: ((•)) in the status line while an alarm is past due, as on the HP, a tap bringing its note back without the buzz; at 280 px in minimal view it fits beside the six modes and the leave button, which it had pushed 2 px off screen');
   }
   {
     const { VECTOR_KEYS, menuById, MENU_GROUPS } = await import('../www/src/ui/menus.js');
@@ -440,7 +447,7 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(/const MODE_KEYS = Object\.freeze\(\{\s*DEG: \['angle', 'DEG'\], RAD: \['angle', 'RAD'\], GRAD: \['angle', 'GRD'\], GRD: \['angle', 'GRD'\],\s*RECT: \['coordMode', 'RECT'\], CYLIN: \['coordMode', 'CYLIN'\], SPHERE: \['coordMode', 'SPHERE'\], CMPLX: \['complexMode', true\],\s*HEX: \['binaryBase', 'h'\], DEC: \['binaryBase', 'd'\], OCT: \['binaryBase', 'o'\], BIN: \['binaryBase', 'b'\],/.test(appSrc)
     && /\.\.\.\(mode && \{ toggle: true, on: \(\) => calcState\[mode\[0\]\] === mode\[1\] \}\),/.test(appSrc),
     'mode keys: DEG, RAD, GRAD, RECT, CYLIN, SPHERE, CMPLX, HEX, DEC, OCT and BIN keys in any command menu mark the mode in force, as the HP\'s DEG■ and HEX■ do');
-  assert(/@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}\s*\/\*[^*]*\*\/\s*\.ann-status:has\(\.ann-m\.e, \.ann-m\.halt\) \{ padding-left: 2px; padding-right: 2px; \}/.test(gridCss),
+  assert(/@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}\s*\/\*[^*]*\*\/\s*\.ann-status:has\(\.ann-m\.e, \.ann-m\.halt, \.ann-m\.alarm\) \{ padding-left: 2px; padding-right: 2px; \}/.test(gridCss),
     'minimal view: with a level being edited, the status line gives up its side padding under 320 px, so the amber pencil no longer pushes the leave button 2 px off a 280 px screen');
   assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),
     'UNIT_GROUPS: every key makes a unit object when attached to a number');
@@ -874,10 +881,10 @@ import { assert, assertThrows } from './helpers.mjs';
   d.renderStatus({ classic: true, editing: 'PF' });
   assert(/aria-label="Cancel editing PF"/.test(statusLine.innerHTML), 'renderStatus: Classic full view marks a variable edit the same way');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/:root\[data-theme="classic"\] \.status-line \.ann-m\.e \{ font: inherit; color: #7a4a00; padding: 0 2px; \}/.test(css)
-    && /:root\[data-theme="classic"\]:not\(\[data-view="minimal"\]\) \.status-line \.ann-m\.e \{ height: 11px; min-height: 0; min-width: 0; \}/.test(css)
+  assert(/:root\[data-theme="classic"\] \.status-line :is\(\.ann-m\.e, \.ann-m\.alarm\) \{ font: inherit; color: #7a4a00; padding: 0 2px; \}/.test(css)
+    && /:root\[data-theme="classic"\]:not\(\[data-view="minimal"\]\) \.status-line :is\(\.ann-m\.e, \.ann-m\.alarm\) \{ height: 11px; min-height: 0; min-width: 0; \}/.test(css)
     && /@container app \(max-width: 319px\) \{ :root\[data-theme="classic"\] \.status-line:has\(\.ann-m\.e\):has\(\.ann-g\.opt:not\(\[data-mode\]\) > \.on\) \.ann-g\[data-mode="exact"\] \{ display: none; \} \}/.test(css)
-    && /:root\[data-theme="classic"\] \.ann-g\[role="button"\]::before, :root\[data-theme="classic"\] \.status-line \.ann-m\.e::before \{ content: ""; position: absolute; inset: -14px -7px; \}/.test(css),
+    && /:root\[data-theme="classic"\] \.ann-g\[role="button"\]::before, :root\[data-theme="classic"\] \.status-line :is\(\.ann-m\.e, \.ann-m\.alarm\)::before \{ content: ""; position: absolute; inset: -14px -7px; \}/.test(css),
     "renderStatus: Classic's pencil is header-sized in full view and finger-sized in minimal view, and under 320 px with HALT lit too the = annunciator gives way (the Leave button ran 5 px off a 280 px screen); in full view the 11 px pencil takes the finger-sized tap the Classic mode annunciators have");
   d.renderStatus({ shift: 'shiftLLock' });
   assert(statusLine.innerHTML.includes('LOCKED') && statusLine.innerHTML.includes('↰'),
@@ -1785,7 +1792,7 @@ setAngle('RAD');
   assert(/^@container app \(max-width: 319px\) \{\n  \.crumbs \{ flex-shrink: 0; max-width: 40%; \}\n  \.modes \{ flex-shrink: 1; min-width: 0; \}/.test(bar)
     && /\.mode-chip\.summary span \{ overflow: hidden; text-overflow: ellipsis; \}\n  \.in-tabs \.i \{ display: none; \}/.test(bar)
     && appbarSrc.includes('<span>${escapeHtml(modesSummary())}</span>')
-    && /@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}[\s\S]{0,480}?button\.ann-m \{ min-width: 28px; \}/.test(css)
+    && /@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}[\s\S]{0,720}?button\.ann-m \{ min-width: 28px; \}/.test(css)
     && css.includes('@container app (max-width: 319px) { .writer-keys { gap: 2px; padding: 0 4px 8px; } .writer-keys .cmdline-go { min-width: 26px; padding: 0; white-space: nowrap; } }'),
     "narrow phones: under 320 px (a fold's cover screen, or a larger system text size) the directory name stays whole while the modes summary gives way, and Ask, minimal view's leave button and the equation writer's Enter stay on screen");
 }
@@ -1914,7 +1921,7 @@ setAngle('RAD');
     'soft keys, touch: under 320 px the 29 px menu button takes a finger into the bar\'s padding and the gap beside it (36 px)');
   assert(/@container app \(max-width: 319px\) \{\s*:root\[data-theme="classic"\] \.menubar \{ margin-inline: -10px; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.menubar \{ margin: 0 -14px -14px; \}/.test(touch),
     'soft keys, touch, Classic theme: under 320 px the menu bar runs past the bezel to the screen edges, so its keys are 32 px at 280 too (they were 29, and 27 in minimal view)');
-  assert(/:root\[data-theme="classic"\] \.ann-g\[role="button"\], :root\[data-theme="classic"\] \.status-line \.ann-m\.e \{ position: relative; \}\s*:root\[data-theme="classic"\] \.ann-g\[role="button"\]::before, :root\[data-theme="classic"\] \.status-line \.ann-m\.e::before \{ content: ""; position: absolute; inset: -14px -7px; \}/.test(touch),
+  assert(/:root\[data-theme="classic"\] \.ann-g\[role="button"\], :root\[data-theme="classic"\] \.status-line :is\(\.ann-m\.e, \.ann-m\.alarm\) \{ position: relative; \}\s*:root\[data-theme="classic"\] \.ann-g\[role="button"\]::before, :root\[data-theme="classic"\] \.status-line :is\(\.ann-m\.e, \.ann-m\.alarm\)::before \{ content: ""; position: absolute; inset: -14px -7px; \}/.test(touch),
     'Classic theme, touch: each mode annunciator takes a finger across its LCD row (they were 11 px tall, the only way to change a mode from minimal view\'s status line), and so does the editing pencil in full view');
   const narrowClassic = css.slice(css.indexOf('@container work (max-width: 359px) {\n  :root[data-theme="classic"][data-view="minimal"]'));
   assert(/^@container work \(max-width: 359px\) \{\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.status-line \{ gap: 8px; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.ann-g > span:not\(\.on\) \{ display: none; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.ann-g:not\(:has\(> \.on, > button\)\) \{ display: none; \}/.test(narrowClassic)
@@ -2070,8 +2077,8 @@ setAngle('RAD');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
   assert(displaySrc.includes(`const haltMark = halted ? '<span class="ann-m l halt">HALT</span>' : '';`)
-    && /\.ann-m\.halt \{ padding: 0; font-size: 11px; letter-spacing: 0; \}\s*\.ann-status:has\(\.ann-m\.halt\) button\.ann-m \{ min-width: 28px; \}\s*@container app \(max-width: 359px\) \{ \.ann-status:has\(\.ann-m\.halt\) \{ padding-left: 6px; padding-right: 4px; \} \}/.test(css)
-    && /\.ann-status:has\(\.ann-m\.halt\):has\(\.ann-m\.e\) button\.ann-m\[data-mode="exact"\] \{ display: none; \}/.test(css),
+    && /\.ann-m\.halt \{ padding: 0; font-size: 11px; letter-spacing: 0; \}\s*\.ann-status:has\(\.ann-m\.halt, \.ann-m\.alarm\) button\.ann-m \{ min-width: 28px; \}\s*@container app \(max-width: 359px\) \{ \.ann-status:has\(\.ann-m\.halt, \.ann-m\.alarm\) \{ padding-left: 6px; padding-right: 4px; \} \}/.test(css)
+    && /\.ann-status:has\(\.ann-m\.halt\):has\(\.ann-m\.e, \.ann-m\.alarm\) button\.ann-m\[data-mode="exact"\],\s*\.ann-status:has\(\.ann-m\.e\):has\(\.ann-m\.alarm\) button\.ann-m\[data-mode="exact"\] \{ display: none; \}/.test(css),
     'minimal view: the HALT annunciator is small and tight beside the modes, which give room as under 320 px, so the leave button stays on screen while a program is halted (it ended 21 px off a 280 px screen, 13 at 320); with a level being edited too, the exact mode gives way under 320 px');
 }
 

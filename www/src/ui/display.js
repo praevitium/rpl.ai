@@ -673,7 +673,7 @@ export class Display {
     this.cmdline.classList.toggle('empty', entry.buffer.length === 0);
   }
 
-  renderStatus({ classic = false, minimal = false, shift = null, halted = null, editing = null } = {}) {
+  renderStatus({ classic = false, minimal = false, shift = null, halted = null, editing = null, alarm = false } = {}) {
     const el = this.statusLine;
     if (!el) return;
     const layer = shift?.startsWith('shiftL') ? 'l' : shift?.startsWith('shiftR') ? 'r' : shift?.startsWith('alpha') ? 'a' : '';
@@ -683,6 +683,7 @@ export class Display {
       ? `<button type="button" class="ann-btn" data-status="menu" title="Menu" aria-label="Menu" aria-haspopup="menu">${icon('more', 'sm')}</button><button type="button" class="ann-btn" data-status="fullscreen" title="Full screen" aria-label="Full screen">${icon('full', 'sm')}</button><button type="button" class="ann-btn" data-status="leave-minimal" title="Leave minimal view" aria-label="Leave minimal view">${icon('collapse', 'sm')}</button>`
       : '';
     const editMark = editing ? `<button type="button" class="ann-m e" data-status="cancel-edit" title="Editing ${escapeHtml(editTarget(editing))}: tap to cancel" aria-label="Cancel editing ${escapeHtml(editTarget(editing))}">${icon('edit', 'sm')}${typeof editing === 'number' ? editing : ''}</button>` : '';
+    const alarmMark = alarm ? `<button type="button" class="${minimal || classic ? 'ann-m' : 'pill'} alarm" data-status="alarm" title="An alarm is past due: tap to see it" aria-label="An alarm is past due">((•))</button>` : '';
     if (classic) {
       const g = (items, cls = '', mode = '') => `<div class="ann-g ${cls}"${mode ? ` data-status="mode" data-mode="${mode}" role="button" tabindex="0" title="Change ${MODE_NAMES[mode]}"` : ''}>${items.map(([t, on, c]) => `<span class="${on ? 'on' : ''} ${c || ''}">${t}</span>`).join('')}</div>`;
       el.innerHTML = [
@@ -692,6 +693,7 @@ export class Display {
         g([['=', !calcState.approxMode], ['~', calcState.approxMode]], '', 'exact'),
         g([['ℝ', !calcState.complexMode], ['ℂ', calcState.complexMode]], '', 'complex'),
         g([['HALT', !!halted]], 'opt'),
+        alarmMark,
         editMark,
         `<div class="ann-path">${pathHtml}</div>`,
         minimal ? `<div class="ann-g" style="gap:0">${minimalButtons}</div>` : '',
@@ -710,7 +712,7 @@ export class Display {
       ].filter(([, t]) => t);
       const layerMark = layer ? `<span class="ann-m ${layer}">${{ l: '↰', r: '↱', a: 'α' }[layer]}${locked ? ' LOCK' : ''}</span>` : '';
       const haltMark = halted ? '<span class="ann-m l halt">HALT</span>' : '';
-      el.innerHTML = `<div class="ann-status">${modes.map(([m, t]) => `<button type="button" class="ann-m" data-status="mode" data-mode="${m}" title="Change ${MODE_NAMES[m]}">${escapeHtml(t)}</button>`).join('')}${layerMark}${haltMark}${editMark}<span class="ann-sp"></span><span class="ann-path">${pathHtml}</span>${minimalButtons}</div>`;
+      el.innerHTML = `<div class="ann-status">${modes.map(([m, t]) => `<button type="button" class="ann-m" data-status="mode" data-mode="${m}" title="Change ${MODE_NAMES[m]}">${escapeHtml(t)}</button>`).join('')}${layerMark}${haltMark}${alarmMark}${editMark}<span class="ann-sp"></span><span class="ann-path">${pathHtml}</span>${minimalButtons}</div>`;
       el.className = 'status-line';
       return;
     }
@@ -719,6 +721,7 @@ export class Display {
     if (layer === 'r') pills.push(`<span class="pill r">↱ ${locked ? 'LOCKED' : 'SHIFT'}</span>`);
     if (layer === 'a') pills.push(`<span class="pill a">α ${locked ? 'LOCKED' : 'ALPHA'}</span>`);
     if (editing) pills.push(`<span class="pill e">EDITING ${escapeHtml(editTarget(editing).toUpperCase())}</span>`);
+    if (alarm) pills.push(alarmMark);
     el.innerHTML = pills.join('');
     el.className = pills.length ? 'status-line has-pills' : 'status-line';
   }

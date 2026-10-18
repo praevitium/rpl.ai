@@ -825,7 +825,9 @@ Catalog and the command reference mark what is available. Not there yet:
   `ACKALL` work on the list, which is saved with the stack. An alarm that
   comes due while the app is open shows its message in a note with an ACK
   button, a buzz and a tone (set flag -57 for quiet); one missed while the
-  app was closed shows as past due the next time it opens.
+  app was closed shows as past due the next time it opens. While one is
+  past due, the HP's alert annunciator ((•)) lights in the status line,
+  and a tap on it brings the note back.
 - PICT and the plot-setup commands (PVIEW, ERASE, AXES, XRNG, YRNG, STEQ and
   the rest)
 - the HP's numbered menus for MENU and TMENU (a list, a name holding one

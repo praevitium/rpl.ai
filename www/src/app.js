@@ -211,14 +211,15 @@ class App {
     this._showAlarm();
   }
 
-  _showAlarm() {
+  _showAlarm({ quiet = false } = {}) {
     const alarm = pastDueAlarm();
     const id = alarm && `${alarm.due}|${alarm.message}`;
     if (id === this._alarmShown) return;
     this._alarmShown = id;
+    this.renderStatus();
     if (!alarm) { this.toasts.dismiss('alarm'); return; }
     const fresh = document.visibilityState === 'visible' && Date.now() - alarm.due < ALARM_FRESH_MS;
-    if (fresh && !testUserFlag(-57)) {
+    if (fresh && !quiet && !testUserFlag(-57)) {
       alarmBeep();
       navigator.vibrate?.([200, 100, 200, 100, 200]);
     }
@@ -251,6 +252,7 @@ class App {
       shift: this.shift,
       halted: calcState.halted && calcState.halted.kind !== 'wait' ? calcState.halted.kind : null,
       editing: this.pendingEdit ? this.pendingEdit.level ?? this.pendingEdit.name : null,
+      alarm: !!pastDueAlarm(),
     });
   }
 
@@ -754,6 +756,7 @@ class App {
       else if (kind === 'leave-minimal') this.setMinimal(false);
       else if (kind === 'menu') this.appbar.openAppMenu(el, { drawers: true });
       else if (kind === 'cancel-edit') this.cancelEdit();
+      else if (kind === 'alarm') { this._alarmShown = null; this._showAlarm({ quiet: true }); }
     };
   }
 
