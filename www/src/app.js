@@ -136,7 +136,7 @@ class App {
     subscribeState(() => this._onStateChange());
 
     this.entry.attach($('cmdline'), {
-      onCommit: () => { if (this._answerKey(hpKeyCode('ENTER'))) return; if (!this._runChord('Enter')) this.commitEntry(); },
+      onCommit: () => { if (this._answerKey(hpKeyCode('ENTER')) || this._enterAnswersDialog()) return; if (!this._runChord('Enter')) this.commitEntry(); },
       onType: (text) => this._answerKey(typedKeyCode(text)),
       onCancel: () => this.runAction('ui.escape'),
       onArrowUpEmpty: () => this._runChord('ArrowUp'),
@@ -1075,6 +1075,7 @@ class App {
       return;
     }
     if (this.pendingEdit) { this._commitEdit(); return; }
+    if (this._enterAnswersDialog()) return;
     if (calcState.halted?.kind === 'input') { this._acceptInput(); return; }
     if (this._answerKey(hpKeyCode('ENTER'))) return;
     this.entry.enter();
@@ -1117,10 +1118,7 @@ class App {
   // choice and 1, as the HP's OK does, or with 0 when no choice is highlighted and the list is for looking at.
   showChooseList() {
     const { items, pos } = calcState.halted.dialog;
-    const rows = items.map((item, i) => {
-      const { label, value } = chooseEntry(item);
-      return { text: label, mark: i + 1 === pos ? icon('check', 'sm') : '', run: () => (pos ? this._continueProgram(value, Integer(1n)) : this._continueProgram(Integer(0n))) };
-    });
+    const rows = items.map((item, i) => ({ text: chooseEntry(item).label, mark: i + 1 === pos ? icon('check', 'sm') : '', run: () => this._answerChoice(i + 1) }));
     this._heldKeyMenu(rows, $('banner').querySelector('.bn'), 'Choose', { above: true });
   }
 
@@ -1162,6 +1160,23 @@ class App {
     if (dialog.verify) { try { parseEntry(text); } catch (e) { this.entry.flashError(e); return; } }
     this.entry.cancel();
     this._continueProgram(Str(text));
+  }
+
+  // Enter on an empty line is the OK of a message or choose box, as the HP's ENTER is: a CHOOSE answers with its
+  // highlighted choice, or 0 when none is highlighted, and a MSGBOX goes on. A typed line still runs.
+  _enterAnswersDialog() {
+    const kind = calcState.halted?.kind;
+    if (this.entry.buffer.trim() || !(kind === 'choose' || kind === 'msgbox')) return false;
+    if (kind === 'msgbox') this._continueProgram();
+    else this._answerChoice(calcState.halted.dialog.pos);
+    return true;
+  }
+
+  // The nth choice answers with its result and 1; with no choice highlighted the list is for looking at and gives 0.
+  _answerChoice(n) {
+    const { items, pos } = calcState.halted.dialog;
+    if (!pos) { this._continueProgram(Integer(0n)); return; }
+    this._continueProgram(chooseEntry(items[n - 1]).value, Integer(1n));
   }
 
   // A key pressed while a program waits at 0 WAIT answers it with the key's code, as the HP's keyboard would.

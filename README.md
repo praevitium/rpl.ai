@@ -498,12 +498,13 @@ highlighted. Continue, Step, Step into or Stop from the banner (or `CONT`,
 walks through it. `PROMPT` shows its message and waits for your input; on
 a phone, while you type the answer, the banner shrinks to one row so the
 stack stays in view. `MSGBOX` shows its message with an OK key and goes
-on when you tap it. `INPUT` asks: its prompt is the banner, the text it
-offers is on the command line, and Enter or OK hands the line back to the
-program as a string (the HP's `V` option asks that it parse first; its
-cursor position and α lock are taken, ALG is not). `CHOOSE` lists its
-choices in a popover: a tap answers with the choice (or the second object
-of a `{ display result }` pair) and 1, Cancel with 0. `DISP` writes a
+on when you tap it or press Enter on an empty line. `INPUT` asks: its
+prompt is the banner, the text it offers is on the command line, and
+Enter or OK hands the line back to the program as a string (the HP's `V`
+option asks that it parse first; its cursor position and α lock are
+taken, ALG is not). `CHOOSE` lists its choices in a popover: a tap
+answers with the choice (or the second object of a `{ display result }`
+pair) and 1, Enter with the marked one, Cancel with 0. `DISP` writes a
 message on one of seven display lines above the command line and `CLLCD`
 blanks them; the text goes when the program ends or pauses unless `FREEZE`
 keeps it until the next key. `WAIT` pauses a program for a number of

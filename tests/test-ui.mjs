@@ -2004,7 +2004,7 @@ setAngle('RAD');
   assert(pair.label === 'Large' && pair.value.value === 2n && plain.label === 'X' && plain.value.id === 'X' && triple.label === '{ 1 2 3 }' && triple.value.items.length === 3,
     'CHOOSE: a { display result } pair shows the first and returns the second, while any other object, a longer list included, shows as itself and is the result');
   assert(/if \(kind === 'choose'\) return `<div class="bn halt choose" role="status">[\s\S]*?<div class="bn-t">\$\{escapeHtml\(prompt \|\| 'Choose'\)\}<\/div><div class="bn-f">\$\{key\('choose', 'Choose', [^)]*'menu', 'pri'\)\}\$\{key\('cancel', 'Cancel', [^)]*'x'\)\}\$\{STOP_KEY\}<\/div><\/div>`;/.test(bannerSrc)
-    && /showChooseList\(\) \{\s*const \{ items, pos \} = calcState\.halted\.dialog;[\s\S]{0,400}?mark: i \+ 1 === pos \? icon\('check', 'sm'\) : '', run: \(\) => \(pos \? this\._continueProgram\(value, Integer\(1n\)\) : this\._continueProgram\(Integer\(0n\)\)\)[\s\S]{0,200}?this\._heldKeyMenu\(rows, \$\('banner'\)\.querySelector\('\.bn'\), 'Choose', \{ above: true \}\);/.test(appSrc)
+    && /showChooseList\(\) \{\s*const \{ items, pos \} = calcState\.halted\.dialog;[\s\S]{0,400}?mark: i \+ 1 === pos \? icon\('check', 'sm'\) : '', run: \(\) => this\._answerChoice\(i \+ 1\)[\s\S]{0,200}?this\._heldKeyMenu\(rows, \$\('banner'\)\.querySelector\('\.bn'\), 'Choose', \{ above: true \}\);/.test(appSrc)
     && /_heldKeyMenu\(options, anchor, label, \{ above = false \} = \{\}\) \{[\s\S]{0,400}?keepFocus: true,\s*above,/.test(appSrc)
     && /if \(\(this\._above \|\| top \+ h > vh - margin\) && r\.top - h - 6 >= margin\) top = r\.top - h - 6;/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8'))
     && /if \(act === 'choose' && kind === 'choose'\) \{ this\.showChooseList\(\); return; \}\s*if \(act === 'form' && kind === 'inform'\) \{ this\.showInformSheet\(\); return; \}\s*if \(act === 'cancel' && \(kind === 'choose' \|\| kind === 'inform'\)\) \{ this\._continueProgram\(Integer\(0n\)\); return; \}/.test(appSrc)
@@ -2012,6 +2012,15 @@ setAngle('RAD');
     && /_endDialog\(\) \{\s*if \(this\._dialogAlpha\) \{[^}]*\}\s*if \(this\._dialogHalt\.kind === 'choose'\) this\.popover\.close\(\{ restoreFocus: false \}\);\s*if \(this\._dialogHalt\.kind === 'inform' && this\.sheets\.kind === 'inform'\) this\.sheets\.close\(\);\s*clearTimeout\(this\._waitTimer\);\s*this\._dialogHalt = null;/.test(appSrc)
     && /if \(id === 'CHOOSE'\) \{[\s\S]{0,300}?_markSuspend\(toks, i \+ 1, 'choose', choose\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
     "CHOOSE: its banner is the prompt with Choose, Cancel and Stop keys; the choices open in the held-key popover above the banner (below the chip it covered Stop and the command line), the highlighted one marked, a tap answering with the choice and 1 (0 when none is highlighted), Cancel with 0, and the list goes when its dialog ends (a press on the banner's keys leaves a popover anchored to the banner open); it halts a running program the way INPUT does, carrying its choices");
+}
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/if \(this\._enterAnswersDialog\(\)\) return;\s*if \(calcState\.halted\?\.kind === 'input'\) \{ this\._acceptInput\(\); return; \}/.test(appSrc)
+    && /onCommit: \(\) => \{ if \(this\._answerKey\(hpKeyCode\('ENTER'\)\) \|\| this\._enterAnswersDialog\(\)\) return; if \(!this\._runChord\('Enter'\)\) this\.commitEntry\(\); \},/.test(appSrc)
+    && /_enterAnswersDialog\(\) \{\s*const kind = calcState\.halted\?\.kind;\s*if \(this\.entry\.buffer\.trim\(\) \|\| !\(kind === 'choose' \|\| kind === 'msgbox'\)\) return false;\s*if \(kind === 'msgbox'\) this\._continueProgram\(\);\s*else this\._answerChoice\(calcState\.halted\.dialog\.pos\);\s*return true;/.test(appSrc)
+    && /_answerChoice\(n\) \{\s*const \{ items, pos \} = calcState\.halted\.dialog;\s*if \(!pos\) \{ this\._continueProgram\(Integer\(0n\)\); return; \}\s*this\._continueProgram\(chooseEntry\(items\[n - 1\]\)\.value, Integer\(1n\)\);/.test(appSrc),
+    "Enter on an empty line is the OK of a CHOOSE (its highlighted choice, 0 when none is) and of a MSGBOX, as the HP's ENTER is; a typed line still runs");
 }
 
 {
@@ -2059,7 +2068,7 @@ setAngle('RAD');
     && /handleKey\(key\) \{[\s\S]{0,400}?if \(this\._answerKey\(hpKeyCode\(key\.primary, this\.layer\(\)\)\)\) return;/.test(appSrc)
     && /pressSoftKey\(i, forcedLayer = null\) \{\s*if \(this\._answerKey\(hpKeyCode\(`F\$\{i \+ 1\}`, forcedLayer \?\? this\.layer\(\)\)\)\) return;/.test(appSrc)
     && /if \(this\._answerKey\(hpKeyCode\('ENTER'\)\)\) return;\s*this\.entry\.enter\(\);/.test(appSrc)
-    && /onCommit: \(\) => \{ if \(this\._answerKey\(hpKeyCode\('ENTER'\)\)\) return; if \(!this\._runChord\('Enter'\)\) this\.commitEntry\(\); \},\s*onType: \(text\) => this\._answerKey\(typedKeyCode\(text\)\),/.test(appSrc)
+    && /onCommit: \(\) => \{ if \(this\._answerKey\(hpKeyCode\('ENTER'\)\) \|\| this\._enterAnswersDialog\(\)\) return; if \(!this\._runChord\('Enter'\)\) this\.commitEntry\(\); \},\s*onType: \(text\) => this\._answerKey\(typedKeyCode\(text\)\),/.test(appSrc)
     && /EditorView\.inputHandler\.of\(\(_view, _from, _to, text\) => onType\?\.\(text\) === true\),/.test(readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8'))
     && /if \(e\.key\.length === 1 && !e\.ctrlKey && !e\.metaKey && !e\.altKey && !inField && this\._answerKey\(typedKeyCode\(e\.key\)\)\) \{ e\.preventDefault\(\); return; \}\s*const binding = findBinding\(chord,/.test(appSrc)
     && /_beginWait\(halted\) \{\s*const \{ seconds, menu \} = halted\.dialog;\s*if \(menu && this\.prefs\.minimal\) this\.setMinimalMenu\(true\);\s*if \(seconds\) this\._waitTimer = setTimeout\(\(\) => \{ if \(calcState\.halted === halted\) this\._continueProgram\(\); \}, seconds \* 1000\);/.test(appSrc)
