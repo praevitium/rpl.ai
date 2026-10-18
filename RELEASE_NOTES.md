@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.132 (2026-10-18)
+**Latest release:** v0.6.133 (2026-10-18)
 
 ---
 
@@ -18,6 +18,20 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.133 — 2026-10-18
+
+VTYPE of a name with no variable said Undefined name; it now returns -1, as
+the AUR says, so a program can test whether a variable exists. A tagged
+value with a long tag showed only the tag on a phone, its value cut off;
+the tag now gives way first, down to five characters, so a level reads
+`Total pri…: 123.456`. EQ→, the HP's equation split, joins the app:
+`X^2+1=Y` EQ→ gives `X^2+1` and `Y`, and an expression, number or unit
+comes back with a 0. The TYPES menu now holds the HP's PRG TYPE keys,
+OBJ→ →ARRY →LIST →STR →TAG →UNIT, then C→R R→C NUM CHR DTAG EQ→, then
+TYPE VTYPE. The Catalog counts 500 commands.
 
 ---
 
