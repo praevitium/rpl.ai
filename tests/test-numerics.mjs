@@ -2338,10 +2338,10 @@ setAngle('rad');
   s.push(Integer(12n));
   s.push(Integer(18n));
   lookup('IEGCD').fn(s);
-  assert(s.depth === 3, 'session053: IEGCD pushes u v g');
-  const g = s.peek(1).value;
-  const v = s.peek(2).value;
-  const u = s.peek(3).value;
+  assert(s.depth === 3, 'IEGCD pushes the gcd, then u and v, as the AUR orders them');
+  const g = s.peek(3).value;
+  const u = s.peek(2).value;
+  const v = s.peek(1).value;
   assert(g === 6n, 'session053: IEGCD 12 18 g = 6');
   assert(u * 12n + v * 18n === 6n, 'session053: IEGCD 12 18 u v satisfies u*a + v*b = g');
 }
@@ -2351,7 +2351,7 @@ setAngle('rad');
   s.push(Integer(0n));
   s.push(Integer(0n));
   lookup('IEGCD').fn(s);
-  assert(s.peek(1).value === 0n,
+  assert(s.peek(3).value === 0n,
     'session053: IEGCD 0 0 → g = 0');
 }
 
@@ -2360,11 +2360,16 @@ setAngle('rad');
   s.push(Integer(-12n));
   s.push(Integer(18n));
   lookup('IEGCD').fn(s);
-  const g = s.peek(1).value;
-  const v = s.peek(2).value;
-  const u = s.peek(3).value;
+  const g = s.peek(3).value;
+  const u = s.peek(2).value;
+  const v = s.peek(1).value;
   assert(g === 6n && u * -12n + v * 18n === 6n,
     'session053: IEGCD -12 18 satisfies u*(-12) + v*18 = 6');
+}
+
+{
+  const vals = runLine('18 24 IEGCD').snapshot().reverse().map((x) => Number(x.value)).join(' ');
+  assert(vals === '6 -1 1', `IEGCD gives the AUR's 6 -1 1 for 18 24, the gcd first (got ${vals})`);
 }
 
 {

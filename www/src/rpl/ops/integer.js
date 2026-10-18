@@ -504,9 +504,9 @@ register('IBERNOULLI', (s) => {
 register('IEGCD', (s) => {
   const [av, bv] = s.popN(2);
   const { g, u, v } = _extGcd(_toBigInt(av), _toBigInt(bv));
+  s.push(Integer(g));
   s.push(Integer(u));
   s.push(Integer(v));
-  s.push(Integer(g));
 }, { category: 'Integer / number theory', categoryOrder: 13, label: "IEGCD" });
 
 
