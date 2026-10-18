@@ -1,14 +1,19 @@
 import { isInteger, isBinaryInteger, isReal, isList, isName, isString, BinaryInteger, Real } from '../types.js';
 import { RPLError } from '../stack.js';
-import { state as calcState, setWordsize, getWordsize, getWordsizeMask, getBinaryBase, setBinaryBase, setTextbookMode, setDisplay, varStore, varRecall, inScratchState, setLcdLine, clearLcd, freezeLcd, LCD_LINES } from '../state.js';
+import { state as calcState, setWordsize, getWordsize, getWordsizeMask, getBinaryBase, setBinaryBase, setTextbookMode, setDisplay, varStore, varRecall, inScratchState, setLcdLine, clearLcd, freezeLcd, LCD_LINES, testUserFlag } from '../state.js';
 import { format } from '../formatter.js';
 import { register } from './registry.js';
 
 
 let _menuHook = null;
+let _beepHook = null;
 
 export function setMenuHook(fn) {
   _menuHook = typeof fn === 'function' ? fn : null;
+}
+
+export function setBeepHook(fn) {
+  _beepHook = typeof fn === 'function' ? fn : null;
 }
 
 // The HP numbers its built-in menus; here only 0, the menu before this one, is taken (null below).
@@ -52,6 +57,20 @@ register('FREEZE', (s) => {
   if (!(isReal(n) || isInteger(n))) throw new RPLError('Bad argument type');
   freezeLcd();
 }, { category: 'Display / base', categoryOrder: 28, label: "FREEZE" });
+
+// As the HP's: a frequency that doesn't round into 1 to 15000 Hz is skipped, a duration over 1200 s is cut to it,
+// and flag -56 (Error Beep off) silences BEEP too.
+const BEEP_MAX_HZ = 15000;
+const BEEP_MAX_SECONDS = 1200;
+
+register('BEEP', (s) => {
+  const [hz, seconds] = s.popN(2);
+  if (![hz, seconds].every((v) => isReal(v) || isInteger(v))) throw new RPLError('Bad argument type');
+  const freq = Math.round(Number(hz.value));
+  const dur = Math.min(BEEP_MAX_SECONDS, Number(seconds.value));
+  if (freq < 1 || freq > BEEP_MAX_HZ || !(dur > 0) || testUserFlag(-56) || inScratchState()) return;
+  _beepHook?.(freq, dur);
+}, { category: 'Display / base', categoryOrder: 29, label: "BEEP" });
 
 
 register('STWS', (s) => {

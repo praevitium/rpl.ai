@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 486 commands, exact big-integer and rational arithmetic,
+of its command set: 487 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -510,7 +510,10 @@ keeps it until the next key. `WAIT` pauses a program for a number of
 seconds, or with 0 (or -1, which brings the soft keys up in minimal view)
 waits for a key and returns its HP key code: 92.1 for the 1 key, on the
 keypad or typed, 11.1 for the first soft key, 105.1 for Enter or the Enter
-chip on its banner. The display stays through a `WAIT`. `INFORM` opens its form in a sheet: a
+chip on its banner. The display stays through a `WAIT`. `BEEP` sounds a
+tone, hertz then seconds (`440 .5 BEEP`); tones in a row play one after
+another, and flag -56, which silences the error beep, silences them too.
+`INFORM` opens its form in a sheet: a
 field per label with its help as the placeholder and its initial value
 typed in, OK parses each field (an empty one gives `NOVAL`, the name
 NOVAL here), checks it against the field's types and answers with the
@@ -747,13 +750,13 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 486. The
+**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 487. The
 Catalog and the command reference mark what is available. Not there yet:
 
-- program I/O: KEY and BEEP. Programs read their arguments from the
-  stack, label results with `→TAG`, ask with `INPUT`, `CHOOSE` and
-  `INFORM`, pause with `PROMPT` or `WAIT`, report with `MSGBOX` and write
-  on the display with `DISP`.
+- program I/O: KEY. Programs read their arguments from the stack, label
+  results with `→TAG`, ask with `INPUT`, `CHOOSE` and `INFORM`, pause with
+  `PROMPT` or `WAIT`, report with `MSGBOX`, write on the display with
+  `DISP` and sound a tone with `BEEP`.
 - PICT and the plot-setup commands (PVIEW, ERASE, AXES, XRNG, YRNG, STEQ and
   the rest)
 - the HP's numbered menus for MENU and TMENU (a list, a name holding one
@@ -772,6 +775,8 @@ System RPL, and IR and serial transfer.
 
 - Statistics commands take a vector, or a matrix of columns, from level 1
   when one is there, and read ΣDAT otherwise; `Σ+` fills ΣDAT as on the HP.
+- `BEEP` doesn't hold the program while its tone plays; tones in a row still
+  sound one after another.
 - BESTFIT pushes the model it picked and its correlation, as LINFIT does,
   as well as making it the current one.
 - Plot commands open the plot view instead of drawing into PICT.

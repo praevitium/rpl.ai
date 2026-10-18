@@ -3,7 +3,7 @@ export {
 } from './ops/registry.js';
 export { singleStepMode, stepIntoMode, localFramesDepth, dosubsStackDepth, isProgramLine, runProgramLine, keepsFailureStack } from './ops/internal.js';
 export { setGraphicsHook } from './ops/graphics.js';
-export { setMenuHook } from './ops/display.js';
+export { setMenuHook, setBeepHook } from './ops/display.js';
 import './ops/stack.js';
 import './ops/arithmetic.js';
 import './ops/complex.js';

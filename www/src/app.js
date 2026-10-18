@@ -36,7 +36,8 @@ import {
   varOrder, varList, varRecall, varStore, currentPath,
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook, setMenuHook } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook, setBeepHook } from './rpl/ops.js';
+import { beep } from './ui/beep.js';
 import { _hp50TypeCode } from './rpl/ops/internal.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
@@ -124,6 +125,7 @@ class App {
       else this.showMenu('CST', { commit: false });
       if (this.prefs.minimal) this.setMinimalMenu(true);
     });
+    setBeepHook(beep);
     loadCommandReference().then((m) => { this.reference = m; this.menubar.render(); }).catch(() => {});
 
     this._wireDisplay();

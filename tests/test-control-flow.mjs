@@ -1,5 +1,5 @@
 import { Stack } from '../www/src/rpl/stack.js';
-import { lookup, localFramesDepth, singleStepMode, stepIntoMode, dosubsStackDepth } from '../www/src/rpl/ops.js';
+import { lookup, localFramesDepth, singleStepMode, stepIntoMode, dosubsStackDepth, setBeepHook } from '../www/src/rpl/ops.js';
 import {
   Real, Integer, BinaryInteger, Complex, Name, Str, Directory, Program, Tagged,
   RList, Vector, Matrix,
@@ -7570,4 +7570,29 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   lookup('SAME').fn(u);
   assert(u.depth === 1 && Number(u.peek().value) === 1, 'NOVAL pushes the name NOVAL, the object the word typed gives');
   clearAllHalted(); clearPromptMessage();
+}
+
+{
+  const { setUserFlag, clearUserFlag } = await import('../www/src/rpl/state.js');
+  const tones = [];
+  setBeepHook((hz, seconds) => tones.push([hz, seconds]));
+  const s = runLine('440 .5 BEEP');
+  assert(s.depth === 0 && tones.length === 1 && tones[0][0] === 440 && tones[0][1] === 0.5, 'n x BEEP sounds n hertz for x seconds through the app\'s hook and leaves nothing');
+  runLine('440.4 2000 BEEP');
+  assert(tones.length === 2 && tones[1][0] === 440 && tones[1][1] === 1200, 'the frequency rounds to a whole hertz and a duration over 1200 s is cut to 1200, as on the HP');
+  for (const line of ['0 1 BEEP', '15001 1 BEEP', '.4 1 BEEP', '440 0 BEEP', '440 -1 BEEP']) assert(runLine(line).depth === 0, `${line} takes its arguments quietly`);
+  assert(tones.length === 2, 'a frequency outside 1 to 15000 Hz or no duration sounds nothing, without an error');
+  setUserFlag(-56);
+  runLine('440 1 BEEP');
+  assert(tones.length === 2, 'flag -56 set (no error beep) silences BEEP too');
+  clearUserFlag(-56);
+  runLine('« 440 .2 BEEP 523 .2 BEEP »');
+  lookup('EVAL').fn(runLine('« 440 .2 BEEP 523 .2 BEEP »'));
+  assert(tones.length === 4 && tones[2][0] === 440 && tones[3][0] === 523, 'a program\'s tones reach the hook in order, for the app to play one after another');
+  const t = new Stack();
+  t.push(parseEntry('"a"')[0]); t.push(parseEntry('1')[0]);
+  assertThrows(() => lookup('BEEP').fn(t), /Bad argument type/, 'BEEP wants two numbers');
+  assertThrows(() => lookup('BEEP').fn(new Stack()), /Too few arguments/, 'BEEP with nothing says so');
+  assert(lookup('BEEP').category === 'Display / base', 'BEEP sits with DISP and FREEZE, the HP\'s OUT menu family');
+  setBeepHook(null);
 }
