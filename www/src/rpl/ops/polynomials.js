@@ -16,15 +16,23 @@ register('DECOMP', (s) => {
 }, { category: 'Polynomials', categoryOrder: 10, label: "DECOMP" });
 
 
-// Coefficient lists run from the highest degree down, as on the HP50.
+// Coefficients run from the highest degree down, as on the HP50, in the HP's array or in a list; a result keeps the
+// form it was given.
 const _isCoef = (v) => isReal(v) || isInteger(v) || isComplex(v);
+
+function _polyItems(v) {
+  if (!isList(v) && !isVector(v)) throw new RPLError('Bad argument type');
+  return v.items;
+}
+
+const _likeInput = (v, items) => (isVector(v) && items.length ? Vector(items) : RList(items));
 
 function _popPolyAndPoint(s) {
   const [poly, a] = s.popN(2);
-  if (!isList(poly)) throw new RPLError('Bad argument type');
-  if (poly.items.length === 0) throw new RPLError('Bad argument value');
-  if (!poly.items.every(_isCoef) || !_isCoef(a)) throw new RPLError('Bad argument type');
-  return [poly.items, a];
+  const items = _polyItems(poly);
+  if (items.length === 0) throw new RPLError('Bad argument value');
+  if (!items.every(_isCoef) || !_isCoef(a)) throw new RPLError('Bad argument type');
+  return [items, a, poly];
 }
 
 // Synthetic division by (x - a): the quotient and the remainder p(a).
@@ -40,9 +48,9 @@ function _hornerDivide(coefs, a) {
 
 
 register('HORNER', (s) => {
-  const [coefs, a] = _popPolyAndPoint(s);
+  const [coefs, a, poly] = _popPolyAndPoint(s);
   const { q, r } = _hornerDivide(coefs, a);
-  s.push(RList(q));
+  s.push(_likeInput(poly, q));
   s.push(a);
   s.push(r);
 }, { category: 'Polynomials', categoryOrder: 3, label: "HORNER" });
@@ -50,9 +58,10 @@ register('HORNER', (s) => {
 
 register('PCOEF', (s) => {
   const [rootsList] = s.popN(1);
-  if (!isList(rootsList) || !rootsList.items.every(_isCoef)) throw new RPLError('Bad argument type');
+  const roots = _polyItems(rootsList);
+  if (!roots.every(_isCoef)) throw new RPLError('Bad argument type');
   let coefs = [Integer(1n)];
-  for (const r of rootsList.items) {
+  for (const r of roots) {
     const next = [coefs[0]];
     for (let i = 1; i < coefs.length; i++) {
       next.push(_scalarBinary('-', coefs[i], _scalarBinary('*', r, coefs[i - 1])));
@@ -60,7 +69,7 @@ register('PCOEF', (s) => {
     next.push(_scalarBinary('-', Integer(0n), _scalarBinary('*', r, coefs[coefs.length - 1])));
     coefs = next;
   }
-  s.push(RList(coefs));
+  s.push(_likeInput(rootsList, coefs));
 }, { category: 'Polynomials', categoryOrder: 1, label: "PCOEF" });
 
 
@@ -171,9 +180,9 @@ function _proot(cxRaw, polyIsReal) {
 
 register('PROOT', (s) => {
   const [poly] = s.popN(1);
-  if (!isList(poly)) throw new RPLError('Bad argument type');
-  if (poly.items.length === 0) throw new RPLError('Bad argument value');
-  const roots = _proot(poly.items.map(_coefToCx), poly.items.every((c) => !isComplex(c) || c.im === 0));
+  const items = _polyItems(poly);
+  if (items.length === 0) throw new RPLError('Bad argument value');
+  const roots = _proot(items.map(_coefToCx), items.every((c) => !isComplex(c) || c.im === 0));
   // An empty Vector cannot exist, so a constant yields an empty list.
   s.push(roots.length ? Vector(roots) : RList([]));
 }, { category: 'Polynomials', categoryOrder: 5, label: "PROOT" });
@@ -240,7 +249,7 @@ register('PEVAL', (s) => {
 // Repeated synthetic division by (x - a) yields the coefficients of the
 // same polynomial in powers of (x - a), lowest first.
 register('PTAYL', (s) => {
-  const [items, a] = _popPolyAndPoint(s);
+  const [items, a, poly] = _popPolyAndPoint(s);
   let coefs = items;
   const shifted = [];
   while (coefs.length > 1) {
@@ -249,7 +258,7 @@ register('PTAYL', (s) => {
     coefs = q;
   }
   shifted.push(coefs[0]);
-  s.push(RList(shifted.reverse()));
+  s.push(_likeInput(poly, shifted.reverse()));
 }, { category: 'Polynomials', categoryOrder: 4, label: "PTAYL" });
 
 

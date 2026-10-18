@@ -2897,6 +2897,19 @@ giac._setFixtures({
   assertThrows(() => { lookup('QUOT').fn(s); }, /Infinite/, 'session054: QUOT by zero throws');
 }
 
+{
+  // The AUR's examples, which take arrays; the result keeps the form it was given.
+  const top = (line) => format(runLine(line).peek());
+  assert(top('[ 2 -3 4 -5 ] PCOEF') === '[ 1 2 -25 -26 120 ]' && top('{ 2 -3 4 -5 } PCOEF') === '{ 1 2 -25 -26 120 }',
+    `PCOEF takes the AUR's root array and gives a coefficient array (got ${top('[ 2 -3 4 -5 ] PCOEF')})`);
+  assert(top('[ 1 2 -25 -26 120 ] 8 PEVAL') === '3432', `PEVAL takes the AUR's coefficient array (got ${top('[ 1 2 -25 -26 120 ] 8 PEVAL')})`);
+  const roots = runLine('[ 1 2 -25 -26 120 ] PROOT').peek();
+  assert(roots.type === 'vector' && roots.items.map((v) => Math.round(Number(v.value))).sort((a, b) => a - b).join(' ') === '-5 -3 2 4',
+    `PROOT takes the AUR's coefficient array, where it said Bad argument type (got ${format(roots)})`);
+  assert(top('[ 1 -3 2 ] 1 PTAYL') === '[ 1 -1 0 ]' && format(runLine('[ 1 -3 2 ] 3 HORNER').peek(3)) === '[ 1 0 ]',
+    'PTAYL and HORNER take an array too and give one back');
+}
+
 /* =================================================================
    PEVAL, PTAYL, EPSX0, DISTRIB.
    (GRAMSCHMIDT / QR / CHOLESKY / RDM / C→P / P→C live in
