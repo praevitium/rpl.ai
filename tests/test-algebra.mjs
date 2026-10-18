@@ -922,17 +922,17 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
          `EXPAND on a Real is a pass-through`);
 }
 
-// COLLECT 1-arg routes through Giac's simplify(); 2-arg through
-// Giac's collect(expr,var).  Each block registers the caseval
-// fixture the op emits.
+// COLLECT 1-arg routes through Giac's collect(), which factors over the
+// integers as the AUR's COLLECT does; 2-arg through Giac's
+// collect(expr,var).  Each block registers the caseval fixture the op emits.
 {
-  // COLLECT on a Symbolic sums like terms via the simplifier.
+  // COLLECT on a Symbolic sums like terms on the way to factoring.
   // 'X + X + Y' must come back as '2*X + Y' — same result as EVAL
   // would produce, but reachable without triggering full evaluation.
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X + X + Y')));
   giac._clear();
-  giac._setFixture('simplify(X+X+Y)', '2*X+Y');
+  giac._setFixture('collect(X+X+Y)', '2*X+Y');
   lookup('COLLECT').fn(s);
   assert(isSymbolic(s.peek()) &&
          formatAlgebra(s.peek().expr) === '2*X + Y',
@@ -945,7 +945,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X*Y + Y*X')));
   giac._clear();
-  giac._setFixture('simplify(X*Y+Y*X)', '2*X*Y');
+  giac._setFixture('collect(X*Y+Y*X)', '2*X*Y');
   lookup('COLLECT').fn(s);
   assert(formatAlgebra(s.peek().expr) === '2*X*Y',
          `COLLECT 'X*Y + Y*X' → '${formatAlgebra(s.peek().expr)}' (want '2*X*Y')`);
@@ -955,10 +955,10 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   // COLLECT on a non-algebraic passes through unchanged — matches
   // EXPAND's leniency so users can compose either against any argument.
   const s = new Stack();
-  s.push(Real(5));
+  s.push(Real(2.5));
   lookup('COLLECT').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(5),
-         `COLLECT on a Real is a pass-through`);
+  assert(isReal(s.peek()) && s.peek().value.eq(2.5),
+         `COLLECT on a non-integer Real is a pass-through`);
 }
 {
   // COLLECT on a bare Name is a pass-through (no work to do).
@@ -1516,25 +1516,13 @@ giac._setFixtures({
   giac._clear();
 }
 {
-  // Backwards compat: 1-arg form still works as a simplify alias.
-  const s = new Stack();
-  s.push(Symbolic(parseAlgebra('X + X + Y')));
-  giac._clear();
-  giac._setFixture('simplify(X+X+Y)', '2*X+Y');
-  lookup('COLLECT').fn(s);
-  assert(isSymbolic(s.peek()) &&
-         formatAlgebra(s.peek().expr) === '2*X + Y',
-         `COLLECT 1-arg still works as simplify alias`);
-  giac._clear();
-}
-{
   // 2-arg with a Real on top stays 1-arg (Real is not a variable).
   // Pops only the top; pre-existing pass-through semantics.
   const s = new Stack();
   s.push(Symbolic(parseAlgebra('X + X')));
-  s.push(Real(7));
+  s.push(Real(2.5));
   lookup('COLLECT').fn(s);
-  assert(isReal(s.peek()) && s.peek().value.eq(7),
+  assert(isReal(s.peek()) && s.peek().value.eq(2.5),
          `COLLECT: Real on top is not a variable — falls to 1-arg and passes through`);
   // Underlying Symbolic untouched on level 2.
   assert(isSymbolic(s.peek(2)) &&

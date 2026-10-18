@@ -769,8 +769,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
 
 {
   // HP50-specific rounding identities (FLOOR/CEIL/IP/FP/SIGN idempotency)
-  // aren't part of Giac's native simplify().  COLLECT's 1-arg form
-  // routes through Giac's simplify(), so the fixtures below simulate
+  // aren't part of Giac's native simplify().  SIMPLIFY routes through
+  // Giac's simplify(), so the fixtures below simulate
   // what Giac *would* return if we taught it those rules (or added a
   // post-Giac normalisation pass).  The tests still verify the caseval
   // plumbing + formatter round-trip.
@@ -806,10 +806,10 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   ];
   for (const [src, expected] of IDEMP) {
     const [e] = parseEntry(`\`${src}\``);
-    const out = runOp('COLLECT', e);
+    const out = runOp('SIMPLIFY', e);
     const f = format(out);
     assert(f === `\`${expected}\``,
-      `session082: COLLECT '${src}' → '${expected}' (got ${f})`);
+      `session082: SIMPLIFY '${src}' → '${expected}' (got ${f})`);
   }
 
   const FP_OF_INT = [
@@ -819,10 +819,10 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   ];
   for (const [src] of FP_OF_INT) {
     const [e] = parseEntry(`\`${src}\``);
-    const out = runOp('COLLECT', e);
+    const out = runOp('SIMPLIFY', e);
     const f = format(out);
     assert(f === "`0`" || f === '0' || f === '0.',
-      `session082: COLLECT '${src}' → 0 (got ${f})`);
+      `session082: SIMPLIFY '${src}' → 0 (got ${f})`);
   }
 
   const CROSS = [
@@ -835,24 +835,43 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
   ];
   for (const [src, expected] of CROSS) {
     const [e] = parseEntry(`\`${src}\``);
-    const out = runOp('COLLECT', e);
+    const out = runOp('SIMPLIFY', e);
     const f = format(out);
     assert(f === `\`${expected}\``,
-      `session082: COLLECT '${src}' → '${expected}' (got ${f})`);
+      `session082: SIMPLIFY '${src}' → '${expected}' (got ${f})`);
   }
 
   {
     const [e] = parseEntry("`FLOOR(FP(X))`");
-    const out = runOp('COLLECT', e);
+    const out = runOp('SIMPLIFY', e);
     assert(format(out) === "`FLOOR(FP(X))`",
-      `session082: COLLECT leaves FLOOR(FP(X)) alone (got ${format(out)})`);
+      `session082: SIMPLIFY leaves FLOOR(FP(X)) alone (got ${format(out)})`);
   }
   {
     const [e] = parseEntry("`CEIL(FP(X))`");
-    const out = runOp('COLLECT', e);
+    const out = runOp('SIMPLIFY', e);
     assert(format(out) === "`CEIL(FP(X))`",
-      `session082: COLLECT leaves CEIL(FP(X)) alone (got ${format(out)})`);
+      `session082: SIMPLIFY leaves CEIL(FP(X)) alone (got ${format(out)})`);
   }
+  giac._clear();
+}
+
+{
+  // COLLECT factors over the integers, never into square roots, as the AUR's COLLECT(X^2+5*X+6) = (X+2)(X+3) does.
+  const { giac } = await import('../www/src/rpl/cas/giac-engine.mjs');
+  giac._clear();
+  giac._setFixtures({
+    'collect(X^2+5*X+6)': '(X+2)*(X+3)',
+    'collect(X^2-2)': 'X^2-2',
+    'collect(X*Y+X*Z)': '(Y+Z)*X',
+  });
+  for (const [src, expected] of [['X^2+5*X+6', '(X + 2)*(X + 3)'], ['X^2-2', 'X^2 - 2'], ['X*Y+X*Z', '(Y + Z)*X']]) {
+    const [e] = parseEntry(`\`${src}\``);
+    const f = format(runOp('COLLECT', e));
+    assert(f === `\`${expected}\``, `COLLECT '${src}' factors over the integers to '${expected}', where it used to simplify (got ${f})`);
+  }
+  const twelve = format(runOp('COLLECT', parseEntry('12')[0]));
+  assert(twelve === format(runOp('FACTOR', parseEntry('12')[0])), `COLLECT writes an integer as its prime factors, as FACTOR does (got ${twelve})`);
   giac._clear();
 }
 

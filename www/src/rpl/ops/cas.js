@@ -42,6 +42,29 @@ const _simplify = _casUnary('simplify');
 register('EXPAND', _casUnary('expand'), { category: 'CAS / symbolic', categoryOrder: 6, label: "EXPAND" });
 
 
+// FACTOR, and COLLECT, which factors over the integers only (no square roots), as the AUR says.
+function _factorWith(giacFn) {
+  return (s) => {
+    const popped = s.pop();
+    const v = isSymbolic(popped) && popped.expr.kind === 'num' ? _astToRplValue(popped.expr) : popped;
+    if (isSymbolic(v)) {
+      _pushCasResult(s, _casEval(v.expr, (e) => `${giacFn}(${e})`));
+      return;
+    }
+    if (isInteger(v) || (isReal(v) && v.value.isInteger())) {
+      s.push(_factorInteger(v));
+      return;
+    }
+    if (isReal(v) || isRational(v) || isName(v)) {
+      s.push(v);
+      return;
+    }
+    throw new RPLError('Bad argument type');
+  };
+}
+
+const _collect = _factorWith('collect');
+
 register('COLLECT', (s) => {
   const top = s.peek();
   if ((isName(top) || isString(top)) && isSymbolic(s.peek(2))) {
@@ -50,30 +73,14 @@ register('COLLECT', (s) => {
     _pushCasResult(s, _casEval(expr.expr, (e) => `collect(${e},${varName})`, [varName]));
     return;
   }
-  _simplify(s);
+  _collect(s);
 }, { category: 'CAS / symbolic', categoryOrder: 7, label: "COLLECT" });
 
 
 register('SIMPLIFY', _simplify, { category: 'CAS / symbolic', categoryOrder: 15, label: "SIMPLIFY" });
 
 
-register('FACTOR', (s) => {
-  const popped = s.pop();
-  const v = isSymbolic(popped) && popped.expr.kind === 'num' ? _astToRplValue(popped.expr) : popped;
-  if (isSymbolic(v)) {
-    _pushCasResult(s, _casEval(v.expr, (e) => `factor(${e})`));
-    return;
-  }
-  if (isInteger(v) || (isReal(v) && v.value.isInteger())) {
-    s.push(_factorInteger(v));
-    return;
-  }
-  if (isReal(v) || isRational(v) || isName(v)) {
-    s.push(v);
-    return;
-  }
-  throw new RPLError('Bad argument type');
-}, { category: 'CAS / symbolic', categoryOrder: 8, label: "FACTOR" });
+register('FACTOR', _factorWith('factor'), { category: 'CAS / symbolic', categoryOrder: 8, label: "FACTOR" });
 
 
 // Giac prints factor(12) as (2)^2*3, so integers are factored natively;
