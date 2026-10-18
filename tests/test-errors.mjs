@@ -2,7 +2,7 @@ import { assert } from './helpers.mjs';
 import { ERROR_KINDS, parseErrorMessage, describeError } from '../www/src/ui/errors.js';
 import { errorBannerHtml, haltedBannerHtml } from '../www/src/ui/banner.js';
 import { describeValue } from '../www/src/ui/display.js';
-import { Str, Real, Name, Vector } from '../www/src/rpl/types.js';
+import { Str, Real, Name, Vector, RList } from '../www/src/rpl/types.js';
 
 {
   const p = parseErrorMessage('SIN: Bad argument type: expected real, got string');
@@ -103,4 +103,12 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
     `describeError: a statistics command without ΣDAT names ΣDAT and offers to store level 1 there when it holds an array (${withData.detail})`);
   assert(fixIds(bare) === 'help,explain' && fixIds(recall) === 'help,explain',
     'describeError: no Store level 1 fix with nothing to store, or for RCLΣ, which only reads ΣDAT back');
+}
+
+{
+  const short = RList([Real(1), Real(2)]), long = RList([Real(1), Real(2), Real(3)]);
+  const lists = describeError('ADD: Invalid dimension', ctx({ failure: { op: 'ADD', levels: [long, short] }, stack: [long, short], depth: 2 }));
+  const arrays = describeError('+: Invalid dimension', ctx({ failure: { op: '+', levels: [Vector([Real(1)])] }, stack: [], depth: 0 }));
+  assert(lists.kind === 'dimension' && /^Lists need the same number of items for ADD/.test(lists.detail) && /^Vectors and matrices/.test(arrays.detail),
+    `describeError: a size error over lists speaks of their items, not of vectors and matrices (${lists.detail})`);
 }

@@ -74,7 +74,7 @@ export const ERROR_KINDS = Object.freeze({
   dimension: {
     match: (p) => p.core === 'Invalid dimension',
     title: (c) => `${c.command ?? 'That command'}: the sizes don't match.`,
-    detail: (c) => sentence(`Vectors and matrices need compatible dimensions for ${c.command ?? 'this'}${c.culprits.length ? `. Here ${c.culprits.map((x) => `level ${x.level} is ${x.text}`).join(', ')}` : ''}`),
+    detail: (c) => sentence(`${c.culprits.some((x) => x.type === 'List') ? 'Lists need the same number of items' : 'Vectors and matrices need compatible dimensions'} for ${c.command ?? 'this'}${c.culprits.length ? `. Here ${c.culprits.map((x) => `level ${x.level} is ${x.text}`).join(', ')}` : ''}`),
     fixes: (c) => [...(c.command ? [{ id: 'help', label: `${c.command} reference` }] : []), { id: 'explain', label: 'Explain' }],
   },
   units: {
