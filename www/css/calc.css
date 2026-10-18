@@ -2122,21 +2122,21 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   .vr .acts .mini { flex: 0 1 auto; min-width: 34px; }
 }
 
-/* With the keyboard up the writers leave the stack some room: their hints wait for the keyboard to go, and a tall formula or matrix scrolls. */
-:root[data-keyboard] .eqw-ins, :root[data-keyboard] .mx-foot:not(.error) { display: none; }
-:root[data-keyboard] .eqw-canvas { max-height: calc(var(--app-height, 100dvh) * .4); }
-:root[data-keyboard] .mx-grid-wrap { max-height: calc(var(--app-height, 100dvh) * .35); }
-/* Typing at a PROMPT, the halt banner keeps to one row of title and icon keys, so level 1 stays in view; the keys drop under a message that would get less than 140px beside them (four keys left a PROMPT's message 48px at 280). */
-:root[data-keyboard] .bn.halt { display: flex; flex-wrap: wrap; align-items: center; padding-block: 6px; }
-:root[data-keyboard] .bn.halt :is(.bn-ico, .bn-prog), :root[data-keyboard] .bn.halt .bn-f span { display: none; }
-:root[data-keyboard] .bn.halt .bn-t { flex: 1 1 140px; }
-:root[data-keyboard] .bn.halt .bn-f { flex: none; flex-wrap: nowrap; margin-top: 0; }
-:root[data-keyboard] .bn.halt .bn-f .chip { min-width: 40px; justify-content: center; padding-inline: 0; }
-/* Typing after an error, the banner keeps to its title and fixes, so the command line stays in view; the explanation waits for the keyboard to go. */
-:root[data-keyboard] .bn:not(.halt) { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding-block: 6px; }
-:root[data-keyboard] .bn:not(.halt) :is(.bn-ico, .bn-d) { display: none; }
-:root[data-keyboard] .bn:not(.halt) .bn-x { grid-column: 2; }
-:root[data-keyboard] .bn:not(.halt) .bn-f { grid-column: 1 / -1; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-top: 2px; }
+/* With the keyboard up, or in a window under 400px (data-short: a phone's split screen or landscape), the writers leave the stack some room: their hints wait for the room to come back, and a tall formula or matrix scrolls. */
+:root:is([data-keyboard], [data-short]) .eqw-ins, :root:is([data-keyboard], [data-short]) .mx-foot:not(.error) { display: none; }
+:root:is([data-keyboard], [data-short]) .eqw-canvas { max-height: calc(var(--app-height, 100dvh) * .4); }
+:root:is([data-keyboard], [data-short]) .mx-grid-wrap { max-height: calc(var(--app-height, 100dvh) * .35); }
+/* So does the halt banner, keeping to one row of title and icon keys, so level 1 stays in view; the keys drop under a message that would get less than 140px beside them (four keys left a PROMPT's message 48px at 280). */
+:root:is([data-keyboard], [data-short]) .bn.halt { display: flex; flex-wrap: wrap; align-items: center; padding-block: 6px; }
+:root:is([data-keyboard], [data-short]) .bn.halt :is(.bn-ico, .bn-prog), :root:is([data-keyboard], [data-short]) .bn.halt .bn-f span { display: none; }
+:root:is([data-keyboard], [data-short]) .bn.halt .bn-t { flex: 1 1 140px; }
+:root:is([data-keyboard], [data-short]) .bn.halt .bn-f { flex: none; flex-wrap: nowrap; margin-top: 0; }
+:root:is([data-keyboard], [data-short]) .bn.halt .bn-f .chip { min-width: 40px; justify-content: center; padding-inline: 0; }
+/* And an error's banner keeps to its title and fixes, so the command line stays in view; the explanation waits too. */
+:root:is([data-keyboard], [data-short]) .bn:not(.halt) { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding-block: 6px; }
+:root:is([data-keyboard], [data-short]) .bn:not(.halt) :is(.bn-ico, .bn-d) { display: none; }
+:root:is([data-keyboard], [data-short]) .bn:not(.halt) .bn-x { grid-column: 2; }
+:root:is([data-keyboard], [data-short]) .bn:not(.halt) .bn-f { grid-column: 1 / -1; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-top: 2px; }
 /* The assistant keeps its conversation in view the same way: the endpoint button and token counts wait for the keyboard to go. */
 :root[data-keyboard] .cb-switch-model-btn, :root[data-keyboard] .cb-stats { display: none; }
 /* A landscape phone with its keyboard up has about 190px left: while typing, only the stack, the line or writer and its keys stay. */
@@ -2144,7 +2144,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   :root[data-keyboard] .input-top, :root[data-keyboard] .input-hint,
   :root[data-keyboard] .mx-foot, :root[data-keyboard] .status-line, :root[data-keyboard] .appbar, :root[data-keyboard] .menubar, :root[data-keyboard] .st-more { display: none; }
   :root[data-keyboard] .app { grid-template-rows: minmax(0, 1fr); }
-  :root[data-keyboard] .mx-grid-wrap { max-height: 92px; }
+  :root:is([data-keyboard], [data-short]) .mx-grid-wrap { max-height: 92px; }
   /* In landscape the writers' keys sit beside the formula or matrix; on a narrow screen they stay under it, or they push it off the edge. */
   @container app (min-width: 480px) {
     :root[data-keyboard] .mx, :root[data-keyboard] .eqw { grid-template-columns: 1fr auto; align-items: end; }

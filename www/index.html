@@ -39,6 +39,8 @@
     root.style.setProperty('--app-height', `${viewport.height}px`);
     fullHeight = editing() ? Math.max(fullHeight, viewport.height) : viewport.height;
     root.toggleAttribute('data-keyboard', coarsePointer.matches && editing() && viewport.height < fullHeight * 0.75);
+    // A window under 400px (a phone's split screen or landscape) is as tight as one with the keyboard up.
+    root.toggleAttribute('data-short', viewport.height < 400);
   };
   pinAppViewport();
   window.visualViewport?.addEventListener('resize', pinAppViewport);

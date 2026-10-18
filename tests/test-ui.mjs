@@ -1850,9 +1850,9 @@ setAngle('RAD');
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const short = css.slice(css.indexOf('@media (max-height: 300px) {\n  :root[data-keyboard] .input-top'));
-  assert(/:root\[data-keyboard\] \.bn:not\(\.halt\) \{ grid-template-columns: minmax\(0, 1fr\) auto; align-items: center; padding-block: 6px; \}/.test(css)
-    && /:root\[data-keyboard\] \.bn:not\(\.halt\) :is\(\.bn-ico, \.bn-d\) \{ display: none; \}/.test(css)
-    && /:root\[data-keyboard\] \.bn:not\(\.halt\) \.bn-f \{ grid-column: 1 \/ -1; flex-wrap: nowrap; overflow-x: auto;/.test(css)
+  assert(/:root:is\(\[data-keyboard\], \[data-short\]\) \.bn:not\(\.halt\) \{ grid-template-columns: minmax\(0, 1fr\) auto; align-items: center; padding-block: 6px; \}/.test(css)
+    && /:root:is\(\[data-keyboard\], \[data-short\]\) \.bn:not\(\.halt\) :is\(\.bn-ico, \.bn-d\) \{ display: none; \}/.test(css)
+    && /:root:is\(\[data-keyboard\], \[data-short\]\) \.bn:not\(\.halt\) \.bn-f \{ grid-column: 1 \/ -1; flex-wrap: nowrap; overflow-x: auto;/.test(css)
     && /:root\[data-keyboard\] \.app:has\(\.bn\.halt\) \.key-strip \{ display: none; \}/.test(short)
     && /@container app \(min-width: 480px\) \{\s*:root\[data-keyboard\] \.app:has\(\.bn\) \.key-strip \{ display: none; \}\s*:root\[data-keyboard\] \.bn:not\(\.halt\) \{ grid-template-columns: minmax\(0, 1fr\) auto auto; \}/.test(short),
     'errors, keyboard up: the banner keeps to its title and fixes (the explanation waits for the keyboard to go), and on a short landscape screen puts them on one row in the key strip\'s place, so the command line stays in view (it was pushed below the keyboard at 280 px and in landscape)');
@@ -1860,10 +1860,21 @@ setAngle('RAD');
 
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/:root\[data-keyboard\] \.bn\.halt \{ display: flex; flex-wrap: wrap; align-items: center; padding-block: 6px; \}/.test(css)
-    && /:root\[data-keyboard\] \.bn\.halt \.bn-t \{ flex: 1 1 140px; \}/.test(css)
-    && /:root\[data-keyboard\] \.bn\.halt \.bn-f \{ flex: none; flex-wrap: nowrap; margin-top: 0; \}/.test(css),
+  assert(/:root:is\(\[data-keyboard\], \[data-short\]\) \.bn\.halt \{ display: flex; flex-wrap: wrap; align-items: center; padding-block: 6px; \}/.test(css)
+    && /:root:is\(\[data-keyboard\], \[data-short\]\) \.bn\.halt \.bn-t \{ flex: 1 1 140px; \}/.test(css)
+    && /:root:is\(\[data-keyboard\], \[data-short\]\) \.bn\.halt \.bn-f \{ flex: none; flex-wrap: nowrap; margin-top: 0; \}/.test(css),
     'halts, keyboard up: the banner is a wrapping row, its message taking at least 140 px beside the keys or the whole row above them (a grid gave a PROMPT\'s message 48 px beside its four keys at 280 px, so a long message grew the banner to 380 px and pushed the command line under the keyboard)');
+}
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const html = readFileSync(new URL('../www/index.html', import.meta.url), 'utf8');
+  assert(/root\.toggleAttribute\('data-short', viewport\.height < 400\);/.test(html)
+    && /:root:is\(\[data-keyboard\], \[data-short\]\) \.eqw-ins, :root:is\(\[data-keyboard\], \[data-short\]\) \.mx-foot:not\(\.error\) \{ display: none; \}/.test(css)
+    && /:root:is\(\[data-keyboard\], \[data-short\]\) \.eqw-canvas \{ max-height: calc\(var\(--app-height, 100dvh\) \* \.4\); \}/.test(css)
+    && /:root:is\(\[data-keyboard\], \[data-short\]\) \.mx-grid-wrap \{ max-height: calc\(var\(--app-height, 100dvh\) \* \.35\); \}/.test(css)
+    && !/:root\[data-keyboard\] \.eqw-ins/.test(css),
+    'short windows: under 400 px the root carries data-short and the keyboard-up forms apply without a keyboard, so the writers\' hints and the banners\' explanations and icons wait (in a split screen at 360x370 the equation writer\'s hints pushed the soft keys 14 px under the edge; at 280x300 the matrix writer 16 px and a halt banner 5 px, the line\'s Enter with them)');
 }
 
 {
