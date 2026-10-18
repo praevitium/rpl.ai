@@ -389,9 +389,10 @@ class App {
     if (!b) return;
     const act = b.dataset.bn;
     if (act === 'dismiss') { this.dismissError(); return; }
-    const input = calcState.halted?.kind === 'input';
-    if (act === 'ok' && input) { this._acceptInput(); return; }
-    if (act === 'kill' && input) this.entry.cancel();
+    const kind = calcState.halted?.kind;
+    if (act === 'ok' && kind === 'input') { this._acceptInput(); return; }
+    if (act === 'cont' && kind === 'msgbox') { this._continueProgram(); return; }
+    if (act === 'kill' && kind === 'input') this.entry.cancel();
     const op = { cont: 'CONT', sst: 'SST', into: 'SST↓', kill: 'KILL' }[act];
     if (op) { this.entry.execOp(op); return; }
     if (act === 'fix') this._runFix(b.dataset.fix, b.dataset.arg);
@@ -1065,8 +1066,13 @@ class App {
     const text = this.entry.buffer;
     if (input.verify) { try { parseEntry(text); } catch (e) { this.entry.flashError(e); return; } }
     this.entry.cancel();
-    this.entry._snapForUndo();
-    this.entry.safeRun(() => { this.stack.push(Str(text)); lookup('CONT').fn(this.stack, this.entry); }, 'CONT', { keepPartial: true });
+    this._continueProgram(Str(text));
+  }
+
+  // A dialog's answer belongs to the program's run, so it adds no undo step: UNDO afterwards takes the whole run
+  // back, as the HP's LAST STACK does.
+  _continueProgram(...answers) {
+    this.entry.safeRun(() => { for (const a of answers) this.stack.push(a); lookup('CONT').fn(this.stack, this.entry); }, 'CONT', { keepPartial: true });
   }
 
   backspace() {
