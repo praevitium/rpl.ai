@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.144 (2026-10-18)
+**Latest release:** v0.6.145 (2026-10-18)
 
 ---
 
@@ -18,6 +18,24 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.145 — 2026-10-18
+
+Division by zero follows the HP's error list: `0 0 /` is an Undefined
+result (#304h), for integers, reals, complex numbers, units and `'0/0'`
+EVAL alike, where it was an Infinite result; any other x/0 stays an Infinite
+result (#305h), fractions included, where `1/3 0 /` let out the fraction
+library's own "Division by Zero" with no error number. A binary integer
+divided by zero gives `#0`, as the AUR says, where it was an error. Roots
+stay exact, as in the HP's exact mode: `8 √` gives `2√2`, `8/9 √` gives
+`2√2/3`, `4 1/2 ^` gives `2`, `27 2/3 ^` gives `9`, `2 -1/2 ^` gives `√2/2`
+and `27 3 XROOT` gives `3`, where they stayed whole or gave `3.`; a root that
+doesn't come out, such as `2 1/3 ^`, stays as it was. The 0/0 banner says
+"0/0 has no value", where it said "/ has no value there" and spoke of one
+argument outside the function's domain, and an expression's Undefined
+result is the expression's rather than EVAL's.
 
 ---
 
