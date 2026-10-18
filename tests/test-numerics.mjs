@@ -7310,3 +7310,13 @@ function _arrayEq(a, b) {
     'NDIST(0,1,0) is 1/√(2π), NDIST(0,1,1) the density one sigma out, and NDIST(5,4,9) the N(5,2²) density at 9');
   assertThrows(() => density(0, 0, 1), /Bad argument value/, 'NDIST refuses a variance that is not positive');
 }
+
+{
+  const top = (line) => runLine(line).peek();
+  const parts = (v) => `${v.re},${v.im}`;
+  assert(parts(top('(1,1) 2 ^')) === '0,2' && parts(top('(1,1) 2. ^')) === '0,2' && parts(top('(1,1) -2 ^')) === '0,-0.5',
+    '^: a complex number to an integer power is exact where SQ is, (1,1)^2 = (0,2), with no 1.2E-16 left in the real part');
+  const big = top('(1,1) 100 ^');
+  assert(big.im === 0 && big.re === -1125899906840000, `^: (1,1)^100 is -2^50 to 12 digits with no stray imaginary part (got ${parts(big)})`);
+  assert(Math.abs(top('(1,1) 0.5 ^').re - 1.09868411347) < 1e-11, '^: a fractional power of a complex number still takes the principal root');
+}

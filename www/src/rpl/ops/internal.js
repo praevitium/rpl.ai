@@ -456,10 +456,20 @@ function complexBinary(op, a, b) {
     case '-': r = ca.sub(cb); break;
     case '*': r = ca.mul(cb); break;
     case '/': r = ca.div(cb); break;
-    case '^': r = ca.pow(cb); break;
+    case '^': r = cb.im === 0 && Number.isSafeInteger(cb.re) ? _complexIntPow(ca, cb.re) : ca.pow(cb); break;
     default: throw new RPLError('Unknown op ' + op);
   }
   return { re: r.re, im: r.im };
+}
+
+// By squaring, as SQ and * do: the polar form leaves noise such as (1,1)^2 = (1.2E-16, 2).
+function _complexIntPow(z, n) {
+  let result = new Complex$(1, 0), base = z;
+  for (let k = Math.abs(n); k > 0; k = Math.floor(k / 2)) {
+    if (k % 2) result = result.mul(base);
+    base = base.mul(base);
+  }
+  return n < 0 ? result.inverse() : result;
 }
 
 
