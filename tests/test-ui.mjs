@@ -2301,4 +2301,6 @@ setAngle('RAD');
     && /\(isMatrix\(value\) \|\| isVector\(value\)\) && !short\) \{/.test(displaySrc)
     && /\.st-val\.one-line \.list-inline \{ flex-wrap: nowrap; \}/.test(cssSrc) && /\.st-val\.one-line \.value-text \{ flex: none; overflow: visible; \}/.test(cssSrc),
     'deeper levels: above level 1 a list keeps to one line and a matrix of more than 3 rows shows in its typed form, fading at the edge, while level 1, a selected level and VIEW show them whole, where a 30-item list and a 6x3 matrix took 185 px each at 280 px');
+  assert(/\.st-row\.sel \.st-val \.list-inline \.lcell, \.sheet-view \.st-val \.list-inline \.lcell \{ white-space: normal; overflow-wrap: anywhere; \}/.test(cssSrc),
+    'whole lists: a selected level and VIEW wrap a long string inside a list, where { "a 60-character message" 1 } ran 640 px wide in a 192 px level at 280 px');
 }
