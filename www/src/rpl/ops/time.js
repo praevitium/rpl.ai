@@ -30,7 +30,7 @@ function number(v) {
 function digitsOf(v, decimals) {
   const d = number(v);
   if (d.isNegative()) throw new RPLError('Bad argument value');
-  return d.toFixed(decimals).split('.');
+  return d.toFixed(decimals, Decimal.ROUND_DOWN).split('.');
 }
 
 // MM.DDYYYY, or DD.MMYYYY with flag -42, as the UTC midnight of that day.
