@@ -943,13 +943,14 @@ function* evalRange(s, toks, from, to, depth) {
 // and entry modes; of those only V, which asks that the answer parse, means anything here.
 // INPUT's command-line list: its string, a cursor position (n counts characters from the left of the first row,
 // { row col } names the row; 0 is the end of the row, and a negative number asks for the HP's replace cursor,
-// which the line has not), and the names V, ALG and α, of which V alone matters here.
+// which the line has not), and the names V (verify), α (alpha lock) and ALG, which has no entry mode to set here.
 function inputSpec(v) {
-  if (isString(v)) return { text: v.value, verify: false, cursor: null };
+  if (isString(v)) return { text: v.value, verify: false, cursor: null, alpha: false };
   if (!isList(v)) throw new RPLError('INPUT: Bad argument type');
   const text = v.items.find(isString)?.value ?? '';
   const pos = v.items.find((item) => isReal(item) || isInteger(item) || (isList(item) && item.items.length === 2));
-  return { text, verify: v.items.some((item) => isName(item) && item.id === 'V'), cursor: pos ? inputCursor(text, pos) : null };
+  const named = (id) => v.items.some((item) => isName(item) && item.id === id);
+  return { text, verify: named('V'), cursor: pos ? inputCursor(text, pos) : null, alpha: named('α') };
 }
 
 function inputCursor(text, pos) {

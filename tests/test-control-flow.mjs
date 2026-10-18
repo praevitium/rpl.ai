@@ -7378,6 +7378,14 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   s.push(parseEntry('« "N?" { "A" { "x" 1 } } INPUT »')[0]);
   assertThrows(() => lookup('EVAL').fn(s), /INPUT: Bad argument type/, 'a cursor pair that is not two numbers is refused');
   clearAllHalted(); clearPromptMessage();
+  s.push(parseEntry('« "Name?" { "" α } INPUT »')[0]);
+  lookup('EVAL').fn(s);
+  assert(getHalted()?.dialog.alpha === true, "INPUT's α asks for the alpha lock while the program waits");
+  clearAllHalted(); clearPromptMessage();
+  s.push(parseEntry('« "Name?" "" INPUT »')[0]);
+  lookup('EVAL').fn(s);
+  assert(getHalted()?.dialog.alpha === false, 'a plain INPUT asks for no alpha lock');
+  clearAllHalted(); clearPromptMessage();
   const t = new Stack();
   t.push(Program([Str('N?'), Integer(5n), Name('INPUT')]));
   assertThrows(() => lookup('EVAL').fn(t), /INPUT: Bad argument type/, 'INPUT wants a string or a list in level 1');

@@ -1091,6 +1091,7 @@ class App {
         if (this.inputMode !== 'rpl') this._closeWriter((mode) => `Put the ${mode} aside for the program's INPUT`);
         this.entry.recall(halted.dialog.text);
         if (halted.dialog.cursor != null) this.entry.cursor = halted.dialog.cursor;
+        if (halted.dialog.alpha && this.shift !== 'alphaLock') { this._dialogAlpha = true; this.setShift('alphaLock'); }
       } else if (halted.kind === 'inform') this.showInformSheet();
       else this.showChooseList();
     });
@@ -1105,6 +1106,7 @@ class App {
 
   // A CHOOSE's list goes with its dialog: the banner's keys sit on the popover's anchor, where a press leaves it open.
   _endDialog() {
+    if (this._dialogAlpha) { this._dialogAlpha = false; if (this.shift === 'alphaLock') this.setShift(null); }
     if (this._dialogHalt.kind === 'choose') this.popover.close({ restoreFocus: false });
     if (this._dialogHalt.kind === 'inform' && this.sheets.kind === 'inform') this.sheets.close();
     clearTimeout(this._waitTimer);

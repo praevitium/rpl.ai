@@ -501,7 +501,7 @@ stack stays in view. `MSGBOX` shows its message with an OK key and goes
 on when you tap it. `INPUT` asks: its prompt is the banner, the text it
 offers is on the command line, and Enter or OK hands the line back to the
 program as a string (the HP's `V` option asks that it parse first; its
-cursor position is taken, its entry modes are not). `CHOOSE` lists its
+cursor position and α lock are taken, ALG is not). `CHOOSE` lists its
 choices in a popover: a tap answers with the choice (or the second object
 of a `{ display result }` pair) and 1, Cancel with 0. `DISP` writes a
 message on one of seven display lines above the command line and `CLLCD`
