@@ -369,6 +369,13 @@ import { assert, assertThrows } from './helpers.mjs';
     && /CAS: \(\) => this\._groupKeys\(CAS_GROUPS, 'CAS'\),/.test(appSrc),
     `CAS menu: it opens on folders after the HP's CAS menus, ALG as the HP has it (COLLECT EXPAND FACTOR LNCOLLECT LIN PARTFRAC SOLVE SUBST TEXPAND), then CALC, S.SLV, TRIG and EXP&LN, every key a CAS command, so a phone reaches algebra in two taps instead of paging through nine (unknown ${CAS_GROUPS.flatMap((g) => g.commands).filter((n) => !casNames.includes(n))})`);
   {
+    const { TRIG_GROUPS } = await import('../www/src/ui/menus.js');
+    assert(TRIG_GROUPS.map((g) => `${g.id}: ${g.commands.join(' ')}`).join(' / ') === 'HYP: SINH ASINH COSH ACOSH TANH ATANH EXPM LNP1'
+      && TRIG_GROUPS.every((g) => g.commands.every((n) => lookup(n)))
+      && /TRIG: \(\) => this\._groupKeys\(TRIG_GROUPS, 'TRIG'\),/.test(appSrc),
+      'TRIG menu: it opens on the HP\'s MTH HYP folder, in its order with EXPM and LNP1, where the hyperbolics sat on the third page');
+  }
+  {
     const { INTEGER_GROUPS } = await import('../www/src/ui/menus.js');
     const intFamily = MENU_FAMILIES.find((f) => f.id === 'INTEGER');
     assert(INTEGER_GROUPS.map((g) => `${g.id}: ${g.commands.join(' ')}`).join(' / ') === 'INTEG: EULER IABCUV ICHINREM IDIV2 IEGCD IQUOT IREMAINDER ISPRIME? NEXTPRIME PA2B2 PREVPRIME / MODUL: ADDTMOD DIVMOD DIV2MOD EXPANDMOD FACTORMOD GCDMOD INVMOD MOD MODSTO MULTMOD POWMOD SUBTMOD'

@@ -70,6 +70,11 @@ export const CAS_GROUPS = Object.freeze([
   { id: 'EXP&LN', title: 'Exponentials and logarithms', commands: ['EXPLN', 'LIN', 'LNCOLLECT', 'TEXPAND', 'TSIMP'] },
 ]);
 
+// The HP's MTH HYP folder: the hyperbolic functions in its order, with EXPM and LNP1.
+export const TRIG_GROUPS = Object.freeze([
+  { id: 'HYP', title: 'Hyperbolic functions', commands: ['SINH', 'ASINH', 'COSH', 'ACOSH', 'TANH', 'ATANH', 'EXPM', 'LNP1'] },
+]);
+
 // The HP's ARITH menu's INTEGER and MODULO folders, under its own key faces; DIVIS, FACTORS and PROPFRAC follow them.
 export const INTEGER_GROUPS = Object.freeze([
   { id: 'INTEG', title: 'Integers', commands: ['EULER', 'IABCUV', 'ICHINREM', 'IDIV2', 'IEGCD', 'IQUOT', 'IREMAINDER', 'ISPRIME?', 'NEXTPRIME', 'PA2B2', 'PREVPRIME'] },
