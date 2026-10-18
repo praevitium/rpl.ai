@@ -150,7 +150,7 @@ RPL puts the numbers first and the operation last. Each value goes on the
   them in another base, and `8 STWS` sets the word size, so `#81h RL` gives
   `#3h`. The BASE menu holds them as the HP's does, with folders for
   LOGIC (AND, OR, XOR, NOT), BIT (RL, SL, ASR, SR, RR) and BYTE (RLB, SLB,
-  SRB, RRB). A mode key there or in any menu (HEX, DEG, RECT) shows a mark
+  SRB, RRB). A mode key there or in any menu (HEX, DEG, RECT, CMPLX) shows a mark
   while its mode is on, and on a phone the modes summary names the base,
   polar coordinates and complex mode whenever they aren't the defaults.
 - **Complex numbers.** `(3,4)` is 3+4i and `(2,∠1.5)` is typed in polar

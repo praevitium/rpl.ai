@@ -69,7 +69,7 @@ const SIGMA_DATA_KEYS = ['Σ+', 'Σ-', 'CLΣ', 'STOΣ'];
 // The mode commands whose keys mark the mode in force, as the HP's DEG■ and HEX■ do: [state field, value].
 const MODE_KEYS = Object.freeze({
   DEG: ['angle', 'DEG'], RAD: ['angle', 'RAD'], GRAD: ['angle', 'GRD'], GRD: ['angle', 'GRD'],
-  RECT: ['coordMode', 'RECT'], CYLIN: ['coordMode', 'CYLIN'], SPHERE: ['coordMode', 'SPHERE'],
+  RECT: ['coordMode', 'RECT'], CYLIN: ['coordMode', 'CYLIN'], SPHERE: ['coordMode', 'SPHERE'], CMPLX: ['complexMode', true],
   HEX: ['binaryBase', 'h'], DEC: ['binaryBase', 'd'], OCT: ['binaryBase', 'o'], BIN: ['binaryBase', 'b'],
 });
 
