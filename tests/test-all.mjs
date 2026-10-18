@@ -20,6 +20,7 @@ const FILES = [
   './test-control-flow.mjs',
   './test-binary-int.mjs',
   './test-time.mjs',
+  './test-root.mjs',
   './test-algebra.mjs',
   './test-entry.mjs',
   './test-matrix.mjs',

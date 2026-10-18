@@ -28,3 +28,4 @@ import './ops/system.js';
 import './ops/statistics.js';
 import './ops/control.js';
 import './ops/graphics.js';
+import './ops/root.js';

@@ -83,6 +83,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   LINSOLVE                   [ \`X+Y=3\` \`X-Y=1\` ] [ X Y ] LINSOLVE → the system as a list, the pivots, and [ \`X=2\` \`Y=1\` ] on level 1
   LIMIT (alias lim)          \`expr\` \`var=value\` LIMIT — limit at a point
   ZEROS                      \`expr\` \`var\` ZEROS — the roots as plain values, each once: \`X^3-X^2-8*X+12\` \`X\` ZEROS → { -3 2 }
+  ROOT                       \`f\` \`var\` guess ROOT — a numeric root near the guess (or in { a b }), stored in var: \`COS(X)=X\` \`X\` 1 ROOT → .739085133215
   TAYLR TAYLOR0              \`expr\` \`var\` n TAYLR — Taylor polynomial at 0, n counted from the lowest power; \`expr\` TAYLOR0 is order 4 in VX
   SERIES                     \`expr\` \`X=a\` n SERIES (or \`X\` for a=0, \`X=∞\`) — pushes { :Limit: :Equiv: :Expans: :Remain: } in a small h and \`h=X-a\`
   SUBST                      \`expr\` \`var=value\` SUBST — substitute

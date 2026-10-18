@@ -54,8 +54,8 @@ const REF = parseCommandReference(HTML);
   assert(/Level 2\/Argument 1/.test(deriv.input) && /derivative/.test(deriv.output),
          'DERIV entry splits input/output fields');
   assert(/DERIV\(2\*X\^2\*Y/.test(deriv.example), 'DERIV entry keeps its example command');
-  const root = REF.get('ROOT');
-  assert(root && !root.inApp, 'ROOT is indexed but flagged not-in-app');
+  const mslv = REF.get('MSLV');
+  assert(mslv && !mslv.inApp, 'MSLV is indexed but flagged not-in-app');
 }
 
 {
@@ -94,8 +94,8 @@ const REF = parseCommandReference(HTML);
   assert(/See also: COMB, PERM, !/.test(text), 'formatReferenceEntry includes see-also');
   const sto = formatReferenceEntry(REF.get('STO'), { maxChars: 500 });
   assert(sto.length <= 500, 'formatReferenceEntry honours maxChars');
-  const root = formatReferenceEntry(REF.get('ROOT'));
-  assert(/NOT implemented in this calculator/.test(root),
+  const mslv = formatReferenceEntry(REF.get('MSLV'));
+  assert(/NOT implemented in this calculator/.test(mslv),
          'formatReferenceEntry flags commands the app lacks');
   assert(formatReferenceEntry(null) === '', 'formatReferenceEntry tolerates null');
   assert(shortDescription(REF.get('FIX')).startsWith('Sets the number display format'),
