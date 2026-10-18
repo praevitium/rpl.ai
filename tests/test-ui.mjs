@@ -2028,6 +2028,19 @@ setAngle('RAD');
     && /if \(this\._onArrow\) \{ e\.preventDefault\(\); this\._onArrow\(e\.key === 'ArrowDown' \? 1 : -1\); return; \}/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8')),
     'CHOOSE: the list opens with the marked row in view, the arrow keys (keypad and keyboard) move the mark within the list or bring back a list put away, and Enter answers with it');
 }
+
+{
+  const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/const sheet = \(title, content, nav = '', foot = ''\) =>[^\n]*<div class="sheet-c">\$\{content\}<\/div><\/div>\$\{foot && `<div class="sheet-f">\$\{foot\}<\/div>`\}<\/div>`;/.test(sheetsSrc)
+    && /<\/div>`, '', `\$\{act\('inform-ok', 'check', 'OK', ' pri'\)\}\$\{act\('inform-cancel', 'x', 'Cancel'\)\}\$\{act\('inform-reset', 'undo', 'Reset'\)\}`\);/.test(sheetsSrc)
+    && /<div class="sheet-view">\$\{this\.view\.html\}<\/div>`, '', acts\);/.test(sheetsSrc) && !/sheet-view-acts/.test(sheetsSrc) && !/sheet-view-acts/.test(css)
+    && /\.sheet \{[^\n]*grid-template-rows: auto minmax\(0, 1fr\) auto;/.test(css)
+    && /\.sheet-f \{ display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 22px 16px; border-top: 1px solid var\(--line\); \}/.test(css)
+    && /@container sheet \(max-height: 219px\) \{ \.sheet-f \{ display: none; \} \}/.test(css),
+    'Sheets: the OK, Cancel and Reset keys of INFORM and the Edit, Copy and Share keys of a View sheet sit in a footer outside the scroller, which a sheet too short for both (landscape with the keyboard up) drops for its fields');
+}
+
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/@container work \(max-width: 560px\) \{\s*:root\[data-theme="classic"\] \.ann-g\.opt \{ display: none; \}\s*\/\*[^*]*\*\/\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.ann-g\.opt:not\(\[data-mode\]\):has\(> \.on\) \{ display: flex; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.status-line:has\(\.ann-g\.opt:not\(\[data-mode\]\) > \.on\) \.ann-g > span:not\(\.on\) \{ display: none; \}/.test(css),
