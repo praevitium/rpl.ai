@@ -62,25 +62,11 @@ register('PERM', _withTaggedBinary(_withListBinary((s) => {
 })), { category: 'Probability / combinatorics', categoryOrder: 1, label: "PERM" });
 
 
-// Numerical Recipes §6.2 Chebyshev fit: relative error below 1.2e-7, well
-// short of the HP50's 12 digits.
+// erfc as Q(1/2, x²), to the HP50's 12 digits; a Chebyshev fit had 0 1 1.96 UTPN wrong from the 8th.
 function _erfc(x) {
   if (!Number.isFinite(x)) return x > 0 ? 0 : 2;
-  const z = Math.abs(x);
-  const t = 2 / (2 + z);
-  const ans = t * Math.exp(
-    -z * z - 1.26551223 +
-    t * (1.00002368 +
-    t * (0.37409196 +
-    t * (0.09678418 +
-    t * (-0.18628806 +
-    t * (0.27886807 +
-    t * (-1.13520398 +
-    t * (1.48851587 +
-    t * (-0.82215223 +
-    t * 0.17087277))))))))
-  );
-  return x >= 0 ? ans : 2 - ans;
+  const q = _regGammaQ(0.5, x * x);
+  return x >= 0 ? q : 2 - q;
 }
 
 

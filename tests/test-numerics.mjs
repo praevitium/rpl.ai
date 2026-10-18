@@ -4145,6 +4145,12 @@ setAngle('RAD');
     'session065: UTPN(0, 1, -1) ≈ 0.841345');
 }
 {
+  // Twelve digits, as the HP gives: 0 1 1.96 UTPN is .024997895148, and the far tail keeps its digits too.
+  const utpn = (x) => { const s = new Stack(); s.push(Real(0)); s.push(Real(1)); s.push(Real(x)); lookup('UTPN').fn(s); return s.peek().value.toNumber(); };
+  assert(Math.abs(utpn(1.96) / 0.024997895148220435 - 1) < 1e-11 && Math.abs(utpn(5) / 2.866515718791939e-7 - 1) < 1e-10 && Math.abs(utpn(-1.96) / 0.9750021048517795 - 1) < 1e-11,
+    'UTPN to 12 digits: 0 1 1.96 UTPN is 0.0249978951482 (it was 0.024997892964), and 0 1 5 UTPN 2.86651571879E-7');
+}
+{
   // Integer arguments accepted on all three slots.
   const s = new Stack();
   s.push(Integer(0n));
