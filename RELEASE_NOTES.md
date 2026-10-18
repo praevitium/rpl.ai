@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.131 (2026-10-18)
+**Latest release:** v0.6.132 (2026-10-18)
 
 ---
 
@@ -18,6 +18,18 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.132 — 2026-10-18
+
+A complex number raised to an integer power went through the polar form,
+so `(1,1) 2 ^` gave `(1.22464679915E-16, 2)` and `(1,1) 100 ^` carried a
+stray imaginary part. Integer powers now multiply by squaring, as SQ and *
+do, and give `(0, 2)` as the HP does. The CMPLX menu now leads with the
+HP's own keys, RE IM C→R R→C ABS ARG, then SIGN NEG CONJ, so ABS and NEG
+are a key away on a phone without the keypad; the coordinate modes follow.
+The CMPLX key shows a mark while complex mode is on, as RECT and CYLIN do.
 
 ---
 
