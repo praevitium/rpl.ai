@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.138 (2026-10-18)
+**Latest release:** v0.6.139 (2026-10-18)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.139 — 2026-10-18
+
+The HP's appointment alarms arrive: STOALARM, RCLALARM, DELALARM,
+FINDALARM, ACK and ACKALL, in the TIME menu's ALRM folder under the HP's
+key faces ACKAL, STOAL, RCLAL, DELAL and FINDA. `{ 10.192026 9.3 "Dentist" }
+STOALARM` stores an alarm and gives its index, and alarms are saved with
+the calculator. rpl.ai keeps message alarms only: an action that isn't a
+string, which the HP would run, is refused with Bad argument type. A
+selected list level and VIEW now wrap a long string inside the list, which
+ran 640 px wide in a 192 px level on a 280 px phone.
 
 ---
 
