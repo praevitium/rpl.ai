@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.124 (2026-10-18)
+**Latest release:** v0.6.125 (2026-10-18)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.125 — 2026-10-18
+
+`AMORT` arrives: `12 AMORT` splits the first twelve payments of the loan
+in the TVM variables into principal and interest and gives the balance
+left, so the $200,000 mortgage pays 2235.45 of principal and 12934.18 of
+interest in its first year. The TVM menu now has a key for each
+variable, as the HP's solver menus do: a press stores level 1 in it,
+the left shift solves for it and the right shift recalls it, and inside
+a program it types the same words. A formula holding `I%YR`, such as
+`'I%YR*2'`, couldn't be typed or edited back in, because the algebra
+reader stopped a name at the `%`; it now reads the whole name.
 
 ## v0.6.124 — 2026-10-18
 
