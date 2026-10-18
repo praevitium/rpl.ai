@@ -356,7 +356,7 @@ export class GraphView {
     return isData(top) ? top : varRecall('ΣDAT');
   }
 
-  applyPlotOp(kind, stack) {
+  applyPlotOp(kind, stack, data = null) {
     if (kind === 'draw') {
       this.draw();
       return;
@@ -365,7 +365,7 @@ export class GraphView {
     const spec = TRACE_KINDS[kind];
     const top = stack.peek();
     if (!spec.fields?.length) {
-      this.loadData(kind, isData(top) ? top : varRecall('ΣDAT'));
+      this.loadData(kind, data ?? (isData(top) ? top : varRecall('ΣDAT')));
       return;
     }
     const built = isSymbolic(top) ? stackValueToTrace(top, kind, stack.depth >= 2 ? stack.peek(2) : null) : null;

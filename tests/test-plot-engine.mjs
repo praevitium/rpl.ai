@@ -1,4 +1,4 @@
-import { assert, assertThrows } from './helpers.mjs';
+import { assert, assertThrows, runLine } from './helpers.mjs';
 import {
   evalNumeric, lookupEnv, parsePlotExpr, sampleFunction, samplePolar,
   sampleParametric, segmentPoints, niceTicks, niceNum, hasUsableSpan, worldToPixel,
@@ -175,6 +175,26 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(seen.kind === 'hist', 'HISTPLOT: hook');
   lookup('DRAW').fn(s);
   assert(seen.kind === 'draw', 'DRAW: hook');
+
+  const rows = (m) => m.rows.map((r) => r.map((c) => Number(c.value)).join(',')).join(' ');
+  setGraphicsHook((kind, st, data) => { seen = { kind, data }; });
+  runLine('[[ 1 10 100 ][ 2 20 200 ][ 3 30 300 ]] STOΣ 1 XCOL 3 YCOL');
+  const empty = new Stack();
+  lookup('SCATRPLOT').fn(empty);
+  const scatter = rows(seen.data);
+  lookup('BARPLOT').fn(empty);
+  const bars = rows(seen.data);
+  runLine('2 XCOL');
+  lookup('HISTPLOT').fn(empty);
+  assert(scatter === '1,100 2,200 3,300' && bars === '1 2 3' && rows(seen.data) === '10 20 30',
+    `SCATRPLOT plots ΣDAT's XCOL column against its YCOL column, BARPLOT and HISTPLOT its XCOL column, as the AUR says (${scatter} / ${bars} / ${rows(seen.data)})`);
+  runLine('1 XCOL 5 YCOL');
+  assertThrows(() => lookup('SCATRPLOT').fn(empty), /Invalid dimension/, 'SCATRPLOT with YCOL past ΣDAT\'s last column is Invalid dimension');
+  lookup('BARPLOT').fn(empty);
+  assert(rows(seen.data) === '1 2 3', 'BARPLOT needs only the XCOL column, so a YCOL past the last column does not stop it');
+  runLine('2 YCOL CLΣ');
+  assertThrows(() => lookup('SCATRPLOT').fn(empty), /Nonexistent ΣDAT/, 'SCATRPLOT with no ΣDAT and no array on level 1 is Nonexistent ΣDAT');
+  runLine('{ ΣPAR } PURGE');
   setGraphicsHook(null);
   assertThrows(() => lookup('FUNCTION').fn(s), /No graphics view/,
     'FUNCTION without hook → No graphics view');
@@ -306,6 +326,7 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(mixed.ymax > 5 && mixed.xmax < 2,
     'fitViewToTraces: a function beside a polar curve stays inside the fitted window');
 }
+
 
 {
   const polar = samplePolar(parsePlotExpr('1+0*X'), 0, Math.PI, 5, {}, { toRad: x => x });

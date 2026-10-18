@@ -1,6 +1,7 @@
 import { RPLError } from '../stack.js';
 import { inScratchState } from '../state.js';
 import { register } from './registry.js';
+import { statPlotData } from './statistics.js';
 
 
 let _graphicsHook = null;
@@ -9,20 +10,20 @@ export function setGraphicsHook(fn) {
   _graphicsHook = typeof fn === 'function' ? fn : null;
 }
 
-function _requestPlot(kind, s) {
+function _requestPlot(kind, s, data = null) {
   if (inScratchState()) return;
   if (!_graphicsHook) {
     throw new RPLError('No graphics view');
   }
-  _graphicsHook(kind, s);
+  _graphicsHook(kind, s, data);
 }
 
 
-register('SCATRPLOT', (s) => _requestPlot('scatter', s), { category: 'Graphics', categoryOrder: 2, label: "SCATRPLOT" });
+register('SCATRPLOT', (s) => _requestPlot('scatter', s, statPlotData('scatter', s)), { category: 'Graphics', categoryOrder: 2, label: "SCATRPLOT" });
 
-register('BARPLOT',   (s) => _requestPlot('bar', s), { category: 'Graphics', categoryOrder: 0, label: "BARPLOT" });
+register('BARPLOT',   (s) => _requestPlot('bar', s, statPlotData('bar', s)), { category: 'Graphics', categoryOrder: 0, label: "BARPLOT" });
 
-register('HISTPLOT',  (s) => _requestPlot('hist', s), { category: 'Graphics', categoryOrder: 1, label: "HISTPLOT" });
+register('HISTPLOT',  (s) => _requestPlot('hist', s, statPlotData('hist', s)), { category: 'Graphics', categoryOrder: 1, label: "HISTPLOT" });
 
 register('FUNCTION',  (s) => _requestPlot('function', s), { category: 'Graphics', categoryOrder: 3, label: "FUNCTION" });
 

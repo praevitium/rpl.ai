@@ -233,6 +233,19 @@ function _requireXY(M) {
 
 const _yColumn = (M) => _matStatsCol(M, _dataColumns()[1]);
 
+// What SCATRPLOT, BARPLOT and HISTPLOT draw: an array on level 1, or else ΣDAT's XCOL column against its YCOL
+// column for a scatter and its XCOL column alone for bars, as on the HP.
+export function statPlotData(kind, s) {
+  const top = s.depth ? s.peek(1) : null;
+  if (isVector(top) || isMatrix(top) || isList(top)) return top;
+  const M = _sigmaData();
+  if (!isMatrix(M)) return M;
+  const [x, y] = _dataColumns();
+  const cols = kind === 'scatter' ? [x, y] : [x];
+  if (!M.rows.length || Math.max(...cols) >= M.rows[0].length) throw new RPLError('Invalid dimension');
+  return Matrix(M.rows.map((row) => cols.map((c) => row[c])));
+}
+
 function _countOp(s) {
   const M = _popData(s);
   let n;

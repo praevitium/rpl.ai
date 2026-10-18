@@ -277,9 +277,9 @@ export class Drawers {
     return this._graph;
   }
 
-  openGraph(kind, stack) {
+  openGraph(kind, stack, data = null) {
     this.open('plot');
-    this.graph.applyPlotOp(kind, stack);
+    this.graph.applyPlotOp(kind, stack, data);
   }
 
   insertText(text) {
