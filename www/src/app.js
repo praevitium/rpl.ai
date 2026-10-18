@@ -1484,7 +1484,9 @@ class App {
 
   _showFamilyMenu(id) {
     const family = MENU_FAMILIES.find((f) => f.id === id) ?? MENU_FAMILIES[0];
-    const slots = familyCommands(family).map((name) => this._commandSlot(name));
+    // A family's keys put the HP's own menu first, commands from other families included, and the rest follow.
+    const keys = family.keys ?? [];
+    const slots = [...keys, ...familyCommands(family).filter((name) => !keys.includes(name))].map((name) => this._commandSlot(name));
     const lead = {
       UNITS: () => UNIT_GROUPS.map((group) => ({ label: group.id, dir: true, title: `${group.title}: ${group.units.length} units`, onPress: () => this._showUnitMenu(group) })),
       TVM: () => TVM_VARIABLES.map((id) => this._tvmKey(id)),

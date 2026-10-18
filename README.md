@@ -153,6 +153,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   SRB, RRB). A mode key there or in any menu (HEX, DEG, RECT) shows a mark
   while its mode is on, and on a phone the modes summary names the base,
   polar coordinates and complex mode whenever they aren't the defaults.
+- **Complex numbers.** `(3,4)` is 3+4i and `(2,∠1.5)` is typed in polar
+  form; `CYLIN` shows them that way. The CMPLX menu leads with the HP's
+  RE IM C→R R→C ABS ARG, then SIGN NEG CONJ, then the coordinate modes, and
+  an integer power is exact, so `(1,1) 2 ^` gives `(0, 2)`.
 - **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
   then gives `25`, and SQUARE appears on the VARS menu. A stored program
   runs by name like a built-in. Built-in names such as `SQ` are reserved.

@@ -8,7 +8,7 @@ export const MENU_FAMILIES = Object.freeze([
   { id: 'TIME', short: 'TIME', title: 'Time and dates', category: 'Time / dates' },
   { id: 'TVM', short: 'TVM', title: 'Time value of money', category: 'Finance' },
   { id: 'TRIG', short: 'TRIG', title: 'Trig, log and exp', category: 'Trig / log / exp / hyperbolic' },
-  { id: 'CPLX', short: 'CMPLX', title: 'Complex numbers', category: 'Complex / coordinates' },
+  { id: 'CPLX', short: 'CMPLX', title: 'Complex numbers', category: 'Complex / coordinates', keys: ['RE', 'IM', 'C→R', 'R→C', 'ABS', 'ARG', 'SIGN', 'NEG', 'CONJ', 'C→P', 'P→C', 'CMPLX', 'RECT', 'CYLIN', 'SPHERE', 'CMPLX?'] },
   { id: 'LOGIC', short: 'LOGIC', title: 'Comparisons and logic', category: 'Comparisons / logic' },
   { id: 'INTEGER', short: 'INTGR', title: 'Integers', category: 'Integer / number theory' },
   { id: 'PROB', short: 'PROB', title: 'Probability', category: 'Probability / combinatorics' },
