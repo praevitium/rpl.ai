@@ -21,6 +21,7 @@ export class Popover {
       if (!this.el) return;
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.close(); return; }
       if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      if (this._onArrow) { e.preventDefault(); this._onArrow(e.key === 'ArrowDown' ? 1 : -1); return; }
       const items = [...this.el.querySelectorAll('.opt:not([disabled]), .grid button, .layers button:not([disabled])')];
       if (!items.length) return;
       e.preventDefault();
@@ -32,7 +33,7 @@ export class Popover {
 
   isOpen() { return !!this.el; }
 
-  open(anchor, html, { onClick = null, onClose = null, className = '', label = 'Menu', point = null, keepFocus = false, above = false } = {}) {
+  open(anchor, html, { onClick = null, onClose = null, className = '', label = 'Menu', point = null, keepFocus = false, above = false, onArrow = null } = {}) {
     this.close({ restoreFocus: false });
     this._onOpen?.();
     const el = document.createElement('div');
@@ -47,6 +48,7 @@ export class Popover {
     anchor?.setAttribute?.('aria-expanded', 'true');
     this._point = point;
     this._above = above;
+    this._onArrow = onArrow;
     this._place(point);
     if (onClick) {
       el.addEventListener('click', (e) => {

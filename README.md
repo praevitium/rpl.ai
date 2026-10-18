@@ -507,23 +507,23 @@ Enter or OK hands the line back to the program as a string (the HP's `V`
 option asks that it parse first; its cursor position and α lock are
 taken, ALG is not). `CHOOSE` lists its choices in a popover: a tap
 answers with the choice (or the second object of a `{ display result }`
-pair) and 1, Enter with the marked one, Cancel with 0. `DISP` writes a
-message on one of seven display lines above the command line and `CLLCD`
-blanks them; the text goes when the program ends or pauses unless `FREEZE`
-keeps it until the next key. `WAIT` pauses a program for a number of
-seconds, or with 0 (or -1, which brings the soft keys up in minimal view)
-waits for a key and returns its HP key code: 92.1 for the 1 key, on the
-keypad or typed, 11.1 for the first soft key, 105.1 for Enter or the Enter
-chip on its banner. The display stays through a `WAIT`. `BEEP` sounds a
-tone, hertz then seconds (`440 .5 BEEP`); tones in a row play one after
-another, and flag -56, which silences the error beep, silences them too.
-`INFORM` opens its form in a sheet: a
-field per label with its help as the placeholder and its initial value
-typed in, OK parses each field (an empty one gives `NOVAL`, the name
-NOVAL here), checks it against the field's types and answers with the
-values and 1, Cancel with 0; Reset puts the reset values back. A program
-on the stack can be stepped from the start with `DBUG`, or with Debug in
-its level's ⋯ menu.
+pair) and 1, the arrow keys move the mark and Enter answers with it,
+Cancel with 0. `DISP` writes a message on one of seven display lines
+above the command line and `CLLCD` blanks them; the text goes when the
+program ends or pauses unless `FREEZE` keeps it until the next key.
+`WAIT` pauses a program for a number of seconds, or with 0 (or -1, which
+brings the soft keys up in minimal view) waits for a key and returns its
+HP key code: 92.1 for the 1 key, on the keypad or typed, 11.1 for the
+first soft key, 105.1 for Enter or the Enter chip on its banner. The
+display stays through a `WAIT`. `BEEP` sounds a tone, hertz then seconds
+(`440 .5 BEEP`); tones in a row play one after another, and flag -56,
+which silences the error beep, silences them too. `INFORM` opens its
+form in a sheet: a field per label with its help as the placeholder and
+its initial value typed in, OK parses each field (an empty one gives
+`NOVAL`, the name NOVAL here), checks it against the field's types and
+answers with the values and 1, Cancel with 0; Reset puts the reset
+values back. A program on the stack can be stepped from the start with
+`DBUG`, or with Debug in its level's ⋯ menu.
 
 ![A halted program](screenshots/debugging.png)
 

@@ -139,8 +139,8 @@ class App {
       onCommit: () => { if (this._answerKey(hpKeyCode('ENTER')) || this._enterAnswersDialog()) return; if (!this._runChord('Enter')) this.commitEntry(); },
       onType: (text) => this._answerKey(typedKeyCode(text)),
       onCancel: () => this.runAction('ui.escape'),
-      onArrowUpEmpty: () => this._runChord('ArrowUp'),
-      onArrowDownEmpty: () => this._runChord('ArrowDown'),
+      onArrowUpEmpty: () => this._moveChoice(-1) || this._runChord('ArrowUp'),
+      onArrowDownEmpty: () => this._moveChoice(1) || this._runChord('ArrowDown'),
       onArrowLeftEmpty: () => this._runChord('ArrowLeft'),
       onArrowRightEmpty: () => this._runChord('ArrowRight'),
       onBackspaceEmpty: () => this._runChord('Backspace'),
@@ -1119,8 +1119,19 @@ class App {
   showChooseList() {
     const { items, pos } = calcState.halted.dialog;
     const rows = items.map((item, i) => ({ text: chooseEntry(item).label, mark: i + 1 === pos ? icon('check', 'sm') : '', run: () => this._answerChoice(i + 1) }));
-    this._heldKeyMenu(rows, $('banner').querySelector('.bn'), pos ? 'Choose' : 'View', { above: true });
+    this._chooseList = this._heldKeyMenu(rows, $('banner').querySelector('.bn'), pos ? 'Choose' : 'View', { above: true, onArrow: pos ? (d) => this._moveChoice(d) : null });
     this._revealChoice(pos, true);
+  }
+
+  // The arrow keys move the highlight through a CHOOSE box's list, as the HP's do, or bring back a list put away.
+  _moveChoice(d) {
+    const dialog = calcState.halted?.kind === 'choose' ? calcState.halted.dialog : null;
+    if (!dialog?.pos) return false;
+    if (!this.popover.el || this.popover.el !== this._chooseList) { this.showChooseList(); return true; }
+    dialog.pos = Math.max(1, Math.min(dialog.items.length, dialog.pos + d));
+    this.popover.el.querySelectorAll('.opt .ck').forEach((ck, i) => { ck.innerHTML = i + 1 === dialog.pos ? icon('check', 'sm') : ''; });
+    this._revealChoice(dialog.pos, false);
+    return true;
   }
 
   _revealChoice(pos, center) {
@@ -1574,12 +1585,13 @@ class App {
   }
 
   // A phone with the keypad hidden has no shift, so a finger held on a key offers what ⇦ and ⇨ would do with it.
-  _heldKeyMenu(options, anchor, label, { above = false } = {}) {
+  _heldKeyMenu(options, anchor, label, { above = false, onArrow = null } = {}) {
     const html = options.map((o, i) => `<button type="button" class="opt" data-v="${i}"><span class="ck">${o.mark ?? (i ? '⇨' : '⇦')}</span><b>${escapeHtml(o.text)}</b></button>`).join('');
-    this.popover.open(anchor, html, {
+    return this.popover.open(anchor, html, {
       label,
       keepFocus: true,
       above,
+      onArrow,
       onClick: (target) => {
         this.popover.close({ restoreFocus: false });
         options[Number(target.dataset.v)].run();
@@ -1757,6 +1769,8 @@ class App {
     // A shift key with a letter on it (the compact keypad's) types the letter under α.
     if (MODIFIER_KINDS.has(key.kind) && !(key.alpha && this.layer() === 'A')) { this.setShift(key.kind); return; }
     if (this._answerKey(hpKeyCode(key.primary, this.layer()))) return;
+    const step = { '▲': -1, '▼': 1 }[key.primary];
+    if (step && !this.shift && this._moveChoice(step)) return;
 
     if (this.selection != null && !this.shift) {
       const sel = { '▲': 'level.up', '▼': 'level.down', ENTER: 'level.edit', '⌫': 'level.drop', ON: 'ui.escape' }[key.primary];
