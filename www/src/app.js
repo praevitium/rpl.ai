@@ -34,7 +34,7 @@ import { toLatex } from './rpl/latex.js';
 import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, currentPath,
-  goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag,
+  goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook, setMenuHook, setBeepHook } from './rpl/ops.js';
 import { beep, alarmBeep } from './ui/beep.js';
@@ -84,6 +84,8 @@ function sigmaDataNote(data) {
   const points = isMatrix(data) ? data.rows.length : data?.items.length ?? 0;
   return points ? `ΣDAT: ${points} point${points === 1 ? '' : 's'}` : 'ΣDAT is empty';
 }
+
+const modulusNote = () => `The modular commands work modulo ${getCasModulo()}`;
 
 class App {
   constructor() {
@@ -1564,24 +1566,25 @@ class App {
 
   _commandSlot(name) {
     const mode = MODE_KEYS[name];
+    const note = SIGMA_DATA_KEYS.includes(name) ? () => sigmaDataNote(varRecall('ΣDAT')) : name === 'MODSTO' ? modulusNote : null;
     return {
       label: KEY_LABELS[name] ?? name,
       command: name,
       title: `${this.commandTitle(name)} · ↰ types it · ↱ opens the reference`,
       blockedReason: () => this._tooFewArgumentsReason(name),
-      onPress: () => (SIGMA_DATA_KEYS.includes(name) ? this._runSigmaDataKey(name) : this.runCommandFromUI(name, { asKey: true })),
+      onPress: () => (note ? this._runNotedKey(name, note) : this.runCommandFromUI(name, { asKey: true })),
       onPressL: () => this.entry.typeToken(`${name} `),
       onPressR: () => this.drawers.showReference(name),
       ...(mode && { toggle: true, on: () => calcState[mode[0]] === mode[1] }),
     };
   }
 
-  // Σ+, Σ- and CLΣ change only ΣDAT, so on a phone their keys say what it holds now.
-  _runSigmaDataKey(name) {
+  // Σ+, Σ- and CLΣ change only ΣDAT, and MODSTO only the modulus, so on a phone their keys say what it is now.
+  _runNotedKey(name, note) {
     const mark = this.stack.undoMark();
     this.runCommandFromUI(name, { asKey: true });
     if (this.stack.undoMark() === mark || this.entry.error) return;
-    this.undoToast(sigmaDataNote(varRecall('ΣDAT')));
+    this.undoToast(note());
   }
 
   _groupKeys(groups, familyId) {
@@ -1591,6 +1594,7 @@ class App {
   _showGroupMenu(group, familyId) {
     const back = { label: '◀ BACK', title: `Back to the ${menuById(familyId).title} menu`, onPress: () => this._showFamilyMenu(familyId) };
     this.setMenu([back, ...group.commands.map((name) => this._commandSlot(name))], familyId);
+    if (group.commands.includes('MODSTO')) this.toast(`${modulusNote()}; MODSTO sets it.`, { key: 'modulus', transient: true });
   }
 
   // The HP's solver menus: a TVM variable's key stores level 1 in it, ⇦ solves for it and ⇨ recalls it; inside a

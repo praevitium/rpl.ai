@@ -375,14 +375,19 @@ import { assert, assertThrows } from './helpers.mjs';
       && INTEGER_GROUPS.every((g) => g.commands.every((n) => lookup(n))) && intFamily.keys.join(' ') === 'DIVIS FACTORS PROPFRAC'
       && /INTEGER: \(\) => this\._groupKeys\(INTEGER_GROUPS, 'INTEGER'\),/.test(appSrc),
       'INTGR menu: it opens on the HP\'s ARITH folders INTEG and MODUL, in its order, then DIVIS, FACTORS and PROPFRAC, where 30 keys ran over five pages');
+    assert(/const modulusNote = \(\) => `The modular commands work modulo \$\{getCasModulo\(\)\}`;/.test(appSrc)
+      && /: name === 'MODSTO' \? modulusNote : null;/.test(appSrc)
+      && /if \(group\.commands\.includes\('MODSTO'\)\) this\.toast\(`\$\{modulusNote\(\)\}; MODSTO sets it\.`, \{ key: 'modulus', transient: true \}\);/.test(appSrc),
+      'MODUL folder: on a phone, which shows no CAS modes, opening it says the modulus the modular commands use, and the MODSTO key says the new one with Undo');
   }
   const matrixFamily = MENU_FAMILIES.find((f) => f.id === 'MATRIX');
   assert(MATRIX_GROUPS.map((g) => g.id).join(' ') === 'MAKE NORM FACTR COL ROW' && matrixFamily.keys.join(' ') === 'LSQ'
     && MATRIX_GROUPS.every((g) => g.commands.every((n) => lookup(n)))
     && /MATRIX: \(\) => this\._groupKeys\(MATRIX_GROUPS, 'MATRIX'\),/.test(appSrc),
     'MATRIX menu: it opens as the HP\'s MTH MATR does, MAKE NORM FACTR COL ROW folders and then LSQ, every folder key a registered command, so a phone reaches a column or a factorization in two taps');
-  assert(/const SIGMA_DATA_KEYS = \['Σ\+', 'Σ-', 'CLΣ', 'STOΣ'\];/.test(appSrc) && /onPress: \(\) => \(SIGMA_DATA_KEYS\.includes\(name\) \? this\._runSigmaDataKey\(name\) :/.test(appSrc)
-    && /_runSigmaDataKey\(name\) \{\s*const mark = this\.stack\.undoMark\(\);\s*this\.runCommandFromUI\(name, \{ asKey: true \}\);\s*if \(this\.stack\.undoMark\(\) === mark \|\| this\.entry\.error\) return;\s*this\.undoToast\(sigmaDataNote\(varRecall\('ΣDAT'\)\)\);/.test(appSrc)
+  assert(/const SIGMA_DATA_KEYS = \['Σ\+', 'Σ-', 'CLΣ', 'STOΣ'\];/.test(appSrc) && /const note = SIGMA_DATA_KEYS\.includes\(name\) \? \(\) => sigmaDataNote\(varRecall\('ΣDAT'\)\) :/.test(appSrc)
+    && /onPress: \(\) => \(note \? this\._runNotedKey\(name, note\) :/.test(appSrc)
+    && /_runNotedKey\(name, note\) \{\s*const mark = this\.stack\.undoMark\(\);\s*this\.runCommandFromUI\(name, \{ asKey: true \}\);\s*if \(this\.stack\.undoMark\(\) === mark \|\| this\.entry\.error\) return;\s*this\.undoToast\(note\(\)\);/.test(appSrc)
     && /return points \? `ΣDAT: \$\{points\} point\$\{points === 1 \? '' : 's'\}` : 'ΣDAT is empty';/.test(appSrc),
     'STAT menu: a Σ+, Σ-, CLΣ or STOΣ key that ran says how many points ΣDAT holds now, with Undo, since the stack alone shows nothing; typed into a program or failing, it says nothing');
   {

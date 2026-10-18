@@ -154,7 +154,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
   `0 1 1.96 UTPN` gives 0.0249978951482.
 - **Integers and polynomials.** Integers are exact at any size, so
   `2 64 ^ NEXTPRIME` gives 18446744073709551629. The INTGR menu opens on the
-  HP's ARITH folders, INTEG and MODUL, then DIVIS, FACTORS and PROPFRAC.
+  HP's ARITH folders, INTEG and MODUL, then DIVIS, FACTORS and PROPFRAC;
+  opening MODUL says the modulus its commands use (13 until `MODSTO` sets
+  another), and its MODSTO key says the new one.
   `PROOT`, `PCOEF` and `PEVAL` take the HP's arrays:
   `[ 2 -3 4 -5 ] PCOEF` gives `[ 1 2 -25 -26 120 ]`.
 - **Bases.** `#FFh` is a binary integer; `HEX`, `DEC`, `OCT` and `BIN` show
