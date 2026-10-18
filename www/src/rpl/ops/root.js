@@ -55,7 +55,7 @@ function extremum(fx, x0, span) {
 }
 
 // Secant steps from the guesses, each bounded to a hundred times the last, until a sign change is bracketed.
-function findRoot(fx, guesses) {
+export function findRoot(fx, guesses) {
   let a = guesses[0];
   let b = guesses.length > 1 ? guesses[guesses.length - 1] : a;
   if (b === a) b = a + (Math.abs(a) || 1) * 1e-3;

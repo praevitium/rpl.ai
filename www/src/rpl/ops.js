@@ -29,3 +29,4 @@ import './ops/statistics.js';
 import './ops/control.js';
 import './ops/graphics.js';
 import './ops/root.js';
+import './ops/tvm.js';

@@ -21,6 +21,7 @@ const FILES = [
   './test-binary-int.mjs',
   './test-time.mjs',
   './test-root.mjs',
+  './test-tvm.mjs',
   './test-algebra.mjs',
   './test-entry.mjs',
   './test-matrix.mjs',

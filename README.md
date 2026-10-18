@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 494 commands, exact big-integer and rational arithmetic,
+of its command set: 497 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -126,6 +126,12 @@ RPL puts the numbers first and the operation last. Each value goes on the
   numerically from a guess: `` `COS(X)=X` `X` 1 ROOT `` gives
   0.739085133215 and stores it in X, and a program can stand in for the
   expression.
+- **Money.** `TVMROOT` solves the HP's time-value-of-money variables N,
+  I%YR, PV, PMT and FV for the one named. With 360 in `N`, 6.5 in `I%YR`,
+  200000 in `PV`, 0 in `FV` and 12 in `PYR`, `` `PMT` TVMROOT `` gives
+  -1264.13604699, the monthly payment, and stores it in PMT. `TVMBEG` and
+  `TVMEND` put the payments at each period's start or end (flag -14); the
+  TVM menu holds all three.
 - **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
   then gives `25`, and SQUARE appears on the VARS menu. A stored program
   runs by name like a built-in. Built-in names such as `SQ` are reserved.
@@ -755,7 +761,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 494. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 497. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - program I/O: KEY. Programs read their arguments from the stack, label
