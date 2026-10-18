@@ -2027,6 +2027,8 @@ setAngle('RAD');
     && /onArrowUpEmpty: \(\) => this\._moveChoice\(-1\) \|\| this\._runChord\('ArrowUp'\),[\s\S]{0,200}?onArrowDownEmpty: \(\) => this\._moveChoice\(1\) \|\| this\._runChord\('ArrowDown'\),/.test(appSrc)
     && /if \(this\._onArrow\) \{ e\.preventDefault\(\); this\._onArrow\(e\.key === 'ArrowDown' \? 1 : -1\); return; \}/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8')),
     'CHOOSE: the list opens with the marked row in view, the arrow keys (keypad and keyboard) move the mark within the list or bring back a list put away, and Enter answers with it');
+  assert(/this\._onResize = \(\) => requestAnimationFrame\(\(\) => \{[^}]*this\._place\(this\._point\);/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8')),
+    "Popovers: a resize places an open popover a frame later, once the app's height has followed the visual viewport (after a turn the CHOOSE list sat over its banner's keys)");
 }
 
 {

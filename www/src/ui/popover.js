@@ -10,8 +10,9 @@ export class Popover {
     this.anchor = null;
     this._onClose = null;
     this._point = null;
-    // A phone keyboard shrinks the window under an open popover, which would leave its fields behind the keyboard.
-    this._onResize = () => { if (this.el) this._place(this._point); };
+    // A phone keyboard or a turn resizes the window under an open popover. The app's height follows on the visual
+    // viewport's resize, after this one, so the popover places itself a frame later, against the settled layout.
+    this._onResize = () => requestAnimationFrame(() => { if (this.el) this._place(this._point); });
     this._onDocDown = (e) => {
       if (!this.el) return;
       if (this.el.contains(e.target) || this.anchor?.contains?.(e.target)) return;
