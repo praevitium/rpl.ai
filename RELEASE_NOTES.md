@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.135 (2026-10-18)
+**Latest release:** v0.6.136 (2026-10-18)
 
 ---
 
@@ -18,6 +18,17 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.136 — 2026-10-18
+
+→NUM left a vector or matrix as it was, so a matrix level's →NUM did
+nothing; it now gives every entry its number, as the HP does:
+`[ '1/2' 'π' ] →NUM` gives `[ .5 3.14159265359 ]`. The MATRIX menu now opens as the HP's MTH MATR
+does, on MAKE, NORM, FACTR, COL and ROW folders and then LSQ, with every
+command still on the pages after them. A matrix level's ⋯ menu has Inverse
+and Determinant when it is square, and Transpose.
 
 ---
 
