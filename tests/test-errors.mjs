@@ -26,6 +26,7 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
 
 {
   const samples = {
+    raised: 'EVAL: DOERR: Disk full',
     tooFew: '+: Too few arguments',
     badType: 'SIN: Bad argument type: expected real, got string',
     badValue: 'ASIN: Bad argument value',
@@ -92,6 +93,18 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   assert(html.includes('Enter R2 in kΩ') && html.includes('data-bn="cont"') && html.includes('data-bn="sst"') && html.includes('data-bn="into"') && html.includes('data-bn="kill"'),
     'haltedBannerHtml: shows the PROMPT text and Continue, Step, Step into and Stop');
   assert(haltedBannerHtml({ kind: 'halt', prompt: '<b>' }).includes('&lt;b&gt;'), 'haltedBannerHtml: prompt text is escaped');
+}
+
+{
+  const own = describeError('EVAL: DOERR: Disk full: drive A', ctx());
+  const stop = describeError('EVAL: DOERR: Interrupted', ctx());
+  const sized = describeError('DOERR: Invalid dimension', ctx());
+  assert(own.kind === 'raised' && own.title === 'Disk full: drive A.' && /with DOERR/.test(own.detail),
+    `describeError: a program's own DOERR message is the title, without the EVAL: DOERR: it showed (${own.title})`);
+  assert(stop.kind === 'raised' && stop.title === 'Interrupted.' && sized.kind === 'raised' && sized.title === 'Invalid dimension.',
+    'describeError: "" DOERR no longer says the program ran for 10 seconds, and #501h DOERR no longer explains vector sizes');
+  assert(describeError('DOERR: Too few arguments', ctx()).kind === 'tooFew' && describeError('EVAL: Interrupted', ctx()).kind === 'interrupted',
+    'describeError: DOERR with nothing on the stack is still too few arguments, and the time limit still reads as interrupted');
 }
 
 {

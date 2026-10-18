@@ -14,7 +14,10 @@ export function parseErrorMessage(message) {
   const text = String(message ?? '').trim();
   const parts = text.split(': ');
   const at = parts.findIndex((p) => CORE_MESSAGES.some((core) => p.startsWith(core)));
-  if (at < 0) return { commands: [], command: null, core: text, detail: '' };
+  if (at < 0) {
+    const raisedAt = parts.indexOf('DOERR') + 1;
+    return raisedAt ? { commands: parts.slice(0, raisedAt), command: 'DOERR', core: parts.slice(raisedAt).join(': '), detail: '' } : { commands: [], command: null, core: text, detail: '' };
+  }
   const core = CORE_MESSAGES.find((c) => parts[at].startsWith(c));
   const trailing = parts[at].slice(core.length).trim();
   const detail = [trailing, ...parts.slice(at + 1)].filter(Boolean).join(': ');
@@ -27,6 +30,12 @@ const article = (noun) => (/^[aeiou]/i.test(noun) ? `an ${noun}` : `a ${noun}`);
 const sentence = (text) => (/[.!?]$/.test(text) ? text : `${text}.`);
 
 export const ERROR_KINDS = Object.freeze({
+  raised: {
+    match: (p) => p.command === 'DOERR' && !['Too few arguments', 'Bad argument type'].includes(p.core),
+    title: (c) => sentence(c.detail ? `${c.core}: ${c.detail}` : c.core),
+    detail: () => 'The program raised this error itself, with DOERR.',
+    fixes: (c) => [...(c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []), { id: 'explain', label: 'Explain' }],
+  },
   tooFew: {
     match: (p) => p.core === 'Too few arguments',
     title: (c) => {

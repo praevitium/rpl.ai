@@ -103,7 +103,7 @@ register('DOERR', (s) => {
   if (isInteger(v) || isReal(v) || isBinaryInteger(v)) {
     const code = isReal(v) ? v.value.toNumber() : Number(v.value);
     if (code === 0) return;
-    throw numberedError(ERROR_MESSAGES[code] || `Error: #${code.toString(16).toUpperCase()}h`, code);
+    throw numberedError(ERROR_MESSAGES[code] || `Error #${code.toString(16).toUpperCase()}h`, code);
   }
   throw new RPLError('Bad argument type');
 }, { category: 'Evaluation / program', categoryOrder: 11, label: "DOERR" });

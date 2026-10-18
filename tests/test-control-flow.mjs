@@ -1182,8 +1182,8 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   s.push(Integer(0xFFFn));
   let caught;
   try { lookup('DOERR').fn(s); } catch (e) { caught = e.message; }
-  assert(/Error: #FFFh/.test(caught),
-    'session053: DOERR unknown code → hex-format fallback');
+  assert(/^Error #FFFh$/.test(caught),
+    'session053: DOERR unknown code → hex-format fallback, with no colon, so the banner reads it as DOERR\'s own message');
 }
 
 {
