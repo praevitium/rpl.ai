@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.118 (2026-10-17)
+**Latest release:** v0.6.119 (2026-10-17)
 
 ---
 
@@ -20,6 +20,23 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.119 — 2026-10-17
+
+`INPUT` takes the HP's cursor position: `{ "[  ]" 2 }` opens the line
+with the cursor inside the brackets, n counts characters from the left of
+the first row, `{ row col }` names the row and 0 is the end of it (a
+negative n, the HP's replace cursor, places the cursor the same way; ALG
+and α pass unremarked). A program that reaches `PROMPT` with the matrix
+or equation writer open now puts the writer aside with an Undo note, as
+`INPUT` has since 0.6.118, so the answer lands on a command line that is
+in view. The manual's PDF ran fifteen command entries into the one before
+them, so the Catalog's page for `DATE` carried `→DATE`'s text and example,
+`RREF` and `QR` opened the CAS `rref` and `qr` sections, and `COL→`,
+`C→R`, `NEXT`, `ΔLIST`, `lim`, `dn`, `Psi`, `Σ(Summation)`, `FONT→`,
+`KEYTIME→`, `→LANGUAGE` and `→MINIFONT` had no page of their own; each is
+now its own entry (825 in all), and where a CAS alias shares a classic
+command's letters the classic entry wins.
 
 ## v0.6.118 — 2026-10-17
 
