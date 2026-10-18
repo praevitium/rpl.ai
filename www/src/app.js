@@ -65,6 +65,7 @@ const APP_SHORTCUTS = new Map([
 ]);
 
 const TVM_VARIABLES = ['N', 'I%YR', 'PV', 'PMT', 'FV', 'PYR'];
+const SIGMA_DATA_KEYS = ['Σ+', 'Σ-', 'CLΣ'];
 
 class App {
   constructor() {
@@ -1484,12 +1485,21 @@ class App {
       command: name,
       title: `${this.commandTitle(name)} · ↰ types it · ↱ opens the reference`,
       blockedReason: () => this._tooFewArgumentsReason(name),
-      onPress: () => this.runCommandFromUI(name, { asKey: true }),
+      onPress: () => (SIGMA_DATA_KEYS.includes(name) ? this._runSigmaDataKey(name) : this.runCommandFromUI(name, { asKey: true })),
       onPressL: () => this.entry.typeToken(`${name} `),
       onPressR: () => this.drawers.showReference(name),
     };
   }
 
+  // Σ+, Σ- and CLΣ change only ΣDAT, so on a phone their keys say what it holds now.
+  _runSigmaDataKey(name) {
+    const mark = this.stack.undoMark();
+    this.runCommandFromUI(name, { asKey: true });
+    if (this.stack.undoMark() === mark || this.entry.error) return;
+    const data = varRecall('ΣDAT');
+    const rows = isMatrix(data) ? data.rows.length : 0;
+    this.undoToast(rows ? `ΣDAT: ${rows} point${rows === 1 ? '' : 's'}` : 'ΣDAT is empty');
+  }
 
   _showStatMenu(group) {
     const back = { label: '◀ BACK', title: 'Back to the Statistics menu', onPress: () => this._showFamilyMenu('STAT') };

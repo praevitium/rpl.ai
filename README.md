@@ -138,6 +138,7 @@ RPL puts the numbers first and the operation last. Each value goes on the
   (1, 2.1), (2, 3.9), (3, 6.2) and (4, 7.8), `LR` gives the intercept 0.15
   and slope 1.94, and `5 PREDY` gives 9.85. The STAT menu opens on the HP's
   folders: DATA (Σ+, Σ-, CLΣ), ΣPAR, 1VAR, FIT and SUMS.
+  On a phone, the Σ+, Σ- and CLΣ keys say how many points ΣDAT holds.
 - **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
   then gives `25`, and SQUARE appears on the VARS menu. A stored program
   runs by name like a built-in. Built-in names such as `SQ` are reserved.
