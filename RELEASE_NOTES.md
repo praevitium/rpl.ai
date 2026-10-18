@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.130 (2026-10-18)
+**Latest release:** v0.6.131 (2026-10-18)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.131 — 2026-10-18
+
+A long list on a phone wraps over several lines in textbook mode, and some
+of those lines started half a space in, wherever a separator landed at the
+start of a line. Every wrapped line now starts flush. ADD, the HP's
+element-wise list addition, joins the LIST menu after ΣLIST:
+`{ 1 2 3 } { 10 20 30 } ADD` gives `{ 11 22 33 }` and `{ 1 2 3 } 5 ADD`
+gives `{ 6 7 8 }`, where + appends. Lists of different lengths are refused
+with an error that says lists need the same number of items. VIEW used to
+draw a long list on one line that ran off a phone's screen; it now wraps
+the list to the sheet as the stack does, while formulas and matrices still
+scroll sideways.
 
 ---
 
