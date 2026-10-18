@@ -665,6 +665,7 @@ export class Display {
         const { svg } = astToSvg(item.expr, { size: svgSize });
         return `<span class="lcell lcell-sym">${svg}</span>`;
       }
+      if (isList(item)) return `<span class="lcell">${this._renderTextbookList(item, svgSize)}</span>`;
       return `<span class="lcell">${escapeHtml(format(item, this.displayOpts))}</span>`;
     });
     return `<span class="list-inline">{ ${items.join('<span class="lsep"> </span>')} }</span>`;
