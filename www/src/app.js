@@ -1119,7 +1119,7 @@ class App {
   showChooseList() {
     const { items, pos } = calcState.halted.dialog;
     const rows = items.map((item, i) => ({ text: chooseEntry(item).label, mark: i + 1 === pos ? icon('check', 'sm') : '', run: () => this._answerChoice(i + 1) }));
-    this._heldKeyMenu(rows, $('banner').querySelector('.bn'), 'Choose', { above: true });
+    this._heldKeyMenu(rows, $('banner').querySelector('.bn'), pos ? 'Choose' : 'View', { above: true });
   }
 
   // INFORM's form in a sheet: a label and an input per field, its help as the placeholder and its initial value as
