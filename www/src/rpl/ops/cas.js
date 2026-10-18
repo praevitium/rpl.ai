@@ -129,9 +129,14 @@ function _factorsToAst(factors) {
 }
 
 
+// The AUR: a list of equations and expressions is each solved for the same variable, giving a list of lists.
 register('SOLVE', (s) => {
   const [exprArg, varArg] = s.popN(2);
   const varName = _varName(varArg);
+  s.push(isList(exprArg) ? RList(exprArg.items.map((e) => _solveFor(e, varName))) : _solveFor(exprArg, varName));
+}, { category: 'CAS / symbolic', categoryOrder: 9, label: "SOLVE" });
+
+function _solveFor(exprArg, varName) {
   let ast = _astArg(exprArg);
   // Giac reads `=` differently under its Maple/Mupad modes; `lhs - rhs` is unambiguous.
   if (ast.kind === 'bin' && ast.op === '=') ast = AstBin('-', ast.l, ast.r);
@@ -151,8 +156,8 @@ register('SOLVE', (s) => {
   const roots = splitGiacList(raw) ?? (trimmed ? [trimmed] : []);
   // An inequality solves to conditions such as X<-2, which stand on their own.
   const isCondition = (root) => (root.kind === 'bin' && root.op in COMPARISON_OPS) || (root.kind === 'fn' && root.name in LOGIC_ARITY);
-  s.push(RList(roots.map(giacToAst).map((root) => Symbolic(isCondition(root) ? root : AstBin('=', AstVar(varName), root)))));
-}, { category: 'CAS / symbolic', categoryOrder: 9, label: "SOLVE" });
+  return RList(roots.map(giacToAst).map((root) => Symbolic(isCondition(root) ? root : AstBin('=', AstVar(varName), root))));
+}
 
 const COMPARISON_OPS = { '<': 1, '>': 1, '≤': 1, '≥': 1, '≠': 1, '==': 1 };
 

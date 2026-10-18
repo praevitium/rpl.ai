@@ -1835,6 +1835,20 @@ giac._setFixtures({
   giac._clear();
 }
 {
+  const s = new Stack();
+  s.push(RList([Symbolic(parseAlgebra('X^2 - 4')), Symbolic(parseAlgebra('X = 3'))]));
+  s.push(Name('X'));
+  giac._clear();
+  giac._setFixture('solve(X^2-4,X)', '[2,-2]');
+  giac._setFixture('solve(X-3,X)', '[3]');
+  lookup('SOLVE').fn(s);
+  const top = s.peek();
+  const text = isList(top) && top.items.every(isList) ? top.items.map((l) => l.items.map((e) => formatAlgebra(e.expr)).join(', ')).join(' | ') : String(top?.type);
+  assert(s.depth === 1 && text === 'X = 2, X = -2 | X = 3',
+         `AUR: SOLVE solves each of a list of equations for the variable, giving a list of lists, where it said Bad argument type (got ${text})`);
+  giac._clear();
+}
+{
   // Bare equation form `X-1=0` — the smallest reproducer of the user-
   // reported "SOLVE returns { }" bug.  After the equation→expression
   // rewrite, Giac sees `solve(X-1-0,X)` and gives `[1]`.
@@ -1964,10 +1978,10 @@ giac._setFixtures({
 
   assertThrows(() => {
     const t = new Stack();
-    t.push(RList([]));
+    t.push(RList([RList([])]));
     t.push(Name('X'));
     lookup('ISOL').fn(t);
-  }, 'Bad argument type', 'session329: ISOL rejects non-expression operand');
+  }, 'Bad argument type', 'session329: ISOL rejects non-expression operand, inside the AUR\'s list of equations too');
 }
 
 
