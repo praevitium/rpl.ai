@@ -16,7 +16,7 @@ import { Sheets } from './ui/sheets.js';
 import { Tour } from './ui/tour.js';
 import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
-import { MENU_FAMILIES, UNIT_GROUPS, BRANCH_KEYS, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel } from './ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, BRANCH_KEYS, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel } from './ui/menus.js';
 import { convertValue } from './rpl/units.js';
 import { MODES } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
@@ -1469,8 +1469,17 @@ class App {
 
   _showFamilyMenu(id) {
     const family = MENU_FAMILIES.find((f) => f.id === id) ?? MENU_FAMILIES[0];
-    const names = familyCommands(family);
-    const slots = names.map((name) => ({
+    const slots = familyCommands(family).map((name) => this._commandSlot(name));
+    const lead = {
+      UNITS: () => UNIT_GROUPS.map((group) => ({ label: group.id, dir: true, title: `${group.title}: ${group.units.length} units`, onPress: () => this._showUnitMenu(group) })),
+      TVM: () => TVM_VARIABLES.map((id) => this._tvmKey(id)),
+      STAT: () => STAT_GROUPS.map((group) => ({ label: group.id, dir: true, title: `${group.title}: ${group.commands.join(' ')}`, onPress: () => this._showStatMenu(group) })),
+    }[family.id];
+    this.setMenu([...(lead ? lead() : []), ...slots], family.id);
+  }
+
+  _commandSlot(name) {
+    return {
       label: name,
       command: name,
       title: `${this.commandTitle(name)} · ↰ types it · ↱ opens the reference`,
@@ -1478,11 +1487,13 @@ class App {
       onPress: () => this.runCommandFromUI(name, { asKey: true }),
       onPressL: () => this.entry.typeToken(`${name} `),
       onPressR: () => this.drawers.showReference(name),
-    }));
-    const groups = family.id === 'UNITS'
-      ? UNIT_GROUPS.map((group) => ({ label: group.id, dir: true, title: `${group.title}: ${group.units.length} units`, onPress: () => this._showUnitMenu(group) }))
-      : family.id === 'TVM' ? TVM_VARIABLES.map((id) => this._tvmKey(id)) : [];
-    this.setMenu([...groups, ...slots], family.id);
+    };
+  }
+
+
+  _showStatMenu(group) {
+    const back = { label: '◀ BACK', title: 'Back to the Statistics menu', onPress: () => this._showFamilyMenu('STAT') };
+    this.setMenu([back, ...group.commands.map((name) => this._commandSlot(name))], 'STAT');
   }
 
   // The HP's solver menus: a TVM variable's key stores level 1 in it, ⇦ solves for it and ⇨ recalls it; inside a

@@ -134,6 +134,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   `12 AMORT` splits the first twelve payments into principal and interest
   and gives the balance left. The TVM menu holds all four, and a key for
   each variable stores level 1 in it; ⇦ solves for it and ⇨ recalls it.
+- **Statistics.** `[ 1 2.1 ] Σ+` adds a point to ΣDAT. After the points
+  (1, 2.1), (2, 3.9), (3, 6.2) and (4, 7.8), `LR` gives the intercept 0.15
+  and slope 1.94, and `5 PREDY` gives 9.85. The STAT menu opens on the HP's
+  folders: DATA (Σ+, Σ-, CLΣ), ΣPAR, 1VAR, FIT and SUMS.
 - **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
   then gives `25`, and SQUARE appears on the VARS menu. A stored program
   runs by name like a built-in. Built-in names such as `SQ` are reserved.
