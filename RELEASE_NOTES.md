@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.115 (2026-10-17)
+**Latest release:** v0.6.116 (2026-10-17)
 
 ---
 
@@ -20,6 +20,26 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.116 — 2026-10-17
+
+`INFORM` arrives, the last of the HP's program dialogs: `"Title" { fields }
+format { resets } { init } INFORM` opens a form in a sheet with a field per
+label, its help text as the placeholder and its initial value typed in as
+source. OK parses each field, checks it against the field's types and
+answers with the values and 1; an empty field answers `NOVAL`, which is
+the name NOVAL here (the `NOVAL` command pushes it), a field that fails
+keeps the form open with the complaint on it, Cancel answers 0, Reset puts
+the reset values back, and Enter moves from field to field and answers
+from the last. The form keeps the HP's column count on a wide screen and
+one column on a phone; the X closes it with the program still waiting, and
+Fill in on the banner opens it again. The Classic look's status line
+showed nothing while a level or variable was being edited: its renderer
+returned before the editing pencil of minimal view or the EDITING pill of
+full view were built. The LCD header now carries the same cancel pencil,
+finger-sized in minimal view and header-sized in full view, where it takes
+the finger-sized tap the Classic mode annunciators have; under 320 px with
+HALT lit too, the = annunciator gives way, as the other looks' does.
 
 ## v0.6.115 — 2026-10-17
 
