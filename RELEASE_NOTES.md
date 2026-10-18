@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.117 (2026-10-17)
+**Latest release:** v0.6.118 (2026-10-17)
 
 ---
 
@@ -20,6 +20,23 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.118 — 2026-10-17
+
+The clock arrives, in a TIME menu of its own with the HMS commands: `DATE`
+(MM.DDYYYY, or DD.MMYYYY with flag -42 set), `TIME` (HH.MMSS, 24-hour),
+`TICKS` (a binary integer of 1/8192 s, for timing), `TSTR` (`2.061990
+14.55 TSTR` gives "TUE 02/06/90 02:55:00P"; flag -41 set makes it
+24-hour), and `DATE+` and `DDAYS` for days between dates, October 15 1582
+to December 31 9999. The clock is the device's own, so `→DATE`, `→TIME`
+and `CLKADJ` stay out. A program that reached `INPUT` while the matrix or
+equation writer was open put its text on the command line hidden under
+the writer, where it could neither be seen nor answered; the writer now
+steps aside with a note whose Undo brings it back, content and all, as a
+cancelled writer's does. In a window under 400 px tall without a
+keyboard, a banner's message keeps to two lines and scrolls, so a long
+`PROMPT` no longer pushes the soft keys off the bottom (Classic's
+narrower banner wrapped one to three lines at 280x300).
 
 ## v0.6.117 — 2026-10-17
 
