@@ -385,6 +385,11 @@ import { assert, assertThrows } from './helpers.mjs';
       && /else if \(id === 'BASE'\) this\.showBaseMenu\(\);/.test(appSrc) && /const back = \{ label: '◀ BACK', title: 'Back to the BASE menu', onPress: \(\) => this\.showBaseMenu\(\) \};/.test(appSrc),
       'BASE menu: the HP\'s HEX DEC OCT BIN R→B B→R, then its LOGIC, BIT and BYTE folders, each with a BACK key, and STWS and RCWS, all registered commands, in the picker\'s Math group');
   }
+  assert(/const SHORT_WINDOW = globalThis\.matchMedia\?\.\('\(max-height: 575px\) and \(max-width: 639px\)'\);/.test(appSrc)
+    && /keypadLayout\(\) \{\s*return this\.prefs\.keypad === 'full' && SHORT_WINDOW\?\.matches \? 'compact' : this\.prefs\.keypad;/.test(appSrc)
+    && /SHORT_WINDOW\?\.addEventListener\('change', \(\) => this\.keypad\.update\(\)\);/.test(appSrc)
+    && /this\.compact = app\.keypadLayout\(\) === 'compact';/.test(readFileSync(new URL('../www/src/ui/keyboard.js', import.meta.url), 'utf8')),
+    'keypad: a window with the keypad under the stack and under 576 px tall shows the compact keypad while the setting stays Full, where the full keypad left a 412x457 split screen 18 px of stack');
   {
     const { VECTOR_KEYS, menuById, MENU_GROUPS } = await import('../www/src/ui/menus.js');
     const math = MENU_GROUPS.find((g) => g.title === 'Math').ids;

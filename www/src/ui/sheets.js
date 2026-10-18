@@ -117,7 +117,7 @@ export class Sheets {
         <div class="set stack"><b>Stack text size</b><span>How large the stack's values are drawn, pretty math included.</span>
           <div class="chipset" role="radiogroup" aria-label="Stack text size">${STACK_SIZES.map((s) => `<button type="button" class="chip${app.prefs.stackSize === s ? ' on' : ''}" data-sh="stack-size" data-size="${s}" role="radio" aria-checked="${app.prefs.stackSize === s}">${STACK_SIZE_LABELS[s]}</button>`).join('')}</div>
         </div>
-        <div class="set stack"><b>Keypad</b><span>Compact keeps the keys an RPN session reaches for most, in five rows.</span>
+        <div class="set stack"><b>Keypad</b><span>Compact keeps the keys an RPN session reaches for most, in five rows; a window too short for the full keypad uses it on its own.</span>
           <div class="chipset" role="radiogroup" aria-label="Keypad">${KEYPAD_LAYOUTS.map((k) => `<button type="button" class="chip${app.prefs.keypad === k ? ' on' : ''}" data-sh="keypad" data-layout="${k}" role="radio" aria-checked="${app.prefs.keypad === k}">${KEYPAD_LABELS[k]}</button>`).join('')}</div>
         </div>
         <div class="set stack dock-set"><b>Panels side</b><span>Which side the rail and its drawer (Catalog, Variables, History…) dock on.</span>${sides('panels', app.prefs.panelsSide)}</div>

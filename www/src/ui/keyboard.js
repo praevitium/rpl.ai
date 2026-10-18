@@ -391,7 +391,7 @@ export class Keypad {
     this._scheduleFit();
     const { app } = this;
     const layout = app.prefs.keypad;
-    this.compact = layout === 'compact';
+    this.compact = app.keypadLayout() === 'compact';
     this.el.classList.toggle('kp-hidden', layout === 'hidden');
     this.el.querySelectorAll('[data-kp]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.kp === layout)));
     const layer = app.layer();

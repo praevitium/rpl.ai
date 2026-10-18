@@ -64,6 +64,9 @@ const APP_SHORTCUTS = new Map([
   ['search', (app) => app.palette.open()],
 ]);
 
+// A window with the keypad under the stack and too short for the full keypad to leave two stack levels
+// (under 576 px tall) gets the compact keypad; the setting stays Full.
+const SHORT_WINDOW = globalThis.matchMedia?.('(max-height: 575px) and (max-width: 639px)');
 const TVM_VARIABLES = ['N', 'I%YR', 'PV', 'PMT', 'FV', 'PYR'];
 const SIGMA_DATA_KEYS = ['Σ+', 'Σ-', 'CLΣ', 'STOΣ'];
 // The mode commands whose keys mark the mode in force, as the HP's DEG■ and HEX■ do: [state field, value].
@@ -168,6 +171,7 @@ class App {
 
     this._applyPrefs();
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyThemeColor);
+    SHORT_WINDOW?.addEventListener('change', () => this.keypad.update());
     this._applyPhoneKeyboard();
     this.showMenu(this.prefs.menu ?? (varOrder().length ? 'VARS' : 'STACK'), { remember: false });
     if (this.prefs.drawer) this.drawers.open(this.prefs.drawer);
@@ -342,6 +346,10 @@ class App {
     this.appbar.render();
     if (layout === 'hidden') this.toast('Keypad hidden', { action: 'Show', onAction: () => this.setKeypadLayout(this._lastKeypad ?? 'full'), key: 'view', transient: true });
     else this.toasts.dismiss('view');
+  }
+
+  keypadLayout() {
+    return this.prefs.keypad === 'full' && SHORT_WINDOW?.matches ? 'compact' : this.prefs.keypad;
   }
 
   // On a phone the calc keypad does the typing while it shows, so the editables ask for no system
