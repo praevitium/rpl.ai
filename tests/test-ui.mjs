@@ -369,6 +369,9 @@ import { assert, assertThrows } from './helpers.mjs';
       && /else if \(id === 'BASE'\) this\.showBaseMenu\(\);/.test(appSrc) && /const back = \{ label: '◀ BACK', title: 'Back to the BASE menu', onPress: \(\) => this\.showBaseMenu\(\) \};/.test(appSrc),
       'BASE menu: the HP\'s HEX DEC OCT BIN R→B B→R, then its LOGIC, BIT and BYTE folders, each with a BACK key, and STWS and RCWS, all registered commands, in the picker\'s Math group');
   }
+  assert(/const MODE_KEYS = Object\.freeze\(\{\s*DEG: \['angle', 'DEG'\], RAD: \['angle', 'RAD'\], GRAD: \['angle', 'GRD'\], GRD: \['angle', 'GRD'\],\s*RECT: \['coordMode', 'RECT'\], CYLIN: \['coordMode', 'CYLIN'\], SPHERE: \['coordMode', 'SPHERE'\],\s*HEX: \['binaryBase', 'h'\], DEC: \['binaryBase', 'd'\], OCT: \['binaryBase', 'o'\], BIN: \['binaryBase', 'b'\],/.test(appSrc)
+    && /\.\.\.\(mode && \{ toggle: true, on: \(\) => calcState\[mode\[0\]\] === mode\[1\] \}\),/.test(appSrc),
+    'mode keys: DEG, RAD, GRAD, RECT, CYLIN, SPHERE, HEX, DEC, OCT and BIN keys in any command menu mark the mode in force, as the HP\'s DEG■ and HEX■ do');
   assert(/@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}\s*\/\*[^*]*\*\/\s*\.ann-status:has\(\.ann-m\.e, \.ann-m\.halt\) \{ padding-left: 2px; padding-right: 2px; \}/.test(gridCss),
     'minimal view: with a level being edited, the status line gives up its side padding under 320 px, so the amber pencil no longer pushes the leave button 2 px off a 280 px screen');
   assert(unitKeys.every((key) => { try { return isUnit(parseEntry(`1_${key}`)[0]); } catch { return false; } }),

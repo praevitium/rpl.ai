@@ -66,6 +66,12 @@ const APP_SHORTCUTS = new Map([
 
 const TVM_VARIABLES = ['N', 'I%YR', 'PV', 'PMT', 'FV', 'PYR'];
 const SIGMA_DATA_KEYS = ['Σ+', 'Σ-', 'CLΣ', 'STOΣ'];
+// The mode commands whose keys mark the mode in force, as the HP's DEG■ and HEX■ do: [state field, value].
+const MODE_KEYS = Object.freeze({
+  DEG: ['angle', 'DEG'], RAD: ['angle', 'RAD'], GRAD: ['angle', 'GRD'], GRD: ['angle', 'GRD'],
+  RECT: ['coordMode', 'RECT'], CYLIN: ['coordMode', 'CYLIN'], SPHERE: ['coordMode', 'SPHERE'],
+  HEX: ['binaryBase', 'h'], DEC: ['binaryBase', 'd'], OCT: ['binaryBase', 'o'], BIN: ['binaryBase', 'b'],
+});
 
 function sigmaDataNote(data) {
   if (data !== undefined && !isMatrix(data) && !isVector(data)) return `ΣDAT holds ${describeValue(data).text}, not data`;
@@ -1488,6 +1494,7 @@ class App {
   }
 
   _commandSlot(name) {
+    const mode = MODE_KEYS[name];
     return {
       label: name,
       command: name,
@@ -1496,6 +1503,7 @@ class App {
       onPress: () => (SIGMA_DATA_KEYS.includes(name) ? this._runSigmaDataKey(name) : this.runCommandFromUI(name, { asKey: true })),
       onPressL: () => this.entry.typeToken(`${name} `),
       onPressR: () => this.drawers.showReference(name),
+      ...(mode && { toggle: true, on: () => calcState[mode[0]] === mode[1] }),
     };
   }
 
