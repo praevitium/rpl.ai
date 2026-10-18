@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.139 (2026-10-18)
+**Latest release:** v0.6.140 (2026-10-18)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.140 — 2026-10-18
+
+Alarms now come due while the app is open: a note shows the message with an
+ACK button, the phone buzzes and a tone sounds, as the HP beeps (set flag
+-57, the HP's Alarm Beep off, for quiet). An alarm missed while the app was
+closed or hidden shows as past due, without a sound, the next time it
+opens. While an alarm is past due the HP's alert annunciator ((•)) lights
+in the status line, and a tap on it brings the note back; at 280 px in
+minimal view it fits beside the six modes and the leave button. A key press
+doesn't acknowledge an alarm here; the note's ACK does. The assistant's dry
+runs now roll back the alarm list with the rest of the calculator, where a
+dry run of `0 DELALARM` deleted every alarm for real.
 
 ---
 
