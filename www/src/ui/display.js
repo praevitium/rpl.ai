@@ -1,6 +1,6 @@
 import { format, formatStackTop, DEFAULT_DISPLAY } from '../rpl/formatter.js';
 import { astToSvg } from '../rpl/pretty.js';
-import { TYPES, isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
+import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged } from '../rpl/types.js';
 import { state as calcState, currentPath } from '../rpl/state.js';
 import { icon } from './icons.js';
 
@@ -594,7 +594,20 @@ export class Display {
     } else {
       const span = document.createElement('span');
       span.className = 'value-text';
-      span.textContent = flat;
+      const label = isTagged(value) ? `${value.tag}: ` : null;
+      if (label && flat.startsWith(label)) {
+        // A long tag gives way to the value it labels, each ending in an ellipsis of its own.
+        span.classList.add('tagged');
+        const name = document.createElement('span');
+        name.className = 'tag-name';
+        name.textContent = value.tag;
+        const rest = document.createElement('span');
+        rest.className = 'tag-value';
+        rest.textContent = flat.slice(label.length - 2);
+        span.append(name, rest);
+      } else {
+        span.textContent = flat;
+      }
       cell.appendChild(span);
     }
     return flat;

@@ -272,7 +272,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   search (Android, and Chrome or Edge on a computer).
   A level too wide for the screen, such as a big matrix, fades at the edge
   it continues past; drag it sideways to read the rest, or swipe its level
-  number to drop it. The stack fades the same way at its top while levels
+  number to drop it. A tagged value with a long tag shortens the tag, not
+  the value: `Total pri…: 123.456`. The stack fades the same way at its top while levels
   lie above, under a pill that counts them; tap it to go to the top. Both
   step aside for a selected level, which shows whole with its actions
   whenever it fits, and stays in view when you turn the phone or the

@@ -432,6 +432,10 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .st-val > * { margin-left: auto; }
 .st-val .value-text { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .st-row.sel .st-val .value-text { white-space: pre-wrap; overflow-wrap: anywhere; text-overflow: clip; }
+.st-val .value-text.tagged { display: flex; }
+.st-val .value-text.tagged > * { overflow: hidden; text-overflow: ellipsis; }
+.st-val .value-text.tagged .tag-name { flex-shrink: 1000000; min-width: 5ch; }
+.st-row.sel .st-val .value-text.tagged, .sheet-view .st-val .value-text.tagged { display: block; }
 .st-val.textbook svg { max-width: 100%; height: auto; display: block; }
 .st-tag { position: absolute; left: 44px; top: 50%; transform: translateY(-50%); font: 500 10.5px/1 var(--font-mono); color: var(--ink3); opacity: 0; transition: opacity .12s; pointer-events: none; white-space: nowrap; }
 .st-row:hover .st-tag { opacity: 1; }

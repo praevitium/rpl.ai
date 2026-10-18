@@ -2228,3 +2228,12 @@ setAngle('RAD');
   assert(/\.sheet-view \.st-val\.textbook \{ flex: none; \}\n\.sheet-view \.st-val\.textbook:has\(> \.list-inline\) \{ flex: 0 1 auto; min-width: 0; \}/.test(cssSrc),
     'VIEW: a long list wraps to the sheet as it does on the stack, where it ran off a phone on one line, while formulas and matrices keep their width and scroll sideways');
 }
+
+{
+  const cssSrc = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
+  assert(/const label = isTagged\(value\) \? `\$\{value\.tag\}: ` : null;\s*if \(label && flat\.startsWith\(label\)\) \{/.test(displaySrc)
+    && /\.st-val \.value-text\.tagged \.tag-name \{ flex-shrink: 1000000; min-width: 5ch; \}/.test(cssSrc)
+    && /\.st-row\.sel \.st-val \.value-text\.tagged, \.sheet-view \.st-val \.value-text\.tagged \{ display: block; \}/.test(cssSrc),
+    'tagged levels: a long tag gives way to its value, down to five characters, so a phone shows "Total pri…: 123.456" rather than the tag alone; a selected level and VIEW show both whole');
+}
