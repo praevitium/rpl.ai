@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.134 (2026-10-18)
+**Latest release:** v0.6.135 (2026-10-18)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.135 — 2026-10-18
+
+COLLECT ran SIMPLIFY, so on most expressions its key seemed to do nothing;
+it now factors over the integers as the AUR says, never into square roots:
+`X^2+5*X+6` COLLECT gives `(X+2)*(X+3)`, `X^2-2` stays whole where FACTOR
+splits it with √2, and an integer comes back as its prime factors. The CAS
+menu, nine pages of keys on a phone, now opens on folders after the HP's
+CAS menus: ALG (COLLECT, EXPAND, FACTOR, LNCOLLECT, LIN, PARTFRAC, SOLVE,
+SUBST, TEXPAND, as the HP has it), CALC, S.SLV, TRIG and EXP&LN, with every
+command still on the pages after them. A long formula on a narrow phone
+shrank to fit its line, `(X+Y)^6` expanded down to a third of the stack's
+text size; it now shrinks only to three quarters, then fades at its edge
+and scrolls sideways as a wide matrix does.
 
 ---
 
