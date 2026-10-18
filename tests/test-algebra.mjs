@@ -1423,6 +1423,19 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   giac._clear();
 }
 
+// | (where) substitutes locally, with no CAS, and leaves the result for EVAL as the HP does.
+{
+  const top = (src) => format(runLine(src).peek());
+  assert(top("'X^2+Y' { X 2 Y 3 } |") === '`2^2 + 3`' && top("'X^2+Y' { X 2 Y 3 } | EVAL") === '7' && top("'X+Y' { X Y Y X } |") === '`Y + X`'
+    && top("'A*X' { X 'B+1' } |") === '`A*(B + 1)`' && top("'X' { X 2 } |") === '2',
+    '| (where): each name takes the value after it, all at once, unsimplified, so EVAL finishes the sum');
+  assert(top('5 { X 2 } |') === '5' && top('(1,2) { X 2 } |') === '(1, 2)',
+    '| (where): a number or a complex number comes back as it is, as the AUR lists');
+  assertThrows(() => runLine("'X' { X } |"), /Bad argument value/, '| (where): a name with no value after it is a Bad argument value');
+  assertThrows(() => runLine("'X' { 2 X } |"), /Bad argument type/, '| (where): a value where a name should be is a Bad argument type');
+  assertThrows(() => runLine("'X' 2 |"), /Bad argument type/, '| (where): the bindings must be a list');
+}
+
 // SUBST routes each binding through Giac's `subst(expr, var=value)`.
 // For list/equation multi-binding forms, bindings are applied
 // sequentially so each step is its own caseval command — fixtures

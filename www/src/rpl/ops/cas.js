@@ -237,6 +237,24 @@ register('SUBST', (s) => {
 }, { category: 'CAS / symbolic', categoryOrder: 4, label: "SUBST" });
 
 
+// The HP's | (where): each name in the list takes the value after it, without the CAS, and nothing is simplified,
+// so 'X^2+Y' { X 2 Y 3 } | gives '2^2+3' for EVAL; a number is left as it is.
+register('|', (s) => {
+  const [v, list] = s.popN(2);
+  if (!isList(list)) throw new RPLError('Bad argument type');
+  if (list.items.length % 2) throw new RPLError('Bad argument value');
+  const bindings = new Map();
+  for (let i = 0; i < list.items.length; i += 2) {
+    const value = _toAst(list.items[i + 1]);
+    if (!isName(list.items[i]) || !value) throw new RPLError('Bad argument type');
+    bindings.set(list.items[i].id, value);
+  }
+  if (isReal(v) || isInteger(v) || isRational(v) || isComplex(v)) { s.push(v); return; }
+  if (!isSymbolic(v) && !isName(v)) throw new RPLError('Bad argument type');
+  _pushSubstResult(s, _substitute(_toAst(v), bindings));
+}, { category: 'CAS / symbolic', categoryOrder: 4, label: "|" });
+
+
 function _substVar(ast, name, valueAst) {
   if (!giac.isReady()) throw new RPLError('CAS not ready');
   const valueGiac = astToGiac(valueAst);
