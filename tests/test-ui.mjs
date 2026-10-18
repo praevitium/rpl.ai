@@ -1978,7 +1978,7 @@ setAngle('RAD');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/if \(kind === 'input'\) return `<div class="bn halt input" role="status">[\s\S]*?\$\{message\}<div class="bn-f">\$\{key\('ok', 'OK', 'Enter: answer with the command line', 'check', 'pri'\)\}\$\{STOP_KEY\}<\/div><\/div>`;/.test(bannerSrc)
     && /if \(calcState\.halted\?\.kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(this\._answerKey\(hpKeyCode\('ENTER'\)\)\) return;\s*this\.entry\.enter\(\);/.test(appSrc)
-    && /_beginDialog\(halted\) \{\s*this\._dialogHalt = halted;\s*if \(halted\.kind === 'wait'\) \{ this\._beginWait\(halted\); return; \}\s*queueMicrotask\(\(\) => \{\s*if \(calcState\.halted !== halted\) return;\s*if \(halted\.kind === 'input'\) this\.entry\.recall\(halted\.dialog\.text\);\s*else if \(halted\.kind === 'inform'\) this\.showInformSheet\(\);\s*else this\.showChooseList\(\);/.test(appSrc)
+    && /_beginDialog\(halted\) \{\s*this\._dialogHalt = halted;\s*if \(halted\.kind === 'wait'\) \{ this\._beginWait\(halted\); return; \}\s*queueMicrotask\(\(\) => \{\s*if \(calcState\.halted !== halted\) return;\s*if \(halted\.kind === 'input'\) \{\s*if \(this\.inputMode !== 'rpl'\) this\._closeWriter\(\(mode\) => `Put the \$\{mode\} aside for the program's INPUT`\);\s*this\.entry\.recall\(halted\.dialog\.text\);\s*\} else if \(halted\.kind === 'inform'\) this\.showInformSheet\(\);\s*else this\.showChooseList\(\);/.test(appSrc)
     && /_acceptInput\(\) \{[\s\S]{0,200}?if \(dialog\.verify\) \{ try \{ parseEntry\(text\); \} catch \(e\) \{ this\.entry\.flashError\(e\); return; \} \}\s*this\.entry\.cancel\(\);\s*this\._continueProgram\(Str\(text\)\);/.test(appSrc)
     && /_continueProgram\(\.\.\.answers\) \{\s*const op = \{ over: 'SST', into: 'SST↓' \}\[calcState\.halted\.stepping\] \?\? 'CONT';\s*if \(calcState\.halted\.kind !== 'wait'\) touchLcd\(\);\s*this\.entry\.safeRun\(\(\) => \{ for \(const a of answers\) this\.stack\.push\(a\); lookup\(op\)\.fn\(this\.stack, this\.entry\); \}, op, \{ keepPartial: true \}\);/.test(appSrc)
     && /const stepping = _singleStepMode \? \(_stepInto \? 'into' : 'over'\) : null;\s*_pendingSuspend = \{ tokens, index, kind, dialog, stepping \};/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
@@ -2095,4 +2095,11 @@ setAngle('RAD');
     && /export function errorBeep\(\) \{\s*play\(1000, 0\.125\);/.test(beepSrc)
     && /register\('BEEP', \(s\) => \{[\s\S]*?testUserFlag\(-56\) \|\| inScratchState\(\)\) return;\s*_beepHook\?\.\(freq, dur\);[\s\S]*?categoryOrder: 29/.test(displaySrc),
     'BEEP: the app plays its tones with the error beep\'s square wave, each queued after the last so a program\'s tones sound in turn while it runs on; the command stays quiet under flag -56 and in scratch evaluation');
+}
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/cancelWriter\(\) \{\s*if \(this\._writer\(\)\.collapseSelection\?\.\(\)\) return;\s*this\._closeWriter\(\(mode\) => `Discarded the \$\{mode\}`\);\s*\}/.test(appSrc)
+    && /_closeWriter\(message\) \{[\s\S]*?writer\.clear\(\);\s*if \(edit\) this\._endEdit\(\);\s*this\.setInputMode\('rpl'\);[\s\S]*?else if \(hadContent\) this\.toast\(message\(mode\), \{ action: 'Undo', onAction: reopen \}\);/.test(appSrc),
+    "INPUT with a writer open: the matrix or equation writer steps aside (its content and any edit a tap of Undo away, as when it is cancelled) so the program's text lands on a command line the user can see and answer");
 }

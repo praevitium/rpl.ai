@@ -979,9 +979,14 @@ class App {
   }
 
   cancelWriter() {
+    if (this._writer().collapseSelection?.()) return;
+    this._closeWriter((mode) => `Discarded the ${mode}`);
+  }
+
+  // The writer's content stays a tap of Undo away, as does the edit it was for.
+  _closeWriter(message) {
     const mode = this.inputMode;
     const writer = this._writer();
-    if (writer.collapseSelection?.()) return;
     const edit = this.pendingEdit;
     const saved = writer.snapshot();
     const hadContent = !writer.isEmpty();
@@ -990,7 +995,7 @@ class App {
     this.setInputMode('rpl');
     const reopen = () => this._reopenWriter(mode, saved, edit);
     if (edit) this._toastEditCancelled(edit, reopen);
-    else if (hadContent) this.toast(mode === 'equation' ? 'Discarded the equation' : 'Discarded the matrix', { action: 'Undo', onAction: reopen });
+    else if (hadContent) this.toast(message(mode), { action: 'Undo', onAction: reopen });
   }
 
   _toastEditCancelled(edit, reopen) {
@@ -1072,8 +1077,10 @@ class App {
     if (halted.kind === 'wait') { this._beginWait(halted); return; }
     queueMicrotask(() => {
       if (calcState.halted !== halted) return;
-      if (halted.kind === 'input') this.entry.recall(halted.dialog.text);
-      else if (halted.kind === 'inform') this.showInformSheet();
+      if (halted.kind === 'input') {
+        if (this.inputMode !== 'rpl') this._closeWriter((mode) => `Put the ${mode} aside for the program's INPUT`);
+        this.entry.recall(halted.dialog.text);
+      } else if (halted.kind === 'inform') this.showInformSheet();
       else this.showChooseList();
     });
   }
