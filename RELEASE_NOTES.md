@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.123 (2026-10-18)
+**Latest release:** v0.6.124 (2026-10-18)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.124 — 2026-10-18
+
+The HP's time value of money arrives: `TVMROOT` solves the variable it is
+given, N, I%YR, PV, PMT or FV, from the others and PYR, and stores it, so
+a 30-year $200,000 loan at 6.5% gives a payment of -1264.13604699.
+`TVMBEG` and `TVMEND` put the payments at each period's start or end
+(flag -14), and the new TVM menu holds all three. Names may now hold `%`
+after their first letter, as I%YR does; names bound for the CAS still
+refuse it. An error banner stayed up after the equation writer entered
+a formula, or a level's menu dropped or evaluated one, though the stack
+had moved on; every action now clears the old error, as the HP's next
+key does. A `CHOOSE` choice longer than the list was cut short on a
+narrow phone; it now wraps onto a second line.
 
 ## v0.6.123 — 2026-10-18
 
