@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.145 (2026-10-18)
+**Latest release:** v0.6.146 (2026-10-18)
 
 ---
 
@@ -18,6 +18,20 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.146 — 2026-10-18
+
+SOLVE takes a list of equations and expressions, as the AUR says, and
+solves each for the variable: `{ 'X^2=4' 'X-3' } 'X' SOLVE` gives
+`{ { X=-2 X=2 } { X=3 } }`, where it said Bad argument type. ISOL, which
+runs SOLVE, takes one too. A list inside a list is drawn as textbook maths
+and wraps with the rest of the level, where it showed typed text running
+past a phone's edge. New: SOLVEVX, in the CAS menu's S.SLV folder, solves
+for the current variable, or for the only variable while VX is the
+default `x`: `'T^2=9' SOLVEVX` gives `{ T=-3 T=3 }`, and a list gives a
+list of lists.
 
 ---
 
