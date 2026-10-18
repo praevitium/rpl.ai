@@ -391,6 +391,12 @@ import { assert, assertThrows } from './helpers.mjs';
     && /this\.compact = app\.keypadLayout\(\) === 'compact';/.test(readFileSync(new URL('../www/src/ui/keyboard.js', import.meta.url), 'utf8')),
     'keypad: a window with the keypad under the stack and under 576 px tall shows the compact keypad while the setting stays Full, where the full keypad left a 412x457 split screen 18 px of stack');
   {
+    const { MENU_FAMILIES } = await import('../www/src/ui/menus.js');
+    const prob = MENU_FAMILIES.find((f) => f.id === 'PROB');
+    assert(prob.keys.join(' ') === 'COMB PERM ! RAND RDZ UTPC UTPF UTPN UTPT NDIST' && prob.keys.every((n) => lookup(n)),
+      'PROB menu: the HP\'s MTH PROB keys in its order, COMB PERM ! RAND RDZ, then UTPC UTPF UTPN UTPT and NDIST, where ! RAND and RDZ were only in ARITH');
+  }
+  {
     const { VECTOR_KEYS, menuById, MENU_GROUPS } = await import('../www/src/ui/menus.js');
     const math = MENU_GROUPS.find((g) => g.title === 'Math').ids;
     assert(VECTOR_KEYS.join(' ') === 'ABS DOT CROSS V→ →V2 →V3 RECT CYLIN SPHERE' && VECTOR_KEYS.every((n) => lookup(n))

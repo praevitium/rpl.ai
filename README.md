@@ -148,7 +148,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   Once ΣDAT exists, `3 1 7 Σ+` adds a point from separate numbers, the
   quickest way on a phone. The Σ+, Σ-, CLΣ and STOΣ keys say how many points
   ΣDAT holds, and a statistics command run with an array on the stack but no
-  ΣDAT offers to store it there.
+  ΣDAT offers to store it there. The PROB menu has the HP's keys in its
+  order, `COMB` `PERM` `!` `RAND` `RDZ`, then the upper-tail distributions
+  `UTPC` `UTPF` `UTPN` `UTPT` and `NDIST`, to 12 digits:
+  `0 1 1.96 UTPN` gives 0.0249978951482.
 - **Bases.** `#FFh` is a binary integer; `HEX`, `DEC`, `OCT` and `BIN` show
   them in another base, and `8 STWS` sets the word size, so `#81h RL` gives
   `#3h`. The BASE menu holds them as the HP's does, with folders for

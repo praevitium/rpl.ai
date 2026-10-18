@@ -11,7 +11,7 @@ export const MENU_FAMILIES = Object.freeze([
   { id: 'CPLX', short: 'CMPLX', title: 'Complex numbers', category: 'Complex / coordinates', keys: ['RE', 'IM', 'C→R', 'R→C', 'ABS', 'ARG', 'SIGN', 'NEG', 'CONJ', 'C→P', 'P→C', 'CMPLX', 'RECT', 'CYLIN', 'SPHERE', 'CMPLX?'] },
   { id: 'LOGIC', short: 'LOGIC', title: 'Comparisons and logic', category: 'Comparisons / logic' },
   { id: 'INTEGER', short: 'INTGR', title: 'Integers', category: 'Integer / number theory' },
-  { id: 'PROB', short: 'PROB', title: 'Probability', category: 'Probability / combinatorics' },
+  { id: 'PROB', short: 'PROB', title: 'Probability', category: 'Probability / combinatorics', keys: ['COMB', 'PERM', '!', 'RAND', 'RDZ', 'UTPC', 'UTPF', 'UTPN', 'UTPT', 'NDIST'] },
   { id: 'POLY', short: 'POLY', title: 'Polynomials', category: 'Polynomials' },
   { id: 'CAS', short: 'CAS', title: 'Algebra (CAS)', category: 'CAS / symbolic' },
   { id: 'SPECIAL', short: 'SPECL', title: 'Special functions', category: 'Special functions' },
