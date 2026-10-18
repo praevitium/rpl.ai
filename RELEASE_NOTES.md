@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.126 (2026-10-18)
+**Latest release:** v0.6.127 (2026-10-18)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.127 — 2026-10-18
+
+SCATRPLOT always plotted ΣDAT's first two columns, and BARPLOT and
+HISTPLOT the second and the first, whatever XCOL and YCOL said. As the
+AUR has it, SCATRPLOT now plots the XCOL column against the YCOL column,
+and BARPLOT and HISTPLOT the XCOL column; a column past ΣDAT's last is
+Invalid dimension, and no ΣDAT is Nonexistent ΣDAT, before the plot
+opens. The STAT menu gains the HP's PLOT folder, with BARPLOT, HISTPLOT
+and SCATRPLOT, between 1VAR and FIT. A fitted plot no longer puts its
+last or highest point under the plot tools in the top right corner: it
+leaves them room at the right or the top, whichever costs less.
 
 ## v0.6.126 — 2026-10-18
 
