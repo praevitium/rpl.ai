@@ -721,7 +721,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   resetHome();
 }
 
-// IFERR catches the new "Directory not allowed" trap and ERRN reports 0x502.
+// IFERR catches the "Directory not allowed" trap and ERRN reports the HP's #12Ah.
 // (IFERR restores the pre-trap stack, so inputs remain; we peek at the top.)
 {
   resetHome();
@@ -738,12 +738,12 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   ]));
   lookup('EVAL').fn(s);
   const top = s.peek();
-  assert(isBinaryInteger(top) && top.value === 0x502n,
-         'IFERR around STO-over-subdir: ERRN = #502h (Directory not allowed)');
+  assert(isBinaryInteger(top) && top.value === 0x12An,
+         'IFERR around STO-over-subdir: ERRN = #12Ah (Directory not allowed)');
   resetHome();
 }
 
-// IFERR catches the "Directory not empty" trap and ERRN reports 0x503.
+// IFERR catches the "Directory not empty" trap and ERRN reports the HP's #12Bh.
 {
   resetHome();
   clearLastError();
@@ -761,12 +761,12 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   ]));
   lookup('EVAL').fn(s);
   const top = s.peek();
-  assert(isBinaryInteger(top) && top.value === 0x503n,
-         'IFERR around PURGE-non-empty-subdir: ERRN = #503h (Directory not empty)');
+  assert(isBinaryInteger(top) && top.value === 0x12Bn,
+         'IFERR around PURGE-non-empty-subdir: ERRN = #12Bh (Directory not empty)');
   resetHome();
 }
 
-// IFERR catches CRDIR name-conflict and ERRN reports 0x501.
+// IFERR catches CRDIR name-conflict and ERRN reports the HP's #13Ch.
 {
   resetHome();
   clearLastError();
@@ -781,8 +781,8 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   ]));
   lookup('EVAL').fn(s);
   const top = s.peek();
-  assert(isBinaryInteger(top) && top.value === 0x501n,
-         'IFERR around CRDIR name-conflict: ERRN = #501h (Name conflict)');
+  assert(isBinaryInteger(top) && top.value === 0x13Cn,
+         'IFERR around CRDIR name-conflict: ERRN = #13Ch (Name conflict), where it shared #501h with Invalid dimension');
   resetHome();
 }
 
@@ -790,14 +790,14 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 {
   clearLastError();
   setLastError({ message: 'Directory not allowed: AFOO' });
-  assert(getLastError().number === 0x502,
-         'map: "Directory not allowed" prefix → 0x502');
+  assert(getLastError().number === 0x12A,
+         'map: "Directory not allowed" prefix → 0x12A');
   setLastError({ message: 'Directory not empty: AFOO' });
-  assert(getLastError().number === 0x503,
-         'map: "Directory not empty" prefix → 0x503');
+  assert(getLastError().number === 0x12B,
+         'map: "Directory not empty" prefix → 0x12B');
   setLastError({ message: 'Name conflict: X' });
-  assert(getLastError().number === 0x501,
-         'map: "Name conflict" prefix → 0x501');
+  assert(getLastError().number === 0x13C,
+         'map: "Name conflict" prefix → 0x13C');
   clearLastError();
 }
 

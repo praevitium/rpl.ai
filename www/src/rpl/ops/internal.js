@@ -1106,6 +1106,7 @@ function _dispatchOp(op, s, name) {
     if (e instanceof RPLError && !/^[^\s:]+:\s/.test(e.message)) {
       const named = new RPLError(`${name}: ${e.message}`);
       named.argsReturned = e.argsReturned;
+      named.errorNumber = e.errorNumber;
       named.depth = depth;
       throw named;
     }

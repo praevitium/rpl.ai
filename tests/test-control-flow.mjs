@@ -720,6 +720,17 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
          'ERRN returns the mapped HP50-ish code for "Infinite result" (#305h)');
 }
 
+// ERRN gives the HP's number for every error the app raises, and DOERR's own numbers
+{
+  const errn = (body) => runLine(`« IFERR ${body} THEN ERRN END » EVAL`).peek().value;
+  assert(errn('-2. LNP1') === 0x304n && errn('[ 1 2 ] [ 1 2 3 ] +') === 0x501n && errn('1_m 1_s +') === 0xB02n,
+    'ERRN: Undefined result is #304h, Invalid dimension #501h and Inconsistent units #B02h, as on the HP, where each gave #0h, the number of no error');
+  assert(errn('"My error" DOERR') === 0x70000n && errn('#1234h DOERR') === 0x1234n && errn('#501h DOERR') === 0x501n,
+    'ERRN after DOERR: #70000h for a string, as the AUR says, and the number given for a binary integer');
+  assert(runLine('« IFERR #501h DOERR THEN ERRM END » EVAL').peek().value === 'Invalid dimension',
+    '#501h DOERR is Invalid dimension, where it said Name conflict');
+}
+
 // ERR0 clears the last-error slot
 {
   resetHome();

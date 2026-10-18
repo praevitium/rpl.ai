@@ -1,4 +1,4 @@
-import { setApproxMode, getApproxMode, getLastError, clearLastError } from '../state.js';
+import { setApproxMode, getApproxMode, getLastError, clearLastError, ERROR_NUMBERS } from '../state.js';
 import { RPLAbort, RPLError } from '../stack.js';
 import { Str, BinaryInteger, isInteger, isBinaryInteger, isReal, Program, isString, Integer } from '../types.js';
 import { register } from './registry.js';
@@ -90,28 +90,20 @@ register('NUM', (s) => {
 }, { category: 'Lists / strings', categoryOrder: 14, label: "NUM" });
 
 
-// The inverse of setLastError's message → number table in state.js.
-const ERROR_MESSAGES = {
-  0x201: 'Too few arguments',
-  0x202: 'Bad argument type',
-  0x203: 'Bad argument value',
-  0x204: 'Undefined name',
-  0x303: 'Division by zero',
-  0x305: 'Infinite result',
-  0x501: 'Name conflict',
-  0x502: 'Directory not allowed',
-  0x503: 'Directory not empty',
-};
+const ERROR_MESSAGES = Object.fromEntries(Object.entries(ERROR_NUMBERS).map(([message, n]) => [n, message]));
+const STRING_ERROR = 0x70000;
+
+const numberedError = (message, errorNumber) => Object.assign(new RPLError(message), { errorNumber });
 
 register('DOERR', (s) => {
   const [v] = s.popN(1);
   if (isString(v)) {
-    throw new RPLError(v.value === '' ? 'Interrupted' : v.value);
+    throw v.value === '' ? new RPLError('Interrupted') : numberedError(v.value, STRING_ERROR);
   }
   if (isInteger(v) || isReal(v) || isBinaryInteger(v)) {
     const code = isReal(v) ? v.value.toNumber() : Number(v.value);
     if (code === 0) return;
-    throw new RPLError(ERROR_MESSAGES[code] || `Error: #${code.toString(16).toUpperCase()}h`);
+    throw numberedError(ERROR_MESSAGES[code] || `Error: #${code.toString(16).toUpperCase()}h`, code);
   }
   throw new RPLError('Bad argument type');
 }, { category: 'Evaluation / program', categoryOrder: 11, label: "DOERR" });

@@ -711,18 +711,24 @@ export function moveCurrentEntry(name, targetDir) {
   _emit();
 }
 
-// ERRN numbers; DOERR in ops/evaluation.js keeps the inverse table.  The
-// 0x5xx directory codes are local stand-ins.
-const _ERROR_NUMBERS = Object.freeze({
-  'Too few arguments':    0x201,
-  'Bad argument type':    0x202,
-  'Bad argument value':   0x203,
-  'Undefined name':       0x204,
-  'Division by zero':     0x303,
-  'Infinite result':      0x305,
-  'Name conflict':        0x501,
-  'Directory not allowed':0x502,
-  'Directory not empty':  0x503,
+// ERRN numbers from the HP's list of error messages; DOERR in ops/evaluation.js reads it backwards.
+export const ERROR_NUMBERS = Object.freeze({
+  'Undefined local name':  0x003,
+  'Directory not allowed': 0x12A,
+  'Directory not empty':   0x12B,
+  'Name conflict':         0x13C,
+  'Interrupted':           0x13F,
+  'Too few arguments':     0x201,
+  'Bad argument type':     0x202,
+  'Bad argument value':    0x203,
+  'Undefined name':        0x204,
+  'Division by zero':      0x303,
+  'Undefined result':      0x304,
+  'Infinite result':       0x305,
+  'Invalid dimension':     0x501,
+  'Nonexistent ΣDAT':      0x602,
+  'Inconsistent units':    0xB02,
+  'Nonexistent alarm':     0xD04,
 });
 
 // ERRM reports the message without the dispatcher's `CMD: ` prefix.  A
@@ -731,9 +737,9 @@ export function setLastError(err) {
   const raw = (err && err.message) ? String(err.message) : String(err);
   const m = raw.match(/^[^\s:]+:\s(.+)$/);
   const message = m ? m[1] : raw;
-  const entry = Object.entries(_ERROR_NUMBERS)
+  const entry = Object.entries(ERROR_NUMBERS)
     .find(([key]) => message === key || message.startsWith(key + ':'));
-  state.lastError = { message, number: entry ? entry[1] : 0 };
+  state.lastError = { message, number: err?.errorNumber ?? (entry ? entry[1] : 0) };
 }
 
 export function clearLastError() {
