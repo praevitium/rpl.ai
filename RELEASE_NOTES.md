@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.125 (2026-10-18)
+**Latest release:** v0.6.126 (2026-10-18)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.126 — 2026-10-18
+
+The STAT menu now opens on the HP's folders: DATA holds Σ+, Σ-, CLΣ,
+RCLΣ and STOΣ, then ΣPAR, 1VAR, FIT and SUMS, each with a BACK key, so
+entering points on a phone no longer means paging to the seventh page
+for Σ+. The whole list still follows the folders. A Σ+, Σ- or CLΣ key
+that runs says how many points ΣDAT holds now, with Undo, since the
+stack shows nothing. The MEDIAN key looked blocked on an empty stack
+though MEDIAN reads ΣDAT there, as MEAN does; it no longer does.
+TVMROOT, AMORT, DEFINE and LNAME on an empty stack said Bad argument
+type; they now say Too few arguments, as every other command does.
 
 ## v0.6.125 — 2026-10-18
 
