@@ -16,7 +16,7 @@ import { Sheets } from './ui/sheets.js';
 import { Tour } from './ui/tour.js';
 import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
-import { MENU_FAMILIES, UNIT_GROUPS, BRANCH_KEYS, menuById, unitConversions, customMenuEntry, customMenuLabel } from './ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, BRANCH_KEYS, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel } from './ui/menus.js';
 import { convertValue } from './rpl/units.js';
 import { MODES } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
@@ -252,7 +252,8 @@ class App {
     else this.menubar.render();
     this.display.renderStack(this.stack);
     const halted = calcState.halted;
-    if (halted?.kind === 'input' && this._inputHalt !== halted) this._beginInput(halted);
+    if (this._dialogHalt && this._dialogHalt !== halted) this._endDialog();
+    if (halted?.dialog && this._dialogHalt !== halted) this._beginDialog(halted);
   }
 
   setPrefs(patch) {
@@ -392,6 +393,8 @@ class App {
     const kind = calcState.halted?.kind;
     if (act === 'ok' && kind === 'input') { this._acceptInput(); return; }
     if (act === 'cont' && kind === 'msgbox') { this._continueProgram(); return; }
+    if (act === 'choose' && kind === 'choose') { this.showChooseList(); return; }
+    if (act === 'cancel' && kind === 'choose') { this._continueProgram(Integer(0n)); return; }
     if (act === 'kill' && kind === 'input') this.entry.cancel();
     const op = { cont: 'CONT', sst: 'SST', into: 'SST↓', kill: 'KILL' }[act];
     if (op) { this.entry.execOp(op); return; }
@@ -1054,17 +1057,38 @@ class App {
     if (this.entry.error) this.entry.focus();
   }
 
-  // The line that ran the program clears once it ends, after this notification, so INPUT's text waits a tick.
-  _beginInput(halted) {
-    this._inputHalt = halted;
-    queueMicrotask(() => { if (calcState.halted === halted) this.entry.recall(halted.input.text); });
+  // The line that ran the program clears once it ends, after this notification, so a dialog opens a tick later.
+  _beginDialog(halted) {
+    this._dialogHalt = halted;
+    queueMicrotask(() => {
+      if (calcState.halted !== halted) return;
+      if (halted.kind === 'input') this.entry.recall(halted.dialog.text);
+      else this.showChooseList();
+    });
+  }
+
+  // A CHOOSE's list goes with its dialog: the banner's keys sit on the popover's anchor, where a press leaves it open.
+  _endDialog() {
+    if (this._dialogHalt.kind === 'choose') this.popover.close({ restoreFocus: false });
+    this._dialogHalt = null;
+  }
+
+  // CHOOSE's choices in a popover above the banner, clear of its keys and the command line: a tap answers with the
+  // choice and 1, as the HP's OK does, or with 0 when no choice is highlighted and the list is for looking at.
+  showChooseList() {
+    const { items, pos } = calcState.halted.dialog;
+    const rows = items.map((item, i) => {
+      const { label, value } = chooseEntry(item);
+      return { text: label, mark: i + 1 === pos ? icon('check', 'sm') : '', run: () => (pos ? this._continueProgram(value, Integer(1n)) : this._continueProgram(Integer(0n))) };
+    });
+    this._heldKeyMenu(rows, $('banner').querySelector('.bn'), 'Choose', { above: true });
   }
 
   // Enter or OK hands the command line to the program waiting at INPUT, as a string; with V it has to parse first.
   _acceptInput() {
-    const { input } = calcState.halted;
+    const { dialog } = calcState.halted;
     const text = this.entry.buffer;
-    if (input.verify) { try { parseEntry(text); } catch (e) { this.entry.flashError(e); return; } }
+    if (dialog.verify) { try { parseEntry(text); } catch (e) { this.entry.flashError(e); return; } }
     this.entry.cancel();
     this._continueProgram(Str(text));
   }
@@ -1446,11 +1470,12 @@ class App {
   }
 
   // A phone with the keypad hidden has no shift, so a finger held on a key offers what ⇦ and ⇨ would do with it.
-  _heldKeyMenu(options, anchor, label) {
+  _heldKeyMenu(options, anchor, label, { above = false } = {}) {
     const html = options.map((o, i) => `<button type="button" class="opt" data-v="${i}"><span class="ck">${o.mark ?? (i ? '⇨' : '⇦')}</span><b>${escapeHtml(o.text)}</b></button>`).join('');
     this.popover.open(anchor, html, {
       label,
       keepFocus: true,
+      above,
       onClick: (target) => {
         this.popover.close({ restoreFocus: false });
         options[Number(target.dataset.v)].run();

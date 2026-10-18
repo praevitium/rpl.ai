@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 479 commands, exact big-integer and rational arithmetic,
+of its command set: 480 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -501,9 +501,11 @@ stack stays in view. `MSGBOX` shows its message with an OK key and goes
 on when you tap it. `INPUT` asks: its prompt is the banner, the text it
 offers is on the command line, and Enter or OK hands the line back to the
 program as a string (the HP's `V` option asks that it parse first; its
-cursor positions and entry modes are not taken). A program on the stack
-can be stepped from the start with `DBUG`, or with Debug in its level's ⋯
-menu.
+cursor positions and entry modes are not taken). `CHOOSE` lists its
+choices in a popover: a tap answers with the choice (or the second object
+of a `{ display result }` pair) and 1, Cancel with 0. A program on the
+stack can be stepped from the start with `DBUG`, or with Debug in its
+level's ⋯ menu.
 
 ![A halted program](screenshots/debugging.png)
 
@@ -734,12 +736,12 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 479. The
+**Commands.** The HP 50g manual lists 810 commands; rpl.ai has 480. The
 Catalog and the command reference mark what is available. Not there yet:
 
-- program I/O: INFORM, CHOOSE, DISP, CLLCD, FREEZE, WAIT, KEY and BEEP.
-  Programs read their arguments from the stack, label results with `→TAG`,
-  ask with `INPUT`, pause with `PROMPT` and report with `MSGBOX`.
+- program I/O: INFORM, DISP, CLLCD, FREEZE, WAIT, KEY and BEEP. Programs
+  read their arguments from the stack, label results with `→TAG`, ask with
+  `INPUT` and `CHOOSE`, pause with `PROMPT` and report with `MSGBOX`.
 - PICT and the plot-setup commands (PVIEW, ERASE, AXES, XRNG, YRNG, STEQ and
   the rest)
 - MENU and TMENU, and DEF

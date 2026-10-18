@@ -35,6 +35,11 @@ register('INPUT', () => {
 }, { category: 'Control flow / debug', categoryOrder: 10, label: "INPUT" });
 
 
+register('CHOOSE', () => {
+  throw new RPLError('CHOOSE: not inside a running program');
+}, { category: 'Control flow / debug', categoryOrder: 11, label: "CHOOSE" });
+
+
 // Resumes the most recently halted program, consuming any PROMPT banner.
 function resumeHalted() {
   if (inScratchState()) throw new RPLError('Cannot dry-run a halted program');

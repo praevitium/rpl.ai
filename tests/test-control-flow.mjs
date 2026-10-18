@@ -7352,7 +7352,7 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   s.push(Program([Str('Name?'), Str('Bob'), Name('INPUT'), Str('Hi '), Name('SWAP'), Name('+')]));
   lookup('EVAL').fn(s);
   let halted = getHalted();
-  assert(halted && halted.kind === 'input' && halted.input.text === 'Bob' && halted.input.verify === false && haltedDepth() === 1 && s.depth === 0,
+  assert(halted && halted.kind === 'input' && halted.dialog.text === 'Bob' && halted.dialog.verify === false && haltedDepth() === 1 && s.depth === 0,
     'INPUT halts the program under its own kind with the text to offer, both arguments taken off the stack');
   assert(getPromptMessage()?.value === 'Name?', 'INPUT keeps its prompt for the banner');
   s.push(Str('Bobby'));
@@ -7361,13 +7361,13 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   s.push(parseEntry('« "N?" { "2" 0 V } INPUT STR→ 3 * »')[0]);
   lookup('EVAL').fn(s);
   halted = getHalted();
-  assert(halted?.input.text === '2' && halted.input.verify === true, "INPUT's list offers its string and V asks that the answer parse; the HP's cursor position is not taken");
+  assert(halted?.dialog.text === '2' && halted.dialog.verify === true, "INPUT's list offers its string and V asks that the answer parse; the HP's cursor position is not taken");
   s.push(Str('4'));
   lookup('CONT').fn(s);
   assert(s.depth === 2 && s.peek().value === 12n, 'STR→ reads the answer back');
   s.push(parseEntry('« "N?" { } INPUT »')[0]);
   lookup('EVAL').fn(s);
-  assert(getHalted()?.input.text === '', 'an INPUT list without a string offers an empty line');
+  assert(getHalted()?.dialog.text === '', 'an INPUT list without a string offers an empty line');
   clearAllHalted(); clearPromptMessage();
   const t = new Stack();
   t.push(Program([Str('N?'), Integer(5n), Name('INPUT')]));
@@ -7377,5 +7377,39 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   u.push(Program([Str('N?'), Name('INPUT')]));
   assertThrows(() => lookup('EVAL').fn(u), /INPUT: Too few arguments/, 'INPUT with one argument says so');
   assertThrows(() => lookup('INPUT').fn(new Stack()), /not inside a running program/i, 'INPUT on its own, like PROMPT, wants a running program');
+  clearAllHalted(); clearPromptMessage();
+}
+
+{
+  resetHome(); clearAllHalted(); clearPromptMessage();
+  const s = new Stack();
+  s.push(parseEntry('« "Size?" { "Small" { "Large" 2 } } 2 CHOOSE »')[0]);
+  lookup('EVAL').fn(s);
+  const halted = getHalted();
+  assert(halted?.kind === 'choose' && halted.dialog.pos === 2 && halted.dialog.items.length === 2 && haltedDepth() === 1 && s.depth === 0,
+    'CHOOSE halts the program under its own kind with its choices and the highlighted position, all three arguments taken off the stack');
+  assert(getPromptMessage()?.value === 'Size?', 'CHOOSE keeps its prompt for the banner');
+  s.push(Integer(2n));
+  s.push(Integer(1n));
+  lookup('CONT').fn(s);
+  assert(getHalted() === null && s.depth === 2 && s.peek().value === 1n && s.peek(2).value === 2n, 'the choice and 1 pushed, CONT runs the program on past CHOOSE');
+  s.push(parseEntry('« "" { 1 2 3 } 0 CHOOSE »')[0]);
+  lookup('EVAL').fn(s);
+  assert(getHalted()?.dialog.pos === 0 && getPromptMessage()?.value === '', 'CHOOSE with no highlighted item still halts, the list for looking at');
+  clearAllHalted(); clearPromptMessage();
+  const t = new Stack();
+  t.push(parseEntry('« "Q" 5 1 CHOOSE »')[0]);
+  assertThrows(() => lookup('EVAL').fn(t), /CHOOSE: Bad argument type/, 'CHOOSE wants a list of choices');
+  t.push(parseEntry('« "Q" { 1 2 } "1" CHOOSE »')[0]);
+  assertThrows(() => lookup('EVAL').fn(t), /CHOOSE: Bad argument type/, 'CHOOSE wants a number for the position');
+  t.push(parseEntry('« "Q" { 1 2 } 3 CHOOSE »')[0]);
+  assertThrows(() => lookup('EVAL').fn(t), /CHOOSE: Bad argument value/, 'a position past the last choice is refused');
+  t.push(parseEntry('« "Q" { 1 2 } 1.5 CHOOSE »')[0]);
+  assertThrows(() => lookup('EVAL').fn(t), /CHOOSE: Bad argument value/, 'a fractional position is refused');
+  assert(getHalted() === null && getPromptMessage() === null, 'a refused CHOOSE leaves no halt and no message');
+  const u = new Stack();
+  u.push(parseEntry('« { 1 } 1 CHOOSE »')[0]);
+  assertThrows(() => lookup('EVAL').fn(u), /CHOOSE: Too few arguments/, 'CHOOSE with two arguments says so');
+  assertThrows(() => lookup('CHOOSE').fn(new Stack()), /not inside a running program/i, 'CHOOSE on its own, like PROMPT, wants a running program');
   clearAllHalted(); clearPromptMessage();
 }

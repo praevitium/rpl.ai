@@ -99,6 +99,12 @@ export function customMenuLabel(item) {
   return format(item);
 }
 
+// CHOOSE's choices: an object shows as itself and is the result; { display result } shows the first and returns the second.
+export function chooseEntry(item) {
+  const pair = isList(item) && item.items.length === 2;
+  return { label: customMenuLabel(pair ? item.items[0] : item), value: pair ? item.items[1] : item };
+}
+
 // The HP's custom menu takes an object on its own, { "label" action } or { "label" { action ⇦action ⇨action } }.
 export function customMenuEntry(item) {
   const pair = !isTagged(item) && isList(item) && item.items.length === 2 ? item.items : null;

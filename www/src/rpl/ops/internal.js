@@ -890,6 +890,17 @@ function* evalRange(s, toks, from, to, depth) {
       i++;
       continue;
     }
+    if (id === 'CHOOSE') {
+      if (s.depth < 3) throw new RPLError('CHOOSE: Too few arguments');
+      const choose = chooseSpec(s.peek(2), s.peek());
+      s.pop();
+      s.pop();
+      setPromptMessage(s.pop());
+      _markSuspend(toks, i + 1, 'choose', choose);
+      yield;
+      i++;
+      continue;
+    }
     const runner = id && SUSPENDABLE_OPS.get(id);
     if (runner) {
       yield* runner(s, depth);
@@ -917,11 +928,21 @@ function inputSpec(v) {
 }
 
 
-// Where the program stopped, recorded just before each yield for the halted view.
+// CHOOSE's choices, each an object or { display result }, and the position of the one highlighted (0: none, and the
+// box only shows the choices).
+function chooseSpec(list, pos) {
+  if (!isList(list) || !(isReal(pos) || isInteger(pos))) throw new RPLError('CHOOSE: Bad argument type');
+  const n = Number(pos.value);
+  if (!Number.isInteger(n) || n < 0 || n > list.items.length) throw new RPLError('CHOOSE: Bad argument value');
+  return { items: list.items, pos: n };
+}
+
+
+// Where the program stopped, recorded just before each yield for the halted view; a dialog's details ride along.
 let _pendingSuspend = null;
 
-function _markSuspend(tokens, index, kind, input = null) {
-  _pendingSuspend = { tokens, index, kind, input };
+function _markSuspend(tokens, index, kind, dialog = null) {
+  _pendingSuspend = { tokens, index, kind, dialog };
 }
 
 function* _stepYield(tokens, index) {
@@ -939,9 +960,9 @@ export function runSuspendable(gen) {
   try {
     if (!gen.next().done) {
       halted = true;
-      const { tokens = null, index = null, kind = null, input = null } = _pendingSuspend ?? {};
+      const { tokens = null, index = null, kind = null, dialog = null } = _pendingSuspend ?? {};
       _pendingSuspend = null;
-      setHalted({ generator: gen, tokens, index, kind, input });
+      setHalted({ generator: gen, tokens, index, kind, dialog });
     }
   } finally {
     if (!halted) {

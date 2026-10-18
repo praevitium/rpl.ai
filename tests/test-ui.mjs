@@ -1948,11 +1948,36 @@ setAngle('RAD');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/if \(kind === 'input'\) return `<div class="bn halt input" role="status">[\s\S]*?\$\{message\}<div class="bn-f">\$\{key\('ok', 'OK', 'Enter: answer with the command line', 'check', 'pri'\)\}\$\{STOP_KEY\}<\/div><\/div>`;/.test(bannerSrc)
     && /if \(calcState\.halted\?\.kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*this\.entry\.enter\(\);/.test(appSrc)
-    && /_beginInput\(halted\) \{\s*this\._inputHalt = halted;\s*queueMicrotask\(\(\) => \{ if \(calcState\.halted === halted\) this\.entry\.recall\(halted\.input\.text\); \}\);/.test(appSrc)
-    && /_acceptInput\(\) \{[\s\S]{0,200}?if \(input\.verify\) \{ try \{ parseEntry\(text\); \} catch \(e\) \{ this\.entry\.flashError\(e\); return; \} \}\s*this\.entry\.cancel\(\);\s*this\._continueProgram\(Str\(text\)\);/.test(appSrc)
+    && /_beginDialog\(halted\) \{\s*this\._dialogHalt = halted;\s*queueMicrotask\(\(\) => \{\s*if \(calcState\.halted !== halted\) return;\s*if \(halted\.kind === 'input'\) this\.entry\.recall\(halted\.dialog\.text\);\s*else this\.showChooseList\(\);/.test(appSrc)
+    && /_acceptInput\(\) \{[\s\S]{0,200}?if \(dialog\.verify\) \{ try \{ parseEntry\(text\); \} catch \(e\) \{ this\.entry\.flashError\(e\); return; \} \}\s*this\.entry\.cancel\(\);\s*this\._continueProgram\(Str\(text\)\);/.test(appSrc)
     && /_continueProgram\(\.\.\.answers\) \{\s*this\.entry\.safeRun\(\(\) => \{ for \(const a of answers\) this\.stack\.push\(a\); lookup\('CONT'\)\.fn\(this\.stack, this\.entry\); \}, 'CONT', \{ keepPartial: true \}\);/.test(appSrc)
-    && /if \(act === 'ok' && kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(act === 'cont' && kind === 'msgbox'\) \{ this\._continueProgram\(\); return; \}\s*if \(act === 'kill' && kind === 'input'\) this\.entry\.cancel\(\);/.test(appSrc),
+    && /if \(act === 'ok' && kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(act === 'cont' && kind === 'msgbox'\) \{ this\._continueProgram\(\); return; \}[\s\S]{0,300}?if \(act === 'kill' && kind === 'input'\) this\.entry\.cancel\(\);/.test(appSrc),
     "INPUT: its banner is the prompt with OK and Stop keys and no program source; the text it offers goes on the command line once the line that ran the program has cleared; Enter or OK hands the line back as a string (with V only once it parses) and goes on without an undo step of its own, as MSGBOX's OK does, so UNDO after the program takes the whole run back rather than stopping between its answers; Stop clears the line before KILL");
   assert(/if \(id === 'INPUT'\) \{[\s\S]{0,260}?_markSuspend\(toks, i \+ 1, 'input', input\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
     'INPUT halts a running program the way PROMPT does, carrying the text to offer');
+}
+
+{
+  const bannerSrc = readFileSync(new URL('../www/src/ui/banner.js', import.meta.url), 'utf8');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const { chooseEntry } = await import('../www/src/ui/menus.js');
+  const { RList: L, Str: S, Integer: I, Name: N } = await import('../www/src/rpl/types.js');
+  const pair = chooseEntry(L([S('Large'), I(2n)])), plain = chooseEntry(N('X')), triple = chooseEntry(L([I(1n), I(2n), I(3n)]));
+  assert(pair.label === 'Large' && pair.value.value === 2n && plain.label === 'X' && plain.value.id === 'X' && triple.label === '{ 1 2 3 }' && triple.value.items.length === 3,
+    'CHOOSE: a { display result } pair shows the first and returns the second, while any other object, a longer list included, shows as itself and is the result');
+  assert(/if \(kind === 'choose'\) return `<div class="bn halt choose" role="status">[\s\S]*?<div class="bn-t">\$\{escapeHtml\(prompt \|\| 'Choose'\)\}<\/div><div class="bn-f">\$\{key\('choose', 'Choose', [^)]*'menu', 'pri'\)\}\$\{key\('cancel', 'Cancel', [^)]*'x'\)\}\$\{STOP_KEY\}<\/div><\/div>`;/.test(bannerSrc)
+    && /showChooseList\(\) \{\s*const \{ items, pos \} = calcState\.halted\.dialog;[\s\S]{0,400}?mark: i \+ 1 === pos \? icon\('check', 'sm'\) : '', run: \(\) => \(pos \? this\._continueProgram\(value, Integer\(1n\)\) : this\._continueProgram\(Integer\(0n\)\)\)[\s\S]{0,200}?this\._heldKeyMenu\(rows, \$\('banner'\)\.querySelector\('\.bn'\), 'Choose', \{ above: true \}\);/.test(appSrc)
+    && /_heldKeyMenu\(options, anchor, label, \{ above = false \} = \{\}\) \{[\s\S]{0,400}?keepFocus: true,\s*above,/.test(appSrc)
+    && /if \(\(this\._above \|\| top \+ h > vh - margin\) && r\.top - h - 6 > margin\) top = r\.top - h - 6;/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8'))
+    && /if \(act === 'choose' && kind === 'choose'\) \{ this\.showChooseList\(\); return; \}\s*if \(act === 'cancel' && kind === 'choose'\) \{ this\._continueProgram\(Integer\(0n\)\); return; \}/.test(appSrc)
+    && /if \(this\._dialogHalt && this\._dialogHalt !== halted\) this\._endDialog\(\);\s*if \(halted\?\.dialog && this\._dialogHalt !== halted\) this\._beginDialog\(halted\);/.test(appSrc)
+    && /_endDialog\(\) \{\s*if \(this\._dialogHalt\.kind === 'choose'\) this\.popover\.close\(\{ restoreFocus: false \}\);\s*this\._dialogHalt = null;/.test(appSrc)
+    && /if \(id === 'CHOOSE'\) \{[\s\S]{0,300}?_markSuspend\(toks, i \+ 1, 'choose', choose\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
+    "CHOOSE: its banner is the prompt with Choose, Cancel and Stop keys; the choices open in the held-key popover above the banner (below the chip it covered Stop and the command line), the highlighted one marked, a tap answering with the choice and 1 (0 when none is highlighted), Cancel with 0, and the list goes when its dialog ends (a press on the banner's keys leaves a popover anchored to the banner open); it halts a running program the way INPUT does, carrying its choices");
+}
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/@container work \(max-width: 560px\) \{\s*:root\[data-theme="classic"\] \.ann-g\.opt \{ display: none; \}\s*\/\*[^*]*\*\/\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.ann-g\.opt:not\(\[data-mode\]\):has\(> \.on\) \{ display: flex; \}\s*:root\[data-theme="classic"\]\[data-view="minimal"\] \.status-line:has\(\.ann-g\.opt:not\(\[data-mode\]\) > \.on\) \.ann-g > span:not\(\.on\) \{ display: none; \}/.test(css),
+    "Classic minimal view: a lit HALT shows at every width under 560 px, where the .opt groups are otherwise dropped, the dim annunciators giving way to it as they do under 360 px (the line overflowed by 13 px at 390 with them shown)");
 }

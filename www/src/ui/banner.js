@@ -20,6 +20,7 @@ export function haltedBannerHtml({ kind, prompt = '', programHtml = '' }) {
   const message = `<div class="bn-t">${escapeHtml(prompt)}</div>`;
   if (kind === 'msgbox') return `<div class="bn halt msgbox" role="status"><div class="bn-ico" aria-hidden="true">${icon('info', 'xs')}</div>${message}<div class="bn-f">${key('cont', 'OK', 'CONT', 'check', 'pri')}</div></div>`;
   if (kind === 'input') return `<div class="bn halt input" role="status"><div class="bn-ico" aria-hidden="true">${icon('edit', 'xs')}</div>${message}<div class="bn-f">${key('ok', 'OK', 'Enter: answer with the command line', 'check', 'pri')}${STOP_KEY}</div></div>`;
+  if (kind === 'choose') return `<div class="bn halt choose" role="status"><div class="bn-ico" aria-hidden="true">${icon('menu', 'xs')}</div><div class="bn-t">${escapeHtml(prompt || 'Choose')}</div><div class="bn-f">${key('choose', 'Choose', 'Open the list of choices', 'menu', 'pri')}${key('cancel', 'Cancel', 'Go on without choosing: the program gets 0', 'x')}${STOP_KEY}</div></div>`;
   // A PROMPT speaks to the program's user, so its message is the title and the program's source stays out, as on the HP.
   const title = kind === 'prompt' && prompt ? prompt : `${HALT_TITLES[kind] ?? HALT_TITLES.halt}${prompt ? ` · ${prompt}` : ''}`;
   const program = kind === 'prompt' ? '' : programHtml;

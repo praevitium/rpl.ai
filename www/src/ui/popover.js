@@ -30,7 +30,7 @@ export class Popover {
 
   isOpen() { return !!this.el; }
 
-  open(anchor, html, { onClick = null, onClose = null, className = '', label = 'Menu', point = null, keepFocus = false } = {}) {
+  open(anchor, html, { onClick = null, onClose = null, className = '', label = 'Menu', point = null, keepFocus = false, above = false } = {}) {
     this.close({ restoreFocus: false });
     this._onOpen?.();
     const el = document.createElement('div');
@@ -44,6 +44,7 @@ export class Popover {
     this._onClose = onClose;
     anchor?.setAttribute?.('aria-expanded', 'true');
     this._point = point;
+    this._above = above;
     this._place(point);
     if (onClick) {
       el.addEventListener('click', (e) => {
@@ -81,7 +82,7 @@ export class Popover {
     let left = Math.min(r.left, vw - w - margin);
     left = Math.max(margin, left);
     let top = r.bottom + 6;
-    if (top + h > vh - margin && r.top - h - 6 > margin) top = r.top - h - 6;
+    if ((this._above || top + h > vh - margin) && r.top - h - 6 > margin) top = r.top - h - 6;
     top = Math.max(margin, Math.min(top, vh - h - margin));
     el.style.left = `${left}px`;
     el.style.top = `${top}px`;
