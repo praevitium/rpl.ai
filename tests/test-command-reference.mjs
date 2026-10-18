@@ -74,13 +74,13 @@ const REF = parseCommandReference(HTML);
   const { Stack } = await import('../www/src/rpl/stack.js');
   const wrong = [];
   for (const name of allOps()) {
-    if ((lookup(name).inputs ?? findReferenceEntry(REF, name)?.inputs ?? 0) < 1) continue;
+    if ((findReferenceEntry(REF, name)?.inputs ?? 0) < 1) continue;
     let message = 'ran';
     try { await lookup(name).fn(new Stack(), null); } catch (e) { message = e.message; }
     if (!/Too few arguments|not inside a running program/.test(message)) wrong.push(`${name} (${message})`);
   }
   assert(wrong.length === 0, `every command that needs arguments says Too few arguments on an empty stack (${wrong.join(', ')})`);
-  assert(lookup('MEDIAN').inputs === 0, 'MEDIAN needs no argument, since it reads ΣDAT without one as MEAN does');
+  assert(findReferenceEntry(REF, 'MEDIAN').inputs === 0, 'MEDIAN needs no argument, since it reads ΣDAT as MEAN does');
 }
 
 // →LIST's manual page runs into ΔLIST's under one heading; the first

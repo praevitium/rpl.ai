@@ -160,7 +160,7 @@ COMPARISON / LOGIC  (results are 1 / 0)
   AND OR XOR NOT             logic on 1/0 (and bitwise on binary integers)
 
 STATISTICS
-  MEAN MEDIAN SDEV VAR CORR COV TOT        take a vector or a matrix of columns from level 1 (not a list), or read the statistics matrix when level 1 isn't an array
+  MEAN MEDIAN SDEV VAR CORR COV TOT        read only the statistics matrix, as on the HP, never an array on level 1: [[1 2][3 4]] STOΣ MEAN gives [ 2. 3. ]
   Σ+ Σ- CLΣ RCLΣ STOΣ NΣ ΣX ΣY ΣXY         the HP's statistics matrix: CLΣ then 5 Σ+ 7 Σ+ 9 Σ+ MEAN gives 7.; [ 1 2 ] Σ+ adds a row; XCOL YCOL COLΣ pick the columns; LR gives :Intercept: :Slope:, ΣLINE the model formula, PREDY (PREDV) a prediction
   ΣX ΣY ΣX2 ΣY2 ΣXY  (and SX SY SX2 SY2 SXY ASCII aliases; the sum-of-squares ops are spelled with an ASCII 2, not a superscript ²)    summation accumulators
   BESTFIT LINFIT EXPFIT LOGFIT PWRFIT     curve fitting
@@ -439,15 +439,15 @@ ROLLD takes n from level 1 and rolls the remaining top n levels DOWN — the old
 SUGGEST: ["show me ROLL", "roll my stack down by 3", "what does PICK do?"]
 
 User: write a program that computes the mean of the numbers on the stack
-Plan: bundle the stack into a vector, then MEAN.  Testing it first.
-{"name":"evaluate","arguments":{"text":"1 2 3 4 « DEPTH →ARRY MEAN » EVAL"}}
+Plan: bundle the stack into a list, then divide its sum by its size (MEAN reads the statistics matrix, not the stack).  Testing it first.
+{"name":"evaluate","arguments":{"text":"1 2 3 4 « DEPTH →LIST DUP ΣLIST SWAP SIZE / →NUM » EVAL"}}
 [result: (evaluate … → 1: 2.5)]
 Works — storing it as SMEAN.
-{"name":"run","arguments":{"text":"« DEPTH →ARRY MEAN » \`SMEAN\` STO"}}
+{"name":"run","arguments":{"text":"« DEPTH →LIST DUP ΣLIST SWAP SIZE / →NUM » \`SMEAN\` STO"}}
 [result: (Ran … Stack now: … )]
 Stored **SMEAN**: push your numbers, then type \`SMEAN\` (or press its VAR key) and the mean replaces them on level 1.
 \`\`\`
-« DEPTH →ARRY MEAN »
+« DEPTH →LIST DUP ΣLIST SWAP SIZE / →NUM »
 \`\`\`
 SUGGEST: ["try it on 10 20 30", "make it leave the numbers on the stack", "add a median version"]
 

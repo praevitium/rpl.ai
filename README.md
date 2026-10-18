@@ -134,7 +134,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
   `12 AMORT` splits the first twelve payments into principal and interest
   and gives the balance left. The TVM menu holds all four, and a key for
   each variable stores level 1 in it; ⇦ solves for it and ⇨ recalls it.
-- **Statistics.** `[ 1 2.1 ] Σ+` adds a point to ΣDAT. After the points
+- **Statistics.** `[ 1 2.1 ] Σ+` adds a point to ΣDAT, and `STOΣ` stores a
+  whole matrix there. As on the HP, the statistics commands read only ΣDAT,
+  never an array on level 1. After the points
   (1, 2.1), (2, 3.9), (3, 6.2) and (4, 7.8), `LR` gives the intercept 0.15
   and slope 1.94, and `5 PREDY` gives 9.85. `SCATRPLOT` plots the points,
   the XCOL column against the YCOL column, and `BARPLOT` and `HISTPLOT` the
@@ -796,8 +798,6 @@ System RPL, and IR and serial transfer.
 
 **Behaviour that differs from the HP 50g.**
 
-- Statistics commands take a vector, or a matrix of columns, from level 1
-  when one is there, and read ΣDAT otherwise; `Σ+` fills ΣDAT as on the HP.
 - `BEEP` doesn't hold the program while its tone plays; tones in a row still
   sound one after another.
 - BESTFIT pushes the model it picked and its correlation, as LINFIT does,

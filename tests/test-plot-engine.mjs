@@ -166,7 +166,7 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   let seen = null;
   setGraphicsHook((kind, s) => { seen = { kind, depth: s.depth }; });
   const s = new Stack();
-  s.push(Matrix([[Real(1), Real(2)]]));
+  runLine('[[ 1 2 ]] STOΣ 7', s);
   lookup('SCATRPLOT').fn(s);
   assert(seen.kind === 'scatter' && seen.depth === 1, 'SCATRPLOT: hook fires, stack kept');
   lookup('BARPLOT').fn(s);
@@ -193,7 +193,7 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   lookup('BARPLOT').fn(empty);
   assert(rows(seen.data) === '1 2 3', 'BARPLOT needs only the XCOL column, so a YCOL past the last column does not stop it');
   runLine('2 YCOL CLΣ');
-  assertThrows(() => lookup('SCATRPLOT').fn(empty), /Nonexistent ΣDAT/, 'SCATRPLOT with no ΣDAT and no array on level 1 is Nonexistent ΣDAT');
+  assertThrows(() => lookup('SCATRPLOT').fn(empty), /Nonexistent ΣDAT/, 'SCATRPLOT with no ΣDAT is Nonexistent ΣDAT');
   runLine('{ ΣPAR } PURGE');
   setGraphicsHook(null);
   assertThrows(() => lookup('FUNCTION').fn(s), /No graphics view/,

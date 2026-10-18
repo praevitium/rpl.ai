@@ -348,8 +348,6 @@ import { assert, assertThrows } from './helpers.mjs';
     && /onPress: act\('store'\),\s*onPressL: solve,\s*onPressR: act\('recall'\),/.test(appSrc) && /const solve = id === 'PYR' \? null : act\('solve'\);/.test(appSrc)
     && /if \(inProgramEntry\(this\.entry\.buffer\.slice\(0, this\.entry\.cursor\)\)\) \{ this\.entry\.typeToken\(`\\`\$\{id\}\\` \$\{words\[kind\]\} `\); return; \}/.test(appSrc),
     'TVM menu: each variable\'s key stores level 1 in it, ⇦ solves for it (PYR has no solve) and ⇨ recalls it, as the HP\'s solver menus do; inside a program it types the words instead');
-  assert(/inputs: lookup\(name\)\?\.inputs \?\? entry\.inputs/.test(appSrc),
-    'soft keys: a command\'s own argument count wins over the AUR\'s, so MEDIAN, which reads ΣDAT, no longer shows blocked on an empty stack');
   const statNames = allOps().filter((n) => lookup(n).category === 'Statistics');
   const inFolders = STAT_GROUPS.flatMap((g) => g.commands);
   const aliases = ['NSIGMA', 'SX', 'SX2', 'SY', 'SY2', 'SXY', 'MAXS', 'MINS'];

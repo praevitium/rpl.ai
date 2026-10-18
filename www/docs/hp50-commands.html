@@ -20340,11 +20340,11 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <div class="meta">Reference written for this RPL implementation.</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
-  <dd class="cmd-field cmd-field-type"><p>Function</p></dd>
+  <dd class="cmd-field cmd-field-type"><p>Command</p></dd>
   <dt class="cmd-label cmd-label-description">Description</dt>
-  <dd class="cmd-field cmd-field-description"><p>Median of a vector or per-column median of a matrix.  Uses the standard "average of two middle values" rule for even-length samples.</p></dd>
+  <dd class="cmd-field cmd-field-description"><p>Median Command: Returns the median of each of the m columns of coordinate values in the current statistics matrix (reserved variable ΣDAT), as a vector of m real numbers, or as a single real number if m = 1.  An even number of data points gives the mean of the two middle values.</p></dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
-  <dd class="cmd-field cmd-field-input-output"><table class="cmd-io"><thead><tr><th>Level 1/Argument 1</th><th class="cmd-io-arrow"></th><th>Level 1/Item 1</th></tr></thead><tbody><tr><td>[ vector ]</td><td class="cmd-io-arrow">→</td><td>med</td></tr><tr><td>[[ matrix ]]</td><td class="cmd-io-arrow">→</td><td>[ med per column ]</td></tr></tbody></table></dd>
+  <dd class="cmd-field cmd-field-input-output"><table class="cmd-io"><thead><tr><th>Level 1/Argument 1</th><th class="cmd-io-arrow"></th><th>Level 1/Item 1</th></tr></thead><tbody><tr><td></td><td class="cmd-io-arrow">→</td><td>xmedian</td></tr><tr><td></td><td class="cmd-io-arrow">→</td><td>[xmedian1, xmedian2, ..., xmedianm ]</td></tr></tbody></table></dd>
   <dt class="cmd-label cmd-label-see-also">See also</dt>
   <dd class="cmd-field cmd-field-see-also"><p>MEAN, VAR, SDEV</p></dd>
 </dl>

@@ -20,6 +20,12 @@ import {
 } from '../www/src/rpl/state.js';
 import { assert, assertThrows, runLine } from './helpers.mjs';
 
+// The statistics commands read ΣDAT, as on the HP, so a case's data on level 1 moves there first.
+function stat(op, s) {
+  if (s.depth && (isVector(s.peek()) || isMatrix(s.peek()))) runLine('STOΣ', s);
+  lookup(op).fn(s);
+}
+
 /* Vector / Matrix ops — SIZE / TRN / DET / INV / DOT / CROSS / NORM / IDN. */
 
 /* ================================================================
@@ -2236,7 +2242,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Vector([Real(1), Real(2), Real(3), Real(4)]));
-    lookup('TOT').fn(s);
+    stat('TOT', s);
     assert(isReal(s.peek()) && s.peek().value.eq(10),
       'session052: TOT of [1 2 3 4] → 10');
   }
@@ -2244,7 +2250,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Vector([Integer(5), Integer(7), Integer(13)]));
-    lookup('TOT').fn(s);
+    stat('TOT', s);
     const t = s.peek();
     assert((isReal(t) || isInteger(t))
         && (isInteger(t) ? t.value === 25n : t.value.eq(25)),
@@ -2254,7 +2260,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Vector([Complex(1, 2), Complex(3, 4), Real(5)]));
-    lookup('TOT').fn(s);
+    stat('TOT', s);
     const t = s.peek();
     assert(isComplex(t) && approx(t.re, 9) && approx(t.im, 6),
       'session052: TOT of Complex-containing Vector → (9, 6)');
@@ -2266,7 +2272,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
       [Real(1), Real(2), Real(3)],
       [Real(4), Real(5), Real(6)],
     ]));
-    lookup('TOT').fn(s);
+    stat('TOT', s);
     assert(vecMatches(s.peek(), [5, 7, 9]),
       'session052: TOT of 2×3 Matrix → per-column sums [5 7 9]');
   }
@@ -2274,13 +2280,11 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Vector([]));
-    assertThrows(() => lookup('TOT').fn(s), /Bad argument/, 'session052: TOT of empty Vector throws');
+    assertThrows(() => stat('TOT', s), /Bad argument/, 'session052: TOT of empty Vector throws');
   }
-  // TOT on a scalar throws Bad argument type.
   {
-    const s = new Stack();
-    s.push(Real(42));
-    assertThrows(() => lookup('TOT').fn(s), /Nonexistent ΣDAT/, 'session052: TOT on Real reads ΣDAT and reports it missing');
+    const s = runLine('CLΣ 42');
+    assertThrows(() => stat('TOT', s), /Nonexistent ΣDAT/, 'session052: TOT with a Real on level 1 reads only ΣDAT and reports it missing');
   }
 
 
@@ -2288,7 +2292,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Vector([Real(2), Real(4), Real(6), Real(8)]));
-    lookup('MEAN').fn(s);
+    stat('MEAN', s);
     assert(isReal(s.peek()) && approx(s.peek().value, 5),
       'session052: MEAN of [2 4 6 8] → 5');
   }
@@ -2296,7 +2300,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Vector([Complex(1, 2), Complex(3, 4)]));
-    lookup('MEAN').fn(s);
+    stat('MEAN', s);
     const m = s.peek();
     assert(isComplex(m) && approx(m.re, 2) && approx(m.im, 3),
       'session052: MEAN of [(1,2)(3,4)] → (2,3)');
@@ -2309,7 +2313,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
       [Real(3), Real(20)],
       [Real(5), Real(30)],
     ]));
-    lookup('MEAN').fn(s);
+    stat('MEAN', s);
     assert(vecMatches(s.peek(), [3, 20]),
       'session052: MEAN of 3×2 Matrix → [3 20] (per-column)');
   }
@@ -2317,7 +2321,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Vector([Real(42)]));
-    lookup('MEAN').fn(s);
+    stat('MEAN', s);
     assert(approx(s.peek().value, 42),
       'session052: MEAN of [42] → 42');
   }
@@ -2325,7 +2329,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Vector([Real(1), Name('x')]));
-    assertThrows(() => lookup('MEAN').fn(s), /Bad argument/, 'session052: MEAN of Vector with Name throws');
+    assertThrows(() => stat('MEAN', s), /Bad argument/, 'session052: MEAN of Vector with Name throws');
   }
 
 
@@ -2333,7 +2337,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Vector([Real(2), Real(4), Real(6)]));
-    lookup('VAR').fn(s);
+    stat('VAR', s);
     assert(isReal(s.peek()) && approx(s.peek().value, 4),
       'session052: VAR [2 4 6] → 4 (sample variance, n-1 denom)');
   }
@@ -2341,7 +2345,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Vector([Real(42)]));
-    lookup('VAR').fn(s);
+    stat('VAR', s);
     assert(approx(s.peek().value, 0),
       'session052: VAR of length-1 Vector → 0');
   }
@@ -2353,7 +2357,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
       [Real(3), Real(20)],
       [Real(5), Real(30)],
     ]));
-    lookup('VAR').fn(s);
+    stat('VAR', s);
     // col1: mean 3, deviations -2/0/2 → ss=8, /2 = 4
     // col2: mean 20, devs -10/0/10 → ss=200, /2 = 100
     assert(vecMatches(s.peek(), [4, 100]),
@@ -2363,13 +2367,13 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Vector([Real(1), Complex(2, 3)]));
-    assertThrows(() => lookup('VAR').fn(s), /Bad argument/, 'session052: VAR of Complex-containing Vector throws');
+    assertThrows(() => stat('VAR', s), /Bad argument/, 'session052: VAR of Complex-containing Vector throws');
   }
   // Empty Vector still rejected.
   {
     const s = new Stack();
     s.push(Vector([]));
-    assertThrows(() => lookup('VAR').fn(s), /Bad argument/, 'session052: VAR of empty Vector throws');
+    assertThrows(() => stat('VAR', s), /Bad argument/, 'session052: VAR of empty Vector throws');
   }
 
 
@@ -2377,7 +2381,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Vector([Real(2), Real(4), Real(6)]));
-    lookup('SDEV').fn(s);
+    stat('SDEV', s);
     assert(approx(s.peek().value, 2),
       'session052: SDEV [2 4 6] → 2 (sqrt of sample variance)');
   }
@@ -2385,7 +2389,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Vector([Real(100)]));
-    lookup('SDEV').fn(s);
+    stat('SDEV', s);
     assert(approx(s.peek().value, 0),
       'session052: SDEV of length-1 Vector → 0');
   }
@@ -2397,7 +2401,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
       [Real(3), Real(20)],
       [Real(5), Real(30)],
     ]));
-    lookup('SDEV').fn(s);
+    stat('SDEV', s);
     assert(vecMatches(s.peek(), [2, 10]),
       'session052: SDEV 3×2 Matrix → [2 10] (sqrt of VAR result)');
   }
@@ -2405,15 +2409,13 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
   {
     const s = new Stack();
     s.push(Vector([Integer(0), Integer(10)]));
-    lookup('SDEV').fn(s);
+    stat('SDEV', s);
     assert(approx(s.peek().value, Math.sqrt(50)),
       'session052: SDEV of Integer vector matches Real reduction');
   }
-  // SDEV on a scalar throws Bad argument type.
   {
-    const s = new Stack();
-    s.push(Real(1));
-    assertThrows(() => lookup('SDEV').fn(s), /Nonexistent ΣDAT/, 'session052: SDEV on Real reads ΣDAT and reports it missing');
+    const s = runLine('CLΣ 1');
+    assertThrows(() => stat('SDEV', s), /Nonexistent ΣDAT/, 'session052: SDEV with a Real on level 1 reads only ΣDAT and reports it missing');
   }
 
 
@@ -2520,7 +2522,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(3), Real(2), Real(5), Real(4)]));
-  lookup('MEDIAN').fn(s);
+  stat('MEDIAN', s);
   assert(isReal(s.peek()) && s.peek().value.eq(3),
     'session053: MEDIAN [1 3 2 5 4] = 3');
 }
@@ -2528,7 +2530,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3), Real(4)]));
-  lookup('MEDIAN').fn(s);
+  stat('MEDIAN', s);
   assert(s.peek().value.eq(2.5),
     'session053: MEDIAN [1 2 3 4] = 2.5');
 }
@@ -2540,7 +2542,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(2), Real(20)],
     [Real(3), Real(30)],
   ]));
-  lookup('MEDIAN').fn(s);
+  stat('MEDIAN', s);
   const v = s.peek();
   assert(v.type === 'vector' && v.items.length === 2 &&
          v.items[0].value.eq(2) && v.items[1].value.eq(20),
@@ -2550,13 +2552,13 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
 {
   const s = new Stack();
   s.push(Vector([]));
-  assertThrows(() => lookup('MEDIAN').fn(s), /Bad argument/, 'session053: MEDIAN [] throws');
+  assertThrows(() => stat('MEDIAN', s), /Bad argument/, 'session053: MEDIAN [] throws');
 }
 
 {
   const s = new Stack();
   s.push(Vector([Complex(1, 2)]));
-  assertThrows(() => lookup('MEDIAN').fn(s), /Bad argument/, 'session053: MEDIAN on Complex entry throws');
+  assertThrows(() => stat('MEDIAN', s), /Bad argument/, 'session053: MEDIAN on Complex entry throws');
 }
 
 {
@@ -2566,7 +2568,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(2), Real(4)],
     [Real(3), Real(6)],
   ]));
-  lookup('COV').fn(s);
+  stat('COV', s);
   assert(Math.abs(s.peek().value - 2) < 1e-12,
     'session053: COV perfectly linear data → 2');
 }
@@ -2578,7 +2580,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(2), Real(4)],
     [Real(3), Real(6)],
   ]));
-  lookup('CORR').fn(s);
+  stat('CORR', s);
   assert(Math.abs(s.peek().value - 1) < 1e-12,
     'session053: CORR Y=2X → +1');
 }
@@ -2590,7 +2592,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(2), Real(2)],
     [Real(3), Real(1)],
   ]));
-  lookup('CORR').fn(s);
+  stat('CORR', s);
   assert(Math.abs(s.peek().value - (-1)) < 1e-12,
     'session053: CORR Y=-X → -1');
 }
@@ -2602,13 +2604,13 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(1), Real(7)],
     [Real(1), Real(9)],
   ]));
-  assertThrows(() => lookup('CORR').fn(s), /Infinite result/, 'session053: CORR zero-var throws Infinite result');
+  assertThrows(() => stat('CORR', s), /Infinite result/, 'session053: CORR zero-var throws Infinite result');
 }
 
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)]]));
-  assertThrows(() => lookup('COV').fn(s), /Bad argument/, 'session053: COV 1-row matrix throws');
+  assertThrows(() => stat('COV', s), /Bad argument/, 'session053: COV 1-row matrix throws');
 }
 
 {
@@ -2617,14 +2619,14 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(1), Real(2), Real(3)],
     [Real(4), Real(5), Real(6)],
   ]));
-  lookup('COV').fn(s);
+  stat('COV', s);
   assert(isReal(s.peek()), 'session053: COV on a 3-column matrix uses the XCOL and YCOL columns, 1 and 2 by default');
 }
 
 {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3)]));
-  assertThrows(() => lookup('COV').fn(s), /Bad argument/, 'session053: COV on Vector throws Bad argument type');
+  assertThrows(() => stat('COV', s), /Bad argument/, 'session053: COV on Vector throws Bad argument type');
 }
 
 /* ----------------------------------------------------------------
@@ -2648,61 +2650,61 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
 {
   const s = new Stack();
   s.push(Vector([Real(1), BinaryInteger(2n, 'h'), Real(3)]));
-  assertThrows(() => lookup('MEDIAN').fn(s), /Bad argument type/,
+  assertThrows(() => stat('MEDIAN', s), /Bad argument type/,
     'session438: MEDIAN on Vector with a BinInt element → Bad argument type (_statsNumericEntry has no isBinaryInteger arm)');
 }
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(10)], [BinaryInteger(2n, 'h'), Real(20)], [Real(3), Real(30)]]));
-  assertThrows(() => lookup('MEDIAN').fn(s), /Bad argument type/,
+  assertThrows(() => stat('MEDIAN', s), /Bad argument type/,
     'session438: MEDIAN on Matrix with a BinInt column entry → Bad argument type (per-column coercion through _statsNumericEntry)');
 }
 {
   const s = new Stack();
   s.push(Matrix([[BinaryInteger(2n, 'h'), Real(2)], [Real(2), Real(4)], [Real(3), Real(6)]]));
-  assertThrows(() => lookup('COV').fn(s), /Bad argument type/,
+  assertThrows(() => stat('COV', s), /Bad argument type/,
     'session438: COV with a BinInt x-column entry → Bad argument type (_twoColsOrThrow coerces col 0)');
 }
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), BinaryInteger(2n, 'h')], [Real(2), Real(4)], [Real(3), Real(6)]]));
-  assertThrows(() => lookup('COV').fn(s), /Bad argument type/,
+  assertThrows(() => stat('COV', s), /Bad argument type/,
     'session438: COV with a BinInt y-column entry → Bad argument type (_twoColsOrThrow coerces col 1 — symmetric)');
 }
 {
   const s = new Stack();
   s.push(Matrix([[Complex(1, 2), Real(2)], [Real(2), Real(4)], [Real(3), Real(6)]]));
-  assertThrows(() => lookup('COV').fn(s), /Bad argument type/,
+  assertThrows(() => stat('COV', s), /Bad argument type/,
     'session438: COV with a Complex x-column entry → Bad argument type (no _statsNumOrComplexEntry widening, unlike TOT/MEAN)');
 }
 {
   const s = new Stack();
   s.push(Matrix([[BinaryInteger(2n, 'h'), Real(2)], [Real(2), Real(4)], [Real(3), Real(6)]]));
-  assertThrows(() => lookup('CORR').fn(s), /Bad argument type/,
+  assertThrows(() => stat('CORR', s), /Bad argument type/,
     'session438: CORR with a BinInt x-column entry → Bad argument type (shares _twoColsOrThrow with COV)');
 }
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Complex(1, 2)], [Real(2), Real(4)], [Real(3), Real(6)]]));
-  assertThrows(() => lookup('CORR').fn(s), /Bad argument type/,
+  assertThrows(() => stat('CORR', s), /Bad argument type/,
     'session438: CORR with a Complex y-column entry → Bad argument type');
 }
 {
   const s = new Stack();
   s.push(Matrix([[BinaryInteger(2n, 'h'), Real(2)], [Real(3), Real(4)], [Real(5), Real(6)]]));
-  assertThrows(() => lookup('ΣXY').fn(s), /Bad argument type/,
+  assertThrows(() => stat('ΣXY', s), /Bad argument type/,
     'session438: ΣXY with a BinInt x-column entry → Bad argument type (_matStatsCol on col 0)');
 }
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), BinaryInteger(2n, 'h')], [Real(3), Real(4)], [Real(5), Real(6)]]));
-  assertThrows(() => lookup('ΣXY').fn(s), /Bad argument type/,
+  assertThrows(() => stat('ΣXY', s), /Bad argument type/,
     'session438: ΣXY with a BinInt y-column entry → Bad argument type (_matStatsCol on col 1 — symmetric)');
 }
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Complex(1, 2)], [Real(3), Real(4)], [Real(5), Real(6)]]));
-  assertThrows(() => lookup('ΣXY').fn(s), /Bad argument type/,
+  assertThrows(() => stat('ΣXY', s), /Bad argument type/,
     'session438: ΣXY with a Complex y-column entry → Bad argument type');
 }
 
@@ -2771,37 +2773,37 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(5), Real(6)],
   ]);
   {
-    const s = new Stack(); s.push(mk()); lookup('NSIGMA').fn(s);
+    const s = new Stack(); s.push(mk()); stat('NSIGMA', s);
     assert(s.pop().value.eq(3), 'session054: NΣ 3×2 matrix → 3');
   }
   {
-    const s = new Stack(); s.push(mk()); lookup('ΣX').fn(s);
+    const s = new Stack(); s.push(mk()); stat('ΣX', s);
     assert(s.pop().value.eq(9), 'session054: ΣX → 9');
   }
   {
-    const s = new Stack(); s.push(mk()); lookup('ΣY').fn(s);
+    const s = new Stack(); s.push(mk()); stat('ΣY', s);
     assert(s.pop().value.eq(12), 'session054: ΣY → 12');
   }
   {
-    const s = new Stack(); s.push(mk()); lookup('ΣXY').fn(s);
+    const s = new Stack(); s.push(mk()); stat('ΣXY', s);
     assert(s.pop().value.eq(44), 'session054: ΣXY → 44 (1·2+3·4+5·6)');
   }
   {
-    const s = new Stack(); s.push(mk()); lookup('ΣX2').fn(s);
+    const s = new Stack(); s.push(mk()); stat('ΣX2', s);
     assert(s.pop().value.eq(35), 'session054: ΣX² → 35 (1+9+25)');
   }
   {
-    const s = new Stack(); s.push(mk()); lookup('ΣY2').fn(s);
+    const s = new Stack(); s.push(mk()); stat('ΣY2', s);
     assert(s.pop().value.eq(56), 'session054: ΣY² → 56 (4+16+36)');
   }
   {
-    const s = new Stack(); s.push(mk()); lookup('MAXΣ').fn(s);
+    const s = new Stack(); s.push(mk()); stat('MAXΣ', s);
     const v = s.pop();
     assert(v.type === 'vector' && v.items[0].value.eq(5) && v.items[1].value.eq(6),
       'session054: MAXΣ → [5, 6]');
   }
   {
-    const s = new Stack(); s.push(mk()); lookup('MINΣ').fn(s);
+    const s = new Stack(); s.push(mk()); stat('MINΣ', s);
     const v = s.pop();
     assert(v.type === 'vector' && v.items[0].value.eq(1) && v.items[1].value.eq(2),
       'session054: MINΣ → [1, 2]');
@@ -2811,7 +2813,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
 {
   const s = new Stack();
   s.push(Matrix([[Real(1)], [Real(2)]]));
-  assertThrows(() => lookup('ΣY').fn(s), /dimension/i, 'session054: ΣY 1-col matrix throws dimension');
+  assertThrows(() => stat('ΣY', s), /dimension/i, 'session054: ΣY 1-col matrix throws dimension');
 }
 
 {
@@ -2822,7 +2824,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(3), Real(6)],
     [Real(4), Real(8)],
   ]));
-  lookup('LINFIT').fn(s);
+  stat('LINFIT', s);
   const r = s.pop(), sym = s.pop();
   assert(isSymbolic(sym), 'session054: LINFIT returns Symbolic');
   assert(Math.abs(r.value - 1) < 1e-12, 'session054: LINFIT perfect line → r=1');
@@ -2835,7 +2837,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(2), Real(2 * Math.E * Math.E)],
     [Real(3), Real(2 * Math.E * Math.E * Math.E)],
   ]));
-  lookup('EXPFIT').fn(s);
+  stat('EXPFIT', s);
   const r = s.pop(), sym = s.pop();
   assert(isSymbolic(sym), 'session054: EXPFIT returns Symbolic');
   assert(Math.abs(r.value - 1) < 1e-9, 'session054: EXPFIT perfect fit → r≈1');
@@ -2849,7 +2851,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(3), Real(9)],
     [Real(4), Real(16)],
   ]));
-  lookup('PWRFIT').fn(s);
+  stat('PWRFIT', s);
   const r = s.pop();
   s.pop(); // sym
   assert(Math.abs(r.value - 1) < 1e-9, 'session054: PWRFIT x² perfect → r≈1');
@@ -2862,7 +2864,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(Math.E), Real(5)],
     [Real(Math.E * Math.E), Real(8)],
   ]));
-  lookup('LOGFIT').fn(s);
+  stat('LOGFIT', s);
   const r = s.pop();
   s.pop();
   assert(Math.abs(r.value - 1) < 1e-9, 'session054: LOGFIT perfect fit → r≈1');
@@ -2871,7 +2873,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
 {
   const s = new Stack();
   s.push(Matrix([[Real(-1), Real(2)], [Real(1), Real(4)]]));
-  assertThrows(() => lookup('LOGFIT').fn(s), /Bad argument/, 'session054: LOGFIT negative X throws');
+  assertThrows(() => stat('LOGFIT', s), /Bad argument/, 'session054: LOGFIT negative X throws');
 }
 
 {
@@ -2882,7 +2884,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(3), Real(6)],
     [Real(4), Real(8)],
   ]));
-  lookup('BESTFIT').fn(s);
+  stat('BESTFIT', s);
   s.pop();
   const out = s.pop();
   assert(isSymbolic(out) && formatAlgebra(out.expr) === '0 + 2*X' && calcState.lastFitModel?.kind === 'LIN',
@@ -2897,7 +2899,7 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     [Real(3), Real(Math.exp(3))],
     [Real(4), Real(Math.exp(4))],
   ]));
-  lookup('BESTFIT').fn(s);
+  stat('BESTFIT', s);
   s.pop();
   const out = s.pop();
   assert(isSymbolic(out) && /^1\.?\*EXP\(1\.?\*X\)$/.test(formatAlgebra(out.expr)) && calcState.lastFitModel?.kind === 'EXP',
@@ -3310,7 +3312,7 @@ function _approxMatEqual(A, B, tol) {
   // [1 2 3 4 5] → mean=3 → |dev| = 2,1,0,1,2 → MAD = 6/5 = 1.2
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3), Real(4), Real(5)]));
-  lookup('MAD').fn(s);
+  stat('MAD', s);
   const m = s.pop();
   assert(m.type === 'real' && Math.abs(m.value - 1.2) < 1e-12,
     `session057: MAD [1..5] = 1.2, got ${m.value}`);
@@ -3320,7 +3322,7 @@ function _approxMatEqual(A, B, tol) {
   const s = new Stack();
   s.push(Vector([Integer(2n), Integer(4n), Integer(4n), Integer(6n)]));
   // mean=4; |dev|=2,0,0,2; MAD = 4/4 = 1
-  lookup('MAD').fn(s);
+  stat('MAD', s);
   const m = s.pop();
   assert(m.type === 'real' && Math.abs(m.value - 1) < 1e-12,
     `session057: MAD Integer Vec = 1, got ${m.value}`);
@@ -3329,7 +3331,7 @@ function _approxMatEqual(A, B, tol) {
 {
   const s = new Stack();
   s.push(Vector([Real(42)]));
-  lookup('MAD').fn(s);
+  stat('MAD', s);
   const m = s.pop();
   assert(m.type === 'real' && m.value.eq(0),
     `session057: MAD [42] = 0, got ${m.value}`);
@@ -3338,13 +3340,13 @@ function _approxMatEqual(A, B, tol) {
 {
   const s = new Stack();
   s.push(Vector([]));
-  assertThrows(() => lookup('MAD').fn(s), /Bad argument value/, 'session057: MAD on empty Vector throws');
+  assertThrows(() => stat('MAD', s), /Bad argument value/, 'session057: MAD on empty Vector throws');
 }
 
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(10)], [Real(2), Real(20)], [Real(3), Real(30)]]));
-  lookup('MAD').fn(s);
+  stat('MAD', s);
   const v = s.pop();
   // col1 mean=2; |dev|=1,0,1; MAD = 2/3
   // col2 mean=20; |dev|=10,0,10; MAD = 20/3
@@ -3357,15 +3359,14 @@ function _approxMatEqual(A, B, tol) {
 }
 
 {
-  const s = new Stack();
-  s.push(Real(5));
-  assertThrows(() => lookup('MAD').fn(s), /Nonexistent ΣDAT/, 'session057: MAD on Real reads ΣDAT and reports it missing');
+  const s = runLine('CLΣ 5');
+  assertThrows(() => stat('MAD', s), /Nonexistent ΣDAT/, 'session057: MAD with a Real on level 1 reads only ΣDAT and reports it missing');
 }
 
 {
   const s = new Stack();
   s.push(Vector([Complex(1, 2), Complex(3, 4)]));
-  assertThrows(() => lookup('MAD').fn(s), /Bad argument type/, 'session057: MAD rejects Complex entries');
+  assertThrows(() => stat('MAD', s), /Bad argument type/, 'session057: MAD rejects Complex entries');
 }
 
 {
@@ -3501,7 +3502,7 @@ function _approxMatEqual(A, B, tol) {
     [Real(2), Real(4)],
     [Real(3), Real(6)],
   ]));
-  lookup('LINFIT').fn(s);
+  stat('LINFIT', s);
   s.pop(); s.pop();   // drop model sym + r
   s.push(Real(5));
   lookup('PREDV').fn(s);
@@ -3517,10 +3518,10 @@ function _approxMatEqual(A, B, tol) {
     [Real(2), Real(4)],
     [Real(3), Real(6)],
   ]));
-  lookup('LINFIT').fn(s);
+  stat('LINFIT', s);
   s.pop(); s.pop();
   s.push(Real(10));
-  lookup('PREDX').fn(s);
+  stat('PREDX', s);
   const x = s.pop();
   assert(isReal(x) && Math.abs(x.value - 5) < 1e-9,
     'session058: PREDX(10) after LINFIT y=2x → 5');
@@ -3533,7 +3534,7 @@ function _approxMatEqual(A, B, tol) {
     [Real(1), Real(Math.E)],
     [Real(2), Real(Math.E * Math.E)],
   ]));
-  lookup('EXPFIT').fn(s);
+  stat('EXPFIT', s);
   s.pop(); s.pop();
   s.push(Real(1));
   lookup('PREDV').fn(s);
@@ -3549,10 +3550,10 @@ function _approxMatEqual(A, B, tol) {
     [Real(1), Real(Math.E)],
     [Real(2), Real(Math.E * Math.E)],
   ]));
-  lookup('EXPFIT').fn(s);
+  stat('EXPFIT', s);
   s.pop(); s.pop();
   s.push(Real(Math.E));
-  lookup('PREDX').fn(s);
+  stat('PREDX', s);
   const x = s.pop();
   assert(isReal(x) && Math.abs(x.value - 1) < 1e-6,
     'session058: PREDX(e) after EXPFIT → 1');
@@ -3565,7 +3566,7 @@ function _approxMatEqual(A, B, tol) {
     [Real(Math.E), Real(1)],
     [Real(Math.E * Math.E), Real(2)],
   ]));
-  lookup('LOGFIT').fn(s);
+  stat('LOGFIT', s);
   s.pop(); s.pop();
   s.push(Real(Math.E));
   lookup('PREDV').fn(s);
@@ -3582,7 +3583,7 @@ function _approxMatEqual(A, B, tol) {
     [Real(3), Real(9)],
     [Real(4), Real(16)],
   ]));
-  lookup('PWRFIT').fn(s);
+  stat('PWRFIT', s);
   s.pop(); s.pop();
   s.push(Real(5));
   lookup('PREDV').fn(s);
@@ -3599,10 +3600,10 @@ function _approxMatEqual(A, B, tol) {
     [Real(3), Real(9)],
     [Real(4), Real(16)],
   ]));
-  lookup('PWRFIT').fn(s);
+  stat('PWRFIT', s);
   s.pop(); s.pop();
   s.push(Real(25));
-  lookup('PREDX').fn(s);
+  stat('PREDX', s);
   const x = s.pop();
   assert(isReal(x) && Math.abs(x.value - 5) < 1e-6,
     'session058: PREDX(25) after PWRFIT y=x^2 → 5');
@@ -3614,7 +3615,7 @@ function _approxMatEqual(A, B, tol) {
     [Real(1), Real(2)],
     [Real(2), Real(4)],
   ]));
-  lookup('LINFIT').fn(s);
+  stat('LINFIT', s);
   s.pop(); s.pop();
   s.push(Integer(7n));
   lookup('PREDV').fn(s);
@@ -3632,7 +3633,7 @@ function _approxMatEqual(A, B, tol) {
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)], [Real(2), Real(4)]]));
-  lookup('LINFIT').fn(s);
+  stat('LINFIT', s);
   s.pop(); s.pop();
   s.push(BinaryInteger(7n));
   lookup('PREDV').fn(s);
@@ -3645,7 +3646,7 @@ function _approxMatEqual(A, B, tol) {
   // Base-cosmetic: #111b (binary 7) takes the same value-based BinInt arm.
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)], [Real(2), Real(4)]]));
-  lookup('LINFIT').fn(s);
+  stat('LINFIT', s);
   s.pop(); s.pop();
   s.push(BinaryInteger(7n, 'b'));
   lookup('PREDV').fn(s);
@@ -3658,10 +3659,10 @@ function _approxMatEqual(A, B, tol) {
   // PREDX (inverse fit) feeds its operand through the same _fitScalar BinInt arm.
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)], [Real(2), Real(4)]]));
-  lookup('LINFIT').fn(s);
+  stat('LINFIT', s);
   s.pop(); s.pop();
   s.push(BinaryInteger(16n));
-  lookup('PREDX').fn(s);
+  stat('PREDX', s);
   const x = s.pop();
   assert(isReal(x) && Math.abs(x.value - 8) < 1e-9,
     'session415: PREDX accepts BinInt #16, returns Real(8)');
@@ -3686,13 +3687,13 @@ function _approxMatEqual(A, B, tol) {
   varPurge('ΣPAR');
   const s = new Stack();
   s.push(Real(1));
-  assertThrows(() => lookup('PREDX').fn(s), /Undefined name/, 'session058: PREDX with no fit and no ΣPAR throws Undefined name');
+  assertThrows(() => stat('PREDX', s), /Undefined name/, 'session058: PREDX with no fit and no ΣPAR throws Undefined name');
 }
 
 {
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)], [Real(2), Real(4)]]));
-  lookup('LINFIT').fn(s);
+  stat('LINFIT', s);
   s.pop(); s.pop();
   s.push(Complex(1, 2));
   assertThrows(() => lookup('PREDV').fn(s), /Bad argument type/, 'session058: PREDV on Complex throws');
@@ -3704,7 +3705,7 @@ function _approxMatEqual(A, B, tol) {
     [Real(1), Real(0)],
     [Real(Math.E), Real(1)],
   ]));
-  lookup('LOGFIT').fn(s);
+  stat('LOGFIT', s);
   s.pop(); s.pop();
   s.push(Real(-1));
   assertThrows(() => lookup('PREDV').fn(s), /Infinite result/, 'session058: PREDV(-1) after LOGFIT → Infinite result');
@@ -3714,7 +3715,7 @@ function _approxMatEqual(A, B, tol) {
   // Establish a known prior model.
   const s = new Stack();
   s.push(Matrix([[Real(1), Real(2)], [Real(2), Real(4)]]));
-  lookup('LINFIT').fn(s);
+  stat('LINFIT', s);
   s.pop(); s.pop();
   const before = calcState.lastFitModel;
   assert(before && before.kind === 'LIN',
@@ -3726,11 +3727,12 @@ function _approxMatEqual(A, B, tol) {
     [Real(2), Real(Math.exp(2))],
     [Real(3), Real(Math.exp(3))],
   ]));
-  lookup('BESTFIT').fn(s2);
+  stat('BESTFIT', s2);
   s2.pop();
   assert(calcState.lastFitModel !== before && calcState.lastFitModel.kind === 'EXP',
     'session058: BESTFIT makes its pick the model PREDV uses');
   calcState.lastFitModel = null;
+  runLine('CLΣ');
 }
 
 {

@@ -19,11 +19,11 @@ function _requestPlot(kind, s, data = null) {
 }
 
 
-register('SCATRPLOT', (s) => _requestPlot('scatter', s, statPlotData('scatter', s)), { category: 'Graphics', categoryOrder: 2, label: "SCATRPLOT" });
+register('SCATRPLOT', (s) => _requestPlot('scatter', s, statPlotData('scatter')), { category: 'Graphics', categoryOrder: 2, label: "SCATRPLOT" });
 
-register('BARPLOT',   (s) => _requestPlot('bar', s, statPlotData('bar', s)), { category: 'Graphics', categoryOrder: 0, label: "BARPLOT" });
+register('BARPLOT',   (s) => _requestPlot('bar', s, statPlotData('bar')), { category: 'Graphics', categoryOrder: 0, label: "BARPLOT" });
 
-register('HISTPLOT',  (s) => _requestPlot('hist', s, statPlotData('hist', s)), { category: 'Graphics', categoryOrder: 1, label: "HISTPLOT" });
+register('HISTPLOT',  (s) => _requestPlot('hist', s, statPlotData('hist')), { category: 'Graphics', categoryOrder: 1, label: "HISTPLOT" });
 
 register('FUNCTION',  (s) => _requestPlot('function', s), { category: 'Graphics', categoryOrder: 3, label: "FUNCTION" });
 
