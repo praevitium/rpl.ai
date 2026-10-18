@@ -34,7 +34,7 @@ import { toLatex } from './rpl/latex.js';
 import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, currentPath,
-  goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag,
+  goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook, setMenuHook, setBeepHook } from './rpl/ops.js';
 import { beep } from './ui/beep.js';
@@ -1487,12 +1487,28 @@ class App {
     // A family's keys put the HP's own menu first, commands from other families included, and the rest follow.
     const keys = family.keys ?? [];
     const slots = [...keys, ...familyCommands(family).filter((name) => !keys.includes(name))].map((name) => this._commandSlot(name));
+    const flagKeys = (family.flagKeys ?? []).map((key) => this._flagKey(...key));
     const lead = {
       UNITS: () => UNIT_GROUPS.map((group) => ({ label: group.id, dir: true, title: `${group.title}: ${group.units.length} units`, onPress: () => this._showUnitMenu(group) })),
       TVM: () => TVM_VARIABLES.map((id) => this._tvmKey(id)),
       STAT: () => STAT_GROUPS.map((group) => ({ label: group.id, dir: true, title: `${group.title}: ${group.commands.join(' ')}`, onPress: () => this._showStatMenu(group) })),
     }[family.id];
-    this.setMenu([...(lead ? lead() : []), ...slots], family.id);
+    this.setMenu([...(lead ? lead() : []), ...slots, ...flagKeys], family.id);
+  }
+
+  // A flag the HP sets from a form, such as TIME's clock and date formats, as a key marked while the flag is set.
+  _flagKey(flag, label, what) {
+    const command = () => `${flag} ${testUserFlag(flag) ? 'CF' : 'SF'}`;
+    return {
+      label,
+      title: `${what} (flag ${flag})`,
+      toggle: true,
+      on: () => testUserFlag(flag),
+      onPress: () => {
+        if (this.entry._typingAtCursor()) this.entry.typeToken(`${command()} `);
+        else (testUserFlag(flag) ? clearUserFlag : setUserFlag)(flag);
+      },
+    };
   }
 
   _commandSlot(name) {

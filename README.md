@@ -794,9 +794,11 @@ Catalog and the command reference mark what is available. Not there yet:
   results with `→TAG`, ask with `INPUT`, `CHOOSE` and `INFORM`, pause with
   `PROMPT` or `WAIT`, report with `MSGBOX`, write on the display with
   `DISP` and sound a tone with `BEEP`.
-- setting the clock: `→DATE`, `→TIME` and `CLKADJ`. The clock is the
+- setting the clock: `→DATE`, `→TIME` and `CLKADJ`, and alarms (`STOALARM`,
+  `RCLALARM`, `DELALARM`, `FINDALARM`, `ACK`, `ACKALL`). The clock is the
   device's own; `DATE`, `TIME`, `TICKS` and `TSTR` read it, and `DATE+`
-  and `DDAYS` count days, with flags -41 and -42 for the formats.
+  and `DDAYS` count days, with flags -41 and -42 for the formats, which
+  the TIME menu's 24H and D.M.Y keys set.
 - PICT and the plot-setup commands (PVIEW, ERASE, AXES, XRNG, YRNG, STEQ and
   the rest)
 - the HP's numbered menus for MENU and TMENU (a list, a name holding one

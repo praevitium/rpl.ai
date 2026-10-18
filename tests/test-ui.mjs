@@ -381,6 +381,11 @@ import { assert, assertThrows } from './helpers.mjs';
     const types = MENU_FAMILIES.find((f) => f.id === 'TYPES');
     assert(types.keys.join(' ') === 'OBJ→ →ARRY →LIST →STR →TAG →UNIT C→R R→C NUM CHR DTAG EQ→ TYPE VTYPE' && types.keys.every((n) => lookup(n)),
       'TYPES menu: the HP\'s PRG TYPE keys, OBJ→ →ARRY →LIST →STR →TAG →UNIT / C→R R→C NUM CHR DTAG EQ→ / TYPE VTYPE, so a phone converts between types from one menu');
+    const time = MENU_FAMILIES.find((f) => f.id === 'TIME');
+    assert(time.flagKeys.map(([flag, label]) => `${label}${flag}`).join(' ') === '24H-41 D.M.Y-42'
+      && /const flagKeys = \(family\.flagKeys \?\? \[\]\)\.map\(\(key\) => this\._flagKey\(\.\.\.key\)\);/.test(appSrc)
+      && /on: \(\) => testUserFlag\(flag\),\s*onPress: \(\) => \{\s*if \(this\.entry\._typingAtCursor\(\)\) this\.entry\.typeToken\(`\$\{command\(\)\} `\);\s*else \(testUserFlag\(flag\) \? clearUserFlag : setUserFlag\)\(flag\);/.test(appSrc),
+      'TIME menu: 24H and D.M.Y keys after the commands set the HP\'s clock and date formats (flags -41 and -42), marked while set, and type -41 SF or CF inside a program');
   }
   assert(/const MODE_KEYS = Object\.freeze\(\{\s*DEG: \['angle', 'DEG'\], RAD: \['angle', 'RAD'\], GRAD: \['angle', 'GRD'\], GRD: \['angle', 'GRD'\],\s*RECT: \['coordMode', 'RECT'\], CYLIN: \['coordMode', 'CYLIN'\], SPHERE: \['coordMode', 'SPHERE'\], CMPLX: \['complexMode', true\],\s*HEX: \['binaryBase', 'h'\], DEC: \['binaryBase', 'd'\], OCT: \['binaryBase', 'o'\], BIN: \['binaryBase', 'b'\],/.test(appSrc)
     && /\.\.\.\(mode && \{ toggle: true, on: \(\) => calcState\[mode\[0\]\] === mode\[1\] \}\),/.test(appSrc),
