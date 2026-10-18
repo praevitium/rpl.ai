@@ -941,10 +941,25 @@ function* evalRange(s, toks, from, to, depth) {
 
 // INPUT's level 1 is the text to offer on the command line, alone or in a list that may add the HP's cursor position
 // and entry modes; of those only V, which asks that the answer parse, means anything here.
+// INPUT's command-line list: its string, a cursor position (n counts characters from the left of the first row,
+// { row col } names the row; 0 is the end of the row, and a negative number asks for the HP's replace cursor,
+// which the line has not), and the names V, ALG and α, of which V alone matters here.
 function inputSpec(v) {
-  if (isString(v)) return { text: v.value, verify: false };
+  if (isString(v)) return { text: v.value, verify: false, cursor: null };
   if (!isList(v)) throw new RPLError('INPUT: Bad argument type');
-  return { text: v.items.find(isString)?.value ?? '', verify: v.items.some((item) => isName(item) && item.id === 'V') };
+  const text = v.items.find(isString)?.value ?? '';
+  const pos = v.items.find((item) => isReal(item) || isInteger(item) || (isList(item) && item.items.length === 2));
+  return { text, verify: v.items.some((item) => isName(item) && item.id === 'V'), cursor: pos ? inputCursor(text, pos) : null };
+}
+
+function inputCursor(text, pos) {
+  const nums = isList(pos) ? pos.items : [Real(1), pos];
+  if (!nums.every((n) => isReal(n) || isInteger(n))) throw new RPLError('INPUT: Bad argument type');
+  const [row, col] = nums.map((n) => Math.abs(Math.trunc(Number(n.value))));
+  const rows = text.split('\n');
+  const r = Math.min(Math.max(row, 1), rows.length);
+  const start = rows.slice(0, r - 1).reduce((n, line) => n + line.length + 1, 0);
+  return start + (col === 0 ? rows[r - 1].length : Math.min(col - 1, rows[r - 1].length));
 }
 
 

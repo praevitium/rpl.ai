@@ -1080,6 +1080,7 @@ class App {
       if (halted.kind === 'input') {
         if (this.inputMode !== 'rpl') this._closeWriter((mode) => `Put the ${mode} aside for the program's INPUT`);
         this.entry.recall(halted.dialog.text);
+        if (halted.dialog.cursor != null) this.entry.cursor = halted.dialog.cursor;
       } else if (halted.kind === 'inform') this.showInformSheet();
       else this.showChooseList();
     });

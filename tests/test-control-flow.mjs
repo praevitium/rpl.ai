@@ -7361,13 +7361,22 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   s.push(parseEntry('« "N?" { "2" 0 V } INPUT STR→ 3 * »')[0]);
   lookup('EVAL').fn(s);
   halted = getHalted();
-  assert(halted?.dialog.text === '2' && halted.dialog.verify === true, "INPUT's list offers its string and V asks that the answer parse; the HP's cursor position is not taken");
+  assert(halted?.dialog.text === '2' && halted.dialog.verify === true && halted.dialog.cursor === 1, "INPUT's list offers its string, V asks that the answer parse and 0 puts the cursor at the end");
   s.push(Str('4'));
   lookup('CONT').fn(s);
   assert(s.depth === 2 && s.peek().value === 12n, 'STR→ reads the answer back');
   s.push(parseEntry('« "N?" { } INPUT »')[0]);
   lookup('EVAL').fn(s);
-  assert(getHalted()?.dialog.text === '', 'an INPUT list without a string offers an empty line');
+  assert(getHalted()?.dialog.text === '' && getHalted().dialog.cursor === null, 'an INPUT list without a string offers an empty line, the cursor where the line leaves it');
+  for (const [spec, cursor, why] of [['{ "[  ]" 2 }', 1, 'n counts characters from the left of the first row'], ['{ "ABC" -2 }', 1, "a negative n asks for the HP's replace cursor at the same place"], ['{ "ABC" 9 }', 3, 'a count past the row stops at its end'], ['{ "AB\nCD" { 2 0 } }', 5, '{ row col } with 0 is the end of that row'], ['{ "AB\nCD" { 2 1 } }', 3, '{ row col } counts along that row'], ['{ "AB\nCD" { 5 1 } }', 3, 'a row past the text is its last row'], ['{ "ABC" ALG α 2 V }', 1, 'ALG and α pass unremarked']]) {
+    clearAllHalted(); clearPromptMessage();
+    s.push(parseEntry(`« "N?" ${spec} INPUT »`)[0]);
+    lookup('EVAL').fn(s);
+    assert(getHalted()?.dialog.cursor === cursor, `INPUT ${spec.replace(/\n/g, '\\n')}: ${why} (got ${getHalted()?.dialog.cursor})`);
+  }
+  clearAllHalted(); clearPromptMessage();
+  s.push(parseEntry('« "N?" { "A" { "x" 1 } } INPUT »')[0]);
+  assertThrows(() => lookup('EVAL').fn(s), /INPUT: Bad argument type/, 'a cursor pair that is not two numbers is refused');
   clearAllHalted(); clearPromptMessage();
   const t = new Stack();
   t.push(Program([Str('N?'), Integer(5n), Name('INPUT')]));
