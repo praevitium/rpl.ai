@@ -24,7 +24,7 @@ export const MENU_FAMILIES = Object.freeze([
   { id: 'CONTROL', short: 'CTRL', title: 'Control flow and debugging', category: 'Control flow / debug' },
   { id: 'FLAGS', short: 'FLAGS', title: 'Flags', category: 'Flags' },
   { id: 'DISPLAY', short: 'DISP', title: 'Display and bases', category: 'Display / base' },
-  { id: 'TYPES', short: 'TYPES', title: 'Types and tags', category: 'Types & tags' },
+  { id: 'TYPES', short: 'TYPES', title: 'Types and tags', category: 'Types & tags', keys: ['OBJ→', '→ARRY', '→LIST', '→STR', '→TAG', '→UNIT', 'C→R', 'R→C', 'NUM', 'CHR', 'DTAG', 'EQ→', 'TYPE', 'VTYPE'] },
   { id: 'UNITS', short: 'UNITS', title: 'Units', category: 'Units' },
   { id: 'SYSTEM', short: 'SYS', title: 'System', category: 'System' },
   { id: 'MORE', short: 'MORE', title: 'Everything else', category: 'Other' },

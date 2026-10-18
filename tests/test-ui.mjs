@@ -376,6 +376,12 @@ import { assert, assertThrows } from './helpers.mjs';
       && /const slots = \[\.\.\.keys, \.\.\.familyCommands\(family\)\.filter\(\(name\) => !keys\.includes\(name\)\)\]\.map/.test(appSrc),
       'CMPLX menu: the HP\'s RE IM C→R R→C ABS ARG / SIGN NEG CONJ first, ABS, SIGN and NEG from Arithmetic included, then the coordinate modes, with the rest of the family after its keys');
   }
+  {
+    const { MENU_FAMILIES } = await import('../www/src/ui/menus.js');
+    const types = MENU_FAMILIES.find((f) => f.id === 'TYPES');
+    assert(types.keys.join(' ') === 'OBJ→ →ARRY →LIST →STR →TAG →UNIT C→R R→C NUM CHR DTAG EQ→ TYPE VTYPE' && types.keys.every((n) => lookup(n)),
+      'TYPES menu: the HP\'s PRG TYPE keys, OBJ→ →ARRY →LIST →STR →TAG →UNIT / C→R R→C NUM CHR DTAG EQ→ / TYPE VTYPE, so a phone converts between types from one menu');
+  }
   assert(/const MODE_KEYS = Object\.freeze\(\{\s*DEG: \['angle', 'DEG'\], RAD: \['angle', 'RAD'\], GRAD: \['angle', 'GRD'\], GRD: \['angle', 'GRD'\],\s*RECT: \['coordMode', 'RECT'\], CYLIN: \['coordMode', 'CYLIN'\], SPHERE: \['coordMode', 'SPHERE'\], CMPLX: \['complexMode', true\],\s*HEX: \['binaryBase', 'h'\], DEC: \['binaryBase', 'd'\], OCT: \['binaryBase', 'o'\], BIN: \['binaryBase', 'b'\],/.test(appSrc)
     && /\.\.\.\(mode && \{ toggle: true, on: \(\) => calcState\[mode\[0\]\] === mode\[1\] \}\),/.test(appSrc),
     'mode keys: DEG, RAD, GRAD, RECT, CYLIN, SPHERE, CMPLX, HEX, DEC, OCT and BIN keys in any command menu mark the mode in force, as the HP\'s DEG■ and HEX■ do');
