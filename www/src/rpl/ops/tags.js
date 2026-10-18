@@ -1,7 +1,7 @@
-import { Real, isString, isName, isTagged, Tagged } from '../types.js';
+import { Real, isString, isName, isTagged, Tagged, isSymbolic, isNumber, isUnit } from '../types.js';
 import { RPLError } from '../stack.js';
 import { register } from './registry.js';
-import { _hp50TypeCode, recallVar } from './internal.js';
+import { _hp50TypeCode, _astToRplValue, recallVar } from './internal.js';
 
 
 
@@ -44,3 +44,16 @@ register('VTYPE', (s) => {
 
 
 register('KIND', _typeCodeOp, { category: 'Types & tags', categoryOrder: 1, label: "KIND" });
+
+
+register('EQ→', (s) => {
+  const [v] = s.popN(1);
+  if (isSymbolic(v) && v.expr.kind === 'bin' && v.expr.op === '=') {
+    s.push(_astToRplValue(v.expr.l));
+    s.push(_astToRplValue(v.expr.r));
+    return;
+  }
+  if (!isSymbolic(v) && !isName(v) && !isNumber(v) && !isUnit(v)) throw new RPLError('Bad argument type');
+  s.push(v);
+  s.push(Real(0));
+}, { category: 'Types & tags', categoryOrder: 5, label: "EQ→" });

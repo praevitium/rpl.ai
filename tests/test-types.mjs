@@ -21,7 +21,7 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows, runOp } from './helpers.mjs';
+import { assert, assertThrows, runOp, runLine } from './helpers.mjs';
 
 /* Data-type completeness pass. */
 
@@ -12361,4 +12361,13 @@ for (const src of ['{ :a:1 :b:"s" }', '« :a:1 DTAG »', ':o:{ :i:2 }']) {
   assert(isTagged(v) && v.tag === 'my tag', 'parser: a tag may contain a space, as →TAG allows');
   const [big] = parseEntry('`1E+3`');
   assert(big.type === 'symbolic' && big.expr.value === 1000, 'parser: `1E+3` is a Symbolic number');
+}
+
+{
+  const text = (src) => runLine(src).snapshot().reverse().map((v) => formatStackTop(v)).join(' | ');
+  assert(text('`X^2+1=Y` EQ→') === '`X^2 + 1` | `Y`' && text('`X=5` EQ→') === '`X` | 5',
+    'EQ→ splits an equation into its two sides, a number side landing as a number');
+  assert(text('`SIN(X)` EQ→') === '`SIN(X)` | 0.' && text('5 EQ→') === '5 | 0.' && text('3_m EQ→') === '3._m | 0.',
+    'EQ→ treats an expression, number or unit as an equation equal to zero, as the AUR says');
+  assertThrows(() => runLine('"s" EQ→'), 'Bad argument type', 'EQ→ refuses a string');
 }

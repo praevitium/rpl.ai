@@ -171,7 +171,8 @@ STATISTICS
   UTPN UTPC UTPF UTPT        upper-tail probabilities (normal / chi² / F / Student-t); m v x NDIST — normal density at x
 
 TYPES / REFLECTION
-  TYPE VTYPE KIND            classify the level-1 value
+  TYPE VTYPE KIND            classify the level-1 value (VTYPE of a name with no variable gives -1)
+  EQ→                        split an equation into its sides (\`X=5\` EQ→ gives \`X\` and 5)
   →TAG DTAG                  tag / untag (label / unlabel)
   →STR STR→ DECOMP →PRG OBJ→     conversions between strings / programs / structured values
   CMPLX? CMPLX RE IM ARG CONJ    complex predicate / value extractors
