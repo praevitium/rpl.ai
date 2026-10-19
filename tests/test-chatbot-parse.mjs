@@ -702,6 +702,11 @@ import { readFileSync } from 'node:fs';
          'classifyMarkdownLine reads a numbered item');
   assert(J('   12. twelfth') === JSON.stringify({ kind: 'ordered', number: 12, content: 'twelfth' }),
          'classifyMarkdownLine reads an indented multi-digit numbered item');
+  // A `+` bullet and a `1)` item are lists too, as CommonMark reads them; both ran into one paragraph.
+  assert(J('+ plus') === JSON.stringify({ kind: 'bullet', content: 'plus' })
+           && J('2) second') === JSON.stringify({ kind: 'ordered', number: 2, content: 'second' })
+           && J('+1 2 +') === JSON.stringify({ kind: 'text', content: '+1 2 +' }) && J('2)x') === JSON.stringify({ kind: 'text', content: '2)x' }),
+         'classifyMarkdownLine reads a + bullet and a 1) item, each marker followed by a space');
   // Blank: empty or whitespace-only collapses to the blank role (a paragraph break).
   assert(J('') === JSON.stringify({ kind: 'blank' }),
          'classifyMarkdownLine maps an empty line to blank');

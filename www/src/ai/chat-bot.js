@@ -184,9 +184,9 @@ export function classifyMarkdownLine(line) {
   if (/^\s{0,3}([-*_])(?:\s*\1){2,}\s*$/.test(line)) return { kind: 'rule' };
   const qm = line.match(/^\s{0,3}>\s?(.*)/);
   if (qm) return { kind: 'quote', content: qm[1] };
-  const lim = line.match(/^\s*[-*]\s+(.*)/);
+  const lim = line.match(/^\s*[-*+]\s+(.*)/);
   if (lim) return { kind: 'bullet', content: lim[1] };
-  const nlim = line.match(/^\s*(\d+)\.\s+(.*)/);
+  const nlim = line.match(/^\s*(\d+)[.)]\s+(.*)/);
   if (nlim) return { kind: 'ordered', number: Number(nlim[1]), content: nlim[2] };
   if (line.trim() === '') return { kind: 'blank' };
   return { kind: 'text', content: line };
