@@ -190,7 +190,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
   the HP: `-1. LN` gives `(0, 3.14159265359)`. The TRIG menu opens on the
   HP's HYP folder: SINH ASINH COSH ACOSH TANH ATANH, then EXPM and LNP1.
 - **Matrices.** `[[ 2 1 ][ 1 3 ]] DET` gives 5, `INV`, `EGV` and `LU` work
-  on it, and `→NUM` gives every entry its number. The MATRIX menu opens as
+  on it, and `→NUM` gives every entry its number. Entries can be
+  symbolic: `[[ X 1 ][ 2 Y ]] INV` is exact, and `/`, RREF, RANK, LU,
+  CHARPOL, JORDAN and ABS work on such a matrix too. The MATRIX menu opens as
   the HP's MTH MATR does, on MAKE, NORM, FACTR, COL and ROW folders and
   then LSQ. A matrix level's ⋯ menu has Inverse and Determinant when it is
   square, and Transpose. In CYLIN and SPHERE modes `→V2`, `→V3` and `V→`
