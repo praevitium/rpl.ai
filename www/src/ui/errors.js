@@ -106,6 +106,12 @@ export const ERROR_KINDS = Object.freeze({
     detail: (c) => `${c.command ?? 'Unit arithmetic'} needs compatible dimensions, like m and ft, not m and s.`,
     fixes: () => [{ id: 'help', label: 'CONVERT reference', arg: 'CONVERT' }, { id: 'explain', label: 'Explain' }],
   },
+  unknownConstant: {
+    match: (p) => p.core === 'Undefined name' && p.command === 'CONST',
+    title: (c) => `${c.detail || 'That'} isn't one of the HP's constants.`,
+    detail: () => 'CONST knows the Constants Library by name, such as c, g, NA and R∞, and capitals count.',
+    fixes: (c) => [{ id: 'help', label: 'CONST reference' }, ...(c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : [])],
+  },
   undefinedName: {
     match: (p) => p.core.startsWith('Undefined'),
     title: (c) => `Nothing called ${c.detail || 'that'} is stored here.`,

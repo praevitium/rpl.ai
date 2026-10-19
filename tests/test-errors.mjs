@@ -36,6 +36,12 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
 }
 
 {
+  const constant = describeError('CONST: Undefined name: NOPE', ctx({ line: "'NOPE' CONST" }));
+  assert(constant.title === "NOPE isn't one of the HP's constants." && constant.fixes[0].label === 'CONST reference' && !constant.fixes.some((f) => f.id === 'vars'),
+    "CONST's banner for an unknown constant names it and offers the CONST reference, where it said nothing called that was stored and offered Variables");
+}
+
+{
   const samples = {
     raised: 'EVAL: DOERR: Disk full',
     tooFew: '+: Too few arguments',
@@ -46,6 +52,7 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
     undefinedResult: 'LNP1: Undefined result',
     dimension: '+: Invalid dimension',
     units: '+: Inconsistent units',
+    unknownConstant: 'CONST: Undefined name: NOPE',
     undefinedName: 'Undefined name: FOO',
     casLoading: 'FACTOR: CAS not ready',
     interrupted: 'EVAL: Interrupted',

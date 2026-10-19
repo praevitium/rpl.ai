@@ -757,7 +757,8 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     'CONST gives a dimensionless constant as a plain number, and takes the name unquoted');
   assert(line("-61 SF 'c' CONST -61 CF") === '299792458.', 'CONST with flag -61 (Units Usage) set gives the number without its unit');
   assert(line("'g' CONST 2_s SQ * 2 /") === '19.6133_m', "CONST's unit objects work with the others: g t²/2 for 2 s is 19.6133 m");
-  assertThrows(() => runLine("'NOPE' CONST"), /Undefined name/, 'CONST of a name the library lacks is Undefined name');
+  assertThrows(() => runLine("'NOPE' CONST"), /Undefined name: NOPE/, 'CONST of a name the library lacks is Undefined name, naming it');
+  assertThrows(() => runLine("'toString' CONST"), /Undefined name: toString/, "CONST doesn't take a JavaScript object's built-in keys for constants");
   assertThrows(() => runLine('2 CONST'), /Bad argument type/, 'CONST wants a name');
 }
 

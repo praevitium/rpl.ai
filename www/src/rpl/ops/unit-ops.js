@@ -86,8 +86,7 @@ const CONSTANTS = Object.freeze({
 register('CONST', (s) => {
   const [name] = s.popN(1);
   if (!isName(name)) throw new RPLError('Bad argument type');
-  const constant = CONSTANTS[name.id];
-  if (!constant) throw new RPLError('Undefined name');
-  const [value, unit] = constant;
+  if (!Object.hasOwn(CONSTANTS, name.id)) throw new RPLError(`Undefined name: ${name.id}`);
+  const [value, unit] = CONSTANTS[name.id];
   s.push(unit && !testUserFlag(-61) ? Unit(value, parseUnitExpr(unit)) : Real(value));
 }, { category: 'Units', categoryOrder: 7, label: "CONST" });
