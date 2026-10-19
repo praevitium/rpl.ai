@@ -78,7 +78,7 @@ export const STAT_GROUPS = Object.freeze([
 // The HP's CAS menus as folders: ALG as the HP has it, and of S.SLV, CALC, TRIG and EXP&LN the commands the app has.
 export const CAS_GROUPS = Object.freeze([
   { id: 'ALG', title: 'Algebra', commands: ['COLLECT', 'EXPAND', 'FACTOR', 'LNCOLLECT', 'LIN', 'PARTFRAC', 'SOLVE', 'SUBST', 'TEXPAND'] },
-  { id: 'CALC', title: 'Calculus', commands: ['DERVX', 'INTVX', 'LIM', 'SERIES', 'TAYLOR0', 'TAYLR', 'DIVPC', 'TABVAL', 'DERIV', '∫', 'PREVAL', 'RISCH', 'IBP', 'SIGMA', 'SIGMAVX', 'FOURIER', 'LAPLACE', 'ILAP', 'DIV', 'CURL', 'LAPL', 'HESS', 'POTENTIAL', 'VPOTENTIAL'] },
+  { id: 'CALC', title: 'Calculus', commands: ['DERVX', 'INTVX', 'LIM', 'SERIES', 'TAYLOR0', 'TAYLR', 'DIVPC', 'TABVAL', 'DERIV', '∫', 'PREVAL', 'RISCH', 'IBP', 'SIGMA', 'SIGMAVX', 'FOURIER', 'LAPLACE', 'ILAP', 'DESOLVE', 'LDEC', 'DIV', 'CURL', 'LAPL', 'HESS', 'POTENTIAL', 'VPOTENTIAL'] },
   { id: 'S.SLV', title: 'Symbolic solver', commands: ['ISOL', 'LINSOLVE', 'SOLVEVX', 'SOLVE', 'ZEROS', 'ROOT', 'SYST2MAT'] },
   { id: 'TRIG', title: 'Trig rewrites', commands: ['HALFTAN', 'TAN2SC', 'TAN2SC2', 'TCOLLECT', 'TEXPAND', 'TLIN', 'ACOS2S', 'ASIN2C', 'ASIN2T', 'ATAN2S', 'TAN2CS2', 'COSSIN', 'TRIGCOS', 'TRIGSIN', 'TRIGTAN', 'SINCOS'] },
   { id: 'EXP&LN', title: 'Exponentials and logarithms', commands: ['EXPLN', 'EXP2HYP', 'EXP2POW', 'LIN', 'LNCOLLECT', 'TEXPAND', 'TSIMP'] },

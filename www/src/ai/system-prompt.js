@@ -108,6 +108,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   SERIES                     \`expr\` \`X=a\` n SERIES (or \`X\` for a=0, \`X=∞\`) — pushes { :Limit: :Equiv: :Expans: :Remain: } in a small h and \`h=X-a\`
   SUBST                      \`expr\` \`var=value\` SUBST — substitute
   LAPLACE ILAP               Laplace transform / inverse (LAP is LAPLACE)
+  DESOLVE LDEC               \`d1Y(X)+2*Y(X)=EXP(3*X)\` \`Y(X)\` DESOLVE → { \`Y(X)=…\` } with constants cC0 cC1 (d1Y(X) is Y', d1d1Y(X) is Y''; a list adds initial conditions: { eq \`Y(0)=1\` }); \`2*SIN(X)\` \`X^2+1\` LDEC solves y''+y=2*SIN(X) from its auxiliary polynomial
   TEXPAND TLIN TSIMP TCOLLECT EXPLN COSSIN LIN     trig/exp/log rewrites
   EXP2POW EXP2HYP SINCOS     \`EXP(5*LN(X))\` EXP2POW → \`X^5\`; EXP2HYP writes EXP(u) as SINH(u)+COSH(u); \`EXP(i*X)\` SINCOS → \`COS(X)+i*SIN(X)\`
   HALFTAN ASIN2C ASIN2T ACOS2S ATAN2S TAN2SC TAN2SC2 TAN2CS2     specific identity rewrites

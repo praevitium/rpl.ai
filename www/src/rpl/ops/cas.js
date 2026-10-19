@@ -1403,6 +1403,52 @@ register('LAP', lookup('LAPLACE').fn, { category: 'CAS / symbolic', categoryOrde
 
 register('ILAP', _laplaceOp('ilaplace'), { category: 'CAS / symbolic', categoryOrder: 32, label: "ILAP" });
 
+// DESOLVE and LDEC solve differential equations through Giac's desolve. The HP writes a derivative as dn: d1Y(X) is
+// Y differentiated in its first argument, d1d1Y(X) twice. Giac's constants c_0 and n_0 become the HP's cC0 and n0.
+const _DN = /^((?:d\d+)+)([A-Za-z].*)$/;
+
+function _dnToDeriv(ast) {
+  return _rewriteAst(ast, (node) => {
+    const m = node.kind === 'fn' && !isKnownFunction(node.name) && _DN.exec(node.name);
+    if (!m) return null;
+    return m[1].match(/\d+/g).reduce((inner, n) => {
+      const arg = node.args[n - 1];
+      if (arg?.kind !== 'var') throw new RPLError('Bad argument value');
+      return AstFn('DERIV', [inner, arg]);
+    }, AstFn(m[2], node.args));
+  });
+}
+
+const _hpConstants = (raw) => String(raw).replace(/\bc_(\d+)/g, 'cC$1').replace(/\bn_(\d+)/g, 'n$1');
+
+// DESOLVE ( eq Y(X) → { Y(X)=solution … } ); a list holds the equation and its initial conditions.
+register('DESOLVE', (s) => {
+  const [eqArg, fnArg] = s.popN(2);
+  const fn = _astArg(fnArg);
+  if (fn.kind !== 'fn' || fn.args.length !== 1 || fn.args[0].kind !== 'var') throw new RPLError('Bad argument type');
+  const eqs = (isList(eqArg) ? eqArg.items : [eqArg]).map((e) => astToGiac(_dnToDeriv(_astArg(e))));
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const raw = giac.caseval(`desolve(${eqs.length > 1 ? `[${eqs.join(',')}]` : eqs[0]},${astToGiac(fn)})`);
+  const solutions = (splitGiacList(raw) ?? [raw]).map((r) => giacToAst(_hpConstants(r)));
+  if (!solutions.length) throw new RPLError('Bad argument value');
+  s.push(RList(solutions.map((solution) => Symbolic(AstBin('=', fn, solution)))));
+}, { category: 'CAS / symbolic', categoryOrder: 32.1, label: "DESOLVE" });
+
+// LDEC ( rhs p → y ): the equation whose auxiliary polynomial is p, X^2+1 standing for y''+y, in p's variable.
+register('LDEC', (s) => {
+  const [rhsArg, polyArg] = s.popN(2);
+  const rhs = _astArg(rhsArg);
+  const poly = _astArg(polyArg);
+  const x = _mainVar(rhs, poly);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const coeffs = splitGiacList(giac.caseval(`symb2poly(${astToGiac(poly)},${x})`)) ?? [];
+  if (coeffs.length < 2) throw new RPLError('Bad argument value');
+  // Giac's desolve misreads diff(y,X,1), so a first derivative is written without its order.
+  const derivative = (k) => (k === 0 ? `rplY(${x})` : `diff(rplY(${x}),${x}${k > 1 ? `,${k}` : ''})`);
+  const terms = coeffs.map((c, i) => `(${c})*${derivative(coeffs.length - 1 - i)}`);
+  _pushCasResult(s, giacToAst(_hpConstants(giac.caseval(`desolve(${terms.join('+')}=${astToGiac(rhs)},rplY(${x}))`))));
+}, { category: 'CAS / symbolic', categoryOrder: 32.2, label: "LDEC" });
+
 
 const _two = (x) => AstBin('*', AstNum(2), x);
 const _half = (x) => AstBin('/', x, AstNum(2));

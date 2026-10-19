@@ -8767,3 +8767,23 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assertThrows(() => runLine("[ 'X+Y' ] [ X Y ] [ 1 1 ] MSLV"), /Bad argument value/, 'MSLV rejects an underdetermined system');
   giac._clear();
 }
+
+// DESOLVE and LDEC, with real Giac's answers: the HP's d1Y(X) is Giac's diff(Y(X),X) and its c_0 is the HP's cC0.
+{
+  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
+  giac._clear();
+  giac._setFixture('desolve(diff(Y(X),X)+2*Y(X)=exp(3*X),Y(X))', '(5*c_0*exp(-2*X)+exp(3*X))/5');
+  giac._setFixture('desolve([diff(Y(X),X)+2*Y(X)=exp(3*X),Y(0)=1],Y(X))', '(4*exp(-2*X)+exp(3*X))/5');
+  giac._setFixture('desolve(diff(diff(Y(X),X),X)+Y(X)=2*sin(X),Y(X))', 'c_0*cos(X)+c_1*sin(X)-X*cos(X)+1/2*sin(X)');
+  giac._setFixture('desolve(diff(Y(X),X)*Y(X)=X,Y(X))', '[√(X^2-2*c_0),-√(X^2-2*c_0)]');
+  giac._setFixture('symb2poly(X^2-3*X+2,X)', 'poly1[1,-3,2]');
+  giac._setFixture('desolve((1)*diff(rplY(X),X,2)+(-3)*diff(rplY(X),X)+(2)*rplY(X)=exp(X),rplY(X))', 'c_0*exp(2*X)+c_1*exp(X)-X*exp(X)-exp(X)');
+  const solved = shown("'d1Y(X)+2*Y(X)=EXP(3*X)' 'Y(X)' DESOLVE");
+  assert(/^\{ `Y\(X\) = \(5\*cC0\*EXP\(.*2\)\*X\) \+ EXP\(3\*X\)\)\/5` \}$/.test(solved), `DESOLVE solves the AUR's d1Y(X)+2*Y(X)=EXP(3*X) with the constant cC0 (${solved})`);
+  assert(/^\{ `Y\(X\) = \(4\*EXP/.test(shown("{ 'd1Y(X)+2*Y(X)=EXP(3*X)' 'Y(0)=1' } 'Y(X)' DESOLVE")), 'DESOLVE takes initial conditions in a list');
+  assert(shown("'d1d1Y(X)+Y(X)=2*SIN(X)' 'Y(X)' DESOLVE") === '{ `Y(X) = cC0*COS(X) + cC1*SIN(X) - X*COS(X) + 1/2*SIN(X)` }', 'DESOLVE reads d1d1Y(X) as the second derivative');
+  assert(shown("'d1Y(X)*Y(X)=X' 'Y(X)' DESOLVE") === '{ `Y(X) = SQRT(X^2 - 2*cC0)` `Y(X) = -SQRT(X^2 - 2*cC0)` }', 'DESOLVE lists every solution');
+  assertThrows(() => runLine("'d1Y(X)=Y(X)' 'Y' DESOLVE"), /Bad argument type/, 'DESOLVE wants the function as Y(X)');
+  assert(shown("'EXP(X)' 'X^2-3*X+2' LDEC") === '`cC0*EXP(2*X) + cC1*EXP(X) - X*EXP(X) - EXP(X)`', 'LDEC solves y\'\'-3y\'+2y = EXP(X) from its auxiliary polynomial');
+  giac._clear();
+}
