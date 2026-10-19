@@ -443,9 +443,9 @@ export function parseAlgebra(src) {
       return e;
     }
 
-    if (c === '∞') {
+    if (c === '∞' || c === '?') {
       i++;
-      return Var('∞');
+      return Var(c);
     }
 
     if (c === '√') {

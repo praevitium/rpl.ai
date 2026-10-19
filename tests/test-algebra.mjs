@@ -8871,9 +8871,23 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   });
   assert(top("'ATAN(-∞)' EVAL") === '`(-π)/2`', 'EVAL of ATAN(-∞) gives -π/2, as the AUR shows');
   assert(top("'1/∞' EVAL") === '0', 'EVAL of 1/∞ gives 0');
-  assert(top("'∞-∞' EVAL") === '`∞ - ∞`', 'EVAL leaves ∞-∞ as it is, the CAS calling it undefined');
+  assert(top("'∞-∞' EVAL") === '`?`', 'EVAL of ∞-∞ gives ?, the CAS calling it undefined');
   assert(top("'X+∞' EVAL") === '`∞`', 'EVAL of X+∞ gives ∞');
   assert(top("'∞' EVAL") === '`∞`', 'EVAL of ∞ alone asks nothing of the CAS');
   assert(astToGiac(parseAlgebra('X+∞')) === 'X+(+infinity)', 'astToGiac puts a signed infinity beside an operator in parentheses');
+  giac._clear();
+}
+
+// ?, the HP's undefined result: the CAS's undef both ways, and anything worked out from it is ?.
+{
+  const { astToGiac } = await import('../www/src/rpl/cas/giac-convert.mjs');
+  const top = (line) => format(runLine(line).peek());
+  giac._clear();
+  giac._setFixtures({ 'undef+1': 'undef', 'atan(undef)': 'undef' });
+  assert(top('?') === '`?`', '? executed gives the algebraic ?');
+  assert(top("'?+1' EVAL") === '`?`', 'EVAL of ?+1 gives ?, as the AUR says operations on ? do');
+  assert(top("'ATAN(?)' EVAL") === '`?`', 'a function of ? is ?');
+  assert(top("'?+1'") === '`? + 1`', 'an algebraic holding ? reads back as typed');
+  assert(astToGiac(parseAlgebra('?')) === 'undef', '? goes to the CAS as undef');
   giac._clear();
 }

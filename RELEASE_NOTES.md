@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.18 (2026-10-19)
+**Latest release:** v0.7.19 (2026-10-19)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.19 — 2026-10-19
+
+The HP's undefined symbol arrives:
+
+- `?` gives the algebraic `?`, the result the AUR says arithmetic leaves
+  undefined, and an algebraic can hold it: `'?+1'`.
+- EVAL gives `?` for anything worked out from `?` (`'?+1' EVAL`,
+  `'ATAN(?)' EVAL`) and for an undefined result such as `'∞-∞' EVAL`, which
+  0.7.18 left as typed.
+- A difference from the HP: a line that starts with `?` still asks the
+  assistant, so `?` on its own comes from the Catalog, command search or
+  `'?'`, or anywhere later in a line (`1 ? +`).
 
 ## v0.7.18 — 2026-10-19
 

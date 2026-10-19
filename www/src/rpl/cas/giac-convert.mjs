@@ -37,7 +37,7 @@ function assertAstNamesValid(ast) {
   if (!ast || typeof ast !== "object") return;
   switch (ast.kind) {
     case "var":
-      if (!infGiacFromName(ast.name)) assertValidCasName(ast.name);
+      if (ast.name !== "?" && !infGiacFromName(ast.name)) assertValidCasName(ast.name);
       return;
     case "fn":
       assertValidCasName(ast.name);
@@ -113,6 +113,7 @@ function emit(ast, parentPrec) {
     case "var": {
       // Giac reads X++infinity as an increment, so a signed infinity beside an operator goes in parentheses.
       const inf = infGiacFromName(ast.name);
+      if (ast.name === "?") return "undef";
       if (!inf) return ast.name;
       return parentPrec >= 1 ? `(${inf})` : inf;
     }

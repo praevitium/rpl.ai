@@ -918,6 +918,8 @@ System RPL, and IR and serial transfer.
 - ⌫ on an empty line leaves the stack alone, where the HP's drops level 1.
   DROP is on the STACK menu, the key strip above a phone's keyboard and a
   level's menu, and ⌫ still removes a selected level.
+- A line that starts with `?` asks the assistant, so the undefined symbol `?`
+  comes from the Catalog, command search, `'?'` or anywhere later in a line.
 
 **The algebra engine.** Giac is not the HP 49/50's CAS, so answers can come
 back in a different but equivalent form. It is an 11.8 MB download, fetched

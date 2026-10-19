@@ -665,6 +665,11 @@ register('∞', (s) => {
   s.push(Symbolic(AstVar('∞')));
 }, { category: 'Arithmetic', categoryOrder: 24.5, label: "∞" });
 
+// ? is the HP's undefined result, the CAS's undef: EVAL gives ? for anything worked out from it, and for ∞-∞.
+register('?', (s) => {
+  s.push(Symbolic(AstVar('?')));
+}, { category: 'Arithmetic', categoryOrder: 24.6, label: "?" });
+
 
 function _hmsBinary(fn) {
   return (s) => {

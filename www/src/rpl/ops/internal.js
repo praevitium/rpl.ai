@@ -1696,7 +1696,7 @@ export function _evalSymbolic(v, keeps = () => false) {
   const folded = _foldUnits(evalNode(_expandUserCalls(v.expr)), evalNode);
   const integrated = _casCalculus(folded);
   const calculated = integrated === folded ? folded : evalNode(integrated);
-  const settled = _casInfinity(calculated);
+  const settled = _casSpecialValues(calculated);
   const reduced = settled === calculated ? calculated : evalNode(settled);
   _checkInfinite(reduced);
   const value = _astToRplValue(reduced);
@@ -1704,11 +1704,12 @@ export function _evalSymbolic(v, keeps = () => false) {
 }
 
 
-// EVAL hands an expression still holding ∞ to the CAS, which knows the AUR's ATAN(-∞) is -π/2 and 1/∞ is 0; one the
-// CAS leaves undefined, such as ∞-∞, stays as it is.
-function _casInfinity(ast) {
+// EVAL hands an expression still holding ∞ or ? to the CAS, which knows the AUR's ATAN(-∞) is -π/2 and 1/∞ is 0;
+// an undefined answer, such as ∞-∞ or anything worked out from ?, is ?.
+function _casSpecialValues(ast) {
   const bare = ast.kind === 'neg' ? ast.arg : ast;
-  if (bare.kind === 'var' || !algebraFreeVars(ast).has('∞') || !giac.isReady()) return ast;
+  const names = algebraFreeVars(ast);
+  if (bare.kind === 'var' || (!names.has('∞') && !names.has('?')) || !giac.isReady()) return ast;
   let raw;
   try {
     raw = giac.caseval(buildGiacCmd(ast, (e) => e));
@@ -1716,6 +1717,7 @@ function _casInfinity(ast) {
     if (e instanceof RPLError) return ast;
     throw e;
   }
+  if (raw.trim() === 'undef') return AstVar('?');
   return /\bundef\b/.test(raw) ? ast : giacToAst(raw);
 }
 
