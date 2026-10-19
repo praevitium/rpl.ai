@@ -504,7 +504,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   DISPXY, →GROB, LCD→ and LABEL show the comma too, and so do the plot's
   axis labels, trace readout, range boxes and formula fields, which read
   a typed comma. A spreadsheet range pasted in this mode reads 12,345 as
-  12.345, as the command line does. Exports keep the point for now.
+  12.345, as the command line does. Exports, copies and shares always
+  keep the point, so other tools read them.
 
 ---
 
