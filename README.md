@@ -497,7 +497,8 @@ message saying which command it could not read.
 
 In Tutor mode the assistant plans a solution as a few steps, and the
 calculator dry-runs every step before you see it. Each step explains the idea
-and shows the keystrokes. Press **Show me** to watch it happen, or
+and shows the keystrokes, with math, tables and code drawn as in the
+assistant's replies. Press **Show me** to watch it happen, or
 **I'll do it** to press the keys yourself; the tutor checks your stack and
 says what's off. On a phone, I'll do it puts the assistant away so you can
 type, and a note with the step's keys brings it back when you tap Check;
