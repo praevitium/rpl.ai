@@ -178,11 +178,58 @@ export function classifyMarkdownLine(line) {
   return { kind: 'text', content: line };
 }
 
+// A row's cells, split at pipes that aren't escaped; null for a line without one.
+function tableCells(line) {
+  const row = line?.trim() ?? '';
+  if (!/(^|[^\\])\|/.test(row)) return null;
+  const cells = row.split(/(?<!\\)\|/).map((cell) => cell.trim().replace(/\\\|/g, '|'));
+  if (row.startsWith('|')) cells.shift();
+  if (/(?<!\\)\|$/.test(row)) cells.pop();
+  return cells;
+}
+
+/** A GitHub-style table at lines[i]: a header row, a delimiter row of dashes
+ *  (colons set each column's alignment), then rows up to a line without a
+ *  pipe, each padded or cut to the header's width.  `end` is the line after it. */
+export function parseTableAt(lines, i) {
+  const header = tableCells(lines[i]);
+  const delimiter = tableCells(lines[i + 1]);
+  if (!header?.length || delimiter?.length !== header.length || !delimiter.every((c) => /^:?-+:?$/.test(c))) return null;
+  const align = delimiter.map((c) => (c.endsWith(':') ? (c.startsWith(':') ? 'center' : 'right') : c.startsWith(':') ? 'left' : ''));
+  const rows = [];
+  let end = i + 2;
+  for (let cells; (cells = tableCells(lines[end])); end++) rows.push(header.map((_, j) => cells[j] ?? ''));
+  return { header, align, rows, end };
+}
+
+function appendTable(frag, { header, align, rows }) {
+  const table = frag.appendChild(elem('div', { className: 'cb-table' })).appendChild(elem('table'));
+  const addRow = (section, cells, tag) => {
+    const tr = section.appendChild(elem('tr'));
+    cells.forEach((cell, j) => {
+      const td = tr.appendChild(elem(tag));
+      if (align[j]) td.style.textAlign = align[j];
+      appendSpans(td, cell);
+    });
+  };
+  addRow(table.appendChild(elem('thead')), header, 'th');
+  const body = table.appendChild(elem('tbody'));
+  for (const row of rows) addRow(body, row, 'td');
+}
+
 function appendInlineMarkdownLines(frag, text) {
   let p = null;
   const flushP = () => { if (p) { frag.appendChild(p); p = null; } };
-  for (const line of text.split('\n')) {
-    const c = classifyMarkdownLine(line);
+  const lines = text.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const table = parseTableAt(lines, i);
+    if (table) {
+      flushP();
+      appendTable(frag, table);
+      i = table.end - 1;
+      continue;
+    }
+    const c = classifyMarkdownLine(lines[i]);
     if (c.kind === 'text') {
       if (!p) p = elem('p');
       else p.appendChild(document.createTextNode(' '));

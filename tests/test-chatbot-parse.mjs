@@ -1,7 +1,7 @@
 import {
   parseAllToolCalls, parseSuggestions, findMachineSectionStart, stripThinkBlocks,
   resolveToolAlias, activeContextTokens, effectiveBudget, TOOL_ALIASES, ChatBot,
-  parseFencedBlock, parseInlineSpans, classifyMarkdownLine,
+  parseFencedBlock, parseInlineSpans, classifyMarkdownLine, parseTableAt,
   normalizeRpl, normalizeRemoteConfig, looksInfix,
 } from '../www/src/ai/chat-bot.js';
 import {
@@ -531,6 +531,22 @@ import { readFileSync } from 'node:fs';
   const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
   assert(/if \(c\.kind === 'ordered' && c\.number !== 1\) list\.start = c\.number;/.test(src),
          'a numbered list that starts after a break starts at its first item\'s number');
+}
+
+// parseTableAt: a GitHub-style table in a reply, which showed as rows of pipes.
+{
+  const J = (lines, i = 0) => JSON.stringify(parseTableAt(lines, i));
+  assert(J(['| Step | RPL |', '|---|:--:|', '| Enter | `[3 1]` |', 'after'])
+           === JSON.stringify({ header: ['Step', 'RPL'], align: ['', 'center'], rows: [['Enter', '`[3 1]`']], end: 3 }),
+         'parseTableAt reads the header, the alignment and a row, and ends at the line without a pipe');
+  assert(J(['a | b | c | d', ':-- | --: | :-: | ---']).includes('"align":["left","right","center",""]'),
+         'parseTableAt takes each column\'s alignment from the colons, with or without outer pipes');
+  assert(J(['| x \\| y | z |', '|---|---|', '| 1 |', '| 1 | 2 | 3 |', '', '| 4 | 5 |'])
+           === JSON.stringify({ header: ['x | y', 'z'], align: ['', ''], rows: [['1', ''], ['1', '2']], end: 4 }),
+         'parseTableAt keeps an escaped pipe in its cell, pads or cuts rows to the header, and stops at a blank line');
+  assert(parseTableAt(['| a | b |', 'no delimiter'], 0) === null && parseTableAt(['| a | b |', '|---|'], 0) === null
+           && parseTableAt(['text', '---'], 0) === null && parseTableAt(['| a | b |'], 0) === null,
+         'parseTableAt needs a delimiter row as wide as the header, so a rule or a lone row of pipes stays text');
 }
 
 // session367: classifyMarkdownLine — the per-line block-role classifier lifted
