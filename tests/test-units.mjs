@@ -744,3 +744,8 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assertThrows(() => runLine("'5_foo'"), /Unknown unit: foo/, 'an unknown unit in an algebraic is refused when it is typed');
 }
 
+{
+  const line = (src) => runLine(src).snapshot().map((v) => formatSource(v)).join(' ');
+  assert(line("'Vm' →NUM") === '0.02241396954', 'the symbolic Vm is the molar volume at 0 °C and 1 atm, as its description and the HP say, where it held the 100 kPa value, 0.02271095464');
+}
+

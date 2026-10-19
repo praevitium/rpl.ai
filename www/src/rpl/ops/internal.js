@@ -1525,7 +1525,7 @@ const SYM_CONSTANTS = Object.freeze({
   NA:   Real(6.02214076e23),          // Avogadro, /mol (exact)
   k:    Real(1.380649e-23),           // Boltzmann, J/K (exact)
   R:    Real(8.314462618),            // universal gas constant, J/(mol·K)
-  Vm:   Real(0.02271095464),          // molar volume (STP), m³/mol
+  Vm:   Real(0.02241396954),          // molar volume at 0 °C and 1 atm, m³/mol
   'σ':  Real(5.670374419e-8),         // Stefan-Boltzmann, W/(m²·K⁴)
   'ε0': Real(8.8541878128e-12),       // vacuum permittivity, F/m
   'μ0': Real(1.25663706212e-6),       // vacuum permeability, N/A²
