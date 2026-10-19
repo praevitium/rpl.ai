@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.153 (2026-10-18)
+**Latest release:** v0.6.154 (2026-10-18)
 
 ---
 
@@ -18,6 +18,23 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.154 — 2026-10-18
+
+STD shows numbers as the AUR describes: a number shows whole only when
+its digits fit in 12, any other in scientific form, so 1/30 →NUM reads
+3.33333333333E-2 and the Stefan–Boltzmann constant 5.670374419E-8,
+where they showed as 0.0333333333333 and 0.00000005670374419, and a
+whole mantissa keeps its point, as in 1.E12. MOLWT gives the molar mass
+of a formula, a string such as "Ca(OH)2" or a name, in g/mol (the HP
+writes g/gmol), or the number alone with flag -61 set; a name that isn't
+a formula stands for the formula stored in it. A selected level's soft
+keys open on EDIT VIEW ECHO PICK ROLL DROP, so VIEW is one tap away, as
+on the HP's interactive stack. A tapped soft key no longer passes the
+tap on to what it opens: at 280 px VIEW's Edit button sat under the
+finger, so the level opened for editing instead of full size.
 
 ---
 
