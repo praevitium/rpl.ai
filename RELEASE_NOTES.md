@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.154 (2026-10-18)
+**Latest release:** v0.6.155 (2026-10-18)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.155 — 2026-10-18
+
+The Catalog no longer greys out IF, THEN, ELSE, END, CASE, IFERR, FOR,
+NEXT, START, STEP, DO, UNTIL, WHILE, REPEAT, « », →, _, π, e and i as
+"Not available in rpl.ai": the parser runs them all, so their reference
+pages offer Insert, which types « » around the cursor and π, e or i in
+the manual's own case, and the AUR page marks them in app. The HP's
+other names for commands rpl.ai already had now run them: ΣX^2, ΣY^2
+and ΣX*Y (the HP 28's names for ΣX2, ΣY2 and ΣXY), CLUSR (CLVAR), EXPAN
+(EXPAND), COLCT (COLLECT) and LAP (LAPLACE), where typing one pushed a
+bare name; the Catalog counts 519 commands. A Catalog search lists
+manual pages in their own spelling, π, →Qπ, e and i, where it showed
+Π, →QΠ, E and I.
 
 ---
 
