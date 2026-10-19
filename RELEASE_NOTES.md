@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.64 (2026-10-19)
+**Latest release:** v0.7.65 (2026-10-19)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.65 — 2026-10-19
+
+- A bare name in a matrix or vector no longer draws with backticks in
+  textbook view. CAS results such as `[[ X 1 ][ 2 Y ]] LU` showed `` `Y` ``
+  beside formula entries; it now shows Y, as the HP writes it.
+- EVAL of a matrix or vector with symbolic entries evaluates each entry,
+  so stored values fill in: with 3 in X, `[[ X 1 ][ 2 Y ]] EVAL` gives
+  `[[ 3 1 ][ 2 Y ]]`, from the command line or a level's Evaluate (EVAL).
+  The AUR's EVAL table leaves an array as it is; this is noted in EVAL's
+  reference entry and the README's list of differences.
+- A square matrix level's ⋯ menu offers Eigenvalues (EGVL) beside
+  Inverse and Determinant, so a phone needs no typing for it.
 
 ## v0.7.64 — 2026-10-19
 
