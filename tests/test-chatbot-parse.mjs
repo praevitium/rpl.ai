@@ -623,9 +623,10 @@ import { readFileSync } from 'node:fs';
            && J('>tight') === JSON.stringify({ kind: 'quote', content: 'tight' }),
          'classifyMarkdownLine reads a > line as a quote, with or without a space');
   const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
-  assert(/frag\.appendChild\(elem\('hr'\)\)/.test(src) && /else quote = frag\.appendChild\(elem\('blockquote'\)\);/.test(src)
-           && /if \(c\.kind !== 'quote'\) quote = null;/.test(src),
-         'a rule renders as hr, and quote lines in a row share one blockquote that any other line ends');
+  assert(/frag\.appendChild\(elem\('hr'\)\)/.test(src)
+           && /for \(let q; i < lines\.length && \(q = classifyMarkdownLine\(lines\[i\]\)\)\.kind === 'quote'; i\+\+\) inner\.push\(q\.content\);/.test(src)
+           && /appendInlineMarkdownLines\(frag\.appendChild\(elem\('blockquote'\)\), inner\.join\('\\n'\)\);/.test(src),
+         'a rule renders as hr, and quote lines in a row share one blockquote that any other line ends, its lines rendered as blocks of their own (paragraphs at a bare >, lists, quotes in quotes) where they ran together as one line');
 }
 
 // The tutor renders its problem, step titles and hints as markdown and draws its

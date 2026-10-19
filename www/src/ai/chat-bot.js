@@ -238,7 +238,6 @@ export function listIndent(line) {
 
 function appendInlineMarkdownLines(frag, text) {
   let p = null;
-  let quote = null;
   let lists = [];
   const flushP = () => { if (p) { frag.appendChild(p); p = null; } };
   const newList = (parent, tag, c) => {
@@ -257,7 +256,6 @@ function appendInlineMarkdownLines(frag, text) {
       continue;
     }
     const c = classifyMarkdownLine(lines[i]);
-    if (c.kind !== 'quote') quote = null;
     if (c.kind !== 'bullet' && c.kind !== 'ordered' && c.kind !== 'blank') lists = [];
     if (c.kind === 'text') {
       if (!p) p = elem('p');
@@ -271,9 +269,10 @@ function appendInlineMarkdownLines(frag, text) {
     } else if (c.kind === 'rule') {
       frag.appendChild(elem('hr'));
     } else if (c.kind === 'quote') {
-      if (quote) quote.appendChild(document.createTextNode(' '));
-      else quote = frag.appendChild(elem('blockquote'));
-      appendSpans(quote, c.content);
+      const inner = [];
+      for (let q; i < lines.length && (q = classifyMarkdownLine(lines[i])).kind === 'quote'; i++) inner.push(q.content);
+      i--;
+      appendInlineMarkdownLines(frag.appendChild(elem('blockquote')), inner.join('\n'));
     } else if (c.kind !== 'blank') {
       const tag = c.kind === 'bullet' ? 'UL' : 'OL';
       const indent = listIndent(lines[i]);
