@@ -240,7 +240,7 @@ import { assert, assertThrows, runOp, runLine } from './helpers.mjs';
 /* ================================================================
    →STR / STR→ (object ⇄ string serialization).
 
-   →STR  ( any  → "src" )     render via formatter (STD display mode)
+   →STR  ( any  → "src" )     render via formatter in the display format
    STR→  ( "src"  → any… )    parse the source as RPL, push each value
    ================================================================ */
 {
@@ -269,8 +269,15 @@ import { assert, assertThrows, runOp, runLine } from './helpers.mjs';
     const s = new Stack();
     s.push(Str('HELLO'));
     lookup('→STR').fn(s);
-    assert(s.peek(1).value === '"HELLO"',
-      '→STR "HELLO" → literally "\\"HELLO\\"" (quoted form)');
+    assert(s.peek(1).value === 'HELLO',
+      'AUR: →STR returns a string as it is, where it quoted it');
+  }
+  {
+    const text = (src) => runLine(src).peek().value;
+    assert(text('2 FIX 3.14159 →STR STD') === '3.14' && text('3 SCI 12345.678 →STR STD') === '1.235E4',
+      'AUR: →STR writes a number in the display format (flags -49, -50), where it always used STD');
+    assert(text('2 FIX { 1.5 "A" } →STR STD') === '{ 1.50 "A" }' && text('STD 3.14159 →STR') === '3.14159',
+      '→STR formats the numbers inside a list too, and keeps every digit in STD');
   }
   {
     const s = new Stack();

@@ -6,7 +6,7 @@ import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, div
 import { state as _calcState, getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
-import { formatSource, DEFAULT_DISPLAY } from '../formatter.js';
+import { formatSource, currentDisplay } from '../formatter.js';
 import { parseEntry as _parseEntryForObjTo, polarVector } from '../parser.js';
 import { astToGiac } from '../cas/giac-convert.mjs';
 import { lookup } from './registry.js';
@@ -2042,8 +2042,8 @@ export const _fromArrayOp = (s) => {
 
 export const _toStrOp = (s) => {
   const [v] = s.popN(1);
-  // Source form in STD mode, so the text reads back through STR→ whatever the display mode.
-  s.push(Str(formatSource(v, DEFAULT_DISPLAY)));
+  // The AUR: numbers come out in the display format (flags -49, -50), and a string comes back as it is.
+  s.push(isString(v) ? v : Str(formatSource(v, currentDisplay())));
 };
 
 

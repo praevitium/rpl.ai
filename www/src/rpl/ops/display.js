@@ -1,7 +1,7 @@
 import { isInteger, isBinaryInteger, isReal, isList, isName, isString, BinaryInteger, Real } from '../types.js';
 import { RPLError } from '../stack.js';
-import { state as calcState, setWordsize, getWordsize, getWordsizeMask, getBinaryBase, setBinaryBase, setTextbookMode, setDisplay, varStore, varRecall, inScratchState, setLcdLine, clearLcd, freezeLcd, LCD_LINES, testUserFlag } from '../state.js';
-import { format } from '../formatter.js';
+import { setWordsize, getWordsize, getWordsizeMask, getBinaryBase, setBinaryBase, setTextbookMode, setDisplay, varStore, varRecall, inScratchState, setLcdLine, clearLcd, freezeLcd, LCD_LINES, testUserFlag } from '../state.js';
+import { format, currentDisplay } from '../formatter.js';
 import { register } from './registry.js';
 
 
@@ -47,7 +47,7 @@ register('DISP', (s) => {
   const [obj, n] = s.popN(2);
   if (!(isReal(n) || isInteger(n))) throw new RPLError('Bad argument type');
   const line = Math.min(LCD_LINES, Math.max(1, Math.trunc(Number(n.value))));
-  setLcdLine(line, isString(obj) ? obj.value : format(obj, { mode: calcState.displayMode || 'STD', digits: calcState.displayDigits ?? 12 }));
+  setLcdLine(line, isString(obj) ? obj.value : format(obj, currentDisplay()));
 }, { category: 'Display / base', categoryOrder: 26, label: "DISP" });
 
 register('CLLCD', () => clearLcd(), { category: 'Display / base', categoryOrder: 27, label: "CLLCD" });

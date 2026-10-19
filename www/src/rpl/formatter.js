@@ -13,6 +13,8 @@ export const DEFAULT_DISPLAY = {
   digits: 12,
 };
 
+export const currentDisplay = () => ({ mode: _state.displayMode || 'STD', digits: _state.displayDigits ?? 12 });
+
 /* `context: 'stack'` ticks every Name, as the HP50 shows one on a stack
    level; nested items keep their own quoting and are not passed it. */
 export function format(v, display = DEFAULT_DISPLAY, options = {}) {
