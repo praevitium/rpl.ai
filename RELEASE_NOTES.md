@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.1 (2026-10-19)
+**Latest release:** v0.7.2 (2026-10-19)
 
 ---
 
@@ -20,6 +20,28 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.2 — 2026-10-19
+
+The third batch of missing HP 50g commands adds nine from the CAS's
+calculus menus, each giving the AUR's example, all in the CAS menu's CALC
+folder:
+
+- `RISCH` is INTEG by another name: `'Y^2-3*Y+2' 'Y' RISCH`.
+- `IBP` integrates by parts: `'X*COS(X)' 'SIN(X)' IBP` gives
+  `SIN(X)*X` and `-SIN(X)`, which INTVX and + finish.
+- `SIGMA` and `SIGMAVX` give a discrete antiderivative G, with
+  G(x+1)-G(x) the expression: `'2*X-2*Y' 'Y' SIGMA` gives
+  `2*X*Y-Y^2+Y`.
+- `POTENTIAL` and `VPOTENTIAL` undo DERIV and CURL on a vector field; a
+  field that has none is Bad argument value.
+- `HESS` gives the Hessian, the gradient and the variables. Its entries
+  come simplified, `4*U` where the HP shows `2*(2*U)`.
+- `FOURIER` gives the nth complex Fourier coefficient over one period, the
+  PERIOD variable or 2π: `'X^2' 0 FOURIER` gives `4/3*π^2`.
+- `TABVAL` evaluates an expression at a list of values, storing it in EQ
+  as the HP does: `'X^2+1' { 1 2 3 } TABVAL` gives the expression and
+  `{ { 1 2 3 } { 2 5 10 } }`.
 
 ## v0.7.1 — 2026-10-19
 
