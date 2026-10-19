@@ -274,6 +274,16 @@ const REF = parseCommandReference(HTML);
     'command search: a command rpl.ai lacks wears a "not in app" badge and opens its reference page when chosen, where PICT looked runnable and choosing it put up an error');
 }
 
+/* On a 280 px phone a command's description kept four or five words ("Finds zeros of an express…"); on touch it takes
+   two lines in command search and the Catalog, and the keyboard-up rule still hides it. */
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const touch = css.slice(css.indexOf('@media (pointer: coarse) {'));
+  assert(/\n  \.pal-row \.d, \.cmd-row \.ds \{ white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; \}/.test(touch.slice(0, touch.indexOf('\n}\n')))
+    && /:root\[data-keyboard\] \.dw-head, :root\[data-keyboard\] \.pal-row \.d \{ display: none; \}/.test(css),
+    'command search and Catalog rows give a description two lines on touch, and hide it while the keyboard is up');
+}
+
 /* "pi" listed π twice in command search, under Constants and under Commands, once π became findable by name. */
 {
   const paletteSrc = readFileSync(new URL('../www/src/ui/palette.js', import.meta.url), 'utf8');
