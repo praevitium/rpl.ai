@@ -36,6 +36,9 @@ required for development.
   at once instead of waiting for CANCEL.
 - TEXT closes the plot view and goes back to the stack, as the HP leaves
   the graphics display; `DRAW 5 WAIT TEXT` shows a plot for five seconds.
+- `{ } PVIEW` and PICTURE frame PICT in the 50g's default window,
+  (-6.5,-3.9) to (6.5,4), before anything sets PPAR, instead of the plot
+  view's own -10 to 10.
 
 ## v0.7.27 — 2026-10-19
 

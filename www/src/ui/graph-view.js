@@ -8,7 +8,7 @@ import { escapeHtml } from './display.js';
 import { icon } from './icons.js';
 import { isSymbolic, isName, isMatrix, isVector, isList, Real } from '../rpl/types.js';
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians, getPict, subscribe as subscribeState } from '../rpl/state.js';
-import { plotSettings, pictGrid, pictPoint } from '../rpl/ops/graphics.js';
+import { plotSettings, pictWindow, pictGrid, pictPoint } from '../rpl/ops/graphics.js';
 import { downloadFile } from '../rpl/persist.js';
 
 export { stackValueToTrace, traceToStackValues };
@@ -393,7 +393,7 @@ export class GraphView {
 
   applyPlotOp(kind, stack, data = null) {
     if (kind === 'draw' || kind === 'pview') {
-      const window = pparView() ?? this.view;
+      const window = (kind === 'pview' ? pictWindow() : pparView()) ?? this.view;
       this.view = kind === 'pview' ? pviewWindow(data, window) : window;
       this.draw();
       return;

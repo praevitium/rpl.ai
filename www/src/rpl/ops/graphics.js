@@ -85,12 +85,18 @@ function _axesSetting(v) {
 }
 
 // What a plot takes from PPAR, as plain numbers; null until something stores PPAR.
-export function plotSettings() {
-  if (!isList(varRecall('PPAR'))) return null;
-  const [lo, hi, indep, res, axes, , depend] = plotParameters();
-  const view = isComplex(lo) && isComplex(hi) && hi.re > lo.re && hi.im > lo.im
+// The window PICT spans: PPAR's corners, the 50g's defaults until PPAR exists.
+export function pictWindow() {
+  const [lo, hi] = plotParameters();
+  return isComplex(lo) && isComplex(hi) && hi.re > lo.re && hi.im > lo.im
     ? { xmin: lo.re, xmax: hi.re, ymin: lo.im, ymax: hi.im }
     : null;
+}
+
+export function plotSettings() {
+  if (!isList(varRecall('PPAR'))) return null;
+  const [, , indep, res, axes, , depend] = plotParameters();
+  const view = pictWindow();
   const variable = _variableSetting(indep, 'X');
   return {
     view,
