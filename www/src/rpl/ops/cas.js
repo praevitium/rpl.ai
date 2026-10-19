@@ -5,7 +5,7 @@ import { buildGiacCmd, giacToAst, splitGiacList, astToGiac, isGiacErrorString } 
 import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction, LOGIC_ARITY, formatAlgebra, astEqual } from '../algebra.js';
 import { getComplexMode, getCasVx, setCasVx, getApproxMode, getCasModulo, setApproxMode, setComplexMode, resetCasVx, resetCasModulo } from '../state.js';
 import { register, lookup } from './registry.js';
-import { _astToRplValue, _pushCasResult, _isSymOperand, _toAst, _substitute, _withListUnary, _withTaggedUnary, _withVMUnary, recallVar, storeVar, _evalSymbolic, TRUE, FALSE } from './internal.js';
+import { _astToRplValue, _pushCasResult, _isSymOperand, _toAst, _substitute, _withListUnary, _withTaggedUnary, _withVMUnary, recallVar, storeVar, _evalSymbolic, TRUE, FALSE, _expandUserCalls } from './internal.js';
 
 
 
@@ -264,6 +264,23 @@ function _polyArith(giacFn, argc, order) {
 register('DIV2', _polyArith('quorem', 2, [0, 1]), { category: 'Polynomials', categoryOrder: 8.6, label: "DIV2" });
 register('EGCD', _polyArith('egcd', 2, [2, 0, 1]), { category: 'Polynomials', categoryOrder: 8.7, label: "EGCD" });
 register('ABCUV', _polyArith('abcuv', 3, [0, 1]), { category: 'Polynomials', categoryOrder: 8.8, label: "ABCUV" });
+
+// CHINREM ( [a m] [b n] → [c m*n] ): Giac's chinrem in the polynomials' variable. The solution comes reduced modulo
+// m*n: 9*X+23 over X^2+5*X+6 for the AUR's example, which shows X^3+2*X^2+5 over -(X^2+5*X+6), the same congruences.
+register('CHINREM', (s) => {
+  const [u, v] = s.popN(2);
+  const congruence = (w) => {
+    const items = isVector(w) || isList(w) ? w.items : [];
+    if (items.length !== 2) throw new RPLError('Bad argument type');
+    return items.map(_astArg);
+  };
+  const [p, q] = [congruence(u), congruence(v)];
+  const x = _mainVar(...p, ...q);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const parts = splitGiacList(giac.caseval(`chinrem([${p.map(astToGiac).join(',')}],[${q.map(astToGiac).join(',')}],${x})`));
+  if (parts?.length !== 2) throw new RPLError('Bad argument value');
+  s.push(Vector(parts.map((t) => _casValue(giacToAst(t)))));
+}, { category: 'Polynomials', categoryOrder: 8.93, label: "CHINREM" });
 
 // AUR: a 2×n matrix of x and y values gives the polynomial through them, over one denominator.
 register('LAGRANGE', (s) => {
@@ -675,6 +692,59 @@ register('SIGNTAB', (s) => {
   items.push(Symbolic(AstVar('∞')));
   s.push(RList(items));
 }, { category: 'CAS / symbolic', categoryOrder: 10.6, label: "SIGNTAB" });
+
+// DOMAIN ( f → { -∞ mark x1 mark … +∞ } ): where f, user functions expanded, is defined (+) or not (?) along the real
+// line, from Giac's domain conditions; a lone point it excludes, as 0 for 1/X, is left out, as the AUR says.
+const _numericValue = (ast) => {
+  const v = algebraEvalAst(ast, (name) => (name === 'π' ? Math.PI : undefined));
+  return astIsNum(v) ? v.value : NaN;
+};
+
+function _domainHolds(ast, x, t) {
+  if (ast.kind === 'fn' && (ast.name === 'AND' || ast.name === 'OR')) {
+    const parts = ast.args.map((a) => _domainHolds(a, x, t));
+    return ast.name === 'AND' ? parts.every(Boolean) : parts.some(Boolean);
+  }
+  if (ast.kind !== 'bin' || !(ast.op in _BOUNDS)) return true;
+  const side = (a) => (a.kind === 'var' && a.name === x ? t : _numericValue(a));
+  return _BOUNDS[ast.op](side(ast.l), side(ast.r));
+}
+
+const _BOUNDS = { '<': (a, b) => a < b, '>': (a, b) => a > b, '≤': (a, b) => a <= b, '≥': (a, b) => a >= b };
+
+function _domainBounds(ast, x, out = []) {
+  if (ast.kind === 'fn') ast.args.forEach((a) => _domainBounds(a, x, out));
+  else if (ast.kind === 'bin' && ast.op in _BOUNDS) {
+    const bound = ast.l.kind === 'var' && ast.l.name === x ? ast.r : ast.r.kind === 'var' && ast.r.name === x ? ast.l : null;
+    if (bound) out.push([bound, _numericValue(bound)]);
+  }
+  return out;
+}
+
+const _usesUnknownFunction = (ast) => (ast.kind === 'fn' ? !isKnownFunction(ast.name) || ast.args.some(_usesUnknownFunction)
+  : ast.kind === 'bin' ? _usesUnknownFunction(ast.l) || _usesUnknownFunction(ast.r)
+    : ast.kind === 'neg' && _usesUnknownFunction(ast.arg));
+
+register('DOMAIN', (s) => {
+  const [v] = s.popN(1);
+  const expr = _expandUserCalls(_astArg(v));
+  if (_usesUnknownFunction(expr)) throw new RPLError('Unknown operator');
+  const x = _mainVar(expr);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const raw = String(giac.caseval(`domain(${astToGiac(expr)},${x})`)).trim();
+  const relations = (t) => t.replace(/>=/g, '≥').replace(/<=/g, '≤').replace(/<>/g, '≠');
+  const conditions = raw === x ? [] : (splitGiacList(raw) ?? [raw]).map((c) => giacToAst(relations(c)));
+  const bounds = conditions.flatMap((c) => _domainBounds(c, x));
+  if (!bounds.every(([, value]) => Number.isFinite(value))) throw new RPLError('Bad argument value');
+  const sorted = bounds.sort((a, b) => a[1] - b[1]).filter(([, value], i, all) => i === 0 || value - all[i - 1][1] > 1e-12);
+  const at = sorted.map(([, value]) => value);
+  const tests = at.length ? [at[0] - 1, ...at.slice(1).map((value, i) => (at[i] + value) / 2), at.at(-1) + 1] : [0];
+  const mark = (t) => Name(!conditions.length || conditions.some((c) => _domainHolds(c, x, t)) ? '+' : '?');
+  const items = [Symbolic(AstNeg(AstVar('∞'))), mark(tests[0])];
+  sorted.forEach(([ast], i) => items.push(_casValue(ast), mark(tests[i + 1])));
+  items.push(Symbolic(AstVar('∞')));
+  s.push(RList(items));
+}, { category: 'CAS / symbolic', categoryOrder: 10.65, label: "DOMAIN" });
 
 // AUR: the zeros of an expression, each once and without SOLVE's X= in front.
 register('ZEROS', (s) => {

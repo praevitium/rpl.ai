@@ -8822,3 +8822,23 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   const inf = runLine('∞').peek();
   assert(isSymbolic(inf) && format(inf) === '`∞`', '∞ executed gives the algebraic ∞');
 }
+
+// CHINREM and DOMAIN, with real Giac's answers.
+{
+  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
+  giac._clear();
+  giac._setFixture('chinrem([X^2+1,X+2],[X-1,X+3],X)', '[9*X+23,X^2+5*X+6]');
+  assert(shown("[ 'X^2+1' 'X+2' ] [ 'X-1' 'X+3' ] CHINREM") === '[ `9*X + 23` `X^2 + 5*X + 6` ]',
+    'CHINREM solves the AUR\'s congruences, reduced modulo the product');
+  assertThrows(() => runLine("[ 'X^2+1' ] [ 'X-1' 'X+3' ] CHINREM"), /Bad argument type/, 'CHINREM wants an expression and a modulus in each');
+  giac._setFixture('domain(sqrt(X+1),X)', 'X>=-1');
+  giac._setFixture('domain(sqrt(X^2-1),X)', '[X<=-1,X>=1]');
+  giac._setFixture('domain(1/X,X)', 'X<>0');
+  runLine("'F7(A)=√(A+1)' DEFINE");
+  assert(shown("'F7(X)' DOMAIN") === '{ `-∞` ? -1 + `∞` }', 'DOMAIN gives the AUR\'s list for a defined √(A+1)');
+  assert(shown("'√(X^2-1)' DOMAIN") === '{ `-∞` + -1 ? 1 + `∞` }', 'DOMAIN marks where the function is undefined between its bounds');
+  assert(shown("'1/X' DOMAIN") === '{ `-∞` + `∞` }', 'DOMAIN leaves out a rational singularity, as the AUR says');
+  assertThrows(() => runLine("'NOSUCHF(X)' DOMAIN"), /Unknown operator/, 'DOMAIN of a function it does not know is Unknown operator');
+  runLine("{ F7 } PURGE");
+  giac._clear();
+}
