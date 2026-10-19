@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.146 (2026-10-18)
+**Latest release:** v0.6.147 (2026-10-18)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.147 — 2026-10-18
+
+`→STR` writes numbers in the display format, as the AUR says, so
+`2 FIX "Total: " 12.3456 →STR +` gives `"Total: 12.35"`, where `→STR`
+always wrote them in STD; and a string given to `→STR` comes back as it
+is, where it came back wrapped in quotes. The LIST menu opens on the HP's
+folders: ELEM (GET, GETI, PUT, PUTI, SIZE, POS, HEAD, TAIL) and PROC
+(DOLIST, DOSUBS, NSUB, ENDSUB, STREAM, REVLIST, ADD, SORT, SEQ) from its
+PRG LIST menu, and CHARS (SUB, REPL, POS, SIZE, NUM, CHR, OBJ→, →STR,
+HEAD, TAIL, SREPL), its string menu, then OBJ→, →LIST, SUB and REPL,
+where its 35 keys ran over six pages. A string at level 1 shows whole,
+wrapping and keeping its line breaks as a selected level does, where it
+ended in an ellipsis with its newlines read as spaces.
 
 ---
 
