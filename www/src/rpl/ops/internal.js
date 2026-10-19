@@ -3,7 +3,7 @@ import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Nam
 import { RPLAbort, RPLError, Stack, setPushCoerce, checkTimeLimit } from '../stack.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, UnitNode as AstUnit, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, hasUnits, exactRational, isRealNum, isKnownFunction } from '../algebra.js';
 import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
-import { state as _calcState, getApproxMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd } from '../state.js';
+import { state as _calcState, getApproxMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd, withScratchState } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
 import { formatSource, currentDisplay } from '../formatter.js';
@@ -1935,6 +1935,27 @@ function _exactIntegerFn(name, args) {
   }
 }
 
+// A command named in an algebraic, NDIST(0,1,0) or TRNC(1.27,1), runs on a stack of its own when nothing above folds
+// it. One the algebra doesn't know as a function runs in scratch state, so a command such as SF changes nothing.
+function _commandCall(name, args, real) {
+  const op = lookup(name);
+  if (!op) return null;
+  const run = () => {
+    const s = new Stack();
+    args.forEach((a) => s.push(_numberValue(a, real)));
+    try {
+      op.fn(s);
+    } catch (e) {
+      if (e instanceof RPLError || e instanceof RPLAbort) return null;
+      throw e;
+    }
+    const v = s.depth === 1 ? s.pop() : null;
+    if (isReal(v)) return v.value.toNumber();
+    return isInteger(v) && v.value <= BigInt(Number.MAX_SAFE_INTEGER) && v.value >= -BigInt(Number.MAX_SAFE_INTEGER) ? Number(v.value) : null;
+  };
+  return isKnownFunction(name) ? run() : withScratchState(run);
+}
+
 function _angleAwareFnEval(name, args, real = false) {
   const x = args[0];
   const exact = real ? null : _exactIntegerFn(String(name).toUpperCase(), args);
@@ -1950,7 +1971,7 @@ function _angleAwareFnEval(name, args, real = false) {
     default: {
       const call = _callUserProgram(name, args.map((a) => _numberValue(a, real)));
       if (call) return call;
-      result = algebraDefaultFnEval(name, args);
+      result = algebraDefaultFnEval(name, args) ?? _commandCall(name, args, real);
     }
   }
   if (real) return result;

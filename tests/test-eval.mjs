@@ -497,3 +497,17 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(s.depth === 2 && isString(s.peek(2)) && s.peek(2).value === 'rpl.ai 9.9.9' && isString(s.peek()) && /GPL-3\.0/.test(s.peek().value),
     'VERSION pushes "rpl.ai <version>" and the copyright line');
 }
+
+// A built-in command named in an algebraic runs on its numeric arguments when no function rule folds it, as on the HP.
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top("'UTPN(0,1,0.5)' EVAL") === '0.308537538726', 'UTPN in an algebraic evaluates');
+  assert(top("'NDIST(0,1,0)' →NUM") === '0.398942280401', 'NDIST in an algebraic evaluates under →NUM');
+  assert(top("'TRNC(1.27,1)' →NUM") === '1.2', 'TRNC with two arguments evaluates under →NUM');
+  assert(top("'UTPC(2,3)' →NUM") === '0.223130160148', 'UTPC with two arguments evaluates under →NUM');
+  assert(top("'GAMMA(2.5)' EVAL") === '1.32934038818', 'GAMMA of a non-integer evaluates');
+  assert(top("'MANT(123)' EVAL") === '`MANT(123)`', 'EXACT mode keeps an inexact result of integers symbolic');
+  assert(format(runLine("'SF(5)' EVAL 5 FS?").peek()) === '0.', 'a command that changes state runs in scratch state, so SF in an algebraic sets nothing');
+  assert(top("'DUP(3)' EVAL") === '`DUP(3)`', 'a command that leaves other than one result stays symbolic');
+  runLine('5 CF');
+}

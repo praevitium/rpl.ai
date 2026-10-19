@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.29 (2026-10-19)
+**Latest release:** v0.7.30 (2026-10-19)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.30 — 2026-10-19
+
+- A built-in command named in an algebraic now runs on its numbers, as on
+  the HP: `'UTPN(0,1,0.5)' EVAL` gives 0.308537538726, and
+  `'TRNC(1.27,1)' →NUM` gives 1.2. Before, NDIST, UTPN, UTPC, UTPF, UTPT,
+  TRNC, RND, PSI and others stayed symbolic, and GAMMA worked only for
+  whole numbers. A command that isn't one of the algebra's own functions
+  runs in a scratch copy of the calculator, so `'SF(5)' EVAL` changes no
+  flag, and one that doesn't leave exactly one number stays as written.
 
 ## v0.7.29 — 2026-10-19
 
