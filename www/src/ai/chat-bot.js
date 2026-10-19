@@ -316,7 +316,7 @@ function appendSpans(parent, text) {
   }
 }
 
-function renderInlineMarkdown(text) {
+export function renderInlineMarkdown(text) {
   const frag = document.createDocumentFragment();
   appendSpans(frag, text);
   return frag;

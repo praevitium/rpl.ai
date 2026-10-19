@@ -4,13 +4,15 @@ export class Toasts {
   constructor(el) { this.el = el; }
 
   // A toast with a key replaces the one before it with that key; a transient one also goes at the next press outside it.
+  // The message is text, or a node such as a tutor step's title with its math.
   show(message, { action = '', onAction = null, timeout = 3200, error = false, key = '', transient = false } = {}) {
     if (!this.el) return;
     if (key) this.dismiss(key);
     const t = document.createElement('div');
     t.className = `toast${error ? ' err' : ''}`;
     if (key) t.dataset.key = key;
-    t.innerHTML = `<span>${escapeHtml(message)}</span>${action ? `<button type="button">${escapeHtml(action)}</button>` : ''}`;
+    t.innerHTML = `<span></span>${action ? `<button type="button">${escapeHtml(action)}</button>` : ''}`;
+    t.firstChild.append(message);
     const remove = () => t.remove();
     t.querySelector('button')?.addEventListener('click', () => { remove(); onAction?.(); });
     this.el.appendChild(t);

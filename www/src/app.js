@@ -52,7 +52,7 @@ import {
   shareLink, sharedSource, sharedText,
 } from './rpl/persist.js';
 import { giac } from './rpl/cas/giac-engine.mjs';
-import { ChatBot } from './ai/chat-bot.js';
+import { ChatBot, renderInlineMarkdown } from './ai/chat-bot.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -89,6 +89,13 @@ function sigmaDataNote(data) {
 }
 
 const modulusNote = () => `The modular commands work modulo ${getCasModulo()}`;
+
+// A tutor step's title with its math, as the card shows it; the keys stay text, where * would read as emphasis.
+function tutorNote(step, tail) {
+  const note = renderInlineMarkdown(step.title);
+  note.append(tail);
+  return note;
+}
 
 class App {
   constructor() {
@@ -139,8 +146,8 @@ class App {
       tools: this._assistantTools(),
       getContext: () => this._assistantContext(),
       onStatus: (status) => this.drawers?.setAssistantConnected(status === 'ready'),
-      onTutorMine: (step, check) => this._tutorAside(`${step.title}. Keys: ${step.keys || step.rpl}`, 'Check', check),
-      onTutorShow: (step) => this._tutorAside(`${step.title}: done`, 'Continue'),
+      onTutorMine: (step, check) => this._tutorAside(tutorNote(step, `. Keys: ${step.keys || step.rpl}`), 'Check', check),
+      onTutorShow: (step) => this._tutorAside(tutorNote(step, ': done'), 'Continue'),
     });
     this.chatBot.setMode(this.prefs.assistantMode, { tutorStyle: this.prefs.tutorStyle });
     this.drawers = new Drawers({ rail: $('rail'), el: $('drawer'), scrim: $('scrim'), app: this });

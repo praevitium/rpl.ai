@@ -628,6 +628,12 @@ import { readFileSync } from 'node:fs';
          'the tutor\'s markdown takes the reply styles, so its code and tables are drawn and wide math scrolls with an edge fade');
   assert(/\.tut-b \{[^}]*grid-template-columns: minmax\(0, 1fr\)/.test(css),
          'a tutor step\'s column keeps to the card, so a wide formula scrolls instead of running past it');
+  const app = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const toast = readFileSync(new URL('../www/src/ui/toast.js', import.meta.url), 'utf8');
+  assert(/const note = renderInlineMarkdown\(step\.title\);\s*note\.append\(tail\);/.test(app)
+           && /this\._tutorAside\(tutorNote\(step, `\. Keys: \$\{step\.keys \|\| step\.rpl\}`\), 'Check', check\)/.test(app)
+           && /t\.firstChild\.append\(message\);/.test(toast),
+         'the note a phone shows for I\'ll do it and Show me renders the step title\'s math, with its keys left as typed');
 }
 
 // session367: classifyMarkdownLine — the per-line block-role classifier lifted
