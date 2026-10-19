@@ -20,8 +20,11 @@ const CONSTS = Object.freeze({
   e: Math.E,
 });
 
-function bindIndependentVariable(v) {
-  return { x: v, X: v, t: v, T: v, θ: v, theta: v };
+// PPAR's independent variable, when it names one, is bound beside the usual X, T and θ.
+function bindIndependentVariable(v, name) {
+  const bound = { x: v, X: v, t: v, T: v, θ: v, theta: v };
+  if (name) bound[name] = v;
+  return bound;
 }
 
 export function nextTraceColor(index) {
@@ -87,7 +90,7 @@ export function sampleFunction(ast, xMin, xMax, n, env, opts = {}) {
   const pts = [];
   for (let i = 0; i < count; i++) {
     const x = xMin + dx * i;
-    const y = evalNumeric(ast, { ...env, ...bindIndependentVariable(x) }, opts);
+    const y = evalNumeric(ast, { ...env, ...bindIndependentVariable(x, opts.indep) }, opts);
     pts.push([x, y]);
   }
   return segmentPoints(pts, jump);
@@ -99,7 +102,7 @@ export function samplePolar(ast, thetaMin, thetaMax, n, env, opts = {}) {
   const pts = [];
   for (let i = 0; i < count; i++) {
     const th = thetaMin + d * i;
-    const r = evalNumeric(ast, { ...env, ...bindIndependentVariable(th) }, opts);
+    const r = evalNumeric(ast, { ...env, ...bindIndependentVariable(th, opts.indep) }, opts);
     if (!Number.isFinite(r)) { pts.push([NaN, NaN]); continue; }
     const rad = (opts.toRad || (x => x))(th);
     pts.push([r * Math.cos(rad), r * Math.sin(rad)]);
@@ -113,7 +116,7 @@ export function sampleParametric(astX, astY, tMin, tMax, n, env, opts = {}) {
   const pts = [];
   for (let i = 0; i < count; i++) {
     const t = tMin + dt * i;
-    const local = { ...env, ...bindIndependentVariable(t) };
+    const local = { ...env, ...bindIndependentVariable(t, opts.indep) };
     pts.push([
       evalNumeric(astX, local, opts),
       evalNumeric(astY, local, opts),
@@ -190,6 +193,22 @@ export function niceTicks(min, max, maxTicks = 8) {
     if (t >= min - step * 1e-6 && t <= max + step * 1e-6) ticks.push(t);
   }
   if (ticks.length === 0) ticks.push(min);
+  return { ticks, step };
+}
+
+// Ticks every spacing from the axes' crossing, as AXES and ATICK set them, in whole multiples of it when they would
+// crowd the axis; nice ticks when no spacing is set.
+export function axisTicks(min, max, origin = 0, spacing = 0, maxTicks = 8) {
+  const nice = niceTicks(min, max, 8);
+  if ((!(spacing > 0) && origin === 0) || !(max > min) || !Number.isFinite(min + max + origin)) return nice;
+  const base = spacing > 0 ? spacing : nice.step;
+  const step = base * Math.max(1, Math.ceil((max - min) / base / Math.max(2, maxTicks)));
+  const ticks = [];
+  for (let k = Math.ceil((min - origin) / step), n = 0; n <= maxTicks + 2; k++, n++) {
+    const t = Number((origin + k * step).toPrecision(12));
+    if (t > max + step * 1e-6) break;
+    ticks.push(t);
+  }
   return { ticks, step };
 }
 
@@ -574,7 +593,42 @@ function traceContext(view, opts = {}) {
     fitModel: opts.fitModel || null,
     env: opts.env || {},
     snapX: opts.snapX,
+    indep: opts.indep || null,
+    res: opts.res || null,
   };
+}
+
+const MAX_SAMPLES_PER_PIXEL = 4;
+const MAX_STEPS = 20000;
+
+const inIndepRange = (ctx, x) => !ctx.indep?.range || (x >= ctx.indep.range[0] && x <= ctx.indep.range[1]);
+
+// FUNCTION plots across the window, or only over INDEP's range; RES sets the interval between values, in user units
+// or in pixels, counted from where RES says.
+function functionSampling(ctx) {
+  const { view, width, res } = ctx;
+  const range = ctx.indep?.range;
+  const from = Math.max(view.xmin, range?.[0] ?? -Infinity);
+  const to = Math.min(view.xmax, range?.[1] ?? Infinity);
+  if (!(to > from)) return null;
+  const pixel = (view.xmax - view.xmin) / width;
+  const step = res?.step ?? (res?.pixels ?? 0) * pixel;
+  if (!(step > 0)) return { from, to, count: Math.max(2, ((to - from) / pixel + 1e-9) | 0) };
+  const anchor = res.from ?? from;
+  const first = anchor + Math.floor((from - anchor) / step) * step;
+  let last = first + Math.ceil((to - first) / step) * step;
+  if (range && last > range[1] + step * 1e-9) last -= step;
+  const count = Math.round((last - first) / step) + 1;
+  return { from: first, to: last, count: Math.min(count, Math.ceil((to - from) / pixel) * MAX_SAMPLES_PER_PIXEL) };
+}
+
+// POLAR and PARAMETRIC step through their range by RES in user units; a RES in pixels means nothing to them.
+function stepSampling(range, res, fallback) {
+  const step = res?.step;
+  if (!(step > 0)) return { ...range, count: fallback };
+  const count = Math.floor((range.max - range.min) / step + 1e-9) + 1;
+  if (count > MAX_STEPS) return { ...range, count: MAX_STEPS };
+  return { min: range.min, max: range.min + (count - 1) * step, count: Math.max(2, count) };
 }
 
 function kindSpec(t) {
@@ -593,15 +647,16 @@ export const TRACE_KINDS = Object.freeze({
     sample(t, ctx) {
       if (!t.expr) return [];
       const view = ctx.view;
+      const xs = functionSampling(ctx);
+      if (!xs) return [];
       return sampleFunction(
-        parsePlotExpr(t.expr), view.xmin, view.xmax,
-        Math.max(2, ctx.width | 0), ctx.env,
-        { ...ctx.angleOpts, ySpan: view.ymax - view.ymin },
+        parsePlotExpr(t.expr), xs.from, xs.to, xs.count, ctx.env,
+        { ...ctx.angleOpts, ySpan: view.ymax - view.ymin, indep: ctx.indep?.name },
       );
     },
     evalAt(t, x, ctx) {
-      if (!t.expr) return NaN;
-      return evalNumeric(parsePlotExpr(t.expr), bindIndependentVariable(x), ctx.angleOpts || {});
+      if (!t.expr || !inIndepRange(ctx, x)) return NaN;
+      return evalNumeric(parsePlotExpr(t.expr), bindIndependentVariable(x, ctx.indep?.name), ctx.angleOpts || {});
     },
     fromStack(v) { return expressionFromStack('function', v); },
     toStack: expressionToStack,
@@ -616,10 +671,10 @@ export const TRACE_KINDS = Object.freeze({
     label: functionLabel,
     sample(t, ctx) {
       if (!t.expr) return [];
-      const th = ctx.thetaRange;
+      const th = stepSampling(ctx.thetaRange, ctx.res, 720);
       return samplePolar(
-        parsePlotExpr(t.expr), th.min, th.max, 720,
-        ctx.env, ctx.angleOpts,
+        parsePlotExpr(t.expr), th.min, th.max, th.count,
+        ctx.env, { ...ctx.angleOpts, indep: ctx.indep?.name },
       );
     },
     evalAt() { return NaN; },
@@ -640,10 +695,10 @@ export const TRACE_KINDS = Object.freeze({
     label: parametricLabel,
     sample(t, ctx) {
       if (!t.expr || !t.exprY) return [];
-      const tr = ctx.tRange;
+      const tr = stepSampling(ctx.tRange, ctx.res, 480);
       return sampleParametric(
         parsePlotExpr(t.expr), parsePlotExpr(t.exprY),
-        tr.min, tr.max, 480, ctx.env, ctx.angleOpts,
+        tr.min, tr.max, tr.count, ctx.env, { ...ctx.angleOpts, indep: ctx.indep?.name },
       );
     },
     evalAt() { return NaN; },

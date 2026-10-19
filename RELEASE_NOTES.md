@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.20 (2026-10-19)
+**Latest release:** v0.7.21 (2026-10-19)
 
 ---
 
@@ -20,6 +20,27 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.21 — 2026-10-19
+
+Plots follow more of PPAR: the independent variable, the resolution and the
+axes.
+
+- INDEP names a plot's variable, beside X, T and θ: `'A' INDEP` plots
+  `'A^2'`. With a range, `{ X 0 2 } INDEP` draws FUNCTION only from 0 to 2,
+  and POLAR and PARAMETRIC sweep that range instead of a full turn or -10
+  to 10.
+- RES sets the step between plotted values: `.5 RES` plots a point every
+  half unit, counted from the start of INDEP's range or the window's left
+  edge. A binary `#n` counts the plot view's own pixels, and only FUNCTION
+  takes one, so plots stay smooth at 0 as before.
+- AXES moves the axes' crossing, and the grid lines and labels follow it;
+  a tick spacing in units, from AXES or ATICK, draws a grid line at every
+  multiple of it from the crossing, or every few multiples when they would
+  crowd. A spacing in pixels, the default `#10`, keeps the plot's own grid.
+- DIFFEQ still starts from its own initial value, level 2's, at x = 0 or
+  the window's left edge. DEPND and the axis labels are only stored, for
+  LABEL and the rest of PICT to come.
 
 ## v0.7.20 — 2026-10-19
 

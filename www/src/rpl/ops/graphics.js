@@ -48,6 +48,48 @@ export function plotParameters() {
   return PPAR_DEFAULT().map((v, i) => items[i] ?? v);
 }
 
+const _number = (v) => (isReal(v) || isInteger(v) ? toRealOrThrow(v) : NaN);
+
+function _indepSetting(v) {
+  const [name, a, b] = isList(v) ? v.items : [v];
+  const range = [_number(a), _number(b)].sort((p, q) => p - q);
+  return { name: isName(name) ? name.id : 'X', range: range[1] > range[0] ? range : null };
+}
+
+// RES counts from the start of the plotting range, or the window's left edge without one.
+function _resSetting(v, from) {
+  if (isBinaryInteger(v)) return v.value > 0n ? { pixels: Number(v.value), from } : null;
+  const step = Math.abs(_number(v));
+  return step > 0 ? { step, from } : null;
+}
+
+// A tick spacing in pixels is left to the plot view, whose pixels aren't the 50g's.
+function _axesSetting(v) {
+  const [origin, tick] = isList(v) ? v.items : [v];
+  const ticks = isList(tick) ? tick.items.map(_number) : [_number(tick), _number(tick)];
+  return {
+    x: isComplex(origin) ? origin.re : 0,
+    y: isComplex(origin) ? origin.im : 0,
+    tick: ticks.length === 2 && ticks.every((t) => t > 0) ? ticks : null,
+  };
+}
+
+// What a plot takes from PPAR, as plain numbers; null until something stores PPAR.
+export function plotSettings() {
+  if (!isList(varRecall('PPAR'))) return null;
+  const [lo, hi, indep, res, axes] = plotParameters();
+  const view = isComplex(lo) && isComplex(hi) && hi.re > lo.re && hi.im > lo.im
+    ? { xmin: lo.re, xmax: hi.re, ymin: lo.im, ymax: hi.im }
+    : null;
+  const variable = _indepSetting(indep);
+  return {
+    view,
+    indep: variable,
+    res: _resSetting(res, variable.range?.[0] ?? view?.xmin ?? 0),
+    axes: _axesSetting(axes),
+  };
+}
+
 function _setPpar(changes) {
   const items = plotParameters();
   for (const [i, v] of Object.entries(changes)) items[i] = v;

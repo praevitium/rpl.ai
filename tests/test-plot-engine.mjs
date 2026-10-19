@@ -5,7 +5,7 @@ import {
   pixelToWorld, zoomView, panView, pinchView, defaultView, boundsOfPoints,
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit, sampleDiffEq,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
-  evalTraceAtX, sampleTrace, traceInputError, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace,
+  evalTraceAtX, sampleTrace, traceInputError, axisTicks, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace,
 } from '../www/src/ui/plot-engine.js';
 import { Matrix, Vector, Real, Integer, Symbolic, Program, RList, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
 import { lookup, setGraphicsHook } from '../www/src/rpl/ops.js';
@@ -498,4 +498,44 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assertThrows(() => runLine('5 PMIN'), /Bad argument type/, 'PMIN wants a complex number');
   assertThrows(() => runLine('0 1 SCALE'), /Bad argument value/, 'SCALE refuses a zero scale');
   varPurge('PPAR');
+}
+
+// What plots take from PPAR: INDEP's name and range, RES's step and the axes' crossing and tick spacing.
+{
+  const { varPurge } = await import('../www/src/rpl/state.js');
+  const { plotSettings } = await import('../www/src/rpl/ops/graphics.js');
+  const view = { xmin: -2, xmax: 3, ymin: -1, ymax: 5 };
+  const xs = (t, opts) => sampleTrace(t, view, { width: 500, ...plotSettings(), ...opts }).flat().map(([x]) => x);
+  varPurge('PPAR');
+  assert(plotSettings() === null, 'plotSettings: nothing until PPAR is stored');
+  runLine('-2 3 XRNG');
+  const fresh = plotSettings();
+  assert(fresh.view.xmin === -2 && fresh.view.xmax === 3 && fresh.indep.name === 'X' && fresh.indep.range === null
+    && fresh.res === null && fresh.axes.x === 0 && fresh.axes.tick === null, 'plotSettings: XRNG window with the default INDEP, RES and AXES');
+  assert(xs({ kind: 'function', expr: 'X' }).length === 500, 'FUNCTION: default RES samples every pixel across the window');
+  runLine("{ 'A' 0 2 } INDEP .5 RES");
+  const ys = sampleTrace({ kind: 'function', expr: 'A^2' }, view, { width: 500, ...plotSettings() }).flat().map(([, y]) => y);
+  assert(ys.join(' ') === '0 0.25 1 2.25 4', 'FUNCTION: INDEP names the variable and its range, RES the step');
+  const at = (x) => evalTraceAtX({ kind: 'function', expr: 'A^2' }, x, plotSettings());
+  assert(at(1.5) === 2.25 && Number.isNaN(at(2.5)), 'FUNCTION: the readout follows INDEP\'s range');
+  runLine('#10d RES');
+  const pixels = xs({ kind: 'function', expr: 'A' });
+  assert(pixels.length === 21 && pixels[0] === 0 && Math.abs(pixels[20] - 2) < 1e-12, 'FUNCTION: RES in pixels, ten pixels of 0.01 from the range start');
+  runLine("'X' INDEP 1 RES");
+  assert(xs({ kind: 'function', expr: 'X' }).join(' ') === '-2 -1 0 1 2 3', 'FUNCTION: a user-unit RES counts from the window edge');
+  runLine("{ 'T' 0 1 } INDEP .25 RES");
+  const ppar = plotSettings();
+  const curve = sampleTrace({ kind: 'parametric', expr: 'T', exprY: 'T^2' }, view, {
+    width: 500, ...ppar, tRange: { min: ppar.indep.range[0], max: ppar.indep.range[1] },
+  }).flat();
+  assert(curve.map(([x, y]) => `${x},${y}`).join(' ') === '0,0 0.25,0.0625 0.5,0.25 0.75,0.5625 1,1', 'PARAMETRIC: INDEP\'s range stepped by RES');
+  runLine('{ (1,2) { 2 .5 } } AXES');
+  const { axes } = plotSettings();
+  assert(axes.x === 1 && axes.y === 2 && axes.tick.join(' ') === '2 0.5', 'plotSettings: AXES crossing and per-axis ticks');
+  runLine('#10d ATICK');
+  assert(plotSettings().axes.tick === null, 'plotSettings: a tick spacing in pixels is left to the view');
+  varPurge('PPAR');
+  assert(JSON.stringify(axisTicks(-6.5, 6.5)) === JSON.stringify(niceTicks(-6.5, 6.5, 8)), 'axisTicks: nice ticks without AXES or ATICK');
+  assert(axisTicks(-2, 3, 0.5, 1, 16).ticks.join(' ') === '-1.5 -0.5 0.5 1.5 2.5', 'axisTicks: every ATICK unit from the crossing');
+  assert(axisTicks(-10, 10, 0, 0.5, 10).ticks.join(' ') === '-10 -8 -6 -4 -2 0 2 4 6 8 10', 'axisTicks: whole multiples of a crowded spacing');
 }

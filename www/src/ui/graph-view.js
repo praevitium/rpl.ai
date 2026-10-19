@@ -1,13 +1,14 @@
 import {
   TRACE_COLORS, TRACE_KINDS, nextTraceColor, defaultView, zoomView, panView, pinchView,
-  worldToPixel, pixelToWorld, niceTicks, hasUsableSpan,
+  worldToPixel, pixelToWorld, axisTicks, hasUsableSpan,
   sampleTrace, fitViewToTraces, evalTraceAtX,
   stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace,
 } from './plot-engine.js';
 import { escapeHtml } from './display.js';
 import { icon } from './icons.js';
-import { isSymbolic, isMatrix, isVector, isList, isComplex } from '../rpl/types.js';
+import { isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians } from '../rpl/state.js';
+import { plotSettings } from '../rpl/ops/graphics.js';
 import { downloadFile } from '../rpl/persist.js';
 
 export { stackValueToTrace, traceToStackValues };
@@ -33,10 +34,21 @@ const IDLE_READOUT = TOUCH
 // Once PPAR holds a plot window, as XRNG, YRNG and the other plot commands leave it, a plot starts there as on the
 // HP; until then the view fits what it draws.
 function pparView() {
-  const par = varRecall('PPAR');
-  const [lo, hi] = isList(par) ? par.items : [];
-  if (!isComplex(lo) || !isComplex(hi) || !(hi.re > lo.re) || !(hi.im > lo.im)) return null;
-  return { xmin: lo.re, xmax: hi.re, ymin: lo.im, ymax: hi.im };
+  return plotSettings()?.view ?? null;
+}
+
+// How traces are sampled: INDEP's range is POLAR's and PARAMETRIC's, and RES their step, once PPAR sets them.
+function sampleOpts(extra) {
+  const ppar = plotSettings();
+  const range = ppar?.indep.range;
+  return {
+    angleOpts: angleOpts(),
+    thetaRange: range ? { min: range[0], max: range[1] } : thetaRange(),
+    tRange: range ? { min: range[0], max: range[1] } : { min: -10, max: 10 },
+    indep: ppar?.indep ?? null,
+    res: ppar?.res ?? null,
+    ...extra,
+  };
 }
 
 function canSharePng() {
@@ -441,12 +453,11 @@ export class GraphView {
 
   _hoverOpts() {
     const rect = this._canvas.getBoundingClientRect();
-    return {
-      angleOpts: angleOpts(),
+    return sampleOpts({
       snapX: (this.view.xmax - this.view.xmin) * 0.03,
       view: this.view,
       width: rect.width || 240,
-    };
+    });
   }
 
   _hoverFromEvent(ev) {
@@ -655,14 +666,11 @@ export class GraphView {
 
   fitView() {
     const wrap = this._canvas?.parentElement;
-    this.view = fitViewToTraces(this.traces, this.view, {
-      angleOpts: angleOpts(),
-      thetaRange: thetaRange(),
-      tRange: { min: -10, max: 10 },
+    this.view = fitViewToTraces(this.traces, this.view, sampleOpts({
       width: wrap?.clientWidth || 240,
       height: wrap?.clientHeight,
       tools: this._toolsCorner(wrap),
-    });
+    }));
     this.draw();
   }
 
@@ -749,10 +757,13 @@ export class GraphView {
     this._drawHover(ctx, width, height);
   }
 
+  // The axes cross where AXES puts them, (0,0) by default, with grid lines every ATICK units from there.
   _drawGrid(ctx, width, height) {
     const view = this.view;
-    const xt = niceTicks(view.xmin, view.xmax, 8);
-    const yt = niceTicks(view.ymin, view.ymax, 8);
+    const axes = plotSettings()?.axes ?? { x: 0, y: 0, tick: null };
+    const xt = axisTicks(view.xmin, view.xmax, axes.x, axes.tick?.[0], width / 28);
+    const yt = axisTicks(view.ymin, view.ymax, axes.y, axes.tick?.[1], height / 18);
+    const [px0, py0] = worldToPixel(axes.x, axes.y, view, width, height);
     ctx.save();
     ctx.lineWidth = 1;
     const colors = this._colors;
@@ -760,27 +771,23 @@ export class GraphView {
     ctx.fillStyle = colors.label;
     for (const x of xt.ticks) {
       const [px] = worldToPixel(x, 0, view, width, height);
-      ctx.strokeStyle = Math.abs(x) < xt.step * 1e-9 ? colors.axis : colors.grid;
+      const onAxis = Math.abs(x - axes.x) < xt.step * 1e-9;
+      ctx.strokeStyle = onAxis ? colors.axis : colors.grid;
       ctx.beginPath();
       ctx.moveTo(px, 0);
       ctx.lineTo(px, height);
       ctx.stroke();
-      if (Math.abs(x) > xt.step * 1e-9) {
-        const [, py0] = worldToPixel(0, 0, view, width, height);
-        ctx.fillText(fmtAxis(x), px + 3, Math.min(height - 4, Math.max(12, py0 - 4)));
-      }
+      if (!onAxis) ctx.fillText(fmtAxis(x), px + 3, Math.min(height - 4, Math.max(12, py0 - 4)));
     }
     for (const y of yt.ticks) {
       const [, py] = worldToPixel(0, y, view, width, height);
-      ctx.strokeStyle = Math.abs(y) < yt.step * 1e-9 ? colors.axis : colors.grid;
+      const onAxis = Math.abs(y - axes.y) < yt.step * 1e-9;
+      ctx.strokeStyle = onAxis ? colors.axis : colors.grid;
       ctx.beginPath();
       ctx.moveTo(0, py);
       ctx.lineTo(width, py);
       ctx.stroke();
-      if (Math.abs(y) > yt.step * 1e-9) {
-        const [px0] = worldToPixel(0, 0, view, width, height);
-        ctx.fillText(fmtAxis(y), Math.min(width - 36, Math.max(4, px0 + 4)), py - 3);
-      }
+      if (!onAxis) ctx.fillText(fmtAxis(y), Math.min(width - 36, Math.max(4, px0 + 4)), py - 3);
     }
     ctx.restore();
   }
@@ -790,12 +797,7 @@ export class GraphView {
     if (!spec) return;
     let segs = [];
     try {
-      segs = sampleTrace(t, this.view, {
-        width,
-        angleOpts: angleOpts(),
-        thetaRange: thetaRange(),
-        tRange: { min: -10, max: 10 },
-      });
+      segs = sampleTrace(t, this.view, sampleOpts({ width }));
     } catch {
       return;
     }

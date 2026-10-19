@@ -879,9 +879,10 @@ Catalog and the command reference mark what is available. Not there yet:
   past due, the HP's alert annunciator ((•)) lights in the status line,
   and a tap on it brings the note back.
 - PICT and the drawing commands (PVIEW, ERASE, LINE, BOX, LABEL and the
-  rest). The plot-window commands (XRNG, YRNG, CENTR, SCALE and the rest) set
-  PPAR, and plots start in its window, but INDEP, DEPND, RES and AXES are only
-  stored so far
+  rest). The plot-window commands (XRNG, YRNG, CENTR, SCALE, INDEP, RES, AXES
+  and the rest) set PPAR, and plots start in its window, follow its INDEP and
+  RES and draw its axes, but DEPND, the axis labels and DIFFEQ's starting
+  values are only stored so far
 - the HP's numbered menus for MENU and TMENU (a list, a name holding one
   or 0 work), and DEF
 - parts of the CAS, such as DESOLVE and LDEC (SOLVE, SOLVEVX, ISOL,
