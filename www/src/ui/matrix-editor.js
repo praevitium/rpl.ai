@@ -1,7 +1,7 @@
 import { escapeHtml } from './display.js';
 import { writerKeys } from './input-area.js';
 import { parseEntry, fromTyped } from '../rpl/parser.js';
-import { format, withFractionMark, fractionMark } from '../rpl/formatter.js';
+import { format, withFractionMark, fractionMark, separatorMark } from '../rpl/formatter.js';
 import { Var, parseAlgebra } from '../rpl/algebra.js';
 import { sheetNumber, htmlTableToText } from '../rpl/sheet.js';
 import {
@@ -309,7 +309,8 @@ const SYMBOLS = Object.freeze([
   Object.freeze({ text: '∞', title: 'Infinity' }),
 ]);
 
-const FACE_TEXT = Object.freeze({ '−': '-', '×': '*', '÷': '/', 'yˣ': '^', SPC: ' ', ',': ',', '∠': '∠' });
+const FACE_TEXT = Object.freeze({ '−': '-', '×': '*', '÷': '/', 'yˣ': '^', SPC: ' ', '∠': '∠' });
+const MARK_FACES = Object.freeze({ '.': fractionMark, ',': separatorMark });
 const FACE_MOVES = Object.freeze({ '▲': [-1, 0], '▼': [1, 0], '◀': [0, -1], '▶': [0, 1] });
 const FACE_STEPS = Object.freeze({ TAB: 'next', '⇧TAB': 'prev', '⇧ENTER': 'down' });
 const onTouch = () => globalThis.matchMedia?.('(pointer: coarse)').matches === true;
@@ -539,7 +540,7 @@ export class MatrixEditor {
     else if (face === '( )') this._editCell('()', { caretBack: 1 });
     else if (face === 'EEX') this._editCell(eexText(this._textBeforeCaret()));
     else if (face === '+/-') this._toggleSign();
-    else if (FACE_TEXT[face] || /^[0-9a-z.+π∞]$/.test(face)) this._editCell(FACE_TEXT[face] ?? (face === '.' ? fractionMark() : face));
+    else if (FACE_TEXT[face] || MARK_FACES[face] || /^[0-9a-z+π∞]$/.test(face)) this._editCell(FACE_TEXT[face] ?? MARK_FACES[face]?.() ?? face);
     else this.app.notifyError(`${face} isn't available in the matrix writer.`);
   }
 

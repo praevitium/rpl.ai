@@ -1288,6 +1288,22 @@ setAngle('RAD');
   }
 }
 
+{
+  const { setUserFlag, clearUserFlag } = await import('../www/src/rpl/state.js');
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const spc = MAIN_KEYS.find((k) => k.primary === 'SPC');
+  const typed = () => {
+    const e = new Entry(new Stack());
+    e.type('(1');
+    spc.shiftRAction(e);
+    return e.buffer;
+  };
+  setUserFlag(-51);
+  const comma = typed();
+  clearUserFlag(-51);
+  assert(comma === '(1; ' && typed() === '(1, ', `keyboard: the , key types ; with -51 set, so 1 stays a whole number (${comma})`);
+}
+
 /* ================================================================
    session333: errorBeep — the error-flash piezo chirp (beep.js).  The
    only previously uncovered www/src/ui module.  errorBeep has two

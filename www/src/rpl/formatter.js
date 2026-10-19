@@ -20,6 +20,7 @@ export const currentDisplay = () => ({ mode: _state.displayMode || 'STD', digits
 export const withFractionMark = (text) => (testUserFlag(-51) ? commaFractionMark(text) : text);
 
 export const fractionMark = () => (testUserFlag(-51) ? ',' : '.');
+export const separatorMark = () => (testUserFlag(-51) ? ';' : ',');
 
 /* `context: 'stack'` ticks every Name, as the HP50 shows one on a stack
    level; nested items keep their own quoting and are not passed it. */

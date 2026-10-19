@@ -1,6 +1,6 @@
 import { icon } from './icons.js';
 import { escapeHtml } from './display.js';
-import { fractionMark } from '../rpl/formatter.js';
+import { fractionMark, separatorMark } from '../rpl/formatter.js';
 import { holdToClear } from './input-area.js';
 
 // Alpha a..z runs along the keypad's rows: a..f across the top row, g..l across the second,
@@ -188,7 +188,7 @@ export const MAIN_KEYS = [
   mk('SPC',   { shiftL: 'π',   shiftR: ',',
                 action: type(' '),
                 shiftLAction: type('π'),
-                shiftRAction: type(', ') }),
+                shiftRAction: (e) => e.type(`${separatorMark()} `) }),
   mk('ENTER', { className: 'enter', shiftR: '→NUM',
                 action:       enter,
                 shiftRAction: typeExecName('→NUM') }),
