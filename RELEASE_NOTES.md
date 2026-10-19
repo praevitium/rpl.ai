@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.147 (2026-10-18)
+**Latest release:** v0.6.148 (2026-10-18)
 
 ---
 
@@ -18,6 +18,23 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.148 — 2026-10-18
+
+`KEY`, the HP's key test, joins the program commands: it returns 0, or a
+key's row and column and 1 (81 for the left shift, 105 for Enter), so
+`« DO UNTIL KEY END »` waits for a key as the AUR's example does. A
+program polling it pauses after each 50 ms of running so a phone can
+take the key, and its stack and display keep updating meanwhile; at the
+command line `KEY` finds no key and returns 0. A program's message keeps
+its line breaks in the banner, so `"Line 1" 10 CHR + "Line 2" + MSGBOX`
+shows two lines, where it showed one. Stopping or finishing a `PROMPT`
+run while another program waits at a `MSGBOX` brings back the `MSGBOX`'s
+message, where the banner went blank. A program that `WAIT`s in a loop
+keeps its banner and stack steady, where both replayed their fade-in at
+every pause and flickered.
 
 ---
 
