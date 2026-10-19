@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.2 (2026-10-19)
+**Latest release:** v0.7.3 (2026-10-19)
 
 ---
 
@@ -20,6 +20,26 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.3 — 2026-10-19
+
+The fourth batch of missing HP 50g commands adds eleven for matrices and
+vector spaces, each giving the AUR's example:
+
+- `KER` and `IMAGE` give a basis of a matrix's kernel and image:
+  `[[1 1 2][2 1 3][3 1 4]] KER` gives `{ [ 1 1 -1 ] }` and IMAGE gives
+  `{ [ 1 0 -1 ] [ 0 1 2 ] }`.
+- `BASIS` gives a basis of the space a list of vectors spans, and
+  `IBASIS` one of the intersection of two such spaces.
+- `AXQ` turns a matrix into its quadratic form, and `QXA` turns a
+  quadratic form back into its matrix.
+- `SNRM` is the spectral norm (a vector's length, a matrix's largest
+  singular value), `SRAD` the spectral radius, and `SVL` the singular
+  values, largest first. SNRM and SRAD join the MATRIX menu's NORM folder,
+  SVL its FACTR folder.
+- `ISOM` names a 2-d or 3-d isometry: `[[0 -1][-1 0]] ISOM` gives
+  `{ [ 1 1 ] -1 }`, the reflection in y = -x. `MKISOM` builds one:
+  `'π/2' 1 MKISOM` gives `[[ 0 -1 ][ 1 0 ]]`.
 
 ## v0.7.2 — 2026-10-19
 
