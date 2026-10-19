@@ -588,6 +588,11 @@ import { readFileSync } from 'node:fs';
          'parseInlineSpans keeps a parenthesised part of an address and takes mailto links');
   assert(T(parseInlineSpans('[$x^2$ plot](https://a.b/c)')[0].content) === JSON.stringify([['math', 'x^2'], ['text', ' plot']]),
          'parseInlineSpans leaves a link\'s text to the inner pass, so math in it renders');
+  assert(T('See https://example.com/aur.') === JSON.stringify([['text', 'See '], ['url', 'https://example.com/aur'], ['text', '.']])
+           && T('(https://en.wikipedia.org/wiki/RPL_(programming_language))') === JSON.stringify([['text', '('], ['url', 'https://en.wikipedia.org/wiki/RPL_(programming_language)'], ['text', ')']])
+           && T('`https://a.b/c` and [x](https://a.b/d)').includes('"code"') && !T('`https://a.b/c` and [x](https://a.b/d)').includes('"url"')
+           && T('**https://a.b/c**') === JSON.stringify([['bold', 'https://a.b/c']]),
+         'parseInlineSpans links a bare http(s) address, leaving a sentence\'s closing punctuation and a closing bracket outside it and code and [text](url) as they were (it stayed plain text)');
   const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
   assert(/elem\('a', \{ href, target: '_blank', rel: 'noopener noreferrer' \}\)/.test(src),
          'a link opens in a new tab without giving it the page');
