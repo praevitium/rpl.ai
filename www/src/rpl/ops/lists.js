@@ -1,7 +1,7 @@
 import { isGrob, isList, isVector, Integer, Real, isSymbolic, Symbolic, isName, isReal, isInteger, isComplex, isNumber, toComplex, toRealOrThrow, isString, isBinaryInteger, isTagged, isMatrix, Str, RList, Vector, Matrix, isProgram, isRational, isUnit, Unit } from '../types.js';
 import { RPLError } from '../stack.js';
 import { Fn as AstFn, astEqual } from '../algebra.js';
-import { parseEntry as _parseEntryForObjTo } from '../parser.js';
+import { parseEntry as _parseEntryForObjTo, fromTyped } from '../parser.js';
 import { register, lookup, OPS } from './registry.js';
 import { isPict, replGrob, subGrob } from './graphics.js';
 import { setUserFlag, clearUserFlag } from '../state.js';
@@ -239,7 +239,7 @@ register('OBJ→', (s) => {
     return;
   }
   if (isString(v)) {
-    const parsed = _parseEntryForObjTo(v.value);
+    const parsed = _parseEntryForObjTo(fromTyped(v.value));
     for (const item of parsed) s.push(item);
     return;
   }

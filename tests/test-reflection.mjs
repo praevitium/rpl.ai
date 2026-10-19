@@ -3359,3 +3359,13 @@ function _roundTripProgram(prog) {
   assert(top('"IF 1 THEN 7 END" STR→') === '7', 'STR→ runs a structure');
   assert(top('"ZZZQ" STR→') === 'ZZZQ' && top('"`X+1`" STR→') === '`X + 1`', 'STR→ leaves an unknown name or an algebraic');
 }
+
+// Flag -51: →STR writes the comma fraction mark and STR→ and OBJ→ read it, as the HP's do.
+{
+  const str = (v) => (v?.type === 'string' ? v.value : format(v));
+  const s = runLine('-51 SF 1.5 →STR (1.5, 2) →STR "2,5" STR→ "(3,5;1)" OBJ→ -51 CF');
+  const got = s.snapshot().map(str).reverse();
+  assert(got.join(' | ') === '1,5 | (1,5; 2) | 2.5 | (3.5, 1)',
+    `→STR gives 1,5 and (1,5; 2), STR→ reads "2,5" and OBJ→ reads "(3,5;1)" with -51 set (${got.join(' | ')})`);
+  assert(runLine('1.5 →STR').peek().value === '1.5', '→STR gives the point again once -51 is clear');
+}

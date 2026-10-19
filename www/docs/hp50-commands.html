@@ -16033,6 +16033,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Evaluate String Command: Evaluates the text of a string as if the text were entered from the command line. OBJ→ also includes this function. STR→ is included for compatibility with the HP 28S.</p>
+  <p>In rpl.ai STR→ reads a string as the command line does, so with flag -51 set "2,5" STR→ gives 2.5 and "(3,5;1)" a complex number; OBJ→ on a string reads it the same way.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -16053,6 +16054,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Object to String Command: Converts any object to string form. The full-precision internal form of a number is not necessarily represented in the result string. To ensure that →STR preserves the full precision of a number, select Standard number display format or a wordsize of 64 bits (or both) before executing →STR. The result string includes the entire object, even if the displayed form of the object is too large to fit in the display. If the argument object is normally displayed in two or more lines, the result string will contain newline characters (character 10) at the end of each line. The newlines are displayed as the character ␍. If the argument object is already a string, →STR returns the string.</p>
+  <p>In rpl.ai →STR follows flag -51 as well as the display format: with -51 set, 1.5 →STR gives "1,5" and (1.5, 2) gives "(1,5; 2)".</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">

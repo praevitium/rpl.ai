@@ -6,8 +6,8 @@ import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, div
 import { state as _calcState, getApproxMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd, withScratchState } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
-import { formatSource, currentDisplay } from '../formatter.js';
-import { parseEntry as _parseEntryForObjTo, polarVector } from '../parser.js';
+import { formatSource, currentDisplay, withFractionMark } from '../formatter.js';
+import { parseEntry as _parseEntryForObjTo, polarVector, fromTyped } from '../parser.js';
 import { astToGiac, buildGiacCmd, giacToAst } from '../cas/giac-convert.mjs';
 import { giac } from '../cas/giac-engine.mjs';
 import { lookup } from './registry.js';
@@ -2169,15 +2169,15 @@ export const _fromArrayOp = (s) => {
 
 export const _toStrOp = (s) => {
   const [v] = s.popN(1);
-  // The AUR: numbers come out in the display format (flags -49, -50), and a string comes back as it is.
-  s.push(isString(v) ? v : Str(formatSource(v, currentDisplay())));
+  // The AUR: numbers come out in the display format (flags -49, -50, and -51's fraction mark), and a string comes back as it is.
+  s.push(isString(v) ? v : Str(withFractionMark(formatSource(v, currentDisplay()))));
 };
 
 
 export const _fromStrOp = (s) => {
   const [v] = s.popN(1);
   if (!isString(v)) throw new RPLError('Bad argument type');
-  const parsed = _parseEntryForObjTo(v.value);
+  const parsed = _parseEntryForObjTo(fromTyped(v.value));
   if (isProgramLine(parsed)) { runProgramLine(s, parsed); return; }
   for (const item of parsed) {
     if (!isName(item) || item.quoted) { s.push(item); continue; }

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.57 (2026-10-19)
+**Latest release:** v0.7.58 (2026-10-19)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.58 — 2026-10-19
+
+- Flag -51, part 4: with `-51 SF`, →STR writes the comma fraction mark
+  (`1.5 →STR` gives `"1,5"`) and STR→ and OBJ→ read a string the way the
+  command line does (`"2,5" STR→` gives 2.5), so a program running in
+  comma mode gets the HP's text and reads it back.
 
 ## v0.7.57 — 2026-10-19
 
