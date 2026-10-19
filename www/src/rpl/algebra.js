@@ -494,6 +494,10 @@ export function parseAlgebra(src) {
           skip();
         }
         expect(')');
+        // The HP writes a sum Σ(index=initial,final,summand); it is kept as Σ(summand,index,initial,final).
+        if (ident === 'Σ' && args.length === 3 && args[0].kind === 'bin' && args[0].op === '=' && isVar(args[0].l)) {
+          args.splice(0, 3, args[2], args[0].l, args[0].r, args[1]);
+        }
         const spec = KNOWN_FUNCTIONS[ident.toUpperCase()];
         if (spec && spec.arity !== undefined && args.length !== spec.arity) {
           throw new Error(

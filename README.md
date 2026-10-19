@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 519 commands, exact big-integer and rational arithmetic,
+of its command set: 520 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -213,7 +213,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   `'X>1 AND X<5'` is an algebraic, and `'X^2>4' 'X' SOLVE` gives
   `{ X<-2 X>2 }`. A definite integral is written as on the HP,
   `'∫(0,1,X^2,X)'`, and a derivative as `'∂X(X^2)'`; EVAL asks the CAS for
-  them and →NUM works the integral out numerically.
+  them and →NUM works the integral out numerically. A sum is too,
+  `'Σ(k=1,10,k^2)'`, or Σ builds it from the index, its limits and the
+  summand: `'k' 1 10 'k^2' Σ` gives `385`, and `'N' 1 5 'A^N' Σ` the sum in
+  closed form (a sum shows as `Σ(k^2,k,1,10)`, the order Giac writes).
 - **Units.** `100_km 2_h /` gives `50._km/h`; then `1_m/s CONVERT` gives
   `13.8888888889_m/s`. SI prefixes work on SI units (`5_kJ`, `1_MHz`,
   `3_uA`), and a bare `°C` or `°F` converts as a thermometer reading:
@@ -852,7 +855,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 519. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 520. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - setting the clock: `→DATE`, `→TIME` and `CLKADJ`. The clock is the

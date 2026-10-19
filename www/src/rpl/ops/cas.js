@@ -350,6 +350,21 @@ register('∫', (s) => {
   _pushCasResult(s, giacToAst(giac.caseval(cmd)));
 }, { category: 'CAS / symbolic', categoryOrder: 2.5, label: "∫" });
 
+// AUR: Σ takes the index, its first and last values and the summand, and gives the sum, or the
+// symbolic sum while a limit is symbolic; a symbolic summand between numeric limits sums in closed form.
+register('Σ', (s) => {
+  const [index, initial, final, summand] = s.popN(4);
+  const sum = AstFn('Σ', [_astArg(summand), AstVar(_varName(index)), _astArg(initial), _astArg(final)]);
+  s.push(Symbolic(sum));
+  lookup('EVAL').fn(s);
+  const left = s.peek();
+  const numericLimits = [initial, final].every((v) => isReal(v) || isInteger(v));
+  if (numericLimits && isSymbolic(left) && left.expr.kind === 'fn' && left.expr.name === 'Σ' && giac.isReady()) {
+    s.pop();
+    _pushCasResult(s, _casEval(sum, (e) => e));
+  }
+}, { category: 'CAS / symbolic', categoryOrder: 2.6, label: "Σ" });
+
 register('DERVX', _vxForm('DERIV'), { category: 'CAS / symbolic', categoryOrder: 1, label: "DERVX" });
 
 

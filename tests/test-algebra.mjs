@@ -77,6 +77,15 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
          'EVAL keeps a large Σ exact');
   assert(format(sum('Σ(k,k,1,10)', 'EVAL')).replace(/\.$/, '') === '55', 'Σ binds its index even where k names a constant');
   assert(isSymbolic(sum('Σ(k,k,1,M)', 'EVAL')), 'a Σ with a symbolic bound stays symbolic');
+  const hp = parseAlgebra('Σ(k=1,10,k^2)');
+  assert(hp.name === 'Σ' && hp.args.map((a) => formatAlgebra(a)).join() === 'k^2,k,1,10' && format(sum('Σ(k=1,10,k^2)', 'EVAL')) === '385',
+         "Σ reads the HP's Σ(index=initial,final,summand): Σ(k=1,10,k^2) sums to 385, where it said Σ expects 4 arguments");
+  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
+  assert(shown("'k' 1 10 'k^2' Σ") === '385' && shown("'k' 1 'N' 'k' Σ") === '`Σ(k,k,1,N)`',
+         "Σ as a command takes the index, its limits and the summand: 'k' 1 10 'k^2' Σ is 385, and a symbolic limit leaves the sum");
+  giac._setFixtures({ 'sum(A^N,N,1,5)': 'A^5+A^4+A^3+A^2+A' });
+  assert(shown("'N' 1 5 'A^N' Σ") === '`A^5 + A^4 + A^3 + A^2 + A`',
+         "Σ sums a symbolic summand between numeric limits in closed form, as the AUR's 'N' 1 5 'A^N' Σ does");
   const factored = new Stack();
   factored.push(Symbolic(parseAlgebra('338350')));
   lookup('FACTOR').fn(factored);

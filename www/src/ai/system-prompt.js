@@ -79,6 +79,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   DERIV                      \`expr\` \`var\` DERIV — derivative w.r.t. var.  Example: \`SIN(X)\` \`X\` DERIV → \`COS(X)\`; the algebraic form \`∂X(X^2)\` EVAL → \`2*X\`
   DERVX INTVX                derivative / antiderivative w.r.t. the current CAS variable
   INTEG ∫                    \`expr\` \`var\` INTEG — indefinite integral.  Definite: a b \`expr\` \`var\` ∫ (1 2 \`10*X\` \`X\` ∫ → 15), the algebraic \`∫(0,1,X^2,X)\` EVAL (CAS, 1/3) or →NUM (numeric), or \`expr\` \`var\` INTEG a b PREVAL (F(b) - F(a))
+  Σ                          \`k\` 1 10 \`k^2\` Σ → 385: the index, its first and last values and the summand; in an algebraic, Σ followed by (index=first,last,summand) as the HP writes it. A symbolic summand between numeric limits sums in closed form
   SOLVE                      \`eq\` \`var\` SOLVE — solve an equation.  Example: \`X^2-5*X+6=0\` \`X\` SOLVE → { \`X=2\` \`X=3\` }; an inequality gives its conditions: \`X^2>4\` \`X\` SOLVE → { \`X<-2\` \`X>2\` }
   LINSOLVE                   [ \`X+Y=3\` \`X-Y=1\` ] [ X Y ] LINSOLVE → the system as a list, the pivots, and [ \`X=2\` \`Y=1\` ] on level 1
   LIMIT (alias lim)          \`expr\` \`var=value\` LIMIT — limit at a point
