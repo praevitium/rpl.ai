@@ -18,6 +18,7 @@ const PALETTE_ACTIONS = Object.freeze([
 ]);
 
 const RESULT_CAP = 8;
+const PLACEHOLDERS = Object.freeze(['Search commands, settings, variables, constants…', 'Search commands, settings…', 'Search commands…']);
 const STARTER_COMMANDS = Object.freeze(['SOLVE', 'FACTOR', 'DERIV', 'INTEG', 'CONVERT', 'ROLL', 'PICK', 'STO']);
 
 export function highlightMatches(text, query) {
@@ -59,10 +60,11 @@ export class Palette {
     this.app.toasts?.dismiss('view');
     this.el = document.createElement('div');
     this.el.className = 'pal-wrap';
-    this.el.innerHTML = `<div class="pal" role="dialog" aria-modal="true" aria-label="Search"><div class="pal-in">${icon('search')}<input type="text" placeholder="Search commands, settings, variables, constants…" aria-label="Search" autocomplete="off" spellcheck="false"><span class="kbd">Esc</span></div><div class="pal-list" role="listbox"></div><div class="pal-foot"><span>↑↓ choose</span><span>↵ run</span><span>→ reference</span><span>Esc close</span></div></div>`;
+    this.el.innerHTML = `<div class="pal" role="dialog" aria-modal="true" aria-label="Search"><div class="pal-in">${icon('search')}<input type="text" aria-label="Search" autocomplete="off" spellcheck="false"><span class="kbd">Esc</span></div><div class="pal-list" role="listbox"></div><div class="pal-foot"><span>↑↓ choose</span><span>↵ run</span><span>→ reference</span><span>Esc close</span></div></div>`;
     this.host.appendChild(this.el);
     this._input = this.el.querySelector('input');
     this._list = this.el.querySelector('.pal-list');
+    this._fitPlaceholder();
     this._input.value = seed;
     this._input.addEventListener('input', () => { this.index = 0; this._refresh(); });
     this._input.addEventListener('keydown', (e) => this._onKey(e));
@@ -91,6 +93,13 @@ export class Palette {
     const back = this._restoreFocus;
     this._restoreFocus = null;
     if (back?.focus && document.contains(back)) back.focus({ preventScroll: true });
+  }
+
+  // A focused field drops text-overflow, so a phone would clip the full placeholder mid-word.
+  _fitPlaceholder() {
+    const input = this._input;
+    const fits = (text) => { input.value = text; return input.scrollWidth <= input.clientWidth; };
+    input.placeholder = PLACEHOLDERS.find(fits) ?? PLACEHOLDERS.at(-1);
   }
 
   _onKey(e) {

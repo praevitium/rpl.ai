@@ -291,3 +291,12 @@ const REF = parseCommandReference(HTML);
     && /CHAR_GROUPS\.Constants\.filter\(\(\[label\]\) => !listed\.has\(label\)\)/.test(paletteSrc),
     'command search: a constant that is also a listed command (π, e, i) shows once, under Commands, where "pi" listed π twice');
 }
+
+/* At 280 px the focused search field clipped "Search commands, settings, variables, constants…" mid-word: a focused field drops text-overflow. */
+{
+  const paletteSrc = readFileSync(new URL('../www/src/ui/palette.js', import.meta.url), 'utf8');
+  assert(/input\.placeholder = PLACEHOLDERS\.find\(fits\) \?\? PLACEHOLDERS\.at\(-1\);/.test(paletteSrc)
+    && /this\._fitPlaceholder\(\);\n    this\._input\.value = seed;/.test(paletteSrc)
+    && /'Search commands…'\]\);/.test(paletteSrc),
+    'command search: the placeholder is the longest wording that fits the field, down to "Search commands…" on a narrow phone');
+}
