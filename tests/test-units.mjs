@@ -749,3 +749,15 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(line("'Vm' →NUM") === '0.02241396954', 'the symbolic Vm is the molar volume at 0 °C and 1 atm, as its description and the HP say, where it held the 100 kPa value, 0.02271095464');
 }
 
+{
+  const line = (src) => runLine(src).snapshot().map((v) => formatSource(v)).join(' ');
+  assert(line("'c' CONST") === '299792458._m/s' && line("'NA' CONST") === '6.02214076E23_1/mol' && line("'Vm' CONST") === '22.41396954_L/mol' && line("'R∞' CONST") === '10973731.5682_1/m' && line("'∠' CONST") === '1._°',
+    "CONST gives a constant of the HP's Constants Library with its unit, under the library's names (R∞, ∠)");
+  assert(line("'α' CONST") === '0.0072973525693' && line("'εsi' CONST") === '11.9' && line('c CONST') === '299792458._m/s',
+    'CONST gives a dimensionless constant as a plain number, and takes the name unquoted');
+  assert(line("-61 SF 'c' CONST -61 CF") === '299792458.', 'CONST with flag -61 (Units Usage) set gives the number without its unit');
+  assert(line("'g' CONST 2_s SQ * 2 /") === '19.6133_m', "CONST's unit objects work with the others: g t²/2 for 2 s is 19.6133 m");
+  assertThrows(() => runLine("'NOPE' CONST"), /Undefined name/, 'CONST of a name the library lacks is Undefined name');
+  assertThrows(() => runLine('2 CONST'), /Bad argument type/, 'CONST wants a name');
+}
+
