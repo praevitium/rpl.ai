@@ -271,3 +271,11 @@ const REF = parseCommandReference(HTML);
     && /\$\{it\.missing \? ' <span class="badge">not in app<\/span>' : ''\}<\/span>/.test(paletteSrc),
     'command search: a command rpl.ai lacks wears a "not in app" badge and opens its reference page when chosen, where PICT looked runnable and choosing it put up an error');
 }
+
+/* "pi" listed π twice in command search, under Constants and under Commands, once π became findable by name. */
+{
+  const paletteSrc = readFileSync(new URL('../www/src/ui/palette.js', import.meta.url), 'utf8');
+  assert(/const listed = new Set\(commandRows\.map\(\(it\) => it\.title\)\);/.test(paletteSrc)
+    && /CHAR_GROUPS\.Constants\.filter\(\(\[label\]\) => !listed\.has\(label\)\)/.test(paletteSrc),
+    'command search: a constant that is also a listed command (π, e, i) shows once, under Commands, where "pi" listed π twice');
+}

@@ -132,7 +132,8 @@ export class Palette {
     const commands = q
       ? searchCommands(q, { names: allOps(), entries: this.reference, categories: CATEGORIES, limit: RESULT_CAP })
       : STARTER_COMMANDS.filter((name) => !recent.includes(name)).map((name) => ({ name }));
-    groups.push(['Commands', commands.map(commandRow)]);
+    const commandRows = commands.map(commandRow);
+    groups.push(['Commands', commandRows]);
     const scored = (items) => items
       .map((it) => ({ ...it, score: q ? Math.max(textScore(q, it.title), it.keywords ? textScore(q, it.keywords) - 100 : -1) : 0 }))
       .filter((it) => !q || it.score > 0)
@@ -169,7 +170,9 @@ export class Palette {
       run: () => this.app.pressVariable(name),
     }));
     groups.push(['Variables', scored(vars)]);
-    const constants = CHAR_GROUPS.Constants.map(([label, text, title]) => ({
+    // π, e and i are commands too; one row each is enough.
+    const listed = new Set(commandRows.map((it) => it.title));
+    const constants = CHAR_GROUPS.Constants.filter(([label]) => !listed.has(label)).map(([label, text, title]) => ({
       kind: 'constant', title: label, mono: true, detail: title, icon: 'omega', keywords: title,
       run: () => this.app.drawers.insertText(text),
     }));
