@@ -1,9 +1,9 @@
-import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isList, Real, Name, Integer, isComplex, Complex, isVector, Vector, isMatrix, Matrix, isCasIdentifier, isBinaryInteger, isRational, isUnit, Tagged } from '../types.js';
+import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isList, Real, Name, Integer, isComplex, Complex, isVector, Vector, isMatrix, Matrix, isCasIdentifier, isBinaryInteger, isRational, isUnit, Tagged, Program, isProgram } from '../types.js';
 import { giac } from '../cas/giac-engine.mjs';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { buildGiacCmd, giacToAst, splitGiacList, astToGiac, isGiacErrorString } from '../cas/giac-convert.mjs';
 import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction, LOGIC_ARITY, formatAlgebra } from '../algebra.js';
-import { getComplexMode, getCasVx, setCasVx, getApproxMode } from '../state.js';
+import { getComplexMode, getCasVx, setCasVx, getApproxMode, getCasModulo } from '../state.js';
 import { register, lookup } from './registry.js';
 import { _astToRplValue, _pushCasResult, _isSymOperand, _toAst, _substitute, _withListUnary, _withTaggedUnary, _withVMUnary, recallVar, storeVar } from './internal.js';
 
@@ -499,6 +499,92 @@ register('MKISOM', (s) => {
   if (!giac.isReady()) throw new RPLError('CAS not ready');
   s.push(_giacMatrix(giac.caseval(cmd)));
 }, { category: 'Vectors / matrices', categoryOrder: 70, label: "MKISOM" });
+
+// A = PᵀDP for a symmetric A, by LDLᵀ in Giac: D's diagonal and P = Lᵀ, as SYLVESTER and GAUSS give them.
+const _LDLT = '(A->{local n,L,D,i,j,k,s;n:=rowdim(A);L:=idn(n);D:=[0$n];'
+  + 'for(j:=0;j<n;j++){s:=A[j,j];for(k:=0;k<j;k++){s:=s-L[j,k]^2*D[k]};D[j]:=normal(s);'
+  + 'for(i:=j+1;i<n;i++){s:=A[i,j];for(k:=0;k<j;k++){s:=s-L[i,k]*L[j,k]*D[k]};L[i,j]:=normal(s/D[j])}};[D,tran(L)]})';
+
+function _ldlt(matrixGiac) {
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const raw = giac.caseval(`${_LDLT}(${matrixGiac})`);
+  const parts = splitGiacList(raw);
+  if (parts?.length !== 2 || /undef|infinity/.test(raw)) throw new RPLError('Bad argument value');
+  return { d: Vector((splitGiacList(parts[0]) ?? []).map((c) => _casValue(giacToAst(c)))), p: _giacMatrix(parts[1]) };
+}
+
+// AUR: [[1 2][2 4]] SYLVESTER gives D as the vector [ 1 0 ] and P as [[ 1 2 ][ 0 1 ]].
+register('SYLVESTER', (s) => {
+  const [m] = s.popN(1);
+  if (isMatrix(m) && m.rows.length !== m.rows[0].length) throw new RPLError('Invalid dimension');
+  const { d, p } = _ldlt(_matrixArg(m));
+  s.push(d);
+  s.push(p);
+}, { category: 'Vectors / matrices', categoryOrder: 71.5, label: "SYLVESTER" });
+
+// AUR: the diagonal's coefficients, P, the form as a sum of squares, and the variables.
+register('GAUSS', (s) => {
+  const [q, vars] = s.popN(2);
+  const [form, v] = [astToGiac(_astArg(q)), _variables(vars)];
+  const { d, p } = _ldlt(`q2a(${form},${v})`);
+  s.push(d);
+  s.push(p);
+  _pushCasResult(s, giacToAst(giac.caseval(`gauss(${form},${v})`)));
+  s.push(vars);
+}, { category: 'Vectors / matrices', categoryOrder: 71.6, label: "GAUSS" });
+
+// Row reduction modulo the CAS modulus (MODSTO). The AUR's own example leaves a pivot of -1; this gives 1.
+register('RREFMOD', (s) => {
+  const [m] = s.popN(1);
+  const cmd = `rref(${_matrixArg(m)} % ${getCasModulo()})`;
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  s.push(_giacMatrix(giac.caseval(cmd).replace(/ % \d+/g, '')));
+}, { category: 'Vectors / matrices', categoryOrder: 71.7, label: "RREFMOD" });
+
+// A program or a function name takes the value from the stack; an expression has it put for its variable.
+function _applyTo(s, fn, valueAst) {
+  if (isSymbolic(fn)) {
+    const x = _mainVar(fn.expr);
+    return _rewriteAst(fn.expr, (n) => (n.kind === 'var' && n.name === x ? valueAst : null));
+  }
+  if (!isProgram(fn) && !isName(fn)) throw new RPLError('Bad argument type');
+  s.push(_casValue(valueAst));
+  s.push(fn);
+  lookup('EVAL').fn(s);
+  return _astArg(s.pop());
+}
+
+// AUR: [[1 1][0 2]] « → X « EXP(X) » » DIAGMAP is [[ e e²-e ][ 0 e² ]]: P·f(D)·P⁻¹ from Giac's jordan.
+register('DIAGMAP', (s) => {
+  const [m, fn] = s.popN(2);
+  const cmd = `[jordan(${_matrixArg(m)})]`;
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const parts = splitGiacList(giac.caseval(cmd));
+  if (parts?.length !== 2) throw new RPLError('Bad argument value');
+  const [pGiac, jGiac] = parts;
+  const j = (splitGiacList(jGiac) ?? []).map((row) => (splitGiacList(row) ?? []).map(giacToAst));
+  if (j.some((row, r) => row.some((c, k) => k !== r && !_isZero(c)))) throw new RPLError('Bad argument value');
+  const fd = j.map((row, r) => astToGiac(_applyTo(s, fn, row[r])));
+  s.push(_giacMatrix(giac.caseval(`normal(${pGiac}*diag([${fd.join(',')}])*inv(${pGiac}))`)));
+}, { category: 'Vectors / matrices', categoryOrder: 71.8, label: "DIAGMAP" });
+
+// AUR: 2 3 « → I J 'I+2*J' » LCXM is [[ 3 5 7 ][ 4 6 8 ]]; an expression in I and J also serves.
+register('LCXM', (s) => {
+  const [rowsArg, colsArg, fnArg] = s.popN(3);
+  const [rows, cols] = [rowsArg, colsArg].map((v) => Number(_astArg(v).value));
+  if (![rows, cols].every((n) => Number.isInteger(n) && n >= 1)) throw new RPLError('Bad argument value');
+  const fn = isSymbolic(fnArg) ? Program([Name('→'), Name('I'), Name('J'), fnArg]) : fnArg;
+  if (!isProgram(fn) && !isName(fn)) throw new RPLError('Bad argument type');
+  const cells = Array.from({ length: rows }, (_, i) => Array.from({ length: cols }, (_, k) => {
+    checkTimeLimit();
+    s.push(Integer(BigInt(i + 1)));
+    s.push(Integer(BigInt(k + 1)));
+    s.push(fn);
+    lookup('EVAL').fn(s);
+    return s.pop();
+  }));
+  s.push(Matrix(cells));
+}, { category: 'Vectors / matrices', categoryOrder: 71.9, label: "LCXM" });
 
 function _casValue(ast) {
   const leaf = ast.kind === 'neg' ? ast.arg : ast;

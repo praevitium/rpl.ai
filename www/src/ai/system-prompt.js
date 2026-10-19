@@ -154,6 +154,8 @@ CONTAINERS
   KER IMAGE BASIS IBASIS     [[1 1 2][2 1 3][3 1 4]] KER → { [ 1 1 -1 ] }; IMAGE → { [ 1 0 -1 ] [ 0 1 2 ] }; { vectors } BASIS; { u } { v } IBASIS → basis of the intersection
   AXQ QXA ISOM MKISOM        matrix [ X Y ] AXQ → quadratic form; \`q\` [ X Y ] QXA → its matrix; ISOM of an isometry → { axis or angle, ±1 }; \`π/2\` 1 MKISOM → its matrix
   FFT IFFT                   discrete Fourier transform and inverse of a vector or matrix (power-of-two sizes): [ 1 2 3 4 ] FFT → [ (10,0) (-2,2) (-2,0) (-2,-2) ]
+  SYLVESTER GAUSS            symmetric A SYLVESTER → D (diagonal as a vector) and P with A = PᵀDP; \`q\` [ X Y ] GAUSS → D, P, the form as a sum of squares, the variables
+  RREFMOD DIAGMAP LCXM       RREFMOD row-reduces modulo the CAS modulus (MODSTO); A f DIAGMAP applies f (a program or an expression) through A's eigenvalues; r c « → I J 'I+2*J' » LCXM builds an r×c matrix
   IDN CON RANM HILBERT VANDERMONDE   stock matrices
   →DIAG DIAG→                [[ 1 2 ][ 3 4 ]] →DIAG → [ 1 4 ]; [ 1 2 ] { 2 } DIAG→ → [[ 1 0 ][ 0 2 ]] (one dimension is square, { m n } a rectangle)
   ROW+ ROW- COL+ COL- CSWP RSWP RCI RCIJ      row / column manipulation

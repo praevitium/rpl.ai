@@ -6118,6 +6118,32 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   giac._clear();
 }
 
+// SYLVESTER, GAUSS, RREFMOD, DIAGMAP and LCXM, with the AUR's examples as real Giac answers them.
+{
+  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
+  const answers = [
+    [(c) => c.startsWith('(A->{') && c.endsWith('([[1,2],[2,4]])'), '[[1,0],matrix[[1,2],[0,1]]]'],
+    [(c) => c.startsWith('(A->{') && c.endsWith('(q2a(X^2+2*A*X*Y,[X,Y]))'), '[[1,-A^2],matrix[[1,A],[0,1]]]'],
+    [(c) => c === 'gauss(X^2+2*A*X*Y,[X,Y])', '(A*Y+X)^2-Y^2*A^2'],
+    [(c) => c === 'rref([[2,1],[3,4]] % 3)', '[[1 % 3,0 % 3],[0 % 3,1 % 3]]'],
+    [(c) => c === '[jordan([[1,1],[0,2]])]', '[[[1,-1],[1,0]],[[2,0],[0,1]]]'],
+    [(c) => c.startsWith('normal([[1,-1],[1,0]]*diag(['), '[[1,3],[0,4]]'],
+  ];
+  const realCaseval = giac.caseval;
+  giac.caseval = (cmd) => answers.find(([match]) => match(cmd))?.[1] ?? realCaseval.call(giac, cmd);
+  try {
+    assert(shown('[[1 2][2 4]] SYLVESTER') === '[ 1 0 ] | [[ 1 2 ][ 0 1 ]]', 'SYLVESTER gives the AUR\'s D and P');
+    assert(shown("'X^2+2*A*X*Y' [ X Y ] GAUSS") === '[ 1 `-A^2` ] | [[ 1 `A` ][ 0 1 ]] | `(A*Y + X)^2 - Y^2*A^2` | [ X Y ]',
+      'GAUSS gives the diagonal, P, the sum of squares and the variables');
+    assert(shown('3 MODSTO [[2 1][3 4]] RREFMOD 13 MODSTO') === '[[ 1 0 ][ 0 1 ]]', 'RREFMOD reduces modulo the CAS modulus');
+    assert(shown("[[1 1][0 2]] 'X^2' DIAGMAP") === '[[ 1 3 ][ 0 4 ]]', 'DIAGMAP applies X^2 through the eigenvalues');
+  } finally {
+    giac.caseval = realCaseval;
+  }
+  assert(shown("2 3 « → I J 'I+2*J' » LCXM") === '[[ 3 5 7 ][ 4 6 8 ]]', 'LCXM builds the AUR\'s matrix from a program');
+  assert(shown("2 2 'I*J' LCXM") === '[[ 1 2 ][ 2 4 ]]', 'LCXM takes an expression in I and J');
+}
+
 /* ==================================================================
  — PCAR / CHARPOL / EGVL / PA2B2
    PCAR + CHARPOL + EGVL are Giac-backed matrix ops (use fixtures on
