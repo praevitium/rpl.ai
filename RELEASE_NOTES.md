@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.8 (2026-10-19)
+**Latest release:** v0.7.9 (2026-10-19)
 
 ---
 
@@ -20,6 +20,25 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.9 — 2026-10-19
+
+The tenth batch of missing HP 50g commands adds four numeric solvers:
+
+- `RKF` solves y' = f(t,y) by the Runge–Kutta–Fehlberg method, as the HP
+  does, with t and y kept in their variables: after
+  `0 'T' STO 0 'Y' STO '1/(1+T^2)-2*Y^2' 'F' STO`,
+  `{ T Y F } .00001 8 RKF` leaves 8 in T and .123077279663 in Y, within
+  2E-9 of the HP's .123077277659 (the exact value is 8/65). The tolerance
+  may be a list `{ tol h }` that also gives the first step.
+- `RKFSTEP` takes one step within the tolerance and gives the step to try
+  next; `RKFERR` gives the change in y and the error estimate for a step
+  of h, leaving t and y as they were.
+- These take a scalar y for now; the HP's vector problems are not
+  supported yet.
+- `MSLV` solves a system of equations numerically from a vector of
+  guesses: `[ 'SIN(X)+Y' 'X+SIN(Y)=1' ] [ X Y ] [ 0 0 ] MSLV` gives
+  `[ 1.82384112611 -.968154636175 ]`. It finds real solutions only.
 
 ## v0.7.8 — 2026-10-19
 
