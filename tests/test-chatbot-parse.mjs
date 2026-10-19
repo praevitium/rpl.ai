@@ -1,7 +1,7 @@
 import {
   parseAllToolCalls, parseSuggestions, findMachineSectionStart, stripThinkBlocks,
   resolveToolAlias, activeContextTokens, effectiveBudget, TOOL_ALIASES, ChatBot,
-  parseFencedBlock, parseInlineSpans, classifyMarkdownLine, parseTableAt, listIndent,
+  parseFencedBlock, parseInlineSpans, classifyMarkdownLine, parseTableAt, listIndent, quoteLinesAt,
   normalizeRpl, normalizeRemoteConfig, looksInfix,
 } from '../www/src/ai/chat-bot.js';
 import {
@@ -624,9 +624,24 @@ import { readFileSync } from 'node:fs';
          'classifyMarkdownLine reads a > line as a quote, with or without a space');
   const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
   assert(/frag\.appendChild\(elem\('hr'\)\)/.test(src)
-           && /for \(let q; i < lines\.length && \(q = classifyMarkdownLine\(lines\[i\]\)\)\.kind === 'quote'; i\+\+\) inner\.push\(q\.content\);/.test(src)
+           && /const \{ inner, end \} = quoteLinesAt\(lines, i\);\s*i = end - 1;/.test(src)
            && /appendInlineMarkdownLines\(frag\.appendChild\(elem\('blockquote'\)\), inner\.join\('\\n'\)\);/.test(src),
          'a rule renders as hr, and quote lines in a row share one blockquote that any other line ends, its lines rendered as blocks of their own (paragraphs at a bare >, lists, quotes in quotes) where they ran together as one line');
+}
+
+// A quote's lazy continuation: a line without > after the quote's open paragraph carries it on, as CommonMark
+// reads it; the quote ended there, so the line showed as a paragraph and a > after it started a second quote.
+{
+  const Q = (text) => JSON.stringify(quoteLinesAt(text.split('\n'), 0));
+  assert(Q('> one\ntwo\n> three') === JSON.stringify({ inner: ['one', 'two', 'three'], end: 3 }),
+         'quoteLinesAt carries a quote\'s paragraph on over a line without >');
+  assert(Q('> > deep\non') === JSON.stringify({ inner: ['> deep', 'on'], end: 2 }),
+         'quoteLinesAt carries a nested quote\'s paragraph on over a line without >');
+  assert(Q('> one\n>\ntwo') === JSON.stringify({ inner: ['one', ''], end: 2 })
+           && Q('> # Head\ntwo') === JSON.stringify({ inner: ['# Head'], end: 1 })
+           && Q('> one\n- item') === JSON.stringify({ inner: ['one'], end: 1 })
+           && Q('> one\n\ntwo') === JSON.stringify({ inner: ['one'], end: 1 }),
+         'quoteLinesAt ends a quote at a plain line after a bare >, a heading or a blank line, and at a list item');
 }
 
 // The tutor renders its problem, step titles and hints as markdown and draws its

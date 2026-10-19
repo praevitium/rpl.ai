@@ -236,6 +236,25 @@ export function listIndent(line) {
   return line.match(/^\s*/)[0].replace(/\t/g, '    ').length;
 }
 
+const endsInParagraph = (line) => {
+  const c = classifyMarkdownLine(line);
+  return c.kind === 'text' || (c.kind === 'quote' && endsInParagraph(c.content));
+};
+
+/** A quote's lines from lines[i] on, without their >.  A plain line after its
+ *  open paragraph carries that paragraph on, as CommonMark's lazy continuation
+ *  does.  `end` is the line after it. */
+export function quoteLinesAt(lines, i) {
+  const inner = [];
+  for (; i < lines.length; i++) {
+    const q = classifyMarkdownLine(lines[i]);
+    if (q.kind === 'quote') inner.push(q.content);
+    else if (q.kind === 'text' && inner.length && endsInParagraph(inner.at(-1))) inner.push(q.content);
+    else break;
+  }
+  return { inner, end: i };
+}
+
 function appendInlineMarkdownLines(frag, text) {
   let p = null;
   let lists = [];
@@ -269,9 +288,8 @@ function appendInlineMarkdownLines(frag, text) {
     } else if (c.kind === 'rule') {
       frag.appendChild(elem('hr'));
     } else if (c.kind === 'quote') {
-      const inner = [];
-      for (let q; i < lines.length && (q = classifyMarkdownLine(lines[i])).kind === 'quote'; i++) inner.push(q.content);
-      i--;
+      const { inner, end } = quoteLinesAt(lines, i);
+      i = end - 1;
       appendInlineMarkdownLines(frag.appendChild(elem('blockquote')), inner.join('\n'));
     } else if (c.kind !== 'blank') {
       const tag = c.kind === 'bullet' ? 'UL' : 'OL';
