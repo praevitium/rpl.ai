@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.19 (2026-10-19)
+**Latest release:** v0.7.20 (2026-10-19)
 
 ---
 
@@ -20,6 +20,23 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.20 — 2026-10-19
+
+The first step of the HP's PICT and plot setup: the plot window in PPAR.
+
+- PMIN, PMAX, XRNG, YRNG, RES, AXES, ATICK, CENTR, SCALE, SCALEW, SCALEH,
+  \*W, \*H, INDEP and DEPND set the reserved variable PPAR as the AUR
+  describes, starting from the HP 50g's
+  `{ (-6.5,-3.9) (6.5,4) X 0 (0,0) FUNCTION Y }`. CENTR and the scale
+  commands work on the 50g's 131 × 80 PICT, with a tick every 10 pixels:
+  `(1,2) CENTR` puts (1,2) under the centre pixel, and `2 2 SCALE` gives
+  two units per tick.
+- Once PPAR exists, FUNCTION, POLAR, PARAMETRIC, DIFFEQ and DRAW start the
+  plot in its window, as the HP does; without it the plot still fits what
+  it draws. Statistics plots still fit their data.
+- INDEP, DEPND, RES and AXES are stored in PPAR but the plot view doesn't
+  use them yet.
 
 ## v0.7.19 — 2026-10-19
 

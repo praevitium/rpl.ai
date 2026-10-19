@@ -6,7 +6,7 @@ import {
 } from './plot-engine.js';
 import { escapeHtml } from './display.js';
 import { icon } from './icons.js';
-import { isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
+import { isSymbolic, isMatrix, isVector, isList, isComplex } from '../rpl/types.js';
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians } from '../rpl/state.js';
 import { downloadFile } from '../rpl/persist.js';
 
@@ -29,6 +29,15 @@ const TOUCH = !!globalThis.matchMedia?.('(pointer: coarse)').matches;
 const IDLE_READOUT = TOUCH
   ? 'Tap to read values · drag to pan · pinch to zoom'
   : 'Hover, or press T to trace · drag to pan · scroll to zoom';
+
+// Once PPAR holds a plot window, as XRNG, YRNG and the other plot commands leave it, a plot starts there as on the
+// HP; until then the view fits what it draws.
+function pparView() {
+  const par = varRecall('PPAR');
+  const [lo, hi] = isList(par) ? par.items : [];
+  if (!isComplex(lo) || !isComplex(hi) || !(hi.re > lo.re) || !(hi.im > lo.im)) return null;
+  return { xmin: lo.re, xmax: hi.re, ymin: lo.im, ymax: hi.im };
+}
 
 function canSharePng() {
   return typeof navigator.canShare === 'function' && navigator.canShare({ files: [new File([''], 'plot.png', { type: 'image/png' })] });
@@ -358,6 +367,7 @@ export class GraphView {
 
   applyPlotOp(kind, stack, data = null) {
     if (kind === 'draw') {
+      this.view = pparView() ?? this.view;
       this.draw();
       return;
     }
@@ -372,7 +382,7 @@ export class GraphView {
     if (!built) { this._fail(`${kind.toUpperCase()} needs an expression on level 1`); return; }
     const err = traceInputError(kind, built, { adding: true });
     if (err) { this._fail(err); return; }
-    this._addTrace(built, { fit: !!spec.fitOnAdd });
+    this._addTrace(built, { fit: !!spec.fitOnAdd, view: pparView() });
   }
 
   loadFromStack(level) {
@@ -402,14 +412,20 @@ export class GraphView {
     }
   }
 
-  _addTrace(partial, { fit = false, draw = true } = {}) {
+  _addTrace(partial, { fit = false, draw = true, view = null } = {}) {
     const first = !this.traces.length;
     const t = makeTrace(partial);
     this.traces.push(t);
     this._selectedId = t.id;
     if (draw) this._renderExprs();
-    if (fit || first) this.fitView();
-    else if (draw) this.draw();
+    if (view) {
+      this.view = view;
+      if (draw) this.draw();
+    } else if (fit || first) {
+      this.fitView();
+    } else if (draw) {
+      this.draw();
+    }
     return t;
   }
 
