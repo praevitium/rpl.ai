@@ -7403,3 +7403,20 @@ function _arrayEq(a, b) {
   assertThrows(() => runLine('{ 1 1 } { 1 2 } CIRC'), /Bad argument value/, 'CIRC refuses a list that is no permutation');
   assertThrows(() => runLine('{ 1 2 } 3 CIRC'), /Bad argument type/, 'CIRC wants two lists');
 }
+
+// FANNING and DARCY: 16/Re for laminar flow, Colebrook's equation past Re = 2100, DARCY four times FANNING.
+{
+  const top = (line) => format(runLine(line).peek());
+  const num = (line) => Number(runLine(line).peek().value);
+  assert(top('0.0001 1000 FANNING') === '0.016', 'FANNING of laminar flow is 16/Re');
+  assert(top('0.0001 1000 DARCY') === '0.064', 'DARCY of laminar flow is 64/Re');
+  const f = num('0.0001 100000 FANNING');
+  assert(Math.abs(1 / Math.sqrt(f) + 4 * Math.log10(0.0001 / 3.7 + 1.255 / (100000 * Math.sqrt(f)))) < 1e-9, 'FANNING of turbulent flow satisfies Colebrook\'s equation');
+  assert(Math.abs(num('0.0001 100000 DARCY') / (4 * f) - 1) < 1e-11, 'DARCY is four times FANNING');
+  assert(Math.abs(num('0.01 1E6 DARCY') - 0.038) < 0.001, 'DARCY of rough pipe flow reads as the Moody chart does');
+  assert(top('2_mm 1_m / 1E5 FANNING') === top('0.002 1E5 FANNING'), 'FANNING takes a unit object that reduces to a number');
+  assert(top("'E' 1E5 FANNING") === '`FANNING(E,100000.)`', 'FANNING of a name is symbolic');
+  assert(top("'FANNING(0.0001,100000)' EVAL") === format(Real(f)), 'FANNING in an algebraic evaluates');
+  assertThrows(() => runLine('0 1000 FANNING'), /Bad argument value/, 'FANNING wants a roughness above 0');
+  assertThrows(() => runLine('1_m 1000 DARCY'), /Inconsistent units/, 'DARCY refuses a unit with dimensions');
+}

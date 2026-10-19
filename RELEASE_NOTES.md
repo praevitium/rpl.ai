@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.30 (2026-10-19)
+**Latest release:** v0.7.31 (2026-10-19)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.31 — 2026-10-19
+
+- FANNING and DARCY give a pipe flow's friction factor from the relative
+  roughness ε/D and the Reynolds number: 16/Re (64/Re for DARCY) for
+  laminar flow up to Re = 2100, and Colebrook's equation for turbulent
+  flow, so `.0001 1E5 DARCY` gives 0.0185, as a Moody chart reads. Both
+  take unit objects that reduce to numbers, stay symbolic for names, and
+  work inside algebraics.
 
 ## v0.7.30 — 2026-10-19
 

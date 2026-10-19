@@ -1,7 +1,7 @@
-import { Symbolic, isInteger, isReal, Integer, Real, isVector, Vector, isMatrix, Matrix, isList, RList, isTagged, Tagged } from '../types.js';
+import { Symbolic, isInteger, isReal, isUnit, Integer, Real, isVector, Vector, isMatrix, Matrix, isList, RList, isTagged, Tagged } from '../types.js';
 import { Fn as AstFn, Num as AstNum } from '../algebra.js';
-import { RPLError, checkTimeLimit } from '../stack.js';
-import { register } from './registry.js';
+import { RPLError, Stack, checkTimeLimit } from '../stack.js';
+import { register, lookup } from './registry.js';
 import { _bigFactorial, _gamma, _isSymOperand, _lngamma, _regGammaQ, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary } from './internal.js';
 
 
@@ -458,3 +458,47 @@ register('Si', _unaryOp(_realFn('Si', _si, _finiteArg)), { category: 'Special fu
 
 
 register('Ci', _unaryOp(_realFn('Ci', _ci, _finiteArg)), { category: 'Special functions', categoryOrder: 7, label: "CI" });
+
+
+// A unit object that reduces to a plain number, 2_mm/m, counts as that number.
+function _dimensionless(v) {
+  if (!isUnit(v)) return v;
+  const s = new Stack();
+  s.push(v);
+  lookup('UBASE').fn(s);
+  const n = s.pop();
+  if (!isReal(n) && !isInteger(n)) throw new RPLError('Inconsistent units');
+  return n;
+}
+
+// Laminar flow (Re ≤ 2100) gives 16/Re; turbulent flow solves Colebrook's equation for the Fanning factor,
+// 1/√f = -4·log10(ε/D / 3.7 + 1.255/(Re·√f)), the AUR naming no formula of its own.
+function _fanning(roughness, re) {
+  if (!(roughness > 0 && re > 0) || !Number.isFinite(roughness) || !Number.isFinite(re)) throw new RPLError('Bad argument value');
+  if (re <= 2100) return 16 / re;
+  let x = 4;
+  for (let i = 0; i < 100; i++) {
+    const next = -4 * Math.log10(roughness / 3.7 + 1.255 * x / re);
+    const done = Math.abs(next - x) <= 1e-15 * Math.abs(next);
+    x = next;
+    if (done) break;
+  }
+  return 1 / (x * x);
+}
+
+function _frictionFactor(name, scale) {
+  return _withTaggedBinary(_withListBinary((s) => {
+    const [a, b] = s.popN(2).map(_dimensionless);
+    if (_isSymOperand(a) || _isSymOperand(b)) {
+      const l = _toAst(a), r = _toAst(b);
+      if (!l || !r) throw new RPLError('Bad argument type');
+      s.push(Symbolic(AstFn(name, [l, r])));
+      return;
+    }
+    s.push(Real(scale * _fanning(_realArg(a), _realArg(b))));
+  }));
+}
+
+register('FANNING', _frictionFactor('FANNING', 1), { category: 'Special functions', categoryOrder: 11, label: "FANNING" });
+
+register('DARCY', _frictionFactor('DARCY', 4), { category: 'Special functions', categoryOrder: 12, label: "DARCY" });
