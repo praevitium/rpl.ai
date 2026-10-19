@@ -222,6 +222,16 @@ register('SIMP2', (s) => {
   for (const part of parts) s.push(_casValue(giacToAst(part)));
 }, { category: 'Polynomials', categoryOrder: 8.5, label: "SIMP2" });
 
+// The list stays on the stack under its GCD, as the AUR stacks it.
+register('LGCD', (s) => {
+  const [list] = s.popN(1);
+  if (!isList(list) || !list.items.length) throw new RPLError('Bad argument type');
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const gcd = giacToAst(giac.caseval(`lgcd([${list.items.map((v) => astToGiac(_astArg(v))).join(',')}])`));
+  s.push(list);
+  s.push(_casValue(gcd));
+}, { category: 'Polynomials', categoryOrder: 8.55, label: "LGCD" });
+
 // The polynomial forms of IDIV2, IEGCD and IABCUV: Giac's answer, taken in the order the AUR stacks it.
 function _polyArith(giacFn, argc, order) {
   return (s) => {
@@ -649,6 +659,21 @@ register('XNUM', (s, entry) => { lookup('→NUM').fn(s, entry); }, { category: '
 
 register('XQ',   (s, entry) => { lookup('→Q').fn(s, entry); }, { category: 'CAS / symbolic', categoryOrder: 43, label: "XQ" });
 
+register('I→R', (s) => {
+  const v = s.pop();
+  if (isInteger(v)) s.push(Real(v.value.toString()));
+  else if (isReal(v)) s.push(v);
+  else throw new RPLError('Bad argument type');
+}, { category: 'CAS / symbolic', categoryOrder: 43.1, label: "I→R" });
+
+register('R→I', (s) => {
+  const v = s.pop();
+  if (isInteger(v)) s.push(v);
+  else if (!isReal(v)) throw new RPLError('Bad argument type');
+  else if (!v.value.isInteger()) throw new RPLError('Bad argument value');
+  else s.push(Integer(BigInt(v.value.toFixed(0))));
+}, { category: 'CAS / symbolic', categoryOrder: 43.2, label: "R→I" });
+
 
 register('VX', (s) => {
   s.push(Name(getCasVx()));
@@ -660,6 +685,9 @@ register('SVX', (s) => {
   if (!isCasIdentifier(name)) throw new RPLError(`Invalid name: ${name}`);
   setCasVx(name);
 }, { category: 'CAS / symbolic', categoryOrder: 41, label: "SVX" });
+
+register('RCLVX', lookup('VX').fn, { category: 'CAS / symbolic', categoryOrder: 40.1, label: "RCLVX" });
+register('STOVX', lookup('SVX').fn, { category: 'CAS / symbolic', categoryOrder: 41.1, label: "STOVX" });
 
 
 register('PREVAL', (s) => {

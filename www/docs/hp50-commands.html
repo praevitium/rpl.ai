@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 542 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 549 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -374,7 +374,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-ISOL">ISOL</a>
 <a href="#cmd-ISOM" class='notinapp'>ISOM</a>
 <a href="#cmd-ISPRIME-qmark">ISPRIME?</a>
-<a href="#cmd-I-to-R" class='notinapp'>I→R</a>
+<a href="#cmd-I-to-R">I→R</a>
 <a href="#cmd-JORDAN">JORDAN</a>
 <a href="#cmd-KER" class='notinapp'>KER</a>
 <a href="#cmd-KERRM" class='notinapp'>KERRM</a>
@@ -394,7 +394,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-LCXM" class='notinapp'>LCXM</a>
 <a href="#cmd-LDEC" class='notinapp'>LDEC</a>
 <a href="#cmd-LEGENDRE">LEGENDRE</a>
-<a href="#cmd-LGCD" class='notinapp'>LGCD</a>
+<a href="#cmd-LGCD">LGCD</a>
 <a href="#cmd-LIBEVAL" class='notinapp'>LIBEVAL</a>
 <a href="#cmd-LIBS" class='notinapp'>LIBS</a>
 <a href="#cmd-LIMIT">LIMIT</a>
@@ -554,7 +554,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-RCLF">RCLF</a>
 <a href="#cmd-RCLKEYS" class='notinapp'>RCLKEYS</a>
 <a href="#cmd-RCLMENU" class='notinapp'>RCLMENU</a>
-<a href="#cmd-RCLVX" class='notinapp'>RCLVX</a>
+<a href="#cmd-RCLVX">RCLVX</a>
 <a href="#cmd-RCLΣ">RCLΣ</a>
 <a href="#cmd-RCWS">RCWS</a>
 <a href="#cmd-RDM">RDM</a>
@@ -604,7 +604,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-R-to-B">R→B</a>
 <a href="#cmd-R-to-C">R→C</a>
 <a href="#cmd-R-to-D">R→D</a>
-<a href="#cmd-R-to-I" class='notinapp'>R→I</a>
+<a href="#cmd-R-to-I">R→I</a>
 <a href="#cmd-SAME">SAME</a>
 <a href="#cmd-SBRK" class='notinapp'>SBRK</a>
 <a href="#cmd-SCALE" class='notinapp'>SCALE</a>
@@ -670,7 +670,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-STOF">STOF</a>
 <a href="#cmd-STOKEYS" class='notinapp'>STOKEYS</a>
 <a href="#cmd-STORE" class='notinapp'>STORE</a>
-<a href="#cmd-STOVX" class='notinapp'>STOVX</a>
+<a href="#cmd-STOVX">STOVX</a>
 <a href="#cmd-STOΣ">STOΣ</a>
 <a href="#cmd-STO-minus">STO–</a>
 <a href="#cmd-STREAM">STREAM</a>
@@ -702,7 +702,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-TCOLLECT">TCOLLECT</a>
 <a href="#cmd-TDELTA">TDELTA</a>
 <a href="#cmd-TESTS" class='notinapp'>TESTS</a>
-<a href="#cmd-TEVAL" class='notinapp'>TEVAL</a>
+<a href="#cmd-TEVAL">TEVAL</a>
 <a href="#cmd-TEXPAND">TEXPAND</a>
 <a href="#cmd-TEXT" class='notinapp'>TEXT</a>
 <a href="#cmd-THEN">THEN</a>
@@ -752,7 +752,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-VAR">VAR</a>
 <a href="#cmd-VARS">VARS</a>
 <a href="#cmd-VER" class='notinapp'>VER</a>
-<a href="#cmd-VERSION" class='notinapp'>VERSION</a>
+<a href="#cmd-VERSION">VERSION</a>
 <a href="#cmd-VISIT" class='notinapp'>VISIT</a>
 <a href="#cmd-VISITB" class='notinapp'>VISITB</a>
 <a href="#cmd-VPOTENTIAL" class='notinapp'>VPOTENTIAL</a>
@@ -8297,7 +8297,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>NEXTPRIME, PREVPRIME</p>
   </dd>
 </dl>
-<h2 id="cmd-I-to-R">I→R <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-I-to-R">I→R <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 242 · printed page 3-122</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -8926,7 +8926,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>HERMITE, TCHEBYCHEFF</p>
   </dd>
 </dl>
-<h2 id="cmd-LGCD">LGCD <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-LGCD">LGCD <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 250 · printed page 3-130</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -13088,7 +13088,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>MENU, TMENU</p>
   </dd>
 </dl>
-<h2 id="cmd-RCLVX">RCLVX <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-RCLVX">RCLVX <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 315 · printed page 3-195</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -14286,7 +14286,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>D→R</p>
   </dd>
 </dl>
-<h2 id="cmd-R-to-I">R→I <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-R-to-I">R→I <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 335 · printed page 3-215</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -15840,7 +15840,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>DEF, DEFINE, UNASSIGN</p>
   </dd>
 </dl>
-<h2 id="cmd-STOVX">STOVX <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-STOVX">STOVX <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 358 · printed page 3-238</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -16810,7 +16810,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>ALGB, ARIT, CONSTANTS, DIFF, EXP&amp;LN, INTEGER, MAIN, MATHS, MATR, MODULAR, POLYNOMIAL, REWRITE, TRIGO</p>
   </dd>
 </dl>
-<h2 id="cmd-TEVAL">TEVAL <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-TEVAL">TEVAL <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 372 · printed page 3-252</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -18209,7 +18209,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>The version and release date are given as a number of the form V.YYYYMMDD, so a display mode showing at least 8 digits after the fraction mark is needed to display the result in full.</p>
   </dd>
 </dl>
-<h2 id="cmd-VERSION">VERSION <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-VERSION">VERSION <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 390 · printed page 3-270</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>

@@ -29,6 +29,7 @@ ARITHMETIC
   MOD                        level2 mod level1
   XROOT                      a XROOT b = a^(1/b) (level 2 = radicand, level 1 = root)
   GCD LCM                    integer/poly greatest common divisor / least common multiple
+  LGCD                       { list } LGCD → the list and the GCD of its entries: { 12 18 24 } LGCD → { 12 18 24 } 6
   COMB PERM                  combinations / permutations (integer args only)
   IDIV2 IQUOT IREMAINDER     integer division: q+r / quotient / remainder
   GAMMA LNGAMMA Beta         special functions
@@ -72,6 +73,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   EVAL                       simplify / evaluate the Symbolic on level 1 (also runs a Program, resolves a Name)
   →NUM (alias XNUM)          force numeric evaluation
   →Q (alias XQ)              convert to exact rational; →Qπ keeps π symbolic
+  I→R R→I                    integer to real (5 → 5.) and an integral real to an integer (5. → 5)
   EXACT APPROX               switch CAS exact/approximate mode
   EXPAND COLLECT             algebraic rewrites (EXPAN and COLCT are the same)
   FACTOR                     ALGEBRAIC FACTORISATION; \`X^2-1\` FACTOR → \`(X-1)*(X+1)\`.  Use for "factor x^2-1", "factorise (x-1)(x+1)*x".  ⚠ NOT FACT (that's factorial). Mnemonic: FACT ends in T (like "ten!"); FACTOR has more letters (like a factored expression has more terms).
@@ -97,7 +99,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   HALFTAN ASIN2C ASIN2T ACOS2S ATAN2S TAN2SC TAN2SC2 TAN2CS2     specific identity rewrites
   TRIGCOS TRIGSIN TRIGTAN    rewrite with SIN²+COS²=1 in COS terms or SIN terms, or SIN and COS as TAN: \`SIN(X)^2\` TRIGTAN → \`TAN(X)^2/(TAN(X)^2+1)\`
   EXLR                       split an equation/binary into LHS/RHS on the stack
-  VX SVX                     get/set the current CAS main variable (default \`x\`)
+  VX SVX                     get/set the current CAS main variable (default \`x\`); RCLVX and STOVX are the HP's names
   MODSTO ADDTMOD SUBTMOD MULTMOD POWMOD EXPANDMOD FACTORMOD GCDMOD DIVMOD DIV2MOD     modular arithmetic against a stored modulus
   GBASIS GREDUCE             Gröbner basis / reduction
   LNAME                      extract variable Names referenced by an expression

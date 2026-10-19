@@ -106,6 +106,8 @@ const unaryPairs = [
   ['→STR', '->STR', [Real(42)],    '→STR(42) → "42"'],
   ['V→',   'V->',   [Vector([Real(1), Real(2), Real(3)])], 'V→ decomposes 3-vec'],
   ['C→R',  'C->R',  [Complex(3, 4)], 'C→R((3,4)) → 3 on L2, 4 on L1'],
+  ['I→R',  'I->R',  [Integer(5n)],  'I→R(5) → 5.'],
+  ['R→I',  'R->I',  [Real(5)],      'R→I(5.) → 5'],
 ];
 
 for (const [canon, ascii, pre, label] of unaryPairs) {

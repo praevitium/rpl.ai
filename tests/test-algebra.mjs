@@ -5536,6 +5536,48 @@ giac._setFixture('ilaplace(1,x,rplS)', 'Dirac(rplS)');
   resetCasVx();
 }
 
+// RCLVX and STOVX are the HP's names for reading and setting VX.
+{
+  const { resetCasVx } = await import('../www/src/rpl/state.js');
+  resetCasVx();
+  const s = new Stack();
+  s.push(Name('T'));
+  lookup('STOVX').fn(s);
+  lookup('RCLVX').fn(s);
+  assert(s.depth === 1 && isName(s.peek()) && s.peek().id === 'T', 'STOVX stores T as VX and RCLVX recalls it');
+  resetCasVx();
+}
+
+// I→R and R→I convert between exact integers and reals; a fractional real has no integer.
+{
+  const s = new Stack();
+  s.push(Integer(-12n));
+  lookup('I→R').fn(s);
+  assert(isReal(s.peek()) && s.peek().value.eq(-12), 'I→R turns -12 into -12.');
+  s.push(Real(1e20));
+  lookup('R→I').fn(s);
+  assert(isInteger(s.peek()) && s.peek().value === 10n ** 20n, 'R→I turns 1E20 into the integer 100000000000000000000');
+  s.push(Real(2.5));
+  assertThrows(() => lookup('R→I').fn(s), /Bad argument value/, 'R→I on 2.5 is Bad argument value');
+  s.push(Str('5'));
+  assertThrows(() => lookup('I→R').fn(s), /Bad argument type/, 'I→R on a string is Bad argument type');
+}
+
+// LGCD leaves its list under the GCD, as the AUR stacks it.
+{
+  const s = new Stack();
+  const list = RList([Symbolic(parseAlgebra('X^2-1')), Symbolic(parseAlgebra('X^2+2*X+1'))]);
+  s.push(list);
+  giac._clear();
+  giac._setFixture('lgcd([X^2-1,X^2+2*X+1])', 'X+1');
+  lookup('LGCD').fn(s);
+  assert(s.depth === 2 && s.peek(2) === list && formatAlgebra(s.peek().expr) === 'X + 1', 'LGCD { X^2-1 X^2+2*X+1 } leaves the list and gives X+1');
+  giac._clear();
+  const t = new Stack();
+  t.push(RList([]));
+  assertThrows(() => lookup('LGCD').fn(t), /Bad argument type/, 'LGCD of an empty list is Bad argument type');
+}
+
 {
   const { resetCasVx, getCasVx } = await import('../www/src/rpl/state.js');
   resetCasVx();
