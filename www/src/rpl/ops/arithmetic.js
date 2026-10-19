@@ -1,11 +1,12 @@
 import { RPLError, checkTimeLimit } from '../stack.js';
-import { Integer, Matrix, isInteger, isReal, isVector, Vector, isMatrix, isSymbolic, Symbolic, isString, isBinaryInteger, isComplex, isName, Real, isRational, Rational, Complex, isUnit, Unit, toComplex, toRealOrThrow, toRealDecimal, BinaryInteger, isNumber, isList, RList, Str } from '../types.js';
+import { Integer, Matrix, isGrob, isInteger, isReal, isVector, Vector, isMatrix, isSymbolic, Symbolic, isString, isBinaryInteger, isComplex, isName, Real, isRational, Rational, Complex, isUnit, Unit, toComplex, toRealOrThrow, toRealDecimal, BinaryInteger, isNumber, isList, RList, Str } from '../types.js';
 import { Bin as AstBin, formatAlgebra, Neg as AstNeg, Num as AstNum, Fn as AstFn, Var as AstVar } from '../algebra.js';
 import { formatReal, DEFAULT_DISPLAY, formatBinaryInteger } from '../formatter.js';
 import { state as _calcState, getApproxMode, getRealMaxExp, getWordsize, nextPrngUnit, seedPrng } from '../state.js';
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { inverseUexpr, powerUexpr, sameDims, temperaturesAdd } from '../units.js';
 import { register, lookup, OPS } from './registry.js';
+import { isPict, negGrob } from './graphics.js';
 import { _inUnit, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, exactSqrt, exactXroot, recallVar, storeVar } from './internal.js';
 
 
@@ -195,6 +196,7 @@ function _stringCoerce(v) {
 
 register('NEG', _withTaggedUnary(_withListUnary(_withVMUnary((s) => {
   const v = s.pop();
+  if (isGrob(v) || isPict(v)) { negGrob(s, v); return; }
   if (_isSymOperand(v))  { s.push(Symbolic(AstNeg(_toAst(v)))); return; }
   if (isReal(v))     s.push(Real(v.value.neg()));
   else if (isInteger(v)) s.push(Integer(-v.value));

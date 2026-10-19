@@ -392,7 +392,15 @@ function _paint(draw) {
 
 function _pixelOn(g, col, row) {
   if (col < 0 || row < 0 || col >= g.width || row >= g.height) return false;
-  return (g.bytes[row * Math.ceil(g.width / 8) + (col >> 3)] >> (col & 7)) & 1;
+  return !!((g.bytes[row * Math.ceil(g.width / 8) + (col >> 3)] >> (col & 7)) & 1);
+}
+
+// A copy to change before anyone else sees it; the pixel is in range.
+const _copyGrob = (g) => Grob(g.width, g.height, g.bytes.slice());
+
+function _setPixel(g, col, row, on) {
+  const i = row * Math.ceil(g.width / 8) + (col >> 3), bit = 1 << (col & 7);
+  g.bytes[i] = on ? g.bytes[i] | bit : g.bytes[i] & ~bit;
 }
 
 // The part of a segment within a pixel of PICT, so a far-off point can't make a long loop.
@@ -520,4 +528,72 @@ register('PVIEW', (s) => {
   if (!(isList(v) && v.items.length === 0)) pictPoint(v);
   _requestPlot('pview', s, v);
 }, { category: 'Graphics', categoryOrder: 11.9, label: "PVIEW" });
+
+
+// The graphics object a command works on and how it hands back the result: PICT is changed where it is.
+function _target(v, s) {
+  if (isPict(v)) return { grob: getPict(), give: setPict };
+  if (isGrob(v)) return { grob: v, give: (g) => s.push(g) };
+  throw new RPLError('Bad argument type');
+}
+
+// grob laid over target with its top left at (col, row): OR, XOR or in place of what was there, cut at the edges.
+function _overlay(target, [col, row], grob, how) {
+  const out = _copyGrob(target);
+  for (let r = Math.max(0, -row); r < grob.height && row + r < out.height; r++) {
+    for (let c = Math.max(0, -col); c < grob.width && col + c < out.width; c++) {
+      const on = _pixelOn(grob, c, r), was = _pixelOn(out, col + c, row + r);
+      _setPixel(out, col + c, row + r, how === 'or' ? was || on : how === 'xor' ? was !== on : on);
+    }
+  }
+  return out;
+}
+
+function _combine(how) {
+  return (s) => {
+    const [target, at, grob] = s.popN(3);
+    if (!isGrob(grob)) throw new RPLError('Bad argument type');
+    const t = _target(target, s);
+    t.give(_overlay(t.grob, _pixelOf(at), grob, how));
+  };
+}
+
+register('GOR', _combine('or'), { category: 'Graphics', categoryOrder: 12, label: "GOR" });
+register('GXOR', _combine('xor'), { category: 'Graphics', categoryOrder: 12.1, label: "GXOR" });
+
+// REPL with a graphics object: the target is unchanged when the corner is off it.
+export function replGrob(s, target, at, grob) {
+  if (!isGrob(grob)) throw new RPLError('Bad argument type');
+  const t = _target(target, s);
+  const [col, row] = _pixelOf(at);
+  const on = col >= 0 && row >= 0 && col < t.grob.width && row < t.grob.height;
+  t.give(on ? _overlay(t.grob, [col, row], grob, 'replace') : t.grob);
+}
+
+// SUB with a graphics object: the rectangle between two corners, both included, each kept on the object.
+export function subGrob(s, target, a, b) {
+  const g = _target(target, s).grob;
+  const [[c1, r1], [c2, r2]] = [a, b].map(_pixelOf).map(([c, r]) => [
+    Math.min(Math.max(c, 0), g.width - 1), Math.min(Math.max(r, 0), g.height - 1),
+  ]);
+  if (!g.width || !g.height) {
+    s.push(Grob(0, 0));
+    return;
+  }
+  const left = Math.min(c1, c2), top = Math.min(r1, r2);
+  const out = Grob(Math.abs(c2 - c1) + 1, Math.abs(r2 - r1) + 1);
+  for (let r = 0; r < out.height; r++) {
+    for (let c = 0; c < out.width; c++) if (_pixelOn(g, left + c, top + r)) _setPixel(out, c, r, true);
+  }
+  s.push(out);
+}
+
+// NEG of a graphics object turns every pixel over; the bits past its width stay clear.
+export function negGrob(s, v) {
+  const t = _target(v, s);
+  const out = _copyGrob(t.grob);
+  const rowBytes = Math.ceil(out.width / 8), lastMask = out.width % 8 ? 0xff >> (8 - (out.width % 8)) : 0xff;
+  out.bytes.forEach((b, i) => { out.bytes[i] = ~b & ((i + 1) % rowBytes === 0 ? lastMask : 0xff); });
+  t.give(out);
+}
 

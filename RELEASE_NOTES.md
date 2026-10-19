@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.24 (2026-10-19)
+**Latest release:** v0.7.25 (2026-10-19)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.25 — 2026-10-19
+
+Working with graphics objects as the HP does, on PICT or on one another.
+
+- GOR and GXOR lay a graphics object on PICT or on another graphics object,
+  its top left at a point in user units or pixels: `PICT { #0d #0d } grob
+  GXOR`. GOR adds its pixels, GXOR toggles them, so a second GXOR, as
+  with LASTARG in the AUR's example, puts the picture back.
+- REPL overwrites a rectangle of a graphics object or PICT, and leaves it as
+  it is when the corner is off it. SUB cuts a rectangle out between two
+  corners, both included: `PICT { #10d #20d } { #20d #40d } SUB` gives a
+  Graphic 11 × 21, as in the AUR.
+- NEG turns a graphics object's pixels over; `PICT NEG` turns PICT's.
+- On PICT these change PICT and leave nothing on the stack; on another
+  graphics object they return the result.
 
 ## v0.7.24 — 2026-10-19
 

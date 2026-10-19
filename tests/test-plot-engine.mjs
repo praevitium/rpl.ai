@@ -581,6 +581,36 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   setPict(null);
 }
 
+// GOR, GXOR, REPL, SUB and NEG on graphics objects and on PICT, with the AUR's examples.
+{
+  const { formatSource } = await import('../www/src/rpl/formatter.js');
+  const { varPurge, setPict, getPict } = await import('../www/src/rpl/state.js');
+  const text = (src) => runLine(src).snapshot().reverse().map((v) => formatSource(v)).join(' | ');
+  const count = () => getPict().bytes.reduce((n, b) => n + [...b.toString(2)].filter((d) => d === '1').length, 0);
+  const X = 'GROB 5 5 11A040A011';
+  varPurge('PPAR');
+  setPict(null);
+  runLine('ERASE PICT NEG');
+  assert(count() === 131 * 80 && text('PICT NEG') === '', 'NEG of PICT turns every pixel over, in place');
+  runLine(`ERASE PICT NEG PICT { #0d #0d } ${X} GXOR`);
+  assert(count() === 131 * 80 - 9, 'GXOR clears the 9 pixels of the AUR\'s 5 × 5 X on a dark PICT');
+  runLine(`« ERASE PICT NEG PICT { #0d #0d } ${X} GXOR LASTARG GXOR » EVAL`);
+  assert(count() === 131 * 80, 'GXOR again with LASTARG puts the picture back, as the AUR\'s example does');
+  runLine('ERASE PICT (0,0) #5d #5d BLANK NEG REPL');
+  const lit = (col, row) => (getPict().bytes[row * 17 + (col >> 3)] >> (col & 7)) & 1;
+  assert(count() === 25 && lit(65, 40) && lit(69, 44) && !lit(70, 44), 'REPL puts a dark 5 × 5 on PICT with its corner at (0,0), the AUR\'s example');
+  assert(text('PICT { #10d #20d } { #20d #40d } SUB SIZE') === '#11d | #21d', 'SUB of PICT gives the AUR\'s Graphic 11 × 21');
+  assert(text(`${X} NEG`) === 'GROB 5 5 E051B151E0', 'NEG turns a graphics object\'s pixels over, not the bits past its width');
+  assert(text(`${X} { #1d #1d } GROB 2 2 3030 GOR`) === 'GROB 5 5 11E060A011' && text(`${X} { #1d #1d } GROB 2 2 3030 GXOR`) === 'GROB 5 5 11C020A011',
+    'GOR and GXOR lay one object on another at a pixel');
+  assert(text(`${X} { #9d #9d } GROB 2 2 3030 REPL`) === `${X}`, 'REPL leaves the target as it is when the corner is off it');
+  assert(text(`${X} { #3d #3d } { #99d #99d } SUB`) === 'GROB 2 2 1020' && text(`${X} { #2d #2d } { #0d #0d } SUB`) === 'GROB 3 3 102040',
+    'SUB keeps corners on the object and takes them in either order');
+  assertThrows(() => runLine(`${X} { #0d #0d } 5 GOR`), /Bad argument type/, 'GOR wants a graphics object to lay on');
+  varPurge('PPAR');
+  setPict(null);
+}
+
 // What plots take from PPAR: INDEP's name and range, RES's step and the axes' crossing and tick spacing.
 {
   const { varPurge } = await import('../www/src/rpl/state.js');

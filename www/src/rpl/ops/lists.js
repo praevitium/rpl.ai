@@ -1,8 +1,9 @@
-import { isList, isVector, Integer, Real, isSymbolic, Symbolic, isName, isReal, isInteger, isComplex, isNumber, toComplex, toRealOrThrow, isString, isBinaryInteger, isTagged, isMatrix, Str, RList, Vector, Matrix, isProgram, isRational, isUnit, Unit } from '../types.js';
+import { isGrob, isList, isVector, Integer, Real, isSymbolic, Symbolic, isName, isReal, isInteger, isComplex, isNumber, toComplex, toRealOrThrow, isString, isBinaryInteger, isTagged, isMatrix, Str, RList, Vector, Matrix, isProgram, isRational, isUnit, Unit } from '../types.js';
 import { RPLError } from '../stack.js';
 import { Fn as AstFn, astEqual } from '../algebra.js';
 import { parseEntry as _parseEntryForObjTo } from '../parser.js';
 import { register, lookup, OPS } from './registry.js';
+import { isPict, replGrob, subGrob } from './graphics.js';
 import { setUserFlag, clearUserFlag } from '../state.js';
 import { sameDims } from '../units.js';
 import { recallVar, storeVar, _DOSUBS_STACK, _driveGen, _fromListOp, _fromStrOp, _inUnit, _isSymOperand, _scalarBinary, _symbolicDecompose, _toAst, _toCountN, _toIntIdx, _toListOp, _toStrOp, runDoList, runDoSubs, runMap, runSeq, runStream } from './internal.js';
@@ -176,6 +177,10 @@ register('TAIL', (s) => {
 
 register('SUB', (s) => {
   const [v, mVal, nVal] = s.popN(3);
+  if (isGrob(v) || isPict(v)) {
+    subGrob(s, v, mVal, nVal);
+    return;
+  }
   if (!isList(v) && !isString(v)) throw new RPLError('Bad argument type');
   // HP50 clamps instead of erroring: a start below 1 reads as 1, an end past the length as the length.
   const m = Math.max(1, _toCountN(mVal));
@@ -382,6 +387,11 @@ register('DLIST', (s) => OPS.get('ΔLIST').fn(s), { category: 'Lists / strings',
 
 register('REPL', (s) => {
   const [host, pos, patch] = s.popN(3);
+
+  if (isGrob(host) || isPict(host)) {
+    replGrob(s, host, pos, patch);
+    return;
+  }
 
   if (isMatrix(host)) {
     if (!isList(pos) || pos.items.length !== 2) {
