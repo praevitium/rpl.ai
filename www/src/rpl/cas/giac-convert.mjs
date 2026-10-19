@@ -110,8 +110,12 @@ function emit(ast, parentPrec) {
       const s = numText(ast);
       return parentPrec >= 2 && s.startsWith("-") ? `(${s})` : s;
     }
-    case "var":
-      return infGiacFromName(ast.name) || ast.name;
+    case "var": {
+      // Giac reads X++infinity as an increment, so a signed infinity beside an operator goes in parentheses.
+      const inf = infGiacFromName(ast.name);
+      if (!inf) return ast.name;
+      return parentPrec >= 1 ? `(${inf})` : inf;
+    }
     case "unit":
       throw new RPLError("Units can't go to the algebra engine");
     case "neg": {
