@@ -561,14 +561,14 @@ from before it.
 fields, conics, truth plots, contour maps, wireframes, y-slices and
 parametric surfaces in perspective, scatter, bar and histogram plots; `PLOT`
 stores an expression in EQ and plots it, and `PLOTADD` adds another.
-`` 2 -3 1.5 EYEPT `SIN(X*3)*COS(Y*3)` WIREFRAME `` shows the surface from that
-eye point inside VPAR's view volume, and `FAST3D` draws one you turn with a
-drag or the arrow keys, as the 50g's arrow keys turn it. Traces have
+`` 2 -3 1.5 EYEPT `SIN(X*3)*COS(Y*3)` WIREFRAME `` shows the surface from
+that eye point inside VPAR's view volume, and `FAST3D` draws one you turn
+with a drag or the arrow keys, as the 50g's arrow keys turn it. Traces have
 checkboxes and editable expressions. Zoom, fit and reset are on the canvas,
-the window is typed in directly, and Trace mode (`T`) walks a cursor along the curves with live
-readouts. Expand to fill the window, or go full screen. More canvas buttons copy the plot as an image,
-download it as a PNG at the screen's pixel density, and, where the device
-can share images, share it.
+the window is typed in directly, and Trace mode (`T`) walks a cursor along
+the curves with live readouts. Expand to fill the window, or go full screen.
+More canvas buttons copy the plot as an image, download it as a PNG at the
+screen's pixel density, and, where the device can share images, share it.
 
 ![Three traces in trace mode](screenshots/plot.png)
 
