@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.165 (2026-10-19)
+**Latest release:** v0.6.166 (2026-10-19)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.166 — 2026-10-19
+
+`DIV`, `CURL` and `LAPL`, the HP's vector calculus, sit in the CAS
+menu's CALC folder: `[ 'X^2*Y' 'X^2*Y' 'Y^2*Z' ] [ X Y Z ] DIV` gives
+the divergence, `CURL` the curl as a vector (three components and three
+variables), and `'EXP(X)*COS(Z*Y)' [ X Y Z ] LAPL` the Laplacian, as
+the AUR's examples show.
+
+In the assistant's replies, `__bold__` and `_em_` render as bold and
+emphasis, never inside a word such as snake_case or 1_m, and an escaped
+`\*` or `\_` shows as a bare mark.
+
+On a phone, the open drawer's tab scrolls clear of its tab row's edge
+fade, where History sat faded at the right edge at 360 px with the
+keypad hidden.
 
 ## v0.6.165 — 2026-10-19
 
