@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.160 (2026-10-19)
+**Latest release:** v0.6.161 (2026-10-19)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.161 — 2026-10-19
+
+Quotes curled by a phone keyboard's smart punctuation, as an iPhone
+types them, read as the HP's straight ones wherever text is parsed:
+‘X^2+1’ typed on the command line is an algebraic, “hi” a string, and
+3 ‘X’ STO stores X, where all three made names.
+
+Command search's highlighted result says what a mode command would
+set: DEG previews "Angle: Degrees (now Radians)", and FIX, SCI and ENG
+the digit count on level 1.
+
+In the Catalog, a family card beside one whose name wraps keeps its
+command count under its name.
 
 ## v0.6.160 — 2026-10-19
 
