@@ -611,6 +611,25 @@ import { readFileSync } from 'node:fs';
          'a rule renders as hr, and quote lines in a row share one blockquote that any other line ends');
 }
 
+// The tutor renders its problem, step titles and hints as markdown and draws its
+// steps with the replies' styles; $x^2$ showed as typed there, and a wide
+// formula ran past the card's edge, cut off.
+{
+  const tut = readFileSync(new URL('../www/src/ai/tutor.js', import.meta.url), 'utf8');
+  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/appendChild\(this\.renderMarkdown\(this\.plan\.problem\)\)/.test(tut)
+           && /this\.renderInline\(steps\[Number\(holder\.dataset\.title\)\]\.title\)/.test(tut)
+           && /this\.renderInline\(steps\[this\.current\]\.hints\[Number\(holder\.dataset\.hint\)\]\)/.test(tut)
+           && /renderInline: renderInlineMarkdown,/.test(src),
+         'the tutor renders its problem, step titles and hints as markdown, where they showed as typed');
+  assert(/:is\(\.cb-bubble, \.cb-md\) code \{/.test(css) && /:is\(\.cb-bubble, \.cb-md\) \.cb-math-display \{/.test(css)
+           && /class="tut-idea cb-md"/.test(tut) && /markScrollEdges\(el\)/.test(tut),
+         'the tutor\'s markdown takes the reply styles, so its code and tables are drawn and wide math scrolls with an edge fade');
+  assert(/\.tut-b \{[^}]*grid-template-columns: minmax\(0, 1fr\)/.test(css),
+         'a tutor step\'s column keeps to the card, so a wide formula scrolls instead of running past it');
+}
+
 // session367: classifyMarkdownLine — the per-line block-role classifier lifted
 // out of appendInlineMarkdownLines' DOM (session326/347/353/360 extract-and-pin
 // precedent). The renderer's block dispatch (heading/list/paragraph routing)

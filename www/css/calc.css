@@ -1225,7 +1225,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 .gr-data { display: flex; align-items: center; gap: 6px; padding: 6px 8px; font-size: 12.5px; color: var(--ink2); }
 .gr-show { width: 16px; height: 16px; margin: 0 2px; flex: none; cursor: pointer; }
 
-.tut { display: grid; gap: 8px; margin: 4px 0 10px; }
+.tut { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin: 4px 0 10px; }
 .tut-prob { padding: 12px; border-radius: 12px; background: var(--r1); border: 1px solid var(--line); font-size: 13px; line-height: 1.5; }
 .tut-prob small, .tut-keys > span:first-child { display: block; font: 600 10px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); margin-bottom: 6px; }
 .tut-prog { display: flex; gap: 4px; padding: 2px 2px 0; }
@@ -1239,7 +1239,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 .tut-h b { font: 600 13px/1.3 var(--font-ui); }
 .tut-h .n { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 600 11px/1 var(--font-mono); background: var(--r2); color: var(--ink2); }
 .tut-step.done .tut-h .n { background: var(--accent); color: var(--accent-ink); }
-.tut-b { padding: 0 12px 12px 44px; display: grid; gap: 10px; font-size: 13px; line-height: 1.55; }
+.tut-b { padding: 0 12px 12px 44px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; font-size: 13px; line-height: 1.55; }
 .tut-idea > :first-child { margin-top: 0; }
 .tut-idea > :last-child { margin-bottom: 0; }
 .tut-keys { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
@@ -1670,26 +1670,26 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   animation: cb-blink .7s steps(1) infinite;
 }
 @keyframes cb-blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
-.cb-bubble p { margin: 0 0 5px; }
-.cb-bubble p:last-child { margin-bottom: 0; }
-.cb-bubble h3,.cb-bubble h4,.cb-bubble h5,.cb-bubble h6 {
+:is(.cb-bubble, .cb-md) p { margin: 0 0 5px; }
+:is(.cb-bubble, .cb-md) p:last-child { margin-bottom: 0; }
+:is(.cb-bubble, .cb-md) :is(h3, h4, h5, h6) {
   margin: 10px 0 4px;
   font: 600 10.5px/1.2 var(--font-mono);
   color: var(--ink3);
   text-transform: uppercase;
   letter-spacing: .08em;
 }
-.cb-bubble ul,.cb-bubble ol { margin: 4px 0 4px 18px; padding: 0; }
-.cb-bubble li { margin-bottom: 2px; }
-.cb-bubble a { color: var(--accent); text-underline-offset: 2px; }
-.cb-bubble hr { border: 0; border-top: 1px solid var(--line2); margin: 8px 0; }
-.cb-bubble blockquote { margin: 6px 0; padding: 1px 0 1px 10px; border-left: 3px solid var(--line2); color: var(--ink2); }
-.cb-bubble .cb-table { overflow-x: auto; margin: 6px 0; word-break: normal; }
-.cb-bubble table { border-collapse: collapse; font-size: 12.5px; line-height: 1.4; }
-.cb-bubble th, .cb-bubble td { border: 1px solid var(--line2); padding: 3px 8px; text-align: left; vertical-align: top; }
-.cb-bubble th { background: color-mix(in oklab, var(--ink) 6%, transparent); font-weight: 600; }
-.cb-bubble .cb-table code { white-space: nowrap; }
-.cb-bubble code {
+:is(.cb-bubble, .cb-md) :is(ul, ol) { margin: 4px 0 4px 18px; padding: 0; }
+:is(.cb-bubble, .cb-md) li { margin-bottom: 2px; }
+:is(.cb-bubble, .cb-md) a { color: var(--accent); text-underline-offset: 2px; }
+:is(.cb-bubble, .cb-md) hr { border: 0; border-top: 1px solid var(--line2); margin: 8px 0; }
+:is(.cb-bubble, .cb-md) blockquote { margin: 6px 0; padding: 1px 0 1px 10px; border-left: 3px solid var(--line2); color: var(--ink2); }
+:is(.cb-bubble, .cb-md) .cb-table { overflow-x: auto; margin: 6px 0; word-break: normal; }
+:is(.cb-bubble, .cb-md) table { border-collapse: collapse; font-size: 12.5px; line-height: 1.4; }
+:is(.cb-bubble, .cb-md) :is(th, td) { border: 1px solid var(--line2); padding: 3px 8px; text-align: left; vertical-align: top; }
+:is(.cb-bubble, .cb-md) th { background: color-mix(in oklab, var(--ink) 6%, transparent); font-weight: 600; }
+:is(.cb-bubble, .cb-md) .cb-table code { white-space: nowrap; }
+:is(.cb-bubble, .cb-md) code {
   background: color-mix(in oklab, var(--ink) 8%, transparent);
   border: 1px solid var(--line2);
   border-radius: 3px;
@@ -1700,7 +1700,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
-.cb-bubble pre {
+:is(.cb-bubble, .cb-md) pre {
   background: var(--r1);
   border: 1px solid var(--line2);
   border-radius: 6px;
@@ -1710,35 +1710,35 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   font-size: 12.5px;
   line-height: 1.45;
 }
-.cb-bubble pre code {
+:is(.cb-bubble, .cb-md) pre code {
   background: none;
   border: none;
   padding: 0;
   color: var(--accent);
 }
-.cb-bubble .katex { color: var(--ink); font-size: 1.05em; }
+:is(.cb-bubble, .cb-md) .katex { color: var(--ink); font-size: 1.05em; }
 /* KaTeX's struts reach a few px past the line box; with only overflow-x set they turned into a vertical scrollbar. */
-.cb-bubble .cb-math-display {
+:is(.cb-bubble, .cb-md) .cb-math-display {
   display: block;
   overflow: auto hidden;
   padding: 4px 0;
   margin: 4px 0;
   text-align: center;
 }
-.cb-bubble .cb-math-display .katex-display { margin: 0; }
-.cb-bubble .cb-math-fallback {
+:is(.cb-bubble, .cb-md) .cb-math-display .katex-display { margin: 0; }
+:is(.cb-bubble, .cb-md) .cb-math-fallback {
   font-family: var(--font-mono);
   color: var(--ink);
   background: color-mix(in oklab, var(--ink) 5%, transparent);
   padding: 1px 4px;
   border-radius: 3px;
 }
-.cb-bubble .cb-math-fallback.cb-math-display {
+:is(.cb-bubble, .cb-md) .cb-math-fallback.cb-math-display {
   display: block;
   text-align: center;
   padding: 6px 8px;
 }
-.cb-bubble .cb-mermaid {
+:is(.cb-bubble, .cb-md) .cb-mermaid {
   margin: 8px 0;
   padding: 10px;
   background: #f7f8fb;
@@ -1747,13 +1747,13 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   overflow-x: auto;
   text-align: center;
 }
-.cb-bubble .cb-mermaid svg { max-width: 100%; height: auto; }
-.cb-bubble .cb-mermaid pre {
+:is(.cb-bubble, .cb-md) .cb-mermaid svg { max-width: 100%; height: auto; }
+:is(.cb-bubble, .cb-md) .cb-mermaid pre {
   background: var(--r1);
   margin: 0;
   text-align: left;
 }
-.cb-bubble .cb-mermaid-error {
+:is(.cb-bubble, .cb-md) .cb-mermaid-error {
   color: var(--danger);
   font-size: 12px;
   margin-top: 6px;

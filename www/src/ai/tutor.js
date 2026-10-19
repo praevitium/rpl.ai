@@ -1,5 +1,5 @@
 import { icon } from '../ui/icons.js';
-import { escapeHtml } from '../ui/display.js';
+import { escapeHtml, markScrollEdges } from '../ui/display.js';
 
 const DECIMAL = /^[-+]?(\d+\.?\d*|\.\d+)(E[-+]?\d+)?$/i;
 
@@ -22,10 +22,11 @@ export function stackCheck(current, expected, levels = 3) {
 }
 
 export class TutorCard {
-  constructor({ plan, tools, renderMarkdown, onFinish, onMine = null, onShow = null }) {
+  constructor({ plan, tools, renderMarkdown, renderInline, onFinish, onMine = null, onShow = null }) {
     this.plan = plan;
     this.tools = tools;
     this.renderMarkdown = renderMarkdown;
+    this.renderInline = renderInline;
     this.onFinish = onFinish;
     this.onMine = onMine;
     this.onShow = onShow;
@@ -47,19 +48,22 @@ export class TutorCard {
     const { steps } = this.plan;
     const progress = steps.map((_, i) => `<i class="${this.done.has(i) ? 'done' : i === this.current && !this.finished ? 'cur' : ''}"></i>`).join('');
     const finale = this.finished ? `<div class="tut-end"><b>Nicely done.</b><span>You worked it through on your own calculator.</span><div class="chipset"><button type="button" class="chip pri" data-tut="similar">Try a similar problem</button><button type="button" class="chip" data-tut="recap">Recap the solution</button></div></div>` : '';
-    this.el.innerHTML = `<div class="tut-prob"><small>Problem</small><span></span></div><div class="tut-prog" role="progressbar" aria-label="Steps done" aria-valuemin="0" aria-valuemax="${steps.length}" aria-valuenow="${this.done.size}">${progress}</div><ol class="tut-steps">${steps.map((step, i) => this._stepHtml(step, i)).join('')}</ol>${finale}`;
-    this.el.querySelector('.tut-prob span').textContent = this.plan.problem;
+    this.el.innerHTML = `<div class="tut-prob"><small>Problem</small><div class="cb-md"></div></div><div class="tut-prog" role="progressbar" aria-label="Steps done" aria-valuemin="0" aria-valuemax="${steps.length}" aria-valuenow="${this.done.size}">${progress}</div><ol class="tut-steps">${steps.map((step, i) => this._stepHtml(step, i)).join('')}</ol>${finale}`;
+    this.el.querySelector('.tut-prob .cb-md').appendChild(this.renderMarkdown(this.plan.problem));
     for (const holder of this.el.querySelectorAll('[data-idea]')) holder.appendChild(this.renderMarkdown(steps[Number(holder.dataset.idea)].idea));
+    for (const holder of this.el.querySelectorAll('[data-title]')) holder.appendChild(this.renderInline(steps[Number(holder.dataset.title)].title));
+    for (const holder of this.el.querySelectorAll('[data-hint]')) holder.appendChild(this.renderInline(steps[this.current].hints[Number(holder.dataset.hint)]));
+    for (const el of this.el.querySelectorAll('.cb-scroll')) markScrollEdges(el);
   }
 
   _stepHtml(step, i) {
     const open = i === this.current && !this.finished;
     const done = this.done.has(i);
-    const head = `<button type="button" class="tut-h" data-tut="open" data-i="${i}" aria-expanded="${open}"><span class="n">${done ? icon('check', 'xs') : i + 1}</span><b>${escapeHtml(step.title)}</b>${icon(open ? 'chd' : 'chr', 'sm')}</button>`;
+    const head = `<button type="button" class="tut-h" data-tut="open" data-i="${i}" aria-expanded="${open}"><span class="n">${done ? icon('check', 'xs') : i + 1}</span><b class="cb-md" data-title="${i}"></b>${icon(open ? 'chd' : 'chr', 'sm')}</button>`;
     if (!open) return `<li class="tut-step${done ? ' done' : ''}">${head}</li>`;
     const keys = step.rpl ? `<div class="tut-keys"><span>Keys</span>${(step.keys || step.rpl).split(/\s+/).filter(Boolean).map((k) => `<span class="kc">${escapeHtml(k)}</span>`).join('')}</div>` : '';
     const shown = this.hintsShown.get(i) ?? 0;
-    const hints = step.hints.slice(0, shown).map((h, n) => `<div class="tut-hint">${icon('bulb', 'sm')}<span><b>Hint ${n + 1}.</b> ${escapeHtml(h)}</span></div>`).join('');
+    const hints = step.hints.slice(0, shown).map((_, n) => `<div class="tut-hint">${icon('bulb', 'sm')}<span class="cb-md" data-hint="${n}"><b>Hint ${n + 1}.</b> </span></div>`).join('');
     const last = i === this.plan.steps.length - 1;
     const primary = done ? '' : step.rpl
       ? `<button type="button" class="chip pri" data-tut="show" data-i="${i}">${icon('play', 'sm')}Show me</button><button type="button" class="chip" data-tut="mine" data-i="${i}" aria-pressed="${this.doingIt.has(i)}">I'll do it</button>`
@@ -68,7 +72,7 @@ export class TutorCard {
     const feedback = this.feedback.get(i);
     const note = feedback ? `<div class="tut-fb${feedback.ok ? ' ok' : ''}" role="status">${escapeHtml(feedback.text)}</div>` : '';
     const check = this.doingIt.has(i) ? `<div class="tut-mine"><span>Press the keys on the keypad or type them, then</span><button type="button" class="chip" data-tut="check" data-i="${i}">${icon('check', 'sm')}Check my stack</button></div>` : '';
-    return `<li class="tut-step cur">${head}<div class="tut-b"><div class="tut-idea" data-idea="${i}"></div>${keys}<div class="chipset">${primary}${hintButton}</div>${hints}${check}${note}</div></li>`;
+    return `<li class="tut-step cur">${head}<div class="tut-b"><div class="tut-idea cb-md" data-idea="${i}"></div>${keys}<div class="chipset">${primary}${hintButton}</div>${hints}${check}${note}</div></li>`;
   }
 
   _onClick(e) {

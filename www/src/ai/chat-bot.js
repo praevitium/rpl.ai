@@ -316,6 +316,12 @@ function appendSpans(parent, text) {
   }
 }
 
+function renderInlineMarkdown(text) {
+  const frag = document.createDocumentFragment();
+  appendSpans(frag, text);
+  return frag;
+}
+
 /** Index of the `close` that balances the `open` at text[start], skipping
  *  JSON strings: RPL braces inside an argument need not balance.  -1 while
  *  the block is still streaming. */
@@ -1441,6 +1447,7 @@ export class ChatBot {
         currentStack: () => this._getContext().stack,
       },
       renderMarkdown,
+      renderInline: renderInlineMarkdown,
       onFinish: (kind) => this._sendChip(kind === 'similar' ? 'Give me a similar problem to practise, and walk me through it.' : 'Recap the whole solution in a few lines.'),
       onMine: (i, step) => this._onTutorMine?.(step, () => card.check(i)),
       onShow: (i, step) => this._onTutorShow?.(step),
