@@ -388,14 +388,14 @@ button { cursor: pointer; }
 .status-line .pill.l { background: var(--amber-dim); color: var(--amber); }
 .status-line .pill.r { background: var(--coral-dim); color: var(--coral); }
 .status-line .pill.a { background: var(--blue-dim); color: var(--blue); }
-.status-line .pill.e { background: var(--amber-dim); color: var(--amber); }
+.status-line :is(.pill.e, .pill.user) { background: var(--amber-dim); color: var(--amber); }
 .status-line .pill.alarm { position: relative; border: 0; background: var(--amber-dim); color: var(--amber); }
 .ann-status { display: flex; align-items: center; gap: 2px; width: 100%; padding: 6px 12px 8px 14px; border-bottom: 1px dashed var(--line2); font: 600 12.5px/1 var(--font-mono); letter-spacing: .06em; color: var(--ink2); }
 .ann-m { border: 0; background: transparent; letter-spacing: inherit; padding: 5px 7px; border-radius: 6px; }
 button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .ann-m.l, .ann-m.e { color: var(--amber); } .ann-m.r { color: var(--coral); } .ann-m.a { color: var(--blue); }
 .ann-m.e { display: inline-flex; align-items: center; gap: 2px; padding: 0 4px; }
-.ann-m.alarm { color: var(--amber); font-size: 11px; letter-spacing: 0; padding: 0 4px; }
+.ann-m:is(.alarm, .user) { color: var(--amber); font-size: 11px; letter-spacing: 0; padding: 0 4px; }
 .ann-sp { flex: 1; }
 .ann-path { font-weight: 500; color: var(--ink2); padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; gap: 6px; align-items: center; }
 .ann-path button { border: 0; background: transparent; padding: 3px 4px; border-radius: 5px; }
@@ -1032,9 +1032,9 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 :root[data-theme="classic"] .status-line { display: flex; justify-content: flex-start; gap: 14px; padding: 9px 12px 7px; margin: 0 8px; border-bottom: 1px dashed rgba(28, 38, 24, .28); font: 600 10.5px/1 var(--font-mono); letter-spacing: .05em; color: var(--lcd-ink); text-shadow: 1px 1.2px 0 rgba(28, 38, 24, .14); flex-wrap: nowrap; overflow: hidden; }
 :root[data-theme="classic"] .ann-g span.l.on { color: #7a4a00; }
 /* Classic's editing pencil sits in the LCD header: small in full view, a finger's height in minimal view beside Menu and Leave; under 320 px with HALT lit too, the = annunciator gives way, as the other looks' does. */
-:root[data-theme="classic"] .status-line :is(.ann-m.e, .ann-m.alarm) { font: inherit; color: #7a4a00; padding: 0 2px; }
+:root[data-theme="classic"] .status-line :is(.ann-m.e, .ann-m.alarm, .ann-m.user) { font: inherit; color: #7a4a00; padding: 0 2px; }
 :root[data-theme="classic"] .status-line .ann-m.e .i { width: 12px; height: 12px; }
-:root[data-theme="classic"]:not([data-view="minimal"]) .status-line :is(.ann-m.e, .ann-m.alarm) { height: 11px; min-height: 0; min-width: 0; }
+:root[data-theme="classic"]:not([data-view="minimal"]) .status-line :is(.ann-m.e, .ann-m.alarm, .ann-m.user) { height: 11px; min-height: 0; min-width: 0; }
 @container app (max-width: 319px) { :root[data-theme="classic"] .status-line:has(.ann-m.e):has(.ann-g.opt:not([data-mode]) > .on) .ann-g[data-mode="exact"] { display: none; } }
 :root[data-theme="classic"] .ann-path { margin-left: auto; color: var(--lcd-ink); padding: 0; }
 :root[data-theme="classic"] .ann-path button:hover { background: rgba(28, 38, 24, .1); color: var(--lcd-ink); }
@@ -1046,6 +1046,9 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   :root[data-theme="classic"][data-view="minimal"] .ann-g.opt:not([data-mode]):has(> .on) { display: flex; }
   :root[data-theme="classic"][data-view="minimal"] .status-line:has(.ann-g.opt:not([data-mode]) > .on) .ann-g > span:not(.on) { display: none; }
   :root[data-theme="classic"][data-view="minimal"] .status-line:has(.ann-g.opt:not([data-mode]) > .on) .ann-g:not(:has(> .on, > button)) { display: none; }
+  /* USER, lit, takes the dim annunciators' room the same way. */
+  :root[data-theme="classic"] .status-line:has(.ann-m.user) .ann-g > span:not(.on) { display: none; }
+  :root[data-theme="classic"] .status-line:has(.ann-m.user) .ann-g:not(:has(> .on, > button)) { display: none; }
 }
 :root[data-theme="classic"] .input { background: var(--bg); border-top: 0; padding: 8px 10px 6px; }
 :root[data-theme="classic"] .cmdline { background: #b9c7a9; color: var(--lcd-ink); border-color: rgba(0, 0, 0, .45); box-shadow: inset 0 2px 6px rgba(0, 0, 0, .22); text-shadow: 1px 1.4px 0 rgba(28, 38, 24, .14); }
@@ -2048,16 +2051,16 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   .status-line .pill.alarm::before { content: ''; position: absolute; inset: -10px -4px; }
   @container app (min-width: 360px) { button.ann-m { min-width: 40px; } .ann-status:has(> .ann-m:not([data-mode])) button.ann-m { min-width: 36px; } }
   /* HALT is an annunciator beside the modes, not a mode: small and tight, and the modes give as they do under 320 px. */
-  .ann-m.halt { padding: 0; font-size: 11px; letter-spacing: 0; }
-  .ann-status:has(.ann-m.halt, .ann-m.alarm) button.ann-m { min-width: 28px; }
-  @container app (max-width: 359px) { .ann-status:has(.ann-m.halt, .ann-m.alarm) { padding-left: 6px; padding-right: 4px; } }
+  .ann-m:is(.halt, .user) { padding: 0; font-size: 11px; letter-spacing: 0; }
+  .ann-status:has(.ann-m.halt, .ann-m.alarm, .ann-m.user) button.ann-m { min-width: 28px; }
+  @container app (max-width: 359px) { .ann-status:has(.ann-m.halt, .ann-m.alarm, .ann-m.user) { padding-left: 6px; padding-right: 4px; } }
   /* Under 320 px the padding goes and the modes give a little, so the leave button stays on screen; FIX 11 takes two lines if it must. */
   @container app (max-width: 319px) {
     .ann-status { padding-left: 6px; padding-right: 4px; }
     /* The amber pencil of a level being edited, HALT or a past-due alarm is a seventh mode at 280 px, which the side padding pays for. */
-    .ann-status:has(.ann-m.e, .ann-m.halt, .ann-m.alarm) { padding-left: 2px; padding-right: 2px; }
+    .ann-status:has(.ann-m.e, .ann-m.halt, .ann-m.alarm, .ann-m.user) { padding-left: 2px; padding-right: 2px; }
     /* Two of them leave no room for the exact mode. */
-    .ann-status:has(.ann-m.halt):has(.ann-m.e, .ann-m.alarm) button.ann-m[data-mode="exact"],
+    .ann-status:has(.ann-m.halt, .ann-m.user):has(.ann-m.e, .ann-m.alarm) button.ann-m[data-mode="exact"],
     .ann-status:has(.ann-m.e):has(.ann-m.alarm) button.ann-m[data-mode="exact"] { display: none; }
     button.ann-m { min-width: 28px; }
     button.ann-m[data-mode="fmt"] { white-space: normal; line-height: 1.1; }

@@ -884,5 +884,23 @@ function quotaError() {
   setPict(null);
 }
 
+// User key assignments, and S DELKEYS, survive a save.
+{
+  const { setUserKeys, getUserKeys, standardKeysActive } = await import('../www/src/rpl/state.js');
+  resetHome();
+  setUserKeys([[7530, Name('GETI')], [1110, Program([Real(1), Name('+')])]], false);
+  const saved = JSON.parse(JSON.stringify(snapshot(new Stack())));
+  setUserKeys([], true);
+  rehydrate(saved, new Stack());
+  const keys = getUserKeys();
+  assert(keys.length === 2 && keys[0][0] === 1110 && isProgram(keys[0][1]) && keys[1][1].id === 'GETI' && !standardKeysActive(),
+    'user key assignments come back in key order, with S DELKEYS still in force');
+  const legacy = { ...saved };
+  delete legacy.userKeys;
+  delete legacy.standardKeys;
+  rehydrate(legacy, new Stack());
+  assert(getUserKeys().length === 0 && standardKeysActive(), 'a save from before user keys loads with none and the standard keys');
+}
+
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');
 process.exit(failed ? 1 : 0);

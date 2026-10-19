@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.48 (2026-10-19)
+**Latest release:** v0.7.49 (2026-10-19)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.49 — 2026-10-19
+
+- The HP's user keyboard: `« 2 * » 53.1 ASN` gives the SIN key a program,
+  `{ obj key … } STOKEYS` assigns several, `RCLKEYS` lists them and
+  `DELKEYS` removes one, a list of them, all (`0`) or the standard keys
+  (`S`). Keys are numbered rc.p as on the 50g. With flag -62 set, USER
+  shows in the status line and an assigned key, soft keys included, runs
+  its object; ON always keeps its own action. Assignments are saved with
+  the stack.
 
 ## v0.7.48 — 2026-10-19
 

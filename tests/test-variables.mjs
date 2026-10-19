@@ -2091,6 +2091,26 @@ clearAllUserFlags();
   assert(format(runLine('LANGUAGE→').peek()) === '0.', 'LANGUAGE→ gives 0, English');
 }
 
+// The user keyboard: ASN, STOKEYS, RCLKEYS and DELKEYS, keys as rc.pf.
+{
+  const keys = (line) => format(runLine(`${line} RCLKEYS`).peek());
+  assert(keys("0 DELKEYS 'GETI' 75.3 ASN « 1 + » 11 ASN") === '{ S « 1 + » 11.1 `GETI` 75.3 }',
+    'ASN assigns keys, RCLKEYS lists them in key order after S, and 11 is 11.1, the unshifted key');
+  assert(keys("0 DELKEYS { SIN 53.2 COS 54.21 } STOKEYS { 53.2 } DELKEYS") === '{ S COS 54.21 }',
+    'STOKEYS assigns pairs, shift-and-hold planes included, and DELKEYS takes a list');
+  assert(keys("0 DELKEYS 'X' 11.1 ASN S DELKEYS SKEY 12.1 ASN") === '{ `X` 11.1 SKEY 12.1 }',
+    'S DELKEYS drops the S and leaves SKEY assignments marking the keys that keep their standard action');
+  assert(keys("{ S Y 13.1 } STOKEYS") === '{ S `X` 11.1 Y 13.1 }', 'a list starting with S brings the standard keys back, dropping SKEY');
+  assert(keys('0 DELKEYS') === '{ S }', '0 DELKEYS clears every assignment');
+  assertThrows(() => runLine("'X' 17.1 ASN"), /Bad argument value/, 'ASN: rows 1 to 3 have six keys, the others five');
+  assertThrows(() => runLine("'X' 11.7 ASN"), /Bad argument value/, 'ASN: planes run 1 to 6');
+  assertThrows(() => runLine("'X' 106.1 ASN"), /Bad argument value/, 'ASN: the bottom row has five keys');
+  assertThrows(() => runLine("{ 'X' } STOKEYS"), /Bad argument value/, 'STOKEYS wants object and key pairs');
+  assertThrows(() => runLine("0 DELKEYS { A 11.1 B 99.9 } STOKEYS"), /Bad argument value/, 'STOKEYS refuses a list with a bad key');
+  assert(keys('') === '{ S }', 'STOKEYS checks every pair before it assigns any');
+  assertThrows(() => runLine("'X' \"11.1\" ASN"), /Bad argument type/, 'ASN wants a key number');
+}
+
 // EDIT, EDITB, VISIT and VISITB hand the app what to edit and in which editor.
 {
   const { setEditHook } = await import('../www/src/rpl/ops.js');

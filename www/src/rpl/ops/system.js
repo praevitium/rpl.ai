@@ -1,5 +1,7 @@
 import { isReal, Real, isInteger, Integer, isBinaryInteger, BinaryInteger, isRational, Rational, isComplex, Complex, isString, Str, isName, Name, isSymbolic, Symbolic, isList, RList, isVector, Vector, isMatrix, Matrix, isProgram, Program, isTagged, Tagged, isUnit, Unit } from '../types.js';
 import { register } from './registry.js';
+import { RPLError } from '../stack.js';
+import { getUserKeys, setUserKeys, standardKeysActive } from '../state.js';
 
 
 
@@ -71,3 +73,54 @@ register('LANGUAGE→', (s) => {
 register('MEM', (s) => {
   s.push(Real(1073741824));
 }, { category: 'System', categoryOrder: 0, label: "MEM" });
+
+
+// The user keyboard: a key is rc.pf, row r 1 to 10 and column c as the 50g numbers them, shift plane p 1 to 6 (0 is 1)
+// and f 1 for shift-and-hold; it is kept as rc.pf × 100. SKEY stands for a key's standard action and S for every one.
+function _userKey(v) {
+  if (!(isReal(v) || isInteger(v))) throw new RPLError('Bad argument type');
+  const x = Number(v.value) * 100;
+  const n = Math.round(x);
+  const [r, c, p, f] = [Math.floor(n / 1000), Math.floor(n / 100) % 10, Math.floor(n / 10) % 10 || 1, n % 10];
+  const valid = Math.abs(x - n) < 1e-6 && r >= 1 && r <= 10 && c >= 1 && c <= (r <= 3 ? 6 : 5) && p <= 6 && f <= 1;
+  if (!valid) throw new RPLError('Bad argument value');
+  return (r * 10 + c) * 100 + p * 10 + f;
+}
+
+const _isNamed = (v, id) => isName(v) && v.id === id;
+
+function _assignKeys(pairs, standard) {
+  const keys = new Map(getUserKeys());
+  for (const [obj, key] of pairs) keys.set(key, obj);
+  setUserKeys([...keys].filter(([, obj]) => !(standard && _isNamed(obj, 'SKEY'))), standard);
+}
+
+register('ASN', (s) => {
+  const [obj, xkey] = s.popN(2);
+  _assignKeys([[obj, _userKey(xkey)]], standardKeysActive());
+}, { category: 'System', categoryOrder: 3, label: 'ASN' });
+
+register('STOKEYS', (s) => {
+  const [arg] = s.popN(1);
+  if (_isNamed(arg, 'S')) { _assignKeys([], true); return; }
+  if (!isList(arg)) throw new RPLError('Bad argument type');
+  const restore = _isNamed(arg.items[0], 'S');
+  const items = restore ? arg.items.slice(1) : arg.items;
+  if (items.length % 2) throw new RPLError('Bad argument value');
+  const pairs = items.filter((_, i) => i % 2 === 0).map((obj, i) => [obj, _userKey(items[2 * i + 1])]);
+  _assignKeys(pairs, restore || standardKeysActive());
+}, { category: 'System', categoryOrder: 3.1, label: 'STOKEYS' });
+
+register('RCLKEYS', (s) => {
+  const items = getUserKeys().flatMap(([key, obj]) => [obj, Real(key / 100)]);
+  s.push(RList(standardKeysActive() ? [Name('S'), ...items] : items));
+}, { category: 'System', categoryOrder: 3.2, label: 'RCLKEYS' });
+
+// 0 clears every assignment and brings the standard keys back; S leaves only the assigned keys working in USER mode.
+register('DELKEYS', (s) => {
+  const [arg] = s.popN(1);
+  if (_isNamed(arg, 'S')) { setUserKeys(getUserKeys(), false); return; }
+  if ((isReal(arg) || isInteger(arg)) && Number(arg.value) === 0) { setUserKeys([], true); return; }
+  const doomed = new Set((isList(arg) ? arg.items : [arg]).map(_userKey));
+  setUserKeys(getUserKeys().filter(([key]) => !doomed.has(key)));
+}, { category: 'System', categoryOrder: 3.3, label: 'DELKEYS' });

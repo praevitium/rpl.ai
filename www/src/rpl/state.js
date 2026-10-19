@@ -52,6 +52,10 @@ export const state = {
   pict: null,                // PICT, the graphics object the drawing commands use; null until something sets it
   // Appointment alarms, soonest first: { due (ms), message, repeat (ticks, 8192 a second), ack }.
   alarms: [],
+  // User key assignments as [key, object] pairs in key order, the key being rc.pf × 100 (7530 for 75.3);
+  // standardKeys is false after S DELKEYS.
+  userKeys: [],
+  standardKeys: true,
 };
 
 function _dispatchState() {
@@ -337,6 +341,16 @@ export function getAlarms() { return state.alarms; }
 export function getPict() { return state.pict ?? Grob(131, 80); }
 
 export function setPict(grob) { _set('pict', grob); }
+
+export function getUserKeys() { return state.userKeys; }
+
+export function standardKeysActive() { return state.standardKeys; }
+
+export function setUserKeys(pairs, standard = state.standardKeys) {
+  state.userKeys = [...pairs].sort((a, b) => a[0] - b[0]);
+  state.standardKeys = standard;
+  _emit();
+}
 
 export function setAlarms(list) {
   state.alarms = [...list].sort((a, b) => a.due - b.due);
@@ -916,7 +930,7 @@ const CAPTURED_SCALARS = [
   'angle', 'coordMode', 'displayMode', 'displayDigits', 'lastError',
   'wordsize', 'binaryBase', 'textbookMode', 'approxMode', 'complexMode',
   'lastFitModel', 'casVx', 'casModulo', 'halted', 'promptMessage', 'prngSeed',
-  'realMaxExp', 'lcd', 'alarms', 'pict',
+  'realMaxExp', 'lcd', 'alarms', 'pict', 'userKeys', 'standardKeys',
 ];
 
 export function captureCalcState() {

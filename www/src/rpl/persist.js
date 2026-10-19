@@ -111,6 +111,8 @@ export function snapshot(stack) {
     casModulo: encode(state.casModulo),
     alarms: state.alarms,
     pict: encode(state.pict),
+    userKeys: state.userKeys.map(([key, value]) => [key, encode(value)]),
+    standardKeys: state.standardKeys,
   };
 }
 
@@ -119,6 +121,19 @@ function decodePict(snap) {
   const fits = g?.type === TYPES.GROB && g.bytes instanceof Uint8Array && Number.isInteger(g.width) && Number.isInteger(g.height)
     && g.bytes.length === g.height * Math.ceil(g.width / 8);
   return fits ? Grob(g.width, g.height, g.bytes) : null;
+}
+
+// A pair that does not decode is dropped rather than failing the whole restore.
+function decodeUserKeys(snap) {
+  if (!Array.isArray(snap.userKeys)) return [];
+  return snap.userKeys.flatMap((pair) => {
+    if (!Array.isArray(pair) || !Number.isInteger(pair[0])) return [];
+    try {
+      return [[pair[0], decode(pair[1])]];
+    } catch {
+      return [];
+    }
+  });
 }
 
 const validAlarm = (a) => a && Number.isFinite(a.due) && typeof a.message === 'string' && Number.isFinite(a.repeat) && a.repeat >= 0;
@@ -167,6 +182,7 @@ export function rehydrate(snap, stack) {
   }
   const items = Array.isArray(snap.stack) ? snap.stack.map(decode) : [];
   const pict = decodePict(snap);
+  const userKeys = decodeUserKeys(snap);
 
   // Refill the live HOME in place: other modules hold references to it.
   state.home.entries.clear();
@@ -203,6 +219,8 @@ export function rehydrate(snap, stack) {
   state.alarms = (Array.isArray(snap.alarms) ? snap.alarms.filter(validAlarm) : [])
     .map((a) => ({ due: a.due, message: a.message, repeat: a.repeat, ack: !!a.ack })).sort((a, b) => a.due - b.due);
   state.pict = pict;
+  state.userKeys = userKeys;
+  state.standardKeys = snap.standardKeys !== false;
 
   stack.restore(items);
   notify();

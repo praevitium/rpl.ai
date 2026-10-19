@@ -34,7 +34,7 @@ import { toLatex } from './rpl/latex.js';
 import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, currentPath,
-  goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo,
+  goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo, getUserKeys, standardKeysActive,
   batchStateNotifications,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setBeepHook, setConlibHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
@@ -283,6 +283,7 @@ class App {
       halted: calcState.halted && calcState.halted.kind !== 'wait' ? calcState.halted.kind : null,
       editing: this.pendingEdit ? this.pendingEdit.level ?? this.pendingEdit.name : null,
       alarm: !!pastDueAlarm(),
+      user: testUserFlag(-62),
     });
   }
 
@@ -1535,6 +1536,7 @@ class App {
 
   pressSoftKey(i, forcedLayer = null) {
     if (this._answerKey(hpKeyCode(`F${i + 1}`, forcedLayer ?? this.layer()))) return;
+    if (this._userKey(`F${i + 1}`, forcedLayer ?? this.layer())) return;
     this._pressSlot(this.menuView().slots[i], forcedLayer);
   }
 
@@ -1996,12 +1998,7 @@ class App {
     return list.items.map((item) => {
       const { label, main, left, right } = customMenuEntry(item);
       const shifted = !!(left || right);
-      const press = (target) => () => {
-        if (!target || this._typeCustomItem(target)) return;
-        if (customCommand(target)) { this.runCommandFromUI(target.id, { asKey: true }); return; }
-        if (this.entry.buffer.trim().length > 0) this.commitEntry();
-        this._pushValue(target, isProgram(target) || isName(target) ? label : null);
-      };
+      const press = (target) => () => { if (target) this._runKeyObject(target, label); };
       const hint = (mark, target) => (target ? ` · ${mark} ${customMenuLabel(target)}` : '');
       return {
         label,
@@ -2016,6 +2013,26 @@ class App {
         onHold: shifted ? (anchor) => this._heldKeyMenu([[left, '⇦'], [right, '⇨']].filter(([t]) => t).map(([t, mark]) => ({ text: customMenuLabel(t), mark, run: press(t) })), anchor, label) : null,
       };
     });
+  }
+
+  // A CST key's or a user key's object: a command or program runs, a name is evaluated, anything else goes on the stack.
+  _runKeyObject(target, label) {
+    if (this._typeCustomItem(target)) return;
+    if (customCommand(target)) { this.runCommandFromUI(target.id, { asKey: true }); return; }
+    if (this.entry.buffer.trim().length > 0) this.commitEntry();
+    this._pushValue(target, isProgram(target) || isName(target) ? label : null);
+  }
+
+  // In USER mode (flag -62) a key ASN gave an object runs it, SKEY being its standard action; after S DELKEYS a key
+  // with none does nothing, except ON, so the way out stays open.
+  _userKey(primary, layer = this.layer()) {
+    if (!testUserFlag(-62) || this.inputMode !== 'rpl' || this.selection != null) return false;
+    const code = Math.round((hpKeyCode(primary, layer) ?? 0) * 100);
+    const obj = getUserKeys().find(([k]) => k === code)?.[1];
+    if (obj ? isName(obj) && obj.id === 'SKEY' : standardKeysActive() || primary === 'ON') return false;
+    if (obj) this._runKeyObject(obj, customMenuLabel(obj));
+    if (this.shift && !this.shiftLocked()) this.setShift(null);
+    return true;
   }
 
   // Inside an open object a CST key types its item, as the HP's keys do; false when it should run.
@@ -2093,6 +2110,7 @@ class App {
     // A shift key with a letter on it (the compact keypad's) types the letter under α. KEY takes a shift key as a key.
     if (MODIFIER_KINDS.has(key.kind) && !calcState.halted?.dialog?.poll && !(key.alpha && this.layer() === 'A')) { this.setShift(key.kind); return; }
     if (this._answerKey(hpKeyCode(key.primary, this.layer()))) return;
+    if (this._userKey(key.primary)) return;
     const step = { '▲': -1, '▼': 1 }[key.primary];
     if (step && !this.shift && this._moveChoice(step)) return;
 

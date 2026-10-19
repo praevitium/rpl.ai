@@ -318,6 +318,13 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   An item can be `{ "label" object }` or `{ "label" { object ⇦object
   ⇨object } }`, as on the HP; a finger held on the key offers the shifted
   objects.
+  The user keyboard is the HP's too: `« 2 * » 53.1 ASN` gives the SIN key
+  a program, `STOKEYS` assigns a list of pairs, `RCLKEYS` lists them and
+  `DELKEYS` removes them, keys numbered rc.p as on the 50g (row, column,
+  shift). With flag -62 set (`-62 SF`), USER shows in the status line and
+  an assigned key, a soft key included, runs its object as a CST key does;
+  the others keep their action, unless `S DELKEYS` has taken it (ON always
+  keeps its own). The assignments are saved with the stack.
 - Tap a stack level for its actions, on a line under it so they never cover
   the value: Edit, View, Pick (DUP on level 1), Roll above level 1 (SWAP on level 2), Conv for
   a value with units (from 360 px wide), Drop, and ⋯
@@ -915,10 +922,9 @@ Catalog and the command reference mark what is available. Not there yet:
   Symbolic commands such as EXPAND and SOLVE refuse an algebraic with units
   in it, which EVAL and →NUM work out.
 
-**Left out on purpose.** USER mode and key assignments, ENTRY mode, the
-NUM.SLV solver screens, FINANCE, TIME, OFF, libraries (LIB, ATTACH and
-port management other than ARCHIVE and RESTORE), Saturn assembly and
-System RPL, and IR and serial transfer.
+**Left out on purpose.** ENTRY mode, the NUM.SLV solver screens, FINANCE,
+TIME, OFF, libraries (LIB, ATTACH and port management other than ARCHIVE
+and RESTORE), Saturn assembly and System RPL, and IR and serial transfer.
 
 **Behaviour that differs from the HP 50g.**
 
