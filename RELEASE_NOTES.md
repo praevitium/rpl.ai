@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.161 (2026-10-19)
+**Latest release:** v0.6.162 (2026-10-19)
 
 ---
 
@@ -20,6 +20,21 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.162 — 2026-10-19
+
+×, ÷ and − typed from a phone keyboard's symbol keys read as the HP's
+*, / and -: 2 3 × multiplies, ‘2×X’ is an algebraic and −5 a number,
+where each made a name or failed to parse. Inside a string they stay
+text.
+
+Command search's highlighted result says what STO would store and
+where, what RCL would recall, what PURGE would remove, how many points
+CLΣ would clear and how many variables CLVAR would purge (it keeps
+folders that hold anything).
+
+On a phone, a drawer's tab row scrolls the open drawer's tab into
+view, where History and Chars sat past the right edge at 280 px.
 
 ## v0.6.161 — 2026-10-19
 
