@@ -1535,12 +1535,12 @@ class App {
     const act = (a) => () => this.levelAction(a, level);
     return [
       { label: 'EDIT', title: 'Edit this level (Enter)', onPress: act('edit') },
+      { label: 'VIEW', title: 'Show it full size', onPress: act('view') },
       { label: 'ECHO', title: 'Copy it into the command line', onPress: act('echo') },
       { label: 'PICK', title: 'Copy it to level 1', onPress: act('pick') },
       { label: 'ROLL', title: 'Move it to level 1', onPress: act('roll') },
-      { label: 'ROLLD', title: 'Move level 1 here', onPress: act('rolld') },
       { label: 'DROP', title: 'Remove it (⌫)', onPress: act('drop') },
-      { label: 'VIEW', title: 'Show it full size', onPress: act('view') },
+      { label: 'ROLLD', title: 'Move level 1 here', onPress: act('rolld') },
       { label: '→LIST', title: `Make a list of levels 1–${level}`, onPress: act('tolist') },
       { label: 'DUPN', title: `Copy levels 1–${level}`, onPress: act('dupn') },
       { label: 'DRPN', title: `Drop levels 1–${level}`, onPress: act('dropn') },

@@ -312,7 +312,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   interactive stack's VIEW, which shows the level full size (a long number
   in full, a long list wrapped to the screen, a formula or matrix that scrolls both ways; pinch or double-tap to zoom) with Edit, Copy and
   Share under it; on a screen under 320 px wide (360 for a formula, which
-  adds Plot) it waits in ⋯. ⋯ also has →LIST, DUPN, DRPN
+  adds Plot) it waits in ⋯; at any width it is on the first page of the level's soft keys, beside EDIT. ⋯ also has →LIST, DUPN, DRPN
   and KEEP for levels 1 to the one you tapped, and LEVEL to push its number (also on the level's soft keys). Swipe a level left or right to drop it; the
   toast's Undo brings it back. Share sends the value with a link; opening
   the link starts rpl.ai with the value on the command line, where nothing

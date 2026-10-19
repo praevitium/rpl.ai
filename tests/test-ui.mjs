@@ -2415,3 +2415,9 @@ setAngle('RAD');
   fire(onDoc, 'pointerdown', sheetEdit);
   assert(!fire(onDoc, 'click', sheetEdit).stopped, 'soft keys, touch: the next tap, on what the key opened, goes through');
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/\{ label: 'EDIT', [^\n]*\n\s*\{ label: 'VIEW', /.test(appSrc),
+    "level soft keys: a selected level's soft keys put VIEW on the first page beside EDIT, as the HP's interactive stack has it, where it sat on the second page, two taps away under 320 px");
+}
