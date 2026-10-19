@@ -1802,6 +1802,13 @@ setAngle('RAD');
   assert(!palette._items('sw').some(([title]) => title === 'Recent commands'), 'command search: a typed query shows matches, not the recent list');
 }
 
+// SUM of a real gives it back unchanged, and its preview read "→ removes 0 levels".
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/if \(!top\.length && !outcome\.consumed\) return '→ leaves the stack as it is';\n    if \(!top\.length\) return `→ removes /.test(appSrc),
+    'command search: a command that leaves the stack as it was previews as such, not as removing 0 levels');
+}
+
 {
   const paletteSrc = readFileSync(new URL('../www/src/ui/palette.js', import.meta.url), 'utf8');
   assert(/detail: \[entry \? shortDescription\(entry, 90\) : '', sig\]\.filter\(Boolean\)\.join\(' · '\),/.test(paletteSrc),

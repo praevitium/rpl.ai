@@ -1731,6 +1731,7 @@ class App {
     if (!outcome) return '';
     if (!outcome.ok) return this._previewFailure(name, outcome.error).title;
     const top = outcome.results.slice(-2).reverse();
+    if (!top.length && !outcome.consumed) return '→ leaves the stack as it is';
     if (!top.length) return `→ removes ${outcome.consumed === 1 ? 'level 1' : `${outcome.consumed} levels`}`;
     return `→ ${top.map((value, i) => `${i + 1}: ${format(value, this.display.displayOpts)}`).join('   ')}`;
   }
