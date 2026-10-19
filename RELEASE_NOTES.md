@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.50 (2026-10-19)
+**Latest release:** v0.7.51 (2026-10-19)
 
 ---
 
@@ -20,6 +20,14 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.51 — 2026-10-19
+
+- LOCAL and UNBIND: `{ ←A '←B=2' } LOCAL` makes the ← variables ←A (0) and
+  ←B (2), which last from one command line to the next, and `UNBIND`
+  removes them and gives `{ '←B=2' '←A=0' }`, as the AUR's example has it.
+  Names starting with ←, the HP's compiled locals, can now be stored to,
+  recalled and used in algebraics.
 
 ## v0.7.50 — 2026-10-19
 

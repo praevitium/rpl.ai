@@ -110,10 +110,10 @@ export function Name(id, { local = false, quoted = false } = {}) {
 }
 
 // HP50 AUR §2.2.4: 1 to 127 characters, a letter first, then letters, digits,
-// _ or % (the TVM solver's I%YR).  Greek is limited to the HP character set's
-// letters rather than \p{L}, so look-alike letters from other scripts are refused.
+// _ or % (the TVM solver's I%YR), with ← before them for a compiled local such as LOCAL's.  Greek is limited to the
+// HP character set's letters rather than \p{L}, so look-alike letters from other scripts are refused.
 const HP_IDENT_RE =
-  /^[A-Za-zΑ-Ωα-ω][A-Za-z0-9Α-Ωα-ω_%]{0,126}$/;
+  /^←?[A-Za-zΑ-Ωα-ω][A-Za-z0-9Α-Ωα-ω_%]{0,126}$/;
 
 // Command names, upper-cased; register() adds each op so STO refuses them.
 const _RESERVED_NAMES = new Set();
@@ -132,7 +132,7 @@ export function isValidHpIdentifier(name) {
 
 // Giac reads % as its remainder, so a name bound for the CAS keeps to letters, digits and _.
 export function isCasIdentifier(name) {
-  return isValidHpIdentifier(name) && !name.includes('%');
+  return isValidHpIdentifier(name) && !name.includes('%') && !name.startsWith('←');
 }
 
 export function isStorableHpName(name) {

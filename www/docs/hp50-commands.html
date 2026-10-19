@@ -9446,6 +9446,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Creates one or more local variables. This command is intended mainly for use in Algebraic mode; it can not be single stepped when a program containing it is being debugged in Algebraic mode.</p>
+  <p>In rpl.ai LOCAL works the same way from a program or the command line: <code>{ ←A '←B=2' } LOCAL</code> makes ←A and ←B, and they last from one command line to the next until UNBIND. A name must start with ← (Bad argument value otherwise); ← names can be stored to, recalled and used in algebraics, but the CAS commands don't take them.</p>
   </dd>
   <dt class="cmd-label cmd-label-input">Input</dt>
   <dd class="cmd-field cmd-field-input">
@@ -17817,6 +17818,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Removes all local variables created by the LOCAL command, and returns their values. This is useful only if a program needs to remove local variables created earlier in the same program.</p>
+  <p>In rpl.ai a value an algebraic can't hold, such as a list, comes back after its name rather than in an equation.</p>
   </dd>
   <dt class="cmd-label cmd-label-input">Input</dt>
   <dd class="cmd-field cmd-field-input">

@@ -66,6 +66,7 @@ VARIABLES & DIRECTORIES (operate in the current directory)
   DEFINE  \`F(X)=X^2+1\` DEFINE — make the user function F; then \`F(3)\` EVAL gives 10 (any stored program is callable as F(args) in an algebraic; IFTE(test,then,else) works inside algebraics, so \`R(N)=IFTE(N<=1,1,N*R(N-1))\` DEFINE recurses)
   STEQ RCEQ  value STEQ stores it in EQ; RCEQ recalls EQ from the current directory
   DEF     as DEFINE but leaves the equation; { U V } UNASSIGN → their values, purged (a missing one stays a name); PUSH saves flags and path, POP restores them
+  LOCAL UNBIND { ←A '←B=2' } LOCAL makes ← variables (0 or the value after =) that last across command lines; UNBIND removes them and returns { '←B=2' '←A=0' }, newest first
   CLVAR   delete every variable and empty subdirectory in the current dir (destructive: don't run it unasked; CLUSR is the same)
   VARS    push a list of all variable names in the current dir
   ORDER   reorder VARS list

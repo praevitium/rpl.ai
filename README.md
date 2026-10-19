@@ -208,7 +208,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
   then gives `25`, and SQUARE appears on the VARS menu. A stored program
   runs by name like a built-in. Built-in names such as `SQ` are reserved.
 - **Local variables.** `« 2 3 → a b « a b + a b * » » EVAL` leaves `5` and
-  `6`.
+  `6`. `{ ←A '←B=2' } LOCAL` makes ← variables, 0 or the value after `=`,
+  that last, from line to line, until `UNBIND` gives them back as
+  `{ '←B=2' '←A=0' }`.
 - **Errors in programs.** `« IFERR 1 0 / THEN ERRN END » EVAL` traps the
   error and gives `#773d`, the HP's `#305h` for Infinite result, as the
   common errors all carry the HP's numbers; `"Disk full" DOERR` raises a

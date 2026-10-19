@@ -845,6 +845,22 @@ function _pastCaseEnd(toks, from) {
 
 const _localFrames = [];
 
+// LOCAL's frames, oldest first; they stay in _localFrames after the run that made them, until UNBIND.
+const _boundFrames = [];
+
+export function bindLocals(pairs) {
+  const frame = new Map(pairs);
+  _localFrames.push(frame);
+  _boundFrames.push(frame);
+}
+
+// Every variable LOCAL made, newest first, as [name, value].
+export function unbindLocals() {
+  const frames = _boundFrames.splice(0).filter((f) => _localFrames.includes(f));
+  frames.forEach((f) => _localFrames.splice(_localFrames.lastIndexOf(f), 1));
+  return frames.reverse().flatMap((f) => [...f].reverse());
+}
+
 
 function _localFrame(id) {
   for (let i = _localFrames.length - 1; i >= 0; i--) {
@@ -931,7 +947,8 @@ function* runArrow(s, toks, arrowIdx, to, depth) {
   }
   // popN returns [level n … level 1], so the rightmost name binds level 1.
   const values = s.popN(names.length);
-  _localFrames.push(new Map(names.map((name, k) => [name, values[k]])));
+  const frame = new Map(names.map((name, k) => [name, values[k]]));
+  _localFrames.push(frame);
   try {
     if (isProgram(body)) {
       yield* evalRange(s, body.tokens, 0, body.tokens.length, depth + 1);
@@ -939,7 +956,7 @@ function* runArrow(s, toks, arrowIdx, to, depth) {
       yield* _evalValueGen(s, body, depth + 1);
     }
   } finally {
-    _localFrames.pop();
+    _localFrames.splice(_localFrames.lastIndexOf(frame), 1);
   }
   return i + 1;
 }
@@ -1164,7 +1181,9 @@ export function runSuspendable(gen) {
     if (!waiting) settleLcd();
     if (!halted) {
       _pendingSuspend = null;
-      while (_localFrames.length > framesAtEntry) _localFrames.pop();
+      for (let i = _localFrames.length - 1; i >= framesAtEntry; i--) {
+        if (!_boundFrames.includes(_localFrames[i])) _localFrames.splice(i, 1);
+      }
     }
   }
 }

@@ -2091,6 +2091,20 @@ clearAllUserFlags();
   assert(format(runLine('LANGUAGE→').peek()) === '0.', 'LANGUAGE→ gives 0, English');
 }
 
+// LOCAL and UNBIND: ← names bound until UNBIND, across command lines as the AUR's example has it.
+{
+  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
+  assert(shown("{ ←A '←B=2' } LOCAL") === "{ ←A `←B = 2` }", 'LOCAL gives its list back');
+  assert(shown('←B ←A') === '2 | 0', 'LOCAL: a name with no value is 0, and the variables outlive the line that made them');
+  assert(shown('UNBIND') === '{ `←B = 2` `←A = 0` }', 'UNBIND gives the variables back, newest first, as the AUR\'s example does');
+  assert(shown('UNBIND') === '{  }', 'UNBIND leaves none behind');
+  assert(shown("« { '←X=5' } LOCAL DROP « 1 → n « ←X n + » » EVAL UNBIND » EVAL") === '6 | { `←X = 5` }',
+    'LOCAL: a program called from the one that made them sees them, and a → inside leaves them alone');
+  assert(shown("{ '←A=2' } LOCAL DROP 7 '←A' STO '←A*3' EVAL UNBIND") === '21 | { `←A = 7` }', 'LOCAL: STO and algebraics reach ← names');
+  assertThrows(() => runLine('{ A } LOCAL'), /Bad argument value/, 'LOCAL wants ← names, as the AUR has it');
+  assertThrows(() => runLine("'←A' LOCAL"), /Bad argument type/, 'LOCAL wants a list');
+}
+
 // The user keyboard: ASN, STOKEYS, RCLKEYS and DELKEYS, keys as rc.pf.
 {
   const keys = (line) => format(runLine(`${line} RCLKEYS`).peek());

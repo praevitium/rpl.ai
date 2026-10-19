@@ -1,9 +1,10 @@
 import { getPict, varStore, varRecall, varPurge, varOrder, renameCurrentEntry, makeSubdir, goUp, goHome, goInto, currentPath, state as _calcState, reorderCurrentEntries, cloneDirectory, inScratchState, setFlagNumbers, replaceFlags } from '../state.js';
 import { RPLError, Stack } from '../stack.js';
-import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory, isTagged, isSymbolic, isNumber, isUnit, Program, Symbolic, Directory } from '../types.js';
+import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory, isTagged, isSymbolic, isNumber, isUnit, Program, Symbolic, Directory, Integer, Real } from '../types.js';
+import { Bin as AstBin, Var as AstVar } from '../algebra.js';
 import { archiveBackup, restoreBackup } from '../persist.js';
 import { register, lookup } from './registry.js';
-import { _astToRplValue, _coerceDirName, _coerceStorableName, _hp50TypeCode, recallVar, storeVar } from './internal.js';
+import { _astToRplValue, _coerceDirName, _coerceStorableName, _hp50TypeCode, _toAst, recallVar, storeVar, bindLocals, unbindLocals } from './internal.js';
 import { isPict, storePict, purgePict } from './graphics.js';
 
 
@@ -116,6 +117,30 @@ register('UNASSIGN', (s) => {
   };
   s.push(isList(arg) ? RList(arg.items.map(unassign)) : unassign(arg));
 }, { category: 'Variables / directories', categoryOrder: 22.3, label: "UNASSIGN" });
+
+// LOCAL ( { ←a '←b=2' } → the list ): each ←name, 0 or the value after its =, until UNBIND, in programs and
+// on the command line alike.
+function _localBinding(item) {
+  const eq = isSymbolic(item) && item.expr.kind === 'bin' && item.expr.op === '=' ? item.expr : null;
+  const name = eq ? eq.l.kind === 'var' && eq.l.name : isName(item) && item.id;
+  if (!name?.startsWith('←')) throw new RPLError('Bad argument value');
+  return [name, eq ? _astToRplValue(eq.r) : _calcState.approxMode ? Real(0) : Integer(0n)];
+}
+
+register('LOCAL', (s) => {
+  const [list] = s.popN(1);
+  if (!isList(list)) throw new RPLError('Bad argument type');
+  bindLocals(list.items.map(_localBinding));
+  s.push(list);
+}, { category: 'Variables / directories', categoryOrder: 22.4, label: 'LOCAL' });
+
+// UNBIND gives LOCAL's variables back, newest first, as ←name=value, a value no algebraic holds after its name.
+register('UNBIND', (s) => {
+  s.push(RList(unbindLocals().flatMap(([name, value]) => {
+    const ast = _toAst(value);
+    return ast ? [Symbolic(AstBin('=', AstVar(name), ast))] : [Name(name, { quoted: true }), value];
+  })));
+}, { category: 'Variables / directories', categoryOrder: 22.5, label: 'UNBIND' });
 
 const _pushed = [];
 
