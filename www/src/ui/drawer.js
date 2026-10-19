@@ -175,6 +175,7 @@ const DRAWERS = Object.freeze([
 
 const DRAWER_MIN_WIDTH = 280;
 const DRAWER_MAX_WIDTH = 720;
+const TAB_FADE = 36;
 
 export class Drawers {
   constructor({ rail, el, scrim, app }) {
@@ -335,13 +336,15 @@ export class Drawers {
     if (strip) markScrollEdges(strip);
   }
 
-  // The tab row starts at its left edge on every render, so on a phone the open drawer's tab sat past the right edge.
+  // The tab row starts at its left edge on every render, so on a phone the open drawer's tab sat past the right edge,
+  // or under the edge fade (calc.css's 36 px) that says more tabs lie past it.
   _revealTab() {
     const strip = this.el.querySelector('.dw-tabs');
     const tab = strip?.querySelector('[aria-pressed="true"]');
     if (!tab) return;
     const s = strip.getBoundingClientRect(), t = tab.getBoundingClientRect();
-    if (t.left < s.left || t.right > s.right) strip.scrollLeft += t.left + t.width / 2 - (s.left + s.width / 2);
+    const past = (t.left < s.left + TAB_FADE && strip.scrollLeft > 0) || (t.right > s.right - TAB_FADE && strip.scrollLeft + strip.clientWidth < strip.scrollWidth);
+    if (past) strip.scrollLeft += t.left + t.width / 2 - (s.left + s.width / 2);
   }
 
   _headActions(id) {

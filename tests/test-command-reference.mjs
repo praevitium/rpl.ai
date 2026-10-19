@@ -312,8 +312,9 @@ const REF = parseCommandReference(HTML);
 {
   const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
   assert(/this\._renderBody\(\);\n    this\._revealTab\(\);/.test(drawerSrc)
-    && /if \(t\.left < s\.left \|\| t\.right > s\.right\) strip\.scrollLeft \+= t\.left \+ t\.width \/ 2 - \(s\.left \+ s\.width \/ 2\);/.test(drawerSrc),
-    'drawer tabs: the open drawer\'s tab scrolls to the middle of the row when it would sit past an edge');
+    && /const past = \(t\.left < s\.left \+ TAB_FADE && strip\.scrollLeft > 0\) \|\| \(t\.right > s\.right - TAB_FADE && strip\.scrollLeft \+ strip\.clientWidth < strip\.scrollWidth\);\s*if \(past\) strip\.scrollLeft \+= t\.left \+ t\.width \/ 2 - \(s\.left \+ s\.width \/ 2\);/.test(drawerSrc)
+    && /const TAB_FADE = 36;/.test(drawerSrc),
+    'drawer tabs: the open drawer\'s tab scrolls to the middle of the row when it would sit past an edge or under its 36 px fade (History at 360 px with the keypad hidden)');
 }
 
 /* The tabs beside the open one showed cut at both edges with nothing to say the row scrolls; it fades there as the key strip does. */
