@@ -29,7 +29,7 @@ export const ALIASES = new Map([
 
 // Reference headings the parser and the program runner handle, so no command registers them.
 const SYNTAX_WORDS = new Set(['IF', 'THEN', 'ELSE', 'END', 'CASE', 'IFERR', 'FOR', 'NEXT', 'START', 'STEP', 'DO', 'UNTIL',
-  'WHILE', 'REPEAT', '« »', '→', '_', 'π', 'e', 'i']);
+  'WHILE', 'REPEAT', '« »', '→', '_', 'π', 'e', 'i', 'dn']);
 
 export function isSyntaxWord(name) {
   const word = String(name ?? '').trim();

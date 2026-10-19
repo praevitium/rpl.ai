@@ -660,6 +660,11 @@ register('MINR', (s) => {
   s.push(Real(new Decimal(`1e-${e}`)));
 }, { category: 'Arithmetic', categoryOrder: 23, label: "MINR" });
 
+// Executed, ∞ gives the algebraic +∞, as the HP's keyboard and Catalog do.
+register('∞', (s) => {
+  s.push(Symbolic(AstVar('∞')));
+}, { category: 'Arithmetic', categoryOrder: 24.5, label: "∞" });
+
 
 function _hmsBinary(fn) {
   return (s) => {

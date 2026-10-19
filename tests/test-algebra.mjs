@@ -8808,3 +8808,17 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(shown("'(X-1)/(X+2)' SIGNTAB") === '{ `-∞` + -2 - 1 + `∞` }', 'SIGNTAB lists the pole and the zero in order with the sign between');
   giac._clear();
 }
+
+// The HP's dn: EVAL differentiates a built-in function in its nth argument; ∞ executed gives the algebraic ∞.
+{
+  const top = (line) => format(runLine(line).peek());
+  giac._clear();
+  giac._setFixture('diff(sin(rplD1),rplD1)', 'cos(rplD1)');
+  giac._setFixture('diff(cos(rplD1),rplD1)', '-sin(rplD1)');
+  assert(top("'d1SIN(2*X)' EVAL") === '`COS(2*X)`', 'EVAL of d1SIN(2*X) is COS(2*X), as the AUR shows');
+  assert(top("'d1d1SIN(X)' EVAL") === '`-SIN(X)`', 'd1d1 differentiates twice');
+  assert(top("'d1Y(X)' EVAL") === '`d1Y(X)`', 'dn of a function the calculator does not know stays as written');
+  giac._clear();
+  const inf = runLine('∞').peek();
+  assert(isSymbolic(inf) && format(inf) === '`∞`', '∞ executed gives the algebraic ∞');
+}

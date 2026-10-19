@@ -1704,6 +1704,8 @@ function _casCalculus(ast) {
   if (ast.kind !== 'fn') return ast;
   const args = ast.args.map(_casCalculus);
   const rebuilt = args.every((a, i) => a === ast.args[i]) ? ast : AstFn(ast.name, args);
+  const dn = _DN_FUNCTION.exec(ast.name);
+  if (dn && isKnownFunction(dn[2])) return _dnDerivative(dn[1].match(/\d+/g).map(Number), dn[2], args) ?? rebuilt;
   const definite = ast.name === 'INTEG' && args.length === 4;
   const form = definite ? { arity: 4, op: '∫' } : CAS_CALCULUS[ast.name];
   if (!form || args.length !== form.arity || args[1].kind !== 'var') return rebuilt;
@@ -1716,6 +1718,27 @@ function _casCalculus(ast) {
     return _toAst(s.pop());
   } catch {
     return rebuilt;
+  }
+}
+
+// The HP's dn: d1SIN(2*X) is SIN differentiated in its first argument, COS(2*X), and d1d1 differentiates twice.
+const _DN_FUNCTION = /^((?:d\d+)+)([A-Za-z].*)$/;
+
+function _dnDerivative(orders, name, args) {
+  if (orders.some((n) => n > args.length)) return null;
+  const slots = args.map((_, i) => `rplD${i + 1}`);
+  const s = new Stack();
+  try {
+    let expr = AstFn(name, slots.map((slot) => AstVar(slot)));
+    for (const n of orders) {
+      s.push(Symbolic(expr));
+      s.push(Name(slots[n - 1]));
+      lookup('DERIV').fn(s);
+      expr = _toAst(s.pop());
+    }
+    return _substitute(expr, new Map(slots.map((slot, i) => [slot, args[i]])));
+  } catch {
+    return null;
   }
 }
 

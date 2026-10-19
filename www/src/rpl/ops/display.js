@@ -46,7 +46,7 @@ export function setOpenHook(fn) {
   _openHook = typeof fn === 'function' ? fn : null;
 }
 
-// The HP's CAS menu commands open the app's menu or folder holding the same commands; CASCMD and HELP, the
+// The HP's CAS menu commands, and TVM, open the app's menu or folder holding the same commands; CASCMD and HELP, the
 // HP's lists of CAS commands with their examples, open the Catalog.
 const MENU_COMMANDS = Object.freeze({
   ALGB: { family: 'CAS', folder: 'ALG' },
@@ -60,6 +60,7 @@ const MENU_COMMANDS = Object.freeze({
   POLYNOMIAL: { family: 'POLY' },
   MATR: { family: 'MATRIX' },
   TESTS: { family: 'LOGIC' },
+  TVM: { family: 'TVM' },
   CASCMD: { drawer: 'catalog' },
   HELP: { drawer: 'catalog' },
 });
