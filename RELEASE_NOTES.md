@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.14 (2026-10-19)
+**Latest release:** v0.7.15 (2026-10-19)
 
 ---
 
@@ -20,6 +20,21 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.15 — 2026-10-19
+
+The sixteenth batch of missing HP 50g commands adds two:
+
+- `CHINREM` solves two polynomial congruences, each given as
+  [ expression modulus ]: `[ 'X^2+1' 'X+2' ] [ 'X-1' 'X+3' ] CHINREM`
+  gives `[ '9*X+23' 'X^2+5*X+6' ]`. The AUR shows the same solution
+  unreduced, X^3+2*X^2+5 over -(X^2+5*X+6); here it comes reduced modulo
+  the product of the moduli.
+- `DOMAIN` lists where a function of the CAS variable is defined (+) and
+  undefined (?) along the real line: after `'F(A)=√(A+1)' DEFINE`,
+  `'F(X)' DOMAIN` gives `{ -∞ ? -1 + ∞ }`, as the AUR shows. A lone point
+  left out, such as 0 for 1/X, isn't listed, and a function the
+  calculator doesn't know is Unknown operator.
 
 ## v0.7.14 — 2026-10-19
 
