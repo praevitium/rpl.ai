@@ -252,6 +252,17 @@ const REF = parseCommandReference(HTML);
   const paletteSrc = readFileSync(new URL('../www/src/ui/palette.js', import.meta.url), 'utf8');
   assert(/const shown = spelledName\(entry, name\);\s*const runnable = !!lookup\(name\);/.test(paletteSrc)
     && /kind: 'command', title: shown,/.test(paletteSrc)
-    && /run: !runnable && isSyntaxWord\(name\) \? \(\) => typeSyntaxWord\(this\.app\.entry, shown\)/.test(paletteSrc),
+    && /: \(\) => typeSyntaxWord\(this\.app\.entry, shown\),/.test(paletteSrc),
     'command search: IF, FOR, π and the other syntax words show in the manual\'s spelling and choosing one types it on the command line, where it said "IF isn\'t available in rpl.ai"');
+}
+
+/* Command search listed commands rpl.ai lacks, such as PICT and PIXON, like any other, and choosing one put up an
+   error. Such a row now carries a "not in app" badge, which stays in view with the keyboard up where the description
+   line hides, and choosing it opens its reference page. */
+{
+  const paletteSrc = readFileSync(new URL('../www/src/ui/palette.js', import.meta.url), 'utf8');
+  assert(/const missing = !runnable && !isSyntaxWord\(name\);/.test(paletteSrc)
+    && /run: runnable \? \(\) => \{ this\._remember\(name\); this\.app\.runCommandFromUI\(name\); \}\s*: missing \? \(\) => this\.app\.drawers\.showReference\(name\)/.test(paletteSrc)
+    && /it\.missing \? `<span class="badge">not in app<\/span>` : '',/.test(paletteSrc),
+    'command search: a command rpl.ai lacks wears a "not in app" badge and opens its reference page when chosen, where PICT looked runnable and choosing it put up an error');
 }

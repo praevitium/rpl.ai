@@ -117,11 +117,13 @@ export class Palette {
       const sig = entry ? signatureOf(entry) : '';
       const shown = spelledName(entry, name);
       const runnable = !!lookup(name);
+      const missing = !runnable && !isSyntaxWord(name);
       return {
-        kind: 'command', title: shown, mono: true, icon: 'chr', reference: true,
+        kind: 'command', title: shown, mono: true, icon: 'chr', reference: true, missing,
         detail: [entry ? shortDescription(entry, 90) : '', sig].filter(Boolean).join(' · '),
-        run: !runnable && isSyntaxWord(name) ? () => typeSyntaxWord(this.app.entry, shown)
-          : () => { this._remember(name); this.app.runCommandFromUI(name); },
+        run: runnable ? () => { this._remember(name); this.app.runCommandFromUI(name); }
+          : missing ? () => this.app.drawers.showReference(name)
+            : () => typeSyntaxWord(this.app.entry, shown),
         open: () => this.app.drawers.showReference(name),
       };
     };
@@ -191,6 +193,7 @@ export class Palette {
         this.rows.push(it);
         const right = [
           it.current ? `<span class="badge">current</span>` : '',
+          it.missing ? `<span class="badge">not in app</span>` : '',
           it.shortcut ? `<span class="kbd">${escapeHtml(it.shortcut)}</span>` : '',
           it.reference ? `<button type="button" class="mini" data-ref title="Open the reference (→)" aria-label="Reference">${icon('book', 'sm')}</button>` : '',
         ].join('');
