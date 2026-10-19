@@ -937,7 +937,7 @@ function* runArrow(s, toks, arrowIdx, to, depth) {
 // program suspends the enclosing one.
 const SUSPENDABLE_OPS = new Map([
   ['IFT', runIft], ['IFTE', runIfte], ['SEQ', runSeq], ['MAP', runMap],
-  ['DOLIST', runDoList], ['DOSUBS', runDoSubs], ['STREAM', runStream],
+  ['DOLIST', runDoList], ['DOSUBS', runDoSubs], ['STREAM', runStream], ['PROMPTSTO', runPromptSto],
 ]);
 
 
@@ -1384,6 +1384,18 @@ export function* runIfte(s, depth) {
     if (!keepsFailureStack(e)) s.restore(snap);
     throw e;
   }
+}
+
+
+// PROMPTSTO asks for a value under the name with a ?, as INPUT does, and stores what the answer reads as.
+export function promptStoProgram(v) {
+  if (!isName(v)) throw new RPLError('Bad argument type');
+  return Program([Str(`${v.id}?`), Str(''), Name('INPUT'), Name('STR→'), Name(v.id, { quoted: true }), Name('STO')]);
+}
+
+export function* runPromptSto(s, depth) {
+  const [name] = s.popN(1);
+  yield* _evalValueGen(s, promptStoProgram(name), depth + 1);
 }
 
 

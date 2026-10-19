@@ -2,7 +2,7 @@ import { RPLAbort, RPLError } from '../stack.js';
 import { getHalted, takeHalted, clearHalted, inScratchState } from '../state.js';
 import { isProgram, isTagged, Name, Real } from '../types.js';
 import { register, lookup } from './registry.js';
-import { runSuspendable, withStepMode } from './internal.js';
+import { runSuspendable, withStepMode, promptStoProgram } from './internal.js';
 
 
 
@@ -33,6 +33,13 @@ register('MSGBOX', () => {
 register('INPUT', () => {
   throw new RPLError('INPUT: not inside a running program');
 }, { category: 'Control flow / debug', categoryOrder: 10, label: "INPUT" });
+
+// Typed, PROMPTSTO runs as a program of its own, so its INPUT can wait for the answer.
+register('PROMPTSTO', (s) => {
+  const [name] = s.popN(1);
+  s.push(promptStoProgram(name));
+  lookup('EVAL').fn(s);
+}, { category: 'Control flow / debug', categoryOrder: 10.1, label: "PROMPTSTO" });
 
 
 register('CHOOSE', () => {

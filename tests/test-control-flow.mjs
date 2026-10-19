@@ -7693,3 +7693,26 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   assert(lookup('BEEP').category === 'Display / base', 'BEEP sits with DISP and FREEZE, the HP\'s OUT menu family');
   setBeepHook(null);
 }
+
+// PROMPTSTO asks with the name and a ?, then stores what the answer reads as, typed or inside a program.
+{
+  resetHome(); clearAllHalted(); clearPromptMessage();
+  const s = new Stack();
+  s.push(Name('A7', { quoted: true }));
+  lookup('PROMPTSTO').fn(s);
+  assert(getHalted()?.kind === 'input' && getPromptMessage()?.value === 'A7?' && s.depth === 0, 'PROMPTSTO asks A7? with an empty line');
+  s.push(Str('42'));
+  lookup('CONT').fn(s);
+  assert(getHalted() === null && s.depth === 0 && varRecall('A7')?.value === 42n, 'PROMPTSTO stores the answer in A7');
+  s.push(parseEntry("« 'B7' PROMPTSTO B7 2 * »")[0]);
+  lookup('EVAL').fn(s);
+  assert(getPromptMessage()?.value === 'B7?', 'PROMPTSTO inside a program halts it for the answer');
+  s.push(Str('5'));
+  lookup('CONT').fn(s);
+  assert(s.depth === 1 && s.peek().value === 10n, 'the program runs on with the stored answer');
+  const t = new Stack();
+  t.push(Real(3));
+  assertThrows(() => lookup('PROMPTSTO').fn(t), /Bad argument type/, 'PROMPTSTO wants a name');
+  clearAllHalted(); clearPromptMessage();
+  resetHome();
+}
