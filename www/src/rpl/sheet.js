@@ -4,6 +4,7 @@
    list of rows. */
 
 import { parseEntry } from './parser.js';
+import { testUserFlag } from './state.js';
 import { formatSource } from './formatter.js';
 import {
   Decimal, isComplex, isInteger, isList, isMatrix, isRational, isReal, isString, isVector,
@@ -75,8 +76,11 @@ function plainDecimal(m) {
     if (rest.length || !new RegExp(`^\\d{1,3}(?:\\${group}\\d{3})+$`).test(whole)) return null;
     out = `${whole.split(group).join('')}.${fraction}`;
   } else if (commas) {
-    if (/^\d{1,3}(?:,\d{3})+$|^\d{1,2}(?:,\d{2})+,\d{3}$/.test(m)) out = m.replace(/,/g, '');
-    else if (/^\d*,\d+$/.test(m)) out = m.replace(',', '.');
+    // With flag -51 set a lone comma is the fraction mark, as the command line reads it.
+    const fraction = /^\d*,\d+$/.test(m);
+    if (fraction && testUserFlag(-51)) out = m.replace(',', '.');
+    else if (/^[1-9]\d{0,2}(?:,\d{3})+$|^[1-9]\d?(?:,\d{2})+,\d{3}$/.test(m)) out = m.replace(/,/g, '');
+    else if (fraction) out = m.replace(',', '.');
     else return null;
   } else if (dots > 1) {
     if (!/^\d{1,3}(?:\.\d{3})+$/.test(m)) return null;

@@ -36,6 +36,8 @@ const src = (text) => formatSource(parseEntry(text)[0]);
     'sheetNumber: thousands and decimal separators of any locale');
   assert(read('12,5') === '12.5' && read('0,5') === '0.5' && read('1,234') === '1234' && read('1.234.567') === '1234567',
     'sheetNumber: a lone comma is a decimal comma unless it groups three digits');
+  assert(read('0,125') === '0.125' && read('0,12,345') === null,
+    'sheetNumber: a comma after a lone 0 is a decimal comma, since no grouping starts with 0');
   assert(read('$1,234.50') === '1234.50' && read('€12,50') === '12.50' && read('£ 3.5') === '3.5' && read('3.5 €') === '3.5',
     'sheetNumber: a currency symbol is dropped');
   assert(read('(300.00)') === '-300.00' && read('($5.00)') === '-5.00' && read('-$5') === '-5' && read('300-') === '-300'
@@ -46,6 +48,17 @@ const src = (text) => formatSource(parseEntry(text)[0]);
   assert(read('-') === '0' && read('—') === '0', 'sheetNumber: a lone dash is zero, as in an accounting format');
   assert(['', 'abc', '1.2.3', '1/2', '12:30', '#N/A', '1E', 'E5', '$', '()'].every((t) => read(t) === null),
     'sheetNumber: text, dates, times and spreadsheet errors are not numbers');
+}
+
+{
+  const { setUserFlag, clearUserFlag } = await import('../www/src/rpl/state.js');
+  setUserFlag(-51);
+  const read = [sheetNumber('12,345'), sheetNumber('1,234,567'), sheetNumber('1.234,5'), sheetNumber('2.5')];
+  const range = spreadsheetToSource('12,345\t2,5');
+  clearUserFlag(-51);
+  assert(read.join(' ') === '12.345 1234567 1234.5 2.5',
+    `sheetNumber: with flag -51 set a lone comma is the fraction mark, as on the command line (${read.join(' ')})`);
+  assert(src(range) === '[ 12.345 2.5 ]', `spreadsheetToSource: with -51 set a pasted 12,345 is 12.345 (${range})`);
 }
 
 {
