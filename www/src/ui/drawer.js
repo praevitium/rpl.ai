@@ -28,6 +28,9 @@ export const CATEGORIES = {
   Units: [...(_opCategories.Units || []), ...UNIT_SYMBOLS],
 };
 
+// A tile names its character; what follows a dash or sits in closing parentheses stays in its title.
+const charCaption = (title = '') => title.split(' — ')[0].replace(/ \(.*\)$/, '');
+
 export const CHAR_GROUPS = {
   'Constants': [
     ['π', 'π', 'pi — folds to 3.14159… under APPROX / →NUM'],
@@ -582,7 +585,7 @@ export class Drawers {
     const html = Object.entries(CHAR_GROUPS).map(([group, items]) => {
       const matches = items.filter(([label, , title]) => !q || `${label} ${title ?? ''}`.toLowerCase().includes(q));
       if (!matches.length) return '';
-      return `<div class="sec-h">${escapeHtml(group)}</div><div class="cgrid">${matches.map(([label, text, title]) => `<button type="button" data-dw="char" data-text="${escapeHtml(text)}" title="${escapeHtml(title ?? label)}"><b>${escapeHtml(label)}</b><span>${escapeHtml((title ?? '').split(' — ')[0])}</span></button>`).join('')}</div>`;
+      return `<div class="sec-h">${escapeHtml(group)}</div><div class="cgrid">${matches.map(([label, text, title]) => `<button type="button" data-dw="char" data-text="${escapeHtml(text)}" title="${escapeHtml(title ?? label)}"><b>${escapeHtml(label)}</b><span>${escapeHtml(charCaption(title))}</span></button>`).join('')}</div>`;
     }).join('');
     list.innerHTML = html || '<div class="empty-note">No character matches.</div>';
   }

@@ -2428,6 +2428,11 @@ setAngle('RAD');
     && /\.stack-view \.st-val:has\(> \.matrix-grid\.fit\) \{ width: 100%; container-type: inline-size; \}/.test(cssSrc)
     && /\.stack-view \.st-val > \.matrix-grid\.fit \{ font-size: clamp\(\.75em, \(100cqi - 2px\) \/ var\(--mw\), 1em\); \}/.test(cssSrc),
     'matrices on the stack: a grid of plain entries shrinks to fit its line down to the formulas\' 75%, then scrolls, where [[1.5 2.25 3.125][4 5 6][7 8 9]] lost its last column in minimal view at 280 px; one holding a formula keeps its size');
+  const charsSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  assert(/const charCaption = \(title = ''\) => title\.split\(' — '\)\[0\]\.replace\(\/ \\\(\.\*\\\)\$\/, ''\);/.test(charsSrc)
+    && /<span>\$\{escapeHtml\(charCaption\(title\)\)\}<\/span>/.test(charsSrc)
+    && /@media \(pointer: coarse\) \{[^@]*\.cgrid span \{ white-space: normal; text-wrap: balance; text-align: center; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; \}/.test(cssSrc),
+    'Characters drawer: a tile names its constant without the parenthesised value, which stays in its title, and on touch the name takes two lines, where 40 of 111 showed as "speed of li…" or "gravitatio…" on every phone width');
   assert(/const DEEP_GRID_ROWS = 3;/.test(displaySrc)
     && /const oneLine = \(value, level\) => level > 1 && calcState\.textbookMode && \(isList\(value\) \|\| gridRows\(value\) > DEEP_GRID_ROWS\);/.test(displaySrc)
     && /sig: rowSig\(flat, svgSize, oneLine\(value, level\)\)/.test(displaySrc)
