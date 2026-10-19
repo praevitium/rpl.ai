@@ -2,10 +2,10 @@ import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isLis
 import { giac } from '../cas/giac-engine.mjs';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { buildGiacCmd, giacToAst, splitGiacList, astToGiac, isGiacErrorString } from '../cas/giac-convert.mjs';
-import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction, LOGIC_ARITY, formatAlgebra } from '../algebra.js';
+import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction, LOGIC_ARITY, formatAlgebra, astEqual } from '../algebra.js';
 import { getComplexMode, getCasVx, setCasVx, getApproxMode, getCasModulo, setApproxMode, setComplexMode, resetCasVx, resetCasModulo } from '../state.js';
 import { register, lookup } from './registry.js';
-import { _astToRplValue, _pushCasResult, _isSymOperand, _toAst, _substitute, _withListUnary, _withTaggedUnary, _withVMUnary, recallVar, storeVar } from './internal.js';
+import { _astToRplValue, _pushCasResult, _isSymOperand, _toAst, _substitute, _withListUnary, _withTaggedUnary, _withVMUnary, recallVar, storeVar, _evalSymbolic, TRUE, FALSE } from './internal.js';
 
 
 
@@ -174,6 +174,8 @@ const COMPARISON_OPS = { '<': 1, '>': 1, '≤': 1, '≥': 1, '≠': 1, '==': 1 }
 // Giac has no isolate, so ISOL returns every branch SOLVE finds rather
 // than the HP50's single equation with sign placeholders.
 register('ISOL', lookup('SOLVE').fn, { category: 'CAS / symbolic', categoryOrder: 10, label: "ISOL" });
+// The HP 48's name for SOLVE.
+register('QUAD', lookup('SOLVE').fn, { category: 'CAS / symbolic', categoryOrder: 10.1, label: "QUAD" });
 
 // A system's equations, an expression set equal to zero, and its variables, as Giac's syst2mat and linsolve take them.
 function _linearSystem(eqsArg, varsArg) {
@@ -941,19 +943,26 @@ register('TAYLOR0', (s) => {
 // Rebuilds the tree bottom-up and offers each rebuilt node to `rewrite`.
 // A rewrite's result is not walked again, so HALFTAN's new TAN(x/2) and
 // EXPLN's new EXP nodes are left alone.
-function _rewriteAst(ast, rewrite) {
-  let node = ast;
+// The node itself when f leaves every child as it was.
+function _mapChildren(ast, f) {
   if (ast.kind === 'neg') {
-    const arg = _rewriteAst(ast.arg, rewrite);
-    if (arg !== ast.arg) node = AstNeg(arg);
-  } else if (ast.kind === 'bin') {
-    const l = _rewriteAst(ast.l, rewrite);
-    const r = _rewriteAst(ast.r, rewrite);
-    if (l !== ast.l || r !== ast.r) node = AstBin(ast.op, l, r);
-  } else if (ast.kind === 'fn') {
-    const args = ast.args.map((a) => _rewriteAst(a, rewrite));
-    if (args.some((a, i) => a !== ast.args[i])) node = AstFn(ast.name, args);
+    const arg = f(ast.arg);
+    return arg === ast.arg ? ast : AstNeg(arg);
   }
+  if (ast.kind === 'bin') {
+    const l = f(ast.l);
+    const r = f(ast.r);
+    return l === ast.l && r === ast.r ? ast : AstBin(ast.op, l, r);
+  }
+  if (ast.kind === 'fn') {
+    const args = ast.args.map(f);
+    return args.some((a, i) => a !== ast.args[i]) ? AstFn(ast.name, args) : ast;
+  }
+  return ast;
+}
+
+function _rewriteAst(ast, rewrite) {
+  const node = _mapChildren(ast, (a) => _rewriteAst(a, rewrite));
   return rewrite(node) ?? node;
 }
 
@@ -1033,6 +1042,124 @@ register('DISTRIB', (s) => {
   if (!isSymbolic(v)) throw new RPLError('Bad argument type');
   s.push(Symbolic(_distribOnce(v.expr) ?? v.expr));
 }, { category: 'CAS / symbolic', categoryOrder: 11, label: "DISTRIB" });
+
+// FDISTRIB distributes every product and quotient over sums at once, laid out as the AUR's example is: each term
+// of the left factor in turn times each term of the right, the right one written first, a difference as + -(…).
+function _negateTerms(ast) {
+  if (ast.kind === 'bin' && ast.op === '+') return AstBin('+', _negateTerms(ast.l), _negateTerms(ast.r));
+  if (ast.kind === 'bin' && ast.op === '-') return AstBin('+', _negateTerms(ast.l), ast.r);
+  return ast.kind === 'neg' ? ast.arg : AstNeg(ast);
+}
+
+function _overTerms(sum, f) {
+  const right = f(sum.r);
+  return AstBin('+', f(sum.l), sum.op === '-' ? _negateTerms(right) : right);
+}
+
+function _distribProduct(l, r) {
+  if (_isSum(l)) return _overTerms(l, (t) => _distribProduct(t, r));
+  if (_isSum(r)) return _overTerms(r, (t) => _distribProduct(l, t));
+  if (l.kind === 'neg') return _negateTerms(_distribProduct(l.arg, r));
+  if (r.kind === 'neg') return _negateTerms(_distribProduct(l, r.arg));
+  return AstBin('*', r, l);
+}
+
+function _distribQuotient(l, r) {
+  if (_isSum(l)) return _overTerms(l, (t) => _distribQuotient(t, r));
+  if (l.kind === 'neg') return _negateTerms(_distribQuotient(l.arg, r));
+  return AstBin('/', l, r);
+}
+
+function _fullDistrib(ast) {
+  if (ast.kind === 'neg') {
+    const arg = _fullDistrib(ast.arg);
+    return _isSum(arg) ? _negateTerms(arg) : AstNeg(arg);
+  }
+  if (ast.kind !== 'bin') return _mapChildren(ast, _fullDistrib);
+  const l = _fullDistrib(ast.l);
+  const r = _fullDistrib(ast.r);
+  if (ast.op === '*') return _distribProduct(l, r);
+  if (ast.op === '/') return _distribQuotient(l, r);
+  return AstBin(ast.op, l, r);
+}
+
+register('FDISTRIB', (s) => {
+  const v = s.pop();
+  if (!isSymbolic(v)) throw new RPLError('Bad argument type');
+  s.push(Symbolic(_fullDistrib(v.expr)));
+}, { category: 'CAS / symbolic', categoryOrder: 11.1, label: "FDISTRIB" });
+
+// ↓MATCH and ↑MATCH rewrite what matches a pattern. A name starting with & matches any subexpression, the same one
+// wherever it repeats, and an optional condition must then evaluate to a true number.
+function _bindPattern(pat, ast, bound) {
+  if (pat.kind === 'var' && pat.name.startsWith('&')) {
+    if (!bound.has(pat.name)) bound.set(pat.name, ast);
+    return astEqual(bound.get(pat.name), ast);
+  }
+  if (pat.kind !== ast.kind) return false;
+  switch (pat.kind) {
+    case 'num': return pat.value === ast.value && pat.digits === ast.digits;
+    case 'neg': return _bindPattern(pat.arg, ast.arg, bound);
+    case 'bin': return pat.op === ast.op && _bindPattern(pat.l, ast.l, bound) && _bindPattern(pat.r, ast.r, bound);
+    case 'fn': return pat.name === ast.name && pat.args.length === ast.args.length && pat.args.every((p, i) => _bindPattern(p, ast.args[i], bound));
+    default: return astEqual(pat, ast);
+  }
+}
+
+function _holds(ast) {
+  const v = _evalSymbolic(Symbolic(ast));
+  return (isReal(v) && !v.value.eq(0)) || (isInteger(v) && v.value !== 0n);
+}
+
+// Top down, a rewritten part is not looked into again; bottom up, a part whose insides changed waits for the next call.
+const _matchDown = (ast, here) => here(ast) ?? _mapChildren(ast, (a) => _matchDown(a, here));
+
+function _matchUp(ast, here) {
+  const node = _mapChildren(ast, (a) => _matchUp(a, here));
+  return node !== ast ? node : here(ast) ?? ast;
+}
+
+function _matchOp(walk) {
+  return (s) => {
+    const [v, rule] = s.popN(2);
+    const ast = _astArg(v);
+    if (!isList(rule)) throw new RPLError('Bad argument type');
+    if (rule.items.length !== 2 && rule.items.length !== 3) throw new RPLError('Bad argument value');
+    const [pat, repl, cond] = rule.items.map(_astArg);
+    const here = (node) => {
+      const bound = new Map();
+      if (!_bindPattern(pat, node, bound) || (cond && !_holds(_substitute(cond, bound)))) return null;
+      return _substitute(repl, bound);
+    };
+    const result = walk(ast, here);
+    if (result === ast) s.push(v);
+    else _pushCasResult(s, result);
+    s.push(result === ast ? FALSE : TRUE);
+  };
+}
+
+register('↓MATCH', _matchOp(_matchDown), { category: 'CAS / symbolic', categoryOrder: 11.2, label: "↓MATCH" });
+register('↑MATCH', _matchOp(_matchUp), { category: 'CAS / symbolic', categoryOrder: 11.3, label: "↑MATCH" });
+
+// SHOW evaluates the variables of an expression that lead to the name, or, given a list, all but the names in it.
+function _leadsTo(name, target, seen = new Set()) {
+  const bound = recallVar(name);
+  if (seen.has(name) || !(isSymbolic(bound) || isName(bound))) return false;
+  seen.add(name);
+  return [...algebraFreeVars(_toAst(bound))].some((n) => n === target || _leadsTo(n, target, seen));
+}
+
+register('SHOW', (s) => {
+  const [v, target] = s.popN(2);
+  if (!isSymbolic(v)) throw new RPLError('Bad argument type');
+  if (isList(target)) {
+    const kept = new Set(target.items.map(_varName));
+    s.push(_evalSymbolic(v, (name) => kept.has(name)));
+  } else {
+    const name = _varName(target);
+    s.push(_evalSymbolic(v, (n) => n === name || !_leadsTo(n, name)));
+  }
+}, { category: 'CAS / symbolic', categoryOrder: 11.4, label: "SHOW" });
 
 
 register('XNUM', (s, entry) => { lookup('→NUM').fn(s, entry); }, { category: 'CAS / symbolic', categoryOrder: 42, label: "XNUM" });

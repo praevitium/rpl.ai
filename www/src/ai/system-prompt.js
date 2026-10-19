@@ -79,6 +79,9 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   EXACT APPROX               switch CAS exact/approximate mode
   EXPAND COLLECT             algebraic rewrites (EXPAN and COLCT are the same)
   POWEXPAND                  a power as a product: \`(X+1)^3\` POWEXPAND → \`(X+1)*(X+1)*(X+1)\`, for DISTRIB to expand a step at a time
+  FDISTRIB                   every product and quotient spread over sums in one step, nothing collected
+  ↓MATCH ↑MATCH              \`expr\` { \`pattern\` \`replacement\` \`condition\`(optional) } → rewritten expr and 1, or expr and 0; &A in a pattern matches any part: \`SIN(U+V)\` { \`SIN(&A+&B)\` \`SIN(&A)*COS(&B)+COS(&A)*SIN(&B)\` } ↓MATCH; ↓ works top down, ↑ bottom up
+  SHOW                       \`expr\` { X Y } SHOW evaluates every variable but X and Y; \`expr\` \`X\` SHOW evaluates those that lead to X
   FACTOR                     ALGEBRAIC FACTORISATION; \`X^2-1\` FACTOR → \`(X-1)*(X+1)\`.  Use for "factor x^2-1", "factorise (x-1)(x+1)*x".  ⚠ NOT FACT (that's factorial). Mnemonic: FACT ends in T (like "ten!"); FACTOR has more letters (like a factored expression has more terms).
   PARTFRAC PROPFRAC          partial-fraction / proper-fraction decomposition
   DERIV                      \`expr\` \`var\` DERIV — derivative w.r.t. var.  Example: \`SIN(X)\` \`X\` DERIV → \`COS(X)\`; the algebraic form \`∂X(X^2)\` EVAL → \`2*X\`
@@ -87,7 +90,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   RISCH IBP SIGMA SIGMAVX    RISCH is INTEG; \`X*COS(X)\` \`SIN(X)\` IBP → \`SIN(X)*X\` \`-SIN(X)\` (integrate level 1 and add); \`f\` \`var\` SIGMA → discrete antiderivative G with G(x+1)-G(x)=f, SIGMAVX in VX
   INT LININ                  \`SIN(X)\` \`X\` \`Y\` INT → \`-COS(Y)\` (antiderivative at a point); \`expr\` \`X\` LININ → 1 if structurally linear in X, else 0
   Σ                          \`k\` 1 10 \`k^2\` Σ → 385: the index, its first and last values and the summand; in an algebraic, Σ followed by (index=first,last,summand) as the HP writes it. A symbolic summand between numeric limits sums in closed form
-  SOLVE                      \`eq\` \`var\` SOLVE — solve an equation.  Example: \`X^2-5*X+6=0\` \`X\` SOLVE → { \`X=2\` \`X=3\` }; an inequality gives its conditions: \`X^2>4\` \`X\` SOLVE → { \`X<-2\` \`X>2\` }
+  SOLVE (alias QUAD)         \`eq\` \`var\` SOLVE — solve an equation.  Example: \`X^2-5*X+6=0\` \`X\` SOLVE → { \`X=2\` \`X=3\` }; an inequality gives its conditions: \`X^2>4\` \`X\` SOLVE → { \`X<-2\` \`X>2\` }
   LINSOLVE                   [ \`X+Y=3\` \`X-Y=1\` ] [ X Y ] LINSOLVE → the system as a list, the pivots, and [ \`X=2\` \`Y=1\` ] on level 1
   SYST2MAT                   [ \`X-Y=0\` \`2*X+Y=5\` ] [ X Y ] SYST2MAT → [[ 1 -1 0 ][ 2 1 -5 ]], a row per equation, its constant moved to the left side
   LIMIT (alias lim)          \`expr\` \`var=value\` LIMIT — limit at a point

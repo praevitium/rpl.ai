@@ -1660,13 +1660,14 @@ export function* _evalValueGen(s, v, depth, isSubProgram = true) {
 
 // Substitutes real-valued variables (locals first) and folds what it can.
 // Constants fold only under APPROX, and EXACT keeps non-integer folds symbolic
-// ('1/3' stays '1/3').
-function _evalSymbolic(v) {
+// ('1/3' stays '1/3'). A name `keeps` says yes to stays as it is.
+export function _evalSymbolic(v, keeps = () => false) {
   const approx = getApproxMode();
   // A variable holding an algebraic or a name is substituted and evaluated in
   // turn, as on the HP; one that refers back to itself stays a name.
   const resolving = new Set();
   const resolve = (name) => {
+    if (keeps(name)) return null;
     const bound = _localLookup(name) ?? varRecall(name);
     if (bound === undefined) return approx ? _symConstantValue(name) : undefined;
     if (isReal(bound) || isInteger(bound) || isUnit(bound) || isRational(bound)) return _toAst(bound);

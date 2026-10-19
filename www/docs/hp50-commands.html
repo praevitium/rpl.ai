@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 616 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 621 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -288,7 +288,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-FC-qmark">FC?</a>
 <a href="#cmd-FC-qmark-C">FC?C</a>
 <a href="#cmd-FCOEF">FCOEF</a>
-<a href="#cmd-FDISTRIB" class='notinapp'>FDISTRIB</a>
+<a href="#cmd-FDISTRIB">FDISTRIB</a>
 <a href="#cmd-FFT">FFT</a>
 <a href="#cmd-FILER" class='notinapp'>FILER</a>
 <a href="#cmd-FINDALARM">FINDALARM</a>
@@ -537,7 +537,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-PWRFIT">PWRFIT</a>
 <a href="#cmd-PX-to-C" class='notinapp'>PX→C</a>
 <a href="#cmd-qr">qr</a>
-<a href="#cmd-QUAD" class='notinapp'>QUAD</a>
+<a href="#cmd-QUAD">QUAD</a>
 <a href="#cmd-QUOT">QUOT</a>
 <a href="#cmd-QUOTE">QUOTE</a>
 <a href="#cmd-QXA">QXA</a>
@@ -624,7 +624,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-SERVER" class='notinapp'>SERVER</a>
 <a href="#cmd-SEVAL" class='notinapp'>SEVAL</a>
 <a href="#cmd-SF">SF</a>
-<a href="#cmd-SHOW" class='notinapp'>SHOW</a>
+<a href="#cmd-SHOW">SHOW</a>
 <a href="#cmd-SIDENS" class='notinapp'>SIDENS</a>
 <a href="#cmd-SIGMA">SIGMA</a>
 <a href="#cmd-SIGMAVX">SIGMAVX</a>
@@ -803,7 +803,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-ΣY2">ΣY2</a>
 <a href="#cmd-ΣY-pow-2">ΣY^2</a>
 <a href="#cmd-Σ-minus-Sigma-Minus">Σ–(Sigma Minus)</a>
-<a href="#cmd-up-MATCH" class='notinapp'>↑MATCH</a>
+<a href="#cmd-up-MATCH">↑MATCH</a>
 <a href="#cmd-to-Create-Local">→(Create Local)</a>
 <a href="#cmd-to-ARRY">→ARRY</a>
 <a href="#cmd-to-COL">→COL</a>
@@ -826,7 +826,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-to-UNIT">→UNIT</a>
 <a href="#cmd-to-V2">→V2</a>
 <a href="#cmd-to-V3">→V3</a>
-<a href="#cmd-down-MATCH" class='notinapp'>↓MATCH</a>
+<a href="#cmd-down-MATCH">↓MATCH</a>
 <a href="#cmd-partial-Derivative">∂(Derivative)</a>
 <a href="#cmd-SQRT">√(Square Root)</a>
 <a href="#cmd-inf-Infinity" class='notinapp'>∞(Infinity)</a>
@@ -5963,7 +5963,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>CF, FC?, FS? FS?C, SF</p>
   </dd>
 </dl>
-<h2 id="cmd-FDISTRIB">FDISTRIB <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-FDISTRIB">FDISTRIB <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 206 · printed page 3-86</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -9705,7 +9705,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <pre class="cmd-mono">{ 1 2 { 3 4 } } « →STR » MAP returns { &quot;1&quot; &quot;2&quot; { &quot;3&quot; &quot;4&quot; } }.</pre>
   </dd>
 </dl>
-<h2 id="cmd-down-MATCH">↓MATCH <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-down-MATCH">↓MATCH <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 261 · printed page 3-141</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -9726,7 +9726,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>↑MATCH</p>
   </dd>
 </dl>
-<h2 id="cmd-up-MATCH">↑MATCH <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-up-MATCH">↑MATCH <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 262 · printed page 3-142</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -12682,7 +12682,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>LQ, LSQ</p>
   </dd>
 </dl>
-<h2 id="cmd-QUAD">QUAD <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-QUAD">QUAD <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 308 · printed page 3-188</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -14751,7 +14751,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>CF, FC?, FC?C, FS?, FS?C</p>
   </dd>
 </dl>
-<h2 id="cmd-SHOW">SHOW <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-SHOW">SHOW <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 342 · printed page 3-222</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>

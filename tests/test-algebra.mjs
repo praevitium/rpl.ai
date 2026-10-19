@@ -8725,3 +8725,31 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(line('[[1 2][3 4]] SCHUR') === '[[ 5 6 ][ 0 7 ]] | [[ 1 0 ][ 0 1 ]]', 'SCHUR splits list[matrix[…],[…]] into Q and T');
   giac._clear();
 }
+
+// ↓MATCH, ↑MATCH, FDISTRIB, SHOW and QUAD, with the AUR's examples.
+{
+  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
+  assert(shown(".5 { .5 'SIN(π/6)' } ↓MATCH") === '`SIN(π/6)` | 1.', '↓MATCH replaces .5 with SIN(π/6) and says it did');
+  assert(shown("'SIN(U+V)' { 'SIN(&A+&B)' 'SIN(&A)*COS(&B)+COS(&A)*SIN(&B)' } ↓MATCH") === '`SIN(U)*COS(V) + COS(U)*SIN(V)` | 1.',
+    '↓MATCH expands SIN(U+V) through the wildcards &A and &B');
+  assert(shown("'SIN(π/6)' { 'SIN(π/6)' '1/2' } ↑MATCH") === '`1/2` | 1.', '↑MATCH replaces SIN(π/6) with 1/2');
+  assert(shown("'SIN(X+π)' { 'SIN(&A+π)' '-SIN(&A)' } ↑MATCH") === '`-SIN(X)` | 1.', '↑MATCH simplifies SIN(X+π) to -SIN(X)');
+  assert(shown("'W+F(SQ(5))' { 'F(SQ(&A))' '&A' '&A≥0' } ↑MATCH") === '`W + 5` | 1.', '↑MATCH rewrites when the condition holds');
+  assert(shown("'W+F(SQ(-5))' { 'F(SQ(&A))' '&A' '&A≥0' } ↑MATCH") === '`W + F(SQ(-5))` | 0.', '↑MATCH leaves it and gives 0 when the condition fails');
+  assert(shown("'SIN(X+Y)+SIN(X+X)' { '&A+&A' '2*&A' } ↓MATCH") === '`SIN(X + Y) + SIN(2*X)` | 1.', '↓MATCH: a repeated wildcard matches only the same subexpression');
+  assert(shown("'G(F(X+X))' { 'F(&B)' 'H(&B)' } ↑MATCH") === '`G(H(X + X))` | 1.', '↑MATCH tries the innermost parts first');
+  assert(shown("'F(F(X))' { 'F(&A)' '&A' } ↑MATCH") === '`F(X)` | 1.', '↑MATCH leaves a parent whose insides it changed for the next call');
+  assert(shown("'F(F(X))' { 'F(&A)' '&A' } ↑MATCH DROP { 'F(&A)' '&A' } ↑MATCH") === '`X` | 1.', '↑MATCH run again finishes the job');
+  assert(shown("'F(F(X))' { 'F(&A)' '&A' } ↓MATCH") === '`F(X)` | 1.', '↓MATCH does not look into what it just rewrote');
+  assertThrows(() => runLine("'X' { 'X' } ↓MATCH"), /Bad argument value/, '↓MATCH needs a pattern and a replacement');
+  assert(shown("'(X+1)*(X-1)*(X+2)' FDISTRIB")
+    === '`X*(X*X) + 2*(X*X) + (-(X*(1*X)) + (-(2*(1*X)))) + (X*(X*1) + 2*(X*1) + (-(X*(1*1)) + (-(2*(1*1)))))`',
+    'FDISTRIB lays out (X+1)(X-1)(X+2) as the AUR does');
+  assert(shown("7 'C' STO 5 'D' STO 'X-Y+2*C+3*D' { X Y } SHOW") === '`X - Y + 14 + 15`', 'SHOW evaluates C and D but not X and Y');
+  assert(shown("'B+1' 'A' STO 'X^2' 'B' STO 'A*Z+C' 'X' SHOW") === '`(X^2 + 1)*Z + C`', 'SHOW makes X explicit through A and B and keeps C');
+  runLine('{ A B C D } PURGE');
+  giac._clear();
+  giac._setFixture('solve(X^2-4,X)', '[2,-2]');
+  assert(shown("'X^2-4' 'X' QUAD") === '{ `X = 2` `X = -2` }', 'QUAD solves as SOLVE does');
+  giac._clear();
+}
