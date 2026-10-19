@@ -2051,3 +2051,14 @@ clearAllUserFlags();
   runLine("'EQ' PURGE");
   assertThrows(() => runLine('RCEQ'), /Undefined name/, 'RCEQ without an EQ is Undefined name');
 }
+
+// DEF, UNASSIGN, PUSH and POP, as the AUR has them.
+{
+  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
+  assert(shown("'NEW(A,B)=(A-B)/(A+B)' DEF") === '`NEW(A,B) = (A - B)/(A + B)`', 'DEF defines NEW and leaves the equation');
+  assert(shown("'NEW(2,1)' EVAL") === '1/3', 'DEF\'s NEW(2,1) is 1/3');
+  runLine("{ NEW } PURGE");
+  assert(shown("17.5 'U' STO { U V } UNASSIGN") === '{ 17.5 V }', 'UNASSIGN purges U for its value and gives back V, which isn\'t there');
+  assert(shown("-40 SF PUSH -40 CF -40 FS? POP -40 FS? -40 CF") === '0. | 1.', 'POP restores the flags PUSH saved');
+  assert(shown("'D7' CRDIR PUSH D7 PATH POP PATH 'D7' PGDIR") === '{ HOME D7 } | { HOME }', 'POP returns to the path PUSH saved');
+}

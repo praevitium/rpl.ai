@@ -281,6 +281,34 @@ register('STURMAB', (s) => {
   s.push(RList([_casValue(atA), _casValue(giacToAst(giac.caseval(count)))]));
 }, { category: 'Polynomials', categoryOrder: 8.92, label: "STURMAB" });
 
+function _planePoint(v) {
+  if (isComplex(v)) return [AstNum(v.re, true), AstNum(v.im, true)];
+  if (isReal(v) || isInteger(v)) return [_astArg(v), AstNum(0)];
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const e = astToGiac(_astArg(v));
+  const parts = splitGiacList(giac.caseval(`[re(${e}),im(${e})]`));
+  if (parts?.length !== 2) throw new RPLError('Bad argument value');
+  return parts.map(giacToAst);
+}
+
+// AUR: Y=(d-b)/(c-a)*(X-a)+b through (a,b) and (c,d); numeric points fold the slope, which drops when it is 1.
+register('DROITE', (s) => {
+  const [p, q] = s.popN(2);
+  const [a, b, c, d] = [..._planePoint(p), ..._planePoint(q)];
+  const X = AstVar('X');
+  const numeric = [a, b, c, d].every(astIsNum);
+  if (numeric && a.value === c.value) {
+    s.push(Symbolic(AstBin('=', X, a)));
+    return;
+  }
+  const slope = numeric
+    ? AstNum((d.value - b.value) / (c.value - a.value), [a, b, c, d].some((n) => n.real))
+    : AstBin('/', AstBin('-', d, b), AstBin('-', c, a));
+  const run = AstBin('-', X, a);
+  const rise = numeric && slope.value === 1 ? run : AstBin('*', slope, run);
+  s.push(Symbolic(AstBin('=', AstVar('Y'), AstBin('+', rise, b))));
+}, { category: 'Polynomials', categoryOrder: 8.95, label: "DROITE" });
+
 // The AUR's vector calculus: DIV and CURL take a vector function, LAPL an expression, each with a vector of its variables.
 function _vectorCalculus(giacFn, check) {
   return (s) => {
@@ -1096,6 +1124,18 @@ register('LININ', (s) => {
   const [expr, nameArg] = s.popN(2);
   s.push(Integer(_structurallyLinear(_astArg(expr), _varName(nameArg)) ? 1n : 0n));
 }, { category: 'CAS / symbolic', categoryOrder: 39.2, label: "LININ" });
+
+// AUR: { symb1 … symbn } 'name' APPLY is 'name(symb1 … symbn)'.
+register('APPLY', (s) => {
+  const [args, name] = s.popN(2);
+  if (!isList(args) || !isName(name)) throw new RPLError('Bad argument type');
+  s.push(Symbolic(AstFn(name.id, args.items.map(_astArg))));
+}, { category: 'CAS / symbolic', categoryOrder: 39.3, label: "APPLY" });
+
+register('QUOTE', (s) => {
+  const [v] = s.popN(1);
+  s.push(v);
+}, { category: 'CAS / symbolic', categoryOrder: 39.4, label: "QUOTE" });
 
 
 function _lapVarName(ast) {

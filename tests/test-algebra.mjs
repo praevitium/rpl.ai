@@ -6104,6 +6104,20 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(format(runLine("'(X^2-1)/(X+1)' 'X' LININ").peek()) === '0', 'LININ: (X^2-1)/(X+1) is not, though it factors');
 }
 
+// APPLY, QUOTE and DROITE, as the AUR has them.
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top("{ 'X+1' 2 } 'F' APPLY") === '`F(X + 1,2)`', 'APPLY builds F(X+1,2)');
+  assert(top("'SIN(X)' QUOTE") === '`SIN(X)`', 'QUOTE gives its argument back');
+  assert(top('(1,2) (3,4) DROITE') === '`Y = X - 1. + 2.`', 'DROITE gives the AUR\'s Y=X-1.+2. through (1,2) and (3,4)');
+  assert(top('(1,2) (1,5) DROITE') === '`X = 1.`', 'DROITE of two points above each other is X=a');
+  giac._clear();
+  giac._setFixture('[re(π+e*i),im(π+e*i)]', '[pi,exp(1)]');
+  giac._setFixture('[re(e+π*i),im(e+π*i)]', '[exp(1),pi]');
+  assert(top("'π+e*i' 'e+π*i' DROITE") === '`Y = (π - EXP(1))/(EXP(1) - π)*(X - π) + EXP(1)`', 'DROITE keeps the AUR\'s symbolic slope');
+  giac._clear();
+}
+
 /* ==================================================================
  — PCAR / CHARPOL / EGVL / PA2B2
    PCAR + CHARPOL + EGVL are Giac-backed matrix ops (use fixtures on

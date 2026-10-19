@@ -60,6 +60,7 @@ VARIABLES & DIRECTORIES (operate in the current directory)
   PURGE   \`NAME\` PURGE — delete the variable
   DEFINE  \`F(X)=X^2+1\` DEFINE — make the user function F; then \`F(3)\` EVAL gives 10 (any stored program is callable as F(args) in an algebraic; IFTE(test,then,else) works inside algebraics, so \`R(N)=IFTE(N<=1,1,N*R(N-1))\` DEFINE recurses)
   STEQ RCEQ  value STEQ stores it in EQ; RCEQ recalls EQ from the current directory
+  DEF     as DEFINE but leaves the equation; { U V } UNASSIGN → their values, purged (a missing one stays a name); PUSH saves flags and path, POP restores them
   CLVAR   delete every variable and empty subdirectory in the current dir (destructive: don't run it unasked; CLUSR is the same)
   VARS    push a list of all variable names in the current dir
   ORDER   reorder VARS list
@@ -114,6 +115,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   GBASIS GREDUCE             Gröbner basis / reduction
   LNAME                      extract variable Names referenced by an expression
   LVAR                       as LNAME, but keeps the expression and lists COS(B) or MYFUNC(PQ) as one variable
+  APPLY QUOTE                { args } \`F\` APPLY → \`F(args)\`; QUOTE gives its argument back unevaluated
   C2P P2C                    { { 1 3 5 } { 2 4 } } C2P → { 3 4 5 2 1 }; P2C gives the cycles and the signature ±1
 
 POLYNOMIALS / NUMBER THEORY
@@ -123,6 +125,7 @@ POLYNOMIALS / NUMBER THEORY
   SIMP2                      \`X^3+6*X^2+11*X+6\` \`X^3-7*X-6\` SIMP2 → \`X+3\` \`X-3\` (both divided by their GCD; 12 18 SIMP2 → 2 3)
   DIV2 EGCD ABCUV            polynomial IDIV2 IEGCD IABCUV in VX: \`X^2+X+1\` \`2*X+4\` DIV2 → quotient \`X/2-1/2\` remainder 3; \`X^2+1\` \`X-1\` EGCD → 2 1 \`-X-1\` (gcd, u, v); \`X^2+X+1\` \`X^2+4\` 13 ABCUV → \`-X-3\` \`X+4\`
   RESULTANT STURMAB LAGRANGE \`p\` \`q\` RESULTANT in VX (else the first variable); \`P\` a b STURMAB → { P(a) roots in [a,b] }; [[ xs ][ ys ]] LAGRANGE → the interpolating polynomial in VX
+  DROITE                     (1,2) (3,4) DROITE → \`Y=X-1.+2.\`, the line through two points
   EUCLID INVMOD              extended-Euclid / modular inverse
   ISPRIME? NEXTPRIME PREVPRIME DIVIS FACTORS    integer primality / factorisation (FACTORS → { p1 e1 p2 e2 … })
   PA2B2 CYCLOTOMIC           sum-of-two-squares / cyclotomic polynomial

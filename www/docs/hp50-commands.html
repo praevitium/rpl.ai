@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 590 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 597 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -103,7 +103,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-AND">AND</a>
 <a href="#cmd-ANIMATE" class='notinapp'>ANIMATE</a>
 <a href="#cmd-ANS" class='notinapp'>ANS</a>
-<a href="#cmd-APPLY" class='notinapp'>APPLY</a>
+<a href="#cmd-APPLY">APPLY</a>
 <a href="#cmd-ARC" class='notinapp'>ARC</a>
 <a href="#cmd-ARCHIVE">ARCHIVE</a>
 <a href="#cmd-ARG">ARG</a>
@@ -198,7 +198,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-DEC">DEC</a>
 <a href="#cmd-DECR">DECR</a>
 <a href="#cmd-DEDICACE" class='notinapp'>DEDICACE</a>
-<a href="#cmd-DEF" class='notinapp'>DEF</a>
+<a href="#cmd-DEF">DEF</a>
 <a href="#cmd-DEFINE">DEFINE</a>
 <a href="#cmd-DEG">DEG</a>
 <a href="#cmd-DEGREE">DEGREE</a>
@@ -236,7 +236,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-DRAW">DRAW</a>
 <a href="#cmd-DRAW3DMATRIX" class='notinapp'>DRAW3DMATRIX</a>
 <a href="#cmd-DRAX" class='notinapp'>DRAX</a>
-<a href="#cmd-DROITE" class='notinapp'>DROITE</a>
+<a href="#cmd-DROITE">DROITE</a>
 <a href="#cmd-DROP">DROP</a>
 <a href="#cmd-DROP2">DROP2</a>
 <a href="#cmd-DROPN">DROPN</a>
@@ -504,7 +504,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-PMINI">PMINI</a>
 <a href="#cmd-POLAR">POLAR</a>
 <a href="#cmd-POLYNOMIAL" class='notinapp'>POLYNOMIAL</a>
-<a href="#cmd-POP" class='notinapp'>POP</a>
+<a href="#cmd-POP">POP</a>
 <a href="#cmd-POS">POS</a>
 <a href="#cmd-POTENTIAL">POTENTIAL</a>
 <a href="#cmd-POWEXPAND">POWEXPAND</a>
@@ -528,7 +528,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-PTAYL">PTAYL</a>
 <a href="#cmd-PTPROP" class='notinapp'>PTPROP</a>
 <a href="#cmd-PURGE">PURGE</a>
-<a href="#cmd-PUSH" class='notinapp'>PUSH</a>
+<a href="#cmd-PUSH">PUSH</a>
 <a href="#cmd-PUT">PUT</a>
 <a href="#cmd-PUTI">PUTI</a>
 <a href="#cmd-PVAR">PVAR</a>
@@ -539,7 +539,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-qr">qr</a>
 <a href="#cmd-QUAD" class='notinapp'>QUAD</a>
 <a href="#cmd-QUOT">QUOT</a>
-<a href="#cmd-QUOTE" class='notinapp'>QUOTE</a>
+<a href="#cmd-QUOTE">QUOTE</a>
 <a href="#cmd-QXA">QXA</a>
 <a href="#cmd-RAD">RAD</a>
 <a href="#cmd-RAND">RAND</a>
@@ -736,7 +736,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-UBASE">UBASE</a>
 <a href="#cmd-UFACT">UFACT</a>
 <a href="#cmd-UFL1-to-MINIF" class='notinapp'>UFL1→MINIF</a>
-<a href="#cmd-UNASSIGN" class='notinapp'>UNASSIGN</a>
+<a href="#cmd-UNASSIGN">UNASSIGN</a>
 <a href="#cmd-UNASSUME" class='notinapp'>UNASSUME</a>
 <a href="#cmd-UNBIND" class='notinapp'>UNBIND</a>
 <a href="#cmd-UNPICK">UNPICK</a>
@@ -1298,7 +1298,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>LAST, LASTARG, PICK</p>
   </dd>
 </dl>
-<h2 id="cmd-APPLY">APPLY <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-APPLY">APPLY <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 133 · printed page 3-13</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -3670,7 +3670,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>In algebraic mode, the message can be extended. Try: DEDICACE(Salutations)</p>
   </dd>
 </dl>
-<h2 id="cmd-DEF">DEF <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-DEF">DEF <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 172 · printed page 3-52</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -4697,7 +4697,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>AXES, DRAW, LABEL</p>
   </dd>
 </dl>
-<h2 id="cmd-DROITE">DROITE <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-DROITE">DROITE <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 189 · printed page 3-69</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -11767,7 +11767,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>ALGB, ARIT, CONSTANTS, DIFF, EXP&amp;LN, INTEGER, MAIN, MATHS, MATR, MODULAR, REWRITE, TESTS, TRIGO</p>
   </dd>
 </dl>
-<h2 id="cmd-POP">POP <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-POP">POP <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 293 · printed page 3-173</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -12406,7 +12406,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>CLEAR, CLVAR, NEWOB, PGDIR</p>
   </dd>
 </dl>
-<h2 id="cmd-PUSH">PUSH <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PUSH">PUSH <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 303 · printed page 3-183</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -12744,7 +12744,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>REMAINDER, DIV2, IQUOT</p>
   </dd>
 </dl>
-<h2 id="cmd-QUOTE">QUOTE <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-QUOTE">QUOTE <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 309 · printed page 3-189</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -17688,7 +17688,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>→MINIFONT, MINIFONT→</p>
   </dd>
 </dl>
-<h2 id="cmd-UNASSIGN">UNASSIGN <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-UNASSIGN">UNASSIGN <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 383 · printed page 3-263</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>

@@ -1,4 +1,4 @@
-import { varStore, varRecall, varPurge, varOrder, makeSubdir, goUp, goHome, currentPath, state as _calcState, reorderCurrentEntries, cloneDirectory, inScratchState } from '../state.js';
+import { varStore, varRecall, varPurge, varOrder, makeSubdir, goUp, goHome, goInto, currentPath, state as _calcState, reorderCurrentEntries, cloneDirectory, inScratchState, setFlagNumbers, replaceFlags } from '../state.js';
 import { RPLError } from '../stack.js';
 import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory, isTagged, isSymbolic, Program, Symbolic } from '../types.js';
 import { archiveBackup, restoreBackup } from '../persist.js';
@@ -69,6 +69,43 @@ register('RCEQ', (s) => {
   if (v === undefined) throw new RPLError('Undefined name: EQ');
   s.push(v);
 }, { category: 'Variables / directories', categoryOrder: 22.2, label: "RCEQ" });
+
+// AUR: as DEFINE, but the equation stays, so DEF can sit inside an algebraic.
+register('DEF', (s) => {
+  if (s.depth < 1) throw new RPLError('Too few arguments');
+  const eq = s.peek();
+  lookup('DEFINE').fn(s);
+  s.push(eq);
+}, { category: 'Variables / directories', categoryOrder: 22.05, label: "DEF" });
+
+// AUR: UNASSIGN({U,V}) is {17.5,V}: each variable's value, purged without asking, or its name when it isn't here.
+register('UNASSIGN', (s) => {
+  const [arg] = s.popN(1);
+  const unassign = (n) => {
+    if (!isName(n)) throw new RPLError('Bad argument type');
+    const v = _calcState.current.entries.get(n.id);
+    if (v === undefined || isDirectory(v)) return n;
+    varPurge(n.id);
+    return v;
+  };
+  s.push(isList(arg) ? RList(arg.items.map(unassign)) : unassign(arg));
+}, { category: 'Variables / directories', categoryOrder: 22.3, label: "UNASSIGN" });
+
+const _pushed = [];
+
+// AUR: PUSH saves the flags and the path on a stack of its own, POP restores the last, doing nothing with none left.
+// A preview leaves that stack alone.
+register('PUSH', () => {
+  if (!inScratchState()) _pushed.push({ flags: setFlagNumbers(), path: currentPath() });
+}, { category: 'Variables / directories', categoryOrder: 22.4, label: "PUSH" });
+
+register('POP', () => {
+  const saved = inScratchState() ? _pushed.at(-1) : _pushed.pop();
+  if (!saved) return;
+  replaceFlags(saved.flags);
+  goHome();
+  saved.path.slice(1).every((name) => goInto(name));
+}, { category: 'Variables / directories', categoryOrder: 22.5, label: "POP" });
 
 
 register('RCL', (s) => {
