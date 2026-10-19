@@ -1,9 +1,9 @@
 import { RPLError } from '../stack.js';
 import { inScratchState, varRecall, varStore, getPict, setPict, getBinaryBase, toRadians } from '../state.js';
-import { Complex, Real, Name, RList, Str, BinaryInteger, Grob, isComplex, isReal, isInteger, isBinaryInteger, isName, isList, isString, isGrob, isSymbolic, isUnit, toRealOrThrow } from '../types.js';
-import { register } from './registry.js';
+import { Complex, Real, Name, RList, Str, BinaryInteger, Grob, Symbolic, isComplex, isReal, isInteger, isBinaryInteger, isName, isList, isString, isGrob, isSymbolic, isUnit, isMatrix, toRealOrThrow } from '../types.js';
+import { register, lookup } from './registry.js';
 import { statPlotData } from './statistics.js';
-import { TRUE, FALSE } from './internal.js';
+import { TRUE, FALSE, withLocalVariable } from './internal.js';
 import { format } from '../formatter.js';
 import { textGrob, CELL_HEIGHT } from '../pixel-font.js';
 
@@ -25,9 +25,16 @@ function _requestPlot(kind, s, data = null) {
 
 register('SCATRPLOT', (s) => _requestPlot('scatter', s, statPlotData('scatter')), { category: 'Graphics', categoryOrder: 2, label: "SCATRPLOT" });
 
+// BAR, HISTOGRAM and SCATTER draw ΣDAT at once, as FUNCTION and the other plot types do here.
+register('SCATTER',   (s) => _requestPlot('scatter', s, statPlotData('scatter')), { category: 'Graphics', categoryOrder: 2.5, label: "SCATTER" });
+
 register('BARPLOT',   (s) => _requestPlot('bar', s, statPlotData('bar')), { category: 'Graphics', categoryOrder: 0, label: "BARPLOT" });
 
+register('BAR',       (s) => _requestPlot('bar', s, statPlotData('bar')), { category: 'Graphics', categoryOrder: 0.5, label: "BAR" });
+
 register('HISTPLOT',  (s) => _requestPlot('hist', s, statPlotData('hist')), { category: 'Graphics', categoryOrder: 1, label: "HISTPLOT" });
+
+register('HISTOGRAM', (s) => _requestPlot('hist', s, statPlotData('hist')), { category: 'Graphics', categoryOrder: 1.5, label: "HISTOGRAM" });
 
 register('FUNCTION',  (s) => _requestPlot('function', s), { category: 'Graphics', categoryOrder: 3, label: "FUNCTION" });
 
@@ -286,6 +293,109 @@ function _variableSpec(index) {
 
 register('INDEP', _variableSpec(2), { category: 'Graphics', categoryOrder: 9, label: "INDEP" });
 register('DEPND', _variableSpec(6), { category: 'Graphics', categoryOrder: 9.1, label: "DEPND" });
+
+
+const _extent = (values) => values.reduce(([lo, hi], v) => [Math.min(lo, v), Math.max(hi, v)], [Infinity, -Infinity]);
+
+// A range from lo to hi, one unit wider each way when they meet.
+const _span = ([lo, hi]) => (hi > lo ? [lo, hi] : [lo - 1, hi + 1]);
+
+// ΣDAT's XCOL values, and its YCOL values for a scatter plot, as numbers.
+function _statColumns(kind) {
+  const data = statPlotData(kind);
+  const rows = isMatrix(data) ? data.rows : data.items.map((v) => [v]);
+  if (!rows.length || rows[0].length < (kind === 'scatter' ? 2 : 1)) throw new RPLError('Invalid dimension');
+  return rows[0].map((_, c) => rows.map((row) => toRealOrThrow(row[c])));
+}
+
+// SCLΣ fits PPAR's window to ΣDAT's XCOL and YCOL values.
+function _scaleToData() {
+  const [xs, ys] = _statColumns('scatter');
+  const [xmin, xmax] = _span(_extent(xs));
+  const [ymin, ymax] = _span(_extent(ys));
+  _setCorners({ xmin, ymin, xmax, ymax });
+}
+
+register('SCLΣ', _scaleToData, { category: 'Graphics', categoryOrder: 9.2, label: "SCLΣ" });
+
+const AUTO_SAMPLES = 40;
+
+const _samples = (a, b) => Array.from({ length: AUTO_SAMPLES }, (_, i) => a + (b - a) * i / (AUTO_SAMPLES - 1));
+
+// EQ's expressions: each item of a list, both sides of an equation.
+function _equations() {
+  const eq = varRecall('EQ');
+  if (eq === undefined) throw new RPLError('Undefined Name');
+  return (isList(eq) ? eq.items : [eq]).flatMap((v) => (
+    isSymbolic(v) && v.expr.kind === 'bin' && v.expr.op === '=' ? [Symbolic(v.expr.l), Symbolic(v.expr.r)] : [v]
+  ));
+}
+
+// Each expression's values at the points with the plot variable bound, as →NUM gives them; null where it has none.
+function _eqValues(s, name, points) {
+  return _equations().flatMap((expr) => withLocalVariable(name, (bind) => points.map((p) => {
+    bind(Real(p));
+    const depth = s.depth;
+    let v = null;
+    try {
+      s.push(expr);
+      lookup('→NUM').fn(s);
+      if (s.depth === depth + 1) v = s.pop();
+    } catch {
+      v = null;
+    }
+    while (s.depth > depth) s.pop();
+    return v;
+  })));
+}
+
+const _numberOf = (v) => (v && (isReal(v) || isInteger(v)) ? toRealOrThrow(v) : NaN);
+
+
+const AUTO_SCALES = {
+  FUNCTION(s, c, indep) {
+    const ys = _eqValues(s, indep.name, _samples(c.xmin, c.xmax)).map(_numberOf).filter(Number.isFinite);
+    if (!ys.length) return;
+    const [ymin, ymax] = _span(_extent([0, ...ys]));
+    _setCorners({ ...c, ymin, ymax });
+  },
+  // Both ranges hold every point of the curve and the origin.
+  POLAR(s, c, indep) {
+    const [a, b] = indep.values ?? [0, 2 * Math.PI / toRadians(1)];
+    const thetas = _samples(a, b);
+    const points = _eqValues(s, indep.name, thetas).map((v, i) => {
+      const r = _numberOf(v), t = toRadians(thetas[i % AUTO_SAMPLES]);
+      return [r * Math.cos(t), r * Math.sin(t)];
+    }).filter((p) => p.every(Number.isFinite));
+    if (!points.length) return;
+    const [xmin, xmax] = _span(_extent([0, ...points.map(([x]) => x)]));
+    const [ymin, ymax] = _span(_extent([0, ...points.map(([, y]) => y)]));
+    _setCorners({ xmin, ymin, xmax, ymax });
+  },
+  CONIC(s, c) {
+    const { cols, rows } = _pictPixels();
+    const half = (c.xmax - c.xmin) / cols * rows / 2, cy = (c.ymin + c.ymax) / 2;
+    _setCorners({ ...c, ymin: cy - half, ymax: cy + half });
+  },
+  BAR(s, c) {
+    const [xs] = _statColumns('bar');
+    const [ymin, ymax] = _span(_extent([0, ...xs]));
+    _setCorners({ xmin: 0, xmax: xs.length + 1, ymin, ymax });
+  },
+  HISTOGRAM() {
+    const [xs] = _statColumns('hist');
+    const [xmin, xmax] = _span(_extent(xs));
+    _setCorners({ xmin, xmax, ymin: 0, ymax: xs.length });
+  },
+  SCATTER: _scaleToData,
+};
+
+// AUTO scales PPAR's window for the plot type PPAR names, FUNCTION to start. PARAMETRIC is left, as a parametric plot
+// here takes x(t) and y(t) apart rather than EQ's x+i*y; TRUTH, DIFFEQ and the 3D types are left as on the HP.
+register('AUTO', (s) => {
+  const [, , indep, , , ptype] = plotParameters();
+  AUTO_SCALES[isName(ptype) ? ptype.id : '']?.(s, _corners(), _variableSetting(indep, 'X'));
+}, { category: 'Graphics', categoryOrder: 9.3, label: "AUTO" });
 
 
 // PICT puts the name PICT on the stack; RCL, STO, PURGE and SIZE take it for the graphics object itself.

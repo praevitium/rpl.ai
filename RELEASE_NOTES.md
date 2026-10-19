@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.28 (2026-10-19)
+**Latest release:** v0.7.29 (2026-10-19)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.29 — 2026-10-19
+
+- AUTO scales PPAR's window for its plot type. For FUNCTION, the type to
+  start, it samples EQ at 40 points across the x range and sets the y
+  range to hold the values and the origin: `'X^2' STEQ AUTO` gives a
+  window of (-6.5,0) to (6.5,42.25). POLAR fits both ranges to the curve,
+  CONIC makes the y scale match the x scale, and BAR, HISTOGRAM and
+  SCATTER fit ΣDAT. The plot variable is bound only while EQ is sampled,
+  so a variable of the same name keeps its value. The plot type commands
+  here draw at once and leave PPAR's type as it is, so AUTO follows a type
+  only when it is stored in PPAR, and it leaves PARAMETRIC alone.
+- SCLΣ fits the window to ΣDAT's XCOL and YCOL columns, so a scatter plot
+  fills it.
+- BAR, HISTOGRAM and SCATTER draw ΣDAT at once, as BARPLOT, HISTPLOT and
+  SCATRPLOT do.
 
 ## v0.7.28 — 2026-10-19
 

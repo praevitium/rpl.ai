@@ -870,6 +870,17 @@ export function storeVar(id, value) {
   else varStore(id, value);
 }
 
+// fn runs with the name bound as a local variable, set through the function it is given, as a plot binds its variable.
+export function withLocalVariable(name, fn) {
+  const frame = new Map([[name, null]]);
+  _localFrames.push(frame);
+  try {
+    return fn((value) => frame.set(name, value));
+  } finally {
+    _localFrames.splice(_localFrames.lastIndexOf(frame), 1);
+  }
+}
+
 
 // Single-step debugger state.  With _singleStepMode set, evalRange yields after
 // every token, except inside a named sub-program (_insideSubProgram) unless SST↓

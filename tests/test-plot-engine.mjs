@@ -699,3 +699,47 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   setGraphicsHook(null);
   assert(text('1 TEXT') === '1', 'TEXT without a plot view leaves the stack as it was');
 }
+
+// AUTO and SCLΣ scale PPAR's window; BAR, HISTOGRAM and SCATTER draw ΣDAT.
+{
+  const { format } = await import('../www/src/rpl/formatter.js');
+  const { varPurge, varRecall, setAngle, state } = await import('../www/src/rpl/state.js');
+  const angle = state.angle;
+  const corners = () => varRecall('PPAR').items.slice(0, 2).map((v) => format(v)).join(' ');
+  const reset = () => ['PPAR', 'EQ', 'ΣDAT', 'ΣPAR', 'X'].forEach(varPurge);
+  reset();
+  runLine("'X^2' STEQ AUTO");
+  assert(corners() === '(-6.5, 0) (6.5, 42.25)', 'AUTO: FUNCTION keeps the x range and takes y from EQ\'s values and the origin');
+  runLine("5 'X' STO AUTO");
+  assert(format(runLine('X').peek()) === '5', 'AUTO leaves a variable named like the plot variable as it was');
+  reset();
+  runLine("'SIN(X)=COS(X)' STEQ AUTO");
+  const [lo, hi] = varRecall('PPAR').items.map((v) => v.im);
+  assert(lo < -0.99 && hi > 0.99 && hi <= 1, 'AUTO: both sides of an equation are sampled');
+  reset();
+  runLine("RAD { (-6.5,-3.9) (6.5,4) X 0 (0,0) POLAR Y } 'PPAR' STO '2' STEQ AUTO");
+  const [p1, p2] = varRecall('PPAR').items;
+  assert(Math.abs(p2.re - 2) < 1e-9 && p1.re < -1.9 && Math.abs(p2.im - 2) < 0.01, 'AUTO: POLAR fits the circle r = 2');
+  reset();
+  runLine("{ (-6.5,-1) (6.5,1) X 0 (0,0) CONIC Y } 'PPAR' STO AUTO");
+  assert(corners() === '(-6.5, -3.95) (6.5, 3.95)', 'AUTO: CONIC makes the y scale the x scale');
+  reset();
+  runLine("[[ 1 2 ][ 3 5 ][ 4 1 ]] STOΣ SCLΣ");
+  assert(corners() === '(1, 1) (4, 5)', 'SCLΣ fits the window to XCOL and YCOL');
+  runLine("{ (-6.5,-3.9) (6.5,4) X 0 (0,0) BAR Y } 'PPAR' STO AUTO");
+  assert(corners() === '(0, 0) (4, 4)', 'AUTO: BAR runs 0 to n+1 across and holds the x axis');
+  runLine("{ (-6.5,-3.9) (6.5,4) X 0 (0,0) HISTOGRAM Y } 'PPAR' STO AUTO");
+  assert(corners() === '(1, 0) (4, 3)', 'AUTO: HISTOGRAM spans the data and 0 to the number of rows');
+  runLine("{ (-6.5,-3.9) (6.5,4) X 0 (0,0) TRUTH Y } 'PPAR' STO AUTO");
+  assert(corners() === '(-6.5, -3.9) (6.5, 4)', 'AUTO leaves TRUTH alone');
+  runLine("[[ 2 2 ]] STOΣ SCLΣ");
+  assert(corners() === '(1, 1) (3, 3)', 'SCLΣ widens a single point by one unit each way');
+  const seen = [];
+  setGraphicsHook((kind) => seen.push(kind));
+  runLine('[[ 1 2 ][ 3 5 ]] STOΣ BAR HISTOGRAM SCATTER');
+  assert(seen.join(' ') === 'bar hist scatter', 'BAR, HISTOGRAM and SCATTER draw ΣDAT as BARPLOT, HISTPLOT and SCATRPLOT do');
+  setGraphicsHook(null);
+  reset();
+  assertThrows(() => runLine('AUTO'), /Undefined Name/, 'AUTO for FUNCTION needs EQ');
+  setAngle(angle);
+}
