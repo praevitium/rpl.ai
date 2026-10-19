@@ -108,7 +108,7 @@ export const TIME_GROUPS = Object.freeze([
 ]);
 
 // The HP's five-letter key faces for names that would break across a key's lines.
-export const KEY_LABELS = Object.freeze({ ACKALL: 'ACKAL', STOALARM: 'STOAL', RCLALARM: 'RCLAL', DELALARM: 'DELAL', FINDALARM: 'FINDA' });
+export const KEY_LABELS = Object.freeze({ ACKALL: 'ACKAL', STOALARM: 'STOAL', RCLALARM: 'RCLAL', DELALARM: 'DELAL', FINDALARM: 'FINDA', VANDERMONDE: 'VANDE' });
 
 // The HP's MTH MATR folders, MAKE NORM FACTR COL ROW, with the commands of each that the app has; LSQ follows them.
 export const MATRIX_GROUPS = Object.freeze([
