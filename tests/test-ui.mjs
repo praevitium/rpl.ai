@@ -2422,6 +2422,12 @@ setAngle('RAD');
   assert(/const MIN_FORMULA_SCALE = 0\.75;/.test(displaySrc)
     && /const \{ svg, width \} = astToSvg\(value\.expr, \{ size: svgSize \}\);\s*cell\.innerHTML = svg;\s*cell\.firstElementChild\.style\.minWidth = `\$\{Math\.round\(width \* MIN_FORMULA_SCALE\)\}px`;/.test(displaySrc),
     'formulas on the stack: a long one shrinks to fit only to three quarters of its size, then fades at its edge and scrolls sideways as a wide matrix does, where (X+Y)^6 expanded shrank to a third at 280 px');
+  assert(/const fit = ncols > 0 && texts\.every\(r => !r\.includes\(null\)\);/.test(displaySrc)
+    && /\$\{fit \? `;--mw:\$\{gridWidthEm\(texts\)\}` : ''\}/.test(displaySrc)
+    && /\* 0\.6 \+ 0\.1\);\s*return \(cols\.reduce\(\(a, b\) => a \+ b, 0\) \+ 0\.9 \* \(cols\.length - 1\) \+ 1\)\.toFixed\(2\);/.test(displaySrc)
+    && /\.stack-view \.st-val:has\(> \.matrix-grid\.fit\) \{ width: 100%; container-type: inline-size; \}/.test(cssSrc)
+    && /\.stack-view \.st-val > \.matrix-grid\.fit \{ font-size: clamp\(\.75em, \(100cqi - 2px\) \/ var\(--mw\), 1em\); \}/.test(cssSrc),
+    'matrices on the stack: a grid of plain entries shrinks to fit its line down to the formulas\' 75%, then scrolls, where [[1.5 2.25 3.125][4 5 6][7 8 9]] lost its last column in minimal view at 280 px; one holding a formula keeps its size');
   assert(/const DEEP_GRID_ROWS = 3;/.test(displaySrc)
     && /const oneLine = \(value, level\) => level > 1 && calcState\.textbookMode && \(isList\(value\) \|\| gridRows\(value\) > DEEP_GRID_ROWS\);/.test(displaySrc)
     && /sig: rowSig\(flat, svgSize, oneLine\(value, level\)\)/.test(displaySrc)

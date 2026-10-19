@@ -464,6 +464,9 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .st-val .matrix-grid::after { right: 0; border-left: 0; }
 .st-val .matrix-grid .mcell { padding: 0 .05em; text-align: right; white-space: nowrap; }
 .st-val .matrix-grid .mcell-sym { text-align: center; display: flex; align-items: center; justify-content: center; }
+/* A grid a little too wide for its line shrinks to fit, down to the formulas' 75%, before it scrolls (display.js gridWidthEm). */
+.stack-view .st-val:has(> .matrix-grid.fit) { width: 100%; container-type: inline-size; }
+.stack-view .st-val > .matrix-grid.fit { font-size: clamp(.75em, (100cqi - 2px) / var(--mw), 1em); }
 .st-val .list-inline { font-family: var(--font-mono); display: inline-flex; align-items: center; flex-wrap: wrap; gap: .1em 0; }
 .st-val .list-inline .lcell { white-space: nowrap; }
 .st-val .list-inline .lcell-sym { display: inline-flex; align-items: center; }

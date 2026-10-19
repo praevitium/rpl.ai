@@ -55,6 +55,12 @@ function tallLevelScroll(view, v, r) {
 const LEVEL_WINDOW = 50;
 // A long formula shrinks to fit only this far; past it, it keeps a readable size and scrolls sideways as a wide matrix does.
 const MIN_FORMULA_SCALE = 0.75;
+// A grid of plain entries in em, for calc.css to shrink it to its line: Plex Mono's 0.6em advance per character,
+// .1em of padding per entry, .9em between columns and .5em at each bracket.
+const gridWidthEm = (texts) => {
+  const cols = texts[0].map((_, j) => Math.max(...texts.map((r) => [...r[j]].length)) * 0.6 + 0.1);
+  return (cols.reduce((a, b) => a + b, 0) + 0.9 * (cols.length - 1) + 1).toFixed(2);
+};
 
 export function suspendedProgramText(halted, display = DEFAULT_DISPLAY) {
   if (!halted || !Array.isArray(halted.tokens)) return '';
@@ -646,19 +652,16 @@ export class Display {
       rows = [val.items];
     }
     const ncols = rows.reduce((m, r) => Math.max(m, r.length), 0);
-    const cells = rows.map(r => {
-      const padded = r.concat(Array(Math.max(0, ncols - r.length)).fill(null));
-      return padded.map(cell => {
-        if (cell === null) return '<span class="mcell"></span>';
-        if (isSymbolic(cell)) {
-          const { svg } = astToSvg(cell.expr, { size: 18 });
-          return `<span class="mcell mcell-sym">${svg}</span>`;
-        }
-        return `<span class="mcell">${escapeHtml(format(cell, this.displayOpts))}</span>`;
-      }).join('');
-    });
-    const cls = isMatrix(val) ? 'matrix-grid' : 'matrix-grid vector-grid';
-    return `<span class="${cls}" style="--mcols:${Math.max(1, ncols)}">${cells.join('')}</span>`;
+    const texts = rows.map(r => r.concat(Array(Math.max(0, ncols - r.length)).fill(null))
+      .map(cell => (cell === null ? '' : isSymbolic(cell) ? null : format(cell, this.displayOpts))));
+    const cells = texts.map((r, i) => r.map((text, j) => {
+      if (text !== null) return `<span class="mcell">${escapeHtml(text)}</span>`;
+      const { svg } = astToSvg(rows[i][j].expr, { size: 18 });
+      return `<span class="mcell mcell-sym">${svg}</span>`;
+    }).join(''));
+    const fit = ncols > 0 && texts.every(r => !r.includes(null));
+    const cls = `matrix-grid${isMatrix(val) ? '' : ' vector-grid'}${fit ? ' fit' : ''}`;
+    return `<span class="${cls}" style="--mcols:${Math.max(1, ncols)}${fit ? `;--mw:${gridWidthEm(texts)}` : ''}">${cells.join('')}</span>`;
   }
 
   _renderTextbookList(val, svgSize = 22) {
