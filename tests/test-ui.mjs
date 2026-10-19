@@ -2392,3 +2392,26 @@ setAngle('RAD');
   assert(/EditorView\.contentAttributes\.of\(\{ enterkeyhint: 'go', 'aria-label': 'Command line' \}\)/.test(entrySrc),
     'screen readers: the command line is named Command line, where TalkBack and VoiceOver announced an unnamed edit field, the one unnamed control in a sweep of 16 phone states at 280 and 360 px');
 }
+
+{
+  const { MenuBar } = await import('../www/src/ui/menubar.js');
+  const on = {}, onDoc = {};
+  const listen = (registry) => (type, fn) => { (registry[type] ??= []).push(fn); };
+  const sk = { dataset: { i: '0' }, disabled: false, classList: { add() {}, remove() {} } };
+  const key = { closest: (sel) => (sel === '.mb-keys' ? {} : sel.startsWith('.sk') ? sk : null) };
+  const el = { addEventListener: listen(on), ownerDocument: { addEventListener: listen(onDoc) }, contains: (node) => node === key };
+  const opened = [];
+  new MenuBar({ el, app: { menuView: () => ({ slots: [{ label: 'VIEW' }] }), pressSoftKey: () => opened.push('view'), clearPreview: () => {} } });
+  const fire = (registry, type, target) => {
+    const ev = { type, pointerType: 'touch', pointerId: 1, button: 0, clientX: 100, clientY: 100, target, stopped: false, preventDefault() { this.stopped = true; }, stopPropagation() { this.stopped = true; } };
+    for (const fn of registry[type] ?? []) fn(ev);
+    return ev;
+  };
+  const tap = (clickTarget) => { fire(onDoc, 'pointerdown', key); fire(on, 'pointerdown', key); fire(on, 'pointerup', key); return fire(onDoc, 'click', clickTarget).stopped; };
+  const sheetEdit = { closest: () => null };
+  assert(tap(sheetEdit) && opened.length === 1,
+    "soft keys, touch: the click a tap sends after its key opened VIEW is swallowed, where at 280 px it pressed the Edit button VIEW had just put under the finger and the level opened for editing");
+  assert(!tap(key), 'soft keys, touch: a click that lands back on the soft keys passes');
+  fire(onDoc, 'pointerdown', sheetEdit);
+  assert(!fire(onDoc, 'click', sheetEdit).stopped, 'soft keys, touch: the next tap, on what the key opened, goes through');
+}

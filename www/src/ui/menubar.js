@@ -62,6 +62,16 @@ export class MenuBar {
       if (b.dataset.mb === 'next') this._nxt();
       else if (b.dataset.mb === 'pick') this.openPicker(b);
     });
+    // The click that follows a finger's lift lands on whatever its key opened there, such as VIEW's Edit.
+    const doc = el.ownerDocument;
+    doc?.addEventListener('pointerdown', () => { this._lifted = false; }, true);
+    doc?.addEventListener('click', (e) => {
+      if (!this._lifted) return;
+      this._lifted = false;
+      if (el.contains(e.target)) return;
+      e.preventDefault();
+      e.stopPropagation();
+    }, true);
   }
 
   _schedulePreview(i) {
@@ -123,7 +133,10 @@ export class MenuBar {
     const t = this._touch;
     if (t?.id !== e.pointerId) return;
     this._touchEnd();
-    if (t.sk && !t.moved && !t.done) this._press(t.sk);
+    if (t.sk && !t.moved && !t.done) {
+      this._lifted = true;
+      this._press(t.sk);
+    }
   }
 
   _touchEnd() {
