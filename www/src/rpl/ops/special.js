@@ -486,7 +486,7 @@ function _fanning(roughness, re) {
   return 1 / (x * x);
 }
 
-function _frictionFactor(name, scale) {
+function _realBinaryFn(name, compute) {
   return _withTaggedBinary(_withListBinary((s) => {
     const [a, b] = s.popN(2).map(_dimensionless);
     if (_isSymOperand(a) || _isSymOperand(b)) {
@@ -495,10 +495,33 @@ function _frictionFactor(name, scale) {
       s.push(Symbolic(AstFn(name, [l, r])));
       return;
     }
-    s.push(Real(scale * _fanning(_realArg(a), _realArg(b))));
+    s.push(Real(compute(_realArg(a), _realArg(b))));
   }));
 }
 
-register('FANNING', _frictionFactor('FANNING', 1), { category: 'Special functions', categoryOrder: 11, label: "FANNING" });
+register('FANNING', _realBinaryFn('FANNING', _fanning), { category: 'Special functions', categoryOrder: 11, label: "FANNING" });
 
-register('DARCY', _frictionFactor('DARCY', 4), { category: 'Special functions', categoryOrder: 12, label: "DARCY" });
+register('DARCY', _realBinaryFn('DARCY', (e, re) => 4 * _fanning(e, re)), { category: 'Special functions', categoryOrder: 12, label: "DARCY" });
+
+// Dranchuk, Purvis and Robinson's fit to the Standing-Katz chart, whose range of 1.05 ≤ Tr ≤ 3 and Pr ≤ 30 is the
+// AUR's, solved by Newton's method for the reduced density ρr = 0.27·Pr/(z·Tr).
+const _DPR = Object.freeze([0.31506237, -1.04670990, -0.57832729, 0.53530771, -0.61232032, -0.10488813, 0.68157001, 0.68446549]);
+
+function _zFactor(tr, pr) {
+  if (!(tr >= 1.05 && tr <= 3 && pr >= 0 && pr <= 30)) throw new RPLError('Bad argument value');
+  const [a1, a2, a3, a4, a5, a6, a7, a8] = _DPR;
+  const t1 = a1 + a2 / tr + a3 / tr ** 3, t2 = a4 + a5 / tr, t3 = a5 * a6 / tr, t4 = a7 / tr ** 3;
+  const z = (r) => 1 + t1 * r + t2 * r ** 2 + t3 * r ** 5 + t4 * r ** 2 * (1 + a8 * r ** 2) * Math.exp(-a8 * r ** 2);
+  const dz = (r) => t1 + 2 * t2 * r + 5 * t3 * r ** 4 + 2 * t4 * r * (1 + a8 * r ** 2 - a8 ** 2 * r ** 4) * Math.exp(-a8 * r ** 2);
+  const c = 0.27 * pr / tr;
+  if (c === 0) return 1;
+  let r = c;
+  for (let i = 0; i < 100; i++) {
+    const step = (r * z(r) - c) / (z(r) + r * dz(r));
+    r -= step;
+    if (Math.abs(step) <= 1e-15 * r) break;
+  }
+  return c / r;
+}
+
+register('ZFACTOR', _realBinaryFn('ZFACTOR', _zFactor), { category: 'Special functions', categoryOrder: 13, label: "ZFACTOR" });

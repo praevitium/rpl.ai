@@ -35,6 +35,7 @@ ARITHMETIC
   IDIV2 IQUOT IREMAINDER     integer division: q+r / quotient / remainder
   GAMMA LNGAMMA Beta         special functions
   FANNING DARCY              relative roughness and Reynolds number to a friction factor: .0001 1E5 DARCY → .0185 (16/Re or 64/Re for laminar flow)
+  ZFACTOR                    reduced temperature (1.05 to 3) and pressure (0 to 30) to a gas compressibility factor: 1.5 2 ZFACTOR → .8206
   erf erfc PSI ZETA          error/digamma/zeta
   LAMBERT Ei Si Ci           Lambert W, exp/sine/cosine integrals
   RND TRNC TRUNC FLOOR CEIL IP FP    rounding family (n RND rounds level 2 to n decimals)

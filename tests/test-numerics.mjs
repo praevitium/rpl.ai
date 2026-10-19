@@ -7420,3 +7420,24 @@ function _arrayEq(a, b) {
   assertThrows(() => runLine('0 1000 FANNING'), /Bad argument value/, 'FANNING wants a roughness above 0');
   assertThrows(() => runLine('1_m 1000 DARCY'), /Inconsistent units/, 'DARCY refuses a unit with dimensions');
 }
+
+// ZFACTOR: Dranchuk, Purvis and Robinson's fit to the Standing-Katz chart over the AUR's range.
+{
+  const top = (line) => format(runLine(line).peek());
+  const num = (line) => Number(runLine(line).peek().value);
+  const A = [0.31506237, -1.04670990, -0.57832729, 0.53530771, -0.61232032, -0.10488813, 0.68157001, 0.68446549];
+  const fit = (tr, pr, z) => {
+    const r = 0.27 * pr / (z * tr);
+    return 1 + (A[0] + A[1] / tr + A[2] / tr ** 3) * r + (A[3] + A[4] / tr) * r ** 2 + A[4] * A[5] * r ** 5 / tr
+      + A[6] * r ** 2 / tr ** 3 * (1 + A[7] * r ** 2) * Math.exp(-A[7] * r ** 2);
+  };
+  const z = num('1.5 2 ZFACTOR');
+  assert(Math.abs(fit(1.5, 2, z) / z - 1) < 1e-10, `ZFACTOR satisfies the Dranchuk-Purvis-Robinson equation (${z})`);
+  assert(Math.abs(z - 0.82) < 0.01 && Math.abs(num('2 3 ZFACTOR') - 0.94) < 0.01, 'ZFACTOR reads as the Standing-Katz chart does');
+  assert(top('1.5 0 ZFACTOR') === '1.', 'ZFACTOR of no pressure is the ideal gas, 1');
+  assert(top('300_K 200_K / 2 ZFACTOR') === top('1.5 2 ZFACTOR'), 'ZFACTOR takes unit objects that reduce to numbers');
+  assert(top("'T' 2. ZFACTOR") === '`ZFACTOR(T,2.)`', 'ZFACTOR of a name is symbolic');
+  assert(top("'ZFACTOR(1.5,2)' EVAL") === top('1.5 2 ZFACTOR'), 'ZFACTOR in an algebraic evaluates');
+  assertThrows(() => runLine('1 2 ZFACTOR'), /Bad argument value/, 'ZFACTOR wants a reduced temperature of 1.05 to 3');
+  assertThrows(() => runLine('1.5 31 ZFACTOR'), /Bad argument value/, 'ZFACTOR wants a reduced pressure of 0 to 30');
+}

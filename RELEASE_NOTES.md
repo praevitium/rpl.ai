@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.52 (2026-10-19)
+**Latest release:** v0.7.53 (2026-10-19)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.53 — 2026-10-19
+
+- ZFACTOR: `1.5 2 ZFACTOR` gives 0.8206, the compressibility factor of a
+  hydrocarbon gas at a reduced temperature of 1.5 and a reduced pressure
+  of 2. It solves Dranchuk, Purvis and Robinson's fit to the Standing-Katz
+  chart, whose range (1.05 to 3, and up to 30) is the AUR's; the AUR names
+  no method, so a result may differ slightly from the 50g's. Unit objects
+  that reduce to numbers are taken, and a name gives `ZFACTOR(T,2.)`.
 
 ## v0.7.52 — 2026-10-19
 

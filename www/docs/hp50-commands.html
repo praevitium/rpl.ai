@@ -19120,6 +19120,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Gas Compressibility Z Factor Function: Calculates the gas compressibility correction factor for non-ideal behavior of a hydrocarbon gas. xTr is the reduced temperature: the ratio of the actual temperature (T) to the pseudocritical temperature (Tc). (Calculate the ratio using absolute temperatures.) xTr must be between 1.05 and 3.0. yPr is the reduced pressure: the ratio of the actual pressure (P) to the pseudocritical pressure (Pc). yPr must be between 0 and 30. xTr and yPr must be real numbers or unit objects that reduce to dimensionless numbers.</p>
+  <p>In rpl.ai ZFACTOR solves Dranchuk, Purvis and Robinson's fit to the Standing-Katz chart, whose range of 1.05 to 3 for xTr and up to 30 for yPr is the one above; the AUR names no method, so a result may differ slightly from the 50g's. A value outside the range is Bad argument value.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
