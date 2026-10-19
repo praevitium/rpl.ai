@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.13 (2026-10-19)
+**Latest release:** v0.7.14 (2026-10-19)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.14 — 2026-10-19
+
+The fifteenth batch of missing HP 50g commands adds `PROMPTSTO`:
+
+- `'A' PROMPTSTO` asks for a value under the prompt `A?`, as INPUT asks,
+  and stores what the answer reads as in A: type 42 and Enter, and A
+  holds 42. It works typed on the command line and inside a program,
+  which halts for the answer and runs on once it is stored.
 
 ## v0.7.13 — 2026-10-19
 
