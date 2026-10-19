@@ -6,6 +6,7 @@ import {
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit, sampleDiffEq,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
   evalTraceAtX, sampleTrace, traceInputError, axisTicks, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace,
+  DEFAULT_TURN, turnBy,
 } from '../www/src/ui/plot-engine.js';
 import { Matrix, Vector, Real, Integer, Symbolic, Program, RList, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
 import { lookup, setGraphicsHook } from '../www/src/rpl/ops.js';
@@ -911,6 +912,24 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   runLine("'X*Y' YSLICE DROP { 'X' 'Y' 'X*Y' } PARSURFACE DROP");
   assert(kinds.join(',') === 'yslice,parsurface data', `YSLICE and PARSURFACE hand their level 1 to the plot view (${kinds})`);
   assertThrows(() => runLine("'X' PARSURFACE"), /Bad argument type/, 'PARSURFACE wants x, y and z in a list or vector');
+  setGraphicsHook(null);
+}
+
+// FAST3D turns the view volume, scaled to a cube, about its centre; the eye point plays no part.
+{
+  const volume = { x: [-10, 10], y: [-1, 1], z: [-1, 1], eye: [0, 0, 0], steps: [10, 8] };
+  const fast = (expr, turn) => sampleTrace({ kind: 'fast3d', expr }, null, { volume, turn });
+  assert(fast('X*Y/10').length === 8 + 10 + 12, 'FAST3D: the mesh and the box, whatever the eye point');
+  const level = fast('0', { azimuth: 0, elevation: 0 });
+  assert(level.slice(0, -12).flat().every(([, v]) => Math.abs(v) < 1e-12), 'FAST3D: z = 0 seen level from the front lies on the horizon');
+  const side = fast('0', { azimuth: 0, elevation: 0 }).flat();
+  assert(Math.max(...side.map(([u]) => Math.abs(u))) < 0.5, 'FAST3D: a wide x range is scaled to the cube, not drawn 10 times wider');
+  assert(DEFAULT_TURN.elevation > 0 && turnBy(DEFAULT_TURN, 0, 10).elevation === 1.5 && turnBy(DEFAULT_TURN, 1, 0).azimuth === DEFAULT_TURN.azimuth + 1,
+    'FAST3D turns freely around and up to just short of straight above');
+  let seen = null;
+  setGraphicsHook((kind) => { seen = kind; });
+  runLine("'X*Y' FAST3D DROP");
+  assert(seen === 'fast3d', 'FAST3D hands its expression to the plot view');
   setGraphicsHook(null);
 }
 

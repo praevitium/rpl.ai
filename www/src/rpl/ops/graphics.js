@@ -41,7 +41,7 @@ register('FUNCTION',  (s) => _requestPlot('function', s), { category: 'Graphics'
 register('POLAR',     (s) => _requestPlot('polar', s), { category: 'Graphics', categoryOrder: 4, label: "POLAR" });
 
 // PLOT stores level 1 in EQ and plots it, PLOTADD adds it to EQ's list and to the plot, each as PPAR's plot type says.
-const PTYPE_KINDS = Object.freeze({ FUNCTION: 'function', POLAR: 'polar', PARAMETRIC: 'parametric', DIFFEQ: 'diffeq', SLOPEFIELD: 'slopefield', CONIC: 'conic', TRUTH: 'truth', PCONTOUR: 'contour', WIREFRAME: 'wireframe', YSLICE: 'yslice' });
+const PTYPE_KINDS = Object.freeze({ FUNCTION: 'function', POLAR: 'polar', PARAMETRIC: 'parametric', DIFFEQ: 'diffeq', SLOPEFIELD: 'slopefield', CONIC: 'conic', TRUTH: 'truth', PCONTOUR: 'contour', WIREFRAME: 'wireframe', YSLICE: 'yslice', FAST3D: 'fast3d' });
 
 function _plotKind() {
   const ptype = plotParameters()[5];
@@ -86,6 +86,8 @@ register('PCONTOUR', (s) => _requestPlot('contour', s), { category: 'Graphics', 
 register('WIREFRAME', (s) => _requestPlot('wireframe', s), { category: 'Graphics', categoryOrder: 7.9, label: 'WIREFRAME' });
 
 register('YSLICE', (s) => _requestPlot('yslice', s), { category: 'Graphics', categoryOrder: 7.91, label: 'YSLICE' });
+
+register('FAST3D', (s) => _requestPlot('fast3d', s), { category: 'Graphics', categoryOrder: 7.915, label: 'FAST3D' });
 
 // PARSURFACE plots the list or vector of x, y and z of two variables on level 1.
 register('PARSURFACE', (s) => {

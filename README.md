@@ -57,7 +57,7 @@ download, no account and no sign-up.
 | **Linear algebra** | Vectors and matrices with DET, INV, RANK, LU, QR, SCHUR, CHOLESKY, EGV and LINSOLVE, and a matrix writer that pastes from spreadsheets |
 | **Statistics** | ΣDAT and Σ+, MEAN, SDEV, LINFIT, BESTFIT and BINS, and distributions such as NDIST and UTPN |
 | **Programming** | User RPL with `« »`, IF, CASE, FOR, WHILE and IFERR (typed from the HP's BRCH menu), local variables, recursion, DEFINE, directories, and HALT, SST, SST↓ and DBUG for debugging |
-| **Plots** | FUNCTION, POLAR, PARAMETRIC, DIFFEQ, slope fields, conics, truth plots, contour maps, 3D wireframes, y-slices and parametric surfaces, scatter, bar and histogram plots, with trace, zoom and PNG export |
+| **Plots** | FUNCTION, POLAR, PARAMETRIC, DIFFEQ, slope fields, conics, truth plots, contour maps, 3D wireframes you can turn, y-slices and parametric surfaces, scatter, bar and histogram plots, with trace, zoom and PNG export |
 | **Data in and out** | Copy and paste with Excel, Google Sheets and Numbers; CSV, TSV, `.xlsx`, JSON and HP `.rpl` files; LaTeX copied out and pasted in |
 | **Input** | Keyboard first with `⌘K` search, the HP 50g keypad on screen, and a phone layout with its own key strip |
 | **Assistant** | Optional. A model you run with Ollama explains, solves, writes programs and tutors, acting on your stack with one-click undo |
@@ -562,9 +562,10 @@ fields, conics, truth plots, contour maps, wireframes, y-slices and
 parametric surfaces in perspective, scatter, bar and histogram plots; `PLOT`
 stores an expression in EQ and plots it, and `PLOTADD` adds another.
 `` 2 -3 1.5 EYEPT `SIN(X*3)*COS(Y*3)` WIREFRAME `` shows the surface from that
-eye point inside VPAR's view volume. Traces have checkboxes and editable
-expressions. Zoom, fit and reset are on the canvas, the window is typed in
-directly, and Trace mode (`T`) walks a cursor along the curves with live
+eye point inside VPAR's view volume, and `FAST3D` draws one you turn with a
+drag or the arrow keys, as the 50g's arrow keys turn it. Traces have
+checkboxes and editable expressions. Zoom, fit and reset are on the canvas,
+the window is typed in directly, and Trace mode (`T`) walks a cursor along the curves with live
 readouts. Expand to fill the window, or go full screen. More canvas buttons copy the plot as an image,
 download it as a PNG at the screen's pixel density, and, where the device
 can share images, share it.
@@ -895,8 +896,8 @@ Catalog and the command reference mark what is available. Not there yet:
   app was closed shows as past due the next time it opens. While one is
   past due, the HP's alert annunciator ((•)) lights in the status line,
   and a tap on it brings the note back.
-- PICTURE's cursor, and the other plot types (FAST3D, GRIDMAP and the
-  rest). PICT holds a
+- PICTURE's cursor, and the other plot types (GRIDMAP and the rest).
+  PICT holds a
   graphics object, LINE, TLINE, BOX, ARC, PIXON, PIXOFF, DRAX and LABEL
   draw on it, GOR, GXOR, SUB, REPL and NEG work on it and on other graphics
   objects (GROBADD stacks two), →GROB draws any object as one in rpl.ai's

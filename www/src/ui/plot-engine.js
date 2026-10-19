@@ -547,9 +547,9 @@ const steps = (lo, hi, n) => Array.from({ length: n }, (_, k) => lo + (hi - lo) 
 
 // point(u, v) is the surface's [x, y, z] for u across [u0, u1] and v across [v0, v1]; YSLICE draws only the lines
 // across u.
-function sampleSurface(point, [u0, u1], [v0, v1], volume, { along = true } = {}) {
+function sampleSurface(point, [u0, u1], [v0, v1], volume, { along = true, camera = null } = {}) {
   const { x, y, z } = volume;
-  const project = perspective(volume.eye, [x, y, z].map(([a, b]) => (a + b) / 2));
+  const project = camera ?? perspective(volume.eye, [x, y, z].map(([a, b]) => (a + b) / 2));
   if (!project) return [];
   const [nu, nv] = volume.steps.map((n) => Math.max(2, Math.round(n)));
   const image = (u, v) => {
@@ -565,6 +565,30 @@ function sampleSurface(point, [u0, u1], [v0, v1], volume, { along = true } = {})
 export function sampleWireframe(ast, volume, opts, { slices = false } = {}) {
   const graph = (x, y) => [x, y, odeSlope(ast, x, y, opts)];
   return sampleSurface(graph, volume.x, volume.y, volume, { along: !slices });
+}
+
+// FAST3D ignores the eye point: the view volume, scaled to a cube, turns about its centre under a camera at a fixed
+// distance, as the 50g's arrow keys turn it.
+const ORBIT_DISTANCE = 4.5;
+const ELEVATION_LIMIT = 1.5;
+export const DEFAULT_TURN = Object.freeze({ azimuth: 0.6, elevation: 0.45 });
+
+export function turnBy({ azimuth, elevation }, dAzimuth, dElevation) {
+  return { azimuth: azimuth + dAzimuth, elevation: Math.max(-ELEVATION_LIMIT, Math.min(ELEVATION_LIMIT, elevation + dElevation)) };
+}
+
+function orbit(volume, { azimuth, elevation }) {
+  const axes = [volume.x, volume.y, volume.z];
+  const mid = axes.map(([a, b]) => (a + b) / 2);
+  const half = axes.map(([a, b]) => Math.abs(b - a) / 2 || 1);
+  const eye = [Math.cos(elevation) * Math.sin(azimuth), -Math.cos(elevation) * Math.cos(azimuth), Math.sin(elevation)].map((c) => c * ORBIT_DISTANCE);
+  const camera = perspective(eye, [0, 0, 0]);
+  return (p) => camera(p.map((c, i) => (c - mid[i]) / half[i]));
+}
+
+export function sampleFast3D(ast, volume, turn, opts) {
+  const graph = (x, y) => [x, y, odeSlope(ast, x, y, opts)];
+  return sampleSurface(graph, volume.x, volume.y, volume, { camera: orbit(volume, turn) });
 }
 
 // PARSURFACE's surface is x(u, v), y(u, v) and z(u, v) over VPAR's input plane, u and v bound as INDEP and DEPND.
@@ -857,6 +881,7 @@ function traceContext(view, opts = {}) {
     depend: opts.depend || null,
     res: opts.res || null,
     volume: opts.volume || null,
+    turn: opts.turn || null,
   };
 }
 
@@ -1106,6 +1131,24 @@ export const TRACE_KINDS = Object.freeze({
     },
     evalAt() { return NaN; },
     fromStack(v) { return expressionFromStack('wireframe', v); },
+    toStack: expressionToStack,
+  },
+  fast3d: {
+    render: 'stroke',
+    data: true,
+    equalAxes: true,
+    projected: true,
+    turnable: true,
+    editable: true,
+    fitOnAdd: true,
+    fields: [{ key: 'expr', placeholder: 'X^2-Y^2', aria: 'z = f(x, y)' }],
+    label: functionLabel,
+    sample(t, ctx) {
+      if (!t.expr || !ctx.volume) return [];
+      return sampleFast3D(parsePlotExpr(t.expr), ctx.volume, ctx.turn ?? DEFAULT_TURN, diffeqOpts(ctx));
+    },
+    evalAt() { return NaN; },
+    fromStack(v) { return expressionFromStack('fast3d', v); },
     toStack: expressionToStack,
   },
   yslice: {

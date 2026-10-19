@@ -1,5 +1,5 @@
 import {
-  TRACE_COLORS, TRACE_KINDS, nextTraceColor, defaultView, zoomView, panView, pinchView,
+  TRACE_COLORS, TRACE_KINDS, nextTraceColor, defaultView, zoomView, panView, pinchView, DEFAULT_TURN, turnBy,
   worldToPixel, pixelToWorld, axisTicks, hasUsableSpan,
   sampleTrace, fitViewToTraces, evalTraceAtX,
   stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace,
@@ -26,6 +26,7 @@ const PLOT_KINDS = Object.freeze([
   ['contour', 'Contour', 'Level curves of f(x, y)'],
   ['wireframe', 'Wireframe', 'z = f(x, y) in perspective, from VPAR'],
   ['yslice', 'Y-slice', 'Slices of z = f(x, y) across x, in perspective'],
+  ['fast3d', 'Fast 3D', 'z = f(x, y) to turn with a drag or the arrow keys'],
   ['scatter', 'Scatter', 'Points from ΣDAT or the stack'],
   ['bar', 'Bar', 'Bar chart from ΣDAT or the stack'],
   ['hist', 'Histogram', 'Histogram from ΣDAT or the stack'],
@@ -36,6 +37,10 @@ const TOUCH = !!globalThis.matchMedia?.('(pointer: coarse)').matches;
 const IDLE_READOUT = TOUCH
   ? 'Tap to read values · drag to pan · pinch to zoom'
   : 'Hover, or press T to trace · drag to pan · scroll to zoom';
+const TURN_READOUT = TOUCH ? 'Drag to turn · pinch to zoom' : 'Drag or use the arrow keys to turn · scroll to zoom';
+// A drag turns a FAST3D surface this far per pixel; an arrow key, a twelfth of a turn.
+const TURN_PER_PIXEL = 0.01;
+const TURN_STEP = Math.PI / 12;
 
 // Once PPAR holds a plot window, as XRNG, YRNG and the other plot commands leave it, a plot starts there as on the
 // HP; until then the view fits what it draws.
@@ -103,6 +108,7 @@ export class GraphView {
   constructor({ app } = {}) {
     this.app = app;
     this.view = defaultView();
+    this._turn = { ...DEFAULT_TURN };
     this.traces = [];
     this._drag = null;
     this._pointers = new Map();
@@ -260,6 +266,9 @@ export class GraphView {
         const to = this._drag.ids.map((id) => this._pointers.get(id));
         this.view = pinchView(this._drag.view, this._drag.from, to, rect.width, rect.height);
         this.draw();
+      } else if (this._drag && this._turnable()) {
+        this._turn = turnBy(this._drag.turn, (ev.offsetX - this._drag.x) * TURN_PER_PIXEL, (ev.offsetY - this._drag.y) * TURN_PER_PIXEL);
+        this.draw();
       } else if (this._drag) {
         const [x0, y0] = pixelToWorld(this._drag.x, this._drag.y, this._drag.view, rect.width, rect.height);
         const [x1, y1] = pixelToWorld(ev.offsetX, ev.offsetY, this._drag.view, rect.width, rect.height);
@@ -282,7 +291,7 @@ export class GraphView {
       this._hoverFromEvent(ev);
     }, { passive: false });
     canvas.addEventListener('dblclick', (ev) => {
-      this.view = defaultView();
+      this.resetView();
       this._hoverFromEvent(ev);
     });
 
@@ -302,7 +311,7 @@ export class GraphView {
     const [a, b] = this._pointers.entries();
     if (!a) this._drag = null;
     else if (b) this._drag = { ids: [a[0], b[0]], from: [a[1], b[1]], view: { ...this.view } };
-    else this._drag = { x: a[1][0], y: a[1][1], view: { ...this.view } };
+    else this._drag = { x: a[1][0], y: a[1][1], view: { ...this.view }, turn: this._turn };
   }
 
   // On a phone the kinds scroll in one row; keep the chosen one in sight.
@@ -496,8 +505,13 @@ export class GraphView {
     });
   }
 
+  // A 3D picture has no x and y to read.
   _hoverFromEvent(ev) {
     if (this.tracing) return;
+    if (this._projected()) {
+      this._clearHover();
+      return;
+    }
     const rect = this._canvas.getBoundingClientRect();
     const [wx, wy] = pixelToWorld(ev.offsetX, ev.offsetY, this.view, rect.width, rect.height);
     this._hover = { x: wx, y: wy };
@@ -514,7 +528,7 @@ export class GraphView {
 
   _clearHover() {
     this._hover = null;
-    if (!this.tracing) this._readout.textContent = IDLE_READOUT;
+    if (!this.tracing) this._readout.textContent = this._idleReadout();
     this.draw();
   }
 
@@ -543,16 +557,37 @@ export class GraphView {
     this.draw();
   }
 
+  // A 3D picture's reset turns it back and fits it; the default window would shrink it to a dot.
   resetView() {
-    this.view = defaultView();
-    this.draw();
+    if (!this._projected()) {
+      this.view = defaultView();
+      this.draw();
+      return;
+    }
+    this._turn = { ...DEFAULT_TURN };
+    this.fitView();
+  }
+
+  _projected() {
+    return this.traces.some((t) => t.enabled && TRACE_KINDS[t.kind]?.projected);
+  }
+
+  _turnable() {
+    return this.traces.some((t) => t.enabled && TRACE_KINDS[t.kind]?.turnable);
+  }
+
+  _idleReadout() {
+    return this._turnable() ? TURN_READOUT : IDLE_READOUT;
   }
 
   nudge(dir) {
     const v = this.view;
     const dx = (v.xmax - v.xmin) / 20;
     const dy = (v.ymax - v.ymin) / 20;
-    if (this.tracing && (dir === 'left' || dir === 'right')) {
+    if (!this.tracing && this._turnable()) {
+      const turn = { left: [-TURN_STEP, 0], right: [TURN_STEP, 0], up: [0, TURN_STEP], down: [0, -TURN_STEP] }[dir] ?? [0, 0];
+      this._turn = turnBy(this._turn, ...turn);
+    } else if (this.tracing && (dir === 'left' || dir === 'right')) {
       this.traceX += (dir === 'left' ? -dx : dx) / 4;
       if (this.traceX < v.xmin) this.view = panView(v, this.traceX - v.xmin - dx, 0);
       if (this.traceX > v.xmax) this.view = panView(v, this.traceX - v.xmax + dx, 0);
@@ -568,7 +603,7 @@ export class GraphView {
     const v = this.view;
     if (this.tracing && (this.traceX == null || this.traceX < v.xmin || this.traceX > v.xmax)) this.traceX = (v.xmin + v.xmax) / 2;
     this.el.querySelector('[data-gr="trace"]').setAttribute('aria-pressed', String(this.tracing));
-    this._readout.textContent = this.tracing ? this._readoutAt(this.traceX) : IDLE_READOUT;
+    this._readout.textContent = this.tracing ? this._readoutAt(this.traceX) : this._idleReadout();
     if (this.tracing) this.focus();
     this.draw();
   }
@@ -706,6 +741,7 @@ export class GraphView {
       width: wrap?.clientWidth || 240,
       height: wrap?.clientHeight,
       tools: this._toolsCorner(wrap),
+      turn: this._turn,
     }));
     this.draw();
   }
@@ -787,7 +823,9 @@ export class GraphView {
     ctx.fillRect(0, 0, width, height);
 
     // A 3D picture's x and y are the screen's, not the plot's, so the grid would mislead.
-    if (!this.traces.some((t) => t.enabled && TRACE_KINDS[t.kind]?.projected)) this._drawGrid(ctx, width, height);
+    if (!this._projected()) this._drawGrid(ctx, width, height);
+    const idle = this._idleReadout();
+    if (!this.tracing && [IDLE_READOUT, TURN_READOUT].includes(this._readout.textContent) && this._readout.textContent !== idle) this._readout.textContent = idle;
     for (const t of this.traces) {
       if (!t.enabled) continue;
       this._drawTrace(ctx, t, width, height);
@@ -892,7 +930,7 @@ export class GraphView {
     if (!spec) return;
     let segs = [];
     try {
-      segs = spec.grid ? this._gridSamples(t, width, height) : sampleTrace(t, this.view, sampleOpts({ width, height }));
+      segs = spec.grid ? this._gridSamples(t, width, height) : sampleTrace(t, this.view, sampleOpts({ width, height, turn: this._turn }));
     } catch {
       return;
     }

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.46 (2026-10-19)
+**Latest release:** v0.7.47 (2026-10-19)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.47 — 2026-10-19
+
+- FAST3D draws z = f(x, y) over VPAR's view volume scaled to a cube, and
+  you turn it: drag it with a finger or the mouse, or use the arrow keys
+  as on the 50g. Pinch or scroll to zoom; the plot view's reset turns it
+  back. The plot view has a Fast 3D kind for typing one in.
+- The plot view's reset, and a double-click, fit a 3D picture again
+  instead of jumping to the 2D default window, where it shrank to a dot,
+  and a 3D picture no longer shows x and y readouts that mean nothing.
 
 ## v0.7.46 — 2026-10-19
 
