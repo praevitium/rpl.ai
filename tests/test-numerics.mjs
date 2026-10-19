@@ -1107,7 +1107,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 
 // MAXR / MINR constants and HMS family
 
-// MAXR: largest finite Real — derived from current realMaxExp (default 999)
+// MAXR: largest finite Real — derived from current realMaxExp (default 499, the HP's)
 {
   const s = new Stack();
   lookup('MAXR').fn(s);
@@ -1125,7 +1125,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
          `session044: MINR pushes 1e-${e}`);
 }
 
-// Default realMaxExp is REAL_MAX_EXP_DEFAULT (999)
+// Default realMaxExp is REAL_MAX_EXP_DEFAULT, the AUR's MAXR 9.99999999999E499
 assert(getRealMaxExp() === REAL_MAX_EXP_DEFAULT,
        'session044: default realMaxExp is REAL_MAX_EXP_DEFAULT');
 
@@ -1179,7 +1179,7 @@ assert(getRealMaxExp() === REAL_MAX_EXP_DEFAULT,
   // constants + relationships (REAL_MAX_EXP_MAX was previously unimported)
   assert(REAL_MAX_EXP_MIN === 10, 'session390: REAL_MAX_EXP_MIN is 10');
   assert(REAL_MAX_EXP_MAX === 9e15, 'session390: REAL_MAX_EXP_MAX is 9e15 (decimal.js cap)');
-  assert(REAL_MAX_EXP_DEFAULT === 999, 'session390: REAL_MAX_EXP_DEFAULT is 999');
+  assert(REAL_MAX_EXP_DEFAULT === 499, 'MAXR defaults to the HP\'s 9.99999999999E499 and MINR to 1E-499');
   assert(REAL_MAX_EXP_MIN < REAL_MAX_EXP_DEFAULT && REAL_MAX_EXP_DEFAULT < REAL_MAX_EXP_MAX,
          'session390: MIN < DEFAULT < MAX');
 

@@ -21,7 +21,7 @@ export const WORDSIZE_DEFAULT = 64;
 
 // realMaxExp sets MAXR (9.99…E+n) and MINR (1E-n) only; arithmetic is not
 // clamped to it.  The HP50's BCD format stops at 499; decimal.js at 9e15.
-export const REAL_MAX_EXP_DEFAULT = 999;
+export const REAL_MAX_EXP_DEFAULT = 499;
 export const REAL_MAX_EXP_MIN     = 10;
 export const REAL_MAX_EXP_MAX     = 9e15;
 
