@@ -349,7 +349,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   for a stack level) says a level or variable is being edited, so Enter
   puts it back; tap the pencil to cancel. Curly quotes, typed with an
   iPhone's smart punctuation or pasted from Notes or a messaging app, read
-  as the HP's straight ones.
+  as the HP's straight ones, and ×, ÷ and − from a phone's symbol keys as
+  *, / and -.
 - ⌫ and Enter sit beside the command line, finger-sized. ⌫ deletes a
   character or the selected text, and leaves the stack alone on an empty
   line. Hold ⌫, there or on the keypad, to clear the whole line; Undo in
@@ -556,7 +557,7 @@ can share images, share it.
 
 `⌘K` finds commands (by name, description or topic), settings, modes, menus,
 variables and constants. For quick commands, the selected result shows what
-it would leave on your stack, why it can't run, or the mode it sets; `→` opens its reference page. With nothing
+it would leave on your stack, why it can't run, or the mode or variable it would change; `→` opens its reference page. With nothing
 typed, the commands you last ran from search come first, so on a phone
 without the keypad a command you use often is two taps away.
 
