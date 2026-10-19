@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.34 (2026-10-19)
+**Latest release:** v0.7.35 (2026-10-19)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.35 — 2026-10-19
+
+- TRUTH shades the region of the plot view where a condition holds, as the
+  50g's truth plot does: `'X^2+Y^2<4 AND X>0' TRUTH` fills the right half
+  of a disc. Any non-zero value counts as true, so comparisons, AND, OR
+  and NOT all work, and INDEP's and DEPND's ranges in PPAR bound the
+  region. The shading follows the view as it pans and zooms, and the plot
+  view has a Truth kind for typing one in.
 
 ## v0.7.34 — 2026-10-19
 

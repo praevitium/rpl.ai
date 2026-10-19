@@ -784,3 +784,31 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(seen === 'conic', 'CONIC hands its equation to the plot view');
   setGraphicsHook(null);
 }
+
+// TRUTH: shaded runs of cells where the condition holds, inside INDEP's and DEPND's ranges.
+{
+  const view = { xmin: -2, xmax: 2, ymin: -2, ymax: 2 };
+  const truth = (expr, opts = {}) => sampleTrace({ kind: 'truth', expr }, view, { width: 240, height: 240, ...opts });
+  const centre = ([[x0, y0], [x1, y1]]) => [(x0 + x1) / 2, (y0 + y1) / 2];
+  const half = truth('X<0');
+  assert(half.length === 80 && half.every(([[x0], [x1]]) => x0 === -2 && Math.abs(x1) < 1e-9),
+    'TRUTH: X<0 shades one run per row across the left half');
+  const disc = truth('X^2+Y^2<1');
+  assert(disc.length > 0 && disc.every(([[x0, y0], [x1, y1]]) => {
+    const y = (y0 + y1) / 2, w = Math.sqrt(Math.max(0, 1 - y * y));
+    return x0 >= -w - 0.05 && x1 <= w + 0.05;
+  }), 'TRUTH: a disc stays inside the circle');
+  assert(truth('X>0 AND Y>0').every((c) => centre(c).every((v) => v > 0)), 'TRUTH: AND joins two conditions');
+  assert(truth('X^2+Y^2+1<0').length === 0, 'TRUTH: a condition that never holds shades nothing');
+  assert(truth('SQRT(X)').every(([[x0]]) => x0 >= 0), 'TRUTH: a cell where f has no value stays unshaded');
+  const ranged = truth('1', { indep: { name: 'X', range: [0, 1] }, depend: { name: 'Y', range: [-1, 0] } });
+  assert(ranged.length > 0 && ranged.every(([[x0, y0], [x1, y1]]) => x0 >= 0 && x1 <= 1 && y0 >= -1 && y1 <= 0),
+    'TRUTH: INDEP and DEPND ranges bound the shading');
+  const named = truth('T<U', { indep: { name: 'T' }, depend: { name: 'U' } });
+  assert(named.length > 0 && named.every((c) => { const [x, y] = centre(c); return x < y + 0.05; }), 'TRUTH: INDEP and DEPND name the variables');
+  let seen = null;
+  setGraphicsHook((kind) => { seen = kind; });
+  runLine("'X<Y' TRUTH DROP");
+  assert(seen === 'truth', 'TRUTH hands its condition to the plot view');
+  setGraphicsHook(null);
+}

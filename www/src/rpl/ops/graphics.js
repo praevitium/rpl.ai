@@ -48,6 +48,8 @@ register('SLOPEFIELD', (s) => _requestPlot('slopefield', s), { category: 'Graphi
 
 register('CONIC', (s) => _requestPlot('conic', s), { category: 'Graphics', categoryOrder: 7.6, label: "CONIC" });
 
+register('TRUTH', (s) => _requestPlot('truth', s), { category: 'Graphics', categoryOrder: 7.7, label: "TRUTH" });
+
 register('DRAW',      (s) => _requestPlot('draw', s), { category: 'Graphics', categoryOrder: 6, label: "DRAW" });
 
 

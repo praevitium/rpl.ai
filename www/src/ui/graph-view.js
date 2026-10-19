@@ -22,6 +22,7 @@ const PLOT_KINDS = Object.freeze([
   ['diffeq', 'dy/dx', 'dy/dx = f(x, y)'],
   ['slopefield', 'Slopes', 'dy/dx = f(x, y) as a slope field'],
   ['conic', 'Conic', 'f(x, y) = 0, a second-order curve'],
+  ['truth', 'Truth', 'Shade where a condition in x and y holds'],
   ['scatter', 'Scatter', 'Points from ΣDAT or the stack'],
   ['bar', 'Bar', 'Bar chart from ΣDAT or the stack'],
   ['hist', 'Histogram', 'Histogram from ΣDAT or the stack'],
@@ -150,6 +151,7 @@ export class GraphView {
     this._bind();
     this._renderExprs();
     this._pict = calcState.pict;
+    this._cells = new WeakMap();
     subscribeState(() => {
       if (calcState.pict === this._pict) return;
       this._pict = calcState.pict;
@@ -851,12 +853,16 @@ export class GraphView {
     if (!spec) return;
     let segs = [];
     try {
-      segs = sampleTrace(t, this.view, sampleOpts({ width, height }));
+      segs = spec.render === 'cells' ? this._cellsOf(t, width, height) : sampleTrace(t, this.view, sampleOpts({ width, height }));
     } catch {
       return;
     }
     if (spec.render === 'bars') {
       this._drawBars(ctx, t, segs, width, height);
+      return;
+    }
+    if (spec.render === 'cells') {
+      this._drawCells(ctx, t, segs, width, height);
       return;
     }
     const view = this.view;
@@ -884,6 +890,31 @@ export class GraphView {
         else ctx.lineTo(px, py);
       });
       ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // A truth plot evaluates its condition at thousands of cells, so a redraw that only moves the hover keeps them.
+  _cellsOf(t, width, height) {
+    const opts = sampleOpts({ width, height });
+    const key = JSON.stringify([t.expr, this.view, width, height, calcState.angle, opts.indep, opts.depend]);
+    const cached = this._cells.get(t);
+    if (cached?.key === key) return cached.cells;
+    const cells = sampleTrace(t, this.view, opts);
+    this._cells.set(t, { key, cells });
+    return cells;
+  }
+
+  // Edges are rounded to whole pixels so neighbouring rows meet without a seam.
+  _drawCells(ctx, t, cells, width, height) {
+    const view = this.view;
+    ctx.save();
+    ctx.fillStyle = this._traceColor(t);
+    ctx.globalAlpha = 0.45;
+    for (const [[x0, y0], [x1, y1]] of cells) {
+      const [left, top] = worldToPixel(x0, y1, view, width, height).map(Math.round);
+      const [right, bottom] = worldToPixel(x1, y0, view, width, height).map(Math.round);
+      ctx.fillRect(left, top, right - left, bottom - top);
     }
     ctx.restore();
   }

@@ -459,6 +459,40 @@ export function sampleConic(ast, xmin, xmax, count, ySpan, opts) {
   return pieces.map((piece) => segmentPoints(piece, ySpan * 8)).flat();
 }
 
+// TRUTH shades the cells of a grid where f(x, y) is non-zero, each run of cells along a row as one rectangle from its
+// lower left to its upper right corner. Cells grow past 3 pixels to keep to about the HP's 131 x 80 evaluations.
+const TRUTH_CELL_PIXELS = 3;
+const TRUTH_MAX_CELLS = 10000;
+
+const clipRange = (lo, hi, range) => [Math.max(lo, range?.[0] ?? lo), Math.min(hi, range?.[1] ?? hi)];
+
+export function sampleTruth(ast, view, width, height, opts) {
+  const [xmin, xmax] = clipRange(view.xmin, view.xmax, opts?.xRange);
+  const [ymin, ymax] = clipRange(view.ymin, view.ymax, opts?.yRange);
+  if (!(xmax > xmin && ymax > ymin)) return [];
+  const cell = Math.max(TRUTH_CELL_PIXELS, Math.sqrt(width * height / TRUTH_MAX_CELLS));
+  const cols = Math.ceil(width * (xmax - xmin) / (view.xmax - view.xmin) / cell);
+  const rows = Math.ceil(height * (ymax - ymin) / (view.ymax - view.ymin) / cell);
+  const xAt = (i) => xmin + (xmax - xmin) * i / cols, yAt = (j) => ymin + (ymax - ymin) * j / rows;
+  const isTrue = (i, j) => {
+    const v = odeSlope(ast, xAt(i + 0.5), yAt(j + 0.5), opts);
+    return Number.isFinite(v) && v !== 0;
+  };
+  const cells = [];
+  for (let j = 0; j < rows; j++) {
+    let start = -1;
+    for (let i = 0; i <= cols; i++) {
+      const on = i < cols && isTrue(i, j);
+      if (on && start < 0) start = i;
+      if (!on && start >= 0) {
+        cells.push([[xAt(start), yAt(j)], [xAt(i), yAt(j + 1)]]);
+        start = -1;
+      }
+    }
+  }
+  return cells;
+}
+
 function rk4Step(ast, x, y, h, opts) {
   const k1 = odeSlope(ast, x, y, opts);
   const k2 = odeSlope(ast, x + h / 2, y + (h * k1) / 2, opts);
@@ -905,6 +939,22 @@ export const TRACE_KINDS = Object.freeze({
     },
     evalAt() { return NaN; },
     fromStack(v) { return expressionFromStack('conic', v); },
+    toStack: expressionToStack,
+  },
+  truth: {
+    render: 'cells',
+    data: false,
+    editable: true,
+    fitOnAdd: false,
+    fields: [{ key: 'expr', placeholder: 'X^2+Y^2<4', aria: 'Condition in X and Y' }],
+    label: functionLabel,
+    sample(t, ctx) {
+      if (!t.expr) return [];
+      return sampleTruth(parsePlotExpr(t.expr), ctx.view, ctx.width, ctx.height ?? ctx.width * 0.6,
+        { ...diffeqOpts(ctx), xRange: ctx.indep?.range, yRange: ctx.depend?.range });
+    },
+    evalAt() { return NaN; },
+    fromStack(v) { return expressionFromStack('truth', v); },
     toStack: expressionToStack,
   },
   fit: {
