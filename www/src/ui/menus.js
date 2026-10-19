@@ -1,6 +1,8 @@
 import { parseUnitExpr, sameDims, uexprEqual, toBaseUexpr } from '../rpl/units.js';
 import { isList, isName, isString, isTagged } from '../rpl/types.js';
-import { format } from '../rpl/formatter.js';
+import { format as formatValue, withFractionMark } from '../rpl/formatter.js';
+
+const format = (value) => withFractionMark(formatValue(value));
 
 export const MENU_FAMILIES = Object.freeze([
   { id: 'STACK', short: 'STACK', title: 'Stack', category: 'Stack' },

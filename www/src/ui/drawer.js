@@ -6,7 +6,7 @@ import {
 } from '../rpl/state.js';
 import { TYPES, isStorableHpName } from '../rpl/types.js';
 import { unitInfo } from '../rpl/units.js';
-import { format } from '../rpl/formatter.js';
+import { format, withFractionMark } from '../rpl/formatter.js';
 import {
   exportHpTextFile, readUpload,
   listBackups, archiveBackup, restoreBackup, deleteBackup,
@@ -527,7 +527,7 @@ export class Drawers {
   _varRow(name, value) {
     const isDir = value.type === TYPES.DIRECTORY;
     const n = escapeHtml(name);
-    const preview = isDir ? `${value.entries.size} item${value.entries.size === 1 ? '' : 's'}` : format(value);
+    const preview = isDir ? `${value.entries.size} item${value.entries.size === 1 ? '' : 's'}` : withFractionMark(format(value));
     const acts = isDir
       ? `<button type="button" class="mini" data-dw="var-open" data-name="${n}" title="Open ${n}" aria-label="Open ${n}">${icon('chr', 'sm')}</button>`
       : `<button type="button" class="mini" data-dw="var-edit" data-name="${n}" title="Edit ${n}" aria-label="Edit ${n}">${icon('edit', 'sm')}</button>`;
