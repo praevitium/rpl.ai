@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.151 (2026-10-18)
+**Latest release:** v0.6.152 (2026-10-18)
 
 ---
 
@@ -18,6 +18,17 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.152 — 2026-10-18
+
+The assistant's replies render the rest of their everyday Markdown: a
+`####` heading shows as a heading, where its hashes showed; a
+`[text](url)` link to an http(s) or mailto address opens in a new tab,
+while any other address stays text; a `---` line draws a rule, and `>`
+lines show as one quote with a bar beside it, where both showed as
+typed.
 
 ---
 
