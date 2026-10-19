@@ -1852,8 +1852,10 @@ setAngle('RAD');
   const fade = Number(displaySrc.match(/const TOP_FADE = (\d+);/)?.[1]);
   assert(fade === 36 && css.includes(`.stack-view.more-t { mask-image: linear-gradient(to bottom, transparent, #000 ${fade}px); }`)
     && new RegExp(`\\.stack-view \\{[^}]*scroll-padding-top: ${fade}px;`).test(css)
-    && /const view = this\.stackView, edge = view\.scrollTop \+ TOP_FADE,/.test(displaySrc) && /row\.offsetTop \+ row\.offsetHeight <= edge/.test(displaySrc) && /view\.classList\.toggle\('more-t', above > 0\)/.test(displaySrc),
+    && /const view = this\.stackView, edge = view\.scrollTop \+ TOP_FADE,/.test(displaySrc) && /row\.offsetTop \+ row\.offsetHeight <= edge/.test(displaySrc) && /view\.classList\.toggle\('more-t', above > 0 \|\| cut\)/.test(displaySrc),
     'stack: with levels above, the top edge fades under the "more levels above" pill, which counts a level ending in the fade, and a level selected there scrolls clear of it (the pill used to sit on a half-shown level it did not count)');
+  assert(/return \{ above, top, cut: rows\.length > 0 && rows\[0\]\.offsetTop < view\.scrollTop \};/.test(displaySrc),
+    'stack: a top level cut by a short view fades at the top edge too, where a turned phone in minimal view sliced level 4\'s matrix through its first row with no sign of more above');
 }
 
 {

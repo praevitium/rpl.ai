@@ -530,13 +530,15 @@ export class Display {
     const view = this.stackView, edge = view.scrollTop + TOP_FADE, top = view.offsetTop + 6;
     const sel = view.querySelector('.st-row.sel');
     if (sel && sel.offsetTop < edge && sel.offsetTop + sel.offsetHeight > edge) return { above: 0, top };
-    const above = [...view.querySelectorAll('.st-row[data-key]')].filter((row) => row.offsetTop + row.offsetHeight <= edge).length;
-    return { above, top };
+    const rows = [...view.querySelectorAll('.st-row[data-key]')];
+    const above = rows.filter((row) => row.offsetTop + row.offsetHeight <= edge).length;
+    // A top level cut by a short view fades as well, though the pill counts only levels wholly above.
+    return { above, top, cut: rows.length > 0 && rows[0].offsetTop < view.scrollTop };
   }
 
-  _showMore({ above, top }) {
+  _showMore({ above, top, cut }) {
     const view = this.stackView;
-    view.classList.toggle('more-t', above > 0);
+    view.classList.toggle('more-t', above > 0 || cut);
     const count = above && above + this._hidden;
     if (!this._more) {
       this._more = document.createElement('button');
