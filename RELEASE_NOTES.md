@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.155 (2026-10-18)
+**Latest release:** v0.6.156 (2026-10-18)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.156 — 2026-10-18
+
+Command search no longer says "IF isn't available in rpl.ai": choosing
+IF, FOR, π or another word the parser reads types it on the command
+line, as the Catalog's Insert does (inside an open program too), and
+its rows use the manual's spelling, π rather than Π. Commands rpl.ai
+lacks, such as PICT, wear a "not in app" badge there, and choosing one
+opens its reference page instead of putting up an error. Σ, the HP's
+summation: `'k' 1 10 'k^2' Σ` gives 385, a symbolic summand between
+numeric limits sums in closed form (`'N' 1 5 'A^N' Σ`), and the
+algebraic `'Σ(k=1,10,k^2)'` reads as the HP writes it, where it said Σ
+expects 4 arguments; the Catalog counts 520 commands.
 
 ---
 
