@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 530 commands, exact big-integer and rational arithmetic,
+of its command set: 533 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -166,7 +166,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
   opening MODUL says the modulus its commands use (13 until `MODSTO` sets
   another), and its MODSTO key says the new one.
   `PROOT`, `PCOEF` and `PEVAL` take the HP's arrays:
-  `[ 2 -3 4 -5 ] PCOEF` gives `[ 1 2 -25 -26 120 ]`.
+  `[ 2 -3 4 -5 ] PCOEF` gives `[ 1 2 -25 -26 120 ]`. `DIV2`, `EGCD` and
+  `ABCUV` are IDIV2, IEGCD and IABCUV for polynomials:
+  `` `X^2+1` `X-1` EGCD `` gives 2, 1 and `-X-1`.
 - **Bases.** `#FFh` is a binary integer; `HEX`, `DEC`, `OCT` and `BIN` show
   them in another base, and `8 STWS` sets the word size, so `#81h RL` gives
   `#3h`. The BASE menu holds them as the HP's does, with folders for
@@ -338,8 +340,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   rather than lose its exponent or last digits, breaking before the
   exponent first. Above level 1, as on the HP, a long list keeps to one
   line, and so does a matrix of more than three rows, in its typed form;
-  tap the level, or VIEW it, to see it whole. The stack fades the same way at its top while levels
-  lie above, under a pill that counts them; tap it to go to the top. Both
+  tap the level, or VIEW it, to see it whole. The stack fades the same way at its top while a level
+  runs above it, under a pill that counts the levels wholly above; tap it to go to the top. Both
   step aside for a selected level, which shows whole with its actions
   whenever it fits, and stays in view when you turn the phone or the
   keyboard comes up. A deep
@@ -861,7 +863,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 530. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 533. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - setting the clock: `→DATE`, `→TIME` and `CLKADJ`. The clock is the
