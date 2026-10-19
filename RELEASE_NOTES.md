@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.12 (2026-10-19)
+**Latest release:** v0.7.13 (2026-10-19)
 
 ---
 
@@ -20,6 +20,21 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.13 — 2026-10-19
+
+The fourteenth batch of missing HP 50g commands adds three:
+
+- `TVM` opens the TVM menu, as the HP's TVM command opens its solver.
+- `∞` executed gives the algebraic `∞`, as the HP's keyboard and Catalog
+  do, for LIM and the CAS commands: `'ATAN(-∞)' SIMPLIFY` gives -π/2.
+  Breaking change: a bare ∞ used to push the name ∞. EVAL still leaves
+  ATAN(-∞) as it is where the HP gives -(π/2); that is for a later
+  release.
+- The HP's `dn` notation: EVAL differentiates a built-in function in its
+  nth argument, so `'d1SIN(2*X)' EVAL` gives `COS(2*X)`, as the AUR
+  shows, and `d1d1` differentiates twice. A function the calculator
+  doesn't know, such as Y in `d1Y(X)`, stays as written for DESOLVE.
 
 ## v0.7.12 — 2026-10-19
 
