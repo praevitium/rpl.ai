@@ -177,7 +177,8 @@ register('ISOL', lookup('SOLVE').fn, { category: 'CAS / symbolic', categoryOrder
 // The HP 48's name for SOLVE.
 register('QUAD', lookup('SOLVE').fn, { category: 'CAS / symbolic', categoryOrder: 10.1, label: "QUAD" });
 
-// A system's equations, an expression set equal to zero, and its variables, as Giac's syst2mat and linsolve take them.
+// A system's equations, an expression set equal to zero, and its variables, as Giac's syst2mat, linsolve and fsolve
+// take them.
 function _linearSystem(eqsArg, varsArg) {
   const items = (v) => (isVector(v) || isList(v) ? v.items : [v]);
   const asZero = (e) => (e.kind === 'bin' && e.op === '=' ? AstBin('-', e.l, e.r) : e);
@@ -202,6 +203,21 @@ register('LINSOLVE', (s) => {
   s.push(RList(pivots.map((p) => _casValue(giacToAst(p)))));
   s.push(Vector(solution.map(Symbolic)));
 }, { category: 'CAS / symbolic', categoryOrder: 9.5, label: "LINSOLVE" });
+
+// MSLV ( [eqs] [vars] [guesses] → [eqs] [vars] [solution] ): Giac's fsolve from the guesses, as many equations as
+// variables; no solution found is the HP's Bad Guess(es).
+register('MSLV', (s) => {
+  const [eqsArg, varsArg, guessArg] = s.popN(3);
+  const items = (v) => (isVector(v) || isList(v) ? v.items : [v]);
+  const { system, vars } = _linearSystem(eqsArg, varsArg);
+  const guesses = items(guessArg);
+  if (items(eqsArg).length !== vars.length || guesses.length !== vars.length) throw new RPLError('Bad argument value');
+  const values = splitGiacList(giac.caseval(`fsolve(${system},[${guesses.map((g) => astToGiac(_astArg(g))).join(',')}])`));
+  if (values?.length !== vars.length) throw new RPLError('MSLV: Bad Guess(es)');
+  s.push(eqsArg);
+  s.push(varsArg);
+  s.push(Vector(values.map((v) => _casValue(giacToAst(v)))));
+}, { category: 'CAS / symbolic', categoryOrder: 9.6, label: "MSLV" });
 
 
 // SYST2MAT ( [eqs] [vars] → [[ coefficients constant ]] ): a row per equation, its constant moved to the left

@@ -8753,3 +8753,17 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(shown("'X^2-4' 'X' QUAD") === '{ `X = 2` `X = -2` }', 'QUAD solves as SOLVE does');
   giac._clear();
 }
+
+// MSLV solves the AUR's system numerically through Giac's fsolve.
+{
+  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
+  giac._clear();
+  giac._setFixture('fsolve([sin(X)+Y,X+sin(Y)-1],[X,Y],[0,0])', '[1.82384112611,-0.968154636175]');
+  assert(shown("[ 'SIN(X)+Y' 'X+SIN(Y)=1' ] [ X Y ] [ 0 0 ] MSLV")
+    === '[ `SIN(X) + Y` `X + SIN(Y) = 1` ] | [ X Y ] | [ 1.82384112611 -0.968154636175 ]',
+    'MSLV keeps the equations and variables and gives the solution vector');
+  giac._setFixture('fsolve([X*Y-1,X+Y],[X,Y],[1,1])', 'undef');
+  assertThrows(() => runLine("[ 'X*Y-1' 'X+Y' ] [ X Y ] [ 1 1 ] MSLV"), /MSLV: Bad Guess/, 'MSLV with no solution found is Bad Guess(es)');
+  assertThrows(() => runLine("[ 'X+Y' ] [ X Y ] [ 1 1 ] MSLV"), /Bad argument value/, 'MSLV rejects an underdetermined system');
+  giac._clear();
+}

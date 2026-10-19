@@ -25,3 +25,29 @@ const top = (s) => Number(s.peek().value);
   assertThrows(() => runLine("'X' 'X' \"a\" ROOT"), /ROOT: Bad argument type/, 'ROOT wants a numeric guess');
   runLine("'X' PURGE");
 }
+
+// RKF, RKFSTEP and RKFERR on the AUR's y' = 1/(1+T^2) - 2*Y^2, y(0) = 0, whose solution is T/(1+T^2).
+{
+  const value = (name) => Number(recallVar(name).value);
+  runLine("0 'T' STO 0 'Y' STO '1/(1+T^2)-2*Y^2' 'F' STO");
+  let s = runLine('{ T Y F } .00001 8 RKF');
+  assert(s.depth === 2 && value('T') === 8 && near(value('Y'), 0.123077277659, 1e-8),
+    `RKF steps T to 8 and Y to the HP's .123077277659 within 1E-8 (${value('Y')}; exact 8/65)`);
+  runLine("0 'T' STO 1 'Y' STO");
+  runLine("{ T Y 'Y' } 1E-9 1 RKF");
+  assert(near(value('Y'), Math.E, 1e-8), `RKF solves y' = y to e (${value('Y')})`);
+  runLine("0 'T' STO 0 'Y' STO");
+  s = runLine('{ T Y F } .00001 .5 RKFSTEP');
+  const t = value('T');
+  assert(t > 0 && t <= 0.5 && near(value('Y'), t / (1 + t * t), 1e-5) && top(s) > 0,
+    `RKFSTEP takes one step no longer than .5 within tolerance and gives the next step (${t}, ${top(s)})`);
+  runLine("0 'T' STO 0 'Y' STO");
+  s = runLine('{ T Y F } .5 RKFERR');
+  const [delta, error] = s.snapshot().slice(0, 2).map((v) => Number(v.value)).reverse();
+  assert(near(delta, 0.4, 1e-3) && error > 0 && error < 1e-3 && value('T') === 0 && value('Y') === 0,
+    `RKFERR gives the change and error estimate of a .5 step and leaves T and Y alone (${delta}, ${error})`);
+  assertThrows(() => runLine("{ T Y 'Q' } .00001 1 RKF"), /Bad argument value/, 'RKF: a right-hand side that is no number');
+  assert(value('T') === 0, 'a failed RKF puts T back');
+  assertThrows(() => runLine("{ T Y } .00001 1 RKF"), /Bad argument type/, 'RKF wants t, y and f in its list');
+  runLine('{ T Y F } PURGE');
+}
