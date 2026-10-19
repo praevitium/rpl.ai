@@ -106,12 +106,16 @@ function realArg(v) {
   return Number(v.value);
 }
 
-function odeProblem(list, s) {
-  if (!isList(list) || list.items.length !== 3) throw new RPLError('Bad argument type');
-  const [t, y, given] = list.items;
-  const stored = isName(given) ? recallVar(given.id) : null;
-  const rhs = isSymbolic(stored) ? stored : given;
-  if (!isName(t) || !isName(y) || !(isSymbolic(rhs) || isName(rhs))) throw new RPLError('Bad argument type');
+// The list holds t, y and f, and for the Rosenbrock commands ∂f/∂y and ∂f/∂t too; each may be a name holding it.
+function odeProblem(list, s, size = 3) {
+  if (!isList(list) || list.items.length !== size) throw new RPLError('Bad argument type');
+  const [t, y, ...given] = list.items;
+  const exprs = given.map((g) => {
+    const stored = isName(g) ? recallVar(g.id) : null;
+    return isSymbolic(stored) ? stored : g;
+  });
+  const usable = (e, i) => isSymbolic(e) || isName(e) || (i > 0 && (isReal(e) || isInteger(e)));
+  if (!isName(t) || !isName(y) || !exprs.every(usable)) throw new RPLError('Bad argument type');
   const saved = [t, y].map((name) => {
     const v = recallVar(name.id);
     if (v === undefined) throw new RPLError(`Undefined name: ${name.id}`);
@@ -121,26 +125,27 @@ function odeProblem(list, s) {
     storeVar(t.id, Real(tv));
     storeVar(y.id, Real(yv));
   };
-  const f = (tv, yv) => {
+  const evaluator = (expr) => (tv, yv) => {
     store(tv, yv);
     const depth = s.depth;
-    s.push(rhs);
+    s.push(expr);
     lookup('→NUM').fn(s);
     const v = s.depth === depth + 1 ? s.pop() : null;
     while (s.depth > depth) s.pop();
     if (!v || !(isReal(v) || isInteger(v)) || !Number.isFinite(Number(v.value))) throw new RPLError('Bad argument value');
     return Number(v.value);
   };
+  const [f, fy, ft] = exprs.map(evaluator);
   const reset = () => {
     storeVar(t.id, saved[0]);
     storeVar(y.id, saved[1]);
   };
-  return { f, t: realArg(saved[0]), y: realArg(saved[1]), store, reset };
+  return { f, fy, ft, t: realArg(saved[0]), y: realArg(saved[1]), store, reset };
 }
 
 // Runs a solver on the problem, with t and y put back as they were if it fails.
-function solving(list, s, solve) {
-  const problem = odeProblem(list, s);
+function solving(list, s, solve, size = 3) {
+  const problem = odeProblem(list, s, size);
   try {
     solve(problem);
   } catch (e) {
@@ -160,16 +165,30 @@ function rkfTrial(f, t, y, h) {
   return { delta: weigh(FIFTH_ORDER), error: Math.abs(weigh(ERROR_WEIGHTS)) };
 }
 
-const stepFactor = (tol, error) => (error === 0 ? 4 : Math.min(4, Math.max(0.1, 0.8 * (tol / error) ** 0.2)));
+const stepFactor = (tol, error, power) => (error === 0 ? 4 : Math.min(4, Math.max(0.1, 0.8 * (tol / error) ** power)));
 
 // One step no longer than h whose error is within tol, and the step to try next.
-function rkfStep(f, t, y, tol, h) {
+function adaptiveStep(trial, power, tol, h) {
   for (;;) {
     checkTimeLimit();
-    const { delta, error } = rkfTrial(f, t, y, h);
-    if (error <= tol) return { h, delta, next: h * stepFactor(tol, error) };
-    h *= stepFactor(tol, error);
+    const { delta, error } = trial(h);
+    if (error <= tol) return { h, delta, next: h * stepFactor(tol, error, power) };
+    h *= stepFactor(tol, error, power);
   }
+}
+
+const rkfStep = (f, t, y, tol, h) => adaptiveStep((step) => rkfTrial(f, t, y, step), 0.2, tol, h);
+
+// Steps from t to end, each step's length capped by what remains, and stores where it ends.
+function march({ t, y, store }, end, h, stepAt) {
+  while (t !== end) {
+    const remaining = end - t;
+    const step = stepAt(t, y, Math.sign(remaining) * Math.min(Math.abs(h), Math.abs(remaining)));
+    y += step.delta;
+    t = Math.abs(end - (t + step.h)) <= 1e-12 * Math.max(1, Math.abs(end)) ? end : t + step.h;
+    h = step.next;
+  }
+  store(t, y);
 }
 
 function tolerance(v) {
@@ -182,17 +201,7 @@ register('RKF', (s) => {
   const [list, tolArg, endArg] = s.popN(3);
   const { tol, h: h0 } = tolerance(tolArg);
   const end = realArg(endArg);
-  solving(list, s, ({ f, t, y, store }) => {
-    let h = h0 || end - t;
-    while (t !== end) {
-      const remaining = end - t;
-      const step = rkfStep(f, t, y, tol, Math.sign(remaining) * Math.min(Math.abs(h), Math.abs(remaining)));
-      y += step.delta;
-      t = Math.abs(end - (t + step.h)) <= 1e-12 * Math.max(1, Math.abs(end)) ? end : t + step.h;
-      h = step.next;
-    }
-    store(t, y);
-  });
+  solving(list, s, (p) => march(p, end, h0 || end - p.t, (t, y, h) => rkfStep(p.f, t, y, tol, h)));
   s.push(list);
   s.push(tolArg);
 }, { category: 'CAS / symbolic', categoryOrder: 10.8, label: 'RKF' });
@@ -226,3 +235,78 @@ register('RKFERR', (s) => {
   s.push(Real(trial.delta));
   s.push(Real(trial.error));
 }, { category: 'CAS / symbolic', categoryOrder: 10.82, label: 'RKFERR' });
+
+
+// RRK, RRKSTEP and RSBERR add Kaps and Rentrop's fourth-order Rosenbrock method, with its third-order error estimate,
+// for stiff problems; the list gives ∂f/∂y and ∂f/∂t.
+const KAPS_RENTROP = {
+  gamma: 1 / 2, a21: 2, a31: 48 / 25, a32: 6 / 25, c21: -8, c31: 372 / 25, c32: 12 / 5,
+  c41: -112 / 125, c42: -54 / 125, c43: -2 / 5, c2: 1, c3: 3 / 5,
+  b: [19 / 9, 1 / 2, 25 / 108, 125 / 108], e: [17 / 54, 7 / 36, 0, 125 / 108], d: [1 / 2, -3 / 2, 121 / 50, 29 / 250],
+};
+
+function rosenbrockTrial({ f, fy, ft }, t, y, h) {
+  if (Math.abs(h) <= Math.max(2.5e-11 * Math.abs(t), 1e-300)) return { delta: h * f(t, y), error: 0 };
+  const k = KAPS_RENTROP, dfdt = ft(t, y), a = 1 / (k.gamma * h) - fy(t, y);
+  const g1 = (f(t, y) + h * k.d[0] * dfdt) / a;
+  const g2 = (f(t + k.c2 * h, y + k.a21 * g1) + h * k.d[1] * dfdt + k.c21 * g1 / h) / a;
+  const f3 = f(t + k.c3 * h, y + k.a31 * g1 + k.a32 * g2);
+  const g3 = (f3 + h * k.d[2] * dfdt + (k.c31 * g1 + k.c32 * g2) / h) / a;
+  const g4 = (f3 + h * k.d[3] * dfdt + (k.c41 * g1 + k.c42 * g2 + k.c43 * g3) / h) / a;
+  const weigh = (w) => w[0] * g1 + w[1] * g2 + w[2] * g3 + w[3] * g4;
+  return { delta: weigh(k.b), error: Math.abs(weigh(k.e)) };
+}
+
+// Rosenbrock's method (2) where the step is stiff, |h·∂f/∂y| past Runge–Kutta–Fehlberg's stability range of about 3,
+// else RKF (1); the AUR names no rule of its own.
+const STIFF = 3;
+const RKF_METHOD = 1, ROSENBROCK_METHOD = 2;
+
+function mixedStep(p, t, y, tol, h) {
+  const method = Math.abs(h * p.fy(t, y)) > STIFF ? ROSENBROCK_METHOD : RKF_METHOD;
+  const step = method === ROSENBROCK_METHOD
+    ? adaptiveStep((trial) => rosenbrockTrial(p, t, y, trial), 0.25, tol, h)
+    : rkfStep(p.f, t, y, tol, h);
+  return { ...step, method };
+}
+
+register('RRK', (s) => {
+  const [list, tolArg, endArg] = s.popN(3);
+  const { tol, h: h0 } = tolerance(tolArg);
+  const end = realArg(endArg);
+  solving(list, s, (p) => march(p, end, h0 || end - p.t, (t, y, h) => mixedStep(p, t, y, tol, h)), 5);
+  s.push(list);
+  s.push(tolArg);
+}, { category: 'CAS / symbolic', categoryOrder: 10.83, label: 'RRK' });
+
+// The last method used is taken but plays no part here.
+register('RRKSTEP', (s) => {
+  const [list, tolArg, hArg, lastArg] = s.popN(4);
+  const tol = realArg(tolArg);
+  const h = realArg(hArg);
+  realArg(lastArg);
+  let step;
+  solving(list, s, (p) => {
+    step = mixedStep(p, p.t, p.y, tol, h);
+    p.store(p.t + step.h, p.y + step.delta);
+  }, 5);
+  s.push(list);
+  s.push(tolArg);
+  s.push(Real(step.next));
+  s.push(Real(step.method));
+}, { category: 'CAS / symbolic', categoryOrder: 10.84, label: 'RRKSTEP' });
+
+// RSBERR tries one Rosenbrock step of h and leaves t and y as they were; an error of 0 means Euler's method stood in.
+register('RSBERR', (s) => {
+  const [list, hArg] = s.popN(2);
+  const h = realArg(hArg);
+  let trial;
+  solving(list, s, (p) => {
+    trial = rosenbrockTrial(p, p.t, p.y, h);
+    p.reset();
+  }, 5);
+  s.push(list);
+  s.push(hArg);
+  s.push(Real(trial.delta));
+  s.push(Real(trial.error));
+}, { category: 'CAS / symbolic', categoryOrder: 10.85, label: 'RSBERR' });

@@ -51,3 +51,28 @@ const top = (s) => Number(s.peek().value);
   assertThrows(() => runLine("{ T Y } .00001 1 RKF"), /Bad argument type/, 'RKF wants t, y and f in its list');
   runLine('{ T Y F } PURGE');
 }
+
+// RRK, RRKSTEP and RSBERR: the AUR's example with its partial derivatives, and a stiff problem Rosenbrock's method takes.
+{
+  const value = (name) => Number(recallVar(name).value);
+  runLine("0 'T' STO 0 'Y' STO '1/(1+T^2)-2*Y^2' 'F' STO '-4*Y' 'FY' STO '-2*T/(1+T^2)^2' 'FT' STO");
+  let s = runLine('{ T Y F FY FT } .00001 8 RRK');
+  assert(s.depth === 2 && value('T') === 8 && near(value('Y'), 8 / 65, 1e-5),
+    `RRK steps T to 8 and Y to 8/65 within the tolerance (${value('Y')})`);
+  runLine("0 'T' STO 0 'Y' STO");
+  runLine("{ T Y '-1000*(Y-COS(T))' -1000 '-1000*SIN(T)' } 1E-6 1 RRK");
+  const stiff = (Math.cos(1) * 1e6 + 1000 * Math.sin(1)) / (1e6 + 1);
+  assert(near(value('Y'), stiff, 1e-5), `RRK solves the stiff y' = -1000(y - cos t) (${value('Y')}, ${stiff})`);
+  runLine("0 'T' STO 0 'Y' STO");
+  s = runLine('{ T Y F FY FT } .00001 .5 0 RRKSTEP');
+  assert(s.depth === 4 && top(s) === 1 && value('T') > 0 && value('T') <= 0.5, 'RRKSTEP takes a Runge–Kutta–Fehlberg step where the problem is not stiff');
+  runLine("0 'T' STO 0 'Y' STO");
+  s = runLine("{ T Y '-1000*(Y-COS(T))' -1000 '-1000*SIN(T)' } 1E-6 .1 0 RRKSTEP");
+  assert(top(s) === 2, 'RRKSTEP names Rosenbrock\'s method, 2, where the step is stiff');
+  runLine("0 'T' STO 0 'Y' STO");
+  s = runLine('{ T Y F FY FT } .1 RSBERR');
+  assert(s.depth === 4 && value('T') === 0 && value('Y') === 0 && near(Number(s.peek(2).value), 0.1 / 1.01 * 1.0, 1e-3) && top(s) > 0,
+    'RSBERR gives the change over one step and its error, leaving T and Y');
+  assertThrows(() => runLine('{ T Y F FY } .1 RSBERR'), /Bad argument type/, 'RSBERR wants five items in its list');
+  ['T', 'Y', 'F', 'FY', 'FT'].forEach((n) => runLine(`'${n}' PURGE`));
+}

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.31 (2026-10-19)
+**Latest release:** v0.7.32 (2026-10-19)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.32 — 2026-10-19
+
+- RRK, RRKSTEP and RSBERR solve y' = f(t,y) when the problem is stiff,
+  given f's partial derivatives: `{ T Y F FY FT } .00001 8 RRK` steps T
+  to 8 and Y to 8/65 within the tolerance, as the AUR's example does.
+  RRKSTEP uses a fourth-order Rosenbrock method (Kaps and Rentrop's) where
+  a step is stiff and Runge–Kutta–Fehlberg elsewhere, and returns the
+  method it used (1 or 2). RSBERR gives a Rosenbrock step's change and
+  its error. The partial derivatives may be plain numbers, such as -1000.
 
 ## v0.7.31 — 2026-10-19
 
