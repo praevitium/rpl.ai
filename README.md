@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 508 commands, exact big-integer and rational arithmetic,
+of its command set: 509 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -601,10 +601,13 @@ keeps it until the next key. `WAIT` pauses a program for a number of
 seconds, or with 0 (or -1, which brings the soft keys up in minimal
 view) waits for a key and returns its HP key code: 92.1 for the 1 key,
 on the keypad or typed, 11.1 for the first soft key, 105.1 for Enter or
-the Enter chip on its banner. The display stays through a `WAIT`. `BEEP`
-sounds a tone, hertz then seconds (`440 .5 BEEP`); tones in a row play
-one after another, and flag -56, which silences the error beep, silences
-them too. `INFORM` opens its form in a sheet: a field per label with its
+the Enter chip on its banner. The display stays through a `WAIT`. `KEY`
+looks for a key without waiting: 0, or the key's row and column and 1 (81
+for ↰, 105 for Enter), so `DO UNTIL KEY END` waits for one; a program
+polling it pauses every 50 ms for the page to take a key, its stack and
+display updating as it runs. `BEEP` sounds a tone, hertz then seconds
+(`440 .5 BEEP`); tones in a row play one after another, and flag -56,
+which silences the error beep, silences them too. `INFORM` opens its form in a sheet: a field per label with its
 help as the placeholder and its initial value typed in, OK parses each
 field (an empty one gives `NOVAL`, the name NOVAL here), checks it
 against the field's types and answers with the values and 1, Cancel with
@@ -840,13 +843,9 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 508. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 509. The
 Catalog and the command reference mark what is available. Not there yet:
 
-- program I/O: KEY. Programs read their arguments from the stack, label
-  results with `→TAG`, ask with `INPUT`, `CHOOSE` and `INFORM`, pause with
-  `PROMPT` or `WAIT`, report with `MSGBOX`, write on the display with
-  `DISP` and sound a tone with `BEEP`.
 - setting the clock: `→DATE`, `→TIME` and `CLKADJ`. The clock is the
   device's own; `DATE`, `TIME`, `TICKS` and `TSTR` read it, and `DATE+`
   and `DDAYS` count days, with flags -41 and -42 for the formats, which
