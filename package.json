@@ -1,6 +1,6 @@
 {
   "name": "rplai",
-  "version": "0.7.19",
+  "version": "0.7.20",
   "description": "AI-Assisted RPL Calculator - Modern HP50g Adaptation",
   "type": "module",
   "scripts": {
