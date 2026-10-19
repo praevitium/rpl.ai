@@ -47,6 +47,7 @@ import {
 import { buildSystemPrompt, TOOL_SCHEMAS } from './system-prompt.js';
 import { TutorCard } from './tutor.js';
 import { hpCodesToGlyphs } from '../rpl/hp-text.js';
+import { markScrollEdges } from '../ui/display.js';
 
 function dlog(...args)  { console.log('[ChatBot]', ...args); }
 function dwarn(...args) { console.warn('[ChatBot]', ...args); }
@@ -110,6 +111,11 @@ function ensureMermaid() {
   return _mermaidPromise;
 }
 
+// Wide math, tables and code scroll sideways and fade at the edge they continue past, as stack levels do.
+function markEdgesIn(root) {
+  for (const el of root.querySelectorAll('.cb-scroll')) markScrollEdges(el);
+}
+
 function renderMathInto(target, expr, displayMode) {
   const fallback = elem(displayMode ? 'div' : 'span', {
     className: displayMode ? 'cb-math-fallback cb-math-display' : 'cb-math-fallback',
@@ -118,9 +124,14 @@ function renderMathInto(target, expr, displayMode) {
   target.appendChild(fallback);
   ensureKaTeX().then((katex) => {
     try {
-      const wrap = elem(displayMode ? 'div' : 'span', { className: displayMode ? 'cb-math-display' : 'cb-math-inline' });
+      const wrap = elem(displayMode ? 'div' : 'span', { className: displayMode ? 'cb-math-display cb-scroll' : 'cb-math-inline' });
       wrap.innerHTML = katex.renderToString(expr, { displayMode, throwOnError: false, output: 'html' });
       fallback.replaceWith(wrap);
+      const scroller = wrap.closest('.cb-scroll');
+      if (scroller) {
+        markScrollEdges(scroller);
+        document.fonts?.ready.then(() => markScrollEdges(scroller));
+      }
     } catch { /* keep the source text */ }
   }).catch(() => {});
 }
@@ -154,7 +165,7 @@ function renderMarkdown(text) {
     if (i % 2 === 0) { appendInlineMarkdown(frag, part); return; }
     const { lang, code } = parseFencedBlock(part);
     if (lang === 'mermaid') renderMermaidInto(frag, code.trimEnd());
-    else frag.appendChild(elem('pre')).appendChild(elem('code', { textContent: code.trimEnd() }));
+    else frag.appendChild(elem('pre', { className: 'cb-scroll' })).appendChild(elem('code', { textContent: code.trimEnd() }));
   });
   return frag;
 }
@@ -203,7 +214,7 @@ export function parseTableAt(lines, i) {
 }
 
 function appendTable(frag, { header, align, rows }) {
-  const table = frag.appendChild(elem('div', { className: 'cb-table' })).appendChild(elem('table'));
+  const table = frag.appendChild(elem('div', { className: 'cb-table cb-scroll' })).appendChild(elem('table'));
   const addRow = (section, cells, tag) => {
     const tr = section.appendChild(elem('tr'));
     cells.forEach((cell, j) => {
@@ -634,6 +645,7 @@ export class ChatBot {
     this._history    = [];
     this._container  = null;
     this._messagesEl = null;
+    this._edgeObserver = null;
     this._inputEl    = null;
     this._sendBtn    = null;
     this._stopBtn    = null;
@@ -905,6 +917,12 @@ export class ChatBot {
     }, () => this._showPicker());
     this._pickerEl = elem('div', { className: 'cb-picker hidden' });
     this._messagesEl = elem('div', { className: 'cb-messages' });
+    this._messagesEl.addEventListener('scroll', (e) => {
+      if (e.target.classList?.contains('cb-scroll')) markScrollEdges(e.target);
+    }, { capture: true, passive: true });
+    this._edgeObserver?.disconnect();
+    this._edgeObserver = new ResizeObserver(() => markEdgesIn(this._messagesEl));
+    this._edgeObserver.observe(this._messagesEl);
     this._statsEl = elem('div', {
       className: 'cb-stats hidden',
       title: 'Inference stats — most recent turn and cumulative session totals.',
@@ -1904,6 +1922,7 @@ export class ChatBot {
   _place(node, after = null) {
     if (after?.parentNode === this._messagesEl) this._messagesEl.insertBefore(node, after.nextSibling);
     else this._messagesEl.appendChild(node);
+    markEdgesIn(node);
     this._scrollBottom();
     return node;
   }
@@ -2014,6 +2033,7 @@ export class ChatBot {
     bubble.classList.remove('cb-bubble-streaming', 'cb-bubble-thinking');
     bubble.innerHTML = '';
     if (text) bubble.appendChild(renderMarkdown(text));
+    markEdgesIn(bubble);
     if (state) {
       bubble.classList.add(state === 'stalled' ? 'cb-bubble-stalled' : 'cb-bubble-stopped');
       const cause = state === 'stalled'

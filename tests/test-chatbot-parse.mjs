@@ -549,6 +549,22 @@ import { readFileSync } from 'node:fs';
          'parseTableAt needs a delimiter row as wide as the header, so a rule or a lone row of pipes stays text');
 }
 
+// Wide math, tables and code in a reply scroll sideways and fade at the edge they
+// continue past, as stack levels do; a wide formula was cut off with no sign of more.
+{
+  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/import \{ markScrollEdges \} from '\.\.\/ui\/display\.js';/.test(src)
+           && /'cb-math-display cb-scroll'/.test(src) && /'cb-table cb-scroll'/.test(src) && /elem\('pre', \{ className: 'cb-scroll' \}\)/.test(src),
+         'display math, tables and code blocks in a reply are sideways scrollers marked with the stack\'s edge classes');
+  assert(/if \(e\.target\.classList\?\.contains\('cb-scroll'\)\) markScrollEdges\(e\.target\);/.test(src)
+           && /new ResizeObserver\(\(\) => markEdgesIn\(this\._messagesEl\)\)/.test(src)
+           && /document\.fonts\?\.ready\.then\(\(\) => markScrollEdges\(scroller\)\)/.test(src),
+         'the edges are marked as a scroller scrolls, as the drawer resizes and once KaTeX\'s fonts have loaded');
+  assert(['.cb-scroll.more-r {', '.cb-scroll.more-l {', '.cb-scroll.more-l.more-r {'].every((sel) => css.includes(sel)),
+         'calc.css fades a reply\'s scroller with the mask the stack levels use');
+}
+
 // session367: classifyMarkdownLine — the per-line block-role classifier lifted
 // out of appendInlineMarkdownLines' DOM (session326/347/353/360 extract-and-pin
 // precedent). The renderer's block dispatch (heading/list/paragraph routing)
