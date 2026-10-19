@@ -531,9 +531,9 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .key-strip { display: none; }
 :root[data-keyboard] .key-strip:not([hidden]) { display: flex; gap: 6px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; padding: 8px 0 2px; }
 .key-strip::-webkit-scrollbar { display: none; }
-.key-strip.more-r, .st-val.more-r, .sheet-view.more-r, .ref-table.more-r, .cb-scroll.more-r { mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
-.key-strip.more-l, .st-val.more-l, .sheet-view.more-l, .ref-table.more-l, .cb-scroll.more-l { mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent); }
-.key-strip.more-l.more-r, .st-val.more-l.more-r, .sheet-view.more-l.more-r, .ref-table.more-l.more-r, .cb-scroll.more-l.more-r { mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
+.key-strip.more-r, .dw-tabs.more-r, .st-val.more-r, .sheet-view.more-r, .ref-table.more-r, .cb-scroll.more-r { mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
+.key-strip.more-l, .dw-tabs.more-l, .st-val.more-l, .sheet-view.more-l, .ref-table.more-l, .cb-scroll.more-l { mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent); }
+.key-strip.more-l.more-r, .dw-tabs.more-l.more-r, .st-val.more-l.more-r, .sheet-view.more-l.more-r, .ref-table.more-l.more-r, .cb-scroll.more-l.more-r { mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
 .key-strip button { flex: none; min-width: 44px; height: 40px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--key-line); background: var(--key); box-shadow: var(--shadow-1); color: var(--key-ink); font: 600 14px/1 var(--font-mono); -webkit-tap-highlight-color: transparent; }
 .key-strip button.op { font-size: 18px; }
 .key-strip button:active { transform: translateY(1px); }

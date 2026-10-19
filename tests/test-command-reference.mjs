@@ -315,3 +315,13 @@ const REF = parseCommandReference(HTML);
     && /if \(t\.left < s\.left \|\| t\.right > s\.right\) strip\.scrollLeft \+= t\.left \+ t\.width \/ 2 - \(s\.left \+ s\.width \/ 2\);/.test(drawerSrc),
     'drawer tabs: the open drawer\'s tab scrolls to the middle of the row when it would sit past an edge');
 }
+
+/* The tabs beside the open one showed cut at both edges with nothing to say the row scrolls; it fades there as the key strip does. */
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/this\.el\.querySelector\('\.dw-tabs'\)\.addEventListener\('scroll', \(\) => this\._markTabEdges\(\), \{ passive: true \}\);\n    this\._markTabEdges\(\);/.test(drawerSrc)
+    && /new ResizeObserver\(\(\) => this\._markTabEdges\(\)\)\.observe\(this\.el\);/.test(drawerSrc)
+    && ['.dw-tabs.more-r,', '.dw-tabs.more-l,', '.dw-tabs.more-l.more-r,'].every((sel) => css.includes(sel)),
+    'drawer tabs: the row fades at an edge with more tabs past it, after a render, a scroll and a resize');
+}

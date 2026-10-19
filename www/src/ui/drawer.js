@@ -198,6 +198,7 @@ export class Drawers {
     });
     this.scrim.addEventListener('click', () => this.close());
     this.el.addEventListener('click', (e) => this._onClick(e));
+    new ResizeObserver(() => this._markTabEdges()).observe(this.el);
     this.el.addEventListener('input', (e) => this._onInput(e));
     this.el.addEventListener('submit', (e) => this._onSubmit(e));
     this.el.addEventListener('keydown', (e) => this._onKeyDown(e));
@@ -325,6 +326,13 @@ export class Drawers {
     this._renderHeadSub();
     this._renderBody();
     this._revealTab();
+    this.el.querySelector('.dw-tabs').addEventListener('scroll', () => this._markTabEdges(), { passive: true });
+    this._markTabEdges();
+  }
+
+  _markTabEdges() {
+    const strip = this.el.querySelector('.dw-tabs');
+    if (strip) markScrollEdges(strip);
   }
 
   // The tab row starts at its left edge on every render, so on a phone the open drawer's tab sat past the right edge.
