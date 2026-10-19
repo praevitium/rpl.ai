@@ -497,7 +497,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   and the matrix writer's cells use the same marks, and the keypad's .
   key types the comma and its , key the semicolon, as do →STR and STR→
   in a program. The equation writer shows 1,5 and reads a typed comma as
-  the fraction mark and a semicolon as the separator. Exports keep the
+  the fraction mark and a semicolon as the separator; its insights, DISP,
+  DISPXY, →GROB, LCD→ and LABEL show the comma too. Exports keep the
   point for now.
 
 ---

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.59 (2026-10-19)
+**Latest release:** v0.7.60 (2026-10-19)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.60 — 2026-10-19
+
+- Fix: with flag -51 set, DISP, DISPXY, →GROB, LCD→ and LABEL still
+  drew numbers with the point. They now use the comma fraction mark, as
+  the HP's display does.
+- Flag -51, part 6: the equation writer's insights (a value, zeros,
+  holes) and the toast after pushing solutions, a non-string PROMPT
+  message, and the unit-conversion and constant pickers show the comma
+  mark too.
 
 ## v0.7.59 — 2026-10-19
 
