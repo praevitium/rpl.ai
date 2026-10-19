@@ -8414,6 +8414,25 @@ giac._setFixture('ilaplace(1,x,rplS)', 'Dirac(rplS)');
   giac._clear();
 }
 
+/* SYST2MAT: the AUR's example, a row per equation with its constant moved to the left side, from Giac's syst2mat. */
+{
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
+  giac._clear();
+  giac._setFixtures({
+    'syst2mat([X-Y,2*X+Y-5],[X,Y])': 'matrix[[1,-1,0],[2,1,-5]]',
+    'syst2mat([A*X+Y-3,X-Y-1],[X,Y])': 'matrix[[A,1,-3],[1,-1,-1]]',
+    'syst2mat([X+Y-3.5],[X,Y])': 'matrix[[1,1,-3.5]]',
+    'syst2mat([X^2-1],[X])': 'matrix[[2*X,-1]]',
+  });
+  assert(line("[ 'X-Y' '2*X+Y=5' ] [ X Y ] SYST2MAT") === '[[ 1 -1 0 ][ 2 1 -5 ]]',
+    'SYST2MAT gives the AUR\'s matrix for X-Y=0 and 2X+Y=5, an expression set equal to zero');
+  assert(line("{ 'A*X+Y=3' 'X-Y=1' } { X Y } SYST2MAT") === '[[ `A` 1 -3 ][ 1 -1 -1 ]]' && line("[ 'X+Y=3.5' ] [ X Y ] SYST2MAT") === '[[ 1 1 -3.5 ]]',
+    'SYST2MAT takes lists, keeps a symbolic coefficient and a decimal constant');
+  assertThrows(() => runLine("[ 'X^2=1' ] [ X ] SYST2MAT"), /Bad argument value/, 'SYST2MAT refuses a system that is not linear');
+  assertThrows(() => runLine("[ 'X=1' ] [ 3 ] SYST2MAT"), /Bad argument type/, 'SYST2MAT refuses a number as a variable');
+  giac._clear();
+}
+
 /* SCHUR reads the matrix[ tag real Giac puts on its first result. */
 {
   giac._clear();

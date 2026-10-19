@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 520 commands, exact big-integer and rational arithmetic,
+of its command set: 521 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -858,7 +858,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 520. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 521. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - setting the clock: `→DATE`, `→TIME` and `CLKADJ`. The clock is the
@@ -878,9 +878,9 @@ Catalog and the command reference mark what is available. Not there yet:
 - the HP's numbered menus for MENU and TMENU (a list, a name holding one
   or 0 work), and DEF
 - parts of the CAS, such as DESOLVE and LDEC (SOLVE, SOLVEVX, ISOL,
-  LINSOLVE, ROOT, ZEROS, TAYLR, TAYLOR0 and SERIES are here). Symbolic
-  commands such as EXPAND and SOLVE refuse an algebraic with units in it,
-  which EVAL and →NUM work out.
+  LINSOLVE, SYST2MAT, ROOT, ZEROS, TAYLR, TAYLOR0 and SERIES are here).
+  Symbolic commands such as EXPAND and SOLVE refuse an algebraic with units
+  in it, which EVAL and →NUM work out.
 
 **Left out on purpose.** USER mode and key assignments, ENTRY mode, the
 NUM.SLV solver screens, FINANCE, TIME, OFF, libraries (LIB, ATTACH and

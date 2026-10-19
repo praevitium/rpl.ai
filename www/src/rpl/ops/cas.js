@@ -175,17 +175,22 @@ const COMPARISON_OPS = { '<': 1, '>': 1, '≤': 1, '≥': 1, '≠': 1, '==': 1 }
 // than the HP50's single equation with sign placeholders.
 register('ISOL', lookup('SOLVE').fn, { category: 'CAS / symbolic', categoryOrder: 10, label: "ISOL" });
 
-// LINSOLVE ( [eqs] [vars] → { [eqs] [vars] } { pivots } [solution] ). The pivots are those of the CAS's
-// Gaussian reduction, a free variable stays out of the solution, and a system with no solution gives [ ].
-register('LINSOLVE', (s) => {
-  const [eqsArg, varsArg] = s.popN(2);
+// A system's equations, an expression set equal to zero, and its variables, as Giac's syst2mat and linsolve take them.
+function _linearSystem(eqsArg, varsArg) {
   const items = (v) => (isVector(v) || isList(v) ? v.items : [v]);
   const asZero = (e) => (e.kind === 'bin' && e.op === '=' ? AstBin('-', e.l, e.r) : e);
   const eqs = items(eqsArg).map((e) => astToGiac(asZero(_astArg(e))));
   const vars = items(varsArg).map(_varName);
   if (!eqs.length || !vars.length) throw new RPLError('Bad argument value');
   if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const system = `[${eqs.join(',')}],[${vars.map((v) => astToGiac(AstVar(v))).join(',')}]`;
+  return { system: `[${eqs.join(',')}],[${vars.map((v) => astToGiac(AstVar(v))).join(',')}]`, vars };
+}
+
+// LINSOLVE ( [eqs] [vars] → { [eqs] [vars] } { pivots } [solution] ). The pivots are those of the CAS's
+// Gaussian reduction, a free variable stays out of the solution, and a system with no solution gives [ ].
+register('LINSOLVE', (s) => {
+  const [eqsArg, varsArg] = s.popN(2);
+  const { system, vars } = _linearSystem(eqsArg, varsArg);
   const reduced = splitGiacList(giac.caseval(`lu(delcols(syst2mat(${system}),${vars.length}))[2]`)) ?? [];
   const pivots = reduced.map((row) => (splitGiacList(row) ?? []).find((cell) => !/^-?0(\.0*)?$/.test(cell))).filter(Boolean);
   const values = splitGiacList(giac.caseval(`linsolve(${system})`)) ?? [];
@@ -196,6 +201,17 @@ register('LINSOLVE', (s) => {
   s.push(Vector(solution.map(Symbolic)));
 }, { category: 'CAS / symbolic', categoryOrder: 9.5, label: "LINSOLVE" });
 
+
+// SYST2MAT ( [eqs] [vars] → [[ coefficients constant ]] ): a row per equation, its constant moved to the left
+// side as the AUR's example shows (X-Y=0, 2X+Y=5 gives [[ 1 -1 0 ][ 2 1 -5 ]]); a term that isn't linear is refused.
+register('SYST2MAT', (s) => {
+  const [eqsArg, varsArg] = s.popN(2);
+  const { system, vars } = _linearSystem(eqsArg, varsArg);
+  const rows = (splitGiacList(giac.caseval(`syst2mat(${system})`)) ?? []).map((row) => (splitGiacList(row) ?? []).map(giacToAst));
+  const linear = rows.length && rows.every((row) => row.every((cell) => !vars.some((v) => algebraFreeVars(cell).has(v))));
+  if (!linear) throw new RPLError('Bad argument value');
+  s.push(Matrix(rows.map((row) => row.map(_casValue))));
+}, { category: 'CAS / symbolic', categoryOrder: 9.5, label: "SYST2MAT" });
 
 function _casValue(ast) {
   const leaf = ast.kind === 'neg' ? ast.arg : ast;
