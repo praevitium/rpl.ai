@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.167 (2026-10-19)
+**Latest release:** v0.6.168 (2026-10-19)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.168 — 2026-10-19
+
+On a phone, a Characters tile shows its constant's whole name over two
+lines, where 40 of 111 tiles showed only a cut name such as "speed of
+li…". A value in parentheses, such as MAXR's 9.99999999999e499, stays in
+the tile's title.
+
+`DIV2`, `EGCD` and `ABCUV` are the HP's IDIV2, IEGCD and IABCUV for
+polynomials, in VX or the arguments' only variable, next to `SIMP2` in
+the POLY menu: `'X^2+1' 'X-1' EGCD` gives the AUR's 2, 1 and `-X - 1`,
+`'X^2+X+1' '2*X+4' DIV2` the quotient `1/2*X - 1/2` and remainder 3.
+
+The stack's top edge fades whenever its top level runs above the view,
+not only once a whole level is hidden, so a turned phone in minimal view
+no longer slices a matrix's first row with no sign of more above.
 
 ## v0.6.167 — 2026-10-19
 
