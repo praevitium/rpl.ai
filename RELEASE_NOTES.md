@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.157 (2026-10-18)
+**Latest release:** v0.6.158 (2026-10-18)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.158 — 2026-10-18
+
+Command search and the Catalog list each command once under its arrow
+name: LIST-> no longer sits beside LIST→, nor ->ARRY beside →ARRY, and
+typing the ASCII spelling, "c->r" say, finds C→R. On a phone a
+command's description takes two lines there instead of four or five
+words, and the Catalog's search box ends its placeholder in an
+ellipsis.
+
+An address the assistant writes without markdown, such as
+https://www.hpcalc.org/, is a link that opens in a new tab, with a
+sentence's closing punctuation left outside it.
 
 ## v0.6.157 — 2026-10-18
 
