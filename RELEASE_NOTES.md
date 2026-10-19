@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.63 (2026-10-19)
+**Latest release:** v0.7.64 (2026-10-19)
 
 ---
 
@@ -20,6 +20,25 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.64 — 2026-10-19
+
+- Symbolic matrices, part 1: linear algebra. `[[ X 1 ][ 2 Y ]] INV`
+  gives the exact inverse, `[ 3 4 ] [[ X 1 ][ 2 Y ]] /` solves the
+  system, and RREF, RANK and LU work on symbolic entries, all through
+  Giac. A singular symbolic matrix is an Infinite result, as a numeric
+  one is.
+- CHARPOL (PCAR) and JORDAN write a symbolic matrix's polynomials in VX:
+  `[[ A B ][ C D ]] CHARPOL` gives `x^2-(A+D)*x+A*D-B*C`. JORDAN takes
+  the minimal polynomial from the Jordan blocks, since Giac's own can be
+  wrong for symbolic entries.
+- ABS of a symbolic array is its Frobenius norm: `[ X 3 ] ABS` gives
+  `√(X^2+9)`.
+- Matrix products and sums, DOT, CROSS and DET leave out 1* and +0
+  around symbolic entries: `[[ X 1 ][ 2 Y ]] [[ A B ][ C D ]] *` gives
+  `X*A+C`, not `X*A+1*C`.
+- The README now says plainly that exports, copies and shares keep the
+  point under flag -51.
 
 ## v0.7.63 — 2026-10-19
 
