@@ -1672,7 +1672,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 @keyframes cb-blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
 .cb-bubble p { margin: 0 0 5px; }
 .cb-bubble p:last-child { margin-bottom: 0; }
-.cb-bubble h3,.cb-bubble h4,.cb-bubble h5 {
+.cb-bubble h3,.cb-bubble h4,.cb-bubble h5,.cb-bubble h6 {
   margin: 10px 0 4px;
   font: 600 10.5px/1.2 var(--font-mono);
   color: var(--ink3);

@@ -565,6 +565,13 @@ import { readFileSync } from 'node:fs';
          'calc.css fades a reply\'s scroller with the mask the stack levels use');
 }
 
+// Headings 4 to 6 deep render as the smallest heading, h6.
+{
+  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
+  assert(/elem\(`h\$\{Math\.min\(c\.level \+ 2, 6\)\}`\)/.test(src),
+         'a #### heading renders as h6 rather than an h7 the browser does not know');
+}
+
 // session367: classifyMarkdownLine — the per-line block-role classifier lifted
 // out of appendInlineMarkdownLines' DOM (session326/347/353/360 extract-and-pin
 // precedent). The renderer's block dispatch (heading/list/paragraph routing)
@@ -580,8 +587,9 @@ import { readFileSync } from 'node:fs';
   assert(J('### Deep') === JSON.stringify({ kind: 'heading', level: 3, content: 'Deep' }),
          'classifyMarkdownLine reads a level-3 heading');
   // 4+ hashes exceed the {1,3} bound, and a hash with no following space, fall to text.
-  assert(J('#### too deep') === JSON.stringify({ kind: 'text', content: '#### too deep' }),
-         'classifyMarkdownLine treats 4+ hashes as text (level bound is 1-3)');
+  assert(J('#### deeper') === JSON.stringify({ kind: 'heading', level: 4, content: 'deeper' })
+           && J('####### seven') === JSON.stringify({ kind: 'text', content: '####### seven' }),
+         'classifyMarkdownLine reads 4 to 6 hashes as headings, where #### showed as typed, and 7 as text');
   assert(J('#NoSpace') === JSON.stringify({ kind: 'text', content: '#NoSpace' }),
          'classifyMarkdownLine requires a space after the hash run');
   // Bullets: a `-` or `*` plus a space, optionally indented; the marker is stripped.

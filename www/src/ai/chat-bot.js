@@ -179,7 +179,7 @@ function appendInlineMarkdown(frag, text) {
 }
 
 export function classifyMarkdownLine(line) {
-  const hm = line.match(/^(#{1,3})\s+(.+)/);
+  const hm = line.match(/^(#{1,6})\s+(.+)/);
   if (hm) return { kind: 'heading', level: hm[1].length, content: hm[2] };
   const lim = line.match(/^\s*[-*]\s+(.*)/);
   if (lim) return { kind: 'bullet', content: lim[1] };
@@ -249,7 +249,7 @@ function appendInlineMarkdownLines(frag, text) {
     }
     flushP();
     if (c.kind === 'heading') {
-      appendSpans(frag.appendChild(elem(`h${c.level + 2}`)), c.content);
+      appendSpans(frag.appendChild(elem(`h${Math.min(c.level + 2, 6)}`)), c.content);
     } else if (c.kind !== 'blank') {
       const tag = c.kind === 'bullet' ? 'UL' : 'OL';
       let list = frag.lastChild;
