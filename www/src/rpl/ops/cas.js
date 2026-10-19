@@ -222,6 +222,36 @@ register('SIMP2', (s) => {
   for (const part of parts) s.push(_casValue(giacToAst(part)));
 }, { category: 'Polynomials', categoryOrder: 8.5, label: "SIMP2" });
 
+// The AUR's vector calculus: DIV and CURL take a vector function, LAPL an expression, each with a vector of its variables.
+function _vectorCalculus(giacFn, check) {
+  return (s) => {
+    const [fnArg, varsArg] = s.popN(2);
+    if (!isVector(varsArg) && !isList(varsArg)) throw new RPLError('Bad argument type');
+    const parts = isVector(fnArg) || isList(fnArg) ? fnArg.items : null;
+    const vars = varsArg.items.map(_varName);
+    check(parts, vars);
+    if (!giac.isReady()) throw new RPLError('CAS not ready');
+    const f = parts ? `[${parts.map((e) => astToGiac(_astArg(e))).join(',')}]` : astToGiac(_astArg(fnArg));
+    const raw = giac.caseval(`${giacFn}(${f},[${vars.map((v) => astToGiac(AstVar(v))).join(',')}])`);
+    const items = splitGiacList(raw);
+    s.push(items ? Vector(items.map((item) => _casValue(giacToAst(item)))) : _casValue(giacToAst(raw)));
+  };
+}
+
+register('DIV', _vectorCalculus('divergence', (parts, vars) => {
+  if (!parts) throw new RPLError('Bad argument type');
+  if (parts.length !== vars.length) throw new RPLError('Invalid dimension');
+}), { category: 'CAS / symbolic', categoryOrder: 34.6, label: "DIV" });
+
+register('CURL', _vectorCalculus('curl', (parts, vars) => {
+  if (!parts) throw new RPLError('Bad argument type');
+  if (parts.length !== 3 || vars.length !== 3) throw new RPLError('Invalid dimension');
+}), { category: 'CAS / symbolic', categoryOrder: 34.7, label: "CURL" });
+
+register('LAPL', _vectorCalculus('laplacian', (parts, vars) => {
+  if (parts || !vars.length) throw new RPLError('Bad argument type');
+}), { category: 'CAS / symbolic', categoryOrder: 34.8, label: "LAPL" });
+
 function _casValue(ast) {
   const leaf = ast.kind === 'neg' ? ast.arg : ast;
   return leaf.kind === 'num' || ast.kind === 'var' ? _astToRplValue(ast) : Symbolic(ast);

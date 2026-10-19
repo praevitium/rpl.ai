@@ -8450,6 +8450,26 @@ giac._setFixture('ilaplace(1,x,rplS)', 'Dirac(rplS)');
   giac._clear();
 }
 
+/* DIV, CURL and LAPL: the AUR's vector calculus examples, from Giac's divergence, curl and laplacian. */
+{
+  const top = (src) => format(runLine(src).peek());
+  giac._clear();
+  giac._setFixtures({
+    'divergence([X^2*Y,X^2*Y,Y^2*Z],[X,Y,Z])': 'X^2+2*X*Y+Y^2',
+    'curl([X^2*Y,X^2*Y,Y^2*Z],[X,Y,Z])': '[2*Y*Z,0,2*X*Y-X^2]',
+    'laplacian(exp(X)*cos(Z*Y),[X,Y,Z])': '-Y^2*cos(Z*Y)*exp(X)-Z^2*cos(Z*Y)*exp(X)+cos(Z*Y)*exp(X)',
+  });
+  const v = "[ 'X^2*Y' 'X^2*Y' 'Y^2*Z' ] [ X Y Z ]";
+  assert(top(`${v} DIV`) === '`X^2 + 2*X*Y + Y^2`', 'DIV gives the AUR\'s divergence of [X^2*Y X^2*Y Y^2*Z]');
+  assert(top(`${v} CURL`) === '[ `2*Y*Z` 0 `2*X*Y - X^2` ]', 'CURL gives the AUR\'s curl as a vector');
+  assert(top("'EXP(X)*COS(Z*Y)' [ X Y Z ] LAPL") === '`(-Y^2)*COS(Z*Y)*EXP(X) - Z^2*COS(Z*Y)*EXP(X) + COS(Z*Y)*EXP(X)`',
+    'LAPL gives the Laplacian of an expression');
+  assertThrows(() => runLine("[ 'X' 'Y' ] [ X Y ] CURL"), /Invalid dimension/, 'CURL needs three components and three variables');
+  assertThrows(() => runLine("[ 'X' ] [ X Y ] DIV"), /Invalid dimension/, 'DIV needs a component for each variable');
+  assertThrows(() => runLine("[ 'X' ] [ X ] LAPL"), /Bad argument type/, 'LAPL takes an expression, not a vector');
+  giac._clear();
+}
+
 /* SCHUR reads the matrix[ tag real Giac puts on its first result. */
 {
   giac._clear();
