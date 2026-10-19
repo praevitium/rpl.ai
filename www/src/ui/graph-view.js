@@ -396,6 +396,11 @@ export class GraphView {
   }
 
   applyPlotOp(kind, stack, data = null) {
+    if (kind === 'animate') {
+      this.view = pictWindow() ?? this.view;
+      this._animate(data);
+      return;
+    }
     if (kind === 'draw' || kind === 'pview') {
       const window = (kind === 'pview' ? pictWindow() : pparView()) ?? this.view;
       this.view = kind === 'pview' ? pviewWindow(data, window) : window;
@@ -821,31 +826,59 @@ export class GraphView {
   }
 
   // PICT's lit pixels over the plot, each the cell of PPAR's window it stands for, as the drawing commands left them.
+  // ANIMATE's frames take turns over PICT until rep runs out (never for rep 0) or the plot view is hidden.
+  _animate({ frames, at, delay, rep }) {
+    clearTimeout(this._animation?.timer);
+    const total = rep === 0 ? Infinity : frames.length * rep;
+    const show = (i) => {
+      const playing = i < total && (i === 0 || this._canvas.offsetParent);
+      this._animation = playing ? { frame: frames[i % frames.length], at, timer: setTimeout(() => show(i + 1), delay * 1000) } : null;
+      this.draw();
+    };
+    show(0);
+  }
+
   _drawPict(ctx, width, height) {
     const pict = getPict();
-    if (!pict.bytes.some(Boolean)) return;
+    const frame = this._animation;
+    if (!frame && !pict.bytes.some(Boolean)) return;
     let grid;
     try {
       grid = pictGrid();
     } catch {
       return;
     }
-    const rowBytes = Math.ceil(pict.width / 8);
     const edge = (col, row) => worldToPixel(grid.xmin + (col - 0.5) * grid.dx, grid.ymax - (row - 0.5) * grid.dy, this.view, width, height).map(Math.round);
     ctx.save();
     ctx.fillStyle = this._colors.ink;
-    for (let row = 0; row < pict.height; row++) {
+    this._drawGrob(ctx, pict, [0, 0], edge);
+    if (frame) {
+      const [col, row] = frame.at;
+      const [x0, y0] = edge(col, row);
+      const [x1, y1] = edge(Math.min(col + frame.frame.width, pict.width), Math.min(row + frame.frame.height, pict.height));
+      ctx.fillStyle = this._colors.bg;
+      ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+      ctx.fillStyle = this._colors.ink;
+      this._drawGrob(ctx, frame.frame, frame.at, edge, pict);
+    }
+    ctx.restore();
+  }
+
+  // Lit pixels of g with its top left at PICT pixel [col, row], cut to PICT's edges when given.
+  _drawGrob(ctx, g, [col, row], edge, within = g) {
+    const rowBytes = Math.ceil(g.width / 8);
+    for (let r = 0; r < g.height && row + r < within.height; r++) {
       for (let k = 0; k < rowBytes; k++) {
-        const byte = pict.bytes[row * rowBytes + k];
+        const byte = g.bytes[r * rowBytes + k];
         for (let bit = 0; byte && bit < 8; bit++) {
-          if (!(byte & (1 << bit))) continue;
-          const [x0, y0] = edge(k * 8 + bit, row);
-          const [x1, y1] = edge(k * 8 + bit + 1, row + 1);
+          const c = k * 8 + bit;
+          if (!(byte & (1 << bit)) || col + c >= within.width) continue;
+          const [x0, y0] = edge(col + c, row + r);
+          const [x1, y1] = edge(col + c + 1, row + r + 1);
           ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
         }
       }
     }
-    ctx.restore();
   }
 
   _drawTrace(ctx, t, width, height) {

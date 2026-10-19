@@ -658,6 +658,31 @@ const _picture = (s) => _requestPlot('pview', s, RList([]));
 register('PICTURE', _picture, { category: 'Graphics', categoryOrder: 11.91, label: "PICTURE" });
 register('GRAPH', _picture, { category: 'Graphics', categoryOrder: 11.92, label: "GRAPH" });
 
+// ANIMATE plays the graphics objects over PICT from the deepest level up, each replacing the pixels at #x #y, 0.1 s
+// apart; rep 0, the default, plays until the plot view closes. The stack is left as it was.
+const _frameOf = (v) => {
+  const g = isName(v) ? varRecall(v.id) : v;
+  if (!isGrob(g)) throw new RPLError('Bad argument type');
+  return g;
+};
+
+register('ANIMATE', (s) => {
+  const spec = s.peek();
+  let count = spec, at = [0, 0], delay = 0.1, rep = 0;
+  if (isList(spec)) {
+    if (spec.items.length !== 4 || !_isPixelPoint(spec.items[1])) throw new RPLError('Bad argument type');
+    count = spec.items[0];
+    at = _pixelOf(spec.items[1]);
+    delay = _real(spec.items[2]);
+    rep = _real(spec.items[3]);
+  }
+  const n = _real(count);
+  if (!Number.isInteger(n) || n < 1 || !(delay >= 0) || !Number.isInteger(rep) || rep < 0) throw new RPLError('Bad argument value');
+  if (s.depth < n + 1) throw new RPLError('Too few arguments');
+  const frames = Array.from({ length: n }, (_, i) => _frameOf(s.peek(n + 1 - i)));
+  _requestPlot('animate', s, { frames, at, delay, rep });
+}, { category: 'Graphics', categoryOrder: 11.95, label: "ANIMATE" });
+
 // TEXT goes back from the plot to the stack; without a plot view there is nothing to leave.
 register('TEXT', (s) => {
   if (!inScratchState()) _graphicsHook?.('text', s);

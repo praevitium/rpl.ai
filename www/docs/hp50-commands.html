@@ -1253,7 +1253,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>NOT, OR, XOR</p>
   </dd>
 </dl>
-<h2 id="cmd-ANIMATE">ANIMATE <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-ANIMATE">ANIMATE <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 132 · printed page 3-12</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -1263,6 +1263,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Animate Command: Displays graphic objects in sequence. ANIMATE displays a series of graphics objects (or variables containing them) one after the other. You can use a list to specify the area of the screen you want to animate (pixel coordinates #X and #Y), the number of seconds before the next grob is displayed (delay), and the number of times the sequence is run (rep). If rep is set to 0, the sequence is played approximately one million times (1,048,575 cycles), or until you press − (the $ key). If you use a list on level 1, all parameters must be present. If the list specifier is not used, the delay between each grob will default to 0.1 second. The animation displays PICT while displaying the grobs. The grobs and the animate parameters are left on the stack.</p>
+  <p>In rpl.ai ANIMATE plays in the plot view over PICT, which opens in PICT's window as PICTURE does, from the deepest graphics object up, each replacing the pixels it covers at #X #Y. Without the list, rep is 0. Rep 0 plays until the plot view closes, as TEXT or its close button does; a program carries on while the animation plays.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">

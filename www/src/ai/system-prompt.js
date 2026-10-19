@@ -246,6 +246,7 @@ PLOT WINDOW (PPAR, as on the HP 50g)
   ARC PIXON PIXOFF           (0,0) 2 0 π ARC draws counterclockwise from the first angle to the second (a #n radius with a pixel centre); (1,1) PIXON lights a pixel, PIXOFF clears it, PIX? gives 1 or 0
   PVIEW C→PX PX→C            { } PVIEW shows PICT over the plot in PPAR's window ((x,y) PVIEW puts that point at the top left); (0,0) C→PX gives { #65d #40d }, PX→C goes back
   PICTURE GRAPH TEXT         PICTURE (GRAPH is the same) shows PICT as { } PVIEW does; TEXT closes the plot view, back to the stack
+  ANIMATE                    g1 g2 g3 3 ANIMATE plays the graphics objects over PICT in turn, 0.1 s apart, until the plot view closes; { 3 { #10d #10d } .2 2 } ANIMATE sets the place, the delay and two runs; the stack is left as it was
   GOR GXOR REPL SUB NEG      PICT { #0d #0d } grob GOR lays a graphics object on PICT (GXOR toggles, REPL overwrites); with a graphics object instead of PICT they return the result; PICT { #10d #20d } { #20d #40d } SUB cuts out a rectangle; PICT NEG inverts PICT
   GROBADD                    grob1 grob2 GROBADD sets grob2 under grob1 in one graphics object
   LABEL                      writes the axes' names and the window's limits on PICT; "A=2" 1 →GROB draws an object as a graphics object (sizes 0 to 3 share one 5 × 7 font, six columns a character)

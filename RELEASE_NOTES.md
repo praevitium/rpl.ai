@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.38 (2026-10-19)
+**Latest release:** v0.7.39 (2026-10-19)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.39 — 2026-10-19
+
+- ANIMATE plays graphics objects one after another over PICT in the plot
+  view, as the 50g does: `g1 g2 g3 3 ANIMATE` shows them in turn, 0.1 s
+  apart, until the plot view closes, and `{ 3 { #10d #10d } .2 2 }` as
+  the count sets where they go, the delay and how many runs. Variables
+  holding graphics objects work too, and the stack is left as it was, so
+  the AUR's `… OBJ→ ANIMATE DROPN` idiom works.
 
 ## v0.7.38 — 2026-10-19
 

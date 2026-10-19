@@ -812,3 +812,23 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(seen === 'truth', 'TRUTH hands its condition to the plot view');
   setGraphicsHook(null);
 }
+
+// ANIMATE: the graphics objects from the deepest level up, the place, delay and repeats, the stack left as it was.
+{
+  let seen = null;
+  setGraphicsHook((kind, st, data) => { seen = { kind, data, depth: st.depth }; });
+  runLine('2 2 BLANK 3 3 BLANK NEG 2 ANIMATE');
+  assert(seen?.kind === 'animate' && seen.depth === 3 && seen.data.frames.map((g) => g.width).join() === '2,3',
+    'ANIMATE hands the graphics objects over from the deepest level up and leaves the stack as it was');
+  assert(seen.data.at.join() === '0,0' && seen.data.delay === 0.1 && seen.data.rep === 0,
+    'ANIMATE without a list starts at the top left, 0.1 s apart, until the view closes');
+  runLine("4 4 BLANK 'F7' STO 'F7' 5 5 BLANK { 2 { #5d #6d } .5 3 } ANIMATE");
+  assert(seen.data.frames.map((g) => g.width).join() === '4,5' && seen.data.at.join() === '5,6' && seen.data.delay === 0.5 && seen.data.rep === 3,
+    'ANIMATE takes a variable holding a graphics object, and its list gives the place, delay and repeats');
+  assertThrows(() => runLine('1 2 ANIMATE'), /Too few arguments/, 'ANIMATE wants n graphics objects');
+  assertThrows(() => runLine('"x" 1 ANIMATE'), /Bad argument type/, 'ANIMATE plays only graphics objects');
+  assertThrows(() => runLine('0 ANIMATE'), /Bad argument value/, 'ANIMATE wants at least one');
+  assertThrows(() => runLine('2 2 BLANK { 1 { 1 2 } .1 1 } ANIMATE'), /Bad argument type/, 'ANIMATE\'s place is two binary integers');
+  runLine("'F7' PURGE");
+  setGraphicsHook(null);
+}
