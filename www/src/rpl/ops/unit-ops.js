@@ -1,8 +1,9 @@
-import { isName, isUnit, Real, Unit } from '../types.js';
+import { isName, isString, isUnit, Real, Unit } from '../types.js';
 import { RPLError } from '../stack.js';
-import { testUserFlag, inScratchState } from '../state.js';
+import { testUserFlag, inScratchState, varRecall } from '../state.js';
 import { toBaseUexpr, sameDims, convertValue, divideUexpr, multiplyUexpr, parseUnitExpr } from '../units.js';
 import { register } from './registry.js';
+import { molarMass } from '../elements.js';
 import { _inUnit, _makeUnit, _numVal, _scalarBinary, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary } from './internal.js';
 
 
@@ -108,3 +109,22 @@ export function setConlibHook(fn) {
 register('CONLIB', () => {
   if (!inScratchState()) _conlibHook?.();
 }, { category: 'Units', categoryOrder: 8, label: "CONLIB" });
+
+// A name that isn't a formula stands for the formula stored in it, as the AUR has it.
+function formulaText(arg) {
+  if (isString(arg)) return arg.value;
+  if (!isName(arg)) throw new RPLError('Bad argument type');
+  if (molarMass(arg.id) !== null) return arg.id;
+  const stored = varRecall(arg.id);
+  if (stored === undefined) throw new RPLError(`Undefined name: ${arg.id}`);
+  if (isString(stored)) return stored.value;
+  if (isName(stored)) return stored.id;
+  throw new RPLError('Bad argument type');
+}
+
+register('MOLWT', (s) => {
+  const [arg] = s.popN(1);
+  const mass = molarMass(formulaText(arg));
+  if (mass === null) throw new RPLError('Bad argument value');
+  s.push(testUserFlag(-61) ? Real(mass) : Unit(mass, parseUnitExpr('g/mol')));
+}, { category: 'Units', categoryOrder: 9, label: "MOLWT" });

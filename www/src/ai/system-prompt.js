@@ -139,6 +139,7 @@ UNITS  (built-in: SI units m kg s A K mol cd Hz N J W Pa V Ω C F with prefixes,
   SIN COS TAN                an angle unit overrides the angle mode (30_° SIN gives 0.5 whatever DEG RAD GRD says)
   CONST                      a constant of the HP's library with its unit: \`c\` CONST gives 299792458._m/s (also g G h ħ k NA R q me mp ε0 μ0 Vm StdT StdP …); with flag -61 set, the number alone
   CONLIB                     opens the Constants Library on screen, each constant with its value; a tap puts one on the stack
+  MOLWT                      molar mass of a formula string or name: "Ca(OH)2" MOLWT gives 74.09268_g/mol; with flag -61 set, the number alone
   TDELTA TINC                temperature change between two readings (100_°C 32_°F TDELTA gives 100_°C) / a reading plus an increment (20_°C 9_°F TINC gives 25_°C)
 
 PROGRAMS & CONTROL FLOW

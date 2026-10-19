@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 511 commands, exact big-integer and rational arithmetic,
+of its command set: 512 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -230,7 +230,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
   in their units and with CODATA 2018 values: `'c' CONST` gives
   `299792458._m/s`, and with flag -61 set it gives the number alone. CONLIB
   (a key in the UNITS menu) lists them all with what each is and its value,
-  and a tap puts one on the stack, as the HP's library does. Units
+  and a tap puts one on the stack, as the HP's library does. MOLWT gives a
+  formula's molar mass: `"Ca(OH)2" MOLWT` gives `74.09268_g/mol`, from
+  standard atomic weights (the HP writes the unit g/gmol). Units
   work inside algebraics too, with a compound unit in
   parentheses: store `2_s` in `T` and `'9.81_(m/s^2)*T^2/2' EVAL` gives
   `19.62_m`. In the equation writer, `_` after a number starts its unit, and
@@ -850,7 +852,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 511. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 512. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - setting the clock: `→DATE`, `→TIME` and `CLKADJ`. The clock is the
@@ -889,6 +891,8 @@ System RPL, and IR and serial transfer.
 - BESTFIT pushes the model it picked and its correlation, as LINFIT does,
   as well as making it the current one.
 - Plot commands open the plot view instead of drawing into PICT.
+- MOLWT answers in g/mol, from standard atomic weights, where the HP
+  writes g/gmol, so its last digits can differ from the HP's.
 - There is no ON key to break a running program. A command or program that
   runs longer than 10 seconds is stopped, the stack is put back, and the
   error says why. A loop stops after 1,000,000 passes.

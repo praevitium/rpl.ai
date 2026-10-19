@@ -780,3 +780,17 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     'a constant picked in the library is the value CONST gives');
 }
 
+{
+  const line = (src) => runLine(src).snapshot().map((v) => formatSource(v)).join(' ');
+  assert(line('"H2O" MOLWT') === '18.01528_g/mol' && line('"Ca(OH)2" MOLWT') === '74.09268_g/mol' && line('"[Co(NH3)6]Cl3" MOLWT') === '267.475315_g/mol',
+    "MOLWT gives a formula's molar mass, a group in parentheses or brackets counted as a whole");
+  assert(line('`H2O` MOLWT') === '18.01528_g/mol' && line('-61 SF "NaCl" MOLWT -61 CF') === '58.44276928',
+    'MOLWT takes the formula as a name too, and with flag -61 set gives the number alone');
+  assert(line('"CH3C6H2(NO2)3" `tnt` STO `tnt` MOLWT `tnt` PURGE') === '227.1311_g/mol',
+    "MOLWT of a name that isn't a formula reads the formula stored in it, as in the AUR's TNT example");
+  for (const bad of ['"Xy" MOLWT', '"" MOLWT', '"Ca(OH" MOLWT', '"h2o" MOLWT']) {
+    assertThrows(() => runLine(bad), /Bad argument value/, `${bad} is no formula: Bad argument value`);
+  }
+  assertThrows(() => runLine('5 MOLWT'), /Bad argument type/, 'MOLWT wants a string or a name');
+}
+
