@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.11 (2026-10-19)
+**Latest release:** v0.7.12 (2026-10-19)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.12 — 2026-10-19
+
+The thirteenth batch of missing HP 50g commands opens objects for
+editing:
+
+- `EDIT` opens level 1 in the command line, laid out as the level's own
+  edit does; Enter puts the edited object back on level 1.
+- `EDITB` opens level 1 in the editor that suits it: an algebraic in the
+  Equation Writer, a matrix or vector in the Matrix Writer, anything else
+  in the command line.
+- `'F' VISIT` opens the contents of the variable F in the command line,
+  and Enter stores the edited object back in F; `VISITB` uses the editor
+  that suits the contents, as the Variables drawer's edit button does.
 
 ## v0.7.11 — 2026-10-19
 
