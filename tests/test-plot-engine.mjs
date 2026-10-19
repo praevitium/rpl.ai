@@ -467,3 +467,35 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
 }
 
 
+
+// PPAR and the commands that set it, from the AUR; PPAR is purged after, as other tests read a fresh directory.
+{
+  const { format } = await import('../www/src/rpl/formatter.js');
+  const { varRecall, varPurge } = await import('../www/src/rpl/state.js');
+  const ppar = () => format(varRecall('PPAR'));
+  varPurge('PPAR');
+  runLine('-2 3 XRNG');
+  assert(ppar() === '{ (-2, -3.9) (3, 4) X 0. (0, 0) FUNCTION Y }', 'XRNG sets xmin and xmax in the default PPAR');
+  runLine('-1 1 YRNG');
+  assert(ppar() === '{ (-2, -1) (3, 1) X 0. (0, 0) FUNCTION Y }', 'YRNG sets ymin and ymax');
+  runLine('(-6.5,-3.9) PMIN (6.5,4) PMAX');
+  assert(ppar() === '{ (-6.5, -3.9) (6.5, 4) X 0. (0, 0) FUNCTION Y }', 'PMIN and PMAX set the corners');
+  runLine('(1,2) CENTR');
+  assert(ppar() === '{ (-5.5, -1.9) (7.5, 6) X 0. (0, 0) FUNCTION Y }', 'CENTR puts (1,2) under the centre pixel, column 65 and row 40');
+  runLine('0 CENTR 2 2 SCALE');
+  assert(ppar() === '{ (-13, -7.8) (13, 8) X 0. (0, 0) FUNCTION Y }', 'SCALE 2 2 gives two units per tick, a tick every 10 pixels');
+  runLine('.5 SCALEW .5 *H');
+  assert(ppar() === '{ (-6.5, -3.9) (6.5, 4) X 0. (0, 0) FUNCTION Y }', 'SCALEW and *H halve the scales about the centre');
+  runLine("'T' INDEP -1 1 INDEP");
+  assert(format(varRecall('PPAR').items[2]) === '{ T -1 1 }', 'INDEP takes a name, then a range that keeps it');
+  runLine("{ 'Z' 0 5 } DEPND");
+  assert(format(varRecall('PPAR').items[6]) === '{ Z 0 5 }', 'DEPND takes a name and range together');
+  runLine('#5d RES { (0,0) 2 "t" "y" } AXES');
+  assert(format(varRecall('PPAR').items[3]) === '#5d', 'RES stores a pixel interval');
+  assert(format(varRecall('PPAR').items[4]) === '{ (0, 0) 2 "t" "y" }', 'AXES stores the AUR example list');
+  runLine('3 ATICK');
+  assert(format(varRecall('PPAR').items[4]) === '{ (0, 0) 3 "t" "y" }', 'ATICK changes only the tick spacing');
+  assertThrows(() => runLine('5 PMIN'), /Bad argument type/, 'PMIN wants a complex number');
+  assertThrows(() => runLine('0 1 SCALE'), /Bad argument value/, 'SCALE refuses a zero scale');
+  varPurge('PPAR');
+}

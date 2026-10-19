@@ -224,6 +224,11 @@ STATISTICS
   RAND RDZ                   pseudo-random / seed
   UTPN UTPC UTPF UTPT        upper-tail probabilities (normal / chi² / F / Student-t); m v x NDIST — normal density at x
 
+PLOT WINDOW (PPAR, as on the HP 50g)
+  XRNG YRNG PMIN PMAX        -2 3 XRNG -1 1 YRNG sets the plot window; FUNCTION, POLAR and the other plots, and DRAW, then start there instead of fitting
+  CENTR SCALE SCALEW SCALEH  (1,2) CENTR moves the window's centre; 2 2 SCALE gives two units per tick; .5 SCALEW halves the width (*W and *H are the same)
+  INDEP DEPND RES AXES ATICK  the independent and dependent variables and ranges, resolution, axes crossing, ticks and labels, all kept in PPAR
+
 TYPES / REFLECTION
   TYPE VTYPE KIND            classify the level-1 value (VTYPE of a name with no variable gives -1)
   EQ→                        split an equation into its sides (\`X=5\` EQ→ gives \`X\` and 5)
