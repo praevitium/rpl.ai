@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.150 (2026-10-18)
+**Latest release:** v0.6.151 (2026-10-18)
 
 ---
 
@@ -18,6 +18,18 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.151 — 2026-10-18
+
+Numbered steps in the assistant's replies keep their numbers when display
+math or a paragraph comes between them, so the third step shows 3, where
+the list started again at 1. A markdown table in a reply renders as a
+table, its cells taking inline math and code, where it showed rows of
+pipes. Display math, tables and code wider than a reply fade at the edge
+they continue past and scroll sideways, as stack levels do, where a wide
+formula was cut off with no sign of more.
 
 ---
 
