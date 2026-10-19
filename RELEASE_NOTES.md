@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.62 (2026-10-19)
+**Latest release:** v0.7.63 (2026-10-19)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.63 — 2026-10-19
+
+- `;`, the HP's drop-safe command: drops level 1 if there is one and
+  does nothing on an empty stack. With flag -51 set a typed `;` is the
+  separator, so use DROP there.
+- C$, the HP's counted string: `C$ 5 hello world` enters "hello" and
+  the name `world`; `C$ $ ` enters the rest of the line as one string,
+  quotes and all. It is in the Catalog with Insert. 733 commands.
+- Fix: between 561 and 600 px the soft keys cut ◀ BACK to ◀ BA…; it now
+  takes two lines like the other long labels.
 
 ## v0.7.62 — 2026-10-19
 
