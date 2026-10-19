@@ -593,6 +593,24 @@ import { readFileSync } from 'node:fs';
          'a link opens in a new tab without giving it the page');
 }
 
+// Rules and quotes in a reply: --- (or * * *, ___) is a rule, ahead of a
+// bullet, and > starts a quote; both showed as typed.
+{
+  const J = x => JSON.stringify(classifyMarkdownLine(x));
+  assert(J('---') === JSON.stringify({ kind: 'rule' }) && J('* * *') === JSON.stringify({ kind: 'rule' })
+           && J('- - -') === JSON.stringify({ kind: 'rule' }) && J('___') === JSON.stringify({ kind: 'rule' }),
+         'classifyMarkdownLine reads ---, * * *, - - - and ___ as a rule');
+  assert(J('--') === JSON.stringify({ kind: 'text', content: '--' }) && J('- item') === JSON.stringify({ kind: 'bullet', content: 'item' }),
+         'classifyMarkdownLine needs three marks for a rule, so -- and a bullet stay as they were');
+  assert(J('> Tip: `LINSOLVE` works') === JSON.stringify({ kind: 'quote', content: 'Tip: `LINSOLVE` works' })
+           && J('>tight') === JSON.stringify({ kind: 'quote', content: 'tight' }),
+         'classifyMarkdownLine reads a > line as a quote, with or without a space');
+  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
+  assert(/frag\.appendChild\(elem\('hr'\)\)/.test(src) && /else quote = frag\.appendChild\(elem\('blockquote'\)\);/.test(src)
+           && /if \(c\.kind !== 'quote'\) quote = null;/.test(src),
+         'a rule renders as hr, and quote lines in a row share one blockquote that any other line ends');
+}
+
 // session367: classifyMarkdownLine — the per-line block-role classifier lifted
 // out of appendInlineMarkdownLines' DOM (session326/347/353/360 extract-and-pin
 // precedent). The renderer's block dispatch (heading/list/paragraph routing)

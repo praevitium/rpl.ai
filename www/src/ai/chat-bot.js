@@ -181,6 +181,9 @@ function appendInlineMarkdown(frag, text) {
 export function classifyMarkdownLine(line) {
   const hm = line.match(/^(#{1,6})\s+(.+)/);
   if (hm) return { kind: 'heading', level: hm[1].length, content: hm[2] };
+  if (/^\s{0,3}([-*_])(?:\s*\1){2,}\s*$/.test(line)) return { kind: 'rule' };
+  const qm = line.match(/^\s{0,3}>\s?(.*)/);
+  if (qm) return { kind: 'quote', content: qm[1] };
   const lim = line.match(/^\s*[-*]\s+(.*)/);
   if (lim) return { kind: 'bullet', content: lim[1] };
   const nlim = line.match(/^\s*(\d+)\.\s+(.*)/);
@@ -230,6 +233,7 @@ function appendTable(frag, { header, align, rows }) {
 
 function appendInlineMarkdownLines(frag, text) {
   let p = null;
+  let quote = null;
   const flushP = () => { if (p) { frag.appendChild(p); p = null; } };
   const lines = text.split('\n');
   for (let i = 0; i < lines.length; i++) {
@@ -241,6 +245,7 @@ function appendInlineMarkdownLines(frag, text) {
       continue;
     }
     const c = classifyMarkdownLine(lines[i]);
+    if (c.kind !== 'quote') quote = null;
     if (c.kind === 'text') {
       if (!p) p = elem('p');
       else p.appendChild(document.createTextNode(' '));
@@ -250,6 +255,12 @@ function appendInlineMarkdownLines(frag, text) {
     flushP();
     if (c.kind === 'heading') {
       appendSpans(frag.appendChild(elem(`h${Math.min(c.level + 2, 6)}`)), c.content);
+    } else if (c.kind === 'rule') {
+      frag.appendChild(elem('hr'));
+    } else if (c.kind === 'quote') {
+      if (quote) quote.appendChild(document.createTextNode(' '));
+      else quote = frag.appendChild(elem('blockquote'));
+      appendSpans(quote, c.content);
     } else if (c.kind !== 'blank') {
       const tag = c.kind === 'bullet' ? 'UL' : 'OL';
       let list = frag.lastChild;
