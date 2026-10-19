@@ -534,6 +534,20 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(axes.x === 1 && axes.y === 2 && axes.tick.join(' ') === '2 0.5', 'plotSettings: AXES crossing and per-axis ticks');
   runLine('#10d ATICK');
   assert(plotSettings().axes.tick === null, 'plotSettings: a tick spacing in pixels is left to the view');
+  runLine("{ 'X' 0 1 } INDEP { 'W' 1 .0001 } DEPND");
+  const ode = plotSettings();
+  assert(ode.indep.values.join(' ') === '0 1' && ode.depend.name === 'W' && ode.depend.values.join(' ') === '1 0.0001',
+    'plotSettings: DEPND\'s name, initial value and tolerance');
+  const solve = (expr, y0, s = plotSettings()) => sampleTrace({ kind: 'diffeq', expr, exprY: String(y0) }, view, { width: 500, ...s }).flat();
+  const growth = solve('W', 1);
+  assert(growth[0].join(' ') === '0 1' && Math.abs(growth.at(-1)[0] - 1) < 1e-12 && Math.abs(growth.at(-1)[1] - Math.E) < 1e-9,
+    'DIFFEQ: W\'=W runs from INDEP\'s 0 to 1 and reaches e, DEPND naming the solution');
+  const halfway = evalTraceAtX({ kind: 'diffeq', expr: 'W', exprY: '1' }, 0.5, { ...plotSettings(), view, width: 500 });
+  assert(Math.abs(halfway - Math.exp(0.5)) < 1e-6, 'DIFFEQ: the readout follows INDEP\'s span');
+  runLine("{ 'S' 1 0 } INDEP");
+  const back = solve('Y', 1);
+  assert(back[0][0] === 1 && Math.abs(back.at(-1)[0]) < 1e-12 && Math.abs(back.at(-1)[1] - 1 / Math.E) < 1e-9, 'DIFFEQ: INDEP { S 1 0 } runs backward from 1 to 0');
+  assert(Math.abs(solve('S', 1).at(-1)[1] - 0.5) < 1e-9, 'DIFFEQ: INDEP names the independent variable');
   varPurge('PPAR');
   assert(JSON.stringify(axisTicks(-6.5, 6.5)) === JSON.stringify(niceTicks(-6.5, 6.5, 8)), 'axisTicks: nice ticks without AXES or ATICK');
   assert(axisTicks(-2, 3, 0.5, 1, 16).ticks.join(' ') === '-1.5 -0.5 0.5 1.5 2.5', 'axisTicks: every ATICK unit from the crossing');

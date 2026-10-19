@@ -374,7 +374,9 @@ function finitePts(pts) {
 }
 
 function odeSlope(ast, x, y, opts) {
-  return evalNumeric(ast, { ...bindIndependentVariable(x), y, Y: y }, opts || {});
+  const env = { ...bindIndependentVariable(x, opts?.indep), y, Y: y };
+  if (opts?.depend) env[opts.depend] = y;
+  return evalNumeric(ast, env, opts || {});
 }
 
 function rk4Step(ast, x, y, h, opts) {
@@ -472,6 +474,16 @@ function diffeqLabel(t) {
 
 function diffeqSteps(ctx) {
   return Math.max(48, ctx?.width | 0);
+}
+
+function diffeqOpts(ctx) {
+  return { ...(ctx.angleOpts || {}), indep: ctx.indep?.name, depend: ctx.depend?.name };
+}
+
+// With INDEP's two numbers in PPAR, DIFFEQ runs from the first to the second, as on the HP.
+function diffeqFromIndep(t, y0, ctx) {
+  const [x0, x1] = ctx.indep.values;
+  return integrateOde(parsePlotExpr(t.expr), x0, y0, x1, diffeqSteps(ctx), diffeqOpts(ctx));
 }
 
 function plotFieldError(fields, values, adding) {
@@ -594,6 +606,7 @@ function traceContext(view, opts = {}) {
     env: opts.env || {},
     snapX: opts.snapX,
     indep: opts.indep || null,
+    depend: opts.depend || null,
     res: opts.res || null,
   };
 }
@@ -748,11 +761,12 @@ export const TRACE_KINDS = Object.freeze({
       if (!t.expr) return [];
       const y0 = diffeqInitialY(t);
       if (!Number.isFinite(y0)) return [];
+      if (ctx.indep?.values) return segmentPoints(diffeqFromIndep(t, y0, ctx), Infinity);
       const view = ctx.view;
       return sampleDiffEq(
         parsePlotExpr(t.expr), y0,
         view.xmin, view.xmax, diffeqSteps(ctx),
-        ctx.angleOpts,
+        diffeqOpts(ctx),
       );
     },
     evalAt(t, x, ctx) {
@@ -764,11 +778,16 @@ export const TRACE_KINDS = Object.freeze({
       const y0 = diffeqInitialY(t);
       if (!Number.isFinite(y0)) return NaN;
       const steps = diffeqSteps(ctx);
+      const span = ctx.indep?.values;
+      if (span) {
+        if (x === span[0]) return y0;
+        return yOnSampledIvp(diffeqFromIndep(t, y0, ctx), x, Math.abs(span[1] - span[0]) / steps);
+      }
       if (x === ivpAnchor(view.xmin, view.xmax)) return y0;
       const pts = sampleDiffEq(
         parsePlotExpr(t.expr), y0,
         view.xmin, view.xmax, steps,
-        ctx.angleOpts || {},
+        diffeqOpts(ctx),
       ).flat();
       return yOnSampledIvp(pts, x, Math.abs(view.xmax - view.xmin) / ivpSteps(steps));
     },

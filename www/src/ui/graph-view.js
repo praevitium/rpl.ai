@@ -6,7 +6,7 @@ import {
 } from './plot-engine.js';
 import { escapeHtml } from './display.js';
 import { icon } from './icons.js';
-import { isSymbolic, isName, isMatrix, isVector, isList } from '../rpl/types.js';
+import { isSymbolic, isName, isMatrix, isVector, isList, Real } from '../rpl/types.js';
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians } from '../rpl/state.js';
 import { plotSettings } from '../rpl/ops/graphics.js';
 import { downloadFile } from '../rpl/persist.js';
@@ -46,6 +46,7 @@ function sampleOpts(extra) {
     thetaRange: range ? { min: range[0], max: range[1] } : thetaRange(),
     tRange: range ? { min: range[0], max: range[1] } : { min: -10, max: 10 },
     indep: ppar?.indep ?? null,
+    depend: ppar?.depend ?? null,
     res: ppar?.res ?? null,
     ...extra,
   };
@@ -390,11 +391,18 @@ export class GraphView {
       this.loadData(kind, data);
       return;
     }
-    const built = isSymbolic(top) || isName(top) ? stackValueToTrace(top, kind, stack.depth >= 2 ? stack.peek(2) : null) : null;
+    const built = isSymbolic(top) || isName(top) ? stackValueToTrace(top, kind, this._below(kind, stack)) : null;
     if (!built) { this._fail(`${kind.toUpperCase()} needs an expression on level 1`); return; }
     const err = traceInputError(kind, built, { adding: true });
     if (err) { this._fail(err); return; }
     this._addTrace(built, { fit: !!spec.fitOnAdd, view: pparView() });
+  }
+
+  // DIFFEQ's initial value is DEPND's once PPAR gives one, as on the HP, else level 2's.
+  _below(kind, stack) {
+    const y0 = kind === 'diffeq' ? plotSettings()?.depend.values?.[0] : undefined;
+    if (y0 !== undefined) return Real(y0);
+    return stack.depth >= 2 ? stack.peek(2) : null;
   }
 
   loadFromStack(level) {

@@ -50,10 +50,16 @@ export function plotParameters() {
 
 const _number = (v) => (isReal(v) || isInteger(v) ? toRealOrThrow(v) : NaN);
 
-function _indepSetting(v) {
+// INDEP's or DEPND's name and two numbers, as given and as a range low to high.
+function _variableSetting(v, fallback) {
   const [name, a, b] = isList(v) ? v.items : [v];
-  const range = [_number(a), _number(b)].sort((p, q) => p - q);
-  return { name: isName(name) ? name.id : 'X', range: range[1] > range[0] ? range : null };
+  const values = [_number(a), _number(b)];
+  const range = [...values].sort((p, q) => p - q);
+  return {
+    name: isName(name) ? name.id : fallback,
+    values: values.every(Number.isFinite) ? values : null,
+    range: range[1] > range[0] ? range : null,
+  };
 }
 
 // RES counts from the start of the plotting range, or the window's left edge without one.
@@ -77,14 +83,15 @@ function _axesSetting(v) {
 // What a plot takes from PPAR, as plain numbers; null until something stores PPAR.
 export function plotSettings() {
   if (!isList(varRecall('PPAR'))) return null;
-  const [lo, hi, indep, res, axes] = plotParameters();
+  const [lo, hi, indep, res, axes, , depend] = plotParameters();
   const view = isComplex(lo) && isComplex(hi) && hi.re > lo.re && hi.im > lo.im
     ? { xmin: lo.re, xmax: hi.re, ymin: lo.im, ymax: hi.im }
     : null;
-  const variable = _indepSetting(indep);
+  const variable = _variableSetting(indep, 'X');
   return {
     view,
     indep: variable,
+    depend: _variableSetting(depend, 'Y'),
     res: _resSetting(res, variable.range?.[0] ?? view?.xmin ?? 0),
     axes: _axesSetting(axes),
   };

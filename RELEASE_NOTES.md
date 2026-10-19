@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.21 (2026-10-19)
+**Latest release:** v0.7.22 (2026-10-19)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.22 — 2026-10-19
+
+DIFFEQ follows PPAR too, as the AUR describes it.
+
+- With two numbers in INDEP, `{ X 0 2 } INDEP`, DIFFEQ solves from the
+  first to the second, backward when the first is larger, rather than
+  across the whole plot from x = 0. INDEP's name is the independent
+  variable, beside X.
+- With two numbers in DEPND, `{ Y 1 .0001 } DEPND`, the first is the
+  initial value instead of level 2's, and DEPND's name is the solution,
+  beside Y. The tolerance is kept but not used, as the plot solves in fixed
+  steps.
+- FUNCTION, POLAR, PARAMETRIC and DIFFEQ take a lone name as well as an
+  expression: `'X' FUNCTION` plots y = x, and `'Y' DIFFEQ` solves y' = y.
+  They used to say they needed an expression.
 
 ## v0.7.21 — 2026-10-19
 

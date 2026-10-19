@@ -227,8 +227,8 @@ STATISTICS
 PLOT WINDOW (PPAR, as on the HP 50g)
   XRNG YRNG PMIN PMAX        -2 3 XRNG -1 1 YRNG sets the plot window; FUNCTION, POLAR and the other plots, and DRAW, then start there instead of fitting
   CENTR SCALE SCALEW SCALEH  (1,2) CENTR moves the window's centre; 2 2 SCALE gives two units per tick; .5 SCALEW halves the width (*W and *H are the same)
-  INDEP RES                  { T 0 1 } INDEP names the plot variable and its range (FUNCTION plots only there; POLAR and PARAMETRIC sweep it); .1 RES is the step between plotted values (#n RES in pixels, FUNCTION only)
-  AXES ATICK DEPND           { (1,1) 2 } AXES moves the axes' crossing and puts grid lines every 2 units; 2 ATICK sets the spacing alone; DEPND and the axis labels are stored only
+  INDEP RES                  { T 0 1 } INDEP names the plot variable and its range (FUNCTION plots only there; POLAR and PARAMETRIC sweep it; DIFFEQ runs from the first number to the second); .1 RES is the step between plotted values (#n RES in pixels, FUNCTION only)
+  DEPND AXES ATICK           { Y 1 .0001 } DEPND gives DIFFEQ its initial value; { (1,1) 2 } AXES moves the axes' crossing and puts grid lines every 2 units; 2 ATICK sets the spacing alone; the axis labels are stored only
 
 TYPES / REFLECTION
   TYPE VTYPE KIND            classify the level-1 value (VTYPE of a name with no variable gives -1)
