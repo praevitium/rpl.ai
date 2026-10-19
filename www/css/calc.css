@@ -628,6 +628,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .kp[data-layer="L"] .k .p.lay { color: var(--amber); }
 .kp[data-layer="R"] .k .p.lay { color: var(--coral); }
 .kp[data-layer="A"] .k .p.lay { color: var(--blue); }
+.kp[data-layer="L"] .k.alp .p.lay { color: #04121f; }
 .k.dim .p { opacity: .28; }
 .k.enter { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
 .k.enter .cap { color: var(--accent-ink); opacity: .75; }

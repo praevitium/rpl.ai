@@ -321,8 +321,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   The user keyboard is the HP's too: `« 2 * » 53.1 ASN` gives the SIN key
   a program, `STOKEYS` assigns a list of pairs, `RCLKEYS` lists them and
   `DELKEYS` removes them, keys numbered rc.p as on the 50g (row, column,
-  shift). With flag -62 set (`-62 SF`), USER shows in the status line and
-  an assigned key, a soft key included, runs its object as a CST key does;
+  shift). ⇨USER (↰α) turns USER mode on for the next key (1USR), a second
+  press locks it and a third ends it (with flag -61 set the first press
+  locks it); `-62 SF` does the same from a program. In USER mode an
+  assigned key, a soft key included, runs its object as a CST key does;
   the others keep their action, unless `S DELKEYS` has taken it (ON always
   keeps its own). The assignments are saved with the stack.
 - Tap a stack level for its actions, on a line under it so they never cover

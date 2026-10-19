@@ -51,7 +51,7 @@ const EQW_ACTION_OPS = Object.freeze({
 
 export const EQW_APP_FACES = new Set([
   'ENTER', 'ON', 'EVAL', '→NUM', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6',
-  'PREV', 'NEXT', 'CAT', 'EQW', 'COPY', 'CUT', 'PASTE',
+  'PREV', 'NEXT', 'CAT', 'EQW', 'COPY', 'CUT', 'PASTE', 'USER',
 ]);
 
 export const EQW_UNAVAILABLE_FACES = new Set([
@@ -2176,6 +2176,7 @@ export class EquationEditor {
     if (face === 'NEXT') { this.app.nextMenuPage(); return; }
     if (face === 'CAT') { this.app.drawers.toggle('catalog'); return; }
     if (face === 'EQW') { this.app.runAction('writer.equation'); return; }
+    if (face === 'USER') { this.app.toggleUser(); return; }
     if (face === 'ENTER') { this.app.commitEntry(); return; }
     if (face === 'ON') { this.app.runAction('ui.escape'); return; }
     if (face === 'EVAL' || face === '→NUM') { this.transform(face); return; }

@@ -283,7 +283,7 @@ class App {
       halted: calcState.halted && calcState.halted.kind !== 'wait' ? calcState.halted.kind : null,
       editing: this.pendingEdit ? this.pendingEdit.level ?? this.pendingEdit.name : null,
       alarm: !!pastDueAlarm(),
-      user: testUserFlag(-62),
+      user: testUserFlag(-62) && (this._userOnce ? '1USR' : 'USER'),
     });
   }
 
@@ -328,6 +328,7 @@ class App {
   }
 
   _onStateChange() {
+    if (!testUserFlag(-62)) this._userOnce = false;
     this.appbar.render();
     this.renderStatus();
     this.renderBanner();
@@ -2027,12 +2028,24 @@ class App {
   // with none does nothing, except ON, so the way out stays open.
   _userKey(primary, layer = this.layer()) {
     if (!testUserFlag(-62) || this.inputMode !== 'rpl' || this.selection != null) return false;
+    if (this._userOnce) clearUserFlag(-62);
     const code = Math.round((hpKeyCode(primary, layer) ?? 0) * 100);
     const obj = getUserKeys().find(([k]) => k === code)?.[1];
     if (obj ? isName(obj) && obj.id === 'SKEY' : standardKeysActive() || primary === 'ON') return false;
     if (obj) this._runKeyObject(obj, customMenuLabel(obj));
     if (this.shift && !this.shiftLocked()) this.setShift(null);
     return true;
+  }
+
+  // ⇨USER (↰α): with flag -61 clear the first press is 1USR, USER for the next key only, the second locks USER and a
+  // third ends it; with -61 set the first press locks it.
+  toggleUser() {
+    this.setShift(null);
+    const on = testUserFlag(-62);
+    if (on && !this._userOnce) { clearUserFlag(-62); return; }
+    this._userOnce = !on && !testUserFlag(-61);
+    setUserFlag(-62);
+    this.renderStatus();
   }
 
   // Inside an open object a CST key types its item, as the HP's keys do; false when it should run.
@@ -2108,7 +2121,11 @@ class App {
 
   handleKey(key) {
     // A shift key with a letter on it (the compact keypad's) types the letter under α. KEY takes a shift key as a key.
-    if (MODIFIER_KINDS.has(key.kind) && !calcState.halted?.dialog?.poll && !(key.alpha && this.layer() === 'A')) { this.setShift(key.kind); return; }
+    if (MODIFIER_KINDS.has(key.kind) && !calcState.halted?.dialog?.poll && !(key.alpha && this.layer() === 'A')) {
+      if (key.kind !== 'alpha' || this.layer() !== 'L') this.setShift(key.kind);
+      else if (!this._answerKey(hpKeyCode('α', 'L'))) this.toggleUser();
+      return;
+    }
     if (this._answerKey(hpKeyCode(key.primary, this.layer()))) return;
     if (this._userKey(key.primary)) return;
     const step = { '▲': -1, '▼': 1 }[key.primary];

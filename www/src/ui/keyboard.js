@@ -141,7 +141,7 @@ export const MAIN_KEYS = [
               shiftLAction: typeExecFn('ABS'),
               shiftRAction: typeExecFn('ARG') }),
 
-  mk('α',   { className: 'alpha-key', kind: 'alpha' }),
+  mk('α',   { className: 'alpha-key', kind: 'alpha', shiftL: 'USER' }),
   mk('7',   { kind: 'digit', action: type('7') }),
   mk('8',   { kind: 'digit', action: type('8') }),
   mk('9',   { kind: 'digit', shiftR: '|',
@@ -406,7 +406,7 @@ export class Keypad {
       let face = key.primary;
       let flipped = false;
       let dim = false;
-      if (layer && (!modifier || (layer === 'A' && key.alpha))) {
+      if (layer && (!modifier || (layer === 'A' && key.alpha) || (layer === 'L' && key.kind === 'alpha'))) {
         const alt = layer === 'L' ? key.shiftL : layer === 'R' ? key.shiftR : key.alpha;
         if (alt) { face = alt; flipped = true; } else dim = true;
       }

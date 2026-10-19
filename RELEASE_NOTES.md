@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.49 (2026-10-19)
+**Latest release:** v0.7.50 (2026-10-19)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.50 — 2026-10-19
+
+- ⇨USER on the keypad, as on the 50g: ↰α turns USER mode on for the next
+  key (1USR in the status line), a second press locks it and a third ends
+  it; with flag -61 set the first press locks it. The α key shows USER
+  while ↰ is down, and a program waiting for a key still gets ↰α as 71.2.
 
 ## v0.7.49 — 2026-10-19
 

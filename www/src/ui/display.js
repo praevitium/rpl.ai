@@ -722,7 +722,7 @@ export class Display {
       ? `<button type="button" class="ann-btn" data-status="menu" title="Menu" aria-label="Menu" aria-haspopup="menu">${icon('more', 'sm')}</button><button type="button" class="ann-btn" data-status="fullscreen" title="Full screen" aria-label="Full screen">${icon('full', 'sm')}</button><button type="button" class="ann-btn" data-status="leave-minimal" title="Leave minimal view" aria-label="Leave minimal view">${icon('collapse', 'sm')}</button>`
       : '';
     const editMark = editing ? `<button type="button" class="ann-m e" data-status="cancel-edit" title="Editing ${escapeHtml(editTarget(editing))}: tap to cancel" aria-label="Cancel editing ${escapeHtml(editTarget(editing))}">${icon('edit', 'sm')}${typeof editing === 'number' ? editing : ''}</button>` : '';
-    const userMark = user ? `<span class="${minimal || classic ? 'ann-m' : 'pill'} user" title="USER mode: assigned keys run their objects">USER</span>` : '';
+    const userMark = user ? `<span class="${minimal || classic ? 'ann-m' : 'pill'} user" title="${user === '1USR' ? 'USER mode for the next key' : 'USER mode'}: assigned keys run their objects">${user}</span>` : '';
     const alarmMark = alarm ? `<button type="button" class="${minimal || classic ? 'ann-m' : 'pill'} alarm" data-status="alarm" title="An alarm is past due: tap to see it" aria-label="An alarm is past due">((•))</button>` : '';
     if (classic) {
       const g = (items, cls = '', mode = '') => `<div class="ann-g ${cls}"${mode ? ` data-status="mode" data-mode="${mode}" role="button" tabindex="0" title="Change ${MODE_NAMES[mode]}"` : ''}>${items.map(([t, on, c]) => `<span class="${on ? 'on' : ''} ${c || ''}">${t}</span>`).join('')}</div>`;
