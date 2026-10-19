@@ -2073,3 +2073,17 @@ clearAllUserFlags();
     'ALGB opens the CAS ALG folder, CASCMD the Catalog and MODULAR the INTEGER MODUL folder');
   setOpenHook(null);
 }
+
+// EDIT, EDITB, VISIT and VISITB hand the app what to edit and in which editor.
+{
+  const { setEditHook } = await import('../www/src/rpl/ops.js');
+  const asked = [];
+  setEditHook((target) => asked.push(JSON.stringify(target)));
+  runLine("5 EDIT EDITB DROP 'X+1' 'F7' STO 'F7' VISIT 'F7' VISITB");
+  assert(asked.join(' ') === '{"level":1,"line":true} {"level":1,"line":false} {"name":"F7","line":true} {"name":"F7","line":false}',
+    'EDIT and VISIT ask for the command line, EDITB and VISITB for the editor that suits the object');
+  assertThrows(() => runLine('CLEAR EDIT'), /Too few arguments/, 'EDIT needs an object on level 1');
+  assertThrows(() => runLine("'NOSUCH7' VISIT"), /Undefined name/, 'VISIT needs a variable that exists');
+  runLine("'F7' PURGE");
+  setEditHook(null);
+}

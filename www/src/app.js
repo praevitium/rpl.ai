@@ -37,7 +37,7 @@ import {
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo,
   batchStateNotifications,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setBeepHook, setConlibHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setBeepHook, setConlibHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
 import { VERSION } from './build-info.js';
 import { beep, alarmBeep } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest } from './rpl/ops/time.js';
@@ -170,6 +170,8 @@ class App {
       else this.showMenu(family, { commit: false });
       if (this.prefs.minimal) this.setMinimalMenu(true);
     });
+    // After the line that ran EDIT or VISIT has left the command line.
+    setEditHook(({ level, name, line }) => setTimeout(() => (name ? this.editVariable(name, { line }) : this.editLevel(level, { line }))));
     setBeepHook(beep);
     setVersion(VERSION);
     setConlibHook(() => this.showConstants());
@@ -1012,25 +1014,26 @@ class App {
     catch (e) { if (e.name !== 'AbortError') this.notifyError(`Couldn't share: ${e.message}`); }
   }
 
-  editLevel(level) {
+  editLevel(level, { line = false } = {}) {
     if (this.stack.depth < level) { this.entry.flashError({ message: 'Too few arguments' }); return; }
     const value = this.stack.peek(level);
     this.clearSelection();
-    this._beginEdit({ kind: 'level', level, value, label: `Editing level ${level}` });
+    this._beginEdit({ kind: 'level', level, value, line, label: `Editing level ${level}` });
   }
 
-  editVariable(name) {
+  editVariable(name, { line = false } = {}) {
     const value = varRecall(name);
     if (value === undefined) return;
-    this._beginEdit({ kind: 'var', name, value, label: `Editing ${name}` });
+    this._beginEdit({ kind: 'var', name, value, line, label: `Editing ${name}` });
   }
 
   _beginEdit(edit) {
     if (this.entry.buffer.trim()) this.commitEntry();
     if (this.entry.buffer.trim()) return;
     const { value } = edit;
-    const mode = isSymbolic(value) || (isName(value) && edit.kind === 'level') ? 'equation'
-      : isMatrix(value) || isVector(value) ? 'matrix' : 'rpl';
+    const mode = edit.line ? 'rpl'
+      : isSymbolic(value) || (isName(value) && edit.kind === 'level') ? 'equation'
+        : isMatrix(value) || isVector(value) ? 'matrix' : 'rpl';
     const writer = { equation: this.equationEditor, matrix: this.matrixEditor }[mode];
     const replaced = writer && !writer.isEmpty() ? { saved: writer.snapshot(), edit: this.pendingEdit } : null;
     this.pendingEdit = edit;

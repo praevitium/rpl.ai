@@ -70,6 +70,35 @@ Object.entries(MENU_COMMANDS).forEach(([name, target], i) => {
   }, { category: 'Display / base', categoryOrder: 30 + i / 100, label: name });
 });
 
+let _editHook = null;
+
+export function setEditHook(fn) {
+  _editHook = typeof fn === 'function' ? fn : null;
+}
+
+// EDIT and VISIT open level 1 or a variable's contents in the command line, EDITB and VISITB in the editor that suits
+// the object; the edit replaces the level or is stored back in the variable.
+function _editLevelOp(line) {
+  return (s) => {
+    if (s.depth < 1) throw new RPLError('Too few arguments');
+    if (!inScratchState()) _editHook?.({ level: 1, line });
+  };
+}
+
+function _visitOp(line) {
+  return (s) => {
+    const [v] = s.popN(1);
+    if (!isName(v)) throw new RPLError('Bad argument type');
+    if (varRecall(v.id) === undefined) throw new RPLError(`Undefined name: ${v.id}`);
+    if (!inScratchState()) _editHook?.({ name: v.id, line });
+  };
+}
+
+register('EDIT', _editLevelOp(true), { category: 'Display / base', categoryOrder: 31, label: "EDIT" });
+register('EDITB', _editLevelOp(false), { category: 'Display / base', categoryOrder: 31.1, label: "EDITB" });
+register('VISIT', _visitOp(true), { category: 'Display / base', categoryOrder: 31.2, label: "VISIT" });
+register('VISITB', _visitOp(false), { category: 'Display / base', categoryOrder: 31.3, label: "VISITB" });
+
 
 // DISP writes an object on line n of the seven-line display over the stack, a string without its quotes, and CLLCD
 // blanks it. The text goes when the program ends or pauses, unless FREEZE keeps it until the next key press.
