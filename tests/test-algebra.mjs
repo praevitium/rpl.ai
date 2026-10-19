@@ -5925,6 +5925,31 @@ for (const [cmd, src, call, answer, want] of [
   assert(got === want, `${cmd} '${src}' gives '${want}' (got '${got}')`);
   giac._clear();
 }
+// DIV2 / EGCD / ABCUV: the polynomial IDIV2, IEGCD and IABCUV, with the AUR's examples as real Giac answers them.
+for (const [cmd, srcs, call, answer, want] of [
+  ['DIV2', ['X^2+X+1', '2*X+4'], 'quorem(X^2+X+1,2*X+4,X)', '[1/2*X-1/2,3]', ['1/2*X - 1/2', '3']],
+  ['EGCD', ['X^2+1', 'X-1'], 'egcd(X^2+1,X-1,X)', '[1,-X-1,2]', ['2', '1', '-X - 1']],
+  ['ABCUV', ['X^2+X+1', 'X^2+4', 13n], 'abcuv(X^2+X+1,X^2+4,13,X)', '[-X-3,X+4]', ['-X - 3', 'X + 4']],
+]) {
+  const s = new Stack();
+  for (const src of srcs) s.push(typeof src === 'bigint' ? Integer(src) : Symbolic(parseAlgebra(src)));
+  giac._clear();
+  giac._setFixture(call, answer);
+  lookup(cmd).fn(s);
+  const got = s.snapshot().map((v) => (isSymbolic(v) ? formatAlgebra(v.expr) : String(v.value))).reverse();
+  assert(got.join(' | ') === want.join(' | '), `${cmd} ${srcs.join(' ')} gives ${want.join(' | ')} (got ${got.join(' | ')})`);
+  giac._clear();
+}
+{
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra('X^2-1')));
+  s.push(Symbolic(parseAlgebra('X^2+2*X+1')));
+  s.push(Integer(1n));
+  giac._clear();
+  giac._setFixture('abcuv(X^2-1,X^2+2*X+1,1,X)', 'GIAC_ERROR: No solution in ring Error: Bad Argument Value');
+  assertThrows(() => lookup('ABCUV').fn(s), /Bad argument value/, 'ABCUV with no solution in polynomials is Bad argument value');
+  giac._clear();
+}
 for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   const s = new Stack();
   s.push(Integer(5n));

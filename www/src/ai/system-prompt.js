@@ -107,6 +107,7 @@ POLYNOMIALS / NUMBER THEORY
   TCHEB HERMITE LEGENDRE     classic orthogonal polynomial families
   QUOT REMAINDER             polynomial division
   SIMP2                      \`X^3+6*X^2+11*X+6\` \`X^3-7*X-6\` SIMP2 → \`X+3\` \`X-3\` (both divided by their GCD; 12 18 SIMP2 → 2 3)
+  DIV2 EGCD ABCUV            polynomial IDIV2 IEGCD IABCUV in VX: \`X^2+X+1\` \`2*X+4\` DIV2 → quotient \`X/2-1/2\` remainder 3; \`X^2+1\` \`X-1\` EGCD → 2 1 \`-X-1\` (gcd, u, v); \`X^2+X+1\` \`X^2+4\` 13 ABCUV → \`-X-3\` \`X+4\`
   EUCLID INVMOD              extended-Euclid / modular inverse
   ISPRIME? NEXTPRIME PREVPRIME DIVIS FACTORS    integer primality / factorisation (FACTORS → { p1 e1 p2 e2 … })
   PA2B2 CYCLOTOMIC           sum-of-two-squares / cyclotomic polynomial

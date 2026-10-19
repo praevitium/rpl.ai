@@ -222,6 +222,21 @@ register('SIMP2', (s) => {
   for (const part of parts) s.push(_casValue(giacToAst(part)));
 }, { category: 'Polynomials', categoryOrder: 8.5, label: "SIMP2" });
 
+// The polynomial forms of IDIV2, IEGCD and IABCUV: Giac's answer, taken in the order the AUR stacks it.
+function _polyArith(giacFn, argc, order) {
+  return (s) => {
+    const args = s.popN(argc).map(_astArg);
+    if (!giac.isReady()) throw new RPLError('CAS not ready');
+    const parts = splitGiacList(giac.caseval(`${giacFn}(${args.map(astToGiac).join(',')},${_vxFor(...args)})`));
+    if (parts?.length !== order.length) throw new RPLError('Bad argument value');
+    for (const i of order) s.push(_casValue(giacToAst(parts[i])));
+  };
+}
+
+register('DIV2', _polyArith('quorem', 2, [0, 1]), { category: 'Polynomials', categoryOrder: 8.6, label: "DIV2" });
+register('EGCD', _polyArith('egcd', 2, [2, 0, 1]), { category: 'Polynomials', categoryOrder: 8.7, label: "EGCD" });
+register('ABCUV', _polyArith('abcuv', 3, [0, 1]), { category: 'Polynomials', categoryOrder: 8.8, label: "ABCUV" });
+
 // The AUR's vector calculus: DIV and CURL take a vector function, LAPL an expression, each with a vector of its variables.
 function _vectorCalculus(giacFn, check) {
   return (s) => {
@@ -374,11 +389,11 @@ register('INTEG', (s) => {
 
 const _CONSTANT_NAMES = new Set(['π', 'e', 'i', '∞']);
 
-// VX, or the only variable of an expression that lacks VX, so `X^2` DERVX
+// VX, or the only variable of expressions that lack VX, so `X^2` DERVX
 // differentiates by X while VX is still the default x.
-function _vxFor(ast) {
+function _vxFor(...asts) {
   const vx = getCasVx();
-  const names = ast ? [...algebraFreeVars(ast)].filter((name) => !_CONSTANT_NAMES.has(name)) : [];
+  const names = [...new Set(asts.filter(Boolean).flatMap((ast) => [...algebraFreeVars(ast)]))].filter((name) => !_CONSTANT_NAMES.has(name));
   return names.length === 1 && names[0] !== vx ? names[0] : vx;
 }
 
