@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.6 (2026-10-19)
+**Latest release:** v0.7.7 (2026-10-19)
 
 ---
 
@@ -20,6 +20,21 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.7 — 2026-10-19
+
+The eighth batch of missing HP 50g commands adds the HP's CAS menu commands
+and `CASCFG`:
+
+- `ALGB`, `DIFF`, `EXP&LN`, `TRIGO` and `MAIN` open the CAS menu, or its
+  ALG, CALC, EXP&LN or TRIG folder; `ARIT`, `INTEGER` and `MODULAR` the
+  INTEGER menu or its INTEG or MODUL folder; `POLYNOMIAL`, `MATR` and
+  `TESTS` the POLY, MATRIX and LOGIC menus. Each opens the app's menu that
+  holds the same commands as the HP's, so the soft keys differ in places.
+- `CASCMD` and `HELP`, the HP's browsable lists of CAS commands, open the
+  Catalog, where each command opens its reference page.
+- `CASCFG` puts back the CAS defaults: exact mode, real mode, VX `x` and
+  the modulus 13.
 
 ## v0.7.6 — 2026-10-19
 
