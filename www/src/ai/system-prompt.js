@@ -56,6 +56,9 @@ STACK MANIPULATION
 
 VARIABLES & DIRECTORIES (operate in the current directory)
   STO     value \`NAME\` STO — store value into NAME (value on level 2, name on level 1)
+  ▶       value \`NAME\` ▶ — STO that leaves value on the stack
+  STORE   \`17*Y\` \`Z\` STORE — store the number the expression evaluates to (→NUM if it stays symbolic) and return it
+  RENAME  \`NEW\` \`OLD\` RENAME — rename a variable in the current dir
   RCL     \`NAME\` RCL — push the value of NAME onto the stack
   PURGE   \`NAME\` PURGE — delete the variable
   DEFINE  \`F(X)=X^2+1\` DEFINE — make the user function F; then \`F(3)\` EVAL gives 10 (any stored program is callable as F(args) in an algebraic; IFTE(test,then,else) works inside algebraics, so \`R(N)=IFTE(N<=1,1,N*R(N-1))\` DEFINE recurses)
@@ -66,7 +69,7 @@ VARIABLES & DIRECTORIES (operate in the current directory)
   ORDER   reorder VARS list
   STO+ STO- STO* STO/        in-place arithmetic update
   INCR DECR                  ++ / -- on a numeric variable
-  CRDIR PGDIR HOME UPDIR PATH    directory navigation / management
+  CRDIR PGDIR HOME UPDIR PATH    directory navigation / management; DIR \`NAME\` STO makes an empty directory too
   ARCHIVE RESTORE            :0:NAME ARCHIVE saves stack + HOME as a backup (ports 0-3); :0:NAME RESTORE brings it back
   SF CF FS? FC? FS?C FC?C    flag set / clear / query
   STOF RCLF                  flag-word save / restore

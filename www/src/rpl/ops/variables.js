@@ -1,6 +1,6 @@
-import { varStore, varRecall, varPurge, varOrder, makeSubdir, goUp, goHome, goInto, currentPath, state as _calcState, reorderCurrentEntries, cloneDirectory, inScratchState, setFlagNumbers, replaceFlags } from '../state.js';
-import { RPLError } from '../stack.js';
-import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory, isTagged, isSymbolic, Program, Symbolic } from '../types.js';
+import { varStore, varRecall, varPurge, varOrder, renameCurrentEntry, makeSubdir, goUp, goHome, goInto, currentPath, state as _calcState, reorderCurrentEntries, cloneDirectory, inScratchState, setFlagNumbers, replaceFlags } from '../state.js';
+import { RPLError, Stack } from '../stack.js';
+import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory, isTagged, isSymbolic, isNumber, isUnit, Program, Symbolic, Directory } from '../types.js';
 import { archiveBackup, restoreBackup } from '../persist.js';
 import { register, lookup } from './registry.js';
 import { _astToRplValue, _coerceDirName, _coerceStorableName, _hp50TypeCode, recallVar, storeVar } from './internal.js';
@@ -41,6 +41,13 @@ register('STO', (s) => {
   _forEachName(nameVal, (n) => _store(_coerceStorableName(n), value));
 }, { category: 'Variables / directories', categoryOrder: 0, label: "STO" });
 
+// ▶ is STO that leaves the object on the stack, as the AUR's diagram shows (obj 'name' → obj).
+register('▶', (s) => {
+  const value = s.peek(2);
+  lookup('STO').fn(s);
+  s.push(value);
+}, { category: 'Variables / directories', categoryOrder: 0.1, label: "▶" });
+
 
 // AUR: `A=2*X` stores 2*X in A, and `A(X,Y)=2*X+3/Y` makes the user function
 // « → X Y `2*X+3/Y` » in A, which an algebraic then calls as A(1,2).
@@ -57,6 +64,24 @@ register('DEFINE', (s) => {
   _store(_coerceStorableName(Name(l.name)), isName(value) ? Symbolic(r) : value);
   s.pop();
 }, { category: 'Variables / directories', categoryOrder: 22, label: "DEFINE" });
+
+const _isNumeric = (v) => isNumber(v) || isUnit(v);
+
+// STORE keeps the number an expression evaluates to, where STO keeps the expression: the AUR's STORE(17*Y,Z),
+// with 2 in Y, stores and returns 34.
+register('STORE', (s) => {
+  const [value, nameVal] = s.popN(2);
+  const name = _coerceStorableName(nameVal);
+  if (!_isNumeric(value) && !isSymbolic(value) && !isName(value)) throw new RPLError('Bad argument type');
+  const scratch = new Stack();
+  scratch.push(value);
+  if (!_isNumeric(value)) lookup('EVAL').fn(scratch);
+  if (!_isNumeric(scratch.peek())) lookup('→NUM').fn(scratch);
+  const result = scratch.peek();
+  if (scratch.depth !== 1 || !_isNumeric(result)) throw new RPLError('Bad argument value');
+  _store(name, result);
+  s.push(result);
+}, { category: 'Variables / directories', categoryOrder: 22.1, label: "STORE" });
 
 register('STEQ', (s) => {
   const [v] = s.popN(1);
@@ -120,6 +145,12 @@ function _purge(id) {
 register('PURGE', (s) => {
   _forEachName(s.pop(), (n) => _purge(_coerceDirName(n)));
 }, { category: 'Variables / directories', categoryOrder: 2, label: "PURGE" });
+
+// RENAME ( 'new' 'old' → ), in the current directory.
+register('RENAME', (s) => {
+  const [newName, oldName] = s.popN(2);
+  _asRPLError(() => renameCurrentEntry(_coerceStorableName(oldName), _coerceStorableName(newName)));
+}, { category: 'Variables / directories', categoryOrder: 2.1, label: "RENAME" });
 
 
 // Subdirectories that still hold something stay, as on the HP50.
@@ -187,6 +218,11 @@ function _mkdir(id) {
 register('CRDIR', (s) => {
   _forEachName(s.pop(), (n) => _mkdir(_coerceStorableName(n)));
 }, { category: 'Variables / directories', categoryOrder: 5, label: "CRDIR" });
+
+// DIR pushes an empty directory, so DIR 'NAME' STO makes one as CRDIR does.
+register('DIR', (s) => {
+  s.push(Directory({ name: '' }));
+}, { category: 'Variables / directories', categoryOrder: 5.1, label: "DIR" });
 
 
 register('UPDIR', () => { goUp(); }, { category: 'Variables / directories', categoryOrder: 6, label: "UPDIR" });

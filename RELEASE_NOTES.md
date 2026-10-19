@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.16 (2026-10-19)
+**Latest release:** v0.7.17 (2026-10-19)
 
 ---
 
@@ -20,6 +20,24 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.17 — 2026-10-19
+
+The eighteenth batch of missing HP 50g commands adds four for variables:
+
+- `STORE` stores the number an expression evaluates to, where STO keeps
+  the expression: with 2 in Y, `'17*Y' 'Z' STORE` stores and returns 34,
+  as the AUR shows. An expression that stays symbolic is stored as its
+  numerical value (`'√2' 'Z' STORE` gives 1.41421356237), and one with no
+  numerical value is Bad argument value.
+- `RENAME` ( 'new' 'old' → ) renames a variable in the current directory;
+  a new name already in use is Name conflict.
+- `DIR` pushes an empty directory, so `DIR 'NAME' STO` makes one as CRDIR
+  does.
+- `▶`, the store arrow, is STO that leaves the object on the stack:
+  `5 'A' ▶` stores 5 in A and leaves 5. The manual's page for it had lost
+  its ▶ when it was converted, so its heading read only "(Store)"; the
+  reference now shows it.
 
 ## v0.7.16 — 2026-10-19
 

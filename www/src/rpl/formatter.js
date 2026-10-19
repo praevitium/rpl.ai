@@ -37,7 +37,7 @@ export function format(v, display = DEFAULT_DISPLAY, options = {}) {
   if (isProgram(v)) return '« ' + v.tokens.map(x => formatSource(x, display)).join(' ') + ' »';
   if (isTagged(v))  return `${v.tag}: ${format(v.value, display)}`;
   if (isSymbolic(v))return `\`${formatSymbolic(v.expr)}\``;
-  if (isDirectory(v)) return `Directory { ${v.name} }`;
+  if (isDirectory(v)) return v.name ? `Directory { ${v.name} }` : 'Directory { }';
   if (isUnit(v)) {
     const num = formatReal(v.value, display);
     const u   = formatUnitExpr(v.uexpr);

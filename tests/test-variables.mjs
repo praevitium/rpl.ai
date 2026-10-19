@@ -2087,3 +2087,24 @@ clearAllUserFlags();
   runLine("'F7' PURGE");
   setEditHook(null);
 }
+
+// STORE, RENAME, DIR and ▶ from the AUR.
+{
+  const top = (line) => format(runLine(line).peek());
+  runLine("2 'Y7' STO");
+  assert(top("'17*Y7' 'Z7' STORE") === '34', 'STORE evaluates 17*Y and returns 34, as the AUR shows');
+  assert(format(varRecall('Z7')) === '34', 'STORE keeps the number, not the expression');
+  assert(top("'√2' 'Z7' STORE") === '1.41421356237', 'STORE stores the numerical value of what stays symbolic');
+  assertThrows(() => runLine("'NOSUCH7+1' 'Z7' STORE"), /Bad argument value/, 'STORE of an expression with no numerical value is Bad argument value');
+  assertThrows(() => runLine('"A" \'Z7\' STORE'), /Bad argument type/, 'STORE of a string is Bad argument type');
+  runLine("'W7' 'Z7' RENAME");
+  assert(varRecall('Z7') === undefined && format(varRecall('W7')) === '1.41421356237', 'RENAME gives the old variable the new name');
+  assertThrows(() => runLine("'Y7' 'W7' RENAME"), /Name conflict/, 'RENAME onto a name in use is Name conflict');
+  assertThrows(() => runLine("'Q7' 'NOSUCH7' RENAME"), /Undefined name/, 'RENAME of a missing variable is Undefined name');
+  assert(top('DIR') === 'Directory { }', 'DIR pushes an empty directory');
+  runLine("DIR 'D7' STO");
+  assert(isDirectory(varRecall('D7')) && varRecall('D7').entries.size === 0, "DIR 'NAME' STO makes an empty directory, as CRDIR does");
+  const s = runLine("5 'V7' ▶");
+  assert(s.depth === 1 && format(s.peek()) === '5' && format(varRecall('V7')) === '5', '▶ stores and leaves the object on the stack');
+  runLine("{ Y7 W7 V7 } PURGE 'D7' PGDIR");
+}
