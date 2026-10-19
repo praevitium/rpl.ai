@@ -523,6 +523,16 @@ import { readFileSync } from 'node:fs';
          'appendSpans renders bold and em content through appendSpans, so math inside them goes to KaTeX');
 }
 
+// Numbered steps split by display math or a paragraph go on from their own
+// number: "2. Divide by 2" after a $$…$$ block showed as "1.".
+{
+  assert(classifyMarkdownLine('2. Divide by 2').number === 2,
+         'classifyMarkdownLine keeps the number of a numbered item');
+  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
+  assert(/if \(c\.kind === 'ordered' && c\.number !== 1\) list\.start = c\.number;/.test(src),
+         'a numbered list that starts after a break starts at its first item\'s number');
+}
+
 // session367: classifyMarkdownLine — the per-line block-role classifier lifted
 // out of appendInlineMarkdownLines' DOM (session326/347/353/360 extract-and-pin
 // precedent). The renderer's block dispatch (heading/list/paragraph routing)
@@ -550,10 +560,10 @@ import { readFileSync } from 'node:fs';
   // `*italic*` has no space after the star, so it is NOT a bullet — stays text.
   assert(J('*just italic*') === JSON.stringify({ kind: 'text', content: '*just italic*' }),
          'classifyMarkdownLine leaves *italic* (no space after star) as text, not a bullet');
-  // Ordered: digits + dot + space, optionally indented; the marker is stripped.
-  assert(J('1. first') === JSON.stringify({ kind: 'ordered', content: 'first' }),
+  // Ordered: digits + dot + space, optionally indented; the marker is stripped and its number kept.
+  assert(J('1. first') === JSON.stringify({ kind: 'ordered', number: 1, content: 'first' }),
          'classifyMarkdownLine reads a numbered item');
-  assert(J('   12. twelfth') === JSON.stringify({ kind: 'ordered', content: 'twelfth' }),
+  assert(J('   12. twelfth') === JSON.stringify({ kind: 'ordered', number: 12, content: 'twelfth' }),
          'classifyMarkdownLine reads an indented multi-digit numbered item');
   // Blank: empty or whitespace-only collapses to the blank role (a paragraph break).
   assert(J('') === JSON.stringify({ kind: 'blank' }),
@@ -586,9 +596,9 @@ import { readFileSync } from 'node:fs';
          'classifyMarkdownLine reads a bodyless star bullet (empty content)');
   assert(J('  - ') === JSON.stringify({ kind: 'bullet', content: '' }),
          'classifyMarkdownLine reads an indented bodyless bullet (empty content)');
-  assert(J('1. ') === JSON.stringify({ kind: 'ordered', content: '' }),
+  assert(J('1. ') === JSON.stringify({ kind: 'ordered', number: 1, content: '' }),
          'classifyMarkdownLine reads a bodyless numbered item (empty content)');
-  assert(J('12. ') === JSON.stringify({ kind: 'ordered', content: '' }),
+  assert(J('12. ') === JSON.stringify({ kind: 'ordered', number: 12, content: '' }),
          'classifyMarkdownLine reads a bodyless multi-digit numbered item (empty content)');
   // The heading arm requires `(.+)`, so a bodyless hash run is NOT a heading —
   // it falls through to text (the empty-body asymmetry with the list arms).

@@ -172,8 +172,8 @@ export function classifyMarkdownLine(line) {
   if (hm) return { kind: 'heading', level: hm[1].length, content: hm[2] };
   const lim = line.match(/^\s*[-*]\s+(.*)/);
   if (lim) return { kind: 'bullet', content: lim[1] };
-  const nlim = line.match(/^\s*\d+\.\s+(.*)/);
-  if (nlim) return { kind: 'ordered', content: nlim[1] };
+  const nlim = line.match(/^\s*(\d+)\.\s+(.*)/);
+  if (nlim) return { kind: 'ordered', number: Number(nlim[1]), content: nlim[2] };
   if (line.trim() === '') return { kind: 'blank' };
   return { kind: 'text', content: line };
 }
@@ -194,7 +194,11 @@ function appendInlineMarkdownLines(frag, text) {
       appendSpans(frag.appendChild(elem(`h${c.level + 2}`)), c.content);
     } else if (c.kind !== 'blank') {
       const tag = c.kind === 'bullet' ? 'UL' : 'OL';
-      const list = frag.lastChild?.tagName === tag ? frag.lastChild : frag.appendChild(elem(tag));
+      let list = frag.lastChild;
+      if (list?.tagName !== tag) {
+        list = frag.appendChild(elem(tag));
+        if (c.kind === 'ordered' && c.number !== 1) list.start = c.number;
+      }
       appendSpans(list.appendChild(elem('li')), c.content);
     }
   }
