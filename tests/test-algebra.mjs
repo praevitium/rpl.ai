@@ -80,8 +80,11 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   const hp = parseAlgebra('Σ(k=1,10,k^2)');
   assert(hp.name === 'Σ' && hp.args.map((a) => formatAlgebra(a)).join() === 'k^2,k,1,10' && format(sum('Σ(k=1,10,k^2)', 'EVAL')) === '385',
          "Σ reads the HP's Σ(index=initial,final,summand): Σ(k=1,10,k^2) sums to 385, where it said Σ expects 4 arguments");
+  assert(formatAlgebra(hp) === 'Σ(k=1,10,k^2)' && formatAlgebra(parseAlgebra('Σ(k^2,k,1,10)')) === 'Σ(k=1,10,k^2)'
+         && formatAlgebra(parseAlgebra(formatAlgebra(parseAlgebra('Σ(k=1,N-1,k^2)+1')))) === 'Σ(k=1,N - 1,k^2) + 1',
+         "Σ prints as the HP writes it, Σ(k=1,10,k^2), where it showed Giac's Σ(k^2,k,1,10), and reads back the same");
   const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
-  assert(shown("'k' 1 10 'k^2' Σ") === '385' && shown("'k' 1 'N' 'k' Σ") === '`Σ(k,k,1,N)`',
+  assert(shown("'k' 1 10 'k^2' Σ") === '385' && shown("'k' 1 'N' 'k' Σ") === '`Σ(k=1,N,k)`',
          "Σ as a command takes the index, its limits and the summand: 'k' 1 10 'k^2' Σ is 385, and a symbolic limit leaves the sum");
   giac._setFixtures({ 'sum(A^N,N,1,5)': 'A^5+A^4+A^3+A^2+A' });
   assert(shown("'N' 1 5 'A^N' Σ") === '`A^5 + A^4 + A^3 + A^2 + A`',

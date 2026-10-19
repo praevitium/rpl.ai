@@ -717,6 +717,10 @@ function fmt(ast, parentPrec) {
     }
     if (ast.name === 'INTEG' && ast.args.length === 4) return `∫(${[2, 3, 0, 1].map((k) => fmt(ast.args[k], LOGIC_PREC.OR)).join(',')})`;
     if (ast.name === 'DERIV' && ast.args.length === 2 && ast.args[1].kind === 'var') return `∂${ast.args[1].name}(${fmt(ast.args[0], LOGIC_PREC.OR)})`;
+    if (ast.name === 'Σ' && ast.args.length === 4 && ast.args[1].kind === 'var') {
+      const [body, index, from, to] = ast.args.map((a) => fmt(a, LOGIC_PREC.OR));
+      return `Σ(${index}=${from},${to},${body})`;
+    }
     const inside = ast.args.map(a => fmt(a, LOGIC_PREC.OR)).join(',');
     return `${ast.name}(${inside})`;
   }

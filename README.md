@@ -216,7 +216,7 @@ RPL puts the numbers first and the operation last. Each value goes on the
   them and →NUM works the integral out numerically. A sum is too,
   `'Σ(k=1,10,k^2)'`, or Σ builds it from the index, its limits and the
   summand: `'k' 1 10 'k^2' Σ` gives `385`, and `'N' 1 5 'A^N' Σ` the sum in
-  closed form (a sum shows as `Σ(k^2,k,1,10)`, the order Giac writes).
+  closed form.
 - **Units.** `100_km 2_h /` gives `50._km/h`; then `1_m/s CONVERT` gives
   `13.8888888889_m/s`. SI prefixes work on SI units (`5_kJ`, `1_MHz`,
   `3_uA`), and a bare `°C` or `°F` converts as a thermometer reading:
