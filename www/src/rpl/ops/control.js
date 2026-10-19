@@ -1,5 +1,5 @@
 import { RPLAbort, RPLError } from '../stack.js';
-import { getHalted, clearPromptMessage, takeHalted, clearHalted, inScratchState } from '../state.js';
+import { getHalted, takeHalted, clearHalted, inScratchState } from '../state.js';
 import { isProgram, isTagged, Name } from '../types.js';
 import { register, lookup } from './registry.js';
 import { runSuspendable, withStepMode } from './internal.js';
@@ -60,7 +60,6 @@ register('NOVAL', (s) => {
 function resumeHalted() {
   if (inScratchState()) throw new RPLError('Cannot dry-run a halted program');
   if (!getHalted()) throw new RPLError('No halted program');
-  clearPromptMessage();
   runSuspendable(takeHalted().generator);
 }
 
@@ -72,7 +71,6 @@ register('CONT', resumeHalted, { category: 'Control flow / debug', categoryOrder
 register('KILL', () => {
   if (inScratchState()) throw new RPLError('Cannot dry-run a halted program');
   clearHalted();
-  clearPromptMessage();
 }, { category: 'Control flow / debug', categoryOrder: 3, label: "KILL" });
 
 

@@ -4543,6 +4543,35 @@ const { getPromptMessage, clearPromptMessage }
     'session121: bare PROMPT does not consume the operand on the throw');
 }
 
+{
+  resetHome(); clearAllHalted();
+  const s = new Stack();
+  s.push(Program([ Str('First'), Name('MSGBOX'), Integer(1n) ]));
+  lookup('EVAL').fn(s);
+  s.push(Program([ Str('Second'), Name('PROMPT'), Integer(2n) ]));
+  lookup('EVAL').fn(s);
+  assert(haltedDepth() === 2 && getPromptMessage()?.value === 'Second',
+    'PROMPT halted over a MSGBOX shows its own message');
+  lookup('KILL').fn(s);
+  assert(haltedDepth() === 1 && getPromptMessage()?.value === 'First',
+    'KILL on a PROMPT halted over a MSGBOX brings back the MSGBOX message, where the banner showed none');
+  lookup('CONT').fn(s);
+  assert(haltedDepth() === 0 && getPromptMessage() === null && s.depth === 1 && s.peek().value === 1n,
+    'CONT then finishes the MSGBOX program and clears its message');
+}
+
+{
+  resetHome(); clearAllHalted();
+  const s = new Stack();
+  s.push(Program([ Str('First'), Name('MSGBOX'), Integer(1n) ]));
+  lookup('EVAL').fn(s);
+  s.push(Program([ Str('Second'), Name('PROMPT'), Integer(2n) ]));
+  lookup('EVAL').fn(s);
+  lookup('CONT').fn(s);
+  assert(haltedDepth() === 1 && getPromptMessage()?.value === 'First' && s.peek().value === 2n,
+    'CONT on a PROMPT halted over a MSGBOX finishes the PROMPT and brings back the MSGBOX message');
+}
+
 /* ---- PROMPT inside a → frame: banner shows, frame survives across
         suspension, and CONT cleans it up on completion ---- */
 {

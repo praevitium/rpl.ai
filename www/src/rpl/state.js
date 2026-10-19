@@ -43,8 +43,8 @@ export const state = {
   casVx: 'x',                // the HP50 uses 'X'; lowercase matches the keyboard
   casModulo: 13n,
   realMaxExp: REAL_MAX_EXP_DEFAULT,
-  // Suspended programs, oldest first, as { generator, tokens, index, kind }.
-  // halted is the newest one, which CONT resumes first.
+  // Suspended programs, oldest first, as { generator, tokens, index, kind, dialog, stepping, prompt }.
+  // halted is the newest one, which CONT resumes first; promptMessage is its message.
   halted: null,
   haltedStack: [],
   promptMessage: null,
@@ -253,6 +253,7 @@ export function clearLastFitModel() { _set('lastFitModel', null); }
 export function setHalted(h) {
   state.haltedStack.push(h);
   state.halted = h;
+  state.promptMessage = h.prompt ?? null;
   _emit();
 }
 
@@ -270,6 +271,7 @@ function _popHalted(close) {
   const record = state.haltedStack.pop();
   if (close) _closeRecord(record);
   state.halted = state.haltedStack[state.haltedStack.length - 1] ?? null;
+  state.promptMessage = state.halted?.prompt ?? null;
   _emit();
   return record;
 }
@@ -288,12 +290,11 @@ export function clearAllHalted() {
   for (const record of state.haltedStack) _closeRecord(record);
   state.haltedStack.length = 0;
   state.halted = null;
+  state.promptMessage = null;
   _emit();
 }
 
 export function haltedDepth() { return state.haltedStack.length; }
-
-export function setPromptMessage(v) { _set('promptMessage', v); }
 
 export function getPromptMessage() { return state.promptMessage; }
 

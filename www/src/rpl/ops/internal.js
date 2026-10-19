@@ -3,7 +3,7 @@ import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Nam
 import { RPLAbort, RPLError, Stack, setPushCoerce, checkTimeLimit } from '../stack.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, UnitNode as AstUnit, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, hasUnits, exactRational, isRealNum, isKnownFunction } from '../algebra.js';
 import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
-import { state as _calcState, getApproxMode, getWordsizeMask, setPromptMessage, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd } from '../state.js';
+import { state as _calcState, getApproxMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
 import { formatSource, currentDisplay } from '../formatter.js';
@@ -960,9 +960,7 @@ function* evalRange(s, toks, from, to, depth) {
     }
     if (id === 'PROMPT' || id === 'MSGBOX') {
       if (s.depth < 1) throw new RPLError(`${id}: Too few arguments`);
-      const msg = s.pop();
-      setPromptMessage(msg);
-      _markSuspend(toks, i + 1, id === 'PROMPT' ? 'prompt' : 'msgbox');
+      _markSuspend(toks, i + 1, id === 'PROMPT' ? 'prompt' : 'msgbox', null, s.pop());
       yield;
       i++;
       continue;
@@ -971,8 +969,7 @@ function* evalRange(s, toks, from, to, depth) {
       if (s.depth < 2) throw new RPLError('INPUT: Too few arguments');
       const input = inputSpec(s.peek());
       s.pop();
-      setPromptMessage(s.pop());
-      _markSuspend(toks, i + 1, 'input', input);
+      _markSuspend(toks, i + 1, 'input', input, s.pop());
       yield;
       i++;
       continue;
@@ -982,8 +979,7 @@ function* evalRange(s, toks, from, to, depth) {
       const choose = chooseSpec(s.peek(2), s.peek());
       s.pop();
       s.pop();
-      setPromptMessage(s.pop());
-      _markSuspend(toks, i + 1, 'choose', choose);
+      _markSuspend(toks, i + 1, 'choose', choose, s.pop());
       yield;
       i++;
       continue;
@@ -1002,8 +998,7 @@ function* evalRange(s, toks, from, to, depth) {
       const inform = informSpec(s.peek(5), s.peek(4), s.peek(3), s.peek(2), s.peek());
       const title = s.peek(5);
       s.popN(5);
-      setPromptMessage(title);
-      _markSuspend(toks, i + 1, 'inform', inform);
+      _markSuspend(toks, i + 1, 'inform', inform, title);
       yield;
       i++;
       continue;
@@ -1097,9 +1092,9 @@ function informSpec(title, fields, format, resets, init) {
 // whether the program was being stepped, so that its answer steps on rather than running free.
 let _pendingSuspend = null;
 
-function _markSuspend(tokens, index, kind, dialog = null) {
+function _markSuspend(tokens, index, kind, dialog = null, prompt = null) {
   const stepping = _singleStepMode ? (_stepInto ? 'into' : 'over') : null;
-  _pendingSuspend = { tokens, index, kind, dialog, stepping };
+  _pendingSuspend = { tokens, index, kind, dialog, stepping, prompt };
 }
 
 function* _stepYield(tokens, index) {
@@ -1120,10 +1115,10 @@ export function runSuspendable(gen) {
   try {
     if (!gen.next().done) {
       halted = true;
-      const { tokens = null, index = null, kind = null, dialog = null, stepping = null } = _pendingSuspend ?? {};
+      const { tokens = null, index = null, kind = null, dialog = null, stepping = null, prompt = null } = _pendingSuspend ?? {};
       _pendingSuspend = null;
       waiting = kind === 'wait';
-      setHalted({ generator: gen, tokens, index, kind, dialog, stepping });
+      setHalted({ generator: gen, tokens, index, kind, dialog, stepping, prompt });
     }
   } finally {
     if (!waiting) settleLcd();
