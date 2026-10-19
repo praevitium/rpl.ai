@@ -10,6 +10,8 @@ import { isSymbolic, isName, isMatrix, isVector, isList, Real } from '../rpl/typ
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians, getPict, subscribe as subscribeState } from '../rpl/state.js';
 import { plotSettings, pictWindow, pictGrid, pictPoint, viewVolume } from '../rpl/ops/graphics.js';
 import { downloadFile } from '../rpl/persist.js';
+import { withFractionMark } from '../rpl/formatter.js';
+import { fromTyped } from '../rpl/parser.js';
 
 export { stackValueToTrace, traceToStackValues };
 
@@ -371,8 +373,8 @@ export class GraphView {
       this.loadData(kind);
       return;
     }
-    const expr = this._addX.value.trim();
-    const exprY = this._addY.value.trim();
+    const expr = fromTyped(this._addX.value.trim());
+    const exprY = fromTyped(this._addY.value.trim());
     if (!expr) return;
     const err = traceInputError(kind, { expr, exprY }, { adding: true });
     if (err) { this._fail(err); return; }
@@ -464,7 +466,7 @@ export class GraphView {
       const values = traceToStackValues(t);
       if (!values.length) { this._fail('nothing to push'); return; }
       this.app.commitEntryAndPush(values);
-      this._readout.textContent = `Pushed ${t.label || t.kind}`;
+      this._readout.textContent = `Pushed ${withFractionMark(t.label || t.kind)}`;
     } catch (e) {
       this._fail(e.message);
     }
@@ -541,7 +543,7 @@ export class GraphView {
       if (!t.enabled) continue;
       const yv = evalTraceAtX(t, wx, opts);
       if (!Number.isFinite(yv)) continue;
-      bits.push(`${t.label || t.expr || t.kind} = ${fmtAxis(yv)}`);
+      bits.push(`${withFractionMark(t.label || t.expr || t.kind)} = ${fmtAxis(yv)}`);
     }
     return bits.join('  ·  ');
   }
@@ -661,7 +663,7 @@ export class GraphView {
 
   _applyRange(input) {
     const text = String(input.value).trim();
-    const value = text ? Number(text) : NaN;
+    const value = text ? Number(fromTyped(text)) : NaN;
     const next = { ...this.view, [input.dataset.rng]: value };
     const valid = Number.isFinite(value) && hasUsableSpan(next.xmin, next.xmax) && hasUsableSpan(next.ymin, next.ymax);
     input.classList.toggle('bad', !valid);
@@ -673,7 +675,7 @@ export class GraphView {
   _syncRanges() {
     for (const input of this.el.querySelectorAll('input[data-rng]')) {
       if (document.activeElement === input) continue;
-      input.value = String(Number(this.view[input.dataset.rng].toPrecision(4)));
+      input.value = withFractionMark(String(Number(this.view[input.dataset.rng].toPrecision(4))));
       input.classList.remove('bad');
     }
   }
@@ -712,8 +714,8 @@ export class GraphView {
   _onTraceExprInput(input) {
     const t = this.traces.find(tr => tr.id === input.dataset.trace);
     if (!t) return;
-    if (input.dataset.field === 'y') t.exprY = input.value;
-    else t.expr = input.value;
+    if (input.dataset.field === 'y') t.exprY = fromTyped(input.value);
+    else t.expr = fromTyped(input.value);
     const spec = TRACE_KINDS[t.kind];
     if (spec?.label) t.label = spec.label(t);
     const err = traceInputError(t.kind, t);
@@ -770,12 +772,12 @@ export class GraphView {
               ? `<span class="gr-param-sep">${escapeHtml(spec.fieldSep)}</span>`
               : '';
             const key = field.key === 'exprY' ? 'y' : 'x';
-            const value = field.key === 'exprY' ? t.exprY : t.expr;
+            const value = withFractionMark(field.key === 'exprY' ? t.exprY : t.expr);
             return `${sep}<input class="gr-expr" data-trace="${t.id}" data-field="${key}"
                     spellcheck="false" aria-label="${escapeHtml(field.aria)}"
                     value="${escapeHtml(value)}" placeholder="${escapeHtml(field.placeholder)}" />`;
           }).join('')
-        : `<span class="gr-trace-label">${escapeHtml(t.label || t.kind)}</span>`;
+        : `<span class="gr-trace-label">${escapeHtml(withFractionMark(t.label || t.kind))}</span>`;
       return `
       <div class="gr-trace ${t.enabled ? '' : 'off'}${t.id === this._selectedId ? ' selected' : ''}"
            data-trace="${t.id}">
@@ -1021,6 +1023,6 @@ export class GraphView {
 function fmtAxis(n) {
   if (!Number.isFinite(n)) return '';
   const a = Math.abs(n);
-  if (a !== 0 && (a >= 1e5 || a < 1e-3)) return n.toExponential(2);
-  return String(Number(n.toPrecision(6)));
+  if (a !== 0 && (a >= 1e5 || a < 1e-3)) return withFractionMark(n.toExponential(2));
+  return withFractionMark(String(Number(n.toPrecision(6))));
 }
