@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.158 (2026-10-18)
+**Latest release:** v0.6.159 (2026-10-19)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.159 — 2026-10-19
+
+A level's ⋯ menu on level 1 leaves out ROLL, ROLLD, DUPN and DRPN,
+which do nothing there or repeat PICK and Drop, and its Roll button
+shows from level 2 up.
+
+An assistant reply's indented list nests under the step above it, a
+bulleted list inside a numbered one, say, instead of starting a new
+list.
+
+On a phone, command search's placeholder is the longest wording that
+fits its field, "Search commands…" at 280 px, instead of one cut off
+mid-word.
 
 ## v0.6.158 — 2026-10-18
 
