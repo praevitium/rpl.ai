@@ -15,7 +15,8 @@ function labelHtml(label) {
   const size = Math.ceil(label.length / rows);
   const lines = Array.from({ length: rows }, (_, i) => label.slice(i * size, (i + 1) * size));
   const widest = (parts) => Math.max(...parts.flatMap((part) => part.split(/\s+/)).map(letterWidth));
-  return `<span class="lbl" style="--w:${widest([label])};--n:${widest(lines)}">${lines.map(escapeHtml).join('<wbr>')}</span>`;
+  // A space breaks only where white-space allows it; a <wbr> after it lets ◀ BACK break in the wide layout too.
+  return `<span class="lbl" style="--w:${widest([label])};--n:${widest(lines)}">${lines.map((line) => escapeHtml(line).replace(/ /g, ' <wbr>')).join('<wbr>')}</span>`;
 }
 
 const WRITER_MENUS = Object.freeze({ EQW: { short: 'EQW', title: 'The equation writer menu' }, MTRW: { short: 'MTRW', title: 'The matrix writer menu' } });
