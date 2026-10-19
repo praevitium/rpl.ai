@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.61 (2026-10-19)
+**Latest release:** v0.7.62 (2026-10-19)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.62 — 2026-10-19
+
+- Fix: a spreadsheet range pasted into the matrix writer or onto the
+  command line read `0,125` as 125, and with flag -51 set read `12,345`
+  as twelve thousand where the command line reads 12.345. A comma after
+  a lone 0 is now a decimal comma, and with -51 set a lone comma is the
+  fraction mark, as the command line reads it.
+- The HP's FM, setting: an FM, key on the MODES menu, beside TXTBK, and
+  a Decimal comma switch in Settings turn flag -51 on and off, so a phone
+  in a comma locale finds it without typing `-51 SF`.
+- Numbers pasted into the matrix writer with -51 set show the comma
+  mark, as typed and loaded cells do.
 
 ## v0.7.61 — 2026-10-19
 

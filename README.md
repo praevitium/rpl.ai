@@ -489,8 +489,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - A phone's back button closes the open menu, search, sheet, writer or
   drawer first, then cancels an edit as the HP's ON does, and leaves the
   app only when nothing is open.
-- Where a phone's keyboard writes 1,5 for one and a half, set flag -51, the
-  HP's fraction-mark flag: the command line then reads a comma beside a
+- Where a phone's keyboard writes 1,5 for one and a half, turn on Decimal
+  comma in Settings, or the FM, key on the MODES menu (flag -51, the HP's
+  fraction-mark setting): the command line then reads a comma beside a
   digit as the decimal point and a semicolon as the separator, so `1,5`
   is 1.5 and `(1,5;2)` a complex number, as on the HP, and the stack shows
   them that way (`3,`, `(1,5; 2)`, `MAX(X; 0,25)`). EDIT, INPUT, INFORM
@@ -500,7 +501,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   the fraction mark and a semicolon as the separator; its insights, DISP,
   DISPXY, →GROB, LCD→ and LABEL show the comma too, and so do the plot's
   axis labels, trace readout, range boxes and formula fields, which read
-  a typed comma. Exports keep the point for now.
+  a typed comma. A spreadsheet range pasted in this mode reads 12,345 as
+  12.345, as the command line does. Exports keep the point for now.
 
 ---
 
