@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.0 (2026-10-19)
+**Latest release:** v0.7.1 (2026-10-19)
 
 ---
 
@@ -20,6 +20,33 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.1 — 2026-10-19
+
+The second batch of missing HP 50g commands adds twelve from the CAS,
+each giving the AUR's example:
+
+- `EXP2POW` turns `EXP(5*LN(X))` into `X^5`, and `EXP2HYP` writes it as
+  `SINH(5*LN(X))+COSH(5*LN(X))`. Both join the CAS menu's EXP&LN folder.
+- `SINCOS` turns `EXP(i*X)` into `COS(X)+i*SIN(X)`, in the TRIG folder.
+- `POWEXPAND` writes `(X+1)^3` as `(X+1)*(X+1)*(X+1)`, for `DISTRIB` to
+  expand a step at a time.
+- `LVAR` keeps its expression and lists its variables as LNAME does,
+  but with `COS(B)` or `MYFUNC(PQ)` counted as one variable.
+- `FXND` splits `(X-3)^2/(Z+4)` into `(X-3)^2` and `Z+4` as written.
+- `DEGREE` gives the degree in VX, or else the first variable; an
+  equation counts as its left side minus its right, and zero is -1.
+- `REORDER` sorts a polynomial by the powers of a variable.
+- `DIVPC`, in the CALC folder, is the Taylor polynomial at 0 of a
+  quotient: `'X^3+4*X+12' '11*X^11+1' 4 DIVPC` gives `12+4*X+X^3`.
+- `RESULTANT`, `STURMAB` and `LAGRANGE` join the POLY menu.
+  `'X^3+2' -2 0 STURMAB` gives `{ -6 1 }`, P(-2) and the one root in
+  [-2, 0]. `[[1 3 4 2][6 7 8 9]] LAGRANGE` gives
+  `(8*x^3-63*x^2+151*x-60)/6`.
+
+`INV` and `SQ` inside an expression now reach Giac as its own inverse and
+square, where every CAS command took them for unknown functions, so
+`'INV(X)*X' EXPAND` gives 1.
 
 ## v0.7.0 — 2026-10-19
 
