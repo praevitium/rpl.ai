@@ -8,7 +8,8 @@ import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
 import { formatSource, currentDisplay } from '../formatter.js';
 import { parseEntry as _parseEntryForObjTo, polarVector } from '../parser.js';
-import { astToGiac } from '../cas/giac-convert.mjs';
+import { astToGiac, buildGiacCmd, giacToAst } from '../cas/giac-convert.mjs';
+import { giac } from '../cas/giac-engine.mjs';
 import { lookup } from './registry.js';
 
 
@@ -1694,12 +1695,29 @@ export function _evalSymbolic(v, keeps = () => false) {
   const evalNode = (ast) => algebraEvalAst(ast, resolve, _angleAwareFnEval, binGate);
   const folded = _foldUnits(evalNode(_expandUserCalls(v.expr)), evalNode);
   const integrated = _casCalculus(folded);
-  const reduced = integrated === folded ? folded : evalNode(integrated);
+  const calculated = integrated === folded ? folded : evalNode(integrated);
+  const settled = _casInfinity(calculated);
+  const reduced = settled === calculated ? calculated : evalNode(settled);
   _checkInfinite(reduced);
   const value = _astToRplValue(reduced);
   return approx && isInteger(value) ? Real(value.value.toString()) : value;
 }
 
+
+// EVAL hands an expression still holding ∞ to the CAS, which knows the AUR's ATAN(-∞) is -π/2 and 1/∞ is 0; one the
+// CAS leaves undefined, such as ∞-∞, stays as it is.
+function _casInfinity(ast) {
+  const bare = ast.kind === 'neg' ? ast.arg : ast;
+  if (bare.kind === 'var' || !algebraFreeVars(ast).has('∞') || !giac.isReady()) return ast;
+  let raw;
+  try {
+    raw = giac.caseval(buildGiacCmd(ast, (e) => e));
+  } catch (e) {
+    if (e instanceof RPLError) return ast;
+    throw e;
+  }
+  return /\bundef\b/.test(raw) ? ast : giacToAst(raw);
+}
 
 // EVAL hands a derivative or integral it still holds to the CAS, as the HP does; one the CAS cannot work out stays as it is.
 const CAS_CALCULUS = { DERIV: { arity: 2, op: 'DERIV' }, INTEG: { arity: 2, op: 'INTEG' } };

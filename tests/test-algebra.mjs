@@ -8857,3 +8857,23 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   runLine("{ Y7 } PURGE");
   giac._clear();
 }
+
+// EVAL hands an expression still holding ∞ to the CAS, as the AUR's ATAN(-∞) example needs.
+{
+  const { astToGiac } = await import('../www/src/rpl/cas/giac-convert.mjs');
+  const top = (line) => format(runLine(line).peek());
+  giac._clear();
+  giac._setFixtures({
+    'atan(-infinity)': '-pi/2',
+    '1/(+infinity)': '0',
+    '(+infinity)-(+infinity)': 'undef',
+    'X+(+infinity)': '+infinity',
+  });
+  assert(top("'ATAN(-∞)' EVAL") === '`(-π)/2`', 'EVAL of ATAN(-∞) gives -π/2, as the AUR shows');
+  assert(top("'1/∞' EVAL") === '0', 'EVAL of 1/∞ gives 0');
+  assert(top("'∞-∞' EVAL") === '`∞ - ∞`', 'EVAL leaves ∞-∞ as it is, the CAS calling it undefined');
+  assert(top("'X+∞' EVAL") === '`∞`', 'EVAL of X+∞ gives ∞');
+  assert(top("'∞' EVAL") === '`∞`', 'EVAL of ∞ alone asks nothing of the CAS');
+  assert(astToGiac(parseAlgebra('X+∞')) === 'X+(+infinity)', 'astToGiac puts a signed infinity beside an operator in parentheses');
+  giac._clear();
+}

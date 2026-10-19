@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.17 (2026-10-19)
+**Latest release:** v0.7.18 (2026-10-19)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.18 — 2026-10-19
+
+The ∞ added in 0.7.13 now evaluates as the AUR's own example does:
+
+- EVAL hands an expression that still holds ∞ to the CAS, so
+  `'ATAN(-∞)' EVAL` gives -π/2 (-90 in degrees), `'1/∞' EVAL` and
+  `'EXP(-∞)' EVAL` give 0, and `'X+∞' EVAL` gives ∞. These used to stay as
+  typed. One the CAS calls undefined, such as `'∞-∞'`, stays as it is,
+  where the HP gives its ? symbol.
+- An infinity beside an operator now reaches the CAS in parentheses: X+∞
+  was sent as `X++infinity`, which Giac reads as an increment.
 
 ## v0.7.17 — 2026-10-19
 
