@@ -4,9 +4,10 @@ import {
   isDirectory, isUnit, isGrob, grobToHex,
   Decimal,
 } from './types.js';
-import { state as _state, getApproxMode, fromRadians } from './state.js';
+import { state as _state, getApproxMode, fromRadians, testUserFlag } from './state.js';
 import { formatAlgebra } from './algebra.js';
 import { formatUnitExpr } from './units.js';
+import { commaFractionMark } from './parser.js';
 
 export const DEFAULT_DISPLAY = {
   mode: 'STD',
@@ -14,6 +15,9 @@ export const DEFAULT_DISPLAY = {
 };
 
 export const currentDisplay = () => ({ mode: _state.displayMode || 'STD', digits: _state.displayDigits ?? 12 });
+
+// Text the user sees or edits takes flag -51's comma fraction mark; stored and exported text keeps the point.
+export const withFractionMark = (text) => (testUserFlag(-51) ? commaFractionMark(text) : text);
 
 /* `context: 'stack'` ticks every Name, as the HP50 shows one on a stack
    level; nested items keep their own quoting and are not passed it. */

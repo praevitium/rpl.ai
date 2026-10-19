@@ -3,6 +3,7 @@
    Node and the browser.  A Box is { width, ascent, descent, draw(x, by) },
    and the boxes in a row share one baseline. */
 
+import { withFractionMark } from './formatter.js';
 import { isNum, isVar, isNeg, isBin, isFn, PREC, LOGIC_PREC, LOGIC_ARITY, numText, unitNodeText } from './algebra.js';
 
 // Single-quoted family names let the stack sit inside a double-quoted attribute.
@@ -304,7 +305,7 @@ function sigmaBox(below, above, size) {
 }
 
 function callBox(name, args, size) {
-  const list = args.flatMap((arg, i) => (i ? [textBox(', ', size), arg] : [arg]));
+  const list = args.flatMap((arg, i) => (i ? [textBox(withFractionMark(', '), size), arg] : [arg]));
   return rowBox([textBox(name, size), parenBox(rowBox(list))]);
 }
 
@@ -346,7 +347,7 @@ const needsBaseParens = (ast) => (isBin(ast) && ast.op === '/') || (isFn(ast) &&
 function lay(ast, parentPrec, size) {
   if (!ast) return textBox('', size);
   if (ast.kind === 'num') {
-    const box = textBox(numText(ast), size);
+    const box = textBox(withFractionMark(numText(ast)), size);
     // Only a power's base needs it: -3 with a raised X would read as -(3^X).
     return parentPrec > 3 && isNegativeNum(ast) ? parenBox(box) : box;
   }

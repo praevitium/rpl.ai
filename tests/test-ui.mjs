@@ -2355,7 +2355,7 @@ setAngle('RAD');
     && /showInformSheet\(\) \{\s*const \{ title, fields, columns, resets, init \} = calcState\.halted\.dialog;[\s\S]*?this\.sheets\.openInform\(\{ title, columns, fields: rows \}\);/.test(appSrc)
     && /acceptInform\(\) \{[\s\S]*?const value = text \? informValue\(text, fields\[Number\(input\.dataset\.inf\)\]\) : Name\('NOVAL'\);\s*if \(typeof value === 'string'\) \{ input\.setCustomValidity\(value\); input\.reportValidity\(\); input\.focus\(\); return; \}[\s\S]*?this\._continueProgram\(RList\(values\), Integer\(1n\)\);/.test(appSrc)
     && /cancelInform\(\) \{ this\._continueProgram\(Integer\(0n\)\); \}/.test(appSrc)
-    && /function informText\(v\) \{\s*return !v \|\| \(isName\(v\) && v\.id === 'NOVAL'\) \? '' : formatSource\(v\);/.test(appSrc)
+    && /function informText\(v\) \{\s*return !v \|\| \(isName\(v\) && v\.id === 'NOVAL'\) \? '' : withFractionMark\(formatSource\(v\)\);/.test(appSrc)
     && /function informValue\(text, field\) \{[\s\S]*?if \(objects\.length !== 1\) return 'One object per field';\s*if \(field\.types\.length && !field\.types\.includes\(_hp50TypeCode\(objects\[0\]\)\)\) return/.test(appSrc)
     && /openInform\(form\) \{\s*this\.form = form;\s*this\._open\('inform'\);/.test(sheetsSrc)
     && /<label class="inf-field"><span>\$\{escapeHtml\(f\.label\)\}<\/span><input type="text" data-inf="\$\{n\}" value="\$\{escapeHtml\(f\.text\)\}" placeholder="\$\{escapeHtml\(f\.help\)\}"/.test(sheetsSrc)

@@ -238,20 +238,26 @@ export function plainPunctuation(src) {
 }
 
 // With flag -51 set the HP's fraction mark is the comma and its separator the semicolon, so typed text is turned into
-// the period form the parser reads: a comma between digits becomes a point and a semicolon a comma. The app's own
-// text, (2.5, -1) or MAX(2, 3), has a space after each comma, so an edited level still reads back.
+// the period form the parser reads: a comma beside a digit becomes a point and a semicolon a comma.
 export function periodFractionMark(src) {
+  return swapMarks(src, { ',': (prev, next) => (/\d/.test(prev + next) ? '.' : ','), ';': () => ',' }, true);
+}
+
+// The reverse, for showing a value with flag -51 set: 1.5 reads 1,5 and (1.5, 2.) reads (1,5; 2,).
+export function commaFractionMark(text) {
+  return swapMarks(text, { '.': (prev, next) => (/\d/.test(prev + next) ? ',' : '.'), ',': () => ';' }, false);
+}
+
+function swapMarks(src, swaps, comments) {
   let out = '';
   for (let i = 0; i < src.length; i++) {
     const c = src[i];
-    if (c === '"' || c === '@') {
+    if (c === '"' || (comments && c === '@')) {
       const end = c === '"' ? stringEnd(src, i) : src.slice(i).search(/[\n\r]|$/) + i;
       out += src.slice(i, end);
       i = end - 1;
-    } else if (c === ',' && /\d/.test(src[i - 1] ?? '') && /\d/.test(src[i + 1] ?? '')) {
-      out += '.';
     } else {
-      out += c === ';' ? ',' : c;
+      out += swaps[c]?.(src[i - 1] ?? '', src[i + 1] ?? '') ?? c;
     }
   }
   return out;

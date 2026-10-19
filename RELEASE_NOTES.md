@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.54 (2026-10-19)
+**Latest release:** v0.7.55 (2026-10-19)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.55 — 2026-10-19
+
+- Flag -51, part 2: with `-51 SF` the stack shows the HP's comma fraction
+  mark and semicolon separators, in plain text and in textbook formulas,
+  matrices and lists: `3,`, `(1,5; 2)`, `MAX(X; 0,25)+1,5`. EDIT, echo, a
+  writer's entry carried to the command line, History, INFORM's fields,
+  custom menu keys, shared links and the assistant's lines all reach the
+  command line in that form, so they read back. The command line now reads
+  any comma beside a digit as the fraction mark, as the HP does, so `1,`
+  is the real 1 and a comma separating two numbers needs a semicolon. The
+  writers, →STR and exports keep the point for now.
 
 ## v0.7.54 — 2026-10-19
 

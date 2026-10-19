@@ -1,8 +1,10 @@
-import { format, formatStackTop, DEFAULT_DISPLAY } from '../rpl/formatter.js';
+import { format, formatStackTop, DEFAULT_DISPLAY, withFractionMark } from '../rpl/formatter.js';
 import { astToSvg } from '../rpl/pretty.js';
 import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isBinaryInteger, isUnit, isString, isGrob } from '../rpl/types.js';
 import { state as calcState, currentPath } from '../rpl/state.js';
 import { icon } from './icons.js';
+
+const formatLevel = (value, display) => withFractionMark(formatStackTop(value, display));
 
 export function escapeHtml(text) {
   return String(text)
@@ -91,7 +93,7 @@ export function suspendedProgramText(halted, display = DEFAULT_DISPLAY) {
   const index = Number.isInteger(raw) && raw >= 0
     ? Math.min(raw, tokens.length)
     : tokens.length;
-  const fmt = (tok) => format(tok, display);
+  const fmt = (tok) => withFractionMark(format(tok, display));
   const beforeAll = tokens.slice(0, index).map(fmt);
   const next = index < tokens.length ? fmt(tokens[index]) : null;
   const afterAll = index < tokens.length ? tokens.slice(index + 1).map(fmt) : [];
@@ -434,7 +436,7 @@ export class Display {
       const id = this._idOf(value);
       const n = (seen.get(id) ?? 0) + 1;
       seen.set(id, n);
-      const flat = formatStackTop(value, this.displayOpts);
+      const flat = formatLevel(value, this.displayOpts);
       entries.push({ value, level, key: `${id}.${n}`, flat, sig: rowSig(flat, svgSize, oneLine(value, level)) });
     }
     const frag = this._placeRows(entries, svgSize);
@@ -619,7 +621,7 @@ export class Display {
   }
 
   _fillValue(cell, value, svgSize, short = false) {
-    const flat = formatStackTop(value, this.displayOpts);
+    const flat = formatLevel(value, this.displayOpts);
     if (short) cell.classList.add('one-line');
     if (calcState.textbookMode && isSymbolic(value)) {
       const { svg, width } = astToSvg(value.expr, { size: svgSize });
@@ -685,7 +687,7 @@ export class Display {
     }
     const ncols = rows.reduce((m, r) => Math.max(m, r.length), 0);
     const texts = rows.map(r => r.concat(Array(Math.max(0, ncols - r.length)).fill(null))
-      .map(cell => (cell === null ? '' : isSymbolic(cell) ? null : format(cell, this.displayOpts))));
+      .map(cell => (cell === null ? '' : isSymbolic(cell) ? null : withFractionMark(format(cell, this.displayOpts)))));
     const cells = texts.map((r, i) => r.map((text, j) => {
       if (text !== null) return `<span class="mcell">${escapeHtml(text)}</span>`;
       const { svg } = astToSvg(rows[i][j].expr, { size: 18 });
@@ -703,7 +705,7 @@ export class Display {
         return `<span class="lcell lcell-sym">${svg}</span>`;
       }
       if (isList(item)) return `<span class="lcell">${this._renderTextbookList(item, svgSize)}</span>`;
-      return `<span class="lcell">${escapeHtml(format(item, this.displayOpts))}</span>`;
+      return `<span class="lcell">${escapeHtml(withFractionMark(format(item, this.displayOpts)))}</span>`;
     });
     return `<span class="list-inline">{ ${items.join('<span class="lsep"> </span>')} }</span>`;
   }

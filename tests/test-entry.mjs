@@ -2073,8 +2073,12 @@ resetBinaryState();
   const { periodFractionMark } = await import('../www/src/rpl/parser.js');
   assert(periodFractionMark("1,5 (1,5;-2) 'MAX(X;2,5)' \"1,5;\" @ 1,5") === "1.5 (1.5,-2) 'MAX(X,2.5)' \"1,5;\" @ 1,5",
     'periodFractionMark turns 1,5 into 1.5 and ; into a comma, leaving strings and comments as typed');
-  assert(periodFractionMark("{ A, B } (2.5, -1) 'MAX(2, 3)'") === "{ A, B } (2.5, -1) 'MAX(2, 3)'",
-    'periodFractionMark leaves a comma that is not between digits, so the app\'s own (2.5, -1) and MAX(2, 3) still read back');
+  assert(periodFractionMark('{ A, B } { 1, 2, } ,5') === '{ A, B } { 1. 2. } .5',
+    'periodFractionMark reads a comma beside a digit as the fraction mark, as the HP does, and one between names as a separator');
+  const { commaFractionMark } = await import('../www/src/rpl/parser.js');
+  const shown = "(1.5, 2.) { 1. 2.5 } `MAX(X, 2.5)` \"a.b, c\" 1.5E-3_m";
+  assert(commaFractionMark(shown) === "(1,5; 2,) { 1, 2,5 } `MAX(X; 2,5)` \"a.b, c\" 1,5E-3_m" && periodFractionMark(commaFractionMark(shown)) === shown,
+    'commaFractionMark shows the comma mark and semicolon separators, strings untouched, and reads back as it was');
   const s = new Stack();
   const e = new Entry(s);
   const run = (line) => { s.clear(); e.type(line); e.enter(); return s.save().map((v) => format(v)).join(' '); };
@@ -2083,4 +2087,8 @@ resetBinaryState();
   const typed = run("1,5 (2,5;-1) 'X+0,5'");
   run('-51 CF');
   assert(typed === '1.5 (2.5, -1) `X + 0.5`', `with -51 set the command line reads 1,5 as 1.5 and (2,5;-1) as a complex number (${typed})`);
+  run('-51 SF');
+  const reals = run('{ 1, 2, }');
+  run('-51 CF');
+  assert(reals === '{ 1. 2. }', `with -51 set a whole real shown as 1, reads back as a real (${reals})`);
 }

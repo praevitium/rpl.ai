@@ -28,7 +28,7 @@ import { MatrixEditor } from './ui/matrix-editor.js';
 import {
   loadCommandReference, findReferenceEntry, formatReferenceEntry, searchCommands, shortDescription,
 } from './ui/command-reference.js';
-import { format, formatSource, formatProgramLines } from './rpl/formatter.js';
+import { format, formatSource, formatProgramLines, withFractionMark } from './rpl/formatter.js';
 import { spreadsheetHtml } from './rpl/sheet.js';
 import { toLatex } from './rpl/latex.js';
 import {
@@ -229,7 +229,7 @@ class App {
     const source = fromLink ?? sharedText(location.search);
     if (source === null) return;
     history.replaceState(history.state, '', location.pathname + (fromLink === null ? '' : location.search));
-    this.entry.recall(source);
+    this.entry.recall(withFractionMark(source));
     this.toast('Opened a shared value. Check it, then press Enter to put it on the stack.', { key: 'shared' });
   }
 
@@ -575,7 +575,7 @@ class App {
     const displayOpts = () => this.display.displayOpts;
     return {
       run: (text) => {
-        this.entry.recall(text);
+        this.entry.recall(withFractionMark(text));
         this.entry.enter();
         return this.entry.error || '';
       },
@@ -770,7 +770,7 @@ class App {
     // An example line runs on the command line; with a writer open, Enter would commit the writer instead.
     const runExample = (line) => {
       if (this.inputMode !== 'rpl') this.setInputMode('rpl');
-      this.entry.recall(line);
+      this.entry.recall(withFractionMark(line));
       this.commitEntry();
     };
     d.onEmptyAction = (act) => {
@@ -839,7 +839,7 @@ class App {
     switch (act) {
       case 'edit': this.editLevel(level); return;
       case 'view': this._viewLevel(level); return;
-      case 'echo': this.clearSelection(); this.entry.typeToken(formatSource(value)); return;
+      case 'echo': this.clearSelection(); this.entry.typeToken(withFractionMark(formatSource(value))); return;
       case 'pick': run(() => this.stack.push(value)); this.selectLevel(level + 1); return;
       case 'roll': run(() => moveLevel(this.stack, level, 1)); this.selectLevel(1); return;
       case 'rolld': run(() => moveLevel(this.stack, 1, level)); this.selectLevel(level); return;
@@ -1050,7 +1050,7 @@ class App {
     this.pendingEdit = edit;
     if (mode === 'rpl') {
       this.setInputMode('rpl');
-      this.entry.recall(isProgram(value) ? formatProgramLines(value) : formatSource(value));
+      this.entry.recall(withFractionMark(isProgram(value) ? formatProgramLines(value) : formatSource(value)));
     } else {
       this.setInputMode(mode, { value });
     }
@@ -1078,7 +1078,7 @@ class App {
   writerCommit(value) {
     const edit = this.pendingEdit;
     if (this.entry.buffer.trim()) this.entry.enter();
-    this.entry._recordHistory(formatSource(value));
+    this.entry._recordHistory(withFractionMark(formatSource(value)));
     this.entry._snapForUndo();
     if (edit?.kind === 'level' && this.stack.peek(edit.level) === edit.value) replaceLevel(this.stack, edit.level, [value]);
     else if (edit?.kind === 'var') varStore(edit.name, value);
@@ -1420,7 +1420,7 @@ class App {
       return '';
     }
     try {
-      const text = formatSource(writer.value());
+      const text = withFractionMark(formatSource(writer.value()));
       writer.clear();
       return text;
     } catch {
@@ -2006,7 +2006,7 @@ class App {
         label,
         title: shifted ? `${label}${hint('↰', left)}${hint('↱', right)}` : `${label} · ↰ types it · ↱ recalls it`,
         onPress: press(main),
-        onPressL: shifted ? press(left) : () => { if (!this._typeCustomItem(main)) this.entry.typeToken(`${customMenuSource(main)} `); },
+        onPressL: shifted ? press(left) : () => { if (!this._typeCustomItem(main)) this.entry.typeToken(`${withFractionMark(customMenuSource(main))} `); },
         onPressR: shifted ? press(right) : () => {
           if (this._typeCustomItem(main, 'R')) return;
           if (this.entry.buffer.trim().length > 0) this.commitEntry();
@@ -2434,7 +2434,7 @@ class App {
 
 // INFORM's values as the form shows them: NOVAL, the HP's empty field, shows as nothing.
 function informText(v) {
-  return !v || (isName(v) && v.id === 'NOVAL') ? '' : formatSource(v);
+  return !v || (isName(v) && v.id === 'NOVAL') ? '' : withFractionMark(formatSource(v));
 }
 
 // A field's text as one object of a type the field takes, or the complaint to show on the field.
