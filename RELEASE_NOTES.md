@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.149 (2026-10-18)
+**Latest release:** v0.6.150 (2026-10-18)
 
 ---
 
@@ -18,6 +18,15 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.150 — 2026-10-18
+
+Math inside bold or italic text in the assistant's and the tutor's replies
+renders, so a line such as `**Example: Solve for $x$ and $y$**` shows x
+and y as math, where it showed them between dollar signs. An escaped `\$`
+in bold text still shows a plain dollar sign.
 
 ---
 
