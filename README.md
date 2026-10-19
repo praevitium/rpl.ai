@@ -187,6 +187,13 @@ RPL puts the numbers first and the operation last. Each value goes on the
   take and give a vector's polar parts, as on the HP: `2 90 →V2` in DEG is
   `[ 2 ∠90 ]`. The VECTOR menu holds the HP's MTH VECTR keys, `ABS`, `DOT`,
   `CROSS`, `V→`, `→V2` and `→V3`, then the RECT, CYLIN and SPHERE modes.
+- **Lists and strings.** `{ 10 20 30 } 2 GET` gives 20,
+  `{ 1 2 3 } « SQ » MAP` gives `{ 1 4 9 }`, and `"HELLO" 2 3 SUB` gives
+  `"EL"`. The LIST menu opens on the HP's folders: ELEM and PROC from its
+  PRG LIST menu and CHARS, its string commands, then OBJ→, →LIST, SUB and
+  REPL. `→STR` writes a number in the display format, as on the HP, so
+  `2 FIX "Total: " 12.3456 →STR +` gives `"Total: 12.35"`, and a string
+  at level 1 shows whole, line breaks included.
 - **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
   then gives `25`, and SQUARE appears on the VARS menu. A stored program
   runs by name like a built-in. Built-in names such as `SQ` are reserved.
