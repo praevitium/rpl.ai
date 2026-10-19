@@ -760,3 +760,15 @@ function vals(s) {
     assert(loads(file), `${file} loads first in a fresh process`);
   }
 }
+
+/* ; is the HP's drop-safe command: it drops level 1 if there is one and does nothing on an empty stack. */
+{
+  const s = new Stack();
+  s.push(Integer(1n));
+  s.push(Integer(2n));
+  lookup(';').fn(s);
+  assert(s.depth === 1 && s.peek().value === 1n, '; drops level 1');
+  lookup(';').fn(s);
+  lookup(';').fn(s);
+  assert(s.depth === 0, '; on an empty stack does nothing, where DROP would fail');
+}

@@ -23,6 +23,8 @@ register('DUP',   (s) => s.dup(), { category: 'Stack', categoryOrder: 0, label: 
 
 register('DROP',  (s) => s.drop(), { category: 'Stack', categoryOrder: 5, label: "DROP" });
 
+register(';',     (s) => { if (s.depth) s.drop(); }, { category: 'Stack', categoryOrder: 5.5, label: ";" });
+
 register('SWAP',  (s) => s.swap(), { category: 'Stack', categoryOrder: 8, label: "SWAP" });
 
 register('OVER',  (s) => s.over(), { category: 'Stack', categoryOrder: 9, label: "OVER" });

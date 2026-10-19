@@ -122,6 +122,14 @@ function tokenize(src) {
     }
 
     const rest = src.slice(i);
+    // C$ n and one separator take the next n characters as a string, C$ $ the rest of the line: the HP's counted string.
+    const counted = rest.match(/^C\$\s+(\$|\d+)(?:\s|$)/);
+    if (counted) {
+      const body = rest.slice(counted[0].length);
+      const text = counted[1] === '$' ? body : body.slice(0, Number(counted[1]));
+      tokens.push({ kind: 'string', text });
+      i += counted[0].length + text.length; continue;
+    }
     // GROB width height hex, the HP's graphics object, reads its hex whole so 1E0F can't become a number.
     const grob = rest.match(/^GROB\s+(\d+)\s+(\d+)(?:\s+([0-9A-Fa-f]+))?(?=$|[\s{}[\]"`«»]|<<|>>)/);
     if (grob) {

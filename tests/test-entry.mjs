@@ -2092,3 +2092,13 @@ resetBinaryState();
   run('-51 CF');
   assert(reals === '{ 1. 2. }', `with -51 set a whole real shown as 1, reads back as a real (${reals})`);
 }
+
+/* C$, the HP's counted string: C$ n and one separator take the next n characters, C$ $ the rest of the line. */
+{
+  const shown = (src) => parseEntry(src).map((v) => (v.type === 'string' ? `"${v.value}"` : v.id ?? String(v.value))).join(' | ');
+  assert(shown('C$ 5 hello world') === '"hello" | world', `C$ 5 takes five characters as a string (${shown('C$ 5 hello world')})`);
+  assert(shown('C$ $ say "hi", then stop') === '"say "hi", then stop"', 'C$ $ takes the rest of the line, quotes and all');
+  assert(shown('C$ 10 abc') === '"abc"', 'C$ with more characters than the line holds takes what there is');
+  assert(shown('1 C$ 3 a b 2') === '1 | "a b" | 2', 'C$ reads inside a line and the count includes spaces');
+  assert(shown('C$ 0 ') === '""', 'C$ 0 is the empty string');
+}

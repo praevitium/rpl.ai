@@ -52,6 +52,7 @@ TRIG (uses the active angle mode RAD/DEG/GRD)
 STACK MANIPULATION
   DUP DROP SWAP OVER ROT UNROT   classic 1-arg / 2-arg ops (UNROT sends level 1 down to level 3)
   DUP2 DROP2 DROPN DUPN      pluralised / n-arg variants
+  ;                          drops level 1 if there is one, else does nothing
   PICK PICK3 UNPICK ROLL ROLLD NIP    n-deep pick/roll (n PICK copies level n to level 1; n ROLL moves level n to level 1; n ROLLD moves level 1 down to level n; n ANS is n PICK)
   CLEAR DEPTH                empty-stack / depth-query
   UNDO LASTSTACK REDO        multi-level stack history
@@ -267,6 +268,7 @@ TYPES / REFLECTION
   EQ→                        split an equation into its sides (\`X=5\` EQ→ gives \`X\` and 5)
   →TAG DTAG                  tag / untag (label / unlabel)
   →STR STR→ DECOMP →PRG OBJ→     conversions between strings / programs / structured values
+  C$ n text / C$ $ text      a counted string: the next n characters, or the rest of the line, as a string
   CMPLX? CMPLX RE IM ARG CONJ    complex predicate / value extractors
   TVARS                      filter variables in the current directory by type code
   BYTES                      object's byte size
