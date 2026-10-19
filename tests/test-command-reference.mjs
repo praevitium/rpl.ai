@@ -187,8 +187,9 @@ const REF = parseCommandReference(HTML);
   assert(REF.get('SCHUR')?.inApp, 'SCHUR is flagged in-app');
   assert(findReferenceEntry(REF, 'SQRT')?.inApp,
          'SQRT / √ heading is flagged in-app');
-  const lcd = findReferenceEntry(REF, 'LCD→');
-  assert(lcd && !lcd.inApp, 'LCD→ is indexed and flagged not-in-app');
+  assert(findReferenceEntry(REF, 'LCD→')?.inApp, 'LCD→ is indexed and flagged in-app');
+  const font = findReferenceEntry(REF, 'FONT→');
+  assert(font && !font.inApp, 'FONT→ is indexed and flagged not-in-app');
   assert(REF.get('COL–')?.inApp && REF.get('ROW–')?.inApp
       && REF.get('HMS–')?.inApp && REF.get('STO–')?.inApp,
          'en-dash COL– / ROW– / HMS– / STO– headings are flagged in-app');

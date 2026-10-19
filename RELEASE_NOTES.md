@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.36 (2026-10-19)
+**Latest release:** v0.7.37 (2026-10-19)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.37 — 2026-10-19
+
+- LCD→ returns the display as a 131 × 80 graphics object, as the 50g
+  does: the stack's levels upward from the menu row, numbered at the left
+  with their values at the right in rpl.ai's pixel font, and a program's
+  DISP lines and DISPXY and →LCD pixels over them. `LCD→ PICT STO PVIEW`
+  shows it as a picture. The menu row is left blank. The pixel font gains
+  an ellipsis for values too wide for their row.
 
 ## v0.7.36 — 2026-10-19
 

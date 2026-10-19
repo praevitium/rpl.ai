@@ -314,9 +314,10 @@ export function setLcdLine(n, text) {
   _emit();
 }
 
-// →LCD and DISPXY draw on the display's pixels above the menu, shown above DISP's lines.
-export function setLcdGrob(grob) {
-  state.lcd = { lines: state.lcd?.lines ?? [], frozen: state.lcd?.frozen ?? false, grob };
+// →LCD and DISPXY draw on the display's pixels above the menu, shown above DISP's lines; drawn lists the areas they
+// covered, [x, y, width, height] each.
+export function setLcdGrob(grob, drawn) {
+  state.lcd = { lines: state.lcd?.lines ?? [], frozen: state.lcd?.frozen ?? false, grob, drawn };
   _emit();
 }
 

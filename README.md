@@ -617,8 +617,10 @@ typed letter moves it to the next choice that starts with the letter,
 and Enter answers with it; Cancel gives 0. `DISP` writes a message on
 one of seven display lines above the command line and `CLLCD` blanks
 them; `DISPXY` writes at a pixel and `→LCD` shows a graphics object on
-the display's 131 × 72 pixels above those lines. The display goes when
-the program ends or pauses unless `FREEZE` keeps it until the next key.
+the display's 131 × 72 pixels above those lines, and `LCD→` returns the
+stack and that display as one 131 × 80 graphics object. The display goes
+when the program ends or pauses unless `FREEZE` keeps it until the next
+key.
 `WAIT` pauses a program for a number of seconds, or with 0 (or -1, which
 brings the soft keys up in minimal view) waits for a key and returns its
 HP key code: 92.1 for the 1 key, on the keypad or typed, 11.1 for the
@@ -880,7 +882,7 @@ Catalog and the command reference mark what is available. Not there yet:
   app was closed shows as past due the next time it opens. While one is
   past due, the HP's alert annunciator ((•)) lights in the status line,
   and a tap on it brings the note back.
-- LCD→, PICTURE's cursor, and the other plot
+- PICTURE's cursor, and the other plot
   types (the 3D plots and the rest). PICT holds a
   graphics object, LINE, TLINE, BOX, ARC, PIXON, PIXOFF, DRAX and LABEL
   draw on it, GOR, GXOR, SUB, REPL and NEG work on it and on other graphics

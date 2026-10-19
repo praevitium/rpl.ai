@@ -5,7 +5,7 @@ import { register, lookup } from './registry.js';
 import { statPlotData } from './statistics.js';
 import { TRUE, FALSE, withLocalVariable } from './internal.js';
 import { format, currentDisplay } from '../formatter.js';
-import { textGrob, CELL_HEIGHT } from '../pixel-font.js';
+import { textGrob, CELL_WIDTH, CELL_HEIGHT } from '../pixel-font.js';
 
 
 let _graphicsHook = null;
@@ -778,14 +778,46 @@ register('→GROB', (s) => {
 }, { category: 'Graphics', categoryOrder: 12.3, label: "→GROB" });
 
 // The 50g's display above its menu row, where →LCD and DISPXY draw; each replaces the pixels it covers.
-const LCD_WIDTH = 131, LCD_HEIGHT = 72;
-const _drawOnLcd = (at, grob) => setLcdGrob(_overlay(getLcd()?.grob ?? Grob(LCD_WIDTH, LCD_HEIGHT), at, grob, 'replace'));
+const LCD_WIDTH = 131, LCD_HEIGHT = 72, LCD_COLUMNS = Math.floor(LCD_WIDTH / CELL_WIDTH);
+
+function _drawOnLcd(at, grob) {
+  const lcd = getLcd();
+  setLcdGrob(_overlay(lcd?.grob ?? Grob(LCD_WIDTH, LCD_HEIGHT), at, grob, 'replace'), [...(lcd?.drawn ?? []), [...at, grob.width, grob.height]]);
+}
 
 register('→LCD', (s) => {
   const grob = s.pop();
   if (!isGrob(grob)) throw new RPLError('Bad argument type');
   _drawOnLcd([0, 0], grob);
 }, { category: 'Graphics', categoryOrder: 12.35, label: "→LCD" });
+
+function _levelText(level, v) {
+  const label = `${level}:`;
+  const room = LCD_COLUMNS - label.length - 1;
+  const shown = format(v, currentDisplay()).replace(/\s*\n\s*/g, ' ');
+  const text = shown.length > room ? `${shown.slice(0, room - 1)}…` : shown;
+  return label.padEnd(LCD_COLUMNS - text.length) + text;
+}
+
+// LCD→ pictures the display as the HP lays it out: the stack's levels up from the menu row, which is left blank, each
+// value right-aligned and cut with an ellipsis; DISP's lines and what →LCD and DISPXY drew replace what they cover.
+register('LCD→', (s) => {
+  const lcd = getLcd();
+  let screen = Grob(LCD_WIDTH, LCD_HEIGHT + CELL_HEIGHT);
+  for (let level = 1; level <= Math.min(s.depth, LCD_HEIGHT / CELL_HEIGHT); level++) {
+    screen = _overlay(screen, [0, LCD_HEIGHT - level * CELL_HEIGHT], textGrob(_levelText(level, s.peek(level))), 'replace');
+  }
+  (lcd?.lines ?? []).forEach((line, i) => {
+    if (line) screen = _overlay(screen, [0, i * CELL_HEIGHT], textGrob(line.padEnd(LCD_COLUMNS + 1)), 'replace');
+  });
+  screen = _copyGrob(screen);
+  for (const [x, y, w, h] of lcd?.drawn ?? []) {
+    for (let r = Math.max(0, y); r < Math.min(y + h, LCD_HEIGHT); r++) {
+      for (let c = Math.max(0, x); c < Math.min(x + w, LCD_WIDTH); c++) _setPixel(screen, c, r, _pixelOn(lcd.grob, c, r));
+    }
+  }
+  s.push(screen);
+}, { category: 'Graphics', categoryOrder: 12.36, label: "LCD→" });
 
 // DISPXY writes as DISP does, from pixel #x #y; both its font sizes are rpl.ai's one pixel font.
 register('DISPXY', (s) => {

@@ -8769,7 +8769,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>ANS, LAST</p>
   </dd>
 </dl>
-<h2 id="cmd-LCD-to">LCD→ <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-LCD-to">LCD→ <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 248 · printed page 3-128</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -8779,6 +8779,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>LCD to Graphics Object Command: Returns the current stack and menu display as a 131 × 80 (on the HP 50g and 49g+) or 131 × 64 (on the HP 48gII) graphics object.</p>
+  <p>In rpl.ai LCD→ draws the display as the 50g lays it out, in rpl.ai's pixel font: up to nine stack levels upward from the menu row, each numbered at the left with its value at the right, cut with an ellipsis when too wide, and DISP's lines and what →LCD and DISPXY drew over them. The menu row is left blank and there is no status header.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">

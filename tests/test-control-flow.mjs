@@ -7582,6 +7582,43 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   touchLcd(); clearAllHalted(); clearPromptMessage();
 }
 
+// LCD→ pictures the display: the stack's levels above a blank menu row, with what the program drew over them.
+{
+  resetHome(); clearAllHalted(); clearPromptMessage();
+  const { touchLcd } = await import('../www/src/rpl/state.js');
+  const { textGrob } = await import('../www/src/rpl/pixel-font.js');
+  const lit = (g, c, r) => (g.bytes[r * Math.ceil(g.width / 8) + (c >> 3)] >> (c & 7)) & 1;
+  const rowIs = (screen, y, text) => {
+    const glyphs = textGrob(text.padEnd(21));
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 126; c++) if (lit(screen, c, y + r) !== lit(glyphs, c, r)) return false;
+    return true;
+  };
+  const blankRows = (screen, from, to) => {
+    for (let r = from; r < to; r++) for (let c = 0; c < screen.width; c++) if (lit(screen, c, r)) return false;
+    return true;
+  };
+  touchLcd();
+  const shot = runLine('7 "ABC" LCD→').peek(1);
+  assert(shot.width === 131 && shot.height === 80, 'LCD→ returns the 50g\'s 131 × 80 display');
+  assert(rowIs(shot, 64, '1:              "ABC"') && rowIs(shot, 56, '2:                  7'),
+    'LCD→: each level sits on its row above the menu row, its number at the left and its value at the right');
+  assert(blankRows(shot, 72, 80) && blankRows(shot, 0, 56), 'LCD→: the menu row and the rows above the stack are blank');
+  const long = runLine('"ABCDEFGHIJKLMNOPQRSTUVWXYZ" LCD→').peek(1);
+  assert(rowIs(long, 64, '1: "ABCDEFGHIJKLMNOP…'), 'LCD→: a value too wide for its row is cut with an ellipsis');
+  const p = new Stack();
+  p.push(Real(5));
+  p.push(parseEntry('« "Hi" 1 DISP "X" { #120d #64d } 1 DISPXY LCD→ »')[0]);
+  lookup('EVAL').fn(p);
+  const drawn = p.peek(1);
+  assert(rowIs(drawn, 0, 'Hi'), 'LCD→: a DISP line replaces its row');
+  const x = textGrob('X');
+  let same = true;
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 6; c++) if (lit(drawn, 120 + c, 64 + r) !== lit(x, c, r)) same = false;
+  assert(same && lit(drawn, 108, 64) === 0 && rowIs(drawn, 64, '1:                  5') === false,
+    'LCD→: what DISPXY drew replaces the stack under it and leaves the rest of the row');
+  touchLcd(); clearAllHalted(); clearPromptMessage();
+}
+
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const { getLcd, touchLcd } = await import('../www/src/rpl/state.js');
