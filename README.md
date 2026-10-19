@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 527 commands, exact big-integer and rational arithmetic,
+of its command set: 530 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -134,7 +134,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
   simplifies nothing: `` `X^2+Y` { X 2 Y 3 } | `` gives `2^2+3`, which
   EVAL makes 7. The CAS menu opens on folders after the HP's CAS menus:
   ALG (COLLECT, EXPAND, FACTOR, LNCOLLECT, LIN, PARTFRAC, SOLVE, SUBST,
-  TEXPAND), CALC, S.SLV, TRIG and EXP&LN.
+  TEXPAND), CALC, S.SLV, TRIG and EXP&LN. TRIGCOS, TRIGSIN and TRIGTAN
+  rewrite with SIN²+COS²=1: `` `SIN(X)^2` TRIGTAN `` gives
+  `TAN(X)^2/(TAN(X)^2+1)`.
 - **Money.** `TVMROOT` solves the HP's time-value-of-money variables N,
   I%YR, PV, PMT and FV for the one named. With 360 in `N`, 6.5 in `I%YR`,
   200000 in `PV`, 0 in `FV` and 12 in `PYR`, `` `PMT` TVMROOT `` gives
@@ -327,8 +329,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   note goes onto the stack with one Enter. Hold the installed app's icon for shortcuts
   straight to the equation writer, the matrix writer, Variables or command
   search (Android, and Chrome or Edge on a computer).
-  A level too wide for the screen, such as a big matrix, or a long formula
-  once it has shrunk to three quarters of its size, fades at the edge it
+  A level too wide for the screen, such as a long formula or matrix once
+  it has shrunk to three quarters of its size, fades at the edge it
   continues past; drag it sideways to read the rest, or swipe its level
   number to drop it. Wide math, tables and code in the assistant's replies
   fade and scroll sideways the same way. A tagged value with a long tag shortens the tag, not
@@ -859,7 +861,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 527. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 530. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - setting the clock: `→DATE`, `→TIME` and `CLKADJ`. The clock is the
