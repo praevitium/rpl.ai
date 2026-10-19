@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.156 (2026-10-18)
+**Latest release:** v0.6.157 (2026-10-18)
 
 ---
 
@@ -20,6 +20,25 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.157 — 2026-10-18
+
+The integral in the equation writer and the stack's textbook view is a
+drawn ∫ sign now, with its limits at its top and bottom right as in a
+textbook, a tall limit kept clear of the other and a thin space before
+d. It was the monospace font's boxy ∫, which left the lower limit on
+the integrand's line.
+
+Command search and the Catalog find π by "pi", which a phone's keyboard
+can type, and words that run together in a description outrank one of
+them being a command's name, so "square root" finds √ rather than ROOT.
+Search lists π once, not under both Constants and Commands, and the
+"not in app" badge sits beside the command's name, leaving a 280 px
+phone the description's width.
+
+A sum shows as the HP writes it, `Σ(k=1,10,k^2)`, on the stack, in EDIT
+and in exports, where it showed Giac's order, `Σ(k^2,k,1,10)`. Sums in
+the old order still read back.
 
 ## v0.6.156 — 2026-10-18
 
