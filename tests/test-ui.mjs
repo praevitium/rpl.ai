@@ -1809,6 +1809,24 @@ setAngle('RAD');
     'command search: a command that leaves the stack as it was previews as such, not as removing 0 levels');
 }
 
+// Command search previewed nothing for a command that sets a mode, so a phone user couldn't tell what DEG or FIX would do.
+{
+  const { modeCommandPreview } = await import('../www/src/ui/modes.js');
+  const { setDisplay } = await import('../www/src/rpl/state.js');
+  const { displayDigitsArg } = await import('../www/src/rpl/ops/display.js');
+  const saved = { angle: calcState.angle, mode: calcState.displayMode, digits: calcState.displayDigits };
+  setAngle('RAD'); setDisplay('STD', 12);
+  assert(modeCommandPreview('DEG') === '→ Angle: Degrees (now Radians)' && modeCommandPreview('RAD') === '→ Angle stays Radians'
+    && modeCommandPreview('GRAD') === '→ Angle: Grads (now Radians)',
+    'command search: DEG previews the angle mode it sets and the one now in force, RAD that it stays');
+  assert(modeCommandPreview('FIX', 4) === '→ Number format: Fixed 4 (now Standard)' && modeCommandPreview('FIX') === ''
+    && displayDigitsArg(Integer(15n)) === 11 && modeCommandPreview('STD') === '→ Number format stays Standard',
+    'command search: FIX previews the digits on level 1 (none there, no preview), capped at 11 as FIX caps them');
+  assert(/^→ Number domain: (Complex \(now Real\)|Real \(now Complex\))$/.test(modeCommandPreview('CMPLX')) && modeCommandPreview('SIN') === '',
+    'command search: CMPLX previews the domain it flips to; a command that sets no mode gets none from here');
+  setAngle(saved.angle); setDisplay(saved.mode, saved.digits);
+}
+
 {
   const paletteSrc = readFileSync(new URL('../www/src/ui/palette.js', import.meta.url), 'utf8');
   assert(/detail: \[entry \? shortDescription\(entry, 90\) : '', sig\]\.filter\(Boolean\)\.join\(' · '\),/.test(paletteSrc),

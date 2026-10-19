@@ -182,8 +182,7 @@ register('RRB', (s) => { const v = s.pop(); s.push(_rotate(v, -8)); }, { categor
 
 
 // Digits are capped at 11, as on the HP50.
-function _popNumDigits(s) {
-  const [n] = s.popN(1);
+export function displayDigitsArg(n) {
   let d;
   if (isInteger(n)) d = Number(n.value);
   else if (isReal(n)) {
@@ -195,6 +194,11 @@ function _popNumDigits(s) {
   if (d < 0) throw new RPLError('Bad argument value');
   if (d > 11) d = 11;
   return d;
+}
+
+function _popNumDigits(s) {
+  const [n] = s.popN(1);
+  return displayDigitsArg(n);
 }
 
 

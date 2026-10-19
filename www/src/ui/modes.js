@@ -86,6 +86,29 @@ export function modeById(id) {
   return MODES.find((m) => m.id === id) ?? null;
 }
 
+// The commands that set a mode, as the mode and the option each picks; CMPLX flips its mode.
+const MODE_COMMANDS = Object.freeze({
+  DEG: ['angle', 'DEG'], RAD: ['angle', 'RAD'], GRAD: ['angle', 'GRD'], GRD: ['angle', 'GRD'],
+  STD: ['fmt', 'STD'], FIX: ['fmt', 'FIX'], SCI: ['fmt', 'SCI'], ENG: ['fmt', 'ENG'],
+  EXACT: ['exact', 'EXACT'], APPROX: ['exact', 'APPROX'], CMPLX: ['complex', null],
+  RECT: ['coord', 'RECT'], CYLIN: ['coord', 'CYLIN'], SPHERE: ['coord', 'SPHERE'],
+  HEX: ['base', 'h'], DEC: ['base', 'd'], OCT: ['base', 'o'], BIN: ['base', 'b'],
+});
+
+const optionLabel = (mode, value, digits) => `${mode.options.find((o) => o.value === value).label}${value === 'STD' || digits == null ? '' : ` ${digits}`}`;
+
+// What a mode command would set, for command search's preview; FIX, SCI and ENG take digits from level 1.
+export function modeCommandPreview(name, digits = null) {
+  const [id, picked] = MODE_COMMANDS[name] ?? [];
+  const mode = modeById(id);
+  if (!mode) return '';
+  const value = picked ?? mode.options.find((o) => o.value !== mode.current()).value;
+  if (mode.digits && value !== 'STD' && digits == null) return '';
+  const next = optionLabel(mode, value, mode.digits ? digits : null);
+  const now = optionLabel(mode, mode.current(), mode.digits ? calcState.displayDigits : null);
+  return next === now ? `→ ${mode.title} stays ${now}` : `→ ${mode.title}: ${next} (now ${now})`;
+}
+
 // A phone shows only this summary, so it names the coordinates, base and complex mode whenever they aren't the
 // defaults, in the HP header's order.
 export function modesSummary() {

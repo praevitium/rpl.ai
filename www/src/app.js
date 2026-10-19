@@ -18,7 +18,7 @@ import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
 import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, INTEGER_GROUPS, TRIG_GROUPS, LIST_GROUPS, TIME_GROUPS, KEY_LABELS, VECTOR_KEYS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, CONSTANT_TITLES, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel } from './ui/menus.js';
 import { convertValue } from './rpl/units.js';
-import { MODES } from './ui/modes.js';
+import { MODES, modeCommandPreview } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
 import { clampLevel, dropLevel, keepLevels, moveLevel, replaceLevel } from './ui/stack-levels.js';
 import { icon } from './ui/icons.js';
@@ -41,6 +41,7 @@ import { lookup, allOps, setGraphicsHook, setMenuHook, setBeepHook, setConlibHoo
 import { beep, alarmBeep } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest } from './rpl/ops/time.js';
 import { _hp50TypeCode } from './rpl/ops/internal.js';
+import { displayDigitsArg } from './rpl/ops/display.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
@@ -1727,6 +1728,8 @@ class App {
   }
 
   previewText(name) {
+    const mode = modeCommandPreview(name, this._levelOneDigits());
+    if (mode) return mode;
     const outcome = previewCommand(name, this.stack.save());
     if (!outcome) return '';
     if (!outcome.ok) return this._previewFailure(name, outcome.error).title;
@@ -1734,6 +1737,10 @@ class App {
     if (!top.length && !outcome.consumed) return '→ leaves the stack as it is';
     if (!top.length) return `→ removes ${outcome.consumed === 1 ? 'level 1' : `${outcome.consumed} levels`}`;
     return `→ ${top.map((value, i) => `${i + 1}: ${format(value, this.display.displayOpts)}`).join('   ')}`;
+  }
+
+  _levelOneDigits() {
+    try { return displayDigitsArg(this.stack.peek(1)); } catch { return null; }
   }
 
   _previewFailure(name, error) {
