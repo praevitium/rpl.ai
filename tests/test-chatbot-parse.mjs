@@ -572,6 +572,27 @@ import { readFileSync } from 'node:fs';
          'a #### heading renders as h6 rather than an h7 the browser does not know');
 }
 
+// Links in a reply: [text](url) to an http(s) or mailto address opens in a new
+// tab; any other address, such as javascript:, stays text.
+{
+  const T = t => JSON.stringify(parseInlineSpans(t).map(s => [s.type, s.content]));
+  const spans = parseInlineSpans('See [the AUR](https://example.com/aur) for more.');
+  assert(JSON.stringify(spans.map(s => [s.type, s.content])) === JSON.stringify([['text', 'See '], ['link', 'the AUR'], ['text', ' for more.']])
+           && spans[1].href === 'https://example.com/aur',
+         'parseInlineSpans reads a [text](url) link, where it showed as typed');
+  assert(T('[x](javascript:alert(1))') === JSON.stringify([['text', '[x](javascript:alert(1))']])
+           && T('[x](data:text/html,hi)') === JSON.stringify([['text', '[x](data:text/html,hi)']]),
+         'parseInlineSpans leaves a link to a javascript: or data: address as text');
+  assert(parseInlineSpans('[f](https://en.wikipedia.org/wiki/Function_(mathematics))')[0].href === 'https://en.wikipedia.org/wiki/Function_(mathematics)'
+           && parseInlineSpans('[mail](mailto:a@b.c)')[0].href === 'mailto:a@b.c',
+         'parseInlineSpans keeps a parenthesised part of an address and takes mailto links');
+  assert(T(parseInlineSpans('[$x^2$ plot](https://a.b/c)')[0].content) === JSON.stringify([['math', 'x^2'], ['text', ' plot']]),
+         'parseInlineSpans leaves a link\'s text to the inner pass, so math in it renders');
+  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
+  assert(/elem\('a', \{ href, target: '_blank', rel: 'noopener noreferrer' \}\)/.test(src),
+         'a link opens in a new tab without giving it the page');
+}
+
 // session367: classifyMarkdownLine — the per-line block-role classifier lifted
 // out of appendInlineMarkdownLines' DOM (session326/347/353/360 extract-and-pin
 // precedent). The renderer's block dispatch (heading/list/paragraph routing)

@@ -263,13 +263,14 @@ function appendInlineMarkdownLines(frag, text) {
   flushP();
 }
 
-/** Inline spans in document order: text, code, math, bold, em.  The
+/** Inline spans in document order: text, code, math, bold, em, link.  The
  *  leftmost opener wins.  `$…$` needs a non-space just inside each `$`,
  *  so prose dollars ("costs $5 and $10") stay text, and an escaped `\$`
  *  never delimits: KaTeX gets it inside math, prose gets a bare `$`.
- *  Bold and em keep their markdown, which appendSpans parses in turn. */
+ *  Bold, em and a link's text keep their markdown, which appendSpans parses
+ *  in turn; a link must go to an http(s) or mailto address, or it stays text. */
 export function parseInlineSpans(text) {
-  const re = /(`([^`]+)`|\\\(([\s\S]+?)\\\)|(?<!\\)\$(?=\S)((?:\\[^\n]|[^\\$\n])+?)(?<=\S)\$|\*\*([^*]+)\*\*|\*([^*]+)\*)/g;
+  const re = /(`([^`]+)`|\\\(([\s\S]+?)\\\)|(?<!\\)\$(?=\S)((?:\\[^\n]|[^\\$\n])+?)(?<=\S)\$|\*\*([^*]+)\*\*|\*([^*]+)\*|\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:)(?:[^\s()]|\([^\s()]*\))+)\))/g;
   const prose = s => s.replace(/\\\$/g, '$');
   const spans = [];
   let last = 0;
@@ -283,6 +284,7 @@ export function parseInlineSpans(text) {
     else if (m[4] !== undefined) spans.push({ type: 'math', content: m[4] });
     else if (m[5] !== undefined) spans.push({ type: 'bold', content: m[5] });
     else if (m[6] !== undefined) spans.push({ type: 'em', content: m[6] });
+    else if (m[7] !== undefined) spans.push({ type: 'link', content: m[7], href: m[8] });
     last = m.index + m[0].length;
   }
   if (last < text.length) {
@@ -294,10 +296,11 @@ export function parseInlineSpans(text) {
 const SPAN_TAGS = { bold: 'strong', em: 'em' };
 
 function appendSpans(parent, text) {
-  for (const { type, content } of parseInlineSpans(text)) {
+  for (const { type, content, href } of parseInlineSpans(text)) {
     if (type === 'text') parent.appendChild(document.createTextNode(content));
     else if (type === 'math') renderMathInto(parent, content.trim(), false);
     else if (type === 'code') parent.appendChild(elem('code', { textContent: content }));
+    else if (type === 'link') appendSpans(parent.appendChild(elem('a', { href, target: '_blank', rel: 'noopener noreferrer' })), content);
     else appendSpans(parent.appendChild(elem(SPAN_TAGS[type])), content);
   }
 }

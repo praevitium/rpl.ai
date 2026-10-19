@@ -1681,6 +1681,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 }
 .cb-bubble ul,.cb-bubble ol { margin: 4px 0 4px 18px; padding: 0; }
 .cb-bubble li { margin-bottom: 2px; }
+.cb-bubble a { color: var(--accent); text-underline-offset: 2px; }
 .cb-bubble .cb-table { overflow-x: auto; margin: 6px 0; word-break: normal; }
 .cb-bubble table { border-collapse: collapse; font-size: 12.5px; line-height: 1.4; }
 .cb-bubble th, .cb-bubble td { border: 1px solid var(--line2); padding: 3px 8px; text-align: left; vertical-align: top; }
