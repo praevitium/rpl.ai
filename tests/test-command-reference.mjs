@@ -279,9 +279,9 @@ const REF = parseCommandReference(HTML);
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const touch = css.slice(css.indexOf('@media (pointer: coarse) {'));
-  assert(/\n  \.pal-row \.d, \.pal-row \.pv, \.cmd-row \.ds \{ white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; \}/.test(touch.slice(0, touch.indexOf('\n}\n')))
+  assert(/\n  \.pal-row \.d, \.pal-row \.pv, \.cmd-row \.ds \{ white-space: normal; text-wrap: pretty; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; \}/.test(touch.slice(0, touch.indexOf('\n}\n')))
     && /:root\[data-keyboard\] \.dw-head, :root\[data-keyboard\] \.pal-row \.d \{ display: none; \}/.test(css),
-    'command search and Catalog rows give a description, and the highlighted row\'s preview ("LIST→ needs more values th…" at 280 px), two lines on touch, and hide the description while the keyboard is up');
+    'command search and Catalog rows give a description, and the highlighted row\'s preview ("LIST→ needs more values th…" at 280 px), two lines on touch without a lone last word ("z → sin" over "z"), and hide the description while the keyboard is up');
 }
 
 /* "pi" listed π twice in command search, under Constants and under Commands, once π became findable by name. */
