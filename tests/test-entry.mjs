@@ -2066,3 +2066,21 @@ resetBinaryState();
   assert(failed && e.error === '' && heard === 1 && s.depth === 4,
     'the next action after an error starts with the error cleared, so a writer entry or a level action no longer leaves the old message up');
 }
+
+// Flag -51: a comma beside a digit is the fraction mark and a semicolon the separator, in what the user types.
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const { periodFractionMark } = await import('../www/src/rpl/parser.js');
+  assert(periodFractionMark("1,5 (1,5;-2) 'MAX(X;2,5)' \"1,5;\" @ 1,5") === "1.5 (1.5,-2) 'MAX(X,2.5)' \"1,5;\" @ 1,5",
+    'periodFractionMark turns 1,5 into 1.5 and ; into a comma, leaving strings and comments as typed');
+  assert(periodFractionMark("{ A, B } (2.5, -1) 'MAX(2, 3)'") === "{ A, B } (2.5, -1) 'MAX(2, 3)'",
+    'periodFractionMark leaves a comma that is not between digits, so the app\'s own (2.5, -1) and MAX(2, 3) still read back');
+  const s = new Stack();
+  const e = new Entry(s);
+  const run = (line) => { s.clear(); e.type(line); e.enter(); return s.save().map((v) => format(v)).join(' '); };
+  assert(run('1,5 2,25') === '1 5 2 25', 'without -51 a comma separates as a space does: 1,5 2,25 is 1, 5, 2 and 25');
+  run('-51 SF');
+  const typed = run("1,5 (2,5;-1) 'X+0,5'");
+  run('-51 CF');
+  assert(typed === '1.5 (2.5, -1) `X + 0.5`', `with -51 set the command line reads 1,5 as 1.5 and (2,5;-1) as a complex number (${typed})`);
+}

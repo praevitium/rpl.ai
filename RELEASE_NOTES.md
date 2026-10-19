@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.53 (2026-10-19)
+**Latest release:** v0.7.54 (2026-10-19)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.54 — 2026-10-19
+
+- Flag -51, the HP's fraction mark, part 1: with `-51 SF` the command line
+  reads a comma between digits as the decimal point and a semicolon as the
+  separator, so `1,5` is 1.5, `(1,5;2)` a complex number and
+  `'MAX(X;2,5)'` a function of two arguments, as on the HP. Answers to
+  INPUT and INFORM read the same way. A comma with a space after it still
+  separates, so an edited level such as `(1.5, 2.)` reads back. The stack,
+  →STR and the writers keep the point for now; they follow in later parts.
 
 ## v0.7.53 — 2026-10-19
 

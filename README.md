@@ -489,6 +489,11 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - A phone's back button closes the open menu, search, sheet, writer or
   drawer first, then cancels an edit as the HP's ON does, and leaves the
   app only when nothing is open.
+- Where a phone's keyboard writes 1,5 for one and a half, set flag -51, the
+  HP's fraction-mark flag: the command line then reads a comma between
+  digits as the decimal point and a semicolon as the separator, so `1,5`
+  is 1.5 and `(1,5;2)` a complex number, as on the HP. INPUT and INFORM
+  answers read the same way. The stack still shows points for now.
 
 ---
 

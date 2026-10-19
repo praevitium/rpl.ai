@@ -49,7 +49,7 @@ import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
   isMatrix, isVector, isReal, isInteger, isRational, isUnit, Symbolic, Integer, Real, Unit, Str, Name, RList,
 } from './rpl/types.js';
-import { parseEntry } from './rpl/parser.js';
+import { parseTyped } from './rpl/parser.js';
 import {
   loadInitialState, adoptStoredState, saveToLocalStorage, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
   shareLink, sharedSource, sharedText,
@@ -1308,7 +1308,7 @@ class App {
   _acceptInput() {
     const { dialog } = calcState.halted;
     const text = this.entry.buffer;
-    if (dialog.verify) { try { parseEntry(text); } catch (e) { this.entry.flashError(e); return; } }
+    if (dialog.verify) { try { parseTyped(text); } catch (e) { this.entry.flashError(e); return; } }
     this.entry.cancel();
     this._continueProgram(Str(text));
   }
@@ -2440,7 +2440,7 @@ function informText(v) {
 // A field's text as one object of a type the field takes, or the complaint to show on the field.
 function informValue(text, field) {
   let objects;
-  try { objects = parseEntry(text); } catch (e) { return e.message; }
+  try { objects = parseTyped(text); } catch (e) { return e.message; }
   if (objects.length !== 1) return 'One object per field';
   if (field.types.length && !field.types.includes(_hp50TypeCode(objects[0]))) return `Not a type this field takes (${field.types.join(', ')})`;
   return objects[0];

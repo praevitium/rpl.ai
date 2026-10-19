@@ -1,4 +1,4 @@
-import { parseEntry, endsInQuote } from '../rpl/parser.js';
+import { parseTyped, endsInQuote } from '../rpl/parser.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
 import { latexToSource } from '../rpl/latex.js';
 import { spreadsheetToSource, htmlTableToSource } from '../rpl/sheet.js';
@@ -587,7 +587,7 @@ export class Entry {
   // as on the HP, even when it fails or aborts; a failure keeps it on the error
   // (e.line) for Fix the line.
   _commitEntry(raw) {
-    const values = parseEntry(raw);
+    const values = parseTyped(raw);
     try {
       if (isProgramLine(values)) this.stack.runOp(() => runProgramLine(this.stack, values));
       else this.stack.holdEmit(() => {

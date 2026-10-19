@@ -3,7 +3,7 @@ import {
   Symbolic, Unit, Tagged, isValidHpIdentifier, Decimal, grobFromHex,
 } from './types.js';
 import { RPLError } from './stack.js';
-import { getApproxMode, getWordsizeMask, state as _state, angleTrig } from './state.js';
+import { getApproxMode, getWordsizeMask, state as _state, angleTrig, testUserFlag } from './state.js';
 import { parseAlgebra } from './algebra.js';
 import { parseUnitExpr } from './units.js';
 
@@ -235,6 +235,37 @@ export function plainPunctuation(src) {
     }
   }
   return out;
+}
+
+// With flag -51 set the HP's fraction mark is the comma and its separator the semicolon, so typed text is turned into
+// the period form the parser reads: a comma between digits becomes a point and a semicolon a comma. The app's own
+// text, (2.5, -1) or MAX(2, 3), has a space after each comma, so an edited level still reads back.
+export function periodFractionMark(src) {
+  let out = '';
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (c === '"' || c === '@') {
+      const end = c === '"' ? stringEnd(src, i) : src.slice(i).search(/[\n\r]|$/) + i;
+      out += src.slice(i, end);
+      i = end - 1;
+    } else if (c === ',' && /\d/.test(src[i - 1] ?? '') && /\d/.test(src[i + 1] ?? '')) {
+      out += '.';
+    } else {
+      out += c === ';' ? ',' : c;
+    }
+  }
+  return out;
+}
+
+function stringEnd(src, start) {
+  let i = start + 1;
+  while (i < src.length && src[i] !== '"') i += src[i] === '\\' ? 2 : 1;
+  return Math.min(i + 1, src.length);
+}
+
+// Text the user typed: the command line and a program's INPUT and INFORM fields.
+export function parseTyped(src) {
+  return parseEntry(testUserFlag(-51) ? periodFractionMark(plainPunctuation(src)) : src);
 }
 
 /** One value per top-level object, in entry order.  Unclosed brackets,
