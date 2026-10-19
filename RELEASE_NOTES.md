@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.51 (2026-10-19)
+**Latest release:** v0.7.52 (2026-10-19)
 
 ---
 
@@ -20,6 +20,14 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.52 — 2026-10-19
+
+- KEYEVAL: `53.1 KEYEVAL` presses the SIN key, numbered rc.p as for ASN.
+  A positive number goes through the user keyboard, whether or not USER
+  mode is on, and a negative one to the standard key. The press comes once
+  the program that asked for it has finished, not partway through it, a
+  difference from the HP; the alpha-shift planes 5 and 6 are refused.
 
 ## v0.7.51 — 2026-10-19
 

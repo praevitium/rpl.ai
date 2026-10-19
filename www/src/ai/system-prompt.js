@@ -271,6 +271,7 @@ TYPES / REFLECTION
   BYTES                      object's byte size
   VERSION                    the app's version string and its copyright line
   ASN STOKEYS RCLKEYS DELKEYS « 2 * » 53.1 ASN assigns a program to the SIN key (key rc.p: row, column, shift plane 1 to 6); { obj key … } STOKEYS assigns pairs, RCLKEYS lists them after S, key DELKEYS or { keys } DELKEYS removes, 0 DELKEYS clears all, S DELKEYS turns unassigned keys off; ↰α (⇨USER) or -62 SF turns USER mode on (1USR for one key unless flag -61 is set), and the user's assigned keys run their objects
+  KEYEVAL                    53.1 KEYEVAL presses the SIN key once the program has finished (rc.p as ASN); positive uses the user keyboard, negative the standard key
   NEWOB                      force a fresh deep copy
 
 DISPLAY / NUMBER MODES

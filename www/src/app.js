@@ -1,7 +1,7 @@
 import { Stack } from './rpl/stack.js';
 import { Entry, inProgramEntry } from './ui/entry.js';
 import { Display, escapeHtml, describeValue, suspendedProgramHtml, binaryBaseLabel } from './ui/display.js';
-import { Keypad, hpKeyCode, typedKeyCode } from './ui/keyboard.js';
+import { Keypad, hpKeyCode, typedKeyCode, keyForCode } from './ui/keyboard.js';
 import { MenuBar } from './ui/menubar.js';
 import { AppBar, installHint } from './ui/appbar.js';
 import { Drawers, CATEGORIES, familyCommands, signatureOf } from './ui/drawer.js';
@@ -37,7 +37,7 @@ import {
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo, getUserKeys, standardKeysActive,
   batchStateNotifications,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setBeepHook, setConlibHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
 import { VERSION } from './build-info.js';
 import { beep, alarmBeep } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest } from './rpl/ops/time.js';
@@ -177,6 +177,7 @@ class App {
     setBeepHook(beep);
     setVersion(VERSION);
     setConlibHook(() => this.showConstants());
+    setKeyHook((code, user) => setTimeout(() => this.evalKey(code, user)));
     loadCommandReference().then((m) => { this.reference = m; this.menubar.render(); }).catch(() => {});
 
     this._wireDisplay();
@@ -2029,12 +2030,35 @@ class App {
   _userKey(primary, layer = this.layer()) {
     if (!testUserFlag(-62) || this.inputMode !== 'rpl' || this.selection != null) return false;
     if (this._userOnce) clearUserFlag(-62);
-    const code = Math.round((hpKeyCode(primary, layer) ?? 0) * 100);
-    const obj = getUserKeys().find(([k]) => k === code)?.[1];
-    if (obj ? isName(obj) && obj.id === 'SKEY' : standardKeysActive() || primary === 'ON') return false;
+    const obj = this._userAssignment(Math.round((hpKeyCode(primary, layer) ?? 0) * 100), primary);
+    if (obj === null) return false;
     if (obj) this._runKeyObject(obj, customMenuLabel(obj));
     if (this.shift && !this.shiftLocked()) this.setShift(null);
     return true;
+  }
+
+  // The object a user key runs; null when its standard action stands, false when S DELKEYS left it none.
+  _userAssignment(code, primary) {
+    const obj = getUserKeys().find(([k]) => k === code)?.[1];
+    if (obj) return isName(obj) && obj.id === 'SKEY' ? null : obj;
+    return standardKeysActive() || primary === 'ON' ? null : false;
+  }
+
+  // KEYEVAL's key press: a positive code runs the key's user assignment where it has one, a negative its standard
+  // action, as the HP's does; planes 2 to 4 are ↰, ↱ and α.
+  evalKey(code, user) {
+    const rc = Math.floor(code / 100);
+    const layer = { 2: 'L', 3: 'R', 4: 'A' }[Math.floor(code / 10) % 10] ?? null;
+    const primary = rc <= 16 ? `F${rc - 10}` : keyForCode(rc);
+    const obj = user ? this._userAssignment(code, primary) : null;
+    if (obj === false) return;
+    if (obj) { this._runKeyObject(obj, customMenuLabel(obj)); return; }
+    if (rc <= 16) { this.pressSoftKey(rc - 11, layer); return; }
+    const key = this.keypad.buttons.find((b) => b.key.primary === primary)?.key;
+    if (!key) return;
+    this.setShift(null);
+    if (layer) this.setShift({ L: 'shiftL', R: 'shiftR', A: 'alpha' }[layer]);
+    this.handleKey(key, { standard: true });
   }
 
   // ⇨USER (↰α): with flag -61 clear the first press is 1USR, USER for the next key only, the second locks USER and a
@@ -2119,7 +2143,7 @@ class App {
     });
   }
 
-  handleKey(key) {
+  handleKey(key, { standard = false } = {}) {
     // A shift key with a letter on it (the compact keypad's) types the letter under α. KEY takes a shift key as a key.
     if (MODIFIER_KINDS.has(key.kind) && !calcState.halted?.dialog?.poll && !(key.alpha && this.layer() === 'A')) {
       if (key.kind !== 'alpha' || this.layer() !== 'L') this.setShift(key.kind);
@@ -2127,7 +2151,7 @@ class App {
       return;
     }
     if (this._answerKey(hpKeyCode(key.primary, this.layer()))) return;
-    if (this._userKey(key.primary)) return;
+    if (!standard && this._userKey(key.primary)) return;
     const step = { '▲': -1, '▼': 1 }[key.primary];
     if (step && !this.shift && this._moveChoice(step)) return;
 

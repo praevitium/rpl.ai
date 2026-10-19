@@ -453,13 +453,14 @@ import { assert, assertThrows } from './helpers.mjs';
       && /\.ann-status:has\(\.ann-m\.e, \.ann-m\.halt, \.ann-m\.alarm, \.ann-m\.user\) \{ padding-left: 2px; padding-right: 2px; \}/.test(cssSrc),
       'alert annunciator: ((•)) in the status line while an alarm is past due, as on the HP, a tap bringing its note back without the buzz; at 280 px in minimal view it fits beside the six modes and the leave button, which it had pushed 2 px off screen');
     assert(/const userMark = user \? `<span class="\$\{minimal \|\| classic \? 'ann-m' : 'pill'\} user"/.test(displaySrc) && /if \(user\) pills\.push\(userMark\);/.test(displaySrc)
-      && /user: testUserFlag\(-62\) && \(this\._userOnce \? '1USR' : 'USER'\),/.test(appSrc) && /if \(this\._userKey\(key\.primary\)\) return;/.test(appSrc)
+      && /user: testUserFlag\(-62\) && \(this\._userOnce \? '1USR' : 'USER'\),/.test(appSrc) && /if \(!standard && this\._userKey\(key\.primary\)\) return;/.test(appSrc)
       && /if \(key\.kind !== 'alpha' \|\| this\.layer\(\) !== 'L'\) this\.setShift\(key\.kind\);\s*else if \(!this\._answerKey\(hpKeyCode\('α', 'L'\)\)\) this\.toggleUser\(\);/.test(appSrc)
       && /if \(on && !this\._userOnce\) \{ clearUserFlag\(-62\); return; \}\s*this\._userOnce = !on && !testUserFlag\(-61\);\s*setUserFlag\(-62\);/.test(appSrc)
       && /if \(this\._userOnce\) clearUserFlag\(-62\);/.test(appSrc)
       && /mk\('α',   \{ className: 'alpha-key', kind: 'alpha', shiftL: 'USER' \}\),/.test(readFileSync(new URL('../www/src/ui/keyboard.js', import.meta.url), 'utf8'))
       && /\.kp\[data-layer="L"\] \.k\.alp \.p\.lay \{ color: #04121f; \}/.test(cssSrc)
-      && /if \(obj \? isName\(obj\) && obj\.id === 'SKEY' : standardKeysActive\(\) \|\| primary === 'ON'\) return false;\s*if \(obj\) this\._runKeyObject\(obj, customMenuLabel\(obj\)\);/.test(appSrc)
+      && /if \(obj\) return isName\(obj\) && obj\.id === 'SKEY' \? null : obj;\s*return standardKeysActive\(\) \|\| primary === 'ON' \? null : false;/.test(appSrc)
+      && /if \(obj === null\) return false;\s*if \(obj\) this\._runKeyObject\(obj, customMenuLabel\(obj\)\);/.test(appSrc)
       && /:root\[data-theme="classic"\] \.status-line:has\(\.ann-m\.user\) \.ann-g > span:not\(\.on\) \{ display: none; \}/.test(cssSrc),
       'USER mode: with flag -62 set a keypad or soft key ASN assigned runs its object as a CST key does, SKEY and unassigned keys keep their action unless S DELKEYS took it (ON always keeps it), and a USER annunciator shows in every look, Classic\'s dim annunciators giving it room on a phone; ↰α is ⇨USER, 1USR for one key with flag -61 clear, then locked, then off, locked at once with -61 set, and a key a program waits for when one does');
   }
@@ -2321,7 +2322,7 @@ setAngle('RAD');
     && /<div class="bn-t">Press a key<\/div><div class="bn-f">\$\{key\('enter', 'Enter', [^}]*?'enter', 'pri'\)\}\$\{STOP_KEY\}/.test(bannerSrc)
     && /if \(act === 'enter' && kind === 'wait'\) \{ this\._answerKey\(hpKeyCode\('ENTER'\)\); return; \}/.test(appSrc)
     && /_answerKey\(code\) \{\s*const halted = calcState\.halted;\s*if \(halted\?\.kind !== 'wait' \|\| !halted\.dialog\.key \|\| code == null\) return false;[\s\S]*?this\._continueProgram\(Real\(code\)\);\s*return true;/.test(appSrc)
-    && /handleKey\(key\) \{[\s\S]{0,700}?if \(this\._answerKey\(hpKeyCode\(key\.primary, this\.layer\(\)\)\)\) return;/.test(appSrc)
+    && /handleKey\(key, \{ standard = false \} = \{\}\) \{[\s\S]{0,700}?if \(this\._answerKey\(hpKeyCode\(key\.primary, this\.layer\(\)\)\)\) return;/.test(appSrc)
     && /pressSoftKey\(i, forcedLayer = null\) \{\s*if \(this\._answerKey\(hpKeyCode\(`F\$\{i \+ 1\}`, forcedLayer \?\? this\.layer\(\)\)\)\) return;/.test(appSrc)
     && /if \(this\._answerKey\(hpKeyCode\('ENTER'\)\)\) return;\s*this\.entry\.enter\(\);/.test(appSrc)
     && /onCommit: \(\) => \{ if \(this\._answerKey\(hpKeyCode\('ENTER'\)\) \|\| this\._enterAnswersDialog\(\)\) return; if \(!this\._runChord\('Enter'\)\) this\.commitEntry\(\); \},\s*onType: \(text\) => this\._answerKey\(typedKeyCode\(text\)\) \|\| this\._jumpChoice\(text\),/.test(appSrc)

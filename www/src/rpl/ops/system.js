@@ -1,7 +1,7 @@
 import { isReal, Real, isInteger, Integer, isBinaryInteger, BinaryInteger, isRational, Rational, isComplex, Complex, isString, Str, isName, Name, isSymbolic, Symbolic, isList, RList, isVector, Vector, isMatrix, Matrix, isProgram, Program, isTagged, Tagged, isUnit, Unit } from '../types.js';
 import { register } from './registry.js';
 import { RPLError } from '../stack.js';
-import { getUserKeys, setUserKeys, standardKeysActive } from '../state.js';
+import { getUserKeys, setUserKeys, standardKeysActive, inScratchState } from '../state.js';
 
 
 
@@ -124,3 +124,20 @@ register('DELKEYS', (s) => {
   const doomed = new Set((isList(arg) ? arg.items : [arg]).map(_userKey));
   setUserKeys(getUserKeys().filter(([key]) => !doomed.has(key)));
 }, { category: 'System', categoryOrder: 3.3, label: 'DELKEYS' });
+
+let _keyHook = null;
+
+export function setKeyHook(fn) {
+  _keyHook = typeof fn === 'function' ? fn : null;
+}
+
+// KEYEVAL presses a key by its code once the program that asked is done: a positive code runs the key's user
+// assignment where it has one, a negative one its standard action. The alpha-shifted planes 5 and 6 have no key here.
+register('KEYEVAL', (s) => {
+  const [x] = s.popN(1);
+  if (!(isReal(x) || isInteger(x))) throw new RPLError('Bad argument type');
+  const user = Number(x.value) > 0;
+  const code = _userKey(user ? x : Real(-Number(x.value)));
+  if (Math.floor(code / 10) % 10 > 4) throw new RPLError('Bad argument value');
+  if (!inScratchState()) _keyHook?.(code, user);
+}, { category: 'System', categoryOrder: 3.4, label: 'KEYEVAL' });

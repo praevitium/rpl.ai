@@ -2091,6 +2091,18 @@ clearAllUserFlags();
   assert(format(runLine('LANGUAGE→').peek()) === '0.', 'LANGUAGE→ gives 0, English');
 }
 
+// KEYEVAL hands the app a key code to press, with whether the key's user assignment counts.
+{
+  const { setKeyHook } = await import('../www/src/rpl/ops.js');
+  const pressed = [];
+  setKeyHook((code, user) => pressed.push(`${code}${user ? '+' : '-'}`));
+  runLine('53.1 KEYEVAL -75.3 KEYEVAL 11 KEYEVAL 101.31 KEYEVAL');
+  assert(pressed.join(' ') === '5310+ 7530- 1110+ 10131+', `KEYEVAL: a positive code uses the user keyboard, a negative one the standard keys (${pressed})`);
+  assertThrows(() => runLine('75.5 KEYEVAL'), /Bad argument value/, 'KEYEVAL: the alpha-shifted planes 5 and 6 have no key here');
+  assertThrows(() => runLine('0 KEYEVAL'), /Bad argument value/, 'KEYEVAL: 0 is no key');
+  setKeyHook(null);
+}
+
 // LOCAL and UNBIND: ← names bound until UNBIND, across command lines as the AUR's example has it.
 {
   const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');

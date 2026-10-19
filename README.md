@@ -329,6 +329,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   assigned key, a soft key included, runs its object as a CST key does;
   the others keep their action, unless `S DELKEYS` has taken it (ON always
   keeps its own). The assignments are saved with the stack.
+  `53.1 KEYEVAL` presses a key from a program once the program has
+  finished: a positive number goes through the user keyboard, a negative
+  one to the standard key.
 - Tap a stack level for its actions, on a line under it so they never cover
   the value: Edit, View, Pick (DUP on level 1), Roll above level 1 (SWAP on level 2), Conv for
   a value with units (from 360 px wide), Drop, and ⋯

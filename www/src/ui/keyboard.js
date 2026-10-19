@@ -254,6 +254,11 @@ const KEY_CODES = Object.freeze({
 });
 const KEY_PLANES = Object.freeze({ L: 2, R: 3, A: 4 });
 
+// The keypad key with code rc, the full keypad's where the compact one's SWAP and DROP share it.
+export function keyForCode(rc) {
+  return Object.keys(KEY_CODES).find((primary) => KEY_CODES[primary] === rc) ?? null;
+}
+
 export function hpKeyCode(primary, layer = null) {
   const rc = KEY_CODES[primary];
   return rc == null ? null : Number(`${rc}.${KEY_PLANES[layer] ?? 1}`);
