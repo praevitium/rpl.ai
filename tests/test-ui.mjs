@@ -1827,6 +1827,17 @@ setAngle('RAD');
   setAngle(saved.angle); setDisplay(saved.mode, saved.digits);
 }
 
+// STO, RCL, PURGE, CLΣ and CLVAR get no scratch run, so command search previewed nothing for them.
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/modeCommandPreview\(name, this\._levelOneDigits\(\)\) \|\| this\._memoryPreview\(name\)/.test(appSrc)
+    && /case 'STO': return id !== null && this\.stack\.depth > 1 \? `→ stores \$\{show\(this\.stack\.peek\(2\)\)\} in \$\{id\}`/.test(appSrc)
+    && /case 'RCL': return id === null \? '' : held === undefined \? `→ \$\{id\} doesn't exist`/.test(appSrc)
+    && /case 'CLΣ': return varRecall\('ΣDAT'\) === undefined \? '→ ΣDAT is already empty'/.test(appSrc)
+    && /case 'CLVAR': case 'CLUSR': \{[\s\S]*?!\(isDirectory\(varRecall\(v\)\) && varRecall\(v\)\.entries\.size > 0\)/.test(appSrc),
+    'command search: STO, RCL, PURGE, CLΣ and CLVAR preview what they would store, recall or clear, CLVAR counting only what it purges');
+}
+
 {
   const paletteSrc = readFileSync(new URL('../www/src/ui/palette.js', import.meta.url), 'utf8');
   assert(/detail: \[entry \? shortDescription\(entry, 90\) : '', sig\]\.filter\(Boolean\)\.join\(' · '\),/.test(paletteSrc),

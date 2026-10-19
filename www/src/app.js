@@ -1728,8 +1728,8 @@ class App {
   }
 
   previewText(name) {
-    const mode = modeCommandPreview(name, this._levelOneDigits());
-    if (mode) return mode;
+    const known = modeCommandPreview(name, this._levelOneDigits()) || this._memoryPreview(name);
+    if (known) return known;
     const outcome = previewCommand(name, this.stack.save());
     if (!outcome) return '';
     if (!outcome.ok) return this._previewFailure(name, outcome.error).title;
@@ -1737,6 +1737,26 @@ class App {
     if (!top.length && !outcome.consumed) return '→ leaves the stack as it is';
     if (!top.length) return `→ removes ${outcome.consumed === 1 ? 'level 1' : `${outcome.consumed} levels`}`;
     return `→ ${top.map((value, i) => `${i + 1}: ${format(value, this.display.displayOpts)}`).join('   ')}`;
+  }
+
+  // Commands that change memory get no scratch run, so the row says what they would store, recall or clear.
+  _memoryPreview(name) {
+    const show = (value) => format(value, this.display.displayOpts);
+    const top = this.stack.depth ? this.stack.peek(1) : null;
+    const id = top && isName(top) ? top.id : null;
+    const held = id === null ? undefined : varRecall(id);
+    switch (name) {
+      case 'STO': return id !== null && this.stack.depth > 1 ? `→ stores ${show(this.stack.peek(2))} in ${id}` : '';
+      case 'RCL': return id === null ? '' : held === undefined ? `→ ${id} doesn't exist` : `→ 1: ${show(held)}`;
+      case 'PURGE': return id === null ? '' : held === undefined ? `→ ${id} doesn't exist` : `→ purges ${id}, ${show(held)}`;
+      case 'CLΣ': return varRecall('ΣDAT') === undefined ? '→ ΣDAT is already empty' : `→ clears ${sigmaDataNote(varRecall('ΣDAT'))}`;
+      case 'CLVAR': case 'CLUSR': {
+        // As CLVAR does, a folder that holds anything stays.
+        const count = varList().filter((v) => !(isDirectory(varRecall(v)) && varRecall(v).entries.size > 0)).length;
+        return count ? `→ purges ${count} variable${count === 1 ? '' : 's'} in ${currentPath().at(-1)}` : `→ nothing to purge in ${currentPath().at(-1)}`;
+      }
+      default: return '';
+    }
   }
 
   _levelOneDigits() {
