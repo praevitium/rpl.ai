@@ -10,8 +10,25 @@ export function errorBannerHtml(desc) {
 export function lcdHtml(lcd) {
   const lines = lcd?.lines ?? [];
   const last = lines.findLastIndex((line) => line);
-  if (last < 0) return '';
-  return `<div class="lcd" role="status" aria-label="Program display">${lines.slice(0, last + 1).map((line) => `<div>${escapeHtml(line ?? '')}</div>`).join('')}</div>`;
+  if (last < 0 && !lcd?.grob) return '';
+  const screen = lcd?.grob ? lcdScreenHtml(lcd.grob) : '';
+  return `<div class="lcd" role="status" aria-label="Program display">${screen}${lines.slice(0, last + 1).map((line) => `<div>${escapeHtml(line ?? '')}</div>`).join('')}</div>`;
+}
+
+// The pixels →LCD and DISPXY drew, each run of lit pixels along a row one rectangle of a path in the display's ink.
+function lcdScreenHtml(g) {
+  const rowBytes = Math.ceil(g.width / 8);
+  const lit = (c, r) => (g.bytes[r * rowBytes + (c >> 3)] >> (c & 7)) & 1;
+  let d = '';
+  for (let r = 0; r < g.height; r++) {
+    for (let c = 0; c < g.width; c++) {
+      if (!lit(c, r)) continue;
+      const start = c;
+      while (c < g.width && lit(c, r)) c++;
+      d += `M${start} ${r}h${c - start}v1h${start - c}z`;
+    }
+  }
+  return `<svg class="lcd-screen" viewBox="0 0 ${g.width} ${g.height}" shape-rendering="crispEdges" aria-hidden="true"><path d="${d}" fill="currentColor"/></svg>`;
 }
 
 const HALT_TITLES = Object.freeze({

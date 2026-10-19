@@ -310,7 +310,13 @@ export function setLcdLine(n, text) {
   const prev = state.lcd?.lines ?? [];
   const lines = Array.from({ length: Math.max(prev.length, n - 1 + parts.length) }, (_, i) => prev[i] ?? '');
   parts.forEach((part, i) => { lines[n - 1 + i] = part; });
-  state.lcd = { lines, frozen: state.lcd?.frozen ?? false };
+  state.lcd = { ...state.lcd, lines, frozen: state.lcd?.frozen ?? false };
+  _emit();
+}
+
+// →LCD and DISPXY draw on the display's pixels above the menu, shown above DISP's lines.
+export function setLcdGrob(grob) {
+  state.lcd = { lines: state.lcd?.lines ?? [], frozen: state.lcd?.frozen ?? false, grob };
   _emit();
 }
 

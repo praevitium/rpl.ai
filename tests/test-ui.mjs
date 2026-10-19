@@ -2279,7 +2279,7 @@ setAngle('RAD');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const entrySrc = readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/export function lcdHtml\(lcd\) \{\s*const lines = lcd\?\.lines \?\? \[\];\s*const last = lines\.findLastIndex\(\(line\) => line\);\s*if \(last < 0\) return '';/.test(bannerSrc)
+  assert(/export function lcdHtml\(lcd\) \{\s*const lines = lcd\?\.lines \?\? \[\];\s*const last = lines\.findLastIndex\(\(line\) => line\);\s*if \(last < 0 && !lcd\?\.grob\) return '';/.test(bannerSrc)
     && /renderBanner\(\) \{\s*const el = \$\('banner'\);\s*const lcd = lcdHtml\(getLcd\(\)\);\s*if \(this\.errorBanner\) \{ this\._haltBanner = null; el\.innerHTML = lcd \+ errorBannerHtml\(this\.errorBanner\); return; \}/.test(appSrc)
     && /enter\(\) \{\s*this\.error = '';\s*this\.failure = null;\s*touchLcd\(\);/.test(entrySrc) && /execOp\(\.\.\.names\) \{\s*this\.error = '';\s*this\.failure = null;\s*touchLcd\(\);/.test(entrySrc)
     && /\} finally \{\s*if \(!waiting\) settleLcd\(\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))

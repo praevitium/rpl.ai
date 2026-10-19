@@ -7540,6 +7540,48 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   touchLcd(); clearAllHalted(); clearPromptMessage();
 }
 
+// DISPXY and →LCD draw on the display's 131 × 72 pixels above the menu, beside DISP's lines.
+{
+  resetHome(); clearAllHalted(); clearPromptMessage();
+  const { getLcd, touchLcd } = await import('../www/src/rpl/state.js');
+  const { textGrob } = await import('../www/src/rpl/pixel-font.js');
+  const { lcdHtml } = await import('../www/src/ui/banner.js');
+  const lit = (g, c, r) => (g.bytes[r * Math.ceil(g.width / 8) + (c >> 3)] >> (c & 7)) & 1;
+  const drawnAt = (screen, glyphs, x, y) => {
+    for (let r = 0; r < glyphs.height; r++) {
+      for (let c = 0; c < glyphs.width; c++) if (lit(screen, x + c, y + r) !== lit(glyphs, c, r)) return false;
+    }
+    return true;
+  };
+  touchLcd();
+  runLine('"HI" { #10d #20d } 2 DISPXY "Line" 1 DISP');
+  const screen = getLcd()?.grob;
+  assert(screen?.width === 131 && screen.height === 72 && drawnAt(screen, textGrob('HI'), 10, 20),
+    'DISPXY: a string is drawn without its quotes from pixel #x #y of a 131 × 72 display');
+  assert(getLcd().lines[0] === 'Line' && lit(screen, 9, 20) === 0, 'DISPXY: DISP lines and the display pixels are kept side by side');
+  runLine('12 { #0d #0d } 1 DISPXY');
+  assert(drawnAt(getLcd().grob, textGrob('12'), 0, 0) && drawnAt(getLcd().grob, textGrob('HI'), 10, 20),
+    'DISPXY: another object adds to the display, in the stack\'s form');
+  assert(/<svg class="lcd-screen" viewBox="0 0 131 72"[^>]*><path d="M\d+ \d+h\d+v1h-\d+z/.test(lcdHtml(getLcd())), 'DISPXY: the banner draws the display as a path of pixel runs');
+  touchLcd();
+  assert(/lcd-screen/.test(lcdHtml({ lines: [], frozen: false, grob: textGrob('A') })) && lcdHtml({ lines: [], frozen: false }) === '',
+    'DISPXY: a display holding only pixels still shows');
+  runLine('140 80 BLANK NEG →LCD');
+  const full = getLcd().grob;
+  assert(full.width === 131 && full.height === 72 && lit(full, 130, 71) === 1 && lit(full, 0, 0) === 1, '→LCD: a graphics object larger than the display is cut to its 131 × 72');
+  runLine('2 2 BLANK →LCD');
+  assert(lit(getLcd().grob, 0, 0) === 0 && lit(getLcd().grob, 2, 0) === 1, '→LCD: a smaller one replaces only the top left corner it covers');
+  touchLcd();
+  const p = new Stack();
+  p.push(parseEntry('« 3 3 BLANK NEG →LCD »')[0]);
+  lookup('EVAL').fn(p);
+  assert(getLcd() === null, '→LCD: the picture goes when the program ends without FREEZE');
+  assertThrows(() => runLine('"x" →LCD'), /Bad argument type/, '→LCD wants a graphics object');
+  assertThrows(() => runLine('"x" { 1 2 } 1 DISPXY'), /Bad argument type/, 'DISPXY wants two binary integers for its place');
+  assertThrows(() => runLine('"x" { #1d #2d } 3 DISPXY'), /Bad argument value/, 'DISPXY takes font size 1 or 2');
+  touchLcd(); clearAllHalted(); clearPromptMessage();
+}
+
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const { getLcd, touchLcd } = await import('../www/src/rpl/state.js');

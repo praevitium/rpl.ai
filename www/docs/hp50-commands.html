@@ -4216,7 +4216,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>DISPXY, FREEZE, HALT, INPUT, PROMPT</p>
   </dd>
 </dl>
-<h2 id="cmd-DISPXY">DISPXY <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-DISPXY">DISPXY <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 181 · printed page 3-61</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -4226,6 +4226,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Display Command: Displays obj at the specified screen coordinates using a specified font size. The list argument expects exactly two binary integers to specify the X and Y coordinates. The level one integer argument n will display the obj using a small font if n is 1 and using the system font if n is 2. To facilitate the display of messages, strings are displayed without the surrounding &quot; &quot; delimiters. All other objects are displayed in the same form as would be used if the object were in level 1 in the multiline display format. If the object display requires more than one display line, the display starts at coordinate #x #y, and continues down the display either to the end of the object or the bottom of the display. NOTE: DISPXY is not useful for displaying grobs. The object displayed by DISPXY persists in the display only until the keyboard is ready for input. The FREEZE command can be used to cause the object to persist in the display until a key is pressed.</p>
+  <p>In rpl.ai DISPXY draws on the same 131 × 72 pixels as →LCD, shown above DISP's lines in the program display. Both font sizes are rpl.ai's one 5 × 7 pixel font, six pixels a character and eight a line.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -8792,7 +8793,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>→GROB, →LCD</p>
   </dd>
 </dl>
-<h2 id="cmd-to-LCD">→LCD <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-to-LCD">→LCD <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 248 · printed page 3-128</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -8802,6 +8803,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Graphics Object to LCD Command: Displays the specified graphics object with its upper left pixel in the upper left corner of the display. If the graphics object is larger than 131 × 72 (on the HP 50g and 49g+) or 131 × 56 (on the HP 48gII), it is truncated.</p>
+  <p>In rpl.ai the display is the program display above the command line, where DISP writes: →LCD draws on its 131 × 72 pixels, shown above DISP's lines, and the picture goes when the program ends or pauses unless FREEZE keeps it, as DISP's text does.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">

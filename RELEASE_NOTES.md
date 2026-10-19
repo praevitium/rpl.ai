@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.35 (2026-10-19)
+**Latest release:** v0.7.36 (2026-10-19)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.36 — 2026-10-19
+
+- DISPXY and →LCD draw on the program display, as on the 50g: the
+  display above the command line, where DISP writes, gains the HP's 131 ×
+  72 pixels. `"Ready" { #10d #20d } 2 DISPXY` writes at that pixel in
+  rpl.ai's pixel font, and `grob →LCD` shows a graphics object from the
+  top left corner, cut to the screen. Like DISP's lines, the picture goes
+  when the program ends or pauses unless FREEZE keeps it.
 
 ## v0.7.35 — 2026-10-19
 

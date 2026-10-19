@@ -616,12 +616,14 @@ pair) and 1; the marked choice is highlighted, the arrow keys move it, a
 typed letter moves it to the next choice that starts with the letter,
 and Enter answers with it; Cancel gives 0. `DISP` writes a message on
 one of seven display lines above the command line and `CLLCD` blanks
-them; the text goes when the program ends or pauses unless `FREEZE`
-keeps it until the next key. `WAIT` pauses a program for a number of
-seconds, or with 0 (or -1, which brings the soft keys up in minimal
-view) waits for a key and returns its HP key code: 92.1 for the 1 key,
-on the keypad or typed, 11.1 for the first soft key, 105.1 for Enter or
-the Enter chip on its banner. The display stays through a `WAIT`. `KEY`
+them; `DISPXY` writes at a pixel and `→LCD` shows a graphics object on
+the display's 131 × 72 pixels above those lines. The display goes when
+the program ends or pauses unless `FREEZE` keeps it until the next key.
+`WAIT` pauses a program for a number of seconds, or with 0 (or -1, which
+brings the soft keys up in minimal view) waits for a key and returns its
+HP key code: 92.1 for the 1 key, on the keypad or typed, 11.1 for the
+first soft key, 105.1 for Enter or the Enter chip on its banner. The
+display stays through a `WAIT`. `KEY`
 looks for a key without waiting: 0, or the key's row and column and 1 (81
 for ↰, 105 for Enter), so `DO UNTIL KEY END` waits for one; a program
 polling it pauses every 50 ms for the page to take a key, its stack and
@@ -878,7 +880,7 @@ Catalog and the command reference mark what is available. Not there yet:
   app was closed shows as past due the next time it opens. While one is
   past due, the HP's alert annunciator ((•)) lights in the status line,
   and a tap on it brings the note back.
-- the screen commands LCD→ and →LCD, PICTURE's cursor, and the other plot
+- LCD→, PICTURE's cursor, and the other plot
   types (the 3D plots and the rest). PICT holds a
   graphics object, LINE, TLINE, BOX, ARC, PIXON, PIXOFF, DRAX and LABEL
   draw on it, GOR, GXOR, SUB, REPL and NEG work on it and on other graphics

@@ -1,10 +1,10 @@
 import { RPLError } from '../stack.js';
-import { inScratchState, varRecall, varStore, getPict, setPict, getBinaryBase, toRadians } from '../state.js';
+import { inScratchState, varRecall, varStore, getPict, setPict, getBinaryBase, toRadians, getLcd, setLcdGrob } from '../state.js';
 import { Complex, Real, Name, RList, Str, BinaryInteger, Grob, Symbolic, isComplex, isReal, isInteger, isBinaryInteger, isName, isList, isString, isGrob, isSymbolic, isUnit, isMatrix, toRealOrThrow } from '../types.js';
 import { register, lookup } from './registry.js';
 import { statPlotData } from './statistics.js';
 import { TRUE, FALSE, withLocalVariable } from './internal.js';
-import { format } from '../formatter.js';
+import { format, currentDisplay } from '../formatter.js';
 import { textGrob, CELL_HEIGHT } from '../pixel-font.js';
 
 
@@ -776,6 +776,24 @@ register('→GROB', (s) => {
   const shown = isString(v) ? v.value : format(v, undefined, { context: 'stack' }).replace(/`/g, "'");
   s.push(textGrob(size === 0 && (isSymbolic(v) || isUnit(v)) ? shown.replace(/^'|'$/g, '') : shown));
 }, { category: 'Graphics', categoryOrder: 12.3, label: "→GROB" });
+
+// The 50g's display above its menu row, where →LCD and DISPXY draw; each replaces the pixels it covers.
+const LCD_WIDTH = 131, LCD_HEIGHT = 72;
+const _drawOnLcd = (at, grob) => setLcdGrob(_overlay(getLcd()?.grob ?? Grob(LCD_WIDTH, LCD_HEIGHT), at, grob, 'replace'));
+
+register('→LCD', (s) => {
+  const grob = s.pop();
+  if (!isGrob(grob)) throw new RPLError('Bad argument type');
+  _drawOnLcd([0, 0], grob);
+}, { category: 'Graphics', categoryOrder: 12.35, label: "→LCD" });
+
+// DISPXY writes as DISP does, from pixel #x #y; both its font sizes are rpl.ai's one pixel font.
+register('DISPXY', (s) => {
+  const [obj, at, size] = s.popN(3);
+  if (!_isPixelPoint(at) || !(isReal(size) || isInteger(size))) throw new RPLError('Bad argument type');
+  if (![1, 2].includes(_real(size))) throw new RPLError('Bad argument value');
+  _drawOnLcd(_pixelOf(at), textGrob(isString(obj) ? obj.value : format(obj, currentDisplay())));
+}, { category: 'Display / base', categoryOrder: 26.5, label: "DISPXY" });
 
 // LABEL writes the axes' names by their ends, and the window's limits where the axes leave PICT: the x values under
 // the horizontal axis, the y values beside the vertical one, each moved to the other side when it would fall off.
