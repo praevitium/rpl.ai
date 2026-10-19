@@ -3,7 +3,7 @@ import {
 } from '../rpl/algebra.js';
 import {
   isMatrix, isVector, isList, isSymbolic,
-  toRealOrThrow, Matrix, Real,
+  toRealOrThrow, Matrix, Real, RList,
 } from '../rpl/types.js';
 import { evalFitModel } from '../rpl/state.js';
 import { _expandUserCalls } from '../rpl/ops/internal.js';
@@ -493,9 +493,9 @@ export function sampleTruth(ast, view, width, height, opts) {
   return cells;
 }
 
-// WIREFRAME's perspective view of z = f(x, y) over VPAR's view volume, from its eye point looking at the volume's centre
-// with z up: NUMY lines across x and NUMX along y, each finely sampled, and the volume's box. A point outside the
-// volume's z range breaks its line.
+// The 3D plots' perspective views of a surface in VPAR's view volume, from its eye point looking at the volume's centre
+// with z up: NUMY lines across the surface's first parameter and NUMX along its second, each finely sampled, and the
+// volume's box. A point outside the volume breaks its line.
 const WIRE_SAMPLES = 48;
 
 const sub3 = (a, b) => a.map((v, i) => v - b[i]);
@@ -538,20 +538,39 @@ function boxEdges({ x, y, z }, project) {
   return edges.filter(([p, q]) => p && q);
 }
 
-export function sampleWireframe(ast, volume, opts) {
-  const { x: [x0, x1], y: [y0, y1], z: [z0, z1] } = volume;
-  const project = perspective(volume.eye, [(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2]);
+function within(v, [a, b]) {
+  const slack = 1e-9 * (Math.abs(a) + Math.abs(b) + 1);
+  return v >= Math.min(a, b) - slack && v <= Math.max(a, b) + slack;
+}
+
+const steps = (lo, hi, n) => Array.from({ length: n }, (_, k) => lo + (hi - lo) * k / (n - 1));
+
+// point(u, v) is the surface's [x, y, z] for u across [u0, u1] and v across [v0, v1]; YSLICE draws only the lines
+// across u.
+function sampleSurface(point, [u0, u1], [v0, v1], volume, { along = true } = {}) {
+  const { x, y, z } = volume;
+  const project = perspective(volume.eye, [x, y, z].map(([a, b]) => (a + b) / 2));
   if (!project) return [];
-  const [nx, ny] = volume.steps.map((n) => Math.max(2, Math.round(n)));
-  const [zlo, zhi] = [Math.min(z0, z1), Math.max(z0, z1)];
-  const surface = (x, y) => {
-    const z = odeSlope(ast, x, y, opts);
-    return z >= zlo && z <= zhi ? project([x, y, z]) : null;
+  const [nu, nv] = volume.steps.map((n) => Math.max(2, Math.round(n)));
+  const image = (u, v) => {
+    const p = point(u, v);
+    return p.every((c, i) => within(c, [x, y, z][i])) ? project(p) : null;
   };
-  const line = (point) => unbroken(Array.from({ length: WIRE_SAMPLES }, (_, k) => point(k / (WIRE_SAMPLES - 1))));
-  const across = Array.from({ length: ny }, (_, j) => y0 + (y1 - y0) * j / (ny - 1)).flatMap((y) => line((u) => surface(x0 + (x1 - x0) * u, y)));
-  const along = Array.from({ length: nx }, (_, i) => x0 + (x1 - x0) * i / (nx - 1)).flatMap((x) => line((u) => surface(x, y0 + (y1 - y0) * u)));
-  return [...across, ...along, ...boxEdges(volume, project)];
+  const line = (at) => unbroken(Array.from({ length: WIRE_SAMPLES }, (_, k) => at(k / (WIRE_SAMPLES - 1))));
+  const across = steps(v0, v1, nv).flatMap((v) => line((t) => image(u0 + (u1 - u0) * t, v)));
+  const lengthwise = along ? steps(u0, u1, nu).flatMap((u) => line((t) => image(u, v0 + (v1 - v0) * t))) : [];
+  return [...across, ...lengthwise, ...boxEdges(volume, project)];
+}
+
+export function sampleWireframe(ast, volume, opts, { slices = false } = {}) {
+  const graph = (x, y) => [x, y, odeSlope(ast, x, y, opts)];
+  return sampleSurface(graph, volume.x, volume.y, volume, { along: !slices });
+}
+
+// PARSURFACE's surface is x(u, v), y(u, v) and z(u, v) over VPAR's input plane, u and v bound as INDEP and DEPND.
+export function sampleParSurface(asts, volume, opts) {
+  const point = (u, v) => asts.map((ast) => odeSlope(ast, u, v, opts));
+  return sampleSurface(point, volume.input.x, volume.input.y, volume);
 }
 
 // PCONTOUR draws ten level curves of f(x, y) between its lowest and highest values in the view, by marching squares
@@ -770,6 +789,14 @@ function expressionFromStack(kind, v) {
 function expressionToStack(t) {
   if (!t?.expr) return [];
   return [equationToSymbolic(t.expr)];
+}
+
+// PARSURFACE takes x, y and z of u and v as a list or vector of three.
+function parSurfaceFromStack(v) {
+  const parts = isList(v) || isVector(v) ? v.items.map(valueToEquationDraft) : [];
+  if (parts.length !== 3 || !parts.every(Boolean)) return null;
+  const [expr, exprY, exprZ] = parts;
+  return { kind: 'parsurface', expr, exprY, exprZ, label: `(${expr}, ${exprY}, ${exprZ})`, points: null, source: v };
 }
 
 function parametricFromStack(v, below) {
@@ -1080,6 +1107,39 @@ export const TRACE_KINDS = Object.freeze({
     evalAt() { return NaN; },
     fromStack(v) { return expressionFromStack('wireframe', v); },
     toStack: expressionToStack,
+  },
+  yslice: {
+    render: 'stroke',
+    data: true,
+    equalAxes: true,
+    projected: true,
+    editable: true,
+    fitOnAdd: true,
+    fields: [{ key: 'expr', placeholder: 'X^2-Y^2', aria: 'z = f(x, y)' }],
+    label: functionLabel,
+    sample(t, ctx) {
+      if (!t.expr || !ctx.volume) return [];
+      return sampleWireframe(parsePlotExpr(t.expr), ctx.volume, diffeqOpts(ctx), { slices: true });
+    },
+    evalAt() { return NaN; },
+    fromStack(v) { return expressionFromStack('yslice', v); },
+    toStack: expressionToStack,
+  },
+  parsurface: {
+    render: 'stroke',
+    data: true,
+    equalAxes: true,
+    projected: true,
+    label: (t) => `(${t.expr}, ${t.exprY}, ${t.exprZ})`,
+    sample(t, ctx) {
+      if (!t.expr || !t.exprY || !t.exprZ || !ctx.volume) return [];
+      return sampleParSurface([t.expr, t.exprY, t.exprZ].map(parsePlotExpr), ctx.volume, diffeqOpts(ctx));
+    },
+    evalAt() { return NaN; },
+    fromStack: parSurfaceFromStack,
+    toStack(t) {
+      return t.expr && t.exprY && t.exprZ ? [RList([t.expr, t.exprY, t.exprZ].map(equationToSymbolic))] : [];
+    },
   },
   truth: {
     render: 'cells',

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.45 (2026-10-19)
+**Latest release:** v0.7.46 (2026-10-19)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.46 — 2026-10-19
+
+- YSLICE draws z = f(x, y) as slices across x in perspective, NUMY of
+  them, and PARSURFACE draws a parametric surface: x, y and z of two
+  variables over VPAR's input plane, given as a list on level 1, so
+  `0 1 XXRNG 0 6.2832 YYRNG { 'X*COS(Y)' 'X*SIN(Y)' 'X^2-.5' } PARSURFACE`
+  draws a bowl. Both share WIREFRAME's view from VPAR's eye point, and the
+  plot view has a Y-slice kind for typing one in.
 
 ## v0.7.45 — 2026-10-19
 

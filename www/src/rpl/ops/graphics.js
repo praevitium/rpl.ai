@@ -1,6 +1,6 @@
 import { RPLError } from '../stack.js';
 import { inScratchState, varRecall, varStore, getPict, setPict, getBinaryBase, toRadians, getLcd, setLcdGrob } from '../state.js';
-import { Complex, Real, Name, RList, Str, BinaryInteger, Grob, Symbolic, isComplex, isReal, isInteger, isBinaryInteger, isName, isList, isString, isGrob, isSymbolic, isUnit, isMatrix, toRealOrThrow } from '../types.js';
+import { Complex, Real, Name, RList, Str, BinaryInteger, Grob, Symbolic, isComplex, isReal, isInteger, isBinaryInteger, isName, isList, isString, isGrob, isSymbolic, isUnit, isMatrix, isVector, toRealOrThrow } from '../types.js';
 import { register, lookup } from './registry.js';
 import { statPlotData } from './statistics.js';
 import { TRUE, FALSE, withLocalVariable } from './internal.js';
@@ -41,7 +41,7 @@ register('FUNCTION',  (s) => _requestPlot('function', s), { category: 'Graphics'
 register('POLAR',     (s) => _requestPlot('polar', s), { category: 'Graphics', categoryOrder: 4, label: "POLAR" });
 
 // PLOT stores level 1 in EQ and plots it, PLOTADD adds it to EQ's list and to the plot, each as PPAR's plot type says.
-const PTYPE_KINDS = Object.freeze({ FUNCTION: 'function', POLAR: 'polar', PARAMETRIC: 'parametric', DIFFEQ: 'diffeq', SLOPEFIELD: 'slopefield', CONIC: 'conic', TRUTH: 'truth', PCONTOUR: 'contour', WIREFRAME: 'wireframe' });
+const PTYPE_KINDS = Object.freeze({ FUNCTION: 'function', POLAR: 'polar', PARAMETRIC: 'parametric', DIFFEQ: 'diffeq', SLOPEFIELD: 'slopefield', CONIC: 'conic', TRUTH: 'truth', PCONTOUR: 'contour', WIREFRAME: 'wireframe', YSLICE: 'yslice' });
 
 function _plotKind() {
   const ptype = plotParameters()[5];
@@ -84,6 +84,16 @@ register('TRUTH', (s) => _requestPlot('truth', s), { category: 'Graphics', categ
 register('PCONTOUR', (s) => _requestPlot('contour', s), { category: 'Graphics', categoryOrder: 7.8, label: "PCONTOUR" });
 
 register('WIREFRAME', (s) => _requestPlot('wireframe', s), { category: 'Graphics', categoryOrder: 7.9, label: 'WIREFRAME' });
+
+register('YSLICE', (s) => _requestPlot('yslice', s), { category: 'Graphics', categoryOrder: 7.91, label: 'YSLICE' });
+
+// PARSURFACE plots the list or vector of x, y and z of two variables on level 1.
+register('PARSURFACE', (s) => {
+  if (s.depth < 1) throw new RPLError('Too few arguments');
+  const v = s.peek();
+  if (!(isList(v) || isVector(v)) || v.items.length !== 3) throw new RPLError('Bad argument type');
+  _requestPlot('parsurface', s, v);
+}, { category: 'Graphics', categoryOrder: 7.92, label: 'PARSURFACE' });
 
 register('DRAW',      (s) => _requestPlot('draw', s), { category: 'Graphics', categoryOrder: 6, label: "DRAW" });
 

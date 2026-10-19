@@ -894,6 +894,26 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   setGraphicsHook(null);
 }
 
+// YSLICE draws only the slices across x; PARSURFACE maps VPAR's input plane through x, y and z of two variables.
+{
+  const volume = { x: [-1, 1], y: [-1, 1], z: [-1, 1], input: { x: [0, 1], y: [0, 2 * Math.PI] }, eye: [0, -3, 0], steps: [10, 8] };
+  const slices = sampleTrace({ kind: 'yslice', expr: 'X^2-Y^2' }, null, { volume });
+  assert(slices.length === 8 + 12, `YSLICE: NUMY slices across x and the box (${slices.length})`);
+  const disc = sampleTrace({ kind: 'parsurface', expr: 'X*COS(Y)', exprY: 'X*SIN(Y)', exprZ: '0' }, null, { volume });
+  assert(disc.length === 8 + 10 + 12 && disc.slice(0, -12).flat().every(([u, v]) => Math.abs(v) < 1e-12),
+    `PARSURFACE: a flat disc at z = 0, seen edge on from (0, -3, 0), lies on the horizon (${disc.length})`);
+  const tall = sampleTrace({ kind: 'parsurface', expr: 'X', exprY: '0', exprZ: 'Y' }, null, { volume });
+  const lengthwise = tall.slice(0, -12).filter((seg) => seg.length < 48);
+  assert(tall.length - 12 === 2 + 10 && lengthwise.length === 10,
+    `PARSURFACE: z = v leaves the volume past v = 1, dropping the lines across u beyond it and cutting those along v (${tall.length})`);
+  const kinds = [];
+  setGraphicsHook((kind, s, data) => kinds.push(`${kind}${data ? ' data' : ''}`));
+  runLine("'X*Y' YSLICE DROP { 'X' 'Y' 'X*Y' } PARSURFACE DROP");
+  assert(kinds.join(',') === 'yslice,parsurface data', `YSLICE and PARSURFACE hand their level 1 to the plot view (${kinds})`);
+  assertThrows(() => runLine("'X' PARSURFACE"), /Bad argument type/, 'PARSURFACE wants x, y and z in a list or vector');
+  setGraphicsHook(null);
+}
+
 // PCONTOUR: ten level curves by marching squares, each segment on its level.
 {
   const view = { xmin: -3, xmax: 3, ymin: -3, ymax: 3 };

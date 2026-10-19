@@ -238,6 +238,7 @@ PLOT WINDOW (PPAR, as on the HP 50g)
   TRUTH                      \`X^2+Y^2<4 AND X>0\` TRUTH shades the region of the plot view where the condition holds (any non-zero value)
   PCONTOUR                   \`X^2-Y^2\` PCONTOUR draws ten level curves of f(x, y) across the plot view
   WIREFRAME                  \`X^2-Y^2\` WIREFRAME draws z = f(x, y) as a wireframe in perspective, inside VPAR's view volume (XVOL YVOL ZVOL) seen from its eye point (EYEPT), NUMY lines across x and NUMX along y
+  YSLICE PARSURFACE          \`X^2-Y^2\` YSLICE draws only the NUMY slices across x; { \`X*COS(Y)\` \`X*SIN(Y)\` \`X\` } PARSURFACE draws x, y and z of two variables over VPAR's input plane (XXRNG YYRNG), in perspective
   XRNG YRNG PMIN PMAX        -2 3 XRNG -1 1 YRNG sets the plot window; FUNCTION, POLAR and the other plots, and DRAW, then start there instead of fitting
   XVOL YVOL ZVOL EYEPT       -2 2 XVOL sets VPAR's view volume for the 3D plots (YVOL its depth, ZVOL its height), 0 -3 0 EYEPT the eye point; XXRNG YYRNG set the input plane, 10 NUMX 8 NUMY the steps; VPAR starts as { -1 1 -1 1 -1 1 -1 1 -1 1 0 -3 0 10 8 }; WIREFRAME reads it
   CENTR SCALE SCALEW SCALEH  (1,2) CENTR moves the window's centre; 2 2 SCALE gives two units per tick; .5 SCALEW halves the width (*W and *H are the same)
