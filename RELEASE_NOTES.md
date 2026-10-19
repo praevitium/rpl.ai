@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.163 (2026-10-19)
+**Latest release:** v0.6.164 (2026-10-19)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.164 — 2026-10-19
+
+`→DIAG` and `DIAG→`, the HP's diagonal commands, sit on the MATRIX
+menu's MAKE folder: `[[ 1 2 ][ 3 4 ]] →DIAG` gives [ 1 4 ], the major
+diagonal of any matrix, and `[ 1 2 3 ] { 3 } DIAG→` builds the 3x3
+matrix with that diagonal. One dimension makes it square, { m n } a
+rectangle; a longer diagonal fills with zeros and extra elements drop,
+as the AUR describes.
+
+In the assistant's replies, steps numbered 1) 2) 3) and bullets that
+start with + show as lists, as Markdown reads them, where they ran
+together into one paragraph.
+
+On a phone, command search and Catalog rows no longer leave a lone last
+word on their second line, such as the z of SIN's z → sin z.
 
 ## v0.6.163 — 2026-10-19
 
