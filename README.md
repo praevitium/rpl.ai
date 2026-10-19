@@ -306,7 +306,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   ⇨object } }`, as on the HP; a finger held on the key offers the shifted
   objects.
 - Tap a stack level for its actions, on a line under it so they never cover
-  the value: Edit, View, Pick (DUP on level 1), Roll (SWAP on level 2), Conv for
+  the value: Edit, View, Pick (DUP on level 1), Roll above level 1 (SWAP on level 2), Conv for
   a value with units (from 360 px wide), Drop, and ⋯
   (or hold a finger on the level) for EVAL, →NUM, copy, share, store and the rest (and, for a program, Debug; for a value
   with units, Convert to…, which lists the value in every unit of the UNITS
@@ -316,7 +316,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   in full, a long list wrapped to the screen, a formula or matrix that scrolls both ways; pinch or double-tap to zoom) with Edit, Copy and
   Share under it; on a screen under 320 px wide (360 for a formula, which
   adds Plot) it waits in ⋯; at any width it is on the first page of the level's soft keys, beside EDIT. ⋯ also has →LIST, DUPN, DRPN
-  and KEEP for levels 1 to the one you tapped, and LEVEL to push its number (also on the level's soft keys). Swipe a level left or right to drop it; the
+  and KEEP for levels 1 to the one you tapped (DUPN and DRPN above level 1), and LEVEL to push its number (also on the level's soft keys). Swipe a level left or right to drop it; the
   toast's Undo brings it back. Share sends the value with a link; opening
   the link starts rpl.ai with the value on the command line, where nothing
   runs until you press Enter. Share levels 1–n, in the ⋯ of a deeper level,
