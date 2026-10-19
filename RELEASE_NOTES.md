@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.162 (2026-10-19)
+**Latest release:** v0.6.163 (2026-10-19)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.163 — 2026-10-19
+
+`SYST2MAT` turns a system of linear equations into a matrix, as the
+AUR describes: `[ 'X-Y' '2*X+Y=5' ] [ X Y ] SYST2MAT` gives
+[[ 1 -1 0 ][ 2 1 -5 ]], a row per equation with its constant moved to
+the left side. An expression counts as equal to zero, the system can be
+a list, and a term that isn't linear is refused. It sits on the CAS
+menu's S.SLV folder after ROOT.
+
+In the assistant's replies, a line without > after a quote's paragraph
+carries that paragraph on, as Markdown reads it, where it ended the
+quote and showed as a paragraph of its own.
+
+On a phone, a drawer's tab row fades at an edge with more tabs past it,
+as the key strip does.
 
 ## v0.6.162 — 2026-10-19
 
