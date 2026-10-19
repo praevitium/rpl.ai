@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.168 (2026-10-19)
+**Latest release:** v0.7.0 (2026-10-19)
 
 ---
 
@@ -20,6 +20,21 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.0 — 2026-10-19
+
+0.7 fills in the HP 50g commands still missing, a batch at a time. This
+first batch adds seven:
+
+- `RCLVX` and `STOVX`, the HP's names for reading and setting the CAS
+  variable VX.
+- `I→R` and `R→I` (and `I->R`, `R->I`): `5 I→R` gives `5.` and `7. R→I`
+  gives `7`; a real with a fraction is Bad argument value.
+- `LGCD`, the GCD of a list, which stays on the stack under it, as the
+  AUR has it: `{ 12 18 24 } LGCD` gives the list and 6.
+- `TEVAL`, which evaluates as EVAL does and adds the seconds it took,
+  tagged `s`.
+- `VERSION`, the app's version and its copyright line.
 
 ## v0.6.168 — 2026-10-19
 
