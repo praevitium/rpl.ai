@@ -1,6 +1,6 @@
 import { format, formatStackTop, DEFAULT_DISPLAY, withFractionMark } from '../rpl/formatter.js';
 import { astToSvg } from '../rpl/pretty.js';
-import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isBinaryInteger, isUnit, isString, isGrob } from '../rpl/types.js';
+import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isBinaryInteger, isUnit, isString, isGrob, isName } from '../rpl/types.js';
 import { state as calcState, currentPath } from '../rpl/state.js';
 import { icon } from './icons.js';
 
@@ -38,6 +38,8 @@ const rowSig = (flat, svgSize, oneLine) => `${svgSize}|${calcState.textbookMode 
 // Above level 1, as on the HP, a list keeps to one line, and so does a matrix taller than this, in its typed form.
 const DEEP_GRID_ROWS = 3;
 const gridRows = (v) => isMatrix(v) ? v.rows.length : isVector(v) && v.items.every(isVector) ? v.items.length : 1;
+// A name in an array needs no quotes, as on the HP, wherever it came from.
+const gridText = (cell, display) => (isName(cell) && !cell.local ? cell.id : withFractionMark(format(cell, display)));
 const oneLine = (value, level) => level > 1 && calcState.textbookMode && (isList(value) || gridRows(value) > DEEP_GRID_ROWS);
 const levelTitle = (level) => `Level ${level}. Click to select, double-click to edit, drag to move.`;
 const fromBottom = (view) => view.scrollHeight - view.scrollTop - view.clientHeight;
@@ -687,7 +689,7 @@ export class Display {
     }
     const ncols = rows.reduce((m, r) => Math.max(m, r.length), 0);
     const texts = rows.map(r => r.concat(Array(Math.max(0, ncols - r.length)).fill(null))
-      .map(cell => (cell === null ? '' : isSymbolic(cell) ? null : withFractionMark(format(cell, this.displayOpts)))));
+      .map(cell => (cell === null ? '' : isSymbolic(cell) ? null : gridText(cell, this.displayOpts))));
     const cells = texts.map((r, i) => r.map((text, j) => {
       if (text !== null) return `<span class="mcell">${escapeHtml(text)}</span>`;
       const { svg } = astToSvg(rows[i][j].expr, { size: 18 });
