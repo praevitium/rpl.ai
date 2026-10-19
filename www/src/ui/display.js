@@ -136,7 +136,7 @@ const clipText = (text, max = 28) => (text.length > max ? `${text.slice(0, max -
 
 export function describeValue(value) {
   const type = typeName(value);
-  const shown = clipText(format(value));
+  const shown = clipText(withFractionMark(format(value)));
   switch (value?.type) {
     case TYPES.STRING: return { type, text: `the string ${shown}` };
     case TYPES.NAME: return { type, text: `the name ${shown}` };

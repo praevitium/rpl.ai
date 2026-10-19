@@ -4,7 +4,7 @@ import {
 } from '../rpl/algebra.js';
 import { eqwToSvg, astToSvg } from '../rpl/pretty.js';
 import { Symbolic, Name, Real, isSymbolic, isNumber, isName, isInteger, isReal, isList, isUnit, Integer } from '../rpl/types.js';
-import { format } from '../rpl/formatter.js';
+import { format, withFractionMark } from '../rpl/formatter.js';
 import { astLatex, parseMath } from '../rpl/latex.js';
 import { RPLError, Stack } from '../rpl/stack.js';
 import { lookup } from '../rpl/ops.js';
@@ -1986,7 +1986,7 @@ export class EquationEditor {
     let solutions;
     try { solutions = runOps([Symbolic(ast), Name(variable)], ['SOLVE']); }
     catch (error) { this.app.notifyError(this._casMessage(error)); return; }
-    this.app.pushFromWriter(solutions, `Pushed the solutions for ${variable}: ${solutionsText(solutions)}`);
+    this.app.pushFromWriter(solutions, `Pushed the solutions for ${variable}: ${withFractionMark(solutionsText(solutions))}`);
   }
 
   commit() {
@@ -2301,10 +2301,10 @@ export class EquationEditor {
 
   _insightHtml(insight, index) {
     let body;
-    if (insight.kind === 'value') body = `<span class="val">${Number.isInteger(insight.value) ? '=' : '≈'} ${escapeHtml(plainNumber(insight.value))}</span>`;
+    if (insight.kind === 'value') body = `<span class="val">${Number.isInteger(insight.value) ? '=' : '≈'} ${escapeHtml(withFractionMark(plainNumber(insight.value)))}</span>`;
     else if (insight.kind === 'plot') body = sparklineSvg(insight.ast, insight.variable);
     else if (insight.kind === 'replace') body = `<span class="m">${astToSvg(insight.ast, { size: 17, padding: 1 }).svg}</span>`;
-    else body = `<span class="val">${escapeHtml(insight.text)}</span>`;
+    else body = `<span class="val">${escapeHtml(withFractionMark(insight.text))}</span>`;
     const title = insight.kind === 'note' ? insight.note : INSIGHT_TITLES[insight.kind];
     return `<button type="button" class="ins${insight.hot ? ' hot' : ''}" data-i="${index}" title="${escapeHtml(title)}"><small>${escapeHtml(insight.label)}</small>${body}</button>`;
   }

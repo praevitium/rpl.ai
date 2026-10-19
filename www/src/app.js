@@ -472,7 +472,7 @@ class App {
       const banner = haltedBannerHtml({
         kind: halted.kind,
         dialog: halted.dialog,
-        prompt: prompt == null ? '' : isString(prompt) ? prompt.value : format(prompt),
+        prompt: prompt == null ? '' : isString(prompt) ? prompt.value : withFractionMark(format(prompt)),
         programHtml: suspendedProgramHtml(halted, this.display.displayOpts),
       });
       if (banner === this._haltBanner) {
@@ -951,7 +951,7 @@ class App {
     const value = this.stack.peek(level);
     const targets = unitConversions(value.uexpr);
     if (!targets.length) { this.toast(`No other unit in the UNITS menu matches level ${level}`); return; }
-    const rows = targets.map((uexpr, i) => `<button type="button" class="opt" data-v="${i}"><span class="ck">${icon('chr', 'sm')}</span><b>${escapeHtml(format(Unit(convertValue(value.value, value.uexpr, uexpr), uexpr), this.display.displayOpts))}</b></button>`);
+    const rows = targets.map((uexpr, i) => `<button type="button" class="opt" data-v="${i}"><span class="ck">${icon('chr', 'sm')}</span><b>${escapeHtml(withFractionMark(format(Unit(convertValue(value.value, value.uexpr, uexpr), uexpr), this.display.displayOpts)))}</b></button>`);
     this.popover.open(anchor ?? this.display.stackView.querySelector('.st-row.sel'), `<h6>Convert level ${level} to</h6>${rows.join('')}`, {
       label: `Convert level ${level}`,
       onClick: (t) => {
@@ -1671,7 +1671,7 @@ class App {
           if (known) { this.stack.push(named()); lookup(known).fn(this.stack); }
           varStore(id, this.stack.pop());
         };
-        if (this.entry.safeRun(store, 'STO')) this.undoToast(`${id}: ${format(value)}`);
+        if (this.entry.safeRun(store, 'STO')) this.undoToast(`${id}: ${withFractionMark(format(value))}`);
       },
       solve: () => this._solverRoot(root, named()),
       recall: () => {
@@ -1913,7 +1913,7 @@ class App {
   // The HP's CONLIB: each constant with what it is and its value, as the library lists them; a tap is its →STK.
   showConstants() {
     const ids = constantIds();
-    const rows = ids.map((id, i) => `<button type="button" class="opt" data-v="${i}"><span class="ck"></span><b>${escapeHtml(`${id}: ${CONSTANT_TITLES[id]}`)}</b><span>${escapeHtml(format(constantValue(id), this.display.displayOpts))}</span></button>`);
+    const rows = ids.map((id, i) => `<button type="button" class="opt" data-v="${i}"><span class="ck"></span><b>${escapeHtml(`${id}: ${CONSTANT_TITLES[id]}`)}</b><span>${escapeHtml(withFractionMark(format(constantValue(id), this.display.displayOpts)))}</span></button>`);
     this.popover.open($('input'), `<h6>Constants library</h6>${rows.join('')}`, {
       label: 'Constants library',
       above: true,
