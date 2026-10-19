@@ -1,5 +1,5 @@
 import { hpTextToSource, parseHpText, formatHpText, HP_TEXT_HEADER } from '../www/src/rpl/hp-text.js';
-import { parseEntry } from '../www/src/rpl/parser.js';
+import { parseEntry, endsInQuote } from '../www/src/rpl/parser.js';
 import { formatSource } from '../www/src/rpl/formatter.js';
 import {
   Str, Rational, Integer, RList, Matrix, isDirectory, isProgram, isString, isSymbolic, isTagged, isRational, isInteger, isReal,
@@ -28,6 +28,11 @@ END`;
     'hpTextToSource: curly quotes from a messaging app read as a string and an algebraic');
   assert(hpTextToSource('"He said “hi”" SIZE') === '"He said “hi”" SIZE',
     'hpTextToSource: curly quotes inside a straight-quoted string stay text');
+  const typed = parseEntry('‘X^2+1’ “don’t” ‘A’');
+  assert(isSymbolic(typed[0]) && isString(typed[1]) && typed[1].value === 'don’t' && typed[2].type === 'name' && typed[2].id === 'A',
+    'parseEntry: quotes curled by a phone keyboard\'s smart punctuation read as straight ones, so ‘X^2+1’ is an algebraic and “don’t” a string');
+  assert(endsInQuote('1 ‘X') && !endsInQuote('1 ‘X’') && !endsInQuote('"it’s"'),
+    'endsInQuote: a curly quote opens and closes an algebraic, so operator keys type inside ‘X as they do inside \'X');
   assert(hpTextToSource(`"it's @ here"`) === `"it's @ here"`,
     'hpTextToSource: apostrophes and @ inside a string are kept');
 }

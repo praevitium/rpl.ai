@@ -2,7 +2,7 @@
    with apostrophes there but backticks here, T(3) spells glyphs as
    backslash codes, and `@` starts a comment. */
 
-import { parseEntry } from './parser.js';
+import { parseEntry, straightenQuotes } from './parser.js';
 import { formatSource } from './formatter.js';
 import { RPLError } from './stack.js';
 import { Directory, isDirectory, isName, isStorableHpName } from './types.js';
@@ -41,27 +41,6 @@ function mapOutsideStrings(src, mapChar) {
 export function hpCodesToGlyphs(src) {
   for (const [code, glyph] of T3_CODES) src = src.split(code).join(glyph);
   return src;
-}
-
-// Notes and messaging apps curl the quotes in a program they pass on. The HP has no curly quotes, so they
-// read as straight ones, but inside a straight-quoted string they are text.
-function straightenQuotes(src) {
-  let out = '';
-  let closer = null;
-  for (let i = 0; i < src.length; i++) {
-    const c = src[i];
-    if (closer) {
-      if (c === '\\' && i + 1 < src.length) { out += c + src[++i]; continue; }
-      if (c === closer || c === '"') { out += '"'; closer = null; continue; }
-      out += c;
-    } else if (c === '"' || c === '“' || c === '”') {
-      out += '"';
-      closer = c === '"' ? '"' : '”';
-    } else {
-      out += c === '‘' || c === '’' ? "'" : c;
-    }
-  }
-  return out;
 }
 
 export function hpTextToSource(text) {
