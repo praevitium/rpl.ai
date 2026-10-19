@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.166 (2026-10-19)
+**Latest release:** v0.6.167 (2026-10-19)
 
 ---
 
@@ -20,6 +20,21 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.167 — 2026-10-19
+
+`MAXR` and `MINR` are the HP 50g's 9.99999999999E499 and 1E-499, as the
+AUR and the Characters drawer give them, where they were E999 and E-999.
+`STMXE` still sets another range.
+
+`TRIGCOS`, `TRIGSIN` and `TRIGTAN`, the HP's trig rewrites, sit at the
+end of the CAS menu's TRIG folder: `'SIN(X)^2' TRIGCOS` gives
+`-COS(X)^2 + 1`, and `'SIN(X)^2' TRIGTAN` the AUR's
+`TAN(X)^2/(TAN(X)^2 + 1)`.
+
+A matrix or vector on the stack shrinks to fit its line, down to three
+quarters of its size as a formula does, before it scrolls sideways, so a
+3×3 matrix keeps its last column in minimal view at 280 px.
 
 ## v0.6.166 — 2026-10-19
 
