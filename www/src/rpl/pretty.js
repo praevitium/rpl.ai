@@ -255,18 +255,32 @@ function caretSlotBox(size) {
   };
 }
 
+// The sign is drawn, not set in the font: a monospace ∫ is a boxy J that leaves the lower limit on the integrand's line.
+// Limits sit at its top right and bottom right, as in a textbook.
 function integralBox(lo, hi, size) {
-  const glyph = textBox('∫', size * 1.7);
-  const limW = Math.max(lo.width, hi.width);
-  const width = glyph.width + limW;
-  const ascent = Math.max(glyph.ascent, hi.ascent + hi.descent + glyph.ascent * 0.15);
-  const descent = Math.max(glyph.descent, lo.ascent + lo.descent);
+  const signW = 0.55 * size;
+  const rise = 1.08 * size;
+  const drop = 0.42 * size;
+  const h = rise + drop;
+  const strokeW = Math.max(1.2, 0.075 * size);
+  const hiX = signW + 0.06 * size;
+  const loX = signW * 0.72;
+  const width = Math.max(hiX + hi.width, loX + lo.width) + 0.15 * size;
+  // A tall limit, a fraction say, lifts the upper one clear of the lower.
+  const hiRise = Math.max(rise - hi.ascent, hi.descent + 0.08 * size + lo.ascent - drop);
+  const ascent = Math.max(rise + 0.03 * h + strokeW / 2, hiRise + hi.ascent);
+  const descent = Math.max(drop + 0.03 * h + strokeW / 2, drop + lo.descent);
   return {
     width, ascent, descent,
     draw(x, by) {
-      const hiBy = by - glyph.ascent + hi.descent;
-      const loBy = by + lo.ascent * 0.15;
-      return glyph.draw(x, by) + hi.draw(x + glyph.width, hiBy) + lo.draw(x + glyph.width, loBy);
+      const top = by - rise;
+      const bot = by + drop;
+      const px = (u) => fmt(x + u * signW);
+      const py = (v) => fmt(top + v * h);
+      const sign = `<path class="int-sign" d="M ${px(0.98)} ${py(0.07)} C ${px(0.9)} ${py(-0.02)} ${px(0.68)} ${py(-0.03)} ${px(0.62)} ${py(0.12)} ` +
+        `L ${px(0.38)} ${py(0.88)} C ${px(0.32)} ${py(1.03)} ${px(0.1)} ${py(1.02)} ${px(0.02)} ${py(0.93)}" ` +
+        `fill="none" stroke="currentColor" stroke-width="${fmt(strokeW)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+      return sign + hi.draw(x + hiX, by - hiRise) + lo.draw(x + loX, bot);
     },
   };
 }
@@ -304,7 +318,7 @@ function derivBox(body, v, size) {
 }
 
 function integBox(body, v, lo, hi, size) {
-  return rowBox([integralBox(lo, hi, size), body, textBox('d', size), v]);
+  return rowBox([integralBox(lo, hi, size), body, gapBox(0.2 * size), textBox('d', size), v]);
 }
 
 function sumBox(body, v, lo, hi, size) {

@@ -8139,8 +8139,8 @@ giac._setFixture('ilaplace(1,x,rplS)', 'Dirac(rplS)');
   assert(fact.svg.includes('>!<') && !fact.svg.includes('>FACT<'),
     'pretty draws FACT with a trailing !');
   const integral = astToSvg(integ);
-  assert(integral.svg.includes('>∫<') && integral.svg.includes('>0<') && integral.svg.includes('>1<'),
-    'pretty draws 4-arg INTEG as ∫ with limits');
+  assert(integral.svg.includes('class="int-sign"') && integral.svg.includes('>0<') && integral.svg.includes('>1<'),
+    'pretty draws 4-arg INTEG as a drawn ∫ sign with limits, not the monospace font\'s boxy ∫ that left the lower limit on the integrand\'s line');
   const sigma = astToSvg(sum);
   assert(sigma.svg.includes('>Σ<') && sigma.svg.includes('>K<') && sigma.svg.includes('>N<'),
     'pretty draws Σ with k=1 below and N above');
