@@ -1853,7 +1853,7 @@ class App {
       toggle: true,
       on: () => calcState.textbookMode,
       onPress: () => this.setTextbook(!calcState.textbookMode),
-    });
+    }, this._flagKey(-51, 'FM,', 'Comma as the fraction mark: 1,5, with ; between the parts of (1,5; 2)'));
     this.setMenu(slots, 'MODES', opts);
   }
 

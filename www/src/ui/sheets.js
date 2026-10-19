@@ -4,7 +4,7 @@ import { ACTIONS, KEYMAP, CONTEXT_LABELS, chordText, isMacPlatform } from './act
 import { STORAGE_KEY as STACK_STORAGE_KEY, BACKUPS_KEY } from '../rpl/persist.js';
 import { UI_PREFS_KEY, THEMES, THEME_LABELS, STACK_SIZES, STACK_SIZE_LABELS, TUTOR_STYLES, KEYPAD_LAYOUTS, KEYPAD_LABELS, SIDES, SIDE_LABELS } from './ui-prefs.js';
 import { REMOTE_CONFIG_KEY as CHAT_REMOTE_KEY, CONSENT_KEY as CHAT_CONSENT_KEY } from '../ai/chat-bot.js';
-import { state as calcState } from '../rpl/state.js';
+import { state as calcState, testUserFlag, setUserFlag, clearUserFlag } from '../rpl/state.js';
 import { VERSION, BUILD, SHA } from '../build-info.js';
 import { pickFile } from './drawer.js';
 
@@ -123,6 +123,7 @@ export class Sheets {
         <div class="set stack dock-set"><b>Panels side</b><span>Which side the rail and its drawer (Catalog, Variables, History…) dock on.</span>${sides('panels', app.prefs.panelsSide)}</div>
         <div class="set stack dock-set"><b>Keypad side</b><span>Which side of the stack the keypad docks on.</span>${sides('keypad', app.prefs.keypadSide)}</div>
         <div class="set"><b>Pretty math</b><span>Show expressions, matrices and lists on the stack in textbook form.</span>${tgl('textbook', !!calcState.textbookMode, 'Pretty math')}</div>
+        <div class="set"><b>Decimal comma</b><span>Show 1,5 and read a typed comma as the decimal mark, with ; between the parts of (1,5; 2). The HP's FM, setting, flag -51.</span>${tgl('fractionComma', testUserFlag(-51), 'Decimal comma')}</div>
         <div class="set"><b>Soft keys in Minimal view</b><span>Keep the soft-menu row visible for menu work.</span>${tgl('minimalMenu', app.prefs.minimalMenu, 'Soft keys in Minimal view')}</div>
         <div class="set"><b>Keyboard-shortcut hints</b><span>Show each key's physical-keyboard shortcut on the keypad.</span>${tgl('hints', app.prefs.hints, 'Keyboard-shortcut hints')}</div>${typeof navigator.vibrate === 'function' && matchMedia('(pointer: coarse)').matches ? `
         <div class="set"><b>Vibrate on key presses</b><span>A short buzz when a finger presses a key, one more when a held finger opens a menu or clears the line, and two on an error, as the HP beeps (flag -56 set stops those), where the phone supports it.</span>${tgl('haptics', app.prefs.haptics, 'Vibrate on key presses')}</div>` : ''}`;
@@ -224,6 +225,7 @@ export class Sheets {
   _toggle(setting, on) {
     const { app } = this;
     if (setting === 'textbook') app.setTextbook(on);
+    else if (setting === 'fractionComma') (on ? setUserFlag : clearUserFlag)(-51);
     else if (setting === 'minimalMenu') app.setMinimalMenu(on);
     else if (setting === 'hints') { app.setPrefs({ hints: on }); app.keypad.update(); }
     else if (setting === 'haptics') app.setPrefs({ haptics: on });
