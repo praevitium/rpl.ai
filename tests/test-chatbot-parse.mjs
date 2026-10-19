@@ -565,6 +565,13 @@ import { readFileSync } from 'node:fs';
          'calc.css fades a reply\'s scroller with the mask the stack levels use');
 }
 
+// A <br> in a table cell, which models write to break a cell's lines, showed as typed; it breaks the line.
+{
+  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
+  assert(/cell\.split\(\/<br\\s\*\\\/\?>\/i\)\.forEach\(\(line, k\) => \{\s*if \(k\) td\.appendChild\(elem\('br'\)\);\s*appendSpans\(td, line\);/.test(src),
+         'a table cell breaks its line at <br>, <br/> or <BR>, where the tag showed as typed');
+}
+
 // Headings 4 to 6 deep render as the smallest heading, h6.
 {
   const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');

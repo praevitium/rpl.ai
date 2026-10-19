@@ -223,7 +223,11 @@ function appendTable(frag, { header, align, rows }) {
     cells.forEach((cell, j) => {
       const td = tr.appendChild(elem(tag));
       if (align[j]) td.style.textAlign = align[j];
-      appendSpans(td, cell);
+      // A table row is one line of Markdown, so models break a cell's lines with <br>.
+      cell.split(/<br\s*\/?>/i).forEach((line, k) => {
+        if (k) td.appendChild(elem('br'));
+        appendSpans(td, line);
+      });
     });
   };
   addRow(table.appendChild(elem('thead')), header, 'th');
