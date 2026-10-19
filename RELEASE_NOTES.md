@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.148 (2026-10-18)
+**Latest release:** v0.6.149 (2026-10-18)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.149 — 2026-10-18
+
+`CONST`, the HP's Constants Library command, joins the units: `'c' CONST`
+gives `299792458._m/s`, and the library's 39 constants come by its names
+(`NA`, `k`, `R`, `R∞`, `ε0`, `ħ` and the rest) in their units with
+CODATA 2018 values, or as plain numbers with flag -61 set. A name the
+library lacks says so in the banner, which offers CONST's reference.
+`'Vm' →NUM`, the molar volume, gives the HP's `0.02241396954` m³/mol at
+0 °C and one atmosphere, where it gave `0.02271095464`, the value at
+100 kPa. Screen readers name the command line Command line, where it had
+no name. The assistant knows `KEY` and `CONST`, where it was told `KEY`
+doesn't exist.
 
 ---
 
