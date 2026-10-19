@@ -63,6 +63,11 @@ register('VERSION', (s) => {
   s.push(Str('GPL-3.0-or-later. Giac © Bernard Parisse, Renée de Graeve and contributors'));
 }, { category: 'System', categoryOrder: 0.5, label: "VERSION" });
 
+// rpl.ai speaks English, the HP's language 0.
+register('LANGUAGE→', (s) => {
+  s.push(Real(0));
+}, { category: 'System', categoryOrder: 0.6, label: 'LANGUAGE→' });
+
 register('MEM', (s) => {
   s.push(Real(1073741824));
 }, { category: 'System', categoryOrder: 0, label: "MEM" });

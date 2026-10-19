@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.42 (2026-10-19)
+**Latest release:** v0.7.43 (2026-10-19)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.43 — 2026-10-19
+
+- MENUXY puts up the HP's numbered CAS commands as a temporary menu:
+  `34 37 MENUXY` shows ATAN2S, ASIN2T, ASIN2C and ACOS2S. REWRITE shows
+  the CAS's rewriting commands the same way, SOLVER opens the CAS menu's
+  S.SLV folder, and LANGUAGE→ gives 0, English.
 
 ## v0.7.42 — 2026-10-19
 

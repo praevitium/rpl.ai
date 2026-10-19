@@ -2068,10 +2068,27 @@ clearAllUserFlags();
   const { setOpenHook } = await import('../www/src/rpl/ops.js');
   const opened = [];
   setOpenHook((target) => opened.push(JSON.stringify(target)));
-  runLine('ALGB CASCMD MODULAR TVM MATHS CONSTANTS');
-  assert(opened.join(' ') === '{"family":"CAS","folder":"ALG"} {"drawer":"catalog"} {"family":"INTEGER","folder":"MODUL"} {"family":"TVM"} {"family":"CAS"} {"drawer":"chars"}',
-    'ALGB opens the CAS ALG folder, CASCMD the Catalog, MODULAR the INTEGER MODUL folder, TVM the TVM menu, MATHS the CAS menu and CONSTANTS the Characters drawer');
+  runLine('ALGB CASCMD MODULAR TVM MATHS CONSTANTS SOLVER');
+  assert(opened.join(' ') === '{"family":"CAS","folder":"ALG"} {"drawer":"catalog"} {"family":"INTEGER","folder":"MODUL"} {"family":"TVM"} {"family":"CAS"} {"drawer":"chars"} {"family":"CAS","folder":"S.SLV"}',
+    'ALGB opens the CAS ALG folder, CASCMD the Catalog, MODULAR the INTEGER MODUL folder, TVM the TVM menu, MATHS the CAS menu, CONSTANTS the Characters drawer and SOLVER the S.SLV folder');
   setOpenHook(null);
+}
+
+// MENUXY shows a range of the HP's numbered CAS commands, and REWRITE its rewriting commands, as TMENU shows a list.
+{
+  const { setMenuHook } = await import('../www/src/rpl/ops.js');
+  const shown = [];
+  setMenuHook((list, temporary) => shown.push(`${format(list)}${temporary ? ' temporary' : ''}`));
+  runLine('34 37 MENUXY');
+  assert(shown.at(-1) === '{ ATAN2S ASIN2T ASIN2C ACOS2S } temporary', `MENUXY(34,37) shows the AUR's ATAN2S ASIN2T ASIN2C ACOS2S (${shown.at(-1)})`);
+  runLine('-3 2 MENUXY 138 500 MENUXY');
+  assert(shown.at(-2) === '{ EXPAND FACTOR SUBST } temporary' && shown.at(-1) === '{ ∞ PROMPTSTO } temporary',
+    `MENUXY takes numbers below 0 as 0 and above 140 as 140, leaving off VER, which rpl.ai lacks (${shown.slice(-2)})`);
+  runLine('REWRITE');
+  assert(shown.at(-1) === '{ DISTRIB EXPLN EXP2POW FDISTRIB LIN LNCOLLECT SIMPLIFY XNUM XQ } temporary', `REWRITE shows the rewriting commands (${shown.at(-1)})`);
+  assertThrows(() => runLine('"a" 3 MENUXY'), /Bad argument type/, 'MENUXY wants numbers');
+  setMenuHook(null);
+  assert(format(runLine('LANGUAGE→').peek()) === '0.', 'LANGUAGE→ gives 0, English');
 }
 
 // EDIT, EDITB, VISIT and VISITB hand the app what to edit and in which editor.

@@ -312,6 +312,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   can put up its own keys, as on the HP: `{ SIN COS } MENU` stores the list
   in CST and shows it, `TMENU` shows one without storing it, and `0 MENU`
   brings back the menu before (the HP's other menu numbers are not taken).
+  `34 37 MENUXY` puts up the HP's numbered CAS commands 34 to 37 (ATAN2S,
+  ASIN2T, ASIN2C and ACOS2S) the same way, and `REWRITE` the CAS's
+  rewriting commands.
   An item can be `{ "label" object }` or `{ "label" { object ⇦object
   ⇨object } }`, as on the HP; a finger held on the key offers the shifted
   objects.

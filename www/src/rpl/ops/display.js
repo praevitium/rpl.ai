@@ -1,8 +1,8 @@
-import { isInteger, isBinaryInteger, isReal, isList, isName, isString, BinaryInteger, Real } from '../types.js';
+import { isInteger, isBinaryInteger, isReal, isList, isName, isString, BinaryInteger, Real, RList, Name } from '../types.js';
 import { RPLError } from '../stack.js';
 import { setWordsize, getWordsize, getWordsizeMask, getBinaryBase, setBinaryBase, setTextbookMode, setDisplay, varStore, varRecall, inScratchState, setLcdLine, clearLcd, freezeLcd, LCD_LINES, testUserFlag } from '../state.js';
 import { format, currentDisplay } from '../formatter.js';
-import { register } from './registry.js';
+import { register, lookup } from './registry.js';
 import { mesPrepare } from './root.js';
 
 
@@ -66,6 +66,7 @@ const MENU_COMMANDS = Object.freeze({
   HELP: { drawer: 'catalog' },
   MATHS: { family: 'CAS' },
   CONSTANTS: { drawer: 'chars' },
+  SOLVER: { family: 'CAS', folder: 'S.SLV' },
 });
 
 Object.entries(MENU_COMMANDS).forEach(([name, target], i) => {
@@ -73,6 +74,43 @@ Object.entries(MENU_COMMANDS).forEach(([name, target], i) => {
     if (!inScratchState()) _openHook?.(target);
   }, { category: 'Display / base', categoryOrder: 30 + i / 100, label: name });
 });
+
+// The HP's numbered CAS commands, 0 to 140, for MENUXY.
+const CAS_NUMBERED = Object.freeze([
+  'EXPAND', 'FACTOR', 'SUBST', 'DERVX', 'INTVX', 'lim', 'TAYLOR0', 'SERIES', 'SOLVEVX', 'PLOT', 'PLOTADD', 'IBP',
+  'PREVAL', 'RISCH', 'DERIV', 'DESOLVE', 'LAP', 'ILAP', 'LDEC', 'TEXPAND', 'LIN', 'TSIMP', 'LNCOLLECT', 'EXPLN',
+  'SINCOS', 'TLIN', 'TCOLLECT', 'TRIG', 'TRIGCOS', 'TRIGSIN', 'TRIGTAN', 'TAN2SC', 'HALFTAN', 'TAN2SC2', 'ATAN2S', 'ASIN2T',
+  'ASIN2C', 'ACOS2S', 'DIV2', 'IDIV2', 'QUOT', 'IQUOT', 'REMAINDER', 'IREMAINDER', 'GCD', 'LCM', 'EGCD', 'IEGCD',
+  'ABCUV', 'IABCUV', 'LGCD', 'SIMP2', 'PARTFRAC', 'PROPFRAC', 'PTAYL', 'HORNER', 'EULER', 'PA2B2', 'CHINREM', 'ICHINREM',
+  'ISPRIME?', 'NEXTPRIME', 'PREVPRIME', 'SOLVE', 'ZEROS', 'FCOEF', 'FROOTS', 'FACTORS', 'DIVIS', 'TRAN', 'HADAMARD', 'rref',
+  'REF', 'AXM', 'AXL', 'QXA', 'AXQ', 'GAUSS', 'SYLVESTER', 'PCAR', 'JORDAN', 'MAD', 'LINSOLVE', 'VANDERMONDE',
+  'HILBERT', 'LCXM', 'DIV', 'CURL', 'LAPL', 'HESS', 'LEGENDRE', 'TCHEBYCHEFF', 'HERMITE', 'LAGRANGE', 'FOURIER', 'SIGNTAB',
+  'TABVAR', 'TABVAL', 'DIVPC', 'TRUNC', 'SEVAL', 'TEVAL', 'MAP', 'XNUM', 'XQ', 'REORDER', 'LVAR', 'FXND',
+  'EXLR', 'LNAME', 'ADDTMOD', 'SUBTMOD', 'MULTMOD', 'DIVMOD', 'DIV2MOD', 'POWMOD', 'INVMOD', 'GCDMOD', 'EXPANDMOD', 'FACTORMOD',
+  'RREFMOD', 'MODSTO', 'MENUXY', 'KEYEVAL', 'GROBADD', 'SCROLL', 'CASCFG', 'MAIN', 'ALGB', 'CMPLX', 'TRIGO', 'MATR',
+  'DIFF', 'ARIT', 'SOLVER', 'EXP&LN', 'EPSX0', '?', '∞', 'PROMPTSTO', 'VER',
+]);
+
+const REWRITE_COMMANDS = Object.freeze(['DISTRIB', 'EXPLN', 'EXP2POW', 'FDISTRIB', 'LIN', 'LNCOLLECT', 'POWEREXPAND', 'SIMPLIFY', 'XNUM', 'XQ']);
+
+// A temporary menu of commands, as TMENU shows one; those rpl.ai lacks are left off.
+function _commandMenu(names) {
+  if (!inScratchState()) _menuHook?.(RList(names.filter((name) => lookup(name)).map((name) => Name(name))), true);
+}
+
+function _menuNumber(v) {
+  if (!(isReal(v) || isInteger(v))) throw new RPLError('Bad argument type');
+  return Math.min(CAS_NUMBERED.length - 1, Math.max(0, Math.trunc(Number(v.value))));
+}
+
+register('MENUXY', (s) => {
+  const [first, last] = s.popN(2).map(_menuNumber);
+  _commandMenu(CAS_NUMBERED.slice(first, last + 1));
+}, { category: 'Display / base', categoryOrder: 25.1, label: 'MENUXY' });
+
+register('REWRITE', () => {
+  _commandMenu(REWRITE_COMMANDS);
+}, { category: 'Display / base', categoryOrder: 30.5, label: 'REWRITE' });
 
 // MSOLVR opens the multiple-equation solver's menu on Mpar, made from EQ when there is none.
 register('MSOLVR', () => {
