@@ -5548,6 +5548,18 @@ giac._setFixture('ilaplace(1,x,rplS)', 'Dirac(rplS)');
   resetCasVx();
 }
 
+// CASCFG puts back the CAS defaults: exact, real, VX and the modulus 13.
+{
+  const { getCasVx, setCasVx, getCasModulo, setCasModulo, getApproxMode, setApproxMode, getComplexMode, setComplexMode } = await import('../www/src/rpl/state.js');
+  setCasVx('T');
+  setCasModulo(7n);
+  setApproxMode(true);
+  setComplexMode(true);
+  runLine('CASCFG');
+  const defaults = getCasVx() === 'x' && getCasModulo() === 13n && !getApproxMode() && !getComplexMode();
+  assert(defaults, 'CASCFG resets VX, the modulus, exact mode and real mode');
+}
+
 // I→R and R→I convert between exact integers and reals; a fractional real has no integer.
 {
   const s = new Stack();

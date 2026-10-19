@@ -111,6 +111,8 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   FXND                       numerator and denominator: \`(X-3)^2/(Z+4)\` FXND → \`(X-3)^2\` \`Z+4\`
   DEGREE REORDER             degree in VX, else the first variable (an equation is lhs-rhs, zero is -1); \`poly\` \`var\` REORDER sorts by powers of var
   VX SVX                     get/set the current CAS main variable (default \`x\`); RCLVX and STOVX are the HP's names
+  CASCFG                     back to exact, real, VX \`x\` and the modulus 13
+  ALGB DIFF EXP&LN TRIGO MAIN ARIT INTEGER MODULAR POLYNOMIAL MATR TESTS     open the matching menu or CAS folder; CASCMD and HELP open the Catalog
   MODSTO ADDTMOD SUBTMOD MULTMOD POWMOD EXPANDMOD FACTORMOD GCDMOD DIVMOD DIV2MOD     modular arithmetic against a stored modulus
   GBASIS GREDUCE             Gröbner basis / reduction
   LNAME                      extract variable Names referenced by an expression

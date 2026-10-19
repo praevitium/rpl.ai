@@ -37,7 +37,7 @@ import {
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo,
   batchStateNotifications,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook, setMenuHook, setBeepHook, setConlibHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setBeepHook, setConlibHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
 import { VERSION } from './build-info.js';
 import { beep, alarmBeep } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest } from './rpl/ops/time.js';
@@ -158,6 +158,16 @@ class App {
       if (!list) this.showPreviousMenu({ commit: false });
       else if (temporary) this.setMenu(this._customMenuSlots(list), 'TMENU');
       else this.showMenu('CST', { commit: false });
+      if (this.prefs.minimal) this.setMinimalMenu(true);
+    });
+    setOpenHook(({ family, folder, drawer }) => {
+      if (drawer) {
+        this.drawers.open(drawer);
+        return;
+      }
+      const group = { CAS: CAS_GROUPS, INTEGER: INTEGER_GROUPS }[family]?.find((g) => g.id === folder);
+      if (group) this._showGroupMenu(group, family);
+      else this.showMenu(family, { commit: false });
       if (this.prefs.minimal) this.setMinimalMenu(true);
     });
     setBeepHook(beep);

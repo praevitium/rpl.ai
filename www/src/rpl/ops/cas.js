@@ -3,7 +3,7 @@ import { giac } from '../cas/giac-engine.mjs';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { buildGiacCmd, giacToAst, splitGiacList, astToGiac, isGiacErrorString } from '../cas/giac-convert.mjs';
 import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction, LOGIC_ARITY, formatAlgebra } from '../algebra.js';
-import { getComplexMode, getCasVx, setCasVx, getApproxMode, getCasModulo } from '../state.js';
+import { getComplexMode, getCasVx, setCasVx, getApproxMode, getCasModulo, setApproxMode, setComplexMode, resetCasVx, resetCasModulo } from '../state.js';
 import { register, lookup } from './registry.js';
 import { _astToRplValue, _pushCasResult, _isSymOperand, _toAst, _substitute, _withListUnary, _withTaggedUnary, _withVMUnary, recallVar, storeVar } from './internal.js';
 
@@ -1068,6 +1068,14 @@ register('SVX', (s) => {
 
 register('RCLVX', lookup('VX').fn, { category: 'CAS / symbolic', categoryOrder: 40.1, label: "RCLVX" });
 register('STOVX', lookup('SVX').fn, { category: 'CAS / symbolic', categoryOrder: 41.1, label: "STOVX" });
+
+// AUR: the CAS modes' defaults, exact and real, with VX and the modulus 13.
+register('CASCFG', () => {
+  setApproxMode(false);
+  setComplexMode(false);
+  resetCasVx();
+  resetCasModulo();
+}, { category: 'CAS / symbolic', categoryOrder: 41.2, label: "CASCFG" });
 
 
 register('PREVAL', (s) => {

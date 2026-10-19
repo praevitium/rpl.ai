@@ -2062,3 +2062,14 @@ clearAllUserFlags();
   assert(shown("-40 SF PUSH -40 CF -40 FS? POP -40 FS? -40 CF") === '0. | 1.', 'POP restores the flags PUSH saved');
   assert(shown("'D7' CRDIR PUSH D7 PATH POP PATH 'D7' PGDIR") === '{ HOME D7 } | { HOME }', 'POP returns to the path PUSH saved');
 }
+
+// The HP's CAS menu commands open the matching menu, folder or drawer.
+{
+  const { setOpenHook } = await import('../www/src/rpl/ops.js');
+  const opened = [];
+  setOpenHook((target) => opened.push(JSON.stringify(target)));
+  runLine('ALGB CASCMD MODULAR');
+  assert(opened.join(' ') === '{"family":"CAS","folder":"ALG"} {"drawer":"catalog"} {"family":"INTEGER","folder":"MODUL"}',
+    'ALGB opens the CAS ALG folder, CASCMD the Catalog and MODULAR the INTEGER MODUL folder');
+  setOpenHook(null);
+}

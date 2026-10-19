@@ -40,6 +40,36 @@ register('TMENU', (s) => {
   if (!inScratchState()) _menuHook?.(list, true);
 }, { category: 'Display / base', categoryOrder: 25, label: "TMENU" });
 
+let _openHook = null;
+
+export function setOpenHook(fn) {
+  _openHook = typeof fn === 'function' ? fn : null;
+}
+
+// The HP's CAS menu commands open the app's menu or folder holding the same commands; CASCMD and HELP, the
+// HP's lists of CAS commands with their examples, open the Catalog.
+const MENU_COMMANDS = Object.freeze({
+  ALGB: { family: 'CAS', folder: 'ALG' },
+  DIFF: { family: 'CAS', folder: 'CALC' },
+  'EXP&LN': { family: 'CAS', folder: 'EXP&LN' },
+  TRIGO: { family: 'CAS', folder: 'TRIG' },
+  MAIN: { family: 'CAS' },
+  ARIT: { family: 'INTEGER' },
+  INTEGER: { family: 'INTEGER', folder: 'INTEG' },
+  MODULAR: { family: 'INTEGER', folder: 'MODUL' },
+  POLYNOMIAL: { family: 'POLY' },
+  MATR: { family: 'MATRIX' },
+  TESTS: { family: 'LOGIC' },
+  CASCMD: { drawer: 'catalog' },
+  HELP: { drawer: 'catalog' },
+});
+
+Object.entries(MENU_COMMANDS).forEach(([name, target], i) => {
+  register(name, () => {
+    if (!inScratchState()) _openHook?.(target);
+  }, { category: 'Display / base', categoryOrder: 30 + i / 100, label: name });
+});
+
 
 // DISP writes an object on line n of the seven-line display over the stack, a string without its quotes, and CLLCD
 // blanks it. The text goes when the program ends or pauses, unless FREEZE keeps it until the next key press.
