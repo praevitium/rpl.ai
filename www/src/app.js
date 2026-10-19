@@ -16,7 +16,7 @@ import { Sheets } from './ui/sheets.js';
 import { Tour } from './ui/tour.js';
 import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
-import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, INTEGER_GROUPS, TRIG_GROUPS, LIST_GROUPS, TIME_GROUPS, KEY_LABELS, VECTOR_KEYS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel } from './ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, INTEGER_GROUPS, TRIG_GROUPS, LIST_GROUPS, TIME_GROUPS, KEY_LABELS, VECTOR_KEYS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, CONSTANT_TITLES, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel } from './ui/menus.js';
 import { convertValue } from './rpl/units.js';
 import { MODES } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
@@ -37,7 +37,7 @@ import {
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo,
   batchStateNotifications,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook, setMenuHook, setBeepHook } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook, setBeepHook, setConlibHook, constantIds, constantValue } from './rpl/ops.js';
 import { beep, alarmBeep } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest } from './rpl/ops/time.js';
 import { _hp50TypeCode } from './rpl/ops/internal.js';
@@ -152,6 +152,7 @@ class App {
       if (this.prefs.minimal) this.setMinimalMenu(true);
     });
     setBeepHook(beep);
+    setConlibHook(() => this.showConstants());
     loadCommandReference().then((m) => { this.reference = m; this.menubar.render(); }).catch(() => {});
 
     this._wireDisplay();
@@ -1816,6 +1817,30 @@ class App {
     const lines = [...new Set(this.entry.getHistory().reverse())].slice(0, 4);
     if (!lines.length) return;
     this._heldKeyMenu(lines.map((line) => ({ text: line, mark: '', run: () => (this.entry.buffer ? this.entry.typeToken(line) : this.entry.recall(line)) })), anchor, 'Last lines');
+  }
+
+  // The HP's CONLIB: each constant with what it is and its value, as the library lists them; a tap is its →STK.
+  showConstants() {
+    const ids = constantIds();
+    const rows = ids.map((id, i) => `<button type="button" class="opt" data-v="${i}"><span class="ck"></span><b>${escapeHtml(`${id}: ${CONSTANT_TITLES[id]}`)}</b><span>${escapeHtml(format(constantValue(id), this.display.displayOpts))}</span></button>`);
+    this.popover.open($('input'), `<h6>Constants library</h6>${rows.join('')}`, {
+      label: 'Constants library',
+      above: true,
+      onClick: (t) => {
+        this.popover.close({ restoreFocus: false });
+        this._pressConstant(ids[Number(t.dataset.v)]);
+      },
+    });
+  }
+
+  // A constant goes on the stack after the line is entered, or into an open program as `NA` CONST.
+  _pressConstant(id) {
+    if (this.entry._typingAtCursor()) { this.entry.typeToken(`\`${id}\` CONST `); return; }
+    if (this.entry.buffer.trim()) {
+      this.commitEntry();
+      if (this.entry.error) return;
+    }
+    this._pushValue(constantValue(id));
   }
 
   pressVariable(name, layer = null) {

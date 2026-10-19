@@ -762,3 +762,21 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assertThrows(() => runLine('2 CONST'), /Bad argument type/, 'CONST wants a name');
 }
 
+{
+  const { setConlibHook, constantIds, constantValue } = await import('../www/src/rpl/ops.js');
+  const { withScratchState } = await import('../www/src/rpl/state.js');
+  const { CONSTANT_TITLES } = await import('../www/src/ui/menus.js');
+  let opened = 0;
+  setConlibHook(() => { opened++; });
+  const s = runLine('1 CONLIB');
+  assert(opened === 1 && s.depth === 1, 'CONLIB opens the Constants Library and leaves the stack alone');
+  withScratchState(() => runLine('CONLIB'));
+  assert(opened === 1, "CONLIB in a dry run, such as the assistant's, opens nothing");
+  setConlibHook(null);
+  const ids = constantIds();
+  assert(ids.length === 39 && ids[0] === 'NA' && ids.at(-1) === 'I0' && ids.every((id) => CONSTANT_TITLES[id]),
+    "the library lists the HP's 39 constants in its order, each with the name CONLIB shows");
+  assert(formatSource(constantValue('c')) === '299792458._m/s' && formatSource(constantValue('α')) === '0.0072973525693',
+    'a constant picked in the library is the value CONST gives');
+}
+

@@ -1,6 +1,6 @@
 import { isName, isUnit, Real, Unit } from '../types.js';
 import { RPLError } from '../stack.js';
-import { testUserFlag } from '../state.js';
+import { testUserFlag, inScratchState } from '../state.js';
 import { toBaseUexpr, sameDims, convertValue, divideUexpr, multiplyUexpr, parseUnitExpr } from '../units.js';
 import { register } from './registry.js';
 import { _inUnit, _makeUnit, _numVal, _scalarBinary, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary } from './internal.js';
@@ -83,10 +83,28 @@ const CONSTANTS = Object.freeze({
   'εsi': [11.9, ''], 'εox': [3.9, ''], I0: [1e-12, 'W/m^2'],
 });
 
+export function constantIds() {
+  return Object.keys(CONSTANTS);
+}
+
+export function constantValue(id) {
+  const [value, unit] = CONSTANTS[id];
+  return unit && !testUserFlag(-61) ? Unit(value, parseUnitExpr(unit)) : Real(value);
+}
+
 register('CONST', (s) => {
   const [name] = s.popN(1);
   if (!isName(name)) throw new RPLError('Bad argument type');
   if (!Object.hasOwn(CONSTANTS, name.id)) throw new RPLError(`Undefined name: ${name.id}`);
-  const [value, unit] = CONSTANTS[name.id];
-  s.push(unit && !testUserFlag(-61) ? Unit(value, parseUnitExpr(unit)) : Real(value));
+  s.push(constantValue(name.id));
 }, { category: 'Units', categoryOrder: 7, label: "CONST" });
+
+let _conlibHook = null;
+
+export function setConlibHook(fn) {
+  _conlibHook = typeof fn === 'function' ? fn : null;
+}
+
+register('CONLIB', () => {
+  if (!inScratchState()) _conlibHook?.();
+}, { category: 'Units', categoryOrder: 8, label: "CONLIB" });

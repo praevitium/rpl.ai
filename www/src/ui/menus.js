@@ -51,6 +51,20 @@ export const UNIT_GROUPS = Object.freeze([
   { id: 'VISC', title: 'Viscosity', units: ['P', 'cP', 'St', 'cSt'] },
 ]);
 
+// What the HP's Constants Library (CONLIB) calls each constant.
+export const CONSTANT_TITLES = Object.freeze({
+  NA: "Avogadro's number", k: 'Boltzmann constant', Vm: 'Molar volume', R: 'Universal gas constant',
+  StdT: 'Standard temperature', StdP: 'Standard pressure', 'σ': 'Stefan–Boltzmann constant', c: 'Speed of light',
+  'ε0': 'Permittivity of a vacuum', 'μ0': 'Permeability of a vacuum', g: 'Acceleration of gravity', G: 'Gravitational constant',
+  h: "Planck's constant", 'ħ': "Dirac's constant", q: 'Electronic charge', me: 'Electron mass',
+  qme: 'q/me ratio', mp: 'Proton mass', mpme: 'mp/me ratio', 'α': 'Fine-structure constant',
+  'ø': 'Magnetic flux quantum', F: 'Faraday constant', 'R∞': 'Rydberg constant', a0: 'Bohr radius',
+  'μB': 'Bohr magneton', 'μN': 'Nuclear magneton', 'λ0': 'Photon wavelength', f0: 'Photon frequency',
+  'λc': 'Compton wavelength', rad: '1 radian', 'twoπ': '2π radians', '∠': '∠ in trig mode', c3: "Wien's constant",
+  kq: 'k/q', 'ε0q': 'ε0/q', 'qε0': 'q*ε0',
+  'εsi': 'Dielectric constant of silicon', 'εox': 'Dielectric constant of SiO2', I0: 'Reference intensity',
+});
+
 // The HP's STAT menu opens on these folders; the whole family follows.
 export const STAT_GROUPS = Object.freeze([
   { id: 'DATA', title: 'The statistics matrix', commands: ['Σ+', 'Σ-', 'CLΣ', 'RCLΣ', 'STOΣ'] },
