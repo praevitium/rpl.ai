@@ -547,3 +547,44 @@ register('IABCUV', (s) => {
   s.push(Integer(u * (c / g)));
   s.push(Integer(v * (c / g)));
 }, { category: 'Integer / number theory', categoryOrder: 10, label: "IABCUV" });
+
+
+const _positions = (list) => {
+  if (!isList(list)) throw new RPLError('Bad argument type');
+  return list.items.map((v) => Number(_toBigInt(v)));
+};
+
+// AUR: { { 1 3 5 } { 2 4 } } C2P is { 3 4 5 2 1 }; each cycle sends an entry to the next.
+register('C2P', (s) => {
+  const [cyclesArg] = s.popN(1);
+  if (!isList(cyclesArg)) throw new RPLError('Bad argument type');
+  const cycles = cyclesArg.items.map(_positions);
+  const n = Math.max(0, ...cycles.flat());
+  if (cycles.flat().some((k) => k < 1)) throw new RPLError('Bad argument value');
+  const perm = Array.from({ length: n }, (_, i) => i + 1);
+  for (const cycle of cycles) cycle.forEach((k, i) => { perm[k - 1] = cycle[(i + 1) % cycle.length]; });
+  s.push(RList(perm.map((k) => Integer(BigInt(k)))));
+}, { category: 'Integer / number theory', categoryOrder: 30, label: "C2P" });
+
+// AUR: { 3 4 5 2 1 } P2C gives its cycles { { 1 3 5 } { 2 4 } } and its signature -1; fixed points make no cycle.
+register('P2C', (s) => {
+  const [permArg] = s.popN(1);
+  const perm = _positions(permArg);
+  const n = perm.length;
+  if (new Set(perm).size !== n || perm.some((k) => k < 1 || k > n)) throw new RPLError('Bad argument value');
+  const seen = new Set();
+  const cycles = [];
+  let even = true;
+  for (let start = 1; start <= n; start++) {
+    if (seen.has(start)) continue;
+    const cycle = [];
+    for (let k = start; !seen.has(k); k = perm[k - 1]) {
+      seen.add(k);
+      cycle.push(k);
+    }
+    if (cycle.length % 2 === 0) even = !even;
+    if (cycle.length > 1) cycles.push(RList(cycle.map((k) => Integer(BigInt(k)))));
+  }
+  s.push(RList(cycles));
+  s.push(Integer(even ? 1n : -1n));
+}, { category: 'Integer / number theory', categoryOrder: 31, label: "P2C" });

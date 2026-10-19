@@ -59,6 +59,7 @@ VARIABLES & DIRECTORIES (operate in the current directory)
   RCL     \`NAME\` RCL — push the value of NAME onto the stack
   PURGE   \`NAME\` PURGE — delete the variable
   DEFINE  \`F(X)=X^2+1\` DEFINE — make the user function F; then \`F(3)\` EVAL gives 10 (any stored program is callable as F(args) in an algebraic; IFTE(test,then,else) works inside algebraics, so \`R(N)=IFTE(N<=1,1,N*R(N-1))\` DEFINE recurses)
+  STEQ RCEQ  value STEQ stores it in EQ; RCEQ recalls EQ from the current directory
   CLVAR   delete every variable and empty subdirectory in the current dir (destructive: don't run it unasked; CLUSR is the same)
   VARS    push a list of all variable names in the current dir
   ORDER   reorder VARS list
@@ -83,6 +84,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   DERVX INTVX                derivative / antiderivative w.r.t. the current CAS variable
   INTEG ∫                    \`expr\` \`var\` INTEG — indefinite integral.  Definite: a b \`expr\` \`var\` ∫ (1 2 \`10*X\` \`X\` ∫ → 15), the algebraic \`∫(0,1,X^2,X)\` EVAL (CAS, 1/3) or →NUM (numeric), or \`expr\` \`var\` INTEG a b PREVAL (F(b) - F(a))
   RISCH IBP SIGMA SIGMAVX    RISCH is INTEG; \`X*COS(X)\` \`SIN(X)\` IBP → \`SIN(X)*X\` \`-SIN(X)\` (integrate level 1 and add); \`f\` \`var\` SIGMA → discrete antiderivative G with G(x+1)-G(x)=f, SIGMAVX in VX
+  INT LININ                  \`SIN(X)\` \`X\` \`Y\` INT → \`-COS(Y)\` (antiderivative at a point); \`expr\` \`X\` LININ → 1 if structurally linear in X, else 0
   Σ                          \`k\` 1 10 \`k^2\` Σ → 385: the index, its first and last values and the summand; in an algebraic, Σ followed by (index=first,last,summand) as the HP writes it. A symbolic summand between numeric limits sums in closed form
   SOLVE                      \`eq\` \`var\` SOLVE — solve an equation.  Example: \`X^2-5*X+6=0\` \`X\` SOLVE → { \`X=2\` \`X=3\` }; an inequality gives its conditions: \`X^2>4\` \`X\` SOLVE → { \`X<-2\` \`X>2\` }
   LINSOLVE                   [ \`X+Y=3\` \`X-Y=1\` ] [ X Y ] LINSOLVE → the system as a list, the pivots, and [ \`X=2\` \`Y=1\` ] on level 1
@@ -112,6 +114,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   GBASIS GREDUCE             Gröbner basis / reduction
   LNAME                      extract variable Names referenced by an expression
   LVAR                       as LNAME, but keeps the expression and lists COS(B) or MYFUNC(PQ) as one variable
+  C2P P2C                    { { 1 3 5 } { 2 4 } } C2P → { 3 4 5 2 1 }; P2C gives the cycles and the signature ±1
 
 POLYNOMIALS / NUMBER THEORY
   HORNER PEVAL PROOT PCOEF PTAYL FCOEF FROOTS         polynomial eval / roots / coeffs
@@ -147,6 +150,7 @@ CONTAINERS
   SNRM SRAD SVL              spectral norm (a vector's length), spectral radius (largest |eigenvalue|), singular values largest first
   KER IMAGE BASIS IBASIS     [[1 1 2][2 1 3][3 1 4]] KER → { [ 1 1 -1 ] }; IMAGE → { [ 1 0 -1 ] [ 0 1 2 ] }; { vectors } BASIS; { u } { v } IBASIS → basis of the intersection
   AXQ QXA ISOM MKISOM        matrix [ X Y ] AXQ → quadratic form; \`q\` [ X Y ] QXA → its matrix; ISOM of an isometry → { axis or angle, ±1 }; \`π/2\` 1 MKISOM → its matrix
+  FFT IFFT                   discrete Fourier transform and inverse of a vector or matrix (power-of-two sizes): [ 1 2 3 4 ] FFT → [ (10,0) (-2,2) (-2,0) (-2,-2) ]
   IDN CON RANM HILBERT VANDERMONDE   stock matrices
   →DIAG DIAG→                [[ 1 2 ][ 3 4 ]] →DIAG → [ 1 4 ]; [ 1 2 ] { 2 } DIAG→ → [[ 1 0 ][ 0 2 ]] (one dimension is square, { m n } a rectangle)
   ROW+ ROW- COL+ COL- CSWP RSWP RCI RCIJ      row / column manipulation
@@ -162,6 +166,7 @@ UNITS  (built-in: SI units m kg s A K mol cd Hz N J W Pa V Ω C F with prefixes,
   CONST                      a constant of the HP's library with its unit: \`c\` CONST gives 299792458._m/s (also g G h ħ k NA R q me mp ε0 μ0 Vm StdT StdP …); with flag -61 set, the number alone
   CONLIB                     opens the Constants Library on screen, each constant with its value; a tap puts one on the stack
   MOLWT                      molar mass of a formula string or name: "Ca(OH)2" MOLWT gives 74.09268_g/mol; with flag -61 set, the number alone
+  F0λ                        λ T F0λ → fraction of black-body emission below λ (meters and kelvins, or units): 2.898E-6 1000 F0λ → 0.2501
   TDELTA TINC                temperature change between two readings (100_°C 32_°F TDELTA gives 100_°C) / a reading plus an increment (20_°C 9_°F TINC gives 25_°C)
 
 PROGRAMS & CONTROL FLOW

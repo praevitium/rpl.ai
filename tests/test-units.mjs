@@ -794,3 +794,12 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assertThrows(() => runLine('5 MOLWT'), /Bad argument type/, 'MOLWT wants a string or a name');
 }
 
+
+// F0λ: the black-body fraction below λ, checked against a direct integration of Planck's law.
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top('2.898E-6 1000 F0λ') === '0.250106293888', 'F0λ at λT = 2898 μm·K is a quarter, Wien\'s peak');
+  assert(top('1E-5 1000 F0λ') === '0.914156971', 'F0λ at λT = 10000 μm·K');
+  assert(top('2898_nm 726.85_°C F0λ') === '0.250106293888', 'F0λ converts λ and T from their units');
+  assertThrows(() => runLine('1_s 1000 F0λ'), /Inconsistent units/, 'F0λ wants a length');
+}

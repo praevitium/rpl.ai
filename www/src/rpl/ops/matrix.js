@@ -7,7 +7,7 @@ import { giac } from '../cas/giac-engine.mjs';
 import { giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
 import { charSpaceList, eigenvalueArray, spacesFromJordan } from '../jordan-format.js';
 import { register, OPS } from './registry.js';
-import { _astToRplValue, _coefArrToSymbolicX, _colCompose, _colDecompose, _decimalFrobeniusNorm, _fromArrayOp, _fromVecOp, _indexAsInt, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _matrixToGiacStr, _nFromIntegerArg, _popSquareMatrix, _rowCompose, _rowDecompose, _scalarBinary, _scalarSum, _toArrayOp, _toV2Op, _toV3Op } from './internal.js';
+import { _numVal, _astToRplValue, _coefArrToSymbolicX, _colCompose, _colDecompose, _decimalFrobeniusNorm, _fromArrayOp, _fromVecOp, _indexAsInt, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _matrixToGiacStr, _nFromIntegerArg, _popSquareMatrix, _rowCompose, _rowDecompose, _scalarBinary, _scalarSum, _toArrayOp, _toV2Op, _toV3Op } from './internal.js';
 
 
 
@@ -1280,3 +1280,79 @@ register('RSD', (s) => {
 
   throw new RPLError('Bad argument type');
 }, { category: 'Vectors / matrices', categoryOrder: 19, label: "RSD" });
+
+
+const _isPowerOfTwo = (n) => n > 0 && (n & (n - 1)) === 0;
+
+function _complexParts(v) {
+  if (isComplex(v)) return [v.re, v.im];
+  return [_numVal(v), 0];
+}
+
+// Radix-2 Cooley-Tukey in place: sign -1 transforms, +1 inverts (the caller divides by the length).
+function _fftInPlace(re, im, sign) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) {
+      [re[i], re[j]] = [re[j], re[i]];
+      [im[i], im[j]] = [im[j], im[i]];
+    }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const half = len / 2;
+    for (let k = 0; k < half; k++) {
+      const wr = Math.cos(sign * 2 * Math.PI * k / len);
+      const wi = Math.sin(sign * 2 * Math.PI * k / len);
+      for (let i = k; i < n; i += len) {
+        const br = re[i + half] * wr - im[i + half] * wi;
+        const bi = re[i + half] * wi + im[i + half] * wr;
+        re[i + half] = re[i] - br;
+        im[i + half] = im[i] - bi;
+        re[i] += br;
+        im[i] += bi;
+      }
+    }
+  }
+}
+
+function _transform(cells, sign) {
+  const re = cells.map(([r]) => r);
+  const im = cells.map(([, i]) => i);
+  _fftInPlace(re, im, sign);
+  const scale = sign > 0 ? 1 / cells.length : 1;
+  return re.map((r, k) => [r * scale, im[k] * scale]);
+}
+
+// The AUR's FFT and IFFT on a vector, a single row or column, or by rows then columns on a matrix,
+// each length a power of 2. Parts below 1E-12 of the largest are round-off, so they read 0.
+function _fftOp(sign) {
+  return (s) => {
+    const [a] = s.popN(1);
+    if (!isVector(a) && !isMatrix(a)) throw new RPLError('Bad argument type');
+    const grid = isVector(a) ? [a.items.map(_complexParts)] : a.rows.map((row) => row.map(_complexParts));
+    const rows = grid.length, cols = grid[0].length;
+    const oneD = rows === 1 || cols === 1;
+    if (!(oneD ? _isPowerOfTwo(rows * cols) : _isPowerOfTwo(rows) && _isPowerOfTwo(cols))) throw new RPLError('Invalid dimension');
+    let out;
+    if (oneD) {
+      const flat = _transform(grid.flat(), sign);
+      out = rows === 1 ? [flat] : flat.map((c) => [c]);
+    } else {
+      out = grid.map((row) => _transform(row, sign));
+      for (let c = 0; c < cols; c++) {
+        const col = _transform(out.map((row) => row[c]), sign);
+        col.forEach((cell, r) => { out[r][c] = cell; });
+      }
+    }
+    const big = Math.max(...out.flat(2).map(Math.abs));
+    const clean = (x) => (Math.abs(x) < big * 1e-12 ? 0 : x);
+    const cells = out.map((row) => row.map(([r, i]) => Complex(clean(r), clean(i))));
+    s.push(isVector(a) ? Vector(cells[0]) : Matrix(cells));
+  };
+}
+
+register('FFT', _fftOp(-1), { category: 'Vectors / matrices', categoryOrder: 71, label: "FFT" });
+register('IFFT', _fftOp(1), { category: 'Vectors / matrices', categoryOrder: 72, label: "IFFT" });

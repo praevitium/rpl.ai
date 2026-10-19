@@ -7384,3 +7384,12 @@ function _arrayEq(a, b) {
   assert(show('[[ 1 2 ][ 3 4 ]] →NUM DET') === '-2.', 'a determinant of a →NUM matrix is a real');
   assert(show('[ `X` 2 ] →NUM') === '[ `X` 2. ]', '→NUM leaves an undefined name in an array symbolic');
 }
+
+// C2P and P2C: the AUR's permutation { 3 4 5 2 1 } and its cycles { { 1 3 5 } { 2 4 } }, signature -1.
+{
+  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
+  assert(shown('{ { 1 3 5 } { 2 4 } } C2P') === '{ 3 4 5 2 1 }', 'C2P turns cycles into a permutation');
+  assert(shown('{ 3 4 5 2 1 } P2C') === '{ { 1 3 5 } { 2 4 } } | -1', 'P2C gives the cycles and the signature');
+  assert(shown('{ 1 2 3 } P2C') === '{  } | 1', 'P2C of the identity has no cycles and signature 1');
+  assertThrows(() => runLine('{ 1 1 3 } P2C'), /Bad argument value/, 'P2C refuses a list that is no permutation');
+}

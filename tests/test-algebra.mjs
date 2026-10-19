@@ -6094,6 +6094,16 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assertThrows(() => runLine('{ 1 2 } BASIS'), /Bad argument type/, 'BASIS takes a list of vectors');
 }
 
+// INT and LININ, the AUR's examples.
+{
+  giac._clear();
+  giac._setFixture('subst(integrate(sin(X),X),X=Y)', '-cos(Y)');
+  assert(format(runLine("'SIN(X)' 'X' 'Y' INT").peek()) === '`-COS(Y)`', 'INT gives the antiderivative of SIN(X) at Y');
+  giac._clear();
+  assert(format(runLine("'(X+1)*(Y^-2^Z)+(X/(3-Z^3))' 'X' LININ").peek()) === '1', 'LININ: the AUR\'s first example is linear in X');
+  assert(format(runLine("'(X^2-1)/(X+1)' 'X' LININ").peek()) === '0', 'LININ: (X^2-1)/(X+1) is not, though it factors');
+}
+
 /* ==================================================================
  — PCAR / CHARPOL / EGVL / PA2B2
    PCAR + CHARPOL + EGVL are Giac-backed matrix ops (use fixtures on

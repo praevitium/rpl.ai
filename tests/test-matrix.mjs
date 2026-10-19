@@ -3869,3 +3869,22 @@ function _approxMatEqual(A, B, tol) {
   assert(top('[[ 1 2 ][ 3 4 ]] ->DIAG') === '[ 1 4 ]' && top('[ 7 8 ] { 2 } DIAG->') === '[[ 7 0 ][ 0 8 ]]',
     '->DIAG and DIAG-> are the ASCII spellings');
 }
+
+// FFT and IFFT: the AUR's transforms, a vector or one row or column in one dimension, a matrix in two.
+{
+  const parts = (line) => {
+    const v = runLine(line).peek();
+    return JSON.stringify((v.items ?? v.rows.flat()).map((c) => [c.re, c.im]));
+  };
+  for (const [line, want, label] of [
+    ['[ 1 2 3 4 ] FFT', [[10, 0], [-2, 2], [-2, 0], [-2, -2]], 'FFT [ 1 2 3 4 ] is [ 10 -2+2i -2 -2-2i ]'],
+    ['[ 1 2 3 4 ] FFT IFFT', [[1, 0], [2, 0], [3, 0], [4, 0]], 'IFFT undoes FFT'],
+    ['[[1 2][3 4]] FFT', [[10, 0], [-2, 0], [-4, 0], [0, 0]], 'FFT of a matrix is two-dimensional'],
+    ['[[1][2][3][4]] FFT', [[10, 0], [-2, 2], [-2, 0], [-2, -2]], 'FFT of a column keeps its shape'],
+  ]) {
+    const got = parts(line);
+    assert(got === JSON.stringify(want), `${label} (got ${got})`);
+  }
+  assert(runLine('[[1][2][3][4]] FFT').peek().rows.length === 4, 'FFT of a column gives a column');
+  assertThrows(() => runLine('[ 1 2 3 ] FFT'), /Invalid dimension/, 'FFT needs a power-of-two length');
+}

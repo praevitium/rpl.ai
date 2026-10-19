@@ -58,6 +58,18 @@ register('DEFINE', (s) => {
   s.pop();
 }, { category: 'Variables / directories', categoryOrder: 22, label: "DEFINE" });
 
+register('STEQ', (s) => {
+  const [v] = s.popN(1);
+  _store('EQ', v);
+}, { category: 'Variables / directories', categoryOrder: 22.1, label: "STEQ" });
+
+// AUR: EQ from the current directory only, unevaluated; evaluating the name EQ looks in the parents too.
+register('RCEQ', (s) => {
+  const v = _calcState.current.entries.get('EQ');
+  if (v === undefined) throw new RPLError('Undefined name: EQ');
+  s.push(v);
+}, { category: 'Variables / directories', categoryOrder: 22.2, label: "RCEQ" });
+
 
 register('RCL', (s) => {
   _forEachName(s.pop(), (n) => s.push(_recall(_coerceDirName(n))));

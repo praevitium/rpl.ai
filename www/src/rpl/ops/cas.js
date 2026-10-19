@@ -593,6 +593,14 @@ register('INTEG', (s) => {
 
 register('RISCH', lookup('INTEG').fn, { category: 'CAS / symbolic', categoryOrder: 2.1, label: "RISCH" });
 
+// AUR: the antiderivative at a point, INT(SIN(X),X,Y) being -COS(Y).
+register('INT', (s) => {
+  const [expr, varArg, point] = s.popN(3);
+  const x = _varName(varArg);
+  const at = astToGiac(_astArg(point));
+  _pushCasResult(s, _casEval(_astArg(expr), (e) => `subst(integrate(${e},${x}),${x}=${at})`, [x]));
+}, { category: 'CAS / symbolic', categoryOrder: 2.15, label: "INT" });
+
 // AUR: the discrete antiderivative G, with G(x+1)-G(x) the expression.
 register('SIGMA', (s) => {
   const [expr, varArg] = s.popN(2);
@@ -1070,6 +1078,24 @@ register('LVAR', (s) => {
   items.sort((a, b) => _longestFirst(text.get(a), text.get(b)));
   s.push(Vector(items.map((a) => (a.kind === 'var' ? Name(a.name) : Symbolic(a)))));
 }, { category: 'CAS / symbolic', categoryOrder: 39.1, label: "LVAR" });
+
+// AUR: linear when the name is only added or subtracted, or multiplied or divided by factors without it,
+// so (X^2-1)/(X+1) isn't though it factors to X-1.
+function _structurallyLinear(n, name) {
+  const has = (a) => algebraFreeVars(a).has(name);
+  if (!has(n) || n.kind === 'var') return true;
+  if (n.kind === 'neg') return _structurallyLinear(n.arg, name);
+  if (n.kind !== 'bin') return false;
+  if (n.op === '+' || n.op === '-' || n.op === '=') return _structurallyLinear(n.l, name) && _structurallyLinear(n.r, name);
+  if (n.op === '*') return !(has(n.l) && has(n.r)) && _structurallyLinear(has(n.l) ? n.l : n.r, name);
+  if (n.op === '/') return !has(n.r) && _structurallyLinear(n.l, name);
+  return false;
+}
+
+register('LININ', (s) => {
+  const [expr, nameArg] = s.popN(2);
+  s.push(Integer(_structurallyLinear(_astArg(expr), _varName(nameArg)) ? 1n : 0n));
+}, { category: 'CAS / symbolic', categoryOrder: 39.2, label: "LININ" });
 
 
 function _lapVarName(ast) {

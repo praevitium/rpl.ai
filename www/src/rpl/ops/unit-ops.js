@@ -128,3 +128,33 @@ register('MOLWT', (s) => {
   if (mass === null) throw new RPLError('Bad argument value');
   s.push(testUserFlag(-61) ? Real(mass) : Unit(mass, parseUnitExpr('g/mol')));
 }, { category: 'Units', categoryOrder: 9, label: "MOLWT" });
+
+// Planck's second radiation constant hc/k in m·K (CODATA 2018).
+const C2 = 1.438776877e-2;
+
+function _inBase(v, base) {
+  if (!isUnit(v)) return _numVal(v);
+  if (!sameDims(v.uexpr, base)) throw new RPLError('Inconsistent units');
+  return _inUnit(v, base);
+}
+
+// The fraction of a black body's emission below λ: 1 less the Bernoulli series of ∫₀ˣ t³/(eᵗ-1) dt for
+// small x = c₂/λT, where the sum (15/π⁴) Σ e^(-nx)/n (x³ + 3x²/n + 6x/n² + 6/n³) needs too many terms.
+function _blackBodyFraction(x) {
+  const k = 15 / Math.PI ** 4;
+  if (x < 0.5) return 1 - k * (x ** 3 / 3 - x ** 4 / 8 + x ** 5 / 60 - x ** 7 / 5040 + x ** 9 / 272160 - x ** 11 / 13305600);
+  let sum = 0;
+  for (let n = 1; n <= Math.ceil(40 / x); n++) {
+    sum += Math.exp(-n * x) / n * (x ** 3 + 3 * x ** 2 / n + 6 * x / n ** 2 + 6 / n ** 3);
+  }
+  return k * sum;
+}
+
+// AUR: λ in meters and T in kelvins unless they carry units.
+register('F0λ', (s) => {
+  const [lambdaArg, tArg] = s.popN(2);
+  const lambda = _inBase(lambdaArg, [['m', 1]]);
+  const t = _inBase(tArg, [['K', 1]]);
+  if (!(lambda > 0) || !(t > 0)) throw new RPLError('Bad argument value');
+  s.push(Real(_blackBodyFraction(C2 / (lambda * t))));
+}, { category: 'Units', categoryOrder: 10, label: "F0λ" });

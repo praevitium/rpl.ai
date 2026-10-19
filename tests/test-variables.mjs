@@ -2043,3 +2043,11 @@ clearAllUserFlags();
   setMenuHook(null);
   resetHome();
 }
+
+// STEQ and RCEQ store and recall EQ in the current directory.
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top("'X^2+1' STEQ RCEQ") === '`X^2 + 1`', 'STEQ stores EQ and RCEQ recalls it unevaluated');
+  runLine("'EQ' PURGE");
+  assertThrows(() => runLine('RCEQ'), /Undefined name/, 'RCEQ without an EQ is Undefined name');
+}
