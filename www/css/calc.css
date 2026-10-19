@@ -484,6 +484,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .bn.halt { border-color: color-mix(in oklab, var(--amber) 45%, transparent); background: color-mix(in oklab, var(--amber) 9%, var(--panel)); }
 .bn-ico { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--danger); color: var(--danger-ink); font: 700 13px/1 var(--font-ui); margin-top: 1px; }
 .bn.halt .bn-ico { background: var(--amber); color: #1b1203; }
+/* A program's message keeps its line breaks, as MSGBOX's and PROMPT's do on the HP. */
+.bn.halt .bn-t { white-space: pre-wrap; }
 .bn-t { font: 600 13px/1.35 var(--font-ui); color: var(--ink); overflow-wrap: anywhere; }
 .bn-t code, .bn-d code { font: 12px var(--font-mono); background: var(--r2); padding: 1px 5px; border-radius: 4px; }
 .bn-d { grid-column: 2; font-size: 12.5px; color: var(--ink2); line-height: 1.45; }
