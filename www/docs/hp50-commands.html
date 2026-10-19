@@ -6878,6 +6878,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Stack to Graphics Object Command: Creates a graphics object from a specified object, where the argument nchar size specifies the character size of the object. nchar size can be 0, 1 (small), 2 (medium), or 3 (large). nchar size = 0 is the same as nchar size = 3, except for unit objects and algebraic objects, where 0 specifies the Equation Writer application picture.</p>
+  <p>In rpl.ai the sizes share one 5 × 7 pixel font, six columns a character, and size 0 draws an algebraic or unit as flat text without its quotes rather than the Equation Writer's picture.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -8558,6 +8559,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dd class="cmd-field cmd-field-description">
     <p>Label Axes Command: Labels axes in PICT with x- and y-axis variable names and with the minimum and maximum values of the display ranges. The horizontal axis name is chosen in the following priority order: 1. If the axes parameter in the reserved variable PPAR is a list, then the x-axis element from that list is used.</p>
     <p>2. If axes parameter is not a list, then the independent variable name in PPAR is used. The vertical axis name is chosen in the following priority order: 1. If the axes parameter in PPAR is a list, then the y-axis element from that list is used. 2. If axes is not a list, then the dependent variable name from PPAR is used.</p>
+  <p>In rpl.ai the limits are written at the ends of the axes in the display mode, in rpl.ai's own pixel font.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.26 (2026-10-19)
+**Latest release:** v0.7.27 (2026-10-19)
 
 ---
 
@@ -20,6 +20,23 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.27 — 2026-10-19
+
+Text in graphics objects, in rpl.ai's own pixel font.
+
+- A 5 × 7 pixel font drawn for rpl.ai covers letters with descenders,
+  digits, punctuation, Greek and the HP's math symbols (π √ ∫ Σ Δ ∂ → ≤ ≥
+  ≠ ∞ ∠ and more). Each character takes six columns and eight rows, and
+  looks the same on every device.
+- →GROB draws any object as a graphics object, as the stack shows it:
+  `"A=2" 1 →GROB` gives a Graphic 18 × 8. The 50g's three sizes share the
+  one font here; size 0 leaves an algebraic's or unit's quotes off, where
+  the HP draws its Equation Writer picture.
+- LABEL writes on PICT the axes' names, from AXES or else INDEP and DEPND,
+  and the window's limits at the ends of the axes: the x values under the
+  horizontal axis, the y values beside the vertical one, moved to the
+  other side when they would fall off PICT.
 
 ## v0.7.26 — 2026-10-19
 

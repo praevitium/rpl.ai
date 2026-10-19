@@ -611,7 +611,20 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(count() === 248 && lit(5, 39) && lit(64, 10) && !lit(4, 39) && lit(130, 40) && lit(65, 79),
     'DRAX draws both axes across PICT through (0,0), with a tick every 10 pixels');
   runLine('ERASE { (1,1) 2 } AXES DRAX');
+  const label = runLine('"A=2" 1 →GROB').peek();
+  const on = (g, col, row) => (g.bytes[row * Math.ceil(g.width / 8) + (col >> 3)] >> (col & 7)) & 1;
+  assert(label.width === 18 && label.height === 8 && !on(label, 0, 0) && on(label, 1, 0) && on(label, 3, 0) && on(label, 0, 3) && on(label, 4, 3),
+    '→GROB draws a string in rpl.ai\'s pixel font, six columns and eight rows a character');
+  assert(text("`Y=3*X^2` 1 →GROB SIZE `Y=3*X^2` 0 →GROB SIZE") === '#66d | #8d | #54d | #8d',
+    '→GROB size 0 leaves an algebraic\'s quotes off, as for the Equation Writer\'s picture');
+  assertThrows(() => runLine('5 4 →GROB'), /Bad argument value/, '→GROB takes a size from 0 to 3');
   assert(lit(75, 0) && lit(0, 30) && lit(95, 29) && lit(95, 31) && !lit(85, 29), 'DRAX follows AXES\' crossing and a tick spacing in units');
+  varPurge('PPAR');
+  runLine('ERASE LABEL');
+  assert([0, 1, 2, 3, 4].every((c) => lit(c, 45)) && lit(125, 31) && lit(129, 31) && lit(57, 0) && lit(61, 0),
+    'LABEL writes -6.5 under the axis at the left, X above it at the right and Y beside the top of the vertical axis');
+  runLine('ERASE { (0,0) #10d "t" "v" } AXES LABEL');
+  assert(lit(126, 31) && !lit(125, 31), 'LABEL takes the axis names AXES gives');
   varPurge('PPAR');
   setPict(null);
 }

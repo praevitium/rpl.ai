@@ -1,9 +1,11 @@
 import { RPLError } from '../stack.js';
 import { inScratchState, varRecall, varStore, getPict, setPict, getBinaryBase, toRadians } from '../state.js';
-import { Complex, Real, Name, RList, Str, BinaryInteger, Grob, isComplex, isReal, isInteger, isBinaryInteger, isName, isList, isString, isGrob, toRealOrThrow } from '../types.js';
+import { Complex, Real, Name, RList, Str, BinaryInteger, Grob, isComplex, isReal, isInteger, isBinaryInteger, isName, isList, isString, isGrob, isSymbolic, isUnit, toRealOrThrow } from '../types.js';
 import { register } from './registry.js';
 import { statPlotData } from './statistics.js';
 import { TRUE, FALSE } from './internal.js';
+import { format } from '../formatter.js';
+import { textGrob, CELL_HEIGHT } from '../pixel-font.js';
 
 
 let _graphicsHook = null;
@@ -624,4 +626,45 @@ register('DRAX', () => {
     }
   });
 }, { category: 'Graphics', categoryOrder: 12.2, label: "DRAX" });
+
+// →GROB draws an object as the stack shows it, in rpl.ai's one pixel font whatever the size; size 0 leaves the quotes
+// off an algebraic or unit, standing in for the Equation Writer's picture.
+register('→GROB', (s) => {
+  const [v, sizeArg] = s.popN(2);
+  const size = _real(sizeArg);
+  if (![0, 1, 2, 3].includes(size)) throw new RPLError('Bad argument value');
+  const shown = isString(v) ? v.value : format(v, undefined, { context: 'stack' }).replace(/`/g, "'");
+  s.push(textGrob(size === 0 && (isSymbolic(v) || isUnit(v)) ? shown.replace(/^'|'$/g, '') : shown));
+}, { category: 'Graphics', categoryOrder: 12.3, label: "→GROB" });
+
+// LABEL writes the axes' names by their ends, and the window's limits where the axes leave PICT: the x values under
+// the horizontal axis, the y values beside the vertical one, each moved to the other side when it would fall off.
+register('LABEL', () => {
+  const [, , indep, , axes, , depend] = plotParameters();
+  const { xmin, xmax, ymin, ymax } = _corners();
+  const { width, height } = getPict();
+  const [col, row] = _pixelOf(isList(axes) && isComplex(axes.items[0]) ? axes.items[0] : isComplex(axes) ? axes : Complex(0, 0))
+    .map((n, i) => Math.min(Math.max(n, 0), (i ? height : width) - 1));
+  const nameOf = (v) => (isList(v) ? v.items[0] : v)?.id ?? '';
+  const [xName, yName] = isList(axes)
+    ? [axes.items[2], axes.items[3]].map((l) => (isString(l) ? l.value : ''))
+    : [nameOf(indep), nameOf(depend)];
+  const num = (n) => format(Real(n));
+  const below = row + 2 + CELL_HEIGHT <= height ? row + 2 : row - 1 - CELL_HEIGHT;
+  const above = below > row ? row - 1 - CELL_HEIGHT : row + 2;
+  const beside = (g) => (col + 3 + g.width <= width ? col + 3 : col - 2 - g.width);
+  const labels = [];
+  const put = (text, at) => {
+    if (!text) return;
+    const g = textGrob(text);
+    labels.push([g, at(g)]);
+  };
+  put(num(xmin), () => [0, below]);
+  put(num(xmax), (g) => [width - g.width, below]);
+  put(xName, (g) => [width - g.width, above]);
+  put(num(ymax), (g) => [beside(g), 0]);
+  put(num(ymin), (g) => [beside(g), height - CELL_HEIGHT]);
+  put(yName, (g) => (col - 2 - g.width >= 0 ? [col - 2 - g.width, 0] : [col + 3, CELL_HEIGHT + 1]));
+  setPict(labels.reduce((pict, [g, at]) => _overlay(pict, at, g, 'or'), getPict()));
+}, { category: 'Graphics', categoryOrder: 12.4, label: "LABEL" });
 
