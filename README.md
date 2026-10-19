@@ -435,7 +435,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   finger-sized, and so are the soft keys while the keypad is hidden. The Variables drawer puts
   each variable's buttons on a line under its name, and the History drawer
   shows each entry in full. A drawer opens as a sheet from the bottom; drag its tabs or title
-  down to close it. In minimal view it opens at the side; drag its title
+  down to close it. Its row of tabs opens with the drawer's own tab in view
+  and fades at an edge with more tabs past it. In minimal view it opens at the side; drag its title
   right to close it. Running a command from the Catalog, recalling a History
   line or a variable, editing a variable, restoring a backup, or picking a character closes the
   drawer so you see the result, as the HP's catalog does; after a character or a unit, More
