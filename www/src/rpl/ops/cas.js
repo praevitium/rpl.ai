@@ -1,11 +1,11 @@
 import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isList, Real, Name, Integer, isComplex, Complex, isVector, Vector, isMatrix, Matrix, isCasIdentifier, isBinaryInteger, isRational, isUnit, Tagged } from '../types.js';
 import { giac } from '../cas/giac-engine.mjs';
 import { RPLError, checkTimeLimit } from '../stack.js';
-import { buildGiacCmd, giacToAst, splitGiacList, astToGiac } from '../cas/giac-convert.mjs';
+import { buildGiacCmd, giacToAst, splitGiacList, astToGiac, isGiacErrorString } from '../cas/giac-convert.mjs';
 import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction, LOGIC_ARITY, formatAlgebra } from '../algebra.js';
 import { getComplexMode, getCasVx, setCasVx, getApproxMode } from '../state.js';
 import { register, lookup } from './registry.js';
-import { _astToRplValue, _pushCasResult, _isSymOperand, _toAst, _substitute, _withListUnary, _withTaggedUnary, _withVMUnary } from './internal.js';
+import { _astToRplValue, _pushCasResult, _isSymOperand, _toAst, _substitute, _withListUnary, _withTaggedUnary, _withVMUnary, recallVar, storeVar } from './internal.js';
 
 
 
@@ -292,24 +292,50 @@ function _vectorCalculus(giacFn, check) {
     if (!giac.isReady()) throw new RPLError('CAS not ready');
     const f = parts ? `[${parts.map((e) => astToGiac(_astArg(e))).join(',')}]` : astToGiac(_astArg(fnArg));
     const raw = giac.caseval(`${giacFn}(${f},[${vars.map((v) => astToGiac(AstVar(v))).join(',')}])`);
+    if (isGiacErrorString(raw)) throw new RPLError('Bad argument value');
     const items = splitGiacList(raw);
     s.push(items ? Vector(items.map((item) => _casValue(giacToAst(item)))) : _casValue(giacToAst(raw)));
   };
 }
 
-register('DIV', _vectorCalculus('divergence', (parts, vars) => {
+function _componentPerVariable(parts, vars) {
   if (!parts) throw new RPLError('Bad argument type');
   if (parts.length !== vars.length) throw new RPLError('Invalid dimension');
-}), { category: 'CAS / symbolic', categoryOrder: 34.6, label: "DIV" });
+}
 
-register('CURL', _vectorCalculus('curl', (parts, vars) => {
+function _threeComponents(parts, vars) {
   if (!parts) throw new RPLError('Bad argument type');
   if (parts.length !== 3 || vars.length !== 3) throw new RPLError('Invalid dimension');
-}), { category: 'CAS / symbolic', categoryOrder: 34.7, label: "CURL" });
+}
+
+register('DIV', _vectorCalculus('divergence', _componentPerVariable), { category: 'CAS / symbolic', categoryOrder: 34.6, label: "DIV" });
+
+register('CURL', _vectorCalculus('curl', _threeComponents), { category: 'CAS / symbolic', categoryOrder: 34.7, label: "CURL" });
 
 register('LAPL', _vectorCalculus('laplacian', (parts, vars) => {
   if (parts || !vars.length) throw new RPLError('Bad argument type');
 }), { category: 'CAS / symbolic', categoryOrder: 34.8, label: "LAPL" });
+
+// AUR: a field whose CURL isn't zero, or a VPOTENTIAL field whose DIV isn't, is Bad argument value.
+register('POTENTIAL', _vectorCalculus('potential', _componentPerVariable), { category: 'CAS / symbolic', categoryOrder: 34.85, label: "POTENTIAL" });
+register('VPOTENTIAL', _vectorCalculus('vpotential', _threeComponents), { category: 'CAS / symbolic', categoryOrder: 34.86, label: "VPOTENTIAL" });
+
+// AUR: the Hessian, the gradient and the variables. Its entries come simplified, 4*U where the HP shows 2*(2*U).
+register('HESS', (s) => {
+  const [expr, varsArg] = s.popN(2);
+  if (!isVector(varsArg) && !isList(varsArg)) throw new RPLError('Bad argument type');
+  if (!varsArg.items.length) throw new RPLError('Bad argument value');
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const f = astToGiac(_astArg(expr));
+  const vars = `[${varsArg.items.map((v) => astToGiac(AstVar(_varName(v)))).join(',')}]`;
+  const rows = splitGiacList(giac.caseval(`normal(hessian(${f},${vars}))`))?.map(splitGiacList);
+  const gradient = splitGiacList(giac.caseval(`normal(grad(${f},${vars}))`));
+  if (!rows?.every(Boolean) || !gradient) throw new RPLError('Bad argument value');
+  const value = (item) => _casValue(giacToAst(item));
+  s.push(Matrix(rows.map((row) => row.map(value))));
+  s.push(Vector(gradient.map(value)));
+  s.push(varsArg);
+}, { category: 'CAS / symbolic', categoryOrder: 34.87, label: "HESS" });
 
 function _casValue(ast) {
   const leaf = ast.kind === 'neg' ? ast.arg : ast;
@@ -430,6 +456,25 @@ register('INTEG', (s) => {
   s.push(Symbolic(_casEval(_astArg(expr), (e) => `integrate(${e},${varName})`, [varName])));
 }, { category: 'CAS / symbolic', categoryOrder: 2, label: "INTEG" });
 
+register('RISCH', lookup('INTEG').fn, { category: 'CAS / symbolic', categoryOrder: 2.1, label: "RISCH" });
+
+// AUR: the discrete antiderivative G, with G(x+1)-G(x) the expression.
+register('SIGMA', (s) => {
+  const [expr, varArg] = s.popN(2);
+  const x = _varName(varArg);
+  _pushCasResult(s, _casEval(_astArg(expr), (e) => `normal(sum(${e},${x}))`, [x]));
+}, { category: 'CAS / symbolic', categoryOrder: 2.2, label: "SIGMA" });
+
+// AUR: u*v' and v give u*v and -u'*v, the integral still to take; Giac's ibpdv is the HP's command.
+register('IBP', (s) => {
+  const [f, v] = s.popN(2).map(_astArg);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const x = astToGiac(AstVar(_mainVar(f, v)));
+  const parts = splitGiacList(giac.caseval(`ibpdv(${astToGiac(f)},${astToGiac(v)},${x})`));
+  if (parts?.length !== 2) throw new RPLError('Bad argument value');
+  for (const part of parts) s.push(_casValue(giacToAst(part)));
+}, { category: 'CAS / symbolic', categoryOrder: 2.4, label: "IBP" });
+
 
 const _CONSTANT_NAMES = new Set(['π', 'e', 'i', '∞']);
 
@@ -448,15 +493,16 @@ function _mainVar(...asts) {
   return names.includes(vx) || !names.length ? vx : names[0];
 }
 
-function _vxForm(opName) {
+function _vxForm(opName, pickVar = _vxFor) {
   return (s) => {
     if (s.depth < 1) throw new RPLError('Too few arguments');
-    s.push(Name(_vxFor(_toAst(s.peek()))));
+    s.push(Name(pickVar(_toAst(s.peek()))));
     lookup(opName).fn(s);
   };
 }
 
 register('INTVX', _vxForm('INTEG'), { category: 'CAS / symbolic', categoryOrder: 3, label: "INTVX" });
+register('SIGMAVX', _vxForm('SIGMA', _mainVar), { category: 'CAS / symbolic', categoryOrder: 2.3, label: "SIGMAVX" });
 
 // AUR: ∫ takes the lower limit, the upper limit, the integrand and the name, and
 // gives the definite integral; INTEG is the antiderivative.
@@ -549,6 +595,36 @@ register('DIVPC', (s) => {
   const [num, den] = [numArg, denArg].map(_astArg);
   _pushCasResult(s, _taylor(AstBin('/', num, den), _mainVar(num, den), _taylorOrder(orderArg)));
 }, { category: 'CAS / symbolic', categoryOrder: 3.55, label: "DIVPC" });
+
+// AUR: stores the expression in EQ and gives it back with { { values } { results } }, each value put for VX.
+register('TABVAL', (s) => {
+  const [expr, list] = s.popN(2);
+  if (!isList(list)) throw new RPLError('Bad argument type');
+  const ast = _astArg(expr);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const [e, x] = [ast, AstVar(_mainVar(ast))].map(astToGiac);
+  const results = list.items.length
+    ? splitGiacList(giac.caseval(`[${list.items.map((v) => `subst(${e},${x}=${astToGiac(_astArg(v))})`).join(',')}]`))
+    : [];
+  if (results?.length !== list.items.length) throw new RPLError('Bad argument value');
+  try {
+    storeVar('EQ', expr);
+  } catch (err) {
+    throw new RPLError(err.message);
+  }
+  s.push(expr);
+  s.push(RList([list, RList(results.map((r) => _casValue(giacToAst(r))))]));
+}, { category: 'CAS / symbolic', categoryOrder: 3.57, label: "TABVAL" });
+
+// AUR: the nth complex Fourier coefficient over one period from 0, the period being PERIOD, 2π unless stored.
+register('FOURIER', (s) => {
+  const [f, n] = s.popN(2).map(_astArg);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const period = recallVar('PERIOD');
+  const L = period === undefined ? '2*pi' : astToGiac(_astArg(period));
+  const x = astToGiac(AstVar(_mainVar(f)));
+  _pushCasResult(s, giacToAst(giac.caseval(`fourier_cn(${astToGiac(f)},${x},${L},${astToGiac(n)},0)`)));
+}, { category: 'CAS / symbolic', categoryOrder: 3.65, label: "FOURIER" });
 
 const _infinitySign = (ast) => {
   const inf = (a) => a.kind === 'var' && /^(∞|\+∞|INFINITY|\+INFINITY)$/i.test(a.name);

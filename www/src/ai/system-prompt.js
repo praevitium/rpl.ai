@@ -82,18 +82,21 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   DERIV                      \`expr\` \`var\` DERIV — derivative w.r.t. var.  Example: \`SIN(X)\` \`X\` DERIV → \`COS(X)\`; the algebraic form \`∂X(X^2)\` EVAL → \`2*X\`
   DERVX INTVX                derivative / antiderivative w.r.t. the current CAS variable
   INTEG ∫                    \`expr\` \`var\` INTEG — indefinite integral.  Definite: a b \`expr\` \`var\` ∫ (1 2 \`10*X\` \`X\` ∫ → 15), the algebraic \`∫(0,1,X^2,X)\` EVAL (CAS, 1/3) or →NUM (numeric), or \`expr\` \`var\` INTEG a b PREVAL (F(b) - F(a))
+  RISCH IBP SIGMA SIGMAVX    RISCH is INTEG; \`X*COS(X)\` \`SIN(X)\` IBP → \`SIN(X)*X\` \`-SIN(X)\` (integrate level 1 and add); \`f\` \`var\` SIGMA → discrete antiderivative G with G(x+1)-G(x)=f, SIGMAVX in VX
   Σ                          \`k\` 1 10 \`k^2\` Σ → 385: the index, its first and last values and the summand; in an algebraic, Σ followed by (index=first,last,summand) as the HP writes it. A symbolic summand between numeric limits sums in closed form
   SOLVE                      \`eq\` \`var\` SOLVE — solve an equation.  Example: \`X^2-5*X+6=0\` \`X\` SOLVE → { \`X=2\` \`X=3\` }; an inequality gives its conditions: \`X^2>4\` \`X\` SOLVE → { \`X<-2\` \`X>2\` }
   LINSOLVE                   [ \`X+Y=3\` \`X-Y=1\` ] [ X Y ] LINSOLVE → the system as a list, the pivots, and [ \`X=2\` \`Y=1\` ] on level 1
   SYST2MAT                   [ \`X-Y=0\` \`2*X+Y=5\` ] [ X Y ] SYST2MAT → [[ 1 -1 0 ][ 2 1 -5 ]], a row per equation, its constant moved to the left side
   LIMIT (alias lim)          \`expr\` \`var=value\` LIMIT — limit at a point
   DIV CURL LAPL              [ \`X^2*Y\` \`X^2*Y\` \`Y^2*Z\` ] [ X Y Z ] DIV → divergence; CURL → the curl vector (three components and variables); \`expr\` [ X Y Z ] LAPL → Laplacian
+  POTENTIAL VPOTENTIAL HESS  [ field ] [ X Y Z ] POTENTIAL → U with grad U = field; VPOTENTIAL → a vector whose curl is the field; \`expr\` [ T U ] HESS → Hessian, gradient, variables
   ZEROS                      \`expr\` \`var\` ZEROS — the roots as plain values, each once: \`X^3-X^2-8*X+12\` \`X\` ZEROS → { -3 2 }
   ROOT                       \`f\` \`var\` guess ROOT — a numeric root near the guess (or in { a b }), stored in var: \`COS(X)=X\` \`X\` 1 ROOT → .739085133215
   TVMROOT TVMBEG TVMEND      \`PMT\` TVMROOT — solves the named TVM variable (N I%YR PV PMT FV) from the others and PYR, and stores it; payments at each period's end, TVMBEG for its start: 360 \`N\` STO 6.5 \`I%YR\` STO 200000 \`PV\` STO 0 \`FV\` STO 12 \`PYR\` STO \`PMT\` TVMROOT → -1264.13604699
   AMORT                      n AMORT — the first n payments' principal and interest and the balance left, from I%YR PV PMT PYR: with the mortgage above, 12 AMORT → -2235.45093797 -12934.1816259 197764.549062
   TAYLR TAYLOR0              \`expr\` \`var\` n TAYLR — Taylor polynomial at 0, n counted from the lowest power; \`expr\` TAYLOR0 is order 4 in VX
   DIVPC                      \`num\` \`den\` n DIVPC — Taylor polynomial at 0 of num/den to degree n
+  TABVAL FOURIER             \`X^2+1\` { 1 2 3 } TABVAL → the expression and { { 1 2 3 } { 2 5 10 } }, stored in EQ; \`X^2\` n FOURIER → nth complex Fourier coefficient over PERIOD (2π)
   SERIES                     \`expr\` \`X=a\` n SERIES (or \`X\` for a=0, \`X=∞\`) — pushes { :Limit: :Equiv: :Expans: :Remain: } in a small h and \`h=X-a\`
   SUBST                      \`expr\` \`var=value\` SUBST — substitute
   LAPLACE ILAP               Laplace transform / inverse (LAP is LAPLACE)

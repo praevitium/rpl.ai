@@ -6035,6 +6035,37 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assertThrows(() => runLine('"X" LVAR'), /Bad argument type/, 'LVAR takes an algebraic');
 }
 
+// The 0.7.2 calculus commands, with the AUR's examples as real Giac answers them.
+{
+  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
+  const field = "[ '4*X*Y+Z' '2*X^2+6*Y*Z' 'X+3*Y^2' ] [ X Y Z ]";
+  for (const [line, fixtures, want] of [
+    ["'Y^2-3*Y+2' 'Y' RISCH", [['integrate(Y^2-3*Y+2,Y)', 'Y^3/3-3*Y^2/2+2*Y']], '`Y^3/3 - 3*Y^2/2 + 2*Y`'],
+    ["'2*X-2*Y' 'Y' SIGMA", [['normal(sum(2*X-2*Y,Y))', '2*X*Y-Y^2+Y']], '`2*X*Y - Y^2 + Y`'],
+    ["'2*X-2*Y' SIGMAVX", [['normal(sum(2*X-2*Y,X))', 'X^2-2*X*Y-X']], '`X^2 - 2*X*Y - X`'],
+    ["'X*COS(X)' 'SIN(X)' IBP", [['ibpdv(X*cos(X),sin(X),X)', '[sin(X)*X,-sin(X)]']], '`SIN(X)*X` | `-SIN(X)`'],
+    [`${field} POTENTIAL`, [['potential([4*X*Y+Z,2*X^2+6*Y*Z,X+3*Y^2],[X,Y,Z])', '2*X^2*Y+X*Z+3*Y^2*Z']], '`2*X^2*Y + X*Z + 3*Y^2*Z`'],
+    ["[ '2*Y*Z' 0 '2*X*Y-X^2' ] [ X Y Z ] VPOTENTIAL", [['vpotential([2*Y*Z,0,2*X*Y-X^2],[X,Y,Z])', '[0,X^2*Y-1/3*X^3,Y^2*Z]']],
+      '[ 0 `X^2*Y - 1/3*X^3` `Y^2*Z` ]'],
+    ["'T^2+2*T*U^2' [ T U ] HESS", [['normal(hessian(T^2+2*T*U^2,[T,U]))', '[[2,4*U],[4*U,4*T]]'], ['normal(grad(T^2+2*T*U^2,[T,U]))', '[2*T+2*U^2,4*T*U]']],
+      '[[ 2 `4*U` ][ `4*U` `4*T` ]] | [ `2*T + 2*U^2` `4*T*U` ] | [ T U ]'],
+    ["'X^2' 0 FOURIER", [['fourier_cn(X^2,X,2*pi,0,0)', '4/3*pi^2']], '`4/3*π^2`'],
+    ["'X^2+1' { 1 2 3 } TABVAL", [['[subst(X^2+1,X=1),subst(X^2+1,X=2),subst(X^2+1,X=3)]', '[2,5,10]']], '`X^2 + 1` | { { 1 2 3 } { 2 5 10 } }'],
+  ]) {
+    giac._clear();
+    for (const [call, answer] of fixtures) giac._setFixture(call, answer);
+    const got = shown(line);
+    assert(got === want, `${line.split(' ').pop()}: ${line} gives ${want} (got ${got})`);
+  }
+  assert(shown("'EQ' RCL") === '`X^2 + 1`', 'TABVAL stores its expression in EQ, as the AUR says');
+  runLine("'EQ' PURGE");
+  giac._clear();
+  giac._setFixture('potential([Y,0,0],[X,Y,Z])', 'GIAC_ERROR: Not a potential Error: Bad Argument Value');
+  assertThrows(() => runLine("[ 'Y' 0 0 ] [ X Y Z ] POTENTIAL"), /Bad argument value/, 'POTENTIAL of a field with a curl is Bad argument value');
+  giac._clear();
+  assertThrows(() => runLine("[ 'X' 0 ] [ X Y Z ] VPOTENTIAL"), /Invalid dimension/, 'VPOTENTIAL needs three components and three variables');
+}
+
 /* ==================================================================
  — PCAR / CHARPOL / EGVL / PA2B2
    PCAR + CHARPOL + EGVL are Giac-backed matrix ops (use fixtures on
