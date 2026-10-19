@@ -857,7 +857,7 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 
 .cat-cats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 4px 12px 14px; }
 .drawer.wide .cat-cats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.cat-cats button { border: 1px solid var(--line); background: var(--r1); border-radius: 9px; padding: 9px 10px; text-align: left; display: grid; gap: 2px; color: var(--ink); min-width: 0; }
+.cat-cats button { border: 1px solid var(--line); background: var(--r1); border-radius: 9px; padding: 9px 10px; text-align: left; display: grid; align-content: start; gap: 2px; color: var(--ink); min-width: 0; }
 .cat-cats button:hover { border-color: var(--line2); background: var(--r2); }
 .cat-cats b { font: 600 12px/1.25 var(--font-ui); overflow: hidden; text-overflow: ellipsis; }
 .cat-cats span { font: 11px/1.2 var(--font-mono); color: var(--ink3); }

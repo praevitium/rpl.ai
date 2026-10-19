@@ -300,3 +300,10 @@ const REF = parseCommandReference(HTML);
     && /'Search commands…'\]\);/.test(paletteSrc),
     'command search: the placeholder is the longest wording that fits the field, down to "Search commands…" on a narrow phone');
 }
+
+/* A Catalog family card beside one whose name wraps grew to match it, and its count slid down from its name. */
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/\.cat-cats button \{[^}]*display: grid; align-content: start;/.test(css),
+    'Catalog families: a card keeps its command count under its name when a neighbour\'s name wraps');
+}
