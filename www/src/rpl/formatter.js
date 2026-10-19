@@ -191,23 +191,26 @@ function _normExp(s) {
   return s.replace(/e\+0*(\d)/, 'E$1').replace(/e-0*(\d)/, 'E-$1');
 }
 
+// The AUR's STD: a number whose digits fit in 12 shows whole (.00000000001), any other in scientific form
+// (1.23E-11, and 1/30 as 3.33333333333E-2).
 function _stdDecimal(d) {
   if (d.isZero()) return '0.';
-  const exp = d.e;
-  if (exp >= -11 && exp < 12) {
+  const r = d.toSignificantDigits(12);
+  const exp = r.e;
+  const digits = exp >= 0 ? Math.max(exp + 1, r.sd()) : r.sd() - exp - 1;
+  if (digits <= 12) {
     const places = Math.max(0, 11 - exp);
     let s;
     if (places === 0) {
       // toFixed(0) drops the point; the HP50 shows 42.
-      s = d.toSignificantDigits(12).toFixed(0) + '.';
+      s = r.toFixed(0) + '.';
     } else {
-      s = d.toSignificantDigits(12).toFixed(places);
+      s = r.toFixed(places);
       if (s.includes('.')) s = s.replace(/0+$/, '').replace(/\.$/, '.');
     }
     return s;
   }
-  let s = d.toSignificantDigits(12).toExponential();
-  s = s.replace(/\.?0+(e)/, '$1');
+  const s = r.toExponential().replace(/\.?0+(e)/, '$1').replace(/^(-?\d)e/, '$1.e');
   return _normExp(s);
 }
 

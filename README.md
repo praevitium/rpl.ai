@@ -157,7 +157,7 @@ RPL puts the numbers first and the operation last. Each value goes on the
   ΣDAT offers to store it there. The PROB menu has the HP's keys in its
   order, `COMB` `PERM` `!` `RAND` `RDZ`, then the upper-tail distributions
   `UTPC` `UTPF` `UTPN` `UTPT` and `NDIST`, to 12 digits:
-  `0 1 1.96 UTPN` gives 0.0249978951482.
+  `0 1 1.96 UTPN` gives 2.49978951482E-2.
 - **Integers and polynomials.** Integers are exact at any size, so
   `2 64 ^ NEXTPRIME` gives 18446744073709551629. The INTGR menu opens on the
   HP's ARITH folders, INTEG and MODUL, then DIVIS, FACTORS and PROPFRAC;

@@ -1240,8 +1240,18 @@ assert(getRealMaxExp() === REAL_MAX_EXP_DEFAULT,
 {
   const tiny = Real(new Decimal('1e-500'));
   const str = format(tiny);
-  assert(str === '1E-500',
+  assert(str === '1.E-500',
          `session044: format 1e-500 → '${str}'`);
+}
+
+// The AUR's STD: a number whose digits fit in 12 shows whole, any other in scientific form with a fraction mark.
+{
+  const std = (x) => format(Real(new Decimal(x)));
+  assert(std('1e11') === '100000000000.' && std('1e12') === '1.E12' && std('1e-12') === '0.000000000001'
+           && std('1.23e-11') === '1.23E-11' && std('12.345') === '12.345',
+         "STD shows the AUR's examples: 10^11 whole, 10^12 as 1.E12, .000000000001 whole and 1.23E-11 in scientific form");
+  assert(std('0.0333333333333') === '3.33333333333E-2' && std('0.333333333333') === '0.333333333333' && std('5.670374419e-8') === '5.670374419E-8',
+         'STD shows 1/30 as 3.33333333333E-2, as the HP does, where its 13 digits showed whole as 0.0333333333333');
 }
 
 // MAXR takes no arguments — depth grows by 1
@@ -7270,7 +7280,7 @@ function _arrayEq(a, b) {
   assert(shown('(1.005,2.675) 2 RND') === '(1.01,2.68)', 'RND rounds both parts of a complex number');
   assert(shown('1E15 7 MOD') === '6.' && shown('-5.5 3 MOD') === '0.5' && shown('5.5 -3 MOD') === '-0.5' && shown('5.5 3 MOD') === '2.5', 'MOD of a Real is the exact remainder with the divisor\'s sign');
   assert(shown('100000. LOG IP') === '5.' && shown('0.001 LOG') === '-3.', 'LOG of a power of ten is exact');
-  assert(shown('1.2345678901E-10 SINH') === '0.00000000012345678901' && shown('0.5 SINH') === '0.521095305494', 'SINH keeps its digits near 0');
+  assert(shown('1.2345678901E-10 SINH') === '1.2345678901E-10' && shown('0.5 SINH') === '0.521095305494', 'SINH keeps its digits near 0');
 }
 
 /* DEG and GRD trig are exact at whole quadrants, inside algebraics too. */
@@ -7331,7 +7341,7 @@ function _arrayEq(a, b) {
   const shown = (line) => format(runLine(line).peek());
   assert(Real('0.123456789012345').value.toString() === '0.123456789012' && Real('123456789012345678').value.toString() === '123456789012000000', 'a Real is rounded to 12 significant digits when it is made');
   assert(shown('1 3. / 3 *') === '0.999999999999' && shown('1 3. / 3 * IP') === '0.' && shown('1 3. / 3 * 1 ==') === '0.', '1 3. / 3 * is 0.999999999999 and acts like it');
-  assert(shown('0.1 0.2 + 0.3 ==') === '1.' && shown('1E15 1 +') === '1E15', 'sums of decimals stay exact and a 16-digit sum rounds');
+  assert(shown('0.1 0.2 + 0.3 ==') === '1.' && shown('1E15 1 +') === '1.E15', 'sums of decimals stay exact and a 16-digit sum rounds');
   assert(shown('1 3. / →STR STR→') === '0.333333333333' && shown('1 3. / DUP →STR STR→ ==') === '1.', 'a Real survives →STR and STR→ unchanged');
   assert(Complex(0.1 + 0.2, 1 / 3).re === 0.3 && Complex(0, 1 / 3).im === 0.333333333333, 'the parts of a Complex are rounded to 12 digits');
 }

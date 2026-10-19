@@ -572,7 +572,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   for (const bad of ['10_°C 5_K +', '1_°C 1_°F +', '10_K 5_°C -']) {
     assertThrows(() => runLine(bad), /Inconsistent units/, `${bad} mixes a thermometer scale with another: Inconsistent units`);
   }
-  assert(unitLine('5_°C/min 1_K/s CONVERT') === '0.0833333333333_K/s',
+  assert(unitLine('5_°C/min 1_K/s CONVERT') === '8.33333333333E-2_K/s',
     'a temperature inside a compound unit is a difference, so it has no offset');
 }
 
@@ -677,7 +677,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 
 {
   const line = (src) => runLine(src).snapshot().map((v) => formatSource(v)).join(' ');
-  assert(line('1_° UBASE') === '0.0174532925199_r' && line('180_° 1_r CONVERT') === '3.14159265359_r' && line('1_r 1_° CONVERT') === '57.2957795131_°'
+  assert(line('1_° UBASE') === '1.74532925199E-2_r' && line('180_° 1_r CONVERT') === '3.14159265359_r' && line('1_r 1_° CONVERT') === '57.2957795131_°'
     && line('100_grad 1_° CONVERT') === '90._°' && line('1_arcmin 1_arcs CONVERT') === '60._arcs' && line('1_sr UBASE') === '1._r^2',
     'AUR: the angle units ° r grad arcmin arcs and sr convert among themselves, and a steradian is a square radian');
   assertThrows(() => runLine('1_° 1_m CONVERT'), /Inconsistent units/, 'an angle does not convert to a length');
@@ -706,9 +706,9 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   const line = (src) => runLine(src).snapshot().map((v) => formatSource(v)).join(' ');
   const value = (src) => line(`${src} UVAL`);
   const cases = [
-    ['1_Å 1_m CONVERT', '0.0000000001'], ['1_fermi 1_m CONVERT', '1E-15'], ['1_μ 1_μm CONVERT', '1.'], ['1_ftUS 1_ft CONVERT', '1.000002'],
+    ['1_Å 1_m CONVERT', '0.0000000001'], ['1_fermi 1_m CONVERT', '1.E-15'], ['1_μ 1_μm CONVERT', '1.'], ['1_ftUS 1_ft CONVERT', '1.000002'],
     ['1_miUS 1_m CONVERT', '1609.34721869'], ['1_chain 1_ftUS CONVERT', '66.'], ['1_rd 1_ftUS CONVERT', '16.5'], ['1_fath 1_ftUS CONVERT', '6.'],
-    ['1_Mpc 1_pc CONVERT', '1000000.'], ['1_lyr 1_ly CONVERT', '1.'], ['1_a 1_m^2 CONVERT', '100.'], ['1_b 1_m^2 CONVERT', '1E-28'],
+    ['1_Mpc 1_pc CONVERT', '1000000.'], ['1_lyr 1_ly CONVERT', '1.'], ['1_a 1_m^2 CONVERT', '100.'], ['1_b 1_m^2 CONVERT', '1.E-28'],
     ['1_galC 1_galUK CONVERT', '1.'], ['1_ozUK 1_mL CONVERT', '28.4130625'], ['1_cu 1_cup CONVERT', '1.'], ['1_bu 1_L CONVERT', '35.2390701669'],
     ['4_pk 1_bu CONVERT', '1.'], ['1_fbm 1_in^3 CONVERT', '144.'], ['1_st 1_m^3 CONVERT', '1.'], ['1_c 1_m/s CONVERT', '299792458.'],
     ['1_ga 1_m/s^2 CONVERT', '9.80665'], ['1_t 1_kg CONVERT', '1000.'], ['1_tonUK 1_lb CONVERT', '2240.'], ['1_u 1_kg CONVERT', '1.6605390666E-27'],
@@ -753,7 +753,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   const line = (src) => runLine(src).snapshot().map((v) => formatSource(v)).join(' ');
   assert(line("'c' CONST") === '299792458._m/s' && line("'NA' CONST") === '6.02214076E23_1/mol' && line("'Vm' CONST") === '22.41396954_L/mol' && line("'R∞' CONST") === '10973731.5682_1/m' && line("'∠' CONST") === '1._°',
     "CONST gives a constant of the HP's Constants Library with its unit, under the library's names (R∞, ∠)");
-  assert(line("'α' CONST") === '0.0072973525693' && line("'εsi' CONST") === '11.9' && line('c CONST') === '299792458._m/s',
+  assert(line("'α' CONST") === '7.2973525693E-3' && line("'εsi' CONST") === '11.9' && line('c CONST') === '299792458._m/s',
     'CONST gives a dimensionless constant as a plain number, and takes the name unquoted');
   assert(line("-61 SF 'c' CONST -61 CF") === '299792458.', 'CONST with flag -61 (Units Usage) set gives the number without its unit');
   assert(line("'g' CONST 2_s SQ * 2 /") === '19.6133_m', "CONST's unit objects work with the others: g t²/2 for 2 s is 19.6133 m");
@@ -776,7 +776,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   const ids = constantIds();
   assert(ids.length === 39 && ids[0] === 'NA' && ids.at(-1) === 'I0' && ids.every((id) => CONSTANT_TITLES[id]),
     "the library lists the HP's 39 constants in its order, each with the name CONLIB shows");
-  assert(formatSource(constantValue('c')) === '299792458._m/s' && formatSource(constantValue('α')) === '0.0072973525693',
+  assert(formatSource(constantValue('c')) === '299792458._m/s' && formatSource(constantValue('α')) === '7.2973525693E-3',
     'a constant picked in the library is the value CONST gives');
 }
 
