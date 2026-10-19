@@ -743,3 +743,24 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assertThrows(() => runLine('AUTO'), /Undefined Name/, 'AUTO for FUNCTION needs EQ');
   setAngle(angle);
 }
+
+// SLOPEFIELD: a dash of slope f(x, y) at each grid point, the same length on screen, and the command's hook.
+{
+  const view = { xmin: -1, xmax: 1, ymin: -1, ymax: 1 };
+  const dashes = sampleTrace({ kind: 'slopefield', expr: 'X' }, view, { width: 240, height: 240 });
+  const slope = ([[x0, y0], [x1, y1]]) => (y1 - y0) / (x1 - x0);
+  const mid = ([[x0, y0], [x1, y1]]) => [(x0 + x1) / 2, (y0 + y1) / 2];
+  assert(dashes.length === 100, 'SLOPEFIELD: a 10 × 10 grid of dashes on a 240 × 240 view');
+  assert(dashes.every((d) => Math.abs(slope(d) - mid(d)[0]) < 1e-9), 'SLOPEFIELD: each dash has slope f at its centre');
+  const px = ([[x0, y0], [x1, y1]]) => Math.hypot((x1 - x0) * 120, (y1 - y0) * 120);
+  assert(dashes.every((d) => Math.abs(px(d) - px(dashes[0])) < 1e-9), 'SLOPEFIELD: every dash is as long on screen');
+  const field = sampleTrace({ kind: 'slopefield', expr: 'X-Y' }, view, { width: 240, height: 240 });
+  assert(field.every((d) => { const [x, y] = mid(d); return Math.abs(slope(d) - (x - y)) < 1e-9; }), 'SLOPEFIELD: f may use both X and Y');
+  const real = sampleTrace({ kind: 'slopefield', expr: 'SQRT(X)' }, view, { width: 240, height: 240 });
+  assert(real.length === 50 && real.every((d) => mid(d)[0] > 0), 'SLOPEFIELD: a grid point where f has no value is left out');
+  let seen = null;
+  setGraphicsHook((kind) => { seen = kind; });
+  runLine("'X-Y' SLOPEFIELD DROP");
+  assert(seen === 'slopefield', 'SLOPEFIELD hands its expression to the plot view');
+  setGraphicsHook(null);
+}

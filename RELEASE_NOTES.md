@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.32 (2026-10-19)
+**Latest release:** v0.7.33 (2026-10-19)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.33 — 2026-10-19
+
+- SLOPEFIELD draws dy/dx = f(x, y) as a slope field: `'X-Y' SLOPEFIELD`
+  puts a short dash of slope f at each point of a grid across the plot
+  view, every dash the same length on screen. The field follows the view
+  as it pans and zooms, and the plot view has a Slopes kind for typing one
+  in. As with FUNCTION, the command draws level 1 at once; VPAR's step
+  counts aren't used.
 
 ## v0.7.32 — 2026-10-19
 

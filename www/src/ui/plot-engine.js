@@ -379,6 +379,30 @@ function odeSlope(ast, x, y, opts) {
   return evalNumeric(ast, env, opts || {});
 }
 
+// A slope field: at each point of a grid across the view a dash of slope f(x, y), the same length on screen whatever
+// the slope.
+const SLOPE_CELL_PIXELS = 24;
+
+export function sampleSlopeField(ast, view, width, height, opts) {
+  const cols = Math.max(2, Math.round(width / SLOPE_CELL_PIXELS));
+  const rows = Math.max(2, Math.round(height / SLOPE_CELL_PIXELS));
+  const xPx = width / (view.xmax - view.xmin), yPx = height / (view.ymax - view.ymin);
+  const half = SLOPE_CELL_PIXELS * 0.35;
+  const dashes = [];
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      const x = view.xmin + (i + 0.5) * (view.xmax - view.xmin) / cols;
+      const y = view.ymin + (j + 0.5) * (view.ymax - view.ymin) / rows;
+      const slope = odeSlope(ast, x, y, opts);
+      if (!Number.isFinite(slope)) continue;
+      const len = Math.hypot(xPx, slope * yPx);
+      const dx = half / len, dy = slope * half / len;
+      dashes.push([[x - dx, y - dy], [x + dx, y + dy]]);
+    }
+  }
+  return dashes;
+}
+
 function rk4Step(ast, x, y, h, opts) {
   const k1 = odeSlope(ast, x, y, opts);
   const k2 = odeSlope(ast, x + h / 2, y + (h * k1) / 2, opts);
@@ -599,6 +623,7 @@ function traceContext(view, opts = {}) {
   return {
     view: v,
     width,
+    height: Number(opts.height) > 0 ? Number(opts.height) : null,
     angleOpts: opts.angleOpts || {},
     thetaRange: opts.thetaRange || { min: 0, max: 2 * Math.PI },
     tRange: opts.tRange || { min: -10, max: 10 },
@@ -793,6 +818,21 @@ export const TRACE_KINDS = Object.freeze({
     },
     fromStack: diffeqFromStack,
     toStack: diffeqToStack,
+  },
+  slopefield: {
+    render: 'stroke',
+    data: false,
+    editable: true,
+    fitOnAdd: false,
+    fields: [{ key: 'expr', placeholder: 'X-Y', aria: 'dy/dx' }],
+    label: diffeqLabel,
+    sample(t, ctx) {
+      if (!t.expr) return [];
+      return sampleSlopeField(parsePlotExpr(t.expr), ctx.view, ctx.width, ctx.height ?? ctx.width * 0.6, diffeqOpts(ctx));
+    },
+    evalAt() { return NaN; },
+    fromStack(v) { return expressionFromStack('slopefield', v); },
+    toStack: expressionToStack,
   },
   fit: {
     render: 'stroke',

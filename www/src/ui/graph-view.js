@@ -20,6 +20,7 @@ const PLOT_KINDS = Object.freeze([
   ['polar', 'Polar', 'r = f(θ)'],
   ['parametric', 'Parametric', 'x(t), y(t)'],
   ['diffeq', 'dy/dx', 'dy/dx = f(x, y)'],
+  ['slopefield', 'Slopes', 'dy/dx = f(x, y) as a slope field'],
   ['scatter', 'Scatter', 'Points from ΣDAT or the stack'],
   ['bar', 'Bar', 'Bar chart from ΣDAT or the stack'],
   ['hist', 'Histogram', 'Histogram from ΣDAT or the stack'],
@@ -849,7 +850,7 @@ export class GraphView {
     if (!spec) return;
     let segs = [];
     try {
-      segs = sampleTrace(t, this.view, sampleOpts({ width }));
+      segs = sampleTrace(t, this.view, sampleOpts({ width, height }));
     } catch {
       return;
     }
