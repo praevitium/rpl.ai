@@ -193,11 +193,10 @@ export class Palette {
         this.rows.push(it);
         const right = [
           it.current ? `<span class="badge">current</span>` : '',
-          it.missing ? `<span class="badge">not in app</span>` : '',
           it.shortcut ? `<span class="kbd">${escapeHtml(it.shortcut)}</span>` : '',
           it.reference ? `<button type="button" class="mini" data-ref title="Open the reference (→)" aria-label="Reference">${icon('book', 'sm')}</button>` : '',
         ].join('');
-        html += `<div class="pal-row" role="option" data-i="${i}"><span class="ic">${icon(it.icon ?? 'chr', 'sm')}</span><span class="t${it.mono ? ' mono' : ''}">${highlightMatches(it.title, q.trim())}</span>${it.detail ? `<span class="d">${escapeHtml(it.detail)}</span>` : ''}<span class="r">${right}</span>${it.kind === 'command' ? '<span class="pv" aria-live="polite"></span>' : ''}</div>`;
+        html += `<div class="pal-row" role="option" data-i="${i}"><span class="ic">${icon(it.icon ?? 'chr', 'sm')}</span><span class="t${it.mono ? ' mono' : ''}">${highlightMatches(it.title, q.trim())}${it.missing ? ' <span class="badge">not in app</span>' : ''}</span>${it.detail ? `<span class="d">${escapeHtml(it.detail)}</span>` : ''}<span class="r">${right}</span>${it.kind === 'command' ? '<span class="pv" aria-live="polite"></span>' : ''}</div>`;
       }
     }
     this._list.innerHTML = html || `<div class="pal-empty">Nothing matches. Try a command name, a word like “derivative”, or a setting like “degrees”.</div>`;

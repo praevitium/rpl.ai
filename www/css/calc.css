@@ -761,6 +761,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .pal-row.on { background: var(--accent-dim); }
 .pal-row .t { font: 600 13px/1.3 var(--font-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pal-row .t.mono { font-family: var(--font-mono); }
+.pal-row .t .badge { margin-left: 4px; vertical-align: 2px; }
 .pal-row .d { grid-column: 2; font-size: 11.5px; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* The highlighted row's lighter fill leaves --ink3 under 4.5:1 in the dark looks. */
 .pal-row.on .d, .ac-row.on em { color: var(--ink2); }

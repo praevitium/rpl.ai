@@ -261,12 +261,13 @@ const REF = parseCommandReference(HTML);
 }
 
 /* Command search listed commands rpl.ai lacks, such as PICT and PIXON, like any other, and choosing one put up an
-   error. Such a row now carries a "not in app" badge, which stays in view with the keyboard up where the description
-   line hides, and choosing it opens its reference page. */
+   error. Such a row now carries a "not in app" badge beside its name, which leaves the description its width on a
+   280 px phone and stays in view with the keyboard up where the description line hides, and choosing it opens its
+   reference page. */
 {
   const paletteSrc = readFileSync(new URL('../www/src/ui/palette.js', import.meta.url), 'utf8');
   assert(/const missing = !runnable && !isSyntaxWord\(name\);/.test(paletteSrc)
     && /run: runnable \? \(\) => \{ this\._remember\(name\); this\.app\.runCommandFromUI\(name\); \}\s*: missing \? \(\) => this\.app\.drawers\.showReference\(name\)/.test(paletteSrc)
-    && /it\.missing \? `<span class="badge">not in app<\/span>` : '',/.test(paletteSrc),
+    && /\$\{it\.missing \? ' <span class="badge">not in app<\/span>' : ''\}<\/span>/.test(paletteSrc),
     'command search: a command rpl.ai lacks wears a "not in app" badge and opens its reference page when chosen, where PICT looked runnable and choosing it put up an error');
 }
