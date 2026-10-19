@@ -6,7 +6,7 @@ import {
 } from './plot-engine.js';
 import { escapeHtml } from './display.js';
 import { icon } from './icons.js';
-import { isSymbolic, isMatrix, isVector, isList } from '../rpl/types.js';
+import { isSymbolic, isName, isMatrix, isVector, isList } from '../rpl/types.js';
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians } from '../rpl/state.js';
 import { plotSettings } from '../rpl/ops/graphics.js';
 import { downloadFile } from '../rpl/persist.js';
@@ -390,7 +390,7 @@ export class GraphView {
       this.loadData(kind, data);
       return;
     }
-    const built = isSymbolic(top) ? stackValueToTrace(top, kind, stack.depth >= 2 ? stack.peek(2) : null) : null;
+    const built = isSymbolic(top) || isName(top) ? stackValueToTrace(top, kind, stack.depth >= 2 ? stack.peek(2) : null) : null;
     if (!built) { this._fail(`${kind.toUpperCase()} needs an expression on level 1`); return; }
     const err = traceInputError(kind, built, { adding: true });
     if (err) { this._fail(err); return; }
