@@ -1,6 +1,6 @@
 import { format, formatStackTop, DEFAULT_DISPLAY } from '../rpl/formatter.js';
 import { astToSvg } from '../rpl/pretty.js';
-import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isBinaryInteger, isUnit, isString } from '../rpl/types.js';
+import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isBinaryInteger, isUnit, isString, isGrob } from '../rpl/types.js';
 import { state as calcState, currentPath } from '../rpl/state.js';
 import { icon } from './icons.js';
 
@@ -8,6 +8,28 @@ export function escapeHtml(text) {
   return String(text)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+const GROB_PICTURE_MAX = { width: 240, height: 96, scale: 3 };
+
+// A graphics object's pixels in the stack's ink, scaled up by whole steps while it is small; a frame shows its edges.
+function grobPicture(g) {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'grob';
+  canvas.width = Math.max(1, g.width);
+  canvas.height = Math.max(1, g.height);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--stack-ink').trim() || '#000';
+  const rowBytes = Math.ceil(g.width / 8);
+  for (let row = 0; row < g.height; row++) {
+    for (let col = 0; col < g.width; col++) {
+      if ((g.bytes[row * rowBytes + (col >> 3)] >> (col & 7)) & 1) ctx.fillRect(col, row, 1, 1);
+    }
+  }
+  const fit = Math.min(GROB_PICTURE_MAX.scale, GROB_PICTURE_MAX.width / canvas.width, GROB_PICTURE_MAX.height / canvas.height);
+  const scale = fit >= 1 ? Math.floor(fit) : fit;
+  canvas.style.width = `${canvas.width * scale}px`;
+  return canvas;
 }
 
 const rowSig = (flat, svgSize, oneLine) => `${svgSize}|${calcState.textbookMode ? 1 : 0}|${oneLine ? 1 : 0}|${flat}`;
@@ -610,6 +632,14 @@ export class Display {
     } else if (calcState.textbookMode && (isMatrix(value) || isVector(value)) && !short) {
       cell.innerHTML = this._renderTextbookGrid(value);
       cell.classList.add('textbook');
+    } else if (isGrob(value) && !short) {
+      const box = document.createElement('span');
+      box.className = 'grob-value';
+      const size = document.createElement('span');
+      size.className = 'value-text';
+      size.textContent = flat;
+      box.append(grobPicture(value), size);
+      cell.appendChild(box);
     } else {
       const span = document.createElement('span');
       span.className = 'value-text';

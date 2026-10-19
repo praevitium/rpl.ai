@@ -436,6 +436,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 /* Level 1 shows a string whole, its line breaks included, as a selected level does. */
 .st-row.sel .st-val .value-text, .st-row[data-level="1"] .st-val .value-text.str { white-space: pre-wrap; overflow-wrap: anywhere; text-overflow: clip; }
 .st-val .value-text.num { white-space: normal; overflow-wrap: anywhere; }
+.st-val .grob-value { display: flex; flex-direction: column; align-items: flex-end; gap: .25em; min-width: 0; max-width: 100%; }
+.st-val canvas.grob { box-sizing: content-box; max-width: calc(100% - 2px); height: auto; image-rendering: pixelated; border: 1px solid var(--line2); }
 .st-val .value-text.tagged { display: flex; }
 .st-val .value-text.tagged > * { overflow: hidden; text-overflow: ellipsis; }
 .st-val .value-text.tagged .tag-name { flex-shrink: 1000000; min-width: 5ch; }

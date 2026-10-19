@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.25 (2026-10-19)
+**Latest release:** v0.7.26 (2026-10-19)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.26 — 2026-10-19
+
+- DRAX draws the axes on PICT through the crossing AXES gives, (0,0) to
+  start, with a tick mark every ATICK: ten pixels to start, or a spacing in
+  user units, as on the 50g.
+- A graphics object on the stack shows as its picture beside
+  `Graphic w × h`: small ones scaled up to three times, large ones scaled
+  down to fit, in the stack's ink with a thin frame for its edges. The HP
+  shows only the size.
 
 ## v0.7.25 — 2026-10-19
 
