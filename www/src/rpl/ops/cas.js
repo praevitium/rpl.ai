@@ -945,6 +945,10 @@ register('PARTFRAC', _casUnary('partfrac'), { category: 'CAS / symbolic', catego
 
 register('COSSIN', _casUnary('tan2sincos'), { category: 'CAS / symbolic', categoryOrder: 21, label: "COSSIN" });
 
+register('TRIGCOS', _casUnary('trigcos'), { category: 'CAS / symbolic', categoryOrder: 21.1, label: "TRIGCOS" });
+register('TRIGSIN', _casUnary('trigsin'), { category: 'CAS / symbolic', categoryOrder: 21.2, label: "TRIGSIN" });
+register('TRIGTAN', _casUnary('trigtan'), { category: 'CAS / symbolic', categoryOrder: 21.3, label: "TRIGTAN" });
+
 
 register('LIN', _casUnary('lin'), { category: 'CAS / symbolic', categoryOrder: 35, label: "LIN" });
 

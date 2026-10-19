@@ -5910,6 +5910,30 @@ giac._setFixture('ilaplace(1,x,rplS)', 'Dirac(rplS)');
   assertThrows(() => { lookup('COSSIN').fn(s); }, /Bad argument type/, 'session104: COSSIN on String rejects with Bad argument type');
 }
 
+// TRIGCOS / TRIGSIN / TRIGTAN: answers as real Giac gives them, the AUR's example for TRIGTAN.
+for (const [cmd, src, call, answer, want] of [
+  ['TRIGCOS', 'SIN(X)^2', 'trigcos(sin(X)^2)', '-cos(X)^2+1', '-COS(X)^2 + 1'],
+  ['TRIGSIN', 'COS(X)^4', 'trigsin(cos(X)^4)', 'sin(X)^4-2*sin(X)^2+1', 'SIN(X)^4 - 2*SIN(X)^2 + 1'],
+  ['TRIGTAN', 'SIN(X)^2', 'trigtan(sin(X)^2)', 'tan(X)^2/(tan(X)^2+1)', 'TAN(X)^2/(TAN(X)^2 + 1)'],
+]) {
+  const s = new Stack();
+  s.push(Symbolic(parseAlgebra(src)));
+  giac._clear();
+  giac._setFixture(call, answer);
+  lookup(cmd).fn(s);
+  const got = isSymbolic(s.peek()) ? formatAlgebra(s.peek().expr) : String(s.peek().type);
+  assert(got === want, `${cmd} '${src}' gives '${want}' (got '${got}')`);
+  giac._clear();
+}
+for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
+  const s = new Stack();
+  s.push(Integer(5n));
+  lookup(cmd).fn(s);
+  assert(isInteger(s.peek()) && s.peek().value === 5n, `${cmd} leaves a number as it is`);
+  s.push(Str('trig'));
+  assertThrows(() => { lookup(cmd).fn(s); }, /Bad argument type/, `${cmd} on a string is Bad argument type`);
+}
+
 /* ==================================================================
  — PCAR / CHARPOL / EGVL / PA2B2
    PCAR + CHARPOL + EGVL are Giac-backed matrix ops (use fixtures on

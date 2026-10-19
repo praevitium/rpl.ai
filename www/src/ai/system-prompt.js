@@ -95,6 +95,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   LAPLACE ILAP               Laplace transform / inverse (LAP is LAPLACE)
   TEXPAND TLIN TSIMP TCOLLECT EXPLN COSSIN LIN     trig/exp/log rewrites
   HALFTAN ASIN2C ASIN2T ACOS2S ATAN2S TAN2SC TAN2SC2 TAN2CS2     specific identity rewrites
+  TRIGCOS TRIGSIN TRIGTAN    rewrite with SIN²+COS²=1 in COS terms or SIN terms, or SIN and COS as TAN: \`SIN(X)^2\` TRIGTAN → \`TAN(X)^2/(TAN(X)^2+1)\`
   EXLR                       split an equation/binary into LHS/RHS on the stack
   VX SVX                     get/set the current CAS main variable (default \`x\`)
   MODSTO ADDTMOD SUBTMOD MULTMOD POWMOD EXPANDMOD FACTORMOD GCDMOD DIVMOD DIV2MOD     modular arithmetic against a stored modulus
