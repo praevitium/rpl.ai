@@ -1,6 +1,6 @@
 import { RPLError } from '../stack.js';
-import { inScratchState, varRecall, varStore } from '../state.js';
-import { Complex, Real, Name, RList, Str, BinaryInteger, isComplex, isReal, isInteger, isBinaryInteger, isName, isList, isString, toRealOrThrow } from '../types.js';
+import { inScratchState, varRecall, varStore, getPict, setPict, getBinaryBase } from '../state.js';
+import { Complex, Real, Name, RList, Str, BinaryInteger, Grob, isComplex, isReal, isInteger, isBinaryInteger, isName, isList, isString, isGrob, toRealOrThrow } from '../types.js';
 import { register } from './registry.js';
 import { statPlotData } from './statistics.js';
 
@@ -39,8 +39,9 @@ register('DRAW',      (s) => _requestPlot('draw', s), { category: 'Graphics', ca
 
 // PPAR holds { (xmin,ymin) (xmax,ymax) indep res axes ptype depend }, the HP 50g's defaults until a command sets it.
 const PPAR_DEFAULT = () => [Complex(-6.5, -3.9), Complex(6.5, 4), Name('X'), Real(0), Complex(0, 0), Name('FUNCTION'), Name('Y')];
-// The 50g's PICT is 131 x 80 pixels; CENTR and the scale commands keep column 65 and row 40 on the plot's centre.
-const PICT_COLS = 130, PICT_ROWS = 79, CENTER_COL = 65, CENTER_ROW = 40, TICK_PIXELS = 10;
+// PICT is at least the 50g's 131 × 80 and at most 2048 wide; a tick mark comes every 10 pixels.
+const PICT_MIN_WIDTH = 131, PICT_MIN_HEIGHT = 80, PICT_MAX_WIDTH = 2048, TICK_PIXELS = 10;
+const GROB_MAX_PIXELS = 1 << 23;
 
 export function plotParameters() {
   const par = varRecall('PPAR');
@@ -124,17 +125,26 @@ const _point = (v) => {
   throw new RPLError('Bad argument type');
 };
 
+// PICT's last column and row, and its centre pixel: column 65 and row 40 on the 50g's 131 × 80.
+function _pictPixels() {
+  const { width, height } = getPict();
+  const w = Math.max(width, PICT_MIN_WIDTH), h = Math.max(height, PICT_MIN_HEIGHT);
+  return { cols: w - 1, rows: h - 1, centerCol: Math.floor(w / 2), centerRow: Math.floor(h / 2) };
+}
+
 // The user-unit point under the centre pixel, and the size of one pixel.
 function _grid() {
   const c = _corners();
-  const dx = (c.xmax - c.xmin) / PICT_COLS, dy = (c.ymax - c.ymin) / PICT_ROWS;
-  return { cx: c.xmin + CENTER_COL * dx, cy: c.ymax - CENTER_ROW * dy, dx, dy };
+  const p = _pictPixels();
+  const dx = (c.xmax - c.xmin) / p.cols, dy = (c.ymax - c.ymin) / p.rows;
+  return { cx: c.xmin + p.centerCol * dx, cy: c.ymax - p.centerRow * dy, dx, dy };
 }
 
 function _setGrid({ cx, cy, dx, dy }) {
+  const p = _pictPixels();
   _setCorners({
-    xmin: cx - CENTER_COL * dx, xmax: cx + (PICT_COLS - CENTER_COL) * dx,
-    ymin: cy - (PICT_ROWS - CENTER_ROW) * dy, ymax: cy + CENTER_ROW * dy,
+    xmin: cx - p.centerCol * dx, xmax: cx + (p.cols - p.centerCol) * dx,
+    ymin: cy - (p.rows - p.centerRow) * dy, ymax: cy + p.centerRow * dy,
   });
 }
 
@@ -267,3 +277,71 @@ function _variableSpec(index) {
 
 register('INDEP', _variableSpec(2), { category: 'Graphics', categoryOrder: 9, label: "INDEP" });
 register('DEPND', _variableSpec(6), { category: 'Graphics', categoryOrder: 9.1, label: "DEPND" });
+
+
+// PICT puts the name PICT on the stack; RCL, STO, PURGE and SIZE take it for the graphics object itself.
+export const isPict = (v) => isName(v) && v.id === 'PICT';
+
+function _blank(width, height) {
+  if (width * height > GROB_MAX_PIXELS) throw new RPLError('Insufficient memory');
+  return Grob(width, height);
+}
+
+// A size in pixels: a binary integer, or a whole real.
+function _pixels(v) {
+  const n = isBinaryInteger(v) ? Number(v.value) : _real(v);
+  if (!Number.isInteger(n) || n < 0) throw new RPLError('Bad argument value');
+  return n;
+}
+
+// Only a graphics object goes in PICT, put in the top left corner of a blank 131 × 80 when it is smaller.
+export function storePict(v) {
+  if (!isGrob(v)) throw new RPLError('Bad argument type');
+  if (v.width > PICT_MAX_WIDTH) throw new RPLError('Bad argument value');
+  if (v.width >= PICT_MIN_WIDTH && v.height >= PICT_MIN_HEIGHT) {
+    setPict(v);
+    return;
+  }
+  const g = _blank(Math.max(v.width, PICT_MIN_WIDTH), Math.max(v.height, PICT_MIN_HEIGHT));
+  const from = Math.ceil(v.width / 8), to = Math.ceil(g.width / 8);
+  for (let y = 0; y < v.height; y++) g.bytes.set(v.bytes.subarray(y * from, (y + 1) * from), y * to);
+  setPict(g);
+}
+
+export const purgePict = () => setPict(Grob(0, 0));
+
+export function grobSize(v) {
+  const g = isPict(v) ? getPict() : v;
+  return [g.width, g.height].map((n) => BinaryInteger(BigInt(n), getBinaryBase() || 'd'));
+}
+
+function _resizePict(width, height) {
+  if (width > PICT_MAX_WIDTH) throw new RPLError('Bad argument value');
+  setPict(_blank(Math.max(width, PICT_MIN_WIDTH), Math.max(height, PICT_MIN_HEIGHT)));
+}
+
+register('PICT', (s) => s.push(Name('PICT')), { category: 'Graphics', categoryOrder: 10, label: "PICT" });
+
+// PDIM with corners keeps the plot's scale, so PICT grows or shrinks with them; with pixels PPAR stays.
+register('PDIM', (s) => {
+  const [a, b] = s.popN(2);
+  if (isComplex(a) && isComplex(b)) {
+    if (!(b.re > a.re) || !(b.im > a.im)) throw new RPLError('Bad argument value');
+    const { dx, dy } = _grid();
+    _resizePict(Math.round((b.re - a.re) / dx) + 1, Math.round((b.im - a.im) / dy) + 1);
+    _setCorners({ xmin: a.re, ymin: a.im, xmax: b.re, ymax: b.im });
+    return;
+  }
+  if (!isBinaryInteger(a) || !isBinaryInteger(b)) throw new RPLError('Bad argument type');
+  _resizePict(Number(a.value), Number(b.value));
+}, { category: 'Graphics', categoryOrder: 10.1, label: "PDIM" });
+
+register('ERASE', () => {
+  const { width, height } = getPict();
+  setPict(Grob(width, height));
+}, { category: 'Graphics', categoryOrder: 10.2, label: "ERASE" });
+
+register('BLANK', (s) => {
+  const [width, height] = s.popN(2).map(_pixels);
+  s.push(_blank(width, height));
+}, { category: 'Graphics', categoryOrder: 10.3, label: "BLANK" });

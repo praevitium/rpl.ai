@@ -1,4 +1,4 @@
-import { isVector, RList, Real, isMatrix, isString, Integer, isList, isProgram, Matrix, Vector, isInteger, isReal, isComplex, Complex, isRational, isSymbolic, isUnit, Symbolic } from '../types.js';
+import { isVector, RList, Real, isMatrix, isString, Integer, isList, isProgram, Matrix, Vector, isInteger, isReal, isComplex, Complex, isRational, isSymbolic, isUnit, isGrob, Symbolic } from '../types.js';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { astSize } from '../algebra.js';
 import { unitSize } from '../units.js';
@@ -7,6 +7,7 @@ import { giac } from '../cas/giac-engine.mjs';
 import { giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
 import { charSpaceList, eigenvalueArray, spacesFromJordan } from '../jordan-format.js';
 import { register, OPS } from './registry.js';
+import { isPict, grobSize } from './graphics.js';
 import { _numVal, _astToRplValue, _coefArrToSymbolicX, _colCompose, _colDecompose, _decimalFrobeniusNorm, _fromArrayOp, _fromVecOp, _indexAsInt, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _matrixToGiacStr, _nFromIntegerArg, _popSquareMatrix, _rowCompose, _rowDecompose, _scalarBinary, _scalarSum, _toArrayOp, _toV2Op, _toV3Op } from './internal.js';
 
 
@@ -62,6 +63,7 @@ register('SIZE', (s) => {
   if (isInteger(v)) { s.push(Integer(BigInt((v.value < 0n ? -v.value : v.value).toString().length))); return; }
   if (isSymbolic(v) && typeof v.expr === 'object') { s.push(Integer(BigInt(astSize(v.expr)))); return; }
   if (isUnit(v)) { s.push(Integer(BigInt(unitSize(v.uexpr)))); return; }
+  if (isGrob(v) || isPict(v)) { grobSize(v).forEach((n) => s.push(n)); return; }
   s.push(Integer(1n));
 }, { category: 'Vectors / matrices', categoryOrder: 0, label: "SIZE" });
 

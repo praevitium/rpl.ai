@@ -174,6 +174,29 @@ export function Unit(value, uexpr) {
   return Object.freeze({ type: TYPES.UNIT, value: roundPart(value), uexpr });
 }
 
+// A graphics object, width × height pixels. Each row packs eight pixels to a byte, the leftmost in the low bit, as the
+// HP stores them; the bytes are never changed once the object is made.
+export function Grob(width, height, bytes = new Uint8Array(height * Math.ceil(width / 8))) {
+  return Object.freeze({ type: TYPES.GROB, width, height, bytes });
+}
+
+// The HP's GROB text gives each byte low nibble first.
+export function grobFromHex(width, height, hex) {
+  const rowBytes = Math.ceil(width / 8);
+  if (hex.length !== 2 * rowBytes * height) throw new RPLError('Invalid syntax');
+  const lastMask = width % 8 ? 0xff >> (8 - (width % 8)) : 0xff;
+  const bytes = new Uint8Array(rowBytes * height);
+  for (let i = 0; i < bytes.length; i++) {
+    const b = parseInt(hex[2 * i + 1] + hex[2 * i], 16);
+    bytes[i] = (i + 1) % rowBytes === 0 ? b & lastMask : b;
+  }
+  return Grob(width, height, bytes);
+}
+
+export function grobToHex(g) {
+  return Array.from(g.bytes, (b) => (b & 15).toString(16) + (b >> 4).toString(16)).join('').toUpperCase();
+}
+
 export function Directory({ name = 'HOME', parent = null, entries = null } = {}) {
   return {
     type: TYPES.DIRECTORY,
@@ -198,6 +221,7 @@ export const isProgram  = v => v && v.type === TYPES.PROGRAM;
 export const isTagged    = v => v && v.type === TYPES.TAGGED;
 export const isDirectory = v => v && v.type === TYPES.DIRECTORY;
 export const isUnit      = v => v && v.type === TYPES.UNIT;
+export const isGrob      = v => v && v.type === TYPES.GROB;
 // BinaryInteger is left out: its arithmetic keeps the left operand's base,
 // which promoteNumericPair does not model.
 export const isNumber    = v => isReal(v) || isInteger(v) || isRational(v) || isComplex(v);

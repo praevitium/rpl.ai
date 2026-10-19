@@ -12389,3 +12389,20 @@ for (const src of ['{ :a:1 :b:"s" }', '« :a:1 DTAG »', ':o:{ :i:2 }']) {
     'EQ→ treats an expression, number or unit as an equation equal to zero, as the AUR says');
   assertThrows(() => runLine('"s" EQ→'), 'Bad argument type', 'EQ→ refuses a string');
 }
+
+{
+  const text = (src) => runLine(src).snapshot().reverse().map((v) => formatStackTop(v)).join(' | ');
+  assert(text('GROB 9 2 FF10F010') === 'Graphic 9 × 2', 'GROB: a graphics object shows as Graphic width × height, as on the HP');
+  assert(text('GROB 9 2 ff10f010 →STR') === '"GROB 9 2 FF10F010"' && text('GROB 9 2 FF10F010 DUP →STR STR→ SAME') === '1.',
+    'GROB: →STR gives the GROB text, which reads back as the same object');
+  assert(text('GROB 9 1 FFFF →STR') === '"GROB 9 1 FF10"', 'GROB: bits past the width are dropped');
+  assertThrows(() => runLine('GROB 9 2 FF1'), /Invalid syntax/, 'GROB: the hex must fill every row');
+  assert(text('GROB 9 2 FF10F010 TYPE') === '11.' && text('GROB 9 2 FF10F010 SIZE') === '#9d | #2d',
+    'GROB: TYPE is 11 and SIZE gives the width and height');
+  assert(text('GROB 9 2 FF10F010 GROB 9 2 FF10F000 SAME') === '0.', 'GROB: SAME compares the pixels');
+  assert(text('#3d #2d BLANK →STR') === '"GROB 3 2 0000"' && text('3 2 BLANK') === 'Graphic 3 × 2',
+    'BLANK makes a blank graphics object from two sizes in pixels');
+  assertThrows(() => runLine('-1 2 BLANK'), /Bad argument value/, 'BLANK refuses a negative size');
+  assertThrows(() => runLine('#10000d #10000d BLANK'), /Insufficient memory/, 'BLANK refuses an object too big to hold');
+}
+

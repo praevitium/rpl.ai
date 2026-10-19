@@ -1,4 +1,4 @@
-import { isNumber, promoteNumericPair, isBinaryInteger, isName, isString, isList, isVector, isMatrix, isSymbolic, isTagged, isUnit, isProgram, isDirectory, Symbolic, Integer, BinaryInteger } from '../types.js';
+import { isNumber, promoteNumericPair, isBinaryInteger, isName, isString, isList, isVector, isMatrix, isSymbolic, isTagged, isUnit, isProgram, isDirectory, isGrob, Symbolic, Integer, BinaryInteger } from '../types.js';
 import { getWordsizeMask } from '../state.js';
 import { RPLError } from '../stack.js';
 import { Bin as AstBin, Fn as AstFn, astEqual } from '../algebra.js';
@@ -48,6 +48,9 @@ function eqValues(a, b, strict = false) {
     return !strict && sameDims(a.uexpr, b.uexpr) && _inUnit(a, b.uexpr) === b.value;
   }
   if (isProgram(a) && isProgram(b)) return _eqArr(a.tokens, b.tokens, strict);
+  if (isGrob(a) && isGrob(b)) {
+    return a.width === b.width && a.height === b.height && a.bytes.every((byte, i) => byte === b.bytes[i]);
+  }
   // Directories are containers, not values: each is equal only to itself.
   if (isDirectory(a) && isDirectory(b)) return a === b;
   return false;

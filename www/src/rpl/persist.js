@@ -17,7 +17,7 @@ import {
   state, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo,
   ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX, isModeFlag,
 } from './state.js';
-import { TYPES, Decimal, BIN_BASES, isStorableHpName } from './types.js';
+import { TYPES, Decimal, BIN_BASES, Grob, isStorableHpName } from './types.js';
 import { RPLError } from './stack.js';
 import { formatHpText, parseHpText } from './hp-text.js';
 import { formatDelimited, importTable, importCells, isTable, xlsxRows, SHEET_MAX_CELLS } from './sheet.js';
@@ -31,6 +31,7 @@ function encode(v, seen) {
   if (v === null || v === undefined) return v;
   if (typeof v === 'bigint') return { __t: 'bigint', v: v.toString() };
   if (v instanceof Decimal) return { __t: 'decimal', v: v.toString() };
+  if (v instanceof Uint8Array) return { __t: 'bytes', v: Array.from(v, (b) => b.toString(16).padStart(2, '0')).join('') };
   if (v instanceof Map) {
     const bag = seen ?? new WeakSet();
     return { __t: 'map', v: [...v].map(([k, x]) => [k, encode(x, bag)]) };
@@ -63,6 +64,7 @@ function decode(v) {
   if (typeof v === 'object') {
     if (v.__t === 'bigint') return BigInt(v.v);
     if (v.__t === 'decimal') return new Decimal(v.v);
+    if (v.__t === 'bytes') return Uint8Array.from(v.v.match(/../g) ?? [], (h) => parseInt(h, 16));
     if (v.__t === 'map') {
       return new Map(v.v.map(([k, x]) => [k, decode(x)]));
     }
@@ -108,7 +110,15 @@ export function snapshot(stack) {
     casVx: state.casVx,
     casModulo: encode(state.casModulo),
     alarms: state.alarms,
+    pict: encode(state.pict),
   };
+}
+
+function decodePict(snap) {
+  const g = decode(snap.pict ?? null);
+  const fits = g?.type === TYPES.GROB && g.bytes instanceof Uint8Array && Number.isInteger(g.width) && Number.isInteger(g.height)
+    && g.bytes.length === g.height * Math.ceil(g.width / 8);
+  return fits ? Grob(g.width, g.height, g.bytes) : null;
 }
 
 const validAlarm = (a) => a && Number.isFinite(a.due) && typeof a.message === 'string' && Number.isFinite(a.repeat) && a.repeat >= 0;
@@ -156,6 +166,7 @@ export function rehydrate(snap, stack) {
     throw new Error('snapshot: home is not a directory');
   }
   const items = Array.isArray(snap.stack) ? snap.stack.map(decode) : [];
+  const pict = decodePict(snap);
 
   // Refill the live HOME in place: other modules hold references to it.
   state.home.entries.clear();
@@ -191,6 +202,7 @@ export function rehydrate(snap, stack) {
   restoreModes(snap.modes);
   state.alarms = (Array.isArray(snap.alarms) ? snap.alarms.filter(validAlarm) : [])
     .map((a) => ({ due: a.due, message: a.message, repeat: a.repeat, ack: !!a.ack })).sort((a, b) => a.due - b.due);
+  state.pict = pict;
 
   stack.restore(items);
   notify();

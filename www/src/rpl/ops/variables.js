@@ -1,9 +1,10 @@
-import { varStore, varRecall, varPurge, varOrder, renameCurrentEntry, makeSubdir, goUp, goHome, goInto, currentPath, state as _calcState, reorderCurrentEntries, cloneDirectory, inScratchState, setFlagNumbers, replaceFlags } from '../state.js';
+import { getPict, varStore, varRecall, varPurge, varOrder, renameCurrentEntry, makeSubdir, goUp, goHome, goInto, currentPath, state as _calcState, reorderCurrentEntries, cloneDirectory, inScratchState, setFlagNumbers, replaceFlags } from '../state.js';
 import { RPLError, Stack } from '../stack.js';
 import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory, isTagged, isSymbolic, isNumber, isUnit, Program, Symbolic, Directory } from '../types.js';
 import { archiveBackup, restoreBackup } from '../persist.js';
 import { register, lookup } from './registry.js';
 import { _astToRplValue, _coerceDirName, _coerceStorableName, _hp50TypeCode, recallVar, storeVar } from './internal.js';
+import { isPict, storePict, purgePict } from './graphics.js';
 
 
 
@@ -38,7 +39,7 @@ function _forEachName(v, fn) {
 
 register('STO', (s) => {
   const [value, nameVal] = s.popN(2);
-  _forEachName(nameVal, (n) => _store(_coerceStorableName(n), value));
+  _forEachName(nameVal, (n) => (isPict(n) ? storePict(value) : _store(_coerceStorableName(n), value)));
 }, { category: 'Variables / directories', categoryOrder: 0, label: "STO" });
 
 // ▶ is STO that leaves the object on the stack, as the AUR's diagram shows (obj 'name' → obj).
@@ -134,7 +135,7 @@ register('POP', () => {
 
 
 register('RCL', (s) => {
-  _forEachName(s.pop(), (n) => s.push(_recall(_coerceDirName(n))));
+  _forEachName(s.pop(), (n) => s.push(isPict(n) ? getPict() : _recall(_coerceDirName(n))));
 }, { category: 'Variables / directories', categoryOrder: 1, label: "RCL" });
 
 
@@ -143,7 +144,7 @@ function _purge(id) {
 }
 
 register('PURGE', (s) => {
-  _forEachName(s.pop(), (n) => _purge(_coerceDirName(n)));
+  _forEachName(s.pop(), (n) => (isPict(n) ? purgePict() : _purge(_coerceDirName(n))));
 }, { category: 'Variables / directories', categoryOrder: 2, label: "PURGE" });
 
 // RENAME ( 'new' 'old' → ), in the current directory.

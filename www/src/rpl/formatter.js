@@ -1,7 +1,7 @@
 import {
   isReal, isInteger, isRational, isBinaryInteger, isComplex, isString,
   isName, isList, isVector, isMatrix, isProgram, isTagged, isSymbolic,
-  isDirectory, isUnit,
+  isDirectory, isUnit, isGrob, grobToHex,
   Decimal,
 } from './types.js';
 import { state as _state, getApproxMode, fromRadians } from './state.js';
@@ -38,6 +38,7 @@ export function format(v, display = DEFAULT_DISPLAY, options = {}) {
   if (isTagged(v))  return `${v.tag}: ${format(v.value, display)}`;
   if (isSymbolic(v))return `\`${formatSymbolic(v.expr)}\``;
   if (isDirectory(v)) return v.name ? `Directory { ${v.name} }` : 'Directory { }';
+  if (isGrob(v)) return `Graphic ${v.width} × ${v.height}`;
   if (isUnit(v)) {
     const num = formatReal(v.value, display);
     const u   = formatUnitExpr(v.uexpr);
@@ -51,6 +52,7 @@ export function format(v, display = DEFAULT_DISPLAY, options = {}) {
 export function formatSource(v, display = DEFAULT_DISPLAY) {
   if (isTagged(v)) return `:${v.tag}:${formatSource(v.value, display)}`;
   if (isString(v)) return `"${v.value.replace(/[\\"]/g, '\\$&')}"`;
+  if (isGrob(v)) return `GROB ${v.width} ${v.height} ${grobToHex(v)}`;
   return format(v, display);
 }
 

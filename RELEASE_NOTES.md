@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.22 (2026-10-19)
+**Latest release:** v0.7.23 (2026-10-19)
 
 ---
 
@@ -20,6 +20,29 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.23 — 2026-10-19
+
+Graphics objects, and PICT to hold one: the first step of the HP's
+drawing, which will draw on PICT pixel by pixel as the 50g does.
+
+- A graphics object is written as the HP writes one, `GROB 8 2 F00F`: its
+  width, height and pixels in hex, a row at a time, two digits a byte, low
+  nibble first. The stack shows it as `Graphic 8 × 2`, →STR and editing
+  give the GROB text back, TYPE gives 11, SIZE its width and height, and
+  SAME compares the pixels. It is saved with the rest of the calculator
+  and in `.rpl` files.
+- BLANK makes a blank one: `#8d #2d BLANK`.
+- PICT puts PICT on the stack for RCL, STO, PURGE and SIZE, as the AUR
+  describes. It starts as a blank 131 × 80; a smaller graphics object
+  stored in it goes in the top left corner of a 131 × 80, and `{ PICT }
+  PURGE` leaves a 0 × 0.
+- PDIM resizes PICT, 2048 pixels wide at most and 131 × 80 at least. Given
+  two corners it also sets PPAR's, sizing PICT to keep the plot's scale.
+  ERASE blanks PICT. CENTR and the scale commands now use the size of PICT
+  rather than always 131 × 80.
+- Nothing draws on PICT or shows it yet: PVIEW and the drawing commands
+  come next.
 
 ## v0.7.22 — 2026-10-19
 

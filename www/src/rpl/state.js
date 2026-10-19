@@ -1,7 +1,7 @@
 /* Global calculator modes and flags.  Ops change them through the set*
    helpers so subscribers fire once per change. */
 
-import { Directory, TYPES, BIN_BASES } from './types.js';
+import { Directory, Grob, TYPES, BIN_BASES } from './types.js';
 import { setStateBatcher, setLastArgsGate } from './stack.js';
 
 // RAD first: it is the boot default here, although the HP50 boots in DEG.
@@ -49,6 +49,7 @@ export const state = {
   haltedStack: [],
   promptMessage: null,
   lcd: null,
+  pict: null,                // PICT, the graphics object the drawing commands use; null until something sets it
   // Appointment alarms, soonest first: { due (ms), message, repeat (ticks, 8192 a second), ack }.
   alarms: [],
 };
@@ -324,6 +325,11 @@ export function touchLcd() { if (state.lcd) { state.lcd = null; _emit(); } }
 export function getLcd() { return state.lcd; }
 
 export function getAlarms() { return state.alarms; }
+
+// PICT starts as a blank 131 × 80, the 50g's screen.
+export function getPict() { return state.pict ?? Grob(131, 80); }
+
+export function setPict(grob) { _set('pict', grob); }
 
 export function setAlarms(list) {
   state.alarms = [...list].sort((a, b) => a.due - b.due);
@@ -633,6 +639,7 @@ export function resetHome() {
   state.haltedStack.length = 0;
   state.promptMessage = null;
   state.lcd = null;
+  state.pict = null;
   _emit();
 }
 
@@ -902,7 +909,7 @@ const CAPTURED_SCALARS = [
   'angle', 'coordMode', 'displayMode', 'displayDigits', 'lastError',
   'wordsize', 'binaryBase', 'textbookMode', 'approxMode', 'complexMode',
   'lastFitModel', 'casVx', 'casModulo', 'halted', 'promptMessage', 'prngSeed',
-  'realMaxExp', 'lcd', 'alarms',
+  'realMaxExp', 'lcd', 'alarms', 'pict',
 ];
 
 export function captureCalcState() {

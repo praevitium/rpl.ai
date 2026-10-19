@@ -1,6 +1,6 @@
 import {
   Real, Integer, Rational, BinaryInteger, Complex, Str, Name, RList, Vector, Matrix, Program,
-  Symbolic, Unit, Tagged, isValidHpIdentifier, Decimal,
+  Symbolic, Unit, Tagged, isValidHpIdentifier, Decimal, grobFromHex,
 } from './types.js';
 import { RPLError } from './stack.js';
 import { getApproxMode, getWordsizeMask, state as _state, angleTrig } from './state.js';
@@ -122,6 +122,12 @@ function tokenize(src) {
     }
 
     const rest = src.slice(i);
+    // GROB width height hex, the HP's graphics object, reads its hex whole so 1E0F can't become a number.
+    const grob = rest.match(/^GROB\s+(\d+)\s+(\d+)(?:\s+([0-9A-Fa-f]+))?(?=$|[\s{}[\]"`«»]|<<|>>)/);
+    if (grob) {
+      tokens.push({ kind: 'grob', width: Number(grob[1]), height: Number(grob[2]), hex: grob[3] ?? '' });
+      i += grob[0].length; continue;
+    }
     // 1/3 with no spaces is an exact fraction, the form a rational is shown and saved in.
     const fraction = rest.match(/^[-+]?\d+\/\d+(?=$|[\s{}[\]()"`«»]|<<|>>)/);
     if (fraction) {
@@ -349,6 +355,8 @@ export function parseEntry(src) {
         }
         return Name(body, { quoted: true });
       }
+
+      case 'grob': return grobFromHex(t.width, t.height, t.hex);
 
       case 'tag': {
         if (idx >= toks.length) throw new RPLError(`Missing object after :${t.text}:`);

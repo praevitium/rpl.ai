@@ -500,6 +500,38 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   varPurge('PPAR');
 }
 
+// PICT, the graphics object the drawing commands use, with PDIM, ERASE and PICT as a target for STO, RCL and PURGE.
+{
+  const { format } = await import('../www/src/rpl/formatter.js');
+  const { varRecall, varPurge, setPict } = await import('../www/src/rpl/state.js');
+  const text = (src) => runLine(src).snapshot().reverse().map((v) => format(v)).join(' | ');
+  varPurge('PPAR');
+  setPict(null);
+  assert(text('PICT SIZE') === '#131d | #80d' && text('PICT RCL') === 'Graphic 131 × 80', 'PICT starts as a blank 131 × 80, the 50g\'s screen');
+  runLine('#200d #100d PDIM');
+  assert(text('PICT SIZE') === '#200d | #100d' && varRecall('PPAR') === undefined, 'PDIM in pixels resizes PICT and leaves PPAR alone');
+  runLine('#10d #10d PDIM');
+  assert(text('PICT SIZE') === '#131d | #80d', 'PDIM keeps PICT at least 131 × 80');
+  assertThrows(() => runLine('#2049d #80d PDIM'), /Bad argument value/, 'PDIM: PICT is at most 2048 wide');
+  runLine('(-10,-5) (10,5) PDIM');
+  assert(text('PICT SIZE') === '#201d | #101d' && format(varRecall('PPAR').items[1]) === '(10, 5)',
+    'PDIM with corners keeps the default tenth of a unit to a pixel and sets PPAR\'s corners');
+  runLine('#261d #159d PDIM (-6.5,-3.9) PMIN (6.5,4) PMAX 0 CENTR');
+  assert(format(varRecall('PPAR').items[0]) === '(-6.5, -3.95)' && format(varRecall('PPAR').items[1]) === '(6.5, 3.95)',
+    'CENTR keeps the centre pixel of a larger PICT, column 130 and row 79 of 261 × 159');
+  runLine('GROB 2 2 1020 PICT STO');
+  const pict = runLine('PICT RCL').peek();
+  assert(pict.width === 131 && pict.height === 80 && pict.bytes[0] === 1 && pict.bytes[17] === 2,
+    'STO puts a smaller graphics object in the top left corner of a blank 131 × 80');
+  runLine('ERASE');
+  assert(runLine('PICT RCL').peek().bytes.every((b) => b === 0) && text('PICT SIZE') === '#131d | #80d', 'ERASE blanks PICT and keeps its size');
+  assertThrows(() => runLine('5 PICT STO'), /Bad argument type/, 'PICT holds only a graphics object');
+  runLine('{ PICT } PURGE');
+  assert(text('PICT SIZE') === '#0d | #0d', 'purging PICT leaves a 0 × 0 graphics object, as the AUR says');
+  varPurge('PPAR');
+  setPict(null);
+}
+
 // What plots take from PPAR: INDEP's name and range, RES's step and the axes' crossing and tick spacing.
 {
   const { varPurge } = await import('../www/src/rpl/state.js');

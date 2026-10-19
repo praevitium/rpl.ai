@@ -865,5 +865,24 @@ function quotaError() {
     'share target: a long text (a column of data, a long program) comes to the command line whole, as a paste does; only rpl.ai\'s own links are capped');
 }
 
+// A graphics object on the stack, and PICT, survive a save.
+{
+  const { parseEntry } = await import('../www/src/rpl/parser.js');
+  const { setPict, getPict } = await import('../www/src/rpl/state.js');
+  const { grobFromHex, grobToHex } = await import('../www/src/rpl/types.js');
+  resetHome();
+  const s = new Stack();
+  s.push(parseEntry('GROB 9 2 FF10F010')[0]);
+  setPict(grobFromHex(131, 80, '10' + '0'.repeat(2718)));
+  const saved = JSON.parse(JSON.stringify(snapshot(s)));
+  resetHome();
+  assert(getPict().bytes[0] === 0, 'resetHome blanks PICT');
+  const back = new Stack();
+  rehydrate(saved, back);
+  assert(grobToHex(back.peek()) === 'FF10F010' && back.peek().width === 9, 'a graphics object on the stack comes back whole');
+  assert(getPict().width === 131 && getPict().bytes[0] === 1, 'PICT comes back with its pixels');
+  setPict(null);
+}
+
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');
 process.exit(failed ? 1 : 0);
