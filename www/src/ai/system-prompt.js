@@ -235,6 +235,7 @@ PLOT WINDOW (PPAR, as on the HP 50g)
   SLOPEFIELD                 \`X-Y\` SLOPEFIELD draws dy/dx = f(x, y) as a field of short slope dashes across the plot view
   CONIC                      \`X^2/4+Y^2=1\` CONIC draws a second-order curve f(x, y) = 0, solving for Y at each X
   TRUTH                      \`X^2+Y^2<4 AND X>0\` TRUTH shades the region of the plot view where the condition holds (any non-zero value)
+  PCONTOUR                   \`X^2-Y^2\` PCONTOUR draws ten level curves of f(x, y) across the plot view
   XRNG YRNG PMIN PMAX        -2 3 XRNG -1 1 YRNG sets the plot window; FUNCTION, POLAR and the other plots, and DRAW, then start there instead of fitting
   CENTR SCALE SCALEW SCALEH  (1,2) CENTR moves the window's centre; 2 2 SCALE gives two units per tick; .5 SCALEW halves the width (*W and *H are the same)
   INDEP RES                  { T 0 1 } INDEP names the plot variable and its range (FUNCTION plots only there; POLAR and PARAMETRIC sweep it; DIFFEQ runs from the first number to the second); .1 RES is the step between plotted values (#n RES in pixels, FUNCTION only)

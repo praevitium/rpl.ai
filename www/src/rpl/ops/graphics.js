@@ -41,7 +41,7 @@ register('FUNCTION',  (s) => _requestPlot('function', s), { category: 'Graphics'
 register('POLAR',     (s) => _requestPlot('polar', s), { category: 'Graphics', categoryOrder: 4, label: "POLAR" });
 
 // PLOT stores level 1 in EQ and plots it, PLOTADD adds it to EQ's list and to the plot, each as PPAR's plot type says.
-const PTYPE_KINDS = Object.freeze({ FUNCTION: 'function', POLAR: 'polar', PARAMETRIC: 'parametric', DIFFEQ: 'diffeq', SLOPEFIELD: 'slopefield', CONIC: 'conic', TRUTH: 'truth' });
+const PTYPE_KINDS = Object.freeze({ FUNCTION: 'function', POLAR: 'polar', PARAMETRIC: 'parametric', DIFFEQ: 'diffeq', SLOPEFIELD: 'slopefield', CONIC: 'conic', TRUTH: 'truth', PCONTOUR: 'contour' });
 
 function _plotKind() {
   const ptype = plotParameters()[5];
@@ -80,6 +80,8 @@ register('SLOPEFIELD', (s) => _requestPlot('slopefield', s), { category: 'Graphi
 register('CONIC', (s) => _requestPlot('conic', s), { category: 'Graphics', categoryOrder: 7.6, label: "CONIC" });
 
 register('TRUTH', (s) => _requestPlot('truth', s), { category: 'Graphics', categoryOrder: 7.7, label: "TRUTH" });
+
+register('PCONTOUR', (s) => _requestPlot('contour', s), { category: 'Graphics', categoryOrder: 7.8, label: "PCONTOUR" });
 
 register('DRAW',      (s) => _requestPlot('draw', s), { category: 'Graphics', categoryOrder: 6, label: "DRAW" });
 

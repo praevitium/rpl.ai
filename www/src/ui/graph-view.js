@@ -23,6 +23,7 @@ const PLOT_KINDS = Object.freeze([
   ['slopefield', 'Slopes', 'dy/dx = f(x, y) as a slope field'],
   ['conic', 'Conic', 'f(x, y) = 0, a second-order curve'],
   ['truth', 'Truth', 'Shade where a condition in x and y holds'],
+  ['contour', 'Contour', 'Level curves of f(x, y)'],
   ['scatter', 'Scatter', 'Points from ΣDAT or the stack'],
   ['bar', 'Bar', 'Bar chart from ΣDAT or the stack'],
   ['hist', 'Histogram', 'Histogram from ΣDAT or the stack'],
@@ -151,7 +152,7 @@ export class GraphView {
     this._bind();
     this._renderExprs();
     this._pict = calcState.pict;
-    this._cells = new WeakMap();
+    this._samples = new WeakMap();
     subscribeState(() => {
       if (calcState.pict === this._pict) return;
       this._pict = calcState.pict;
@@ -886,7 +887,7 @@ export class GraphView {
     if (!spec) return;
     let segs = [];
     try {
-      segs = spec.render === 'cells' ? this._cellsOf(t, width, height) : sampleTrace(t, this.view, sampleOpts({ width, height }));
+      segs = spec.grid ? this._gridSamples(t, width, height) : sampleTrace(t, this.view, sampleOpts({ width, height }));
     } catch {
       return;
     }
@@ -927,15 +928,15 @@ export class GraphView {
     ctx.restore();
   }
 
-  // A truth plot evaluates its condition at thousands of cells, so a redraw that only moves the hover keeps them.
-  _cellsOf(t, width, height) {
+  // Truth and contour plots evaluate f at thousands of grid points, so a redraw that only moves the hover keeps them.
+  _gridSamples(t, width, height) {
     const opts = sampleOpts({ width, height });
     const key = JSON.stringify([t.expr, this.view, width, height, calcState.angle, opts.indep, opts.depend]);
-    const cached = this._cells.get(t);
-    if (cached?.key === key) return cached.cells;
-    const cells = sampleTrace(t, this.view, opts);
-    this._cells.set(t, { key, cells });
-    return cells;
+    const cached = this._samples.get(t);
+    if (cached?.key === key) return cached.segs;
+    const segs = sampleTrace(t, this.view, opts);
+    this._samples.set(t, { key, segs });
+    return segs;
   }
 
   // Edges are rounded to whole pixels so neighbouring rows meet without a seam.

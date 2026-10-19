@@ -493,6 +493,51 @@ export function sampleTruth(ast, view, width, height, opts) {
   return cells;
 }
 
+// PCONTOUR draws ten level curves of f(x, y) between its lowest and highest values in the view, by marching squares
+// over a grid of about 8-pixel cells; a saddle cell takes its centre's side.
+const CONTOUR_CELL_PIXELS = 8;
+const CONTOUR_LEVELS = 10;
+
+export function sampleContour(ast, view, width, height, opts) {
+  const cols = Math.max(2, Math.round(width / CONTOUR_CELL_PIXELS));
+  const rows = Math.max(2, Math.round(height / CONTOUR_CELL_PIXELS));
+  const xAt = (i) => view.xmin + (view.xmax - view.xmin) * i / cols;
+  const yAt = (j) => view.ymin + (view.ymax - view.ymin) * j / rows;
+  const values = Array.from({ length: rows + 1 }, (_, j) => Array.from({ length: cols + 1 }, (_, i) => odeSlope(ast, xAt(i), yAt(j), opts)));
+  const finite = values.flat().filter(Number.isFinite);
+  if (!finite.length) return [];
+  const lo = Math.min(...finite), hi = Math.max(...finite);
+  if (!(hi > lo)) return [];
+  const segments = [];
+  for (let k = 1; k <= CONTOUR_LEVELS; k++) {
+    const level = lo + (hi - lo) * k / (CONTOUR_LEVELS + 1);
+    for (let j = 0; j < rows; j++) {
+      for (let i = 0; i < cols; i++) segments.push(...contourCell(values, i, j, level, xAt, yAt));
+    }
+  }
+  return segments;
+}
+
+function contourCell(values, i, j, level, xAt, yAt) {
+  const v = [values[j][i], values[j][i + 1], values[j + 1][i + 1], values[j + 1][i]];
+  const below = v.filter((x) => x < level).length;
+  if (below === 0 || below === 4 || !v.every(Number.isFinite)) return [];
+  const corners = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]].map(([c, r], k) => ({ c, r, v: v[k] - level }));
+  const crossings = [];
+  for (let e = 0; e < 4; e++) {
+    const a = corners[e], b = corners[(e + 1) % 4];
+    if ((a.v < 0) === (b.v < 0)) continue;
+    const t = a.v / (a.v - b.v);
+    crossings.push([xAt(a.c + (b.c - a.c) * t), yAt(a.r + (b.r - a.r) * t)]);
+  }
+  if (crossings.length === 2) return [crossings];
+  if (crossings.length !== 4) return [];
+  const centre = corners.reduce((sum, p) => sum + p.v, 0) / 4;
+  return (centre < 0) === (corners[0].v < 0)
+    ? [[crossings[0], crossings[3]], [crossings[1], crossings[2]]]
+    : [[crossings[0], crossings[1]], [crossings[2], crossings[3]]];
+}
+
 function rk4Step(ast, x, y, h, opts) {
   const k1 = odeSlope(ast, x, y, opts);
   const k2 = odeSlope(ast, x + h / 2, y + (h * k1) / 2, opts);
@@ -941,8 +986,25 @@ export const TRACE_KINDS = Object.freeze({
     fromStack(v) { return expressionFromStack('conic', v); },
     toStack: expressionToStack,
   },
+  contour: {
+    render: 'stroke',
+    grid: true,
+    data: false,
+    editable: true,
+    fitOnAdd: false,
+    fields: [{ key: 'expr', placeholder: 'X^2+Y^2', aria: 'f(x, y)' }],
+    label: functionLabel,
+    sample(t, ctx) {
+      if (!t.expr) return [];
+      return sampleContour(parsePlotExpr(t.expr), ctx.view, ctx.width, ctx.height ?? ctx.width * 0.6, diffeqOpts(ctx));
+    },
+    evalAt() { return NaN; },
+    fromStack(v) { return expressionFromStack('contour', v); },
+    toStack: expressionToStack,
+  },
   truth: {
     render: 'cells',
+    grid: true,
     data: false,
     editable: true,
     fitOnAdd: false,

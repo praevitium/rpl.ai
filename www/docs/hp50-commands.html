@@ -11243,7 +11243,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>PEVAL, PROOT</p>
   </dd>
 </dl>
-<h2 id="cmd-PCONTOUR">PCONTOUR <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PCONTOUR">PCONTOUR <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 286 · printed page 3-166</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -11253,6 +11253,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>PCONTOUR Plot Type Command: Sets the plot type to PCONTOUR. When plot type is set PCONTOUR, the DRAW command plots a contour-map view of a scalar function of two variables. PCONTOUR requires values in the reserved variables EQ, VPAR, and PPAR. VPAR is made up of the following elements: { xleft xright ynear yfar zlow zhigh xmin xmax ymin ymax xeye yeye zeye xstep ystep } For plot type PCONTOUR, the elements of VPAR are used as follows:</p><ul class="cmd-bullets"><li>xleft and xright are real numbers that specify the width of the view space.</li><li>ynear and yfar are real numbers that specify the depth of the view space.</li><li>zlow and zhigh are real numbers that specify the height of the view space.</li><li>xmin and xmax are not used.</li><li>ymin and ymax are not used.</li><li>xeye, yeye, and zeye are real numbers that specify the point in space from which the graph is viewed.</li><li>xstep and ystep are real numbers that set the number of x-coordinates versus the number of y- coordinates plotted. The plotting parameters are specified in the reserved variable PPAR, which has this form: { (xmin, ymin) (xmax, ymax) indep res axes ptype depend } For plot type PCONTOUR, the elements of PPAR are used as follows:</li><li>(xmin, ymin) and (xmax, ymax) are not used.</li><li>indep is a name specifying the independent variable. The default value of indep is X.</li><li>res is not used.</li><li>axes is not used.</li><li>ptype is a command name specifying the plot type. Executing the command PCONTOUR places the name PCONTOUR in ptype.</li><li>depend is a name specifying the dependent variable. The default value is Y.</li></ul>
+  <p>In rpl.ai PCONTOUR draws the expression on level 1 at once, as FUNCTION does, as ten level curves between its lowest and highest values across the plot view, which stands in for VPAR's view space; VPAR and the eye point are not used. The curves follow the view as it pans and zooms, and the plot view has a Contour kind for typing one in.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">

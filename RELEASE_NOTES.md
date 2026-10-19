@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.40 (2026-10-19)
+**Latest release:** v0.7.41 (2026-10-19)
 
 ---
 
@@ -20,6 +20,14 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.41 — 2026-10-19
+
+- PCONTOUR draws a contour map: `'X^2-Y^2' PCONTOUR` shows ten level
+  curves of f(x, y) between its lowest and highest values across the plot
+  view, as the 50g's contour plot does in VPAR's view space. The curves
+  follow the view as it pans and zooms, and the plot view has a Contour
+  kind for typing one in.
 
 ## v0.7.40 — 2026-10-19
 

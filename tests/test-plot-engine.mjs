@@ -857,3 +857,22 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   varPurge('PPAR');
   setGraphicsHook(null);
 }
+
+// PCONTOUR: ten level curves by marching squares, each segment on its level.
+{
+  const view = { xmin: -3, xmax: 3, ymin: -3, ymax: 3 };
+  const contour = (expr) => sampleTrace({ kind: 'contour', expr }, view, { width: 240, height: 240 });
+  const rings = contour('X^2+Y^2');
+  const radii = [...new Set(rings.flat().map(([x, y]) => Math.round(Math.hypot(x, y) * 10) / 10))];
+  assert(rings.length > 0 && rings.every((seg) => seg.length === 2), 'PCONTOUR: level curves come as two-point segments');
+  assert(radii.length >= 10 && rings.every(([[x0, y0], [x1, y1]]) => Math.abs(Math.hypot(x0, y0) - Math.hypot(x1, y1)) < 0.1),
+    'PCONTOUR: X^2+Y^2 gives rings, each segment at one radius');
+  assert(contour('5').length === 0, 'PCONTOUR: a constant has no level curves');
+  assert(contour('X*Y').length > 0, 'PCONTOUR: a saddle draws');
+  assert(contour('SQRT(X)').every(([[x0], [x1]]) => x0 >= 0 && x1 >= 0), 'PCONTOUR: where f has no value nothing is drawn');
+  let seen = null;
+  setGraphicsHook((kind) => { seen = kind; });
+  runLine("'X^2-Y' PCONTOUR DROP");
+  assert(seen === 'contour', 'PCONTOUR hands its expression to the plot view');
+  setGraphicsHook(null);
+}
