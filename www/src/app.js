@@ -35,6 +35,7 @@ import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, currentPath,
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo,
+  batchStateNotifications,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook, setMenuHook, setBeepHook } from './rpl/ops.js';
 import { beep, alarmBeep } from './ui/beep.js';
@@ -428,21 +429,31 @@ class App {
     if (this.errorBanner) this.display.announce(`${this.errorBanner.title} ${this.errorBanner.detail}`);
   }
 
+  // A program that WAITs in a loop halts again and again under the same banner, which stays put so that its
+  // entrance plays once; only the program's display is redrawn.
   renderBanner() {
     const el = $('banner');
     const lcd = lcdHtml(getLcd());
-    if (this.errorBanner) { el.innerHTML = lcd + errorBannerHtml(this.errorBanner); return; }
+    if (this.errorBanner) { this._haltBanner = null; el.innerHTML = lcd + errorBannerHtml(this.errorBanner); return; }
     const halted = calcState.halted;
     if (halted) {
       const prompt = getPromptMessage();
-      el.innerHTML = lcd + haltedBannerHtml({
+      const banner = haltedBannerHtml({
         kind: halted.kind,
         dialog: halted.dialog,
         prompt: prompt == null ? '' : isString(prompt) ? prompt.value : format(prompt),
         programHtml: suspendedProgramHtml(halted, this.display.displayOpts),
       });
+      if (banner === this._haltBanner) {
+        el.querySelector(':scope > .lcd')?.remove();
+        el.insertAdjacentHTML('afterbegin', lcd);
+        return;
+      }
+      this._haltBanner = banner;
+      el.innerHTML = lcd + banner;
       return;
     }
+    this._haltBanner = null;
     el.innerHTML = lcd;
   }
 
@@ -1289,11 +1300,12 @@ class App {
 
   // A dialog's answer belongs to the program's run, so it adds no undo step: UNDO afterwards takes the whole run
   // back, as the HP's LAST STACK does. A dialog reached while stepping steps on, as the HP's SST would. The end of
-  // a WAIT is no key press for the display: its message stays.
+  // a WAIT is no key press for the display: its message stays. The run draws once, when it halts again or ends.
   _continueProgram(...answers) {
     const op = { over: 'SST', into: 'SST↓' }[calcState.halted.stepping] ?? 'CONT';
     if (calcState.halted.kind !== 'wait') touchLcd();
-    this.entry.safeRun(() => { for (const a of answers) this.stack.push(a); lookup(op).fn(this.stack, this.entry); }, op, { keepPartial: true });
+    const resume = () => { for (const a of answers) this.stack.push(a); lookup(op).fn(this.stack, this.entry); };
+    this.entry.safeRun(() => this.stack.holdEmit(() => batchStateNotifications(resume)), op, { keepPartial: true });
   }
 
   backspace() {

@@ -432,8 +432,9 @@ export class Display {
     // The scroll event this causes would measure the rows again for the pill, which the lines below do.
     this._renderScroll = true;
     requestAnimationFrame(() => { this._renderScroll = false; });
-    // Every measurement comes before any change, so the rows are laid out once, not once per change.
-    const animate = !this.ghosts && !this.marks && before.size && !prefersReducedMotion();
+    // Every measurement comes before any change, so the rows are laid out once, not once per change. A program that
+    // WAITs in a loop redraws the stack many times a second, so its rows change in place, as on the HP's display.
+    const animate = !this.ghosts && !this.marks && before.size && !prefersReducedMotion() && calcState.halted?.kind !== 'wait';
     const after = animate ? this._positions() : null;
     this._fromBottom = fromBottom(view);
     const markEdges = this._measureEdges();
