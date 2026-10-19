@@ -493,8 +493,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   HP's fraction-mark flag: the command line then reads a comma beside a
   digit as the decimal point and a semicolon as the separator, so `1,5`
   is 1.5 and `(1,5;2)` a complex number, as on the HP, and the stack shows
-  them that way (`3,`, `(1,5; 2)`, `MAX(X; 0,25)`). EDIT, INPUT and INFORM
-  use the same marks. The writers, →STR and exports keep the point for now.
+  them that way (`3,`, `(1,5; 2)`, `MAX(X; 0,25)`). EDIT, INPUT, INFORM
+  and the matrix writer's cells use the same marks, and the keypad's .
+  key types the comma. The equation writer, →STR and exports keep the
+  point for now.
 
 ---
 

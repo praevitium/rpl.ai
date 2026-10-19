@@ -1,5 +1,6 @@
 import { icon } from './icons.js';
 import { escapeHtml } from './display.js';
+import { fractionMark } from '../rpl/formatter.js';
 import { holdToClear } from './input-area.js';
 
 // Alpha a..z runs along the keypad's rows: a..f across the top row, g..l across the second,
@@ -181,7 +182,7 @@ export const MAIN_KEYS = [
                 shiftLAction: type('∞'),
                 shiftRAction: (e) => e.pressArrow() }),
   mk('.',     { kind: 'digit', shiftL: '::',  shiftR: '↵',
-                action:       type('.'),
+                action:       (e) => e.type(fractionMark()),
                 shiftLAction: type('::'),
                 shiftRAction: type('\n') }),
   mk('SPC',   { shiftL: 'π',   shiftR: ',',

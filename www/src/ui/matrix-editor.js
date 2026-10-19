@@ -1,7 +1,7 @@
 import { escapeHtml } from './display.js';
 import { writerKeys } from './input-area.js';
-import { parseEntry } from '../rpl/parser.js';
-import { format } from '../rpl/formatter.js';
+import { parseEntry, fromTyped } from '../rpl/parser.js';
+import { format, withFractionMark, fractionMark } from '../rpl/formatter.js';
 import { Var, parseAlgebra } from '../rpl/algebra.js';
 import { sheetNumber, htmlTableToText } from '../rpl/sheet.js';
 import {
@@ -201,7 +201,7 @@ function complexCell(text) {
 }
 
 export function parseMatrixCell(text) {
-  const t = String(text ?? '').trim();
+  const t = fromTyped(String(text ?? '').trim());
   if (t === '') return Real(0);
   let values;
   try { values = parseEntry(t); } catch { values = []; }
@@ -300,7 +300,7 @@ export function pasteIntoGrid(grid, startR, startC, text) {
 
 function cellToDraft(v) {
   if (v == null) return '';
-  return format(v);
+  return withFractionMark(format(v));
 }
 
 const SYMBOLS = Object.freeze([
@@ -539,7 +539,7 @@ export class MatrixEditor {
     else if (face === '( )') this._editCell('()', { caretBack: 1 });
     else if (face === 'EEX') this._editCell(eexText(this._textBeforeCaret()));
     else if (face === '+/-') this._toggleSign();
-    else if (FACE_TEXT[face] || /^[0-9a-z.+π∞]$/.test(face)) this._editCell(FACE_TEXT[face] ?? face);
+    else if (FACE_TEXT[face] || /^[0-9a-z.+π∞]$/.test(face)) this._editCell(FACE_TEXT[face] ?? (face === '.' ? fractionMark() : face));
     else this.app.notifyError(`${face} isn't available in the matrix writer.`);
   }
 

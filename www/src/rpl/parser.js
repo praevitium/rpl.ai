@@ -269,9 +269,14 @@ function stringEnd(src, start) {
   return Math.min(i + 1, src.length);
 }
 
-// Text the user typed: the command line and a program's INPUT and INFORM fields.
+// Text the user typed, in the period form the parser reads.
+export function fromTyped(src) {
+  return testUserFlag(-51) ? periodFractionMark(plainPunctuation(src)) : src;
+}
+
+// The command line and a program's INPUT and INFORM fields.
 export function parseTyped(src) {
-  return parseEntry(testUserFlag(-51) ? periodFractionMark(plainPunctuation(src)) : src);
+  return parseEntry(fromTyped(src));
 }
 
 /** One value per top-level object, in entry order.  Unclosed brackets,

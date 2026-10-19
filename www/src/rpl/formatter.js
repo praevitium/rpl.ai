@@ -19,6 +19,8 @@ export const currentDisplay = () => ({ mode: _state.displayMode || 'STD', digits
 // Text the user sees or edits takes flag -51's comma fraction mark; stored and exported text keeps the point.
 export const withFractionMark = (text) => (testUserFlag(-51) ? commaFractionMark(text) : text);
 
+export const fractionMark = () => (testUserFlag(-51) ? ',' : '.');
+
 /* `context: 'stack'` ticks every Name, as the HP50 shows one on a stack
    level; nested items keep their own quoting and are not passed it. */
 export function format(v, display = DEFAULT_DISPLAY, options = {}) {

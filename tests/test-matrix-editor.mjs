@@ -231,3 +231,16 @@ import {
   assert(cell('(1,2)') === '(1, 2)' && cell('1/2') === '1/2' && cell('i') === '`i`', 'a complex literal, a fraction and the name i are unchanged');
 }
 
+
+// Flag -51: a cell reads and shows the comma fraction mark.
+{
+  const { setUserFlag, clearUserFlag } = await import('../www/src/rpl/state.js');
+  const { Matrix: M, Real: R } = await import('../www/src/rpl/types.js');
+  setUserFlag(-51);
+  const cell = parseMatrixCell('1,5');
+  const drafted = valueToGrid(M([[R(1.5), R(2)]]));
+  clearUserFlag(-51);
+  assert(isReal(cell) && cell.value.toNumber() === 1.5, 'parseMatrixCell: with -51 set, 1,5 is one and a half');
+  assert(drafted[0][0] === '1,5' && drafted[0][1] === '2,', `valueToGrid: with -51 set the cells show the comma mark (${drafted[0]})`);
+  assert(valueToGrid(M([[R(1.5)]]))[0][0] === '1.5', 'valueToGrid: without -51 a cell shows the point again');
+}

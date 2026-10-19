@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.55 (2026-10-19)
+**Latest release:** v0.7.56 (2026-10-19)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.56 — 2026-10-19
+
+- Flag -51, part 3: with `-51 SF` the keypad's . key types the comma, as
+  the HP's does, and the matrix writer shows its cells with the comma mark
+  and reads `3,2` typed into a cell as 3.2. The equation writer, →STR and
+  exports keep the point for now.
 
 ## v0.7.55 — 2026-10-19
 
