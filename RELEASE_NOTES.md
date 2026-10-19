@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.9 (2026-10-19)
+**Latest release:** v0.7.10 (2026-10-19)
 
 ---
 
@@ -20,6 +20,25 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.10 — 2026-10-19
+
+The eleventh batch of missing HP 50g commands solves differential
+equations:
+
+- `DESOLVE` solves an ordinary differential equation for a function,
+  written in the HP's notation: `d1Y(X)` is Y's derivative in its first
+  argument and `d1d1Y(X)` its second.
+  `'d1Y(X)+2*Y(X)=EXP(3*X)' 'Y(X)' DESOLVE` gives
+  `{ 'Y(X)=(5*cC0*EXP(-2*X)+EXP(3*X))/5' }`, the AUR's answer written
+  another way, with the HP's arbitrary constant cC0. A list of the
+  equation and initial conditions, such as `'Y(0)=1'`, fixes the
+  constants. Every solution found is listed.
+- `LDEC` solves a linear differential equation with constant coefficients
+  from its right side and auxiliary polynomial: `'2*SIN(X)' 'X^2+1' LDEC`
+  solves y''+y = 2·sin(x). The HP's system form, a matrix of
+  coefficients, is not supported yet.
+- Both sit in the CAS menu's CALC folder after ILAP.
 
 ## v0.7.9 — 2026-10-19
 
