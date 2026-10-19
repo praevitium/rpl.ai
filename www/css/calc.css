@@ -433,7 +433,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 /* A child pushed right by its margin, not by justify-content, so a wide matrix overflows to the right and scrolls (W-L31). */
 .st-val > * { margin-left: auto; }
 .st-val .value-text { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.st-row.sel .st-val .value-text { white-space: pre-wrap; overflow-wrap: anywhere; text-overflow: clip; }
+/* Level 1 shows a string whole, its line breaks included, as a selected level does. */
+.st-row.sel .st-val .value-text, .st-row[data-level="1"] .st-val .value-text.str { white-space: pre-wrap; overflow-wrap: anywhere; text-overflow: clip; }
 .st-val .value-text.num { white-space: normal; overflow-wrap: anywhere; }
 .st-val .value-text.tagged { display: flex; }
 .st-val .value-text.tagged > * { overflow: hidden; text-overflow: ellipsis; }

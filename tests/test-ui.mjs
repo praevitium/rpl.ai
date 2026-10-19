@@ -2360,4 +2360,7 @@ setAngle('RAD');
     'whole lists: a selected level and VIEW wrap a long string inside a list, where { "a 60-character message" 1 } ran 640 px wide in a 192 px level at 280 px');
   assert(/if \(isList\(item\)\) return `<span class="lcell">\$\{this\._renderTextbookList\(item, svgSize\)\}<\/span>`;/.test(displaySrc),
     'nested lists: an inner list draws as a textbook list too and wraps with the rest, where SOLVE of a list of equations showed its inner lists as typed text running 414 px wide in a 192 px level at 280 px');
+  assert(/if \(isString\(value\)\) span\.classList\.add\('str'\);/.test(displaySrc)
+    && /\.st-row\.sel \.st-val \.value-text, \.st-row\[data-level="1"\] \.st-val \.value-text\.str \{ white-space: pre-wrap;/.test(cssSrc),
+    'level 1 strings: a string at level 1 shows whole with its line breaks, as a selected level does, where "LINE1" 10 CHR + "LINE2" + 10 CHR + "LINE3" + showed "LINE1 LINE2 L…" at 280 px');
 }

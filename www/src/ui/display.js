@@ -1,6 +1,6 @@
 import { format, formatStackTop, DEFAULT_DISPLAY } from '../rpl/formatter.js';
 import { astToSvg } from '../rpl/pretty.js';
-import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isBinaryInteger, isUnit } from '../rpl/types.js';
+import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isBinaryInteger, isUnit, isString } from '../rpl/types.js';
 import { state as calcState, currentPath } from '../rpl/state.js';
 import { icon } from './icons.js';
 
@@ -621,6 +621,7 @@ export class Display {
         span.classList.add('num');
         flat.split(isUnit(value) ? /(?=[E_])|(?<=[*/])(?![^(]*\))/ : /(?=E)/).forEach((part, i) => span.append(...(i ? [document.createElement('wbr')] : []), part));
       } else {
+        if (isString(value)) span.classList.add('str');
         span.textContent = flat;
       }
       cell.appendChild(span);
