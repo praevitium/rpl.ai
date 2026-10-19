@@ -21,6 +21,7 @@ const PLOT_KINDS = Object.freeze([
   ['parametric', 'Parametric', 'x(t), y(t)'],
   ['diffeq', 'dy/dx', 'dy/dx = f(x, y)'],
   ['slopefield', 'Slopes', 'dy/dx = f(x, y) as a slope field'],
+  ['conic', 'Conic', 'f(x, y) = 0, a second-order curve'],
   ['scatter', 'Scatter', 'Points from ΣDAT or the stack'],
   ['bar', 'Bar', 'Bar chart from ΣDAT or the stack'],
   ['hist', 'Histogram', 'Histogram from ΣDAT or the stack'],

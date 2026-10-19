@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.33 (2026-10-19)
+**Latest release:** v0.7.34 (2026-10-19)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.34 — 2026-10-19
+
+- CONIC draws a second-order curve f(x, y) = 0, as the 50g does: at each
+  x it solves the equation's quadratic in y, so `'X^2/4+Y^2=1' CONIC`
+  draws an ellipse, `'X^2-Y^2=1' CONIC` both arms of a hyperbola. The two
+  branches are joined where they meet, so an ellipse closes instead of
+  leaving gaps at its ends. The plot view has a Conic kind for typing one
+  in.
 
 ## v0.7.33 — 2026-10-19
 

@@ -764,3 +764,23 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(seen === 'slopefield', 'SLOPEFIELD hands its expression to the plot view');
   setGraphicsHook(null);
 }
+
+// CONIC: the equation as a quadratic in Y at each X, two branches joined where they meet.
+{
+  const view = { xmin: -3, xmax: 3, ymin: -2, ymax: 2 };
+  const conic = (expr) => sampleTrace({ kind: 'conic', expr }, view, { width: 600, height: 400 });
+  const ellipse = conic('X^2/4+Y^2=1');
+  assert(ellipse.length === 2 && ellipse.flat().every(([x, y]) => Math.abs(x * x / 4 + y * y - 1) < 1e-6),
+    'CONIC: both halves of the ellipse lie on it');
+  assert(ellipse.every((half) => Math.abs(half[0][0] + 2) < 1e-6 && Math.abs(half.at(-1)[0] - 2) < 1e-6 && Math.abs(half[0][1]) < 1e-3),
+    'CONIC: the halves meet at the ellipse\'s ends, so it closes');
+  const hyperbola = conic('X^2-Y^2=1');
+  assert(hyperbola.length === 4 && hyperbola.flat().every(([x, y]) => Math.abs(x * x - y * y - 1) < 1e-6), 'CONIC: a hyperbola has four branch pieces');
+  assert(conic('Y=X^2').flat().every(([x, y]) => Math.abs(y - x * x) < 1e-6), 'CONIC: an equation linear in Y is solved for it');
+  assert(conic('X^2+Y^2+1').length === 0, 'CONIC: an equation with no real points draws nothing');
+  let seen = null;
+  setGraphicsHook((kind) => { seen = kind; });
+  runLine("'X^2+Y^2=4' CONIC DROP");
+  assert(seen === 'conic', 'CONIC hands its equation to the plot view');
+  setGraphicsHook(null);
+}

@@ -46,6 +46,8 @@ register('DIFFEQ',    (s) => _requestPlot('diffeq', s), { category: 'Graphics', 
 
 register('SLOPEFIELD', (s) => _requestPlot('slopefield', s), { category: 'Graphics', categoryOrder: 7.5, label: "SLOPEFIELD" });
 
+register('CONIC', (s) => _requestPlot('conic', s), { category: 'Graphics', categoryOrder: 7.6, label: "CONIC" });
+
 register('DRAW',      (s) => _requestPlot('draw', s), { category: 'Graphics', categoryOrder: 6, label: "DRAW" });
 
 

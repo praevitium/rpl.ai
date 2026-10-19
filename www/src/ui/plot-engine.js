@@ -1,5 +1,5 @@
 import {
-  isNum, parseAlgebra, evalAst, defaultFnEval,
+  isNum, parseAlgebra, evalAst, defaultFnEval, Bin,
 } from '../rpl/algebra.js';
 import {
   isMatrix, isVector, isList, isSymbolic,
@@ -401,6 +401,62 @@ export function sampleSlopeField(ast, view, width, height, opts) {
     }
   }
   return dashes;
+}
+
+// CONIC takes f(x, y) = 0, an equation's two sides subtracted, as a quadratic in y at each x: its second-order Taylor
+// form about y = 0, as on the HP. The two roots make two branches, joined where the discriminant reaches zero so an
+// ellipse closes.
+const CONIC_EDGE_STEPS = 40;
+
+export function sampleConic(ast, xmin, xmax, count, ySpan, opts) {
+  const f = ast.kind === 'bin' && ast.op === '=' ? Bin('-', ast.l, ast.r) : ast;
+  const h = 1e-3 * Math.max(1, ySpan);
+  const roots = (x) => {
+    const f0 = odeSlope(f, x, 0, opts), up = odeSlope(f, x, h, opts), down = odeSlope(f, x, -h, opts);
+    const a = (up - 2 * f0 + down) / (2 * h * h), b = (up - down) / (2 * h), c = f0;
+    if (![a, b, c].every(Number.isFinite)) return null;
+    if (Math.abs(a) <= 1e-6 * (Math.abs(b) + Math.abs(c) + 1)) return b === 0 ? null : [-c / b, -c / b];
+    const d = b * b - 4 * a * c;
+    if (d < 0) return null;
+    const r = Math.sqrt(d);
+    return [(-b - r) / (2 * a), (-b + r) / (2 * a)];
+  };
+  // Where the roots appear or vanish between two samples, bisection finds the x where they meet.
+  const edge = (inside, outside) => {
+    for (let i = 0; i < CONIC_EDGE_STEPS; i++) {
+      const mid = (inside + outside) / 2;
+      if (roots(mid)) inside = mid; else outside = mid;
+    }
+    return [inside, roots(inside)];
+  };
+  const pieces = [];
+  let low = [], high = [], last = null;
+  const close = () => {
+    if (low.length) pieces.push(low, high);
+    low = [];
+    high = [];
+  };
+  for (let i = 0; i < count; i++) {
+    const x = xmin + (xmax - xmin) * i / (count - 1);
+    const ys = roots(x);
+    if (ys && !low.length && last !== null) {
+      const [ex, [y0, y1]] = edge(x, last);
+      low.push([ex, y0]);
+      high.push([ex, y1]);
+    }
+    if (ys) {
+      low.push([x, ys[0]]);
+      high.push([x, ys[1]]);
+    } else if (low.length) {
+      const [ex, [y0, y1]] = edge(xmin + (xmax - xmin) * (i - 1) / (count - 1), x);
+      low.push([ex, y0]);
+      high.push([ex, y1]);
+      close();
+    }
+    last = x;
+  }
+  close();
+  return pieces.map((piece) => segmentPoints(piece, ySpan * 8)).flat();
 }
 
 function rk4Step(ast, x, y, h, opts) {
@@ -832,6 +888,23 @@ export const TRACE_KINDS = Object.freeze({
     },
     evalAt() { return NaN; },
     fromStack(v) { return expressionFromStack('slopefield', v); },
+    toStack: expressionToStack,
+  },
+  conic: {
+    render: 'stroke',
+    data: false,
+    editable: true,
+    fitOnAdd: false,
+    fields: [{ key: 'expr', placeholder: 'X^2/4+Y^2=1', aria: 'Equation in X and Y' }],
+    label: functionLabel,
+    sample(t, ctx) {
+      if (!t.expr) return [];
+      const xs = functionSampling(ctx);
+      if (!xs) return [];
+      return sampleConic(parsePlotExpr(t.expr), xs.from, xs.to, xs.count, ctx.view.ymax - ctx.view.ymin, diffeqOpts(ctx));
+    },
+    evalAt() { return NaN; },
+    fromStack(v) { return expressionFromStack('conic', v); },
     toStack: expressionToStack,
   },
   fit: {
