@@ -758,7 +758,7 @@ class App {
       else if (act === 'plot') runExample('`SIN(X)` FUNCTION');
       else if (act === 'tutor') this.runAction('assistant.tutor');
     };
-    d.rowActionsHtml = (level, value) => `<div class="st-acts" role="toolbar" aria-label="Level ${level} actions"><button type="button" data-row-act="edit" title="Edit (Enter)">${icon('edit', 'sm')}Edit</button><button type="button" data-row-act="view" title="View full size (VIEW)" aria-label="View">${icon('expand', 'sm')}</button><button type="button" data-row-act="pick" title="Copy it to level 1 (PICK)">Pick</button><button type="button" data-row-act="roll" title="Move it to level 1 (ROLL)">Roll</button>${isSymbolic(value) ? `<button type="button" data-row-act="plot" title="Plot it">${icon('plot', 'sm')}</button>` : ''}${isUnit(value) ? '<button type="button" data-row-act="convert" title="Convert to another unit (CONVERT)">Conv</button>' : ''}<button type="button" data-row-act="drop" title="Drop it (⌫)" aria-label="Drop">${icon('trash', 'sm')}</button><button type="button" data-row-act="more" title="More actions" aria-label="More actions">${icon('more', 'sm')}</button></div>`;
+    d.rowActionsHtml = (level, value) => `<div class="st-acts" role="toolbar" aria-label="Level ${level} actions"><button type="button" data-row-act="edit" title="Edit (Enter)">${icon('edit', 'sm')}Edit</button><button type="button" data-row-act="view" title="View full size (VIEW)" aria-label="View">${icon('expand', 'sm')}</button><button type="button" data-row-act="pick" title="Copy it to level 1 (PICK)">Pick</button>${level > 1 ? '<button type="button" data-row-act="roll" title="Move it to level 1 (ROLL)">Roll</button>' : ''}${isSymbolic(value) ? `<button type="button" data-row-act="plot" title="Plot it">${icon('plot', 'sm')}</button>` : ''}${isUnit(value) ? '<button type="button" data-row-act="convert" title="Convert to another unit (CONVERT)">Conv</button>' : ''}<button type="button" data-row-act="drop" title="Drop it (⌫)" aria-label="Drop">${icon('trash', 'sm')}</button><button type="button" data-row-act="more" title="More actions" aria-label="More actions">${icon('more', 'sm')}</button></div>`;
     d.onRowClick = (level) => this.selectLevel(this.selection === level ? null : level);
     d.onRowDoubleClick = (level) => this.editLevel(level);
     d.onRowHold = (level) => {
@@ -875,19 +875,22 @@ class App {
   _levelMenu(level, anchor) {
     const value = this.stack.peek(level);
     const item = (act, ico, label, hint = '') => `<button type="button" class="opt" data-act="${act}"><span class="ck">${icon(ico, 'sm')}</span><b>${escapeHtml(label)}</b><em>${escapeHtml(hint)}</em></button>`;
+    // On level 1 ROLL and ROLLD do nothing, and DUPN and DRPN repeat PICK and Drop.
+    const deeper = level > 1;
+    const span = deeper ? `levels 1–${level}` : 'level 1';
     const groups = [
       [item('edit', 'edit', 'Edit', shortcutText('level.edit')), item('view', 'expand', 'View full size (VIEW)')],
       [
         item('echo', 'chr', 'Copy into the command line'),
         item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick')),
-        item('roll', 'up', 'Move to level 1 (ROLL)'),
-        item('rolld', 'down', 'Move level 1 here (ROLLD)'),
+        deeper ? item('roll', 'up', 'Move to level 1 (ROLL)') : '',
+        deeper ? item('rolld', 'down', 'Move level 1 here (ROLLD)') : '',
       ],
       [
-        item('tolist', 'chr', `Make a list of levels 1–${level} (→LIST)`),
-        item('dupn', 'copy', `Copy levels 1–${level} (DUPN)`),
-        item('dropn', 'trash', `Drop levels 1–${level} (DRPN)`),
-        item('keep', 'check', `Keep levels 1–${level} only (KEEP)`),
+        item('tolist', 'chr', `Make a list of ${span} (→LIST)`),
+        deeper ? item('dupn', 'copy', `Copy ${span} (DUPN)`) : '',
+        deeper ? item('dropn', 'trash', `Drop ${span} (DRPN)`) : '',
+        item('keep', 'check', `Keep ${span} only (KEEP)`),
         item('level', 'enter', `Push the level number, ${level} (LEVEL)`),
       ],
       [

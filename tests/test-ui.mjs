@@ -2058,6 +2058,17 @@ setAngle('RAD');
 }
 
 {
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/deeper \? item\('roll', 'up', 'Move to level 1 \(ROLL\)'\) : ''/.test(appSrc)
+    && /deeper \? item\('rolld', 'down', 'Move level 1 here \(ROLLD\)'\) : ''/.test(appSrc)
+    && /deeper \? item\('dupn', 'copy', `Copy \$\{span\} \(DUPN\)`\) : ''/.test(appSrc)
+    && /deeper \? item\('dropn', 'trash', `Drop \$\{span\} \(DRPN\)`\) : ''/.test(appSrc)
+    && /const span = deeper \? `levels 1–\$\{level\}` : 'level 1';/.test(appSrc)
+    && /\$\{level > 1 \? '<button type="button" data-row-act="roll"/.test(appSrc),
+    'stack: level 1\'s ⋯ menu leaves out ROLL and ROLLD, which do nothing there, and DUPN and DRPN, which repeat PICK and Drop, says "level 1" where it said "levels 1–1", and its toolbar has no Roll');
+}
+
+{
   const { Autocomplete } = await import('../www/src/ui/autocomplete.js');
   const fit = (top, height, onTop) => {
     const el = { style: {}, scrollTop: 0, offsetHeight: height, getBoundingClientRect: () => ({ top, bottom: top + height }), querySelector: () => ({ offsetTop: onTop, offsetHeight: 30 }) };
