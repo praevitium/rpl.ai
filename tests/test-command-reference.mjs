@@ -307,3 +307,11 @@ const REF = parseCommandReference(HTML);
   assert(/\.cat-cats button \{[^}]*display: grid; align-content: start;/.test(css),
     'Catalog families: a card keeps its command count under its name when a neighbour\'s name wraps');
 }
+
+/* On a 280 px phone the drawer tabs row started at its left edge, so the open drawer's tab (History, Chars) sat past the right edge. */
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  assert(/this\._renderBody\(\);\n    this\._revealTab\(\);/.test(drawerSrc)
+    && /if \(t\.left < s\.left \|\| t\.right > s\.right\) strip\.scrollLeft \+= t\.left \+ t\.width \/ 2 - \(s\.left \+ s\.width \/ 2\);/.test(drawerSrc),
+    'drawer tabs: the open drawer\'s tab scrolls to the middle of the row when it would sit past an edge');
+}

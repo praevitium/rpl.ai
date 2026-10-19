@@ -324,6 +324,16 @@ export class Drawers {
     this._bindGrip(this.el.querySelector('.drawer-grip'));
     this._renderHeadSub();
     this._renderBody();
+    this._revealTab();
+  }
+
+  // The tab row starts at its left edge on every render, so on a phone the open drawer's tab sat past the right edge.
+  _revealTab() {
+    const strip = this.el.querySelector('.dw-tabs');
+    const tab = strip?.querySelector('[aria-pressed="true"]');
+    if (!tab) return;
+    const s = strip.getBoundingClientRect(), t = tab.getBoundingClientRect();
+    if (t.left < s.left || t.right > s.right) strip.scrollLeft += t.left + t.width / 2 - (s.left + s.width / 2);
   }
 
   _headActions(id) {
