@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.4 (2026-10-19)
+**Latest release:** v0.7.5 (2026-10-19)
 
 ---
 
@@ -20,6 +20,23 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.5 — 2026-10-19
+
+The sixth batch of missing HP 50g commands adds seven:
+
+- `DEF` defines a variable or function as DEFINE does and leaves the
+  equation, so `'NEW(A,B)=(A-B)/(A+B)' DEF` gives it back and
+  `'NEW(2,1)' EVAL` gives 1/3.
+- `UNASSIGN` purges variables and gives their values, or a missing one's
+  name: `{ U V } UNASSIGN` gives `{ 17.5 V }`.
+- `PUSH` saves the flags and the directory path, and `POP` restores the
+  last saved.
+- `APPLY` builds a function call: `{ 'X+1' 2 } 'F' APPLY` gives
+  `F(X+1,2)`. `QUOTE` gives its argument back unevaluated.
+- `DROITE` gives the line through two points: `(1,2) (3,4) DROITE` gives
+  `Y=X-1.+2.`, and symbolic points keep the AUR's slope,
+  `Y=(π-e)/(e-π)*(X-π)+e`.
 
 ## v0.7.4 — 2026-10-19
 
