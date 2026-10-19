@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.152 (2026-10-18)
+**Latest release:** v0.6.153 (2026-10-18)
 
 ---
 
@@ -18,6 +18,20 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.6.153 — 2026-10-18
+
+CONLIB opens the HP's Constants Library: its 39 constants, each with what
+it is and its value, in their units unless flag -61 is set. A tap puts a
+constant on the stack, as the library's →STK does, or types its `CONST`
+inside an open program; CONLIB is a key in the UNITS menu too. The tutor
+renders its problem, step titles and hints as the assistant's replies do,
+where `$x^2$`, bold and code showed as typed, and draws the tables, code
+and quotes in its steps as the replies do, a wide formula scrolling with an
+edge fade where it ran past the card's edge. The note a phone shows after
+I'll do it or Show me renders the step title's math too.
 
 ---
 
