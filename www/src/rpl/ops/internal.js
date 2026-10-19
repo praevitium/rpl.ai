@@ -739,8 +739,18 @@ export function _coerceStorableName(v) {
 
 const MAX_EVAL_DEPTH = 256;
 
-// HP50 loops have no iteration cap; this one keeps a runaway loop recoverable.
+// HP50 loops have no iteration cap; this one keeps a runaway loop recoverable. A loop that pauses, as one polling KEY
+// does, can be stopped from its banner, so its count starts again after each pause.
 const MAX_LOOP_ITERATIONS = 1_000_000;
+
+function _loopLimit(message) {
+  let run = _resumedAt;
+  let count = 0;
+  return () => {
+    if (run !== _resumedAt) { run = _resumedAt; count = 0; }
+    if (++count > MAX_LOOP_ITERATIONS) throw new RPLError(message);
+  };
+}
 
 
 // Control-flow keywords are recognised by name while walking a Program; they are
@@ -993,6 +1003,12 @@ function* evalRange(s, toks, from, to, depth) {
       i++;
       continue;
     }
+    if (id === 'KEY' && _keyCanPause()) {
+      _markSuspend(toks, i + 1, 'wait', KEY_POLL);
+      yield;
+      i++;
+      continue;
+    }
     if (id === 'INFORM') {
       if (s.depth < 5) throw new RPLError('INFORM: Too few arguments');
       const inform = informSpec(s.peek(5), s.peek(4), s.peek(3), s.peek(2), s.peek());
@@ -1092,6 +1108,17 @@ function informSpec(title, fields, format, resets, init) {
 // whether the program was being stepped, so that its answer steps on rather than running free.
 let _pendingSuspend = null;
 
+// KEY finds a key only when the program pauses for one, so it pauses after each 50 ms of running, where the page can
+// take a press; a part that can't pause and a stepped program find none, as KEY at the command line does.
+const KEY_SLICE_MS = 50;
+const KEY_POLL = Object.freeze({ key: true, poll: true });
+let _resumedAt = 0;
+let _unpausable = 0;
+
+function _keyCanPause() {
+  return !_singleStepMode && !_unpausable && Date.now() - _resumedAt >= KEY_SLICE_MS;
+}
+
 function _markSuspend(tokens, index, kind, dialog = null, prompt = null) {
   const stepping = _singleStepMode ? (_stepInto ? 'into' : 'over') : null;
   _pendingSuspend = { tokens, index, kind, dialog, stepping, prompt };
@@ -1112,6 +1139,7 @@ export function runSuspendable(gen) {
   const framesAtEntry = _localFrames.length;
   let halted = false;
   let waiting = false;
+  _resumedAt = Date.now();
   try {
     if (!gen.next().done) {
       halted = true;
@@ -1362,11 +1390,9 @@ export function* runIfte(s, depth) {
 function* runWhile(s, toks, openIdx, depth) {
   const repeatIdx = _scanRequired(toks, openIdx + 1, 'REPEAT', 'WHILE without REPEAT');
   const endIdx = _scanEnd(toks, repeatIdx + 1, 'WHILE/REPEAT without END');
-  let iterations = 0;
+  const limit = _loopLimit('WHILE loop iteration limit');
   while (true) {
-    if (++iterations > MAX_LOOP_ITERATIONS) {
-      throw new RPLError('WHILE loop iteration limit');
-    }
+    limit();
     checkTimeLimit();
     yield* evalRange(s, toks, openIdx + 1, repeatIdx, depth + 1);
     const test = s.pop();
@@ -1380,11 +1406,9 @@ function* runWhile(s, toks, openIdx, depth) {
 function* runDo(s, toks, openIdx, depth) {
   const untilIdx = _scanRequired(toks, openIdx + 1, 'UNTIL', 'DO without UNTIL');
   const endIdx = _scanEnd(toks, untilIdx + 1, 'DO/UNTIL without END');
-  let iterations = 0;
+  const limit = _loopLimit('DO loop iteration limit');
   while (true) {
-    if (++iterations > MAX_LOOP_ITERATIONS) {
-      throw new RPLError('DO loop iteration limit');
-    }
+    limit();
     checkTimeLimit();
     yield* evalRange(s, toks, openIdx + 1, untilIdx, depth + 1);
     yield* evalRange(s, toks, untilIdx + 1, endIdx, depth + 1);
@@ -1438,11 +1462,9 @@ function* runLoopBody(s, toks, bodyFrom, bodyTo, closer, startVal, endVal, local
   let counter = startVal;
   let bound   = endVal;
   let mode    = intMode;
-  let iterations = 0;
+  const limit = _loopLimit('Loop iteration limit');
   while (true) {
-    if (++iterations > MAX_LOOP_ITERATIONS) {
-      throw new RPLError('Loop iteration limit');
-    }
+    limit();
     checkTimeLimit();
     let written = null;
     if (local) {
@@ -1554,7 +1576,9 @@ function _symConstantValue(name) {
 // Runs a program generator that must not suspend; a HALT or PROMPT inside it is
 // reported as an error naming `caller` (e.g. 'IFT action').
 export function _driveGen(gen, caller) {
-  const result = gen.next();
+  _unpausable++;
+  let result;
+  try { result = gen.next(); } finally { _unpausable--; }
   if (!result.done) {
     try { gen.return(); } catch { /* the HALT error below wins */ }
     throw new RPLError(`HALT: cannot suspend inside ${caller}`);

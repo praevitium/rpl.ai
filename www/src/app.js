@@ -58,6 +58,8 @@ const $ = (id) => document.getElementById(id);
 
 const MODIFIER_KINDS = new Set(['shiftL', 'shiftR', 'alpha']);
 const DOUBLE_PRESS_MS = 300;
+// Between the stretches of a program polling KEY, long enough for the page to draw and take a key.
+const KEY_PAUSE_MS = 20;
 // The installed app's icon shortcuts (the manifest's ./?open=…); a link can name nothing else.
 const APP_SHORTCUTS = new Map([
   ['equation', (app) => app.setInputMode('equation')],
@@ -429,7 +431,7 @@ class App {
     if (this.errorBanner) this.display.announce(`${this.errorBanner.title} ${this.errorBanner.detail}`);
   }
 
-  // A program that WAITs in a loop halts again and again under the same banner, which stays put so that its
+  // A program that WAITs in a loop or polls KEY halts again and again under the same banner, which stays put so its
   // entrance plays once; only the program's display is redrawn.
   renderBanner() {
     const el = $('banner');
@@ -1175,9 +1177,10 @@ class App {
 
   // A timed WAIT goes on by itself; -1 WAIT shows the soft keys, the HP's menu, in minimal view.
   _beginWait(halted) {
-    const { seconds, menu } = halted.dialog;
+    const { seconds, menu, poll } = halted.dialog;
     if (menu && this.prefs.minimal) this.setMinimalMenu(true);
     if (seconds) this._waitTimer = setTimeout(() => { if (calcState.halted === halted) this._continueProgram(); }, seconds * 1000);
+    if (poll) this._waitTimer = setTimeout(() => { if (calcState.halted === halted) this._continueProgram(Real(0)); }, KEY_PAUSE_MS);
   }
 
   // A CHOOSE's list goes with its dialog: the banner's keys sit on the popover's anchor, where a press leaves it open.
@@ -1289,12 +1292,14 @@ class App {
     this._continueProgram(chooseEntry(items[n - 1]).value, Integer(1n));
   }
 
-  // A key pressed while a program waits at 0 WAIT answers it with the key's code, as the HP's keyboard would.
+  // A key pressed while a program waits at 0 WAIT answers it with the key's code, as the HP's keyboard would; KEY
+  // gets the key's row and column without its plane, and 1.
   _answerKey(code) {
     const halted = calcState.halted;
     if (halted?.kind !== 'wait' || !halted.dialog.key || code == null) return false;
     if (this.shift && !this.shiftLocked()) this.setShift(null);
-    this._continueProgram(Real(code));
+    if (halted.dialog.poll) this._continueProgram(Real(Math.trunc(code)), Real(1));
+    else this._continueProgram(Real(code));
     return true;
   }
 
@@ -1973,8 +1978,8 @@ class App {
   }
 
   handleKey(key) {
-    // A shift key with a letter on it (the compact keypad's) types the letter under α.
-    if (MODIFIER_KINDS.has(key.kind) && !(key.alpha && this.layer() === 'A')) { this.setShift(key.kind); return; }
+    // A shift key with a letter on it (the compact keypad's) types the letter under α. KEY takes a shift key as a key.
+    if (MODIFIER_KINDS.has(key.kind) && !calcState.halted?.dialog?.poll && !(key.alpha && this.layer() === 'A')) { this.setShift(key.kind); return; }
     if (this._answerKey(hpKeyCode(key.primary, this.layer()))) return;
     const step = { '▲': -1, '▼': 1 }[key.primary];
     if (step && !this.shift && this._moveChoice(step)) return;

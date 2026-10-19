@@ -2264,10 +2264,21 @@ setAngle('RAD');
     && /onCommit: \(\) => \{ if \(this\._answerKey\(hpKeyCode\('ENTER'\)\) \|\| this\._enterAnswersDialog\(\)\) return; if \(!this\._runChord\('Enter'\)\) this\.commitEntry\(\); \},\s*onType: \(text\) => this\._answerKey\(typedKeyCode\(text\)\) \|\| this\._jumpChoice\(text\),/.test(appSrc)
     && /EditorView\.inputHandler\.of\(\(_view, _from, _to, text\) => onType\?\.\(text\) === true\),/.test(readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8'))
     && /if \(e\.key\.length === 1 && !e\.ctrlKey && !e\.metaKey && !e\.altKey && !inField && this\._answerKey\(typedKeyCode\(e\.key\)\)\) \{ e\.preventDefault\(\); return; \}\s*const binding = findBinding\(chord,/.test(appSrc)
-    && /_beginWait\(halted\) \{\s*const \{ seconds, menu \} = halted\.dialog;\s*if \(menu && this\.prefs\.minimal\) this\.setMinimalMenu\(true\);\s*if \(seconds\) this\._waitTimer = setTimeout\(\(\) => \{ if \(calcState\.halted === halted\) this\._continueProgram\(\); \}, seconds \* 1000\);/.test(appSrc)
+    && /_beginWait\(halted\) \{\s*const \{ seconds, menu, poll \} = halted\.dialog;\s*if \(menu && this\.prefs\.minimal\) this\.setMinimalMenu\(true\);\s*if \(seconds\) this\._waitTimer = setTimeout\(\(\) => \{ if \(calcState\.halted === halted\) this\._continueProgram\(\); \}, seconds \* 1000\);/.test(appSrc)
     && /halted: calcState\.halted && calcState\.halted\.kind !== 'wait' \? calcState\.halted\.kind : null,/.test(appSrc)
     && /if \(id === 'WAIT'\) \{[\s\S]{0,300}?_markSuspend\(toks, i \+ 1, 'wait', wait\);/.test(internalSrc),
     "WAIT: a timed wait shows how long with a Stop key and goes on by itself after its seconds (no key press for the display, whose message stays); a key wait says Press a key with Enter and Stop, and any keypad key, soft key (F1 to F6), character typed on a keyboard (a hardware keyboard's keydown ahead of its chords, a phone keyboard's text through the editor's input handler) or Enter, from the chip, the line's Enter or the keyboard (ahead of the empty line's Enter chord), answers with its HP code; -1 shows the soft keys in minimal view; the status line lights no HALT for a wait");
+}
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/if \(halted\.dialog\.poll\) this\._continueProgram\(Real\(Math\.trunc\(code\)\), Real\(1\)\);\s*else this\._continueProgram\(Real\(code\)\);/.test(appSrc)
+    && /if \(poll\) this\._waitTimer = setTimeout\(\(\) => \{ if \(calcState\.halted === halted\) this\._continueProgram\(Real\(0\)\); \}, KEY_PAUSE_MS\);/.test(appSrc)
+    && /const KEY_PAUSE_MS = 20;/.test(appSrc)
+    && /if \(MODIFIER_KINDS\.has\(key\.kind\) && !calcState\.halted\?\.dialog\?\.poll && /.test(appSrc),
+    "KEY: a key pressed while a program polls answers with the key's row and column and 1 (ENTER 105, the left shift 81 rather than shifting), and a 20 ms pause without one answers 0");
+  assert(/function _loopLimit\(message\) \{\s*let run = _resumedAt;\s*let count = 0;\s*return \(\) => \{\s*if \(run !== _resumedAt\) \{ run = _resumedAt; count = 0; \}\s*if \(\+\+count > MAX_LOOP_ITERATIONS\) throw new RPLError\(message\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
+    'KEY: a loop polling KEY counts its iterations afresh after each pause, where an empty « DO UNTIL KEY END » stopped at the million-iteration limit after half a second of waiting');
 }
 
 {

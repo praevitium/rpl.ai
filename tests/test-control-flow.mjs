@@ -7591,6 +7591,46 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
 {
   resetHome(); clearAllHalted(); clearPromptMessage();
   const s = new Stack();
+  lookup('KEY').fn(s);
+  assert(s.depth === 1 && s.peek().type === 'real' && Number(s.peek().value) === 0, 'KEY at the command line finds no key waiting and returns 0');
+  s.push(parseEntry('« KEY »')[0]);
+  lookup('EVAL').fn(s);
+  assert(getHalted() === null && s.depth === 2 && Number(s.peek().value) === 0, 'KEY in a program that has only just started returns 0 at once');
+  const realNow = Date.now;
+  let clock = 0;
+  Date.now = () => (clock += 100);
+  try {
+    const t = new Stack();
+    t.push(parseEntry('« DO UNTIL KEY END »')[0]);
+    lookup('EVAL').fn(t);
+    const halted = getHalted();
+    assert(halted?.kind === 'wait' && halted.dialog.key === true && halted.dialog.poll === true && t.depth === 0 && haltedDepth() === 1,
+      'KEY after 50 ms of running pauses the program for a key, so a phone can take one, under the WAIT kind with nothing pushed yet');
+    t.push(Real(0));
+    lookup('CONT').fn(t);
+    assert(getHalted()?.dialog.poll === true && haltedDepth() === 1 && t.depth === 0, 'KEY, with no key pressed in the pause, returns 0 and the DO loop polls again');
+    t.push(Real(81));
+    t.push(Real(1));
+    lookup('CONT').fn(t);
+    assert(getHalted() === null && t.depth === 1 && Number(t.peek().value) === 81, "KEY returns a key's code and 1: the AUR's « DO UNTIL KEY END » leaves 81 for the left shift key");
+    const u = new Stack();
+    u.push(Real(1));
+    u.push(parseEntry('« KEY »')[0]);
+    lookup('IFT').fn(u);
+    assert(getHalted() === null && u.depth === 1 && Number(u.peek().value) === 0, 'KEY in a part of a program that cannot pause, such as an IFT action run by name, returns 0 instead of halting');
+    const v = new Stack();
+    v.push(parseEntry('« KEY 5 »')[0]);
+    lookup('DBUG').fn(v);
+    assert(getHalted()?.kind === 'step' && v.depth === 1 && Number(v.peek().value) === 0, 'KEY stepped through with DBUG returns 0 and the step halts as usual');
+  } finally {
+    Date.now = realNow;
+    clearAllHalted(); clearPromptMessage();
+  }
+}
+
+{
+  resetHome(); clearAllHalted(); clearPromptMessage();
+  const s = new Stack();
   s.push(parseEntry('« "The Title" { { "ONE" "Name?" 2 } { } { "TWO" "Age?" } { "THREE" "Lucky numbers?" 5 } } { 2 } { NOVAL NOVAL { 1 2 3 } } { "Charlotte" NOVAL { 4 5 6 } } INFORM »')[0]);
   lookup('EVAL').fn(s);
   const halted = getHalted();

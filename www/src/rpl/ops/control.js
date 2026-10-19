@@ -1,6 +1,6 @@
 import { RPLAbort, RPLError } from '../stack.js';
 import { getHalted, takeHalted, clearHalted, inScratchState } from '../state.js';
-import { isProgram, isTagged, Name } from '../types.js';
+import { isProgram, isTagged, Name, Real } from '../types.js';
 import { register, lookup } from './registry.js';
 import { runSuspendable, withStepMode } from './internal.js';
 
@@ -38,6 +38,12 @@ register('INPUT', () => {
 register('CHOOSE', () => {
   throw new RPLError('CHOOSE: not inside a running program');
 }, { category: 'Control flow / debug', categoryOrder: 11, label: "CHOOSE" });
+
+
+// No key is waiting at the command line, nor in a program between its pauses for one (ops/internal.js).
+register('KEY', (s) => {
+  s.push(Real(0));
+}, { category: 'Control flow / debug', categoryOrder: 11.5, label: "KEY" });
 
 
 register('WAIT', () => {
