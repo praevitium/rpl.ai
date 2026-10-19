@@ -5380,6 +5380,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <ul class="cmd-bullets"><li>Names are evaluated.</li><li>Commands are evaluated.</li><li>Other objects are put on the stack.</li></ul>
     <table class="cmd-tbl"><thead><tr><th>Command, Function, XLIB Name</th><th>Evaluates the specified object.</th></tr></thead><tbody><tr><td>Other Objects</td><td>Puts the object on the stack.</td></tr></tbody></table>
     <p>To evaluate a symbolic argument to a numerical result, evaluate the argument in Numerical Results mode (flag –3 set) or execute →NUM on that argument.</p>
+  <p>In rpl.ai a matrix or vector with symbolic entries evaluates entry by entry, so <code>[[ X 1 ][ 2 Y ]] EVAL</code> with 3 stored in X gives <code>[[ 3 1 ][ 2 Y ]]</code>; an entry that gives other than one value is a Bad argument value. A numeric array goes back on the stack as it is.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">

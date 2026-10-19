@@ -192,10 +192,11 @@ RPL puts the numbers first and the operation last. Each value goes on the
 - **Matrices.** `[[ 2 1 ][ 1 3 ]] DET` gives 5, `INV`, `EGV` and `LU` work
   on it, and `→NUM` gives every entry its number. Entries can be
   symbolic: `[[ X 1 ][ 2 Y ]] INV` is exact, and `/`, RREF, RANK, LU,
-  CHARPOL, JORDAN and ABS work on such a matrix too. The MATRIX menu opens as
+  CHARPOL, JORDAN and ABS work on such a matrix too; `EVAL` puts stored
+  values into its entries. The MATRIX menu opens as
   the HP's MTH MATR does, on MAKE, NORM, FACTR, COL and ROW folders and
-  then LSQ. A matrix level's ⋯ menu has Inverse and Determinant when it is
-  square, and Transpose. In CYLIN and SPHERE modes `→V2`, `→V3` and `V→`
+  then LSQ. A matrix level's ⋯ menu has Inverse, Determinant and
+  Eigenvalues when it is square, and Transpose. In CYLIN and SPHERE modes `→V2`, `→V3` and `V→`
   take and give a vector's polar parts, as on the HP: `2 90 →V2` in DEG is
   `[ 2 ∠90 ]`. The VECTOR menu holds the HP's MTH VECTR keys, `ABS`, `DOT`,
   `CROSS`, `V→`, `→V2` and `→V3`, then the RECT, CYLIN and SPHERE modes.
@@ -973,6 +974,8 @@ and RESTORE), Saturn assembly and System RPL, and IR and serial transfer.
   goes in parentheses: `'9.81_(m/s^2)*T'`. `'5_m/s'` is 5 m divided by a
   variable `s`.
 - `ZEROS` always returns a list, even of one root.
+- `EVAL` of a matrix or vector with symbolic entries evaluates each entry;
+  the AUR's EVAL table leaves an array as it is.
 - ⌫ on an empty line leaves the stack alone, where the HP's drops level 1.
   DROP is on the STACK menu, the key strip above a phone's keyboard and a
   level's menu, and ⌫ still removes a selected level.
