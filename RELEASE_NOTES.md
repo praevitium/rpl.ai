@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.3 (2026-10-19)
+**Latest release:** v0.7.4 (2026-10-19)
 
 ---
 
@@ -20,6 +20,28 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.4 — 2026-10-19
+
+The fifth batch of missing HP 50g commands adds nine:
+
+- `FFT` and `IFFT`, the discrete Fourier transform and its inverse, of a
+  vector or a single row or column, or of a matrix in two dimensions;
+  each size must be a power of 2, as on the HP. `[ 1 2 3 4 ] FFT` gives
+  `[ (10, 0) (-2, 2) (-2, 0) (-2, -2) ]`.
+- `F0λ`, the fraction of a black body's emission below a wavelength, in
+  meters and kelvins or any length and temperature units:
+  `2.898E-6 1000 F0λ` gives 0.250106293888.
+- `C2P` and `P2C` convert between a permutation and its cycles:
+  `{ 3 4 5 2 1 } P2C` gives `{ { 1 3 5 } { 2 4 } }` and its signature -1.
+- `LININ` tests whether an expression is structurally linear in a name:
+  1 for the AUR's first example, 0 for `(X^2-1)/(X+1)`.
+- `INT` gives an antiderivative at a point: `'SIN(X)' 'X' 'Y' INT` gives
+  `-COS(Y)`.
+- `STEQ` and `RCEQ` store and recall EQ in the current directory.
+
+DARCY, FANNING, SIDENS and ZFACTOR wait: the AUR gives neither their
+formulas nor examples to check against.
 
 ## v0.7.3 — 2026-10-19
 
