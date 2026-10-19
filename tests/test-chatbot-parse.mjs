@@ -1,7 +1,7 @@
 import {
   parseAllToolCalls, parseSuggestions, findMachineSectionStart, stripThinkBlocks,
   resolveToolAlias, activeContextTokens, effectiveBudget, TOOL_ALIASES, ChatBot,
-  parseFencedBlock, parseInlineSpans, classifyMarkdownLine, parseTableAt,
+  parseFencedBlock, parseInlineSpans, classifyMarkdownLine, parseTableAt, listIndent,
   normalizeRpl, normalizeRemoteConfig, looksInfix,
 } from '../www/src/ai/chat-bot.js';
 import {
@@ -570,6 +570,18 @@ import { readFileSync } from 'node:fs';
   const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
   assert(/elem\(`h\$\{Math\.min\(c\.level \+ 2, 6\)\}`\)/.test(src),
          'a #### heading renders as h6 rather than an h7 the browser does not know');
+}
+
+// Nested lists in a reply: an item indented past the open one starts a list inside its last item, so
+// "1. Step" with "   - detail" under it shows the detail under the step (both showed flat at one level).
+{
+  assert(listIndent('- a') === 0 && listIndent('   - b') === 3 && listIndent('\t1. c') === 4 && listIndent('    - d') === 4,
+         'listIndent counts an item\'s leading spaces, a tab as four');
+  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
+  assert(/if \(top && indent > top\.indent\) \{\s*lists\.push\(\{ list: newList\(top\.list\.lastElementChild, tag, c\), indent \}\);/.test(src)
+           && /while \(lists\.length > 1 && lists\.at\(-1\)\.indent > indent\) lists\.pop\(\);/.test(src)
+           && /if \(c\.kind !== 'bullet' && c\.kind !== 'ordered' && c\.kind !== 'blank'\) lists = \[\];/.test(src),
+         'a reply nests an item indented past the open one inside its last item, closes deeper lists when the indent comes back, and ends every list at a paragraph, heading, quote, rule or table');
 }
 
 // Links in a reply: [text](url) to an http(s) or mailto address opens in a new

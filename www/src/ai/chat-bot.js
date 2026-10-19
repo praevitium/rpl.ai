@@ -231,21 +231,34 @@ function appendTable(frag, { header, align, rows }) {
   for (const row of rows) addRow(body, row, 'td');
 }
 
+// A list item's indent in spaces, a tab counting four: more than the open item's nests under it.
+export function listIndent(line) {
+  return line.match(/^\s*/)[0].replace(/\t/g, '    ').length;
+}
+
 function appendInlineMarkdownLines(frag, text) {
   let p = null;
   let quote = null;
+  let lists = [];
   const flushP = () => { if (p) { frag.appendChild(p); p = null; } };
+  const newList = (parent, tag, c) => {
+    const list = parent.appendChild(elem(tag));
+    if (c.kind === 'ordered' && c.number !== 1) list.start = c.number;
+    return list;
+  };
   const lines = text.split('\n');
   for (let i = 0; i < lines.length; i++) {
     const table = parseTableAt(lines, i);
     if (table) {
       flushP();
+      lists = [];
       appendTable(frag, table);
       i = table.end - 1;
       continue;
     }
     const c = classifyMarkdownLine(lines[i]);
     if (c.kind !== 'quote') quote = null;
+    if (c.kind !== 'bullet' && c.kind !== 'ordered' && c.kind !== 'blank') lists = [];
     if (c.kind === 'text') {
       if (!p) p = elem('p');
       else p.appendChild(document.createTextNode(' '));
@@ -263,12 +276,17 @@ function appendInlineMarkdownLines(frag, text) {
       appendSpans(quote, c.content);
     } else if (c.kind !== 'blank') {
       const tag = c.kind === 'bullet' ? 'UL' : 'OL';
-      let list = frag.lastChild;
-      if (list?.tagName !== tag) {
-        list = frag.appendChild(elem(tag));
-        if (c.kind === 'ordered' && c.number !== 1) list.start = c.number;
+      const indent = listIndent(lines[i]);
+      while (lists.length > 1 && lists.at(-1).indent > indent) lists.pop();
+      const top = lists.at(-1);
+      if (top && indent > top.indent) {
+        lists.push({ list: newList(top.list.lastElementChild, tag, c), indent });
+      } else if (top?.list.tagName !== tag) {
+        const parent = lists.length > 1 ? lists.at(-2).list.lastElementChild : frag;
+        const list = lists.length < 2 && parent.lastChild?.tagName === tag ? parent.lastChild : newList(parent, tag, c);
+        lists[Math.max(lists.length - 1, 0)] = { list, indent };
       }
-      appendSpans(list.appendChild(elem('li')), c.content);
+      appendSpans(lists.at(-1).list.appendChild(elem('li')), c.content);
     }
   }
   flushP();
