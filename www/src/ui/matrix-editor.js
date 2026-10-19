@@ -292,7 +292,8 @@ export function pasteIntoGrid(grid, startR, startC, text) {
   const next = resizeGrid(grid, Math.max(grid.length, r0 + parsed.length), needC);
   for (let i = 0; i < parsed.length && r0 + i < next.length; i++) {
     for (let j = 0; j < parsed[i].length && c0 + j < next[0].length; j++) {
-      next[r0 + i][c0 + j] = sheetNumber(parsed[i][j]) ?? parsed[i][j];
+      const number = sheetNumber(parsed[i][j]);
+      next[r0 + i][c0 + j] = number ? withFractionMark(number) : parsed[i][j];
     }
   }
   return next;

@@ -243,4 +243,11 @@ import {
   assert(isReal(cell) && cell.value.toNumber() === 1.5, 'parseMatrixCell: with -51 set, 1,5 is one and a half');
   assert(drafted[0][0] === '1,5' && drafted[0][1] === '2,', `valueToGrid: with -51 set the cells show the comma mark (${drafted[0]})`);
   assert(valueToGrid(M([[R(1.5)]]))[0][0] === '1.5', 'valueToGrid: without -51 a cell shows the point again');
+  setUserFlag(-51);
+  const pasted = pasteIntoGrid([['']], 0, 0, '12,345\t2,5\nn/a\t1.234,5');
+  const reread = parseMatrixCell(pasted[0][0]);
+  clearUserFlag(-51);
+  assert(JSON.stringify(pasted) === JSON.stringify([['12,345', '2,5'], ['n/a', '1234,5']]),
+    `pasteIntoGrid: with -51 set pasted numbers show the comma mark and text stays as pasted (${JSON.stringify(pasted)})`);
+  assert(isReal(reread) && reread.value.toNumber() === 12.345, 'pasteIntoGrid: with -51 set a pasted 12,345 cell reads back as 12.345');
 }
