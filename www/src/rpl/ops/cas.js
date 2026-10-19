@@ -213,6 +213,15 @@ register('SYST2MAT', (s) => {
   s.push(Matrix(rows.map((row) => row.map(_casValue))));
 }, { category: 'CAS / symbolic', categoryOrder: 9.5, label: "SYST2MAT" });
 
+// SIMP2 ( a b → a/gcd b/gcd ): the AUR's example leaves X+3 and X-3 from X^3+6*X^2+11*X+6 and X^3-7*X-6.
+register('SIMP2', (s) => {
+  const [a, b] = s.popN(2);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const parts = splitGiacList(giac.caseval(`simp2(${astToGiac(_astArg(a))},${astToGiac(_astArg(b))})`));
+  if (parts?.length !== 2) throw new RPLError('Bad argument value');
+  for (const part of parts) s.push(_casValue(giacToAst(part)));
+}, { category: 'Polynomials', categoryOrder: 8.5, label: "SIMP2" });
+
 function _casValue(ast) {
   const leaf = ast.kind === 'neg' ? ast.arg : ast;
   return leaf.kind === 'num' || ast.kind === 'var' ? _astToRplValue(ast) : Symbolic(ast);

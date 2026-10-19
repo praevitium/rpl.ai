@@ -104,6 +104,7 @@ POLYNOMIALS / NUMBER THEORY
   HORNER PEVAL PROOT PCOEF PTAYL FCOEF FROOTS         polynomial eval / roots / coeffs
   TCHEB HERMITE LEGENDRE     classic orthogonal polynomial families
   QUOT REMAINDER             polynomial division
+  SIMP2                      \`X^3+6*X^2+11*X+6\` \`X^3-7*X-6\` SIMP2 → \`X+3\` \`X-3\` (both divided by their GCD; 12 18 SIMP2 → 2 3)
   EUCLID INVMOD              extended-Euclid / modular inverse
   ISPRIME? NEXTPRIME PREVPRIME DIVIS FACTORS    integer primality / factorisation (FACTORS → { p1 e1 p2 e2 … })
   PA2B2 CYCLOTOMIC           sum-of-two-squares / cyclotomic polynomial

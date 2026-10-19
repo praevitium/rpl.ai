@@ -8433,6 +8433,23 @@ giac._setFixture('ilaplace(1,x,rplS)', 'Dirac(rplS)');
   giac._clear();
 }
 
+/* SIMP2: two objects divided by their greatest common divisor, from Giac's simp2, as the AUR's example. */
+{
+  const line = (src) => runLine(src).snapshot().reverse().map((v) => format(v)).join(' | ');
+  giac._clear();
+  giac._setFixtures({
+    'simp2(X^3+6*X^2+11*X+6,X^3-7*X-6)': '[X+3,X-3]',
+    'simp2(12,18)': '[2,3]',
+    'simp2(4*X,6)': '[2*X,3]',
+  });
+  assert(line("'X^3+6*X^2+11*X+6' 'X^3-7*X-6' SIMP2") === '`X + 3` | `X - 3`',
+    'SIMP2 divides the AUR\'s two polynomials by their GCD, the first on level 2');
+  assert(line('12 18 SIMP2') === '2 | 3' && line("'4*X' 6 SIMP2") === '`2*X` | 3',
+    'SIMP2 takes integers and a polynomial with a number');
+  assertThrows(() => runLine('"A" 2 SIMP2'), /Bad argument type/, 'SIMP2 refuses a string');
+  giac._clear();
+}
+
 /* SCHUR reads the matrix[ tag real Giac puts on its first result. */
 {
   giac._clear();
