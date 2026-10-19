@@ -392,6 +392,14 @@ import { assert, assertThrows } from './helpers.mjs';
       && /if \(group\.commands\.includes\('MODSTO'\)\) this\.toast\(`\$\{modulusNote\(\)\}; MODSTO sets it\.`, \{ key: 'modulus', transient: true \}\);/.test(appSrc),
       'MODUL folder: on a phone, which shows no CAS modes, opening it says the modulus the modular commands use, and the MODSTO key says the new one with Undo');
   }
+  {
+    const { LIST_GROUPS } = await import('../www/src/ui/menus.js');
+    const listFamily = MENU_FAMILIES.find((f) => f.id === 'LIST');
+    assert(LIST_GROUPS.map((g) => `${g.id}: ${g.commands.join(' ')}`).join(' / ') === 'ELEM: GET GETI PUT PUTI SIZE POS HEAD TAIL / PROC: DOLIST DOSUBS NSUB ENDSUB STREAM REVLIST ADD SORT SEQ / CHARS: SUB REPL POS SIZE NUM CHR OBJ→ →STR HEAD TAIL SREPL'
+      && LIST_GROUPS.every((g) => g.commands.every((n) => lookup(n))) && listFamily.keys.join(' ') === 'OBJ→ →LIST SUB REPL'
+      && /LIST: \(\) => this\._groupKeys\(LIST_GROUPS, 'LIST'\),/.test(appSrc),
+      'LIST menu: it opens on the HP\'s PRG LIST folders ELEM and PROC and its PRG CHARS string commands, then OBJ→ →LIST SUB REPL, where 35 keys ran over six pages');
+  }
   const matrixFamily = MENU_FAMILIES.find((f) => f.id === 'MATRIX');
   assert(MATRIX_GROUPS.map((g) => g.id).join(' ') === 'MAKE NORM FACTR COL ROW' && matrixFamily.keys.join(' ') === 'LSQ'
     && MATRIX_GROUPS.every((g) => g.commands.every((n) => lookup(n)))

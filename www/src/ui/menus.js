@@ -16,7 +16,7 @@ export const MENU_FAMILIES = Object.freeze([
   { id: 'CAS', short: 'CAS', title: 'Algebra (CAS)', category: 'CAS / symbolic' },
   { id: 'SPECIAL', short: 'SPECL', title: 'Special functions', category: 'Special functions' },
   { id: 'MATRIX', short: 'MATRX', title: 'Vectors and matrices', category: 'Vectors / matrices', keys: ['LSQ'] },
-  { id: 'LIST', short: 'LIST', title: 'Lists and strings', category: 'Lists / strings' },
+  { id: 'LIST', short: 'LIST', title: 'Lists and strings', category: 'Lists / strings', keys: ['OBJ→', '→LIST', 'SUB', 'REPL'] },
   { id: 'STAT', short: 'STAT', title: 'Statistics', category: 'Statistics' },
   { id: 'PLOT', short: 'PLOT', title: 'Plotting', category: 'Graphics' },
   { id: 'MEMORY', short: 'MEM', title: 'Variables and directories', category: 'Variables / directories' },
@@ -79,6 +79,13 @@ export const TRIG_GROUPS = Object.freeze([
 export const INTEGER_GROUPS = Object.freeze([
   { id: 'INTEG', title: 'Integers', commands: ['EULER', 'IABCUV', 'ICHINREM', 'IDIV2', 'IEGCD', 'IQUOT', 'IREMAINDER', 'ISPRIME?', 'NEXTPRIME', 'PA2B2', 'PREVPRIME'] },
   { id: 'MODUL', title: 'Modular arithmetic', commands: ['ADDTMOD', 'DIVMOD', 'DIV2MOD', 'EXPANDMOD', 'FACTORMOD', 'GCDMOD', 'INVMOD', 'MOD', 'MODSTO', 'MULTMOD', 'POWMOD', 'SUBTMOD'] },
+]);
+
+// The HP's PRG LIST folders ELEM and PROC, and its PRG CHARS menu of string commands; OBJ→ →LIST SUB REPL follow them.
+export const LIST_GROUPS = Object.freeze([
+  { id: 'ELEM', title: 'List elements', commands: ['GET', 'GETI', 'PUT', 'PUTI', 'SIZE', 'POS', 'HEAD', 'TAIL'] },
+  { id: 'PROC', title: 'List procedures', commands: ['DOLIST', 'DOSUBS', 'NSUB', 'ENDSUB', 'STREAM', 'REVLIST', 'ADD', 'SORT', 'SEQ'] },
+  { id: 'CHARS', title: 'Strings', commands: ['SUB', 'REPL', 'POS', 'SIZE', 'NUM', 'CHR', 'OBJ→', '→STR', 'HEAD', 'TAIL', 'SREPL'] },
 ]);
 
 // The HP's TIME menu's ALRM folder: the appointment alarms.
