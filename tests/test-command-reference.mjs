@@ -209,3 +209,19 @@ const REF = parseCommandReference(HTML);
   assert(/const prior = named\.get\(upper\);\s*if \(prior && !\(key === upper && prior !== upper\)\) continue;\s*named\.set\(upper, key\);/.test(helpSrc),
     "the drawer's section loader keeps the classic command's section over a CAS alias of the same letters");
 }
+
+/* The program structures, « », →, _, π, e and i are read by the parser, so no command registers them; the
+   reference counts them in, offering Insert, where it greyed them out as "Not available in rpl.ai". */
+{
+  const { isSyntaxWord } = await import('../www/src/ui/command-help.js');
+  const words = ['IF', 'THEN', 'ELSE', 'END', 'CASE', 'IFERR', 'FOR', 'NEXT', 'START', 'STEP', 'DO', 'UNTIL', 'WHILE', 'REPEAT', '« »', '→', '_', 'π', 'e', 'i'];
+  assert(words.every((w) => isSyntaxWord(w) && isSyntaxWord(w.toUpperCase()) && !hasOp(w)) && !isSyntaxWord('SIN') && !isSyntaxWord('IFT') && !isSyntaxWord('PICT'),
+    'syntax words: the twenty headings the parser reads are syntax, in either case, and none is a registered command');
+  const marked = words.map((w) => REF.get(w.toUpperCase())).filter((e) => !e?.inApp).map((e) => e?.name);
+  assert(marked.length === 0, `syntax words: the AUR page marks IF, FOR, « », →, _, π, e, i and the rest in app (${marked.join(', ')})`);
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  assert(/const runnable = !!lookup\(name\);\s*const available = runnable \|\| isSyntaxWord\(name\);/.test(drawerSrc)
+    && /\$\{runnable \|\| isSyntaxWord\(name\) \? `<button type="button" class="btn\$\{runnable \? '' : ' pri'\}" data-dw="ref-insert">Insert in the command line<\/button>` : `<span class="badge">Not available in rpl.ai<\/span>`\}/.test(drawerSrc)
+    && /if \(word === '« »'\) entry\.typeObject\('«  »', 2\);\s*else if \(word === '_'\) entry\.typeWithCursor\('_'\);\s*else entry\.typeToken\(`\$\{word\} `\);/.test(drawerSrc),
+    "syntax words: the Catalog lists them as available and their reference offers Insert (no Run), typing « » around the cursor, _ as the key strip does and π, e or i in its own case, where IF's page said Not available in rpl.ai");
+}

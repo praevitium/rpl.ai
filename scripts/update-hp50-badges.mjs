@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { allOps } from '../www/src/rpl/ops.js';
-import { ALIASES } from '../www/src/ui/command-help.js';
+import { ALIASES, isSyntaxWord } from '../www/src/ui/command-help.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HTML_PATH = path.resolve(HERE, '../www/docs/hp50-commands.html');
@@ -38,7 +38,7 @@ const UI_COMMANDS = new Set(['EQW']);
 
 function isRegistered(display) {
   const key = commandKey(display);
-  if (UI_COMMANDS.has(key)) return true;
+  if (UI_COMMANDS.has(key) || isSyntaxWord(key)) return true;
   if (registered.has(key)) return true;
   const alias = dispatchForDoc.get(key);
   return !!(alias && registered.has(alias));

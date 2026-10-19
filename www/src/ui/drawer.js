@@ -11,7 +11,7 @@ import {
   exportHpTextFile, readUpload,
   listBackups, archiveBackup, restoreBackup, deleteBackup,
 } from '../rpl/persist.js';
-import { referenceSection, pushHistory } from './command-help.js';
+import { referenceSection, pushHistory, isSyntaxWord } from './command-help.js';
 import { loadCommandReference, findReferenceEntry, shortDescription, searchCommands } from './command-reference.js';
 import { matchPositions, highlightSegments } from './op-search.js';
 import { GraphView } from './graph-view.js';
@@ -429,24 +429,34 @@ export class Drawers {
 
   _cmdRow(name, query = '') {
     const entry = this.reference ? findReferenceEntry(this.reference, name) : null;
-    const available = !!lookup(name);
+    const runnable = !!lookup(name);
+    const available = runnable || isSyntaxWord(name);
     const label = query ? highlightSegments(name, matchPositions(query, name)).map((s) => (s.match ? `<mark>${escapeHtml(s.text)}</mark>` : escapeHtml(s.text))).join('') || escapeHtml(name) : escapeHtml(name);
     const sig = entry ? signatureOf(entry) : '';
     const desc = entry ? shortDescription(entry, 120) : (available ? '' : 'Not available in rpl.ai');
-    return `<div class="cmd-row${available ? '' : ' stub'}" data-dw="cmd" data-cmd="${escapeHtml(name)}" role="button" tabindex="0" title="Open the reference for ${escapeHtml(name)}"><div class="nm"><span>${label}</span>${sig ? `<span class="sig">${escapeHtml(sig)}</span>` : ''}</div>${desc ? `<div class="ds">${escapeHtml(desc)}</div>` : ''}<div class="acts">${available ? `<button type="button" class="mini" data-dw="cmd-run" data-cmd="${escapeHtml(name)}" title="Run ${escapeHtml(name)}" aria-label="Run ${escapeHtml(name)}">${icon('play', 'sm')}</button>` : ''}</div></div>`;
+    return `<div class="cmd-row${available ? '' : ' stub'}" data-dw="cmd" data-cmd="${escapeHtml(name)}" role="button" tabindex="0" title="Open the reference for ${escapeHtml(name)}"><div class="nm"><span>${label}</span>${sig ? `<span class="sig">${escapeHtml(sig)}</span>` : ''}</div>${desc ? `<div class="ds">${escapeHtml(desc)}</div>` : ''}<div class="acts">${runnable ? `<button type="button" class="mini" data-dw="cmd-run" data-cmd="${escapeHtml(name)}" title="Run ${escapeHtml(name)}" aria-label="Run ${escapeHtml(name)}">${icon('play', 'sm')}</button>` : ''}</div></div>`;
+  }
+
+  // A syntax word goes in as its key types it: « » around the cursor, _ joined to the number before it.
+  _insertReferenced() {
+    const { entry } = this.app;
+    const word = isSyntaxWord(this.cat.ref) ? findReferenceEntry(this.reference, this.cat.ref)?.name ?? this.cat.ref : this.cat.ref;
+    if (word === '« »') entry.typeObject('«  »', 2);
+    else if (word === '_') entry.typeWithCursor('_');
+    else entry.typeToken(`${word} `);
   }
 
   async _renderReference(body) {
     const name = this.cat.ref;
     const entry = (await this._ensureReference()) && findReferenceEntry(this.reference, name);
     if (this.cat.ref !== name || this.current !== 'catalog') return;
-    const available = !!lookup(name);
+    const runnable = !!lookup(name);
     const sig = entry ? signatureOf(entry) : '';
     body.innerHTML = `<div class="ref">
       <div class="ref-top"><button type="button" class="mini" data-dw="ref-back" title="Back" aria-label="Back">${icon('chl', 'sm')}</button><h4>${escapeHtml(entry?.name ?? name)}</h4>${entry?.type ? `<span class="badge">${escapeHtml(entry.type)}</span>` : ''}</div>
       ${entry ? `<div class="sum">${escapeHtml(shortDescription(entry, 400))}</div>` : ''}
       ${sig ? `<div><div class="lbl">Stack</div><pre class="ref-sig">${escapeHtml(entry.io.replace(/`/g, "'"))}</pre></div>` : ''}
-      <div class="acts">${available ? `<button type="button" class="btn pri" data-dw="ref-run" data-cmd="${escapeHtml(name)}">${icon('play', 'sm')}Run ${escapeHtml(name)}</button><button type="button" class="btn" data-dw="ref-insert">Insert in the command line</button>` : `<span class="badge">Not available in rpl.ai</span>`}<button type="button" class="btn ghost" data-dw="ref-ask">${icon('spark', 'sm')}Ask about it</button></div>
+      <div class="acts">${runnable ? `<button type="button" class="btn pri" data-dw="ref-run" data-cmd="${escapeHtml(name)}">${icon('play', 'sm')}Run ${escapeHtml(name)}</button>` : ''}${runnable || isSyntaxWord(name) ? `<button type="button" class="btn${runnable ? '' : ' pri'}" data-dw="ref-insert">Insert in the command line</button>` : `<span class="badge">Not available in rpl.ai</span>`}<button type="button" class="btn ghost" data-dw="ref-ask">${icon('spark', 'sm')}Ask about it</button></div>
       <div class="ref-doc"></div>
     </div>`;
     const doc = body.querySelector('.ref-doc');
@@ -638,7 +648,7 @@ export class Drawers {
         this._renderBody();
         return;
       case 'ref-run': app.runCommandFromUI(this.cat.ref); this._reveal(); return;
-      case 'ref-insert': entry.typeToken(`${this.cat.ref} `); this._reveal(); return;
+      case 'ref-insert': this._insertReferenced(); this._reveal(); return;
       case 'ref-ask': app.askAssistant(`Explain the ${this.cat.ref} command: what it takes from the stack, what it returns, and a short example I can try.`); return;
       case 'char': this._insertWithMore(t.dataset.text, () => this.insertText(t.dataset.text), `[data-dw="char"][data-text="${CSS.escape(t.dataset.text)}"]`); return;
       case 'hist-recall': app.recallLine(t.dataset.text, 'the line from History'); this._reveal(); return;

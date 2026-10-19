@@ -27,6 +27,15 @@ export const ALIASES = new Map([
   ['DLIST',   'ΔLIST'],
 ]);
 
+// Reference headings the parser and the program runner handle, so no command registers them.
+const SYNTAX_WORDS = new Set(['IF', 'THEN', 'ELSE', 'END', 'CASE', 'IFERR', 'FOR', 'NEXT', 'START', 'STEP', 'DO', 'UNTIL',
+  'WHILE', 'REPEAT', '« »', '→', '_', 'π', 'e', 'i']);
+
+export function isSyntaxWord(name) {
+  const word = String(name ?? '').trim();
+  return SYNTAX_WORDS.has(word) || SYNTAX_WORDS.has(word.toUpperCase()) || SYNTAX_WORDS.has(word.toLowerCase());
+}
+
 // Headings carry a gloss, like "!(Factorial)", that isn't part of the command name.
 export function headingKey(raw) {
   return String(raw == null ? '' : raw).trim().replace(/\s*\(.*\)\s*$/, '').trim();

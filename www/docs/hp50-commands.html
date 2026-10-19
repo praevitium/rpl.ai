@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 500 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 521 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -144,7 +144,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-C2P" class='notinapp'>C2P</a>
 <a href="#cmd-CASCFG" class='notinapp'>CASCFG</a>
 <a href="#cmd-CASCMD" class='notinapp'>CASCMD</a>
-<a href="#cmd-CASE" class='notinapp'>CASE</a>
+<a href="#cmd-CASE">CASE</a>
 <a href="#cmd-CEIL">CEIL</a>
 <a href="#cmd-CENTR" class='notinapp'>CENTR</a>
 <a href="#cmd-CF">CF</a>
@@ -227,7 +227,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-DIVIS">DIVIS</a>
 <a href="#cmd-DIVMOD">DIVMOD</a>
 <a href="#cmd-DIVPC" class='notinapp'>DIVPC</a>
-<a href="#cmd-DO" class='notinapp'>DO</a>
+<a href="#cmd-DO">DO</a>
 <a href="#cmd-DOERR">DOERR</a>
 <a href="#cmd-DOLIST">DOLIST</a>
 <a href="#cmd-DOMAIN" class='notinapp'>DOMAIN</a>
@@ -246,14 +246,14 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-DUPDUP">DUPDUP</a>
 <a href="#cmd-DUPN">DUPN</a>
 <a href="#cmd-D-to-R">D→R</a>
-<a href="#cmd-e" class='notinapp'>e</a>
+<a href="#cmd-e">e</a>
 <a href="#cmd-EDIT" class='notinapp'>EDIT</a>
 <a href="#cmd-EDITB" class='notinapp'>EDITB</a>
 <a href="#cmd-EGCD" class='notinapp'>EGCD</a>
 <a href="#cmd-EGV">EGV</a>
 <a href="#cmd-EGVL">EGVL</a>
-<a href="#cmd-ELSE" class='notinapp'>ELSE</a>
-<a href="#cmd-END" class='notinapp'>END</a>
+<a href="#cmd-ELSE">ELSE</a>
+<a href="#cmd-END">END</a>
 <a href="#cmd-ENDSUB">ENDSUB</a>
 <a href="#cmd-ENG">ENG</a>
 <a href="#cmd-EPSX0">EPSX0</a>
@@ -299,7 +299,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-FONT6" class='notinapp'>FONT6</a>
 <a href="#cmd-FONT7" class='notinapp'>FONT7</a>
 <a href="#cmd-FONT8" class='notinapp'>FONT8</a>
-<a href="#cmd-FOR" class='notinapp'>FOR</a>
+<a href="#cmd-FOR">FOR</a>
 <a href="#cmd-FOURIER" class='notinapp'>FOURIER</a>
 <a href="#cmd-FP">FP</a>
 <a href="#cmd-FREE" class='notinapp'>FREE</a>
@@ -342,7 +342,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-HMS-to">HMS→</a>
 <a href="#cmd-HOME">HOME</a>
 <a href="#cmd-HORNER">HORNER</a>
-<a href="#cmd-i" class='notinapp'>i</a>
+<a href="#cmd-i">i</a>
 <a href="#cmd-IABCUV">IABCUV</a>
 <a href="#cmd-IBASIS" class='notinapp'>IBASIS</a>
 <a href="#cmd-IBERNOULLI">IBERNOULLI</a>
@@ -351,8 +351,8 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-IDIV2">IDIV2</a>
 <a href="#cmd-IDN">IDN</a>
 <a href="#cmd-IEGCD">IEGCD</a>
-<a href="#cmd-IF" class='notinapp'>IF</a>
-<a href="#cmd-IFERR" class='notinapp'>IFERR</a>
+<a href="#cmd-IF">IF</a>
+<a href="#cmd-IFERR">IFERR</a>
 <a href="#cmd-IFFT" class='notinapp'>IFFT</a>
 <a href="#cmd-IFT">IFT</a>
 <a href="#cmd-IFTE">IFTE</a>
@@ -453,7 +453,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-NDUPN">NDUPN</a>
 <a href="#cmd-NEG">NEG</a>
 <a href="#cmd-NEWOB">NEWOB</a>
-<a href="#cmd-NEXT" class='notinapp'>NEXT</a>
+<a href="#cmd-NEXT">NEXT</a>
 <a href="#cmd-NEXTPRIME">NEXTPRIME</a>
 <a href="#cmd-NIP">NIP</a>
 <a href="#cmd-NOT">NOT</a>
@@ -567,7 +567,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-REMAINDER">REMAINDER</a>
 <a href="#cmd-RENAME" class='notinapp'>RENAME</a>
 <a href="#cmd-REORDER" class='notinapp'>REORDER</a>
-<a href="#cmd-REPEAT" class='notinapp'>REPEAT</a>
+<a href="#cmd-REPEAT">REPEAT</a>
 <a href="#cmd-REPL">REPL</a>
 <a href="#cmd-RES" class='notinapp'>RES</a>
 <a href="#cmd-RESTORE">RESTORE</a>
@@ -657,9 +657,9 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-SREPL">SREPL</a>
 <a href="#cmd-SST">SST</a>
 <a href="#cmd-SST-down">SST↓</a>
-<a href="#cmd-START" class='notinapp'>START</a>
+<a href="#cmd-START">START</a>
 <a href="#cmd-STD">STD</a>
-<a href="#cmd-STEP" class='notinapp'>STEP</a>
+<a href="#cmd-STEP">STEP</a>
 <a href="#cmd-STEQ" class='notinapp'>STEQ</a>
 <a href="#cmd-STIME" class='notinapp'>STIME</a>
 <a href="#cmd-STO">STO</a>
@@ -705,7 +705,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-TEVAL" class='notinapp'>TEVAL</a>
 <a href="#cmd-TEXPAND">TEXPAND</a>
 <a href="#cmd-TEXT" class='notinapp'>TEXT</a>
-<a href="#cmd-THEN" class='notinapp'>THEN</a>
+<a href="#cmd-THEN">THEN</a>
 <a href="#cmd-TICKS">TICKS</a>
 <a href="#cmd-TIME">TIME</a>
 <a href="#cmd-TINC">TINC</a>
@@ -741,7 +741,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-UNBIND" class='notinapp'>UNBIND</a>
 <a href="#cmd-UNPICK">UNPICK</a>
 <a href="#cmd-UNROT">UNROT</a>
-<a href="#cmd-UNTIL" class='notinapp'>UNTIL</a>
+<a href="#cmd-UNTIL">UNTIL</a>
 <a href="#cmd-UPDIR">UPDIR</a>
 <a href="#cmd-UTPC">UTPC</a>
 <a href="#cmd-UTPF">UTPF</a>
@@ -759,7 +759,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-VTYPE">VTYPE</a>
 <a href="#cmd-V-to">V→</a>
 <a href="#cmd-WAIT">WAIT</a>
-<a href="#cmd-WHILE" class='notinapp'>WHILE</a>
+<a href="#cmd-WHILE">WHILE</a>
 <a href="#cmd-WIREFRAME" class='notinapp'>WIREFRAME</a>
 <a href="#cmd-WSLOG" class='notinapp'>WSLOG</a>
 <a href="#cmd-XCOL">XCOL</a>
@@ -786,10 +786,10 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-ZFACTOR" class='notinapp'>ZFACTOR</a>
 <a href="#cmd-ZVOL" class='notinapp'>ZVOL</a>
 <a href="#cmd-pow-Power">^(Power)</a>
-<a href="#cmd-unit-Unit-attachment" class='notinapp'>_(Unit attachment)</a>
+<a href="#cmd-unit-Unit-attachment">_(Unit attachment)</a>
 <a href="#cmd-where-Where">|(Where)</a>
-<a href="#cmd-lguil-rguil-Program-delimiters" class='notinapp'>« »(Program delimiters)</a>
-<a href="#cmd-π-Pi" class='notinapp'>π(Pi)</a>
+<a href="#cmd-lguil-rguil-Program-delimiters">« »(Program delimiters)</a>
+<a href="#cmd-π-Pi">π(Pi)</a>
 <a href="#cmd-ΠLIST">ΠLIST</a>
 <a href="#cmd-Σ-plus-Sigma-Plus">Σ+(Sigma Plus)</a>
 <a href="#cmd-ΣLINE">ΣLINE</a>
@@ -804,7 +804,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-ΣY-pow-2" class='notinapp'>ΣY^2</a>
 <a href="#cmd-Σ-minus-Sigma-Minus">Σ–(Sigma Minus)</a>
 <a href="#cmd-up-MATCH" class='notinapp'>↑MATCH</a>
-<a href="#cmd-to-Create-Local" class='notinapp'>→(Create Local)</a>
+<a href="#cmd-to-Create-Local">→(Create Local)</a>
 <a href="#cmd-to-ARRY">→ARRY</a>
 <a href="#cmd-to-COL">→COL</a>
 <a href="#cmd-to-DIAG" class='notinapp'>→DIAG</a>
@@ -2317,7 +2317,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>HELP</p>
   </dd>
 </dl>
-<h2 id="cmd-CASE">CASE <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-CASE">CASE <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 152 · printed page 3-32</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -4479,7 +4479,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>DERIV, DERVX, DESOLVE, ∂</p>
   </dd>
 </dl>
-<h2 id="cmd-DO">DO <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-DO">DO <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 184 · printed page 3-64</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -4912,7 +4912,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>R→D</p>
   </dd>
 </dl>
-<h2 id="cmd-e">e <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-e">e <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 191 · printed page 3-71</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -5051,7 +5051,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>EGV</p>
   </dd>
 </dl>
-<h2 id="cmd-ELSE">ELSE <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-ELSE">ELSE <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 193 · printed page 3-73</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -5071,7 +5071,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>IF, CASE, DO, ELSE, IFERR, REPEAT, THEN, UNTIL, WHILE</p>
   </dd>
 </dl>
-<h2 id="cmd-END">END <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-END">END <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 193 · printed page 3-73</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -6262,7 +6262,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>FONT6, FONT7, FONT8, FONT→</p>
   </dd>
 </dl>
-<h2 id="cmd-FOR">FOR <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-FOR">FOR <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 210 · printed page 3-90</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -7403,7 +7403,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <table class="cmd-kv"><tbody><tr><th>Command</th><td>HORNER(X^2+X+1,3)</td></tr><tr><th>Results</th><td>(X+4,3,13)</td></tr></tbody></table>
   </dd>
 </dl>
-<h2 id="cmd-i">i <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-i">i <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 228 · printed page 3-108</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -7674,7 +7674,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>ABCUV, EGCD, IABCUV</p>
   </dd>
 </dl>
-<h2 id="cmd-IF">IF <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-IF">IF <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 232 · printed page 3-112</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -7694,7 +7694,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>CASE, ELSE, END, IFERR, THEN</p>
   </dd>
 </dl>
-<h2 id="cmd-IFERR">IFERR <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-IFERR">IFERR <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 232 · printed page 3-112</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -10547,7 +10547,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>MEM, PURGE</p>
   </dd>
 </dl>
-<h2 id="cmd-NEXT">NEXT <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-NEXT">NEXT <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 275 · printed page 3-155</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -10567,7 +10567,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>FOR, START, STEP</p>
   </dd>
 </dl>
-<h2 id="cmd-NEXT-operation">NEXT <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-NEXT-operation">NEXT <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 275 · printed page 3-155</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -13400,7 +13400,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <table class="cmd-kv"><tbody><tr><th>Command</th><td>REORDER(X^2+2*Y^2+2*X+6+3*Y, Y)</td></tr><tr><th>Result</th><td>2*Y^2+3*Y+(X^2+2*X)</td></tr></tbody></table>
   </dd>
 </dl>
-<h2 id="cmd-REPEAT">REPEAT <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-REPEAT">REPEAT <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 319 · printed page 3-199</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -15602,7 +15602,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>NEXT, SST</p>
   </dd>
 </dl>
-<h2 id="cmd-START">START <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-START">START <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 354 · printed page 3-234</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -15650,7 +15650,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>ENG, FIX, SCI</p>
   </dd>
 </dl>
-<h2 id="cmd-STEP">STEP <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-STEP">STEP <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 355 · printed page 3-235</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -16887,7 +16887,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>PICTURE, PVIEW</p>
   </dd>
 </dl>
-<h2 id="cmd-THEN">THEN <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-THEN">THEN <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 372 · printed page 3-252</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -17849,7 +17849,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>OVER, PICK, ROLL, ROLLD, SWAP, ROT</p>
   </dd>
 </dl>
-<h2 id="cmd-UNTIL">UNTIL <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-UNTIL">UNTIL <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 385 · printed page 3-265</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -18354,7 +18354,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>KEY</p>
   </dd>
 </dl>
-<h2 id="cmd-WHILE">WHILE <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-WHILE">WHILE <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 393 · printed page 3-273</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -19268,7 +19268,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>CLΣ, RCLΣ, STOΣ, Σ+</p>
   </dd>
 </dl>
-<h2 id="cmd-π-Pi">π(Pi) <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-π-Pi">π(Pi) <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 410 · printed page 3-290</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -19367,7 +19367,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>+, %CH, %T</p>
   </dd>
 </dl>
-<h2 id="cmd-unit-Unit-attachment">_(Unit attachment) <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-unit-Unit-attachment">_(Unit attachment) <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 412 · printed page 3-292</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -19388,7 +19388,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>Numeric value ready for a unit attachment</p>
   </dd>
 </dl>
-<h2 id="cmd-lguil-rguil-Program-delimiters">« »(Program delimiters) <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-lguil-rguil-Program-delimiters">« »(Program delimiters) <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 413 · printed page 3-293</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -19704,7 +19704,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>DEFINE, RCL, →, STO</p>
   </dd>
 </dl>
-<h2 id="cmd-to-Create-Local">→(Create Local) <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-to-Create-Local">→(Create Local) <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 423 · printed page 3-303</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
