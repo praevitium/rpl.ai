@@ -168,8 +168,10 @@ const SPELLED = new Map([['pi', 'Π']]);
 // Several words that run together in a description outrank one of them being some command's name: "square root" is √, not ROOT.
 const PHRASE_SCORE = 1500;
 
+// An ASCII alias (LIST->) is its arrow command (LIST→) typed on a keyboard without →, so it finds that row rather than adding its own.
 export function searchCommands(query, { names = [], entries = null, categories = {}, limit = 12 } = {}) {
-  const q = String(query ?? '').trim();
+  const q = String(query ?? '').trim().replace(/->/g, '→');
+  names = names.filter((n) => !n.includes('->'));
   const words = keywords(q);
   const stems = words.map(stem);
   const scores = new Map();

@@ -140,6 +140,8 @@ const REF = parseCommandReference(HTML);
   assert(top('factorial')[0] === 'FACT', 'searchCommands: "factorial" finds FACT');
   assert(top('pi')[0] === 'Π' && top('PI')[0] === 'Π',
          'searchCommands: "pi" finds π, which a phone keyboard cannot type (PICK, PICK3 and PICT came first)');
+  assert(top('arry').every((n) => !n.includes('->')) && top('arry').includes('ARRY→') && top('c->r')[0] === 'C→R' && top('->num')[0] === '→NUM',
+         'searchCommands: an ASCII alias is its arrow command, so "arry" lists ARRY→ and →ARRY once each and "c->r" finds C→R (both search lists showed ARRY-> and ->ARRY beside them)');
   assert(top('square root')[0] === '√' && top('natural logarithm')[0] === 'LN',
          'searchCommands: words that run together in a description outrank one of them as a name ("square root" gave ROOT, PROOT and XROOT, not √)');
   const rows = searchCommands('mean', opts);
