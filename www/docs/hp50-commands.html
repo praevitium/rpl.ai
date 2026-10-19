@@ -9885,6 +9885,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Make Calculated Value Command: Designates a variable as a calculated variable for the multiple- equation solver. MCALC designates a single variable, a list of variables, or all variables as calculated values.</p>
+  <p>In rpl.ai MROOT takes a calculated variable as unknown, and its key in the MSOLVR menu is unlit. Without Mpar, MCALC first makes it from EQ.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -10119,6 +10120,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Multiple-equation Menu Initialization Command. Creates the reserved variable Mpar, which includes the equations in EQ and the variables in these equations.</p>
+  <p>In rpl.ai Mpar is a list anyone can read or edit, { equations "title" { menu order } { user-defined variables } }, where the HP keeps library data. Its variables are the names the equations use, in order of first use, without π, e, i and ∞. EQ must hold a list of algebraics; programs are not taken.</p>
   </dd>
   <dt class="cmd-label cmd-label-see-also">See also</dt>
   <dd class="cmd-field cmd-field-see-also">
@@ -10179,6 +10181,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Multiple-equation Menu Item Order Command. Changes multiple equation menu titles and order. The argument list contains the variable names in the order you want. Use &quot;&quot; to indicate a blank label. You must include all variables in the original menu and no others.</p>
+  <p>In rpl.ai the title shows beside MES on the menu button while the solver's menu is up.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -10325,6 +10328,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Multiple Roots Command: Uses the multiple-equation solver to solve for one or more variables using the equations in EQ. Given a variable name, MROOT returns the found value; with &quot;ALL&quot; MROOT stores a found value for each variable but returns nothing.</p>
+  <p>In rpl.ai each pass solves, with ROOT from the variable's own value (or 1 when it has none), an equation left with one unknown, until the variable asked for is found; asking for a user-defined variable makes it calculated. Too Many Unknowns when no equation is left with a single unknown, and All Variables Known for "ALL" with nothing to solve.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -10401,6 +10405,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dd class="cmd-field cmd-field-description">
     <p>Multiple Equation Solver Command: Gets the multiple-equation solver variable menu for the set of equations defined by Mpar. The multiple-equation solver application can solve a set of two or more equations for unknown variables by finding the roots of each equation, one at a time. The Multiple-Equation Solver uses the list of equations stored in EQ. “Equations” in this context includes programs, expressions, and variable names that evaluate to a single value. The Multiple- Equation Solver requires that EQ contain more than one equation — that is, the HP Solve application would include the NXEQ menu label for EQ. The solver uses EQ to create a reserved</p>
     <p>variable Mpar that is used during the solution process. Mpar contains the equation set plus additional information. See appendix D, “Reserved Variables”, for information about Mpar.</p>
+  <p>In rpl.ai MSOLVR puts up a menu with a key per variable: the key stores level 1 in the variable and marks it user-defined, ↰ solves for it and ↱ recalls it, as the TVM menu's keys do; inside a program the key types the same as words. ALL solves for every variable not user-defined, and MUSER and MCALC follow. Without Mpar, MSOLVR first makes it from EQ; Mpar then stays as it is until MINIT.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -10450,6 +10455,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Make User-Defined Variable Command: Designates a variable as user-defined for the multiple- equation solver. MUSER designates a single variable, a list of variables, or all variables as user-defined.</p>
+  <p>In rpl.ai MROOT takes a user-defined variable as known, and its key in the MSOLVR menu is lit, as a mode key is when on; storing a value with the key marks it too. Without Mpar, MUSER first makes it from EQ.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">

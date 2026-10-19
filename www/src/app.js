@@ -43,6 +43,7 @@ import { beep, alarmBeep } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest } from './rpl/ops/time.js';
 import { _hp50TypeCode } from './rpl/ops/internal.js';
 import { displayDigitsArg } from './rpl/ops/display.js';
+import { mesMenu } from './rpl/ops/root.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
@@ -332,6 +333,7 @@ class App {
     if (this.menuKind === 'VARS') this.showVarsMenu({ preservePage: true });
     else if (this.menuKind === 'MODES') this.showModesMenu({ preservePage: true });
     else if (this.menuKind === 'CST') this.showCustomMenu({ refresh: true });
+    else if (this.menuKind === 'MES') this.showSolverMenu({ refresh: true });
     else this.menubar.render();
     this.display.renderStack(this.stack);
     this._watchAlarms();
@@ -1475,6 +1477,7 @@ class App {
     else if (id === 'MODES') this.showModesMenu();
     else if (id === 'BRCH') this.showBranchMenu();
     else if (id === 'BASE') this.showBaseMenu();
+    else if (id === 'MES') this.showSolverMenu();
     else if (id === 'VECTOR') this.setMenu(VECTOR_KEYS.map((key) => this._commandSlot(key)), 'VECTOR');
     else this._showFamilyMenu(id);
     if (remember) this.setPrefs({ menu: this.menuKind, recentMenus: [this.menuKind, ...this.prefs.recentMenus.filter((m) => m !== this.menuKind)] });
@@ -1591,7 +1594,7 @@ class App {
     const flagKeys = (family.flagKeys ?? []).map((key) => this._flagKey(...key));
     const lead = {
       UNITS: () => UNIT_GROUPS.map((group) => ({ label: group.id, dir: true, title: `${group.title}: ${group.units.length} units`, onPress: () => this._showUnitMenu(group) })),
-      TVM: () => TVM_VARIABLES.map((id) => this._tvmKey(id)),
+      TVM: () => TVM_VARIABLES.map((id) => this._solverKey(id, id === 'PYR' ? null : 'TVMROOT')),
       STAT: () => this._groupKeys(STAT_GROUPS, 'STAT'),
       CAS: () => this._groupKeys(CAS_GROUPS, 'CAS'),
       MATRIX: () => this._groupKeys(MATRIX_GROUPS, 'MATRIX'),
@@ -1651,32 +1654,31 @@ class App {
     if (group.commands.includes('MODSTO')) this.toast(`${modulusNote()}; MODSTO sets it.`, { key: 'modulus', transient: true });
   }
 
-  // The HP's solver menus: a TVM variable's key stores level 1 in it, ⇦ solves for it and ⇨ recalls it; inside a
-  // program it types the same as words.
-  _tvmKey(id) {
+  // The HP's solver menus: a variable's key stores level 1 in it, ⇦ solves for it with root and ⇨ recalls it; inside
+  // a program it types the same as words. The multiple-equation solver's keys also mark a stored variable known.
+  _solverKey(id, root, known = null) {
+    const named = () => Name(id, { quoted: true });
     const run = {
       store: () => {
         if (!this.stack.depth) { this.entry.flashError({ message: `${id} needs a value on level 1; the stack is empty.` }); return; }
         const value = this.stack.peek();
-        if (this.entry.safeRun(() => { this.entry._snapForUndo(); varStore(id, this.stack.pop()); }, 'STO')) this.undoToast(`${id}: ${format(value)}`);
+        const store = () => {
+          this.entry._snapForUndo();
+          if (known) { this.stack.push(named()); lookup(known).fn(this.stack); }
+          varStore(id, this.stack.pop());
+        };
+        if (this.entry.safeRun(store, 'STO')) this.undoToast(`${id}: ${format(value)}`);
       },
-      solve: () => {
-        this.entry._snapForUndo();
-        this.entry.safeRun(() => { this.stack.push(Name(id, { quoted: true })); this.stack.runOp(() => lookup('TVMROOT').fn(this.stack, this.entry)); }, 'TVMROOT');
-      },
+      solve: () => this._solverRoot(root, named()),
       recall: () => {
         const value = varRecall(id);
         if (value === undefined) this.entry.flashError({ message: `${id} has no value yet` });
         else this._pushValue(value);
       },
     };
-    const words = { store: 'STO', solve: 'TVMROOT', recall: 'RCL' };
-    const act = (kind) => () => {
-      if (inProgramEntry(this.entry.buffer.slice(0, this.entry.cursor))) { this.entry.typeToken(`\`${id}\` ${words[kind]} `); return; }
-      if (this.entry.buffer.trim()) { this.commitEntry(); if (this.entry.error) return; }
-      run[kind]();
-    };
-    const solve = id === 'PYR' ? null : act('solve');
+    const words = { store: known ? `STO \`${id}\` ${known}` : 'STO', solve: root, recall: 'RCL' };
+    const act = (kind) => this._solverAct(`\`${id}\` ${words[kind]}`, run[kind]);
+    const solve = root ? act('solve') : null;
     const choices = [
       { text: `Store level 1 in ${id}`, mark: '', run: act('store') },
       ...(solve ? [{ text: `Solve for ${id}`, mark: '⇦', run: solve }] : []),
@@ -1684,12 +1686,38 @@ class App {
     ];
     return {
       label: id,
-      title: `${id}: stores level 1 in it${solve ? ' · ↰ solves for it' : ''} · ↱ recalls it`,
+      title: `${id}: stores level 1 in it${known ? ' and marks it known' : ''}${solve ? ' · ↰ solves for it' : ''} · ↱ recalls it`,
       onPress: act('store'),
       onPressL: solve,
       onPressR: act('recall'),
       onHold: (anchor) => this._heldKeyMenu(choices, anchor, id),
     };
+  }
+
+  _solverAct(words, run) {
+    return () => {
+      if (inProgramEntry(this.entry.buffer.slice(0, this.entry.cursor))) { this.entry.typeToken(`${words} `); return; }
+      if (this.entry.buffer.trim()) { this.commitEntry(); if (this.entry.error) return; }
+      run();
+    };
+  }
+
+  _solverRoot(root, arg) {
+    this.entry._snapForUndo();
+    this.entry.safeRun(() => { this.stack.push(arg); this.stack.runOp(() => lookup(root).fn(this.stack, this.entry)); }, root);
+  }
+
+  // MSOLVR's menu: a key per variable of Mpar in its order, lit while the variable is known, then ALL, MUSER and MCALC.
+  showSolverMenu({ refresh = false } = {}) {
+    const mes = mesMenu();
+    if (!mes) {
+      this.setMenu([], 'MES', { preservePage: refresh });
+      if (!refresh) this.toast('No equations to solve. Store a list of equations in EQ and run MSOLVR.');
+      return;
+    }
+    const keys = mes.keys.map((id) => id && { ...this._solverKey(id, 'MROOT', 'MUSER'), toggle: true, on: () => !!mesMenu()?.known.has(id) });
+    const all = { label: 'ALL', title: 'Solve for every variable not marked known (MROOT)', onPress: this._solverAct('"ALL" MROOT', () => this._solverRoot('MROOT', Str('ALL'))) };
+    this.setMenu([...keys, all, this._commandSlot('MUSER'), this._commandSlot('MCALC')], 'MES', { preservePage: refresh, folder: mes.title || null });
   }
 
   _showUnitMenu(group) {

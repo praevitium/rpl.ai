@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.41 (2026-10-19)
+**Latest release:** v0.7.42 (2026-10-19)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.42 — 2026-10-19
+
+- The HP's multiple-equation solver arrives. With a list of equations in
+  EQ, MSOLVR puts up a menu with a key for each variable: the key stores
+  level 1 in it and marks it user-defined, ⇦ solves for it and ⇨ recalls
+  it, as the TVM keys do, and a user-defined variable's key is lit. ALL
+  solves for every other variable. MROOT solves one equation at a time,
+  each left with a single unknown, until it reaches the variable asked for:
+  with `{ 'V=V0+A*T' 'X=V0*T+A*T^2/2' }` in EQ and V0, A and X
+  user-defined, `'V' MROOT` finds T on the way to V. MUSER and MCALC mark
+  variables user-defined or calculated, MITM sets the menu's title and
+  order, and MINIT starts again from EQ.
+- Compatibility: Mpar is a list you can read and edit,
+  `{ equations "title" { menu order } { user-defined variables } }`, where
+  the HP keeps library data, and EQ must hold algebraics, not programs.
 
 ## v0.7.41 — 2026-10-19
 

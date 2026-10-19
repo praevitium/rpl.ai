@@ -128,10 +128,16 @@ RPL puts the numbers first and the operation last. Each value goes on the
   `{ T=-3 T=3 }`. Both solvers take a list of equations too and solve each
   one. `ROOT` finds a root numerically from a guess:
   `` `COS(X)=X` `X` 1 ROOT `` gives 0.739085133215 and stores it in X, and a
-  program can stand in for the expression. `COLLECT` factors over the
-  integers only, so `` `X^2-2` `` stays whole where FACTOR splits it with
-  √2. The where operator `|` (↱9) puts values in without the CAS and
-  simplifies nothing: `` `X^2+Y` { X 2 Y 3 } | `` gives `2^2+3`, which
+  program can stand in for the expression. With a list of equations in
+  EQ, `MSOLVR` puts up the HP's multiple-equation solver, a key for each
+  variable: the key stores level 1 in it and marks it known, ⇦ solves for
+  it and ⇨ recalls it. `MROOT` solves one equation at a time, each left
+  with a single unknown, so with `` { `V=V0+A*T` `X=V0*T+A*T^2/2` } `` in
+  EQ and V0, A and X known, `` `V` MROOT `` finds T on the way to V.
+  `COLLECT` factors over the integers only, so `` `X^2-2` `` stays whole
+  where FACTOR splits it with √2. The where operator `|` (↱9) puts values
+  in without the CAS and simplifies nothing:
+  `` `X^2+Y` { X 2 Y 3 } | `` gives `2^2+3`, which
   EVAL makes 7. The CAS menu opens on folders after the HP's CAS menus:
   ALG (COLLECT, EXPAND, FACTOR, LNCOLLECT, LIN, PARTFRAC, SOLVE, SUBST,
   TEXPAND), CALC, S.SLV, TRIG and EXP&LN. TRIGCOS, TRIGSIN and TRIGTAN

@@ -3,6 +3,7 @@ import { RPLError } from '../stack.js';
 import { setWordsize, getWordsize, getWordsizeMask, getBinaryBase, setBinaryBase, setTextbookMode, setDisplay, varStore, varRecall, inScratchState, setLcdLine, clearLcd, freezeLcd, LCD_LINES, testUserFlag } from '../state.js';
 import { format, currentDisplay } from '../formatter.js';
 import { register } from './registry.js';
+import { mesPrepare } from './root.js';
 
 
 let _menuHook = null;
@@ -72,6 +73,12 @@ Object.entries(MENU_COMMANDS).forEach(([name, target], i) => {
     if (!inScratchState()) _openHook?.(target);
   }, { category: 'Display / base', categoryOrder: 30 + i / 100, label: name });
 });
+
+// MSOLVR opens the multiple-equation solver's menu on Mpar, made from EQ when there is none.
+register('MSOLVR', () => {
+  mesPrepare();
+  if (!inScratchState()) _openHook?.({ family: 'MES' });
+}, { category: 'CAS / symbolic', categoryOrder: 10.76, label: 'MSOLVR' });
 
 let _editHook = null;
 

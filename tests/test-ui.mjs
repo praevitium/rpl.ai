@@ -348,9 +348,9 @@ import { assert, assertThrows } from './helpers.mjs';
     'touch: with key vibration on, a held finger buzzes once when it opens a level or soft-key menu, the whole-menu grid or the keypad key layers, starts a Variables drag or a writer selection, or clears the line');
   assert(/UNIT_GROUPS\.map\(\(group\) => \(\{ label: group\.id, dir: true,/.test(appSrc) && /\.pop \.grid button \{[^}]*overflow-wrap: anywhere;/.test(gridCss),
     'menus: the UNITS menu\'s group keys wear the folder tab, as submenu keys do on the HP, and a long name in the whole-menu grid wraps inside its key as it does on a narrow soft key');
-  assert(/const TVM_VARIABLES = \['N', 'I%YR', 'PV', 'PMT', 'FV', 'PYR'\];/.test(appSrc) && /TVM: \(\) => TVM_VARIABLES\.map\(\(id\) => this\._tvmKey\(id\)\),/.test(appSrc)
-    && /onPress: act\('store'\),\s*onPressL: solve,\s*onPressR: act\('recall'\),/.test(appSrc) && /const solve = id === 'PYR' \? null : act\('solve'\);/.test(appSrc)
-    && /if \(inProgramEntry\(this\.entry\.buffer\.slice\(0, this\.entry\.cursor\)\)\) \{ this\.entry\.typeToken\(`\\`\$\{id\}\\` \$\{words\[kind\]\} `\); return; \}/.test(appSrc),
+  assert(/const TVM_VARIABLES = \['N', 'I%YR', 'PV', 'PMT', 'FV', 'PYR'\];/.test(appSrc) && /TVM: \(\) => TVM_VARIABLES\.map\(\(id\) => this\._solverKey\(id, id === 'PYR' \? null : 'TVMROOT'\)\),/.test(appSrc)
+    && /onPress: act\('store'\),\s*onPressL: solve,\s*onPressR: act\('recall'\),/.test(appSrc) && /const solve = root \? act\('solve'\) : null;/.test(appSrc)
+    && /if \(inProgramEntry\(this\.entry\.buffer\.slice\(0, this\.entry\.cursor\)\)\) \{ this\.entry\.typeToken\(`\$\{words\} `\); return; \}/.test(appSrc),
     'TVM menu: each variable\'s key stores level 1 in it, ⇦ solves for it (PYR has no solve) and ⇨ recalls it, as the HP\'s solver menus do; inside a program it types the words instead');
   const statNames = allOps().filter((n) => lookup(n).category === 'Statistics');
   const inFolders = STAT_GROUPS.flatMap((g) => g.commands);

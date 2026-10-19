@@ -1,6 +1,7 @@
 import { Stack } from '../www/src/rpl/stack.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import { recallVar } from '../www/src/rpl/ops/internal.js';
+import { format } from '../www/src/rpl/formatter.js';
 import { assert, assertThrows, runLine } from './helpers.mjs';
 
 const near = (a, b, eps = 1e-9) => Math.abs(a - b) < eps;
@@ -75,4 +76,41 @@ const top = (s) => Number(s.peek().value);
     'RSBERR gives the change over one step and its error, leaving T and Y');
   assertThrows(() => runLine('{ T Y F FY } .1 RSBERR'), /Bad argument type/, 'RSBERR wants five items in its list');
   ['T', 'Y', 'F', 'FY', 'FT'].forEach((n) => runLine(`'${n}' PURGE`));
+}
+
+// The multiple-equation solver: MINIT reads EQ into Mpar, MUSER marks the known variables, and MROOT solves an
+// equation at a time, each left with one unknown, until it reaches the one asked for.
+{
+  const value = (name) => Number(recallVar(name).value);
+  const mpar = () => format(recallVar('Mpar'));
+  runLine("{ 'V=V0+A*T' 'X=V0*T+A*T^2/2' } STEQ MINIT");
+  assert(mpar() === '{ { `V = V0 + A*T` `X = V0*T + A*T^2/2` } "" { V V0 A T X } {  } }',
+    `MINIT puts EQ's equations and their variables, in order of first use, in Mpar (${mpar()})`);
+  runLine("0 'V0' STO 2 'A' STO 10 'X' STO { V0 A X } MUSER");
+  let s = runLine("'V' MROOT");
+  assert(s.depth === 1 && near(top(s), Math.sqrt(40)) && near(value('T'), Math.sqrt(10)),
+    `MROOT solves X's equation for T, then V's for V (${top(s)}, T ${value('T')})`);
+  s = runLine("3 'X' STO 'X' MUSER \"ALL\" MROOT");
+  assert(s.depth === 0 && near(value('T'), Math.sqrt(3)) && near(value('V'), 2 * Math.sqrt(3)), 'MROOT "ALL" stores every unknown and returns nothing');
+  runLine("'A' MCALC 4 'T' STO 'T' MUSER");
+  s = runLine("'A' MROOT");
+  assert(near(top(s), 0.375) && mpar().endsWith('{ V0 T X } }'), `MCALC makes A an unknown again for MROOT (${top(s)}, ${mpar()})`);
+  s = runLine("'A' MUSER 'X' MROOT");
+  assert(near(top(s), 3) && mpar().endsWith('{ V0 A T } }'), 'MROOT solves a known variable when asked for it, and it is no longer known');
+  runLine("\"Motion\" { T \"\" V X V0 A } MITM");
+  assert(mpar().includes('"Motion" { T "" V X V0 A }'), 'MITM sets the menu title and order, "" for a blank key');
+  assertThrows(() => runLine('"M" { T V } MITM'), /MITM: Bad argument value/, 'MITM wants every variable of the menu and no other');
+  assertThrows(() => runLine('"ALL" MUSER "ALL" MROOT'), /MROOT: All Variables Known/, 'MROOT "ALL" with every variable known');
+  assertThrows(() => runLine('"ALL" MCALC "ALL" MROOT'), /MROOT: Too Many Unknowns/, 'no equation left with a single unknown');
+  assertThrows(() => runLine("'Q' MUSER"), /MUSER: Bad argument value/, 'MUSER wants a variable of Mpar');
+  assertThrows(() => runLine('5 MCALC'), /MCALC: Bad argument type/, 'MCALC wants a name, a list or "ALL"');
+  assertThrows(() => runLine('{ V } MROOT'), /MROOT: Bad argument type/, 'MROOT wants a name or "ALL"');
+  runLine("{ 'A=B' } STEQ");
+  assert(mpar().includes('"Motion"'), 'Mpar stays as it is when EQ changes, until MINIT');
+  assertThrows(() => runLine('MINIT'), /MINIT: Single Equation/, 'MINIT wants more than one equation');
+  assertThrows(() => runLine("'A' STEQ MINIT"), /MINIT: EQ Invalid for MINIT/, 'MINIT wants a list of equations in EQ');
+  runLine("{ 'P*V=N*R*T' 'N=M/W' } STEQ 'Mpar' PURGE 8.314 'R' STO 300 'T' STO 1 'V' STO 32 'W' STO 64 'M' STO { R T V W M } MUSER");
+  s = runLine("'P' MROOT");
+  assert(near(top(s), 2 * 8.314 * 300, 1e-6), `without Mpar, MUSER makes it from EQ first (${top(s)})`);
+  runLine("{ V V0 A T X P N R W M EQ Mpar } PURGE");
 }

@@ -1,6 +1,6 @@
 import { RPLError, checkTimeLimit } from '../stack.js';
-import { Real, Symbolic, isReal, isInteger, isList, isName, isSymbolic, isProgram } from '../types.js';
-import { Bin } from '../algebra.js';
+import { Real, Symbolic, Name, Str, RList, isReal, isInteger, isList, isName, isString, isSymbolic, isProgram } from '../types.js';
+import { Bin, freeVars } from '../algebra.js';
 import { register, lookup } from './registry.js';
 import { storeVar, recallVar } from './internal.js';
 
@@ -87,6 +87,138 @@ register('ROOT', (s) => {
   storeVar(name.id, Real(root));
   s.push(Real(root));
 }, { category: 'CAS / symbolic', categoryOrder: 10.7, label: 'ROOT' });
+
+// The multiple-equation solver keeps its state in Mpar as a list anyone can read: { equations "title" { menu order,
+// "" for a blank key } { known variables } }. The HP's Mpar is opaque library data.
+const MES_CONSTANTS = new Set(['π', 'e', 'i', '∞']);
+
+function mesNames(eq) {
+  return [...freeVars(eq.expr)].filter((name) => !MES_CONSTANTS.has(name));
+}
+
+function mesFromEq(cmd) {
+  const eq = recallVar('EQ');
+  if (eq === undefined) throw new RPLError('Undefined name: EQ');
+  if (!isList(eq) || !eq.items.every(isSymbolic)) throw new RPLError(`${cmd}: EQ Invalid for MINIT`);
+  if (eq.items.length < 2) throw new RPLError(`${cmd}: Single Equation`);
+  const items = [...new Set(eq.items.flatMap(mesNames))].map((id) => Name(id));
+  return { eqs: eq.items, title: '', items, known: [] };
+}
+
+function mesRead(cmd) {
+  const mpar = recallVar('Mpar');
+  if (mpar === undefined) return null;
+  const [eqs, title, items, known] = isList(mpar) ? mpar.items : [];
+  const valid = isList(eqs) && eqs.items.every(isSymbolic) && isString(title) && isList(items)
+    && items.items.every((v) => isName(v) || (isString(v) && !v.value)) && isList(known) && known.items.every(isName);
+  if (!valid || mpar.items.length !== 4) throw new RPLError(`${cmd}: Invalid Mpar`);
+  return { eqs: eqs.items, title: title.value, items: items.items, known: known.items.map((n) => n.id) };
+}
+
+// Mpar stays as it is until MINIT starts again from EQ; without one, the commands make it from EQ first.
+function mesState(cmd) {
+  return mesRead(cmd) ?? mesWrite(mesFromEq(cmd));
+}
+
+function mesWrite(mes) {
+  storeVar('Mpar', RList([RList(mes.eqs), Str(mes.title), RList(mes.items), RList(mes.known.map((id) => Name(id)))]));
+  return mes;
+}
+
+export function mesPrepare() {
+  mesState('MSOLVR');
+}
+
+const mesVars = (mes) => mes.items.filter(isName).map((n) => n.id);
+
+// The solver's menu: its title, keys in order (null for a blank) and which are known; null without Mpar.
+export function mesMenu() {
+  try {
+    const mes = mesRead('MSOLVR');
+    return mes && { title: mes.title, keys: mes.items.map((v) => (isName(v) ? v.id : null)), known: new Set(mes.known) };
+  } catch {
+    return null;
+  }
+}
+
+function mesTargets(arg, mes, cmd) {
+  const vars = mesVars(mes);
+  let ids;
+  if (isString(arg) && arg.value.toUpperCase() === 'ALL') ids = vars;
+  else if (isName(arg)) ids = [arg.id];
+  else if (isList(arg) && arg.items.every(isName)) ids = arg.items.map((n) => n.id);
+  else throw new RPLError(`${cmd}: Bad argument type`);
+  if (!ids.every((id) => vars.includes(id))) throw new RPLError(`${cmd}: Bad argument value`);
+  return ids;
+}
+
+register('MINIT', () => {
+  mesWrite(mesFromEq('MINIT'));
+}, { category: 'CAS / symbolic', categoryOrder: 10.71, label: 'MINIT' });
+
+register('MITM', (s) => {
+  const [title, list] = s.popN(2);
+  if (!isString(title) || !isList(list)) throw new RPLError('MITM: Bad argument type');
+  const mes = mesState('MITM');
+  const names = list.items.filter((v) => !(isString(v) && !v.value));
+  const ids = names.map((n) => (isName(n) ? n.id : null));
+  const vars = mesVars(mes);
+  if (ids.length !== vars.length || new Set(ids).size !== ids.length || !ids.every((id) => vars.includes(id))) throw new RPLError('MITM: Bad argument value');
+  mesWrite({ ...mes, title: title.value, items: list.items.map((v) => (isName(v) ? Name(v.id) : v)) });
+}, { category: 'CAS / symbolic', categoryOrder: 10.72, label: 'MITM' });
+
+function markKnown(cmd, known) {
+  return (s) => {
+    const [arg] = s.popN(1);
+    const mes = mesState(cmd);
+    const ids = new Set(mesTargets(arg, mes, cmd));
+    const marked = mesVars(mes).filter((id) => (ids.has(id) ? known : mes.known.includes(id)));
+    mesWrite({ ...mes, known: marked });
+  };
+}
+
+register('MUSER', markKnown('MUSER', true), { category: 'CAS / symbolic', categoryOrder: 10.73, label: 'MUSER' });
+register('MCALC', markKnown('MCALC', false), { category: 'CAS / symbolic', categoryOrder: 10.74, label: 'MCALC' });
+
+// Each pass solves, by ROOT from the variable's own value, an equation left with one unknown; the known variables are
+// those marked user-defined, and the one asked for is solved even if it was marked.
+function mesSolveFor(s, eq, id, cmd) {
+  for (const other of mesNames(eq)) {
+    if (other !== id && recallVar(other) === undefined) throw new RPLError(`${cmd}: Undefined Name ${other}`);
+  }
+  const guess = recallVar(id);
+  s.push(eq);
+  s.push(Name(id, { quoted: true }));
+  s.push(isReal(guess) || isInteger(guess) ? guess : Real(1));
+  try {
+    lookup('ROOT').fn(s);
+  } catch (e) {
+    throw new RPLError(e.message.replace(/^ROOT:/, `${cmd}:`));
+  }
+  return s.pop();
+}
+
+register('MROOT', (s) => {
+  const [arg] = s.popN(1);
+  const mes = mesState('MROOT');
+  const all = isString(arg) && arg.value.toUpperCase() === 'ALL';
+  if (!all && !isName(arg)) throw new RPLError('MROOT: Bad argument type');
+  const [target] = all ? [null] : mesTargets(arg, mes, 'MROOT');
+  const known = mes.known.filter((id) => id !== target);
+  const unknown = new Set(mesVars(mes).filter((id) => !known.includes(id)));
+  if (!unknown.size) throw new RPLError('MROOT: All Variables Known');
+  let found = null;
+  while (target ? unknown.has(target) : unknown.size) {
+    checkTimeLimit();
+    const step = mes.eqs.map((eq) => [eq, mesNames(eq).filter((id) => unknown.has(id))]).find(([, ids]) => ids.length === 1);
+    if (!step) throw new RPLError('MROOT: Too Many Unknowns');
+    const [eq, [id]] = step;
+    found = mesSolveFor(s, eq, id, 'MROOT');
+    unknown.delete(id);
+  }
+  if (known.length !== mes.known.length) mesWrite({ ...mes, known });
+  if (target) s.push(found);
+}, { category: 'CAS / symbolic', categoryOrder: 10.75, label: 'MROOT' });
 
 // RKF, RKFSTEP and RKFERR solve y' = f(t,y) by Runge–Kutta–Fehlberg 4(5). As on the HP, t and y live in their
 // variables and f is evaluated numerically with them stored; a step's error is |y5 - y4|, and y moves by the
