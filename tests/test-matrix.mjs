@@ -7,6 +7,7 @@ import {
   isString, isMatrix, isVector, isList, isSymbolic,
 } from '../www/src/rpl/types.js';
 import { parseEntry } from '../www/src/rpl/parser.js';
+import { giac } from '../www/src/rpl/cas/giac-engine.mjs';
 import { format, formatStackTop } from '../www/src/rpl/formatter.js';
 import { formatAlgebra } from '../www/src/rpl/algebra.js';
 import {
@@ -555,10 +556,13 @@ function stat(op, s) {
     assertThrows(() => lookup('INV').fn(s), /dimension/i, 'INV non-square throws Invalid dimension');
   }
   {
-    // Symbolic entry → Bad argument type (explicit scope limit).
+    giac._setFixtures({ 'inv([[a,1],[2,b]])': '[[b/(a*b-2),-1/(a*b-2)],[-2/(a*b-2),a/(a*b-2)]]' });
     const s = new Stack();
     s.push(Matrix([[Name('a'), Real(1)], [Real(2), Name('b')]]));
-    assertThrows(() => lookup('INV').fn(s), /Bad argument/, 'INV on symbolic-entry matrix throws Bad argument type');
+    lookup('INV').fn(s);
+    assert(format(s.peek()) === '[[ `b/(a*b - 2)` `(-1)/(a*b - 2)` ][ `(-2)/(a*b - 2)` `a/(a*b - 2)` ]]',
+      `INV inverts a symbolic-entry matrix exactly through Giac (got ${format(s.peek())})`);
+    giac._clear();
   }
 
   {
@@ -3887,4 +3891,42 @@ function _approxMatEqual(A, B, tol) {
   }
   assert(runLine('[[1][2][3][4]] FFT').peek().rows.length === 4, 'FFT of a column gives a column');
   assertThrows(() => runLine('[ 1 2 3 ] FFT'), /Invalid dimension/, 'FFT needs a power-of-two length');
+}
+
+// Symbolic matrices: products and sums leave out 1* and +0, and the linear algebra goes through Giac.
+{
+  const top = (src) => format(runLine(src).peek());
+  assert(top('[[ X 1 ][ 2 Y ]] [[ A B ][ C D ]] *') === '[[ `X*A + C` `X*B + D` ][ `2*A + Y*C` `2*B + Y*D` ]]',
+    `* of symbolic matrices writes C, not 1*C (got ${top('[[ X 1 ][ 2 Y ]] [[ A B ][ C D ]] *')})`);
+  assert(top('[[ X 0 ][ 0 Y ]] [ 1 1 ] *') === '[ X Y ]', '* of a symbolic matrix and vector drops 0 and 1 terms');
+  assert(top('[[ X 0 ][ 0 Y ]] DET') === '`X*Y`', 'DET of a symbolic diagonal matrix is X*Y, not X*Y-0');
+  assert(top('[ X Y ] [ 1 0 ] DOT') === 'X', 'DOT drops the zero term and the factor 1');
+  assert(top('[[ X 1 ]] [[ 0 Y ]] +') === '[[ X `1 + Y` ]]', '+ of symbolic matrices drops +0');
+  assert(top('[ X 3 ] ABS') === '`SQRT(X^2 + 9)`', `ABS of a symbolic vector is its Frobenius norm (got ${top('[ X 3 ] ABS')})`);
+  assert(top('[ 3 4 ] ABS') === '5.', 'ABS of a numeric vector stays a real');
+
+  giac._setFixtures({
+    'normal(inv([[X,1],[2,Y]])*[3,4])': '[(3*Y-4)/(X*Y-2),(4*X-6)/(X*Y-2)]',
+    'rref([[A,B,1],[C,D,2]])': '[[1,0,(-2*B+D)/(A*D-B*C)],[0,1,(2*A-C)/(A*D-B*C)]]',
+    'rank([[A,B],[(2*A),(2*B)]])': '1',
+    'normal([lu([[X,1],[2,Y]])])': '[[1,0],[[1,0],[1/2*X,1]],[[2,Y],[0,-1/2*X*Y+1]]]',
+    'inv([[X,X],[1,1]])': 'GIAC_ERROR: Not invertible Error: Bad Argument Value',
+    'charpoly([[A,B],[C,D]])': '[1,-A-D,A*D-B*C]',
+    'charpoly([[A,1],[1,A]])': '[1,-2*A,A^2-1]',
+  });
+  assert(top('[ 3 4 ] [[ X 1 ][ 2 Y ]] /') === '[ `(3*Y - 4)/(X*Y - 2)` `(4*X - 6)/(X*Y - 2)` ]',
+    `/ solves a symbolic system exactly (got ${top('[ 3 4 ] [[ X 1 ][ 2 Y ]] /')})`);
+  assertThrows(() => runLine('[ 3 4 5 ] [[ X 1 ][ 2 Y ]] /'), /Invalid dimension/, '/ checks a symbolic system\'s shape');
+  assert(top('[[ A B 1 ][ C D 2 ]] RREF') === '[[ 1 0 `((-2)*B + D)/(A*D - B*C)` ][ 0 1 `(2*A - C)/(A*D - B*C)` ]]',
+    'RREF reduces a symbolic matrix through Giac');
+  const rank = runLine('[[ A B ][ \'2*A\' \'2*B\' ]] RANK').peek();
+  assert(isInteger(rank) && rank.value === 1n, 'RANK of a symbolic matrix is exact');
+  const lu = runLine('[[ X 1 ][ 2 Y ]] LU');
+  assert(lu.depth === 3 && format(lu.peek(1)) === '[[ 0 1 ][ 1 0 ]]' && format(lu.peek(3)) === '[[ 1 0 ][ `1/2*X` 1 ]]',
+    `LU of a symbolic matrix gives L, U and the permutation P (got ${lu.snapshot().map((v) => format(v)).join(' | ')})`);
+  assertThrows(() => runLine('[[ X X ][ 1 1 ]] INV'), /Infinite result/, 'INV of a singular symbolic matrix is an Infinite result');
+  assert(top('[[ A B ][ C D ]] CHARPOL') === '`x^2 - (A + D)*x + A*D - B*C`',
+    `CHARPOL of a symbolic matrix is a polynomial in VX (got ${top('[[ A B ][ C D ]] CHARPOL')})`);
+  assert(top('[[ A 1 ][ 1 A ]] PCAR') === '`x^2 - 2*A*x + A^2 - 1`', `PCAR writes Giac's coefficients in VX (got ${top('[[ A 1 ][ 1 A ]] PCAR')})`);
+  giac._clear();
 }

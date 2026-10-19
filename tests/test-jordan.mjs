@@ -2,7 +2,8 @@ import { giac } from '../www/src/rpl/cas/giac-engine.mjs';
 import { lookup } from '../www/src/rpl/ops.js';
 import { Stack } from '../www/src/rpl/stack.js';
 import { setCasVx, resetCasVx } from '../www/src/rpl/state.js';
-import { Integer, Matrix, isList, isVector, isSymbolic, isTagged, isReal } from '../www/src/rpl/types.js';
+import { Integer, Matrix, Name, isList, isVector, isSymbolic, isTagged, isReal } from '../www/src/rpl/types.js';
+import { format } from '../www/src/rpl/formatter.js';
 import { assert, assertThrows } from './helpers.mjs';
 
 function square(rows) {
@@ -119,5 +120,22 @@ function done() {
   s.push(square([[1n, 0n], [0n, 1n]]));
   assertThrows(() => lookup('JORDAN').fn(s), /Bad argument value/,
     'JORDAN: a non-pair from jordan is rejected');
+  done();
+}
+
+{
+  setCasVx('x');
+  giac._clear();
+  giac._setFixtures({
+    'jordan([[A,B],[B,A]])': '[[1,-1],[1,1]],[[A+B,0],[0,A-B]]',
+    'charpoly([[A,B],[B,A]])': '[1,-2*A,A^2-B^2]',
+    'normal(pcoeff([(A+B),(A-B)]))': 'poly1[1,-2*A,A^2-B^2]',
+  });
+  const s = new Stack();
+  s.push(Matrix([[Name('A'), Name('B')], [Name('B'), Name('A')]]));
+  lookup('JORDAN').fn(s);
+  assert(s.depth === 4 && format(s.peek(4)) === '`x^2 - 2*A*x + A^2 - B^2`' && format(s.peek(3)) === '`x^2 - 2*A*x + A^2 - B^2`',
+    `JORDAN: a symbolic matrix's polynomials come out in VX (got ${format(s.peek(4))}, ${format(s.peek(3))})`);
+  assert(format(s.peek(1)) === '[ `A + B` `A - B` ]', `JORDAN: symbolic eigenvalues (got ${format(s.peek(1))})`);
   done();
 }

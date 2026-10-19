@@ -1,6 +1,6 @@
 import { isVector, RList, Real, isMatrix, isString, Integer, isList, isProgram, Matrix, Vector, isInteger, isReal, isComplex, Complex, isRational, isSymbolic, isUnit, isGrob, Symbolic } from '../types.js';
 import { RPLError, checkTimeLimit } from '../stack.js';
-import { astSize } from '../algebra.js';
+import { astSize, Bin as AstBin, Neg as AstNeg, Num as AstNum, Var as AstVar } from '../algebra.js';
 import { unitSize } from '../units.js';
 import { nextPrngInt9, getCasVx } from '../state.js';
 import { giac } from '../cas/giac-engine.mjs';
@@ -8,7 +8,7 @@ import { giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
 import { charSpaceList, eigenvalueArray, spacesFromJordan } from '../jordan-format.js';
 import { register, OPS } from './registry.js';
 import { isPict, grobSize } from './graphics.js';
-import { _numVal, _astToRplValue, _coefArrToSymbolicX, _colCompose, _colDecompose, _decimalFrobeniusNorm, _fromArrayOp, _fromVecOp, _indexAsInt, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _matrixToGiacStr, _nFromIntegerArg, _popSquareMatrix, _rowCompose, _rowDecompose, _scalarBinary, _scalarSum, _toArrayOp, _toV2Op, _toV3Op } from './internal.js';
+import { _numVal, _astToRplValue, _coefArrToSymbolicX, _colCompose, _colDecompose, _decimalFrobeniusNorm, _fromArrayOp, _fromVecOp, _casArray, _hasSymEntry, _indexAsInt, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _matrixToGiacStr, _nFromIntegerArg, _popSquareMatrix, _rowCompose, _rowDecompose, _scalarBinary, _scalarSum, _scalarToGiacStr, _tidyBinary, _toArrayOp, _toV2Op, _toV3Op } from './internal.js';
 
 
 
@@ -86,22 +86,22 @@ register('TRN', _transposeOp(true), { category: 'Vectors / matrices', categoryOr
 register('TRAN', _transposeOp(false), { category: 'Vectors / matrices', categoryOrder: 1.5, label: "TRAN" });
 
 
-// Cofactor expansion through _scalarBinary, so Integer and Symbolic entries stay exact.
+// Cofactor expansion through _tidyBinary, so Integer and Symbolic entries stay exact.
 function _detCofactor(rows) {
   checkTimeLimit();
   const n = rows.length;
   if (n === 1) return rows[0][0];
   if (n === 2) {
-    const ad = _scalarBinary('*', rows[0][0], rows[1][1]);
-    const bc = _scalarBinary('*', rows[0][1], rows[1][0]);
-    return _scalarBinary('-', ad, bc);
+    const ad = _tidyBinary('*', rows[0][0], rows[1][1]);
+    const bc = _tidyBinary('*', rows[0][1], rows[1][0]);
+    return _tidyBinary('-', ad, bc);
   }
   let det = null;
   for (let j = 0; j < n; j++) {
     const minor = rows.slice(1).map(row => row.filter((_, k) => k !== j));
     const cof = _detCofactor(minor);
-    const term = _scalarBinary('*', rows[0][j], cof);
-    det = (det === null) ? term : _scalarBinary((j & 1) === 1 ? '-' : '+', det, term);
+    const term = _tidyBinary('*', rows[0][j], cof);
+    det = (det === null) ? term : _tidyBinary((j & 1) === 1 ? '-' : '+', det, term);
   }
   return det;
 }
@@ -185,7 +185,7 @@ register('DOT', (s) => {
   const [a, b] = s.popN(2);
   if (!isVector(a) || !isVector(b)) throw new RPLError('Bad argument type');
   if (a.items.length !== b.items.length) throw new RPLError('Invalid dimension');
-  const parts = a.items.map((x, i) => _scalarBinary('*', x, b.items[i]));
+  const parts = a.items.map((x, i) => _tidyBinary('*', x, b.items[i]));
   s.push(_scalarSum(parts));
 }, { category: 'Vectors / matrices', categoryOrder: 9, label: "DOT" });
 
@@ -202,15 +202,15 @@ register('CROSS', (s) => {
   if (!isVector(a) || !isVector(b)) throw new RPLError('Bad argument type');
   const [a0, a1, a2] = _crossOperand(a);
   const [b0, b1, b2] = _crossOperand(b);
-  const c0 = _scalarBinary('-',
-    _scalarBinary('*', a1, b2),
-    _scalarBinary('*', a2, b1));
-  const c1 = _scalarBinary('-',
-    _scalarBinary('*', a2, b0),
-    _scalarBinary('*', a0, b2));
-  const c2 = _scalarBinary('-',
-    _scalarBinary('*', a0, b1),
-    _scalarBinary('*', a1, b0));
+  const c0 = _tidyBinary('-',
+    _tidyBinary('*', a1, b2),
+    _tidyBinary('*', a2, b1));
+  const c1 = _tidyBinary('-',
+    _tidyBinary('*', a2, b0),
+    _tidyBinary('*', a0, b2));
+  const c2 = _tidyBinary('-',
+    _tidyBinary('*', a0, b1),
+    _tidyBinary('*', a1, b0));
   s.push(Vector([c0, c1, c2]));
 }, { category: 'Vectors / matrices', categoryOrder: 10, label: "CROSS" });
 
@@ -298,14 +298,23 @@ function _rowEchelon(rows, clearAbove) {
 register('RREF', (s) => {
   const [v] = s.popN(1);
   if (!isMatrix(v)) throw new RPLError('Bad argument type');
+  if (_hasSymEntry(v.rows.flat())) { s.push(_casArray(`rref(${_matrixToGiacStr(v)})`)); return; }
   s.push(_realMatrix(_rowEchelon(v.rows, true)));
 }, { category: 'Vectors / matrices', categoryOrder: 17, label: "RREF" });
 
+
+function _casRank(m) {
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const raw = giac.caseval(`rank(${_matrixToGiacStr(m)})`);
+  if (!/^\d+$/.test(raw)) throw new RPLError('Bad argument value');
+  return Integer(BigInt(raw));
+}
 
 // A tolerance rather than exact zero: row operations leave floating-point residue.
 register('RANK', (s) => {
   const [v] = s.popN(1);
   if (!isMatrix(v)) throw new RPLError('Bad argument type');
+  if (_hasSymEntry(v.rows.flat())) { s.push(_casRank(v)); return; }
   const rank = _rowEchelon(v.rows, true).filter(row => row.some(x => Math.abs(x) > 1e-10)).length;
   s.push(Integer(BigInt(rank)));
 }, { category: 'Vectors / matrices', categoryOrder: 8, label: "RANK" });
@@ -804,6 +813,17 @@ register('HILBERT', (s) => {
 }, { category: 'Vectors / matrices', categoryOrder: 43, label: "HILBERT" });
 
 
+// Giac answers [p, L, U] with P·A = L·U, P's row i holding its 1 in column p[i].
+function _casLU(A) {
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const [perm, L, U] = splitGiacList(giac.caseval(`normal([lu(${_matrixToGiacStr(A)})])`)) ?? [];
+  const p = splitGiacList(perm ?? '');
+  const lower = giacMatrixRows(L ?? ''), upper = giacMatrixRows(U ?? '');
+  if (!p || !lower || !upper) throw new RPLError('Bad argument value');
+  const P = p.map((col) => p.map((_, j) => Integer(BigInt(Number(col) === j))));
+  return [Matrix(lower), Matrix(upper), Matrix(P)];
+}
+
 // piv[i] is the row of A that lands in row i of P·A.
 register('LU', (s) => {
   const [A] = s.popN(1);
@@ -812,6 +832,7 @@ register('LU', (s) => {
   if (n === 0 || A.rows[0].length !== n) {
     throw new RPLError('Invalid dimension');
   }
+  if (_hasSymEntry(A.rows.flat())) { _casLU(A).forEach((m) => s.push(m)); return; }
   const M = _asNumArray2D(A.rows);
   const piv = new Array(n);
   for (let i = 0; i < n; i++) piv[i] = i;
@@ -1129,13 +1150,66 @@ register('AXM', (s) => {
 }, { category: 'Vectors / matrices', categoryOrder: 45, label: "AXM" });
 
 
+// [negative, magnitude] for one term: -2*A is [true, 2*A].
+function _unsigned(ast) {
+  if (ast.kind === 'neg') {
+    const [negative, inner] = _unsigned(ast.arg);
+    return [!negative, inner];
+  }
+  if (ast.kind === 'bin' && (ast.op === '*' || ast.op === '/')) {
+    const [negative, lead] = _unsigned(ast.l);
+    return [negative, negative ? AstBin(ast.op, lead, ast.r) : ast];
+  }
+  return [false, ast];
+}
+
+function _signedTerms(ast, negative = false) {
+  if (ast.kind === 'bin' && (ast.op === '+' || ast.op === '-')) {
+    return [..._signedTerms(ast.l, negative), ..._signedTerms(ast.r, ast.op === '-' ? !negative : negative)];
+  }
+  const [flip, term] = _unsigned(ast);
+  return [[flip !== negative, term]];
+}
+
+const _isZeroNum = (ast) => ast.kind === 'num' && ast.value === 0;
+
+function _sumOf(terms) {
+  let acc = null;
+  for (const [negative, term] of terms) {
+    if (_isZeroNum(term)) continue;
+    acc = acc === null ? (negative ? AstNeg(term) : term) : AstBin(negative ? '-' : '+', acc, term);
+  }
+  return acc ?? AstNum(0);
+}
+
+// A symbolic matrix's polynomial comes from Giac as coefficients; this writes it in VX, highest power first.
+function _polyInVx(raw, vx) {
+  const coefs = splitGiacList(raw);
+  if (!coefs) return Symbolic(giacToAst(raw));
+  const terms = [];
+  coefs.forEach((text, i) => {
+    const k = coefs.length - 1 - i;
+    const parts = _signedTerms(giacToAst(text));
+    if (k === 0) { terms.push(...parts); return; }
+    const power = k === 1 ? AstVar(vx) : AstBin('^', AstVar(vx), AstNum(k));
+    const negative = parts.every(([neg]) => neg);
+    const c = _sumOf(parts.map(([neg, term]) => [neg !== negative, term]));
+    if (_isZeroNum(c)) return;
+    terms.push([negative, c.kind === 'num' && c.value === 1 && !c.real ? power : AstBin('*', c, power)]);
+  });
+  return _astToRplValue(_sumOf(terms));
+}
+
+function _matrixPoly(cmd, matrix, vx) {
+  const matStr = _matrixToGiacStr(matrix);
+  if (_hasSymEntry(matrix.rows.flat())) return _polyInVx(giac.caseval(`${cmd}(${matStr})`), vx);
+  return Symbolic(giacToAst(giac.caseval(`${cmd}(${matStr},${vx})`)));
+}
+
 register('PCAR', (s) => {
   const { matrix } = _popSquareMatrix(s);
   if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const vx = getCasVx();
-  const matStr = _matrixToGiacStr(matrix);
-  const cmd = `charpoly(${matStr},${vx})`;
-  s.push(Symbolic(giacToAst(giac.caseval(cmd))));
+  s.push(_matrixPoly('charpoly', matrix, getCasVx()));
 }, { category: 'Vectors / matrices', categoryOrder: 46, label: "PCAR" });
 
 
@@ -1232,15 +1306,15 @@ register('JORDAN', (s) => {
   const { matrix } = _popSquareMatrix(s);
   if (!giac.isReady()) throw new RPLError('CAS not ready');
   const vx = getCasVx();
-  const matStr = _matrixToGiacStr(matrix);
-  const pmin = Symbolic(giacToAst(giac.caseval(`pmin(${matStr},${vx})`)));
-  const pcar = Symbolic(giacToAst(giac.caseval(`charpoly(${matStr},${vx})`)));
-  const factors = jordanFactors(giac.caseval(`jordan(${matStr})`));
+  const factors = jordanFactors(giac.caseval(`jordan(${_matrixToGiacStr(matrix)})`));
   if (!factors) throw new RPLError('Bad argument value');
   const built = spacesFromJordan(factors.transition, factors.form);
   if (!built) throw new RPLError('Bad argument value');
-  s.push(pmin);
-  s.push(pcar);
+  // Giac's pmin of a symbolic matrix can be wrong, so its roots come from the Jordan blocks.
+  s.push(_hasSymEntry(matrix.rows.flat())
+    ? _polyInVx(giac.caseval(`normal(pcoeff([${built.minimalRoots.map(_scalarToGiacStr).join(',')}]))`), vx)
+    : _matrixPoly('pmin', matrix, vx));
+  s.push(_matrixPoly('charpoly', matrix, vx));
   s.push(charSpaceList(built.spaces));
   s.push(eigenvalueArray(built.values));
 }, { category: 'Vectors / matrices', categoryOrder: 50, label: 'JORDAN' });

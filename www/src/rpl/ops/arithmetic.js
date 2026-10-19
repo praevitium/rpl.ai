@@ -7,7 +7,7 @@ import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { inverseUexpr, powerUexpr, sameDims, temperaturesAdd } from '../units.js';
 import { register, lookup, OPS } from './registry.js';
 import { isPict, negGrob } from './graphics.js';
-import { _inUnit, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, exactSqrt, exactXroot, recallVar, storeVar } from './internal.js';
+import { _inUnit, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _arrayToGiacStr, _casArray, _hasSymEntry, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _tidyBinary, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, exactSqrt, exactXroot, recallVar, storeVar } from './internal.js';
 
 
 
@@ -32,12 +32,21 @@ function _matMul(aRows, bRows) {
     for (let j = 0; j < bc; j++) {
       checkTimeLimit();
       const parts = new Array(ac);
-      for (let k = 0; k < ac; k++) parts[k] = _scalarBinary('*', aRows[i][k], bRows[k][j]);
+      for (let k = 0; k < ac; k++) parts[k] = _tidyBinary('*', aRows[i][k], bRows[k][j]);
       row[j] = _scalarSum(parts);
     }
     out.push(row);
   }
   return out;
+}
+
+
+const _arrayEntries = (v) => (isVector(v) ? v.items : v.rows.flat());
+
+function _checkSolveShape(rhs, m) {
+  const n = m.rows.length;
+  const rows = isVector(rhs) ? rhs.items.length : rhs.rows.length;
+  if (n === 0 || m.rows[0].length !== n || rows !== n) throw new RPLError('Invalid dimension');
 }
 
 
@@ -86,13 +95,18 @@ function binaryMath(op) {
     if (isVector(a) && isVector(b)) {
       if (op !== '+' && op !== '-' && op !== '*') throw new RPLError('Bad argument type');
       if (a.items.length !== b.items.length) throw new RPLError('Invalid dimension');
-      const parts = a.items.map((x, i) => _scalarBinary(op, x, b.items[i]));
+      const parts = a.items.map((x, i) => _tidyBinary(op, x, b.items[i]));
       s.push(op === '*' ? _scalarSum(parts) : Vector(parts));
       return;
     }
 
     // AUR: an array B divided by a square matrix A solves AX = B, so X is INV(A)*B.
     if (op === '/' && (isMatrix(a) || isVector(a)) && isMatrix(b)) {
+      if (_hasSymEntry([..._arrayEntries(a), ..._arrayEntries(b)])) {
+        _checkSolveShape(a, b);
+        s.push(_casArray(`normal(inv(${_arrayToGiacStr(b)})*${_arrayToGiacStr(a)})`));
+        return;
+      }
       s.push(b);
       lookup('INV').fn(s);
       s.push(a);
@@ -106,7 +120,7 @@ function binaryMath(op) {
       if (op === '+' || op === '-') {
         if (ar !== br || ac !== bc) throw new RPLError('Invalid dimension');
         s.push(Matrix(a.rows.map((row, i) =>
-          row.map((x, j) => _scalarBinary(op, x, b.rows[i][j])))));
+          row.map((x, j) => _tidyBinary(op, x, b.rows[i][j])))));
         return;
       }
       if (op === '*') {
@@ -120,7 +134,7 @@ function binaryMath(op) {
       const cols = a.rows[0]?.length ?? 0;
       if (cols !== b.items.length) throw new RPLError('Invalid dimension');
       s.push(Vector(a.rows.map(row => {
-        const parts = row.map((x, k) => _scalarBinary('*', x, b.items[k]));
+        const parts = row.map((x, k) => _tidyBinary('*', x, b.items[k]));
         return _scalarSum(parts);
       })));
       return;
@@ -132,7 +146,7 @@ function binaryMath(op) {
       for (let j = 0; j < cols; j++) {
         const parts = new Array(rows);
         for (let i = 0; i < rows; i++) {
-          parts[i] = _scalarBinary('*', a.items[i], b.rows[i][j]);
+          parts[i] = _tidyBinary('*', a.items[i], b.rows[i][j]);
         }
         out[j] = _scalarSum(parts);
       }
@@ -150,19 +164,19 @@ function binaryMath(op) {
     }
 
     if (isVector(a) && _isScalarOperand(b)) {
-      s.push(Vector(a.items.map(x => _scalarBinary(op, x, b))));
+      s.push(Vector(a.items.map(x => _tidyBinary(op, x, b))));
       return;
     }
     if (_isScalarOperand(a) && isVector(b)) {
-      s.push(Vector(b.items.map(x => _scalarBinary(op, a, x))));
+      s.push(Vector(b.items.map(x => _tidyBinary(op, a, x))));
       return;
     }
     if (isMatrix(a) && _isScalarOperand(b)) {
-      s.push(Matrix(a.rows.map(row => row.map(x => _scalarBinary(op, x, b)))));
+      s.push(Matrix(a.rows.map(row => row.map(x => _tidyBinary(op, x, b)))));
       return;
     }
     if (_isScalarOperand(a) && isMatrix(b)) {
-      s.push(Matrix(b.rows.map(row => row.map(x => _scalarBinary(op, a, x)))));
+      s.push(Matrix(b.rows.map(row => row.map(x => _tidyBinary(op, a, x)))));
       return;
     }
 
@@ -242,10 +256,18 @@ register('INV', _withTaggedUnary(_withListUnary((s) => {
     const cols = n > 0 ? v.rows[0].length : 0;
     if (n !== cols) throw new RPLError('Invalid dimension');
     if (n === 0) { s.push(v); return; }
-    s.push(Matrix(_invMatrixNumeric(v.rows)));
+    s.push(_hasSymEntry(v.rows.flat()) ? _casArray(`inv(${_arrayToGiacStr(v)})`) : Matrix(_invMatrixNumeric(v.rows)));
   } else throw new RPLError('Bad argument type');
 })), { category: 'Arithmetic', categoryOrder: 6, label: "INV" });
 
+
+// AUR: the Frobenius norm, √(X^2+Y^2) for [ X Y ].
+function _frobeniusNorm(entries) {
+  if (!_hasSymEntry(entries)) return Real(_decimalFrobeniusNorm(entries));
+  const squares = entries.map((x) => (isComplex(x) ? Real(x.re * x.re + x.im * x.im) : _scalarBinary('^', x, Integer(2n))));
+  const numeric = _scalarSum(squares.filter((x) => !_isSymOperand(x)));
+  return Symbolic(AstFn('SQRT', [_toAst(_scalarSum([...squares.filter(_isSymOperand), numeric]))]));
+}
 
 register('ABS', _withTaggedUnary(_withListUnary((s) => {
   const v = s.pop();
@@ -258,8 +280,7 @@ register('ABS', _withTaggedUnary(_withListUnary((s) => {
   }
   else if (isComplex(v)) s.push(Real(Math.hypot(v.re, v.im)));
   else if (isUnit(v))    s.push(Unit(Math.abs(v.value), v.uexpr));
-  else if (isVector(v))  s.push(Real(_decimalFrobeniusNorm(v.items)));
-  else if (isMatrix(v))  s.push(Real(_decimalFrobeniusNorm(v.rows.flat())));
+  else if (isVector(v) || isMatrix(v)) s.push(_frobeniusNorm(_arrayEntries(v)));
   else throw new RPLError('Bad argument type');
 })), { category: 'Arithmetic', categoryOrder: 7, label: "ABS" });
 

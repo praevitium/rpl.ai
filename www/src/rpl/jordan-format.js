@@ -83,5 +83,6 @@ export function spacesFromJordan(pRows, jRows) {
         : RList(g.chains.map(jordanChain)),
     })),
     values: groups.flatMap(g => g.chains.flatMap(chain => chain.map(() => g.lambda))),
+    minimalRoots: groups.flatMap(g => Array(Math.max(...g.chains.map(chain => chain.length))).fill(g.lambda)),
   };
 }

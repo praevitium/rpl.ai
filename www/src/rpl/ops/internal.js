@@ -8,7 +8,7 @@ import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
 import { formatSource, currentDisplay, withFractionMark } from '../formatter.js';
 import { parseEntry as _parseEntryForObjTo, polarVector, fromTyped } from '../parser.js';
-import { astToGiac, buildGiacCmd, giacToAst } from '../cas/giac-convert.mjs';
+import { astToGiac, buildGiacCmd, giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
 import { giac } from '../cas/giac-engine.mjs';
 import { lookup } from './registry.js';
 
@@ -441,9 +441,30 @@ export function _withVMUnary(handler) {
 export function _scalarSum(parts) {
   if (parts.length === 0) return Real(0);
   let acc = parts[0];
-  for (let i = 1; i < parts.length; i++) acc = _scalarBinary('+', acc, parts[i]);
+  for (let i = 1; i < parts.length; i++) acc = _tidyBinary('+', acc, parts[i]);
   return acc;
 }
+
+const _isExactly = (v, n) => (isInteger(v) && v.value === BigInt(n)) || (isReal(v) && v.value.eq(n));
+
+// Array arithmetic writes X, not 1*X or X+0, beside a symbolic entry.
+export function _tidyBinary(op, a, b) {
+  if (_isSymOperand(a) || _isSymOperand(b)) {
+    if (op === '*') {
+      if (_isExactly(a, 1)) return b;
+      if (_isExactly(b, 1)) return a;
+      if (_isExactly(a, 0)) return a;
+      if (_isExactly(b, 0)) return b;
+      if (_isExactly(a, -1)) return Symbolic(AstNeg(_toAst(b)));
+    } else if (op === '+' || op === '-') {
+      if (_isExactly(b, 0)) return a;
+      if (_isExactly(a, 0)) return op === '+' ? b : Symbolic(AstNeg(_toAst(b)));
+    }
+  }
+  return _scalarBinary(op, a, b);
+}
+
+export const _hasSymEntry = (values) => values.some(_isSymOperand);
 
 
 export function binIntBinary(op, a, b) {
@@ -2675,6 +2696,23 @@ export function _matrixToGiacStr(m) {
     return `[${elts.join(',')}]`;
   });
   return `[${rows.join(',')}]`;
+}
+
+
+export function _arrayToGiacStr(v) {
+  return isVector(v) ? `[${v.items.map(_scalarToGiacStr).join(',')}]` : _matrixToGiacStr(v);
+}
+
+// Giac's answer for an array with symbolic entries, as a vector or matrix; singular is Infinite result, as numerically.
+export function _casArray(cmd) {
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const raw = giac.caseval(cmd);
+  if (/not invertible/i.test(raw)) throw new RPLError('Infinite result');
+  const items = splitGiacList(raw);
+  if (!items) throw new RPLError('Bad argument value');
+  const cell = (text) => _astToRplValue(giacToAst(text));
+  const rows = items.map(splitGiacList);
+  return rows.every(Boolean) ? Matrix(rows.map((row) => row.map(cell))) : Vector(items.map(cell));
 }
 
 
