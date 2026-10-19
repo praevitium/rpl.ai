@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.164 (2026-10-19)
+**Latest release:** v0.6.165 (2026-10-19)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.165 — 2026-10-19
+
+`SIMP2` divides two objects by their greatest common divisor, as the AUR
+describes: `'X^3+6*X^2+11*X+6' 'X^3-7*X-6' SIMP2` leaves `X+3` and
+`X-3`, and `12 18 SIMP2` leaves 2 and 3. It sits with the polynomial
+commands.
+
+In the assistant's replies, a `<br>` inside a table cell breaks the
+cell's line, where it showed as typed.
+
+On a phone, the MATRIX menu's MAKE folder shows VANDERMONDE under the
+HP's five-letter face VANDE, where a 280 px screen broke the name over
+three lines.
 
 ## v0.6.164 — 2026-10-19
 
