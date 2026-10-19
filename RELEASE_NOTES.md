@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.58 (2026-10-19)
+**Latest release:** v0.7.59 (2026-10-19)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.59 — 2026-10-19
+
+- Flag -51, part 5: the equation writer draws numbers with the comma
+  fraction mark and function arguments with `;`, and a comma typed on a
+  computer or phone keyboard is the fraction mark there, a semicolon the
+  separator.
+- Fix: with -51 set, the keypad's , key (↱SPC) typed `, `, which the
+  command line then read as a fraction mark after a digit, so
+  `'MAX(1, 3)'` failed with Invalid algebraic. It now types `; `, the
+  separator in comma mode, on the command line and in the matrix writer.
 
 ## v0.7.58 — 2026-10-19
 

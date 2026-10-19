@@ -495,8 +495,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   is 1.5 and `(1,5;2)` a complex number, as on the HP, and the stack shows
   them that way (`3,`, `(1,5; 2)`, `MAX(X; 0,25)`). EDIT, INPUT, INFORM
   and the matrix writer's cells use the same marks, and the keypad's .
-  key types the comma, as do →STR and STR→ in a program. The equation
-  writer and exports keep the point for now.
+  key types the comma and its , key the semicolon, as do →STR and STR→
+  in a program. The equation writer shows 1,5 and reads a typed comma as
+  the fraction mark and a semicolon as the separator. Exports keep the
+  point for now.
 
 ---
 
