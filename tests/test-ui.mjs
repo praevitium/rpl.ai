@@ -311,10 +311,10 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(/isUnit\(value\) \? item\('convert', 'chr', 'Convert to…'\) : ''/.test(appSrc) && /case 'convert': this\._convertMenu\(level, anchor\); return;/.test(appSrc)
     && /unitConversions\(value\.uexpr\)/.test(appSrc) && /this\.stack\.push\(Unit\(1, targets\[/.test(appSrc) && /this\.stack\.runOp\(\(\) => lookup\('CONVERT'\)\.fn\(this\.stack, this\.entry\)\); \}, 'CONVERT'\)/.test(appSrc),
     'stack: a unit level\'s ⋯ menu has Convert to…, whose rows show the level in each unit of its dimensions and run CONVERT with a 1 of that unit, so LASTARG and Undo see the HP\'s own command');
-  assert(/isMatrix\(value\) && value\.rows\.length === value\.rows\[0\]\?\.length \? item\('inv', 'chr', 'Inverse \(INV\)'\) \+ item\('det', 'chr', 'Determinant \(DET\)'\) : ''/.test(appSrc)
+  assert(/isMatrix\(value\) && value\.rows\.length === value\.rows\[0\]\?\.length \? item\('inv', 'chr', 'Inverse \(INV\)'\) \+ item\('det', 'chr', 'Determinant \(DET\)'\) \+ item\('egvl', 'chr', 'Eigenvalues \(EGVL\)'\) : ''/.test(appSrc)
     && /isMatrix\(value\) \? item\('trn', 'chr', 'Transpose \(TRN\)'\) : ''/.test(appSrc)
-    && /case 'inv': runOn\('INV'\); return;\s*case 'det': runOn\('DET'\); return;\s*case 'trn': runOn\('TRN'\); return;/.test(appSrc),
-    'stack: a matrix level\'s ⋯ menu has Inverse and Determinant when it is square, and Transpose, run on the level as its EVAL and →NUM are, as a unit level has Convert to… and a formula Plot');
+    && /case 'inv': runOn\('INV'\); return;\s*case 'det': runOn\('DET'\); return;\s*case 'egvl': runOn\('EGVL'\); return;\s*case 'trn': runOn\('TRN'\); return;/.test(appSrc),
+    'stack: a matrix level\'s ⋯ menu has Inverse, Determinant and Eigenvalues when it is square, and Transpose, run on the level as its EVAL and →NUM are, as a unit level has Convert to… and a formula Plot');
   assert((appSrc.match(/this\.stack\.runOp\(\(\) => lookup\(op\)\.fn\(this\.stack, this\.entry\)\)/g) || []).length === 2,
     'stack: a level menu\'s EVAL, →NUM, DBUG, →LIST, DUPN and DROPN run through Stack.runOp, so LASTARG gives their arguments as it does for a typed command');
   assert(/onHold: \(anchor\) => this\._heldKeyMenu\(\[\{ text: `Convert level 1 to \$\{unit\}`, run: \(\) => this\.insertUnit\(unit, 'convert'\) \}, \{ text: `Divide by \$\{unit\}`, run: \(\) => this\.insertUnit\(unit, 'divide'\) \}\], anchor, 'Unit'\)/.test(appSrc)
