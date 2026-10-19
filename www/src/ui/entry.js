@@ -150,8 +150,8 @@ export class Entry {
           keymap.of(defaultKeymap),
           // A program waiting at 0 WAIT takes a typed character as its key.
           EditorView.inputHandler.of((_view, _from, _to, text) => onType?.(text) === true),
-          // A phone's Enter key runs the line here, so it says go rather than new line.
-          EditorView.contentAttributes.of({ enterkeyhint: 'go' }),
+          // A phone's Enter key runs the line here, so it says go rather than new line; a screen reader names the line.
+          EditorView.contentAttributes.of({ enterkeyhint: 'go', 'aria-label': 'Command line' }),
           // A phone shows a few words of a line, so a long one wraps rather than scrolling out of sight.
           ...(onTouch() ? [EditorView.lineWrapping] : []),
           EditorView.clipboardInputFilter.of(pastedSource),

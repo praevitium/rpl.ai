@@ -2386,3 +2386,9 @@ setAngle('RAD');
     && /\.st-row\.sel \.st-val \.value-text, \.st-row\[data-level="1"\] \.st-val \.value-text\.str \{ white-space: pre-wrap;/.test(cssSrc),
     'level 1 strings: a string at level 1 shows whole with its line breaks, as a selected level does, where "LINE1" 10 CHR + "LINE2" + 10 CHR + "LINE3" + showed "LINE1 LINE2 L…" at 280 px');
 }
+
+{
+  const entrySrc = readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8');
+  assert(/EditorView\.contentAttributes\.of\(\{ enterkeyhint: 'go', 'aria-label': 'Command line' \}\)/.test(entrySrc),
+    'screen readers: the command line is named Command line, where TalkBack and VoiceOver announced an unnamed edit field, the one unnamed control in a sweep of 16 phone states at 280 and 360 px');
+}
