@@ -498,8 +498,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   key types the comma and its , key the semicolon, as do →STR and STR→
   in a program. The equation writer shows 1,5 and reads a typed comma as
   the fraction mark and a semicolon as the separator; its insights, DISP,
-  DISPXY, →GROB, LCD→ and LABEL show the comma too. Exports keep the
-  point for now.
+  DISPXY, →GROB, LCD→ and LABEL show the comma too, and so do the plot's
+  axis labels, trace readout, range boxes and formula fields, which read
+  a typed comma. Exports keep the point for now.
 
 ---
 

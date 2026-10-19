@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.60 (2026-10-19)
+**Latest release:** v0.7.61 (2026-10-19)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.61 — 2026-10-19
+
+- Flag -51, part 7: the plot shows its axis labels, trace readout, range
+  boxes and formula fields with the comma fraction mark, and reads a
+  comma typed in a range box or formula field, so `-2,5` sets a range
+  and `X^2+0,5` plots.
 
 ## v0.7.60 — 2026-10-19
 
