@@ -225,3 +225,14 @@ const REF = parseCommandReference(HTML);
     && /if \(word === '« »'\) entry\.typeObject\('«  »', 2\);\s*else if \(word === '_'\) entry\.typeWithCursor\('_'\);\s*else entry\.typeToken\(`\$\{word\} `\);/.test(drawerSrc),
     "syntax words: the Catalog lists them as available and their reference offers Insert (no Run), typing « » around the cursor, _ as the key strip does and π, e or i in its own case, where IF's page said Not available in rpl.ai");
 }
+
+/* A Catalog search finds manual pages by their capitalised key, and its rows showed that key: π as Π, →Qπ as →QΠ,
+   e as E, i as I, while the page itself is titled π. The row now shows the page's own spelling. */
+{
+  const spelled = [...REF].filter(([key, e]) => e.name !== key).map(([, e]) => e.name);
+  assert(['π', 'e', 'i', '→Qπ', 'dn', 'F0λ', 'lim'].every((n) => spelled.includes(n)), `catalog rows: the manual spells π, e, i, →Qπ, dn, F0λ and lim in lower case (${spelled.join(' ')})`);
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  assert(/const shown = entry\?\.name\.toUpperCase\(\) === name\.toUpperCase\(\) \? entry\.name : name;\s*const label = query \? highlightSegments\(shown, matchPositions\(query, shown\)\)/.test(drawerSrc)
+    && /title="Open the reference for \$\{escapeHtml\(shown\)\}"/.test(drawerSrc),
+    'catalog rows: a row shows the manual page\'s own spelling of its name (π, →Qπ, e, i), where a search listed Π, →QΠ, E and I');
+}
