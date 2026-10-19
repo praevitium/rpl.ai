@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 509 commands, exact big-integer and rational arithmetic,
+of its command set: 510 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -226,7 +226,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   to it and ↱ divides by it, so `5` ft then ↰ m gives `1.524_m`; a finger
   held on the key offers both. SIN, COS and TAN take an angle unit, which
   overrides the angle mode: `30_° SIN` gives `0.5` whatever DEG, RAD or GRD
-  says. Units work inside algebraics too, with a compound unit in
+  says. CONST knows the 39 constants of the HP's Constants Library by name,
+  in their units and with CODATA 2018 values: `'c' CONST` gives
+  `299792458._m/s`, and with flag -61 set it gives the number alone. Units
+  work inside algebraics too, with a compound unit in
   parentheses: store `2_s` in `T` and `'9.81_(m/s^2)*T^2/2' EVAL` gives
   `19.62_m`. In the equation writer, `_` after a number starts its unit, and
   the UNITS menu keys type their unit after the number too: pick a menu from
@@ -843,7 +846,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 509. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 510. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - setting the clock: `→DATE`, `→TIME` and `CLKADJ`. The clock is the
