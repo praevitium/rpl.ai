@@ -617,6 +617,17 @@ import { readFileSync } from 'node:fs';
          'a link opens in a new tab without giving it the page');
 }
 
+// __Bold__ and _em_ with underscores, and escaped marks, showed as typed in a reply.
+{
+  const T = t => JSON.stringify(parseInlineSpans(t).map(s => [s.type, s.content]));
+  assert(T('__bold__ and _em_') === JSON.stringify([['bold', 'bold'], ['text', ' and '], ['em', 'em']]),
+         'parseInlineSpans reads __bold__ and _em_');
+  assert(T('snake_case_name and 1_m') === JSON.stringify([['text', 'snake_case_name and 1_m']]) && T('x__y__z') === JSON.stringify([['text', 'x__y__z']]),
+         'parseInlineSpans leaves underscores inside a word, as in snake_case or a unit, as text');
+  assert(T('a\\*star and *em*') === JSON.stringify([['text', 'a*star and '], ['em', 'em']]) && T('\\_not em\\_') === JSON.stringify([['text', '_not em_']]),
+         'parseInlineSpans shows an escaped * or _ as a bare mark that opens no emphasis');
+}
+
 // Rules and quotes in a reply: --- (or * * *, ___) is a rule, ahead of a
 // bullet, and > starts a quote; both showed as typed.
 {

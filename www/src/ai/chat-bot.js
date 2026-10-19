@@ -317,12 +317,14 @@ function appendInlineMarkdownLines(frag, text) {
  *  leftmost opener wins.  `$…$` needs a non-space just inside each `$`,
  *  so prose dollars ("costs $5 and $10") stay text, and an escaped `\$`
  *  never delimits: KaTeX gets it inside math, prose gets a bare `$`.
+ *  __Bold__ and _em_ also take underscores, never inside a word such as
+ *  snake_case or 1_m, and an escaped `\*` or `\_` is a bare mark.
  *  Bold, em and a link's text keep their markdown, which appendSpans parses
  *  in turn; a link must go to an http(s) or mailto address, or it stays text.
  *  A bare http(s) address is a link too, without the punctuation that ends a sentence. */
 export function parseInlineSpans(text) {
-  const re = /(`([^`]+)`|\\\(([\s\S]+?)\\\)|(?<!\\)\$(?=\S)((?:\\[^\n]|[^\\$\n])+?)(?<=\S)\$|\*\*([^*]+)\*\*|\*([^*]+)\*|\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:)(?:[^\s()]|\([^\s()]*\))+)\)|(https?:\/\/(?:[^\s<>()]|\([^\s<>()]*\))*(?:[^\s<>().,;:!?'"*\]]|\([^\s<>()]*\))))/g;
-  const prose = s => s.replace(/\\\$/g, '$');
+  const re = /(`([^`]+)`|\\\(([\s\S]+?)\\\)|(?<!\\)\$(?=\S)((?:\\[^\n]|[^\\$\n])+?)(?<=\S)\$|(?<!\\)\*\*([^*]+)\*\*|(?<!\\)\*([^*]+)\*|\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:)(?:[^\s()]|\([^\s()]*\))+)\)|(https?:\/\/(?:[^\s<>()]|\([^\s<>()]*\))*(?:[^\s<>().,;:!?'"*\]]|\([^\s<>()]*\)))|(?<![\w\\])__(?=\S)([^_\n]+?)(?<=\S)__(?!\w)|(?<![\w\\])_(?=[^\s_])([^_\n]+?)(?<=[^\s_])_(?!\w))/g;
+  const prose = s => s.replace(/\\([$*_])/g, '$1');
   const spans = [];
   let last = 0;
   let m;
@@ -337,6 +339,8 @@ export function parseInlineSpans(text) {
     else if (m[6] !== undefined) spans.push({ type: 'em', content: m[6] });
     else if (m[7] !== undefined) spans.push({ type: 'link', content: m[7], href: m[8] });
     else if (m[9] !== undefined) spans.push({ type: 'url', content: m[9] });
+    else if (m[10] !== undefined) spans.push({ type: 'bold', content: m[10] });
+    else if (m[11] !== undefined) spans.push({ type: 'em', content: m[11] });
     last = m.index + m[0].length;
   }
   if (last < text.length) {
