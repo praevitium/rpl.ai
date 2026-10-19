@@ -222,8 +222,12 @@ const REF = parseCommandReference(HTML);
   const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
   assert(/const runnable = !!lookup\(name\);\s*const available = runnable \|\| isSyntaxWord\(name\);/.test(drawerSrc)
     && /\$\{runnable \|\| isSyntaxWord\(name\) \? `<button type="button" class="btn\$\{runnable \? '' : ' pri'\}" data-dw="ref-insert">Insert in the command line<\/button>` : `<span class="badge">Not available in rpl.ai<\/span>`\}/.test(drawerSrc)
-    && /if \(word === '« »'\) entry\.typeObject\('«  »', 2\);\s*else if \(word === '_'\) entry\.typeWithCursor\('_'\);\s*else entry\.typeToken\(`\$\{word\} `\);/.test(drawerSrc),
-    "syntax words: the Catalog lists them as available and their reference offers Insert (no Run), typing « » around the cursor, _ as the key strip does and π, e or i in its own case, where IF's page said Not available in rpl.ai");
+    && /typeSyntaxWord\(this\.app\.entry, word\);/.test(drawerSrc),
+    "syntax words: the Catalog lists them as available and their reference offers Insert (no Run), where IF's page said Not available in rpl.ai");
+  const { typeSyntaxWord } = await import('../www/src/ui/command-help.js');
+  const typed = (word) => { const calls = []; typeSyntaxWord({ typeObject: (t, b) => calls.push(`object ${t} ${b}`), typeWithCursor: (t) => calls.push(`cursor ${t}`), typeToken: (t) => calls.push(`token ${t}`) }, word); return calls.join(); };
+  assert(typed('« »') === 'object «  » 2' && typed('_') === 'cursor _' && typed('IF') === 'token IF ' && typed('π') === 'token π ',
+    'syntax words: Insert types « » around the cursor, _ as the key strip does, and a word such as IF or π with a space after it');
 }
 
 /* A Catalog search finds manual pages by their capitalised key, and its rows showed that key: π as Π, →Qπ as →QΠ,
@@ -231,8 +235,23 @@ const REF = parseCommandReference(HTML);
 {
   const spelled = [...REF].filter(([key, e]) => e.name !== key).map(([, e]) => e.name);
   assert(['π', 'e', 'i', '→Qπ', 'dn', 'F0λ', 'lim'].every((n) => spelled.includes(n)), `catalog rows: the manual spells π, e, i, →Qπ, dn, F0λ and lim in lower case (${spelled.join(' ')})`);
+  const { spelledName } = await import('../www/src/ui/command-reference.js');
+  assert(spelledName(REF.get('Π'), 'Π') === 'π' && spelledName(REF.get('→QΠ'), '→QΠ') === '→Qπ' && spelledName(REF.get('E'), 'E') === 'e'
+    && spelledName(findReferenceEntry(REF, 'SQRT'), 'SQRT') === 'SQRT' && spelledName(null, 'NOPE') === 'NOPE',
+    'catalog rows: spelledName gives a page\'s own spelling for its capitalised key, and keeps an alias or an unknown name as it is');
   const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
-  assert(/const shown = entry\?\.name\.toUpperCase\(\) === name\.toUpperCase\(\) \? entry\.name : name;\s*const label = query \? highlightSegments\(shown, matchPositions\(query, shown\)\)/.test(drawerSrc)
+  assert(/const shown = spelledName\(entry, name\);\s*const label = query \? highlightSegments\(shown, matchPositions\(query, shown\)\)/.test(drawerSrc)
     && /title="Open the reference for \$\{escapeHtml\(shown\)\}"/.test(drawerSrc),
     'catalog rows: a row shows the manual page\'s own spelling of its name (π, →Qπ, e, i), where a search listed Π, →QΠ, E and I');
+}
+
+/* Command search found IF, FOR and π but choosing one said "IF isn't available in rpl.ai" (inside an open program
+   too) and listed π as Π. A syntax word now goes onto the command line as the Catalog's Insert types it, in the
+   manual's spelling. */
+{
+  const paletteSrc = readFileSync(new URL('../www/src/ui/palette.js', import.meta.url), 'utf8');
+  assert(/const shown = spelledName\(entry, name\);\s*const runnable = !!lookup\(name\);/.test(paletteSrc)
+    && /kind: 'command', title: shown,/.test(paletteSrc)
+    && /run: !runnable && isSyntaxWord\(name\) \? \(\) => typeSyntaxWord\(this\.app\.entry, shown\)/.test(paletteSrc),
+    'command search: IF, FOR, π and the other syntax words show in the manual\'s spelling and choosing one types it on the command line, where it said "IF isn\'t available in rpl.ai"');
 }

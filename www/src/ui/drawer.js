@@ -11,8 +11,8 @@ import {
   exportHpTextFile, readUpload,
   listBackups, archiveBackup, restoreBackup, deleteBackup,
 } from '../rpl/persist.js';
-import { referenceSection, pushHistory, isSyntaxWord } from './command-help.js';
-import { loadCommandReference, findReferenceEntry, shortDescription, searchCommands } from './command-reference.js';
+import { referenceSection, pushHistory, isSyntaxWord, typeSyntaxWord } from './command-help.js';
+import { loadCommandReference, findReferenceEntry, shortDescription, searchCommands, spelledName } from './command-reference.js';
 import { matchPositions, highlightSegments } from './op-search.js';
 import { GraphView } from './graph-view.js';
 import { icon } from './icons.js';
@@ -431,21 +431,16 @@ export class Drawers {
     const entry = this.reference ? findReferenceEntry(this.reference, name) : null;
     const runnable = !!lookup(name);
     const available = runnable || isSyntaxWord(name);
-    // A search finds manual pages by their capitalised key; the row shows the page's own spelling, π rather than Π.
-    const shown = entry?.name.toUpperCase() === name.toUpperCase() ? entry.name : name;
+    const shown = spelledName(entry, name);
     const label = query ? highlightSegments(shown, matchPositions(query, shown)).map((s) => (s.match ? `<mark>${escapeHtml(s.text)}</mark>` : escapeHtml(s.text))).join('') || escapeHtml(shown) : escapeHtml(shown);
     const sig = entry ? signatureOf(entry) : '';
     const desc = entry ? shortDescription(entry, 120) : (available ? '' : 'Not available in rpl.ai');
     return `<div class="cmd-row${available ? '' : ' stub'}" data-dw="cmd" data-cmd="${escapeHtml(name)}" role="button" tabindex="0" title="Open the reference for ${escapeHtml(shown)}"><div class="nm"><span>${label}</span>${sig ? `<span class="sig">${escapeHtml(sig)}</span>` : ''}</div>${desc ? `<div class="ds">${escapeHtml(desc)}</div>` : ''}<div class="acts">${runnable ? `<button type="button" class="mini" data-dw="cmd-run" data-cmd="${escapeHtml(name)}" title="Run ${escapeHtml(name)}" aria-label="Run ${escapeHtml(name)}">${icon('play', 'sm')}</button>` : ''}</div></div>`;
   }
 
-  // A syntax word goes in as its key types it: « » around the cursor, _ joined to the number before it.
   _insertReferenced() {
-    const { entry } = this.app;
     const word = isSyntaxWord(this.cat.ref) ? findReferenceEntry(this.reference, this.cat.ref)?.name ?? this.cat.ref : this.cat.ref;
-    if (word === '« »') entry.typeObject('«  »', 2);
-    else if (word === '_') entry.typeWithCursor('_');
-    else entry.typeToken(`${word} `);
+    typeSyntaxWord(this.app.entry, word);
   }
 
   async _renderReference(body) {

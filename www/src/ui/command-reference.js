@@ -105,6 +105,11 @@ export function parseCommandReference(html) {
   return map;
 }
 
+// A search finds manual pages by their capitalised key; a row shows the page's own spelling, π rather than Π.
+export function spelledName(entry, name) {
+  return entry?.name.toUpperCase() === String(name).toUpperCase() ? entry.name : name;
+}
+
 export function findReferenceEntry(entries, name) {
   const key = String(name ?? '').trim().toUpperCase();
   if (!key) return null;

@@ -1,7 +1,8 @@
-import { allOps } from '../rpl/ops.js';
+import { allOps, lookup } from '../rpl/ops.js';
 import { state as calcState } from '../rpl/state.js';
 import { TYPES } from '../rpl/types.js';
-import { searchCommands, findReferenceEntry, shortDescription, loadCommandReference } from './command-reference.js';
+import { searchCommands, findReferenceEntry, shortDescription, loadCommandReference, spelledName } from './command-reference.js';
+import { isSyntaxWord, typeSyntaxWord } from './command-help.js';
 import { fuzzyScore, matchPositions, highlightSegments, moveSelection } from './op-search.js';
 import { ACTIONS, shortcutText } from './actions.js';
 import { MODES } from './modes.js';
@@ -114,10 +115,13 @@ export class Palette {
     const commandRow = ({ name }) => {
       const entry = this.reference ? findReferenceEntry(this.reference, name) : null;
       const sig = entry ? signatureOf(entry) : '';
+      const shown = spelledName(entry, name);
+      const runnable = !!lookup(name);
       return {
-        kind: 'command', title: name, mono: true, icon: 'chr', reference: true,
+        kind: 'command', title: shown, mono: true, icon: 'chr', reference: true,
         detail: [entry ? shortDescription(entry, 90) : '', sig].filter(Boolean).join(' · '),
-        run: () => { this._remember(name); this.app.runCommandFromUI(name); },
+        run: !runnable && isSyntaxWord(name) ? () => typeSyntaxWord(this.app.entry, shown)
+          : () => { this._remember(name); this.app.runCommandFromUI(name); },
         open: () => this.app.drawers.showReference(name),
       };
     };

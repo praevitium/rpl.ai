@@ -36,6 +36,13 @@ export function isSyntaxWord(name) {
   return SYNTAX_WORDS.has(word) || SYNTAX_WORDS.has(word.toUpperCase()) || SYNTAX_WORDS.has(word.toLowerCase());
 }
 
+// A syntax word goes in as its key types it: « » around the cursor, _ joined to the number before it.
+export function typeSyntaxWord(entry, word) {
+  if (word === '« »') entry.typeObject('«  »', 2);
+  else if (word === '_') entry.typeWithCursor('_');
+  else entry.typeToken(`${word} `);
+}
+
 // Headings carry a gloss, like "!(Factorial)", that isn't part of the command name.
 export function headingKey(raw) {
   return String(raw == null ? '' : raw).trim().replace(/\s*\(.*\)\s*$/, '').trim();
