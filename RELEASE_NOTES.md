@@ -27,6 +27,8 @@ required for development.
   expression in EQ, leaves it on the stack and plots it as PPAR's plot
   type; `'X^2' PLOTADD` adds an expression to EQ's list and to the plot
   beside the traces already there.
+- CONSTANTS opens the Characters drawer at the constants (π, e, i, ∞, MAXR
+  and MINR), and MATHS opens the CAS menu, as MAIN does.
 
 ## v0.7.39 — 2026-10-19
 

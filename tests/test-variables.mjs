@@ -2068,9 +2068,9 @@ clearAllUserFlags();
   const { setOpenHook } = await import('../www/src/rpl/ops.js');
   const opened = [];
   setOpenHook((target) => opened.push(JSON.stringify(target)));
-  runLine('ALGB CASCMD MODULAR TVM');
-  assert(opened.join(' ') === '{"family":"CAS","folder":"ALG"} {"drawer":"catalog"} {"family":"INTEGER","folder":"MODUL"} {"family":"TVM"}',
-    'ALGB opens the CAS ALG folder, CASCMD the Catalog, MODULAR the INTEGER MODUL folder and TVM the TVM menu');
+  runLine('ALGB CASCMD MODULAR TVM MATHS CONSTANTS');
+  assert(opened.join(' ') === '{"family":"CAS","folder":"ALG"} {"drawer":"catalog"} {"family":"INTEGER","folder":"MODUL"} {"family":"TVM"} {"family":"CAS"} {"drawer":"chars"}',
+    'ALGB opens the CAS ALG folder, CASCMD the Catalog, MODULAR the INTEGER MODUL folder, TVM the TVM menu, MATHS the CAS menu and CONSTANTS the Characters drawer');
   setOpenHook(null);
 }
 
