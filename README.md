@@ -323,7 +323,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   A level too wide for the screen, such as a big matrix, or a long formula
   once it has shrunk to three quarters of its size, fades at the edge it
   continues past; drag it sideways to read the rest, or swipe its level
-  number to drop it. A tagged value with a long tag shortens the tag, not
+  number to drop it. Wide math, tables and code in the assistant's replies
+  fade and scroll sideways the same way. A tagged value with a long tag shortens the tag, not
   the value: `Total pri…: 123.456`. A number too wide for its line wraps
   rather than lose its exponent or last digits, breaking before the
   exponent first. Above level 1, as on the HP, a long list keeps to one
