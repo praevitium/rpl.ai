@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.37 (2026-10-19)
+**Latest release:** v0.7.38 (2026-10-19)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.38 — 2026-10-19
+
+- SCROLL, the programmable VIEW: it takes the object on level 1 and opens
+  it full size in the View sheet, scrolling both ways and zooming with a
+  pinch, so a program can show a long formula or matrix whole. The sheet
+  has no Edit, Copy or Share, as the object has left the stack.
 
 ## v0.7.37 — 2026-10-19
 

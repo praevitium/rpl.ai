@@ -130,6 +130,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   CASCFG                     back to exact, real, VX \`x\` and the modulus 13
   ALGB DIFF EXP&LN TRIGO MAIN ARIT INTEGER MODULAR POLYNOMIAL MATR TESTS TVM     open the matching menu or CAS folder; CASCMD and HELP open the Catalog
   EDIT EDITB VISIT VISITB     EDIT opens level 1 in the command line and Enter replaces it; \`F\` VISIT opens F's contents and Enter stores them back; EDITB and VISITB use the Equation or Matrix Writer when it suits the object
+  SCROLL                      takes level 1 and shows it full size, as the interactive stack's VIEW does
   MODSTO ADDTMOD SUBTMOD MULTMOD POWMOD EXPANDMOD FACTORMOD GCDMOD DIVMOD DIV2MOD     modular arithmetic against a stored modulus
   GBASIS GREDUCE             Gröbner basis / reduction
   LNAME                      extract variable Names referenced by an expression

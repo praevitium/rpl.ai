@@ -2088,6 +2088,17 @@ clearAllUserFlags();
   setEditHook(null);
 }
 
+// SCROLL takes level 1 and hands it to the app to show full size.
+{
+  const { setViewHook } = await import('../www/src/rpl/ops.js');
+  const shown = [];
+  setViewHook((v) => shown.push(format(v)));
+  const s = runLine("1 'X^2+1' SCROLL");
+  assert(shown.join(' ') === format(runLine("'X^2+1'").peek()) && s.depth === 1, 'SCROLL hands level 1 to the app to show and takes it off the stack');
+  assertThrows(() => runLine('SCROLL'), /Too few arguments/, 'SCROLL needs an object');
+  setViewHook(null);
+}
+
 // STORE, RENAME, DIR and ▶ from the AUR.
 {
   const top = (line) => format(runLine(line).peek());

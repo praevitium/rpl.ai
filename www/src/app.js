@@ -37,7 +37,7 @@ import {
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo,
   batchStateNotifications,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setBeepHook, setConlibHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setBeepHook, setConlibHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
 import { VERSION } from './build-info.js';
 import { beep, alarmBeep } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest } from './rpl/ops/time.js';
@@ -172,6 +172,7 @@ class App {
     });
     // After the line that ran EDIT or VISIT has left the command line.
     setEditHook(({ level, name, line }) => setTimeout(() => (name ? this.editVariable(name, { line }) : this.editLevel(level, { line }))));
+    setViewHook((value) => setTimeout(() => this._viewValue(value, 'View')));
     setBeepHook(beep);
     setVersion(VERSION);
     setConlibHook(() => this.showConstants());
@@ -881,10 +882,15 @@ class App {
 
   // The HP interactive stack's VIEW: the value at a readable size, scrolling both ways, where the stack would shrink or cut it.
   _viewLevel(level) {
+    this._viewValue(this.stack.peek(level), `Level ${level}`, level);
+  }
+
+  // Without a level, as for SCROLL's object, which has left the stack, the sheet has no actions.
+  _viewValue(value, title, level = null) {
     const cell = document.createElement('div');
     cell.className = 'st-val';
-    this.display._fillValue(cell, this.stack.peek(level), 30);
-    this.sheets.openView(`Level ${level}`, cell.outerHTML, level);
+    this.display._fillValue(cell, value, 30);
+    this.sheets.openView(title, cell.outerHTML, level);
   }
 
   _levelMenu(level, anchor) {

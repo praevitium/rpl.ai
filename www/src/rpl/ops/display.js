@@ -100,6 +100,18 @@ register('EDITB', _editLevelOp(false), { category: 'Display / base', categoryOrd
 register('VISIT', _visitOp(true), { category: 'Display / base', categoryOrder: 31.2, label: "VISIT" });
 register('VISITB', _visitOp(false), { category: 'Display / base', categoryOrder: 31.3, label: "VISITB" });
 
+let _viewHook = null;
+
+export function setViewHook(fn) {
+  _viewHook = typeof fn === 'function' ? fn : null;
+}
+
+// SCROLL takes level 1 and shows it full size, as VIEW does a stack level; a program carries on meanwhile.
+register('SCROLL', (s) => {
+  const v = s.pop();
+  if (!inScratchState()) _viewHook?.(v);
+}, { category: 'Display / base', categoryOrder: 31.4, label: "SCROLL" });
+
 
 // DISP writes an object on line n of the seven-line display over the stack, a string without its quotes, and CLLCD
 // blanks it. The text goes when the program ends or pauses, unless FREEZE keeps it until the next key press.
