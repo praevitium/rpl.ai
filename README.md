@@ -417,7 +417,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   soft keys, full screen and Settings, and the button beside it leaves. A
   writer brings its soft keys with it, as on the HP, so the matrix writer's
   +ROW, +COL and TRN are a tap away, and a menu picked from command search
-  turns the soft keys on.
+  turns the soft keys on. Command search and the Catalog find a symbol the
+  phone's keyboard lacks by its name: "pi" finds π, "square root" finds √.
 - The BRCH menu, as on the HP, types IF, THEN, ELSE, END, CASE, IFERR,
   START, FOR, NEXT, STEP, DO, UNTIL, WHILE and REPEAT between spaces, and
   opens `« »` first on a bare line. With the left shift a key types its
