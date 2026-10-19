@@ -568,3 +568,20 @@ function replaceSelection(state, ast) {
     'EQW Alt with a letter or digit, and Cmd or Ctrl shortcuts, are left to the browser');
   assert(key('å', { altKey: true }) === 'UNAVAILABLE', 'EQW a symbol the writer has no key for says so');
 }
+
+/* Flag -51: the writer draws the comma fraction mark and reads a typed comma as one, a semicolon as the separator. */
+{
+  const { setUserFlag, clearUserFlag } = await import('../www/src/rpl/state.js');
+  const key = (k) => physicalFace({ key: k, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false });
+  const typed = press(emptyEquation(), '1', '.', '5');
+  setUserFlag(-51);
+  const drawn = eqwToSvg(typed.root, { size: 24 }).svg;
+  const call = eqwToSvg(fromAst(parseAlgebra('MAX(2.5, 3)')), { size: 24 }).svg;
+  const keys = [key(','), key(';')];
+  clearUserFlag(-51);
+  assert(drawn.includes('1,5') && !drawn.includes('1.5'), 'EQW with -51 set a number shows the comma fraction mark');
+  assert(call.includes('>2,5<') && call.includes('>; <'), 'EQW with -51 set a function shows 2,5 and the ; separator');
+  assert(keys[0] === '.' && keys[1] === ',', `EQW with -51 set a typed , is the fraction mark and ; the separator (${keys})`);
+  assert(textOf(typed) === '1.5', 'EQW the writer keeps 1.5 inside, whatever mark it shows');
+  assert(key(',') === ',' && eqwToSvg(typed.root, { size: 24 }).svg.includes('1.5'), 'EQW without -51 the comma separates and the point shows again');
+}

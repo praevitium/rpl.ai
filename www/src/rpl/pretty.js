@@ -508,7 +508,7 @@ function layEqwItem(item, key, size, caret, rects) {
     return eqwTrack(box, key, 'hole', rects);
   }
   if (item.t === 'num' || item.t === 'name') {
-    const text = textBox(item.text || '', size);
+    const text = textBox(item.t === 'num' ? withFractionMark(item.text || '') : item.text || '', size);
     const box = key === caret ? rowBox([text, caretBox(size)]) : text;
     return eqwTrack(box, key, 'leaf', rects);
   }

@@ -11,7 +11,7 @@ import { lookup } from '../rpl/ops.js';
 import { parseEntry } from '../rpl/parser.js';
 import { _astToRplValue } from '../rpl/ops/internal.js';
 import { giac } from '../rpl/cas/giac-engine.mjs';
-import { state as calcState, toRadians, fromRadians } from '../rpl/state.js';
+import { state as calcState, toRadians, fromRadians, testUserFlag } from '../rpl/state.js';
 import { evalNumeric } from './plot-engine.js';
 import { escapeHtml } from './display.js';
 import { writerKeys } from './input-area.js';
@@ -1575,6 +1575,8 @@ function typedWithOption(event) {
   return option && !event.metaKey && event.key?.length === 1 && !/^[A-Za-z0-9]$/.test(event.key);
 }
 
+const COMMA_MODE_KEYS = Object.freeze({ ',': '.', ';': ',' });
+
 export function physicalFace(event) {
   if ((event.altKey || event.ctrlKey || event.metaKey) && !typedWithOption(event)) return null;
   if (event.shiftKey && event.key === 'ArrowDown') return 'NOOP';
@@ -1591,6 +1593,7 @@ export function physicalFace(event) {
   };
   if (moves[event.key]) return moves[event.key];
   if (event.key === ' ') return 'NOOP';
+  if (testUserFlag(-51) && COMMA_MODE_KEYS[event.key]) return COMMA_MODE_KEYS[event.key];
   const map = {
     '+': '+', '-': '−', '−': '−', '*': '×', '×': '×', '·': '×',
     '/': '÷', '÷': '÷', '^': 'yˣ', '!': '!', '(': '( )', ')': ')', ',': ',',
