@@ -1,10 +1,25 @@
 import { setApproxMode, getApproxMode, getLastError, clearLastError, ERROR_NUMBERS } from '../state.js';
 import { RPLAbort, RPLError } from '../stack.js';
-import { Str, BinaryInteger, isInteger, isBinaryInteger, isReal, Program, isString, Integer, Real, Tagged } from '../types.js';
+import { Str, BinaryInteger, isInteger, isBinaryInteger, isReal, Program, isString, Integer, Real, Tagged, isVector, isMatrix, Vector, Matrix } from '../types.js';
 import { register } from './registry.js';
-import { _driveGen, _evalValueGen, _toCountN, _withVMUnary, keepsFailureStack, runIft, runIfte, runSuspendable } from './internal.js';
+import { _driveGen, _evalValueGen, _hasSymEntry, _toCountN, _withVMUnary, keepsFailureStack, runIft, runIfte, runSuspendable } from './internal.js';
 
 
+
+function evalEntry(s, x) {
+  const depth = s.depth;
+  runSuspendable(_evalValueGen(s, x, 0, false));
+  if (s.depth !== depth + 1) throw new RPLError('Bad argument value');
+  return s.pop();
+}
+
+// An array with symbolic entries evaluates entry by entry, so [[ X 1 ]] with 3 in X gives [[ 3 1 ]].
+function evalArray(s, v) {
+  if (isVector(v)) return Vector(v.items.map((x) => evalEntry(s, x)));
+  return Matrix(v.rows.map((row) => row.map((x) => evalEntry(s, x))));
+}
+
+const isSymbolicArray = (v) => (isVector(v) && _hasSymEntry(v.items)) || (isMatrix(v) && _hasSymEntry(v.rows.flat()));
 
 // The snapshot is taken after the pop, so a failing program is consumed.  A failing
 // command or ABORT inside it leaves the stack where the program got to.
@@ -12,7 +27,8 @@ function evalOp(s) {
   const v = s.pop();
   const snap = s.save();
   try {
-    runSuspendable(_evalValueGen(s, v, 0, false));
+    if (isSymbolicArray(v)) s.push(evalArray(s, v));
+    else runSuspendable(_evalValueGen(s, v, 0, false));
   } catch (e) {
     if (!keepsFailureStack(e)) s.restore(snap);
     throw e;

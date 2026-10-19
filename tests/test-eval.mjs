@@ -511,3 +511,15 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(top("'DUP(3)' EVAL") === '`DUP(3)`', 'a command that leaves other than one result stays symbolic');
   runLine('5 CF');
 }
+
+// EVAL of an array with symbolic entries evaluates each entry; a numeric array stays as it is.
+{
+  const top = (line) => format(runLine(line).peek());
+  runLine("3 'EVX' STO");
+  assert(top('[[ EVX 1 ][ 2 EVY ]] EVAL') === '[[ 3 1 ][ 2 EVY ]]', 'EVAL puts a stored value into a symbolic matrix entry');
+  assert(top("[ EVX 'EVX^2' ] EVAL") === '[ 3 9 ]', 'EVAL evaluates each entry of a symbolic vector');
+  assert(top('[[ 1 2 ][ 3 4 ]] EVAL') === '[[ 1 2 ][ 3 4 ]]', 'EVAL leaves a numeric matrix as it is');
+  runLine("« 1 2 » 'EVP' STO");
+  assertThrows(() => runLine('[ EVP ] EVAL'), /Bad argument value/, 'EVAL of an array refuses an entry that gives two values');
+  runLine("'EVX' PURGE 'EVP' PURGE");
+}
