@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.10 (2026-10-19)
+**Latest release:** v0.7.11 (2026-10-19)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.11 — 2026-10-19
+
+The twelfth batch of missing HP 50g commands adds two:
+
+- `SVD` gives a matrix's singular value decomposition as the AUR
+  describes it: U and V square and orthogonal and S largest first, so
+  that A = U·diag(S)·V. `[[1 2][3 4][5 6]] SVD` gives a 3×3 U, a 2×2 V
+  and `[ 9.52551809157 .514300580659 ]`; `S { 3 2 } DIAG→` builds
+  diag(S). It sits in the MATRIX menu's FACTR folder beside SVL.
+- `SIGNTAB` tabulates the sign of an expression in the CAS variable:
+  `'2-X^2' SIGNTAB` gives `{ -∞ - -√2 + √2 - ∞ }`, the zeros and poles
+  in increasing order with + or - between them, as the AUR shows.
 
 ## v0.7.10 — 2026-10-19
 
