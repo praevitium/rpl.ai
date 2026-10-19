@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.6.159 (2026-10-19)
+**Latest release:** v0.6.160 (2026-10-19)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.6.160 — 2026-10-19
+
+Command search's Recent commands show a command saved under its ASCII
+spelling before 0.6.158, LIST-> say, as LIST→, and only once. On a
+phone the highlighted result's preview takes two lines, so a reason
+such as "LIST→ needs more values than the stack holds." reads in full,
+and a command that gives the stack back unchanged, SUM of a real,
+previews as leaving the stack as it is rather than removing 0 levels.
+
+A quote in an assistant reply keeps its own paragraphs, lists and
+quotes within it, instead of running them together on one line.
 
 ## v0.6.159 — 2026-10-19
 
