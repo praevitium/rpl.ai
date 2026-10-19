@@ -2,7 +2,7 @@ import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isLis
 import { giac } from '../cas/giac-engine.mjs';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { buildGiacCmd, giacToAst, splitGiacList, astToGiac } from '../cas/giac-convert.mjs';
-import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction, LOGIC_ARITY } from '../algebra.js';
+import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction, LOGIC_ARITY, formatAlgebra } from '../algebra.js';
 import { getComplexMode, getCasVx, setCasVx, getApproxMode } from '../state.js';
 import { register, lookup } from './registry.js';
 import { _astToRplValue, _pushCasResult, _isSymOperand, _toAst, _substitute, _withListUnary, _withTaggedUnary, _withVMUnary } from './internal.js';
@@ -247,6 +247,40 @@ register('DIV2', _polyArith('quorem', 2, [0, 1]), { category: 'Polynomials', cat
 register('EGCD', _polyArith('egcd', 2, [2, 0, 1]), { category: 'Polynomials', categoryOrder: 8.7, label: "EGCD" });
 register('ABCUV', _polyArith('abcuv', 3, [0, 1]), { category: 'Polynomials', categoryOrder: 8.8, label: "ABCUV" });
 
+// AUR: a 2×n matrix of x and y values gives the polynomial through them, over one denominator.
+register('LAGRANGE', (s) => {
+  const [m] = s.popN(1);
+  if (!isMatrix(m)) throw new RPLError('Bad argument type');
+  if (m.rows.length !== 2) throw new RPLError('Invalid dimension');
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const [xs, ys] = m.rows.map((row) => `[${row.map((v) => astToGiac(_astArg(v))).join(',')}]`);
+  const parts = splitGiacList(giac.caseval(`f2nd(normal(lagrange(${xs},${ys},${astToGiac(AstVar(getCasVx()))})))`));
+  if (parts?.length !== 2) throw new RPLError('Bad argument value');
+  const [num, den] = parts.map(giacToAst);
+  _pushCasResult(s, astIsNum(den) && den.value === 1 ? num : AstBin('/', num, den));
+}, { category: 'Polynomials', categoryOrder: 8.9, label: "LAGRANGE" });
+
+register('RESULTANT', (s) => {
+  const [a, b] = s.popN(2).map(_astArg);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const x = astToGiac(AstVar(_mainVar(a, b)));
+  _pushCasResult(s, giacToAst(giac.caseval(`resultant(${astToGiac(a)},${astToGiac(b)},${x})`)));
+}, { category: 'Polynomials', categoryOrder: 8.91, label: "RESULTANT" });
+
+// AUR: P(a), for its sign, and the number of roots in [a, b]. Giac's sturmab counts ]a, b], so a root at a
+// is counted apart, with the square-free P divided by X-a; with no roots it gives -1 where P is negative.
+register('STURMAB', (s) => {
+  const [p, a, b] = s.popN(3).map(_astArg);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const [P, A, B] = [p, a, b].map(astToGiac);
+  const x = astToGiac(AstVar(_mainVar(p)));
+  const atA = giacToAst(giac.caseval(`subst(${P},${x}=${A})`));
+  const count = astIsNum(atA) && atA.value === 0
+    ? `1+max(0,sturmab(quo(normal((${P})/gcd(${P},diff(${P},${x}))),${x}-(${A}),${x}),${x},${A},${B}))`
+    : `max(0,sturmab(${P},${x},${A},${B}))`;
+  s.push(RList([_casValue(atA), _casValue(giacToAst(giac.caseval(count)))]));
+}, { category: 'Polynomials', categoryOrder: 8.92, label: "STURMAB" });
+
 // The AUR's vector calculus: DIV and CURL take a vector function, LAPL an expression, each with a vector of its variables.
 function _vectorCalculus(giacFn, check) {
   return (s) => {
@@ -407,6 +441,13 @@ function _vxFor(...asts) {
   return names.length === 1 && names[0] !== vx ? names[0] : vx;
 }
 
+// AUR: VX when the expressions use it, else their first variable.
+function _mainVar(...asts) {
+  const vx = getCasVx();
+  const names = [...new Set(asts.flatMap((ast) => [...algebraFreeVars(ast)]))].filter((name) => !_CONSTANT_NAMES.has(name));
+  return names.includes(vx) || !names.length ? vx : names[0];
+}
+
 function _vxForm(opName) {
   return (s) => {
     if (s.depth < 1) throw new RPLError('Too few arguments');
@@ -502,6 +543,12 @@ register('TAYLR', (s) => {
   const varName = _varName(varArg);
   _pushCasResult(s, _taylor(_astArg(expr), varName, _taylorOrder(orderArg)));
 }, { category: 'CAS / symbolic', categoryOrder: 3.5, label: "TAYLR" });
+
+register('DIVPC', (s) => {
+  const [numArg, denArg, orderArg] = s.popN(3);
+  const [num, den] = [numArg, denArg].map(_astArg);
+  _pushCasResult(s, _taylor(AstBin('/', num, den), _mainVar(num, den), _taylorOrder(orderArg)));
+}, { category: 'CAS / symbolic', categoryOrder: 3.55, label: "DIVPC" });
 
 const _infinitySign = (ast) => {
   const inf = (a) => a.kind === 'var' && /^(∞|\+∞|INFINITY|\+INFINITY)$/i.test(a.name);
@@ -728,6 +775,57 @@ register('EXLR', (s) => {
   s.push(Symbolic(v.expr.r));
 }, { category: 'CAS / symbolic', categoryOrder: 38, label: "EXLR" });
 
+const _hasQuotient = (n) => (n.kind === 'bin' && (n.op === '/' || _hasQuotient(n.l) || _hasQuotient(n.r)))
+  || (n.kind === 'neg' && _hasQuotient(n.arg)) || (n.kind === 'fn' && n.name === 'INV');
+
+// AUR: (X-3)^2/(Z+4) splits as written; Giac's fxnd would expand (X-3)^2.
+register('FXND', (s) => {
+  const [v] = s.popN(1);
+  if (isRational(v)) {
+    s.push(Integer(v.n));
+    s.push(Integer(v.d));
+    return;
+  }
+  if (isInteger(v) || isReal(v) || isName(v)) {
+    s.push(v);
+    s.push(Integer(1n));
+    return;
+  }
+  if (!isSymbolic(v)) throw new RPLError('Bad argument type');
+  const ast = v.expr;
+  if (ast.kind === 'bin' && ast.op === '/' && !_hasQuotient(ast.l) && !_hasQuotient(ast.r)) {
+    s.push(_casValue(ast.l));
+    s.push(_casValue(ast.r));
+    return;
+  }
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const parts = splitGiacList(giac.caseval(buildGiacCmd(ast, (e) => `fxnd(${e})`)));
+  if (parts?.length !== 2) throw new RPLError('Bad argument value');
+  for (const part of parts) s.push(_casValue(giacToAst(part)));
+}, { category: 'CAS / symbolic', categoryOrder: 38.1, label: "FXND" });
+
+// AUR: an equation counts as its left side minus its right, and zero has degree -1.
+register('DEGREE', (s) => {
+  const [v] = s.popN(1);
+  let ast = _astArg(v);
+  if (ast.kind === 'bin' && ast.op === '=') ast = AstBin('-', ast.l, ast.r);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const p = astToGiac(ast);
+  const d = giacToAst(giac.caseval(`when(normal(${p})==0,-1,degree(normal(${p}),${astToGiac(AstVar(_mainVar(ast)))}))`));
+  const degree = d.kind === 'neg' && astIsNum(d.arg) ? -d.arg.value : d.value;
+  if (!Number.isInteger(degree)) throw new RPLError('Bad argument value');
+  s.push(getApproxMode() ? Real(degree) : Integer(BigInt(degree)));
+}, { category: 'CAS / symbolic', categoryOrder: 38.2, label: "DEGREE" });
+
+register('REORDER', (s) => {
+  const [p, v] = s.popN(2);
+  const x = _varName(v);
+  _pushCasResult(s, _casEval(_astArg(p), (e) => `reorder(${e},[${x}])`, [x]));
+}, { category: 'CAS / symbolic', categoryOrder: 38.3, label: "REORDER" });
+
+
+// AUR p.3-136: longest first, then alphabetical.
+const _longestFirst = (a, b) => b.length - a.length || (a < b ? -1 : a > b ? 1 : 0);
 
 register('LNAME', (s) => {
   if (s.depth < 1) throw new RPLError('Too few arguments');
@@ -747,10 +845,20 @@ register('LNAME', (s) => {
       n.args.forEach(visit);
     }
   })(v.expr);
-  // AUR p.3-136: longest first, then alphabetical.
-  const ids = [...names].sort((a, b) => b.length - a.length || (a < b ? -1 : a > b ? 1 : 0));
-  s.push(Vector(ids.map((id) => Name(id))));
+  s.push(Vector([...names].sort(_longestFirst).map((id) => Name(id))));
 }, { category: 'CAS / symbolic', categoryOrder: 39, label: "LNAME" });
+
+// AUR: as LNAME, but a function of a variable, COS(B), counts as one, and the expression stays on the stack.
+register('LVAR', (s) => {
+  if (s.depth < 1) throw new RPLError('Too few arguments');
+  const v = s.peek();
+  if (!isSymbolic(v)) throw new RPLError('Bad argument type');
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const items = (splitGiacList(giac.caseval(buildGiacCmd(v.expr, (e) => `lvar(${e})`))) ?? []).map(giacToAst);
+  const text = new Map(items.map((a) => [a, a.kind === 'var' ? a.name : formatAlgebra(a)]));
+  items.sort((a, b) => _longestFirst(text.get(a), text.get(b)));
+  s.push(Vector(items.map((a) => (a.kind === 'var' ? Name(a.name) : Symbolic(a)))));
+}, { category: 'CAS / symbolic', categoryOrder: 39.1, label: "LVAR" });
 
 
 function _lapVarName(ast) {
@@ -927,6 +1035,11 @@ const _EXPLN_REWRITES = {
 
 register('EXPLN', _rewriteOp(_fnRewrites(_EXPLN_REWRITES)), { category: 'CAS / symbolic', categoryOrder: 12, label: "EXPLN" });
 
+register('EXP2POW', _casUnary('exp2pow'), { category: 'CAS / symbolic', categoryOrder: 12.1, label: "EXP2POW" });
+
+// Giac has no EXP2HYP; the AUR writes EXP(u) as SINH(u)+COSH(u).
+register('EXP2HYP', _rewriteOp(_fnRewrites({ EXP: (u) => AstBin('+', AstFn('SINH', [u]), AstFn('COSH', [u])) })), { category: 'CAS / symbolic', categoryOrder: 12.2, label: "EXP2HYP" });
+
 
 // HEAVISIDE(0) = 1, as on the HP50.
 register('HEAVISIDE', _withTaggedUnary(_withListUnary(_withVMUnary((s) => {
@@ -974,6 +1087,18 @@ function _lncollectRewrite(n) {
 
 register('LNCOLLECT', _rewriteOp(_lncollectRewrite), { category: 'CAS / symbolic', categoryOrder: 13, label: "LNCOLLECT" });
 
+const POWEXPAND_MAX = 64;
+
+// AUR: (X+1)^3 becomes (X+1)*(X+1)*(X+1), for DISTRIB to expand a step at a time; Giac leaves powers alone.
+function _powExpandRewrite(n) {
+  if (n.kind !== 'bin' || n.op !== '^' || !astIsNum(n.r)) return null;
+  const k = n.r.value;
+  if (!Number.isInteger(k) || k < 2 || k > POWEXPAND_MAX) return null;
+  return Array.from({ length: k - 1 }).reduce((product) => AstBin('*', product, n.l), n.l);
+}
+
+register('POWEXPAND', _rewriteOp(_powExpandRewrite), { category: 'CAS / symbolic', categoryOrder: 6.5, label: "POWEXPAND" });
+
 
 register('PROPFRAC', (s) => {
   const v = s.pop();
@@ -991,6 +1116,7 @@ register('COSSIN', _casUnary('tan2sincos'), { category: 'CAS / symbolic', catego
 register('TRIGCOS', _casUnary('trigcos'), { category: 'CAS / symbolic', categoryOrder: 21.1, label: "TRIGCOS" });
 register('TRIGSIN', _casUnary('trigsin'), { category: 'CAS / symbolic', categoryOrder: 21.2, label: "TRIGSIN" });
 register('TRIGTAN', _casUnary('trigtan'), { category: 'CAS / symbolic', categoryOrder: 21.3, label: "TRIGTAN" });
+register('SINCOS', _casUnary('sincos'), { category: 'CAS / symbolic', categoryOrder: 21.4, label: "SINCOS" });
 
 
 register('LIN', _casUnary('lin'), { category: 'CAS / symbolic', categoryOrder: 35, label: "LIN" });

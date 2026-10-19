@@ -76,6 +76,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   I→R R→I                    integer to real (5 → 5.) and an integral real to an integer (5. → 5)
   EXACT APPROX               switch CAS exact/approximate mode
   EXPAND COLLECT             algebraic rewrites (EXPAN and COLCT are the same)
+  POWEXPAND                  a power as a product: \`(X+1)^3\` POWEXPAND → \`(X+1)*(X+1)*(X+1)\`, for DISTRIB to expand a step at a time
   FACTOR                     ALGEBRAIC FACTORISATION; \`X^2-1\` FACTOR → \`(X-1)*(X+1)\`.  Use for "factor x^2-1", "factorise (x-1)(x+1)*x".  ⚠ NOT FACT (that's factorial). Mnemonic: FACT ends in T (like "ten!"); FACTOR has more letters (like a factored expression has more terms).
   PARTFRAC PROPFRAC          partial-fraction / proper-fraction decomposition
   DERIV                      \`expr\` \`var\` DERIV — derivative w.r.t. var.  Example: \`SIN(X)\` \`X\` DERIV → \`COS(X)\`; the algebraic form \`∂X(X^2)\` EVAL → \`2*X\`
@@ -92,17 +93,22 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   TVMROOT TVMBEG TVMEND      \`PMT\` TVMROOT — solves the named TVM variable (N I%YR PV PMT FV) from the others and PYR, and stores it; payments at each period's end, TVMBEG for its start: 360 \`N\` STO 6.5 \`I%YR\` STO 200000 \`PV\` STO 0 \`FV\` STO 12 \`PYR\` STO \`PMT\` TVMROOT → -1264.13604699
   AMORT                      n AMORT — the first n payments' principal and interest and the balance left, from I%YR PV PMT PYR: with the mortgage above, 12 AMORT → -2235.45093797 -12934.1816259 197764.549062
   TAYLR TAYLOR0              \`expr\` \`var\` n TAYLR — Taylor polynomial at 0, n counted from the lowest power; \`expr\` TAYLOR0 is order 4 in VX
+  DIVPC                      \`num\` \`den\` n DIVPC — Taylor polynomial at 0 of num/den to degree n
   SERIES                     \`expr\` \`X=a\` n SERIES (or \`X\` for a=0, \`X=∞\`) — pushes { :Limit: :Equiv: :Expans: :Remain: } in a small h and \`h=X-a\`
   SUBST                      \`expr\` \`var=value\` SUBST — substitute
   LAPLACE ILAP               Laplace transform / inverse (LAP is LAPLACE)
   TEXPAND TLIN TSIMP TCOLLECT EXPLN COSSIN LIN     trig/exp/log rewrites
+  EXP2POW EXP2HYP SINCOS     \`EXP(5*LN(X))\` EXP2POW → \`X^5\`; EXP2HYP writes EXP(u) as SINH(u)+COSH(u); \`EXP(i*X)\` SINCOS → \`COS(X)+i*SIN(X)\`
   HALFTAN ASIN2C ASIN2T ACOS2S ATAN2S TAN2SC TAN2SC2 TAN2CS2     specific identity rewrites
   TRIGCOS TRIGSIN TRIGTAN    rewrite with SIN²+COS²=1 in COS terms or SIN terms, or SIN and COS as TAN: \`SIN(X)^2\` TRIGTAN → \`TAN(X)^2/(TAN(X)^2+1)\`
   EXLR                       split an equation/binary into LHS/RHS on the stack
+  FXND                       numerator and denominator: \`(X-3)^2/(Z+4)\` FXND → \`(X-3)^2\` \`Z+4\`
+  DEGREE REORDER             degree in VX, else the first variable (an equation is lhs-rhs, zero is -1); \`poly\` \`var\` REORDER sorts by powers of var
   VX SVX                     get/set the current CAS main variable (default \`x\`); RCLVX and STOVX are the HP's names
   MODSTO ADDTMOD SUBTMOD MULTMOD POWMOD EXPANDMOD FACTORMOD GCDMOD DIVMOD DIV2MOD     modular arithmetic against a stored modulus
   GBASIS GREDUCE             Gröbner basis / reduction
   LNAME                      extract variable Names referenced by an expression
+  LVAR                       as LNAME, but keeps the expression and lists COS(B) or MYFUNC(PQ) as one variable
 
 POLYNOMIALS / NUMBER THEORY
   HORNER PEVAL PROOT PCOEF PTAYL FCOEF FROOTS         polynomial eval / roots / coeffs
@@ -110,6 +116,7 @@ POLYNOMIALS / NUMBER THEORY
   QUOT REMAINDER             polynomial division
   SIMP2                      \`X^3+6*X^2+11*X+6\` \`X^3-7*X-6\` SIMP2 → \`X+3\` \`X-3\` (both divided by their GCD; 12 18 SIMP2 → 2 3)
   DIV2 EGCD ABCUV            polynomial IDIV2 IEGCD IABCUV in VX: \`X^2+X+1\` \`2*X+4\` DIV2 → quotient \`X/2-1/2\` remainder 3; \`X^2+1\` \`X-1\` EGCD → 2 1 \`-X-1\` (gcd, u, v); \`X^2+X+1\` \`X^2+4\` 13 ABCUV → \`-X-3\` \`X+4\`
+  RESULTANT STURMAB LAGRANGE \`p\` \`q\` RESULTANT in VX (else the first variable); \`P\` a b STURMAB → { P(a) roots in [a,b] }; [[ xs ][ ys ]] LAGRANGE → the interpolating polynomial in VX
   EUCLID INVMOD              extended-Euclid / modular inverse
   ISPRIME? NEXTPRIME PREVPRIME DIVIS FACTORS    integer primality / factorisation (FACTORS → { p1 e1 p2 e2 … })
   PA2B2 CYCLOTOMIC           sum-of-two-squares / cyclotomic polynomial

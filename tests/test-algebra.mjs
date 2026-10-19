@@ -6001,6 +6001,40 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assertThrows(() => { lookup(cmd).fn(s); }, /Bad argument type/, `${cmd} on a string is Bad argument type`);
 }
 
+// The 0.7.1 CAS commands, with the AUR's examples as real Giac answers them.
+{
+  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
+  for (const [line, fixtures, want] of [
+    ["'EXP(5*LN(X))' EXP2POW", [['exp2pow(exp(5*ln(X)))', 'X^5']], '`X^5`'],
+    ["'EXP(5*LN(X))' EXP2HYP", [], '`SINH(5*LN(X)) + COSH(5*LN(X))`'],
+    ["'EXP(i*X)' SINCOS", [['sincos(exp(i*X))', 'cos(X)+i*sin(X)']], '`COS(X) + i*SIN(X)`'],
+    ["'(X+1)^3' POWEXPAND", [], '`(X + 1)*(X + 1)*(X + 1)`'],
+    ["'COS(B)/2*A+MYFUNC(PQ)+INV(T)' LVAR", [['lvar(cos(B)/2*A+MYFUNC(PQ)+inv(T))', '[cos(B),A,MYFUNC(PQ),T]']],
+      '`COS(B)/2*A + MYFUNC(PQ) + INV(T)` | [ `MYFUNC(PQ)` `COS(B)` A T ]'],
+    ["'(X-3)^2/(Z+4)' FXND", [], '`(X - 3)^2` | `Z + 4`'],
+    ["'X+1/X' FXND", [['fxnd(X+1/X)', '[X^2+1,X]']], '`X^2 + 1` | `X`'],
+    ["'X^2+2*Y^2+2*X+6+3*Y' 'Y' REORDER", [['reorder(X^2+2*Y^2+2*X+6+3*Y,[Y])', '2*Y^2+3*Y+X^2+2*X+6']], '`2*Y^2 + 3*Y + X^2 + 2*X + 6`'],
+    ["'X^3-P*X+Q' '3*X^2-P' RESULTANT", [['resultant(X^3-P*X+Q,3*X^2-P,X)', '-4*P^3+27*Q^2']], '`(-4)*P^3 + 27*Q^2`'],
+    ["'X^3+2' -2 0 STURMAB", [['subst(X^3+2,X=-2)', '-6'], ['max(0,sturmab(X^3+2,X,-2,0))', '1']], '{ -6 1 }'],
+    ["'X^2-1' -1 0 STURMAB", [['subst(X^2-1,X=-1)', '0'], ['1+max(0,sturmab(quo(normal((X^2-1)/gcd(X^2-1,diff(X^2-1,X))),X-(-1),X),X,-1,0))', '1']], '{ 0 1 }'],
+    ["'X^3+4*X+12' '11*X^11+1' 4 DIVPC", [['series((X^3+4*X+12)/(11*X^11+1),X=0,4,polynom)', '12+4*X+X^3']], '`12 + 4*X + X^3`'],
+    ['[[1 3 4 2][6 7 8 9]] LAGRANGE', [['f2nd(normal(lagrange([1,3,4,2],[6,7,8,9],x)))', '[8*x^3-63*x^2+151*x-60,6]']], '`(8*x^3 - 63*x^2 + 151*x - 60)/6`'],
+    ['[[1 2][3 5]] LAGRANGE', [['f2nd(normal(lagrange([1,2],[3,5],x)))', '[2*x+1,1]']], '`2*x + 1`'],
+    ["'x^2-17=x^3+2*X' DEGREE", [['when(normal(x^2-17-(x^3+2*X))==0,-1,degree(normal(x^2-17-(x^3+2*X)),x))', '3']], '3'],
+    ["'X^2-X^2' DEGREE", [['when(normal(X^2-X^2)==0,-1,degree(normal(X^2-X^2),X))', '-1']], '-1'],
+  ]) {
+    giac._clear();
+    for (const [call, answer] of fixtures) giac._setFixture(call, answer);
+    const got = shown(line);
+    assert(got === want, `${line.split(' ').pop()}: ${line} gives ${want} (got ${got})`);
+  }
+  giac._clear();
+  assert(shown('3/4 FXND') === '3 | 4', 'FXND splits the rational 3/4 into 3 and 4');
+  assert(shown("'X^-2+X^2' POWEXPAND") === '`X^(-2) + X*X`', 'POWEXPAND leaves a negative power as it is');
+  assertThrows(() => runLine('[[1 2 3]] LAGRANGE'), /Invalid dimension/, 'LAGRANGE needs two rows, the x and the y values');
+  assertThrows(() => runLine('"X" LVAR'), /Bad argument type/, 'LVAR takes an algebraic');
+}
+
 /* ==================================================================
  — PCAR / CHARPOL / EGVL / PA2B2
    PCAR + CHARPOL + EGVL are Giac-backed matrix ops (use fixtures on
