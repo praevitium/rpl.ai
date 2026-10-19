@@ -549,7 +549,8 @@ from before it.
 ### Plots you can work with
 
 `FUNCTION`, `POLAR`, `PARAMETRIC`, differential equations and their slope
-fields, conics, truth plots, scatter, bar and histogram plots. Traces have checkboxes and editable expressions. Zoom, fit
+fields, conics, truth plots, scatter, bar and histogram plots; `PLOT` stores an
+expression in EQ and plots it, and `PLOTADD` adds another. Traces have checkboxes and editable expressions. Zoom, fit
 and reset are on the canvas, the window is typed in directly, and Trace mode
 (`T`) walks a cursor along the curves with live readouts. Expand to fill the
 window, or go full screen. More canvas buttons copy the plot as an image,

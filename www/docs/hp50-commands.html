@@ -11616,7 +11616,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>CLOSEIO, KERRM, SERVER</p>
   </dd>
 </dl>
-<h2 id="cmd-PLOT">PLOT <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PLOT">PLOT <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 291 · printed page 3-171</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -11626,6 +11626,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Stores its argument in EQ and opens the PLOT SETUP screen.</p>
+  <p>In rpl.ai PLOT stores level 1 in EQ, leaves it on the stack and opens the plot view with it plotted as PPAR's plot type (FUNCTION by default), the plot view being rpl.ai's plot setup and graph in one.</p>
   </dd>
   <dt class="cmd-label cmd-label-input">Input</dt>
   <dd class="cmd-field cmd-field-input">
@@ -11649,7 +11650,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>PLOTADD</p>
   </dd>
 </dl>
-<h2 id="cmd-PLOTADD">PLOTADD <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PLOTADD">PLOTADD <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 291 · printed page 3-171</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -11659,6 +11660,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Adds a function to the existing plot function list, and opens the Plot Setup screen.</p>
+  <p>In rpl.ai PLOTADD takes level 1, adds it to EQ (which becomes a list when it held one expression) and adds it to the plot view beside the traces already there, as PPAR's plot type says.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">

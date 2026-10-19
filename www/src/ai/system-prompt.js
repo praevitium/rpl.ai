@@ -231,6 +231,7 @@ STATISTICS
   UTPN UTPC UTPF UTPT        upper-tail probabilities (normal / chi² / F / Student-t); m v x NDIST — normal density at x
 
 PLOT WINDOW (PPAR, as on the HP 50g)
+  PLOT PLOTADD               \`SIN(X)\` PLOT stores it in EQ and plots it (PPAR's plot type); \`X^2\` PLOTADD adds it to EQ's list and to the plot
   SLOPEFIELD                 \`X-Y\` SLOPEFIELD draws dy/dx = f(x, y) as a field of short slope dashes across the plot view
   CONIC                      \`X^2/4+Y^2=1\` CONIC draws a second-order curve f(x, y) = 0, solving for Y at each X
   TRUTH                      \`X^2+Y^2<4 AND X>0\` TRUTH shades the region of the plot view where the condition holds (any non-zero value)

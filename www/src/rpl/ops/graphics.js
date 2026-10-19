@@ -40,6 +40,37 @@ register('FUNCTION',  (s) => _requestPlot('function', s), { category: 'Graphics'
 
 register('POLAR',     (s) => _requestPlot('polar', s), { category: 'Graphics', categoryOrder: 4, label: "POLAR" });
 
+// PLOT stores level 1 in EQ and plots it, PLOTADD adds it to EQ's list and to the plot, each as PPAR's plot type says.
+const PTYPE_KINDS = Object.freeze({ FUNCTION: 'function', POLAR: 'polar', PARAMETRIC: 'parametric', DIFFEQ: 'diffeq', SLOPEFIELD: 'slopefield', CONIC: 'conic', TRUTH: 'truth' });
+
+function _plotKind() {
+  const ptype = plotParameters()[5];
+  return PTYPE_KINDS[isName(ptype) ? ptype.id : ''] ?? 'function';
+}
+
+const _plottable = (v) => {
+  if (!isSymbolic(v) && !isName(v)) throw new RPLError('Bad argument type');
+  return v;
+};
+
+register('PLOT', (s) => {
+  if (s.depth < 1) throw new RPLError('Too few arguments');
+  varStore('EQ', _plottable(s.peek()));
+  _requestPlot(_plotKind(), s);
+}, { category: 'Graphics', categoryOrder: 3.1, label: "PLOT" });
+
+register('PLOTADD', (s) => {
+  const f = _plottable(s.pop());
+  const eq = varRecall('EQ');
+  varStore('EQ', eq === undefined ? f : RList([...(isList(eq) ? eq.items : [eq]), f]));
+  s.push(f);
+  try {
+    _requestPlot(_plotKind(), s);
+  } finally {
+    s.pop();
+  }
+}, { category: 'Graphics', categoryOrder: 3.2, label: "PLOTADD" });
+
 register('PARAMETRIC',(s) => _requestPlot('parametric', s), { category: 'Graphics', categoryOrder: 5, label: "PARAMETRIC" });
 
 register('DIFFEQ',    (s) => _requestPlot('diffeq', s), { category: 'Graphics', categoryOrder: 7, label: "DIFFEQ" });

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.39 (2026-10-19)
+**Latest release:** v0.7.40 (2026-10-19)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.40 — 2026-10-19
+
+- PLOT and PLOTADD, the CAS plot commands: `'SIN(X)' PLOT` stores the
+  expression in EQ, leaves it on the stack and plots it as PPAR's plot
+  type; `'X^2' PLOTADD` adds an expression to EQ's list and to the plot
+  beside the traces already there.
 
 ## v0.7.39 — 2026-10-19
 

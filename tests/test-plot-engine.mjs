@@ -832,3 +832,28 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   runLine("'F7' PURGE");
   setGraphicsHook(null);
 }
+
+// PLOT and PLOTADD: EQ takes the expression, and the plot view the trace, of PPAR's plot type.
+{
+  const { varRecall, varPurge } = await import('../www/src/rpl/state.js');
+  const { format } = await import('../www/src/rpl/formatter.js');
+  let seen = null;
+  setGraphicsHook((kind, st) => { seen = { kind, top: format(st.peek()), depth: st.depth }; });
+  varPurge('EQ');
+  varPurge('PPAR');
+  const s = runLine("'SIN(X)' PLOT");
+  assert(seen?.kind === 'function' && s.depth === 1 && format(varRecall('EQ')) === format(s.peek()),
+    'PLOT stores level 1 in EQ, leaves it on the stack and plots it as a function');
+  const t = runLine("'X^2' PLOTADD");
+  assert(t.depth === 0 && seen.kind === 'function' && seen.top === format(runLine("'X^2'").peek()) && varRecall('EQ')?.items?.length === 2,
+    'PLOTADD takes level 1, adds it to EQ as a list and to the plot');
+  runLine("'COS(X)' PLOTADD");
+  assert(varRecall('EQ').items.length === 3, 'PLOTADD appends to EQ\'s list');
+  runLine("{ (-1,-1) (1,1) X 0 (0,0) POLAR Y } 'PPAR' STO 'T' PLOT");
+  assert(seen.kind === 'polar', 'PLOT follows PPAR\'s plot type');
+  assertThrows(() => runLine('5 PLOT'), /Bad argument type/, 'PLOT wants an expression or a name');
+  assertThrows(() => runLine('PLOT'), /Too few arguments/, 'PLOT wants an argument');
+  varPurge('EQ');
+  varPurge('PPAR');
+  setGraphicsHook(null);
+}
