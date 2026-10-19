@@ -1,8 +1,9 @@
 import { RPLError } from '../stack.js';
-import { inScratchState, varRecall, varStore, getPict, setPict, getBinaryBase } from '../state.js';
+import { inScratchState, varRecall, varStore, getPict, setPict, getBinaryBase, toRadians } from '../state.js';
 import { Complex, Real, Name, RList, Str, BinaryInteger, Grob, isComplex, isReal, isInteger, isBinaryInteger, isName, isList, isString, isGrob, toRealOrThrow } from '../types.js';
 import { register } from './registry.js';
 import { statPlotData } from './statistics.js';
+import { TRUE, FALSE } from './internal.js';
 
 
 let _graphicsHook = null;
@@ -345,3 +346,178 @@ register('BLANK', (s) => {
   const [width, height] = s.popN(2).map(_pixels);
   s.push(_blank(width, height));
 }, { category: 'Graphics', categoryOrder: 10.3, label: "BLANK" });
+
+
+// PICT's pixel grid in user units: the point at column 0 and row 0, and the size of a pixel.
+export function pictGrid() {
+  const { xmin, ymax } = _corners();
+  const { dx, dy } = _grid();
+  return { xmin, ymax, dx, dy };
+}
+
+const _isPixelPoint = (v) => isList(v) && v.items.length === 2 && v.items.every(isBinaryInteger);
+
+// A point as PICT's column and row: { #n #m } in pixels, or (x, y) in user units through PPAR.
+function _pixelOf(v) {
+  if (_isPixelPoint(v)) return v.items.map((b) => Number(b.value));
+  if (!isComplex(v)) throw new RPLError('Bad argument type');
+  const g = pictGrid();
+  return [Math.round((v.re - g.xmin) / g.dx), Math.round((g.ymax - v.im) / g.dy)];
+}
+
+// A point in user units, a pixel standing for its centre.
+export function pictPoint(v) {
+  if (isComplex(v)) return { x: v.re, y: v.im };
+  const [col, row] = _pixelOf(v);
+  const g = pictGrid();
+  return { x: g.xmin + col * g.dx, y: g.ymax - row * g.dy };
+}
+
+const _pixelList = (cells) => RList(cells.map((n) => BinaryInteger(BigInt(n), getBinaryBase() || 'd')));
+
+// Draws on a copy of PICT and makes it PICT; pixels off its edges are dropped.
+function _paint(draw) {
+  const p = getPict();
+  const g = Grob(p.width, p.height, p.bytes.slice());
+  const rowBytes = Math.ceil(g.width / 8);
+  draw((col, row, how) => {
+    if (col < 0 || row < 0 || col >= g.width || row >= g.height) return;
+    const i = row * rowBytes + (col >> 3), bit = 1 << (col & 7);
+    if (how === 'off') g.bytes[i] &= ~bit;
+    else if (how === 'toggle') g.bytes[i] ^= bit;
+    else g.bytes[i] |= bit;
+  });
+  setPict(g);
+}
+
+function _pixelOn(g, col, row) {
+  if (col < 0 || row < 0 || col >= g.width || row >= g.height) return false;
+  return (g.bytes[row * Math.ceil(g.width / 8) + (col >> 3)] >> (col & 7)) & 1;
+}
+
+// The part of a segment within a pixel of PICT, so a far-off point can't make a long loop.
+function _clip([c0, r0], [c1, r1], width, height) {
+  if ([c0, c1].every((c) => c >= -1 && c <= width) && [r0, r1].every((r) => r >= -1 && r <= height)) return [[c0, r0], [c1, r1]];
+  let t0 = 0, t1 = 1;
+  const dc = c1 - c0, dr = r1 - r0;
+  for (const [p, q] of [[-dc, c0 + 1], [dc, width - c0], [-dr, r0 + 1], [dr, height - r0]]) {
+    if (p === 0) {
+      if (q < 0) return null;
+      continue;
+    }
+    const t = q / p;
+    if (p < 0) t0 = Math.max(t0, t);
+    else t1 = Math.min(t1, t);
+    if (t0 > t1) return null;
+  }
+  return [[Math.round(c0 + t0 * dc), Math.round(r0 + t0 * dr)], [Math.round(c0 + t1 * dc), Math.round(r0 + t1 * dr)]];
+}
+
+// Bresenham's line, each pixel once.
+function _line(from, to, plot) {
+  const { width, height } = getPict();
+  const ends = _clip(from, to, width, height);
+  if (!ends) return;
+  let [[c, r], [c1, r1]] = ends;
+  const dc = Math.abs(c1 - c), dr = -Math.abs(r1 - r), sc = c < c1 ? 1 : -1, sr = r < r1 ? 1 : -1;
+  let err = dc + dr;
+  for (;;) {
+    plot(c, r);
+    if (c === c1 && r === r1) return;
+    const e2 = 2 * err;
+    if (e2 >= dr) { err += dr; c += sc; }
+    if (e2 <= dc) { err += dc; r += sr; }
+  }
+}
+
+function _pixelCommand(how) {
+  return (s) => {
+    const [v] = s.popN(1);
+    const [col, row] = _pixelOf(v);
+    _paint((plot) => plot(col, row, how));
+  };
+}
+
+register('PIXON', _pixelCommand('on'), { category: 'Graphics', categoryOrder: 11, label: "PIXON" });
+register('PIXOFF', _pixelCommand('off'), { category: 'Graphics', categoryOrder: 11.1, label: "PIXOFF" });
+
+register('PIX?', (s) => {
+  const [col, row] = _pixelOf(s.popN(1)[0]);
+  s.push(_pixelOn(getPict(), col, row) ? TRUE : FALSE);
+}, { category: 'Graphics', categoryOrder: 11.2, label: "PIX?" });
+
+function _lineCommand(how) {
+  return (s) => {
+    const [a, b] = s.popN(2).map(_pixelOf);
+    _paint((plot) => _line(a, b, (c, r) => plot(c, r, how)));
+  };
+}
+
+register('LINE', _lineCommand('on'), { category: 'Graphics', categoryOrder: 11.3, label: "LINE" });
+register('TLINE', _lineCommand('toggle'), { category: 'Graphics', categoryOrder: 11.4, label: "TLINE" });
+
+register('BOX', (s) => {
+  const [[c0, r0], [c1, r1]] = s.popN(2).map(_pixelOf);
+  _paint((plot) => {
+    const on = (c, r) => plot(c, r, 'on');
+    _line([c0, r0], [c1, r0], on);
+    _line([c1, r0], [c1, r1], on);
+    _line([c1, r1], [c0, r1], on);
+    _line([c0, r1], [c0, r0], on);
+  });
+}, { category: 'Graphics', categoryOrder: 11.5, label: "BOX" });
+
+// ARC's radius is in pixels: #n as given, or a user-unit radius measured from the centre to where the arc starts.
+register('ARC', (s) => {
+  const [center, radius, a1, a2] = s.popN(4);
+  const [t1, t2] = [a1, a2].map((a) => toRadians(_real(a)));
+  const [cx, cy] = _pixelOf(center);
+  let r;
+  if (isComplex(center) && (isReal(radius) || isInteger(radius))) {
+    const rr = _real(radius);
+    const [sx, sy] = _pixelOf(Complex(center.re + rr * Math.cos(t1), center.im + rr * Math.sin(t1)));
+    r = Math.hypot(sx - cx, sy - cy);
+  } else if (_isPixelPoint(center) && isBinaryInteger(radius)) {
+    r = Number(radius.value);
+  } else {
+    throw new RPLError('Bad argument type');
+  }
+  const sweep = Math.abs(t2 - t1) > 2 * Math.PI ? 2 * Math.PI * Math.sign(t2 - t1) : t2 - t1;
+  const steps = Math.min(20000, Math.max(1, Math.ceil(Math.abs(sweep) * Math.max(r, 1))));
+  const at = (k) => {
+    const t = t1 + (sweep * k) / steps;
+    return [Math.round(cx + r * Math.cos(t)), Math.round(cy - r * Math.sin(t))];
+  };
+  _paint((plot) => {
+    const on = (c, row) => plot(c, row, 'on');
+    let prev = at(0);
+    on(...prev);
+    if (sweep === 0) return;
+    for (let k = 1; k <= steps; k++) {
+      const next = at(k);
+      _line(prev, next, on);
+      prev = next;
+    }
+  });
+}, { category: 'Graphics', categoryOrder: 11.6, label: "ARC" });
+
+register('C→PX', (s) => {
+  const [v] = s.popN(1);
+  if (!isComplex(v)) throw new RPLError('Bad argument type');
+  s.push(_pixelList(_pixelOf(v)));
+}, { category: 'Graphics', categoryOrder: 11.7, label: "C→PX" });
+
+register('PX→C', (s) => {
+  const [v] = s.popN(1);
+  if (!_isPixelPoint(v)) throw new RPLError('Bad argument type');
+  const { x, y } = pictPoint(v);
+  s.push(Complex(x, y));
+}, { category: 'Graphics', categoryOrder: 11.8, label: "PX→C" });
+
+// PVIEW shows PICT: { } in PPAR's window, or with a point at the view's top left.
+register('PVIEW', (s) => {
+  const [v] = s.popN(1);
+  if (!(isList(v) && v.items.length === 0)) pictPoint(v);
+  _requestPlot('pview', s, v);
+}, { category: 'Graphics', categoryOrder: 11.9, label: "PVIEW" });
+

@@ -7,8 +7,8 @@ import {
 import { escapeHtml } from './display.js';
 import { icon } from './icons.js';
 import { isSymbolic, isName, isMatrix, isVector, isList, Real } from '../rpl/types.js';
-import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians } from '../rpl/state.js';
-import { plotSettings } from '../rpl/ops/graphics.js';
+import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians, getPict, subscribe as subscribeState } from '../rpl/state.js';
+import { plotSettings, pictGrid, pictPoint } from '../rpl/ops/graphics.js';
 import { downloadFile } from '../rpl/persist.js';
 
 export { stackValueToTrace, traceToStackValues };
@@ -50,6 +50,13 @@ function sampleOpts(extra) {
     res: ppar?.res ?? null,
     ...extra,
   };
+}
+
+// PVIEW shows PICT in PPAR's window, or in a window that size with the given point at its top left.
+function pviewWindow(point, window) {
+  if (isList(point) && !point.items.length) return window;
+  const { x, y } = pictPoint(point);
+  return { xmin: x, xmax: x + window.xmax - window.xmin, ymin: y - (window.ymax - window.ymin), ymax: y };
 }
 
 function canSharePng() {
@@ -140,6 +147,12 @@ export class GraphView {
     this._selectedId = null;
     this._bind();
     this._renderExprs();
+    this._pict = calcState.pict;
+    subscribeState(() => {
+      if (calcState.pict === this._pict) return;
+      this._pict = calcState.pict;
+      this.draw();
+    });
   }
 
   _bind() {
@@ -379,8 +392,9 @@ export class GraphView {
   }
 
   applyPlotOp(kind, stack, data = null) {
-    if (kind === 'draw') {
-      this.view = pparView() ?? this.view;
+    if (kind === 'draw' || kind === 'pview') {
+      const window = pparView() ?? this.view;
+      this.view = kind === 'pview' ? pviewWindow(data, window) : window;
       this.draw();
       return;
     }
@@ -733,6 +747,7 @@ export class GraphView {
       grid: token('--plot-grid'),
       axis: token('--plot-axis'),
       label: token('--plot-label'),
+      ink: token('--ink'),
       font: `11px ${token('--font-mono')}`,
     };
   }
@@ -762,6 +777,7 @@ export class GraphView {
       if (!t.enabled) continue;
       this._drawTrace(ctx, t, width, height);
     }
+    this._drawPict(ctx, width, height);
     this._drawHover(ctx, width, height);
   }
 
@@ -796,6 +812,34 @@ export class GraphView {
       ctx.lineTo(width, py);
       ctx.stroke();
       if (!onAxis) ctx.fillText(fmtAxis(y), Math.min(width - 36, Math.max(4, px0 + 4)), py - 3);
+    }
+    ctx.restore();
+  }
+
+  // PICT's lit pixels over the plot, each the cell of PPAR's window it stands for, as the drawing commands left them.
+  _drawPict(ctx, width, height) {
+    const pict = getPict();
+    if (!pict.bytes.some(Boolean)) return;
+    let grid;
+    try {
+      grid = pictGrid();
+    } catch {
+      return;
+    }
+    const rowBytes = Math.ceil(pict.width / 8);
+    const edge = (col, row) => worldToPixel(grid.xmin + (col - 0.5) * grid.dx, grid.ymax - (row - 0.5) * grid.dy, this.view, width, height).map(Math.round);
+    ctx.save();
+    ctx.fillStyle = this._colors.ink;
+    for (let row = 0; row < pict.height; row++) {
+      for (let k = 0; k < rowBytes; k++) {
+        const byte = pict.bytes[row * rowBytes + k];
+        for (let bit = 0; byte && bit < 8; bit++) {
+          if (!(byte & (1 << bit))) continue;
+          const [x0, y0] = edge(k * 8 + bit, row);
+          const [x1, y1] = edge(k * 8 + bit + 1, row + 1);
+          ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+        }
+      }
     }
     ctx.restore();
   }

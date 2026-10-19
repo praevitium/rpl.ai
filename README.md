@@ -878,10 +878,10 @@ Catalog and the command reference mark what is available. Not there yet:
   app was closed shows as past due the next time it opens. While one is
   past due, the HP's alert annunciator ((•)) lights in the status line,
   and a tap on it brings the note back.
-- PVIEW, the drawing commands (LINE, BOX, ARC, PIXON, LABEL and the rest)
-  and the graphics object commands such as GOR and →GROB. PICT holds a
-  graphics object (PICT RCL, STO and PURGE, PDIM, ERASE, BLANK), but nothing
-  draws on it or shows it yet. The plot-window commands (XRNG, YRNG, CENTR,
+- the text and axes drawing commands (LABEL, DRAX, →GROB) and the graphics
+  object commands such as GOR, GXOR, SUB and REPL. PICT holds a graphics
+  object, LINE, TLINE, BOX, ARC, PIXON and PIXOFF draw on it, and PVIEW
+  shows it over the plot. The plot-window commands (XRNG, YRNG, CENTR,
   SCALE, INDEP, RES, AXES and the rest) set PPAR, and plots start in its
   window, follow its INDEP, DEPND and RES and draw its axes, but the axis
   labels are only stored so far

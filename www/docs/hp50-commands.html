@@ -1334,6 +1334,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Draw Arc Command: Draws an arc in PICT counterclockwise from xθ1 to xθ2, with its center at the coordinate specified in argument 1 or level 4 and its radius specified in argument 2 or level 3. ARC always draws an arc of constant radius in pixels, even when the radius and center are specified in user-units, regardless of the relative scales in user-units of the x- and y-axes. With user-unit arguments, the arc starts at the pixel specified by (x, y) + (a, b), where (a, b) is the rectangular conversion of the polar coordinate (xradius, xθ1). The resultant distance in pixels from the starting point to the center pixel is used as the actual radius, r&#x60;. The arc stops at the pixel specified by (r&#x60;, xθ2). If xθ1 = xθ2, ARC plots one point. If |xθ1 – xθ2| &gt;360 degrees, 2π radians, or 400 grads, ARC draws a complete circle.</p>
+  <p>In rpl.ai a second angle smaller than the first sweeps back clockwise to it.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
@@ -12538,6 +12539,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>PICT View Command: Displays PICT with the specified coordinate at the upper left corner of the graphics display. PICT must fill the entire display on execution of PVIEW. Thus, if a position other than the upper left corner of PICT is specified, PICT must be large enough to fill a rectangle that extends 131 pixels to the right and 80 pixels down on the HP 50g and 49g+ (64 pixels down on the HP 48gII). If PVIEW is executed from a program with a coordinate argument (versus an empty list), the graphics display persists only until the keyboard is ready for input (for example, until the end of program execution). However, the FREEZE command freezes the display until a key is pressed. If PVIEW is executed with an empty list argument, PICT is centered in the graphics display with scrolling mode activated. In this case, the graphics display persists until −is pressed. PVIEW does not activate the graphics cursor or the Picture menu. To activate the graphics cursor and Picture menu, execute PICTURE.</p>
+  <p>In rpl.ai PVIEW opens the plot view, where PICT's pixels show over the plot at PPAR's scale; the view can still be panned and zoomed, and stays until you close it.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">

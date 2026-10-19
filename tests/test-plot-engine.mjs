@@ -532,6 +532,55 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   setPict(null);
 }
 
+// The drawing commands, on PICT's pixels, given in pixels or in PPAR's user units.
+{
+  const { format } = await import('../www/src/rpl/formatter.js');
+  const { varPurge, setPict, getPict, state, setAngle } = await import('../www/src/rpl/state.js');
+  const angle = state.angle;
+  const text = (src) => runLine(src).snapshot().reverse().map((v) => format(v)).join(' | ');
+  const lit = (col, row) => {
+    const p = getPict();
+    return (p.bytes[row * Math.ceil(p.width / 8) + (col >> 3)] >> (col & 7)) & 1;
+  };
+  const count = () => getPict().bytes.reduce((n, b) => n + [...b.toString(2)].filter((d) => d === '1').length, 0);
+  varPurge('PPAR');
+  setPict(null);
+  assert(text('(0,0) C→PX') === '{ #65d #40d }' && text('(-6.5,4) C→PX') === '{ #0d #0d }',
+    'C→PX: (0,0) is PICT\'s centre pixel and (xmin, ymax) its top left');
+  assert(text('{ #65d #40d } PX→C') === '(0, 0)' && text('{ #0d #79d } PX→C') === '(-6.5, -3.9)', 'PX→C gives a pixel\'s centre in user units');
+  runLine('{ #3d #2d } PIXON (0,0) PIXON');
+  assert(lit(3, 2) && lit(65, 40) && count() === 2 && text('{ #3d #2d } PIX? { #4d #2d } PIX?') === '1. | 0.',
+    'PIXON lights a pixel given in pixels or in user units, and PIX? tests one');
+  runLine('{ #3d #2d } PIXOFF');
+  assert(!lit(3, 2) && count() === 1, 'PIXOFF turns a pixel off');
+  runLine('ERASE { #2d #1d } { #12d #5d } LINE');
+  assert(count() === 11 && lit(2, 1) && lit(7, 3) && lit(12, 5), 'LINE lights a pixel a column from end to end, the ends included');
+  runLine('{ #2d #1d } { #12d #5d } TLINE');
+  assert(count() === 0, 'TLINE toggles the same pixels back off');
+  runLine('ERASE { #1d #1d } { #8d #6d } BOX');
+  assert(count() === 24 && lit(1, 1) && lit(8, 6) && !lit(4, 3), 'BOX draws the outline between two corners');
+  runLine('RAD ERASE { #20d #20d } #6d 0 7 ARC');
+  assert(lit(26, 20) && lit(20, 14) && lit(14, 20) && lit(20, 26) && !lit(20, 20), 'ARC past a full turn draws the whole circle, its radius in pixels');
+  runLine('ERASE { #20d #20d } #6d 0 1.5707963268 ARC');
+  assert(lit(26, 20) && lit(20, 14) && !lit(14, 20) && !lit(20, 26), 'ARC goes counterclockwise from the first angle to the second');
+  runLine('ERASE (0,0) 1 0 0 ARC');
+  assert(count() === 1 && lit(75, 40), 'ARC with equal angles plots one point, a user-unit radius from the centre');
+  runLine('ERASE { #0d #0d } { #100000000000d #3d } LINE');
+  assert(count() === 131, 'a line to a far-off point is cut at the edge of PICT');
+  assertThrows(() => runLine('5 PIXON'), /Bad argument type/, 'PIXON wants a point');
+  let seen = null;
+  setGraphicsHook((kind, st, data) => { seen = { kind, data }; });
+  runLine('{ } PVIEW');
+  assert(seen?.kind === 'pview' && seen.data.items.length === 0, 'PVIEW opens the plot view on PICT');
+  runLine('(1,2) PVIEW');
+  assert(format(seen.data) === '(1, 2)', 'PVIEW passes the point for the top left');
+  assertThrows(() => runLine('5 PVIEW'), /Bad argument type/, 'PVIEW wants a point or { }');
+  setGraphicsHook(null);
+  setAngle(angle);
+  varPurge('PPAR');
+  setPict(null);
+}
+
 // What plots take from PPAR: INDEP's name and range, RES's step and the axes' crossing and tick spacing.
 {
   const { varPurge } = await import('../www/src/rpl/state.js');

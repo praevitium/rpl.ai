@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.23 (2026-10-19)
+**Latest release:** v0.7.24 (2026-10-19)
 
 ---
 
@@ -20,6 +20,24 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.24 — 2026-10-19
+
+Drawing on PICT, and seeing it: the HP's pixel drawing commands.
+
+- LINE, TLINE, BOX, ARC, PIXON and PIXOFF draw on PICT, and PIX? tests a
+  pixel. A point is `(x,y)` in PPAR's user units or `{ #col #row }` in
+  pixels, as the AUR gives them: `(0,0) (3,2) LINE`, `{ #20d #20d } #6d 0
+  360 ARC` in degrees. TLINE toggles the pixels on its line. ARC's radius
+  is in pixels, as on the 50g. A point off PICT draws only the part on it.
+- C→PX and PX→C convert between the two: `(0,0) C→PX` gives
+  `{ #65d #40d }`, the centre of the 131 × 80 PICT.
+- PVIEW opens the plot view on PICT: `{ } PVIEW` in PPAR's window, and
+  `(x,y) PVIEW` or `{ #n #m } PVIEW` with that point at the top left. PICT's
+  pixels show over the plot as the 50g's square pixels, in the theme's ink,
+  and follow a program's drawing as it happens. The plot itself stays as
+  sharp as before; DRAW, FUNCTION and the other plots draw their curves
+  under PICT rather than into it.
 
 ## v0.7.23 — 2026-10-19
 

@@ -231,7 +231,10 @@ PLOT WINDOW (PPAR, as on the HP 50g)
   INDEP RES                  { T 0 1 } INDEP names the plot variable and its range (FUNCTION plots only there; POLAR and PARAMETRIC sweep it; DIFFEQ runs from the first number to the second); .1 RES is the step between plotted values (#n RES in pixels, FUNCTION only)
   DEPND AXES ATICK           { Y 1 .0001 } DEPND gives DIFFEQ its initial value; { (1,1) 2 } AXES moves the axes' crossing and puts grid lines every 2 units; 2 ATICK sets the spacing alone; the axis labels are stored only
   PICT                       the graphics object the HP draws on, 131 × 80 to start: PICT RCL recalls it, a graphics object PICT STO replaces it, { PICT } PURGE empties it
-  PDIM ERASE BLANK           #262d #160d PDIM resizes PICT ((xmin,ymin) (xmax,ymax) PDIM also sets PPAR's corners, keeping the scale); ERASE blanks it; #8d #2d BLANK makes a blank graphics object; SIZE gives a graphics object's width and height. Nothing draws on PICT or shows it yet
+  PDIM ERASE BLANK           #262d #160d PDIM resizes PICT ((xmin,ymin) (xmax,ymax) PDIM also sets PPAR's corners, keeping the scale); ERASE blanks it; #8d #2d BLANK makes a blank graphics object; SIZE gives a graphics object's width and height
+  LINE TLINE BOX             (0,0) (3,2) LINE draws on PICT; TLINE toggles the pixels instead; BOX draws a rectangle by two corners. A point is (x,y) in PPAR's units or { #col #row } in pixels
+  ARC PIXON PIXOFF           (0,0) 2 0 π ARC draws counterclockwise from the first angle to the second (a #n radius with a pixel centre); (1,1) PIXON lights a pixel, PIXOFF clears it, PIX? gives 1 or 0
+  PVIEW C→PX PX→C            { } PVIEW shows PICT over the plot in PPAR's window ((x,y) PVIEW puts that point at the top left); (0,0) C→PX gives { #65d #40d }, PX→C goes back
 
 TYPES / REFLECTION
   TYPE VTYPE KIND            classify the level-1 value (VTYPE of a name with no variable gives -1)
