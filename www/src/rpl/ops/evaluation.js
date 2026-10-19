@@ -1,6 +1,6 @@
 import { setApproxMode, getApproxMode, getLastError, clearLastError, ERROR_NUMBERS } from '../state.js';
 import { RPLAbort, RPLError } from '../stack.js';
-import { Str, BinaryInteger, isInteger, isBinaryInteger, isReal, Program, isString, Integer } from '../types.js';
+import { Str, BinaryInteger, isInteger, isBinaryInteger, isReal, Program, isString, Integer, Real, Tagged } from '../types.js';
 import { register } from './registry.js';
 import { _driveGen, _evalValueGen, _toCountN, _withVMUnary, keepsFailureStack, runIft, runIfte, runSuspendable } from './internal.js';
 
@@ -20,6 +20,13 @@ function evalOp(s) {
 }
 
 register('EVAL', evalOp, { category: 'Evaluation / program', categoryOrder: 0, label: "EVAL" });
+
+// The time comes tagged s, in seconds, as the HP 50g shows it.
+register('TEVAL', (s) => {
+  const start = performance.now();
+  evalOp(s);
+  s.push(Tagged('s', Real(((performance.now() - start) / 1000).toFixed(4))));
+}, { category: 'Evaluation / program', categoryOrder: 0.5, label: "TEVAL" });
 
 
 register('APPROX', () => { setApproxMode(true); }, { category: 'Evaluation / program', categoryOrder: 4, label: "APPROX" });

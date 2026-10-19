@@ -54,6 +54,15 @@ register('NEWOB', (s) => {
 
 // There is no bounded memory pool to measure; a fixed 1 GiB keeps MEM
 // comparisons predictable.
+// The app passes in its build's version; the rpl core can't read the generated build-info.js.
+let _version = 'rpl.ai';
+export function setVersion(version) { _version = `rpl.ai ${version}`; }
+
+register('VERSION', (s) => {
+  s.push(Str(_version));
+  s.push(Str('GPL-3.0-or-later. Giac © Bernard Parisse, Renée de Graeve and contributors'));
+}, { category: 'System', categoryOrder: 0.5, label: "VERSION" });
+
 register('MEM', (s) => {
   s.push(Real(1073741824));
 }, { category: 'System', categoryOrder: 0, label: "MEM" });

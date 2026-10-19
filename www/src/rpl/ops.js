@@ -4,6 +4,7 @@ export {
 export { singleStepMode, stepIntoMode, localFramesDepth, dosubsStackDepth, isProgramLine, runProgramLine, keepsFailureStack } from './ops/internal.js';
 export { setGraphicsHook } from './ops/graphics.js';
 export { setMenuHook, setBeepHook } from './ops/display.js';
+export { setVersion } from './ops/system.js';
 export { setConlibHook, constantIds, constantValue } from './ops/unit-ops.js';
 import './ops/stack.js';
 import './ops/arithmetic.js';

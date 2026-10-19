@@ -37,7 +37,8 @@ import {
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo,
   batchStateNotifications,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook, setMenuHook, setBeepHook, setConlibHook, constantIds, constantValue } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook, setBeepHook, setConlibHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
+import { VERSION } from './build-info.js';
 import { beep, alarmBeep } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest } from './rpl/ops/time.js';
 import { _hp50TypeCode } from './rpl/ops/internal.js';
@@ -160,6 +161,7 @@ class App {
       if (this.prefs.minimal) this.setMinimalMenu(true);
     });
     setBeepHook(beep);
+    setVersion(VERSION);
     setConlibHook(() => this.showConstants());
     loadCommandReference().then((m) => { this.reference = m; this.menubar.render(); }).catch(() => {});
 

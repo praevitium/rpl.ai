@@ -480,3 +480,20 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(isReal(t.peek()) || t.peek().type === 'integer', 'EVAL of the pushed algebraic then evaluates it');
   resetHome();
 }
+
+// TEVAL evaluates as EVAL does and adds the seconds it took, tagged s.
+{
+  const s = runLine("'2+3' TEVAL");
+  assert(s.depth === 2 && s.peek(2).value === 5n, 'TEVAL leaves the result of EVAL');
+  const t = s.peek();
+  assert(t.type === 'tagged' && t.tag === 's' && isReal(t.value) && t.value.value.gte(0), 'TEVAL adds the time taken, tagged s');
+}
+
+// VERSION gives the app's version and its copyright line.
+{
+  const { setVersion } = await import('../www/src/rpl/ops.js');
+  setVersion('9.9.9');
+  const s = runLine('VERSION');
+  assert(s.depth === 2 && isString(s.peek(2)) && s.peek(2).value === 'rpl.ai 9.9.9' && isString(s.peek()) && /GPL-3\.0/.test(s.peek().value),
+    'VERSION pushes "rpl.ai <version>" and the copyright line');
+}

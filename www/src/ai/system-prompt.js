@@ -163,6 +163,7 @@ PROGRAMS & CONTROL FLOW
   IFERR ... THEN ... [ELSE ...] END      error trap
   ERRM ERRN ERR0 DOERR       error inspection / raising
   EVAL                       evaluate the object on level 1 (Program runs, Name resolves, etc.)
+  TEVAL                      EVAL that also pushes the seconds taken, tagged s
   → a b c « ... »            local variables: pop into named locals visible only inside the body
   HALT CONT KILL RUN SST SST↓ DBUG       suspended-execution / debugger
   PROMPT                     pause and show a banner (resume with CONT)
@@ -190,6 +191,7 @@ TYPES / REFLECTION
   CMPLX? CMPLX RE IM ARG CONJ    complex predicate / value extractors
   TVARS                      filter variables in the current directory by type code
   BYTES                      object's byte size
+  VERSION                    the app's version string and its copyright line
   NEWOB                      force a fresh deep copy
 
 DISPLAY / NUMBER MODES
