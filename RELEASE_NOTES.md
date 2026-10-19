@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.43 (2026-10-19)
+**Latest release:** v0.7.44 (2026-10-19)
 
 ---
 
@@ -20,6 +20,14 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.44 — 2026-10-19
+
+- VPAR, the 3D plots' parameters, arrives with the commands that set it:
+  XVOL, YVOL and ZVOL the view volume, XXRNG and YYRNG the input plane,
+  EYEPT the eye point, and NUMX and NUMY the steps. `-2 2 XVOL` stores
+  `{ -2 2 -1 1 -1 1 -1 1 -1 1 0 -3 0 10 8 }`, the rest being the HP 48G
+  plot form's defaults. The 3D plot types that read it come next.
 
 ## v0.7.43 — 2026-10-19
 

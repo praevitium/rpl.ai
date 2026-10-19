@@ -468,6 +468,22 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
 
 
 
+// VPAR and the commands that set it for the 3D plots, from the HP 48G plot form's defaults.
+{
+  const { format } = await import('../www/src/rpl/formatter.js');
+  const { varRecall, varPurge } = await import('../www/src/rpl/state.js');
+  const vpar = () => format(varRecall('VPAR'));
+  varPurge('VPAR');
+  runLine('-2 2 XVOL');
+  assert(vpar() === '{ -2. 2. -1. 1. -1. 1. -1. 1. -1. 1. 0. -3. 0. 10. 8. }', `XVOL sets the view volume's width in the default VPAR (${vpar()})`);
+  runLine('0 5 YVOL -3 3 ZVOL -4 4 XXRNG -5 5 YYRNG 1 -2 3 EYEPT 12 NUMX 6 NUMY');
+  assert(vpar() === '{ -2. 2. 0. 5. -3. 3. -4. 4. -5. 5. 1. -2. 3. 12. 6. }', `YVOL, ZVOL, XXRNG, YYRNG, EYEPT, NUMX and NUMY each set their part (${vpar()})`);
+  assertThrows(() => runLine('5 1 YVOL'), /Bad argument value/, 'YVOL wants ynear less than yfar');
+  assertThrows(() => runLine('1 NUMX'), /Bad argument value/, 'NUMX wants 2 or more steps');
+  assertThrows(() => runLine('"a" 2 XVOL'), /Bad argument type/, 'XVOL wants numbers');
+  varPurge('VPAR');
+}
+
 // PPAR and the commands that set it, from the AUR; PPAR is purged after, as other tests read a fresh directory.
 {
   const { format } = await import('../www/src/rpl/formatter.js');

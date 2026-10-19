@@ -333,6 +333,52 @@ function _variableSpec(index) {
 register('INDEP', _variableSpec(2), { category: 'Graphics', categoryOrder: 9, label: "INDEP" });
 register('DEPND', _variableSpec(6), { category: 'Graphics', categoryOrder: 9.1, label: "DEPND" });
 
+// VPAR holds { xleft xright ynear yfar zlow zhigh xmin xmax ymin ymax xeye yeye zeye xstep ystep } for the 3D plots,
+// the HP 48G plot form's defaults until a command sets it.
+const VPAR_DEFAULT = () => [-1, 1, -1, 1, -1, 1, -1, 1, -1, 1, 0, -3, 0, 10, 8].map(Real);
+
+export function viewParameters() {
+  const par = varRecall('VPAR');
+  const items = isList(par) ? par.items : [];
+  return VPAR_DEFAULT().map((v, i) => items[i] ?? v);
+}
+
+function _setVpar(at, values) {
+  const items = viewParameters();
+  values.forEach((v, i) => { items[at + i] = Real(v); });
+  varStore('VPAR', RList(items));
+}
+
+// YVOL's ynear must be less than its yfar.
+function _vparRange(at, ordered = false) {
+  return (s) => {
+    const [lo, hi] = s.popN(2).map(_real);
+    if (ordered && !(lo < hi)) throw new RPLError('Bad argument value');
+    _setVpar(at, [lo, hi]);
+  };
+}
+
+function _vparSteps(at) {
+  return (s) => {
+    const [n] = s.popN(1).map(_real);
+    if (!(n >= 2)) throw new RPLError('Bad argument value');
+    _setVpar(at, [n]);
+  };
+}
+
+register('XVOL', _vparRange(0), { category: 'Graphics', categoryOrder: 9.11, label: 'XVOL' });
+register('YVOL', _vparRange(2, true), { category: 'Graphics', categoryOrder: 9.12, label: 'YVOL' });
+register('ZVOL', _vparRange(4), { category: 'Graphics', categoryOrder: 9.13, label: 'ZVOL' });
+register('XXRNG', _vparRange(6), { category: 'Graphics', categoryOrder: 9.14, label: 'XXRNG' });
+register('YYRNG', _vparRange(8), { category: 'Graphics', categoryOrder: 9.15, label: 'YYRNG' });
+
+register('EYEPT', (s) => {
+  _setVpar(10, s.popN(3).map(_real));
+}, { category: 'Graphics', categoryOrder: 9.16, label: 'EYEPT' });
+
+register('NUMX', _vparSteps(13), { category: 'Graphics', categoryOrder: 9.17, label: 'NUMX' });
+register('NUMY', _vparSteps(14), { category: 'Graphics', categoryOrder: 9.18, label: 'NUMY' });
+
 
 const _extent = (values) => values.reduce(([lo, hi], v) => [Math.min(lo, v), Math.max(hi, v)], [Infinity, -Infinity]);
 

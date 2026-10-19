@@ -10805,6 +10805,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Number of X-Steps Command: Sets the number of x-steps for each y-step in 3D perspective plots. The number of x-steps is the number of independent variable points plotted for each dependent variable point plotted. This number must be 2 or more. This value is stored in the reserved variable VPAR. YSLICE is the only 3D plot type that does not use this value.</p>
+  <p>In rpl.ai fewer than 2 steps is Bad argument value.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -10825,6 +10826,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Number of Y-Steps Command: Sets the number of y-steps across the view volume in 3D perspective plots. The number of y-steps is the number of dependent variable points plotted across the view volume. This number must be 2 or more. This value is stored in the reserved variable VPAR.</p>
+  <p>In rpl.ai fewer than 2 steps is Bad argument value.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -18843,6 +18845,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>X Volume Coordinates Command: Sets the width of the view volume in the reserved variable VPAR. xleft and xright set the x-coordinates for the view volume used in 3D plots. These values are stored in the reserved variable VPAR.</p>
+  <p>In rpl.ai VPAR starts as the HP 48G plot form has it, { -1 1 -1 1 -1 1 -1 1 -1 1 0 -3 0 10 8 }, until a command sets part of it; the 3D plot types that read it are not in rpl.ai yet.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -19029,6 +19032,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Y Volume Coordinates Command: Sets the depth of the view volume in the reserved variable VPAR. The variables ynear and yfar are real numbers that set the y-coordinates for the view volume used in 3D plots. ynear must be less than yfar. These values are stored in the reserved variable VPAR.</p>
+  <p>In rpl.ai a ynear not less than yfar is Bad argument value.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
