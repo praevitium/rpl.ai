@@ -6,7 +6,7 @@ import {
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit, sampleDiffEq,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
   evalTraceAtX, sampleTrace, traceInputError, axisTicks, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace,
-  DEFAULT_TURN, turnBy,
+  DEFAULT_TURN, turnBy, evalComplex, TRACE_KINDS,
 } from '../www/src/ui/plot-engine.js';
 import { Matrix, Vector, Real, Integer, Symbolic, Program, RList, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
 import { lookup, setGraphicsHook } from '../www/src/rpl/ops.js';
@@ -931,6 +931,45 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   runLine("'X*Y' FAST3D DROP");
   assert(seen === 'fast3d', 'FAST3D hands its expression to the plot view');
   setGraphicsHook(null);
+}
+
+{
+  const at = (expr, x, y) => evalComplex(parsePlotExpr(expr), { X: x, Y: y });
+  const near = (z, re, im) => z && Math.abs(z[0] - re) < 1e-12 && Math.abs(z[1] - im) < 1e-12;
+  assert(near(at('SIN(X+i*Y)', 1, 2), Math.sin(1) * Math.cosh(2), Math.cos(1) * Math.sinh(2)), 'GRIDMAP: SIN works on x + iy');
+  assert(near(at('(X+i*Y)^2', 1, 2), -3, 4) && near(at('SQRT(X)', -4, 0), 0, 2), 'GRIDMAP: powers and roots are complex');
+  assert(at('FLOOR(X)', 1, 0) === null, 'GRIDMAP: a function with no complex form has no value');
+  const volume = { x: [-1, 1], y: [-1, 1], z: [-1, 1], input: { x: [-1, 1], y: [-1, 1] }, eye: [0, -3, 0], steps: [10, 8] };
+  const grid = (expr) => sampleTrace({ kind: 'gridmap', expr }, null, { volume });
+  const plain = grid('X+i*Y');
+  assert(plain.length === 8 + 10 && plain.flat().every(([u, v]) => Math.abs(u) <= 1 && Math.abs(v) <= 1),
+    `GRIDMAP: f = z draws the input grid itself, NUMY lines across and NUMX along (${plain.length})`);
+  const steep = grid('EXP(20*X)');
+  assert(steep.length === 8 + 8 && steep.flat().every(([u]) => u <= 1e6), `GRIDMAP: points past 1E6 are left out (${steep.length})`);
+  let seen = null;
+  setGraphicsHook((kind) => { seen = kind; });
+  runLine("'EXP(X+i*Y)' GRIDMAP DROP");
+  assert(seen === 'gridmap', 'GRIDMAP hands its expression to the plot view');
+  setGraphicsHook(null);
+}
+
+{
+  const turn = { azimuth: 0, elevation: 0 };
+  const rows = [[1, 2, 3], [4, 5, 6]];
+  const mesh = (low, high) => sampleTrace({ kind: 'matrix3d', points: { rows, low, high } }, null, { turn });
+  assert(mesh(0, 10).length === 2 + 3 + 12, 'DRAW3DMATRIX: a line along each row and down each column, and the box');
+  assert(mesh(0, 4.5).length === 2 + 12, 'DRAW3DMATRIX: values outside vmin to vmax are left out, and the lines through them');
+  const fromLevel = TRACE_KINDS.matrix3d.fromStack(Matrix([[Real(1), Real(2)], [Real(3), Real(9)]]));
+  assert(fromLevel.points.low === 1 && fromLevel.points.high === 9 && isMatrix(fromLevel.source),
+    'DRAW3DMATRIX: a matrix plotted from level 1 spans its own values');
+  let seen = null;
+  setGraphicsHook((kind, s, data) => { seen = data; });
+  runLine('[[1 2][3 4]] 0 5 DRAW3DMATRIX');
+  assert(seen?.rows?.[1]?.[1] === 4 && seen.low === 0 && seen.high === 5 && isMatrix(seen.source),
+    'DRAW3DMATRIX hands its matrix and range to the plot view');
+  setGraphicsHook(null);
+  assertThrows(() => runLine("{ 1 2 } 0 5 DRAW3DMATRIX"), /Bad argument type/, 'DRAW3DMATRIX wants a real matrix');
+  assertThrows(() => runLine('[[1 2]] 0 DRAW3DMATRIX'), /Too few arguments/, 'DRAW3DMATRIX takes the matrix, vmin and vmax');
 }
 
 // PCONTOUR: ten level curves by marching squares, each segment on its level.

@@ -41,7 +41,7 @@ register('FUNCTION',  (s) => _requestPlot('function', s), { category: 'Graphics'
 register('POLAR',     (s) => _requestPlot('polar', s), { category: 'Graphics', categoryOrder: 4, label: "POLAR" });
 
 // PLOT stores level 1 in EQ and plots it, PLOTADD adds it to EQ's list and to the plot, each as PPAR's plot type says.
-const PTYPE_KINDS = Object.freeze({ FUNCTION: 'function', POLAR: 'polar', PARAMETRIC: 'parametric', DIFFEQ: 'diffeq', SLOPEFIELD: 'slopefield', CONIC: 'conic', TRUTH: 'truth', PCONTOUR: 'contour', WIREFRAME: 'wireframe', YSLICE: 'yslice', FAST3D: 'fast3d' });
+const PTYPE_KINDS = Object.freeze({ FUNCTION: 'function', POLAR: 'polar', PARAMETRIC: 'parametric', DIFFEQ: 'diffeq', SLOPEFIELD: 'slopefield', CONIC: 'conic', TRUTH: 'truth', PCONTOUR: 'contour', WIREFRAME: 'wireframe', YSLICE: 'yslice', FAST3D: 'fast3d', GRIDMAP: 'gridmap' });
 
 function _plotKind() {
   const ptype = plotParameters()[5];
@@ -88,6 +88,16 @@ register('WIREFRAME', (s) => _requestPlot('wireframe', s), { category: 'Graphics
 register('YSLICE', (s) => _requestPlot('yslice', s), { category: 'Graphics', categoryOrder: 7.91, label: 'YSLICE' });
 
 register('FAST3D', (s) => _requestPlot('fast3d', s), { category: 'Graphics', categoryOrder: 7.915, label: 'FAST3D' });
+
+register('GRIDMAP', (s) => _requestPlot('gridmap', s), { category: 'Graphics', categoryOrder: 7.93, label: 'GRIDMAP' });
+
+// DRAW3DMATRIX takes the matrix and vmin vmax from the stack, as the AUR has it, and draws its values in 3D.
+register('DRAW3DMATRIX', (s) => {
+  const [m, lo, hi] = s.popN(3);
+  if (!isMatrix(m) || !m.rows.every((row) => row.every((v) => isReal(v) || isInteger(v)))) throw new RPLError('Bad argument type');
+  const rows = m.rows.map((row) => row.map(toRealOrThrow));
+  _requestPlot('matrix3d', s, { rows, low: _real(lo), high: _real(hi), source: m });
+}, { category: 'Graphics', categoryOrder: 7.94, label: 'DRAW3DMATRIX' });
 
 // PARSURFACE plots the list or vector of x, y and z of two variables on level 1.
 register('PARSURFACE', (s) => {

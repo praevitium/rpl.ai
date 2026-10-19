@@ -27,6 +27,7 @@ const PLOT_KINDS = Object.freeze([
   ['wireframe', 'Wireframe', 'z = f(x, y) in perspective, from VPAR'],
   ['yslice', 'Y-slice', 'Slices of z = f(x, y) across x, in perspective'],
   ['fast3d', 'Fast 3D', 'z = f(x, y) to turn with a drag or the arrow keys'],
+  ['gridmap', 'Grid map', 'The input grid as f(x + iy) maps it'],
   ['scatter', 'Scatter', 'Points from ΣDAT or the stack'],
   ['bar', 'Bar', 'Bar chart from ΣDAT or the stack'],
   ['hist', 'Histogram', 'Histogram from ΣDAT or the stack'],

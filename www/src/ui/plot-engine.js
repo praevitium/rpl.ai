@@ -591,6 +591,102 @@ export function sampleFast3D(ast, volume, turn, opts) {
   return sampleSurface(graph, volume.x, volume.y, volume, { camera: orbit(volume, turn) });
 }
 
+// DRAW3DMATRIX's points (row, column, value), each joined to its neighbours, in FAST3D's turning cube; a value outside
+// vmin to vmax is left out.
+export function sampleMatrix3D({ rows, low, high }, turn) {
+  const volume = { x: [1, rows.length], y: [1, rows[0].length], z: [low, high] };
+  const project = orbit(volume, turn);
+  const at = (r, c) => (rows[r][c] >= low && rows[r][c] <= high ? project([r + 1, c + 1, rows[r][c]]) : null);
+  const across = rows.flatMap((row, r) => unbroken(row.map((_, c) => at(r, c))));
+  const along = rows[0].flatMap((_, c) => unbroken(rows.map((_, r) => at(r, c))));
+  return [...across, ...along, ...boxEdges(volume, project)];
+}
+
+// A matrix plotted from level 1 or ΣDAT spans its own values.
+function matrixData(m) {
+  const rows = m.rows.map((row) => row.map(scalarToNumber));
+  const values = rows.flat().filter(Number.isFinite);
+  return values.length ? { rows, low: Math.min(...values), high: Math.max(...values), source: m } : null;
+}
+
+// GRIDMAP's f is complex: X and Y are real, i is √-1, and these functions work on complex numbers, in radians as the
+// 50g's do for complex arguments; anything else has no value.
+const cMul = ([a, b], [c, d]) => [a * c - b * d, a * d + b * c];
+const cDiv = ([a, b], [c, d]) => {
+  const n = c * c + d * d;
+  return [(a * c + b * d) / n, (b * c - a * d) / n];
+};
+const cExp = ([a, b]) => [Math.exp(a) * Math.cos(b), Math.exp(a) * Math.sin(b)];
+const cLn = ([a, b]) => [Math.log(Math.hypot(a, b)), Math.atan2(b, a)];
+const cSin = ([a, b]) => [Math.sin(a) * Math.cosh(b), Math.cos(a) * Math.sinh(b)];
+const cCos = ([a, b]) => [Math.cos(a) * Math.cosh(b), -Math.sin(a) * Math.sinh(b)];
+const cSinh = ([a, b]) => [Math.sinh(a) * Math.cos(b), Math.cosh(a) * Math.sin(b)];
+const cCosh = ([a, b]) => [Math.cosh(a) * Math.cos(b), Math.sinh(a) * Math.sin(b)];
+
+function cPow(z, w) {
+  if (w[1] === 0 && Number.isInteger(w[0]) && Math.abs(w[0]) <= 64) {
+    let p = [1, 0];
+    for (let k = 0; k < Math.abs(w[0]); k++) p = cMul(p, z);
+    return w[0] < 0 ? cDiv([1, 0], p) : p;
+  }
+  if (z[0] === 0 && z[1] === 0) return w[0] > 0 ? [0, 0] : [NaN, NaN];
+  return cExp(cMul(w, cLn(z)));
+}
+
+const COMPLEX_FUNCTIONS = Object.freeze({
+  SIN: cSin, COS: cCos, TAN: (z) => cDiv(cSin(z), cCos(z)),
+  SINH: cSinh, COSH: cCosh, TANH: (z) => cDiv(cSinh(z), cCosh(z)),
+  EXP: cExp, LN: cLn, LOG: (z) => cLn(z).map((c) => c / Math.LN10),
+  SQRT: (z) => cPow(z, [0.5, 0]), SQ: (z) => cMul(z, z), INV: (z) => cDiv([1, 0], z),
+  ABS: ([a, b]) => [Math.hypot(a, b), 0], ARG: ([a, b]) => [Math.atan2(b, a), 0],
+  CONJ: ([a, b]) => [a, -b], RE: ([a]) => [a, 0], IM: ([, b]) => [b, 0],
+});
+
+const COMPLEX_OPS = Object.freeze({
+  '+': (l, r) => [l[0] + r[0], l[1] + r[1]], '-': (l, r) => [l[0] - r[0], l[1] - r[1]],
+  '*': cMul, '/': cDiv, '^': cPow,
+});
+
+export function evalComplex(ast, env) {
+  if (ast.kind === 'num') return [ast.value, 0];
+  if (ast.kind === 'var') {
+    if (ast.name === 'i') return [0, 1];
+    const v = lookupEnv(ast.name, env);
+    return Number.isFinite(v) ? [v, 0] : null;
+  }
+  if (ast.kind === 'neg') {
+    const z = evalComplex(ast.arg, env);
+    return z && [0 - z[0], 0 - z[1]];
+  }
+  if (ast.kind === 'bin') {
+    const op = COMPLEX_OPS[ast.op];
+    const l = op && evalComplex(ast.l, env);
+    const r = l && evalComplex(ast.r, env);
+    return r ? op(l, r) : null;
+  }
+  const f = ast.kind === 'fn' && ast.args.length === 1 && COMPLEX_FUNCTIONS[String(ast.name).toUpperCase()];
+  const z = f && evalComplex(ast.args[0], env);
+  return z ? f(z) : null;
+}
+
+// GRIDMAP draws VPAR's input plane's grid lines, NUMY across x and NUMX along y, as f maps them; a point that runs
+// off past 1E6 breaks its line.
+const GRIDMAP_LIMIT = 1e6;
+
+export function sampleGridMap(ast, volume, opts) {
+  const [nx, ny] = volume.steps.map((n) => Math.max(2, Math.round(n)));
+  const { x: [x0, x1], y: [y0, y1] } = volume.input;
+  const image = (x, y) => {
+    const env = { ...bindIndependentVariable(x, opts?.indep), y, Y: y, ...(opts?.depend && { [opts.depend]: y }) };
+    const w = evalComplex(ast, env);
+    return w && w.every((c) => Number.isFinite(c) && Math.abs(c) <= GRIDMAP_LIMIT) ? w : null;
+  };
+  const line = (at) => unbroken(Array.from({ length: WIRE_SAMPLES }, (_, k) => at(k / (WIRE_SAMPLES - 1))));
+  const across = steps(y0, y1, ny).flatMap((y) => line((t) => image(x0 + (x1 - x0) * t, y)));
+  const along = steps(x0, x1, nx).flatMap((x) => line((t) => image(x, y0 + (y1 - y0) * t)));
+  return [...across, ...along];
+}
+
 // PARSURFACE's surface is x(u, v), y(u, v) and z(u, v) over VPAR's input plane, u and v bound as INDEP and DEPND.
 export function sampleParSurface(asts, volume, opts) {
   const point = (u, v) => asts.map((ast) => odeSlope(ast, u, v, opts));
@@ -1150,6 +1246,40 @@ export const TRACE_KINDS = Object.freeze({
     evalAt() { return NaN; },
     fromStack(v) { return expressionFromStack('fast3d', v); },
     toStack: expressionToStack,
+  },
+  gridmap: {
+    render: 'stroke',
+    data: true,
+    equalAxes: true,
+    editable: true,
+    fitOnAdd: true,
+    fields: [{ key: 'expr', placeholder: 'SIN(X+i*Y)', aria: 'f(x + iy)' }],
+    label: functionLabel,
+    sample(t, ctx) {
+      if (!t.expr || !ctx.volume) return [];
+      return sampleGridMap(parsePlotExpr(t.expr), ctx.volume, diffeqOpts(ctx));
+    },
+    evalAt() { return NaN; },
+    fromStack(v) { return expressionFromStack('gridmap', v); },
+    toStack: expressionToStack,
+  },
+  matrix3d: {
+    render: 'stroke',
+    data: true,
+    equalAxes: true,
+    projected: true,
+    turnable: true,
+    fitOnAdd: true,
+    sample(t, ctx) {
+      return t.points?.rows?.length ? sampleMatrix3D(t.points, ctx.turn ?? DEFAULT_TURN) : [];
+    },
+    evalAt() { return NaN; },
+    fromStack(v) {
+      const data = isMatrix(v) ? matrixData(v) : v;
+      if (!data?.rows?.length || !data.rows[0].length) return null;
+      return { kind: 'matrix3d', points: data, label: `${data.rows.length}×${data.rows[0].length} matrix`, expr: '', exprY: '', source: data.source };
+    },
+    toStack(t) { return t.source ? [t.source] : []; },
   },
   yslice: {
     render: 'stroke',

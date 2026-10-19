@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.47 (2026-10-19)
+**Latest release:** v0.7.48 (2026-10-19)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.48 — 2026-10-19
+
+- GRIDMAP draws how a complex function maps a grid: `'EXP(X+i*Y)' GRIDMAP`
+  takes VPAR's input plane (XXRNG YYRNG), NUMY lines across x and NUMX
+  along y, and draws their images, fitted in the plot view. X and Y are
+  real and i is √-1; arithmetic, powers, roots, logs, exponentials, trig
+  and hyperbolics work on complex arguments, in radians. The plot view has
+  a Grid map kind for typing one in. Every HP 50g plot type is now in.
+- DRAW3DMATRIX draws a matrix's values at (row, column, value), each joined
+  to its neighbours, leaving out values outside vmin to vmax, and turns
+  with a drag or the arrow keys as FAST3D does. With its mesh showing, the
+  plot view's Level 1 and ΣDAT buttons plot a real matrix from either.
 
 ## v0.7.47 — 2026-10-19
 
