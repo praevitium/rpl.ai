@@ -33,6 +33,10 @@ END`;
     'parseEntry: quotes curled by a phone keyboard\'s smart punctuation read as straight ones, so ‘X^2+1’ is an algebraic and “don’t” a string');
   assert(endsInQuote('1 ‘X') && !endsInQuote('1 ‘X’') && !endsInQuote('"it’s"'),
     'endsInQuote: a curly quote opens and closes an algebraic, so operator keys type inside ‘X as they do inside \'X');
+  const symbols = parseEntry('× ÷ − −5 ‘X−1’ "a×b÷c"');
+  assert(symbols.slice(0, 3).map((v) => v.id).join(' ') === '* / -' && symbols[3].type === 'integer' && symbols[3].value === -5n
+    && isSymbolic(symbols[4]) && symbols[5].value === 'a×b÷c',
+    'parseEntry: ×, ÷ and − from a phone\'s symbol keys read as *, / and - (−5 a number, ‘X−1’ an algebraic), and stay text in a string');
   assert(hpTextToSource(`"it's @ here"`) === `"it's @ here"`,
     'hpTextToSource: apostrophes and @ inside a string are kept');
 }

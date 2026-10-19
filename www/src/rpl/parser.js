@@ -191,7 +191,7 @@ export function polarVector(r, theta, third, spherical = false) {
 }
 
 export function endsInQuote(src) {
-  src = straightenQuotes(src);
+  src = plainPunctuation(src);
   let quote = null;
   for (let i = 0; i < src.length; i++) {
     const c = src[i];
@@ -208,9 +208,11 @@ export function endsInQuote(src) {
   return quote !== null;
 }
 
-// A phone keyboard's smart punctuation, and notes and messaging apps, curl quotes. The HP has no curly quotes, so they
-// read as straight ones, one character for one, but inside a straight-quoted string they are text.
-export function straightenQuotes(src) {
+// A phone keyboard's smart punctuation, and notes and messaging apps, curl quotes, and a phone's symbol keys offer ×, ÷ and −.
+// The HP has none of them, so they read as ' " * / and -, one character for one; inside a string they are text.
+const PLAIN = Object.freeze({ '‘': "'", '’': "'", '×': '*', '÷': '/', '−': '-' });
+
+export function plainPunctuation(src) {
   let out = '';
   let closer = null;
   for (let i = 0; i < src.length; i++) {
@@ -223,7 +225,7 @@ export function straightenQuotes(src) {
       out += '"';
       closer = c === '"' ? '"' : '”';
     } else {
-      out += c === '‘' || c === '’' ? "'" : c;
+      out += PLAIN[c] ?? c;
     }
   }
   return out;
@@ -232,7 +234,7 @@ export function straightenQuotes(src) {
 /** One value per top-level object, in entry order.  Unclosed brackets,
  *  strings and quotes close at the end of the input. */
 export function parseEntry(src) {
-  const toks = tokenize(straightenQuotes(src));
+  const toks = tokenize(plainPunctuation(src));
   let idx = 0;
 
   function parseOne() {

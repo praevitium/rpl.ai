@@ -2,7 +2,7 @@
    with apostrophes there but backticks here, T(3) spells glyphs as
    backslash codes, and `@` starts a comment. */
 
-import { parseEntry, straightenQuotes } from './parser.js';
+import { parseEntry, plainPunctuation } from './parser.js';
 import { formatSource } from './formatter.js';
 import { RPLError } from './stack.js';
 import { Directory, isDirectory, isName, isStorableHpName } from './types.js';
@@ -44,7 +44,7 @@ export function hpCodesToGlyphs(src) {
 }
 
 export function hpTextToSource(text) {
-  const src = hpCodesToGlyphs(straightenQuotes(String(text).replace(/^\uFEFF/, '').replace(/^\s*%%HP:[^;]*;/, '')));
+  const src = hpCodesToGlyphs(plainPunctuation(String(text).replace(/^\uFEFF/, '').replace(/^\s*%%HP:[^;]*;/, '')));
   return mapOutsideStrings(src, (c, s, i) => {
     if (c === "'") return { text: '`', next: i + 1 };
     if (c !== '@') return { text: c, next: i + 1 };
