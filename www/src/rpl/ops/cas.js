@@ -84,6 +84,24 @@ register('COLCT', lookup('COLLECT').fn, { category: 'CAS / symbolic', categoryOr
 
 register('SIMPLIFY', _simplify, { category: 'CAS / symbolic', categoryOrder: 15, label: "SIMPLIFY" });
 
+// SEVAL puts in the values of existing variables and simplifies below the top level only, so the AUR's
+// SIN(…)-SIN(…) stays a difference.
+register('SEVAL', (s) => {
+  const [v] = s.popN(1);
+  if (isReal(v) || isInteger(v) || isRational(v)) {
+    s.push(v);
+    return;
+  }
+  if (!isSymbolic(v) && !isName(v)) throw new RPLError('Bad argument type');
+  const value = _evalSymbolic(isName(v) ? Symbolic(AstVar(v.id)) : v);
+  if (!isSymbolic(value)) {
+    s.push(value);
+    return;
+  }
+  const simplified = (a) => (a.kind === 'num' || a.kind === 'var' ? a : _casEval(a, (e) => `simplify(${e})`));
+  _pushCasResult(s, _mapChildren(value.expr, simplified));
+}, { category: 'CAS / symbolic', categoryOrder: 15.1, label: "SEVAL" });
+
 
 register('FACTOR', _factorWith('factor'), { category: 'CAS / symbolic', categoryOrder: 8, label: "FACTOR" });
 

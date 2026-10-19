@@ -49,7 +49,7 @@ TRIG (uses the active angle mode RAD/DEG/GRD)
 STACK MANIPULATION
   DUP DROP SWAP OVER ROT UNROT   classic 1-arg / 2-arg ops (UNROT sends level 1 down to level 3)
   DUP2 DROP2 DROPN DUPN      pluralised / n-arg variants
-  PICK PICK3 UNPICK ROLL ROLLD NIP    n-deep pick/roll (n PICK copies level n to level 1; n ROLL moves level n to level 1; n ROLLD moves level 1 down to level n)
+  PICK PICK3 UNPICK ROLL ROLLD NIP    n-deep pick/roll (n PICK copies level n to level 1; n ROLL moves level n to level 1; n ROLLD moves level 1 down to level n; n ANS is n PICK)
   CLEAR DEPTH                empty-stack / depth-query
   UNDO LASTSTACK REDO        multi-level stack history
   LASTARG LAST               recall the last command's arguments (LAST is the same command)
@@ -82,6 +82,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   FDISTRIB                   every product and quotient spread over sums in one step, nothing collected
   ↓MATCH ↑MATCH              \`expr\` { \`pattern\` \`replacement\` \`condition\`(optional) } → rewritten expr and 1, or expr and 0; &A in a pattern matches any part: \`SIN(U+V)\` { \`SIN(&A+&B)\` \`SIN(&A)*COS(&B)+COS(&A)*SIN(&B)\` } ↓MATCH; ↓ works top down, ↑ bottom up
   SHOW                       \`expr\` { X Y } SHOW evaluates every variable but X and Y; \`expr\` \`X\` SHOW evaluates those that lead to X
+  SEVAL                      \`expr\` SEVAL puts in the values of stored variables and simplifies each argument of the top level, not the top level itself: \`(X^2-1)/(X-1)+(X^2-4)/(X-2)\` SEVAL → \`X+1+(X+2)\`
   FACTOR                     ALGEBRAIC FACTORISATION; \`X^2-1\` FACTOR → \`(X-1)*(X+1)\`.  Use for "factor x^2-1", "factorise (x-1)(x+1)*x".  ⚠ NOT FACT (that's factorial). Mnemonic: FACT ends in T (like "ten!"); FACTOR has more letters (like a factored expression has more terms).
   PARTFRAC PROPFRAC          partial-fraction / proper-fraction decomposition
   DERIV                      \`expr\` \`var\` DERIV — derivative w.r.t. var.  Example: \`SIN(X)\` \`X\` DERIV → \`COS(X)\`; the algebraic form \`∂X(X^2)\` EVAL → \`2*X\`

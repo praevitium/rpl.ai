@@ -50,9 +50,14 @@ register('LASTSTACK', (s) => s.undo(), { category: 'Stack', categoryOrder: 22, l
 register('REDO',      (s) => s.redo(), { category: 'Stack', categoryOrder: 21, label: "REDO" });
 
 
-register('PICK', (s) => {
+function _pick(s) {
   s.pick(_toPosIntIndex(s.pop()));
-}, { category: 'Stack', categoryOrder: 13, label: "PICK" });
+}
+
+register('PICK', _pick, { category: 'Stack', categoryOrder: 13, label: "PICK" });
+
+// ANS typed in RPN mode is PICK, as the AUR says; the history it reads in algebraic mode doesn't exist here.
+register('ANS', _pick, { category: 'Stack', categoryOrder: 13.1, label: "ANS" });
 
 
 register('DROPN', (s) => {

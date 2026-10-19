@@ -8842,3 +8842,18 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   runLine("{ F7 } PURGE");
   giac._clear();
 }
+
+// SEVAL: existing variables put in, each argument of the top level simplified, the top level left alone.
+{
+  const top = (line) => format(runLine(line).peek());
+  giac._clear();
+  runLine("'π' 'Y7' STO");
+  giac._setFixture('simplify(sin(3*X-π+2*Z-(2*X-Z)))', '-sin(X+3*Z)');
+  giac._setFixture('simplify(sin(X-2*π+(π+3*Z)))', '-sin(X+3*Z)');
+  assert(top("'SIN(3*X-Y7+2*Z-(2*X-Z))-SIN(X-2*Y7+(Y7+3*Z))' SEVAL") === '`-SIN(X + 3*Z) - (-SIN(X + 3*Z))`',
+    'SEVAL puts π in for Y7 and simplifies each SIN but not their difference, as the AUR\'s example does');
+  assert(top('5 SEVAL') === '5', 'SEVAL leaves a number as it is');
+  assertThrows(() => runLine('"A" SEVAL'), /Bad argument type/, 'SEVAL of a string is Bad argument type');
+  runLine("{ Y7 } PURGE");
+  giac._clear();
+}

@@ -202,6 +202,12 @@ function vals(s) {
 }
 
 {
+  const s = runLine('10 20 30 3 ANS');
+  assert(s.depth === 4 && s.peek().value === 10n, 'ANS typed in RPN mode picks level n, as PICK does');
+  assertThrows(() => runLine('9 0 ANS'), /Bad argument/, 'ANS of 0 is Bad argument value, as PICK is');
+}
+
+{
   const s = new Stack();
   s.push(Integer(100n));
   s.push(Integer(200n));

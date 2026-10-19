@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.15 (2026-10-19)
+**Latest release:** v0.7.16 (2026-10-19)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.16 — 2026-10-19
+
+The seventeenth batch of missing HP 50g commands adds two:
+
+- `ANS`, typed in RPN mode, is PICK, as the AUR says: `10 20 30 3 ANS`
+  copies 10 to level 1. The history of answers it reads in algebraic mode
+  doesn't exist here.
+- `SEVAL` puts in the values of stored variables and simplifies each
+  argument of the top level, leaving the top level itself alone:
+  `'(X^2-1)/(X-1)+(X^2-4)/(X-2)' SEVAL` gives `'X+1+(X+2)'`. With π stored
+  in Y, the AUR's `SIN(3*X-Y+2*Z-(2*X-Z))-SIN(X-2*Y+(Y+3*Z))` gives
+  `-SIN(X+3*Z)-(-SIN(X+3*Z))`, the same value as the AUR's
+  -SIN(π-(X+3*Z)) on each side, written as the CAS writes it.
 
 ## v0.7.15 — 2026-10-19
 
