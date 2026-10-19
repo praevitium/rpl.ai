@@ -874,6 +874,26 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   setGraphicsHook(null);
 }
 
+// WIREFRAME: z = f(x, y) seen from VPAR's eye point, looking at the view volume's centre, with the volume's box.
+{
+  const volume = { x: [-1, 1], y: [-1, 1], z: [-1, 1], eye: [0, -3, 0], steps: [10, 8] };
+  const wire = (expr, v = volume) => sampleTrace({ kind: 'wireframe', expr }, null, { volume: v });
+  const saddle = wire('X^2-Y^2');
+  const near = (p, q) => Math.abs(p[0] - q[0]) < 1e-12 && Math.abs(p[1] - q[1]) < 1e-12;
+  assert(saddle.length === 8 + 10 + 12, `WIREFRAME: NUMY lines across x, NUMX along y and the box's 12 edges (${saddle.length})`);
+  assert(saddle.some((seg) => seg.length === 2 && near(seg[0], [-0.5, -0.5]) && near(seg[1], [0.5, -0.5])),
+    'WIREFRAME: the box\'s near bottom edge, 2 units from the eye, spans -.5 to .5');
+  assert(saddle.flat().every(([u, v]) => Math.abs(u) <= 0.5 + 1e-12 && Math.abs(v) <= 0.5 + 1e-12), 'WIREFRAME: the surface stays inside the box\'s image');
+  const bowl = wire('X^2+Y^2');
+  assert(bowl.length < saddle.length && bowl.slice(0, -12).every((seg) => seg.length > 1), 'WIREFRAME: points above the volume\'s z range break their lines');
+  assert(wire('X', { ...volume, eye: [0, 0, 0] }).length === 0, 'WIREFRAME: an eye at the volume\'s centre sees nothing');
+  let seen = null;
+  setGraphicsHook((kind) => { seen = kind; });
+  runLine("'X*Y' WIREFRAME DROP");
+  assert(seen === 'wireframe', 'WIREFRAME hands its expression to the plot view');
+  setGraphicsHook(null);
+}
+
 // PCONTOUR: ten level curves by marching squares, each segment on its level.
 {
   const view = { xmin: -3, xmax: 3, ymin: -3, ymax: 3 };

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.44 (2026-10-19)
+**Latest release:** v0.7.45 (2026-10-19)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.45 — 2026-10-19
+
+- WIREFRAME draws z = f(x, y) in perspective inside VPAR's view volume, as
+  seen from its eye point: `2 -3 1.5 EYEPT 'SIN(X*3)*COS(Y*3)' WIREFRAME`.
+  NUMY lines run across x and NUMX along y, each drawn smoothly rather than
+  in the 50g's straight steps, with the view volume's box around them. The
+  plot view hides its x-y grid while a wireframe shows, and has a Wireframe
+  kind for typing one in.
 
 ## v0.7.44 — 2026-10-19
 

@@ -237,8 +237,9 @@ PLOT WINDOW (PPAR, as on the HP 50g)
   CONIC                      \`X^2/4+Y^2=1\` CONIC draws a second-order curve f(x, y) = 0, solving for Y at each X
   TRUTH                      \`X^2+Y^2<4 AND X>0\` TRUTH shades the region of the plot view where the condition holds (any non-zero value)
   PCONTOUR                   \`X^2-Y^2\` PCONTOUR draws ten level curves of f(x, y) across the plot view
+  WIREFRAME                  \`X^2-Y^2\` WIREFRAME draws z = f(x, y) as a wireframe in perspective, inside VPAR's view volume (XVOL YVOL ZVOL) seen from its eye point (EYEPT), NUMY lines across x and NUMX along y
   XRNG YRNG PMIN PMAX        -2 3 XRNG -1 1 YRNG sets the plot window; FUNCTION, POLAR and the other plots, and DRAW, then start there instead of fitting
-  XVOL YVOL ZVOL EYEPT       -2 2 XVOL sets VPAR's view volume for the 3D plots (YVOL its depth, ZVOL its height), 0 -3 0 EYEPT the eye point; XXRNG YYRNG set the input plane, 10 NUMX 8 NUMY the steps; VPAR starts as { -1 1 -1 1 -1 1 -1 1 -1 1 0 -3 0 10 8 }
+  XVOL YVOL ZVOL EYEPT       -2 2 XVOL sets VPAR's view volume for the 3D plots (YVOL its depth, ZVOL its height), 0 -3 0 EYEPT the eye point; XXRNG YYRNG set the input plane, 10 NUMX 8 NUMY the steps; VPAR starts as { -1 1 -1 1 -1 1 -1 1 -1 1 0 -3 0 10 8 }; WIREFRAME reads it
   CENTR SCALE SCALEW SCALEH  (1,2) CENTR moves the window's centre; 2 2 SCALE gives two units per tick; .5 SCALEW halves the width (*W and *H are the same)
   INDEP RES                  { T 0 1 } INDEP names the plot variable and its range (FUNCTION plots only there; POLAR and PARAMETRIC sweep it; DIFFEQ runs from the first number to the second); .1 RES is the step between plotted values (#n RES in pixels, FUNCTION only)
   DEPND AXES ATICK           { Y 1 .0001 } DEPND gives DIFFEQ its initial value; { (1,1) 2 } AXES moves the axes' crossing and puts grid lines every 2 units; 2 ATICK sets the spacing alone; the axis labels are stored only

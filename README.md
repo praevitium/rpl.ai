@@ -57,7 +57,7 @@ download, no account and no sign-up.
 | **Linear algebra** | Vectors and matrices with DET, INV, RANK, LU, QR, SCHUR, CHOLESKY, EGV and LINSOLVE, and a matrix writer that pastes from spreadsheets |
 | **Statistics** | ΣDAT and Σ+, MEAN, SDEV, LINFIT, BESTFIT and BINS, and distributions such as NDIST and UTPN |
 | **Programming** | User RPL with `« »`, IF, CASE, FOR, WHILE and IFERR (typed from the HP's BRCH menu), local variables, recursion, DEFINE, directories, and HALT, SST, SST↓ and DBUG for debugging |
-| **Plots** | FUNCTION, POLAR, PARAMETRIC, DIFFEQ, slope fields, conics, truth plots, contour maps, scatter, bar and histogram plots, with trace, zoom and PNG export |
+| **Plots** | FUNCTION, POLAR, PARAMETRIC, DIFFEQ, slope fields, conics, truth plots, contour maps, 3D wireframes, scatter, bar and histogram plots, with trace, zoom and PNG export |
 | **Data in and out** | Copy and paste with Excel, Google Sheets and Numbers; CSV, TSV, `.xlsx`, JSON and HP `.rpl` files; LaTeX copied out and pasted in |
 | **Input** | Keyboard first with `⌘K` search, the HP 50g keypad on screen, and a phone layout with its own key strip |
 | **Assistant** | Optional. A model you run with Ollama explains, solves, writes programs and tutors, acting on your stack with one-click undo |
@@ -558,11 +558,14 @@ from before it.
 ### Plots you can work with
 
 `FUNCTION`, `POLAR`, `PARAMETRIC`, differential equations and their slope
-fields, conics, truth plots, contour maps, scatter, bar and histogram plots; `PLOT` stores an
-expression in EQ and plots it, and `PLOTADD` adds another. Traces have checkboxes and editable expressions. Zoom, fit
-and reset are on the canvas, the window is typed in directly, and Trace mode
-(`T`) walks a cursor along the curves with live readouts. Expand to fill the
-window, or go full screen. More canvas buttons copy the plot as an image,
+fields, conics, truth plots, contour maps, wireframe surfaces in perspective,
+scatter, bar and histogram plots; `PLOT` stores an expression in EQ and plots
+it, and `PLOTADD` adds another.
+`` 2 -3 1.5 EYEPT `SIN(X*3)*COS(Y*3)` WIREFRAME `` shows the surface from that
+eye point inside VPAR's view volume. Traces have checkboxes and editable
+expressions. Zoom, fit and reset are on the canvas, the window is typed in
+directly, and Trace mode (`T`) walks a cursor along the curves with live
+readouts. Expand to fill the window, or go full screen. More canvas buttons copy the plot as an image,
 download it as a PNG at the screen's pixel density, and, where the device
 can share images, share it.
 
@@ -892,8 +895,8 @@ Catalog and the command reference mark what is available. Not there yet:
   app was closed shows as past due the next time it opens. While one is
   past due, the HP's alert annunciator ((•)) lights in the status line,
   and a tap on it brings the note back.
-- PICTURE's cursor, and the other plot
-  types (the 3D plots and the rest). PICT holds a
+- PICTURE's cursor, and the other plot types (the 3D plots but
+  WIREFRAME, and the rest). PICT holds a
   graphics object, LINE, TLINE, BOX, ARC, PIXON, PIXOFF, DRAX and LABEL
   draw on it, GOR, GXOR, SUB, REPL and NEG work on it and on other graphics
   objects (GROBADD stacks two), →GROB draws any object as one in rpl.ai's
@@ -902,7 +905,7 @@ Catalog and the command reference mark what is available. Not there yet:
   plot-window commands (XRNG, YRNG, CENTR, SCALE, AUTO, INDEP, RES, AXES
   and the rest) set PPAR, and plots start in its window, follow its
   INDEP, DEPND and RES and draw its axes. XVOL, YVOL, ZVOL, XXRNG, YYRNG,
-  EYEPT, NUMX and NUMY set VPAR, ready for the 3D plots
+  EYEPT, NUMX and NUMY set VPAR, which WIREFRAME reads
 - the HP's numbered menus for MENU and TMENU (a list, a name holding one
   or 0 work), and DEF
 - parts of the CAS, such as DESOLVE and LDEC (SOLVE, SOLVEVX, ISOL,

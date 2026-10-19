@@ -8,7 +8,7 @@ import { escapeHtml } from './display.js';
 import { icon } from './icons.js';
 import { isSymbolic, isName, isMatrix, isVector, isList, Real } from '../rpl/types.js';
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians, getPict, subscribe as subscribeState } from '../rpl/state.js';
-import { plotSettings, pictWindow, pictGrid, pictPoint } from '../rpl/ops/graphics.js';
+import { plotSettings, pictWindow, pictGrid, pictPoint, viewVolume } from '../rpl/ops/graphics.js';
 import { downloadFile } from '../rpl/persist.js';
 
 export { stackValueToTrace, traceToStackValues };
@@ -24,6 +24,7 @@ const PLOT_KINDS = Object.freeze([
   ['conic', 'Conic', 'f(x, y) = 0, a second-order curve'],
   ['truth', 'Truth', 'Shade where a condition in x and y holds'],
   ['contour', 'Contour', 'Level curves of f(x, y)'],
+  ['wireframe', 'Wireframe', 'z = f(x, y) in perspective, from VPAR'],
   ['scatter', 'Scatter', 'Points from ΣDAT or the stack'],
   ['bar', 'Bar', 'Bar chart from ΣDAT or the stack'],
   ['hist', 'Histogram', 'Histogram from ΣDAT or the stack'],
@@ -52,6 +53,7 @@ function sampleOpts(extra) {
     indep: ppar?.indep ?? null,
     depend: ppar?.depend ?? null,
     res: ppar?.res ?? null,
+    volume: viewVolume(),
     ...extra,
   };
 }
@@ -782,7 +784,8 @@ export class GraphView {
     ctx.fillStyle = this._colors.bg;
     ctx.fillRect(0, 0, width, height);
 
-    this._drawGrid(ctx, width, height);
+    // A 3D picture's x and y are the screen's, not the plot's, so the grid would mislead.
+    if (!this.traces.some((t) => t.enabled && TRACE_KINDS[t.kind]?.projected)) this._drawGrid(ctx, width, height);
     for (const t of this.traces) {
       if (!t.enabled) continue;
       this._drawTrace(ctx, t, width, height);

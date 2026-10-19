@@ -493,6 +493,67 @@ export function sampleTruth(ast, view, width, height, opts) {
   return cells;
 }
 
+// WIREFRAME's perspective view of z = f(x, y) over VPAR's view volume, from its eye point looking at the volume's centre
+// with z up: NUMY lines across x and NUMX along y, each finely sampled, and the volume's box. A point outside the
+// volume's z range breaks its line.
+const WIRE_SAMPLES = 48;
+
+const sub3 = (a, b) => a.map((v, i) => v - b[i]);
+const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+
+function unit3(v) {
+  const length = Math.hypot(...v);
+  return length > 1e-12 ? v.map((c) => c / length) : null;
+}
+
+// A camera at eye looking at target; a point not in front of it has no image.
+function perspective(eye, target) {
+  const forward = unit3(sub3(target, eye));
+  if (!forward) return null;
+  const right = unit3(cross3(forward, [0, 0, 1])) ?? [1, 0, 0];
+  const up = cross3(right, forward);
+  return (p) => {
+    const d = sub3(p, eye);
+    const depth = dot3(d, forward);
+    return depth > 1e-9 ? [dot3(d, right) / depth, dot3(d, up) / depth] : null;
+  };
+}
+
+function unbroken(points) {
+  const runs = [[]];
+  for (const p of points) {
+    if (p) runs.at(-1).push(p);
+    else if (runs.at(-1).length) runs.push([]);
+  }
+  return runs.filter((run) => run.length > 1);
+}
+
+function boxEdges({ x, y, z }, project) {
+  const corner = (b) => project([x[b & 1], y[(b >> 1) & 1], z[(b >> 2) & 1]]);
+  const edges = [];
+  for (let b = 0; b < 8; b++) {
+    for (const bit of [1, 2, 4]) if (!(b & bit)) edges.push([corner(b), corner(b | bit)]);
+  }
+  return edges.filter(([p, q]) => p && q);
+}
+
+export function sampleWireframe(ast, volume, opts) {
+  const { x: [x0, x1], y: [y0, y1], z: [z0, z1] } = volume;
+  const project = perspective(volume.eye, [(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2]);
+  if (!project) return [];
+  const [nx, ny] = volume.steps.map((n) => Math.max(2, Math.round(n)));
+  const [zlo, zhi] = [Math.min(z0, z1), Math.max(z0, z1)];
+  const surface = (x, y) => {
+    const z = odeSlope(ast, x, y, opts);
+    return z >= zlo && z <= zhi ? project([x, y, z]) : null;
+  };
+  const line = (point) => unbroken(Array.from({ length: WIRE_SAMPLES }, (_, k) => point(k / (WIRE_SAMPLES - 1))));
+  const across = Array.from({ length: ny }, (_, j) => y0 + (y1 - y0) * j / (ny - 1)).flatMap((y) => line((u) => surface(x0 + (x1 - x0) * u, y)));
+  const along = Array.from({ length: nx }, (_, i) => x0 + (x1 - x0) * i / (nx - 1)).flatMap((x) => line((u) => surface(x, y0 + (y1 - y0) * u)));
+  return [...across, ...along, ...boxEdges(volume, project)];
+}
+
 // PCONTOUR draws ten level curves of f(x, y) between its lowest and highest values in the view, by marching squares
 // over a grid of about 8-pixel cells; a saddle cell takes its centre's side.
 const CONTOUR_CELL_PIXELS = 8;
@@ -768,6 +829,7 @@ function traceContext(view, opts = {}) {
     indep: opts.indep || null,
     depend: opts.depend || null,
     res: opts.res || null,
+    volume: opts.volume || null,
   };
 }
 
@@ -1000,6 +1062,23 @@ export const TRACE_KINDS = Object.freeze({
     },
     evalAt() { return NaN; },
     fromStack(v) { return expressionFromStack('contour', v); },
+    toStack: expressionToStack,
+  },
+  wireframe: {
+    render: 'stroke',
+    data: true,
+    equalAxes: true,
+    projected: true,
+    editable: true,
+    fitOnAdd: true,
+    fields: [{ key: 'expr', placeholder: 'X^2-Y^2', aria: 'z = f(x, y)' }],
+    label: functionLabel,
+    sample(t, ctx) {
+      if (!t.expr || !ctx.volume) return [];
+      return sampleWireframe(parsePlotExpr(t.expr), ctx.volume, diffeqOpts(ctx));
+    },
+    evalAt() { return NaN; },
+    fromStack(v) { return expressionFromStack('wireframe', v); },
     toStack: expressionToStack,
   },
   truth: {

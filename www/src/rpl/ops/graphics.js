@@ -41,7 +41,7 @@ register('FUNCTION',  (s) => _requestPlot('function', s), { category: 'Graphics'
 register('POLAR',     (s) => _requestPlot('polar', s), { category: 'Graphics', categoryOrder: 4, label: "POLAR" });
 
 // PLOT stores level 1 in EQ and plots it, PLOTADD adds it to EQ's list and to the plot, each as PPAR's plot type says.
-const PTYPE_KINDS = Object.freeze({ FUNCTION: 'function', POLAR: 'polar', PARAMETRIC: 'parametric', DIFFEQ: 'diffeq', SLOPEFIELD: 'slopefield', CONIC: 'conic', TRUTH: 'truth', PCONTOUR: 'contour' });
+const PTYPE_KINDS = Object.freeze({ FUNCTION: 'function', POLAR: 'polar', PARAMETRIC: 'parametric', DIFFEQ: 'diffeq', SLOPEFIELD: 'slopefield', CONIC: 'conic', TRUTH: 'truth', PCONTOUR: 'contour', WIREFRAME: 'wireframe' });
 
 function _plotKind() {
   const ptype = plotParameters()[5];
@@ -82,6 +82,8 @@ register('CONIC', (s) => _requestPlot('conic', s), { category: 'Graphics', categ
 register('TRUTH', (s) => _requestPlot('truth', s), { category: 'Graphics', categoryOrder: 7.7, label: "TRUTH" });
 
 register('PCONTOUR', (s) => _requestPlot('contour', s), { category: 'Graphics', categoryOrder: 7.8, label: "PCONTOUR" });
+
+register('WIREFRAME', (s) => _requestPlot('wireframe', s), { category: 'Graphics', categoryOrder: 7.9, label: 'WIREFRAME' });
 
 register('DRAW',      (s) => _requestPlot('draw', s), { category: 'Graphics', categoryOrder: 6, label: "DRAW" });
 
@@ -341,6 +343,12 @@ export function viewParameters() {
   const par = varRecall('VPAR');
   const items = isList(par) ? par.items : [];
   return VPAR_DEFAULT().map((v, i) => items[i] ?? v);
+}
+
+// What the 3D plots take from VPAR, as plain numbers.
+export function viewVolume() {
+  const n = viewParameters().map(_number);
+  return { x: [n[0], n[1]], y: [n[2], n[3]], z: [n[4], n[5]], input: { x: [n[6], n[7]], y: [n[8], n[9]] }, eye: [n[10], n[11], n[12]], steps: [n[13], n[14]] };
 }
 
 function _setVpar(at, values) {
