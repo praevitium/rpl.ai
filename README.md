@@ -555,7 +555,7 @@ can share images, share it.
 
 `⌘K` finds commands (by name, description or topic), settings, modes, menus,
 variables and constants. For quick commands, the selected result shows what
-it would leave on your stack; `→` opens its reference page. With nothing
+it would leave on your stack, or why it can't run; `→` opens its reference page. With nothing
 typed, the commands you last ran from search come first, so on a phone
 without the keypad a command you use often is two taps away.
 
