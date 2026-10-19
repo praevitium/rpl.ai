@@ -16,6 +16,10 @@ register('D->R', alias('D→R'));
 
 register('->NUM', alias('→NUM'));
 
+register('DIAG->', alias('DIAG→'));
+
+register('->DIAG', alias('→DIAG'));
+
 register('B->R', alias('B→R'));
 
 register('R->B', alias('R→B'));

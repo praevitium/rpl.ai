@@ -129,6 +129,7 @@ CONTAINERS
   TRN DET TRACE NORM RANK COND CROSS DOT     matrix algebra (INV inverts a matrix; * multiplies)
   RREF REF CHOLESKY LU QR LQ EGV EGVL PCAR     decompositions / characteristic polynomial
   IDN CON RANM HILBERT VANDERMONDE   stock matrices
+  →DIAG DIAG→                [[ 1 2 ][ 3 4 ]] →DIAG → [ 1 4 ]; [ 1 2 ] { 2 } DIAG→ → [[ 1 0 ][ 0 2 ]] (one dimension is square, { m n } a rectangle)
   ROW+ ROW- COL+ COL- CSWP RSWP RCI RCIJ      row / column manipulation
   SEQ DOLIST DOSUBS STREAM MAP    list combinators (body programs in « »)
   ΣLIST ΔLIST ΠLIST           sum / differences / product over a list

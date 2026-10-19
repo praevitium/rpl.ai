@@ -343,6 +343,26 @@ register('CON', (s) => {
 }, { category: 'Vectors / matrices', categoryOrder: 13, label: "CON" });
 
 
+// DIAG→ ( [diagonals] { dim } → matrix ): one dimension makes it square, real dimensions round, a longer
+// diagonal fills with zeros and elements past a shorter one drop, as the AUR describes.
+register('DIAG→', (s) => {
+  const [diag, dims] = s.popN(2);
+  if (!isVector(diag) || !isList(dims)) throw new RPLError('Bad argument type');
+  if (dims.items.length < 1 || dims.items.length > 2) throw new RPLError('Invalid dimension');
+  const [m, n = m] = dims.items.map((d) => (isReal(d) ? Math.round(d.value.toNumber()) : _wholeArg(d)));
+  if (m < 1 || n < 1) throw new RPLError('Bad argument value');
+  _checkCells(m, n);
+  const zero = diag.items.some((x) => isReal(x) || isComplex(x)) ? Real(0) : Integer(0);
+  s.push(Matrix(Array.from({ length: m }, (_, i) => Array.from({ length: n }, (_, j) => (i === j && i < diag.items.length ? diag.items[i] : zero)))));
+}, { category: 'Vectors / matrices', categoryOrder: 13.5, label: "DIAG→" });
+
+register('→DIAG', (s) => {
+  const [M] = s.popN(1);
+  if (!isMatrix(M)) throw new RPLError('Bad argument type');
+  s.push(Vector(M.rows.filter((row, i) => i < row.length).map((row, i) => row[i])));
+}, { category: 'Vectors / matrices', categoryOrder: 13.6, label: "→DIAG" });
+
+
 register('REF', (s) => {
   const [v] = s.popN(1);
   if (!isMatrix(v)) throw new RPLError('Bad argument type');

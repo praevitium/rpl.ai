@@ -3853,3 +3853,19 @@ function _approxMatEqual(A, B, tol) {
   setAngle(saved[0]);
   setCoordMode(saved[1]);
 }
+
+/* →DIAG and DIAG→, the AUR's diagonal commands on the MATRIX menu's MAKE folder. */
+{
+  const top = (src) => format(runLine(src).peek());
+  assert(top('[ 1 2 3 ] { 3 } DIAG→') === '[[ 1 0 0 ][ 0 2 0 ][ 0 0 3 ]]' && top('[ 1 2 3 ] { 2 4 } DIAG→') === '[[ 1 0 0 0 ][ 0 2 0 0 ]]',
+    'DIAG→ makes a square matrix from one dimension and drops diagonal elements past a shorter diagonal');
+  assert(top('[ 1 2 ] { 3 } DIAG→') === '[[ 1 0 0 ][ 0 2 0 ][ 0 0 0 ]]' && top('[ 1.5 2 ] { 2.4 } DIAG→') === '[[ 1.5 0. ][ 0. 2 ]]',
+    'DIAG→ fills a longer diagonal with zeros, real zeros beside real elements, and rounds a real dimension');
+  assertThrows(() => runLine('[ 1 2 ] { 1 2 3 } DIAG→'), /Invalid dimension/, 'DIAG→ takes no more than two dimensions');
+  assertThrows(() => runLine('[ 1 2 ] { 0 } DIAG→'), /Bad argument value/, 'DIAG→ refuses a zero dimension');
+  assert(top('[[ 1 2 3 ][ 4 5 6 ]] →DIAG') === '[ 1 5 ]' && top('[[ 1 2 ][ 3 4 ][ 5 6 ]] →DIAG') === '[ 1 4 ]',
+    '→DIAG gives the major diagonal of a matrix that need not be square');
+  assertThrows(() => runLine('[ 1 2 ] →DIAG'), /Bad argument type/, '→DIAG refuses a vector');
+  assert(top('[[ 1 2 ][ 3 4 ]] ->DIAG') === '[ 1 4 ]' && top('[ 7 8 ] { 2 } DIAG->') === '[[ 7 0 ][ 0 8 ]]',
+    '->DIAG and DIAG-> are the ASCII spellings');
+}

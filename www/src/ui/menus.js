@@ -112,7 +112,7 @@ export const KEY_LABELS = Object.freeze({ ACKALL: 'ACKAL', STOALARM: 'STOAL', RC
 
 // The HP's MTH MATR folders, MAKE NORM FACTR COL ROW, with the commands of each that the app has; LSQ follows them.
 export const MATRIX_GROUPS = Object.freeze([
-  { id: 'MAKE', title: 'Make matrices', commands: ['CON', 'IDN', 'TRN', 'RDM', 'RANM', 'SIZE', 'VANDERMONDE', 'HILBERT', 'AUGMENT'] },
+  { id: 'MAKE', title: 'Make matrices', commands: ['CON', 'IDN', 'TRN', 'RDM', 'RANM', 'SIZE', 'VANDERMONDE', 'HILBERT', 'AUGMENT', '→DIAG', 'DIAG→'] },
   { id: 'NORM', title: 'Norms and measures', commands: ['ABS', 'RNRM', 'CNRM', 'COND', 'RANK', 'DET', 'TRACE'] },
   { id: 'FACTR', title: 'Factorizations', commands: ['LU', 'LQ', 'QR', 'SCHUR', 'CHOLESKY'] },
   { id: 'COL', title: 'Columns', commands: ['→COL', 'COL→', 'COL+', 'COL-', 'CSWP'] },
