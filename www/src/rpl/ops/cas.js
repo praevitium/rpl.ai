@@ -492,6 +492,42 @@ register('SVL', (s) => {
   s.push(Vector(values.map((a) => a.value).sort((x, y) => y - x).map((x) => Real(x))));
 }, { category: 'Vectors / matrices', categoryOrder: 68, label: "SVL" });
 
+// SVD ( A → U V S ): A = U·diag(S)·V with U and V square and orthogonal and S nonincreasing, as the AUR has it. Giac's
+// svd gives thin factors with S increasing, so the columns are reordered and U and V completed to orthonormal bases.
+function _completeBasis(columns, n) {
+  const basis = columns.map((c) => c.slice());
+  for (let k = 0; k < n && basis.length < n; k++) {
+    let v = Array.from({ length: n }, (_, i) => (i === k ? 1 : 0));
+    for (const b of basis) {
+      const d = b.reduce((sum, bi, i) => sum + bi * v[i], 0);
+      v = v.map((vi, i) => vi - d * b[i]);
+    }
+    const norm = Math.hypot(...v);
+    if (norm > 1e-6) basis.push(v.map((vi) => vi / norm));
+  }
+  return basis;
+}
+
+const _cleanReal = (x) => Real(Math.abs(x) < 1e-12 ? 0 : x);
+
+register('SVD', (s) => {
+  const [m] = s.popN(1);
+  const cmd = `[svd(evalf(${_matrixArg(m)}))]`;
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const parts = splitGiacList(giac.caseval(cmd));
+  if (parts?.length !== 3) throw new RPLError('Bad argument value');
+  const numbers = (list) => (splitGiacList(list) ?? []).map(Number);
+  const [u, v] = [parts[0], parts[2]].map((t) => (splitGiacList(t) ?? []).map(numbers));
+  const values = numbers(parts[1]);
+  if (![...u.flat(), ...v.flat(), ...values].every(Number.isFinite)) throw new RPLError('Bad argument value');
+  const order = values.map((_, i) => i).sort((a, b) => values[b] - values[a]);
+  const columns = (rows) => order.map((j) => rows.map((row) => row[j]));
+  const uColumns = _completeBasis(columns(u), u.length);
+  s.push(Matrix(u.map((_, i) => uColumns.map((col) => _cleanReal(col[i])))));
+  s.push(Matrix(_completeBasis(columns(v), v.length).map((col) => col.map(_cleanReal))));
+  s.push(Vector(order.map((j) => _cleanReal(values[j]))));
+}, { category: 'Vectors / matrices', categoryOrder: 70.5, label: "SVD" });
+
 // AUR: { [1 1] -1 } for the reflection in y = -x, { π/3 1 } for a rotation; a reflection's line or plane
 // leads positive, while an axis keeps the direction its angle turns about.
 register('ISOM', (s) => {
@@ -615,6 +651,30 @@ function _byValue(roots) {
   if (!values.every((v) => astIsNum(v) && Number.isFinite(v.value))) return roots;
   return roots.map((r, i) => [r, values[i].value]).sort((a, b) => a[1] - b[1]).map(([r]) => r);
 }
+
+// SIGNTAB ( f → { -∞ sign x1 sign … +∞ } ): the real zeros and poles of f in VX, in increasing order, with f's sign,
+// + or -, between them, as the AUR tabulates 2-X^2.
+register('SIGNTAB', (s) => {
+  const [v] = s.popN(1);
+  const expr = _astArg(v);
+  const x = _mainVar(expr);
+  const e = astToGiac(expr);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const found = ['numer', 'denom'].flatMap((part) => splitGiacList(giac.caseval(`solve(${part}(${e}),${x})`)) ?? []).map(giacToAst);
+  const points = found.map((ast) => [ast, algebraEvalAst(ast, (name) => (name === 'π' ? Math.PI : undefined))]);
+  if (!points.every(([, value]) => astIsNum(value) && Number.isFinite(value.value))) throw new RPLError('Bad argument value');
+  const sorted = points.map(([ast, value]) => [ast, value.value]).sort((a, b) => a[1] - b[1])
+    .filter(([, value], i, all) => i === 0 || value - all[i - 1][1] > 1e-12);
+  const at = sorted.map(([, value]) => value);
+  const tests = at.length ? [at[0] - 1, ...at.slice(1).map((value, i) => (at[i] + value) / 2), at.at(-1) + 1] : [0];
+  const signs = (splitGiacList(giac.caseval(`[${tests.map((t) => `sign(evalf(subst(${e},${x}=${t})))`).join(',')}]`)) ?? []).map(Number);
+  if (signs.length !== tests.length) throw new RPLError('Bad argument value');
+  const mark = (sign) => (sign > 0 ? Name('+') : sign < 0 ? Name('-') : Integer(0n));
+  const items = [Symbolic(AstNeg(AstVar('∞'))), mark(signs[0])];
+  sorted.forEach(([ast], i) => items.push(_casValue(ast), mark(signs[i + 1])));
+  items.push(Symbolic(AstVar('∞')));
+  s.push(RList(items));
+}, { category: 'CAS / symbolic', categoryOrder: 10.6, label: "SIGNTAB" });
 
 // AUR: the zeros of an expression, each once and without SOLVE's X= in front.
 register('ZEROS', (s) => {

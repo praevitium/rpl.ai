@@ -114,7 +114,7 @@ export const KEY_LABELS = Object.freeze({ ACKALL: 'ACKAL', STOALARM: 'STOAL', RC
 export const MATRIX_GROUPS = Object.freeze([
   { id: 'MAKE', title: 'Make matrices', commands: ['CON', 'IDN', 'TRN', 'RDM', 'RANM', 'SIZE', 'VANDERMONDE', 'HILBERT', 'AUGMENT', '→DIAG', 'DIAG→'] },
   { id: 'NORM', title: 'Norms and measures', commands: ['ABS', 'SNRM', 'RNRM', 'CNRM', 'SRAD', 'COND', 'RANK', 'DET', 'TRACE'] },
-  { id: 'FACTR', title: 'Factorizations', commands: ['LU', 'LQ', 'QR', 'SCHUR', 'CHOLESKY', 'SVL'] },
+  { id: 'FACTR', title: 'Factorizations', commands: ['LU', 'LQ', 'QR', 'SCHUR', 'CHOLESKY', 'SVL', 'SVD'] },
   { id: 'COL', title: 'Columns', commands: ['→COL', 'COL→', 'COL+', 'COL-', 'CSWP'] },
   { id: 'ROW', title: 'Rows', commands: ['→ROW', 'ROW→', 'ROW+', 'ROW-', 'RCI', 'RCIJ', 'RSWP'] },
 ]);

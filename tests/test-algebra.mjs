@@ -8787,3 +8787,24 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(shown("'EXP(X)' 'X^2-3*X+2' LDEC") === '`cC0*EXP(2*X) + cC1*EXP(X) - X*EXP(X) - EXP(X)`', 'LDEC solves y\'\'-3y\'+2y = EXP(X) from its auxiliary polynomial');
   giac._clear();
 }
+
+// SVD and SIGNTAB, with real Giac's answers.
+{
+  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
+  giac._clear();
+  giac._setFixture('[svd(evalf([[1,2],[3,4],[5,6]]))]',
+    '[[[0.883461017699,0.2298476964],[0.240782492133,0.52474481876],[-0.401896033433,0.819641941121]],[0.514300580659,9.52551809157],[[-0.784894453267,0.619629483829],[0.619629483829,0.784894453267]]]');
+  const s = runLine('[[1 2][3 4][5 6]] SVD');
+  const [u, v, sv] = s.snapshot().reverse();
+  const orthonormal = (rows) => rows.every((r, i) => rows.every((q, j) => Math.abs(r.reduce((sum, x, k) => sum + Number(x.value) * Number(q[k].value), 0) - (i === j ? 1 : 0)) < 1e-9));
+  const columns = (rows) => rows[0].map((_, j) => rows.map((r) => r[j]));
+  assert(format(sv) === '[ 9.52551809157 0.514300580659 ]' && u.rows.length === 3 && u.rows[0].length === 3 && v.rows.length === 2
+    && format(u.rows[0][0]) === '0.2298476964' && format(v.rows[0][0]) === '0.619629483829',
+    `SVD gives a 3x3 U, a 2x2 V and S largest first (${format(sv)})`);
+  assert(orthonormal(columns(u.rows)) && orthonormal(v.rows), 'SVD completes U to an orthogonal matrix');
+  giac._setFixture('solve(numer((X-1)/(X+2)),X)', 'list[1]');
+  giac._setFixture('solve(denom((X-1)/(X+2)),X)', 'list[-2]');
+  giac._setFixture('[sign(evalf(subst((X-1)/(X+2),X=-3))),sign(evalf(subst((X-1)/(X+2),X=-0.5))),sign(evalf(subst((X-1)/(X+2),X=2)))]', '[1,-1,1]');
+  assert(shown("'(X-1)/(X+2)' SIGNTAB") === '{ `-∞` + -2 - 1 + `∞` }', 'SIGNTAB lists the pole and the zero in order with the sign between');
+  giac._clear();
+}

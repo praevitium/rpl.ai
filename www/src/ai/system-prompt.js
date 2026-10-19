@@ -98,6 +98,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   DIV CURL LAPL              [ \`X^2*Y\` \`X^2*Y\` \`Y^2*Z\` ] [ X Y Z ] DIV → divergence; CURL → the curl vector (three components and variables); \`expr\` [ X Y Z ] LAPL → Laplacian
   POTENTIAL VPOTENTIAL HESS  [ field ] [ X Y Z ] POTENTIAL → U with grad U = field; VPOTENTIAL → a vector whose curl is the field; \`expr\` [ T U ] HESS → Hessian, gradient, variables
   ZEROS                      \`expr\` \`var\` ZEROS — the roots as plain values, each once: \`X^3-X^2-8*X+12\` \`X\` ZEROS → { -3 2 }
+  SIGNTAB                    \`2-X^2\` SIGNTAB → { -∞ - -√2 + √2 - ∞ }: the zeros and poles in order with the sign between them
   ROOT                       \`f\` \`var\` guess ROOT — a numeric root near the guess (or in { a b }), stored in var: \`COS(X)=X\` \`X\` 1 ROOT → .739085133215
   RKF RKFSTEP RKFERR         y'=f(t,y) with t and y stored: 0 \`T\` STO 0 \`Y\` STO { T Y \`1/(1+T^2)-2*Y^2\` } .00001 8 RKF steps T to 8 and Y to .123077…; { T Y f } tol h RKFSTEP takes one step and gives the next h; { T Y f } h RKFERR → the change in Y and its error estimate
   TVMROOT TVMBEG TVMEND      \`PMT\` TVMROOT — solves the named TVM variable (N I%YR PV PMT FV) from the others and PYR, and stores it; payments at each period's end, TVMBEG for its start: 360 \`N\` STO 6.5 \`I%YR\` STO 200000 \`PV\` STO 0 \`FV\` STO 12 \`PYR\` STO \`PMT\` TVMROOT → -1264.13604699
@@ -159,6 +160,7 @@ CONTAINERS
   TRN DET TRACE NORM RANK COND CROSS DOT     matrix algebra (INV inverts a matrix; * multiplies)
   RREF REF CHOLESKY LU QR LQ EGV EGVL PCAR     decompositions / characteristic polynomial
   SNRM SRAD SVL              spectral norm (a vector's length), spectral radius (largest |eigenvalue|), singular values largest first
+  SVD                        A SVD → U V S with A = U*diag(S)*V, U and V square and orthogonal, S largest first (S { m n } DIAG→ rebuilds diag(S))
   KER IMAGE BASIS IBASIS     [[1 1 2][2 1 3][3 1 4]] KER → { [ 1 1 -1 ] }; IMAGE → { [ 1 0 -1 ] [ 0 1 2 ] }; { vectors } BASIS; { u } { v } IBASIS → basis of the intersection
   AXQ QXA ISOM MKISOM        matrix [ X Y ] AXQ → quadratic form; \`q\` [ X Y ] QXA → its matrix; ISOM of an isometry → { axis or angle, ±1 }; \`π/2\` 1 MKISOM → its matrix
   FFT IFFT                   discrete Fourier transform and inverse of a vector or matrix (power-of-two sizes): [ 1 2 3 4 ] FFT → [ (10,0) (-2,2) (-2,0) (-2,-2) ]
