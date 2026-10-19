@@ -607,6 +607,11 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(text(`${X} { #3d #3d } { #99d #99d } SUB`) === 'GROB 2 2 1020' && text(`${X} { #2d #2d } { #0d #0d } SUB`) === 'GROB 3 3 102040',
     'SUB keeps corners on the object and takes them in either order');
   assertThrows(() => runLine(`${X} { #0d #0d } 5 GOR`), /Bad argument type/, 'GOR wants a graphics object to lay on');
+  runLine('ERASE DRAX');
+  assert(count() === 248 && lit(5, 39) && lit(64, 10) && !lit(4, 39) && lit(130, 40) && lit(65, 79),
+    'DRAX draws both axes across PICT through (0,0), with a tick every 10 pixels');
+  runLine('ERASE { (1,1) 2 } AXES DRAX');
+  assert(lit(75, 0) && lit(0, 30) && lit(95, 29) && lit(95, 31) && !lit(85, 29), 'DRAX follows AXES\' crossing and a tick spacing in units');
   varPurge('PPAR');
   setPict(null);
 }

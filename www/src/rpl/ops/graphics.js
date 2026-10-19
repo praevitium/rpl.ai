@@ -597,3 +597,31 @@ export function negGrob(s, v) {
   t.give(out);
 }
 
+// DRAX draws the axes through AXES' crossing, with a tick mark three pixels long every ATICK: #n pixels (#10 to start)
+// or user units, for both axes or as { x y }.
+register('DRAX', () => {
+  const axes = plotParameters()[4];
+  const [origin, tick = BinaryInteger(10n, 'd')] = isList(axes) ? axes.items : [axes];
+  const [col, row] = _pixelOf(isComplex(origin) ? origin : Complex(0, 0));
+  const { dx, dy } = _grid();
+  const [tx, ty] = isList(tick) ? tick.items : [tick, tick];
+  const spacing = (t, unit) => (isBinaryInteger(t) ? Number(t.value) : Math.abs(_number(t)) / unit);
+  const [sx, sy] = [spacing(tx, dx), spacing(ty, dy)];
+  const { width, height } = getPict();
+  _paint((plot) => {
+    const on = (c, r) => plot(c, r, 'on');
+    _line([0, row], [width - 1, row], on);
+    _line([col, 0], [col, height - 1], on);
+    for (let k = Math.ceil(-col / sx); sx >= 2 && col + k * sx < width; k++) {
+      const c = Math.round(col + k * sx);
+      on(c, row - 1);
+      on(c, row + 1);
+    }
+    for (let k = Math.ceil(-row / sy); sy >= 2 && row + k * sy < height; k++) {
+      const r = Math.round(row + k * sy);
+      on(col - 1, r);
+      on(col + 1, r);
+    }
+  });
+}, { category: 'Graphics', categoryOrder: 12.2, label: "DRAX" });
+
