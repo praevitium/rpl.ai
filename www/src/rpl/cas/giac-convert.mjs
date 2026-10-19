@@ -62,6 +62,7 @@ const HP_TO_GIAC = Object.freeze({
   LOG: "log10",    // HP LOG is base-10; Giac `log` is natural
   EXP: "exp",
   SQRT: "sqrt",
+  INV: "inv", SQ: "sq",
   ABS: "abs",
   SIGN: "sign",
   MIN: "min", MAX: "max",

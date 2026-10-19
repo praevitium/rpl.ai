@@ -8220,6 +8220,7 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(astToGiac(parseAlgebra('XROOT(X,3)')) === 'surd(X,3)',
     'astToGiac XROOT(X,3) is the real cube root of X');
   assert(astEqual(giacToAst('surd(X,3)'), parseAlgebra('XROOT(X,3)')), 'giacToAst maps surd back to XROOT');
+  assert(astToGiac(parseAlgebra('INV(X)+SQ(Y)')) === 'inv(X)+sq(Y)', 'astToGiac sends INV and SQ as Giac\'s inv and sq');
   assert(astToGiac(parseAlgebra('MOD(X,3)')) === '((X)-(3)*floor((X)/(3)))',
     'astToGiac MOD is floored, as HP MOD is');
   assertThrows(() => astToGiac(parseAlgebra('X≠Y')), /Bad argument value/, 'astToGiac refuses ≠, which Giac reads as a test');
