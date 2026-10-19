@@ -354,7 +354,7 @@ import { assert, assertThrows } from './helpers.mjs';
     'TVM menu: each variable\'s key stores level 1 in it, ⇦ solves for it (PYR has no solve) and ⇨ recalls it, as the HP\'s solver menus do; inside a program it types the words instead');
   const statNames = allOps().filter((n) => lookup(n).category === 'Statistics');
   const inFolders = STAT_GROUPS.flatMap((g) => g.commands);
-  const aliases = ['NSIGMA', 'SX', 'SX2', 'SY', 'SY2', 'SXY', 'MAXS', 'MINS'];
+  const aliases = ['NSIGMA', 'SX', 'SX2', 'SY', 'SY2', 'SXY', 'MAXS', 'MINS', 'ΣX^2', 'ΣY^2', 'ΣX*Y'];
   assert(STAT_GROUPS.map((g) => g.id).join(' ') === 'DATA ΣPAR 1VAR PLOT FIT SUMS'
     && inFolders.every((n) => statNames.includes(n) || ['BARPLOT', 'HISTPLOT', 'SCATRPLOT'].includes(n)) && statNames.every((n) => inFolders.includes(n) || aliases.includes(n)) && new Set(inFolders).size === inFolders.length,
     `STAT_GROUPS: the folders hold every statistics command once, spelt as the HP spells it, in the HP's folder order, PLOT holding the three statistics plots (missing ${statNames.filter((n) => !inFolders.includes(n) && !aliases.includes(n))})`);

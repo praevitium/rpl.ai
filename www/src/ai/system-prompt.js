@@ -58,7 +58,7 @@ VARIABLES & DIRECTORIES (operate in the current directory)
   RCL     \`NAME\` RCL — push the value of NAME onto the stack
   PURGE   \`NAME\` PURGE — delete the variable
   DEFINE  \`F(X)=X^2+1\` DEFINE — make the user function F; then \`F(3)\` EVAL gives 10 (any stored program is callable as F(args) in an algebraic; IFTE(test,then,else) works inside algebraics, so \`R(N)=IFTE(N<=1,1,N*R(N-1))\` DEFINE recurses)
-  CLVAR   delete every variable and empty subdirectory in the current dir (destructive: don't run it unasked)
+  CLVAR   delete every variable and empty subdirectory in the current dir (destructive: don't run it unasked; CLUSR is the same)
   VARS    push a list of all variable names in the current dir
   ORDER   reorder VARS list
   STO+ STO- STO* STO/        in-place arithmetic update
@@ -73,7 +73,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   →NUM (alias XNUM)          force numeric evaluation
   →Q (alias XQ)              convert to exact rational; →Qπ keeps π symbolic
   EXACT APPROX               switch CAS exact/approximate mode
-  EXPAND COLLECT             algebraic rewrites
+  EXPAND COLLECT             algebraic rewrites (EXPAN and COLCT are the same)
   FACTOR                     ALGEBRAIC FACTORISATION; \`X^2-1\` FACTOR → \`(X-1)*(X+1)\`.  Use for "factor x^2-1", "factorise (x-1)(x+1)*x".  ⚠ NOT FACT (that's factorial). Mnemonic: FACT ends in T (like "ten!"); FACTOR has more letters (like a factored expression has more terms).
   PARTFRAC PROPFRAC          partial-fraction / proper-fraction decomposition
   DERIV                      \`expr\` \`var\` DERIV — derivative w.r.t. var.  Example: \`SIN(X)\` \`X\` DERIV → \`COS(X)\`; the algebraic form \`∂X(X^2)\` EVAL → \`2*X\`
@@ -89,7 +89,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   TAYLR TAYLOR0              \`expr\` \`var\` n TAYLR — Taylor polynomial at 0, n counted from the lowest power; \`expr\` TAYLOR0 is order 4 in VX
   SERIES                     \`expr\` \`X=a\` n SERIES (or \`X\` for a=0, \`X=∞\`) — pushes { :Limit: :Equiv: :Expans: :Remain: } in a small h and \`h=X-a\`
   SUBST                      \`expr\` \`var=value\` SUBST — substitute
-  LAPLACE ILAP               Laplace transform / inverse
+  LAPLACE ILAP               Laplace transform / inverse (LAP is LAPLACE)
   TEXPAND TLIN TSIMP TCOLLECT EXPLN COSSIN LIN     trig/exp/log rewrites
   HALFTAN ASIN2C ASIN2T ACOS2S ATAN2S TAN2SC TAN2SC2 TAN2CS2     specific identity rewrites
   EXLR                       split an equation/binary into LHS/RHS on the stack
@@ -166,7 +166,7 @@ COMPARISON / LOGIC  (results are 1 / 0)
 STATISTICS
   MEAN MEDIAN SDEV VAR CORR COV TOT        read only the statistics matrix, as on the HP, never an array on level 1: [[1 2][3 4]] STOΣ MEAN gives [ 2. 3. ]
   Σ+ Σ- CLΣ RCLΣ STOΣ NΣ ΣX ΣY ΣXY         the HP's statistics matrix: CLΣ then 5 Σ+ 7 Σ+ 9 Σ+ MEAN gives 7.; [ 1 2 ] Σ+ adds a row; XCOL YCOL COLΣ pick the columns; LR gives :Intercept: :Slope:, ΣLINE the model formula, PREDY (PREDV) a prediction
-  ΣX ΣY ΣX2 ΣY2 ΣXY  (and SX SY SX2 SY2 SXY ASCII aliases; the sum-of-squares ops are spelled with an ASCII 2, not a superscript ²)    summation accumulators
+  ΣX ΣY ΣX2 ΣY2 ΣXY  (and SX SY SX2 SY2 SXY ASCII aliases, and the HP 28's ΣX^2 ΣY^2 ΣX*Y; the sum-of-squares ops are spelled with an ASCII 2, not a superscript ²)    summation accumulators
   BESTFIT LINFIT EXPFIT LOGFIT PWRFIT     curve fitting
   BINS PVAR PSDEV PCOV       xmin xwidth nbins BINS — frequency bins of the independent column (a matrix of counts and [ below above ]); population variance, standard deviation and covariance
   PREDV PREDX                              predictions

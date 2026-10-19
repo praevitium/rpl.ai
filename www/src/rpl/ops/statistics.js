@@ -271,6 +271,9 @@ register('ΣX2', _sumX2Op, { category: 'Statistics', categoryOrder: 15, label: "
 
 register('SX2', _sumX2Op, { category: 'Statistics', categoryOrder: 10, label: "SX2" });
 
+// ΣX^2, ΣY^2 and ΣX*Y are the HP 28's names, which the HP 50g keeps.
+register('ΣX^2', _sumX2Op, { category: 'Statistics', categoryOrder: 15, label: "ΣX^2" });
+
 function _sumYOp(s) {
   const M = _sigmaData();
   _requireXY(M);
@@ -292,6 +295,8 @@ register('ΣY2', _sumY2Op, { category: 'Statistics', categoryOrder: 17, label: "
 
 register('SY2', _sumY2Op, { category: 'Statistics', categoryOrder: 12, label: "SY2" });
 
+register('ΣY^2', _sumY2Op, { category: 'Statistics', categoryOrder: 17, label: "ΣY^2" });
+
 function _sumXYOp(s) {
   const M = _sigmaData();
   _requireXY(M);
@@ -301,6 +306,8 @@ function _sumXYOp(s) {
 register('ΣXY', _sumXYOp, { category: 'Statistics', categoryOrder: 18, label: "ΣXY" });
 
 register('SXY', _sumXYOp, { category: 'Statistics', categoryOrder: 13, label: "SXY" });
+
+register('ΣX*Y', _sumXYOp, { category: 'Statistics', categoryOrder: 18, label: "ΣX*Y" });
 
 // For Vector input MAXΣ / MINΣ return a 1-element Vector, not a scalar.
 const _maxOp = _columnStat(_asReal((items) => Math.max(..._statsNumbers(items))), (r) => Vector([r]));

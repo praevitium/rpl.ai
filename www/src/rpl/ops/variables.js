@@ -74,12 +74,17 @@ register('PURGE', (s) => {
 
 
 // Subdirectories that still hold something stay, as on the HP50.
-register('CLVAR', () => {
+function _clearVars() {
   for (const id of varOrder()) {
     const entry = _calcState.current.entries.get(id);
     if (!(isDirectory(entry) && entry.entries.size > 0)) varPurge(id);
   }
-}, { category: 'Variables / directories', categoryOrder: 21, label: "CLVAR" });
+}
+
+register('CLVAR', _clearVars, { category: 'Variables / directories', categoryOrder: 21, label: "CLVAR" });
+
+// The HP 28's name for CLVAR.
+register('CLUSR', _clearVars, { category: 'Variables / directories', categoryOrder: 21, label: "CLUSR" });
 
 
 // Newest first, like the names on the HP50's VAR menu.

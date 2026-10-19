@@ -42,7 +42,8 @@ import {
 } from '../www/src/rpl/types.js';
 import { setBinaryBase, resetBinaryState, setWordsize } from '../www/src/rpl/state.js';
 import { Fn } from '../www/src/rpl/algebra.js';
-import { assert, assertThrows } from './helpers.mjs';
+import { assert, assertThrows, runLine } from './helpers.mjs';
+import { format } from '../www/src/rpl/formatter.js';
 
 /* Helper: deep-equal for the common RPL value shapes we hit here.
    Purposefully narrow — arrow ops mostly return scalars / vectors
@@ -451,4 +452,16 @@ for (const [canon, ascii, pre, label] of unaryPairs) {
     assertThrows(() => { const s = new Stack(); s.push(Complex(1, 2)); lookup(op).fn(s); },
       'Bad argument type', `session423: ${op} on im≠0 Complex → Bad argument type`);
   }
+}
+
+/* The HP's other names: ΣX^2, ΣY^2 and ΣX*Y (the HP 28's, which the HP 50g keeps), CLUSR, EXPAN, COLCT and LAP run
+   the commands they stand for, where typing one pushed a bare name. */
+{
+  const pairs = [['ΣX^2', 'ΣX2'], ['ΣY^2', 'ΣY2'], ['ΣX*Y', 'ΣXY'], ['CLUSR', 'CLVAR'], ['EXPAN', 'EXPAND'], ['COLCT', 'COLLECT'], ['LAP', 'LAPLACE']];
+  const off = pairs.filter(([alt, name]) => !(lookup(alt) && lookup(alt).fn === lookup(name).fn && lookup(alt).category === lookup(name).category)).map(([alt]) => alt);
+  assert(off.length === 0, `other names: ΣX^2, ΣY^2, ΣX*Y, CLUSR, EXPAN, COLCT and LAP run their commands and sit in their families (${off.join(', ')})`);
+  const s = runLine('[[1 2][3 4][5 6]] STOΣ ΣX^2 ΣX*Y ΣY^2');
+  const sums = s.snapshot().slice(0, 3).reverse().map((v) => format(v));
+  runLine('CLΣ');
+  assert(sums.join() === '35.,44.,56.', `other names: ΣX^2, ΣX*Y and ΣY^2 typed on a line sum x², xy and y² of ΣDAT (${sums.join()})`);
 }

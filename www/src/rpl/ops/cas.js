@@ -41,6 +41,9 @@ const _simplify = _casUnary('simplify');
 
 register('EXPAND', _casUnary('expand'), { category: 'CAS / symbolic', categoryOrder: 6, label: "EXPAND" });
 
+// EXPAN, COLCT and LAP are the HP's other names for EXPAND, COLLECT and LAPLACE.
+register('EXPAN', lookup('EXPAND').fn, { category: 'CAS / symbolic', categoryOrder: 6, label: "EXPAN" });
+
 
 // FACTOR, and COLLECT, which factors over the integers only (no square roots), as the AUR says.
 function _factorWith(giacFn) {
@@ -75,6 +78,8 @@ register('COLLECT', (s) => {
   }
   _collect(s);
 }, { category: 'CAS / symbolic', categoryOrder: 7, label: "COLLECT" });
+
+register('COLCT', lookup('COLLECT').fn, { category: 'CAS / symbolic', categoryOrder: 7, label: "COLCT" });
 
 
 register('SIMPLIFY', _simplify, { category: 'CAS / symbolic', categoryOrder: 15, label: "SIMPLIFY" });
@@ -658,6 +663,8 @@ function _laplaceOp(giacFn) {
 }
 
 register('LAPLACE', _laplaceOp('laplace'), { category: 'CAS / symbolic', categoryOrder: 31, label: "LAPLACE" });
+
+register('LAP', lookup('LAPLACE').fn, { category: 'CAS / symbolic', categoryOrder: 31, label: "LAP" });
 
 register('ILAP', _laplaceOp('ilaplace'), { category: 'CAS / symbolic', categoryOrder: 32, label: "ILAP" });
 
