@@ -138,6 +138,10 @@ const REF = parseCommandReference(HTML);
   assert(mat.filter((r) => r.category === 'Vectors / matrices').length >= 5,
          'searchCommands: a category stem match ("matrix" ~ "matrices") lists that category');
   assert(top('factorial')[0] === 'FACT', 'searchCommands: "factorial" finds FACT');
+  assert(top('pi')[0] === 'Π' && top('PI')[0] === 'Π',
+         'searchCommands: "pi" finds π, which a phone keyboard cannot type (PICK, PICK3 and PICT came first)');
+  assert(top('square root')[0] === '√' && top('natural logarithm')[0] === 'LN',
+         'searchCommands: words that run together in a description outrank one of them as a name ("square root" gave ROOT, PROOT and XROOT, not √)');
   const rows = searchCommands('mean', opts);
   assert(rows[0].name === 'MEAN' && rows[0].inApp && /average|mean/i.test(rows[0].description),
          'searchCommands rows carry inApp and a one-line description');

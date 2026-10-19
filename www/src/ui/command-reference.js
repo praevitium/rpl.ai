@@ -163,6 +163,10 @@ function keywords(query) {
 // Crude stem so "matrix" meets "matrices": compare the first five letters.
 const stem = (w) => w.slice(0, 5);
 const escapeRe = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// A phone keyboard has no π, so its spelled name finds it.
+const SPELLED = new Map([['pi', 'Π']]);
+// Several words that run together in a description outrank one of them being some command's name: "square root" is √, not ROOT.
+const PHRASE_SCORE = 1500;
 
 export function searchCommands(query, { names = [], entries = null, categories = {}, limit = 12 } = {}) {
   const q = String(query ?? '').trim();
@@ -194,7 +198,9 @@ export function searchCommands(query, { names = [], entries = null, categories =
       bump(name, 12);
     }
   }
+  for (const w of words) if (universe.has(SPELLED.get(w))) bump(SPELLED.get(w), 900);
   if (entries && words.length) {
+    const phrase = words.length > 1 ? new RegExp(`\\b${words.map(escapeRe).join('\\W+')}\\b`, 'i') : null;
     for (const [key, e] of entries) {
       const desc = String(e.description).toLowerCase();
       const firstSentence = desc.split(/(?<=\.)\s/)[0] ?? '';
@@ -205,6 +211,7 @@ export function searchCommands(query, { names = [], entries = null, categories =
         if (re.test(firstSentence)) pts += 8;
         else if (re.test(hay)) pts += 4;
       }
+      if (phrase?.test(firstSentence)) pts += PHRASE_SCORE;
       if (pts) bump(key, pts + (e.inApp ? 2 : 0));
     }
   }
