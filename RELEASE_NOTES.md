@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.7 (2026-10-19)
+**Latest release:** v0.7.8 (2026-10-19)
 
 ---
 
@@ -20,6 +20,26 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.8 — 2026-10-19
+
+The ninth batch of missing HP 50g commands adds five for rewriting
+expressions:
+
+- `↓MATCH` and `↑MATCH` rewrite the parts of an expression that match a
+  pattern and give 1 if they rewrote anything, else 0. A name starting
+  with `&` matches any part, the same part wherever it repeats:
+  `'SIN(U+V)' { 'SIN(&A+&B)' 'SIN(&A)*COS(&B)+COS(&A)*SIN(&B)' } ↓MATCH`
+  expands the sine. A third item in the list is a condition the match
+  must meet. `↓MATCH` works from the top down and `↑MATCH` from the
+  innermost parts up; neither looks again at what it just rewrote, so a
+  second call carries on. Algebraics now accept names such as `&A`.
+- `FDISTRIB` distributes every product and quotient over sums in one
+  step, without collecting terms, laid out as the AUR's example.
+- `SHOW` evaluates the variables in an expression except those in a
+  list, or only those that lead to a given name:
+  `'X-Y+2*C+3*D' { X Y } SHOW` gives `X-Y+14+15` with 7 in C and 5 in D.
+- `QUAD` is the HP 48's name for `SOLVE`.
 
 ## v0.7.7 — 2026-10-19
 
