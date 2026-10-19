@@ -6066,6 +6066,34 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assertThrows(() => runLine("[ 'X' 0 ] [ X Y Z ] VPOTENTIAL"), /Invalid dimension/, 'VPOTENTIAL needs three components and three variables');
 }
 
+// The 0.7.3 linear algebra commands, with the AUR's examples as real Giac answers them.
+{
+  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
+  const m = '[[1 1 2][2 1 3][3 1 4]]';
+  for (const [line, fixtures, want] of [
+    [`${m} KER`, [['ker([[1,1,2],[2,1,3],[3,1,4]])', '[[1,1,-1]]']], '{ [ 1 1 -1 ] }'],
+    [`${m} IMAGE`, [['image([[1,1,2],[2,1,3],[3,1,4]])', '[[-1,0,1],[0,-1,-2]]']], '{ [ 1 0 -1 ] [ 0 1 2 ] }'],
+    ['{ [1 2 3] [1 1 1] [2 3 4] } BASIS', [['basis([[1,2,3],[1,1,1],[2,3,4]])', 'set[[-1,0,1],[0,-1,-2]]']], '{ [ 1 0 -1 ] [ 0 1 2 ] }'],
+    ['{ [1 2] } { [2 4] } IBASIS', [['ibasis([[1,2]],[[2,4]])', 'set[[1,2]]']], '{ [ 1 2 ] }'],
+    ['[[3 6 0][2 4 1][1 1 1]] [ X Y Z ] AXQ', [['a2q([[3,6,0],[2,4,1],[1,1,1]],[X,Y,Z])', '3*X^2+8*X*Y+X*Z+4*Y^2+2*Y*Z+Z^2']],
+      '`3*X^2 + 8*X*Y + X*Z + 4*Y^2 + 2*Y*Z + Z^2` | [ X Y Z ]'],
+    ["'X^2+X*Y+Y^2' [ X Y ] QXA", [['q2a(X^2+X*Y+Y^2,[X,Y])', '[[1,1/2],[1/2,1]]']], '[[ 1 `1/2` ][ `1/2` 1 ]] | [ X Y ]'],
+    ['[ 3 4 ] SNRM', [['l2norm(evalf([3,4]))', '5.0']], '5.'],
+    ['[[1 2][3 4]] SRAD', [['max(abs(evalf(eigenvals([[1,2],[3,4]]))))', '5.37228132327']], '5.37228132327'],
+    ['[[1 2][3 4]] SVL', [['svl(evalf([[1,2],[3,4]]))', '[0.365966190626,5.46498570422]']], '[ 5.46498570422 0.365966190626 ]'],
+    ['[[0 -1][-1 0]] ISOM', [['isom([[0,-1],[-1,0]])', '[[-1,-1],-1]']], '{ [ 1 1 ] -1 }'],
+    ["'π/2' 1 MKISOM", [['mkisom(π/2,1)', '[[0,-1],[1,0]]']], '[[ 0 -1 ][ 1 0 ]]'],
+  ]) {
+    giac._clear();
+    for (const [call, answer] of fixtures) giac._setFixture(call, answer);
+    const got = shown(line);
+    assert(got === want, `${line.split(' ').pop()}: ${line} gives ${want} (got ${got})`);
+  }
+  giac._clear();
+  assertThrows(() => runLine('[[1 2 3][4 5 6]] SRAD'), /Invalid dimension/, 'SRAD needs a square matrix');
+  assertThrows(() => runLine('{ 1 2 } BASIS'), /Bad argument type/, 'BASIS takes a list of vectors');
+}
+
 /* ==================================================================
  — PCAR / CHARPOL / EGVL / PA2B2
    PCAR + CHARPOL + EGVL are Giac-backed matrix ops (use fixtures on

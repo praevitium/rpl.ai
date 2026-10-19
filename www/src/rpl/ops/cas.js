@@ -320,6 +320,12 @@ register('LAPL', _vectorCalculus('laplacian', (parts, vars) => {
 register('POTENTIAL', _vectorCalculus('potential', _componentPerVariable), { category: 'CAS / symbolic', categoryOrder: 34.85, label: "POTENTIAL" });
 register('VPOTENTIAL', _vectorCalculus('vpotential', _threeComponents), { category: 'CAS / symbolic', categoryOrder: 34.86, label: "VPOTENTIAL" });
 
+function _giacMatrix(raw) {
+  const rows = splitGiacList(raw)?.map(splitGiacList);
+  if (!rows?.length || !rows.every(Boolean)) throw new RPLError('Bad argument value');
+  return Matrix(rows.map((row) => row.map((c) => _casValue(giacToAst(c)))));
+}
+
 // AUR: the Hessian, the gradient and the variables. Its entries come simplified, 4*U where the HP shows 2*(2*U).
 register('HESS', (s) => {
   const [expr, varsArg] = s.popN(2);
@@ -328,14 +334,143 @@ register('HESS', (s) => {
   if (!giac.isReady()) throw new RPLError('CAS not ready');
   const f = astToGiac(_astArg(expr));
   const vars = `[${varsArg.items.map((v) => astToGiac(AstVar(_varName(v)))).join(',')}]`;
-  const rows = splitGiacList(giac.caseval(`normal(hessian(${f},${vars}))`))?.map(splitGiacList);
+  const hessian = _giacMatrix(giac.caseval(`normal(hessian(${f},${vars}))`));
   const gradient = splitGiacList(giac.caseval(`normal(grad(${f},${vars}))`));
-  if (!rows?.every(Boolean) || !gradient) throw new RPLError('Bad argument value');
-  const value = (item) => _casValue(giacToAst(item));
-  s.push(Matrix(rows.map((row) => row.map(value))));
-  s.push(Vector(gradient.map(value)));
+  if (!gradient) throw new RPLError('Bad argument value');
+  s.push(hessian);
+  s.push(Vector(gradient.map((item) => _casValue(giacToAst(item)))));
   s.push(varsArg);
 }, { category: 'CAS / symbolic', categoryOrder: 34.87, label: "HESS" });
+
+const _giacArray = (v) => (isMatrix(v)
+  ? `[${v.rows.map((row) => `[${row.map((x) => astToGiac(_astArg(x))).join(',')}]`).join(',')}]`
+  : `[${v.items.map((x) => astToGiac(_astArg(x))).join(',')}]`);
+
+function _matrixArg(v) {
+  if (!isMatrix(v)) throw new RPLError('Bad argument type');
+  return _giacArray(v);
+}
+
+function _vectorList(v) {
+  if (!isList(v) || !v.items.every(isVector)) throw new RPLError('Bad argument type');
+  return `[${v.items.map(_giacArray).join(',')}]`;
+}
+
+const _isNegative = (a) => a.kind === 'neg' || (astIsNum(a) && a.value < 0);
+const _isZero = (a) => astIsNum(a) && a.value === 0;
+
+// The AUR prints a basis vector with a positive first entry, [1,0,-1] where Giac gives [-1,0,1].
+function _leadPositive(entries) {
+  const lead = entries.find((a) => !_isZero(a));
+  return lead && _isNegative(lead) ? entries.map((a) => (a.kind === 'neg' ? a.arg : AstNeg(a))) : entries;
+}
+
+const _giacVector = (raw) => Vector(_leadPositive((splitGiacList(raw) ?? []).map(giacToAst)).map(_casValue));
+
+function _giacBasis(cmd) {
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const vectors = splitGiacList(giac.caseval(cmd));
+  if (!vectors?.every((v) => splitGiacList(v))) throw new RPLError('Bad argument value');
+  return RList(vectors.map(_giacVector));
+}
+
+register('KER', (s) => {
+  const [m] = s.popN(1);
+  s.push(_giacBasis(`ker(${_matrixArg(m)})`));
+}, { category: 'Vectors / matrices', categoryOrder: 60, label: "KER" });
+
+register('IMAGE', (s) => {
+  const [m] = s.popN(1);
+  s.push(_giacBasis(`image(${_matrixArg(m)})`));
+}, { category: 'Vectors / matrices', categoryOrder: 61, label: "IMAGE" });
+
+register('BASIS', (s) => {
+  const [list] = s.popN(1);
+  s.push(_giacBasis(`basis(${_vectorList(list)})`));
+}, { category: 'Vectors / matrices', categoryOrder: 62, label: "BASIS" });
+
+register('IBASIS', (s) => {
+  const [a, b] = s.popN(2);
+  s.push(_giacBasis(`ibasis(${_vectorList(a)},${_vectorList(b)})`));
+}, { category: 'Vectors / matrices', categoryOrder: 63, label: "IBASIS" });
+
+function _variables(v) {
+  if (!isVector(v) && !isList(v)) throw new RPLError('Bad argument type');
+  return `[${v.items.map((x) => astToGiac(AstVar(_varName(x)))).join(',')}]`;
+}
+
+// AUR: the quadratic form of a matrix, the variables left under it.
+register('AXQ', (s) => {
+  const [m, vars] = s.popN(2);
+  const cmd = `a2q(${_matrixArg(m)},${_variables(vars)})`;
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  _pushCasResult(s, giacToAst(giac.caseval(cmd)));
+  s.push(vars);
+}, { category: 'Vectors / matrices', categoryOrder: 64, label: "AXQ" });
+
+register('QXA', (s) => {
+  const [q, vars] = s.popN(2);
+  const cmd = `q2a(${astToGiac(_astArg(q))},${_variables(vars)})`;
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  s.push(_giacMatrix(giac.caseval(cmd)));
+  s.push(vars);
+}, { category: 'Vectors / matrices', categoryOrder: 65, label: "QXA" });
+
+function _numericResult(cmd) {
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const ast = giacToAst(giac.caseval(cmd));
+  if (!astIsNum(ast)) throw new RPLError('Bad argument value');
+  return Real(ast.value);
+}
+
+// AUR: a vector's Euclidean length, a matrix's largest singular value.
+register('SNRM', (s) => {
+  const [v] = s.popN(1);
+  if (isVector(v)) s.push(_numericResult(`l2norm(evalf(${_giacArray(v)}))`));
+  else s.push(_numericResult(`max(svl(evalf(${_matrixArg(v)})))`));
+}, { category: 'Vectors / matrices', categoryOrder: 66, label: "SNRM" });
+
+register('SRAD', (s) => {
+  const [m] = s.popN(1);
+  if (isMatrix(m) && m.rows.length !== m.rows[0].length) throw new RPLError('Invalid dimension');
+  s.push(_numericResult(`max(abs(evalf(eigenvals(${_matrixArg(m)}))))`));
+}, { category: 'Vectors / matrices', categoryOrder: 67, label: "SRAD" });
+
+// AUR: in non-increasing order, where Giac's svl gives them increasing.
+register('SVL', (s) => {
+  const [m] = s.popN(1);
+  const cmd = `svl(evalf(${_matrixArg(m)}))`;
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const values = (splitGiacList(giac.caseval(cmd)) ?? []).map(giacToAst);
+  if (!values.length || !values.every(astIsNum)) throw new RPLError('Bad argument value');
+  s.push(Vector(values.map((a) => a.value).sort((x, y) => y - x).map((x) => Real(x))));
+}, { category: 'Vectors / matrices', categoryOrder: 68, label: "SVL" });
+
+// AUR: { [1 1] -1 } for the reflection in y = -x, { π/3 1 } for a rotation; a reflection's line or plane
+// leads positive, while an axis keeps the direction its angle turns about.
+register('ISOM', (s) => {
+  const [m] = s.popN(1);
+  const cmd = `isom(${_matrixArg(m)})`;
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const parts = splitGiacList(giac.caseval(cmd));
+  if (!parts?.length) throw new RPLError('Bad argument value');
+  const axisAndAngle = parts.length > 2;
+  s.push(RList(parts.map((p) => {
+    const items = splitGiacList(p);
+    if (!items) return _casValue(giacToAst(p));
+    const entries = items.map(giacToAst);
+    return Vector((axisAndAngle ? entries : _leadPositive(entries)).map(_casValue));
+  })));
+}, { category: 'Vectors / matrices', categoryOrder: 69, label: "ISOM" });
+
+register('MKISOM', (s) => {
+  const [elements, sign] = s.popN(2);
+  const giacElement = (v) => (isVector(v) ? _giacArray(v) : astToGiac(_astArg(v)));
+  const els = isList(elements) ? `[${elements.items.map(giacElement).join(',')}]` : giacElement(elements);
+  const cmd = `mkisom(${els},${astToGiac(_astArg(sign))})`;
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  s.push(_giacMatrix(giac.caseval(cmd)));
+}, { category: 'Vectors / matrices', categoryOrder: 70, label: "MKISOM" });
 
 function _casValue(ast) {
   const leaf = ast.kind === 'neg' ? ast.arg : ast;
