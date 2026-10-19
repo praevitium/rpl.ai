@@ -70,6 +70,13 @@ register('LANGUAGE→', (s) => {
   s.push(Real(0));
 }, { category: 'System', categoryOrder: 0.6, label: 'LANGUAGE→' });
 
+// French (1) and Spanish (2) aren't here, so →LANGUAGE takes only 0.
+register('→LANGUAGE', (s) => {
+  const [x] = s.popN(1);
+  if (!(isReal(x) || isInteger(x))) throw new RPLError('Bad argument type');
+  if (Number(x.value) !== 0) throw new RPLError('Bad argument value');
+}, { category: 'System', categoryOrder: 0.61, label: '→LANGUAGE' });
+
 register('MEM', (s) => {
   s.push(Real(1073741824));
 }, { category: 'System', categoryOrder: 0, label: "MEM" });

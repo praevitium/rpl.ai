@@ -28,6 +28,8 @@ required for development.
   mode is on, and a negative one to the standard key. The press comes once
   the program that asked for it has finished, not partway through it, a
   difference from the HP; the alpha-shift planes 5 and 6 are refused.
+- →LANGUAGE takes 0, English, the only language rpl.ai has; 1 (French) and
+  2 (Spanish) are Bad argument value.
 
 ## v0.7.51 — 2026-10-19
 

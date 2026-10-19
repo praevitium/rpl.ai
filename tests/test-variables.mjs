@@ -2089,6 +2089,8 @@ clearAllUserFlags();
   assertThrows(() => runLine('"a" 3 MENUXY'), /Bad argument type/, 'MENUXY wants numbers');
   setMenuHook(null);
   assert(format(runLine('LANGUAGE→').peek()) === '0.', 'LANGUAGE→ gives 0, English');
+  assert(runLine('0 →LANGUAGE').depth === 0, '→LANGUAGE takes 0, English');
+  assertThrows(() => runLine('1 →LANGUAGE'), /Bad argument value/, '→LANGUAGE refuses French and Spanish, which rpl.ai lacks');
 }
 
 // KEYEVAL hands the app a key code to press, with whether the key's user assignment counts.
