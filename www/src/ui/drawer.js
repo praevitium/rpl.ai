@@ -287,6 +287,10 @@ export class Drawers {
     this.graph.applyPlotOp(kind, stack, data);
   }
 
+  closeGraph() {
+    if (this.current === 'plot') this.close();
+  }
+
   insertText(text) {
     const { app } = this;
     if (app.inputMode === 'equation') app.equationEditor.typeText(text);

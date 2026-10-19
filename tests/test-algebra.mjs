@@ -8891,3 +8891,12 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(astToGiac(parseAlgebra('?')) === 'undef', '? goes to the CAS as undef');
   giac._clear();
 }
+
+// RATIO, the HP's prefix form of /: on the stack and as RATIO(A,2) in an expression.
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top('6 3 RATIO') === '2', 'RATIO divides two numbers as / does');
+  assert(top("'A' 2 RATIO") === '`A/2`', 'RATIO of a name and a number is A/2');
+  assert(top("'RATIO(A,2)+1'") === '`A/2 + 1`', 'RATIO(A,2) in an expression reads as A/2');
+  assertThrows(() => parseAlgebra('RATIO(A)'), /RATIO|argument/i, 'RATIO in an expression takes two arguments');
+}

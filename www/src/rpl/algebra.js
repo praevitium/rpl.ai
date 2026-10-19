@@ -499,6 +499,10 @@ export function parseAlgebra(src) {
         if (ident === 'Σ' && args.length === 3 && args[0].kind === 'bin' && args[0].op === '=' && isVar(args[0].l)) {
           args.splice(0, 3, args[2], args[0].l, args[0].r, args[1]);
         }
+        if (ident.toUpperCase() === 'RATIO') {
+          if (args.length !== 2) throw new Error(`RATIO expects 2 argument(s), got ${args.length}`);
+          return Bin('/', args[0], args[1]);
+        }
         const spec = KNOWN_FUNCTIONS[ident.toUpperCase()];
         if (spec && spec.arity !== undefined && args.length !== spec.arity) {
           throw new Error(

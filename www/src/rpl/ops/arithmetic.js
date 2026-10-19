@@ -762,6 +762,9 @@ register('*',  _withTaggedBinary(_binaryMathMixed('*')), { category: 'Arithmetic
 
 register('/',  _withTaggedBinary(_binaryMathMixed('/')), { category: 'Arithmetic', categoryOrder: 3, label: "/" });
 
+// The HP's prefix form of /; RATIO(A,2) in an expression reads as A/2.
+register('RATIO', (s) => lookup('/').fn(s), { category: 'Arithmetic', categoryOrder: 3.5, label: "RATIO" });
+
 register('^',  _withTaggedBinary(_binaryMathMixed('^')), { category: 'Arithmetic', categoryOrder: 4, label: "^" });
 
 

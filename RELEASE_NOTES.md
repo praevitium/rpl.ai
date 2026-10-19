@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.27 (2026-10-19)
+**Latest release:** v0.7.28 (2026-10-19)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.28 — 2026-10-19
+
+- CIRC composes two permutations, level 1's done first:
+  `{ 3 4 5 2 1 } { 2 1 4 3 5 } CIRC` gives `{ 4 3 2 5 1 }`, the AUR's
+  example. Permutations of different lengths compose too, the shorter one
+  leaving the entries past its end in place.
+- RATIO is the HP's prefix form of /: `6 3 RATIO` gives 2, and
+  `RATIO(A,2)` typed in an expression reads as `A/2`.
+- GROBADD sets one graphics object under another, both against the left
+  edge, in a graphics object as wide as the wider one.
+- PICTURE, and GRAPH, its HP 28 name, show PICT in the plot view as
+  `{ } PVIEW` does. There is no graphics cursor, and a program carries on
+  at once instead of waiting for CANCEL.
+- TEXT closes the plot view and goes back to the stack, as the HP leaves
+  the graphics display; `DRAW 5 WAIT TEXT` shows a plot for five seconds.
 
 ## v0.7.27 — 2026-10-19
 

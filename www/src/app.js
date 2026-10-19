@@ -153,7 +153,7 @@ class App {
     });
     this.chatBot.setMode(this.prefs.assistantMode, { tutorStyle: this.prefs.tutorStyle });
     this.drawers = new Drawers({ rail: $('rail'), el: $('drawer'), scrim: $('scrim'), app: this });
-    setGraphicsHook((kind, stack, data) => this.drawers.openGraph(kind, stack, data));
+    setGraphicsHook((kind, stack, data) => (kind === 'text' ? this.drawers.closeGraph() : this.drawers.openGraph(kind, stack, data)));
     setMenuHook((list, temporary) => {
       if (!list) this.showPreviousMenu({ commit: false });
       else if (temporary) this.setMenu(this._customMenuSlots(list), 'TMENU');

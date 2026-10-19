@@ -531,6 +531,16 @@ register('PVIEW', (s) => {
   _requestPlot('pview', s, v);
 }, { category: 'Graphics', categoryOrder: 11.9, label: "PVIEW" });
 
+// PICTURE (GRAPH, the HP 28's name) shows PICT as { } PVIEW does; there is no graphics cursor.
+const _picture = (s) => _requestPlot('pview', s, RList([]));
+register('PICTURE', _picture, { category: 'Graphics', categoryOrder: 11.91, label: "PICTURE" });
+register('GRAPH', _picture, { category: 'Graphics', categoryOrder: 11.92, label: "GRAPH" });
+
+// TEXT goes back from the plot to the stack; without a plot view there is nothing to leave.
+register('TEXT', (s) => {
+  if (!inScratchState()) _graphicsHook?.('text', s);
+}, { category: 'Graphics', categoryOrder: 11.93, label: "TEXT" });
+
 
 // The graphics object a command works on and how it hands back the result: PICT is changed where it is.
 function _target(v, s) {
@@ -562,6 +572,14 @@ function _combine(how) {
 
 register('GOR', _combine('or'), { category: 'Graphics', categoryOrder: 12, label: "GOR" });
 register('GXOR', _combine('xor'), { category: 'Graphics', categoryOrder: 12.1, label: "GXOR" });
+
+// GROBADD sets the second graphics object under the first, both against the left edge.
+register('GROBADD', (s) => {
+  const [top, bottom] = s.popN(2);
+  if (!isGrob(top) || !isGrob(bottom)) throw new RPLError('Bad argument type');
+  const out = _blank(Math.max(top.width, bottom.width), top.height + bottom.height);
+  s.push(_overlay(_overlay(out, [0, 0], top, 'replace'), [0, top.height], bottom, 'replace'));
+}, { category: 'Graphics', categoryOrder: 12.15, label: "GROBADD" });
 
 // REPL with a graphics object: the target is unchanged when the corner is off it.
 export function replGrob(s, target, at, grob) {

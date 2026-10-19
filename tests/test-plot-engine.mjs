@@ -682,3 +682,20 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(axisTicks(-2, 3, 0.5, 1, 16).ticks.join(' ') === '-1.5 -0.5 0.5 1.5 2.5', 'axisTicks: every ATICK unit from the crossing');
   assert(axisTicks(-10, 10, 0, 0.5, 10).ticks.join(' ') === '-10 -8 -6 -4 -2 0 2 4 6 8 10', 'axisTicks: whole multiples of a crowded spacing');
 }
+
+// GROBADD, PICTURE, GRAPH and TEXT.
+{
+  const { formatSource } = await import('../www/src/rpl/formatter.js');
+  const text = (src) => runLine(src).snapshot().reverse().map((v) => formatSource(v)).join(' | ');
+  const X = 'GROB 5 5 11A040A011';
+  assert(text(`${X} GROB 2 2 3030 GROBADD`) === 'GROB 5 7 11A040A0113030', 'GROBADD sets the second graphics object under the first');
+  assert(text(`GROB 2 2 3030 ${X} GROBADD`) === 'GROB 5 7 303011A040A011', 'GROBADD widens to the wider object, both at the left edge');
+  assertThrows(() => runLine(`${X} PICT GROBADD`), /Bad argument type/, 'GROBADD wants two graphics objects');
+  const seen = [];
+  setGraphicsHook((kind, st, data) => { seen.push({ kind, data }); });
+  runLine('PICTURE GRAPH TEXT');
+  assert(seen.map((e) => e.kind).join(' ') === 'pview pview text' && seen[0].data.items.length === 0,
+    'PICTURE and GRAPH show PICT as { } PVIEW does, TEXT goes back to the stack');
+  setGraphicsHook(null);
+  assert(text('1 TEXT') === '1', 'TEXT without a plot view leaves the stack as it was');
+}

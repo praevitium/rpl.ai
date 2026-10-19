@@ -554,6 +554,12 @@ const _positions = (list) => {
   return list.items.map((v) => Number(_toBigInt(v)));
 };
 
+const _permutation = (list) => {
+  const perm = _positions(list);
+  if (new Set(perm).size !== perm.length || perm.some((k) => k < 1 || k > perm.length)) throw new RPLError('Bad argument value');
+  return perm;
+};
+
 // AUR: { { 1 3 5 } { 2 4 } } C2P is { 3 4 5 2 1 }; each cycle sends an entry to the next.
 register('C2P', (s) => {
   const [cyclesArg] = s.popN(1);
@@ -569,9 +575,8 @@ register('C2P', (s) => {
 // AUR: { 3 4 5 2 1 } P2C gives its cycles { { 1 3 5 } { 2 4 } } and its signature -1; fixed points make no cycle.
 register('P2C', (s) => {
   const [permArg] = s.popN(1);
-  const perm = _positions(permArg);
+  const perm = _permutation(permArg);
   const n = perm.length;
-  if (new Set(perm).size !== n || perm.some((k) => k < 1 || k > n)) throw new RPLError('Bad argument value');
   const seen = new Set();
   const cycles = [];
   let even = true;
@@ -588,3 +593,12 @@ register('P2C', (s) => {
   s.push(RList(cycles));
   s.push(Integer(even ? 1n : -1n));
 }, { category: 'Integer / number theory', categoryOrder: 31, label: "P2C" });
+
+// AUR: { 3 4 5 2 1 } { 2 1 4 3 5 } CIRC is { 4 3 2 5 1 }, level 1's permutation applied first; the shorter one
+// leaves the entries past its end where they are.
+register('CIRC', (s) => {
+  const [first, second] = s.popN(2).map(_permutation);
+  const n = Math.max(first.length, second.length);
+  const at = (perm, k) => perm[k - 1] ?? k;
+  s.push(RList(Array.from({ length: n }, (_, i) => Integer(BigInt(at(first, at(second, i + 1)))))));
+}, { category: 'Integer / number theory', categoryOrder: 32, label: "CIRC" });

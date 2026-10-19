@@ -7393,3 +7393,13 @@ function _arrayEq(a, b) {
   assert(shown('{ 1 2 3 } P2C') === '{  } | 1', 'P2C of the identity has no cycles and signature 1');
   assertThrows(() => runLine('{ 1 1 3 } P2C'), /Bad argument value/, 'P2C refuses a list that is no permutation');
 }
+
+// CIRC: the AUR's composition, level 1's permutation done first.
+{
+  const shown = (line) => format(runLine(line).peek());
+  assert(shown('{ 3 4 5 2 1 } { 2 1 4 3 5 } CIRC') === '{ 4 3 2 5 1 }', 'CIRC composes the AUR\'s two permutations');
+  assert(shown('{ 2 1 } { 1 3 2 } CIRC') === '{ 2 3 1 }', 'CIRC leaves the entries past the shorter permutation in place');
+  assert(shown('{ 3 4 5 2 1 } DUP CIRC') === '{ 5 2 1 4 3 }', 'CIRC of a permutation with itself applies it twice');
+  assertThrows(() => runLine('{ 1 1 } { 1 2 } CIRC'), /Bad argument value/, 'CIRC refuses a list that is no permutation');
+  assertThrows(() => runLine('{ 1 2 } 3 CIRC'), /Bad argument type/, 'CIRC wants two lists');
+}

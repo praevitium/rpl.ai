@@ -882,8 +882,9 @@ Catalog and the command reference mark what is available. Not there yet:
   types (SLOPEFIELD, TRUTH, CONIC, the 3D plots and the rest). PICT holds a
   graphics object, LINE, TLINE, BOX, ARC, PIXON, PIXOFF, DRAX and LABEL
   draw on it, GOR, GXOR, SUB, REPL and NEG work on it and on other graphics
-  objects, →GROB draws any object as one in rpl.ai's own pixel font, and
-  PVIEW shows PICT over the plot. The plot-window commands (XRNG, YRNG,
+  objects (GROBADD stacks two), →GROB draws any object as one in rpl.ai's
+  own pixel font, PVIEW and PICTURE show PICT over the plot, and TEXT
+  closes it. The plot-window commands (XRNG, YRNG,
   CENTR, SCALE, INDEP, RES, AXES and the rest) set PPAR, and plots start in
   its window, follow its INDEP, DEPND and RES and draw its axes
 - the HP's numbered menus for MENU and TMENU (a list, a name holding one

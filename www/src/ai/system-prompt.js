@@ -27,6 +27,7 @@ ARITHMETIC
   EXPM LNP1                  exp(x)-1, ln(1+x), numerically stable for small x
   FACT                       FACTORIAL (the "!" operator); 10 FACT → 3628800.  ⚠ NOT FACTOR — completely different command (algebraic factorisation, in CAS section below).
   MOD                        level2 mod level1
+  RATIO                      the HP's prefix form of /: 6 3 RATIO → 2, and RATIO(A,2) in an expression is A/2
   XROOT                      a XROOT b = a^(1/b) (level 2 = radicand, level 1 = root)
   GCD LCM                    integer/poly greatest common divisor / least common multiple
   LGCD                       { list } LGCD → the list and the GCD of its entries: { 12 18 24 } LGCD → { 12 18 24 } 6
@@ -133,6 +134,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   LVAR                       as LNAME, but keeps the expression and lists COS(B) or MYFUNC(PQ) as one variable
   APPLY QUOTE                { args } \`F\` APPLY → \`F(args)\`; QUOTE gives its argument back unevaluated
   C2P P2C                    { { 1 3 5 } { 2 4 } } C2P → { 3 4 5 2 1 }; P2C gives the cycles and the signature ±1
+  CIRC                       { 3 4 5 2 1 } { 2 1 4 3 5 } CIRC → { 4 3 2 5 1 }, composing two permutations (level 1's first)
 
 POLYNOMIALS / NUMBER THEORY
   HORNER PEVAL PROOT PCOEF PTAYL FCOEF FROOTS         polynomial eval / roots / coeffs
@@ -235,7 +237,9 @@ PLOT WINDOW (PPAR, as on the HP 50g)
   LINE TLINE BOX DRAX        (0,0) (3,2) LINE draws on PICT; TLINE toggles the pixels instead; BOX draws a rectangle by two corners; DRAX draws the axes AXES and ATICK describe. A point is (x,y) in PPAR's units or { #col #row } in pixels
   ARC PIXON PIXOFF           (0,0) 2 0 π ARC draws counterclockwise from the first angle to the second (a #n radius with a pixel centre); (1,1) PIXON lights a pixel, PIXOFF clears it, PIX? gives 1 or 0
   PVIEW C→PX PX→C            { } PVIEW shows PICT over the plot in PPAR's window ((x,y) PVIEW puts that point at the top left); (0,0) C→PX gives { #65d #40d }, PX→C goes back
+  PICTURE GRAPH TEXT         PICTURE (GRAPH is the same) shows PICT as { } PVIEW does; TEXT closes the plot view, back to the stack
   GOR GXOR REPL SUB NEG      PICT { #0d #0d } grob GOR lays a graphics object on PICT (GXOR toggles, REPL overwrites); with a graphics object instead of PICT they return the result; PICT { #10d #20d } { #20d #40d } SUB cuts out a rectangle; PICT NEG inverts PICT
+  GROBADD                    grob1 grob2 GROBADD sets grob2 under grob1 in one graphics object
   LABEL                      writes the axes' names and the window's limits on PICT; "A=2" 1 →GROB draws an object as a graphics object (sizes 0 to 3 share one 5 × 7 font, six columns a character)
 
 TYPES / REFLECTION
