@@ -1778,6 +1778,8 @@ setAngle('RAD');
   const kept = normalizeUiPrefs({ recentCommands: ['SWAP', 'SQ', 'SWAP', 7, '', 'A B', '→NUM', 'a', 'b', 'c', 'd', 'e', 'f'] }).recentCommands;
   assert(JSON.stringify(kept) === JSON.stringify(['SWAP', 'SQ', '→NUM', 'a', 'b', 'c', 'd', 'e']) && normalizeUiPrefs({ recentCommands: 'SWAP' }).recentCommands.length === 0,
     'normalizeUiPrefs: recent commands keep eight distinct names, newest first, and drop junk');
+  assert(JSON.stringify(normalizeUiPrefs({ recentCommands: ['LIST->', 'SIN', 'LIST→', 'C->R', '->NUM'] }).recentCommands) === JSON.stringify(['LIST→', 'SIN', 'C→R', '→NUM']),
+    'normalizeUiPrefs: a recent command saved as its ASCII alias (LIST->) reads as its arrow name, once');
   assert(JSON.stringify(normalizeUiPrefs({ recentMenus: ['MATRIX', 'VARS', 'matrix', 'VARS', 7, 'TOOLONGNAME', 'CST', 'STAT', 'BRCH'] }).recentMenus) === JSON.stringify(['MATRIX', 'VARS', 'CST', 'STAT'])
     && normalizeUiPrefs({}).recentMenus.length === 0,
     'normalizeUiPrefs: recent menus keep four distinct ids, newest first, and drop junk');

@@ -73,7 +73,9 @@ export function normalizeUiPrefs(raw) {
   if (TUTOR_STYLES.includes(raw.tutorStyle)) p.tutorStyle = raw.tutorStyle;
   if (typeof raw.tourSeen === 'boolean') p.tourSeen = raw.tourSeen;
   if (Array.isArray(raw.recentCommands)) {
-    p.recentCommands = [...new Set(raw.recentCommands.filter((n) => typeof n === 'string' && /^\S{1,24}$/.test(n)))].slice(0, RECENT_COMMANDS_MAX);
+    // Search lists an ASCII alias (LIST->) under its arrow name, so one saved before it did reads as that name.
+    const names = raw.recentCommands.filter((n) => typeof n === 'string' && /^\S{1,24}$/.test(n)).map((n) => n.replace(/->/g, '→'));
+    p.recentCommands = [...new Set(names)].slice(0, RECENT_COMMANDS_MAX);
   }
   if (Array.isArray(raw.recentMenus)) {
     p.recentMenus = [...new Set(raw.recentMenus.filter((n) => typeof n === 'string' && /^[A-Z]{2,8}$/.test(n)))].slice(0, RECENT_MENUS_MAX);
