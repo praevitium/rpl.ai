@@ -204,7 +204,8 @@ function appendInlineMarkdownLines(frag, text) {
 /** Inline spans in document order: text, code, math, bold, em.  The
  *  leftmost opener wins.  `$…$` needs a non-space just inside each `$`,
  *  so prose dollars ("costs $5 and $10") stay text, and an escaped `\$`
- *  never delimits: KaTeX gets it inside math, prose gets a bare `$`. */
+ *  never delimits: KaTeX gets it inside math, prose gets a bare `$`.
+ *  Bold and em keep their markdown, which appendSpans parses in turn. */
 export function parseInlineSpans(text) {
   const re = /(`([^`]+)`|\\\(([\s\S]+?)\\\)|(?<!\\)\$(?=\S)((?:\\[^\n]|[^\\$\n])+?)(?<=\S)\$|\*\*([^*]+)\*\*|\*([^*]+)\*)/g;
   const prose = s => s.replace(/\\\$/g, '$');
@@ -218,8 +219,8 @@ export function parseInlineSpans(text) {
     if (m[2] !== undefined) spans.push({ type: 'code', content: m[2] });
     else if (m[3] !== undefined) spans.push({ type: 'math', content: m[3] });
     else if (m[4] !== undefined) spans.push({ type: 'math', content: m[4] });
-    else if (m[5] !== undefined) spans.push({ type: 'bold', content: prose(m[5]) });
-    else if (m[6] !== undefined) spans.push({ type: 'em', content: prose(m[6]) });
+    else if (m[5] !== undefined) spans.push({ type: 'bold', content: m[5] });
+    else if (m[6] !== undefined) spans.push({ type: 'em', content: m[6] });
     last = m.index + m[0].length;
   }
   if (last < text.length) {
@@ -228,13 +229,14 @@ export function parseInlineSpans(text) {
   return spans;
 }
 
-const SPAN_TAGS = { code: 'code', bold: 'strong', em: 'em' };
+const SPAN_TAGS = { bold: 'strong', em: 'em' };
 
 function appendSpans(parent, text) {
   for (const { type, content } of parseInlineSpans(text)) {
     if (type === 'text') parent.appendChild(document.createTextNode(content));
     else if (type === 'math') renderMathInto(parent, content.trim(), false);
-    else parent.appendChild(elem(SPAN_TAGS[type], { textContent: content }));
+    else if (type === 'code') parent.appendChild(elem('code', { textContent: content }));
+    else appendSpans(parent.appendChild(elem(SPAN_TAGS[type])), content);
   }
 }
 

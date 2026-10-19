@@ -498,10 +498,29 @@ import { readFileSync } from 'node:fs';
   assert(T('pay \\$5 for $x$')
            === JSON.stringify([['text', 'pay $5 for '], ['math', 'x']]),
          'parseInlineSpans skips an escaped \\$ opener and still finds later $…$ math');
-  assert(T('**\\$5**') === JSON.stringify([['bold', '$5']]),
-         'parseInlineSpans unescapes \\$ inside bold');
+  assert(T('**\\$5**') === JSON.stringify([['bold', '\\$5']]) && T('\\$5') === JSON.stringify([['text', '$5']]),
+         'parseInlineSpans leaves \\$ inside bold to the inner pass, which unescapes it');
   assert(T('`\\$5`') === JSON.stringify([['code', '\\$5']]),
          'parseInlineSpans leaves \\$ verbatim inside a code span');
+}
+
+// Bold and italic keep their markdown, which appendSpans parses again, so math
+// inside them renders: "**Solve for $x$ and $y$**" showed its dollars as text.
+{
+  const T = t => JSON.stringify(parseInlineSpans(t).map(s => [s.type, s.content]));
+  const inner = t => T(parseInlineSpans(t)[0].content);
+  assert(T('**Solve for $x$ and $y$**') === JSON.stringify([['bold', 'Solve for $x$ and $y$']])
+           && inner('**Solve for $x$ and $y$**')
+             === JSON.stringify([['text', 'Solve for '], ['math', 'x'], ['text', ' and '], ['math', 'y']]),
+         'parseInlineSpans leaves math inside **bold** to the inner pass');
+  assert(inner('*so $2x = 4$*') === JSON.stringify([['text', 'so '], ['math', '2x = 4']]),
+         'parseInlineSpans leaves math inside *italic* to the inner pass');
+  assert(inner('**see \\(x\\) and `c`**')
+           === JSON.stringify([['text', 'see '], ['math', 'x'], ['text', ' and '], ['code', 'c']]),
+         'parseInlineSpans leaves \\(…\\) math and code inside bold to the inner pass');
+  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
+  assert(/else appendSpans\(parent\.appendChild\(elem\(SPAN_TAGS\[type\]\)\), content\);/.test(src),
+         'appendSpans renders bold and em content through appendSpans, so math inside them goes to KaTeX');
 }
 
 // session367: classifyMarkdownLine — the per-line block-role classifier lifted
