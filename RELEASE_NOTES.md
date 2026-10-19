@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.5 (2026-10-19)
+**Latest release:** v0.7.6 (2026-10-19)
 
 ---
 
@@ -20,6 +20,25 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.6 — 2026-10-19
+
+The seventh batch of missing HP 50g commands adds five for matrices and
+quadratic forms:
+
+- `SYLVESTER` writes a symmetric matrix as PᵀDP: `[[1 2][2 4]] SYLVESTER`
+  gives D as `[ 1 0 ]` and P as `[[ 1 2 ][ 0 1 ]]`, as the AUR does. A
+  zero pivot before the last row is Bad argument value.
+- `GAUSS` reduces a quadratic form to a sum of squares:
+  `'X^2+2*A*X*Y' [ X Y ] GAUSS` gives `[ 1 -A^2 ]`, `[[ 1 A ][ 0 1 ]]`,
+  `(A*Y+X)^2-Y^2*A^2` and the variables.
+- `RREFMOD` row-reduces modulo the CAS modulus that MODSTO sets. Its
+  pivots are 1, where the AUR's own example leaves a -1.
+- `DIAGMAP` applies a function to a diagonalizable matrix through its
+  eigenvalues: `[[1 1][0 2]] « → X 'EXP(X)' » DIAGMAP` gives
+  `[[ e e²-e ][ 0 e² ]]`.
+- `LCXM` builds a matrix from a program of the row and column:
+  `2 3 « → I J 'I+2*J' » LCXM` gives `[[ 3 5 7 ][ 4 6 8 ]]`.
 
 ## v0.7.5 — 2026-10-19
 
