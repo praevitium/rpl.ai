@@ -7520,6 +7520,13 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   s.push(Integer(9n));
   lookup('DISP').fn(s);
   assert(getLcd().lines[6] === '7', 'a line past the seventh writes on the seventh, an object in the display format');
+  const { setUserFlag, clearUserFlag } = await import('../www/src/rpl/state.js');
+  setUserFlag(-51);
+  s.push(parseEntry('1.5')[0]);
+  s.push(Integer(5n));
+  lookup('DISP').fn(s);
+  clearUserFlag(-51);
+  assert(getLcd().lines[4] === '1,5', 'DISP writes a number with the comma fraction mark when flag -51 is set');
   lookup('CLLCD').fn(s);
   assert(getLcd()?.lines.length === 0, 'CLLCD blanks the display');
   s.push(parseEntry('« "Enter data" 1 DISP 7 FREEZE HALT 5 »')[0]);

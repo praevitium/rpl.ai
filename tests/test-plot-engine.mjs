@@ -635,6 +635,13 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(text("`Y=3*X^2` 1 →GROB SIZE `Y=3*X^2` 0 →GROB SIZE") === '#66d | #8d | #54d | #8d',
     '→GROB size 0 leaves an algebraic\'s quotes off, as for the Equation Writer\'s picture');
   assertThrows(() => runLine('5 4 →GROB'), /Bad argument value/, '→GROB takes a size from 0 to 3');
+  {
+    const { setUserFlag, clearUserFlag } = await import('../www/src/rpl/state.js');
+    setUserFlag(-51);
+    const comma = text('1.5 1 →GROB');
+    clearUserFlag(-51);
+    assert(comma === text('"1,5" 1 →GROB') && comma !== text('"1.5" 1 →GROB'), '→GROB draws a number with the comma fraction mark when flag -51 is set');
+  }
   assert(lit(75, 0) && lit(0, 30) && lit(95, 29) && lit(95, 31) && !lit(85, 29), 'DRAX follows AXES\' crossing and a tick spacing in units');
   varPurge('PPAR');
   runLine('ERASE LABEL');

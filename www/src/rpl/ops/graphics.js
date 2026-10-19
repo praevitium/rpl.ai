@@ -4,7 +4,7 @@ import { Complex, Real, Name, RList, Str, BinaryInteger, Grob, Symbolic, isCompl
 import { register, lookup } from './registry.js';
 import { statPlotData } from './statistics.js';
 import { TRUE, FALSE, withLocalVariable } from './internal.js';
-import { format, currentDisplay } from '../formatter.js';
+import { format, currentDisplay, withFractionMark } from '../formatter.js';
 import { textGrob, CELL_WIDTH, CELL_HEIGHT } from '../pixel-font.js';
 
 
@@ -907,7 +907,7 @@ register('→GROB', (s) => {
   const [v, sizeArg] = s.popN(2);
   const size = _real(sizeArg);
   if (![0, 1, 2, 3].includes(size)) throw new RPLError('Bad argument value');
-  const shown = isString(v) ? v.value : format(v, undefined, { context: 'stack' }).replace(/`/g, "'");
+  const shown = isString(v) ? v.value : withFractionMark(format(v, undefined, { context: 'stack' }).replace(/`/g, "'"));
   s.push(textGrob(size === 0 && (isSymbolic(v) || isUnit(v)) ? shown.replace(/^'|'$/g, '') : shown));
 }, { category: 'Graphics', categoryOrder: 12.3, label: "→GROB" });
 
@@ -928,7 +928,7 @@ register('→LCD', (s) => {
 function _levelText(level, v) {
   const label = `${level}:`;
   const room = LCD_COLUMNS - label.length - 1;
-  const shown = format(v, currentDisplay()).replace(/\s*\n\s*/g, ' ');
+  const shown = withFractionMark(format(v, currentDisplay())).replace(/\s*\n\s*/g, ' ');
   const text = shown.length > room ? `${shown.slice(0, room - 1)}…` : shown;
   return label.padEnd(LCD_COLUMNS - text.length) + text;
 }
@@ -958,7 +958,7 @@ register('DISPXY', (s) => {
   const [obj, at, size] = s.popN(3);
   if (!_isPixelPoint(at) || !(isReal(size) || isInteger(size))) throw new RPLError('Bad argument type');
   if (![1, 2].includes(_real(size))) throw new RPLError('Bad argument value');
-  _drawOnLcd(_pixelOf(at), textGrob(isString(obj) ? obj.value : format(obj, currentDisplay())));
+  _drawOnLcd(_pixelOf(at), textGrob(isString(obj) ? obj.value : withFractionMark(format(obj, currentDisplay()))));
 }, { category: 'Display / base', categoryOrder: 26.5, label: "DISPXY" });
 
 // LABEL writes the axes' names by their ends, and the window's limits where the axes leave PICT: the x values under
@@ -973,7 +973,7 @@ register('LABEL', () => {
   const [xName, yName] = isList(axes)
     ? [axes.items[2], axes.items[3]].map((l) => (isString(l) ? l.value : ''))
     : [nameOf(indep), nameOf(depend)];
-  const num = (n) => format(Real(n));
+  const num = (n) => withFractionMark(format(Real(n)));
   const below = row + 2 + CELL_HEIGHT <= height ? row + 2 : row - 1 - CELL_HEIGHT;
   const above = below > row ? row - 1 - CELL_HEIGHT : row + 2;
   const beside = (g) => (col + 3 + g.width <= width ? col + 3 : col - 2 - g.width);
