@@ -2484,7 +2484,7 @@ function* _mapOneValueGen(s, prog, e, depth) {
 
 
 export function* runMap(s, depth) {
-  if (s.depth < 2) throw new RPLError('Too few arguments');
+  s.need(2);
   const prog = s.pop();
   const obj  = s.pop();
   _combinatorProgCheck(prog);
@@ -2551,7 +2551,7 @@ function _toIntCount(v) {
 
 
 export function* runSeq(s, depth) {
-  if (s.depth < 5) throw new RPLError('Too few arguments');
+  s.need(5);
   const step  = s.pop();
   const end   = s.pop();
   const start = s.pop();
@@ -2587,7 +2587,7 @@ export function* runSeq(s, depth) {
 
 
 export function* runDoList(s, depth) {
-  if (s.depth < 2) throw new RPLError('Too few arguments');
+  s.need(2);
   const prog = s.pop();
   _combinatorProgCheck(prog);
   let n = 1;                             // `list prog DOLIST` takes no count
@@ -2619,7 +2619,7 @@ export function dosubsStackDepth() { return _DOSUBS_STACK.length; }
 
 
 export function* runDoSubs(s, depth) {
-  if (s.depth < 3) throw new RPLError('Too few arguments');
+  s.need(3);
   const prog = s.pop();
   _combinatorProgCheck(prog);
   const nVal = s.pop();
@@ -2651,7 +2651,7 @@ export function* runDoSubs(s, depth) {
 
 
 export function* runStream(s, depth) {
-  if (s.depth < 2) throw new RPLError('Too few arguments');
+  s.need(2);
   const prog = s.pop();
   _combinatorProgCheck(prog);
   const list = s.pop();

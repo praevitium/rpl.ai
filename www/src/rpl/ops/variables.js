@@ -54,7 +54,7 @@ register('▶', (s) => {
 // AUR: `A=2*X` stores 2*X in A, and `A(X,Y)=2*X+3/Y` makes the user function
 // « → X Y `2*X+3/Y` » in A, which an algebraic then calls as A(1,2).
 register('DEFINE', (s) => {
-  if (s.depth < 1) throw new RPLError('Too few arguments');
+  s.need(1);
   const v = s.peek();
   const ast = isSymbolic(v) ? v.expr : null;
   if (ast?.kind !== 'bin' || ast.op !== '=') throw new RPLError('Bad argument type');
@@ -99,7 +99,7 @@ register('RCEQ', (s) => {
 
 // AUR: as DEFINE, but the equation stays, so DEF can sit inside an algebraic.
 register('DEF', (s) => {
-  if (s.depth < 1) throw new RPLError('Too few arguments');
+  s.need(1);
   const eq = s.peek();
   lookup('DEFINE').fn(s);
   s.push(eq);

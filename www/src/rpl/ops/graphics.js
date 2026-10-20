@@ -59,7 +59,7 @@ const _plottable = (v) => {
 
 // A list of formulas plots each one, as EQ holding a list does on the HP.
 register('PLOT', (s) => {
-  if (s.depth < 1) throw new RPLError('Too few arguments');
+  s.need(1);
   const f = s.peek();
   varStore('EQ', isList(f) && f.items.length && f.items.every(_isFormula) ? f : _plottable(f));
   _requestPlot(_plotKind(), s);
@@ -107,7 +107,7 @@ register('DRAW3DMATRIX', (s) => {
 
 // PARSURFACE plots the list or vector of x, y and z of two variables on level 1.
 register('PARSURFACE', (s) => {
-  if (s.depth < 1) throw new RPLError('Too few arguments');
+  s.need(1);
   const v = s.peek();
   if (!(isList(v) || isVector(v)) || v.items.length !== 3) throw new RPLError('Bad argument type');
   _requestPlot('parsurface', s, v);
@@ -803,7 +803,7 @@ register('ANIMATE', (s) => {
   }
   const n = _real(count);
   if (!Number.isInteger(n) || n < 1 || !(delay >= 0) || !Number.isInteger(rep) || rep < 0) throw new RPLError('Bad argument value');
-  if (s.depth < n + 1) throw new RPLError('Too few arguments');
+  s.need(n + 1);
   const frames = Array.from({ length: n }, (_, i) => _frameOf(s.peek(n + 1 - i)));
   _requestPlot('animate', s, { frames, at, delay, rep });
 }, { category: 'Graphics', categoryOrder: 11.95, label: "ANIMATE" });

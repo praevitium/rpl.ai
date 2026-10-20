@@ -1053,7 +1053,7 @@ function _mainVar(...asts) {
 
 function _vxForm(opName, pickVar = _vxFor) {
   return (s) => {
-    if (s.depth < 1) throw new RPLError('Too few arguments');
+    s.need(1);
     const top = s.peek();
     const entries = isVector(top) ? top.items : isMatrix(top) ? top.rows.flat() : [top];
     s.push(Name(pickVar(...entries.map(_toAst).filter(Boolean))));
@@ -1597,7 +1597,7 @@ register('REORDER', _entryWise((s) => {
 const _longestFirst = (a, b) => b.length - a.length || (a < b ? -1 : a > b ? 1 : 0);
 
 register('LNAME', (s) => {
-  if (s.depth < 1) throw new RPLError('Too few arguments');
+  s.need(1);
   const v = s.peek();
   if (!isSymbolic(v)) throw new RPLError('Bad argument type');
   const names = new Set();
@@ -1619,7 +1619,7 @@ register('LNAME', (s) => {
 
 // AUR: as LNAME, but a function of a variable, COS(B), counts as one, and the expression stays on the stack.
 register('LVAR', (s) => {
-  if (s.depth < 1) throw new RPLError('Too few arguments');
+  s.need(1);
   const v = s.peek();
   if (!isSymbolic(v)) throw new RPLError('Bad argument type');
   if (!giac.isReady()) throw new RPLError('CAS not ready');

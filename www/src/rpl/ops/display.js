@@ -129,7 +129,7 @@ export function setEditHook(fn) {
 // the object; the edit replaces the level or is stored back in the variable.
 function _editLevelOp(line) {
   return (s) => {
-    if (s.depth < 1) throw new RPLError('Too few arguments');
+    s.need(1);
     if (!inScratchState()) _editHook?.({ level: 1, line });
   };
 }

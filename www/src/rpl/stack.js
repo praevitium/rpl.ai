@@ -95,42 +95,47 @@ export class Stack {
     return out;
   }
 
+  // Throws Too few arguments, with how many values are missing, unless the stack holds n.
+  need(n) {
+    if (this._items.length < n) throw tooFew(n - this._items.length);
+  }
+
   clear() {
     this._items.length = 0;
     this._emit();
   }
 
-  dup()  { if (!this.depth) throw new RPLError('Too few arguments');
+  dup()  { this.need(1);
            this._touch(this._items.length - 1);
            this._items.push(this._items[this._items.length - 1]); this._emit(); }
 
   drop() { this.pop(); }
 
   swap() {
+    this.need(2);
     const n = this._items.length;
-    if (n < 2) throw new RPLError('Too few arguments');
     [this._items[n - 1], this._items[n - 2]] = [this._items[n - 2], this._items[n - 1]];
     this._emit();
   }
 
   rot() {
+    this.need(3);
     const n = this._items.length;
-    if (n < 3) throw new RPLError('Too few arguments');
     const a = this._items.splice(n - 3, 1)[0];
     this._items.push(a);
     this._emit();
   }
 
   unrot() {
+    this.need(3);
     const n = this._items.length;
-    if (n < 3) throw new RPLError('Too few arguments');
     this._items.splice(n - 3, 0, this._items.pop());
     this._emit();
   }
 
   over() {
+    this.need(2);
     const n = this._items.length;
-    if (n < 2) throw new RPLError('Too few arguments');
     this._touch(n - 2);
     this._items.push(this._items[n - 2]);
     this._emit();
@@ -138,29 +143,29 @@ export class Stack {
 
   pick(level) {
     if (level < 1) throw new RPLError('Bad argument value');
+    this.need(level);
     const n = this._items.length;
-    if (n < level) throw new RPLError('Too few arguments');
     this._touch(n - level);
     this._items.push(this._items[n - level]);
     this._emit();
   }
 
   dup2() {
+    this.need(2);
     const n = this._items.length;
-    if (n < 2) throw new RPLError('Too few arguments');
     this._touch(n - 2);
     this._items.push(this._items[n - 2], this._items[n - 1]);
     this._emit();
   }
 
   drop2() {
-    if (this._items.length < 2) throw new RPLError('Too few arguments');
+    this.need(2);
     this._items.length -= 2;
     this._emit();
   }
 
   dropN(n) {
-    if (this._items.length < n) throw new RPLError('Too few arguments');
+    this.need(n);
     this._items.length -= n;
     this._emit();
   }

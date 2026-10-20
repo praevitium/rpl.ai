@@ -69,7 +69,7 @@ register('DROPN', (s) => {
 
 register('DUPN', (s) => {
   const n = _toNonNegIntCount(s.pop());
-  if (s.depth < n) throw new RPLError('Too few arguments');
+  s.need(n);
   if (n === 0) return;
   const copies = [];
   for (let i = n; i >= 1; i--) copies.push(s.peek(i));
@@ -78,8 +78,8 @@ register('DUPN', (s) => {
 
 
 register('DUPDUP', (s) => {
+  s.need(1);
   const v = s.peek(1);
-  if (v === undefined) throw new RPLError('Too few arguments');
   s.pushMany([v, v]);
 }, { category: 'Stack', categoryOrder: 3, label: "DUPDUP" });
 
@@ -98,7 +98,7 @@ register('PICK3', (s) => {
 register('ROLL', (s) => {
   const n = _toNonNegIntCount(s.pop());
   if (n <= 1) return;
-  if (s.depth < n) throw new RPLError('Too few arguments');
+  s.need(n);
   const arr = s._items;
   const [x] = arr.splice(arr.length - n, 1);
   arr.push(x);
@@ -109,7 +109,7 @@ register('ROLL', (s) => {
 register('ROLLD', (s) => {
   const n = _toNonNegIntCount(s.pop());
   if (n <= 1) return;
-  if (s.depth < n) throw new RPLError('Too few arguments');
+  s.need(n);
   const arr = s._items;
   const top = arr.pop();
   arr.splice(arr.length - (n - 1), 0, top);
@@ -120,7 +120,7 @@ register('ROLLD', (s) => {
 // ( … v n → … ): v replaces level n of what remains.
 register('UNPICK', (s) => {
   const n = _toPosIntIndex(s.pop());
-  if (s.depth <= n) throw new RPLError('Too few arguments');
+  s.need(n + 1);
   const v = s.pop();
   s._items[s._items.length - n] = v;
   s._emit();
@@ -130,7 +130,7 @@ register('UNPICK', (s) => {
 // ( x n → x … x n ): n copies of x, then n itself.
 register('NDUPN', (s) => {
   const n = _toNonNegIntCount(s.pop());
-  if (s.depth < 1) throw new RPLError('Too few arguments');
+  s.need(1);
   const x = s.pop();
   s.pushMany(new Array(n).fill(x));
   s.push(Integer(BigInt(n)));

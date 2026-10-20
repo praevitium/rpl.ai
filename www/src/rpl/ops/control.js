@@ -91,7 +91,7 @@ register('RUN', () => withStepMode(false, false, resumeHalted), { category: 'Con
 
 
 register('DBUG', (s) => {
-  if (s.depth < 1) throw new RPLError('Too few arguments');
+  s.need(1);
   let probe = s.peek();
   while (isTagged(probe)) probe = probe.value;
   if (!isProgram(probe)) throw new RPLError('Bad argument type');

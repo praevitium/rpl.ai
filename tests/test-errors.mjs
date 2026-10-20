@@ -138,6 +138,10 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   let thrown = null;
   try { s.popN(2); } catch (e) { thrown = e; }
   assert(thrown?.missing === 1, 'Stack.popN: a too-few error says how many more values it wanted');
+  const missingOf = (fn) => { try { fn(); } catch (e) { return e.missing; } return null; };
+  const one = new Stack(); one.push(Str('x'));
+  assert(missingOf(() => one.dropN(3)) === 2 && missingOf(() => one.swap()) === 1 && missingOf(() => one.pick(4)) === 3 && missingOf(() => new Stack().dup()) === 1,
+    'Stack: DROPN, SWAP, PICK and DUP say how many values they lack too, so their banners count, where DROPN said it needs more values than the stack holds');
   const xroot = describeError('XROOT: Too few arguments', ctx({ failure: { op: 'XROOT', levels: [Str('hi')], depth: 1, missing: 1 }, depth: 1 }));
   assert(xroot.title === 'XROOT needs two values; the stack has one value.' && xroot.detail === 'Put the missing value on the stack first, then run it again.',
     `describeError: a command whose manual page gives no input count counts from what the stack lacked, where it said XROOT needs more values than the stack holds (${xroot.title})`);
