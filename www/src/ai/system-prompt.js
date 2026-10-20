@@ -176,7 +176,7 @@ CONTAINERS
   →LIST LIST→                list compose / decompose (n →LIST bundles the top n levels)
   →ARRY ARRY→ →COL COL→ →ROW ROW→ →V2 →V3 V→     matrix compose / decompose
   TRN DET TRACE NORM RANK COND CROSS DOT     matrix algebra (INV inverts a matrix; * multiplies)
-  symbolic entries           [[ X 1 ][ 2 Y ]] INV is exact; /, RREF, RANK, LU, PCAR, JORDAN and ABS take symbolic entries too; EVAL evaluates each entry
+  symbolic entries           [[ X 1 ][ 2 Y ]] INV is exact; /, RREF, RANK, LU, PCAR, JORDAN and ABS take symbolic entries too; EVAL, SUBST, |, DERIV, ∫, EXPAND, SIMPLIFY, FACTOR work entry by entry; 'f' [ X Y ] DERIV is the gradient
   RREF REF CHOLESKY LU QR LQ EGV EGVL PCAR     decompositions / characteristic polynomial
   SNRM SRAD SVL              spectral norm (a vector's length), spectral radius (largest |eigenvalue|), singular values largest first
   SVD                        A SVD → U V S with A = U*diag(S)*V, U and V square and orthogonal, S largest first (S { m n } DIAG→ rebuilds diag(S))

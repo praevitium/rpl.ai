@@ -193,7 +193,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   on it, and `→NUM` gives every entry its number. Entries can be
   symbolic: `[[ X 1 ][ 2 Y ]] INV` is exact, and `/`, RREF, RANK, LU,
   CHARPOL, JORDAN and ABS work on such a matrix too; `EVAL` puts stored
-  values into its entries. The MATRIX menu opens as
+  values into its entries, and SUBST, `|`, DERIV, ∫, EXPAND, SIMPLIFY,
+  FACTOR and the other CAS rewrites work entry by entry. DERIV by a vector
+  of variables gives the gradient, `'X^2*Y' [ X Y ] DERIV` giving
+  `[ 2*X*Y X^2 ]`, and a vector of functions with it the Jacobian. The MATRIX menu opens as
   the HP's MTH MATR does, on MAKE, NORM, FACTR, COL and ROW folders and
   then LSQ. A matrix level's ⋯ menu has Inverse, Determinant and
   Eigenvalues when it is square, and Transpose. In CYLIN and SPHERE modes `→V2`, `→V3` and `V→`
