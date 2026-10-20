@@ -642,7 +642,7 @@ export class Display {
       box.className = 'grob-value';
       const size = document.createElement('span');
       size.className = 'value-text';
-      size.textContent = flat;
+      size.textContent = flat.replace(' × ', '\u00a0×\u00a0');
       box.append(grobPicture(value), size);
       cell.appendChild(box);
     } else {
