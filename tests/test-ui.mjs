@@ -1889,7 +1889,7 @@ setAngle('RAD');
     && new RegExp(`\\.stack-view \\{[^}]*scroll-padding-top: ${fade}px;`).test(css)
     && /const view = this\.stackView, edge = view\.scrollTop \+ TOP_FADE,/.test(displaySrc) && /row\.offsetTop \+ row\.offsetHeight <= edge/.test(displaySrc) && /view\.classList\.toggle\('more-t', above > 0 \|\| cut\)/.test(displaySrc),
     'stack: with levels above, the top edge fades under the "more levels above" pill, which counts a level ending in the fade, and a level selected there scrolls clear of it (the pill used to sit on a half-shown level it did not count)');
-  assert(/return \{ above, top, cut: rows\.length > 0 && rows\[0\]\.offsetTop < view\.scrollTop \};/.test(displaySrc),
+  assert(/cut: roomy && rows\.length > 0 && rows\[0\]\.offsetTop < view\.scrollTop \};/.test(displaySrc),
     'stack: a top level cut by a short view fades at the top edge too, where a turned phone in minimal view sliced level 4\'s matrix through its first row with no sign of more above');
 }
 
@@ -2044,6 +2044,8 @@ setAngle('RAD');
   const measure = displaySrc.slice(displaySrc.indexOf('  _measureMore() {'), displaySrc.indexOf('\n  _showMore('));
   assert(/const sel = view\.querySelector\('\.st-row\.sel'\);\s*if \(sel && sel\.offsetTop < edge && sel\.offsetTop \+ sel\.offsetHeight > edge\) return \{ above: 0, top \};/.test(measure),
     'stack: the more-levels pill and the top fade give way to a selected level that reaches through them, rather than covering its value');
+  assert(/const roomy = view\.clientHeight >= 2 \* TOP_FADE;\s*return \{ above: roomy \? above : 0, top, cut: roomy && /.test(measure),
+    'stack: a view shorter than twice the top fade, as under an error banner with the keyboard up (47 px in a turned phone, 28 at 280 px), has no fade or pill, where the fade greyed out level 1');
 }
 
 {

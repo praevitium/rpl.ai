@@ -559,8 +559,10 @@ export class Display {
     if (sel && sel.offsetTop < edge && sel.offsetTop + sel.offsetHeight > edge) return { above: 0, top };
     const rows = [...view.querySelectorAll('.st-row[data-key]')];
     const above = rows.filter((row) => row.offsetTop + row.offsetHeight <= edge).length;
-    // A top level cut by a short view fades as well, though the pill counts only levels wholly above.
-    return { above, top, cut: rows.length > 0 && rows[0].offsetTop < view.scrollTop };
+    // A top level cut by a short view fades as well, though the pill counts only levels wholly above. A view too
+    // short for the fade and a level, as under an error banner with the keyboard up, shows neither.
+    const roomy = view.clientHeight >= 2 * TOP_FADE;
+    return { above: roomy ? above : 0, top, cut: roomy && rows.length > 0 && rows[0].offsetTop < view.scrollTop };
   }
 
   _showMore({ above, top, cut }) {
