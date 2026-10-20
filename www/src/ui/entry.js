@@ -19,6 +19,16 @@ const onTouch = () => globalThis.matchMedia?.('(pointer: coarse)').matches === t
 
 const pastedSource = (text) => latexToSource(text) ?? spreadsheetToSource(text) ?? hpTextToSource(text);
 
+// As on the HP, a line that doesn't parse keeps the cursor at the word that broke it: ^10 in 2^10, #ff for its #ffd.
+export function errorSpot(line, message) {
+  const word = String(message).match(/near (\S+)$|^Unexpected '(.+)'$|: (\S+)$/)?.slice(1).find(Boolean);
+  for (const w of word ? [word, word.slice(0, -1)] : []) {
+    const at = w ? line.indexOf(w) : -1;
+    if (at >= 0) return at;
+  }
+  return -1;
+}
+
 function errorText(e) {
   return e && typeof e === 'object' && e.message != null ? String(e.message) : String(e);
 }
@@ -595,7 +605,14 @@ export class Entry {
   // as on the HP, even when it fails or aborts; a failure keeps it on the error
   // (e.line) for Fix the line.
   _commitEntry(raw) {
-    const values = parseTyped(raw);
+    let values;
+    try {
+      values = parseTyped(raw);
+    } catch (e) {
+      const at = errorSpot(this.buffer, errorText(e));
+      if (at >= 0) this.cursor = at;
+      throw e;
+    }
     try {
       if (isProgramLine(values)) this.stack.runOp(() => runProgramLine(this.stack, values));
       else this.stack.holdEmit(() => {

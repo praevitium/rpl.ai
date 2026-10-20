@@ -62,6 +62,14 @@ import { assert, assertThrows } from './helpers.mjs';
 
   {
     const e = new Entry(new Stack());
+    setBinaryBase('d');
+    const spot = (line) => { e.buffer = line; e.cursor = line.length; e.enter(); return [e.buffer, e.cursor]; };
+    assert(spot('2^10').join() === '2^10,1' && spot('3 4 x^2 +').join() === '3 4 x^2 +,4' && spot('#ff 1 +').join() === '#ff 1 +,0' && spot('2 3 + ]').join() === '2 3 + ],6',
+      'a line that does not parse keeps the cursor at the word that broke it, as the HP does, where it stayed at the end of the line');
+  }
+
+  {
+    const e = new Entry(new Stack());
     let emitted = 0;
     e.subscribeHistory(() => { emitted++; });
     e.buffer = '"a" SIN';
