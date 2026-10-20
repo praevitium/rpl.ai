@@ -75,8 +75,17 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
 }
 
 {
+  const typed = describeError('Syntax error near ^10', ctx({ line: '2^10' }));
+  assert(typed.fixes[0].id === 'formula' && typed.fixes[0].arg === '2^10' && typed.fixes[0].label === 'Evaluate as a formula'
+    && /In quotes it is a formula, '2\^10', that EVAL works out/.test(typed.detail),
+    'syntax banner: 2^10 typed without quotes leads with evaluating it as a formula');
+  assert(['ZZQ?', '2^10 3', "'x' 2^", '« 2^10 »'].every((line) => !describeError('Syntax error near x', ctx({ line })).fixes.some((f) => f.id === 'formula')),
+    'syntax banner: no formula fix for a line with no operator, one that is no single formula, or one already quoted');
+}
+
+{
   const hi = Str('hi');
-  const onStack = describeError('SIN: Bad argument type: expected real, got string', ctx({ failure: { op: 'SIN', levels: [hi] }, stack: [hi], depth: 1 }));
+  const onStack =describeError('SIN: Bad argument type: expected real, got string', ctx({ failure: { op: 'SIN', levels: [hi] }, stack: [hi], depth: 1 }));
   assert(onStack.title === "SIN can't use a string." && onStack.culpritLevels.join() === '1',
     'describeError: a bad argument still on the stack is named and outlined');
   assert(onStack.detail.includes('SIN takes z → sin z') && onStack.detail.includes('level 1 is the string "hi"'),

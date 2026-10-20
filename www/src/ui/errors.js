@@ -1,4 +1,5 @@
 import { RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
+import { parseEntry } from '../rpl/parser.js';
 
 const CORE_MESSAGES = Object.freeze([
   'Too few arguments', 'Bad argument type', 'Bad argument value', 'Infinite result',
@@ -133,8 +134,8 @@ export const ERROR_KINDS = Object.freeze({
   syntax: {
     match: (p) => /^(Invalid algebraic|Bad complex literal|Syntax error|Unknown token|Malformed|Unexpected|Missing object|Empty parse|Expected one object|Text after END|(IF|IFERR|WHILE|FOR|START|CASE|DO)\b)/.test(p.core),
     title: () => "That line doesn't read as RPL.",
-    detail: (c) => `${c.message}. The line is still in the command line to fix.`,
-    fixes: () => [{ id: 'edit-line', label: 'Fix the line' }, { id: 'explain', label: 'Explain' }],
+    detail: (c) => `${c.message}.${c.formula ? ` In quotes it is a formula, '${c.formula}', that EVAL works out.` : ''} The line is still in the command line to fix.`,
+    fixes: (c) => [...(c.formula ? [{ id: 'formula', label: 'Evaluate as a formula', arg: c.formula }] : []), { id: 'edit-line', label: 'Fix the line' }, { id: 'explain', label: 'Explain' }],
   },
   sigmaData: {
     match: (p) => p.core === 'Nonexistent ΣDAT',
@@ -156,6 +157,13 @@ export const ERROR_KINDS = Object.freeze({
   },
 });
 
+// A line typed the way other calculators take it, 2^10 or e^2, is a formula once quoted.
+export function formulaOf(line) {
+  const text = String(line ?? '').trim();
+  if (!/[\^*/+\-√=<>(]/.test(text) || /['`"«»{}[\]]/.test(text)) return '';
+  try { return parseEntry(`'${text}'`).length === 1 ? text : ''; } catch { return ''; }
+}
+
 export function describeError(message, { failure = null, stack = [], depth = 0, line = '', describe, commandInfo = () => null } = {}) {
   const parsed = parseErrorMessage(message);
   const [kind, spec] = Object.entries(ERROR_KINDS).find(([, k]) => k.match(parsed));
@@ -171,7 +179,8 @@ export function describeError(message, { failure = null, stack = [], depth = 0, 
   const seenDepth = failedHere && failure.depth != null ? failure.depth : depth;
   const top = stack.length ? describe(stack[0]) : null;
   const storesTop = /^(Vector|Matrix)$/.test(top?.type) && !!command && !['RCLΣ', 'Σ-'].includes(command);
-  const ctx = { ...parsed, message: String(message ?? ''), command, signature, args, depth, seenDepth, culprits, onStack, top, storesTop, hasLine: !!String(line).trim() };
+  const formula = kind === 'syntax' ? formulaOf(line) : '';
+  const ctx = { ...parsed, message: String(message ?? ''), command, signature, args, depth, seenDepth, culprits, onStack, top, storesTop, formula, hasLine: !!String(line).trim() };
   return {
     kind,
     command,
