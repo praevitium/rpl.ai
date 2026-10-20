@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.104 (2026-10-20)
+**Latest release:** v0.7.105 (2026-10-20)
 
 ---
 
@@ -18,6 +18,24 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.7.105 — 2026-10-20
+
+- UNPICK's and RRKSTEP's stack diagrams were the PDF's column headings,
+  so command search and their banners showed "Ln+2 Ln+1 L3 L2 L1" and
+  "L4/A1 L3/A2". They now read "objn objn-1 ... obj1 obj n → obj objn-1 …"
+  and "{ list } xtol h last → { list } xtol …", and RRKSTEP's banner counts
+  its four inputs.
+- A selected level has the HP interactive stack's INFO, after LEVEL on its
+  soft keys and in its ⋯ menu: a note of what it holds, its TYPE and its
+  size by BYTES, such as "Level 3: a 2×2 matrix · TYPE 3 · 163 bytes".
+  The stack and LASTARG stay as they were.
+- A command search preview of a too-few-arguments error counts the
+  missing values as the banner does: DROPN on an empty stack previews
+  "DROPN needs one value; the stack has none." where it said it needed
+  more values than the stack holds.
 
 ---
 
