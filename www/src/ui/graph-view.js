@@ -673,27 +673,35 @@ export class GraphView {
       return s;
     };
     const [mark, cursor] = [this._anchor, this._mark];
+    const snap = () => this.app.entry._snapForUndo();
     switch (key) {
       case 'DOT+': case 'DOT-': {
         this._dot = this._dot === DOTS[key] ? null : DOTS[key];
-        if (this._dot) pictLine(at(cursor), at(cursor), this._dot);
+        if (this._dot) {
+          snap();
+          pictLine(at(cursor), at(cursor), this._dot);
+        }
         return this._dot ? `${key} on: the cursor ${this._dot === 'on' ? 'draws' : 'erases'} as it moves` : `${key} off`;
       }
       case 'MARK':
         this._anchor = { ...cursor };
         return 'Mark set: LINE, BOX, CIRCL, DEL and SUB work from it to the cursor';
       case 'LINE': case 'TLINE': case 'BOX':
+        snap();
         run(key, at(mark), at(cursor));
         return null;
       case 'CIRCL': {
+        snap();
         const [c, r] = [mark, cursor].map(pictPixel);
         run('ARC', RList(c.map(pixel)), pixel(Math.hypot(r[0] - c[0], r[1] - c[1])), Real(0), Real(thetaRange().max));
         return null;
       }
       case 'LABEL': case 'ERASE':
+        snap();
         run(key);
         return null;
       case 'DEL': {
+        snap();
         const [[c1, r1], [c2, r2]] = [mark, cursor].map((p) => pictPixel(p).map(Math.round));
         const blank = run('BLANK', pixel(Math.abs(c2 - c1) + 1), pixel(Math.abs(r2 - r1) + 1)).peek();
         run('REPL', Name('PICT'), RList([pixel(Math.min(c1, c2)), pixel(Math.min(r1, r2))]), blank);
@@ -705,8 +713,8 @@ export class GraphView {
       case 'REPL': {
         const { stack } = this.app;
         if (!stack.depth || !isGrob(stack.peek())) throw new Error('REPL needs a graphics object on level 1');
+        snap();
         run('REPL', Name('PICT'), at(cursor), stack.peek());
-        this.app.entry._snapForUndo();
         stack.pop();
         return null;
       }
