@@ -59,14 +59,15 @@ export function markScrollEdges(el) {
 const swipeThreshold = (width) => Math.min(120, width * 0.35);
 
 // A finger swiped sideways across a notice (an error banner, a toast) puts it away, as a phone's notifications go.
-// A press on one of its buttons, or on what scrolls sideways of its own, is no swipe.
-export function installSwipeAway(host, selector, onAway, ignore = 'button') {
+// A press on one of its buttons, or on what scrolls sideways of its own, is no swipe. onArmed hears the finger cross
+// the point where letting go puts the notice away.
+export function installSwipeAway(host, selector, onAway, { ignore = 'button', onArmed = null } = {}) {
   let swipe = null;
   host.addEventListener('pointerdown', (ev) => {
     swipe = null;
     const el = ev.target.closest?.(selector);
     if (!el || ev.pointerType === 'mouse' || !ev.isPrimary || ev.target.closest(ignore)) return;
-    swipe = { el, id: ev.pointerId, x: ev.clientX, y: ev.clientY, dx: 0, active: false };
+    swipe = { el, id: ev.pointerId, x: ev.clientX, y: ev.clientY, dx: 0, active: false, armed: false };
   });
   host.addEventListener('pointermove', (ev) => {
     if (swipe?.id !== ev.pointerId) return;
@@ -80,6 +81,9 @@ export function installSwipeAway(host, selector, onAway, ignore = 'button') {
     swipe.dx = dx;
     swipe.el.style.transform = `translateX(${dx}px)`;
     swipe.el.style.opacity = String(1 - Math.min(0.7, Math.abs(dx) / (swipe.el.offsetWidth || 1)));
+    const armed = Math.abs(dx) > swipeThreshold(swipe.el.offsetWidth || 1);
+    if (armed && !swipe.armed) onArmed?.();
+    swipe.armed = armed;
   });
   const end = (ev) => {
     if (swipe?.id !== ev.pointerId) return;
@@ -241,6 +245,7 @@ export class Display {
     this.onRowAction = null;
     this.onRowMove = null;
     this.onRowSwipe = null;
+    this.onSwipeArmed = null;
     this.onStatusAction = null;
     this.onEmptyAction = null;
     this._ids = new WeakMap();
@@ -373,7 +378,9 @@ export class Display {
       const width = swipe.row.offsetWidth || 1;
       swipe.row.style.transform = `translateX(${dx}px)`;
       swipe.row.style.opacity = String(1 - Math.min(0.6, Math.abs(dx) / width));
-      swipe.row.classList.toggle('swipe-armed', Math.abs(dx) > swipeThreshold(width));
+      const armed = Math.abs(dx) > swipeThreshold(width);
+      if (armed && !swipe.row.classList.contains('swipe-armed')) this.onSwipeArmed?.();
+      swipe.row.classList.toggle('swipe-armed', armed);
     });
     const end = (ev) => {
       if (swipe?.id !== ev.pointerId) return;

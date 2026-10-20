@@ -142,8 +142,8 @@ class App {
     });
     $('banner').addEventListener('click', (e) => this._onBannerClick(e));
     // A halted program's banner waits for an answer, and the fixes row scrolls sideways of its own with the keyboard up.
-    installSwipeAway($('banner'), '.bn:not(.halt)', () => this.dismissError(), '.bn-f, button');
-    installSwipeAway($('toasts'), '.toast', (toast) => toast.remove());
+    installSwipeAway($('banner'), '.bn:not(.halt)', () => this.dismissError(), { ignore: '.bn-f, button', onArmed: () => this.buzzHold() });
+    installSwipeAway($('toasts'), '.toast', (toast) => toast.remove(), { onArmed: () => this.buzzHold() });
     $('banner').addEventListener('scroll', (e) => { if (e.target.classList?.contains('bn-f')) markScrollEdges(e.target); }, true);
     new ResizeObserver(() => this._markBannerEdges()).observe($('banner'));
     this.appbar = new AppBar({ el: $('appbar'), app: this });
@@ -808,6 +808,8 @@ class App {
     };
     d.onRowAction = (level, act, el) => this.levelAction(act, level, el);
     d.onRowMove = (from, to) => this._moveLevel(from, to);
+    // A swipe buzzes once as it crosses the point where letting go drops the level, with key vibration on.
+    d.onSwipeArmed = () => this.buzzHold();
     d.onRowSwipe = (level) => {
       this.levelAction('drop', level);
       this.undoToast(`Dropped level ${level}`);

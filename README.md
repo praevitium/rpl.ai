@@ -534,7 +534,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - Settings › Appearance sets the stack's text size, from Small to Larger,
   pretty math included. On Android it can also make the keys vibrate briefly
   as a finger presses them, once more as a held finger opens a menu or
-  clears the line, and twice on an error, as the HP beeps (set flag -56,
+  clears the line or a swipe passes the point where letting go drops a
+  level or puts a note away, and twice on an error, as the HP beeps (set flag -56,
   the HP's Error Beep flag, to stop that). A tap anywhere on a switch's row
   flips it.
 - The modes button in the app bar (RAD · STD · EXACT), and each mode on

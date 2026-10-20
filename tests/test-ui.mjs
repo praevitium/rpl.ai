@@ -2796,8 +2796,9 @@ setAngle('RAD');
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/installSwipeAway\(\$\('banner'\), '\.bn:not\(\.halt\)', \(\) => this\.dismissError\(\), '\.bn-f, button'\);/.test(appSrc)
-    && /installSwipeAway\(\$\('toasts'\), '\.toast', \(toast\) => toast\.remove\(\)\);/.test(appSrc)
+  assert(/installSwipeAway\(\$\('banner'\), '\.bn:not\(\.halt\)', \(\) => this\.dismissError\(\), \{ ignore: '\.bn-f, button', onArmed: \(\) => this\.buzzHold\(\) \}\);/.test(appSrc)
+    && /installSwipeAway\(\$\('toasts'\), '\.toast', \(toast\) => toast\.remove\(\), \{ onArmed: \(\) => this\.buzzHold\(\) \}\);/.test(appSrc)
+    && /d\.onSwipeArmed = \(\) => this\.buzzHold\(\);/.test(appSrc)
     && /\.app \.st-row\[data-key\], \.app \.bn:not\(\.halt\), \.toast \{ touch-action: pan-y; \}/.test(css),
     'notices: an error banner and a toast swipe away under a finger, the browser leaving sideways moves on them to the page');
 }

@@ -219,7 +219,8 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   const handlers = {};
   const host = { addEventListener: (type, fn) => { handlers[type] = fn; } };
   let dismissed = 0;
-  installSwipeAway(host, '.bn:not(.halt)', () => { dismissed++; }, '.bn-f, button');
+  let armed = 0;
+  installSwipeAway(host, '.bn:not(.halt)', () => { dismissed++; }, { ignore: '.bn-f, button', onArmed: () => { armed++; } });
   const bn = { offsetWidth: 300, style: {}, setPointerCapture() {} };
   const target = (halt = false, inFixes = false) => ({ closest: (sel) => (sel === '.bn:not(.halt)' ? (halt ? null : bn) : inFixes ? {} : null) });
   const swipe = (dx, dy = 0, t = target()) => {
@@ -236,4 +237,5 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   swipe(150);
   swipe(-150);
   assert(dismissed === 2, 'banner swipe: a finger swiped far either way across an error banner puts it away, as a phone notification goes');
+  assert(armed === 2, 'banner swipe: crossing the point where letting go puts it away is heard once per swipe, for a buzz, and a short swipe never crosses it');
 }
