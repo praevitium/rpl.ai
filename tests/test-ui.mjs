@@ -2495,6 +2495,8 @@ setAngle('RAD');
   assert(/const MIN_FORMULA_SCALE = 0\.75;/.test(displaySrc)
     && /const \{ svg, width \} = astToSvg\(value\.expr, \{ size: svgSize \}\);\s*cell\.innerHTML = svg;\s*cell\.firstElementChild\.style\.minWidth = `\$\{Math\.round\(width \* MIN_FORMULA_SCALE\)\}px`;/.test(displaySrc),
     'formulas on the stack: a long one shrinks to fit only to three quarters of its size, then fades at its edge and scrolls sideways as a wide matrix does, where (X+Y)^6 expanded shrank to a third at 280 px');
+  assert(/const \{ svg, width \} = astToSvg\(expr, \{ size: svgSize \}\);\s*return `<span class="lcell lcell-sym" style="min-width:\$\{Math\.round\(width \* MIN_FORMULA_SCALE\)\}px">\$\{svg\}<\/span>`;/.test(displaySrc),
+    'formulas in a list: each keeps three quarters of its size too, so a one-line list too wide for a phone scrolls, where the factors of { X^2-1 { X^2-4 X^3-8 } } shrank to 37% at 280 px');
   assert(/const fit = ncols > 0 && texts\.every\(r => !r\.includes\(null\)\);/.test(displaySrc)
     && /\$\{fit \? `;--mw:\$\{gridWidthEm\(texts\)\}` : ''\}/.test(displaySrc)
     && /\* 0\.6 \+ 0\.1\);\s*return \(cols\.reduce\(\(a, b\) => a \+ b, 0\) \+ 0\.9 \* \(cols\.length - 1\) \+ 1\)\.toFixed\(2\);/.test(displaySrc)

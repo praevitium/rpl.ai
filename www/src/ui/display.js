@@ -706,8 +706,8 @@ export class Display {
     const items = val.items.map(item => {
       const expr = isSymbolic(item) ? item.expr : isName(item) && !item.local ? Var(item.id) : null;
       if (expr) {
-        const { svg } = astToSvg(expr, { size: svgSize });
-        return `<span class="lcell lcell-sym">${svg}</span>`;
+        const { svg, width } = astToSvg(expr, { size: svgSize });
+        return `<span class="lcell lcell-sym" style="min-width:${Math.round(width * MIN_FORMULA_SCALE)}px">${svg}</span>`;
       }
       if (isList(item)) return `<span class="lcell">${this._renderTextbookList(item, svgSize)}</span>`;
       if (isVector(item)) return `<span class="lcell">${this._renderTextbookList(item, svgSize, ['[', ']'])}</span>`;
