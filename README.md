@@ -276,7 +276,7 @@ RPL puts the numbers first and the operation last. Each value goes on the
   the menu bar while a writer is open and it takes the writer's place until
   you pick EQW or MTRW again.
 - **The stack.** Click a level to select it; its actions appear on the row
-  and in the menu bar. Double-click edits it in the right writer. Drag rows
+  and in the menu bar. Double-click, or double-tap on a phone, edits it in the right writer. Drag rows
   to reorder them. A program opens for editing laid out over lines, each
   structure (IF, CASE, FOR, WHILE and the rest) starting a line and nested
   programs indented, with room for it to show.

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.105 (2026-10-20)
+**Latest release:** v0.7.106 (2026-10-20)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.7.106 — 2026-10-20
+
+- A too-few-arguments banner mixed digits and words: `7 PICK` on four
+  values read "PICK needs 8 values; the stack has four values." Both
+  counts are now words up to nine ("needs eight values"), or both digits
+  past it ("needs 12 values; the stack has 4 values").
+- A double tap on a stack level edits it, as a double click does. On a
+  phone the first tap opens the level's toolbar under the finger, so the
+  second tap opened the level's ⋯ menu instead.
+- With the keyboard up, an error banner can leave the stack only a sliver
+  (47 px on a turned phone, 28 at 280 px). Its top fade covered level 1
+  and greyed it out; a stack that short now has no fade or more-levels
+  pill, so level 1 stays clear.
 
 ---
 
