@@ -2280,6 +2280,23 @@ setAngle('RAD');
 
 {
   const acSrc = readFileSync(new URL('../www/src/ui/autocomplete.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const ends = [];
+  const el = { scrollTop: 0, clientHeight: 40, scrollHeight: 268, classList: { toggle: (c, on) => on && ends.push(c) } };
+  const markEnds = new Function(`return ${acSrc.match(/const markEnds = (\(el\) => \{[\s\S]*?\n\});/)[1]}`)();
+  markEnds(el);
+  const atTop = ends.join(' ');
+  ends.length = 0;
+  Object.assign(el, { scrollTop: 228 });
+  markEnds(el);
+  assert(atTop === 'more-b' && ends.join(' ') === 'more-t'
+    && /this\._fit\(\);\s*markEnds\(this\.el\);/.test(acSrc) && /this\.el\.addEventListener\('scroll', \(\) => markEnds\(this\.el\), \{ passive: true \}\);/.test(acSrc)
+    && /\.ac::before, \.ac::after \{ content: ''; position: sticky;/.test(css) && /\.ac\.more-t::before, \.ac\.more-b::after \{ opacity: 1; \}/.test(css),
+    'autocomplete: a list the keyboard caps fades at the edge it continues past, as the key strip and levels do, so the one row left in landscape shows there are more');
+}
+
+{
+  const acSrc = readFileSync(new URL('../www/src/ui/autocomplete.js', import.meta.url), 'utf8');
   assert(/const banner = globalThis\.document\?\.getElementById\('banner'\)\?\.offsetHeight;\s*this\.el\.style\.bottom = banner \? `calc\(100% - 2px \+ \$\{banner\}px\)` : '';/.test(acSrc),
     'autocomplete: with a program\'s banner above the line the list sits above it, so INPUT\'s question and PROMPT\'s keys stay in view');
   assert(/const sig = info\?\.signature \?\? row\.group \?\? '';/.test(acSrc) && /\$\{sig \? '' : ' nosig'\}/.test(acSrc)

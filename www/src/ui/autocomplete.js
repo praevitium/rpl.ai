@@ -22,6 +22,11 @@ export function wordBeforeCursor(text, cursor) {
 }
 
 const firstLetter = (name) => name.match(/[A-Z]/i)?.[0].toUpperCase();
+// A list the keyboard caps fades at the edge it continues past, so the one row left in landscape shows there are more.
+const markEnds = (el) => {
+  el.classList.toggle('more-t', el.scrollTop > 1);
+  el.classList.toggle('more-b', el.scrollTop + el.clientHeight < el.scrollHeight - 1);
+};
 
 // One letter matches a name's first letter, so N offers →NUM after NEG; two or more match anywhere.
 function completionScore(word, name) {
@@ -110,6 +115,7 @@ export class Autocomplete {
       if (row) this.accept(Number(row.dataset.i));
     });
     this._bindHold();
+    this.el.addEventListener('scroll', () => markEnds(this.el), { passive: true });
     cmdline.addEventListener('keydown', (e) => this._onKey(e), true);
     cmdline.addEventListener('focusout', () => this.close());
     document.addEventListener('pointerdown', (e) => { if (this.isOpen() && !e.target.closest?.('.ac, .keys, #cmdline')) this.close(); }, true);
@@ -165,6 +171,7 @@ export class Autocomplete {
     if (this.el.hidden) this.app.toasts?.dismiss('view');
     this.el.hidden = false;
     this._fit();
+    markEnds(this.el);
   }
 
   // The phone's keyboard can leave less room above the line than the rows take: the list then scrolls, the chosen
