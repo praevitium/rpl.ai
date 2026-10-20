@@ -357,7 +357,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   CONVERT on the one you tap; the level's soft keys have it as CONV). View is the HP
   interactive stack's VIEW, which shows the level full size (a long number
   in full, a long list wrapped to the screen, a formula or matrix that scrolls both ways; pinch or double-tap to zoom) with Edit, Copy and
-  Share under it, and `SCROLL` shows level 1 the same way from a program; on a screen under 320 px wide (360 for a formula, which
+  Share under it, and `SCROLL` shows level 1 the same way from a program; on a screen under 320 px wide (360 for a formula or a list of them, which
   adds Plot) it waits in ⋯; at any width it is on the first page of the level's soft keys, beside EDIT. ⋯ also has →LIST, DUPN, DRPN
   and KEEP for levels 1 to the one you tapped (DUPN and DRPN above level 1), and LEVEL to push its number (also on the level's soft keys). Swipe a level left or right to drop it; the
   toast's Undo brings it back. Share sends the value with a link; opening
@@ -613,7 +613,9 @@ from before it.
 fields, conics, truth plots, contour maps, wireframes, y-slices and
 parametric surfaces in perspective, grid maps of complex functions, scatter,
 bar and histogram plots; `PLOT` stores an expression in EQ and plots it,
-and `PLOTADD` adds another.
+and `PLOTADD` adds another. A list of formulas plots every one of them, as
+the HP draws each equation in a list in EQ: `` { `SIN(X)` `COS(X)` } FUNCTION ``,
+the Plot of a list level, and the plot view's + Level 1 all draw both.
 `` 2 -3 1.5 EYEPT `SIN(X*3)*COS(Y*3)` WIREFRAME `` shows the surface from
 that eye point inside VPAR's view volume, and `FAST3D` draws one you turn
 with a drag or the arrow keys, as the 50g's arrow keys turn it;

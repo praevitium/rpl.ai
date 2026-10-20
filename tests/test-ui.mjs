@@ -1990,12 +1990,22 @@ setAngle('RAD');
 
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/const plottable = \(value\) => isSymbolic\(value\) && !hasUnits\(value\.expr\);/.test(appSrc)
+  assert(/const plottableFormula = \(value\) => isSymbolic\(value\) && !hasUnits\(value\.expr\);/.test(appSrc)
     && /\$\{plottable\(value\) \? `<button type="button" data-row-act="plot"/.test(appSrc)
     && /plottable\(value\) \? item\('plot', 'plot', 'Plot it'\)/.test(appSrc)
     && /plottable\(value\)\s*\? \{ label: 'PLOT'/.test(appSrc)
     && !/isSymbolic\(value\) \? item\('plot'|isSymbolic\(value\) \? `<button type="button" data-row-act="plot"/.test(appSrc),
     'stack: a formula with units gets no Plot from its toolbar, ⋯ menu or soft keys, as in the equation writer, where Plot opened an empty plot');
+  const graphSrc = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
+  assert(/const plottable = \(value\) => plottableFormula\(value\) \|\| \(isList\(value\) && value\.items\.length > 0 && value\.items\.every\(plottableFormula\)\);/.test(appSrc)
+    && /case 'plot': this\.clearSelection\(\); this\.plotValue\(value\); return;/.test(appSrc)
+    && /const formulaList = \(v\) => \(isList\(v\) && v\.items\.length && v\.items\.every\(isFormula\) \? v\.items : null\);/.test(graphSrc)
+    && /const items = formulaList\(top\) \?\? \[top\];/.test(graphSrc)
+    && /built\.forEach\(\(b, i\) => this\._addTrace\(b, \{ fit: fit && i === last, draw: i === last, view: pparView\(\) \}\)\);/.test(graphSrc),
+    'stack: a list of formulas gets Plot too, and it and FUNCTION draw every formula in the list together, as the HP draws each equation in a list stored in EQ');
+  assert(/const specs = \(formulaList\(value\) \?\? \[value\]\)\.map\(\(v\) => stackValueToTrace\(v, this\._kind, below\)\);/.test(graphSrc)
+    && /specs\.forEach\(\(spec, i\) => this\._addTrace\(spec, \{ fit: i === last, draw: i === last \}\)\);/.test(graphSrc),
+    "plot: the drawer's + Level 1 plots each formula of a list on level 1, as Plot does, where it switched to Scatter and added an empty scatter trace");
 }
 
 {

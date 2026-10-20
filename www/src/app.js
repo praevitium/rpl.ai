@@ -93,7 +93,8 @@ function sigmaDataNote(data) {
 }
 
 // A formula with units has no real values to draw, so it is not offered a plot, as in the equation writer.
-const plottable = (value) => isSymbolic(value) && !hasUnits(value.expr);
+const plottableFormula = (value) => isSymbolic(value) && !hasUnits(value.expr);
+const plottable = (value) => plottableFormula(value) || (isList(value) && value.items.length > 0 && value.items.every(plottableFormula));
 
 const modulusNote = () => `The modular commands work modulo ${getCasModulo()}`;
 
@@ -862,7 +863,7 @@ class App {
       case 'egvl': runOn('EGVL'); return;
       case 'trn': runOn('TRN'); return;
       case 'convert': this._convertMenu(level, anchor); return;
-      case 'plot': this.clearSelection(); this.plotExpression(value.expr); return;
+      case 'plot': this.clearSelection(); this.plotValue(value); return;
       case 'copy': {
         const table = spreadsheetHtml(value);
         this.copyText(formatSource(value), table ? `Copied level ${level}. It pastes into a spreadsheet as cells.` : `Copied level ${level}`, table);
@@ -1140,8 +1141,12 @@ class App {
   }
 
   plotExpression(ast) {
+    this.plotValue(Symbolic(ast));
+  }
+
+  plotValue(value) {
     const scratch = new Stack();
-    scratch.push(Symbolic(ast));
+    scratch.push(value);
     this.drawers.openGraph('function', scratch);
   }
 

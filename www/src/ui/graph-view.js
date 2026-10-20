@@ -116,6 +116,9 @@ function thetaRange() {
 }
 
 const isData = (v) => isMatrix(v) || isVector(v) || isList(v);
+const isFormula = (v) => isSymbolic(v) || isName(v);
+// A list of expressions plots each one, as the HP draws every equation in a list stored in EQ.
+const formulaList = (v) => (isList(v) && v.items.length && v.items.every(isFormula) ? v.items : null);
 
 function makeTrace(partial = {}) {
   const id = partial.id || `t${++_traceSeq}`;
@@ -490,11 +493,14 @@ export class GraphView {
       this.loadData(kind, data);
       return;
     }
-    const built = isSymbolic(top) || isName(top) ? stackValueToTrace(top, kind, this._below(kind, stack)) : null;
-    if (!built) { this._fail(`${kind.toUpperCase()} needs an expression on level 1`); return; }
-    const err = traceInputError(kind, built, { adding: true });
+    const items = formulaList(top) ?? [top];
+    const built = items.map((v) => (isFormula(v) ? stackValueToTrace(v, kind, this._below(kind, stack)) : null));
+    if (built.includes(null)) { this._fail(`${kind.toUpperCase()} needs an expression, or a list of them, on level 1`); return; }
+    const err = built.map((b) => traceInputError(kind, b, { adding: true })).find(Boolean);
     if (err) { this._fail(err); return; }
-    this._addTrace(built, { fit: !!spec.fitOnAdd, view: pparView() });
+    const fit = !!spec.fitOnAdd || !this.traces.length;
+    const last = built.length - 1;
+    built.forEach((b, i) => this._addTrace(b, { fit: fit && i === last, draw: i === last, view: pparView() }));
   }
 
   // DIFFEQ's initial value is DEPND's once PPAR gives one, as on the HP, else level 2's.
@@ -509,12 +515,14 @@ export class GraphView {
     if (!stack.depth) { this._fail('the stack is empty'); return; }
     if (level > stack.depth) return;
     const below = stack.depth > level ? stack.peek(level + 1) : null;
-    const spec = stackValueToTrace(stack.peek(level), this._kind, below);
-    if (!spec) { this._fail(`level ${level} is not an expression or data`); return; }
-    const err = traceInputError(spec.kind, spec, { adding: true });
+    const value = stack.peek(level);
+    const specs = (formulaList(value) ?? [value]).map((v) => stackValueToTrace(v, this._kind, below));
+    if (specs.includes(null)) { this._fail(`level ${level} is not an expression or data`); return; }
+    const err = specs.map((spec) => traceInputError(spec.kind, spec, { adding: true })).find(Boolean);
     if (err) { this._fail(err); return; }
-    this.setKind(spec.kind);
-    this._addTrace(spec, { fit: true });
+    this.setKind(specs[0].kind);
+    const last = specs.length - 1;
+    specs.forEach((spec, i) => this._addTrace(spec, { fit: i === last, draw: i === last }));
     this._readout.textContent = `Added level ${level}`;
   }
 
