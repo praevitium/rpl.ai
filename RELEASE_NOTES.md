@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.92 (2026-10-20)
+**Latest release:** v0.7.93 (2026-10-20)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.93 — 2026-10-20
+
+- Letters typed on the keypad bring up the completion list, as a keyboard's
+  do; the list never showed for them, since a keypad key leaves the command
+  line unfocused. A tap outside the list closes it.
+- A finger held on a command in the completion list opens its reference, as
+  the → key does from a keyboard.
+- On a touch screen the completion list's footer, shown on a landscape
+  phone, speaks of taps and holds instead of Tab, the arrows and Esc.
 
 ## v0.7.92 — 2026-10-20
 

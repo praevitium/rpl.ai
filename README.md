@@ -315,6 +315,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   it and runs at once. Inside a quote, string, program, list or unit they
   type. While the keypad shows, it does the typing and the phone's
   keyboard stays down; hide the keypad to type with the phone's keyboard.
+  Letters typed on either bring up the completion list: tap a name to
+  finish it, or hold a finger on a command to read its reference.
   For more of the stack, choose Compact keypad from the ⋯ menu (or Keypad
   in Settings): five rows of the keys an RPN session reaches for most,
   with SWAP, DROP and UNDO beside the digits, SIN, COS and TAN on the
