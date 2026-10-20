@@ -2773,3 +2773,9 @@ setAngle('RAD');
   assert(/\{ label: 'EDIT', [^\n]*\n\s*\{ label: 'VIEW', /.test(appSrc),
     "level soft keys: a selected level's soft keys put VIEW on the first page beside EDIT, as the HP's interactive stack has it, where it sat on the second page, two taps away under 320 px");
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/case 'edit-line': if \(!this\.entry\.buffer\.trim\(\) && this\.entry\.errorLine\) this\.entry\.recall\(this\.entry\.errorLine, this\.entry\.errorSpot\);/.test(appSrc),
+    'Fix the line: the line comes back with the cursor at the command that failed, where it went to the end of a long line typed on a phone');
+}

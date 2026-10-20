@@ -109,6 +109,20 @@ import { assert, assertThrows } from './helpers.mjs';
     line('5 6 + 7 "x" - 8');
     assert(s.depth === 7 && format(s.peek(1)) === '"x"' && format(s.peek(3)) === '11' && e.errorLine === '5 6 + 7 "x" - 8',
       'a line failing at -: what ran before stays, - gets its arguments back and 8 never runs');
+    const bare = (text) => { s.restore([]); e.buffer = text; e.enter(); };
+    bare('1 DROP DROP 2 3');
+    assert(e.errorSpot === 7 && e.errorLine.slice(e.errorSpot) === 'DROP 2 3',
+      'a line failing at its second DROP keeps where that DROP starts for Fix the line');
+    bare('{ DROP } "a DROP" « DROP » 1 @ DROP\n drop DROP DROP DROP DROP DROP');
+    assert(e.errorLine.slice(e.errorSpot) === 'DROP DROP',
+      'the failing DROP is found past DROPs inside a list, a string, a program and a comment, and typed in lower case');
+    e.recall(e.errorLine, e.errorSpot);
+    assert(e.cursor === e.errorSpot && e.errorSpot === e.errorLine.lastIndexOf('DROP DROP') && e.buffer === e.errorLine, 'recall with a spot puts the cursor there');
+    e.resetBuffer('');
+    line('5 6 + 7 "x" - 8');
+    assert(e.errorLine.slice(e.errorSpot) === '- 8', 'a type error keeps where the failing - starts');
+    line('1 IF THEN CLEAR DROP END');
+    assert(e.errorSpot === -1, 'a program line has no spot, so Fix the line leaves the cursor at the end');
     line('DROP DROP DROP DROP DROP');
     assert(s.depth === 0 && e.stack.hasUndo(), 'four DROPs run before the fifth fails; Undo still has the stack from before the line');
     e.performUndo();

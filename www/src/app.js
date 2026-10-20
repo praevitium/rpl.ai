@@ -534,7 +534,7 @@ class App {
       case 'swap': this.dismissError(); this.swapTop(); return;
       case 'help': this.drawers.showReference(arg ?? desc?.command); return;
       case 'explain': this._explainError(message); return;
-      case 'edit-line': if (!this.entry.buffer.trim() && this.entry.errorLine) this.entry.recall(this.entry.errorLine); else this.entry.focus(); return;
+      case 'edit-line': if (!this.entry.buffer.trim() && this.entry.errorLine) this.entry.recall(this.entry.errorLine, this.entry.errorSpot); else this.entry.focus(); return;
       case 'vars': this.drawers.open('vars'); return;
       case 'stosigma': this.dismissError(); this.entry.execOp('STOΣ', desc.command); return;
       case 'formula': this.dismissError(); this.entry.recall(`'${arg}' EVAL`); this.commitEntry(); return;

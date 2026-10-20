@@ -29,6 +29,41 @@ export function errorSpot(line, message) {
   return -1;
 }
 
+// The line with brackets, strings, quotes and comments blanked, leaving the words that run on their own.
+function topLevelText(line) {
+  let depth = 0, until = null, out = '';
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i], pair = (c === '<' || c === '>') && line[i + 1] === c;
+    const top = !until && depth === 0;
+    if (until) { if (c === until || (until === '\n' && c === '\r')) until = null; }
+    else if (c === '"' || c === "'" || c === '`') until = c;
+    else if (c === '@' && !/\S/.test(line[i - 1] ?? ' ')) until = '\n';
+    else if ('«{[('.includes(c) || (pair && c === '<')) depth++;
+    else if ('»}])'.includes(c) || (pair && c === '>')) depth = Math.max(0, depth - 1);
+    const keep = top && !until && depth === 0;
+    out += keep ? c : ' ';
+    if (pair && !keep) { out += ' '; i++; }
+  }
+  return out;
+}
+
+// Where the line's nth top-level word naming id starts, so Fix the line lands on the command that failed.
+export function commandSpot(line, id, nth = 0) {
+  for (const word of topLevelText(line).matchAll(/[^\s,]+/g)) {
+    let value;
+    try { [value] = parseTyped(word[0]); } catch { continue; }
+    if (value?.type === 'name' && !value.quoted && value.id === id && nth-- === 0) return word.index;
+  }
+  return -1;
+}
+
+function failedSpot(line, values, failed) {
+  const name = values[failed];
+  if (name?.type !== 'name' || name.quoted) return -1;
+  const before = values.slice(0, failed).filter((v) => v?.type === 'name' && !v.quoted && v.id === name.id).length;
+  return commandSpot(line, name.id, before);
+}
+
 function errorText(e) {
   return e && typeof e === 'object' && e.message != null ? String(e.message) : String(e);
 }
@@ -83,6 +118,7 @@ export class Entry {
     this._view = null;
     this.error = '';
     this.errorLine = '';
+    this.errorSpot = -1;
     this._listeners = new Set();
     this._historyListeners = new Set();
     this._history = [];
@@ -390,8 +426,9 @@ export class Entry {
     this._history.length = 0;
   }
 
-  recall(text) {
+  recall(text, at = -1) {
     this.resetBuffer(text);
+    if (at >= 0) this.cursor = at;
     this.error = '';
     this._emit();
     this.focus();
@@ -613,17 +650,19 @@ export class Entry {
       if (at >= 0) this.cursor = at;
       throw e;
     }
+    let failed = -1;
     try {
       if (isProgramLine(values)) this.stack.runOp(() => runProgramLine(this.stack, values));
       else this.stack.holdEmit(() => {
         for (const v of values) {
+          failed++;
           if (v?.type === 'name' && !v.quoted && lookup(v.id)) this._runOpTagged(v.id);
           else if (v?.type === 'name' && !v.quoted) { this.stack.push(v); this._runOpTagged('EVAL', v.id); }
           else this.stack.push(v);
         }
       });
     } catch (e) {
-      if (e instanceof Error && !(e instanceof RPLAbort)) e.line = raw;
+      if (e instanceof Error && !(e instanceof RPLAbort)) { e.line = raw; e.spot = failedSpot(raw, values, failed); }
       throw e;
     } finally {
       this._clearCommittedBuffer(raw);
@@ -651,6 +690,7 @@ export class Entry {
   flashError(e) {
     this.error = errorText(e);
     this.errorLine = e?.line ?? '';
+    this.errorSpot = e?.spot ?? -1;
     this._recordError(this.error);
     this.notice = '';
     clearTimeout(this._noticeTimer);
