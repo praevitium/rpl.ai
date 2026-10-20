@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.95 (2026-10-20)
+**Latest release:** v0.7.96 (2026-10-20)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.96 — 2026-10-20
+
+- In landscape with the keyboard up, editing a long program no longer
+  pushes the key strip off the bottom of the screen: the command line keeps
+  to two lines, the rest scrolling inside it, and minimal view trims its
+  padding, so level 1 stays in view above it.
+- A FOR loop's counter is offered first in the completion list while you
+  type the loop's body, as a local variable, as the names a `→` binds are:
+  in `1 5 FOR k k`, the list leads with k.
+- A completion list the keyboard cuts down to a row or two fades at the
+  edge it continues past, as the key strip and stack levels do, so it shows
+  there are more rows to scroll to.
 
 ## v0.7.95 — 2026-10-20
 

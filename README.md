@@ -319,7 +319,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   finish it, or hold a finger on a command to read its reference, whose
   Insert replaces the letters typed. After a number's `_` it lists units:
   `9.8_k` offers km, kg, kN and the rest. Inside a program the names a `→`
-  binds come first: `« → rate time « r` offers rate.
+  or a `FOR` binds come first: `« → rate time « r` offers rate. Where the
+  keyboard leaves room for only a row or two, the list fades at the edge
+  that has more.
   For more of the stack, choose Compact keypad from the ⋯ menu (or Keypad
   in Settings): five rows of the keys an RPN session reaches for most,
   with SWAP, DROP and UNDO beside the digits, SIN, COS and TAN on the
@@ -453,7 +455,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - In landscape, where the keyboard leaves little room, the app bar, tabs,
   hints and soft keys also step aside while you type, and the writers' keys
   move beside the formula or matrix, so level 1 and the whole writer stay in
-  view; a narrow screen keeps them under it. With the keyboard up an error
+  view; a narrow screen keeps them under it. The command line keeps to two
+  lines there, a long or edited program scrolling inside it, so the key
+  strip stays on screen. With the keyboard up an error
   keeps to its title and fixes (the explanation comes back with the
   keyboard down), on one row in landscape, so the command line stays in
   view. Typing in a drawer on a short screen hides its tabs and the
