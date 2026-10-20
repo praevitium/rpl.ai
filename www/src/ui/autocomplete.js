@@ -9,6 +9,7 @@ const MAX_ROWS = 6;
 const AC_MARGIN = 6;
 const WORD_BREAK = /[\s{}[\]()"'`«»,+\-*/^=<>|]/;
 const CLOSES_A_WORD = /^[\s)\]}»`']/;
+const onTouch = () => globalThis.matchMedia?.('(pointer: coarse)').matches === true;
 
 export function wordBeforeCursor(text, cursor) {
   const before = String(text ?? '').slice(0, cursor);
@@ -110,7 +111,9 @@ export class Autocomplete {
         : info ? shortDescription(info.entry, 90) : '';
       return `<div class="ac-row${i === this.index ? ' on' : ''}" role="option" aria-selected="${i === this.index}" data-i="${i}"><b>${label}</b><span>${escapeHtml(detail)}</span><em>${escapeHtml(info?.signature ?? '')}</em></div>`;
     }).join('');
-    this.el.innerHTML = `${rowsHtml}<div class="ac-foot"><span>Tab completes · ↑↓ choose · → reference</span><span>Esc closes</span></div>`;
+    const foot = onTouch() ? '<span>Tap completes · hold for the reference</span><span>Tap elsewhere closes</span>'
+      : '<span>Tab completes · ↑↓ choose · → reference</span><span>Esc closes</span>';
+    this.el.innerHTML = `${rowsHtml}<div class="ac-foot">${foot}</div>`;
     if (this.el.hidden) this.app.toasts?.dismiss('view');
     this.el.hidden = false;
     this._fit();
