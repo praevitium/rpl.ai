@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.82 (2026-10-20)
+**Latest release:** v0.7.83 (2026-10-20)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.83 — 2026-10-20
+
+- →ROW and →COL take a vector apart into its elements and a count, and
+  ROW→ and COL→ put numbers and a count back into a vector, as the AUR's
+  second forms do: `[ 1 2 3 ] →ROW` gives 1 2 3 3, and `1 2 3 3 COL→`
+  gives `[ 1 2 3 ]`. Both said Bad argument type.
 
 ## v0.7.82 — 2026-10-20
 
