@@ -498,6 +498,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .bn-d { grid-column: 2; font-size: 12.5px; color: var(--ink2); line-height: 1.45; }
 .bn-f { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .bn-x { grid-row: 1; grid-column: 3; }
+/* On a narrow phone the fixes start under the icon, so a banner of five takes two or three rows rather than four. */
+@container app (max-width: 359px) { .bn-f { grid-column: 1 / -1; } }
 .bn-prog { grid-column: 2 / -1; font: 12.5px/1.5 var(--font-mono); background: var(--well); color: var(--stack-ink); border-radius: 8px; padding: 6px 8px; border: 1px solid var(--line); overflow-x: auto; white-space: nowrap; }
 .bn-prog mark { background: var(--amber-dim); color: var(--amber); border-radius: 3px; padding: 0 2px; }
 @keyframes bn-in { from { opacity: 0; transform: translateY(6px); } }

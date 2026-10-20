@@ -2786,3 +2786,9 @@ setAngle('RAD');
   assert(/case 'edit-line': if \(!this\.entry\.buffer\.trim\(\) && this\.entry\.errorLine\) this\.entry\.recall\(this\.entry\.errorLine, this\.entry\.errorSpot\);/.test(appSrc),
     'Fix the line: the line comes back with the cursor at the command that failed, where it went to the end of a long line typed on a phone');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/\.bn-f \{ grid-column: 2 \/ -1;[^}]*\}[\s\S]*?@container app \(max-width: 359px\) \{ \.bn-f \{ grid-column: 1 \/ -1; \} \}/.test(css),
+    'errors: under 360 px a banner\'s fixes start under its icon, so five fixes take three rows at 280 px rather than four, leaving the stack 166 px where it had 120');
+}
