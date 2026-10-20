@@ -116,10 +116,22 @@ export function localNames(text) {
 
 // After a number's _, the UNITS menu's units with their group: 9.8_m offers m, mm, mi, mph… Inside an algebraic a unit
 // runs to the next operator, so there only plain units are offered: m^2 or m/s would need parentheses.
+// A phone keyboard has no μ, Å, Ω or °, so a unit holding one is found spelled out: um gives μm, kohm kΩ, degC °C.
+const UNIT_GLYPHS = Object.freeze({ 'μ': ['u', 'micro'], 'Å': ['angstrom', 'Angstrom'], 'Ω': ['ohm', 'Ohm'], '°': ['deg', 'Deg'] });
+
+function unitSpellings(name) {
+  return [...name].reduce((forms, ch) => forms.flatMap((f) => (UNIT_GLYPHS[ch] ?? [ch]).map((s) => f + s)), ['']);
+}
+
+function spelledUnitScore(word, name) {
+  if (![...name].some((ch) => UNIT_GLYPHS[ch])) return 0;
+  return Math.max(...unitSpellings(name).map((s) => (s === word ? 1400 : word.length >= 2 && s.startsWith(word) ? 900 - s.length : 0)));
+}
+
 export function unitCompletions(word, { plain = false } = {}) {
   const seen = new Set();
-  const score = (name) => (name.startsWith(word) ? 1500 - name.length
-    : name.toUpperCase().startsWith(word.toUpperCase()) ? 1000 - name.length : 0);
+  const score = (name) => Math.max(name.startsWith(word) ? 1500 - name.length
+    : name.toUpperCase().startsWith(word.toUpperCase()) ? 1000 - name.length : 0, spelledUnitScore(word, name));
   return UNIT_GROUPS.flatMap((g) => g.units.map((name) => ({ name, kind: 'unit', group: g.title })))
     .filter((row) => !(plain && /[*/^]/.test(row.name)) && !seen.has(row.name) && seen.add(row.name))
     .map((row) => ({ ...row, score: score(row.name) }))

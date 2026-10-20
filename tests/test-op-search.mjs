@@ -330,6 +330,12 @@ import { assert } from './helpers.mjs';
     'unitCompletions: the UNITS menu\'s units starting with what follows _, shortest first, each with its group');
   assert(unitCompletions('ft').some((r) => r.name === 'ft/s') && !unitCompletions('ft', { plain: true }).some((r) => /[*/^]/.test(r.name)),
     'unitCompletions: inside an algebraic only plain units, since 5_ft/s there would divide by s');
+  {
+    const first = (w) => unitCompletions(w)[0]?.name;
+    assert(first('ohm') === 'Ω' && first('kohm') === 'kΩ' && first('Mohm') === 'MΩ' && first('degC') === '°C' && first('um') === 'μm'
+      && first('uF') === 'μF' && first('angstrom') === 'Å' && !unitCompletions('mohm').length,
+      'unitCompletions: a unit holding μ, Å, Ω or ° is found spelled out, ohm giving Ω and degC °C, where those offered nothing, and mohm finds no MΩ');
+  }
   assert(localNames('« → a b « a b + » ').join(' ') === 'a b' && localNames("« -> X Y 'X+Y' ").join(' ') === 'X Y'
     && localNames('→ a1 a2 « ').join(' ') === 'a1 a2' && localNames('« → ←tot n « ').join(' ') === '←tot n' && localNames('2 3 + ').length === 0,
     'localNames: the names a → binds, up to the program or algebraic that uses them');
