@@ -149,7 +149,7 @@ export class Sheets {
     const pad = MOVES.map((m) => (m
       ? `<button type="button" class="btn mh-k" data-sh="mh-step" data-dr="${m[0]}" data-dc="${m[1]}" aria-label="${m[3]}"${g.over ? ' disabled' : ''}>${m[2]}</button>`
       : `<b class="mh-n" aria-hidden="true">${g.over ? '' : near}</b>`)).join('');
-    return `<p class="mh-status" role="status">${status}</p><div class="mh-grid" tabindex="0" aria-label="Battlefield, 8 rows by 16 columns">${cells}</div><div class="mh-pad">${pad}</div>`;
+    return `<p class="mh-status" role="status">${status}</p><div class="mh-board"><div class="mh-grid" tabindex="0" aria-label="Battlefield, 8 rows by 16 columns">${cells}</div><div class="mh-pad">${pad}</div></div>`;
   }
 
   _gameStep(dr, dc) {

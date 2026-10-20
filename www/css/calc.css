@@ -814,6 +814,14 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .mh-pad { display: grid; grid-template-columns: repeat(3, 52px); gap: 6px; justify-content: center; margin-top: 14px; }
 .mh-pad .btn { justify-content: center; min-height: 44px; font-size: 18px; }
 .mh-n { display: grid; place-items: center; font: 600 20px var(--font-mono); color: var(--ink); }
+/* A short, wide sheet (a phone in landscape) puts the pad beside the field, which shrinks to the height left (16 by 8
+   square cells with 2 px gaps are twice as wide as tall, plus 2 px) but never below the pad's 144 px. */
+@container sheet (orientation: landscape) and (max-height: 600px) {
+  .sheet-c:has(> .mh-board) { display: flex; flex-direction: column; padding-block: 8px; }
+  .mh-board { flex: 1 0 144px; container-type: size; display: flex; align-items: center; justify-content: center; gap: 16px; }
+  .mh-board .mh-grid { flex: none; width: min(520px, calc(100cqw - 184px), calc(200cqh + 2px)); margin: 0; }
+  .mh-board .mh-pad { margin-top: 0; }
+}
 /* A sheet too short for a header, a field and the footer (landscape with the keyboard up) keeps its fields: Enter is OK. */
 @container sheet (max-height: 219px) { .sheet-f { display: none; } }
 /* INFORM's form: a label over each field, the fields in the form's columns on a wide screen and in one on a phone. */
@@ -851,6 +859,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   .sheet-wrap { padding: 0; }
   .sheet { border-radius: 0; height: 100%; }
   .sheet-b { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+  .sheet-b.single { grid-template-rows: minmax(0, 1fr); }
   .sheet-nav { border-right: 0; border-bottom: 1px solid var(--line); display: flex; overflow-x: auto; scrollbar-width: none; }
   .sheet-nav button { flex: none; }
 }
