@@ -1963,6 +1963,13 @@ setAngle('RAD');
 }
 
 {
+  const mxSrc = readFileSync(new URL('../www/src/ui/matrix-editor.js', import.meta.url), 'utf8');
+  assert(/\{ label: 'FROM1'[^\n]+\n\s*\{ label: '→STK', title: 'Copy the focused cell to the stack', onPress: \(\) => this\.cellToStack\(\) \},/.test(mxSrc)
+    && /cellToStack\(\) \{[\s\S]*?value = parseMatrixCell\(this\.grid\[r\]\[c\]\);[\s\S]*?this\.app\.pushFromWriter\(value,/.test(mxSrc),
+    'matrix writer: →STK copies the focused cell to the stack and leaves the writer open, as the HP MatrixWriter\'s →STK does');
+}
+
+{
   const eqwSrc = readFileSync(new URL('../www/src/ui/equation-editor.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/this\.strip\.addEventListener\('scroll', \(\) => markScrollEdges\(this\.strip\), \{ passive: true \}\);\s*new ResizeObserver\(\(\) => markScrollEdges\(this\.strip\)\)\.observe\(this\.strip\);/.test(eqwSrc)

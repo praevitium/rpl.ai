@@ -511,9 +511,20 @@ export class MatrixEditor {
       { label: '←WID', title: 'Make the cells narrower', onPress: () => this.widen(-1) },
       { label: 'WID→', title: 'Make the cells wider, so long numbers show in full', onPress: () => this.widen(1) },
       { label: 'FROM1', title: 'Copy level 1 into the grid; Enter then pushes a new one', onPress: run(() => this.loadFromStack()) },
+      { label: '→STK', title: 'Copy the focused cell to the stack', onPress: () => this.cellToStack() },
       { label: 'CLEAR', title: 'Empty every cell', onPress: run(() => { this.fill(emptyGrid); this._focusCell(0, 0); }) },
       ...SYMBOLS.map((s) => ({ label: s.text, title: `${s.title} in the focused cell`, onPress: () => this.insertSymbol(s.text) })),
     ];
+  }
+
+  // The HP MatrixWriter's →STK: the focused cell's value goes to level 1 and the writer stays open.
+  cellToStack() {
+    const [r, c] = this._activeCell();
+    const where = `Row ${r + 1}, column ${c + 1}`;
+    let value;
+    try { value = parseMatrixCell(this.grid[r][c]); }
+    catch { this.app.notifyError(`${where} isn't a number or an expression.`); return; }
+    this.app.pushFromWriter(value, `Copied ${where.toLowerCase()} to the stack`);
   }
 
   widen(step) {
