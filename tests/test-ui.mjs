@@ -2139,7 +2139,14 @@ setAngle('RAD');
 
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  const short = css.slice(css.indexOf('@media (max-height: 300px) {\n  :root[data-keyboard] .input-top'));
+  assert(css.includes('@media (max-height: 330px) {\n  :root[data-keyboard] .input-top, :root[data-keyboard] .input-hint,')
+    && !css.includes('@media (max-height: 300px)'),
+    'keyboard up: a 360 by 640 phone with its keyboard up (310 px) takes the short-screen rules, where an error banner left the stack 10 px and the soft keys ran off the bottom');
+}
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const short = css.slice(css.indexOf('@media (max-height: 330px) {\n  :root[data-keyboard] .input-top'));
   assert(/:root:is\(\[data-keyboard\], \[data-short\]\) \.bn:not\(\.halt\) \{ grid-template-columns: minmax\(0, 1fr\) auto; align-items: center; padding-block: 6px; \}/.test(css)
     && /:root:is\(\[data-keyboard\], \[data-short\]\) \.bn:not\(\.halt\) :is\(\.bn-ico, \.bn-d\) \{ display: none; \}/.test(css)
     && /:root:is\(\[data-keyboard\], \[data-short\]\) \.bn:not\(\.halt\) \.bn-f \{ grid-column: 1 \/ -1; flex-wrap: nowrap; overflow-x: auto;/.test(css)
@@ -2173,7 +2180,7 @@ setAngle('RAD');
 
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  const short = css.slice(css.indexOf('@media (max-height: 300px) {\n  :root[data-keyboard] .input-top'));
+  const short = css.slice(css.indexOf('@media (max-height: 330px) {\n  :root[data-keyboard] .input-top'));
   assert(/@container app \(min-width: 480px\) \{\s*:root\[data-keyboard\] \.mx, :root\[data-keyboard\] \.eqw \{ grid-template-columns: 1fr auto; align-items: end; \}\s*:root\[data-keyboard\] \.writer-keys \.cmdline-go \{ flex: none; width: 40px; \}/.test(short)
     && !/\n  :root\[data-keyboard\] \.mx, :root\[data-keyboard\] \.eqw \{ grid-template-columns/.test(short),
     'writers, keyboard up: their keys sit beside the formula or matrix only on a short screen at least 480 px wide; a 280 px phone with 270 px left keeps them under it (beside it, the matrix ran off the left edge and the equation writer\'s keys off the right)');
@@ -2181,7 +2188,7 @@ setAngle('RAD');
 
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  const short = css.slice(css.indexOf('@media (max-height: 300px) {\n  :root[data-keyboard] .input-top'));
+  const short = css.slice(css.indexOf('@media (max-height: 330px) {\n  :root[data-keyboard] .input-top'));
   assert(/:root\[data-keyboard\] \.status-line, :root\[data-keyboard\] \.appbar, :root\[data-keyboard\] \.menubar/.test(short)
     && /:root\[data-keyboard\] \.app \{ grid-template-rows: minmax\(0, 1fr\); \}/.test(short),
     'keyboard up on a short screen: the app bar steps aside while you type, as minimal view\'s status line does, so a landscape phone with the keypad hidden shows level 1 whole above the line (it had 10 px of stack) and a 568 by 120 view keeps the key strip on screen');
@@ -2189,7 +2196,7 @@ setAngle('RAD');
 
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  const short = css.slice(css.indexOf('@media (max-height: 300px) {\n  :root[data-keyboard] .input-top'));
+  const short = css.slice(css.indexOf('@media (max-height: 330px) {\n  :root[data-keyboard] .input-top'));
   const landscape = short.slice(short.indexOf('@container app (min-width: 480px)'), short.indexOf('/* A halted program'));
   assert(/:root\[data-keyboard\] \.cmdline \.cm-scroller \{ max-height: 2lh; \}/.test(landscape)
     && /:root\[data-keyboard\]\[data-view="minimal"\] \.input \{ padding-block: 4px; \}/.test(landscape),
@@ -2198,7 +2205,7 @@ setAngle('RAD');
 
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  const short = css.slice(css.indexOf('@media (max-height: 300px) {\n  :root[data-keyboard] .input-top'));
+  const short = css.slice(css.indexOf('@media (max-height: 330px) {\n  :root[data-keyboard] .input-top'));
   assert(/\.ref \.acts \{ flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; position: sticky; bottom: 0;[^}]*background: var\(--panel\); \}/.test(short.slice(0, short.indexOf('\n}\n')))
     && /\n\.ref \.acts \{ display: flex; flex-wrap: wrap; gap: 6px; \}/.test(css),
     'reference, short window: Run and Insert keep to one row pinned at the foot of the drawer under 300 px tall, so a completion row held in landscape with the keyboard up shows Insert (it sat at 162 px of 160)');

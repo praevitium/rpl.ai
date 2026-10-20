@@ -2227,7 +2227,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 /* The assistant keeps its conversation in view the same way: the endpoint button and token counts wait for the keyboard to go. */
 :root[data-keyboard] .cb-switch-model-btn, :root[data-keyboard] .cb-stats { display: none; }
 /* A landscape phone with its keyboard up has about 190px left: while typing, only the stack, the line or writer and its keys stay. */
-@media (max-height: 300px) {
+@media (max-height: 330px) {
   :root[data-keyboard] .input-top, :root[data-keyboard] .input-hint,
   :root[data-keyboard] .mx-foot, :root[data-keyboard] .status-line, :root[data-keyboard] .appbar, :root[data-keyboard] .menubar, :root[data-keyboard] .st-more { display: none; }
   :root[data-keyboard] .app { grid-template-rows: minmax(0, 1fr); }
