@@ -803,3 +803,14 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(top('2898_nm 726.85_°C F0λ') === '0.250106293888', 'F0λ converts λ and T from their units');
   assertThrows(() => runLine('1_s 1000 F0λ'), /Inconsistent units/, 'F0λ wants a length');
 }
+
+// SIDENS: silicon's intrinsic carrier density, about 1E10 per cm³ at room temperature.
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top('300 SIDENS') === '9887307042.09', 'SIDENS at 300 K is about 1E10 per cm³');
+  assert(top('26.85_°C SIDENS') === '9887307042.09_1/cm^3', 'SIDENS converts the temperature and answers in 1/cm^3');
+  assert(top("'T' SIDENS") === '`SIDENS(T)`' && top("'SIDENS(300)' →NUM") === '9887307042.09', 'SIDENS of a name stays symbolic and evaluates later');
+  assert(top('0 SIDENS') === '0.', 'SIDENS at 0 K is 0');
+  assertThrows(() => runLine('1686 SIDENS'), /Bad argument value/, 'SIDENS stops at silicon\'s melting point, 1685 K');
+  assertThrows(() => runLine('300_m SIDENS'), /Inconsistent units/, 'SIDENS wants a temperature');
+}

@@ -1,10 +1,11 @@
-import { isName, isString, isUnit, Real, Unit } from '../types.js';
+import { isName, isString, isUnit, Real, Unit, Symbolic } from '../types.js';
+import { Fn as AstFn } from '../algebra.js';
 import { RPLError } from '../stack.js';
 import { testUserFlag, inScratchState, varRecall } from '../state.js';
 import { toBaseUexpr, sameDims, convertValue, divideUexpr, multiplyUexpr, parseUnitExpr } from '../units.js';
 import { register } from './registry.js';
 import { molarMass } from '../elements.js';
-import { _inUnit, _makeUnit, _numVal, _scalarBinary, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary } from './internal.js';
+import { _inUnit, _isSymOperand, _makeUnit, _numVal, _scalarBinary, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary } from './internal.js';
 
 
 
@@ -158,3 +159,24 @@ register('F0λ', (s) => {
   if (!(lambda > 0) || !(t > 0)) throw new RPLError('Bad argument value');
   s.push(Real(_blackBodyFraction(C2 / (lambda * t))));
 }, { category: 'Units', categoryOrder: 10, label: "F0λ" });
+
+// Silicon's intrinsic carrier density in 1/cm³, √(Nc·Nv)·(T/300)^1.5·e^(-Eg/2kT) with Sze's Nc 2.86E19 and Nv 2.66E19
+// at 300 K and Varshni's gap Eg = 1.17 - 4.73E-4·T²/(T+636) eV; the HP's own fit isn't published.
+const BOLTZMANN_EV = 8.617333262e-5;
+
+function _siliconDensity(t) {
+  if (!(t >= 0 && t <= 1685)) throw new RPLError('Bad argument value');
+  if (t === 0) return 0;
+  const gap = 1.17 - 4.73e-4 * t ** 2 / (t + 636);
+  return Math.sqrt(2.86e19 * 2.66e19) * (t / 300) ** 1.5 * Math.exp(-gap / (2 * BOLTZMANN_EV * t));
+}
+
+register('SIDENS', _withTaggedUnary(_withListUnary((s) => {
+  const [t] = s.popN(1);
+  if (_isSymOperand(t)) {
+    s.push(Symbolic(AstFn('SIDENS', [_toAst(t)])));
+    return;
+  }
+  const density = _siliconDensity(_inBase(t, [['K', 1]]));
+  s.push(isUnit(t) ? Unit(density, parseUnitExpr('cm^-3')) : Real(density));
+})), { category: 'Units', categoryOrder: 10.1, label: 'SIDENS' });
