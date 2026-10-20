@@ -2247,6 +2247,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
     :root[data-keyboard] .bn:not(.halt) .bn-x { grid-column: 3; }
   }
   :root[data-keyboard] .dw-head, :root[data-keyboard] .pal-row .d { display: none; }
+  /* A command's Run and Insert keep to one row at the foot of the drawer while the page above them runs past it. */
+  .ref .acts { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; position: sticky; bottom: 0; z-index: 1; margin-block: -6px; padding-block: 6px; background: var(--panel); }
   :root[data-keyboard] .pal-row { padding-block: 0; }
   :root[data-keyboard] .pal-row .t { grid-row: 1 / 3; }
 }

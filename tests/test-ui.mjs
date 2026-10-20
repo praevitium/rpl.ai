@@ -2186,6 +2186,14 @@ setAngle('RAD');
 }
 
 {
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const short = css.slice(css.indexOf('@media (max-height: 300px) {\n  :root[data-keyboard] .input-top'));
+  assert(/\.ref \.acts \{ flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; position: sticky; bottom: 0;[^}]*background: var\(--panel\); \}/.test(short.slice(0, short.indexOf('\n}\n')))
+    && /\n\.ref \.acts \{ display: flex; flex-wrap: wrap; gap: 6px; \}/.test(css),
+    'reference, short window: Run and Insert keep to one row pinned at the foot of the drawer under 300 px tall, so a completion row held in landscape with the keyboard up shows Insert (it sat at 162 px of 160)');
+}
+
+{
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/case 'sharen': \{\s*const text = Array\.from\(\{ length: level \}, \(_, i\) => formatSource\(this\.stack\.peek\(level - i\)\)\)\.join\('\\n'\);\s*this\.shareText\(text, shareLink\(text, location\.href\)\);/.test(appSrc)
     && /typeof navigator\.share === 'function' && level > 1 \? item\('sharen', 'share', `Share levels 1–\$\{level\}…`\) : ''/.test(appSrc),
