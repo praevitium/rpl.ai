@@ -9,7 +9,14 @@ import { _inUnit, _isSymOperand, _makeUnit, _numVal, _scalarBinary, _toAst, _wit
 
 
 
+// The AUR's function form: 'symb' UVAL is 'UVAL(symb)', worked out when EVAL reaches a unit.
+function _symbolicCall(name, s) {
+  const [v] = s.popN(1);
+  s.push(Symbolic(AstFn(name, [_toAst(v)])));
+}
+
 register('UVAL', _withTaggedUnary(_withListUnary((s) => {
+  if (_isSymOperand(s.peek(1))) return _symbolicCall('UVAL', s);
   const [u] = s.popN(1);
   if (!isUnit(u)) throw new RPLError('Bad argument type');
   s.push(Real(u.value));
@@ -17,6 +24,7 @@ register('UVAL', _withTaggedUnary(_withListUnary((s) => {
 
 
 register('UBASE', _withTaggedUnary(_withListUnary((s) => {
+  if (_isSymOperand(s.peek(1))) return _symbolicCall('UBASE', s);
   const [u] = s.popN(1);
   if (!isUnit(u)) throw new RPLError('Bad argument type');
   const { uexpr } = toBaseUexpr(u.uexpr);

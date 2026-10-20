@@ -653,6 +653,9 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(line(':a:5_km UBASE') === ':a:5000._m' && line(':a:5_km UVAL') === ':a:5.' && line('{ 5_km 2_mi } UBASE') === '{ 5000._m 3218.688_m }'
     && line('{ 5_km 2_mi } UVAL') === '{ 5. 2. }',
     'UBASE and UVAL are functions: they keep a tag and map over a list');
+  assert(line("'X*5_km' UBASE") === '`UBASE(X*5._km)`' && line("'X' UVAL") === '`UVAL(X)`'
+    && line("2 'X' STO 'X*5_km' UBASE EVAL 'X' PURGE") === '10000._m' && line("3 'X' STO 'X*5_km' UVAL EVAL 'X' PURGE") === '15.',
+    'AUR: UBASE and UVAL of an algebraic or a name give their function form, worked out when EVAL reaches a unit');
 }
 
 {
