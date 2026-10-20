@@ -1,5 +1,6 @@
 import { format, formatStackTop, DEFAULT_DISPLAY, withFractionMark } from '../rpl/formatter.js';
 import { astToSvg } from '../rpl/pretty.js';
+import { Var } from '../rpl/algebra.js';
 import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isBinaryInteger, isUnit, isString, isGrob, isName } from '../rpl/types.js';
 import { state as calcState, currentPath } from '../rpl/state.js';
 import { icon } from './icons.js';
@@ -702,8 +703,9 @@ export class Display {
 
   _renderTextbookList(val, svgSize = 22) {
     const items = val.items.map(item => {
-      if (isSymbolic(item)) {
-        const { svg } = astToSvg(item.expr, { size: svgSize });
+      const expr = isSymbolic(item) ? item.expr : isName(item) && !item.local ? Var(item.id) : null;
+      if (expr) {
+        const { svg } = astToSvg(expr, { size: svgSize });
         return `<span class="lcell lcell-sym">${svg}</span>`;
       }
       if (isList(item)) return `<span class="lcell">${this._renderTextbookList(item, svgSize)}</span>`;
