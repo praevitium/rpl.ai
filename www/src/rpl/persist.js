@@ -116,6 +116,7 @@ export function snapshot(stack) {
     standardKeys: state.standardKeys,
     headerLines: state.headerLines,
     keyTime: state.keyTime,
+    clockOffset: state.clockOffset,
   };
 }
 
@@ -240,6 +241,7 @@ export function rehydrate(snap, stack) {
   state.standardKeys = snap.standardKeys !== false;
   state.headerLines = [0, 1, 2].includes(snap.headerLines) ? snap.headerLines : 2;
   state.keyTime = Number.isInteger(snap.keyTime) && snap.keyTime >= 0 && snap.keyTime <= 4096 ? snap.keyTime : 1138;
+  state.clockOffset = Number.isFinite(snap.clockOffset) ? snap.clockOffset : 0;
 
   stack.restore(items);
   notify();

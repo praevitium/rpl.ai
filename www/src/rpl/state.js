@@ -61,6 +61,7 @@ export const state = {
   headerLines: 2,
   keyTime: 1138,
   programLines: 9,
+  clockOffset: 0,            // ms that →DATE, →TIME and CLKADJ put the calculator's clock from the device's
 };
 
 function _dispatchState() {
@@ -493,6 +494,8 @@ export function setHeaderLines(n) { state.headerLines = n; }
 export function getKeyTime() { return state.keyTime; }
 export function setKeyTime(n) { state.keyTime = n; }
 export function setProgramLines(n) { state.programLines = n; }
+export function getClockOffset() { return state.clockOffset; }
+export function setClockOffset(ms) { state.clockOffset = ms; _emit(); }
 
 export function resetRealMaxExp() {
   setRealMaxExp(REAL_MAX_EXP_DEFAULT);
@@ -945,7 +948,7 @@ const CAPTURED_SCALARS = [
   'angle', 'coordMode', 'displayMode', 'displayDigits', 'lastError',
   'wordsize', 'binaryBase', 'textbookMode', 'approxMode', 'complexMode',
   'lastFitModel', 'casVx', 'casModulo', 'realAssume', 'halted', 'promptMessage', 'prngSeed',
-  'realMaxExp', 'lcd', 'alarms', 'pict', 'userKeys', 'standardKeys', 'headerLines', 'keyTime', 'programLines',
+  'realMaxExp', 'lcd', 'alarms', 'pict', 'userKeys', 'standardKeys', 'headerLines', 'keyTime', 'programLines', 'clockOffset',
 ];
 
 export function captureCalcState() {

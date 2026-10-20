@@ -1,16 +1,18 @@
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
-import { isReal, isInteger, isList, isString, Real, BinaryInteger, Str, RList } from '../types.js';
+import { isReal, isInteger, isList, isString, isBinaryInteger, Real, BinaryInteger, Str, RList } from '../types.js';
 import { RPLError } from '../stack.js';
-import { testUserFlag, getBinaryBase, getAlarms, setAlarms } from '../state.js';
+import { testUserFlag, getBinaryBase, getAlarms, setAlarms, getClockOffset, setClockOffset } from '../state.js';
 import { register } from './registry.js';
 
 
-// The clock is the device's own, so →DATE, →TIME and CLKADJ stay out. As on the HP, flag -42 set reads and
+// The device's clock, moved by the offset →DATE, →TIME and CLKADJ keep. As on the HP, flag -42 set reads and
 // writes dates as DD.MMYYYY and flag -41 set gives TSTR a 24-hour time.
-let _now = () => Date.now();
+let _deviceNow = () => Date.now();
+const _now = () => _deviceNow() + getClockOffset();
+export const calculatorNow = () => _now();
 
 export function _setClock(fn) {
-  _now = typeof fn === 'function' ? fn : () => Date.now();
+  _deviceNow = typeof fn === 'function' ? fn : () => Date.now();
 }
 
 const DAY_MS = 86400000;
@@ -71,6 +73,41 @@ register('TIME', (s) => {
 register('TICKS', (s) => {
   s.push(BinaryInteger(BigInt(Math.round(_now() * 8.192)), getBinaryBase() || 'd'));
 }, { ...TIME, categoryOrder: 3, label: 'TICKS' });
+
+// →DATE, →TIME and CLKADJ move the calculator's clock, not the device's: the offset is kept with the calculator.
+const _shiftClock = (ms) => setClockOffset(getClockOffset() + Math.round(ms));
+
+// MM.DDYYYY, or DD.MMYYYY with flag -42; a date without its year keeps this one. 2000 to 2090, as on the HP.
+register('→DATE', (s) => {
+  const [v] = s.popN(1);
+  const [whole, frac] = digitsOf(v, 6);
+  const now = new Date(_now());
+  const [first, second, year] = [Number(whole), Number(frac.slice(0, 2)), Number(frac.slice(2, 6)) || now.getFullYear()];
+  const [month, day] = dayFirst() ? [second, first] : [first, second];
+  const target = new Date(now);
+  target.setFullYear(year, month - 1, day);
+  if (!(month >= 1 && month <= 12 && target.getDate() === day && year >= 2000 && year <= 2090)) throw new RPLError('Bad argument value');
+  _shiftClock(target - now);
+}, { ...TIME, categoryOrder: 3.1, label: '→DATE' });
+
+// HH.MMSSs, 24-hour, the s digits a fraction of a second.
+register('→TIME', (s) => {
+  const [v] = s.popN(1);
+  const [whole, frac] = digitsOf(v, 9);
+  const [h, m, sec] = [Number(whole), Number(frac.slice(0, 2)), Number(`${frac.slice(2, 4)}.${frac.slice(4)}`)];
+  if (h > 23 || m > 59 || sec >= 60) throw new RPLError('Bad argument value');
+  const now = new Date(_now());
+  const target = new Date(now);
+  target.setHours(h, m, 0, 0);
+  _shiftClock(target - now + sec * 1000);
+}, { ...TIME, categoryOrder: 3.2, label: '→TIME' });
+
+// x ticks of 1/8192 s, at most 1E12 either way.
+register('CLKADJ', (s) => {
+  const [v] = s.popN(1);
+  const ticks = isBinaryInteger(v) ? Number(v.value) : Number(number(v));
+  _shiftClock(Math.max(-1e12, Math.min(1e12, ticks)) * TICK_MS);
+}, { ...TIME, categoryOrder: 3.3, label: 'CLKADJ' });
 
 register('TSTR', (s) => {
   const [date, time] = s.popN(2).map((v) => (number(v), v));

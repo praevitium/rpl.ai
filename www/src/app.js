@@ -40,7 +40,7 @@ import {
 import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
 import { VERSION, DATE } from './build-info.js';
 import { beep, alarmBeep } from './ui/beep.js';
-import { pastDueAlarm, msToNextAlarm, acknowledgeOldest } from './rpl/ops/time.js';
+import { pastDueAlarm, msToNextAlarm, acknowledgeOldest, calculatorNow } from './rpl/ops/time.js';
 import { _hp50TypeCode } from './rpl/ops/internal.js';
 import { displayDigitsArg } from './rpl/ops/display.js';
 import { mesMenu } from './rpl/ops/root.js';
@@ -249,7 +249,7 @@ class App {
     this._alarmShown = id;
     this.renderStatus();
     if (!alarm) { this.toasts.dismiss('alarm'); return; }
-    const fresh = document.visibilityState === 'visible' && Date.now() - alarm.due < ALARM_FRESH_MS;
+    const fresh = document.visibilityState === 'visible' && calculatorNow() - alarm.due < ALARM_FRESH_MS;
     if (fresh && !quiet && !testUserFlag(-57)) {
       alarmBeep();
       navigator.vibrate?.([200, 100, 200, 100, 200]);

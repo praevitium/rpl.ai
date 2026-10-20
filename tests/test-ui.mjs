@@ -441,7 +441,7 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(KEY_LABELS.VANDERMONDE === 'VANDE' && MATRIX_GROUPS.find((g) => g.id === 'MAKE').commands.includes('VANDERMONDE'),
       'MAKE folder: VANDERMONDE shows the HP\'s face VANDE, where a 280 px phone broke it over three lines as VAND, ERMO and NDE');
     assert(/const wait = msToNextAlarm\(\);\s*if \(wait !== null\) this\._alarmTimer = setTimeout\(\(\) => this\._watchAlarms\(\), Math\.min\(wait \+ 20, ALARM_WAIT_MAX_MS\)\);/.test(appSrc)
-      && /const fresh = document\.visibilityState === 'visible' && Date\.now\(\) - alarm\.due < ALARM_FRESH_MS;\s*if \(fresh && !quiet && !testUserFlag\(-57\)\) \{\s*alarmBeep\(\);/.test(appSrc)
+      && /const fresh = document\.visibilityState === 'visible' && calculatorNow\(\) - alarm\.due < ALARM_FRESH_MS;\s*if \(fresh && !quiet && !testUserFlag\(-57\)\) \{\s*alarmBeep\(\);/.test(appSrc)
       && /action: 'ACK', onAction: acknowledgeOldest, key: 'alarm', timeout: Infinity, transient: true/.test(appSrc)
       && /this\._watchAlarms\(\);\s*document\.addEventListener\('visibilitychange', \(\) => this\._watchAlarms\(\)\);/.test(appSrc),
       'alarms come due while the app is open: a timer to the next one, a note with ACK, a buzz and tone unless flag -57 is set, and one missed while closed or hidden shown as past due');

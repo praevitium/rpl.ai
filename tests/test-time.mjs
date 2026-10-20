@@ -117,3 +117,32 @@ const pad = (n) => String(n).padStart(2, '0');
   runLine('0 DELALARM');
   _setClock(null);
 }
+
+// →DATE, →TIME and CLKADJ move the calculator's clock, by an offset saved with it, and DATE, TIME and alarms follow.
+{
+  const { setClockOffset, getClockOffset } = await import('../www/src/rpl/state.js');
+  const vals = (s) => s.snapshot().reverse().map((v) => Number(v.value)).join(' | ');
+  _setClock(() => new Date(2026, 9, 20, 14, 30, 0).getTime());
+  setClockOffset(0);
+  assert(vals(runLine('12.252030 →DATE DATE')) === '12.25203', '→DATE sets the date');
+  assert(vals(runLine('8.153045 →TIME TIME')) === '8.153045', '→TIME sets the time');
+  assert(vals(runLine('8192 CLKADJ TIME')) === '8.153145', 'CLKADJ moves the clock by ticks, 8192 a second');
+  const saved = JSON.parse(JSON.stringify(snapshot(new Stack())));
+  setClockOffset(0);
+  rehydrate(saved, new Stack());
+  assert(vals(runLine('DATE')) === '12.25203' && getClockOffset() !== 0, 'the clock offset is saved with the calculator');
+  setClockOffset(0);
+  assert(vals(runLine('7.04 →DATE DATE')) === '7.042026', '→DATE without a year keeps this one');
+  runLine('-42 SF');
+  assert(vals(runLine('28.07 →DATE DATE')) === '28.072026', '→DATE reads DD.MM with flag -42 set');
+  runLine('-42 CF');
+  assertThrows(() => runLine('1.011995 →DATE'), /Bad argument value/, '→DATE takes years 2000 to 2090');
+  assertThrows(() => runLine('2.30 →DATE'), /Bad argument value/, '→DATE refuses a day the month lacks');
+  assertThrows(() => runLine('24 →TIME'), /Bad argument value/, '→TIME takes a 24-hour time');
+  setClockOffset(0);
+  runLine('{ 10.202026 15 "Meeting" } STOALARM DROP 15 →TIME');
+  assert(pastDueAlarm()?.message === 'Meeting', 'an alarm comes due by the calculator\'s clock');
+  runLine('0 DELALARM');
+  setClockOffset(0);
+  _setClock(null);
+}

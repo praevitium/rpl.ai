@@ -4,7 +4,7 @@ import { ACTIONS, KEYMAP, CONTEXT_LABELS, chordText, isMacPlatform } from './act
 import { STORAGE_KEY as STACK_STORAGE_KEY, BACKUPS_KEY } from '../rpl/persist.js';
 import { UI_PREFS_KEY, THEMES, THEME_LABELS, STACK_SIZES, STACK_SIZE_LABELS, TUTOR_STYLES, KEYPAD_LAYOUTS, KEYPAD_LABELS, SIDES, SIDE_LABELS } from './ui-prefs.js';
 import { REMOTE_CONFIG_KEY as CHAT_REMOTE_KEY, CONSENT_KEY as CHAT_CONSENT_KEY } from '../ai/chat-bot.js';
-import { state as calcState, testUserFlag, setUserFlag, clearUserFlag } from '../rpl/state.js';
+import { state as calcState, testUserFlag, setUserFlag, clearUserFlag, setClockOffset } from '../rpl/state.js';
 import { VERSION, BUILD, SHA } from '../build-info.js';
 import { pickFile } from './drawer.js';
 
@@ -15,6 +15,17 @@ const VIEW_ZOOM_MAX = 4;
 
 export function clampViewZoom(zoom) {
   return Math.min(VIEW_ZOOM_MAX, Math.max(VIEW_ZOOM_MIN, zoom));
+}
+
+// The two largest parts of the calculator clock's distance from the device's, as "2 h 5 min ahead of the device clock".
+function clockOffsetText(ms) {
+  const parts = [];
+  let rest = Math.abs(ms);
+  for (const [size, label] of [[86400000, 'd'], [3600000, 'h'], [60000, 'min'], [1000, 's']]) {
+    const n = Math.floor(rest / size);
+    if (n && parts.length < 2) { parts.push(`${n} ${label}`); rest -= n * size; }
+  }
+  return `${parts.join(' ') || 'Under a second'} ${ms > 0 ? 'ahead of' : 'behind'} the device clock`;
 }
 
 export class Sheets {
@@ -143,6 +154,9 @@ export class Sheets {
     return `<h4>Data</h4><p>Everything the calculator keeps lives in this browser.</p>
       <div class="set"><b>Back up your work</b><span>Save the stack and HOME directory as a JSON file you can restore later.</span><button type="button" class="btn" data-sh="backup">${icon('down', 'sm')}Download a backup</button></div>
       ${app.isInstalledApp() ? '' : `<div class="set"><b>Install as an app</b><span>Runs in its own window, starts from the dock or home screen, and works offline.</span><button type="button" class="btn" data-sh="install">${icon('down', 'sm')}Install</button></div>`}
+      <div class="set"><b>Calculator clock</b><span>${calcState.clockOffset
+        ? `${clockOffsetText(calcState.clockOffset)}, as →DATE, →TIME or CLKADJ set it.`
+        : 'Follows the device clock; →DATE, →TIME and CLKADJ set it apart.'}</span>${calcState.clockOffset ? `<button type="button" class="btn" data-sh="clock-reset">${icon('undo', 'sm')}Use the device clock</button>` : ''}</div>
       <div class="set"><b>Restore from a backup</b><span>Replace the stack and HOME tree from a JSON file (undoable).</span><button type="button" class="btn" data-sh="restore">${icon('up', 'sm')}Choose a file</button></div>
       <div class="set"><b>Reset everything</b><span>Clears the stack, every variable, named backups, layout choices and the assistant connection, then reloads. This cannot be undone.</span>${this._confirmReset
         ? `<button type="button" class="btn danger" data-sh="reset-confirm">Yes, erase everything</button>`
@@ -199,6 +213,7 @@ export class Sheets {
       case 'backup': app.exportSnapshot(); return;
       case 'install': app.runAction('app.install'); return;
       case 'restore': pickFile('application/json,.json', async (f) => { if (await app.importSnapshotFromFile(f)) this.close(); }); return;
+      case 'clock-reset': setClockOffset(0); this._render(); return;
       case 'reset': this._confirmReset = true; this._render(); return;
       case 'reset-confirm': this.resetEverything(); return;
     }
