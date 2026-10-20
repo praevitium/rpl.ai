@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.84 (2026-10-20)
+**Latest release:** v0.7.85 (2026-10-20)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.85 — 2026-10-20
+
+- Formulas inside a list on the stack keep at least three quarters of
+  their size, as a lone formula does, and a list too wide for its line
+  scrolls sideways with an edge fade. At 280 px a factored list such as
+  `{ (X-1)*(X+1) { (X-2)*(X+2) … } }` drew its formulas at a third of
+  their size.
+- A list of formulas plots every one of them, as the HP draws each
+  equation in a list stored in EQ: `{ 'SIN(X)' 'COS(X)' } FUNCTION`
+  draws both curves, and a list level gets Plot in its toolbar, its ⋯
+  menu and its soft keys, as a formula does.
+- The plot view's + Level 1 plots each formula of a list too, where it
+  switched to Scatter and added an empty scatter trace.
 
 ## v0.7.84 — 2026-10-20
 
