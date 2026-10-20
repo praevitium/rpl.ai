@@ -875,7 +875,7 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   const { varRecall, varPurge } = await import('../www/src/rpl/state.js');
   const { format } = await import('../www/src/rpl/formatter.js');
   let seen = null;
-  setGraphicsHook((kind, st) => { seen = { kind, top: format(st.peek()), depth: st.depth }; });
+  setGraphicsHook((kind, st, data = null) => { seen = { kind, top: st.depth ? format(st.peek()) : null, depth: st.depth, data }; });
   varPurge('EQ');
   varPurge('PPAR');
   const s = runLine("'SIN(X)' PLOT");
@@ -890,6 +890,16 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(seen.kind === 'polar', 'PLOT follows PPAR\'s plot type');
   assertThrows(() => runLine('5 PLOT'), /Bad argument type/, 'PLOT wants an expression or a name');
   assertThrows(() => runLine('PLOT'), /Too few arguments/, 'PLOT wants an argument');
+  varPurge('PPAR');
+  runLine("{ 'SIN(X)' 'COS(X)' } PLOT");
+  assert(seen.kind === 'function' && varRecall('EQ')?.items?.length === 2,
+    'PLOT takes a list of formulas, stores it in EQ and plots it, as EQ holding a list does on the HP');
+  assertThrows(() => runLine("{ 'SIN(X)' 5 } PLOT"), /Bad argument type/, 'PLOT refuses a list holding a number');
+  runLine("'X^3' STEQ DRAW");
+  assert(seen.kind === 'draw' && seen.data?.kind === 'function' && format(seen.data.eq) === format(runLine("'X^3'").peek()),
+    'DRAW hands the plot view EQ and PPAR\'s plot type, so it plots EQ as the HP does');
+  runLine("{ (-1,-1) (1,1) X 0 (0,0) SCATTER Y } 'PPAR' STO DRAW");
+  assert(seen.kind === 'draw' && seen.data === null, 'DRAW with a ΣDAT plot type hands no EQ');
   varPurge('EQ');
   varPurge('PPAR');
   setGraphicsHook(null);

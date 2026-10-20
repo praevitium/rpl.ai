@@ -2006,6 +2006,9 @@ setAngle('RAD');
   assert(/const specs = \(formulaList\(value\) \?\? \[value\]\)\.map\(\(v\) => stackValueToTrace\(v, this\._kind, below\)\);/.test(graphSrc)
     && /specs\.forEach\(\(spec, i\) => this\._addTrace\(spec, \{ fit: i === last, draw: i === last \}\)\);/.test(graphSrc),
     "plot: the drawer's + Level 1 plots each formula of a list on level 1, as Plot does, where it switched to Scatter and added an empty scatter trace");
+  assert(/if \(kind === 'draw' && data\) this\._addEq\(data, stack\);/.test(graphSrc)
+    && /\.filter\(\(b\) => b && !traceInputError\(kind, b, \{ adding: true \}\) && !shown\.has\(key\(b\)\)\);/.test(graphSrc),
+    "plot: DRAW plots EQ's formulas the view doesn't already show, where 'SIN(X)' STEQ DRAW opened an empty plot");
 }
 
 {

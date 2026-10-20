@@ -43,19 +43,25 @@ register('POLAR',     (s) => _requestPlot('polar', s), { category: 'Graphics', c
 // PLOT stores level 1 in EQ and plots it, PLOTADD adds it to EQ's list and to the plot, each as PPAR's plot type says.
 const PTYPE_KINDS = Object.freeze({ FUNCTION: 'function', POLAR: 'polar', PARAMETRIC: 'parametric', DIFFEQ: 'diffeq', SLOPEFIELD: 'slopefield', CONIC: 'conic', TRUTH: 'truth', PCONTOUR: 'contour', WIREFRAME: 'wireframe', YSLICE: 'yslice', FAST3D: 'fast3d', GRIDMAP: 'gridmap' });
 
-function _plotKind() {
+function _ptypeKind() {
   const ptype = plotParameters()[5];
-  return PTYPE_KINDS[isName(ptype) ? ptype.id : ''] ?? 'function';
+  return PTYPE_KINDS[isName(ptype) ? ptype.id : ''];
 }
 
+const _plotKind = () => _ptypeKind() ?? 'function';
+
+const _isFormula = (v) => isSymbolic(v) || isName(v);
+
 const _plottable = (v) => {
-  if (!isSymbolic(v) && !isName(v)) throw new RPLError('Bad argument type');
+  if (!_isFormula(v)) throw new RPLError('Bad argument type');
   return v;
 };
 
+// A list of formulas plots each one, as EQ holding a list does on the HP.
 register('PLOT', (s) => {
   if (s.depth < 1) throw new RPLError('Too few arguments');
-  varStore('EQ', _plottable(s.peek()));
+  const f = s.peek();
+  varStore('EQ', isList(f) && f.items.length && f.items.every(_isFormula) ? f : _plottable(f));
   _requestPlot(_plotKind(), s);
 }, { category: 'Graphics', categoryOrder: 3.1, label: "PLOT" });
 
@@ -107,7 +113,11 @@ register('PARSURFACE', (s) => {
   _requestPlot('parsurface', s, v);
 }, { category: 'Graphics', categoryOrder: 7.92, label: 'PARSURFACE' });
 
-register('DRAW',      (s) => _requestPlot('draw', s), { category: 'Graphics', categoryOrder: 6, label: "DRAW" });
+// DRAW plots EQ as PPAR's plot type, as on the HP; ΣDAT's plot types draw what the view holds.
+register('DRAW', (s) => {
+  const kind = _ptypeKind();
+  _requestPlot('draw', s, kind ? { eq: varRecall('EQ'), kind } : null);
+}, { category: 'Graphics', categoryOrder: 6, label: "DRAW" });
 
 
 // PPAR holds { (xmin,ymin) (xmax,ymax) indep res axes ptype depend }, the HP 50g's defaults until a command sets it.

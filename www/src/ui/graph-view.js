@@ -482,6 +482,7 @@ export class GraphView {
     if (kind === 'draw' || kind === 'pview' || kind === 'picture') {
       const window = (kind === 'draw' ? pparView() : pictWindow()) ?? this.view;
       this.view = kind === 'draw' ? window : pviewWindow(data, window);
+      if (kind === 'draw' && data) this._addEq(data, stack);
       if (kind === 'picture') this._startCursor();
       this.draw();
       return;
@@ -501,6 +502,20 @@ export class GraphView {
     const fit = !!spec.fitOnAdd || !this.traces.length;
     const last = built.length - 1;
     built.forEach((b, i) => this._addTrace(b, { fit: fit && i === last, draw: i === last, view: pparView() }));
+  }
+
+  // DRAW's EQ: each formula the plot doesn't already show, as PPAR's plot type, in the window DRAW set.
+  _addEq({ eq, kind }, stack) {
+    if (!TRACE_KINDS[kind]?.fields?.length) return;
+    const key = (t) => `${t.kind}|${t.expr}|${t.exprY ?? ''}`;
+    const shown = new Set(this.traces.map(key));
+    const built = (formulaList(eq) ?? (isFormula(eq) ? [eq] : []))
+      .map((v) => stackValueToTrace(v, kind, this._below(kind, stack)))
+      .filter((b) => b && !traceInputError(kind, b, { adding: true }) && !shown.has(key(b)));
+    if (!built.length) return;
+    this.setKind(kind);
+    built.forEach((b) => this._addTrace(b, { draw: false, view: this.view }));
+    this._renderExprs();
   }
 
   // DIFFEQ's initial value is DEPND's once PPAR gives one, as on the HP, else level 2's.

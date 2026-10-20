@@ -241,7 +241,7 @@ STATISTICS
   UTPN UTPC UTPF UTPT        upper-tail probabilities (normal / chi² / F / Student-t); m v x NDIST — normal density at x
 
 PLOT WINDOW (PPAR, as on the HP 50g)
-  PLOT PLOTADD               \`SIN(X)\` PLOT stores it in EQ and plots it (PPAR's plot type); \`X^2\` PLOTADD adds it to EQ's list and to the plot
+  PLOT PLOTADD               \`SIN(X)\` PLOT stores it in EQ and plots it (PPAR's plot type); \`X^2\` PLOTADD adds it to EQ's list and to the plot; \`SIN(X)\` STEQ DRAW plots EQ as PPAR's plot type, a list of formulas each one
   FUNCTION                   { \`SIN(X)\` \`COS(X)\` } FUNCTION plots every formula in the list together, as the HP plots a list stored in EQ
   SLOPEFIELD                 \`X-Y\` SLOPEFIELD draws dy/dx = f(x, y) as a field of short slope dashes across the plot view
   CONIC                      \`X^2/4+Y^2=1\` CONIC draws a second-order curve f(x, y) = 0, solving for Y at each X

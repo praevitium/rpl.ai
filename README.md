@@ -613,9 +613,11 @@ from before it.
 fields, conics, truth plots, contour maps, wireframes, y-slices and
 parametric surfaces in perspective, grid maps of complex functions, scatter,
 bar and histogram plots; `PLOT` stores an expression in EQ and plots it,
-and `PLOTADD` adds another. A list of formulas plots every one of them, as
-the HP draws each equation in a list in EQ: `` { `SIN(X)` `COS(X)` } FUNCTION ``,
-the Plot of a list level, and the plot view's + Level 1 all draw both.
+and `PLOTADD` adds another; `DRAW` plots what EQ holds as PPAR's plot type,
+as on the HP, so `` `SIN(X)` STEQ DRAW `` draws the sine. A list of formulas
+plots every one of them, as the HP draws each equation in a list in EQ:
+`` { `SIN(X)` `COS(X)` } FUNCTION ``, `PLOT` of that list, the Plot of a list
+level and the plot view's + Level 1 all draw both.
 `` 2 -3 1.5 EYEPT `SIN(X*3)*COS(Y*3)` WIREFRAME `` shows the surface from
 that eye point inside VPAR's view volume, and `FAST3D` draws one you turn
 with a drag or the arrow keys, as the 50g's arrow keys turn it;
