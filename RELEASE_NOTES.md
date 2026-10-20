@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.98 (2026-10-20)
+**Latest release:** v0.7.99 (2026-10-20)
 
 ---
 
@@ -20,6 +20,24 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.99 — 2026-10-20
+
+- Enter on an empty line with an empty stack now fails as DUP, as the HP
+  names it: the banner says DUP needs one value and offers DUP's
+  reference, where it said "That command needs more values".
+- A program opened with a phone keyboard's `<<` now counts as open, as
+  one opened with `«` does. The BRCH keys typed a second `« »` inside it,
+  and the operator and variable keys entered the line instead of typing
+  their command.
+- Typing `if`, `for`, `start`, `do`, `while`, `case` or `iferr` brings up
+  the BRCH menu's structures in the completion list, `IF … THEN … END`,
+  `FOR … NEXT` and the rest, and a tap types the whole structure as ⇦ on
+  its key does. `THEN`, `END`, `REPEAT` and the other inner words
+  complete too. Inside an algebraic none are offered.
+- The last lines that a finger held on Enter offers (the HP's CMD) now
+  wrap up to four rows in the command line's face, where a long program
+  ended in an ellipsis.
 
 ## v0.7.98 — 2026-10-20
 

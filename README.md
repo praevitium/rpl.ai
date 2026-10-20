@@ -319,9 +319,12 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   finish it, or hold a finger on a command to read its reference, whose
   Insert replaces the letters typed. After a number's `_` it lists units:
   `9.8_k` offers km, kg, kN and the rest. Inside a program the names a `→`
-  or a `FOR` binds come first: `« → rate time « r` offers rate. Where the
-  keyboard leaves room for only a row or two, the list fades at the edge
-  that has more.
+  or a `FOR` binds come first: `« → rate time « r` offers rate. `if`,
+  `for`, `start`, `do`, `while`, `case` and `iferr` offer the BRCH menu's
+  structures whole, `IF … THEN … ELSE … END` and the rest, and a tap types
+  one with the cursor after its first word, inside a program opened with
+  `«` or a phone keyboard's `<<`. Where the keyboard leaves room for only
+  a row or two, the list fades at the edge that has more.
   For more of the stack, choose Compact keypad from the ⋯ menu (or Keypad
   in Settings): five rows of the keys an RPN session reaches for most,
   with SWAP, DROP and UNDO beside the digits, SIN, COS and TAN on the
@@ -417,8 +420,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   character or the selected text, and leaves the stack alone on an empty
   line. Hold ⌫, there or on the keypad, to clear the whole line; Undo in
   the note that appears brings it back. Hold Enter beside the line to pick
-  one of the last four lines you entered, as the HP's CMD offers: it goes
-  back on an empty line, or into the line you are typing. Hold one of the
+  one of the last four lines you entered, as the HP's CMD offers, each
+  shown whole up to four rows: it goes back on an empty line, or into the
+  line you are typing. Hold one of the
   keypad's arrows and it repeats, as the HP's cursor keys do: along a long
   line, through a formula or matrix, or up and down the stack.
 - On a narrow screen each soft-key name is sized to its key, so `SPEED`
