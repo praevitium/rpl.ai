@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.108 (2026-10-20)
+**Latest release:** v0.7.109 (2026-10-20)
 
 ---
 
@@ -18,6 +18,20 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.7.109 — 2026-10-20
+
+- In landscape with the keyboard up, an error banner keeps its title and
+  fixes on one row. Five fixes, as a bad type now has, left the title a
+  few letters on a 640 px phone ("- can't co…"). The title now keeps at
+  least 12em over two lines, and the fixes scroll beside it.
+- A sideways swipe puts an error banner away, as a phone notification
+  goes. A halted program's banner still waits for its answer, and the
+  fixes row still scrolls sideways under a finger with the keyboard up.
+- A reference table keeps a stack-diagram word such as `objn-1` whole and
+  scrolls instead. On a 320 px phone UNPICK's broke into "objn-" and "1".
 
 ---
 
