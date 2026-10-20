@@ -29,7 +29,7 @@ export function parseErrorMessage(message) {
 
 const article = (noun) => (/^[aeiou]/i.test(noun) ? `an ${noun}` : `a ${noun}`);
 
-const sentence = (text) => (/[.!?]$/.test(text) ? text : `${text}.`);
+const sentence = (text) => (/[.!?…]$/.test(text) ? text : `${text}.`);
 
 const evaluates = (c) => ['EVAL', '→NUM'].includes(c.command);
 
@@ -49,7 +49,7 @@ export const ERROR_KINDS = Object.freeze({
     },
     detail: (c) => {
       const put = `Put the missing ${c.args - c.seenDepth === 1 ? 'value' : 'values'} on the stack first, then run it again.`;
-      return c.signature ? `${c.command} takes ${c.signature}. ${put}` : put;
+      return c.signature ? `${sentence(`${c.command} takes ${c.signature}`)} ${put}` : put;
     },
     fixes: (c) => [{ id: 'edit-line', label: c.hasLine ? 'Fix the line' : 'Type a value' }, ...(c.command ? [{ id: 'help', label: `${c.command} reference` }] : [])],
   },
@@ -62,7 +62,7 @@ export const ERROR_KINDS = Object.freeze({
       return `${cmd} can't use ${c.args === 1 ? 'that argument' : 'those arguments'}.`;
     },
     detail: (c) => {
-      const takes = c.signature ? `${c.command} takes ${c.signature}.` : '';
+      const takes = c.signature ? sentence(`${c.command} takes ${c.signature}`) : '';
       const seen = c.culprits.map((x) => `level ${x.level} is ${x.text}`).join(', ');
       const want = c.detail ? ` (${c.detail})` : '';
       const here = seen ? ` ${sentence(`Here ${seen}${want}`)}` : want ? ` ${sentence(want.trim())}` : '';
@@ -78,7 +78,7 @@ export const ERROR_KINDS = Object.freeze({
   badValue: {
     match: (p) => p.core === 'Bad argument value',
     title: (c) => `${c.command ?? 'That command'} can't take that value.`,
-    detail: (c) => `The argument is the right kind of object, but its value is outside what ${c.command ?? 'the command'} accepts${c.detail ? ` (${c.detail})` : ''}.${c.signature ? ` ${c.command} takes ${c.signature}.` : ''}`,
+    detail: (c) => `The argument is the right kind of object, but its value is outside what ${c.command ?? 'the command'} accepts${c.detail ? ` (${c.detail})` : ''}.${c.signature ? ` ${sentence(`${c.command} takes ${c.signature}`)}` : ''}`,
     fixes: (c) => [...(c.command ? [{ id: 'help', label: `${c.command} reference` }] : []), { id: 'explain', label: 'Explain' }],
   },
   infinite: {

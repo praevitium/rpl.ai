@@ -165,7 +165,10 @@ export function signatureOf(entry) {
   const lines = String(entry?.io ?? '').split('\n').filter((l) => !/^Level\s*\S*\/(Argument|Item)/.test(l));
   const first = (lines[0] === '→' ? lines.slice(0, 2).join(' ') : lines[0] ?? '').replace(/`/g, "'").trim();
   if (/^none\.?$/i.test(first)) return '';
-  return first.length > 42 ? `${first.slice(0, 41)}…` : first;
+  if (first.length <= 42) return first;
+  const cut = first.slice(0, 41);
+  const at = cut.lastIndexOf(' ');
+  return `${(at > 20 ? cut.slice(0, at) : cut).replace(/[\s.…[{(“«]+$/, '')} …`;
 }
 
 const DRAWERS = Object.freeze([

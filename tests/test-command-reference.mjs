@@ -202,6 +202,11 @@ const REF = parseCommandReference(HTML);
   const sig = (name) => signatureOf(findReferenceEntry(REF, name));
   assert(sig('*') === 'z1 z2 → z1 × z2' && sig('^') === 'w z → w^z' && sig('√') === 'z → √z' && sig('ALOG') === 'z → 10^z' && sig('EXP') === 'z → e^z',
     `stack diagrams keep the operator and the power the PDF's text lost: * read z1 z2 → z1 z2, ^ w z → wz and √ z → z (${sig('*')}, ${sig('^')}, ${sig('√')})`);
+  const clipped = [...REF.values()].map(signatureOf).filter((s) => s.endsWith('…'));
+  assert(clipped.length > 20 && clipped.every((s) => s.length <= 42 && / …$/.test(s) && !/(\.\.\.|…|[[{(“«]) …$/.test(s)),
+    `a long stack diagram is cut at a word with one ellipsis, not mid-word after the manual's own dots or an open bracket (${clipped.filter((s) => /(\.\.\.|…|[[{(“«]) …$/.test(s)).join(' | ')})`);
+  assert(sig('DUPN') === 'obj1 obj2 … obji–1 obji n → obj1 obj2 …' && sig('CON') === '{ ncolumns } zconstant → …',
+    `DUPN and CON end their diagrams at a whole word (${sig('DUPN')}, ${sig('CON')})`);
 }
 
 /* The manual's PDF ran fifteen entries into the one before them (→DATE under DATE, RREF under the CAS rref), so a

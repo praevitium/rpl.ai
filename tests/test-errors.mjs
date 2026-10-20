@@ -21,6 +21,7 @@ const COMMANDS = {
   '+': { signature: 'z1 z2 → z1 + z2', inputs: 2 },
   '/': { signature: 'z1 z2 → z1 / z2', inputs: 2 },
   DROP: { signature: 'obj → ', inputs: 1 },
+  DUPN: { signature: 'obj1 obj2 … obji–1 obji n → obj1 obj2 …' },
 };
 const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMMANDS[n] ?? null, ...extra });
 
@@ -150,6 +151,9 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   const hi = Str('hi');
   const short = describeError('XROOT: Too few arguments', ctx({ failure: { op: 'XROOT', levels: [hi], depth: 1, missing: 1 }, stack: [hi], depth: 1 }));
   assert(short.culpritLevels.length === 0, 'describeError: a too-few error marks no level as the culprit, where level 1 read "this one" though nothing was wrong with it');
+  const dupn = describeError('DUPN: Too few arguments', ctx({ failure: { op: 'DUPN', levels: [], depth: 1, missing: 3 }, depth: 1 }));
+  assert(dupn.detail === 'DUPN takes obj1 obj2 … obji–1 obji n → obj1 obj2 … Put the missing values on the stack first, then run it again.',
+    `describeError: a clipped stack diagram ends at its ellipsis, where the banner read obj2 ...…. (${dupn.detail})`);
 }
 
 {
