@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.77 (2026-10-20)
+**Latest release:** v0.7.78 (2026-10-20)
 
 ---
 
@@ -20,6 +20,21 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.78 — 2026-10-20
+
+- PICTURE's drawing keys, part 2, which completes the Picture menu's
+  drawing keys, in the HP's order:
+  - DOT+ and DOT- turn pixels on or off as the cursor moves by the arrow
+    keys or a drag from the crosshair; a tap jumps without drawing. Each
+    is pressed while it is on, and pressing it again stops it.
+  - DEL clears the box between the mark and the cursor, and SUB puts it
+    on the stack as a graphics object.
+  - REPL puts the graphics object on level 1 into PICT at the cursor and
+    takes it off the stack.
+  - LABEL and ERASE run their commands.
+- The LINE and TLINE commands and DOT+ and DOT- share one line drawer
+  (graphics.js pictLine).
 
 ## v0.7.77 — 2026-10-20
 
