@@ -39,7 +39,7 @@ export const ERROR_KINDS = Object.freeze({
     match: (p) => p.command === 'DOERR' && !['Too few arguments', 'Bad argument type'].includes(p.core),
     title: (c) => sentence(c.detail ? `${c.core}: ${c.detail}` : c.core),
     detail: () => 'The program raised this error itself, with DOERR.',
-    fixes: (c) => [...(c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []), { id: 'explain', label: 'Explain' }],
+    fixes: () => [{ id: 'explain', label: 'Explain' }],
   },
   tooFew: {
     match: (p) => p.core === 'Too few arguments',
@@ -71,7 +71,7 @@ export const ERROR_KINDS = Object.freeze({
       return `${takes}${here}`.trim() || 'The value on the stack is the wrong kind of object for this command.';
     },
     fixes: (c) => [
-      ...(c.onStack ? [{ id: 'drop', label: 'Drop level 1' }] : c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []),
+      ...(c.onStack ? [{ id: 'drop', label: 'Drop level 1' }] : []),
       ...(c.onStack && c.depth >= 2 && c.args !== 1 ? [{ id: 'swap', label: 'Swap levels 1 and 2' }] : []),
       ...(c.command ? [{ id: 'help', label: `${c.command} reference` }] : []),
       { id: 'explain', label: 'Explain' },
@@ -87,19 +87,19 @@ export const ERROR_KINDS = Object.freeze({
     match: (p) => p.core === 'Infinite result',
     title: (c) => `${c.command ?? 'That'} would give an infinite result.`,
     detail: () => 'Division by zero, or a function at its pole. The stack is back as it was.',
-    fixes: (c) => [...(c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []), { id: 'explain', label: 'Explain' }],
+    fixes: () => [{ id: 'explain', label: 'Explain' }],
   },
   zeroOverZero: {
     match: (p) => p.core === 'Undefined result' && p.command === '/',
     title: () => '0/0 has no value.',
     detail: () => 'Zero divided by zero is undefined, as on the HP. The stack is back as it was.',
-    fixes: (c) => [...(c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []), { id: 'explain', label: 'Explain' }],
+    fixes: () => [{ id: 'explain', label: 'Explain' }],
   },
   undefinedResult: {
     match: (p) => p.core === 'Undefined result',
     title: (c) => (evaluates(c) ? 'That expression has no value.' : `${c.command ?? 'That function'} has no value there.`),
     detail: (c) => `${evaluates(c) ? 'Part of it, such as a 0/0, is undefined' : "The argument is outside the function's domain"}. The stack is back as it was.`,
-    fixes: (c) => [...(c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []), ...(c.command && !evaluates(c) ? [{ id: 'help', label: `${c.command} reference` }] : []), { id: 'explain', label: 'Explain' }],
+    fixes: (c) => [...(c.command && !evaluates(c) ? [{ id: 'help', label: `${c.command} reference` }] : []), { id: 'explain', label: 'Explain' }],
   },
   dimension: {
     match: (p) => p.core === 'Invalid dimension',
@@ -123,7 +123,7 @@ export const ERROR_KINDS = Object.freeze({
     match: (p) => p.core.startsWith('Undefined'),
     title: (c) => `Nothing called ${c.detail || 'that'} is stored here.`,
     detail: () => 'Names are looked up in this directory and the ones above it. Store a value first, for example 42 `X` STO, or check the spelling.',
-    fixes: (c) => [{ id: 'vars', label: 'Open Variables' }, ...(c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : [])],
+    fixes: () => [{ id: 'vars', label: 'Open Variables' }],
   },
   casLoading: {
     match: (p) => p.core === 'CAS not ready',
@@ -135,7 +135,7 @@ export const ERROR_KINDS = Object.freeze({
     match: (p) => p.core === 'Interrupted',
     title: (c) => `${c.command ?? 'That command'} ran for ${RUN_TIME_LIMIT_MS / 1000} seconds, so it was stopped.`,
     detail: () => "The page can't respond while a command runs, so a command that runs this long is stopped. The stack is back as it was. In a program, look for a loop that never ends.",
-    fixes: (c) => [...(c.hasLine ? [{ id: 'edit-line', label: 'Fix the line' }] : []), { id: 'explain', label: 'Explain' }],
+    fixes: () => [{ id: 'explain', label: 'Explain' }],
   },
   syntax: {
     match: (p) => /^(Invalid algebraic|Bad complex literal|Syntax error|Unknown token|Malformed|Unexpected|Missing object|Empty parse|Expected one object|Text after END|(IF|IFERR|WHILE|FOR|START|CASE|DO)\b)/.test(p.core),
@@ -189,6 +189,15 @@ export function hexLineOf(line) {
   return { line: hexed.join(''), word: words.find((w, i) => hexed[i] !== w) };
 }
 
+const LINE_FIX = Object.freeze({ id: 'edit-line', label: 'Fix the line' });
+
+// Any error from a typed line can bring the line back, after the error's own fixes and before its reference.
+function withLineFix(fixes, hasLine) {
+  if (!hasLine || fixes.some((f) => f.id === 'edit-line' || f.id === 'retry')) return fixes;
+  const at = fixes.findIndex((f) => f.id === 'help' || f.id === 'explain');
+  return at < 0 ? [...fixes, LINE_FIX] : [...fixes.slice(0, at), LINE_FIX, ...fixes.slice(at)];
+}
+
 export function describeError(message, { failure = null, stack = [], depth = 0, line = '', describe, commandInfo = () => null } = {}) {
   const parsed = parseErrorMessage(message);
   const [kind, spec] = Object.entries(ERROR_KINDS).find(([, k]) => k.match(parsed));
@@ -212,7 +221,7 @@ export function describeError(message, { failure = null, stack = [], depth = 0, 
     command,
     title: spec.title(ctx),
     detail: spec.detail(ctx),
-    fixes: spec.fixes(ctx),
+    fixes: withLineFix(spec.fixes(ctx), ctx.hasLine),
     // A too-few error is the stack's depth, not a value's fault, so no level is marked as the culprit.
     culpritLevels: onStack && kind !== 'tooFew' ? culprits.map((c) => c.level) : [],
   };

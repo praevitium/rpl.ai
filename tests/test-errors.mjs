@@ -195,6 +195,19 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
 }
 
 {
+  const fixIds = (d) => d.fixes.map((f) => f.id).join(',');
+  const x = Str('x'), two = Real(2);
+  const typed = describeError('-: Bad argument type', ctx({ failure: { op: '-', levels: [x, two] }, stack: [x, two], depth: 2, line: '2 "x" -' }));
+  const value = describeError('GET: Bad argument value', ctx({ line: '{ 1 2 } 5 GET' }));
+  const units = describeError('+: Inconsistent units', ctx({ line: '1_m 1_s +' }));
+  const other = describeError('Something odd', ctx({ line: '1 ODD' }));
+  assert(fixIds(typed) === 'drop,swap,edit-line,help,explain' && fixIds(value) === 'edit-line,help,explain' && fixIds(units) === 'edit-line,help,explain' && fixIds(other) === 'edit-line,explain',
+    `describeError: every error from a typed line offers Fix the line, after its own fixes and before its reference, where a bad type with the value on the stack, a bad value, mismatched units and the catch-all offered none (${fixIds(typed)} / ${fixIds(value)} / ${fixIds(units)})`);
+  assert(fixIds(describeError('GET: Bad argument value', ctx())) === 'help,explain' && fixIds(describeError('EVAL: CAS not ready', ctx({ line: 'X SOLVE' }))) === 'retry',
+    'describeError: no Fix the line without a line, and none beside Try again, which runs the line itself');
+}
+
+{
   const short = RList([Real(1), Real(2)]), long = RList([Real(1), Real(2), Real(3)]);
   const lists = describeError('ADD: Invalid dimension', ctx({ failure: { op: 'ADD', levels: [long, short] }, stack: [long, short], depth: 2 }));
   const arrays = describeError('+: Invalid dimension', ctx({ failure: { op: '+', levels: [Vector([Real(1)])] }, stack: [], depth: 0 }));
