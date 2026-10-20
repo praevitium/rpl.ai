@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 733 commands, exact big-integer and rational arithmetic,
+of its command set: 736 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -126,7 +126,11 @@ RPL puts the numbers first and the operation last. Each value goes on the
   remainder, and ZEROS lists the roots on their own. SOLVEVX solves for the
   current variable, or the only one there is: `` `T^2=9` SOLVEVX `` gives
   `{ T=-3 T=3 }`. Both solvers take a list of equations too and solve each
-  one. `ROOT` finds a root numerically from a guess:
+  one. `ASSUME` tells the CAS what a name may be: after `` `K>0` ASSUME ``
+  the integral of `EXP(-K*T)` from 0 to ∞ is `1/K`, and after
+  `` `Z≥0` ASSUME `` the roots of `Z^2=4` are just `Z=2`. UNASSUME forgets
+  it, ADDTOREAL keeps just that the name is real, and the assumptions are
+  saved with the calculator. `ROOT` finds a root numerically from a guess:
   `` `COS(X)=X` `X` 1 ROOT `` gives 0.739085133215 and stores it in X, and a
   program can stand in for the expression. With a list of equations in
   EQ, `MSOLVR` puts up the HP's multiple-equation solver, a key for each
@@ -918,7 +922,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 733. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 736. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - setting the clock: `→DATE`, `→TIME` and `CLKADJ`. The clock is the
@@ -979,6 +983,8 @@ and RESTORE), Saturn assembly and System RPL, and IR and serial transfer.
 - `ZEROS` always returns a list, even of one root.
 - `EVAL` of a matrix or vector with symbolic entries evaluates each entry;
   the AUR's EVAL table leaves an array as it is.
+- REALASSUME starts empty rather than holding X, Y, t, S1 and S2, and
+  `ASSUME` keeps a strict `Z>0` as written where the HP makes it `Z≥0`.
 - ⌫ on an empty line leaves the stack alone, where the HP's drops level 1.
   DROP is on the STACK menu, the key strip above a phone's keyboard and a
   level's menu, and ⌫ still removes a selected level.

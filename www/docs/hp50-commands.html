@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 745 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 748 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -96,7 +96,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-ACOSH">ACOSH</a>
 <a href="#cmd-ADD">ADD</a>
 <a href="#cmd-ADDTMOD">ADDTMOD</a>
-<a href="#cmd-ADDTOREAL" class='notinapp'>ADDTOREAL</a>
+<a href="#cmd-ADDTOREAL">ADDTOREAL</a>
 <a href="#cmd-ALGB">ALGB</a>
 <a href="#cmd-ALOG">ALOG</a>
 <a href="#cmd-AMORT">AMORT</a>
@@ -115,7 +115,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-ASINH">ASINH</a>
 <a href="#cmd-ASN">ASN</a>
 <a href="#cmd-ASR">ASR</a>
-<a href="#cmd-ASSUME" class='notinapp'>ASSUME</a>
+<a href="#cmd-ASSUME">ASSUME</a>
 <a href="#cmd-ATAN">ATAN</a>
 <a href="#cmd-ATAN2S">ATAN2S</a>
 <a href="#cmd-ATANH">ATANH</a>
@@ -737,7 +737,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-UFACT">UFACT</a>
 <a href="#cmd-UFL1-to-MINIF" class='notinapp'>UFL1→MINIF</a>
 <a href="#cmd-UNASSIGN">UNASSIGN</a>
-<a href="#cmd-UNASSUME" class='notinapp'>UNASSUME</a>
+<a href="#cmd-UNASSUME">UNASSUME</a>
 <a href="#cmd-UNBIND">UNBIND</a>
 <a href="#cmd-UNPICK">UNPICK</a>
 <a href="#cmd-UNROT">UNROT</a>
@@ -1131,7 +1131,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <table class="cmd-kv"><tbody><tr><th>Command</th><td>ADDTMOD(X^2+3*X+6,9*X+3)</td></tr><tr><th>Result</th><td>X^2-2*X+2</td></tr></tbody></table>
   </dd>
 </dl>
-<h2 id="cmd-ADDTOREAL">ADDTOREAL <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-ADDTOREAL">ADDTOREAL <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 130 · printed page 3-10</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -1141,6 +1141,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Adds specified global names to the reserved variable REALASSUME. This is a list of the global variables that will be treated by some CAS operations as real numbers when Complex mode is set. If a variable is already in the REALASSSUME list, this command removes any additional assumptions made on it by ASSUME.</p>
+  <p>In rpl.ai flag -128 is not followed: ADDTOREAL always adds the name.</p>
   </dd>
   <dt class="cmd-label cmd-label-input">Input</dt>
   <dd class="cmd-field cmd-field-input">
@@ -1639,7 +1640,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>SL, SLB, SR, SRB</p>
   </dd>
 </dl>
-<h2 id="cmd-ASSUME">ASSUME <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-ASSUME">ASSUME <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 139 · printed page 3-19</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -1649,6 +1650,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Adds global names to the reserved variable REALASSUME, with specific assumptions. REALASSUME is a list of the global variables that will be considered by some CAS operations to represent real numbers when complex mode is set. ASSUME adds further assumptions, for example that a variable is greater than or equal to zero. Assumptions must be of the form v≤expression, or v≥expression, where v is the variable name. Several assumptions can be combined. These assumptions are used by the solve commands; for example if a variable is assumed to be greater than zero then the solvers will not look for solutions where that variable is negative. Some of the solvers will give complex solutions for variables even if they are in REALASSUME.</p>
+  <p>In rpl.ai REALASSUME starts empty rather than holding X, Y, t, S1 and S2, and a condition stays as written: Z&gt;0 is kept strict, while Z≥MINR, the AUR&#x27;s way to say positive, reaches the CAS as Z&gt;0. A new ASSUME on a name replaces that name&#x27;s earlier conditions; join several with AND. The assumptions are saved with the calculator.</p>
   </dd>
   <dt class="cmd-label cmd-label-input">Input</dt>
   <dd class="cmd-field cmd-field-input">
@@ -17784,7 +17786,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>ADDTOREAL, ASSUME, DEF, LOCAL, PURGE, STO, STORE, UNASSUME, UNBIND</p>
   </dd>
 </dl>
-<h2 id="cmd-UNASSUME">UNASSUME <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-UNASSUME">UNASSUME <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 383 · printed page 3-263</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -17794,6 +17796,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Removes all assumptions on specified global variables, whether created by default, by ADDTOREAL or by ASSUME. Does this by removing the variable names from the list REALASSUME. Returns the variable names. To remove assumptions on a variable but leave it in REALASSUME, use ADDTOREAL instead of UNASSUME.</p>
+  <p>In rpl.ai REALASSUME starts empty, so S1 and S2 are not there to remove.</p>
   </dd>
   <dt class="cmd-label cmd-label-input">Input</dt>
   <dd class="cmd-field cmd-field-input">

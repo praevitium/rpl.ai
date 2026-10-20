@@ -106,6 +106,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   LIMIT (alias lim)          \`expr\` \`var=value\` LIMIT — limit at a point
   DIV CURL LAPL              [ \`X^2*Y\` \`X^2*Y\` \`Y^2*Z\` ] [ X Y Z ] DIV → divergence; CURL → the curl vector (three components and variables); \`expr\` [ X Y Z ] LAPL → Laplacian
   POTENTIAL VPOTENTIAL HESS  [ field ] [ X Y Z ] POTENTIAL → U with grad U = field; VPOTENTIAL → a vector whose curl is the field; \`expr\` [ T U ] HESS → Hessian, gradient, variables
+  ASSUME UNASSUME ADDTOREAL  \`K>0\` ASSUME tells the CAS K is positive (a list or AND for several); \`K\` UNASSUME forgets it; \`X\` ADDTOREAL keeps only that X is real
   ZEROS                      \`expr\` \`var\` ZEROS — the roots as plain values, each once: \`X^3-X^2-8*X+12\` \`X\` ZEROS → { -3 2 }
   SIGNTAB                    \`2-X^2\` SIGNTAB → { -∞ - -√2 + √2 - ∞ }: the zeros and poles in order with the sign between them
   DOMAIN                     \`√(X+1)\` DOMAIN → { -∞ ? -1 + ∞ }: where the function is defined (+) and undefined (?); a lone excluded point such as 0 in 1/X is left out
