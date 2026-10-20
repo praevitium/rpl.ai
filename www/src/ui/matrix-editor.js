@@ -6,7 +6,7 @@ import { Var, parseAlgebra } from '../rpl/algebra.js';
 import { sheetNumber, htmlTableToText } from '../rpl/sheet.js';
 import {
   Matrix, Vector, Real, Complex, Symbolic,
-  isMatrix, isVector, isList, isNumber, isSymbolic, isName, isValidHpIdentifier,
+  isMatrix, isVector, isList, isNumber, isSymbolic, isName, isUnit, isValidHpIdentifier,
 } from '../rpl/types.js';
 
 export const MATRIX_MAX = 50;
@@ -111,6 +111,15 @@ export function eexText(before) {
   return /[\d.]$/.test(before) ? 'E' : '1E';
 }
 
+// As on the command line, a unit key attaches its unit to the number being typed: 5 becomes 5_m, 5_m becomes 5_m*s.
+export function unitCellText(before, unit, mode = 'times') {
+  const op = mode === 'divide' ? '/' : '*';
+  if (!before.trim()) return mode === 'divide' ? `1_1/${unit}` : `1_${unit}`;
+  if (!/^[-+]?\.?\d/.test(before)) return `${op}1_${unit}`;
+  if (before.includes('_')) return `${op}${unit}`;
+  return mode === 'divide' ? `_1/${unit}` : `_${unit}`;
+}
+
 function isVectorShape(grid) {
   const rows = grid.length;
   const cols = grid[0]?.length || 0;
@@ -206,7 +215,7 @@ export function parseMatrixCell(text) {
   let values;
   try { values = parseEntry(t); } catch { values = []; }
   const v = values.length === 1 ? values[0] : null;
-  if (v && (isNumber(v) || isSymbolic(v))) return v;
+  if (v && (isNumber(v) || isSymbolic(v) || isUnit(v))) return v;
   if (v && isName(v) && (v.id === '∞' || isValidHpIdentifier(v.id))) return Symbolic(Var(v.id));
   // 2,500, 10% and $1,234.50 as a spreadsheet writes them, and 1+2i.
   const sheet = sheetNumber(t);
@@ -546,6 +555,13 @@ export class MatrixEditor {
   }
 
   insertSymbol(text) { this._editCell(text); }
+
+  typeUnit(unit, mode) {
+    if (mode === 'convert') { this.app.notifyError('CONVERT works on the stack; in the writer a unit key attaches its unit.'); return; }
+    const text = unitCellText(this._textBeforeCaret(), unit, mode);
+    this._editCell(text);
+    return text;
+  }
 
   _caret() {
     const [r, c] = this._activeCell();

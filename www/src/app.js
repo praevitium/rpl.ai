@@ -1381,6 +1381,7 @@ class App {
   // it types that, unless it can attach to the number being typed. Returns what it typed.
   insertUnit(unit, mode = 'times') {
     if (this.inputMode === 'equation') { this.equationEditor.typeUnit(unit, mode); return; }
+    if (this.inputMode === 'matrix') return this.matrixEditor.typeUnit(unit, mode);
     const e = this.entry;
     const typed = e.buffer.trim();
     const before = e.buffer.slice(0, e.cursor);

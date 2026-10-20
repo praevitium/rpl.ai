@@ -1955,6 +1955,14 @@ setAngle('RAD');
 }
 
 {
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const mxSrc = readFileSync(new URL('../www/src/ui/matrix-editor.js', import.meta.url), 'utf8');
+  assert(/if \(this\.inputMode === 'matrix'\) return this\.matrixEditor\.typeUnit\(unit, mode\);/.test(appSrc)
+    && /typeUnit\(unit, mode\) \{\s*if \(mode === 'convert'\) \{ this\.app\.notifyError\('CONVERT works on the stack; in the writer a unit key attaches its unit\.'\); return; \}\s*const text = unitCellText\(this\._textBeforeCaret\(\), unit, mode\);\s*this\._editCell\(text\);/.test(mxSrc),
+    'matrix writer: a UNITS key types into the focused cell, as in the equation writer, where it entered the matrix and pushed the unit on its own');
+}
+
+{
   const eqwSrc = readFileSync(new URL('../www/src/ui/equation-editor.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/this\.strip\.addEventListener\('scroll', \(\) => markScrollEdges\(this\.strip\), \{ passive: true \}\);\s*new ResizeObserver\(\(\) => markScrollEdges\(this\.strip\)\)\.observe\(this\.strip\);/.test(eqwSrc)

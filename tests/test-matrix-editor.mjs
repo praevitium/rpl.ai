@@ -4,11 +4,21 @@ import {
   emptyGrid, identityGrid, zerosGrid, clampDim, resizeGrid,
   parseMatrixCell, gridToMatrix, gridToValue, valueToGrid, pasteIntoGrid,
   insertRow, deleteRow, insertCol, deleteCol, transposeGrid, MATRIX_MAX, toggleCellSign, mapCaret, trimGrid, eexText,
-  nextCellWidth,
+  nextCellWidth, unitCellText,
 } from '../www/src/ui/matrix-editor.js';
 import {
-  Matrix, Vector, Real, Integer, RList, isMatrix, isInteger, isReal, isRational, isVector, isSymbolic,
+  Matrix, Vector, Real, Integer, RList, isMatrix, isInteger, isReal, isRational, isVector, isSymbolic, isUnit,
 } from '../www/src/rpl/types.js';
+
+{
+  assert(unitCellText('5', 'm') === '_m' && unitCellText('5_m', 's', 'divide') === '/s' && unitCellText('5_m', 's') === '*s'
+    && unitCellText('', 'm') === '1_m' && unitCellText('5', 's', 'divide') === '_1/s' && unitCellText('X', 'm') === '*1_m',
+    'unitCellText: a unit key attaches its unit to the number in a matrix cell, as on the command line, where it entered the matrix and pushed the unit');
+  const cell = (before, unit, mode) => parseMatrixCell(before + unitCellText(before, unit, mode));
+  assert(isUnit(cell('5', 'm')) && format(cell('5', 'm')) === '5._m' && format(cell('5_m', 's', 'divide')) === '5._m/s'
+    && format(cell('', 'km')) === '1._km' && format(cell('', 's', 'divide')) === '1._1/s',
+    'unitCellText: what it types reads back as a unit object, as [[ 5_m ]] does on the command line, where a cell made 5_m a formula and 5_m/s a division by a variable s');
+}
 
 {
   assert(clampDim(0) === 1, 'clampDim: floor 1');
