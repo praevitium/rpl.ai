@@ -1,6 +1,6 @@
 import { allOps } from '../rpl/ops.js';
 import { endsInQuote } from '../rpl/parser.js';
-import { varOrder, varRecall } from '../rpl/state.js';
+import { varOrder, varRecall, state } from '../rpl/state.js';
 import { shortDescription } from './command-reference.js';
 import { fuzzyScore, matchPositions, highlightSegments } from './op-search.js';
 import { escapeHtml, typeName, LONG_PRESS_MS } from './display.js';
@@ -102,7 +102,9 @@ export class Autocomplete {
   update() {
     const { entry } = this.app;
     const text = entry.buffer;
-    const at = this.app.inputMode === 'rpl' && (entry.hasFocus() || this.app.typingOnKeypad) && !this.app.errorBanner && !text.trimStart().startsWith('?')
+    // An INPUT's answer is text the program reads back, so it gets no command completions.
+    const typing = this.app.inputMode === 'rpl' && (entry.hasFocus() || this.app.typingOnKeypad) && state.halted?.kind !== 'input';
+    const at = typing && !this.app.errorBanner && !text.trimStart().startsWith('?')
       ? unitPart(wordBeforeCursor(text, entry.cursor)) : null;
     if (this.shown && at?.from === this.word?.from && at.word === this.shown) return;
     this.shown = null;

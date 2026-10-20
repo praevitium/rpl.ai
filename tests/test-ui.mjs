@@ -2281,6 +2281,28 @@ setAngle('RAD');
 }
 
 {
+  const { Autocomplete } = await import('../www/src/ui/autocomplete.js');
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const { state: calcState } = await import('../www/src/rpl/state.js');
+  const entry = new Entry(new Stack());
+  entry.hasFocus = () => true;
+  const ac = Object.assign(Object.create(Autocomplete.prototype), {
+    app: { entry, inputMode: 'rpl', errorBanner: null }, el: { hidden: true }, rows: [], index: 0, word: null, shown: null, _dismissedWord: null,
+  });
+  ac._render = function () { this.el.hidden = false; };
+  entry.subscribe(() => ac.update());
+  const halted = calcState.halted;
+  calcState.halted = { kind: 'input' };
+  entry.type('SI');
+  const duringInput = ac.isOpen();
+  calcState.halted = { kind: 'prompt' };
+  entry.type('N');
+  const duringPrompt = ac.isOpen();
+  calcState.halted = halted;
+  assert(!duringInput && duringPrompt, 'autocomplete: an INPUT\'s answer, text the program reads, brings up no command completions; a PROMPT\'s line still does');
+}
+
+{
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/setMenuHook\(\(list, temporary\) => \{\s*if \(!list\) this\.showPreviousMenu\(\{ commit: false \}\);\s*else if \(temporary\) this\.setMenu\(this\._customMenuSlots\(list\), 'TMENU'\);\s*else this\.showMenu\('CST', \{ commit: false \}\);/.test(appSrc)
     && /showCustomMenu\(\{ commit = true, refresh = false \} = \{\}\) \{\s*if \(commit && !refresh && this\.entry\.buffer/.test(appSrc) && /showPreviousMenu\(\{ commit = true \} = \{\}\) \{[\s\S]{0,160}?this\.showMenu\(prev, \{ commit \}\)/.test(appSrc),
