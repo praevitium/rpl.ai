@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.83 (2026-10-20)
+**Latest release:** v0.7.84 (2026-10-20)
 
 ---
 
@@ -20,6 +20,21 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.84 — 2026-10-20
+
+- The CAS commands that take one expression take a list of them too,
+  nested lists included, and give a list back:
+  `{ 'X^2-1' { 'X^2-4' } } FACTOR` gives
+  `{ (X-1)*(X+1) { (X-2)*(X+2) } }`. EXPAND, SIMPLIFY, FACTOR, DERIV,
+  INTEG, SUBST, `|` and the rest all do, where a list said Bad argument
+  type.
+- LIMIT, TAYLR, TAYLOR0, ZEROS, LAPLACE, ILAP, DISTRIB, FDISTRIB, XQ,
+  I→R, R→I, REORDER, SIGMA, FOURIER and SHOW now take a vector or matrix
+  as well as a list, element by element:
+  `[[ 'SIN(X)/X' 2 ]] 'X=0' LIMIT` gives `[[ 1 2 ]]`.
+- LAPLACE and ILAP take a number, as on the HP, in the variable VX:
+  `1 LAPLACE` gives `1/x` and `1 ILAP` gives `DIRAC(x)`.
 
 ## v0.7.83 — 2026-10-20
 
