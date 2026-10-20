@@ -171,8 +171,8 @@ export function _scalarBinary(op, a, b) {
   if (_isSymOperand(a) || _isSymOperand(b)) {
     const l = _toAst(a);
     const r = _toAst(b);
-    if (l && r) return Symbolic(AstBin(op, l, r));
-    throw new RPLError('Bad argument type');
+    if (!l || !r) throw new RPLError('Bad argument type');
+    return (getApproxMode() ? null : _radicalBinary(op, l, r)) ?? Symbolic(AstBin(op, l, r));
   }
   if (isUnit(a) || isUnit(b)) return _unitBinary(op, a, b);
   if (!isNumber(a) || !isNumber(b)) throw new RPLError('Bad argument type');
@@ -276,6 +276,78 @@ function _exactPower(x, e) {
 // The HP's exact √ of a non-negative integer or fraction: 2, 1/2, 2*√2 or √2/3.
 export function exactSqrt(v) {
   return _exactPower(_fraction(v), new Fraction(1n, 2n));
+}
+
+const _NEG_ONE = new Fraction(-1n, 1n);
+
+// c·√b as [c, b], c an exact fraction and b a positive integer: a number, √b, c*√b, √b/d, c*√b/d or a negation.
+function _radicalTerm(ast) {
+  if (ast.kind === 'neg') {
+    const t = _radicalTerm(ast.arg);
+    return t && [t[0].mul(_NEG_ONE), t[1]];
+  }
+  const r = exactRational(ast);
+  if (r) return [new Fraction(r[0], r[1]), 1n];
+  if (ast.kind === 'fn' && ast.name === 'SQRT') {
+    const b = exactRational(ast.args[0]);
+    return b && b[1] === 1n && b[0] > 0n ? [new Fraction(1n, 1n), b[0]] : null;
+  }
+  if (ast.kind !== 'bin' || (ast.op !== '*' && ast.op !== '/')) return null;
+  const x = _radicalTerm(ast.l), y = _radicalTerm(ast.r);
+  if (!x || !y || (x[1] !== 1n && y[1] !== 1n)) return null;
+  if (ast.op === '*') return [x[0].mul(y[0]), x[1] * y[1]];
+  return y[1] === 1n && y[0].n !== 0n ? [x[0].div(y[0]), x[1]] : null;
+}
+
+function _radicalValue(c, b) {
+  const { a, b: rest } = _squareFactor(b);
+  const coef = c.mul(new Fraction(a, 1n));
+  if (coef.n === 0n || rest === 1n) return _fractionValue(coef);
+  const ast = _radicalAst(new Fraction(coef.n, coef.d), rest);
+  return Symbolic(coef.s < 0n ? AstNeg(ast) : ast);
+}
+
+// (c·√b)^k = c^k·b^(k div 2)·√b when k is odd.
+function _radicalPower(c, b, k) {
+  const m = k < 0n ? -k : k;
+  const coef = c.pow(new Fraction(m, 1n)).mul(new Fraction(b ** (m / 2n), 1n));
+  const root = m % 2n === 1n ? b : 1n;
+  if (k >= 0n) return _radicalValue(coef, root);
+  return coef.n === 0n ? null : _radicalValue(new Fraction(1n, 1n).div(coef.mul(new Fraction(root, 1n))), root);
+}
+
+// Exact arithmetic on square roots, as the HP's exact mode does it: √2*√2 is 2, √8/√2 is 2, (2*√3)^2 is 12, √2+√2 is 2*√2.
+export function _radicalBinary(op, l, r) {
+  const x = _radicalTerm(l), y = _radicalTerm(r);
+  if (!x || !y || (x[1] === 1n && y[1] === 1n)) return null;
+  switch (op) {
+    case '*': return _radicalValue(x[0].mul(y[0]), x[1] * y[1]);
+    case '/': return y[0].n === 0n ? null : _radicalValue(x[0].div(y[0].mul(new Fraction(y[1], 1n))), x[1] * y[1]);
+    case '+': case '-': return x[1] === y[1] ? _radicalValue(op === '+' ? x[0].add(y[0]) : x[0].sub(y[0]), x[1]) : null;
+    case '^': return y[1] === 1n && y[0].d === 1n && y[0].n <= 64n ? _radicalPower(x[0], x[1], y[0].s * y[0].n) : null;
+    default: return null;
+  }
+}
+
+// EVAL's exact radicals: √12 is 2*√3, 4^(1/2) is 2, and products, quotients and powers of roots work out.
+function _radicalRewrite(ast) {
+  if (ast.kind === 'neg') {
+    const arg = _radicalRewrite(ast.arg);
+    return arg === ast.arg ? ast : AstNeg(arg);
+  }
+  if (ast.kind === 'fn') {
+    const args = ast.args.map(_radicalRewrite);
+    const x = ast.name === 'SQRT' && args.length === 1 ? exactRational(args[0]) : null;
+    if (x && x[0] >= 0n) return _toAst(exactSqrt(x[1] === 1n ? Integer(x[0]) : Rational(x[0], x[1])));
+    return args.every((a, i) => a === ast.args[i]) ? ast : AstFn(ast.name, args);
+  }
+  if (ast.kind !== 'bin') return ast;
+  const l = _radicalRewrite(ast.l), r = _radicalRewrite(ast.r);
+  const base = ast.op === '^' ? exactRational(l) : null, exp = base && exactRational(r);
+  const power = exp && exp[1] !== 1n && base[0] >= 0n ? _exactPower(new Fraction(base[0], base[1]), new Fraction(exp[0], exp[1])) : null;
+  const value = power ?? _radicalBinary(ast.op, l, r);
+  if (value) return _toAst(value);
+  return l === ast.l && r === ast.r ? ast : AstBin(ast.op, l, r);
 }
 
 // The k-th root of an integer or fraction when it is exact, -2 for -8 and k = 3, else null.
@@ -1796,7 +1868,7 @@ export function _evalSymbolic(v, keeps = () => false) {
     : (_op, args, result) => _approxGate(result, args);
   const evalNode = (ast) => algebraEvalAst(ast, resolve, _angleAwareFnEval, binGate);
   const evaluated = _foldUnits(evalNode(_expandUserCalls(v.expr)), evalNode);
-  const trig = approx ? evaluated : exactTrigRewrite(evaluated, _calcState.angle);
+  const trig = approx ? evaluated : _radicalRewrite(exactTrigRewrite(evaluated, _calcState.angle));
   const folded = trig === evaluated ? evaluated : evalNode(trig);
   const integrated = _casCalculus(folded);
   const calculated = integrated === folded ? folded : evalNode(integrated);

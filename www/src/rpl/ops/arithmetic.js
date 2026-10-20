@@ -287,7 +287,7 @@ register('ABS', _withTaggedUnary(_withListUnary((s) => {
 
 register('SQ', _withTaggedUnary(_withListUnary((s) => {
   const v = s.pop();
-  if (_isSymOperand(v))  { s.push(Symbolic(AstBin('^', _toAst(v), AstNum(2)))); return; }
+  if (_isSymOperand(v))  { s.push(_scalarBinary('^', v, Integer(2n))); return; }
   if (isReal(v))    s.push(Real(v.value.times(v.value)));
   else if (isInteger(v)) s.push(Integer(v.value * v.value));
   else if (isRational(v)) {

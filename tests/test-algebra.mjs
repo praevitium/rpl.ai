@@ -9059,3 +9059,26 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(top("RAD 'SIN(π/5)' EVAL") === '`SIN(π/5)`', 'exact trig: π/5 has none in this table and stays');
   runLine('RAD');
 }
+
+// Exact arithmetic on square roots, as the HP's exact mode does it, on the stack and under EVAL.
+{
+  const top = (line) => formatStackTop(runLine(line).peek());
+  assert(top('2 √ SQ') === '2' && top('3 √ 3 √ *') === '3' && top('8 √ 2 √ /') === '2',
+    'radicals: √2², √3·√3 and √8/√2 are whole numbers');
+  assert(top('2 √ 3 √ *') === '`SQRT(6)`' && top('2 √ 2 √ +') === '`2*SQRT(2)`' && top('2 √ 3 ^') === '`2*SQRT(2)`' && top('2 √ -2 ^') === '1/2',
+    'radicals: products, like sums and powers of roots');
+  assert(top('2 √ 1 +') === '`SQRT(2) + 1`' && top("2 √ 'X' *") === '`SQRT(2)*X`', 'radicals: unlike terms and names stay');
+  assert(top("'√12' EVAL") === '`2*SQRT(3)`' && top("'4^(1/2)' EVAL") === '2' && top("'√2*√2+1' EVAL") === '3',
+    'radicals: EVAL works roots out inside an algebraic');
+  assert(top('DEG 45 SIN SQ') === '1/2', 'radicals: the square of sin 45° is 1/2');
+  assert(top('2. √ SQ') === '1.99999999999', 'radicals: a real stays a real, as on the HP');
+  runLine('RAD');
+}
+
+// MAX and MIN keep exact numbers exact.
+{
+  const top = (line) => formatStackTop(runLine(line).peek());
+  assert(top('1/3 1/4 MAX') === '1/3' && top('1/3 1/4 MIN') === '1/4' && top('2 7/3 MAX') === '7/3',
+    'MAX and MIN of fractions give the fraction, as on the HP');
+  assert(top('1/3 .25 MAX') === '0.333333333333', 'MAX with a real gives a real');
+}
