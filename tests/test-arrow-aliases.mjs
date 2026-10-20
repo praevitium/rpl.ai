@@ -469,14 +469,15 @@ for (const [canon, ascii, pre, label] of unaryPairs) {
 }
 
 /* A phone keyboard has no →, ≤, ≥ or ≠: a program typed with ->STR, ->, <=, >= and <> showed them so beside the «
-   that << became, where the keypad and the HP write →STR and ≤. They are kept as the HP writes them; a name of the
-   user's own, such as X->Y, stays as typed. */
+   that << became, where the keypad and the HP write →STR and ≤. They are kept as the HP writes them; X->Y, no
+   command and no name, is a syntax error. */
 {
   const { parseEntry } = await import('../www/src/rpl/parser.js');
   const shown = (src) => parseEntry(src).map((v) => format(v)).join(' ');
   assert(shown('<< 2 ->STR STR-> >>') === '« 2 →STR STR→ »' && shown('<< 1 2 <= 3 4 >= 5 6 <> >>') === '« 1 2 ≤ 3 4 ≥ 5 6 ≠ »'
-    && shown('<< -> a << a 2 * >> >>') === '« → a « a 2 * » »' && shown('<< X->Y ->Q >>') === '« X->Y →Q »',
-    'ASCII spellings: ->STR, STR->, <=, >=, <>, -> and ->Q typed on a phone are kept as →STR, STR→, ≤, ≥, ≠, → and →Q; X->Y, no command, stays');
+    && shown('<< -> a << a 2 * >> >>') === '« → a « a 2 * » »' && shown('<< 1 ->Q >>') === '« 1 →Q »',
+    'ASCII spellings: ->STR, STR->, <=, >=, <>, -> and ->Q typed on a phone are kept as →STR, STR→, ≤, ≥, ≠, → and →Q');
+  assertThrows(() => parseEntry('<< X->Y >>'), /Syntax error near X->Y/, 'ASCII spellings: X->Y, no command and no name, is a syntax error');
   const s = runLine('3 << -> a << a 2 * >> >> EVAL');
   assert(format(s.peek(1)) === '6', 'ASCII spellings: a program typed with -> still binds its local');
 }

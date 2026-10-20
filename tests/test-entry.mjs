@@ -1820,8 +1820,8 @@ const _close = (a, b, eps = 1e-10) => Math.abs(Number(a) - Number(b)) < eps;
   assert(isProgram(parseEntry('« 1 + »')[0]), 'header kind: program');
   assert(isUnit(parseEntry('1_m/s')[0]), 'header kind: unit');
   assert(isSymbolic(parseEntry('`X^2+1`')[0]), 'header kind: algebraic (symbolic)');
-  // anything unrecognised passes through as a bare identifier (Name).
-  assert(isName(parseEntry('ZZQ?')[0]), 'header kind: unrecognised → bare identifier');
+  // Text that is no name or command is a syntax error, as on the HP, where it passed through as a bogus Name.
+  assertThrows(() => parseEntry('ZZQ?'), /Syntax error near ZZQ\?/, 'header kind: unrecognised text is a syntax error');
 }
 
 // session374: first coverage of Entry's pure cursor/buffer movement

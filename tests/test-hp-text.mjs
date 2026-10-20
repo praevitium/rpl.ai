@@ -91,7 +91,8 @@ assertThrows(() => parseHpText('DIR SUB 1 END', 'N'), /expected a variable name/
   assert(formatSource(Rational(1n, 3n)) === '1/3' && formatSource(one('{ 1/3 -3/4 }')) === '{ 1/3 -3/4 }'
     && formatSource(one('[[ 1/3 2 ][ 5 7/8 ]]')) === '[[ 1/3 2 ][ 5 7/8 ]]' && formatSource(one('« 1/3 2/3 + »')) === '« 1/3 2/3 + »',
     'a rational reads back inside a list, a matrix and a program');
-  assert(!['1/3_m', '1/3E2', '1/2/3', '2/3x'].some((src) => parseEntry(src).some(isRational)),
+  const readsRational = (src) => { try { return parseEntry(src).some(isRational); } catch { return false; } };
+  assert(!['1/3_m', '1/3E2', '1/2/3', '2/3x'].some(readsRational),
     'a fraction followed by a unit, an exponent, a second slash or letters is not a rational');
   const stack = runLine('1 3 / DUP ->STR STR→ SAME');
   assert(stack.peek().value.eq(1), '->STR then STR→ gives back the same rational');

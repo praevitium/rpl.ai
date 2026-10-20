@@ -6,7 +6,7 @@ import { RPLError } from './stack.js';
 import { getApproxMode, getWordsizeMask, state as _state, angleTrig, testUserFlag } from './state.js';
 import { parseAlgebra } from './algebra.js';
 import { parseUnitExpr } from './units.js';
-import { hasOp } from './ops/registry.js';
+import { hasOp, OPS } from './ops/registry.js';
 
 // A part of (re, im): a plain number or a fraction.  parseFloat would read 1_m as 1 and 1/2 as 1.
 function complexPart(text) {
@@ -223,8 +223,7 @@ export function endsInQuote(src) {
   return quote !== null;
 }
 
-// A phone keyboard has no →, ≤, ≥ or ≠, so a command typed ->STR, <= or <> is kept as the HP writes it, as << is;
-// names of the user's own stay as typed.
+// A phone keyboard has no →, ≤, ≥ or ≠, so a command typed ->STR, <= or <> is kept as the HP writes it, as << is.
 const HP_COMPARISONS = Object.freeze({ '<=': '≤', '>=': '≥', '<>': '≠' });
 
 function hpSpelling(text) {
@@ -424,8 +423,13 @@ export function parseEntry(src) {
         return Tagged(t.text, parseOne());
       }
 
-      case 'ident':
-        return Name(hpSpelling(t.text));
+      case 'ident': {
+        const name = hpSpelling(t.text);
+        // As on the HP, text that is no name, command or → is a syntax error: 2^10 or e^2 typed without quotes made a name
+        // ^10 or e^2. Before any command is registered (the parser on its own) there is nothing to check against.
+        if (OPS.size && name !== '→' && !isValidHpIdentifier(name) && !hasOp(name)) throw new RPLError(`Syntax error near ${t.text}`);
+        return Name(name);
+      }
 
       case 'delim': {
         if (t.text === '{') return parseList();
