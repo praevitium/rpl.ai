@@ -33,18 +33,33 @@ function completionScore(word, name) {
   return Math.max(0, fuzzyScore(word, name));
 }
 
-export function completions(word, { names = [], variables = [] } = {}) {
+export function completions(word, { names = [], variables = [], locals = [] } = {}) {
   if (!word) return [];
   const seen = new Set();
   return [
+    ...locals.map((name) => ({ name, kind: 'local' })),
     ...variables.map((name) => ({ name, kind: 'variable' })),
     ...names.filter((n) => !n.includes('->')).map((name) => ({ name, kind: 'command' })),
   ]
-    .map((row) => ({ ...row, score: completionScore(word, row.name) }))
+    .map((row) => {
+      const score = completionScore(word, row.name);
+      return { ...row, score: score && row.kind === 'local' ? score + 100 : score };
+    })
     .filter((row) => row.score > 0)
     .sort((a, b) => b.score - a.score || a.name.length - b.name.length)
     .filter((row) => !seen.has(row.name.toUpperCase()) && seen.add(row.name.toUpperCase()))
     .slice(0, MAX_ROWS);
+}
+
+// The names a → earlier in the line binds: in « → a b « a b + » » the program's a and b.
+export function localNames(text) {
+  const words = String(text ?? '').split(/\s+/);
+  const names = new Set();
+  words.forEach((word, i) => {
+    if (word !== '→' && word !== '->') return;
+    for (let j = i + 1; j < words.length && /^[^\d«»'`"{}[\]()#][^«»'`"{}[\]()#]*$/.test(words[j]); j++) names.add(words[j]);
+  });
+  return [...names];
 }
 
 // After a number's _, the UNITS menu's units with their group: 9.8_m offers m, mm, mi, mph… Inside an algebraic a unit
@@ -114,7 +129,8 @@ export class Autocomplete {
       this.close();
       return;
     }
-    const rows = at.unit ? unitCompletions(at.word, { plain: isInsideAlgebraic(text, at.from) }) : completions(at.word, { names: allOps(), variables: varOrder() });
+    const rows = at.unit ? unitCompletions(at.word, { plain: isInsideAlgebraic(text, at.from) })
+      : completions(at.word, { names: allOps(), variables: varOrder(), locals: localNames(text.slice(0, at.from)) });
     if (!rows.length || (rows.length === 1 && rows[0].name === at.word)) { this.close(); return; }
     if (this.word?.word !== at.word) this.index = 0;
     this.word = at;
@@ -131,6 +147,7 @@ export class Autocomplete {
         : escapeHtml(row.name);
       const info = row.kind === 'command' ? this.app.commandInfo(row.name) : null;
       const detail = row.kind === 'variable' ? `Variable · ${typeName(varRecall(row.name))}`
+        : row.kind === 'local' ? 'Local variable'
         : row.kind === 'unit' ? 'Unit'
         : info ? shortDescription(info.entry, 90) : '';
       const sig = info?.signature ?? row.group ?? '';
@@ -206,7 +223,7 @@ export class Autocomplete {
     const { from } = this.word;
     const to = entry.cursor;
     const text = entry.buffer;
-    const spaced = row.kind === 'command' && !isInsideAlgebraic(text, from) && !/^\s/.test(text.slice(to));
+    const spaced = (row.kind === 'command' || row.kind === 'local') && !isInsideAlgebraic(text, from) && !/^\s/.test(text.slice(to));
     const insert = spaced ? `${row.name} ` : row.name;
     entry._dispatch({ changes: { from, to, insert }, selection: { anchor: from + insert.length } });
     this._dismissedWord = row.name;

@@ -274,7 +274,7 @@ import { assert } from './helpers.mjs';
 }
 
 {
-  const { wordBeforeCursor, completions, isInsideAlgebraic, unitCompletions } = await import('../www/src/ui/autocomplete.js');
+  const { wordBeforeCursor, completions, isInsideAlgebraic, unitCompletions, localNames } = await import('../www/src/ui/autocomplete.js');
   const at = wordBeforeCursor('2 3 SW', 6);
   assert(at?.word === 'SW' && at.from === 4, 'wordBeforeCursor: the word ending at the cursor and where it starts');
   assert(wordBeforeCursor('`SI', 3)?.word === 'SI', 'wordBeforeCursor: an algebraic quote starts a word');
@@ -294,5 +294,10 @@ import { assert } from './helpers.mjs';
     'unitCompletions: the UNITS menu\'s units starting with what follows _, shortest first, each with its group');
   assert(unitCompletions('ft').some((r) => r.name === 'ft/s') && !unitCompletions('ft', { plain: true }).some((r) => /[*/^]/.test(r.name)),
     'unitCompletions: inside an algebraic only plain units, since 5_ft/s there would divide by s');
+  assert(localNames('« → a b « a b + » ').join(' ') === 'a b' && localNames("« -> X Y 'X+Y' ").join(' ') === 'X Y'
+    && localNames('→ a1 a2 « ').join(' ') === 'a1 a2' && localNames('« → ←tot n « ').join(' ') === '←tot n' && localNames('2 3 + ').length === 0,
+    'localNames: the names a → binds, up to the program or algebraic that uses them');
+  assert(completions('r', { names: ['RE', 'RL', 'RAD'], locals: ['rate'] }).map((r) => `${r.name}:${r.kind}`).join(' ') === 'rate:local RE:command RL:command RAD:command',
+    'completions: a program\'s locals lead, ahead of shorter commands');
   assert(isInsideAlgebraic('2 `SI', 3) && !isInsideAlgebraic('`X` SI', 4), 'isInsideAlgebraic: counts the quotes before the word');
 }

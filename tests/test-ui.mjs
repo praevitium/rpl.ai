@@ -2281,6 +2281,11 @@ setAngle('RAD');
   const units = ac.isOpen() && ac.rows.every((r) => r.kind === 'unit') && ac.word.word === 'k';
   ac.accept(1);
   assert(units && entry.buffer === '9.8_kg', 'autocomplete: after a number\'s _ the list offers units, and a chosen one completes the unit with no space after it');
+  entry.resetBuffer('');
+  entry.type('« → rate time « r');
+  const local = ac.rows[0]?.kind === 'local' && ac.rows[0].name === 'rate';
+  ac.accept(0);
+  assert(local && entry.buffer === '« → rate time « rate ', 'autocomplete: inside a program the → locals are offered first, and a chosen one is a word with its space');
 }
 
 {
