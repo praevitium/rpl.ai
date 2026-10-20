@@ -16,10 +16,17 @@ export function wordBeforeCursor(text, cursor) {
   const before = String(text ?? '').slice(0, cursor);
   if ((before.match(/"/g) ?? []).length % 2 === 1) return null;
   let from = before.length;
-  while (from > 0 && !WORD_BREAK.test(before[from - 1])) from--;
+  // A phone keyboard's -> stands for →, so ->S and R->B are one word, as →S and R→B are.
+  for (;;) {
+    while (from > 0 && !WORD_BREAK.test(before[from - 1])) from--;
+    if (!before.slice(0, from).endsWith('->')) break;
+    from -= 2;
+  }
   const word = before.slice(from);
   return word ? { word, from } : null;
 }
+
+export const hpArrows = (word) => word.replaceAll('->', '→');
 
 const firstLetter = (name) => name.match(/[A-Z]/i)?.[0].toUpperCase();
 // A list the keyboard caps fades at the edge it continues past, so the one row left in landscape shows there are more.
@@ -39,7 +46,7 @@ function completionScore(word, name) {
 }
 
 export function completions(word, { names = [], variables = [], locals = [] } = {}) {
-  if (!word) return [];
+  if (!word || hpArrows(word) === '→') return [];
   const seen = new Set();
   return [
     ...locals.map((name) => ({ name, kind: 'local' })),
@@ -47,7 +54,7 @@ export function completions(word, { names = [], variables = [], locals = [] } = 
     ...names.filter((n) => !n.includes('->')).map((name) => ({ name, kind: 'command' })),
   ]
     .map((row) => {
-      const score = completionScore(word, row.name);
+      const score = completionScore(hpArrows(word), row.name);
       return { ...row, score: score && row.kind === 'local' ? score + 100 : score };
     })
     .filter((row) => row.score > 0)
@@ -150,7 +157,7 @@ export class Autocomplete {
   _render() {
     const { word } = this.word;
     const rowsHtml = this.rows.map((row, i) => {
-      const segments = highlightSegments(row.name, matchPositions(word, row.name));
+      const segments = highlightSegments(row.name, matchPositions(hpArrows(word), row.name));
       const label = segments.length
         ? segments.map((s) => (s.match ? `<mark>${escapeHtml(s.text)}</mark>` : escapeHtml(s.text))).join('')
         : escapeHtml(row.name);

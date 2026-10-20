@@ -19,7 +19,7 @@ import { icon } from './icons.js';
 import { escapeHtml, typeName, markScrollEdges, LONG_PRESS_MS } from './display.js';
 import { MENU_FAMILIES, UNIT_GROUPS } from './menus.js';
 import { shortcutText } from './actions.js';
-import { wordBeforeCursor } from './autocomplete.js';
+import { wordBeforeCursor, hpArrows } from './autocomplete.js';
 
 const UNIT_SYMBOLS = Object.freeze([...new Set(UNIT_GROUPS.flatMap((g) => g.units))].filter(unitInfo));
 
@@ -472,7 +472,7 @@ export class Drawers {
     const word = isSyntaxWord(this.cat.ref) ? findReferenceEntry(this.reference, this.cat.ref)?.name ?? this.cat.ref : this.cat.ref;
     const { entry } = this.app;
     const at = wordBeforeCursor(entry.buffer, entry.cursor);
-    if (at && word.toUpperCase().startsWith(at.word.toUpperCase())) {
+    if (at && word.toUpperCase().startsWith(hpArrows(at.word).toUpperCase())) {
       entry._dispatch({ changes: { from: at.from, to: entry.cursor, insert: '' }, selection: { anchor: at.from } });
     }
     typeSyntaxWord(entry, word);

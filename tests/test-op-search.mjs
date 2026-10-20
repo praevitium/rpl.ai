@@ -280,6 +280,14 @@ import { assert } from './helpers.mjs';
   assert(wordBeforeCursor('`SI', 3)?.word === 'SI', 'wordBeforeCursor: an algebraic quote starts a word');
   assert(wordBeforeCursor('"SW', 3) === null, 'wordBeforeCursor: nothing inside a string');
   assert(wordBeforeCursor('2 ', 2) === null, 'wordBeforeCursor: nothing right after a space');
+  assert(wordBeforeCursor('2 ->S', 5)?.word === '->S' && wordBeforeCursor('2 R->', 5)?.from === 2 && wordBeforeCursor('3 4 -', 5) === null,
+    'wordBeforeCursor: a phone keyboard\'s -> belongs to the word, as → does (->S, R->), while a lone - is still minus');
+  {
+    const ops = ['→STR', '->STR', '→HMS', 'R→B', 'R->B', 'SIN', 'SQ', 'STR→'];
+    assert(completions('->S', { names: ops }).map((r) => r.name).join(' ') === '→STR →HMS' && completions('R->', { names: ops })[0]?.name === 'R→B'
+      && completions('STR->', { names: ops }).map((r) => r.name).join(' ') === 'STR→' && completions('->', { names: ops }).length === 0,
+      'completions: ->S offers →STR, R-> R→B and STR-> STR→, as typed with arrows; a lone -> (a local binding) offers nothing');
+  }
   const rows = completions('SW', { names: allOps() });
   assert(rows[0].name === 'SWAP' && rows.length <= 6, 'completions: the shortest prefix match ranks first, at most six rows');
   const mine = completions('MY', { names: allOps(), variables: ['MYVAR'] });

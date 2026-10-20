@@ -2270,6 +2270,10 @@ setAngle('RAD');
   insert('SIN');
   assert(replaced === '2 SIN ' && entry.buffer === '2 X SIN ',
     'reference Insert: SIN replaces the si half typed at the cursor (the word a held completion row opened the page from), and follows a word it does not complete');
+  entry.resetBuffer('');
+  entry.type('3 R->');
+  insert('R→B');
+  assert(entry.buffer === '3 R→B ', 'reference Insert: R→B replaces R-> typed on a phone keyboard, which completes to it');
 }
 
 {
