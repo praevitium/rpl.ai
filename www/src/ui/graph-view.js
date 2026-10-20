@@ -37,6 +37,8 @@ const PLOT_KINDS = Object.freeze([
 const RANGE_FIELDS = Object.freeze([['xmin', 'x from'], ['xmax', 'x to'], ['ymin', 'y from'], ['ymax', 'y to']]);
 const TAP_SLOP_PX = 6;
 const TOUCH = !!globalThis.matchMedia?.('(pointer: coarse)').matches;
+// A drag that starts this close to the graphics cursor moves it rather than the plot.
+const MARK_GRAB_PX = TOUCH ? 24 : 10;
 const IDLE_READOUT = TOUCH
   ? 'Tap to read values · drag to pan · pinch to zoom'
   : 'Hover, or press T to trace · drag to pan · scroll to zoom';
@@ -276,6 +278,10 @@ export class GraphView {
         const to = this._drag.ids.map((id) => this._pointers.get(id));
         this.view = pinchView(this._drag.view, this._drag.from, to, rect.width, rect.height);
         this.draw();
+      } else if (this._drag?.mark) {
+        this._markAt(ev.offsetX, ev.offsetY);
+        this._readout.textContent = this._readoutAt(this._mark.x, this._mark.y);
+        this.draw();
       } else if (this._drag && this._turnable()) {
         this._turn = turnBy(this._drag.turn, (ev.offsetX - this._drag.x) * TURN_PER_PIXEL, (ev.offsetY - this._drag.y) * TURN_PER_PIXEL);
         this.draw();
@@ -321,7 +327,14 @@ export class GraphView {
     const [a, b] = this._pointers.entries();
     if (!a) this._drag = null;
     else if (b) this._drag = { ids: [a[0], b[0]], from: [a[1], b[1]], view: { ...this.view } };
-    else this._drag = { x: a[1][0], y: a[1][1], view: { ...this.view }, turn: this._turn };
+    else this._drag = { x: a[1][0], y: a[1][1], view: { ...this.view }, turn: this._turn, mark: this._onMark(a[1][0], a[1][1]) };
+  }
+
+  _onMark(px, py) {
+    if (!this._mark || this.tracing || this._projected()) return false;
+    const rect = this._canvas.getBoundingClientRect();
+    const [mx, my] = worldToPixel(this._mark.x, this._mark.y, this.view, rect.width, rect.height);
+    return Math.hypot(px - mx, py - my) <= MARK_GRAB_PX;
   }
 
   // On a phone the kinds scroll in one row; keep the chosen one in sight.
