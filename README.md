@@ -423,7 +423,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   names it the HP's way: `"hi" sin` reads "SIN can't use a string." with
   the SIN reference. A line typed the way other
   calculators take it, `2^10` or `e^2`, is no RPL, as on the HP; its
-  banner's Evaluate as a formula runs it quoted with EVAL. A `#ff` typed
+  banner's Evaluate as a formula runs it quoted with EVAL, and the cursor
+  waits at `^10`, where the line broke, as on the HP. A `#ff` typed
   in DEC reads in decimal, as on the HP, and its banner's Read as hex runs
   the line with `#ffh`.
 - ⌫ and Enter sit beside the command line, finger-sized. ⌫ deletes a

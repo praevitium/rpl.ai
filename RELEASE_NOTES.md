@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.103 (2026-10-20)
+**Latest release:** v0.7.104 (2026-10-20)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.7.104 — 2026-10-20
+
+- DROPN, DUPN, ROLL, PICK, SWAP and the other commands that check the
+  stack before they take from it said only that they needed more values
+  than the stack held. Their banners now count, as `+`'s does:
+  `1 3 DROPN` reads "DROPN needs four values; the stack has two values."
+- A line that doesn't parse keeps the cursor at the word that broke it,
+  as on the HP: after `2^10` the cursor waits at `^10`, and after
+  `3 4 x^2 +` at `x^2`, so the fix is typed in place.
+- A stack diagram too long for a banner or search ends at a whole word
+  with one ellipsis. DUPN's banner read "obj1 obj2 ...…." and now reads
+  "obj1 obj2 …", and the matrix commands no longer end on an open `[[`.
 
 ---
 
