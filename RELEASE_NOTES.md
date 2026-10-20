@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.88 (2026-10-20)
+**Latest release:** v0.7.89 (2026-10-20)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.89 — 2026-10-20
+
+- Square roots work out against each other in exact mode, as on the HP:
+  `2 √ SQ` is 2, `3 √ 3 √ *` is 3, `8 √ 2 √ /` is 2, `2 √ 3 √ *` is √6 and
+  `2 √ 2 √ +` is 2√2, where they stayed SQRT(2)^2 and the like. EVAL does
+  the same inside an algebraic, and also gives `'√12'` as 2√3 and
+  `'4^(1/2)'` as 2, as `12 √` and `4 1/2 ^` already did.
+- MAX and MIN keep fractions exact: `1/3 1/4 MAX` gives 1/3, where it gave
+  0.333333333333.
 
 ## v0.7.88 — 2026-10-20
 
