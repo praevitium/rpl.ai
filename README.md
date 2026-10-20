@@ -535,7 +535,9 @@ factors or differentiates just that part. On a Mac, Option types the
 symbols it has, such as √, π, ≤ and ∑.
 
 The insight strip underneath recomputes as you type, and one click applies
-a result or opens the plot. Its algebra runs in the background, so typing
+a result or opens the plot; a formula with units is worked on but not
+plotted, here or from its stack level. The strip scrolls sideways and fades
+at an edge with more past it. Its algebra runs in the background, so typing
 never waits on it, and a result that takes more than 3 seconds is skipped.
 Enter pushes the expression, or replaces the level you were editing. Esc
 cancels, with Undo. Switch to RPL and the formula moves to the command line.
