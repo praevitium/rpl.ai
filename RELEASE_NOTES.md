@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.102 (2026-10-20)
+**Latest release:** v0.7.103 (2026-10-20)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.103 — 2026-10-20
+
+- The stack diagrams of `*`, `^`, `√`, SQ, ALOG and EXP lost their operator
+  or power when the manual was taken from its PDF, so a banner said `*`
+  takes "z1 z2 → z1 z2" and `^` "w z → wz". They now read z1 × z2, w^z,
+  √z, z^2, 10^z and e^z, in banners, the Catalog and search.
+- The completion list finds a unit holding μ, Å, Ω or ° from the letters a
+  phone keyboard has: `10ohm` offers `_Ω`, `kohm` kΩ, `degC` °C, `um` μm,
+  `uF` μF and `angstrom` Å.
+- A too-few-arguments banner no longer marks level 1 "this one", as if the
+  value there were at fault; only a value a command can't use is marked.
 
 ## v0.7.102 — 2026-10-20
 
