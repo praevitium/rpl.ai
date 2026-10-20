@@ -628,7 +628,8 @@ and DOT- draw and erase as the cursor moves, MARK sets a mark at the
 cursor, LINE, TLINE, BOX and CIRCL draw from it to the cursor, DEL clears
 the box between them and SUB copies it to the stack, REPL puts level 1's
 graphics object in at the cursor, LABEL and ERASE run their commands, and
-PICT→ puts PICT on the stack. The plot-window
+PICT→ puts PICT on the stack. UNDO takes a drawing back, from a key or a
+typed command. The plot-window
 commands (XRNG, YRNG, CENTR, SCALE, AUTO, INDEP, RES, AXES and the rest)
 set PPAR, and plots start in its window, follow its INDEP, DEPND and RES
 and draw its axes. XVOL, YVOL, ZVOL, XXRNG, YYRNG, EYEPT, NUMX and NUMY set
@@ -988,6 +989,9 @@ and serial transfer.
 - BESTFIT pushes the model it picked and its correlation, as LINFIT does,
   as well as making it the current one.
 - Plot commands open the plot view instead of drawing into PICT.
+- UNDO takes back a change to PICT along with the stack and variables, so
+  a stray ERASE or LINE can be undone; the HP's UNDO restores the stack
+  only.
 - MOLWT answers in g/mol, from standard atomic weights, where the HP
   writes g/gmol, so its last digits can differ from the HP's.
 - There is no ON key to break a running program. A command or program that
