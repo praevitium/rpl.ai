@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.65 (2026-10-19)
+**Latest release:** v0.7.66 (2026-10-20)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.66 — 2026-10-20
+
+- Symbolic matrices, part 2: the CAS commands take an array of
+  expressions entry by entry, as EXPAND's AUR entry says. SUBST, `|`,
+  DERIV, INTEG, ∫, INTVX, DERVX, EXPAND, SIMPLIFY, FACTOR, COLLECT,
+  PARTFRAC, PROPFRAC, TSIMP and the trig and exponential rewrites all do:
+  `[[ 'SIN(T)' T ][ 'T^2' 1 ]] 'T' DERIV` gives
+  `[[ COS(T) 1 ][ 2*T 0 ]]`. Rewrites leave numeric entries as they are.
+- DERIV by a vector of variables gives the gradient, as the AUR says:
+  `'X^2*Y' [ X Y ] DERIV` gives `[ 2*X*Y X^2 ]`. A vector of functions
+  with it gives the Jacobian matrix.
+- DERIV of an exact number gives the integer 0 rather than 0., and FACTOR
+  of a prime gives the number itself rather than a one-term formula.
 
 ## v0.7.65 — 2026-10-19
 
