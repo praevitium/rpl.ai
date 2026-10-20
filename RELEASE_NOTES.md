@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.101 (2026-10-20)
+**Latest release:** v0.7.102 (2026-10-20)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.102 — 2026-10-20
+
+- A command whose manual page gives no count of its inputs, such as XROOT,
+  DERIV or ISPRIME?, now says how many values it needs when the stack runs
+  short: `"hi" XROOT` reads "XROOT needs two values; the stack has one
+  value.", where it said it needs more values than the stack holds. The
+  count comes from what the stack lacked, so it covers 317 commands.
+- The completion list finds a command with Σ, Δ or π in its name from the
+  letters a phone keyboard has: `clsigma` offers CLΣ, `stosig` STOΣ,
+  `deltalist` ΔLIST and `->qpi` →Qπ. Every command is offered as the HP
+  spells it, so →Qπ, erf and lim no longer show as →QΠ, ERF and LIM.
+- A `#` number with hex digits typed in DEC, OCT or BIN mode, such as
+  `#ff`, now gets a Read as hex fix on its banner, which runs the line with
+  `#ffh`, and a detail saying that a # number reads in the current base, as
+  on the HP. The banner spoke of a `#ffd` nobody typed.
 
 ## v0.7.101 — 2026-10-20
 
