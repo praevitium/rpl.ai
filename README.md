@@ -989,6 +989,8 @@ and serial transfer.
 
 **Behaviour that differs from the HP 50g.**
 
+- An algebraic reads the HP's postfix factorial, `'5!'` or `'(N+1)!'`, but
+  its text form writes `FACT(5)`; the textbook display shows `5!`.
 - `BEEP` doesn't hold the program while its tone plays; tones in a row still
   sound one after another.
 - `→DATE`, `→TIME` and `CLKADJ` set rpl.ai's own clock, by an offset

@@ -19421,6 +19421,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>Factorial (Gamma) Function: Returns the factorial n! of a positive integer argument n, or the gamma function Γ(x+1) of a non-integer argument x. For x ≥ 253.1190554375 or n &lt; 0, ! causes an overflow exception (if flag –21 is set, the exception is treated as an error). For non-integer x ≤ –254.1082426465, ! causes an underflow exception (if flag –20 is set, the exception is treated as an error). In algebraic syntax, ! follows its argument. Thus the algebraic syntax for the factorial of 7 is 7!. For non-integer arguments x, x! = Γ(x + 1), defined for x &gt; –1 as:</p>
     <p>∞ –t x Γ ( x + 1 ) = ∫ e t dt 0</p>
     <p>and defined for other values of x by analytic continuation: Γ(x + 1) = n Γ(x)</p>
+    <p>In rpl.ai an algebraic reads 7! as the AUR says, and 2^3! as 2^6. The textbook display shows X!; the text form, and an edit, write FACT(X).</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">

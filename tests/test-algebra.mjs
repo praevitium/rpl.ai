@@ -9028,3 +9028,14 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
     'DERIV takes a list of expressions element by element, as it does a vector');
   giac._clear();
 }
+
+// The HP writes factorial after its argument, binding tighter than ^.
+{
+  const fact = (src) => formatAlgebra(parseAlgebra(src));
+  assert(fact('X!+1') === 'FACT(X) + 1', "postfix !: 'X!+1' reads as FACT(X)+1");
+  assert(fact('(N+1)!/N!') === 'FACT(N + 1)/FACT(N)', 'postfix !: after a parenthesis and a name');
+  assert(fact('2^3!') === '2^FACT(3)' && fact('X!^2') === 'FACT(X)^2', 'postfix !: binds tighter than ^ on either side');
+  assert(fact('-3!') === '-FACT(3)' && fact('X!!') === 'FACT(FACT(X))', 'postfix !: under a minus sign, and twice');
+  assert(formatStackTop(runLine("'5!' EVAL").peek()) === '120', "postfix !: '5!' EVAL is 120");
+  assert(formatStackTop(runLine("'X!'").peek()) === '`FACT(X)`', "postfix !: 'X!' typed with quotes is an algebraic, not a name");
+}

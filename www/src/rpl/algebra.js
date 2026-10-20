@@ -408,8 +408,14 @@ export function parseAlgebra(src) {
   }
 
   function parsePow() {
-    const left = parseP();
+    let left = parseP();
     skip();
+    // The HP's postfix factorial binds tighter than ^, so 2^3! is 2^6.
+    while (s[i] === '!') {
+      i++;
+      left = Fn('FACT', [left]);
+      skip();
+    }
     if (s[i] === '^') {
       i++;
       const right = parseF();              // right-assoc: X^Y^Z = X^(Y^Z)
