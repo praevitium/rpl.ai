@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.76 (2026-10-20)
+**Latest release:** v0.7.77 (2026-10-20)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.77 — 2026-10-20
+
+- PICTURE's drawing keys, part 1. While PICTURE's cursor shows, a row
+  under the plot holds the HP's Picture menu keys:
+  - MARK sets a mark at the cursor, drawn as a small ×.
+  - LINE, TLINE, BOX and CIRCL draw on PICT from the mark to the cursor:
+    a line, a line that flips its pixels, a box with those corners, and a
+    circle round the mark through the cursor. They wait for a mark.
+  - PICT→ puts PICT on the stack.
+  - On a phone the row scrolls sideways.
+- DOT+, DOT-, DEL, SUB, REPL and LABEL come next. As with the LINE and
+  BOX commands, UNDO does not take a drawing back.
 
 ## v0.7.76 — 2026-10-20
 
