@@ -1739,9 +1739,16 @@ class App {
       onPress: () => this.insertUnit(unit),
       onPressL: () => this.insertUnit(unit, 'convert'),
       onPressR: () => this.insertUnit(unit, 'divide'),
-      onHold: (anchor) => this._heldKeyMenu([{ text: `Convert level 1 to ${unit}`, run: () => this.insertUnit(unit, 'convert') }, { text: `Divide by ${unit}`, run: () => this.insertUnit(unit, 'divide') }], anchor, 'Unit'),
+      onHold: (anchor) => this._heldKeyMenu(this._heldUnitOptions(unit), anchor, 'Unit'),
     }));
     this.setMenu([back, ...keys], 'UNITS', { folder: group.id });
+  }
+
+  // A writer has no level 1 to convert, so a held unit key offers what its tap and ↱ do there.
+  _heldUnitOptions(unit) {
+    const divide = { text: `Divide by ${unit}`, run: () => this.insertUnit(unit, 'divide') };
+    if (this.inputMode === 'equation' || this.inputMode === 'matrix') return [{ text: `Attach ${unit}`, mark: '', run: () => this.insertUnit(unit) }, divide];
+    return [{ text: `Convert level 1 to ${unit}`, run: () => this.insertUnit(unit, 'convert') }, divide];
   }
 
   commandTitle(name) {

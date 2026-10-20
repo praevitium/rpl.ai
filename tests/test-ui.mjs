@@ -317,7 +317,9 @@ import { assert, assertThrows } from './helpers.mjs';
     'stack: a matrix level\'s ⋯ menu has Inverse, Determinant and Eigenvalues when it is square, and Transpose, run on the level as its EVAL and →NUM are, as a unit level has Convert to… and a formula Plot');
   assert((appSrc.match(/this\.stack\.runOp\(\(\) => lookup\(op\)\.fn\(this\.stack, this\.entry\)\)/g) || []).length === 2,
     'stack: a level menu\'s EVAL, →NUM, DBUG, →LIST, DUPN and DROPN run through Stack.runOp, so LASTARG gives their arguments as it does for a typed command');
-  assert(/onHold: \(anchor\) => this\._heldKeyMenu\(\[\{ text: `Convert level 1 to \$\{unit\}`, run: \(\) => this\.insertUnit\(unit, 'convert'\) \}, \{ text: `Divide by \$\{unit\}`, run: \(\) => this\.insertUnit\(unit, 'divide'\) \}\], anchor, 'Unit'\)/.test(appSrc)
+  assert(/onHold: \(anchor\) => this\._heldKeyMenu\(this\._heldUnitOptions\(unit\), anchor, 'Unit'\)/.test(appSrc)
+    && /return \[\{ text: `Convert level 1 to \$\{unit\}`, run: \(\) => this\.insertUnit\(unit, 'convert'\) \}, divide\];/.test(appSrc)
+    && /const divide = \{ text: `Divide by \$\{unit\}`, run: \(\) => this\.insertUnit\(unit, 'divide'\) \};/.test(appSrc)
     && /onHold: left && \(\(anchor\) => this\._heldKeyMenu\(\[left, right\]\.filter\(Boolean\)\.map\(\(words\) => \(\{ text: words\.join\(' … '\), run: type\(words\) \}\)\), anchor, 'Structures'\)\)/.test(appSrc) && !/_structureMenu/.test(appSrc),
     'units: a finger held on a UNITS soft key offers the shifted key\'s Convert and Divide through the held-key menu a BRCH key\'s structures use');
   assert(/\.\.\.\(isUnit\(value\) \? \[\{ label: 'CONV', title: 'Convert it to another unit \(CONVERT\)', onPress: act\('convert'\) \}\] : \[\]\)/.test(appSrc),
@@ -1967,6 +1969,13 @@ setAngle('RAD');
   assert(/\{ label: 'FROM1'[^\n]+\n\s*\{ label: '→STK', title: 'Copy the focused cell to the stack', onPress: \(\) => this\.cellToStack\(\) \},/.test(mxSrc)
     && /cellToStack\(\) \{[\s\S]*?value = parseMatrixCell\(this\.grid\[r\]\[c\]\);[\s\S]*?this\.app\.pushFromWriter\(value,/.test(mxSrc),
     'matrix writer: →STK copies the focused cell to the stack and leaves the writer open, as the HP MatrixWriter\'s →STK does');
+}
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/onHold: \(anchor\) => this\._heldKeyMenu\(this\._heldUnitOptions\(unit\), anchor, 'Unit'\)/.test(appSrc)
+    && /if \(this\.inputMode === 'equation' \|\| this\.inputMode === 'matrix'\) return \[\{ text: `Attach \$\{unit\}`, mark: '', run: \(\) => this\.insertUnit\(unit\) \}, divide\];/.test(appSrc),
+    'units: a finger held on a unit key in a writer offers Attach and Divide, where it offered Convert level 1, which the writer refuses');
 }
 
 {
