@@ -1,6 +1,6 @@
 import { Stack } from './rpl/stack.js';
 import { Entry, inProgramEntry } from './ui/entry.js';
-import { Display, escapeHtml, describeValue, suspendedProgramHtml, binaryBaseLabel } from './ui/display.js';
+import { Display, escapeHtml, describeValue, suspendedProgramHtml, binaryBaseLabel, markScrollEdges } from './ui/display.js';
 import { Keypad, hpKeyCode, typedKeyCode, keyForCode } from './ui/keyboard.js';
 import { MenuBar } from './ui/menubar.js';
 import { AppBar, installHint } from './ui/appbar.js';
@@ -141,6 +141,8 @@ class App {
       stackView: $('stackView'), cmdline: $('cmdline'), statusLine: $('statusLine'),
     });
     $('banner').addEventListener('click', (e) => this._onBannerClick(e));
+    $('banner').addEventListener('scroll', (e) => { if (e.target.classList?.contains('bn-f')) markScrollEdges(e.target); }, true);
+    new ResizeObserver(() => this._markBannerEdges()).observe($('banner'));
     this.appbar = new AppBar({ el: $('appbar'), app: this });
     this.keypad = new Keypad({ el: $('keys'), app: this });
     this.menubar = new MenuBar({ el: $('menubar'), app: this });
@@ -471,7 +473,7 @@ class App {
   renderBanner() {
     const el = $('banner');
     const lcd = lcdHtml(getLcd());
-    if (this.errorBanner) { this._haltBanner = null; el.innerHTML = lcd + errorBannerHtml(this.errorBanner); return; }
+    if (this.errorBanner) { this._haltBanner = null; el.innerHTML = lcd + errorBannerHtml(this.errorBanner); this._markBannerEdges(); return; }
     const halted = calcState.halted;
     if (halted) {
       const prompt = getPromptMessage();
@@ -492,6 +494,12 @@ class App {
     }
     this._haltBanner = null;
     el.innerHTML = lcd;
+  }
+
+  // With the keyboard up the fixes keep to one row that scrolls, and fade at the edge they continue past.
+  _markBannerEdges() {
+    const fixes = $('banner').querySelector('.bn-f');
+    if (fixes) markScrollEdges(fixes);
   }
 
   dismissError() {

@@ -344,6 +344,10 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(/showLastLines\(anchor\) \{\s*const lines = \[\.\.\.new Set\(this\.entry\.getHistory\(\)\.reverse\(\)\)\]\.slice\(0, 4\);\s*if \(!lines\.length\) return;\s*this\._heldKeyMenu\(lines\.map\(\(line\) => \(\{ text: line, mark: '', run: \(\) => \(this\.entry\.buffer \? this\.entry\.typeToken\(line\) : this\.entry\.recall\(line\)\) \}\)\), anchor, 'Last lines', \{ className: 'lines' \}\);/.test(appSrc)
     && /holdForLines\(this\.go, app\);/.test(inputAreaSrc) && /<span class="ck">\$\{o\.mark \?\? \(i \? '⇨' : '⇦'\)\}<\/span>/.test(appSrc),
     'command line: a finger held on the Enter beside the line offers the last four lines entered, newest first (the HP\'s CMD), which go back on an empty line or into the line being typed');
+  assert(['.bn-f.more-r,', '.bn-f.more-l,', '.bn-f.more-l.more-r,'].every((sel) => gridCss.includes(sel))
+    && /\$\('banner'\)\.addEventListener\('scroll', \(e\) => \{ if \(e\.target\.classList\?\.contains\('bn-f'\)\) markScrollEdges\(e\.target\); \}, true\);/.test(appSrc)
+    && /el\.innerHTML = lcd \+ errorBannerHtml\(this\.errorBanner\); this\._markBannerEdges\(\);/.test(appSrc),
+    'error banner: with the keyboard up its one row of fixes fades at the edge it continues past, as the key strip and drawer tabs do, where a cut chip ended at the banner\'s edge');
   assert(/\.pop\.lines \.opt \{ grid-template-columns: minmax\(0, 1fr\); \}\s*\.pop\.lines \.opt \.ck \{ display: none; \}\s*\.pop\.lines \.opt b \{ font: 500 12\.5px\/1\.35 var\(--font-mono\); white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; \}/.test(gridCss),
     'command line: the last lines wrap up to four rows in the command line\'s face, without the empty mark column, as CHOOSE choices wrap, where a long line ended in an ellipsis');
   assert(/buzzHold\(\) \{\s*if \(this\.prefs\.haptics && typeof navigator\.vibrate === 'function'\) navigator\.vibrate\(20\);/.test(appSrc) && /d\.onRowHold = \(level\) => \{\s*this\.buzzHold\(\);/.test(appSrc) && /showKeyLayers\(key, anchor\) \{\s*this\.buzzHold\(\);/.test(appSrc)
@@ -2535,7 +2539,7 @@ setAngle('RAD');
   const entrySrc = readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/export function lcdHtml\(lcd\) \{\s*const lines = lcd\?\.lines \?\? \[\];\s*const last = lines\.findLastIndex\(\(line\) => line\);\s*if \(last < 0 && !lcd\?\.grob\) return '';/.test(bannerSrc)
-    && /renderBanner\(\) \{\s*const el = \$\('banner'\);\s*const lcd = lcdHtml\(getLcd\(\)\);\s*if \(this\.errorBanner\) \{ this\._haltBanner = null; el\.innerHTML = lcd \+ errorBannerHtml\(this\.errorBanner\); return; \}/.test(appSrc)
+    && /renderBanner\(\) \{\s*const el = \$\('banner'\);\s*const lcd = lcdHtml\(getLcd\(\)\);\s*if \(this\.errorBanner\) \{ this\._haltBanner = null; el\.innerHTML = lcd \+ errorBannerHtml\(this\.errorBanner\); this\._markBannerEdges\(\); return; \}/.test(appSrc)
     && /enter\(\) \{\s*this\.error = '';\s*this\.failure = null;\s*touchLcd\(\);/.test(entrySrc) && /execOp\(\.\.\.names\) \{\s*this\.error = '';\s*this\.failure = null;\s*touchLcd\(\);/.test(entrySrc)
     && /\} finally \{\s*if \(!waiting\) settleLcd\(\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
     && /\.lcd \{ margin: 8px 10px 0; padding: 8px 12px;[^}]*font: 13px\/1\.45 var\(--font-mono\);/.test(css) && /:root\[data-keyboard\] \.lcd \{ max-height: calc\(3 \* 1\.45em \+ 18px\); overflow-y: auto; \}/.test(css)
