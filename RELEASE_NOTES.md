@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.106 (2026-10-20)
+**Latest release:** v0.7.107 (2026-10-20)
 
 ---
 
@@ -18,6 +18,23 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.7.107 — 2026-10-20
+
+- A 360 by 640 phone with its keyboard up is 310 px tall, just over the
+  300 px where the short-screen rules start. An error banner left its
+  stack 10 px, or 28 px in minimal view, and pushed the soft keys off the
+  bottom. The rules now start at 330 px, so the app bar and status line
+  give way while typing and the stack keeps 83 to 97 px.
+- Fix the line brings a failed line back with the cursor at the command
+  that failed: `1 DROP DROP 2 3` comes back with the cursor before the
+  second DROP, where it went to the end of the line. Words inside lists,
+  strings, programs and comments don't count.
+- With the keyboard up over a short stack, the empty-stack card was pinned
+  to its bottom, with Write an equation cut under the app bar. It now
+  starts at its heading.
 
 ---
 
