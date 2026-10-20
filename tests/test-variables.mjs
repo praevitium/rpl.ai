@@ -838,6 +838,22 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   }
 
   {
+    const { state, setPict, varStateMatchesUndoTop, redoVarState } = await import('../www/src/rpl/state.js');
+    const { Grob } = await import('../www/src/rpl/types.js');
+    const before = state.pict;
+    saveVarStateForUndo();
+    assert(varStateMatchesUndoTop(), 'a fresh snapshot matches the state it took');
+    const drawn = Grob(131, 80);
+    setPict(drawn);
+    assert(!varStateMatchesUndoTop(), 'a new PICT no longer matches the snapshot, so a drawing keeps its undo step');
+    undoVarState();
+    assert(state.pict === before, 'UNDO takes PICT back to before the drawing');
+    redoVarState();
+    assert(state.pict === drawn, 'REDO puts the drawing back');
+    clearVarUndo();
+  }
+
+  {
     resetHome();
     varStore('X', Real(5));
     saveVarStateForUndo();

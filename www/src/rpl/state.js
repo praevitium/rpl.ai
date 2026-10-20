@@ -860,14 +860,16 @@ let _varRedoStack = [];
 
 const VAR_UNDO_MAX = 100;          // matches Stack.UNDO_MAX
 
+// PICT rides along with the variables, so UNDO takes back a drawing too; a graphics object is never changed in place.
 function _snapshotVarState() {
-  return { home: _cloneDir(state.home), path: _pathNamesToCurrent() };
+  return { home: _cloneDir(state.home), path: _pathNamesToCurrent(), pict: state.pict };
 }
 
 function _restoreVarSnapshot(snap) {
   _repopulateHome(snap.home);
   const landed = _walkPath(state.home, snap.path);
   state.current = landed ?? state.home;
+  state.pict = snap.pict;
 }
 
 export function saveVarStateForUndo() {
@@ -913,6 +915,7 @@ function _varStateMatches(snap) {
   const path = _pathNamesToCurrent();
   return path.length === snap.path.length
     && path.every((name, i) => name === snap.path[i])
+    && state.pict === snap.pict
     && _sameDir(state.home, snap.home);
 }
 
