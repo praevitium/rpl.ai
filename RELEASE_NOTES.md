@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.75 (2026-10-20)
+**Latest release:** v0.7.76 (2026-10-20)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.76 — 2026-10-20
+
+- Bug: level 1 shows whole on a phone again in two cases.
+  - A vector inside a list, such as STURM's sequences, wraps by its
+    entries as a nested list does, with formulas in pretty math. Before,
+    it ran past the screen's edge and faded out.
+  - A graphics object's size caption ("Graphic 114 × 32") wraps instead
+    of losing its first letters at 280 px.
+- Feature: a swipe on MINEHUNT's field moves you one square that way, in
+  any of eight directions, for a phone where the squares are too small
+  to tap.
+- UX: a graphics object's size stays on one line ("114 × 32") when its
+  caption wraps.
 
 ## v0.7.75 — 2026-10-20
 
