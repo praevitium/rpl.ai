@@ -740,7 +740,15 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     'EVAL and →NUM substitute a variable that holds a unit object');
   assert(line("5_m 'X' *") === '`5._m*X`' && line("'5_m*X' EVAL") === '`5._m*X`',
     'a unit times a name is a symbolic product, as on the HP 50g');
-  assertThrows(() => runLine("'5_m*X' EXPAND"), /Units can't go to the algebra engine/, 'EXPAND refuses an algebraic with units instead of dropping them');
+  const { giac } = await import('../www/src/rpl/cas/giac-engine.mjs');
+  giac._clear();
+  giac._setFixtures({
+    'expand((5*rplu_m)*X+(3*rplu_m)*X)': '8*X*rplu_m',
+    'solve(X*(2*rplu_s)-(6*rplu_m),X)': 'list[3*rplu_m/rplu_s]',
+    'integrate(X*(1*rplu__176_C),X)': 'rplu__176_C*X^2/2',
+  });
+  assert(line("'5_m*X+3_m*X' EXPAND") === '`8._m*X`' && line("'X*2_s=6_m' 'X' SOLVE") === '{ `X = 3._(m/s)` }' && line("'X*1_°C' 'X' INTEG") === '`0.5_°C*X^2`',
+    'EXPAND, SOLVE and INTEG carry units through the algebra engine, a name per unit, and gather them back into one unit object');
   assertThrows(() => runLine("'5_foo'"), /Unknown unit: foo/, 'an unknown unit in an algebraic is refused when it is typed');
 }
 

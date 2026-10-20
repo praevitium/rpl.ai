@@ -1805,7 +1805,7 @@ export function _evalSymbolic(v, keeps = () => false) {
 function _casSpecialValues(ast) {
   const bare = ast.kind === 'neg' ? ast.arg : ast;
   const names = algebraFreeVars(ast);
-  if (bare.kind === 'var' || (!names.has('∞') && !names.has('?')) || !giac.isReady()) return ast;
+  if (bare.kind === 'var' || (!names.has('∞') && !names.has('?')) || hasUnits(ast) || !giac.isReady()) return ast;
   let raw;
   try {
     raw = giac.caseval(buildGiacCmd(ast, (e) => e));

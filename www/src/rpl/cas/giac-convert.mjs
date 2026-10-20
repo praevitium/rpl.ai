@@ -3,7 +3,8 @@
 // Conversion between the algebra AST and the syntax Giac's caseval reads
 // and writes: the same infix surface, but with Giac's function names.
 
-import { parseAlgebra, Var, Neg, Bin, Num, numText } from "../algebra.js";
+import { parseAlgebra, Var, Neg, Bin, Num, Fn, UnitNode, numText } from "../algebra.js";
+import { multiplyUexpr, powerUexpr } from "../units.js";
 import { isCasIdentifier } from "../types.js";
 import { RPLError } from "../stack.js";
 
@@ -142,7 +143,7 @@ function emit(ast, parentPrec) {
       return parentPrec >= 1 ? `(${inf})` : inf;
     }
     case "unit":
-      throw new RPLError("Units can't go to the algebra engine");
+      return emitUnit(ast);
     case "neg": {
       const inf = ast.arg && ast.arg.kind === "var" && infGiacFromName(ast.arg.name);
       if (inf === "+infinity") {
@@ -174,6 +175,17 @@ function emit(ast, parentPrec) {
     default:
       return "?";
   }
+}
+
+// A unit goes to Giac as its number times a name per unit, rplu_m for m, so the
+// algebra multiplies and cancels units; giacToAst turns the names back into units.
+const UNIT_PREFIX = "rplu_";
+const unitGiacName = (sym) => UNIT_PREFIX + sym.replace(/[^A-Za-z0-9]/gu, (c) => `_${c.codePointAt(0)}_`);
+const unitLiteral = (_m, code) => `(1_${code.replace(/_(\d+)_/g, (_c, n) => String.fromCodePoint(Number(n)))})`;
+
+function emitUnit(ast) {
+  const factors = ast.uexpr.map(([sym, exp]) => (exp === 1 ? unitGiacName(sym) : `${unitGiacName(sym)}^(${exp})`));
+  return `(${[String(ast.value), ...factors].join("*")})`;
 }
 
 function emitFn(ast) {
@@ -304,6 +316,7 @@ export function giacToAst(giacStr) {
   // except pi, which Giac reads as the constant whatever a user stored in it,
   // and the logic words, which the algebra spells in capitals.
   const mapped = s
+    .replace(/\brplu_(\w+)/g, unitLiteral)
     .replace(/([A-Za-z_][A-Za-z0-9_]*)\s*\(/g, (match, name) => {
       const hp = GIAC_TO_HP[name];
       return hp ? `${hp}(` : match;
@@ -313,11 +326,62 @@ export function giacToAst(giacStr) {
     .replace(/\b(and|or|xor|not)\b/g, (word) => word.toUpperCase())
     .replace(/([A-Za-z0-9_.]+|\([^()]*\))!(?!=)/g, "FACT($1)");
 
+  let ast;
   try {
-    return parseAlgebra(mapped);
+    ast = parseAlgebra(mapped);
   } catch {
     throw new RPLError(`Unsupported result: ${giacStr}`);
   }
+  return s.includes(UNIT_PREFIX) ? withUnits(ast) : ast;
+}
+
+const numberOf = (a) => (a.kind === "num" ? a.value : a.kind === "neg" && a.arg.kind === "num" ? -a.arg.value : null);
+
+function withUnits(ast) {
+  switch (ast.kind) {
+    case "neg": {
+      const arg = withUnits(ast.arg);
+      return arg.kind === "unit" ? UnitNode(-arg.value, arg.uexpr) : Neg(arg);
+    }
+    case "fn":
+      return Fn(ast.name, ast.args.map(withUnits));
+    case "bin": {
+      const l = withUnits(ast.l);
+      const r = withUnits(ast.r);
+      const n = numberOf(r);
+      if (ast.op === "^" && l.kind === "unit" && n !== null) return UnitNode(l.value ** n, powerUexpr(l.uexpr, n));
+      return ast.op === "*" || ast.op === "/" ? gatherUnits(Bin(ast.op, l, r)) : Bin(ast.op, l, r);
+    }
+    default:
+      return ast;
+  }
+}
+
+// Giac writes 5*X*rplu_m; the numbers and units of a product gather into one unit, 5_m*X.
+function gatherUnits(ast) {
+  const factors = [];
+  const flatten = (a, e) => {
+    if (a.kind === "bin" && (a.op === "*" || a.op === "/")) {
+      flatten(a.l, e);
+      flatten(a.r, a.op === "/" ? -e : e);
+    } else factors.push([a, e]);
+  };
+  flatten(ast, 1);
+  if (!factors.some(([a]) => a.kind === "unit")) return ast;
+  let value = 1;
+  let uexpr = [];
+  const over = [];
+  const under = [];
+  for (const [a, e] of factors) {
+    const n = a.kind === "unit" ? a.value : numberOf(a);
+    if (n === null) (e > 0 ? over : under).push(a);
+    else value *= n ** e;
+    if (a.kind === "unit") uexpr = multiplyUexpr(uexpr, powerUexpr(a.uexpr, e));
+  }
+  const unit = uexpr.length ? UnitNode(value, uexpr) : Num(value, true);
+  const product = (list) => list.reduce((p, a) => Bin("*", p, a));
+  const top = product(value === 1 ? [...over, unit] : [unit, ...over]);
+  return under.length ? Bin("/", top, product(under)) : top;
 }
 
 const GIAC_RESULT_MESSAGES = {
