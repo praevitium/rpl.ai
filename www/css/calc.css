@@ -2249,8 +2249,9 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   /* So does an error's title with its fixes beside it in landscape, so the command line stays in view. */
   @container app (min-width: 480px) {
     :root[data-keyboard] .app:has(.bn) .key-strip { display: none; }
-    :root[data-keyboard] .bn:not(.halt) { grid-template-columns: minmax(0, 1fr) auto auto; }
-    :root[data-keyboard] .bn:not(.halt) .bn-t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* The title keeps 12em over two lines, the fixes scrolling beside it, or five fixes leave it a few letters on a 640 px phone. */
+    :root[data-keyboard] .bn:not(.halt) { grid-template-columns: minmax(min(12em, 40%), 1fr) minmax(0, max-content) auto; }
+    :root[data-keyboard] .bn:not(.halt) .bn-t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
     :root[data-keyboard] .bn:not(.halt) .bn-f { grid-column: 2; grid-row: 1; margin-top: 0; }
     :root[data-keyboard] .bn:not(.halt) .bn-x { grid-column: 3; }
   }
