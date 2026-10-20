@@ -408,7 +408,11 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   as the HP's straight ones, and ×, ÷ and − from a phone's symbol keys as
   *, / and -. A phone keyboard has no →, ≤, ≥ or ≠ either: type `->`, `<=`,
   `>=` or `<>` and a program keeps them as the HP writes them, `->STR` as
-  `→STR`, and the completion list offers `→STR` for `->S`.
+  `→STR`, and the completion list offers `→STR` for `->S`. Nor has it π,
+  ∞, Σ, ∫, √ or ∂: spell them, `pi`, `inf`, `sum`, `integral`, `sqrt` or
+  `deriv`, and the list offers the HP's sign. A line typed the way other
+  calculators take it, `2^10` or `e^2`, is no RPL, as on the HP; its
+  banner's Evaluate as a formula runs it quoted with EVAL.
 - ⌫ and Enter sit beside the command line, finger-sized. ⌫ deletes a
   character or the selected text, and leaves the stack alone on an empty
   line. Hold ⌫, there or on the keypad, to clear the whole line; Undo in

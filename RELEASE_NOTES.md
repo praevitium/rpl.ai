@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.97 (2026-10-20)
+**Latest release:** v0.7.98 (2026-10-20)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.98 — 2026-10-20
+
+- Text typed without quotes that is no name, command or number, such as
+  `2^10`, `e^2`, `√16` or `2*-3`, is now a syntax error, as on the HP.
+  Before, it went on the stack as a name nothing could use (`2^10` gave
+  `2` and a name `^10`). This breaks User-RPL that relied on such names;
+  quote a formula instead, `'2^10'`. `STR→` and `OBJ→` on such text now
+  error too.
+- That syntax banner offers Evaluate as a formula when the line reads as
+  one: it runs `'2^10' EVAL` and leaves 1024.
+- Typing `pi`, `inf`, `sum`, `integral`, `sqrt` or `deriv` brings up π,
+  ∞, Σ, ∫, √ or ∂ in the completion list, signs a phone keyboard has no
+  key for. A command spelled exactly so, such as `SUM`, still comes first.
 
 ## v0.7.97 — 2026-10-20
 
