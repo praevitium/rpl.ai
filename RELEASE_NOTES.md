@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.91 (2026-10-20)
+**Latest release:** v0.7.92 (2026-10-20)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.92 — 2026-10-20
+
+- While the command line's completions are showing, ↑ and ↓ put the
+  highlighted one in the line as they move, so Enter runs it, where they only
+  moved the highlight and Enter ran what was typed. Esc puts back what you
+  typed. The keypad's ▲ and ▼ do the same.
+- Completions show from the first letter typed: one letter offers the names
+  that start with it, counting →NUM and ΣLIST as starting with N and L, where
+  the list waited for two letters. From two letters on they match as before.
 
 ## v0.7.91 — 2026-10-20
 
