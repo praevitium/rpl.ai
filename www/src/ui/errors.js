@@ -193,7 +193,7 @@ export function describeError(message, { failure = null, stack = [], depth = 0, 
   const command = parsed.command ?? failure?.op ?? null;
   const info = command ? commandInfo(command) : null;
   const signature = info?.signature ?? '';
-  const failedHere = failure && (failure.op == null || parsed.commands.includes(failure.op));
+  const failedHere = failure && (failure.op == null || !parsed.commands.length || parsed.commands.includes(failure.op));
   const seenDepth = failedHere && failure.depth != null ? failure.depth : depth;
   const args = info?.inputs ?? (failedHere && failure.missing != null ? seenDepth + failure.missing : null);
   const seen = failure && (!parsed.command || failure.op === parsed.command) ? failure.levels : [];

@@ -82,6 +82,6 @@ export function previewCommand(name, liveItems = []) {
     });
   } catch (e) {
     if (e instanceof RPLInterrupt) return null;
-    return { ok: false, error: errorText(e) };
+    return { ok: false, error: errorText(e), missing: e?.missing };
   }
 }

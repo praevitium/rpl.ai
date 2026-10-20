@@ -1801,7 +1801,7 @@ class App {
       d.ghosts = outcome.results;
       d.previewLabel = `PREVIEW · ${name}`;
     } else {
-      const desc = this._previewFailure(name, outcome.error);
+      const desc = this._previewFailure(name, outcome);
       d.marks = Object.fromEntries(desc.culpritLevels.map((l) => [l, 'culprit']));
       d.ghosts = null;
       d.previewLabel = desc.title;
@@ -1814,7 +1814,7 @@ class App {
     if (known) return known;
     const outcome = previewCommand(name, this.stack.save());
     if (!outcome) return '';
-    if (!outcome.ok) return this._previewFailure(name, outcome.error).title;
+    if (!outcome.ok) return this._previewFailure(name, outcome).title;
     const top = outcome.results.slice(-2).reverse();
     if (!top.length && !outcome.consumed) return '→ leaves the stack as it is';
     if (!top.length) return `→ removes ${outcome.consumed === 1 ? 'level 1' : `${outcome.consumed} levels`}`;
@@ -1845,10 +1845,10 @@ class App {
     try { return displayDigitsArg(this.stack.peek(1)); } catch { return null; }
   }
 
-  _previewFailure(name, error) {
+  _previewFailure(name, { error, missing }) {
     const levels = this.stack.snapshot().slice(0, 3);
     return describeError(error, {
-      failure: { op: name, levels }, stack: levels, depth: this.stack.depth,
+      failure: { op: name, levels, missing }, stack: levels, depth: this.stack.depth,
       describe: describeValue, commandInfo: (n) => this.commandInfo(n),
     });
   }

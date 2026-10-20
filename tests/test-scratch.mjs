@@ -124,6 +124,9 @@ import { assert } from './helpers.mjs';
     'previewCommand: DUP consumes nothing and adds a copy of level 1');
   const bad = previewCommand('SIN', [Str('hi')]);
   assert(bad && bad.ok === false && /Bad argument type/.test(bad.error), 'previewCommand: an error comes back as a message');
+  const short = previewCommand('DROPN', [Real(3)]);
+  assert(short && short.ok === false && short.missing === 3,
+    `previewCommand: a too-few error says how many values were missing, so a search preview counts as the banner does (${short?.missing})`);
   assert(previewCommand('STO', live) === null && !isPreviewable('PURGE') && !isPreviewable('HEX') && !isPreviewable('RAND'),
     'previewCommand: commands that write variables or modes, or are random, are not previewed');
   assert(isPreviewable('SIN') && isPreviewable('+') && isPreviewable('ROLL'), 'isPreviewable: stack and math commands are');
