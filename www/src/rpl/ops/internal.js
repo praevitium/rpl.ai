@@ -438,26 +438,30 @@ export function _withVMUnary(handler) {
 }
 
 
-// A CAS command takes an array of expressions entry by entry, as EXPAND's AUR entry says: of argc arguments, the
-// one `at` levels down may be an array, and the command runs on each entry with the others; entries that fail
-// `only` pass through as they are. A vector whose entries all give equal-length vectors comes back a matrix,
-// so DERIV of [ f g ] by [ X Y ] is the Jacobian.
+// A CAS command takes an array or a list of expressions entry by entry, as EXPAND's AUR entry says: of argc
+// arguments, the one `at` levels down may be an array or a list, and the command runs on each entry with the
+// others; entries that fail `only` pass through as they are, and a list inside a list is taken the same way.
+// A vector whose entries all give equal-length vectors comes back a matrix, so DERIV of [ f g ] by [ X Y ] is the Jacobian.
 export function _entryWise(handler, { argc = 1, at = null, only = null } = {}) {
-  return (s) => {
+  const wrapped = (s) => {
     const n = typeof argc === 'function' ? argc(s) : argc;
     const level = at ?? n;
     const v = s.depth >= n ? s.peek(level) : null;
-    if (!isVector(v) && !isMatrix(v)) { handler(s); return; }
+    if (!isVector(v) && !isMatrix(v) && !isList(v)) { handler(s); return; }
     const args = s.popN(n);
     const k = n - level;
     const apply = (x) => {
-      if (only && !only(x)) return x;
+      if (only && !only(x) && !isList(x)) return x;
       const base = s.depth;
       args.forEach((a, i) => s.push(i === k ? x : a));
-      handler(s);
+      (isList(x) ? wrapped : handler)(s);
       if (s.depth !== base + 1) throw new RPLError('Bad argument value');
       return s.pop();
     };
+    if (isList(v)) {
+      s.push(RList(v.items.map(apply)));
+      return;
+    }
     if (isMatrix(v)) {
       const rows = v.rows.map((row) => row.map(apply));
       if (rows.flat().some((x) => isVector(x) || isMatrix(x))) throw new RPLError('Invalid dimension');
@@ -468,6 +472,7 @@ export function _entryWise(handler, { argc = 1, at = null, only = null } = {}) {
     const jacobian = items.length > 0 && items.every((x) => isVector(x) && x.items.length === items[0].items.length);
     s.push(jacobian ? Matrix(items.map((x) => x.items)) : Vector(items));
   };
+  return wrapped;
 }
 
 

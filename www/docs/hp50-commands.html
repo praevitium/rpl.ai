@@ -20209,7 +20209,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-type">Type</dt>
   <dd class="cmd-field cmd-field-type"><p>Function</p></dd>
   <dt class="cmd-label cmd-label-description">Description</dt>
-  <dd class="cmd-field cmd-field-description"><p>Laplace transform of a symbolic expression with respect to the current CAS variable VX.  Routes through the Giac engine; the input must be Symbolic.  Use ILAP for the inverse transform.</p></dd>
+  <dd class="cmd-field cmd-field-description"><p>Laplace transform of a symbolic expression with respect to the current CAS variable VX.  Routes through the Giac engine.  The input is an expression or a number, so <code>1 LAPLACE</code> gives <code>1/x</code> in VX; a list, vector or matrix is transformed element by element.  Use ILAP for the inverse transform.</p></dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output"><table class="cmd-io"><thead><tr><th>Level 1/Argument 1</th><th class="cmd-io-arrow"></th><th>Level 1/Item 1</th></tr></thead><tbody><tr><td>`f(x)`</td><td class="cmd-io-arrow">→</td><td>`LAPLACE(f)(x)`</td></tr></tbody></table></dd>
   <dt class="cmd-label cmd-label-see-also">See also</dt>

@@ -129,7 +129,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   `EXP(i*X)` into `COS(X)+i*SIN(X)`. SOLVEVX solves for the
   current variable, or the only one there is: `` `T^2=9` SOLVEVX `` gives
   `{ T=-3 T=3 }`. Both solvers take a list of equations too and solve each
-  one. `ASSUME` tells the CAS what a name may be: after `` `K>0` ASSUME ``
+  one. FACTOR, EXPAND, DERIV, LIMIT, TAYLR, LAPLACE and the other CAS
+  commands that take one expression take a list of them as well, nested
+  lists included, and work element by element:
+  `` { `X^2-1` `X^2-4` } FACTOR `` gives `{ (X-1)*(X+1) (X-2)*(X+2) }`. `ASSUME` tells the CAS what a name may be: after `` `K>0` ASSUME ``
   the integral of `EXP(-K*T)` from 0 to ∞ is `1/K`, and after
   `` `Z≥0` ASSUME `` the roots of `Z^2=4` are just `Z=2`. UNASSUME forgets
   it, ADDTOREAL keeps just that the name is real, and the assumptions are

@@ -855,7 +855,7 @@ register('DOMAIN', (s) => {
 }, { category: 'CAS / symbolic', categoryOrder: 10.65, label: "DOMAIN" });
 
 // AUR: the zeros of an expression, each once and without SOLVE's X= in front.
-register('ZEROS', (s) => {
+register('ZEROS', _entryWise((s) => {
   const [exprArg, varArg] = s.popN(2);
   const varName = _varName(varArg);
   let ast = _astArg(exprArg);
@@ -866,7 +866,7 @@ register('ZEROS', (s) => {
   const trimmed = String(raw).trim();
   const roots = (splitGiacList(raw) ?? (trimmed ? [trimmed] : [])).map((r) => giacToAst(r));
   s.push(RList(_byValue(roots).map(_casValue)));
-}, { category: 'CAS / symbolic', categoryOrder: 10.5, label: "ZEROS" });
+}, { argc: 2 }), { category: 'CAS / symbolic', categoryOrder: 10.5, label: "ZEROS" });
 
 
 // REALASSUME: names the CAS takes as real (ADDTOREAL) and ASSUME's conditions on them, which Giac
@@ -1017,11 +1017,11 @@ register('INT', (s) => {
 }, { category: 'CAS / symbolic', categoryOrder: 2.15, label: "INT" });
 
 // AUR: the discrete antiderivative G, with G(x+1)-G(x) the expression.
-register('SIGMA', (s) => {
+register('SIGMA', _entryWise((s) => {
   const [expr, varArg] = s.popN(2);
   const x = _varName(varArg);
   _pushCasResult(s, _casEval(_astArg(expr), (e) => `normal(sum(${e},${x}))`, [x]));
-}, { category: 'CAS / symbolic', categoryOrder: 2.2, label: "SIGMA" });
+}, { argc: 2 }), { category: 'CAS / symbolic', categoryOrder: 2.2, label: "SIGMA" });
 
 // AUR: u*v' and v give u*v and -u'*v, the integral still to take; Giac's ibpdv is the HP's command.
 register('IBP', (s) => {
@@ -1144,11 +1144,11 @@ function _taylor(ast, x, n) {
   return _sumOf(_sumTerms(result).filter((_, i) => powers[i] <= top));
 }
 
-register('TAYLR', (s) => {
+register('TAYLR', _entryWise((s) => {
   const [expr, varArg, orderArg] = s.popN(3);
   const varName = _varName(varArg);
   _pushCasResult(s, _taylor(_astArg(expr), varName, _taylorOrder(orderArg)));
-}, { category: 'CAS / symbolic', categoryOrder: 3.5, label: "TAYLR" });
+}, { argc: 3 }), { category: 'CAS / symbolic', categoryOrder: 3.5, label: "TAYLR" });
 
 register('DIVPC', (s) => {
   const [numArg, denArg, orderArg] = s.popN(3);
@@ -1177,14 +1177,14 @@ register('TABVAL', (s) => {
 }, { category: 'CAS / symbolic', categoryOrder: 3.57, label: "TABVAL" });
 
 // AUR: the nth complex Fourier coefficient over one period from 0, the period being PERIOD, 2π unless stored.
-register('FOURIER', (s) => {
+register('FOURIER', _entryWise((s) => {
   const [f, n] = s.popN(2).map(_astArg);
   if (!giac.isReady()) throw new RPLError('CAS not ready');
   const period = recallVar('PERIOD');
   const L = period === undefined ? '2*pi' : astToGiac(_astArg(period));
   const x = astToGiac(AstVar(_mainVar(f)));
   _pushCasResult(s, giacToAst(giac.caseval(`fourier_cn(${astToGiac(f)},${x},${L},${astToGiac(n)},0)`)));
-}, { category: 'CAS / symbolic', categoryOrder: 3.65, label: "FOURIER" });
+}, { argc: 2 }), { category: 'CAS / symbolic', categoryOrder: 3.65, label: "FOURIER" });
 
 const _infinitySign = (ast) => {
   const inf = (a) => a.kind === 'var' && /^(∞|\+∞|INFINITY|\+INFINITY)$/i.test(a.name);
@@ -1235,10 +1235,10 @@ register('SERIES', (s) => {
   s.push(Symbolic(AstBin('=', h, back)));
 }, { category: 'CAS / symbolic', categoryOrder: 3.6, label: "SERIES" });
 
-register('TAYLOR0', (s) => {
+register('TAYLOR0', _entryWise((s) => {
   const ast = _astArg(s.pop());
   _pushCasResult(s, _taylor(ast, _vxFor(ast), 4));
-}, { category: 'CAS / symbolic', categoryOrder: 34.5, label: "TAYLOR0" });
+}), { category: 'CAS / symbolic', categoryOrder: 34.5, label: "TAYLOR0" });
 
 
 // Rebuilds the tree bottom-up and offers each rebuilt node to `rewrite`.
@@ -1338,11 +1338,11 @@ function _distribOnce(ast) {
 }
 
 
-register('DISTRIB', (s) => {
+register('DISTRIB', _entryWise((s) => {
   const v = s.pop();
   if (!isSymbolic(v)) throw new RPLError('Bad argument type');
   s.push(Symbolic(_distribOnce(v.expr) ?? v.expr));
-}, { category: 'CAS / symbolic', categoryOrder: 11, label: "DISTRIB" });
+}, { only: _isSymOperand }), { category: 'CAS / symbolic', categoryOrder: 11, label: "DISTRIB" });
 
 // FDISTRIB distributes every product and quotient over sums at once, laid out as the AUR's example is: each term
 // of the left factor in turn times each term of the right, the right one written first, a difference as + -(…).
@@ -1384,11 +1384,11 @@ function _fullDistrib(ast) {
   return AstBin(ast.op, l, r);
 }
 
-register('FDISTRIB', (s) => {
+register('FDISTRIB', _entryWise((s) => {
   const v = s.pop();
   if (!isSymbolic(v)) throw new RPLError('Bad argument type');
   s.push(Symbolic(_fullDistrib(v.expr)));
-}, { category: 'CAS / symbolic', categoryOrder: 11.1, label: "FDISTRIB" });
+}, { only: _isSymOperand }), { category: 'CAS / symbolic', categoryOrder: 11.1, label: "FDISTRIB" });
 
 // ↓MATCH and ↑MATCH rewrite what matches a pattern. A name starting with & matches any subexpression, the same one
 // wherever it repeats, and an optional condition must then evaluate to a true number.
@@ -1450,7 +1450,7 @@ function _leadsTo(name, target, seen = new Set()) {
   return [...algebraFreeVars(_toAst(bound))].some((n) => n === target || _leadsTo(n, target, seen));
 }
 
-register('SHOW', (s) => {
+register('SHOW', _entryWise((s) => {
   const [v, target] = s.popN(2);
   if (!isSymbolic(v)) throw new RPLError('Bad argument type');
   if (isList(target)) {
@@ -1460,27 +1460,27 @@ register('SHOW', (s) => {
     const name = _varName(target);
     s.push(_evalSymbolic(v, (n) => n === name || !_leadsTo(n, name)));
   }
-}, { category: 'CAS / symbolic', categoryOrder: 11.4, label: "SHOW" });
+}, { argc: 2, only: _isSymOperand }), { category: 'CAS / symbolic', categoryOrder: 11.4, label: "SHOW" });
 
 
 register('XNUM', (s, entry) => { lookup('→NUM').fn(s, entry); }, { category: 'CAS / symbolic', categoryOrder: 42, label: "XNUM" });
 
-register('XQ',   (s, entry) => { lookup('→Q').fn(s, entry); }, { category: 'CAS / symbolic', categoryOrder: 43, label: "XQ" });
+register('XQ',   _entryWise((s) => { lookup('→Q').fn(s); }), { category: 'CAS / symbolic', categoryOrder: 43, label: "XQ" });
 
-register('I→R', (s) => {
+register('I→R', _entryWise((s) => {
   const v = s.pop();
   if (isInteger(v)) s.push(Real(v.value.toString()));
   else if (isReal(v)) s.push(v);
   else throw new RPLError('Bad argument type');
-}, { category: 'CAS / symbolic', categoryOrder: 43.1, label: "I→R" });
+}), { category: 'CAS / symbolic', categoryOrder: 43.1, label: "I→R" });
 
-register('R→I', (s) => {
+register('R→I', _entryWise((s) => {
   const v = s.pop();
   if (isInteger(v)) s.push(v);
   else if (!isReal(v)) throw new RPLError('Bad argument type');
   else if (!v.value.isInteger()) throw new RPLError('Bad argument value');
   else s.push(Integer(BigInt(v.value.toFixed(0))));
-}, { category: 'CAS / symbolic', categoryOrder: 43.2, label: "R→I" });
+}), { category: 'CAS / symbolic', categoryOrder: 43.2, label: "R→I" });
 
 
 register('VX', (s) => {
@@ -1586,11 +1586,11 @@ register('DEGREE', (s) => {
   s.push(getApproxMode() ? Real(degree) : Integer(BigInt(degree)));
 }, { category: 'CAS / symbolic', categoryOrder: 38.2, label: "DEGREE" });
 
-register('REORDER', (s) => {
+register('REORDER', _entryWise((s) => {
   const [p, v] = s.popN(2);
   const x = _varName(v);
   _pushCasResult(s, _casEval(_astArg(p), (e) => `reorder(${e},[${x}])`, [x]));
-}, { category: 'CAS / symbolic', categoryOrder: 38.3, label: "REORDER" });
+}, { argc: 2 }), { category: 'CAS / symbolic', categoryOrder: 38.3, label: "REORDER" });
 
 
 // AUR p.3-136: longest first, then alphabetical.
@@ -1669,9 +1669,9 @@ function _lapVarName(ast) {
 // The HP50 transforms in place (X -> X).  Giac needs a target variable of its
 // own, or laplace(f,X,X) reads as a substitution, so the result is renamed back.
 function _laplaceOp(giacFn) {
-  return (s) => {
+  return _entryWise((s) => {
     const [v] = s.popN(1);
-    if (!_isSymOperand(v)) throw new RPLError('Bad argument type');
+    if (!_isSymOperand(v) && !isReal(v) && !isInteger(v)) throw new RPLError('Bad argument type');
     const expr = _toAst(v);
     const x = _lapVarName(expr);
     const result = _casEval(expr, (e) => `${giacFn}(${e},${x},rplS)`, [x]);
@@ -1679,7 +1679,7 @@ function _laplaceOp(giacFn) {
     const names = algebraFreeVars(result);
     const dummy = ['t', 'τ', 'u'].find((n) => n !== x && !names.has(n));
     _pushCasResult(s, _substitute(result, new Map([['rplS', AstVar(x)], [x, AstVar(dummy)]])));
-  };
+  });
 }
 
 register('LAPLACE', _laplaceOp('laplace'), { category: 'CAS / symbolic', categoryOrder: 31, label: "LAPLACE" });
@@ -1995,14 +1995,14 @@ function _limitPoint(v, vx) {
 }
 
 
-register('LIMIT', (s) => {
+register('LIMIT', _entryWise((s) => {
   const [exprArg, pointArg] = s.popN(2);
   if (!_isSymOperand(exprArg)) throw new RPLError('Bad argument type');
   if (!giac.isReady()) throw new RPLError('CAS not ready');
   const { varName, valGiac } = _limitPoint(pointArg, _vxFor(_toAst(exprArg)));
   const cmd = buildGiacCmd(_toAst(exprArg), (e) => `limit(${e},${varName},${valGiac})`, [varName]);
   _pushCasResult(s, giacToAst(giac.caseval(cmd)));
-}, { category: 'CAS / symbolic', categoryOrder: 34, label: "LIMIT" });
+}, { argc: 2, only: _isSymOperand }), { category: 'CAS / symbolic', categoryOrder: 34, label: "LIMIT" });
 
 
 register('lim', (s) => { lookup('LIMIT').fn(s); }, { category: 'CAS / symbolic', categoryOrder: 33, label: "LIM" });

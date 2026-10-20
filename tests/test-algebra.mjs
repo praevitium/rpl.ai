@@ -178,11 +178,13 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(isInteger(s.peek()) && s.peek().value === 0n, 'DERIV Y wrt X = 0');
 }
 {
-  // Bad arg types: DERIV of a List errors cleanly.
+  // A list is taken element by element, as an array is: the derivative of a constant is 0.
   const s = new Stack();
   s.push(RList([Real(1)]));
   s.push(Name('X'));
-  assertThrows(() => { lookup('DERIV').fn(s); }, null, 'DERIV on List throws "Bad argument type"');
+  lookup('DERIV').fn(s);
+  assert(isList(s.peek()) && s.peek().items.length === 1 && Number(s.peek().items[0].value) === 0,
+    'DERIV of { 1 } by X gives { 0 }, element by element');
 }
 
 // session315: rejection-path coverage for the VX-implicit calculus cluster
@@ -192,10 +194,9 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 // final `Bad argument type` throw BEFORE any Giac call; the empty stack
 // hits the wrapper's depth guard. `∫` is the AUR's definite integral, so it
 // needs four operands and rejects a non-symbolic integrand the same way.
-// Arrays are no longer refused: they go entry by entry (see the end of this file).
+// Arrays and lists are no longer refused: they go entry by entry (see the end of this file).
 {
   const bad = [
-    ['List', () => RList([Integer(1n)])],
     ['Complex', () => Complex(Real(1), Real(2))],
   ];
   for (const op of ['INTVX', 'DERVX', 'DERIVX']) {
@@ -245,9 +246,9 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
          '∂: SIN(X) wrt X differentiates like DERIV');
   giac._clear();
   const bad = new Stack();
-  bad.push(RList([Integer(1n)]));
+  bad.push(Complex(Real(1), Real(2)));
   bad.push(Name('X'));
-  assertThrows(() => { lookup('∂').fn(bad); }, /Bad argument type/, '∂ on a List → Bad argument type');
+  assertThrows(() => { lookup('∂').fn(bad); }, /Bad argument type/, '∂ on a complex number → Bad argument type');
 }
 
 {
@@ -4098,14 +4099,16 @@ giac._setFixture('laplace(1,x,rplS)', '1/rplS');
 
 {
   const s = new Stack();
-  s.push(Real(1));
-  assertThrows(() => { lookup('LAPLACE').fn(s); }, /Bad argument type/, 'session058: LAPLACE on Real rejects');
+  giac._setFixtures({ 'laplace(1,x,rplS)': '1/rplS' });
+  s.push(Integer(1));
+  lookup('LAPLACE').fn(s);
+  assert(formatStackTop(s.pop()) === '`1/x`', 'LAPLACE of the number 1 is 1/x, as on the HP');
 }
 
 {
   const s = new Stack();
-  s.push(Real(1));
-  assertThrows(() => { lookup('ILAP').fn(s); }, /Bad argument type/, 'session058: ILAP on Real rejects');
+  s.push(Str('X'));
+  assertThrows(() => { lookup('ILAP').fn(s); }, /Bad argument type/, 'session058: ILAP on a string rejects');
 }
 
 /* ================================================================
@@ -7166,9 +7169,9 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   const s = new Stack();
   s.push(Vector([Integer(1n), Integer(2n)]));
   s.push(Symbolic(parseAlgebra('X=0')));
-  assertThrows(() => { lookup('LIMIT').fn(s); },
-               /Bad argument type/,
-               'session139: LIMIT on Vector expression → Bad argument type');
+  lookup('LIMIT').fn(s);
+  assert(isVector(s.peek()) && s.peek().items.map((x) => Number(x.value)).join() === '1,2',
+         'session139: LIMIT takes a vector entry by entry, its constants as they are');
 }
 
 {
@@ -7314,9 +7317,9 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   const s = new Stack();
   s.push(Vector([Integer(1n), Integer(2n)]));
   s.push(Symbolic(parseAlgebra('X=0')));
-  assertThrows(() => { lookup('lim').fn(s); },
-               /Bad argument type/,
-               'session336: lim on Vector expression → Bad argument type');
+  lookup('lim').fn(s);
+  assert(isVector(s.peek()) && s.peek().items.map((x) => Number(x.value)).join() === '1,2',
+         'session336: lim takes a vector entry by entry, its constants as they are');
 }
 
 {
@@ -9012,4 +9015,16 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assertThrows(() => runLine("'X+1' ASSUME"), /Bad argument value/, 'ASSUME refuses what is not a comparison');
   assertThrows(() => runLine('5 ASSUME'), /Bad argument type/, 'ASSUME refuses a number');
   setRealAssume([]);
+}
+
+{
+  const { giac } = await import('../www/src/rpl/cas/giac-engine.mjs');
+  giac._clear();
+  giac._setFixtures({ 'expand((X+1)^2)': 'X^2+2*X+1', 'expand((X-1)^2)': 'X^2-2*X+1', 'diff(X^2,X)': '2*X', 'diff(sin(X),X)': 'cos(X)' });
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
+  assert(line("{ '(X+1)^2' { '(X-1)^2' 5 } } EXPAND") === '{ `X^2 + 2*X + 1` { `X^2 - 2*X + 1` 5 } }',
+    'EXPAND takes a list element by element, a list inside it too, and leaves a number as it is');
+  assert(line("{ 'X^2' 'SIN(X)' } 'X' DERIV") === '{ `2*X` `COS(X)` }',
+    'DERIV takes a list of expressions element by element, as it does a vector');
+  giac._clear();
 }
