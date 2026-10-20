@@ -117,11 +117,15 @@ export function unitCompletions(word, { plain = false } = {}) {
     .slice(0, MAX_ROWS);
 }
 
-// The unit part of a word that holds a _, as the word to complete, or the word itself.
+// The unit part of a word that holds a _, as the word to complete, or the word itself. A phone keyboard keeps _ a
+// page or two away, so letters typed straight after a number (9.8kg, not the exponent of 2e or 1E5) are a unit too,
+// and a pick puts the _ in.
 function unitPart(at) {
   const i = at?.word.lastIndexOf('_') ?? -1;
   const unit = i >= 0 ? at.word.slice(i + 1) : '';
-  return /^\p{L}/u.test(unit) ? { word: unit, from: at.from + i + 1, unit: true } : at;
+  if (/^\p{L}/u.test(unit)) return { word: unit, from: at.from + i + 1, unit: true };
+  const [, number, letters] = at?.word.match(/^([-+]?(?:\d+\.?\d*|\.\d+))(\p{L}.*)$/u) ?? [];
+  return letters && !/^[eE]\d*$/.test(letters) ? { word: letters, from: at.from + number.length, unit: true, glue: '_' } : at;
 }
 
 export function isInsideAlgebraic(text, offset) {
@@ -163,7 +167,7 @@ export class Autocomplete {
     const typing = this.app.inputMode === 'rpl' && (entry.hasFocus() || this.app.typingOnKeypad) && state.halted?.kind !== 'input';
     const at = typing && !this.app.errorBanner && !text.trimStart().startsWith('?')
       ? unitPart(wordBeforeCursor(text, entry.cursor)) : null;
-    if (this.shown && at?.from === this.word?.from && at.word === this.shown) return;
+    if (this.shown && at?.from === this._shownFrom && at.word === this.shown) return;
     this.shown = null;
     if (!at) this._dismissedWord = null;
     const after = text.slice(entry.cursor);
@@ -173,7 +177,7 @@ export class Autocomplete {
     }
     const rows = at.unit ? unitCompletions(at.word, { plain: isInsideAlgebraic(text, at.from) })
       : completions(at.word, { names: allOps(), variables: varOrder(), locals: localNames(text.slice(0, at.from)), structures: !isInsideAlgebraic(text, at.from) });
-    if (!rows.length || (rows.length === 1 && rows[0].name === at.word)) { this.close(); return; }
+    if (!rows.length || (rows.length === 1 && rows[0].name === at.word && !at.glue)) { this.close(); return; }
     if (this.word?.word !== at.word) this.index = 0;
     this.word = at;
     this.rows = rows;
@@ -184,9 +188,9 @@ export class Autocomplete {
     const { word } = this.word;
     const rowsHtml = this.rows.map((row, i) => {
       const segments = highlightSegments(row.name, matchPositions(hpArrows(word), row.name));
-      const label = segments.length
+      const label = escapeHtml(this.word.glue ?? '') + (segments.length
         ? segments.map((s) => (s.match ? `<mark>${escapeHtml(s.text)}</mark>` : escapeHtml(s.text))).join('')
-        : escapeHtml(row.name);
+        : escapeHtml(row.name));
       const info = row.kind === 'command' ? this.app.commandInfo(row.name) : null;
       const detail = row.kind === 'variable' ? `Variable · ${typeName(varRecall(row.name))}`
         : row.kind === 'local' ? 'Local variable'
@@ -253,11 +257,12 @@ export class Autocomplete {
     document.addEventListener('click', (e) => { if (held) { held = false; e.preventDefault(); e.stopPropagation(); } }, true);
   }
 
-  _replaceWord(text) {
+  _replaceWord(text, glue = this.word.glue ?? '') {
     const { entry } = this.app;
     const { from } = this.word;
     this.shown = text;
-    entry._dispatch({ changes: { from, to: entry.cursor, insert: text }, selection: { anchor: from + text.length } });
+    this._shownFrom = from + glue.length;
+    entry._dispatch({ changes: { from, to: entry.cursor, insert: glue + text }, selection: { anchor: this._shownFrom + text.length } });
     entry._emit();
   }
 
@@ -276,7 +281,7 @@ export class Autocomplete {
     }
     const text = entry.buffer;
     const spaced = (row.kind === 'command' || row.kind === 'local') && !isInsideAlgebraic(text, from) && !/^\s/.test(text.slice(to));
-    const insert = spaced ? `${row.name} ` : row.name;
+    const insert = `${this.word.glue ?? ''}${spaced ? `${row.name} ` : row.name}`;
     entry._dispatch({ changes: { from, to, insert }, selection: { anchor: from + insert.length } });
     this._dismissedWord = row.name;
     this.close();
@@ -299,7 +304,7 @@ export class Autocomplete {
     } else if (e.key === 'Escape') {
       consume();
       this._dismissedWord = this.word?.word ?? null;
-      if (this.shown) this._replaceWord(this.word.word);
+      if (this.shown) this._replaceWord(this.word.word, '');
       this.close();
     }
   }

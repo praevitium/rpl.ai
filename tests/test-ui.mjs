@@ -2333,6 +2333,15 @@ setAngle('RAD');
   ac.accept(1);
   assert(units && entry.buffer === '9.8_kg', 'autocomplete: after a number\'s _ the list offers units, and a chosen one completes the unit with no space after it');
   entry.resetBuffer('');
+  entry.type('5f');
+  const bare = ac.isOpen() && ac.rows.every((r) => r.kind === 'unit') && ac.word.word === 'f' && ac.word.glue === '_';
+  ac.accept(ac.rows.findIndex((r) => r.name === 'ft'));
+  const picked = entry.buffer;
+  const exponents = ['2e', '1E5', '2.5e'].map((typed) => { entry.resetBuffer(''); entry.type(typed); return ac.isOpen() && ac.rows.some((r) => r.kind === 'unit'); });
+  const acSource = readFileSync(new URL('../www/src/ui/autocomplete.js', import.meta.url), 'utf8');
+  assert(bare && picked === '5_ft' && !exponents.some(Boolean) && /const label = escapeHtml\(this\.word\.glue \?\? ''\) \+/.test(acSource),
+    'autocomplete: letters typed straight after a number offer units, a pick putting in the _ a phone keyboard keeps a page away (5f gives 5_ft, the rows reading _ft); an exponent\'s E offers none');
+  entry.resetBuffer('');
   entry.type('« → rate time « r');
   const local = ac.rows[0]?.kind === 'local' && ac.rows[0].name === 'rate';
   ac.accept(0);
