@@ -2044,6 +2044,9 @@ setAngle('RAD');
   const measure = displaySrc.slice(displaySrc.indexOf('  _measureMore() {'), displaySrc.indexOf('\n  _showMore('));
   assert(/const sel = view\.querySelector\('\.st-row\.sel'\);\s*if \(sel && sel\.offsetTop < edge && sel\.offsetTop \+ sel\.offsetHeight > edge\) return \{ above: 0, top \};/.test(measure),
     'stack: the more-levels pill and the top fade give way to a selected level that reaches through them, rather than covering its value');
+  assert(/const tapped = this\._tapped;\s*this\._tapped = null;\s*if \(ev\.detail === 2 && tapped && performance\.now\(\) - tapped\.at < DOUBLE_TAP_MS\) \{ this\.onRowDoubleClick\?\.\(tapped\.level\); return; \}/.test(displaySrc)
+    && /if \(act\) \{ this\.onRowAction\?\.\(level, act\.dataset\.rowAct, act\); return; \}\s*this\._tapped = \{ level, at: performance\.now\(\) \};/.test(displaySrc),
+    'stack: a double tap edits the level the first tap hit, though that tap opened its toolbar under the finger, where on a phone the second tap opened the level\'s ⋯ menu; two quick taps on a toolbar button still act twice');
   assert(/const roomy = view\.clientHeight >= 2 \* TOP_FADE;\s*return \{ above: roomy \? above : 0, top, cut: roomy && /.test(measure),
     'stack: a view shorter than twice the top fade, as under an error banner with the keyboard up (47 px in a turned phone, 28 at 280 px), has no fade or pill, where the fade greyed out level 1');
 }

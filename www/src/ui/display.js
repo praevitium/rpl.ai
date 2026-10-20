@@ -72,6 +72,7 @@ export function coordModeGlyph(mode) {
 const SUSPENDED_CONTEXT = 8;
 // The faded top edge of a stack with levels above it; calc.css .stack-view.more-t and its scroll-padding-top match.
 const TOP_FADE = 36;
+const DOUBLE_TAP_MS = 600;
 
 // A level that fits shows whole, its toolbar included; a taller one from its top. The fade gives way to it (_measureMore).
 function tallLevelScroll(view, v, r) {
@@ -220,13 +221,17 @@ export class Display {
       if (ev.target.closest?.('.st-older')) { this._showOlder(); return; }
       const empty = ev.target.closest?.('[data-empty-act]');
       if (empty) { this.onEmptyAction?.(empty.dataset.emptyAct, empty); return; }
+      // The first click re-renders the rows, so the browser's dblclick would land on a removed element. On a phone
+      // the first tap also opens the level's toolbar and scrolls it into view, so the second lands elsewhere.
+      const tapped = this._tapped;
+      this._tapped = null;
+      if (ev.detail === 2 && tapped && performance.now() - tapped.at < DOUBLE_TAP_MS) { this.onRowDoubleClick?.(tapped.level); return; }
       const row = ev.target.closest?.('.st-row[data-level]');
       if (!row) return;
       const level = Number(row.dataset.level);
       const act = ev.target.closest?.('[data-row-act]');
       if (act) { this.onRowAction?.(level, act.dataset.rowAct, act); return; }
-      // The first click re-renders the rows, so the browser's dblclick would land on a removed element.
-      if (ev.detail === 2 && !ev.target.closest?.('.st-acts')) { this.onRowDoubleClick?.(level); return; }
+      this._tapped = { level, at: performance.now() };
       this.onRowClick?.(level, ev);
     });
     view.addEventListener('dragstart', (ev) => {
