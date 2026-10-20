@@ -1,6 +1,6 @@
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { Integer, Matrix, isGrob, isInteger, isReal, isVector, Vector, isMatrix, isSymbolic, Symbolic, isString, isBinaryInteger, isComplex, isName, Real, isRational, Rational, Complex, isUnit, Unit, toComplex, toRealOrThrow, toRealDecimal, BinaryInteger, isNumber, isList, RList, Str } from '../types.js';
-import { Bin as AstBin, formatAlgebra, Neg as AstNeg, Num as AstNum, Fn as AstFn, Var as AstVar } from '../algebra.js';
+import { Bin as AstBin, formatAlgebra, isRealNum, Neg as AstNeg, Num as AstNum, Fn as AstFn, Var as AstVar } from '../algebra.js';
 import { formatReal, DEFAULT_DISPLAY, formatBinaryInteger } from '../formatter.js';
 import { state as _calcState, getApproxMode, getRealMaxExp, getWordsize, nextPrngUnit, seedPrng } from '../state.js';
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
@@ -828,18 +828,53 @@ function _rationalAst(x) {
 }
 
 
-register('→Q', (s) => {
-  const [v] = s.popN(1);
-  if (isInteger(v)) {
-    s.push(Symbolic(AstNum(Number(v.value))));
-    return;
+function _fractionAst(n, d) {
+  const size = AstNum(n < 0n ? -n : n);
+  const frac = d === 1n ? size : AstBin('/', size, AstNum(d));
+  return n < 0n ? AstNeg(frac) : frac;
+}
+
+function _complexQuotientAst(re, im, numAst) {
+  const imaginary = (y) => {
+    const size = numAst(y);
+    return size.kind === 'num' && size.value === 1 ? AstVar('i') : AstBin('*', size, AstVar('i'));
+  };
+  if (im === 0) return numAst(re);
+  if (re === 0) return im < 0 ? AstNeg(imaginary(-im)) : imaginary(im);
+  return AstBin(im < 0 ? '-' : '+', numAst(re), imaginary(Math.abs(im)));
+}
+
+function _realNumsTo(node, numAst) {
+  switch (node.kind) {
+    case 'num': return isRealNum(node) && Number.isFinite(node.value) ? numAst(node.value) : node;
+    case 'neg': return AstNeg(_realNumsTo(node.arg, numAst));
+    case 'bin': return AstBin(node.op, _realNumsTo(node.l, numAst), _realNumsTo(node.r, numAst));
+    case 'fn': return AstFn(node.name, node.args.map((a) => _realNumsTo(a, numAst)));
+    default: return node;
   }
-  if (!isReal(v)) throw new RPLError('Bad argument type');
-  const x = v.value.toNumber();
-  if (!Number.isFinite(x)) throw new RPLError('Bad argument value');
-  if (x === 0) { s.push(Symbolic(AstNum(0))); return; }
-  s.push(Symbolic(_rationalAst(x)));
-}, { category: 'Arithmetic', categoryOrder: 40, label: "→Q" });
+}
+
+// The AUR's →Q and →Qπ take a number, a fraction, a complex number or a formula, whose approximate numbers they convert.
+function _quotientOp(numAst) {
+  return (s) => {
+    const [v] = s.popN(1);
+    let ast;
+    if (isInteger(v)) ast = numAst(Number(v.value));
+    else if (isRational(v)) ast = _fractionAst(v.n, v.d);
+    else if (isReal(v)) {
+      const x = v.value.toNumber();
+      if (!Number.isFinite(x)) throw new RPLError('Bad argument value');
+      ast = numAst(x);
+    } else if (isComplex(v)) {
+      if (!Number.isFinite(v.re) || !Number.isFinite(v.im)) throw new RPLError('Bad argument value');
+      ast = _complexQuotientAst(v.re, v.im, numAst);
+    } else if (isSymbolic(v)) ast = _realNumsTo(v.expr, numAst);
+    else throw new RPLError('Bad argument type');
+    s.push(Symbolic(ast));
+  };
+}
+
+register('→Q', _quotientOp(_rationalAst), { category: 'Arithmetic', categoryOrder: 40, label: "→Q" });
 
 
 function _astIntOrThrow(n) {
@@ -873,6 +908,7 @@ function _qDecompose(sym) {
 register('Q→', (s) => {
   const [v] = s.popN(1);
   if (isInteger(v))  { s.push(Integer(v.value)); s.push(Integer(1n)); return; }
+  if (isRational(v)) { s.push(Integer(v.n)); s.push(Integer(v.d)); return; }
   if (isReal(v)) {
     if (!v.value.isInteger()) throw new RPLError('Bad argument value');
     s.push(Integer(BigInt(v.value.toFixed(0)))); s.push(Integer(1n)); return;
@@ -914,19 +950,12 @@ function _piMultipleAst(n, d) {
 }
 
 
-register('→Qπ', (s) => {
-  const [v] = s.popN(1);
-  let x;
-  if (isInteger(v)) x = Number(v.value);
-  else if (isReal(v)) x = v.value.toNumber();
-  else throw new RPLError('Bad argument type');
-  if (!Number.isFinite(x)) throw new RPLError('Bad argument value');
-  if (x === 0) { s.push(Symbolic(AstNum(0))); return; }
+function _piQuotientAst(x) {
+  if (x === 0) return AstNum(0);
   const { n, d } = _continuedFractionConvergent(Math.abs(x) / Math.PI);
-  if (n === 0) {
-    s.push(Symbolic(_rationalAst(x)));
-    return;
-  }
+  if (n === 0) return _rationalAst(x);
   const core = _piMultipleAst(n, d);
-  s.push(Symbolic(x < 0 ? AstNeg(core) : core));
-}, { category: 'Arithmetic', categoryOrder: 42, label: "→QΠ" });
+  return x < 0 ? AstNeg(core) : core;
+}
+
+register('→Qπ', _quotientOp(_piQuotientAst), { category: 'Arithmetic', categoryOrder: 42, label: "→QΠ" });

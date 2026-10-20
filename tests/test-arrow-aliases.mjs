@@ -310,9 +310,9 @@ for (const [canon, ascii, pre, label] of unaryPairs) {
   // `->Q` inherits →Q's type guard (non-Real/Integer → Bad argument type)
   // and finiteness guard (∞ → Bad argument value).
   const sType = new Stack();
-  sType.push(Complex(1, 2));
+  sType.push(Str('x'));
   assertThrows(() => { lookup('->Q').fn(sType); }, /Bad argument type/,
-               'session343: ->Q on Complex → Bad argument type (→Q type guard)');
+               'session343: ->Q on a string → Bad argument type (→Q type guard)');
   const sInf = new Stack();
   sInf.push(Real(Infinity));
   assertThrows(() => { lookup('->Q').fn(sInf); }, /Bad argument value/,
@@ -320,9 +320,9 @@ for (const [canon, ascii, pre, label] of unaryPairs) {
 
   // `->Qπ` shares the same two guards.
   const pType = new Stack();
-  pType.push(Complex(1, 2));
+  pType.push(Str('x'));
   assertThrows(() => { lookup('->Qπ').fn(pType); }, /Bad argument type/,
-               'session343: ->Qπ on Complex → Bad argument type (→Qπ type guard)');
+               'session343: ->Qπ on a string → Bad argument type (→Qπ type guard)');
   const pInf = new Stack();
   pInf.push(Real(Infinity));
   assertThrows(() => { lookup('->Qπ').fn(pInf); }, /Bad argument value/,

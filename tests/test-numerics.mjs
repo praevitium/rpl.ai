@@ -1827,8 +1827,26 @@ setAngle('rad');
 
 {
   const s = new Stack();
-  s.push(Complex(1, 2));
-  assertThrows(() => { lookup('→Q').fn(s); }, null, 'session047: Complex →Q throws Bad argument type');
+  s.push(Str('x'));
+  assertThrows(() => { lookup('→Q').fn(s); }, null, 'session047: String →Q throws Bad argument type');
+}
+
+{
+  const shown = (line) => format(runLine(line).peek());
+  const cases = [
+    ['5 2 / →Q', '`5/2`'],
+    ['(0.5,-0.75) →Q', '`1/2 - 3/4*i`'],
+    ['(0,2.5) →Q', '`5/2*i`'],
+    ["'Y+2.5' →Q", '`Y + 5/2`'],
+    ["'SIN(0.25*X)=1.5' →Q", '`SIN(1/4*X) = 3/2`'],
+    ["'X+1.5707963268' →Qπ", '`X + PI/2`'],
+    ['(1.5707963268,3.14159265359) →Qπ', '`PI/2 + PI*i`'],
+  ];
+  for (const [line, want] of cases) {
+    assert(shown(line) === want, `→Q: ${line} gives ${want}, as the AUR lists, where it said Bad argument type (${shown(line)})`);
+  }
+  const q = runLine('5 2 / Q→');
+  assert(q.depth === 2 && format(q.peek(2)) === '5' && format(q.peek()) === '2', 'Q→: the fraction 5/2 gives 5 and 2');
 }
 
 {
@@ -2136,8 +2154,8 @@ setAngle('rad');
 
 {
   const s = new Stack();
-  s.push(Complex(1, 2));
-  assertThrows(() => { lookup('→Qπ').fn(s); }, /Bad argument/, 'session052: Complex →Qπ throws');
+  s.push(Str('x'));
+  assertThrows(() => { lookup('→Qπ').fn(s); }, /Bad argument/, 'session052: String →Qπ throws');
 }
 
 {
