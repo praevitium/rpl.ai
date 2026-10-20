@@ -109,6 +109,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   ASSUME UNASSUME ADDTOREAL  \`K>0\` ASSUME tells the CAS K is positive (a list or AND for several); \`K\` UNASSUME forgets it; \`X\` ADDTOREAL keeps only that X is real
   ZEROS                      \`expr\` \`var\` ZEROS — the roots as plain values, each once: \`X^3-X^2-8*X+12\` \`X\` ZEROS → { -3 2 }
   SIGNTAB                    \`2-X^2\` SIGNTAB → { -∞ - -√2 + √2 - ∞ }: the zeros and poles in order with the sign between them
+  TABVAR                     \`X^2-1\` TABVAR → \`X^2-1\` { { -∞ - 0 + ∞ } { ∞ ↓ -1 ↑ ∞ } } and a picture: the variation table from the sign of f′
   DOMAIN                     \`√(X+1)\` DOMAIN → { -∞ ? -1 + ∞ }: where the function is defined (+) and undefined (?); a lone excluded point such as 0 in 1/X is left out
   ROOT                       \`f\` \`var\` guess ROOT — a numeric root near the guess (or in { a b }), stored in var: \`COS(X)=X\` \`X\` 1 ROOT → .739085133215
   MINIT MROOT MUSER MCALC    multiple-equation solver on the list of equations in EQ (Mpar holds its state): MINIT starts from EQ, \`X\` MUSER marks a variable known, MCALC unknown, \`V\` MROOT solves equation after equation, each left with one unknown, until V is found ("ALL" solves them all); MSOLVR shows a key per variable, MITM "title" { order } sets the menu
@@ -127,6 +128,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   TEXPAND TLIN TSIMP TCOLLECT EXPLN COSSIN LIN     trig/exp/log rewrites
   EXP2POW EXP2HYP SINCOS     \`EXP(5*LN(X))\` EXP2POW → \`X^5\`; EXP2HYP writes EXP(u) as SINH(u)+COSH(u); \`EXP(i*X)\` SINCOS → \`COS(X)+i*SIN(X)\`
   HALFTAN ASIN2C ASIN2T ACOS2S ATAN2S TAN2SC TAN2SC2 TAN2CS2     specific identity rewrites
+  TRIG                       exponentials to SIN and COS, then SIN²+COS²=1 towards COS (SIN with flag -116 set): \`EXP(i*X)\` TRIG → \`COS(X)+i*SIN(X)\`
   TRIGCOS TRIGSIN TRIGTAN    rewrite with SIN²+COS²=1 in COS terms or SIN terms, or SIN and COS as TAN: \`SIN(X)^2\` TRIGTAN → \`TAN(X)^2/(TAN(X)^2+1)\`
   EXLR                       split an equation/binary into LHS/RHS on the stack
   FXND                       numerator and denominator: \`(X-3)^2/(Z+4)\` FXND → \`(X-3)^2\` \`Z+4\`
@@ -151,6 +153,7 @@ POLYNOMIALS / NUMBER THEORY
   SIMP2                      \`X^3+6*X^2+11*X+6\` \`X^3-7*X-6\` SIMP2 → \`X+3\` \`X-3\` (both divided by their GCD; 12 18 SIMP2 → 2 3)
   DIV2 EGCD ABCUV            polynomial IDIV2 IEGCD IABCUV in VX: \`X^2+X+1\` \`2*X+4\` DIV2 → quotient \`X/2-1/2\` remainder 3; \`X^2+1\` \`X-1\` EGCD → 2 1 \`-X-1\` (gcd, u, v); \`X^2+X+1\` \`X^2+4\` 13 ABCUV → \`-X-3\` \`X+4\`
   CHINREM                    polynomial ICHINREM: [ \`X^2+1\` \`X+2\` ] [ \`X-1\` \`X+3\` ] CHINREM → [ \`9*X+23\` \`X^2+5*X+6\` ] (the solution and the product of the moduli)
+  STURM                      \`X^3+1\` STURM → { [1] -1. [X^3+1 X^2 -1] 1. }: the content, then each multiplicity's Sturm sequence and the multiplicity
   RESULTANT STURMAB LAGRANGE \`p\` \`q\` RESULTANT in VX (else the first variable); \`P\` a b STURMAB → { P(a) roots in [a,b] }; [[ xs ][ ys ]] LAGRANGE → the interpolating polynomial in VX
   DROITE                     (1,2) (3,4) DROITE → \`Y=X-1.+2.\`, the line through two points
   EUCLID INVMOD              extended-Euclid / modular inverse

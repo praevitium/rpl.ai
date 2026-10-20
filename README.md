@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 736 commands, exact big-integer and rational arithmetic,
+of its command set: 739 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -123,7 +123,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   is the same object. Or press `⌘E`, type `x^2-5x+6=0`, and click the Solve
   card. `` `EXP(X)` `X` 3 TAYLR `` gives the Taylor polynomial
   `1+X+1/2*X^2+1/6*X^3`, SERIES expands around any point with the limit and
-  remainder, and ZEROS lists the roots on their own. SOLVEVX solves for the
+  remainder, and ZEROS lists the roots on their own. `` `X^2-1` TABVAR ``
+  gives the variation table, `-∞ ↓ -1 ↑ ∞`, from the signs of the
+  derivative, STURM gives a polynomial's Sturm sequences, and TRIG turns
+  `EXP(i*X)` into `COS(X)+i*SIN(X)`. SOLVEVX solves for the
   current variable, or the only one there is: `` `T^2=9` SOLVEVX `` gives
   `{ T=-3 T=3 }`. Both solvers take a list of equations too and solve each
   one. `ASSUME` tells the CAS what a name may be: after `` `K>0` ASSUME ``
@@ -922,7 +925,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 736. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 739. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - setting the clock: `→DATE`, `→TIME` and `CLKADJ`. The clock is the
@@ -985,6 +988,12 @@ and RESTORE), Saturn assembly and System RPL, and IR and serial transfer.
   the AUR's EVAL table leaves an array as it is.
 - REALASSUME starts empty rather than holding X, Y, t, S1 and S2, and
   `ASSUME` keeps a strict `Z>0` as written where the HP makes it `Z≥0`.
+- `STURM` lists the content as `[c] -1.` and then each multiplicity's
+  standard Sturm sequence, without the extra `[1] 1.` pair of the AUR's
+  example. `TRIG` of `LN(X+i)` keeps the term that makes it right for
+  X<0, which the AUR's `ATAN(1/X)` leaves out. `TABVAR` gives `?` where f
+  has no limit, and its picture is a text table of F, F′ and the
+  variation rather than the HP's matrix.
 - ⌫ on an empty line leaves the stack alone, where the HP's drops level 1.
   DROP is on the STACK menu, the key strip above a phone's keyboard and a
   level's menu, and ⌫ still removes a selected level.
