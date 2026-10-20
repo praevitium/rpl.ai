@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.66 (2026-10-20)
+**Latest release:** v0.7.67 (2026-10-20)
 
 ---
 
@@ -20,6 +20,23 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.67 — 2026-10-20
+
+- ASSUME, UNASSUME and ADDTOREAL, the HP's CAS assumptions, through
+  Giac. After `'K>0' ASSUME` the integral of `EXP(-K*T)` from 0 to ∞ is
+  `1/K`, and after `'Z≥0' ASSUME`, `'√(Z^2)' SIMPLIFY` gives `Z` and the
+  roots of `Z^2=4` are just `Z=2`. Several conditions go in a list or
+  joined by AND; UNASSUME forgets a name and ADDTOREAL keeps just that it
+  is real. They live in REALASSUME, which is saved with the calculator
+  and comes back with a backup's restore. Like VX and the modes, UNDO
+  leaves them as they are.
+- Differences from the HP, noted in the commands' reference entries and
+  the README: REALASSUME starts empty rather than holding X, Y, t, S1 and
+  S2, ASSUME keeps a strict `Z>0` as written where the HP makes it `Z≥0`
+  (`Z≥MINR`, the AUR's way to say positive, reaches the CAS as `Z>0`), and
+  ADDTOREAL does not follow flag -128.
+- rpl.ai now has 736 of the HP 50g's 825 commands.
 
 ## v0.7.66 — 2026-10-20
 
