@@ -623,9 +623,12 @@ plays graphics objects over it in turn, and TEXT closes it. PICTURE brings
 the HP's graphics cursor: the arrow keys move it a pixel at a time, a tap
 or click puts it anywhere, and Enter, or the button that shows its point,
 puts (x,y) on the stack; in Trace mode Enter puts the point on the curve.
-Under the plot, the Picture menu's keys draw on PICT as the HP's do: MARK
-sets a mark at the cursor, LINE, TLINE, BOX and CIRCL draw from it to the
-cursor, and PICT→ puts PICT on the stack. The plot-window
+Under the plot, the Picture menu's keys draw on PICT as the HP's do: DOT+
+and DOT- draw and erase as the cursor moves, MARK sets a mark at the
+cursor, LINE, TLINE, BOX and CIRCL draw from it to the cursor, DEL clears
+the box between them and SUB copies it to the stack, REPL puts level 1's
+graphics object in at the cursor, LABEL and ERASE run their commands, and
+PICT→ puts PICT on the stack. The plot-window
 commands (XRNG, YRNG, CENTR, SCALE, AUTO, INDEP, RES, AXES and the rest)
 set PPAR, and plots start in its window, follow its INDEP, DEPND and RES
 and draw its axes. XVOL, YVOL, ZVOL, XXRNG, YYRNG, EYEPT, NUMX and NUMY set
@@ -962,8 +965,6 @@ Catalog and the command reference mark what is available. Not there yet:
 
 - the HP's numbered menus for MENU and TMENU (a list, a name holding one
   or 0 work)
-- the rest of PICTURE's drawing keys: DOT+, DOT-, DEL, SUB, REPL and
-  LABEL (their commands are here)
 - units in symbolic commands: EXPAND, SOLVE and the like refuse an
   algebraic with units in it, which EVAL and →NUM work out
 
