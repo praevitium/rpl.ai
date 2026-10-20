@@ -557,7 +557,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .ac-row span { font-size: 12px; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ac-row em { font: normal 11px/1 var(--font-mono); color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 36ch; }
 .ac-foot { display: flex; justify-content: space-between; gap: 10px; padding: 7px 12px; border-top: 1px solid var(--line); font: 11px/1.2 var(--font-ui); color: var(--ink3); }
-@container app (max-width: 719px) { .ac-row { grid-template-columns: minmax(56px, max-content) minmax(0, 1fr); } .ac-row span { display: none; } .ac-row em { max-width: none; } }
+@container app (max-width: 719px) { .ac-row { grid-template-columns: minmax(56px, max-content) minmax(0, 1fr); } .ac-row span { display: none; } .ac-row em { max-width: none; } .ac-row.nosig span { display: block; } .ac-row.nosig em { display: none; } }
 @container app (max-width: 520px) { .ac-foot { display: none; } }
 
 .menubar { flex: none; display: flex; align-items: stretch; gap: 6px; padding: 6px 10px 8px; background: var(--chrome); min-width: 0; }

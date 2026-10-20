@@ -2262,6 +2262,9 @@ setAngle('RAD');
   const acSrc = readFileSync(new URL('../www/src/ui/autocomplete.js', import.meta.url), 'utf8');
   assert(/const banner = globalThis\.document\?\.getElementById\('banner'\)\?\.offsetHeight;\s*this\.el\.style\.bottom = banner \? `calc\(100% - 2px \+ \$\{banner\}px\)` : '';/.test(acSrc),
     'autocomplete: with a program\'s banner above the line the list sits above it, so INPUT\'s question and PROMPT\'s keys stay in view');
+  assert(/const sig = info\?\.signature \?\? row\.group \?\? '';/.test(acSrc) && /\$\{sig \? '' : ' nosig'\}/.test(acSrc)
+    && /\.ac-row\.nosig span \{ display: block; \} \.ac-row\.nosig em \{ display: none; \}/.test(readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8')),
+    'autocomplete: under 720 px, where a row shows its stack diagram only, a row with none (a variable, GCD) shows its type or description instead of nothing');
 }
 
 {

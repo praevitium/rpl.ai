@@ -133,7 +133,8 @@ export class Autocomplete {
       const detail = row.kind === 'variable' ? `Variable · ${typeName(varRecall(row.name))}`
         : row.kind === 'unit' ? 'Unit'
         : info ? shortDescription(info.entry, 90) : '';
-      return `<div class="ac-row${i === this.index ? ' on' : ''}" role="option" aria-selected="${i === this.index}" data-i="${i}"><b>${label}</b><span>${escapeHtml(detail)}</span><em>${escapeHtml(info?.signature ?? row.group ?? '')}</em></div>`;
+      const sig = info?.signature ?? row.group ?? '';
+      return `<div class="ac-row${i === this.index ? ' on' : ''}${sig ? '' : ' nosig'}" role="option" aria-selected="${i === this.index}" data-i="${i}"><b>${label}</b><span>${escapeHtml(detail)}</span><em>${escapeHtml(sig)}</em></div>`;
     }).join('');
     const foot = onTouch() ? '<span>Tap completes · hold for the reference</span><span>Tap elsewhere closes</span>'
       : '<span>Tab completes · ↑↓ choose · → reference</span><span>Esc closes</span>';
