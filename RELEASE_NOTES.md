@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.99 (2026-10-20)
+**Latest release:** v0.7.100 (2026-10-20)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.100 — 2026-10-20
+
+- With flag -51 set (the comma as the fraction mark), a formula typed with
+  the comma, such as `2,5^2`, now gets the syntax banner's Evaluate as a
+  formula fix too, and gives 6,25. The fix read the line without the
+  comma rule, so it never offered itself there.
+- Letters typed straight after a number, such as `9.8kg` or `5ft`, now
+  bring up the units they start, shown as `_kg` and `_ft`, and a tap puts
+  in the `_` that a phone keyboard keeps a page away. The exponent of
+  `2e` or `1E5` brings up none.
+- With the keyboard up, the error banner's one row of fixes fades at the
+  edge it continues past, as the key strip and drawer tabs do, so a chip
+  cut by the edge reads as more to scroll.
 
 ## v0.7.99 — 2026-10-20
 

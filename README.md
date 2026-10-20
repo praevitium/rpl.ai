@@ -318,7 +318,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   Letters typed on either bring up the completion list: tap a name to
   finish it, or hold a finger on a command to read its reference, whose
   Insert replaces the letters typed. After a number's `_` it lists units:
-  `9.8_k` offers km, kg, kN and the rest. Inside a program the names a `→`
+  `9.8_k` offers km, kg, kN and the rest. A phone keyboard keeps `_` a page
+  away, so letters typed straight after the number do too: `9.8kg` offers
+  `_kg`, and a tap gives `9.8_kg`. Inside a program the names a `→`
   or a `FOR` binds come first: `« → rate time « r` offers rate. `if`,
   `for`, `start`, `do`, `while`, `case` and `iferr` offer the BRCH menu's
   structures whole, `IF … THEN … ELSE … END` and the rest, and a tap types
