@@ -639,8 +639,9 @@ away: drop the bad value, swap levels, open the reference, or ask the
 assistant to explain. A failed command gives its arguments back. As on the
 HP, what ran before it in the line or program stays, the rest doesn't run and
 the line is used up; Fix the line, offered with every error from a typed
-line, brings it back with the cursor at the command that failed, and Undo
-restores the stack from before it. On a phone a sideways swipe puts the
+line (a command key pressed on a typed value counts as part of it), brings
+it back with the cursor at the command that failed, and Undo restores the
+stack from before it. On a phone a sideways swipe puts the
 banner away, as a notification goes.
 
 ![An error banner with fixes](screenshots/errors.png)

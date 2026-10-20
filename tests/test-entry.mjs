@@ -123,6 +123,14 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(e.errorLine.slice(e.errorSpot) === '- 8', 'a type error keeps where the failing - starts');
     line('1 IF THEN CLEAR DROP END');
     assert(e.errorSpot === -1, 'a program line has no spot, so Fix the line leaves the cursor at the end');
+    s.restore([]);
+    e.buffer = '"a"';
+    e.execOp('SIN');
+    assert(e.errorLine === '"a" SIN' && e.errorSpot === 4 && e.buffer === '',
+      'a command key pressed on a typed value that fails keeps the value and the command as the line, with its spot at the command, for Fix the line');
+    e.buffer = '';
+    e.execOp('SIN');
+    assert(e.errorLine === '' && e.errorSpot === -1, 'a command key on an empty line leaves no line to fix');
     line('DROP DROP DROP DROP DROP');
     assert(s.depth === 0 && e.stack.hasUndo(), 'four DROPs run before the fifth fails; Undo still has the stack from before the line');
     e.performUndo();

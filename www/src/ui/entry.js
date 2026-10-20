@@ -681,8 +681,16 @@ export class Entry {
     touchLcd();
     this._snapForUndo();
     this.safeRun(() => {
-      if (this.buffer.trim().length > 0) this._commitEntry(this.buffer.trim());
-      for (const name of names) this._runOpTagged(name);
+      const raw = this.buffer.trim();
+      if (raw) this._commitEntry(raw);
+      let at = raw.length;
+      try {
+        for (const name of names) { at += 1; this._runOpTagged(name); at += name.length; }
+      } catch (e) {
+        // A key pressed on a typed line fails as the line and the command typed together would, so Fix the line brings back both.
+        if (raw && e instanceof Error && !(e instanceof RPLAbort)) { e.line = `${raw} ${names.join(' ')}`; e.spot = at; }
+        throw e;
+      }
     }, '', { keepPartial: true });
     this._emit();
   }
