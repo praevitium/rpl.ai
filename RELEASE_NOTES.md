@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.107 (2026-10-20)
+**Latest release:** v0.7.108 (2026-10-20)
 
 ---
 
@@ -18,6 +18,23 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.7.108 — 2026-10-20
+
+- Editing a level in minimal view with the keyboard up on a short screen
+  (a 360 by 640 phone, 310 px tall) showed nothing to say so: the status
+  line and its edit pencil give way there, and minimal view's command line
+  has no outline. It now takes the amber outline the other views show, so
+  you know Enter replaces the level.
+- Every error from a typed line offers Fix the line, after its own fixes
+  and before its reference. A bad type with the value on the stack
+  (`2 "x" -`), a bad value (`{ 1 2 } 5 GET`), mismatched sizes or units
+  and other errors offered none, so the line had to be typed again.
+- Under 360 px an error or halt banner's fixes start under its icon, not
+  beside it, so five fixes take three rows at 280 px instead of four and
+  the stack keeps 166 px where it had 120.
 
 ---
 
