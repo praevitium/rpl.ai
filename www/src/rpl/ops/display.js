@@ -1,9 +1,10 @@
 import { isInteger, isBinaryInteger, isReal, isList, isName, isString, BinaryInteger, Real, RList, Name } from '../types.js';
 import { RPLError } from '../stack.js';
-import { setWordsize, getWordsize, getWordsizeMask, getBinaryBase, setBinaryBase, setTextbookMode, setDisplay, varStore, varRecall, inScratchState, setLcdLine, clearLcd, freezeLcd, LCD_LINES, testUserFlag } from '../state.js';
+import { setWordsize, getWordsize, getWordsizeMask, getBinaryBase, setBinaryBase, setTextbookMode, setDisplay, varStore, varRecall, varList, varPurge, inScratchState, setLcdLine, clearLcd, freezeLcd, LCD_LINES, testUserFlag } from '../state.js';
 import { format, currentDisplay, withFractionMark } from '../formatter.js';
 import { register, lookup } from './registry.js';
 import { mesPrepare } from './root.js';
+import { newField, loadField } from '../minehunt.js';
 
 
 let _menuHook = null;
@@ -158,6 +159,32 @@ register('SCROLL', (s) => {
   const v = s.pop();
   if (!inScratchState()) _viewHook?.(v);
 }, { category: 'Display / base', categoryOrder: 31.4, label: "SCROLL" });
+
+let _gameHook = null;
+
+export function setGameHook(fn) {
+  _gameHook = typeof fn === 'function' ? fn : null;
+}
+
+// Nmines holds the number of mines, 1 to 64, negative to see them; 20 without it.
+function _mineCount() {
+  const v = varRecall('Nmines');
+  if (v === undefined) return 20;
+  if (!(isReal(v) || isInteger(v))) throw new RPLError('Bad argument type');
+  const n = Math.trunc(Number(v.value));
+  if (!(Math.abs(n) >= 1 && Math.abs(n) <= 64)) throw new RPLError('Bad argument value');
+  return n;
+}
+
+// A game saved in MHpar here resumes, and MHpar goes, as on the HP.
+register('MINEHUNT', () => {
+  if (inScratchState()) return;
+  const saved = varList().includes('MHpar') ? varRecall('MHpar') : null;
+  const game = saved ? loadField(saved) : newField(_mineCount());
+  if (!game) throw new RPLError('Bad argument value');
+  if (saved) varPurge('MHpar');
+  _gameHook?.(game);
+}, { category: 'Display / base', categoryOrder: 31.5, label: 'MINEHUNT' });
 
 
 // DISP writes an object on line n of the seven-line display over the stack, a string without its quotes, and CLLCD

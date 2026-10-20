@@ -4,7 +4,8 @@ import { ACTIONS, KEYMAP, CONTEXT_LABELS, chordText, isMacPlatform } from './act
 import { STORAGE_KEY as STACK_STORAGE_KEY, BACKUPS_KEY } from '../rpl/persist.js';
 import { UI_PREFS_KEY, THEMES, THEME_LABELS, STACK_SIZES, STACK_SIZE_LABELS, TUTOR_STYLES, KEYPAD_LAYOUTS, KEYPAD_LABELS, SIDES, SIDE_LABELS } from './ui-prefs.js';
 import { REMOTE_CONFIG_KEY as CHAT_REMOTE_KEY, CONSENT_KEY as CHAT_CONSENT_KEY } from '../ai/chat-bot.js';
-import { state as calcState, testUserFlag, setUserFlag, clearUserFlag, setClockOffset } from '../rpl/state.js';
+import { state as calcState, testUserFlag, setUserFlag, clearUserFlag, setClockOffset, varStore } from '../rpl/state.js';
+import { ROWS, COLS, GOAL, minesAround, step, newField, saveField } from '../rpl/minehunt.js';
 import { VERSION, BUILD, SHA } from '../build-info.js';
 import { pickFile } from './drawer.js';
 
@@ -16,6 +17,13 @@ const VIEW_ZOOM_MAX = 4;
 export function clampViewZoom(zoom) {
   return Math.min(VIEW_ZOOM_MAX, Math.max(VIEW_ZOOM_MIN, zoom));
 }
+
+// The pad's squares, row by row: [dr, dc, arrow, label, digit key, arrow key]; the middle one shows the count.
+const MOVES = [
+  [-1, -1, '↖', 'Up and left', '7'], [-1, 0, '↑', 'Up', '8', 'ArrowUp'], [-1, 1, '↗', 'Up and right', '9'],
+  [0, -1, '←', 'Left', '4', 'ArrowLeft'], null, [0, 1, '→', 'Right', '6', 'ArrowRight'],
+  [1, -1, '↙', 'Down and left', '1'], [1, 0, '↓', 'Down', '2', 'ArrowDown'], [1, 1, '↘', 'Down and right', '3'],
+];
 
 // The two largest parts of the calculator clock's distance from the device's, as "2 h 5 min ahead of the device clock".
 function clockOffsetText(ms) {
@@ -62,6 +70,14 @@ export class Sheets {
     this._open('inform');
   }
 
+  // MINEHUNT: the grid, a direction pad, the count of mines around you; arrows or 1–9 move, K saves the game in MHpar.
+  openGame(game) {
+    this.game = game;
+    this.gameMines = game.visible ? -game.mines.size : game.mines.size;
+    this._open('game');
+    requestAnimationFrame(() => this.el?.querySelector('.mh-grid')?.focus({ preventScroll: true }));
+  }
+
   openView(title, html, level) {
     this.view = { title, html, level };
     this._open('view');
@@ -78,7 +94,7 @@ export class Sheets {
       this.el.className = 'sheet-wrap';
       this.el.addEventListener('mousedown', (e) => { if (e.target === this.el) this.close(); });
       this.el.addEventListener('click', (e) => this._onClick(e));
-      this.el.addEventListener('keydown', (e) => this._onKeyDown(e));
+      this.el.addEventListener('keydown', (e) => (this.kind === 'game' ? this._onGameKey(e) : this._onKeyDown(e)));
       this.host.appendChild(this.el);
     }
     this._render();
@@ -106,6 +122,12 @@ export class Sheets {
       this.el.innerHTML = sheet(escapeHtml(title || 'Form'), `<div class="inf-fields" style="--inf-cols:${columns}">${fields.map(field).join('')}</div>`, '', `${act('inform-ok', 'check', 'OK', ' pri')}${act('inform-cancel', 'x', 'Cancel')}${act('inform-reset', 'undo', 'Reset')}`);
       return;
     }
+    if (this.kind === 'game') {
+      const act = (name, ico, label, extra = '') => `<button type="button" class="btn${extra}" data-sh="${name}">${icon(ico, 'sm')}${label}</button>`;
+      const foot = this.game.over ? `${act('mh-new', 'undo', 'Play again', ' pri')}${act('close', 'x', 'Close')}` : `${act('mh-save', 'down', 'Save (K)')}${act('close', 'x', 'Quit')}`;
+      this.el.innerHTML = sheet('MINEHUNT', this._gameHtml(), '', foot);
+      return;
+    }
     if (this.kind === 'view') {
       const act = (name, ico, label) => `<button type="button" class="btn" data-sh="view-act" data-act="${name}">${icon(ico, 'sm')}${label}</button>`;
       const acts = this.view.level == null ? '' : [act('edit', 'edit', 'Edit'), act('copy', 'copy', 'Copy'), typeof navigator.share === 'function' ? act('share', 'share', 'Share') : ''].join('');
@@ -114,6 +136,34 @@ export class Sheets {
     }
     const nav = SETTINGS_PAGES.map((p) => `<button type="button" data-sh="page" data-page="${p}" aria-pressed="${p === this.page}">${icon({ appearance: 'sliders', assistant: 'spark', data: 'folder' }[p], 'sm')}${{ appearance: 'Appearance', assistant: 'Assistant', data: 'Data' }[p]}</button>`).join('');
     this.el.innerHTML = sheet('Settings', this._settingsPageHtml(), `<nav class="sheet-nav">${nav}</nav>`);
+  }
+
+  _gameHtml() {
+    const g = this.game;
+    const near = minesAround(g);
+    const status = g.over === 'won' ? 'You crossed the field.' : g.over === 'mine' ? 'You stepped on a mine.' : `${near} ${near === 1 ? 'mine' : 'mines'} next to you`;
+    const cells = Array.from({ length: ROWS * COLS }, (_, i) => {
+      const cls = [i === g.at && 'here', g.visited.has(i) && 'seen', i === GOAL && 'goal', (g.over || g.visible) && g.mines.has(i) && 'mine'].filter(Boolean).join(' ');
+      return `<i class="${cls}" data-sh="mh-square" data-square="${i}"></i>`;
+    }).join('');
+    const pad = MOVES.map((m) => (m
+      ? `<button type="button" class="btn mh-k" data-sh="mh-step" data-dr="${m[0]}" data-dc="${m[1]}" aria-label="${m[3]}"${g.over ? ' disabled' : ''}>${m[2]}</button>`
+      : `<b class="mh-n" aria-hidden="true">${g.over ? '' : near}</b>`)).join('');
+    return `<p class="mh-status" role="status">${status}</p><div class="mh-grid" tabindex="0" aria-label="Battlefield, 8 rows by 16 columns">${cells}</div><div class="mh-pad">${pad}</div>`;
+  }
+
+  _gameStep(dr, dc) {
+    if (this.game.over) return;
+    step(this.game, dr, dc);
+    this._render();
+    this.el.querySelector('.mh-grid')?.focus({ preventScroll: true });
+  }
+
+  _saveGame() {
+    if (this.game.over) return;
+    varStore('MHpar', saveField(this.game));
+    this.close();
+    this.app.toast('Game saved in MHpar; MINEHUNT picks it up.');
   }
 
   _settingsPageHtml() {
@@ -214,6 +264,15 @@ export class Sheets {
       case 'install': app.runAction('app.install'); return;
       case 'restore': pickFile('application/json,.json', async (f) => { if (await app.importSnapshotFromFile(f)) this.close(); }); return;
       case 'clock-reset': setClockOffset(0); this._render(); return;
+      case 'mh-step': this._gameStep(Number(b.dataset.dr), Number(b.dataset.dc)); return;
+      case 'mh-square': {
+        const to = Number(b.dataset.square);
+        const dr = Math.floor(to / COLS) - Math.floor(this.game.at / COLS), dc = to % COLS - this.game.at % COLS;
+        if (Math.abs(dr) <= 1 && Math.abs(dc) <= 1 && (dr || dc)) this._gameStep(dr, dc);
+        return;
+      }
+      case 'mh-save': this._saveGame(); return;
+      case 'mh-new': this.openGame(newField(this.gameMines)); return;
       case 'reset': this._confirmReset = true; this._render(); return;
       case 'reset-confirm': this.resetEverything(); return;
     }
@@ -228,6 +287,13 @@ export class Sheets {
   }
 
   // Enter in a form field moves on to the next, and from the last answers the form, as the HP's ENTER does.
+  _onGameKey(e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const move = MOVES.find((m) => m && (m[4] === e.key || m[5] === e.key));
+    if (move) { e.preventDefault(); this._gameStep(move[0], move[1]); }
+    else if (e.key === 'k' || e.key === 'K') { e.preventDefault(); this._saveGame(); }
+  }
+
   _onKeyDown(e) {
     if (this.kind !== 'inform' || e.key !== 'Enter' || !e.target.matches('input[data-inf]')) return;
     e.preventDefault();

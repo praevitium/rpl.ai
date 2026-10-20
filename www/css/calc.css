@@ -801,6 +801,19 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .sheet-view .st-val > * { margin-left: 0; }
 .sheet-view .st-val .value-text { white-space: pre-wrap; overflow-wrap: anywhere; overflow: visible; }
 .sheet-f { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 22px 16px; border-top: 1px solid var(--line); }
+.mh-status { margin: 0 0 10px; font: 600 14px/1.3 var(--font-ui); color: var(--ink); }
+.mh-grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 2px; max-width: 520px; margin: 0 auto; border-radius: 6px; }
+.mh-grid:focus { outline: none; }
+.mh-grid:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 3px; }
+.mh-grid i { aspect-ratio: 1; border-radius: 3px; background: var(--line); }
+.mh-grid i.seen { background: var(--accent-dim); }
+.mh-grid i.goal { box-shadow: inset 0 0 0 2px var(--accent-line); }
+.mh-grid i.mine { background: var(--danger-dim); box-shadow: inset 0 0 0 2px var(--danger); }
+.mh-grid i.here { background: var(--accent); }
+.mh-grid i.here.mine { background: var(--danger); }
+.mh-pad { display: grid; grid-template-columns: repeat(3, 52px); gap: 6px; justify-content: center; margin-top: 14px; }
+.mh-pad .btn { justify-content: center; min-height: 44px; font-size: 18px; }
+.mh-n { display: grid; place-items: center; font: 600 20px var(--font-mono); color: var(--ink); }
 /* A sheet too short for a header, a field and the footer (landscape with the keyboard up) keeps its fields: Enter is OK. */
 @container sheet (max-height: 219px) { .sheet-f { display: none; } }
 /* INFORM's form: a label over each field, the fields in the form's columns on a wide screen and in one on a phone. */

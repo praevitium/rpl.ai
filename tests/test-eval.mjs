@@ -521,6 +521,36 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   runLine('2 →HEADER 1138 →KEYTIME 9 →NDISP');
 }
 
+// MINEHUNT: an 8×16 field from the upper-left to the lower-right corner, Nmines mines, a game saved in MHpar resumed.
+{
+  const { setGameHook } = await import('../www/src/rpl/ops.js');
+  const { minesAround, step, saveField, loadField, newField, GOAL } = await import('../www/src/rpl/minehunt.js');
+  let game = null;
+  setGameHook((g) => { game = g; });
+  runLine('MINEHUNT');
+  assert(game.mines.size === 20 && game.at === 0 && !game.mines.has(0) && !game.mines.has(GOAL) && !game.visible,
+    'MINEHUNT starts in the corner with 20 mines, none on the start or the goal');
+  runLine("-5 'Nmines' STO MINEHUNT");
+  assert(game.mines.size === 5 && game.visible, 'a negative Nmines sets that many mines and shows them');
+  assertThrows(() => runLine("99 'Nmines' STO MINEHUNT"), /Bad argument value/, 'Nmines takes 1 to 64');
+  runLine("'Nmines' PURGE");
+  const field = { mines: new Set([1, 16, 17]), at: 0, visited: new Set([0]), visible: false, over: null };
+  assert(minesAround(field) === 3, 'the count is of the mines in the squares around you');
+  assert(step(field, -1, 0) === null && field.at === 0, 'the edge of the field holds you');
+  assert(step(field, 0, 1) === 'mine', 'a step onto a mine ends the game');
+  const won = { mines: new Set(), at: GOAL - 1, visited: new Set([GOAL - 1]), visible: false, over: null };
+  assert(step(won, 0, 1) === 'won', 'reaching the far corner wins');
+  let seed = 0;
+  const fresh = newField(7, () => ((seed = (seed + 0.37) % 1)));
+  const back = loadField(saveField(fresh));
+  assert(back.mines.size === fresh.mines.size && [...back.mines].every((m) => fresh.mines.has(m)) && back.at === 0, 'MHpar keeps the mines and where you are');
+  game = null;
+  calcState.current.entries.set('MHpar', saveField({ ...fresh, at: 17, visited: new Set([0, 17]) }));
+  runLine('MINEHUNT');
+  assert(game.at === 17 && !varList().includes('MHpar'), 'MINEHUNT resumes the game in MHpar and purges it');
+  setGameHook(null);
+}
+
 // A built-in command named in an algebraic runs on its numeric arguments when no function rule folds it, as on the HP.
 {
   const top = (line) => format(runLine(line).peek());
