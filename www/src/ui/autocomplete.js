@@ -57,6 +57,7 @@ export class Autocomplete {
     this.rows = [];
     this.index = 0;
     this.word = null;
+    this.shown = null;
     this._dismissedWord = null;
     this.el.addEventListener('mousedown', (e) => e.preventDefault());
     this.el.addEventListener('click', (e) => {
@@ -74,6 +75,8 @@ export class Autocomplete {
     const text = entry.buffer;
     const at = this.app.inputMode === 'rpl' && entry.hasFocus() && !this.app.errorBanner && !text.trimStart().startsWith('?')
       ? wordBeforeCursor(text, entry.cursor) : null;
+    if (this.shown && at?.from === this.word?.from && at.word === this.shown) return;
+    this.shown = null;
     if (!at) this._dismissedWord = null;
     const after = text.slice(entry.cursor);
     if (!at || at.word.length < 2 || /^[0-9.#_]/.test(at.word) || (after && !CLOSES_A_WORD.test(after)) || at.word === this._dismissedWord) {
@@ -122,6 +125,24 @@ export class Autocomplete {
     this.el.hidden = true;
     this.rows = [];
     this.index = 0;
+    this.shown = null;
+  }
+
+  // ↑ and ↓ put the highlighted completion in the line as they move; the list stays the one for what was typed.
+  move(step) {
+    if (!this.isOpen()) return false;
+    this.index = (this.index + step + this.rows.length) % this.rows.length;
+    this._replaceWord(this.rows[this.index].name);
+    this._render();
+    return true;
+  }
+
+  _replaceWord(text) {
+    const { entry } = this.app;
+    const { from } = this.word;
+    this.shown = text;
+    entry._dispatch({ changes: { from, to: entry.cursor, insert: text }, selection: { anchor: from + text.length } });
+    entry._emit();
   }
 
   accept(i = this.index) {
@@ -145,8 +166,7 @@ export class Autocomplete {
     const consume = () => { e.preventDefault(); e.stopPropagation(); };
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       consume();
-      this.index = (this.index + (e.key === 'ArrowDown' ? 1 : this.rows.length - 1)) % this.rows.length;
-      this._render();
+      this.move(e.key === 'ArrowDown' ? 1 : -1);
     } else if (e.key === 'Tab' && !e.shiftKey) {
       consume();
       this.accept();
@@ -156,6 +176,7 @@ export class Autocomplete {
     } else if (e.key === 'Escape') {
       consume();
       this._dismissedWord = this.word?.word ?? null;
+      if (this.shown) this._replaceWord(this.word.word);
       this.close();
     }
   }

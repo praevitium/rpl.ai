@@ -2172,7 +2172,7 @@ class App {
     if (this._answerKey(hpKeyCode(key.primary, this.layer()))) return;
     if (!standard && this._userKey(key.primary)) return;
     const step = { '▲': -1, '▼': 1 }[key.primary];
-    if (step && !this.shift && this._moveChoice(step)) return;
+    if (step && !this.shift && (this._moveChoice(step) || this.autocomplete.move(step))) return;
 
     if (this.selection != null && !this.shift) {
       const sel = { '▲': 'level.up', '▼': 'level.down', ENTER: 'level.edit', '⌫': 'level.drop', ON: 'ui.escape' }[key.primary];

@@ -2207,6 +2207,31 @@ setAngle('RAD');
   assert(fit(-26, 178, 150) === '146px/34', 'autocomplete: the chosen row scrolls into the capped list (150 + 30 - 146)');
   assert(fit(-148, 178, 0) === '30px/0', 'autocomplete: one whole row (30 px here, 40 on touch) remains in landscape with the keyboard up');
   assert(/\.ac \{[^}]*overflow: hidden auto;/.test(readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8')), 'autocomplete: the list scrolls when capped');
+
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const entry = new Entry(new Stack());
+  entry.hasFocus = () => true;
+  const ac = Object.assign(Object.create(Autocomplete.prototype), {
+    app: { entry, inputMode: 'rpl', errorBanner: null }, el: { hidden: true }, rows: [], index: 0, word: null, shown: null, _dismissedWord: null,
+  });
+  ac._render = function () { this.el.hidden = false; };
+  entry.subscribe(() => ac.update());
+  const key = (k) => ac._onKey({ key: k, preventDefault() {}, stopPropagation() {} });
+  entry.type('1 SI');
+  const typedRows = ac.rows.map((r) => r.name).join(' ');
+  key('ArrowDown');
+  assert(entry.buffer === `1 ${ac.rows[1].name}` && ac.isOpen() && ac.rows.map((r) => r.name).join(' ') === typedRows,
+    'autocomplete: ↓ puts the highlighted completion in the line and keeps the list made for what was typed');
+  key('ArrowUp');
+  key('ArrowUp');
+  assert(entry.buffer === `1 ${ac.rows[ac.rows.length - 1].name}`, 'autocomplete: ↑ past the first row wraps to the last and puts it in the line');
+  key('Escape');
+  assert(entry.buffer === '1 SI' && !ac.isOpen(), 'autocomplete: Esc puts back what was typed and closes the list');
+  entry.type('N');
+  key('ArrowDown');
+  const chosen = ac.rows[1].name;
+  key('Tab');
+  assert(entry.buffer === `1 ${chosen} ` && !ac.isOpen(), 'autocomplete: Tab after ↓ completes the chosen command with its space');
 }
 
 {
@@ -2315,7 +2340,7 @@ setAngle('RAD');
     "Enter on an empty line is the OK of a CHOOSE (its highlighted choice, 0 when none is) and of a MSGBOX, as the HP's ENTER is; a typed line still runs");
   assert(/_moveChoice\(d\) \{\s*const dialog = calcState\.halted\?\.kind === 'choose' \? calcState\.halted\.dialog : null;\s*if \(!dialog\?\.pos\) return false;\s*if \(!this\.popover\.el \|\| this\.popover\.el !== this\._chooseList\) \{ this\.showChooseList\(\); return true; \}\s*this\._markChoice\(Math\.max\(1, Math\.min\(dialog\.items\.length, dialog\.pos \+ d\)\)\);\s*return true;/.test(appSrc)
     && /_revealChoice\(center\) \{\s*this\.popover\.el\?\.querySelector\('\.opt\.on'\)\?\.scrollIntoView\(\{ block: center \? 'center' : 'nearest' \}\);/.test(appSrc)
-    && /const step = \{ '▲': -1, '▼': 1 \}\[key\.primary\];\s*if \(step && !this\.shift && this\._moveChoice\(step\)\) return;/.test(appSrc)
+    && /const step = \{ '▲': -1, '▼': 1 \}\[key\.primary\];\s*if \(step && !this\.shift && \(this\._moveChoice\(step\) \|\| this\.autocomplete\.move\(step\)\)\) return;/.test(appSrc)
     && /onArrowUpEmpty: \(\) => this\._moveChoice\(-1\) \|\| this\._runChord\('ArrowUp'\),[\s\S]{0,200}?onArrowDownEmpty: \(\) => this\._moveChoice\(1\) \|\| this\._runChord\('ArrowDown'\),/.test(appSrc)
     && /if \(this\._onArrow\) \{ e\.preventDefault\(\); this\._onArrow\(e\.key === 'ArrowDown' \? 1 : -1\); return; \}/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8')),
     'CHOOSE: the list opens with the marked row in view, the arrow keys (keypad and keyboard) move the mark within the list or bring back a list put away, and Enter answers with it');

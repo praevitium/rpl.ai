@@ -298,6 +298,7 @@ On Windows and Linux, ⌘ is Ctrl and ⌥ is Alt.
 | `⌘\` · `⌘;` · `⇧⌘F` | Tools drawer · keypad · Minimal view |
 | `⌘,` · `⌘/` | Settings · every shortcut, grouped by where it applies |
 | Tab | Complete a command or variable name; next box or next cell in the writers |
+| `↑` · `↓` with completions showing | Put the next or previous completion in the line, so Enter runs it; Esc puts back what you typed |
 | Enter in the matrix writer | Stores the cell and moves on, as the HP's ENTER; on a cell you haven't typed in it pushes the matrix, so `1` Enter `2` Enter Enter enters `[[ 1 2 ]]` · ⇧Enter next row |
 | Esc | Close, deselect, dismiss, or cancel with Undo |
 
