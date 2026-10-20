@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.81 (2026-10-20)
+**Latest release:** v0.7.82 (2026-10-20)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.82 — 2026-10-20
+
+- A UNITS key with the matrix writer open types its unit into the
+  focused cell, as it does in the equation writer: 5 becomes 5_m, and ↱
+  gives 5_1/m. It used to enter the matrix and push the unit on its own.
+  ↰ (CONVERT) says it works on the stack.
+- A matrix cell holding a unit, such as 5_m/s, enters a unit object, as
+  `[[ 5_m/s ]]` typed on the command line does, where it entered a formula
+  that divided 5_m by a variable s.
+- The matrix writer's →STK, from the HP's MatrixWriter, copies the focused
+  cell to the stack and leaves the writer open.
+- A finger held on a unit key with a writer open offers Attach and Divide,
+  where it offered Convert level 1, which the writer refuses.
 
 ## v0.7.81 — 2026-10-20
 
