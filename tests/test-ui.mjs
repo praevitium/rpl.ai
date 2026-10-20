@@ -1955,6 +1955,16 @@ setAngle('RAD');
 }
 
 {
+  const eqwSrc = readFileSync(new URL('../www/src/ui/equation-editor.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/this\.strip\.addEventListener\('scroll', \(\) => markScrollEdges\(this\.strip\), \{ passive: true \}\);\s*new ResizeObserver\(\(\) => markScrollEdges\(this\.strip\)\)\.observe\(this\.strip\);/.test(eqwSrc)
+    && (eqwSrc.match(/this\.strip\.innerHTML = [^\n]+\n\s*markScrollEdges\(this\.strip\);/g) ?? []).length === 2
+    && /\.eqw-ins\.more-r,[^{]*\{ mask-image: linear-gradient\(to right, #000 calc\(100% - 36px\), transparent\); \}/.test(css)
+    && /\.eqw-ins\.more-l\.more-r,[^{]*\{ mask-image: linear-gradient\(to right, transparent, #000 36px/.test(css),
+    'equation writer: its insight cards fade at the edge they continue past, as the drawer tabs and key strip do, where on a phone a card was cut off at the edge');
+}
+
+{
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/const plottable = \(value\) => isSymbolic\(value\) && !hasUnits\(value\.expr\);/.test(appSrc)
     && /\$\{plottable\(value\) \? `<button type="button" data-row-act="plot"/.test(appSrc)

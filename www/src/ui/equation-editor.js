@@ -13,7 +13,7 @@ import { _astToRplValue } from '../rpl/ops/internal.js';
 import { giac } from '../rpl/cas/giac-engine.mjs';
 import { state as calcState, toRadians, fromRadians, testUserFlag } from '../rpl/state.js';
 import { evalNumeric } from './plot-engine.js';
-import { escapeHtml } from './display.js';
+import { escapeHtml, markScrollEdges } from './display.js';
 import { writerKeys } from './input-area.js';
 
 const HOLE = Object.freeze({ t: 'hole' });
@@ -1779,6 +1779,8 @@ export class EquationEditor {
     this.textBox = this.el.querySelector('.eqw-text');
     this.textArea = this.el.querySelector('.eqw-ta');
     this.strip = this.el.querySelector('.eqw-ins');
+    this.strip.addEventListener('scroll', () => markScrollEdges(this.strip), { passive: true });
+    new ResizeObserver(() => markScrollEdges(this.strip)).observe(this.strip);
     this.canvas.after(writerKeys(TAP_KEYS, (face) => this.pressFace(face)));
     this.state = emptyEquation();
     this.big = false;
@@ -2291,12 +2293,14 @@ export class EquationEditor {
     this.insights = insights;
     const cards = insights.map((insight, i) => this._insightHtml(insight, i)).join('');
     this.strip.innerHTML = cards + note || (pending ? '' : insightNote('Nothing to add', 'The CAS has no simpler form for this one.'));
+    markScrollEdges(this.strip);
   }
 
   _showInsightNote(title, text) {
     this.insights = [];
     this._insightFor = null;
     this.strip.innerHTML = insightNote(title, text);
+    markScrollEdges(this.strip);
   }
 
   _insightHtml(insight, index) {
