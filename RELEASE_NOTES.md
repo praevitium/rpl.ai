@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.93 (2026-10-20)
+**Latest release:** v0.7.94 (2026-10-20)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.94 — 2026-10-20
+
+- The completion list no longer covers a program's banner: while a PROMPT
+  or HALT waits it opens above the banner, so the program's message and its
+  Continue and Stop keys stay in view.
+- After a number's `_` the completion list offers units, each with its
+  group: `9.8_k` lists km, kg, kN, kJ, kW and kV. Inside an algebraic only
+  plain units are offered, since a compound one there needs parentheses.
+- While a program waits at INPUT, the typed answer brings up no command
+  completions: it is text the program reads back.
 
 ## v0.7.93 — 2026-10-20
 
