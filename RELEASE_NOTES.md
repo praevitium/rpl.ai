@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.68 (2026-10-20)
+**Latest release:** v0.7.69 (2026-10-20)
 
 ---
 
@@ -18,6 +18,28 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.7.69 — 2026-10-20
+
+- VER, DEDICACE and RULES.
+  - `VER` gives Giac's version, 1.5, with the build's date run on, as
+    V.YYYYMMDD runs a version and a date together.
+  - `"Hi" DEDICACE` gives rpl.ai's own dedication with Hi added.
+  - `RULES` shows the credits in a message box: rpl.ai, Giac's Bernard
+    Parisse and Renée De Graeve, and thanks to Eric Rechlin, Joseph K.
+    Horn, Jean-Yves Avenard, Cyrille de Brébisson, Claudio Lapilli and
+    William C. Wickes.
+- →HEADER, HEADER→, →KEYTIME, KEYTIME→ and →NDISP.
+  - They check their setting and keep it: 0 to 2 header lines, 0 to 4096
+    ticks, and at least one program line.
+  - HEADER→ and KEYTIME→ give the setting back, 2 and 1138 at first.
+  - The header and key time are saved with the calculator. →NDISP starts
+    over on a reload, as at the HP's warmstart.
+  - The screen and keys keep rpl.ai's own layout and timing. This is
+    noted in each reference entry and the README.
+- MENUXY now shows every one of the HP's 141 numbered CAS commands.
 
 ---
 
