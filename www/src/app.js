@@ -865,6 +865,7 @@ class App {
       case 'dropn': runOnLevels('DROPN'); return;
       case 'keep': run(() => keepLevels(this.stack, level)); this.clearSelection(); return;
       case 'level': run(() => this.stack.push(Integer(level))); this.selectLevel(level + 1); return;
+      case 'info': this._levelInfo(level); return;
       case 'eval': runOn('EVAL'); return;
       case 'debug': runOn('DBUG'); return;
       case 'num': runOn('→NUM'); return;
@@ -902,6 +903,14 @@ class App {
     }
   }
 
+  // The HP interactive stack's INFO: what the level holds, with its TYPE and BYTES, run on a copy so the stack and LASTARG stay put.
+  _levelInfo(level) {
+    const value = this.stack.peek(level);
+    const result = (name) => { const s = new Stack(); s.pushMany([value]); lookup(name).fn(s); return s.peek(1).value; };
+    const { type, text } = describeValue(value);
+    this.toast(`Level ${level}: ${/^a /.test(text) ? text : type} · TYPE ${Number(result('TYPE'))} · ${result('BYTES')} bytes`);
+  }
+
   // The HP interactive stack's VIEW: the value at a readable size, scrolling both ways, where the stack would shrink or cut it.
   _viewLevel(level) {
     this._viewValue(this.stack.peek(level), `Level ${level}`, level);
@@ -935,6 +944,7 @@ class App {
         deeper ? item('dropn', 'trash', `Drop ${span} (DRPN)`) : '',
         item('keep', 'check', `Keep ${span} only (KEEP)`),
         item('level', 'enter', `Push the level number, ${level} (LEVEL)`),
+        item('info', 'info', 'Type and size (INFO)'),
       ],
       [
         item('eval', 'play', 'Evaluate (EVAL)'),
@@ -1600,6 +1610,7 @@ class App {
       { label: 'DRPN', title: `Drop levels 1–${level}`, onPress: act('dropn') },
       { label: 'KEEP', title: `Keep levels 1–${level} only`, onPress: act('keep') },
       { label: 'LEVEL', title: `Push the level number, ${level}`, onPress: act('level') },
+      { label: 'INFO', title: 'Its type and size', onPress: act('info') },
       plottable(value)
         ? { label: 'PLOT', title: 'Plot it', onPress: act('plot') }
         : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },

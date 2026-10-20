@@ -2218,6 +2218,15 @@ setAngle('RAD');
 }
 
 {
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/\{ label: 'LEVEL', [^\n]+\n\s+\{ label: 'INFO', title: 'Its type and size', onPress: act\('info'\) \}/.test(appSrc)
+    && /item\('info', 'info', 'Type and size \(INFO\)'\)/.test(appSrc)
+    && /case 'info': this\._levelInfo\(level\); return;/.test(appSrc)
+    && /const result = \(name\) => \{ const s = new Stack\(\); s\.pushMany\(\[value\]\); lookup\(name\)\.fn\(s\); return s\.peek\(1\)\.value; \};/.test(appSrc),
+    'stack: a level has the HP interactive stack\'s INFO after LEVEL, on its soft keys and in its ⋯ menu, which notes its type, TYPE and BYTES from a copy, leaving the stack and LASTARG alone');
+}
+
+{
   const { Autocomplete } = await import('../www/src/ui/autocomplete.js');
   const fit = (top, height, onTop) => {
     const el = { style: {}, scrollTop: 0, offsetHeight: height, getBoundingClientRect: () => ({ top, bottom: top + height }), querySelector: () => ({ offsetTop: onTop, offsetHeight: 30 }) };
