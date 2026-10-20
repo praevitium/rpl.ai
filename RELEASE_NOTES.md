@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.109 (2026-10-20)
+**Latest release:** v0.7.110 (2026-10-20)
 
 ---
 
@@ -18,6 +18,23 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.7.110 — 2026-10-20
+
+- In a window under 330 px tall with no keyboard up, as in a landscape
+  split screen once Settings has taken the focus, the app bar, writer
+  tabs, command line and soft keys needed about 180 px: in a 160 px
+  window the soft keys ran 22 px past the bottom and the stack had no
+  room. The writer tabs and hints now step aside there, as they do with
+  the keyboard up, and the soft keys end on screen.
+- A command key pressed on a typed value that fails now counts as part
+  of the line: type `"abc"`, tap SIN, and Fix the line brings back
+  `"abc" SIN` with the cursor at SIN. Before, the typed value was gone
+  and no Fix the line was offered.
+- A toast, such as an Undo note or a hint, swipes away under a finger as
+  an error banner does since 0.7.109. Its button still taps.
 
 ---
 
