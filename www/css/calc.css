@@ -2051,7 +2051,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 
 .app, .app * { touch-action: pan-x pan-y; }
 .app .gr-canvas, .app .mh-grid { touch-action: none; }
-.app .st-row[data-key], .app .bn:not(.halt) { touch-action: pan-y; }
+.app .st-row[data-key], .app .bn:not(.halt), .toast { touch-action: pan-y; }
 /* A value is a sideways scroller, so the browser takes a sideways swipe on it; only one that overflows needs that. */
 .app .st-row[data-key] .st-val:not(.more-l, .more-r) { touch-action: pan-y; }
 .app .dw-tabs { touch-action: pan-x; }

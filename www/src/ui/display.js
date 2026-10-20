@@ -56,6 +56,45 @@ export function markScrollEdges(el) {
   setScrollEdges(el, scrollEdges(el));
 }
 
+const swipeThreshold = (width) => Math.min(120, width * 0.35);
+
+// A finger swiped sideways across a notice (an error banner, a toast) puts it away, as a phone's notifications go.
+// A press on one of its buttons, or on what scrolls sideways of its own, is no swipe.
+export function installSwipeAway(host, selector, onAway, ignore = 'button') {
+  let swipe = null;
+  host.addEventListener('pointerdown', (ev) => {
+    swipe = null;
+    const el = ev.target.closest?.(selector);
+    if (!el || ev.pointerType === 'mouse' || !ev.isPrimary || ev.target.closest(ignore)) return;
+    swipe = { el, id: ev.pointerId, x: ev.clientX, y: ev.clientY, dx: 0, active: false };
+  });
+  host.addEventListener('pointermove', (ev) => {
+    if (swipe?.id !== ev.pointerId) return;
+    const dx = ev.clientX - swipe.x;
+    if (!swipe.active) {
+      if (Math.abs(ev.clientY - swipe.y) > 10) { swipe = null; return; }
+      if (Math.abs(dx) < 10) return;
+      swipe.active = true;
+      swipe.el.setPointerCapture?.(ev.pointerId);
+    }
+    swipe.dx = dx;
+    swipe.el.style.transform = `translateX(${dx}px)`;
+    swipe.el.style.opacity = String(1 - Math.min(0.7, Math.abs(dx) / (swipe.el.offsetWidth || 1)));
+  });
+  const end = (ev) => {
+    if (swipe?.id !== ev.pointerId) return;
+    const { el, dx, active } = swipe;
+    swipe = null;
+    if (!active) return;
+    const away = ev.type === 'pointerup' && Math.abs(dx) > swipeThreshold(el.offsetWidth || 1);
+    el.style.transform = '';
+    el.style.opacity = '';
+    if (away) onAway(el);
+  };
+  host.addEventListener('pointerup', end);
+  host.addEventListener('pointercancel', end);
+}
+
 export function binaryBaseLabel(base) {
   return { h: 'HEX', d: 'DEC', o: 'OCT', b: 'BIN' }[base];
 }
@@ -177,7 +216,6 @@ const MODE_NAMES = Object.freeze({
 const editTarget = (editing) => (typeof editing === 'number' ? `level ${editing}` : editing);
 
 const prefersReducedMotion = () => !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-export const swipeThreshold = (width) => Math.min(120, width * 0.35);
 export const LONG_PRESS_MS = 450;
 
 export class Display {

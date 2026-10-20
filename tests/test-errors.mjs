@@ -1,7 +1,7 @@
 import { assert } from './helpers.mjs';
 import { ERROR_KINDS, parseErrorMessage, describeError } from '../www/src/ui/errors.js';
-import { errorBannerHtml, haltedBannerHtml, installBannerSwipe } from '../www/src/ui/banner.js';
-import { describeValue } from '../www/src/ui/display.js';
+import { errorBannerHtml, haltedBannerHtml } from '../www/src/ui/banner.js';
+import { describeValue, installSwipeAway } from '../www/src/ui/display.js';
 import { Str, Real, Name, Vector, RList } from '../www/src/rpl/types.js';
 
 {
@@ -219,7 +219,7 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   const handlers = {};
   const host = { addEventListener: (type, fn) => { handlers[type] = fn; } };
   let dismissed = 0;
-  installBannerSwipe(host, () => { dismissed++; });
+  installSwipeAway(host, '.bn:not(.halt)', () => { dismissed++; }, '.bn-f, button');
   const bn = { offsetWidth: 300, style: {}, setPointerCapture() {} };
   const target = (halt = false, inFixes = false) => ({ closest: (sel) => (sel === '.bn:not(.halt)' ? (halt ? null : bn) : inFixes ? {} : null) });
   const swipe = (dx, dy = 0, t = target()) => {

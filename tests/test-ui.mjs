@@ -2796,9 +2796,10 @@ setAngle('RAD');
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/installBannerSwipe\(\$\('banner'\), \(\) => this\.dismissError\(\)\);/.test(appSrc)
-    && /\.app \.st-row\[data-key\], \.app \.bn:not\(\.halt\) \{ touch-action: pan-y; \}/.test(css),
-    'errors: the banner swipes away under a finger, the browser leaving sideways moves on it to the page');
+  assert(/installSwipeAway\(\$\('banner'\), '\.bn:not\(\.halt\)', \(\) => this\.dismissError\(\), '\.bn-f, button'\);/.test(appSrc)
+    && /installSwipeAway\(\$\('toasts'\), '\.toast', \(toast\) => toast\.remove\(\)\);/.test(appSrc)
+    && /\.app \.st-row\[data-key\], \.app \.bn:not\(\.halt\), \.toast \{ touch-action: pan-y; \}/.test(css),
+    'notices: an error banner and a toast swipe away under a finger, the browser leaving sideways moves on them to the page');
 }
 
 {

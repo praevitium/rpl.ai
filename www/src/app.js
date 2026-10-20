@@ -1,12 +1,12 @@
 import { Stack } from './rpl/stack.js';
 import { Entry, inProgramEntry } from './ui/entry.js';
-import { Display, escapeHtml, describeValue, suspendedProgramHtml, binaryBaseLabel, markScrollEdges } from './ui/display.js';
+import { Display, escapeHtml, describeValue, suspendedProgramHtml, binaryBaseLabel, markScrollEdges, installSwipeAway } from './ui/display.js';
 import { Keypad, hpKeyCode, typedKeyCode, keyForCode } from './ui/keyboard.js';
 import { MenuBar } from './ui/menubar.js';
 import { AppBar, installHint } from './ui/appbar.js';
 import { Drawers, CATEGORIES, familyCommands, signatureOf } from './ui/drawer.js';
 import { describeError, ERROR_KINDS } from './ui/errors.js';
-import { errorBannerHtml, haltedBannerHtml, lcdHtml, installBannerSwipe } from './ui/banner.js';
+import { errorBannerHtml, haltedBannerHtml, lcdHtml } from './ui/banner.js';
 import { InputArea } from './ui/input-area.js';
 import { Autocomplete } from './ui/autocomplete.js';
 import { Palette } from './ui/palette.js';
@@ -141,7 +141,9 @@ class App {
       stackView: $('stackView'), cmdline: $('cmdline'), statusLine: $('statusLine'),
     });
     $('banner').addEventListener('click', (e) => this._onBannerClick(e));
-    installBannerSwipe($('banner'), () => this.dismissError());
+    // A halted program's banner waits for an answer, and the fixes row scrolls sideways of its own with the keyboard up.
+    installSwipeAway($('banner'), '.bn:not(.halt)', () => this.dismissError(), '.bn-f, button');
+    installSwipeAway($('toasts'), '.toast', (toast) => toast.remove());
     $('banner').addEventListener('scroll', (e) => { if (e.target.classList?.contains('bn-f')) markScrollEdges(e.target); }, true);
     new ResizeObserver(() => this._markBannerEdges()).observe($('banner'));
     this.appbar = new AppBar({ el: $('appbar'), app: this });

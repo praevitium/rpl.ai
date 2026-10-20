@@ -642,7 +642,7 @@ the line is used up; Fix the line, offered with every error from a typed
 line (a command key pressed on a typed value counts as part of it), brings
 it back with the cursor at the command that failed, and Undo restores the
 stack from before it. On a phone a sideways swipe puts the
-banner away, as a notification goes.
+banner, or any note such as Undo's, away, as a notification goes.
 
 ![An error banner with fixes](screenshots/errors.png)
 
