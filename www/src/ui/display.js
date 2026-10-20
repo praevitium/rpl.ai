@@ -279,7 +279,7 @@ export class Display {
       new ResizeObserver(() => {
         const selected = view.querySelector('.st-row.sel');
         if (selected) this._reveal(selected);
-        else if (this._fromBottom <= 2) view.scrollTop = view.scrollHeight;
+        else if (this._fromBottom <= 2 && !view.dataset.empty) view.scrollTop = view.scrollHeight;
         this._fromBottom = fromBottom(view);
         const markEdges = this._measureEdges();
         const more = this._measureMore();
@@ -434,6 +434,7 @@ export class Display {
     if (!depth && !this.ghosts?.length) {
       view.innerHTML = this.emptyHtml;
       view.dataset.empty = '1';
+      view.scrollTop = 0;
       this._updateMore();
       return;
     }

@@ -2063,10 +2063,12 @@ setAngle('RAD');
 
 {
   const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
-  assert(/new ResizeObserver\(\(\) => \{\s*const selected = view\.querySelector\('\.st-row\.sel'\);\s*if \(selected\) this\._reveal\(selected\);\s*else if \(this\._fromBottom <= 2\) view\.scrollTop = view\.scrollHeight;\s*this\._fromBottom = fromBottom\(view\);/.test(displaySrc)
+  assert(/new ResizeObserver\(\(\) => \{\s*const selected = view\.querySelector\('\.st-row\.sel'\);\s*if \(selected\) this\._reveal\(selected\);\s*else if \(this\._fromBottom <= 2 && !view\.dataset\.empty\) view\.scrollTop = view\.scrollHeight;\s*this\._fromBottom = fromBottom\(view\);/.test(displaySrc)
     && /if \(this\._renderScroll\) return;\s*this\._fromBottom = fromBottom\(view\);/.test(displaySrc)
     && /this\._fromBottom = fromBottom\(view\);\s*const markEdges = this\._measureEdges\(\);/.test(displaySrc),
     'stack: level 1 stays in sight when the equation writer closes over the full keypad (the view grew, then shrank again in the same frame as the keys refit, and level 1 was left 13 px low), going by the distance from the bottom last seen on a scroll, render or resize; a selected level stays in sight instead, so turning the phone with level 8 selected no longer leaves it below a 216 px landscape view');
+  assert(/view\.innerHTML = this\.emptyHtml;\s*view\.dataset\.empty = '1';\s*view\.scrollTop = 0;/.test(displaySrc),
+    'stack: the empty-stack card starts at its heading, so the keyboard coming up over a 108 px well at 320x340 no longer pins it to the bottom with Write an equation cut under the app bar');
 }
 
 {
