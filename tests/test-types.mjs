@@ -5935,12 +5935,12 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     // that loosened the tolerance would surface here.
     {
       const s = new Stack();
-      s.push(Integer(1n));
+      s.push(Integer(2n));
       lookup('ATAN').fn(s);
       const v = s.peek();
       assert(v?.type === 'symbolic' && v.expr?.kind === 'fn' && v.expr.name === 'ATAN'
-          && v.expr.args.length === 1 && v.expr.args[0]?.kind === 'num' && v.expr.args[0].value === 1,
-        `session142: ATAN(Integer(1)) RAD → Symbolic ATAN(1) (atan(1)=π/4 not integer-clean — stay-symbolic via _exactUnaryLift); got ${v?.type} expr=${JSON.stringify(v?.expr)}`);
+          && v.expr.args.length === 1 && v.expr.args[0]?.kind === 'num' && v.expr.args[0].value === 2,
+        `session142: ATAN(Integer(2)) RAD → Symbolic ATAN(2) (atan(2) has no closed form — stay-symbolic via _exactUnaryLift); got ${v?.type} expr=${JSON.stringify(v?.expr)}`);
     }
 
     // DEG-mode integer-clean fold: ASIN(Integer(1)) under DEG = 90,
@@ -6387,12 +6387,12 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     // the DEG axis.
     {
       const s = new Stack();
-      s.push(Integer(30n));
+      s.push(Integer(20n));
       lookup('SIN').fn(s);
       const v = s.peek();
       assert(v?.type === 'symbolic' && v.expr?.kind === 'fn' && v.expr.name === 'SIN'
-          && v.expr.args[0]?.kind === 'num' && v.expr.args[0].value === 30,
-        `session145: SIN(Integer(30)) DEG → Symbolic SIN(30) (sin(30°)=0.5 not integer-clean; pins fractional-output stay-symbolic on the DEG axis); got ${v?.type} expr=${JSON.stringify(v?.expr)}`);
+          && v.expr.args[0]?.kind === 'num' && v.expr.args[0].value === 20,
+        `session145: SIN(Integer(20)) DEG → Symbolic SIN(20) (sin(20°) has no closed form; pins the stay-symbolic arm on the DEG axis, 30 SIN being 1/2); got ${v?.type} expr=${JSON.stringify(v?.expr)}`);
     }
 
     setAngle('RAD');
@@ -7157,9 +7157,9 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       // operands and bypassed the EXACT-mode integer-stay arm
       // entirely (Real input → Real(π/2) output).
       const okItem1Sym = okShape && isSymbolic(v.value.items[1])
-          && v.value.items[1].expr?.kind === 'fn' && v.value.items[1].expr.name === 'ASIN';
+          && v.value.items[1].expr?.kind === 'bin' && v.value.items[1].expr.op === '/' && v.value.items[1].expr.l?.name === 'π';
       assert(okItem0 && okItem1Sym,
-        `session150: ASIN :a:Vector(Integer(0), Integer(1)) RAD → :a:Vector(Integer(0), Symbolic ASIN(1)) (RAD-mode contrast on Integer operands: item[0] still folds to Integer(0) since asin(0)=0 is integer-clean in any angle mode, but item[1] stays-Symbolic because asin(1)=π/2 NOT integer-clean under RAD — _exactUnaryLift's stay-symbolic fall-through fires under the wrapper composition; angle-mode flip toggles Integer / Symbolic per element on the SAME Integer operands — DEG → :a:V[Z(0), Z(90)] vs RAD → :a:V[Z(0), Sym(ASIN(1))]; distinct from session 140's :a:V(Real(0),Real(1)) ASIN RAD pin which BYPASSED the EXACT-mode integer-stay arm with Real operands and produced Real(π/2) instead); got tag=${v?.tag} items=${v?.value?.items?.map(x => `${x.type}${x.value?.toString?.() ? '('+x.value.toString()+')' : ''}`).join(',')}`);
+        `session150: ASIN :a:Vector(Integer(0), Integer(1)) RAD → :a:Vector(Integer(0), π/2) (RAD-mode contrast, exact mode's closed form π/2 in place of ASIN(1) on Integer operands: item[0] still folds to Integer(0) since asin(0)=0 is integer-clean in any angle mode, but item[1] stays-Symbolic because asin(1)=π/2 NOT integer-clean under RAD — _exactUnaryLift's stay-symbolic fall-through fires under the wrapper composition; angle-mode flip toggles Integer / Symbolic per element on the SAME Integer operands — DEG → :a:V[Z(0), Z(90)] vs RAD → :a:V[Z(0), Sym(ASIN(1))]; distinct from session 140's :a:V(Real(0),Real(1)) ASIN RAD pin which BYPASSED the EXACT-mode integer-stay arm with Real operands and produced Real(π/2) instead); got tag=${v?.tag} items=${v?.value?.items?.map(x => `${x.type}${x.value?.toString?.() ? '('+x.value.toString()+')' : ''}`).join(',')}`);
     }
   } finally {
     setAngle(_prevAngle);
@@ -9587,8 +9587,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       const v = s.peek();
       const item = v?.items?.[0];
       assert(isList(v) && v.items.length === 1 && isSymbolic(item)
-          && item.expr?.kind === 'fn' && item.expr?.name === 'ACOS',
-        `session185: { Integer(0) } ACOS RAD → { Symbolic(ACOS(0)) } (acos(0)=π/2; fromRadians(π/2)≈1.5707 not integer-clean → Symbolic arm; re-land T-003); got item type=${item?.type} expr=${JSON.stringify(item?.expr)}`);
+          && item.expr?.kind === 'bin' && item.expr.l?.name === 'π',
+        `session185: { Integer(0) } ACOS RAD → { π/2 } (exact mode's closed form of acos(0); re-land T-003); got item type=${item?.type} expr=${JSON.stringify(item?.expr)}`);
     }
 
     // DEG — bare-List axis
@@ -9612,8 +9612,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       const v = s.peek();
       const item = v?.value?.items?.[0];
       assert(isTagged(v) && v.tag === 'z' && isList(v.value) && v.value.items.length === 1
-          && isSymbolic(item) && item.expr?.kind === 'fn' && item.expr?.name === 'ACOS',
-        `session185: :z:{ Integer(0) } ACOS RAD → :z:{ Symbolic(ACOS(0)) } (angle-mode Symbolic arm preserved through Tagged peel/rewrap; re-land T-003); got tag=${v?.tag} item type=${item?.type} expr=${JSON.stringify(item?.expr)}`);
+          && isSymbolic(item) && item.expr?.kind === 'bin' && item.expr.l?.name === 'π',
+        `session185: :z:{ Integer(0) } ACOS RAD → :z:{ π/2 } (closed form preserved through Tagged peel/rewrap; re-land T-003); got tag=${v?.tag} item type=${item?.type} expr=${JSON.stringify(item?.expr)}`);
     }
 
     // DEG — Tagged-of-List axis

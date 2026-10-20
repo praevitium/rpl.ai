@@ -117,6 +117,8 @@ RPL puts the numbers first and the operation last. Each value goes on the
   keyboard, `*` is just text, so a whole line works too: `2 3 + 4 *` Enter
   gives `20`. Fractions stay exact: `1/3 2/5 +` gives `11/15`. So do roots,
   as in the HP's exact mode: `8 √` gives `2√2`, and `27 2/3 ^` gives `9`.
+  Trig functions give their closed forms at multiples of 30° and 45°: `30 SIN`
+  in DEG is `1/2`, `π 4 / COS` is `√2/2`, and `1 ASIN` in RAD is `π/2`.
 - **Algebra.** Push `` `X^2-4` `` and run `FACTOR` for `(X−2)(X+2)`, or
   `` `X^2-5*X+6=0` `X` SOLVE `` for `{ X=2 X=3 }`. The ` key stands in for
   the HP's ' key, and the command line reads apostrophes too: `'X^2-4'`

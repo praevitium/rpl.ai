@@ -2,10 +2,11 @@ import { setAngle, state as _calcState, getApproxMode, toRadians, fromRadians } 
 import { Symbolic, toRealOrThrow, Real, isComplex, Complex, isInteger, isRational, isReal, isUnit } from '../types.js';
 import { convertValue, parseUnitExpr, sameDims } from '../units.js';
 import { Fn as AstFn } from '../algebra.js';
+import { exactTrig, exactInverseTrig } from '../exact-trig.js';
 import { RPLError } from '../stack.js';
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { register } from './registry.js';
-import { _cx, _cxAdd, _cxDiv, _cxMul, _cxSub, _exactUnaryLift, _isSymOperand, _toAst, _withListUnary, _withTaggedUnary, _withVMUnary, unaryReal } from './internal.js';
+import { _astToRplValue, _cx, _cxAdd, _cxDiv, _cxMul, _cxSub, _exactUnaryLift, _isSymOperand, _toAst, _withListUnary, _withTaggedUnary, _withVMUnary, unaryReal } from './internal.js';
 
 
 
@@ -27,8 +28,16 @@ register('D→R', unaryReal('D→R', d => d * Math.PI / 180), { category: 'Trig 
 function _unaryOp(name, scalarFn) {
   return _withTaggedUnary(_withListUnary(_withVMUnary((s) => {
     const v = s.pop();
-    s.push(_isSymOperand(v) ? Symbolic(AstFn(name, [_toAst(v)])) : scalarFn(v));
+    s.push(_isSymOperand(v) ? _exactSpecial(name, v) ?? Symbolic(AstFn(name, [_toAst(v)])) : scalarFn(v));
   })));
+}
+
+// Exact mode's closed form at a special angle or value: 30 SIN in DEG is 1/2, π 4 / COS is √2/2, 1 ASIN in RAD is π/2.
+function _exactSpecial(name, v) {
+  if (getApproxMode()) return null;
+  const ast = _toAst(v);
+  const special = exactTrig(name, ast, _calcState.angle) ?? exactInverseTrig(name, ast, _calcState.angle);
+  return special && _astToRplValue(special);
 }
 
 function _isExact(v) {
@@ -239,7 +248,7 @@ function _trigFwdCx(name, realFn, cxFn, decimalFn) {
       const { mode, angle } = _unitAngle(v);
       return Real(decimalFn(angle, mode));
     }
-    if (_isExact(v)) return _exactUnaryLift(name, realFn(toRadians(toRealOrThrow(v))), v);
+    if (_isExact(v)) return _exactSpecial(name, v) ?? _exactUnaryLift(name, realFn(toRadians(toRealOrThrow(v))), v);
     return Real(decimalFn(_toDecimal(v)));
   });
 }
@@ -251,6 +260,8 @@ function _trigInvCx(name, realFn, cxFn, decimalFn) {
   return _unaryOp(name, (v) => {
     if (isComplex(v)) return _complexAngle(cxFn(v));
     if (_isExact(v)) {
+      const special = _exactSpecial(name, v);
+      if (special) return special;
       const y = realFn(toRealOrThrow(v));
       if (Number.isFinite(y)) return _exactUnaryLift(name, fromRadians(y), v);
     }

@@ -9039,3 +9039,23 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(formatStackTop(runLine("'5!' EVAL").peek()) === '120', "postfix !: '5!' EVAL is 120");
   assert(formatStackTop(runLine("'X!'").peek()) === '`FACT(X)`', "postfix !: 'X!' typed with quotes is an algebraic, not a name");
 }
+
+// Exact mode's closed forms at multiples of 30 and 45 degrees, as the HP gives them.
+{
+  const top = (line) => formatStackTop(runLine(line).peek());
+  assert(top('DEG 30 SIN') === '1/2' && top('DEG 45 COS') === '`SQRT(2)/2`' && top('DEG 60 TAN') === '`SQRT(3)`',
+    'exact trig: 30 SIN, 45 COS and 60 TAN in DEG are 1/2, √2/2 and √3');
+  assert(top('DEG 210 SIN') === '-1/2' && top('DEG 20 SIN') === '`SIN(20)`' && top('DEG 90 TAN') === '`TAN(90)`',
+    'exact trig: the sign follows the quadrant, and other angles and TAN at 90 stay as they are');
+  assert(top('DEG 30. SIN') === '0.5', 'exact trig: a real argument still gives a real');
+  assert(top('GRD 50 SIN') === '`SQRT(2)/2`' && top('GRD 1/2 ASIN') === '100/3', 'exact trig: grads');
+  assert(top('RAD π 6 / SIN') === '1/2' && top('RAD 2 π * 3 / SIN') === '`SQRT(3)/2`' && top('RAD π COS') === '-1',
+    'exact trig: a multiple of π in RAD');
+  assert(top('RAD 1 ASIN') === '`π/2`' && top('RAD -1/2 ACOS') === '`2*π/3`' && top('RAD 1 ATAN') === '`π/4`' && top("RAD '√3' ATAN") === '`π/3`',
+    'exact trig: ASIN, ACOS and ATAN give the angle back as a multiple of π');
+  assert(top("DEG '√2/2' ACOS") === '45' && top('DEG -1 ASIN') === '-90', 'exact trig: the inverse functions in DEG');
+  assert(top("RAD 'SIN(π/6)' EVAL") === '1/2' && top("RAD '2*COS(π/3)+SIN(π/2)' EVAL") === '2' && top("DEG 'SIN(30)+COS(60)' EVAL") === '1',
+    'exact trig: EVAL gives the closed forms inside an algebraic');
+  assert(top("RAD 'SIN(π/5)' EVAL") === '`SIN(π/5)`', 'exact trig: π/5 has none in this table and stays');
+  runLine('RAD');
+}

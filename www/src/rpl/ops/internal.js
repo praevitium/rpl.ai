@@ -1,6 +1,7 @@
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Name, Symbolic, Integer, Unit, isUnit, isBinaryInteger, isNumber, promoteNumericPair, Complex, Rational, isList, RList, isTagged, Tagged, isVector, Vector, isMatrix, Matrix, BinaryInteger, toRealOrThrow, toRealDecimal, isString, isValidHpIdentifier, isStorableHpName, isProgram, isDirectory, isGrob, Str, Program } from '../types.js';
 import { RPLAbort, RPLError, Stack, setPushCoerce, checkTimeLimit } from '../stack.js';
+import { exactTrigRewrite } from '../exact-trig.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, UnitNode as AstUnit, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, hasUnits, exactRational, isRealNum, isKnownFunction } from '../algebra.js';
 import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
 import { state as _calcState, getApproxMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd, withScratchState } from '../state.js';
@@ -1794,7 +1795,9 @@ export function _evalSymbolic(v, keeps = () => false) {
     ? null
     : (_op, args, result) => _approxGate(result, args);
   const evalNode = (ast) => algebraEvalAst(ast, resolve, _angleAwareFnEval, binGate);
-  const folded = _foldUnits(evalNode(_expandUserCalls(v.expr)), evalNode);
+  const evaluated = _foldUnits(evalNode(_expandUserCalls(v.expr)), evalNode);
+  const trig = approx ? evaluated : exactTrigRewrite(evaluated, _calcState.angle);
+  const folded = trig === evaluated ? evaluated : evalNode(trig);
   const integrated = _casCalculus(folded);
   const calculated = integrated === folded ? folded : evalNode(integrated);
   const settled = _casSpecialValues(calculated);
