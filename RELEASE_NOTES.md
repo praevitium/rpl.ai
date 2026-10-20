@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.79 (2026-10-20)
+**Latest release:** v0.7.80 (2026-10-20)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.80 — 2026-10-20
+
+- EXPAND, COLLECT, SOLVE, DERIV, INTEG, FACTOR and the other CAS commands
+  work on an algebraic holding units, where they said Units can't go to
+  the algebra engine. Each unit goes to Giac as a name, so the algebra
+  multiplies and cancels units, and the numbers and units of each product
+  come back as one unit object: `'2_m*X+3_m*X' COLLECT` gives `5_m*X`,
+  and `'X*2_s=6_m' 'X' SOLVE` gives `X=3_(m/s)`.
 
 ## v0.7.79 — 2026-10-20
 
