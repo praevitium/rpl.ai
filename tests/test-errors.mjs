@@ -143,6 +143,9 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
     `describeError: a command whose manual page gives no input count counts from what the stack lacked, where it said XROOT needs more values than the stack holds (${xroot.title})`);
   const swap = describeError('+: Too few arguments', ctx({ depth: 0 }));
   assert(/Put the missing values on/.test(swap.detail), 'describeError: two missing values are values');
+  const hi = Str('hi');
+  const short = describeError('XROOT: Too few arguments', ctx({ failure: { op: 'XROOT', levels: [hi], depth: 1, missing: 1 }, stack: [hi], depth: 1 }));
+  assert(short.culpritLevels.length === 0, 'describeError: a too-few error marks no level as the culprit, where level 1 read "this one" though nothing was wrong with it');
 }
 
 {

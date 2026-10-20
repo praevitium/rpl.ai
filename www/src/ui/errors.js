@@ -211,6 +211,7 @@ export function describeError(message, { failure = null, stack = [], depth = 0, 
     title: spec.title(ctx),
     detail: spec.detail(ctx),
     fixes: spec.fixes(ctx),
-    culpritLevels: onStack ? culprits.map((c) => c.level) : [],
+    // A too-few error is the stack's depth, not a value's fault, so no level is marked as the culprit.
+    culpritLevels: onStack && kind !== 'tooFew' ? culprits.map((c) => c.level) : [],
   };
 }
