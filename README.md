@@ -415,7 +415,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   `>=` or `<>` and a program keeps them as the HP writes them, `->STR` as
   `→STR`, and the completion list offers `→STR` for `->S`. Nor has it π,
   ∞, Σ, ∫, √ or ∂: spell them, `pi`, `inf`, `sum`, `integral`, `sqrt` or
-  `deriv`, and the list offers the HP's sign. A line typed the way other
+  `deriv`, and the list offers the HP's sign. A command typed in lower
+  case, as a phone keyboard leaves it, runs as the HP's, and a banner
+  names it the HP's way: `"hi" sin` reads "SIN can't use a string." with
+  the SIN reference. A line typed the way other
   calculators take it, `2^10` or `e^2`, is no RPL, as on the HP; its
   banner's Evaluate as a formula runs it quoted with EVAL.
 - ⌫ and Enter sit beside the command line, finger-sized. ⌫ deletes a

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.100 (2026-10-20)
+**Latest release:** v0.7.101 (2026-10-20)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.101 — 2026-10-20
+
+- An open completion list now fits the window again after it changes size,
+  as a menu does. Turning the phone to landscape with the keyboard up left
+  the list sized for portrait, running off the top of the screen with the
+  chosen row out of sight.
+- →Q and →Qπ now take a fraction, a complex number or a formula, as the
+  AUR lists: `5 2 / →Q` gives `5/2`, `(0.5,-0.75) →Q` gives `1/2-3/4*i`
+  and `'Y+2.5' →Q` gives `Y+5/2`, converting each approximate number in
+  the formula. They said Bad argument type to all three. Q→ splits a
+  fraction into its numerator and denominator.
+- A command typed in lower case, as a phone keyboard leaves it, is now
+  named the HP's way when it fails: `"hi" sin` reads "SIN can't use a
+  string." with the SIN reference, where it said sin, and `->q` reads
+  →Q. Programs and the assistant's dry runs name it the same way.
 
 ## v0.7.100 — 2026-10-20
 
