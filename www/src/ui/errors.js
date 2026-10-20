@@ -8,9 +8,10 @@ const CORE_MESSAGES = Object.freeze([
   'CAS not ready', 'Interrupted', 'Nonexistent ΣDAT', 'Nonexistent alarm', 'Undefined result',
 ]);
 
-const NUMBER_WORDS = Object.freeze(['no values', 'one value', 'two values', 'three values', 'four values', 'five values']);
+const NUMBER_WORDS = Object.freeze(['no values', 'one value', 'two values', 'three values', 'four values', 'five values', 'six values', 'seven values', 'eight values', 'nine values']);
 
-const valuesText = (n) => NUMBER_WORDS[n] ?? `${n} values`;
+// Counts in one sentence are all words or all digits, so 12 is never set beside four.
+const valuesText = (n, digits = false) => (digits ? null : NUMBER_WORDS[n]) ?? `${n} value${n === 1 ? '' : 's'}`;
 
 export function parseErrorMessage(message) {
   const text = String(message ?? '').trim();
@@ -45,7 +46,8 @@ export const ERROR_KINDS = Object.freeze({
     title: (c) => {
       const cmd = c.command ?? 'That command';
       if (!c.args) return `${cmd} needs more values than the stack holds.`;
-      return `${cmd} needs ${valuesText(c.args)}; the stack ${c.seenDepth === c.depth ? 'has' : 'had'} ${c.seenDepth ? valuesText(c.seenDepth) : 'none'}.`;
+      const digits = Math.max(c.args, c.seenDepth) >= NUMBER_WORDS.length;
+      return `${cmd} needs ${valuesText(c.args, digits)}; the stack ${c.seenDepth === c.depth ? 'has' : 'had'} ${c.seenDepth ? valuesText(c.seenDepth, digits) : 'none'}.`;
     },
     detail: (c) => {
       const put = `Put the missing ${c.args - c.seenDepth === 1 ? 'value' : 'values'} on the stack first, then run it again.`;

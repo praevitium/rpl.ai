@@ -151,6 +151,10 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   const hi = Str('hi');
   const short = describeError('XROOT: Too few arguments', ctx({ failure: { op: 'XROOT', levels: [hi], depth: 1, missing: 1 }, stack: [hi], depth: 1 }));
   assert(short.culpritLevels.length === 0, 'describeError: a too-few error marks no level as the culprit, where level 1 read "this one" though nothing was wrong with it');
+  const pick = describeError('PICK: Too few arguments', ctx({ failure: { op: 'PICK', levels: [], depth: 4, missing: 4 }, depth: 4 }));
+  const deep = describeError('PICK: Too few arguments', ctx({ failure: { op: 'PICK', levels: [], depth: 4, missing: 8 }, depth: 4 }));
+  assert(pick.title === 'PICK needs eight values; the stack has four values.' && deep.title === 'PICK needs 12 values; the stack has 4 values.',
+    `describeError: the counts in a too-few title are both words up to nine, or both digits past it, where 7 PICK read "needs 8 values; the stack has four values" (${pick.title} ${deep.title})`);
   const untagged = describeError('Too few arguments', ctx({ failure: { op: 'UNPICK', levels: [], missing: 1 }, depth: 0 }));
   assert(untagged.title === 'UNPICK needs one value; the stack has none.',
     `describeError: a search preview's message, which names no command, still counts from its failure record (${untagged.title})`);
