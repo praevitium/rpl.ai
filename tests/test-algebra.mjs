@@ -9082,3 +9082,13 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
     'MAX and MIN of fractions give the fraction, as on the HP');
   assert(top('1/3 .25 MAX') === '0.333333333333', 'MAX with a real gives a real');
 }
+
+// EVAL gathers a product's exact numbers into one coefficient, as the HP does.
+{
+  const top = (line) => formatStackTop(runLine(line).peek());
+  assert(top("'ATAN(1)*4' EVAL") === '`π`' && top("'2*X*3' EVAL") === '`6*X`' && top("'X/2*2' EVAL") === '`X`',
+    'coefficients: π/4*4 is π, 2*X*3 is 6*X and X/2*2 is X');
+  assert(top("'X*3/6' EVAL") === '`X/2`' && top("'2*X/(4*Y)' EVAL") === '`X/(2*Y)`' && top("'X*Y/2/3' EVAL") === '`X*Y/6`',
+    'coefficients: a fraction left over divides');
+  assert(top("'X*0*2' EVAL") === '0' && top("'2*X' EVAL") === '`2*X`', 'coefficients: zero, and a single number left as it is');
+}

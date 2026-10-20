@@ -329,6 +329,35 @@ export function _radicalBinary(op, l, r) {
   }
 }
 
+// A product or quotient's exact numbers gather into one coefficient, as the HP's EVAL does: π/4*4 is π, 2*X*3 is 6*X.
+function _gatherCoefficient(ast) {
+  const factors = [];
+  const walk = (node, up) => {
+    if (node.kind === 'bin' && (node.op === '*' || node.op === '/')) {
+      walk(node.l, up);
+      walk(node.r, node.op === '*' ? up : !up);
+    } else factors.push({ node, up });
+  };
+  walk(ast, true);
+  const numbers = factors.filter((f) => exactRational(f.node));
+  if (numbers.length < 2) return null;
+  let coef = new Fraction(1n, 1n);
+  for (const { node, up } of numbers) {
+    const [n, d] = exactRational(node);
+    if (n === 0n && !up) return null;
+    coef = up ? coef.mul(new Fraction(n, d)) : coef.div(new Fraction(n, d));
+  }
+  const rest = factors.filter((f) => !exactRational(f.node));
+  if (coef.n === 0n || !rest.length) return _toAst(_fractionValue(coef));
+  const top = rest.filter((f) => f.up).map((f) => f.node);
+  const bottom = rest.filter((f) => !f.up).map((f) => f.node);
+  if (coef.n !== 1n) top.unshift(AstNum(coef.n));
+  if (coef.d !== 1n) bottom.unshift(AstNum(coef.d));
+  const product = (nodes) => nodes.reduce((a, b) => AstBin('*', a, b));
+  const value = bottom.length ? AstBin('/', top.length ? product(top) : AstNum(1n), product(bottom)) : product(top);
+  return coef.s < 0n ? AstNeg(value) : value;
+}
+
 // EVAL's exact radicals: √12 is 2*√3, 4^(1/2) is 2, and products, quotients and powers of roots work out.
 function _radicalRewrite(ast) {
   if (ast.kind === 'neg') {
@@ -343,6 +372,8 @@ function _radicalRewrite(ast) {
   }
   if (ast.kind !== 'bin') return ast;
   const l = _radicalRewrite(ast.l), r = _radicalRewrite(ast.r);
+  const gathered = ast.op === '*' || ast.op === '/' ? _gatherCoefficient(AstBin(ast.op, l, r)) : null;
+  if (gathered) return gathered;
   const base = ast.op === '^' ? exactRational(l) : null, exp = base && exactRational(r);
   const power = exp && exp[1] !== 1n && base[0] >= 0n ? _exactPower(new Fraction(base[0], base[1]), new Fraction(exp[0], exp[1])) : null;
   const value = power ?? _radicalBinary(ast.op, l, r);
