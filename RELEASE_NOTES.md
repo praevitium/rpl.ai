@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.78 (2026-10-20)
+**Latest release:** v0.7.79 (2026-10-20)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.79 — 2026-10-20
+
+- UNDO takes back drawings on PICT, from a typed command (LINE, BOX,
+  ERASE, REPL into PICT and the rest) or from PICTURE's keys. A whole
+  DOT+ or DOT- stroke goes back in one step, and after REPL the graphics
+  object comes back to level 1. REDO puts the drawing back.
+- This differs from the HP, whose UNDO restores the stack only; the
+  README lists it.
 
 ## v0.7.78 — 2026-10-20
 
