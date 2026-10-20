@@ -745,6 +745,10 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .pop .opt em:empty { display: none; }
 /* A program's choices wrap rather than lose their ends: on a phone a cut choice can't be read any other way. */
 .pop.choose .opt b { white-space: normal; overflow-wrap: anywhere; }
+/* The last lines entered (CMD) wrap too, in the command line's face and without the empty mark column, so two long lines that start alike stay apart. */
+.pop.lines .opt { grid-template-columns: minmax(0, 1fr); }
+.pop.lines .opt .ck { display: none; }
+.pop.lines .opt b { font: 500 12.5px/1.35 var(--font-mono); white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
 .pop hr { border: 0; border-top: 1px solid var(--line); margin: 5px 4px; }
 .pop .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 2px; }
 .pop .grid.digits { grid-template-columns: repeat(6, minmax(0, 1fr)); }

@@ -1927,7 +1927,7 @@ class App {
   showLastLines(anchor) {
     const lines = [...new Set(this.entry.getHistory().reverse())].slice(0, 4);
     if (!lines.length) return;
-    this._heldKeyMenu(lines.map((line) => ({ text: line, mark: '', run: () => (this.entry.buffer ? this.entry.typeToken(line) : this.entry.recall(line)) })), anchor, 'Last lines');
+    this._heldKeyMenu(lines.map((line) => ({ text: line, mark: '', run: () => (this.entry.buffer ? this.entry.typeToken(line) : this.entry.recall(line)) })), anchor, 'Last lines', { className: 'lines' });
   }
 
   // The HP's CONLIB: each constant with what it is and its value, as the library lists them; a tap is its →STK.
