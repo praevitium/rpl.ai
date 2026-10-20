@@ -4,7 +4,7 @@ export const OPS = new Map();
 
 export function register(name, fn, opts = {}) {
   const key = String(name).toUpperCase();
-  OPS.set(key, { fn, label: name, ...opts });
+  OPS.set(key, { fn, label: name, ...opts, name });
   registerReservedName(name);
 }
 

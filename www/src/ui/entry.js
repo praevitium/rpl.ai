@@ -544,9 +544,11 @@ export class Entry {
     }
   }
 
-  _runOpTagged(opName, tag = opName) {
+  // A command typed sin or ->q is named SIN or →Q, as the HP spells it.
+  _runOpTagged(opName, tag) {
     const op = lookup(opName);
     if (!op) throw new RPLError(`Undefined: ${opName}`);
+    tag ??= op.name;
     const before = this.stack.save();
     const seen = this.stack.snapshot().slice(0, 3);
     try {

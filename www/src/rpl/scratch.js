@@ -41,7 +41,7 @@ export function evalScratch(text, { liveItems = [], displayOpts, maxLevels = 8 }
         const bare = v?.type === 'name' && !v.quoted;
         const op = bare ? lookup(v.id) : null;
         if (!op) stack.push(v);
-        if (bare) runTagged(stack, v.id, op ?? lookup('EVAL'));
+        if (bare) runTagged(stack, op?.name ?? v.id, op ?? lookup('EVAL'));
       }
       return result();
     } catch (e) {

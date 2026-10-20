@@ -54,6 +54,14 @@ import { assert, assertThrows } from './helpers.mjs';
 
   {
     const e = new Entry(new Stack());
+    const failed = (line) => { e.buffer = line; e.cursor = line.length; e.enter(); return e.error; };
+    assert(failed('"hi" sin') === 'SIN: Bad argument type: expected real, got string' && e.failure?.op === 'SIN'
+      && failed('"hi" ->q').startsWith('→Q: ') && failed('« "a" sin » EVAL').includes('SIN: '),
+      'a command typed in lower case, sin or ->q, fails as SIN or →Q, as the HP spells it, where the banner said sin and offered a sin reference');
+  }
+
+  {
+    const e = new Entry(new Stack());
     let emitted = 0;
     e.subscribeHistory(() => { emitted++; });
     e.buffer = '"a" SIN';

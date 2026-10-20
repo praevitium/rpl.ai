@@ -1331,7 +1331,7 @@ function* evalToken(s, tok, depth) {
     const localVal = _localLookup(tok.id);
     if (localVal !== undefined) { s.push(localVal); return; }
     const op = lookup(tok.id);
-    if (op) { _dispatchOp(op, s, tok.id); return; }
+    if (op) { _dispatchOp(op, s, op.name); return; }
     const bound = varRecall(tok.id);
     if (bound !== undefined) yield* _callGlobal(s, bound, depth + 1);
     else s.push(tok);
