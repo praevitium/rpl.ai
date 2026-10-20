@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 763 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 764 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -432,7 +432,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-MENUXY">MENUXY</a>
 <a href="#cmd-MERGE">MERGE</a>
 <a href="#cmd-MIN">MIN</a>
-<a href="#cmd-MINEHUNT" class='notinapp'>MINEHUNT</a>
+<a href="#cmd-MINEHUNT">MINEHUNT</a>
 <a href="#cmd-MINIFONT-to" class='notinapp'>MINIFONT→</a>
 <a href="#cmd-MINIT">MINIT</a>
 <a href="#cmd-MINR">MINR</a>
@@ -10073,7 +10073,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>MAX</p>
   </dd>
 </dl>
-<h2 id="cmd-MINEHUNT">MINEHUNT <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-MINEHUNT">MINEHUNT <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 267 · printed page 3-147</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -10084,6 +10084,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dd class="cmd-field cmd-field-description">
     <p>Starts the MINEHUNT game. In this game, you are standing in the upper-left corner of an 8x16 battlefield grid. Your mission is to travel safely to the lower-right corner, avoiding invisible mines along the way. The game tells you how many mines are under the eight squares adjacent to your position.</p>
     <p>Use the number or arrow keys to cross the battlefield one square at a time (use 7, 9, 1, and 3to move diagonally.) You can exit the game at any time by pressing −(the $ key). To interrupt and save a game, press K. This creates a variable MHpar in the current directory and ends the game. If MHpar exists when you start MINEHUNT, the interrupted game resumes and MHpar is purged. You can change the number of mines in the battlefield by creating a variable named Nmines containing the desired number. Nmines must contain a real number (1 to 64). If Nmines is negative, the mines are visible during the game (allowing you to cheat).</p>
+    <p>In rpl.ai the battlefield opens in a sheet: the arrow keys, 1 to 9, the pad or a tap on a square next to you move you, K or Save stores the game in MHpar, and Esc or Quit ends it. Without Nmines there are 20 mines.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
