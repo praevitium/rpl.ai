@@ -247,6 +247,31 @@ export function panView(view, dxWorld, dyWorld) {
   };
 }
 
+// The HP's screen is 131 pixels across; the graphics cursor moves one of them per arrow key, and its point is
+// rounded to the decimal place a pixel resolves, so ENTER gives (1.2,-0.5) rather than a pixel's long fraction.
+const CURSOR_PIXELS = 130;
+
+function _toPixel(v, span) {
+  const unit = 10 ** Math.floor(Math.log10(Math.abs(span) / CURSOR_PIXELS));
+  return Number((Math.round(v / unit) * unit).toPrecision(12)) || 0;
+}
+
+export function cursorPoint(x, y, view) {
+  return { x: _toPixel(x, view.xmax - view.xmin), y: _toPixel(y, view.ymax - view.ymin) };
+}
+
+// Past an edge the view scrolls with the cursor, as PICT scrolls under the HP's.
+export function stepCursor(cursor, dir, view) {
+  const dx = (view.xmax - view.xmin) / CURSOR_PIXELS;
+  const dy = (view.ymax - view.ymin) / CURSOR_PIXELS;
+  const [sx, sy] = { left: [-dx, 0], right: [dx, 0], up: [0, dy], down: [0, -dy] }[dir] ?? [0, 0];
+  const next = { x: cursor.x + sx, y: cursor.y + sy };
+  const over = (v, lo, hi) => (v < lo ? v - lo : v > hi ? v - hi : 0);
+  const ox = over(next.x, view.xmin, view.xmax);
+  const oy = over(next.y, view.ymin, view.ymax);
+  return { cursor: next, view: ox || oy ? panView(view, ox, oy) : view };
+}
+
 // Two fingers moved from `from` to `to` (pixel pairs): the view scales by how far
 // they spread, and the point under their first midpoint follows their midpoint.
 export function pinchView(view, from, to, width, height) {

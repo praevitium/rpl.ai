@@ -6,7 +6,7 @@ import {
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit, sampleDiffEq,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
   evalTraceAtX, sampleTrace, traceInputError, axisTicks, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace,
-  DEFAULT_TURN, turnBy, evalComplex, TRACE_KINDS,
+  DEFAULT_TURN, turnBy, evalComplex, TRACE_KINDS, cursorPoint, stepCursor,
 } from '../www/src/ui/plot-engine.js';
 import { Matrix, Vector, Real, Integer, Symbolic, Program, RList, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
 import { lookup, setGraphicsHook } from '../www/src/rpl/ops.js';
@@ -109,6 +109,19 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(near(pinchIn.xmax - pinchIn.xmin, 40) && near(pinchIn.xmin, -15) && near(pinchIn.ymax, 15),
     'pinchView: pinching to half the distance zooms out about the midpoint (-5, 5)');
   assert(pinchView(view, [[10, 10], [10, 10]], [[0, 0], [40, 40]], 200, 200) === view, 'pinchView: two fingers on one spot leave the view');
+}
+
+{
+  const view = { xmin: -10, xmax: 10, ymin: -5, ymax: 5 };
+  const p = cursorPoint(1.23456, -0.98765, view);
+  assert(p.x === 1.2 && p.y === -0.99, 'cursorPoint: PICTURE rounds the point to what a pixel resolves');
+  assert(Object.is(cursorPoint(0.004, 0, view).x, 0), 'cursorPoint: a point by the origin is 0, not -0');
+  const tiny = cursorPoint(1.00000123456, 2, { xmin: 1, xmax: 1.0001, ymin: 0, ymax: 4 });
+  assert(tiny.x === 1.0000012 && tiny.y === 2, 'cursorPoint: a narrow window keeps the digits its pixels resolve');
+  const step = stepCursor({ x: 0, y: 0 }, 'right', view);
+  assert(Math.abs(step.cursor.x - 20 / 130) < 1e-12 && step.cursor.y === 0 && step.view === view, 'stepCursor: an arrow moves the cursor one pixel');
+  const edge = stepCursor({ x: 0, y: 5 }, 'up', view);
+  assert(Math.abs(edge.view.ymax - edge.cursor.y) < 1e-12 && edge.view.xmin === -10, 'stepCursor: past an edge the view scrolls with the cursor');
 }
 
 {
@@ -718,8 +731,8 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   const seen = [];
   setGraphicsHook((kind, st, data) => { seen.push({ kind, data }); });
   runLine('PICTURE GRAPH TEXT');
-  assert(seen.map((e) => e.kind).join(' ') === 'pview pview text' && seen[0].data.items.length === 0,
-    'PICTURE and GRAPH show PICT as { } PVIEW does, TEXT goes back to the stack');
+  assert(seen.map((e) => e.kind).join(' ') === 'picture picture text' && seen[0].data.items.length === 0,
+    'PICTURE and GRAPH show PICT as { } PVIEW does, with the graphics cursor; TEXT goes back to the stack');
   setGraphicsHook(null);
   assert(text('1 TEXT') === '1', 'TEXT without a plot view leaves the stack as it was');
 }

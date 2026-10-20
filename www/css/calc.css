@@ -1121,6 +1121,9 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 .pl-tools button:hover { background: var(--r2); color: var(--ink); }
 .pl-tools button[aria-pressed="true"] { color: var(--accent); background: var(--accent-dim); }
 .pl-tools .pl-fold { display: none; }
+.pl-push { position: absolute; left: 8px; bottom: 8px; max-width: calc(100% - 64px); height: 28px; padding: 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 8px; border: 1px solid var(--line2); background: color-mix(in oklab, var(--panel) 88%, transparent); color: var(--ink); font: 12px/1 var(--font-mono); box-shadow: var(--shadow-1); }
+.pl-push:hover { background: var(--r2); }
+.pl-push[hidden] { display: none; }
 .gr-readout { min-height: 18px; padding: 0 2px 4px; font: 11.5px/1.4 var(--font-mono); color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pl-side { flex: none; max-height: 46%; overflow-y: auto; border-top: 1px solid var(--line); padding-bottom: 8px; }
 .pl-kinds { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px 12px 2px; }
@@ -2112,6 +2115,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   /* Two columns keep all eight finger-sized tools in a 220 px plot. */
   .pl-tools { display: grid; grid-template-columns: repeat(2, 40px); }
   .pl-tools button { width: 40px; height: 40px; }
+  .pl-push { height: 40px; }
   .pl-tools .pl-fold { display: grid; grid-column: 1 / -1; width: auto; }
   .pl-tools .pl-fold[aria-expanded="true"] { color: var(--accent); background: var(--accent-dim); }
   .pl-tools.folded { grid-template-columns: 40px; }

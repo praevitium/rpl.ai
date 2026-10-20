@@ -762,8 +762,8 @@ register('PVIEW', (s) => {
   _requestPlot('pview', s, v);
 }, { category: 'Graphics', categoryOrder: 11.9, label: "PVIEW" });
 
-// PICTURE (GRAPH, the HP 28's name) shows PICT as { } PVIEW does; there is no graphics cursor.
-const _picture = (s) => _requestPlot('pview', s, RList([]));
+// PICTURE (GRAPH, the HP 28's name) shows PICT as { } PVIEW does, with the graphics cursor.
+const _picture = (s) => _requestPlot('picture', s, RList([]));
 register('PICTURE', _picture, { category: 'Graphics', categoryOrder: 11.91, label: "PICTURE" });
 register('GRAPH', _picture, { category: 'Graphics', categoryOrder: 11.92, label: "GRAPH" });
 

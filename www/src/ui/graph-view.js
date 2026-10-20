@@ -1,16 +1,16 @@
 import {
   TRACE_COLORS, TRACE_KINDS, nextTraceColor, defaultView, zoomView, panView, pinchView, DEFAULT_TURN, turnBy,
-  worldToPixel, pixelToWorld, axisTicks, hasUsableSpan,
+  worldToPixel, pixelToWorld, axisTicks, hasUsableSpan, cursorPoint, stepCursor,
   sampleTrace, fitViewToTraces, evalTraceAtX,
   stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace,
 } from './plot-engine.js';
 import { escapeHtml } from './display.js';
 import { icon } from './icons.js';
-import { isSymbolic, isName, isMatrix, isVector, isList, Real } from '../rpl/types.js';
+import { isSymbolic, isName, isMatrix, isVector, isList, Real, Complex } from '../rpl/types.js';
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians, getPict, subscribe as subscribeState } from '../rpl/state.js';
 import { plotSettings, pictWindow, pictGrid, pictPoint, viewVolume } from '../rpl/ops/graphics.js';
 import { downloadFile } from '../rpl/persist.js';
-import { withFractionMark } from '../rpl/formatter.js';
+import { withFractionMark, format } from '../rpl/formatter.js';
 import { fromTyped } from '../rpl/parser.js';
 
 export { stackValueToTrace, traceToStackValues };
@@ -116,13 +116,14 @@ export class GraphView {
     this._drag = null;
     this._pointers = new Map();
     this._hover = null;
+    this._mark = null;
     this.tracing = false;
     this.traceX = null;
     this.el = document.createElement('div');
     this.el.className = 'gr-view';
     this.el.innerHTML = `
       <div class="pl-main">
-        <div class="pl-box" tabindex="0" role="application" aria-label="Plot. Arrows pan, plus and minus zoom, 0 resets, T traces, F goes full screen.">
+        <div class="pl-box" tabindex="0" role="application" aria-label="Plot. Arrows pan or move the cursor, Enter puts its point on the stack, plus and minus zoom, 0 resets, T traces, F goes full screen.">
           <canvas class="gr-canvas" aria-hidden="true"></canvas>
           <div class="pl-tools${TOUCH ? ' folded' : ''}" role="toolbar" aria-label="Plot tools">
             <button type="button" class="pl-fold" data-gr="fold" title="Plot tools" aria-label="Plot tools" aria-expanded="${!TOUCH}">${icon('more', 'sm')}</button>
@@ -135,6 +136,7 @@ export class GraphView {
             <button type="button" data-gr="png" title="Download the plot as a PNG" aria-label="Download as PNG">${icon('down', 'sm')}</button>
             ${canSharePng() ? `<button type="button" data-gr="share" title="Share the plot as an image" aria-label="Share">${icon('share', 'sm')}</button>` : ''}
           </div>
+          <button type="button" class="pl-push" data-gr="push" title="Put the cursor's point on the stack (Enter)" hidden></button>
         </div>
         <div class="gr-readout" aria-live="polite">${IDLE_READOUT}</div>
       </div>
@@ -160,6 +162,7 @@ export class GraphView {
     this._canvas = this.el.querySelector('.gr-canvas');
     this._ctx = this._canvas.getContext('2d');
     this._readout = this.el.querySelector('.gr-readout');
+    this._push = this.el.querySelector('.pl-push');
     this._kind = 'function';
     this._selectedId = null;
     this._bind();
@@ -191,6 +194,7 @@ export class GraphView {
       else if (act === 'png') this.downloadPng();
       else if (act === 'copy') this.copyPng();
       else if (act === 'share') this.sharePng();
+      else if (act === 'push') this.pushCursor();
       else if (act === 'from') this.loadFromStack(1);
       else if (act === 'data-level1') this.loadData(this._kind, this.app.stack.peek(1));
       else if (act === 'data-sigma') this.loadData(this._kind, varRecall('ΣDAT'));
@@ -255,7 +259,10 @@ export class GraphView {
       this._startGesture();
       if (this._drag) return;
       if (this.tracing && tap) this._traceTo(ev.offsetX);
-      else this._hoverFromEvent(ev);
+      else {
+        if (tap) this._markAt(ev.offsetX, ev.offsetY);
+        this._hoverFromEvent(ev);
+      }
     });
     canvas.addEventListener('pointercancel', (ev) => {
       this._pointers.delete(ev.pointerId);
@@ -413,14 +420,16 @@ export class GraphView {
   }
 
   applyPlotOp(kind, stack, data = null) {
+    this._mark = null;
     if (kind === 'animate') {
       this.view = pictWindow() ?? this.view;
       this._animate(data);
       return;
     }
-    if (kind === 'draw' || kind === 'pview') {
-      const window = (kind === 'pview' ? pictWindow() : pparView()) ?? this.view;
-      this.view = kind === 'pview' ? pviewWindow(data, window) : window;
+    if (kind === 'draw' || kind === 'pview' || kind === 'picture') {
+      const window = (kind === 'draw' ? pparView() : pictWindow()) ?? this.view;
+      this.view = kind === 'draw' ? window : pviewWindow(data, window);
+      if (kind === 'picture') this._startCursor();
       this.draw();
       return;
     }
@@ -531,8 +540,56 @@ export class GraphView {
 
   _clearHover() {
     this._hover = null;
-    if (!this.tracing) this._readout.textContent = this._idleReadout();
+    if (!this.tracing) this._readout.textContent = this._mark ? this._readoutAt(this._mark.x, this._mark.y) : this._idleReadout();
     this.draw();
+  }
+
+  // PICTURE's graphics cursor starts in the middle of the view, and takes the arrow keys and Enter.
+  _startCursor() {
+    const v = this.view;
+    this._mark = { x: (v.xmin + v.xmax) / 2, y: (v.ymin + v.ymax) / 2 };
+    this._readout.textContent = this._readoutAt(this._mark.x, this._mark.y);
+    this.focus();
+  }
+
+  _markAt(px, py) {
+    if (this._projected()) return;
+    const rect = this._canvas.getBoundingClientRect();
+    const [x, y] = pixelToWorld(px, py, this.view, rect.width, rect.height);
+    this._mark = { x, y };
+  }
+
+  // Enter puts the graphics cursor's point on the stack as (x,y), as the HP's PICTURE does; in Trace, the point on
+  // the first curve under the trace cursor.
+  _cursorValue() {
+    if (this.tracing) {
+      const opts = this._hoverOpts();
+      for (const t of this.traces) {
+        const y = t.enabled ? evalTraceAtX(t, this.traceX, opts) : NaN;
+        if (Number.isFinite(y)) return this._pointValue(this.traceX, y);
+      }
+      return null;
+    }
+    return this._mark && !this._projected() ? this._pointValue(this._mark.x, this._mark.y) : null;
+  }
+
+  _pointValue(x, y) {
+    const p = cursorPoint(x, y, this.view);
+    return Complex(p.x, p.y);
+  }
+
+  pushCursor() {
+    const value = this._cursorValue();
+    if (!value) return false;
+    this.app.commitEntryAndPush(value);
+    this._readout.textContent = `Pushed ${format(value)}`;
+    return true;
+  }
+
+  _syncPush() {
+    const value = this._cursorValue();
+    this._push.hidden = !value;
+    if (value) this._push.textContent = `↵ ${format(value)}`;
   }
 
   _readoutAt(wx, wy = null) {
@@ -595,6 +652,9 @@ export class GraphView {
       if (this.traceX < v.xmin) this.view = panView(v, this.traceX - v.xmin - dx, 0);
       if (this.traceX > v.xmax) this.view = panView(v, this.traceX - v.xmax + dx, 0);
       this._readout.textContent = this._readoutAt(this.traceX);
+    } else if (this._mark && !this.tracing) {
+      ({ cursor: this._mark, view: this.view } = stepCursor(this._mark, dir, v));
+      this._readout.textContent = this._readoutAt(this._mark.x, this._mark.y);
     } else {
       this.view = panView(v, dir === 'left' ? -dx : dir === 'right' ? dx : 0, dir === 'down' ? -dy : dir === 'up' ? dy : 0);
     }
@@ -613,9 +673,7 @@ export class GraphView {
 
   // The canvas as drawn, without the hover readout, at the screen's pixel density.
   _png() {
-    this._hover = null;
-    this.draw();
-    return new Promise((resolve, reject) => this._canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('The plot could not be drawn'))), 'image/png'));
+    return new Promise((resolve, reject) => this._withoutCursor(() => this._canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('The plot could not be drawn'))), 'image/png')));
   }
 
   _fileName() {
@@ -639,15 +697,26 @@ export class GraphView {
 
   // Built synchronously so share() still runs inside the tap, which Safari requires.
   _pngFile() {
-    this._hover = null;
-    this.draw();
-    const bytes = Uint8Array.from(atob(this._canvas.toDataURL('image/png').split(',')[1]), (c) => c.charCodeAt(0));
+    const url = this._withoutCursor(() => this._canvas.toDataURL('image/png'));
+    const bytes = Uint8Array.from(atob(url.split(',')[1]), (c) => c.charCodeAt(0));
     return new File([bytes], this._fileName(), { type: 'image/png' });
   }
 
   async sharePng() {
     try { await navigator.share({ files: [this._pngFile()] }); }
     catch (e) { if (e.name !== 'AbortError') this.app.notifyError(`Share failed: ${e.message}`); }
+  }
+
+  // A picture of the plot leaves out the hover readout and the graphics cursor; the canvas is copied as the call is made.
+  _withoutCursor(take) {
+    const mark = this._mark;
+    this._hover = null;
+    this._mark = null;
+    this.draw();
+    try { return take(); } finally {
+      this._mark = mark;
+      this.draw();
+    }
   }
 
   fullscreen() {
@@ -706,6 +775,24 @@ export class GraphView {
       ctx.beginPath();
       ctx.arc(dx, dy, 4.5, 0, Math.PI * 2);
       ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  _drawMark(ctx, width, height) {
+    if (!this._mark || this.tracing || this._projected()) return;
+    const [px, py] = worldToPixel(this._mark.x, this._mark.y, this.view, width, height);
+    ctx.save();
+    ctx.lineCap = 'round';
+    for (const [color, lineWidth] of [[this._colors.bg, 4], [this._colors.label, 1.5]]) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.beginPath();
+      ctx.moveTo(px - 9, py);
+      ctx.lineTo(px + 9, py);
+      ctx.moveTo(px, py - 9);
+      ctx.lineTo(px, py + 9);
       ctx.stroke();
     }
     ctx.restore();
@@ -835,6 +922,8 @@ export class GraphView {
     }
     this._drawPict(ctx, width, height);
     this._drawHover(ctx, width, height);
+    this._drawMark(ctx, width, height);
+    this._syncPush();
   }
 
   // The axes cross where AXES puts them, (0,0) by default, with grid lines every ATICK units from there.

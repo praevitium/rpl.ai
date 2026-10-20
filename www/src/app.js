@@ -2264,6 +2264,7 @@ class App {
       case 'matrix.nextCell': this.matrixEditor.focus(); return true;
       case 'matrix.enter': this.commitEntry(); return true;
       case 'plot.pan': this.drawers.graph.nudge(arg); return true;
+      case 'plot.enter': return this.drawers.graph.pushCursor();
       case 'plot.zoomIn': this.drawers.graph.zoomBy(1 / 1.25); return true;
       case 'plot.zoomOut': this.drawers.graph.zoomBy(1.25); return true;
       case 'plot.reset': this.drawers.graph.resetView(); return true;
