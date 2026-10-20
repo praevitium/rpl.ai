@@ -14195,10 +14195,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
-    <pre class="cmd-mono"> L4/A1      L3/A2           L2/A3       L1/A4            L4/I1      L3/I2            L2/I3     L1/I4
-    
-    { list }     xtol            h          last        → { list }       xtol            hnext   current</pre>
-    <p>L = Level; A = Argument; I = item</p>
+    <table class="cmd-io"><thead><tr><th>L4/A1</th><th>L3/A2</th><th>L2/A3</th><th>L1/A4</th><th class="cmd-io-arrow"></th><th>L4/I1</th><th>L3/I2</th><th>L2/I3</th><th>L1/I4</th></tr></thead><tbody><tr><td>{ list }</td><td>xtol</td><td>h</td><td>last</td><td class="cmd-io-arrow">→</td><td>{ list }</td><td>xtol</td><td>hnext</td><td>current</td></tr><tr class="cmd-io-span"><td colspan="9">L = Level; A = Argument; I = item</td></tr></tbody></table>
   </dd>
   <dt class="cmd-label cmd-label-see-also">See also</dt>
   <dd class="cmd-field cmd-field-see-also">
@@ -17895,9 +17892,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
-    <pre class="cmd-mono"> Ln+2      Ln+1       L3            L2    L1                  Ln        Ln–1     L1
-    
-    objn     objn-1    obj1 obj n → obj objn-1 obj1</pre>
+    <table class="cmd-io"><thead><tr><th>Ln+2</th><th>Ln+1 ... L3</th><th>L2</th><th>L1</th><th class="cmd-io-arrow"></th><th>Ln</th><th>Ln–1 ...</th><th>L1</th></tr></thead><tbody><tr><td>objn</td><td>objn-1 ... obj1</td><td>obj</td><td>n</td><td class="cmd-io-arrow">→</td><td>obj</td><td>objn-1 ...</td><td>obj1</td></tr><tr class="cmd-io-span"><td colspan="8">L = Level</td></tr></tbody></table>
   </dd>
   <dt class="cmd-label cmd-label-example">Example</dt>
   <dd class="cmd-field cmd-field-example">

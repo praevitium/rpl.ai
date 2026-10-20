@@ -207,6 +207,9 @@ const REF = parseCommandReference(HTML);
     `a long stack diagram is cut at a word with one ellipsis, not mid-word after the manual's own dots or an open bracket (${clipped.filter((s) => /(\.\.\.|…|[[{(“«]) …$/.test(s)).join(' | ')})`);
   assert(sig('DUPN') === 'obj1 obj2 … obji–1 obji n → obj1 obj2 …' && sig('CON') === '{ ncolumns } zconstant → …',
     `DUPN and CON end their diagrams at a whole word (${sig('DUPN')}, ${sig('CON')})`);
+  const headings = [...REF.entries()].filter(([, e]) => /^L[\dn]\S*( L[\dn]\S*)*( …)?$/.test(signatureOf(e))).map(([k]) => k);
+  assert(headings.length === 0 && sig('UNPICK').startsWith('objn objn-1 ... obj1 obj n → obj') && sig('RRKSTEP').startsWith('{ list } xtol h last →'),
+    `no stack diagram is the manual's column headings, where UNPICK read Ln+2 Ln+1 L3 L2 L1 Ln Ln–1 L1 and RRKSTEP L4/A1 L3/A2 (${headings.join(', ')}; ${sig('UNPICK')})`);
 }
 
 /* The manual's PDF ran fifteen entries into the one before them (→DATE under DATE, RREF under the CAS rref), so a
