@@ -114,6 +114,9 @@ export class Autocomplete {
     const foot = onTouch() ? '<span>Tap completes · hold for the reference</span><span>Tap elsewhere closes</span>'
       : '<span>Tab completes · ↑↓ choose · → reference</span><span>Esc closes</span>';
     this.el.innerHTML = `${rowsHtml}<div class="ac-foot">${foot}</div>`;
+    // A program's banner sits just above the line, so the list goes over it and INPUT's question and PROMPT's keys stay in view.
+    const banner = globalThis.document?.getElementById('banner')?.offsetHeight;
+    this.el.style.bottom = banner ? `calc(100% - 2px + ${banner}px)` : '';
     if (this.el.hidden) this.app.toasts?.dismiss('view');
     this.el.hidden = false;
     this._fit();

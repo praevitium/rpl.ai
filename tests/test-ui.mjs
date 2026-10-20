@@ -2259,6 +2259,12 @@ setAngle('RAD');
 }
 
 {
+  const acSrc = readFileSync(new URL('../www/src/ui/autocomplete.js', import.meta.url), 'utf8');
+  assert(/const banner = globalThis\.document\?\.getElementById\('banner'\)\?\.offsetHeight;\s*this\.el\.style\.bottom = banner \? `calc\(100% - 2px \+ \$\{banner\}px\)` : '';/.test(acSrc),
+    'autocomplete: with a program\'s banner above the line the list sits above it, so INPUT\'s question and PROMPT\'s keys stay in view');
+}
+
+{
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/setMenuHook\(\(list, temporary\) => \{\s*if \(!list\) this\.showPreviousMenu\(\{ commit: false \}\);\s*else if \(temporary\) this\.setMenu\(this\._customMenuSlots\(list\), 'TMENU'\);\s*else this\.showMenu\('CST', \{ commit: false \}\);/.test(appSrc)
     && /showCustomMenu\(\{ commit = true, refresh = false \} = \{\}\) \{\s*if \(commit && !refresh && this\.entry\.buffer/.test(appSrc) && /showPreviousMenu\(\{ commit = true \} = \{\}\) \{[\s\S]{0,160}?this\.showMenu\(prev, \{ commit \}\)/.test(appSrc),
