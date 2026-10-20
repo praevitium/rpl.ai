@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.110 (2026-10-20)
+**Latest release:** v0.7.111 (2026-10-20)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.7.111 — 2026-10-20
+
+- A program variable's soft key pressed on a typed value now keeps the
+  line when the program fails, as a command key does since 0.7.110: type
+  `"abc"`, tap a program's key, and Fix the line brings back `"abc" PSIN`
+  with the cursor at the name. Before, the typed value was gone and no
+  Fix the line was offered.
+- With key vibration on, a swipe across a stack level, an error banner or
+  a toast buzzes once as it passes the point where letting go drops or
+  dismisses it.
+- Under 320 px an error banner's fixes sit tighter (8 px padding, 4 px
+  gaps), so a bad type's five fixes take two rows at 280 px where
+  Explain took a third alone, and the stack keeps 214 px where it had 166.
 
 ---
 
