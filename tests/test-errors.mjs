@@ -81,6 +81,12 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
     'syntax banner: 2^10 typed without quotes leads with evaluating it as a formula');
   assert(['ZZQ?', '2^10 3', "'x' 2^", '« 2^10 »'].every((line) => !describeError('Syntax error near x', ctx({ line })).fixes.some((f) => f.id === 'formula')),
     'syntax banner: no formula fix for a line with no operator, one that is no single formula, or one already quoted');
+  const { setUserFlag, clearUserFlag } = await import('../www/src/rpl/state.js');
+  setUserFlag(-51);
+  const comma = describeError('Syntax error near ^2', ctx({ line: '2,5^2' }));
+  clearUserFlag(-51);
+  assert(comma.fixes[0].id === 'formula' && comma.fixes[0].arg === '2,5^2',
+    'syntax banner: with flag -51 a formula typed with the comma fraction mark, 2,5^2, gets the formula fix too, where it read as no formula');
 }
 
 {

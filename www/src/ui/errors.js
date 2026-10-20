@@ -1,5 +1,5 @@
 import { RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
-import { parseEntry } from '../rpl/parser.js';
+import { parseTyped } from '../rpl/parser.js';
 
 const CORE_MESSAGES = Object.freeze([
   'Too few arguments', 'Bad argument type', 'Bad argument value', 'Infinite result',
@@ -161,7 +161,7 @@ export const ERROR_KINDS = Object.freeze({
 export function formulaOf(line) {
   const text = String(line ?? '').trim();
   if (!/[\^*/+\-√=<>(]/.test(text) || /['`"«»{}[\]]/.test(text)) return '';
-  try { return parseEntry(`'${text}'`).length === 1 ? text : ''; } catch { return ''; }
+  try { return parseTyped(`'${text}'`).length === 1 ? text : ''; } catch { return ''; }
 }
 
 export function describeError(message, { failure = null, stack = [], depth = 0, line = '', describe, commandInfo = () => null } = {}) {
