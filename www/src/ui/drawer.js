@@ -140,9 +140,26 @@ export function familyCommands(family) {
 
 const UPLOAD_ACCEPT = '.json,.rpl,.txt,.csv,.tsv,.xlsx,application/json,text/plain,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
+// A stack diagram's objn-1 stays whole; a narrow drawer broke it after the hyphen.
+function keepHyphenatedWords(table) {
+  const walker = document.createTreeWalker(table, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) if (/\S-\S/.test(node.textContent)) nodes.push(node);
+  for (const node of nodes) {
+    node.replaceWith(...node.textContent.split(/(\S+-\S+)/).filter(Boolean).map((part) => {
+      if (!/\S-\S/.test(part)) return part;
+      const word = document.createElement('span');
+      word.className = 'nb';
+      word.textContent = part;
+      return word;
+    }));
+  }
+}
+
 // A manual table wider than the drawer scrolls on its own, fading at the edge it continues past.
 function scrollWideTables(doc) {
   for (const table of doc.querySelectorAll('table')) {
+    keepHyphenatedWords(table);
     const wrap = document.createElement('div');
     wrap.className = 'ref-table';
     table.before(wrap);

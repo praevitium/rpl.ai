@@ -2800,3 +2800,11 @@ setAngle('RAD');
     && /\.app \.st-row\[data-key\], \.app \.bn:not\(\.halt\) \{ touch-action: pan-y; \}/.test(css),
     'errors: the banner swipes away under a finger, the browser leaving sideways moves on it to the page');
 }
+
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/function scrollWideTables\(doc\) \{\s*for \(const table of doc\.querySelectorAll\('table'\)\) \{\s*keepHyphenatedWords\(table\);/.test(drawerSrc)
+    && /word\.className = 'nb';/.test(drawerSrc) && /\.ref-table \.nb \{ white-space: nowrap; \}/.test(css),
+    'reference: a stack diagram\'s objn-1 stays whole in a narrow drawer, the table scrolling instead, where UNPICK\'s broke into objn- and 1 at 320 px');
+}
