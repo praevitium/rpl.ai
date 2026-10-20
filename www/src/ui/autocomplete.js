@@ -153,6 +153,12 @@ export class Autocomplete {
     });
     this._bindHold();
     this.el.addEventListener('scroll', () => markEnds(this.el), { passive: true });
+    // A turn or the keyboard resizes the window under an open list, which fits it again a frame later, as a popover does.
+    window.addEventListener('resize', () => requestAnimationFrame(() => {
+      if (!this.isOpen()) return;
+      this._fit();
+      markEnds(this.el);
+    }));
     cmdline.addEventListener('keydown', (e) => this._onKey(e), true);
     cmdline.addEventListener('focusout', () => this.close());
     document.addEventListener('pointerdown', (e) => { if (this.isOpen() && !e.target.closest?.('.ac, .keys, #cmdline')) this.close(); }, true);

@@ -2311,6 +2311,8 @@ setAngle('RAD');
     && /this\._fit\(\);\s*markEnds\(this\.el\);/.test(acSrc) && /this\.el\.addEventListener\('scroll', \(\) => markEnds\(this\.el\), \{ passive: true \}\);/.test(acSrc)
     && /\.ac::before, \.ac::after \{ content: ''; position: sticky;/.test(css) && /\.ac\.more-t::before, \.ac\.more-b::after \{ opacity: 1; \}/.test(css),
     'autocomplete: a list the keyboard caps fades at the edge it continues past, as the key strip and levels do, so the one row left in landscape shows there are more');
+  assert(/window\.addEventListener\('resize', \(\) => requestAnimationFrame\(\(\) => \{\s*if \(!this\.isOpen\(\)\) return;\s*this\._fit\(\);\s*markEnds\(this\.el\);/.test(acSrc),
+    'autocomplete: an open list fits the window again a frame after it resizes, as a popover does, so turning the phone with the keyboard up no longer leaves it running off the top');
 }
 
 {
