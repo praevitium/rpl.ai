@@ -2228,6 +2228,9 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   @container app (min-width: 480px) {
     :root[data-keyboard] .mx, :root[data-keyboard] .eqw { grid-template-columns: 1fr auto; align-items: end; }
     :root[data-keyboard] .writer-keys .cmdline-go { flex: none; width: 40px; }
+    /* Two lines of a long or edited program, the rest scrolling, leave the key strip and one level on screen; four put the strip 15px under the edge. */
+    :root[data-keyboard] .cmdline .cm-scroller { max-height: 2lh; }
+    :root[data-keyboard][data-view="minimal"] .input { padding-block: 4px; }
   }
   /* A halted program's keys take the room the key strip would, so one stack level stays in view. */
   :root[data-keyboard] .app:has(.bn.halt) .key-strip { display: none; }

@@ -2163,7 +2163,7 @@ setAngle('RAD');
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const short = css.slice(css.indexOf('@media (max-height: 300px) {\n  :root[data-keyboard] .input-top'));
-  assert(/@container app \(min-width: 480px\) \{\s*:root\[data-keyboard\] \.mx, :root\[data-keyboard\] \.eqw \{ grid-template-columns: 1fr auto; align-items: end; \}\s*:root\[data-keyboard\] \.writer-keys \.cmdline-go \{ flex: none; width: 40px; \}\s*\}/.test(short)
+  assert(/@container app \(min-width: 480px\) \{\s*:root\[data-keyboard\] \.mx, :root\[data-keyboard\] \.eqw \{ grid-template-columns: 1fr auto; align-items: end; \}\s*:root\[data-keyboard\] \.writer-keys \.cmdline-go \{ flex: none; width: 40px; \}/.test(short)
     && !/\n  :root\[data-keyboard\] \.mx, :root\[data-keyboard\] \.eqw \{ grid-template-columns/.test(short),
     'writers, keyboard up: their keys sit beside the formula or matrix only on a short screen at least 480 px wide; a 280 px phone with 270 px left keeps them under it (beside it, the matrix ran off the left edge and the equation writer\'s keys off the right)');
 }
@@ -2174,6 +2174,15 @@ setAngle('RAD');
   assert(/:root\[data-keyboard\] \.status-line, :root\[data-keyboard\] \.appbar, :root\[data-keyboard\] \.menubar/.test(short)
     && /:root\[data-keyboard\] \.app \{ grid-template-rows: minmax\(0, 1fr\); \}/.test(short),
     'keyboard up on a short screen: the app bar steps aside while you type, as minimal view\'s status line does, so a landscape phone with the keypad hidden shows level 1 whole above the line (it had 10 px of stack) and a 568 by 120 view keeps the key strip on screen');
+}
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const short = css.slice(css.indexOf('@media (max-height: 300px) {\n  :root[data-keyboard] .input-top'));
+  const landscape = short.slice(short.indexOf('@container app (min-width: 480px)'), short.indexOf('/* A halted program'));
+  assert(/:root\[data-keyboard\] \.cmdline \.cm-scroller \{ max-height: 2lh; \}/.test(landscape)
+    && /:root\[data-keyboard\]\[data-view="minimal"\] \.input \{ padding-block: 4px; \}/.test(landscape),
+    'EDIT, landscape keyboard up: the line keeps to two lines and minimal view drops its padding, so at 740 by 160 the key strip and level 1 stay on screen (an edited program took four lines and put the strip 15 px under the edge)');
 }
 
 {
