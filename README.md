@@ -421,7 +421,11 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   what you typed, leaving off empty rows and columns at the end, and next row
   goes back to the column the row started in, as in a spreadsheet. Its menu
   has the HP's ←WID and WID→, which make the cells narrower or wider so a
-  long number shows in full. As with the HP's ENTER, Enter (your keyboard's,
+  long number shows in full, and its →STK, which copies the focused cell to
+  the stack while the writer stays open. A UNITS key types its unit into the
+  cell (5 becomes 5_m), and held it offers Attach and Divide; a cell holding
+  5_m/s enters a unit object, as [[ 5_m/s ]] typed on the command line
+  does. As with the HP's ENTER, Enter (your keyboard's,
   the writer's own Enter key or the keypad's ENTER) stores what you typed in
   a cell and moves to the next one, and on a cell you haven't typed in it
   puts the matrix on the stack, so 1 Enter 2 Enter Enter enters [[ 1 2 ]].
