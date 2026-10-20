@@ -574,7 +574,7 @@ export class Entry {
     }
     this._snapForUndo();
     if (!raw) {
-      this.safeRun(() => this.stack.dup());
+      this.safeRun(() => this.stack.dup(), 'DUP');
       return;
     }
     this.safeRun(() => {

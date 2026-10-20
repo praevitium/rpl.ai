@@ -48,6 +48,12 @@ import { assert, assertThrows } from './helpers.mjs';
 
   {
     const e = new Entry(new Stack());
+    e.enter();
+    assert(e.error === 'DUP: Too few arguments', 'Enter on an empty line with an empty stack fails as DUP, as the HP names it, where it gave a bare Too few arguments');
+  }
+
+  {
+    const e = new Entry(new Stack());
     let emitted = 0;
     e.subscribeHistory(() => { emitted++; });
     e.buffer = '"a" SIN';
