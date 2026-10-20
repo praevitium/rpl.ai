@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.70 (2026-10-20)
+**Latest release:** v0.7.71 (2026-10-20)
 
 ---
 
@@ -18,6 +18,24 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.7.71 — 2026-10-20
+
+- →DATE, →TIME and CLKADJ set rpl.ai's clock.
+  - `12.252030 →DATE` sets the date, keeping this year when it is left
+    off. Flag -42 reads it as DD.MM.
+  - `8.30 →TIME` sets a 24-hour time, fractions of a second included.
+  - `8192 CLKADJ` moves the clock one second, 8192 ticks to the second,
+    and takes a binary integer as TICKS gives one.
+  - DATE, TIME, TICKS and alarms follow the new clock.
+- The device's own clock stays as it is: rpl.ai keeps an offset, saved
+  with the calculator. Settings, Data, says how far the calculator's
+  clock is from the device's and has a Use the device clock button.
+- →DATE refuses a date before 2000 or after 2090 with Bad argument value,
+  where the HP ignores 1991 to 1999 without a word. This is noted in its
+  reference entry.
 
 ---
 
