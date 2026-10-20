@@ -19,11 +19,15 @@ export function wordBeforeCursor(text, cursor) {
   return word ? { word, from } : null;
 }
 
+const firstLetter = (name) => name.match(/[A-Z]/i)?.[0].toUpperCase();
+
+// One letter matches a name's first letter, so N offers →NUM after NEG; two or more match anywhere.
 function completionScore(word, name) {
   const w = word.toUpperCase();
   const n = name.toUpperCase();
   if (n === w) return 2000;
   if (n.startsWith(w)) return 1500 - n.length;
+  if (w.length === 1) return firstLetter(n) === w ? 1000 - n.length : 0;
   return Math.max(0, fuzzyScore(word, name));
 }
 
@@ -79,7 +83,7 @@ export class Autocomplete {
     this.shown = null;
     if (!at) this._dismissedWord = null;
     const after = text.slice(entry.cursor);
-    if (!at || at.word.length < 2 || /^[0-9.#_]/.test(at.word) || (after && !CLOSES_A_WORD.test(after)) || at.word === this._dismissedWord) {
+    if (!at || (at.word.length < 2 && !/^[a-z]$/i.test(at.word)) || /^[0-9.#_]/.test(at.word) || (after && !CLOSES_A_WORD.test(after)) || at.word === this._dismissedWord) {
       this.close();
       return;
     }

@@ -286,5 +286,8 @@ import { assert } from './helpers.mjs';
   assert(mine[0].name === 'MYVAR' && mine[0].kind === 'variable', 'completions: variables are offered alongside commands');
   assert(completions('→NU', { names: allOps() })[0].name === '→NUM', 'completions: arrow commands complete from their own spelling');
   assert(!completions('NU', { names: allOps() }).some((r) => r.name.includes('->')), 'completions: ASCII arrow aliases are not offered twice');
+  assert(completions('n', { names: ['SIN', '→NUM', 'NEG', 'ΣLIST'] }).map((r) => r.name).join(' ') === 'NEG →NUM',
+    'completions: one letter matches the first letter of a name, past an arrow, and not a letter further in');
+  assert(completions('l', { names: ['SIN', 'ΣLIST', 'LN'] }).map((r) => r.name).join(' ') === 'LN ΣLIST', 'completions: one letter finds ΣLIST by its L');
   assert(isInsideAlgebraic('2 `SI', 3) && !isInsideAlgebraic('`X` SI', 4), 'isInsideAlgebraic: counts the quotes before the word');
 }
