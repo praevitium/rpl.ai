@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.85 (2026-10-20)
+**Latest release:** v0.7.86 (2026-10-20)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.86 — 2026-10-20
+
+- DRAW plots what EQ holds as PPAR's plot type, as on the HP, so
+  `'SIN(X)' STEQ DRAW` draws the sine in PPAR's window, where it opened an
+  empty plot. A list in EQ draws every formula in it, and DRAW after PLOT
+  leaves the curve PLOT drew as it is rather than drawing it twice. With
+  a ΣDAT plot type (SCATTER, BAR, HISTOGRAM) DRAW leaves EQ alone.
+- PLOT takes a list of formulas, stores it in EQ and plots each one,
+  where it said Bad argument type.
 
 ## v0.7.85 — 2026-10-20
 
