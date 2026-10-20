@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.74 (2026-10-20)
+**Latest release:** v0.7.75 (2026-10-20)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.75 — 2026-10-20
+
+- Bug: in Settings, Data, the Calculator clock row drew its title over
+  its description on a phone while the clock followed the device's (on
+  a wide screen the description sat off to the right). A row that ends
+  in its description now keeps it under the title.
+- Feature: a finger dragging PICTURE's crosshair moves it to the point
+  you want, so a phone needs no arrow keys to place it exactly. A drag
+  that starts anywhere else still pans the plot.
+- UX: MINEHUNT on a phone in landscape puts its pad beside the field,
+  which takes the height the sheet leaves it, so the whole game fits
+  without scrolling. Before, the field ran past the sheet and the pad
+  sat below it.
+- On a screen under 720 px wide, a sheet with one page (VIEW, INFORM,
+  MINEHUNT) now fills the sheet's height, as its layout needs.
 
 ## v0.7.74 — 2026-10-20
 
