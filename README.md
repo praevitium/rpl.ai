@@ -124,8 +124,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
 - **Algebra.** Push `` `X^2-4` `` and run `FACTOR` for `(X−2)(X+2)`, or
   `` `X^2-5*X+6=0` `X` SOLVE `` for `{ X=2 X=3 }`. The ` key stands in for
   the HP's ' key, and the command line reads apostrophes too: `'X^2-4'`
-  is the same object. Or press `⌘E`, type `x^2-5x+6=0`, and click the Solve
-  card. `` `EXP(X)` `X` 3 TAYLR `` gives the Taylor polynomial
+  is the same object. EVAL gathers like terms and factors: `'X+X+1+2'` gives
+  `2*X+3` and `'X*X/X^3'` gives `1/X`. Or press `⌘E`, type `x^2-5x+6=0`, and
+  click the Solve card. `` `EXP(X)` `X` 3 TAYLR `` gives the Taylor polynomial
   `1+X+1/2*X^2+1/6*X^3`, SERIES expands around any point with the limit and
   remainder, and ZEROS lists the roots on their own. `` `X^2-1` TABVAR ``
   gives the variation table, `-∞ ↓ -1 ↑ ∞`, from the signs of the

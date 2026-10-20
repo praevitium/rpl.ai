@@ -2,6 +2,7 @@ import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Name, Symbolic, Integer, Unit, isUnit, isBinaryInteger, isNumber, promoteNumericPair, Complex, Rational, isList, RList, isTagged, Tagged, isVector, Vector, isMatrix, Matrix, BinaryInteger, toRealOrThrow, toRealDecimal, isString, isValidHpIdentifier, isStorableHpName, isProgram, isDirectory, isGrob, Str, Program } from '../types.js';
 import { RPLAbort, RPLError, Stack, setPushCoerce, checkTimeLimit } from '../stack.js';
 import { exactTrigRewrite } from '../exact-trig.js';
+import { gatherLike } from '../tidy.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, UnitNode as AstUnit, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, hasUnits, exactRational, isRealNum, isKnownFunction } from '../algebra.js';
 import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
 import { state as _calcState, getApproxMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd, withScratchState } from '../state.js';
@@ -329,50 +330,22 @@ export function _radicalBinary(op, l, r) {
   }
 }
 
-// A product or quotient's exact numbers gather into one coefficient, as the HP's EVAL does: π/4*4 is π, 2*X*3 is 6*X.
-function _gatherCoefficient(ast) {
-  const factors = [];
-  const walk = (node, up) => {
-    if (node.kind === 'bin' && (node.op === '*' || node.op === '/')) {
-      walk(node.l, up);
-      walk(node.r, node.op === '*' ? up : !up);
-    } else factors.push({ node, up });
-  };
-  walk(ast, true);
-  const numbers = factors.filter((f) => exactRational(f.node));
-  if (numbers.length < 2) return null;
-  let coef = new Fraction(1n, 1n);
-  for (const { node, up } of numbers) {
-    const [n, d] = exactRational(node);
-    if (n === 0n && !up) return null;
-    coef = up ? coef.mul(new Fraction(n, d)) : coef.div(new Fraction(n, d));
-  }
-  const rest = factors.filter((f) => !exactRational(f.node));
-  if (coef.n === 0n || !rest.length) return _toAst(_fractionValue(coef));
-  const top = rest.filter((f) => f.up).map((f) => f.node);
-  const bottom = rest.filter((f) => !f.up).map((f) => f.node);
-  if (coef.n !== 1n) top.unshift(AstNum(coef.n));
-  if (coef.d !== 1n) bottom.unshift(AstNum(coef.d));
-  const product = (nodes) => nodes.reduce((a, b) => AstBin('*', a, b));
-  const value = bottom.length ? AstBin('/', top.length ? product(top) : AstNum(1n), product(bottom)) : product(top);
-  return coef.s < 0n ? AstNeg(value) : value;
-}
-
-// EVAL's exact radicals: √12 is 2*√3, 4^(1/2) is 2, and products, quotients and powers of roots work out.
-function _radicalRewrite(ast) {
+// EVAL's exact rewrites: √12 is 2*√3, 4^(1/2) is 2, products, quotients and powers of roots work out, and like terms gather.
+function _radicalRewrite(ast, gather) {
   if (ast.kind === 'neg') {
-    const arg = _radicalRewrite(ast.arg);
+    const arg = _radicalRewrite(ast.arg, gather);
+    if (gather && arg.kind === 'neg') return arg.arg;
     return arg === ast.arg ? ast : AstNeg(arg);
   }
   if (ast.kind === 'fn') {
-    const args = ast.args.map(_radicalRewrite);
+    const args = ast.args.map((a) => _radicalRewrite(a, gather));
     const x = ast.name === 'SQRT' && args.length === 1 ? exactRational(args[0]) : null;
     if (x && x[0] >= 0n) return _toAst(exactSqrt(x[1] === 1n ? Integer(x[0]) : Rational(x[0], x[1])));
     return args.every((a, i) => a === ast.args[i]) ? ast : AstFn(ast.name, args);
   }
   if (ast.kind !== 'bin') return ast;
-  const l = _radicalRewrite(ast.l), r = _radicalRewrite(ast.r);
-  const gathered = ast.op === '*' || ast.op === '/' ? _gatherCoefficient(AstBin(ast.op, l, r)) : null;
+  const l = _radicalRewrite(ast.l, gather), r = _radicalRewrite(ast.r, gather);
+  const gathered = gather && gatherLike(AstBin(ast.op, l, r));
   if (gathered) return gathered;
   const base = ast.op === '^' ? exactRational(l) : null, exp = base && exactRational(r);
   const power = exp && exp[1] !== 1n && base[0] >= 0n ? _exactPower(new Fraction(base[0], base[1]), new Fraction(exp[0], exp[1])) : null;
@@ -1878,8 +1851,8 @@ export function* _evalValueGen(s, v, depth, isSubProgram = true) {
 
 // Substitutes real-valued variables (locals first) and folds what it can.
 // Constants fold only under APPROX, and EXACT keeps non-integer folds symbolic
-// ('1/3' stays '1/3'). A name `keeps` says yes to stays as it is.
-export function _evalSymbolic(v, keeps = () => false) {
+// ('1/3' stays '1/3'). A name `keeps` says yes to stays as it is. Like terms gather unless `gather` is false.
+export function _evalSymbolic(v, keeps = () => false, gather = true) {
   const approx = getApproxMode();
   // A variable holding an algebraic or a name is substituted and evaluated in
   // turn, as on the HP; one that refers back to itself stays a name.
@@ -1899,7 +1872,7 @@ export function _evalSymbolic(v, keeps = () => false) {
     : (_op, args, result) => _approxGate(result, args);
   const evalNode = (ast) => algebraEvalAst(ast, resolve, _angleAwareFnEval, binGate);
   const evaluated = _foldUnits(evalNode(_expandUserCalls(v.expr)), evalNode);
-  const trig = approx ? evaluated : _radicalRewrite(exactTrigRewrite(evaluated, _calcState.angle));
+  const trig = approx ? evaluated : _radicalRewrite(exactTrigRewrite(evaluated, _calcState.angle), gather);
   const folded = trig === evaluated ? evaluated : evalNode(trig);
   const integrated = _casCalculus(folded);
   const calculated = integrated === folded ? folded : evalNode(integrated);

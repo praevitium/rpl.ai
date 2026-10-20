@@ -430,7 +430,7 @@ const RPL_SYNTAX_NOTES = `RPL SYNTAX ESSENTIALS (what the entry line accepts)
 - STO order: value first, then the backticked name: 42 \`A\` STO.  RCL: \`A\` RCL.  A bare backticked name pushes the Name, not the value.
 - Comparisons return 1/0: 3 4 <  →  1.   TRUE/FALSE literals are 1/0.
 - Arrows: → is typed as -> in ASCII for some commands (->NUM, ->LIST also work); glyph names like ΣLIST, ΔLIST, ΠLIST, →ARRY are literal command names.
-- CAS: the default variable is \`x\` (lowercase); expressions in X and x are different symbols.  EXACT mode keeps SQRT(2) symbolic; →NUM forces a decimal.  Angle mode (RAD/DEG) affects trig; at multiples of 30° and 45° EXACT trig gives closed forms (DEG 30 SIN → 1/2, π 4 / COS → SQRT(2)/2, 1 ASIN in RAD → π/2).  Square roots multiply out exactly: 2 √ SQ → 2, 2 √ 3 √ * → SQRT(6); MAX and MIN keep fractions exact.`;
+- CAS: the default variable is \`x\` (lowercase); expressions in X and x are different symbols.  EXACT mode keeps SQRT(2) symbolic; →NUM forces a decimal.  Angle mode (RAD/DEG) affects trig; at multiples of 30° and 45° EXACT trig gives closed forms (DEG 30 SIN → 1/2, π 4 / COS → SQRT(2)/2, 1 ASIN in RAD → π/2).  Square roots multiply out exactly: 2 √ SQ → 2, 2 √ 3 √ * → SQRT(6); MAX and MIN keep fractions exact.  EXACT EVAL gathers like terms and factors: \`X+X\` EVAL → 2*X, \`X*X\` EVAL → X^2, \`1*X+0\` EVAL → X; SHOW and SEVAL leave the top level as it is.`;
 
 const HARD_RULES = `- Emit only RPL the calculator can parse and execute; when unsure a symbol parses, spell it as the named command from the catalog or look it up.
 - Never wrap tool calls in \`\`\`json fences or <tool_call> tags.

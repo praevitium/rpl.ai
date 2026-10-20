@@ -95,7 +95,7 @@ register('SEVAL', (s) => {
     return;
   }
   if (!isSymbolic(v) && !isName(v)) throw new RPLError('Bad argument type');
-  const value = _evalSymbolic(isName(v) ? Symbolic(AstVar(v.id)) : v);
+  const value = _evalSymbolic(isName(v) ? Symbolic(AstVar(v.id)) : v, undefined, false);
   if (!isSymbolic(value)) {
     s.push(value);
     return;
@@ -1455,10 +1455,10 @@ register('SHOW', _entryWise((s) => {
   if (!isSymbolic(v)) throw new RPLError('Bad argument type');
   if (isList(target)) {
     const kept = new Set(target.items.map(_varName));
-    s.push(_evalSymbolic(v, (name) => kept.has(name)));
+    s.push(_evalSymbolic(v, (name) => kept.has(name), false));
   } else {
     const name = _varName(target);
-    s.push(_evalSymbolic(v, (n) => n === name || !_leadsTo(n, name)));
+    s.push(_evalSymbolic(v, (n) => n === name || !_leadsTo(n, name), false));
   }
 }, { argc: 2, only: _isSymOperand }), { category: 'CAS / symbolic', categoryOrder: 11.4, label: "SHOW" });
 

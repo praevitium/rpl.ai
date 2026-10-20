@@ -9092,3 +9092,26 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
     'coefficients: a fraction left over divides');
   assert(top("'X*0*2' EVAL") === '0' && top("'2*X' EVAL") === '`2*X`', 'coefficients: zero, and a single number left as it is');
 }
+
+// EVAL gathers like terms and like factors, and drops identities.
+{
+  const top = (line) => format(runLine(line).peek());
+  const cases = [
+    ["'X+X'", '`2*X`'], ["'2*X+3*X'", '`5*X`'], ["'X-X'", '0'], ["'X/2+X'", '`3*X/2`'], ["'1+X+2'", '`X + 3`'],
+    ["'X*Y+Y*X'", '`2*X*Y`'], ["'X^2+2*X+X^2'", '`2*X^2 + 2*X`'], ["'SIN(X)+SIN(X)'", '`2*SIN(X)`'],
+  ];
+  assert(cases.every(([src, want]) => top(`${src} EVAL`) === want), 'EVAL: like terms add, X+X is 2*X and X-X is 0');
+  const products = [
+    ["'X*X'", '`X^2`'], ["'X^2*X'", '`X^3`'], ["'X/X^2'", '`1/X`'], ["'(X+1)/(X+1)'", '1'], ["'(X^2)^3'", '`X^6`'],
+    ["'√X*√X'", '`X`'], ["'√2*X*√2'", '`2*X`'],
+  ];
+  assert(products.every(([src, want]) => top(`${src} EVAL`) === want), 'EVAL: like factors gather into powers, √X*√X is X');
+  const identities = [["'1*X'", '`X`'], ["'X+0'", '`X`'], ["'X^1'", '`X`'], ["'X/1'", '`X`'], ["'X^0'", '1'], ["'0*X'", '0'], ["'-1*X'", '`-X`'], ["'-(-X)'", '`X`']];
+  assert(identities.every(([src, want]) => top(`${src} EVAL`) === want), 'EVAL: 1*X, X+0, X^1 are X, X^0 is 1, 0*X is 0');
+  assert(top("'(X^2)^(1/2)' EVAL") === '`(X^2)^(1/2)`' && top("'X*2' EVAL") === '`X*2`',
+    'EVAL leaves (X^2)^(1/2), which is |X|, and a product with nothing to gather');
+  assert(top("'X+X' 'X' SHOW") === '`X + X`', 'SHOW does not gather, as the AUR\'s X-Y+14+15 shows');
+  runLine('APPROX');
+  assert(top("'X+X' EVAL") === '`X + X`', 'EVAL in approximate mode leaves like terms');
+  runLine('EXACT');
+}
