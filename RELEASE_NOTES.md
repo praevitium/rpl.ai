@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.80 (2026-10-20)
+**Latest release:** v0.7.81 (2026-10-20)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.81 — 2026-10-20
+
+- A formula with units, such as `(X+1_m)^2`, no longer offers Plot from
+  its stack level's toolbar, ⋯ menu or soft keys, where it opened an empty
+  plot; the soft key gives EVAL in its place, and the equation writer
+  already left it out.
+- UBASE and UVAL take an algebraic or a name, as the AUR lists:
+  `'X*5_km' UBASE` gives `UBASE(X*5_km)`, which EVAL works out once X has
+  a value, where both said Bad argument type.
+- The equation writer's insight cards fade at the edge they continue past,
+  as the drawer tabs and the key strip do, where on a phone a card was cut
+  off at the writer's edge.
 
 ## v0.7.80 — 2026-10-20
 
