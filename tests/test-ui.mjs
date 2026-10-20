@@ -2245,6 +2245,11 @@ setAngle('RAD');
   assert(/handleKey\(key, opts\) \{\s*this\.typingOnKeypad = true;\s*try \{ this\._handleKey\(key, opts\); \} finally \{ this\.typingOnKeypad = false; \}/.test(readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8'))
     && /document\.addEventListener\('pointerdown', \(e\) => \{ if \(this\.isOpen\(\) && !e\.target\.closest\?\.\('\.ac, \.keys, #cmdline'\)\) this\.close\(\); \}, true\);/.test(readFileSync(new URL('../www/src/ui/autocomplete.js', import.meta.url), 'utf8')),
     'autocomplete: a keypad key counts as typing on the line, and a tap outside the list, the keypad and the line closes it, since no focusout comes');
+  const acSrc = readFileSync(new URL('../www/src/ui/autocomplete.js', import.meta.url), 'utf8');
+  assert(/if \(e\.pointerType === 'mouse' \|\| row\?\.kind !== 'command'\) return;/.test(acSrc)
+    && /const fire = \(\) => \{ hold = null; held = true; this\.app\.buzzHold\(\); this\.close\(\); this\.app\.drawers\.showReference\(row\.name\); \};/.test(acSrc)
+    && /document\.addEventListener\('click', \(e\) => \{ if \(held\) \{ held = false; e\.preventDefault\(\); e\.stopPropagation\(\); \} \}, true\);/.test(acSrc),
+    'autocomplete: a finger held on a command\'s row opens its reference, as → does, and the lift\'s click completes nothing');
 }
 
 {

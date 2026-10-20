@@ -3,7 +3,7 @@ import { endsInQuote } from '../rpl/parser.js';
 import { varOrder, varRecall } from '../rpl/state.js';
 import { shortDescription } from './command-reference.js';
 import { fuzzyScore, matchPositions, highlightSegments } from './op-search.js';
-import { escapeHtml, typeName } from './display.js';
+import { escapeHtml, typeName, LONG_PRESS_MS } from './display.js';
 
 const MAX_ROWS = 6;
 const AC_MARGIN = 6;
@@ -68,6 +68,7 @@ export class Autocomplete {
       const row = e.target.closest('.ac-row');
       if (row) this.accept(Number(row.dataset.i));
     });
+    this._bindHold();
     cmdline.addEventListener('keydown', (e) => this._onKey(e), true);
     cmdline.addEventListener('focusout', () => this.close());
     document.addEventListener('pointerdown', (e) => { if (this.isOpen() && !e.target.closest?.('.ac, .keys, #cmdline')) this.close(); }, true);
@@ -140,6 +141,23 @@ export class Autocomplete {
     this._replaceWord(this.rows[this.index].name);
     this._render();
     return true;
+  }
+
+  // A finger held on a command's row opens its reference, as → does from a keyboard; the click its lift makes is eaten.
+  _bindHold() {
+    let hold = null, held = false;
+    const cancel = () => { if (hold) clearTimeout(hold.timer); hold = null; };
+    document.addEventListener('pointerdown', () => { held = false; }, true);
+    this.el.addEventListener('pointerdown', (e) => {
+      const row = this.rows[e.target.closest('.ac-row')?.dataset.i];
+      if (e.pointerType === 'mouse' || row?.kind !== 'command') return;
+      const fire = () => { hold = null; held = true; this.app.buzzHold(); this.close(); this.app.drawers.showReference(row.name); };
+      hold = { x: e.clientX, y: e.clientY, timer: setTimeout(fire, LONG_PRESS_MS) };
+    });
+    this.el.addEventListener('pointermove', (e) => { if (hold && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 10) cancel(); });
+    for (const type of ['pointerup', 'pointercancel']) this.el.addEventListener(type, cancel);
+    this.el.addEventListener('contextmenu', (e) => e.preventDefault());
+    document.addEventListener('click', (e) => { if (held) { held = false; e.preventDefault(); e.stopPropagation(); } }, true);
   }
 
   _replaceWord(text) {
