@@ -2,9 +2,11 @@ import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isLis
 import { giac } from '../cas/giac-engine.mjs';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { buildGiacCmd, giacToAst, splitGiacList, astToGiac, isGiacErrorString, assumedName } from '../cas/giac-convert.mjs';
-import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction, LOGIC_ARITY, formatAlgebra, astEqual } from '../algebra.js';
-import { getComplexMode, getCasVx, setCasVx, getApproxMode, getCasModulo, setApproxMode, setComplexMode, resetCasVx, resetCasModulo, getRealAssume, setRealAssume } from '../state.js';
+import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction, LOGIC_ARITY, formatAlgebra, astEqual, exactRational } from '../algebra.js';
+import { getComplexMode, getCasVx, setCasVx, getApproxMode, getCasModulo, setApproxMode, setComplexMode, resetCasVx, resetCasModulo, getRealAssume, setRealAssume, testUserFlag } from '../state.js';
 import { register, lookup } from './registry.js';
+import { format, currentDisplay, withFractionMark } from '../formatter.js';
+import { textGrob } from '../pixel-font.js';
 import { _astToRplValue, _entryWise, _pushCasResult, _isSymOperand, _toAst, _substitute, _withListUnary, _withTaggedUnary, _withVMUnary, recallVar, storeVar, _evalSymbolic, TRUE, FALSE, _expandUserCalls } from './internal.js';
 
 
@@ -333,6 +335,47 @@ register('STURMAB', (s) => {
     : `max(0,sturmab(${P},${x},${A},${B}))`;
   s.push(RList([_casValue(atA), _casValue(giacToAst(giac.caseval(count)))]));
 }, { category: 'Polynomials', categoryOrder: 8.92, label: "STURMAB" });
+
+// STURM ( P → { [content] -1. seq1 m1 … } ): P's content, marked -1. as in the AUR, then for each multiplicity m the
+// Sturm sequence of the product of P's factors of multiplicity m, each term divided by its integer content.
+function _sturmTerms(raw, x) {
+  const terms = splitGiacList(raw);
+  if (!terms) throw new RPLError('Bad argument value');
+  const scaled = terms.map((term) => {
+    const coefs = splitGiacList(term) ?? [term];
+    if (!coefs.every((c) => /^-?\d+$/.test(c))) return `[${coefs.join(',')}]`;
+    const big = coefs.map(BigInt);
+    const g = big.reduce((a, b) => _bigGcd(a, b < 0n ? -b : b), 0n) || 1n;
+    return `[${big.map((c) => c / g).join(',')}]`;
+  });
+  return splitGiacList(giac.caseval(`[${scaled.map((c) => `expand(poly2symb(${c},${x}))`).join(',')}]`)).map((t) => _tableValue(giacToAst(t)));
+}
+
+const _bigGcd = (a, b) => (b === 0n ? a : _bigGcd(b, a % b));
+
+register('STURM', (s) => {
+  const [v] = s.popN(1);
+  const p = _astArg(v);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const name = _mainVar(p);
+  const x = astToGiac(AstVar(name));
+  const pairs = splitGiacList(giac.caseval(`factors(${astToGiac(p)})`));
+  if (!pairs || pairs.length % 2) throw new RPLError('Bad argument value');
+  const content = [];
+  const groups = new Map();
+  for (let i = 0; i < pairs.length; i += 2) {
+    const [factor, m] = [pairs[i], Number(pairs[i + 1])];
+    if (!algebraFreeVars(giacToAst(factor)).has(name)) content.push(`(${factor})^(${pairs[i + 1]})`);
+    else if (Number.isInteger(m) && m > 0) groups.set(m, [...(groups.get(m) ?? []), `(${factor})`]);
+    else throw new RPLError('Bad argument value');
+  }
+  const items = [Vector([_tableValue(giacToAst(giac.caseval(`normal(${content.join('*') || 1})`)))]), Real(-1)];
+  for (const m of [...groups.keys()].sort((a, b) => a - b)) {
+    const seq = giac.caseval(`sturmseq(expand(${groups.get(m).join('*')}),${x})`);
+    items.push(Vector(_sturmTerms(splitGiacList(seq)?.[1], x)), Real(m));
+  }
+  s.push(RList(items));
+}, { category: 'Polynomials', categoryOrder: 8.925, label: "STURM" });
 
 function _planePoint(v) {
   if (isComplex(v)) return [AstNum(v.re, true), AstNum(v.im, true)];
@@ -680,6 +723,12 @@ function _casValue(ast) {
   return leaf.kind === 'num' || ast.kind === 'var' ? _astToRplValue(ast) : Symbolic(ast);
 }
 
+// An exact fraction as a rational, as the stack writes 1/2; Giac's -1/2 reads as (-1)/2.
+function _tableValue(ast) {
+  const value = ast.kind === 'bin' && ast.op === '/' && ast.l.kind === 'neg' ? AstNeg(AstBin('/', ast.l.arg, ast.r)) : ast;
+  return exactRational(value) ? _astToRplValue(value) : _casValue(ast);
+}
+
 // Real roots in increasing order, as the AUR lists them; anything else keeps Giac's order.
 function _byValue(roots) {
   const values = roots.map((r) => algebraEvalAst(r, (name) => (name === 'π' ? Math.PI : undefined)));
@@ -689,10 +738,7 @@ function _byValue(roots) {
 
 // SIGNTAB ( f → { -∞ sign x1 sign … +∞ } ): the real zeros and poles of f in VX, in increasing order, with f's sign,
 // + or -, between them, as the AUR tabulates 2-X^2.
-register('SIGNTAB', (s) => {
-  const [v] = s.popN(1);
-  const expr = _astArg(v);
-  const x = _mainVar(expr);
+function _signTable(expr, x) {
   const e = astToGiac(expr);
   if (!giac.isReady()) throw new RPLError('CAS not ready');
   const found = ['numer', 'denom'].flatMap((part) => splitGiacList(giac.caseval(`solve(${part}(${e}),${x})`)) ?? []).map(giacToAst);
@@ -704,12 +750,56 @@ register('SIGNTAB', (s) => {
   const tests = at.length ? [at[0] - 1, ...at.slice(1).map((value, i) => (at[i] + value) / 2), at.at(-1) + 1] : [0];
   const signs = (splitGiacList(giac.caseval(`[${tests.map((t) => `sign(evalf(subst(${e},${x}=${t})))`).join(',')}]`)) ?? []).map(Number);
   if (signs.length !== tests.length) throw new RPLError('Bad argument value');
-  const mark = (sign) => (sign > 0 ? Name('+') : sign < 0 ? Name('-') : Integer(0n));
-  const items = [Symbolic(AstNeg(AstVar('∞'))), mark(signs[0])];
-  sorted.forEach(([ast], i) => items.push(_casValue(ast), mark(signs[i + 1])));
-  items.push(Symbolic(AstVar('∞')));
-  s.push(RList(items));
+  return { points: [AstNeg(AstVar('∞')), ...sorted.map(([ast]) => ast), AstVar('∞')], signs };
+}
+
+const _signMark = (sign) => (sign > 0 ? Name('+') : sign < 0 ? Name('-') : Integer(0n));
+
+function _interleave(points, marks) {
+  return points.flatMap((p, i) => (i < marks.length ? [p, marks[i]] : [p]));
+}
+
+register('SIGNTAB', (s) => {
+  const [v] = s.popN(1);
+  const expr = _astArg(v);
+  const { points, signs } = _signTable(expr, _mainVar(expr));
+  s.push(RList(_interleave(points.map(_tableValue), signs.map(_signMark))));
 }, { category: 'CAS / symbolic', categoryOrder: 10.6, label: "SIGNTAB" });
+
+// TABVAR ( f → f { { -∞ sign x1 … +∞ } { f(-∞) arrow f(x1) … f(+∞) } } grob ): SIGNTAB of f' and f's limits at
+// its points, ? where f has no limit, as at a pole of 1/X; the picture sets F and F' over the table, as on the HP.
+const _ARROWS = { '1': '↑', '-1': '↓', '0': '→' };
+
+function _limitValue(text) {
+  const t = String(text).trim();
+  return t === 'infinity' || t === 'undef' || t.startsWith('bounded_function') ? AstVar('?') : giacToAst(t);
+}
+
+const _cellText = (v) => withFractionMark(format(v, currentDisplay(), { context: 'stack' })).replace(/^[`']|[`']$/g, '').replace(/ /g, '');
+
+function _tableGrob(f, df, rows) {
+  const cells = rows.map((row) => row.map(_cellText));
+  const widths = cells[0].map((_, j) => Math.max(...cells.map((row) => row[j].length)));
+  const line = (label, row) => [label.padEnd(2), ...row.map((c, j) => c.padStart(widths[j]))].join(' ');
+  return textGrob([`F:${_cellText(f)}`, `F':${_cellText(df)}`, line('X', cells[0]), line('F', cells[1])].join('\n'));
+}
+
+register('TABVAR', (s) => {
+  const [v] = s.popN(1);
+  const f = _astArg(v);
+  const x = _mainVar(f);
+  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  const [F, X] = [f, AstVar(x)].map(astToGiac);
+  const df = giacToAst(giac.caseval(`simplify(diff(${F},${X}))`));
+  const { points, signs } = _signTable(df, x);
+  const limits = splitGiacList(giac.caseval(`[${points.map((p) => `limit(${F},${X},${astToGiac(p)})`).join(',')}]`));
+  if (limits?.length !== points.length) throw new RPLError('Bad argument value');
+  const xRow = _interleave(points.map(_tableValue), signs.map(_signMark));
+  const fRow = _interleave(limits.map((t) => _tableValue(_limitValue(t))), signs.map((sign) => Name(_ARROWS[sign] ?? '?')));
+  s.push(Symbolic(f));
+  s.push(RList([RList(xRow), RList(fRow)]));
+  s.push(_tableGrob(Symbolic(f), _casValue(df), [xRow, fRow]));
+}, { category: 'CAS / symbolic', categoryOrder: 10.65, label: "TABVAR" });
 
 // DOMAIN ( f → { -∞ mark x1 mark … +∞ } ): where f, user functions expanded, is defined (+) or not (?) along the real
 // line, from Giac's domain conditions; a lone point it excludes, as 0 for 1/X, is left out, as the AUR says.
@@ -1868,6 +1958,18 @@ register('PARTFRAC', _casUnary('partfrac'), { category: 'CAS / symbolic', catego
 
 register('COSSIN', _casUnary('tan2sincos'), { category: 'CAS / symbolic', categoryOrder: 21, label: "COSSIN" });
 
+// TRIG: exponentials to sines and cosines, then sin²+cos²=1 towards cosines, or sines with flag -116 set; a complex
+// expression is split into real and imaginary parts, so LN(X+i) gives ATAN(1/X) with its branch for X < 0.
+register('TRIG', _entryWise((s) => {
+  const v = s.pop();
+  if (!isSymbolic(v)) {
+    if (isReal(v) || isInteger(v) || isRational(v) || isName(v)) { s.push(v); return; }
+    throw new RPLError('Bad argument type');
+  }
+  const rewrite = testUserFlag(-116) ? 'trigsin' : 'trigcos';
+  const complex = algebraFreeVars(v.expr).has('i');
+  _pushCasResult(s, _casEval(v.expr, (e) => (complex ? `evalc(${rewrite}(exp2trig(${e})))` : `${rewrite}(exp2trig(${e}))`)));
+}), { category: 'CAS / symbolic', categoryOrder: 21.05, label: "TRIG" });
 register('TRIGCOS', _casUnary('trigcos'), { category: 'CAS / symbolic', categoryOrder: 21.1, label: "TRIGCOS" });
 register('TRIGSIN', _casUnary('trigsin'), { category: 'CAS / symbolic', categoryOrder: 21.2, label: "TRIGSIN" });
 register('TRIGTAN', _casUnary('trigtan'), { category: 'CAS / symbolic', categoryOrder: 21.3, label: "TRIGTAN" });

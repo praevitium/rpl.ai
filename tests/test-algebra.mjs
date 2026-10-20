@@ -8805,6 +8805,66 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   giac._clear();
 }
 
+// STURM, TRIG and TABVAR, with real Giac's answers.
+{
+  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
+  giac._clear();
+  giac._setFixtures({
+    'factors(X^3+1)': '[X+1,1,X^2-X+1,1]',
+    'normal(1)': '1',
+    'sturmseq(expand((X+1)*(X^2-X+1)),X)': '[1,[[1,0,0,1],[3,0,0],-9],1]',
+    '[expand(poly2symb([1,0,0,1],X)),expand(poly2symb([1,0,0],X)),expand(poly2symb([-1],X))]': '[X^3+1,X^2,-1]',
+    'factors((X-1)^3*(X+2))': '[X-1,3,X+2,1]',
+    'sturmseq(expand((X+2)),X)': '[1,[[1,2],1],1]',
+    '[expand(poly2symb([1,2],X)),expand(poly2symb([1],X))]': '[X+2,1]',
+    'sturmseq(expand((X-1)),X)': '[1,[[1,-1],1],1]',
+    '[expand(poly2symb([1,-1],X)),expand(poly2symb([1],X))]': '[X-1,1]',
+    'factors(X^3/2+1)': '[X^3+2,1,2,-1]',
+    'normal((2)^(-1))': '1/2',
+    'sturmseq(expand((X^3+2)),X)': '[1,[[1,0,0,2],[3,0,0],-18],1]',
+    '[expand(poly2symb([1,0,0,2],X)),expand(poly2symb([1,0,0],X)),expand(poly2symb([-1],X))]': '[X^3+2,X^2,-1]',
+    'factors(sin(X))': '[sin(X),1]',
+    'sturmseq(expand((sin(X))),X)': '[sin(X),1]',
+  });
+  assert(shown("'X^3+1' STURM") === '{ [ 1 ] -1. [ `X^3 + 1` `X^2` -1 ] 1. }', 'STURM gives the content, then the Sturm sequence with its multiplicity');
+  assert(shown("'(X-1)^3*(X+2)' STURM") === '{ [ 1 ] -1. [ `X + 2` 1 ] 1. [ `X - 1` 1 ] 3. }', 'STURM gives a sequence for each multiplicity');
+  assert(shown("'X^3/2+1' STURM") === '{ [ 1/2 ] -1. [ `X^3 + 2` `X^2` -1 ] 1. }', 'STURM takes a fraction into the content');
+  assertThrows(() => runLine("'SIN(X)' STURM"), /Bad argument value/, 'STURM of a non-polynomial is a Bad argument value');
+
+  giac._setFixtures({
+    'evalc(trigcos(exp2trig(ln(X+i))))': '1/2*ln(X^2+1)+i*(atan(1/X)+(1-sign(X))*pi/2)',
+    'trigcos(exp2trig(sin(X)^4+cos(X)^2))': 'cos(X)^4-cos(X)^2+1',
+    'trigsin(exp2trig(sin(X)^4+cos(X)^2))': 'sin(X)^4-sin(X)^2+1',
+  });
+  assert(shown("'LN(X+i)' TRIG") === '`1/2*LN(X^2 + 1) + i*(ATAN(1/X) + (1 - SIGN(X))*π/2)`', 'TRIG splits LN(X+i) into real and imaginary parts');
+  assert(shown("'SIN(X)^4+COS(X)^2' TRIG") === '`COS(X)^4 - COS(X)^2 + 1`', 'TRIG prefers cosines with flag -116 clear');
+  assert(shown("-116 SF 'SIN(X)^4+COS(X)^2' TRIG -116 CF") === '`SIN(X)^4 - SIN(X)^2 + 1`', 'TRIG prefers sines with flag -116 set');
+  assert(shown('7 TRIG') === '7', 'TRIG leaves a number as it is');
+
+  giac._setFixtures({
+    'simplify(diff(X^2-1,X))': '2*X',
+    'solve(numer(2*X),X)': 'list[0]',
+    'solve(denom(2*X),X)': '[]',
+    '[sign(evalf(subst(2*X,X=-1))),sign(evalf(subst(2*X,X=1)))]': '[-1.0,1.0]',
+    '[limit(X^2-1,X,-infinity),limit(X^2-1,X,0),limit(X^2-1,X,+infinity)]': '[+infinity,-1,+infinity]',
+    'simplify(diff(X/(X^2+1),X))': '(-X^2+1)/(X^4+2*X^2+1)',
+    'solve(numer((-(X^2)+1)/(X^4+2*X^2+1)),X)': 'list[-1,1]',
+    'solve(denom((-(X^2)+1)/(X^4+2*X^2+1)),X)': '[]',
+    '[sign(evalf(subst((-(X^2)+1)/(X^4+2*X^2+1),X=-2))),sign(evalf(subst((-(X^2)+1)/(X^4+2*X^2+1),X=0))),sign(evalf(subst((-(X^2)+1)/(X^4+2*X^2+1),X=2)))]': '[-1.0,1.0,-1.0]',
+    '[limit(X/(X^2+1),X,-infinity),limit(X/(X^2+1),X,-1),limit(X/(X^2+1),X,1),limit(X/(X^2+1),X,+infinity)]': '[0,-1/2,1/2,0]',
+    'simplify(diff(1/X,X))': '-1/X^2',
+    'solve(numer((-1)/X^2),X)': '[]',
+    'solve(denom((-1)/X^2),X)': 'list[0]',
+    '[sign(evalf(subst((-1)/X^2,X=-1))),sign(evalf(subst((-1)/X^2,X=1)))]': '[-1.0,-1.0]',
+    '[limit(1/X,X,-infinity),limit(1/X,X,0),limit(1/X,X,+infinity)]': '[0,infinity,0]',
+  });
+  assert(shown("'X^2-1' TABVAR") === '`X^2 - 1` | { { `-∞` - 0 + `∞` } { `∞` ↓ -1 ↑ `∞` } } | Graphic 84 × 32',
+    'TABVAR gives f, the variation table the AUR shows for X^2-1, and a picture');
+  assert(shown("'X/(X^2+1)' TABVAR DROP") === '`X/(X^2 + 1)` | { { `-∞` - -1 + 1 - `∞` } { 0 ↓ -1/2 ↑ 1/2 ↓ 0 } }', 'TABVAR gives exact turning values');
+  assert(shown("'1/X' TABVAR DROP") === '`1/X` | { { `-∞` - 0 - `∞` } { 0 ↓ `?` ↓ 0 } }', 'TABVAR gives ? at a pole with no limit');
+  giac._clear();
+}
+
 // The HP's dn: EVAL differentiates a built-in function in its nth argument; ∞ executed gives the algebraic ∞.
 {
   const top = (line) => format(runLine(line).peek());
