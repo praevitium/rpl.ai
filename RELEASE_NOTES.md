@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.94 (2026-10-20)
+**Latest release:** v0.7.95 (2026-10-20)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.95 — 2026-10-20
+
+- Completion rows for variables and units no longer show blank on a phone:
+  where a row has no stack diagram, its description shows instead.
+- Inside a program the completion list offers the local names a `→` binds,
+  first: in `« → rate time « r` it lists rate, and completing it adds the
+  space a command gets.
+- Insert on a reference page opened by holding a completion row replaces
+  the letters typed: `2 SI`, hold SIN, Insert gives `2 SIN`, not
+  `2 SI SIN`.
 
 ## v0.7.94 — 2026-10-20
 
