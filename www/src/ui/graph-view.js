@@ -6,12 +6,14 @@ import {
 } from './plot-engine.js';
 import { escapeHtml } from './display.js';
 import { icon } from './icons.js';
-import { isSymbolic, isName, isMatrix, isVector, isList, Real, Complex } from '../rpl/types.js';
+import { isSymbolic, isName, isMatrix, isVector, isList, Real, Complex, RList, BinaryInteger } from '../rpl/types.js';
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians, getPict, subscribe as subscribeState } from '../rpl/state.js';
 import { plotSettings, pictWindow, pictGrid, pictPoint, viewVolume } from '../rpl/ops/graphics.js';
 import { downloadFile } from '../rpl/persist.js';
 import { withFractionMark, format } from '../rpl/formatter.js';
 import { fromTyped } from '../rpl/parser.js';
+import { lookup } from '../rpl/ops/registry.js';
+import { Stack } from '../rpl/stack.js';
 
 export { stackValueToTrace, traceToStackValues };
 
@@ -35,6 +37,16 @@ const PLOT_KINDS = Object.freeze([
   ['hist', 'Histogram', 'Histogram from ΣDAT or the stack'],
 ]);
 const RANGE_FIELDS = Object.freeze([['xmin', 'x from'], ['xmax', 'x to'], ['ymin', 'y from'], ['ymax', 'y to']]);
+// PICTURE's drawing keys, as on the HP's: MARK sets the mark at the cursor, and LINE, TLINE, BOX and CIRCL draw on
+// PICT from the mark to the cursor.
+const PICT_TOOLS = Object.freeze([
+  ['MARK', 'Set the mark at the cursor'],
+  ['LINE', 'Draw a line from the mark to the cursor'],
+  ['TLINE', 'Flip the pixels on a line from the mark to the cursor'],
+  ['BOX', 'Draw a box with corners at the mark and the cursor'],
+  ['CIRCL', 'Draw a circle round the mark through the cursor'],
+  ['PICT→', 'Put PICT on the stack'],
+]);
 const TAP_SLOP_PX = 6;
 const TOUCH = !!globalThis.matchMedia?.('(pointer: coarse)').matches;
 // A drag that starts this close to the graphics cursor moves it rather than the plot.
@@ -67,6 +79,12 @@ function sampleOpts(extra) {
     volume: viewVolume(),
     ...extra,
   };
+}
+
+// A point's column and row in PICT.
+function pictPixel({ x, y }) {
+  const g = pictGrid();
+  return [(x - g.xmin) / g.dx, (g.ymax - y) / g.dy];
 }
 
 // PVIEW shows PICT in PPAR's window, or in a window that size with the given point at its top left.
@@ -119,6 +137,7 @@ export class GraphView {
     this._pointers = new Map();
     this._hover = null;
     this._mark = null;
+    this._anchor = null;
     this.tracing = false;
     this.traceX = null;
     this.el = document.createElement('div');
@@ -141,6 +160,7 @@ export class GraphView {
           <button type="button" class="pl-push" data-gr="push" title="Put the cursor's point on the stack (Enter)" hidden></button>
         </div>
         <div class="gr-readout" aria-live="polite">${IDLE_READOUT}</div>
+        <div class="pl-pict" role="toolbar" aria-label="Picture tools" hidden>${PICT_TOOLS.map(([label, title]) => `<button type="button" class="chip" data-pict="${label}" title="${title}">${label}</button>`).join('')}</div>
       </div>
       <div class="pl-side">
         <div class="pl-kinds" role="group" aria-label="Plot type">${PLOT_KINDS.map(([kind, label, title]) => `<button type="button" class="chip" data-kind="${kind}" title="${escapeHtml(title)}" aria-pressed="${kind === 'function'}">${escapeHtml(label)}</button>`).join('')}</div>
@@ -165,6 +185,7 @@ export class GraphView {
     this._ctx = this._canvas.getContext('2d');
     this._readout = this.el.querySelector('.gr-readout');
     this._push = this.el.querySelector('.pl-push');
+    this._pictTools = this.el.querySelector('.pl-pict');
     this._kind = 'function';
     this._selectedId = null;
     this._bind();
@@ -184,6 +205,8 @@ export class GraphView {
       if (btn) this.retypeSelectionAndSetKind(btn.dataset.kind);
     });
     this.el.addEventListener('click', (ev) => {
+      const key = ev.target.closest?.('[data-pict]');
+      if (key) { this.pictTool(key.dataset.pict); return; }
       const tool = ev.target.closest?.('[data-gr]');
       if (!tool) return;
       const act = tool.dataset.gr;
@@ -434,6 +457,7 @@ export class GraphView {
 
   applyPlotOp(kind, stack, data = null) {
     this._mark = null;
+    this._anchor = null;
     if (kind === 'animate') {
       this.view = pictWindow() ?? this.view;
       this._animate(data);
@@ -603,6 +627,41 @@ export class GraphView {
     const value = this._cursorValue();
     this._push.hidden = !value;
     if (value) this._push.textContent = `↵ ${format(value)}`;
+    this._pictTools.hidden = !this._mark || this.tracing || this._projected();
+    for (const b of this._pictTools.querySelectorAll('[data-pict="LINE"], [data-pict="TLINE"], [data-pict="BOX"], [data-pict="CIRCL"]')) b.disabled = !this._anchor;
+  }
+
+  pictTool(key) {
+    if (!this._mark) return;
+    if (key === 'MARK') {
+      this._anchor = { ...this._mark };
+      this._readout.textContent = 'Mark set: LINE, BOX and CIRCL draw from it to the cursor';
+      this.draw();
+      return;
+    }
+    if (key === 'PICT→') {
+      this.app.commitEntryAndPush(getPict());
+      this._readout.textContent = 'Pushed PICT';
+      return;
+    }
+    if (!this._anchor) return;
+    const s = new Stack();
+    if (key === 'CIRCL') {
+      const [c, r] = [this._anchor, this._mark].map(pictPixel);
+      const pixel = (n) => BinaryInteger(BigInt(Math.round(n)), 'd');
+      s.push(RList(c.map(pixel)));
+      s.push(pixel(Math.hypot(r[0] - c[0], r[1] - c[1])));
+      s.push(Real(0));
+      s.push(Real(thetaRange().max));
+    } else {
+      s.push(Complex(this._anchor.x, this._anchor.y));
+      s.push(Complex(this._mark.x, this._mark.y));
+    }
+    try {
+      lookup(key === 'CIRCL' ? 'ARC' : key).fn(s);
+    } catch (e) {
+      this._fail(e.message);
+    }
   }
 
   _readoutAt(wx, wy = null) {
@@ -722,12 +781,14 @@ export class GraphView {
 
   // A picture of the plot leaves out the hover readout and the graphics cursor; the canvas is copied as the call is made.
   _withoutCursor(take) {
-    const mark = this._mark;
+    const { _mark: mark, _anchor: anchor } = this;
     this._hover = null;
     this._mark = null;
+    this._anchor = null;
     this.draw();
     try { return take(); } finally {
       this._mark = mark;
+      this._anchor = anchor;
       this.draw();
     }
   }
@@ -798,6 +859,19 @@ export class GraphView {
     const [px, py] = worldToPixel(this._mark.x, this._mark.y, this.view, width, height);
     ctx.save();
     ctx.lineCap = 'round';
+    if (this._anchor) {
+      const [ax, ay] = worldToPixel(this._anchor.x, this._anchor.y, this.view, width, height);
+      for (const [color, lineWidth] of [[this._colors.bg, 4], [this._colors.label, 1.5]]) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.beginPath();
+        ctx.moveTo(ax - 5, ay - 5);
+        ctx.lineTo(ax + 5, ay + 5);
+        ctx.moveTo(ax + 5, ay - 5);
+        ctx.lineTo(ax - 5, ay + 5);
+        ctx.stroke();
+      }
+    }
     for (const [color, lineWidth] of [[this._colors.bg, 4], [this._colors.label, 1.5]]) {
       ctx.strokeStyle = color;
       ctx.lineWidth = lineWidth;
