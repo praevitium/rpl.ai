@@ -190,6 +190,8 @@ import { assert, assertThrows } from './helpers.mjs';
     const closed = ['', '4', '3 4', '« 2 »', '{ 1 }', '"a+b"', "'X+1'", '5_m 2', '1E5', 'SIN'];
     assert(open.every(inOpenObject), 'inOpenObject is true inside quotes, strings, brackets, units and exponents');
     assert(!closed.some(inOpenObject), 'inOpenObject is false once every object is closed');
+    assert(inOpenObject('<< 7 0 > ') && inOpenObject('<< 1 << 2 >> ') && !inOpenObject('<< 1 >> ') && !inOpenObject('3 2 < '),
+      'inOpenObject reads a phone keyboard\'s << and >> as « and », as the parser does, and a lone < as less than');
   }
   {
     const s = new Stack();
@@ -266,7 +268,7 @@ import { assert, assertThrows } from './helpers.mjs';
   }
   {
     const { inProgramEntry } = await import('../www/src/ui/entry.js');
-    assert(['«', '« 2', '{ 1', '« [ 1 2 ] 3', '« 1 « 2'].every(inProgramEntry), 'inProgramEntry is true inside a program or a list');
+    assert(['«', '« 2', '{ 1', '« [ 1 2 ] 3', '« 1 « 2', '<< 2'].every(inProgramEntry), 'inProgramEntry is true inside a program (« or <<) or a list');
     assert(!['', '3', "« 'X", '« "a', '« 5_m', '« 1E', '« [ 1', '« (1,', '« 2 »'].some(inProgramEntry), 'inProgramEntry is false in an algebraic, string, unit, exponent, vector or complex number, or outside');
     const e = new Entry(new Stack());
     e.type("« 'X");

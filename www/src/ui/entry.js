@@ -26,13 +26,19 @@ function errorText(e) {
 function scanOpen(text) {
   const open = [];
   let quote = null, string = false;
-  for (const c of text) {
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
     if (string) { if (c === '"') string = false; continue; }
     if (quote) { if (c === quote) quote = null; continue; }
     if (c === '"') string = true;
     else if (c === "'" || c === '`') quote = c;
     else if ('«{[('.includes(c)) open.push(c);
     else if ('»}])'.includes(c)) open.pop();
+    // A phone keyboard's << and >> are the HP's « and », as the parser reads them.
+    else if ((c === '<' || c === '>') && text[i + 1] === c) {
+      if (c === '<') open.push('«'); else open.pop();
+      i++;
+    }
   }
   const last = text.match(/\S*$/)[0];
   const literal = string || quote !== null || last.includes('_') || /^[-+]?(\d+\.?\d*|\.\d+)[eE]$/.test(last);
