@@ -1020,7 +1020,7 @@ function* runArrow(s, toks, arrowIdx, to, depth) {
 // program suspends the enclosing one.
 const SUSPENDABLE_OPS = new Map([
   ['IFT', runIft], ['IFTE', runIfte], ['SEQ', runSeq], ['MAP', runMap],
-  ['DOLIST', runDoList], ['DOSUBS', runDoSubs], ['STREAM', runStream], ['PROMPTSTO', runPromptSto],
+  ['DOLIST', runDoList], ['DOSUBS', runDoSubs], ['STREAM', runStream], ['PROMPTSTO', runPromptSto], ['RULES', runRules],
 ]);
 
 
@@ -1481,6 +1481,18 @@ export function promptStoProgram(v) {
 export function* runPromptSto(s, depth) {
   const [name] = s.popN(1);
   yield* _evalValueGen(s, promptStoProgram(name), depth + 1);
+}
+
+const CREDITS = [
+  'rpl.ai: praevitium and contributors',
+  'Giac: Bernard Parisse, Renée De Graeve',
+  'With thanks to Eric Rechlin, Joseph K. Horn, Jean-Yves Avenard, Cyrille de Brébisson, Claudio Lapilli and William C. Wickes',
+].join('\n');
+
+export const rulesProgram = () => Program([Str(CREDITS), Name('MSGBOX')]);
+
+function* runRules(s, depth) {
+  yield* _evalValueGen(s, rulesProgram(), depth + 1);
 }
 
 

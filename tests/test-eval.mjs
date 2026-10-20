@@ -498,6 +498,29 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     'VERSION pushes "rpl.ai <version>" and the copyright line');
 }
 
+// VER, DEDICACE and RULES; →HEADER, →KEYTIME and →NDISP check and keep their setting.
+{
+  const { setVersion } = await import('../www/src/rpl/ops.js');
+  const { getHalted, getPromptMessage, clearAllHalted, clearPromptMessage } = await import('../www/src/rpl/state.js');
+  const top = (line) => format(runLine(line).peek());
+  setVersion('9.9.9', '2026-10-19');
+  assert(top('VER') === '1.520261019', 'VER gives Giac 1.5 and the build date as V.YYYYMMDD');
+  assert(/^"rpl\.ai is dedicated to .* Salut"$/.test(top('"Salut" DEDICACE')), 'DEDICACE gives the dedication, extended by its argument');
+  clearAllHalted(); clearPromptMessage();
+  runLine('RULES');
+  assert(getHalted()?.kind === 'msgbox' && /Bernard Parisse/.test(getPromptMessage()?.value) && /William C\. Wickes/.test(getPromptMessage()?.value),
+    'RULES shows the credits in a message box');
+  clearAllHalted(); clearPromptMessage();
+  assert(top('HEADER→') === '2.' && top('1 →HEADER HEADER→') === '1.', '→HEADER keeps a size HEADER→ gives back, 2 lines at first');
+  assertThrows(() => runLine('3 →HEADER'), /Bad argument value/, '→HEADER takes 0, 1 or 2 lines');
+  assert(top('KEYTIME→') === '1138.' && top('500 →KEYTIME KEYTIME→') === '500.', '→KEYTIME keeps a time KEYTIME→ gives back, 1138 ticks at first');
+  assertThrows(() => runLine('5000 →KEYTIME'), /Bad argument value/, '→KEYTIME takes 0 to 4096 ticks');
+  assert(runLine('12 →NDISP').depth === 0, '→NDISP takes a number of program lines');
+  assertThrows(() => runLine('0 →NDISP'), /Bad argument value/, '→NDISP needs at least one line');
+  assertThrows(() => runLine('"a" →HEADER'), /Bad argument type/, '→HEADER takes a number');
+  runLine('2 →HEADER 1138 →KEYTIME 9 →NDISP');
+}
+
 // A built-in command named in an algebraic runs on its numeric arguments when no function rule folds it, as on the HP.
 {
   const top = (line) => format(runLine(line).peek());

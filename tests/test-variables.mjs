@@ -2082,8 +2082,8 @@ clearAllUserFlags();
   runLine('34 37 MENUXY');
   assert(shown.at(-1) === '{ ATAN2S ASIN2T ASIN2C ACOS2S } temporary', `MENUXY(34,37) shows the AUR's ATAN2S ASIN2T ASIN2C ACOS2S (${shown.at(-1)})`);
   runLine('-3 2 MENUXY 138 500 MENUXY');
-  assert(shown.at(-2) === '{ EXPAND FACTOR SUBST } temporary' && shown.at(-1) === '{ ∞ PROMPTSTO } temporary',
-    `MENUXY takes numbers below 0 as 0 and above 140 as 140, leaving off VER, which rpl.ai lacks (${shown.slice(-2)})`);
+  assert(shown.at(-2) === '{ EXPAND FACTOR SUBST } temporary' && shown.at(-1) === '{ ∞ PROMPTSTO VER } temporary',
+    `MENUXY takes numbers below 0 as 0 and above 140 as 140 (${shown.slice(-2)})`);
   runLine('REWRITE');
   assert(shown.at(-1) === '{ DISTRIB EXPLN EXP2POW FDISTRIB LIN LNCOLLECT SIMPLIFY XNUM XQ } temporary', `REWRITE shows the rewriting commands (${shown.at(-1)})`);
   assertThrows(() => runLine('"a" 3 MENUXY'), /Bad argument type/, 'MENUXY wants numbers');

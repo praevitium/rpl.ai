@@ -57,6 +57,10 @@ export const state = {
   // standardKeys is false after S DELKEYS.
   userKeys: [],
   standardKeys: true,
+  // →HEADER, →KEYTIME and →NDISP are checked and kept; the header, key handling and program view are rpl.ai's own.
+  headerLines: 2,
+  keyTime: 1138,
+  programLines: 9,
 };
 
 function _dispatchState() {
@@ -483,6 +487,12 @@ export function setRealMaxExp(n) {
   state.realMaxExp = n;
   _emit();
 }
+
+export function getHeaderLines() { return state.headerLines; }
+export function setHeaderLines(n) { state.headerLines = n; }
+export function getKeyTime() { return state.keyTime; }
+export function setKeyTime(n) { state.keyTime = n; }
+export function setProgramLines(n) { state.programLines = n; }
 
 export function resetRealMaxExp() {
   setRealMaxExp(REAL_MAX_EXP_DEFAULT);
@@ -935,7 +945,7 @@ const CAPTURED_SCALARS = [
   'angle', 'coordMode', 'displayMode', 'displayDigits', 'lastError',
   'wordsize', 'binaryBase', 'textbookMode', 'approxMode', 'complexMode',
   'lastFitModel', 'casVx', 'casModulo', 'realAssume', 'halted', 'promptMessage', 'prngSeed',
-  'realMaxExp', 'lcd', 'alarms', 'pict', 'userKeys', 'standardKeys',
+  'realMaxExp', 'lcd', 'alarms', 'pict', 'userKeys', 'standardKeys', 'headerLines', 'keyTime', 'programLines',
 ];
 
 export function captureCalcState() {

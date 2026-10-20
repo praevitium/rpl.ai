@@ -1,7 +1,9 @@
 import { isReal, Real, isInteger, Integer, isBinaryInteger, BinaryInteger, isRational, Rational, isComplex, Complex, isString, Str, isName, Name, isSymbolic, Symbolic, isList, RList, isVector, Vector, isMatrix, Matrix, isProgram, Program, isTagged, Tagged, isUnit, Unit } from '../types.js';
-import { register } from './registry.js';
+import { register, lookup } from './registry.js';
+import { format } from '../formatter.js';
+import { rulesProgram } from './internal.js';
 import { RPLError } from '../stack.js';
-import { getUserKeys, setUserKeys, standardKeysActive, inScratchState } from '../state.js';
+import { getUserKeys, setUserKeys, standardKeysActive, inScratchState, getHeaderLines, setHeaderLines, getKeyTime, setKeyTime, setProgramLines } from '../state.js';
 
 
 
@@ -56,9 +58,45 @@ register('NEWOB', (s) => {
 
 // There is no bounded memory pool to measure; a fixed 1 GiB keeps MEM
 // comparisons predictable.
-// The app passes in its build's version; the rpl core can't read the generated build-info.js.
+// The app passes in its build's version and date; the rpl core can't read the generated build-info.js.
 let _version = 'rpl.ai';
-export function setVersion(version) { _version = `rpl.ai ${version}`; }
+let _buildDate = '';
+export function setVersion(version, date = '') {
+  _version = `rpl.ai ${version}`;
+  _buildDate = date.replace(/-/g, '');
+}
+
+// VER: Giac's version 1.5 with the build date run on, as V.YYYYMMDD runs a version and a date together.
+register('VER', (s) => {
+  s.push(Real(Number(`1.5${_buildDate}`)));
+}, { category: 'System', categoryOrder: 0.51, label: 'VER' });
+
+const DEDICATION = 'rpl.ai is dedicated to everyone who learned to think in RPN on an HP calculator, and to the people who built them.';
+
+register('DEDICACE', (s) => {
+  const [v] = s.popN(1);
+  const extra = isString(v) ? v.value : format(v).replace(/^`|`$/g, '');
+  s.push(Str(`${DEDICATION} ${extra}`));
+}, { category: 'System', categoryOrder: 0.52, label: 'DEDICACE' });
+
+register('RULES', (s) => {
+  s.push(rulesProgram());
+  lookup('EVAL').fn(s);
+}, { category: 'System', categoryOrder: 0.53, label: 'RULES' });
+
+function _settingArg(s, min, max) {
+  const [v] = s.popN(1);
+  if (!(isReal(v) || isInteger(v))) throw new RPLError('Bad argument type');
+  const n = Math.trunc(Number(v.value));
+  if (!(n >= min && n <= max)) throw new RPLError('Bad argument value');
+  return n;
+}
+
+register('→HEADER', (s) => setHeaderLines(_settingArg(s, 0, 2)), { category: 'System', categoryOrder: 0.54, label: '→HEADER' });
+register('HEADER→', (s) => s.push(Real(getHeaderLines())), { category: 'System', categoryOrder: 0.55, label: 'HEADER→' });
+register('→KEYTIME', (s) => setKeyTime(_settingArg(s, 0, 4096)), { category: 'System', categoryOrder: 0.56, label: '→KEYTIME' });
+register('KEYTIME→', (s) => s.push(Real(getKeyTime())), { category: 'System', categoryOrder: 0.57, label: 'KEYTIME→' });
+register('→NDISP', (s) => setProgramLines(_settingArg(s, 1, Infinity)), { category: 'System', categoryOrder: 0.58, label: '→NDISP' });
 
 register('VERSION', (s) => {
   s.push(Str(_version));

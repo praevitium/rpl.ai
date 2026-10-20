@@ -919,5 +919,22 @@ function quotaError() {
   setRealAssume([]);
 }
 
+/* --- →HEADER and →KEYTIME survive snapshot / rehydrate; →NDISP starts over, as at the HP's warmstart. --- */
+{
+  const { setHeaderLines, getHeaderLines, setKeyTime, getKeyTime } = await import('../www/src/rpl/state.js');
+  setHeaderLines(1);
+  setKeyTime(500);
+  const saved = JSON.parse(JSON.stringify(snapshot(new Stack())));
+  setHeaderLines(2);
+  setKeyTime(1138);
+  rehydrate(saved, new Stack());
+  assert(getHeaderLines() === 1 && getKeyTime() === 500, '→HEADER and →KEYTIME settings come back');
+  const legacy = { ...saved };
+  delete legacy.headerLines;
+  delete legacy.keyTime;
+  rehydrate(legacy, new Stack());
+  assert(getHeaderLines() === 2 && getKeyTime() === 1138, 'a save from before them loads with 2 header lines and 1138 ticks');
+}
+
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');
 process.exit(failed ? 1 : 0);

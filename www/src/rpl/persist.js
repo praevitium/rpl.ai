@@ -114,6 +114,8 @@ export function snapshot(stack) {
     pict: encode(state.pict),
     userKeys: state.userKeys.map(([key, value]) => [key, encode(value)]),
     standardKeys: state.standardKeys,
+    headerLines: state.headerLines,
+    keyTime: state.keyTime,
   };
 }
 
@@ -236,6 +238,8 @@ export function rehydrate(snap, stack) {
   state.pict = pict;
   state.userKeys = userKeys;
   state.standardKeys = snap.standardKeys !== false;
+  state.headerLines = [0, 1, 2].includes(snap.headerLines) ? snap.headerLines : 2;
+  state.keyTime = Number.isInteger(snap.keyTime) && snap.keyTime >= 0 && snap.keyTime <= 4096 ? snap.keyTime : 1138;
 
   stack.restore(items);
   notify();

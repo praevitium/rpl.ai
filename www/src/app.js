@@ -38,7 +38,7 @@ import {
   batchStateNotifications,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
-import { VERSION } from './build-info.js';
+import { VERSION, DATE } from './build-info.js';
 import { beep, alarmBeep } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest } from './rpl/ops/time.js';
 import { _hp50TypeCode } from './rpl/ops/internal.js';
@@ -175,7 +175,7 @@ class App {
     setEditHook(({ level, name, line }) => setTimeout(() => (name ? this.editVariable(name, { line }) : this.editLevel(level, { line }))));
     setViewHook((value) => setTimeout(() => this._viewValue(value, 'View')));
     setBeepHook(beep);
-    setVersion(VERSION);
+    setVersion(VERSION, DATE);
     setConlibHook(() => this.showConstants());
     setKeyHook((code, user) => setTimeout(() => this.evalKey(code, user)));
     loadCommandReference().then((m) => { this.reference = m; this.menubar.render(); }).catch(() => {});
