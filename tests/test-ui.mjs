@@ -2149,6 +2149,13 @@ setAngle('RAD');
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const short = css.slice(css.indexOf('@media (max-height: 330px) {\n  :root[data-keyboard] .input-top'));
+  assert(/^@media \(max-height: 330px\) \{[^@]*:root\[data-keyboard\]\[data-view="minimal"\] \.cmdline\.editing \{ border-color: color-mix\(in oklab, var\(--amber\) 60%, transparent\); box-shadow: 0 0 0 3px var\(--amber-dim\);/.test(short),
+    'minimal view, keyboard up on a short screen: a level being edited outlines the command line in amber, since the status line and its edit pencil are hidden there and Enter would otherwise replace level 1 unannounced');
+}
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const short = css.slice(css.indexOf('@media (max-height: 330px) {\n  :root[data-keyboard] .input-top'));
   assert(/:root:is\(\[data-keyboard\], \[data-short\]\) \.bn:not\(\.halt\) \{ grid-template-columns: minmax\(0, 1fr\) auto; align-items: center; padding-block: 6px; \}/.test(css)
     && /:root:is\(\[data-keyboard\], \[data-short\]\) \.bn:not\(\.halt\) :is\(\.bn-ico, \.bn-d\) \{ display: none; \}/.test(css)
     && /:root:is\(\[data-keyboard\], \[data-short\]\) \.bn:not\(\.halt\) \.bn-f \{ grid-column: 1 \/ -1; flex-wrap: nowrap; overflow-x: auto;/.test(css)

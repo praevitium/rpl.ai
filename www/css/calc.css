@@ -2231,6 +2231,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   :root[data-keyboard] .input-top, :root[data-keyboard] .input-hint,
   :root[data-keyboard] .mx-foot, :root[data-keyboard] .status-line, :root[data-keyboard] .appbar, :root[data-keyboard] .menubar, :root[data-keyboard] .st-more { display: none; }
   :root[data-keyboard] .app { grid-template-rows: minmax(0, 1fr); }
+  /* Minimal view's edit pencil goes with its status line, so its command line takes the amber outline the other views show. */
+  :root[data-keyboard][data-view="minimal"] .cmdline.editing { border-color: color-mix(in oklab, var(--amber) 60%, transparent); box-shadow: 0 0 0 3px var(--amber-dim); padding-inline: 8px; }
   :root:is([data-keyboard], [data-short]) .mx-grid-wrap { max-height: 92px; }
   /* In landscape the writers' keys sit beside the formula or matrix; on a narrow screen they stay under it, or they push it off the edge. */
   @container app (min-width: 480px) {
