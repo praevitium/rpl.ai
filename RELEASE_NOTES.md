@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.69 (2026-10-20)
+**Latest release:** v0.7.70 (2026-10-20)
 
 ---
 
@@ -18,6 +18,18 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.7.70 — 2026-10-20
+
+- SIDENS, silicon's intrinsic carrier density.
+  - `300 SIDENS` gives about 9.89E9 per cm³. A temperature unit gives the
+    answer in `1/cm^3`, such as `26.85_°C SIDENS`, and a name gives
+    `'SIDENS(T)'`.
+  - It uses the textbook model √(Nc·Nv)·(T/300)^1.5·e^(−Eg/2kT), with
+    Sze's densities of states and Varshni's band gap. The HP's own fit is
+    not published; this is noted in its reference entry and the README.
 
 ---
 
