@@ -1375,6 +1375,7 @@ function _dispatchOp(op, s, name) {
       named.argsReturned = e.argsReturned;
       named.errorNumber = e.errorNumber;
       named.depth = depth;
+      named.missing = e.missing;
       throw named;
     }
     throw e;

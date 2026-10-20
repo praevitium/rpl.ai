@@ -46,7 +46,10 @@ export const ERROR_KINDS = Object.freeze({
       if (!c.args) return `${cmd} needs more values than the stack holds.`;
       return `${cmd} needs ${valuesText(c.args)}; the stack ${c.seenDepth === c.depth ? 'has' : 'had'} ${c.seenDepth ? valuesText(c.seenDepth) : 'none'}.`;
     },
-    detail: (c) => (c.signature ? `${c.command} takes ${c.signature}. Put the missing value on the stack first, then run it again.` : 'Put the missing values on the stack first, then run it again.'),
+    detail: (c) => {
+      const put = `Put the missing ${c.args - c.seenDepth === 1 ? 'value' : 'values'} on the stack first, then run it again.`;
+      return c.signature ? `${c.command} takes ${c.signature}. ${put}` : put;
+    },
     fixes: (c) => [{ id: 'edit-line', label: c.hasLine ? 'Fix the line' : 'Type a value' }, ...(c.command ? [{ id: 'help', label: `${c.command} reference` }] : [])],
   },
   badType: {
@@ -170,13 +173,13 @@ export function describeError(message, { failure = null, stack = [], depth = 0, 
   const command = parsed.command ?? failure?.op ?? null;
   const info = command ? commandInfo(command) : null;
   const signature = info?.signature ?? '';
-  const args = info?.inputs ?? null;
+  const failedHere = failure && (failure.op == null || parsed.commands.includes(failure.op));
+  const seenDepth = failedHere && failure.depth != null ? failure.depth : depth;
+  const args = info?.inputs ?? (failedHere && failure.missing != null ? seenDepth + failure.missing : null);
   const seen = failure && (!parsed.command || failure.op === parsed.command) ? failure.levels : [];
   const count = Math.min(seen.length, args ?? 2);
   const onStack = count > 0 && seen.slice(0, count).every((v, i) => stack[i] === v);
   const culprits = seen.slice(0, count).map((value, i) => ({ level: i + 1, ...describe(value) }));
-  const failedHere = failure && (failure.op == null || parsed.commands.includes(failure.op));
-  const seenDepth = failedHere && failure.depth != null ? failure.depth : depth;
   const top = stack.length ? describe(stack[0]) : null;
   const storesTop = /^(Vector|Matrix)$/.test(top?.type) && !!command && !['RCLΣ', 'Σ-'].includes(command);
   const formula = kind === 'syntax' ? formulaOf(line) : '';

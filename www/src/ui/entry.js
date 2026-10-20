@@ -529,7 +529,7 @@ export class Entry {
         this.flashNotice('Program aborted');
         return false;
       }
-      if (!this.failure && e.depth != null) this.failure = { op: null, levels: [], depth: e.depth };
+      if (!this.failure && e.depth != null) this.failure = { op: null, levels: [], depth: e.depth, missing: e.missing };
       if (!keepPartial) this.stack.restore(rollback);
       this._dropNoOpUndoStep();
       this.flashError(context ? new RPLError(`${context}: ${errorText(e)}`) : e);
@@ -556,7 +556,7 @@ export class Entry {
     } catch (e) {
       if (e instanceof RPLAbort) throw e;
       if (!keepsFailureStack(e)) this.stack.restore(before);
-      this.failure = { op: tag, levels: seen, depth: e.depth ?? before.length };
+      this.failure = { op: tag, levels: seen, depth: e.depth ?? before.length, missing: e.missing };
       throw new RPLError(`${tag}: ${errorText(e)}`);
     }
   }

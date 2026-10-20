@@ -79,7 +79,7 @@ export class Stack {
   }
 
   pop() {
-    if (this._items.length === 0) throw new RPLError('Too few arguments');
+    if (this._items.length === 0) throw tooFew(1);
     this._touch(this._items.length - 1);
     const v = this._items.pop();
     this._emit();
@@ -88,7 +88,7 @@ export class Stack {
 
   // Returns [level n, ..., level 1].
   popN(n) {
-    if (this._items.length < n) throw new RPLError('Too few arguments');
+    if (this._items.length < n) throw tooFew(n - this._items.length);
     this._touch(this._items.length - n);
     const out = this._items.splice(this._items.length - n, n);
     this._emit();
@@ -307,6 +307,13 @@ Stack.UNDO_MAX = 100;
 
 export class RPLError extends Error {
   constructor(msg) { super(msg); this.name = 'RPLError'; }
+}
+
+// Says how many more values the command wanted, so its banner can count them where the manual gives no count.
+function tooFew(missing) {
+  const e = new RPLError('Too few arguments');
+  e.missing = missing;
+  return e;
 }
 
 // Thrown by ABORT.  Not an RPLError, so IFERR cannot trap it.

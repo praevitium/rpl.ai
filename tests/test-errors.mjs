@@ -123,6 +123,20 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
 }
 
 {
+  const { Stack } = await import('../www/src/rpl/stack.js');
+  const s = new Stack();
+  s.push(Str('hi'));
+  let thrown = null;
+  try { s.popN(2); } catch (e) { thrown = e; }
+  assert(thrown?.missing === 1, 'Stack.popN: a too-few error says how many more values it wanted');
+  const xroot = describeError('XROOT: Too few arguments', ctx({ failure: { op: 'XROOT', levels: [Str('hi')], depth: 1, missing: 1 }, depth: 1 }));
+  assert(xroot.title === 'XROOT needs two values; the stack has one value.' && xroot.detail === 'Put the missing value on the stack first, then run it again.',
+    `describeError: a command whose manual page gives no input count counts from what the stack lacked, where it said XROOT needs more values than the stack holds (${xroot.title})`);
+  const swap = describeError('+: Too few arguments', ctx({ depth: 0 }));
+  assert(/Put the missing values on/.test(swap.detail), 'describeError: two missing values are values');
+}
+
+{
   const html = haltedBannerHtml({ kind: 'prompt', prompt: 'Enter R2 in kΩ', programHtml: '« R1 <mark>HALT</mark> »' });
   assert(html.includes('Enter R2 in kΩ') && html.includes('data-bn="cont"') && html.includes('data-bn="sst"') && html.includes('data-bn="into"') && html.includes('data-bn="kill"'),
     'haltedBannerHtml: shows the PROMPT text and Continue, Step, Step into and Stop');
