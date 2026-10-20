@@ -902,5 +902,22 @@ function quotaError() {
   assert(getUserKeys().length === 0 && standardKeysActive(), 'a save from before user keys loads with none and the standard keys');
 }
 
+/* --- REALASSUME (ASSUME, ADDTOREAL) survives snapshot / rehydrate. --- */
+{
+  const { setRealAssume, getRealAssume } = await import('../www/src/rpl/state.js');
+  setRealAssume([Name('X'), Symbolic(Bin('≥', Var('Z'), Num(0)))]);
+  const saved = JSON.parse(JSON.stringify(snapshot(new Stack())));
+  setRealAssume([]);
+  rehydrate(saved, new Stack());
+  const back = getRealAssume();
+  assert(back.length === 2 && isName(back[0]) && back[0].id === 'X' && isSymbolic(back[1]) && back[1].expr.op === '≥',
+    'REALASSUME comes back with its name and its condition');
+  const legacy = { ...saved };
+  delete legacy.realAssume;
+  rehydrate(legacy, new Stack());
+  assert(getRealAssume().length === 0, 'a save from before ASSUME loads with no assumptions');
+  setRealAssume([]);
+}
+
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');
 process.exit(failed ? 1 : 0);

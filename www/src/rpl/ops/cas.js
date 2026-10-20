@@ -1,9 +1,9 @@
 import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isList, Real, Name, Integer, isComplex, Complex, isVector, Vector, isMatrix, Matrix, isCasIdentifier, isBinaryInteger, isRational, isUnit, Tagged, Program, isProgram } from '../types.js';
 import { giac } from '../cas/giac-engine.mjs';
 import { RPLError, checkTimeLimit } from '../stack.js';
-import { buildGiacCmd, giacToAst, splitGiacList, astToGiac, isGiacErrorString } from '../cas/giac-convert.mjs';
+import { buildGiacCmd, giacToAst, splitGiacList, astToGiac, isGiacErrorString, assumedName } from '../cas/giac-convert.mjs';
 import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction, LOGIC_ARITY, formatAlgebra, astEqual } from '../algebra.js';
-import { getComplexMode, getCasVx, setCasVx, getApproxMode, getCasModulo, setApproxMode, setComplexMode, resetCasVx, resetCasModulo } from '../state.js';
+import { getComplexMode, getCasVx, setCasVx, getApproxMode, getCasModulo, setApproxMode, setComplexMode, resetCasVx, resetCasModulo, getRealAssume, setRealAssume } from '../state.js';
 import { register, lookup } from './registry.js';
 import { _astToRplValue, _entryWise, _pushCasResult, _isSymOperand, _toAst, _substitute, _withListUnary, _withTaggedUnary, _withVMUnary, recallVar, storeVar, _evalSymbolic, TRUE, FALSE, _expandUserCalls } from './internal.js';
 
@@ -777,6 +777,44 @@ register('ZEROS', (s) => {
   const roots = (splitGiacList(raw) ?? (trimmed ? [trimmed] : [])).map((r) => giacToAst(r));
   s.push(RList(_byValue(roots).map(_casValue)));
 }, { category: 'CAS / symbolic', categoryOrder: 10.5, label: "ZEROS" });
+
+
+// REALASSUME: names the CAS takes as real (ADDTOREAL) and ASSUME's conditions on them, which Giac
+// then uses, so with 'K>0' assumed the integral of EXP(-K*T) from 0 to ∞ is 1/K.
+const _ASSUMABLE = new Set(['<', '>', '≤', '≥']);
+
+function _conditions(ast) {
+  if (ast.kind === 'fn' && ast.name === 'AND') return ast.args.flatMap(_conditions);
+  if (ast.kind === 'bin' && _ASSUMABLE.has(ast.op) && (ast.l.kind === 'var' || ast.r.kind === 'var')) return [ast];
+  throw new RPLError('Bad argument value');
+}
+
+const _entryName = (e) => (isName(e) ? e.id : assumedName(e.expr));
+const _nameList = (v) => (isList(v) ? v.items : [v]).map(_varName);
+const _withoutNames = (names) => getRealAssume().filter((e) => !names.has(_entryName(e)));
+
+register('ASSUME', (s) => {
+  const [v] = s.popN(1);
+  const conds = (isList(v) ? v.items : [v]).flatMap((item) => {
+    if (!isSymbolic(item)) throw new RPLError('Bad argument type');
+    return _conditions(item.expr);
+  });
+  setRealAssume([..._withoutNames(new Set(conds.map(assumedName))), ...conds.map((c) => Symbolic(c))]);
+  s.push(v);
+}, { category: 'CAS / symbolic', categoryOrder: 10.6, label: "ASSUME" });
+
+register('UNASSUME', (s) => {
+  const [v] = s.popN(1);
+  setRealAssume(_withoutNames(new Set(_nameList(v))));
+  s.push(v);
+}, { category: 'CAS / symbolic', categoryOrder: 10.7, label: "UNASSUME" });
+
+// AUR: a name already there loses ASSUME's conditions and stays real.
+register('ADDTOREAL', (s) => {
+  const [v] = s.popN(1);
+  const names = _nameList(v);
+  setRealAssume([..._withoutNames(new Set(names)), ...[...new Set(names)].map((n) => Name(n))]);
+}, { category: 'CAS / symbolic', categoryOrder: 10.8, label: "ADDTOREAL" });
 
 
 const _substArgc = (s) => (s.depth && (isList(s.peek()) || _isEquationSymbolic(s.peek())) ? 2 : 3);

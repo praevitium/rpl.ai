@@ -42,6 +42,7 @@ export const state = {
   lastFitModel: null,        // { kind, a, b } for PREDV / PREDX; not persisted
   casVx: 'x',                // the HP50 uses 'X'; lowercase matches the keyboard
   casModulo: 13n,
+  realAssume: [],            // REALASSUME: names the CAS takes as real, and ASSUME's conditions
   realMaxExp: REAL_MAX_EXP_DEFAULT,
   // Suspended programs, oldest first, as { generator, tokens, index, kind, dialog, stepping, prompt }.
   // halted is the newest one, which CONT resumes first; promptMessage is its message.
@@ -381,6 +382,10 @@ export function setCasModulo(m) {
 export function getCasModulo() { return state.casModulo; }
 
 export function resetCasModulo() { _set('casModulo', 13n); }
+
+export function getRealAssume() { return state.realAssume; }
+
+export function setRealAssume(entries) { _set('realAssume', [...entries]); }
 
 function _validFlag(n) {
   const k = Math.trunc(Number(n));
@@ -929,7 +934,7 @@ export function redoVarState() {
 const CAPTURED_SCALARS = [
   'angle', 'coordMode', 'displayMode', 'displayDigits', 'lastError',
   'wordsize', 'binaryBase', 'textbookMode', 'approxMode', 'complexMode',
-  'lastFitModel', 'casVx', 'casModulo', 'halted', 'promptMessage', 'prngSeed',
+  'lastFitModel', 'casVx', 'casModulo', 'realAssume', 'halted', 'promptMessage', 'prngSeed',
   'realMaxExp', 'lcd', 'alarms', 'pict', 'userKeys', 'standardKeys',
 ];
 

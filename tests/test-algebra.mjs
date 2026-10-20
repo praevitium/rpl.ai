@@ -8931,3 +8931,25 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(top("'X^2*Y' 'X' DERIV") === '`2*X*Y`', 'DERIV of one expression by one variable is unchanged');
   giac._clear();
 }
+
+// ASSUME, UNASSUME and ADDTOREAL keep REALASSUME, which the engine sends to Giac as assume, additionally and purge.
+{
+  const { getRealAssume, setRealAssume } = await import('../www/src/rpl/state.js');
+  const { assumeCommands } = await import('../www/src/rpl/cas/giac-convert.mjs');
+  const sent = () => assumeCommands(getRealAssume()).cmds.join('; ');
+  setRealAssume([]);
+  assert(format(runLine("'Z≥0' ASSUME").peek()) === '`Z≥0`', 'ASSUME gives back its condition, as the AUR says');
+  assert(sent() === 'assume(Z>=0)', 'ASSUME Z≥0 becomes assume(Z>=0)');
+  runLine("'Z>1 AND Z≤5' ASSUME");
+  assert(sent() === 'assume(Z>1); additionally(Z<=5)', 'a new ASSUME on Z replaces the old one, its AND parts in turn');
+  runLine("{ 'K>0' } ASSUME 'X' ADDTOREAL");
+  assert(sent() === 'assume(Z>1); additionally(Z<=5); assume(K>0); assume(X,real)', 'ADDTOREAL adds a name the CAS takes as real');
+  runLine("'K' ADDTOREAL");
+  assert(sent() === 'assume(Z>1); additionally(Z<=5); assume(X,real); assume(K,real)', 'ADDTOREAL drops ASSUME\'s condition and keeps the name real');
+  assert(format(runLine('{ Z K } UNASSUME').peek()) === '{ Z K }' && sent() === 'assume(X,real)', 'UNASSUME removes names and gives them back');
+  runLine("'W≥MINR' ASSUME");
+  assert(sent() === 'assume(X,real); assume(W>0)', 'W≥MINR, the AUR\'s way to say positive, is W>0 for Giac');
+  assertThrows(() => runLine("'X+1' ASSUME"), /Bad argument value/, 'ASSUME refuses what is not a comparison');
+  assertThrows(() => runLine('5 ASSUME'), /Bad argument type/, 'ASSUME refuses a number');
+  setRealAssume([]);
+}

@@ -3,7 +3,7 @@
 // Conversion between the algebra AST and the syntax Giac's caseval reads
 // and writes: the same infix surface, but with Giac's function names.
 
-import { parseAlgebra, Var, Neg, numText } from "../algebra.js";
+import { parseAlgebra, Var, Neg, Bin, Num, numText } from "../algebra.js";
 import { isCasIdentifier } from "../types.js";
 import { RPLError } from "../stack.js";
 
@@ -11,6 +11,30 @@ import { RPLError } from "../stack.js";
 // character Giac reads specially (`#` starts a comment) into the command.
 function assertValidCasName(name) {
   if (!isCasIdentifier(name)) throw new RPLError(`Invalid name: ${name}`);
+}
+
+// The name a REALASSUME condition is about: the side of the comparison that is a name.
+export const assumedName = (cond) => (cond.l.kind === "var" ? cond.l.name : cond.r.name);
+
+// The AUR writes Z≥MINR for "Z is positive"; Giac reads that as Z>0.
+const minrBound = (c) => (c.r.kind === "var" && c.r.name === "MINR" && (c.op === "≥" || c.op === ">") ? Bin(">", c.l, Num(0)) : c);
+
+// What Giac needs for REALASSUME (Names and Symbolic conditions): per name, assume(N,real), or its
+// conditions as one assume and then additionally.
+export function assumeCommands(entries) {
+  const byName = new Map();
+  for (const e of entries) {
+    const name = e.expr ? assumedName(e.expr) : e.id;
+    assertValidCasName(name);
+    if (!byName.has(name)) byName.set(name, []);
+    if (e.expr) byName.get(name).push(e.expr);
+  }
+  const cmds = [];
+  for (const [name, conds] of byName) {
+    if (!conds.length) cmds.push(`assume(${name},real)`);
+    conds.forEach((c, i) => cmds.push(`${i ? "additionally" : "assume"}(${astToGiac(minrBound(c))})`));
+  }
+  return { names: [...byName.keys()], cmds };
 }
 
 function infGiacFromName(name) {

@@ -4,7 +4,7 @@
 // stay ordinary sync ops; the price is that a slow call blocks its thread.
 // Node (the tests) gets a fixture-backed mock: the wasm build is browser-only.
 
-import { stripGiacQuotes, stripGiacApproxSuffix } from "./giac-convert.mjs";
+import { stripGiacQuotes, stripGiacApproxSuffix, assumeCommands } from "./giac-convert.mjs";
 import { state as calcState } from "../state.js";
 import { RPLError, RPLInterrupt } from "../stack.js";
 
@@ -43,6 +43,8 @@ class BrowserGiacEngine {
     this._ready = null;
     this._caseval = null;
     this._angleSent = null;
+    this._assumeSent = null;
+    this._assumedNames = [];
   }
 
   // Giac has no gradians, so GRD symbolic work runs in radians, as the HP's CAS does.
@@ -51,6 +53,17 @@ class BrowserGiacEngine {
     if (this._angleSent === want) return;
     this._caseval(`angle_radian:=${want}`);
     this._angleSent = want;
+  }
+
+  // REALASSUME goes to Giac again whenever it changes, so Undo, a restore or a reload carry it too.
+  _syncAssumptions() {
+    const { names, cmds } = assumeCommands(calcState.realAssume);
+    const sent = cmds.join(";");
+    if (this._assumeSent === sent) return;
+    for (const name of this._assumedNames) this._caseval(`purge(${name})`);
+    for (const cmd of cmds) this._caseval(cmd);
+    this._assumedNames = names;
+    this._assumeSent = sent;
   }
 
   init() {
@@ -105,10 +118,12 @@ class BrowserGiacEngine {
     const sp = globalThis.Module.stackSave();
     try {
       this._syncAngleMode();
+      this._syncAssumptions();
       return normalize(this._caseval(cmd));
     } catch {
       globalThis.Module.stackRestore(sp);
       this._angleSent = null;
+      this._assumeSent = null;
       throw new RPLError("Bad argument value");
     }
   }

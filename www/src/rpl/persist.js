@@ -14,7 +14,7 @@
    saves are rejected instead of loading as garbage. */
 
 import {
-  state, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo,
+  state, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo, setRealAssume,
   ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX, isModeFlag,
 } from './state.js';
 import { TYPES, Decimal, BIN_BASES, Grob, isStorableHpName } from './types.js';
@@ -109,6 +109,7 @@ export function snapshot(stack) {
     prngSeed: encode(state.prngSeed),
     casVx: state.casVx,
     casModulo: encode(state.casModulo),
+    realAssume: state.realAssume.map(encode),
     alarms: state.alarms,
     pict: encode(state.pict),
     userKeys: state.userKeys.map(([key, value]) => [key, encode(value)]),
@@ -130,6 +131,19 @@ function decodeUserKeys(snap) {
     if (!Array.isArray(pair) || !Number.isInteger(pair[0])) return [];
     try {
       return [[pair[0], decode(pair[1])]];
+    } catch {
+      return [];
+    }
+  });
+}
+
+// REALASSUME holds names and comparisons; anything else is dropped.
+function decodeRealAssume(snap) {
+  if (!Array.isArray(snap.realAssume)) return [];
+  return snap.realAssume.flatMap((entry) => {
+    try {
+      const v = decode(entry);
+      return v && (v.type === TYPES.NAME || v.type === TYPES.SYMBOLIC) ? [v] : [];
     } catch {
       return [];
     }
@@ -214,6 +228,7 @@ export function rehydrate(snap, stack) {
   setCasVx(vx === 'X' ? 'x' : vx);
 
   setCasModulo(decodeCasModulo(snap));
+  setRealAssume(decodeRealAssume(snap));
 
   restoreModes(snap.modes);
   state.alarms = (Array.isArray(snap.alarms) ? snap.alarms.filter(validAlarm) : [])
