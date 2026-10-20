@@ -618,7 +618,10 @@ PICT holds a graphics object: LINE, TLINE, BOX, ARC, PIXON, PIXOFF, DRAX
 and LABEL draw on it, GOR, GXOR, SUB, REPL and NEG work on it and on other
 graphics objects (GROBADD stacks two), and →GROB draws any object as one in
 rpl.ai's own pixel font. PVIEW and PICTURE show PICT over the plot, ANIMATE
-plays graphics objects over it in turn, and TEXT closes it. The plot-window
+plays graphics objects over it in turn, and TEXT closes it. PICTURE brings
+the HP's graphics cursor: the arrow keys move it a pixel at a time, a tap
+or click puts it anywhere, and Enter, or the button that shows its point,
+puts (x,y) on the stack; in Trace mode Enter puts the point on the curve. The plot-window
 commands (XRNG, YRNG, CENTR, SCALE, AUTO, INDEP, RES, AXES and the rest)
 set PPAR, and plots start in its window, follow its INDEP, DEPND and RES
 and draw its axes. XVOL, YVOL, ZVOL, XXRNG, YYRNG, EYEPT, NUMX and NUMY set
@@ -955,8 +958,8 @@ Catalog and the command reference mark what is available. Not there yet:
 
 - the HP's numbered menus for MENU and TMENU (a list, a name holding one
   or 0 work)
-- PICTURE's graphics cursor: PICTURE and PVIEW show PICT over the plot,
-  with no cursor to move over it
+- PICTURE's menu of drawing tools (DOT+, LINE, BOX and the rest); the
+  commands they stand for are here
 - units in symbolic commands: EXPAND, SOLVE and the like refuse an
   algebraic with units in it, which EVAL and →NUM work out
 
