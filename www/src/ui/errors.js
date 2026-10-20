@@ -1,5 +1,6 @@
 import { RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
 import { parseTyped } from '../rpl/parser.js';
+import { getBinaryBase } from '../rpl/state.js';
 
 const CORE_MESSAGES = Object.freeze([
   'Too few arguments', 'Bad argument type', 'Bad argument value', 'Infinite result',
@@ -137,8 +138,15 @@ export const ERROR_KINDS = Object.freeze({
   syntax: {
     match: (p) => /^(Invalid algebraic|Bad complex literal|Syntax error|Unknown token|Malformed|Unexpected|Missing object|Empty parse|Expected one object|Text after END|(IF|IFERR|WHILE|FOR|START|CASE|DO)\b)/.test(p.core),
     title: () => "That line doesn't read as RPL.",
-    detail: (c) => `${c.message}.${c.formula ? ` In quotes it is a formula, '${c.formula}', that EVAL works out.` : ''} The line is still in the command line to fix.`,
-    fixes: (c) => [...(c.formula ? [{ id: 'formula', label: 'Evaluate as a formula', arg: c.formula }] : []), { id: 'edit-line', label: 'Fix the line' }, { id: 'explain', label: 'Explain' }],
+    detail: (c) => {
+      if (c.hex) return `${c.hex.word} has hex digits, but a # number reads in the current base${c.base ? `, ${c.base}` : ''}, as on the HP. ${c.hex.word}h reads as hex. The line is still in the command line to fix.`;
+      return `${c.message}.${c.formula ? ` In quotes it is a formula, '${c.formula}', that EVAL works out.` : ''} The line is still in the command line to fix.`;
+    },
+    fixes: (c) => [
+      ...(c.formula ? [{ id: 'formula', label: 'Evaluate as a formula', arg: c.formula }] : []),
+      ...(c.hex ? [{ id: 'line', label: `Read as hex, ${c.hex.word}h`, arg: c.hex.line }] : []),
+      { id: 'edit-line', label: 'Fix the line' }, { id: 'explain', label: 'Explain' },
+    ],
   },
   sigmaData: {
     match: (p) => p.core === 'Nonexistent ΣDAT',
@@ -167,6 +175,18 @@ export function formulaOf(line) {
   try { return parseTyped(`'${text}'`).length === 1 ? text : ''; } catch { return ''; }
 }
 
+const BASE_NAMES = Object.freeze({ d: 'DEC', o: 'OCT', b: 'BIN' });
+
+// As on the HP, #ff reads in the current base, so in DEC its hex digits need the h suffix: the line with each such number as hex.
+export function hexLineOf(line) {
+  const text = String(line ?? '');
+  const words = text.split(/(\s+)/);
+  const hexed = words.map((w) => (/^#[0-9a-f]*[a-f][0-9a-f]*$/i.test(w) ? `${w}h` : w));
+  if (hexed.join('') === text) return null;
+  try { parseTyped(hexed.join('')); } catch { return null; }
+  return { line: hexed.join(''), word: words.find((w, i) => hexed[i] !== w) };
+}
+
 export function describeError(message, { failure = null, stack = [], depth = 0, line = '', describe, commandInfo = () => null } = {}) {
   const parsed = parseErrorMessage(message);
   const [kind, spec] = Object.entries(ERROR_KINDS).find(([, k]) => k.match(parsed));
@@ -183,7 +203,8 @@ export function describeError(message, { failure = null, stack = [], depth = 0, 
   const top = stack.length ? describe(stack[0]) : null;
   const storesTop = /^(Vector|Matrix)$/.test(top?.type) && !!command && !['RCLΣ', 'Σ-'].includes(command);
   const formula = kind === 'syntax' ? formulaOf(line) : '';
-  const ctx = { ...parsed, message: String(message ?? ''), command, signature, args, depth, seenDepth, culprits, onStack, top, storesTop, formula, hasLine: !!String(line).trim() };
+  const hex = kind === 'syntax' ? hexLineOf(line) : null;
+  const ctx = { ...parsed, message: String(message ?? ''), command, signature, args, depth, seenDepth, culprits, onStack, top, storesTop, formula, hex, base: BASE_NAMES[getBinaryBase()], hasLine: !!String(line).trim() };
   return {
     kind,
     command,

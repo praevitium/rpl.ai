@@ -90,6 +90,15 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
 }
 
 {
+  const hex = describeError('Malformed d-base integer: #ffd', ctx({ line: '#ff 10 +' }));
+  assert(hex.kind === 'syntax' && hex.fixes[0].id === 'line' && hex.fixes[0].arg === '#ffh 10 +' && hex.fixes[0].label === 'Read as hex, #ffh'
+    && /^#ff has hex digits, but a # number reads in the current base, DEC, as on the HP\. #ffh reads as hex\./.test(hex.detail),
+    `syntax banner: #ff typed in DEC offers reading it as hex, #ffh, where it spoke of a #ffd nobody typed (${hex.detail})`);
+  assert(['#19 2 +', '#ffh 1 +', 'ZZQ?', '"#ff"'].every((line) => !describeError('Syntax error near x', ctx({ line })).fixes.some((f) => f.id === 'line')),
+    'syntax banner: no hex fix for a # number with only decimal digits, one already in hex, or no # number at all');
+}
+
+{
   const hi = Str('hi');
   const onStack =describeError('SIN: Bad argument type: expected real, got string', ctx({ failure: { op: 'SIN', levels: [hi] }, stack: [hi], depth: 1 }));
   assert(onStack.title === "SIN can't use a string." && onStack.culpritLevels.join() === '1',

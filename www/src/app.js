@@ -538,6 +538,7 @@ class App {
       case 'vars': this.drawers.open('vars'); return;
       case 'stosigma': this.dismissError(); this.entry.execOp('STOΣ', desc.command); return;
       case 'formula': this.dismissError(); this.entry.recall(`'${arg}' EVAL`); this.commitEntry(); return;
+      case 'line': this.dismissError(); this.entry.recall(arg); this.commitEntry(); return;
       case 'retry':
         this.dismissError();
         if (!this.entry.buffer.trim() && desc?.command && lookup(desc.command)) this.entry.execOp(desc.command);
