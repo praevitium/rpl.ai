@@ -438,6 +438,39 @@ export function _withVMUnary(handler) {
 }
 
 
+// A CAS command takes an array of expressions entry by entry, as EXPAND's AUR entry says: of argc arguments, the
+// one `at` levels down may be an array, and the command runs on each entry with the others; entries that fail
+// `only` pass through as they are. A vector whose entries all give equal-length vectors comes back a matrix,
+// so DERIV of [ f g ] by [ X Y ] is the Jacobian.
+export function _entryWise(handler, { argc = 1, at = null, only = null } = {}) {
+  return (s) => {
+    const n = typeof argc === 'function' ? argc(s) : argc;
+    const level = at ?? n;
+    const v = s.depth >= n ? s.peek(level) : null;
+    if (!isVector(v) && !isMatrix(v)) { handler(s); return; }
+    const args = s.popN(n);
+    const k = n - level;
+    const apply = (x) => {
+      if (only && !only(x)) return x;
+      const base = s.depth;
+      args.forEach((a, i) => s.push(i === k ? x : a));
+      handler(s);
+      if (s.depth !== base + 1) throw new RPLError('Bad argument value');
+      return s.pop();
+    };
+    if (isMatrix(v)) {
+      const rows = v.rows.map((row) => row.map(apply));
+      if (rows.flat().some((x) => isVector(x) || isMatrix(x))) throw new RPLError('Invalid dimension');
+      s.push(Matrix(rows));
+      return;
+    }
+    const items = v.items.map(apply);
+    const jacobian = items.length > 0 && items.every((x) => isVector(x) && x.items.length === items[0].items.length);
+    s.push(jacobian ? Matrix(items.map((x) => x.items)) : Vector(items));
+  };
+}
+
+
 export function _scalarSum(parts) {
   if (parts.length === 0) return Real(0);
   let acc = parts[0];

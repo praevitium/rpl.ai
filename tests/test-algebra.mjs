@@ -192,12 +192,11 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 // final `Bad argument type` throw BEFORE any Giac call; the empty stack
 // hits the wrapper's depth guard. `∫` is the AUR's definite integral, so it
 // needs four operands and rejects a non-symbolic integrand the same way.
+// Arrays are no longer refused: they go entry by entry (see the end of this file).
 {
   const bad = [
-    ['Vector', () => Vector([Real(1), Real(2)])],
     ['List', () => RList([Integer(1n)])],
     ['Complex', () => Complex(Real(1), Real(2))],
-    ['Matrix', () => Matrix([[Real(1), Real(2)], [Real(3), Real(4)]])],
   ];
   for (const op of ['INTVX', 'DERVX', 'DERIVX']) {
     for (const [label, make] of bad) {
@@ -7116,9 +7115,8 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 {
   const s = new Stack();
   s.push(Vector([Integer(1n), Integer(2n)]));
-  assertThrows(() => { lookup('LIN').fn(s); },
-               /Bad argument type/,
-               'session139: LIN on Vector → Bad argument type');
+  lookup('LIN').fn(s);
+  assert(format(s.peek()) === '[ 1 2 ]', 'session139: LIN on a vector of numbers goes entry by entry and leaves them');
 }
 
 
@@ -8897,4 +8895,39 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(top("'A' 2 RATIO") === '`A/2`', 'RATIO of a name and a number is A/2');
   assert(top("'RATIO(A,2)+1'") === '`A/2 + 1`', 'RATIO(A,2) in an expression reads as A/2');
   assertThrows(() => parseAlgebra('RATIO(A)'), /RATIO|argument/i, 'RATIO in an expression takes two arguments');
+}
+
+// CAS commands take an array of expressions entry by entry, as EXPAND's AUR entry says.
+{
+  const top = (line) => format(runLine(line).peek());
+  giac._setFixtures({
+    'diff(sin(T),T)': 'cos(T)',
+    'diff(T^2,T)': '2*T',
+    'diff(X^2*Y,X)': '2*X*Y',
+    'diff(X^2*Y,Y)': 'X^2',
+    'diff(X+Y,X)': '1',
+    'diff(X+Y,Y)': '1',
+    'subst(X,X=3)': '3',
+    'subst(1,X=3)': '1',
+    'subst(2,X=3)': '2',
+    'subst(Y,X=3)': 'Y',
+    'expand((X+1)^2)': 'X^2+2*X+1',
+    'factor(X^2-1)': '(X-1)*(X+1)',
+    'integrate(X^2,X)': 'X^3/3',
+    'integrate(X,X)': 'X^2/2',
+    'simplify(subst(integrate(T^2,T),T=1)-subst(integrate(T^2,T),T=0))': '1/3',
+    'simplify(subst(integrate(T,T),T=1)-subst(integrate(T,T),T=0))': '1/2',
+  });
+  assert(top("[[ 'SIN(T)' T ][ 'T^2' 1 ]] 'T' DERIV") === '[[ `COS(T)` 1 ][ `2*T` 0 ]]', 'DERIV differentiates each entry of a matrix, an exact number giving 0');
+  assert(top("'X^2*Y' [ X Y ] DERIV") === '[ `2*X*Y` `X^2` ]', 'DERIV by a vector of variables is the gradient, as the AUR says');
+  assert(top("[ 'X^2*Y' 'X+Y' ] [ X Y ] DERIV") === '[[ `2*X*Y` `X^2` ][ 1 1 ]]', 'DERIV of a vector of functions by a vector of variables is the Jacobian matrix');
+  assert(top("[[ X 1 ][ 2 Y ]] 'X=3' SUBST") === '[[ 3 1 ][ 2 Y ]]', 'SUBST substitutes in each entry of a matrix');
+  assert(top('[[ X 1 ][ 2 Y ]] { X 3 } |') === '[[ 3 1 ][ 2 Y ]]', '| substitutes in each entry of a matrix');
+  assert(top("[[ '(X+1)^2' 1 ][ 2 Y ]] EXPAND") === '[[ `X^2 + 2*X + 1` 1 ][ 2 Y ]]', 'EXPAND takes an array of expressions, as the AUR says');
+  assert(top("[ 'X^2-1' 12 7 ] FACTOR") === '[ `(X - 1)*(X + 1)` `2^2*3` 7 ]', 'FACTOR factors each entry, a prime staying a number');
+  assert(top("[ 'X^2' X ] INTVX") === '[ `X^3/3` `X^2/2` ]', 'INTVX integrates each entry by the one variable they share');
+  assert(top("0 1 [ 'T^2' T ] 'T' ∫") === '[ `1/3` `1/2` ]', '∫ integrates each entry of a vector between the limits');
+  assert(top("[[ 'SIN(X+Y)' 1 ]] TEXPAND") === '[[ `SIN(X)*COS(Y) + COS(X)*SIN(Y)` 1 ]]', 'TEXPAND rewrites each symbolic entry and leaves numbers');
+  assert(top("'X^2*Y' 'X' DERIV") === '`2*X*Y`', 'DERIV of one expression by one variable is unchanged');
+  giac._clear();
 }

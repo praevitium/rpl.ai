@@ -5,7 +5,7 @@ import { buildGiacCmd, giacToAst, splitGiacList, astToGiac, isGiacErrorString } 
 import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction, LOGIC_ARITY, formatAlgebra, astEqual } from '../algebra.js';
 import { getComplexMode, getCasVx, setCasVx, getApproxMode, getCasModulo, setApproxMode, setComplexMode, resetCasVx, resetCasModulo } from '../state.js';
 import { register, lookup } from './registry.js';
-import { _astToRplValue, _pushCasResult, _isSymOperand, _toAst, _substitute, _withListUnary, _withTaggedUnary, _withVMUnary, recallVar, storeVar, _evalSymbolic, TRUE, FALSE, _expandUserCalls } from './internal.js';
+import { _astToRplValue, _entryWise, _pushCasResult, _isSymOperand, _toAst, _substitute, _withListUnary, _withTaggedUnary, _withVMUnary, recallVar, storeVar, _evalSymbolic, TRUE, FALSE, _expandUserCalls } from './internal.js';
 
 
 
@@ -28,12 +28,12 @@ function _astArg(v) {
 
 // Numbers and bare names pass through, so these compose with any operand.
 function _casUnary(giacFn) {
-  return (s) => {
+  return _entryWise((s) => {
     const v = s.pop();
     if (isSymbolic(v)) _pushCasResult(s, _casEval(v.expr, (e) => `${giacFn}(${e})`));
     else if (isReal(v) || isInteger(v) || isRational(v) || isName(v)) s.push(v);
     else throw new RPLError('Bad argument type');
-  };
+  });
 }
 
 const _simplify = _casUnary('simplify');
@@ -47,7 +47,7 @@ register('EXPAN', lookup('EXPAND').fn, { category: 'CAS / symbolic', categoryOrd
 
 // FACTOR, and COLLECT, which factors over the integers only (no square roots), as the AUR says.
 function _factorWith(giacFn) {
-  return (s) => {
+  return _entryWise((s) => {
     const popped = s.pop();
     const v = isSymbolic(popped) && popped.expr.kind === 'num' ? _astToRplValue(popped.expr) : popped;
     if (isSymbolic(v)) {
@@ -63,7 +63,7 @@ function _factorWith(giacFn) {
       return;
     }
     throw new RPLError('Bad argument type');
-  };
+  });
 }
 
 const _collect = _factorWith('collect');
@@ -779,7 +779,9 @@ register('ZEROS', (s) => {
 }, { category: 'CAS / symbolic', categoryOrder: 10.5, label: "ZEROS" });
 
 
-register('SUBST', (s) => {
+const _substArgc = (s) => (s.depth && (isList(s.peek()) || _isEquationSymbolic(s.peek())) ? 2 : 3);
+
+register('SUBST', _entryWise((s) => {
   const top = s.peek();
   if (isList(top)) {
     const [exprVal, { items }] = s.popN(2);
@@ -803,12 +805,12 @@ register('SUBST', (s) => {
   }
   const [exprVal, varVal, valueVal] = s.popN(3);
   _pushSubstResult(s, _substVar(_astArg(exprVal), _varName(varVal), _astArg(valueVal)));
-}, { category: 'CAS / symbolic', categoryOrder: 4, label: "SUBST" });
+}, { argc: _substArgc }), { category: 'CAS / symbolic', categoryOrder: 4, label: "SUBST" });
 
 
 // The HP's | (where): each name in the list takes the value after it, without the CAS, and nothing is simplified,
 // so 'X^2+Y' { X 2 Y 3 } | gives '2^2+3' for EVAL; a number is left as it is.
-register('|', (s) => {
+register('|', _entryWise((s) => {
   const [v, list] = s.popN(2);
   if (!isList(list)) throw new RPLError('Bad argument type');
   if (list.items.length % 2) throw new RPLError('Bad argument value');
@@ -821,7 +823,7 @@ register('|', (s) => {
   if (isReal(v) || isInteger(v) || isRational(v) || isComplex(v)) { s.push(v); return; }
   if (!isSymbolic(v) && !isName(v)) throw new RPLError('Bad argument type');
   _pushSubstResult(s, _substitute(_toAst(v), bindings));
-}, { category: 'CAS / symbolic', categoryOrder: 4, label: "|" });
+}, { argc: 2 }), { category: 'CAS / symbolic', categoryOrder: 4, label: "|" });
 
 
 function _substVar(ast, name, valueAst) {
@@ -842,7 +844,8 @@ function _pushSubstResult(s, ast) {
 }
 
 
-register('DERIV', (s) => {
+// AUR: a vector of variables gives the gradient, and a vector of functions with it the Jacobian.
+register('DERIV', _entryWise(_entryWise((s) => {
   const [expr, varArg] = s.popN(2);
   const varName = _varName(varArg);
   if (isSymbolic(expr)) {
@@ -862,10 +865,10 @@ register('DERIV', (s) => {
     return;
   }
   throw new RPLError('Bad argument type');
-}, { category: 'CAS / symbolic', categoryOrder: 0, label: "DERIV" });
+}, { argc: 2, at: 1 }), { argc: 2 }), { category: 'CAS / symbolic', categoryOrder: 0, label: "DERIV" });
 
 
-register('INTEG', (s) => {
+register('INTEG', _entryWise((s) => {
   const [expr, varArg] = s.popN(2);
   const varName = _varName(varArg);
   if ((isInteger(expr) && expr.value === 0n) || (isReal(expr) && expr.value.isZero())) {
@@ -873,7 +876,7 @@ register('INTEG', (s) => {
     return;
   }
   s.push(Symbolic(_casEval(_astArg(expr), (e) => `integrate(${e},${varName})`, [varName])));
-}, { category: 'CAS / symbolic', categoryOrder: 2, label: "INTEG" });
+}, { argc: 2 }), { category: 'CAS / symbolic', categoryOrder: 2, label: "INTEG" });
 
 register('RISCH', lookup('INTEG').fn, { category: 'CAS / symbolic', categoryOrder: 2.1, label: "RISCH" });
 
@@ -923,7 +926,9 @@ function _mainVar(...asts) {
 function _vxForm(opName, pickVar = _vxFor) {
   return (s) => {
     if (s.depth < 1) throw new RPLError('Too few arguments');
-    s.push(Name(pickVar(_toAst(s.peek()))));
+    const top = s.peek();
+    const entries = isVector(top) ? top.items : isMatrix(top) ? top.rows.flat() : [top];
+    s.push(Name(pickVar(...entries.map(_toAst).filter(Boolean))));
     lookup(opName).fn(s);
   };
 }
@@ -933,7 +938,7 @@ register('SIGMAVX', _vxForm('SIGMA', _mainVar), { category: 'CAS / symbolic', ca
 
 // AUR: ∫ takes the lower limit, the upper limit, the integrand and the name, and
 // gives the definite integral; INTEG is the antiderivative.
-register('∫', (s) => {
+register('∫', _entryWise((s) => {
   const [lower, upper, integrand, varArg] = s.popN(4);
   const varName = _varName(varArg);
   if (!giac.isReady()) throw new RPLError('CAS not ready');
@@ -942,7 +947,7 @@ register('∫', (s) => {
   const b = astToGiac(endpoint(upper));
   const cmd = buildGiacCmd(_astArg(integrand), (e) => `simplify(subst(integrate(${e},${varName}),${varName}=${b})-subst(integrate(${e},${varName}),${varName}=${a}))`, [varName]);
   _pushCasResult(s, giacToAst(giac.caseval(cmd)));
-}, { category: 'CAS / symbolic', categoryOrder: 2.5, label: "∫" });
+}, { argc: 4, at: 2 }), { category: 'CAS / symbolic', categoryOrder: 2.5, label: "∫" });
 
 // AUR: Σ takes the index, its first and last values and the summand, and gives the sum, or the
 // symbolic sum while a limit is symbolic; a symbolic summand between numeric limits sums in closed form.
@@ -1139,11 +1144,11 @@ function _fnRewrites(map) {
 }
 
 function _rewriteOp(rewrite) {
-  return (s) => {
+  return _entryWise((s) => {
     const [v] = s.popN(1);
     if (!isSymbolic(v)) throw new RPLError('Bad argument type');
     s.push(Symbolic(_rewriteAst(v.expr, rewrite)));
-  };
+  }, { only: isSymbolic });
 }
 
 
@@ -1774,11 +1779,11 @@ register('DIRAC', _withTaggedUnary(_withListUnary(_withVMUnary((s) => {
 }))), { category: 'CAS / symbolic', categoryOrder: 30, label: "DIRAC" });
 
 
-register('TSIMP', (s) => {
+register('TSIMP', _entryWise((s) => {
   const [v] = s.popN(1);
   if (!isSymbolic(v)) throw new RPLError('Bad argument type');
   _pushCasResult(s, _casEval(v.expr, (e) => `tsimplify(${e})`));
-}, { category: 'CAS / symbolic', categoryOrder: 19, label: "TSIMP" });
+}, { only: isSymbolic }), { category: 'CAS / symbolic', categoryOrder: 19, label: "TSIMP" });
 
 
 const _isLn = (n) => n.kind === 'fn' && n.name === 'LN' && n.args.length === 1;
@@ -1812,12 +1817,12 @@ function _powExpandRewrite(n) {
 register('POWEXPAND', _rewriteOp(_powExpandRewrite), { category: 'CAS / symbolic', categoryOrder: 6.5, label: "POWEXPAND" });
 
 
-register('PROPFRAC', (s) => {
+register('PROPFRAC', _entryWise((s) => {
   const v = s.pop();
   if (isSymbolic(v) || isRational(v)) _pushCasResult(s, _casEval(_toAst(v), (e) => `propfrac(${e})`));
   else if (isReal(v) || isInteger(v) || isName(v)) s.push(v);
   else throw new RPLError('Bad argument type');
-}, { category: 'CAS / symbolic', categoryOrder: 37, label: "PROPFRAC" });
+}), { category: 'CAS / symbolic', categoryOrder: 37, label: "PROPFRAC" });
 
 
 register('PARTFRAC', _casUnary('partfrac'), { category: 'CAS / symbolic', categoryOrder: 36, label: "PARTFRAC" });
