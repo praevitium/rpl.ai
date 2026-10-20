@@ -963,11 +963,8 @@ and these are the gaps worth knowing about.
 
 **Commands.** The HP 50g manual lists 825 commands; rpl.ai has 752. The
 Catalog and the command reference mark what is available. Not there yet:
-
-- the HP's numbered menus for MENU and TMENU (a list, a name holding one
-  or 0 work)
-- units in symbolic commands: EXPAND, SOLVE and the like refuse an
-  algebraic with units in it, which EVAL and →NUM work out
+the HP's numbered menus for MENU and TMENU (a list, a name holding one or 0
+work).
 
 **Left out on purpose.** ENTRY mode, the NUM.SLV solver screens, the
 equation library (EQNLIB, SOLVEQN), the periodic table (PERTBL, PTPROP,
@@ -1032,10 +1029,12 @@ and serial transfer.
   comes from the Catalog, command search, `'?'` or anywhere later in a line.
 
 **The algebra engine.** Giac is not the HP 49/50's CAS, so answers can come
-back in a different but equivalent form. It is an 11.8 MB download, fetched
-once. One CAS command, such as factoring a huge polynomial, can't be
-interrupted: the page stops responding until it finishes. The equation
-writer's insights and the previews never wait on it.
+back in a different but equivalent form. Units go through it as names, so
+EXPAND, SOLVE, DERIV and the rest work on an algebraic holding them, and the
+numbers and units of each product come back as one unit object, `5_m*X`.
+It is an 11.8 MB download, fetched once. One CAS command, such as factoring
+a huge polynomial, can't be interrupted: the page stops responding until it
+finishes. The equation writer's insights and the previews never wait on it.
 
 **Your data.** The stack and variables live in this browser's storage on
 this device. They don't sync, and clearing the site's data, or closing a
