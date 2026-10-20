@@ -19,6 +19,7 @@ import { icon } from './icons.js';
 import { escapeHtml, typeName, markScrollEdges, LONG_PRESS_MS } from './display.js';
 import { MENU_FAMILIES, UNIT_GROUPS } from './menus.js';
 import { shortcutText } from './actions.js';
+import { wordBeforeCursor } from './autocomplete.js';
 
 const UNIT_SYMBOLS = Object.freeze([...new Set(UNIT_GROUPS.flatMap((g) => g.units))].filter(unitInfo));
 
@@ -466,9 +467,15 @@ export class Drawers {
     return `<div class="cmd-row${available ? '' : ' stub'}" data-dw="cmd" data-cmd="${escapeHtml(name)}" role="button" tabindex="0" title="Open the reference for ${escapeHtml(shown)}"><div class="nm"><span>${label}</span>${sig ? `<span class="sig">${escapeHtml(sig)}</span>` : ''}</div>${desc ? `<div class="ds">${escapeHtml(desc)}</div>` : ''}<div class="acts">${runnable ? `<button type="button" class="mini" data-dw="cmd-run" data-cmd="${escapeHtml(name)}" title="Run ${escapeHtml(name)}" aria-label="Run ${escapeHtml(name)}">${icon('play', 'sm')}</button>` : ''}</div></div>`;
   }
 
+  // A word half typed at the cursor, as when a finger held on a completion opened this page, gives way to the whole name.
   _insertReferenced() {
     const word = isSyntaxWord(this.cat.ref) ? findReferenceEntry(this.reference, this.cat.ref)?.name ?? this.cat.ref : this.cat.ref;
-    typeSyntaxWord(this.app.entry, word);
+    const { entry } = this.app;
+    const at = wordBeforeCursor(entry.buffer, entry.cursor);
+    if (at && word.toUpperCase().startsWith(at.word.toUpperCase())) {
+      entry._dispatch({ changes: { from: at.from, to: entry.cursor, insert: '' }, selection: { anchor: at.from } });
+    }
+    typeSyntaxWord(entry, word);
   }
 
   async _renderReference(body) {

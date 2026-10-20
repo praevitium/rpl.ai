@@ -229,7 +229,7 @@ const REF = parseCommandReference(HTML);
   const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
   assert(/const runnable = !!lookup\(name\);\s*const available = runnable \|\| isSyntaxWord\(name\);/.test(drawerSrc)
     && /\$\{runnable \|\| isSyntaxWord\(name\) \? `<button type="button" class="btn\$\{runnable \? '' : ' pri'\}" data-dw="ref-insert">Insert in the command line<\/button>` : `<span class="badge">Not available in rpl.ai<\/span>`\}/.test(drawerSrc)
-    && /typeSyntaxWord\(this\.app\.entry, word\);/.test(drawerSrc),
+    && /typeSyntaxWord\(entry, word\);/.test(drawerSrc),
     "syntax words: the Catalog lists them as available and their reference offers Insert (no Run), where IF's page said Not available in rpl.ai");
   const { typeSyntaxWord } = await import('../www/src/ui/command-help.js');
   const typed = (word) => { const calls = []; typeSyntaxWord({ typeObject: (t, b) => calls.push(`object ${t} ${b}`), typeWithCursor: (t) => calls.push(`cursor ${t}`), typeToken: (t) => calls.push(`token ${t}`) }, word); return calls.join(); };

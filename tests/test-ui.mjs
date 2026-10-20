@@ -2250,6 +2250,17 @@ setAngle('RAD');
     && /const fire = \(\) => \{ hold = null; held = true; this\.app\.buzzHold\(\); this\.close\(\); this\.app\.drawers\.showReference\(row\.name\); \};/.test(acSrc)
     && /document\.addEventListener\('click', \(e\) => \{ if \(held\) \{ held = false; e\.preventDefault\(\); e\.stopPropagation\(\); \} \}, true\);/.test(acSrc),
     'autocomplete: a finger held on a command\'s row opens its reference, as → does, and the lift\'s click completes nothing');
+  const { Drawers } = await import('../www/src/ui/drawer.js');
+  const insert = (ref) => Drawers.prototype._insertReferenced.call({ cat: { ref }, reference: null, app: { entry } });
+  entry.resetBuffer('');
+  entry.type('2 si');
+  insert('SIN');
+  const replaced = entry.buffer;
+  entry.resetBuffer('');
+  entry.type('2 X');
+  insert('SIN');
+  assert(replaced === '2 SIN ' && entry.buffer === '2 X SIN ',
+    'reference Insert: SIN replaces the si half typed at the cursor (the word a held completion row opened the page from), and follows a word it does not complete');
 }
 
 {
