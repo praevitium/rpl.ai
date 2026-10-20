@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.72 (2026-10-20)
+**Latest release:** v0.7.73 (2026-10-20)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.73 — 2026-10-20
+
+- The README's list of what is not there yet names only real gaps: the
+  HP's numbered menus, PICTURE's graphics cursor and units in symbolic
+  commands. DEF, DESOLVE and LDEC had long been in.
+- Its list of what is left out on purpose now names the equation library,
+  the periodic table, RCLMENU, FILER, StreamSmart, the screen fonts and
+  printing.
+- The README's tour describes PICT under Plots and has a new Time and
+  alarms section.
 
 ## v0.7.72 — 2026-10-20
 
