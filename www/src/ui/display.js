@@ -701,7 +701,8 @@ export class Display {
     return `<span class="${cls}" style="--mcols:${Math.max(1, ncols)}${fit ? `;--mw:${gridWidthEm(texts)}` : ''}">${cells.join('')}</span>`;
   }
 
-  _renderTextbookList(val, svgSize = 22) {
+  // A vector inside a list wraps by its entries as a nested list does, so level 1 shows it whole on a phone.
+  _renderTextbookList(val, svgSize = 22, [open, close] = ['{', '}']) {
     const items = val.items.map(item => {
       const expr = isSymbolic(item) ? item.expr : isName(item) && !item.local ? Var(item.id) : null;
       if (expr) {
@@ -709,9 +710,10 @@ export class Display {
         return `<span class="lcell lcell-sym">${svg}</span>`;
       }
       if (isList(item)) return `<span class="lcell">${this._renderTextbookList(item, svgSize)}</span>`;
+      if (isVector(item)) return `<span class="lcell">${this._renderTextbookList(item, svgSize, ['[', ']'])}</span>`;
       return `<span class="lcell">${escapeHtml(withFractionMark(format(item, this.displayOpts)))}</span>`;
     });
-    return `<span class="list-inline">{ ${items.join('<span class="lsep"> </span>')} }</span>`;
+    return `<span class="list-inline">${open} ${items.join('<span class="lsep"> </span>')} ${close}</span>`;
   }
 
   renderCmdline(entry) {
