@@ -500,6 +500,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .bn-x { grid-row: 1; grid-column: 3; }
 /* On a narrow phone the fixes start under the icon, so a banner of five takes two or three rows rather than four. */
 @container app (max-width: 359px) { .bn-f { grid-column: 1 / -1; } }
+/* Under 320 px tighter fixes keep a bad type's five to two rows, where Explain took a third on its own at 280. */
+@container app (max-width: 319px) { .bn-f { gap: 4px; } .bn-f .chip { padding-inline: 8px; } }
 .bn-prog { grid-column: 2 / -1; font: 12.5px/1.5 var(--font-mono); background: var(--well); color: var(--stack-ink); border-radius: 8px; padding: 6px 8px; border: 1px solid var(--line); overflow-x: auto; white-space: nowrap; }
 .bn-prog mark { background: var(--amber-dim); color: var(--amber); border-radius: 3px; padding: 0 2px; }
 @keyframes bn-in { from { opacity: 0; transform: translateY(6px); } }

@@ -2824,3 +2824,9 @@ setAngle('RAD');
     && /this\.entry\.safeRun\(\(\) => \{ this\.stack\.push\(value\); lookup\('EVAL'\)\.fn\(this\.stack, this\.entry\); \}, runAs, \{ typed \}\);/.test(appSrc),
     'variable keys: a program\'s key pressed on a typed value that fails keeps both for Fix the line, as a command key does');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/@container app \(max-width: 319px\) \{ \.bn-f \{ gap: 4px; \} \.bn-f \.chip \{ padding-inline: 8px; \} \}/.test(css),
+    'errors: under 320 px the banner\'s fixes sit tighter, so a bad type\'s five take two rows at 280 px, where Explain took a third alone');
+}
