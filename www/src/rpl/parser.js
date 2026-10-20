@@ -6,6 +6,7 @@ import { RPLError } from './stack.js';
 import { getApproxMode, getWordsizeMask, state as _state, angleTrig, testUserFlag } from './state.js';
 import { parseAlgebra } from './algebra.js';
 import { parseUnitExpr } from './units.js';
+import { hasOp } from './ops/registry.js';
 
 // A part of (re, im): a plain number or a fraction.  parseFloat would read 1_m as 1 and 1/2 as 1.
 function complexPart(text) {
@@ -222,6 +223,16 @@ export function endsInQuote(src) {
   return quote !== null;
 }
 
+// A phone keyboard has no →, ≤, ≥ or ≠, so a command typed ->STR, <= or <> is kept as the HP writes it, as << is;
+// names of the user's own stay as typed.
+const HP_COMPARISONS = Object.freeze({ '<=': '≤', '>=': '≥', '<>': '≠' });
+
+function hpSpelling(text) {
+  if (text === '->') return '→';
+  const name = HP_COMPARISONS[text] ?? text.replaceAll('->', '→');
+  return name !== text && hasOp(name) ? name : text;
+}
+
 // A phone keyboard's smart punctuation, and notes and messaging apps, curl quotes, and a phone's symbol keys offer ×, ÷ and −.
 // The HP has none of them, so they read as ' " * / and -, one character for one; inside a string they are text.
 const PLAIN = Object.freeze({ '‘': "'", '’': "'", '×': '*', '÷': '/', '−': '-' });
@@ -414,7 +425,7 @@ export function parseEntry(src) {
       }
 
       case 'ident':
-        return Name(t.text);
+        return Name(hpSpelling(t.text));
 
       case 'delim': {
         if (t.text === '{') return parseList();
