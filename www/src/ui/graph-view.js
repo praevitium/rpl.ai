@@ -6,9 +6,9 @@ import {
 } from './plot-engine.js';
 import { escapeHtml } from './display.js';
 import { icon } from './icons.js';
-import { isSymbolic, isName, isMatrix, isVector, isList, Real, Complex, RList, BinaryInteger } from '../rpl/types.js';
+import { isSymbolic, isName, isMatrix, isVector, isList, isGrob, Real, Complex, RList, BinaryInteger, Name } from '../rpl/types.js';
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians, getPict, subscribe as subscribeState } from '../rpl/state.js';
-import { plotSettings, pictWindow, pictGrid, pictPoint, viewVolume } from '../rpl/ops/graphics.js';
+import { plotSettings, pictWindow, pictGrid, pictPoint, pictLine, viewVolume } from '../rpl/ops/graphics.js';
 import { downloadFile } from '../rpl/persist.js';
 import { withFractionMark, format } from '../rpl/formatter.js';
 import { fromTyped } from '../rpl/parser.js';
@@ -37,16 +37,25 @@ const PLOT_KINDS = Object.freeze([
   ['hist', 'Histogram', 'Histogram from ΣDAT or the stack'],
 ]);
 const RANGE_FIELDS = Object.freeze([['xmin', 'x from'], ['xmax', 'x to'], ['ymin', 'y from'], ['ymax', 'y to']]);
-// PICTURE's drawing keys, as on the HP's: MARK sets the mark at the cursor, and LINE, TLINE, BOX and CIRCL draw on
-// PICT from the mark to the cursor.
+// PICTURE's drawing keys, in the HP's order: DOT+ and DOT- turn pixels on or off as the cursor moves, MARK sets the
+// mark at the cursor, and LINE, TLINE, BOX, CIRCL, DEL and SUB work between the mark and the cursor.
 const PICT_TOOLS = Object.freeze([
-  ['MARK', 'Set the mark at the cursor'],
+  ['DOT+', 'Turn on the pixels the cursor passes over'],
+  ['DOT-', 'Turn off the pixels the cursor passes over'],
   ['LINE', 'Draw a line from the mark to the cursor'],
   ['TLINE', 'Flip the pixels on a line from the mark to the cursor'],
   ['BOX', 'Draw a box with corners at the mark and the cursor'],
   ['CIRCL', 'Draw a circle round the mark through the cursor'],
+  ['MARK', 'Set the mark at the cursor'],
+  ['LABEL', 'Label the axes with their ranges'],
+  ['DEL', 'Clear the box between the mark and the cursor'],
+  ['ERASE', 'Clear PICT'],
+  ['SUB', 'Put the box between the mark and the cursor on the stack'],
+  ['REPL', 'Put the graphics object on level 1 into PICT at the cursor'],
   ['PICT→', 'Put PICT on the stack'],
 ]);
+const NEEDS_MARK = new Set(['LINE', 'TLINE', 'BOX', 'CIRCL', 'DEL', 'SUB']);
+const DOTS = Object.freeze({ 'DOT+': 'on', 'DOT-': 'off' });
 const TAP_SLOP_PX = 6;
 const TOUCH = !!globalThis.matchMedia?.('(pointer: coarse)').matches;
 // A drag that starts this close to the graphics cursor moves it rather than the plot.
@@ -138,6 +147,7 @@ export class GraphView {
     this._hover = null;
     this._mark = null;
     this._anchor = null;
+    this._dot = null;
     this.tracing = false;
     this.traceX = null;
     this.el = document.createElement('div');
@@ -302,7 +312,9 @@ export class GraphView {
         this.view = pinchView(this._drag.view, this._drag.from, to, rect.width, rect.height);
         this.draw();
       } else if (this._drag?.mark) {
+        const from = this._mark;
         this._markAt(ev.offsetX, ev.offsetY);
+        this._dotPath(from);
         this._readout.textContent = this._readoutAt(this._mark.x, this._mark.y);
         this.draw();
       } else if (this._drag && this._turnable()) {
@@ -458,6 +470,7 @@ export class GraphView {
   applyPlotOp(kind, stack, data = null) {
     this._mark = null;
     this._anchor = null;
+    this._dot = null;
     if (kind === 'animate') {
       this.view = pictWindow() ?? this.view;
       this._animate(data);
@@ -628,40 +641,80 @@ export class GraphView {
     this._push.hidden = !value;
     if (value) this._push.textContent = `↵ ${format(value)}`;
     this._pictTools.hidden = !this._mark || this.tracing || this._projected();
-    for (const b of this._pictTools.querySelectorAll('[data-pict="LINE"], [data-pict="TLINE"], [data-pict="BOX"], [data-pict="CIRCL"]')) b.disabled = !this._anchor;
+    for (const b of this._pictTools.querySelectorAll('[data-pict]')) {
+      if (NEEDS_MARK.has(b.dataset.pict)) b.disabled = !this._anchor;
+      if (DOTS[b.dataset.pict]) b.setAttribute('aria-pressed', String(this._dot === DOTS[b.dataset.pict]));
+    }
+  }
+
+  // With DOT+ or DOT- on, the cursor draws as it moves by a key or a drag; a tap jumps without drawing.
+  _dotPath(from) {
+    if (this._dot && from) pictLine(Complex(from.x, from.y), Complex(this._mark.x, this._mark.y), this._dot);
   }
 
   pictTool(key) {
-    if (!this._mark) return;
-    if (key === 'MARK') {
-      this._anchor = { ...this._mark };
-      this._readout.textContent = 'Mark set: LINE, BOX and CIRCL draw from it to the cursor';
-      this.draw();
-      return;
-    }
-    if (key === 'PICT→') {
-      this.app.commitEntryAndPush(getPict());
-      this._readout.textContent = 'Pushed PICT';
-      return;
-    }
-    if (!this._anchor) return;
-    const s = new Stack();
-    if (key === 'CIRCL') {
-      const [c, r] = [this._anchor, this._mark].map(pictPixel);
-      const pixel = (n) => BinaryInteger(BigInt(Math.round(n)), 'd');
-      s.push(RList(c.map(pixel)));
-      s.push(pixel(Math.hypot(r[0] - c[0], r[1] - c[1])));
-      s.push(Real(0));
-      s.push(Real(thetaRange().max));
-    } else {
-      s.push(Complex(this._anchor.x, this._anchor.y));
-      s.push(Complex(this._mark.x, this._mark.y));
-    }
+    if (!this._mark || (NEEDS_MARK.has(key) && !this._anchor)) return;
     try {
-      lookup(key === 'CIRCL' ? 'ARC' : key).fn(s);
+      this._readout.textContent = this._pictKey(key) ?? this._readout.textContent;
+      this.draw();
     } catch (e) {
       this._fail(e.message);
     }
+  }
+
+  // Runs a drawing key and gives what the readout should say, if anything.
+  _pictKey(key) {
+    const at = ({ x, y }) => Complex(x, y);
+    const pixel = (n) => BinaryInteger(BigInt(Math.round(n)), 'd');
+    const run = (name, ...args) => {
+      const s = new Stack();
+      for (const v of args) s.push(v);
+      lookup(name).fn(s);
+      return s;
+    };
+    const [mark, cursor] = [this._anchor, this._mark];
+    switch (key) {
+      case 'DOT+': case 'DOT-': {
+        this._dot = this._dot === DOTS[key] ? null : DOTS[key];
+        if (this._dot) pictLine(at(cursor), at(cursor), this._dot);
+        return this._dot ? `${key} on: the cursor ${this._dot === 'on' ? 'draws' : 'erases'} as it moves` : `${key} off`;
+      }
+      case 'MARK':
+        this._anchor = { ...cursor };
+        return 'Mark set: LINE, BOX, CIRCL, DEL and SUB work from it to the cursor';
+      case 'LINE': case 'TLINE': case 'BOX':
+        run(key, at(mark), at(cursor));
+        return null;
+      case 'CIRCL': {
+        const [c, r] = [mark, cursor].map(pictPixel);
+        run('ARC', RList(c.map(pixel)), pixel(Math.hypot(r[0] - c[0], r[1] - c[1])), Real(0), Real(thetaRange().max));
+        return null;
+      }
+      case 'LABEL': case 'ERASE':
+        run(key);
+        return null;
+      case 'DEL': {
+        const [[c1, r1], [c2, r2]] = [mark, cursor].map((p) => pictPixel(p).map(Math.round));
+        const blank = run('BLANK', pixel(Math.abs(c2 - c1) + 1), pixel(Math.abs(r2 - r1) + 1)).peek();
+        run('REPL', Name('PICT'), RList([pixel(Math.min(c1, c2)), pixel(Math.min(r1, r2))]), blank);
+        return null;
+      }
+      case 'SUB':
+        this.app.commitEntryAndPush(run('SUB', Name('PICT'), at(mark), at(cursor)).peek());
+        return 'Pushed the box as a graphics object';
+      case 'REPL': {
+        const { stack } = this.app;
+        if (!stack.depth || !isGrob(stack.peek())) throw new Error('REPL needs a graphics object on level 1');
+        run('REPL', Name('PICT'), at(cursor), stack.peek());
+        this.app.entry._snapForUndo();
+        stack.pop();
+        return null;
+      }
+      case 'PICT→':
+        this.app.commitEntryAndPush(getPict());
+        return 'Pushed PICT';
+    }
+    return null;
   }
 
   _readoutAt(wx, wy = null) {
@@ -725,7 +778,9 @@ export class GraphView {
       if (this.traceX > v.xmax) this.view = panView(v, this.traceX - v.xmax + dx, 0);
       this._readout.textContent = this._readoutAt(this.traceX);
     } else if (this._mark && !this.tracing) {
+      const from = this._mark;
       ({ cursor: this._mark, view: this.view } = stepCursor(this._mark, dir, v));
+      this._dotPath(from);
       this._readout.textContent = this._readoutAt(this._mark.x, this._mark.y);
     } else {
       this.view = panView(v, dir === 'left' ? -dx : dir === 'right' ? dx : 0, dir === 'down' ? -dy : dir === 'up' ? dy : 0);

@@ -687,10 +687,16 @@ register('PIX?', (s) => {
   s.push(_pixelOn(getPict(), col, row) ? TRUE : FALSE);
 }, { category: 'Graphics', categoryOrder: 11.2, label: "PIX?" });
 
+// A line on PICT between two points, its pixels turned on, off or flipped; PICTURE's DOT+ and DOT- draw with it too.
+export function pictLine(from, to, how) {
+  const [a, b] = [from, to].map(_pixelOf);
+  _paint((plot) => _line(a, b, (c, r) => plot(c, r, how)));
+}
+
 function _lineCommand(how) {
   return (s) => {
-    const [a, b] = s.popN(2).map(_pixelOf);
-    _paint((plot) => _line(a, b, (c, r) => plot(c, r, how)));
+    const [a, b] = s.popN(2);
+    pictLine(a, b, how);
   };
 }
 
