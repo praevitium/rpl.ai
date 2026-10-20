@@ -39,8 +39,9 @@ export function htmlToText(html) {
   return s.split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n');
 }
 
+// A superscript reads as a power, so the manual's 10<sup>z</sup> is 10^z in plain text.
 function cleanInline(html) {
-  return decodeEntities(String(html).replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+  return decodeEntities(String(html).replace(/<sup>([\s\S]*?)<\/sup>/g, '^$1').replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
 }
 
 function fewestStackInputs(html) {

@@ -197,8 +197,11 @@ const REF = parseCommandReference(HTML);
 
 /* The palette's stack signature is the manual's first stack line, without its column headings or a bare None. */
 {
-  assert(signatureOf(REF.get('LR')) === '→ Intercept: x1 Slope: x2' && signatureOf(REF.get('SQ')) === 'z → z2' && signatureOf(REF.get('PWRFIT')) === '' && signatureOf(REF.get('MINEHUNT')) === '',
+  assert(signatureOf(REF.get('LR')) === '→ Intercept: x1 Slope: x2' && signatureOf(REF.get('SQ')) === 'z → z^2' && signatureOf(REF.get('PWRFIT')) === '' && signatureOf(REF.get('MINEHUNT')) === '',
     'signatureOf skips Level n/Argument n headings and the manual\'s None');
+  const sig = (name) => signatureOf(findReferenceEntry(REF, name));
+  assert(sig('*') === 'z1 z2 → z1 × z2' && sig('^') === 'w z → w^z' && sig('√') === 'z → √z' && sig('ALOG') === 'z → 10^z' && sig('EXP') === 'z → e^z',
+    `stack diagrams keep the operator and the power the PDF's text lost: * read z1 z2 → z1 z2, ^ w z → wz and √ z → z (${sig('*')}, ${sig('^')}, ${sig('√')})`);
 }
 
 /* The manual's PDF ran fifteen entries into the one before them (→DATE under DATE, RREF under the CAS rref), so a
