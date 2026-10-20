@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.89 (2026-10-20)
+**Latest release:** v0.7.90 (2026-10-20)
 
 ---
 
@@ -20,6 +20,12 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.90 — 2026-10-20
+
+- EVAL gathers the numbers of a product or quotient into one coefficient,
+  as the HP does: `'ATAN(1)*4' EVAL` gives π, `'2*X*3'` gives 6*X and
+  `'X/2*2'` gives X, where they stayed π/4*4 and the like.
 
 ## v0.7.89 — 2026-10-20
 
