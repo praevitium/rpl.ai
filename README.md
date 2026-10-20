@@ -4,7 +4,7 @@
 
 rpl.ai is a programmable RPL calculator that runs in any modern browser and
 keeps working offline. It implements the HP 50g's User-RPL language and most
-of its command set: 747 commands, exact big-integer and rational arithmetic,
+of its command set: 748 commands, exact big-integer and rational arithmetic,
 units, lists, matrices, programs and directories. It swaps the 131×80 LCD
 for a high-resolution stack, a real keyboard, mouse or touch screen, and the
 [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)
@@ -925,7 +925,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 747. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 748. The
 Catalog and the command reference mark what is available. Not there yet:
 
 - setting the clock: `→DATE`, `→TIME` and `CLKADJ`. The clock is the
@@ -988,6 +988,8 @@ and RESTORE), Saturn assembly and System RPL, and IR and serial transfer.
   `HEADER→` and `KEYTIME→` give back, but the screen and keys keep rpl.ai's
   own layout and timing. `VER` gives Giac's version, 1.5, with the build's
   date, and `DEDICACE` and `RULES` give rpl.ai's own dedication and credits.
+- `SIDENS` uses the textbook model of silicon's intrinsic carrier density,
+  about 9.89E9 per cm³ at 300 K, since the HP's own fit is not published.
 - `EVAL` of a matrix or vector with symbolic entries evaluates each entry;
   the AUR's EVAL table leaves an array as it is.
 - REALASSUME starts empty rather than holding X, Y, t, S1 and S2, and

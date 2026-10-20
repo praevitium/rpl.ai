@@ -205,6 +205,7 @@ UNITS  (built-in: SI units m kg s A K mol cd Hz N J W Pa V Ω C F with prefixes,
   CONLIB                     opens the Constants Library on screen, each constant with its value; a tap puts one on the stack
   MOLWT                      molar mass of a formula string or name: "Ca(OH)2" MOLWT gives 74.09268_g/mol; with flag -61 set, the number alone
   F0λ                        λ T F0λ → fraction of black-body emission below λ (meters and kelvins, or units): 2.898E-6 1000 F0λ → 0.2501
+  SIDENS                     T SIDENS → silicon's intrinsic carrier density per cm³ (kelvins, or a temperature unit for 1/cm^3): 300 SIDENS → 9.89E9
   TDELTA TINC                temperature change between two readings (100_°C 32_°F TDELTA gives 100_°C) / a reading plus an increment (20_°C 9_°F TINC gives 25_°C)
 
 PROGRAMS & CONTROL FLOW
