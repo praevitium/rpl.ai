@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.73 (2026-10-20)
+**Latest release:** v0.7.74 (2026-10-20)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.74 — 2026-10-20
+
+- PICTURE brings the HP's graphics cursor to the plot view.
+  - A crosshair starts in the middle of the view, and the plot takes the
+    keyboard.
+  - The arrow keys move the crosshair one pixel of the HP's screen at a
+    time, and past an edge the view scrolls with it. A tap or click puts
+    it anywhere, on any plot.
+  - Enter, or the button in the corner that shows the point, puts (x,y)
+    on the stack, rounded to the digits a pixel resolves, so it gives
+    (1.2, -0.5) rather than a pixel's long fraction. In Trace mode,
+    Enter puts the point on the curve.
+  - Pictures copied, saved or shared leave the crosshair out.
+- PICTURE's menu of drawing tools is still to come; the commands it
+  stands for are here.
 
 ## v0.7.73 — 2026-10-20
 
