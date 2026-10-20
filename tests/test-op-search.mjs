@@ -274,7 +274,7 @@ import { assert } from './helpers.mjs';
 }
 
 {
-  const { wordBeforeCursor, completions, isInsideAlgebraic } = await import('../www/src/ui/autocomplete.js');
+  const { wordBeforeCursor, completions, isInsideAlgebraic, unitCompletions } = await import('../www/src/ui/autocomplete.js');
   const at = wordBeforeCursor('2 3 SW', 6);
   assert(at?.word === 'SW' && at.from === 4, 'wordBeforeCursor: the word ending at the cursor and where it starts');
   assert(wordBeforeCursor('`SI', 3)?.word === 'SI', 'wordBeforeCursor: an algebraic quote starts a word');
@@ -289,5 +289,10 @@ import { assert } from './helpers.mjs';
   assert(completions('n', { names: ['SIN', '→NUM', 'NEG', 'ΣLIST'] }).map((r) => r.name).join(' ') === 'NEG →NUM',
     'completions: one letter matches the first letter of a name, past an arrow, and not a letter further in');
   assert(completions('l', { names: ['SIN', 'ΣLIST', 'LN'] }).map((r) => r.name).join(' ') === 'LN ΣLIST', 'completions: one letter finds ΣLIST by its L');
+  const kUnits = unitCompletions('k');
+  assert(kUnits.slice(0, 3).map((r) => r.name).join(' ') === 'km kg kN' && kUnits[0].group === 'Length' && kUnits.every((r) => r.kind === 'unit'),
+    'unitCompletions: the UNITS menu\'s units starting with what follows _, shortest first, each with its group');
+  assert(unitCompletions('ft').some((r) => r.name === 'ft/s') && !unitCompletions('ft', { plain: true }).some((r) => /[*/^]/.test(r.name)),
+    'unitCompletions: inside an algebraic only plain units, since 5_ft/s there would divide by s');
   assert(isInsideAlgebraic('2 `SI', 3) && !isInsideAlgebraic('`X` SI', 4), 'isInsideAlgebraic: counts the quotes before the word');
 }

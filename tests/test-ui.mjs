@@ -2265,6 +2265,22 @@ setAngle('RAD');
 }
 
 {
+  const { Autocomplete } = await import('../www/src/ui/autocomplete.js');
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const entry = new Entry(new Stack());
+  entry.hasFocus = () => true;
+  const ac = Object.assign(Object.create(Autocomplete.prototype), {
+    app: { entry, inputMode: 'rpl', errorBanner: null }, el: { hidden: true }, rows: [], index: 0, word: null, shown: null, _dismissedWord: null,
+  });
+  ac._render = function () { this.el.hidden = false; };
+  entry.subscribe(() => ac.update());
+  entry.type('9.8_k');
+  const units = ac.isOpen() && ac.rows.every((r) => r.kind === 'unit') && ac.word.word === 'k';
+  ac.accept(1);
+  assert(units && entry.buffer === '9.8_kg', 'autocomplete: after a number\'s _ the list offers units, and a chosen one completes the unit with no space after it');
+}
+
+{
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/setMenuHook\(\(list, temporary\) => \{\s*if \(!list\) this\.showPreviousMenu\(\{ commit: false \}\);\s*else if \(temporary\) this\.setMenu\(this\._customMenuSlots\(list\), 'TMENU'\);\s*else this\.showMenu\('CST', \{ commit: false \}\);/.test(appSrc)
     && /showCustomMenu\(\{ commit = true, refresh = false \} = \{\}\) \{\s*if \(commit && !refresh && this\.entry\.buffer/.test(appSrc) && /showPreviousMenu\(\{ commit = true \} = \{\}\) \{[\s\S]{0,160}?this\.showMenu\(prev, \{ commit \}\)/.test(appSrc),

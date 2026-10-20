@@ -4,6 +4,7 @@ import { varOrder, varRecall } from '../rpl/state.js';
 import { shortDescription } from './command-reference.js';
 import { fuzzyScore, matchPositions, highlightSegments } from './op-search.js';
 import { escapeHtml, typeName, LONG_PRESS_MS } from './display.js';
+import { UNIT_GROUPS } from './menus.js';
 
 const MAX_ROWS = 6;
 const AC_MARGIN = 6;
@@ -46,6 +47,27 @@ export function completions(word, { names = [], variables = [] } = {}) {
     .slice(0, MAX_ROWS);
 }
 
+// After a number's _, the UNITS menu's units with their group: 9.8_m offers m, mm, mi, mph… Inside an algebraic a unit
+// runs to the next operator, so there only plain units are offered: m^2 or m/s would need parentheses.
+export function unitCompletions(word, { plain = false } = {}) {
+  const seen = new Set();
+  const score = (name) => (name.startsWith(word) ? 1500 - name.length
+    : name.toUpperCase().startsWith(word.toUpperCase()) ? 1000 - name.length : 0);
+  return UNIT_GROUPS.flatMap((g) => g.units.map((name) => ({ name, kind: 'unit', group: g.title })))
+    .filter((row) => !(plain && /[*/^]/.test(row.name)) && !seen.has(row.name) && seen.add(row.name))
+    .map((row) => ({ ...row, score: score(row.name) }))
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_ROWS);
+}
+
+// The unit part of a word that holds a _, as the word to complete, or the word itself.
+function unitPart(at) {
+  const i = at?.word.lastIndexOf('_') ?? -1;
+  const unit = i >= 0 ? at.word.slice(i + 1) : '';
+  return /^\p{L}/u.test(unit) ? { word: unit, from: at.from + i + 1, unit: true } : at;
+}
+
 export function isInsideAlgebraic(text, offset) {
   return endsInQuote(String(text ?? '').slice(0, offset));
 }
@@ -81,7 +103,7 @@ export class Autocomplete {
     const { entry } = this.app;
     const text = entry.buffer;
     const at = this.app.inputMode === 'rpl' && (entry.hasFocus() || this.app.typingOnKeypad) && !this.app.errorBanner && !text.trimStart().startsWith('?')
-      ? wordBeforeCursor(text, entry.cursor) : null;
+      ? unitPart(wordBeforeCursor(text, entry.cursor)) : null;
     if (this.shown && at?.from === this.word?.from && at.word === this.shown) return;
     this.shown = null;
     if (!at) this._dismissedWord = null;
@@ -90,7 +112,7 @@ export class Autocomplete {
       this.close();
       return;
     }
-    const rows = completions(at.word, { names: allOps(), variables: varOrder() });
+    const rows = at.unit ? unitCompletions(at.word, { plain: isInsideAlgebraic(text, at.from) }) : completions(at.word, { names: allOps(), variables: varOrder() });
     if (!rows.length || (rows.length === 1 && rows[0].name === at.word)) { this.close(); return; }
     if (this.word?.word !== at.word) this.index = 0;
     this.word = at;
@@ -106,10 +128,10 @@ export class Autocomplete {
         ? segments.map((s) => (s.match ? `<mark>${escapeHtml(s.text)}</mark>` : escapeHtml(s.text))).join('')
         : escapeHtml(row.name);
       const info = row.kind === 'command' ? this.app.commandInfo(row.name) : null;
-      const detail = row.kind === 'variable'
-        ? `Variable · ${typeName(varRecall(row.name))}`
+      const detail = row.kind === 'variable' ? `Variable · ${typeName(varRecall(row.name))}`
+        : row.kind === 'unit' ? 'Unit'
         : info ? shortDescription(info.entry, 90) : '';
-      return `<div class="ac-row${i === this.index ? ' on' : ''}" role="option" aria-selected="${i === this.index}" data-i="${i}"><b>${label}</b><span>${escapeHtml(detail)}</span><em>${escapeHtml(info?.signature ?? '')}</em></div>`;
+      return `<div class="ac-row${i === this.index ? ' on' : ''}" role="option" aria-selected="${i === this.index}" data-i="${i}"><b>${label}</b><span>${escapeHtml(detail)}</span><em>${escapeHtml(info?.signature ?? row.group ?? '')}</em></div>`;
     }).join('');
     const foot = onTouch() ? '<span>Tap completes · hold for the reference</span><span>Tap elsewhere closes</span>'
       : '<span>Tab completes · ↑↓ choose · → reference</span><span>Esc closes</span>';
