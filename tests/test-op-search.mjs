@@ -306,6 +306,17 @@ import { assert } from './helpers.mjs';
     assert(!has('p', 'π') && !has('in', '∞') && completions('pi', { names: [], variables: ['pi'] })[0].kind === 'variable',
       'completions: a spelled glyph needs its whole spelling or three letters of it, and a variable named pi still leads');
   }
+  {
+    const shown = (w, opts) => completions(w, { names: allOps(), ...opts }).map((r) => r.name);
+    const [ifRow] = completions('if', { names: allOps() });
+    assert(ifRow.kind === 'structure' && ifRow.words.join(' ') === 'IF THEN END' && shown('if')[1] === 'IF … THEN … ELSE … END'
+      && shown('FOR').slice(0, 2).join('|') === 'FOR … NEXT|FOR … STEP' && shown('WHI')[0] === 'WHILE … REPEAT … END'
+      && shown('DO')[0] === 'DO … UNTIL … END' && shown('ife')[0] === 'IFERR … THEN … END',
+      'completions: a structure word offers its BRCH structures whole, as ⇦ and ⇨ on its key type them, typed in any case');
+    assert(completions('TH', { names: allOps() })[0].name === 'THEN' && completions('TH', { names: allOps() })[0].kind === 'command'
+      && shown('REP').includes('REPEAT') && !shown('i').some((n) => n.includes('…')) && !shown('if', { structures: false }).some((n) => n.includes('…')),
+      'completions: THEN, END, REPEAT and the other inner words complete as words; one letter, or an algebraic, offers no structure');
+  }
   const kUnits = unitCompletions('k');
   assert(kUnits.slice(0, 3).map((r) => r.name).join(' ') === 'km kg kN' && kUnits[0].group === 'Length' && kUnits.every((r) => r.kind === 'unit'),
     'unitCompletions: the UNITS menu\'s units starting with what follows _, shortest first, each with its group');

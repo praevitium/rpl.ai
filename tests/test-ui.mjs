@@ -2335,6 +2335,16 @@ setAngle('RAD');
   const local = ac.rows[0]?.kind === 'local' && ac.rows[0].name === 'rate';
   ac.accept(0);
   assert(local && entry.buffer === '« → rate time « rate ', 'autocomplete: inside a program the → locals are offered first, and a chosen one is a word with its space');
+  entry.resetBuffer('');
+  entry.type('<< 7 0 > if');
+  const structure = ac.rows[1]?.kind === 'structure' && ac.rows[1].name === 'IF … THEN … ELSE … END';
+  ac.accept(1);
+  assert(structure && entry.buffer === '<< 7 0 > IF  THEN  ELSE  END ' && entry.cursor === 12 && !ac.isOpen(),
+    'autocomplete: a structure row typed as if types the whole structure in its place, the cursor after IF, as BRCH\'s ⇦ does');
+  entry.resetBuffer('');
+  entry.type('1 3 for');
+  ac.accept(0);
+  assert(entry.buffer === '1 3 « FOR  NEXT  »' && entry.cursor === 10, 'autocomplete: a structure chosen outside a program opens one around it, as BRCH\'s keys do');
 }
 
 {

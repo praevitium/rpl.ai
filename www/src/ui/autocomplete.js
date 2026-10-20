@@ -4,7 +4,7 @@ import { varOrder, varRecall, state } from '../rpl/state.js';
 import { shortDescription } from './command-reference.js';
 import { fuzzyScore, matchPositions, highlightSegments } from './op-search.js';
 import { escapeHtml, typeName, LONG_PRESS_MS } from './display.js';
-import { UNIT_GROUPS } from './menus.js';
+import { UNIT_GROUPS, BRANCH_KEYS } from './menus.js';
 
 const MAX_ROWS = 6;
 const AC_MARGIN = 6;
@@ -50,12 +50,21 @@ const SPELLED = Object.freeze({
   'π': ['pi'], '∞': ['inf', 'infinity'], 'Σ': ['sum', 'sigma'], '∫': ['integral'], '√': ['sqrt'], '∂': ['deriv', 'partial'],
 });
 
+// The BRCH menu's structures, offered whole as ⇦ on its keys types them, and the words that only continue one.
+const STRUCTURES = BRANCH_KEYS.flatMap(([, ...forms]) => forms);
+const STRUCTURE_WORDS = BRANCH_KEYS.filter(([, whole]) => !whole).map(([word]) => word);
+
+function structureScore(word, [first, ...rest]) {
+  const w = word.toUpperCase();
+  return w.length < 2 || !first.startsWith(w) ? 0 : (first === w ? 1900 : 1490) - rest.length;
+}
+
 function spelledScore(word, spellings) {
   const w = word.toLowerCase();
   return Math.max(...spellings.map((s) => (s === w ? 1900 : w.length >= 3 && s.startsWith(w) ? 1500 - s.length : 0)));
 }
 
-export function completions(word, { names = [], variables = [], locals = [] } = {}) {
+export function completions(word, { names = [], variables = [], locals = [], structures = true } = {}) {
   if (!word || hpArrows(word) === '→') return [];
   const seen = new Set();
   return [
@@ -63,9 +72,15 @@ export function completions(word, { names = [], variables = [], locals = [] } = 
     ...variables.map((name) => ({ name, kind: 'variable' })),
     ...names.filter((n) => !n.includes('->')).map((name) => ({ name, kind: 'command' })),
     ...Object.entries(SPELLED).map(([name, spellings]) => ({ name, kind: 'command', spellings })),
+    ...(structures ? [
+      ...STRUCTURE_WORDS.map((name) => ({ name, kind: 'command', inner: true })),
+      ...STRUCTURES.map((words) => ({ name: words.join(' … '), kind: 'structure', words })),
+    ] : []),
   ]
-    .map(({ spellings, ...row }) => {
-      const score = spellings ? spelledScore(word, spellings) : completionScore(hpArrows(word), row.name);
+    .map(({ spellings, inner, ...row }) => {
+      const score = spellings ? spelledScore(word, spellings)
+        : row.words ? structureScore(word, row.words)
+        : inner && word.length < 2 ? 0 : completionScore(hpArrows(word), row.name);
       return { ...row, score: score && row.kind === 'local' ? score + 100 : score };
     })
     .filter((row) => row.score > 0)
@@ -157,7 +172,7 @@ export class Autocomplete {
       return;
     }
     const rows = at.unit ? unitCompletions(at.word, { plain: isInsideAlgebraic(text, at.from) })
-      : completions(at.word, { names: allOps(), variables: varOrder(), locals: localNames(text.slice(0, at.from)) });
+      : completions(at.word, { names: allOps(), variables: varOrder(), locals: localNames(text.slice(0, at.from)), structures: !isInsideAlgebraic(text, at.from) });
     if (!rows.length || (rows.length === 1 && rows[0].name === at.word)) { this.close(); return; }
     if (this.word?.word !== at.word) this.index = 0;
     this.word = at;
@@ -176,6 +191,7 @@ export class Autocomplete {
       const detail = row.kind === 'variable' ? `Variable · ${typeName(varRecall(row.name))}`
         : row.kind === 'local' ? 'Local variable'
         : row.kind === 'unit' ? 'Unit'
+        : row.kind === 'structure' ? 'Program structure'
         : info ? shortDescription(info.entry, 90) : '';
       const sig = info?.signature ?? row.group ?? '';
       return `<div class="ac-row${i === this.index ? ' on' : ''}${sig ? '' : ' nosig'}" role="option" aria-selected="${i === this.index}" data-i="${i}"><b>${label}</b><span>${escapeHtml(detail)}</span><em>${escapeHtml(sig)}</em></div>`;
@@ -214,7 +230,8 @@ export class Autocomplete {
   move(step) {
     if (!this.isOpen()) return false;
     this.index = (this.index + step + this.rows.length) % this.rows.length;
-    this._replaceWord(this.rows[this.index].name);
+    const row = this.rows[this.index];
+    this._replaceWord(row.words?.[0] ?? row.name);
     this._render();
     return true;
   }
@@ -250,6 +267,13 @@ export class Autocomplete {
     const { entry } = this.app;
     const { from } = this.word;
     const to = entry.cursor;
+    if (row.words) {
+      entry._dispatch({ changes: { from, to, insert: '' }, selection: { anchor: from } });
+      this._dismissedWord = row.words[0];
+      this.close();
+      entry.typeStructure(row.words);
+      return;
+    }
     const text = entry.buffer;
     const spaced = (row.kind === 'command' || row.kind === 'local') && !isInsideAlgebraic(text, from) && !/^\s/.test(text.slice(to));
     const insert = spaced ? `${row.name} ` : row.name;
