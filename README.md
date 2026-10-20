@@ -614,7 +614,32 @@ the curves with live readouts. Expand to fill the window, or go full screen.
 More canvas buttons copy the plot as an image, download it as a PNG at the
 screen's pixel density, and, where the device can share images, share it.
 
+PICT holds a graphics object: LINE, TLINE, BOX, ARC, PIXON, PIXOFF, DRAX
+and LABEL draw on it, GOR, GXOR, SUB, REPL and NEG work on it and on other
+graphics objects (GROBADD stacks two), and →GROB draws any object as one in
+rpl.ai's own pixel font. PVIEW and PICTURE show PICT over the plot, ANIMATE
+plays graphics objects over it in turn, and TEXT closes it. The plot-window
+commands (XRNG, YRNG, CENTR, SCALE, AUTO, INDEP, RES, AXES and the rest)
+set PPAR, and plots start in its window, follow its INDEP, DEPND and RES
+and draw its axes. XVOL, YVOL, ZVOL, XXRNG, YYRNG, EYEPT, NUMX and NUMY set
+VPAR, which the 3D plots read.
+
 ![Three traces in trace mode](screenshots/plot.png)
+
+### Time and alarms
+
+`DATE`, `TIME`, `TICKS` and `TSTR` read the calculator's clock, and
+`DATE+` and `DDAYS` count days, with flags -41 and -42 for the formats,
+which the TIME menu's 24H and D.M.Y keys set. `→DATE`, `→TIME` and
+`CLKADJ` move rpl.ai's clock away from the device's, and Settings › Data
+sets it back. The ALRM folder keeps appointment alarms:
+`{ 10.192026 9.3 "Dentist" } STOALARM` stores one and gives its index, and
+`RCLALARM`, `DELALARM`, `FINDALARM`, `ACK` and `ACKALL` work on the list,
+which is saved with the stack. An alarm that comes due while the app is
+open shows its message in a note with an ACK button, a buzz and a tone (set
+flag -57 for quiet); one missed while the app was closed shows as past due
+the next time it opens. While one is past due, the HP's alert annunciator
+((•)) lights in the status line, and a tap on it brings the note back.
 
 ### Search everything
 
@@ -928,45 +953,27 @@ and these are the gaps worth knowing about.
 **Commands.** The HP 50g manual lists 825 commands; rpl.ai has 752. The
 Catalog and the command reference mark what is available. Not there yet:
 
-- setting the device's clock. `→DATE`, `→TIME` and `CLKADJ` move only
-  rpl.ai's clock, by an offset saved with the calculator that Settings,
-  Data, sets back to the device's; `DATE`, `TIME`, `TICKS` and `TSTR` read
-  it, and `DATE+`
-  and `DDAYS` count days, with flags -41 and -42 for the formats, which
-  the TIME menu's 24H and D.M.Y keys set. Its ALRM folder keeps
-  appointment alarms: `{ 10.192026 9.3 "Dentist" } STOALARM` stores one
-  and gives its index, and `RCLALARM`, `DELALARM`, `FINDALARM`, `ACK` and
-  `ACKALL` work on the list, which is saved with the stack. An alarm that
-  comes due while the app is open shows its message in a note with an ACK
-  button, a buzz and a tone (set flag -57 for quiet); one missed while the
-  app was closed shows as past due the next time it opens. While one is
-  past due, the HP's alert annunciator ((•)) lights in the status line,
-  and a tap on it brings the note back.
-- PICTURE's cursor. PICT holds a
-  graphics object, LINE, TLINE, BOX, ARC, PIXON, PIXOFF, DRAX and LABEL
-  draw on it, GOR, GXOR, SUB, REPL and NEG work on it and on other graphics
-  objects (GROBADD stacks two), →GROB draws any object as one in rpl.ai's
-  own pixel font, PVIEW and PICTURE show PICT over the plot, ANIMATE
-  plays graphics objects over it in turn, and TEXT closes it. The
-  plot-window commands (XRNG, YRNG, CENTR, SCALE, AUTO, INDEP, RES, AXES
-  and the rest) set PPAR, and plots start in its window, follow its
-  INDEP, DEPND and RES and draw its axes. XVOL, YVOL, ZVOL, XXRNG, YYRNG,
-  EYEPT, NUMX and NUMY set VPAR, which the 3D plots read
 - the HP's numbered menus for MENU and TMENU (a list, a name holding one
-  or 0 work), and DEF
-- parts of the CAS, such as DESOLVE and LDEC (SOLVE, SOLVEVX, ISOL,
-  LINSOLVE, SYST2MAT, ROOT, ZEROS, TAYLR, TAYLOR0 and SERIES are here).
-  Symbolic commands such as EXPAND and SOLVE refuse an algebraic with units
-  in it, which EVAL and →NUM work out.
+  or 0 work)
+- PICTURE's graphics cursor: PICTURE and PVIEW show PICT over the plot,
+  with no cursor to move over it
+- units in symbolic commands: EXPAND, SOLVE and the like refuse an
+  algebraic with units in it, which EVAL and →NUM work out
 
-**Left out on purpose.** ENTRY mode, the NUM.SLV solver screens, FINANCE,
-TIME, OFF, libraries (LIB, ATTACH and port management other than ARCHIVE
-and RESTORE), Saturn assembly and System RPL, and IR and serial transfer.
+**Left out on purpose.** ENTRY mode, the NUM.SLV solver screens, the
+equation library (EQNLIB, SOLVEQN), the periodic table (PERTBL, PTPROP,
+PERINFO), RCLMENU, FINANCE, TIME, OFF, FILER (the Variables drawer does
+its work), the StreamSmart app (STRM), the screen fonts (FONT6, →FONT,
+→MINIFONT and the rest), libraries (LIB, ATTACH and port management other
+than ARCHIVE and RESTORE), Saturn assembly and System RPL, printing, and IR
+and serial transfer.
 
 **Behaviour that differs from the HP 50g.**
 
 - `BEEP` doesn't hold the program while its tone plays; tones in a row still
   sound one after another.
+- `→DATE`, `→TIME` and `CLKADJ` set rpl.ai's own clock, by an offset
+  Settings › Data clears, since a web page can't set the device's.
 - Alarms carry a message only: `STOALARM` refuses an object to run (the
   HP's control alarms), and an alarm comes due only while the app is open.
   A key press doesn't acknowledge an alarm; its note's ACK button does.
