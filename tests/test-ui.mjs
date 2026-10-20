@@ -2792,3 +2792,11 @@ setAngle('RAD');
   assert(/\.bn-f \{ grid-column: 2 \/ -1;[^}]*\}[\s\S]*?@container app \(max-width: 359px\) \{ \.bn-f \{ grid-column: 1 \/ -1; \} \}/.test(css),
     'errors: under 360 px a banner\'s fixes start under its icon, so five fixes take three rows at 280 px rather than four, leaving the stack 166 px where it had 120');
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/installBannerSwipe\(\$\('banner'\), \(\) => this\.dismissError\(\)\);/.test(appSrc)
+    && /\.app \.st-row\[data-key\], \.app \.bn:not\(\.halt\) \{ touch-action: pan-y; \}/.test(css),
+    'errors: the banner swipes away under a finger, the browser leaving sideways moves on it to the page');
+}

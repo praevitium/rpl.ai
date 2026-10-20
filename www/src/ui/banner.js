@@ -1,5 +1,42 @@
 import { icon } from './icons.js';
-import { escapeHtml } from './display.js';
+import { escapeHtml, swipeThreshold } from './display.js';
+
+// A finger swiped sideways across an error banner puts it away, as a phone's notifications go. A halted program's
+// banner waits for an answer, and the fixes row scrolls sideways of its own with the keyboard up, so neither swipes.
+export function installBannerSwipe(host, onDismiss) {
+  let swipe = null;
+  host.addEventListener('pointerdown', (ev) => {
+    swipe = null;
+    const bn = ev.target.closest?.('.bn:not(.halt)');
+    if (!bn || ev.pointerType === 'mouse' || !ev.isPrimary || ev.target.closest('.bn-f, button')) return;
+    swipe = { bn, id: ev.pointerId, x: ev.clientX, y: ev.clientY, dx: 0, active: false };
+  });
+  host.addEventListener('pointermove', (ev) => {
+    if (swipe?.id !== ev.pointerId) return;
+    const dx = ev.clientX - swipe.x;
+    if (!swipe.active) {
+      if (Math.abs(ev.clientY - swipe.y) > 10) { swipe = null; return; }
+      if (Math.abs(dx) < 10) return;
+      swipe.active = true;
+      swipe.bn.setPointerCapture?.(ev.pointerId);
+    }
+    swipe.dx = dx;
+    swipe.bn.style.transform = `translateX(${dx}px)`;
+    swipe.bn.style.opacity = String(1 - Math.min(0.7, Math.abs(dx) / (swipe.bn.offsetWidth || 1)));
+  });
+  const end = (ev) => {
+    if (swipe?.id !== ev.pointerId) return;
+    const { bn, dx, active } = swipe;
+    swipe = null;
+    if (!active) return;
+    const away = ev.type === 'pointerup' && Math.abs(dx) > swipeThreshold(bn.offsetWidth || 1);
+    bn.style.transform = '';
+    bn.style.opacity = '';
+    if (away) onDismiss();
+  };
+  host.addEventListener('pointerup', end);
+  host.addEventListener('pointercancel', end);
+}
 
 export function errorBannerHtml(desc) {
   const fixes = desc.fixes.map((f, i) => `<button type="button" class="chip${i === 0 ? ' pri' : ''}" data-bn="fix" data-fix="${escapeHtml(f.id)}"${f.arg ? ` data-arg="${escapeHtml(f.arg)}"` : ''}>${escapeHtml(f.label)}</button>`).join('');

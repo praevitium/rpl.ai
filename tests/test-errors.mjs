@@ -1,6 +1,6 @@
 import { assert } from './helpers.mjs';
 import { ERROR_KINDS, parseErrorMessage, describeError } from '../www/src/ui/errors.js';
-import { errorBannerHtml, haltedBannerHtml } from '../www/src/ui/banner.js';
+import { errorBannerHtml, haltedBannerHtml, installBannerSwipe } from '../www/src/ui/banner.js';
 import { describeValue } from '../www/src/ui/display.js';
 import { Str, Real, Name, Vector, RList } from '../www/src/rpl/types.js';
 
@@ -213,4 +213,27 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   const arrays = describeError('+: Invalid dimension', ctx({ failure: { op: '+', levels: [Vector([Real(1)])] }, stack: [], depth: 0 }));
   assert(lists.kind === 'dimension' && /^Lists need the same number of items for ADD/.test(lists.detail) && /^Vectors and matrices/.test(arrays.detail),
     `describeError: a size error over lists speaks of their items, not of vectors and matrices (${lists.detail})`);
+}
+
+{
+  const handlers = {};
+  const host = { addEventListener: (type, fn) => { handlers[type] = fn; } };
+  let dismissed = 0;
+  installBannerSwipe(host, () => { dismissed++; });
+  const bn = { offsetWidth: 300, style: {}, setPointerCapture() {} };
+  const target = (halt = false, inFixes = false) => ({ closest: (sel) => (sel === '.bn:not(.halt)' ? (halt ? null : bn) : inFixes ? {} : null) });
+  const swipe = (dx, dy = 0, t = target()) => {
+    handlers.pointerdown({ target: t, pointerType: 'touch', isPrimary: true, pointerId: 1, clientX: 50, clientY: 50 });
+    for (let i = 1; i <= 4; i++) handlers.pointermove({ pointerId: 1, clientX: 50 + (dx * i) / 4, clientY: 50 + (dy * i) / 4 });
+    handlers.pointerup({ type: 'pointerup', pointerId: 1 });
+  };
+  swipe(40);
+  swipe(0, 60);
+  swipe(150, 0, target(false, true));
+  swipe(150, 0, target(true));
+  assert(dismissed === 0 && bn.style.transform === '',
+    'banner swipe: a short swipe, a vertical drag, a swipe along the fixes row and one across a halted program\'s banner leave the banner where it was');
+  swipe(150);
+  swipe(-150);
+  assert(dismissed === 2, 'banner swipe: a finger swiped far either way across an error banner puts it away, as a phone notification goes');
 }

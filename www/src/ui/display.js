@@ -177,7 +177,7 @@ const MODE_NAMES = Object.freeze({
 const editTarget = (editing) => (typeof editing === 'number' ? `level ${editing}` : editing);
 
 const prefersReducedMotion = () => !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-const swipeThreshold = (width) => Math.min(120, width * 0.35);
+export const swipeThreshold = (width) => Math.min(120, width * 0.35);
 export const LONG_PRESS_MS = 450;
 
 export class Display {
