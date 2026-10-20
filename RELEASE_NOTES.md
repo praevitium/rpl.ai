@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.86 (2026-10-20)
+**Latest release:** v0.7.87 (2026-10-20)
 
 ---
 
@@ -20,6 +20,14 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.87 — 2026-10-20
+
+- Algebraics read the HP's postfix factorial, as the AUR's ! entry says:
+  `'5!' EVAL` gives 120, `'N!/(K!*(N-K)!)'` is a binomial coefficient and
+  `'2^3!'` is 2^6, the factorial binding tighter than ^. They said
+  Invalid algebraic, and `'X!'` became a name. The text form still
+  writes FACT(X); the textbook display shows X!.
 
 ## v0.7.86 — 2026-10-20
 
