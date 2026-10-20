@@ -31,6 +31,7 @@ import {
 import { format, formatSource, formatProgramLines, withFractionMark } from './rpl/formatter.js';
 import { spreadsheetHtml } from './rpl/sheet.js';
 import { toLatex } from './rpl/latex.js';
+import { hasUnits } from './rpl/algebra.js';
 import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, currentPath,
@@ -90,6 +91,9 @@ function sigmaDataNote(data) {
   const points = isMatrix(data) ? data.rows.length : data?.items.length ?? 0;
   return points ? `ΣDAT: ${points} point${points === 1 ? '' : 's'}` : 'ΣDAT is empty';
 }
+
+// A formula with units has no real values to draw, so it is not offered a plot, as in the equation writer.
+const plottable = (value) => isSymbolic(value) && !hasUnits(value.expr);
 
 const modulusNote = () => `The modular commands work modulo ${getCasModulo()}`;
 
@@ -780,7 +784,7 @@ class App {
       else if (act === 'plot') runExample('`SIN(X)` FUNCTION');
       else if (act === 'tutor') this.runAction('assistant.tutor');
     };
-    d.rowActionsHtml = (level, value) => `<div class="st-acts" role="toolbar" aria-label="Level ${level} actions"><button type="button" data-row-act="edit" title="Edit (Enter)">${icon('edit', 'sm')}Edit</button><button type="button" data-row-act="view" title="View full size (VIEW)" aria-label="View">${icon('expand', 'sm')}</button><button type="button" data-row-act="pick" title="Copy it to level 1 (PICK)">Pick</button>${level > 1 ? '<button type="button" data-row-act="roll" title="Move it to level 1 (ROLL)">Roll</button>' : ''}${isSymbolic(value) ? `<button type="button" data-row-act="plot" title="Plot it">${icon('plot', 'sm')}</button>` : ''}${isUnit(value) ? '<button type="button" data-row-act="convert" title="Convert to another unit (CONVERT)">Conv</button>' : ''}<button type="button" data-row-act="drop" title="Drop it (⌫)" aria-label="Drop">${icon('trash', 'sm')}</button><button type="button" data-row-act="more" title="More actions" aria-label="More actions">${icon('more', 'sm')}</button></div>`;
+    d.rowActionsHtml = (level, value) => `<div class="st-acts" role="toolbar" aria-label="Level ${level} actions"><button type="button" data-row-act="edit" title="Edit (Enter)">${icon('edit', 'sm')}Edit</button><button type="button" data-row-act="view" title="View full size (VIEW)" aria-label="View">${icon('expand', 'sm')}</button><button type="button" data-row-act="pick" title="Copy it to level 1 (PICK)">Pick</button>${level > 1 ? '<button type="button" data-row-act="roll" title="Move it to level 1 (ROLL)">Roll</button>' : ''}${plottable(value) ? `<button type="button" data-row-act="plot" title="Plot it">${icon('plot', 'sm')}</button>` : ''}${isUnit(value) ? '<button type="button" data-row-act="convert" title="Convert to another unit (CONVERT)">Conv</button>' : ''}<button type="button" data-row-act="drop" title="Drop it (⌫)" aria-label="Drop">${icon('trash', 'sm')}</button><button type="button" data-row-act="more" title="More actions" aria-label="More actions">${icon('more', 'sm')}</button></div>`;
     d.onRowClick = (level) => this.selectLevel(this.selection === level ? null : level);
     d.onRowDoubleClick = (level) => this.editLevel(level);
     d.onRowHold = (level) => {
@@ -928,7 +932,7 @@ class App {
         isUnit(value) ? item('convert', 'chr', 'Convert to…') : '',
         isMatrix(value) && value.rows.length === value.rows[0]?.length ? item('inv', 'chr', 'Inverse (INV)') + item('det', 'chr', 'Determinant (DET)') + item('egvl', 'chr', 'Eigenvalues (EGVL)') : '',
         isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') : '',
-        isSymbolic(value) ? item('plot', 'plot', 'Plot it') : '',
+        plottable(value) ? item('plot', 'plot', 'Plot it') : '',
         item('ask', 'spark', 'Ask the assistant about it'),
       ],
       [
@@ -1580,7 +1584,7 @@ class App {
       { label: 'DRPN', title: `Drop levels 1–${level}`, onPress: act('dropn') },
       { label: 'KEEP', title: `Keep levels 1–${level} only`, onPress: act('keep') },
       { label: 'LEVEL', title: `Push the level number, ${level}`, onPress: act('level') },
-      isSymbolic(value)
+      plottable(value)
         ? { label: 'PLOT', title: 'Plot it', onPress: act('plot') }
         : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },
       { label: '→NUM', title: 'Evaluate to a number', onPress: act('num') },
