@@ -119,7 +119,7 @@ function _factorInteger(v) {
   } else {
     ast = _factorsToAst(_primeFactor(abs));
   }
-  return Symbolic(n < 0n ? AstNeg(ast) : ast);
+  return _astToRplValue(n < 0n ? AstNeg(ast) : ast);
 }
 
 
@@ -849,7 +849,11 @@ register('DERIV', (s) => {
     _pushCasResult(s, _casEval(expr.expr, (e) => `diff(${e},${varName})`, [varName]));
     return;
   }
-  if (isReal(expr) || isInteger(expr) || isUnit(expr)) {
+  if (isInteger(expr) || isRational(expr)) {
+    s.push(Integer(0n));
+    return;
+  }
+  if (isReal(expr) || isUnit(expr)) {
     s.push(Real(0));
     return;
   }

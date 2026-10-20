@@ -1371,13 +1371,11 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
          `FACTOR 42 → '2*3*7' (got '${formatAlgebra(s.peek().expr)}')`);
 }
 {
-  // Prime input: returned as a lone Num wrapped in Symbolic.
+  // A prime comes back as the number itself.
   const s = new Stack();
   s.push(Integer(7));
   lookup('FACTOR').fn(s);
-  assert(isSymbolic(s.peek()) &&
-         formatAlgebra(s.peek().expr) === '7',
-         `FACTOR 7 → '7' (got '${formatAlgebra(s.peek().expr)}')`);
+  assert(isInteger(s.peek()) && s.peek().value === 7n, 'FACTOR 7 → 7, a prime staying a number');
 }
 {
   // Negative integer: factorisation wrapped in unary minus.
