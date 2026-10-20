@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.71 (2026-10-20)
+**Latest release:** v0.7.72 (2026-10-20)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.7.72 — 2026-10-20
+
+- MINEHUNT, the HP's minefield game, in a sheet.
+  - Cross the 8 × 16 field from the upper-left corner to the lower-right
+    one. The pad's middle shows how many mines lie in the squares around
+    you.
+  - Move with the arrow keys, 1 to 9 for the diagonals, the pad, or a tap
+    on a square next to you.
+  - Nmines sets the number of mines, 1 to 64, and a negative number shows
+    them. Without it there are 20.
+  - K or Save stores the game in MHpar and ends it, and the next MINEHUNT
+    picks it up and purges MHpar, as on the HP. Esc or Quit ends a game.
+  - Play again starts a new field after a win or a mine.
 
 ---
 
