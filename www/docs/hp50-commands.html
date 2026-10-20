@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 751 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 759 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -197,7 +197,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-DDAYS">DDAYS</a>
 <a href="#cmd-DEC">DEC</a>
 <a href="#cmd-DECR">DECR</a>
-<a href="#cmd-DEDICACE" class='notinapp'>DEDICACE</a>
+<a href="#cmd-DEDICACE">DEDICACE</a>
 <a href="#cmd-DEF">DEF</a>
 <a href="#cmd-DEFINE">DEFINE</a>
 <a href="#cmd-DEG">DEG</a>
@@ -329,7 +329,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-HALFTAN">HALFTAN</a>
 <a href="#cmd-HALT">HALT</a>
 <a href="#cmd-HEAD">HEAD</a>
-<a href="#cmd-HEADER-to" class='notinapp'>HEADER→</a>
+<a href="#cmd-HEADER-to">HEADER→</a>
 <a href="#cmd-HELP">HELP</a>
 <a href="#cmd-HERMITE">HERMITE</a>
 <a href="#cmd-HESS">HESS</a>
@@ -600,7 +600,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-RSBERR">RSBERR</a>
 <a href="#cmd-RSD">RSD</a>
 <a href="#cmd-RSWP">RSWP</a>
-<a href="#cmd-RULES" class='notinapp'>RULES</a>
+<a href="#cmd-RULES">RULES</a>
 <a href="#cmd-R-to-B">R→B</a>
 <a href="#cmd-R-to-C">R→C</a>
 <a href="#cmd-R-to-D">R→D</a>
@@ -751,7 +751,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-VANDERMONDE">VANDERMONDE</a>
 <a href="#cmd-VAR">VAR</a>
 <a href="#cmd-VARS">VARS</a>
-<a href="#cmd-VER" class='notinapp'>VER</a>
+<a href="#cmd-VER">VER</a>
 <a href="#cmd-VERSION">VERSION</a>
 <a href="#cmd-VISIT">VISIT</a>
 <a href="#cmd-VISITB">VISITB</a>
@@ -810,12 +810,12 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-to-DIAG">→DIAG</a>
 <a href="#cmd-to-FONT" class='notinapp'>→FONT</a>
 <a href="#cmd-to-GROB">→GROB</a>
-<a href="#cmd-to-HEADER" class='notinapp'>→HEADER</a>
+<a href="#cmd-to-HEADER">→HEADER</a>
 <a href="#cmd-to-HMS">→HMS</a>
-<a href="#cmd-to-KEYTIME" class='notinapp'>→KEYTIME</a>
+<a href="#cmd-to-KEYTIME">→KEYTIME</a>
 <a href="#cmd-to-LCD">→LCD</a>
 <a href="#cmd-to-LIST">→LIST</a>
-<a href="#cmd-to-NDISP" class='notinapp'>→NDISP</a>
+<a href="#cmd-to-NDISP">→NDISP</a>
 <a href="#cmd-to-NUM">→NUM</a>
 <a href="#cmd-to-Q">→Q</a>
 <a href="#cmd-to-Qπ">→Qπ</a>
@@ -3667,7 +3667,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>INCR, STO+, STO–</p>
   </dd>
 </dl>
-<h2 id="cmd-DEDICACE">DEDICACE <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-DEDICACE">DEDICACE <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 172 · printed page 3-52</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -3677,6 +3677,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Displays a greeting from the CAS team and dedication to all HP calculator users.</p>
+    <p>In rpl.ai DEDICACE gives rpl.ai’s own dedication as a string, with its argument added at the end.</p>
   </dd>
   <dt class="cmd-label cmd-label-example">Example</dt>
   <dd class="cmd-field cmd-field-example">
@@ -7074,7 +7075,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>TAIL</p>
   </dd>
 </dl>
-<h2 id="cmd-HEADER-to">HEADER→ <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-HEADER-to">HEADER→ <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 223 · printed page 3-103</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -7084,6 +7085,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Header size: Returns the current size of the header in lines.</p>
+    <p>In rpl.ai HEADER→ gives back the size →HEADER kept, 2 at first.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -7094,7 +7096,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>→HEADER</p>
   </dd>
 </dl>
-<h2 id="cmd-to-HEADER">→HEADER <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-to-HEADER">→HEADER <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 223 · printed page 3-103</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -7104,6 +7106,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Header size: Sets the current size of the header in lines: to 0, 1, or 2 lines.</p>
+    <p>In rpl.ai →HEADER checks the size and keeps it for HEADER→, but the status line keeps its own layout.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -8483,7 +8486,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <table class="cmd-kv"><tbody><tr><th>Command</th><td>KEYEVAL(101.3)</td></tr><tr><th>Result</th><td>The calculator is turned off.</td></tr></tbody></table>
   </dd>
 </dl>
-<h2 id="cmd-to-KEYTIME">→KEYTIME <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-to-KEYTIME">→KEYTIME <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 244 · printed page 3-124</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -8493,6 +8496,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Sets a new keytime value. Keytime is the time after a keypress during which further keypresses will not be actioned. It is measured in ticks, with valid values between 0 and 4096 ticks. If you experience key bounce, you can increase the value of keytime. If you experience lost keystrokes when rapidly hitting the same key in succession, you can decrease the value of keytime. The default is 1138 ticks.</p>
+    <p>In rpl.ai →KEYTIME checks the time and keeps it for KEYTIME→, but key presses are not held back by it.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -8503,7 +8507,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>KEYTIME→</p>
   </dd>
 </dl>
-<h2 id="cmd-KEYTIME-to">KEYTIME→ <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-KEYTIME-to">KEYTIME→ <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 244 · printed page 3-124</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -8513,6 +8517,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Displays the current keytime value. Keytime is the time after a keypress during which further keypresses will not be actioned. It is measured in ticks. If you experience key bounce, you can increase the value of keytime.</p>
+    <p>In rpl.ai KEYTIME→ gives back the time →KEYTIME kept, 1138 at first.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -9980,7 +9985,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Displays a function key menu of computer algebra commands in a specified range.</p>
-  <p>In rpl.ai the commands show as TMENU shows a list, and VER, which rpl.ai lacks, is left off.</p>
+  <p>In rpl.ai the commands show as TMENU shows a list.</p>
   </dd>
   <dt class="cmd-label cmd-label-input">Input</dt>
   <dd class="cmd-field cmd-field-input">
@@ -10479,7 +10484,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>MCALC</p>
   </dd>
 </dl>
-<h2 id="cmd-to-NDISP">→NDISP <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-to-NDISP">→NDISP <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 273 · printed page 3-153</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -10489,6 +10494,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Sets the number of program lines displayed on the screen. The default value on the calculator is 9. On the HP 50g and 49g+ a value of 12 should be set for →NDISP, which will allow more of these models’ taller screen to be used when the font is FONT7, FONT6, or the MINIFONT. Also, note that the →NDISP setting is reset to 9 at every warmstart. Including &lt;&lt; 12 →NDISP &gt;&gt; in &#x60;STARTUP&#x60; will automatically reset the value to 12.</p>
+    <p>In rpl.ai →NDISP checks the number and keeps it until the app is reloaded, but the program editor shows as many lines as fit.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -14257,7 +14263,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>CSWP, ROW+, ROW–</p>
   </dd>
 </dl>
-<h2 id="cmd-RULES">RULES <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-RULES">RULES <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 334 · printed page 3-214</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -14267,6 +14273,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Displays a list of names of individuals involved with the HP 49G calculator project.</p>
+    <p>In rpl.ai RULES shows, in a message box, the people behind rpl.ai and Giac, with thanks to Eric Rechlin, Joseph K. Horn, Jean-Yves Avenard, Cyrille de Brébisson, Claudio Lapilli and William C. Wickes.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -18255,7 +18262,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>ORDER, PVARS, TVARS</p>
   </dd>
 </dl>
-<h2 id="cmd-VER">VER <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-VER">VER <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 390 · printed page 3-270</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -18265,6 +18272,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Returns the Computer Algebra System version number, and date of release.</p>
+    <p>In rpl.ai VER gives Giac’s version, 1.5, with the build’s date run on: 1.520261020 for a build of 20 October 2026.</p>
   </dd>
   <dt class="cmd-label cmd-label-input">Input</dt>
   <dd class="cmd-field cmd-field-input">
