@@ -24,6 +24,9 @@ const MOVES = [
   [0, -1, '←', 'Left', '4', 'ArrowLeft'], null, [0, 1, '→', 'Right', '6', 'ArrowRight'],
   [1, -1, '↙', 'Down and left', '1'], [1, 0, '↓', 'Down', '2', 'ArrowDown'], [1, 1, '↘', 'Down and right', '3'],
 ];
+// A swipe on the field moves one square its way: right first, then round by eighths of a turn, as the screen's y grows down.
+const SWIPE_STEPS = [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]];
+const SWIPE_PX = 24;
 
 // The two largest parts of the calculator clock's distance from the device's, as "2 h 5 min ahead of the device clock".
 function clockOffsetText(ms) {
@@ -95,6 +98,8 @@ export class Sheets {
       this.el.addEventListener('mousedown', (e) => { if (e.target === this.el) this.close(); });
       this.el.addEventListener('click', (e) => this._onClick(e));
       this.el.addEventListener('keydown', (e) => (this.kind === 'game' ? this._onGameKey(e) : this._onKeyDown(e)));
+      this.el.addEventListener('pointerdown', (e) => { this._swipe = this.kind === 'game' && e.target.closest('.mh-grid') ? [e.clientX, e.clientY] : null; });
+      this.el.addEventListener('pointerup', (e) => this._gameSwipe(e));
       this.host.appendChild(this.el);
     }
     this._render();
@@ -286,7 +291,6 @@ export class Sheets {
     }
   }
 
-  // Enter in a form field moves on to the next, and from the last answers the form, as the HP's ENTER does.
   _onGameKey(e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const move = MOVES.find((m) => m && (m[4] === e.key || m[5] === e.key));
@@ -294,6 +298,17 @@ export class Sheets {
     else if (e.key === 'k' || e.key === 'K') { e.preventDefault(); this._saveGame(); }
   }
 
+  _gameSwipe(e) {
+    const from = this._swipe;
+    this._swipe = null;
+    if (!from || this.kind !== 'game') return;
+    const dx = e.clientX - from[0], dy = e.clientY - from[1];
+    if (Math.hypot(dx, dy) < SWIPE_PX) return;
+    const [dr, dc] = SWIPE_STEPS[(Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) + 8) % 8];
+    this._gameStep(dr, dc);
+  }
+
+  // Enter in a form field moves on to the next, and from the last answers the form, as the HP's ENTER does.
   _onKeyDown(e) {
     if (this.kind !== 'inform' || e.key !== 'Enter' || !e.target.matches('input[data-inf]')) return;
     e.preventDefault();
