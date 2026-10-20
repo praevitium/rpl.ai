@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.67 (2026-10-20)
+**Latest release:** v0.7.68 (2026-10-20)
 
 ---
 
@@ -18,6 +18,31 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.7.68 — 2026-10-20
+
+- STURM, TRIG and TABVAR through Giac.
+  - `'X^3+1' STURM` gives `{ [1] -1. [X^3+1 X^2 -1] 1. }`: P's content,
+    then each multiplicity's Sturm sequence, followed by that
+    multiplicity.
+  - TRIG turns exponentials into sines and cosines, then simplifies with
+    SIN²+COS²=1 towards cosines, or towards sines with flag -116 set.
+  - `'X^2-1' TABVAR` gives the function, the variation table
+    `{ { -∞ - 0 + ∞ } { ∞ ↓ -1 ↑ ∞ } }` and a picture of F, F′ and the
+    table.
+  - TRIG is in the CAS menu's TRIG folder and TABVAR in its CALC folder.
+- Differences from the AUR, noted in each command's reference entry and
+  the README:
+  - STURM leaves out the extra `[1] 1.` pair the AUR's example shows.
+  - TRIG of `LN(X+i)` keeps the term that makes it right for X<0.
+  - TABVAR gives `?` where f has no limit, as at the pole of 1/X.
+- A name in a list no longer draws with backticks in textbook view.
+  SIGNTAB's `{ -∞ + -2 - 1 + ∞ }` showed its last ∞ as `` `∞` ``; it
+  now draws bare, like the formulas beside it.
+- SIGNTAB gives exact fractions as rationals, so a zero at 1/2 shows as
+  1/2.
 
 ---
 
