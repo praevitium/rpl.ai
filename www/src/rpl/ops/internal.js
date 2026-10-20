@@ -2592,8 +2592,22 @@ export function _indexAsInt(v) {
 }
 
 
+// AUR: →ROW and →COL take a vector apart into its elements and a count, and ROW→ and COL→ put numbers and a count back into one.
+function _vectorDecompose(s, v) {
+  for (const item of v.items) s.push(item);
+  s.push(Real(v.items.length));
+}
+
+function _composeElements(s, items) {
+  if (items.some(isVector)) return false;
+  if (!items.every(_isScalarOperand)) throw new RPLError('Bad argument type');
+  s.push(Vector(items));
+  return true;
+}
+
 export const _rowDecompose = (s) => {
   const [M] = s.popN(1);
+  if (isVector(M)) return _vectorDecompose(s, M);
   if (!isMatrix(M)) throw new RPLError('Bad argument type');
   for (const row of M.rows) s.push(Vector(row.slice()));
   s.push(Real(M.rows.length));
@@ -2605,6 +2619,7 @@ export const _rowCompose = (s) => {
   const m = _indexAsInt(countVal);
   if (m < 1) throw new RPLError('Bad argument value');
   const vecs = s.popN(m);
+  if (_composeElements(s, vecs)) return;
   for (const v of vecs) {
     if (!isVector(v)) throw new RPLError('Bad argument type');
   }
@@ -2619,6 +2634,7 @@ export const _rowCompose = (s) => {
 
 export const _colDecompose = (s) => {
   const [M] = s.popN(1);
+  if (isVector(M)) return _vectorDecompose(s, M);
   if (!isMatrix(M)) throw new RPLError('Bad argument type');
   const m = M.rows.length;
   const cols = m > 0 ? M.rows[0].length : 0;
@@ -2636,6 +2652,7 @@ export const _colCompose = (s) => {
   const n = _indexAsInt(countVal);
   if (n < 1) throw new RPLError('Bad argument value');
   const vecs = s.popN(n);
+  if (_composeElements(s, vecs)) return;
   for (const v of vecs) {
     if (!isVector(v)) throw new RPLError('Bad argument type');
   }

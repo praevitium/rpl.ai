@@ -1791,11 +1791,13 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
       'session051: →ROW on 1×1 gives [42] 1.');
   }
 
-  // →ROW on Vector throws.
-  {
+  // AUR: →ROW and →COL take a vector apart into its elements and a count.
+  for (const op of ['→ROW', '→COL']) {
     const s = new Stack();
     s.push(Vector([Real(1), Real(2)]));
-    assertThrows(() => lookup('→ROW').fn(s), /Bad argument/, 'session051: →ROW on Vector throws');
+    lookup(op).fn(s);
+    assert(s.depth === 3 && s.peek(1).value.eq(2) && s.peek(2).value.eq(2) && s.peek(3).value.eq(1),
+      `AUR: ${op} on [ 1 2 ] gives 1 2 2, its elements and their count`);
   }
 
   // ASCII alias ->ROW.
@@ -1848,13 +1850,20 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('ROW→').fn(s), /Invalid dimension/, 'session051: ROW→ mismatched row lengths throws');
   }
 
-  // Non-Vector argument throws.
-  {
+  // AUR: ROW→ and COL→ put numbers and a count into a vector; a vector among numbers is still refused.
+  for (const op of ['ROW→', 'COL→']) {
     const s = new Stack();
     s.push(Real(1));
     s.push(Real(2));
     s.push(Integer(2));
-    assertThrows(() => lookup('ROW→').fn(s), /Bad argument/, 'session051: ROW→ on non-vector args throws');
+    lookup(op).fn(s);
+    assert(s.depth === 1 && isVector(s.peek(1)) && s.peek(1).items.length === 2 && s.peek(1).items[1].value.eq(2),
+      `AUR: ${op} with 1 2 2 gives [ 1 2 ]`);
+    const t = new Stack();
+    t.push(Real(1));
+    t.push(Vector([Real(2)]));
+    t.push(Integer(2));
+    assertThrows(() => lookup(op).fn(t), /Bad argument/, `${op} with a number and a vector is Bad argument type`);
   }
 
   // ASCII alias ROW->.
@@ -1991,8 +2000,9 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
       s.push(Real(1));
       s.push(Real(2));
       s.push(Integer(2));
-      assertThrows(() => lookup('ROW->').fn(s), /Bad argument type/,
-        'session391: ROW-> non-vector args → Bad argument type');
+      lookup('ROW->').fn(s);
+      assert(isVector(s.peek(1)) && s.peek(1).items.length === 2,
+        'session391: ROW-> with numbers and a count gives a vector, as the AUR\'s second form does');
     }
     // COL-> mirrors COL→'s mismatched-height reject (compose path).
     {
@@ -2003,12 +2013,13 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
       assertThrows(() => lookup('COL->').fn(s), /Invalid dimension/,
         'session391: COL-> mismatched column heights → Invalid dimension');
     }
-    // ->ROW / ->COL mirror →ROW/→COL's non-Matrix rejects (decompose path).
+    // ->ROW / ->COL mirror →ROW/→COL: a vector comes apart, a real is refused.
     {
       const s = new Stack();
       s.push(Vector([Real(1), Real(2)]));
-      assertThrows(() => lookup('->ROW').fn(s), /Bad argument type/,
-        'session391: ->ROW on Vector → Bad argument type');
+      lookup('->ROW').fn(s);
+      assert(s.depth === 3 && s.peek(1).value.eq(2),
+        'session391: ->ROW on a vector gives its elements and a count, as the AUR\'s second form does');
     }
     {
       const s = new Stack();
