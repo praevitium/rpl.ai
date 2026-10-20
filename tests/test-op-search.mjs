@@ -297,6 +297,9 @@ import { assert } from './helpers.mjs';
   assert(localNames('« → a b « a b + » ').join(' ') === 'a b' && localNames("« -> X Y 'X+Y' ").join(' ') === 'X Y'
     && localNames('→ a1 a2 « ').join(' ') === 'a1 a2' && localNames('« → ←tot n « ').join(' ') === '←tot n' && localNames('2 3 + ').length === 0,
     'localNames: the names a → binds, up to the program or algebraic that uses them');
+  assert(localNames('« → n « 0 1 n FOR k k SQ + ').join(' ') === 'n k' && localNames('1 5 FOR ').length === 0
+    && localNames('1 5 for k ').length === 0 && localNames('1 5 START ').length === 0,
+    'localNames: a FOR loop\'s counter is a local too (lower-case for is a name, not the loop, and START binds none)');
   assert(completions('r', { names: ['RE', 'RL', 'RAD'], locals: ['rate'] }).map((r) => `${r.name}:${r.kind}`).join(' ') === 'rate:local RE:command RL:command RAD:command',
     'completions: a program\'s locals lead, ahead of shorter commands');
   assert(isInsideAlgebraic('2 `SI', 3) && !isInsideAlgebraic('`X` SI', 4), 'isInsideAlgebraic: counts the quotes before the word');

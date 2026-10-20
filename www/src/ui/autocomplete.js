@@ -51,13 +51,16 @@ export function completions(word, { names = [], variables = [], locals = [] } = 
     .slice(0, MAX_ROWS);
 }
 
-// The names a → earlier in the line binds: in « → a b « a b + » » the program's a and b.
+const isLocalName = (word) => /^[^\d«»'`"{}[\]()#][^«»'`"{}[\]()#]*$/.test(word ?? '');
+
+// The names a → or a FOR earlier in the line binds: in « → a b « a b + » » the program's a and b, in 1 5 FOR k … NEXT its k.
 export function localNames(text) {
   const words = String(text ?? '').split(/\s+/);
   const names = new Set();
   words.forEach((word, i) => {
+    if (word === 'FOR' && isLocalName(words[i + 1])) names.add(words[i + 1]);
     if (word !== '→' && word !== '->') return;
-    for (let j = i + 1; j < words.length && /^[^\d«»'`"{}[\]()#][^«»'`"{}[\]()#]*$/.test(words[j]); j++) names.add(words[j]);
+    for (let j = i + 1; j < words.length && isLocalName(words[j]); j++) names.add(words[j]);
   });
   return [...names];
 }
