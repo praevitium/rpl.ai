@@ -1003,8 +1003,9 @@ and serial transfer.
   date, and `DEDICACE` and `RULES` give rpl.ai's own dedication and credits.
 - `SIDENS` uses the textbook model of silicon's intrinsic carrier density,
   about 9.89E9 per cm³ at 300 K, since the HP's own fit is not published.
-- `MINEHUNT` is played in a sheet: the arrow keys, 1 to 9, its pad or a tap
-  on a square next to you move you, K saves the game in MHpar and Esc quits.
+- `MINEHUNT` is played in a sheet: the arrow keys, 1 to 9, its pad, a tap
+  on a square next to you or a swipe on the field move you, K saves the game
+  in MHpar and Esc quits.
   On a phone in landscape the pad sits beside the field.
 - `EVAL` of a matrix or vector with symbolic entries evaluates each entry;
   the AUR's EVAL table leaves an array as it is.
