@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.96 (2026-10-20)
+**Latest release:** v0.7.97 (2026-10-20)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.97 — 2026-10-20
+
+- A program typed on a phone keyboard with `->STR`, `->`, `<=`, `>=` or
+  `<>` now keeps them as `→STR`, `→`, `≤`, `≥` and `≠`, as `<<` already
+  became `«`; it showed `« 2 ->STR »` where the keypad and the HP write
+  `« 2 →STR »`. A name of your own, such as `X->Y`, stays as typed.
+- Typing `->S`, `R->` or `STR->` on a phone keyboard brings up the arrow
+  commands they stand for, `→STR`, `R→B`, `STR→`, and a tap completes to
+  them. Before, the list completed only the letters after `>`, so picking
+  a row gave `->SIN`.
+- In a window under 300 px tall, as in landscape with the keyboard up, a
+  command's reference keeps Run and Insert in one row at the foot of the
+  drawer, so a completion row held there shows Insert without scrolling.
 
 ## v0.7.96 — 2026-10-20
 

@@ -406,7 +406,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   puts it back; tap the pencil to cancel. Curly quotes, typed with an
   iPhone's smart punctuation or pasted from Notes or a messaging app, read
   as the HP's straight ones, and ×, ÷ and − from a phone's symbol keys as
-  *, / and -.
+  *, / and -. A phone keyboard has no →, ≤, ≥ or ≠ either: type `->`, `<=`,
+  `>=` or `<>` and a program keeps them as the HP writes them, `->STR` as
+  `→STR`, and the completion list offers `→STR` for `->S`.
 - ⌫ and Enter sit beside the command line, finger-sized. ⌫ deletes a
   character or the selected text, and leaves the stack alone on an empty
   line. Hold ⌫, there or on the keypad, to clear the whole line; Undo in
