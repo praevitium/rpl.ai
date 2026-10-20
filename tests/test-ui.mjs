@@ -2808,3 +2808,10 @@ setAngle('RAD');
     && /word\.className = 'nb';/.test(drawerSrc) && /\.ref-table \.nb \{ white-space: nowrap; \}/.test(css),
     'reference: a stack diagram\'s objn-1 stays whole in a narrow drawer, the table scrolling instead, where UNPICK\'s broke into objn- and 1 at 320 px');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const short = css.slice(css.indexOf('@media (max-height: 330px) {\n  :root[data-keyboard] .input-top'));
+  assert(/^@media \(max-height: 330px\) \{[^@]*:root\[data-short\] \.input-top, :root\[data-short\] \.input-hint \{ display: none; \}/.test(short),
+    'short window, no keyboard: the writer tabs step aside under 330 px, so in a 160 px landscape split screen the soft keys end on screen, where they ran 22 px past it once Settings had taken the focus');
+}

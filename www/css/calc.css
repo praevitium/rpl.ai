@@ -2234,6 +2234,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   :root[data-keyboard] .input-top, :root[data-keyboard] .input-hint,
   :root[data-keyboard] .mx-foot, :root[data-keyboard] .status-line, :root[data-keyboard] .appbar, :root[data-keyboard] .menubar, :root[data-keyboard] .st-more { display: none; }
   :root[data-keyboard] .app { grid-template-rows: minmax(0, 1fr); }
+  /* Without the keyboard, as in a landscape split screen, the soft keys stay, so the writer tabs give them their room. */
+  :root[data-short] .input-top, :root[data-short] .input-hint { display: none; }
   /* Minimal view's edit pencil goes with its status line, so its command line takes the amber outline the other views show. */
   :root[data-keyboard][data-view="minimal"] .cmdline.editing { border-color: color-mix(in oklab, var(--amber) 60%, transparent); box-shadow: 0 0 0 3px var(--amber-dim); padding-inline: 8px; }
   :root:is([data-keyboard], [data-short]) .mx-grid-wrap { max-height: 92px; }
