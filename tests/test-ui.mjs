@@ -2232,6 +2232,19 @@ setAngle('RAD');
   const chosen = ac.rows[1].name;
   key('Tab');
   assert(entry.buffer === `1 ${chosen} ` && !ac.isOpen(), 'autocomplete: Tab after ↓ completes the chosen command with its space');
+  entry.hasFocus = () => false;
+  entry.resetBuffer('');
+  entry.type('2 S');
+  const unfocused = ac.isOpen();
+  entry.type('I');
+  ac.app.typingOnKeypad = true;
+  entry.type('N');
+  ac.app.typingOnKeypad = false;
+  assert(!unfocused && ac.isOpen() && ac.rows[0].name === 'SIN',
+    'autocomplete: letters typed on the keypad, which leaves the line unfocused, bring up the list as a keyboard\'s do');
+  assert(/handleKey\(key, opts\) \{\s*this\.typingOnKeypad = true;\s*try \{ this\._handleKey\(key, opts\); \} finally \{ this\.typingOnKeypad = false; \}/.test(readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8'))
+    && /document\.addEventListener\('pointerdown', \(e\) => \{ if \(this\.isOpen\(\) && !e\.target\.closest\?\.\('\.ac, \.keys, #cmdline'\)\) this\.close\(\); \}, true\);/.test(readFileSync(new URL('../www/src/ui/autocomplete.js', import.meta.url), 'utf8')),
+    'autocomplete: a keypad key counts as typing on the line, and a tap outside the list, the keypad and the line closes it, since no focusout comes');
 }
 
 {

@@ -70,6 +70,7 @@ export class Autocomplete {
     });
     cmdline.addEventListener('keydown', (e) => this._onKey(e), true);
     cmdline.addEventListener('focusout', () => this.close());
+    document.addEventListener('pointerdown', (e) => { if (this.isOpen() && !e.target.closest?.('.ac, .keys, #cmdline')) this.close(); }, true);
   }
 
   isOpen() { return !this.el.hidden; }
@@ -77,7 +78,7 @@ export class Autocomplete {
   update() {
     const { entry } = this.app;
     const text = entry.buffer;
-    const at = this.app.inputMode === 'rpl' && entry.hasFocus() && !this.app.errorBanner && !text.trimStart().startsWith('?')
+    const at = this.app.inputMode === 'rpl' && (entry.hasFocus() || this.app.typingOnKeypad) && !this.app.errorBanner && !text.trimStart().startsWith('?')
       ? wordBeforeCursor(text, entry.cursor) : null;
     if (this.shown && at?.from === this.word?.from && at.word === this.shown) return;
     this.shown = null;

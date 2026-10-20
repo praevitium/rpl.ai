@@ -2162,7 +2162,13 @@ class App {
     });
   }
 
-  handleKey(key, { standard = false } = {}) {
+  // A keypad key types into the line without focusing it, so the completion list asks typingOnKeypad as well.
+  handleKey(key, opts) {
+    this.typingOnKeypad = true;
+    try { this._handleKey(key, opts); } finally { this.typingOnKeypad = false; }
+  }
+
+  _handleKey(key, { standard = false } = {}) {
     // A shift key with a letter on it (the compact keypad's) types the letter under α. KEY takes a shift key as a key.
     if (MODIFIER_KINDS.has(key.kind) && !calcState.halted?.dialog?.poll && !(key.alpha && this.layer() === 'A')) {
       if (key.kind !== 'alpha' || this.layer() !== 'L') this.setShift(key.kind);
