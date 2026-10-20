@@ -1979,7 +1979,8 @@ class App {
 
   pressVariable(name, layer = null) {
     if (this.entry.typeVariable(name, layer)) return;
-    if (this.entry.buffer.trim().length > 0) {
+    const raw = this.entry.buffer.trim();
+    if (raw) {
       this.commitEntry();
       if (this.entry.error) return;
     }
@@ -1996,12 +1997,13 @@ class App {
       if (!goInto(name)) this.entry.flashError({ message: `Cannot open ${name}` });
       return;
     }
-    this._pushValue(v, isProgram(v) ? name : null);
+    // A program's key pressed on a typed value fails as the two typed together would, so Fix the line brings back both.
+    this._pushValue(v, isProgram(v) ? name : null, raw ? { line: `${raw} ${name}`, spot: raw.length + 1 } : null);
   }
 
-  _pushValue(value, runAs = null) {
+  _pushValue(value, runAs = null, typed = null) {
     this.entry._snapForUndo();
-    if (runAs) this.entry.safeRun(() => { this.stack.push(value); lookup('EVAL').fn(this.stack, this.entry); }, runAs);
+    if (runAs) this.entry.safeRun(() => { this.stack.push(value); lookup('EVAL').fn(this.stack, this.entry); }, runAs, { typed });
     else this.stack.push(value);
   }
 

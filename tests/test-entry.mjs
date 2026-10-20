@@ -131,6 +131,9 @@ import { assert, assertThrows } from './helpers.mjs';
     e.buffer = '';
     e.execOp('SIN');
     assert(e.errorLine === '' && e.errorSpot === -1, 'a command key on an empty line leaves no line to fix');
+    e.safeRun(() => { lookup('SIN').fn(s); }, 'PSIN', { typed: { line: '"a" PSIN', spot: 4 } });
+    assert(e.error.startsWith('PSIN: ') && e.errorLine === '"a" PSIN' && e.errorSpot === 4,
+      'a run that fails keeps the line its key was pressed on, as a program variable\'s key does, for Fix the line');
     line('DROP DROP DROP DROP DROP');
     assert(s.depth === 0 && e.stack.hasUndo(), 'four DROPs run before the fifth fails; Undo still has the stack from before the line');
     e.performUndo();

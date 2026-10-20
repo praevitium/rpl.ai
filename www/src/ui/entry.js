@@ -565,8 +565,9 @@ export class Entry {
   // A failed command leaves its arguments on the stack, as on the HP 50g.  With
   // keepPartial (the command line) what ran before it stays, as on the HP;
   // otherwise the whole action is undone.  ABORT keeps the stack as the program
-  // left it.  True when the body ran to completion.
-  safeRun(body, context = '', { keepPartial = false } = {}) {
+  // left it.  A failure keeps typed ({ line, spot }), the line a key was pressed on,
+  // for Fix the line.  True when the body ran to completion.
+  safeRun(body, context = '', { keepPartial = false, typed = null } = {}) {
     const rollback = this.stack.save();
     try {
       withTimeLimit(RUN_TIME_LIMIT_MS, body);
@@ -579,7 +580,9 @@ export class Entry {
       if (!this.failure && e.depth != null) this.failure = { op: null, levels: [], depth: e.depth, missing: e.missing };
       if (!keepPartial) this.stack.restore(rollback);
       this._dropNoOpUndoStep();
-      this.flashError(context ? new RPLError(`${context}: ${errorText(e)}`) : e);
+      const error = context ? new RPLError(`${context}: ${errorText(e)}`) : e;
+      if (typed && error instanceof Error && error.line == null) Object.assign(error, typed);
+      this.flashError(error);
       return false;
     }
   }

@@ -2816,3 +2816,10 @@ setAngle('RAD');
   assert(/^@media \(max-height: 330px\) \{[^@]*:root\[data-short\] \.input-top, :root\[data-short\] \.input-hint \{ display: none; \}/.test(short),
     'short window, no keyboard: the writer tabs step aside under 330 px, so in a 160 px landscape split screen the soft keys end on screen, where they ran 22 px past it once Settings had taken the focus');
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/this\._pushValue\(v, isProgram\(v\) \? name : null, raw \? \{ line: `\$\{raw\} \$\{name\}`, spot: raw\.length \+ 1 \} : null\);/.test(appSrc)
+    && /this\.entry\.safeRun\(\(\) => \{ this\.stack\.push\(value\); lookup\('EVAL'\)\.fn\(this\.stack, this\.entry\); \}, runAs, \{ typed \}\);/.test(appSrc),
+    'variable keys: a program\'s key pressed on a typed value that fails keeps both for Fix the line, as a command key does');
+}
