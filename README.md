@@ -482,8 +482,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   drawer so you see the result, as the HP's catalog does; after a character or a unit, More
   brings the drawer back at it for the next one.
 - On a plot, two fingers pinch to zoom and one drags to pan; a tap shows
-  the x and y under it and each curve's value there, and with Trace on it
-  moves the trace cursor there. The plot's tools fold into one ⋯ button,
+  the x and y under it and each curve's value there and moves the graphics
+  cursor there, a drag that starts on the cursor moves it, and with Trace
+  on a tap moves the trace cursor. The plot's tools fold into one ⋯ button,
   leaving the plot to your fingers, and the plot types scroll in one row.
   In a short plot drawer, in landscape or with the keyboard up, the drawer
   scrolls, so the field you type in stays in view.
@@ -1004,6 +1005,7 @@ and serial transfer.
   about 9.89E9 per cm³ at 300 K, since the HP's own fit is not published.
 - `MINEHUNT` is played in a sheet: the arrow keys, 1 to 9, its pad or a tap
   on a square next to you move you, K saves the game in MHpar and Esc quits.
+  On a phone in landscape the pad sits beside the field.
 - `EVAL` of a matrix or vector with symbolic entries evaluates each entry;
   the AUR's EVAL table leaves an array as it is.
 - REALASSUME starts empty rather than holding X, Y, t, S1 and S2, and
