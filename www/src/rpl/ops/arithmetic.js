@@ -482,6 +482,8 @@ register('MOD', _withTaggedBinary(_withListBinary((s) => {
 })), { category: 'Arithmetic', categoryOrder: 17, label: "MOD" });
 
 
+const _exactParts = (v) => (isInteger(v) ? [v.value, 1n] : [v.n, v.d]);
+
 function _minMax(s, wantMin, name) {
   const [a, b] = s.popN(2);
   if (_isSymOperand(a) || _isSymOperand(b)) {
@@ -496,9 +498,10 @@ function _minMax(s, wantMin, name) {
   }
   if (!isNumber(a) || !isNumber(b)) throw new RPLError('Bad argument type');
   if (isComplex(a) || isComplex(b)) throw new RPLError('Bad argument type');
-  if (isInteger(a) && isInteger(b)) {
-    const aWins = wantMin ? (a.value <= b.value) : (a.value >= b.value);
-    s.push(Integer(aWins ? a.value : b.value));
+  if ((isInteger(a) || isRational(a)) && (isInteger(b) || isRational(b))) {
+    const [an, ad] = _exactParts(a), [bn, bd] = _exactParts(b);
+    const aWins = wantMin ? an * bd <= bn * ad : an * bd >= bn * ad;
+    s.push(aWins ? a : b);
   } else {
     const da = _toDecimal(a);
     const db = _toDecimal(b);

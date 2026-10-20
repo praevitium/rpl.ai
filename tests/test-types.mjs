@@ -4116,21 +4116,19 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     s.push(Rational(1n, 3n));
     lookup('MIN').fn(s);
     const v = s.peek();
-    assert(isReal(v),
-      `session125: MIN Rational(1,2) Rational(1,3) → Real (Q→R degradation, NOT stay-exact; got ${v?.type})`);
-    assert(Math.abs(v.value.toNumber() - 1/3) < 1e-12,
-      `session125: MIN Rational(1,2) Rational(1,3) → Real(≈0.333) (got ${v?.value?.toString()})`);
+    assert(isRational(v) && v.n === 1n && v.d === 3n,
+      `session125: MIN Rational(1,2) Rational(1,3) → Rational(1,3), exact as on the HP (got ${v?.type})`);
   }
 
-  // MAX Q Q → Real(1/2).
+  // MAX Q Q → Rational(1/2).
   {
     const s = new Stack();
     s.push(Rational(1n, 2n));
     s.push(Rational(1n, 3n));
     lookup('MAX').fn(s);
     const v = s.peek();
-    assert(isReal(v) && Math.abs(v.value.toNumber() - 0.5) < 1e-12,
-      `session125: MAX Rational(1,2) Rational(1,3) → Real(0.5) (Q→R degradation; got ${v?.type}(${v?.value}))`);
+    assert(isRational(v) && v.n === 1n && v.d === 2n,
+      `session125: MAX Rational(1,2) Rational(1,3) → Rational(1,2), exact as on the HP (got ${v?.type}(${v?.value}))`);
   }
 
   // MOD Q Q — `7/2 mod 1/3`.  Routes through `_hp50ModReal` on
@@ -4163,8 +4161,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     s.push(Integer(1n));
     lookup('MIN').fn(s);
     const v = s.peek();
-    assert(isReal(v) && Math.abs(v.value.toNumber() - 0.5) < 1e-12,
-      `session125: MIN Rational(1,2) Integer(1) → Real(0.5) (Q×Z falls to Real branch; got ${v?.type}(${v?.value}))`);
+    assert(isRational(v) && v.n === 1n && v.d === 2n,
+      `session125: MIN Rational(1,2) Integer(1) → Rational(1,2), exact (got ${v?.type}(${v?.value}))`);
   }
 
   // Operand-order symmetry — Z × Q routes through the same Real
@@ -4175,8 +4173,8 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     s.push(Rational(1n, 2n));
     lookup('MIN').fn(s);
     const v = s.peek();
-    assert(isReal(v) && Math.abs(v.value.toNumber() - 0.5) < 1e-12,
-      `session125: MIN Integer(1) Rational(1,2) → Real(0.5) (Z×Q symmetric)`);
+    assert(isRational(v) && v.n === 1n && v.d === 2n,
+      `session125: MIN Integer(1) Rational(1,2) → Rational(1,2) (Z×Q symmetric, exact)`);
   }
 
   // Q × R on MAX — `3/2 ≈ 1.5` vs `0.7`, max is 1.5 as Real.  Pins
