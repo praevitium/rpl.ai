@@ -2269,6 +2269,8 @@ setAngle('RAD');
     && /document\.addEventListener\('pointerdown', \(e\) => \{ if \(this\.isOpen\(\) && !e\.target\.closest\?\.\('\.ac, \.keys, #cmdline'\)\) this\.close\(\); \}, true\);/.test(readFileSync(new URL('../www/src/ui/autocomplete.js', import.meta.url), 'utf8')),
     'autocomplete: a keypad key counts as typing on the line, and a tap outside the list, the keypad and the line closes it, since no focusout comes');
   const acSrc = readFileSync(new URL('../www/src/ui/autocomplete.js', import.meta.url), 'utf8');
+  assert(/completions\(at\.word, \{ names: allOps\(\)\.map\(\(n\) => lookup\(n\)\.name\)/.test(acSrc),
+    'autocomplete: commands are offered as the HP spells them, →Qπ, erf and lim, where the list showed →QΠ, ERF and LIM');
   assert(/if \(e\.pointerType === 'mouse' \|\| row\?\.kind !== 'command'\) return;/.test(acSrc)
     && /const fire = \(\) => \{ hold = null; held = true; this\.app\.buzzHold\(\); this\.close\(\); this\.app\.drawers\.showReference\(row\.name\); \};/.test(acSrc)
     && /document\.addEventListener\('click', \(e\) => \{ if \(held\) \{ held = false; e\.preventDefault\(\); e\.stopPropagation\(\); \} \}, true\);/.test(acSrc),

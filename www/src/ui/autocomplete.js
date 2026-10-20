@@ -1,4 +1,4 @@
-import { allOps } from '../rpl/ops.js';
+import { allOps, lookup } from '../rpl/ops.js';
 import { endsInQuote } from '../rpl/parser.js';
 import { varOrder, varRecall, state } from '../rpl/state.js';
 import { shortDescription } from './command-reference.js';
@@ -59,6 +59,16 @@ function structureScore(word, [first, ...rest]) {
   return w.length < 2 || !first.startsWith(w) ? 0 : (first === w ? 1900 : 1490) - rest.length;
 }
 
+// Nor inside a name, so CLSIGMA finds CLΣ, DELTALIST ΔLIST and ->QPI →Qπ.
+const spelledGreek = (name) => name.toUpperCase().replaceAll('Σ', 'SIGMA').replaceAll('Δ', 'DELTA').replaceAll('Π', 'PI');
+
+function greekScore(word, name) {
+  const spelled = spelledGreek(name);
+  if (spelled === name.toUpperCase()) return 0;
+  const w = word.toUpperCase();
+  return spelled === w ? 1950 : w.length >= 3 && spelled.startsWith(w) ? 1500 - spelled.length : 0;
+}
+
 function spelledScore(word, spellings) {
   const w = word.toLowerCase();
   return Math.max(...spellings.map((s) => (s === w ? 1900 : w.length >= 3 && s.startsWith(w) ? 1500 - s.length : 0)));
@@ -80,7 +90,8 @@ export function completions(word, { names = [], variables = [], locals = [], str
     .map(({ spellings, inner, ...row }) => {
       const score = spellings ? spelledScore(word, spellings)
         : row.words ? structureScore(word, row.words)
-        : inner && word.length < 2 ? 0 : completionScore(hpArrows(word), row.name);
+        : inner && word.length < 2 ? 0
+        : Math.max(completionScore(hpArrows(word), row.name), row.kind === 'command' ? greekScore(hpArrows(word), row.name) : 0);
       return { ...row, score: score && row.kind === 'local' ? score + 100 : score };
     })
     .filter((row) => row.score > 0)
@@ -182,7 +193,7 @@ export class Autocomplete {
       return;
     }
     const rows = at.unit ? unitCompletions(at.word, { plain: isInsideAlgebraic(text, at.from) })
-      : completions(at.word, { names: allOps(), variables: varOrder(), locals: localNames(text.slice(0, at.from)), structures: !isInsideAlgebraic(text, at.from) });
+      : completions(at.word, { names: allOps().map((n) => lookup(n).name), variables: varOrder(), locals: localNames(text.slice(0, at.from)), structures: !isInsideAlgebraic(text, at.from) });
     if (!rows.length || (rows.length === 1 && rows[0].name === at.word && !at.glue)) { this.close(); return; }
     if (this.word?.word !== at.word) this.index = 0;
     this.word = at;

@@ -307,6 +307,14 @@ import { assert } from './helpers.mjs';
       'completions: a spelled glyph needs its whole spelling or three letters of it, and a variable named pi still leads');
   }
   {
+    const first = (w) => completions(w, { names: allOps() })[0]?.name;
+    assert(first('clsigma') === 'CLΣ' && first('sigma+') === 'Σ+' && first('deltalist') === 'ΔLIST' && first('->qpi') === '→QΠ'
+      && first('stosig') === 'STOΣ' && first('sigmaline') === 'ΣLINE',
+      'completions: a Σ, Δ or π inside a command name is found spelled out, clsigma giving CLΣ and ->qpi →Qπ, where those offered nothing');
+    assert(!completions('si', { names: ['ΣLIST', 'SIN'] }).some((r) => r.name === 'ΣLIST' && r.score > 1000),
+      'completions: a spelled Greek letter needs three letters typed');
+  }
+  {
     const shown = (w, opts) => completions(w, { names: allOps(), ...opts }).map((r) => r.name);
     const [ifRow] = completions('if', { names: allOps() });
     assert(ifRow.kind === 'structure' && ifRow.words.join(' ') === 'IF THEN END' && shown('if')[1] === 'IF … THEN … ELSE … END'
