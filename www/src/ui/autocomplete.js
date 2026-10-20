@@ -45,6 +45,16 @@ function completionScore(word, name) {
   return Math.max(0, fuzzyScore(word, name));
 }
 
+// A phone keyboard has none of these, so each is offered for the word that spells it: pi gives π, inf ∞, sum Σ.
+const SPELLED = Object.freeze({
+  'π': ['pi'], '∞': ['inf', 'infinity'], 'Σ': ['sum', 'sigma'], '∫': ['integral'], '√': ['sqrt'], '∂': ['deriv', 'partial'],
+});
+
+function spelledScore(word, spellings) {
+  const w = word.toLowerCase();
+  return Math.max(...spellings.map((s) => (s === w ? 1900 : w.length >= 3 && s.startsWith(w) ? 1500 - s.length : 0)));
+}
+
 export function completions(word, { names = [], variables = [], locals = [] } = {}) {
   if (!word || hpArrows(word) === '→') return [];
   const seen = new Set();
@@ -52,9 +62,10 @@ export function completions(word, { names = [], variables = [], locals = [] } = 
     ...locals.map((name) => ({ name, kind: 'local' })),
     ...variables.map((name) => ({ name, kind: 'variable' })),
     ...names.filter((n) => !n.includes('->')).map((name) => ({ name, kind: 'command' })),
+    ...Object.entries(SPELLED).map(([name, spellings]) => ({ name, kind: 'command', spellings })),
   ]
-    .map((row) => {
-      const score = completionScore(hpArrows(word), row.name);
+    .map(({ spellings, ...row }) => {
+      const score = spellings ? spelledScore(word, spellings) : completionScore(hpArrows(word), row.name);
       return { ...row, score: score && row.kind === 'local' ? score + 100 : score };
     })
     .filter((row) => row.score > 0)

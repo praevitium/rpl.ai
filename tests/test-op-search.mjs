@@ -297,6 +297,15 @@ import { assert } from './helpers.mjs';
   assert(completions('n', { names: ['SIN', '→NUM', 'NEG', 'ΣLIST'] }).map((r) => r.name).join(' ') === 'NEG →NUM',
     'completions: one letter matches the first letter of a name, past an arrow, and not a letter further in');
   assert(completions('l', { names: ['SIN', 'ΣLIST', 'LN'] }).map((r) => r.name).join(' ') === 'LN ΣLIST', 'completions: one letter finds ΣLIST by its L');
+  {
+    const first = (w) => completions(w, { names: allOps() })[0];
+    const has = (w, name) => completions(w, { names: allOps() }).some((r) => r.name === name && r.kind === 'command');
+    assert(first('pi').name === 'π' && first('PI').name === 'π' && first('inf').name === '∞' && first('integral').name === '∫'
+      && has('sum', 'Σ') && first('sum').name === 'SUM' && has('sqrt', '√') && has('deriv', '∂') && has('integ', '∫'),
+      'completions: pi, inf, sum, integral, sqrt and deriv offer π, ∞, Σ, ∫, √ and ∂, behind a command spelled exactly so');
+    assert(!has('p', 'π') && !has('in', '∞') && completions('pi', { names: [], variables: ['pi'] })[0].kind === 'variable',
+      'completions: a spelled glyph needs its whole spelling or three letters of it, and a variable named pi still leads');
+  }
   const kUnits = unitCompletions('k');
   assert(kUnits.slice(0, 3).map((r) => r.name).join(' ') === 'km kg kN' && kUnits[0].group === 'Length' && kUnits.every((r) => r.kind === 'unit'),
     'unitCompletions: the UNITS menu\'s units starting with what follows _, shortest first, each with its group');
