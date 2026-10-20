@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.90 (2026-10-20)
+**Latest release:** v0.7.91 (2026-10-20)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.91 — 2026-10-20
+
+- EVAL gathers like terms and like factors in exact mode, as the HP's EVAL
+  does: `'X+X'` gives 2*X, `'2*X+3*X'` gives 5*X, `'X*X'` gives X^2,
+  `'X/X^2'` gives 1/X and `'√X*√X'` gives X. Identities drop out: `'1*X'`,
+  `'X+0'` and `'X^1'` give X, `'X-X'` and `'0*X'` give 0, `'X^0'` gives 1.
+  `'(X^2)^(1/2)'` stays, as it is |X|. SHOW and SEVAL still leave the top
+  level alone, as the AUR's examples show, and ∞-∞ is still ?.
 
 ## v0.7.90 — 2026-10-20
 
