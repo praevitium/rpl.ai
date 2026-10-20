@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.87 (2026-10-20)
+**Latest release:** v0.7.88 (2026-10-20)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.7.88 — 2026-10-20
+
+- In exact mode SIN, COS and TAN give their closed forms at multiples of
+  30 and 45 degrees, as the HP does: `30 SIN` in DEG is 1/2, `45 COS` is
+  √2/2, `π 6 / SIN` in RAD is 1/2 and `π COS` is -1. ASIN, ACOS and ATAN
+  give those angles back, `1 ASIN` in RAD being π/2 and `-1/2 ACOS`
+  2*π/3, and EVAL works them out inside an algebraic:
+  `'SIN(30)+COS(60)'` in DEG gives 1. They stayed SIN(30) and ASIN(1).
+  Grads work too; other angles stay as they are.
 
 ## v0.7.87 — 2026-10-20
 
