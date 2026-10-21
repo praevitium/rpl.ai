@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.26 (2026-10-21)
+**Latest release:** v0.8.27 (2026-10-21)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.27 — 2026-10-21
+
+- Fixed: on a phone under about 840 px tall (360 by 740, 412 by 780 and
+  the like), opening the equation or matrix writer with the full keypad
+  left the stack no whole level, and the keypad had to scroll. The
+  compact keypad now takes its place while a writer is open, as it does
+  in a short window, and the full one comes back when the writer closes;
+  the setting stays Full.
 
 ## v0.8.26 — 2026-10-21
 
