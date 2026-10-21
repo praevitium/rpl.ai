@@ -589,7 +589,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   with its digits, exact or approximate results, real or complex domain,
   coordinates and integer base, then switches for the decimal comma,
   Beep (flag -56: off, an error and BEEP stay silent), Key click (a short
-  tick as a key or soft key is pressed, for a phone that can't vibrate,
+  tick as a key, soft key or NXT is pressed, for a phone that can't vibrate,
   such as an iPhone), saving last arguments (-55), a 24-hour clock (-41)
   and day-first dates (-42). It changes the same settings as the MODES
   menu and commands such as `DEG`, so programs read them as usual. On a
@@ -620,7 +620,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - Flag -22 works as on the HP: set, an infinite result is ±MAXR instead of
   an error, so `1 0 /` gives 9.99999999999E499, `0 LN` its negative, and
   `TAN` of 90° in degrees MAXR signed as the angle; `INV`, `LOG`, `LNP1`
-  and `ATANH` follow too.
+  and `ATANH` follow too, as does an algebraic that comes to x/0, such as
+  `'1/0' EVAL`.
 - Where a phone's keyboard writes 1,5 for one and a half, turn on Decimal
   comma in Settings › Calculator, or the FM, key on the MODES menu (flag -51, the HP's
   fraction-mark setting): the command line then reads a comma beside a

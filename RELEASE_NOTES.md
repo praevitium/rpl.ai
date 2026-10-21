@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.40 (2026-10-21)
+**Latest release:** v0.8.41 (2026-10-21)
 
 ---
 
@@ -20,6 +20,21 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.41 — 2026-10-21
+
+- Fixed: a tap on a keypad key typed it twice in Chrome, so `7` gave 77
+  and `SIN` ran twice. Chrome sends the click that follows a tap with
+  detail 0, as a keyboard's, once the key has acted on the touch; only a
+  keyboard's or screen reader's click now presses a key. The soft keys did
+  the same, so `DUP` ran twice and a toggle such as CLK flipped back off,
+  and a stylus tap still did.
+- Added: flag -22 reaches algebraics. Set, an algebraic that comes to x/0
+  or 0 to a negative power, such as `'1/0' EVAL` or `→NUM`, gives ±MAXR
+  as `1 0 /` does; deeper in an expression it stays an error.
+- Improved: NXT on the soft-key row ticks and buzzes like the soft keys
+  beside it when key click or vibration is on. With the keypad hidden or
+  in minimal view it is the only NXT, and it was silent.
 
 ## v0.8.40 — 2026-10-21
 
