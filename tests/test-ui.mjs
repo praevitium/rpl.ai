@@ -3106,3 +3106,9 @@ setAngle('RAD');
   assert(/const note = appNote\(entry\);[\s\S]{0,800}?\$\{note \? `<div class="sum ref-app">\$\{escapeHtml\(note\)\}<\/div>` : ''\}/.test(drawerSrc) && /\.ref \.ref-app \{/.test(css),
     "the Catalog page shows rpl.ai's note under the HP's summary, where a phone sees it without scrolling");
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(css.includes('@container app (max-width: 479px) { .toasts { width: 92%; justify-items: stretch; } .toast > span { flex: 1; } }'),
+    'on a phone stacked notes share one width with their buttons at the right edge');
+}

@@ -883,6 +883,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .toasts { position: absolute; left: 50%; top: 58px; transform: translateX(-50%); z-index: var(--z-toast); display: grid; gap: 6px; justify-items: center; pointer-events: none; width: max-content; max-width: 92%; }
 /* Over an open sheet a note would cover its title and page tabs, so it sits at the bottom instead, above the footer
    when the sheet fills the screen (sheets.js _liftNotes). */
+/* On a phone the notes share one width, so two stacked notes line up instead of a short one sitting inside a long one. */
+@container app (max-width: 479px) { .toasts { width: 92%; justify-items: stretch; } .toast > span { flex: 1; } }
 .lay-sheet:not(:empty) ~ #toasts { top: auto; bottom: max(calc(16px + env(safe-area-inset-bottom, 0px)), var(--note-lift, 0px)); }
 .toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; background: var(--ink); color: var(--bg); border-radius: 10px; padding: 8px 8px 8px 12px; font: 500 12.5px/1.3 var(--font-ui); box-shadow: var(--shadow-2); animation: bn-in .2s; }
 .toast.err { background: var(--danger); color: var(--danger-ink); }
