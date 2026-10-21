@@ -578,9 +578,11 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   as a finger presses them, once more as a held finger opens a menu or
   clears the line or a swipe passes the point where letting go drops a
   level or puts a note away or turns the soft keys' page, and twice on an error, as the HP beeps (set flag -56,
-  the HP's Error Beep flag, to stop that). Keep the screen on stops the
-  phone sleeping while rpl.ai is open, for a long program or a result you
-  keep checking. A tap anywhere on a switch's row flips it.
+  the HP's Error Beep flag, to stop that); a program's `BEEP` buzzes as
+  long as its tones play, up to 5 s, so a phone on silent still signals.
+  Keep the screen on stops the phone sleeping while rpl.ai is open, for a
+  long program or a result you keep checking; `OFF` lets it sleep until a
+  tap wakes the calculator. A tap anywhere on a switch's row flips it.
 - Settings › Calculator is the HP's MODES form: angle, number format
   with its digits, exact or approximate results, real or complex domain,
   coordinates and integer base, then switches for the decimal comma,
