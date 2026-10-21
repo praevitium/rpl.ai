@@ -269,6 +269,7 @@ register('OBJ→', (s) => {
 function _sortKey(v) {
   if (isReal(v)) return v.value.toNumber();
   if (isInteger(v) || isBinaryInteger(v)) return Number(v.value);
+  if (isRational(v)) return Number(v.n) / Number(v.d);
   return null;
 }
 

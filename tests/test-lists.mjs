@@ -1,7 +1,7 @@
 import { Stack } from '../www/src/rpl/stack.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import {
-  Real, Integer, BinaryInteger, Complex, Name, Str, Directory, Program, Tagged,
+  Real, Integer, Rational, BinaryInteger, Complex, Name, Str, Directory, Program, Tagged,
   RList, Vector, Matrix,
   isReal, isInteger, isBinaryInteger, isComplex, isDirectory, isProgram, isName,
   isString, isList,
@@ -483,6 +483,12 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   const vals = out.items.map(num);
   assert(JSON.stringify(vals) === JSON.stringify([1, 2.5, 3]),
     'SORT handles mixed Real / Integer numeric types');
+}
+{
+  const s = new Stack();
+  s.push(RList([Rational(1n, 2n), Rational(1n, 3n), Real(0.4)]));
+  lookup('SORT').fn(s);
+  assert(format(s.peek(1)) === '{ 1/3 0.4 1/2 }', 'SORT orders fractions among other numbers, where it said Bad argument type');
 }
 {
   const s = new Stack();
