@@ -444,8 +444,18 @@ export class Display {
     });
     view.addEventListener('pointerup', cancel);
     view.addEventListener('pointercancel', cancel);
+    // A right click opens the menu as a held finger does, as it does on a key, unless it is for text selected before
+    // it; a Mac's right click selects the word under it, so the selection is read as the button goes down.
+    let textChosen = false;
+    view.addEventListener('pointerdown', (ev) => { if (ev.button === 2) textChosen = !doc?.getSelection?.()?.isCollapsed; });
     view.addEventListener('contextmenu', (ev) => {
-      if (!hold && !this._held) return;
+      if (!hold && !this._held) {
+        const row = !ev.target.closest?.('.st-acts') && ev.target.closest?.('.st-row[data-key]');
+        if (!row || textChosen || ev.pointerType === 'touch') return;
+        ev.preventDefault();
+        this.onRowHold?.(Number(row.dataset.level));
+        return;
+      }
       ev.preventDefault();
       if (hold) fire();
     });

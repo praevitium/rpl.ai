@@ -2861,6 +2861,12 @@ setAngle('RAD');
   assert(/case 'level\.view': if \(this\.entry\.buffer\.length\) return false; this\.levelAction\('view'\); return true;/.test(appSrc)
     && appSrc.includes("item('view', 'expand', 'View full size (VIEW)', shortcutText('level.view'))") && appSrc.includes("{ label: 'VIEW', title: 'Show it full size (Space)'"),
     'Space on a selected level opens VIEW, as Quick Look does, and types a space when the line has text; the level menu and the VIEW soft key name it');
+  {
+    const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
+    assert(/view\.addEventListener\('pointerdown', \(ev\) => \{ if \(ev\.button === 2\) textChosen = !doc\?\.getSelection\?\.\(\)\?\.isCollapsed; \}\);/.test(displaySrc)
+      && /if \(!row \|\| textChosen \|\| ev\.pointerType === 'touch'\) return;\s*ev\.preventDefault\(\);\s*this\.onRowHold\?\.\(Number\(row\.dataset\.level\)\);/.test(displaySrc),
+      'a right click on a level opens its menu, as a held finger does and as a right click on a key does, unless text was selected before it (a Mac selects the word under a right click)');
+  }
   assert(/case 'level\.copy':\s*\/\/[^\n]*\n\s*if \(this\.selection == null && \(!this\.stack\.depth \|\| !window\.getSelection\(\)\?\.isCollapsed\)\) return false;\s*this\.levelAction\('copy', this\.selection \?\? 1\); return true;/.test(appSrc),
     'Ctrl or Cmd+C with no level selected copies level 1, ready to paste into a spreadsheet, unless text is selected for the browser to copy or the stack is empty');
 }
