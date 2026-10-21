@@ -85,7 +85,7 @@ register('CASCMD', (s) => {
 const CONSTANTS_MENU = Object.freeze(['π', 'e', 'i', '∞', 'MAXR', 'MINR']);
 register('CONSTANTS', () => {
   if (inScratchState()) return;
-  if (testUserFlag(-117)) _menuHook?.(RList(CONSTANTS_MENU.map((name) => Name(name))), true);
+  if (testUserFlag(-117)) _menuHook?.(RList(CONSTANTS_MENU.map((name) => Name(name))), true, 'CONST');
   else _openHook?.({ drawer: 'chars' });
 }, { category: 'Display / base', categoryOrder: 30.14, label: 'CONSTANTS' });
 
@@ -107,9 +107,9 @@ const CAS_NUMBERED = Object.freeze([
 
 const REWRITE_COMMANDS = Object.freeze(['DISTRIB', 'EXPLN', 'EXP2POW', 'FDISTRIB', 'LIN', 'LNCOLLECT', 'POWEREXPAND', 'SIMPLIFY', 'XNUM', 'XQ']);
 
-// A temporary menu of commands, as TMENU shows one; those rpl.ai lacks are left off.
-function _commandMenu(names) {
-  if (!inScratchState()) _menuHook?.(RList(names.filter((name) => lookup(name)).map((name) => Name(name))), true);
+// A temporary menu of commands, as TMENU shows one under the command's name; those rpl.ai lacks are left off.
+function _commandMenu(names, title) {
+  if (!inScratchState()) _menuHook?.(RList(names.filter((name) => lookup(name)).map((name) => Name(name))), true, title);
 }
 
 function _menuNumber(v) {
@@ -119,11 +119,11 @@ function _menuNumber(v) {
 
 register('MENUXY', (s) => {
   const [first, last] = s.popN(2).map(_menuNumber);
-  _commandMenu(CAS_NUMBERED.slice(first, last + 1));
+  _commandMenu(CAS_NUMBERED.slice(first, last + 1), 'MENUXY');
 }, { category: 'Display / base', categoryOrder: 25.1, label: 'MENUXY' });
 
 register('REWRITE', () => {
-  _commandMenu(REWRITE_COMMANDS);
+  _commandMenu(REWRITE_COMMANDS, 'REWRITE');
 }, { category: 'Display / base', categoryOrder: 30.5, label: 'REWRITE' });
 
 // MSOLVR opens the multiple-equation solver's menu on Mpar, made from EQ when there is none.

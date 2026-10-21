@@ -168,9 +168,9 @@ class App {
     this.chatBot.setMode(this.prefs.assistantMode, { tutorStyle: this.prefs.tutorStyle });
     this.drawers = new Drawers({ rail: $('rail'), el: $('drawer'), scrim: $('scrim'), app: this });
     setGraphicsHook((kind, stack, data) => (kind === 'text' ? this.drawers.closeGraph() : this.drawers.openGraph(kind, stack, data)));
-    setMenuHook((list, temporary) => {
+    setMenuHook((list, temporary, title = null) => {
       if (!list) this.showLastMenu();
-      else if (temporary) this.setMenu(this._customMenuSlots(list), 'TMENU');
+      else if (temporary) this.setMenu(this._customMenuSlots(list), 'TMENU', { folder: title });
       else this.showMenu('CST', { commit: false });
       if (this.prefs.minimal) this.setMinimalMenu(true);
     });

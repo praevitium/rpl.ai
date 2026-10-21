@@ -2551,9 +2551,9 @@ setAngle('RAD');
 
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/setMenuHook\(\(list, temporary\) => \{\s*if \(!list\) this\.showLastMenu\(\);\s*else if \(temporary\) this\.setMenu\(this\._customMenuSlots\(list\), 'TMENU'\);\s*else this\.showMenu\('CST', \{ commit: false \}\);/.test(appSrc)
+  assert(/setMenuHook\(\(list, temporary, title = null\) => \{\s*if \(!list\) this\.showLastMenu\(\);\s*else if \(temporary\) this\.setMenu\(this\._customMenuSlots\(list\), 'TMENU', \{ folder: title \}\);\s*else this\.showMenu\('CST', \{ commit: false \}\);/.test(appSrc)
     && /showCustomMenu\(\{ commit = true, refresh = false \} = \{\}\) \{\s*if \(commit && !refresh && this\.entry\.buffer/.test(appSrc) && /showLastMenu\(\) \{[\s\S]{0,300}?else this\.showMenu\(last\.kind, \{ commit: false \}\);/.test(appSrc),
-    'MENU and TMENU show their menu through a hook without committing the line they run from (which would run it again), a temporary one under the kind TMENU');
+    'MENU and TMENU show their menu through a hook without committing the line they run from (which would run it again), a temporary one under the kind TMENU and the name of the command that made it');
   assert(/else this\.showMenu\('CST', \{ commit: false \}\);\s*if \(this\.prefs\.minimal\) this\.setMinimalMenu\(true\);\s*\}\);/.test(appSrc),
     'MENU and TMENU turn the soft keys on in minimal view, as a menu picked from command search does, instead of showing nothing while they are hidden');
   assert(/else if \(this\.menuKind === 'CST'\) this\.showCustomMenu\(\{ refresh: true \}\);/.test(appSrc)
