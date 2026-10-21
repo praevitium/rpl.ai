@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.30 (2026-10-21)
+**Latest release:** v0.8.31 (2026-10-21)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.31 — 2026-10-21
+
+- Fixed: the error beep follows flag -56, as on the HP and as BEEP
+  already did, so Settings › Calculator's Beep switch (or `-56 SF`)
+  silences errors; they sounded regardless.
+- Added: Key click in Settings › Calculator, the HP MODES form's switch.
+  A short, quiet tick plays as a keypad key, soft key, key strip button
+  or the ⌫ and Enter beside the line is pressed, so a phone that can't
+  vibrate, such as an iPhone, still answers a press. It's off by default.
+- Fixed: typing in a drawer on a screen under 400 px tall (a phone with
+  its keyboard up), the drawer's row showed only its buttons once its
+  tabs stepped aside; it names the drawer again.
 
 ## v0.8.30 — 2026-10-21
 
