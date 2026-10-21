@@ -607,7 +607,8 @@ export class Entry {
       if (e instanceof RPLAbort) throw e;
       if (!keepsFailureStack(e)) this.stack.restore(before);
       this.failure = { op: tag, levels: seen, depth: e.depth ?? before.length, missing: e.missing };
-      throw new RPLError(`${tag}: ${errorText(e)}`);
+      const text = errorText(e);
+      throw new RPLError(text.startsWith(`${tag}: `) ? text : `${tag}: ${text}`);
     }
   }
 

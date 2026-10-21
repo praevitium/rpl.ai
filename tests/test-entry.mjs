@@ -55,6 +55,14 @@ import { assert, assertThrows } from './helpers.mjs';
   {
     const e = new Entry(new Stack());
     const failed = (line) => { e.buffer = line; e.cursor = line.length; e.enter(); return e.error; };
+    assert(failed('"Hi" MSGBOX') === 'MSGBOX: not inside a running program' && failed('1 TVMROOT') === 'TVMROOT: Bad argument type'
+      && failed('« 1 ROOT » EVAL').startsWith('EVAL: ROOT: '),
+      'a command whose own error names it says its name once, where the banner read MSGBOX: MSGBOX: and TVMROOT: TVMROOT:');
+  }
+
+  {
+    const e = new Entry(new Stack());
+    const failed = (line) => { e.buffer = line; e.cursor = line.length; e.enter(); return e.error; };
     assert(failed('"hi" sin') === 'SIN: Bad argument type: expected real, got string' && e.failure?.op === 'SIN'
       && failed('"hi" ->q').startsWith('→Q: ') && failed('« "a" sin » EVAL').includes('SIN: '),
       'a command typed in lower case, sin or ->q, fails as SIN or →Q, as the HP spells it, where the banner said sin and offered a sin reference');
