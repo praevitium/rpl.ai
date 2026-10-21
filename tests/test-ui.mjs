@@ -1269,6 +1269,23 @@ setAngle('RAD');
   const nine = MAIN_KEYS.find(k => k.primary === '9');
   assert(nine.shiftR === '|' && typeof nine.shiftRAction === 'function',
     'keyboard: | is typed from 9 right shift');
+  const shifts = (keys, d) => { const k = keys.find(k => k.primary === d); return `${k.shiftL || '-'}/${k.shiftR || '-'}`; };
+  assert(['7', '8', '9', '4', '5', '6', '1', '2', 'ON'].map(d => shifts(MAIN_KEYS, d)).join(' ')
+           === 'S.SLV/- EXP&LN/TVM TRIG/| CALC/ALG MATRX/STAT -/UNITS ARITH/CMPLX DEF/- CONT/OFF',
+    'keyboard: the digit keys carry the HP 50g shifted menus, DEF and OFF');
+  const opened = [];
+  const menuApp = { openMenu: (...at) => opened.push(at.filter(Boolean).join('/')) };
+  for (const d of ['7', '8', '9', '4', '5', '6', '1']) {
+    const k = MAIN_KEYS.find(k => k.primary === d);
+    k.shiftLAction?.(null, null, menuApp);
+    if (d !== '9') k.shiftRAction?.(null, null, menuApp);
+  }
+  assert(opened.join(' ') === 'CAS/S.SLV CAS/EXP&LN TVM CAS/TRIG CAS/CALC CAS/ALG MATRIX STAT UNITS ARITH CPLX',
+    'keyboard: the shifted digit keys open their menus and CAS folders');
+  assert(['4', '5', '6', '1'].map(d => shifts(COMPACT_KEYS, d)).join(' ') === 'CALC/ALG MATRX/- -/UNITS ARITH/-',
+    'keyboard: the compact keypad keeps only the ↰ menus on its crowded 5 and 1');
+  assert(/setOpenHook\([\s\S]*?this\.openMenu\(family, folder\);/.test(readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8')),
+    'keyboard: the HP menu commands and the shifted menu keys open menus the same way');
 
   resetHome();
   try {

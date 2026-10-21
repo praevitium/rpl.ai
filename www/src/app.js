@@ -178,10 +178,7 @@ class App {
         this.drawers.open(drawer);
         return;
       }
-      const group = { CAS: CAS_GROUPS, INTEGER: INTEGER_GROUPS }[family]?.find((g) => g.id === folder);
-      if (group) this._showGroupMenu(group, family);
-      else this.showMenu(family, { commit: false });
-      if (this.prefs.minimal) this.setMinimalMenu(true);
+      this.openMenu(family, folder);
       // A phone often has no shift key showing, so the solver says how its keys solve.
       const mes = family === 'MES' && mesMenu();
       if (mes && matchMedia('(pointer: coarse)').matches) this.toast(`${mes.title || 'Solver'}: tap a variable's key to store level 1 in it; hold the unknown's key to solve for it.`, { key: 'mes' });
@@ -1688,6 +1685,14 @@ class App {
     else if (id === 'VECTOR') this.setMenu(VECTOR_KEYS.map((key) => this._commandSlot(key)), 'VECTOR');
     else this._showFamilyMenu(id);
     if (remember) this.setPrefs({ menu: this.menuKind, recentMenus: [this.menuKind, ...this.prefs.recentMenus.filter((m) => m !== this.menuKind)] });
+  }
+
+  // A menu or one of its folders, as the HP's menu commands and shifted menu keys open them.
+  openMenu(family, folder) {
+    const group = { CAS: CAS_GROUPS, INTEGER: INTEGER_GROUPS }[family]?.find((g) => g.id === folder);
+    if (group) this._showGroupMenu(group, family);
+    else this.showMenu(family, { commit: false });
+    if (this.prefs.minimal) this.setMinimalMenu(true);
   }
 
   // The HP's last menu, for 0 MENU and a finger held on the menu button: the one shown before this one, a temporary
