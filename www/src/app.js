@@ -1008,6 +1008,7 @@ class App {
       case 'eval': runOn('EVAL'); return;
       case 'debug': runOn('DBUG'); return;
       case 'num': runOn('→NUM'); return;
+      case 'toq': runOn('→Q'); return;
       case 'inv': runOn('INV'); return;
       case 'det': runOn('DET'); return;
       case 'egvl': runOn('EGVL'); return;
@@ -1097,6 +1098,7 @@ class App {
         item('eval', 'play', 'Evaluate (EVAL)'),
         isProgram(value) ? item('debug', 'step', 'Debug step by step (DBUG)') : '',
         item('num', 'chr', 'To a number (→NUM)'),
+        isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : '',
         isUnit(value) ? item('convert', 'chr', 'Convert to…') : '',
         isMatrix(value) && value.rows.length === value.rows[0]?.length ? item('inv', 'chr', 'Inverse (INV)') + item('det', 'chr', 'Determinant (DET)') + item('egvl', 'chr', 'Eigenvalues (EGVL)') : '',
         isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') : '',
