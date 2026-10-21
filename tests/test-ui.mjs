@@ -3079,3 +3079,9 @@ setAngle('RAD');
   assert(/const away = \(ev\) => \{\n\s*if \(t\.isConnected && ev\.target\.closest\?\.\('\.toast'\)\) return;/.test(toast),
     "a press on another note's button leaves the transient minimal-view note in place, so the note under it does not jump away from the finger before the tap lands");
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/@container sheet \(max-width: 319px\) \{ \.sheet-f \{ gap: 6px; padding-inline: 12px; \} \}/.test(css),
+    'a sheet footer of three keys keeps to one row on a 280 px phone');
+}
