@@ -3164,3 +3164,9 @@ setAngle('RAD');
   assert(/openPrintLog\(\) \{\s*this\.app\.toasts\?\.dismiss\('print'\);\s*this\._open\('print'\);/.test(sheetsSrc),
     "opening the print log puts away the note whose Show opens it, which stayed over the log when it was opened from search");
 }
+
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  assert(drawerSrc.includes('<div class="main"><div class="nm"><span class="nm-text">:${key}</span></div>'),
+    "a backup's name wraps on a phone as a variable's does, where :1:A_VERY_LONG_BACKUP_NAME was clipped mid-letter at 280 px");
+}
