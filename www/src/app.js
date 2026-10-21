@@ -276,6 +276,8 @@ class App {
     if (id === this._alarmShown) return;
     this._alarmShown = id;
     this.renderStatus();
+    // The installed app's icon carries a dot while an alarm is past due, as the HP's status line carries ((•)).
+    (alarm ? navigator.setAppBadge?.() : navigator.clearAppBadge?.())?.catch(() => {});
     if (!alarm) { this.toasts.dismiss('alarm'); return; }
     const fresh = document.visibilityState === 'visible' && calculatorNow() - alarm.due < ALARM_FRESH_MS;
     if (fresh && !quiet && !testUserFlag(-57)) {

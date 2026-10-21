@@ -460,6 +460,8 @@ import { assert, assertThrows } from './helpers.mjs';
       && /alarm: !!pastDueAlarm\(\),/.test(appSrc) && /else if \(kind === 'alarm'\) \{ this\._alarmShown = null; this\._showAlarm\(\{ quiet: true \}\); \}/.test(appSrc)
       && /\.ann-status:has\(\.ann-m\.e, \.ann-m\.halt, \.ann-m\.alarm, \.ann-m\.user\) \{ padding-left: 2px; padding-right: 2px; \}/.test(cssSrc),
       'alert annunciator: ((•)) in the status line while an alarm is past due, as on the HP, a tap bringing its note back without the buzz; at 280 px in minimal view it fits beside the six modes and the leave button, which it had pushed 2 px off screen');
+    assert(/this\._alarmShown = id;\s*this\.renderStatus\(\);\s*\/\/[^\n]*\n\s*\(alarm \? navigator\.setAppBadge\?\.\(\) : navigator\.clearAppBadge\?\.\(\)\)\?\.catch\(\(\) => \{\}\);/.test(appSrc),
+      'alarm badge: the installed app\'s icon carries a dot while an alarm is past due and loses it on ACK, where the badge API is there');
     assert(/const userMark = user \? `<span class="\$\{minimal \|\| classic \? 'ann-m' : 'pill'\} user"/.test(displaySrc) && /if \(user\) pills\.push\(userMark\);/.test(displaySrc)
       && /user: testUserFlag\(-62\) && \(this\._userOnce \? '1USR' : 'USER'\),/.test(appSrc) && /if \(!standard && this\._userKey\(key\.primary\)\) return;/.test(appSrc)
       && /if \(key\.kind !== 'alpha' \|\| this\.layer\(\) !== 'L'\) this\.setShift\(key\.kind\);\s*else if \(!this\._answerKey\(hpKeyCode\('α', 'L'\)\)\) this\.toggleUser\(\);/.test(appSrc)
