@@ -130,8 +130,12 @@ export function mesPrepare() {
 }
 
 // The Equation Library's sets arrive with their title and their constants known.
+export function mesItems(eqs) {
+  return [...new Set(eqs.flatMap(mesNames))];
+}
+
 export function mesSetup(eqs, title, known) {
-  const items = [...new Set(eqs.flatMap(mesNames))].map((id) => Name(id));
+  const items = mesItems(eqs).map((id) => Name(id));
   return mesWrite({ eqs, title, items, known });
 }
 

@@ -3046,3 +3046,11 @@ setAngle('RAD');
     && /\.pl-fcn\.more-r, \.pt-wrap\.more-r, \.cb-scroll\.more-r \{ mask-image/.test(css),
     'the periodic table\'s row fades at the edge that scrolls, as the key strip and the plot rows do');
 }
+
+{
+  const sh = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/const \{ names, known \} = setVariables\(subject, set\);\n\s*const vars = names\.map\(\(id\) => \(known\[id\] \? `<span class="known">\$\{escapeHtml\(id\)\} = \$\{format\(known\[id\]\)\}<\/span>` : `<span>\$\{escapeHtml\(id\)\}<\/span>`\)\)\.join\(''\);/.test(sh)
+    && /<p class="eq-vars">\$\{vars\}<\/p>/.test(sh) && /\n\.eq-vars \{ display: flex; flex-wrap: wrap;/.test(css) && /\n\.eq-vars \.known \{ border-style: dashed;/.test(css),
+    "a set's page lists its variables in the solver's key order, the constants it knows with their values, so a phone shows what the solver's keys will be before Solve");
+}

@@ -5,19 +5,31 @@ import { inScratchState } from '../state.js';
 import { parseTyped } from '../parser.js';
 import { storeVar } from './internal.js';
 import { constantValue } from './unit-ops.js';
-import { mesSetup } from './root.js';
+import { mesSetup, mesItems } from './root.js';
 import { librarySet } from '../eqlib.js';
 
 const parseEq = (src) => parseTyped(`'${src}'`)[0];
 
-// SOLVEQN's work: EQ, the set's constants stored as plain SI numbers and marked known, and Mpar titled after the set.
-export function solveSet(subject, title) {
+// A set parsed, its constants as the plain SI numbers the solver works in.
+function parsedSet(subject, title) {
   const set = librarySet(subject, title);
   if (!set) throw new RPLError('SOLVEQN: Bad argument value');
-  const eqs = set.eqs.map(parseEq);
-  for (const id of set.known) storeVar(id, Real(Number(constantValue(id).value)));
-  storeVar('EQ', eqs.length === 1 ? eqs[0] : RList(eqs));
-  mesSetup(eqs, set.title, set.known);
+  const known = Object.fromEntries(set.known.map((id) => [id, Real(Number(constantValue(id).value))]));
+  return { ...set, eqs: set.eqs.map(parseEq), known };
+}
+
+// The set's variables in the solver's key order, with the values of the constants among them.
+export function setVariables(subject, title) {
+  const set = parsedSet(subject, title);
+  return { names: mesItems(set.eqs), known: set.known };
+}
+
+// SOLVEQN's work: EQ, the set's constants stored and marked known, and Mpar titled after the set.
+export function solveSet(subject, title) {
+  const set = parsedSet(subject, title);
+  for (const [id, v] of Object.entries(set.known)) storeVar(id, v);
+  storeVar('EQ', set.eqs.length === 1 ? set.eqs[0] : RList(set.eqs));
+  mesSetup(set.eqs, set.title, Object.keys(set.known));
   return set;
 }
 

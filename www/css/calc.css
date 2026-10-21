@@ -2315,3 +2315,6 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 .eq-title { margin: 0 0 8px; font-size: 15px; }
 .eq-eqs { display: grid; gap: 4px; margin-bottom: 10px; }
 .eq-eqs code { display: block; padding: 6px 10px; border-radius: 6px; background: var(--r1); font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+.eq-vars { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 10px; }
+.eq-vars span { padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px; font: 500 12px/18px var(--font-mono); color: var(--ink); }
+.eq-vars .known { border-style: dashed; color: var(--ink2); }
