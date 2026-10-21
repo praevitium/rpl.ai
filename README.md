@@ -579,10 +579,12 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - Settings › Calculator is the HP's MODES form: angle, number format
   with its digits, exact or approximate results, real or complex domain,
   coordinates and integer base, then switches for the decimal comma,
-  Beep (flag -56), saving last arguments (-55), a 24-hour clock (-41) and
-  day-first dates (-42). It changes the same settings as the MODES menu
-  and commands such as `DEG`, so programs read them as usual. On a phone
-  its four page tabs share one row.
+  Beep (flag -56: off, an error and BEEP stay silent), Key click (a short
+  tick as a key or soft key is pressed, for a phone that can't vibrate,
+  such as an iPhone), saving last arguments (-55), a 24-hour clock (-41)
+  and day-first dates (-42). It changes the same settings as the MODES
+  menu and commands such as `DEG`, so programs read them as usual. On a
+  phone its four page tabs share one row.
 - The modes button in the app bar (RAD · STD · EXACT), and each mode on
   minimal view's status line, sets FIX, SCI or ENG with any digit count
   from 0 to 11, so a phone needs no typed `5 FIX`. On a screen under 320 px
