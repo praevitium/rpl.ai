@@ -1046,7 +1046,7 @@ class App {
     const groups = [
       [item('edit', 'edit', 'Edit', shortcutText('level.edit')), item('view', 'expand', 'View full size (VIEW)')],
       [
-        item('echo', 'chr', 'Copy into the command line'),
+        item('echo', 'chr', `Copy into ${this._echoPlace()} (ECHO)`),
         item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick')),
         deeper ? item('roll', 'up', 'Move to level 1 (ROLL)') : '',
         deeper ? item('rolld', 'down', 'Move level 1 here (ROLLD)') : '',
@@ -1180,6 +1180,10 @@ class App {
     if (this.inputMode === 'equation') this.equationEditor._pasteText(source);
     else if (this.inputMode === 'matrix') this.matrixEditor.echo(source);
     else this.entry.typeToken(source);
+  }
+
+  _echoPlace() {
+    return { equation: 'the formula', matrix: 'the matrix cell' }[this.inputMode] ?? 'the command line';
   }
 
   // A level moved, dropped or pushed past the one being edited takes the edit along; it ends only when its value leaves the stack.
@@ -1736,7 +1740,7 @@ class App {
     return [
       { label: 'EDIT', title: 'Edit this level (Enter)', onPress: act('edit') },
       { label: 'VIEW', title: 'Show it full size', onPress: act('view') },
-      { label: 'ECHO', title: 'Copy it into the command line', onPress: act('echo') },
+      { label: 'ECHO', title: `Copy it into ${this._echoPlace()}`, onPress: act('echo') },
       { label: 'PICK', title: 'Copy it to level 1', onPress: act('pick') },
       { label: 'ROLL', title: 'Move it to level 1', onPress: act('roll') },
       { label: 'DROP', title: 'Remove it (⌫)', onPress: act('drop') },

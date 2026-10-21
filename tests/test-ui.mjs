@@ -3232,6 +3232,14 @@ setAngle('RAD');
 }
 
 {
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(appSrc.includes("item('echo', 'chr', `Copy into ${this._echoPlace()} (ECHO)`),")
+    && appSrc.includes("{ label: 'ECHO', title: `Copy it into ${this._echoPlace()}`, onPress: act('echo') },")
+    && appSrc.includes("return { equation: 'the formula', matrix: 'the matrix cell' }[this.inputMode] ?? 'the command line';"),
+    'the level menu and the ECHO soft key name where ECHO puts the level: the command line, the formula or the matrix cell');
+}
+
+{
   const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(displaySrc.includes("row.classList.toggle('drag-below', Number(row.dataset.level) < this._dragLevel);")
