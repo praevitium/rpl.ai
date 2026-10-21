@@ -406,6 +406,29 @@ export function listBackups() {
     .sort((a, b) => b.savedAt - a.savedAt);
 }
 
+// localStorage holds about five million characters; what the backups and the session leave of that is the port's free memory.
+const STORAGE_CHARS = 5 * 1024 * 1024;
+
+/** The names backed up in `port`, oldest first, and an estimate of the free memory there. */
+export function portContents(port) {
+  backupKey(port, '_');
+  const names = listBackups().filter((b) => b.port === String(port)).reverse().map((b) => b.name);
+  const storage = backupStorage();
+  let used = 0;
+  for (let i = 0; i < storage.length; i++) {
+    const key = storage.key(i);
+    used += key.length + (storage.getItem(key)?.length ?? 0);
+  }
+  return { names, free: Math.max(0, STORAGE_CHARS - used) };
+}
+
+/** PINIT's clean-up: backups that can no longer be read are dropped. */
+export function pruneBackups() {
+  const backups = readBackups();
+  const kept = Object.fromEntries(Object.entries(backups).filter(([, b]) => b?.snap?.stack && b?.snap?.home));
+  if (Object.keys(kept).length !== Object.keys(backups).length) writeBackups(kept);
+}
+
 export function archiveBackup(port, name, stack, savedAt = Date.now()) {
   const backups = readBackups();
   backups[backupKey(port, name)] = { savedAt, snap: snapshot(stack) };

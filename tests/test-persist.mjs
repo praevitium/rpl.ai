@@ -681,6 +681,42 @@ assert(isReal(mat.rows[0][1]) && mat.rows[0][1].value.eq(2) &&
   }
 }
 
+// PVARS lists a port's backups as :port:name with the free memory, PINIT drops unreadable backups, LIBS has no libraries.
+{
+  const saved = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = {
+    getItem: k => store.get(k) ?? null,
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: k => store.delete(k),
+    key: i => [...store.keys()][i] ?? null,
+    get length() { return store.size; },
+  };
+  try {
+    resetHome();
+    const s = new Stack();
+    archiveBackup('1', 'FIRST', s, 1000);
+    archiveBackup('1', 'SECOND', s, 2000);
+    archiveBackup('2', 'OTHER', s, 3000);
+    s.push(Integer(1n));
+    lookup('PVARS').fn(s);
+    const free = s.pop();
+    const names = s.pop();
+    assert(names.items.map((t) => `:${t.tag}:${t.value.id}`).join(' ') === ':1:FIRST :1:SECOND' && free.value > 0n && free.value < 5n * 1024n * 1024n,
+      'PVARS lists the backups in a port, oldest first, and the free memory');
+    s.push(Integer(4n));
+    assertThrows(() => lookup('PVARS').fn(s), /Bad argument value/, 'PVARS knows ports 0 to 3');
+    store.set(BACKUPS_KEY, JSON.stringify({ ...JSON.parse(store.get(BACKUPS_KEY)), '3:BROKEN': { savedAt: 1 } }));
+    lookup('PINIT').fn(s);
+    assert(Object.keys(JSON.parse(store.get(BACKUPS_KEY))).join() === '1:FIRST,1:SECOND,2:OTHER', 'PINIT drops a backup that can no longer be read');
+    lookup('LIBS').fn(s);
+    assert(s.depth === 1 && s.peek().items.length === 0, 'LIBS finds no libraries attached');
+  } finally {
+    globalThis.localStorage = saved;
+    resetHome();
+  }
+}
+
 {
   resetHome();
   const seeded = new Stack();

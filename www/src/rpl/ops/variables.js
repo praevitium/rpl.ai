@@ -1,8 +1,8 @@
 import { getPict, varStore, varRecall, varPurge, varOrder, renameCurrentEntry, makeSubdir, goUp, goHome, goInto, currentPath, state as _calcState, reorderCurrentEntries, cloneDirectory, inScratchState, setFlagNumbers, replaceFlags } from '../state.js';
 import { RPLError, Stack } from '../stack.js';
-import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory, isTagged, isSymbolic, isNumber, isUnit, Program, Symbolic, Directory, Integer, Real } from '../types.js';
+import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory, isTagged, isSymbolic, isNumber, isUnit, Program, Symbolic, Directory, Integer, Real, Tagged } from '../types.js';
 import { Bin as AstBin, Var as AstVar } from '../algebra.js';
-import { archiveBackup, restoreBackup } from '../persist.js';
+import { archiveBackup, restoreBackup, portContents, pruneBackups } from '../persist.js';
 import { register, lookup } from './registry.js';
 import { _astToRplValue, _coerceDirName, _coerceStorableName, _hp50TypeCode, _toAst, recallVar, storeVar, bindLocals, unbindLocals } from './internal.js';
 import { isPict, storePict, purgePict } from './graphics.js';
@@ -370,3 +370,20 @@ register('RESTORE', (s) => {
   const { port, name } = _popBackupObject(s);
   restoreBackup(port, name, s);
 }, { category: 'Variables / directories', categoryOrder: 20, label: "RESTORE" });
+
+// The ports are the backup store ARCHIVE writes to; rpl.ai has no library objects to list beside the backups.
+register('PVARS', (s) => {
+  const [n] = s.popN(1);
+  if (!isReal(n) && !isInteger(n)) throw new RPLError('Bad argument type');
+  const port = Number(n.value);
+  if (!Number.isInteger(port) || port < 0 || port > 3) throw new RPLError('Bad argument value');
+  const { names, free } = portContents(port);
+  s.push(RList(names.map((name) => Tagged(String(port), Name(name)))));
+  s.push(Integer(free));
+}, { category: 'Variables / directories', categoryOrder: 20.1, label: "PVARS" });
+
+register('PINIT', () => {
+  if (!inScratchState()) pruneBackups();
+}, { category: 'Variables / directories', categoryOrder: 20.2, label: "PINIT" });
+
+register('LIBS', (s) => s.push(RList([])), { category: 'Variables / directories', categoryOrder: 20.3, label: "LIBS" });

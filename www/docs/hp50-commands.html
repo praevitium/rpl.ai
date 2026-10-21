@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 809 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 812 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -396,7 +396,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-LEGENDRE">LEGENDRE</a>
 <a href="#cmd-LGCD">LGCD</a>
 <a href="#cmd-LIBEVAL" class='notinapp'>LIBEVAL</a>
-<a href="#cmd-LIBS" class='notinapp'>LIBS</a>
+<a href="#cmd-LIBS">LIBS</a>
 <a href="#cmd-LIMIT">LIMIT</a>
 <a href="#cmd-LIN">LIN</a>
 <a href="#cmd-LINE">LINE</a>
@@ -492,7 +492,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-PICK3">PICK3</a>
 <a href="#cmd-PICT">PICT</a>
 <a href="#cmd-PICTURE">PICTURE</a>
-<a href="#cmd-PINIT" class='notinapp'>PINIT</a>
+<a href="#cmd-PINIT">PINIT</a>
 <a href="#cmd-PIX-qmark">PIX?</a>
 <a href="#cmd-PIXOFF">PIXOFF</a>
 <a href="#cmd-PIXON">PIXON</a>
@@ -532,7 +532,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-PUT">PUT</a>
 <a href="#cmd-PUTI">PUTI</a>
 <a href="#cmd-PVAR">PVAR</a>
-<a href="#cmd-PVARS" class='notinapp'>PVARS</a>
+<a href="#cmd-PVARS">PVARS</a>
 <a href="#cmd-PVIEW">PVIEW</a>
 <a href="#cmd-PWRFIT">PWRFIT</a>
 <a href="#cmd-PX-to-C">PX→C</a>
@@ -9029,7 +9029,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>EVAL, FLASHEVAL, SYSEVAL</p>
   </dd>
 </dl>
-<h2 id="cmd-LIBS">LIBS <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-LIBS">LIBS <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 250 · printed page 3-130</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -9039,6 +9039,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Libraries Command: Lists the title, number, and port of each library attached to the current directory. The title of a library often takes the form LIBRARY-NAME : Description. A library without a title is displayed as &quot; &quot;.</p>
+    <p>In rpl.ai no libraries can be attached, so LIBS returns an empty list.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -11575,7 +11576,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>PICT, PVIEW, TEXT</p>
   </dd>
 </dl>
-<h2 id="cmd-PINIT">PINIT <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PINIT">PINIT <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 289 · printed page 3-169</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -11585,6 +11586,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Port Initialize Command: Initializes all currently active ports. It may affect data already stored in a port. PINIT is particularly useful when a third-party library has corrupted memory. It stores and then purges an object in each internal port. This has the effect of initializing each port without disturbing any previous-stored data, while removing any invalid objects.</p>
+    <p>In rpl.ai PINIT drops backups that can no longer be read, such as one cut short when storage filled, and leaves the rest alone.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -12590,7 +12592,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>MEAN, PCOV, PSDEV, SDEV, VAR</p>
   </dd>
 </dl>
-<h2 id="cmd-PVARS">PVARS <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PVARS">PVARS <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 305 · printed page 3-185</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -12601,6 +12603,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dd class="cmd-field cmd-field-description">
     <p>Port-Variables Command: Returns a list of the backup objects (:nport:name) and the library objects (:nport:nlibrary) in the specified port. Also returns the available memory size (RAM). The port number, nport, must be in the range from 0 to 2.</p>
     <p>If nport = 0, then memory is bytes of available main RAM; otherwise memory is bytes of available RAM in the specified port.</p>
+    <p>In rpl.ai the ports are the browser's backup store: PVARS lists the backups ARCHIVE made in ports 0 to 3, oldest first, and memory is an estimate of the characters browser storage has left, shared by every port. There are no libraries to list.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">

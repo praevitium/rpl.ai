@@ -1037,15 +1037,15 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 809. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 812. The
 Catalog and the command reference mark what is available. Not there yet:
 the HP's numbered menus for MENU and TMENU (a list, a name holding one or 0
 work).
 
 **Left out on purpose.** ENTRY mode, the NUM.SLV solver screens, RCLMENU,
 FINANCE, TIME, the StreamSmart app (STRM), UFL1→MINIF's font libraries,
-libraries (LIB, ATTACH and port management other
-than ARCHIVE and RESTORE), and Saturn assembly and System RPL.
+libraries (ATTACH and DETACH; LIBS lists none), and Saturn assembly and
+System RPL.
 
 **Behaviour that differs from the HP 50g.**
 
@@ -1069,6 +1069,10 @@ than ARCHIVE and RESTORE), and Saturn assembly and System RPL.
   `XMIT` prints its string to the print log, `SERVER` and `XSERV` return
   with a note, and `PKT` ends in Timeout, as an HP with nothing connected
   does.
+- The ports are the browser's backup store: `PVARS` lists the backups
+  `ARCHIVE` made in ports 0 to 3 with an estimate of the storage left,
+  shared by every port, `PINIT` drops backups that can no longer be read,
+  and `LIBS` returns `{ }`, there being no libraries.
 - The screen has one typeface, so the system font is the stack text size:
   `FONT6`, `FONT7` and `FONT8` return `:Font:6` to `:Font:8`, tagged sizes
   rather than font objects (TYPE 12, not 30), and `→FONT` sets Small,
