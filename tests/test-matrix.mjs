@@ -3844,6 +3844,10 @@ function _approxMatEqual(A, B, tol) {
       && line('[[1. 2][3 4]] INV') === '[[ -2. 1. ][ 1.5 -0.5 ]]',
     'INV of an integer matrix in exact mode is fractions, as on the HP, where it gave decimals; a real entry keeps it numeric');
   assertThrows(() => runLine('[[1 2][2 4]] INV'), /Infinite result/, 'INV of a singular exact matrix is an Infinite result');
+  assert(line('[[2 1 5][1 3 10]] RREF') === '[[ 1 0 1 ][ 0 1 3 ]]' && line('[[1 2][2 4]] RREF') === '[[ 1 2 ][ 0 0 ]]'
+      && line('[[2 3][4 5]] RREF') === '[[ 1 0 ][ 0 1 ]]' && line('[[2 4 1][1 3 1]] RREF') === '[[ 1 0 -1/2 ][ 0 1 1/2 ]]'
+      && line('[[1. 2][2 4]] RREF') === '[[ 1. 2. ][ 0. 0. ]]',
+    'RREF of an integer matrix in exact mode stays integers and fractions, as on the HP, where it gave decimals; a real entry keeps it numeric');
   assertThrows(() => runLine('[[2 1][1 3]] [5 10] /'), /Bad argument type/, 'a matrix divided by a vector is still refused');
   assert(line('[[1 2][3 4]] →ROW') === '2. | [ 3 4 ] | [ 1 2 ]' && line('[1 2] [3 4] 2 ROW→') === '[[ 1 2 ][ 3 4 ]]',
     '→ROW takes a matrix apart and ROW→ puts rows together, the AUR way round');

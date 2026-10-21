@@ -2217,22 +2217,33 @@ export function _invMatrixNumeric(rows) {
 
 const _isExactZero = (x) => isInteger(x) && x.value === 0n;
 
-// Gauss-Jordan on integers and fractions, so an exact matrix inverts to fractions as on the HP.
+export const _isExactArray = (entries) => !getApproxMode() && entries.every((x) => isInteger(x) || isRational(x));
+
+// Gauss-Jordan on integers and fractions, so an exact matrix reduces and inverts to fractions as on the HP.
+export function _rrefExact(rows) {
+  const a = rows.map((row) => [...row]);
+  const cols = a[0]?.length ?? 0;
+  let r = 0;
+  for (let c = 0; c < cols && r < a.length; c++) {
+    const p = a.findIndex((row, i) => i >= r && !_isExactZero(row[c]));
+    if (p < 0) continue;
+    [a[r], a[p]] = [a[p], a[r]];
+    const piv = a[r][c];
+    a[r] = a[r].map((x) => _scalarBinary('/', x, piv));
+    for (let i = 0; i < a.length; i++) {
+      const f = a[i][c];
+      if (i !== r && !_isExactZero(f)) a[i] = a[i].map((x, j) => _scalarBinary('-', x, _scalarBinary('*', f, a[r][j])));
+    }
+    r++;
+  }
+  return a;
+}
+
 export function _invMatrixExact(rows) {
   const n = rows.length;
-  const a = rows.map((row, i) => [...row, ...rows.map((_, j) => Integer(i === j ? 1n : 0n))]);
-  for (let k = 0; k < n; k++) {
-    const p = a.findIndex((row, i) => i >= k && !_isExactZero(row[k]));
-    if (p < 0) throw new RPLError('Infinite result');
-    [a[k], a[p]] = [a[p], a[k]];
-    const piv = a[k][k];
-    a[k] = a[k].map((x) => _scalarBinary('/', x, piv));
-    for (let i = 0; i < n; i++) {
-      const f = a[i][k];
-      if (i !== k && !_isExactZero(f)) a[i] = a[i].map((x, j) => _scalarBinary('-', x, _scalarBinary('*', f, a[k][j])));
-    }
-  }
-  return a.map((row) => row.slice(n));
+  const reduced = _rrefExact(rows.map((row, i) => [...row, ...rows.map((_, j) => Integer(i === j ? 1n : 0n))]));
+  if (_isExactZero(reduced[n - 1][n - 1])) throw new RPLError('Infinite result');
+  return reduced.map((row) => row.slice(n));
 }
 
 
