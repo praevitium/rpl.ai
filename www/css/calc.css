@@ -2288,3 +2288,22 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 /* OFF: a dark screen over everything, as the HP's goes blank, until a tap or a key. */
 .off-screen { position: fixed; inset: 0; z-index: 300; display: grid; place-content: center; gap: 8px; text-align: center; background: #0b0d10; color: #6b7280; font-family: var(--font-mono); cursor: pointer; }
 .off-screen small { font-size: 12px; color: #4b5563; }
+
+/* PERTBL: 18 columns that scroll sideways on a phone, each cell a finger wide, the lanthanides and actinides below. */
+.pt-wrap { overflow-x: auto; padding-bottom: 6px; }
+.pt-grid { display: grid; grid-template-columns: repeat(18, 38px); grid-auto-rows: 38px; gap: 2px; width: max-content; }
+.pt-cell { display: grid; place-content: center; padding: 0; border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 5px; background: var(--r1); color: var(--ink); font: 600 12px/1 var(--font-mono); }
+.pt-cell small { font: 500 8px/1 var(--font-mono); color: var(--ink3); }
+.pt-cell[aria-pressed="true"] { background: var(--accent-dim); border-color: var(--accent-line); color: var(--accent); }
+.pt-cell.b-s { border-bottom-color: #e05d5d; }
+.pt-cell.b-p { border-bottom-color: #3f8ae0; }
+.pt-cell.b-d { border-bottom-color: #4ba36a; }
+.pt-cell.b-f { border-bottom-color: #c58a2e; }
+.pt-card { margin-top: 12px; }
+.pt-card h5 { margin: 0 0 4px; font-size: 16px; }
+.pt-card h5 span { font-family: var(--font-mono); color: var(--ink2); margin-left: 6px; }
+.pt-hint { margin: 0 0 8px; font-size: 12.5px; color: var(--ink2); }
+.pt-props { display: grid; gap: 4px; }
+.pt-prop { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 40px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); text-align: left; font-size: 13px; }
+.pt-prop b { font-family: var(--font-mono); font-weight: 500; text-align: right; overflow-wrap: anywhere; }
+.pt-prop:disabled { opacity: .5; }

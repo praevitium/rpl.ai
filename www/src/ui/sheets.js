@@ -6,6 +6,9 @@ import { UI_PREFS_KEY, THEMES, THEME_LABELS, STACK_SIZES, STACK_SIZE_LABELS, TUT
 import { REMOTE_CONFIG_KEY as CHAT_REMOTE_KEY, CONSENT_KEY as CHAT_CONSENT_KEY } from '../ai/chat-bot.js';
 import { state as calcState, testUserFlag, setUserFlag, clearUserFlag, setClockOffset, varStore } from '../rpl/state.js';
 import { ROWS, COLS, GOAL, minesAround, step, newField, saveField } from '../rpl/minehunt.js';
+import { ELEMENTS } from '../rpl/elements.js';
+import { PROPERTIES, propertyValue } from '../rpl/ops/periodic.js';
+import { format } from '../rpl/formatter.js';
 import { VERSION, BUILD, SHA } from '../build-info.js';
 import { pickFile } from './drawer.js';
 
@@ -81,6 +84,12 @@ export class Sheets {
     requestAnimationFrame(() => this.el?.querySelector('.mh-grid')?.focus({ preventScroll: true }));
   }
 
+  // PERTBL: the table, a tap on an element its properties, a tap on a property its value on the stack.
+  openPeriodicTable() {
+    this.ptZ ??= 1;
+    this._open('ptable');
+  }
+
   openView(title, html, level) {
     this.view = { title, html, level };
     this._open('view');
@@ -133,6 +142,10 @@ export class Sheets {
       this.el.innerHTML = sheet('MINEHUNT', this._gameHtml(), '', foot);
       return;
     }
+    if (this.kind === 'ptable') {
+      this.el.innerHTML = sheet('Periodic Table', this._tableHtml(), '', `<button type="button" class="btn" data-sh="close">${icon('x', 'sm')}Close</button>`);
+      return;
+    }
     if (this.kind === 'view') {
       const act = (name, ico, label) => `<button type="button" class="btn" data-sh="view-act" data-act="${name}">${icon(ico, 'sm')}${label}</button>`;
       const { level } = this.view;
@@ -147,6 +160,16 @@ export class Sheets {
     }
     const nav = SETTINGS_PAGES.map((p) => `<button type="button" data-sh="page" data-page="${p}" aria-pressed="${p === this.page}">${icon({ appearance: 'sliders', assistant: 'spark', data: 'folder' }[p], 'sm')}${{ appearance: 'Appearance', assistant: 'Assistant', data: 'Data' }[p]}</button>`).join('');
     this.el.innerHTML = sheet('Settings', this._settingsPageHtml(), `<nav class="sheet-nav">${nav}</nav>`);
+  }
+
+  _tableHtml() {
+    const e = ELEMENTS[this.ptZ - 1];
+    const cells = ELEMENTS.map((el) => `<button type="button" class="pt-cell b-${el[15]}" data-sh="pt-elem" data-z="${el[0]}" style="grid-column:${el[23]};grid-row:${el[24]}" aria-label="${escapeHtml(el[2])}" aria-pressed="${el[0] === this.ptZ}"><small>${el[0]}</small>${el[1]}</button>`).join('');
+    const rows = PROPERTIES.map((p, i) => {
+      const v = propertyValue(e, p);
+      return `<button type="button" class="pt-prop" data-sh="pt-push" data-prop="${i + 1}"${v ? '' : ' disabled'}><span>${i + 1}. ${p[0]}</span><b>${v ? escapeHtml(format(v)) : '–'}</b></button>`;
+    }).join('');
+    return `<div class="pt-wrap"><div class="pt-grid" role="grid" aria-label="Periodic table">${cells}</div></div><div class="pt-card"><h5>${e[0]} ${escapeHtml(e[2])} <span>${e[1]}</span></h5><p class="pt-hint">Tap a property to put it on the stack, as PTPROP does with its number.</p><div class="pt-props">${rows}</div></div>`;
   }
 
   _gameHtml() {
@@ -281,6 +304,21 @@ export class Sheets {
       case 'install': app.runAction('app.install'); return;
       case 'restore': pickFile('application/json,.json', async (f) => { if (await app.importSnapshotFromFile(f)) this.close(); }); return;
       case 'clock-reset': setClockOffset(0); this._render(); return;
+      case 'pt-elem': {
+        const wrap = this.el.querySelector('.pt-wrap'), left = wrap?.scrollLeft ?? 0;
+        this.ptZ = Number(b.dataset.z);
+        this._render();
+        this.el.querySelector('.pt-wrap').scrollLeft = left;
+        this.el.querySelector('.pt-card')?.scrollIntoView?.({ block: 'nearest' });
+        return;
+      }
+      case 'pt-push': {
+        const v = propertyValue(ELEMENTS[this.ptZ - 1], PROPERTIES[Number(b.dataset.prop) - 1]);
+        if (!v) return;
+        app.commitEntryAndPush(v);
+        app.toast(`${format(v)} is on the stack`);
+        return;
+      }
       case 'mh-step': this._gameStep(Number(b.dataset.dr), Number(b.dataset.dc)); return;
       case 'mh-square': {
         const to = Number(b.dataset.square);

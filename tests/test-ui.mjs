@@ -3020,3 +3020,15 @@ setAngle('RAD');
     && /\n\.off-screen \{ position: fixed; inset: 0; z-index: 300;/.test(css),
     'FILER opens the Variables drawer and OFF saves the session and covers the app with an off screen that a tap or a key removes, as the HP\'s file manager and power switch');
 }
+
+{
+  const sh = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  const app = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/setTableHook\(\(\) => setTimeout\(\(\) => this\.sheets\.openPeriodicTable\(\)\)\);/.test(app)
+    && /class="pt-cell b-\$\{el\[15\]\}" data-sh="pt-elem" data-z="\$\{el\[0\]\}" style="grid-column:\$\{el\[23\]\};grid-row:\$\{el\[24\]\}"/.test(sh)
+    && /class="pt-prop" data-sh="pt-push" data-prop="\$\{i \+ 1\}"/.test(sh)
+    && /case 'pt-push': \{\n\s*const v = propertyValue\(ELEMENTS\[this\.ptZ - 1\], PROPERTIES\[Number\(b\.dataset\.prop\) - 1\]\);\n\s*if \(!v\) return;\n\s*app\.commitEntryAndPush\(v\);/.test(sh)
+    && /\n\.pt-grid \{ display: grid; grid-template-columns: repeat\(18, 38px\); grid-auto-rows: 38px;/.test(css) && /\n\.pt-prop \{ [^\n]*min-height: 40px;/.test(css),
+    'PERTBL opens a sheet with the 18-column table in finger-wide cells placed by period and group, a tap on an element lists its 23 properties and a tap on a property puts it on the stack');
+}

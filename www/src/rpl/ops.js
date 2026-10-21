@@ -4,6 +4,7 @@ export {
 export { singleStepMode, stepIntoMode, localFramesDepth, dosubsStackDepth, isProgramLine, runProgramLine, keepsFailureStack } from './ops/internal.js';
 export { setGraphicsHook } from './ops/graphics.js';
 export { setMenuHook, setBeepHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook } from './ops/display.js';
+export { setTableHook } from './ops/periodic.js';
 export { setVersion, setKeyHook } from './ops/system.js';
 export { setConlibHook, constantIds, constantValue } from './ops/unit-ops.js';
 import './ops/stack.js';
@@ -32,3 +33,4 @@ import './ops/control.js';
 import './ops/graphics.js';
 import './ops/root.js';
 import './ops/tvm.js';
+import './ops/periodic.js';

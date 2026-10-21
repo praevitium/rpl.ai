@@ -1036,15 +1036,14 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 766. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 769. The
 Catalog and the command reference mark what is available. Not there yet:
 the HP's numbered menus for MENU and TMENU (a list, a name holding one or 0
 work).
 
 **Left out on purpose.** ENTRY mode, the NUM.SLV solver screens, the
-equation library (EQNLIB, SOLVEQN), the periodic table (PERTBL, PTPROP,
-PERINFO), RCLMENU, FINANCE, TIME, the StreamSmart app (STRM), the screen
-fonts (FONT6, →FONT,
+equation library (EQNLIB, SOLVEQN), RCLMENU, FINANCE, TIME, the StreamSmart
+app (STRM), the screen fonts (FONT6, →FONT,
 →MINIFONT and the rest), libraries (LIB, ATTACH and port management other
 than ARCHIVE and RESTORE), Saturn assembly and System RPL, printing, and IR
 and serial transfer.
@@ -1054,6 +1053,10 @@ and serial transfer.
 - `FILER` opens the Variables drawer, the file manager here, and `OFF`
   saves the session and covers the app with an off screen until a tap or a
   key wakes it, since a web page has no power to cut.
+- `PERTBL` opens a periodic table sheet, and `PTPROP` takes a property by
+  number or by name; numbers 6 and 8 follow the HP's examples, the other 21
+  are rpl.ai's order, listed in the reference. The element data is
+  Bowserinator's Periodic-Table-JSON, drawn from Wikipedia.
 - An algebraic reads the HP's postfix factorial, `'5!'` or `'(N+1)!'`, but
   its text form writes `FACT(5)`; the textbook display shows `5!`.
 - `BEEP` doesn't hold the program while its tone plays; tones in a row still
@@ -1221,6 +1224,8 @@ rpl.ai bundles or depends on:
 - **[Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html)**
   (GPL-3.0+): Bernard Parisse's computer algebra system, as WebAssembly via
   [emgiac](https://github.com/adriweb/emgiac), with GMP, MPFR and MPFI (LGPL)
+- **[Periodic-Table-JSON](https://github.com/Bowserinator/Periodic-Table-JSON)**
+  by Bowserinator, CC BY-SA, for the 118 elements behind PERTBL and PTPROP.
 - **[decimal.js](https://github.com/MikeMcl/decimal.js)**,
   **[fraction.js](https://github.com/rawify/Fraction.js)** and
   **[complex.js](https://github.com/rawify/Complex.js)** (MIT): decimal,

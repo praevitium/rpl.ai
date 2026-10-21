@@ -825,3 +825,17 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assertThrows(() => runLine('1686 SIDENS'), /Bad argument value/, 'SIDENS stops at silicon\'s melting point, 1685 K');
   assertThrows(() => runLine('300_m SIDENS'), /Inconsistent units/, 'SIDENS wants a temperature');
 }
+
+// PTPROP, PERTBL and PERINFO: the periodic table.
+{
+  const line = (src) => runLine(src).snapshot().map((v) => formatSource(v)).join(' ');
+  const err = (src) => { try { runLine(src); return ''; } catch (e) { return e.message; } };
+  assert(line("'Hg' 6 PTPROP") === '"[Xe]4f14·5d10·6s2"', 'PTPROP 6 is the electron configuration, written as the AUR example writes it');
+  assert(line('-61 SF 79 8 PTPROP -61 CF') === '1337.33' && line('79 8 PTPROP') === '1337.33_K', 'PTPROP 8 is the melting point, a unit object unless flag -61 says no units, as MOLWT');
+  assert(line('"Fe" "Density" PTPROP') === '7.874_g/cm^3' && line("'Fe' 1 PTPROP") === '55.8452_g/mol' && line('26 17 PTPROP') === '"Fe"' && line('26 16 PTPROP') === '"Iron"',
+    'PTPROP takes the symbol as a name or a string, or the atomic number, and a property by number or by name');
+  assert(line('6 21 PTPROP') === '{ 2 4 }' && line('1 18 PTPROP') === '1' && line('"he" 3 PTPROP') === '18', 'PTPROP gives the shells as a list and counts as integers, the symbol in any case');
+  assert(/Bad argument value/.test(err('200 1 PTPROP')) && /Bad argument value/.test(err("'Xx' 1 PTPROP")) && /Bad argument value/.test(err('26 24 PTPROP')) && /not known/.test(err('118 8 PTPROP')),
+    'PTPROP refuses an unknown element or property and says when a value is not known');
+  assert(line('5 PERTBL') === '5', 'PERTBL leaves the stack alone; the app opens the table through its hook');
+}

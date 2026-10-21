@@ -38,7 +38,7 @@ import {
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo, getUserKeys, standardKeysActive,
   batchStateNotifications,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
 import { VERSION, DATE } from './build-info.js';
 import { beep, alarmBeep } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest, calculatorNow } from './rpl/ops/time.js';
@@ -189,6 +189,7 @@ class App {
     // A phone's keyboard, up for the line that ran FILER, would leave the drawer a sliver; it goes with the focus.
     setFilerHook(() => setTimeout(() => { document.activeElement?.blur?.(); this.drawers.open('vars'); }));
     setOffHook(() => setTimeout(() => this.turnOff()));
+    setTableHook(() => setTimeout(() => this.sheets.openPeriodicTable()));
     setBeepHook(beep);
     setVersion(VERSION, DATE);
     setConlibHook(() => this.showConstants());

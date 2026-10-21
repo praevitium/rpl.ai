@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 766 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 769 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -483,9 +483,9 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-PCONTOUR">PCONTOUR</a>
 <a href="#cmd-PCOV">PCOV</a>
 <a href="#cmd-PDIM">PDIM</a>
-<a href="#cmd-PERINFO" class='notinapp'>PERINFO</a>
+<a href="#cmd-PERINFO">PERINFO</a>
 <a href="#cmd-PERM">PERM</a>
-<a href="#cmd-PERTBL" class='notinapp'>PERTBL</a>
+<a href="#cmd-PERTBL">PERTBL</a>
 <a href="#cmd-PEVAL">PEVAL</a>
 <a href="#cmd-PGDIR">PGDIR</a>
 <a href="#cmd-PICK">PICK</a>
@@ -526,7 +526,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-PSDEV">PSDEV</a>
 <a href="#cmd-PSI">PSI</a>
 <a href="#cmd-PTAYL">PTAYL</a>
-<a href="#cmd-PTPROP" class='notinapp'>PTPROP</a>
+<a href="#cmd-PTPROP">PTPROP</a>
 <a href="#cmd-PURGE">PURGE</a>
 <a href="#cmd-PUSH">PUSH</a>
 <a href="#cmd-PUT">PUT</a>
@@ -11344,7 +11344,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>PMAX, PMIN</p>
   </dd>
 </dl>
-<h2 id="cmd-PERINFO">PERINFO <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PERINFO">PERINFO <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 287 · printed page 3-167</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -11354,6 +11354,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Displays the Periodic Table version and copyright information. It doesn’t affect the stack.</p>
+    <p>In rpl.ai PERINFO shows the table's version and its data source in a message box.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -11389,7 +11390,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>COMB, FACT, !</p>
   </dd>
 </dl>
-<h2 id="cmd-PERTBL">PERTBL <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PERTBL">PERTBL <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 288 · printed page 3-168</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -11399,6 +11400,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Starts the Periodic Table. It doesn’t affect the stack.</p>
+    <p>In rpl.ai PERTBL opens the Periodic Table sheet: a tap on an element shows its 23 properties, a tap on a property puts it on the stack.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
@@ -12421,7 +12423,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <table class="cmd-kv"><tbody><tr><th>Command</th><td>PTAYL(X^2+3*X+2, 2)</td></tr><tr><th>Result</th><td>X^2+7*X+12</td></tr></tbody></table>
   </dd>
 </dl>
-<h2 id="cmd-PTPROP">PTPROP <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PTPROP">PTPROP <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 302 · printed page 3-182</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -12431,6 +12433,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Returns the specified property for the specified element. It takes the element’s atomic number or symbol as a name (with certain restrictions) and the property number. It returns the property, usually a value or a string. It chooses to use or not use units according to the Units Usage flag (flag 61: SI units if clear, no units if set). If you use PTPROP as an algebraic function, you must use the symbol to define the element — you can’t use its atomic number. See Appendix B for a full list of available properties.</p>
+    <p>In rpl.ai the property numbers are 1 Atomic weight, 2 Density, 3 Group, 4 Period, 5 Block, 6 Electron configuration, 7 Electronegativity, 8 Melting point, 9 Boiling point, 10 Molar heat capacity, 11 Electron affinity, 12 First ionization energy, 13 Second ionization energy, 14 Atomic radius, 15 Covalent radius, 16 Name, 17 Symbol, 18 Atomic number, 19 Phase, 20 Category, 21 Electrons per shell, 22 Appearance, 23 Discovered by; 6 and 8 follow the examples above, the rest is rpl.ai's order. A property can also be named, <code>'Fe' "Density" PTPROP</code>. Flag -61 set gives numbers without units, as MOLWT does. The data is Bowserinator's Periodic-Table-JSON, drawn from Wikipedia, so a value can differ from the HP's (gold melts at 1337.33 K here).</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
