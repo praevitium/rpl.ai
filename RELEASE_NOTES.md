@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.48 (2026-10-21)
+**Latest release:** v0.8.49 (2026-10-21)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.49 — 2026-10-21
+
+- Fixed: Ctrl+A (⌘A on a Mac) in the equation writer selected the whole
+  page, so Ctrl+C then copied the page's text and Ctrl+X cut nothing. It
+  now selects the whole formula, as Shift+↑ does, for Ctrl+C, Ctrl+X and
+  typing over.
+- Added: Shift+Enter on a selected stack level copies it into the command
+  line, as the interactive stack's ECHO key does, so a level can join a
+  line being typed. With no level selected, Shift+Enter still starts a new
+  line. The level's menu and the ECHO soft key name the key.
+- Improved: the writers' hint rows name the new keys: Ctrl+A in the
+  equation writer, and in the matrix writer that Enter stores the cell
+  before it pushes and Esc puts the cell back before it cancels.
 
 ## v0.8.48 — 2026-10-21
 

@@ -290,13 +290,13 @@ On Windows and Linux, ⌘ is Ctrl and ⌥ is Alt.
 | Keys | Does |
 |---|---|
 | `⌘K` | Search commands, settings, variables and help |
-| `⌘E` · `⇧⌘M` | Equation writer · Matrix writer (press again to carry it to the command line) |
+| `⌘E` · `⇧⌘M` | Equation writer · Matrix writer (press again to carry it to the command line); `⌘A` in the equation writer selects the whole formula for `⌘C` or `⌘X` |
 | `⌘I` | Ask the assistant (or start a line with `?`) |
 | `F1`–`F6` · PgUp/PgDn | Soft keys · menu pages |
 | `↑` · `↓` on an empty line | Select level 1 · edit level 1 |
 | Enter · `→` on an empty line | DUP · SWAP |
 | `⌘C` on an empty line | Copy level 1, ready to paste into a spreadsheet (text you have selected copies as text) |
-| With a level selected | `↑` `↓` move the selection · `⌘↑` `⌘↓` move the level · Enter edits · Space shows it full size (VIEW) · ⌫ drops · `⌘C` copies · `⌘D` picks |
+| With a level selected | `↑` `↓` move the selection · `⌘↑` `⌘↓` move the level · Enter edits · ⇧Enter copies it into the command line (ECHO) · Space shows it full size (VIEW) · ⌫ drops · `⌘C` copies · `⌘D` picks |
 | On a variable in the Variables drawer | Enter runs it or puts it on the stack · ⇧Enter stores level 1 in it · ⌥Enter recalls it, as the HP's shifted VAR keys do |
 | `⌘Z` · `⇧⌘Z` | Undo · redo (text when the line has text, otherwise the stack) |
 | `⌘\` · `⌘;` · `⇧⌘F` | Tools drawer · keypad · Minimal view |
