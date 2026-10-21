@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.47 (2026-10-21)
+**Latest release:** v0.8.48 (2026-10-21)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.48 — 2026-10-21
+
+- Fixed: after a tap or click on the plot, the readout showed the raw
+  point, x = 2.46 and y = -5.65313, while the ↵ button and Enter put
+  (2.5, -5.7) on the stack. The readout now reads the point at its pixel,
+  as the HP's cursor does and as the button and Enter push it.
+- Added: in Trace mode, a tap or click on another curve traces that
+  function, the touch twin of ↑ and ↓; a tap away from every curve keeps
+  the one traced and moves along it.
+- Improved: the Picture tools that a tap on the plot brings up no longer
+  squash the plot and move the tapped point (by 30 px on a desktop); they
+  take their room from the bottom of the plot at the same scale.
 
 ## v0.8.47 — 2026-10-21
 
