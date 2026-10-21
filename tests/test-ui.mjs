@@ -2926,6 +2926,8 @@ setAngle('RAD');
     assert(appSrc.includes("isList(value) && value.items.length > 1 ? item('sort', 'chr', 'Sort (SORT)') + item('revlist', 'chr', 'Reverse (REVLIST)') + item('sumlist', 'chr', 'Sum (ΣLIST)') : '',")
       && appSrc.includes("case 'sort': runOn('SORT'); return;") && appSrc.includes("case 'sumlist': runOn('ΣLIST'); return;"),
       'a list of two or more items offers Sort (SORT), Reverse (REVLIST) and Sum (ΣLIST) in its level menu');
+    assert(appSrc.includes("isVector(value) ? item('abs', 'chr', 'Length (ABS)') : '',") && appSrc.includes("case 'abs': runOn('ABS'); return;"),
+      'a vector level offers its length (ABS) in its menu');
     assert(appSrc.includes("isString(value) ? item('strto', 'play', 'Run its text (STR→)') : item('eval', 'play', 'Evaluate (EVAL)'),")
       && appSrc.includes("case 'strto': runOn('STR→'); return;"),
       'a string level offers Run its text (STR→) where Evaluate (EVAL) gave the string back unchanged');
