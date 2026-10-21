@@ -2,7 +2,7 @@ import { setAngle, state as _calcState, getApproxMode, toRadians, fromRadians } 
 import { Symbolic, toRealOrThrow, Real, isComplex, Complex, isInteger, isRational, isReal, isUnit } from '../types.js';
 import { convertValue, parseUnitExpr, sameDims } from '../units.js';
 import { Fn as AstFn } from '../algebra.js';
-import { exactTrig, exactInverseTrig } from '../exact-trig.js';
+import { exactTrig, exactInverseTrig, exactRadians } from '../exact-trig.js';
 import { RPLError } from '../stack.js';
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { register } from './registry.js';
@@ -22,7 +22,16 @@ register('GRAD', () => setAngle('GRD'), { category: 'Trig / log / exp / hyperbol
 
 register('R→D', unaryReal('R→D', r => r * 180 / Math.PI), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 18, label: "R→D" });
 
-register('D→R', unaryReal('D→R', d => d * Math.PI / 180), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 19, label: "D→R" });
+const _degToRad = unaryReal('D→R', d => d * Math.PI / 180);
+
+// An exact number of degrees gives an exact multiple of π in EXACT mode, as the AUR's (π/180)x.
+register('D→R', _withTaggedUnary(_withListUnary((s) => {
+  const v = s.peek(1);
+  if (getApproxMode() || !(isInteger(v) || isRational(v))) { _degToRad(s); return; }
+  s.pop();
+  const ast = isInteger(v) ? exactRadians(v.value, 1n) : exactRadians(v.n, v.d);
+  s.push(ast.kind === 'num' ? _astToRplValue(ast) : Symbolic(ast));
+})), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 19, label: "D→R" });
 
 
 function _unaryOp(name, scalarFn) {

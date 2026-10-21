@@ -96,19 +96,26 @@ function degreesOf(name, ast) {
   return name === 'ACOS' ? 90 - deg : deg;
 }
 
-// Degrees as the angle mode writes them: an integer or fraction of degrees or grads, a multiple of π in radians.
-function angleOf(deg, angle) {
-  if (angle === 'DEG') return Num(BigInt(deg));
-  const [scale, unit] = angle === 'GRD' ? [10n, 9n] : [1n, 180n];
-  let n = BigInt(deg) * scale, d = unit;
+// n/d reduced, its magnitude drawn by top: k, k*π, k/m, k*π/m, or the negative of one.
+function signedFraction(n, d, top) {
   const g = gcd(n < 0n ? -n : n, d);
   [n, d] = [n / g, d / g];
   if (n === 0n) return ZERO;
   const magnitude = n < 0n ? -n : n;
-  const top = angle === 'GRD' ? Num(magnitude) : magnitude === 1n ? Var('π') : Bin('*', Num(magnitude), Var('π'));
-  const value = d === 1n ? top : Bin('/', top, Num(d));
+  const value = d === 1n ? top(magnitude) : Bin('/', top(magnitude), Num(d));
   return n < 0n ? Neg(value) : value;
 }
+
+const piTimes = (k) => (k === 1n ? Var('π') : Bin('*', Num(k), Var('π')));
+
+// Degrees as the angle mode writes them: an integer or fraction of degrees or grads, a multiple of π in radians.
+function angleOf(deg, angle) {
+  if (angle === 'DEG') return Num(BigInt(deg));
+  return angle === 'GRD' ? signedFraction(BigInt(deg) * 10n, 9n, Num) : signedFraction(BigInt(deg), 180n, piTimes);
+}
+
+// n/d degrees in radians, exactly: 90 is π/2.
+export const exactRadians = (n, d) => signedFraction(n, d * 180n, piTimes);
 
 function gcd(a, b) {
   while (b) [a, b] = [b, a % b];
