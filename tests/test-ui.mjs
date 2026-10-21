@@ -3054,3 +3054,13 @@ setAngle('RAD');
     && /<p class="eq-vars">\$\{vars\}<\/p>/.test(sh) && /\n\.eq-vars \{ display: flex; flex-wrap: wrap;/.test(css) && /\n\.eq-vars \.known \{ border-style: dashed;/.test(css),
     "a set's page lists its variables in the solver's key order, the constants it knows with their values, so a phone shows what the solver's keys will be before Solve");
 }
+
+{
+  const sh = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/const lift = foot\?\.height && box && foot\.bottom >= box\.bottom - 24 \? Math\.round\(box\.bottom - foot\.top \+ 8\) : 0;\n\s*notes\.style\.setProperty\('--note-lift', `\$\{lift\}px`\);/.test(sh)
+    && /_render\(\) \{\n\s*requestAnimationFrame\(\(\) => this\._liftNotes\(\)\);/.test(sh)
+    && /this\._resize = new ResizeObserver\(\(\) => this\._liftNotes\(\)\);/.test(sh)
+    && /\.lay-sheet:not\(:empty\) ~ #toasts \{ top: auto; bottom: max\(calc\(16px \+ env\(safe-area-inset-bottom, 0px\)\), var\(--note-lift, 0px\)\); \}/.test(css),
+    "a note over a sheet that fills a phone's screen sits above its footer, so the minimal-view note no longer takes the first tap on Solve, Back or Close");
+}

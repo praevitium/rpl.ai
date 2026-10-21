@@ -59,8 +59,10 @@ export class Sheets {
 
   close() {
     if (!this.el) return;
+    this._resize?.disconnect();
     this.el.remove();
     this.el = null;
+    this._liftNotes();
     this.kind = null;
     this._confirmReset = false;
   }
@@ -119,12 +121,26 @@ export class Sheets {
       this.el.addEventListener('pointerdown', (e) => { this._swipe = this.kind === 'game' && e.target.closest('.mh-grid') ? [e.clientX, e.clientY] : null; });
       this.el.addEventListener('pointerup', (e) => this._gameSwipe(e));
       this.host.appendChild(this.el);
+      this._resize = new ResizeObserver(() => this._liftNotes());
+      this._resize.observe(this.el);
     }
     this._render();
     requestAnimationFrame(() => this.el?.querySelector('.sheet-nav button[aria-pressed="true"], .sheet-c button, .sheet-c input')?.focus({ preventScroll: true }));
   }
 
+  // A note sits at the bottom edge while a sheet is open; over a sheet whose footer reaches that edge it would cover
+  // the footer's buttons, so it goes above them.
+  _liftNotes() {
+    const notes = this.app.toasts?.el;
+    if (!notes) return;
+    const foot = this.el?.querySelector('.sheet-f')?.getBoundingClientRect();
+    const box = notes.offsetParent?.getBoundingClientRect();
+    const lift = foot?.height && box && foot.bottom >= box.bottom - 24 ? Math.round(box.bottom - foot.top + 8) : 0;
+    notes.style.setProperty('--note-lift', `${lift}px`);
+  }
+
   _render() {
+    requestAnimationFrame(() => this._liftNotes());
     const sheet = (title, content, nav = '', foot = '', head = '') => `<div class="sheet" role="dialog" aria-modal="true" aria-label="${title}"><div class="sheet-h"><b>${title}</b>${head}<button type="button" class="icon-btn sm" data-sh="close" title="Close (Esc)" aria-label="Close">${icon('x', 'sm')}</button></div><div class="sheet-b${nav ? '' : ' single'}">${nav}<div class="sheet-c">${content}</div></div>${foot && `<div class="sheet-f">${foot}</div>`}</div>`;
     if (this.kind === 'shortcuts') {
       this.el.innerHTML = sheet('Keyboard shortcuts', this._shortcutsHtml());
