@@ -330,10 +330,17 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   one with the cursor after its first word, inside a program opened with
   `«` or a phone keyboard's `<<`. Where the keyboard leaves room for only
   a row or two, the list fades at the edge that has more.
+  The digit keys' shifts open the HP 50g's menus and leave the command
+  line as it is: ↰7 S.SLV, ↰8 EXP&LN, ↰9 TRIG, ↰4 CALC and ↱4 ALG open
+  those CAS folders, ↱8 TVM (the HP's FINANCE), ↰5 MATRX, ↱5 STAT,
+  ↱6 UNITS, ↰1 ARITH and ↱1 CMPLX their menus; ↰2 DEF runs DEFINE and
+  ↱ON is OFF. ↱9 keeps the where operator `|`. On a narrow keypad the
+  shift labels shrink together until every key's pair fits.
   For more of the stack, choose Compact keypad from the ⋯ menu (or Keypad
   in Settings): five rows of the keys an RPN session reaches for most,
   with SWAP, DROP and UNDO beside the digits, SIN, COS and TAN on the
-  shifted 7, 8 and 9, and under α the whole pad running a to z. Its keys
+  shifted 7, 8 and 9, the menus of 4, 5, 6, 1 and 2 (the crowded 5 and 1
+  keep only their ↰ ones), and under α the whole pad running a to z. Its keys
   name their shifts in landscape too. A window too short for the full
   keypad to leave two stack levels (under about 576 px tall, as in split
   screen, or 840 px with a writer open) uses the compact keypad on its own,
