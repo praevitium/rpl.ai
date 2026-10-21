@@ -2552,13 +2552,29 @@ setAngle('RAD');
 {
   const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/const sheet = \(title, content, nav = '', foot = ''\) =>[^\n]*<div class="sheet-c">\$\{content\}<\/div><\/div>\$\{foot && `<div class="sheet-f">\$\{foot\}<\/div>`\}<\/div>`;/.test(sheetsSrc)
+  assert(/const sheet = \(title, content, nav = '', foot = '', head = ''\) =>[^\n]*<div class="sheet-c">\$\{content\}<\/div><\/div>\$\{foot && `<div class="sheet-f">\$\{foot\}<\/div>`\}<\/div>`;/.test(sheetsSrc)
     && /<\/div>`, '', `\$\{act\('inform-ok', 'check', 'OK', ' pri'\)\}\$\{act\('inform-cancel', 'x', 'Cancel'\)\}\$\{act\('inform-reset', 'undo', 'Reset'\)\}`\);/.test(sheetsSrc)
-    && /<div class="sheet-view">\$\{this\.view\.html\}<\/div>`, '', acts\);/.test(sheetsSrc) && !/sheet-view-acts/.test(sheetsSrc) && !/sheet-view-acts/.test(css)
+    && /<div class="sheet-view">\$\{this\.view\.html\}<\/div>`, '', acts, steps\);/.test(sheetsSrc) && !/sheet-view-acts/.test(sheetsSrc) && !/sheet-view-acts/.test(css)
     && /\.sheet \{[^\n]*grid-template-rows: auto minmax\(0, 1fr\) auto;/.test(css)
     && /\.sheet-f \{ display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 22px 16px; border-top: 1px solid var\(--line\); \}/.test(css)
     && /@container sheet \(max-height: 219px\) \{ \.sheet-f \{ display: none; \} \}/.test(css),
     'Sheets: the OK, Cancel and Reset keys of INFORM and the Edit, Copy and Share keys of a View sheet sit in a footer outside the scroller, which a sheet too short for both (landscape with the keyboard up) drops for its fields');
+}
+
+{
+  const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/<b>\$\{title\}<\/b>\$\{head\}<button type="button" class="icon-btn sm" data-sh="close"/.test(sheetsSrc)
+    && /const steps = level == null \? '' : step\(1, 'chu', 'No level above'\) \+ step\(-1, 'chd', 'No level below'\);/.test(sheetsSrc)
+    && /case 'view-step': \{\n\s*const \{ step \} = b\.dataset;\n\s*app\.stepView\(Number\(step\)\);/.test(sheetsSrc),
+    'VIEW: up and down arrows sit in the sheet header beside the level, so the footer still fits Edit and Copy on one row at 280 px');
+  const body = appSrc.match(/\n  stepView\(by\) \{\n([\s\S]*?)\n  \}\n/)[1];
+  const calls = [];
+  const fake = { sheets: { view: { level: 2 } }, stack: { depth: 3 }, selectLevel: (l) => calls.push(`sel ${l}`), _viewLevel: (l) => { calls.push(`view ${l}`); fake.sheets.view.level = l; } };
+  const stepView = new Function('by', body);
+  for (const by of [1, 1, -1, -1, -1]) stepView.call(fake, by);
+  assert(calls.join(', ') === 'sel 3, view 3, sel 2, view 2, sel 1, view 1',
+    `VIEW: stepping moves the interactive stack's pointer and shows the level it lands on, stopping at the top and at level 1 (got ${calls.join(', ')})`);
 }
 
 {

@@ -921,6 +921,14 @@ class App {
     this._viewValue(this.stack.peek(level), `Level ${level}`, level);
   }
 
+  // VIEW's ▲ and ▼ move the interactive stack's pointer, as the HP's arrows do, and show the level it lands on.
+  stepView(by) {
+    const level = (this.sheets.view?.level ?? 0) + by;
+    if (level < 1 || level > this.stack.depth) return;
+    this.selectLevel(level);
+    this._viewLevel(level);
+  }
+
   // Without a level, as for SCROLL's object, which has left the stack, the sheet has no actions.
   _viewValue(value, title, level = null) {
     const cell = document.createElement('div');

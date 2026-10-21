@@ -107,7 +107,7 @@ export class Sheets {
   }
 
   _render() {
-    const sheet = (title, content, nav = '', foot = '') => `<div class="sheet" role="dialog" aria-modal="true" aria-label="${title}"><div class="sheet-h"><b>${title}</b><button type="button" class="icon-btn sm" data-sh="close" title="Close (Esc)" aria-label="Close">${icon('x', 'sm')}</button></div><div class="sheet-b${nav ? '' : ' single'}">${nav}<div class="sheet-c">${content}</div></div>${foot && `<div class="sheet-f">${foot}</div>`}</div>`;
+    const sheet = (title, content, nav = '', foot = '', head = '') => `<div class="sheet" role="dialog" aria-modal="true" aria-label="${title}"><div class="sheet-h"><b>${title}</b>${head}<button type="button" class="icon-btn sm" data-sh="close" title="Close (Esc)" aria-label="Close">${icon('x', 'sm')}</button></div><div class="sheet-b${nav ? '' : ' single'}">${nav}<div class="sheet-c">${content}</div></div>${foot && `<div class="sheet-f">${foot}</div>`}</div>`;
     if (this.kind === 'shortcuts') {
       this.el.innerHTML = sheet('Keyboard shortcuts', this._shortcutsHtml());
       return;
@@ -135,8 +135,14 @@ export class Sheets {
     }
     if (this.kind === 'view') {
       const act = (name, ico, label) => `<button type="button" class="btn" data-sh="view-act" data-act="${name}">${icon(ico, 'sm')}${label}</button>`;
-      const acts = this.view.level == null ? '' : [act('edit', 'edit', 'Edit'), act('copy', 'copy', 'Copy'), typeof navigator.share === 'function' ? act('share', 'share', 'Share') : ''].join('');
-      this.el.innerHTML = sheet(escapeHtml(this.view.title), `<div class="sheet-view">${this.view.html}</div>`, '', acts);
+      const { level } = this.view;
+      const step = (by, ico, end) => {
+        const to = level + by, off = to < 1 || to > this.app.stack.depth, label = off ? end : `Level ${to}`;
+        return `<button type="button" class="icon-btn sm" data-sh="view-step" data-step="${by}" title="${label}" aria-label="${label}"${off ? ' disabled' : ''}>${icon(ico, 'sm')}</button>`;
+      };
+      const acts = level == null ? '' : [act('edit', 'edit', 'Edit'), act('copy', 'copy', 'Copy'), typeof navigator.share === 'function' ? act('share', 'share', 'Share') : ''].join('');
+      const steps = level == null ? '' : step(1, 'chu', 'No level above') + step(-1, 'chd', 'No level below');
+      this.el.innerHTML = sheet(escapeHtml(this.view.title), `<div class="sheet-view">${this.view.html}</div>`, '', acts, steps);
       return;
     }
     const nav = SETTINGS_PAGES.map((p) => `<button type="button" data-sh="page" data-page="${p}" aria-pressed="${p === this.page}">${icon({ appearance: 'sliders', assistant: 'spark', data: 'folder' }[p], 'sm')}${{ appearance: 'Appearance', assistant: 'Assistant', data: 'Data' }[p]}</button>`).join('');
@@ -255,6 +261,12 @@ export class Sheets {
         const { level } = this.view;
         if (b.dataset.act === 'edit') this.close();
         app.levelAction(b.dataset.act, level);
+        return;
+      }
+      case 'view-step': {
+        const { step } = b.dataset;
+        app.stepView(Number(step));
+        (this.el.querySelector(`[data-step="${step}"]:not(:disabled)`) ?? this.el.querySelector('[data-sh="view-step"]:not(:disabled)'))?.focus({ preventScroll: true });
         return;
       }
       case 'page': this.page = b.dataset.page; this._confirmReset = false; this._render(); return;
