@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.18 (2026-10-21)
+**Latest release:** v0.8.19 (2026-10-21)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.19 — 2026-10-21
+
+- On a phone, drag a stack level up or down by its number to move it onto
+  another level, as the HP's ROLL and ROLLD do; held near the top or
+  bottom edge, the stack scrolls to a level out of view. A sideways swipe
+  from the number still drops the level, and Undo puts a move back.
+- Fixed: on a phone narrower than 320 px, Settings' Data tab was cut to
+  "Dat"; the page tabs drop their icons there, as the writer tabs do.
+- The tour's stack card on a phone names the swipe that drops a level and
+  the drag by its number that moves it.
 
 ---
 
