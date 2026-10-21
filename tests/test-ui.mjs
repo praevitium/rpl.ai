@@ -1351,6 +1351,7 @@ setAngle('RAD');
    ================================================================ */
 {
   const { errorBeep } = await import('../www/src/ui/beep.js');
+  const { setUserFlag, clearUserFlag, testUserFlag: flagOn } = await import('../www/src/rpl/state.js');
 
   // No AudioContext in scope yet → silent no-op, never throws, returns
   // undefined.  Leaves the module's lazy `_ctx` cache null so the build
@@ -1440,6 +1441,14 @@ setAngle('RAD');
     errorBeep();
     assert(ctx.resumed === before,
       'errorBeep: a running context is not resumed again');
+
+    const was = flagOn(-56);
+    ctx.oscs.length = 0;
+    setUserFlag(-56);
+    errorBeep();
+    if (!was) clearUserFlag(-56);
+    assert(ctx.oscs.length === 0,
+      'errorBeep: flag -56 silences it as it does BEEP, where Settings\' Beep switch left errors sounding');
   } finally {
     delete globalThis.AudioContext;
   }
@@ -2748,7 +2757,7 @@ setAngle('RAD');
   const displaySrc = readFileSync(new URL('../www/src/rpl/ops/display.js', import.meta.url), 'utf8');
   assert(/import \{ beep, alarmBeep \} from '\.\/ui\/beep\.js';/.test(appSrc) && /\n    setBeepHook\(beep\);\n/.test(appSrc)
     && /export function beep\(hz, seconds\) \{[\s\S]*?const at = Math\.max\(ctx\.currentTime, _queueEnd\);\s*_queueEnd = at \+ seconds;\s*play\(hz, seconds, at\);/.test(beepSrc)
-    && /export function errorBeep\(\) \{\s*play\(1000, 0\.125\);/.test(beepSrc)
+    && /export function errorBeep\(\) \{\s*if \(!testUserFlag\(-56\)\) play\(1000, 0\.125\);/.test(beepSrc)
     && /register\('BEEP', \(s\) => \{[\s\S]*?testUserFlag\(-56\) \|\| inScratchState\(\)\) return;\s*_beepHook\?\.\(freq, dur\);[\s\S]*?categoryOrder: 29/.test(displaySrc),
     'BEEP: the app plays its tones with the error beep\'s square wave, each queued after the last so a program\'s tones sound in turn while it runs on; the command stays quiet under flag -56 and in scratch evaluation');
 }

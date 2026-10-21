@@ -1,3 +1,5 @@
+import { testUserFlag } from '../rpl/state.js';
+
 let _ctx = null;
 let _queueEnd = 0;
 
@@ -36,8 +38,9 @@ function play(hz, dur, at = null) {
   osc.stop(now + dur + 0.01);
 }
 
+// Flag -56 silences the error beep, as it does BEEP.
 export function errorBeep() {
-  play(1000, 0.125);
+  if (!testUserFlag(-56)) play(1000, 0.125);
 }
 
 // BEEP's tones play one after another, as the HP's do while its program waits for each; the program here runs on.
