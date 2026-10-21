@@ -215,7 +215,7 @@ export class Drawers {
     this.scrim = scrim;
     this.app = app;
     this.current = null;
-    this.cat = { q: '', family: null, ref: null, history: [], idx: -1 };
+    this.cat = { q: '', family: null, ref: null, history: [], idx: -1, focusAction: false };
     this.charsQuery = '';
     this.varsQuery = '';
     this.historyQuery = '';
@@ -544,6 +544,8 @@ export class Drawers {
       <div class="acts">${runnable ? `<button type="button" class="btn pri" data-dw="ref-run" data-cmd="${escapeHtml(name)}">${icon('play', 'sm')}Run ${escapeHtml(name)}</button>` : ''}${runnable || isSyntaxWord(name) ? `<button type="button" class="btn${runnable ? '' : ' pri'}" data-dw="ref-insert">Insert in the command line</button>` : `<span class="badge">Not available in rpl.ai</span>`}<button type="button" class="btn ghost" data-dw="ref-ask">${icon('spark', 'sm')}Ask about it</button></div>
       <div class="ref-doc"></div>
     </div>`;
+    // Enter in the search box opened this page and took the box away, so the keyboard carries on from its first action.
+    if (this.cat.focusAction) { this.cat.focusAction = false; body.querySelector('.acts .btn')?.focus(); }
     const doc = body.querySelector('.ref-doc');
     try {
       const frag = await referenceSection(name);
@@ -663,7 +665,7 @@ export class Drawers {
     }
     if (q && e.key === 'Enter' && q.dataset.q === 'cat') {
       const first = this._body()?.querySelector('.cmd-row');
-      if (first) { e.preventDefault(); this.showReference(first.dataset.cmd); }
+      if (first) { e.preventDefault(); this.cat.focusAction = true; this.showReference(first.dataset.cmd); }
       return;
     }
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[role="button"][data-dw]')) {

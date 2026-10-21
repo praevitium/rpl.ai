@@ -2843,6 +2843,9 @@ setAngle('RAD');
   assert(/recallLine\(text, why\) \{\s*if \(this\.inputMode !== 'rpl'\) this\._closeWriter\(\(mode\) => `Put the \$\{mode\} aside for \$\{why\}`\);\s*this\.entry\.recall\(text\);/.test(appSrc)
     && /case 'hist-recall': app\.recallLine\(t\.dataset\.text, 'the line from History'\); this\._reveal\(\); return;\s*case 'hist-run': e\.stopPropagation\(\); app\.recallLine\(t\.dataset\.text, 'the line from History'\); app\.commitEntry\(\); this\._reveal\(\); return;/.test(drawerSrc),
     "History's recall and Run put an open writer aside with its Undo note, as INPUT does, so the line lands where it can be seen and Run runs it rather than committing the writer");
+  assert(/if \(first\) \{ e\.preventDefault\(\); this\.cat\.focusAction = true; this\.showReference\(first\.dataset\.cmd\); \}/.test(drawerSrc)
+    && /if \(this\.cat\.focusAction\) \{ this\.cat\.focusAction = false; body\.querySelector\('\.acts \.btn'\)\?\.focus\(\); \}/.test(drawerSrc),
+    'Catalog: Enter in the search box opens the first match with its Run (or Insert) button focused, where the page took the box away and the keyboard was left on nothing');
 }
 
 {
