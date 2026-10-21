@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.41 (2026-10-21)
+**Latest release:** v0.8.42 (2026-10-21)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.42 — 2026-10-21
+
+- Fixed: one cell copied from Excel or LibreOffice Calc arrived on the
+  command line as the text the cell shows, so `$1,200.00` was a syntax
+  error, `12.5%` pushed 12.5 and then failed, and `(300.00)` became the
+  complex number (300, 0). A single cell now pastes as its number, at the
+  exact value the sheet holds, as a range of cells already did.
+- Added: a single cell copied from Google Sheets, which arrives as a span
+  rather than a table, pastes as its exact number too.
+- Improved: in the matrix writer, Ctrl+Enter (⌘Enter on a Mac) pushes the
+  matrix from any cell. Before, it did nothing, and only Enter on a cell
+  you hadn't typed in could push it. The shortcut list (⌘/) shows it.
 
 ## v0.8.41 — 2026-10-21
 

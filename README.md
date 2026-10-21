@@ -300,7 +300,7 @@ On Windows and Linux, ⌘ is Ctrl and ⌥ is Alt.
 | `⌘,` · `⌘/` | Settings · every shortcut, grouped by where it applies |
 | Tab | Complete a command or variable name; next box or next cell in the writers |
 | `↑` · `↓` with completions showing | Put the next or previous completion in the line, so Enter runs it; Esc puts back what you typed |
-| Enter in the matrix writer | Stores the cell and moves on, as the HP's ENTER; on a cell you haven't typed in it pushes the matrix, so `1` Enter `2` Enter Enter enters `[[ 1 2 ]]` · ⇧Enter next row |
+| Enter in the matrix writer | Stores the cell and moves on, as the HP's ENTER; on a cell you haven't typed in it pushes the matrix, so `1` Enter `2` Enter Enter enters `[[ 1 2 ]]` · ⇧Enter next row · `⌘Enter` pushes the matrix from any cell |
 | Esc | Close, deselect, dismiss, or cancel with Undo |
 
 Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
@@ -817,7 +817,8 @@ Copy a matrix, vector or list (`⌘C` on a selected level) and paste it into
 Excel, Google Sheets or Numbers: it arrives as cells. Copy a range of
 numbers from a spreadsheet and paste it on the command line, where it
 becomes a matrix (a vector for a single row, a one-column matrix for a
-single column), or into the matrix writer's cells. Excel, Sheets and Calc
+single column, and the number itself for one cell), or into the matrix
+writer's cells. Excel, Sheets and Calc
 paste each number at the exact value the sheet holds, not as rounded as the
 cell shows it. Currency, percentages, accounting negatives such as
 `(300.00)` and the separators of other locales (`1.234,56`) are read as
