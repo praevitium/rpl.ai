@@ -607,7 +607,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - The TOOL menu holds the HP's TOOL key: `EDIT`, `VIEW`, `RCL`, `STO`,
   `PURGE` and `CLEAR`, then `CASCMD` and `HELP`, so minimal view, which has
   no keypad, reaches them from the soft keys. `VIEW` shows level 1 full
-  size, as a level's View does.
+  size, as a level's View does. `CASCMD` and `HELP` open the Catalog on its
+  list of CAS commands, and `"SOLVE" CASCMD` starts that list at `SOLVE`,
+  as on the HP. A Catalog family keeps its name and back button at the top
+  as its list scrolls.
 - Where a phone's keyboard writes 1,5 for one and a half, turn on Decimal
   comma in Settings › Calculator, or the FM, key on the MODES menu (flag -51, the HP's
   fraction-mark setting): the command line then reads a comma beside a
