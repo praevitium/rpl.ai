@@ -746,7 +746,9 @@ with a drag or the arrow keys, as the 50g's arrow keys turn it;
 `DRAW3DMATRIX` draws a matrix's values the same way. Traces have
 checkboxes and editable expressions. Zoom, fit and reset are on the canvas,
 the window is typed in directly, and Trace mode (`T`) walks a cursor along
-the curves with live readouts. Expand to fill the window, or go full screen.
+the curves with live readouts; with several functions plotted, ↑ and ↓ move
+it to the previous or next one, as the HP's do, and ▸ marks it in the
+readout. Expand to fill the window, or go full screen.
 On a phone the graph fills the plot view, with the plot types peeking
 below it; the traces and window scroll up under it.
 More canvas buttons copy the plot as an image, download it as a PNG at the
@@ -759,7 +761,8 @@ rpl.ai's own pixel font. PVIEW and PICTURE show PICT over the plot, ANIMATE
 plays graphics objects over it in turn, and TEXT closes it. PICTURE brings
 the HP's graphics cursor: the arrow keys move it a pixel at a time, a tap
 or click puts it anywhere, and Enter, or the button that shows its point,
-puts (x,y) on the stack; in Trace mode Enter puts the point on the curve.
+puts (x,y) on the stack; in Trace mode Enter puts the point on the curve,
+exactly as the readout shows it.
 Under the plot, the Picture menu's keys draw on PICT as the HP's do: DOT+
 and DOT- draw and erase as the cursor moves, MARK sets a mark at the
 cursor, LINE, TLINE, BOX and CIRCL draw from it to the cursor, DEL clears

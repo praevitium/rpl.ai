@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.44 (2026-10-21)
+**Latest release:** v0.8.45 (2026-10-21)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.45 — 2026-10-21
+
+- Fixed: in Trace mode, Enter pushed the point rounded to the cursor's
+  pixel, so tracing SIN at x = 0.75 put (0.8, 0.7) on the stack, off the
+  curve and unlike the readout. It now pushes the traced point as the
+  readout shows it; the free cursor still rounds to its pixel.
+- Added: with several functions plotted, ↑ and ↓ in Trace mode move the
+  trace to the previous or next one, as the HP 50g's arrow keys do in
+  TRACE. With one function they pan the view as before.
+- Improved: tracing several functions, the readout marks the one Enter
+  and the FCN tools work on with ▸.
 
 ## v0.8.44 — 2026-10-21
 
