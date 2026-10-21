@@ -241,11 +241,22 @@ export function htmlTableToText(html) {
 // One cell is just its number, so $1,200.00 or 12.5% pastes as a number too.
 export function htmlTableToSource(html) {
   const rows = htmlTableRows(String(html));
-  if (!rows?.[0]?.length || rows.length * rows[0].length > SHEET_MAX_CELLS) return null;
+  if (!rows) return sheetsSpanNumber(String(html));
+  if (!rows[0]?.length || rows.length * rows[0].length > SHEET_MAX_CELLS) return null;
   if (rows.length === 1 && rows[0].length === 1) return rows[0][0].exact ?? sheetNumber(rows[0][0].text);
   if (rows.some((row) => row.length !== rows[0].length)) return null;
   const numbers = rows.map((row) => row.map(({ text, exact }) => exact ?? blankToZero(text)));
   return numbers.some((row) => row.includes(null)) ? null : numericSource(numbers);
+}
+
+// Google Sheets copies one cell as a span rather than a table.
+function sheetsSpanNumber(html) {
+  const markup = withoutBlocks(html);
+  for (let i = markup.indexOf('<span'); i !== -1; i = markup.indexOf('<span', i + 1)) {
+    const tag = markup.slice(i, tagEnd(markup, i + 1) + 1);
+    if (/\bdata-sheets-value=/i.test(tag)) return exactNumber(tag);
+  }
+  return null;
 }
 
 // A first row of text over rows of numbers is a header, not data.

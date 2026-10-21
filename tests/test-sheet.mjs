@@ -221,6 +221,12 @@ const src = (text) => formatSource(parseEntry(text)[0]);
     'htmlTableToSource: comments and style blocks are not tables');
   const sheets = `<meta charset='utf-8'><google-sheets-html-origin><style type="text/css"><!--td {border: 1px solid #ccc;}--></style><table xmlns="http://www.w3.org/1999/xhtml" cellspacing="0" cellpadding="0" dir="ltr" border="1"><colgroup><col width="100"/></colgroup><tbody><tr style="height:21px;"><td style="text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:3.14159265358979}" data-sheets-formula="=IF(A1>2,PI(),0)">3.14</td></tr><tr style="height:21px;"><td style="text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:42}">42</td></tr></tbody></table>`;
   assert(htmlTableToSource(sheets) === '[[ 3.14159265358979 ][ 42 ]]', 'htmlTableToSource: Google Sheets keeps exact numbers in data-sheets-value, and a > inside an attribute does not end the tag');
+  const sheetsCell = (value, shown, formula = '') => `<meta charset='utf-8'><google-sheets-html-origin><span style="font-size:10pt;" data-sheets-root="1" data-sheets-value="${value}"${formula} data-sheets-userformat="{&quot;2&quot;:513}">${shown}</span>`;
+  assert(htmlTableToSource(sheetsCell('{&quot;1&quot;:3,&quot;3&quot;:1200}', '$1,200.00')) === '1200'
+    && htmlTableToSource(sheetsCell('{&quot;1&quot;:3,&quot;3&quot;:3.14159265358979}', '3.14', ' data-sheets-formula="=IF(A1>2,PI(),0)"')) === '3.14159265358979',
+    'htmlTableToSource: one cell from Google Sheets, which comes as a span rather than a table, pastes as its exact number');
+  assert(htmlTableToSource(sheetsCell('{&quot;1&quot;:2,&quot;2&quot;:&quot;Total&quot;}', 'Total')) === null && htmlTableToSource('<p>3</p>') === null,
+    'htmlTableToSource: a text cell from Google Sheets, or HTML that is no spreadsheet, is left to the plain text paste');
   const calc = '<table cellspacing="0" border="0"><colgroup width="85"></colgroup><tr><td align="right" sdval="0.333333333333333" sdnum="1033;0;0.00">0.33</td></tr><tr><td align="right" sdval="7" sdnum="1033;">7</td></tr></table>';
   assert(htmlTableToSource(calc) === '[[ 0.333333333333333 ][ 7 ]]', 'htmlTableToSource: LibreOffice Calc keeps exact numbers in sdval');
   assert(htmlTableToSource(`<table>${'<tr><td>1</td></tr>'.repeat(SHEET_MAX_CELLS + 1)}</table>`) === null,
