@@ -281,6 +281,10 @@ TYPES / REFLECTION
   BYTES                      object's byte size
   VERSION                    the app's version string and its copyright line
   MINEHUNT                   the HP's minefield game in a sheet: cross from the upper-left to the lower-right corner; Nmines (1 to 64, negative shows them) sets the mines and K saves the game in MHpar
+  FILER OFF                  FILER opens the Variables drawer, the file manager here; OFF saves the session and shows an off screen until a tap or key
+  PERTBL PTPROP PERINFO      PERTBL opens the periodic table; "Fe" 2 PTPROP or 26 "Density" PTPROP gives an element's property (6 is the electron configuration, 8 the melting point); PERINFO shows a note on the table
+  EQNLIB SOLVEQN             EQNLIB opens the HP's Equation Library (15 subjects, 102 sets); 2 9 0 SOLVEQN puts Electricity's Capacitive Energy in EQ, its constants known, and opens the solver's keys
+  PR1 PRST PRSTC PRVAR PRLCD CR  print to the print log (there is no printer): PR1 level 1, PRST and PRSTC the stack, 'X' PRVAR a variable, PRLCD the display as text, CR an empty line; DELAY and OLDPRT do nothing
   VER DEDICACE RULES         VER → 1.5YYYYMMDD, Giac's version with the build date; "Hi" DEDICACE → the dedication with Hi added; RULES shows the credits
   →HEADER HEADER→ →KEYTIME KEYTIME→ →NDISP  check and keep the header size (0-2), the keytime (0-4096 ticks) and the program lines; the screen and keys stay as they are
   ASN STOKEYS RCLKEYS DELKEYS « 2 * » 53.1 ASN assigns a program to the SIN key (key rc.p: row, column, shift plane 1 to 6); { obj key … } STOKEYS assigns pairs, RCLKEYS lists them after S, key DELKEYS or { keys } DELKEYS removes, 0 DELKEYS clears all, S DELKEYS turns unassigned keys off; ↰α (⇨USER) or -62 SF turns USER mode on (1USR for one key unless flag -61 is set), and the user's assigned keys run their objects
