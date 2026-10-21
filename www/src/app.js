@@ -1690,8 +1690,11 @@ class App {
   // A menu or one of its folders, as the HP's menu commands and shifted menu keys open them.
   openMenu(family, folder) {
     const group = { CAS: CAS_GROUPS, INTEGER: INTEGER_GROUPS }[family]?.find((g) => g.id === folder);
-    if (group) this._showGroupMenu(group, family);
-    else this.showMenu(family, { commit: false });
+    if (!group) this.showMenu(family, { commit: false });
+    else {
+      this._menuPinned = !!this.writerMenuId();
+      this._showGroupMenu(group, family);
+    }
     if (this.prefs.minimal) this.setMinimalMenu(true);
   }
 
@@ -2391,7 +2394,9 @@ class App {
 
     if (this.inputMode !== 'rpl') {
       if (key.primary === 'ON' && !this.shift) { this.runAction('ui.escape'); return; }
-      if (this.inputMode === 'equation') this.equationEditor.pressKeypad(key, this.shift);
+      const shifted = { L: key.shiftLAction, R: key.shiftRAction }[this.layer()];
+      if (shifted?.opensMenu) shifted(this.entry, this.stack, this);
+      else if (this.inputMode === 'equation') this.equationEditor.pressKeypad(key, this.shift);
       else this.matrixEditor.pressFace(keypadFace(key, this.shift));
       if (this.shift && !this.shiftLocked()) this.setShift(null);
       return;

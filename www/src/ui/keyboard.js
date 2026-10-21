@@ -32,8 +32,8 @@ const cancel =                  (_e, _s, app) => app.runAction('ui.escape');
 const typeExec     = (ch, op) =>    (e) => e.pressOperator(ch, op);
 const typeExecFn   = fn =>          (e) => e.pressFunction(fn);
 const typeExecName = op =>          (e) => e.pressCommand(op);
-// The HP's shifted menu keys open a menu and leave the command line as it is.
-const menu = (family, folder) => (_e, _s, app) => app.openMenu(family, folder);
+// The HP's shifted menu keys open a menu and leave the command line, or a writer, as it is.
+const menu = (family, folder) => Object.assign((_e, _s, app) => app.openMenu(family, folder), { opensMenu: true });
 
 export const SOFT_KEYS = [
   mk('F1', { className: 'menu', action: (e, s, app) => app.pressSoftKey(0) }),

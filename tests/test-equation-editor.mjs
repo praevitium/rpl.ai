@@ -326,8 +326,8 @@ function same(state, source, label) {
 {
   const labels = new Set();
   for (const key of [...SOFT_KEYS, ...NAV_KEYS, ...ARROW_KEYS, ...MAIN_KEYS]) {
-    for (const label of [key.primary, key.shiftL, key.shiftR, key.alpha]) {
-      if (label) labels.add(label);
+    for (const [label, action] of [[key.primary], [key.shiftL, key.shiftLAction], [key.shiftR, key.shiftRAction], [key.alpha]]) {
+      if (label && !action?.opensMenu) labels.add(label);
     }
   }
   const bad = [...labels].filter((label) => {

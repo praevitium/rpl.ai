@@ -1284,6 +1284,11 @@ setAngle('RAD');
     'keyboard: the shifted digit keys open their menus and CAS folders');
   assert(['4', '5', '6', '1'].map(d => shifts(COMPACT_KEYS, d)).join(' ') === 'CALC/ALG MATRX/- -/UNITS ARITH/-',
     'keyboard: the compact keypad keeps only the ↰ menus on its crowded 5 and 1');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(MAIN_KEYS.find(k => k.primary === '4').shiftLAction.opensMenu === true
+           && /const shifted = \{ L: key\.shiftLAction, R: key\.shiftRAction \}\[this\.layer\(\)\];\s*if \(shifted\?\.opensMenu\)/.test(appSrc)
+           && /openMenu\(family, folder\) \{[\s\S]*?this\._menuPinned = !!this\.writerMenuId\(\);\s*this\._showGroupMenu/.test(appSrc),
+    'keyboard: with a writer open a shifted menu key opens its menu over the writer\'s own, where the writer said the face was unavailable');
   assert(/setOpenHook\([\s\S]*?this\.openMenu\(family, folder\);/.test(readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8')),
     'keyboard: the HP menu commands and the shifted menu keys open menus the same way');
   assert(/\.k \.l, \.k \.r \{[^}]*zoom: var\(--corner-zoom, 1\)/.test(readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8'))
