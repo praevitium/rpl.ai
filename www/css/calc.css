@@ -1008,7 +1008,13 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 .vr.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
 .vr.drop-into { background: var(--accent-dim); box-shadow: inset 0 0 0 1px var(--accent-line); }
 .vr-list.drop-end { box-shadow: inset 0 -2px 0 var(--accent); }
-.vars-foot { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px 14px; border-top: 1px solid var(--line); }
+/* Backups fold away under their heading, which shows how many there are. */
+.vr-backups { border-top: 1px solid var(--line); }
+.vr-backups > summary { list-style: none; cursor: pointer; padding-bottom: 12px; }
+.vr-backups > summary::-webkit-details-marker { display: none; }
+.vr-backups > summary .badge { margin-left: 8px; }
+.vr-backups > summary .i { transition: transform .15s; }
+.vr-backups[open] > summary .i { transform: rotate(180deg); }
 .backup-new { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 12px 10px; }
 .backup-new input { flex: 1 1 140px; min-width: 0; height: 32px; border-radius: 8px; border: 1px solid var(--line2); background: var(--field); color: var(--ink); padding: 0 9px; font: 13px/1 var(--font-mono); }
 .backup-new select { height: 32px; border-radius: 8px; border: 1px solid var(--line2); background: var(--r1); color: var(--ink); padding: 0 6px; font: 12px/1 var(--font-mono); }
@@ -2254,13 +2260,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   @container app (max-width: 359px) { .appbar .sp + .install-btn + .search-btn::before { content: ""; position: absolute; inset: 0 0 0 -6px; } }
   /* Between Install and More, Search has no gap to reach into, so it takes width from the spacers. */
   @container app (min-width: 360px) and (max-width: 383px) { .appbar .sp { min-width: 0; } .search-btn { min-width: 40px; } }
-  /* Six finger-sized actions don't fit beside a name at 320 px, so they get a line of their own. */
-  .vr .main { grid-column: 2 / -1; }
-  .vr .acts { grid-column: 1 / -1; }
-  /* With the actions on their own line the name has the width to show in full. */
+  /* A finger reads a long name in full rather than cut short. */
   .vr .nm-text { white-space: normal; overflow-wrap: anywhere; }
-  .vr .acts { justify-content: flex-end; margin: -4px -4px -6px 0; }
-  .vr .acts .mini { flex: 0 1 auto; min-width: 34px; }
 }
 
 /* With the keyboard up, or in a window under 400px (data-short: a phone's split screen or landscape), the writers leave the stack some room: their hints wait for the room to come back, and a tall formula or matrix scrolls. */

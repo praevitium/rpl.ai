@@ -203,6 +203,8 @@ const DRAWERS = Object.freeze([
 ]);
 
 const DRAWER_MIN_WIDTH = 280;
+
+const menuItem = (act, ico, label, hint = '') => `<button type="button" class="opt" data-act="${act}"><span class="ck">${icon(ico, 'sm')}</span><b>${escapeHtml(label)}</b><em>${escapeHtml(hint)}</em></button>`;
 const DRAWER_MAX_WIDTH = 720;
 const TAB_FADE = 36;
 
@@ -531,13 +533,7 @@ export class Drawers {
   }
 
   _renderVars(body) {
-    body.innerHTML = `<div class="path-bar" data-path-bar></div><div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="vars" placeholder="Filter variables" aria-label="Filter variables" value="${escapeHtml(this.varsQuery)}" autocomplete="off" spellcheck="false"></label></div><div class="dw-list vr-list"></div><div class="vars-foot">
-      <button type="button" class="btn" data-dw="vars-newdir">${icon('folder', 'sm')}New folder</button>
-      <button type="button" class="btn" data-dw="vars-upload" title="Add a variable from a spreadsheet file (.csv, .tsv, .xlsx), an HP text file (.rpl, .txt) or a .json file; it is named after the file">${icon('up', 'sm')}Upload</button>
-      <button type="button" class="btn" data-dw="vars-export-rpl" title="Download this directory as an HP text file (DIR … END)">${icon('down', 'sm')}Export .rpl</button>
-      <button type="button" class="btn ghost" data-dw="vars-export" title="Download the stack and the whole HOME tree as JSON">${icon('down', 'sm')}Back up everything</button>
-      <button type="button" class="btn ghost" data-dw="vars-import" title="Replace the stack and HOME tree from a JSON backup (undoable)">${icon('up', 'sm')}Restore from file</button>
-    </div><div class="sec-h">Backups<span class="badge" data-backup-count></span></div><form class="backup-new" data-form="archive"><input type="text" name="name" placeholder="Backup name" aria-label="Backup name" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="done"><span class="backup-to"><select name="port" aria-label="Port" title="Port 0 lives in this browser; ports 1–3 are separate slots">${[0, 1, 2, 3].map((p) => `<option value="${p}">:${p}:</option>`).join('')}</select><button type="submit" class="btn" title="Save the stack and HOME tree (same as :n:name ARCHIVE)">Archive</button></span></form><div class="dw-backups"></div>`;
+    body.innerHTML = `<div class="path-bar" data-path-bar></div><div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="vars" placeholder="Filter variables" aria-label="Filter variables" value="${escapeHtml(this.varsQuery)}" autocomplete="off" spellcheck="false"></label><button type="button" class="icon-btn sm" data-dw="vars-more" title="New folder, upload, export and back up" aria-label="New folder, upload, export and back up" aria-haspopup="menu">${icon('more', 'sm')}</button></div><div class="dw-list vr-list"></div><details class="vr-backups"><summary class="sec-h"><span>Backups<span class="badge" data-backup-count></span></span>${icon('chd', 'sm')}</summary><form class="backup-new" data-form="archive"><input type="text" name="name" placeholder="Backup name" aria-label="Backup name" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="done"><span class="backup-to"><select name="port" aria-label="Port" title="Port 0 lives in this browser; ports 1–3 are separate slots">${[0, 1, 2, 3].map((p) => `<option value="${p}">:${p}:</option>`).join('')}</select><button type="submit" class="btn" title="Save the stack and HOME tree (same as :n:name ARCHIVE)">Archive</button></span></form><div class="dw-backups"></div></details>`;
     this._renderVarsList();
   }
 
@@ -563,13 +559,10 @@ export class Drawers {
     const isDir = value.type === TYPES.DIRECTORY;
     const n = escapeHtml(name);
     const preview = isDir ? `${value.entries.size} item${value.entries.size === 1 ? '' : 's'}` : withFractionMark(format(value));
-    const acts = isDir
-      ? `<button type="button" class="mini" data-dw="var-open" data-name="${n}" title="Open ${n}" aria-label="Open ${n}">${icon('chr', 'sm')}</button>`
-      : `<button type="button" class="mini" data-dw="var-edit" data-name="${n}" title="Edit ${n}" aria-label="Edit ${n}">${icon('edit', 'sm')}</button>`;
     return `<div class="vr${isDir ? ' dir' : ''}" draggable="true" data-drag-name="${n}" data-dw="var" data-name="${n}" role="button" tabindex="0" title="${isDir ? `Open ${n}` : `${n}: click to ${value.type === TYPES.PROGRAM ? 'run' : 'put on the stack'}`}">
       <span class="grip" aria-hidden="true">${icon('grip', 'sm')}</span>
       <div class="main"><div class="nm">${isDir ? icon('folder', 'sm') : ''}<span class="nm-text">${n}</span><span class="badge">${escapeHtml(isDir ? 'Folder' : typeName(value))}</span></div><div class="pv">${escapeHtml(preview.length > 120 ? `${preview.slice(0, 119)}…` : preview)}</div></div>
-      <div class="acts">${acts}<button type="button" class="mini" data-dw="var-rename" data-name="${n}" title="Rename ${n}" aria-label="Rename ${n}">${icon('rename', 'sm')}</button><button type="button" class="mini" data-dw="var-download" data-name="${n}" title="Download ${n}" aria-label="Download ${n}">${icon('down', 'sm')}</button><button type="button" class="mini danger" data-dw="var-delete" data-name="${n}" title="Delete ${n} (undoable)" aria-label="Delete ${n}">${icon('trash', 'sm')}</button></div>
+      <div class="acts"><button type="button" class="mini" data-dw="var-menu" data-name="${n}" title="${isDir ? 'Open' : 'Edit'}, rename, download or delete ${n}" aria-label="More for ${n}" aria-haspopup="menu">${icon('more', 'sm')}</button></div>
     </div>`;
   }
 
@@ -724,20 +717,40 @@ export class Drawers {
       case 'err-explain': e.stopPropagation(); app.askAssistant(`I got this error on the calculator: ${t.dataset.text}. What went wrong and how do I fix it?`); return;
       case 'path': app.navigateToPathSegment(Number(t.dataset.index)); return;
       case 'var': this._activateVar(name); return;
-      case 'var-open': e.stopPropagation(); this._activateVar(name); return;
-      case 'var-edit': e.stopPropagation(); app.editVariable(name); this._reveal(); return;
-      case 'var-rename': e.stopPropagation(); this._beginRename(t.closest('.vr'), name); return;
-      case 'var-download': e.stopPropagation(); app.downloadMenu(t, name, calcState.current.entries.get(name)); return;
-      case 'var-delete': e.stopPropagation(); this._deleteVar(name); return;
-      case 'vars-newdir': this._newFolder(t); return;
-      case 'vars-upload': this._upload(); return;
-      case 'vars-export-rpl': this._exportRpl(); return;
-      case 'vars-export': app.exportSnapshot(); return;
-      case 'vars-import': this._import(); return;
+      case 'var-menu': e.stopPropagation(); this._varMenu(t, name); return;
+      case 'vars-more': this._varsMenu(t); return;
       case 'backup-restore': this._restoreBackup(t.dataset.key); return;
       case 'backup-save': e.stopPropagation(); this._saveBackup(t.dataset.key); return;
       case 'backup-delete': e.stopPropagation(); this._deleteBackup(t.dataset.key); return;
     }
+  }
+
+  // A variable's actions wait in one menu, so its row shows just the name and value; a tap on the row still recalls or runs it.
+  _varMenu(anchor, name) {
+    const isDir = calcState.current.entries.get(name)?.type === TYPES.DIRECTORY;
+    const html = `<h6>${escapeHtml(name)}</h6>${isDir ? menuItem('open', 'chr', 'Open') : menuItem('edit', 'edit', 'Edit')}${menuItem('rename', 'rename', 'Rename')}${menuItem('download', 'down', 'Download as…')}<hr>${menuItem('delete', 'trash', 'Delete')}`;
+    this._openMenu(anchor, html, name, (act) => {
+      if (act === 'open') this._activateVar(name);
+      else if (act === 'edit') { this.app.editVariable(name); this._reveal(); }
+      else if (act === 'rename') this._beginRename(anchor.closest('.vr'), name);
+      else if (act === 'download') this.app.downloadMenu(anchor, name, calcState.current.entries.get(name));
+      else if (act === 'delete') this._deleteVar(name);
+    });
+  }
+
+  _varsMenu(anchor) {
+    const html = `${menuItem('newdir', 'folder', 'New folder')}${menuItem('upload', 'up', 'Upload files…', '.csv .tsv .xlsx .rpl .json')}${menuItem('export-rpl', 'down', 'Export this folder', '.rpl')}<hr>${menuItem('export', 'down', 'Back up everything', '.json')}${menuItem('import', 'up', 'Restore from a backup file…')}`;
+    this._openMenu(anchor, html, 'Variables', (act) => {
+      if (act === 'newdir') this._newFolder(anchor);
+      else if (act === 'upload') this._upload();
+      else if (act === 'export-rpl') this._exportRpl();
+      else if (act === 'export') this.app.exportSnapshot();
+      else if (act === 'import') this._import();
+    });
+  }
+
+  _openMenu(anchor, html, label, run) {
+    this.app.popover.open(anchor, html, { label, onClick: (b) => { this.app.popover.close({ restoreFocus: false }); run(b.dataset.act); } });
   }
 
   _activateVar(name) {

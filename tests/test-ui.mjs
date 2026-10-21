@@ -3327,3 +3327,16 @@ setAngle('RAD');
     && /setInputMode\(mode[\s\S]*?this\.keypad\.update\(\);/.test(appSrc),
     'a writer opened with the full keypad on a phone under 840 px tall gets the compact keypad, as a short window does: the full one left the stack no whole level at 360 by 740 or 412 by 780 and had to scroll itself');
 }
+
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const row = drawerSrc.slice(drawerSrc.indexOf('  _varRow(name, value) {'), drawerSrc.indexOf('  _renderBackups() {'));
+  assert((row.match(/<button /g) ?? []).length === 1 && row.includes('data-dw="var-menu"')
+    && /_varMenu\(anchor, name\) \{[\s\S]*?menuItem\('open', 'chr', 'Open'\) : menuItem\('edit', 'edit', 'Edit'\)\}\$\{menuItem\('rename', 'rename', 'Rename'\)\}\$\{menuItem\('download', 'down', 'Download as…'\)\}<hr>\$\{menuItem\('delete', 'trash', 'Delete'\)\}/.test(drawerSrc)
+    && /_varsMenu\(anchor\) \{[\s\S]*?'newdir'[\s\S]*?'upload'[\s\S]*?'export-rpl'[\s\S]*?'export'[\s\S]*?'import'/.test(drawerSrc)
+    && drawerSrc.includes('data-dw="vars-more"') && !drawerSrc.includes('vars-foot')
+    && drawerSrc.includes('<details class="vr-backups"><summary class="sec-h">') && !css.includes('.vars-foot')
+    && !css.includes('  .vr .acts { grid-column: 1 / -1; }'),
+    "Variables drawer: a row is its name and value with one ⋯ (Edit or Open, Rename, Download, Delete), the folder tools sit in one ⋯ by the filter, and Backups fold away; a phone showed four buttons under every name and five more under the list");
+}
