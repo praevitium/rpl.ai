@@ -2905,3 +2905,10 @@ setAngle('RAD');
     && /\n  \.vr\.editing \.nm input \{ height: 40px; \}/.test(css),
     'Variables drawer, rename on a phone: the inline name field is 40 px on touch, keeps the case typed and labels Enter Done, as the Store and New folder fields do');
 }
+
+{
+  const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/\n  \.gr-add input, \.gr-expr, \.pl-range input \{ height: 40px; \}/.test(css),
+    'plot on touch: the add, trace and window fields are 40 px, as the plot tools and every other field are');
+}

@@ -2148,6 +2148,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   .pl-tools { display: grid; grid-template-columns: repeat(2, 40px); }
   .pl-tools button { width: 40px; height: 40px; }
   .pl-push { height: 40px; }
+  .gr-add input, .gr-expr, .pl-range input { height: 40px; }
   .pl-tools .pl-fold { display: grid; grid-column: 1 / -1; width: auto; }
   .pl-tools .pl-fold[aria-expanded="true"] { color: var(--accent); background: var(--accent-dim); }
   .pl-tools.folded { grid-template-columns: 40px; }
