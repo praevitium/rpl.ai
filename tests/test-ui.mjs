@@ -1561,6 +1561,15 @@ setAngle('RAD');
   const other = writer('1,1', '1,1');
   assert(typed.done === true && typed.calls === 'undo focus 0,2' && moved.done === false && !moved.calls && other.done === false,
     'matrix writer: Esc on a cell being typed puts back what it held and keeps the cell, as the HP\'s CANCEL drops the entry being typed; on a cell not typed in it does nothing, so Esc goes on to close the writer');
+  const step = (goDown) => {
+    const moves = [];
+    MatrixEditor.prototype.enter.call({ goDown, _focusR: 0, _focusC: 1, typedCellFocused: () => true, _moveBy: (kind, r, c) => moves.push(`${kind} ${r},${c}`) });
+    return moves.join(' ');
+  };
+  const mxSrc = readFileSync(new URL('../www/src/ui/matrix-editor.js', import.meta.url), 'utf8');
+  assert(step(true) === 'down 0,1' && step(false) === 'next 0,1'
+    && mxSrc.includes("{ label: 'GO↓', title: \"Enter moves down the column, as the HP's GO↓ does; off, it moves right (GO→)\", toggle: true, on: () => this.goDown"),
+    'matrix writer: the GO↓ key, as on the HP\'s MatrixWriter, makes Enter after typing a cell move down the column instead of right');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/if \(this\._writer\(\)\.collapseSelection\?\.\(\) \|\| this\._writer\(\)\.cancelCell\?\.\(\)\) return;\s*this\._closeWriter/.test(appSrc),
     'Esc and a phone\'s back button cancel the matrix cell being typed before they discard the matrix');

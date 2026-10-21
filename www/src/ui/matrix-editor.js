@@ -343,6 +343,7 @@ export class MatrixEditor {
     this._future = [];
     this._mergeCell = null;
     this._typedCell = null;
+    this.goDown = false;
     this.el = document.createElement('div');
     this.el.className = 'mx';
     this.el.innerHTML = '<div class="mx-grid-wrap"><div class="mx-grid" role="grid" aria-label="Matrix cells"></div></div><div class="mx-foot" role="status"></div>';
@@ -477,7 +478,7 @@ export class MatrixEditor {
 
   // Every Enter works like the HP MatrixWriter's ENTER: it stores what was typed and moves on, and enters the matrix otherwise.
   enter() {
-    if (this.typedCellFocused()) this._moveBy('next', this._focusR, this._focusC);
+    if (this.typedCellFocused()) this._moveBy(this.goDown ? 'down' : 'next', this._focusR, this._focusC);
     else this.app.commitEntry();
   }
 
@@ -522,6 +523,7 @@ export class MatrixEditor {
       { label: 'FROM1', title: 'Copy level 1 into the grid; Enter then pushes a new one', onPress: run(() => this.loadFromStack()) },
       { label: '→STK', title: 'Copy the focused cell to the stack', onPress: () => this.cellToStack() },
       { label: 'CLEAR', title: 'Empty every cell', onPress: run(() => { this.fill(emptyGrid); this._focusCell(0, 0); }) },
+      { label: 'GO↓', title: "Enter moves down the column, as the HP's GO↓ does; off, it moves right (GO→)", toggle: true, on: () => this.goDown, onPress: run(() => { this.goDown = !this.goDown; }) },
       ...SYMBOLS.map((s) => ({ label: s.text, title: `${s.title} in the focused cell`, onPress: () => this.insertSymbol(s.text) })),
     ];
   }
