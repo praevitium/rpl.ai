@@ -117,6 +117,12 @@ function angleOf(deg, angle) {
 // n/d degrees in radians, exactly: 90 is π/2.
 export const exactRadians = (n, d) => signedFraction(n, d * 180n, piTimes);
 
+// An exact multiple of π in degrees as [numerator, denominator], or null: π/2 is [90, 1].
+export function exactDegrees(ast) {
+  const m = piMultiple(ast);
+  return m && [m[0] * 180n, m[1]];
+}
+
 function gcd(a, b) {
   while (b) [a, b] = [b, a % b];
   return a;

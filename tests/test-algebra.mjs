@@ -9051,6 +9051,9 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(top('90 D→R') === '`π/2`' && top('-90 D→R') === '`-(π/2)`' && top('3/4 D→R') === '`π/240`' && top('0 D→R') === '0'
       && top('90. D→R') === '1.57079632679' && formatStackTop(runLine('{ 90 180 } D→R').peek()) === '{ `π/2` `π` }',
     'D→R of an exact number of degrees is an exact multiple of π, as the AUR\'s (π/180)x, where it stayed D→R(90)');
+  assert(top('`π/2` R→D') === '90' && top('`-(π/4)` R→D') === '-45' && top('`π/7` R→D') === '180/7' && top('90 D→R R→D') === '90'
+      && top('1. R→D') === '57.2957795131',
+    'R→D of an exact multiple of π gives its exact degrees, where it stayed R→D(π/2)');
   assert(top('GRD 50 SIN') === '`SQRT(2)/2`' && top('GRD 1/2 ASIN') === '100/3', 'exact trig: grads');
   assert(top('RAD π 6 / SIN') === '1/2' && top('RAD 2 π * 3 / SIN') === '`SQRT(3)/2`' && top('RAD π COS') === '-1',
     'exact trig: a multiple of π in RAD');
