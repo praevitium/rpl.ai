@@ -635,7 +635,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .k .p.long { font-size: 10.5px; letter-spacing: 0; }
 .k .p sup { font-size: .68em; margin-left: .05em; transform: translateY(-.35em); }
 .k .p .i { width: 16px; height: 16px; }
-.k .l, .k .r { position: absolute; top: 4px; font: 600 9.5px/1 var(--font-mono); white-space: nowrap; max-width: 50%; overflow: hidden; }
+.k .l, .k .r { position: absolute; top: 4px; font: 600 9.5px/1 var(--font-mono); white-space: nowrap; max-width: 50%; overflow: hidden; zoom: var(--corner-zoom, 1); }
 .k .l sup, .k .r sup { font-size: .8em; }
 .k .l { left: 6px; color: var(--amber); }
 .k .r { right: 6px; color: var(--coral); }

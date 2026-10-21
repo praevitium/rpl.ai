@@ -1286,6 +1286,9 @@ setAngle('RAD');
     'keyboard: the compact keypad keeps only the ↰ menus on its crowded 5 and 1');
   assert(/setOpenHook\([\s\S]*?this\.openMenu\(family, folder\);/.test(readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8')),
     'keyboard: the HP menu commands and the shifted menu keys open menus the same way');
+  assert(/\.k \.l, \.k \.r \{[^}]*zoom: var\(--corner-zoom, 1\)/.test(readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8'))
+           && /_fitCorners\(\) \{[\s\S]*?setProperty\('--corner-zoom'/.test(readFileSync(new URL('../www/src/ui/keyboard.js', import.meta.url), 'utf8')),
+    'keyboard: shift labels shrink together until each key\'s pair fits');
 
   resetHome();
   try {

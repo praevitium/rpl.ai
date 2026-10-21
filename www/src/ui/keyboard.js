@@ -398,6 +398,7 @@ export class Keypad {
   // amount, down to 26 px, rather than the bottom row scrolling out of reach. A squeeze shows up as
   // the keypad's own resize; the room coming back does not, so every update refits, once a frame.
   fit() {
+    this._fitCorners();
     const { el } = this;
     el.style.removeProperty('--key-h');
     const over = el.scrollHeight - el.clientHeight;
@@ -407,6 +408,31 @@ export class Keypad {
     if (!rows) return;
     const height = keys[0].getBoundingClientRect().height;
     el.style.setProperty('--key-h', `${Math.max(26, Math.floor(height - over / rows))}px`);
+  }
+
+  // One size for every shift label, shrunk until each key's pair fits it with a gap however narrow the keypad.
+  _fitCorners() {
+    const shown = (label) => label?.getClientRects().length;
+    const keys = this.buttons.map((b) => b.el).filter((k) => k.offsetParent && (shown(k.querySelector('.l')) || shown(k.querySelector('.r'))));
+    const size = `${this.kp.clientWidth}x${this.kp.clientHeight}`;
+    if (!keys.length || size === this._cornerSize) return;
+    this._cornerSize = size;
+    this.kp.style.removeProperty('--corner-zoom');
+    let zoom = 1;
+    for (const k of keys) {
+      const box = k.getBoundingClientRect();
+      const labels = [k.querySelector('.l'), k.querySelector('.r')].filter(shown);
+      let room = box.width - (labels.length - 1) * 2;
+      let width = 0;
+      for (const label of labels) {
+        const at = label.getBoundingClientRect();
+        room -= label.classList.contains('l') ? at.left - box.left : box.right - at.right;
+        width += label.scrollWidth;
+        zoom = Math.min(zoom, label.clientWidth / label.scrollWidth);
+      }
+      zoom = Math.min(zoom, room / width);
+    }
+    if (zoom < 1) this.kp.style.setProperty('--corner-zoom', String(Math.floor(zoom * 100) / 100));
   }
 
   _scheduleFit() {
