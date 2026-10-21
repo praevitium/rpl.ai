@@ -323,6 +323,7 @@ export class GraphView {
       else {
         if (tap) this._markAt(ev.offsetX, ev.offsetY);
         this._hoverFromEvent(ev);
+        if (tap && this._mark && !this._projected()) this._readout.textContent = this._markReadout();
       }
     });
     canvas.addEventListener('pointercancel', (ev) => {
@@ -341,7 +342,7 @@ export class GraphView {
         const from = this._mark;
         this._markAt(ev.offsetX, ev.offsetY);
         this._dotPath(from);
-        this._readout.textContent = this._readoutAt(this._mark.x, this._mark.y);
+        this._readout.textContent = this._markReadout();
         this.draw();
       } else if (this._drag && this._turnable()) {
         this._turn = turnBy(this._drag.turn, (ev.offsetX - this._drag.x) * TURN_PER_PIXEL, (ev.offsetY - this._drag.y) * TURN_PER_PIXEL);
@@ -657,7 +658,7 @@ export class GraphView {
 
   _clearHover() {
     this._hover = null;
-    if (!this.tracing) this._readout.textContent = this._mark ? this._readoutAt(this._mark.x, this._mark.y) : this._idleReadout();
+    if (!this.tracing) this._readout.textContent = this._mark ? this._markReadout() : this._idleReadout();
     this.draw();
   }
 
@@ -665,7 +666,7 @@ export class GraphView {
   _startCursor() {
     const v = this.view;
     this._mark = { x: (v.xmin + v.xmax) / 2, y: (v.ymin + v.ymax) / 2 };
-    this._readout.textContent = this._readoutAt(this._mark.x, this._mark.y);
+    this._readout.textContent = this._markReadout();
     this.focus();
   }
 
@@ -694,6 +695,12 @@ export class GraphView {
   _pointValue(x, y) {
     const p = cursorPoint(x, y, this.view);
     return Complex(p.x, p.y);
+  }
+
+  // The mark reads as Enter pushes it, at its pixel.
+  _markReadout() {
+    const p = cursorPoint(this._mark.x, this._mark.y, this.view);
+    return this._readoutAt(p.x, p.y);
   }
 
   pushCursor() {
@@ -1011,7 +1018,7 @@ export class GraphView {
       const from = this._mark;
       ({ cursor: this._mark, view: this.view } = stepCursor(this._mark, dir, v));
       this._dotPath(from);
-      this._readout.textContent = this._readoutAt(this._mark.x, this._mark.y);
+      this._readout.textContent = this._markReadout();
     } else {
       this.view = panView(v, dir === 'left' ? -dx : dir === 'right' ? dx : 0, dir === 'down' ? -dy : dir === 'up' ? dy : 0);
     }

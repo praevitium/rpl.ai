@@ -3134,6 +3134,10 @@ setAngle('RAD');
       && gv.includes('const near = this._curveNear(x, y, rect.height);\n    if (near) this._selectTrace(near.id);'),
       'plot trace: a tap on a curve traces that function, the touch twin of up and down; a tap away from every curve keeps the one traced');
   }
+  assert(/_markReadout\(\) \{\s*const p = cursorPoint\(this\._mark\.x, this\._mark\.y, this\.view\);\s*return this\._readoutAt\(p\.x, p\.y\);/.test(gv)
+    && !gv.includes('this._readoutAt(this._mark.x, this._mark.y)')
+    && gv.includes('if (tap && this._mark && !this._projected()) this._readout.textContent = this._markReadout();'),
+    'plot cursor: a tap reads the point as Enter pushes it, rounded to its pixel, where the readout said x = 2.46, y = -5.65313 for a push of (2.5, -5.7)');
 }
 
 {
