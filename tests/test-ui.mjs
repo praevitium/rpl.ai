@@ -332,11 +332,11 @@ import { assert, assertThrows } from './helpers.mjs';
     && /pressSoftKey\(i, forcedLayer = null\) \{\s*if \(this\._answerKey\(hpKeyCode\(`F\$\{i \+ 1\}`, forcedLayer \?\? this\.layer\(\)\)\)\) return;\s*if \(this\._userKey\(`F\$\{i \+ 1\}`, forcedLayer \?\? this\.layer\(\)\)\) return;\s*this\._pressSlot\(this\.menuView\(\)\.slots\[i\], forcedLayer\);/.test(appSrc),
     'menus: a key pressed by its place in the whole menu turns the soft keys to its page and presses through the same path as a soft key');
   const menubarAll = readFileSync(new URL('../www/src/ui/menubar.js', import.meta.url), 'utf8');
-  assert(/const held = e\.pointerType === 'touch' && e\.target\.closest\('\[data-mb="next"\]:not\(:disabled\), \[data-mb="pick"\]'\);/.test(menubarAll) && /this\._mbTimer = setTimeout\(\(\) => \{\s*this\._mbHeld = true;\s*this\.app\.buzzHold\(\);\s*if \(button\.dataset\.mb === 'next'\) this\.openAll\(button\);\s*else this\.app\.showPreviousMenu\(\);\s*\}, LONG_PRESS_MS\);/.test(menubarAll)
+  assert(/const held = e\.pointerType === 'touch' && e\.target\.closest\('\[data-mb="next"\]:not\(:disabled\), \[data-mb="pick"\]'\);/.test(menubarAll) && /this\._mbTimer = setTimeout\(\(\) => \{\s*this\._mbHeld = true;\s*this\.app\.buzzHold\(\);\s*if \(button\.dataset\.mb === 'next'\) this\.openAll\(button\);\s*else this\.app\.showLastMenu\(\);\s*\}, LONG_PRESS_MS\);/.test(menubarAll)
     && /if \(this\._mbHeld\) \{ this\._mbHeld = false; return; \}\s*if \(b\.dataset\.mb === 'next'\) this\._nxt\(\);\s*else if \(b\.dataset\.mb === 'pick'\) this\.openPicker\(b\);/.test(menubarAll) && /this\.app\.pressMenuSlot\(Number\(target\.dataset\.v\)\);/.test(menubarAll),
     'menus: a finger held on NXT lays every key of the menu out in a grid, a plain tap still turns the page, and a key tapped in the grid presses by its place');
-  assert(/showPreviousMenu\(\{ commit = true \} = \{\}\) \{\s*const prev = this\.prefs\.recentMenus\.find\(\(id\) => id !== this\.menuKind\);\s*if \(prev\) this\.showMenu\(prev, \{ commit \}\);\s*else this\.toast\('No menu before this one'\);/.test(appSrc),
-    'menus: a finger held on the menu button goes back to the menu shown before, the picker\'s Recent group one hold away');
+  assert(!appSrc.includes('showPreviousMenu') && /\/\/ The HP's last menu, for 0 MENU and a finger held on the menu button:[^\n]*\n[^\n]*\n  showLastMenu\(\) \{/.test(appSrc),
+    'menus: a finger held on the menu button goes back to the menu shown before, as 0 MENU does, a TMENU menu or a folder included, where it said there was none after a TMENU or inside a folder');
   const gridCss = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/class="\$\{on \? 'on' : ''\}\$\{slot\.dir \? ' dir' : ''\}"/.test(menubarAll) && /\.pop \.grid button\.dir::before \{ content: ""; position: absolute; left: 6px; top: -1px; width: 30%; height: 3px;/.test(gridCss),
     'menus: a folder key in the whole-menu grid wears the tab its soft key does');
@@ -2448,7 +2448,7 @@ setAngle('RAD');
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/setMenuHook\(\(list, temporary\) => \{\s*if \(!list\) this\.showLastMenu\(\);\s*else if \(temporary\) this\.setMenu\(this\._customMenuSlots\(list\), 'TMENU'\);\s*else this\.showMenu\('CST', \{ commit: false \}\);/.test(appSrc)
-    && /showCustomMenu\(\{ commit = true, refresh = false \} = \{\}\) \{\s*if \(commit && !refresh && this\.entry\.buffer/.test(appSrc) && /showPreviousMenu\(\{ commit = true \} = \{\}\) \{[\s\S]{0,160}?this\.showMenu\(prev, \{ commit \}\)/.test(appSrc),
+    && /showCustomMenu\(\{ commit = true, refresh = false \} = \{\}\) \{\s*if \(commit && !refresh && this\.entry\.buffer/.test(appSrc) && /showLastMenu\(\) \{[\s\S]{0,300}?else this\.showMenu\(last\.kind, \{ commit: false \}\);/.test(appSrc),
     'MENU and TMENU show their menu through a hook without committing the line they run from (which would run it again), a temporary one under the kind TMENU');
   assert(/else this\.showMenu\('CST', \{ commit: false \}\);\s*if \(this\.prefs\.minimal\) this\.setMinimalMenu\(true\);\s*\}\);/.test(appSrc),
     'MENU and TMENU turn the soft keys on in minimal view, as a menu picked from command search does, instead of showing nothing while they are hidden');

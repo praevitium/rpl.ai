@@ -187,7 +187,7 @@ export class MenuBar {
       this._mbHeld = true;
       this.app.buzzHold();
       if (button.dataset.mb === 'next') this.openAll(button);
-      else this.app.showPreviousMenu();
+      else this.app.showLastMenu();
     }, LONG_PRESS_MS);
   }
 

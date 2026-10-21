@@ -1633,14 +1633,8 @@ class App {
     if (remember) this.setPrefs({ menu: this.menuKind, recentMenus: [this.menuKind, ...this.prefs.recentMenus.filter((m) => m !== this.menuKind)] });
   }
 
-  // The menu shown before this one, one hold away on a phone, where the picker's Recent group is two taps.
-  showPreviousMenu({ commit = true } = {}) {
-    const prev = this.prefs.recentMenus.find((id) => id !== this.menuKind);
-    if (prev) this.showMenu(prev, { commit });
-    else this.toast('No menu before this one');
-  }
-
-  // 0 MENU, the HP's last menu: the one shown before this one, a temporary menu or a folder included.
+  // The HP's last menu, for 0 MENU and a finger held on the menu button: the one shown before this one, a temporary
+  // menu or a folder included.
   showLastMenu() {
     const last = this._lastMenu;
     if (!last?.kind) this.toast('No menu before this one', { key: 'last-menu' });
