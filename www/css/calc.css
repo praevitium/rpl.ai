@@ -476,7 +476,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .st-val .list-inline .lcell:first-of-type { margin-left: .5em; }
 .st-val .list-inline .lsep { display: contents; }
 .st-val.one-line .list-inline { flex-wrap: nowrap; }
-.st-row.sel .st-val .list-inline .lcell, .sheet-view .st-val .list-inline .lcell { white-space: normal; overflow-wrap: anywhere; }
+.st-row.sel .st-val .list-inline .lcell, .sheet-view .st-val .list-inline .lcell { white-space: normal; overflow-wrap: anywhere; text-align: left; }
 .st-val.one-line .value-text { flex: none; overflow: visible; }
 
 

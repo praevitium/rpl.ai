@@ -2782,8 +2782,8 @@ setAngle('RAD');
     && /\(isMatrix\(value\) \|\| isVector\(value\)\) && !short\) \{/.test(displaySrc)
     && /\.st-val\.one-line \.list-inline \{ flex-wrap: nowrap; \}/.test(cssSrc) && /\.st-val\.one-line \.value-text \{ flex: none; overflow: visible; \}/.test(cssSrc),
     'deeper levels: above level 1 a list keeps to one line and a matrix of more than 3 rows shows in its typed form, fading at the edge, while level 1, a selected level and VIEW show them whole, where a 30-item list and a 6x3 matrix took 185 px each at 280 px');
-  assert(/\.st-row\.sel \.st-val \.list-inline \.lcell, \.sheet-view \.st-val \.list-inline \.lcell \{ white-space: normal; overflow-wrap: anywhere; \}/.test(cssSrc),
-    'whole lists: a selected level and VIEW wrap a long string inside a list, where { "a 60-character message" 1 } ran 640 px wide in a 192 px level at 280 px');
+  assert(/\.st-row\.sel \.st-val \.list-inline \.lcell, \.sheet-view \.st-val \.list-inline \.lcell \{ white-space: normal; overflow-wrap: anywhere; text-align: left; \}/.test(cssSrc),
+    'whole lists: a selected level and VIEW wrap a long string inside a list, reading from the left, where { "a 60-character message" 1 } ran 640 px wide in a 192 px level at 280 px and then wrapped right-aligned in a level, centred in VIEW');
   assert(/if \(isList\(item\)\) return `<span class="lcell">\$\{this\._renderTextbookList\(item, svgSize\)\}<\/span>`;/.test(displaySrc),
     'nested lists: an inner list draws as a textbook list too and wraps with the rest, where SOLVE of a list of equations showed its inner lists as typed text running 414 px wide in a 192 px level at 280 px');
   assert(/if \(isString\(value\)\) span\.classList\.add\('str'\);/.test(displaySrc)
