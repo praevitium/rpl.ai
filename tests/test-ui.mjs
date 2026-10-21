@@ -2887,6 +2887,10 @@ setAngle('RAD');
     'Esc in a drawer docked beside the stack takes the keyboard back to the command line and leaves the drawer open, and one over the stack closes, before Esc reaches the selection, a writer or the command line');
   assert(/const hadFocus = this\.el\.contains\(document\.activeElement\) && !globalThis\.matchMedia\?\.\('\(pointer: coarse\)'\)\.matches;[\s\S]{0,200}if \(hadFocus\) this\.app\.focusInput\(\);/.test(drawerSrc),
     'drawer: closing it with the keyboard inside, by Ctrl+\\ or its close button, hands the keyboard to the command line where it was left on nothing; not on a touch screen, whose keyboard it would raise');
+  assert(appSrc.includes("onShiftEnter: () => this.selection != null && this._runChord('Shift+Enter'),")
+    && readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8').includes('if (onShiftEnter?.()) return true;')
+    && appSrc.includes("case 'level.echo': this.levelAction('echo'); return true;"),
+    'Shift+Enter on a selected level reaches ECHO through the command line, which took it for a new line');
   assert(appSrc.includes("case 'eqw.selectAll': this.equationEditor.pressFace('RS▲'); return true;"),
     'Ctrl or Cmd+A in the equation writer selects the whole formula as the HP\'s →▲ does, so Ctrl+C and Ctrl+X take the formula and not the page');
   assert(/case 'level\.view': if \(this\.entry\.buffer\.length\) return false; this\.levelAction\('view'\); return true;/.test(appSrc)
@@ -3458,8 +3462,8 @@ setAngle('RAD');
 
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(appSrc.includes("item('echo', 'chr', `Copy into ${this._echoPlace()} (ECHO)`),")
-    && appSrc.includes("{ label: 'ECHO', title: `Copy it into ${this._echoPlace()}`, onPress: act('echo') },")
+  assert(appSrc.includes("item('echo', 'chr', `Copy into ${this._echoPlace()} (ECHO)`, shortcutText('level.echo')),")
+    && appSrc.includes("{ label: 'ECHO', title: `Copy it into ${this._echoPlace()} (⇧Enter)`, onPress: act('echo') },")
     && appSrc.includes("return { equation: 'the formula', matrix: 'the matrix cell' }[this.inputMode] ?? 'the command line';"),
     'the level menu and the ECHO soft key name where ECHO puts the level: the command line, the formula or the matrix cell');
 }

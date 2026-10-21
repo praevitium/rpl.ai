@@ -162,7 +162,7 @@ export class Entry {
   }
 
   attach(parent, { onCommit, onCancel, onArrowUpEmpty, onArrowDownEmpty,
-                   onArrowLeftEmpty, onArrowRightEmpty, onBackspaceEmpty, onDeleteEmpty, onType } = {}) {
+                   onArrowLeftEmpty, onArrowRightEmpty, onBackspaceEmpty, onDeleteEmpty, onType, onShiftEnter } = {}) {
     if (this._view) return;
     const isEmpty = () => this._view.state.doc.length === 0;
     const delegateIfEmpty = (cb) => () => {
@@ -172,6 +172,7 @@ export class Entry {
     const appKeys = keymap.of([
       { key: 'Enter',       run: () => { onCommit?.(); return true; } },
       { key: 'Shift-Enter', run: (view) => {
+          if (onShiftEnter?.()) return true;
           const head = view.state.selection.main.head;
           view.dispatch({ changes: { from: head, insert: '\n' },
                           selection: { anchor: head + 1 } });
