@@ -458,6 +458,9 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .st-row.ghost .st-tag, .st-row.arg .st-tag { opacity: 1; color: var(--accent); }
 .st-acts { position: absolute; left: 40px; top: 50%; transform: translateY(-50%); display: flex; gap: 2px; background: var(--panel); border: 1px solid var(--line2); border-radius: 8px; padding: 2px; box-shadow: var(--shadow-2); z-index: 2; }
 .st-row.sel .st-tag { display: none; }
+/* A marked level keeps its tag beside the value, so a wide value starts after "this one" instead of under it. */
+.st-row:is(.culprit, .arg, .ghost):not(.sel) { grid-template-columns: 34px auto minmax(0, 1fr); }
+.st-row:is(.culprit, .arg, .ghost):not(.sel) .st-tag { position: static; transform: none; }
 .st-acts button { border: 0; background: transparent; color: var(--ink); font: 500 11.5px/1 var(--font-ui); padding: 6px 8px; border-radius: 6px; display: flex; align-items: center; gap: 5px; }
 .st-acts button:hover { background: var(--r2); }
 .st-acts [data-row-act="view"] { display: none; }

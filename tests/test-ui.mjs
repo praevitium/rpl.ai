@@ -2802,6 +2802,8 @@ setAngle('RAD');
     && /if \(this\.sheets\.isOpen\(\)\) \{ this\.sheets\.dismiss\(\); return true; \}/.test(appSrc)
     && /\[\(\) => this\.sheets\.isOpen\(\), \(\) => this\.sheets\.dismiss\(\)\]/.test(appSrc),
     'INFORM: the form put away by its X, Escape, the back button or a tap beside it cancels, answering 0 as the HP\'s CANCEL and ON do, where the program stayed halted with the form gone');
+  assert(/\.st-row:is\(\.culprit, \.arg, \.ghost\):not\(\.sel\) \{ grid-template-columns: 34px auto minmax\(0, 1fr\); \}\s*\.st-row:is\(\.culprit, \.arg, \.ghost\):not\(\.sel\) \.st-tag \{ position: static; transform: none; \}/.test(css),
+    'a marked level (this one, argument, result) keeps its tag beside the value, so a wide list at 280 px starts after "this one" instead of running 46 px under it');
 }
 
 {
