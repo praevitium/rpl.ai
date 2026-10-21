@@ -2575,6 +2575,8 @@ class App {
     if (this.entry.buffer.length) { this.clearLine(); return true; }
     if (this.shift) { this.setShift(null); return true; }
     if (this._drawerCoversStack()) { this.drawers.close(); return true; }
+    // A drawer docked beside the stack stays open; Esc takes the keyboard from it back to the command line.
+    if (document.activeElement?.closest?.('#drawer')) this.focusInput();
     return true;
   }
 

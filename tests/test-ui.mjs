@@ -2846,6 +2846,8 @@ setAngle('RAD');
   assert(/if \(first\) \{ e\.preventDefault\(\); this\.cat\.focusAction = true; this\.showReference\(first\.dataset\.cmd\); \}/.test(drawerSrc)
     && /if \(this\.cat\.focusAction\) \{ this\.cat\.focusAction = false; body\.querySelector\('\.acts \.btn'\)\?\.focus\(\); \}/.test(drawerSrc),
     'Catalog: Enter in the search box opens the first match with its Run (or Insert) button focused, where the page took the box away and the keyboard was left on nothing');
+  assert(/if \(this\._drawerCoversStack\(\)\) \{ this\.drawers\.close\(\); return true; \}\s*\/\/[^\n]*\n\s*if \(document\.activeElement\?\.closest\?\.\('#drawer'\)\) this\.focusInput\(\);\s*return true;/.test(appSrc),
+    'Esc in a drawer docked beside the stack takes the keyboard back to the command line and leaves the drawer open, where it did nothing; a drawer over the stack still closes');
 }
 
 {
