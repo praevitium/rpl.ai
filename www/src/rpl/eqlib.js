@@ -1,6 +1,6 @@
 // The HP 50g's Equation Library: its 15 subjects and their equation sets by number, as SOLVEQN names them, each
-// [title, equations]. An empty list is a set the library doesn't hold yet. Angles are in degrees where the HP's
-// are, and the constants g, G, c, ε0, μ0, σ, R, NA and c3 come from the constants library when a set is solved.
+// [title, equations, constants], the constants being the names the solver fills in from the constants library.
+// Values are plain numbers in SI units; angles are in degrees where the HP's are.
 export const EQ_LIBRARY = Object.freeze([
   ['Columns and Beams', [
     ['Elastic Buckling', ['Pcr=π^2*E*A/(K*L/r)^2', 'Pcr=π^2*E*I/(K*L)^2', 'σcr=Pcr/A', 'r=SQRT(I/A)']],
@@ -15,7 +15,7 @@ export const EQ_LIBRARY = Object.freeze([
     ['Cantilever Shear', []],
   ]],
   ['Electricity', [
-    ['Coulomb\'s Law', ['F=q1*q2/(4*π*ε0*εr*r^2)']],
+    ['Coulomb\'s Law', ['F=q1*q2/(4*π*ε0*εr*r^2)'], ['ε0']],
     ['Ohm\'s Law and Power', ['V=I*R', 'P=V*I', 'P=I^2*R', 'P=V^2/R']],
     ['Voltage Divider', ['V1=V*R1/(R1+R2)']],
     ['Current Divider', ['I1=I*R2/(R1+R2)']],
@@ -32,16 +32,16 @@ export const EQ_LIBRARY = Object.freeze([
     ['RC Transient', ['V=Vf-(Vf-Vi)*EXP(-t/(R*C))']],
     ['RL Transient', ['I=Vf/R-(Vf/R-Ii)*EXP(-t*R/L)']],
     ['Resonant Frequency', ['ω0=1/SQRT(L*C)', 'f0=ω0/(2*π)', 'Qs=1/R*SQRT(L/C)', 'Qp=R*SQRT(C/L)']],
-    ['Plate Capacitor', ['C=ε0*εr*A/d']],
-    ['Cylindrical Capacitor', ['C=2*π*ε0*εr*L/LN(ro/ri)']],
-    ['Solenoid Inductance', ['L=μ0*μr*N^2*A/h']],
-    ['Toroid Inductance', ['L=μ0*μr*N^2*h/(2*π)*LN(ro/ri)']],
+    ['Plate Capacitor', ['C=ε0*εr*A/d'], ['ε0']],
+    ['Cylindrical Capacitor', ['C=2*π*ε0*εr*L/LN(ro/ri)'], ['ε0']],
+    ['Solenoid Inductance', ['L=μ0*μr*N^2*A/h'], ['μ0']],
+    ['Toroid Inductance', ['L=μ0*μr*N^2*h/(2*π)*LN(ro/ri)'], ['μ0']],
     ['Sinusoidal Voltage', ['V=Vmax*SIN(ω*t+φ)', 'ω=2*π*f']],
     ['Sinusoidal Current', ['I=Imax*SIN(ω*t+φ)', 'ω=2*π*f']],
   ]],
   ['Fluids', [
-    ['Pressure at Depth', ['P=P0+ρ*g*h']],
-    ['Bernoulli Equation', ['P1+ρ*v1^2/2+ρ*g*y1=P2+ρ*v2^2/2+ρ*g*y2', 'Q=A1*v1', 'Q=A2*v2']],
+    ['Pressure at Depth', ['P=P0+ρ*g*h'], ['g']],
+    ['Bernoulli Equation', ['P1+ρ*v1^2/2+ρ*g*y1=P2+ρ*v2^2/2+ρ*g*y2', 'Q=A1*v1', 'Q=A2*v2'], ['g']],
     ['Flow with Losses', []],
     ['Flow in Full Pipes', []],
   ]],
@@ -52,18 +52,18 @@ export const EQ_LIBRARY = Object.freeze([
     ['Hooke\'s Law', ['F=-k*x', 'W=1/2*k*x^2']],
     ['1D Elastic Collisions', ['v1f=(m1-m2)/(m1+m2)*v1i', 'v2f=2*m1/(m1+m2)*v1i']],
     ['Drag Force', ['F=Cd*ρ*v^2*A/2']],
-    ['Law of Gravitation', ['F=G*m1*m2/r^2']],
-    ['Mass-Energy Relation', ['E=m*c^2']],
+    ['Law of Gravitation', ['F=G*m1*m2/r^2'], ['G']],
+    ['Mass-Energy Relation', ['E=m*c^2'], ['c']],
   ]],
   ['Gases', [
-    ['Ideal Gas Law', ['P*V=n*R*T', 'm=n*MW']],
+    ['Ideal Gas Law', ['P*V=n*R*T', 'm=n*MW'], ['R']],
     ['Ideal Gas State Change', ['P0*V0/T0=P1*V1/T1']],
-    ['Isothermal Expansion', ['W=n*R*T*LN(Vf/Vi)', 'm=n*MW']],
+    ['Isothermal Expansion', ['W=n*R*T*LN(Vf/Vi)', 'm=n*MW'], ['R']],
     ['Polytropic Processes', ['Pf/Pi=(Vi/Vf)^n', 'Tf/Ti=(Pf/Pi)^((n-1)/n)']],
     ['Isentropic Flow', ['T/T0=1/(1+(k-1)/2*M^2)', 'P/P0=(T/T0)^(k/(k-1))', 'ρ/ρ0=(T/T0)^(1/(k-1))', 'A/At=1/M*(2/(k+1)*(1+(k-1)/2*M^2))^((k+1)/(2*(k-1)))']],
-    ['Real Gas Law', ['P*V=Z*n*R*T', 'm=n*MW']],
+    ['Real Gas Law', ['P*V=Z*n*R*T', 'm=n*MW'], ['R']],
     ['Real Gas State Change', ['P0*V0/(Z0*T0)=P1*V1/(Z1*T1)']],
-    ['Kinetic Theory', ['P=n*MW*vrms^2/(3*V)', 'vrms=SQRT(3*R*T/MW)', 'm=n*MW']],
+    ['Kinetic Theory', ['P=n*MW*vrms^2/(3*V)', 'vrms=SQRT(3*R*T/MW)', 'm=n*MW'], ['R']],
   ]],
   ['Heat Transfer', [
     ['Heat Capacity', ['Q=m*c*ΔT', 'ΔT=Tf-Ti']],
@@ -71,22 +71,22 @@ export const EQ_LIBRARY = Object.freeze([
     ['Conduction', ['q=k*A*ΔT/L', 'ΔT=Th-Tc']],
     ['Convection', ['q=h*A*ΔT', 'ΔT=Th-Tc']],
     ['Conduction + Convection', ['q=A*ΔT/(1/h1+L/k+1/h3)', 'U=1/(1/h1+L/k+1/h3)', 'ΔT=Th-Tc']],
-    ['Black Body Radiation', ['eb=σ*T^4', 'λmax*T=c3', 'f=c/λmax']],
+    ['Black Body Radiation', ['eb=σ*T^4', 'λmax*T=c3', 'f=c/λmax'], ['σ', 'c3', 'c']],
   ]],
   ['Magnetism', [
-    ['Straight Wire', ['B=μ0*μr*I/(2*π*r)']],
-    ['Force between Wires', ['Fba=μ0*μr*Ia*Ib*L/(2*π*d)']],
-    ['Magnetic Field in Solenoid', ['B=μ0*μr*I*nl']],
-    ['Magnetic Field in Toroid', ['B=μ0*μr*I*N/(2*π*r)']],
+    ['Straight Wire', ['B=μ0*μr*I/(2*π*r)'], ['μ0']],
+    ['Force between Wires', ['Fba=μ0*μr*Ia*Ib*L/(2*π*d)'], ['μ0']],
+    ['Magnetic Field in Solenoid', ['B=μ0*μr*I*nl'], ['μ0']],
+    ['Magnetic Field in Toroid', ['B=μ0*μr*I*N/(2*π*r)'], ['μ0']],
   ]],
   ['Motion', [
     ['Linear Motion', ['x=x0+v0*t+1/2*a*t^2', 'x=x0+v*t-1/2*a*t^2', 'x=x0+1/2*(v0+v)*t', 'v=v0+a*t']],
-    ['Object in Free Fall', ['y=y0+v0*t-1/2*g*t^2', 'y=y0+v*t+1/2*g*t^2', 'y=y0+1/2*(v0+v)*t', 'v=v0-g*t']],
-    ['Projectile Motion', ['x=x0+v0*COS(θ0)*t', 'y=y0+v0*SIN(θ0)*t-1/2*g*t^2', 'vcx=v0*COS(θ0)', 'vcy=v0*SIN(θ0)-g*t', 'R=v0^2/g*SIN(2*θ0)', 'hmax=y0+v0^2*SIN(θ0)^2/(2*g)']],
+    ['Object in Free Fall', ['y=y0+v0*t-1/2*g*t^2', 'y=y0+v*t+1/2*g*t^2', 'y=y0+1/2*(v0+v)*t', 'v=v0-g*t'], ['g']],
+    ['Projectile Motion', ['x=x0+v0*COS(θ0)*t', 'y=y0+v0*SIN(θ0)*t-1/2*g*t^2', 'vcx=v0*COS(θ0)', 'vcy=v0*SIN(θ0)-g*t', 'R=v0^2/g*SIN(2*θ0)', 'hmax=y0+v0^2*SIN(θ0)^2/(2*g)'], ['g']],
     ['Angular Motion', ['θ=θ0+ω0*t+1/2*α*t^2', 'θ=θ0+ω*t-1/2*α*t^2', 'θ=θ0+1/2*(ω0+ω)*t', 'ω=ω0+α*t']],
     ['Circular Motion', ['ω=v/r', 'ar=v^2/r', 'N=ω/(2*π)']],
-    ['Terminal Velocity', ['vt=SQRT(2*m*g/(Cd*ρ*A))']],
-    ['Escape Velocity', ['ve=SQRT(2*G*M/R)']],
+    ['Terminal Velocity', ['vt=SQRT(2*m*g/(Cd*ρ*A))'], ['g']],
+    ['Escape Velocity', ['ve=SQRT(2*G*M/R)'], ['G']],
   ]],
   ['Optics', [
     ['Law of Refraction', ['n1*SIN(θ1)=n2*SIN(θ2)']],
@@ -98,8 +98,8 @@ export const EQ_LIBRARY = Object.freeze([
   ]],
   ['Oscillations', [
     ['Mass-Spring System', ['ω=SQRT(k/m)', 'T=2*π/ω', 'f=1/T']],
-    ['Simple Pendulum', ['ω=SQRT(g/L)', 'T=2*π/ω', 'f=1/T']],
-    ['Conical Pendulum', ['ω=SQRT(g/h)', 'T=2*π/ω', 'f=1/T', 'h=L*COS(θ)']],
+    ['Simple Pendulum', ['ω=SQRT(g/L)', 'T=2*π/ω', 'f=1/T'], ['g']],
+    ['Conical Pendulum', ['ω=SQRT(g/h)', 'T=2*π/ω', 'f=1/T', 'h=L*COS(θ)'], ['g']],
     ['Torsional Pendulum', ['ω=SQRT(G*J/(L*I))', 'T=2*π/ω', 'f=1/T']],
     ['Simple Harmonic', ['x=xm*COS(ω*t+φ)', 'v=-ω*xm*SIN(ω*t+φ)', 'a=-ω^2*xm*COS(ω*t+φ)']],
   ]],
@@ -132,7 +132,7 @@ export const EQ_LIBRARY = Object.freeze([
   ['Waves', [
     ['Transverse Waves', ['y=ym*SIN(k*x-ω*t)', 'v=λ*f', 'k=2*π/λ', 'ω=2*π*f']],
     ['Longitudinal Waves', ['s=sm*COS(k*x-ω*t)', 'v=λ*f', 'k=2*π/λ', 'ω=2*π*f']],
-    ['Sound Waves', ['v=SQRT(B/ρ)', 'I=1/2*ρ*v*(ω*sm)^2', 'β=10*LOG(I/I0)', 'ω=2*π*f']],
+    ['Sound Waves', ['v=SQRT(B/ρ)', 'I=1/2*ρ*v*(ω*sm)^2', 'β=10*LOG(I/I0)', 'ω=2*π*f'], ['I0']],
   ]],
 ]);
 
@@ -140,5 +140,5 @@ export const EQ_LIBRARY = Object.freeze([
 export function librarySet(subject, title) {
   const sets = EQ_LIBRARY[subject - 1]?.[1];
   const set = sets?.[title - 1];
-  return set ? { subject: EQ_LIBRARY[subject - 1][0], title: set[0], eqs: set[1] } : null;
+  return set ? { subject: EQ_LIBRARY[subject - 1][0], title: set[0], eqs: set[1], known: set[2] ?? [] } : null;
 }
