@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.12 (2026-10-20)
+**Latest release:** v0.8.13 (2026-10-20)
 
 ---
 
@@ -18,6 +18,24 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.13 — 2026-10-20
+
+- The serial port: `BAUD`, `PARITY`, `CKSM`, `TRANSIO`, `STIME`, `OPENIO`,
+  `CLOSEIO`, `BUFLEN`, `SRECV`, `XMIT`, `KERRM`, `FINISH`, `SERVER`, `XSERV`
+  and `PKT`. Breaks from the HP: nothing is on the other end, so the
+  settings are checked and kept in IOPAR (in HOME, as on the HP), `BUFLEN`
+  gives 0 and 1, `SRECV` returns at once what a timed-out HP returns (an
+  empty string and 0), `XMIT` prints its string to the print log, `SERVER`
+  and `XSERV` return with a note, `FINISH`, `OPENIO` and `CLOSEIO` do
+  nothing, and `PKT` ends in Timeout.
+- Fixed: the Catalog's page for a command led with what the HP does (SEND
+  "sends … to a Kermit device") while rpl.ai's own note sat far below on a
+  phone; the note's first sentence now follows the summary.
+- On a phone, stacked notes share one width, their buttons at the right
+  edge, instead of a short note sitting inside a long one.
 
 ---
 
