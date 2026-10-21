@@ -490,7 +490,11 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - In landscape, where the keyboard leaves little room, the app bar, tabs,
   hints and soft keys also step aside while you type, and the writers' keys
   move beside the formula or matrix, so level 1 and the whole writer stay in
-  view; a narrow screen keeps them under it. The command line keeps to two
+  view; a narrow screen keeps them under it. A landscape phone keeps them
+  beside it with the keyboard down too, in minimal view or with the keypad
+  hidden, so the stack keeps another level; any window under 440 px tall,
+  an installed app on a 412 or 430 px tall phone in landscape included,
+  also puts the writers' hints away. The command line keeps to two
   lines there, a long or edited program scrolling inside it, so the key
   strip stays on screen. With the keyboard up an error
   keeps to its title and fixes (the explanation comes back with the
@@ -574,8 +578,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   as a finger presses them, once more as a held finger opens a menu or
   clears the line or a swipe passes the point where letting go drops a
   level or puts a note away or turns the soft keys' page, and twice on an error, as the HP beeps (set flag -56,
-  the HP's Error Beep flag, to stop that). A tap anywhere on a switch's row
-  flips it.
+  the HP's Error Beep flag, to stop that). Keep the screen on stops the
+  phone sleeping while rpl.ai is open, for a long program or a result you
+  keep checking. A tap anywhere on a switch's row flips it.
 - Settings › Calculator is the HP's MODES form: angle, number format
   with its digits, exact or approximate results, real or complex domain,
   coordinates and integer base, then switches for the decimal comma,
