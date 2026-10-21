@@ -228,7 +228,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
   `"EL"`. The LIST menu opens on the HP's folders: ELEM and PROC from its
   PRG LIST menu and CHARS, its string commands, then OBJ→, →LIST, SUB and
   REPL. A list's level menu offers Sort (SORT), Reverse (REVLIST) and Sum
-  (ΣLIST), and a string's offers Run its text (STR→), so `"1 2 +"` gives 3.
+  (ΣLIST), a string's offers Run its text (STR→), so `"1 2 +"` gives 3,
+  and a vector's offers Length (ABS). Each level menu names the kind of
+  object it acts on.
   `→STR` writes a number in the display format, as on the HP, so
   `2 FIX "Total: " 12.3456 →STR +` gives `"Total: 12.35"`, and a string
   at level 1 shows whole, line breaks included.

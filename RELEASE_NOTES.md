@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.58 (2026-10-21)
+**Latest release:** v0.8.59 (2026-10-21)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.59 — 2026-10-21
+
+- Fixed: ARG said Bad argument type on a fraction while RE, IM, CONJ and
+  ABS took it; `-3/4 ARG` now gives π in radians, as `-0.75 ARG` does.
+- Added: a vector level's menu offers Length (ABS), the HP's norm of an
+  array, so `[ 3 4 ]` gives 5.
+- Improved: a level's menu heading names the kind of object it acts on,
+  such as "Level 2 · Fraction", as its INFO note does.
 
 ## v0.8.58 — 2026-10-21
 
