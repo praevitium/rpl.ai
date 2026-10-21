@@ -200,8 +200,13 @@ const src = (text) => formatSource(parseEntry(text)[0]);
   const cell = (value, attributes = 'x:num') => `<tr height=20 style='height:15.0pt'><td height=20 class=xl65 align=right style='height:15.0pt' ${attributes}>${value}</td></tr>`;
   assert(htmlTableToSource(excel(cell('1') + cell('2.5') + cell('3.14', 'x:num="3.1415926535897931"'))) === '[[ 1 ][ 2.5 ][ 3.1415926535897931 ]]',
     'htmlTableToSource: one column from Excel is a column matrix, with each number at the exact value Excel keeps beside its text');
-  assert(htmlTableToSource(excel(cell('7'))) === null && htmlTableToSource(excel(cell('a', 'x:str') + cell('b', 'x:str'))) === null,
-    'htmlTableToSource: one cell, or a column with text, is left to the plain text paste');
+  assert(htmlTableToSource(excel(cell('a', 'x:str') + cell('b', 'x:str'))) === null && htmlTableToSource(excel(cell('Total', 'x:str'))) === null
+    && htmlTableToSource(excel(cell(''))) === null,
+    'htmlTableToSource: a column with text, or one cell of text or nothing, is left to the plain text paste');
+  assert(htmlTableToSource(excel(cell('7'))) === '7' && htmlTableToSource(excel(cell('$1,200.00', 'x:num="1200"'))) === '1200'
+    && htmlTableToSource(excel(cell('12.5%', 'x:num="0.125"'))) === '0.125' && htmlTableToSource(excel(cell('3.14', 'x:num="3.1415926535897931"'))) === '3.1415926535897931'
+    && htmlTableToSource(excel(cell('(300.00)'))) === '-300.00',
+    'htmlTableToSource: one cell copied from Excel pastes as its number at the exact value, where they landed as typed text: $1,200.00 was a syntax error, 12.5% left 12.5 and failed, (300.00) became the complex (300, 0), and 3.14 lost the digits the sheet holds');
   assert(htmlTableToSource(excel(cell('1', '') + cell('') + cell('&nbsp;') + cell('$1,234.50') + cell('12%'))) === '[[ 1 ][ 0 ][ 0 ][ 1234.50 ][ 12E-2 ]]',
     'htmlTableToSource: blank cells are 0 and currency and percentages are read as in a pasted range');
   assert(htmlTableToSource('<table><tr><td>1</td><td>2</td></tr><tr><td>3</td><td>4</td></tr></table>') === '[[ 1 2 ][ 3 4 ]]'

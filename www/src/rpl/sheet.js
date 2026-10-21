@@ -238,9 +238,11 @@ export function htmlTableToText(html) {
 // A range of numbers copied from a spreadsheet, read from the clipboard's HTML
 // flavour: a single column, which plain text can't tell from typed lines, and
 // every number at full precision rather than as rounded as the sheet shows it.
+// One cell is just its number, so $1,200.00 or 12.5% pastes as a number too.
 export function htmlTableToSource(html) {
   const rows = htmlTableRows(String(html));
-  if (!rows || rows.length * (rows[0]?.length ?? 0) < 2 || rows.length * rows[0].length > SHEET_MAX_CELLS) return null;
+  if (!rows?.[0]?.length || rows.length * rows[0].length > SHEET_MAX_CELLS) return null;
+  if (rows.length === 1 && rows[0].length === 1) return rows[0][0].exact ?? sheetNumber(rows[0][0].text);
   if (rows.some((row) => row.length !== rows[0].length)) return null;
   const numbers = rows.map((row) => row.map(({ text, exact }) => exact ?? blankToZero(text)));
   return numbers.some((row) => row.includes(null)) ? null : numericSource(numbers);
