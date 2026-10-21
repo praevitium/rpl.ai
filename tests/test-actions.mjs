@@ -82,4 +82,7 @@ import {
     'findBinding: Ctrl or Cmd+A in the equation writer selects the whole formula, where it selected the whole page for Ctrl+C to copy; on the command line it is left to the editor');
   assert(findBinding('Space', ['selection', 'empty', 'global'])?.action === 'level.view' && findBinding('Space', ['empty', 'global']) === null,
     'findBinding: Space on a selected level shows it full size, as the interactive stack\'s VIEW does; with nothing selected it is not a shortcut');
+  assert(findBinding('Home', ['selection', 'empty', 'global'])?.action === 'level.top' && findBinding('End', ['selection', 'empty', 'global'])?.action === 'level.bottom'
+    && findBinding('Home', ['line', 'global']) === null,
+    'findBinding: Home and End move the interactive stack\'s pointer to the top level and to level 1; with no level selected they are left to the command line');
 }

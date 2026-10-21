@@ -162,7 +162,7 @@ export class Entry {
   }
 
   attach(parent, { onCommit, onCancel, onArrowUpEmpty, onArrowDownEmpty,
-                   onArrowLeftEmpty, onArrowRightEmpty, onBackspaceEmpty, onDeleteEmpty, onType, onShiftEnter } = {}) {
+                   onArrowLeftEmpty, onArrowRightEmpty, onBackspaceEmpty, onDeleteEmpty, onHomeEmpty, onEndEmpty, onType, onShiftEnter } = {}) {
     if (this._view) return;
     const isEmpty = () => this._view.state.doc.length === 0;
     const delegateIfEmpty = (cb) => () => {
@@ -191,6 +191,8 @@ export class Entry {
       { key: 'ArrowRight',  run: delegateIfEmpty(onArrowRightEmpty) },
       { key: 'Backspace',   run: delegateIfEmpty(onBackspaceEmpty) },
       { key: 'Delete',      run: delegateIfEmpty(onDeleteEmpty) },
+      { key: 'Home',        run: delegateIfEmpty(onHomeEmpty) },
+      { key: 'End',         run: delegateIfEmpty(onEndEmpty) },
     ]);
     this._view = new EditorView({
       state: EditorState.create({

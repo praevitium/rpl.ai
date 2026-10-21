@@ -232,6 +232,8 @@ class App {
       onBackspaceEmpty: () => this._runChord('Backspace'),
       onDeleteEmpty: () => this._runChord('Delete'),
       onShiftEnter: () => this.selection != null && this._runChord('Shift+Enter'),
+      onHomeEmpty: () => this.selection != null && this._runChord('Home'),
+      onEndEmpty: () => this.selection != null && this._runChord('End'),
     });
     this.input.attachEditorChrome();
     const openReference = (word) => this.drawers.showReference(word.toUpperCase());
@@ -2550,6 +2552,8 @@ class App {
       case 'level.editFirst': if (!this.stack.depth) return true; this.editLevel(1); return true;
       case 'level.up': this.selectLevel(Math.min(this.stack.depth, this.selection + 1)); return true;
       case 'level.down': if (this.selection <= 1) this.clearSelection(); else this.selectLevel(this.selection - 1); return true;
+      case 'level.top': this.selectLevel(this.stack.depth); return true;
+      case 'level.bottom': this.selectLevel(1); return true;
       case 'level.rollUp': if (this.selection < this.stack.depth) this._moveLevel(this.selection, this.selection + 1); return true;
       case 'level.rollDown': if (this.selection > 1) this._moveLevel(this.selection, this.selection - 1); return true;
       case 'level.edit': this.levelAction('edit'); return true;

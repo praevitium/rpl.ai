@@ -2891,6 +2891,12 @@ setAngle('RAD');
     && readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8').includes('if (onShiftEnter?.()) return true;')
     && appSrc.includes("case 'level.echo': this.levelAction('echo'); return true;"),
     'Shift+Enter on a selected level reaches ECHO through the command line, which took it for a new line');
+  assert(appSrc.includes("onHomeEmpty: () => this.selection != null && this._runChord('Home'),")
+    && appSrc.includes("onEndEmpty: () => this.selection != null && this._runChord('End'),")
+    && readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8').includes("{ key: 'Home',        run: delegateIfEmpty(onHomeEmpty) },")
+    && appSrc.includes("case 'level.top': this.selectLevel(this.stack.depth); return true;")
+    && appSrc.includes("case 'level.bottom': this.selectLevel(1); return true;"),
+    'Home and End on a selected level jump to the top level and level 1 through an empty command line, which kept them for its caret');
   {
     const hintSrc = readFileSync(new URL('../www/src/ui/input-area.js', import.meta.url), 'utf8');
     assert(hintSrc.includes("`⇧← ⇧→ select · ${shortcutText('eqw.selectAll')} all`")
