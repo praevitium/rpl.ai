@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.7 (2026-10-20)
+**Latest release:** v0.8.8 (2026-10-20)
 
 ---
 
@@ -20,6 +20,23 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.8 — 2026-10-20
+
+- The Equation Library, second part: all 102 sets now hold their equations.
+  The beams (simple and cantilever deflection, slope, moment and shear, with
+  the HP's `IFTE(x≤a,…)` forms), Flow with Losses, Flow in Full Pipes (with
+  `FANNING`) and the four Solid State Devices sets (PN Step Junctions, NMOS
+  Transistors, Bipolar Transistors, JFETs, with `ni = SIDENS(T)*1E6` per cubic
+  metre) are in, written from DB48X's forms of the HP's sets.
+- Fixed: a set's constants are now the ones the HP marks known for that set,
+  not every name that happens to match a constant. 0.8.7 stored the gas
+  constant into Ohm's law's R, the speed of light into a beam's c, and the
+  Stefan-Boltzmann constant into Normal Stress's σ, so those sets could not
+  be solved for them; k, q, εsi, εox and I0 join the constants a set can know.
+- A set's page in the Equation Library lists its variables in the solver's
+  key order, the known constants with their values, and says the values are
+  plain numbers in SI units.
 
 ## v0.8.7 — 2026-10-20
 
