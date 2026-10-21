@@ -138,7 +138,7 @@ export function familyCommands(family) {
   return _opCategories[family.category] ?? [];
 }
 
-const UPLOAD_ACCEPT = '.json,.rpl,.txt,.csv,.tsv,.xlsx,application/json,text/plain,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+export const UPLOAD_ACCEPT = '.json,.rpl,.txt,.csv,.tsv,.xlsx,application/json,text/plain,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 // A stack diagram's objn-1 stays whole; a narrow drawer broke it after the hyphen.
 function keepHyphenatedWords(table) {
@@ -169,12 +169,17 @@ function scrollWideTables(doc) {
   }
 }
 
-export function pickFile(accept, onFile) {
+export function pickFiles(accept, onFiles, multiple = true) {
   const picker = document.createElement('input');
   picker.type = 'file';
   picker.accept = accept;
-  picker.addEventListener('change', () => { const f = picker.files?.[0]; if (f) onFile(f); });
+  picker.multiple = multiple;
+  picker.addEventListener('change', () => { if (picker.files?.length) onFiles([...picker.files]); });
   picker.click();
+}
+
+export function pickFile(accept, onFile) {
+  pickFiles(accept, (files) => onFile(files[0]), false);
 }
 
 // The manual's column headings (Level 1/Argument 1) are skipped, and a lone arrow takes its result line.

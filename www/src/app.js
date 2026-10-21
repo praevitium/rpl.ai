@@ -4,7 +4,7 @@ import { Display, escapeHtml, describeValue, suspendedProgramHtml, binaryBaseLab
 import { Keypad, hpKeyCode, typedKeyCode, keyForCode } from './ui/keyboard.js';
 import { MenuBar } from './ui/menubar.js';
 import { AppBar, installHint } from './ui/appbar.js';
-import { Drawers, CATEGORIES, familyCommands, signatureOf } from './ui/drawer.js';
+import { Drawers, CATEGORIES, familyCommands, signatureOf, pickFiles, UPLOAD_ACCEPT } from './ui/drawer.js';
 import { describeError, ERROR_KINDS } from './ui/errors.js';
 import { errorBannerHtml, haltedBannerHtml, lcdHtml } from './ui/banner.js';
 import { InputArea } from './ui/input-area.js';
@@ -38,7 +38,7 @@ import {
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo, getUserKeys, standardKeysActive,
   batchStateNotifications,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setFontHooks, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setFontHooks, setTransferHooks, receivedName, receivedTarget, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
 import { VERSION, DATE } from './build-info.js';
 import { beep, alarmBeep } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest, calculatorNow } from './rpl/ops/time.js';
@@ -197,6 +197,7 @@ class App {
       get: () => this.prefs.stackSize,
       set: (size) => { this.setPrefs({ stackSize: size }); setTimeout(() => { this._applyPrefs(); this.renderAll(); }); },
     });
+    setTransferHooks({ send: (files) => this._sendFiles(files), receive: (pairs) => this._receiveFiles(pairs) });
     setBeepHook(beep);
     setVersion(VERSION, DATE);
     setConlibHook(() => this.showConstants());
@@ -580,6 +581,54 @@ class App {
       if (this.sheets.kind === 'print') this.sheets.openPrintLog();
       else this.toast(`Printed ${n} ${n === 1 ? 'line' : 'lines'} to the print log`, { key: 'print', action: 'Show', onAction: () => this.sheets.openPrintLog() });
     });
+  }
+
+  _sendFiles(files) {
+    try {
+      const saved = files.map(({ name, value }) => downloadValue(name, value, 'rpl'));
+      this.toast(`Saved ${saved.join(', ')}`);
+    } catch (e) {
+      this.notifyError(`Send failed: ${e.message}`);
+    }
+  }
+
+  // A file picker opens only from a tap or key press, so a program that receives long after one asks for a tap
+  // first, with a note that waits until the next press elsewhere.
+  _receiveFiles(pairs) {
+    const pick = () => pickFiles(UPLOAD_ACCEPT, (files) => this.storeFiles(files, pairs), !pairs || pairs.length > 1);
+    const what = !pairs ? 'the files' : pairs.length === 1 ? `the file for ${pairs[0].to}` : pairs.map(({ from }) => from).join(', ');
+    if (navigator.userActivation?.isActive === false) this.toast(`Choose ${what} to receive`, { key: 'receive', action: 'Choose', onAction: pick, timeout: Infinity, transient: true });
+    else pick();
+  }
+
+  // Received files become variables here: a name in use takes a number unless flag -36 is set, and a KGET or RECN
+  // list picks which files go under which names.
+  async storeFiles(files, pairs = null) {
+    const stored = [];
+    const notes = [];
+    const skipped = [];
+    this.entry._snapForUndo();
+    for (const file of files) {
+      try {
+        const { name, value, note } = await readUpload(file);
+        const target = receivedTarget(pairs, file.name, name);
+        if (!target) { skipped.push(file.name); continue; }
+        const as = receivedName(target);
+        if (isDirectory(value)) value.parent = calcState.current;
+        varStore(as, value);
+        stored.push(as === name || !pairs ? as : `${file.name} as ${as}`);
+        if (note) notes.push(note);
+      } catch (e) {
+        this.notifyError(`${file.name} wasn't received: ${e.message}`);
+      }
+    }
+    if (skipped.length) notes.push(`Skipped ${skipped.join(', ')}, not asked for.`);
+    if (!stored.length) {
+      this.entry._dropNoOpUndoStep();
+      if (notes.length) this.toast(notes.join(' '));
+      return;
+    }
+    this.undoToast(`Received ${stored.join(', ')}${notes.length ? `. ${notes.join(' ')}` : ''}`);
   }
 
   // A toast's Undo reverses its own step, never the text being typed, and

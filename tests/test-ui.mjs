@@ -3085,3 +3085,9 @@ setAngle('RAD');
   assert(/@container sheet \(max-width: 319px\) \{ \.sheet-f \{ gap: 6px; padding-inline: 12px; \} \.chip \{ padding-inline: 8px; \} \}/.test(css),
     'a sheet footer of three keys and the four stack text sizes keep to one row on a 280 px phone');
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/navigator\.userActivation\?\.isActive === false\) this\.toast\(`Choose \$\{what\} to receive`, \{ key: 'receive', action: 'Choose', onAction: pick, timeout: Infinity, transient: true \}\)/.test(appSrc),
+    'a receive with no press to open a picker asks for a tap with a note that waits for it');
+}

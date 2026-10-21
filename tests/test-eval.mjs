@@ -620,3 +620,33 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   runLine('FONT6 →MINIFONT');
   setFontHooks(null);
 }
+
+// The transfer commands: sending downloads .rpl files, receiving asks for files to store.
+{
+  const { setTransferHooks, receivedName, receivedTarget } = await import('../www/src/rpl/ops.js');
+  const sent = [];
+  const asked = [];
+  setTransferHooks({ send: (files) => sent.push(files.map(({ name, value }) => `${name}=${format(value)}`).join(' ')), receive: (pairs) => asked.push(JSON.stringify(pairs)) });
+  runLine("1 'TXA' STO 2 'TXC' STO");
+  runLine("'TXA' SEND {{ TXA TXB } TXC } SEND {{ TXA \"my file\" }} XSEND 'TXC' XPUT");
+  assert(sent.join('|') === 'TXA=1|TXB=1 TXC=2|my file=1|TXC=2', 'SEND, XSEND and XPUT send a name, a list of names and {{ old new }} renames, a new name as a string too');
+  assertThrows(() => runLine("{ TXA TXNOPE } SEND"), /Undefined name: TXNOPE/, 'SEND names a variable that does not exist');
+  assert(sent.length === 4, 'a failed SEND sends nothing');
+  assertThrows(() => runLine('{ } SEND'), /Bad argument value/, 'SEND wants a name');
+  assertThrows(() => runLine('5 SEND'), /Bad argument type/, 'SEND wants a name, not a number');
+  runLine("RECV 'TXN' RECN {{ \"old name\" TXD } TXE } KGET 'TXF' XGET");
+  assert(asked.join('|') === 'null|[{"from":null,"to":"TXN"}]|[{"from":"old name","to":"TXD"},{"from":"TXE","to":"TXE"}]|[{"from":"TXF","to":"TXF"}]',
+    'RECV takes files under their own names, RECN one under a name, KGET and XGET the named ones');
+  assertThrows(() => runLine('{ "not a name" } KGET'), /Invalid name: not a name/, 'KGET stores only under a valid name');
+  assertThrows(() => runLine("'TXA' XRECV"), /Name conflict/, 'XRECV into a name in use is an error while flag -36 is clear');
+  runLine("-36 SF 'TXA' XRECV");
+  assert(asked.length === 5 && receivedName('TXA') === 'TXA', 'flag -36 set lets XRECV and a received file replace a variable');
+  runLine('-36 CF');
+  assert(receivedName('TXA') === 'TXA1' && receivedName('TXZ') === 'TXZ', 'with flag -36 clear a received name in use takes a number');
+  const pairs = [{ from: 'TXA', to: 'TXB' }, { from: 'old name', to: 'TXD' }];
+  assert(receivedTarget(null, 'x.rpl', 'X') === 'X' && receivedTarget([{ from: null, to: 'N' }], 'x.rpl', 'X') === 'N'
+      && receivedTarget(pairs, 'txa.rpl', 'txa') === 'TXB' && receivedTarget(pairs, 'old name.rpl', 'old_name') === 'TXD' && receivedTarget(pairs, 'other.rpl', 'other') === null,
+    'a received file goes under its own name, the one asked for, or the new name of the pair it matches; others are skipped');
+  setTransferHooks(null);
+  runLine("{ TXA TXC } PURGE");
+}

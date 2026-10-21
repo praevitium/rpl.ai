@@ -1036,7 +1036,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 786. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 794. The
 Catalog and the command reference mark what is available. Not there yet:
 the HP's numbered menus for MENU and TMENU (a list, a name holding one or 0
 work).
@@ -1044,8 +1044,8 @@ work).
 **Left out on purpose.** ENTRY mode, the NUM.SLV solver screens, RCLMENU,
 FINANCE, TIME, the StreamSmart app (STRM), UFL1→MINIF's font libraries,
 libraries (LIB, ATTACH and port management other
-than ARCHIVE and RESTORE), Saturn assembly and System RPL, and IR and
-serial transfer.
+than ARCHIVE and RESTORE), Saturn assembly and System RPL, and the serial
+port itself (SRECV, XMIT and the Kermit settings such as BAUD).
 
 **Behaviour that differs from the HP 50g.**
 
@@ -1058,6 +1058,11 @@ serial transfer.
   lines while the app is open, with Copy and Clear. `PRLCD` prints the
   stack as text, not the screen's pixels, and `DELAY` and `OLDPRT` do
   nothing.
+- There is no Kermit or XModem link, so `SEND`, `XSEND` and `XPUT` save
+  variables as .rpl HP text files to your downloads, and `RECV`, `RECN`,
+  `KGET`, `XRECV` and `XGET` open a file picker and store what is chosen
+  once it is picked, while a program goes on. A received name in use takes
+  a number (NAME1) unless flag -36 is set.
 - The screen has one typeface, so the system font is the stack text size:
   `FONT6`, `FONT7` and `FONT8` return `:Font:6` to `:Font:8`, tagged sizes
   rather than font objects (TYPE 12, not 30), and `→FONT` sets Small,
