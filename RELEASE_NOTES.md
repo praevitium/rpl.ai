@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.36 (2026-10-21)
+**Latest release:** v0.8.37 (2026-10-21)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.37 — 2026-10-21
+
+- Fixed: `KILL`, and a halt banner's Stop, cancelled only the latest halted
+  program. As the AUR has it, they now cancel every halted program, while a
+  program waiting in a dialog stays.
+- Added: flag -40, or the new CLK key on the TIME menu, shows the time in
+  the status line as the HP's header does, 24-hour with flag -41. It shows
+  where there is room: from 390 px in minimal view, 430 in the Classic look.
+- Changed: the HALT annunciator lights for `HALT`, `PROMPT` and a single
+  step, as the HP's HLT does, and no longer for `MSGBOX`, `INPUT`,
+  `CHOOSE` or `INFORM`. It stays lit while a halted program waits under one.
 
 ## v0.8.36 — 2026-10-21
 
