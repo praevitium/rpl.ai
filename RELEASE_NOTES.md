@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.34 (2026-10-21)
+**Latest release:** v0.8.35 (2026-10-21)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.35 — 2026-10-21
+
+- Fixed: the phone's back button left the app from the dark `OFF` screen
+  and with an error showing. As the HP's ON does, it now wakes rpl.ai from
+  `OFF` and dismisses the error first.
+- Added: installed as an app, rpl.ai's icon carries a dot while an alarm
+  is past due, as the HP's status line carries ((•)), until `ACK` or
+  `ACKALL` acknowledges it.
+- Fixed: a command whose own error already names it showed the name
+  twice, as in `TVMROOT: TVMROOT: Bad argument type` or
+  `AMORT: AMORT: Undefined Name I%YR`. It now says it once.
 
 ## v0.8.34 — 2026-10-21
 
