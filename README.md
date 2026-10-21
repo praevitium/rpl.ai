@@ -296,7 +296,7 @@ On Windows and Linux, ⌘ is Ctrl and ⌥ is Alt.
 | `↑` · `↓` on an empty line | Select level 1 · edit level 1 |
 | Enter · `→` on an empty line | DUP · SWAP |
 | `⌘C` on an empty line | Copy level 1, ready to paste into a spreadsheet (text you have selected copies as text) |
-| With a level selected | `↑` `↓` move the selection · `⌘↑` `⌘↓` move the level · Enter edits · ⇧Enter copies it into the command line (ECHO) · Space shows it full size (VIEW) · ⌫ drops · `⌘C` copies · `⌘D` picks |
+| With a level selected | `↑` `↓` move the selection · Home · End go to the top level · level 1 · `⌘↑` `⌘↓` move the level · Enter edits · ⇧Enter copies it into the command line (ECHO) · Space shows it full size (VIEW) · ⌫ drops · `⌘C` copies · `⌘D` picks |
 | On a variable in the Variables drawer | Enter runs it or puts it on the stack · ⇧Enter stores level 1 in it · ⌥Enter recalls it, as the HP's shifted VAR keys do |
 | `⌘Z` · `⇧⌘Z` | Undo · redo (text when the line has text, otherwise the stack) |
 | `⌘\` · `⌘;` · `⇧⌘F` | Tools drawer · keypad · Minimal view |
@@ -593,6 +593,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   Keep the screen on stops the phone sleeping while rpl.ai is open, for a
   long program or a result you keep checking; `OFF` lets it sleep until a
   tap wakes the calculator. A tap anywhere on a switch's row flips it.
+  From the keyboard, Tab stops once on each choice row and the arrow keys
+  pick within it, and the keyboard stays on the row after the choice.
 - Settings › Calculator is the HP's MODES form: angle, number format
   with its digits, exact or approximate results, real or complex domain,
   coordinates and integer base, then switches for the decimal comma,

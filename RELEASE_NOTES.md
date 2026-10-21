@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.49 (2026-10-21)
+**Latest release:** v0.8.50 (2026-10-21)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.50 — 2026-10-21
+
+- Fixed: choosing a theme, text size, layout or switch in Settings with
+  the keyboard redrew the sheet and dropped the focus, so the next Tab
+  started again from the top. The keyboard now stays on the control it
+  was on.
+- Added: with a stack level selected, Home moves the interactive stack's
+  pointer to the top level and End to level 1, however deep the stack.
+  With text on the command line, Home and End still move the cursor.
+- Improved: each row of choices in Settings is one Tab stop, on the
+  chosen option, and the arrow keys pick the next or previous choice, as
+  in any radio group, where Tab used to stop on every option.
 
 ## v0.8.49 — 2026-10-21
 
