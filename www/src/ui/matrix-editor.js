@@ -574,6 +574,12 @@ export class MatrixEditor {
     this._writeCell(r, c, text, [text.length, text.length]);
   }
 
+  // A level dropped on a cell goes over what it held, even while it was being typed.
+  aimCell(r, c) {
+    this._focusCell(r, c);
+    this._typedCell = null;
+  }
+
   typeUnit(unit, mode) {
     if (mode === 'convert') { this.app.notifyError('CONVERT works on the stack; in the writer a unit key attaches its unit.'); return; }
     const text = unitCellText(this._textBeforeCaret(), unit, mode);

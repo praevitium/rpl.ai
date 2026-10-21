@@ -907,7 +907,10 @@ class App {
     };
     d.onRowAction = (level, act, el) => this.levelAction(act, level, el);
     d.onRowMove = (from, to) => this._moveLevel(from, to);
-    d.onRowEcho = (level) => this.levelAction('echo', level);
+    d.onRowEcho = (level, target) => {
+      if (target?.matches('.mx-cell')) this.matrixEditor.aimCell(Number(target.dataset.r), Number(target.dataset.c));
+      this.levelAction('echo', level);
+    };
     // A swipe buzzes once as it crosses the point where letting go drops the level, with key vibration on.
     d.onSwipeArmed = () => this.buzzHold();
     d.onRowSwipe = (level) => {

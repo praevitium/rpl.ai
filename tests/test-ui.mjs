@@ -3212,9 +3212,9 @@ setAngle('RAD');
   const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(displaySrc.includes("?.closest?.('.st-row[data-key], #cmdline, .eqw, .mx');")
-    && /if \(target\.matches\('\.st-row'\)\) this\.onRowMove\?\.\(from, Number\(target\.dataset\.level\)\);\s*else this\.onRowEcho\?\.\(from\);/.test(displaySrc)
-    && appSrc.includes("d.onRowEcho = (level) => this.levelAction('echo', level);")
+  assert(displaySrc.includes("?.closest?.('.st-row[data-key], #cmdline, .mx-cell, .eqw, .mx');")
+    && /if \(target\.matches\('\.st-row'\)\) this\.onRowMove\?\.\(from, Number\(target\.dataset\.level\)\);\s*else this\.onRowEcho\?\.\(from, target\);/.test(displaySrc)
+    && appSrc.includes("this.levelAction('echo', level);")
     && css.includes('.cmdline.drag-over { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }')
     && css.includes(':root[data-view="minimal"] .input .cmdline.drag-over { background: var(--accent-dim); }'),
     "a level a finger drags by its number onto the command line is typed there, as ECHO does and a mouse's drop already did, the line lit while it is over it, minimal view's borderless line with a tint");
@@ -3237,6 +3237,16 @@ setAngle('RAD');
     && appSrc.includes("{ label: 'ECHO', title: `Copy it into ${this._echoPlace()}`, onPress: act('echo') },")
     && appSrc.includes("return { equation: 'the formula', matrix: 'the matrix cell' }[this.inputMode] ?? 'the command line';"),
     'the level menu and the ECHO soft key name where ECHO puts the level: the command line, the formula or the matrix cell');
+}
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const mxSrc = readFileSync(new URL('../www/src/ui/matrix-editor.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/d\.onRowEcho = \(level, target\) => \{\s*if \(target\?\.matches\('\.mx-cell'\)\) this\.matrixEditor\.aimCell\(Number\(target\.dataset\.r\), Number\(target\.dataset\.c\)\);\s*this\.levelAction\('echo', level\);/.test(appSrc)
+    && /aimCell\(r, c\) \{\s*this\._focusCell\(r, c\);\s*this\._typedCell = null;/.test(mxSrc)
+    && css.indexOf('.mx-grid .mx-cell.drag-over { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-line); background: var(--accent-dim); }') > css.indexOf(':root[data-theme="classic"] .mx-cell {'),
+    'a level a finger drops on a matrix cell goes over what that cell held, the cell lit while the finger is over it, in Classic too');
 }
 
 {
