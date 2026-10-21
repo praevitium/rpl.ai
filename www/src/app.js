@@ -2618,8 +2618,9 @@ class App {
       [() => this.sheets.isOpen(), () => this.sheets.close()],
       [() => this.inputMode !== 'rpl', () => this.cancelWriter()],
       [() => this._drawerCoversStack(), () => this.drawers.close()],
-      // As the HP's ON cancels an edit, so does a phone's back button.
+      // As the HP's ON cancels an edit and leaves the interactive stack, so does a phone's back button.
       [() => !!this.pendingEdit, () => this.cancelEdit()],
+      [() => this.selection != null, () => this.clearSelection()],
     ];
     const top = () => overlays.find(([isOpen]) => isOpen());
     let ignorePop = false;
