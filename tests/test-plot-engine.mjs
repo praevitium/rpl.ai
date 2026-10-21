@@ -1041,4 +1041,6 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(near(integrateFunction((x) => x * x, 0, 3), 9) && near(integrateFunction(Math.sin, 0, Math.PI), 2), 'FCN AREA: Simpson integrates x^2 on 0..3 to 9 and sin on 0..pi to 2');
   assert(near(integrateFunction(Math.sin, Math.PI, 0), -2) && integrateFunction(Math.sin, 1, 1) === 0, 'FCN AREA: a backwards span is negative and an empty span is 0');
   assert(near(integrateFunction((x) => x, 0, 1, 7), 0.5), 'FCN AREA: an odd panel count is made even');
+  assert(axisTicks(-10, 10, 0, 0, 6.25).ticks.join() === '-10,-5,0,5,10', 'axis ticks: a 250 px plot gets five x labels instead of eleven that collided at 280 px');
+  assert(axisTicks(-10, 10, 0, 0, 15).ticks.join() === '-10,-8,-6,-4,-2,0,2,4,6,8', 'axis ticks: a wide plot keeps its nice steps of two');
 }

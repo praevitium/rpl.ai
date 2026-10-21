@@ -1170,7 +1170,7 @@ export class GraphView {
   _drawGrid(ctx, width, height) {
     const view = this.view;
     const axes = plotSettings()?.axes ?? { x: 0, y: 0, tick: null };
-    const xt = axisTicks(view.xmin, view.xmax, axes.x, axes.tick?.[0], width / 28);
+    const xt = axisTicks(view.xmin, view.xmax, axes.x, axes.tick?.[0], width / 40);
     const yt = axisTicks(view.ymin, view.ymax, axes.y, axes.tick?.[1], height / 18);
     const [px0, py0] = worldToPixel(axes.x, axes.y, view, width, height);
     ctx.save();

@@ -2945,4 +2945,6 @@ setAngle('RAD');
     'plot FCN: ISECT pushes the nearest crossing of the function with the next one as I-Sect: (x, y), and AREA marks the first bound on one tap (the chip pressed) and pushes Area: on the next, in the HP\'s FCN order ROOT ISECT SLOPE AREA EXTR');
   assert(/\n@media \(max-height: 400px\) \{ \.pl-box \{ min-height: 150px; \} \}/.test(css),
     'plot in landscape: the plot box gives up its 220 px minimum in a window under 400 px tall, so the readout and FCN keys sit on screen instead of under the fold');
+  assert(/axisTicks\(view\.xmin, view\.xmax, axes\.x, axes\.tick\?\.\[0\], width \/ 40\)/.test(gv),
+    'plot at 280 px: the x axis asks for a label per 40 px, so its labels no longer collide');
 }

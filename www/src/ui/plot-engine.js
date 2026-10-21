@@ -199,7 +199,7 @@ export function niceTicks(min, max, maxTicks = 8) {
 // Ticks every spacing from the axes' crossing, as AXES and ATICK set them, in whole multiples of it when they would
 // crowd the axis; nice ticks when no spacing is set.
 export function axisTicks(min, max, origin = 0, spacing = 0, maxTicks = 8) {
-  const nice = niceTicks(min, max, 8);
+  const nice = niceTicks(min, max, Math.min(8, maxTicks));
   if ((!(spacing > 0) && origin === 0) || !(max > min) || !Number.isFinite(min + max + origin)) return nice;
   const base = spacing > 0 ? spacing : nice.step;
   const step = base * Math.max(1, Math.ceil((max - min) / base / Math.max(2, maxTicks)));
