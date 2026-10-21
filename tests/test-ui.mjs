@@ -3112,3 +3112,15 @@ setAngle('RAD');
   assert(css.includes('@container app (max-width: 479px) { .toasts { width: 92%; justify-items: stretch; } .toast > span { flex: 1; } }'),
     'on a phone stacked notes share one width with their buttons at the right edge');
 }
+
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(drawerSrc.includes('<span class="backup-to"><select name="port"') && drawerSrc.includes('>Archive</button></span></form>')
+    && css.includes('.backup-new { display: flex; flex-wrap: wrap;') && css.includes('.backup-new input { flex: 1 1 140px;')
+    && css.includes('.backup-to { display: flex; gap: 6px; margin-left: auto; }'),
+    'in a narrow drawer the backup name takes its own row and the port and Archive wrap together beneath it');
+  assert(drawerSrc.includes(`<span class="when">\${escapeHtml(new Date(savedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }))}</span>`)
+    && css.includes('.dw-backups .pv { white-space: normal; }') && css.includes('.dw-backups .when { white-space: nowrap; }'),
+    'a backup row shows a short date that wraps whole instead of being cut on a phone');
+}

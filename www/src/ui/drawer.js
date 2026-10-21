@@ -537,7 +537,7 @@ export class Drawers {
       <button type="button" class="btn" data-dw="vars-export-rpl" title="Download this directory as an HP text file (DIR … END)">${icon('down', 'sm')}Export .rpl</button>
       <button type="button" class="btn ghost" data-dw="vars-export" title="Download the stack and the whole HOME tree as JSON">${icon('down', 'sm')}Back up everything</button>
       <button type="button" class="btn ghost" data-dw="vars-import" title="Replace the stack and HOME tree from a JSON backup (undoable)">${icon('up', 'sm')}Restore from file</button>
-    </div><div class="sec-h">Backups<span class="badge" data-backup-count></span></div><form class="backup-new" data-form="archive"><input type="text" name="name" placeholder="Backup name" aria-label="Backup name" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="done"><select name="port" aria-label="Port" title="Port 0 lives in this browser; ports 1–3 are separate slots">${[0, 1, 2, 3].map((p) => `<option value="${p}">:${p}:</option>`).join('')}</select><button type="submit" class="btn" title="Save the stack and HOME tree (same as :n:name ARCHIVE)">Archive</button></form><div class="dw-backups"></div>`;
+    </div><div class="sec-h">Backups<span class="badge" data-backup-count></span></div><form class="backup-new" data-form="archive"><input type="text" name="name" placeholder="Backup name" aria-label="Backup name" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="done"><span class="backup-to"><select name="port" aria-label="Port" title="Port 0 lives in this browser; ports 1–3 are separate slots">${[0, 1, 2, 3].map((p) => `<option value="${p}">:${p}:</option>`).join('')}</select><button type="submit" class="btn" title="Save the stack and HOME tree (same as :n:name ARCHIVE)">Archive</button></span></form><div class="dw-backups"></div>`;
     this._renderVarsList();
   }
 
@@ -585,7 +585,7 @@ export class Drawers {
       ? `<div class="empty-note">${escapeHtml(unavailable || 'No backups yet. Name one above, or run :0:name ARCHIVE.')}</div>`
       : backups.map(({ port, name, savedAt, depth }) => {
         const key = escapeHtml(`${port}:${name}`);
-        return `<div class="vr" data-dw="backup-restore" data-key="${key}" role="button" tabindex="0" title="Restore :${key} (replaces the stack and HOME tree; undoable)"><span class="grip" aria-hidden="true">${icon('clock', 'sm')}</span><div class="main"><div class="nm">:${key}</div><div class="pv">${depth} level${depth === 1 ? '' : 's'} · ${escapeHtml(new Date(savedAt).toLocaleString())}</div></div><div class="acts"><button type="button" class="mini danger" data-dw="backup-delete" data-key="${key}" title="Delete :${key}" aria-label="Delete backup :${key}">${icon('trash', 'sm')}</button></div></div>`;
+        return `<div class="vr" data-dw="backup-restore" data-key="${key}" role="button" tabindex="0" title="Restore :${key} (replaces the stack and HOME tree; undoable)"><span class="grip" aria-hidden="true">${icon('clock', 'sm')}</span><div class="main"><div class="nm">:${key}</div><div class="pv">${depth} level${depth === 1 ? '' : 's'} · <span class="when">${escapeHtml(new Date(savedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }))}</span></div></div><div class="acts"><button type="button" class="mini danger" data-dw="backup-delete" data-key="${key}" title="Delete :${key}" aria-label="Delete backup :${key}">${icon('trash', 'sm')}</button></div></div>`;
       }).join('');
   }
 
