@@ -3182,3 +3182,14 @@ setAngle('RAD');
   assert(/const mes = family === 'MES' && mesMenu\(\);\s*if \(mes && matchMedia\('\(pointer: coarse\)'\)\.matches\) this\.toast\(`\$\{mes\.title \|\| 'Solver'\}: tap a variable's key to store level 1 in it; hold the unknown's key to solve for it\.`, \{ key: 'mes' \}\);/.test(appSrc),
     "MSOLVR and the Equation Library's Solve say on a phone how the solver's keys store and solve, there being often no shift key showing");
 }
+
+{
+  const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(displaySrc.includes('this._installLevelDrag(view);')
+    && /if \(ev\.pointerType !== 'touch' \|\| !ev\.isPrimary \|\| !ev\.target\.closest\?\.\('\.st-lvl'\)\) return;/.test(displaySrc)
+    && /if \(this\._held \|\| \(dx > 10 && dx >= dy\)\) \{ drag = null; return; \}\s*if \(dy <= 10\) return;/.test(displaySrc)
+    && /if \(ev\.type === 'pointerup' && target\) this\.onRowMove\?\.\(Number\(row\.dataset\.level\), Number\(target\.dataset\.level\)\);/.test(displaySrc)
+    && css.includes('.st-row[data-key] .st-lvl { touch-action: none; align-self: stretch; margin-block: -6px; display: flex; align-items: center; justify-content: flex-end; }'),
+    "a finger moved up or down from a level's number drags the level onto another, as a mouse does, while sideways it still swipes the level away");
+}

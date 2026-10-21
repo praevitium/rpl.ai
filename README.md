@@ -381,7 +381,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   pointer with them, as the HP's arrows do, and `SCROLL` shows level 1 the same way from a program; on a screen under 320 px wide (360 for a formula or a list of them, which
   adds Plot) it waits in ⋯; at any width it is on the first page of the level's soft keys, beside EDIT. ⋯ also has →LIST, DUPN, DRPN
   and KEEP for levels 1 to the one you tapped (DUPN and DRPN above level 1), and LEVEL to push its number, and the HP's INFO notes what the level holds, its TYPE and its size by BYTES (both also on the level's soft keys). Swipe a level left or right to drop it; the
-  toast's Undo brings it back. Share sends the value with a link; opening
+  toast's Undo brings it back. Drag a level up or down by its number to move it onto
+  another, as the HP's ROLL and ROLLD do (held near the top or bottom edge, the stack scrolls). Share sends the value with a link; opening
   the link starts rpl.ai with the value on the command line, where nothing
   runs until you press Enter. Share levels 1–n, in the ⋯ of a deeper level,
   sends them one to a line, deepest first, so Enter on the other end

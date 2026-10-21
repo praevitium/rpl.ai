@@ -307,6 +307,7 @@ export class Display {
     });
     this._installSwipe(view);
     this._installLongPress(view);
+    this._installLevelDrag(view);
     view.addEventListener('scroll', () => {
       if (this._renderScroll) return;
       this._fromBottom = fromBottom(view);
@@ -445,6 +446,64 @@ export class Display {
       ev.preventDefault();
       if (hold) fire();
     });
+  }
+
+  // A finger moved up or down from a level's number drags the level onto another, as a mouse does; sideways it swipes.
+  _installLevelDrag(view) {
+    let drag = null;
+    const aim = () => {
+      const row = view.ownerDocument.elementFromPoint(drag.x, drag.y)?.closest?.('.st-row[data-key]');
+      const target = row && row !== drag.row ? row : null;
+      if (target === drag.target) return;
+      drag.target?.classList.remove('drag-over');
+      drag.target = target;
+      target?.classList.add('drag-over');
+    };
+    // Near the stack's top or bottom edge the finger scrolls it, so a level out of view can be reached.
+    const scroll = () => {
+      drag.raf = 0;
+      const box = view.getBoundingClientRect();
+      const step = drag.y < box.top + 40 ? -8 : drag.y > box.bottom - 40 ? 8 : 0;
+      const before = view.scrollTop;
+      view.scrollTop += step;
+      if (view.scrollTop === before) return;
+      aim();
+      drag.raf = requestAnimationFrame(scroll);
+    };
+    view.addEventListener('pointerdown', (ev) => {
+      drag = null;
+      if (ev.pointerType !== 'touch' || !ev.isPrimary || !ev.target.closest?.('.st-lvl')) return;
+      const row = ev.target.closest('.st-row[data-key]');
+      if (row) drag = { row, id: ev.pointerId, x0: ev.clientX, y0: ev.clientY, x: ev.clientX, y: ev.clientY, active: false, target: null, raf: 0 };
+    });
+    view.addEventListener('pointermove', (ev) => {
+      if (drag?.id !== ev.pointerId) return;
+      Object.assign(drag, { x: ev.clientX, y: ev.clientY });
+      if (!drag.active) {
+        const dx = Math.abs(drag.x - drag.x0);
+        const dy = Math.abs(drag.y - drag.y0);
+        if (this._held || (dx > 10 && dx >= dy)) { drag = null; return; }
+        if (dy <= 10) return;
+        drag.active = true;
+        drag.row.setPointerCapture?.(ev.pointerId);
+        drag.row.classList.add('dragging');
+      }
+      aim();
+      if (!drag.raf) scroll();
+    });
+    const end = (ev) => {
+      if (drag?.id !== ev.pointerId) return;
+      const { row, target, active, raf } = drag;
+      drag = null;
+      cancelAnimationFrame(raf);
+      if (!active) return;
+      row.classList.remove('dragging');
+      target?.classList.remove('drag-over');
+      this._swipedAt = performance.now();
+      if (ev.type === 'pointerup' && target) this.onRowMove?.(Number(row.dataset.level), Number(target.dataset.level));
+    };
+    view.addEventListener('pointerup', end);
+    view.addEventListener('pointercancel', end);
   }
 
   _idOf(value) {
