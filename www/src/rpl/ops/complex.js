@@ -19,6 +19,7 @@ function _elementwise(scalarFn) {
 function _argScalar(v) {
   if (isReal(v))    return Real(fromRadians(v.value.isNegative() ? Math.PI : 0));
   if (isInteger(v)) return Real(fromRadians(v.value < 0n ? Math.PI : 0));
+  if (isRational(v)) return Real(fromRadians(v.n < 0n ? Math.PI : 0));
   if (isComplex(v)) return Real(fromRadians(Math.atan2(v.im, v.re)));
   if (_isSymOperand(v)) return Symbolic(AstFn('ARG', [_toAst(v)]));
   throw new RPLError('Bad argument type');

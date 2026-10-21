@@ -2342,6 +2342,14 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
       `session110: :p:Real(42) SIGN → :p:1 (tag preserved)`);
   }
 
+  {
+    const s = new Stack();
+    s.push(Rational(-3n, 4n));
+    lookup('ARG').fn(s);
+    assert(isReal(s.peek()) && Math.abs(s.peek().value.toNumber() - Math.PI) < 1e-9,
+      'ARG of the fraction -3/4 is π in radians, as for -0.75, where it said Bad argument type');
+  }
+
   // ARG on Tagged Complex — atan2(im, re) at current angle mode
   // (default RAD).  Value is irrational; pin approximately.
   {
@@ -10363,10 +10371,7 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
 
    Closes six `·` (untested) cells in the DATA_TYPES.md Q column.
 
-   ARG: `_argScalar` handles isReal and isInteger only; isRational
-   falls through to `throw new RPLError('Bad argument type')`.
-   ARG of a rational is mathematically well-defined (0 for positive,
-   π for negative) but the implementation rejects it.  Q=✗.
+   ARG: a rational gives 0 when positive and π when negative, as a real does.  Q=✓.
 
    % / %T / %CH: all three dispatch through `toRealOrThrow`, which
    has an explicit `isRational(v)` branch returning Number(n)/Number(d).
@@ -10381,18 +10386,17 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
    +7 session231 pins.
    ================================================================ */
 {
-  // _argScalar has no isRational branch; Rational falls through to throw.
   {
     const s = new Stack();
     s.push(Rational(1n, 2n));
-    assertThrows(() => lookup('ARG').fn(s), /Bad argument type/i,
-      `session231: ARG Rational(1,2) → 'Bad argument type' (_argScalar has no isRational branch)`);
+    lookup('ARG').fn(s);
+    assert(isReal(s.peek()) && s.peek().value.toNumber() === 0, 'session231: ARG Rational(1,2) → 0');
   }
   {
     const s = new Stack();
     s.push(Rational(-1n, 2n));
-    assertThrows(() => lookup('ARG').fn(s), /Bad argument type/i,
-      `session231: ARG Rational(-1,2) → 'Bad argument type' (negative rational also rejected by _argScalar)`);
+    lookup('ARG').fn(s);
+    assert(isReal(s.peek()) && Math.abs(s.peek().value.toNumber() - Math.PI) < 1e-9, 'session231: ARG Rational(-1,2) → π');
   }
 
   // toRealOrThrow handles isRational: Number(v.n)/Number(v.d).
