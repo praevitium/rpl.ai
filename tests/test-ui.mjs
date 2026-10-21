@@ -3099,3 +3099,10 @@ setAngle('RAD');
       && /async storeFiles\(files, pairs = null, verb = 'Received'\) \{[\s\S]*?const as = receivedName\(target\);/.test(appSrc),
     'Upload in the Variables drawer takes several files and stores them as RECV does, a name in use taking a number');
 }
+
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/const note = appNote\(entry\);[\s\S]{0,800}?\$\{note \? `<div class="sum ref-app">\$\{escapeHtml\(note\)\}<\/div>` : ''\}/.test(drawerSrc) && /\.ref \.ref-app \{/.test(css),
+    "the Catalog page shows rpl.ai's note under the HP's summary, where a phone sees it without scrolling");
+}

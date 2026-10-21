@@ -12,7 +12,7 @@ import {
   listBackups, archiveBackup, restoreBackup, deleteBackup,
 } from '../rpl/persist.js';
 import { referenceSection, pushHistory, isSyntaxWord, typeSyntaxWord } from './command-help.js';
-import { loadCommandReference, findReferenceEntry, shortDescription, searchCommands, spelledName } from './command-reference.js';
+import { loadCommandReference, findReferenceEntry, shortDescription, appNote, searchCommands, spelledName } from './command-reference.js';
 import { matchPositions, highlightSegments } from './op-search.js';
 import { GraphView } from './graph-view.js';
 import { icon } from './icons.js';
@@ -509,9 +509,11 @@ export class Drawers {
     if (this.cat.ref !== name || this.current !== 'catalog') return;
     const runnable = !!lookup(name);
     const sig = entry ? signatureOf(entry) : '';
+    const note = appNote(entry);
     body.innerHTML = `<div class="ref">
       <div class="ref-top"><button type="button" class="mini" data-dw="ref-back" title="Back" aria-label="Back">${icon('chl', 'sm')}</button><h4>${escapeHtml(entry?.name ?? name)}</h4>${entry?.type ? `<span class="badge">${escapeHtml(entry.type)}</span>` : ''}</div>
       ${entry ? `<div class="sum">${escapeHtml(shortDescription(entry, 400))}</div>` : ''}
+      ${note ? `<div class="sum ref-app">${escapeHtml(note)}</div>` : ''}
       ${sig ? `<div><div class="lbl">Stack</div><pre class="ref-sig">${escapeHtml(entry.io.replace(/`/g, "'"))}</pre></div>` : ''}
       <div class="acts">${runnable ? `<button type="button" class="btn pri" data-dw="ref-run" data-cmd="${escapeHtml(name)}">${icon('play', 'sm')}Run ${escapeHtml(name)}</button>` : ''}${runnable || isSyntaxWord(name) ? `<button type="button" class="btn${runnable ? '' : ' pri'}" data-dw="ref-insert">Insert in the command line</button>` : `<span class="badge">Not available in rpl.ai</span>`}<button type="button" class="btn ghost" data-dw="ref-ask">${icon('spark', 'sm')}Ask about it</button></div>
       <div class="ref-doc"></div>

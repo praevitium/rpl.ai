@@ -149,6 +149,12 @@ export function shortDescription(entry, max = 110) {
   return clip(d.split(/(?<=\.)\s/)[0] || d, max);
 }
 
+// Where rpl.ai departs from the HP, the reference says so in a paragraph that starts "In rpl.ai"; its first sentence.
+export function appNote(entry, max = 400) {
+  const note = /(?:^|\n)(In rpl\.ai[^\n]*)/.exec(String(entry?.description ?? ''))?.[1];
+  return note ? clip(note.split(/(?<=\.)\s/)[0], max) : '';
+}
+
 const STOP = new Set(['the', 'a', 'an', 'of', 'to', 'in', 'on', 'for', 'and', 'or',
   'is', 'it', 'that', 'this', 'with', 'from', 'by', 'as', 'at', 'be', 'command',
   'commands', 'function', 'functions', 'op', 'ops', 'operation', 'operations',

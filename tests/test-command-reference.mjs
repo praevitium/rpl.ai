@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import {
   decodeEntities, htmlToText, parseCommandReference, findReferenceEntry,
-  formatReferenceEntry, shortDescription, searchCommands,
+  formatReferenceEntry, shortDescription, searchCommands, appNote,
 } from '../www/src/ui/command-reference.js';
 import { allOps, hasOp } from '../www/src/rpl/ops.js';
 import { CATEGORIES, signatureOf } from '../www/src/ui/drawer.js';
@@ -338,4 +338,10 @@ const REF = parseCommandReference(HTML);
     && /new ResizeObserver\(\(\) => this\._markTabEdges\(\)\)\.observe\(this\.el\);/.test(drawerSrc)
     && ['.dw-tabs.more-r,', '.dw-tabs.more-l,', '.dw-tabs.more-l.more-r,'].every((sel) => css.includes(sel)),
     'drawer tabs: the row fades at an edge with more tabs past it, after a render, a scroll and a resize');
+}
+
+/* Where rpl.ai departs from the HP the Catalog page leads with the reference's "In rpl.ai" note. */
+{
+  assert(/^In rpl\.ai there is no printer: PR1 writes level 1 to the print log[^]*stack\.$/.test(appNote(REF.get('PR1'))), 'appNote gives the first sentence of PR1\'s rpl.ai note');
+  assert(appNote(REF.get('SIN')) === '' && appNote(null) === '', 'a command rpl.ai runs as the HP does has no note');
 }

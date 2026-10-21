@@ -8550,7 +8550,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Kermit Get Command: Used by a local Kermit to get a Kermit server to transmit the named object(s). To rename an object when the local device gets it, include the old and new names in an embedded list. For example, {{ AAA BBB }} KGET gets the variable named AAA but changes its name to BBB. {{ AAA BBB } CCC } KGET gets AAA as BBB and gets CCC under its own name. (If the original name is not legal on the calculator, enter it as a string.)</p>
-    <p>In rpl.ai there is no Kermit or XModem link: KGET opens a file picker and stores the files asked for: one name takes whatever file is chosen, a list takes the files whose names match, {{ old new }} storing old under the new name, and other files are skipped in the current directory once picked, so a program goes on before the file arrives. It reads .rpl HP text files, rpl.ai's .json files, .csv, .tsv and .xlsx tables. With flag –36 clear a name in use takes a number (NAME1); set, the received object replaces it. If no tap or key press opened the picker (a program that ran a while), a note asks for one with Choose.</p>
+    <p>In rpl.ai there is no Kermit or XModem link: KGET opens a file picker and stores the files asked for in the current directory once they are picked, so a program goes on before they arrive. One name takes whatever file is chosen; a list takes the files whose names match, {{ old new }} storing old under the new name, and skips the others. It reads .rpl HP text files, rpl.ai's .json files, .csv, .tsv and .xlsx tables. With flag –36 clear a name in use takes a number (NAME1); set, the received object replaces it. If no tap or key press opened the picker (a program that ran a while), a note asks for one with Choose.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
@@ -13313,7 +13313,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Receive Renamed Object Command: Prepares the calculator to receive a file from another Kermit server device, and to store the file in a specified variable. RECN is identical to RECV except that the name under which the received data is stored is specified.</p>
-    <p>In rpl.ai there is no Kermit or XModem link: RECN opens a file picker and stores the chosen file under the name given in the current directory once picked, so a program goes on before the file arrives. It reads .rpl HP text files, rpl.ai's .json files, .csv, .tsv and .xlsx tables. With flag –36 clear a name in use takes a number (NAME1); set, the received object replaces it. If no tap or key press opened the picker (a program that ran a while), a note asks for one with Choose.</p>
+    <p>In rpl.ai there is no Kermit or XModem link: RECN opens a file picker and stores the chosen file in the current directory under the name given, once it is picked, so a program goes on before the file arrives. It reads .rpl HP text files, rpl.ai's .json files, .csv, .tsv and .xlsx tables. With flag –36 clear a name in use takes a number (NAME1); set, the received object replaces it. If no tap or key press opened the picker (a program that ran a while), a note asks for one with Choose.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
@@ -13358,7 +13358,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Receive Object Command: Instructs the calculator to look for a named file from another Kermit server device. The received file is stored in a variable named by the sender. Since the calculator does not normally look for incoming Kermit files, you must use RECV to tell it to do so.</p>
-    <p>In rpl.ai there is no Kermit or XModem link: RECV opens a file picker and stores each chosen file under its own name, as the HP stores a file under the name the sender gives in the current directory once picked, so a program goes on before the file arrives. It reads .rpl HP text files, rpl.ai's .json files, .csv, .tsv and .xlsx tables. With flag –36 clear a name in use takes a number (NAME1); set, the received object replaces it. If no tap or key press opened the picker (a program that ran a while), a note asks for one with Choose.</p>
+    <p>In rpl.ai there is no Kermit or XModem link: RECV opens a file picker and stores each chosen file in the current directory under its own name, as the HP takes the name its sender gives, once it is picked, so a program goes on before the file arrives. It reads .rpl HP text files, rpl.ai's .json files, .csv, .tsv and .xlsx tables. With flag –36 clear a name in use takes a number (NAME1); set, the received object replaces it. If no tap or key press opened the picker (a program that ran a while), a note asks for one with Choose.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
@@ -18610,7 +18610,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>XModem Get Command: Retrieves a specified filename via XMODEM from another calculator. The other calculator needs to be in server mode for the operation to work (G I/O FUNCTIONS START SERVER).</p>
-    <p>In rpl.ai there is no Kermit or XModem link: XGET opens a file picker and stores the chosen file under the name asked for in the current directory once picked, so a program goes on before the file arrives. It reads .rpl HP text files, rpl.ai's .json files, .csv, .tsv and .xlsx tables. With flag –36 clear a name in use takes a number (NAME1); set, the received object replaces it. If no tap or key press opened the picker (a program that ran a while), a note asks for one with Choose.</p>
+    <p>In rpl.ai there is no Kermit or XModem link: XGET opens a file picker and stores the chosen file in the current directory under the name asked for, once it is picked, so a program goes on before the file arrives. It reads .rpl HP text files, rpl.ai's .json files, .csv, .tsv and .xlsx tables. With flag –36 clear a name in use takes a number (NAME1); set, the received object replaces it. If no tap or key press opened the picker (a program that ran a while), a note asks for one with Choose.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -18781,7 +18781,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>XModem Receive Command: Prepares the calculator to receive an object via XModem. The received object is stored in the given variable name. The transfer will start more quickly if you start the XModem sender before executing XRECV. Invalid object names cause an error. If flag –36 is clear, object names that are already in use also cause an error. If you are transferring data between two calculators, executing {AAA BBB CCC} XRECV receives AAA, BBB, and CCC. You also need to use a list on the sending end ({AAA BBB CCC} XSEND, for example).</p>
-    <p>In rpl.ai there is no Kermit or XModem link: XRECV opens a file picker and stores the chosen file under the name given in the current directory once picked, so a program goes on before the file arrives. It reads .rpl HP text files, rpl.ai's .json files, .csv, .tsv and .xlsx tables. With flag –36 clear a name in use takes a number (NAME1); set, the received object replaces it. If no tap or key press opened the picker (a program that ran a while), a note asks for one with Choose. A name in use is an error while flag –36 is clear, as the AUR says.</p>
+    <p>In rpl.ai there is no Kermit or XModem link: XRECV opens a file picker and stores the chosen file in the current directory under the name given, once it is picked, so a program goes on before the file arrives. It reads .rpl HP text files, rpl.ai's .json files, .csv, .tsv and .xlsx tables. With flag –36 clear a name in use takes a number (NAME1); set, the received object replaces it. If no tap or key press opened the picker (a program that ran a while), a note asks for one with Choose. A name in use is an error while flag –36 is clear, as the AUR says.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
