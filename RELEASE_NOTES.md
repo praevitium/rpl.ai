@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.43 (2026-10-21)
+**Latest release:** v0.8.44 (2026-10-21)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.44 — 2026-10-21
+
+- Fixed: closing Settings, Keyboard shortcuts, About or another sheet
+  with Esc left the keyboard focused on nothing. A sheet now gives the
+  focus back to whatever had it, such as the command line, and Keyboard
+  shortcuts, which has no field, puts the focus on its Close button when
+  it opens.
+- Added: on a variable in the Variables drawer, Shift+Enter stores level
+  1 in it and Alt+Enter (⌥Enter on a Mac) recalls it without running it,
+  as the HP's left- and right-shifted VAR keys do and as Shift+F1 and
+  Alt+F1 already did on the soft keys. Enter still runs it or puts it on
+  the stack.
+- Improved: a variable's tooltip in the Variables drawer reads as its VAR
+  soft key's does and names those keys, where it said only "click to put
+  on the stack".
 
 ## v0.8.43 — 2026-10-21
 

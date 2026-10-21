@@ -296,6 +296,7 @@ On Windows and Linux, ⌘ is Ctrl and ⌥ is Alt.
 | Enter · `→` on an empty line | DUP · SWAP |
 | `⌘C` on an empty line | Copy level 1, ready to paste into a spreadsheet (text you have selected copies as text) |
 | With a level selected | `↑` `↓` move the selection · `⌘↑` `⌘↓` move the level · Enter edits · ⌫ drops · `⌘C` copies · `⌘D` picks |
+| On a variable in the Variables drawer | Enter runs it or puts it on the stack · ⇧Enter stores level 1 in it · ⌥Enter recalls it, as the HP's shifted VAR keys do |
 | `⌘Z` · `⇧⌘Z` | Undo · redo (text when the line has text, otherwise the stack) |
 | `⌘\` · `⌘;` · `⇧⌘F` | Tools drawer · keypad · Minimal view |
 | `⌘,` · `⌘/` | Settings · every shortcut, grouped by where it applies |
