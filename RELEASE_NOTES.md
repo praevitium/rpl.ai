@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.11 (2026-10-20)
+**Latest release:** v0.8.12 (2026-10-20)
 
 ---
 
@@ -18,6 +18,26 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.12 — 2026-10-20
+
+- Transfer: `SEND`, `XSEND` and `XPUT` save variables as .rpl HP text
+  files to your downloads (a list sends several, `{{ old new }}` renames),
+  and `RECV`, `RECN`, `KGET`, `XRECV` and `XGET` open a file picker and
+  store the chosen .rpl, .json, .csv, .tsv or .xlsx files as variables.
+  Breaks from the HP: there is no Kermit or XModem link, and a receive
+  finishes when the files are picked, so a program goes on before they
+  arrive; when no tap or key press can open the picker, a note asks for
+  one with Choose and waits. A received name in use takes a number (NAME1)
+  while flag -36 is clear, as on the HP; XRECV into a name in use is an
+  error then, as the AUR says.
+- Fixed: `PR1` and `PRVAR` printed a directory as `Directory { NAME }`;
+  they print `DIR`, its variables and `END`, as the .rpl file holds it.
+- Upload in the Variables drawer takes several files at once and stores
+  them as `RECV` does, a name in use taking a number instead of refusing
+  the file.
 
 ---
 
