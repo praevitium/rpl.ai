@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.111 (2026-10-20)
+**Latest release:** v0.7.112 (2026-10-20)
 
 ---
 
@@ -18,6 +18,24 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.7.112 — 2026-10-20
+
+- In the Classic theme, editing a level now outlines the command line in
+  amber, as the other themes do. The theme's LCD border hid the outline,
+  so with the keypad hidden and the phone's keyboard up, where the status
+  line and its pencil give way, nothing showed that Enter would replace
+  the level.
+- VIEW's sheet has ▲ and ▼ beside its title. They show the level above
+  or below and move the interactive stack's pointer with them, as the HP's
+  arrows do, so a phone can page through the stack full size without
+  closing the sheet. Each is greyed out at the top of the stack or at
+  level 1.
+- With key vibration on, a swipe along the soft keys buzzes once as it
+  turns the page, as a swipe on a level, banner or note does. A menu of
+  one page doesn't buzz.
 
 ---
 

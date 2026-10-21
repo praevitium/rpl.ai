@@ -377,7 +377,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   CONVERT on the one you tap; the level's soft keys have it as CONV). View is the HP
   interactive stack's VIEW, which shows the level full size (a long number
   in full, a long list wrapped to the screen, a formula or matrix that scrolls both ways; pinch or double-tap to zoom) with Edit, Copy and
-  Share under it, and `SCROLL` shows level 1 the same way from a program; on a screen under 320 px wide (360 for a formula or a list of them, which
+  Share under it and ▲ ▼ beside its title, which step to the level above or below and move the stack's
+  pointer with them, as the HP's arrows do, and `SCROLL` shows level 1 the same way from a program; on a screen under 320 px wide (360 for a formula or a list of them, which
   adds Plot) it waits in ⋯; at any width it is on the first page of the level's soft keys, beside EDIT. ⋯ also has →LIST, DUPN, DRPN
   and KEEP for levels 1 to the one you tapped (DUPN and DRPN above level 1), and LEVEL to push its number, and the HP's INFO notes what the level holds, its TYPE and its size by BYTES (both also on the level's soft keys). Swipe a level left or right to drop it; the
   toast's Undo brings it back. Share sends the value with a link; opening
@@ -410,7 +411,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   command line wraps a long line rather than scrolling it out of sight, and
   in minimal view an amber pencil on the status line (with the level number
   for a stack level) says a level or variable is being edited, so Enter
-  puts it back; tap the pencil to cancel. Curly quotes, typed with an
+  puts it back; tap the pencil to cancel. In the other views, and in minimal view
+  with the keyboard up, the command line itself takes an amber outline while
+  it edits, in the Classic theme too. Curly quotes, typed with an
   iPhone's smart punctuation or pasted from Notes or a messaging app, read
   as the HP's straight ones, and ×, ÷ and − from a phone's symbol keys as
   *, / and -. A phone keyboard has no →, ≤, ≥ or ≠ either: type `->`, `<=`,
@@ -535,7 +538,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   pretty math included. On Android it can also make the keys vibrate briefly
   as a finger presses them, once more as a held finger opens a menu or
   clears the line or a swipe passes the point where letting go drops a
-  level or puts a note away, and twice on an error, as the HP beeps (set flag -56,
+  level or puts a note away or turns the soft keys' page, and twice on an error, as the HP beeps (set flag -56,
   the HP's Error Beep flag, to stop that). A tap anywhere on a switch's row
   flips it.
 - The modes button in the app bar (RAD · STD · EXACT), and each mode on
