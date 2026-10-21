@@ -6,7 +6,7 @@ import {
 } from './plot-engine.js';
 import { escapeHtml, markScrollEdges } from './display.js';
 import { icon } from './icons.js';
-import { isSymbolic, isName, isMatrix, isVector, isList, isGrob, Real, Complex, RList, BinaryInteger, Name, Tagged } from '../rpl/types.js';
+import { isSymbolic, isName, isMatrix, isVector, isList, isGrob, isTagged, Real, Complex, RList, BinaryInteger, Name, Tagged } from '../rpl/types.js';
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians, getPict, subscribe as subscribeState } from '../rpl/state.js';
 import { plotSettings, pictWindow, pictGrid, pictPoint, pictLine, viewVolume } from '../rpl/ops/graphics.js';
 import { downloadFile } from '../rpl/persist.js';
@@ -125,7 +125,7 @@ function thetaRange() {
 }
 
 const isData = (v) => isMatrix(v) || isVector(v) || isList(v);
-const isFormula = (v) => isSymbolic(v) || isName(v);
+const isFormula = (v) => isSymbolic(v) || isName(v) || (isTagged(v) && isFormula(v.value));
 // A list of expressions plots each one, as the HP draws every equation in a list stored in EQ.
 const formulaList = (v) => (isList(v) && v.items.length && v.items.every(isFormula) ? v.items : null);
 

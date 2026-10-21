@@ -93,7 +93,8 @@ function sigmaDataNote(data) {
 }
 
 // A formula with units has no real values to draw, so it is not offered a plot, as in the equation writer.
-const plottableFormula = (value) => isSymbolic(value) && !hasUnits(value.expr);
+// A tagged formula, as TANL and F' leave, plots as the formula; the HP reads through a tag too.
+const plottableFormula = (value) => { const v = isTagged(value) ? value.value : value; return isSymbolic(v) && !hasUnits(v.expr); };
 const plottable = (value) => plottableFormula(value) || (isList(value) && value.items.length > 0 && value.items.every(plottableFormula));
 
 const modulusNote = () => `The modular commands work modulo ${getCasModulo()}`;

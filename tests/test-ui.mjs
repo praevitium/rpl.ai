@@ -2015,7 +2015,7 @@ setAngle('RAD');
 
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/const plottableFormula = \(value\) => isSymbolic\(value\) && !hasUnits\(value\.expr\);/.test(appSrc)
+  assert(/const plottableFormula = \(value\) => \{ const v = isTagged\(value\) \? value\.value : value; return isSymbolic\(v\) && !hasUnits\(v\.expr\); \};/.test(appSrc)
     && /\$\{plottable\(value\) \? `<button type="button" data-row-act="plot"/.test(appSrc)
     && /plottable\(value\) \? item\('plot', 'plot', 'Plot it'\)/.test(appSrc)
     && /plottable\(value\)\s*\? \{ label: 'PLOT'/.test(appSrc)
@@ -2986,4 +2986,14 @@ setAngle('RAD');
     && /this\.view = panView\(v, p\.re - \(v\.xmin \+ v\.xmax\) \/ 2, p\.im - \(v\.ymin \+ v\.ymax\) \/ 2\);/.test(gv)
     && /this\._fail\('CNTR needs a cursor: tap the plot or trace first'\)/.test(gv),
     'plot tools: ZSQR brings the y scale to the x scale about the centre so a circle is round, and CNTR pans the window to put the cursor at its centre, as the HP\'s ZOOM keys do; without a cursor CNTR says so');
+}
+
+{
+  const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
+  const pe = readFileSync(new URL('../www/src/ui/plot-engine.js', import.meta.url), 'utf8');
+  const app = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/const plottableFormula = \(value\) => \{ const v = isTagged\(value\) \? value\.value : value; return isSymbolic\(v\) && !hasUnits\(v\.expr\); \};/.test(app)
+    && /const isFormula = \(v\) => isSymbolic\(v\) \|\| isName\(v\) \|\| \(isTagged\(v\) && isFormula\(v\.value\)\);/.test(gv)
+    && /if \(isTagged\(v\)\) return stackValueToTrace\(v\.value, preferredKind, below\);/.test(pe),
+    'plot from a level: a tagged formula, as TANL and F\' leave on the stack, offers Plot and plots as the formula, where the level offered nothing and PLOT said FUNCTION needs an expression');
 }

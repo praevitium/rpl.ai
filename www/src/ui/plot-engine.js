@@ -2,7 +2,7 @@ import {
   isNum, parseAlgebra, evalAst, defaultFnEval, Bin,
 } from '../rpl/algebra.js';
 import {
-  isMatrix, isVector, isList, isSymbolic,
+  isMatrix, isVector, isList, isSymbolic, isTagged,
   toRealOrThrow, Matrix, Real, RList,
 } from '../rpl/types.js';
 import { evalFitModel } from '../rpl/state.js';
@@ -1542,6 +1542,7 @@ export function retypeTrace(t, kind) {
 }
 
 export function stackValueToTrace(v, preferredKind = 'function', below = null) {
+  if (isTagged(v)) return stackValueToTrace(v.value, preferredKind, below);
   if (isMatrix(v) || isVector(v) || isList(v)) {
     const kind = (preferredKind === 'bar' || preferredKind === 'hist')
       ? preferredKind : 'scatter';
