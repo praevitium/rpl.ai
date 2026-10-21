@@ -2858,6 +2858,9 @@ setAngle('RAD');
     'Esc in a drawer docked beside the stack takes the keyboard back to the command line and leaves the drawer open, and one over the stack closes, before Esc reaches the selection, a writer or the command line');
   assert(/const hadFocus = this\.el\.contains\(document\.activeElement\) && !globalThis\.matchMedia\?\.\('\(pointer: coarse\)'\)\.matches;[\s\S]{0,200}if \(hadFocus\) this\.app\.focusInput\(\);/.test(drawerSrc),
     'drawer: closing it with the keyboard inside, by Ctrl+\\ or its close button, hands the keyboard to the command line where it was left on nothing; not on a touch screen, whose keyboard it would raise');
+  assert(/case 'level\.view': if \(this\.entry\.buffer\.length\) return false; this\.levelAction\('view'\); return true;/.test(appSrc)
+    && appSrc.includes("item('view', 'expand', 'View full size (VIEW)', shortcutText('level.view'))") && appSrc.includes("{ label: 'VIEW', title: 'Show it full size (Space)'"),
+    'Space on a selected level opens VIEW, as Quick Look does, and types a space when the line has text; the level menu and the VIEW soft key name it');
   assert(/case 'level\.copy':\s*\/\/[^\n]*\n\s*if \(this\.selection == null && \(!this\.stack\.depth \|\| !window\.getSelection\(\)\?\.isCollapsed\)\) return false;\s*this\.levelAction\('copy', this\.selection \?\? 1\); return true;/.test(appSrc),
     'Ctrl or Cmd+C with no level selected copies level 1, ready to paste into a spreadsheet, unless text is selected for the browser to copy or the stack is empty');
 }

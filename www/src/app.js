@@ -1075,7 +1075,7 @@ class App {
     const deeper = level > 1;
     const span = deeper ? `levels 1–${level}` : 'level 1';
     const groups = [
-      [item('edit', 'edit', 'Edit', shortcutText('level.edit')), item('view', 'expand', 'View full size (VIEW)')],
+      [item('edit', 'edit', 'Edit', shortcutText('level.edit')), item('view', 'expand', 'View full size (VIEW)', shortcutText('level.view'))],
       [
         item('echo', 'chr', `Copy into ${this._echoPlace()} (ECHO)`),
         item('pick', 'copy', 'Copy to level 1 (PICK)', shortcutText('level.pick')),
@@ -1803,7 +1803,7 @@ class App {
     const act = (a) => () => this.levelAction(a, level);
     return [
       { label: 'EDIT', title: 'Edit this level (Enter)', onPress: act('edit') },
-      { label: 'VIEW', title: 'Show it full size', onPress: act('view') },
+      { label: 'VIEW', title: 'Show it full size (Space)', onPress: act('view') },
       { label: 'ECHO', title: `Copy it into ${this._echoPlace()}`, onPress: act('echo') },
       { label: 'PICK', title: 'Copy it to level 1', onPress: act('pick') },
       { label: 'ROLL', title: 'Move it to level 1', onPress: act('roll') },
@@ -2551,6 +2551,8 @@ class App {
       case 'level.rollUp': if (this.selection < this.stack.depth) this._moveLevel(this.selection, this.selection + 1); return true;
       case 'level.rollDown': if (this.selection > 1) this._moveLevel(this.selection, this.selection - 1); return true;
       case 'level.edit': this.levelAction('edit'); return true;
+      // As Quick Look does; with text on the line, Space types.
+      case 'level.view': if (this.entry.buffer.length) return false; this.levelAction('view'); return true;
       case 'level.drop': if (this._keyRepeat) return true; this.levelAction('drop'); return true;
       case 'level.copy':
         // With no level selected, ⌘C copies level 1, unless text is selected for the browser to copy.
