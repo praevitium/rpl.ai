@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.8 (2026-10-20)
+**Latest release:** v0.8.9 (2026-10-20)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.9 — 2026-10-20
+
+- Fixed: in minimal view the "Minimal view" note, and any note shown while
+  a sheet was open, sat over the sheet's footer on a phone, so the first tap
+  on the Equation Library's Solve, Back or Close, or the periodic table's
+  Close, landed on the note and did nothing. Notes now sit above the footer
+  of a sheet that fills the screen.
+- The Equation Library, third part: 23 sets now hold the HP's full lists of
+  equations, 339 in all. Bernoulli's Equation has its ten, Real Gas Law and
+  Real Gas State Change find Z through `ZFACTOR`, Black Body Radiation finds
+  the band fraction through `F0λ`, and Angular Mechanics, Mohr's Circle,
+  Sound Waves and the rest gain the equations they were missing. DB48X's
+  transcription of the HP's sets is credited in the README.
+- A tap on one of a set's equations puts it on the stack with a note, as
+  the HP's →STK key does; the equations are finger-sized buttons.
 
 ## v0.8.8 — 2026-10-20
 
