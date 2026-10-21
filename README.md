@@ -691,6 +691,8 @@ with a drag or the arrow keys, as the 50g's arrow keys turn it;
 checkboxes and editable expressions. Zoom, fit and reset are on the canvas,
 the window is typed in directly, and Trace mode (`T`) walks a cursor along
 the curves with live readouts. Expand to fill the window, or go full screen.
+On a phone the graph fills the plot view, with the plot types peeking
+below it; the traces and window scroll up under it.
 More canvas buttons copy the plot as an image, download it as a PNG at the
 screen's pixel density, and, where the device can share images, share it.
 
