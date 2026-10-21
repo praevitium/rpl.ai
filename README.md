@@ -303,7 +303,7 @@ On Windows and Linux, ⌘ is Ctrl and ⌥ is Alt.
 | `⌘,` · `⌘/` | Settings · every shortcut, grouped by where it applies |
 | Tab | Complete a command or variable name; next box or next cell in the writers |
 | `↑` · `↓` with completions showing | Put the next or previous completion in the line, so Enter runs it; Esc puts back what you typed |
-| Enter in the matrix writer | Stores the cell and moves on, as the HP's ENTER; on a cell you haven't typed in it pushes the matrix, so `1` Enter `2` Enter Enter enters `[[ 1 2 ]]` · ⇧Enter next row · `⌘Enter` pushes the matrix from any cell |
+| Enter in the matrix writer | Stores the cell and moves on, as the HP's ENTER (down the column with GO↓ on); on a cell you haven't typed in it pushes the matrix, so `1` Enter `2` Enter Enter enters `[[ 1 2 ]]` · ⇧Enter next row · `⌘Enter` pushes the matrix from any cell · Esc puts back the cell you are typing · `⌘Home` `⌘End` first and last cell |
 | Esc | Close, deselect, dismiss, or cancel with Undo; in the drawer, out of it to the command line, closing a drawer over the stack and leaving the line as it was |
 
 Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
@@ -483,6 +483,11 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   the writer's own Enter key or the keypad's ENTER) stores what you typed in
   a cell and moves to the next one, and on a cell you haven't typed in it
   puts the matrix on the stack, so 1 Enter 2 Enter Enter enters [[ 1 2 ]].
+  The menu's GO↓, as the HP's, makes Enter move down the column instead, so
+  1 Enter 2 Enter Enter enters [[ 1 ][ 2 ]]. As the HP's CANCEL first drops
+  the entry being typed, Esc (or a phone's back button) first puts back what
+  the cell held, and only then puts the writer away. Ctrl or ⌘+Home and +End
+  go to the first cell and the last one filled, as in a spreadsheet.
 - With the keypad hidden, opening the equation or matrix writer brings up
   your phone's keyboard, and so does tapping the equation; while the keypad
   shows, its keys type into the writer instead, and when the writer needs

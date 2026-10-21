@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.46 (2026-10-21)
+**Latest release:** v0.8.47 (2026-10-21)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.47 — 2026-10-21
+
+- Fixed: Esc in the matrix writer, while a cell was being typed, put the
+  whole matrix away (Undo brought it back). As the HP's CANCEL first drops
+  the entry being typed, Esc, or a phone's back button, now puts back what
+  the cell held and keeps the writer open; the next Esc puts it away.
+- Added: the HP MatrixWriter's GO↓ key, on the matrix writer's menu. With
+  it on, Enter after typing a cell moves down the column rather than to
+  the right, so 1 Enter 2 Enter 3 Enter Enter enters the column
+  [[ 1 ][ 2 ][ 3 ]]. Off, Enter moves right, as GO→ does.
+- Improved: in the matrix writer, Ctrl+Home (⌘Home on a Mac) goes to the
+  first cell and Ctrl+End to the last one filled, as in Excel, Numbers and
+  Google Sheets. Home and End alone still move within the cell.
 
 ## v0.8.46 — 2026-10-21
 
