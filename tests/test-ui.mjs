@@ -1570,6 +1570,9 @@ setAngle('RAD');
   assert(step(true) === 'down 0,1' && step(false) === 'next 0,1'
     && mxSrc.includes("{ label: 'GO↓', title: \"Enter moves down the column, as the HP's GO↓ does; off, it moves right (GO→)\", toggle: true, on: () => this.goDown"),
     'matrix writer: the GO↓ key, as on the HP\'s MatrixWriter, makes Enter after typing a cell move down the column instead of right');
+  assert(mxSrc.includes("if ((e.ctrlKey || e.metaKey) && (e.key === 'Home' || e.key === 'End')) next = e.key === 'Home' ? [0, 0] : lastCell(trimGrid(this.grid));")
+    && /const lastCell = \(grid\) => \[grid\.length - 1, \(grid\[0\]\?\.length \|\| 1\) - 1\];/.test(mxSrc),
+    'matrix writer: Ctrl or Cmd+Home goes to the first cell and +End to the last one filled, as in a spreadsheet; Home and End alone still move the caret');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/if \(this\._writer\(\)\.collapseSelection\?\.\(\) \|\| this\._writer\(\)\.cancelCell\?\.\(\)\) return;\s*this\._closeWriter/.test(appSrc),
     'Esc and a phone\'s back button cancel the matrix cell being typed before they discard the matrix');

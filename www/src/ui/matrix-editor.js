@@ -105,6 +105,8 @@ export function trimGrid(grid) {
   return grid.slice(0, rows).map((row) => row.slice(0, cols));
 }
 
+const lastCell = (grid) => [grid.length - 1, (grid[0]?.length || 1) - 1];
+
 // EEX types E after a number, 1E where no number is, and nothing when the number has its exponent already.
 export function eexText(before) {
   if (/(?:\d+\.?\d*|\.\d+)[eE][+-]?\d*$/.test(before)) return '';
@@ -732,7 +734,9 @@ export class MatrixEditor {
       this._moveBy(e.key === 'Enter' ? 'down' : e.shiftKey ? 'prev' : 'next', r, c);
       return;
     }
-    if (e.key === 'ArrowUp') next = [Math.max(0, r - 1), c];
+    // As in a spreadsheet, Ctrl or ⌘+Home goes to the first cell and +End to the last one filled.
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'Home' || e.key === 'End')) next = e.key === 'Home' ? [0, 0] : lastCell(trimGrid(this.grid));
+    else if (e.key === 'ArrowUp') next = [Math.max(0, r - 1), c];
     else if (e.key === 'ArrowDown') next = [Math.min(rows - 1, r + 1), c];
     else if (e.key === 'ArrowLeft' && atStart) next = c > 0 ? [r, c - 1] : r > 0 ? [r - 1, cols - 1] : null;
     else if (e.key === 'ArrowRight' && atEnd) next = c < cols - 1 ? [r, c + 1] : r < rows - 1 ? [r + 1, 0] : null;
