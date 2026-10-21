@@ -315,13 +315,13 @@ button { cursor: pointer; }
 /* On the smallest phones the directory name needs the room; Install stays in the ⋯ menu. */
 @container app (max-width: 359px) { .install-btn { display: none; } .appbar .sp { min-width: 0; } }
 /* Under 320 px (a fold's cover screen, or a larger system text size) the modes summary gives way to the
-   directory name, and the writer tabs drop their icons so Ask stays on screen. */
+   directory name, and the writer tabs and Settings' page tabs drop their icons so Ask and Data stay on screen. */
 @container app (max-width: 319px) {
   .crumbs { flex-shrink: 0; max-width: 40%; }
   .modes { flex-shrink: 1; min-width: 0; }
   .mode-chip.summary { min-width: 0; }
   .mode-chip.summary span { overflow: hidden; text-overflow: ellipsis; }
-  .in-tabs .i { display: none; }
+  .in-tabs .i, .sheet-nav .i { display: none; }
 }
 @container app (max-width: 719px) {
   .mode-chip:not(.summary) { display: none; }
