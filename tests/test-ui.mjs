@@ -2897,3 +2897,11 @@ setAngle('RAD');
     && /\n\.pop-chips \{ display: flex; flex-wrap: wrap; gap: 6px; padding: 0 6px 4px; \}/.test(css),
     'Store in a variable: the popover lists the directory\'s variables (not its folders) as chips in the VARS menu\'s order, and a tap stores the level in that name through the same path as the field, with its Undo note');
 }
+
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/input\.autocomplete = 'off';\n\s*input\.autocapitalize = 'off';\n\s*input\.enterKeyHint = 'done';/.test(drawerSrc)
+    && /\n  \.vr\.editing \.nm input \{ height: 40px; \}/.test(css),
+    'Variables drawer, rename on a phone: the inline name field is 40 px on touch, keeps the case typed and labels Enter Done, as the Store and New folder fields do');
+}

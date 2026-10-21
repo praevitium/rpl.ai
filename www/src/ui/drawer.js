@@ -841,6 +841,8 @@ export class Drawers {
     input.value = oldName;
     input.spellcheck = false;
     input.autocomplete = 'off';
+    input.autocapitalize = 'off';
+    input.enterKeyHint = 'done';
     input.setAttribute('aria-label', `New name for ${oldName}`);
     nameEl.replaceWith(input);
     input.focus();

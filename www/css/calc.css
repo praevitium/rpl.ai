@@ -2143,6 +2143,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   .mini, .icon-btn.sm { width: 40px; height: 40px; }
   .btn, .dw-tabs button, .path-bar button { min-height: 40px; }
   .field, .backup-new input, .backup-new select, .pop-name { height: 40px; }
+  .vr.editing .nm input { height: 40px; }
   /* Two columns keep all eight finger-sized tools in a 220 px plot. */
   .pl-tools { display: grid; grid-template-columns: repeat(2, 40px); }
   .pl-tools button { width: 40px; height: 40px; }
