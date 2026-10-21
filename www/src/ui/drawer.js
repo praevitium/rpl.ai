@@ -356,7 +356,7 @@ export class Drawers {
     const extra = this._headActions(id);
     const wideBtn = id === 'assistant' || id === 'plot' ? '' : `<button type="button" class="icon-btn sm" data-dw="wide" title="${this.prefs.drawerWide ? 'Narrower' : 'Wider'}" aria-label="${this.prefs.drawerWide ? 'Narrower' : 'Wider'}">${icon(this.prefs.drawerWide ? 'collapse' : 'expand', 'sm')}</button>`;
     const dockBtn = `<button type="button" class="icon-btn sm" data-dw="dock" title="Dock the panels on the other side" aria-label="Dock the panels on the other side">${icon('dock', 'sm')}</button>`;
-    this.el.innerHTML = `<div class="drawer-grip" aria-hidden="true"></div>${tabs}<div class="dw-head"><div class="dw-title">${icon(meta.icon)}<span>${escapeHtml(meta.label)}</span><small class="dw-sub"></small></div>${extra}${wideBtn}${dockBtn}<button type="button" class="icon-btn sm" data-dw="close" title="Close${shortcutText('drawer.toggle') ? ` (${shortcutText('drawer.toggle')})` : ''}" aria-label="Close">${icon('x', 'sm')}</button></div><div class="dw-body"></div>`;
+    this.el.innerHTML = `<div class="drawer-grip" aria-hidden="true"></div><div class="dw-top">${tabs}<div class="dw-head"><div class="dw-title">${icon(meta.icon)}<span>${escapeHtml(meta.label)}</span><small class="dw-sub"></small></div>${extra}${wideBtn}${dockBtn}<button type="button" class="icon-btn sm" data-dw="close" title="Close${shortcutText('drawer.toggle') ? ` (${shortcutText('drawer.toggle')})` : ''}" aria-label="Close">${icon('x', 'sm')}</button></div></div><div class="dw-body"></div>`;
     this._bindGrip(this.el.querySelector('.drawer-grip'));
     this._renderHeadSub();
     this._renderBody();
@@ -1019,7 +1019,7 @@ export class Drawers {
     }
   }
 
-  // On a phone the drawer is a bottom sheet: dragging its tabs or title down closes it, as sheets do.
+  // On a phone the drawer is a bottom sheet: dragging its top row down closes it, as sheets do.
   _bindSheetDrag() {
     let drag = null;
     let dragged = false;
@@ -1066,9 +1066,9 @@ export class Drawers {
     }, true);
   }
 
-  // A bottom sheet drags down by its tabs or title. Minimal view's side panel drags right by its title only, since its tabs scroll sideways.
+  // A bottom sheet drags down by its top row. Minimal view's side panel drags right by its title and buttons only, since its tabs scroll sideways.
   _dragAxis(target) {
-    if (this.el.offsetTop > 0) return target.closest('.dw-tabs, .dw-head') ? 'y' : null;
+    if (this.el.offsetTop > 0) return target.closest('.dw-top') ? 'y' : null;
     const sidePanel = document.documentElement.dataset.view === 'minimal' && this.el.offsetLeft > 0;
     return sidePanel && target.closest('.dw-head') ? 'x' : null;
   }

@@ -330,7 +330,7 @@ button { cursor: pointer; }
 /* The six mode chips take the room the wordmark had, so it comes back a little wider. */
 @container app (max-width: 779px) { .brand .word { display: none; } }
 @container app (max-width: 520px) {
-  .drawer { width: 100%; top: auto; height: 90%; border-right: 0; border-radius: 16px 16px 0 0; transform: translateY(104%); }
+  .drawer { width: 100%; top: auto; height: calc(100% - 24px); border-right: 0; border-radius: 16px 16px 0 0; transform: translateY(104%); }
   .appbar { gap: 2px; padding: 0 6px; }
   .brand { display: none; }
   .crumbs button { padding: 7px 4px; }
@@ -344,6 +344,12 @@ button { cursor: pointer; }
 .dw-tabs button { flex: none; border: 0; background: transparent; color: var(--ink3); border-radius: 8px; padding: 6px 9px; display: flex; align-items: center; gap: 6px; font: 500 12px/1 var(--font-ui); }
 .dw-tabs button[aria-pressed="true"] { background: var(--accent-dim); color: var(--accent); }
 @container app (max-width: 979px) { .dw-tabs { display: flex; } .drawer [data-dw="wide"], .drawer [data-dw="dock"] { display: none; } }
+/* Where the tabs show, the pressed tab names the drawer, so the title gives way and its buttons end the tab row,
+   wrapping under it in a drawer too narrow to leave the tabs 150 px. The tabs take nearly all the spare room. */
+.dw-top { display: flex; flex-wrap: wrap; flex: none; border-bottom: 1px solid var(--line); }
+.dw-top > .dw-tabs { flex: 999 1 150px; min-width: 0; border-bottom: 0; }
+.dw-top > .dw-head { flex: 1 0 auto; justify-content: flex-end; border-bottom: 0; }
+@container app (max-width: 979px) { .app:not(.plot-focus) .dw-title { display: none; } .app:not(.plot-focus) .dw-head { padding: 6px 8px 6px 4px; } }
 :root[data-view="minimal"] .drawer [data-dw="dock"], :root[data-view="minimal"] .set.dock-set { display: none; }
 @container app (max-width: 979px) { .set.dock-set { display: none; } }
 @container app (min-width: 521px) and (max-width: 979px) { .drawer-grip { display: block; } }
@@ -1053,6 +1059,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 :root[data-view="minimal"] .drawer { position: absolute; left: auto; right: 0; top: 0; bottom: 0; width: min(var(--drawer-w, 400px), calc(100% - 48px)); height: auto; border-left: 1px solid var(--line); border-right: 0; border-radius: 0; box-shadow: var(--shadow-3); transform: none; visibility: visible; transition: none; }
 :root[data-view="minimal"] .drawer:not(.open) { display: none; }
 :root[data-view="minimal"] .dw-tabs { display: flex; }
+:root[data-view="minimal"] .app:not(.plot-focus) .dw-title { display: none; }
+:root[data-view="minimal"] .app:not(.plot-focus) .dw-head { padding: 6px 8px 6px 4px; }
 :root[data-view="minimal"] .scrim { display: block; }
 :root[data-view="minimal"] .drawer-grip { display: block; left: -4px; right: auto; }
 

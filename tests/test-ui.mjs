@@ -3296,3 +3296,15 @@ setAngle('RAD');
     && css.indexOf('.gr-view > .pl-side, .app.plot-focus') > css.indexOf('.app.plot-focus .pl-side { max-height: 40%;'),
     'plot, on a phone: the graph fills the sheet with the plot types peeking below, and the types, traces and window scroll up under it (they took 46% of a 390 px phone and left the canvas a quarter of it)');
 }
+
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(drawerSrc.includes('<div class="drawer-grip" aria-hidden="true"></div><div class="dw-top">${tabs}<div class="dw-head">')
+    && drawerSrc.includes("if (this.el.offsetTop > 0) return target.closest('.dw-top') ? 'y' : null;")
+    && css.includes('.dw-top > .dw-tabs { flex: 999 1 150px; min-width: 0; border-bottom: 0; }')
+    && css.includes('@container app (max-width: 979px) { .app:not(.plot-focus) .dw-title { display: none; }')
+    && css.includes(':root[data-view="minimal"] .app:not(.plot-focus) .dw-title { display: none; }')
+    && css.includes('.drawer { width: 100%; top: auto; height: calc(100% - 24px);'),
+    'drawer on a phone or tablet: its buttons end the tab row instead of a title row that repeated the pressed tab, wrapping under the tabs only where they would get under 150 px, and the sheet leaves 24 px above it, not a tenth of the screen; a drag down the row still closes it');
+}
