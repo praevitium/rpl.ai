@@ -304,7 +304,8 @@ export class Sheets {
         <div class="set"><b>Soft keys in Minimal view</b><span>Keep the soft-menu row visible for menu work.</span>${tgl('minimalMenu', app.prefs.minimalMenu, 'Soft keys in Minimal view')}</div>
         <div class="set"><b>Pop-up notes</b><span>Notes after an action, with their Undo, and hints. Errors and alarms always show; Undo stays on its key.</span>${tgl('notes', app.prefs.notes, 'Pop-up notes')}</div>
         <div class="set"><b>Keyboard-shortcut hints</b><span>Show each key's physical-keyboard shortcut on the keypad.</span>${tgl('hints', app.prefs.hints, 'Keyboard-shortcut hints')}</div>${typeof navigator.vibrate === 'function' && matchMedia('(pointer: coarse)').matches ? `
-        <div class="set"><b>Vibrate on key presses</b><span>A short buzz when a finger presses a key, one more when a held finger opens a menu or clears the line, and two on an error, as the HP beeps (flag -56 set stops those), where the phone supports it.</span>${tgl('haptics', app.prefs.haptics, 'Vibrate on key presses')}</div>` : ''}`;
+        <div class="set"><b>Vibrate on key presses</b><span>A short buzz when a finger presses a key, one more when a held finger opens a menu or clears the line, and two on an error, as the HP beeps (flag -56 set stops those), where the phone supports it.</span>${tgl('haptics', app.prefs.haptics, 'Vibrate on key presses')}</div>` : ''}${navigator.wakeLock ? `
+        <div class="set"><b>Keep the screen on</b><span>The screen stays on while rpl.ai is open, for a long program or a result you keep checking.</span>${tgl('keepAwake', app.prefs.keepAwake, 'Keep the screen on')}</div>` : ''}`;
     }
     if (this.page === 'calculator') return this._calculatorPageHtml();
     if (this.page === 'assistant') {
@@ -509,6 +510,7 @@ export class Sheets {
     else if (setting === 'haptics') app.setPrefs({ haptics: on });
     else if (setting === 'keyClick') app.setPrefs({ keyClick: on });
     else if (setting === 'notes') app.setPrefs({ notes: on });
+    else if (setting === 'keepAwake') { app.setPrefs({ keepAwake: on }); app.keepAwake(); }
   }
 
   resetEverything() {

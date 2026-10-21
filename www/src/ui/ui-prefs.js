@@ -29,6 +29,7 @@ export const DEFAULT_UI_PREFS = Object.freeze({
   hints: false,
   haptics: false,
   keyClick: false,
+  keepAwake: false,
   notes: true,
   stackSize: 'normal',
   historySort: 'newest',
@@ -69,6 +70,7 @@ export function normalizeUiPrefs(raw) {
   if (typeof raw.hints === 'boolean') p.hints = raw.hints;
   if (typeof raw.haptics === 'boolean') p.haptics = raw.haptics;
   if (typeof raw.keyClick === 'boolean') p.keyClick = raw.keyClick;
+  if (typeof raw.keepAwake === 'boolean') p.keepAwake = raw.keepAwake;
   if (typeof raw.notes === 'boolean') p.notes = raw.notes;
   if (STACK_SIZES.includes(raw.stackSize)) p.stackSize = raw.stackSize;
   if (HISTORY_SORTS.includes(raw.historySort)) p.historySort = raw.historySort;

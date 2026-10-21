@@ -244,7 +244,8 @@ class App {
     this._openSharedLink();
     this._openShortcut();
     this._watchAlarms();
-    document.addEventListener('visibilitychange', () => this._watchAlarms());
+    this.keepAwake();
+    document.addEventListener('visibilitychange', () => { this._watchAlarms(); this.keepAwake(); });
     if (!this.prefs.tourSeen) setTimeout(() => this.tour.start(), 700);
   }
 
@@ -2564,6 +2565,21 @@ class App {
 
   _drawerCoversStack() {
     return this.drawers.isOpen() && (this.prefs.minimal || window.innerWidth < 980);
+  }
+
+  // The phone lets go of a screen wake lock whenever the app is hidden, so it is asked for again as the app comes back.
+  keepAwake() {
+    if (!this.prefs.keepAwake || document.visibilityState !== 'visible' || !navigator.wakeLock) {
+      this._wakeLock?.then((lock) => lock?.release());
+      this._wakeLock = null;
+      return;
+    }
+    if (this._wakeLock) return;
+    const pending = navigator.wakeLock.request('screen').then((lock) => {
+      lock.addEventListener('release', () => { if (this._wakeLock === pending) this._wakeLock = null; });
+      return lock;
+    }, () => { if (this._wakeLock === pending) this._wakeLock = null; return null; });
+    this._wakeLock = pending;
   }
 
   _installHaptics() {

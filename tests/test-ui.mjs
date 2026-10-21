@@ -451,7 +451,7 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(/const wait = msToNextAlarm\(\);\s*if \(wait !== null\) this\._alarmTimer = setTimeout\(\(\) => this\._watchAlarms\(\), Math\.min\(wait \+ 20, ALARM_WAIT_MAX_MS\)\);/.test(appSrc)
       && /const fresh = document\.visibilityState === 'visible' && calculatorNow\(\) - alarm\.due < ALARM_FRESH_MS;\s*if \(fresh && !quiet && !testUserFlag\(-57\)\) \{\s*alarmBeep\(\);/.test(appSrc)
       && /action: 'ACK', onAction: acknowledgeOldest, key: 'alarm', timeout: Infinity, transient: true/.test(appSrc)
-      && /this\._watchAlarms\(\);\s*document\.addEventListener\('visibilitychange', \(\) => this\._watchAlarms\(\)\);/.test(appSrc),
+      && /this\._watchAlarms\(\);[\s\S]{0,40}document\.addEventListener\('visibilitychange', \(\) => \{ this\._watchAlarms\(\);/.test(appSrc),
       'alarms come due while the app is open: a timer to the next one, a note with ACK, a buzz and tone unless flag -57 is set, and one missed while closed or hidden shown as past due');
     const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
     const cssSrc = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
@@ -1765,6 +1765,11 @@ setAngle('RAD');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/if \(this\.prefs\.keyClick\) keyClick\(\);/.test(appSrc),
     'Settings: with Key click on, a keypad key, soft key, key strip button or the Enter beside the line ticks as it is pressed');
+  assert(normalizeUiPrefs({}).keepAwake === false && normalizeUiPrefs({ keepAwake: true }).keepAwake === true && normalizeUiPrefs({ keepAwake: 'yes' }).keepAwake === false,
+    'Settings: Keep the screen on is off until switched on, and kept as a preference');
+  assert(/this\.keepAwake\(\);\n    document\.addEventListener\('visibilitychange', \(\) => \{ this\._watchAlarms\(\); this\.keepAwake\(\); \}\);/.test(appSrc)
+    && /navigator\.wakeLock\.request\('screen'\)/.test(appSrc) && /if \(this\._wakeLock === pending\) this\._wakeLock = null;/.test(appSrc),
+    'Settings: Keep the screen on holds a screen wake lock while the app shows and asks again as it comes back, since the phone lets go of it when hidden; an old lock\'s release leaves a newer request alone (a quick off and on lost track of the new lock)');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/@media \(max-height: 400px\) \{\s*:root\[data-keyboard\] \.dw-tabs, :root\[data-keyboard\] \.cb-header \{ display: none; \}\s*\/\*[^*]*\*\/\s*:root\[data-keyboard\] \.app:not\(\.plot-focus\) \.dw-title \{ display: flex; \}/.test(css),
     'drawers: typing on a short screen, a drawer whose tabs step aside names itself again, where its row held only its buttons');
