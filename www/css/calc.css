@@ -2273,10 +2273,14 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 :root:is([data-keyboard], [data-short]) .eqw-ins, :root:is([data-keyboard], [data-short]) .mx-foot:not(.error) { display: none; }
 :root:is([data-keyboard], [data-short]) .eqw-canvas { max-height: calc(var(--app-height, 100dvh) * .4); }
 :root:is([data-keyboard], [data-short]) .mx-grid-wrap { max-height: calc(var(--app-height, 100dvh) * .35); }
-/* A landscape phone's writer keeps its keys beside the formula or matrix, as it does with the keyboard up, so a second level shows. */
+/* A landscape phone's writer keeps its keys beside the formula or matrix, as it does with the keyboard up, so a second level shows; the matrix's five keys fit beside it in a narrower column than the formula's eight. */
+@container work (min-width: 520px) {
+  :root[data-short] .mx { grid-template-columns: 1fr auto; align-items: end; }
+  :root[data-short] .mx .writer-keys .cmdline-go { flex: none; width: 40px; }
+}
 @container work (min-width: 600px) {
-  :root[data-short] .mx, :root[data-short] .eqw { grid-template-columns: 1fr auto; align-items: end; }
-  :root[data-short] .writer-keys .cmdline-go { flex: none; width: 40px; }
+  :root[data-short] .eqw { grid-template-columns: 1fr auto; align-items: end; }
+  :root[data-short] .eqw .writer-keys .cmdline-go { flex: none; width: 40px; }
 }
 /* So does the halt banner, keeping to one row of title and icon keys, so level 1 stays in view; the keys drop under a message that would get less than 140px beside them (four keys left a PROMPT's message 48px at 280). */
 :root:is([data-keyboard], [data-short]) .bn.halt { display: flex; flex-wrap: wrap; align-items: center; padding-block: 6px; }
