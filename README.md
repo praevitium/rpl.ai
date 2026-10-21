@@ -576,6 +576,13 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   level or puts a note away or turns the soft keys' page, and twice on an error, as the HP beeps (set flag -56,
   the HP's Error Beep flag, to stop that). A tap anywhere on a switch's row
   flips it.
+- Settings › Calculator is the HP's MODES form: angle, number format
+  with its digits, exact or approximate results, real or complex domain,
+  coordinates and integer base, then switches for the decimal comma,
+  Beep (flag -56), saving last arguments (-55), a 24-hour clock (-41) and
+  day-first dates (-42). It changes the same settings as the MODES menu
+  and commands such as `DEG`, so programs read them as usual. On a phone
+  its four page tabs share one row.
 - The modes button in the app bar (RAD · STD · EXACT), and each mode on
   minimal view's status line, sets FIX, SCI or ENG with any digit count
   from 0 to 11, so a phone needs no typed `5 FIX`. On a screen under 320 px
@@ -586,7 +593,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   drawer first, then cancels an edit as the HP's ON does, and leaves the
   app only when nothing is open.
 - Where a phone's keyboard writes 1,5 for one and a half, turn on Decimal
-  comma in Settings, or the FM, key on the MODES menu (flag -51, the HP's
+  comma in Settings › Calculator, or the FM, key on the MODES menu (flag -51, the HP's
   fraction-mark setting): the command line then reads a comma beside a
   digit as the decimal point and a semicolon as the separator, so `1,5`
   is 1.5 and `(1,5;2)` a complex number, as on the HP, and the stack shows
