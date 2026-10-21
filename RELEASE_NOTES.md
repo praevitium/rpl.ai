@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.6 (2026-10-20)
+**Latest release:** v0.8.7 (2026-10-20)
 
 ---
 
@@ -18,6 +18,23 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.7 — 2026-10-20
+
+- The Equation Library, first part: `EQNLIB` opens a sheet of the HP's 15
+  subjects and their 102 equation sets by number, a set's equations, and
+  Solve; `SOLVEQN` takes the HP's subject and title numbers (`2 9 0 SOLVEQN`
+  is Electricity, Capacitive Energy), puts the set's equations in EQ, stores
+  its constants (g, G, c, ε0, μ0, σ, R, NA, c3) as plain SI numbers marked
+  known, titles Mpar after the set and opens the solver as MSOLVR does. 88
+  sets hold their equations, written from the physics rather than copied
+  from the HP, so a variable name can differ; the beams, Solid State Devices
+  and pipe flow sets say they are still to come. The PICT option is read and
+  ignored.
+- The periodic table's row fades at the edge that scrolls, as the key strip
+  and the plot rows do.
 
 ---
 
