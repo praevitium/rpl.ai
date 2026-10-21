@@ -5,14 +5,14 @@ export const EQ_LIBRARY = Object.freeze([
   ['Columns and Beams', [
     ['Elastic Buckling', ['Pcr=π^2*E*A/(K*L/r)^2', 'Pcr=π^2*E*I/(K*L)^2', 'σcr=Pcr/A', 'r=SQRT(I/A)']],
     ['Eccentric Columns', ['σmax=P/A*(1+ε*c/r^2/COS(K*L/(2*r)*SQRT(P/(E*A))))', 'r=SQRT(I/A)']],
-    ['Simple Deflection', []],
-    ['Simple Slope', []],
-    ['Simple Moment', []],
-    ['Simple Shear', []],
-    ['Cantilever Deflection', []],
-    ['Cantilever Slope', []],
-    ['Cantilever Moment', []],
-    ['Cantilever Shear', []],
+    ['Simple Deflection', ['y=P*(L-a)*x/(6*L*E*I)*(x^2+(L-a)^2-L^2)-M*x/(E*I)*(c-x^2/(6*L)-L/3-c^2/(2*L))-w*x/(24*E*I)*(L^3+x^2*(x-2*L))']],
+    ['Simple Slope', ['θ=180/π*(P*(L-a)/(6*L*E*I)*(3*x^2+(L-a)^2-L^2)-M/(E*I)*(c-(x^2+c^2)/(2*L)-L/3)-w/(24*E*I)*(L^3+x^2*(4*x-6*L)))']],
+    ['Simple Moment', ['Mx=P*IFTE(x≤a,(L-a)*x,(L-x)*a)/L+M*IFTE(x≤c,x,x-L)/L+w*x*(L-x)/2']],
+    ['Simple Shear', ['V=P*(L-a)/L+M/L+w*(L-2*x)/2']],
+    ['Cantilever Deflection', ['y=P*IFTE(x≤a,x,a)^2/(6*E*I)*IFTE(x≤a,x-3*a,a-3*x)+M*IFTE(x≤c,x^2,c*(2*x-c))/(2*E*I)-w*x^2/(24*E*I)*(6*L^2-4*L*x+x^2)']],
+    ['Cantilever Slope', ['θ=180/π*(P*IFTE(x≤a,x*(x-2*a),-a^2)/(2*E*I)+M*IFTE(x≤c,x,c)/(E*I)-w*x/(6*E*I)*(3*L^2-3*L*x+x^2))']],
+    ['Cantilever Moment', ['Mx=IFTE(x≤a,1,0)*P*(x-a)+IFTE(x≤c,1,0)*M-w/2*(L^2-2*L*x+x^2)']],
+    ['Cantilever Shear', ['V=IFTE(x≤a,1,0)*P+w*(L-x)']],
   ]],
   ['Electricity', [
     ['Coulomb\'s Law', ['F=q1*q2/(4*π*ε0*εr*r^2)'], ['ε0']],
@@ -42,8 +42,8 @@ export const EQ_LIBRARY = Object.freeze([
   ['Fluids', [
     ['Pressure at Depth', ['P=P0+ρ*g*h'], ['g']],
     ['Bernoulli Equation', ['P1+ρ*v1^2/2+ρ*g*y1=P2+ρ*v2^2/2+ρ*g*y2', 'Q=A1*v1', 'Q=A2*v2'], ['g']],
-    ['Flow with Losses', []],
-    ['Flow in Full Pipes', []],
+    ['Flow with Losses', ['M*(ΔP/ρ+(v2^2-v1^2)/2+g*Δy+hL)=W', 'M*(ΔP/ρ+v2^2*(1-(A2/A1)^2)/2+g*Δy+hL)=W', 'M*(ΔP/ρ+v1^2*((A1/A2)^2-1)/2+g*Δy+hL)=W', 'ΔP=P2-P1', 'Δy=y2-y1', 'M=ρ*Q', 'Q=A2*v2', 'Q=A1*v1', 'A1=π*D1^2/4', 'A2=π*D2^2/4'], ['g']],
+    ['Flow in Full Pipes', ['ρ*(π*D^2/4)*vavg*(ΔP/ρ+g*Δy+vavg^2*(2*f*(L/D)+ΣK/2))=W', 'f=FANNING(ε/D,Reynolds)', 'ΔP=P2-P1', 'Δy=y2-y1', 'M=ρ*Q', 'Q=A*vavg', 'A=π*D^2/4', 'Reynolds=D*vavg*ρ/μ', 'n=μ/ρ'], ['g']],
   ]],
   ['Forces and Energy', [
     ['Linear Mechanics', ['F=m*a', 'Ki=1/2*m*vi^2', 'Kf=1/2*m*vf^2', 'W=F*x', 'W=Kf-Ki', 'P=F*v', 'Pavg=W/t']],
@@ -118,10 +118,10 @@ export const EQ_LIBRARY = Object.freeze([
     ['Sphere', ['V=4/3*π*r^3', 'A=4*π*r^2', 'I=2/5*m*r^2', 'Id=I+m*d^2']],
   ]],
   ['Solid State Devices', [
-    ['PN Step Junctions', []],
-    ['NMOS Transistors', []],
-    ['Bipolar Transistors', []],
-    ['JFETs', []],
+    ['PN Step Junctions', ['Vbi=k*T/q*LN(NA*ND/ni^2)', 'ni=SIDENS(T)*1E6', 'xd^2=2*εsi*ε0/q*(Vbi-Va)*(1/NA+1/ND)', 'Cj=εsi*ε0/xd', 'Emax=2*(Vbi-Va)/xd', 'BV=εsi*ε0*E1^2/(2*q)*(1/NA+1/ND)', 'J=Js*(EXP(q*Va/(k*T))-1)', 'Aj=(W+2*ΔW)*(L+2*ΔL)+π*(W+2*ΔW+2*ΔL)*xj+2*π*xj^2', 'I=J*Aj'], ['k', 'q', 'εsi', 'ε0']],
+    ['NMOS Transistors', ['We=W-2*ΔW', 'Le=L-2*ΔL', 'Cox=εox*ε0/tox', 'IDS=Cox*μn*(We/Le)*((VGS-Vt)*VDS-VDS^2/2)*(1+λ*VDS)', 'γ^2=2*εsi*ε0*q*NA/Cox^2', 'Vt=Vt0+γ*(SQRT(2*ABS(φp)-ABS(VBS))-SQRT(2*ABS(φp)))', 'φp=-k*T/q*LN(NA/ni)', 'ni=SIDENS(T)*1E6', 'gds=IDS*λ', 'gm^2=Cox*μn*(We/Le)*(1+λ*VDS)*2*IDS', 'VDsat=VGS-Vt'], ['k', 'q', 'εsi', 'εox', 'ε0']],
+    ['Bipolar Transistors', ['IE=-IES*(EXP(q*VBE/(k*T))-1)+αR*IES*(EXP(q*VBC/(k*T))-1)', 'IC=-ICS*(EXP(q*VBC/(k*T))-1)+αF*ICS*(EXP(q*VBE/(k*T))-1)', 'IS=αF*IES', 'IS=αR*ICS', 'IB+IE+IC=0', 'ICO=ICS*(1-αF*αR)', 'ICEO=ICO/(1-αF)', 'VCEsat=k*T/q*LN(MAX((1+IC/IB*(1-αR))/(αR*(1-IC/IB*(1-αF)/αF)),1E-100))'], ['k', 'q']],
+    ['JFETs', ['Vbi=k*T/q*LN(ND/ni)', 'ni=SIDENS(T)*1E6', 'xdmax^2=2*εsi*ε0/(q*ND)*(Vbi-VGS+VDS)', 'G0=q*ND*μn*a*W/L', 'ID=G0*(VDS-2/3*SQRT(2*εsi*ε0/(q*ND*a^2))*((Vbi-VGS+VDS)^(3/2)-(Vbi-VGS)^(3/2)))', 'VDsat=q*ND*a^2/(2*εsi*ε0)-(Vbi-VGS)', 'Vt=Vbi-q*ND*a^2/(2*εsi*ε0)', 'gm=G0*(1-SQRT(2*εsi*ε0/(q*ND*a^2)*(Vbi-VGS)))'], ['k', 'q', 'εsi', 'ε0']],
   ]],
   ['Stress Analysis', [
     ['Normal Stress', ['σ=E*ε', 'ε=δ/L', 'σ=P/A']],

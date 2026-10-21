@@ -120,8 +120,13 @@ const top = (s) => Number(s.peek().value);
   const { varRecall } = await import('../www/src/rpl/state.js');
   const { formatSource } = await import('../www/src/rpl/formatter.js');
   const { isList, isSymbolic } = await import('../www/src/rpl/types.js');
+  const { EQ_LIBRARY } = await import('../www/src/rpl/eqlib.js');
+  const { parseTyped } = await import('../www/src/rpl/parser.js');
   const err = (src) => { try { runLine(src); return ''; } catch (e) { return e.message; } };
   const known = () => varRecall('Mpar').items[3].items.map((n) => n.id).join();
+  const sets = EQ_LIBRARY.flatMap(([, list]) => list);
+  assert(EQ_LIBRARY.length === 15 && sets.length === 102 && sets.every(([, eqs]) => eqs.length && eqs.every((e) => isSymbolic(parseTyped(`'${e}'`)[0]))),
+    "the library holds the HP's 15 subjects and 102 sets, every set with equations that parse");
   runLine('8 1 0 SOLVEQN');
   const eq = varRecall('EQ'), mpar = varRecall('Mpar');
   assert(isList(eq) && eq.items.length === 4 && /v = v0 \+ a\*t/.test(formatSource(eq.items[3])), 'SOLVEQN 8 1: Motion, Linear Motion puts its four equations in EQ');
@@ -136,10 +141,16 @@ const top = (s) => Number(s.peek().value);
   assert(known() === '' && varRecall('c') === undefined, "SOLVEQN 1 2: Eccentric Columns' c is a distance, not the speed of light");
   runLine('14 1 0 SOLVEQN');
   assert(known() === '' && varRecall('σ') === undefined, "SOLVEQN 14 1: Normal Stress solves for σ, not the Stefan-Boltzmann constant");
+  runLine('13 1 0 SOLVEQN');
+  assert(known() === 'k,q,εsi,ε0' && varRecall('NA') === undefined && formatSource(varRecall('q')) === '1.602176634E-19',
+    'SOLVEQN 13 1: PN Step Junctions knows k, q, εsi and ε0 and leaves NA, the acceptor density, a variable');
   runLine('15 3 0 SOLVEQN');
   assert(known() === 'I0' && Number(varRecall('I0').value) === 1e-12, 'SOLVEQN 15 3: Sound Waves knows I0, the reference intensity');
+  runLine("1 6 0 SOLVEQN 1000 'P' STO 4 'L' STO 1 'a' STO 0 'M' STO 0 'w' STO 0 'x' STO { P L a M w x } MUSER");
+  assert(top(runLine("'V' MROOT")) === 750, 'SOLVEQN 1 6: Simple Shear, V = P*(L-a)/L for a point load');
+  runLine("1 10 0 SOLVEQN { P L a w x } MUSER");
+  assert(top(runLine("'V' MROOT")) === 1000 && top(runLine("2 'x' STO 'V' MROOT")) === 0, 'SOLVEQN 1 10: Cantilever Shear reads IFTE(x≤a,1,0), the load counts left of it only');
   assert(/Bad argument value/.test(err('99 1 0 SOLVEQN')) && /Bad argument value/.test(err('2 40 0 SOLVEQN')) && /Bad argument type/.test(err("'x' 1 0 SOLVEQN")), 'SOLVEQN refuses an unknown subject or title and a non-number');
-  assert(/not in the library yet/.test(err('13 1 0 SOLVEQN')), 'SOLVEQN names a set the library does not hold yet');
   assert(runLine('5 EQNLIB').depth === 1, 'EQNLIB leaves the stack alone; the app opens the sheet through its hook');
-  for (const id of ['EQ', 'Mpar', 'g', 'I0']) err(`'${id}' PURGE`);
+  for (const id of ['EQ', 'Mpar', 'g', 'k', 'q', 'εsi', 'ε0', 'I0', 'P', 'L', 'a', 'M', 'w', 'x', 'V']) err(`'${id}' PURGE`);
 }

@@ -14,7 +14,6 @@ const parseEq = (src) => parseTyped(`'${src}'`)[0];
 export function solveSet(subject, title) {
   const set = librarySet(subject, title);
   if (!set) throw new RPLError('SOLVEQN: Bad argument value');
-  if (!set.eqs.length) throw new RPLError(`SOLVEQN: ${set.title} is not in the library yet`);
   const eqs = set.eqs.map(parseEq);
   for (const id of set.known) storeVar(id, Real(Number(constantValue(id).value)));
   storeVar('EQ', eqs.length === 1 ? eqs[0] : RList(eqs));

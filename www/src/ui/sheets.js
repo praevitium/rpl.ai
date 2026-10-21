@@ -183,19 +183,16 @@ export class Sheets {
 
   _libraryHtml() {
     const { subject, set } = this.eqlib;
-    const row = (sh, n, text, sub, off = false) => `<button type="button" class="eq-row${off ? ' off' : ''}" data-sh="${sh}" data-n="${n}"><span>${n}. ${escapeHtml(text)}</span><small>${escapeHtml(sub)}</small></button>`;
+    const row = (sh, n, text, sub) => `<button type="button" class="eq-row" data-sh="${sh}" data-n="${n}"><span>${n}. ${escapeHtml(text)}</span><small>${escapeHtml(sub)}</small></button>`;
     if (subject == null) {
-      return `<p class="pt-hint">The HP's Equation Library: ${EQ_LIBRARY.length} subjects. Tap one for its equation sets.</p><div class="eq-list">${EQ_LIBRARY.map(([title, sets], i) => row('eq-subject', i + 1, title, `${sets.filter((s) => s[1].length).length} of ${sets.length} sets`)).join('')}</div>`;
+      return `<p class="pt-hint">The HP's Equation Library: ${EQ_LIBRARY.length} subjects. Tap one for its equation sets.</p><div class="eq-list">${EQ_LIBRARY.map(([title, sets], i) => row('eq-subject', i + 1, title, `${sets.length} sets`)).join('')}</div>`;
     }
     const [title, sets] = EQ_LIBRARY[subject - 1];
     if (set == null) {
-      return `<p class="pt-hint">${escapeHtml(title)}: tap a set for its equations.</p><div class="eq-list">${sets.map(([t, eqs], i) => row('eq-set', i + 1, t, eqs.length ? `${eqs.length} ${eqs.length === 1 ? 'equation' : 'equations'}` : 'not in the library yet', !eqs.length)).join('')}</div>`;
+      return `<p class="pt-hint">${escapeHtml(title)}: tap a set for its equations.</p><div class="eq-list">${sets.map(([t, eqs], i) => row('eq-set', i + 1, t, `${eqs.length} ${eqs.length === 1 ? 'equation' : 'equations'}`)).join('')}</div>`;
     }
     const [t, eqs] = sets[set - 1];
-    const body = eqs.length
-      ? `<div class="eq-eqs">${eqs.map((e) => `<code>${escapeHtml(e)}</code>`).join('')}</div><p class="pt-hint">Solve puts the equations in EQ, its constants known, and opens the solver: type a value and tap its key to store it, hold the key to solve for it. <code>${subject} ${set} 0 SOLVEQN</code> does the same.</p>`
-      : '<p class="pt-hint">This set is not in the library yet.</p>';
-    return `<h5 class="eq-title">${escapeHtml(title)} · ${set}. ${escapeHtml(t)}</h5>${body}`;
+    return `<h5 class="eq-title">${escapeHtml(title)} · ${set}. ${escapeHtml(t)}</h5><div class="eq-eqs">${eqs.map((e) => `<code>${escapeHtml(e)}</code>`).join('')}</div><p class="pt-hint">Solve puts the equations in EQ, its constants known, and opens the solver: type a value and tap its key to store it, hold the key to solve for it. <code>${subject} ${set} 0 SOLVEQN</code> does the same.</p>`;
   }
 
   _tableHtml() {

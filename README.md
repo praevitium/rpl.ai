@@ -1059,9 +1059,8 @@ and serial transfer.
 - `EQNLIB` opens the Equation Library as a sheet of the HP's 15 subjects
   and their sets, and `SOLVEQN` takes the HP's subject and title numbers;
   the equations are written from the physics, not copied from the HP, so a
-  variable name can differ, the constants come in as plain SI numbers, and
-  14 of the 102 sets (the beams, Solid State Devices, pipe flow) are still
-  to come.
+  variable name can differ, and the values are plain numbers in SI units,
+  each set's constants (g, ε0, k and so on, per set as on the HP) filled in.
 - An algebraic reads the HP's postfix factorial, `'5!'` or `'(N+1)!'`, but
   its text form writes `FACT(5)`; the textbook display shows `5!`.
 - `BEEP` doesn't hold the program while its tone plays; tones in a row still
