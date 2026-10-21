@@ -487,7 +487,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   keeps to its title and fixes (the explanation comes back with the
   keyboard down), on one row in landscape, so the command line stays in
   view. Typing in a drawer on a short screen hides its tabs and the
-  assistant's status line, and in landscape its title too, so the
+  assistant's status line, and in landscape its buttons too, so the
   conversation or list keeps its room.
 - While the phone's keyboard is up on the command line, a strip above it
   holds the keys a phone keyboard lacks. `+`, `−`, `×`, `÷`, `yˣ`, `SWAP` and
@@ -522,10 +522,13 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   the assistant's controls and the minimal status line's modes are
   finger-sized, and so are the soft keys while the keypad is hidden. The Variables drawer puts
   each variable's buttons on a line under its name, and the History drawer
-  shows each entry in full. A drawer opens as a sheet from the bottom; drag its tabs or title
-  down to close it. Its row of tabs opens with the drawer's own tab in view
-  and fades at an edge with more tabs past it. In minimal view it opens at the side; drag its title
-  right to close it. Running a command from the Catalog, recalling a History
+  shows each entry in full. A drawer opens as a sheet from the bottom, nearly
+  the screen's height; drag its top row down to close it. That one row holds
+  the tabs and the drawer's buttons (the pressed tab names the drawer, so
+  there is no title row), and the buttons go under the tabs only in a drawer
+  too narrow to leave them room. The tabs open with the drawer's own tab in
+  view and fade at an edge with more tabs past it. In minimal view it opens
+  at the side; drag its buttons right to close it. Running a command from the Catalog, recalling a History
   line or a variable, editing a variable, restoring a backup, or picking a character closes the
   drawer so you see the result, as the HP's catalog does; after a character or a unit, More
   brings the drawer back at it for the next one.
