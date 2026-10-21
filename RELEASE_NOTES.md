@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.51 (2026-10-21)
+**Latest release:** v0.8.52 (2026-10-21)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.52 — 2026-10-21
+
+- Fixed: an arrow key pressed with the keyboard on the tools rail (or a
+  drawer's tabs on a phone) reached the stack: → swapped levels 1 and 2
+  and ↓ took level 1 into the command line. The arrow keys, Home and End
+  now move between the rail's buttons.
+- Added: with a stack level selected, the keyboard's menu key or
+  Shift+F10 opens the level's menu, as a right click or a held finger
+  does, with ECHO, PICK, ROLL, ROLLD, →LIST, DUPN, DRPN, KEEP, LEVEL and
+  INFO.
+- Improved: a level's More actions button names its key, Shift+F10, as
+  the Edit and Drop buttons beside it name theirs.
 
 ## v0.8.51 — 2026-10-21
 
