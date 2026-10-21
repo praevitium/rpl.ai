@@ -2217,12 +2217,43 @@ export function _invMatrixNumeric(rows) {
 
 const _isExactZero = (x) => isInteger(x) && x.value === 0n;
 
-export const _isExactArray = (entries) => !getApproxMode() && entries.every((x) => isInteger(x) || isRational(x));
+const _isExactArray = (entries) => !getApproxMode() && entries.every((x) => isInteger(x) || isRational(x));
 
-// Gauss-Jordan on integers and fractions, so an exact matrix reduces and inverts to fractions as on the HP.
-export function _rrefExact(rows) {
+// Exact matrices keep their fractions and complex ones their complex entries, which the float reduction refuses.
+export const _reducesByScalars = (entries) => _isExactArray(entries) || entries.some(isComplex);
+
+const _toPair = (x) => (isComplex(x) ? [x.re, x.im] : [_numVal(x), 0]);
+const _pairSize = ([re, im]) => Math.hypot(re, im);
+const _pairDiv = ([a, b], [c, d]) => { const n = c * c + d * d; return [(a * c + b * d) / n, (b * c - a * d) / n]; };
+const _pairSubMul = ([a, b], [f, g], [c, d]) => [a - (f * c - g * d), b - (f * d + g * c)];
+
+// Complex entries reduce in doubles and round once at the end, pinning pivots and cleared entries as the real RREF does.
+function _rrefComplex(rows, cols) {
+  const a = rows.map((row) => row.map(_toPair));
+  let r = 0;
+  for (let c = 0; c < cols && r < a.length; c++) {
+    let p = r;
+    for (let i = r + 1; i < a.length; i++) if (_pairSize(a[i][c]) > _pairSize(a[p][c])) p = i;
+    if (_pairSize(a[p][c]) < 1e-12) continue;
+    [a[r], a[p]] = [a[p], a[r]];
+    const piv = a[r][c];
+    a[r] = a[r].map((x) => _pairDiv(x, piv));
+    a[r][c] = [1, 0];
+    for (let i = 0; i < a.length; i++) {
+      if (i === r) continue;
+      const f = a[i][c];
+      a[i] = a[i].map((x, j) => _pairSubMul(x, f, a[r][j]));
+      a[i][c] = [0, 0];
+    }
+    r++;
+  }
+  return { rows: a.map((row) => row.map(([re, im]) => Complex(re + 0, im + 0))), rank: r };
+}
+
+// Gauss-Jordan over the first `cols` columns. Exact entries pivot on the first nonzero and stay exact, as on the HP.
+export function _rrefScalar(rows, cols = rows[0]?.length ?? 0) {
+  if (rows.flat().some(isComplex)) return _rrefComplex(rows, cols);
   const a = rows.map((row) => [...row]);
-  const cols = a[0]?.length ?? 0;
   let r = 0;
   for (let c = 0; c < cols && r < a.length; c++) {
     const p = a.findIndex((row, i) => i >= r && !_isExactZero(row[c]));
@@ -2236,13 +2267,13 @@ export function _rrefExact(rows) {
     }
     r++;
   }
-  return a;
+  return { rows: a, rank: r };
 }
 
-export function _invMatrixExact(rows) {
+export function _invMatrixScalar(rows) {
   const n = rows.length;
-  const reduced = _rrefExact(rows.map((row, i) => [...row, ...rows.map((_, j) => Integer(i === j ? 1n : 0n))]));
-  if (_isExactZero(reduced[n - 1][n - 1])) throw new RPLError('Infinite result');
+  const { rows: reduced, rank } = _rrefScalar(rows.map((row, i) => [...row, ...rows.map((_, j) => Integer(i === j ? 1n : 0n))]), n);
+  if (rank < n) throw new RPLError('Infinite result');
   return reduced.map((row) => row.slice(n));
 }
 

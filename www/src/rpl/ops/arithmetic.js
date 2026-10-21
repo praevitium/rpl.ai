@@ -7,7 +7,7 @@ import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { inverseUexpr, powerUexpr, sameDims, temperaturesAdd } from '../units.js';
 import { register, lookup, OPS } from './registry.js';
 import { isPict, negGrob } from './graphics.js';
-import { _inUnit, _infiniteResult, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _arrayToGiacStr, _casArray, _hasSymEntry, _invMatrixExact, _invMatrixNumeric, _isExactArray, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _tidyBinary, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, exactSqrt, exactXroot, recallVar, storeVar } from './internal.js';
+import { _inUnit, _infiniteResult, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _arrayToGiacStr, _casArray, _hasSymEntry, _invMatrixNumeric, _invMatrixScalar, _isScalarOperand, _isSymOperand, _makeUnit, _reducesByScalars, _scalarBinary, _scalarSum, _tidyBinary, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, exactSqrt, exactXroot, recallVar, storeVar } from './internal.js';
 
 
 
@@ -257,7 +257,7 @@ register('INV', _withTaggedUnary(_withListUnary((s) => {
     if (n === 0) { s.push(v); return; }
     const entries = v.rows.flat();
     if (_hasSymEntry(entries)) s.push(_casArray(`inv(${_arrayToGiacStr(v)})`));
-    else s.push(Matrix(_isExactArray(entries) ? _invMatrixExact(v.rows) : _invMatrixNumeric(v.rows)));
+    else s.push(Matrix(_reducesByScalars(entries) ? _invMatrixScalar(v.rows) : _invMatrixNumeric(v.rows)));
   } else throw new RPLError('Bad argument type');
 })), { category: 'Arithmetic', categoryOrder: 6, label: "INV" });
 

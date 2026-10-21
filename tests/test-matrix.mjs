@@ -729,11 +729,12 @@ function stat(op, s) {
     assertThrows(() => lookup('RREF').fn(s), /Bad argument/, 'session048: RREF on Vector throws Bad argument type');
   }
 
-  // RREF on Complex entry throws (numeric pivot path rejects Complex).
+  // RREF reduces a matrix with a complex entry, as the HP does.
   {
     const s = new Stack();
     s.push(Matrix([[Complex(1, 1), Real(1)], [Real(0), Real(1)]]));
-    assertThrows(() => lookup('RREF').fn(s), /Bad argument/, 'session048: RREF on Complex-entry matrix throws');
+    lookup('RREF').fn(s);
+    assert(format(s.peek()) === '[[ (1, 0) (0, 0) ][ (0, 0) (1, 0) ]]', `RREF reduces a Complex-entry matrix (got ${format(s.peek())})`);
   }
 
   // RANK: full-rank 2×2 → 2.
@@ -3848,6 +3849,13 @@ function _approxMatEqual(A, B, tol) {
       && line('[[2 3][4 5]] RREF') === '[[ 1 0 ][ 0 1 ]]' && line('[[2 4 1][1 3 1]] RREF') === '[[ 1 0 -1/2 ][ 0 1 1/2 ]]'
       && line('[[1. 2][2 4]] RREF') === '[[ 1. 2. ][ 0. 0. ]]',
     'RREF of an integer matrix in exact mode stays integers and fractions, as on the HP, where it gave decimals; a real entry keeps it numeric');
+  assert(line('[[(0,1) 0][0 (0,1)]] INV') === '[[ (0, -1) (0, 0) ][ (0, 0) (0, -1) ]]'
+      && line('[[(1,2) 3][4 5]] INV').startsWith('[[ (-0.234899328859, -0.335570469799) (0.140939597315, 0.201342281879) ][ (0.187919463087, 0.268456375839)')
+      && line('[[(1,2) 3][4 5]] RREF') === '[[ (1, 0) (0, 0) ][ (0, 0) (1, 0) ]]',
+    'INV and RREF take a complex matrix, as the HP does and as DET already did, where they said Bad argument type');
+  assert(line('[[(1,1) 2][3 4]] INV') === '[[ (-0.4, -0.8) (0.2, 0.4) ][ (0.3, 0.6) (0.1, -0.3) ]]',
+    'INV of a complex matrix rounds once at the end, without noise in the twelfth digit');
+  assertThrows(() => runLine('[[(1,1) (2,2)][1 2]] INV'), /Infinite result/, 'INV of a singular complex matrix is an Infinite result');
   assertThrows(() => runLine('[[2 1][1 3]] [5 10] /'), /Bad argument type/, 'a matrix divided by a vector is still refused');
   assert(line('[[1 2][3 4]] →ROW') === '2. | [ 3 4 ] | [ 1 2 ]' && line('[1 2] [3 4] 2 ROW→') === '[[ 1 2 ][ 3 4 ]]',
     '→ROW takes a matrix apart and ROW→ puts rows together, the AUR way round');

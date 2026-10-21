@@ -8,7 +8,7 @@ import { giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
 import { charSpaceList, eigenvalueArray, spacesFromJordan } from '../jordan-format.js';
 import { register, OPS } from './registry.js';
 import { isPict, grobSize } from './graphics.js';
-import { _numVal, _astToRplValue, _coefArrToSymbolicX, _colCompose, _colDecompose, _decimalFrobeniusNorm, _fromArrayOp, _fromVecOp, _casArray, _hasSymEntry, _indexAsInt, _invMatrixNumeric, _isExactArray, _isScalarOperand, _rrefExact, _isSymOperand, _matrixToGiacStr, _nFromIntegerArg, _popSquareMatrix, _rowCompose, _rowDecompose, _scalarBinary, _scalarSum, _scalarToGiacStr, _tidyBinary, _toArrayOp, _toV2Op, _toV3Op } from './internal.js';
+import { _numVal, _astToRplValue, _coefArrToSymbolicX, _colCompose, _colDecompose, _decimalFrobeniusNorm, _fromArrayOp, _fromVecOp, _casArray, _hasSymEntry, _indexAsInt, _invMatrixNumeric, _isScalarOperand, _reducesByScalars, _rrefScalar, _isSymOperand, _matrixToGiacStr, _nFromIntegerArg, _popSquareMatrix, _rowCompose, _rowDecompose, _scalarBinary, _scalarSum, _scalarToGiacStr, _tidyBinary, _toArrayOp, _toV2Op, _toV3Op } from './internal.js';
 
 
 
@@ -299,7 +299,7 @@ register('RREF', (s) => {
   const [v] = s.popN(1);
   if (!isMatrix(v)) throw new RPLError('Bad argument type');
   if (_hasSymEntry(v.rows.flat())) { s.push(_casArray(`rref(${_matrixToGiacStr(v)})`)); return; }
-  s.push(_isExactArray(v.rows.flat()) ? Matrix(_rrefExact(v.rows)) : _realMatrix(_rowEchelon(v.rows, true)));
+  s.push(_reducesByScalars(v.rows.flat()) ? Matrix(_rrefScalar(v.rows).rows) : _realMatrix(_rowEchelon(v.rows, true)));
 }, { category: 'Vectors / matrices', categoryOrder: 17, label: "RREF" });
 
 
