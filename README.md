@@ -857,7 +857,10 @@ which silences the error beep, silences them too. `INFORM` opens its form in a s
 help as the placeholder and its initial value typed in, OK parses each
 field (an empty one gives `NOVAL`, the name NOVAL here), checks it
 against the field's types and answers with the values and 1, Cancel with
-0; Reset puts the reset values back. A program on the stack can be
+0, as do the sheet's ×, Escape and a phone's back button; Reset puts the
+reset values back. As on the HP, whose command line runs as a program,
+`MSGBOX`, `CHOOSE`, `INPUT`, `INFORM` and `WAIT` typed straight on the
+command line open their dialog too. A program on the stack can be
 stepped from the start with `DBUG`, or with Debug in its level's ⋯ menu.
 
 ![A halted program](screenshots/debugging.png)
