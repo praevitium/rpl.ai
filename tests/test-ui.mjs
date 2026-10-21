@@ -1765,6 +1765,9 @@ setAngle('RAD');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/if \(this\.prefs\.keyClick\) keyClick\(\);/.test(appSrc),
     'Settings: with Key click on, a keypad key, soft key, key strip button or the Enter beside the line ticks as it is pressed');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/@media \(max-height: 400px\) \{\s*:root\[data-keyboard\] \.dw-tabs, :root\[data-keyboard\] \.cb-header \{ display: none; \}\s*\/\*[^*]*\*\/\s*:root\[data-keyboard\] \.app:not\(\.plot-focus\) \.dw-title \{ display: flex; \}/.test(css),
+    'drawers: typing on a short screen, a drawer whose tabs step aside names itself again, where its row held only its buttons');
 }
 
 {

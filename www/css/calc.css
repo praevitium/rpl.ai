@@ -2329,6 +2329,9 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 /* Typing in a drawer on a short screen leaves its content the room its tabs and the assistant's status took. */
 @media (max-height: 400px) {
   :root[data-keyboard] .dw-tabs, :root[data-keyboard] .cb-header { display: none; }
+  /* With its tabs gone the drawer's row names it again, where only its buttons were left. */
+  :root[data-keyboard] .app:not(.plot-focus) .dw-title { display: flex; }
+  :root[data-keyboard] .app:not(.plot-focus) .dw-head { padding-left: 14px; }
 }
 /* A landscape phone's drawer is too short for the plot's 220 px with its readout and FCN keys, so the plot gives way first. */
 @media (max-height: 400px) { .pl-box { min-height: 150px; } }
