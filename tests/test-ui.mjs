@@ -3224,7 +3224,7 @@ setAngle('RAD');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const mxSrc = readFileSync(new URL('../www/src/ui/matrix-editor.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(appSrc.includes("case 'echo': this.clearSelection(); this._echo(withFractionMark(formatSource(value))); return;")
+  assert(appSrc.includes("case 'echo': this.clearSelection(); this._echo(level); return;")
     && /if \(this\.inputMode === 'equation'\) this\.equationEditor\._pasteText\(source\);\s*else if \(this\.inputMode === 'matrix'\) this\.matrixEditor\.echo\(source\);\s*else this\.entry\.typeToken\(source\);/.test(appSrc)
     && /echo\(text\) \{\s*if \(this\.typedCellFocused\(\)\) \{ this\._editCell\(text\); return; \}\s*const \[r, c\] = this\._activeCell\(\);\s*this\._writeCell\(r, c, text, \[text\.length, text\.length\]\);/.test(mxSrc)
     && css.includes('.eqw.drag-over, .mx.drag-over { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-line); }'),
@@ -3247,6 +3247,13 @@ setAngle('RAD');
     && /aimCell\(r, c\) \{\s*this\._focusCell\(r, c\);\s*this\._typedCell = null;/.test(mxSrc)
     && css.indexOf('.mx-grid .mx-cell.drag-over { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-line); background: var(--accent-dim); }') > css.indexOf(':root[data-theme="classic"] .mx-cell {'),
     'a level a finger drops on a matrix cell goes over what that cell held, the cell lit while the finger is over it, in Classic too');
+}
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(appSrc.includes("if (!this._writerTakes(source)) { this.notifyError(`Level ${level} holds ${describeValue(value).text}, which can't go in ${this._echoPlace()}.`); return; }")
+    && /_writerTakes\(source\) \{\s*if \(this\.inputMode === 'equation'\) return readsAsFormula\(source\);\s*if \(this\.inputMode !== 'matrix'\) return true;\s*try \{ parseMatrixCell\(source\); return true; \} catch \{ return false; \}/.test(appSrc),
+    'ECHO of a level a writer cannot hold says so plainly (Level 1 holds a program, which can\'t go in the formula) instead of a parser position or a cell that fails at Enter');
 }
 
 {

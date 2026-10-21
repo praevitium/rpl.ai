@@ -6,7 +6,7 @@ import {
   equationInsights, variablesOf, primaryVariable, renameVariable,
   equationToSymbolic, valueToEquationDraft, valueFromEquation,
   EQW_CMDS, EQW_APP_FACES, EQW_UNAVAILABLE_FACES, applyOpsToAst,
-  cutTarget, pasteText, replaceTarget, EquationEditor,
+  cutTarget, pasteText, replaceTarget, EquationEditor, readsAsFormula,
 } from '../www/src/ui/equation-editor.js';
 import { Symbolic, Name, Integer, Matrix, isSymbolic, isInteger } from '../www/src/rpl/types.js';
 import { parseAlgebra, formatAlgebra, astEqual } from '../www/src/rpl/algebra.js';
@@ -602,4 +602,10 @@ function replaceSelection(state, ast) {
   clearUserFlag(-51);
   assert(copied === 'MAX(1,5;2)' && textOf(writer.state) === 'MAX(1.5,2)' && textOf(echoed.state) === '1.5',
     `EQW with -51 set Copy writes MAX(1,5;2) and a paste or ECHO of 1,5 reads 1.5 (${copied}, ${textOf(writer.state)}, ${textOf(echoed.state)})`);
+}
+
+{
+  const takes = ['1.5', '`2*X + 1`', 'X', '3._m'].map(readsAsFormula);
+  const refuses = ['{ 1 2 }', '"hi"', '« 1 + »', '[[ 1 2 ][ 3 4 ]]'].map(readsAsFormula);
+  assert(takes.every(Boolean) && !refuses.some(Boolean), `EQW readsAsFormula takes numbers, expressions, names and units, not lists, strings, programs or matrices (${takes} / ${refuses})`);
 }

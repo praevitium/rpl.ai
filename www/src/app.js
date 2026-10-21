@@ -23,8 +23,8 @@ import { computeMenuPage } from './ui/paging.js';
 import { clampLevel, dropLevel, keepLevels, moveLevel, replaceLevel } from './ui/stack-levels.js';
 import { icon } from './ui/icons.js';
 import { installCommandHover, entryWordAtEvent, stackWordAtEvent } from './ui/hover-help.js';
-import { EquationEditor, keypadFace } from './ui/equation-editor.js';
-import { MatrixEditor } from './ui/matrix-editor.js';
+import { EquationEditor, keypadFace, readsAsFormula } from './ui/equation-editor.js';
+import { MatrixEditor, parseMatrixCell } from './ui/matrix-editor.js';
 import {
   loadCommandReference, findReferenceEntry, formatReferenceEntry, searchCommands, shortDescription,
 } from './ui/command-reference.js';
@@ -963,7 +963,7 @@ class App {
     switch (act) {
       case 'edit': this.editLevel(level); return;
       case 'view': this._viewLevel(level); return;
-      case 'echo': this.clearSelection(); this._echo(withFractionMark(formatSource(value))); return;
+      case 'echo': this.clearSelection(); this._echo(level); return;
       case 'pick': run(() => this.stack.push(value)); this.selectLevel(level + 1); return;
       case 'roll': run(() => moveLevel(this.stack, level, 1)); this.selectLevel(1); return;
       case 'rolld': run(() => moveLevel(this.stack, 1, level)); this.selectLevel(level); return;
@@ -1179,10 +1179,19 @@ class App {
   }
 
   // ECHO puts a level where the typing goes: the command line, or the open writer at its cursor.
-  _echo(source) {
+  _echo(level) {
+    const value = this.stack.peek(level);
+    const source = withFractionMark(formatSource(value));
+    if (!this._writerTakes(source)) { this.notifyError(`Level ${level} holds ${describeValue(value).text}, which can't go in ${this._echoPlace()}.`); return; }
     if (this.inputMode === 'equation') this.equationEditor._pasteText(source);
     else if (this.inputMode === 'matrix') this.matrixEditor.echo(source);
     else this.entry.typeToken(source);
+  }
+
+  _writerTakes(source) {
+    if (this.inputMode === 'equation') return readsAsFormula(source);
+    if (this.inputMode !== 'matrix') return true;
+    try { parseMatrixCell(source); return true; } catch { return false; }
   }
 
   _echoPlace() {

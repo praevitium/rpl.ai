@@ -1513,6 +1513,15 @@ export function cutTarget(state) {
   return next;
 }
 
+// What a paste or an ECHO puts in the formula: text in the comma form as typed, without its outer quotes.
+function pastedSource(text) {
+  return fromTyped(String(text ?? '')).replace(/^\s*['`]|['`]\s*$/g, '');
+}
+
+export function readsAsFormula(text) {
+  try { parseMath(pastedSource(text).trim()); return true; } catch { return false; }
+}
+
 export function pasteText(state, text, { selectionAsCaret = false } = {}) {
   const ast = parseMath(String(text ?? '').trim());
   const items = [...fromAst(ast)];
@@ -2085,7 +2094,7 @@ export class EquationEditor {
   }
 
   _pasteText(text) {
-    try { this.state = pasteText(this.state, fromTyped(String(text ?? '')).replace(/^\s*['`]|['`]\s*$/g, ''), { selectionAsCaret: !this._selecting }); }
+    try { this.state = pasteText(this.state, pastedSource(text), { selectionAsCaret: !this._selecting }); }
     catch (error) { this.app.notifyError(`That doesn't read as an expression: ${error.message}`); return; }
     this._render();
   }
