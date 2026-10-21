@@ -9,7 +9,7 @@ import { unitInfo } from '../rpl/units.js';
 import { format, withFractionMark } from '../rpl/formatter.js';
 import {
   exportHpTextFile,
-  listBackups, archiveBackup, restoreBackup, deleteBackup, subscribeBackups,
+  listBackups, archiveBackup, restoreBackup, deleteBackup, exportBackup, subscribeBackups,
 } from '../rpl/persist.js';
 import { referenceSection, pushHistory, isSyntaxWord, typeSyntaxWord } from './command-help.js';
 import { loadCommandReference, findReferenceEntry, shortDescription, appNote, searchCommands, spelledName } from './command-reference.js';
@@ -585,7 +585,7 @@ export class Drawers {
       ? `<div class="empty-note">${escapeHtml(unavailable || 'No backups yet. Name one above, or run :0:name ARCHIVE.')}</div>`
       : backups.map(({ port, name, savedAt, depth }) => {
         const key = escapeHtml(`${port}:${name}`);
-        return `<div class="vr" data-dw="backup-restore" data-key="${key}" role="button" tabindex="0" title="Restore :${key} (replaces the stack and HOME tree; undoable)"><span class="grip" aria-hidden="true">${icon('clock', 'sm')}</span><div class="main"><div class="nm">:${key}</div><div class="pv">${depth} level${depth === 1 ? '' : 's'} · <span class="when">${escapeHtml(new Date(savedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }))}</span></div></div><div class="acts"><button type="button" class="mini danger" data-dw="backup-delete" data-key="${key}" title="Delete :${key}" aria-label="Delete backup :${key}">${icon('trash', 'sm')}</button></div></div>`;
+        return `<div class="vr" data-dw="backup-restore" data-key="${key}" role="button" tabindex="0" title="Restore :${key} (replaces the stack and HOME tree; undoable)"><span class="grip" aria-hidden="true">${icon('clock', 'sm')}</span><div class="main"><div class="nm">:${key}</div><div class="pv">${depth} level${depth === 1 ? '' : 's'} · <span class="when">${escapeHtml(new Date(savedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }))}</span></div></div><div class="acts"><button type="button" class="mini" data-dw="backup-save" data-key="${key}" title="Save :${key} as a file (Restore from file reads it back)" aria-label="Save backup :${key} as a file">${icon('down', 'sm')}</button><button type="button" class="mini danger" data-dw="backup-delete" data-key="${key}" title="Delete :${key}" aria-label="Delete backup :${key}">${icon('trash', 'sm')}</button></div></div>`;
       }).join('');
   }
 
@@ -735,6 +735,7 @@ export class Drawers {
       case 'vars-export': app.exportSnapshot(); return;
       case 'vars-import': this._import(); return;
       case 'backup-restore': this._restoreBackup(t.dataset.key); return;
+      case 'backup-save': e.stopPropagation(); this._saveBackup(t.dataset.key); return;
       case 'backup-delete': e.stopPropagation(); this._deleteBackup(t.dataset.key); return;
     }
   }
@@ -824,6 +825,12 @@ export class Drawers {
       app.entry._dropNoOpUndoStep();
       app.notifyError(`Restore failed: ${e.message}`);
     }
+  }
+
+  _saveBackup(key) {
+    const sep = key.indexOf(':');
+    try { this.app.toast(`Saved ${exportBackup(key.slice(0, sep), key.slice(sep + 1))}`); }
+    catch (e) { this.app.notifyError(`Save failed: ${e.message}`); }
   }
 
   _deleteBackup(key) {

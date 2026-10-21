@@ -3149,3 +3149,12 @@ setAngle('RAD');
   assert(/const foot = printLog\.length\s*\? `<button type="button" class="btn" data-sh="pr-copy">[\s\S]{0,200}?\$\{share\}<button type="button" class="btn" data-sh="pr-clear">[^`]*`\s*: `<button type="button" class="btn" data-sh="close">/.test(sheetsSrc),
     "the print log's footer keeps to Copy, Share and Clear on one row on a phone, the header's × closing it, as VIEW's footer does");
 }
+
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  const persistSrc = readFileSync(new URL('../www/src/rpl/persist.js', import.meta.url), 'utf8');
+  assert(drawerSrc.includes('<button type="button" class="mini" data-dw="backup-save" data-key="${key}"')
+    && drawerSrc.includes("case 'backup-save': e.stopPropagation(); this._saveBackup(t.dataset.key); return;")
+    && /export function exportBackup\(port, name\) \{[\s\S]{0,200}?downloadFile\(JSON\.stringify\(backup\.snap, null, 2\), `hp50-\$\{port\}-\$\{safeFileName\(name\)\}\.json`, 'application\/json'\);/.test(persistSrc),
+    "a backup's row saves it as a file that Restore from file reads back, so a phone's backup can move to another device");
+}

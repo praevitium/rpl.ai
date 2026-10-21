@@ -742,8 +742,9 @@ without the keypad a command you use often is two taps away.
 Browse, run, edit, rename and download variables. Drag them to reorder,
 into folders or onto the breadcrumb; on a phone, drag a row by its grip, or
 touch and hold it first, and the list scrolls when you near its edge. Back up the stack and the
-whole HOME tree to a JSON file and restore it, archive to backup ports, and
-import or export HP text files (`.rpl`).
+whole HOME tree to a JSON file and restore it, archive to backup ports (and
+save a port's backup as a file to restore on another device), and import or
+export HP text files (`.rpl`).
 
 Copy a matrix, vector or list (`⌘C` on a selected level) and paste it into
 Excel, Google Sheets or Numbers: it arrives as cells. Copy a range of

@@ -441,6 +441,13 @@ export function restoreBackup(port, name, stack) {
   rehydrate(backup.snap, stack);
 }
 
+/** A backup as a file, which Restore from file reads back as it reads Back up everything's. */
+export function exportBackup(port, name) {
+  const backup = readBackups()[backupKey(port, name)];
+  if (!backup) throw new RPLError(`Nonexistent backup :${port}:${name}`);
+  return downloadFile(JSON.stringify(backup.snap, null, 2), `hp50-${port}-${safeFileName(name)}.json`, 'application/json');
+}
+
 export function deleteBackup(port, name) {
   const backups = readBackups();
   const key = backupKey(port, name);
