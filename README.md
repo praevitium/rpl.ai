@@ -607,6 +607,11 @@ fraction bar or root sign, and a toolbar evaluates, simplifies, expands,
 factors or differentiates just that part. On a Mac, Option types the
 symbols it has, such as √, π, ≤ and ∑.
 
+On a phone with the keypad hidden, or in minimal view, the writer takes two
+parts of the spare height to the stack's one, and the formula's type grows
+to fill it, up to 1.6 times, shrinking back as the formula gets longer or
+the keyboard comes up. The BIG soft key starts it from larger type.
+
 The insight strip underneath recomputes as you type, and one click applies
 a result or opens the plot; a formula with units is worked on but not
 plotted, here or from its stack level. The strip scrolls sideways and fades
