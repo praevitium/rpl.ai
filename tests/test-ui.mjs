@@ -2909,6 +2909,10 @@ setAngle('RAD');
       && drawerRowSrc.includes("if (dw === 'var') this._deleteVar(row.dataset.name);")
       && drawerRowSrc.includes("(rows[Math.min(i, rows.length - 1)] ?? this._body()?.querySelector('[data-q]'))?.focus();"),
       'drawer rows: the arrow keys, Home and End move between a list\'s rows and Delete purges a variable or removes a History entry, where they reached the stack: ↓ took level 1 into the command line and ⌫ dropped a selected level');
+    assert(drawerRowSrc.includes("this.rail.addEventListener('keydown', (e) => this._stepAmong(e, [...this.rail.querySelectorAll('[data-drawer]')]));")
+      && drawerRowSrc.includes("if (e.target.matches?.('[data-drawer-tab]') && this._stepAmong(e, [...this.el.querySelectorAll('[data-drawer-tab]')])) return;")
+      && /const to = \{ ArrowUp: i - 1, ArrowLeft: i - 1, ArrowDown: i \+ 1, ArrowRight: i \+ 1, Home: 0, End: buttons\.length - 1 \}\[e\.key\];\s*if \(to === undefined\) return false;\s*e\.preventDefault\(\);/.test(drawerRowSrc),
+      'tools rail and drawer tabs: the arrow keys, Home and End move along the buttons, where → on a rail button swapped levels 1 and 2 and ↓ took level 1 into the command line');
   }
   {
     const hintSrc = readFileSync(new URL('../www/src/ui/input-area.js', import.meta.url), 'utf8');

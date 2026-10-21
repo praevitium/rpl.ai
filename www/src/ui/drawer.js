@@ -228,6 +228,7 @@ export class Drawers {
       const b = e.target.closest('[data-drawer]');
       if (b) this.toggle(b.dataset.drawer);
     });
+    this.rail.addEventListener('keydown', (e) => this._stepAmong(e, [...this.rail.querySelectorAll('[data-drawer]')]));
     this.scrim.addEventListener('click', () => this.close());
     this.el.addEventListener('click', (e) => this._onClick(e));
     new ResizeObserver(() => this._markTabEdges()).observe(this.el);
@@ -661,6 +662,7 @@ export class Drawers {
   }
 
   _onKeyDown(e) {
+    if (e.target.matches?.('[data-drawer-tab]') && this._stepAmong(e, [...this.el.querySelectorAll('[data-drawer-tab]')])) return;
     const q = e.target.closest?.('[data-q]');
     if (q && e.key === 'Escape') {
       if (q.value) { q.value = ''; q.dispatchEvent(new Event('input', { bubbles: true })); e.stopPropagation(); e.preventDefault(); }
@@ -692,6 +694,17 @@ export class Drawers {
       e.preventDefault();
       this._deleteRow(row);
     }
+  }
+
+  // The rail and the drawer's tabs are each one group of buttons: the arrow keys, Home and End move along it, where they reached the stack.
+  _stepAmong(e, buttons) {
+    const i = buttons.indexOf(e.target);
+    if (i < 0 || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return false;
+    const to = { ArrowUp: i - 1, ArrowLeft: i - 1, ArrowDown: i + 1, ArrowRight: i + 1, Home: 0, End: buttons.length - 1 }[e.key];
+    if (to === undefined) return false;
+    e.preventDefault();
+    buttons[(to + buttons.length) % buttons.length].focus();
+    return true;
   }
 
   _rowsLike(row) {
