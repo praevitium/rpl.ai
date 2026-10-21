@@ -1188,6 +1188,11 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 .app.plot-focus .pl-main { padding-bottom: 10px; }
 .app.plot-focus .pl-side { max-height: none; border-top: 0; border-left: 1px solid var(--line); }
 @container app (max-width: 719px) { .app.plot-focus .gr-view { display: flex; } .app.plot-focus .pl-side { max-height: 40%; border-left: 0; border-top: 1px solid var(--line); } }
+/* On a phone the graph fills the sheet, with the plot types peeking below it; types, traces and window scroll up under it. */
+@container app (max-width: 719px) {
+  .gr-view > .pl-main { flex: none; min-height: calc(100% - 53px); }
+  .gr-view > .pl-side, .app.plot-focus .gr-view > .pl-side { max-height: none; overflow: visible; }
+}
 .eqw { position: relative; border-radius: 12px; border: 1px solid var(--accent-line); background: var(--well); box-shadow: 0 0 0 3px var(--accent-dim); display: grid; outline: none; color: var(--stack-ink); min-width: 0; }
 .eqw.editing { border-color: color-mix(in oklab, var(--amber) 60%, transparent); box-shadow: 0 0 0 3px var(--amber-dim); }
 .eqw-canvas { position: relative; min-height: 92px; max-height: 240px; overflow: auto; display: grid; place-items: center; padding: 18px 16px 10px; cursor: text; scrollbar-width: thin; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }

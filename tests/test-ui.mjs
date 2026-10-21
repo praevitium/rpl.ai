@@ -3289,3 +3289,10 @@ setAngle('RAD');
     && css.includes('.st-row.drag-over.drag-below { box-shadow: inset 0 -2px 0 var(--accent); }'),
     "a level dragged toward level 1, by a finger or a mouse, shows its drop line under the row it lands below, not over it");
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(css.includes('@container app (max-width: 719px) {\n  .gr-view > .pl-main { flex: none; min-height: calc(100% - 53px); }\n  .gr-view > .pl-side, .app.plot-focus .gr-view > .pl-side { max-height: none; overflow: visible; }\n}')
+    && css.indexOf('.gr-view > .pl-side, .app.plot-focus') > css.indexOf('.app.plot-focus .pl-side { max-height: 40%;'),
+    'plot, on a phone: the graph fills the sheet with the plot types peeking below, and the types, traces and window scroll up under it (they took 46% of a 390 px phone and left the canvas a quarter of it)');
+}
