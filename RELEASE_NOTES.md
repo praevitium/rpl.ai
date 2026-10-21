@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.9 (2026-10-20)
+**Latest release:** v0.8.10 (2026-10-20)
 
 ---
 
@@ -20,6 +20,27 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.10 — 2026-10-20
+
+- Printing: `PR1`, `PRST`, `PRSTC`, `PRVAR`, `PRLCD` and `CR` print to a
+  print log, there being no printer. A note says how many lines a run
+  printed, with Show to open the log; command search opens it too (Print
+  log). The log keeps the last 2000 lines while the app is open, newest at
+  the bottom as on the HP's paper, with Copy and Clear. Breaks from the HP:
+  `PRLCD` prints the stack as text rather than the screen's pixels, `PRVAR`
+  takes no ports, and `DELAY` and `OLDPRT`, with no printer to pace or
+  remap, do nothing.
+- Fixed: in minimal view, tapping the button of a note that sat under the
+  "Minimal view" note did nothing on a phone. The press put the minimal-view
+  note away, the note under it jumped up, and the tap missed. A press on any
+  note now leaves the minimal-view note in place until the next press
+  elsewhere.
+- A sheet's footer of three keys (Back, Solve and Close; Copy, Clear and
+  Close; INFORM's OK, Cancel and Reset) keeps to one row on a 280 px phone
+  instead of two.
+- The assistant knows FILER, OFF, PERTBL, PTPROP, PERINFO, EQNLIB, SOLVEQN
+  and the print commands.
 
 ## v0.8.9 — 2026-10-20
 
