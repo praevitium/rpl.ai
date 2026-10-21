@@ -2447,7 +2447,7 @@ setAngle('RAD');
 
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/setMenuHook\(\(list, temporary\) => \{\s*if \(!list\) this\.showPreviousMenu\(\{ commit: false \}\);\s*else if \(temporary\) this\.setMenu\(this\._customMenuSlots\(list\), 'TMENU'\);\s*else this\.showMenu\('CST', \{ commit: false \}\);/.test(appSrc)
+  assert(/setMenuHook\(\(list, temporary\) => \{\s*if \(!list\) this\.showLastMenu\(\);\s*else if \(temporary\) this\.setMenu\(this\._customMenuSlots\(list\), 'TMENU'\);\s*else this\.showMenu\('CST', \{ commit: false \}\);/.test(appSrc)
     && /showCustomMenu\(\{ commit = true, refresh = false \} = \{\}\) \{\s*if \(commit && !refresh && this\.entry\.buffer/.test(appSrc) && /showPreviousMenu\(\{ commit = true \} = \{\}\) \{[\s\S]{0,160}?this\.showMenu\(prev, \{ commit \}\)/.test(appSrc),
     'MENU and TMENU show their menu through a hook without committing the line they run from (which would run it again), a temporary one under the kind TMENU');
   assert(/else this\.showMenu\('CST', \{ commit: false \}\);\s*if \(this\.prefs\.minimal\) this\.setMinimalMenu\(true\);\s*\}\);/.test(appSrc),
@@ -3123,4 +3123,11 @@ setAngle('RAD');
   assert(drawerSrc.includes(`<span class="when">\${escapeHtml(new Date(savedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }))}</span>`)
     && css.includes('.dw-backups .pv { white-space: normal; }') && css.includes('.dw-backups .when { white-space: nowrap; }'),
     'a backup row shows a short date that wraps whole instead of being cut on a phone');
+}
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(appSrc.includes("if (kind !== this.menuKind || folder !== this.menuFolder) this._lastMenu = { kind: this.menuKind, folder: this.menuFolder, slots: this.menuAll };")
+    && /showLastMenu\(\) \{\s*const last = this\._lastMenu;\s*if \(!last\?\.kind\) this\.toast\('No menu before this one', \{ key: 'last-menu' \}\);\s*else if \(last\.kind === 'TMENU' \|\| last\.folder\) this\.setMenu\(last\.slots, last\.kind, \{ folder: last\.folder \}\);\s*else this\.showMenu\(last\.kind, \{ commit: false \}\);/.test(appSrc),
+    '0 MENU goes back to the menu shown before this one, a TMENU menu or folder included, as the HP\'s last menu does (it said there was none after TMENU)');
 }

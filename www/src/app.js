@@ -167,7 +167,7 @@ class App {
     this.drawers = new Drawers({ rail: $('rail'), el: $('drawer'), scrim: $('scrim'), app: this });
     setGraphicsHook((kind, stack, data) => (kind === 'text' ? this.drawers.closeGraph() : this.drawers.openGraph(kind, stack, data)));
     setMenuHook((list, temporary) => {
-      if (!list) this.showPreviousMenu({ commit: false });
+      if (!list) this.showLastMenu();
       else if (temporary) this.setMenu(this._customMenuSlots(list), 'TMENU');
       else this.showMenu('CST', { commit: false });
       if (this.prefs.minimal) this.setMinimalMenu(true);
@@ -1640,8 +1640,17 @@ class App {
     else this.toast('No menu before this one');
   }
 
+  // 0 MENU, the HP's last menu: the one shown before this one, a temporary menu or a folder included.
+  showLastMenu() {
+    const last = this._lastMenu;
+    if (!last?.kind) this.toast('No menu before this one', { key: 'last-menu' });
+    else if (last.kind === 'TMENU' || last.folder) this.setMenu(last.slots, last.kind, { folder: last.folder });
+    else this.showMenu(last.kind, { commit: false });
+  }
+
   setMenu(slots, kind = null, { preservePage = false, folder = null } = {}) {
     if (kind === 'EQW') { this._eqwSlots = slots; this._ctxPage = 0; this.menubar.render(); return; }
+    if (kind !== this.menuKind || folder !== this.menuFolder) this._lastMenu = { kind: this.menuKind, folder: this.menuFolder, slots: this.menuAll };
     this.menuKind = kind;
     this.menuFolder = folder;
     this.menuAll = Array.isArray(slots) ? slots.slice() : [];
