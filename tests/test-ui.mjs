@@ -3133,3 +3133,10 @@ setAngle('RAD');
     && /showLastMenu\(\) \{\s*const last = this\._lastMenu;\s*if \(!last\?\.kind\) this\.toast\('No menu before this one', \{ key: 'last-menu' \}\);\s*else if \(last\.kind === 'TMENU' \|\| last\.folder\) this\.setMenu\(last\.slots, last\.kind, \{ folder: last\.folder \}\);\s*else this\.showMenu\(last\.kind, \{ commit: false \}\);/.test(appSrc),
     '0 MENU goes back to the menu shown before this one, a TMENU menu or folder included, as the HP\'s last menu does (it said there was none after TMENU)');
 }
+
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  assert(/if \(!this\._archive\(port, name\)\) return;[\s\S]{0,200}?form\.elements\.name\.value = '';\s*form\.elements\.name\.blur\(\);/.test(drawerSrc)
+    && /app\.toast\(`\$\{exists \? 'Replaced' : 'Archived'\} :\$\{port\}:\$\{name\}`\);\s*return true;/.test(drawerSrc),
+    "a backup archived from the drawer's form clears the name and puts the phone keyboard away, so the new row shows (Archive and the row were under the keyboard)");
+}

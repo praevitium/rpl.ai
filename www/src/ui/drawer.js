@@ -662,20 +662,26 @@ export class Drawers {
     e.preventDefault();
     const name = form.elements.name.value.trim();
     const port = form.elements.port.value;
-    this._archive(port, name);
+    if (!this._archive(port, name)) return;
+    // The phone keyboard's Done goes with the name, so the new backup's row shows where the keyboard was.
+    form.elements.name.value = '';
+    form.elements.name.blur();
   }
 
   _archive(port, name) {
     const { app } = this;
-    if (!isStorableHpName(name)) { app.notifyError(`Backups need a variable-style name; “${name}” isn't one.`); return; }
+    if (!isStorableHpName(name)) { app.notifyError(`Backups need a variable-style name; “${name}” isn't one.`); return false; }
     try {
       const exists = listBackups().some((b) => b.port === port && b.name === name);
       archiveBackup(port, name, app.stack);
       app.toast(`${exists ? 'Replaced' : 'Archived'} :${port}:${name}`);
+      return true;
     } catch (e) {
       app.notifyError(`Archive failed: ${e.message}`);
+      return false;
+    } finally {
+      this._renderBackups();
     }
-    this._renderBackups();
   }
 
   _onClick(e) {
