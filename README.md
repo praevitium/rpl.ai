@@ -1056,9 +1056,9 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
 - `PR1`, `PRST`, `PRSTC`, `PRVAR`, `PRLCD` and `CR` print to a print log,
   there being no printer: a note says what was printed, with Show to open
   the log (command search finds it as Print log), which keeps the last 2000
-  lines while the app is open, with Copy and Clear. `PRLCD` prints the
-  stack as text, not the screen's pixels, and `DELAY` and `OLDPRT` do
-  nothing.
+  lines while the app is open, with Copy, Clear and, on a phone, Share to
+  send it to another app. `PRLCD` prints the stack as text, not the
+  screen's pixels, and `DELAY` and `OLDPRT` do nothing.
 - There is no Kermit or XModem link, so `SEND`, `XSEND` and `XPUT` save
   variables as .rpl HP text files to your downloads, and `RECV`, `RECN`,
   `KGET`, `XRECV` and `XGET` open a file picker and store what is chosen

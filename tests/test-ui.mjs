@@ -3140,3 +3140,12 @@ setAngle('RAD');
     && /app\.toast\(`\$\{exists \? 'Replaced' : 'Archived'\} :\$\{port\}:\$\{name\}`\);\s*return true;/.test(drawerSrc),
     "a backup archived from the drawer's form clears the name and puts the phone keyboard away, so the new row shows (Archive and the row were under the keyboard)");
 }
+
+{
+  const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  assert(/const share = typeof navigator\.share === 'function' \? `<button type="button" class="btn" data-sh="pr-share">/.test(sheetsSrc)
+    && sheetsSrc.includes("case 'pr-share': app.shareText(printLog.join('\\n')); return;"),
+    'the print log shares what was printed where the phone can share, as VIEW does');
+  assert(/const foot = printLog\.length\s*\? `<button type="button" class="btn" data-sh="pr-copy">[\s\S]{0,200}?\$\{share\}<button type="button" class="btn" data-sh="pr-clear">[^`]*`\s*: `<button type="button" class="btn" data-sh="close">/.test(sheetsSrc),
+    "the print log's footer keeps to Copy, Share and Clear on one row on a phone, the header's × closing it, as VIEW's footer does");
+}

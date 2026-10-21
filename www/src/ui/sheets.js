@@ -184,7 +184,10 @@ export class Sheets {
       const body = printLog.length
         ? `<pre class="pr-log">${escapeHtml(printLog.join('\n'))}</pre>`
         : '<p class="pt-hint">Nothing printed yet. PR1, PRST, PRSTC, PRVAR, PRLCD and CR print here, as the HP prints on paper.</p>';
-      const foot = `${printLog.length ? `<button type="button" class="btn" data-sh="pr-copy">${icon('copy', 'sm')}Copy</button><button type="button" class="btn" data-sh="pr-clear">${icon('trash', 'sm')}Clear</button>` : ''}<button type="button" class="btn" data-sh="close">${icon('x', 'sm')}Close</button>`;
+      const share = typeof navigator.share === 'function' ? `<button type="button" class="btn" data-sh="pr-share">${icon('share', 'sm')}Share</button>` : '';
+      const foot = printLog.length
+        ? `<button type="button" class="btn" data-sh="pr-copy">${icon('copy', 'sm')}Copy</button>${share}<button type="button" class="btn" data-sh="pr-clear">${icon('trash', 'sm')}Clear</button>`
+        : `<button type="button" class="btn" data-sh="close">${icon('x', 'sm')}Close</button>`;
       this.el.innerHTML = sheet('Print log', body, '', foot);
       const content = this.el.querySelector('.sheet-c');
       content.scrollTop = content.scrollHeight;
@@ -379,6 +382,7 @@ export class Sheets {
         this._render();
         return;
       case 'pr-copy': app.copyText(printLog.join('\n'), 'Copied the print log'); return;
+      case 'pr-share': app.shareText(printLog.join('\n')); return;
       case 'pr-clear': clearPrintLog(); this._render(); return;
       case 'eq-push': {
         const v = libraryEquation(this.eqlib.subject, this.eqlib.set, Number(b.dataset.i));
