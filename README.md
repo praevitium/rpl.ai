@@ -105,7 +105,8 @@ ready.
 Your stack, variables and settings stay in this browser on this device.
 Nothing is uploaded. Two windows of the same browser share them and stay in
 step. To move them to another browser or keep a copy, use Back up everything
-in the Variables drawer, and Restore from file on the other side.
+in the Variables drawer's ⋯ menu, and Restore from a backup file on the other
+side.
 
 ### Five minutes with RPL
 
@@ -521,8 +522,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   Settings sheet, the plot's tools (in two columns), the suggestion chips,
   the toasts' buttons, the writer tabs and Ask, the matrix writer's cells,
   the assistant's controls and the minimal status line's modes are
-  finger-sized, and so are the soft keys while the keypad is hidden. The Variables drawer puts
-  each variable's buttons on a line under its name, and the History drawer
+  finger-sized, and so are the soft keys while the keypad is hidden. The Variables drawer shows
+  each name in full, and the History drawer
   shows each entry in full. A drawer opens as a sheet from the bottom, nearly
   the screen's height; drag its top row down to close it. That one row holds
   the tabs and the drawer's buttons (the pressed tab names the drawer, so
@@ -754,7 +755,11 @@ without the keypad a command you use often is two taps away.
 
 ### Variables and directories
 
-Browse, run, edit, rename and download variables. Drag them to reorder,
+Browse, run, edit, rename and download variables. A tap on a row puts the
+value on the stack (or runs a program, or opens a folder), and its ⋯ menu
+edits, renames, downloads or deletes it; the ⋯ by the filter makes a folder,
+uploads files, exports the folder as `.rpl` and backs up or restores
+everything, and the backup ports fold away under Backups. Drag rows to reorder,
 into folders or onto the breadcrumb; on a phone, drag a row by its grip, or
 touch and hold it first, and the list scrolls when you near its edge. Back up the stack and the
 whole HOME tree to a JSON file and restore it, archive to backup ports (and
@@ -772,7 +777,7 @@ cell shows it. Currency, percentages, accounting negatives such as
 numbers.
 
 Spreadsheet files work too. Download a matrix, vector or list as `.csv`,
-`.tsv` or Excel's `.xlsx` from its download button in the Variables drawer,
+`.tsv` or Excel's `.xlsx` with Download as… in its Variables drawer menu,
 or with **Download as…** in a stack level's menu, which offers `.rpl` and
 `.json` for any value. Upload `.csv`, `.tsv`, `.xlsx`, `.rpl`, `.txt` or
 `.json` files in the drawer, several at once, or drop one anywhere on the
