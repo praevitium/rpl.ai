@@ -3073,6 +3073,8 @@ setAngle('RAD');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/this\._addTrace\(traceFromInputs\(kind, expr, exprY\), \{ fit: !!spec\.fitOnAdd \}\);\n[^\n]*\n\s*this\._addX\.scrollIntoView\?\.\(\{ block: 'nearest' \}\);/.test(gv),
     'plot, keyboard up: after a trace is added the add field is scrolled back into view, where the grown trace list pushed it under the keyboard');
+  assert(gv.includes('if (Number.isFinite(y)) return Complex(Number(this.traceX.toPrecision(12)), Number(y.toPrecision(12)));'),
+    'plot trace: Enter pushes the traced point as the readout shows it, on the curve, where x = 0.75 with SIN(X) = 0.681639 pushed (0.8, 0.7), a point off the curve');
 }
 
 {

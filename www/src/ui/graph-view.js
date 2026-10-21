@@ -666,7 +666,8 @@ export class GraphView {
       const opts = this._hoverOpts();
       for (const t of this.traces) {
         const y = t.enabled ? evalTraceAtX(t, this.traceX, opts) : NaN;
-        if (Number.isFinite(y)) return this._pointValue(this.traceX, y);
+        // A traced point goes as the readout shows it, on the curve; only the free cursor rounds to its pixel.
+        if (Number.isFinite(y)) return Complex(Number(this.traceX.toPrecision(12)), Number(y.toPrecision(12)));
       }
       return null;
     }
