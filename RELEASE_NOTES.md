@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.29 (2026-10-21)
+**Latest release:** v0.8.30 (2026-10-21)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.30 — 2026-10-21
+
+- Added: Settings › Calculator, the HP's MODES form. It sets the angle,
+  the number format with its digits, exact or approximate results, the
+  real or complex domain, coordinates and the integer base, each with a
+  line on what the choice does. Switches cover the decimal comma (moved
+  from Appearance), Beep (flag -56), saving last arguments (-55), a
+  24-hour clock (-41) and day-first dates (-42). They change the same
+  settings as the MODES menu and commands such as `DEG`.
+- Changed: on a phone, Settings' four page tabs share one row without
+  their icons, so none scrolls out of sight.
 
 ## v0.8.29 — 2026-10-21
 
