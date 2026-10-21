@@ -170,7 +170,21 @@ export class Sheets {
     notes.style.setProperty('--note-lift', `${lift}px`);
   }
 
+  // A choice redraws the sheet; the keyboard stays on the control it was on.
   _render() {
+    const keep = this._focusedControl();
+    this._draw();
+    if (keep) this.el?.querySelector(keep)?.focus({ preventScroll: true });
+  }
+
+  _focusedControl() {
+    const at = document.activeElement;
+    if (!at || at === this.el || !this.el?.contains(at)) return null;
+    const attrs = Object.entries(at.dataset).map(([k, v]) => `[data-${k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}="${globalThis.CSS?.escape?.(v) ?? v}"]`);
+    return attrs.length ? `${at.tagName.toLowerCase()}${attrs.join('')}` : null;
+  }
+
+  _draw() {
     requestAnimationFrame(() => this._liftNotes());
     const sheet = (title, content, nav = '', foot = '', head = '') => `<div class="sheet" role="dialog" aria-modal="true" aria-label="${title}"><div class="sheet-h"><b>${title}</b>${head}<button type="button" class="icon-btn sm" data-sh="close" title="Close (Esc)" aria-label="Close">${icon('x', 'sm')}</button></div><div class="sheet-b${nav ? '' : ' single'}">${nav}<div class="sheet-c">${content}</div></div>${foot && `<div class="sheet-f">${foot}</div>`}</div>`;
     if (this.kind === 'shortcuts') {
