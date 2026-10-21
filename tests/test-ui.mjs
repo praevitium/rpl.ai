@@ -2854,8 +2854,8 @@ setAngle('RAD');
     'Variables: on a focused variable, Shift+Enter stores level 1 in it and Alt+Enter recalls it, as the HP\'s shifted VAR keys and Shift+F1 and Alt+F1 on the soft keys do');
   assert(drawerSrc.includes("${n}: ${value.type === TYPES.PROGRAM ? 'run it' : 'put it on the stack'} · Shift+Enter stores level 1 into it · Alt+Enter recalls without running"),
     'Variables: a row\'s tooltip reads as its VAR soft key\'s does (run it or put it on the stack, store, recall), with the drawer\'s keys, where it said only "click to put on the stack"');
-  assert(/if \(this\._drawerCoversStack\(\)\) \{ this\.drawers\.close\(\); return true; \}\s*\/\/[^\n]*\n\s*if \(document\.activeElement\?\.closest\?\.\('#drawer'\)\) this\.focusInput\(\);\s*return true;/.test(appSrc),
-    'Esc in a drawer docked beside the stack takes the keyboard back to the command line and leaves the drawer open, where it did nothing; a drawer over the stack still closes');
+  assert(/closest\?\.\('\.pl-box'\)\) \{ this\.focusInput\(\); return true; \}\s*(\/\/[^\n]*\n\s*)*if \(document\.activeElement\?\.closest\?\.\('#drawer'\)\) \{\s*if \(this\._drawerCoversStack\(\)\) this\.drawers\.close\(\);\s*else this\.focusInput\(\);\s*return true;\s*\}\s*if \(this\.selection != null\)/.test(appSrc),
+    'Esc in a drawer docked beside the stack takes the keyboard back to the command line and leaves the drawer open, and one over the stack closes, before Esc reaches the selection, a writer or the command line');
   assert(/const hadFocus = this\.el\.contains\(document\.activeElement\) && !globalThis\.matchMedia\?\.\('\(pointer: coarse\)'\)\.matches;[\s\S]{0,200}if \(hadFocus\) this\.app\.focusInput\(\);/.test(drawerSrc),
     'drawer: closing it with the keyboard inside, by Ctrl+\\ or its close button, hands the keyboard to the command line where it was left on nothing; not on a touch screen, whose keyboard it would raise');
   assert(/case 'level\.copy':\s*\/\/[^\n]*\n\s*if \(this\.selection == null && \(!this\.stack\.depth \|\| !window\.getSelection\(\)\?\.isCollapsed\)\) return false;\s*this\.levelAction\('copy', this\.selection \?\? 1\); return true;/.test(appSrc),

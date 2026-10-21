@@ -2571,15 +2571,20 @@ class App {
     if (this.sheets.isOpen()) { this.sheets.dismiss(); return true; }
     if (this.plotFocus) { this.setPlotFocus(false); return true; }
     if (document.activeElement?.closest?.('.pl-box')) { this.focusInput(); return true; }
+    // Esc in the drawer leaves it, and leaves the stack and the command line behind it as they were; one docked beside
+    // the stack stays open.
+    if (document.activeElement?.closest?.('#drawer')) {
+      if (this._drawerCoversStack()) this.drawers.close();
+      else this.focusInput();
+      return true;
+    }
     if (this.selection != null) { this.clearSelection(); return true; }
     if (this.entry.error) { this.dismissError(); return true; }
     if (this.inputMode !== 'rpl') { this.cancelWriter(); return true; }
     if (this.pendingEdit) { this.cancelEdit(); return true; }
     if (this.entry.buffer.length) { this.clearLine(); return true; }
     if (this.shift) { this.setShift(null); return true; }
-    if (this._drawerCoversStack()) { this.drawers.close(); return true; }
-    // A drawer docked beside the stack stays open; Esc takes the keyboard from it back to the command line.
-    if (document.activeElement?.closest?.('#drawer')) this.focusInput();
+    if (this._drawerCoversStack()) this.drawers.close();
     return true;
   }
 
