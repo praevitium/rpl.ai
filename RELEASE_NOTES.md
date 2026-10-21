@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.5 (2026-10-20)
+**Latest release:** v0.8.6 (2026-10-20)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.6 — 2026-10-20
+
+- The periodic table: `PERTBL` opens a sheet with the 118 elements in their
+  18 columns, a tap on an element lists its 23 properties and a tap on a
+  property puts it on the stack; `PTPROP` takes an element by symbol (a name
+  or a string) or atomic number and a property by number or by name, `'Hg' 6
+  PTPROP` giving `"[Xe]4f14·5d10·6s2"` and `79 8 PTPROP` the melting point
+  `1337.33_K`, a plain number with flag -61 set as MOLWT does; `PERINFO`
+  shows the table's version and data source. Property numbers 6 and 8
+  follow the HP's examples; the other 21 are rpl.ai's order, listed in the
+  reference, the AUR's Appendix B being out of reach. The data is
+  Bowserinator's Periodic-Table-JSON (CC BY-SA), drawn from Wikipedia, so a
+  value can differ from the HP's.
 
 ---
 
