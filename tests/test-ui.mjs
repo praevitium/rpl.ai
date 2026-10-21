@@ -3193,3 +3193,9 @@ setAngle('RAD');
     && css.includes('.st-row[data-key] .st-lvl { touch-action: none; align-self: stretch; margin-block: -6px; display: flex; align-items: center; justify-content: flex-end; }'),
     "a finger moved up or down from a level's number drags the level onto another, as a mouse does, while sideways it still swipes the level away");
 }
+
+{
+  const tourSrc = readFileSync(new URL('../www/src/ui/tour.js', import.meta.url), 'utf8');
+  assert(tourSrc.includes("a finger held on it opens its menu, a swipe sideways drops it, and a drag up or down by its number moves it.'"),
+    "the tour's stack card on a phone names the swipe that drops a level and the drag by its number that moves it, as its soft-key card names the swipe along the keys");
+}
