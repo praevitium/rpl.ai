@@ -2276,7 +2276,9 @@ setAngle('RAD');
     && /:root:is\(\[data-keyboard\], \[data-short\]\) \.eqw-canvas \{ max-height: calc\(var\(--app-height, 100dvh\) \* \.4\); \}/.test(css)
     && /:root:is\(\[data-keyboard\], \[data-short\]\) \.mx-grid-wrap \{ max-height: calc\(var\(--app-height, 100dvh\) \* \.35\); \}/.test(css)
     && !/:root\[data-keyboard\] \.eqw-ins/.test(css),
-    'short windows: under 400 px the root carries data-short and the keyboard-up forms apply without a keyboard, so the writers\' hints and the banners\' explanations and icons wait (in a split screen at 360x370 the equation writer\'s hints pushed the soft keys 14 px under the edge; at 280x300 the matrix writer 16 px and a halt banner 5 px, the line\'s Enter with them)');
+    'short windows: under 440 px the root carries data-short and the keyboard-up forms apply without a keyboard, so the writers\' hints and the banners\' explanations and icons wait (in a split screen at 360x370 the equation writer\'s hints pushed the soft keys 14 px under the edge; at 280x300 the matrix writer 16 px and a halt banner 5 px, the line\'s Enter with them)');
+  assert(/@container work \(min-width: 600px\) \{\s*:root\[data-short\] \.mx, :root\[data-short\] \.eqw \{ grid-template-columns: 1fr auto; align-items: end; \}\s*:root\[data-short\] \.writer-keys \.cmdline-go \{ flex: none; width: 40px; \}/.test(css),
+    'short windows: a landscape phone keeps the writers\' keys beside the formula or matrix from a 600 px work column, as the keyboard-up layout does (under them the matrix writer left no whole level at 640x360 and one at 844x390; a full keypad beside a 640 px window left the formula 32 px, so the work column decides)');
   assert(/\.bn\.halt \.bn-t \{ white-space: pre-wrap; \}/.test(css),
     'AUR: MSGBOX, PROMPT and INPUT keep a message\'s line breaks, where "Line 1" 10 CHR + "Line 2" + MSGBOX showed Line 1 Line 2 on one line');
   assert(/:root\[data-short\]:not\(\[data-keyboard\]\) \.bn \.bn-t \{ max-height: 2\.7em; overflow-y: auto; \}/.test(css),
