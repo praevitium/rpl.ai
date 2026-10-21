@@ -680,7 +680,40 @@ export class Drawers {
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[role="button"][data-dw]')) {
       e.preventDefault();
       e.target.click();
+      return;
     }
+    const row = !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.target.matches?.('[role="button"][data-dw][tabindex="0"]') && e.target;
+    if (!row) return;
+    // A row's keys stay in its list, where they reached the stack: ↓ took level 1 into the command line and ⌫ dropped a level.
+    if (/^Arrow(Up|Down|Left|Right)$|^(Home|End)$/.test(e.key)) {
+      e.preventDefault();
+      this._stepRow(row, e.key);
+    } else if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault();
+      this._deleteRow(row);
+    }
+  }
+
+  _rowsLike(row) {
+    return [...(this._body()?.querySelectorAll(`[role="button"][data-dw="${row.dataset.dw}"][tabindex="0"]`) ?? [])];
+  }
+
+  _stepRow(row, key) {
+    const rows = this._rowsLike(row);
+    const i = rows.indexOf(row);
+    const to = { ArrowUp: i - 1, ArrowDown: i + 1, Home: 0, End: rows.length - 1 }[key] ?? i;
+    rows[Math.max(0, Math.min(to, rows.length - 1))]?.focus();
+  }
+
+  // Delete on a variable is the HP's PURGE, with Undo; on a History entry it removes the entry.
+  _deleteRow(row) {
+    const i = this._rowsLike(row).indexOf(row);
+    const { dw } = row.dataset;
+    if (dw === 'var') this._deleteVar(row.dataset.name);
+    else if (dw === 'hist-recall') row.querySelector('[data-dw="hist-delete"]')?.click();
+    else return;
+    const rows = this._rowsLike({ dataset: { dw } });
+    (rows[Math.min(i, rows.length - 1)] ?? this._body()?.querySelector('[data-q]'))?.focus();
   }
 
   _onSubmit(e) {

@@ -2898,6 +2898,13 @@ setAngle('RAD');
     && appSrc.includes("case 'level.bottom': this.selectLevel(1); return true;"),
     'Home and End on a selected level jump to the top level and level 1 through an empty command line, which kept them for its caret');
   {
+    const drawerRowSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+    assert(/if \(\/\^Arrow\(Up\|Down\|Left\|Right\)\$\|\^\(Home\|End\)\$\/\.test\(e\.key\)\) \{\s*e\.preventDefault\(\);\s*this\._stepRow\(row, e\.key\);\s*\} else if \(e\.key === 'Delete' \|\| e\.key === 'Backspace'\) \{\s*e\.preventDefault\(\);\s*this\._deleteRow\(row\);/.test(drawerRowSrc)
+      && drawerRowSrc.includes("if (dw === 'var') this._deleteVar(row.dataset.name);")
+      && drawerRowSrc.includes("(rows[Math.min(i, rows.length - 1)] ?? this._body()?.querySelector('[data-q]'))?.focus();"),
+      'drawer rows: the arrow keys, Home and End move between a list\'s rows and Delete purges a variable or removes a History entry, where they reached the stack: ↓ took level 1 into the command line and ⌫ dropped a selected level');
+  }
+  {
     const hintSrc = readFileSync(new URL('../www/src/ui/input-area.js', import.meta.url), 'utf8');
     assert(hintSrc.includes("`⇧← ⇧→ select · ${shortcutText('eqw.selectAll')} all`")
       && hintSrc.includes("matrix: ['Tab next cell', '⇧Enter next row', 'Enter stores the cell, again pushes', 'Esc puts the cell back, again cancels'],"),
