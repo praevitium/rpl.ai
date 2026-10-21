@@ -533,13 +533,17 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   on a tap moves the trace cursor. The plot's tools fold into one ⋯ button,
   leaving the plot to your fingers, and the plot types scroll in one row.
   Under the readout a function plot has the HP's FCN keys ROOT, ISECT,
-  SLOPE, AREA and EXTR: each works about the cursor (the trace cursor, else
-  the point you tapped, else the middle of the window) on the selected or
-  first function, puts the answer on the stack tagged as the HP does,
-  `Root: 3.14159265359`, `I-Sect: (0.785398163397, 0.707106781187)` with the
-  next function, `Slope: 0.` or `Extrm: (4.71238898039, -1)`, and moves the
-  trace cursor there; AREA marks the first bound on one tap and, after the
-  cursor has moved, puts `Area: 2.` on the next.
+  SLOPE, AREA, EXTR, F(X), F' and TANL: each works about the cursor (the
+  trace cursor, else the point you tapped, else the middle of the window) on
+  the selected or first function, puts the answer on the stack tagged as the
+  HP does, `Root: 3.14159265359`, `I-Sect: (0.785398163397, 0.707106781187)`
+  with the next function, `Slope: 0.`, `Extrm: (4.71238898039, -1)` or
+  `F(x): 0.841470984808`, and moves the trace cursor there; AREA marks the
+  first bound on one tap and, after the cursor has moved, puts `Area: 2.` on
+  the next; F' plots the derivative and puts it on the stack; TANL plots the
+  tangent line and puts it on the stack as `TanL: '0.540302305868*X+0.30116867894'`.
+  SLOPE and TANL take the CAS derivative when it is ready and difference the
+  curve when it isn't.
   In a short plot drawer, in landscape or with the keyboard up, the drawer
   scrolls, so the field you type in stays in view.
 - Settings › Appearance sets the stack's text size, from Small to Larger,

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.1 (2026-10-20)
+**Latest release:** v0.8.2 (2026-10-20)
 
 ---
 
@@ -18,6 +18,23 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.2 — 2026-10-20
+
+- The plot's FCN keys gain F(X), F' and TANL after EXTR, as on the HP. F(X)
+  pushes the function's value at the cursor as `F(x):`; F' plots the CAS
+  derivative, makes it the current function and pushes it; TANL plots the
+  tangent line at the cursor and pushes it as `TanL: 'm*X+b'`. SLOPE and
+  TANL read the CAS derivative when it is ready (`Slope: 0.540302305868` at
+  1 on SIN(X), where differencing gave 0.540293), and difference the curve
+  when it isn't.
+- On a phone the plot drawer's show/hide box for each trace was the native
+  16 px checkbox, the one control in the drawer under 40 px; on touch it is
+  now a 40 px box drawn in the trace's colour.
+- The plot's type, PICT and FCN rows, which scroll sideways on a phone, now
+  fade at the edge that has more, as the key strip and drawer tabs do.
 
 ---
 
