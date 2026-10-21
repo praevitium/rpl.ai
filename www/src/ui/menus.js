@@ -131,6 +131,8 @@ export const BASE_GROUPS = Object.freeze([
 
 // The HP's MTH VECTR menu, its coordinate modes marked while on.
 export const VECTOR_KEYS = Object.freeze(['ABS', 'DOT', 'CROSS', 'V→', '→V2', '→V3', 'RECT', 'CYLIN', 'SPHERE']);
+// The HP's TOOL key: level 1's everyday tools, then CASCMD and HELP on the second page.
+export const TOOL_KEYS = Object.freeze(['EDIT', 'VIEW', 'RCL', 'STO', 'PURGE', 'CLEAR', 'CASCMD', 'HELP']);
 
 // Every UNITS key with uexpr's dimensions, in menu order, then the SI base form, the unit itself left out.
 export function unitConversions(uexpr) {
@@ -150,6 +152,7 @@ export const OWN_MENUS = Object.freeze([
   { id: 'BRCH', short: 'BRCH', title: 'Program structures (IF, FOR, WHILE…)' },
   { id: 'BASE', short: 'BASE', title: 'Integer bases and bits' },
   { id: 'VECTOR', short: 'VECTR', title: 'Vectors and coordinate modes' },
+  { id: 'TOOL', short: 'TOOL', title: 'Edit, view, store and clear (the HP\'s TOOL)' },
 ]);
 
 // The HP's PRG BRCH keys: each types its word, ⇦ its whole structure and ⇨ the structure's other form.
@@ -168,7 +171,7 @@ export const BRANCH_KEYS = Object.freeze([
 ]);
 
 export const MENU_GROUPS = Object.freeze([
-  { title: 'Yours', ids: ['VARS', 'CST', 'MODES'] },
+  { title: 'Yours', ids: ['VARS', 'CST', 'MODES', 'TOOL'] },
   { title: 'Math', ids: ['ARITH', 'TIME', 'TVM', 'TRIG', 'CPLX', 'CAS', 'POLY', 'MATRIX', 'VECTOR', 'STAT', 'INTEGER', 'BASE', 'PROB', 'SPECIAL', 'LOGIC'] },
   { title: 'Data and programs', ids: ['STACK', 'LIST', 'MEMORY', 'PROGRAM', 'BRCH', 'CONTROL', 'TYPES', 'UNITS', 'FLAGS', 'DISPLAY', 'PLOT', 'SYSTEM', 'MORE'] },
 ]);

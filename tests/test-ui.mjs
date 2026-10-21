@@ -1779,6 +1779,15 @@ setAngle('RAD');
     'Settings: Keep the screen on lets go while OFF\'s dark screen shows and takes the lock again as a tap wakes the calculator (the phone stayed lit on the off screen)');
   assert(/\[\(\) => !!this\.pendingEdit, \(\) => this\.cancelEdit\(\)\],\n      \[\(\) => this\.selection != null, \(\) => this\.clearSelection\(\)\],\n    \];/.test(appSrc),
     'back button: a selected stack level is the last thing back puts away, as the HP\'s ON leaves the interactive stack, before the app itself (back with a level selected left the installed app)');
+  {
+    const { TOOL_KEYS, MENU_GROUPS, menuById } = await import('../www/src/ui/menus.js');
+    const { lookup: findOp } = await import('../www/src/rpl/ops.js');
+    assert(TOOL_KEYS.join(' ') === 'EDIT VIEW RCL STO PURGE CLEAR CASCMD HELP' && TOOL_KEYS.filter((k) => k !== 'VIEW').every((k) => findOp(k))
+      && MENU_GROUPS[0].ids.includes('TOOL') && menuById('TOOL')?.short === 'TOOL'
+      && /else if \(id === 'TOOL'\) this\.setMenu\(TOOL_KEYS\.map\(\(key\) => \(key === 'VIEW' \? this\._viewKey\(\) : this\._commandSlot\(key\)\)\), 'TOOL'\);/.test(appSrc)
+      && /_viewKey\(\) \{\n    return \{ label: 'VIEW',[^\n]*onPress: \(\) => this\.levelAction\('view', 1\) \};/.test(appSrc),
+      'TOOL menu: the HP\'s TOOL keys EDIT, VIEW, RCL, STO, PURGE and CLEAR, then CASCMD and HELP, with VIEW showing level 1 full size, so minimal view (no keypad) has them a tap away');
+  }
   assert(/setBeepHook\(\(hz, seconds\) => this\._buzzBeep\(beep\(hz, seconds\)\)\);/.test(appSrc)
     && /_buzzBeep\(seconds\) \{\n    if \(this\.prefs\.haptics && typeof navigator\.vibrate === 'function'\) navigator\.vibrate\(Math\.round\(Math\.min\(seconds, BEEP_BUZZ_MAX_S\) \* 1000\)\);/.test(appSrc),
     'BEEP: with key vibration on, the phone buzzes as long as the queued tones play, up to 5 s, so a phone on silent still gives a program\'s signal (flag -56 stops BEEP before it reaches the hook)');

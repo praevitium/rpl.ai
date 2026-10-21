@@ -16,7 +16,7 @@ import { Sheets } from './ui/sheets.js';
 import { Tour } from './ui/tour.js';
 import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
-import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, INTEGER_GROUPS, TRIG_GROUPS, LIST_GROUPS, TIME_GROUPS, KEY_LABELS, VECTOR_KEYS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, CONSTANT_TITLES, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel } from './ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, INTEGER_GROUPS, TRIG_GROUPS, LIST_GROUPS, TIME_GROUPS, KEY_LABELS, VECTOR_KEYS, TOOL_KEYS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, CONSTANT_TITLES, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel } from './ui/menus.js';
 import { convertValue } from './rpl/units.js';
 import { MODES, modeCommandPreview } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
@@ -1687,6 +1687,7 @@ class App {
     else if (id === 'BASE') this.showBaseMenu();
     else if (id === 'MES') this.showSolverMenu();
     else if (id === 'VECTOR') this.setMenu(VECTOR_KEYS.map((key) => this._commandSlot(key)), 'VECTOR');
+    else if (id === 'TOOL') this.setMenu(TOOL_KEYS.map((key) => (key === 'VIEW' ? this._viewKey() : this._commandSlot(key))), 'TOOL');
     else this._showFamilyMenu(id);
     if (remember) this.setPrefs({ menu: this.menuKind, recentMenus: [this.menuKind, ...this.prefs.recentMenus.filter((m) => m !== this.menuKind)] });
   }
@@ -1828,6 +1829,11 @@ class App {
       LIST: () => this._groupKeys(LIST_GROUPS, 'LIST'),
     }[family.id];
     this.setMenu([...(lead ? lead() : []), ...slots, ...flagKeys], family.id);
+  }
+
+  // TOOL's VIEW, which is no command here: level 1 full size in a sheet, as a level's View shows it.
+  _viewKey() {
+    return { label: 'VIEW', title: 'Show level 1 full size, with Edit, Copy and Share', onPress: () => this.levelAction('view', 1) };
   }
 
   // A flag the HP sets from a form, such as TIME's clock and date formats, as a key marked while the flag is set.
