@@ -762,7 +762,9 @@ VPAR, which the 3D plots read.
 
 `DATE`, `TIME`, `TICKS` and `TSTR` read the calculator's clock, and
 `DATE+` and `DDAYS` count days, with flags -41 and -42 for the formats,
-which the TIME menu's 24H and D.M.Y keys set. `→DATE`, `→TIME` and
+which the TIME menu's 24H and D.M.Y keys set. Flag -40, or the CLK key,
+shows the time in the status line, as the HP's header does, where there is
+room (from 390 px in minimal view, 430 in the Classic look). `→DATE`, `→TIME` and
 `CLKADJ` move rpl.ai's clock away from the device's, and Settings › Data
 sets it back. The ALRM folder keeps appointment alarms:
 `{ 10.192026 9.3 "Dentist" } STOALARM` stores one and gives its index, and
@@ -825,7 +827,9 @@ sheet's used range; dates arrive as Excel's serial numbers.
 `HALT` suspends a program and shows it with the next instruction
 highlighted. Continue, Step, Step into or Stop from the banner (or `CONT`,
 `SST`, `SST↓`, `KILL`); Step runs a called program as one step, Step into
-walks through it. `PROMPT` shows its message and waits for your input; on
+walks through it. As on the HP, Stop or `KILL` cancels every halted
+program, and the HALT annunciator lights for `HALT`, `PROMPT` and a step,
+not for the dialogs below. `PROMPT` shows its message and waits for your input; on
 a phone, while you type the answer, the banner shrinks to one row so the
 stack stays in view. `MSGBOX` shows its message with an OK key and goes
 on when you tap it or press Enter on an empty line. `INPUT` asks: its
