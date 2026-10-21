@@ -406,6 +406,15 @@ export class MatrixEditor {
     this._renderGrid();
   }
 
+  // As the HP's CANCEL first drops the entry being typed, and a spreadsheet's Esc, the cell gets back what it held.
+  cancelCell() {
+    const key = `${this._focusR},${this._focusC}`;
+    if (this._typedCell !== key || this._mergeCell !== key) return false;
+    this.undo();
+    this._focusCell(this._focusR, this._focusC, { select: true });
+    return true;
+  }
+
   canUndo() { return this._past.length > 0; }
 
   canRedo() { return this._future.length > 0; }

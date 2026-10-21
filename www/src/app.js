@@ -1320,7 +1320,7 @@ class App {
   }
 
   cancelWriter() {
-    if (this._writer().collapseSelection?.()) return;
+    if (this._writer().collapseSelection?.() || this._writer().cancelCell?.()) return;
     this._closeWriter((mode) => `Discarded the ${mode}`);
   }
 

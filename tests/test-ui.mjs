@@ -1550,6 +1550,23 @@ setAngle('RAD');
 }
 
 {
+  const { MatrixEditor } = await import('../www/src/ui/matrix-editor.js');
+  const writer = (typed, merged) => {
+    const calls = [];
+    const self = { _focusR: 0, _focusC: 2, _typedCell: typed, _mergeCell: merged, undo: () => calls.push('undo'), _focusCell: (r, c) => calls.push(`focus ${r},${c}`) };
+    return { done: MatrixEditor.prototype.cancelCell.call(self), calls: calls.join(' ') };
+  };
+  const typed = writer('0,2', '0,2');
+  const moved = writer(null, null);
+  const other = writer('1,1', '1,1');
+  assert(typed.done === true && typed.calls === 'undo focus 0,2' && moved.done === false && !moved.calls && other.done === false,
+    'matrix writer: Esc on a cell being typed puts back what it held and keeps the cell, as the HP\'s CANCEL drops the entry being typed; on a cell not typed in it does nothing, so Esc goes on to close the writer');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/if \(this\._writer\(\)\.collapseSelection\?\.\(\) \|\| this\._writer\(\)\.cancelCell\?\.\(\)\) return;\s*this\._closeWriter/.test(appSrc),
+    'Esc and a phone\'s back button cancel the matrix cell being typed before they discard the matrix');
+}
+
+{
   const { normalizeUiPrefs } = await import('../www/src/ui/ui-prefs.js');
   const defaults = normalizeUiPrefs({});
   assert(defaults.assistantMode === 'ask' && defaults.tutorStyle === 'socratic', 'ui prefs default to Ask mode with a Socratic tutor');
@@ -2830,7 +2847,7 @@ setAngle('RAD');
 
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/cancelWriter\(\) \{\s*if \(this\._writer\(\)\.collapseSelection\?\.\(\)\) return;\s*this\._closeWriter\(\(mode\) => `Discarded the \$\{mode\}`\);\s*\}/.test(appSrc)
+  assert(/cancelWriter\(\) \{\s*if \(this\._writer\(\)\.collapseSelection\?\.\(\) \|\| this\._writer\(\)\.cancelCell\?\.\(\)\) return;\s*this\._closeWriter\(\(mode\) => `Discarded the \$\{mode\}`\);\s*\}/.test(appSrc)
     && /_closeWriter\(message\) \{[\s\S]*?writer\.clear\(\);\s*if \(edit\) this\._endEdit\(\);\s*this\.setInputMode\('rpl'\);[\s\S]*?else if \(hadContent\) this\.toast\(message\(mode\), \{ action: 'Undo', onAction: reopen \}\);/.test(appSrc),
     "INPUT with a writer open: the matrix or equation writer steps aside (its content and any edit a tap of Undo away, as when it is cancelled) so the program's text lands on a command line the user can see and answer");
 }
