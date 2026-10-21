@@ -2938,10 +2938,10 @@ setAngle('RAD');
   const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/value = Tagged\('I-Sect', Complex\(x, f\(x\)\)\);/.test(gv) && /this\._fail\('ISECT needs two functions'\)/.test(gv)
-    && /if \(this\._areaFrom == null\) \{\n\s*this\._areaFrom = x0;\n\s*this\._syncPush\(\);/.test(gv)
-    && /const area = integrateFunction\(f, this\._areaFrom, x0\);\n\s*this\._areaFrom = null;/.test(gv)
+    && /if \(this\._areaFrom\?\.trace !== t\.id\) \{\n\s*this\._areaFrom = \{ x: x0, trace: t\.id \};\n\s*this\._syncPush\(\);/.test(gv)
+    && /const area = integrateFunction\(f, this\._areaFrom\.x, x0\);\n\s*this\._areaFrom = null;/.test(gv)
     && /value = Tagged\('Area', Real\(area\)\);/.test(gv)
-    && /\[data-fcn="AREA"\]'\)\.setAttribute\('aria-pressed', String\(this\._areaFrom != null\)\);/.test(gv),
+    && /\[data-fcn="AREA"\]'\)\.setAttribute\('aria-pressed', String\(this\._areaFrom\?\.trace === this\._fcnTrace\(\)\?\.id\)\);/.test(gv),
     'plot FCN: ISECT pushes the nearest crossing of the function with the next one as I-Sect: (x, y), and AREA marks the first bound on one tap (the chip pressed) and pushes Area: on the next, in the HP\'s FCN order ROOT ISECT SLOPE AREA EXTR');
   assert(/\n@media \(max-height: 400px\) \{ \.pl-box \{ min-height: 150px; \} \}/.test(css),
     'plot in landscape: the plot box gives up its 220 px minimum in a window under 400 px tall, so the readout and FCN keys sit on screen instead of under the fold');
@@ -2965,4 +2965,11 @@ setAngle('RAD');
     && /for \(const row of this\._chipRows\) row\.addEventListener\('scroll', \(\) => markScrollEdges\(row\), \{ passive: true \}\);/.test(gv)
     && /_markChipRows\(\) \{\n\s*for \(const row of this\._chipRows\) markScrollEdges\(row\);/.test(gv),
     'plot chip rows on a phone: the plot types, PICT and FCN rows fade at the edge that scrolls, as the key strip and drawer tabs do');
+}
+
+{
+  const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
+  assert(/this\._areaFrom = \{ x: x0, trace: t\.id \};/.test(gv) && /if \(this\._areaFrom\?\.trace !== t\.id\) \{/.test(gv)
+    && /aria-pressed', String\(this\._areaFrom\?\.trace === this\._fcnTrace\(\)\?\.id\)\)/.test(gv),
+    'plot AREA: the first bound belongs to the function it was marked on, so once that trace is removed, hidden or deselected the key shows unpressed and the next tap marks afresh instead of integrating another function from the old bound');
 }

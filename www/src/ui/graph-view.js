@@ -684,7 +684,7 @@ export class GraphView {
     if (value) this._push.textContent = `↵ ${format(value)}`;
     this._pictTools.hidden = !this._mark || this.tracing || this._projected();
     this._fcnTools.hidden = !this._fcnTrace();
-    this._fcnTools.querySelector('[data-fcn="AREA"]').setAttribute('aria-pressed', String(this._areaFrom != null));
+    this._fcnTools.querySelector('[data-fcn="AREA"]').setAttribute('aria-pressed', String(this._areaFrom?.trace === this._fcnTrace()?.id));
     this._markChipRows();
     for (const b of this._pictTools.querySelectorAll('[data-pict]')) {
       if (NEEDS_MARK.has(b.dataset.pict)) b.disabled = !this._anchor;
@@ -746,14 +746,15 @@ export class GraphView {
       if (!Number.isFinite(x)) { this._fail(`${t.expr} and ${other.expr} don't cross in the window`); return; }
       value = Tagged('I-Sect', Complex(x, f(x)));
     } else if (key === 'AREA') {
-      // The HP's AREA: one press marks the first bound, the next integrates from it to the cursor.
-      if (this._areaFrom == null) {
-        this._areaFrom = x0;
+      // The HP's AREA: one press marks the first bound, the next integrates from it to the cursor. A bound marked on
+      // another function, since removed, hidden or deselected, is not this one's.
+      if (this._areaFrom?.trace !== t.id) {
+        this._areaFrom = { x: x0, trace: t.id };
         this._syncPush();
         this._readout.textContent = `Area from ${format(Real(x0))}: move the cursor and tap AREA again`;
         return;
       }
-      const area = integrateFunction(f, this._areaFrom, x0);
+      const area = integrateFunction(f, this._areaFrom.x, x0);
       this._areaFrom = null;
       if (!Number.isFinite(area)) { this._fail(`${t.expr} has no area there`); return; }
       value = Tagged('Area', Real(area));
