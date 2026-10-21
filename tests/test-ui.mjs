@@ -2825,7 +2825,7 @@ setAngle('RAD');
     && /<label class="inf-field"><span>\$\{escapeHtml\(f\.label\)\}<\/span><input type="text" data-inf="\$\{n\}" value="\$\{escapeHtml\(f\.text\)\}" placeholder="\$\{escapeHtml\(f\.help\)\}"/.test(sheetsSrc)
     && /\$\{act\('inform-ok', 'check', 'OK', ' pri'\)\}\$\{act\('inform-cancel', 'x', 'Cancel'\)\}\$\{act\('inform-reset', 'undo', 'Reset'\)\}/.test(sheetsSrc)
     && /case 'inform-ok': app\.acceptInform\(\); return;\s*case 'inform-cancel': app\.cancelInform\(\); return;\s*case 'inform-reset': this\._informReset\(\); return;/.test(sheetsSrc)
-    && /_onKeyDown\(e\) \{\s*if \(this\.kind !== 'inform' \|\| e\.key !== 'Enter' \|\| !e\.target\.matches\('input\[data-inf\]'\)\) return;[\s\S]*?if \(next\) next\.focus\(\);\s*else this\.app\.acceptInform\(\);/.test(sheetsSrc)
+    && /_onKeyDown\(e\) \{[\s\S]*?\n    if \(this\.kind !== 'inform' \|\| e\.key !== 'Enter' \|\| !e\.target\.matches\('input\[data-inf\]'\)\) return;[\s\S]*?if \(next\) next\.focus\(\);\s*else this\.app\.acceptInform\(\);/.test(sheetsSrc)
     && /const last = fields\.filter\(Boolean\)\.length - 1;/.test(sheetsSrc)
     && /data-inf="\$\{n\}"[^>]*enterkeyhint="\$\{n\+\+ === last \? 'done' : 'next'\}"/.test(sheetsSrc)
     && /if \(id === 'INFORM'\) \{[\s\S]{0,400}?_markSuspend\(toks, i \+ 1, 'inform', inform, title\);/.test(internalSrc)
@@ -3307,9 +3307,12 @@ setAngle('RAD');
     && /this\._resize = new ResizeObserver\(\(\) => this\._liftNotes\(\)\);/.test(sh)
     && /\.lay-sheet:not\(:empty\) ~ #toasts \{ top: auto; bottom: max\(calc\(16px \+ env\(safe-area-inset-bottom, 0px\)\), var\(--note-lift, 0px\)\); \}/.test(css),
     "a note over a sheet that fills a phone's screen sits above its footer, so the minimal-view note no longer takes the first tap on Solve, Back or Close");
-  assert(/_render\(\) \{\s*const keep = this\._focusedControl\(\);\s*this\._draw\(\);\s*if \(keep\) this\.el\?\.querySelector\(keep\)\?\.focus\(\{ preventScroll: true \}\);/.test(sh)
+  assert(/_render\(\) \{\s*const keep = this\._focusedControl\(\);\s*this\._draw\(\);\s*this\._oneStopPerGroup\(\);\s*if \(keep\) this\.el\?\.querySelector\(keep\)\?\.focus\(\{ preventScroll: true \}\);/.test(sh)
     && sh.includes('const attrs = Object.entries(at.dataset).map(([k, v]) => `[data-${k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}="${globalThis.CSS?.escape?.(v) ?? v}"]`);'),
     'a sheet redrawn by a choice keeps the keyboard on the control it was on, where choosing a theme, a size or a switch in Settings by keyboard left the focus on nothing');
+  assert(/_oneStopPerGroup\(\) \{[\s\S]{0,300}for \(const r of radios\) r\.tabIndex = r === chosen \? 0 : -1;/.test(sh)
+    && /const radio = \/\^Arrow\(Left\|Right\|Up\|Down\)\$\/\.test\(e\.key\) && e\.target\.closest\?\.\('\[role="radiogroup"\] \[role="radio"\]'\);[\s\S]{0,400}next\.focus\(\);\s*next\.click\(\);/.test(sh),
+    'Settings radio groups take one Tab stop, on the chosen option, and the arrow keys choose among the options, where every theme, size and side was its own Tab stop');
 }
 
 {

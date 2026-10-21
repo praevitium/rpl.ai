@@ -174,7 +174,17 @@ export class Sheets {
   _render() {
     const keep = this._focusedControl();
     this._draw();
+    this._oneStopPerGroup();
     if (keep) this.el?.querySelector(keep)?.focus({ preventScroll: true });
+  }
+
+  // As in any radio group, Tab stops once on the chosen option and the arrow keys choose among them.
+  _oneStopPerGroup() {
+    for (const group of this.el?.querySelectorAll('[role="radiogroup"]') ?? []) {
+      const radios = [...group.querySelectorAll('[role="radio"]')];
+      const chosen = radios.find((r) => r.getAttribute('aria-checked') === 'true') ?? radios[0];
+      for (const r of radios) r.tabIndex = r === chosen ? 0 : -1;
+    }
   }
 
   _focusedControl() {
@@ -520,6 +530,15 @@ export class Sheets {
 
   // Enter in a form field moves on to the next, and from the last answers the form, as the HP's ENTER does.
   _onKeyDown(e) {
+    const radio = /^Arrow(Left|Right|Up|Down)$/.test(e.key) && e.target.closest?.('[role="radiogroup"] [role="radio"]');
+    if (radio) {
+      e.preventDefault();
+      const radios = [...radio.closest('[role="radiogroup"]').querySelectorAll('[role="radio"]')];
+      const next = radios[(radios.indexOf(radio) + (/Left|Up/.test(e.key) ? -1 : 1) + radios.length) % radios.length];
+      next.focus();
+      next.click();
+      return;
+    }
     if (this.kind !== 'inform' || e.key !== 'Enter' || !e.target.matches('input[data-inf]')) return;
     e.preventDefault();
     const inputs = [...this.el.querySelectorAll('input[data-inf]')];
