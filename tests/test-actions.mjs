@@ -72,4 +72,6 @@ import {
     'findBinding: Enter on a selected level edits it');
   assert(findBinding('Enter', ['empty', 'global'])?.action === 'stack.dup', 'findBinding: Enter on an empty line is DUP');
   assert(findBinding('/', ['line', 'global']) === null, 'findBinding: "/" in the command line is not a shortcut');
+  assert(findBinding('Mod+Enter', ['matrix', 'global'])?.action === 'writer.commit',
+    'findBinding: Ctrl or Cmd+Enter in the matrix writer pushes the matrix, listed with the writer\'s other shortcuts');
 }

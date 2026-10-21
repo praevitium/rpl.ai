@@ -703,6 +703,12 @@ export class MatrixEditor {
     const atStart = cell.selectionStart === 0 && cell.selectionEnd === 0;
     const atEnd = cell.selectionStart === cell.value.length && cell.selectionEnd === cell.value.length;
     let next = null;
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      this.app.commitEntry();
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       e.stopPropagation();

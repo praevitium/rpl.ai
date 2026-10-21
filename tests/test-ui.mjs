@@ -3360,6 +3360,8 @@ setAngle('RAD');
     && /echo\(text\) \{\s*if \(this\.typedCellFocused\(\)\) \{ this\._editCell\(text\); return; \}\s*const \[r, c\] = this\._activeCell\(\);\s*this\._writeCell\(r, c, text, \[text\.length, text\.length\]\);/.test(mxSrc)
     && css.includes('.eqw.drag-over, .mx.drag-over { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-line); }'),
     'ECHO with a writer open, from the level menu or a finger drop on the writer, puts the level in the formula at the caret or in the focused matrix cell, not the hidden command line');
+  assert(/if \(e\.key === 'Enter' && \(e\.ctrlKey \|\| e\.metaKey\)\) \{\s*e\.preventDefault\(\);\s*e\.stopPropagation\(\);\s*this\.app\.commitEntry\(\);/.test(mxSrc),
+    'matrix writer: Ctrl or Cmd+Enter in a typed cell pushes the matrix, where it did nothing and only an Enter on an untyped cell could');
 }
 
 {
