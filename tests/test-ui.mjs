@@ -2909,7 +2909,7 @@ setAngle('RAD');
 {
   const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/const FCN_TOOLS = Object\.freeze\(\[\['ROOT', [^\]]*\], \['ISECT', [^\]]*\], \['SLOPE', [^\]]*\], \['AREA', [^\]]*\], \['EXTR', [^\]]*\]\]\);/.test(gv)
+  assert(/const FCN_TOOLS = Object\.freeze\(\[\['ROOT', [^\]]*\], \['ISECT', [^\]]*\], \['SLOPE', [^\]]*\], \['AREA', [^\]]*\], \['EXTR', [^\]]*\], \['F\(X\)', [^\]]*\], \["F'", [^\]]*\], \['TANL', [^\]]*\]\]\);/.test(gv)
     && /<div class="pl-fcn" role="toolbar" aria-label="Function tools" hidden>\$\{FCN_TOOLS\.map\(/.test(gv)
     && /if \(fcn\) \{ this\.fcnTool\(fcn\.dataset\.fcn\); return; \}/.test(gv)
     && /this\._fcnTools\.hidden = !this\._fcnTrace\(\);/.test(gv)
@@ -2952,6 +2952,11 @@ setAngle('RAD');
 {
   const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/value = Tagged\('F\(x\)', Real\(y\)\);/.test(gv) && /lookup\('DERIV'\)\.fn\(s\);/.test(gv) && /this\._addTrace\(dt\);\n\s*value = d;/.test(gv)
+    && /const line = traceFromInputs\('function', lineExpr\(m, b, name\)\);/.test(gv) && /value = Tagged\('TanL', TRACE_KINDS\.function\.toStack\(line\)\[0\]\);/.test(gv)
+    && /const slope = m === 1 \? name : m === -1 \? `-\$\{name\}` : m === 0 \? '' : `\$\{num\(m\)\}\*\$\{name\}`;/.test(gv)
+    && /const exact = d \? evalTraceAtX\(d, x, opts\) : NaN;\n\s*return Number\.isFinite\(exact\) \? exact : slopeAt\(f, x, /.test(gv),
+    'plot FCN: F(X) pushes the value here as F(x):, F\' plots the CAS derivative and pushes it, TANL plots the tangent as m*X+b (X for a unit slope, no +0.) and pushes it as TanL:, after EXTR as on the HP; SLOPE and TANL read the CAS derivative when it is ready and difference the curve otherwise');
   assert(/\n  \.gr-show \{ appearance: none; width: 40px; height: 40px; margin: 0; display: grid; place-content: center; \}/.test(css)
     && /\.gr-show:checked::before \{ background: currentColor;/.test(css) && /style="accent-color:\$\{t\.color\};color:\$\{t\.color\}"/.test(gv),
     'plot trace rows on touch: the show/hide box is a 40 px target drawn in the trace\'s colour, where the native 16 px box was the drawer\'s one small control');

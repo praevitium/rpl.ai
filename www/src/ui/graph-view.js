@@ -55,8 +55,15 @@ const PICT_TOOLS = Object.freeze([
   ['PICT→', 'Put PICT on the stack'],
 ]);
 // The HP's FCN menu on a function plot, the part that works about one cursor.
-const FCN_TOOLS = Object.freeze([['ROOT', 'The nearest root of the function'], ['ISECT', 'The nearest crossing of two functions, as a point'], ['SLOPE', 'The slope of the function here'], ['AREA', 'The area under the function between two cursor positions: tap here, move the cursor, tap again'], ['EXTR', 'The nearest extremum, as a point']]);
+const FCN_TOOLS = Object.freeze([['ROOT', 'The nearest root of the function'], ['ISECT', 'The nearest crossing of two functions, as a point'], ['SLOPE', 'The slope of the function here'], ['AREA', 'The area under the function between two cursor positions: tap here, move the cursor, tap again'], ['EXTR', 'The nearest extremum, as a point'], ['F(X)', 'The value of the function here'], ["F'", 'The derivative of the function, plotted and put on the stack'], ['TANL', 'The tangent line here, plotted and put on the stack']]);
 const NEEDS_MARK = new Set(['LINE', 'TLINE', 'BOX', 'CIRCL', 'DEL', 'SUB']);
+// The HP writes a tangent as m*X+b, its numbers at the 12 digits a Real keeps.
+function lineExpr(m, b, name) {
+  const num = (v) => { const s = String(Number(v.toPrecision(12))).replace('e', 'E'); return /[.E]/.test(s) ? s : `${s}.`; };
+  const slope = m === 1 ? name : m === -1 ? `-${name}` : m === 0 ? '' : `${num(m)}*${name}`;
+  const icept = b === 0 && slope ? '' : `${b < 0 ? '-' : slope ? '+' : ''}${num(Math.abs(b))}`;
+  return slope + icept;
+}
 const DOTS = Object.freeze({ 'DOT+': 'on', 'DOT-': 'off' });
 const TAP_SLOP_PX = 6;
 const TOUCH = !!globalThis.matchMedia?.('(pointer: coarse)').matches;
@@ -687,6 +694,23 @@ export class GraphView {
     if (this._dot && from) pictLine(Complex(from.x, from.y), Complex(this._mark.x, this._mark.y), this._dot);
   }
 
+  // F': the function's DERIV in its variable, through the CAS as the command goes.
+  _derivative(t, name) {
+    const s = new Stack();
+    s.push(TRACE_KINDS.function.toStack(t)[0]);
+    s.push(Name(name));
+    lookup('DERIV').fn(s);
+    return s.pop();
+  }
+
+  // SLOPE and TANL read the derivative where the CAS gives one, as the HP does, and difference the curve where it doesn't.
+  _slopeAt(t, f, x, opts) {
+    let d = null;
+    try { d = stackValueToTrace(this._derivative(t, opts.indep ?? 'X'), 'function'); } catch { d = null; }
+    const exact = d ? evalTraceAtX(d, x, opts) : NaN;
+    return Number.isFinite(exact) ? exact : slopeAt(f, x, (this.view.xmax - this.view.xmin) / 2000);
+  }
+
   _fcnTrace() {
     const isFn = (t) => t.enabled && t.kind === 'function';
     return this.traces.find((t) => t.id === this._selectedId && isFn(t)) ?? this.traces.find(isFn) ?? null;
@@ -698,13 +722,14 @@ export class GraphView {
     const t = this._fcnTrace();
     if (!t) return;
     const opts = this._hoverOpts();
+    const name = opts.indep ?? 'X';
     const f = (x) => evalTraceAtX(t, x, opts);
     const v = this.view;
     const span = v.xmax - v.xmin;
     const x0 = this.tracing && this.traceX != null ? this.traceX : this._mark && !this._projected() ? this._mark.x : (v.xmin + v.xmax) / 2;
     let x = x0, value;
     if (key === 'SLOPE') {
-      const slope = slopeAt(f, x0, span / 2000);
+      const slope = this._slopeAt(t, f, x0, opts);
       if (!Number.isFinite(slope)) { this._fail(`no slope of ${t.expr} at ${format(Real(x0))}`); return; }
       value = Tagged('Slope', Real(slope));
     } else if (key === 'ROOT') {
@@ -729,6 +754,24 @@ export class GraphView {
       this._areaFrom = null;
       if (!Number.isFinite(area)) { this._fail(`${t.expr} has no area there`); return; }
       value = Tagged('Area', Real(area));
+    } else if (key === 'F(X)') {
+      const y = f(x0);
+      if (!Number.isFinite(y)) { this._fail(`${t.expr} has no value at ${format(Real(x0))}`); return; }
+      value = Tagged('F(x)', Real(y));
+    } else if (key === "F'") {
+      let d;
+      try { d = this._derivative(t, name); } catch (e) { this._fail(e.message); return; }
+      const dt = stackValueToTrace(d, 'function');
+      if (!dt) { this._fail(`no derivative of ${t.expr}`); return; }
+      this._addTrace(dt);
+      value = d;
+    } else if (key === 'TANL') {
+      const m = this._slopeAt(t, f, x0, opts), b = f(x0) - m * x0;
+      if (!Number.isFinite(m + b)) { this._fail(`no tangent of ${t.expr} at ${format(Real(x0))}`); return; }
+      const line = traceFromInputs('function', lineExpr(m, b, name));
+      this._addTrace(line);
+      this._selectTrace(t.id);
+      value = Tagged('TanL', TRACE_KINDS.function.toStack(line)[0]);
     } else {
       const e = nearestExtremum(f, x0, span);
       if (!e) { this._fail(`no extremum of ${t.expr} in the window`); return; }
