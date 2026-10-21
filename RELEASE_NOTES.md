@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.27 (2026-10-21)
+**Latest release:** v0.8.28 (2026-10-21)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.28 — 2026-10-21
+
+- Changed: the Variables drawer is decluttered. Each variable's row shows
+  its name and value with one ⋯ button whose menu edits (or opens),
+  renames, downloads or deletes it, where four buttons sat under every
+  name; a phone's row went from 86 to 55 px. New folder, Upload, Export
+  .rpl, Back up everything and Restore move from five buttons under the
+  list into one ⋯ menu beside the filter, and the backup ports fold away
+  under Backups, which shows how many there are. The drawer's title no
+  longer repeats the folder path its path row and the app bar show.
 
 ## v0.8.27 — 2026-10-21
 
