@@ -150,7 +150,13 @@ const top = (s) => Number(s.peek().value);
   assert(top(runLine("'V' MROOT")) === 750, 'SOLVEQN 1 6: Simple Shear, V = P*(L-a)/L for a point load');
   runLine("1 10 0 SOLVEQN { P L a w x } MUSER");
   assert(top(runLine("'V' MROOT")) === 1000 && top(runLine("2 'x' STO 'V' MROOT")) === 0, 'SOLVEQN 1 10: Cantilever Shear reads IFTE(x≤a,1,0), the load counts left of it only');
+  runLine('3 2 0 SOLVEQN');
+  assert(varRecall('EQ').items.length === 10 && known() === 'g', "SOLVEQN 3 2: Bernoulli's Equation holds the HP's ten equations, g known");
+  runLine("6 6 0 SOLVEQN 3000 'T' STO 1E-6 'λ1' STO 2E-6 'λ2' STO { T λ1 λ2 } MUSER");
+  assert(Math.abs(top(runLine("'f' MROOT")) - top(runLine("'F0λ(2E-6,3000)-F0λ(1E-6,3000)' →NUM"))) < 1e-12, 'SOLVEQN 6 6: Black Body Radiation finds the band fraction f through F0λ');
+  runLine("5 6 0 SOLVEQN 1.5 'T' STO 1 'Tc' STO 2 'P' STO 1 'Pc' STO { T Tc P Pc } MUSER");
+  assert(Math.abs(top(runLine("'Z' MROOT")) - 0.820633025234) < 1e-9, 'SOLVEQN 5 6: Real Gas Law finds Z through ZFACTOR');
   assert(/Bad argument value/.test(err('99 1 0 SOLVEQN')) && /Bad argument value/.test(err('2 40 0 SOLVEQN')) && /Bad argument type/.test(err("'x' 1 0 SOLVEQN")), 'SOLVEQN refuses an unknown subject or title and a non-number');
   assert(runLine('5 EQNLIB').depth === 1, 'EQNLIB leaves the stack alone; the app opens the sheet through its hook');
-  for (const id of ['EQ', 'Mpar', 'g', 'k', 'q', 'εsi', 'ε0', 'I0', 'P', 'L', 'a', 'M', 'w', 'x', 'V']) err(`'${id}' PURGE`);
+  for (const id of ['EQ', 'Mpar', 'g', 'k', 'q', 'εsi', 'ε0', 'I0', 'P', 'L', 'a', 'M', 'w', 'x', 'V', 'T', 'λ1', 'λ2', 'f', 'σ', 'c3', 'Tc', 'Pc', 'Z', 'R']) err(`'${id}' PURGE`);
 }

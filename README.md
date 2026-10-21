@@ -1058,9 +1058,10 @@ and serial transfer.
   Bowserinator's Periodic-Table-JSON, drawn from Wikipedia.
 - `EQNLIB` opens the Equation Library as a sheet of the HP's 15 subjects
   and their sets, and `SOLVEQN` takes the HP's subject and title numbers;
-  the equations are written from the physics, not copied from the HP, so a
-  variable name can differ, and the values are plain numbers in SI units,
-  each set's constants (g, ε0, k and so on, per set as on the HP) filled in.
+  the equations follow the HP's sets as DB48X transcribes them, in plain
+  numbers in SI units rather than the HP's unit-tagged values, so a few
+  variable names differ, and each set's constants (g, ε0, k and so on, per
+  set as on the HP) are filled in.
 - An algebraic reads the HP's postfix factorial, `'5!'` or `'(N+1)!'`, but
   its text form writes `FACT(5)`; the textbook display shows `5!`.
 - `BEEP` doesn't hold the program while its tone plays; tones in a row still
@@ -1230,6 +1231,9 @@ rpl.ai bundles or depends on:
   [emgiac](https://github.com/adriweb/emgiac), with GMP, MPFR and MPFI (LGPL)
 - **[Periodic-Table-JSON](https://github.com/Bowserinator/Periodic-Table-JSON)**
   by Bowserinator, CC BY-SA, for the 118 elements behind PERTBL and PTPROP.
+- **[DB48X](https://github.com/c3d/db48x)** by Christophe de Dinechin
+  (LGPL-3.0): its transcription of the HP 50g's Equation Library, which
+  EQNLIB's 102 sets follow.
 - **[decimal.js](https://github.com/MikeMcl/decimal.js)**,
   **[fraction.js](https://github.com/rawify/Fraction.js)** and
   **[complex.js](https://github.com/rawify/Complex.js)** (MIT): decimal,
