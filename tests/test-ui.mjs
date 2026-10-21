@@ -3199,3 +3199,11 @@ setAngle('RAD');
   assert(tourSrc.includes("a finger held on it opens its menu, a swipe sideways drops it, and a drag up or down by its number moves it.'"),
     "the tour's stack card on a phone names the swipe that drops a level and the drag by its number that moves it, as its soft-key card names the swipe along the keys");
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/if \(this\.pendingEdit\?\.kind === 'level' && this\.stack\.peek\(this\.pendingEdit\.level\) !== this\.pendingEdit\.value\) this\._followEdit\(\);/.test(appSrc)
+    && /_followEdit\(\) \{\s*const \{ value \} = this\.pendingEdit;\s*let level = 0;\s*for \(let n = 1; n <= this\.stack\.depth && !level; n\+\+\) if \(this\.stack\.peek\(n\) === value\) level = n;\s*this\.pendingEdit = level \? \{ \.\.\.this\.pendingEdit, level, label: `Editing level \$\{level\}` \} : null;\s*this\.input\.render\(\);\s*this\.renderStatus\(\);/.test(appSrc)
+    && /writerCommit\(value\) \{\s*if \(this\.entry\.buffer\.trim\(\)\) this\.entry\.enter\(\);\s*const edit = this\.pendingEdit;/.test(appSrc),
+    "a level edit follows its value when other levels are moved, swiped away or pushed, so Enter still replaces it and minimal view's pencil names its new level; it ends, pencil and all, only when the value leaves the stack");
+}

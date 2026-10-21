@@ -322,10 +322,7 @@ class App {
       this.selection = clamped || null;
       this.display.selectedLevel = this.selection;
     }
-    if (this.pendingEdit?.kind === 'level' && this.stack.peek(this.pendingEdit.level) !== this.pendingEdit.value) {
-      this.pendingEdit = null;
-      this.input.render();
-    }
+    if (this.pendingEdit?.kind === 'level' && this.stack.peek(this.pendingEdit.level) !== this.pendingEdit.value) this._followEdit();
     if (this.errorBanner && !this.entry.error) this._showError('');
     this.display.renderStack(this.stack);
     this.appbar.render();
@@ -1177,6 +1174,16 @@ class App {
     this._beginEdit({ kind: 'level', level, value, line, label: `Editing level ${level}` });
   }
 
+  // A level moved, dropped or pushed past the one being edited takes the edit along; it ends only when its value leaves the stack.
+  _followEdit() {
+    const { value } = this.pendingEdit;
+    let level = 0;
+    for (let n = 1; n <= this.stack.depth && !level; n++) if (this.stack.peek(n) === value) level = n;
+    this.pendingEdit = level ? { ...this.pendingEdit, level, label: `Editing level ${level}` } : null;
+    this.input.render();
+    this.renderStatus();
+  }
+
   editVariable(name, { line = false } = {}) {
     const value = varRecall(name);
     if (value === undefined) return;
@@ -1221,8 +1228,8 @@ class App {
   }
 
   writerCommit(value) {
-    const edit = this.pendingEdit;
     if (this.entry.buffer.trim()) this.entry.enter();
+    const edit = this.pendingEdit;
     this.entry._recordHistory(withFractionMark(formatSource(value)));
     this.entry._snapForUndo();
     if (edit?.kind === 'level' && this.stack.peek(edit.level) === edit.value) replaceLevel(this.stack, edit.level, [value]);
