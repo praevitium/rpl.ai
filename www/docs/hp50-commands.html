@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 771 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 779 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -182,7 +182,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-COS">COS</a>
 <a href="#cmd-COSH">COSH</a>
 <a href="#cmd-COV">COV</a>
-<a href="#cmd-CR" class='notinapp'>CR</a>
+<a href="#cmd-CR">CR</a>
 <a href="#cmd-CRDIR">CRDIR</a>
 <a href="#cmd-CROSS">CROSS</a>
 <a href="#cmd-CSWP">CSWP</a>
@@ -203,7 +203,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-DEG">DEG</a>
 <a href="#cmd-DEGREE">DEGREE</a>
 <a href="#cmd-DELALARM">DELALARM</a>
-<a href="#cmd-DELAY" class='notinapp'>DELAY</a>
+<a href="#cmd-DELAY">DELAY</a>
 <a href="#cmd-DELKEYS">DELKEYS</a>
 <a href="#cmd-DEPND">DEPND</a>
 <a href="#cmd-DEPTH">DEPTH</a>
@@ -466,7 +466,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-OBJ-to">OBJ→</a>
 <a href="#cmd-OCT">OCT</a>
 <a href="#cmd-OFF">OFF</a>
-<a href="#cmd-OLDPRT" class='notinapp'>OLDPRT</a>
+<a href="#cmd-OLDPRT">OLDPRT</a>
 <a href="#cmd-OPENIO" class='notinapp'>OPENIO</a>
 <a href="#cmd-OR">OR</a>
 <a href="#cmd-ORDER">ORDER</a>
@@ -509,20 +509,20 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-POTENTIAL">POTENTIAL</a>
 <a href="#cmd-POWEXPAND">POWEXPAND</a>
 <a href="#cmd-POWMOD">POWMOD</a>
-<a href="#cmd-PR1" class='notinapp'>PR1</a>
+<a href="#cmd-PR1">PR1</a>
 <a href="#cmd-PREDV">PREDV</a>
 <a href="#cmd-PREDX">PREDX</a>
 <a href="#cmd-PREDY">PREDY</a>
 <a href="#cmd-PREVAL">PREVAL</a>
 <a href="#cmd-PREVPRIME">PREVPRIME</a>
-<a href="#cmd-PRLCD" class='notinapp'>PRLCD</a>
+<a href="#cmd-PRLCD">PRLCD</a>
 <a href="#cmd-PROMPT">PROMPT</a>
 <a href="#cmd-PROMPTSTO">PROMPTSTO</a>
 <a href="#cmd-PROOT">PROOT</a>
 <a href="#cmd-PROPFRAC">PROPFRAC</a>
-<a href="#cmd-PRST" class='notinapp'>PRST</a>
-<a href="#cmd-PRSTC" class='notinapp'>PRSTC</a>
-<a href="#cmd-PRVAR" class='notinapp'>PRVAR</a>
+<a href="#cmd-PRST">PRST</a>
+<a href="#cmd-PRSTC">PRSTC</a>
+<a href="#cmd-PRVAR">PRVAR</a>
 <a href="#cmd-PSDEV">PSDEV</a>
 <a href="#cmd-PSI">PSI</a>
 <a href="#cmd-PTAYL">PTAYL</a>
@@ -3269,7 +3269,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>COLΣ, CORR, PCOV, PREDX, PREDY, XCOL, YCOL</p>
   </dd>
 </dl>
-<h2 id="cmd-CR">CR <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-CR">CR <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 167 · printed page 3-47</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -3279,6 +3279,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Carriage Right Command: Prints the contents, if any, of the printer buffer. When printing to the serial port (flag –34 set), CR sends to the printer a string that encodes the line termination method. The default termination method is carriage-return/linefeed. The string is the fourth parameter in the reserved variable PRTPAR. When using the HP 82240B Infrared Printer (flag –34 clear), CR leaves the printhead on the right end of the just printed line.</p>
+    <p>In rpl.ai CR writes an empty line to the print log, there being no print buffer to empty. The log is described under PR1.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
@@ -3810,7 +3811,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>FINDALARM, RCLALARM, STOALARM</p>
   </dd>
 </dl>
-<h2 id="cmd-DELAY">DELAY <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-DELAY">DELAY <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 174 · printed page 3-54</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -3820,6 +3821,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Delay Command: Specifies how many seconds the calculator waits between sending lines of information to the printer. Setting flag –34 directs printer output to the serial port. In this case, flag –33 must be clear. If flag –34 is set and transmit pacing is enabled (nonzero) in reserved variable IOPAR, then XON/XOFF handshaking controls data transmission and the delay setting has no effect. xdelay specifies the delay time in seconds. The default delay is 0 seconds. The maximum delay is 6.9 seconds. (The sign of xdelay is ignored, so –4 DELAY is equivalent to 4 DELAY.) The delay setting is the first parameter in the reserved variable PRTPAR. A shorter delay setting can be useful when the calculator sends multiple lines of information to your printer (for example, when printing a program). To optimize printing efficiency, set the delay just longer than the time the printhead requires to print one line of information. If you set the delay shorter than the time to print one line, you may lose information. Also, as the batteries in the printer lose their charge, the printhead slows down, and, if you have previously decreased the delay, you may have to increase it to avoid losing information. (Battery discharge will not cause the printhead to slow to more than the 1.8-second default delay setting.)</p>
+    <p>In rpl.ai there is no printer to pace, so DELAY checks that its argument is a number and does nothing else; PRTPAR is not created.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
@@ -10935,7 +10937,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>CONT, HALT, KILL</p>
   </dd>
 </dl>
-<h2 id="cmd-OLDPRT">OLDPRT <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-OLDPRT">OLDPRT <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 279 · printed page 3-159</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -10946,6 +10948,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dd class="cmd-field cmd-field-description">
     <p>Modifies the remapping string in the reserved variable PRTPAR so that the extended character set of the calculator matches that of the HP 82240A Infrared Printer.</p>
     <p>The character set in the HP 82240A Infrared Printer does not match the character set of the calculator:</p><ul class="cmd-bullets"><li>24 characters in the calculator’s character set are not available in the HP 82240A Infrared Printer. (From the table in Appendix J, these characters are numbers 129, 130, 143-157, 159, 166, 169, 172, 174, 184, and 185.) The HP 82240A prints a  in substitution.</li><li>Many characters in the extended character table (character codes 128 through 255) do not have the same character code. For example, the « character has code 171 in the calculator and code 146 in the HP 82240A Infrared Printer. To use the CHR command to print extended characters with an HP 82240A Infrared Printer, first execute OLDPRT. The remapping string modified by OLDPRT is the second parameter in PRTPAR. This string (which is empty in the default state) changes the character code of each byte to match the codes in the HP 82240A Infrared Printer character table. To cancel OLDPRT character mapping in order to print to an HP 82240B Infrared Printer, purge the PRTPAR variable. To print a string containing graphics data, disable OLDPRT.</li></ul>
+    <p>In rpl.ai there is no HP 82240A printer to remap characters for, so OLDPRT does nothing; PRTPAR is not created.</p>
   </dd>
   <dt class="cmd-label cmd-label-see-also">See also</dt>
   <dd class="cmd-field cmd-field-see-also">
@@ -11962,7 +11965,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>Exact mode must be set (flag –105 clear). Numeric mode must not be set (flag –3 clear). Radians mode must be set (flag –17 set).</p>
   </dd>
 </dl>
-<h2 id="cmd-PR1">PR1 <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PR1">PR1 <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 295 · printed page 3-175</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -11973,6 +11976,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dd class="cmd-field cmd-field-description">
     <p>Print Level 1 Command: Prints an object in multiline printer format. All objects except strings are printed with their identifying delimiters. Strings are printed without the leading and trailing &quot; delimiters. If flag –34 is set (printer output directed to the serial port), flag –33 must be clear. Multiline printer format is similar to multiline display format, with the following exceptions:</p><ul class="cmd-bullets"><li>Strings and names that are more than 24 characters long are continued on the next printer line.</li><li>The real and imaginary parts of complex numbers are printed on separate lines if they don’t fit on the same line.</li><li>Grobs are printed graphically.</li><li>Arrays are printed with a numbered heading for each row and with a column number before each element. For example, the 2 × 3 array 1 2 3 4 5 6 would be printed as follows: Array { 2 3 } Row 1 1] 1 2] 2 3] 3</li></ul>
     <p>Row 2 1] 4 2] 5 3] 6</p>
+    <p>In rpl.ai there is no printer: PR1 writes level 1 to the print log, a string without its quotes and anything else as it is typed, and leaves it on the stack. A note says what was printed, with Show to open the log, which command search also opens (Print log); the log keeps the last 2000 lines until the app is closed, with Copy and Clear.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
@@ -12115,7 +12119,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>ISPRIME?, NEXTPRIME</p>
   </dd>
 </dl>
-<h2 id="cmd-PRLCD">PRLCD <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PRLCD">PRLCD <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 298 · printed page 3-178</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -12125,6 +12129,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Print LCD Command: Prints a pixel-by-pixel image of the current display (excluding the annunciators). The width of the printed image of characters in the display is narrower using PRLCD than using a print command such as PR1. The difference results from the spacing between characters. On the display there is a single blank column between characters, and PRLCD prints this spacing. Print commands such as PR1 print two blank columns between adjacent characters.</p>
+    <p>In rpl.ai PRLCD writes the display as text to the print log: the stack's levels as the screen shows them, one line each, rather than a picture of the pixels. The log is described under PR1.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
@@ -12241,7 +12246,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <table class="cmd-kv"><tbody><tr><th>Command</th><td>PROPFRAC((X^3+4)/X^2))</td></tr><tr><th>Result</th><td>X+(4/X^2)</td></tr></tbody></table>
   </dd>
 </dl>
-<h2 id="cmd-PRST">PRST <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PRST">PRST <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 300 · printed page 3-180</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -12251,6 +12256,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Print Stack Command: Prints all objects in the stack, starting with the object on the highest level. Objects are printed in multiline printer format. See the PR1 entry for a description of multiline printer format.</p>
+    <p>In rpl.ai PRST writes every level to the print log, the highest first, each with its level number, in the form PR1 uses. The log is described under PR1.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
@@ -12265,7 +12271,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>CR, DELAY, OLDPRT, PRLCD, PRSTC, PRVAR, PR1</p>
   </dd>
 </dl>
-<h2 id="cmd-PRSTC">PRSTC <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PRSTC">PRSTC <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 300 · printed page 3-180</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -12275,6 +12281,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Print Stack (Compact) Command: Prints in compact form all objects in the stack, starting with the object on the highest level. If flag –34 is set (printer output directed to the serial port), flag –33 must be clear. When flag –38 is set, linefeeds are not added at the end of each print line. Generally, flag –38 should be clear for execution of PRSTC. Compact printer format is the same as compact display format. Multiline objects are truncated and appear on one line only.</p>
+    <p>In rpl.ai PRSTC writes every level to the print log on one line each, as the display shows it, cut to the HP display's 33 characters. The log is described under PR1.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
@@ -12289,7 +12296,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>CR, DELAY, OLDPRT, PRLCD, PRST, PRVAR, PR1</p>
   </dd>
 </dl>
-<h2 id="cmd-PRVAR">PRVAR <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-PRVAR">PRVAR <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 300 · printed page 3-180</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -12299,6 +12306,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Print Variable Command: Searches the current directory path or port for the specified variables and prints the name and contents of each variable. Objects are printed in multiline printer format. See the PR1 entry for a description of multiline printer format. If flag –34 is set (printer output directed to the serial port), flag –33 must be clear. When flag –38 is set, linefeeds are not added at the end of each print line. Generally, flag –38 should be clear for execution of PRVAR.</p>
+    <p>In rpl.ai PRVAR writes each variable to the print log as its name, a colon and its value; a name or a list of names is taken, and a variable that does not exist is an error. Ports have no meaning here. The log is described under PR1.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">

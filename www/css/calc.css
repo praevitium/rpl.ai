@@ -2319,3 +2319,6 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 .eq-vars { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 10px; }
 .eq-vars span { padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px; font: 500 12px/18px var(--font-mono); color: var(--ink); }
 .eq-vars .known { border-style: dashed; color: var(--ink2); }
+
+/* The print log: what the print commands printed, as the HP's paper roll. */
+.pr-log { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--r1); color: var(--ink); font: 500 13px/1.45 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }

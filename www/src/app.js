@@ -38,7 +38,7 @@ import {
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo, getUserKeys, standardKeysActive,
   batchStateNotifications,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
 import { VERSION, DATE } from './build-info.js';
 import { beep, alarmBeep } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest, calculatorNow } from './rpl/ops/time.js';
@@ -191,6 +191,7 @@ class App {
     setOffHook(() => setTimeout(() => this.turnOff()));
     setTableHook(() => setTimeout(() => this.sheets.openPeriodicTable()));
     setLibraryHook(() => setTimeout(() => this.sheets.openEquationLibrary()));
+    setPrintHook((count) => this._notePrinted(count));
     setBeepHook(beep);
     setVersion(VERSION, DATE);
     setConlibHook(() => this.showConstants());
@@ -563,6 +564,18 @@ class App {
   }
 
   toast(message, opts) { this.toasts.show(message, opts); }
+
+  // A program that prints line by line gets one note for the run, counting every line, after it has finished.
+  _notePrinted(count) {
+    this._printedLines = (this._printedLines ?? 0) + count;
+    clearTimeout(this._printTimer);
+    this._printTimer = setTimeout(() => {
+      const n = this._printedLines;
+      this._printedLines = 0;
+      if (this.sheets.kind === 'print') this.sheets.openPrintLog();
+      else this.toast(`Printed ${n} ${n === 1 ? 'line' : 'lines'} to the print log`, { key: 'print', action: 'Show', onAction: () => this.sheets.openPrintLog() });
+    });
+  }
 
   // A toast's Undo reverses its own step, never the text being typed, and
   // only while that step is still the latest one, so each replaces the last.
@@ -2307,6 +2320,7 @@ class App {
       case 'help.tour': this.tour.start(); return true;
       case 'catalog.open': this.drawers.open('catalog'); return true;
       case 'about.open': this.sheets.openAbout(); return true;
+      case 'printlog.open': this.sheets.openPrintLog(); return true;
       case 'app.install': this.installApp(); return true;
       case 'assistant.ask': {
         const text = this.entry.buffer.trim().replace(/^\?/, '').trim();

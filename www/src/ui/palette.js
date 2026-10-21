@@ -14,7 +14,7 @@ import { escapeHtml, typeName } from './display.js';
 
 const PALETTE_ACTIONS = Object.freeze([
   'settings.open', 'shortcuts.open', 'help.tour', 'app.install', 'view.minimal', 'keypad.toggle', 'drawer.toggle', 'assistant.tutor',
-  'writer.equation', 'writer.matrix', 'assistant.ask', 'edit.undo', 'edit.redo', 'edit.paste',
+  'writer.equation', 'writer.matrix', 'assistant.ask', 'edit.undo', 'edit.redo', 'edit.paste', 'printlog.open',
 ]);
 
 const RESULT_CAP = 8;

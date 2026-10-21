@@ -577,3 +577,23 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assertThrows(() => runLine('[ EVP ] EVAL'), /Bad argument value/, 'EVAL of an array refuses an entry that gives two values');
   runLine("'EVX' PURGE 'EVP' PURGE");
 }
+
+// The print commands write to the print log, rpl.ai having no printer.
+{
+  const { printLog, clearPrintLog, setPrintHook } = await import('../www/src/rpl/ops.js');
+  const printed = (line) => { clearPrintLog(); const s = runLine(line); return [printLog.join('|'), s.depth]; };
+  let lines = 0;
+  setPrintHook((n) => { lines += n; });
+  assert(printed('"Hello" PR1').join() === 'Hello,1', 'PR1 prints a string without its quotes and leaves it on the stack');
+  assert(printed('1 [[ 1 2 ][ 3 4 ]] « 1 + » PRST').join() === '3: 1|2: [[ 1 2 ][ 3 4 ]]|1: « 1 + »,3', 'PRST prints every level, the highest first, with its level number');
+  assert(printed('"a string longer than the HP display is wide" PRSTC')[0] === '1: "a string longer than the HP dis…', 'PRSTC prints each level on one line cut to the display width');
+  assert(printed('1 2 PRLCD')[0] === '2: 1|1: 2', 'PRLCD prints the stack as the display shows it');
+  assert(printed("42 'PRV' STO { PRV } PRVAR").join() === 'PRV: 42,0' && printed("'PRV' PRVAR")[0] === 'PRV: 42', 'PRVAR prints a name or a list of names with its value');
+  assertThrows(() => runLine("'PRNOPE' PRVAR"), /Undefined name: PRNOPE/, 'PRVAR names a variable that does not exist');
+  assert(printed('CR').join() === ',0', 'CR prints an empty line');
+  assert(printed('-4 DELAY OLDPRT').join() === ',0' && lines === 10, 'DELAY and OLDPRT have no printer to set up and print nothing; the hook heard every printed line');
+  assertThrows(() => runLine('"x" DELAY'), /Bad argument type/, 'DELAY wants a number');
+  setPrintHook(null);
+  clearPrintLog();
+  runLine("'PRV' PURGE");
+}

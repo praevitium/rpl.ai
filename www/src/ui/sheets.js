@@ -10,6 +10,7 @@ import { ELEMENTS } from '../rpl/elements.js';
 import { PROPERTIES, propertyValue } from '../rpl/ops/periodic.js';
 import { EQ_LIBRARY } from '../rpl/eqlib.js';
 import { solveSet, setVariables, libraryEquation } from '../rpl/ops/eqlib.js';
+import { printLog, clearPrintLog } from '../rpl/ops/print.js';
 import { lookup } from '../rpl/ops/registry.js';
 import { format } from '../rpl/formatter.js';
 import { VERSION, BUILD, SHA } from '../build-info.js';
@@ -95,6 +96,11 @@ export class Sheets {
     this._open('ptable');
   }
 
+  // What PR1, PRST and the other print commands printed, newest at the bottom as on the HP's paper.
+  openPrintLog() {
+    this._open('print');
+  }
+
   // EQNLIB: the subjects, a subject's sets, a set's equations with Solve.
   openEquationLibrary() {
     this.eqlib ??= { subject: null, set: null };
@@ -172,6 +178,16 @@ export class Sheets {
       const wrap = this.el.querySelector('.pt-wrap');
       markScrollEdges(wrap);
       wrap.addEventListener('scroll', () => markScrollEdges(wrap), { passive: true });
+      return;
+    }
+    if (this.kind === 'print') {
+      const body = printLog.length
+        ? `<pre class="pr-log">${escapeHtml(printLog.join('\n'))}</pre>`
+        : '<p class="pt-hint">Nothing printed yet. PR1, PRST, PRSTC, PRVAR, PRLCD and CR print here, as the HP prints on paper.</p>';
+      const foot = `${printLog.length ? `<button type="button" class="btn" data-sh="pr-copy">${icon('copy', 'sm')}Copy</button><button type="button" class="btn" data-sh="pr-clear">${icon('trash', 'sm')}Clear</button>` : ''}<button type="button" class="btn" data-sh="close">${icon('x', 'sm')}Close</button>`;
+      this.el.innerHTML = sheet('Print log', body, '', foot);
+      const content = this.el.querySelector('.sheet-c');
+      content.scrollTop = content.scrollHeight;
       return;
     }
     if (this.kind === 'eqlib') {
@@ -362,6 +378,8 @@ export class Sheets {
         else this.eqlib.subject = null;
         this._render();
         return;
+      case 'pr-copy': app.copyText(printLog.join('\n'), 'Copied the print log'); return;
+      case 'pr-clear': clearPrintLog(); this._render(); return;
       case 'eq-push': {
         const v = libraryEquation(this.eqlib.subject, this.eqlib.set, Number(b.dataset.i));
         app.commitEntryAndPush(v);
