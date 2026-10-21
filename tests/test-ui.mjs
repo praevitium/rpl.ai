@@ -3012,7 +3012,7 @@ setAngle('RAD');
 {
   const app = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/setFilerHook\(\(\) => setTimeout\(\(\) => this\.drawers\.open\('vars'\)\)\);/.test(app)
+  assert(/setFilerHook\(\(\) => setTimeout\(\(\) => \{ document\.activeElement\?\.blur\?\.\(\); this\.drawers\.open\('vars'\); \}\)\);/.test(app)
     && /setOffHook\(\(\) => setTimeout\(\(\) => this\.turnOff\(\)\)\);/.test(app)
     && /this\._noteAutosave\(saveToLocalStorage\(this\.stack\)\);\n\s*const off = document\.createElement\('div'\);\n\s*off\.className = 'off-screen';/.test(app)
     && /off\.addEventListener\('click', wake\);\n\s*document\.addEventListener\('keydown', wake, true\);/.test(app) && /if \(ev\.type === 'keydown'\) this\.entry\.focus\(\);/.test(app)

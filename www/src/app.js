@@ -186,7 +186,8 @@ class App {
     setEditHook(({ level, name, line }) => setTimeout(() => (name ? this.editVariable(name, { line }) : this.editLevel(level, { line }))));
     setViewHook((value) => setTimeout(() => this._viewValue(value, 'View')));
     setGameHook((game) => setTimeout(() => this.sheets.openGame(game)));
-    setFilerHook(() => setTimeout(() => this.drawers.open('vars')));
+    // A phone's keyboard, up for the line that ran FILER, would leave the drawer a sliver; it goes with the focus.
+    setFilerHook(() => setTimeout(() => { document.activeElement?.blur?.(); this.drawers.open('vars'); }));
     setOffHook(() => setTimeout(() => this.turnOff()));
     setBeepHook(beep);
     setVersion(VERSION, DATE);
