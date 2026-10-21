@@ -25,13 +25,15 @@ export class Popover {
     this._onKey = (e) => {
       if (!this.el) return;
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.close(); return; }
-      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-      if (this._onArrow) { e.preventDefault(); this._onArrow(e.key === 'ArrowDown' ? 1 : -1); return; }
+      // Home and End go to a menu's first and last item, unless the keyboard is in a field or still on the command line.
+      const ends = (e.key === 'Home' || e.key === 'End') && this.el.contains(document.activeElement) && !document.activeElement.matches('input, textarea, select');
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && !ends) return;
+      if (this._onArrow && !ends) { e.preventDefault(); this._onArrow(e.key === 'ArrowDown' ? 1 : -1); return; }
       const items = [...this.el.querySelectorAll('.opt:not([disabled]), .grid button, .layers button:not([disabled])')];
       if (!items.length) return;
       e.preventDefault();
       const i = items.indexOf(document.activeElement);
-      const next = e.key === 'ArrowDown' ? (i + 1) % items.length : (i <= 0 ? items.length - 1 : i - 1);
+      const next = { ArrowDown: (i + 1) % items.length, ArrowUp: i <= 0 ? items.length - 1 : i - 1, Home: 0, End: items.length - 1 }[e.key];
       items[next].focus();
     };
   }

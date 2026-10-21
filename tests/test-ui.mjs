@@ -2688,7 +2688,7 @@ setAngle('RAD');
     && /_revealChoice\(center\) \{\s*this\.popover\.el\?\.querySelector\('\.opt\.on'\)\?\.scrollIntoView\(\{ block: center \? 'center' : 'nearest' \}\);/.test(appSrc)
     && /const step = \{ '▲': -1, '▼': 1 \}\[key\.primary\];\s*if \(step && !this\.shift && \(this\._moveChoice\(step\) \|\| this\.autocomplete\.move\(step\)\)\) return;/.test(appSrc)
     && /onArrowUpEmpty: \(\) => this\._moveChoice\(-1\) \|\| this\._runChord\('ArrowUp'\),[\s\S]{0,200}?onArrowDownEmpty: \(\) => this\._moveChoice\(1\) \|\| this\._runChord\('ArrowDown'\),/.test(appSrc)
-    && /if \(this\._onArrow\) \{ e\.preventDefault\(\); this\._onArrow\(e\.key === 'ArrowDown' \? 1 : -1\); return; \}/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8')),
+    && /if \(this\._onArrow && !ends\) \{ e\.preventDefault\(\); this\._onArrow\(e\.key === 'ArrowDown' \? 1 : -1\); return; \}/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8')),
     'CHOOSE: the list opens with the marked row in view, the arrow keys (keypad and keyboard) move the mark within the list or bring back a list put away, and Enter answers with it');
   assert(/this\._onResize = \(\) => requestAnimationFrame\(\(\) => \{[^}]*this\._place\(this\._point\);/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8')),
     "Popovers: a resize places an open popover a frame later, once the app's height has followed the visual viewport (after a turn the CHOOSE list sat over its banner's keys)");
@@ -2897,6 +2897,12 @@ setAngle('RAD');
     && appSrc.includes("case 'level.top': this.selectLevel(this.stack.depth); return true;")
     && appSrc.includes("case 'level.bottom': this.selectLevel(1); return true;"),
     'Home and End on a selected level jump to the top level and level 1 through an empty command line, which kept them for its caret');
+  {
+    const popSrc = readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8');
+    assert(/const ends = \(e\.key === 'Home' \|\| e\.key === 'End'\) && this\.el\.contains\(document\.activeElement\) && !document\.activeElement\.matches\('input, textarea, select'\);/.test(popSrc)
+      && popSrc.includes("Home: 0, End: items.length - 1 }[e.key];"),
+      'menus: Home and End go to the first and last item, as in any menu; in a field or with the keyboard still on the command line they are left alone');
+  }
   {
     const drawerRowSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
     assert(/if \(\/\^Arrow\(Up\|Down\|Left\|Right\)\$\|\^\(Home\|End\)\$\/\.test\(e\.key\)\) \{\s*e\.preventDefault\(\);\s*this\._stepRow\(row, e\.key\);\s*\} else if \(e\.key === 'Delete' \|\| e\.key === 'Backspace'\) \{\s*e\.preventDefault\(\);\s*this\._deleteRow\(row\);/.test(drawerRowSrc)
