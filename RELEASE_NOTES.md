@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.21 (2026-10-21)
+**Latest release:** v0.8.22 (2026-10-21)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.22 — 2026-10-21
+
+- Fixed: with flag -51 set (the comma as the fraction mark), ECHO of a
+  number such as 1,5 into the equation writer, or a paste of one, failed
+  to read. The writer's paste now reads the comma form, as its keys
+  already did, and its Copy writes it, so copy and paste round-trip.
+- New: a level dragged by its number onto one of the matrix writer's
+  cells lights that cell and, on release, takes its place, whatever the
+  cell held. A drop elsewhere on the writer still fills the focused cell.
+- ECHO of a level the open writer can't hold, such as a list into the
+  formula or a program into a matrix cell, now says so plainly ("Level 1
+  holds a program, which can't go in the formula.") instead of naming a
+  parser position, or filling a cell that failed only at Enter.
 
 ---
 
