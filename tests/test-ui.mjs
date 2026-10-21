@@ -2891,6 +2891,12 @@ setAngle('RAD');
     && readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8').includes('if (onShiftEnter?.()) return true;')
     && appSrc.includes("case 'level.echo': this.levelAction('echo'); return true;"),
     'Shift+Enter on a selected level reaches ECHO through the command line, which took it for a new line');
+  {
+    const hintSrc = readFileSync(new URL('../www/src/ui/input-area.js', import.meta.url), 'utf8');
+    assert(hintSrc.includes("`⇧← ⇧→ select · ${shortcutText('eqw.selectAll')} all`")
+      && hintSrc.includes("matrix: ['Tab next cell', '⇧Enter next row', 'Enter stores the cell, again pushes', 'Esc puts the cell back, again cancels'],"),
+      'the writers\' hint rows name Ctrl or Cmd+A in the equation writer, and say what Enter and Esc do in the matrix writer, where they said Enter pushes and Esc cancels');
+  }
   assert(appSrc.includes("case 'eqw.selectAll': this.equationEditor.pressFace('RS▲'); return true;"),
     'Ctrl or Cmd+A in the equation writer selects the whole formula as the HP\'s →▲ does, so Ctrl+C and Ctrl+X take the formula and not the page');
   assert(/case 'level\.view': if \(this\.entry\.buffer\.length\) return false; this\.levelAction\('view'\); return true;/.test(appSrc)

@@ -10,8 +10,8 @@ const WRITERS = Object.freeze([
 
 const HINTS = Object.freeze({
   rpl: ['Enter runs', '⇧Enter new line', 'start with ? to ask the assistant'],
-  equation: ['/ fraction · ^ power · ( group', 'Tab next box', '⇧← ⇧→ select', 'Enter pushes', 'Esc cancels'],
-  matrix: ['Tab next cell', '⇧Enter next row', 'Enter pushes', 'Esc cancels'],
+  equation: ['/ fraction · ^ power · ( group', 'Tab next box', `⇧← ⇧→ select · ${shortcutText('eqw.selectAll')} all`, 'Enter pushes', 'Esc cancels'],
+  matrix: ['Tab next cell', '⇧Enter next row', 'Enter stores the cell, again pushes', 'Esc puts the cell back, again cancels'],
 });
 
 // A button held acts instead of pressed: arm() says whether a press may become a hold and gives fire() what it
