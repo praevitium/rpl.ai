@@ -3856,6 +3856,9 @@ function _approxMatEqual(A, B, tol) {
   assert(line('[[(1,1) 2][3 4]] INV') === '[[ (-0.4, -0.8) (0.2, 0.4) ][ (0.3, 0.6) (0.1, -0.3) ]]',
     'INV of a complex matrix rounds once at the end, without noise in the twelfth digit');
   assertThrows(() => runLine('[[(1,1) (2,2)][1 2]] INV'), /Infinite result/, 'INV of a singular complex matrix is an Infinite result');
+  assert(line('[[ 100000000000000001 100000000000000000 ][ 100000000000000000 99999999999999999 ]] RANK') === '2'
+      && line('[[(1,1) (2,2)][1 2]] RANK') === '1' && line('[[(1,2) 3][4 5]] RANK') === '2' && line('[[1 2][2 4]] RANK') === '1',
+    'RANK counts an integer matrix exactly, where big entries rounded a nonsingular one to rank 1, and takes complex matrices');
   assertThrows(() => runLine('[[2 1][1 3]] [5 10] /'), /Bad argument type/, 'a matrix divided by a vector is still refused');
   assert(line('[[1 2][3 4]] →ROW') === '2. | [ 3 4 ] | [ 1 2 ]' && line('[1 2] [3 4] 2 ROW→') === '[[ 1 2 ][ 3 4 ]]',
     '→ROW takes a matrix apart and ROW→ puts rows together, the AUR way round');

@@ -315,6 +315,7 @@ register('RANK', (s) => {
   const [v] = s.popN(1);
   if (!isMatrix(v)) throw new RPLError('Bad argument type');
   if (_hasSymEntry(v.rows.flat())) { s.push(_casRank(v)); return; }
+  if (_reducesByScalars(v.rows.flat())) { s.push(Integer(BigInt(_rrefScalar(v.rows).rank))); return; }
   const rank = _rowEchelon(v.rows, true).filter(row => row.some(x => Math.abs(x) > 1e-10)).length;
   s.push(Integer(BigInt(rank)));
 }, { category: 'Vectors / matrices', categoryOrder: 8, label: "RANK" });
