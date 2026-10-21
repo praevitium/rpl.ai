@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.17 (2026-10-21)
+**Latest release:** v0.8.18 (2026-10-21)
 
 ---
 
@@ -18,6 +18,20 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.18 — 2026-10-21
+
+- A backup deleted from its row in the Variables drawer comes back with
+  the note's Undo, so a finger that slips from Save to Delete costs
+  nothing.
+- Fixed: a long backup name was clipped mid-letter on a phone; it wraps
+  as a variable's name does.
+- `MSOLVR`, `SOLVEQN` and the Equation Library's Solve say on a phone how
+  the solver's keys work: tap a variable's key to store level 1 in it,
+  hold the unknown's key to solve for it, as there is often no shift key
+  showing.
 
 ---
 
