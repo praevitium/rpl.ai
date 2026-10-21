@@ -524,6 +524,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .cmdline { display: flex; align-items: flex-start; gap: 8px; padding: 9px 8px 9px 12px; border-radius: 10px; border: 1px solid var(--line2); background: var(--well); min-height: 44px; min-width: 0; position: relative; font: 15px/24px var(--font-mono); color: var(--stack-ink); transition: border-color .15s, box-shadow .15s; cursor: text; }
 .cmdline::before { content: "›"; font: 600 15px/24px var(--font-mono); color: var(--accent); flex: none; }
 .cmdline:focus-within { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-dim); }
+.cmdline.drag-over { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
 .cmdline.editing { border-color: color-mix(in oklab, var(--amber) 60%, transparent); box-shadow: 0 0 0 3px var(--amber-dim); }
 /* A program opened for editing is laid out over lines, so it gets room to show them. */
 .cmdline.editing .cm-scroller { max-height: max(4lh, calc(var(--app-height, 100dvh) * .4)); }
@@ -1037,6 +1038,8 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 :root[data-view="minimal"] .input { background: transparent; border-top: 1px solid var(--line); padding: 10px 22px 16px; }
 :root[data-view="minimal"] .cmdline { border-color: transparent; box-shadow: none; background: transparent; padding: 4px 0; font-size: 17px; line-height: 26px; }
 :root[data-view="minimal"] .cmdline::before { font-size: 17px; line-height: 26px; }
+/* Borderless here, the line takes a tint under a level dragged onto it; .input outranks Classic's transparent line. */
+:root[data-view="minimal"] .input .cmdline.drag-over { background: var(--accent-dim); }
 :root[data-view="minimal"] .stack-view { --stack-size: 21px; }
 :root[data-view="minimal"] .st-row { padding-left: 12px; padding-right: 22px; min-height: 44px; }
 :root[data-view="minimal"] .st-lvl { font-size: 14px; }

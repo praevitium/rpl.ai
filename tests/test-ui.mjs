@@ -3189,7 +3189,7 @@ setAngle('RAD');
   assert(displaySrc.includes('this._installLevelDrag(view);')
     && /if \(ev\.pointerType !== 'touch' \|\| !ev\.isPrimary \|\| !ev\.target\.closest\?\.\('\.st-lvl'\)\) return;/.test(displaySrc)
     && /if \(this\._held \|\| \(dx > 10 && dx >= dy\)\) \{ drag = null; return; \}\s*if \(dy <= 10\) return;/.test(displaySrc)
-    && /if \(ev\.type === 'pointerup' && target\) this\.onRowMove\?\.\(Number\(row\.dataset\.level\), Number\(target\.dataset\.level\)\);/.test(displaySrc)
+    && /if \(ev\.type !== 'pointerup' \|\| !target\) return;/.test(displaySrc)
     && css.includes('.st-row[data-key] .st-lvl { touch-action: none; align-self: stretch; margin-block: -6px; display: flex; align-items: center; justify-content: flex-end; }'),
     "a finger moved up or down from a level's number drags the level onto another, as a mouse does, while sideways it still swipes the level away");
 }
@@ -3206,4 +3206,16 @@ setAngle('RAD');
     && /_followEdit\(\) \{\s*const \{ value \} = this\.pendingEdit;\s*let level = 0;\s*for \(let n = 1; n <= this\.stack\.depth && !level; n\+\+\) if \(this\.stack\.peek\(n\) === value\) level = n;\s*this\.pendingEdit = level \? \{ \.\.\.this\.pendingEdit, level, label: `Editing level \$\{level\}` \} : null;\s*this\.input\.render\(\);\s*this\.renderStatus\(\);/.test(appSrc)
     && /writerCommit\(value\) \{\s*if \(this\.entry\.buffer\.trim\(\)\) this\.entry\.enter\(\);\s*const edit = this\.pendingEdit;/.test(appSrc),
     "a level edit follows its value when other levels are moved, swiped away or pushed, so Enter still replaces it and minimal view's pencil names its new level; it ends, pencil and all, only when the value leaves the stack");
+}
+
+{
+  const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(displaySrc.includes("?.closest?.('.st-row[data-key], #cmdline');")
+    && /if \(target\.id === 'cmdline'\) this\.onRowEcho\?\.\(from\);\s*else this\.onRowMove\?\.\(from, Number\(target\.dataset\.level\)\);/.test(displaySrc)
+    && appSrc.includes("d.onRowEcho = (level) => this.levelAction('echo', level);")
+    && css.includes('.cmdline.drag-over { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }')
+    && css.includes(':root[data-view="minimal"] .input .cmdline.drag-over { background: var(--accent-dim); }'),
+    "a level a finger drags by its number onto the command line is typed there, as ECHO does and a mouse's drop already did, the line lit while it is over it, minimal view's borderless line with a tint");
 }
