@@ -335,8 +335,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   shifted 7, 8 and 9, and under α the whole pad running a to z. Its keys
   name their shifts in landscape too. A window too short for the full
   keypad to leave two stack levels (under about 576 px tall, as in split
-  screen) uses the compact keypad on its own, and the full one comes back
-  when it grows; the setting stays Full. A phone held sideways, from 520 px
+  screen, or 840 px with a writer open) uses the compact keypad on its own,
+  and the full one comes back when it grows or the writer closes; the
+  setting stays Full. A phone held sideways, from 520 px
   wide, keeps the keypad beside the stack.
   The command menus' soft keys do the same; the catalog types. A
   variable's key types its name inside a program, list or quote, and in a

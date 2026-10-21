@@ -427,7 +427,7 @@ import { assert, assertThrows } from './helpers.mjs';
       'BASE menu: the HP\'s HEX DEC OCT BIN R→B B→R, then its LOGIC, BIT and BYTE folders, each with a BACK key, and STWS and RCWS, all registered commands, in the picker\'s Math group');
   }
   assert(/const SHORT_WINDOW = globalThis\.matchMedia\?\.\('\(max-height: 575px\) and \(max-width: 639px\)'\);/.test(appSrc)
-    && /keypadLayout\(\) \{\s*return this\.prefs\.keypad === 'full' && SHORT_WINDOW\?\.matches \? 'compact' : this\.prefs\.keypad;/.test(appSrc)
+    && /keypadLayout\(\) \{\s*const short = this\.inputMode === 'rpl' \? SHORT_WINDOW : SHORT_FOR_WRITER;\s*return this\.prefs\.keypad === 'full' && short\?\.matches \? 'compact' : this\.prefs\.keypad;/.test(appSrc)
     && /SHORT_WINDOW\?\.addEventListener\('change', \(\) => this\.keypad\.update\(\)\);/.test(appSrc)
     && /this\.compact = app\.keypadLayout\(\) === 'compact';/.test(readFileSync(new URL('../www/src/ui/keyboard.js', import.meta.url), 'utf8')),
     'keypad: a window with the keypad under the stack and under 576 px tall shows the compact keypad while the setting stays Full, where the full keypad left a 412x457 split screen 18 px of stack');
@@ -3318,4 +3318,12 @@ setAngle('RAD');
     && block.includes(`${when} .input-body > .eqw > .eqw-canvas { max-height: none; }`)
     && css.indexOf(':root:is([data-keyboard], [data-short]) .eqw-canvas { max-height:') > css.indexOf(block.slice(0, 80)),
     'equation writer on a phone with the keypad hidden or in minimal view: the spare height goes two parts to the formula, one to the stack (a 121 px canvas under a 445 px empty stack at 390 by 844); the full keypad, the keyboard up and desktop keep the content-sized canvas');
+}
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(appSrc.includes("const SHORT_FOR_WRITER = globalThis.matchMedia?.('(max-height: 839px) and (max-width: 639px)');")
+    && appSrc.includes("SHORT_FOR_WRITER?.addEventListener('change', () => this.keypad.update());")
+    && /setInputMode\(mode[\s\S]*?this\.keypad\.update\(\);/.test(appSrc),
+    'a writer opened with the full keypad on a phone under 840 px tall gets the compact keypad, as a short window does: the full one left the stack no whole level at 360 by 740 or 412 by 780 and had to scroll itself');
 }
