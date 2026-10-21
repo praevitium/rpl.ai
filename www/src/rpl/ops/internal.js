@@ -2179,10 +2179,10 @@ export function _invMatrixNumeric(rows) {
   for (const row of rows) {
     if (row.length !== n) throw new RPLError('Invalid dimension');
     for (const x of row) {
-      if (!isReal(x) && !isInteger(x)) throw new RPLError('Bad argument type');
+      if (!isReal(x) && !isInteger(x) && !isRational(x)) throw new RPLError('Bad argument type');
     }
   }
-  const a = rows.map(row => row.map(x => isInteger(x) ? Number(x.value) : x.value.toNumber()));
+  const a = rows.map(row => row.map(_numVal));
   const I = [];
   for (let i = 0; i < n; i++) {
     const row = new Array(n).fill(0);

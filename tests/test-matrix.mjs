@@ -3853,6 +3853,10 @@ function _approxMatEqual(A, B, tol) {
       && line('[[(1,2) 3][4 5]] INV').startsWith('[[ (-0.234899328859, -0.335570469799) (0.140939597315, 0.201342281879) ][ (0.187919463087, 0.268456375839)')
       && line('[[(1,2) 3][4 5]] RREF') === '[[ (1, 0) (0, 0) ][ (0, 0) (1, 0) ]]',
     'INV and RREF take a complex matrix, as the HP does and as DET already did, where they said Bad argument type');
+  try {
+    assert(line('[[ 1 2 ][ 3 4 ]] INV -105 SF INV') === '[[ 1. 2. ][ 3. 4. ]]',
+      'INV of a matrix of fractions in approximate mode gives decimals, where it said Bad argument type');
+  } finally { setApproxMode(false); }
   assert(line('[[(1,1) 2][3 4]] INV') === '[[ (-0.4, -0.8) (0.2, 0.4) ][ (0.3, 0.6) (0.1, -0.3) ]]',
     'INV of a complex matrix rounds once at the end, without noise in the twelfth digit');
   assertThrows(() => runLine('[[(1,1) (2,2)][1 2]] INV'), /Infinite result/, 'INV of a singular complex matrix is an Infinite result');
