@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.113 (2026-10-20)
+**Latest release:** v0.8.0 (2026-10-20)
 
 ---
 
@@ -18,6 +18,26 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.0 — 2026-10-20
+
+- A function plot has the HP's FCN keys ROOT, EXTR and SLOPE under its
+  readout. Each works about the cursor (the trace cursor, else the point
+  tapped, else the middle of the window) on the selected or first function
+  trace, pushes the answer tagged as the HP does (`Root: 3.14159265359`,
+  `Extrm: (4.71238898039, -1)`, `Slope: 0.`) and moves the trace cursor to
+  it. ROOT and EXTR find the nearest one in the window; a sign change at a
+  pole doesn't count as a root.
+- With the phone's keyboard up, adding a trace grew the trace list and
+  pushed the expression field, still focused, under the keyboard; it now
+  scrolls back into view for the next expression.
+- The plot drawer's expression, trace and window fields are 40 px on touch
+  (they were 32, 28 and 30), as the plot tools and every other field are.
+- The README's command count is current again: 765 of the AUR's 825 are in
+  the app; the 61 missing are the serial, printing, library, font, equation
+  library and periodic table commands left out on purpose, and RCLMENU.
 
 ---
 

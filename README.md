@@ -532,6 +532,12 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   cursor there, a drag that starts on the cursor moves it, and with Trace
   on a tap moves the trace cursor. The plot's tools fold into one ⋯ button,
   leaving the plot to your fingers, and the plot types scroll in one row.
+  Under the readout a function plot has the HP's FCN keys ROOT, EXTR and
+  SLOPE: each works about the cursor (the trace cursor, else the point you
+  tapped, else the middle of the window) on the selected or first function,
+  puts the answer on the stack tagged as the HP does, `Root: 3.14159265359`,
+  `Extrm: (4.71238898039, -1)` or `Slope: 0.`, and moves the trace cursor
+  there.
   In a short plot drawer, in landscape or with the keyboard up, the drawer
   scrolls, so the field you type in stays in view.
 - Settings › Appearance sets the stack's text size, from Small to Larger,
@@ -1017,7 +1023,7 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 752. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 765. The
 Catalog and the command reference mark what is available. Not there yet:
 the HP's numbered menus for MENU and TMENU (a list, a name holding one or 0
 work).
