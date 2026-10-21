@@ -511,6 +511,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(getHalted()?.kind === 'msgbox' && /Bernard Parisse/.test(getPromptMessage()?.value) && /William C\. Wickes/.test(getPromptMessage()?.value),
     'RULES shows the credits in a message box');
   clearAllHalted(); clearPromptMessage();
+  assert(top('7 FILER OFF') === '7', 'FILER and OFF run from a program and leave the stack alone; the app opens the Variables drawer and the off screen through their hooks');
   assert(top('HEADER→') === '2.' && top('1 →HEADER HEADER→') === '1.', '→HEADER keeps a size HEADER→ gives back, 2 lines at first');
   assertThrows(() => runLine('3 →HEADER'), /Bad argument value/, '→HEADER takes 0, 1 or 2 lines');
   assert(top('KEYTIME→') === '1138.' && top('500 →KEYTIME KEYTIME→') === '500.', '→KEYTIME keeps a time KEYTIME→ gives back, 1138 ticks at first');

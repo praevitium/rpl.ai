@@ -166,6 +166,26 @@ export function setGameHook(fn) {
   _gameHook = typeof fn === 'function' ? fn : null;
 }
 
+let _filerHook = null, _offHook = null;
+
+export function setFilerHook(fn) {
+  _filerHook = typeof fn === 'function' ? fn : null;
+}
+
+export function setOffHook(fn) {
+  _offHook = typeof fn === 'function' ? fn : null;
+}
+
+// FILER: the HP's file manager is the Variables drawer here.
+register('FILER', () => {
+  if (!inScratchState()) _filerHook?.();
+}, { category: 'Variables / directories', categoryOrder: 3.5, label: 'FILER' });
+
+// OFF: the HP switches off; a web page has no power to cut, so the session is saved and an off screen covers the app.
+register('OFF', () => {
+  if (!inScratchState()) _offHook?.();
+}, { category: 'System', categoryOrder: 0.53, label: 'OFF' });
+
 // Nmines holds the number of mines, 1 to 64, negative to see them; 20 without it.
 function _mineCount() {
   const v = varRecall('Nmines');

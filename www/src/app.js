@@ -38,7 +38,7 @@ import {
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo, getUserKeys, standardKeysActive,
   batchStateNotifications,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
 import { VERSION, DATE } from './build-info.js';
 import { beep, alarmBeep } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest, calculatorNow } from './rpl/ops/time.js';
@@ -186,6 +186,8 @@ class App {
     setEditHook(({ level, name, line }) => setTimeout(() => (name ? this.editVariable(name, { line }) : this.editLevel(level, { line }))));
     setViewHook((value) => setTimeout(() => this._viewValue(value, 'View')));
     setGameHook((game) => setTimeout(() => this.sheets.openGame(game)));
+    setFilerHook(() => setTimeout(() => this.drawers.open('vars')));
+    setOffHook(() => setTimeout(() => this.turnOff()));
     setBeepHook(beep);
     setVersion(VERSION, DATE);
     setConlibHook(() => this.showConstants());
@@ -713,6 +715,32 @@ class App {
     });
     addEventListener('focus', () => adopt(true));
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') adopt(true); });
+  }
+
+  // OFF: the HP switches off. The session is saved and an off screen covers the app until a tap or a key wakes it.
+  turnOff() {
+    if (this._offScreen) return;
+    this._noteAutosave(saveToLocalStorage(this.stack));
+    const off = document.createElement('div');
+    off.className = 'off-screen';
+    off.setAttribute('role', 'button');
+    off.setAttribute('aria-label', 'Off. Tap or press a key to wake rpl.ai');
+    off.tabIndex = 0;
+    off.innerHTML = '<span>rpl.ai is off</span><small>Tap or press a key</small>';
+    // A click, not the pointer's press, so the tap that wakes doesn't also land on what the screen covered.
+    const wake = (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      document.removeEventListener('keydown', wake, true);
+      off.remove();
+      this._offScreen = null;
+      if (ev.type === 'keydown') this.entry.focus();
+    };
+    off.addEventListener('click', wake);
+    document.addEventListener('keydown', wake, true);
+    document.body.append(off);
+    this._offScreen = off;
+    off.focus({ preventScroll: true });
   }
 
   _noteAutosave(result) {

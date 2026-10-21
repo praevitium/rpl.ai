@@ -3008,3 +3008,15 @@ setAngle('RAD');
   assert(/_dropStaleBound\(key, label\) \{\n\s*if \(!this\[key\] \|\| this\[key\]\.trace === this\._fcnTrace\(\)\?\.id\) return;\n\s*this\[key\] = null;\n\s*if \(this\._readout\.textContent\.startsWith\(`\$\{label\} from `\)\) this\._readout\.textContent = this\._idleReadout\(\);/.test(gv),
     'plot AREA and SHADE: a first bound whose function is gone is dropped with its "move the cursor and tap again" readout, so the readout and the chip agree');
 }
+
+{
+  const app = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/setFilerHook\(\(\) => setTimeout\(\(\) => this\.drawers\.open\('vars'\)\)\);/.test(app)
+    && /setOffHook\(\(\) => setTimeout\(\(\) => this\.turnOff\(\)\)\);/.test(app)
+    && /this\._noteAutosave\(saveToLocalStorage\(this\.stack\)\);\n\s*const off = document\.createElement\('div'\);\n\s*off\.className = 'off-screen';/.test(app)
+    && /off\.addEventListener\('click', wake\);\n\s*document\.addEventListener\('keydown', wake, true\);/.test(app) && /if \(ev\.type === 'keydown'\) this\.entry\.focus\(\);/.test(app)
+    && /const wake = \(ev\) => \{\n\s*ev\.preventDefault\(\);\n\s*ev\.stopPropagation\(\);/.test(app)
+    && /\n\.off-screen \{ position: fixed; inset: 0; z-index: 300;/.test(css),
+    'FILER opens the Variables drawer and OFF saves the session and covers the app with an off screen that a tap or a key removes, as the HP\'s file manager and power switch');
+}

@@ -1036,21 +1036,24 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 765. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 766. The
 Catalog and the command reference mark what is available. Not there yet:
 the HP's numbered menus for MENU and TMENU (a list, a name holding one or 0
 work).
 
 **Left out on purpose.** ENTRY mode, the NUM.SLV solver screens, the
 equation library (EQNLIB, SOLVEQN), the periodic table (PERTBL, PTPROP,
-PERINFO), RCLMENU, FINANCE, TIME, OFF, FILER (the Variables drawer does
-its work), the StreamSmart app (STRM), the screen fonts (FONT6, →FONT,
+PERINFO), RCLMENU, FINANCE, TIME, the StreamSmart app (STRM), the screen
+fonts (FONT6, →FONT,
 →MINIFONT and the rest), libraries (LIB, ATTACH and port management other
 than ARCHIVE and RESTORE), Saturn assembly and System RPL, printing, and IR
 and serial transfer.
 
 **Behaviour that differs from the HP 50g.**
 
+- `FILER` opens the Variables drawer, the file manager here, and `OFF`
+  saves the session and covers the app with an off screen until a tap or a
+  key wakes it, since a web page has no power to cut.
 - An algebraic reads the HP's postfix factorial, `'5!'` or `'(N+1)!'`, but
   its text form writes `FACT(5)`; the textbook display shows `5!`.
 - `BEEP` doesn't hold the program while its tone plays; tones in a row still

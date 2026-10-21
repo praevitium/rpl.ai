@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 764 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 766 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -290,7 +290,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-FCOEF">FCOEF</a>
 <a href="#cmd-FDISTRIB">FDISTRIB</a>
 <a href="#cmd-FFT">FFT</a>
-<a href="#cmd-FILER" class='notinapp'>FILER</a>
+<a href="#cmd-FILER">FILER</a>
 <a href="#cmd-FINDALARM">FINDALARM</a>
 <a href="#cmd-FINISH" class='notinapp'>FINISH</a>
 <a href="#cmd-FIX">FIX</a>
@@ -465,7 +465,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-NΣ">NΣ</a>
 <a href="#cmd-OBJ-to">OBJ→</a>
 <a href="#cmd-OCT">OCT</a>
-<a href="#cmd-OFF" class='notinapp'>OFF</a>
+<a href="#cmd-OFF">OFF</a>
 <a href="#cmd-OLDPRT" class='notinapp'>OLDPRT</a>
 <a href="#cmd-OPENIO" class='notinapp'>OPENIO</a>
 <a href="#cmd-OR">OR</a>
@@ -6054,7 +6054,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>IFFT</p>
   </dd>
 </dl>
-<h2 id="cmd-FILER">FILER <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-FILER">FILER <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 207 · printed page 3-87</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -6064,6 +6064,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Opens File Manager.</p>
+    <p>In rpl.ai FILER opens the Variables drawer, which is the file manager here.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -10912,7 +10913,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>BIN, DEC, HEX, RCWS, STWS</p>
   </dd>
 </dl>
-<h2 id="cmd-OFF">OFF <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-OFF">OFF <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 279 · printed page 3-159</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -10922,6 +10923,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Off Command: Turns off the calculator. When executed from a program, that program will resume execution when the calculator is turned on. This provides a programmable “autostart.” ( i.e., a programmable …ç).</p>
+    <p>In rpl.ai OFF saves the session and covers the app with an off screen until a tap or a key wakes it; a web page has no power to cut, and nothing is lost.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
