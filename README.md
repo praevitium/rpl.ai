@@ -371,7 +371,7 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - Tap a stack level for its actions, on a line under it so they never cover
   the value: Edit, View, Pick (DUP on level 1), Roll above level 1 (SWAP on level 2), Conv for
   a value with units (from 360 px wide), Drop, and ⋯
-  (or hold a finger on the level) for EVAL, →NUM, copy, share, store and the rest (and, for a program, Debug; for a value
+  (or hold a finger on the level) for EVAL, →NUM, copy, share, store (its field lists the directory's variables as chips, so a name already there is a tap away) and the rest (and, for a program, Debug; for a value
   with units, Convert to…, which lists the value in every unit of the UNITS
   menu with the same dimensions, `254._cm`, `100._in`, `2.54_m`…, and runs
   CONVERT on the one you tap; the level's soft keys have it as CONV). View is the HP

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.7.112 (2026-10-20)
+**Latest release:** v0.7.113 (2026-10-20)
 
 ---
 
@@ -18,6 +18,20 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.7.113 — 2026-10-20
+
+- The Store, New folder and Backup name fields, and the Variables drawer's
+  inline rename field, are 40 px on touch (they were 32 and 26), keep the
+  case typed (a phone keyboard capitalised the first letter of a name whose
+  case matters) and label the keyboard's Enter key Done, as the writers'
+  fields already did.
+- Store in a variable lists the directory's variables as chips under its
+  field, in the VARS menu's order (folders left out), so a name already
+  there is a tap away instead of typed; the tap stores at once, with the
+  usual Undo note.
 
 ---
 
