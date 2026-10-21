@@ -758,9 +758,10 @@ numbers.
 Spreadsheet files work too. Download a matrix, vector or list as `.csv`,
 `.tsv` or Excel's `.xlsx` from its download button in the Variables drawer,
 or with **Download as…** in a stack level's menu, which offers `.rpl` and
-`.json` for any value. Upload a `.csv`, `.tsv`, `.xlsx`, `.rpl`, `.txt` or
-`.json` file in the drawer, or drop one anywhere on the calculator to put it
-on the stack. A table of numbers becomes a matrix (a vector for one row), a
+`.json` for any value. Upload `.csv`, `.tsv`, `.xlsx`, `.rpl`, `.txt` or
+`.json` files in the drawer, several at once, or drop one anywhere on the
+calculator to put it on the stack; `'X' SEND` and `RECV` do the same from a
+program. A table of numbers becomes a matrix (a vector for one row), a
 text row above numbers is taken as a header and skipped, and a table with
 other text becomes a list of rows. From a workbook rpl.ai reads the first
 sheet's used range; dates arrive as Excel's serial numbers.
@@ -1062,7 +1063,8 @@ port itself (SRECV, XMIT and the Kermit settings such as BAUD).
   variables as .rpl HP text files to your downloads, and `RECV`, `RECN`,
   `KGET`, `XRECV` and `XGET` open a file picker and store what is chosen
   once it is picked, while a program goes on. A received name in use takes
-  a number (NAME1) unless flag -36 is set.
+  a number (NAME1) unless flag -36 is set, as Upload in the Variables
+  drawer now does too.
 - The screen has one typeface, so the system font is the stack text size:
   `FONT6`, `FONT7` and `FONT8` return `:Font:6` to `:Font:8`, tagged sizes
   rather than font objects (TYPE 12, not 30), and `→FONT` sets Small,

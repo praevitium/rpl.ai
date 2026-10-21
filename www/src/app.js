@@ -601,9 +601,9 @@ class App {
     else pick();
   }
 
-  // Received files become variables here: a name in use takes a number unless flag -36 is set, and a KGET or RECN
-  // list picks which files go under which names.
-  async storeFiles(files, pairs = null) {
+  // Received or uploaded files become variables here, as RECV stores them: a name in use takes a number unless flag
+  // -36 is set, and a KGET or RECN list picks which files go under which names.
+  async storeFiles(files, pairs = null, verb = 'Received') {
     const stored = [];
     const notes = [];
     const skipped = [];
@@ -619,7 +619,7 @@ class App {
         stored.push(as === name || !pairs ? as : `${file.name} as ${as}`);
         if (note) notes.push(note);
       } catch (e) {
-        this.notifyError(`${file.name} wasn't received: ${e.message}`);
+        this.notifyError(`${file.name} wasn't ${verb.toLowerCase()}: ${e.message}`);
       }
     }
     if (skipped.length) notes.push(`Skipped ${skipped.join(', ')}, not asked for.`);
@@ -628,7 +628,7 @@ class App {
       if (notes.length) this.toast(notes.join(' '));
       return;
     }
-    this.undoToast(`Received ${stored.join(', ')}${notes.length ? `. ${notes.join(' ')}` : ''}`);
+    this.undoToast(`${verb} ${stored.join(', ')}${notes.length ? `. ${notes.join(' ')}` : ''}`);
   }
 
   // A toast's Undo reverses its own step, never the text being typed, and

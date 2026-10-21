@@ -1,14 +1,14 @@
 import { allOps, lookup, opCategories } from '../rpl/ops.js';
 import {
   state as calcState, subscribe as subscribeState,
-  varStore, varPurge, goInto, currentPath, makeSubdir,
+  varPurge, goInto, currentPath, makeSubdir,
   getDirectoryByPath, moveCurrentEntry, reorderCurrentEntry, renameCurrentEntry,
 } from '../rpl/state.js';
 import { TYPES, isStorableHpName } from '../rpl/types.js';
 import { unitInfo } from '../rpl/units.js';
 import { format, withFractionMark } from '../rpl/formatter.js';
 import {
-  exportHpTextFile, readUpload,
+  exportHpTextFile,
   listBackups, archiveBackup, restoreBackup, deleteBackup,
 } from '../rpl/persist.js';
 import { referenceSection, pushHistory, isSyntaxWord, typeSyntaxWord } from './command-help.js';
@@ -788,19 +788,7 @@ export class Drawers {
   }
 
   _upload() {
-    const { app } = this;
-    pickFile(UPLOAD_ACCEPT, async (file) => {
-      try {
-        const { name, value, note } = await readUpload(file);
-        if (calcState.current.entries.has(name)) { app.notifyError(`${name} already exists here. Rename or delete it first.`); return; }
-        if (value?.type === TYPES.DIRECTORY) value.parent = calcState.current;
-        app.entry._snapForUndo();
-        varStore(name, value);
-        app.undoToast(`Added ${name}${note ? `. ${note}` : ''}`);
-      } catch (e) {
-        app.notifyError(`Upload failed: ${e.message}`);
-      }
-    });
+    pickFiles(UPLOAD_ACCEPT, (files) => this.app.storeFiles(files, null, 'Added'));
   }
 
   _exportRpl() {

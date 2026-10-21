@@ -3091,3 +3091,11 @@ setAngle('RAD');
   assert(/navigator\.userActivation\?\.isActive === false\) this\.toast\(`Choose \$\{what\} to receive`, \{ key: 'receive', action: 'Choose', onAction: pick, timeout: Infinity, transient: true \}\)/.test(appSrc),
     'a receive with no press to open a picker asks for a tap with a note that waits for it');
 }
+
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/_upload\(\) \{\s*pickFiles\(UPLOAD_ACCEPT, \(files\) => this\.app\.storeFiles\(files, null, 'Added'\)\);\s*\}/.test(drawerSrc)
+      && /async storeFiles\(files, pairs = null, verb = 'Received'\) \{[\s\S]*?const as = receivedName\(target\);/.test(appSrc),
+    'Upload in the Variables drawer takes several files and stores them as RECV does, a name in use taking a number');
+}
