@@ -66,6 +66,7 @@ function lineExpr(m, b, name) {
 }
 const DOTS = Object.freeze({ 'DOT+': 'on', 'DOT-': 'off' });
 const TAP_SLOP_PX = 6;
+const CURVE_PICK_PX = 24;
 const TOUCH = !!globalThis.matchMedia?.('(pointer: coarse)').matches;
 // A drag that starts this close to the graphics cursor moves it rather than the plot.
 const MARK_GRAB_PX = TOUCH ? 24 : 10;
@@ -169,7 +170,7 @@ export class GraphView {
     this.el.className = 'gr-view';
     this.el.innerHTML = `
       <div class="pl-main">
-        <div class="pl-box" tabindex="0" role="application" aria-label="Plot. Arrows pan or move the cursor, Enter puts its point on the stack, plus and minus zoom, 0 resets, T traces (up and down then switch function), F goes full screen.">
+        <div class="pl-box" tabindex="0" role="application" aria-label="Plot. Arrows pan or move the cursor, Enter puts its point on the stack, plus and minus zoom, 0 resets, T traces (up and down, or a tap on a curve, then switch function), F goes full screen.">
           <canvas class="gr-canvas" aria-hidden="true"></canvas>
           <div class="pl-tools${TOUCH ? ' folded' : ''}" role="toolbar" aria-label="Plot tools">
             <button type="button" class="pl-fold" data-gr="fold" title="Plot tools" aria-label="Plot tools" aria-expanded="${!TOUCH}">${icon('more', 'sm')}</button>
@@ -318,7 +319,7 @@ export class GraphView {
       this._pointers.delete(ev.pointerId);
       this._startGesture();
       if (this._drag) return;
-      if (this.tracing && tap) this._traceTo(ev.offsetX);
+      if (this.tracing && tap) this._traceTo(ev.offsetX, ev.offsetY);
       else {
         if (tap) this._markAt(ev.offsetX, ev.offsetY);
         this._hoverFromEvent(ev);
@@ -631,11 +632,27 @@ export class GraphView {
     this.draw();
   }
 
-  _traceTo(px) {
+  _traceTo(px, py) {
     const rect = this._canvas.getBoundingClientRect();
-    [this.traceX] = pixelToWorld(px, 0, this.view, rect.width, rect.height);
+    const [x, y] = pixelToWorld(px, py, this.view, rect.width, rect.height);
+    this.traceX = x;
+    // A tap on another curve traces that one, as ▲ and ▼ step to it.
+    const near = this._curveNear(x, y, rect.height);
+    if (near) this._selectTrace(near.id);
     this._readout.textContent = this._readoutAt(this.traceX);
     this.draw();
+  }
+
+  _curveNear(x, y, height) {
+    const opts = this._hoverOpts();
+    let best = null;
+    let gap = CURVE_PICK_PX * (this.view.ymax - this.view.ymin) / (height || 1);
+    for (const t of this.traces) {
+      if (!t.enabled || t.kind !== 'function') continue;
+      const d = Math.abs(evalTraceAtX(t, x, opts) - y);
+      if (d < gap) { best = t; gap = d; }
+    }
+    return best;
   }
 
   _clearHover() {

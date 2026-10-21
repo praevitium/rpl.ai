@@ -3121,8 +3121,19 @@ setAngle('RAD');
     'plot trace: with several functions plotted, up and down move the trace to the previous or next one, as the HP\'s ▲ and ▼ do, and Enter pushes that function\'s point; with one function they still pan');
   assert(gv.includes("const picked = this.tracing && this.traces.filter((t) => t.enabled && t.kind === 'function').length > 1 ? this._fcnTrace() : null;")
     && gv.includes("bits.push(`${t === picked ? '▸ ' : ''}${withFractionMark(t.label || t.expr || t.kind)} = ${fmtAxis(yv)}`);")
-    && gv.includes('T traces (up and down then switch function)'),
+    && gv.includes('T traces (up and down, or a tap on a curve, then switch function)'),
     'plot trace: with several functions the readout marks the one Enter pushes with ▸, and the plot\'s spoken help names up and down');
+  {
+    const { GraphView } = await import('../www/src/ui/graph-view.js');
+    const { traceFromInputs } = await import('../www/src/ui/plot-engine.js');
+    const sin = { ...traceFromInputs('function', 'SIN(X)'), id: 's', enabled: true };
+    const cos = { ...traceFromInputs('function', 'COS(X)'), id: 'c', enabled: true };
+    const self = { view: { xmin: -10, xmax: 10, ymin: -10, ymax: 10 }, traces: [sin, cos], _hoverOpts: () => ({}) };
+    const near = (x, y) => GraphView.prototype._curveNear.call(self, x, y, 400)?.id ?? null;
+    assert(near(Math.PI / 2, 0.9) === 's' && near(Math.PI, -0.9) === 'c' && near(5, 6) === null
+      && gv.includes('const near = this._curveNear(x, y, rect.height);\n    if (near) this._selectTrace(near.id);'),
+      'plot trace: a tap on a curve traces that function, the touch twin of up and down; a tap away from every curve keeps the one traced');
+  }
 }
 
 {
