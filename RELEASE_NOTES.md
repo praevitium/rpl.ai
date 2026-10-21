@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.38 (2026-10-21)
+**Latest release:** v0.8.39 (2026-10-21)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.39 — 2026-10-21
+
+- Fixed: `CONSTANTS` opened the Characters drawer with whatever filter it
+  was left with, so a filter such as "arrow" hid the constants. It now
+  clears the filter and shows the constants first.
+- Added: with flag -117 set, as the AUR has it, `CONSTANTS` shows π, e, i,
+  ∞, MAXR and MINR as soft keys instead of the drawer.
+- Improved: the Characters drawer's groups and History's Errors and
+  Entries headings stay at the top while their section scrolls, as a
+  Catalog family's name does.
 
 ## v0.8.38 — 2026-10-21
 
