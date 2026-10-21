@@ -315,13 +315,13 @@ button { cursor: pointer; }
 /* On the smallest phones the directory name needs the room; Install stays in the ⋯ menu. */
 @container app (max-width: 359px) { .install-btn { display: none; } .appbar .sp { min-width: 0; } }
 /* Under 320 px (a fold's cover screen, or a larger system text size) the modes summary gives way to the
-   directory name, and the writer tabs and Settings' page tabs drop their icons so Ask and Data stay on screen. */
+   directory name, and the writer tabs drop their icons so Ask stays on screen. */
 @container app (max-width: 319px) {
   .crumbs { flex-shrink: 0; max-width: 40%; }
   .modes { flex-shrink: 1; min-width: 0; }
   .mode-chip.summary { min-width: 0; }
   .mode-chip.summary span { overflow: hidden; text-overflow: ellipsis; }
-  .in-tabs .i, .sheet-nav .i { display: none; }
+  .in-tabs .i { display: none; }
 }
 @container app (max-width: 719px) {
   .mode-chip:not(.summary) { display: none; }
@@ -887,7 +887,12 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   .sheet-b { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
   .sheet-b.single { grid-template-rows: minmax(0, 1fr); }
   .sheet-nav { border-right: 0; border-bottom: 1px solid var(--line); display: flex; overflow-x: auto; scrollbar-width: none; }
-  .sheet-nav button { flex: none; }
+  .sheet-nav button { flex: 1 0 auto; justify-content: center; }
+}
+/* Settings' four page tabs share a phone's row without their icons, so Data stays on screen. */
+@container app (max-width: 479px) {
+  .sheet-nav .i { display: none; }
+  .sheet-nav button { padding-left: 4px; padding-right: 4px; }
 }
 
 .toasts { position: absolute; left: 50%; top: 58px; transform: translateX(-50%); z-index: var(--z-toast); display: grid; gap: 6px; justify-items: center; pointer-events: none; width: max-content; max-width: 92%; }

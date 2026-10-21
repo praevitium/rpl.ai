@@ -1727,6 +1727,28 @@ setAngle('RAD');
 }
 
 {
+  const { Sheets } = await import('../www/src/ui/sheets.js');
+  const { state: calc, testUserFlag: flagSet, setDisplay } = await import('../www/src/rpl/state.js');
+  const page = () => Sheets.prototype._calculatorPageHtml.call({});
+  const rows = [...page().matchAll(/<b>([^<]+)<\/b>/g)].map((m) => m[1]).join(', ');
+  assert(rows === 'Angle, Number format, Results, Number domain, Coordinates, Integer base, Decimal comma, Beep, Save last arguments, 24-hour clock, Day first in dates',
+    `Settings: a Calculator page holds the HP's MODES form, its modes and the mode flags (${rows})`);
+  const sheet = { el: { contains: () => true }, app: {}, _render: () => {} };
+  const tap = (dataset) => Sheets.prototype._onClick.call(sheet, { target: { closest: () => ({ dataset }) } });
+  const before = [calc.displayMode, calc.displayDigits, flagSet(-56)];
+  tap({ sh: 'mode', m: 'fmt', v: 'FIX', digits: '3' });
+  const fixed = `${calc.displayMode} ${calc.displayDigits}`;
+  const digitsRow = /aria-label="Digits"/.test(page());
+  const beepOn = /aria-pressed="true" aria-label="Beep"/.test(page());
+  tap({ sh: 'flag', flag: '-56' });
+  const beepOff = flagSet(-56) && /aria-pressed="false" aria-label="Beep"/.test(page());
+  tap({ sh: 'flag', flag: '-56' });
+  setDisplay(before[0], before[0] === 'STD' ? 12 : before[1]);
+  assert(fixed === 'FIX 3' && digitsRow && beepOn && beepOff && flagSet(-56) === before[2],
+    'Settings: the Calculator page sets FIX 3 and shows its digits, and Beep reads on while flag -56 is clear and sets it when switched off');
+}
+
+{
   const { installHint } = await import('../www/src/ui/appbar.js');
   const UA = {
     androidChrome: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36',
@@ -1950,7 +1972,7 @@ setAngle('RAD');
   const appbarSrc = readFileSync(new URL('../www/src/ui/appbar.js', import.meta.url), 'utf8');
   const bar = css.slice(css.indexOf('@container app (max-width: 319px) {\n  .crumbs'));
   assert(/^@container app \(max-width: 319px\) \{\n  \.crumbs \{ flex-shrink: 0; max-width: 40%; \}\n  \.modes \{ flex-shrink: 1; min-width: 0; \}/.test(bar)
-    && /\.mode-chip\.summary span \{ overflow: hidden; text-overflow: ellipsis; \}\n  \.in-tabs \.i, \.sheet-nav \.i \{ display: none; \}/.test(bar)
+    && /\.mode-chip\.summary span \{ overflow: hidden; text-overflow: ellipsis; \}\n  \.in-tabs \.i \{ display: none; \}/.test(bar)
     && appbarSrc.includes('<span>${escapeHtml(modesSummary())}</span>')
     && /@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}[\s\S]{0,720}?button\.ann-m \{ min-width: 28px; \}/.test(css)
     && css.includes('@container app (max-width: 319px) { .writer-keys { gap: 2px; padding: 0 4px 8px; } .writer-keys .cmdline-go { min-width: 26px; padding: 0; white-space: nowrap; } }'),

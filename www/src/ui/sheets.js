@@ -15,9 +15,19 @@ import { lookup } from '../rpl/ops/registry.js';
 import { format } from '../rpl/formatter.js';
 import { VERSION, BUILD, SHA } from '../build-info.js';
 import { pickFile } from './drawer.js';
+import { MODES, modeById, DISPLAY_DIGITS_CHOICES } from './modes.js';
 
 
-const SETTINGS_PAGES = Object.freeze(['appearance', 'assistant', 'data']);
+const SETTINGS_PAGES = Object.freeze(['appearance', 'calculator', 'assistant', 'data']);
+const SETTINGS_PAGE_NAMES = Object.freeze({ appearance: ['sliders', 'Appearance'], calculator: ['keypad', 'Calculator'], assistant: ['spark', 'Assistant'], data: ['folder', 'Data'] });
+// The HP's mode flags as switches; Beep and last arguments read on while their flag is clear, as the HP's MODES form does.
+const FLAG_SETTINGS = Object.freeze([
+  [-51, false, 'Decimal comma', 'Show 1,5 and read a typed comma as the decimal mark, with ; between the parts of (1,5; 2).'],
+  [-56, true, 'Beep', 'BEEP plays its tone, and errors buzz where key vibration is on.'],
+  [-55, true, 'Save last arguments', 'LASTARG brings back the arguments of the last command.'],
+  [-41, false, '24-hour clock', 'TSTR and the alarm list write 14:55:00 rather than 02:55:00P.'],
+  [-42, false, 'Day first in dates', 'Dates are read and written as DD.MMYYYY rather than MM.DDYYYY.'],
+]);
 const VIEW_ZOOM_MIN = 0.4;
 const VIEW_ZOOM_MAX = 4;
 
@@ -213,7 +223,7 @@ export class Sheets {
       this.el.innerHTML = sheet(escapeHtml(this.view.title), `<div class="sheet-view">${this.view.html}</div>`, '', acts, steps);
       return;
     }
-    const nav = SETTINGS_PAGES.map((p) => `<button type="button" data-sh="page" data-page="${p}" aria-pressed="${p === this.page}">${icon({ appearance: 'sliders', assistant: 'spark', data: 'folder' }[p], 'sm')}${{ appearance: 'Appearance', assistant: 'Assistant', data: 'Data' }[p]}</button>`).join('');
+    const nav = SETTINGS_PAGES.map((p) => `<button type="button" data-sh="page" data-page="${p}" aria-pressed="${p === this.page}">${icon(SETTINGS_PAGE_NAMES[p][0], 'sm')}${SETTINGS_PAGE_NAMES[p][1]}</button>`).join('');
     this.el.innerHTML = sheet('Settings', this._settingsPageHtml(), `<nav class="sheet-nav">${nav}</nav>`);
   }
 
@@ -289,12 +299,12 @@ export class Sheets {
         <div class="set stack dock-set"><b>Panels side</b><span>Which side the rail and its drawer (Catalog, Variables, History…) dock on.</span>${sides('panels', app.prefs.panelsSide)}</div>
         <div class="set stack dock-set"><b>Keypad side</b><span>Which side of the stack the keypad docks on.</span>${sides('keypad', app.prefs.keypadSide)}</div>
         <div class="set"><b>Pretty math</b><span>Show expressions, matrices and lists on the stack in textbook form.</span>${tgl('textbook', !!calcState.textbookMode, 'Pretty math')}</div>
-        <div class="set"><b>Decimal comma</b><span>Show 1,5 and read a typed comma as the decimal mark, with ; between the parts of (1,5; 2). The HP's FM, setting, flag -51.</span>${tgl('fractionComma', testUserFlag(-51), 'Decimal comma')}</div>
         <div class="set"><b>Soft keys in Minimal view</b><span>Keep the soft-menu row visible for menu work.</span>${tgl('minimalMenu', app.prefs.minimalMenu, 'Soft keys in Minimal view')}</div>
         <div class="set"><b>Pop-up notes</b><span>Notes after an action, with their Undo, and hints. Errors and alarms always show; Undo stays on its key.</span>${tgl('notes', app.prefs.notes, 'Pop-up notes')}</div>
         <div class="set"><b>Keyboard-shortcut hints</b><span>Show each key's physical-keyboard shortcut on the keypad.</span>${tgl('hints', app.prefs.hints, 'Keyboard-shortcut hints')}</div>${typeof navigator.vibrate === 'function' && matchMedia('(pointer: coarse)').matches ? `
         <div class="set"><b>Vibrate on key presses</b><span>A short buzz when a finger presses a key, one more when a held finger opens a menu or clears the line, and two on an error, as the HP beeps (flag -56 set stops those), where the phone supports it.</span>${tgl('haptics', app.prefs.haptics, 'Vibrate on key presses')}</div>` : ''}`;
     }
+    if (this.page === 'calculator') return this._calculatorPageHtml();
     if (this.page === 'assistant') {
       const consented = (() => { try { return localStorage.getItem(CHAT_CONSENT_KEY) === '1'; } catch { return false; } })();
       let endpoint = null;
@@ -317,6 +327,24 @@ export class Sheets {
       <div class="set"><b>Reset everything</b><span>Clears the stack, every variable, named backups, layout choices and the assistant connection, then reloads. This cannot be undone.</span>${this._confirmReset
         ? `<button type="button" class="btn danger" data-sh="reset-confirm">Yes, erase everything</button>`
         : `<button type="button" class="btn danger" data-sh="reset">${icon('trash', 'sm')}Reset everything</button>`}</div>`;
+  }
+
+  _calculatorPageHtml() {
+    const chip = (on, label, data) => `<button type="button" class="chip${on ? ' on' : ''}" data-sh="mode" ${data} role="radio" aria-checked="${on}">${escapeHtml(label)}</button>`;
+    const modes = MODES.map((m) => {
+      const current = m.current();
+      const options = m.options.map((o) => chip(o.value === current, o.label, `data-m="${m.id}" data-v="${o.value}"`)).join('');
+      const digits = m.digits && current !== 'STD'
+        ? `<div class="chipset" role="radiogroup" aria-label="Digits">${DISPLAY_DIGITS_CHOICES.map((d) => chip(d === calcState.displayDigits, String(d), `data-m="${m.id}" data-v="${current}" data-digits="${d}"`)).join('')}</div>`
+        : '';
+      const detail = m.options.find((o) => o.value === current)?.detail ?? '';
+      return `<div class="set stack"><b>${escapeHtml(m.title)}</b><span>${escapeHtml(detail)}</span><div class="chipset" role="radiogroup" aria-label="${escapeHtml(m.title)}">${options}</div>${digits}</div>`;
+    }).join('');
+    const flags = FLAG_SETTINGS.map(([flag, clearIsOn, title, what]) => {
+      const on = testUserFlag(flag) !== clearIsOn;
+      return `<div class="set"><b>${title}</b><span>${what} Flag ${flag}.</span><button type="button" class="tgl" role="switch" aria-pressed="${on}" aria-label="${escapeHtml(title)}" data-sh="flag" data-flag="${flag}"></button></div>`;
+    }).join('');
+    return `<h4>Calculator</h4><p>How the calculator works out and shows numbers, as the HP's MODES form sets it. The MODES menu, the mode button at the top and commands such as DEG or 4 FIX change the same settings, and programs can read them.</p>${modes}${flags}`;
   }
 
   _shortcutsHtml() {
@@ -372,6 +400,13 @@ export class Sheets {
       case 'open-assistant': this.close(); app.drawers.open('assistant'); return;
       case 'tutor-style': app.setTutorStyle(b.dataset.style); this._render(); return;
       case 'toggle': this._toggle(b.dataset.setting, b.getAttribute('aria-pressed') !== 'true'); this._render(); return;
+      case 'mode': modeById(b.dataset.m)?.set(b.dataset.v, b.dataset.digits == null ? undefined : Number(b.dataset.digits)); this._render(); return;
+      case 'flag': {
+        const flag = Number(b.dataset.flag);
+        (testUserFlag(flag) ? clearUserFlag : setUserFlag)(flag);
+        this._render();
+        return;
+      }
       case 'backup': app.exportSnapshot(); return;
       case 'install': app.runAction('app.install'); return;
       case 'restore': pickFile('application/json,.json', async (f) => { if (await app.importSnapshotFromFile(f)) this.close(); }); return;
@@ -465,7 +500,6 @@ export class Sheets {
   _toggle(setting, on) {
     const { app } = this;
     if (setting === 'textbook') app.setTextbook(on);
-    else if (setting === 'fractionComma') (on ? setUserFlag : clearUserFlag)(-51);
     else if (setting === 'minimalMenu') app.setMinimalMenu(on);
     else if (setting === 'hints') { app.setPrefs({ hints: on }); app.keypad.update(); }
     else if (setting === 'haptics') app.setPrefs({ haptics: on });
