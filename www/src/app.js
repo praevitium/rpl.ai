@@ -1013,6 +1013,7 @@ class App {
       case 'det': runOn('DET'); return;
       case 'egvl': runOn('EGVL'); return;
       case 'trn': runOn('TRN'); return;
+      case 'rref': runOn('RREF'); return;
       case 'convert': this._convertMenu(level, anchor); return;
       case 'plot': this.clearSelection(); this.plotValue(value); return;
       case 'copy': {
@@ -1100,7 +1101,7 @@ class App {
         isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : item('num', 'chr', 'To a number (→NUM)'),
         isUnit(value) ? item('convert', 'chr', 'Convert to…') : '',
         isMatrix(value) && value.rows.length === value.rows[0]?.length ? item('inv', 'chr', 'Inverse (INV)') + item('det', 'chr', 'Determinant (DET)') + item('egvl', 'chr', 'Eigenvalues (EGVL)') : '',
-        isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') : '',
+        isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') + item('rref', 'chr', 'Row reduce (RREF)') : '',
         plottable(value) ? item('plot', 'plot', 'Plot it') : '',
         item('ask', 'spark', 'Ask the assistant about it'),
       ],
