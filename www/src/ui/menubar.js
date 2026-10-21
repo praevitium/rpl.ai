@@ -126,6 +126,7 @@ export class MenuBar {
     }
     if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < 2 * Math.abs(dy)) return;
     t.done = true;
+    if (this.app.menuView().pages > 1) this.app.buzzHold();
     if (dx < 0) this.app.nextMenuPage();
     else this.app.prevMenuPage();
   }

@@ -1772,6 +1772,25 @@ setAngle('RAD');
 }
 
 {
+  const { MenuBar } = await import('../www/src/ui/menubar.js');
+  const on = {};
+  const el = { addEventListener: (type, fn) => { (on[type] ??= []).push(fn); } };
+  const calls = [];
+  let pages = 3;
+  const app = { menuView: () => ({ slots: [{ label: 'DUP' }], pages }), nextMenuPage: () => calls.push('next'), prevMenuPage: () => calls.push('prev'), pressSoftKey: (i) => calls.push(`press ${i}`), buzzHold: () => calls.push('buzz'), clearPreview: () => {} };
+  new MenuBar({ el, app });
+  const sk = { dataset: { i: '0' }, disabled: false, classList: { add() {}, remove() {} } };
+  const target = { closest: (sel) => (sel === '.mb-keys' ? {} : sel.startsWith('.sk') ? sk : null) };
+  const fire = (type, x, y = 100) => { for (const fn of on[type] ?? []) fn({ type, pointerType: 'touch', pointerId: 1, button: 0, clientX: x, clientY: y, target, preventDefault() {} }); };
+  fire('pointerdown', 200); fire('pointermove', 150); fire('pointermove', 100); fire('pointerup', 90);
+  assert(calls.join() === 'buzz,next', 'soft keys, touch: a swipe that turns the page buzzes once, as a swipe on a level, banner or note does');
+  calls.length = 0;
+  pages = 1;
+  fire('pointerdown', 200); fire('pointermove', 100); fire('pointerup', 100);
+  assert(calls.join() === 'next', 'soft keys, touch: a swipe on a menu of one page, which has no page to turn to, does not buzz');
+}
+
+{
   const { TOUR_STEPS } = await import('../www/src/ui/tour.js');
   assert(/held, a BRCH, UNITS or variable key offers what its shifted forms do/.test(TOUR_STEPS.find((s) => s.title === 'Soft keys')?.touch ?? ''), 'tour: on a phone the soft-key step teaches that a held BRCH, UNITS or variable key offers its shifted forms');
   assert(/swipe along the keys/.test(TOUR_STEPS.find((s) => s.title === 'Soft keys')?.touch ?? ''), 'tour: on a phone the soft-key step teaches the swipe that turns the page, beside NXT');
