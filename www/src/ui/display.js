@@ -289,10 +289,11 @@ export class Display {
     view.addEventListener('dragover', (ev) => {
       if (this._dragLevel == null) return;
       const row = ev.target.closest?.('.st-row[data-level]');
-      view.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over'));
+      view.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over', 'drag-below'));
       if (!row) return;
       ev.preventDefault();
       row.classList.add('drag-over');
+      row.classList.toggle('drag-below', Number(row.dataset.level) < this._dragLevel);
     });
     view.addEventListener('drop', (ev) => {
       if (this._dragLevel == null) return;
@@ -304,7 +305,7 @@ export class Display {
     });
     view.addEventListener('dragend', () => {
       this._dragLevel = null;
-      view.querySelectorAll('.dragging, .drag-over').forEach((el) => el.classList.remove('dragging', 'drag-over'));
+      view.querySelectorAll('.dragging, .drag-over').forEach((el) => el.classList.remove('dragging', 'drag-over', 'drag-below'));
     });
     this._installSwipe(view);
     this._installLongPress(view);
@@ -457,9 +458,10 @@ export class Display {
       const row = view.ownerDocument.elementFromPoint(drag.x, drag.y)?.closest?.('.st-row[data-key], #cmdline');
       const target = row && row !== drag.row ? row : null;
       if (target === drag.target) return;
-      drag.target?.classList.remove('drag-over');
+      drag.target?.classList.remove('drag-over', 'drag-below');
       drag.target = target;
       target?.classList.add('drag-over');
+      target?.classList.toggle('drag-below', Number(target.dataset.level) < Number(drag.row.dataset.level));
     };
     // Near the stack's top or bottom edge the finger scrolls it, so a level out of view can be reached.
     const scroll = () => {
@@ -500,7 +502,7 @@ export class Display {
       cancelAnimationFrame(raf);
       if (!active) return;
       row.classList.remove('dragging');
-      target?.classList.remove('drag-over');
+      target?.classList.remove('drag-over', 'drag-below');
       this._swipedAt = performance.now();
       if (ev.type !== 'pointerup' || !target) return;
       const from = Number(row.dataset.level);

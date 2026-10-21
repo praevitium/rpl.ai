@@ -3219,3 +3219,12 @@ setAngle('RAD');
     && css.includes(':root[data-view="minimal"] .input .cmdline.drag-over { background: var(--accent-dim); }'),
     "a level a finger drags by its number onto the command line is typed there, as ECHO does and a mouse's drop already did, the line lit while it is over it, minimal view's borderless line with a tint");
 }
+
+{
+  const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(displaySrc.includes("row.classList.toggle('drag-below', Number(row.dataset.level) < this._dragLevel);")
+    && displaySrc.includes("target?.classList.toggle('drag-below', Number(target.dataset.level) < Number(drag.row.dataset.level));")
+    && css.includes('.st-row.drag-over.drag-below { box-shadow: inset 0 -2px 0 var(--accent); }'),
+    "a level dragged toward level 1, by a finger or a mouse, shows its drop line under the row it lands below, not over it");
+}
