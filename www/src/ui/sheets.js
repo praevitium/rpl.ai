@@ -144,6 +144,9 @@ export class Sheets {
     }
     if (this.kind === 'ptable') {
       this.el.innerHTML = sheet('Periodic Table', this._tableHtml(), '', `<button type="button" class="btn" data-sh="close">${icon('x', 'sm')}Close</button>`);
+      const wrap = this.el.querySelector('.pt-wrap');
+      markScrollEdges(wrap);
+      wrap.addEventListener('scroll', () => markScrollEdges(wrap), { passive: true });
       return;
     }
     if (this.kind === 'view') {

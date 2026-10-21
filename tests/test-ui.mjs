@@ -2960,8 +2960,8 @@ setAngle('RAD');
   assert(/\n  \.gr-show \{ appearance: none; width: 40px; height: 40px; margin: 0; display: grid; place-content: center; \}/.test(css)
     && /\.gr-show:checked::before \{ background: currentColor;/.test(css) && /style="accent-color:\$\{t\.color\};color:\$\{t\.color\}"/.test(gv),
     'plot trace rows on touch: the show/hide box is a 40 px target drawn in the trace\'s colour, where the native 16 px box was the drawer\'s one small control');
-  assert(/\.pl-kinds\.more-r, \.pl-pict\.more-r, \.pl-fcn\.more-r, \.cb-scroll\.more-r \{ mask-image: linear-gradient\(to right/.test(css)
-    && /\.pl-kinds\.more-l\.more-r, \.pl-pict\.more-l\.more-r, \.pl-fcn\.more-l\.more-r, \.cb-scroll\.more-l\.more-r \{/.test(css)
+  assert(/\.pl-kinds\.more-r, \.pl-pict\.more-r, \.pl-fcn\.more-r, \.pt-wrap\.more-r, \.cb-scroll\.more-r \{ mask-image: linear-gradient\(to right/.test(css)
+    && /\.pl-kinds\.more-l\.more-r, \.pl-pict\.more-l\.more-r, \.pl-fcn\.more-l\.more-r, \.pt-wrap\.more-l\.more-r, \.cb-scroll\.more-l\.more-r \{/.test(css)
     && /for \(const row of this\._chipRows\) row\.addEventListener\('scroll', \(\) => markScrollEdges\(row\), \{ passive: true \}\);/.test(gv)
     && /_markChipRows\(\) \{\n\s*for \(const row of this\._chipRows\) markScrollEdges\(row\);/.test(gv),
     'plot chip rows on a phone: the plot types, PICT and FCN rows fade at the edge that scrolls, as the key strip and drawer tabs do');
@@ -3031,4 +3031,12 @@ setAngle('RAD');
     && /case 'pt-push': \{\n\s*const v = propertyValue\(ELEMENTS\[this\.ptZ - 1\], PROPERTIES\[Number\(b\.dataset\.prop\) - 1\]\);\n\s*if \(!v\) return;\n\s*app\.commitEntryAndPush\(v\);/.test(sh)
     && /\n\.pt-grid \{ display: grid; grid-template-columns: repeat\(18, 38px\); grid-auto-rows: 38px;/.test(css) && /\n\.pt-prop \{ [^\n]*min-height: 40px;/.test(css),
     'PERTBL opens a sheet with the 18-column table in finger-wide cells placed by period and group, a tap on an element lists its 23 properties and a tap on a property puts it on the stack');
+}
+
+{
+  const sh = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/const wrap = this\.el\.querySelector\('\.pt-wrap'\);\n\s*markScrollEdges\(wrap\);\n\s*wrap\.addEventListener\('scroll', \(\) => markScrollEdges\(wrap\), \{ passive: true \}\);/.test(sh)
+    && /\.pl-fcn\.more-r, \.pt-wrap\.more-r, \.cb-scroll\.more-r \{ mask-image/.test(css),
+    'the periodic table\'s row fades at the edge that scrolls, as the key strip and the plot rows do');
 }
