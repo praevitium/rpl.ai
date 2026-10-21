@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.15 (2026-10-20)
+**Latest release:** v0.8.16 (2026-10-21)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.16 — 2026-10-21
+
+- The print log has Share on a phone, so what PR1, PRST and XMIT printed
+  goes to another app the way a printout would; its footer keeps Copy,
+  Share and Clear on one row, the header's × closing it as VIEW's does.
+- Fixed: archiving from the Variables drawer's backup form with the phone
+  keyboard's Done kept the keyboard up and the name in the field, so the
+  new backup's row stayed hidden under the keyboard; the field now clears
+  and the keyboard goes.
+- A long string inside a list, in a selected level or VIEW, wraps reading
+  from the left, where it wrapped right-aligned in a level and centred in
+  VIEW.
 
 ---
 
