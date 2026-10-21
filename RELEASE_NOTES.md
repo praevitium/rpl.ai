@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.33 (2026-10-21)
+**Latest release:** v0.8.34 (2026-10-21)
 
 ---
 
@@ -20,6 +20,21 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.34 — 2026-10-21
+
+- Fixed: with a stack level selected (the HP's interactive stack), the
+  phone's back button left the app. It now leaves the selection first, as
+  the HP's ON does, and leaves the app only when nothing is open.
+- Added: the TOOL menu, the HP's TOOL key: `EDIT`, `VIEW`, `RCL`, `STO`,
+  `PURGE` and `CLEAR`, then `CASCMD` and `HELP` on the next page, so
+  minimal view, which has no keypad, reaches them from the soft keys.
+  `VIEW` shows level 1 full size, as a level's View does. It's listed with
+  VARS, CST and MODES in the menu picker.
+- Changed: in a short window the matrix writer's five keys sit beside its
+  grid from a 520 px wide work column, where the formula's eight still
+  need 600 px, so with the full keypad in landscape at 844 × 390 or wider
+  the stack shows another level and a 3 × 3 grid still shows whole.
 
 ## v0.8.33 — 2026-10-21
 
