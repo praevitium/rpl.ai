@@ -3476,7 +3476,7 @@ setAngle('RAD');
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
-  assert(css.includes('.cat-crumb { display: flex; align-items: center; gap: 6px; padding: 2px 8px 8px; position: sticky; top: 0; z-index: 1; background: var(--panel); }')
+  assert(css.includes('.cat-crumb { display: flex; align-items: center; gap: 6px; padding: 2px 8px 8px; position: sticky; top: 0; z-index: 2; background: var(--panel); }')
     && drawerSrc.includes("const crumb = this._body().querySelector('.cat-crumb')?.offsetHeight ?? 0;"),
     'a Catalog family keeps its name and back button in sight down a long list (the CAS family has 121 commands), and CASCMD\'s start lands under it, not behind it');
 }
@@ -3487,4 +3487,10 @@ setAngle('RAD');
   assert(/showConstants\(\) \{\n    this\.charsQuery = '';/.test(drawerSrc)
     && /if \(drawer === 'chars'\) \{\n        this\.drawers\.showConstants\(\);/.test(appSrc),
     'CONSTANTS opens the Characters drawer on its constants: left filtered to "arrow", it showed only arrows on a phone');
+}
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(css.includes('.dw-list > .sec-h { position: sticky; top: 0; z-index: 1; background: var(--panel); }'),
+    'a drawer list\'s section names (the Characters groups, History\'s Errors and Entries with Clear) stay in sight while their section scrolls, under the Catalog\'s family name');
 }

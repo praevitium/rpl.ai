@@ -378,6 +378,8 @@ button { cursor: pointer; }
 .btn.danger { color: var(--danger); border-color: color-mix(in oklab, var(--danger) 45%, transparent); background: transparent; }
 .btn.danger:hover { background: var(--danger-dim); }
 .sec-h { font: 600 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); padding: 14px 14px 6px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+/* A drawer list's section names stay in sight while their section scrolls, as the Catalog's family name does. */
+.dw-list > .sec-h { position: sticky; top: 0; z-index: 1; background: var(--panel); }
 .sec-h button { border: 0; background: transparent; color: var(--ink3); font: inherit; letter-spacing: inherit; padding: 2px 4px; border-radius: 4px; }
 .sec-h button:hover { color: var(--ink); background: var(--r1); }
 .empty-note { padding: 18px 16px; color: var(--ink3); font-size: 12.5px; line-height: 1.5; text-align: center; }
@@ -932,7 +934,7 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 .cat-cats b { font: 600 12px/1.25 var(--font-ui); overflow: hidden; text-overflow: ellipsis; }
 .cat-cats span { font: 11px/1.2 var(--font-mono); color: var(--ink3); }
 /* A family's name and way back stay in sight down a long list, such as the CAS family's 121 commands. */
-.cat-crumb { display: flex; align-items: center; gap: 6px; padding: 2px 8px 8px; position: sticky; top: 0; z-index: 1; background: var(--panel); }
+.cat-crumb { display: flex; align-items: center; gap: 6px; padding: 2px 8px 8px; position: sticky; top: 0; z-index: 2; background: var(--panel); }
 .cat-crumb b { font: 600 12.5px/1.2 var(--font-ui); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmd-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 7px 10px 7px 14px; border-top: 1px solid var(--line); cursor: pointer; }
 .cmd-row:hover { background: var(--r1); }
