@@ -3494,3 +3494,11 @@ setAngle('RAD');
   assert(css.includes('.dw-list > .sec-h { position: sticky; top: 0; z-index: 1; background: var(--panel); }'),
     'a drawer list\'s section names (the Characters groups, History\'s Errors and Entries with Clear) stay in sight while their section scrolls, under the Catalog\'s family name');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(css.includes('  .ann-m.halt + .ann-m.user { margin-left: 4px; }')
+    && css.includes('    .ann-status:has(.ann-m.halt):has(.ann-m.user) button.ann-m[data-mode="exact"],')
+    && css.includes('@container app (max-width: 319px) { :root[data-theme="classic"] .status-line:has(.ann-m.user):has(.ann-g.opt:not([data-mode]) > .on) :is(.ann-g[data-mode="exact"], .ann-path) { display: none; } }'),
+    'minimal view with HALT and USER both lit: they read apart (HALTUSER ran together) and under 320 px the exact mode gives way, with Classic\'s empty path, so Menu and Leave stay on a 280 px screen (they ran 23 px off, 37 in Classic)');
+}

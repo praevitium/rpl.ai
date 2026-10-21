@@ -1119,6 +1119,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 :root[data-theme="classic"] .status-line .ann-m.e .i { width: 12px; height: 12px; }
 :root[data-theme="classic"]:not([data-view="minimal"]) .status-line :is(.ann-m.e, .ann-m.alarm, .ann-m.user) { height: 11px; min-height: 0; min-width: 0; }
 @container app (max-width: 319px) { :root[data-theme="classic"] .status-line:has(.ann-m.e):has(.ann-g.opt:not([data-mode]) > .on) .ann-g[data-mode="exact"] { display: none; } }
+/* With HALT and USER both lit, the empty path goes too, or Leave ran 37 px off a 280 px screen. */
+@container app (max-width: 319px) { :root[data-theme="classic"] .status-line:has(.ann-m.user):has(.ann-g.opt:not([data-mode]) > .on) :is(.ann-g[data-mode="exact"], .ann-path) { display: none; } }
 :root[data-theme="classic"] .ann-path { margin-left: auto; color: var(--lcd-ink); padding: 0; }
 :root[data-theme="classic"] .ann-clock { color: var(--lcd-ink); padding: 0 0 0 8px; }
 /* Classic's bezel leaves its line 48 px narrower, so its clock needs a wider window. */
@@ -2166,12 +2168,15 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   .ann-m:is(.halt, .user) { padding: 0; font-size: 11px; letter-spacing: 0; }
   .ann-status:has(.ann-m.halt, .ann-m.alarm, .ann-m.user) button.ann-m { min-width: 28px; }
   @container app (max-width: 359px) { .ann-status:has(.ann-m.halt, .ann-m.alarm, .ann-m.user) { padding-left: 6px; padding-right: 4px; } }
+  /* Without the gaps, HALT and USER would read as one word. */
+  .ann-m.halt + .ann-m.user { margin-left: 4px; }
   /* Under 320 px the padding goes and the modes give a little, so the leave button stays on screen; FIX 11 takes two lines if it must. */
   @container app (max-width: 319px) {
     .ann-status { padding-left: 6px; padding-right: 4px; }
     /* The amber pencil of a level being edited, HALT or a past-due alarm is a seventh mode at 280 px, which the side padding pays for. */
     .ann-status:has(.ann-m.e, .ann-m.halt, .ann-m.alarm, .ann-m.user) { padding-left: 2px; padding-right: 2px; }
     /* Two of them leave no room for the exact mode. */
+    .ann-status:has(.ann-m.halt):has(.ann-m.user) button.ann-m[data-mode="exact"],
     .ann-status:has(.ann-m.halt, .ann-m.user):has(.ann-m.e, .ann-m.alarm) button.ann-m[data-mode="exact"],
     .ann-status:has(.ann-m.e):has(.ann-m.alarm) button.ann-m[data-mode="exact"] { display: none; }
     button.ann-m { min-width: 28px; }
