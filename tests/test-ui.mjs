@@ -3170,3 +3170,9 @@ setAngle('RAD');
   assert(drawerSrc.includes('<div class="main"><div class="nm"><span class="nm-text">:${key}</span></div>'),
     "a backup's name wraps on a phone as a variable's does, where :1:A_VERY_LONG_BACKUP_NAME was clipped mid-letter at 280 px");
 }
+
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  assert(/const backup = deleteBackup\(port, name\);\s*this\.app\.toast\(`Deleted backup :\$\{key\}`, \{ key: 'backup-delete', action: 'Undo', onAction: \(\) => putBackBackup\(port, name, backup\) \}\);/.test(drawerSrc),
+    "a backup deleted from its row comes back with the note's Undo, a slip of the finger beside Save costing nothing");
+}

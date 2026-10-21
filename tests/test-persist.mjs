@@ -21,7 +21,7 @@ import {
 } from '../www/src/rpl/state.js';
 import {
   snapshot, rehydrate, encodeValue, decodeValue, loadInitialState, STORAGE_KEY,
-  BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup, exportBackup, subscribeBackups,
+  BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup, putBackBackup, exportBackup, subscribeBackups,
   saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX,
 } from '../www/src/rpl/persist.js';
 import { lookup } from '../www/src/rpl/ops.js';
@@ -677,6 +677,9 @@ assert(isReal(mat.rows[0][1]) && mat.rows[0][1].value.eq(2) &&
     archiveBackup('1', 'UNHEARD', new Stack());
     assert(heard === 2, 'subscribeBackups hears each archive and delete until it is turned off');
     assertThrows(() => exportBackup('1', 'HEARD'), /Nonexistent backup :1:HEARD/, 'exportBackup refuses a backup that is gone');
+    const gone = deleteBackup('1', 'UNHEARD');
+    putBackBackup('1', 'UNHEARD', gone);
+    assert(listBackups().some((b) => b.port === '1' && b.name === 'UNHEARD'), 'deleteBackup returns the backup and putBackBackup puts it back, for the drawer\'s Undo');
   } finally {
     globalThis.localStorage = saved;
   }

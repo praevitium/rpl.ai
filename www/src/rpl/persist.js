@@ -448,11 +448,20 @@ export function exportBackup(port, name) {
   return downloadFile(JSON.stringify(backup.snap, null, 2), `hp50-${port}-${safeFileName(name)}.json`, 'application/json');
 }
 
+/** Deletes a backup and returns it, so it can be put back. */
 export function deleteBackup(port, name) {
   const backups = readBackups();
   const key = backupKey(port, name);
   if (!(key in backups)) throw new RPLError(`Nonexistent backup :${port}:${name}`);
+  const backup = backups[key];
   delete backups[key];
+  writeBackups(backups);
+  return backup;
+}
+
+export function putBackBackup(port, name, backup) {
+  const backups = readBackups();
+  backups[backupKey(port, name)] = backup;
   writeBackups(backups);
 }
 

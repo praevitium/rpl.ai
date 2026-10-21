@@ -9,7 +9,7 @@ import { unitInfo } from '../rpl/units.js';
 import { format, withFractionMark } from '../rpl/formatter.js';
 import {
   exportHpTextFile,
-  listBackups, archiveBackup, restoreBackup, deleteBackup, exportBackup, subscribeBackups,
+  listBackups, archiveBackup, restoreBackup, deleteBackup, putBackBackup, exportBackup, subscribeBackups,
 } from '../rpl/persist.js';
 import { referenceSection, pushHistory, isSyntaxWord, typeSyntaxWord } from './command-help.js';
 import { loadCommandReference, findReferenceEntry, shortDescription, appNote, searchCommands, spelledName } from './command-reference.js';
@@ -835,8 +835,14 @@ export class Drawers {
 
   _deleteBackup(key) {
     const sep = key.indexOf(':');
-    try { deleteBackup(key.slice(0, sep), key.slice(sep + 1)); this.app.toast(`Deleted backup :${key}`); }
-    catch (e) { this.app.notifyError(`Delete failed: ${e.message}`); }
+    const port = key.slice(0, sep);
+    const name = key.slice(sep + 1);
+    try {
+      const backup = deleteBackup(port, name);
+      this.app.toast(`Deleted backup :${key}`, { key: 'backup-delete', action: 'Undo', onAction: () => putBackBackup(port, name, backup) });
+    } catch (e) {
+      this.app.notifyError(`Delete failed: ${e.message}`);
+    }
     this._renderBackups();
   }
 
