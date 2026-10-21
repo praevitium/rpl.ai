@@ -2917,8 +2917,8 @@ setAngle('RAD');
       && drawerRowSrc.includes("else if (act === 'pgdir') this._deleteVar(name, true);")
       && drawerRowSrc.includes('varPurge(name, withContents);'),
       'Variables: a folder with something in it offers Delete with its items (PGDIR), with Undo, where Delete could only refuse');
-    assert(appSrc.includes("isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : '',") && appSrc.includes("case 'toq': runOn('→Q'); return;"),
-      'a level holding a decimal offers To a fraction (→Q) beside →NUM, as the HP\'s →Q turns .75 into \'3/4\'');
+    assert(appSrc.includes("isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : item('num', 'chr', 'To a number (→NUM)'),") && appSrc.includes("case 'toq': runOn('→Q'); return;"),
+      'a level holding a decimal offers To a fraction (→Q), as the HP\'s →Q turns .75 into \'3/4\', in place of →NUM, which leaves a decimal as it is');
     assert(appSrc.includes(`data-row-act="more" title="More actions (\${shortcutText('level.menu')})"`),
       'a level\'s More actions button names its key, Shift+F10, as Edit and Drop beside it name theirs');
   }
