@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.39 (2026-10-21)
+**Latest release:** v0.8.40 (2026-10-21)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.40 — 2026-10-21
+
+- Fixed: in minimal view on a 280 px screen, with HALT and USER both lit,
+  the Menu and Leave buttons ran off the right edge (23 px, 37 in the
+  Classic look), and HALT and USER read as one word. The exact mode now
+  gives way below 320 px and the two marks sit apart.
+- Added: flag -22, as the AUR has it. Set, an infinite result is ±MAXR
+  instead of an Infinite result error: `1 0 /`, `0 INV`, `0 LN`, `0 LOG`,
+  `-1 LNP1`, `1 ATANH` and `TAN` at an odd multiple of 90° in degrees.
+- Improved: the soft keys `CONSTANTS`, `REWRITE` and `MENUXY` show are
+  named on the menu button (CONST, REWRITE, MENUXY) instead of TMENU, and
+  come back by that name as the previous menu.
 
 ## v0.8.39 — 2026-10-21
 
