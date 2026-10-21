@@ -63,13 +63,13 @@ export class MenuBar {
       if (b.dataset.mb === 'next') this._nxt();
       else if (b.dataset.mb === 'pick') this.openPicker(b);
     });
-    // The click that follows a finger's lift lands on whatever its key opened there, such as VIEW's Edit.
+    // The click that follows a finger's lift lands on whatever its key opened there, such as VIEW's Edit, or on the key
+    // again, which Chrome's click (detail 0, as a keyboard's) would press a second time.
     const doc = el.ownerDocument;
     doc?.addEventListener('pointerdown', () => { this._lifted = false; }, true);
     doc?.addEventListener('click', (e) => {
       if (!this._lifted) return;
       this._lifted = false;
-      if (el.contains(e.target)) return;
       e.preventDefault();
       e.stopPropagation();
     }, true);

@@ -2931,7 +2931,7 @@ setAngle('RAD');
   const sheetEdit = { closest: () => null };
   assert(tap(sheetEdit) && opened.length === 1,
     "soft keys, touch: the click a tap sends after its key opened VIEW is swallowed, where at 280 px it pressed the Edit button VIEW had just put under the finger and the level opened for editing");
-  assert(!tap(key), 'soft keys, touch: a click that lands back on the soft keys passes');
+  assert(tap(key) && opened.length === 2, 'soft keys, touch: the click that lands back on the key is swallowed too, where Chrome\'s (detail 0, as a keyboard\'s) pressed it again: DUP ran twice and a toggle such as CLK flipped back off');
   fire(onDoc, 'pointerdown', sheetEdit);
   assert(!fire(onDoc, 'click', sheetEdit).stopped, 'soft keys, touch: the next tap, on what the key opened, goes through');
 }
