@@ -3196,8 +3196,8 @@ setAngle('RAD');
 
 {
   const tourSrc = readFileSync(new URL('../www/src/ui/tour.js', import.meta.url), 'utf8');
-  assert(tourSrc.includes("a finger held on it opens its menu, a swipe sideways drops it, and a drag up or down by its number moves it.'"),
-    "the tour's stack card on a phone names the swipe that drops a level and the drag by its number that moves it, as its soft-key card names the swipe along the keys");
+  assert(tourSrc.includes("a finger held on it opens its menu, a swipe sideways drops it, and a drag up or down by its number moves it, or copies it to the command line or an open writer, or stores it in a variable's soft key.\""),
+    "the tour's stack card on a phone names the swipe that drops a level and the drag by its number that moves it, copies it to the command line or a writer, or stores it in a variable's key");
 }
 
 {
