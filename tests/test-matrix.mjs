@@ -3838,8 +3838,12 @@ function _approxMatEqual(A, B, tol) {
   const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
   assert(line('[[(1,2) 3][4 5]] TRN') === '[[ (1, -2) 4 ][ 3 5 ]]' && line('[[(1,2) 3][4 5]] TRAN') === '[[ (1, 2) 4 ][ 3 5 ]]',
     'TRN is the conjugate transpose and TRAN the plain one, as the AUR defines them');
-  assert(line('[5 10] [[2 1][1 3]] /') === '[ 1. 3. ]' && line('[[5][10]] [[2 1][1 3]] /') === '[[ 1. ][ 3. ]]',
-    'an array divided by a square matrix solves the system, as the AUR says');
+  assert(line('[5 10] [[2 1][1 3]] /') === '[ 1 3 ]' && line('[[5][10]] [[2 1][1 3]] /') === '[[ 1 ][ 3 ]]' && line('[5. 10] [[2 1][1 3]] /') === '[ 1. 3. ]',
+    'an array divided by a square matrix solves the system, as the AUR says, exactly when both are exact');
+  assert(line('[[1 2][3 4]] INV') === '[[ -2 1 ][ 3/2 -1/2 ]]' && line('[[1 2][3 4]] INV INV') === '[[ 1 2 ][ 3 4 ]]'
+      && line('[[1. 2][3 4]] INV') === '[[ -2. 1. ][ 1.5 -0.5 ]]',
+    'INV of an integer matrix in exact mode is fractions, as on the HP, where it gave decimals; a real entry keeps it numeric');
+  assertThrows(() => runLine('[[1 2][2 4]] INV'), /Infinite result/, 'INV of a singular exact matrix is an Infinite result');
   assertThrows(() => runLine('[[2 1][1 3]] [5 10] /'), /Bad argument type/, 'a matrix divided by a vector is still refused');
   assert(line('[[1 2][3 4]] →ROW') === '2. | [ 3 4 ] | [ 1 2 ]' && line('[1 2] [3 4] 2 ROW→') === '[[ 1 2 ][ 3 4 ]]',
     '→ROW takes a matrix apart and ROW→ puts rows together, the AUR way round');

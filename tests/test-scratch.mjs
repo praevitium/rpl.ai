@@ -41,7 +41,7 @@ import { assert } from './helpers.mjs';
 }
 {
   const r = evalScratch('[[1 2][3 4]] INV');
-  assert(r.ok && /-2\./.test(r.stack[0]), 'evalScratch runs matrix ops');
+  assert(r.ok && r.stack[0].includes('[[ -2 1 ][ 3/2 -1/2 ]]'), `evalScratch runs matrix ops (got ${r.stack?.[0]})`);
 }
 {
   const r = evalScratch('{ 5 3 9 } SORT');

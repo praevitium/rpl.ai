@@ -7,7 +7,7 @@ import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { inverseUexpr, powerUexpr, sameDims, temperaturesAdd } from '../units.js';
 import { register, lookup, OPS } from './registry.js';
 import { isPict, negGrob } from './graphics.js';
-import { _inUnit, _infiniteResult, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _arrayToGiacStr, _casArray, _hasSymEntry, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _tidyBinary, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, exactSqrt, exactXroot, recallVar, storeVar } from './internal.js';
+import { _inUnit, _infiniteResult, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _arrayToGiacStr, _casArray, _hasSymEntry, _invMatrixExact, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _tidyBinary, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, exactSqrt, exactXroot, recallVar, storeVar } from './internal.js';
 
 
 
@@ -255,7 +255,9 @@ register('INV', _withTaggedUnary(_withListUnary((s) => {
     const cols = n > 0 ? v.rows[0].length : 0;
     if (n !== cols) throw new RPLError('Invalid dimension');
     if (n === 0) { s.push(v); return; }
-    s.push(_hasSymEntry(v.rows.flat()) ? _casArray(`inv(${_arrayToGiacStr(v)})`) : Matrix(_invMatrixNumeric(v.rows)));
+    const entries = v.rows.flat();
+    if (_hasSymEntry(entries)) s.push(_casArray(`inv(${_arrayToGiacStr(v)})`));
+    else s.push(Matrix(!getApproxMode() && entries.every((x) => isInteger(x) || isRational(x)) ? _invMatrixExact(v.rows) : _invMatrixNumeric(v.rows)));
   } else throw new RPLError('Bad argument type');
 })), { category: 'Arithmetic', categoryOrder: 6, label: "INV" });
 

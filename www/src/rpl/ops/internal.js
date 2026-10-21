@@ -2215,6 +2215,26 @@ export function _invMatrixNumeric(rows) {
   return I.map(row => row.map(x => Real(x)));
 }
 
+const _isExactZero = (x) => isInteger(x) && x.value === 0n;
+
+// Gauss-Jordan on integers and fractions, so an exact matrix inverts to fractions as on the HP.
+export function _invMatrixExact(rows) {
+  const n = rows.length;
+  const a = rows.map((row, i) => [...row, ...rows.map((_, j) => Integer(i === j ? 1n : 0n))]);
+  for (let k = 0; k < n; k++) {
+    const p = a.findIndex((row, i) => i >= k && !_isExactZero(row[k]));
+    if (p < 0) throw new RPLError('Infinite result');
+    [a[k], a[p]] = [a[p], a[k]];
+    const piv = a[k][k];
+    a[k] = a[k].map((x) => _scalarBinary('/', x, piv));
+    for (let i = 0; i < n; i++) {
+      const f = a[i][k];
+      if (i !== k && !_isExactZero(f)) a[i] = a[i].map((x, j) => _scalarBinary('-', x, _scalarBinary('*', f, a[k][j])));
+    }
+  }
+  return a.map((row) => row.slice(n));
+}
+
 
 function _wholeNumber(v, min) {
   let n;
