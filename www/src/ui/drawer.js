@@ -668,6 +668,12 @@ export class Drawers {
       if (first) { e.preventDefault(); this.cat.focusAction = true; this.showReference(first.dataset.cmd); }
       return;
     }
+    // As the HP's ← and → shifted VAR keys store and recall, and Shift+F1 and Alt+F1 do on the soft keys.
+    if (e.key === 'Enter' && (e.shiftKey || e.altKey) && e.target.matches?.('.vr[data-dw="var"]:not(.dir)')) {
+      e.preventDefault();
+      this.app.pressVariable(e.target.dataset.name, e.shiftKey ? 'L' : 'R');
+      return;
+    }
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[role="button"][data-dw]')) {
       e.preventDefault();
       e.target.click();
