@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.14 (2026-10-20)
+**Latest release:** v0.8.15 (2026-10-20)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.15 — 2026-10-20
+
+- `SBRK`, the serial break. Break from the HP: there is no serial port, so
+  there is never a transfer to break and it does nothing. The commands
+  still missing are recorded in the README: RCLMENU and the numbered menus
+  need the HP's menu-number table, and the rest need a ROM, libraries,
+  warmstarts or the StreamSmart hardware.
+- Fixed: `0 MENU` after `TMENU` said there was no menu before, and after
+  `MENU` it skipped the menu just left; it now goes back to the menu shown
+  before, a temporary menu or a folder included, as the HP's last menu
+  does.
+- A list on the stack reads `{ 1 2 }` as the HP writes it, where the
+  braces had lost their spaces (`{1 2}`).
 
 ---
 
