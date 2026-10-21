@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.4 (2026-10-20)
+**Latest release:** v0.8.5 (2026-10-20)
 
 ---
 
@@ -18,6 +18,17 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.5 — 2026-10-20
+
+- `FILER` and `OFF` are in, the first two of the commands still outside the
+  app that a web page can honour. FILER opens the Variables drawer, the file
+  manager here, and lets a phone's keyboard go so the drawer has the screen.
+  OFF saves the session and covers the app with an off screen until a tap or
+  a key wakes it; a web page has no power to cut, and nothing is lost. Both
+  do nothing inside a scratch evaluation, as the other screen commands do.
 
 ---
 
