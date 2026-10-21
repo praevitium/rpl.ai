@@ -2155,6 +2155,14 @@ setAngle('RAD');
 
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const classic = css.indexOf(':root[data-theme="classic"] .cmdline {');
+  const editing = css.indexOf(':root[data-theme="classic"]:not([data-view="minimal"]) .cmdline.editing { border-color: color-mix(in oklab, var(--amber) 60%, transparent); box-shadow: inset 0 2px 6px rgba(0, 0, 0, .22), 0 0 0 3px var(--amber-dim); }');
+  assert(classic > 0 && editing > classic,
+    'Classic theme: a level being edited outlines the command line in amber, as the other themes do; its LCD border hid the mark, so with the keypad hidden and the keyboard up (no status line) Enter replaced level 1 unannounced');
+}
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const short = css.slice(css.indexOf('@media (max-height: 330px) {\n  :root[data-keyboard] .input-top'));
   assert(/:root:is\(\[data-keyboard\], \[data-short\]\) \.bn:not\(\.halt\) \{ grid-template-columns: minmax\(0, 1fr\) auto; align-items: center; padding-block: 6px; \}/.test(css)
     && /:root:is\(\[data-keyboard\], \[data-short\]\) \.bn:not\(\.halt\) :is\(\.bn-ico, \.bn-d\) \{ display: none; \}/.test(css)
