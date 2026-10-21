@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.13 (2026-10-20)
+**Latest release:** v0.8.14 (2026-10-20)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.14 — 2026-10-20
+
+- Ports: `PVARS` lists the backups `ARCHIVE` made in a port as tagged
+  names with the free memory, `PINIT` drops backups that can no longer be
+  read, and `LIBS` returns `{ }`. Breaks from the HP: the ports are the
+  browser's backup store, so ports 0 to 3 all report one estimate of the
+  storage left, and there are no libraries to list.
+- Fixed: a backup made by typing `ARCHIVE` didn't show in the Variables
+  drawer's Backups list until the drawer was reopened.
+- On a phone the backup name field takes its own row, with the port and
+  Archive beneath it, and a backup's date is short and wraps whole instead
+  of being cut.
 
 ---
 
