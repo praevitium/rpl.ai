@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.19 (2026-10-21)
+**Latest release:** v0.8.20 (2026-10-21)
 
 ---
 
@@ -18,6 +18,21 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.20 — 2026-10-21
+
+- Fixed: a level being edited lost its edit when another level was moved,
+  swiped away or pushed past it, so Enter pushed the text as a new level
+  while minimal view's pencil still named the old level. The edit now
+  follows its value to its new level, and ends, pencil and all, only when
+  the value leaves the stack.
+- On a phone, drag a level by its number onto the command line to copy it
+  there, as the HP's ECHO does (a mouse's drop already did); the line
+  lights up while the level is over it.
+- A level dragged toward level 1 shows its drop line under the row it will
+  land below, rather than over it, for a finger and a mouse alike.
 
 ---
 
