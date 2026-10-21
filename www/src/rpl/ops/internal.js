@@ -5,7 +5,7 @@ import { exactTrigRewrite } from '../exact-trig.js';
 import { gatherLike } from '../tidy.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, UnitNode as AstUnit, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, hasUnits, exactRational, isRealNum, isKnownFunction } from '../algebra.js';
 import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
-import { state as _calcState, getApproxMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd, withScratchState } from '../state.js';
+import { state as _calcState, getApproxMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, testUserFlag, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd, withScratchState } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
 import { formatSource, currentDisplay, withFractionMark } from '../formatter.js';
@@ -115,6 +115,12 @@ export function _makeUnit(value, uexpr) {
   return uexpr.length === 0 ? Real(value) : Unit(value, uexpr);
 }
 
+// With flag -22 set, as the AUR has it, an infinite result is ±MAXR instead of an Infinite result error.
+export function _infiniteResult(negative = false) {
+  if (!testUserFlag(-22)) throw new RPLError('Infinite result');
+  return Real(new Decimal(`${negative ? '-' : ''}9.99999999999e+${getRealMaxExp()}`));
+}
+
 // The HP's error list: 0/0 is an Undefined result, any other x/0 an Infinite result.
 const _divisionByZero = (dividendIsZero) => new RPLError(dividendIsZero ? 'Undefined result' : 'Infinite result');
 
@@ -177,6 +183,7 @@ export function _scalarBinary(op, a, b) {
   }
   if (isUnit(a) || isUnit(b)) return _unitBinary(op, a, b);
   if (!isNumber(a) || !isNumber(b)) throw new RPLError('Bad argument type');
+  if (op === '/' && !isComplex(a) && !isComplex(b) && _numVal(b) === 0 && _numVal(a) !== 0) return _infiniteResult(_numVal(a) < 0);
   const p = promoteNumericPair(a, b);
   if (p.kind === 'complex') {
     const r = complexBinary(op, p.a, p.b);

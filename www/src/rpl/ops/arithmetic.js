@@ -7,7 +7,7 @@ import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { inverseUexpr, powerUexpr, sameDims, temperaturesAdd } from '../units.js';
 import { register, lookup, OPS } from './registry.js';
 import { isPict, negGrob } from './graphics.js';
-import { _inUnit, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _arrayToGiacStr, _casArray, _hasSymEntry, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _tidyBinary, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, exactSqrt, exactXroot, recallVar, storeVar } from './internal.js';
+import { _inUnit, _infiniteResult, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _arrayToGiacStr, _casArray, _hasSymEntry, _invMatrixNumeric, _isScalarOperand, _isSymOperand, _makeUnit, _scalarBinary, _scalarSum, _tidyBinary, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, exactSqrt, exactXroot, recallVar, storeVar } from './internal.js';
 
 
 
@@ -231,11 +231,10 @@ register('INV', _withTaggedUnary(_withListUnary((s) => {
     return;
   }
   if (isReal(v)) {
-    if (v.value.isZero()) throw new RPLError('Infinite result');
-    s.push(Real(new Decimal(1).div(v.value)));
+    s.push(v.value.isZero() ? _infiniteResult() : Real(new Decimal(1).div(v.value)));
   } else if (isInteger(v)) {
-    if (v.value === 0n) throw new RPLError('Infinite result');
-    if (getApproxMode()) s.push(Real(1 / Number(v.value)));
+    if (v.value === 0n) s.push(_infiniteResult());
+    else if (getApproxMode()) s.push(Real(1 / Number(v.value)));
     else if (v.value === 1n || v.value === -1n) s.push(Integer(v.value));
     else s.push(Rational(1n, v.value));
   } else if (isRational(v)) {

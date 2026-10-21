@@ -288,6 +288,20 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   clearLastError();
 }
 
+// Flag -22 set: an infinite result is ±MAXR instead of an error, signed as the AUR has it.
+{
+  const shown = (line) => { try { return format(runLine(`-22 SF ${line}`).peek()); } finally { runLine('-22 CF RAD'); } };
+  const MAXR = '9.99999999999E499';
+  for (const [line, want] of [['1 0 /', MAXR], ['-2.5 0 /', `-${MAXR}`], ['1/3 0 /', MAXR], ['0 INV', MAXR], ['0. LN', `-${MAXR}`],
+    ['0 LOG', `-${MAXR}`], ['(0.,0.) LN', `-${MAXR}`], ['-1 LNP1', `-${MAXR}`], ['1. ATANH', MAXR], ['-1. ATANH', `-${MAXR}`],
+    ['DEG 90. TAN', MAXR], ['DEG -90. TAN', `-${MAXR}`], ['{ 0 1 } LN', `{ -${MAXR} 0 }`]]) {
+    assert(shown(line) === want, `-22 SF ${line} gives ${want} (got ${shown(line)})`);
+  }
+  assertThrows(() => runLine('-22 SF 0 0 /'), /^Undefined result$/, 'with -22 set, 0 0 / is still an Undefined result');
+  runLine('-22 CF');
+  assertThrows(() => runLine('0 LN'), /^Infinite result$/, 'with -22 clear, 0 LN is still an Infinite result');
+}
+
 
 // FLOOR / CEIL / IP / FP / SIGN / MOD / MIN / MAX
 

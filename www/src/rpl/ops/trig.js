@@ -6,7 +6,7 @@ import { exactTrig, exactInverseTrig } from '../exact-trig.js';
 import { RPLError } from '../stack.js';
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { register } from './registry.js';
-import { _astToRplValue, _cx, _cxAdd, _cxDiv, _cxMul, _cxSub, _exactUnaryLift, _isSymOperand, _toAst, _withListUnary, _withTaggedUnary, _withVMUnary, unaryReal } from './internal.js';
+import { _astToRplValue, _infiniteResult, _cx, _cxAdd, _cxDiv, _cxMul, _cxSub, _exactUnaryLift, _isSymOperand, _toAst, _withListUnary, _withTaggedUnary, _withVMUnary, unaryReal } from './internal.js';
 
 
 
@@ -61,7 +61,7 @@ function _complexAngle(z) {
 register('LNP1', _unaryOp('LNP1', (v) => {
   const x = toRealOrThrow(v);
   if (x < -1) throw new RPLError('Undefined result');
-  if (x === -1) throw new RPLError('Infinite result');
+  if (x === -1) return _infiniteResult(true);
   return Real(Math.log1p(x));
 }), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 10, label: "LNP1" });
 
@@ -184,7 +184,7 @@ function _trigDecimal(kind, d, mode = _calcState.angle) {
   const quarters = x.minus(t).div(quadrant).mod(4).plus(4).mod(4).toNumber();
   if (t.isZero()) {
     if (kind === 'tan') {
-      if (quarters % 2) throw new RPLError('Infinite result');
+      if (quarters % 2) return _infiniteResult(d.isNegative()).value;
       return new Decimal(0);
     }
     return new Decimal((kind === 'sin' ? [0, 1, 0, -1] : [1, 0, -1, 0])[quarters]);
@@ -213,8 +213,8 @@ const _isZero = (v) => (isInteger(v) ? v.value === 0n : isRational(v) ? v.n === 
 
 function _unaryCx(name, realFn, cxFn, decimalFn) {
   return _unaryOp(name, (v) => {
+    if ((name === 'LN' || name === 'LOG') && (_isZero(v) || (isComplex(v) && !v.re && !v.im))) return _infiniteResult(true);
     if (isComplex(v)) return _complex(cxFn(v));
-    if ((name === 'LN' || name === 'LOG') && _isZero(v)) throw new RPLError('Infinite result');
     if (_isExact(v)) return _exactUnaryLift(name, realFn(toRealOrThrow(v)), v);
     const d = _toDecimal(v);
     const result = decimalFn(d);
@@ -325,7 +325,7 @@ register('ATANH', _unaryOp('ATANH', (v) => {
     if (x > -1 && x < 1) return _exactUnaryLift('ATANH', Math.atanh(x), v);
   }
   const d = _toDecimal(v);
-  if (d.abs().eq(1)) throw new RPLError('Infinite result');
+  if (d.abs().eq(1)) return _infiniteResult(d.isNegative());
   return d.abs().lt(1) ? Real(d.atanh()) : _complex(_cxAtanh({ re: d.toNumber(), im: 0 }));
 }), { category: 'Trig / log / exp / hyperbolic', categoryOrder: 17, label: "ATANH" });
 
