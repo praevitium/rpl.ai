@@ -2966,12 +2966,12 @@ setAngle('RAD');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  const field = /spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="done" class="pop-name"/;
+  const field = /spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done" class="pop-name"/;
   assert(field.test(appSrc) && field.test(drawerSrc) && !/height:32px/.test(appSrc) && !/height:32px/.test(drawerSrc)
-    && /placeholder="Backup name" aria-label="Backup name" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="done">/.test(drawerSrc)
+    && /placeholder="Backup name" aria-label="Backup name" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done">/.test(drawerSrc)
     && /\n\.pop-name \{ width: 100%; height: 32px; border-radius: 8px;/.test(css)
     && /\n  \.field, \.backup-new input, \.backup-new select, \.pop-name \{ height: 40px; \}/.test(css),
-    'names on a phone: the Store, New folder and Backup name fields are 40 px on touch, keep the case typed (no first-letter capital) and label the keyboard\'s Enter Done, as the writers\' fields do');
+    'names on a phone: the Store, New folder and Backup name fields are 40 px on touch, keep the case typed (no first-letter capital, no autocorrect) and label the keyboard\'s Enter Done, as the writers\' fields do');
 }
 
 {
@@ -2989,9 +2989,16 @@ setAngle('RAD');
 {
   const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/input\.autocomplete = 'off';\n\s*input\.autocapitalize = 'off';\n\s*input\.enterKeyHint = 'done';/.test(drawerSrc)
+  assert(/input\.autocomplete = 'off';\n\s*input\.autocapitalize = 'off';\n\s*input\.setAttribute\('autocorrect', 'off'\);\n\s*input\.enterKeyHint = 'done';/.test(drawerSrc)
     && /\n  \.vr\.editing \.nm input \{ height: 40px; \}/.test(css),
     'Variables drawer, rename on a phone: the inline name field is 40 px on touch, keeps the case typed and labels Enter Done, as the Store and New folder fields do');
+  {
+    const sources = ['palette', 'drawer', 'graph-view', 'sheets'].map((f) => readFileSync(new URL(`../www/src/ui/${f}.js`, import.meta.url), 'utf8')).join('\n');
+    const inputs = sources.match(/<input (?:type="(?:text|search)"|class="gr-expr")[\s\S]*?>/g) ?? [];
+    const loose = inputs.filter((tag) => !/inputmode="decimal"/.test(tag) && !(/autocapitalize="off"/.test(tag) && /autocorrect="off"/.test(tag)));
+    assert(inputs.length >= 10 && loose.length === 0,
+      `phone keyboards: every field RPL is typed into (command search, the drawer filters, name fields, the plot's expressions, INFORM) turns off autocapitalize and autocorrect, as the command line does, so an iPhone neither capitalises nor "corrects" what is typed${loose.length ? `; still loose: ${loose.map((t) => t.slice(0, 60)).join(' | ')}` : ''}`);
+  }
 }
 
 {

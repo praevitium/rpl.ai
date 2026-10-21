@@ -60,7 +60,7 @@ export class Palette {
     this.app.toasts?.dismiss('view');
     this.el = document.createElement('div');
     this.el.className = 'pal-wrap';
-    this.el.innerHTML = `<div class="pal" role="dialog" aria-modal="true" aria-label="Search"><div class="pal-in">${icon('search')}<input type="text" aria-label="Search" autocomplete="off" spellcheck="false"><span class="kbd">Esc</span></div><div class="pal-list" role="listbox"></div><div class="pal-foot"><span>↑↓ choose</span><span>↵ run</span><span>→ reference</span><span>Esc close</span></div></div>`;
+    this.el.innerHTML = `<div class="pal" role="dialog" aria-modal="true" aria-label="Search"><div class="pal-in">${icon('search')}<input type="text" aria-label="Search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><span class="kbd">Esc</span></div><div class="pal-list" role="listbox"></div><div class="pal-foot"><span>↑↓ choose</span><span>↵ run</span><span>→ reference</span><span>Esc close</span></div></div>`;
     this.host.appendChild(this.el);
     this._input = this.el.querySelector('input');
     this._list = this.el.querySelector('.pal-list');

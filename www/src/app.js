@@ -1133,7 +1133,7 @@ class App {
   _storePrompt(level, anchor) {
     const names = varOrder().filter((id) => !isDirectory(varRecall(id)));
     const chips = names.length ? `<div class="pop-chips">${names.map((id) => `<button type="button" class="chip" data-name="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join('')}</div>` : '';
-    const html = `<form data-store><h6>Store level ${level} in</h6><div style="padding:4px 6px 6px"><input type="text" name="name" placeholder="Variable name, like R1" aria-label="Variable name" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="done" class="pop-name"></div>${chips}<div class="note">Same as <code>\`NAME\` STO</code>. Level ${level} stays on the stack.</div><div style="display:flex;justify-content:flex-end;padding:6px"><button type="submit" class="btn pri">Store</button></div></form>`;
+    const html = `<form data-store><h6>Store level ${level} in</h6><div style="padding:4px 6px 6px"><input type="text" name="name" placeholder="Variable name, like R1" aria-label="Variable name" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done" class="pop-name"></div>${chips}<div class="note">Same as <code>\`NAME\` STO</code>. Level ${level} stays on the stack.</div><div style="display:flex;justify-content:flex-end;padding:6px"><button type="submit" class="btn pri">Store</button></div></form>`;
     const pop = this.popover.open(anchor ?? this.display.stackView.querySelector('.st-row.sel'), html, { label: 'Store' });
     const form = pop.querySelector('form');
     requestAnimationFrame(() => form.elements.name.focus());

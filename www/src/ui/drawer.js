@@ -452,7 +452,7 @@ export class Drawers {
 
   _renderCatalog(body) {
     if (this.cat.ref) { this._renderReference(body); return; }
-    body.innerHTML = `<div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="cat" placeholder="Search commands and what they do" aria-label="Search commands" value="${escapeHtml(this.cat.q)}" autocomplete="off" spellcheck="false"></label></div><div class="dw-list"></div>`;
+    body.innerHTML = `<div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="cat" placeholder="Search commands and what they do" aria-label="Search commands" value="${escapeHtml(this.cat.q)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></label></div><div class="dw-list"></div>`;
     this._renderCatalogList();
     this._ensureReference();
   }
@@ -529,7 +529,7 @@ export class Drawers {
   }
 
   _renderVars(body) {
-    body.innerHTML = `<div class="path-bar" data-path-bar></div><div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="vars" placeholder="Filter variables" aria-label="Filter variables" value="${escapeHtml(this.varsQuery)}" autocomplete="off" spellcheck="false"></label><button type="button" class="icon-btn sm" data-dw="vars-more" title="New folder, upload, export and back up" aria-label="New folder, upload, export and back up" aria-haspopup="menu">${icon('more', 'sm')}</button></div><div class="dw-list vr-list"></div><details class="vr-backups"><summary class="sec-h"><span>Backups<span class="badge" data-backup-count></span></span>${icon('chd', 'sm')}</summary><form class="backup-new" data-form="archive"><input type="text" name="name" placeholder="Backup name" aria-label="Backup name" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="done"><span class="backup-to"><select name="port" aria-label="Port" title="Port 0 lives in this browser; ports 1–3 are separate slots">${[0, 1, 2, 3].map((p) => `<option value="${p}">:${p}:</option>`).join('')}</select><button type="submit" class="btn" title="Save the stack and HOME tree (same as :n:name ARCHIVE)">Archive</button></span></form><div class="dw-backups"></div></details>`;
+    body.innerHTML = `<div class="path-bar" data-path-bar></div><div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="vars" placeholder="Filter variables" aria-label="Filter variables" value="${escapeHtml(this.varsQuery)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></label><button type="button" class="icon-btn sm" data-dw="vars-more" title="New folder, upload, export and back up" aria-label="New folder, upload, export and back up" aria-haspopup="menu">${icon('more', 'sm')}</button></div><div class="dw-list vr-list"></div><details class="vr-backups"><summary class="sec-h"><span>Backups<span class="badge" data-backup-count></span></span>${icon('chd', 'sm')}</summary><form class="backup-new" data-form="archive"><input type="text" name="name" placeholder="Backup name" aria-label="Backup name" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done"><span class="backup-to"><select name="port" aria-label="Port" title="Port 0 lives in this browser; ports 1–3 are separate slots">${[0, 1, 2, 3].map((p) => `<option value="${p}">:${p}:</option>`).join('')}</select><button type="submit" class="btn" title="Save the stack and HOME tree (same as :n:name ARCHIVE)">Archive</button></span></form><div class="dw-backups"></div></details>`;
     this._renderVarsList();
   }
 
@@ -579,7 +579,7 @@ export class Drawers {
   }
 
   _renderHistory(body) {
-    body.innerHTML = `<div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="history" placeholder="Filter history" aria-label="Filter history" value="${escapeHtml(this.historyQuery)}" autocomplete="off" spellcheck="false"></label></div><div class="dw-list"></div>`;
+    body.innerHTML = `<div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="history" placeholder="Filter history" aria-label="Filter history" value="${escapeHtml(this.historyQuery)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></label></div><div class="dw-list"></div>`;
     this._renderHistoryList();
   }
 
@@ -602,7 +602,7 @@ export class Drawers {
   }
 
   _renderChars(body) {
-    body.innerHTML = `<div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="chars" placeholder="Filter characters and constants" aria-label="Filter characters" value="${escapeHtml(this.charsQuery)}" autocomplete="off" spellcheck="false"></label></div><div class="dw-list"></div>`;
+    body.innerHTML = `<div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="chars" placeholder="Filter characters and constants" aria-label="Filter characters" value="${escapeHtml(this.charsQuery)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></label></div><div class="dw-list"></div>`;
     this._renderCharsList();
   }
 
@@ -792,7 +792,7 @@ export class Drawers {
 
   _newFolder(anchor) {
     const { app } = this;
-    const html = `<form data-newdir><h6>New folder</h6><div style="padding:4px 6px 6px"><input type="text" name="name" placeholder="Name, like PROJECTS" aria-label="Folder name" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="done" class="pop-name"></div><div class="note">Same as <code>\`NAME\` CRDIR</code>.</div><div style="display:flex;justify-content:flex-end;gap:6px;padding:6px"><button type="submit" class="btn pri">Create</button></div></form>`;
+    const html = `<form data-newdir><h6>New folder</h6><div style="padding:4px 6px 6px"><input type="text" name="name" placeholder="Name, like PROJECTS" aria-label="Folder name" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done" class="pop-name"></div><div class="note">Same as <code>\`NAME\` CRDIR</code>.</div><div style="display:flex;justify-content:flex-end;gap:6px;padding:6px"><button type="submit" class="btn pri">Create</button></div></form>`;
     const pop = app.popover.open(anchor, html, { label: 'New folder' });
     const form = pop.querySelector('form');
     requestAnimationFrame(() => form.elements.name.focus());
@@ -866,6 +866,7 @@ export class Drawers {
     input.spellcheck = false;
     input.autocomplete = 'off';
     input.autocapitalize = 'off';
+    input.setAttribute('autocorrect', 'off');
     input.enterKeyHint = 'done';
     input.setAttribute('aria-label', `New name for ${oldName}`);
     nameEl.replaceWith(input);

@@ -196,8 +196,8 @@ export class GraphView {
         <div class="gr-exprs" aria-label="Traces"></div>
         <div class="gr-data" hidden><span>Plot the data in</span><button type="button" class="btn" data-gr="data-level1">Level 1</button><button type="button" class="btn" data-gr="data-sigma">ΣDAT</button></div>
         <form class="gr-add">
-          <input type="text" class="gr-add-x" spellcheck="false" autocomplete="off" placeholder="SIN(X)" aria-label="Expression" />
-          <input type="text" class="gr-add-y hidden" spellcheck="false" autocomplete="off" placeholder="COS(T)" aria-label="Y expression" />
+          <input type="text" class="gr-add-x" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="SIN(X)" aria-label="Expression" />
+          <input type="text" class="gr-add-y hidden" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="COS(T)" aria-label="Y expression" />
           <button type="submit" class="btn" title="Add this trace">Add</button>
         </form>
         <div class="sec-h">Window</div>
@@ -1212,7 +1212,7 @@ export class GraphView {
             const key = field.key === 'exprY' ? 'y' : 'x';
             const value = withFractionMark(field.key === 'exprY' ? t.exprY : t.expr);
             return `${sep}<input class="gr-expr" data-trace="${t.id}" data-field="${key}"
-                    spellcheck="false" aria-label="${escapeHtml(field.aria)}"
+                    spellcheck="false" autocapitalize="off" autocorrect="off" aria-label="${escapeHtml(field.aria)}"
                     value="${escapeHtml(value)}" placeholder="${escapeHtml(field.placeholder)}" />`;
           }).join('')
         : `<span class="gr-trace-label">${escapeHtml(withFractionMark(t.label || t.kind))}</span>`;
