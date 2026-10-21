@@ -2269,7 +2269,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   .vr .nm-text { white-space: normal; overflow-wrap: anywhere; }
 }
 
-/* With the keyboard up, or in a window under 400px (data-short: a phone's split screen or landscape), the writers leave the stack some room: their hints wait for the room to come back, and a tall formula or matrix scrolls. */
+/* With the keyboard up, or in a window under 440px (data-short: a phone's split screen or landscape), the writers leave the stack some room: their hints wait for the room to come back, and a tall formula or matrix scrolls. */
 :root:is([data-keyboard], [data-short]) .eqw-ins, :root:is([data-keyboard], [data-short]) .mx-foot:not(.error) { display: none; }
 :root:is([data-keyboard], [data-short]) .eqw-canvas { max-height: calc(var(--app-height, 100dvh) * .4); }
 :root:is([data-keyboard], [data-short]) .mx-grid-wrap { max-height: calc(var(--app-height, 100dvh) * .35); }

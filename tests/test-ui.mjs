@@ -2271,7 +2271,7 @@ setAngle('RAD');
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const html = readFileSync(new URL('../www/index.html', import.meta.url), 'utf8');
-  assert(/root\.toggleAttribute\('data-short', viewport\.height < 400\);/.test(html)
+  assert(/root\.toggleAttribute\('data-short', viewport\.height < 440\);/.test(html)
     && /:root:is\(\[data-keyboard\], \[data-short\]\) \.eqw-ins, :root:is\(\[data-keyboard\], \[data-short\]\) \.mx-foot:not\(\.error\) \{ display: none; \}/.test(css)
     && /:root:is\(\[data-keyboard\], \[data-short\]\) \.eqw-canvas \{ max-height: calc\(var\(--app-height, 100dvh\) \* \.4\); \}/.test(css)
     && /:root:is\(\[data-keyboard\], \[data-short\]\) \.mx-grid-wrap \{ max-height: calc\(var\(--app-height, 100dvh\) \* \.35\); \}/.test(css)
