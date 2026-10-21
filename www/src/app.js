@@ -809,12 +809,14 @@ class App {
       document.removeEventListener('keydown', wake, true);
       off.remove();
       this._offScreen = null;
+      this.keepAwake();
       if (ev.type === 'keydown') this.entry.focus();
     };
     off.addEventListener('click', wake);
     document.addEventListener('keydown', wake, true);
     document.body.append(off);
     this._offScreen = off;
+    this.keepAwake();
     off.focus({ preventScroll: true });
   }
 
@@ -2568,8 +2570,9 @@ class App {
   }
 
   // The phone lets go of a screen wake lock whenever the app is hidden, so it is asked for again as the app comes back.
+  // OFF lets go of it too, or the phone's screen would stay lit on the dark off screen.
   keepAwake() {
-    if (!this.prefs.keepAwake || document.visibilityState !== 'visible' || !navigator.wakeLock) {
+    if (!this.prefs.keepAwake || this._offScreen || document.visibilityState !== 'visible' || !navigator.wakeLock) {
       this._wakeLock?.then((lock) => lock?.release());
       this._wakeLock = null;
       return;

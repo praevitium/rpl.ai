@@ -1770,6 +1770,9 @@ setAngle('RAD');
   assert(/this\.keepAwake\(\);\n    document\.addEventListener\('visibilitychange', \(\) => \{ this\._watchAlarms\(\); this\.keepAwake\(\); \}\);/.test(appSrc)
     && /navigator\.wakeLock\.request\('screen'\)/.test(appSrc) && /if \(this\._wakeLock === pending\) this\._wakeLock = null;/.test(appSrc),
     'Settings: Keep the screen on holds a screen wake lock while the app shows and asks again as it comes back, since the phone lets go of it when hidden; an old lock\'s release leaves a newer request alone (a quick off and on lost track of the new lock)');
+  assert(/if \(!this\.prefs\.keepAwake \|\| this\._offScreen \|\|/.test(appSrc)
+    && /this\._offScreen = off;\n    this\.keepAwake\(\);/.test(appSrc) && /this\._offScreen = null;\n      this\.keepAwake\(\);/.test(appSrc),
+    'Settings: Keep the screen on lets go while OFF\'s dark screen shows and takes the lock again as a tap wakes the calculator (the phone stayed lit on the off screen)');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/@media \(max-height: 400px\) \{\s*:root\[data-keyboard\] \.dw-tabs, :root\[data-keyboard\] \.cb-header \{ display: none; \}\s*\/\*[^*]*\*\/\s*:root\[data-keyboard\] \.app:not\(\.plot-focus\) \.dw-title \{ display: flex; \}/.test(css),
     'drawers: typing on a short screen, a drawer whose tabs step aside names itself again, where its row held only its buttons');
