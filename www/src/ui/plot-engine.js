@@ -1441,6 +1441,50 @@ export function fitViewToTraces(traces, view, opts = {}) {
   return hasCurve && !hasPointData ? withEqualAxes(fitted, opts.width, opts.height) : clearOfTools(fitted, opts, true);
 }
 
+export function slopeAt(f, x, h) {
+  return (f(x + h) - f(x - h)) / (2 * h);
+}
+
+function bisect(g, a, b) {
+  let ga = g(a);
+  for (let i = 0; i < 64 && a < b; i++) {
+    const m = (a + b) / 2, gm = g(m);
+    if (!Number.isFinite(gm)) return NaN;
+    if (gm === 0) return m;
+    if ((gm < 0) === (ga < 0)) { a = m; ga = gm; } else b = m;
+  }
+  return (a + b) / 2;
+}
+
+// The nearest x on either side of x0, within span, where g changes sign and shrinks: a pole changes sign too, but grows.
+function nearestCrossing(g, x0, step, span) {
+  for (let i = 1; i * step <= span; i++) {
+    for (const dir of [1, -1]) {
+      const a = x0 + dir * (i - 1) * step, b = x0 + dir * i * step;
+      const [lo, hi] = a < b ? [a, b] : [b, a];
+      const glo = g(lo), ghi = g(hi);
+      if (!Number.isFinite(glo) || !Number.isFinite(ghi)) continue;
+      if (glo === 0) return lo;
+      if (ghi === 0) return hi;
+      if ((glo < 0) === (ghi < 0)) continue;
+      const r = bisect(g, lo, hi);
+      if (Number.isFinite(r) && Math.abs(g(r)) <= Math.min(Math.abs(glo), Math.abs(ghi))) return r;
+    }
+  }
+  return NaN;
+}
+
+// The HP's FCN tools on a function plot, about the cursor: ROOT and EXTR find the nearest root or extremum within span.
+export function nearestRoot(f, x0, span, steps = 400) {
+  return nearestCrossing(f, x0, span / steps, span);
+}
+
+export function nearestExtremum(f, x0, span, steps = 400) {
+  const step = span / steps;
+  const x = nearestCrossing((x) => slopeAt(f, x, step / 8), x0, step, span);
+  return Number.isFinite(x) ? { x, y: f(x) } : null;
+}
+
 export function evalTraceAtX(t, x, opts = {}) {
   if (!t || t.enabled === false || !Number.isFinite(x)) return NaN;
   const kind = TRACE_KINDS[t.kind];

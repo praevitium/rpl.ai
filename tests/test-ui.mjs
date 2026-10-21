@@ -2909,8 +2909,15 @@ setAngle('RAD');
 {
   const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/\n  \.gr-add input, \.gr-expr, \.pl-range input \{ height: 40px; \}/.test(css),
-    'plot on touch: the add, trace and window fields are 40 px, as the plot tools and every other field are');
+  assert(/const FCN_TOOLS = Object\.freeze\(\[\['ROOT', [^\]]*\], \['EXTR', [^\]]*\], \['SLOPE', [^\]]*\]\]\);/.test(gv)
+    && /<div class="pl-fcn" role="toolbar" aria-label="Function tools" hidden>\$\{FCN_TOOLS\.map\(/.test(gv)
+    && /if \(fcn\) \{ this\.fcnTool\(fcn\.dataset\.fcn\); return; \}/.test(gv)
+    && /this\._fcnTools\.hidden = !this\._fcnTrace\(\);/.test(gv)
+    && /value = Tagged\('Root', Real\(x\)\);/.test(gv) && /value = Tagged\('Extrm', Complex\(e\.x, e\.y\)\);/.test(gv) && /value = Tagged\('Slope', Real\(slope\)\);/.test(gv)
+    && /this\.app\.commitEntryAndPush\(value\);\n\s*this\.traceX = x;\n\s*if \(!this\.tracing\) this\.setTraceMode\(true\);/.test(gv)
+    && /\.pl-pict, \.pl-fcn \{ display: flex; flex-wrap: wrap; gap: 5px; padding: 0 2px 6px; \}/.test(css)
+    && /\n  \.pl-kinds, \.pl-pict, \.pl-fcn \{ flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; \}/.test(css),
+    'plot FCN: a function plot has ROOT, EXTR and SLOPE chips under the readout that work about the cursor on the selected or first function trace, push the answer tagged as the HP does (Root:, Extrm:, Slope:) and move the trace cursor there');
 }
 
 {
@@ -2918,4 +2925,11 @@ setAngle('RAD');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/this\._addTrace\(traceFromInputs\(kind, expr, exprY\), \{ fit: !!spec\.fitOnAdd \}\);\n[^\n]*\n\s*this\._addX\.scrollIntoView\?\.\(\{ block: 'nearest' \}\);/.test(gv),
     'plot, keyboard up: after a trace is added the add field is scrolled back into view, where the grown trace list pushed it under the keyboard');
+}
+
+{
+  const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/\n  \.gr-add input, \.gr-expr, \.pl-range input \{ height: 40px; \}/.test(css),
+    'plot on touch: the add, trace and window fields are 40 px, as the plot tools and every other field are');
 }

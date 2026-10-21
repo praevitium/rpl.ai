@@ -6,7 +6,7 @@ import {
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit, sampleDiffEq,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
   evalTraceAtX, sampleTrace, traceInputError, axisTicks, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace,
-  DEFAULT_TURN, turnBy, evalComplex, TRACE_KINDS, cursorPoint, stepCursor,
+  DEFAULT_TURN, turnBy, evalComplex, TRACE_KINDS, cursorPoint, stepCursor, slopeAt, nearestRoot, nearestExtremum,
 } from '../www/src/ui/plot-engine.js';
 import { Matrix, Vector, Real, Integer, Symbolic, Program, RList, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
 import { lookup, setGraphicsHook } from '../www/src/rpl/ops.js';
@@ -1019,4 +1019,19 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   runLine("'X^2-Y' PCONTOUR DROP");
   assert(seen === 'contour', 'PCONTOUR hands its expression to the plot view');
   setGraphicsHook(null);
+}
+
+{
+  const near = (a, b, tol = 1e-7) => Math.abs(a - b) <= tol;
+  assert(near(nearestRoot(Math.sin, 3, 10), Math.PI), 'FCN ROOT: the nearest root of sin about 3 is pi');
+  assert(near(nearestRoot(Math.sin, -0.5, 10), 0) && near(nearestRoot(Math.sin, 2.9, 10), Math.PI), 'FCN ROOT: the nearer side wins, 0 from -0.5 and pi from 2.9');
+  assert(Number.isNaN(nearestRoot((x) => x * x + 1, 0, 10)), 'FCN ROOT: a function without a root in the window gives NaN');
+  assert(Number.isNaN(nearestRoot((x) => 1 / (x - 2), 1.5, 4)), 'FCN ROOT: the sign change at a pole is not a root');
+  assert(near(nearestRoot((x) => x - 1.25, 0, 10), 1.25), 'FCN ROOT: a line crosses where it should');
+  const e = nearestExtremum(Math.cos, 0.5, 10);
+  assert(e && near(e.x, 0, 1e-5) && near(e.y, 1, 1e-9), `FCN EXTR: the extremum of cos about 0.5 is (0, 1), got ${JSON.stringify(e)}`);
+  const m = nearestExtremum((x) => (x - 2) * (x - 2) + 3, 0, 10);
+  assert(m && near(m.x, 2, 1e-5) && near(m.y, 3, 1e-9), 'FCN EXTR: a parabola\'s vertex');
+  assert(nearestExtremum((x) => x, 0, 10) === null, 'FCN EXTR: a line has no extremum');
+  assert(near(slopeAt((x) => x * x, 1, 1e-4), 2, 1e-6) && near(slopeAt(Math.sin, 0, 1e-4), 1, 1e-6), 'FCN SLOPE: central differences give 2 for x^2 at 1 and 1 for sin at 0');
 }

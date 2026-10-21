@@ -1,12 +1,12 @@
 import {
   TRACE_COLORS, TRACE_KINDS, nextTraceColor, defaultView, zoomView, panView, pinchView, DEFAULT_TURN, turnBy,
   worldToPixel, pixelToWorld, axisTicks, hasUsableSpan, cursorPoint, stepCursor,
-  sampleTrace, fitViewToTraces, evalTraceAtX,
+  sampleTrace, fitViewToTraces, evalTraceAtX, slopeAt, nearestRoot, nearestExtremum,
   stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace,
 } from './plot-engine.js';
 import { escapeHtml } from './display.js';
 import { icon } from './icons.js';
-import { isSymbolic, isName, isMatrix, isVector, isList, isGrob, Real, Complex, RList, BinaryInteger, Name } from '../rpl/types.js';
+import { isSymbolic, isName, isMatrix, isVector, isList, isGrob, Real, Complex, RList, BinaryInteger, Name, Tagged } from '../rpl/types.js';
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians, getPict, subscribe as subscribeState } from '../rpl/state.js';
 import { plotSettings, pictWindow, pictGrid, pictPoint, pictLine, viewVolume } from '../rpl/ops/graphics.js';
 import { downloadFile } from '../rpl/persist.js';
@@ -54,6 +54,8 @@ const PICT_TOOLS = Object.freeze([
   ['REPL', 'Put the graphics object on level 1 into PICT at the cursor'],
   ['PICT→', 'Put PICT on the stack'],
 ]);
+// The HP's FCN menu on a function plot, the part that works about one cursor.
+const FCN_TOOLS = Object.freeze([['ROOT', 'The nearest root of the function'], ['EXTR', 'The nearest extremum, as a point'], ['SLOPE', 'The slope of the function here']]);
 const NEEDS_MARK = new Set(['LINE', 'TLINE', 'BOX', 'CIRCL', 'DEL', 'SUB']);
 const DOTS = Object.freeze({ 'DOT+': 'on', 'DOT-': 'off' });
 const TAP_SLOP_PX = 6;
@@ -174,6 +176,7 @@ export class GraphView {
         </div>
         <div class="gr-readout" aria-live="polite">${IDLE_READOUT}</div>
         <div class="pl-pict" role="toolbar" aria-label="Picture tools" hidden>${PICT_TOOLS.map(([label, title]) => `<button type="button" class="chip" data-pict="${label}" title="${title}">${label}</button>`).join('')}</div>
+        <div class="pl-fcn" role="toolbar" aria-label="Function tools" hidden>${FCN_TOOLS.map(([label, title]) => `<button type="button" class="chip" data-fcn="${label}" title="${title}">${label}</button>`).join('')}</div>
       </div>
       <div class="pl-side">
         <div class="pl-kinds" role="group" aria-label="Plot type">${PLOT_KINDS.map(([kind, label, title]) => `<button type="button" class="chip" data-kind="${kind}" title="${escapeHtml(title)}" aria-pressed="${kind === 'function'}">${escapeHtml(label)}</button>`).join('')}</div>
@@ -199,6 +202,7 @@ export class GraphView {
     this._readout = this.el.querySelector('.gr-readout');
     this._push = this.el.querySelector('.pl-push');
     this._pictTools = this.el.querySelector('.pl-pict');
+    this._fcnTools = this.el.querySelector('.pl-fcn');
     this._kind = 'function';
     this._selectedId = null;
     this._bind();
@@ -220,6 +224,8 @@ export class GraphView {
     this.el.addEventListener('click', (ev) => {
       const key = ev.target.closest?.('[data-pict]');
       if (key) { this.pictTool(key.dataset.pict); return; }
+      const fcn = ev.target.closest?.('[data-fcn]');
+      if (fcn) { this.fcnTool(fcn.dataset.fcn); return; }
       const tool = ev.target.closest?.('[data-gr]');
       if (!tool) return;
       const act = tool.dataset.gr;
@@ -666,6 +672,7 @@ export class GraphView {
     this._push.hidden = !value;
     if (value) this._push.textContent = `↵ ${format(value)}`;
     this._pictTools.hidden = !this._mark || this.tracing || this._projected();
+    this._fcnTools.hidden = !this._fcnTrace();
     for (const b of this._pictTools.querySelectorAll('[data-pict]')) {
       if (NEEDS_MARK.has(b.dataset.pict)) b.disabled = !this._anchor;
       if (DOTS[b.dataset.pict]) b.setAttribute('aria-pressed', String(this._dot === DOTS[b.dataset.pict]));
@@ -675,6 +682,43 @@ export class GraphView {
   // With DOT+ or DOT- on, the cursor draws as it moves by a key or a drag; a tap jumps without drawing.
   _dotPath(from) {
     if (this._dot && from) pictLine(Complex(from.x, from.y), Complex(this._mark.x, this._mark.y), this._dot);
+  }
+
+  _fcnTrace() {
+    const isFn = (t) => t.enabled && t.kind === 'function';
+    return this.traces.find((t) => t.id === this._selectedId && isFn(t)) ?? this.traces.find(isFn) ?? null;
+  }
+
+  // ROOT, EXTR and SLOPE work on the selected (else the first) function trace, about the trace cursor, the mark or the
+  // middle of the window, push their answer tagged as the HP does and move the trace cursor to it.
+  fcnTool(key) {
+    const t = this._fcnTrace();
+    if (!t) return;
+    const opts = this._hoverOpts();
+    const f = (x) => evalTraceAtX(t, x, opts);
+    const v = this.view;
+    const span = v.xmax - v.xmin;
+    const x0 = this.tracing && this.traceX != null ? this.traceX : this._mark && !this._projected() ? this._mark.x : (v.xmin + v.xmax) / 2;
+    let x = x0, value;
+    if (key === 'SLOPE') {
+      const slope = slopeAt(f, x0, span / 2000);
+      if (!Number.isFinite(slope)) { this._fail(`no slope of ${t.expr} at ${format(Real(x0))}`); return; }
+      value = Tagged('Slope', Real(slope));
+    } else if (key === 'ROOT') {
+      x = nearestRoot(f, x0, span);
+      if (!Number.isFinite(x)) { this._fail(`no root of ${t.expr} in the window`); return; }
+      value = Tagged('Root', Real(x));
+    } else {
+      const e = nearestExtremum(f, x0, span);
+      if (!e) { this._fail(`no extremum of ${t.expr} in the window`); return; }
+      x = e.x;
+      value = Tagged('Extrm', Complex(e.x, e.y));
+    }
+    this.app.commitEntryAndPush(value);
+    this.traceX = x;
+    if (!this.tracing) this.setTraceMode(true);
+    else this.draw();
+    this._readout.textContent = format(value);
   }
 
   pictTool(key) {

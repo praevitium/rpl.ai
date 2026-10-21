@@ -1154,9 +1154,9 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 .gr-readout { min-height: 18px; padding: 0 2px 4px; font: 11.5px/1.4 var(--font-mono); color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pl-side { flex: none; max-height: 46%; overflow-y: auto; border-top: 1px solid var(--line); padding-bottom: 8px; }
 .pl-kinds { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px 12px 2px; }
-.pl-pict { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 2px 6px; }
-.pl-pict[hidden] { display: none; }
-.pl-pict .chip { font-family: var(--font-mono); }
+.pl-pict, .pl-fcn { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 2px 6px; }
+.pl-pict[hidden], .pl-fcn[hidden] { display: none; }
+.pl-pict .chip, .pl-fcn .chip { font-family: var(--font-mono); }
 .pl-pict .chip:disabled { opacity: .45; }
 .pl-range { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px 8px; align-items: center; padding: 2px 14px 6px; font: 12px/1 var(--font-mono); color: var(--ink3); }
 .pl-range input { min-width: 0; height: 30px; border-radius: 7px; border: 1px solid var(--line2); background: var(--field); color: var(--ink); font: 12.5px/1 var(--font-mono); padding: 0 8px; text-align: right; outline: none; }
@@ -2157,8 +2157,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   .unit-grid button { min-width: 40px; min-height: 40px; }
   .eqw-tip button { min-width: 40px; min-height: 40px; }
   /* Seven 40 px plot kinds would take three rows on a phone; they scroll sideways in one. */
-  .pl-kinds, .pl-pict { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-  .pl-kinds .chip, .pl-pict .chip { flex: none; }
+  .pl-kinds, .pl-pict, .pl-fcn { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .pl-kinds .chip, .pl-pict .chip, .pl-fcn .chip { flex: none; }
   /* A phone shows the plot's hint and readouts in full, on two lines if need be. */
   .gr-readout { white-space: normal; }
   .tgl::before { content: ""; position: absolute; inset: -10px -4px; }
