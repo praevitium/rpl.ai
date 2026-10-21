@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.57 (2026-10-21)
+**Latest release:** v0.8.58 (2026-10-21)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.58 — 2026-10-21
+
+- Fixed: SORT said Bad argument type on a list holding a fraction; fractions
+  now sort by value among the other numbers, so `{ 1/2 1/3 0.4 } SORT`
+  gives `{ 1/3 0.4 1/2 }`.
+- Added: a string level's menu offers "Run its text (STR→)" in place of
+  "Evaluate (EVAL)", which gives a string back unchanged on the HP, so
+  `"1 2 +"` becomes 3.
+- Improved: the interactive stack's soft keys show STR→ on a string, as its
+  menu does.
 
 ## v0.8.57 — 2026-10-21
 
