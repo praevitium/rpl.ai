@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.24 (2026-10-21)
+**Latest release:** v0.8.25 (2026-10-21)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.25 — 2026-10-21
+
+- Changed: where a drawer shows its tabs (phones, tablets and minimal
+  view), its buttons end the tab row instead of sitting in a title row
+  that repeated the pressed tab, and they wrap under the tabs only in a
+  drawer too narrow to leave the tabs room. On a phone the drawer opens
+  as a sheet nearly the screen's height, with 24 px above it rather than
+  a tenth of the screen. Together they give a 390 by 844 phone's plot 113
+  px more height, and a tablet's drawer 57 px.
 
 ## v0.8.24 — 2026-10-21
 
