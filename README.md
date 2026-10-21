@@ -1036,14 +1036,14 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 779. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 786. The
 Catalog and the command reference mark what is available. Not there yet:
 the HP's numbered menus for MENU and TMENU (a list, a name holding one or 0
 work).
 
 **Left out on purpose.** ENTRY mode, the NUM.SLV solver screens, RCLMENU,
-FINANCE, TIME, the StreamSmart app (STRM), the screen fonts (FONT6, →FONT,
-→MINIFONT and the rest), libraries (LIB, ATTACH and port management other
+FINANCE, TIME, the StreamSmart app (STRM), UFL1→MINIF's font libraries,
+libraries (LIB, ATTACH and port management other
 than ARCHIVE and RESTORE), Saturn assembly and System RPL, and IR and
 serial transfer.
 
@@ -1058,6 +1058,11 @@ serial transfer.
   lines while the app is open, with Copy and Clear. `PRLCD` prints the
   stack as text, not the screen's pixels, and `DELAY` and `OLDPRT` do
   nothing.
+- The screen has one typeface, so the system font is the stack text size:
+  `FONT6`, `FONT7` and `FONT8` return `:Font:6` to `:Font:8`, tagged sizes
+  rather than font objects (TYPE 12, not 30), and `→FONT` sets Small,
+  Normal or Large, leaving Larger as it is for font 8. `→MINIFONT` and
+  `MINIFONT→` keep a minifont that nothing is drawn in.
 - `PERTBL` opens a periodic table sheet, and `PTPROP` takes a property by
   number or by name; numbers 6 and 8 follow the HP's examples, the other 21
   are rpl.ai's order, listed in the reference. The element data is

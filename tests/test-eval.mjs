@@ -597,3 +597,24 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   clearPrintLog();
   runLine("'PRV' PURGE");
 }
+
+// The font commands: the system font is the stack text size, a font object the tagged size :Font:n.
+{
+  const { setFontHooks } = await import('../www/src/rpl/ops.js');
+  const show = (line) => format(runLine(line).peek());
+  let size = 'larger';
+  setFontHooks({ get: () => size, set: (v) => { size = v; } });
+  assert(show('FONT6') === 'Font: 6' && show('FONT8') === 'Font: 8', 'FONT6, FONT7 and FONT8 give font objects, tagged sizes here');
+  assert(show('FONT→') === 'Font: 8', 'FONT→ reads the stack text size, Larger counting as font 8');
+  runLine('FONT→ →FONT FONT8 →FONT');
+  assert(size === 'larger', '→FONT of font 8 keeps Larger, so FONT→ saved and restored leaves it be');
+  runLine('FONT6 →FONT');
+  assert(size === 'small' && show('FONT→') === 'Font: 6', '→FONT 6 sets the stack text size to Small');
+  runLine('7 →FONT');
+  assert(size === 'normal', '→FONT takes a plain 7 too');
+  assertThrows(() => runLine(':Font:9 →FONT'), /Bad argument value/, '→FONT knows fonts 6, 7 and 8 only');
+  assertThrows(() => runLine('"x" →FONT'), /Bad argument type/, '→FONT wants a font');
+  assert(show('MINIFONT→') === 'Font: 6' && show('FONT8 →MINIFONT MINIFONT→') === 'Font: 8', '→MINIFONT keeps a minifont that MINIFONT→ gives back');
+  runLine('FONT6 →MINIFONT');
+  setFontHooks(null);
+}

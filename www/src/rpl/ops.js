@@ -7,6 +7,7 @@ export { setMenuHook, setBeepHook, setOpenHook, setEditHook, setViewHook, setGam
 export { setTableHook } from './ops/periodic.js';
 export { setLibraryHook } from './ops/eqlib.js';
 export { setPrintHook, printLog, clearPrintLog } from './ops/print.js';
+export { setFontHooks } from './ops/fonts.js';
 export { setVersion, setKeyHook } from './ops/system.js';
 export { setConlibHook, constantIds, constantValue } from './ops/unit-ops.js';
 import './ops/stack.js';
@@ -38,3 +39,4 @@ import './ops/tvm.js';
 import './ops/periodic.js';
 import './ops/eqlib.js';
 import './ops/print.js';
+import './ops/fonts.js';

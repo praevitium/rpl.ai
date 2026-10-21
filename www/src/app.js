@@ -38,7 +38,7 @@ import {
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo, getUserKeys, standardKeysActive,
   batchStateNotifications,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setFontHooks, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
 import { VERSION, DATE } from './build-info.js';
 import { beep, alarmBeep } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest, calculatorNow } from './rpl/ops/time.js';
@@ -192,6 +192,11 @@ class App {
     setTableHook(() => setTimeout(() => this.sheets.openPeriodicTable()));
     setLibraryHook(() => setTimeout(() => this.sheets.openEquationLibrary()));
     setPrintHook((count) => this._notePrinted(count));
+    // →FONT sets the stack text size at once, so FONT→ on the same line reads it back; the screen follows after the run.
+    setFontHooks({
+      get: () => this.prefs.stackSize,
+      set: (size) => { this.setPrefs({ stackSize: size }); setTimeout(() => { this._applyPrefs(); this.renderAll(); }); },
+    });
     setBeepHook(beep);
     setVersion(VERSION, DATE);
     setConlibHook(() => this.showConstants());

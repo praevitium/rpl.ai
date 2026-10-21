@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 779 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 786 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -296,9 +296,9 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-FIX">FIX</a>
 <a href="#cmd-FLASHEVAL" class='notinapp'>FLASHEVAL</a>
 <a href="#cmd-FLOOR">FLOOR</a>
-<a href="#cmd-FONT6" class='notinapp'>FONT6</a>
-<a href="#cmd-FONT7" class='notinapp'>FONT7</a>
-<a href="#cmd-FONT8" class='notinapp'>FONT8</a>
+<a href="#cmd-FONT6">FONT6</a>
+<a href="#cmd-FONT7">FONT7</a>
+<a href="#cmd-FONT8">FONT8</a>
 <a href="#cmd-FOR">FOR</a>
 <a href="#cmd-FOURIER">FOURIER</a>
 <a href="#cmd-FP">FP</a>
@@ -433,7 +433,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-MERGE">MERGE</a>
 <a href="#cmd-MIN">MIN</a>
 <a href="#cmd-MINEHUNT">MINEHUNT</a>
-<a href="#cmd-MINIFONT-to" class='notinapp'>MINIFONT→</a>
+<a href="#cmd-MINIFONT-to">MINIFONT→</a>
 <a href="#cmd-MINIT">MINIT</a>
 <a href="#cmd-MINR">MINR</a>
 <a href="#cmd-MINΣ">MINΣ</a>
@@ -808,7 +808,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-to-ARRY">→ARRY</a>
 <a href="#cmd-to-COL">→COL</a>
 <a href="#cmd-to-DIAG">→DIAG</a>
-<a href="#cmd-to-FONT" class='notinapp'>→FONT</a>
+<a href="#cmd-to-FONT">→FONT</a>
 <a href="#cmd-to-GROB">→GROB</a>
 <a href="#cmd-to-HEADER">→HEADER</a>
 <a href="#cmd-to-HMS">→HMS</a>
@@ -6191,7 +6191,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>CEIL, IP, RND, TRNC</p>
   </dd>
 </dl>
-<h2 id="cmd-FONT6">FONT6 <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-FONT6">FONT6 <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 208 · printed page 3-88</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -6201,6 +6201,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Font Function: Returns the system FONT6 object. You use this in conjunction with the →FONT command to set the system font to type 6.</p>
+    <p>In rpl.ai the screen is drawn in one typeface, so the system font is the stack text size from Settings: font 6 is Small, 7 Normal and 8 Large. FONT6 returns the font object :Font:6, a tagged size (TYPE 12, not 30), since there are no font objects to hold glyphs.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -6211,7 +6212,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>FONT7, FONT8, →FONT, FONT→</p>
   </dd>
 </dl>
-<h2 id="cmd-FONT7">FONT7 <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-FONT7">FONT7 <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 209 · printed page 3-89</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -6221,6 +6222,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Font Function: Returns the system FONT7 object. You use this in conjunction with the →FONT command to set the system font to type 7.</p>
+    <p>In rpl.ai the screen is drawn in one typeface, so the system font is the stack text size from Settings: font 6 is Small, 7 Normal and 8 Large. FONT7 returns the font object :Font:7, a tagged size (TYPE 12, not 30), since there are no font objects to hold glyphs.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -6231,7 +6233,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>FONT6, FONT8, →FONT, FONT→</p>
   </dd>
 </dl>
-<h2 id="cmd-FONT8">FONT8 <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-FONT8">FONT8 <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 209 · printed page 3-89</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -6241,6 +6243,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Font Function: Returns the system FONT8 object. You use this in conjunction with the →FONT command to set the system font to type 8.</p>
+    <p>In rpl.ai the screen is drawn in one typeface, so the system font is the stack text size from Settings: font 6 is Small, 7 Normal and 8 Large. FONT8 returns the font object :Font:8, a tagged size (TYPE 12, not 30), since there are no font objects to hold glyphs.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -6251,7 +6254,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>FONT6, FONT7, →FONT, FONT→</p>
   </dd>
 </dl>
-<h2 id="cmd-FONT-to">FONT→ <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-FONT-to">FONT→ <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 209 · printed page 3-89</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -6261,6 +6264,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Returns the current system font.</p>
+    <p>In rpl.ai FONT→ returns the stack text size from Settings as a font object: :Font:6 for Small, :Font:7 for Normal and :Font:8 for Large or Larger.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -6271,7 +6275,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>FONT6, FONT7, FONT8, →FONT</p>
   </dd>
 </dl>
-<h2 id="cmd-to-FONT">→FONT <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-to-FONT">→FONT <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 209 · printed page 3-89</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -6281,6 +6285,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Set font Function: Sets the system font. You use this in conjunction with one of the three font commands to set the system font. Valid input is any font object (TYPE 30) of size 6, 7, or 8.</p>
+    <p>In rpl.ai →FONT sets the stack text size, the one Settings shows: font 6 Small, 7 Normal, 8 Large. It takes a font object from FONT6, FONT7 or FONT8, or the plain number; font 8 leaves Larger as it is, so a program that saves FONT→ and restores it changes nothing. The setting is kept with the other preferences.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -10096,7 +10101,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>None.</p>
   </dd>
 </dl>
-<h2 id="cmd-MINIFONT-to">MINIFONT→ <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-MINIFONT-to">MINIFONT→ <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 268 · printed page 3-148</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -10106,6 +10111,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Minifont: Returns the font that is set as the minifont.</p>
+    <p>In rpl.ai MINIFONT→ returns the minifont →MINIFONT last set, :Font:6 at first. Nothing is drawn in it; it is kept so a program that sets and reads it runs.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -10116,7 +10122,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>→MINIFONT</p>
   </dd>
 </dl>
-<h2 id="cmd-to-MINIFONT">→MINIFONT <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-to-MINIFONT">→MINIFONT <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 268 · printed page 3-148</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -10126,6 +10132,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Minifont: Sets the font that is used as the minifont.</p>
+    <p>In rpl.ai →MINIFONT keeps the font object (or number 6, 7 or 8) for MINIFONT→ to return. Nothing is drawn in it, the screen having one typeface.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
