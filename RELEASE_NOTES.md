@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.37 (2026-10-21)
+**Latest release:** v0.8.38 (2026-10-21)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.38 — 2026-10-21
+
+- Fixed: `CASCMD` and `HELP` opened the Catalog on whatever page it was last
+  left on, such as a command's reference. They now open its Algebra (CAS)
+  list, as the HP's lists of CAS commands do.
+- Added: as the AUR has it, a string in level 1 starts `CASCMD`'s list at
+  that command: `"SOLVE" CASCMD` opens the list at `SOLVE`.
+- Improved: a Catalog family keeps its name and back button at the top
+  while its list scrolls, so the CAS family's 121 commands no longer hide
+  the way back.
 
 ## v0.8.37 — 2026-10-21
 
