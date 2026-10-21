@@ -1204,6 +1204,15 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 .eqw { position: relative; border-radius: 12px; border: 1px solid var(--accent-line); background: var(--well); box-shadow: 0 0 0 3px var(--accent-dim); display: grid; outline: none; color: var(--stack-ink); min-width: 0; }
 .eqw.editing { border-color: color-mix(in oklab, var(--amber) 60%, transparent); box-shadow: 0 0 0 3px var(--amber-dim); }
 .eqw-canvas { position: relative; min-height: 92px; max-height: 240px; overflow: auto; display: grid; place-items: center; padding: 18px 16px 10px; cursor: text; scrollbar-width: thin; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+/* On a phone with the keypad out of the way, the spare height goes two parts to the formula for one to the stack, and
+   the canvas grows past 240 px; zero bases keep its size from following the formula's. With the keyboard up or on a
+   short screen the canvas keeps its cap below. */
+@container app (max-width: 719px) {
+  :root:not([data-keyboard], [data-short]):is([data-view="minimal"], :has(.keys.kp-hidden)) .work:has(.eqw) > .input { flex: 2 1 0; display: flex; flex-direction: column; }
+  :root:not([data-keyboard], [data-short]):is([data-view="minimal"], :has(.keys.kp-hidden)) .input-body:has(> .eqw) { flex: 1 1 0; display: flex; flex-direction: column; }
+  :root:not([data-keyboard], [data-short]):is([data-view="minimal"], :has(.keys.kp-hidden)) .input-body > .eqw { flex: 1 1 0; grid-template-rows: minmax(92px, 1fr); }
+  :root:not([data-keyboard], [data-short]):is([data-view="minimal"], :has(.keys.kp-hidden)) .input-body > .eqw > .eqw-canvas { max-height: none; }
+}
 /* Hits come from coordinates, and a touch must stay on the canvas while the SVG is redrawn under it (W-L25). */
 .eqw-canvas svg { display: block; overflow: visible; pointer-events: none; }
 .eqw-canvas .eqw-caret { fill: var(--accent); animation: eqw-blink 1.06s steps(1) infinite; }

@@ -3308,3 +3308,14 @@ setAngle('RAD');
     && css.includes('.drawer { width: 100%; top: auto; height: calc(100% - 24px);'),
     'drawer on a phone or tablet: its buttons end the tab row instead of a title row that repeated the pressed tab, wrapping under the tabs only where they would get under 150 px, and the sheet leaves 24 px above it, not a tenth of the screen; a drag down the row still closes it');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const when = ':root:not([data-keyboard], [data-short]):is([data-view="minimal"], :has(.keys.kp-hidden))';
+  const block = css.slice(css.indexOf('@container app (max-width: 719px) {\n  ' + when));
+  assert(block.startsWith(`@container app (max-width: 719px) {\n  ${when} .work:has(.eqw) > .input { flex: 2 1 0; display: flex; flex-direction: column; }`)
+    && block.includes(`${when} .input-body > .eqw { flex: 1 1 0; grid-template-rows: minmax(92px, 1fr); }`)
+    && block.includes(`${when} .input-body > .eqw > .eqw-canvas { max-height: none; }`)
+    && css.indexOf(':root:is([data-keyboard], [data-short]) .eqw-canvas { max-height:') > css.indexOf(block.slice(0, 80)),
+    'equation writer on a phone with the keypad hidden or in minimal view: the spare height goes two parts to the formula, one to the stack (a 121 px canvas under a 445 px empty stack at 390 by 844); the full keypad, the keyboard up and desktop keep the content-sized canvas');
+}
