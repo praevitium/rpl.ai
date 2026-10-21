@@ -614,7 +614,13 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   keep theirs.
 - `CONSTANTS` opens the Characters drawer on its constants, whatever filter
   it was left with; with flag -117 set, as on the HP, it shows π, e, i, ∞,
-  MAXR and MINR as soft keys instead, a tap away in minimal view.
+  MAXR and MINR as soft keys instead, a tap away in minimal view. The
+  soft keys `CONSTANTS`, `REWRITE` and `MENUXY` show carry the command's
+  name on the menu button (CONST for the constants).
+- Flag -22 works as on the HP: set, an infinite result is ±MAXR instead of
+  an error, so `1 0 /` gives 9.99999999999E499, `0 LN` its negative, and
+  `TAN` of 90° in degrees MAXR signed as the angle; `INV`, `LOG`, `LNP1`
+  and `ATANH` follow too.
 - Where a phone's keyboard writes 1,5 for one and a half, turn on Decimal
   comma in Settings › Calculator, or the FM, key on the MODES menu (flag -51, the HP's
   fraction-mark setting): the command line then reads a comma beside a
