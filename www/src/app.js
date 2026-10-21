@@ -36,7 +36,7 @@ import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, currentPath,
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo, getUserKeys, standardKeysActive,
-  batchStateNotifications,
+  batchStateNotifications, isSuspension,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setFontHooks, setTransferHooks, receivedName, receivedTarget, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
 import { VERSION, DATE } from './build-info.js';
@@ -81,8 +81,6 @@ const SIGMA_DATA_KEYS = ['Σ+', 'Σ-', 'CLΣ', 'STOΣ'];
 const ALARM_FRESH_MS = 60000;
 const ALARM_WAIT_MAX_MS = 3600000;
 const BEEP_BUZZ_MAX_S = 5;
-// The HP lights HLT for HALT, PROMPT and a single step; its dialogs and WAIT run on without it.
-const DIALOG_HALTS = new Set(['wait', 'msgbox', 'input', 'choose', 'inform']);
 // The mode commands whose keys mark the mode in force, as the HP's DEG■ and HEX■ do: [state field, value].
 const MODE_KEYS = Object.freeze({
   DEG: ['angle', 'DEG'], RAD: ['angle', 'RAD'], GRAD: ['angle', 'GRD'], GRD: ['angle', 'GRD'],
@@ -313,7 +311,7 @@ class App {
       classic: this.prefs.theme === 'classic',
       minimal: this.prefs.minimal,
       shift: this.shift,
-      halted: calcState.haltedStack.some((h) => !DIALOG_HALTS.has(h.kind)),
+      halted: calcState.haltedStack.some((h) => !isSuspension(h)),
       editing: this.pendingEdit ? this.pendingEdit.level ?? this.pendingEdit.name : null,
       alarm: !!pastDueAlarm(),
       user: testUserFlag(-62) && (this._userOnce ? '1USR' : 'USER'),

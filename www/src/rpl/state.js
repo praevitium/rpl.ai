@@ -307,6 +307,11 @@ export function clearAllHalted() {
 
 export function haltedDepth() { return state.haltedStack.length; }
 
+// HALT, PROMPT and a single step halt a program; the dialogs and WAIT suspend one, which the HP's KILL leaves and its
+// HLT annunciator doesn't show.
+const SUSPENSION_KINDS = new Set(['wait', 'msgbox', 'input', 'choose', 'inform']);
+export const isSuspension = (record) => SUSPENSION_KINDS.has(record?.kind);
+
 export function getPromptMessage() { return state.promptMessage; }
 
 export function clearPromptMessage() { _set('promptMessage', null); }

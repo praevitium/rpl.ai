@@ -1,5 +1,5 @@
 import { RPLAbort, RPLError } from '../stack.js';
-import { getHalted, takeHalted, clearHalted, inScratchState } from '../state.js';
+import { getHalted, takeHalted, clearHalted, inScratchState, isSuspension } from '../state.js';
 import { isProgram, isTagged, Name, Real } from '../types.js';
 import { register, lookup } from './registry.js';
 import { runSuspendable, withStepMode, promptStoProgram } from './internal.js';
@@ -80,10 +80,12 @@ function resumeHalted() {
 register('CONT', resumeHalted, { category: 'Control flow / debug', categoryOrder: 2, label: "CONT" });
 
 
-// KILL discards only the most recent halted program, and does nothing without one.
+// As the AUR has it, KILL cancels the program it stops and every halted one under it, not just the latest, but leaves a
+// program suspended in a dialog.
 register('KILL', () => {
   if (inScratchState()) throw new RPLError('Cannot dry-run a halted program');
   clearHalted();
+  while (getHalted() && !isSuspension(getHalted())) clearHalted();
 }, { category: 'Control flow / debug', categoryOrder: 3, label: "KILL" });
 
 

@@ -3152,14 +3152,10 @@ function collectSymLeaves(node, out) {
   lookup('EVAL').fn(s);
   assert(haltedDepth() === 2, 'session083: KILL setup — two halts on LIFO');
   lookup('KILL').fn(s);
-  assert(haltedDepth() === 1,
-    'session083: KILL peels one halt off the LIFO (not the whole stack)');
-  assert(getHalted() !== null,
-    'session083: after KILL, the older halt is now the top');
+  assert(haltedDepth() === 0 && getHalted() === null,
+    'KILL cancels every halted program, as the AUR has it, where it peeled off only the latest');
   lookup('KILL').fn(s);
-  assert(haltedDepth() === 0,
-    'session083: second KILL drains the LIFO');
-  assert(getHalted() === null, 'session083: getHalted null after both KILLs');
+  assert(haltedDepth() === 0, 'KILL with nothing halted is a no-op');
 }
 
 {
@@ -3642,7 +3638,7 @@ function collectSymLeaves(node, out) {
   assert(older.kind === 'halt' && older.tokens[0].value === 10n,
     'buried halt keeps its own step record');
   lookup('KILL').fn(s);
-  assert(getHalted() === older, 'KILL reveals the buried halt record');
+  assert(getHalted() === null, 'KILL cancels the buried halt too, as the AUR has it');
   lookup('KILL').fn(s);
 }
 
