@@ -2307,3 +2307,12 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 .pt-prop { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 40px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); text-align: left; font-size: 13px; }
 .pt-prop b { font-family: var(--font-mono); font-weight: 500; text-align: right; overflow-wrap: anywhere; }
 .pt-prop:disabled { opacity: .5; }
+
+/* EQNLIB: subjects, then a subject's sets, then a set's equations, each row a finger tall. */
+.eq-list { display: grid; gap: 4px; }
+.eq-row { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 40px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); text-align: left; font-size: 14px; }
+.eq-row small { color: var(--ink2); font-size: 12px; }
+.eq-row.off span { color: var(--ink3); }
+.eq-title { margin: 0 0 8px; font-size: 15px; }
+.eq-eqs { display: grid; gap: 4px; margin-bottom: 10px; }
+.eq-eqs code { display: block; padding: 6px 10px; border-radius: 6px; background: var(--r1); font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }

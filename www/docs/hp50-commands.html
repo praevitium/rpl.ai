@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 769 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 771 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -257,7 +257,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-ENDSUB">ENDSUB</a>
 <a href="#cmd-ENG">ENG</a>
 <a href="#cmd-EPSX0">EPSX0</a>
-<a href="#cmd-EQNLIB" class='notinapp'>EQNLIB</a>
+<a href="#cmd-EQNLIB">EQNLIB</a>
 <a href="#cmd-EQW">EQW</a>
 <a href="#cmd-EQ-to">EQ→</a>
 <a href="#cmd-ERASE">ERASE</a>
@@ -643,7 +643,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-SNEG">SNEG</a>
 <a href="#cmd-SNRM">SNRM</a>
 <a href="#cmd-SOLVE">SOLVE</a>
-<a href="#cmd-SOLVEQN" class='notinapp'>SOLVEQN</a>
+<a href="#cmd-SOLVEQN">SOLVEQN</a>
 <a href="#cmd-SOLVER">SOLVER</a>
 <a href="#cmd-SOLVEVX">SOLVEVX</a>
 <a href="#cmd-SORT">SORT</a>
@@ -5191,7 +5191,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <table class="cmd-kv"><tbody><tr><th>Command</th><td>EPSX0(1E-13*X+.01)</td></tr><tr><th>Result</th><td>0*X+.01</td></tr></tbody></table>
   </dd>
 </dl>
-<h2 id="cmd-EQNLIB">EQNLIB <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-EQNLIB">EQNLIB <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 195 · printed page 3-75</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -5201,6 +5201,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Starts the Equation Library application.</p>
+    <p>In rpl.ai EQNLIB opens the Equation Library sheet: the HP's 15 subjects and their equation sets by number, a set's equations, and Solve, which does what SOLVEQN does. 88 of the 102 sets hold their equations so far; the rest say so.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -15341,7 +15342,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>DESOLVE, LDEC, LINSOLVE, MSLV, QUAD, SOLVEVX</p>
   </dd>
 </dl>
-<h2 id="cmd-SOLVEQN">SOLVEQN <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-SOLVEQN">SOLVEQN <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 349 · printed page 3-229</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -15351,6 +15352,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Starts the appropriate solver for a specified set of equations. SOLVEQN sets up and starts the appropriate solver for the specified set of equations, bypassing the Equation Library catalogs. It sets EQ (and Mpar if more than one equation is being solved), sets the unit options according to flags 60 and 61, and starts the appropriate solver. SOLVEQN uses subject and title numbers (levels 3 and 2) and a “PICT” option (level 1) and returns nothing. Subject and title numbers are listed in chapter 5. For example, a 2 in level 3 and a 9 in level 2 would specify the Electricity category and Capacitive Energy set of equations. If the “PICT” option is 0, PICT is not affected; otherwise, the equation picture (if any) is copied into PICT.</p>
+    <p>In rpl.ai the subject and title numbers are the HP's (2 9 is Electricity, Capacitive Energy); the PICT option is read and ignored, there being no equation pictures. The set's equations go into EQ (one equation as itself, several as a list), its constants (g, G, c, ε0, μ0, σ, R, NA, c3) are stored as plain SI numbers and marked known, Mpar takes the set's title, and the solver's menu opens as MSOLVR's does. A set the library doesn't hold yet errors by name.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">

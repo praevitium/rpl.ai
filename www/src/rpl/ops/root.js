@@ -129,6 +129,12 @@ export function mesPrepare() {
   mesState('MSOLVR');
 }
 
+// The Equation Library's sets arrive with their title and their constants known.
+export function mesSetup(eqs, title, known) {
+  const items = [...new Set(eqs.flatMap(mesNames))].map((id) => Name(id));
+  return mesWrite({ eqs, title, items, known });
+}
+
 const mesVars = (mes) => mes.items.filter(isName).map((n) => n.id);
 
 // The solver's menu: its title, keys in order (null for a blank) and which are known; null without Mpar.

@@ -114,3 +114,23 @@ const top = (s) => Number(s.peek().value);
   assert(near(top(s), 2 * 8.314 * 300, 1e-6), `without Mpar, MUSER makes it from EQ first (${top(s)})`);
   runLine("{ V V0 A T X P N R W M EQ Mpar } PURGE");
 }
+
+// SOLVEQN and EQNLIB: the Equation Library.
+{
+  const { varRecall } = await import('../www/src/rpl/state.js');
+  const { formatSource } = await import('../www/src/rpl/formatter.js');
+  const { isList, isSymbolic } = await import('../www/src/rpl/types.js');
+  const err = (src) => { try { runLine(src); return ''; } catch (e) { return e.message; } };
+  runLine('8 1 0 SOLVEQN');
+  const eq = varRecall('EQ'), mpar = varRecall('Mpar');
+  assert(isList(eq) && eq.items.length === 4 && /v = v0 \+ a\*t/.test(formatSource(eq.items[3])), 'SOLVEQN 8 1: Motion, Linear Motion puts its four equations in EQ');
+  assert(isList(mpar) && mpar.items[1].value === 'Linear Motion' && mpar.items[3].items.length === 0, "SOLVEQN titles Mpar after the set; Linear Motion has no constants to mark known");
+  runLine('8 2 0 SOLVEQN');
+  assert(varRecall('Mpar').items[3].items.map((n) => n.id).join() === 'g' && formatSource(varRecall('g')) === '9.80665', 'SOLVEQN 8 2: Object in Free Fall stores g as a plain SI number and marks it known');
+  runLine('2 9 0 SOLVEQN');
+  assert(isSymbolic(varRecall('EQ')) && /E = 1\/2\*C\*V\^2/.test(formatSource(varRecall('EQ'))), "SOLVEQN 2 9: Electricity, Capacitive Energy, the AUR's example, puts its one equation in EQ as itself");
+  assert(/Bad argument value/.test(err('99 1 0 SOLVEQN')) && /Bad argument value/.test(err('2 40 0 SOLVEQN')) && /Bad argument type/.test(err("'x' 1 0 SOLVEQN")), 'SOLVEQN refuses an unknown subject or title and a non-number');
+  assert(/not in the library yet/.test(err('13 1 0 SOLVEQN')), 'SOLVEQN names a set the library does not hold yet');
+  assert(runLine('5 EQNLIB').depth === 1, 'EQNLIB leaves the stack alone; the app opens the sheet through its hook');
+  runLine('{ EQ Mpar g } PURGE');
+}

@@ -3035,7 +3035,13 @@ setAngle('RAD');
 
 {
   const sh = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  const app = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/setLibraryHook\(\(\) => setTimeout\(\(\) => this\.sheets\.openEquationLibrary\(\)\)\);/.test(app)
+    && /row\('eq-subject', i \+ 1, title, /.test(sh) && /row\('eq-set', i \+ 1, t, /.test(sh)
+    && /case 'eq-solve': \{\n\s*const \{ subject, set \} = this\.eqlib;\n\s*this\.close\(\);\n\s*app\.entry\.safeRun\(\(\) => app\.stack\.runOp\(\(\) => \{ solveSet\(subject, set\); lookup\('MSOLVR'\)\.fn\(app\.stack\); \}\), 'SOLVEQN'\);/.test(sh)
+    && /\n\.eq-row \{ [^\n]*min-height: 40px;/.test(css),
+    'EQNLIB opens a sheet of the HP\'s subjects, then a subject\'s sets, then a set\'s equations with Solve, which sets EQ and Mpar and opens the solver as SOLVEQN does, in finger-tall rows');
   assert(/const wrap = this\.el\.querySelector\('\.pt-wrap'\);\n\s*markScrollEdges\(wrap\);\n\s*wrap\.addEventListener\('scroll', \(\) => markScrollEdges\(wrap\), \{ passive: true \}\);/.test(sh)
     && /\.pl-fcn\.more-r, \.pt-wrap\.more-r, \.cb-scroll\.more-r \{ mask-image/.test(css),
     'the periodic table\'s row fades at the edge that scrolls, as the key strip and the plot rows do');

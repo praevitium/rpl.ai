@@ -8,6 +8,9 @@ import { state as calcState, testUserFlag, setUserFlag, clearUserFlag, setClockO
 import { ROWS, COLS, GOAL, minesAround, step, newField, saveField } from '../rpl/minehunt.js';
 import { ELEMENTS } from '../rpl/elements.js';
 import { PROPERTIES, propertyValue } from '../rpl/ops/periodic.js';
+import { EQ_LIBRARY } from '../rpl/eqlib.js';
+import { solveSet } from '../rpl/ops/eqlib.js';
+import { lookup } from '../rpl/ops/registry.js';
 import { format } from '../rpl/formatter.js';
 import { VERSION, BUILD, SHA } from '../build-info.js';
 import { pickFile } from './drawer.js';
@@ -90,6 +93,12 @@ export class Sheets {
     this._open('ptable');
   }
 
+  // EQNLIB: the subjects, a subject's sets, a set's equations with Solve.
+  openEquationLibrary() {
+    this.eqlib ??= { subject: null, set: null };
+    this._open('eqlib');
+  }
+
   openView(title, html, level) {
     this.view = { title, html, level };
     this._open('view');
@@ -149,6 +158,13 @@ export class Sheets {
       wrap.addEventListener('scroll', () => markScrollEdges(wrap), { passive: true });
       return;
     }
+    if (this.kind === 'eqlib') {
+      const { subject, set } = this.eqlib;
+      const eqs = subject != null && set != null ? EQ_LIBRARY[subject - 1][1][set - 1][1] : [];
+      const foot = `${subject != null ? `<button type="button" class="btn" data-sh="eq-back">${icon('back', 'sm')}Back</button>` : ''}${eqs.length ? `<button type="button" class="btn pri" data-sh="eq-solve">${icon('play', 'sm')}Solve</button>` : ''}<button type="button" class="btn" data-sh="close">${icon('x', 'sm')}Close</button>`;
+      this.el.innerHTML = sheet('Equation Library', this._libraryHtml(), '', foot);
+      return;
+    }
     if (this.kind === 'view') {
       const act = (name, ico, label) => `<button type="button" class="btn" data-sh="view-act" data-act="${name}">${icon(ico, 'sm')}${label}</button>`;
       const { level } = this.view;
@@ -163,6 +179,23 @@ export class Sheets {
     }
     const nav = SETTINGS_PAGES.map((p) => `<button type="button" data-sh="page" data-page="${p}" aria-pressed="${p === this.page}">${icon({ appearance: 'sliders', assistant: 'spark', data: 'folder' }[p], 'sm')}${{ appearance: 'Appearance', assistant: 'Assistant', data: 'Data' }[p]}</button>`).join('');
     this.el.innerHTML = sheet('Settings', this._settingsPageHtml(), `<nav class="sheet-nav">${nav}</nav>`);
+  }
+
+  _libraryHtml() {
+    const { subject, set } = this.eqlib;
+    const row = (sh, n, text, sub, off = false) => `<button type="button" class="eq-row${off ? ' off' : ''}" data-sh="${sh}" data-n="${n}"><span>${n}. ${escapeHtml(text)}</span><small>${escapeHtml(sub)}</small></button>`;
+    if (subject == null) {
+      return `<p class="pt-hint">The HP's Equation Library: ${EQ_LIBRARY.length} subjects. Tap one for its equation sets.</p><div class="eq-list">${EQ_LIBRARY.map(([title, sets], i) => row('eq-subject', i + 1, title, `${sets.filter((s) => s[1].length).length} of ${sets.length} sets`)).join('')}</div>`;
+    }
+    const [title, sets] = EQ_LIBRARY[subject - 1];
+    if (set == null) {
+      return `<p class="pt-hint">${escapeHtml(title)}: tap a set for its equations.</p><div class="eq-list">${sets.map(([t, eqs], i) => row('eq-set', i + 1, t, eqs.length ? `${eqs.length} ${eqs.length === 1 ? 'equation' : 'equations'}` : 'not in the library yet', !eqs.length)).join('')}</div>`;
+    }
+    const [t, eqs] = sets[set - 1];
+    const body = eqs.length
+      ? `<div class="eq-eqs">${eqs.map((e) => `<code>${escapeHtml(e)}</code>`).join('')}</div><p class="pt-hint">Solve puts the equations in EQ, its constants known, and opens the solver: type a value and tap its key to store it, hold the key to solve for it. <code>${subject} ${set} 0 SOLVEQN</code> does the same.</p>`
+      : '<p class="pt-hint">This set is not in the library yet.</p>';
+    return `<h5 class="eq-title">${escapeHtml(title)} · ${set}. ${escapeHtml(t)}</h5>${body}`;
   }
 
   _tableHtml() {
@@ -307,6 +340,19 @@ export class Sheets {
       case 'install': app.runAction('app.install'); return;
       case 'restore': pickFile('application/json,.json', async (f) => { if (await app.importSnapshotFromFile(f)) this.close(); }); return;
       case 'clock-reset': setClockOffset(0); this._render(); return;
+      case 'eq-subject': this.eqlib.subject = Number(b.dataset.n); this._render(); return;
+      case 'eq-set': this.eqlib.set = Number(b.dataset.n); this._render(); return;
+      case 'eq-back':
+        if (this.eqlib.set != null) this.eqlib.set = null;
+        else this.eqlib.subject = null;
+        this._render();
+        return;
+      case 'eq-solve': {
+        const { subject, set } = this.eqlib;
+        this.close();
+        app.entry.safeRun(() => app.stack.runOp(() => { solveSet(subject, set); lookup('MSOLVR').fn(app.stack); }), 'SOLVEQN');
+        return;
+      }
       case 'pt-elem': {
         const wrap = this.el.querySelector('.pt-wrap'), left = wrap?.scrollLeft ?? 0;
         this.ptZ = Number(b.dataset.z);

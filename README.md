@@ -1036,14 +1036,13 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 769. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 771. The
 Catalog and the command reference mark what is available. Not there yet:
 the HP's numbered menus for MENU and TMENU (a list, a name holding one or 0
 work).
 
-**Left out on purpose.** ENTRY mode, the NUM.SLV solver screens, the
-equation library (EQNLIB, SOLVEQN), RCLMENU, FINANCE, TIME, the StreamSmart
-app (STRM), the screen fonts (FONT6, →FONT,
+**Left out on purpose.** ENTRY mode, the NUM.SLV solver screens, RCLMENU,
+FINANCE, TIME, the StreamSmart app (STRM), the screen fonts (FONT6, →FONT,
 →MINIFONT and the rest), libraries (LIB, ATTACH and port management other
 than ARCHIVE and RESTORE), Saturn assembly and System RPL, printing, and IR
 and serial transfer.
@@ -1057,6 +1056,12 @@ and serial transfer.
   number or by name; numbers 6 and 8 follow the HP's examples, the other 21
   are rpl.ai's order, listed in the reference. The element data is
   Bowserinator's Periodic-Table-JSON, drawn from Wikipedia.
+- `EQNLIB` opens the Equation Library as a sheet of the HP's 15 subjects
+  and their sets, and `SOLVEQN` takes the HP's subject and title numbers;
+  the equations are written from the physics, not copied from the HP, so a
+  variable name can differ, the constants come in as plain SI numbers, and
+  14 of the 102 sets (the beams, Solid State Devices, pipe flow) are still
+  to come.
 - An algebraic reads the HP's postfix factorial, `'5!'` or `'(N+1)!'`, but
   its text form writes `FACT(5)`; the textbook display shows `5!`.
 - `BEEP` doesn't hold the program while its tone plays; tones in a row still
