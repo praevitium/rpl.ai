@@ -1350,7 +1350,7 @@ setAngle('RAD');
    guard, or rewires the graph/envelope.
    ================================================================ */
 {
-  const { errorBeep } = await import('../www/src/ui/beep.js');
+  const { errorBeep, keyClick } = await import('../www/src/ui/beep.js');
   const { setUserFlag, clearUserFlag, testUserFlag: flagOn } = await import('../www/src/rpl/state.js');
 
   // No AudioContext in scope yet → silent no-op, never throws, returns
@@ -1446,9 +1446,10 @@ setAngle('RAD');
     ctx.oscs.length = 0;
     setUserFlag(-56);
     errorBeep();
+    keyClick();
     if (!was) clearUserFlag(-56);
-    assert(ctx.oscs.length === 0,
-      'errorBeep: flag -56 silences it as it does BEEP, where Settings\' Beep switch left errors sounding');
+    assert(ctx.oscs.map((o) => o.frequency.value).join(',') === '2000' && ctx.gains.at(-1).gain.events[1][1] === 0.05,
+      'errorBeep: flag -56 silences it as it does BEEP, where Settings\' Beep switch left errors sounding; a key click ticks quietly whatever the flag');
   } finally {
     delete globalThis.AudioContext;
   }
@@ -1738,9 +1739,9 @@ setAngle('RAD');
 {
   const { Sheets } = await import('../www/src/ui/sheets.js');
   const { state: calc, testUserFlag: flagSet, setDisplay } = await import('../www/src/rpl/state.js');
-  const page = () => Sheets.prototype._calculatorPageHtml.call({});
+  const page = () => Sheets.prototype._calculatorPageHtml.call({ app: { prefs: { keyClick: false } } });
   const rows = [...page().matchAll(/<b>([^<]+)<\/b>/g)].map((m) => m[1]).join(', ');
-  assert(rows === 'Angle, Number format, Results, Number domain, Coordinates, Integer base, Decimal comma, Beep, Save last arguments, 24-hour clock, Day first in dates',
+  assert(rows === 'Angle, Number format, Results, Number domain, Coordinates, Integer base, Decimal comma, Beep, Key click, Save last arguments, 24-hour clock, Day first in dates',
     `Settings: a Calculator page holds the HP's MODES form, its modes and the mode flags (${rows})`);
   const sheet = { el: { contains: () => true }, app: {}, _render: () => {} };
   const tap = (dataset) => Sheets.prototype._onClick.call(sheet, { target: { closest: () => ({ dataset }) } });
@@ -1755,6 +1756,15 @@ setAngle('RAD');
   setDisplay(before[0], before[0] === 'STD' ? 12 : before[1]);
   assert(fixed === 'FIX 3' && digitsRow && beepOn && beepOff && flagSet(-56) === before[2],
     'Settings: the Calculator page sets FIX 3 and shows its digits, and Beep reads on while flag -56 is clear and sets it when switched off');
+}
+
+{
+  const { normalizeUiPrefs } = await import('../www/src/ui/ui-prefs.js');
+  assert(normalizeUiPrefs({}).keyClick === false && normalizeUiPrefs({ keyClick: true }).keyClick === true && normalizeUiPrefs({ keyClick: 1 }).keyClick === false,
+    'Settings: Key click is off until switched on, and kept as a preference');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/if \(this\.prefs\.keyClick\) keyClick\(\);/.test(appSrc),
+    'Settings: with Key click on, a keypad key, soft key, key strip button or the Enter beside the line ticks as it is pressed');
 }
 
 {
@@ -2755,7 +2765,7 @@ setAngle('RAD');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const beepSrc = readFileSync(new URL('../www/src/ui/beep.js', import.meta.url), 'utf8');
   const displaySrc = readFileSync(new URL('../www/src/rpl/ops/display.js', import.meta.url), 'utf8');
-  assert(/import \{ beep, alarmBeep \} from '\.\/ui\/beep\.js';/.test(appSrc) && /\n    setBeepHook\(beep\);\n/.test(appSrc)
+  assert(/import \{ beep, alarmBeep, keyClick \} from '\.\/ui\/beep\.js';/.test(appSrc) && /\n    setBeepHook\(beep\);\n/.test(appSrc)
     && /export function beep\(hz, seconds\) \{[\s\S]*?const at = Math\.max\(ctx\.currentTime, _queueEnd\);\s*_queueEnd = at \+ seconds;\s*play\(hz, seconds, at\);/.test(beepSrc)
     && /export function errorBeep\(\) \{\s*if \(!testUserFlag\(-56\)\) play\(1000, 0\.125\);/.test(beepSrc)
     && /register\('BEEP', \(s\) => \{[\s\S]*?testUserFlag\(-56\) \|\| inScratchState\(\)\) return;\s*_beepHook\?\.\(freq, dur\);[\s\S]*?categoryOrder: 29/.test(displaySrc),

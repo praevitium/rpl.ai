@@ -20,10 +20,12 @@ import { MODES, modeById, DISPLAY_DIGITS_CHOICES } from './modes.js';
 
 const SETTINGS_PAGES = Object.freeze(['appearance', 'calculator', 'assistant', 'data']);
 const SETTINGS_PAGE_NAMES = Object.freeze({ appearance: ['sliders', 'Appearance'], calculator: ['keypad', 'Calculator'], assistant: ['spark', 'Assistant'], data: ['folder', 'Data'] });
-// The HP's mode flags as switches; Beep and last arguments read on while their flag is clear, as the HP's MODES form does.
-const FLAG_SETTINGS = Object.freeze([
+// The HP's MODES switches: a number is a flag, read on while clear for Beep and last arguments as the HP's form does,
+// and a name is an app preference.
+const CALC_SWITCHES = Object.freeze([
   [-51, false, 'Decimal comma', 'Show 1,5 and read a typed comma as the decimal mark, with ; between the parts of (1,5; 2).'],
-  [-56, true, 'Beep', 'BEEP plays its tone, and errors buzz where key vibration is on.'],
+  [-56, true, 'Beep', 'An error beeps, and BEEP plays its tone; with key vibration on, an error buzzes too.'],
+  ['keyClick', false, 'Key click', "A short tick as a key or soft key is pressed, for a phone that can't vibrate, such as an iPhone."],
   [-55, true, 'Save last arguments', 'LASTARG brings back the arguments of the last command.'],
   [-41, false, '24-hour clock', 'TSTR and the alarm list write 14:55:00 rather than 02:55:00P.'],
   [-42, false, 'Day first in dates', 'Dates are read and written as DD.MMYYYY rather than MM.DDYYYY.'],
@@ -340,11 +342,13 @@ export class Sheets {
       const detail = m.options.find((o) => o.value === current)?.detail ?? '';
       return `<div class="set stack"><b>${escapeHtml(m.title)}</b><span>${escapeHtml(detail)}</span><div class="chipset" role="radiogroup" aria-label="${escapeHtml(m.title)}">${options}</div>${digits}</div>`;
     }).join('');
-    const flags = FLAG_SETTINGS.map(([flag, clearIsOn, title, what]) => {
-      const on = testUserFlag(flag) !== clearIsOn;
-      return `<div class="set"><b>${title}</b><span>${what} Flag ${flag}.</span><button type="button" class="tgl" role="switch" aria-pressed="${on}" aria-label="${escapeHtml(title)}" data-sh="flag" data-flag="${flag}"></button></div>`;
+    const switches = CALC_SWITCHES.map(([key, clearIsOn, title, what]) => {
+      const flag = typeof key === 'number';
+      const on = flag ? testUserFlag(key) !== clearIsOn : !!this.app.prefs[key];
+      const data = flag ? `data-sh="flag" data-flag="${key}"` : `data-sh="toggle" data-setting="${key}"`;
+      return `<div class="set"><b>${title}</b><span>${escapeHtml(what)}${flag ? ` Flag ${key}.` : ''}</span><button type="button" class="tgl" role="switch" aria-pressed="${on}" aria-label="${escapeHtml(title)}" ${data}></button></div>`;
     }).join('');
-    return `<h4>Calculator</h4><p>How the calculator works out and shows numbers, as the HP's MODES form sets it. The MODES menu, the mode button at the top and commands such as DEG or 4 FIX change the same settings, and programs can read them.</p>${modes}${flags}`;
+    return `<h4>Calculator</h4><p>How the calculator works out and shows numbers, as the HP's MODES form sets it. The MODES menu, the mode button at the top and commands such as DEG or 4 FIX change the same settings, and programs can read them.</p>${modes}${switches}`;
   }
 
   _shortcutsHtml() {
@@ -503,6 +507,7 @@ export class Sheets {
     else if (setting === 'minimalMenu') app.setMinimalMenu(on);
     else if (setting === 'hints') { app.setPrefs({ hints: on }); app.keypad.update(); }
     else if (setting === 'haptics') app.setPrefs({ haptics: on });
+    else if (setting === 'keyClick') app.setPrefs({ keyClick: on });
     else if (setting === 'notes') app.setPrefs({ notes: on });
   }
 

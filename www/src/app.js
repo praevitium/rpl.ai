@@ -40,7 +40,7 @@ import {
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setFontHooks, setTransferHooks, receivedName, receivedTarget, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
 import { VERSION, DATE } from './build-info.js';
-import { beep, alarmBeep } from './ui/beep.js';
+import { beep, alarmBeep, keyClick } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest, calculatorNow } from './rpl/ops/time.js';
 import { _hp50TypeCode } from './rpl/ops/internal.js';
 import { displayDigitsArg } from './rpl/ops/display.js';
@@ -2566,11 +2566,12 @@ class App {
     return this.drawers.isOpen() && (this.prefs.minimal || window.innerWidth < 980);
   }
 
-  // A phone's back button closes the top overlay before it leaves the app: an overlay holds one history entry.
   _installHaptics() {
-    if (typeof navigator.vibrate !== 'function') return;
+    const vibrates = typeof navigator.vibrate === 'function';
     document.addEventListener('pointerdown', (e) => {
-      if (this.prefs.haptics && e.pointerType === 'touch' && e.target.closest?.('.k, .sk, .key-strip button, .cmdline-go')) navigator.vibrate(10);
+      if (!e.target.closest?.('.k, .sk, .key-strip button, .cmdline-go')) return;
+      if (this.prefs.keyClick) keyClick();
+      if (vibrates && this.prefs.haptics && e.pointerType === 'touch') navigator.vibrate(10);
     }, { passive: true });
   }
 
@@ -2584,6 +2585,7 @@ class App {
     if (this.prefs.haptics && typeof navigator.vibrate === 'function' && !testUserFlag(-56)) navigator.vibrate([30, 60, 30]);
   }
 
+  // A phone's back button closes the top overlay before it leaves the app: an overlay holds one history entry.
   _installBackButton() {
     const overlays = [
       [() => this.popover.isOpen(), () => this.popover.close()],

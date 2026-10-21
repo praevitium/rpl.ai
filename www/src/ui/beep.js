@@ -13,7 +13,7 @@ function getCtx() {
   return _ctx;
 }
 
-function play(hz, dur, at = null) {
+function play(hz, dur, at = null, peak = 0.12) {
   const ctx = getCtx();
   if (!ctx) return;
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
@@ -26,7 +26,6 @@ function play(hz, dur, at = null) {
   const now = at ?? ctx.currentTime;
   const atk = 0.004;
   const rel = Math.min(0.012, dur / 2);
-  const peak = 0.12;
   // Ramp in and out: a hard-edged square wave clicks.
   gain.gain.setValueAtTime(0, now);
   gain.gain.linearRampToValueAtTime(peak, now + atk);
@@ -41,6 +40,10 @@ function play(hz, dur, at = null) {
 // Flag -56 silences the error beep, as it does BEEP.
 export function errorBeep() {
   if (!testUserFlag(-56)) play(1000, 0.125);
+}
+
+export function keyClick() {
+  play(2000, 0.012, null, 0.05);
 }
 
 // BEEP's tones play one after another, as the HP's do while its program waits for each; the program here runs on.
