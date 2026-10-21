@@ -692,8 +692,10 @@ export class GraphView {
     if (value) this._push.textContent = `↵ ${format(value)}`;
     this._pictTools.hidden = !this._mark || this.tracing || this._projected();
     this._fcnTools.hidden = !this._fcnTrace();
-    this._fcnTools.querySelector('[data-fcn="AREA"]').setAttribute('aria-pressed', String(this._areaFrom?.trace === this._fcnTrace()?.id));
-    this._fcnTools.querySelector('[data-fcn="SHADE"]').setAttribute('aria-pressed', String(this._shadeFrom?.trace === this._fcnTrace()?.id));
+    this._dropStaleBound('_areaFrom', 'Area');
+    this._dropStaleBound('_shadeFrom', 'Shade');
+    this._fcnTools.querySelector('[data-fcn="AREA"]').setAttribute('aria-pressed', String(this._areaFrom != null));
+    this._fcnTools.querySelector('[data-fcn="SHADE"]').setAttribute('aria-pressed', String(this._shadeFrom != null));
     this._markChipRows();
     for (const b of this._pictTools.querySelectorAll('[data-pict]')) {
       if (NEEDS_MARK.has(b.dataset.pict)) b.disabled = !this._anchor;
@@ -704,6 +706,13 @@ export class GraphView {
   // With DOT+ or DOT- on, the cursor draws as it moves by a key or a drag; a tap jumps without drawing.
   _dotPath(from) {
     if (this._dot && from) pictLine(Complex(from.x, from.y), Complex(this._mark.x, this._mark.y), this._dot);
+  }
+
+  // A bound marked on a function since removed, hidden or deselected is dropped, with the readout that asked for its second tap.
+  _dropStaleBound(key, label) {
+    if (!this[key] || this[key].trace === this._fcnTrace()?.id) return;
+    this[key] = null;
+    if (this._readout.textContent.startsWith(`${label} from `)) this._readout.textContent = this._idleReadout();
   }
 
   // A trace a key adds comes into view in the list, which a phone's side panel scrolls.

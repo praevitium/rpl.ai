@@ -2941,7 +2941,7 @@ setAngle('RAD');
     && /if \(this\._areaFrom\?\.trace !== t\.id\) \{\n\s*this\._areaFrom = \{ x: x0, trace: t\.id \};\n\s*this\._syncPush\(\);/.test(gv)
     && /const area = integrateFunction\(f, this\._areaFrom\.x, x0\);\n\s*this\._areaFrom = null;/.test(gv)
     && /value = Tagged\('Area', Real\(area\)\);/.test(gv)
-    && /\[data-fcn="AREA"\]'\)\.setAttribute\('aria-pressed', String\(this\._areaFrom\?\.trace === this\._fcnTrace\(\)\?\.id\)\);/.test(gv),
+    && /\[data-fcn="AREA"\]'\)\.setAttribute\('aria-pressed', String\(this\._areaFrom != null\)\);/.test(gv),
     'plot FCN: ISECT pushes the nearest crossing of the function with the next one as I-Sect: (x, y), and AREA marks the first bound on one tap (the chip pressed) and pushes Area: on the next, in the HP\'s FCN order ROOT ISECT SLOPE AREA EXTR');
   assert(/\n@media \(max-height: 400px\) \{ \.pl-box \{ min-height: 150px; \} \}/.test(css),
     'plot in landscape: the plot box gives up its 220 px minimum in a window under 400 px tall, so the readout and FCN keys sit on screen instead of under the fold');
@@ -2970,7 +2970,7 @@ setAngle('RAD');
 {
   const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
   assert(/this\._areaFrom = \{ x: x0, trace: t\.id \};/.test(gv) && /if \(this\._areaFrom\?\.trace !== t\.id\) \{/.test(gv)
-    && /aria-pressed', String\(this\._areaFrom\?\.trace === this\._fcnTrace\(\)\?\.id\)\)/.test(gv),
+    && /this\._dropStaleBound\('_areaFrom', 'Area'\);\n\s*this\._dropStaleBound\('_shadeFrom', 'Shade'\);/.test(gv),
     'plot AREA: the first bound belongs to the function it was marked on, so once that trace is removed, hidden or deselected the key shows unpressed and the next tap marks afresh instead of integrating another function from the old bound');
   assert(/this\._showTraceRow\(this\._addTrace\(dt\)\);/.test(gv) && /this\._showTraceRow\(this\._addTrace\(line\)\);/.test(gv)
     && /_showTraceRow\(t\) \{\n\s*this\._exprs\.querySelector\(`\.gr-trace\[data-trace="\$\{t\.id\}"\]`\)\?\.scrollIntoView\?\.\(\{ block: 'nearest' \}\);/.test(gv),
@@ -3005,4 +3005,6 @@ setAngle('RAD');
     'plot FCN SHADE: one tap marks the first bound (the chip pressed), the next shades between the function and the next one, or the x axis, over the bounds, in the function\'s colour at a quarter; the shade goes with either trace');
   assert(/const fns = this\.traces\.filter\(\(o\) => o\.enabled && o\.kind === 'function'\);\n\s*const next = fns\[\(fns\.indexOf\(t\) \+ 1\) % fns\.length\];\n\s*this\._selectTrace\(next\.id\);\n\s*this\._showTraceRow\(next\);/.test(gv),
     'plot FCN NXEQ: the next enabled function becomes the current one, its row scrolled into view, as the HP\'s NXEQ turns to the next equation');
+  assert(/_dropStaleBound\(key, label\) \{\n\s*if \(!this\[key\] \|\| this\[key\]\.trace === this\._fcnTrace\(\)\?\.id\) return;\n\s*this\[key\] = null;\n\s*if \(this\._readout\.textContent\.startsWith\(`\$\{label\} from `\)\) this\._readout\.textContent = this\._idleReadout\(\);/.test(gv),
+    'plot AREA and SHADE: a first bound whose function is gone is dropped with its "move the cursor and tap again" readout, so the readout and the chip agree');
 }
