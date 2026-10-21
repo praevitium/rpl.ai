@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.10 (2026-10-20)
+**Latest release:** v0.8.11 (2026-10-20)
 
 ---
 
@@ -18,6 +18,24 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.11 — 2026-10-20
+
+- Fonts: `FONT6`, `FONT7`, `FONT8`, `→FONT`, `FONT→`, `→MINIFONT` and
+  `MINIFONT→`. The screen has one typeface, so the system font is the stack
+  text size from Settings: `FONT8 →FONT` makes it Large, font 6 Small and
+  font 7 Normal, and `FONT→` reads it back. They sit at the end of the DISP
+  menu. Breaks from the HP: a font is the tagged size `:Font:8` (TYPE 12,
+  not a TYPE 30 font object); font 8 leaves Larger as it is, so a program
+  that saves `FONT→` and restores it changes nothing; the minifont is kept
+  for `MINIFONT→` but nothing is drawn in it. `UFL1→MINIF` stays out.
+- Fixed: a binary integer written as the HP shows it and the AUR prints it,
+  `# 5d` with a space after `#`, said Malformed binary integer; typed,
+  pasted or in a program it now reads as `#5d`.
+- Settings: the four stack text sizes keep to one row on a 280 px phone
+  instead of leaving Larger on a second.
 
 ---
 
