@@ -2611,7 +2611,7 @@ class App {
   _installHaptics() {
     const vibrates = typeof navigator.vibrate === 'function';
     document.addEventListener('pointerdown', (e) => {
-      if (!e.target.closest?.('.k, .sk, .key-strip button, .cmdline-go')) return;
+      if (!e.target.closest?.('.k, .sk, [data-mb="next"]:not(:disabled), .key-strip button, .cmdline-go')) return;
       if (this.prefs.keyClick) keyClick();
       if (vibrates && this.prefs.haptics && e.pointerType === 'touch') navigator.vibrate(10);
     }, { passive: true });

@@ -1771,6 +1771,8 @@ setAngle('RAD');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/if \(this\.prefs\.keyClick\) keyClick\(\);/.test(appSrc),
     'Settings: with Key click on, a keypad key, soft key, key strip button or the Enter beside the line ticks as it is pressed');
+  assert(appSrc.includes(`closest?.('.k, .sk, [data-mb="next"]:not(:disabled), .key-strip button, .cmdline-go')`),
+    'key feedback: NXT on the soft-key row ticks and buzzes like the soft keys beside it, where with the keypad hidden or in minimal view, the only NXT there is, it stayed silent');
   assert(normalizeUiPrefs({}).keepAwake === false && normalizeUiPrefs({ keepAwake: true }).keepAwake === true && normalizeUiPrefs({ keepAwake: 'yes' }).keepAwake === false,
     'Settings: Keep the screen on is off until switched on, and kept as a preference');
   assert(/this\.keepAwake\(\);\n    document\.addEventListener\('visibilitychange', \(\) => \{ this\._watchAlarms\(\); this\.keepAwake\(\); \}\);/.test(appSrc)
