@@ -294,6 +294,7 @@ On Windows and Linux, ⌘ is Ctrl and ⌥ is Alt.
 | `F1`–`F6` · PgUp/PgDn | Soft keys · menu pages |
 | `↑` · `↓` on an empty line | Select level 1 · edit level 1 |
 | Enter · `→` on an empty line | DUP · SWAP |
+| `⌘C` on an empty line | Copy level 1, ready to paste into a spreadsheet (text you have selected copies as text) |
 | With a level selected | `↑` `↓` move the selection · `⌘↑` `⌘↓` move the level · Enter edits · ⌫ drops · `⌘C` copies · `⌘D` picks |
 | `⌘Z` · `⇧⌘Z` | Undo · redo (text when the line has text, otherwise the stack) |
 | `⌘\` · `⌘;` · `⇧⌘F` | Tools drawer · keypad · Minimal view |
@@ -301,7 +302,7 @@ On Windows and Linux, ⌘ is Ctrl and ⌥ is Alt.
 | Tab | Complete a command or variable name; next box or next cell in the writers |
 | `↑` · `↓` with completions showing | Put the next or previous completion in the line, so Enter runs it; Esc puts back what you typed |
 | Enter in the matrix writer | Stores the cell and moves on, as the HP's ENTER; on a cell you haven't typed in it pushes the matrix, so `1` Enter `2` Enter Enter enters `[[ 1 2 ]]` · ⇧Enter next row · `⌘Enter` pushes the matrix from any cell |
-| Esc | Close, deselect, dismiss, or cancel with Undo |
+| Esc | Close, deselect, dismiss, or cancel with Undo; in a drawer docked beside the stack, back to the command line |
 
 Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 

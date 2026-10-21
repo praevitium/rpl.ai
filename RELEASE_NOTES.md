@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.42 (2026-10-21)
+**Latest release:** v0.8.43 (2026-10-21)
 
 ---
 
@@ -20,6 +20,21 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.43 — 2026-10-21
+
+- Fixed: Enter in the Catalog's search box opens the first match's page,
+  but the page replaced the search box and left the keyboard focused on
+  nothing. The page's Run (or Insert) button now takes the focus, so a
+  second Enter runs the command.
+- Added: on an empty command line with no level selected, Ctrl+C (⌘C on a
+  Mac) copies level 1, so a result goes to a spreadsheet or document in one
+  keystroke; a matrix pastes as cells. Text you have selected on the page
+  still copies as text.
+- Improved: with the drawer docked beside the stack on a wide screen, Esc
+  in the drawer takes the keyboard back to the command line and leaves the
+  drawer open. Before, it did nothing. A drawer over the stack still
+  closes.
 
 ## v0.8.42 — 2026-10-21
 
