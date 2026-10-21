@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.55 (2026-10-21)
+**Latest release:** v0.8.56 (2026-10-21)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.56 — 2026-10-21
+
+- Fixed: INV and RREF refused a matrix with complex entries, which the HP
+  inverts and reduces: `[[ (1,1) 2 ][ 3 4 ]] INV` now gives
+  `[[ (-0.4, -0.8) (0.2, 0.4) ][ (0.3, 0.6) (0.1, -0.3) ]]`, and RREF and
+  RANK work on such a matrix too.
+- Added: in exact mode RANK counts on exact fractions, where the decimal
+  reduction could lose a pivot to rounding:
+  `[[ 100000000000000001 100000000000000000 ][ 100000000000000000 99999999999999999 ]] RANK`
+  now gives 2, not 1.
+- Fixed: TYPE, VTYPE, TVARS and a level's INFO note gave a fraction -1, a
+  code the HP has no object for. The HP holds an exact 3/4 as an
+  algebraic, so it now reports 9.
 
 ## v0.8.55 — 2026-10-21
 

@@ -208,8 +208,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
 - **Matrices.** `[[ 2 1 ][ 1 3 ]] DET` gives 5, `INV`, `EGV` and `LU` work
   on it, and `→NUM` gives every entry its number. In exact mode an integer
   matrix inverts and row-reduces to fractions, as on the HP:
-  `[[ 1 2 ][ 3 4 ]] INV` gives `[[ -2 1 ][ 3/2 -1/2 ]]`, and a matrix
-  level's menu offers Row reduce (RREF). Entries can be
+  `[[ 1 2 ][ 3 4 ]] INV` gives `[[ -2 1 ][ 3/2 -1/2 ]]`, RANK counts
+  exactly, and a matrix level's menu offers Row reduce (RREF). INV, RREF
+  and RANK take complex entries too. Entries can be
   symbolic: `[[ X 1 ][ 2 Y ]] INV` is exact, and `/`, RREF, RANK, LU,
   CHARPOL, JORDAN and ABS work on such a matrix too; `EVAL` puts stored
   values into its entries, and SUBST, `|`, DERIV, ∫, EXPAND, SIMPLIFY,
