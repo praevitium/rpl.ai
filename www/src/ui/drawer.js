@@ -238,9 +238,7 @@ export class Drawers {
     this._bindRunPreviews();
     this._bindVarsDrag();
     subscribeState(() => {
-      if (this.current !== 'vars') return;
-      this._renderVarsList();
-      this._renderHeadSub();
+      if (this.current === 'vars') this._renderVarsList();
     });
     subscribeBackups(() => { if (this.current === 'vars') this._renderBackups(); });
     app.entry.subscribeHistory(() => { if (this.current === 'history') this._renderHistoryList(); });
@@ -401,9 +399,7 @@ export class Drawers {
   _renderHeadSub() {
     const sub = this.el.querySelector('.dw-sub');
     if (!sub) return;
-    if (this.current === 'catalog') sub.textContent = `${allOps().filter((n) => !n.includes('->')).length} commands`;
-    else if (this.current === 'vars') sub.textContent = currentPath().join(' › ');
-    else sub.textContent = '';
+    sub.textContent = this.current === 'catalog' ? `${allOps().filter((n) => !n.includes('->')).length} commands` : '';
   }
 
   _body() { return this.el.querySelector('.dw-body'); }
