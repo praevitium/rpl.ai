@@ -1513,15 +1513,17 @@ export function cutTarget(state) {
   return next;
 }
 
-export function pasteText(state, text) {
+export function pasteText(state, text, { selectionAsCaret = false } = {}) {
   const ast = parseMath(String(text ?? '').trim());
   const items = [...fromAst(ast)];
   const at = state.target.mode === 'insert' ? getItem(state.root, state.target.path) : null;
-  if (!at || at.t === 'hole') return replaceTarget(state, items);
-  // At a caret after a leaf the pasted expression follows it as a factor, as typing would (W-L21).
+  const afterSelection = selectionAsCaret && state.target.mode === 'select' && targetItems(state).some((item) => item.t !== 'hole');
+  if (!afterSelection && (!at || at.t === 'hole')) return replaceTarget(state, items);
+  // At a caret after a leaf, or one drawn after an unhighlighted selection, the pasted expression follows it as a factor,
+  // as typing would (W-L21).
   const extras = isAddLike(ast) ? [makeParen(items, false)] : items;
   extras[extras.length - 1] = marked(extras[extras.length - 1], 'select');
-  return insertAfter(state, [opTok('*'), ...extras], null);
+  return afterSelection ? insertAfterSelection(state, [opTok('*'), ...extras]) : insertAfter(state, [opTok('*'), ...extras], null);
 }
 
 function placeCursor(state, path) {
@@ -2083,7 +2085,7 @@ export class EquationEditor {
   }
 
   _pasteText(text) {
-    try { this.state = pasteText(this.state, String(text ?? '').replace(/^\s*['`]|['`]\s*$/g, '')); }
+    try { this.state = pasteText(this.state, String(text ?? '').replace(/^\s*['`]|['`]\s*$/g, ''), { selectionAsCaret: !this._selecting }); }
     catch (error) { this.app.notifyError(`That doesn't read as an expression: ${error.message}`); return; }
     this._render();
   }

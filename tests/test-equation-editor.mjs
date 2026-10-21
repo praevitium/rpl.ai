@@ -552,6 +552,9 @@ function replaceSelection(state, ast) {
   assert(textOf(pasteText(typed, 'y')) === 'x + 2*y' && textOf(pasteText(typed, 'a+b')) === 'x + 2*(a + b)' && textOf(pasteText(emptyEquation(), 'a+b')) === 'a + b',
     'EQW a paste at the caret keeps the item before it, bracketing a pasted sum');
   assert(textOf(pasteText(press(emptyEquation(), 'a', '×', 'b', '◀'), 'c')) === 'a*c', 'EQW a paste over a cleared item still replaces it');
+  const pasted = pasteText(emptyEquation(), '2*x+1');
+  assert(textOf(pasteText(pasted, '33', { selectionAsCaret: true })) === '2*x + 1*33' && textOf(pasteText(pasted, '33')) === '2*x + 33',
+    'EQW a second paste follows the first at the caret drawn after it, and replaces it only when the selection shows');
   const inBox = press(emptyEquation(), 'x', '÷', '2', '◀', '◀', '◀', '▶');
   assert(inBox.target.mode === 'clear' && textOf(press(inBox, '▶', '+', '1')) === 'x/2 + 1', 'EQW ▶ at the last leaf of a denominator steps out to the fraction, so + 1 follows it');
   assert(textOf(press(press(emptyEquation(), 'x', '÷', '2'), '▶', '+', '1')) === 'x/2 + 1', 'EQW ▶ from the caret in a denominator does the same');
