@@ -55,7 +55,7 @@ const PICT_TOOLS = Object.freeze([
   ['PICT→', 'Put PICT on the stack'],
 ]);
 // The HP's FCN menu on a function plot, the part that works about one cursor.
-const FCN_TOOLS = Object.freeze([['ROOT', 'The nearest root of the function'], ['ISECT', 'The nearest crossing of two functions, as a point'], ['SLOPE', 'The slope of the function here'], ['AREA', 'The area under the function between two cursor positions: tap here, move the cursor, tap again'], ['EXTR', 'The nearest extremum, as a point'], ['F(X)', 'The value of the function here'], ["F'", 'The derivative of the function, plotted and put on the stack'], ['TANL', 'The tangent line here, plotted and put on the stack']]);
+const FCN_TOOLS = Object.freeze([['ROOT', 'The nearest root of the function'], ['ISECT', 'The nearest crossing of two functions, as a point'], ['SLOPE', 'The slope of the function here'], ['AREA', 'The area under the function between two cursor positions: tap here, move the cursor, tap again'], ['SHADE', 'Shade between the function and the next one, or the x axis, between two cursor positions: tap here, move the cursor, tap again'], ['EXTR', 'The nearest extremum, as a point'], ['F(X)', 'The value of the function here'], ['NXEQ', 'Make the next function the current one'], ["F'", 'The derivative of the function, plotted and put on the stack'], ['TANL', 'The tangent line here, plotted and put on the stack']]);
 const NEEDS_MARK = new Set(['LINE', 'TLINE', 'BOX', 'CIRCL', 'DEL', 'SUB']);
 // The HP writes a tangent as m*X+b, its numbers at the 12 digits a Real keeps.
 function lineExpr(m, b, name) {
@@ -160,6 +160,8 @@ export class GraphView {
     this._mark = null;
     this._anchor = null;
     this._areaFrom = null;
+    this._shadeFrom = null;
+    this._shade = null;
     this._dot = null;
     this.tracing = false;
     this.traceX = null;
@@ -496,6 +498,8 @@ export class GraphView {
     this._mark = null;
     this._anchor = null;
     this._areaFrom = null;
+    this._shadeFrom = null;
+    this._shade = null;
     this._dot = null;
     if (kind === 'animate') {
       this.view = pictWindow() ?? this.view;
@@ -689,6 +693,7 @@ export class GraphView {
     this._pictTools.hidden = !this._mark || this.tracing || this._projected();
     this._fcnTools.hidden = !this._fcnTrace();
     this._fcnTools.querySelector('[data-fcn="AREA"]').setAttribute('aria-pressed', String(this._areaFrom?.trace === this._fcnTrace()?.id));
+    this._fcnTools.querySelector('[data-fcn="SHADE"]').setAttribute('aria-pressed', String(this._shadeFrom?.trace === this._fcnTrace()?.id));
     this._markChipRows();
     for (const b of this._pictTools.querySelectorAll('[data-pict]')) {
       if (NEEDS_MARK.has(b.dataset.pict)) b.disabled = !this._anchor;
@@ -767,6 +772,28 @@ export class GraphView {
       this._areaFrom = null;
       if (!Number.isFinite(area)) { this._fail(`${t.expr} has no area there`); return; }
       value = Tagged('Area', Real(area));
+    } else if (key === 'SHADE') {
+      // The HP's SHADE: one press marks the first bound, the next shades from it to the cursor, between the function
+      // and the next one, or the x axis when it is alone.
+      if (this._shadeFrom?.trace !== t.id) {
+        this._shadeFrom = { x: x0, trace: t.id };
+        this._syncPush();
+        this._readout.textContent = `Shade from ${format(Real(x0))}: move the cursor and tap SHADE again`;
+        return;
+      }
+      const other = this.traces.find((o) => o !== t && o.enabled && o.kind === 'function');
+      this._shade = { from: Math.min(this._shadeFrom.x, x0), to: Math.max(this._shadeFrom.x, x0), a: t.id, b: other?.id ?? null };
+      this._shadeFrom = null;
+      this.draw();
+      this._readout.textContent = `Shaded ${t.expr} from ${format(Real(this._shade.from))} to ${format(Real(this._shade.to))}${other ? ` against ${other.expr}` : ''}`;
+      return;
+    } else if (key === 'NXEQ') {
+      const fns = this.traces.filter((o) => o.enabled && o.kind === 'function');
+      const next = fns[(fns.indexOf(t) + 1) % fns.length];
+      this._selectTrace(next.id);
+      this._showTraceRow(next);
+      this._readout.textContent = next.expr;
+      return;
     } else if (key === 'F(X)') {
       const y = f(x0);
       if (!Number.isFinite(y)) { this._fail(`${t.expr} has no value at ${format(Real(x0))}`); return; }
@@ -1127,6 +1154,7 @@ export class GraphView {
   removeTrace(id) {
     this.traces = this.traces.filter(t => t.id !== id);
     if (this._selectedId === id) this._selectedId = null;
+    if (this._shade && (this._shade.a === id || this._shade.b === id)) this._shade = null;
     this._renderExprs();
     this.draw();
   }
@@ -1241,6 +1269,7 @@ export class GraphView {
       if (!t.enabled) continue;
       this._drawTrace(ctx, t, width, height);
     }
+    this._drawShade(ctx, width, height);
     this._drawPict(ctx, width, height);
     this._drawHover(ctx, width, height);
     this._drawMark(ctx, width, height);
@@ -1336,6 +1365,35 @@ export class GraphView {
         }
       }
     }
+  }
+
+  // SHADE's region between the function and the next one, or the x axis, over its bounds.
+  _drawShade(ctx, width, height) {
+    const s = this._shade;
+    if (!s) return;
+    const a = this.traces.find((t) => t.id === s.a && t.enabled);
+    const b = s.b ? this.traces.find((t) => t.id === s.b && t.enabled) : null;
+    if (!a || (s.b && !b)) return;
+    const opts = this._hoverOpts();
+    const n = 200, step = (s.to - s.from) / n;
+    const top = [], bottom = [];
+    for (let i = 0; i <= n; i++) {
+      const x = s.from + i * step;
+      const ya = evalTraceAtX(a, x, opts), yb = b ? evalTraceAtX(b, x, opts) : 0;
+      if (!Number.isFinite(ya) || !Number.isFinite(yb)) continue;
+      top.push(worldToPixel(x, ya, this.view, width, height));
+      bottom.push(worldToPixel(x, yb, this.view, width, height));
+    }
+    if (top.length < 2) return;
+    ctx.save();
+    ctx.beginPath();
+    top.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
+    bottom.reverse().forEach(([px, py]) => ctx.lineTo(px, py));
+    ctx.closePath();
+    ctx.fillStyle = a.color;
+    ctx.globalAlpha = 0.25;
+    ctx.fill();
+    ctx.restore();
   }
 
   _drawTrace(ctx, t, width, height) {

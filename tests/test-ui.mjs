@@ -2909,7 +2909,7 @@ setAngle('RAD');
 {
   const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/const FCN_TOOLS = Object\.freeze\(\[\['ROOT', [^\]]*\], \['ISECT', [^\]]*\], \['SLOPE', [^\]]*\], \['AREA', [^\]]*\], \['EXTR', [^\]]*\], \['F\(X\)', [^\]]*\], \["F'", [^\]]*\], \['TANL', [^\]]*\]\]\);/.test(gv)
+  assert(/const FCN_TOOLS = Object\.freeze\(\[\['ROOT', [^\]]*\], \['ISECT', [^\]]*\], \['SLOPE', [^\]]*\], \['AREA', [^\]]*\], \['SHADE', [^\]]*\], \['EXTR', [^\]]*\], \['F\(X\)', [^\]]*\], \['NXEQ', [^\]]*\], \["F'", [^\]]*\], \['TANL', [^\]]*\]\]\);/.test(gv)
     && /<div class="pl-fcn" role="toolbar" aria-label="Function tools" hidden>\$\{FCN_TOOLS\.map\(/.test(gv)
     && /if \(fcn\) \{ this\.fcnTool\(fcn\.dataset\.fcn\); return; \}/.test(gv)
     && /this\._fcnTools\.hidden = !this\._fcnTrace\(\);/.test(gv)
@@ -2996,4 +2996,13 @@ setAngle('RAD');
     && /const isFormula = \(v\) => isSymbolic\(v\) \|\| isName\(v\) \|\| \(isTagged\(v\) && isFormula\(v\.value\)\);/.test(gv)
     && /if \(isTagged\(v\)\) return stackValueToTrace\(v\.value, preferredKind, below\);/.test(pe),
     'plot from a level: a tagged formula, as TANL and F\' leave on the stack, offers Plot and plots as the formula, where the level offered nothing and PLOT said FUNCTION needs an expression');
+  assert(/if \(this\._shadeFrom\?\.trace !== t\.id\) \{\n\s*this\._shadeFrom = \{ x: x0, trace: t\.id \};/.test(gv)
+    && /this\._shade = \{ from: Math\.min\(this\._shadeFrom\.x, x0\), to: Math\.max\(this\._shadeFrom\.x, x0\), a: t\.id, b: other\?\.id \?\? null \};/.test(gv)
+    && /this\._drawShade\(ctx, width, height\);\n\s*this\._drawPict\(ctx, width, height\);/.test(gv)
+    && /const ya = evalTraceAtX\(a, x, opts\), yb = b \? evalTraceAtX\(b, x, opts\) : 0;/.test(gv)
+    && /ctx\.fillStyle = a\.color;\n\s*ctx\.globalAlpha = 0\.25;/.test(gv)
+    && /if \(this\._shade && \(this\._shade\.a === id \|\| this\._shade\.b === id\)\) this\._shade = null;/.test(gv),
+    'plot FCN SHADE: one tap marks the first bound (the chip pressed), the next shades between the function and the next one, or the x axis, over the bounds, in the function\'s colour at a quarter; the shade goes with either trace');
+  assert(/const fns = this\.traces\.filter\(\(o\) => o\.enabled && o\.kind === 'function'\);\n\s*const next = fns\[\(fns\.indexOf\(t\) \+ 1\) % fns\.length\];\n\s*this\._selectTrace\(next\.id\);\n\s*this\._showTraceRow\(next\);/.test(gv),
+    'plot FCN NXEQ: the next enabled function becomes the current one, its row scrolled into view, as the HP\'s NXEQ turns to the next equation');
 }
