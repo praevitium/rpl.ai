@@ -25,14 +25,23 @@ export class Popover {
     this._onKey = (e) => {
       if (!this.el) return;
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.close(); return; }
-      // Home and End go to a menu's first and last item, unless the keyboard is in a field or still on the command line.
-      const ends = (e.key === 'Home' || e.key === 'End') && this.el.contains(document.activeElement) && !document.activeElement.matches('input, textarea, select');
-      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && !ends) return;
-      if (this._onArrow && !ends) { e.preventDefault(); this._onArrow(e.key === 'ArrowDown' ? 1 : -1); return; }
+      // Home and End go to a menu's first and last item, and a letter to the next item starting with it, unless the
+      // keyboard is in a field or still on the command line.
+      const inMenu = this.el.contains(document.activeElement) && !document.activeElement.matches('input, textarea, select');
+      const ends = (e.key === 'Home' || e.key === 'End') && inMenu;
+      const letter = inMenu && !e.ctrlKey && !e.metaKey && !e.altKey && /^\p{L}$/u.test(e.key) ? e.key.toUpperCase() : '';
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && !ends && !letter) return;
+      if (this._onArrow && !ends && !letter) { e.preventDefault(); this._onArrow(e.key === 'ArrowDown' ? 1 : -1); return; }
       const items = [...this.el.querySelectorAll('.opt:not([disabled]), .grid button, .layers button:not([disabled])')];
       if (!items.length) return;
-      e.preventDefault();
       const i = items.indexOf(document.activeElement);
+      if (letter) {
+        const label = (item) => (item.querySelector('b') ?? item).textContent.trim().toUpperCase();
+        const match = [...items.slice(i + 1), ...items.slice(0, i + 1)].find((item) => label(item).startsWith(letter));
+        if (match) { e.preventDefault(); match.focus(); }
+        return;
+      }
+      e.preventDefault();
       const next = { ArrowDown: (i + 1) % items.length, ArrowUp: i <= 0 ? items.length - 1 : i - 1, Home: 0, End: items.length - 1 }[e.key];
       items[next].focus();
     };
