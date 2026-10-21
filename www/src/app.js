@@ -1825,8 +1825,8 @@ class App {
       { label: 'KEEP', title: `Keep levels 1–${level} only`, onPress: act('keep') },
       { label: 'LEVEL', title: `Push the level number, ${level}`, onPress: act('level') },
       { label: 'INFO', title: 'Its type and size', onPress: act('info') },
-      plottable(value)
-        ? { label: 'PLOT', title: 'Plot it', onPress: act('plot') }
+      plottable(value) ? { label: 'PLOT', title: 'Plot it', onPress: act('plot') }
+        : isString(value) ? { label: 'STR→', title: 'Run its text', onPress: act('strto') }
         : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },
       isReal(value)
         ? { label: '→Q', title: 'To a fraction', onPress: act('toq') }
