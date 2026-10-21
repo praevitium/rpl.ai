@@ -3138,6 +3138,16 @@ setAngle('RAD');
     && !gv.includes('this._readoutAt(this._mark.x, this._mark.y)')
     && gv.includes('if (tap && this._mark && !this._projected()) this._readout.textContent = this._markReadout();'),
     'plot cursor: a tap reads the point as Enter pushes it, rounded to its pixel, where the readout said x = 2.46, y = -5.65313 for a push of (2.5, -5.7)');
+  {
+    const { GraphView } = await import('../www/src/ui/graph-view.js');
+    const self = { _box: { clientHeight: 330 }, view: { xmin: -10, xmax: 10, ymin: -10, ymax: 10 }, _projected: () => false };
+    GraphView.prototype._keepScale.call(self, () => { self._box.clientHeight = 231; });
+    const kept = self.view.ymax === 10 && Math.abs(self.view.ymin + 4) < 1e-9 && self.view.xmin === -10;
+    GraphView.prototype._keepScale.call(self, () => {});
+    assert(kept && Math.abs(self.view.ymin + 4) < 1e-9
+      && gv.includes('if (tap) this._keepScale(() => { this._markAt(ev.offsetX, ev.offsetY); this._syncPush(); });'),
+      'plot cursor: the Picture tools a tap brings up take their room from the bottom of the plot at the same scale, so the tapped point stays under the finger, where the plot squashed and the point moved 30 px');
+  }
 }
 
 {

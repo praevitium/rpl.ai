@@ -321,7 +321,7 @@ export class GraphView {
       if (this._drag) return;
       if (this.tracing && tap) this._traceTo(ev.offsetX, ev.offsetY);
       else {
-        if (tap) this._markAt(ev.offsetX, ev.offsetY);
+        if (tap) this._keepScale(() => { this._markAt(ev.offsetX, ev.offsetY); this._syncPush(); });
         this._hoverFromEvent(ev);
         if (tap && this._mark && !this._projected()) this._readout.textContent = this._markReadout();
       }
@@ -726,6 +726,17 @@ export class GraphView {
       if (NEEDS_MARK.has(b.dataset.pict)) b.disabled = !this._anchor;
       if (DOTS[b.dataset.pict]) b.setAttribute('aria-pressed', String(this._dot === DOTS[b.dataset.pict]));
     }
+  }
+
+  // The Picture tools a tap brings up take their room from the plot's bottom edge at the same scale, so the point
+  // tapped stays under the finger rather than the curves squashing.
+  _keepScale(toggle) {
+    const before = this._box.clientHeight;
+    toggle();
+    const after = this._box.clientHeight;
+    if (!(before > 0 && after > 0) || before === after || this._projected()) return;
+    const v = this.view;
+    this.view = { ...v, ymin: v.ymax - (v.ymax - v.ymin) * after / before };
   }
 
   // With DOT+ or DOT- on, the cursor draws as it moves by a key or a drag; a tap jumps without drawing.
