@@ -28,7 +28,8 @@ export function parseErrorMessage(message) {
   return { commands, command: commands.at(-1) ?? null, core, detail };
 }
 
-const article = (noun) => (/^[aeiou]/i.test(noun) ? `an ${noun}` : `a ${noun}`);
+// A unit object, not an unit object: a u that sounds like you takes a.
+const article = (noun) => (/^(?!uni)[aeiou]/i.test(noun) ? `an ${noun}` : `a ${noun}`);
 
 const sentence = (text) => (/[.!?…]$/.test(text) ? text : `${text}.`);
 

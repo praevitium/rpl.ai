@@ -2,7 +2,8 @@ import { assert } from './helpers.mjs';
 import { ERROR_KINDS, parseErrorMessage, describeError } from '../www/src/ui/errors.js';
 import { errorBannerHtml, haltedBannerHtml } from '../www/src/ui/banner.js';
 import { describeValue, installSwipeAway } from '../www/src/ui/display.js';
-import { Str, Real, Name, Vector, RList } from '../www/src/rpl/types.js';
+import { Str, Real, Name, Vector, RList, Integer, Unit } from '../www/src/rpl/types.js';
+import { parseUnitExpr } from '../www/src/rpl/units.js';
 
 {
   const p = parseErrorMessage('SIN: Bad argument type: expected real, got string');
@@ -118,6 +119,10 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   assert(both.title === "+ can't combine a real number with a name." && both.fixes.some((f) => f.id === 'swap'),
     'describeError: a two-argument command names both and offers SWAP');
   assert(!both.detail.includes('..'), 'describeError: an HP real like "2." does not end the sentence with two periods');
+  const ft = Unit(1, parseUnitExpr('ft'));
+  const unitTitle = describeError('+: Bad argument type', ctx({ failure: { op: '+', levels: [ft, Integer(1n)] }, stack: [ft, Integer(1n)], depth: 2 })).title;
+  assert(/^\+ can't combine an integer with a unit object\.$/.test(unitTitle),
+    `describeError: + names a unit object with "a", where it said "an unit object" (got ${unitTitle})`);
 
   const few = describeError('+: Too few arguments', ctx({ depth: 1 }));
   assert(few.title === '+ needs two values; the stack has one value.', 'describeError: too few arguments counts what is missing');
