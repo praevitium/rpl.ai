@@ -707,7 +707,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
   .k { height: var(--key-h, clamp(26px, 7.2dvh, 36px)); }
   .k .l, .k .r, .k .a, .k .cap { display: none; }
 }
-@media (max-height: 560px) and (min-width: 640px) {
+/* A short landscape window puts the keypad beside the stack; below the keypad, a 568 x 320 phone's stack got 29 px. */
+@media (max-height: 560px) and (min-width: 520px) and (orientation: landscape) {
   .app-main { flex-direction: row; }
   .keys {
     display: flex;

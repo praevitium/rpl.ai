@@ -336,7 +336,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   name their shifts in landscape too. A window too short for the full
   keypad to leave two stack levels (under about 576 px tall, as in split
   screen) uses the compact keypad on its own, and the full one comes back
-  when it grows; the setting stays Full.
+  when it grows; the setting stays Full. A phone held sideways, from 520 px
+  wide, keeps the keypad beside the stack.
   The command menus' soft keys do the same; the catalog types. A
   variable's key types its name inside a program, list or quote, and in a
   program ⇦ and ⇨ type a STO or RCL of it, as on the HP; a finger held on
