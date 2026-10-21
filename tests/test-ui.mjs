@@ -2960,4 +2960,9 @@ setAngle('RAD');
   assert(/\n  \.gr-show \{ appearance: none; width: 40px; height: 40px; margin: 0; display: grid; place-content: center; \}/.test(css)
     && /\.gr-show:checked::before \{ background: currentColor;/.test(css) && /style="accent-color:\$\{t\.color\};color:\$\{t\.color\}"/.test(gv),
     'plot trace rows on touch: the show/hide box is a 40 px target drawn in the trace\'s colour, where the native 16 px box was the drawer\'s one small control');
+  assert(/\.pl-kinds\.more-r, \.pl-pict\.more-r, \.pl-fcn\.more-r, \.cb-scroll\.more-r \{ mask-image: linear-gradient\(to right/.test(css)
+    && /\.pl-kinds\.more-l\.more-r, \.pl-pict\.more-l\.more-r, \.pl-fcn\.more-l\.more-r, \.cb-scroll\.more-l\.more-r \{/.test(css)
+    && /for \(const row of this\._chipRows\) row\.addEventListener\('scroll', \(\) => markScrollEdges\(row\), \{ passive: true \}\);/.test(gv)
+    && /_markChipRows\(\) \{\n\s*for \(const row of this\._chipRows\) markScrollEdges\(row\);/.test(gv),
+    'plot chip rows on a phone: the plot types, PICT and FCN rows fade at the edge that scrolls, as the key strip and drawer tabs do');
 }

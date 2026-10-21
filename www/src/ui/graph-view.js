@@ -4,7 +4,7 @@ import {
   sampleTrace, fitViewToTraces, evalTraceAtX, slopeAt, nearestRoot, nearestExtremum, integrateFunction,
   stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace,
 } from './plot-engine.js';
-import { escapeHtml } from './display.js';
+import { escapeHtml, markScrollEdges } from './display.js';
 import { icon } from './icons.js';
 import { isSymbolic, isName, isMatrix, isVector, isList, isGrob, Real, Complex, RList, BinaryInteger, Name, Tagged } from '../rpl/types.js';
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians, getPict, subscribe as subscribeState } from '../rpl/state.js';
@@ -211,6 +211,8 @@ export class GraphView {
     this._push = this.el.querySelector('.pl-push');
     this._pictTools = this.el.querySelector('.pl-pict');
     this._fcnTools = this.el.querySelector('.pl-fcn');
+    this._chipRows = [this.el.querySelector('.pl-kinds'), this._pictTools, this._fcnTools];
+    for (const row of this._chipRows) row.addEventListener('scroll', () => markScrollEdges(row), { passive: true });
     this._kind = 'function';
     this._selectedId = null;
     this._bind();
@@ -683,6 +685,7 @@ export class GraphView {
     this._pictTools.hidden = !this._mark || this.tracing || this._projected();
     this._fcnTools.hidden = !this._fcnTrace();
     this._fcnTools.querySelector('[data-fcn="AREA"]').setAttribute('aria-pressed', String(this._areaFrom != null));
+    this._markChipRows();
     for (const b of this._pictTools.querySelectorAll('[data-pict]')) {
       if (NEEDS_MARK.has(b.dataset.pict)) b.disabled = !this._anchor;
       if (DOTS[b.dataset.pict]) b.setAttribute('aria-pressed', String(this._dot === DOTS[b.dataset.pict]));
@@ -1160,7 +1163,14 @@ export class GraphView {
     }).join('') || '<div class="gr-empty">Select an expression on the stack and press PLOT, add level 1 here, or type one below.</div>';
   }
 
-  resize() { this.draw(); }
+  resize() {
+    this.draw();
+    this._markChipRows();
+  }
+
+  _markChipRows() {
+    for (const row of this._chipRows) markScrollEdges(row);
+  }
 
   _palette() {
     const css = getComputedStyle(this._canvas);
