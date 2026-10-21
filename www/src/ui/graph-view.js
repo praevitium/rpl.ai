@@ -175,6 +175,8 @@ export class GraphView {
             <button type="button" data-gr="zout" title="Zoom out (−)" aria-label="Zoom out">${icon('minus', 'sm')}</button>
             <button type="button" data-gr="fit" title="Fit the traces" aria-label="Fit">${icon('fit', 'sm')}</button>
             <button type="button" data-gr="reset" title="Reset the view (0)" aria-label="Reset">${icon('target', 'sm')}</button>
+            <button type="button" data-gr="zsqr" title="Square the axes (ZSQR)" aria-label="Square the axes">${icon('grid', 'sm')}</button>
+            <button type="button" data-gr="cntr" title="Centre on the cursor (CNTR)" aria-label="Centre on the cursor">${icon('mark', 'sm')}</button>
             <button type="button" data-gr="trace" title="Trace (T): arrows move along the curve" aria-label="Trace" aria-pressed="false">${icon('trace', 'sm')}</button>
             <button type="button" data-gr="copy" title="Copy the plot as an image" aria-label="Copy as image">${icon('copy', 'sm')}</button>
             <button type="button" data-gr="png" title="Download the plot as a PNG" aria-label="Download as PNG">${icon('down', 'sm')}</button>
@@ -243,6 +245,8 @@ export class GraphView {
       else if (act === 'zout') this.zoomBy(1.25);
       else if (act === 'fit') this.fitView();
       else if (act === 'reset') this.resetView();
+      else if (act === 'zsqr') this.squareView();
+      else if (act === 'cntr') this.centerOnCursor();
       else if (act === 'trace') this.setTraceMode(!this.tracing);
       else if (act === 'fold') this._toggleTools(tool);
       else if (act === 'png') this.downloadPng();
@@ -884,6 +888,24 @@ export class GraphView {
   zoomBy(factor) {
     const v = this.view;
     this.view = zoomView(v, (v.xmin + v.xmax) / 2, (v.ymin + v.ymax) / 2, factor);
+    this.draw();
+  }
+
+  // ZSQR: the HP's square zoom, the y scale brought to the x scale about the window's centre.
+  squareView() {
+    const v = this.view, rect = this._canvas.getBoundingClientRect();
+    if (!(rect.width > 0 && rect.height > 0)) return;
+    const half = (v.xmax - v.xmin) * rect.height / rect.width / 2, cy = (v.ymin + v.ymax) / 2;
+    this.view = { ...v, ymin: cy - half, ymax: cy + half };
+    this.draw();
+  }
+
+  // CNTR: the window moved to put the cursor at its centre.
+  centerOnCursor() {
+    const p = this._cursorValue();
+    if (!p) { this._fail('CNTR needs a cursor: tap the plot or trace first'); return; }
+    const v = this.view;
+    this.view = panView(v, p.re - (v.xmin + v.xmax) / 2, p.im - (v.ymin + v.ymax) / 2);
     this.draw();
   }
 

@@ -2973,3 +2973,14 @@ setAngle('RAD');
     && /aria-pressed', String\(this\._areaFrom\?\.trace === this\._fcnTrace\(\)\?\.id\)\)/.test(gv),
     'plot AREA: the first bound belongs to the function it was marked on, so once that trace is removed, hidden or deselected the key shows unpressed and the next tap marks afresh instead of integrating another function from the old bound');
 }
+
+{
+  const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
+  assert(/<button type="button" data-gr="zsqr" title="Square the axes \(ZSQR\)" aria-label="Square the axes">/.test(gv)
+    && /<button type="button" data-gr="cntr" title="Centre on the cursor \(CNTR\)" aria-label="Centre on the cursor">/.test(gv)
+    && /else if \(act === 'zsqr'\) this\.squareView\(\);\n\s*else if \(act === 'cntr'\) this\.centerOnCursor\(\);/.test(gv)
+    && /const half = \(v\.xmax - v\.xmin\) \* rect\.height \/ rect\.width \/ 2, cy = \(v\.ymin \+ v\.ymax\) \/ 2;\n\s*this\.view = \{ \.\.\.v, ymin: cy - half, ymax: cy \+ half \};/.test(gv)
+    && /this\.view = panView\(v, p\.re - \(v\.xmin \+ v\.xmax\) \/ 2, p\.im - \(v\.ymin \+ v\.ymax\) \/ 2\);/.test(gv)
+    && /this\._fail\('CNTR needs a cursor: tap the plot or trace first'\)/.test(gv),
+    'plot tools: ZSQR brings the y scale to the x scale about the centre so a circle is round, and CNTR pans the window to put the cursor at its centre, as the HP\'s ZOOM keys do; without a cursor CNTR says so');
+}
