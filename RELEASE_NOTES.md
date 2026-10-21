@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.50 (2026-10-21)
+**Latest release:** v0.8.51 (2026-10-21)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.51 — 2026-10-21
+
+- Fixed: keys pressed on a row of the Variables, History or Catalog
+  drawer reached the stack: ↓ took level 1 into the command line, → swapped
+  levels 1 and 2 and ⌫ dropped a selected level. The arrow keys, Home and
+  End now move between the list's rows.
+- Added: Delete (or ⌫) on a variable in the Variables drawer purges it,
+  as PURGE does, with Undo; on a History entry it removes the entry.
+- Improved: Home and End in a menu, such as a stack level's, go to its
+  first and last item, as in any menu.
 
 ## v0.8.50 — 2026-10-21
 
