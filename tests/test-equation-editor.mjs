@@ -623,3 +623,18 @@ function replaceSelection(state, ast) {
   const refuses = ['{ 1 2 }', '"hi"', '« 1 + »', '[[ 1 2 ][ 3 4 ]]'].map(readsAsFormula);
   assert(takes.every(Boolean) && !refuses.some(Boolean), `EQW readsAsFormula takes numbers, expressions, names and units, not lists, strings, programs or matrices (${takes} / ${refuses})`);
 }
+
+{
+  const fit = (maxHeight, natural) => {
+    const saved = globalThis.getComputedStyle;
+    globalThis.getComputedStyle = () => ({ maxHeight, paddingLeft: '16px', paddingRight: '16px', paddingTop: '18px', paddingBottom: '10px' });
+    try { return EquationEditor.prototype._fitSize.call({ canvas: { clientWidth: 372, clientHeight: 258 } }, natural); } finally { globalThis.getComputedStyle = saved; }
+  };
+  const sizes = [
+    fit('240px', { base: 28, width: 40, height: 40 }), fit('none', { base: 28, width: 40, height: 40 }),
+    fit('none', { base: 28, width: 200, height: 60 }), fit('none', { base: 28, width: 700, height: 60 }),
+    fit('none', { base: 38, width: 40, height: 40 }),
+  ];
+  assert(sizes.join() === '28,44,42,28,60',
+    `EQW type fills a phone's grown canvas up to 1.6 times, in even steps, never below its size (BIG's 38 included), and stays put where the canvas is capped (${sizes})`);
+}

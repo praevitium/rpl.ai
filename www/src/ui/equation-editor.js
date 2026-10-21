@@ -1633,6 +1633,7 @@ const TAP_KEYS = Object.freeze([
   { face: '( )', label: '( )', title: 'Group (()' },
 ]);
 const SIZE = Object.freeze({ normal: 28, big: 38 });
+const FIT_MAX = 1.6;
 
 const SELECTION_TOOLS = Object.freeze([
   Object.freeze({ id: 'EVAL', label: 'Evaluate' }),
@@ -1792,6 +1793,7 @@ export class EquationEditor {
     this.strip = this.el.querySelector('.eqw-ins');
     this.strip.addEventListener('scroll', () => markScrollEdges(this.strip), { passive: true });
     new ResizeObserver(() => markScrollEdges(this.strip)).observe(this.strip);
+    new ResizeObserver(() => { if (this._natural && this._fitSize(this._natural) !== this._drawnSize) this._render(); }).observe(this.canvas);
     this.canvas.after(writerKeys(TAP_KEYS, (face) => this.pressFace(face)));
     this.state = emptyEquation();
     this.big = false;
@@ -2204,14 +2206,18 @@ export class EquationEditor {
   _render() {
     this.el.querySelector('.eqw-tip')?.remove();
     const target = this.state.target;
-    const drawn = eqwToSvg(this.state.root, {
-      size: this.big ? SIZE.big : SIZE.normal,
+    const opts = {
       caret: target.mode === 'insert' ? target.path.join('.') : null,
       boxed: target.mode === 'clear' ? target.path.join('.') : null,
       selected: target.mode === 'select' ? { row: target.row, from: target.from, to: target.to } : null,
       selectionAsCaret: !this._selecting,
       clipId: 'eqw-selection',
-    });
+    };
+    const base = this.big ? SIZE.big : SIZE.normal;
+    let drawn = eqwToSvg(this.state.root, { ...opts, size: base });
+    this._natural = { base, width: drawn.width, height: drawn.height };
+    this._drawnSize = this._fitSize(this._natural);
+    if (this._drawnSize !== base) drawn = eqwToSvg(this.state.root, { ...opts, size: this._drawnSize });
     this._rects = drawn.rects;
     let text = '';
     try { text = formatAlgebra(toAst(this.state.root)); } catch { text = ''; }
@@ -2224,6 +2230,17 @@ export class EquationEditor {
     }
     this.app?.appbar?.updateHistory();
     this._scheduleInsights();
+  }
+
+  // Where calc.css lets the canvas fill a phone (no max-height), the type grows to fill it too, up to FIT_MAX times, in
+  // even steps so it doesn't flicker a pixel at a time while typing.
+  _fitSize({ base, width, height }) {
+    const box = getComputedStyle(this.canvas);
+    if (box.maxHeight !== 'none') return base;
+    const w = this.canvas.clientWidth - parseFloat(box.paddingLeft) - parseFloat(box.paddingRight);
+    const h = this.canvas.clientHeight - parseFloat(box.paddingTop) - parseFloat(box.paddingBottom);
+    const size = Math.floor(base * Math.min(FIT_MAX, 0.92 * w / width, 0.92 * h / height) / 2) * 2;
+    return Math.max(base, size);
   }
 
   _svgOrigin(host = this.canvas) {
