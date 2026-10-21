@@ -492,7 +492,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   move beside the formula or matrix, so level 1 and the whole writer stay in
   view; a narrow screen keeps them under it. A landscape phone keeps them
   beside it with the keyboard down too, in minimal view or with the keypad
-  hidden, so the stack keeps another level; any window under 440 px tall,
+  hidden, so the stack keeps another level, and the matrix writer's keys
+  stay beside its grid with the full keypad on a phone 844 px wide or
+  more; any window under 440 px tall,
   an installed app on a 412 or 430 px tall phone in landscape included,
   also puts the writers' hints away. The command line keeps to two
   lines there, a long or edited program scrolling inside it, so the key
@@ -599,8 +601,12 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   text size, the button shortens (RAD · STD ·…) so the folder name, Ask and
   the writers' keys stay on screen.
 - A phone's back button closes the open menu, search, sheet, writer or
-  drawer first, then cancels an edit as the HP's ON does, and leaves the
-  app only when nothing is open.
+  drawer first, then cancels an edit and leaves a selected stack level as
+  the HP's ON does, and leaves the app only when nothing is open.
+- The TOOL menu holds the HP's TOOL key: `EDIT`, `VIEW`, `RCL`, `STO`,
+  `PURGE` and `CLEAR`, then `CASCMD` and `HELP`, so minimal view, which has
+  no keypad, reaches them from the soft keys. `VIEW` shows level 1 full
+  size, as a level's View does.
 - Where a phone's keyboard writes 1,5 for one and a half, turn on Decimal
   comma in Settings › Calculator, or the FM, key on the MODES menu (flag -51, the HP's
   fraction-mark setting): the command line then reads a comma beside a
