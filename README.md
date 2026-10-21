@@ -206,7 +206,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
   the HP: `-1. LN` gives `(0, 3.14159265359)`. The TRIG menu opens on the
   HP's HYP folder: SINH ASINH COSH ACOSH TANH ATANH, then EXPM and LNP1.
 - **Matrices.** `[[ 2 1 ][ 1 3 ]] DET` gives 5, `INV`, `EGV` and `LU` work
-  on it, and `→NUM` gives every entry its number. Entries can be
+  on it, and `→NUM` gives every entry its number. In exact mode an integer
+  matrix inverts to fractions, as on the HP: `[[ 1 2 ][ 3 4 ]] INV` gives
+  `[[ -2 1 ][ 3/2 -1/2 ]]`. Entries can be
   symbolic: `[[ X 1 ][ 2 Y ]] INV` is exact, and `/`, RREF, RANK, LU,
   CHARPOL, JORDAN and ABS work on such a matrix too; `EVAL` puts stored
   values into its entries, and SUBST, `|`, DERIV, ∫, EXPAND, SIMPLIFY,

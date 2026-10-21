@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.53 (2026-10-21)
+**Latest release:** v0.8.54 (2026-10-21)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.54 — 2026-10-21
+
+- Fixed: in exact mode, INV of an integer matrix gave decimals, where the
+  HP gives fractions, and refused a matrix of fractions outright:
+  `[[ 1 2 ][ 3 4 ]] INV` now gives `[[ -2 1 ][ 3/2 -1/2 ]]`, and INV twice
+  gives the matrix back. An array divided by such a matrix stays exact
+  too (`[ 5 10 ] [[ 2 1 ][ 1 3 ]] /` gives `[ 1 3 ]`, not `[ 1. 3. ]`). A
+  real entry, or approximate mode, keeps the decimal inverse.
+- Added: a stack level holding a decimal offers "To a fraction (→Q)" in
+  its menu, so .75 becomes '3/4', as the HP's →Q does.
+- Improved: a decimal's level menu no longer offers "To a number (→NUM)",
+  which leaves a decimal as it is; →Q takes its place.
 
 ## v0.8.53 — 2026-10-21
 
