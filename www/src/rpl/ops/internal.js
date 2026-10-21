@@ -1890,6 +1890,8 @@ export function _evalSymbolic(v, keeps = () => false, gather = true) {
   const calculated = integrated === folded ? folded : evalNode(integrated);
   const settled = _casSpecialValues(calculated);
   const reduced = settled === calculated ? calculated : evalNode(settled);
+  const infinite = testUserFlag(-22) && _infiniteTop(reduced);
+  if (infinite) return infinite;
   _checkInfinite(reduced);
   const value = _astToRplValue(reduced);
   return approx && isInteger(value) ? Real(value.value.toString()) : value;
@@ -1964,6 +1966,17 @@ function _dnDerivative(orders, name, args) {
   } catch {
     return null;
   }
+}
+
+// With flag -22 set, a result that is itself x/0 or 0^-n is ±MAXR, as on the stack. Deeper in an expression, such as
+// SIN(1/0), it stays an error rather than a wrong value.
+function _infiniteTop(ast) {
+  const negated = ast.kind === 'neg';
+  const { op, l, r } = negated ? ast.arg : ast;
+  const num = (a) => a?.kind === 'num';
+  if (op === '/' && num(l) && l.value !== 0 && num(r) && r.value === 0) return _infiniteResult(negated !== l.value < 0);
+  if (op === '^' && num(l) && l.value === 0 && ((num(r) && r.value < 0) || (r?.kind === 'neg' && num(r.arg)))) return _infiniteResult(negated);
+  return null;
 }
 
 // A division by zero left in the result raises the HP's error, not a 1/0 to keep.

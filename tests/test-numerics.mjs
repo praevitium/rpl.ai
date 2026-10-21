@@ -294,10 +294,13 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   const MAXR = '9.99999999999E499';
   for (const [line, want] of [['1 0 /', MAXR], ['-2.5 0 /', `-${MAXR}`], ['1/3 0 /', MAXR], ['0 INV', MAXR], ['0. LN', `-${MAXR}`],
     ['0 LOG', `-${MAXR}`], ['(0.,0.) LN', `-${MAXR}`], ['-1 LNP1', `-${MAXR}`], ['1. ATANH', MAXR], ['-1. ATANH', `-${MAXR}`],
-    ['DEG 90. TAN', MAXR], ['DEG -90. TAN', `-${MAXR}`], ['{ 0 1 } LN', `{ -${MAXR} 0 }`]]) {
+    ['DEG 90. TAN', MAXR], ['DEG -90. TAN', `-${MAXR}`], ['{ 0 1 } LN', `{ -${MAXR} 0 }`],
+    ["'1/0' EVAL", MAXR], ["'-(1/0)' EVAL", `-${MAXR}`], ["'0^-2' EVAL", MAXR], ["'1/0' →NUM", MAXR]]) {
     assert(shown(line) === want, `-22 SF ${line} gives ${want} (got ${shown(line)})`);
   }
   assertThrows(() => runLine('-22 SF 0 0 /'), /^Undefined result$/, 'with -22 set, 0 0 / is still an Undefined result');
+  assertThrows(() => runLine("-22 SF 'SIN(1/0)' EVAL"), /^Infinite result$/, 'with -22 set, a division by zero deep in an expression stays an error rather than a wrong value');
+  runLine('-22 CF');
   runLine('-22 CF');
   assertThrows(() => runLine('0 LN'), /^Infinite result$/, 'with -22 clear, 0 LN is still an Infinite result');
 }
