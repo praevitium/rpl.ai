@@ -3090,7 +3090,7 @@ setAngle('RAD');
 
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/navigator\.userActivation\?\.isActive === false\) this\.toast\(`Choose \$\{what\} to receive`, \{ key: 'receive', action: 'Choose', onAction: pick, timeout: Infinity, transient: true \}\)/.test(appSrc),
+  assert(/navigator\.userActivation\?\.isActive === false\) this\.toast\(`Choose \$\{what\} to receive`, \{ key: 'receive', action: 'Choose', onAction: pick, timeout: Infinity, transient: true, essential: true \}\)/.test(appSrc),
     'a receive with no press to open a picker asks for a tap with a note that waits for it');
 }
 
@@ -3265,6 +3265,20 @@ setAngle('RAD');
     && /_storeLevel\(level, name\) \{[\s\S]*?const value = this\.stack\.peek\(level\);\s*dropLevel\(this\.stack, level\);\s*varStore\(name, value\);[\s\S]*?this\.undoToast\(`Stored level \$\{level\} in \$\{name\}`\);/.test(appSrc)
     && css.includes('.mb-keys .sk.var.drag-over { box-shadow: inset 0 0 0 2px var(--accent); }'),
     "a level a finger drops on a variable's soft key is stored there and leaves the stack, as ↰ and the key store level 1, with Undo; only variable keys light up");
+}
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  const { normalizeUiPrefs } = await import('../www/src/ui/ui-prefs.js');
+  const essential = (key) => new RegExp(`key: '${key}'[^\\n]*essential: true`).test(appSrc);
+  assert(normalizeUiPrefs({}).notes === true && normalizeUiPrefs({ notes: false }).notes === false && normalizeUiPrefs({ notes: 'no' }).notes === true
+    && /toast\(message, opts = \{\}\) \{\s*if \(this\.prefs\.notes === false && !opts\.essential\) return;\s*this\.toasts\.show\(message, opts\);/.test(appSrc)
+    && appSrc.includes("notifyError(message) { this.toasts.show(message, { error: true, timeout: 5200 }); }")
+    && essential('alarm') && essential('receive') && /key: 'tutor', timeout: Infinity, essential: true,/.test(appSrc)
+    && /'A new version of rpl\.ai is ready', \{[\s\S]{0,200}essential: true,/.test(appSrc)
+    && sheetsSrc.includes("${tgl('notes', app.prefs.notes, 'Pop-up notes')}") && sheetsSrc.includes("else if (setting === 'notes') app.setPrefs({ notes: on });"),
+    'Settings turns pop-up notes off: Undo notes, hints and confirmations go quiet, while errors, alarms, a file to choose, the tutor and a new version still show');
 }
 
 {

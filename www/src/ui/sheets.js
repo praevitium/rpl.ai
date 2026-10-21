@@ -291,6 +291,7 @@ export class Sheets {
         <div class="set"><b>Pretty math</b><span>Show expressions, matrices and lists on the stack in textbook form.</span>${tgl('textbook', !!calcState.textbookMode, 'Pretty math')}</div>
         <div class="set"><b>Decimal comma</b><span>Show 1,5 and read a typed comma as the decimal mark, with ; between the parts of (1,5; 2). The HP's FM, setting, flag -51.</span>${tgl('fractionComma', testUserFlag(-51), 'Decimal comma')}</div>
         <div class="set"><b>Soft keys in Minimal view</b><span>Keep the soft-menu row visible for menu work.</span>${tgl('minimalMenu', app.prefs.minimalMenu, 'Soft keys in Minimal view')}</div>
+        <div class="set"><b>Pop-up notes</b><span>Notes after an action, with their Undo, and hints. Errors and alarms always show; Undo stays on its key.</span>${tgl('notes', app.prefs.notes, 'Pop-up notes')}</div>
         <div class="set"><b>Keyboard-shortcut hints</b><span>Show each key's physical-keyboard shortcut on the keypad.</span>${tgl('hints', app.prefs.hints, 'Keyboard-shortcut hints')}</div>${typeof navigator.vibrate === 'function' && matchMedia('(pointer: coarse)').matches ? `
         <div class="set"><b>Vibrate on key presses</b><span>A short buzz when a finger presses a key, one more when a held finger opens a menu or clears the line, and two on an error, as the HP beeps (flag -56 set stops those), where the phone supports it.</span>${tgl('haptics', app.prefs.haptics, 'Vibrate on key presses')}</div>` : ''}`;
     }
@@ -468,6 +469,7 @@ export class Sheets {
     else if (setting === 'minimalMenu') app.setMinimalMenu(on);
     else if (setting === 'hints') { app.setPrefs({ hints: on }); app.keypad.update(); }
     else if (setting === 'haptics') app.setPrefs({ haptics: on });
+    else if (setting === 'notes') app.setPrefs({ notes: on });
   }
 
   resetEverything() {

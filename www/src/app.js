@@ -282,7 +282,7 @@ class App {
       navigator.vibrate?.([200, 100, 200, 100, 200]);
     }
     const what = alarm.message || `the alarm set for ${new Date(alarm.due).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
-    this.toast(`${fresh ? 'Alarm' : 'Past due'}: ${what}`, { action: 'ACK', onAction: acknowledgeOldest, key: 'alarm', timeout: Infinity, transient: true });
+    this.toast(`${fresh ? 'Alarm' : 'Past due'}: ${what}`, { action: 'ACK', onAction: acknowledgeOldest, key: 'alarm', timeout: Infinity, transient: true, essential: true });
   }
 
   _openShortcut() {
@@ -569,7 +569,11 @@ class App {
     this.askAssistant(`I got this error on the calculator: "${message}".${line ? ` The command line held: ${line}.` : ''} ${levels ? `On the stack, ${levels}.` : 'The stack is empty.'} What went wrong, and how do I fix it?`);
   }
 
-  toast(message, opts) { this.toasts.show(message, opts); }
+  // With pop-up notes off, only what needs an answer still shows: an alarm, a file to choose, the tutor, a new version.
+  toast(message, opts = {}) {
+    if (this.prefs.notes === false && !opts.essential) return;
+    this.toasts.show(message, opts);
+  }
 
   // A program that prints line by line gets one note for the run, counting every line, after it has finished.
   _notePrinted(count) {
@@ -597,7 +601,7 @@ class App {
   _receiveFiles(pairs) {
     const pick = () => pickFiles(UPLOAD_ACCEPT, (files) => this.storeFiles(files, pairs), !pairs || pairs.length > 1);
     const what = !pairs ? 'the files' : pairs.length === 1 ? `the file for ${pairs[0].to}` : pairs.map(({ from }) => from).join(', ');
-    if (navigator.userActivation?.isActive === false) this.toast(`Choose ${what} to receive`, { key: 'receive', action: 'Choose', onAction: pick, timeout: Infinity, transient: true });
+    if (navigator.userActivation?.isActive === false) this.toast(`Choose ${what} to receive`, { key: 'receive', action: 'Choose', onAction: pick, timeout: Infinity, transient: true, essential: true });
     else pick();
   }
 
@@ -2540,7 +2544,7 @@ class App {
     if (!this.drawers.hidesInput()) return;
     this.drawers.close();
     this.toast(text, {
-      action, key: 'tutor', timeout: Infinity,
+      action, key: 'tutor', timeout: Infinity, essential: true,
       onAction: () => { this.drawers.open('assistant'); then?.(); },
     });
   }
@@ -2704,6 +2708,7 @@ function installOfflineCache(app) {
       app.toast('A new version of rpl.ai is ready', {
         action: 'Reload',
         onAction: () => { reloadRequested = true; reg.waiting?.postMessage({ type: 'activate-update' }); },
+        essential: true,
       });
     };
     announceWaitingUpdate();

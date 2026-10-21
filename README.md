@@ -556,7 +556,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   In a short plot drawer, in landscape or with the keyboard up, the drawer
   scrolls, so the field you type in stays in view.
 - Settings › Appearance sets the stack's text size, from Small to Larger,
-  pretty math included. On Android it can also make the keys vibrate briefly
+  pretty math included. Its Pop-up notes switch silences the notes that
+  follow an action (with their Undo) and the hints; errors and alarms still
+  show, and Undo stays on its key and in the menus. On Android it can also make the keys vibrate briefly
   as a finger presses them, once more as a held finger opens a menu or
   clears the line or a swipe passes the point where letting go drops a
   level or puts a note away or turns the soft keys' page, and twice on an error, as the HP beeps (set flag -56,
