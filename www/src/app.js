@@ -175,6 +175,10 @@ class App {
       if (this.prefs.minimal) this.setMinimalMenu(true);
     });
     setOpenHook(({ family, folder, drawer }) => {
+      if (drawer === 'catalog' && family) {
+        this.drawers.showFamily(family);
+        return;
+      }
       if (drawer) {
         this.drawers.open(drawer);
         return;

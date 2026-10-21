@@ -3463,3 +3463,11 @@ setAngle('RAD');
     && !css.includes('  .vr .acts { grid-column: 1 / -1; }'),
     "Variables drawer: a row is its name and value with one ⋯ (Edit or Open, Rename, Download, Delete), the folder tools sit in one ⋯ by the filter, and Backups fold away; a phone showed four buttons under every name and five more under the list");
 }
+
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/showFamily\(id\) \{\n    Object\.assign\(this\.cat, \{ q: '', ref: null, family: id \}\);/.test(drawerSrc)
+    && /if \(drawer === 'catalog' && family\) \{\n        this\.drawers\.showFamily\(family\);/.test(appSrc),
+    'CASCMD and HELP open the Catalog on its CAS list afresh: on a phone they showed the reference page (SIN) or search the Catalog was last left on');
+}

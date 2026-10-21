@@ -2085,8 +2085,8 @@ clearAllUserFlags();
   const opened = [];
   setOpenHook((target) => opened.push(JSON.stringify(target)));
   runLine('ALGB CASCMD MODULAR TVM MATHS CONSTANTS SOLVER');
-  assert(opened.join(' ') === '{"family":"CAS","folder":"ALG"} {"drawer":"catalog"} {"family":"INTEGER","folder":"MODUL"} {"family":"TVM"} {"family":"CAS"} {"drawer":"chars"} {"family":"CAS","folder":"S.SLV"}',
-    'ALGB opens the CAS ALG folder, CASCMD the Catalog, MODULAR the INTEGER MODUL folder, TVM the TVM menu, MATHS the CAS menu, CONSTANTS the Characters drawer and SOLVER the S.SLV folder');
+  assert(opened.join(' ') === '{"family":"CAS","folder":"ALG"} {"drawer":"catalog","family":"CAS"} {"family":"INTEGER","folder":"MODUL"} {"family":"TVM"} {"family":"CAS"} {"drawer":"chars"} {"family":"CAS","folder":"S.SLV"}',
+    'ALGB opens the CAS ALG folder, CASCMD the Catalog on its CAS family, MODULAR the INTEGER MODUL folder, TVM the TVM menu, MATHS the CAS menu, CONSTANTS the Characters drawer and SOLVER the S.SLV folder');
   setOpenHook(null);
 }
 

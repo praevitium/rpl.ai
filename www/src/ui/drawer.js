@@ -334,6 +334,14 @@ export class Drawers {
     else this._renderBody();
   }
 
+  // As the HP's CASCMD and HELP lists do, a family's list opens afresh, not on whatever page the Catalog last showed.
+  showFamily(id) {
+    Object.assign(this.cat, { q: '', ref: null, family: id });
+    if (this.current !== 'catalog') this.open('catalog');
+    else this._renderBody();
+    this._body().scrollTop = 0;
+  }
+
   _renderRail() {
     this.rail.innerHTML = DRAWERS.map((d) => `<button type="button" data-drawer="${d.id}" aria-pressed="${this.current === d.id}" title="${escapeHtml(d.label)}">${icon(d.icon)}<span>${escapeHtml(d.short ?? d.label)}</span>${d.id === 'assistant' ? '<i class="dot off" aria-hidden="true"></i>' : ''}</button>`).join('');
   }

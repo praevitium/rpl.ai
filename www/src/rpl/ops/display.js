@@ -49,7 +49,8 @@ export function setOpenHook(fn) {
 }
 
 // The HP's CAS menu commands, and TVM, open the app's menu or folder holding the same commands; CASCMD and HELP, the
-// HP's lists of CAS commands with their examples, open the Catalog, and CONSTANTS the Characters drawer, constants first.
+// HP's lists of CAS commands with their examples, open the Catalog on its CAS family, and CONSTANTS the Characters drawer,
+// constants first.
 const MENU_COMMANDS = Object.freeze({
   ALGB: { family: 'CAS', folder: 'ALG' },
   DIFF: { family: 'CAS', folder: 'CALC' },
@@ -63,8 +64,8 @@ const MENU_COMMANDS = Object.freeze({
   MATR: { family: 'MATRIX' },
   TESTS: { family: 'LOGIC' },
   TVM: { family: 'TVM' },
-  CASCMD: { drawer: 'catalog' },
-  HELP: { drawer: 'catalog' },
+  CASCMD: { drawer: 'catalog', family: 'CAS' },
+  HELP: { drawer: 'catalog', family: 'CAS' },
   MATHS: { family: 'CAS' },
   CONSTANTS: { drawer: 'chars' },
   SOLVER: { family: 'CAS', folder: 'S.SLV' },
