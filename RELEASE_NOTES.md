@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.45 (2026-10-21)
+**Latest release:** v0.8.46 (2026-10-21)
 
 ---
 
@@ -20,6 +20,25 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.46 — 2026-10-21
+
+- Fixed: Esc in the drawer, with nothing in its search box to clear,
+  cleared the command line, out of sight behind a drawer over the stack.
+  Esc now leaves the drawer first: it closes a drawer over the stack, or
+  takes the keyboard back to the command line from one docked beside it,
+  and the line keeps what you typed.
+- Fixed: closing the drawer with ⌘\ (Ctrl+\) or its close button left the
+  keyboard on nothing when it had been in the drawer. The command line
+  gets it back, as it does when a sheet closes; on a touch screen, where
+  that would raise the keyboard, nothing changes.
+- Added: Space on a selected stack level shows it full size, as the
+  interactive stack's VIEW key does and as Quick Look does on a Mac. With
+  text on the command line Space still types a space. The level's menu and
+  the VIEW soft key name the key.
+- Improved: a right click on a stack level opens its menu, as holding a
+  finger on it does and as a right click on a key already did. With text
+  selected in the stack, the browser's own menu still comes up to copy it.
 
 ## v0.8.45 — 2026-10-21
 

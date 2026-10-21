@@ -277,7 +277,8 @@ RPL puts the numbers first and the operation last. Each value goes on the
   the menu bar while a writer is open and it takes the writer's place until
   you pick EQW or MTRW again.
 - **The stack.** Click a level to select it; its actions appear on the row
-  and in the menu bar. Double-click, or double-tap on a phone, edits it in the right writer. Drag rows
+  and in the menu bar. Double-click, or double-tap on a phone, edits it in the right writer. Right-click
+  a level, or hold a finger on it, for its menu. Drag rows
   to reorder them. A program opens for editing laid out over lines, each
   structure (IF, CASE, FOR, WHILE and the rest) starting a line and nested
   programs indented, with room for it to show.
@@ -295,7 +296,7 @@ On Windows and Linux, ⌘ is Ctrl and ⌥ is Alt.
 | `↑` · `↓` on an empty line | Select level 1 · edit level 1 |
 | Enter · `→` on an empty line | DUP · SWAP |
 | `⌘C` on an empty line | Copy level 1, ready to paste into a spreadsheet (text you have selected copies as text) |
-| With a level selected | `↑` `↓` move the selection · `⌘↑` `⌘↓` move the level · Enter edits · ⌫ drops · `⌘C` copies · `⌘D` picks |
+| With a level selected | `↑` `↓` move the selection · `⌘↑` `⌘↓` move the level · Enter edits · Space shows it full size (VIEW) · ⌫ drops · `⌘C` copies · `⌘D` picks |
 | On a variable in the Variables drawer | Enter runs it or puts it on the stack · ⇧Enter stores level 1 in it · ⌥Enter recalls it, as the HP's shifted VAR keys do |
 | `⌘Z` · `⇧⌘Z` | Undo · redo (text when the line has text, otherwise the stack) |
 | `⌘\` · `⌘;` · `⇧⌘F` | Tools drawer · keypad · Minimal view |
@@ -303,7 +304,7 @@ On Windows and Linux, ⌘ is Ctrl and ⌥ is Alt.
 | Tab | Complete a command or variable name; next box or next cell in the writers |
 | `↑` · `↓` with completions showing | Put the next or previous completion in the line, so Enter runs it; Esc puts back what you typed |
 | Enter in the matrix writer | Stores the cell and moves on, as the HP's ENTER; on a cell you haven't typed in it pushes the matrix, so `1` Enter `2` Enter Enter enters `[[ 1 2 ]]` · ⇧Enter next row · `⌘Enter` pushes the matrix from any cell |
-| Esc | Close, deselect, dismiss, or cancel with Undo; in a drawer docked beside the stack, back to the command line |
+| Esc | Close, deselect, dismiss, or cancel with Undo; in the drawer, out of it to the command line, closing a drawer over the stack and leaving the line as it was |
 
 Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 
