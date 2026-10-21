@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.23 (2026-10-21)
+**Latest release:** v0.8.24 (2026-10-21)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.24 — 2026-10-21
+
+- New: Settings › Appearance has a Pop-up notes switch. Turned off, the
+  notes that follow an action, their Undo buttons and the hints stay
+  quiet; errors, alarms, a file to choose, the tutor and the new-version
+  notice still show, and Undo stays on its key and in the menus.
+- Changed: on a phone the graph fills the plot view, with the plot types
+  peeking below it, and the types, traces and window scroll up under it.
+  The canvas went from about a quarter of a 390 by 844 phone to half of
+  it.
 
 ## v0.8.23 — 2026-10-21
 
