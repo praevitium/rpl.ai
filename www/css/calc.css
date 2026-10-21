@@ -2149,6 +2149,10 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   .pl-tools button { width: 40px; height: 40px; }
   .pl-push { height: 40px; }
   .gr-add input, .gr-expr, .pl-range input { height: 40px; }
+  /* The native show/hide box is 16 px, so a finger gets a 40 px one drawn in the trace's colour. */
+  .gr-show { appearance: none; width: 40px; height: 40px; margin: 0; display: grid; place-content: center; }
+  .gr-show::before { content: ''; width: 18px; height: 18px; box-sizing: border-box; border: 2px solid currentColor; border-radius: 4px; }
+  .gr-show:checked::before { background: currentColor; box-shadow: inset 0 0 0 3px var(--panel); }
   .pl-tools .pl-fold { display: grid; grid-column: 1 / -1; width: auto; }
   .pl-tools .pl-fold[aria-expanded="true"] { color: var(--accent); background: var(--accent-dim); }
   .pl-tools.folded { grid-template-columns: 40px; }

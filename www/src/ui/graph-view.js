@@ -1109,7 +1109,7 @@ export class GraphView {
       <div class="gr-trace ${t.enabled ? '' : 'off'}${t.id === this._selectedId ? ' selected' : ''}"
            data-trace="${t.id}">
         <input type="checkbox" class="gr-show" data-trace="${t.id}" data-act="toggle" ${t.enabled ? 'checked' : ''}
-               style="accent-color:${t.color}" title="Show or hide this trace" aria-label="Show ${escapeHtml(t.label || t.expr || t.kind)}">
+               style="accent-color:${t.color};color:${t.color}" title="Show or hide this trace" aria-label="Show ${escapeHtml(t.label || t.expr || t.kind)}">
         ${body}
         <button type="button" class="mini" data-trace="${t.id}" data-act="push" title="Push it onto the stack" aria-label="Push onto the stack">${icon('enter', 'sm')}</button>
         <button type="button" class="mini" data-trace="${t.id}" data-act="remove" title="Remove" aria-label="Remove">${icon('x', 'sm')}</button>

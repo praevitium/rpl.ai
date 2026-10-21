@@ -2948,3 +2948,11 @@ setAngle('RAD');
   assert(/axisTicks\(view\.xmin, view\.xmax, axes\.x, axes\.tick\?\.\[0\], width \/ 40\)/.test(gv),
     'plot at 280 px: the x axis asks for a label per 40 px, so its labels no longer collide');
 }
+
+{
+  const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/\n  \.gr-show \{ appearance: none; width: 40px; height: 40px; margin: 0; display: grid; place-content: center; \}/.test(css)
+    && /\.gr-show:checked::before \{ background: currentColor;/.test(css) && /style="accent-color:\$\{t\.color\};color:\$\{t\.color\}"/.test(gv),
+    'plot trace rows on touch: the show/hide box is a 40 px target drawn in the trace\'s colour, where the native 16 px box was the drawer\'s one small control');
+}
