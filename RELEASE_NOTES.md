@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.54 (2026-10-21)
+**Latest release:** v0.8.55 (2026-10-21)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.55 — 2026-10-21
+
+- Fixed: in exact mode, RREF of an integer matrix gave decimals, where the
+  HP keeps integers and fractions: `[[ 2 1 5 ][ 1 3 10 ]] RREF` now gives
+  `[[ 1 0 1 ][ 0 1 3 ]]`. RREF and INV share one exact row reduction; a
+  real entry, or approximate mode, keeps the decimal one.
+- Added: a matrix level's menu offers "Row reduce (RREF)" beside
+  Transpose, square or not.
+- Improved: the interactive stack's soft keys show →Q on a decimal, where
+  →NUM left it as it was, as the level's menu does.
 
 ## v0.8.54 — 2026-10-21
 
