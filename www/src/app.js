@@ -2533,6 +2533,7 @@ class App {
       case 'eqw.group': this.equationEditor.pressFace('( )'); return true;
       case 'eqw.next': this.equationEditor.pressFace('▶'); return true;
       case 'eqw.extend': this.equationEditor.pressFace(arg < 0 ? '⇧◀' : '⇧▶'); return true;
+      case 'eqw.selectAll': this.equationEditor.pressFace('RS▲'); return true;
       case 'menu.prev': this.prevMenuPage(); return true;
       case 'menu.next': this.nextMenuPage(); return true;
       case 'softkey.press': this.pressSoftKey(arg); return true;

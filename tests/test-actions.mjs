@@ -76,6 +76,8 @@ import {
     'findBinding: Ctrl or Cmd+C on an empty line copies level 1, and with text on the line it is left to the editor');
   assert(findBinding('Mod+Enter', ['matrix', 'global'])?.action === 'writer.commit',
     'findBinding: Ctrl or Cmd+Enter in the matrix writer pushes the matrix, listed with the writer\'s other shortcuts');
+  assert(findBinding('Mod+A', ['equation', 'global'])?.action === 'eqw.selectAll' && findBinding('Mod+A', ['line', 'global']) === null,
+    'findBinding: Ctrl or Cmd+A in the equation writer selects the whole formula, where it selected the whole page for Ctrl+C to copy; on the command line it is left to the editor');
   assert(findBinding('Space', ['selection', 'empty', 'global'])?.action === 'level.view' && findBinding('Space', ['empty', 'global']) === null,
     'findBinding: Space on a selected level shows it full size, as the interactive stack\'s VIEW does; with nothing selected it is not a shortcut');
 }
