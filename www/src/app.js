@@ -80,6 +80,7 @@ const TVM_VARIABLES = ['N', 'I%YR', 'PV', 'PMT', 'FV', 'PYR'];
 const SIGMA_DATA_KEYS = ['Σ+', 'Σ-', 'CLΣ', 'STOΣ'];
 const ALARM_FRESH_MS = 60000;
 const ALARM_WAIT_MAX_MS = 3600000;
+const BEEP_BUZZ_MAX_S = 5;
 // The mode commands whose keys mark the mode in force, as the HP's DEG■ and HEX■ do: [state field, value].
 const MODE_KEYS = Object.freeze({
   DEG: ['angle', 'DEG'], RAD: ['angle', 'RAD'], GRAD: ['angle', 'GRD'], GRD: ['angle', 'GRD'],
@@ -199,7 +200,7 @@ class App {
       set: (size) => { this.setPrefs({ stackSize: size }); setTimeout(() => { this._applyPrefs(); this.renderAll(); }); },
     });
     setTransferHooks({ send: (files) => this._sendFiles(files), receive: (pairs) => this._receiveFiles(pairs), note: (text) => this.toast(text) });
-    setBeepHook(beep);
+    setBeepHook((hz, seconds) => this._buzzBeep(beep(hz, seconds)));
     setVersion(VERSION, DATE);
     setConlibHook(() => this.showConstants());
     setKeyHook((code, user) => setTimeout(() => this.evalKey(code, user)));
@@ -2598,6 +2599,11 @@ class App {
   // A held finger that opens a menu, starts a drag or clears the line says so, as a key does on its press.
   buzzHold() {
     if (this.prefs.haptics && typeof navigator.vibrate === 'function') navigator.vibrate(20);
+  }
+
+  // With key vibration on, BEEP buzzes as long as its tones play, so a phone on silent still gives a program's signal.
+  _buzzBeep(seconds) {
+    if (this.prefs.haptics && typeof navigator.vibrate === 'function') navigator.vibrate(Math.round(Math.min(seconds, BEEP_BUZZ_MAX_S) * 1000));
   }
 
   _buzzError() {

@@ -1350,7 +1350,7 @@ setAngle('RAD');
    guard, or rewires the graph/envelope.
    ================================================================ */
 {
-  const { errorBeep, keyClick } = await import('../www/src/ui/beep.js');
+  const { errorBeep, keyClick, beep } = await import('../www/src/ui/beep.js');
   const { setUserFlag, clearUserFlag, testUserFlag: flagOn } = await import('../www/src/rpl/state.js');
 
   // No AudioContext in scope yet → silent no-op, never throws, returns
@@ -1450,6 +1450,10 @@ setAngle('RAD');
     if (!was) clearUserFlag(-56);
     assert(ctx.oscs.map((o) => o.frequency.value).join(',') === '2000' && ctx.gains.at(-1).gain.events[1][1] === 0.05,
       'errorBeep: flag -56 silences it as it does BEEP, where Settings\' Beep switch left errors sounding; a key click ticks quietly whatever the flag');
+
+    const first = beep(440, 0.5), tune = beep(880, 0.3);
+    assert(Math.abs(first - 0.5) < 1e-9 && Math.abs(tune - 0.8) < 1e-9,
+      'beep: returns how long the queued tones play from now, so BEEP\'s buzz lasts a whole tune');
   } finally {
     delete globalThis.AudioContext;
   }
@@ -1773,6 +1777,9 @@ setAngle('RAD');
   assert(/if \(!this\.prefs\.keepAwake \|\| this\._offScreen \|\|/.test(appSrc)
     && /this\._offScreen = off;\n    this\.keepAwake\(\);/.test(appSrc) && /this\._offScreen = null;\n      this\.keepAwake\(\);/.test(appSrc),
     'Settings: Keep the screen on lets go while OFF\'s dark screen shows and takes the lock again as a tap wakes the calculator (the phone stayed lit on the off screen)');
+  assert(/setBeepHook\(\(hz, seconds\) => this\._buzzBeep\(beep\(hz, seconds\)\)\);/.test(appSrc)
+    && /_buzzBeep\(seconds\) \{\n    if \(this\.prefs\.haptics && typeof navigator\.vibrate === 'function'\) navigator\.vibrate\(Math\.round\(Math\.min\(seconds, BEEP_BUZZ_MAX_S\) \* 1000\)\);/.test(appSrc),
+    'BEEP: with key vibration on, the phone buzzes as long as the queued tones play, up to 5 s, so a phone on silent still gives a program\'s signal (flag -56 stops BEEP before it reaches the hook)');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/@media \(max-height: 400px\) \{\s*:root\[data-keyboard\] \.dw-tabs, :root\[data-keyboard\] \.cb-header \{ display: none; \}\s*\/\*[^*]*\*\/\s*:root\[data-keyboard\] \.app:not\(\.plot-focus\) \.dw-title \{ display: flex; \}/.test(css),
     'drawers: typing on a short screen, a drawer whose tabs step aside names itself again, where its row held only its buttons');
@@ -2778,7 +2785,7 @@ setAngle('RAD');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const beepSrc = readFileSync(new URL('../www/src/ui/beep.js', import.meta.url), 'utf8');
   const displaySrc = readFileSync(new URL('../www/src/rpl/ops/display.js', import.meta.url), 'utf8');
-  assert(/import \{ beep, alarmBeep, keyClick \} from '\.\/ui\/beep\.js';/.test(appSrc) && /\n    setBeepHook\(beep\);\n/.test(appSrc)
+  assert(/import \{ beep, alarmBeep, keyClick \} from '\.\/ui\/beep\.js';/.test(appSrc) && /\n    setBeepHook\(\(hz, seconds\) => this\._buzzBeep\(beep\(hz, seconds\)\)\);\n/.test(appSrc)
     && /export function beep\(hz, seconds\) \{[\s\S]*?const at = Math\.max\(ctx\.currentTime, _queueEnd\);\s*_queueEnd = at \+ seconds;\s*play\(hz, seconds, at\);/.test(beepSrc)
     && /export function errorBeep\(\) \{\s*if \(!testUserFlag\(-56\)\) play\(1000, 0\.125\);/.test(beepSrc)
     && /register\('BEEP', \(s\) => \{[\s\S]*?testUserFlag\(-56\) \|\| inScratchState\(\)\) return;\s*_beepHook\?\.\(freq, dur\);[\s\S]*?categoryOrder: 29/.test(displaySrc),

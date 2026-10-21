@@ -47,12 +47,14 @@ export function keyClick() {
 }
 
 // BEEP's tones play one after another, as the HP's do while its program waits for each; the program here runs on.
+// Returns how long, in seconds, the queued tones play from now.
 export function beep(hz, seconds) {
   const ctx = getCtx();
-  if (!ctx) return;
+  if (!ctx) return seconds;
   const at = Math.max(ctx.currentTime, _queueEnd);
   _queueEnd = at + seconds;
   play(hz, seconds, at);
+  return _queueEnd - ctx.currentTime;
 }
 
 export function alarmBeep() {
