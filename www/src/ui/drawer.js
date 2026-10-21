@@ -292,10 +292,13 @@ export class Drawers {
   close() {
     if (!this.current) return;
     const leaving = this.current;
+    // The keyboard it had goes back to the command line rather than to nothing; a touch screen's would raise its keyboard.
+    const hadFocus = this.el.contains(document.activeElement) && !globalThis.matchMedia?.('(pointer: coarse)').matches;
     this.current = null;
     this.app.setPrefs({ drawer: null });
     this.render();
     if (leaving === 'plot') this.app.setPlotFocus(false);
+    if (hadFocus) this.app.focusInput();
   }
 
   toggle(id = null) {

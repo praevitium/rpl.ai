@@ -2856,6 +2856,8 @@ setAngle('RAD');
     'Variables: a row\'s tooltip reads as its VAR soft key\'s does (run it or put it on the stack, store, recall), with the drawer\'s keys, where it said only "click to put on the stack"');
   assert(/if \(this\._drawerCoversStack\(\)\) \{ this\.drawers\.close\(\); return true; \}\s*\/\/[^\n]*\n\s*if \(document\.activeElement\?\.closest\?\.\('#drawer'\)\) this\.focusInput\(\);\s*return true;/.test(appSrc),
     'Esc in a drawer docked beside the stack takes the keyboard back to the command line and leaves the drawer open, where it did nothing; a drawer over the stack still closes');
+  assert(/const hadFocus = this\.el\.contains\(document\.activeElement\) && !globalThis\.matchMedia\?\.\('\(pointer: coarse\)'\)\.matches;[\s\S]{0,200}if \(hadFocus\) this\.app\.focusInput\(\);/.test(drawerSrc),
+    'drawer: closing it with the keyboard inside, by Ctrl+\\ or its close button, hands the keyboard to the command line where it was left on nothing; not on a touch screen, whose keyboard it would raise');
   assert(/case 'level\.copy':\s*\/\/[^\n]*\n\s*if \(this\.selection == null && \(!this\.stack\.depth \|\| !window\.getSelection\(\)\?\.isCollapsed\)\) return false;\s*this\.levelAction\('copy', this\.selection \?\? 1\); return true;/.test(appSrc),
     'Ctrl or Cmd+C with no level selected copies level 1, ready to paste into a spreadsheet, unless text is selected for the browser to copy or the stack is empty');
 }
