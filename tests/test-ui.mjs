@@ -3472,3 +3472,11 @@ setAngle('RAD');
     && /if \(from\) this\._ensureReference\(\)\.then\(\(\) => this\._scrollFamilyTo\(id, from\)\);/.test(drawerSrc),
     'CASCMD and HELP open the Catalog on its CAS list afresh (on a phone they showed the reference page or search the Catalog was last left on), and CASCMD scrolls it to the command a string in level 1 names once the descriptions are in');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  assert(css.includes('.cat-crumb { display: flex; align-items: center; gap: 6px; padding: 2px 8px 8px; position: sticky; top: 0; z-index: 1; background: var(--panel); }')
+    && drawerSrc.includes("const crumb = this._body().querySelector('.cat-crumb')?.offsetHeight ?? 0;"),
+    'a Catalog family keeps its name and back button in sight down a long list (the CAS family has 121 commands), and CASCMD\'s start lands under it, not behind it');
+}

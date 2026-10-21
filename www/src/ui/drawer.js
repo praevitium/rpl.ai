@@ -349,7 +349,8 @@ export class Drawers {
     const key = from.trim().toUpperCase();
     const rows = [...this._body().querySelectorAll('.cmd-row')];
     const row = rows.find((r) => r.dataset.cmd.toUpperCase() === key) ?? rows.find((r) => r.dataset.cmd.toUpperCase().startsWith(key));
-    if (row) this._body().scrollTop += row.getBoundingClientRect().top - this._body().getBoundingClientRect().top;
+    const crumb = this._body().querySelector('.cat-crumb')?.offsetHeight ?? 0;
+    if (row) this._body().scrollTop += row.getBoundingClientRect().top - this._body().getBoundingClientRect().top - crumb;
   }
 
   _renderRail() {

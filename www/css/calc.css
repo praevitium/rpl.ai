@@ -931,7 +931,8 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 .cat-cats button:hover { border-color: var(--line2); background: var(--r2); }
 .cat-cats b { font: 600 12px/1.25 var(--font-ui); overflow: hidden; text-overflow: ellipsis; }
 .cat-cats span { font: 11px/1.2 var(--font-mono); color: var(--ink3); }
-.cat-crumb { display: flex; align-items: center; gap: 6px; padding: 2px 8px 8px; }
+/* A family's name and way back stay in sight down a long list, such as the CAS family's 121 commands. */
+.cat-crumb { display: flex; align-items: center; gap: 6px; padding: 2px 8px 8px; position: sticky; top: 0; z-index: 1; background: var(--panel); }
 .cat-crumb b { font: 600 12.5px/1.2 var(--font-ui); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmd-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 7px 10px 7px 14px; border-top: 1px solid var(--line); cursor: pointer; }
 .cmd-row:hover { background: var(--r1); }
