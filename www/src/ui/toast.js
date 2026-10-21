@@ -3,7 +3,8 @@ import { escapeHtml } from './display.js';
 export class Toasts {
   constructor(el) { this.el = el; }
 
-  // A toast with a key replaces the one before it with that key; a transient one also goes at the next press outside it.
+  // A toast with a key replaces the one before it with that key; a transient one also goes at the next press outside
+  // the toasts, so a note under it keeps its place while a finger presses that note's button.
   // The message is text, or a node such as a tutor step's title with its math.
   show(message, { action = '', onAction = null, timeout = 3200, error = false, key = '', transient = false } = {}) {
     if (!this.el) return;
@@ -18,7 +19,7 @@ export class Toasts {
     this.el.appendChild(t);
     if (transient) {
       const away = (ev) => {
-        if (t.isConnected && t.contains(ev.target)) return;
+        if (t.isConnected && ev.target.closest?.('.toast')) return;
         remove();
         document.removeEventListener('pointerdown', away, true);
       };

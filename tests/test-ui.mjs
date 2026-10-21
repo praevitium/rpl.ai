@@ -2046,7 +2046,7 @@ setAngle('RAD');
   const toastSrc = readFileSync(new URL('../www/src/ui/toast.js', import.meta.url), 'utf8');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/transient = false \} = \{\}\) \{/.test(toastSrc)
-    && /if \(transient\) \{\s*const away = \(ev\) => \{\s*if \(t\.isConnected && t\.contains\(ev\.target\)\) return;\s*remove\(\);\s*document\.removeEventListener\('pointerdown', away, true\);/.test(toastSrc)
+    && /if \(transient\) \{\s*const away = \(ev\) => \{\s*if \(t\.isConnected && ev\.target\.closest\?\.\('\.toast'\)\) return;\s*remove\(\);\s*document\.removeEventListener\('pointerdown', away, true\);/.test(toastSrc)
     && /document\.addEventListener\('pointerdown', away, true\);/.test(toastSrc)
     && (appSrc.match(/key: 'view', transient: true \}/g) || []).length === 2,
     'toasts: the Keypad hidden and minimal view hints go at the first tap anywhere else, which still does what it touched, instead of covering the top of the stack for five seconds; their own Show and Leave buttons still work');
@@ -3072,4 +3072,10 @@ setAngle('RAD');
     && /this\._resize = new ResizeObserver\(\(\) => this\._liftNotes\(\)\);/.test(sh)
     && /\.lay-sheet:not\(:empty\) ~ #toasts \{ top: auto; bottom: max\(calc\(16px \+ env\(safe-area-inset-bottom, 0px\)\), var\(--note-lift, 0px\)\); \}/.test(css),
     "a note over a sheet that fills a phone's screen sits above its footer, so the minimal-view note no longer takes the first tap on Solve, Back or Close");
+}
+
+{
+  const toast = readFileSync(new URL('../www/src/ui/toast.js', import.meta.url), 'utf8');
+  assert(/const away = \(ev\) => \{\n\s*if \(t\.isConnected && ev\.target\.closest\?\.\('\.toast'\)\) return;/.test(toast),
+    "a press on another note's button leaves the transient minimal-view note in place, so the note under it does not jump away from the finger before the tap lands");
 }
