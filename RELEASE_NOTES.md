@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.25 (2026-10-21)
+**Latest release:** v0.8.26 (2026-10-21)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.26 — 2026-10-21
+
+- Changed: on a phone with the keypad hidden, or in minimal view, the
+  equation writer takes two parts of the spare height to the stack's one
+  and its canvas grows past 240 px (a 390 by 844 phone gave the formula
+  121 px under 445 px of mostly empty stack; it now gets 258 px, with
+  three levels still showing). The full keypad, the keyboard up and
+  desktop windows keep the writer as it was.
+- New: where the writer's canvas has grown, the formula's type grows to
+  fill it, up to 1.6 times (44 px, or 60 px with BIG), and shrinks back as
+  the formula gets longer or the keyboard comes up.
 
 ## v0.8.25 — 2026-10-21
 
