@@ -1061,7 +1061,7 @@ and serial transfer.
   the equations follow the HP's sets as DB48X transcribes them, in plain
   numbers in SI units rather than the HP's unit-tagged values, so a few
   variable names differ, and each set's constants (g, ε0, k and so on, per
-  set as on the HP) are filled in.
+  set as on the HP) are filled in. A tap on an equation puts it on the stack.
 - An algebraic reads the HP's postfix factorial, `'5!'` or `'(N+1)!'`, but
   its text form writes `FACT(5)`; the textbook display shows `5!`.
 - `BEEP` doesn't hold the program while its tone plays; tones in a row still

@@ -3058,6 +3058,15 @@ setAngle('RAD');
 {
   const sh = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/class="eq-eq" data-sh="eq-push" data-i="\$\{i\}"/.test(sh)
+    && /case 'eq-push': \{\n\s*const v = libraryEquation\(this\.eqlib\.subject, this\.eqlib\.set, Number\(b\.dataset\.i\)\);\n\s*app\.commitEntryAndPush\(v\);\n\s*app\.toast\(`\$\{format\(v\)\} is on the stack`\);/.test(sh)
+    && /\n\.eq-eq \{ display: block; width: 100%; min-height: 40px;/.test(css),
+    "a set's equations are finger-tall buttons that put the equation on the stack with a toast, as the HP's →STK key and the periodic table's property rows do");
+}
+
+{
+  const sh = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/const lift = foot\?\.height && box && foot\.bottom >= box\.bottom - 24 \? Math\.round\(box\.bottom - foot\.top \+ 8\) : 0;\n\s*notes\.style\.setProperty\('--note-lift', `\$\{lift\}px`\);/.test(sh)
     && /_render\(\) \{\n\s*requestAnimationFrame\(\(\) => this\._liftNotes\(\)\);/.test(sh)
     && /this\._resize = new ResizeObserver\(\(\) => this\._liftNotes\(\)\);/.test(sh)

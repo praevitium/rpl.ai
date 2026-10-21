@@ -24,6 +24,11 @@ export function setVariables(subject, title) {
   return { names: mesItems(set.eqs), known: set.known };
 }
 
+// One equation of a set, parsed, for the sheet's tap to put it on the stack as the HP's →STK key does.
+export function libraryEquation(subject, title, index) {
+  return parsedSet(subject, title).eqs[index];
+}
+
 // SOLVEQN's work: EQ, the set's constants stored and marked known, and Mpar titled after the set.
 export function solveSet(subject, title) {
   const set = parsedSet(subject, title);

@@ -156,6 +156,8 @@ const top = (s) => Number(s.peek().value);
   assert(Math.abs(top(runLine("'f' MROOT")) - top(runLine("'F0λ(2E-6,3000)-F0λ(1E-6,3000)' →NUM"))) < 1e-12, 'SOLVEQN 6 6: Black Body Radiation finds the band fraction f through F0λ');
   runLine("5 6 0 SOLVEQN 1.5 'T' STO 1 'Tc' STO 2 'P' STO 1 'Pc' STO { T Tc P Pc } MUSER");
   assert(Math.abs(top(runLine("'Z' MROOT")) - 0.820633025234) < 1e-9, 'SOLVEQN 5 6: Real Gas Law finds Z through ZFACTOR');
+  const { libraryEquation } = await import('../www/src/rpl/ops/eqlib.js');
+  assert(isSymbolic(libraryEquation(8, 1, 3)) && /v = v0 \+ a\*t/.test(formatSource(libraryEquation(8, 1, 3))), "libraryEquation gives one equation of a set parsed, for the sheet's tap");
   assert(/Bad argument value/.test(err('99 1 0 SOLVEQN')) && /Bad argument value/.test(err('2 40 0 SOLVEQN')) && /Bad argument type/.test(err("'x' 1 0 SOLVEQN")), 'SOLVEQN refuses an unknown subject or title and a non-number');
   assert(runLine('5 EQNLIB').depth === 1, 'EQNLIB leaves the stack alone; the app opens the sheet through its hook');
   for (const id of ['EQ', 'Mpar', 'g', 'k', 'q', 'εsi', 'ε0', 'I0', 'P', 'L', 'a', 'M', 'w', 'x', 'V', 'T', 'λ1', 'λ2', 'f', 'σ', 'c3', 'Tc', 'Pc', 'Z', 'R']) err(`'${id}' PURGE`);

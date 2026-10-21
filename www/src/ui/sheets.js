@@ -9,7 +9,7 @@ import { ROWS, COLS, GOAL, minesAround, step, newField, saveField } from '../rpl
 import { ELEMENTS } from '../rpl/elements.js';
 import { PROPERTIES, propertyValue } from '../rpl/ops/periodic.js';
 import { EQ_LIBRARY } from '../rpl/eqlib.js';
-import { solveSet, setVariables } from '../rpl/ops/eqlib.js';
+import { solveSet, setVariables, libraryEquation } from '../rpl/ops/eqlib.js';
 import { lookup } from '../rpl/ops/registry.js';
 import { format } from '../rpl/formatter.js';
 import { VERSION, BUILD, SHA } from '../build-info.js';
@@ -210,7 +210,7 @@ export class Sheets {
     const [t, eqs] = sets[set - 1];
     const { names, known } = setVariables(subject, set);
     const vars = names.map((id) => (known[id] ? `<span class="known">${escapeHtml(id)} = ${format(known[id])}</span>` : `<span>${escapeHtml(id)}</span>`)).join('');
-    return `<h5 class="eq-title">${escapeHtml(title)} · ${set}. ${escapeHtml(t)}</h5><div class="eq-eqs">${eqs.map((e) => `<code>${escapeHtml(e)}</code>`).join('')}</div><p class="eq-vars">${vars}</p><p class="pt-hint">Solve puts the equations in EQ, its constants known, and opens the solver: type a value and tap its key to store it, hold the key to solve for it. Values are plain numbers in SI units. <code>${subject} ${set} 0 SOLVEQN</code> does the same.</p>`;
+    return `<h5 class="eq-title">${escapeHtml(title)} · ${set}. ${escapeHtml(t)}</h5><div class="eq-eqs">${eqs.map((e, i) => `<button type="button" class="eq-eq" data-sh="eq-push" data-i="${i}">${escapeHtml(e)}</button>`).join('')}</div><p class="eq-vars">${vars}</p><p class="pt-hint">Tap an equation to put it on the stack. Solve puts them all in EQ, its constants known, and opens the solver: type a value and tap its key to store it, hold the key to solve for it. Values are plain numbers in SI units. <code>${subject} ${set} 0 SOLVEQN</code> does the same.</p>`;
   }
 
   _tableHtml() {
@@ -362,6 +362,12 @@ export class Sheets {
         else this.eqlib.subject = null;
         this._render();
         return;
+      case 'eq-push': {
+        const v = libraryEquation(this.eqlib.subject, this.eqlib.set, Number(b.dataset.i));
+        app.commitEntryAndPush(v);
+        app.toast(`${format(v)} is on the stack`);
+        return;
+      }
       case 'eq-solve': {
         const { subject, set } = this.eqlib;
         this.close();
