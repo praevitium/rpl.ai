@@ -1823,7 +1823,9 @@ class App {
       plottable(value)
         ? { label: 'PLOT', title: 'Plot it', onPress: act('plot') }
         : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },
-      { label: '→NUM', title: 'Evaluate to a number', onPress: act('num') },
+      isReal(value)
+        ? { label: '→Q', title: 'To a fraction', onPress: act('toq') }
+        : { label: '→NUM', title: 'Evaluate to a number', onPress: act('num') },
       ...(isUnit(value) ? [{ label: 'CONV', title: 'Convert it to another unit (CONVERT)', onPress: act('convert') }] : []),
       { label: 'STO…', title: 'Store it in a variable', onPress: act('store') },
       { label: 'COPY', title: 'Copy to the clipboard · ↰ copies it as LaTeX', onPress: act('copy'), onPressL: act('latex') },

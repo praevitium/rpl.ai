@@ -2919,6 +2919,8 @@ setAngle('RAD');
       'Variables: a folder with something in it offers Delete with its items (PGDIR), with Undo, where Delete could only refuse');
     assert(appSrc.includes("isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') + item('rref', 'chr', 'Row reduce (RREF)') : '',") && appSrc.includes("case 'rref': runOn('RREF'); return;"),
       'a matrix level offers Row reduce (RREF) beside Transpose, square or not');
+    assert(/isReal\(value\)\s*\? \{ label: '→Q', title: 'To a fraction', onPress: act\('toq'\) \}\s*: \{ label: '→NUM', title: 'Evaluate to a number', onPress: act\('num'\) \},/.test(appSrc),
+      'the interactive stack soft keys show →Q on a decimal where →NUM did nothing, as its menu does');
     assert(appSrc.includes("isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : item('num', 'chr', 'To a number (→NUM)'),") && appSrc.includes("case 'toq': runOn('→Q'); return;"),
       'a level holding a decimal offers To a fraction (→Q), as the HP\'s →Q turns .75 into \'3/4\', in place of →NUM, which leaves a decimal as it is');
     assert(appSrc.includes(`data-row-act="more" title="More actions (\${shortcutText('level.menu')})"`),
