@@ -181,6 +181,9 @@ class App {
       if (group) this._showGroupMenu(group, family);
       else this.showMenu(family, { commit: false });
       if (this.prefs.minimal) this.setMinimalMenu(true);
+      // A phone often has no shift key showing, so the solver says how its keys solve.
+      const mes = family === 'MES' && mesMenu();
+      if (mes && matchMedia('(pointer: coarse)').matches) this.toast(`${mes.title || 'Solver'}: tap a variable's key to store level 1 in it; hold the unknown's key to solve for it.`, { key: 'mes' });
     });
     // After the line that ran EDIT or VISIT has left the command line.
     setEditHook(({ level, name, line }) => setTimeout(() => (name ? this.editVariable(name, { line }) : this.editLevel(level, { line }))));

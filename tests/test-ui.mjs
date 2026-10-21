@@ -3176,3 +3176,9 @@ setAngle('RAD');
   assert(/const backup = deleteBackup\(port, name\);\s*this\.app\.toast\(`Deleted backup :\$\{key\}`, \{ key: 'backup-delete', action: 'Undo', onAction: \(\) => putBackBackup\(port, name, backup\) \}\);/.test(drawerSrc),
     "a backup deleted from its row comes back with the note's Undo, a slip of the finger beside Save costing nothing");
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/const mes = family === 'MES' && mesMenu\(\);\s*if \(mes && matchMedia\('\(pointer: coarse\)'\)\.matches\) this\.toast\(`\$\{mes\.title \|\| 'Solver'\}: tap a variable's key to store level 1 in it; hold the unknown's key to solve for it\.`, \{ key: 'mes' \}\);/.test(appSrc),
+    "MSOLVR and the Equation Library's Solve say on a phone how the solver's keys store and solve, there being often no shift key showing");
+}
