@@ -2952,7 +2952,7 @@ setAngle('RAD');
 {
   const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/value = Tagged\('F\(x\)', Real\(y\)\);/.test(gv) && /lookup\('DERIV'\)\.fn\(s\);/.test(gv) && /this\._addTrace\(dt\);\n\s*value = d;/.test(gv)
+  assert(/value = Tagged\('F\(x\)', Real\(y\)\);/.test(gv) && /lookup\('DERIV'\)\.fn\(s\);/.test(gv) && /this\._showTraceRow\(this\._addTrace\(dt\)\);\n\s*value = d;/.test(gv)
     && /const line = traceFromInputs\('function', lineExpr\(m, b, name\)\);/.test(gv) && /value = Tagged\('TanL', TRACE_KINDS\.function\.toStack\(line\)\[0\]\);/.test(gv)
     && /const slope = m === 1 \? name : m === -1 \? `-\$\{name\}` : m === 0 \? '' : `\$\{num\(m\)\}\*\$\{name\}`;/.test(gv)
     && /const exact = d \? evalTraceAtX\(d, x, opts\) : NaN;\n\s*return Number\.isFinite\(exact\) \? exact : slopeAt\(f, x, /.test(gv),
@@ -2972,6 +2972,9 @@ setAngle('RAD');
   assert(/this\._areaFrom = \{ x: x0, trace: t\.id \};/.test(gv) && /if \(this\._areaFrom\?\.trace !== t\.id\) \{/.test(gv)
     && /aria-pressed', String\(this\._areaFrom\?\.trace === this\._fcnTrace\(\)\?\.id\)\)/.test(gv),
     'plot AREA: the first bound belongs to the function it was marked on, so once that trace is removed, hidden or deselected the key shows unpressed and the next tap marks afresh instead of integrating another function from the old bound');
+  assert(/this\._showTraceRow\(this\._addTrace\(dt\)\);/.test(gv) && /this\._showTraceRow\(this\._addTrace\(line\)\);/.test(gv)
+    && /_showTraceRow\(t\) \{\n\s*this\._exprs\.querySelector\(`\.gr-trace\[data-trace="\$\{t\.id\}"\]`\)\?\.scrollIntoView\?\.\(\{ block: 'nearest' \}\);/.test(gv),
+    'plot F\' and TANL on a phone: the trace they add scrolls into view in the list, as the add field does after Add');
 }
 
 {

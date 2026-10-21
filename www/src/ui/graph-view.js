@@ -701,6 +701,11 @@ export class GraphView {
     if (this._dot && from) pictLine(Complex(from.x, from.y), Complex(this._mark.x, this._mark.y), this._dot);
   }
 
+  // A trace a key adds comes into view in the list, which a phone's side panel scrolls.
+  _showTraceRow(t) {
+    this._exprs.querySelector(`.gr-trace[data-trace="${t.id}"]`)?.scrollIntoView?.({ block: 'nearest' });
+  }
+
   // F': the function's DERIV in its variable, through the CAS as the command goes.
   _derivative(t, name) {
     const s = new Stack();
@@ -771,13 +776,13 @@ export class GraphView {
       try { d = this._derivative(t, name); } catch (e) { this._fail(e.message); return; }
       const dt = stackValueToTrace(d, 'function');
       if (!dt) { this._fail(`no derivative of ${t.expr}`); return; }
-      this._addTrace(dt);
+      this._showTraceRow(this._addTrace(dt));
       value = d;
     } else if (key === 'TANL') {
       const m = this._slopeAt(t, f, x0, opts), b = f(x0) - m * x0;
       if (!Number.isFinite(m + b)) { this._fail(`no tangent of ${t.expr} at ${format(Real(x0))}`); return; }
       const line = traceFromInputs('function', lineExpr(m, b, name));
-      this._addTrace(line);
+      this._showTraceRow(this._addTrace(line));
       this._selectTrace(t.id);
       value = Tagged('TanL', TRACE_KINDS.function.toStack(line)[0]);
     } else {
