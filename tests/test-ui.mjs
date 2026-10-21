@@ -3075,6 +3075,10 @@ setAngle('RAD');
     'plot, keyboard up: after a trace is added the add field is scrolled back into view, where the grown trace list pushed it under the keyboard');
   assert(gv.includes('if (Number.isFinite(y)) return Complex(Number(this.traceX.toPrecision(12)), Number(y.toPrecision(12)));'),
     'plot trace: Enter pushes the traced point as the readout shows it, on the curve, where x = 0.75 with SIN(X) = 0.681639 pushed (0.8, 0.7), a point off the curve');
+  assert(/\} else if \(this\.tracing && \(dir === 'up' \|\| dir === 'down'\) && this\._stepTrace\(dir === 'up' \? -1 : 1\)\) \{/.test(gv)
+    && /_stepTrace\(by\) \{\s*const fns = this\.traces\.filter\(\(t\) => t\.enabled && t\.kind === 'function'\);\s*if \(fns\.length < 2\) return false;/.test(gv)
+    && gv.includes('for (const t of [this._fcnTrace(), ...this.traces].filter(Boolean)) {'),
+    'plot trace: with several functions plotted, up and down move the trace to the previous or next one, as the HP\'s ▲ and ▼ do, and Enter pushes that function\'s point; with one function they still pan');
 }
 
 {

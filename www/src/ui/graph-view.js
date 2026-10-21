@@ -664,7 +664,7 @@ export class GraphView {
   _cursorValue() {
     if (this.tracing) {
       const opts = this._hoverOpts();
-      for (const t of this.traces) {
+      for (const t of [this._fcnTrace(), ...this.traces].filter(Boolean)) {
         const y = t.enabled ? evalTraceAtX(t, this.traceX, opts) : NaN;
         // A traced point goes as the readout shows it, on the curve; only the free cursor rounds to its pixel.
         if (Number.isFinite(y)) return Complex(Number(this.traceX.toPrecision(12)), Number(y.toPrecision(12)));
@@ -986,6 +986,8 @@ export class GraphView {
       if (this.traceX < v.xmin) this.view = panView(v, this.traceX - v.xmin - dx, 0);
       if (this.traceX > v.xmax) this.view = panView(v, this.traceX - v.xmax + dx, 0);
       this._readout.textContent = this._readoutAt(this.traceX);
+    } else if (this.tracing && (dir === 'up' || dir === 'down') && this._stepTrace(dir === 'up' ? -1 : 1)) {
+      this._readout.textContent = this._readoutAt(this.traceX);
     } else if (this._mark && !this.tracing) {
       const from = this._mark;
       ({ cursor: this._mark, view: this.view } = stepCursor(this._mark, dir, v));
@@ -995,6 +997,15 @@ export class GraphView {
       this.view = panView(v, dir === 'left' ? -dx : dir === 'right' ? dx : 0, dir === 'down' ? -dy : dir === 'up' ? dy : 0);
     }
     this.draw();
+  }
+
+  // As the HP's ▲ and ▼ do in TRACE, the trace moves to the previous or next function plotted; with one, they pan.
+  _stepTrace(by) {
+    const fns = this.traces.filter((t) => t.enabled && t.kind === 'function');
+    if (fns.length < 2) return false;
+    const at = fns.indexOf(this._fcnTrace());
+    this._selectTrace(fns[(at + by + fns.length) % fns.length].id);
+    return true;
   }
 
   setTraceMode(on) {
