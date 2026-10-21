@@ -2885,3 +2885,15 @@ setAngle('RAD');
     && /\n  \.field, \.backup-new input, \.backup-new select, \.pop-name \{ height: 40px; \}/.test(css),
     'names on a phone: the Store, New folder and Backup name fields are 40 px on touch, keep the case typed (no first-letter capital) and label the keyboard\'s Enter Done, as the writers\' fields do');
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const body = appSrc.match(/\n  _storePrompt\(level, anchor\) \{\n([\s\S]*?)\n  \}\n/)[1];
+  assert(/const names = varOrder\(\)\.filter\(\(id\) => !isDirectory\(varRecall\(id\)\)\);/.test(body)
+    && /<div class="pop-chips">\$\{names\.map\(\(id\) => `<button type="button" class="chip" data-name="\$\{escapeHtml\(id\)\}">\$\{escapeHtml\(id\)\}<\/button>`\)\.join\(''\)\}<\/div>/.test(body)
+    && /pop\.querySelector\('\.pop-chips'\)\?\.addEventListener\('click', \(e\) => \{ const chip = e\.target\.closest\('\.chip'\); if \(chip\) store\(chip\.dataset\.name\); \}\);/.test(body)
+    && /form\.addEventListener\('submit', \(e\) => \{ e\.preventDefault\(\); store\(form\.elements\.name\.value\.trim\(\)\); \}\);/.test(body)
+    && /\n\.pop-chips \{ display: flex; flex-wrap: wrap; gap: 6px; padding: 0 6px 4px; \}/.test(css),
+    'Store in a variable: the popover lists the directory\'s variables (not its folders) as chips in the VARS menu\'s order, and a tap stores the level in that name through the same path as the field, with its Undo note');
+}

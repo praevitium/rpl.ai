@@ -1016,13 +1016,13 @@ class App {
   }
 
   _storePrompt(level, anchor) {
-    const html = `<form data-store><h6>Store level ${level} in</h6><div style="padding:4px 6px 6px"><input type="text" name="name" placeholder="Variable name, like R1" aria-label="Variable name" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="done" class="pop-name"></div><div class="note">Same as <code>\`NAME\` STO</code>. Level ${level} stays on the stack.</div><div style="display:flex;justify-content:flex-end;padding:6px"><button type="submit" class="btn pri">Store</button></div></form>`;
+    const names = varOrder().filter((id) => !isDirectory(varRecall(id)));
+    const chips = names.length ? `<div class="pop-chips">${names.map((id) => `<button type="button" class="chip" data-name="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join('')}</div>` : '';
+    const html = `<form data-store><h6>Store level ${level} in</h6><div style="padding:4px 6px 6px"><input type="text" name="name" placeholder="Variable name, like R1" aria-label="Variable name" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="done" class="pop-name"></div>${chips}<div class="note">Same as <code>\`NAME\` STO</code>. Level ${level} stays on the stack.</div><div style="display:flex;justify-content:flex-end;padding:6px"><button type="submit" class="btn pri">Store</button></div></form>`;
     const pop = this.popover.open(anchor ?? this.display.stackView.querySelector('.st-row.sel'), html, { label: 'Store' });
     const form = pop.querySelector('form');
     requestAnimationFrame(() => form.elements.name.focus());
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const name = form.elements.name.value.trim();
+    const store = (name) => {
       const value = this.stack.peek(level);
       this.entry._snapForUndo();
       try {
@@ -1033,7 +1033,10 @@ class App {
         this.entry._dropNoOpUndoStep();
         this.notifyError(`Couldn't store in “${name}”: ${err.message}`);
       }
-    });
+    };
+    form.addEventListener('submit', (e) => { e.preventDefault(); store(form.elements.name.value.trim()); });
+    // A name the directory already holds is a tap away, as a variable's soft key is; STO replaces as it does there.
+    pop.querySelector('.pop-chips')?.addEventListener('click', (e) => { const chip = e.target.closest('.chip'); if (chip) store(chip.dataset.name); });
   }
 
   _moveLevel(from, to) {
