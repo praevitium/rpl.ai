@@ -1006,6 +1006,7 @@ class App {
       case 'level': run(() => this.stack.push(Integer(level))); this.selectLevel(level + 1); return;
       case 'info': this._levelInfo(level); return;
       case 'eval': runOn('EVAL'); return;
+      case 'strto': runOn('STR→'); return;
       case 'debug': runOn('DBUG'); return;
       case 'num': runOn('→NUM'); return;
       case 'toq': runOn('→Q'); return;
@@ -1099,7 +1100,7 @@ class App {
         item('info', 'info', 'Type and size (INFO)'),
       ],
       [
-        item('eval', 'play', 'Evaluate (EVAL)'),
+        isString(value) ? item('strto', 'play', 'Run its text (STR→)') : item('eval', 'play', 'Evaluate (EVAL)'),
         isProgram(value) ? item('debug', 'step', 'Debug step by step (DBUG)') : '',
         isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : item('num', 'chr', 'To a number (→NUM)'),
         isUnit(value) ? item('convert', 'chr', 'Convert to…') : '',
