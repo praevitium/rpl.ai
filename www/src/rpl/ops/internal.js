@@ -2322,7 +2322,7 @@ export const _fromListOp = (s) => {
 
 
 // HP50 TYPE codes.  Vectors and matrices share the array codes 3 / 4, and the
-// arbitrary-precision Integer reports ZINT (28).
+// arbitrary-precision Integer reports ZINT (28).  A fraction is the algebraic 3/4 on the HP, so it reports 9.
 export function _hp50TypeCode(v) {
   if (isReal(v))          return 0;
   if (isComplex(v))       return 1;
@@ -2339,7 +2339,7 @@ export function _hp50TypeCode(v) {
   if (isList(v))          return 5;
   if (isName(v))          return v.local ? 7 : 6;
   if (isProgram(v))       return 8;
-  if (isSymbolic(v))      return 9;
+  if (isSymbolic(v) || isRational(v)) return 9;
   if (isBinaryInteger(v)) return 10;
   if (isGrob(v))          return 11;
   if (isTagged(v))        return 12;

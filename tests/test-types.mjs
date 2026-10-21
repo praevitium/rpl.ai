@@ -614,6 +614,13 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
 
 {
   const s = new Stack();
+  s.push(Rational(3n, 4n));
+  lookup('TYPE').fn(s);
+  assert(s.peek().value.eq(9), 'TYPE of the fraction 3/4 gives 9, as the HP reports for the algebraic 3/4');
+}
+
+{
+  const s = new Stack();
   s.push(Real(1));
   s.push(Real(2));
   s.push(Str('x'));
