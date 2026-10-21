@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.22 (2026-10-21)
+**Latest release:** v0.8.23 (2026-10-21)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.23 — 2026-10-21
+
+- Fixed: with flag -51 set, the equation writer's text view showed 1.5
+  beside a formula drawn as 1,5, and marked 1,5 or MAX(2,5;3) typed there
+  as wrong. It now shows and reads the comma form, as the writer's keys
+  and clipboard do.
+- New: a level dragged by its number onto a variable's soft key is stored
+  in that variable and leaves the stack, as the HP's left shift and the
+  key store level 1, with an Undo note that also brings back the
+  variable's old value. Only variable keys light up as the finger passes.
+- The tour's stack card on a phone now names every place a level dragged
+  by its number can go: another level, the command line, an open writer
+  or a variable's soft key.
 
 ---
 
