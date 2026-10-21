@@ -1065,3 +1065,11 @@ setBinaryBase(null);
   assertThrows(() => parseEntry('#1AB'), /Malformed b-base integer/, 'outside HEX mode #1AB stays a malformed binary number');
   setBinaryBase(saved);
 }
+
+{
+  const read = (src) => parseEntry(src).map((v) => `${v.value}${v.base}`).join(' ');
+  assert(read('# 5d') === '5d' && read('# 202h') === '514h' && read('# 1Fh # 3d') === '31h 3d', 'parse: the AUR form # 5d, with a space after #, reads as #5d');
+  assert(format(parseEntry('« # 1Fh # 3d AND »')[0]) === '« #1Fh #3d AND »', 'parse: # 1Fh and # 3d inside a program');
+  assertThrows(() => parseEntry('# '), /Malformed binary integer/, 'parse: # alone is still malformed');
+  assertThrows(() => parseEntry('# DUP'), /Malformed binary integer/, 'parse: # before a name is still malformed');
+}

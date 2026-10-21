@@ -79,10 +79,14 @@ function tokenize(src) {
     // A trailing d or b is read as the base letter although both are hex
     // digits, as the AUR says; with no base letter the current display base
     // applies.  In HEX mode a number the letter can't end, such as #1AB, is hex.
+    // The HP shows # 5d with a space, as the AUR writes it, and reads it back.
     if (c === '#') {
-      let j = i + 1;
+      let start = i + 1;
+      while (start < n && /[ \t]/.test(src[start])) start++;
+      if (!/[0-9A-Fa-f]/.test(src[start] ?? '')) start = i + 1;
+      let j = start;
       while (j < n && /[0-9A-Fa-fHhOo]/.test(src[j])) j++;
-      const atom = src.slice(i + 1, j);
+      const atom = src.slice(start, j);
       if (atom.length === 0) {
         throw new RPLError('Malformed binary integer');
       }
