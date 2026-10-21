@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.2 (2026-10-20)
+**Latest release:** v0.8.3 (2026-10-20)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.3 — 2026-10-20
+
+- The plot tools gain the HP's ZSQR, which brings the y scale to the x
+  scale so a circle is round, and CNTR, which moves the window to put the
+  cursor at its centre.
+- AREA's first bound belongs to the function it was marked on: once that
+  trace is removed, hidden or deselected the key shows unpressed and the next
+  tap marks afresh, where it integrated another function from the old bound.
+- On a phone the trace F' or TANL adds scrolls into view in the trace list,
+  as the add field does after Add.
 
 ---
 

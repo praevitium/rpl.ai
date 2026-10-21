@@ -532,6 +532,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   cursor there, a drag that starts on the cursor moves it, and with Trace
   on a tap moves the trace cursor. The plot's tools fold into one ⋯ button,
   leaving the plot to your fingers, and the plot types scroll in one row.
+  Among the tools are the HP's ZSQR, which brings the y scale to the x scale
+  so a circle is round, and CNTR, which moves the window to put the cursor
+  at its centre.
   Under the readout a function plot has the HP's FCN keys ROOT, ISECT,
   SLOPE, AREA, EXTR, F(X), F' and TANL: each works about the cursor (the
   trace cursor, else the point you tapped, else the middle of the window) on
