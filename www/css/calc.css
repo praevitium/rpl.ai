@@ -471,9 +471,9 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .stack-view .st-val:has(> .matrix-grid.fit) { width: 100%; container-type: inline-size; }
 .stack-view .st-val > .matrix-grid.fit { font-size: clamp(.75em, (100cqi - 2px) / var(--mw), 1em); }
 .st-val .list-inline { font-family: var(--font-mono); display: inline-flex; align-items: center; flex-wrap: wrap; gap: .1em 0; }
-.st-val .list-inline .lcell { white-space: nowrap; }
+.st-val .list-inline .lcell { white-space: nowrap; margin-right: .5em; }
 .st-val .list-inline .lcell-sym { display: inline-flex; align-items: center; }
-.st-val .list-inline .lcell:not(:last-of-type) { margin-right: .5em; }
+.st-val .list-inline .lcell:first-of-type { margin-left: .5em; }
 .st-val .list-inline .lsep { display: contents; }
 .st-val.one-line .list-inline { flex-wrap: nowrap; }
 .st-row.sel .st-val .list-inline .lcell, .sheet-view .st-val .list-inline .lcell { white-space: normal; overflow-wrap: anywhere; }

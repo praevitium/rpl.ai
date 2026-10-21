@@ -2737,8 +2737,10 @@ setAngle('RAD');
 
 {
   const cssSrc = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/\.st-val \.list-inline \.lcell:not\(:last-of-type\) \{ margin-right: \.5em; \}/.test(cssSrc) && /\.st-val \.list-inline \.lsep \{ display: contents; \}/.test(cssSrc),
+  assert(/\.st-val \.list-inline \.lcell \{ white-space: nowrap; margin-right: \.5em; \}/.test(cssSrc) && /\.st-val \.list-inline \.lsep \{ display: contents; \}/.test(cssSrc),
     'textbook list: the space between items rides on the item before it, so a long list wrapped on a phone starts every line flush rather than some half a space in');
+  assert(/\.st-val \.list-inline \.lcell:first-of-type \{ margin-left: \.5em; \}/.test(cssSrc),
+    'textbook list: the braces keep their spaces, { 1 2 } as the HP writes it, where the flex box dropped the spaces in the brace text and showed {1 2}');
 }
 
 {
