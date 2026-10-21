@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.0 (2026-10-20)
+**Latest release:** v0.8.1 (2026-10-20)
 
 ---
 
@@ -18,6 +18,22 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.1 — 2026-10-20
+
+- The plot's FCN keys gain ISECT and AREA, in the HP's order ROOT, ISECT,
+  SLOPE, AREA, EXTR. ISECT pushes the nearest crossing of the function with
+  the next one as `I-Sect: (x, y)`; AREA marks the first bound on one tap
+  (the key stays lit) and, once the cursor has moved, pushes `Area:` on the
+  next, as the HP's does.
+- On a phone in landscape the plot box kept its 220 px minimum, which put
+  the tap readout and the FCN keys under the fold of a 390 px window; the
+  box gives way first in a window under 400 px tall, so they stay on screen.
+- At 280 px the x axis asked for eleven labels in 250 px and "-10" ran into
+  "-8"; the axis now asks for a label per 40 px, five at that width, and a
+  wide plot keeps its ticks.
 
 ---
 
