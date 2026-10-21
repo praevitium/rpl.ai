@@ -3082,6 +3082,6 @@ setAngle('RAD');
 
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/@container sheet \(max-width: 319px\) \{ \.sheet-f \{ gap: 6px; padding-inline: 12px; \} \}/.test(css),
-    'a sheet footer of three keys keeps to one row on a 280 px phone');
+  assert(/@container sheet \(max-width: 319px\) \{ \.sheet-f \{ gap: 6px; padding-inline: 12px; \} \.chip \{ padding-inline: 8px; \} \}/.test(css),
+    'a sheet footer of three keys and the four stack text sizes keep to one row on a 280 px phone');
 }
