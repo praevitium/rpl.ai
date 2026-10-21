@@ -54,8 +54,8 @@ const REF = parseCommandReference(HTML);
   assert(/Level 2\/Argument 1/.test(deriv.input) && /derivative/.test(deriv.output),
          'DERIV entry splits input/output fields');
   assert(/DERIV\(2\*X\^2\*Y/.test(deriv.example), 'DERIV entry keeps its example command');
-  const baud = REF.get('BAUD');
-  assert(baud && !baud.inApp, 'BAUD, a serial I/O command, is indexed but flagged not-in-app');
+  const syseval = REF.get('SYSEVAL');
+  assert(syseval && !syseval.inApp, 'SYSEVAL, a ROM-address command, is indexed but flagged not-in-app');
 }
 
 {
@@ -109,8 +109,8 @@ const REF = parseCommandReference(HTML);
   assert(/See also: COMB, PERM, !/.test(text), 'formatReferenceEntry includes see-also');
   const sto = formatReferenceEntry(REF.get('STO'), { maxChars: 500 });
   assert(sto.length <= 500, 'formatReferenceEntry honours maxChars');
-  const baud = formatReferenceEntry(REF.get('BAUD'));
-  assert(/NOT implemented in this calculator/.test(baud),
+  const syseval = formatReferenceEntry(REF.get('SYSEVAL'));
+  assert(/NOT implemented in this calculator/.test(syseval),
          'formatReferenceEntry flags commands the app lacks');
   assert(formatReferenceEntry(null) === '', 'formatReferenceEntry tolerates null');
   assert(shortDescription(REF.get('FIX')).startsWith('Sets the number display format'),

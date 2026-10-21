@@ -650,3 +650,27 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   setTransferHooks(null);
   runLine("{ TXA TXC } PURGE");
 }
+
+// The serial commands: settings go to IOPAR in HOME, nothing ever arrives, XMIT prints.
+{
+  const { printLog, clearPrintLog, setTransferHooks } = await import('../www/src/rpl/ops.js');
+  const notes = [];
+  setTransferHooks({ note: (text) => notes.push(text) });
+  const show = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' ');
+  assert(show("9600 BAUD 2 PARITY 1 CKSM 0 TRANSIO 'IOSUB' CRDIR 'IOSUB' EVAL 4800 BAUD UPDIR IOPAR") === '{ 4800 2 0 0 1 0 }',
+    'BAUD, PARITY, CKSM and TRANSIO set IOPAR in HOME, from a subdirectory too');
+  assertThrows(() => runLine('1234 BAUD'), /Bad argument value/, 'BAUD knows the HP rates only');
+  assertThrows(() => runLine('5 PARITY'), /Bad argument value/, 'PARITY runs from -4 to 4');
+  assertThrows(() => runLine('4 CKSM'), /Bad argument value/, 'CKSM is 1, 2 or 3');
+  assertThrows(() => runLine('30 STIME'), /Bad argument value/, 'STIME runs from 0 to 25.4 seconds');
+  assert(show('2.5 STIME OPENIO CLOSEIO FINISH BUFLEN') === '0 1', 'BUFLEN finds no characters and no error');
+  assert(show('10 SRECV') === '"" 0', 'SRECV returns what a timed-out HP does: no characters and 0');
+  clearPrintLog();
+  assert(show('"to the printer" XMIT') === '1' && printLog.join() === 'to the printer', 'XMIT prints the string, as to an RS-232 printer, and reports success');
+  assert(show('KERRM') === '""', 'KERRM has no Kermit error to report');
+  assert(show('SERVER XSERV 1') === '1' && notes.length === 2, 'SERVER and XSERV say there is no serial link and return');
+  assertThrows(() => runLine('"D" "G" PKT'), /Timeout/, 'PKT times out with no Kermit server, as the HP does with nothing connected');
+  setTransferHooks(null);
+  clearPrintLog();
+  runLine("{ IOPAR IOSUB } PURGE");
+}

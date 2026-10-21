@@ -197,7 +197,7 @@ class App {
       get: () => this.prefs.stackSize,
       set: (size) => { this.setPrefs({ stackSize: size }); setTimeout(() => { this._applyPrefs(); this.renderAll(); }); },
     });
-    setTransferHooks({ send: (files) => this._sendFiles(files), receive: (pairs) => this._receiveFiles(pairs) });
+    setTransferHooks({ send: (files) => this._sendFiles(files), receive: (pairs) => this._receiveFiles(pairs), note: (text) => this.toast(text) });
     setBeepHook(beep);
     setVersion(VERSION, DATE);
     setConlibHook(() => this.showConstants());

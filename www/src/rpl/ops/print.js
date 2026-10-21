@@ -20,7 +20,7 @@ export function clearPrintLog() {
   printLog.length = 0;
 }
 
-function print(lines) {
+export function print(lines) {
   if (inScratchState()) return;
   printLog.push(...lines);
   if (printLog.length > MAX_LINES) printLog.splice(0, printLog.length - MAX_LINES);

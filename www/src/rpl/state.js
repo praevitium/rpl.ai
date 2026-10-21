@@ -581,6 +581,12 @@ export function varStore(id, value) {
   _emit();
 }
 
+// Reserved variables the HP keeps in HOME whatever the current directory, such as IOPAR.
+export function homeStore(id, value) {
+  _home.entries.set(String(id), value);
+  _emit();
+}
+
 // Map has no in-place reorder, so the directory gets a rebuilt Map.
 function _setEntries(dir, pairs) {
   dir.entries = new Map(pairs);
