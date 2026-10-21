@@ -536,17 +536,21 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   so a circle is round, and CNTR, which moves the window to put the cursor
   at its centre.
   Under the readout a function plot has the HP's FCN keys ROOT, ISECT,
-  SLOPE, AREA, EXTR, F(X), F' and TANL: each works about the cursor (the
-  trace cursor, else the point you tapped, else the middle of the window) on
-  the selected or first function, puts the answer on the stack tagged as the
-  HP does, `Root: 3.14159265359`, `I-Sect: (0.785398163397, 0.707106781187)`
-  with the next function, `Slope: 0.`, `Extrm: (4.71238898039, -1)` or
-  `F(x): 0.841470984808`, and moves the trace cursor there; AREA marks the
-  first bound on one tap and, after the cursor has moved, puts `Area: 2.` on
-  the next; F' plots the derivative and puts it on the stack; TANL plots the
-  tangent line and puts it on the stack as `TanL: '0.540302305868*X+0.30116867894'`.
-  SLOPE and TANL take the CAS derivative when it is ready and difference the
-  curve when it isn't.
+  SLOPE, AREA, SHADE, EXTR, F(X), NXEQ, F' and TANL: each works about the
+  cursor (the trace cursor, else the point you tapped, else the middle of the
+  window) on the selected or first function, puts the answer on the stack
+  tagged as the HP does, `Root: 3.14159265359`,
+  `I-Sect: (0.785398163397, 0.707106781187)` with the next function,
+  `Slope: 0.`, `Extrm: (4.71238898039, -1)` or `F(x): 0.841470984808`, and
+  moves the trace cursor there; AREA marks the first bound on one tap and,
+  after the cursor has moved, puts `Area: 2.` on the next; SHADE does the
+  same and shades between the function and the next one, or the x axis;
+  NXEQ makes the next function the current one; F' plots the derivative and
+  puts it on the stack; TANL plots the tangent line and puts it on the stack
+  as `TanL: '0.540302305868*X+0.30116867894'`. SLOPE and TANL take the CAS
+  derivative when it is ready and difference the curve when it isn't. A
+  tagged formula on the stack, as these leave, plots from its level like any
+  other.
   In a short plot drawer, in landscape or with the keyboard up, the drawer
   scrolls, so the field you type in stays in view.
 - Settings › Appearance sets the stack's text size, from Small to Larger,

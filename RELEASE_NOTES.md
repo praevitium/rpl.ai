@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.3 (2026-10-20)
+**Latest release:** v0.8.4 (2026-10-20)
 
 ---
 
@@ -18,6 +18,23 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.4 — 2026-10-20
+
+- The plot's FCN keys gain SHADE and NXEQ, in the HP's order ROOT, ISECT,
+  SLOPE, AREA, SHADE, EXTR, F(X), NXEQ, F', TANL. SHADE marks the first bound
+  on one tap and, on the next, shades between the function and the next one,
+  or the x axis when it is alone, in the function's colour; the shade stays
+  through pans and zooms and goes with either trace. NXEQ makes the next
+  function the current one, as the HP's turns to the next equation.
+- A tagged formula on the stack, as TANL and F' leave (`TanL: 'X'`), now
+  offers Plot from its level and plots as the formula; before, the level
+  offered nothing and PLOT said FUNCTION needs an expression.
+- An AREA or SHADE first bound whose function has since been removed,
+  hidden or deselected is dropped together with its "move the cursor and
+  tap again" readout, so the readout and the key agree.
 
 ---
 
