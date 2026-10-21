@@ -15,7 +15,7 @@ import {
   goHome, goUp, goInto, makeSubdir,
   setWordsize, getWordsize, getWordsizeMask,
   setBinaryBase, getBinaryBase, resetBinaryState,
-  setApproxMode,
+  setApproxMode, clearAllHalted,
 } from '../www/src/rpl/state.js';
 import { assert, assertThrows } from './helpers.mjs';
 
@@ -55,9 +55,19 @@ import { assert, assertThrows } from './helpers.mjs';
   {
     const e = new Entry(new Stack());
     const failed = (line) => { e.buffer = line; e.cursor = line.length; e.enter(); return e.error; };
-    assert(failed('"Hi" MSGBOX') === 'MSGBOX: not inside a running program' && failed('1 TVMROOT') === 'TVMROOT: Bad argument type'
+    assert(failed('"Go" PROMPT') === 'PROMPT: not inside a running program' && failed('1 TVMROOT') === 'TVMROOT: Bad argument type'
       && failed('« 1 ROOT » EVAL').startsWith('EVAL: ROOT: '),
-      'a command whose own error names it says its name once, where the banner read MSGBOX: MSGBOX: and TVMROOT: TVMROOT:');
+      'a command whose own error names it says its name once, where the banner read PROMPT: PROMPT: and TVMROOT: TVMROOT:');
+  }
+
+  {
+    const e = new Entry(new Stack());
+    const typed = (line) => { clearAllHalted(); e.buffer = line; e.cursor = line.length; e.enter(); return `${e.error || ''}|${calcState.halted?.kind ?? ''}`; };
+    assert(typed('"Hi" MSGBOX') === '|msgbox' && typed('"Pick" { "A" "B" } 1 CHOOSE') === '|choose' && typed('"Name?" "" INPUT') === '|input'
+      && typed('"T" { "A" } { } { } { } INFORM') === '|inform' && typed('2 WAIT') === '|wait'
+      && typed('HALT') === 'HALT: not inside a running program|' && typed('"Go" PROMPT') === 'PROMPT: not inside a running program|',
+      'MSGBOX, CHOOSE, INPUT, INFORM and WAIT typed on the line open their dialog, as the HP runs its line as a program; HALT and PROMPT, which would leave the line suspended, still say they need a program');
+    clearAllHalted();
   }
 
   {

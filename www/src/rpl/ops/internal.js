@@ -905,12 +905,16 @@ function bareNameId(tok) {
 }
 
 
+// The HP runs its command line as a program, so these open their dialog there too. HALT and PROMPT
+// stay errors on the line: they would leave it suspended with nothing after them.
+const LINE_DIALOGS = new Set(['MSGBOX', 'CHOOSE', 'INPUT', 'INFORM', 'WAIT']);
+
 // A command line holding a program structure or → runs as one program, as on
 // the HP50, instead of pushing FOR, NEXT and the rest as names.
 export function isProgramLine(values) {
   return values.some((v) => {
     const id = bareNameId(v);
-    return id !== null && (CF_OPENERS.has(id) || id === '→' || id === '->');
+    return id !== null && (CF_OPENERS.has(id) || LINE_DIALOGS.has(id) || id === '→' || id === '->');
   });
 }
 
