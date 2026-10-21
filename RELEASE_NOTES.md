@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.35 (2026-10-21)
+**Latest release:** v0.8.36 (2026-10-21)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.36 — 2026-10-21
+
+- Fixed: `INFORM`'s form put away by its ×, Escape, a phone's back button
+  or a tap beside it left the program halted with the form gone. It now
+  cancels, answering 0, as the HP's CANCEL and ON do.
+- Added: `MSGBOX`, `CHOOSE`, `INPUT`, `INFORM` and `WAIT` typed straight on
+  the command line open their dialog, as on the HP, which runs its command
+  line as a program; they had said "not inside a running program". `HALT`
+  and `PROMPT` still need a program.
+- Changed: a level marked "this one", "argument" or "result" keeps its tag
+  beside the value, so a wide value starts after the tag instead of
+  running under it, as it did at 280 px in minimal view.
 
 ## v0.8.35 — 2026-10-21
 
