@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.56 (2026-10-21)
+**Latest release:** v0.8.57 (2026-10-21)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.57 — 2026-10-21
+
+- Fixed: with approximate mode on, INV of a matrix holding fractions said
+  Bad argument type; it now gives the decimal inverse, so
+  `[[ 1 2 ][ 3 4 ]] INV -105 SF INV` returns `[[ 1. 2. ][ 3. 4. ]]`.
+- Added: a list of two or more items offers Sort (SORT), Reverse (REVLIST)
+  and Sum (ΣLIST) in its level menu, as the HP's LIST menu does.
+- Improved: with the keyboard in a menu, a typed letter moves to the next
+  item starting with it, as a CHOOSE list already does, so a long level
+  menu needs no scrolling.
 
 ## v0.8.56 — 2026-10-21
 

@@ -227,7 +227,8 @@ RPL puts the numbers first and the operation last. Each value goes on the
   `{ 1 2 3 } « SQ » MAP` gives `{ 1 4 9 }`, and `"HELLO" 2 3 SUB` gives
   `"EL"`. The LIST menu opens on the HP's folders: ELEM and PROC from its
   PRG LIST menu and CHARS, its string commands, then OBJ→, →LIST, SUB and
-  REPL. `→STR` writes a number in the display format, as on the HP, so
+  REPL. A list's level menu offers Sort (SORT), Reverse (REVLIST) and Sum
+  (ΣLIST). `→STR` writes a number in the display format, as on the HP, so
   `2 FIX "Total: " 12.3456 →STR +` gives `"Total: 12.35"`, and a string
   at level 1 shows whole, line breaks included.
 - **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
@@ -300,7 +301,7 @@ On Windows and Linux, ⌘ is Ctrl and ⌥ is Alt.
 | `↑` · `↓` on an empty line | Select level 1 · edit level 1 |
 | Enter · `→` on an empty line | DUP · SWAP |
 | `⌘C` on an empty line | Copy level 1, ready to paste into a spreadsheet (text you have selected copies as text) |
-| With a level selected | `↑` `↓` move the selection · Home · End go to the top level · level 1 · `⌘↑` `⌘↓` move the level · Enter edits · ⇧Enter copies it into the command line (ECHO) · Space shows it full size (VIEW) · ⌫ drops · `⌘C` copies · `⌘D` picks · the menu key or Shift+F10 opens its menu |
+| With a level selected | `↑` `↓` move the selection · Home · End go to the top level · level 1 · `⌘↑` `⌘↓` move the level · Enter edits · ⇧Enter copies it into the command line (ECHO) · Space shows it full size (VIEW) · ⌫ drops · `⌘C` copies · `⌘D` picks · the menu key or Shift+F10 opens its menu, where a typed letter jumps to the next item starting with it |
 | On a variable in the Variables drawer | Enter runs it or puts it on the stack · ⇧Enter stores level 1 in it · ⌥Enter recalls it, as the HP's shifted VAR keys do · Delete purges it (PURGE, with Undo); a folder with something in it offers Delete with its items (PGDIR) in its ⋯ menu |
 | On a row in a drawer list | `↑` `↓` Home End move between rows · Delete removes a History entry · in a menu, Home and End go to the first and last item |
 | On the tools rail or a drawer's tabs | The arrow keys, Home and End move between the buttons; Enter opens one |
