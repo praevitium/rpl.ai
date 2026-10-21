@@ -109,7 +109,11 @@ function formatDirectoryBody(dir, indent, seen = new Set()) {
   return lines.join('\n');
 }
 
+// A value as it is typed, a directory written out as DIR name value … END.
+export function formatHpSource(value) {
+  return isDirectory(value) ? formatDirectoryBody(value, '') : formatSource(value);
+}
+
 export function formatHpText(value) {
-  const body = isDirectory(value) ? formatDirectoryBody(value, '') : formatSource(value);
-  return `${HP_TEXT_HEADER}\n${sourceToHpText(body)}\n`;
+  return `${HP_TEXT_HEADER}\n${sourceToHpText(formatHpSource(value))}\n`;
 }

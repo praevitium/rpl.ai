@@ -590,8 +590,10 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(printed('1 2 PRLCD')[0] === '2: 1|1: 2', 'PRLCD prints the stack as the display shows it');
   assert(printed("42 'PRV' STO { PRV } PRVAR").join() === 'PRV: 42,0' && printed("'PRV' PRVAR")[0] === 'PRV: 42', 'PRVAR prints a name or a list of names with its value');
   assertThrows(() => runLine("'PRNOPE' PRVAR"), /Undefined name: PRNOPE/, 'PRVAR names a variable that does not exist');
+  assert(printed("'PRDIR' CRDIR 'PRDIR' EVAL 5 'Q' STO UPDIR { PRDIR } PRVAR 'PRDIR' RCL PR1 DROP 'PRDIR' PGDIR")[0] === 'PRDIR: DIR|  Q 5|END|DIR|  Q 5|END',
+    'PRVAR and PR1 print a directory as DIR, its variables and END');
   assert(printed('CR').join() === ',0', 'CR prints an empty line');
-  assert(printed('-4 DELAY OLDPRT').join() === ',0' && lines === 10, 'DELAY and OLDPRT have no printer to set up and print nothing; the hook heard every printed line');
+  assert(printed('-4 DELAY OLDPRT').join() === ',0' && lines === 16, 'DELAY and OLDPRT have no printer to set up and print nothing; the hook heard every printed line');
   assertThrows(() => runLine('"x" DELAY'), /Bad argument type/, 'DELAY wants a number');
   setPrintHook(null);
   clearPrintLog();

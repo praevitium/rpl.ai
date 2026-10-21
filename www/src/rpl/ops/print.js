@@ -2,7 +2,8 @@ import { isString, isName, isList, isReal, isInteger } from '../types.js';
 import { register } from './registry.js';
 import { RPLError } from '../stack.js';
 import { inScratchState } from '../state.js';
-import { format, formatSource } from '../formatter.js';
+import { format } from '../formatter.js';
+import { formatHpSource } from '../hp-text.js';
 import { recallVar } from './internal.js';
 
 // rpl.ai has no printer: the print commands write to a print log the app shows, as the HP prints on paper.
@@ -26,8 +27,8 @@ function print(lines) {
   _printHook?.(lines.length);
 }
 
-// Multiline printer format: strings without their quotes, everything else as it is typed.
-const multiline = (v) => (isString(v) ? v.value : formatSource(v)).split('\n');
+// Multiline printer format: strings without their quotes, everything else as it is typed, a directory as DIR … END.
+const multiline = (v) => (isString(v) ? v.value : formatHpSource(v)).split('\n');
 
 function compact(v) {
   const text = format(v).replace(/\s*\n\s*/g, ' ');
