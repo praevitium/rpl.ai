@@ -1782,7 +1782,7 @@ setAngle('RAD');
   assert(/\[\(\) => !!this\.pendingEdit, \(\) => this\.cancelEdit\(\)\],\n      \[\(\) => this\.selection != null, \(\) => this\.clearSelection\(\)\],\n    \];/.test(appSrc),
     'back button: a selected stack level is the last thing back puts away, as the HP\'s ON leaves the interactive stack, before the app itself (back with a level selected left the installed app)');
   assert(/const overlays = \[\n[^\n]*\n      \[\(\) => !!this\._offScreen, \(\) => this\._offScreen\.click\(\)\],/.test(appSrc)
-    && /\[\(\) => this\.sheets\.isOpen\(\), \(\) => this\.sheets\.close\(\)\],\n      \[\(\) => !!this\.entry\.error, \(\) => this\.dismissError\(\)\],/.test(appSrc)
+    && /\[\(\) => this\.sheets\.isOpen\(\), \(\) => this\.sheets\.dismiss\(\)\],\n      \[\(\) => !!this\.entry\.error, \(\) => this\.dismissError\(\)\],/.test(appSrc)
     && /this\._offScreen = off;\n    this\.keepAwake\(\);\n[^\n]*\n    this\._syncBackButton\?\.\(\);/.test(appSrc),
     'back button: as the HP\'s ON wakes it and clears an error message, back wakes the calculator from OFF (first, since the off screen covers everything) and puts an error banner away before the app is left (both left the installed app); OFF, which comes after its tap, guards the history itself');
   {
@@ -2797,6 +2797,11 @@ setAngle('RAD');
     && /\.inf-fields \{ display: grid; grid-template-columns: repeat\(var\(--inf-cols, 1\), minmax\(0, 1fr\)\);/.test(css)
     && /@container app \(max-width: 479px\) \{ \.inf-fields \{ grid-template-columns: minmax\(0, 1fr\); \} \.inf-blank \{ display: none; \} \}/.test(css),
     "INFORM: its banner is the title with Fill in, Cancel and Stop keys; the form opens in a sheet with a label and a 40 px input per field, the help as the placeholder and the initial value as source, in the form's columns on a wide screen and one on a phone; OK parses each field (an empty one NOVAL), checks the field's types and answers with the values and 1, a failing field keeping the form open with the complaint on it; Cancel answers 0, Reset puts the reset values back, Enter moves to the next field and from the last answers, and the fields tell a phone keyboard so (Next, and Done on the last, as the matrix writer's cells and the command line's Go do); the sheet goes with its dialog and the banner's Fill in reopens it");
+  assert(/dismiss\(\) \{\s*if \(this\.kind === 'inform'\) this\.app\.cancelInform\(\);\s*else this\.close\(\);/.test(sheetsSrc)
+    && /if \(e\.target === this\.el\) this\.dismiss\(\);/.test(sheetsSrc) && /case 'close': this\.dismiss\(\); return;/.test(sheetsSrc)
+    && /if \(this\.sheets\.isOpen\(\)\) \{ this\.sheets\.dismiss\(\); return true; \}/.test(appSrc)
+    && /\[\(\) => this\.sheets\.isOpen\(\), \(\) => this\.sheets\.dismiss\(\)\]/.test(appSrc),
+    'INFORM: the form put away by its X, Escape, the back button or a tap beside it cancels, answering 0 as the HP\'s CANCEL and ON do, where the program stayed halted with the form gone');
 }
 
 {

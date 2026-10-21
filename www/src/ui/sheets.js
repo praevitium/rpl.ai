@@ -80,6 +80,12 @@ export class Sheets {
     this._confirmReset = false;
   }
 
+  // Putting INFORM's form away cancels it, as the HP's CANCEL and ON do, where it had left the program halted unseen.
+  dismiss() {
+    if (this.kind === 'inform') this.app.cancelInform();
+    else this.close();
+  }
+
   openSettings() {
     this.page = 'appearance';
     this._open('settings');
@@ -134,7 +140,7 @@ export class Sheets {
     if (!this.el) {
       this.el = document.createElement('div');
       this.el.className = 'sheet-wrap';
-      this.el.addEventListener('mousedown', (e) => { if (e.target === this.el) this.close(); });
+      this.el.addEventListener('mousedown', (e) => { if (e.target === this.el) this.dismiss(); });
       this.el.addEventListener('click', (e) => this._onClick(e));
       this.el.addEventListener('keydown', (e) => (this.kind === 'game' ? this._onGameKey(e) : this._onKeyDown(e)));
       this.el.addEventListener('pointerdown', (e) => { this._swipe = this.kind === 'game' && e.target.closest('.mh-grid') ? [e.clientX, e.clientY] : null; });
@@ -381,7 +387,7 @@ export class Sheets {
     if (!b || !this.el.contains(b)) return;
     const { app } = this;
     switch (b.dataset.sh) {
-      case 'close': this.close(); return;
+      case 'close': this.dismiss(); return;
       case 'inform-ok': app.acceptInform(); return;
       case 'inform-cancel': app.cancelInform(); return;
       case 'inform-reset': this._informReset(); return;

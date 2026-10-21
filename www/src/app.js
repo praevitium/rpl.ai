@@ -2553,7 +2553,7 @@ class App {
 
   _escape() {
     if (this.popover.isOpen()) { this.popover.close(); return true; }
-    if (this.sheets.isOpen()) { this.sheets.close(); return true; }
+    if (this.sheets.isOpen()) { this.sheets.dismiss(); return true; }
     if (this.plotFocus) { this.setPlotFocus(false); return true; }
     if (document.activeElement?.closest?.('.pl-box')) { this.focusInput(); return true; }
     if (this.selection != null) { this.clearSelection(); return true; }
@@ -2627,7 +2627,7 @@ class App {
       [() => !!this._offScreen, () => this._offScreen.click()],
       [() => this.popover.isOpen(), () => this.popover.close()],
       [() => this.palette.isOpen(), () => this.palette.close()],
-      [() => this.sheets.isOpen(), () => this.sheets.close()],
+      [() => this.sheets.isOpen(), () => this.sheets.dismiss()],
       [() => !!this.entry.error, () => this.dismissError()],
       [() => this.inputMode !== 'rpl', () => this.cancelWriter()],
       [() => this._drawerCoversStack(), () => this.drawers.close()],
