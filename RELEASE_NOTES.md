@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.31 (2026-10-21)
+**Latest release:** v0.8.32 (2026-10-21)
 
 ---
 
@@ -20,6 +20,23 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.32 — 2026-10-21
+
+- Fixed: an installed app on a 412 or 430 px tall phone in landscape
+  missed the short-window layout, which started under 400 px, so an open
+  equation or matrix writer left no whole stack level in view. It now
+  starts under 440 px and leaves two or three.
+- Added: Keep the screen on in Settings › Appearance, where the browser
+  supports it. The phone's screen stays on while rpl.ai is open, for a
+  long program or a result you keep checking; the app asks again each
+  time it comes back to the front. It's off by default.
+- Changed: a landscape phone with the keyboard down keeps the writers'
+  keys beside the formula or matrix, as it does with the keyboard up,
+  in minimal view or with the keypad hidden. The matrix writer at
+  640 × 360 now leaves one stack level where it left none, and every
+  other landscape size gains one. With the full keypad beside it the
+  work column is too narrow, so the keys stay under the writer.
 
 ## v0.8.31 — 2026-10-21
 
