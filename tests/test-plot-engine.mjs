@@ -6,7 +6,7 @@ import {
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit, sampleDiffEq,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
   evalTraceAtX, sampleTrace, traceInputError, axisTicks, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace,
-  DEFAULT_TURN, turnBy, evalComplex, TRACE_KINDS, cursorPoint, stepCursor, slopeAt, nearestRoot, nearestExtremum,
+  DEFAULT_TURN, turnBy, evalComplex, TRACE_KINDS, cursorPoint, stepCursor, slopeAt, nearestRoot, nearestExtremum, integrateFunction,
 } from '../www/src/ui/plot-engine.js';
 import { Matrix, Vector, Real, Integer, Symbolic, Program, RList, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
 import { lookup, setGraphicsHook } from '../www/src/rpl/ops.js';
@@ -1034,4 +1034,11 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(m && near(m.x, 2, 1e-5) && near(m.y, 3, 1e-9), 'FCN EXTR: a parabola\'s vertex');
   assert(nearestExtremum((x) => x, 0, 10) === null, 'FCN EXTR: a line has no extremum');
   assert(near(slopeAt((x) => x * x, 1, 1e-4), 2, 1e-6) && near(slopeAt(Math.sin, 0, 1e-4), 1, 1e-6), 'FCN SLOPE: central differences give 2 for x^2 at 1 and 1 for sin at 0');
+}
+
+{
+  const near = (a, b, tol = 1e-7) => Math.abs(a - b) <= tol;
+  assert(near(integrateFunction((x) => x * x, 0, 3), 9) && near(integrateFunction(Math.sin, 0, Math.PI), 2), 'FCN AREA: Simpson integrates x^2 on 0..3 to 9 and sin on 0..pi to 2');
+  assert(near(integrateFunction(Math.sin, Math.PI, 0), -2) && integrateFunction(Math.sin, 1, 1) === 0, 'FCN AREA: a backwards span is negative and an empty span is 0');
+  assert(near(integrateFunction((x) => x, 0, 1, 7), 0.5), 'FCN AREA: an odd panel count is made even');
 }

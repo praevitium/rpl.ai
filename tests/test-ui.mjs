@@ -2909,7 +2909,7 @@ setAngle('RAD');
 {
   const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/const FCN_TOOLS = Object\.freeze\(\[\['ROOT', [^\]]*\], \['EXTR', [^\]]*\], \['SLOPE', [^\]]*\]\]\);/.test(gv)
+  assert(/const FCN_TOOLS = Object\.freeze\(\[\['ROOT', [^\]]*\], \['ISECT', [^\]]*\], \['SLOPE', [^\]]*\], \['AREA', [^\]]*\], \['EXTR', [^\]]*\]\]\);/.test(gv)
     && /<div class="pl-fcn" role="toolbar" aria-label="Function tools" hidden>\$\{FCN_TOOLS\.map\(/.test(gv)
     && /if \(fcn\) \{ this\.fcnTool\(fcn\.dataset\.fcn\); return; \}/.test(gv)
     && /this\._fcnTools\.hidden = !this\._fcnTrace\(\);/.test(gv)
@@ -2935,7 +2935,14 @@ setAngle('RAD');
 }
 
 {
+  const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/value = Tagged\('I-Sect', Complex\(x, f\(x\)\)\);/.test(gv) && /this\._fail\('ISECT needs two functions'\)/.test(gv)
+    && /if \(this\._areaFrom == null\) \{\n\s*this\._areaFrom = x0;\n\s*this\._syncPush\(\);/.test(gv)
+    && /const area = integrateFunction\(f, this\._areaFrom, x0\);\n\s*this\._areaFrom = null;/.test(gv)
+    && /value = Tagged\('Area', Real\(area\)\);/.test(gv)
+    && /\[data-fcn="AREA"\]'\)\.setAttribute\('aria-pressed', String\(this\._areaFrom != null\)\);/.test(gv),
+    'plot FCN: ISECT pushes the nearest crossing of the function with the next one as I-Sect: (x, y), and AREA marks the first bound on one tap (the chip pressed) and pushes Area: on the next, in the HP\'s FCN order ROOT ISECT SLOPE AREA EXTR');
   assert(/\n@media \(max-height: 400px\) \{ \.pl-box \{ min-height: 150px; \} \}/.test(css),
     'plot in landscape: the plot box gives up its 220 px minimum in a window under 400 px tall, so the readout and FCN keys sit on screen instead of under the fold');
 }

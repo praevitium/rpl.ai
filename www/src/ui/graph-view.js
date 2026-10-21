@@ -1,7 +1,7 @@
 import {
   TRACE_COLORS, TRACE_KINDS, nextTraceColor, defaultView, zoomView, panView, pinchView, DEFAULT_TURN, turnBy,
   worldToPixel, pixelToWorld, axisTicks, hasUsableSpan, cursorPoint, stepCursor,
-  sampleTrace, fitViewToTraces, evalTraceAtX, slopeAt, nearestRoot, nearestExtremum,
+  sampleTrace, fitViewToTraces, evalTraceAtX, slopeAt, nearestRoot, nearestExtremum, integrateFunction,
   stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace,
 } from './plot-engine.js';
 import { escapeHtml } from './display.js';
@@ -55,7 +55,7 @@ const PICT_TOOLS = Object.freeze([
   ['PICT→', 'Put PICT on the stack'],
 ]);
 // The HP's FCN menu on a function plot, the part that works about one cursor.
-const FCN_TOOLS = Object.freeze([['ROOT', 'The nearest root of the function'], ['EXTR', 'The nearest extremum, as a point'], ['SLOPE', 'The slope of the function here']]);
+const FCN_TOOLS = Object.freeze([['ROOT', 'The nearest root of the function'], ['ISECT', 'The nearest crossing of two functions, as a point'], ['SLOPE', 'The slope of the function here'], ['AREA', 'The area under the function between two cursor positions: tap here, move the cursor, tap again'], ['EXTR', 'The nearest extremum, as a point']]);
 const NEEDS_MARK = new Set(['LINE', 'TLINE', 'BOX', 'CIRCL', 'DEL', 'SUB']);
 const DOTS = Object.freeze({ 'DOT+': 'on', 'DOT-': 'off' });
 const TAP_SLOP_PX = 6;
@@ -152,6 +152,7 @@ export class GraphView {
     this._hover = null;
     this._mark = null;
     this._anchor = null;
+    this._areaFrom = null;
     this._dot = null;
     this.tracing = false;
     this.traceX = null;
@@ -481,6 +482,7 @@ export class GraphView {
   applyPlotOp(kind, stack, data = null) {
     this._mark = null;
     this._anchor = null;
+    this._areaFrom = null;
     this._dot = null;
     if (kind === 'animate') {
       this.view = pictWindow() ?? this.view;
@@ -673,6 +675,7 @@ export class GraphView {
     if (value) this._push.textContent = `↵ ${format(value)}`;
     this._pictTools.hidden = !this._mark || this.tracing || this._projected();
     this._fcnTools.hidden = !this._fcnTrace();
+    this._fcnTools.querySelector('[data-fcn="AREA"]').setAttribute('aria-pressed', String(this._areaFrom != null));
     for (const b of this._pictTools.querySelectorAll('[data-pict]')) {
       if (NEEDS_MARK.has(b.dataset.pict)) b.disabled = !this._anchor;
       if (DOTS[b.dataset.pict]) b.setAttribute('aria-pressed', String(this._dot === DOTS[b.dataset.pict]));
@@ -708,6 +711,24 @@ export class GraphView {
       x = nearestRoot(f, x0, span);
       if (!Number.isFinite(x)) { this._fail(`no root of ${t.expr} in the window`); return; }
       value = Tagged('Root', Real(x));
+    } else if (key === 'ISECT') {
+      const other = this.traces.find((o) => o !== t && o.enabled && o.kind === 'function');
+      if (!other) { this._fail('ISECT needs two functions'); return; }
+      x = nearestRoot((x) => f(x) - evalTraceAtX(other, x, opts), x0, span);
+      if (!Number.isFinite(x)) { this._fail(`${t.expr} and ${other.expr} don't cross in the window`); return; }
+      value = Tagged('I-Sect', Complex(x, f(x)));
+    } else if (key === 'AREA') {
+      // The HP's AREA: one press marks the first bound, the next integrates from it to the cursor.
+      if (this._areaFrom == null) {
+        this._areaFrom = x0;
+        this._syncPush();
+        this._readout.textContent = `Area from ${format(Real(x0))}: move the cursor and tap AREA again`;
+        return;
+      }
+      const area = integrateFunction(f, this._areaFrom, x0);
+      this._areaFrom = null;
+      if (!Number.isFinite(area)) { this._fail(`${t.expr} has no area there`); return; }
+      value = Tagged('Area', Real(area));
     } else {
       const e = nearestExtremum(f, x0, span);
       if (!e) { this._fail(`no extremum of ${t.expr} in the window`); return; }

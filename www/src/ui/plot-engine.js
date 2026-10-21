@@ -1479,6 +1479,15 @@ export function nearestRoot(f, x0, span, steps = 400) {
   return nearestCrossing(f, x0, span / steps, span);
 }
 
+// AREA: Simpson's rule between two cursor positions, on an even number of panels.
+export function integrateFunction(f, a, b, panels = 1000) {
+  if (a === b) return 0;
+  const n = panels + (panels % 2), h = (b - a) / n;
+  let sum = f(a) + f(b);
+  for (let i = 1; i < n; i++) sum += (i % 2 ? 4 : 2) * f(a + i * h);
+  return sum * h / 3;
+}
+
 export function nearestExtremum(f, x0, span, steps = 400) {
   const step = span / steps;
   const x = nearestCrossing((x) => slopeAt(f, x, step / 8), x0, step, span);
