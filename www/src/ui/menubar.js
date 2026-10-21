@@ -56,7 +56,7 @@ export class MenuBar {
     el.addEventListener('contextmenu', (e) => { if (e.target.closest('.sk[data-i]')) e.preventDefault(); });
     el.addEventListener('click', (e) => {
       const sk = e.target.closest('.sk[data-i]');
-      if (sk) { if (e.detail === 0 && !sk.disabled) this._press(sk); return; }
+      if (sk) { if (e.detail === 0 && !e.pointerType && !sk.disabled) this._press(sk); return; }
       const b = e.target.closest('[data-mb]');
       if (!b) return;
       if (this._mbHeld) { this._mbHeld = false; return; }

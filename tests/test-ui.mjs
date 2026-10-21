@@ -2934,6 +2934,12 @@ setAngle('RAD');
   assert(tap(key) && opened.length === 2, 'soft keys, touch: the click that lands back on the key is swallowed too, where Chrome\'s (detail 0, as a keyboard\'s) pressed it again: DUP ran twice and a toggle such as CLK flipped back off');
   fire(onDoc, 'pointerdown', sheetEdit);
   assert(!fire(onDoc, 'click', sheetEdit).stopped, 'soft keys, touch: the next tap, on what the key opened, goes through');
+  const click = (pointerType) => { for (const fn of on.click ?? []) fn({ type: 'click', detail: 0, pointerType, target: key }); };
+  click('pen');
+  click('');
+  assert(opened.length === 3, "soft keys: a click with detail 0 presses the key only from a keyboard (no pointer type), where a stylus tap's click, which Chrome also sends with detail 0, pressed it a second time");
+  assert(/if \(evt\.detail !== 0 \|\| evt\.pointerType\) return;/.test(readFileSync(new URL('../www/src/ui/keyboard.js', import.meta.url), 'utf8')),
+    'keypad: a tap types its key once, where Chrome sends the click after a cancelled touch pointerdown with detail 0, as a keyboard does, and 7 typed 77 and SIN ran twice');
 }
 
 {

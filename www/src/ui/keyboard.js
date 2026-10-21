@@ -381,8 +381,10 @@ export class Keypad {
       evt.preventDefault();
       press();
     });
+    // Chrome sends a tap's click with detail 0 once its pointerdown is cancelled, as a keyboard's is; only a
+    // keyboard's or a screen reader's click has no pointer type.
     el.addEventListener('click', (evt) => {
-      if (evt.detail !== 0) return;
+      if (evt.detail !== 0 || evt.pointerType) return;
       press();
       el.focus({ preventScroll: true });
     });
