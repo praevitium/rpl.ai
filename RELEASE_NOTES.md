@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.20 (2026-10-21)
+**Latest release:** v0.8.21 (2026-10-21)
 
 ---
 
@@ -18,6 +18,27 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.21 — 2026-10-21
+
+- Fixed: a phone held sideways at 520 to 639 px wide put the keypad below
+  the stack, leaving a 568 x 320 phone 29 px of stack. From 520 px wide a
+  short landscape window now keeps the keypad beside the stack, with four
+  whole levels in view and both writers fitting.
+- Fixed: a second paste into the equation writer replaced the last item of
+  the first, though the writer drew the caret after it. It now follows that
+  item as a factor, as typing does; a selection that shows is still
+  replaced.
+- New: with the equation or matrix writer open, ECHO from a level's menu or
+  soft key, and a level dragged by its number onto the writer, put the
+  level in the formula at its caret or in the focused matrix cell instead
+  of the hidden command line. ECHO then Enter in the matrix writer fills
+  cells one after another.
+- The level menu and the ECHO soft key name where ECHO puts the level (the
+  command line, the formula or the matrix cell), and the menu item carries
+  (ECHO) like VIEW, PICK and ROLL beside it.
 
 ---
 
