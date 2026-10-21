@@ -2873,3 +2873,15 @@ setAngle('RAD');
   assert(/@container app \(max-width: 319px\) \{ \.bn-f \{ gap: 4px; \} \.bn-f \.chip \{ padding-inline: 8px; \} \}/.test(css),
     'errors: under 320 px the banner\'s fixes sit tighter, so a bad type\'s five take two rows at 280 px, where Explain took a third alone');
 }
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const field = /spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="done" class="pop-name"/;
+  assert(field.test(appSrc) && field.test(drawerSrc) && !/height:32px/.test(appSrc) && !/height:32px/.test(drawerSrc)
+    && /placeholder="Backup name" aria-label="Backup name" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="done">/.test(drawerSrc)
+    && /\n\.pop-name \{ width: 100%; height: 32px; border-radius: 8px;/.test(css)
+    && /\n  \.field, \.backup-new input, \.backup-new select, \.pop-name \{ height: 40px; \}/.test(css),
+    'names on a phone: the Store, New folder and Backup name fields are 40 px on touch, keep the case typed (no first-letter capital) and label the keyboard\'s Enter Done, as the writers\' fields do');
+}
