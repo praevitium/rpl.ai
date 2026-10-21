@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { assert, assertThrows } from './helpers.mjs';
 import {
   emptyEquation, equationFromValue, fromAst, toAst, targetAst, EQW_INSERTS,
@@ -602,6 +603,19 @@ function replaceSelection(state, ast) {
   clearUserFlag(-51);
   assert(copied === 'MAX(1,5;2)' && textOf(writer.state) === 'MAX(1.5,2)' && textOf(echoed.state) === '1.5',
     `EQW with -51 set Copy writes MAX(1,5;2) and a paste or ECHO of 1,5 reads 1.5 (${copied}, ${textOf(writer.state)}, ${textOf(echoed.state)})`);
+}
+
+/* Flag -51 in the writer's text view: it reads 2,5 and the ; separator as the keys do. */
+{
+  const { setUserFlag, clearUserFlag } = await import('../www/src/rpl/state.js');
+  const classes = new Set();
+  const writer = { state: emptyEquation(), _render() {}, textArea: { value: 'MAX(2,5;3)', classList: { add: (c) => classes.add(c), remove: (c) => classes.delete(c) } } };
+  setUserFlag(-51);
+  EquationEditor.prototype._onTextInput.call(writer);
+  clearUserFlag(-51);
+  assert(textOf(writer.state) === 'MAX(2.5,3)' && !classes.has('bad'), `EQW with -51 set the text view reads MAX(2,5;3) as MAX(2.5,3) (${textOf(writer.state)})`);
+  const src = readFileSync(new URL('../www/src/ui/equation-editor.js', import.meta.url), 'utf8');
+  assert(src.includes('this.textArea.value = withFractionMark(text);'), 'EQW with -51 set the text view shows the comma form the formula is drawn in');
 }
 
 {

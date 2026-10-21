@@ -2122,7 +2122,7 @@ export class EquationEditor {
   _onTextInput() {
     const text = this.textArea.value.trim();
     try {
-      this.state = text ? replaceWhole(this.state, parseMath(text), 'text') : pressEquationKey(this.state, 'CLEAR');
+      this.state = text ? replaceWhole(this.state, parseMath(fromTyped(text)), 'text') : pressEquationKey(this.state, 'CLEAR');
       this.textArea.classList.remove('bad');
     } catch {
       this.textArea.classList.add('bad');
@@ -2219,7 +2219,7 @@ export class EquationEditor {
     if (drawn.selection && this._selecting) this._placeTools(drawn.selection);
     this._scrollToCaret(drawn.rects.get(target.path?.join('.') ?? ''));
     if (this.showText && document.activeElement !== this.textArea) {
-      this.textArea.value = text;
+      this.textArea.value = withFractionMark(text);
       this.textArea.classList.remove('bad');
     }
     this.app?.appbar?.updateHistory();
