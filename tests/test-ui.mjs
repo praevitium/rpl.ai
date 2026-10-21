@@ -1779,6 +1779,10 @@ setAngle('RAD');
     'Settings: Keep the screen on lets go while OFF\'s dark screen shows and takes the lock again as a tap wakes the calculator (the phone stayed lit on the off screen)');
   assert(/\[\(\) => !!this\.pendingEdit, \(\) => this\.cancelEdit\(\)\],\n      \[\(\) => this\.selection != null, \(\) => this\.clearSelection\(\)\],\n    \];/.test(appSrc),
     'back button: a selected stack level is the last thing back puts away, as the HP\'s ON leaves the interactive stack, before the app itself (back with a level selected left the installed app)');
+  assert(/const overlays = \[\n[^\n]*\n      \[\(\) => !!this\._offScreen, \(\) => this\._offScreen\.click\(\)\],/.test(appSrc)
+    && /\[\(\) => this\.sheets\.isOpen\(\), \(\) => this\.sheets\.close\(\)\],\n      \[\(\) => !!this\.entry\.error, \(\) => this\.dismissError\(\)\],/.test(appSrc)
+    && /this\._offScreen = off;\n    this\.keepAwake\(\);\n[^\n]*\n    this\._syncBackButton\?\.\(\);/.test(appSrc),
+    'back button: as the HP\'s ON wakes it and clears an error message, back wakes the calculator from OFF (first, since the off screen covers everything) and puts an error banner away before the app is left (both left the installed app); OFF, which comes after its tap, guards the history itself');
   {
     const { TOOL_KEYS, MENU_GROUPS, menuById } = await import('../www/src/ui/menus.js');
     const { lookup: findOp } = await import('../www/src/rpl/ops.js');

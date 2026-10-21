@@ -818,6 +818,8 @@ class App {
     document.body.append(off);
     this._offScreen = off;
     this.keepAwake();
+    // OFF can come after the tap that ran it has settled the back button, as from a program.
+    this._syncBackButton?.();
     off.focus({ preventScroll: true });
   }
 
@@ -2619,9 +2621,12 @@ class App {
   // A phone's back button closes the top overlay before it leaves the app: an overlay holds one history entry.
   _installBackButton() {
     const overlays = [
+      // As the HP's ON wakes it from OFF and clears an error message, so does a phone's back button.
+      [() => !!this._offScreen, () => this._offScreen.click()],
       [() => this.popover.isOpen(), () => this.popover.close()],
       [() => this.palette.isOpen(), () => this.palette.close()],
       [() => this.sheets.isOpen(), () => this.sheets.close()],
+      [() => !!this.entry.error, () => this.dismissError()],
       [() => this.inputMode !== 'rpl', () => this.cancelWriter()],
       [() => this._drawerCoversStack(), () => this.drawers.close()],
       // As the HP's ON cancels an edit and leaves the interactive stack, so does a phone's back button.
@@ -2642,6 +2647,7 @@ class App {
       sync();
     });
     for (const type of ['click', 'keyup', 'pointerup']) document.addEventListener(type, () => setTimeout(sync), true);
+    this._syncBackButton = () => setTimeout(sync);
   }
 
   _installKeyboard() {
