@@ -2913,6 +2913,10 @@ setAngle('RAD');
       && drawerRowSrc.includes("if (e.target.matches?.('[data-drawer-tab]') && this._stepAmong(e, [...this.el.querySelectorAll('[data-drawer-tab]')])) return;")
       && /const to = \{ ArrowUp: i - 1, ArrowLeft: i - 1, ArrowDown: i \+ 1, ArrowRight: i \+ 1, Home: 0, End: buttons\.length - 1 \}\[e\.key\];\s*if \(to === undefined\) return false;\s*e\.preventDefault\(\);/.test(drawerRowSrc),
       'tools rail and drawer tabs: the arrow keys, Home and End move along the buttons, where → on a rail button swapped levels 1 and 2 and ↓ took level 1 into the command line');
+    assert(drawerRowSrc.includes("const remove = inside ? menuItem('pgdir', 'trash', `Delete with its ${inside} item${inside === 1 ? '' : 's'} (PGDIR)`) : menuItem('delete', 'trash', 'Delete');")
+      && drawerRowSrc.includes("else if (act === 'pgdir') this._deleteVar(name, true);")
+      && drawerRowSrc.includes('varPurge(name, withContents);'),
+      'Variables: a folder with something in it offers Delete with its items (PGDIR), with Undo, where Delete could only refuse');
     assert(appSrc.includes(`data-row-act="more" title="More actions (\${shortcutText('level.menu')})"`),
       'a level\'s More actions button names its key, Shift+F10, as Edit and Drop beside it name theirs');
   }
@@ -3599,7 +3603,7 @@ setAngle('RAD');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const row = drawerSrc.slice(drawerSrc.indexOf('  _varRow(name, value) {'), drawerSrc.indexOf('  _renderBackups() {'));
   assert((row.match(/<button /g) ?? []).length === 1 && row.includes('data-dw="var-menu"')
-    && /_varMenu\(anchor, name\) \{[\s\S]*?menuItem\('open', 'chr', 'Open'\) : menuItem\('edit', 'edit', 'Edit'\)\}\$\{menuItem\('rename', 'rename', 'Rename'\)\}\$\{menuItem\('download', 'down', 'Download as…'\)\}<hr>\$\{menuItem\('delete', 'trash', 'Delete'\)\}/.test(drawerSrc)
+    && /_varMenu\(anchor, name\) \{[\s\S]*?menuItem\('open', 'chr', 'Open'\) : menuItem\('edit', 'edit', 'Edit'\)\}\$\{menuItem\('rename', 'rename', 'Rename'\)\}\$\{menuItem\('download', 'down', 'Download as…'\)\}<hr>\$\{remove\}/.test(drawerSrc)
     && /_varsMenu\(anchor\) \{[\s\S]*?'newdir'[\s\S]*?'upload'[\s\S]*?'export-rpl'[\s\S]*?'export'[\s\S]*?'import'/.test(drawerSrc)
     && drawerSrc.includes('data-dw="vars-more"') && !drawerSrc.includes('vars-foot')
     && drawerSrc.includes('<details class="vr-backups"><summary class="sec-h">') && !css.includes('.vars-foot')

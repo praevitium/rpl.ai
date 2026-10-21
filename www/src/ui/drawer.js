@@ -807,14 +807,18 @@ export class Drawers {
 
   // A variable's actions wait in one menu, so its row shows just the name and value; a tap on the row still recalls or runs it.
   _varMenu(anchor, name) {
-    const isDir = calcState.current.entries.get(name)?.type === TYPES.DIRECTORY;
-    const html = `<h6>${escapeHtml(name)}</h6>${isDir ? menuItem('open', 'chr', 'Open') : menuItem('edit', 'edit', 'Edit')}${menuItem('rename', 'rename', 'Rename')}${menuItem('download', 'down', 'Download as…')}<hr>${menuItem('delete', 'trash', 'Delete')}`;
+    const value = calcState.current.entries.get(name);
+    const isDir = value?.type === TYPES.DIRECTORY;
+    const inside = isDir ? value.entries.size : 0;
+    const remove = inside ? menuItem('pgdir', 'trash', `Delete with its ${inside} item${inside === 1 ? '' : 's'} (PGDIR)`) : menuItem('delete', 'trash', 'Delete');
+    const html = `<h6>${escapeHtml(name)}</h6>${isDir ? menuItem('open', 'chr', 'Open') : menuItem('edit', 'edit', 'Edit')}${menuItem('rename', 'rename', 'Rename')}${menuItem('download', 'down', 'Download as…')}<hr>${remove}`;
     this._openMenu(anchor, html, name, (act) => {
       if (act === 'open') this._activateVar(name);
       else if (act === 'edit') { this.app.editVariable(name); this._reveal(); }
       else if (act === 'rename') this._beginRename(anchor.closest('.vr'), name);
       else if (act === 'download') this.app.downloadMenu(anchor, name, calcState.current.entries.get(name));
       else if (act === 'delete') this._deleteVar(name);
+      else if (act === 'pgdir') this._deleteVar(name, true);
     });
   }
 
@@ -858,18 +862,18 @@ export class Drawers {
     } });
   }
 
-  _deleteVar(name) {
+  _deleteVar(name, withContents = false) {
     const { app } = this;
     const v = calcState.current.entries.get(name);
     if (v === undefined) return;
     app.entry._snapForUndo();
     try {
-      varPurge(name);
+      varPurge(name, withContents);
       app.undoToast(`Deleted ${name}`);
     } catch (e) {
       app.entry._dropNoOpUndoStep();
       app.notifyError(v.type === TYPES.DIRECTORY
-        ? `${name} isn't empty. Open it and delete what's inside first (HP PURGE works the same way).`
+        ? `${name} isn't empty, and PURGE leaves a full folder alone. Its menu's Delete with its items runs PGDIR, which takes everything inside.`
         : `Couldn't delete ${name}: ${e.message}`);
     }
   }
