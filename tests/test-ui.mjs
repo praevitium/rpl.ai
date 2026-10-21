@@ -2933,3 +2933,9 @@ setAngle('RAD');
   assert(/\n  \.gr-add input, \.gr-expr, \.pl-range input \{ height: 40px; \}/.test(css),
     'plot on touch: the add, trace and window fields are 40 px, as the plot tools and every other field are');
 }
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/\n@media \(max-height: 400px\) \{ \.pl-box \{ min-height: 150px; \} \}/.test(css),
+    'plot in landscape: the plot box gives up its 220 px minimum in a window under 400 px tall, so the readout and FCN keys sit on screen instead of under the fold');
+}
