@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.28 (2026-10-21)
+**Latest release:** v0.8.29 (2026-10-21)
 
 ---
 
@@ -20,6 +20,20 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.29 — 2026-10-21
+
+- Added: the digit keys carry the HP 50g's shifted menus. ↰7 S.SLV,
+  ↰8 EXP&LN, ↰9 TRIG, ↰4 CALC and ↱4 ALG open those CAS folders; ↱8 TVM
+  (the HP's FINANCE), ↰5 MATRX, ↱5 STAT, ↱6 UNITS, ↰1 ARITH and ↱1 CMPLX
+  open their menus. ↰2 DEF runs DEFINE and ↱ON is OFF. A menu key leaves
+  a half-typed command line as it is, and with a writer open it shows
+  the menu over the writer's own. ↱9 keeps the where operator `|` rather
+  than the HP's TIME. The compact keypad shares 4, 5, 6, 1 and 2, its
+  crowded 5 and 1 keeping only their ↰ menus.
+- Fixed: shift labels on a narrow keypad shrink together until every
+  key's pair fits with a gap. The desktop keypad column and 280 px
+  phones overlapped pairs such as DEL and CLEAR, or cut them.
 
 ## v0.8.28 — 2026-10-21
 
