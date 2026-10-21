@@ -2912,3 +2912,10 @@ setAngle('RAD');
   assert(/\n  \.gr-add input, \.gr-expr, \.pl-range input \{ height: 40px; \}/.test(css),
     'plot on touch: the add, trace and window fields are 40 px, as the plot tools and every other field are');
 }
+
+{
+  const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/this\._addTrace\(traceFromInputs\(kind, expr, exprY\), \{ fit: !!spec\.fitOnAdd \}\);\n[^\n]*\n\s*this\._addX\.scrollIntoView\?\.\(\{ block: 'nearest' \}\);/.test(gv),
+    'plot, keyboard up: after a trace is added the add field is scrolled back into view, where the grown trace list pushed it under the keyboard');
+}

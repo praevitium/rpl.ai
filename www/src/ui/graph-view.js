@@ -437,6 +437,8 @@ export class GraphView {
     const err = traceInputError(kind, { expr, exprY }, { adding: true });
     if (err) { this._fail(err); return; }
     this._addTrace(traceFromInputs(kind, expr, exprY), { fit: !!spec.fitOnAdd });
+    // A phone's keyboard stays up for the next expression, so the field it types into stays in view as the list grows.
+    this._addX.scrollIntoView?.({ block: 'nearest' });
     this._addX.value = '';
     this._addY.value = '';
   }
