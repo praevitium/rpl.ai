@@ -179,6 +179,10 @@ class App {
         this.drawers.showFamily(family, from);
         return;
       }
+      if (drawer === 'chars') {
+        this.drawers.showConstants();
+        return;
+      }
       if (drawer) {
         this.drawers.open(drawer);
         return;

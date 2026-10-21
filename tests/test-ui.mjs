@@ -3480,3 +3480,11 @@ setAngle('RAD');
     && drawerSrc.includes("const crumb = this._body().querySelector('.cat-crumb')?.offsetHeight ?? 0;"),
     'a Catalog family keeps its name and back button in sight down a long list (the CAS family has 121 commands), and CASCMD\'s start lands under it, not behind it');
 }
+
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/showConstants\(\) \{\n    this\.charsQuery = '';/.test(drawerSrc)
+    && /if \(drawer === 'chars'\) \{\n        this\.drawers\.showConstants\(\);/.test(appSrc),
+    'CONSTANTS opens the Characters drawer on its constants: left filtered to "arrow", it showed only arrows on a phone');
+}

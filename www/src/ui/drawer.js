@@ -344,6 +344,14 @@ export class Drawers {
     if (from) this._ensureReference().then(() => this._scrollFamilyTo(id, from));
   }
 
+  // CONSTANTS opens on the constants, the drawer's first group, whatever filter it was left with.
+  showConstants() {
+    this.charsQuery = '';
+    if (this.current !== 'chars') this.open('chars');
+    else this._renderBody();
+    this._body().scrollTop = 0;
+  }
+
   _scrollFamilyTo(id, from) {
     if (this.current !== 'catalog' || this.cat.family !== id || this.cat.ref || this.cat.q) return;
     const key = from.trim().toUpperCase();
