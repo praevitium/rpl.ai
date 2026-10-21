@@ -2552,7 +2552,10 @@ class App {
       case 'level.rollDown': if (this.selection > 1) this._moveLevel(this.selection, this.selection - 1); return true;
       case 'level.edit': this.levelAction('edit'); return true;
       case 'level.drop': if (this._keyRepeat) return true; this.levelAction('drop'); return true;
-      case 'level.copy': this.levelAction('copy'); return true;
+      case 'level.copy':
+        // With no level selected, ⌘C copies level 1, unless text is selected for the browser to copy.
+        if (this.selection == null && (!this.stack.depth || !window.getSelection()?.isCollapsed)) return false;
+        this.levelAction('copy', this.selection ?? 1); return true;
       case 'level.pick': this.levelAction('pick'); return true;
       default: return false;
     }

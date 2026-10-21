@@ -2848,6 +2848,8 @@ setAngle('RAD');
     'Catalog: Enter in the search box opens the first match with its Run (or Insert) button focused, where the page took the box away and the keyboard was left on nothing');
   assert(/if \(this\._drawerCoversStack\(\)\) \{ this\.drawers\.close\(\); return true; \}\s*\/\/[^\n]*\n\s*if \(document\.activeElement\?\.closest\?\.\('#drawer'\)\) this\.focusInput\(\);\s*return true;/.test(appSrc),
     'Esc in a drawer docked beside the stack takes the keyboard back to the command line and leaves the drawer open, where it did nothing; a drawer over the stack still closes');
+  assert(/case 'level\.copy':\s*\/\/[^\n]*\n\s*if \(this\.selection == null && \(!this\.stack\.depth \|\| !window\.getSelection\(\)\?\.isCollapsed\)\) return false;\s*this\.levelAction\('copy', this\.selection \?\? 1\); return true;/.test(appSrc),
+    'Ctrl or Cmd+C with no level selected copies level 1, ready to paste into a spreadsheet, unless text is selected for the browser to copy or the stack is empty');
 }
 
 {
