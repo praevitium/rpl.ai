@@ -610,7 +610,11 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   size, as a level's View does. `CASCMD` and `HELP` open the Catalog on its
   list of CAS commands, and `"SOLVE" CASCMD` starts that list at `SOLVE`,
   as on the HP. A Catalog family keeps its name and back button at the top
-  as its list scrolls.
+  as its list scrolls, as the Characters groups and History's sections
+  keep theirs.
+- `CONSTANTS` opens the Characters drawer on its constants, whatever filter
+  it was left with; with flag -117 set, as on the HP, it shows π, e, i, ∞,
+  MAXR and MINR as soft keys instead, a tap away in minimal view.
 - Where a phone's keyboard writes 1,5 for one and a half, turn on Decimal
   comma in Settings › Calculator, or the FM, key on the MODES menu (flag -51, the HP's
   fraction-mark setting): the command line then reads a comma beside a
