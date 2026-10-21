@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.16 (2026-10-21)
+**Latest release:** v0.8.17 (2026-10-21)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.17 — 2026-10-21
+
+- A backup in the Variables drawer has Save beside Delete: it downloads the
+  backup as a file that Restore from file reads back, so a backup made with
+  `ARCHIVE` on a phone can move to another device.
+- Fixed: a finger held on the soft keys' menu button said there was no
+  menu before after a `TMENU`, or inside a folder such as CAS · ALG; it now
+  goes back to the menu shown before, as `0 MENU` does.
+- Opening the print log puts away the "Printed …" note whose Show opens
+  it, which stayed over the log when it was opened from search.
 
 ---
 
