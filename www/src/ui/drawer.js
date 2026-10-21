@@ -9,7 +9,7 @@ import { unitInfo } from '../rpl/units.js';
 import { format, withFractionMark } from '../rpl/formatter.js';
 import {
   exportHpTextFile,
-  listBackups, archiveBackup, restoreBackup, deleteBackup,
+  listBackups, archiveBackup, restoreBackup, deleteBackup, subscribeBackups,
 } from '../rpl/persist.js';
 import { referenceSection, pushHistory, isSyntaxWord, typeSyntaxWord } from './command-help.js';
 import { loadCommandReference, findReferenceEntry, shortDescription, appNote, searchCommands, spelledName } from './command-reference.js';
@@ -240,6 +240,7 @@ export class Drawers {
       this._renderVarsList();
       this._renderHeadSub();
     });
+    subscribeBackups(() => { if (this.current === 'vars') this._renderBackups(); });
     app.entry.subscribeHistory(() => { if (this.current === 'history') this._renderHistoryList(); });
   }
 

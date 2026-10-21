@@ -21,7 +21,7 @@ import {
 } from '../www/src/rpl/state.js';
 import {
   snapshot, rehydrate, encodeValue, decodeValue, loadInitialState, STORAGE_KEY,
-  BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup,
+  BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup, subscribeBackups,
   saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX,
 } from '../www/src/rpl/persist.js';
 import { lookup } from '../www/src/rpl/ops.js';
@@ -660,6 +660,24 @@ assert(isReal(mat.rows[0][1]) && mat.rows[0][1].value.eq(2) &&
   } finally {
     globalThis.localStorage = saved;
     resetHome();
+  }
+}
+
+// An open backup list hears ARCHIVE and a deleted backup, which change no variable.
+{
+  const saved = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) };
+  try {
+    let heard = 0;
+    const off = subscribeBackups(() => { heard += 1; });
+    archiveBackup('1', 'HEARD', new Stack());
+    deleteBackup('1', 'HEARD');
+    off();
+    archiveBackup('1', 'UNHEARD', new Stack());
+    assert(heard === 2, 'subscribeBackups hears each archive and delete until it is turned off');
+  } finally {
+    globalThis.localStorage = saved;
   }
 }
 

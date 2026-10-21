@@ -377,8 +377,17 @@ function readBackups() {
   return parsed && typeof parsed === 'object' ? parsed : {};
 }
 
+// ARCHIVE run from the command line changes no variable, so an open backup list listens here.
+const backupListeners = new Set();
+
+export function subscribeBackups(fn) {
+  backupListeners.add(fn);
+  return () => backupListeners.delete(fn);
+}
+
 function writeBackups(backups) {
   backupStorage().setItem(BACKUPS_KEY, JSON.stringify(backups));
+  for (const fn of backupListeners) fn();
 }
 
 function backupKey(port, name) {
