@@ -2919,6 +2919,9 @@ setAngle('RAD');
       'Variables: a folder with something in it offers Delete with its items (PGDIR), with Undo, where Delete could only refuse');
     assert(appSrc.includes("isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') + item('rref', 'chr', 'Row reduce (RREF)') : '',") && appSrc.includes("case 'rref': runOn('RREF'); return;"),
       'a matrix level offers Row reduce (RREF) beside Transpose, square or not');
+    assert(appSrc.includes("isList(value) && value.items.length > 1 ? item('sort', 'chr', 'Sort (SORT)') + item('revlist', 'chr', 'Reverse (REVLIST)') + item('sumlist', 'chr', 'Sum (ΣLIST)') : '',")
+      && appSrc.includes("case 'sort': runOn('SORT'); return;") && appSrc.includes("case 'sumlist': runOn('ΣLIST'); return;"),
+      'a list of two or more items offers Sort (SORT), Reverse (REVLIST) and Sum (ΣLIST) in its level menu');
     assert(/isReal\(value\)\s*\? \{ label: '→Q', title: 'To a fraction', onPress: act\('toq'\) \}\s*: \{ label: '→NUM', title: 'Evaluate to a number', onPress: act\('num'\) \},/.test(appSrc),
       'the interactive stack soft keys show →Q on a decimal where →NUM did nothing, as its menu does');
     assert(appSrc.includes("isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : item('num', 'chr', 'To a number (→NUM)'),") && appSrc.includes("case 'toq': runOn('→Q'); return;"),

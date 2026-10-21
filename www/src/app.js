@@ -1014,6 +1014,9 @@ class App {
       case 'egvl': runOn('EGVL'); return;
       case 'trn': runOn('TRN'); return;
       case 'rref': runOn('RREF'); return;
+      case 'sort': runOn('SORT'); return;
+      case 'revlist': runOn('REVLIST'); return;
+      case 'sumlist': runOn('ΣLIST'); return;
       case 'convert': this._convertMenu(level, anchor); return;
       case 'plot': this.clearSelection(); this.plotValue(value); return;
       case 'copy': {
@@ -1102,6 +1105,7 @@ class App {
         isUnit(value) ? item('convert', 'chr', 'Convert to…') : '',
         isMatrix(value) && value.rows.length === value.rows[0]?.length ? item('inv', 'chr', 'Inverse (INV)') + item('det', 'chr', 'Determinant (DET)') + item('egvl', 'chr', 'Eigenvalues (EGVL)') : '',
         isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') + item('rref', 'chr', 'Row reduce (RREF)') : '',
+        isList(value) && value.items.length > 1 ? item('sort', 'chr', 'Sort (SORT)') + item('revlist', 'chr', 'Reverse (REVLIST)') + item('sumlist', 'chr', 'Sum (ΣLIST)') : '',
         plottable(value) ? item('plot', 'plot', 'Plot it') : '',
         item('ask', 'spark', 'Ask the assistant about it'),
       ],
