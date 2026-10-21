@@ -98,6 +98,7 @@ export class Sheets {
 
   // What PR1, PRST and the other print commands printed, newest at the bottom as on the HP's paper.
   openPrintLog() {
+    this.app.toasts?.dismiss('print');
     this._open('print');
   }
 

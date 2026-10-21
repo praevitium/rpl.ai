@@ -3158,3 +3158,9 @@ setAngle('RAD');
     && /export function exportBackup\(port, name\) \{[\s\S]{0,200}?downloadFile\(JSON\.stringify\(backup\.snap, null, 2\), `hp50-\$\{port\}-\$\{safeFileName\(name\)\}\.json`, 'application\/json'\);/.test(persistSrc),
     "a backup's row saves it as a file that Restore from file reads back, so a phone's backup can move to another device");
 }
+
+{
+  const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  assert(/openPrintLog\(\) \{\s*this\.app\.toasts\?\.dismiss\('print'\);\s*this\._open\('print'\);/.test(sheetsSrc),
+    "opening the print log puts away the note whose Show opens it, which stayed over the log when it was opened from search");
+}
