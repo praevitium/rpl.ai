@@ -36,6 +36,7 @@ export const ACTIONS = Object.freeze({
   'level.editFirst':   { label: 'Edit level 1 in its writer', surfaces: ['keypad.▼', 'stack.row'] },
   'level.up':          { label: 'Select the level above', surfaces: ['keypad.▲', 'menu.LEVEL'] },
   'level.down':        { label: 'Select the level below', surfaces: ['keypad.▼', 'menu.LEVEL'] },
+  'level.menu':        { label: "Open the selected level's menu", surfaces: ['stack.row'] },
   'level.top':         { label: 'Select the top level', surfaces: ['menu.LEVEL'] },
   'level.bottom':      { label: 'Select level 1', surfaces: ['menu.LEVEL'] },
   'level.rollUp':      { label: 'Move the level up (ROLLD)', surfaces: ['stack.drag', 'menu.LEVEL'] },
@@ -110,6 +111,8 @@ export const KEYMAP = Object.freeze([
   { context: 'empty', chord: 'Mod+C', action: 'level.copy' },
   { context: 'selection', chord: 'ArrowUp', action: 'level.up' },
   { context: 'selection', chord: 'ArrowDown', action: 'level.down' },
+  { context: 'selection', chord: 'ContextMenu', action: 'level.menu' },
+  { context: 'selection', chord: 'Shift+F10', action: 'level.menu' },
   { context: 'selection', chord: 'Home', action: 'level.top' },
   { context: 'selection', chord: 'End', action: 'level.bottom' },
   { context: 'selection', chord: 'Mod+ArrowUp', action: 'level.rollUp' },
@@ -200,7 +203,7 @@ const MAC_GLYPHS = { Mod: '⌘', Ctrl: '⌃', Alt: '⌥', Shift: '⇧' };
 const KEY_GLYPHS = {
   ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
   Backspace: '⌫', Delete: 'Del', Enter: '↵', Escape: 'Esc',
-  PageUp: 'PgUp', PageDown: 'PgDn', Space: 'Space', Tab: 'Tab',
+  PageUp: 'PgUp', PageDown: 'PgDn', Space: 'Space', Tab: 'Tab', ContextMenu: 'Menu',
 };
 
 export function chordText(chord, mac = isMacPlatform()) {

@@ -85,4 +85,7 @@ import {
   assert(findBinding('Home', ['selection', 'empty', 'global'])?.action === 'level.top' && findBinding('End', ['selection', 'empty', 'global'])?.action === 'level.bottom'
     && findBinding('Home', ['line', 'global']) === null,
     'findBinding: Home and End move the interactive stack\'s pointer to the top level and to level 1; with no level selected they are left to the command line');
+  assert(findBinding('ContextMenu', ['selection', 'empty', 'global'])?.action === 'level.menu' && findBinding('Shift+F10', ['selection', 'empty', 'global'])?.action === 'level.menu'
+    && findBinding('ContextMenu', ['empty', 'global']) === null && chordText('ContextMenu', false) === 'Menu',
+    'findBinding: the menu key and Shift+F10 open the selected level\'s menu, as a right click on it does, and the shortcuts list names the key Menu; with no level selected the browser keeps them');
 }

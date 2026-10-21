@@ -2552,6 +2552,7 @@ class App {
       case 'level.editFirst': if (!this.stack.depth) return true; this.editLevel(1); return true;
       case 'level.up': this.selectLevel(Math.min(this.stack.depth, this.selection + 1)); return true;
       case 'level.down': if (this.selection <= 1) this.clearSelection(); else this.selectLevel(this.selection - 1); return true;
+      case 'level.menu': this.levelAction('more', this.selection, this.display.stackView.querySelector('.st-row.sel [data-row-act="more"]')); return true;
       case 'level.top': this.selectLevel(this.stack.depth); return true;
       case 'level.bottom': this.selectLevel(1); return true;
       case 'level.rollUp': if (this.selection < this.stack.depth) this._moveLevel(this.selection, this.selection + 1); return true;
