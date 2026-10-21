@@ -1122,7 +1122,7 @@ class App {
       ],
       [item('drop', 'trash', 'Drop', shortcutText('level.drop'))],
     ];
-    const html = `<h6>Level ${level}</h6>${groups.map((group) => group.join('')).join('<hr>')}`;
+    const html = `<h6>Level ${level} · ${escapeHtml(describeValue(value).type)}</h6>${groups.map((group) => group.join('')).join('<hr>')}`;
     this.popover.open(anchor, html, {
       label: `Level ${level}`,
       onClick: (t) => { this.popover.close({ restoreFocus: false }); this.levelAction(t.dataset.act, level, anchor); },

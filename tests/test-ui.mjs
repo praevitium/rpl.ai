@@ -2928,6 +2928,8 @@ setAngle('RAD');
       'a list of two or more items offers Sort (SORT), Reverse (REVLIST) and Sum (ΣLIST) in its level menu');
     assert(appSrc.includes("isVector(value) ? item('abs', 'chr', 'Length (ABS)') : '',") && appSrc.includes("case 'abs': runOn('ABS'); return;"),
       'a vector level offers its length (ABS) in its menu');
+    assert(appSrc.includes("const html = `<h6>Level ${level} · ${escapeHtml(describeValue(value).type)}</h6>"),
+      "a level's menu names the kind of object it acts on, as its INFO note does");
     assert(appSrc.includes("isString(value) ? item('strto', 'play', 'Run its text (STR→)') : item('eval', 'play', 'Evaluate (EVAL)'),")
       && appSrc.includes("case 'strto': runOn('STR→'); return;"),
       'a string level offers Run its text (STR→) where Evaluate (EVAL) gave the string back unchanged');
