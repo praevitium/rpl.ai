@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.52 (2026-10-21)
+**Latest release:** v0.8.53 (2026-10-21)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.53 — 2026-10-21
+
+- Fixed: an error naming a unit argument said "an unit object", as in
+  "+ can't combine an integer with an unit object". It now says "a unit
+  object".
+- Added: a folder with something in it offers "Delete with its items
+  (PGDIR)" in its menu in the Variables drawer, with Undo, as the HP's
+  PGDIR purges a directory and everything inside. Delete used to refuse
+  and say to empty the folder first.
+- Improved: a variable row's tooltip names Delete, which purges it,
+  beside Shift+Enter and Alt+Enter.
 
 ## v0.8.52 — 2026-10-21
 
