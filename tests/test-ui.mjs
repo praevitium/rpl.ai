@@ -3212,8 +3212,8 @@ setAngle('RAD');
   const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(displaySrc.includes("?.closest?.('.st-row[data-key], #cmdline, .mx-cell, .eqw, .mx');")
-    && /if \(target\.matches\('\.st-row'\)\) this\.onRowMove\?\.\(from, Number\(target\.dataset\.level\)\);\s*else this\.onRowEcho\?\.\(from, target\);/.test(displaySrc)
+  assert(displaySrc.includes("?.closest?.('.st-row[data-key], #cmdline, .mx-cell, .eqw, .mx, .sk.var');")
+    && /if \(target\.matches\('\.st-row'\)\) this\.onRowMove\?\.\(from, Number\(target\.dataset\.level\)\);\s*else if \(target\.matches\('\.sk'\)\) this\.onRowStore\?\.\(from, Number\(target\.dataset\.i\)\);\s*else this\.onRowEcho\?\.\(from, target\);/.test(displaySrc)
     && appSrc.includes("this.levelAction('echo', level);")
     && css.includes('.cmdline.drag-over { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }')
     && css.includes(':root[data-view="minimal"] .input .cmdline.drag-over { background: var(--accent-dim); }'),
@@ -3254,6 +3254,17 @@ setAngle('RAD');
   assert(appSrc.includes("if (!this._writerTakes(source)) { this.notifyError(`Level ${level} holds ${describeValue(value).text}, which can't go in ${this._echoPlace()}.`); return; }")
     && /_writerTakes\(source\) \{\s*if \(this\.inputMode === 'equation'\) return readsAsFormula\(source\);\s*if \(this\.inputMode !== 'matrix'\) return true;\s*try \{ parseMatrixCell\(source\); return true; \} catch \{ return false; \}/.test(appSrc),
     'ECHO of a level a writer cannot hold says so plainly (Level 1 holds a program, which can\'t go in the formula) instead of a parser position or a cell that fails at Enter');
+}
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const mbSrc = readFileSync(new URL('../www/src/ui/menubar.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(mbSrc.includes("${slot.variable ? ' var' : ''}")
+    && /d\.onRowStore = \(level, i\) => \{\s*const slot = this\.menuView\(\)\.slots\[i\];\s*if \(slot\?\.variable\) this\._storeLevel\(level, slot\.label\);/.test(appSrc)
+    && /_storeLevel\(level, name\) \{[\s\S]*?const value = this\.stack\.peek\(level\);\s*dropLevel\(this\.stack, level\);\s*varStore\(name, value\);[\s\S]*?this\.undoToast\(`Stored level \$\{level\} in \$\{name\}`\);/.test(appSrc)
+    && css.includes('.mb-keys .sk.var.drag-over { box-shadow: inset 0 0 0 2px var(--accent); }'),
+    "a level a finger drops on a variable's soft key is stored there and leaves the stack, as ↰ and the key store level 1, with Undo; only variable keys light up");
 }
 
 {

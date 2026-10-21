@@ -1119,6 +1119,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 :root[data-theme="classic"] .sk.dir::before { background: #c9d6b9; height: 3px; top: 3px; left: 5px; width: 26%; border-radius: 1px; }
 :root[data-theme="classic"] .sk .fk { color: rgba(201, 214, 185, .5); }
 :root[data-theme="classic"] .sk.l { color: #f2c07a; } :root[data-theme="classic"] .sk.r { color: #f5a596; }
+/* A level dragged onto a variable's key, to be stored there. */
+.mb-keys .sk.var.drag-over { box-shadow: inset 0 0 0 2px var(--accent); }
 :root[data-theme="classic"] .mb-menu { background: transparent; border-color: rgba(201, 214, 185, .25); }
 /* VIEW's sheet is no LCD, so the value takes the sheet's ink rather than the LCD's. */
 :root[data-theme="classic"] .sheet-view { --stack-ink: var(--ink); }

@@ -245,6 +245,7 @@ export class Display {
     this.onRowAction = null;
     this.onRowMove = null;
     this.onRowEcho = null;
+    this.onRowStore = null;
     this.onRowSwipe = null;
     this.onSwipeArmed = null;
     this.onStatusAction = null;
@@ -450,12 +451,13 @@ export class Display {
     });
   }
 
-  // A finger moved up or down from a level's number drags the level onto another, as a mouse does, or onto the command
-  // line, an open writer or one of its matrix cells to copy it there (ECHO); sideways it swipes.
+  // A finger moved up or down from a level's number drags the level onto another, as a mouse does, onto the command
+  // line, an open writer or one of its matrix cells to copy it there (ECHO), or onto a variable's soft key to store it
+  // there; sideways it swipes.
   _installLevelDrag(view) {
     let drag = null;
     const aim = () => {
-      const row = view.ownerDocument.elementFromPoint(drag.x, drag.y)?.closest?.('.st-row[data-key], #cmdline, .mx-cell, .eqw, .mx');
+      const row = view.ownerDocument.elementFromPoint(drag.x, drag.y)?.closest?.('.st-row[data-key], #cmdline, .mx-cell, .eqw, .mx, .sk.var');
       const target = row && row !== drag.row ? row : null;
       if (target === drag.target) return;
       drag.target?.classList.remove('drag-over', 'drag-below');
@@ -507,6 +509,7 @@ export class Display {
       if (ev.type !== 'pointerup' || !target) return;
       const from = Number(row.dataset.level);
       if (target.matches('.st-row')) this.onRowMove?.(from, Number(target.dataset.level));
+      else if (target.matches('.sk')) this.onRowStore?.(from, Number(target.dataset.i));
       else this.onRowEcho?.(from, target);
     };
     view.addEventListener('pointerup', end);

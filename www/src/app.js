@@ -911,6 +911,10 @@ class App {
       if (target?.matches('.mx-cell')) this.matrixEditor.aimCell(Number(target.dataset.r), Number(target.dataset.c));
       this.levelAction('echo', level);
     };
+    d.onRowStore = (level, i) => {
+      const slot = this.menuView().slots[i];
+      if (slot?.variable) this._storeLevel(level, slot.label);
+    };
     // A swipe buzzes once as it crosses the point where letting go drops the level, with key vibration on.
     d.onSwipeArmed = () => this.buzzHold();
     d.onRowSwipe = (level) => {
@@ -1176,6 +1180,18 @@ class App {
     const value = this.stack.peek(level);
     this.clearSelection();
     this._beginEdit({ kind: 'level', level, value, line, label: `Editing level ${level}` });
+  }
+
+  // A level dropped on a variable's soft key goes into it, as ↰ and the key store level 1.
+  _storeLevel(level, name) {
+    this.clearSelection();
+    const stored = this.entry.safeRun(() => {
+      this.entry._snapForUndo();
+      const value = this.stack.peek(level);
+      dropLevel(this.stack, level);
+      varStore(name, value);
+    }, 'STO');
+    if (stored) this.undoToast(`Stored level ${level} in ${name}`);
   }
 
   // ECHO puts a level where the typing goes: the command line, or the open writer at its cursor.
