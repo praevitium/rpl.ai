@@ -588,7 +588,7 @@ export class Drawers {
     const isDir = value.type === TYPES.DIRECTORY;
     const n = escapeHtml(name);
     const preview = isDir ? `${value.entries.size} item${value.entries.size === 1 ? '' : 's'}` : withFractionMark(format(value));
-    return `<div class="vr${isDir ? ' dir' : ''}" draggable="true" data-drag-name="${n}" data-dw="var" data-name="${n}" role="button" tabindex="0" title="${isDir ? `Open ${n}` : `${n}: ${value.type === TYPES.PROGRAM ? 'run it' : 'put it on the stack'} · Shift+Enter stores level 1 into it · Alt+Enter recalls without running`}">
+    return `<div class="vr${isDir ? ' dir' : ''}" draggable="true" data-drag-name="${n}" data-dw="var" data-name="${n}" role="button" tabindex="0" title="${isDir ? `Open ${n}` : `${n}: ${value.type === TYPES.PROGRAM ? 'run it' : 'put it on the stack'} · Shift+Enter stores level 1 into it · Alt+Enter recalls without running · Delete purges it`}">
       <span class="grip" aria-hidden="true">${icon('grip', 'sm')}</span>
       <div class="main"><div class="nm">${isDir ? icon('folder', 'sm') : ''}<span class="nm-text">${n}</span><span class="badge">${escapeHtml(isDir ? 'Folder' : typeName(value))}</span></div><div class="pv">${escapeHtml(preview.length > 120 ? `${preview.slice(0, 119)}…` : preview)}</div></div>
       <div class="acts"><button type="button" class="mini" data-dw="var-menu" data-name="${n}" title="${isDir ? 'Open' : 'Edit'}, rename, download or delete ${n}" aria-label="More for ${n}" aria-haspopup="menu">${icon('more', 'sm')}</button></div>

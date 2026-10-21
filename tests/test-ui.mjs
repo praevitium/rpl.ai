@@ -2881,7 +2881,7 @@ setAngle('RAD');
     'Catalog: Enter in the search box opens the first match with its Run (or Insert) button focused, where the page took the box away and the keyboard was left on nothing');
   assert(/if \(e\.key === 'Enter' && \(e\.shiftKey \|\| e\.altKey\) && e\.target\.matches\?\.\('\.vr\[data-dw="var"\]:not\(\.dir\)'\)\) \{\s*e\.preventDefault\(\);\s*this\.app\.pressVariable\(e\.target\.dataset\.name, e\.shiftKey \? 'L' : 'R'\);/.test(drawerSrc),
     'Variables: on a focused variable, Shift+Enter stores level 1 in it and Alt+Enter recalls it, as the HP\'s shifted VAR keys and Shift+F1 and Alt+F1 on the soft keys do');
-  assert(drawerSrc.includes("${n}: ${value.type === TYPES.PROGRAM ? 'run it' : 'put it on the stack'} · Shift+Enter stores level 1 into it · Alt+Enter recalls without running"),
+  assert(drawerSrc.includes("${n}: ${value.type === TYPES.PROGRAM ? 'run it' : 'put it on the stack'} · Shift+Enter stores level 1 into it · Alt+Enter recalls without running · Delete purges it"),
     'Variables: a row\'s tooltip reads as its VAR soft key\'s does (run it or put it on the stack, store, recall), with the drawer\'s keys, where it said only "click to put on the stack"');
   assert(/closest\?\.\('\.pl-box'\)\) \{ this\.focusInput\(\); return true; \}\s*(\/\/[^\n]*\n\s*)*if \(document\.activeElement\?\.closest\?\.\('#drawer'\)\) \{\s*if \(this\._drawerCoversStack\(\)\) this\.drawers\.close\(\);\s*else this\.focusInput\(\);\s*return true;\s*\}\s*if \(this\.selection != null\)/.test(appSrc),
     'Esc in a drawer docked beside the stack takes the keyboard back to the command line and leaves the drawer open, and one over the stack closes, before Esc reaches the selection, a writer or the command line');
