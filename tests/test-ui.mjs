@@ -3079,6 +3079,10 @@ setAngle('RAD');
     && /_stepTrace\(by\) \{\s*const fns = this\.traces\.filter\(\(t\) => t\.enabled && t\.kind === 'function'\);\s*if \(fns\.length < 2\) return false;/.test(gv)
     && gv.includes('for (const t of [this._fcnTrace(), ...this.traces].filter(Boolean)) {'),
     'plot trace: with several functions plotted, up and down move the trace to the previous or next one, as the HP\'s ▲ and ▼ do, and Enter pushes that function\'s point; with one function they still pan');
+  assert(gv.includes("const picked = this.tracing && this.traces.filter((t) => t.enabled && t.kind === 'function').length > 1 ? this._fcnTrace() : null;")
+    && gv.includes("bits.push(`${t === picked ? '▸ ' : ''}${withFractionMark(t.label || t.expr || t.kind)} = ${fmtAxis(yv)}`);")
+    && gv.includes('T traces (up and down then switch function)'),
+    'plot trace: with several functions the readout marks the one Enter pushes with ▸, and the plot\'s spoken help names up and down');
 }
 
 {

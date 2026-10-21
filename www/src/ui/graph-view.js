@@ -169,7 +169,7 @@ export class GraphView {
     this.el.className = 'gr-view';
     this.el.innerHTML = `
       <div class="pl-main">
-        <div class="pl-box" tabindex="0" role="application" aria-label="Plot. Arrows pan or move the cursor, Enter puts its point on the stack, plus and minus zoom, 0 resets, T traces, F goes full screen.">
+        <div class="pl-box" tabindex="0" role="application" aria-label="Plot. Arrows pan or move the cursor, Enter puts its point on the stack, plus and minus zoom, 0 resets, T traces (up and down then switch function), F goes full screen.">
           <canvas class="gr-canvas" aria-hidden="true"></canvas>
           <div class="pl-tools${TOUCH ? ' folded' : ''}" role="toolbar" aria-label="Plot tools">
             <button type="button" class="pl-fold" data-gr="fold" title="Plot tools" aria-label="Plot tools" aria-expanded="${!TOUCH}">${icon('more', 'sm')}</button>
@@ -912,11 +912,13 @@ export class GraphView {
     const bits = [`x = ${fmtAxis(wx)}`];
     if (wy != null) bits.push(`y = ${fmtAxis(wy)}`);
     const opts = this._hoverOpts();
+    // Tracing several functions, ▸ marks the one Enter and the FCN tools use.
+    const picked = this.tracing && this.traces.filter((t) => t.enabled && t.kind === 'function').length > 1 ? this._fcnTrace() : null;
     for (const t of this.traces) {
       if (!t.enabled) continue;
       const yv = evalTraceAtX(t, wx, opts);
       if (!Number.isFinite(yv)) continue;
-      bits.push(`${withFractionMark(t.label || t.expr || t.kind)} = ${fmtAxis(yv)}`);
+      bits.push(`${t === picked ? '▸ ' : ''}${withFractionMark(t.label || t.expr || t.kind)} = ${fmtAxis(yv)}`);
     }
     return bits.join('  ·  ');
   }
