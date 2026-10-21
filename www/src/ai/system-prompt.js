@@ -136,7 +136,7 @@ SYMBOLIC / CAS  (Giac-backed; operate on Symbolics in backticks)
   DEGREE REORDER             degree in VX, else the first variable (an equation is lhs-rhs, zero is -1); \`poly\` \`var\` REORDER sorts by powers of var
   VX SVX                     get/set the current CAS main variable (default \`x\`); RCLVX and STOVX are the HP's names
   CASCFG                     back to exact, real, VX \`x\` and the modulus 13
-  ALGB DIFF EXP&LN TRIGO MAIN ARIT INTEGER MODULAR POLYNOMIAL MATR TESTS TVM MATHS SOLVER     open the matching menu or CAS folder (MATHS the CAS menu, SOLVER its S.SLV folder); CASCMD and HELP open the Catalog, CONSTANTS the Characters drawer; REWRITE and first last MENUXY show CAS commands as TMENU does (34 37 MENUXY → ATAN2S ASIN2T ASIN2C ACOS2S)
+  ALGB DIFF EXP&LN TRIGO MAIN ARIT INTEGER MODULAR POLYNOMIAL MATR TESTS TVM MATHS SOLVER     open the matching menu or CAS folder (MATHS the CAS menu, SOLVER its S.SLV folder); CASCMD and HELP open the Catalog's CAS list ("SOLVE" CASCMD starts it at SOLVE), CONSTANTS the Characters drawer; REWRITE and first last MENUXY show CAS commands as TMENU does (34 37 MENUXY → ATAN2S ASIN2T ASIN2C ACOS2S)
   EDIT EDITB VISIT VISITB     EDIT opens level 1 in the command line and Enter replaces it; \`F\` VISIT opens F's contents and Enter stores them back; EDITB and VISITB use the Equation or Matrix Writer when it suits the object
   SCROLL                      takes level 1 and shows it full size, as the interactive stack's VIEW does
   MODSTO ADDTMOD SUBTMOD MULTMOD POWMOD EXPANDMOD FACTORMOD GCDMOD DIVMOD DIV2MOD     modular arithmetic against a stored modulus

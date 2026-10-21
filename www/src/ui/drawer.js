@@ -335,11 +335,21 @@ export class Drawers {
   }
 
   // As the HP's CASCMD and HELP lists do, a family's list opens afresh, not on whatever page the Catalog last showed.
-  showFamily(id) {
+  showFamily(id, from = null) {
     Object.assign(this.cat, { q: '', ref: null, family: id });
     if (this.current !== 'catalog') this.open('catalog');
     else this._renderBody();
     this._body().scrollTop = 0;
+    // The descriptions arriving with the reference move the rows, so the list scrolls once they are in.
+    if (from) this._ensureReference().then(() => this._scrollFamilyTo(id, from));
+  }
+
+  _scrollFamilyTo(id, from) {
+    if (this.current !== 'catalog' || this.cat.family !== id || this.cat.ref || this.cat.q) return;
+    const key = from.trim().toUpperCase();
+    const rows = [...this._body().querySelectorAll('.cmd-row')];
+    const row = rows.find((r) => r.dataset.cmd.toUpperCase() === key) ?? rows.find((r) => r.dataset.cmd.toUpperCase().startsWith(key));
+    if (row) this._body().scrollTop += row.getBoundingClientRect().top - this._body().getBoundingClientRect().top;
   }
 
   _renderRail() {

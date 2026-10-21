@@ -2087,6 +2087,10 @@ clearAllUserFlags();
   runLine('ALGB CASCMD MODULAR TVM MATHS CONSTANTS SOLVER');
   assert(opened.join(' ') === '{"family":"CAS","folder":"ALG"} {"drawer":"catalog","family":"CAS"} {"family":"INTEGER","folder":"MODUL"} {"family":"TVM"} {"family":"CAS"} {"drawer":"chars"} {"family":"CAS","folder":"S.SLV"}',
     'ALGB opens the CAS ALG folder, CASCMD the Catalog on its CAS family, MODULAR the INTEGER MODUL folder, TVM the TVM menu, MATHS the CAS menu, CONSTANTS the Characters drawer and SOLVER the S.SLV folder');
+  opened.length = 0;
+  const depth = runLine('CLEAR "lap" CASCMD 7 CASCMD').depth;
+  assert(opened.join(' ') === '{"drawer":"catalog","family":"CAS","from":"lap"} {"drawer":"catalog","family":"CAS"}' && depth === 2,
+    'CASCMD with a string in level 1 starts its list at that command, as the AUR has it, and leaves the stack as it was');
   setOpenHook(null);
 }
 

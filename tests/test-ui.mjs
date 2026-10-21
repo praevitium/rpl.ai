@@ -3467,7 +3467,8 @@ setAngle('RAD');
 {
   const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/showFamily\(id\) \{\n    Object\.assign\(this\.cat, \{ q: '', ref: null, family: id \}\);/.test(drawerSrc)
-    && /if \(drawer === 'catalog' && family\) \{\n        this\.drawers\.showFamily\(family\);/.test(appSrc),
-    'CASCMD and HELP open the Catalog on its CAS list afresh: on a phone they showed the reference page (SIN) or search the Catalog was last left on');
+  assert(/showFamily\(id, from = null\) \{\n    Object\.assign\(this\.cat, \{ q: '', ref: null, family: id \}\);/.test(drawerSrc)
+    && /if \(drawer === 'catalog' && family\) \{\n        this\.drawers\.showFamily\(family, from\);/.test(appSrc)
+    && /if \(from\) this\._ensureReference\(\)\.then\(\(\) => this\._scrollFamilyTo\(id, from\)\);/.test(drawerSrc),
+    'CASCMD and HELP open the Catalog on its CAS list afresh (on a phone they showed the reference page or search the Catalog was last left on), and CASCMD scrolls it to the command a string in level 1 names once the descriptions are in');
 }

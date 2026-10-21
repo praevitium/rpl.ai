@@ -64,7 +64,6 @@ const MENU_COMMANDS = Object.freeze({
   MATR: { family: 'MATRIX' },
   TESTS: { family: 'LOGIC' },
   TVM: { family: 'TVM' },
-  CASCMD: { drawer: 'catalog', family: 'CAS' },
   HELP: { drawer: 'catalog', family: 'CAS' },
   MATHS: { family: 'CAS' },
   CONSTANTS: { drawer: 'chars' },
@@ -76,6 +75,12 @@ Object.entries(MENU_COMMANDS).forEach(([name, target], i) => {
     if (!inScratchState()) _openHook?.(target);
   }, { category: 'Display / base', categoryOrder: 30 + i / 100, label: name });
 });
+
+// A string in level 1 starts the list at that command, as the AUR has it.
+register('CASCMD', (s) => {
+  const from = s.depth && isString(s.peek(1)) ? s.peek(1).value : null;
+  if (!inScratchState()) _openHook?.({ drawer: 'catalog', family: 'CAS', ...(from && { from }) });
+}, { category: 'Display / base', categoryOrder: 30.12, label: 'CASCMD' });
 
 // The HP's numbered CAS commands, 0 to 140, for MENUXY.
 const CAS_NUMBERED = Object.freeze([

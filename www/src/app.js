@@ -174,9 +174,9 @@ class App {
       else this.showMenu('CST', { commit: false });
       if (this.prefs.minimal) this.setMinimalMenu(true);
     });
-    setOpenHook(({ family, folder, drawer }) => {
+    setOpenHook(({ family, folder, drawer, from }) => {
       if (drawer === 'catalog' && family) {
-        this.drawers.showFamily(family);
+        this.drawers.showFamily(family, from);
         return;
       }
       if (drawer) {
