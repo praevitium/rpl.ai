@@ -2693,6 +2693,10 @@ setAngle('RAD');
     && /const steps = level == null \? '' : step\(1, 'chu', 'No level above'\) \+ step\(-1, 'chd', 'No level below'\);/.test(sheetsSrc)
     && /case 'view-step': \{\n\s*const \{ step \} = b\.dataset;\n\s*app\.stepView\(Number\(step\)\);/.test(sheetsSrc),
     'VIEW: up and down arrows sit in the sheet header beside the level, so the footer still fits Edit and Copy on one row at 280 px');
+  assert(/this\._returnTo = document\.activeElement === document\.body \? null : document\.activeElement;/.test(sheetsSrc)
+    && /if \(back\?\.isConnected && \(!document\.activeElement \|\| document\.activeElement === document\.body\)\) back\.focus\(\{ preventScroll: true \}\);/.test(sheetsSrc)
+    && /\?\? this\.el\?\.querySelector\('\[data-sh="close"\]'\)\)\?\.focus\(/.test(sheetsSrc),
+    'sheets: Settings, Shortcuts, About and the rest take the keyboard when they open (Shortcuts on its Close button) and give it back to what had it when they close, where Esc left it on nothing');
   const body = appSrc.match(/\n  stepView\(by\) \{\n([\s\S]*?)\n  \}\n/)[1];
   const calls = [];
   const fake = { sheets: { view: { level: 2 } }, stack: { depth: 3 }, selectLevel: (l) => calls.push(`sel ${l}`), _viewLevel: (l) => { calls.push(`view ${l}`); fake.sheets.view.level = l; } };

@@ -66,6 +66,7 @@ export class Sheets {
     this.kind = null;
     this.page = 'appearance';
     this._confirmReset = false;
+    this._returnTo = null;
   }
 
   isOpen() { return !!this.el; }
@@ -75,6 +76,10 @@ export class Sheets {
     this._resize?.disconnect();
     this.el.remove();
     this.el = null;
+    // As a dialog does, the sheet hands the keyboard back to whatever had it, unless something has taken it since.
+    const back = this._returnTo;
+    this._returnTo = null;
+    if (back?.isConnected && (!document.activeElement || document.activeElement === document.body)) back.focus({ preventScroll: true });
     this._liftNotes();
     this.kind = null;
     this._confirmReset = false;
@@ -138,6 +143,7 @@ export class Sheets {
   _open(kind) {
     this.kind = kind;
     if (!this.el) {
+      this._returnTo = document.activeElement === document.body ? null : document.activeElement;
       this.el = document.createElement('div');
       this.el.className = 'sheet-wrap';
       this.el.addEventListener('mousedown', (e) => { if (e.target === this.el) this.dismiss(); });
@@ -150,7 +156,7 @@ export class Sheets {
       this._resize.observe(this.el);
     }
     this._render();
-    requestAnimationFrame(() => this.el?.querySelector('.sheet-nav button[aria-pressed="true"], .sheet-c button, .sheet-c input')?.focus({ preventScroll: true }));
+    requestAnimationFrame(() => (this.el?.querySelector('.sheet-nav button[aria-pressed="true"], .sheet-c button, .sheet-c input') ?? this.el?.querySelector('[data-sh="close"]'))?.focus({ preventScroll: true }));
   }
 
   // A note sits at the bottom edge while a sheet is open; over a sheet whose footer reaches that edge it would cover
