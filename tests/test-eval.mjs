@@ -663,7 +663,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assertThrows(() => runLine('5 PARITY'), /Bad argument value/, 'PARITY runs from -4 to 4');
   assertThrows(() => runLine('4 CKSM'), /Bad argument value/, 'CKSM is 1, 2 or 3');
   assertThrows(() => runLine('30 STIME'), /Bad argument value/, 'STIME runs from 0 to 25.4 seconds');
-  assert(show('2.5 STIME OPENIO CLOSEIO FINISH BUFLEN') === '0 1', 'BUFLEN finds no characters and no error');
+  assert(show('2.5 STIME OPENIO SBRK CLOSEIO FINISH BUFLEN') === '0 1', 'BUFLEN finds no characters and no error, SBRK no transfer to break');
   assert(show('10 SRECV') === '"" 0', 'SRECV returns what a timed-out HP does: no characters and 0');
   clearPrintLog();
   assert(show('"to the printer" XMIT') === '1' && printLog.join() === 'to the printer', 'XMIT prints the string, as to an RS-232 printer, and reports success');

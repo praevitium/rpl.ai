@@ -137,6 +137,7 @@ register('STIME', (s) => {
 
 register('OPENIO', () => {}, { category: 'System', categoryOrder: 0.83, label: 'OPENIO' });
 register('CLOSEIO', () => {}, { category: 'System', categoryOrder: 0.84, label: 'CLOSEIO' });
+register('SBRK', () => {}, { category: 'System', categoryOrder: 0.845, label: 'SBRK' });
 register('BUFLEN', (s) => { s.push(Integer(0)); s.push(Integer(1)); }, { category: 'System', categoryOrder: 0.85, label: 'BUFLEN' });
 
 // Nothing arrives, so SRECV returns at once what a timed-out HP returns: the characters received (none) and 0.

@@ -1037,15 +1037,16 @@ rpl.ai aims to keep everything that makes the HP 50g good, without its
 bugs, and to go beyond it where a modern screen helps. It isn't finished,
 and these are the gaps worth knowing about.
 
-**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 812. The
+**Commands.** The HP 50g manual lists 825 commands; rpl.ai has 813. The
 Catalog and the command reference mark what is available. Not there yet:
 the HP's numbered menus for MENU and TMENU (a list, a name holding one or 0
 work).
 
-**Left out on purpose.** ENTRY mode, the NUM.SLV solver screens, RCLMENU,
-FINANCE, TIME, the StreamSmart app (STRM), UFL1→MINIF's font libraries,
-libraries (ATTACH and DETACH; LIBS lists none), and Saturn assembly and
-System RPL.
+**Left out on purpose.** ENTRY mode and its RPL>, the NUM.SLV solver
+screens, RCLMENU, FINANCE, TIME, the StreamSmart app (STRM), UFL1→MINIF's
+font libraries, libraries (ATTACH and DETACH; LIBS lists none), WSLOG's
+warmstart log, the HP 48's FREE and ROMUPLOAD, and Saturn assembly and
+System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
 
 **Behaviour that differs from the HP 50g.**
 
@@ -1066,9 +1067,9 @@ System RPL.
   drawer now does too.
 - The serial port has nothing on the other end: `BAUD`, `PARITY`, `CKSM`
   and `TRANSIO` set IOPAR in HOME, `BUFLEN` and `SRECV` find no characters,
-  `XMIT` prints its string to the print log, `SERVER` and `XSERV` return
-  with a note, and `PKT` ends in Timeout, as an HP with nothing connected
-  does.
+  `SBRK` has no transfer to break, `XMIT` prints its string to the print
+  log, `SERVER` and `XSERV` return with a note, and `PKT` ends in Timeout,
+  as an HP with nothing connected does.
 - The ports are the browser's backup store: `PVARS` lists the backups
   `ARCHIVE` made in ports 0 to 3 with an estimate of the storage left,
   shared by every port, `PINIT` drops backups that can no longer be read,

@@ -66,7 +66,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 </head>
 <body>
 <h1 id='top'>HP 50g Advanced Guide — Command Reference</h1>
-<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 812 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
+<p>825 commands extracted from the HP 50g Advanced User's Reference Manual. 813 are implemented in this RPL app. Sections are reproduced verbatim from the PDF.</p>
 <div class="search-box"><input type="text" id="search" placeholder="Filter commands…" oninput="filterTOC()" autofocus></div>
 <h2 style='background:none; border-left:none; padding-left:0;'>Index (alphabetical)</h2>
 <div class="toc" id="toc">
@@ -606,7 +606,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
 <a href="#cmd-R-to-D">R→D</a>
 <a href="#cmd-R-to-I">R→I</a>
 <a href="#cmd-SAME">SAME</a>
-<a href="#cmd-SBRK" class='notinapp'>SBRK</a>
+<a href="#cmd-SBRK">SBRK</a>
 <a href="#cmd-SCALE">SCALE</a>
 <a href="#cmd-SCALEH">SCALEH</a>
 <a href="#cmd-SCALEW">SCALEW</a>
@@ -14433,7 +14433,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>TYPE, ==</p>
   </dd>
 </dl>
-<h2 id="cmd-SBRK">SBRK <span class="not-in-app">not in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
+<h2 id="cmd-SBRK">SBRK <span class="in-app">in app</span> <span class="back"><a href="#top">↑ top</a></span></h2>
 <div class="meta">PDF page 336 · printed page 3-216</div>
 <dl class="cmd-body">
   <dt class="cmd-label cmd-label-type">Type</dt>
@@ -14443,6 +14443,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Serial Break Command: Interrupts serial transmission or reception. SBRK is typically used when a problem occurs in a serial data transmission.</p>
+    <p>In rpl.ai there is no serial port, so there is never a transmission to break: SBRK does nothing, as on an HP with nothing connected.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
