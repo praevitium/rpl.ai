@@ -122,6 +122,7 @@ RPL puts the numbers first and the operation last. Each value goes on the
   and `'√12' EVAL` is `2√3`.
   Trig functions give their closed forms at multiples of 30° and 45°: `30 SIN`
   in DEG is `1/2`, `π 4 / COS` is `√2/2`, and `1 ASIN` in RAD is `π/2`.
+  D→R and R→D stay exact too: `90 D→R` is `π/2` and `π/2` R→D is 90.
 - **Algebra.** Push `` `X^2-4` `` and run `FACTOR` for `(X−2)(X+2)`, or
   `` `X^2-5*X+6=0` `X` SOLVE `` for `{ X=2 X=3 }`. The ` key stands in for
   the HP's ' key, and the command line reads apostrophes too: `'X^2-4'`

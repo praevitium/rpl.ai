@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.59 (2026-10-21)
+**Latest release:** v0.8.60 (2026-10-21)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.60 — 2026-10-21
+
+- Fixed: in exact mode D→R of an integer or fraction of degrees gave an
+  unevaluable `D→R(90)`; it now gives the exact multiple of π, as the AUR's
+  (π/180)x: `90 D→R` is `π/2`, and a list of degrees converts entry by
+  entry.
+- Fixed: R→D of an exact multiple of π stayed `R→D(π/2)`; it now gives the
+  exact degrees, so `π/2` R→D is 90 and D→R and R→D round-trip. A real
+  argument still gives a real.
 
 ## v0.8.59 — 2026-10-21
 
