@@ -3212,12 +3212,23 @@ setAngle('RAD');
   const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(displaySrc.includes("?.closest?.('.st-row[data-key], #cmdline');")
-    && /if \(target\.id === 'cmdline'\) this\.onRowEcho\?\.\(from\);\s*else this\.onRowMove\?\.\(from, Number\(target\.dataset\.level\)\);/.test(displaySrc)
+  assert(displaySrc.includes("?.closest?.('.st-row[data-key], #cmdline, .eqw, .mx');")
+    && /if \(target\.matches\('\.st-row'\)\) this\.onRowMove\?\.\(from, Number\(target\.dataset\.level\)\);\s*else this\.onRowEcho\?\.\(from\);/.test(displaySrc)
     && appSrc.includes("d.onRowEcho = (level) => this.levelAction('echo', level);")
     && css.includes('.cmdline.drag-over { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }')
     && css.includes(':root[data-view="minimal"] .input .cmdline.drag-over { background: var(--accent-dim); }'),
     "a level a finger drags by its number onto the command line is typed there, as ECHO does and a mouse's drop already did, the line lit while it is over it, minimal view's borderless line with a tint");
+}
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const mxSrc = readFileSync(new URL('../www/src/ui/matrix-editor.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(appSrc.includes("case 'echo': this.clearSelection(); this._echo(withFractionMark(formatSource(value))); return;")
+    && /if \(this\.inputMode === 'equation'\) this\.equationEditor\._pasteText\(source\);\s*else if \(this\.inputMode === 'matrix'\) this\.matrixEditor\.echo\(source\);\s*else this\.entry\.typeToken\(source\);/.test(appSrc)
+    && /echo\(text\) \{\s*if \(this\.typedCellFocused\(\)\) \{ this\._editCell\(text\); return; \}\s*const \[r, c\] = this\._activeCell\(\);\s*this\._writeCell\(r, c, text, \[text\.length, text\.length\]\);/.test(mxSrc)
+    && css.includes('.eqw.drag-over, .mx.drag-over { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-line); }'),
+    'ECHO with a writer open, from the level menu or a finger drop on the writer, puts the level in the formula at the caret or in the focused matrix cell, not the hidden command line');
 }
 
 {

@@ -1235,6 +1235,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 :root[data-theme="classic"] .ins svg.spark line { stroke: rgba(28, 38, 24, .3); }
 .mx { position: relative; border-radius: 12px; border: 1px solid var(--accent-line); background: var(--well); box-shadow: 0 0 0 3px var(--accent-dim); padding: 10px 12px; display: grid; gap: 8px; min-width: 0; color: var(--stack-ink); }
 .mx.editing { border-color: color-mix(in oklab, var(--amber) 60%, transparent); box-shadow: 0 0 0 3px var(--amber-dim); }
+.eqw.drag-over, .mx.drag-over { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-line); }
 .mx-grid-wrap { overflow: auto; max-height: 220px; display: flex; justify-content: safe center; scrollbar-width: thin; }
 .mx-grid { display: inline-grid; gap: 5px; position: relative; padding: 4px 14px; }
 .mx-grid::before, .mx-grid::after { content: ""; position: absolute; top: 0; bottom: 0; width: 8px; border: 2px solid var(--ink2); }

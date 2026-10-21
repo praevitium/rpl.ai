@@ -451,11 +451,11 @@ export class Display {
   }
 
   // A finger moved up or down from a level's number drags the level onto another, as a mouse does, or onto the command
-  // line to copy it there (ECHO); sideways it swipes.
+  // line or an open writer to copy it there (ECHO); sideways it swipes.
   _installLevelDrag(view) {
     let drag = null;
     const aim = () => {
-      const row = view.ownerDocument.elementFromPoint(drag.x, drag.y)?.closest?.('.st-row[data-key], #cmdline');
+      const row = view.ownerDocument.elementFromPoint(drag.x, drag.y)?.closest?.('.st-row[data-key], #cmdline, .eqw, .mx');
       const target = row && row !== drag.row ? row : null;
       if (target === drag.target) return;
       drag.target?.classList.remove('drag-over', 'drag-below');
@@ -506,8 +506,8 @@ export class Display {
       this._swipedAt = performance.now();
       if (ev.type !== 'pointerup' || !target) return;
       const from = Number(row.dataset.level);
-      if (target.id === 'cmdline') this.onRowEcho?.(from);
-      else this.onRowMove?.(from, Number(target.dataset.level));
+      if (target.matches('.st-row')) this.onRowMove?.(from, Number(target.dataset.level));
+      else this.onRowEcho?.(from);
     };
     view.addEventListener('pointerup', end);
     view.addEventListener('pointercancel', end);

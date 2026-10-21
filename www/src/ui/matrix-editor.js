@@ -567,6 +567,13 @@ export class MatrixEditor {
 
   insertSymbol(text) { this._editCell(text); }
 
+  // ECHO writes a stack level into the focused cell: at the caret while the cell is being typed, else over what it held.
+  echo(text) {
+    if (this.typedCellFocused()) { this._editCell(text); return; }
+    const [r, c] = this._activeCell();
+    this._writeCell(r, c, text, [text.length, text.length]);
+  }
+
   typeUnit(unit, mode) {
     if (mode === 'convert') { this.app.notifyError('CONVERT works on the stack; in the writer a unit key attaches its unit.'); return; }
     const text = unitCellText(this._textBeforeCaret(), unit, mode);

@@ -960,7 +960,7 @@ class App {
     switch (act) {
       case 'edit': this.editLevel(level); return;
       case 'view': this._viewLevel(level); return;
-      case 'echo': this.clearSelection(); this.entry.typeToken(withFractionMark(formatSource(value))); return;
+      case 'echo': this.clearSelection(); this._echo(withFractionMark(formatSource(value))); return;
       case 'pick': run(() => this.stack.push(value)); this.selectLevel(level + 1); return;
       case 'roll': run(() => moveLevel(this.stack, level, 1)); this.selectLevel(1); return;
       case 'rolld': run(() => moveLevel(this.stack, 1, level)); this.selectLevel(level); return;
@@ -1173,6 +1173,13 @@ class App {
     const value = this.stack.peek(level);
     this.clearSelection();
     this._beginEdit({ kind: 'level', level, value, line, label: `Editing level ${level}` });
+  }
+
+  // ECHO puts a level where the typing goes: the command line, or the open writer at its cursor.
+  _echo(source) {
+    if (this.inputMode === 'equation') this.equationEditor._pasteText(source);
+    else if (this.inputMode === 'matrix') this.matrixEditor.echo(source);
+    else this.entry.typeToken(source);
   }
 
   // A level moved, dropped or pushed past the one being edited takes the edit along; it ends only when its value leaves the stack.
