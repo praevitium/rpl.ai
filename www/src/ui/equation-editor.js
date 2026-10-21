@@ -8,7 +8,7 @@ import { format, withFractionMark } from '../rpl/formatter.js';
 import { astLatex, parseMath } from '../rpl/latex.js';
 import { RPLError, Stack } from '../rpl/stack.js';
 import { lookup } from '../rpl/ops.js';
-import { parseEntry } from '../rpl/parser.js';
+import { parseEntry, fromTyped } from '../rpl/parser.js';
 import { _astToRplValue } from '../rpl/ops/internal.js';
 import { giac } from '../rpl/cas/giac-engine.mjs';
 import { state as calcState, toRadians, fromRadians, testUserFlag } from '../rpl/state.js';
@@ -2077,7 +2077,7 @@ export class EquationEditor {
 
   _selectionText() {
     const ast = this._selectionAst();
-    return ast && formatAlgebra(ast);
+    return ast && withFractionMark(formatAlgebra(ast));
   }
 
   _writeClipboard(text) {
@@ -2085,7 +2085,7 @@ export class EquationEditor {
   }
 
   _pasteText(text) {
-    try { this.state = pasteText(this.state, String(text ?? '').replace(/^\s*['`]|['`]\s*$/g, ''), { selectionAsCaret: !this._selecting }); }
+    try { this.state = pasteText(this.state, fromTyped(String(text ?? '')).replace(/^\s*['`]|['`]\s*$/g, ''), { selectionAsCaret: !this._selecting }); }
     catch (error) { this.app.notifyError(`That doesn't read as an expression: ${error.message}`); return; }
     this._render();
   }

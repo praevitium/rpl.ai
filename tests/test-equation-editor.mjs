@@ -6,7 +6,7 @@ import {
   equationInsights, variablesOf, primaryVariable, renameVariable,
   equationToSymbolic, valueToEquationDraft, valueFromEquation,
   EQW_CMDS, EQW_APP_FACES, EQW_UNAVAILABLE_FACES, applyOpsToAst,
-  cutTarget, pasteText, replaceTarget,
+  cutTarget, pasteText, replaceTarget, EquationEditor,
 } from '../www/src/ui/equation-editor.js';
 import { Symbolic, Name, Integer, Matrix, isSymbolic, isInteger } from '../www/src/rpl/types.js';
 import { parseAlgebra, formatAlgebra, astEqual } from '../www/src/rpl/algebra.js';
@@ -587,4 +587,19 @@ function replaceSelection(state, ast) {
   assert(keys[0] === '.' && keys[1] === ',', `EQW with -51 set a typed , is the fraction mark and ; the separator (${keys})`);
   assert(textOf(typed) === '1.5', 'EQW the writer keeps 1.5 inside, whatever mark it shows');
   assert(key(',') === ',' && eqwToSvg(typed.root, { size: 24 }).svg.includes('1.5'), 'EQW without -51 the comma separates and the point shows again');
+}
+
+/* Flag -51 on the writer's clipboard: Copy writes the comma form and a paste, or an ECHO, reads it, so they round-trip. */
+{
+  const { setUserFlag, clearUserFlag } = await import('../www/src/rpl/state.js');
+  const writer = { state: emptyEquation(), _selecting: false, _render() {}, app: { notifyError: (m) => { throw new Error(m); } } };
+  const call = parseAlgebra('MAX(1.5, 2)');
+  setUserFlag(-51);
+  const copied = EquationEditor.prototype._selectionText.call({ _selectionAst: () => call });
+  EquationEditor.prototype._pasteText.call(writer, copied);
+  const echoed = { ...writer, state: emptyEquation() };
+  EquationEditor.prototype._pasteText.call(echoed, '1,5');
+  clearUserFlag(-51);
+  assert(copied === 'MAX(1,5;2)' && textOf(writer.state) === 'MAX(1.5,2)' && textOf(echoed.state) === '1.5',
+    `EQW with -51 set Copy writes MAX(1,5;2) and a paste or ECHO of 1,5 reads 1.5 (${copied}, ${textOf(writer.state)}, ${textOf(echoed.state)})`);
 }
