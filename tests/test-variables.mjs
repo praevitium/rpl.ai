@@ -2106,6 +2106,8 @@ clearAllUserFlags();
     `MENUXY takes numbers below 0 as 0 and above 140 as 140 (${shown.slice(-2)})`);
   runLine('REWRITE');
   assert(shown.at(-1) === '{ DISTRIB EXPLN EXP2POW FDISTRIB LIN LNCOLLECT SIMPLIFY XNUM XQ } temporary', `REWRITE shows the rewriting commands (${shown.at(-1)})`);
+  runLine('-117 SF CONSTANTS -117 CF');
+  assert(shown.at(-1) === '{ π e i ∞ MAXR MINR } temporary', `with flag -117 set, CONSTANTS shows its constants as soft keys, as the HP's menu (${shown.at(-1)})`);
   assertThrows(() => runLine('"a" 3 MENUXY'), /Bad argument type/, 'MENUXY wants numbers');
   setMenuHook(null);
   assert(format(runLine('LANGUAGE→').peek()) === '0.', 'LANGUAGE→ gives 0, English');

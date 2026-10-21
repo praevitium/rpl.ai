@@ -49,8 +49,7 @@ export function setOpenHook(fn) {
 }
 
 // The HP's CAS menu commands, and TVM, open the app's menu or folder holding the same commands; CASCMD and HELP, the
-// HP's lists of CAS commands with their examples, open the Catalog on its CAS family, and CONSTANTS the Characters drawer,
-// constants first.
+// HP's lists of CAS commands with their examples, open the Catalog on its CAS family.
 const MENU_COMMANDS = Object.freeze({
   ALGB: { family: 'CAS', folder: 'ALG' },
   DIFF: { family: 'CAS', folder: 'CALC' },
@@ -66,7 +65,6 @@ const MENU_COMMANDS = Object.freeze({
   TVM: { family: 'TVM' },
   HELP: { drawer: 'catalog', family: 'CAS' },
   MATHS: { family: 'CAS' },
-  CONSTANTS: { drawer: 'chars' },
   SOLVER: { family: 'CAS', folder: 'S.SLV' },
 });
 
@@ -81,6 +79,15 @@ register('CASCMD', (s) => {
   const from = s.depth && isString(s.peek(1)) ? s.peek(1).value : null;
   if (!inScratchState()) _openHook?.({ drawer: 'catalog', family: 'CAS', ...(from && { from }) });
 }, { category: 'Display / base', categoryOrder: 30.12, label: 'CASCMD' });
+
+// CONSTANTS opens the Characters drawer, constants first; with flag -117 set it shows them as soft keys, as the HP shows its
+// menu rather than its list.
+const CONSTANTS_MENU = Object.freeze(['π', 'e', 'i', '∞', 'MAXR', 'MINR']);
+register('CONSTANTS', () => {
+  if (inScratchState()) return;
+  if (testUserFlag(-117)) _menuHook?.(RList(CONSTANTS_MENU.map((name) => Name(name))), true);
+  else _openHook?.({ drawer: 'chars' });
+}, { category: 'Display / base', categoryOrder: 30.14, label: 'CONSTANTS' });
 
 // The HP's numbered CAS commands, 0 to 140, for MENUXY.
 const CAS_NUMBERED = Object.freeze([
