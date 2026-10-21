@@ -601,8 +601,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   text size, the button shortens (RAD · STD ·…) so the folder name, Ask and
   the writers' keys stay on screen.
 - A phone's back button closes the open menu, search, sheet, writer or
-  drawer first, then cancels an edit and leaves a selected stack level as
-  the HP's ON does, and leaves the app only when nothing is open.
+  drawer first, then dismisses an error, cancels an edit and leaves a
+  selected stack level as the HP's ON does, wakes rpl.ai from `OFF`, and
+  leaves the app only when nothing is open.
 - The TOOL menu holds the HP's TOOL key: `EDIT`, `VIEW`, `RCL`, `STO`,
   `PURGE` and `CLEAR`, then `CASCMD` and `HELP`, so minimal view, which has
   no keypad, reaches them from the soft keys. `VIEW` shows level 1 full
@@ -770,7 +771,8 @@ which is saved with the stack. An alarm that comes due while the app is
 open shows its message in a note with an ACK button, a buzz and a tone (set
 flag -57 for quiet); one missed while the app was closed shows as past due
 the next time it opens. While one is past due, the HP's alert annunciator
-((•)) lights in the status line, and a tap on it brings the note back.
+((•)) lights in the status line, and a tap on it brings the note back;
+installed as an app, its icon carries a dot until the alarm is acknowledged.
 
 ### Search everything
 
