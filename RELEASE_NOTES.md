@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.32 (2026-10-21)
+**Latest release:** v0.8.33 (2026-10-21)
 
 ---
 
@@ -20,6 +20,23 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.33 — 2026-10-21
+
+- Fixed: with Keep the screen on, `OFF`'s dark screen kept the screen
+  wake lock, so the phone stayed lit on a black page. `OFF` now lets the
+  phone sleep, and the tap that wakes the calculator keeps the screen on
+  again.
+- Added: with key vibration on, a program's `BEEP` buzzes as long as its
+  tones play (a tune of several BEEPs buzzes through to its end, up to
+  5 s), so a phone on silent still gives the signal. Flag -56 stops it,
+  as it stops the tone.
+- Changed: command search, the Catalog, Variables, History and
+  Characters filters, the plot's expression fields, the rename, New
+  folder, Store and backup name fields and INFORM's fields tell the
+  phone's keyboard not to capitalise or autocorrect, as the command line
+  already did, so an iPhone no longer turns `sto` into `Sto` or "corrects"
+  a command name.
 
 ## v0.8.32 — 2026-10-21
 
