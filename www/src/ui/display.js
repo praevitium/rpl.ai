@@ -842,7 +842,7 @@ export class Display {
     this.cmdline.classList.toggle('empty', entry.buffer.length === 0);
   }
 
-  renderStatus({ classic = false, minimal = false, shift = null, halted = null, editing = null, alarm = false, user = false } = {}) {
+  renderStatus({ classic = false, minimal = false, shift = null, halted = null, editing = null, alarm = false, user = false, clock = null } = {}) {
     const el = this.statusLine;
     if (!el) return;
     const layer = shift?.startsWith('shiftL') ? 'l' : shift?.startsWith('shiftR') ? 'r' : shift?.startsWith('alpha') ? 'a' : '';
@@ -854,6 +854,7 @@ export class Display {
     const editMark = editing ? `<button type="button" class="ann-m e" data-status="cancel-edit" title="Editing ${escapeHtml(editTarget(editing))}: tap to cancel" aria-label="Cancel editing ${escapeHtml(editTarget(editing))}">${icon('edit', 'sm')}${typeof editing === 'number' ? editing : ''}</button>` : '';
     const userMark = user ? `<span class="${minimal || classic ? 'ann-m' : 'pill'} user" title="${user === '1USR' ? 'USER mode for the next key' : 'USER mode'}: assigned keys run their objects">${user}</span>` : '';
     const alarmMark = alarm ? `<button type="button" class="${minimal || classic ? 'ann-m' : 'pill'} alarm" data-status="alarm" title="An alarm is past due: tap to see it" aria-label="An alarm is past due">((•))</button>` : '';
+    const clockMark = clock ? `<span class="ann-clock" title="The time (flag -40)">${clock}</span>` : '';
     if (classic) {
       const g = (items, cls = '', mode = '') => `<div class="ann-g ${cls}"${mode ? ` data-status="mode" data-mode="${mode}" role="button" tabindex="0" title="Change ${MODE_NAMES[mode]}"` : ''}>${items.map(([t, on, c]) => `<span class="${on ? 'on' : ''} ${c || ''}">${t}</span>`).join('')}</div>`;
       el.innerHTML = [
@@ -867,6 +868,7 @@ export class Display {
         alarmMark,
         editMark,
         `<div class="ann-path">${pathHtml}</div>`,
+        clockMark,
         minimal ? `<div class="ann-g" style="gap:0">${minimalButtons}</div>` : '',
       ].join('');
       el.className = 'status-line';
@@ -883,7 +885,7 @@ export class Display {
       ].filter(([, t]) => t);
       const layerMark = layer ? `<span class="ann-m ${layer}">${{ l: '↰', r: '↱', a: 'α' }[layer]}${locked ? ' LOCK' : ''}</span>` : '';
       const haltMark = halted ? '<span class="ann-m l halt">HALT</span>' : '';
-      el.innerHTML = `<div class="ann-status">${modes.map(([m, t]) => `<button type="button" class="ann-m" data-status="mode" data-mode="${m}" title="Change ${MODE_NAMES[m]}">${escapeHtml(t)}</button>`).join('')}${layerMark}${haltMark}${userMark}${alarmMark}${editMark}<span class="ann-sp"></span><span class="ann-path">${pathHtml}</span>${minimalButtons}</div>`;
+      el.innerHTML = `<div class="ann-status">${modes.map(([m, t]) => `<button type="button" class="ann-m" data-status="mode" data-mode="${m}" title="Change ${MODE_NAMES[m]}">${escapeHtml(t)}</button>`).join('')}${layerMark}${haltMark}${userMark}${alarmMark}${editMark}<span class="ann-sp"></span>${clockMark}<span class="ann-path">${pathHtml}</span>${minimalButtons}</div>`;
       el.className = 'status-line';
       return;
     }

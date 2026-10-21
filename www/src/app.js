@@ -41,7 +41,7 @@ import {
 import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setFontHooks, setTransferHooks, receivedName, receivedTarget, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
 import { VERSION, DATE } from './build-info.js';
 import { beep, alarmBeep, keyClick } from './ui/beep.js';
-import { pastDueAlarm, msToNextAlarm, acknowledgeOldest, calculatorNow } from './rpl/ops/time.js';
+import { pastDueAlarm, msToNextAlarm, acknowledgeOldest, calculatorNow, headerClock } from './rpl/ops/time.js';
 import { _hp50TypeCode } from './rpl/ops/internal.js';
 import { displayDigitsArg } from './rpl/ops/display.js';
 import { mesMenu } from './rpl/ops/root.js';
@@ -307,6 +307,9 @@ class App {
   }
 
   renderStatus() {
+    const clock = testUserFlag(-40) ? headerClock() : null;
+    clearTimeout(this._clockTimer);
+    if (clock) this._clockTimer = setTimeout(() => this.renderStatus(), 60020 - (calculatorNow() % 60000));
     this.display.renderStatus({
       classic: this.prefs.theme === 'classic',
       minimal: this.prefs.minimal,
@@ -315,6 +318,7 @@ class App {
       editing: this.pendingEdit ? this.pendingEdit.level ?? this.pendingEdit.name : null,
       alarm: !!pastDueAlarm(),
       user: testUserFlag(-62) && (this._userOnce ? '1USR' : 'USER'),
+      clock,
     });
   }
 

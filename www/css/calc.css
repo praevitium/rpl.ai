@@ -403,6 +403,9 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .ann-m.e { display: inline-flex; align-items: center; gap: 2px; padding: 0 4px; }
 .ann-m:is(.alarm, .user) { color: var(--amber); font-size: 11px; letter-spacing: 0; padding: 0 4px; }
 .ann-sp { flex: 1; }
+.ann-clock { flex: none; font-size: 11px; letter-spacing: 0; padding: 0 4px; white-space: nowrap; }
+/* Narrower, the modes and buttons leave no room for the clock. */
+@container app (max-width: 389px) { .ann-clock { display: none; } }
 .ann-path { font-weight: 500; color: var(--ink2); padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; gap: 6px; align-items: center; }
 .ann-path button { border: 0; background: transparent; padding: 3px 4px; border-radius: 5px; }
 .ann-path button:hover { background: var(--r1); color: var(--ink); }
@@ -1114,6 +1117,9 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 :root[data-theme="classic"]:not([data-view="minimal"]) .status-line :is(.ann-m.e, .ann-m.alarm, .ann-m.user) { height: 11px; min-height: 0; min-width: 0; }
 @container app (max-width: 319px) { :root[data-theme="classic"] .status-line:has(.ann-m.e):has(.ann-g.opt:not([data-mode]) > .on) .ann-g[data-mode="exact"] { display: none; } }
 :root[data-theme="classic"] .ann-path { margin-left: auto; color: var(--lcd-ink); padding: 0; }
+:root[data-theme="classic"] .ann-clock { color: var(--lcd-ink); padding: 0 0 0 8px; }
+/* Classic's bezel leaves its line 48 px narrower, so its clock needs a wider window. */
+@container app (max-width: 429px) { :root[data-theme="classic"] .ann-clock { display: none; } }
 :root[data-theme="classic"] .ann-path button:hover { background: rgba(28, 38, 24, .1); color: var(--lcd-ink); }
 :root[data-theme="classic"] .ann-btn { color: var(--lcd-ink); opacity: .45; }
 :root[data-theme="classic"] .ann-btn:hover { background: rgba(28, 38, 24, .1); color: var(--lcd-ink); }

@@ -501,10 +501,10 @@ import { assert, assertThrows } from './helpers.mjs';
     assert(types.keys.join(' ') === 'OBJ→ →ARRY →LIST →STR →TAG →UNIT C→R R→C NUM CHR DTAG EQ→ TYPE VTYPE' && types.keys.every((n) => lookup(n)),
       'TYPES menu: the HP\'s PRG TYPE keys, OBJ→ →ARRY →LIST →STR →TAG →UNIT / C→R R→C NUM CHR DTAG EQ→ / TYPE VTYPE, so a phone converts between types from one menu');
     const time = MENU_FAMILIES.find((f) => f.id === 'TIME');
-    assert(time.flagKeys.map(([flag, label]) => `${label}${flag}`).join(' ') === '24H-41 D.M.Y-42'
+    assert(time.flagKeys.map(([flag, label]) => `${label}${flag}`).join(' ') === 'CLK-40 24H-41 D.M.Y-42'
       && /const flagKeys = \(family\.flagKeys \?\? \[\]\)\.map\(\(key\) => this\._flagKey\(\.\.\.key\)\);/.test(appSrc)
       && /on: \(\) => testUserFlag\(flag\),\s*onPress: \(\) => \{\s*if \(this\.entry\._typingAtCursor\(\)\) this\.entry\.typeToken\(`\$\{command\(\)\} `\);\s*else \(testUserFlag\(flag\) \? clearUserFlag : setUserFlag\)\(flag\);/.test(appSrc),
-      'TIME menu: 24H and D.M.Y keys after the commands set the HP\'s clock and date formats (flags -41 and -42), marked while set, and type -41 SF or CF inside a program');
+      'TIME menu: CLK, 24H and D.M.Y keys after the commands show the clock in the status line and set the HP\'s clock and date formats (flags -40, -41 and -42), marked while set, and type -41 SF or CF inside a program');
   }
   assert(/const MODE_KEYS = Object\.freeze\(\{\s*DEG: \['angle', 'DEG'\], RAD: \['angle', 'RAD'\], GRAD: \['angle', 'GRD'\], GRD: \['angle', 'GRD'\],\s*RECT: \['coordMode', 'RECT'\], CYLIN: \['coordMode', 'CYLIN'\], SPHERE: \['coordMode', 'SPHERE'\], CMPLX: \['complexMode', true\],\s*HEX: \['binaryBase', 'h'\], DEC: \['binaryBase', 'd'\], OCT: \['binaryBase', 'o'\], BIN: \['binaryBase', 'b'\],/.test(appSrc)
     && /\.\.\.\(mode && \{ toggle: true, on: \(\) => calcState\[mode\[0\]\] === mode\[1\] \}\),/.test(appSrc),
@@ -2804,6 +2804,11 @@ setAngle('RAD');
     'INFORM: the form put away by its X, Escape, the back button or a tap beside it cancels, answering 0 as the HP\'s CANCEL and ON do, where the program stayed halted with the form gone');
   assert(/\.st-row:is\(\.culprit, \.arg, \.ghost\):not\(\.sel\) \{ grid-template-columns: 34px auto minmax\(0, 1fr\); \}\s*\.st-row:is\(\.culprit, \.arg, \.ghost\):not\(\.sel\) \.st-tag \{ position: static; transform: none; \}/.test(css),
     'a marked level (this one, argument, result) keeps its tag beside the value, so a wide list at 280 px starts after "this one" instead of running 46 px under it');
+  assert(/const clock = testUserFlag\(-40\) \? headerClock\(\) : null;\s*clearTimeout\(this\._clockTimer\);\s*if \(clock\) this\._clockTimer = setTimeout\(\(\) => this\.renderStatus\(\), 60020 - \(calculatorNow\(\) % 60000\)\);/.test(appSrc)
+    && /<span class="ann-sp"><\/span>\$\{clockMark\}<span class="ann-path">/.test(readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8'))
+    && /@container app \(max-width: 389px\) \{ \.ann-clock \{ display: none; \} \}/.test(css)
+    && /@container app \(max-width: 429px\) \{ :root\[data-theme="classic"\] \.ann-clock \{ display: none; \} \}/.test(css),
+    'flag -40: the status line shows the time, as the HP\'s header does, ticking each minute, from 390 px in minimal view and 430 in the Classic look, where it fits beside the modes and buttons');
 }
 
 {

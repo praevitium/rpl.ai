@@ -1,6 +1,6 @@
 import { Stack } from '../www/src/rpl/stack.js';
 import { lookup } from '../www/src/rpl/ops.js';
-import { _setClock, pastDueAlarm, msToNextAlarm, acknowledgeOldest } from '../www/src/rpl/ops/time.js';
+import { _setClock, pastDueAlarm, msToNextAlarm, acknowledgeOldest, headerClock } from '../www/src/rpl/ops/time.js';
 import { isBinaryInteger } from '../www/src/rpl/types.js';
 import { setUserFlag, clearUserFlag } from '../www/src/rpl/state.js';
 import { snapshot, rehydrate } from '../www/src/rpl/persist.js';
@@ -145,4 +145,20 @@ const pad = (n) => String(n).padStart(2, '0');
   runLine('0 DELALARM');
   setClockOffset(0);
   _setClock(null);
+}
+
+{
+  // Flag -40's clock in the status line, as the HP's header shows the time.
+  const at = (h, m) => new Date(2026, 9, 21, h, m, 30).getTime();
+  _setClock(() => at(18, 5));
+  clearUserFlag(-41);
+  const twelve = headerClock();
+  setUserFlag(-41);
+  const twentyFour = headerClock();
+  clearUserFlag(-41);
+  _setClock(() => at(0, 7));
+  const midnight = headerClock();
+  _setClock(null);
+  assert(twelve === '06:05P' && twentyFour === '18:05' && midnight === '12:07A',
+    `the status line's clock reads 06:05P, or 18:05 with flag -41 set, and 12:07A just after midnight (got ${twelve}, ${twentyFour}, ${midnight})`);
 }

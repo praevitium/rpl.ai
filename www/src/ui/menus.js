@@ -7,7 +7,7 @@ const format = (value) => withFractionMark(formatValue(value));
 export const MENU_FAMILIES = Object.freeze([
   { id: 'STACK', short: 'STACK', title: 'Stack', category: 'Stack' },
   { id: 'ARITH', short: 'ARITH', title: 'Arithmetic', category: 'Arithmetic' },
-  { id: 'TIME', short: 'TIME', title: 'Time and dates', category: 'Time / dates', flagKeys: [[-41, '24H', '24-hour clock: TSTR writes 14:55:00'], [-42, 'D.M.Y', 'Day first: dates read and written as DD.MMYYYY']] },
+  { id: 'TIME', short: 'TIME', title: 'Time and dates', category: 'Time / dates', flagKeys: [[-40, 'CLK', 'Clock: the status line shows the time, as the header of the HP does'], [-41, '24H', '24-hour clock: TSTR writes 14:55:00'], [-42, 'D.M.Y', 'Day first: dates read and written as DD.MMYYYY']] },
   { id: 'TVM', short: 'TVM', title: 'Time value of money', category: 'Finance' },
   { id: 'TRIG', short: 'TRIG', title: 'Trig, log and exp', category: 'Trig / log / exp / hyperbolic' },
   { id: 'CPLX', short: 'CMPLX', title: 'Complex numbers', category: 'Complex / coordinates', keys: ['RE', 'IM', 'C→R', 'R→C', 'ABS', 'ARG', 'SIGN', 'NEG', 'CONJ', 'C→P', 'P→C', 'CMPLX', 'RECT', 'CYLIN', 'SPHERE', 'CMPLX?'] },

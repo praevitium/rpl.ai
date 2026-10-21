@@ -109,6 +109,13 @@ register('CLKADJ', (s) => {
   _shiftClock(Math.max(-1e12, Math.min(1e12, ticks)) * TICK_MS);
 }, { ...TIME, categoryOrder: 3.3, label: 'CLKADJ' });
 
+// The time in the status line while flag -40 is set, as the HP's header shows it: 24-hour with flag -41, else with A or P.
+export function headerClock() {
+  const d = new Date(_now());
+  const h = d.getHours(), m = d.getMinutes();
+  return testUserFlag(-41) ? `${pad(h)}:${pad(m)}` : `${pad(h % 12 || 12)}:${pad(m)}${h < 12 ? 'A' : 'P'}`;
+}
+
 register('TSTR', (s) => {
   const [date, time] = s.popN(2).map((v) => (number(v), v));
   const d = new Date(parseDate(date));
