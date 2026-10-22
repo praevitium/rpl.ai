@@ -1171,19 +1171,7 @@ class App {
     const chips = names.length ? `<div class="pop-chips">${names.map((id) => `<button type="button" class="chip" data-name="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join('')}</div>` : '';
     const html = `<form data-store><h6>Store level ${level} in</h6><div style="padding:4px 6px 6px"><input type="text" name="name" placeholder="Variable name, like R1" aria-label="Variable name" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done" class="pop-name"></div><div class="note err" role="alert" hidden></div>${chips}<div class="note">Same as <code>\`NAME\` STO</code>. Level ${level} stays on the stack.</div><div style="display:flex;justify-content:flex-end;padding:6px"><button type="submit" class="btn pri">Store</button></div></form>`;
     const pop = this.popover.open(anchor ?? this.display.stackView.querySelector('.st-row.sel'), html, { label: 'Store' });
-    const form = pop.querySelector('form');
-    const field = form.elements.name;
-    const note = form.querySelector('.note.err');
-    requestAnimationFrame(() => field.focus());
-    // A refusal shows under the field, where a toast would cover the popover with the keyboard up.
-    const refuse = (message) => { note.textContent = message; note.hidden = false; field.setAttribute('aria-invalid', 'true'); field.focus(); };
-    field.addEventListener('input', () => { note.hidden = true; field.removeAttribute('aria-invalid'); });
-    const store = (text) => {
-      // As `NAME` STO takes it: quotes are optional, and a name STO refuses is refused here too.
-      const name = text.replace(/^(['`])(.+)\1$/, '$2');
-      if (!name) return;
-      if (!isValidHpIdentifier(name)) { refuse(`“${name}” isn't a valid name. Use letters and digits, starting with a letter.`); return; }
-      if (isReservedHpName(name)) { refuse(`“${name}” isn't a valid name: ${name.toUpperCase()} is a command.`); return; }
+    const take = this.nameForm(pop.querySelector('form'), (name, refuse) => {
       const value = this.stack.peek(level);
       this.entry._snapForUndo();
       try {
@@ -1194,10 +1182,28 @@ class App {
         this.entry._dropNoOpUndoStep();
         refuse(`Couldn't store in “${name}”: ${err.message}`);
       }
-    };
-    form.addEventListener('submit', (e) => { e.preventDefault(); store(field.value.trim()); });
+    });
     // A name the directory already holds is a tap away, as a variable's soft key is; STO replaces as it does there.
-    pop.querySelector('.pop-chips')?.addEventListener('click', (e) => { const chip = e.target.closest('.chip'); if (chip) store(chip.dataset.name); });
+    pop.querySelector('.pop-chips')?.addEventListener('click', (e) => { const chip = e.target.closest('.chip'); if (chip) take(chip.dataset.name); });
+  }
+
+  // A popover form's name field, read as `NAME` STO reads it: quotes optional, and a name STO refuses is refused under the
+  // field, where a toast would cover it with the keyboard up. Returns the reader, for chips that offer a name.
+  nameForm(form, onName) {
+    const field = form.elements.name;
+    const note = form.querySelector('.note.err');
+    const refuse = (message) => { note.textContent = message; note.hidden = false; field.setAttribute('aria-invalid', 'true'); field.focus(); };
+    const take = (text) => {
+      const name = text.trim().replace(/^(['`])(.+)\1$/, '$2');
+      if (!name) return;
+      if (!isValidHpIdentifier(name)) refuse(`“${name}” isn't a valid name. Use letters and digits, starting with a letter.`);
+      else if (isReservedHpName(name)) refuse(`“${name}” isn't a valid name: ${name.toUpperCase()} is a command.`);
+      else onName(name, refuse);
+    };
+    field.addEventListener('input', () => { note.hidden = true; field.removeAttribute('aria-invalid'); });
+    form.addEventListener('submit', (e) => { e.preventDefault(); take(field.value); });
+    requestAnimationFrame(() => field.focus());
+    return take;
   }
 
   _moveLevel(from, to) {

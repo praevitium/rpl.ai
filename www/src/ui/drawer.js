@@ -880,17 +880,12 @@ export class Drawers {
 
   _newFolder(anchor) {
     const { app } = this;
-    const html = `<form data-newdir><h6>New folder</h6><div style="padding:4px 6px 6px"><input type="text" name="name" placeholder="Name, like PROJECTS" aria-label="Folder name" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done" class="pop-name"></div><div class="note">Same as <code>\`NAME\` CRDIR</code>.</div><div style="display:flex;justify-content:flex-end;gap:6px;padding:6px"><button type="submit" class="btn pri">Create</button></div></form>`;
+    const html = `<form data-newdir><h6>New folder</h6><div style="padding:4px 6px 6px"><input type="text" name="name" placeholder="Name, like PROJECTS" aria-label="Folder name" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done" class="pop-name"></div><div class="note err" role="alert" hidden></div><div class="note">Same as <code>\`NAME\` CRDIR</code>.</div><div style="display:flex;justify-content:flex-end;gap:6px;padding:6px"><button type="submit" class="btn pri">Create</button></div></form>`;
     const pop = app.popover.open(anchor, html, { label: 'New folder' });
-    const form = pop.querySelector('form');
-    requestAnimationFrame(() => form.elements.name.focus());
-    form.addEventListener('submit', (ev) => {
-      ev.preventDefault();
-      const dir = form.elements.name.value.trim();
-      if (!isStorableHpName(dir)) { app.notifyError(`“${dir}” isn't a valid name. Use letters and digits, starting with a letter.`); return; }
+    app.nameForm(pop.querySelector('form'), (dir, refuse) => {
       app.entry._snapForUndo();
       try { makeSubdir(dir); app.popover.close(); app.undoToast(`Created ${dir}`); }
-      catch (err) { app.entry._dropNoOpUndoStep(); app.notifyError(err.message); }
+      catch (err) { app.entry._dropNoOpUndoStep(); refuse(err.message); }
     });
   }
 

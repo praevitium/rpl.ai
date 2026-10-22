@@ -3144,21 +3144,28 @@ setAngle('RAD');
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const drawerSrcForNames = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
   const body = appSrc.match(/\n  _storePrompt\(level, anchor\) \{\n([\s\S]*?)\n  \}\n/)[1];
+  const nameForm = appSrc.match(/\n  nameForm\(form, onName\) \{\n([\s\S]*?)\n  \}\n/)?.[1] ?? '';
+  const newFolder = drawerSrcForNames.match(/\n  _newFolder\(anchor\) \{\n([\s\S]*?)\n  \}\n/)?.[1] ?? '';
   assert(/const names = varOrder\(\)\.filter\(\(id\) => !isDirectory\(varRecall\(id\)\)\);/.test(body)
     && /<div class="pop-chips">\$\{names\.map\(\(id\) => `<button type="button" class="chip" data-name="\$\{escapeHtml\(id\)\}">\$\{escapeHtml\(id\)\}<\/button>`\)\.join\(''\)\}<\/div>/.test(body)
-    && /pop\.querySelector\('\.pop-chips'\)\?\.addEventListener\('click', \(e\) => \{ const chip = e\.target\.closest\('\.chip'\); if \(chip\) store\(chip\.dataset\.name\); \}\);/.test(body)
-    && /form\.addEventListener\('submit', \(e\) => \{ e\.preventDefault\(\); store\(field\.value\.trim\(\)\); \}\);/.test(body)
+    && /const take = this\.nameForm\(pop\.querySelector\('form'\), \(name, refuse\) => \{/.test(body)
+    && /pop\.querySelector\('\.pop-chips'\)\?\.addEventListener\('click', \(e\) => \{ const chip = e\.target\.closest\('\.chip'\); if \(chip\) take\(chip\.dataset\.name\); \}\);/.test(body)
     && /\n\.pop-chips \{ display: flex; flex-wrap: wrap; gap: 6px; padding: 0 6px 4px; \}/.test(css),
     'Store in a variable: the popover lists the directory\'s variables (not its folders) as chips in the VARS menu\'s order, and a tap stores the level in that name through the same path as the field, with its Undo note');
-  assert(/const name = text\.replace\(\/\^\(\['`\]\)\(\.\+\)\\1\$\/, '\$2'\);\s*if \(!name\) return;\s*if \(!isValidHpIdentifier\(name\)\) \{ refuse\([\s\S]*?\); return; \}\s*if \(isReservedHpName\(name\)\) \{ refuse\([\s\S]*?\); return; \}\s*const value = this\.stack\.peek\(level\);/.test(body),
+  assert(/const name = text\.trim\(\)\.replace\(\/\^\(\['`\]\)\(\.\+\)\\1\$\/, '\$2'\);\s*if \(!name\) return;\s*if \(!isValidHpIdentifier\(name\)\) refuse\([\s\S]*?\);\s*else if \(isReservedHpName\(name\)\) refuse\([\s\S]*?\);\s*else onName\(name, refuse\);/.test(nameForm)
+    && /try \{\s*varStore\(name, value\);/.test(body) && !/notifyError/.test(body),
     'Store in a variable: a name STO refuses (1A, X Y, SIN, an empty field) is refused before anything is stored, and quotes around a name are dropped, where any text became a variable no name typed on the line could reach');
   assert(/<div class="note err" role="alert" hidden><\/div>/.test(body)
-    && /const refuse = \(message\) => \{ note\.textContent = message; note\.hidden = false; field\.setAttribute\('aria-invalid', 'true'\); field\.focus\(\); \};/.test(body)
-    && /field\.addEventListener\('input', \(\) => \{ note\.hidden = true; field\.removeAttribute\('aria-invalid'\); \}\);/.test(body)
-    && !/notifyError/.test(body)
+    && /const refuse = \(message\) => \{ note\.textContent = message; note\.hidden = false; field\.setAttribute\('aria-invalid', 'true'\); field\.focus\(\); \};/.test(nameForm)
+    && /field\.addEventListener\('input', \(\) => \{ note\.hidden = true; field\.removeAttribute\('aria-invalid'\); \}\);/.test(nameForm)
     && /\n\.pop \.note\.err \{ padding-top: 0; color: var\(--danger\); \}/.test(css),
     'Store in a variable: a refusal shows under the field and clears as the name is retyped, where an error note covered the popover\'s heading, or its field in landscape, with the keyboard up');
+  assert(/<div class="note err" role="alert" hidden><\/div><div class="note">Same as <code>\\`NAME\\` CRDIR<\/code>\.<\/div>/.test(newFolder)
+    && /app\.nameForm\(pop\.querySelector\('form'\), \(dir, refuse\) => \{/.test(newFolder)
+    && /catch \(err\) \{ app\.entry\._dropNoOpUndoStep\(\); refuse\(err\.message\); \}/.test(newFolder) && !/notifyError/.test(newFolder),
+    'Variables, New folder: the name field reads names as the Store box does, an empty one doing nothing and quotes dropped, and says why it refuses one under the field, where an error note covered the field itself at 280 px with the keyboard up');
 }
 
 {
