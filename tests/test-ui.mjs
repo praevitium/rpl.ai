@@ -2935,6 +2935,10 @@ setAngle('RAD');
       && appSrc.includes("isUnit(value) ? item('convert', 'chr', 'Convert to…') + item('uval', 'chr', 'Drop the unit (UVAL)') : '',")
       && ['btor', 'dtag', 'uval'].every((act) => appSrc.includes(`case '${act}': runOn('${{ btor: 'B→R', dtag: 'DTAG', uval: 'UVAL' }[act]}'); return;`)),
       'a binary integer offers B→R where →NUM gave it back unchanged, a tagged object DTAG and a unit object UVAL');
+    assert(appSrc.includes("isName(value) && varRecall(value.id) !== undefined ? item('rcl', 'down', 'Recall its value (RCL)') : '',")
+      && appSrc.includes("isName(value) && level === 1 && this.stack.depth > 1 ? item('sto', 'folder', 'Store level 2 in it (STO)') : '',")
+      && appSrc.includes("case 'rcl': runOn('RCL'); return;") && appSrc.includes("case 'sto': runOn('STO'); return;"),
+      'a quoted name offers RCL when its variable exists and, on level 1 under another value, STO, as the HP does with a name on the stack');
     assert(appSrc.includes("const html = `<h6>Level ${level} · ${escapeHtml(describeValue(value).type)}</h6>"),
       "a level's menu names the kind of object it acts on, as its INFO note does");
     assert(appSrc.includes("isString(value) ? item('strto', 'play', 'Run its text (STR→)') : item('eval', 'play', 'Evaluate (EVAL)'),")

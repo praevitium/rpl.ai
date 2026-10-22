@@ -1012,6 +1012,8 @@ class App {
       case 'toq': runOn('→Q'); return;
       case 'btor': runOn('B→R'); return;
       case 'dtag': runOn('DTAG'); return;
+      case 'rcl': runOn('RCL'); return;
+      case 'sto': runOn('STO'); return;
       case 'uval': runOn('UVAL'); return;
       case 'inv': runOn('INV'); return;
       case 'det': runOn('DET'); return;
@@ -1108,6 +1110,8 @@ class App {
         isProgram(value) ? item('debug', 'step', 'Debug step by step (DBUG)') : '',
         isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : isBinaryInteger(value) ? item('btor', 'chr', 'To a real number (B→R)') : item('num', 'chr', 'To a number (→NUM)'),
         isTagged(value) ? item('dtag', 'chr', 'Drop the tag (DTAG)') : '',
+        isName(value) && varRecall(value.id) !== undefined ? item('rcl', 'down', 'Recall its value (RCL)') : '',
+        isName(value) && level === 1 && this.stack.depth > 1 ? item('sto', 'folder', 'Store level 2 in it (STO)') : '',
         isUnit(value) ? item('convert', 'chr', 'Convert to…') + item('uval', 'chr', 'Drop the unit (UVAL)') : '',
         isMatrix(value) && value.rows.length === value.rows[0]?.length ? item('inv', 'chr', 'Inverse (INV)') + item('det', 'chr', 'Determinant (DET)') + item('egvl', 'chr', 'Eigenvalues (EGVL)') : '',
         isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') + item('rref', 'chr', 'Row reduce (RREF)') : '',
