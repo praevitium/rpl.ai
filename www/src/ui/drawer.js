@@ -956,12 +956,17 @@ export class Drawers {
     input.focus();
     input.select();
     let done = false;
-    const finish = (commit) => {
+    const finish = (commit, keep = false) => {
       if (done) return;
+      const next = input.value.trim().replace(/^(['`])(.+)\1$/, '$2');
+      if (commit && next && next !== oldName && !isStorableHpName(next)) {
+        this.app.notifyError(`“${next}” isn't a valid name.`);
+        // Enter keeps the field and the name typed, to correct it; leaving the field keeps the old name.
+        if (keep) { input.setAttribute('aria-invalid', 'true'); input.select(); return; }
+        commit = false;
+      }
       done = true;
-      const next = input.value.trim();
       if (commit && next && next !== oldName) {
-        if (!isStorableHpName(next)) { this.app.notifyError(`“${next}” isn't a valid name.`); this._renderVarsList(); return; }
         this.app.entry._snapForUndo();
         try { renameCurrentEntry(oldName, next); return; }
         catch (e) { this.app.entry._dropNoOpUndoStep(); this.app.notifyError(`Rename failed: ${e.message}`); }
@@ -971,9 +976,10 @@ export class Drawers {
     input.addEventListener('click', (ev) => ev.stopPropagation());
     input.addEventListener('keydown', (ev) => {
       ev.stopPropagation();
-      if (ev.key === 'Enter') { ev.preventDefault(); finish(true); }
+      if (ev.key === 'Enter') { ev.preventDefault(); finish(true, true); }
       else if (ev.key === 'Escape') { ev.preventDefault(); finish(false); }
     });
+    input.addEventListener('input', () => input.removeAttribute('aria-invalid'));
     input.addEventListener('blur', () => finish(true));
   }
 

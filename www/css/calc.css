@@ -1018,6 +1018,7 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 }
 .vr.dir .nm { color: var(--ink); }
 .vr.editing .nm input { width: 100%; height: 26px; border-radius: 6px; border: 1px solid var(--accent-line); background: var(--field); color: var(--ink); font: 600 13px/1 var(--font-mono); padding: 0 6px; outline: none; }
+.vr.editing .nm input[aria-invalid] { border-color: var(--danger); }
 .vr.dragging { opacity: .4; }
 .vr.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
 .vr.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }

@@ -3169,6 +3169,11 @@ setAngle('RAD');
     && /app\.nameForm\(pop\.querySelector\('form'\), \(dir, refuse\) => \{/.test(newFolder)
     && /catch \(err\) \{ app\.entry\._dropNoOpUndoStep\(\); refuse\(err\.message\); \}/.test(newFolder) && !/notifyError/.test(newFolder),
     'Variables, New folder: the name field reads names as the Store box does, an empty one doing nothing and quotes dropped, and says why it refuses one under the field, where an error note covered the field itself at 280 px with the keyboard up');
+  assert(/const next = input\.value\.trim\(\)\.replace\(\/\^\(\['`\]\)\(\.\+\)\\1\$\/, '\$2'\);/.test(drawerSrcForNames)
+    && /if \(keep\) \{ input\.setAttribute\('aria-invalid', 'true'\); input\.select\(\); return; \}/.test(drawerSrcForNames)
+    && /if \(ev\.key === 'Enter'\) \{ ev\.preventDefault\(\); finish\(true, true\); \}/.test(drawerSrcForNames)
+    && /\n\.vr\.editing \.nm input\[aria-invalid\] \{ border-color: var\(--danger\); \}/.test(css),
+    'Variables, Rename: a refused name stays in the field, marked and selected, for Enter to try again, where the field closed and lost what was typed; quotes around a name are dropped, and leaving the field keeps the old name');
 }
 
 {
