@@ -3147,6 +3147,8 @@ setAngle('RAD');
     && /form\.addEventListener\('submit', \(e\) => \{ e\.preventDefault\(\); store\(form\.elements\.name\.value\.trim\(\)\); \}\);/.test(body)
     && /\n\.pop-chips \{ display: flex; flex-wrap: wrap; gap: 6px; padding: 0 6px 4px; \}/.test(css),
     'Store in a variable: the popover lists the directory\'s variables (not its folders) as chips in the VARS menu\'s order, and a tap stores the level in that name through the same path as the field, with its Undo note');
+  assert(/const name = text\.replace\(\/\^\(\['`\]\)\(\.\+\)\\1\$\/, '\$2'\);\s*if \(!name\) return;\s*if \(!isValidHpIdentifier\(name\)\) \{ this\.notifyError\([\s\S]*?\); return; \}\s*if \(isReservedHpName\(name\)\) \{ this\.notifyError\([\s\S]*?\); return; \}\s*const value = this\.stack\.peek\(level\);/.test(body),
+    'Store in a variable: a name STO refuses (1A, X Y, SIN, an empty field) is refused before anything is stored, and quotes around a name are dropped, where any text became a variable no name typed on the line could reach');
 }
 
 {

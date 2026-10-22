@@ -47,7 +47,7 @@ import { displayDigitsArg } from './rpl/ops/display.js';
 import { mesMenu } from './rpl/ops/root.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
-  isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
+  isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic, isValidHpIdentifier, isReservedHpName,
   isMatrix, isVector, isReal, isInteger, isRational, isUnit, isBinaryInteger, Symbolic, Integer, Real, Unit, Str, Name, RList,
 } from './rpl/types.js';
 import { parseTyped } from './rpl/parser.js';
@@ -1169,7 +1169,12 @@ class App {
     const pop = this.popover.open(anchor ?? this.display.stackView.querySelector('.st-row.sel'), html, { label: 'Store' });
     const form = pop.querySelector('form');
     requestAnimationFrame(() => form.elements.name.focus());
-    const store = (name) => {
+    const store = (text) => {
+      // As `NAME` STO takes it: quotes are optional, and a name STO refuses is refused here too.
+      const name = text.replace(/^(['`])(.+)\1$/, '$2');
+      if (!name) return;
+      if (!isValidHpIdentifier(name)) { this.notifyError(`“${name}” isn't a valid name. Use letters and digits, starting with a letter.`); return; }
+      if (isReservedHpName(name)) { this.notifyError(`“${name}” isn't a valid name: ${name.toUpperCase()} is a command.`); return; }
       const value = this.stack.peek(level);
       this.entry._snapForUndo();
       try {
