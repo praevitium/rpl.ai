@@ -2939,6 +2939,9 @@ setAngle('RAD');
       && appSrc.includes("isName(value) && level === 1 && this.stack.depth > 1 ? item('sto', 'folder', 'Store level 2 in it (STO)') : '',")
       && appSrc.includes("case 'rcl': runOn('RCL'); return;") && appSrc.includes("case 'sto': runOn('STO'); return;"),
       'a quoted name offers RCL when its variable exists and, on level 1 under another value, STO, as the HP does with a name on the stack');
+    assert(appSrc.includes("isName(value) && varOrder().includes(value.id) ? item('purge', 'trash', 'Purge its variable (PURGE)') : '',")
+      && appSrc.includes("case 'purge': runOn('PURGE'); return;"),
+      'a quoted name offers PURGE when its variable is in this folder, the only one PURGE reaches, where RCL also finds one in a parent folder');
     assert(appSrc.includes("const html = `<h6>Level ${level} · ${escapeHtml(describeValue(value).type)}</h6>"),
       "a level's menu names the kind of object it acts on, as its INFO note does");
     assert(appSrc.includes("isString(value) ? item('strto', 'play', 'Run its text (STR→)') : item('eval', 'play', 'Evaluate (EVAL)'),")
