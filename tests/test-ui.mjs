@@ -2942,8 +2942,8 @@ setAngle('RAD');
       'a string level offers Run its text (STR→) where Evaluate (EVAL) gave the string back unchanged');
     assert(appSrc.includes("        : isString(value) ? { label: 'STR→', title: 'Run its text', onPress: act('strto') }"),
       'the interactive stack soft keys show STR→ on a string, as its menu does');
-    assert(/isReal\(value\)\s*\? \{ label: '→Q', title: 'To a fraction', onPress: act\('toq'\) \}\s*: \{ label: '→NUM', title: 'Evaluate to a number', onPress: act\('num'\) \},/.test(appSrc),
-      'the interactive stack soft keys show →Q on a decimal where →NUM did nothing, as its menu does');
+    assert(/isReal\(value\)\s*\? \{ label: '→Q', title: 'To a fraction', onPress: act\('toq'\) \}\s*: isBinaryInteger\(value\) \? \{ label: 'B→R', title: 'To a real number', onPress: act\('btor'\) \}\s*: \{ label: '→NUM', title: 'Evaluate to a number', onPress: act\('num'\) \},/.test(appSrc),
+      'the interactive stack soft keys show →Q on a decimal and B→R on a binary integer where →NUM did nothing, as its menu does');
     assert(appSrc.includes("isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : ") && appSrc.includes("case 'toq': runOn('→Q'); return;"),
       'a level holding a decimal offers To a fraction (→Q), as the HP\'s →Q turns .75 into \'3/4\', in place of →NUM, which leaves a decimal as it is');
     assert(appSrc.includes(`data-row-act="more" title="More actions (\${shortcutText('level.menu')})"`),

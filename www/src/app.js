@@ -1836,6 +1836,7 @@ class App {
         : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },
       isReal(value)
         ? { label: '→Q', title: 'To a fraction', onPress: act('toq') }
+        : isBinaryInteger(value) ? { label: 'B→R', title: 'To a real number', onPress: act('btor') }
         : { label: '→NUM', title: 'Evaluate to a number', onPress: act('num') },
       ...(isUnit(value) ? [{ label: 'CONV', title: 'Convert it to another unit (CONVERT)', onPress: act('convert') }] : []),
       { label: 'STO…', title: 'Store it in a variable', onPress: act('store') },
