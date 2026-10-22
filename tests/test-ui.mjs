@@ -308,7 +308,7 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(conversions('°C').join(' ') === 'K °F °R' && conversions('m^2').includes('acre') && conversions('kg').includes('lb') && conversions('m^3').includes('L'),
     'unitConversions: temperatures, areas, masses and volumes find their menu keys through the dimensions, so m^3 reaches L and gal');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/isUnit\(value\) \? item\('convert', 'chr', 'Convert to…'\) : ''/.test(appSrc) && /case 'convert': this\._convertMenu\(level, anchor\); return;/.test(appSrc)
+  assert(/isUnit\(value\) \? item\('convert', 'chr', 'Convert to…'\) \+ /.test(appSrc) && /case 'convert': this\._convertMenu\(level, anchor\); return;/.test(appSrc)
     && /unitConversions\(value\.uexpr\)/.test(appSrc) && /this\.stack\.push\(Unit\(1, targets\[/.test(appSrc) && /this\.stack\.runOp\(\(\) => lookup\('CONVERT'\)\.fn\(this\.stack, this\.entry\)\); \}, 'CONVERT'\)/.test(appSrc),
     'stack: a unit level\'s ⋯ menu has Convert to…, whose rows show the level in each unit of its dimensions and run CONVERT with a 1 of that unit, so LASTARG and Undo see the HP\'s own command');
   assert(/isMatrix\(value\) && value\.rows\.length === value\.rows\[0\]\?\.length \? item\('inv', 'chr', 'Inverse \(INV\)'\) \+ item\('det', 'chr', 'Determinant \(DET\)'\) \+ item\('egvl', 'chr', 'Eigenvalues \(EGVL\)'\) : ''/.test(appSrc)
@@ -2930,6 +2930,11 @@ setAngle('RAD');
       'a list of two or more items offers Sort (SORT), Reverse (REVLIST) and Sum (ΣLIST) in its level menu');
     assert(appSrc.includes("isVector(value) ? item('abs', 'chr', 'Length (ABS)') : '',") && appSrc.includes("case 'abs': runOn('ABS'); return;"),
       'a vector level offers its length (ABS) in its menu');
+    assert(appSrc.includes("isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : isBinaryInteger(value) ? item('btor', 'chr', 'To a real number (B→R)') : item('num', 'chr', 'To a number (→NUM)'),")
+      && appSrc.includes("isTagged(value) ? item('dtag', 'chr', 'Drop the tag (DTAG)') : '',")
+      && appSrc.includes("isUnit(value) ? item('convert', 'chr', 'Convert to…') + item('uval', 'chr', 'Drop the unit (UVAL)') : '',")
+      && ['btor', 'dtag', 'uval'].every((act) => appSrc.includes(`case '${act}': runOn('${{ btor: 'B→R', dtag: 'DTAG', uval: 'UVAL' }[act]}'); return;`)),
+      'a binary integer offers B→R where →NUM gave it back unchanged, a tagged object DTAG and a unit object UVAL');
     assert(appSrc.includes("const html = `<h6>Level ${level} · ${escapeHtml(describeValue(value).type)}</h6>"),
       "a level's menu names the kind of object it acts on, as its INFO note does");
     assert(appSrc.includes("isString(value) ? item('strto', 'play', 'Run its text (STR→)') : item('eval', 'play', 'Evaluate (EVAL)'),")
@@ -2939,7 +2944,7 @@ setAngle('RAD');
       'the interactive stack soft keys show STR→ on a string, as its menu does');
     assert(/isReal\(value\)\s*\? \{ label: '→Q', title: 'To a fraction', onPress: act\('toq'\) \}\s*: \{ label: '→NUM', title: 'Evaluate to a number', onPress: act\('num'\) \},/.test(appSrc),
       'the interactive stack soft keys show →Q on a decimal where →NUM did nothing, as its menu does');
-    assert(appSrc.includes("isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : item('num', 'chr', 'To a number (→NUM)'),") && appSrc.includes("case 'toq': runOn('→Q'); return;"),
+    assert(appSrc.includes("isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : ") && appSrc.includes("case 'toq': runOn('→Q'); return;"),
       'a level holding a decimal offers To a fraction (→Q), as the HP\'s →Q turns .75 into \'3/4\', in place of →NUM, which leaves a decimal as it is');
     assert(appSrc.includes(`data-row-act="more" title="More actions (\${shortcutText('level.menu')})"`),
       'a level\'s More actions button names its key, Shift+F10, as Edit and Drop beside it name theirs');

@@ -48,7 +48,7 @@ import { mesMenu } from './rpl/ops/root.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic,
-  isMatrix, isVector, isReal, isInteger, isRational, isUnit, Symbolic, Integer, Real, Unit, Str, Name, RList,
+  isMatrix, isVector, isReal, isInteger, isRational, isUnit, isBinaryInteger, Symbolic, Integer, Real, Unit, Str, Name, RList,
 } from './rpl/types.js';
 import { parseTyped } from './rpl/parser.js';
 import {
@@ -1010,6 +1010,9 @@ class App {
       case 'debug': runOn('DBUG'); return;
       case 'num': runOn('→NUM'); return;
       case 'toq': runOn('→Q'); return;
+      case 'btor': runOn('B→R'); return;
+      case 'dtag': runOn('DTAG'); return;
+      case 'uval': runOn('UVAL'); return;
       case 'inv': runOn('INV'); return;
       case 'det': runOn('DET'); return;
       case 'egvl': runOn('EGVL'); return;
@@ -1103,8 +1106,9 @@ class App {
       [
         isString(value) ? item('strto', 'play', 'Run its text (STR→)') : item('eval', 'play', 'Evaluate (EVAL)'),
         isProgram(value) ? item('debug', 'step', 'Debug step by step (DBUG)') : '',
-        isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : item('num', 'chr', 'To a number (→NUM)'),
-        isUnit(value) ? item('convert', 'chr', 'Convert to…') : '',
+        isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : isBinaryInteger(value) ? item('btor', 'chr', 'To a real number (B→R)') : item('num', 'chr', 'To a number (→NUM)'),
+        isTagged(value) ? item('dtag', 'chr', 'Drop the tag (DTAG)') : '',
+        isUnit(value) ? item('convert', 'chr', 'Convert to…') + item('uval', 'chr', 'Drop the unit (UVAL)') : '',
         isMatrix(value) && value.rows.length === value.rows[0]?.length ? item('inv', 'chr', 'Inverse (INV)') + item('det', 'chr', 'Determinant (DET)') + item('egvl', 'chr', 'Eigenvalues (EGVL)') : '',
         isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') + item('rref', 'chr', 'Row reduce (RREF)') : '',
         isVector(value) ? item('abs', 'chr', 'Length (ABS)') : '',
