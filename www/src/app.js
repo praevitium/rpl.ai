@@ -1169,16 +1169,21 @@ class App {
   _storePrompt(level, anchor) {
     const names = varOrder().filter((id) => !isDirectory(varRecall(id)));
     const chips = names.length ? `<div class="pop-chips">${names.map((id) => `<button type="button" class="chip" data-name="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join('')}</div>` : '';
-    const html = `<form data-store><h6>Store level ${level} in</h6><div style="padding:4px 6px 6px"><input type="text" name="name" placeholder="Variable name, like R1" aria-label="Variable name" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done" class="pop-name"></div>${chips}<div class="note">Same as <code>\`NAME\` STO</code>. Level ${level} stays on the stack.</div><div style="display:flex;justify-content:flex-end;padding:6px"><button type="submit" class="btn pri">Store</button></div></form>`;
+    const html = `<form data-store><h6>Store level ${level} in</h6><div style="padding:4px 6px 6px"><input type="text" name="name" placeholder="Variable name, like R1" aria-label="Variable name" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done" class="pop-name"></div><div class="note err" role="alert" hidden></div>${chips}<div class="note">Same as <code>\`NAME\` STO</code>. Level ${level} stays on the stack.</div><div style="display:flex;justify-content:flex-end;padding:6px"><button type="submit" class="btn pri">Store</button></div></form>`;
     const pop = this.popover.open(anchor ?? this.display.stackView.querySelector('.st-row.sel'), html, { label: 'Store' });
     const form = pop.querySelector('form');
-    requestAnimationFrame(() => form.elements.name.focus());
+    const field = form.elements.name;
+    const note = form.querySelector('.note.err');
+    requestAnimationFrame(() => field.focus());
+    // A refusal shows under the field, where a toast would cover the popover with the keyboard up.
+    const refuse = (message) => { note.textContent = message; note.hidden = false; field.setAttribute('aria-invalid', 'true'); field.focus(); };
+    field.addEventListener('input', () => { note.hidden = true; field.removeAttribute('aria-invalid'); });
     const store = (text) => {
       // As `NAME` STO takes it: quotes are optional, and a name STO refuses is refused here too.
       const name = text.replace(/^(['`])(.+)\1$/, '$2');
       if (!name) return;
-      if (!isValidHpIdentifier(name)) { this.notifyError(`“${name}” isn't a valid name. Use letters and digits, starting with a letter.`); return; }
-      if (isReservedHpName(name)) { this.notifyError(`“${name}” isn't a valid name: ${name.toUpperCase()} is a command.`); return; }
+      if (!isValidHpIdentifier(name)) { refuse(`“${name}” isn't a valid name. Use letters and digits, starting with a letter.`); return; }
+      if (isReservedHpName(name)) { refuse(`“${name}” isn't a valid name: ${name.toUpperCase()} is a command.`); return; }
       const value = this.stack.peek(level);
       this.entry._snapForUndo();
       try {
@@ -1187,10 +1192,10 @@ class App {
         this.undoToast(`Stored in ${name}`);
       } catch (err) {
         this.entry._dropNoOpUndoStep();
-        this.notifyError(`Couldn't store in “${name}”: ${err.message}`);
+        refuse(`Couldn't store in “${name}”: ${err.message}`);
       }
     };
-    form.addEventListener('submit', (e) => { e.preventDefault(); store(form.elements.name.value.trim()); });
+    form.addEventListener('submit', (e) => { e.preventDefault(); store(field.value.trim()); });
     // A name the directory already holds is a tap away, as a variable's soft key is; STO replaces as it does there.
     pop.querySelector('.pop-chips')?.addEventListener('click', (e) => { const chip = e.target.closest('.chip'); if (chip) store(chip.dataset.name); });
   }

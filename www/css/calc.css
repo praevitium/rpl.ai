@@ -787,6 +787,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .pop .layers span { font-size: 11.5px; color: var(--ink2); }
 .pop .layers small { font: 600 9.5px/1 var(--font-mono); letter-spacing: .06em; }
 .pop .note { padding: 6px 8px 2px; font-size: 11.5px; color: var(--ink3); line-height: 1.4; }
+.pop .note.err { padding-top: 0; color: var(--danger); }
 .pop-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 6px 4px; }
 
 .pal-wrap { position: absolute; inset: 0; z-index: var(--z-palette); background: rgba(0, 0, 0, .4); display: flex; justify-content: center; align-items: flex-start; padding: 7vh 12px 12px; animation: fade .15s; }
