@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.60 (2026-10-21)
+**Latest release:** v0.8.61 (2026-10-22)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.61 — 2026-10-22
+
+- Fixed: on a 280 px phone a level menu cut Copy into the command line
+  (ECHO) and Push the level number (LEVEL) short, losing the command name,
+  and a touch screen has no hover title to read it from; menu rows now
+  wrap on touch.
+- Added: a level's menu offers Drop the tag (DTAG) on a tagged object,
+  Drop the unit (UVAL) on a unit object and To a real number (B→R) on a
+  binary integer, where To a number (→NUM) gave `#255d` back unchanged.
+- Improved: a selected binary integer's soft keys show B→R in place of
+  →NUM, as its menu does.
 
 ## v0.8.60 — 2026-10-21
 
