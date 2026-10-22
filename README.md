@@ -233,11 +233,13 @@ RPL puts the numbers first and the operation last. Each value goes on the
   a vector's offers Length (ABS), a tagged object's Drop the tag (DTAG),
   a unit object's Drop the unit (UVAL) and a binary integer's To a real
   number (B→R), also on its soft keys, and a quoted name's Recall its
-  value (RCL) and, on level 1, Store level 2 in it (STO). Each level menu
-  names the kind of object it acts on, and on a phone its rows wrap
-  rather than cut a command name short. Its Store in a variable… box
-  takes the names STO takes, quotes optional, and says under the field
-  why it refuses one.
+  value (RCL), on level 1 Store level 2 in it (STO) and, for a variable
+  in this folder, Purge its variable (PURGE). Each level menu names the
+  kind of object it acts on, and on a phone its rows wrap rather than cut
+  a command name short. Its Store in a variable… box, like the Variables
+  drawer's New folder box, takes the names STO takes, quotes optional,
+  and says under the field why it refuses one; Rename keeps a refused
+  name in its field to correct.
   `→STR` writes a number in the display format, as on the HP, so
   `2 FIX "Total: " 12.3456 →STR +` gives `"Total: 12.35"`, and a string
   at level 1 shows whole, line breaks included.
