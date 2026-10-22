@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.62 (2026-10-22)
+**Latest release:** v0.8.63 (2026-10-22)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.63 — 2026-10-22
+
+- Fixed: with the phone keyboard up, the Variables drawer's New folder
+  box put its refusal note over its own field, refused an empty name as
+  “”, and refused a quoted name; it now reads names as the Store box
+  does, quotes optional, an empty field doing nothing, and says why it
+  refuses one under the field.
+- Added: a quoted name's level menu offers Purge its variable (PURGE)
+  when the variable is in this folder, with Undo to bring it back.
+- Improved: a name the Variables drawer's Rename refuses stays in its
+  field, marked and selected, for another try, where the field closed and
+  lost what was typed; quotes around a name are dropped there too.
 
 ## v0.8.62 — 2026-10-22
 
