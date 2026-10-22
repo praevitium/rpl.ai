@@ -2593,6 +2593,8 @@ setAngle('RAD');
     'the CST soft keys follow CST as it changes (STO, PURGE, UNDO) while the menu shows, as the VARS keys do, keeping their page and without the empty-CST note');
   assert(/const list = isName\(cst\) \? varRecall\(cst\.id\) : cst;/.test(appSrc), 'the custom menu follows a name stored in CST to the list it holds, as the HP does');
   assert(/\.pop \.opt, \.pop \.grid button, \.pop \.layers button, \.ac-row \{ min-height: 40px; \}/.test(readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8')), 'autocomplete rows take a finger on touch, as the popover rows do');
+  assert(/@media \(pointer: coarse\) \{[\s\S]*?\.pop \.opt b \{ white-space: normal; overflow-wrap: anywhere; \}/.test(readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8')),
+    'popover rows wrap on touch, so a level menu at 280 px keeps (ECHO) and (LEVEL) in sight');
 }
 
 {
