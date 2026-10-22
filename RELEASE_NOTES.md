@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.61 (2026-10-22)
+**Latest release:** v0.8.62 (2026-10-22)
 
 ---
 
@@ -20,6 +20,19 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.62 — 2026-10-22
+
+- Fixed: a level menu's Store in a variable… box stored under any text,
+  so `1A`, `X Y`, `SIN` or an empty field became a variable that no name
+  typed on the command line could reach; it now takes only the names STO
+  takes, and quotes around a name (`'R1'`) are dropped.
+- Added: a quoted name's level menu offers Recall its value (RCL) when
+  its variable exists, and on level 1 Store level 2 in it (STO), as the
+  HP does with a name on the stack.
+- Improved: the Store box says why it refuses a name under its field,
+  where an error note covered the box's heading, or its field in
+  landscape, with the phone keyboard up.
 
 ## v0.8.61 — 2026-10-22
 
