@@ -232,9 +232,12 @@ RPL puts the numbers first and the operation last. Each value goes on the
   (ΣLIST), a string's offers Run its text (STR→), so `"1 2 +"` gives 3,
   a vector's offers Length (ABS), a tagged object's Drop the tag (DTAG),
   a unit object's Drop the unit (UVAL) and a binary integer's To a real
-  number (B→R), also on its soft keys. Each level menu names the kind of
-  object it acts on, and on a phone its rows wrap rather than cut a
-  command name short.
+  number (B→R), also on its soft keys, and a quoted name's Recall its
+  value (RCL) and, on level 1, Store level 2 in it (STO). Each level menu
+  names the kind of object it acts on, and on a phone its rows wrap
+  rather than cut a command name short. Its Store in a variable… box
+  takes the names STO takes, quotes optional, and says under the field
+  why it refuses one.
   `→STR` writes a number in the display format, as on the HP, so
   `2 FIX "Total: " 12.3456 →STR +` gives `"Total: 12.35"`, and a string
   at level 1 shows whole, line breaks included.
