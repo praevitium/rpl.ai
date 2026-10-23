@@ -208,6 +208,12 @@ const menuItem = (act, ico, label, hint = '') => `<button type="button" class="o
 const DRAWER_MAX_WIDTH = 720;
 const TAB_FADE = 36;
 
+// Date and time each keep together, the time moving to a line of its own in a narrow drawer rather than being cut.
+const savedWhen = (savedAt) => {
+  const at = new Date(savedAt);
+  return `<span class="when">${escapeHtml(at.toLocaleDateString([], { dateStyle: 'short' }))}</span> <span class="when">${escapeHtml(at.toLocaleTimeString([], { timeStyle: 'short' }))}</span>`;
+};
+
 export class Drawers {
   constructor({ rail, el, scrim, app }) {
     this.rail = rail;
@@ -607,7 +613,7 @@ export class Drawers {
       ? `<div class="empty-note">${escapeHtml(unavailable || 'No backups yet. Name one above, or run :0:name ARCHIVE.')}</div>`
       : backups.map(({ port, name, savedAt, depth }) => {
         const key = escapeHtml(`${port}:${name}`);
-        return `<div class="vr" data-dw="backup-restore" data-key="${key}" role="button" tabindex="0" title="Restore :${key} (replaces the stack and HOME tree; undoable)"><span class="grip" aria-hidden="true">${icon('clock', 'sm')}</span><div class="main"><div class="nm"><span class="nm-text">:${key}</span></div><div class="pv">${depth} level${depth === 1 ? '' : 's'} · <span class="when">${escapeHtml(new Date(savedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }))}</span></div></div><div class="acts"><button type="button" class="mini" data-dw="backup-save" data-key="${key}" title="Save :${key} as a file (Restore from file reads it back)" aria-label="Save backup :${key} as a file">${icon('down', 'sm')}</button><button type="button" class="mini danger" data-dw="backup-delete" data-key="${key}" title="Delete :${key}" aria-label="Delete backup :${key}">${icon('trash', 'sm')}</button></div></div>`;
+        return `<div class="vr" data-dw="backup-restore" data-key="${key}" role="button" tabindex="0" title="Restore :${key} (replaces the stack and HOME tree; undoable)"><span class="grip" aria-hidden="true">${icon('clock', 'sm')}</span><div class="main"><div class="nm"><span class="nm-text">:${key}</span></div><div class="pv">${depth} level${depth === 1 ? '' : 's'} · ${savedWhen(savedAt)}</div></div><div class="acts"><button type="button" class="mini" data-dw="backup-save" data-key="${key}" title="Save :${key} as a file (Restore from file reads it back)" aria-label="Save backup :${key} as a file">${icon('down', 'sm')}</button><button type="button" class="mini danger" data-dw="backup-delete" data-key="${key}" title="Delete :${key}" aria-label="Delete backup :${key}">${icon('trash', 'sm')}</button></div></div>`;
       }).join('');
   }
 

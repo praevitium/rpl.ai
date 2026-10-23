@@ -3446,9 +3446,10 @@ setAngle('RAD');
     && css.includes('.backup-new { display: flex; flex-wrap: wrap;') && css.includes('.backup-new input { flex: 1 1 140px;')
     && css.includes('.backup-to { display: flex; gap: 6px; margin-left: auto; }'),
     'in a narrow drawer the backup name takes its own row and the port and Archive wrap together beneath it');
-  assert(drawerSrc.includes(`<span class="when">\${escapeHtml(new Date(savedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }))}</span>`)
+  assert(drawerSrc.includes(`<span class="when">\${escapeHtml(at.toLocaleDateString([], { dateStyle: 'short' }))}</span> <span class="when">\${escapeHtml(at.toLocaleTimeString([], { timeStyle: 'short' }))}</span>`)
+    && drawerSrc.includes(' · ${savedWhen(savedAt)}</div>')
     && css.includes('.dw-backups .pv { white-space: normal; }') && css.includes('.dw-backups .when { white-space: nowrap; }'),
-    'a backup row shows a short date that wraps whole instead of being cut on a phone');
+    'a backup row keeps its date and its time each whole, the time wrapping beneath the date in a 280 px drawer rather than being cut');
 }
 
 {
