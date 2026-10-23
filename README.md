@@ -124,7 +124,8 @@ RPL puts the numbers first and the operation last. Each value goes on the
   in DEG is `1/2`, `π 4 / COS` is `√2/2`, and `1 ASIN` in RAD is `π/2`.
   D→R and R→D stay exact too: `90 D→R` is `π/2` and `π/2` R→D is 90.
 - **Algebra.** Push `` `X^2-4` `` and run `FACTOR` for `(X−2)(X+2)`, or
-  `` `X^2-5*X+6=0` `X` SOLVE `` for `{ X=2 X=3 }`. The ` key stands in for
+  `` `X^2-5*X+6=0` `X` SOLVE `` for `{ X=2 X=3 }`; an algebraic level's
+  menu offers Expand (EXPAND) and Factor (FACTOR) too. The ` key stands in for
   the HP's ' key, and the command line reads apostrophes too: `'X^2-4'`
   is the same object. EVAL gathers like terms and factors: `'X+X+1+2'` gives
   `2*X+3` and `'X*X/X^3'` gives `1/X`. Or press `⌘E`, type `x^2-5x+6=0`, and
@@ -236,7 +237,7 @@ RPL puts the numbers first and the operation last. Each value goes on the
   value (RCL), on level 1 Store level 2 in it (STO) and, for a variable
   in this folder, Purge its variable (PURGE). A list, array, complex
   number, tagged or unit object, program or algebraic offers Take apart
-  (OBJ→). Each level menu names the
+  (OBJ→), on its soft keys too. Each level menu names the
   kind of object it acts on, and on a phone its rows wrap rather than cut
   a command name short. Its Store in a variable… box, like the Variables
   drawer's New folder and Backups boxes, takes the names STO takes,

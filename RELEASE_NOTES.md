@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.64 (2026-10-22)
+**Latest release:** v0.8.65 (2026-10-22)
 
 ---
 
@@ -20,6 +20,16 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.65 — 2026-10-22
+
+- Fixed: with the phone keyboard up, a name the Backups field refused
+  was explained in a note under the keyboard, leaving only the field's
+  red edge in sight; the note now scrolls into view above the keyboard.
+- Added: an algebraic level's menu offers Expand (EXPAND) and Factor
+  (FACTOR), the HP's everyday ALG rewrites, with Undo.
+- Improved: a selected level's soft keys offer OBJ→ wherever its menu
+  offers Take apart, as they offer B→R and CONV.
 
 ## v0.8.64 — 2026-10-22
 
