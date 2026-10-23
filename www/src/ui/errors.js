@@ -35,6 +35,9 @@ const sentence = (text) => (/[.!?…]$/.test(text) ? text : `${text}.`);
 
 const evaluates = (c) => ['EVAL', '→NUM'].includes(c.command);
 
+// A structure's manual page diagrams its words, not the values it takes, so its banner counts and leaves the diagram out.
+const STRUCTURES = new Set(['IF', 'CASE', 'WHILE', 'DO', 'START', 'FOR', 'STEP', '→']);
+
 export const ERROR_KINDS = Object.freeze({
   raised: {
     match: (p) => p.command === 'DOERR' && !['Too few arguments', 'Bad argument type'].includes(p.core),
@@ -204,7 +207,7 @@ export function describeError(message, { failure = null, stack = [], depth = 0, 
   const [kind, spec] = Object.entries(ERROR_KINDS).find(([, k]) => k.match(parsed));
   const command = parsed.command ?? failure?.op ?? null;
   const info = command ? commandInfo(command) : null;
-  const signature = info?.signature ?? '';
+  const signature = STRUCTURES.has(command) ? '' : info?.signature ?? '';
   const failedHere = failure && (failure.op == null || !parsed.commands.length || parsed.commands.includes(failure.op));
   const seenDepth = failedHere && failure.depth != null ? failure.depth : depth;
   const args = info?.inputs ?? (failedHere && failure.missing != null ? seenDepth + failure.missing : null);

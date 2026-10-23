@@ -1063,6 +1063,14 @@ export function withStepMode(single, into, fn) {
 
 
 // `→ n1 n2 … body` binds locals from the stack for one Program or algebraic body.
+// A structure that finds too few values names itself, as a failing command does, so its banner counts the stack the
+// structure saw and does not blame the EVAL that was running it.
+function takeValues(s, structure, n) {
+  if (s.depth < n) throw Object.assign(new RPLError(`${structure}: Too few arguments`), { depth: s.depth, missing: n - s.depth });
+  return s.popN(n);
+}
+
+
 function* runArrow(s, toks, arrowIdx, to, depth) {
   const names = [];
   let i = arrowIdx + 1;
@@ -1081,7 +1089,7 @@ function* runArrow(s, toks, arrowIdx, to, depth) {
     throw new RPLError('→: body must be a program or algebraic');
   }
   // popN returns [level n … level 1], so the rightmost name binds level 1.
-  const values = s.popN(names.length);
+  const values = takeValues(s, '→', names.length);
   const frame = new Map(names.map((name, k) => [name, values[k]]));
   _localFrames.push(frame);
   try {
@@ -1460,7 +1468,7 @@ function* runCase(s, toks, openIdx, depth) {
     }
     const thenIdx = scan.idx;
     yield* evalRange(s, toks, i, thenIdx, depth + 1);
-    const test = s.pop();
+    const [test] = takeValues(s, 'CASE', 1);
     const innerEnd = scanAtDepth0(toks, thenIdx + 1, null);
     const innerEndIdx = (innerEnd && innerEnd.kind === 'END') ? innerEnd.idx : bound;
     if (isTruthy(_testValue(test))) {
@@ -1487,7 +1495,7 @@ function _testValue(v) {
 function* runIf(s, toks, openIdx, depth) {
   const thenIdx = _scanRequired(toks, openIdx + 1, 'THEN', 'IF without THEN');
   yield* evalRange(s, toks, openIdx + 1, thenIdx, depth + 1);
-  const test = s.pop();
+  const [test] = takeValues(s, 'IF', 1);
   const { elseIdx, endIdx } = _scanElseEnd(toks, thenIdx, 'IF');
   if (isTruthy(_testValue(test))) {
     yield* evalRange(s, toks, thenIdx + 1, elseIdx >= 0 ? elseIdx : endIdx, depth + 1);
@@ -1586,7 +1594,7 @@ function* runWhile(s, toks, openIdx, depth) {
     limit();
     checkTimeLimit();
     yield* evalRange(s, toks, openIdx + 1, repeatIdx, depth + 1);
-    const test = s.pop();
+    const [test] = takeValues(s, 'WHILE', 1);
     if (!isTruthy(_testValue(test))) break;
     yield* evalRange(s, toks, repeatIdx + 1, endIdx, depth + 1);
   }
@@ -1603,7 +1611,7 @@ function* runDo(s, toks, openIdx, depth) {
     checkTimeLimit();
     yield* evalRange(s, toks, openIdx + 1, untilIdx, depth + 1);
     yield* evalRange(s, toks, untilIdx + 1, endIdx, depth + 1);
-    const test = s.pop();
+    const [test] = takeValues(s, 'DO', 1);
     if (isTruthy(_testValue(test))) break;
   }
   return _pastBlock(toks, endIdx);
@@ -1612,8 +1620,8 @@ function* runDo(s, toks, openIdx, depth) {
 
 // Integer bounds keep the loop counter a BigInt; anything else counts in Decimal,
 // so 0 0.3 FOR with a 0.1 step reaches 0.3.
-function _popLoopBounds(s) {
-  const [startVal, endVal] = s.popN(2);
+function _popLoopBounds(s, structure) {
+  const [startVal, endVal] = takeValues(s, structure, 2);
   const intMode = isInteger(startVal) && isInteger(endVal);
   const toBound = (v) => intMode ? v.value : toRealDecimal(v);
   return { a: toBound(startVal), b: toBound(endVal), intMode };
@@ -1621,7 +1629,7 @@ function _popLoopBounds(s) {
 
 
 function* runStart(s, toks, openIdx, depth) {
-  const { a, b, intMode } = _popLoopBounds(s);
+  const { a, b, intMode } = _popLoopBounds(s, 'START');
   const { closer, closerIdx } = _scanCounterCloser(toks, openIdx + 1, 'START');
   yield* runLoopBody(s, toks, openIdx + 1, closerIdx, closer, a, b, null, intMode, depth);
   return _pastBlock(toks, closerIdx);
@@ -1631,7 +1639,7 @@ function* runStart(s, toks, openIdx, depth) {
 // The counter is a local variable, so it never touches a global of the same
 // name, and storing into it inside the loop moves the loop on.
 function* runFor(s, toks, openIdx, depth) {
-  const { a, b, intMode } = _popLoopBounds(s);
+  const { a, b, intMode } = _popLoopBounds(s, 'FOR');
   const varTok = toks[openIdx + 1];
   if (!isName(varTok)) throw new RPLError('FOR needs a name');
   const { closer, closerIdx } = _scanCounterCloser(toks, openIdx + 2, 'FOR');
@@ -1673,7 +1681,7 @@ function* runLoopBody(s, toks, bodyFrom, bodyTo, closer, startVal, endVal, local
     }
     let step;
     if (closer === 'STEP') {
-      const stepVal = s.pop();
+      const [stepVal] = takeValues(s, 'STEP', 1);
       if (mode && isInteger(stepVal)) {
         step = stepVal.value;
       } else {
@@ -2408,7 +2416,8 @@ export const _fromStrOp = (s) => {
     if (!isName(item) || item.quoted) { s.push(item); continue; }
     const op = lookup(item.id);
     if (!op) s.push(item);
-    (op ?? lookup('EVAL')).fn(s);
+    const run = op ?? lookup('EVAL');
+    _dispatchOp(run, s, run.name);
   }
 };
 

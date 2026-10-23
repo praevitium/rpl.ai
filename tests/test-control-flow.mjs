@@ -7798,3 +7798,34 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   clearAllHalted(); clearPromptMessage();
   resetHome();
 }
+
+// A structure that finds too few values names itself and counts the stack it saw, where the EVAL running it took the blame
+// ("EVAL needs one value; the stack has one value"); STR→ names the command inside its string the way EVAL names one in a program.
+{
+  const failure = (src, s = new Stack()) => { try { runLine(src, s); } catch (e) { return e; } return null; };
+  const named = (src, structure, depth, missing) => {
+    const e = failure(src);
+    assert(e?.message === `${structure}: Too few arguments` && e.depth === depth && e.missing === missing,
+      `${structure} with too few values says so itself, having seen ${depth} and wanted ${missing} more (${e?.message} ${e?.depth} ${e?.missing})`);
+  };
+  named('« IF THEN 1 END » EVAL', 'IF', 0, 1);
+  named('« 1 START NEXT » EVAL', 'START', 1, 1);
+  named('« 1 FOR I I NEXT » EVAL', 'FOR', 1, 1);
+  named('« WHILE REPEAT END » EVAL', 'WHILE', 0, 1);
+  named('« DO UNTIL END » EVAL', 'DO', 0, 1);
+  named('« CASE THEN END END » EVAL', 'CASE', 0, 1);
+  named('« 1 5 FOR I STEP » EVAL', 'STEP', 0, 1);
+  named('« → A B « A B + » » 1 SWAP EVAL', '→', 1, 1);
+  assert(failure('« IF 1 THEN 2 END » EVAL') === null && failure('« 1 5 START 1 STEP » EVAL') === null && failure('« 3 → A « A » » EVAL') === null,
+    'a structure given its values runs as before');
+
+  const s = new Stack();
+  const e = failure('"1 +" STR→', s);
+  assert(e?.message === '+: Too few arguments' && e.depth === 1 && e.missing === 1 && s.depth === 1 && s.peek().value === 1n,
+    `STR→ names the + that failed inside its string and leaves what ran before it, as a program under EVAL does (${e?.message} ${s.depth})`);
+  const t = new Stack();
+  const inf = failure('"1 0 /" STR→', t);
+  assert(inf?.message === '/: Infinite result' && t.depth === 2 && t.peek().value === 0n,
+    `STR→ gives the arguments of a failing / back and says / would give an infinite result, not STR→ (${inf?.message} ${t.depth})`);
+  assert(runLine('"1 2 +" STR→').peek().value === 3n && runLine('"5" STR→').peek().value === 5n, 'STR→ still evaluates a string of commands and numbers');
+}

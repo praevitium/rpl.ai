@@ -22,6 +22,8 @@ const COMMANDS = {
   '+': { signature: 'z1 z2 → z1 + z2', inputs: 2 },
   '/': { signature: 'z1 z2 → z1 / z2', inputs: 2 },
   DROP: { signature: 'obj → ', inputs: 1 },
+  IF: { signature: 'IF → (nothing)', inputs: 1 },
+  START: { signature: 'START xstart xfinish → (nothing)', inputs: 2 },
   DUPN: { signature: 'obj1 obj2 … obji–1 obji n → obj1 obj2 …' },
 };
 const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMMANDS[n] ?? null, ...extra });
@@ -132,6 +134,12 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   const inProgram = describeError('P: DROP: Too few arguments', ctx({ failure: { op: 'P', levels: [], depth: 0 }, depth: 2 }));
   assert(inProgram.title === 'DROP needs one value; the stack had none.',
     'describeError: DROP failing inside program P counts the stack it saw');
+  const inIf = describeError('EVAL: IF: Too few arguments', ctx({ failure: { op: 'EVAL', levels: [], depth: 0, missing: 1 }, depth: 1 }));
+  assert(inIf.title === 'IF needs one value; the stack had none.' && inIf.detail === 'Put the missing value on the stack first, then run it again.',
+    `describeError: an IF inside an EVAL blames the IF and counts the stack it saw, where the EVAL took the blame, and a structure's diagram is not what it takes (${inIf.title} ${inIf.detail})`);
+  const inStart = describeError('EVAL: START: Too few arguments', ctx({ failure: { op: 'EVAL', levels: [], depth: 1, missing: 1 }, depth: 1 }));
+  assert(inStart.title === 'START needs two values; the stack has one value.' && !inStart.detail.includes('takes'),
+    `describeError: START counts its two bounds (${inStart.title} ${inStart.detail})`);
   const stale = describeError('DROP: Too few arguments', ctx({ failure: { op: 'SIN', levels: [], depth: 3 }, depth: 0 }));
   assert(stale.title === 'DROP needs one value; the stack has none.',
     "describeError: DROP ignores the depth recorded for another command's failure");
