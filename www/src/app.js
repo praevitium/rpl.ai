@@ -98,6 +98,8 @@ function sigmaDataNote(data) {
 // A tagged formula, as TANL and F' leave, plots as the formula; the HP reads through a tag too.
 const plottableFormula = (value) => { const v = isTagged(value) ? value.value : value; return isSymbolic(v) && !hasUnits(v.expr); };
 const plottable = (value) => plottableFormula(value) || (isList(value) && value.items.length > 0 && value.items.every(plottableFormula));
+// What OBJ→ breaks into parts; a string has STR→ instead, and a number comes back whole.
+const takesApart = (value) => [isList, isVector, isMatrix, isComplex, isTagged, isUnit, isProgram, isSymbolic].some((is) => is(value));
 
 const modulusNote = () => `The modular commands work modulo ${getCasModulo()}`;
 
@@ -1114,7 +1116,7 @@ class App {
         isProgram(value) ? item('debug', 'step', 'Debug step by step (DBUG)') : '',
         isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : isBinaryInteger(value) ? item('btor', 'chr', 'To a real number (B→R)') : item('num', 'chr', 'To a number (→NUM)'),
         isTagged(value) ? item('dtag', 'chr', 'Drop the tag (DTAG)') : '',
-        [isList, isVector, isMatrix, isComplex, isTagged, isUnit, isProgram, isSymbolic].some((is) => is(value)) ? item('objto', 'chr', 'Take apart (OBJ→)') : '',
+        takesApart(value) ? item('objto', 'chr', 'Take apart (OBJ→)') : '',
         isName(value) && varRecall(value.id) !== undefined ? item('rcl', 'down', 'Recall its value (RCL)') : '',
         isName(value) && level === 1 && this.stack.depth > 1 ? item('sto', 'folder', 'Store level 2 in it (STO)') : '',
         isName(value) && varOrder().includes(value.id) ? item('purge', 'trash', 'Purge its variable (PURGE)') : '',
@@ -1873,6 +1875,7 @@ class App {
         : isBinaryInteger(value) ? { label: 'B→R', title: 'To a real number', onPress: act('btor') }
         : { label: '→NUM', title: 'Evaluate to a number', onPress: act('num') },
       ...(isUnit(value) ? [{ label: 'CONV', title: 'Convert it to another unit (CONVERT)', onPress: act('convert') }] : []),
+      ...(takesApart(value) ? [{ label: 'OBJ→', title: 'Take it apart', onPress: act('objto') }] : []),
       { label: 'STO…', title: 'Store it in a variable', onPress: act('store') },
       { label: 'COPY', title: 'Copy to the clipboard · ↰ copies it as LaTeX', onPress: act('copy'), onPressL: act('latex') },
       { label: 'ASK ✦', title: 'Ask the assistant about it', onPress: act('ask') },

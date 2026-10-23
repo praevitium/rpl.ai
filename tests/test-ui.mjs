@@ -2942,12 +2942,15 @@ setAngle('RAD');
     assert(appSrc.includes("isName(value) && varOrder().includes(value.id) ? item('purge', 'trash', 'Purge its variable (PURGE)') : '',")
       && appSrc.includes("case 'purge': runOn('PURGE'); return;"),
       'a quoted name offers PURGE when its variable is in this folder, the only one PURGE reaches, where RCL also finds one in a parent folder');
-    assert(appSrc.includes("[isList, isVector, isMatrix, isComplex, isTagged, isUnit, isProgram, isSymbolic].some((is) => is(value)) ? item('objto', 'chr', 'Take apart (OBJ→)') : '',")
+    assert(appSrc.includes("const takesApart = (value) => [isList, isVector, isMatrix, isComplex, isTagged, isUnit, isProgram, isSymbolic].some((is) => is(value));")
+      && appSrc.includes("takesApart(value) ? item('objto', 'chr', 'Take apart (OBJ→)') : '',")
       && appSrc.includes("case 'objto': runOn('OBJ→'); return;"),
       'a list, array, complex number, tagged or unit object, program or algebraic offers Take apart (OBJ→) in its level menu; a string keeps STR→ and a number, which OBJ→ gives back, offers neither');
     assert(appSrc.includes("isSymbolic(value) ? item('expand', 'chr', 'Expand (EXPAND)') + item('factor', 'chr', 'Factor (FACTOR)') : '',")
       && appSrc.includes("case 'expand': runOn('EXPAND'); return;") && appSrc.includes("case 'factor': runOn('FACTOR'); return;"),
       "an algebraic level offers Expand (EXPAND) and Factor (FACTOR), the HP's everyday ALG rewrites, in its level menu");
+    assert(appSrc.includes("...(takesApart(value) ? [{ label: 'OBJ→', title: 'Take it apart', onPress: act('objto') }] : []),"),
+      "a selected level's soft keys offer OBJ→ wherever its menu offers Take apart, as they offer B→R and CONV");
     assert(appSrc.includes("const html = `<h6>Level ${level} · ${escapeHtml(describeValue(value).type)}</h6>"),
       "a level's menu names the kind of object it acts on, as its INFO note does");
     assert(appSrc.includes("isString(value) ? item('strto', 'play', 'Run its text (STR→)') : item('eval', 'play', 'Evaluate (EVAL)'),")
