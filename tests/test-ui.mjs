@@ -3164,7 +3164,7 @@ setAngle('RAD');
     && /try \{\s*varStore\(name, value\);/.test(body) && !/notifyError/.test(body),
     'Store in a variable: a name STO refuses (1A, X Y, SIN, an empty field) is refused before anything is stored, and quotes around a name are dropped, where any text became a variable no name typed on the line could reach');
   assert(/<div class="note err" role="alert" hidden><\/div>/.test(body)
-    && /const refuse = \(message\) => \{ note\.textContent = message; note\.hidden = false; field\.setAttribute\('aria-invalid', 'true'\); field\.focus\(\); \};/.test(nameForm)
+    && /const refuse = \(message\) => \{\s*note\.textContent = message;\s*note\.hidden = false;\s*field\.setAttribute\('aria-invalid', 'true'\);\s*field\.focus\(\);/.test(nameForm)
     && /field\.addEventListener\('input', \(\) => \{ note\.hidden = true; field\.removeAttribute\('aria-invalid'\); \}\);/.test(nameForm)
     && /\n\.pop \.note\.err \{ padding-top: 0; color: var\(--danger\); \}/.test(css),
     'Store in a variable: a refusal shows under the field and clears as the name is retyped, where an error note covered the popover\'s heading, or its field in landscape, with the keyboard up');
@@ -3184,6 +3184,8 @@ setAngle('RAD');
     && !/Backups need a variable-style name/.test(drawerSrcForNames)
     && /\n\.backup-new \.note\.err \{ flex-basis: 100%;/.test(css) && css.includes('.backup-new input[aria-invalid] { border-color: var(--danger); }'),
     'Variables, Backups: the name field reads names as Store and New folder do, an empty one doing nothing and quotes dropped, and says why it refuses one under the field, where an empty name drew an error toast and a quoted one was refused; opening the drawer does not focus it');
+  assert(/field\.focus\(\);\s*\/\/[^\n]*\n\s*note\.scrollIntoView\(\{ block: 'nearest' \}\);\s*\};/.test(nameForm),
+    'a refused name scrolls its note into view after focusing the field, where the Backups note sat under the phone keyboard at 280 and 390 px and in landscape, the drawer keeping only the field above it');
 }
 
 {

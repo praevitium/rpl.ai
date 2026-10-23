@@ -1196,7 +1196,14 @@ class App {
   nameForm(form, onName, { focus = true } = {}) {
     const field = form.elements.name;
     const note = form.querySelector('.note.err');
-    const refuse = (message) => { note.textContent = message; note.hidden = false; field.setAttribute('aria-invalid', 'true'); field.focus(); };
+    const refuse = (message) => {
+      note.textContent = message;
+      note.hidden = false;
+      field.setAttribute('aria-invalid', 'true');
+      field.focus();
+      // A drawer keeps the field just above the keyboard, which would leave a note under it out of sight.
+      note.scrollIntoView({ block: 'nearest' });
+    };
     const take = (text) => {
       const name = text.trim().replace(/^(['`])(.+)\1$/, '$2');
       if (!name) return;
