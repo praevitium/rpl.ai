@@ -48,7 +48,7 @@ import { mesMenu } from './rpl/ops/root.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic, isValidHpIdentifier, isReservedHpName,
-  isMatrix, isVector, isReal, isInteger, isRational, isUnit, isBinaryInteger, Symbolic, Integer, Real, Unit, Str, Name, RList,
+  isMatrix, isVector, isReal, isInteger, isRational, isUnit, isBinaryInteger, isComplex, Symbolic, Integer, Real, Unit, Str, Name, RList,
 } from './rpl/types.js';
 import { parseTyped } from './rpl/parser.js';
 import {
@@ -1012,6 +1012,7 @@ class App {
       case 'toq': runOn('→Q'); return;
       case 'btor': runOn('B→R'); return;
       case 'dtag': runOn('DTAG'); return;
+      case 'objto': runOn('OBJ→'); return;
       case 'rcl': runOn('RCL'); return;
       case 'sto': runOn('STO'); return;
       case 'purge': runOn('PURGE'); return;
@@ -1111,6 +1112,7 @@ class App {
         isProgram(value) ? item('debug', 'step', 'Debug step by step (DBUG)') : '',
         isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : isBinaryInteger(value) ? item('btor', 'chr', 'To a real number (B→R)') : item('num', 'chr', 'To a number (→NUM)'),
         isTagged(value) ? item('dtag', 'chr', 'Drop the tag (DTAG)') : '',
+        [isList, isVector, isMatrix, isComplex, isTagged, isUnit, isProgram, isSymbolic].some((is) => is(value)) ? item('objto', 'chr', 'Take apart (OBJ→)') : '',
         isName(value) && varRecall(value.id) !== undefined ? item('rcl', 'down', 'Recall its value (RCL)') : '',
         isName(value) && level === 1 && this.stack.depth > 1 ? item('sto', 'folder', 'Store level 2 in it (STO)') : '',
         isName(value) && varOrder().includes(value.id) ? item('purge', 'trash', 'Purge its variable (PURGE)') : '',
