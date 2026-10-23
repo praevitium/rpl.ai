@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.66 (2026-10-23)
+**Latest release:** v0.8.67 (2026-10-23)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.67 — 2026-10-23
+
+- Fixed: MAXR and MINR counted as a formula's unknowns, so `MAXR-X`
+  offered Solve for MAXR in its level menu; they are constants now, as
+  π, e and i are, in the level menu and the equation writer alike.
+- Added: an algebraic level's menu offers Differentiate by its main
+  variable (DERIV), X when the formula has one, so `X^3+2*X` gives
+  `3*X^2+2` with one tap, with Undo.
+- Improved: a selected formula's soft keys keep EVAL, with PLOT after
+  it, as its menu offers both; PLOT had taken EVAL's place.
 
 ## v0.8.66 — 2026-10-23
 

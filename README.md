@@ -125,8 +125,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
   D→R and R→D stay exact too: `90 D→R` is `π/2` and `π/2` R→D is 90.
 - **Algebra.** Push `` `X^2-4` `` and run `FACTOR` for `(X−2)(X+2)`, or
   `` `X^2-5*X+6=0` `X` SOLVE `` for `{ X=2 X=3 }`; an algebraic level's
-  menu offers Expand (EXPAND), Factor (FACTOR) and Solve for each of its
-  first three unknowns (SOLVE) too. The ` key stands in for
+  menu offers Expand (EXPAND), Factor (FACTOR), Solve for each of its
+  first three unknowns (SOLVE) and Differentiate by its main variable
+  (DERIV) too. The ` key stands in for
   the HP's ' key, and the command line reads apostrophes too: `'X^2-4'`
   is the same object. EVAL gathers like terms and factors: `'X+X+1+2'` gives
   `2*X+3` and `'X*X/X^3'` gives `1/X`. Or press `⌘E`, type `x^2-5x+6=0`, and
