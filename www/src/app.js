@@ -23,7 +23,7 @@ import { computeMenuPage } from './ui/paging.js';
 import { clampLevel, dropLevel, keepLevels, moveLevel, replaceLevel } from './ui/stack-levels.js';
 import { icon } from './ui/icons.js';
 import { installCommandHover, entryWordAtEvent, stackWordAtEvent } from './ui/hover-help.js';
-import { EquationEditor, keypadFace, readsAsFormula, variablesOf } from './ui/equation-editor.js';
+import { EquationEditor, keypadFace, readsAsFormula, variablesOf, primaryVariable } from './ui/equation-editor.js';
 import { MatrixEditor, parseMatrixCell } from './ui/matrix-editor.js';
 import {
   loadCommandReference, findReferenceEntry, formatReferenceEntry, searchCommands, shortDescription,
@@ -100,6 +100,8 @@ const plottableFormula = (value) => { const v = isTagged(value) ? value.value : 
 const plottable = (value) => plottableFormula(value) || (isList(value) && value.items.length > 0 && value.items.every(plottableFormula));
 // What OBJ→ breaks into parts; a string has STR→ instead, and a number comes back whole.
 const takesApart = (value) => [isList, isVector, isMatrix, isComplex, isTagged, isUnit, isProgram, isSymbolic].some((is) => is(value));
+// Level actions that run a command on the level and a name: solve:X runs 'X' SOLVE.
+const NAMED_LEVEL_OPS = Object.freeze({ solve: 'SOLVE', deriv: 'DERIV' });
 
 const modulusNote = () => `The modular commands work modulo ${getCasModulo()}`;
 
@@ -993,7 +995,8 @@ class App {
       this.entry._snapForUndo();
       this.entry.safeRun(() => { this.stack.push(Integer(level)); this.stack.runOp(() => lookup(op).fn(this.stack, this.entry)); }, op);
     };
-    if (act.startsWith('solve:')) { runOn('SOLVE', Name(act.slice('solve:'.length), { quoted: true })); return; }
+    const [verb, name] = act.split(':');
+    if (name && NAMED_LEVEL_OPS[verb]) { runOn(NAMED_LEVEL_OPS[verb], Name(name, { quoted: true })); return; }
     switch (act) {
       case 'edit': this.editLevel(level); return;
       case 'view': this._viewLevel(level); return;
@@ -1127,6 +1130,7 @@ class App {
         isSymbolic(value) ? item('expand', 'chr', 'Expand (EXPAND)') + item('factor', 'chr', 'Factor (FACTOR)') : '',
         // Three unknowns at most keep the menu short; SOLVE on the command line takes any name.
         isSymbolic(value) ? variablesOf(value.expr).slice(0, 3).map((name) => item(`solve:${escapeHtml(name)}`, 'chr', `Solve for ${name} (SOLVE)`)).join('') : '',
+        isSymbolic(value) && primaryVariable(value.expr) ? item(`deriv:${escapeHtml(primaryVariable(value.expr))}`, 'chr', `Differentiate by ${primaryVariable(value.expr)} (DERIV)`) : '',
         isMatrix(value) && value.rows.length === value.rows[0]?.length ? item('inv', 'chr', 'Inverse (INV)') + item('det', 'chr', 'Determinant (DET)') + item('egvl', 'chr', 'Eigenvalues (EGVL)') : '',
         isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') + item('rref', 'chr', 'Row reduce (RREF)') : '',
         isVector(value) ? item('abs', 'chr', 'Length (ABS)') : '',
