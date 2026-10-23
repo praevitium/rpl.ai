@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.68 (2026-10-23)
+**Latest release:** v0.8.69 (2026-10-23)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.69 — 2026-10-23
+
+- Fixed: an error inside `IF`, `CASE`, `WHILE`, `DO`, `START`, `FOR`, a `→`
+  program or a string run by `STR→` blamed the wrong command, with banners
+  such as "EVAL/STR→ needs one value; the stack has one value". The banner
+  now names the structure or the command that failed and counts the stack
+  it saw; a string that fails partway leaves what it made and the failed
+  command's arguments, as a program does, rather than putting itself back.
+- Added: Plot on a level whose formula has one open name that is not X,
+  such as `Y^2-3*Y+2`, draws it along that name, as the equation writer
+  does, and a note says which name took X's place; a list of formulas or
+  a tagged one follows suit.
+- Improved: a menu taller than the window, such as a formula's 24-row
+  level menu on a phone, fades at the edge that has more rows, as the
+  command line's suggestion list does.
 
 ## v0.8.68 — 2026-10-23
 

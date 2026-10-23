@@ -244,7 +244,8 @@ RPL puts the numbers first and the operation last. Each value goes on the
   a command name short. Its Store in a variable… box, like the Variables
   drawer's New folder and Backups boxes, takes the names STO takes,
   quotes optional, and says under the field why it refuses one; Rename
-  keeps a refused name in its field to correct.
+  keeps a refused name in its field to correct. A menu taller than the
+  window, a formula's for one, fades at the edge that has more rows.
   `→STR` writes a number in the display format, as on the HP, so
   `2 FIX "Total: " 12.3456 →STR +` gives `"Total: 12.35"`, and a string
   at level 1 shows whole, line breaks included.
@@ -773,7 +774,9 @@ plots every one of them, as the HP draws each equation in a list in EQ:
 `` { `SIN(X)` `COS(X)` } FUNCTION ``, `PLOT` of that list, the Plot of a list
 level and the plot view's + Level 1 all draw both. Other names take the
 numbers their variables hold, so `` 2 `A` STO `A*X^2` `` plots 2X², and a
-note names any that hold none.
+note names any that hold none. A level's Plot draws a formula whose one open
+name is not X along that name, so `` `Y^2-3*Y+2` `` plots against Y, and a
+note says which name took X's place.
 `` 2 -3 1.5 EYEPT `SIN(X*3)*COS(Y*3)` WIREFRAME `` shows the surface from
 that eye point inside VPAR's view volume, and `FAST3D` draws one you turn
 with a drag or the arrow keys, as the 50g's arrow keys turn it;
