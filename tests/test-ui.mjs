@@ -2150,7 +2150,7 @@ setAngle('RAD');
   assert(/const plottableFormula = \(value\) => \{ const v = isTagged\(value\) \? value\.value : value; return isSymbolic\(v\) && !hasUnits\(v\.expr\); \};/.test(appSrc)
     && /\$\{plottable\(value\) \? `<button type="button" data-row-act="plot"/.test(appSrc)
     && /plottable\(value\) \? item\('plot', 'plot', 'Plot it'\)/.test(appSrc)
-    && /plottable\(value\)\s*\? \{ label: 'PLOT'/.test(appSrc)
+    && /\.\.\.\(plottable\(value\) \? \[\{ label: 'PLOT'/.test(appSrc)
     && !/isSymbolic\(value\) \? item\('plot'|isSymbolic\(value\) \? `<button type="button" data-row-act="plot"/.test(appSrc),
     'stack: a formula with units gets no Plot from its toolbar, ⋯ menu or soft keys, as in the equation writer, where Plot opened an empty plot');
   const graphSrc = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
@@ -2966,8 +2966,9 @@ setAngle('RAD');
     assert(appSrc.includes("isString(value) ? item('strto', 'play', 'Run its text (STR→)') : item('eval', 'play', 'Evaluate (EVAL)'),")
       && appSrc.includes("case 'strto': runOn('STR→'); return;"),
       'a string level offers Run its text (STR→) where Evaluate (EVAL) gave the string back unchanged');
-    assert(appSrc.includes("        : isString(value) ? { label: 'STR→', title: 'Run its text', onPress: act('strto') }"),
-      'the interactive stack soft keys show STR→ on a string, as its menu does');
+    assert(appSrc.includes("      isString(value) ? { label: 'STR→', title: 'Run its text', onPress: act('strto') } : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },")
+      && appSrc.includes("      ...(plottable(value) ? [{ label: 'PLOT', title: 'Plot it', onPress: act('plot') }] : []),"),
+      'the interactive stack soft keys show STR→ on a string, as its menu does, and a formula keeps EVAL with PLOT after it, where PLOT took EVAL\'s place');
     assert(/isReal\(value\)\s*\? \{ label: '→Q', title: 'To a fraction', onPress: act\('toq'\) \}\s*: isBinaryInteger\(value\) \? \{ label: 'B→R', title: 'To a real number', onPress: act\('btor'\) \}\s*: \{ label: '→NUM', title: 'Evaluate to a number', onPress: act\('num'\) \},/.test(appSrc),
       'the interactive stack soft keys show →Q on a decimal and B→R on a binary integer where →NUM did nothing, as its menu does');
     assert(appSrc.includes("isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : ") && appSrc.includes("case 'toq': runOn('→Q'); return;"),
