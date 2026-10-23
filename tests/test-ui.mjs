@@ -2505,18 +2505,29 @@ setAngle('RAD');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const ends = [];
   const el = { scrollTop: 0, clientHeight: 40, scrollHeight: 268, classList: { toggle: (c, on) => on && ends.push(c) } };
-  const markEnds = new Function(`return ${acSrc.match(/const markEnds = (\(el\) => \{[\s\S]*?\n\});/)[1]}`)();
+  const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
+  const markEnds = new Function(`return function ${displaySrc.match(/export function (markScrollEnds\(el\) \{[\s\S]*?\n\})/)[1]}`)();
   markEnds(el);
   const atTop = ends.join(' ');
   ends.length = 0;
   Object.assign(el, { scrollTop: 228 });
   markEnds(el);
   assert(atTop === 'more-b' && ends.join(' ') === 'more-t'
-    && /this\._fit\(\);\s*markEnds\(this\.el\);/.test(acSrc) && /this\.el\.addEventListener\('scroll', \(\) => markEnds\(this\.el\), \{ passive: true \}\);/.test(acSrc)
+    && /this\._fit\(\);\s*markScrollEnds\(this\.el\);/.test(acSrc) && /this\.el\.addEventListener\('scroll', \(\) => markScrollEnds\(this\.el\), \{ passive: true \}\);/.test(acSrc)
     && /\.ac::before, \.ac::after \{ content: ''; position: sticky;/.test(css) && /\.ac\.more-t::before, \.ac\.more-b::after \{ opacity: 1; \}/.test(css),
     'autocomplete: a list the keyboard caps fades at the edge it continues past, as the key strip and levels do, so the one row left in landscape shows there are more');
-  assert(/window\.addEventListener\('resize', \(\) => requestAnimationFrame\(\(\) => \{\s*if \(!this\.isOpen\(\)\) return;\s*this\._fit\(\);\s*markEnds\(this\.el\);/.test(acSrc),
+  assert(/window\.addEventListener\('resize', \(\) => requestAnimationFrame\(\(\) => \{\s*if \(!this\.isOpen\(\)\) return;\s*this\._fit\(\);\s*markScrollEnds\(this\.el\);/.test(acSrc),
     'autocomplete: an open list fits the window again a frame after it resizes, as a popover does, so turning the phone with the keyboard up no longer leaves it running off the top');
+}
+
+{
+  const popSrc = readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/import \{ markScrollEnds \} from '\.\/display\.js';/.test(popSrc)
+    && /this\._place\(point\);\s*el\.addEventListener\('scroll', \(\) => markScrollEnds\(el\), \{ passive: true \}\);/.test(popSrc)
+    && /el\.style\.top = `\$\{top\}px`;\s*markScrollEnds\(el\);\s*\}/.test(popSrc)
+    && /\.pop::before, \.pop::after \{ content: ''; position: sticky;/.test(css) && /\.pop\.more-t::before, \.pop\.more-b::after \{ opacity: 1; \}/.test(css),
+    'popover: a menu that scrolls fades at the edge it continues past, as the autocomplete list does, so the level menu\'s rows below the fold show there are more');
 }
 
 {

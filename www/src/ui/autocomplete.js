@@ -3,7 +3,7 @@ import { endsInQuote } from '../rpl/parser.js';
 import { varOrder, varRecall, state } from '../rpl/state.js';
 import { shortDescription } from './command-reference.js';
 import { fuzzyScore, matchPositions, highlightSegments } from './op-search.js';
-import { escapeHtml, typeName, LONG_PRESS_MS } from './display.js';
+import { escapeHtml, typeName, markScrollEnds, LONG_PRESS_MS } from './display.js';
 import { UNIT_GROUPS, BRANCH_KEYS } from './menus.js';
 
 const MAX_ROWS = 6;
@@ -29,11 +29,6 @@ export function wordBeforeCursor(text, cursor) {
 export const hpArrows = (word) => word.replaceAll('->', '→');
 
 const firstLetter = (name) => name.match(/[A-Z]/i)?.[0].toUpperCase();
-// A list the keyboard caps fades at the edge it continues past, so the one row left in landscape shows there are more.
-const markEnds = (el) => {
-  el.classList.toggle('more-t', el.scrollTop > 1);
-  el.classList.toggle('more-b', el.scrollTop + el.clientHeight < el.scrollHeight - 1);
-};
 
 // One letter matches a name's first letter, so N offers →NUM after NEG; two or more match anywhere.
 function completionScore(word, name) {
@@ -175,12 +170,12 @@ export class Autocomplete {
       if (row) this.accept(Number(row.dataset.i));
     });
     this._bindHold();
-    this.el.addEventListener('scroll', () => markEnds(this.el), { passive: true });
+    this.el.addEventListener('scroll', () => markScrollEnds(this.el), { passive: true });
     // A turn or the keyboard resizes the window under an open list, which fits it again a frame later, as a popover does.
     window.addEventListener('resize', () => requestAnimationFrame(() => {
       if (!this.isOpen()) return;
       this._fit();
-      markEnds(this.el);
+      markScrollEnds(this.el);
     }));
     cmdline.addEventListener('keydown', (e) => this._onKey(e), true);
     cmdline.addEventListener('focusout', () => this.close());
@@ -238,7 +233,7 @@ export class Autocomplete {
     if (this.el.hidden) this.app.toasts?.dismiss('view');
     this.el.hidden = false;
     this._fit();
-    markEnds(this.el);
+    markScrollEnds(this.el);
   }
 
   // The phone's keyboard can leave less room above the line than the rows take: the list then scrolls, the chosen

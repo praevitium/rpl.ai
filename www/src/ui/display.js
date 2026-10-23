@@ -56,6 +56,12 @@ export function markScrollEdges(el) {
   setScrollEdges(el, scrollEdges(el));
 }
 
+// The same for a list that scrolls up and down: more-t and more-b mark the edge it continues past.
+export function markScrollEnds(el) {
+  el.classList.toggle('more-t', el.scrollTop > 1);
+  el.classList.toggle('more-b', el.scrollTop + el.clientHeight < el.scrollHeight - 1);
+}
+
 const swipeThreshold = (width) => Math.min(120, width * 0.35);
 
 // A finger swiped sideways across a notice (an error banner, a toast) puts it away, as a phone's notifications go.

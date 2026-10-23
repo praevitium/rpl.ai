@@ -757,6 +757,10 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .lay-pop:empty, .lay-pal:empty, .lay-sheet:empty { display: none; }
 .pop { position: fixed; z-index: var(--z-popover); background: var(--panel); border: 1px solid var(--line2); border-radius: 12px; box-shadow: var(--shadow-2); padding: 6px; min-width: 200px; max-width: min(380px, 92vw); max-height: min(70vh, 560px); overflow-y: auto; animation: pop-in .14s var(--ease); color: var(--ink); }
 @keyframes pop-in { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
+.pop::before, .pop::after { content: ''; position: sticky; z-index: 1; display: block; height: 14px; pointer-events: none; opacity: 0; }
+.pop::before { top: 0; margin-bottom: -14px; background: linear-gradient(var(--panel), transparent); }
+.pop::after { bottom: 0; margin-top: -14px; background: linear-gradient(transparent, var(--panel)); }
+.pop.more-t::before, .pop.more-b::after { opacity: 1; }
 .pop h6 { margin: 4px 8px 6px; font: 600 10px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); }
 .pop .opt { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 2px 8px; width: 100%; text-align: left; border: 0; background: transparent; border-radius: 8px; padding: 7px 8px; align-items: center; color: var(--ink); }
 .pop .opt:hover, .pop .opt.on, .pop .opt:focus-visible { background: var(--r1); outline: none; }

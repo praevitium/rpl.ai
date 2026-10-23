@@ -1,3 +1,5 @@
+import { markScrollEnds } from './display.js';
+
 const FOCUSABLE = 'button:not([disabled]), input, select, [tabindex="0"]';
 
 const MIN_ABOVE = 100;
@@ -66,6 +68,7 @@ export class Popover {
     this._above = above;
     this._onArrow = onArrow;
     this._place(point);
+    el.addEventListener('scroll', () => markScrollEnds(el), { passive: true });
     if (onClick) {
       el.addEventListener('click', (e) => {
         const target = e.target.closest('[data-v], [data-act]');
@@ -110,6 +113,7 @@ export class Popover {
     top = Math.max(margin, Math.min(top, vh - h - margin));
     el.style.left = `${left}px`;
     el.style.top = `${top}px`;
+    markScrollEnds(el);
   }
 
   close({ restoreFocus = true } = {}) {
