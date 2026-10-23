@@ -3,11 +3,11 @@ import {
 } from '../rpl/algebra.js';
 import {
   isMatrix, isVector, isList, isSymbolic, isTagged,
-  toRealOrThrow, Matrix, Real, RList,
+  toRealOrThrow, Matrix, Real, RList, Symbolic, Tagged,
 } from '../rpl/types.js';
 import { evalFitModel, varRecall } from '../rpl/state.js';
 import { _expandUserCalls } from '../rpl/ops/internal.js';
-import { equationToSymbolic, valueToEquationDraft } from './equation-editor.js';
+import { equationToSymbolic, valueToEquationDraft, renameVariable } from './equation-editor.js';
 
 export { evalFitModel };
 
@@ -77,10 +77,38 @@ function storedNumber(name) {
   }
 }
 
-// The names a plot of src cannot evaluate: neither its variable, a constant nor a variable holding a number.
-export function unvaluedNames(src, indep = null) {
+// The names a plot cannot evaluate: neither its variable, a constant nor a variable holding a number.
+function openNames(ast, indep) {
   const bound = bindIndependentVariable(0, indep);
-  return [...freeVars(parsePlotExpr(src))].filter((name) => !Number.isFinite(lookupEnv(name, bound)) && storedNumber(name) === null);
+  return [...freeVars(ast)].filter((name) => !Number.isFinite(lookupEnv(name, bound)) && storedNumber(name) === null);
+}
+
+export function unvaluedNames(src, indep = null) {
+  return openNames(parsePlotExpr(src), indep);
+}
+
+// The one open name of a formula that uses none of the plot's own variables, such as the Y of Y^2-3*Y+2.
+function soleOpenName(ast, indep) {
+  const own = Object.keys(bindIndependentVariable(0, indep)).map((n) => n.toLowerCase());
+  if ([...freeVars(ast)].some((name) => own.includes(name.toLowerCase()))) return null;
+  const open = openNames(ast, indep);
+  return open.length === 1 ? open[0] : null;
+}
+
+// Plot it draws such a formula along that name, as the equation writer draws its own variable: the name takes X's
+// place. Gives the value to plot and the names that moved.
+export function alongOpenName(value, indep = null) {
+  const moved = [];
+  const along = (v) => {
+    if (isTagged(v)) { const inner = along(v.value); return inner === v.value ? v : Tagged(v.tag, inner); }
+    if (isList(v)) { const items = v.items.map(along); return items.every((item, i) => item === v.items[i]) ? v : RList(items); }
+    const name = isSymbolic(v) ? soleOpenName(v.expr, indep) : null;
+    if (!name) return v;
+    moved.push(name);
+    return Symbolic(renameVariable(v.expr, name, 'X'));
+  };
+  const shown = along(value);
+  return { value: shown, moved: [...new Set(moved)] };
 }
 
 export function evalNumeric(ast, env, opts = {}) {

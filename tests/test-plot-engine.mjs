@@ -5,13 +5,13 @@ import {
   pixelToWorld, zoomView, panView, pinchView, defaultView, boundsOfPoints,
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit, sampleDiffEq,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
-  evalTraceAtX, sampleTrace, traceInputError, axisTicks, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace, unvaluedNames,
+  evalTraceAtX, sampleTrace, traceInputError, axisTicks, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace, unvaluedNames, alongOpenName,
   DEFAULT_TURN, turnBy, evalComplex, TRACE_KINDS, cursorPoint, stepCursor, slopeAt, nearestRoot, nearestExtremum, integrateFunction,
 } from '../www/src/ui/plot-engine.js';
-import { Matrix, Vector, Real, Integer, Symbolic, Program, RList, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
+import { Matrix, Vector, Real, Integer, Symbolic, Program, RList, Tagged, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
 import { lookup, setGraphicsHook } from '../www/src/rpl/ops.js';
 import { Stack } from '../www/src/rpl/stack.js';
-import { parseAlgebra } from '../www/src/rpl/algebra.js';
+import { parseAlgebra, formatAlgebra } from '../www/src/rpl/algebra.js';
 import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.js';
 
 {
@@ -39,6 +39,28 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(Number.isNaN(evalNumeric(parsePlotExpr('PLB*X'), { x: 3 })), 'evalNumeric: a name with no variable is NaN');
   assert(unvaluedNames('PLA*X^2+PLB*T+π').join() === 'PLB', 'unvaluedNames: a stored number, the variable and π have values, PLB has none');
   assert(unvaluedNames('Q^2', 'Q').length === 0, "unvaluedNames: PPAR's independent variable has a value");
+  const along = (src, indep) => alongOpenName(Symbolic(parseAlgebra(src)), indep);
+  const text = (r) => formatAlgebra(r.value.expr);
+  const quad = along('Y^2-3*Y+2');
+  assert(text(quad) === formatAlgebra(parseAlgebra('X^2-3*X+2')) && quad.moved.join() === 'Y',
+    `alongOpenName: Y^2-3*Y+2 is drawn along Y, which takes X's place (${text(quad)} ${quad.moved})`);
+  const stored = along('PLA*Y^2');
+  assert(text(stored) === formatAlgebra(parseAlgebra('PLA*X^2')) && stored.moved.join() === 'Y', 'alongOpenName: a name holding a number keeps its value, and the open name moves');
+  assert(along('π*R^2').moved.join() === 'R' && text(along('π*R^2')) === formatAlgebra(parseAlgebra('π*X^2')), 'alongOpenName: π is no open name');
+  for (const src of ['SIN(X)', 'A*B', 'X^2+Y', 'A*T^2+V*T', 'PLA*X', 'T+Q']) {
+    const r = along(src);
+    assert(r.moved.length === 0 && text(r) === formatAlgebra(parseAlgebra(src)),
+      `alongOpenName: ${src} stays as it is (a plot variable in it, or two open names, or none)`);
+  }
+  const bound = along('Y^2', 'Y');
+  assert(bound.moved.length === 0 && text(bound) === formatAlgebra(parseAlgebra('Y^2')), "alongOpenName: PPAR's INDEP name is bound already, so Y^2 plots along Y as it is");
+  const tagged = alongOpenName(Tagged('F', Symbolic(parseAlgebra('Y+1'))));
+  assert(tagged.value.tag === 'F' && formatAlgebra(tagged.value.value.expr) === formatAlgebra(parseAlgebra('X+1')) && tagged.moved.join() === 'Y', 'alongOpenName: a tagged formula keeps its tag');
+  const many = alongOpenName(RList([Symbolic(parseAlgebra('Y^2')), Symbolic(parseAlgebra('SIN(Y)')), Symbolic(parseAlgebra('A*B'))]));
+  assert(many.value.items.map((v) => formatAlgebra(v.expr)).join() === ['X^2', 'SIN(X)', 'A*B'].map((x) => formatAlgebra(parseAlgebra(x))).join() && many.moved.join() === 'Y',
+    'alongOpenName: each formula of a list moves on its own, and the names that moved are named once');
+  const plain = Real(3);
+  assert(alongOpenName(plain).value === plain && alongOpenName(plain).moved.length === 0, 'alongOpenName: a number is left alone');
   varStore('PLA', Symbolic(parseAlgebra('Y+1')));
   assert(Number.isNaN(evalNumeric(parsePlotExpr('PLA*X'), { x: 3 })), 'evalNumeric: a stored formula is not a number');
   assert(unvaluedNames('PLA*X').join() === 'PLA', 'unvaluedNames: a variable holding a formula has no number');

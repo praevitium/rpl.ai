@@ -45,6 +45,8 @@ import { pastDueAlarm, msToNextAlarm, acknowledgeOldest, calculatorNow, headerCl
 import { _hp50TypeCode } from './rpl/ops/internal.js';
 import { displayDigitsArg } from './rpl/ops/display.js';
 import { mesMenu } from './rpl/ops/root.js';
+import { plotSettings } from './rpl/ops/graphics.js';
+import { alongOpenName } from './ui/plot-engine.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic, isValidHpIdentifier, isReservedHpName,
@@ -1419,9 +1421,11 @@ class App {
   }
 
   plotValue(value) {
+    const { value: shown, moved } = alongOpenName(value, plotSettings()?.indep?.name);
     const scratch = new Stack();
-    scratch.push(value);
+    scratch.push(shown);
     this.drawers.openGraph('function', scratch);
+    if (moved.length) this.toast(`${moved.length === 1 ? moved[0] : `${moved.slice(0, -1).join(', ')} and ${moved.at(-1)}`} ${moved.length === 1 ? 'takes' : 'take'} X's place on the plot.`, { key: 'plot-along', transient: true });
   }
 
   commitEntryAndPush(values) {

@@ -2160,6 +2160,9 @@ setAngle('RAD');
     && /const items = formulaList\(top\) \?\? \[top\];/.test(graphSrc)
     && /built\.forEach\(\(b, i\) => this\._addTrace\(b, \{ fit: fit && i === last, draw: i === last, view: pparView\(\) \}\)\);/.test(graphSrc),
     'stack: a list of formulas gets Plot too, and it and FUNCTION draw every formula in the list together, as the HP draws each equation in a list stored in EQ');
+  assert(appSrc.includes("const { value: shown, moved } = alongOpenName(value, plotSettings()?.indep?.name);")
+    && appSrc.includes("takes' : 'take'} X's place on the plot.`, { key: 'plot-along', transient: true });"),
+    "plot: Plot it on a formula in one name the plot doesn't bind, Y^2-3*Y+2, draws it along that name, as the equation writer does its own, and says which name took X's place");
   assert(graphSrc.includes("if (kind === 'function') this._noteUnvalued(built);")
     && graphSrc.includes("if (!names.length) { this.app.toasts?.dismiss('plot'); return; }")
     && graphSrc.includes("{ key: 'plot', transient: true });"),
