@@ -2949,6 +2949,10 @@ setAngle('RAD');
     assert(appSrc.includes("isSymbolic(value) ? item('expand', 'chr', 'Expand (EXPAND)') + item('factor', 'chr', 'Factor (FACTOR)') : '',")
       && appSrc.includes("case 'expand': runOn('EXPAND'); return;") && appSrc.includes("case 'factor': runOn('FACTOR'); return;"),
       "an algebraic level offers Expand (EXPAND) and Factor (FACTOR), the HP's everyday ALG rewrites, in its level menu");
+    assert(appSrc.includes("isSymbolic(value) ? variablesOf(value.expr).slice(0, 3).map((name) => item(`solve:${escapeHtml(name)}`, 'chr', `Solve for ${name} (SOLVE)`)).join('') : '',")
+      && appSrc.includes("if (act.startsWith('solve:')) { runOn('SOLVE', Name(act.slice('solve:'.length), { quoted: true })); return; }")
+      && /moveLevel\(this\.stack, level, 1\); if \(operand\) this\.stack\.push\(operand\);/.test(appSrc),
+      'an algebraic level offers Solve for each of its first three unknowns (SOLVE), pushing the quoted name after rolling the level down, so X^2-5*X+6=0 solves with one tap');
     assert(appSrc.includes("...(takesApart(value) ? [{ label: 'OBJ→', title: 'Take it apart', onPress: act('objto') }] : []),"),
       "a selected level's soft keys offer OBJ→ wherever its menu offers Take apart, as they offer B→R and CONV");
     assert(appSrc.includes("const html = `<h6>Level ${level} · ${escapeHtml(describeValue(value).type)}</h6>"),

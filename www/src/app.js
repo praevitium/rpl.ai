@@ -23,7 +23,7 @@ import { computeMenuPage } from './ui/paging.js';
 import { clampLevel, dropLevel, keepLevels, moveLevel, replaceLevel } from './ui/stack-levels.js';
 import { icon } from './ui/icons.js';
 import { installCommandHover, entryWordAtEvent, stackWordAtEvent } from './ui/hover-help.js';
-import { EquationEditor, keypadFace, readsAsFormula } from './ui/equation-editor.js';
+import { EquationEditor, keypadFace, readsAsFormula, variablesOf } from './ui/equation-editor.js';
 import { MatrixEditor, parseMatrixCell } from './ui/matrix-editor.js';
 import {
   loadCommandReference, findReferenceEntry, formatReferenceEntry, searchCommands, shortDescription,
@@ -983,16 +983,17 @@ class App {
       this.entry._snapForUndo();
       try { fn(); } catch (e) { this.entry._dropNoOpUndoStep(); this.entry.flashError(e); }
     };
-    const runOn = (op) => {
+    const runOn = (op, operand) => {
       this.clearSelection();
       this.entry._snapForUndo();
-      this.entry.safeRun(() => { moveLevel(this.stack, level, 1); this.stack.runOp(() => lookup(op).fn(this.stack, this.entry)); }, op);
+      this.entry.safeRun(() => { moveLevel(this.stack, level, 1); if (operand) this.stack.push(operand); this.stack.runOp(() => lookup(op).fn(this.stack, this.entry)); }, op);
     };
     const runOnLevels = (op) => {
       this.clearSelection();
       this.entry._snapForUndo();
       this.entry.safeRun(() => { this.stack.push(Integer(level)); this.stack.runOp(() => lookup(op).fn(this.stack, this.entry)); }, op);
     };
+    if (act.startsWith('solve:')) { runOn('SOLVE', Name(act.slice('solve:'.length), { quoted: true })); return; }
     switch (act) {
       case 'edit': this.editLevel(level); return;
       case 'view': this._viewLevel(level); return;
@@ -1122,6 +1123,8 @@ class App {
         isName(value) && varOrder().includes(value.id) ? item('purge', 'trash', 'Purge its variable (PURGE)') : '',
         isUnit(value) ? item('convert', 'chr', 'Convert to…') + item('uval', 'chr', 'Drop the unit (UVAL)') : '',
         isSymbolic(value) ? item('expand', 'chr', 'Expand (EXPAND)') + item('factor', 'chr', 'Factor (FACTOR)') : '',
+        // Three unknowns at most keep the menu short; SOLVE on the command line takes any name.
+        isSymbolic(value) ? variablesOf(value.expr).slice(0, 3).map((name) => item(`solve:${escapeHtml(name)}`, 'chr', `Solve for ${name} (SOLVE)`)).join('') : '',
         isMatrix(value) && value.rows.length === value.rows[0]?.length ? item('inv', 'chr', 'Inverse (INV)') + item('det', 'chr', 'Determinant (DET)') + item('egvl', 'chr', 'Eigenvalues (EGVL)') : '',
         isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') + item('rref', 'chr', 'Row reduce (RREF)') : '',
         isVector(value) ? item('abs', 'chr', 'Length (ABS)') : '',
