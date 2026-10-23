@@ -32,6 +32,18 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
 }
 
 {
+  const { varStore, varPurge } = await import('../www/src/rpl/state.js');
+  varStore('PLA', Integer(2n));
+  varStore('X', Real(5));
+  assert(evalNumeric(parsePlotExpr('PLA*X^2'), { x: 3 }) === 18, 'evalNumeric: a stored PLA feeds the plot, the bound X wins over a stored X');
+  assert(Number.isNaN(evalNumeric(parsePlotExpr('PLB*X'), { x: 3 })), 'evalNumeric: a name with no variable is NaN');
+  varStore('PLA', Symbolic(parseAlgebra('Y+1')));
+  assert(Number.isNaN(evalNumeric(parsePlotExpr('PLA*X'), { x: 3 })), 'evalNumeric: a stored formula is not a number');
+  varPurge('PLA');
+  varPurge('X');
+}
+
+{
   const ast = parsePlotExpr('2*X');
   const segs = sampleFunction(ast, 0, 2, 3, {});
   assert(segs.length === 1 && segs[0].length === 3, 'sampleFunction: one segment');

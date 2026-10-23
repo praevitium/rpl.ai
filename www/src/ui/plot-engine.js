@@ -5,7 +5,7 @@ import {
   isMatrix, isVector, isList, isSymbolic, isTagged,
   toRealOrThrow, Matrix, Real, RList,
 } from '../rpl/types.js';
-import { evalFitModel } from '../rpl/state.js';
+import { evalFitModel, varRecall } from '../rpl/state.js';
 import { _expandUserCalls } from '../rpl/ops/internal.js';
 import { equationToSymbolic, valueToEquationDraft } from './equation-editor.js';
 
@@ -65,12 +65,24 @@ function plotFnEval(name, args, opts = {}) {
   return Number.isFinite(folded) ? folded : NaN;
 }
 
+// As on the HP, a name the plot doesn't bind evaluates to the number its variable holds.
+function storedNumber(name) {
+  const value = varRecall(name);
+  if (!value) return null;
+  try {
+    const n = toRealOrThrow(isTagged(value) ? value.value : value);
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
+}
+
 export function evalNumeric(ast, env, opts = {}) {
   const node = evalAst(
     ast,
     (name) => {
       const v = lookupEnv(name, env);
-      return Number.isFinite(v) ? v : null;
+      return Number.isFinite(v) ? v : storedNumber(name);
     },
     (name, args) => plotFnEval(name, args, opts),
   );
