@@ -1065,8 +1065,10 @@ class App {
   _levelInfo(level) {
     const value = this.stack.peek(level);
     const result = (name) => { const s = new Stack(); s.pushMany([value]); lookup(name).fn(s); return s.peek(1).value; };
-    const { type, text } = describeValue(value);
-    this.toast(`Level ${level}: ${/^a /.test(text) ? text : type} · TYPE ${Number(result('TYPE'))} · ${result('BYTES')} bytes`);
+    const count = (n, noun) => `${n} ${noun}${n === 1 ? '' : 's'}`;
+    const size = isList(value) ? count(value.items.length, 'item') : isVector(value) ? count(value.items.length, 'element')
+      : isMatrix(value) ? `${value.rows.length}×${value.rows[0]?.length ?? 0}` : '';
+    this.toast(`Level ${level}: ${[describeValue(value).type, size, `TYPE ${Number(result('TYPE'))}`, `${result('BYTES')} bytes`].filter(Boolean).join(' · ')}`);
   }
 
   // The HP interactive stack's VIEW: the value at a readable size, scrolling both ways, where the stack would shrink or cut it.

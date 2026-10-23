@@ -2407,6 +2407,9 @@ setAngle('RAD');
     && /case 'info': this\._levelInfo\(level\); return;/.test(appSrc)
     && /const result = \(name\) => \{ const s = new Stack\(\); s\.pushMany\(\[value\]\); lookup\(name\)\.fn\(s\); return s\.peek\(1\)\.value; \};/.test(appSrc),
     'stack: a level has the HP interactive stack\'s INFO after LEVEL, on its soft keys and in its ⋯ menu, which notes its type, TYPE and BYTES from a copy, leaving the stack and LASTARG alone');
+  assert(/const size = isList\(value\) \? count\(value\.items\.length, 'item'\) : isVector\(value\) \? count\(value\.items\.length, 'element'\)\s*: isMatrix\(value\) \? `\$\{value\.rows\.length\}×\$\{value\.rows\[0\]\?\.length \?\? 0\}` : '';/.test(appSrc)
+    && appSrc.includes("this.toast(`Level ${level}: ${[describeValue(value).type, size, `TYPE ${Number(result('TYPE'))}`, `${result('BYTES')} bytes`].filter(Boolean).join(' · ')}`);"),
+    'stack: INFO leads with the type name its level menu\'s heading uses, then a size for a list, vector or matrix (List · 3 items, Matrix · 2×2), where some notes read "a list of 3 items" and others "Complex number"');
 }
 
 {
