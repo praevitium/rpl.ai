@@ -1,5 +1,5 @@
 import {
-  isNum, parseAlgebra, evalAst, defaultFnEval, Bin,
+  isNum, parseAlgebra, evalAst, defaultFnEval, freeVars, Bin,
 } from '../rpl/algebra.js';
 import {
   isMatrix, isVector, isList, isSymbolic, isTagged,
@@ -75,6 +75,12 @@ function storedNumber(name) {
   } catch {
     return null;
   }
+}
+
+// The names a plot of src cannot evaluate: neither its variable, a constant nor a variable holding a number.
+export function unvaluedNames(src, indep = null) {
+  const bound = bindIndependentVariable(0, indep);
+  return [...freeVars(parsePlotExpr(src))].filter((name) => !Number.isFinite(lookupEnv(name, bound)) && storedNumber(name) === null);
 }
 
 export function evalNumeric(ast, env, opts = {}) {

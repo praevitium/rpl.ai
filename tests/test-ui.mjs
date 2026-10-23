@@ -2160,6 +2160,10 @@ setAngle('RAD');
     && /const items = formulaList\(top\) \?\? \[top\];/.test(graphSrc)
     && /built\.forEach\(\(b, i\) => this\._addTrace\(b, \{ fit: fit && i === last, draw: i === last, view: pparView\(\) \}\)\);/.test(graphSrc),
     'stack: a list of formulas gets Plot too, and it and FUNCTION draw every formula in the list together, as the HP draws each equation in a list stored in EQ');
+  assert(graphSrc.includes("if (kind === 'function') this._noteUnvalued(built);")
+    && graphSrc.includes("if (!names.length) { this.app.toasts?.dismiss('plot'); return; }")
+    && graphSrc.includes("{ key: 'plot', transient: true });"),
+    "plot: a function plot names the names that hold no number, which leave its curve blank, in one note that the next plot replaces or clears");
   assert(/const specs = \(formulaList\(value\) \?\? \[value\]\)\.map\(\(v\) => stackValueToTrace\(v, this\._kind, below\)\);/.test(graphSrc)
     && /specs\.forEach\(\(spec, i\) => this\._addTrace\(spec, \{ fit: i === last, draw: i === last \}\)\);/.test(graphSrc),
     "plot: the drawer's + Level 1 plots each formula of a list on level 1, as Plot does, where it switched to Scatter and added an empty scatter trace");

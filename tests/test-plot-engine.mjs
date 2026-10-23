@@ -5,7 +5,7 @@ import {
   pixelToWorld, zoomView, panView, pinchView, defaultView, boundsOfPoints,
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit, sampleDiffEq,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
-  evalTraceAtX, sampleTrace, traceInputError, axisTicks, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace,
+  evalTraceAtX, sampleTrace, traceInputError, axisTicks, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace, unvaluedNames,
   DEFAULT_TURN, turnBy, evalComplex, TRACE_KINDS, cursorPoint, stepCursor, slopeAt, nearestRoot, nearestExtremum, integrateFunction,
 } from '../www/src/ui/plot-engine.js';
 import { Matrix, Vector, Real, Integer, Symbolic, Program, RList, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
@@ -37,8 +37,11 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   varStore('X', Real(5));
   assert(evalNumeric(parsePlotExpr('PLA*X^2'), { x: 3 }) === 18, 'evalNumeric: a stored PLA feeds the plot, the bound X wins over a stored X');
   assert(Number.isNaN(evalNumeric(parsePlotExpr('PLB*X'), { x: 3 })), 'evalNumeric: a name with no variable is NaN');
+  assert(unvaluedNames('PLA*X^2+PLB*T+π').join() === 'PLB', 'unvaluedNames: a stored number, the variable and π have values, PLB has none');
+  assert(unvaluedNames('Q^2', 'Q').length === 0, "unvaluedNames: PPAR's independent variable has a value");
   varStore('PLA', Symbolic(parseAlgebra('Y+1')));
   assert(Number.isNaN(evalNumeric(parsePlotExpr('PLA*X'), { x: 3 })), 'evalNumeric: a stored formula is not a number');
+  assert(unvaluedNames('PLA*X').join() === 'PLA', 'unvaluedNames: a variable holding a formula has no number');
   varPurge('PLA');
   varPurge('X');
 }

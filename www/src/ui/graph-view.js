@@ -2,7 +2,7 @@ import {
   TRACE_COLORS, TRACE_KINDS, nextTraceColor, defaultView, zoomView, panView, pinchView, DEFAULT_TURN, turnBy,
   worldToPixel, pixelToWorld, axisTicks, hasUsableSpan, cursorPoint, stepCursor,
   sampleTrace, fitViewToTraces, evalTraceAtX, slopeAt, nearestRoot, nearestExtremum, integrateFunction,
-  stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace,
+  stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace, unvaluedNames,
 } from './plot-engine.js';
 import { escapeHtml, markScrollEdges } from './display.js';
 import { icon } from './icons.js';
@@ -531,6 +531,16 @@ export class GraphView {
     const fit = !!spec.fitOnAdd || !this.traces.length;
     const last = built.length - 1;
     built.forEach((b, i) => this._addTrace(b, { fit: fit && i === last, draw: i === last, view: pparView() }));
+    if (kind === 'function') this._noteUnvalued(built);
+  }
+
+  // As on the HP, a name with no number leaves its curve blank, so a note says which name to store.
+  _noteUnvalued(built) {
+    const names = [...new Set(built.flatMap((b) => unvaluedNames(b.expr, plotSettings()?.indep?.name)))];
+    if (!names.length) { this.app.toasts?.dismiss('plot'); return; }
+    const one = names.length === 1;
+    const list = one ? names[0] : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+    this.app.toast(`${list} ${one ? 'has' : 'have'} no value, so the curve can't be drawn. Store a number in ${one ? 'it' : 'each'} first.`, { key: 'plot', transient: true });
   }
 
   // DRAW's EQ: each formula the plot doesn't already show, as PPAR's plot type, in the window DRAW set.
