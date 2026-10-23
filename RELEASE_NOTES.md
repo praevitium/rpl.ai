@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.65 (2026-10-22)
+**Latest release:** v0.8.66 (2026-10-23)
 
 ---
 
@@ -20,6 +20,18 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.66 — 2026-10-23
+
+- Fixed: OBJ→ on an algebraic put its function before a count of n+1,
+  so `'X+1'` gave X 1 + 3; it now gives the arguments, their count and
+  then the function on level 1, as the AUR has it: X 1 2 +.
+- Added: an algebraic level's menu offers Solve for each of its first
+  three unknowns (SOLVE), so `X^2-5*X+6=0` gives `{ X=2 X=3 }` with one
+  tap, with Undo.
+- Improved: a level's Type and size note (INFO) leads with the type
+  name its menu's heading uses, then a size for a list, vector or
+  matrix: List · 3 items, Matrix · 2×2.
 
 ## v0.8.65 — 2026-10-22
 
