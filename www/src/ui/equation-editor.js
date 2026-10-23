@@ -1367,7 +1367,7 @@ export function collapseSelection(state, dir = 1) {
   return path ? move(state, { mode: 'insert', path }) : state;
 }
 
-const CONSTANT_NAMES = new Set(['π', 'e', 'i', '∞']);
+const CONSTANT_NAMES = new Set(['π', 'e', 'i', '∞', 'MAXR', 'MINR']);
 const TRIG_NAMES = new Set(['SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN']);
 
 export function variablesOf(ast) {

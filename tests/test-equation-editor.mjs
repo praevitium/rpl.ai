@@ -419,6 +419,7 @@ function same(state, source, label) {
 
 {
   assert(variablesOf(parseAlgebra('π*X+e^i')).join() === 'X', 'EQW variablesOf skips π, e and i');
+  assert(variablesOf(parseAlgebra('MAXR-X+MINR')).join() === 'X', 'EQW variablesOf skips MAXR and MINR, the HP\'s largest and smallest reals, so a level menu offers no Solve for MAXR');
   assert(primaryVariable(parseAlgebra('a*t^2+x'), 'x') === 'x' && primaryVariable(parseAlgebra('a*t'), 'x') === 'a',
     'EQW primaryVariable prefers the CAS variable, then the first name');
   assert(formatAlgebra(renameVariable(parseAlgebra('t^2+t'), 't', 'X')) === 'X^2 + X', 'EQW renameVariable renames every use');
