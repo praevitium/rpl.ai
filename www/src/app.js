@@ -1189,9 +1189,9 @@ class App {
     pop.querySelector('.pop-chips')?.addEventListener('click', (e) => { const chip = e.target.closest('.chip'); if (chip) take(chip.dataset.name); });
   }
 
-  // A popover form's name field, read as `NAME` STO reads it: quotes optional, and a name STO refuses is refused under the
+  // A form's name field, read as `NAME` STO reads it: quotes optional, and a name STO refuses is refused under the
   // field, where a toast would cover it with the keyboard up. Returns the reader, for chips that offer a name.
-  nameForm(form, onName) {
+  nameForm(form, onName, { focus = true } = {}) {
     const field = form.elements.name;
     const note = form.querySelector('.note.err');
     const refuse = (message) => { note.textContent = message; note.hidden = false; field.setAttribute('aria-invalid', 'true'); field.focus(); };
@@ -1204,7 +1204,7 @@ class App {
     };
     field.addEventListener('input', () => { note.hidden = true; field.removeAttribute('aria-invalid'); });
     form.addEventListener('submit', (e) => { e.preventDefault(); take(field.value); });
-    requestAnimationFrame(() => field.focus());
+    if (focus) requestAnimationFrame(() => field.focus());
     return take;
   }
 

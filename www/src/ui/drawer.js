@@ -239,7 +239,6 @@ export class Drawers {
     this.el.addEventListener('click', (e) => this._onClick(e));
     new ResizeObserver(() => this._markTabEdges()).observe(this.el);
     this.el.addEventListener('input', (e) => this._onInput(e));
-    this.el.addEventListener('submit', (e) => this._onSubmit(e));
     this.el.addEventListener('keydown', (e) => this._onKeyDown(e));
     this._bindSheetDrag();
     this._bindRunPreviews();
@@ -568,7 +567,8 @@ export class Drawers {
   }
 
   _renderVars(body) {
-    body.innerHTML = `<div class="path-bar" data-path-bar></div><div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="vars" placeholder="Filter variables" aria-label="Filter variables" value="${escapeHtml(this.varsQuery)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></label><button type="button" class="icon-btn sm" data-dw="vars-more" title="New folder, upload, export and back up" aria-label="New folder, upload, export and back up" aria-haspopup="menu">${icon('more', 'sm')}</button></div><div class="dw-list vr-list"></div><details class="vr-backups"><summary class="sec-h"><span>Backups<span class="badge" data-backup-count></span></span>${icon('chd', 'sm')}</summary><form class="backup-new" data-form="archive"><input type="text" name="name" placeholder="Backup name" aria-label="Backup name" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done"><span class="backup-to"><select name="port" aria-label="Port" title="Port 0 lives in this browser; ports 1–3 are separate slots">${[0, 1, 2, 3].map((p) => `<option value="${p}">:${p}:</option>`).join('')}</select><button type="submit" class="btn" title="Save the stack and HOME tree (same as :n:name ARCHIVE)">Archive</button></span></form><div class="dw-backups"></div></details>`;
+    body.innerHTML = `<div class="path-bar" data-path-bar></div><div class="dw-tools"><label class="field">${icon('search', 'sm')}<input type="search" data-q="vars" placeholder="Filter variables" aria-label="Filter variables" value="${escapeHtml(this.varsQuery)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></label><button type="button" class="icon-btn sm" data-dw="vars-more" title="New folder, upload, export and back up" aria-label="New folder, upload, export and back up" aria-haspopup="menu">${icon('more', 'sm')}</button></div><div class="dw-list vr-list"></div><details class="vr-backups"><summary class="sec-h"><span>Backups<span class="badge" data-backup-count></span></span>${icon('chd', 'sm')}</summary><form class="backup-new" data-form="archive"><input type="text" name="name" placeholder="Backup name" aria-label="Backup name" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done"><span class="backup-to"><select name="port" aria-label="Port" title="Port 0 lives in this browser; ports 1–3 are separate slots">${[0, 1, 2, 3].map((p) => `<option value="${p}">:${p}:</option>`).join('')}</select><button type="submit" class="btn" title="Save the stack and HOME tree (same as :n:name ARCHIVE)">Archive</button></span><div class="note err" role="alert" hidden></div></form><div class="dw-backups"></div></details>`;
+    this._bindArchive(body.querySelector('[data-form="archive"]'));
     this._renderVarsList();
   }
 
@@ -735,28 +735,24 @@ export class Drawers {
     (rows[Math.min(i, rows.length - 1)] ?? this._body()?.querySelector('[data-q]'))?.focus();
   }
 
-  _onSubmit(e) {
-    const form = e.target.closest('[data-form="archive"]');
-    if (!form) return;
-    e.preventDefault();
-    const name = form.elements.name.value.trim();
-    const port = form.elements.port.value;
-    if (!this._archive(port, name)) return;
-    // The phone keyboard's Done goes with the name, so the new backup's row shows where the keyboard was.
-    form.elements.name.value = '';
-    form.elements.name.blur();
+  _bindArchive(form) {
+    this.app.nameForm(form, (name, refuse) => {
+      if (!this._archive(form.elements.port.value, name, refuse)) return;
+      // The phone keyboard's Done goes with the name, so the new backup's row shows where the keyboard was.
+      form.elements.name.value = '';
+      form.elements.name.blur();
+    }, { focus: false });
   }
 
-  _archive(port, name) {
+  _archive(port, name, refuse) {
     const { app } = this;
-    if (!isStorableHpName(name)) { app.notifyError(`Backups need a variable-style name; “${name}” isn't one.`); return false; }
     try {
       const exists = listBackups().some((b) => b.port === port && b.name === name);
       archiveBackup(port, name, app.stack);
       app.toast(`${exists ? 'Replaced' : 'Archived'} :${port}:${name}`);
       return true;
     } catch (e) {
-      app.notifyError(`Archive failed: ${e.message}`);
+      refuse(`Archive failed: ${e.message}`);
       return false;
     } finally {
       this._renderBackups();

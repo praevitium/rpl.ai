@@ -3149,7 +3149,7 @@ setAngle('RAD');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const drawerSrcForNames = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
   const body = appSrc.match(/\n  _storePrompt\(level, anchor\) \{\n([\s\S]*?)\n  \}\n/)[1];
-  const nameForm = appSrc.match(/\n  nameForm\(form, onName\) \{\n([\s\S]*?)\n  \}\n/)?.[1] ?? '';
+  const nameForm = appSrc.match(/\n  nameForm\(form, onName, \{ focus = true \} = \{\}\) \{\n([\s\S]*?)\n  \}\n/)?.[1] ?? '';
   const newFolder = drawerSrcForNames.match(/\n  _newFolder\(anchor\) \{\n([\s\S]*?)\n  \}\n/)?.[1] ?? '';
   assert(/const names = varOrder\(\)\.filter\(\(id\) => !isDirectory\(varRecall\(id\)\)\);/.test(body)
     && /<div class="pop-chips">\$\{names\.map\(\(id\) => `<button type="button" class="chip" data-name="\$\{escapeHtml\(id\)\}">\$\{escapeHtml\(id\)\}<\/button>`\)\.join\(''\)\}<\/div>/.test(body)
@@ -3172,8 +3172,15 @@ setAngle('RAD');
   assert(/const next = input\.value\.trim\(\)\.replace\(\/\^\(\['`\]\)\(\.\+\)\\1\$\/, '\$2'\);/.test(drawerSrcForNames)
     && /if \(keep\) \{ input\.setAttribute\('aria-invalid', 'true'\); input\.select\(\); return; \}/.test(drawerSrcForNames)
     && /if \(ev\.key === 'Enter'\) \{ ev\.preventDefault\(\); finish\(true, true\); \}/.test(drawerSrcForNames)
-    && /\n\.vr\.editing \.nm input\[aria-invalid\] \{ border-color: var\(--danger\); \}/.test(css),
+    && /\n\.vr\.editing \.nm input\[aria-invalid\],[^{]* \{ border-color: var\(--danger\); \}/.test(css),
     'Variables, Rename: a refused name stays in the field, marked and selected, for Enter to try again, where the field closed and lost what was typed; quotes around a name are dropped, and leaving the field keeps the old name');
+  assert(/this\._bindArchive\(body\.querySelector\('\[data-form="archive"\]'\)\);/.test(drawerSrcForNames)
+    && /this\.app\.nameForm\(form, \(name, refuse\) => \{[\s\S]*?\}, \{ focus: false \}\);/.test(drawerSrcForNames)
+    && /if \(focus\) requestAnimationFrame\(\(\) => field\.focus\(\)\);/.test(nameForm)
+    && /catch \(e\) \{\s*refuse\(`Archive failed: \$\{e\.message\}`\);/.test(drawerSrcForNames)
+    && !/Backups need a variable-style name/.test(drawerSrcForNames)
+    && /\n\.backup-new \.note\.err \{ flex-basis: 100%;/.test(css) && css.includes('.backup-new input[aria-invalid] { border-color: var(--danger); }'),
+    'Variables, Backups: the name field reads names as Store and New folder do, an empty one doing nothing and quotes dropped, and says why it refuses one under the field, where an empty name drew an error toast and a quoted one was refused; opening the drawer does not focus it');
 }
 
 {
@@ -3442,7 +3449,7 @@ setAngle('RAD');
 {
   const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(drawerSrc.includes('<span class="backup-to"><select name="port"') && drawerSrc.includes('>Archive</button></span></form>')
+  assert(drawerSrc.includes('<span class="backup-to"><select name="port"') && drawerSrc.includes('>Archive</button></span><div class="note err" role="alert" hidden></div></form>')
     && css.includes('.backup-new { display: flex; flex-wrap: wrap;') && css.includes('.backup-new input { flex: 1 1 140px;')
     && css.includes('.backup-to { display: flex; gap: 6px; margin-left: auto; }'),
     'in a narrow drawer the backup name takes its own row and the port and Archive wrap together beneath it');
@@ -3461,7 +3468,7 @@ setAngle('RAD');
 
 {
   const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
-  assert(/if \(!this\._archive\(port, name\)\) return;[\s\S]{0,200}?form\.elements\.name\.value = '';\s*form\.elements\.name\.blur\(\);/.test(drawerSrc)
+  assert(/if \(!this\._archive\(form\.elements\.port\.value, name, refuse\)\) return;[\s\S]{0,200}?form\.elements\.name\.value = '';\s*form\.elements\.name\.blur\(\);/.test(drawerSrc)
     && /app\.toast\(`\$\{exists \? 'Replaced' : 'Archived'\} :\$\{port\}:\$\{name\}`\);\s*return true;/.test(drawerSrc),
     "a backup archived from the drawer's form clears the name and puts the phone keyboard away, so the new row shows (Archive and the row were under the keyboard)");
 }
