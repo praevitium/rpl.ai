@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.63 (2026-10-22)
+**Latest release:** v0.8.64 (2026-10-22)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.64 — 2026-10-22
+
+- Fixed: in a 280 px Variables drawer a backup's save time was cut after
+  the hour, as “10/23/26, 12:…”; the date and the time now each stay
+  whole, the time moving to its own line when the row is narrow.
+- Added: a list, array, complex number, tagged or unit object, program or
+  algebraic offers Take apart (OBJ→) in its level menu, with Undo.
+- Improved: the Backups name field reads names as the Store and New
+  folder boxes do: an empty field does nothing, quotes are dropped, and a
+  refused name is explained under the field instead of in a toast.
 
 ## v0.8.63 — 2026-10-22
 
