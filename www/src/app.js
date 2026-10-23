@@ -1017,6 +1017,8 @@ class App {
       case 'sto': runOn('STO'); return;
       case 'purge': runOn('PURGE'); return;
       case 'uval': runOn('UVAL'); return;
+      case 'expand': runOn('EXPAND'); return;
+      case 'factor': runOn('FACTOR'); return;
       case 'inv': runOn('INV'); return;
       case 'det': runOn('DET'); return;
       case 'egvl': runOn('EGVL'); return;
@@ -1117,6 +1119,7 @@ class App {
         isName(value) && level === 1 && this.stack.depth > 1 ? item('sto', 'folder', 'Store level 2 in it (STO)') : '',
         isName(value) && varOrder().includes(value.id) ? item('purge', 'trash', 'Purge its variable (PURGE)') : '',
         isUnit(value) ? item('convert', 'chr', 'Convert to…') + item('uval', 'chr', 'Drop the unit (UVAL)') : '',
+        isSymbolic(value) ? item('expand', 'chr', 'Expand (EXPAND)') + item('factor', 'chr', 'Factor (FACTOR)') : '',
         isMatrix(value) && value.rows.length === value.rows[0]?.length ? item('inv', 'chr', 'Inverse (INV)') + item('det', 'chr', 'Determinant (DET)') + item('egvl', 'chr', 'Eigenvalues (EGVL)') : '',
         isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') + item('rref', 'chr', 'Row reduce (RREF)') : '',
         isVector(value) ? item('abs', 'chr', 'Length (ABS)') : '',
