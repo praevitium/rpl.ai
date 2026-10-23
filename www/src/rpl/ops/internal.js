@@ -81,23 +81,11 @@ export function _symbolicDecompose(v) {
   if (ast.kind === 'num' || ast.kind === 'var') {
     return [_astToRplValue(ast), Integer(1n)];
   }
-  if (ast.kind === 'neg') {
-    return [_astToRplValue(ast.arg), Name('NEG', { quoted: true }), Integer(2n)];
-  }
-  if (ast.kind === 'bin') {
-    return [
-      _astToRplValue(ast.l),
-      _astToRplValue(ast.r),
-      Name(ast.op, { quoted: true }),
-      Integer(3n),
-    ];
-  }
-  if (ast.kind === 'fn') {
-    const out = ast.args.map(_astToRplValue);
-    out.push(Name(ast.name, { quoted: true }));
-    out.push(Integer(BigInt(ast.args.length + 1)));
-    return out;
-  }
+  // The AUR's `symb` → arg1 … argn n `function`: the count of arguments, then the function on level 1.
+  const parts = (args, fn) => [...args.map(_astToRplValue), Integer(BigInt(args.length)), Name(fn, { quoted: true })];
+  if (ast.kind === 'neg') return parts([ast.arg], 'NEG');
+  if (ast.kind === 'bin') return parts([ast.l, ast.r], ast.op);
+  if (ast.kind === 'fn') return parts(ast.args, ast.name);
   return [v, Integer(1n)];
 }
 

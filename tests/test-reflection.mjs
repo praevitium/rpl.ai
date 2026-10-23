@@ -1607,25 +1607,25 @@ import { assert, runLine } from './helpers.mjs';
    OBJ→ on Symbolic — peel one AST layer onto the stack.
    ================================================================ */
 
-// `'A+B' OBJ→`  →  'A'  'B'  '+'  3
+// `'A+B' OBJ→`  →  'A'  'B'  2  '+', the AUR's arg1 … argn n function
 {
   const s = new Stack();
   s.push(parseEntry("`A+B`")[0]);
   lookup('OBJ→').fn(s);
   assert(s.depth === 4,
-    'session068: OBJ→ on 2-arg Bin leaves 4 items (l, r, op, count)');
-  const [l, r, op, cnt] = s._items;
+    'session068: OBJ→ on 2-arg Bin leaves 4 items (l, r, count, op)');
+  const [l, r, cnt, op] = s._items;
   assert(l.type === 'name' && l.id === 'A' && l.quoted,
     'session068: OBJ→ symbolic arg l is quoted Name(A)');
   assert(r.type === 'name' && r.id === 'B' && r.quoted,
     'session068: OBJ→ symbolic arg r is quoted Name(B)');
   assert(op.type === 'name' && op.id === '+' && op.quoted,
     'session068: OBJ→ symbolic head is quoted Name(+)');
-  assert(cnt.type === 'integer' && cnt.value === 3n,
-    'session068: OBJ→ symbolic count is Integer(3) for a binary head');
+  assert(cnt.type === 'integer' && cnt.value === 2n,
+    'session068: OBJ→ symbolic count is Integer(2), a binary operator\'s two arguments, as the AUR has it');
 }
 
-// `'3+X' OBJ→`  →  Integer(3)  'X'  '+'  3
+// `'3+X' OBJ→`  →  Integer(3)  'X'  2  '+'
 {
   const s = new Stack();
   s.push(parseEntry("`3+X`")[0]);
@@ -1636,24 +1636,24 @@ import { assert, runLine } from './helpers.mjs';
     'session068: OBJ→ 3+X left-arg unwraps to the exact integer 3');
   assert(s._items[1].type === 'name' && s._items[1].id === 'X',
     'session068: OBJ→ 3+X right-arg is Name(X)');
-  assert(s._items[3].type === 'integer' && s._items[3].value === 3n,
-    'session068: OBJ→ 3+X count is 3');
+  assert(s._items[2].type === 'integer' && s._items[2].value === 2n && s._items[3].type === 'name' && s._items[3].id === '+',
+    'session068: OBJ→ 3+X gives the argument count 2, then the function + on level 1');
 }
 
-// `'SIN(X+1)' OBJ→`  →  Symbolic('X+1')  'SIN'  2
+// `'SIN(X+1)' OBJ→`  →  Symbolic('X+1')  1  'SIN'
 {
   const s = new Stack();
   s.push(parseEntry("`SIN(X+1)`")[0]);
   lookup('OBJ→').fn(s);
   assert(s.depth === 3,
-    'session068: OBJ→ on a unary Fn leaves 3 items (arg, fn, count)');
-  const [arg, fn, cnt] = s._items;
+    'session068: OBJ→ on a unary Fn leaves 3 items (arg, count, fn)');
+  const [arg, cnt, fn] = s._items;
   assert(arg.type === 'symbolic' && arg.expr.kind === 'bin' && arg.expr.op === '+',
     'session068: OBJ→ SIN(X+1): non-leaf argument stays Symbolic');
   assert(fn.type === 'name' && fn.id === 'SIN' && fn.quoted,
     'session068: OBJ→ SIN(X+1) head is quoted Name(SIN)');
-  assert(cnt.type === 'integer' && cnt.value === 2n,
-    'session068: OBJ→ SIN(X+1) count is 2 (arg + head)');
+  assert(cnt.type === 'integer' && cnt.value === 1n,
+    'session068: OBJ→ SIN(X+1) count is 1, its one argument');
 }
 
 // Leaf Var: 'X' OBJ→  →  'X'  1  (single-layer)
@@ -1684,17 +1684,17 @@ import { assert, runLine } from './helpers.mjs';
     'session068: OBJ→ leaf Num count is 1');
 }
 
-// Neg: '-X' OBJ→  →  'X'  'NEG'  2
+// Neg: '-X' OBJ→  →  'X'  1  'NEG'
 {
   const s = new Stack();
   s.push(parseEntry("`-X`")[0]);
   lookup('OBJ→').fn(s);
   assert(s.depth === 3,
     'session068: OBJ→ on Neg leaves 3 items');
-  assert(s._items[1].type === 'name' && s._items[1].id === 'NEG',
-    'session068: OBJ→ Neg head is Name(NEG)');
-  assert(s._items[2].type === 'integer' && s._items[2].value === 2n,
-    'session068: OBJ→ Neg count is 2');
+  assert(s._items[2].type === 'name' && s._items[2].id === 'NEG',
+    'session068: OBJ→ Neg head is Name(NEG), on level 1');
+  assert(s._items[1].type === 'integer' && s._items[1].value === 1n,
+    'session068: OBJ→ Neg count is 1');
 }
 
 // Multi-arg function: lift a fake Fn with two args and verify the shape.
@@ -1706,11 +1706,11 @@ import { assert, runLine } from './helpers.mjs';
   }));
   lookup('OBJ→').fn(s);
   assert(s.depth === 4,
-    'session068: OBJ→ on 2-arg Fn leaves 4 items (a1, a2, fn, count)');
-  assert(s._items[2].type === 'name' && s._items[2].id === 'GCD',
-    'session068: OBJ→ 2-arg Fn head is Name(GCD)');
-  assert(s._items[3].type === 'integer' && s._items[3].value === 3n,
-    'session068: OBJ→ 2-arg Fn count is N+1 = 3');
+    'session068: OBJ→ on 2-arg Fn leaves 4 items (a1, a2, count, fn)');
+  assert(s._items[3].type === 'name' && s._items[3].id === 'GCD',
+    'session068: OBJ→ 2-arg Fn head is Name(GCD), on level 1');
+  assert(s._items[2].type === 'integer' && s._items[2].value === 2n,
+    'session068: OBJ→ 2-arg Fn count is its 2 arguments, as the AUR has it, where it was N+1 = 3 after the function');
 }
 
 /* session345: the two defensive arms of _symbolicDecompose (ops.js ~269)
