@@ -101,7 +101,7 @@ const plottable = (value) => plottableFormula(value) || (isList(value) && value.
 // What OBJ→ breaks into parts; a string has STR→ instead, and a number comes back whole.
 const takesApart = (value) => [isList, isVector, isMatrix, isComplex, isTagged, isUnit, isProgram, isSymbolic].some((is) => is(value));
 // Level actions that run a command on the level and a name: solve:X runs 'X' SOLVE.
-const NAMED_LEVEL_OPS = Object.freeze({ solve: 'SOLVE', deriv: 'DERIV' });
+const NAMED_LEVEL_OPS = Object.freeze({ solve: 'SOLVE', deriv: 'DERIV', integ: 'RISCH' });
 
 const modulusNote = () => `The modular commands work modulo ${getCasModulo()}`;
 
@@ -1101,6 +1101,9 @@ class App {
     // On level 1 ROLL and ROLLD do nothing, and DUPN and DRPN repeat PICK and Drop.
     const deeper = level > 1;
     const span = deeper ? `levels 1–${level}` : 'level 1';
+    const mainVariable = isSymbolic(value) ? primaryVariable(value.expr) : null;
+    // Giac integrates no equation, so RISCH would hand one back unevaluated.
+    const integrable = mainVariable && value.expr.op !== '=';
     const groups = [
       [item('edit', 'edit', 'Edit', shortcutText('level.edit')), item('view', 'expand', 'View full size (VIEW)', shortcutText('level.view'))],
       [
@@ -1130,7 +1133,8 @@ class App {
         isSymbolic(value) ? item('expand', 'chr', 'Expand (EXPAND)') + item('factor', 'chr', 'Factor (FACTOR)') : '',
         // Three unknowns at most keep the menu short; SOLVE on the command line takes any name.
         isSymbolic(value) ? variablesOf(value.expr).slice(0, 3).map((name) => item(`solve:${escapeHtml(name)}`, 'chr', `Solve for ${name} (SOLVE)`)).join('') : '',
-        isSymbolic(value) && primaryVariable(value.expr) ? item(`deriv:${escapeHtml(primaryVariable(value.expr))}`, 'chr', `Differentiate by ${primaryVariable(value.expr)} (DERIV)`) : '',
+        mainVariable ? item(`deriv:${escapeHtml(mainVariable)}`, 'chr', `Differentiate by ${mainVariable} (DERIV)`) : '',
+        integrable ? item(`integ:${escapeHtml(mainVariable)}`, 'chr', `Integrate by ${mainVariable} (RISCH)`) : '',
         isMatrix(value) && value.rows.length === value.rows[0]?.length ? item('inv', 'chr', 'Inverse (INV)') + item('det', 'chr', 'Determinant (DET)') + item('egvl', 'chr', 'Eigenvalues (EGVL)') : '',
         isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') + item('rref', 'chr', 'Row reduce (RREF)') : '',
         isVector(value) ? item('abs', 'chr', 'Length (ABS)') : '',
