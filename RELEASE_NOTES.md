@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.67 (2026-10-23)
+**Latest release:** v0.8.68 (2026-10-23)
 
 ---
 
@@ -20,6 +20,17 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.68 — 2026-10-23
+
+- Fixed: a plot left every name but its variable undefined, so after
+  `2 'A' STO` plotting `A*X^2` showed an empty grid; as on the HP, a name
+  now takes the number its variable holds.
+- Added: an algebraic level's menu offers Integrate by its main variable
+  (RISCH) beside Differentiate by, so `Y^2-3*Y+2` gives
+  `Y^3/3-3*Y^2/2+2*Y` with one tap, with Undo.
+- Improved: a function plot whose formula holds a name with no number
+  says which one to store, where it showed a blank grid without a word.
 
 ## v0.8.67 — 2026-10-23
 

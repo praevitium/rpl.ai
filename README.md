@@ -126,8 +126,8 @@ RPL puts the numbers first and the operation last. Each value goes on the
 - **Algebra.** Push `` `X^2-4` `` and run `FACTOR` for `(X−2)(X+2)`, or
   `` `X^2-5*X+6=0` `X` SOLVE `` for `{ X=2 X=3 }`; an algebraic level's
   menu offers Expand (EXPAND), Factor (FACTOR), Solve for each of its
-  first three unknowns (SOLVE) and Differentiate by its main variable
-  (DERIV) too. The ` key stands in for
+  first three unknowns (SOLVE), and Differentiate by (DERIV) and Integrate
+  by (RISCH) its main variable too. The ` key stands in for
   the HP's ' key, and the command line reads apostrophes too: `'X^2-4'`
   is the same object. EVAL gathers like terms and factors: `'X+X+1+2'` gives
   `2*X+3` and `'X*X/X^3'` gives `1/X`. Or press `⌘E`, type `x^2-5x+6=0`, and
@@ -771,7 +771,9 @@ and `PLOTADD` adds another; `DRAW` plots what EQ holds as PPAR's plot type,
 as on the HP, so `` `SIN(X)` STEQ DRAW `` draws the sine. A list of formulas
 plots every one of them, as the HP draws each equation in a list in EQ:
 `` { `SIN(X)` `COS(X)` } FUNCTION ``, `PLOT` of that list, the Plot of a list
-level and the plot view's + Level 1 all draw both.
+level and the plot view's + Level 1 all draw both. Other names take the
+numbers their variables hold, so `` 2 `A` STO `A*X^2` `` plots 2X², and a
+note names any that hold none.
 `` 2 -3 1.5 EYEPT `SIN(X*3)*COS(Y*3)` WIREFRAME `` shows the surface from
 that eye point inside VPAR's view volume, and `FAST3D` draws one you turn
 with a drag or the arrow keys, as the 50g's arrow keys turn it;
