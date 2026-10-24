@@ -1002,6 +1002,28 @@ function quotaError() {
   assert(getHeaderLines() === 2 && getKeyTime() === 1138, 'a save from before them loads with 2 header lines and 1138 ticks');
 }
 
+// STMXE's exponent range and →NDISP's line count are kept as →HEADER and →KEYTIME are.
+{
+  const { setRealMaxExp, getRealMaxExp, setProgramLines } = await import('../www/src/rpl/state.js');
+  setRealMaxExp(300);
+  setProgramLines(4);
+  const saved = JSON.parse(JSON.stringify(snapshot(new Stack())));
+  setRealMaxExp(499);
+  setProgramLines(9);
+  rehydrate(saved, new Stack());
+  assert(getRealMaxExp() === 300 && calcState.programLines === 4, 'STMXE and →NDISP settings come back');
+  for (const [range, lines] of [[5, 0], [1e20, -3], [2.5, 2.5], ['300', '4'], [null, null]]) {
+    rehydrate({ ...saved, realMaxExp: range, programLines: lines }, new Stack());
+    assert(getRealMaxExp() === 499 && calcState.programLines === 9, `a saved range ${JSON.stringify(range)} and line count ${JSON.stringify(lines)} load as the defaults 499 and 9`);
+  }
+  const legacy = { ...saved };
+  delete legacy.realMaxExp;
+  delete legacy.programLines;
+  setRealMaxExp(300);
+  rehydrate(legacy, new Stack());
+  assert(getRealMaxExp() === 499 && calcState.programLines === 9, 'a save from before them loads with 499 and 9');
+}
+
 {
   resetHome();
   const { Var: AstVar, Bin: AstBin } = await import('../www/src/rpl/algebra.js');

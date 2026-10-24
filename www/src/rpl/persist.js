@@ -15,7 +15,7 @@
 
 import {
   state, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo, setRealAssume,
-  ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX, isModeFlag,
+  ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX, REAL_MAX_EXP_DEFAULT, REAL_MAX_EXP_MIN, REAL_MAX_EXP_MAX, isModeFlag,
 } from './state.js';
 import { TYPES, Decimal, BIN_BASES, Grob, isStorableHpName, bigintText, isStackOverflow } from './types.js';
 import { RPLError } from './stack.js';
@@ -118,6 +118,8 @@ export function snapshot(stack) {
     standardKeys: state.standardKeys,
     headerLines: state.headerLines,
     keyTime: state.keyTime,
+    programLines: state.programLines,
+    realMaxExp: state.realMaxExp,
     clockOffset: state.clockOffset,
   };
 }
@@ -243,6 +245,9 @@ export function rehydrate(snap, stack) {
   state.standardKeys = snap.standardKeys !== false;
   state.headerLines = [0, 1, 2].includes(snap.headerLines) ? snap.headerLines : 2;
   state.keyTime = Number.isInteger(snap.keyTime) && snap.keyTime >= 0 && snap.keyTime <= 4096 ? snap.keyTime : 1138;
+  state.programLines = Number.isInteger(snap.programLines) && snap.programLines >= 1 ? snap.programLines : 9;
+  const maxExp = snap.realMaxExp;
+  state.realMaxExp = Number.isInteger(maxExp) && maxExp >= REAL_MAX_EXP_MIN && maxExp <= REAL_MAX_EXP_MAX ? maxExp : REAL_MAX_EXP_DEFAULT;
   state.clockOffset = Number.isFinite(snap.clockOffset) ? snap.clockOffset : 0;
 
   stack.restore(items);
