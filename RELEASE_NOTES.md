@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.73 (2026-10-23)
+**Latest release:** v0.8.74 (2026-10-24)
 
 ---
 
@@ -20,6 +20,23 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.74 — 2026-10-24
+
+- Fixed: a minus that starts a product or quotient printed in brackets, so
+  `'-X*Y'` came back from the stack as `(-X)*Y`, `'-2*X'` as `(-2)*X` and a
+  Giac result as `(-4)*P^3 + 27*Q^2`. It now prints as typed, `-X*Y`, `-2*X`
+  and `-4*P^3 + 27*Q^2`, in the same places where a minus can start the text
+  (the whole expression, an argument, the inside of brackets). After an
+  operator or under a power the brackets stay, as in `X*(-Y)` and `(-X)^2`.
+- Added: a formula on the stack opens its table of values from its ⋯ menu,
+  with no plot drawn. A list of formulas gets a column each, the x column is
+  named after the formula's own variable (T for `T^2-3*T+2`, and a formula in
+  A alone is tabulated in A), and a name with no value says so.
+- Improved: the table of values fits a phone better. Its paging keys sit with
+  the step keys, so the sheet has no footer: a 280 px screen shows 9 rows
+  where it showed 7 and a landscape phone 5 where it showed 2. A short window
+  drops the hint under the table.
 
 ## v0.8.73 — 2026-10-23
 
