@@ -1122,6 +1122,42 @@ function quotaError() {
   }
 }
 
+// A draft that was an edit of a level or variable keeps where it was and a hash of what it began from.
+{
+  const saved = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
+  try {
+    saveDraft({ text: '« 1 2 + »', cursor: 3, edit: { kind: 'var', name: 'PRG', was: -123456 } });
+    let back = loadDraft();
+    assert(back.text === '« 1 2 + »' && back.edit.kind === 'var' && back.edit.name === 'PRG' && back.edit.was === -123456 && back.edit.level === undefined,
+      'edit draft: a variable edit comes back with its name and hash');
+    saveDraft({ text: '7', cursor: 1, edit: { kind: 'level', level: 2, was: 9, line: true } });
+    back = loadDraft();
+    assert(back.edit.kind === 'level' && back.edit.level === 2 && back.edit.line === true && back.edit.name === undefined, 'edit draft: a level edit comes back with its level and the line flag');
+    saveDraft({ text: '7', cursor: 1 });
+    assert(loadDraft().edit === undefined, 'edit draft: a draft that is no edit has none');
+    for (const [name, edit] of [
+      ['a level that is no whole number', { kind: 'level', level: 'a', was: 1 }],
+      ['level 0', { kind: 'level', level: 0, was: 1 }],
+      ['a fractional level', { kind: 'level', level: 1.5, was: 1 }],
+      ['an empty variable name', { kind: 'var', name: '', was: 1 }],
+      ['a variable name over 200 characters', { kind: 'var', name: 'N'.repeat(201), was: 1 }],
+      ['a variable name that is no text', { kind: 'var', name: 5, was: 1 }],
+      ['an unknown kind', { kind: 'x', level: 1, was: 1 }],
+      ['no hash', { kind: 'level', level: 1 }],
+      ['a hash that is no whole number', { kind: 'level', level: 1, was: 0.5 }],
+      ['no object', 5],
+    ]) {
+      store.set(DRAFT_KEY, JSON.stringify({ text: '1 2 +', cursor: 2, edit }));
+      const d = loadDraft();
+      assert(d && d.text === '1 2 +' && d.edit === undefined, `edit draft: ${name} is dropped and the line stays`);
+    }
+  } finally {
+    globalThis.localStorage = saved;
+  }
+}
+
 // The lines entered are kept, as the HP keeps its last command lines through power-off.
 {
   const saved = globalThis.localStorage;

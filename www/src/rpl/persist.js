@@ -361,6 +361,15 @@ function readWriter(writer) {
   return shaped ? { mode: 'matrix', saved: { grid: grid.map((row) => row.map((c) => String(c ?? ''))), asVector: !!asVector, focus: at } } : null;
 }
 
+// The level or variable a draft was an edit of, by where it is and a hash of the value it started from, or null when what was saved
+// is not that.
+function readEdit(edit) {
+  const named = edit?.kind === 'var' && typeof edit.name === 'string' && edit.name.length > 0 && edit.name.length <= 200;
+  const leveled = edit?.kind === 'level' && Number.isInteger(edit.level) && edit.level >= 1;
+  if (!(named || leveled) || !Number.isInteger(edit.was)) return null;
+  return { kind: edit.kind, ...(leveled ? { level: edit.level } : { name: edit.name }), ...(edit.line === true && { line: true }), was: edit.was };
+}
+
 export function loadDraft() {
   try {
     const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null');
@@ -368,7 +377,8 @@ export function loadDraft() {
     const writer = readWriter(draft?.writer);
     if (!text.trim() && !writer) return null;
     const cursor = Number.isInteger(draft.cursor) ? Math.max(0, Math.min(draft.cursor, text.length)) : text.length;
-    return { text, cursor, ...(writer && { writer }) };
+    const edit = readEdit(draft.edit);
+    return { text, cursor, ...(writer && { writer }), ...(edit && { edit }) };
   } catch { return null; }
 }
 

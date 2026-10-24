@@ -83,6 +83,13 @@ const SIGMA_DATA_KEYS = ['Σ+', 'Σ-', 'CLΣ', 'STOΣ'];
 const ALARM_FRESH_MS = 60000;
 const ALARM_WAIT_MAX_MS = 3600000;
 const DRAFT_DELAY_MS = 400;
+
+// Stands for the value an edit began from, so a draft is only taken back to an edit of that value.
+function sourceHash(value) {
+  let hash = 0;
+  for (const c of formatSource(value)) hash = (Math.imul(hash, 31) + c.codePointAt(0)) | 0;
+  return hash;
+}
 const BEEP_BUZZ_MAX_S = 5;
 // The mode commands whose keys mark the mode in force, as the HP's DEG■ and HEX■ do: [state field, value].
 const MODE_KEYS = Object.freeze({
@@ -288,7 +295,18 @@ class App {
     if (!draft) return;
     this.entry.resetBuffer(draft.text);
     this.entry.cursor = draft.cursor;
+    if (draft.edit) this._restoreEdit(draft.edit);
     if (draft.writer) this._restoreWriter(draft.writer);
+  }
+
+  // A level or variable being edited is edited again, if its value is still the one the edit began from; else the text stays as a line.
+  _restoreEdit({ kind, level, name, line, was }) {
+    const value = kind === 'level' ? (level <= this.stack.depth ? this.stack.peek(level) : undefined) : varRecall(name);
+    if (value === undefined || sourceHash(value) !== was) return;
+    const target = kind === 'level' ? { level, label: `Editing level ${level}` } : { name, label: `Editing ${name}` };
+    this.pendingEdit = { kind, value, line, was, ...target };
+    this.renderStatus();
+    this.input.render();
   }
 
   // A formula or matrix being written comes back open, as the line does; one that cannot be put back is left out.
@@ -319,13 +337,22 @@ class App {
     addEventListener('pagehide', keep);
   }
 
-  // What a reload brings back: the plain command line and the formula or matrix being written, not a level or variable being
-  // edited or a dialog's answer. A writer is saved as the page is hidden, and forgotten when it closes.
+  // What a reload brings back: the command line, the formula or matrix being written and the level or variable it edits, not a
+  // dialog's answer. A writer is saved as the page is hidden, and forgotten when it closes.
   _draft() {
-    if (this.pendingEdit || this._dialogHalt) return null;
+    if (this._dialogHalt) return null;
     const text = this.entry.buffer;
     const writer = this._writerDraft();
-    return text.trim() || writer ? { text, cursor: this.entry.cursor, ...(writer && { writer }) } : null;
+    const edit = this._editDraft();
+    return text.trim() || writer ? { text, cursor: this.entry.cursor, ...(writer && { writer }), ...(edit && { edit }) } : null;
+  }
+
+  _editDraft() {
+    const edit = this.pendingEdit;
+    if (!edit) return null;
+    edit.was ??= sourceHash(edit.value);
+    const { kind, level, name, line, was } = edit;
+    return { kind, ...(kind === 'level' ? { level } : { name }), ...(line && { line }), was };
   }
 
   _writerDraft() {
