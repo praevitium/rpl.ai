@@ -5,7 +5,7 @@ import { getBinaryBase } from '../rpl/state.js';
 const CORE_MESSAGES = Object.freeze([
   'Too few arguments', 'Bad argument type', 'Bad argument value', 'Infinite result',
   'Invalid dimension', 'Inconsistent units', 'Undefined local name', 'Undefined name',
-  'CAS not ready', 'Interrupted', 'Nonexistent ΣDAT', 'Nonexistent alarm', 'Undefined result',
+  'CAS not ready', 'Interrupted', 'Insufficient memory', 'Nonexistent ΣDAT', 'Nonexistent alarm', 'Undefined result',
 ]);
 
 const NUMBER_WORDS = Object.freeze(['no values', 'one value', 'two values', 'three values', 'four values', 'five values', 'six values', 'seven values', 'eight values', 'nine values']);
@@ -140,6 +140,12 @@ export const ERROR_KINDS = Object.freeze({
     title: (c) => `${c.command ?? 'That command'} ran for ${RUN_TIME_LIMIT_MS / 1000} seconds, so it was stopped.`,
     detail: () => "The page can't respond while a command runs, so a command that runs this long is stopped. The stack is back as it was. In a program, look for a loop that never ends.",
     fixes: () => [{ id: 'explain', label: 'Explain' }],
+  },
+  memory: {
+    match: (p) => p.core === 'Insufficient memory',
+    title: (c) => `${c.command ?? 'That command'} would make a result too big to hold.`,
+    detail: () => 'The result would pass what the page keeps in memory: a million digits in a number, a million entries in an array or list, or a polynomial of degree 1000. The stack is back as it was. Try a smaller size.',
+    fixes: (c) => [...(c.command ? [{ id: 'help', label: `${c.command} reference` }] : []), { id: 'explain', label: 'Explain' }],
   },
   syntax: {
     match: (p) => /^(Invalid algebraic|Bad complex literal|Syntax error|Unknown token|Malformed|Unexpected|Missing object|Empty parse|Expected one object|Text after END|(IF|IFERR|WHILE|FOR|START|CASE|DO)\b)/.test(p.core),

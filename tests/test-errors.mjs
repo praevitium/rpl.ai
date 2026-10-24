@@ -60,6 +60,7 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
     undefinedName: 'Undefined name: FOO',
     casLoading: 'FACTOR: CAS not ready',
     interrupted: 'EVAL: Interrupted',
+    memory: 'FACT: Insufficient memory',
     syntax: 'Invalid algebraic: Unexpected end of expression',
     sigmaData: 'MEAN: Nonexistent ΣDAT',
     other: 'Something new went wrong',
@@ -76,6 +77,15 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
       assert(html.includes('role="alert"') && html.includes('data-fix='), `errorBannerHtml: ${kind} renders its fixes`);
     }
   }
+}
+
+{
+  const big = describeError('FACT: Insufficient memory', ctx({ line: '300000 FACT' }));
+  assert(big.kind === 'memory' && big.title === 'FACT would make a result too big to hold.' && big.fixes.map((f) => f.id).join() === 'edit-line,help,explain'
+    && /^The result would pass what the page keeps in memory: a million digits/.test(big.detail),
+    `memory banner: Insufficient memory names the command, the limits and a smaller size, where it showed the bare message (${big.title})`);
+  assert(describeError('Insufficient memory', ctx()).title === 'That command would make a result too big to hold.',
+    'memory banner: with no command named it still reads as a sentence');
 }
 
 {
