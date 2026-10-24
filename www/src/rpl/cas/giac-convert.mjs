@@ -332,7 +332,30 @@ export function giacToAst(giacStr) {
   } catch {
     throw new RPLError(`Unsupported result: ${giacStr}`);
   }
-  return s.includes(UNIT_PREFIX) ? withUnits(ast) : ast;
+  return numbersFirst(s.includes(UNIT_PREFIX) ? withUnits(ast) : ast);
+}
+
+const isNumber = (a) => a.kind === "num" || (a.kind === "neg" && a.arg.kind === "num");
+
+// Giac writes the derivative of A*X^2 as A*2*X; a product reads with its numbers first, 2*A*X.
+function numbersFirst(ast) {
+  switch (ast.kind) {
+    case "neg":
+      return Neg(numbersFirst(ast.arg));
+    case "fn":
+      return Fn(ast.name, ast.args.map(numbersFirst));
+    case "bin": {
+      const l = numbersFirst(ast.l);
+      const r = numbersFirst(ast.r);
+      if (ast.op !== "*") return Bin(ast.op, l, r);
+      const factors = (a) => (a.kind === "bin" && a.op === "*" ? [...factors(a.l), ...factors(a.r)] : [a]);
+      const all = [...factors(l), ...factors(r)];
+      const ordered = [...all.filter(isNumber), ...all.filter((a) => !isNumber(a))];
+      return ordered.every((a, i) => a === all[i]) ? Bin("*", l, r) : ordered.reduce((acc, a) => Bin("*", acc, a));
+    }
+    default:
+      return ast;
+  }
 }
 
 const numberOf = (a) => (a.kind === "num" ? a.value : a.kind === "neg" && a.arg.kind === "num" ? -a.arg.value : null);

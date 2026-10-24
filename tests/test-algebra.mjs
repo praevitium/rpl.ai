@@ -8485,6 +8485,19 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 {
   const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
   giac._clear();
+  giac._setFixtures({
+    'diff(A*X^3+B*X^2,X)': 'A*3*X^2+B*2*X', 'diff(C*exp(2*X),X)': 'C*2*exp(2*X)', 'diff(A*X^2*B,X)': 'A*2*X*B', 'diff(A/X,X)': '-A/X^2',
+  });
+  assert(line("'A*X^3+B*X^2' DERVX") === '`3*A*X^2 + 2*B*X`' && line("'C*EXP(2*X)' DERVX") === '`2*C*EXP(2*X)`',
+    'CAS results read with the numbers of a product first: Giac\'s A*3*X^2 is 3*A*X^2');
+  assert(line("'A*X^2*B' DERVX") === '`2*A*X*B`' && line("'A/X' DERVX") === '`(-A)/X^2`',
+    'a product keeps the order of its other factors, and a quotient is left as Giac wrote it');
+  giac._clear();
+}
+
+{
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
+  giac._clear();
   giac._setFixtures({ 'solve(sin(X)-1,X)': '[1/2*pi]', 'zeros(cos(X),X)': '[1/2*pi,(-1)/2*pi]' });
   assert(line("'SIN(X)=1' 'X' SOLVE") === '{ `X = 1/2*π` }', 'SOLVE shows Giac\'s pi as π, as the rest of the app does');
   assert(line("'COS(X)' 'X' ZEROS") === '{ `(-1)/2*π` `1/2*π` }', 'ZEROS orders roots that involve π by value');
