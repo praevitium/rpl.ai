@@ -84,7 +84,8 @@ function openNames(ast, indep) {
 }
 
 export function unvaluedNames(src, indep = null) {
-  return openNames(parsePlotExpr(src), indep);
+  const form = equationForm(parsePlotExpr(src), indep);
+  return [...new Set((form.sides ?? [form.vertical]).flatMap((side) => openNames(side, indep)))];
 }
 
 // The one open name of a formula that uses none of the plot's own variables, such as the Y of Y^2-3*Y+2.
@@ -95,6 +96,28 @@ function soleOpenName(ast, indep) {
   return open.length === 1 ? open[0] : null;
 }
 
+// The HP plots an equation by its form: name = expr draws only the expression, indep = constant a vertical line and
+// expr = expr each side.
+const isEquation = (ast) => ast.kind === 'bin' && ast.op === '=';
+const isNamed = (ast) => isEquation(ast) && ast.l.kind === 'var';
+
+function equationForm(ast, indep) {
+  if (!isEquation(ast)) return { sides: [ast] };
+  if (!isNamed(ast)) return { sides: [ast.l, ast.r] };
+  const own = Object.keys(bindIndependentVariable(0, indep)).map((name) => name.toLowerCase());
+  const constant = ![...freeVars(ast.r)].some((name) => own.includes(name.toLowerCase()));
+  return own.includes(ast.l.name.toLowerCase()) && constant ? { vertical: ast.r } : { sides: [ast.r] };
+}
+
+// The two sides of expr = expr become a trace each, so each keeps its colour and the plot tools can find where they cross.
+export function splitEquation(spec) {
+  if (spec.kind !== 'function' || !spec.expr) return [spec];
+  let sides;
+  try { sides = equationForm(parsePlotExpr(spec.expr), null).sides; } catch { return [spec]; }
+  if (sides?.length !== 2) return [spec];
+  return sides.map((side) => { const expr = valueToEquationDraft(Symbolic(side)); return { ...spec, expr, label: expr }; });
+}
+
 // Plot it draws such a formula along that name, as the equation writer draws its own variable: the name takes X's
 // place. Gives the value to plot and the names that moved.
 export function alongOpenName(value, indep = null) {
@@ -102,7 +125,7 @@ export function alongOpenName(value, indep = null) {
   const along = (v) => {
     if (isTagged(v)) { const inner = along(v.value); return inner === v.value ? v : Tagged(v.tag, inner); }
     if (isList(v)) { const items = v.items.map(along); return items.every((item, i) => item === v.items[i]) ? v : RList(items); }
-    const name = isSymbolic(v) ? soleOpenName(v.expr, indep) : null;
+    const name = isSymbolic(v) && !isNamed(v.expr) ? soleOpenName(v.expr, indep) : null;
     if (!name) return v;
     moved.push(name);
     return Symbolic(renameVariable(v.expr, name, 'X'));
@@ -1103,14 +1126,20 @@ export const TRACE_KINDS = Object.freeze({
       const view = ctx.view;
       const xs = functionSampling(ctx);
       if (!xs) return [];
-      return sampleFunction(
-        parsePlotExpr(t.expr), xs.from, xs.to, xs.count, ctx.env,
+      const form = equationForm(parsePlotExpr(t.expr), ctx.indep?.name);
+      if (form.vertical) {
+        const x = evalNumeric(form.vertical, ctx.env ?? {}, ctx.angleOpts || {});
+        return Number.isFinite(x) && inIndepRange(ctx, x) ? [[[x, view.ymin], [x, view.ymax]]] : [];
+      }
+      return form.sides.flatMap((side) => sampleFunction(
+        side, xs.from, xs.to, xs.count, ctx.env,
         { ...ctx.angleOpts, ySpan: view.ymax - view.ymin, indep: ctx.indep?.name },
-      );
+      ));
     },
     evalAt(t, x, ctx) {
       if (!t.expr || !inIndepRange(ctx, x)) return NaN;
-      return evalNumeric(parsePlotExpr(t.expr), bindIndependentVariable(x, ctx.indep?.name), ctx.angleOpts || {});
+      const { sides } = equationForm(parsePlotExpr(t.expr), ctx.indep?.name);
+      return sides?.length === 1 ? evalNumeric(sides[0], bindIndependentVariable(x, ctx.indep?.name), ctx.angleOpts || {}) : NaN;
     },
     fromStack(v) { return expressionFromStack('function', v); },
     toStack: expressionToStack,
@@ -1466,10 +1495,15 @@ function clearOfTools(view, { width, height, tools }, dataX) {
   return view;
 }
 
+// A vertical line has no height of its own to fit.
+function isVertical(t, indep) {
+  try { return t.kind === 'function' && !!t.expr && !!equationForm(parsePlotExpr(t.expr), indep).vertical; } catch { return false; }
+}
+
 export function fitViewToTraces(traces, view, opts = {}) {
   const v = view || defaultView();
   const shown = (traces || []).filter((t) => t && t.enabled !== false);
-  const functions = shown.filter((t) => !isDataTrace(t));
+  const functions = shown.filter((t) => !isDataTrace(t) && !isVertical(t, opts.indep?.name));
   const xy = shown.filter(isDataTrace).flatMap((t) => sampleTraceForFit(t, v, opts));
   if (!xy.length) {
     const ys = functions.flatMap((t) => sampleTraceForFit(t, v, opts));

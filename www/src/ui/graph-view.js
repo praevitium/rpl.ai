@@ -2,7 +2,7 @@ import {
   TRACE_COLORS, TRACE_KINDS, nextTraceColor, defaultView, zoomView, panView, pinchView, DEFAULT_TURN, turnBy,
   worldToPixel, pixelToWorld, axisTicks, hasUsableSpan, cursorPoint, stepCursor,
   sampleTrace, fitViewToTraces, evalTraceAtX, slopeAt, nearestRoot, nearestExtremum, integrateFunction,
-  stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace, unvaluedNames,
+  stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace, unvaluedNames, splitEquation,
 } from './plot-engine.js';
 import { escapeHtml, markScrollEdges } from './display.js';
 import { icon } from './icons.js';
@@ -594,6 +594,11 @@ export class GraphView {
   }
 
   _addTrace(partial, { fit = false, draw = true, view = null } = {}) {
+    const parts = splitEquation(partial);
+    if (parts.length > 1) {
+      const last = parts.length - 1;
+      return parts.map((part, i) => this._addTrace(part, { fit: fit && i === last, draw: draw && i === last, view }))[last];
+    }
     const first = !this.traces.length;
     const t = makeTrace(partial);
     this.traces.push(t);

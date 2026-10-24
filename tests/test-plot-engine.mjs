@@ -5,7 +5,7 @@ import {
   pixelToWorld, zoomView, panView, pinchView, defaultView, boundsOfPoints,
   valueToPoints, valuesFromColumn, histogram, evalFitModel, sampleFit, sampleDiffEq,
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
-  evalTraceAtX, sampleTrace, traceInputError, axisTicks, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace, unvaluedNames, alongOpenName,
+  evalTraceAtX, sampleTrace, traceInputError, axisTicks, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace, unvaluedNames, alongOpenName, splitEquation,
   DEFAULT_TURN, turnBy, evalComplex, TRACE_KINDS, cursorPoint, stepCursor, slopeAt, nearestRoot, nearestExtremum, integrateFunction,
 } from '../www/src/ui/plot-engine.js';
 import { Matrix, Vector, Real, Integer, Symbolic, Program, RList, Tagged, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
@@ -66,6 +66,45 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(unvaluedNames('PLA*X').join() === 'PLA', 'unvaluedNames: a variable holding a formula has no number');
   varPurge('PLA');
   varPurge('X');
+}
+
+{
+  const { varStore, varPurge } = await import('../www/src/rpl/state.js');
+  const fn = (expr) => ({ kind: 'function', expr });
+  const view = { xmin: -10, xmax: 10, ymin: -5, ymax: 5 };
+  const draw = (t, opts = {}) => sampleTrace(t, view, { width: 240, ...opts });
+  const named = draw(fn('Y=2*X'));
+  assert(named.length === 1 && named[0][0][0] === -10 && named[0][0][1] === -20, 'equation plot: name = expr draws only the expression');
+  assert(evalTraceAtX(fn('Y=2*X'), 3) === 6, 'equation plot: name = expr reads out the expression');
+  assert(unvaluedNames('Y=2*X').length === 0 && unvaluedNames('A*X=B').join() === 'A,B' && unvaluedNames('X=3').length === 0,
+    'equation plot: the name before = is no open name, the sides are');
+  const flat = draw(fn('Y=3'));
+  assert(flat.length === 1 && flat[0].every(([, y]) => y === 3), 'equation plot: Y=3 is a horizontal line');
+  const line = draw(fn('X=3'));
+  assert(JSON.stringify(line) === '[[[3,-5],[3,5]]]', `equation plot: indep = constant is a vertical line across the window (${JSON.stringify(line)})`);
+  assert(Number.isNaN(evalTraceAtX(fn('X=3'), 3)), 'equation plot: a vertical line has no y to read out');
+  assert(Math.abs(draw(fn('X=PI/2'))[0][0][0] - Math.PI / 2) < 1e-10, 'equation plot: the constant is evaluated');
+  varStore('PLC', Integer(2n));
+  assert(draw(fn('X=PLC'))[0][0][0] === 2, 'equation plot: a stored number is a constant');
+  varPurge('PLC');
+  assert(draw(fn('X=A')).length === 0, 'equation plot: an open name leaves the line out');
+  assert(draw(fn('X=3'), { indep: { name: 'X', range: [0, 2] } }).length === 0, "equation plot: a vertical line outside INDEP's range is left out");
+  assert(draw(fn('Q=3'), { indep: { name: 'Q' } })[0][0][0] === 3, "equation plot: PPAR's independent variable makes the vertical line");
+  assert(draw(fn('Q=3'))[0].every(([, y]) => y === 3), 'equation plot: any other name before = is the dependent variable');
+  const sides = splitEquation(fn('X^2=4'));
+  assert(sides.length === 2 && sides.every((t) => t.kind === 'function')
+    && evalTraceAtX(sides[0], 3) === 9 && evalTraceAtX(sides[1], 3) === 4 && sides[0].label === sides[0].expr,
+    'equation plot: expr = expr becomes a trace for each side');
+  for (const t of [fn('Y=2*X'), fn('X=3'), fn('SIN(X)'), fn('X^2 ='), { kind: 'polar', expr: 'X^2=4' }]) {
+    assert(splitEquation(t).length === 1 && splitEquation(t)[0] === t, `equation plot: ${t.expr} stays one trace`);
+  }
+  assert(draw(fn('X^2=4')).length === 2, 'equation plot: a trace that still holds both sides draws both');
+  assert(JSON.stringify(fitViewToTraces([fn('X=3')], view)) === JSON.stringify(view), 'equation plot: a vertical line leaves the fit alone');
+  assert(JSON.stringify(fitViewToTraces([fn('X=3'), fn('X^2')], view)) === JSON.stringify(fitViewToTraces([fn('X^2')], view)), 'equation plot: a vertical line adds nothing to the fit');
+  const alone = alongOpenName(Symbolic(parseAlgebra('Y=3')));
+  assert(alone.moved.length === 0 && formatAlgebra(alone.value.expr) === formatAlgebra(parseAlgebra('Y=3')), 'alongOpenName: name = expr keeps its name, which is the dependent variable');
+  const both = alongOpenName(Symbolic(parseAlgebra('Y^2=4')));
+  assert(both.moved.join() === 'Y' && formatAlgebra(both.value.expr) === formatAlgebra(parseAlgebra('X^2=4')), 'alongOpenName: expr = expr draws along its open name');
 }
 
 {
