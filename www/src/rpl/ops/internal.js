@@ -368,7 +368,7 @@ function _rationalBinary(op, a, b) {
       r = fa.div(fb);
       break;
     case '^': {
-      if (fb.d === 1n) { r = fa.pow(fb); break; }
+      if (fb.d === 1n) { _checkBigPower(fa.n > fa.d ? fa.n : fa.d, fb.n); r = fa.pow(fb); break; }
       // A fractional exponent stays symbolic in EXACT mode so 2^(1/3) remains exact, unless the root comes out.
       if (!getApproxMode()) {
         const exact = _exactPower(fa, fb);
@@ -647,10 +647,14 @@ function integerBinary(op, a, b) {
 // The HP holds an integer in its memory, a few million digits at most; a bigger one is not worth a frozen page.
 const MAX_INTEGER_DIGITS = 1_000_000;
 
-function _bigPower(a, b) {
+function _checkBigPower(a, b) {
   const mag = a < 0n ? -a : a;
   const log10 = Number.isFinite(Number(mag)) ? Math.log10(Number(mag)) : mag.toString().length - 1;
   if (mag > 1n && Number(b) * log10 > MAX_INTEGER_DIGITS) throw new RPLError('Insufficient memory');
+}
+
+function _bigPower(a, b) {
+  _checkBigPower(a, b);
   return a ** b;
 }
 

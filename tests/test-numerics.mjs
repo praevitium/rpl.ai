@@ -7493,4 +7493,6 @@ function _arrayEq(a, b) {
   assert(top('2 1000000 ^ SIZE') === '301030' && top('2 -10 ^') === '1/1024', 'an exact integer power of a million bits or so still comes out');
   assertThrows(() => runLine('2 4000000 ^'), /Insufficient memory/, 'an exact integer power of over a million digits says Insufficient memory');
   assertThrows(() => runLine('7 -3000000 ^'), /Insufficient memory/, 'the same holds for the fraction a negative exponent makes');
+  assertThrows(() => runLine('1/3 99999999999 ^'), /Insufficient memory/, 'and for a fraction raised to a huge power, which stopped the page');
+  assert(top('1/3 20 ^') === '1/3486784401' && top('2/3 -5 ^') === '243/32', 'a fraction to a modest power still comes out exact');
 }
