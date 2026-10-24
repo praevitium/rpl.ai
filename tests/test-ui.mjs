@@ -3025,8 +3025,8 @@ setAngle('RAD');
       && appSrc.includes("case 'strto': runOn('STR→'); return;"),
       'a string level offers Run its text (STR→) where Evaluate (EVAL) gave the string back unchanged');
     assert(appSrc.includes("      isString(value) ? { label: 'STR→', title: 'Run its text', onPress: act('strto') } : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },")
-      && appSrc.includes("      ...(plottable(value) ? [{ label: 'PLOT', title: 'Plot it', onPress: act('plot') }] : []),"),
-      'the interactive stack soft keys show STR→ on a string, as its menu does, and a formula keeps EVAL with PLOT after it, where PLOT took EVAL\'s place');
+      && appSrc.includes("      ...(plottable(value) ? [{ label: 'PLOT', title: 'Plot it', onPress: act('plot') }, { label: 'TABLE', title: 'Its table of values', onPress: act('table') }] : []),"),
+      'the interactive stack soft keys show STR→ on a string, as its menu does, and a formula keeps EVAL with PLOT and TABLE after it, where PLOT took EVAL\'s place');
     assert(/isReal\(value\)\s*\? \{ label: '→Q', title: 'To a fraction', onPress: act\('toq'\) \}\s*: isBinaryInteger\(value\) \? \{ label: 'B→R', title: 'To a real number', onPress: act\('btor'\) \}\s*: \{ label: '→NUM', title: 'Evaluate to a number', onPress: act\('num'\) \},/.test(appSrc),
       'the interactive stack soft keys show →Q on a decimal and B→R on a binary integer where →NUM did nothing, as its menu does');
     assert(appSrc.includes("isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : ") && appSrc.includes("case 'toq': runOn('→Q'); return;"),

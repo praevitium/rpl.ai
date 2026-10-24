@@ -1893,7 +1893,7 @@ class App {
       { label: 'LEVEL', title: `Push the level number, ${level}`, onPress: act('level') },
       { label: 'INFO', title: 'Its type and size', onPress: act('info') },
       isString(value) ? { label: 'STR→', title: 'Run its text', onPress: act('strto') } : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },
-      ...(plottable(value) ? [{ label: 'PLOT', title: 'Plot it', onPress: act('plot') }] : []),
+      ...(plottable(value) ? [{ label: 'PLOT', title: 'Plot it', onPress: act('plot') }, { label: 'TABLE', title: 'Its table of values', onPress: act('table') }] : []),
       isReal(value)
         ? { label: '→Q', title: 'To a fraction', onPress: act('toq') }
         : isBinaryInteger(value) ? { label: 'B→R', title: 'To a real number', onPress: act('btor') }
