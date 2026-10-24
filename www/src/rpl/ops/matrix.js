@@ -1047,48 +1047,69 @@ function _polyScale(arr, k) {
 
 
 function _polyShiftUp(arr) {
-  return arr.concat([0]);
+  return arr.concat([0n]);
 }
 
 
 function _polyAdd(a, b) {
   const la = a.length, lb = b.length;
   const L = Math.max(la, lb);
-  const out = new Array(L).fill(0);
+  const out = new Array(L).fill(0n);
   for (let i = 0; i < la; i++) out[L - la + i] += a[i];
   for (let i = 0; i < lb; i++) out[L - lb + i] += b[i];
   return out;
 }
 
 
-// p₀ = 1, p₁ given, p_{k+1} = step(p_k, p_{k-1}, k); coefficients in descending degree.
+// A degree past this has coefficients of a million digits between them.
+const MAX_POLY_DEGREE = 1000;
+
+// p₀ = 1, p₁ given, p_{k+1} = step(p_k, p_{k-1}, k); BigInt coefficients in descending degree.
 function _recurrencePoly(n, p1, step) {
-  if (n === 0) return [1];
-  let prev = [1];
+  if (n > MAX_POLY_DEGREE) throw new RPLError('Insufficient memory');
+  if (n === 0) return [1n];
+  let prev = [1n];
   let curr = p1;
   for (let k = 1; k < n; k++) {
     checkTimeLimit();
-    [prev, curr] = [curr, step(curr, prev, k)];
+    [prev, curr] = [curr, step(curr, prev, BigInt(k))];
   }
   return curr;
 }
 
-const _chebyshevStep = (p, prev) => _polyAdd(_polyScale(_polyShiftUp(p), 2), _polyScale(prev, -1));
+const _chebyshevStep = (p, prev) => _polyAdd(_polyScale(_polyShiftUp(p), 2n), _polyScale(prev, -1n));
 
 
 register('HERMITE', (s) => {
   const [v] = s.popN(1);
   const n = _nFromIntegerArg(v);
-  s.push(_coefArrToSymbolicX(_recurrencePoly(n, [2, 0],
-    (p, prev, k) => _polyAdd(_polyScale(_polyShiftUp(p), 2), _polyScale(prev, -2 * k)))));
+  s.push(_coefArrToSymbolicX(_recurrencePoly(n, [2n, 0n],
+    (p, prev, k) => _polyAdd(_polyScale(_polyShiftUp(p), 2n), _polyScale(prev, -2n * k)))));
 }, { category: 'Vectors / matrices', categoryOrder: 38, label: "HERMITE" });
 
 
+// The factors of two every nonzero coefficient shares, up to cap.
+function _sharedTwos(coefs, cap) {
+  let shared = cap;
+  for (const c of coefs) {
+    if (c === 0n) continue;
+    let t = 0;
+    for (let m = c < 0n ? -c : c; (m & 1n) === 0n && t < shared; m >>= 1n) t++;
+    shared = t;
+  }
+  return shared;
+}
+
+
+// R_k = 2^k P_k has whole coefficients: (k+1) R_{k+1} = 2(2k+1) x R_k - 4k R_{k-1}.  The HP shows the
+// result over the smallest power of two that clears them, (35*X^4-30*X^2+3)/8.
 register('LEGENDRE', (s) => {
   const [v] = s.popN(1);
   const n = _nFromIntegerArg(v);
-  s.push(_coefArrToSymbolicX(_recurrencePoly(n, [1, 0],
-    (p, prev, k) => _polyScale(_polyAdd(_polyScale(_polyShiftUp(p), 2 * k + 1), _polyScale(prev, -k)), 1 / (k + 1)))));
+  const r = _recurrencePoly(n, [2n, 0n], (p, prev, k) =>
+    _polyAdd(_polyScale(_polyShiftUp(p), 2n * (2n * k + 1n)), _polyScale(prev, -4n * k)).map(c => c / (k + 1n)));
+  const shared = _sharedTwos(r, n);
+  s.push(_coefArrToSymbolicX(r.map(c => c >> BigInt(shared)), 1n << BigInt(n - shared)));
 }, { category: 'Vectors / matrices', categoryOrder: 39, label: "LEGENDRE" });
 
 
@@ -1097,8 +1118,8 @@ function _tchebOp(s) {
   const [v] = s.popN(1);
   const n = _wholeArg(v);
   const poly = n >= 0
-    ? _recurrencePoly(n, [1, 0], _chebyshevStep)
-    : _recurrencePoly(-n - 1, [2, 0], _chebyshevStep);
+    ? _recurrencePoly(n, [1n, 0n], _chebyshevStep)
+    : _recurrencePoly(-n - 1, [2n, 0n], _chebyshevStep);
   s.push(_coefArrToSymbolicX(poly));
 }
 

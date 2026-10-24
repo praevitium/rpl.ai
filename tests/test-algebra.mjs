@@ -3391,6 +3391,27 @@ for (const name of ['HERMITE', 'LEGENDRE']) {
     'session056: TCHEBYCHEFF accepts integer-valued Real');
 }
 
+/* The families keep whole coefficients, past the 2^53 a double holds, and LEGENDRE comes over its power-of-two denominator as the
+   AUR shows it; a degree whose coefficients would fill the memory says so where the page would have frozen. */
+{
+  const top = (src) => format(runLine(src).peek());
+  assert(top('4 LEGENDRE') === '`(35*X^4 - 30*X^2 + 3)/8`', 'LEGENDRE(4) is (35*X^4-30*X^2+3)/8, as the AUR shows');
+  assert(top('12 LEGENDRE') === '`(676039*X^12 - 1939938*X^10 + 2078505*X^8 - 1021020*X^6 + 225225*X^4 - 18018*X^2 + 231)/1024`', 'LEGENDRE(12) has whole numbers over 1024');
+  assert(top('3 LEGENDRE') === '`(5*X^3 - 3*X)/2`' && top('2 LEGENDRE') === '`(3*X^2 - 1)/2`' && top('1 LEGENDRE') === '`X`' && top('0 LEGENDRE') === '`1`', 'LEGENDRE of 0 to 3 is 1, X, (3*X^2-1)/2 and (5*X^3-3*X)/2');
+  assert(top('30 HERMITE').includes('164850350674673664000*X^16'), 'HERMITE(30) keeps every digit of a coefficient past 2^53, where a double rounded it to ...660000');
+  let h60 = 1n;
+  for (let i = 31n; i <= 60n; i++) h60 *= i;
+  assert(top('60 HERMITE').endsWith(` + ${h60}\``), 'HERMITE(60) ends in its exact constant term 60!/30!, where a double gave 3.1E48');
+  assert(top('100 TCHEBYCHEFF').startsWith(`\`${2n ** 99n}*X^100 - ${100n * 2n ** 97n}*X^98 + ${2425n * 2n ** 96n}*X^96 - `), 'TCHEBYCHEFF(100) has the exact leading coefficients 2^99, -100*2^97 and 2425*2^96');
+  assert(top('-4 TCHEBYCHEFF') === '`8*X^3 - 4*X`', 'a negative degree still gives the second kind');
+  const { withTimeLimit } = await import('../www/src/rpl/stack.js');
+  for (const name of ['HERMITE', 'LEGENDRE', 'TCHEBYCHEFF']) {
+    assertThrows(() => runLine(`1001 ${name}`), /Insufficient memory/, `${name} of degree 1001 says Insufficient memory`);
+    assertThrows(() => runLine(`1E9 ${name}`), /Insufficient memory/, `${name} of degree a billion says Insufficient memory, where it computed for as long as the time limit`);
+    assert(withTimeLimit(5000, () => format(runLine(`1000 ${name}`).peek()).length) > 100000, `${name} of degree 1000 still comes out`);
+  }
+}
+
 /* ================================================================
    TCHEBYCHEFF second-kind (negative n), FROOTS.
 

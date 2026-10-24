@@ -2892,23 +2892,23 @@ export function _pToCOp(s) {
 }
 
 
-// Descending-degree coefficients → an expanded polynomial in X, with signs folded
-// into the operators (2*X^3-X rather than 2*X^3+-1*X).
-export function _coefArrToSymbolicX(coefs) {
+// Descending-degree coefficients (Numbers or BigInts) → an expanded polynomial in X, with signs folded
+// into the operators (2*X^3-X rather than 2*X^3+-1*X); a denominator above 1 divides the whole polynomial.
+export function _coefArrToSymbolicX(coefs, den = 1n) {
   const X = AstVar('X');
   const deg = coefs.length - 1;
   let ast = null;
   for (let i = 0; i < coefs.length; i++) {
     const c = coefs[i];
-    if (c === 0) continue;
+    if (c === 0 || c === 0n) continue;
     const pow = deg - i;
-    const ac = Math.abs(c);
+    const ac = c < 0 ? -c : c;
     let factor;
     if (pow === 0) {
       factor = AstNum(ac);
     } else {
       const Xpow = (pow === 1) ? X : AstBin('^', X, AstNum(pow));
-      factor = (ac === 1) ? Xpow : AstBin('*', AstNum(ac), Xpow);
+      factor = (ac === 1 || ac === 1n) ? Xpow : AstBin('*', AstNum(ac), Xpow);
     }
     if (ast === null) {
       ast = c < 0 ? AstNeg(factor) : factor;
@@ -2917,7 +2917,7 @@ export function _coefArrToSymbolicX(coefs) {
     }
   }
   if (ast === null) ast = AstNum(0);
-  return Symbolic(ast);
+  return Symbolic(den === 1n ? ast : AstBin('/', ast, AstNum(den)));
 }
 
 
