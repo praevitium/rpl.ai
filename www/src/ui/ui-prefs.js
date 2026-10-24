@@ -14,6 +14,7 @@ const ASSISTANT_MODES = Object.freeze(['ask', 'tutor']);
 export const TUTOR_STYLES = Object.freeze(['socratic', 'direct']);
 const RECENT_COMMANDS_MAX = 8;
 const RECENT_MENUS_MAX = 4;
+const MENU_PAGE_MAX = 9999;
 
 export const DEFAULT_UI_PREFS = Object.freeze({
   theme: 'auto',
@@ -34,6 +35,8 @@ export const DEFAULT_UI_PREFS = Object.freeze({
   stackSize: 'normal',
   historySort: 'newest',
   menu: null,
+  menuFolder: null,
+  menuPage: 0,
   assistantMode: 'ask',
   tutorStyle: 'socratic',
   tourSeen: false,
@@ -75,6 +78,8 @@ export function normalizeUiPrefs(raw) {
   if (STACK_SIZES.includes(raw.stackSize)) p.stackSize = raw.stackSize;
   if (HISTORY_SORTS.includes(raw.historySort)) p.historySort = raw.historySort;
   if (typeof raw.menu === 'string' && /^[A-Z]{2,8}$/.test(raw.menu)) p.menu = raw.menu;
+  if (typeof raw.menuFolder === 'string' && raw.menuFolder.length > 0 && raw.menuFolder.length <= 64) p.menuFolder = raw.menuFolder;
+  if (Number.isInteger(raw.menuPage) && raw.menuPage >= 0 && raw.menuPage <= MENU_PAGE_MAX) p.menuPage = raw.menuPage;
   if (ASSISTANT_MODES.includes(raw.assistantMode)) p.assistantMode = raw.assistantMode;
   if (TUTOR_STYLES.includes(raw.tutorStyle)) p.tutorStyle = raw.tutorStyle;
   if (typeof raw.tourSeen === 'boolean') p.tourSeen = raw.tourSeen;

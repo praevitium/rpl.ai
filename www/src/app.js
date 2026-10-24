@@ -270,6 +270,8 @@ class App {
     SHORT_FOR_WRITER?.addEventListener('change', () => this.keypad.update());
     this._applyPhoneKeyboard();
     this.showMenu(this.prefs.menu ?? (varOrder().length ? 'VARS' : 'STACK'), { remember: false });
+    this._restoreMenuPlace();
+    this._installMenuPlace();
     if (this.prefs.drawer) this.drawers.open(this.prefs.drawer);
     this._installKeyboard();
     this._installAutosave();
@@ -286,6 +288,28 @@ class App {
     this.keepAwake();
     document.addEventListener('visibilitychange', () => { this._watchAlarms(); this.keepAwake(); });
     if (!this.prefs.tourSeen) setTimeout(() => this.tour.start(), 700);
+  }
+
+  // The HP comes back on the menu page it was left on. The folder and page are kept as the page is hidden, and the soft keys
+  // turn to them again at the next start, if the same keys are there.
+  _restoreMenuPlace() {
+    const { menuFolder, menuPage } = this.prefs;
+    if (menuFolder && menuFolder !== this.menuFolder) {
+      const folder = this.menuAll.find((slot) => slot.dir && slot.label === menuFolder);
+      if (!folder) return;
+      folder.onPress();
+    }
+    this.menuPage = Math.min(menuPage, Math.max(0, Math.ceil(this.menuAll.length / 6) - 1));
+    this.menubar.render();
+  }
+
+  _installMenuPlace() {
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') this._keepMenuPlace(); });
+    addEventListener('pagehide', () => this._keepMenuPlace());
+  }
+
+  _keepMenuPlace() {
+    if (this.menuKind && this.menuKind !== 'TMENU') this.setPrefs({ menu: this.menuKind, menuFolder: this.menuFolder, menuPage: this.menuPage });
   }
 
   // The HP keeps its command line through power-off. A phone may drop the page while another app has the screen, so a line
@@ -1897,7 +1921,7 @@ class App {
     else if (id === 'VECTOR') this.setMenu(VECTOR_KEYS.map((key) => this._commandSlot(key)), 'VECTOR');
     else if (id === 'TOOL') this.setMenu(TOOL_KEYS.map((key) => (key === 'VIEW' ? this._viewKey() : this._commandSlot(key))), 'TOOL');
     else this._showFamilyMenu(id);
-    if (remember) this.setPrefs({ menu: this.menuKind, recentMenus: [this.menuKind, ...this.prefs.recentMenus.filter((m) => m !== this.menuKind)] });
+    if (remember) this.setPrefs({ menu: this.menuKind, menuFolder: this.menuFolder, menuPage: this.menuPage, recentMenus: [this.menuKind, ...this.prefs.recentMenus.filter((m) => m !== this.menuKind)] });
   }
 
   // A menu or one of its folders, as the HP's menu commands and shifted menu keys open them.

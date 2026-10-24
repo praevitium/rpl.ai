@@ -1521,6 +1521,13 @@ setAngle('RAD');
     'loadUiPrefs: migration writes rplai.ui and removes the old keys');
   assert(normalizeUiPrefs({ menu: 'TRIG' }).menu === 'TRIG' && normalizeUiPrefs({ menu: '<b>' }).menu === null,
     'normalizeUiPrefs: the last menu is remembered, junk is dropped');
+  const place = normalizeUiPrefs({ menu: 'CAS', menuFolder: 'S.SLV', menuPage: 2 });
+  assert(place.menuFolder === 'S.SLV' && place.menuPage === 2 && normalizeUiPrefs({}).menuFolder === null && normalizeUiPrefs({}).menuPage === 0,
+    'normalizeUiPrefs: the menu\'s folder and page are remembered, none by default');
+  assert(normalizeUiPrefs({ menuFolder: '' }).menuFolder === null && normalizeUiPrefs({ menuFolder: 'X'.repeat(65) }).menuFolder === null && normalizeUiPrefs({ menuFolder: 7 }).menuFolder === null,
+    'normalizeUiPrefs: a folder that is empty, over 64 characters or no text is dropped');
+  assert([-1, 1.5, '2', NaN, Infinity, 10000, null].every((page) => normalizeUiPrefs({ menuPage: page }).menuPage === 0) && normalizeUiPrefs({ menuPage: 9999 }).menuPage === 9999,
+    'normalizeUiPrefs: a page that is no whole number from 0 to 9999 is dropped');
   assert(loadUiPrefs(memory({ 'hp50.ui.chrome': 'simple' })).keypad === 'compact',
     'loadUiPrefs: the old "simple" chrome becomes the Compact keypad');
   const saved = memory({ [UI_PREFS_KEY]: JSON.stringify({ theme: 'classic' }), 'hp50.ui.chrome': 'minimal' });
@@ -1971,8 +1978,8 @@ setAngle('RAD');
   assert(JSON.stringify(normalizeUiPrefs({ recentMenus: ['MATRIX', 'VARS', 'matrix', 'VARS', 7, 'TOOLONGNAME', 'CST', 'STAT', 'BRCH'] }).recentMenus) === JSON.stringify(['MATRIX', 'VARS', 'CST', 'STAT'])
     && normalizeUiPrefs({}).recentMenus.length === 0,
     'normalizeUiPrefs: recent menus keep four distinct ids, newest first, and drop junk');
-  assert(/if \(remember\) this\.setPrefs\(\{ menu: this\.menuKind, recentMenus: \[this\.menuKind, \.\.\.this\.prefs\.recentMenus\.filter\(\(m\) => m !== this\.menuKind\)\] \}\);/.test(readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8')),
-    'menus: showing a menu puts it first among the recent menus');
+  assert(/if \(remember\) this\.setPrefs\(\{ menu: this\.menuKind, menuFolder: this\.menuFolder, menuPage: this\.menuPage, recentMenus: \[this\.menuKind, \.\.\.this\.prefs\.recentMenus\.filter\(\(m\) => m !== this\.menuKind\)\] \}\);/.test(readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8')),
+    'menus: showing a menu puts it first among the recent menus, and the saved folder and page are those of the menu just shown');
   const menubarSrc = readFileSync(new URL('../www/src/ui/menubar.js', import.meta.url), 'utf8');
   assert(/const recent = this\.app\.prefs\.recentMenus\.filter\(\(id\) => id !== current && menuById\(id\)\);/.test(menubarSrc) && /\{ title: 'Recent', ids: recent \}/.test(menubarSrc),
     'menus: the menu picker leads with the menus used last, the current one left out');
@@ -4154,4 +4161,16 @@ setAngle('RAD');
     'a draft names the edit by its level or variable and a hash of the value it began from');
   assert(/_restoreEdit\(\{ kind, level, name, line, was \}\) \{\n\s*const value = kind === 'level' \? \(level <= this\.stack\.depth \? this\.stack\.peek\(level\) : undefined\) : varRecall\(name\);\n\s*if \(value === undefined \|\| sourceHash\(value\) !== was\) return;/.test(appSrc),
     'the edit is taken up again only for the value it began from; a level or variable that changed leaves the text as a plain line');
+}
+
+// The soft keys come back on the folder and page they were left on: kept as the page is hidden, found again by the folder's key.
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/_keepMenuPlace\(\) \{\n\s*if \(this\.menuKind && this\.menuKind !== 'TMENU'\) this\.setPrefs\(\{ menu: this\.menuKind, menuFolder: this\.menuFolder, menuPage: this\.menuPage \}\);\n\s*\}/.test(appSrc)
+    && /_installMenuPlace\(\) \{\n\s*document\.addEventListener\('visibilitychange', \(\) => \{ if \(document\.visibilityState === 'hidden'\) this\._keepMenuPlace\(\); \}\);\n\s*addEventListener\('pagehide', \(\) => this\._keepMenuPlace\(\)\);/.test(appSrc),
+    'menu place: the menu, folder and page are kept as the page is hidden, except a program\'s temporary menu');
+  assert(/_restoreMenuPlace\(\) \{\n\s*const \{ menuFolder, menuPage \} = this\.prefs;\n\s*if \(menuFolder && menuFolder !== this\.menuFolder\) \{\n\s*const folder = this\.menuAll\.find\(\(slot\) => slot\.dir && slot\.label === menuFolder\);\n\s*if \(!folder\) return;\n\s*folder\.onPress\(\);\n\s*\}\n\s*this\.menuPage = Math\.min\(menuPage, Math\.max\(0, Math\.ceil\(this\.menuAll\.length \/ 6\) - 1\)\);\n\s*this\.menubar\.render\(\);/.test(appSrc),
+    'menu place: the folder is opened by its own key, and a saved page past the last one shows the last');
+  assert(/this\.showMenu\(this\.prefs\.menu \?\? \(varOrder\(\)\.length \? 'VARS' : 'STACK'\), \{ remember: false \}\);\n\s*this\._restoreMenuPlace\(\);\n\s*this\._installMenuPlace\(\);/.test(appSrc),
+    'menu place: the place is restored right after the first menu is shown, and kept from then on');
 }
