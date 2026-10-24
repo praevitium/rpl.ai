@@ -7,6 +7,7 @@ import {
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
   evalTraceAtX, sampleTrace, traceInputError, axisTicks, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace, unvaluedNames, alongOpenName, splitEquation,
   DEFAULT_TURN, turnBy, evalComplex, TRACE_KINDS, cursorPoint, stepCursor, slopeAt, nearestRoot, nearestExtremum, integrateFunction,
+  tableRows, tableSetup,
 } from '../www/src/ui/plot-engine.js';
 import { Matrix, Vector, Real, Integer, Symbolic, Program, RList, Tagged, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
 import { lookup, setGraphicsHook } from '../www/src/rpl/ops.js';
@@ -1119,4 +1120,17 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(near(integrateFunction((x) => x, 0, 1, 7), 0.5), 'FCN AREA: an odd panel count is made even');
   assert(axisTicks(-10, 10, 0, 0, 6.25).ticks.join() === '-10,-5,0,5,10', 'axis ticks: a 250 px plot gets five x labels instead of eleven that collided at 280 px');
   assert(axisTicks(-10, 10, 0, 0, 15).ticks.join() === '-10,-8,-6,-4,-2,0,2,4,6,8', 'axis ticks: a wide plot keeps its nice steps of two');
+}
+
+{
+  const fn = (expr, enabled = true) => ({ kind: 'function', expr, enabled });
+  const rows = tableRows([fn('X^2'), fn('SIN(X)', false), { kind: 'polar', expr: 'X', enabled: true }, fn('LN(X)')], -1, 1, 4);
+  assert(rows.map((r) => r.x).join() === '-1,0,1,2', 'TABLE: x runs from the start by the step, one row each');
+  assert(rows.every((r) => r.ys.length === 2) && rows[3].ys[0] === 4, 'TABLE: only the enabled function traces take a column');
+  assert(Number.isNaN(rows[0].ys[1]) && rows[2].ys[1] === 0, 'TABLE: a function with no value at x has NaN there');
+  assert(tableRows([fn('X')], 0, 0.1, 4).map((r) => r.x).join() === '0,0.1,0.2,0.3', 'TABLE: x keeps its 12 digits, 0.3 and not 0.30000000000000004');
+  assert(tableRows([fn('X')], 5, -1, 3).map((r) => r.x).join() === '5,4,3', 'TABLE: a negative step counts down');
+  const setup = (xmin, xmax) => JSON.stringify(tableSetup({ xmin, xmax, ymin: -1, ymax: 1 }));
+  assert(setup(-10, 10) === '{"start":-10,"step":2}' && setup(-6.5, 6.5) === '{"start":-7,"step":1}' && setup(0, 1) === '{"start":0,"step":0.1}' && setup(0.15, 0.35) === '{"start":0.14,"step":0.02}',
+    'TABLE: it opens on a round start at the window\'s left edge with a step that gives about ten rows across it');
 }

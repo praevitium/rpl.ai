@@ -1585,6 +1585,21 @@ export function evalTraceAtX(t, x, opts = {}) {
   }
 }
 
+// TABLE: the enabled functions' values for x from start by step, NaN where a function has none.
+export function tableRows(traces, start, step, count, opts = {}) {
+  const functions = traces.filter((t) => t.enabled && t.kind === 'function');
+  return Array.from({ length: count }, (_, i) => {
+    const x = Number((start + i * step).toPrecision(12));
+    return { x, ys: functions.map((t) => evalTraceAtX(t, x, opts)) };
+  });
+}
+
+// The table opens on a round number at the window's left edge, a step that gives about ten rows across the window.
+export function tableSetup(view) {
+  const step = niceNum((view.xmax - view.xmin) / 10, true);
+  return { start: Number((Math.floor(view.xmin / step) * step).toPrecision(12)), step };
+}
+
 export function traceInputError(kind, values, { adding = false } = {}) {
   const spec = TRACE_KINDS[kind];
   if (!spec?.fields?.length) return null;

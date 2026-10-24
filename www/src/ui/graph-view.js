@@ -3,6 +3,7 @@ import {
   worldToPixel, pixelToWorld, axisTicks, hasUsableSpan, cursorPoint, stepCursor,
   sampleTrace, fitViewToTraces, evalTraceAtX, slopeAt, nearestRoot, nearestExtremum, integrateFunction,
   stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace, unvaluedNames, splitEquation,
+  tableRows, tableSetup,
 } from './plot-engine.js';
 import { escapeHtml, markScrollEdges } from './display.js';
 import { icon } from './icons.js';
@@ -170,7 +171,7 @@ export class GraphView {
     this.el.className = 'gr-view';
     this.el.innerHTML = `
       <div class="pl-main">
-        <div class="pl-box" tabindex="0" role="application" aria-label="Plot. Arrows pan or move the cursor, Enter puts its point on the stack, plus and minus zoom, 0 resets, T traces (up and down, or a tap on a curve, then switch function), F goes full screen.">
+        <div class="pl-box" tabindex="0" role="application" aria-label="Plot. Arrows pan or move the cursor, Enter puts its point on the stack, plus and minus zoom, 0 resets, T traces (up and down, or a tap on a curve, then switch function), V shows the table of values, F goes full screen.">
           <canvas class="gr-canvas" aria-hidden="true"></canvas>
           <div class="pl-tools${TOUCH ? ' folded' : ''}" role="toolbar" aria-label="Plot tools">
             <button type="button" class="pl-fold" data-gr="fold" title="Plot tools" aria-label="Plot tools" aria-expanded="${!TOUCH}">${icon('more', 'sm')}</button>
@@ -181,6 +182,7 @@ export class GraphView {
             <button type="button" data-gr="zsqr" title="Square the axes (ZSQR)" aria-label="Square the axes">${icon('grid', 'sm')}</button>
             <button type="button" data-gr="cntr" title="Centre on the cursor (CNTR)" aria-label="Centre on the cursor">${icon('mark', 'sm')}</button>
             <button type="button" data-gr="trace" title="Trace (T): arrows move along the curve" aria-label="Trace" aria-pressed="false">${icon('trace', 'sm')}</button>
+            <button type="button" data-gr="table" title="Table of values" aria-label="Table of values">${icon('table', 'sm')}</button>
             <button type="button" data-gr="copy" title="Copy the plot as an image" aria-label="Copy as image">${icon('copy', 'sm')}</button>
             <button type="button" data-gr="png" title="Download the plot as a PNG" aria-label="Download as PNG">${icon('down', 'sm')}</button>
             ${canSharePng() ? `<button type="button" data-gr="share" title="Share the plot as an image" aria-label="Share">${icon('share', 'sm')}</button>` : ''}
@@ -251,6 +253,7 @@ export class GraphView {
       else if (act === 'zsqr') this.squareView();
       else if (act === 'cntr') this.centerOnCursor();
       else if (act === 'trace') this.setTraceMode(!this.tracing);
+      else if (act === 'table') this.openTable();
       else if (act === 'fold') this._toggleTools(tool);
       else if (act === 'png') this.downloadPng();
       else if (act === 'copy') this.copyPng();
@@ -716,6 +719,21 @@ export class GraphView {
   _markReadout() {
     const p = cursorPoint(this._mark.x, this._mark.y, this.view);
     return this._readoutAt(p.x, p.y);
+  }
+
+  // TABLE: a sheet of x with the plotted functions' values beside it.
+  openTable() {
+    if (!this._tableTraces().length) { this._readout.textContent = 'Plot a function to see its table'; return; }
+    this.app.sheets.openTable(tableSetup(this.view));
+  }
+
+  _tableTraces() { return this.traces.filter((t) => t.enabled && t.kind === 'function'); }
+
+  tableData(start, step, count) {
+    return {
+      heads: this._tableTraces().map((t) => t.label || t.expr || 'Y'),
+      rows: tableRows(this.traces, start, step, count, this._hoverOpts()),
+    };
   }
 
   pushCursor() {

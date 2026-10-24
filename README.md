@@ -803,6 +803,11 @@ On a phone the graph fills the plot view, with the plot types peeking
 below it; the traces and window scroll up under it.
 More canvas buttons copy the plot as an image, download it as a PNG at the
 screen's pixel density, and, where the device can share images, share it.
+The table button, or `V` on the plot, opens the HP's table of values: x from
+a start by a step, a column for each function plotted, opening on a round
+start at the window's left edge. Type another start or step, halve or double
+the step, or move Earlier and Later; a tap on a value puts its point, (x,y),
+on the stack.
 
 PICT holds a graphics object: LINE, TLINE, BOX, ARC, PIXON, PIXOFF, DRAX
 and LABEL draw on it, GOR, GXOR, SUB, REPL and NEG work on it and on other

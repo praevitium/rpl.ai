@@ -12,7 +12,9 @@ import { EQ_LIBRARY } from '../rpl/eqlib.js';
 import { solveSet, setVariables, libraryEquation } from '../rpl/ops/eqlib.js';
 import { printLog, clearPrintLog } from '../rpl/ops/print.js';
 import { lookup } from '../rpl/ops/registry.js';
-import { format } from '../rpl/formatter.js';
+import { format, withFractionMark } from '../rpl/formatter.js';
+import { fromTyped } from '../rpl/parser.js';
+import { Real, Complex } from '../rpl/types.js';
 import { VERSION, BUILD, SHA } from '../build-info.js';
 import { pickFile } from './drawer.js';
 import { MODES, modeById, DISPLAY_DIGITS_CHOICES } from './modes.js';
@@ -57,6 +59,11 @@ function clockOffsetText(ms) {
   }
   return `${parts.join(' ') || 'Under a second'} ${ms > 0 ? 'ahead of' : 'behind'} the device clock`;
 }
+
+const TABLE_ROWS = 60;
+
+// A table value at 8 digits, 12 in a field to edit, with the HP's E for a power of ten.
+const tableText = (v, digits = 8) => String(Number(v.toPrecision(digits))).replace('e+', 'E').replace('e', 'E');
 
 export class Sheets {
   constructor({ host, app }) {
@@ -131,6 +138,13 @@ export class Sheets {
     this._open('eqlib');
   }
 
+  // TABLE: x from a start by a step with the plotted functions' values beside it, a tap on a value its point on the stack.
+  openTable(setup) {
+    this.tbl = { ...setup };
+    this._open('table');
+    requestAnimationFrame(() => this.el?.querySelector('[data-sh="close"]')?.focus({ preventScroll: true }));
+  }
+
   openView(title, html, level) {
     this.view = { title, html, level };
     this._open('view');
@@ -148,6 +162,7 @@ export class Sheets {
       this.el.className = 'sheet-wrap';
       this.el.addEventListener('mousedown', (e) => { if (e.target === this.el) this.dismiss(); });
       this.el.addEventListener('click', (e) => this._onClick(e));
+      this.el.addEventListener('change', (e) => this._onChange(e));
       this.el.addEventListener('keydown', (e) => (this.kind === 'game' ? this._onGameKey(e) : this._onKeyDown(e)));
       this.el.addEventListener('pointerdown', (e) => { this._swipe = this.kind === 'game' && e.target.closest('.mh-grid') ? [e.clientX, e.clientY] : null; });
       this.el.addEventListener('pointerup', (e) => this._gameSwipe(e));
@@ -240,6 +255,26 @@ export class Sheets {
       this.el.innerHTML = sheet('Print log', body, '', foot);
       const content = this.el.querySelector('.sheet-c');
       content.scrollTop = content.scrollHeight;
+      return;
+    }
+    if (this.kind === 'table') {
+      const { start, step } = this.tbl;
+      const data = this.app.drawers.graph.tableData(start, step, TABLE_ROWS);
+      this.tbl.data = data;
+      const shown = (v, digits) => (Number.isNaN(v) ? '—' : v === Infinity ? '∞' : v === -Infinity ? '−∞' : escapeHtml(withFractionMark(tableText(v, digits))));
+      const field = (key, label, value) => `<label class="tb-field"><span>${label}</span><input type="text" inputmode="decimal" data-tb="${key}" value="${escapeHtml(withFractionMark(tableText(value, 12)))}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>`;
+      const act = (name, label, title) => `<button type="button" class="btn" data-sh="${name}" title="${title}" aria-label="${title}">${label}</button>`;
+      const heads = data.heads.map((h) => `<th scope="col" title="${escapeHtml(withFractionMark(h))}">${escapeHtml(withFractionMark(h))}</th>`).join('');
+      const rows = data.rows.map((r, i) => `<tr><td data-sh="tb-pick" data-i="${i}">${shown(r.x, 12)}</td>${r.ys.map((y, j) => `<td data-sh="tb-pick" data-i="${i}" data-j="${j}">${shown(y, 8)}</td>`).join('')}</tr>`).join('');
+      const body = `<div class="tb-set">${field('start', 'Start', start)}${field('step', 'Step', step)}<div class="tb-zoom">${act('tb-finer', '÷2', 'Halve the step')}${act('tb-coarser', '×2', 'Double the step')}</div></div>`
+        + `<div class="tb-wrap"><table class="tb"><thead><tr><th scope="col">X</th>${heads}</tr></thead><tbody>${rows}</tbody></table></div>`
+        + '<p class="pt-hint">Tap a value to put its point on the stack.</p>';
+      const foot = `<button type="button" class="btn" data-sh="tb-earlier">${icon('chu', 'sm')}Earlier</button><button type="button" class="btn" data-sh="tb-later">${icon('chd', 'sm')}Later</button><button type="button" class="btn" data-sh="close">${icon('x', 'sm')}Close</button>`;
+      this.el.innerHTML = sheet('Table of values', body, '', foot);
+      this.el.querySelector('.sheet-c').classList.add('tb-c');
+      const wrap = this.el.querySelector('.tb-wrap');
+      markScrollEdges(wrap);
+      wrap.addEventListener('scroll', () => markScrollEdges(wrap), { passive: true });
       return;
     }
     if (this.kind === 'eqlib') {
@@ -459,6 +494,19 @@ export class Sheets {
         else this.eqlib.subject = null;
         this._render();
         return;
+      case 'tb-finer': this.tbl.step = Number((this.tbl.step / 2).toPrecision(12)); this._render(); return;
+      case 'tb-coarser': this.tbl.step = Number((this.tbl.step * 2).toPrecision(12)); this._render(); return;
+      case 'tb-earlier': this._tableMove(-TABLE_ROWS / 2); return;
+      case 'tb-later': this._tableMove(TABLE_ROWS / 2); return;
+      case 'tb-pick': {
+        const row = this.tbl.data.rows[Number(b.dataset.i)];
+        const y = b.dataset.j == null ? null : row.ys[Number(b.dataset.j)];
+        if (y != null && !Number.isFinite(y)) { app.toast('That function has no value there'); return; }
+        const value = y == null ? Real(row.x) : Complex(row.x, Number(y.toPrecision(12)));
+        app.commitEntryAndPush(value);
+        app.toast(`${format(value)} is on the stack`);
+        return;
+      }
       case 'pr-copy': app.copyText(printLog.join('\n'), 'Copied the print log'); return;
       case 'pr-share': app.shareText(printLog.join('\n')); return;
       case 'pr-clear': clearPrintLog(); this._render(); return;
@@ -529,6 +577,22 @@ export class Sheets {
   }
 
   // Enter in a form field moves on to the next, and from the last answers the form, as the HP's ENTER does.
+  _tableMove(rows) {
+    this.tbl.start = Number((this.tbl.start + rows * this.tbl.step).toPrecision(12));
+    this._render();
+  }
+
+  _onChange(e) {
+    const input = this.kind === 'table' && e.target.closest?.('input[data-tb]');
+    if (!input) return;
+    const value = Number(fromTyped(String(input.value).trim()));
+    const ok = Number.isFinite(value) && (input.dataset.tb !== 'step' || value !== 0);
+    input.classList.toggle('bad', !ok);
+    if (!ok) return;
+    this.tbl[input.dataset.tb] = value;
+    this._render();
+  }
+
   _onKeyDown(e) {
     const radio = /^Arrow(Left|Right|Up|Down)$/.test(e.key) && e.target.closest?.('[role="radiogroup"] [role="radio"]');
     if (radio) {
@@ -624,7 +688,7 @@ function actionLabel(id) {
     'level.edit': 'Edit', 'level.drop': 'Drop', 'level.copy': 'Copy', 'level.pick': 'PICK',
     'eqw.fraction': 'Fraction', 'eqw.power': 'Exponent', 'eqw.group': 'Parentheses', 'eqw.next': 'Next box',
     'eqw.extend': 'Extend selection', 'writer.commit': 'Push, or finish the edit', 'matrix.nextCell': 'Next cell', 'matrix.enter': 'Store the cell, or push', 'plot.pan': 'Pan', 'plot.enter': "Push the cursor's point", 'plot.zoomIn': 'Zoom in',
-    'plot.zoomOut': 'Zoom out', 'plot.reset': 'Reset view', 'plot.trace': 'Trace', 'plot.fullscreen': 'Full screen',
+    'plot.zoomOut': 'Zoom out', 'plot.reset': 'Reset view', 'plot.trace': 'Trace', 'plot.table': 'Table of values', 'plot.fullscreen': 'Full screen',
     'palette.move': 'Choose a result', 'palette.run': 'Run it', 'palette.reference': 'Open the reference',
   };
   return LABELS[id] ?? ACTIONS[id]?.label ?? id;

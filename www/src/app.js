@@ -2606,6 +2606,7 @@ class App {
       case 'plot.zoomOut': this.drawers.graph.zoomBy(1.25); return true;
       case 'plot.reset': this.drawers.graph.resetView(); return true;
       case 'plot.trace': this.drawers.graph.setTraceMode(!this.drawers.graph.tracing); return true;
+      case 'plot.table': this.drawers.graph.openTable(); return true;
       case 'plot.fullscreen': this.drawers.graph.fullscreen(); return true;
       case 'eqw.fraction': this.equationEditor.pressFace('÷'); return true;
       case 'eqw.power': this.equationEditor.pressFace('yˣ'); return true;

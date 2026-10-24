@@ -3367,8 +3367,8 @@ setAngle('RAD');
   assert(/\n  \.gr-show \{ appearance: none; width: 40px; height: 40px; margin: 0; display: grid; place-content: center; \}/.test(css)
     && /\.gr-show:checked::before \{ background: currentColor;/.test(css) && /style="accent-color:\$\{t\.color\};color:\$\{t\.color\}"/.test(gv),
     'plot trace rows on touch: the show/hide box is a 40 px target drawn in the trace\'s colour, where the native 16 px box was the drawer\'s one small control');
-  assert(/\.pl-kinds\.more-r, \.pl-pict\.more-r, \.pl-fcn\.more-r, \.pt-wrap\.more-r, \.cb-scroll\.more-r \{ mask-image: linear-gradient\(to right/.test(css)
-    && /\.pl-kinds\.more-l\.more-r, \.pl-pict\.more-l\.more-r, \.pl-fcn\.more-l\.more-r, \.pt-wrap\.more-l\.more-r, \.cb-scroll\.more-l\.more-r \{/.test(css)
+  assert(/\.pl-kinds\.more-r, \.pl-pict\.more-r, \.pl-fcn\.more-r, \.pt-wrap\.more-r, \.tb-wrap\.more-r, \.cb-scroll\.more-r \{ mask-image: linear-gradient\(to right/.test(css)
+    && /\.pl-kinds\.more-l\.more-r, \.pl-pict\.more-l\.more-r, \.pl-fcn\.more-l\.more-r, \.pt-wrap\.more-l\.more-r, \.tb-wrap\.more-l\.more-r, \.cb-scroll\.more-l\.more-r \{/.test(css)
     && /for \(const row of this\._chipRows\) row\.addEventListener\('scroll', \(\) => markScrollEdges\(row\), \{ passive: true \}\);/.test(gv)
     && /_markChipRows\(\) \{\n\s*for \(const row of this\._chipRows\) markScrollEdges\(row\);/.test(gv),
     'plot chip rows on a phone: the plot types, PICT and FCN rows fade at the edge that scrolls, as the key strip and drawer tabs do');
@@ -3450,7 +3450,7 @@ setAngle('RAD');
     && /\n\.eq-row \{ [^\n]*min-height: 40px;/.test(css),
     'EQNLIB opens a sheet of the HP\'s subjects, then a subject\'s sets, then a set\'s equations with Solve, which sets EQ and Mpar and opens the solver as SOLVEQN does, in finger-tall rows');
   assert(/const wrap = this\.el\.querySelector\('\.pt-wrap'\);\n\s*markScrollEdges\(wrap\);\n\s*wrap\.addEventListener\('scroll', \(\) => markScrollEdges\(wrap\), \{ passive: true \}\);/.test(sh)
-    && /\.pl-fcn\.more-r, \.pt-wrap\.more-r, \.cb-scroll\.more-r \{ mask-image/.test(css),
+    && /\.pl-fcn\.more-r, \.pt-wrap\.more-r, \.tb-wrap\.more-r, \.cb-scroll\.more-r \{ mask-image/.test(css),
     'the periodic table\'s row fades at the edge that scrolls, as the key strip and the plot rows do');
 }
 
@@ -3792,4 +3792,21 @@ setAngle('RAD');
     && css.includes('    .ann-status:has(.ann-m.halt):has(.ann-m.user) button.ann-m[data-mode="exact"],')
     && css.includes('@container app (max-width: 319px) { :root[data-theme="classic"] .status-line:has(.ann-m.user):has(.ann-g.opt:not([data-mode]) > .on) :is(.ann-g[data-mode="exact"], .ann-path) { display: none; } }'),
     'minimal view with HALT and USER both lit: they read apart (HALTUSER ran together) and under 320 px the exact mode gives way, with Classic\'s empty path, so Menu and Leave stay on a 280 px screen (they ran 23 px off, 37 in Classic)');
+}
+
+{
+  const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
+  const sh = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const { ACTIONS, KEYMAP } = await import('../www/src/ui/actions.js');
+  assert(gv.includes('data-gr="table"') && gv.includes("else if (act === 'table') this.openTable();")
+    && /openTable\(\) \{\s*if \(!this\._tableTraces\(\)\.length\) \{ this\._readout\.textContent = 'Plot a function to see its table'; return; \}\s*this\.app\.sheets\.openTable\(tableSetup\(this\.view\)\);/.test(gv)
+    && ACTIONS['plot.table'] && KEYMAP.some((b) => b.context === 'plot' && b.chord === 'V' && b.action === 'plot.table'),
+    'plot table: a tool in the plot toolbar, and V on the plot, open a sheet of the functions\' values, or say to plot a function first');
+  assert(/this\._open\('table'\);\s*requestAnimationFrame\(\(\) => this\.el\?\.querySelector\('\[data-sh="close"\]'\)\?\.focus/.test(sh)
+    && /case 'tb-pick': \{[\s\S]{0,420}Complex\(row\.x, Number\(y\.toPrecision\(12\)\)\)[\s\S]{0,80}app\.commitEntryAndPush\(value\);/.test(sh),
+    'plot table: it opens with Close focused, so a phone\'s keyboard stays down, and a tap on a value puts its point on the stack at the 12 digits a Real keeps');
+  assert(/\.tb-c \{ display: flex; flex-direction: column; overflow: hidden; \}/.test(css) && /\.tb th \{ position: sticky; top: 0;/.test(css)
+    && css.includes('.pt-wrap.more-l.more-r, .tb-wrap.more-l.more-r,') && /@media \(pointer: coarse\) \{ \.tb td \{ height: 40px; \} \}/.test(css),
+    'plot table: the rows scroll under a header that stays, fade where more columns continue, and take a 40 px tap on touch');
 }
