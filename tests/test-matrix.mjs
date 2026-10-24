@@ -560,7 +560,7 @@ function stat(op, s) {
     const s = new Stack();
     s.push(Matrix([[Name('a'), Real(1)], [Real(2), Name('b')]]));
     lookup('INV').fn(s);
-    assert(format(s.peek()) === '[[ `b/(a*b - 2)` `(-1)/(a*b - 2)` ][ `(-2)/(a*b - 2)` `a/(a*b - 2)` ]]',
+    assert(format(s.peek()) === '[[ `b/(a*b - 2)` `-1/(a*b - 2)` ][ `-2/(a*b - 2)` `a/(a*b - 2)` ]]',
       `INV inverts a symbolic-entry matrix exactly through Giac (got ${format(s.peek())})`);
     giac._clear();
   }
@@ -3951,7 +3951,7 @@ function _approxMatEqual(A, B, tol) {
   assert(top('[ 3 4 ] [[ X 1 ][ 2 Y ]] /') === '[ `(3*Y - 4)/(X*Y - 2)` `(4*X - 6)/(X*Y - 2)` ]',
     `/ solves a symbolic system exactly (got ${top('[ 3 4 ] [[ X 1 ][ 2 Y ]] /')})`);
   assertThrows(() => runLine('[ 3 4 5 ] [[ X 1 ][ 2 Y ]] /'), /Invalid dimension/, '/ checks a symbolic system\'s shape');
-  assert(top('[[ A B 1 ][ C D 2 ]] RREF') === '[[ 1 0 `((-2)*B + D)/(A*D - B*C)` ][ 0 1 `(2*A - C)/(A*D - B*C)` ]]',
+  assert(top('[[ A B 1 ][ C D 2 ]] RREF') === '[[ 1 0 `(-2*B + D)/(A*D - B*C)` ][ 0 1 `(2*A - C)/(A*D - B*C)` ]]',
     'RREF reduces a symbolic matrix through Giac');
   const rank = runLine('[[ A B ][ \'2*A\' \'2*B\' ]] RANK').peek();
   assert(isInteger(rank) && rank.value === 1n, 'RANK of a symbolic matrix is exact');

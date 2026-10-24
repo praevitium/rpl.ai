@@ -6026,7 +6026,7 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
     ["'(X-3)^2/(Z+4)' FXND", [], '`(X - 3)^2` | `Z + 4`'],
     ["'X+1/X' FXND", [['fxnd(X+1/X)', '[X^2+1,X]']], '`X^2 + 1` | `X`'],
     ["'X^2+2*Y^2+2*X+6+3*Y' 'Y' REORDER", [['reorder(X^2+2*Y^2+2*X+6+3*Y,[Y])', '2*Y^2+3*Y+X^2+2*X+6']], '`2*Y^2 + 3*Y + X^2 + 2*X + 6`'],
-    ["'X^3-P*X+Q' '3*X^2-P' RESULTANT", [['resultant(X^3-P*X+Q,3*X^2-P,X)', '-4*P^3+27*Q^2']], '`(-4)*P^3 + 27*Q^2`'],
+    ["'X^3-P*X+Q' '3*X^2-P' RESULTANT", [['resultant(X^3-P*X+Q,3*X^2-P,X)', '-4*P^3+27*Q^2']], '`-4*P^3 + 27*Q^2`'],
     ["'X^3+2' -2 0 STURMAB", [['subst(X^3+2,X=-2)', '-6'], ['max(0,sturmab(X^3+2,X,-2,0))', '1']], '{ -6 1 }'],
     ["'X^2-1' -1 0 STURMAB", [['subst(X^2-1,X=-1)', '0'], ['1+max(0,sturmab(quo(normal((X^2-1)/gcd(X^2-1,diff(X^2-1,X))),X-(-1),X),X,-1,0))', '1']], '{ 0 1 }'],
     ["'X^3+4*X+12' '11*X^11+1' 4 DIVPC", [['series((X^3+4*X+12)/(11*X^11+1),X=0,4,polynom)', '12+4*X+X^3']], '`12 + 4*X + X^3`'],
@@ -8490,8 +8490,8 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   });
   assert(line("'A*X^3+B*X^2' DERVX") === '`3*A*X^2 + 2*B*X`' && line("'C*EXP(2*X)' DERVX") === '`2*C*EXP(2*X)`',
     'CAS results read with the numbers of a product first: Giac\'s A*3*X^2 is 3*A*X^2');
-  assert(line("'A*X^2*B' DERVX") === '`2*A*X*B`' && line("'A/X' DERVX") === '`(-A)/X^2`',
-    'a product keeps the order of its other factors, and a quotient is left as Giac wrote it');
+  assert(line("'A*X^2*B' DERVX") === '`2*A*X*B`' && line("'A/X' DERVX") === '`-A/X^2`',
+    'a product keeps the order of its other factors, and a negative numerator reads -A/X^2');
   giac._clear();
 }
 
@@ -8500,7 +8500,7 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   giac._clear();
   giac._setFixtures({ 'solve(sin(X)-1,X)': '[1/2*pi]', 'zeros(cos(X),X)': '[1/2*pi,(-1)/2*pi]' });
   assert(line("'SIN(X)=1' 'X' SOLVE") === '{ `X = 1/2*π` }', 'SOLVE shows Giac\'s pi as π, as the rest of the app does');
-  assert(line("'COS(X)' 'X' ZEROS") === '{ `(-1)/2*π` `1/2*π` }', 'ZEROS orders roots that involve π by value');
+  assert(line("'COS(X)' 'X' ZEROS") === '{ `-1/2*π` `1/2*π` }', 'ZEROS orders roots that involve π by value');
   giac._clear();
 }
 
@@ -8612,7 +8612,7 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(line("'EXP(-2*X)' LAPLACE") === '`1/(X + 2)`', 'LAPLACE of EXP(-2*X) is 1/(X+2), with the X of the result the transform variable');
   assert(/^`EXP\(\(?-2\)?\*X\)`$/.test(line("'1/(X+2)' ILAP")), 'ILAP of 1/(X+2) is EXP(-2*X)');
   giac._setFixtures({ 'laplace(X^N,X,rplS)': 'integrate(X^N*exp(-X*rplS),X,0,+infinity)', 'laplace(X^N*t,X,rplS)': 'integrate(X^N*t*exp(-X*rplS),X,0,+infinity)' });
-  assert(line("'X^N' LAPLACE") === '`∫(0,∞,t^N*EXP((-t)*X),t)`' && line("'X^N*t' LAPLACE") === '`∫(0,∞,τ^N*t*EXP((-τ)*X),τ)`',
+  assert(line("'X^N' LAPLACE") === '`∫(0,∞,t^N*EXP(-t*X),t)`' && line("'X^N*t' LAPLACE") === '`∫(0,∞,τ^N*t*EXP(-τ*X),τ)`',
     'a transform left as an integral keeps its dummy variable apart from the transform variable, under a name the expression does not use');
   giac._clear();
 }
@@ -8640,7 +8640,7 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 /* Giac's infinity is the app's ∞, inside a result as well as alone. */
 {
   const { giacToAst } = await import('../www/src/rpl/cas/giac-convert.mjs');
-  assert(formatAlgebra(giacToAst('integrate(X^N*exp(-X*S),X,0,+infinity)')) === '∫(0,∞,X^N*EXP((-X)*S),X)' && formatAlgebra(giacToAst('-infinity')) === '-∞' && formatAlgebra(giacToAst('1/infinity')) === '1/∞',
+  assert(formatAlgebra(giacToAst('integrate(X^N*exp(-X*S),X,0,+infinity)')) === '∫(0,∞,X^N*EXP(-X*S),X)' && formatAlgebra(giacToAst('-infinity')) === '-∞' && formatAlgebra(giacToAst('1/infinity')) === '1/∞',
     'infinity inside a Giac result reads as ∞');
 }
 
@@ -8737,7 +8737,7 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   const v = "[ 'X^2*Y' 'X^2*Y' 'Y^2*Z' ] [ X Y Z ]";
   assert(top(`${v} DIV`) === '`X^2 + 2*X*Y + Y^2`', 'DIV gives the AUR\'s divergence of [X^2*Y X^2*Y Y^2*Z]');
   assert(top(`${v} CURL`) === '[ `2*Y*Z` 0 `2*X*Y - X^2` ]', 'CURL gives the AUR\'s curl as a vector');
-  assert(top("'EXP(X)*COS(Z*Y)' [ X Y Z ] LAPL") === '`(-Y^2)*COS(Z*Y)*EXP(X) - Z^2*COS(Z*Y)*EXP(X) + COS(Z*Y)*EXP(X)`',
+  assert(top("'EXP(X)*COS(Z*Y)' [ X Y Z ] LAPL") === '`-Y^2*COS(Z*Y)*EXP(X) - Z^2*COS(Z*Y)*EXP(X) + COS(Z*Y)*EXP(X)`',
     'LAPL gives the Laplacian of an expression');
   assertThrows(() => runLine("[ 'X' 'Y' ] [ X Y ] CURL"), /Invalid dimension/, 'CURL needs three components and three variables');
   assertThrows(() => runLine("[ 'X' ] [ X Y ] DIV"), /Invalid dimension/, 'DIV needs a component for each variable');
@@ -8807,7 +8807,7 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   giac._setFixture('symb2poly(X^2-3*X+2,X)', 'poly1[1,-3,2]');
   giac._setFixture('desolve((1)*diff(rplY(X),X,2)+(-3)*diff(rplY(X),X)+(2)*rplY(X)=exp(X),rplY(X))', 'c_0*exp(2*X)+c_1*exp(X)-X*exp(X)-exp(X)');
   const solved = shown("'d1Y(X)+2*Y(X)=EXP(3*X)' 'Y(X)' DESOLVE");
-  assert(/^\{ `Y\(X\) = \(5\*cC0\*EXP\(.*2\)\*X\) \+ EXP\(3\*X\)\)\/5` \}$/.test(solved), `DESOLVE solves the AUR's d1Y(X)+2*Y(X)=EXP(3*X) with the constant cC0 (${solved})`);
+  assert(/^\{ `Y\(X\) = \(5\*cC0\*EXP\(-2\*X\) \+ EXP\(3\*X\)\)\/5` \}$/.test(solved), `DESOLVE solves the AUR's d1Y(X)+2*Y(X)=EXP(3*X) with the constant cC0 (${solved})`);
   assert(/^\{ `Y\(X\) = \(4\*EXP/.test(shown("{ 'd1Y(X)+2*Y(X)=EXP(3*X)' 'Y(0)=1' } 'Y(X)' DESOLVE")), 'DESOLVE takes initial conditions in a list');
   assert(shown("'d1d1Y(X)+Y(X)=2*SIN(X)' 'Y(X)' DESOLVE") === '{ `Y(X) = cC0*COS(X) + cC1*SIN(X) - X*COS(X) + 1/2*SIN(X)` }', 'DESOLVE reads d1d1Y(X) as the second derivative');
   assert(shown("'d1Y(X)*Y(X)=X' 'Y(X)' DESOLVE") === '{ `Y(X) = SQRT(X^2 - 2*cC0)` `Y(X) = -SQRT(X^2 - 2*cC0)` }', 'DESOLVE lists every solution');
@@ -8957,7 +8957,7 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
     '(+infinity)-(+infinity)': 'undef',
     'X+(+infinity)': '+infinity',
   });
-  assert(top("'ATAN(-∞)' EVAL") === '`(-π)/2`', 'EVAL of ATAN(-∞) gives -π/2, as the AUR shows');
+  assert(top("'ATAN(-∞)' EVAL") === '`-π/2`', 'EVAL of ATAN(-∞) gives -π/2, as the AUR shows');
   assert(top("'1/∞' EVAL") === '0', 'EVAL of 1/∞ gives 0');
   assert(top("'∞-∞' EVAL") === '`?`', 'EVAL of ∞-∞ gives ?, the CAS calling it undefined');
   assert(top("'X+∞' EVAL") === '`∞`', 'EVAL of X+∞ gives ∞');
@@ -9149,4 +9149,14 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   runLine('APPROX');
   assert(top("'X+X' EVAL") === '`X + X`', 'EVAL in approximate mode leaves like terms');
   runLine('EXACT');
+}
+
+{
+  const show = (src) => formatAlgebra(parseAlgebra(src));
+  assert(show('-X*Y') === '-X*Y' && show('-2*X/Y') === '-2*X/Y' && show('-X^2*Y') === '-X^2*Y' && show('SIN(-X*Y)') === 'SIN(-X*Y)' && show('-X*Y+Z') === '-X*Y + Z' && show('(-X*Y)^2') === '(-X*Y)^2',
+    'a minus that starts an expression, an argument or a bracket reads on into its product or quotient without brackets, as it was typed');
+  assert(show('X*(-Y)') === 'X*(-Y)' && show('X-(-Y)') === 'X - (-Y)' && show('(-X)^2') === '(-X)^2' && show('A-(-X)*Y') === 'A - (-X)*Y' && show('-(-X)') === '-(-X)',
+    'a minus after an operator, under a power or on another minus keeps its brackets');
+  const same = ['-X*Y', '-A/X^2', '-(A+B)*C', '-X^2*Y', 'A^(-B*C)', 'SIN(-X*Y)+1', '-1/2*π', 'A-(-X)*Y', 'X>-Y*Z AND X<2'].filter((src) => !astEqual(parseAlgebra(show(src)), parseAlgebra(src)));
+  assert(same.length === 0, `what a leading minus prints as reads back as the same expression (${same})`);
 }

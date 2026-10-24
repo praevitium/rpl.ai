@@ -690,7 +690,7 @@ export function astSize(ast) {
 }
 
 export function formatAlgebra(ast) {
-  return fmt(ast, LOGIC_PREC.OR);
+  return fmt(ast, LOGIC_PREC.OR, true);
 }
 
 // Below every arithmetic and comparison level: X>1 AND X<2 needs no brackets.
@@ -702,7 +702,8 @@ export const PREC = Object.freeze({
   '+': 1, '-': 1, '*': 2, '/': 2, '^': 3,
 });
 
-function fmt(ast, parentPrec) {
+// `lead` is true where a minus may start the text with no brackets: the whole expression, an argument, the inside of brackets.
+function fmt(ast, parentPrec, lead = false) {
   if (!ast) return '';
   if (ast.kind === 'num') {
     const s = numText(ast);
@@ -718,21 +719,21 @@ function fmt(ast, parentPrec) {
   if (ast.kind === 'neg') {
     const inner = fmt(ast.arg, 3);
     const s = `-${inner}`;
-    return parentPrec >= 2 ? `(${s})` : s;
+    return parentPrec >= 2 && !(lead && parentPrec === 2) ? `(${s})` : s;
   }
   if (ast.kind === 'fn') {
     const logic = LOGIC_PREC[ast.name];
     if (logic !== undefined && ast.args.length === LOGIC_ARITY[ast.name]) {
-      const text = ast.name === 'NOT' ? `NOT ${fmt(ast.args[0], 0)}` : `${fmt(ast.args[0], logic)} ${ast.name} ${fmt(ast.args[1], logic + 1)}`;
+      const text = ast.name === 'NOT' ? `NOT ${fmt(ast.args[0], 0)}` : `${fmt(ast.args[0], logic, lead || logic < parentPrec)} ${ast.name} ${fmt(ast.args[1], logic + 1)}`;
       return logic < parentPrec ? `(${text})` : text;
     }
-    if (ast.name === 'INTEG' && ast.args.length === 4) return `∫(${[2, 3, 0, 1].map((k) => fmt(ast.args[k], LOGIC_PREC.OR)).join(',')})`;
-    if (ast.name === 'DERIV' && ast.args.length === 2 && ast.args[1].kind === 'var') return `∂${ast.args[1].name}(${fmt(ast.args[0], LOGIC_PREC.OR)})`;
+    if (ast.name === 'INTEG' && ast.args.length === 4) return `∫(${[2, 3, 0, 1].map((k) => fmt(ast.args[k], LOGIC_PREC.OR, true)).join(',')})`;
+    if (ast.name === 'DERIV' && ast.args.length === 2 && ast.args[1].kind === 'var') return `∂${ast.args[1].name}(${fmt(ast.args[0], LOGIC_PREC.OR, true)})`;
     if (ast.name === 'Σ' && ast.args.length === 4 && ast.args[1].kind === 'var') {
-      const [body, index, from, to] = ast.args.map((a) => fmt(a, LOGIC_PREC.OR));
+      const [body, index, from, to] = ast.args.map((a) => fmt(a, LOGIC_PREC.OR, true));
       return `Σ(${index}=${from},${to},${body})`;
     }
-    const inside = ast.args.map(a => fmt(a, LOGIC_PREC.OR)).join(',');
+    const inside = ast.args.map(a => fmt(a, LOGIC_PREC.OR, true)).join(',');
     return `${ast.name}(${inside})`;
   }
   if (ast.kind === 'bin') {
@@ -740,7 +741,7 @@ function fmt(ast, parentPrec) {
     const rightAssoc = (ast.op === '^');
     const lPrec = rightAssoc ? p + 1 : p;
     const rPrec = rightAssoc ? p : p + 1;
-    const lStr = fmt(ast.l, lPrec);
+    const lStr = fmt(ast.l, lPrec, lead || p < parentPrec);
     const rStr = fmt(ast.r, rPrec);
     // Comparisons other than = print tight, as the HP 50g shows 'X>Y'.
     const sep = (ast.op === '+' || ast.op === '-' || ast.op === '=')
