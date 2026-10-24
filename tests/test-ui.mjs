@@ -2613,6 +2613,29 @@ setAngle('RAD');
 }
 
 {
+  const { Autocomplete } = await import('../www/src/ui/autocomplete.js');
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const entry = new Entry(new Stack());
+  entry.hasFocus = () => true;
+  const ac = Object.assign(Object.create(Autocomplete.prototype), {
+    app: { entry, inputMode: 'rpl', errorBanner: null }, el: { hidden: true }, rows: [], index: 0, word: null, shown: null, _dismissedWord: null,
+  });
+  ac._render = function () { this.el.hidden = false; };
+  entry.subscribe(() => ac.update());
+  entry.type('STO');
+  const rows = ac.rows.length;
+  const steps = [];
+  for (let i = 0; i < 2 * rows + 2; i++) { ac.move(i % 3 === 2 ? -1 : 1); steps.push(ac.isOpen() && ac.rows.length === rows && entry.buffer === ac.rows[ac.index].name); }
+  assert(rows > 2 && ac.rows.some((r) => r.name === 'STO*') && steps.every(Boolean),
+    'autocomplete: ↑ and ↓ step through STO* and STO+, names that end in a word break, the list staying open on its rows with the line holding each');
+  ac.close();
+  const closed = ac.move(1);
+  ac.el.hidden = false;
+  ac.rows = [];
+  assert(closed === false && ac.move(1) === false, 'autocomplete: ↑ and ↓ do nothing on a closed list or one with no rows, where they used to throw');
+}
+
+{
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/setMenuHook\(\(list, temporary, title = null\) => \{\s*if \(!list\) this\.showLastMenu\(\);\s*else if \(temporary\) this\.setMenu\(this\._customMenuSlots\(list\), 'TMENU', \{ folder: title \}\);\s*else this\.showMenu\('CST', \{ commit: false \}\);/.test(appSrc)
     && /showCustomMenu\(\{ commit = true, refresh = false \} = \{\}\) \{\s*if \(commit && !refresh && this\.entry\.buffer/.test(appSrc) && /showLastMenu\(\) \{[\s\S]{0,300}?else this\.showMenu\(last\.kind, \{ commit: false \}\);/.test(appSrc),

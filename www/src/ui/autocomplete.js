@@ -189,9 +189,11 @@ export class Autocomplete {
     const text = entry.buffer;
     // An INPUT's answer is text the program reads back, so it gets no command completions.
     const typing = this.app.inputMode === 'rpl' && (entry.hasFocus() || this.app.typingOnKeypad) && state.halted?.kind !== 'input';
-    const at = typing && !this.app.errorBanner && !text.trimStart().startsWith('?')
-      ? unitPart(wordBeforeCursor(text, entry.cursor)) : null;
-    if (this.shown && at?.from === this._shownFrom && at.word === this.shown) return;
+    const active = typing && !this.app.errorBanner && !text.trimStart().startsWith('?');
+    const at = active ? unitPart(wordBeforeCursor(text, entry.cursor)) : null;
+    // A name ending in a word break, STO* or ΣX^2, is no word before the cursor, but it is still the one ↑ and ↓ put there.
+    const stillShown = this.shown && (at ? at.from === this._shownFrom && at.word === this.shown : active && text.slice(this._shownFrom, entry.cursor) === this.shown);
+    if (stillShown) return;
     this.shown = null;
     if (!at) this._dismissedWord = null;
     const after = text.slice(entry.cursor);
@@ -256,11 +258,11 @@ export class Autocomplete {
 
   // ↑ and ↓ put the highlighted completion in the line as they move; the list stays the one for what was typed.
   move(step) {
-    if (!this.isOpen()) return false;
+    if (!this.isOpen() || !this.rows.length) return false;
     this.index = (this.index + step + this.rows.length) % this.rows.length;
     const row = this.rows[this.index];
     this._replaceWord(row.words?.[0] ?? row.name);
-    this._render();
+    if (this.isOpen()) this._render();
     return true;
   }
 
