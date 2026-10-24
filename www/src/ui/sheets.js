@@ -262,7 +262,7 @@ export class Sheets {
       const data = this.app.drawers.graph.tableData(start, step, TABLE_ROWS);
       this.tbl.data = data;
       const shown = (v, digits) => (Number.isNaN(v) ? '—' : v === Infinity ? '∞' : v === -Infinity ? '−∞' : escapeHtml(withFractionMark(tableText(v, digits))));
-      const field = (key, label, value) => `<label class="tb-field"><span>${label}</span><input type="text" inputmode="decimal" data-tb="${key}" value="${escapeHtml(withFractionMark(tableText(value, 12)))}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>`;
+      const field = (key, label, value) => `<label class="tb-field"><span>${label}</span><input type="text" enterkeyhint="done" data-tb="${key}" value="${escapeHtml(withFractionMark(tableText(value, 12)))}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>`;
       const act = (name, label, title) => `<button type="button" class="btn" data-sh="${name}" title="${title}" aria-label="${title}">${label}</button>`;
       const heads = data.heads.map((h) => `<th scope="col" title="${escapeHtml(withFractionMark(h))}">${escapeHtml(withFractionMark(h))}</th>`).join('');
       const rows = data.rows.map((r, i) => `<tr><td data-sh="tb-pick" data-i="${i}">${shown(r.x, 12)}</td>${r.ys.map((y, j) => `<td data-sh="tb-pick" data-i="${i}" data-j="${j}">${shown(y, 8)}</td>`).join('')}</tr>`).join('');

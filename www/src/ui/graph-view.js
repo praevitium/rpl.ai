@@ -204,7 +204,7 @@ export class GraphView {
           <button type="submit" class="btn" title="Add this trace">Add</button>
         </form>
         <div class="sec-h">Window</div>
-        <div class="pl-range">${RANGE_FIELDS.map(([key, label], i) => `${i % 2 ? '<span>to</span>' : `<span>${key[0]}</span>`}<input type="text" inputmode="decimal" data-rng="${key}" aria-label="${label}" spellcheck="false" autocomplete="off">`).join('')}</div>
+        <div class="pl-range">${RANGE_FIELDS.map(([key, label], i) => `${i % 2 ? '<span>to</span>' : `<span>${key[0]}</span>`}<input type="text" enterkeyhint="done" data-rng="${key}" aria-label="${label}" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off">`).join('')}</div>
       </div>
     `;
     this._box = this.el.querySelector('.pl-box');

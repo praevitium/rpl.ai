@@ -3810,3 +3810,12 @@ setAngle('RAD');
     && css.includes('.pt-wrap.more-l.more-r, .tb-wrap.more-l.more-r,') && /@media \(pointer: coarse\) \{ \.tb td \{ height: 40px; \} \}/.test(css),
     'plot table: the rows scroll under a header that stays, fade where more columns continue, and take a 40 px tap on touch');
 }
+
+{
+  const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
+  const sh = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  assert(!/inputmode="decimal"/.test(gv + sh)
+    && gv.includes('<input type="text" enterkeyhint="done" data-rng="${key}" aria-label="${label}" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off">')
+    && sh.includes('<input type="text" enterkeyhint="done" data-tb="${key}"'),
+    'plot window and table fields: they ask for the phone\'s usual keyboard, since an iPhone\'s decimal pad has no minus sign for a negative bound or start, and label Enter Done');
+}
