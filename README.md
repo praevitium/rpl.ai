@@ -51,7 +51,7 @@ download, no account and no sign-up.
 
 | Area | What you get |
 |---|---|
-| **Numbers** | Exact big integers and fractions (`100 FACT` gives all 158 digits, `1/3 2/5 +` gives `11/15`), 12-digit reals, complex numbers, and binary integers in any base |
+| **Numbers** | Exact big integers and fractions (`100 FACT` gives all 158 digits, `1/3 2/5 +` gives `11/15`; a power that would pass a million digits says Insufficient memory, as the HP does when an object won't fit), 12-digit reals, complex numbers, and binary integers in any base |
 | **Algebra and calculus** | The Giac CAS behind SOLVE, FACTOR, EXPAND, PARTFRAC, DERIV, INTEG, TAYLR, SERIES, LAPLACE and ILAP, with `∫` and `∂` written inside algebraics |
 | **Units** | The HP 50g's whole unit catalog with SI prefixes, CONVERT and UBASE, and units inside algebraics |
 | **Linear algebra** | Vectors and matrices with DET, INV, RANK, LU, QR, SCHUR, CHOLESKY, EGV and LINSOLVE, and a matrix writer that pastes from spreadsheets |

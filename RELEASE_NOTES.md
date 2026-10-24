@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.74 (2026-10-24)
+**Latest release:** v0.8.75 (2026-10-24)
 
 ---
 
@@ -20,6 +20,29 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.75 — 2026-10-24
+
+- Fixed: GAMMA and FACT of a fraction from 142 up came back as ∞ where the
+  value fits a double: `150.5 GAMMA` is 4.6610726271E261 and `170.5 FACT`
+  9.48336756682E307. Past 171.625 a double cannot hold Γ, and ∞ is still
+  the answer.
+- Fixed: a huge value sent to ERF, ERFC, ZETA, UTPC, NDUPN or an exact
+  integer power showed JavaScript's own message ("Real() does not accept
+  NaN", "Invalid array length", "Maximum BigInt size exceeded"). ERF and
+  ERFC now give ±1 and 0 or 2 for a huge argument, ZETA 1, and the rest say
+  Bad argument value or Insufficient memory, as the HP does when an object
+  will not fit: a million copies for NDUPN, a million digits for an
+  integer or fraction power, which keeps `2 1000000000 ^` and
+  `1/3 100000000 ^` from freezing the page.
+- Fixed: a number or a list inside LOCAL's list said "startsWith is not a
+  function"; it says Bad argument value, as a name without a ← does.
+- Added: the table of values has Copy, and Share where the browser can, in
+  its header. They hand on a heading row, then x and each function's value
+  at 12 digits, blank where a function has none, as cells a spreadsheet
+  pastes.
+- Improved: a formula's soft keys carry TABLE after PLOT, so its table of
+  values is one tap from the level as well as in its ⋯ menu.
 
 ## v0.8.74 — 2026-10-24
 
