@@ -155,7 +155,11 @@ RPL puts the numbers first and the operation last. Each value goes on the
   the names you know and tap Solve beside the one to find; it searches from
   the number in its own box, so another number there can find another root,
   and it says whether it found a zero. Tap a name to put its value on the
-  stack. Command search opens the form on level 1, or on EQ. With a list of equations in
+  stack. Command search opens the form on level 1, or on EQ. The Equation
+  Library's Solve (find it in command search as Equation Library) opens a
+  set in the same form with its constants filled in: Solve beside a name
+  finds it from the boxes that hold values, going through the set's other
+  equations for what it needs on the way, as `MROOT` does. With a list of equations in
   EQ, `MSOLVR` puts up the HP's multiple-equation solver, a key for each
   variable: the key stores level 1 in it and marks it known, ⇦ solves for
   it and ⇨ recalls it. `MROOT` solves one equation at a time, each left
@@ -1238,7 +1242,9 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
   the equations follow the HP's sets as DB48X transcribes them, in plain
   numbers in SI units rather than the HP's unit-tagged values, so a few
   variable names differ, and each set's constants (g, ε0, k and so on, per
-  set as on the HP) are filled in. A tap on an equation puts it on the stack.
+  set as on the HP) are filled in. A tap on an equation puts it on the stack,
+  and Solve opens the set as a form, a box for each name; `SOLVEQN` and
+  `MSOLVR` put up the HP's soft keys for it instead.
 - An algebraic reads the HP's postfix factorial, `'5!'` or `'(N+1)!'`, but
   its text form writes `FACT(5)`; the textbook display shows `5!`.
 - `BEEP` doesn't hold the program while its tone plays; tones in a row still
@@ -1273,7 +1279,12 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
   terms) rather than blaming storage.
 - Solve equation is a sheet, opened from a formula's menu, not the HP's
   NUM.SLV screen: its boxes are variables, as on the HP, and Solve runs
-  `ROOT` from the number in a box (1 when blank).
+  `ROOT` from the number in a box (1 when blank). The Equation Library's
+  Solve opens its set in that form where the HP shows the multiple-equation
+  solver's soft keys.
+- The parts of a complex number are doubles, so one past 1.8E308 shows as
+  `∞` (and reads back as such) where the HP's range runs to
+  9.99999999999E499; reals are not limited.
 - `RCLF` returns the numbers of the set flags as a list, and `STOF` takes
   that list back, instead of the HP's binary-integer flag words.
 - A local variable is visible to programs called from its body; on the HP

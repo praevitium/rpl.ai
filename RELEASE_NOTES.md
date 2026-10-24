@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.78 (2026-10-24)
+**Latest release:** v0.8.79 (2026-10-24)
 
 ---
 
@@ -20,6 +20,34 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.79 — 2026-10-24
+
+- Fixed: a complex number with an infinite part came back wrong from a
+  save. `(1E300,1E300) SQ` shows `(-∞, ∞)`, and after the autosave, a
+  reload, a backup or a shared link it was `(-∞, -∞)`: JSON has no infinity,
+  so the part was written as nothing and read back as minus infinity or
+  zero. It is written as a word now, in lists, vectors and matrices too, and
+  `(∞, 1)` reads back as typed, so a level that overflowed can be edited and
+  pasted. A figure past a double (`(1E400, 0)`) or a fraction over zero is
+  still no complex part.
+- Fixed: a whole complex part of 13 digits or more printed as JavaScript
+  writes it, `(1e+21, 5)` or `(123456789012000000, 1)`; it shows as a real
+  does, `(1.E21, 5)` and `(1.23456789012E17, 1)`.
+- Added: the Equation Library's Solve opens a set as a form. Pick a set and
+  tap Solve: a box for each name, the set's constants already in, and Solve
+  beside each name. Type what you know and tap Solve beside the one to find;
+  the equations are searched as `MROOT` does, so a name that needs another
+  found first gets it on the way and says so (`Found P = 12, with V = 6 on
+  the way`), and one short of values lists the boxes to fill. Back returns
+  to the set. A set of 29 names scrolls with its note held at the bottom,
+  and 3 or more equations sit behind a heading. `SOLVEQN` and `MSOLVR` still
+  put up the HP's soft keys.
+- Improved: command search finds the Equation Library as Equation Library,
+  physics, engineering or library; the sheet's Back has the arrow the
+  reference pages' Back has, where it had the backspace key's; and in Solve equation
+  the names, boxes and Solve keys line up in three columns however long a
+  name is.
 
 ## v0.8.78 — 2026-10-24
 
