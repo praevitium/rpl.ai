@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.72 (2026-10-23)
+**Latest release:** v0.8.73 (2026-10-23)
 
 ---
 
@@ -20,6 +20,25 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.73 — 2026-10-23
+
+- Added: a table of values for the plot, the HP's TABLE. The table button
+  among the plot's tools, or `V` on the plot, opens a sheet of x from a
+  start by a step with a column for each function plotted, opening on a round
+  start at the window's left edge. Type another start or step, halve or
+  double the step, or move Earlier and Later by 30 rows; a tap on a value puts
+  its point, (x,y), on the stack, and a tap on x the number alone. A function
+  with no value at an x shows a dash. The header stays while the rows scroll,
+  and columns that run past a narrow screen fade at the edge.
+- Fixed: CAS results wrote a product with its numbers last, `A*2*X` for the
+  derivative of `A*X^2` and `B*3*COS(3*X)` for that of `B*SIN(3*X)`. A
+  product now reads with its numbers first, `2*A*X` and `3*B*COS(3*X)`; only
+  literal numbers move, and the other factors keep their order.
+- Improved: the plot's window fields and the table's start and step ask for
+  the phone's usual keyboard. An iPhone's decimal pad has no minus sign, so a
+  negative bound or start could not be typed there; their Enter key now says
+  Done.
 
 ## v0.8.72 — 2026-10-23
 
