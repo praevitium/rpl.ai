@@ -9104,6 +9104,10 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(top('`π/2` R→D') === '90' && top('`-(π/4)` R→D') === '-45' && top('`π/7` R→D') === '180/7' && top('90 D→R R→D') === '90'
       && top('1. R→D') === '57.2957795131',
     'R→D of an exact multiple of π gives its exact degrees, where it stayed R→D(π/2)');
+  assert(top("'X' D→R") === '`D→R(X)`' && top("'D→R(X)'") === '`D→R(X)`' && top("'X^2 + R→D(Y)'") === '`X^2 + R→D(Y)`' && top("'D→R(180.)' EVAL") === '3.14159265359',
+    'D→R(X) and R→D(X), as a symbolic prints them, read back and run as typed, where the arrow ended the name');
+  assert(top('`SIN(D→R(X))`') === '`SIN(D→R(X))`' && formatAlgebra(parseAlgebra('A→B(1)')) === 'A→B(1)' && (() => { try { parseAlgebra('A→B'); return false; } catch { return true; } })(),
+    'an arrow inside a name is read only in a call; a bare A→B is still no name');
   assert(top('GRD 50 SIN') === '`SQRT(2)/2`' && top('GRD 1/2 ASIN') === '100/3', 'exact trig: grads');
   assert(top('RAD π 6 / SIN') === '1/2' && top('RAD 2 π * 3 / SIN') === '`SQRT(3)/2`' && top('RAD π COS') === '-1',
     'exact trig: a multiple of π in RAD');

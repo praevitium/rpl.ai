@@ -484,8 +484,8 @@ export function parseAlgebra(src) {
     // NAME(args) is a call, as on the HP 50g: a built-in function, or a user
     // function such as one DEFINE makes.
     // A name may hold % after its first letter, as the TVM solver's I%YR does, and start with &, the wildcard
-    // ↓MATCH and ↑MATCH patterns use, or ←, a compiled local's mark.
-    const m = s.slice(i).match(/^[&←]?[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω0-9%]*/);
+    // ↓MATCH and ↑MATCH patterns use, or ←, a compiled local's mark. A call may have an arrow in it: D→R(X).
+    const m = s.slice(i).match(/^[&←]?[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω0-9%]*(?:→[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω0-9%]*(?=\s*\())?/);
     if (m) {
       i += m[0].length;
       const ident = m[0];
