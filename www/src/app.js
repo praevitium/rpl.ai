@@ -54,7 +54,7 @@ import {
 } from './rpl/types.js';
 import { parseTyped } from './rpl/parser.js';
 import {
-  loadInitialState, adoptStoredState, saveToLocalStorage, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
+  loadInitialState, adoptStoredState, saveToLocalStorage, saveDraft, loadDraft, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
   shareLink, sharedSource, sharedText,
 } from './rpl/persist.js';
 import { giac } from './rpl/cas/giac-engine.mjs';
@@ -82,6 +82,7 @@ const TVM_VARIABLES = ['N', 'I%YR', 'PV', 'PMT', 'FV', 'PYR'];
 const SIGMA_DATA_KEYS = ['Σ+', 'Σ-', 'CLΣ', 'STOΣ'];
 const ALARM_FRESH_MS = 60000;
 const ALARM_WAIT_MAX_MS = 3600000;
+const DRAFT_DELAY_MS = 400;
 const BEEP_BUZZ_MAX_S = 5;
 // The mode commands whose keys mark the mode in force, as the HP's DEG■ and HEX■ do: [state field, value].
 const MODE_KEYS = Object.freeze({
@@ -268,12 +269,44 @@ class App {
     this._installBackButton();
     this._installHaptics();
     this.renderAll();
+    this._restoreDraft();
+    this._installDraft();
     this._openSharedLink();
     this._openShortcut();
     this._watchAlarms();
     this.keepAwake();
     document.addEventListener('visibilitychange', () => { this._watchAlarms(); this.keepAwake(); });
     if (!this.prefs.tourSeen) setTimeout(() => this.tour.start(), 700);
+  }
+
+  // The HP keeps its command line through power-off. A phone may drop the page while another app has the screen, so a line
+  // typed but not entered is kept and comes back at the next start with its cursor, without raising the keyboard.
+  _restoreDraft() {
+    const draft = loadDraft();
+    if (!draft) return;
+    this.entry.resetBuffer(draft.text);
+    this.entry.cursor = draft.cursor;
+  }
+
+  _installDraft() {
+    let timer = 0;
+    const keep = () => {
+      clearTimeout(timer);
+      saveDraft(this._draft());
+    };
+    this.entry.subscribe(() => {
+      clearTimeout(timer);
+      if (this._draft()) timer = setTimeout(keep, DRAFT_DELAY_MS);
+      else keep();
+    });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') keep(); });
+    addEventListener('pagehide', keep);
+  }
+
+  // What a reload brings back: the plain command line, not a level or variable being edited or a dialog's answer.
+  _draft() {
+    const text = this.entry.buffer;
+    return !text.trim() || this.pendingEdit || this._dialogHalt ? null : { text, cursor: this.entry.cursor };
   }
 
   // A shared link, or text another app shares to rpl.ai, only fills the command

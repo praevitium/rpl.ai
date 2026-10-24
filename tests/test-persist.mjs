@@ -22,7 +22,7 @@ import {
 import {
   snapshot, rehydrate, encodeValue, decodeValue, loadInitialState, STORAGE_KEY,
   BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup, putBackBackup, exportBackup, subscribeBackups,
-  saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX,
+  saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX, saveDraft, loadDraft, DRAFT_KEY,
 } from '../www/src/rpl/persist.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import { varRecall } from '../www/src/rpl/state.js';
@@ -1034,6 +1034,41 @@ function quotaError() {
   s.push(Symbolic(ast));
   assert(saveToLocalStorage(s) === 'nested', 'autosave says nested, not full, when a value is nested too deeply to write');
   resetHome();
+}
+
+// The command line typed but not entered is kept, as the HP keeps its line through power-off.
+{
+  const saved = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
+  try {
+    assert(loadDraft() === null, 'draft: nothing kept on a fresh store');
+    saveDraft({ text: '1 2 + SIN', cursor: 3 });
+    const back = loadDraft();
+    assert(back.text === '1 2 + SIN' && back.cursor === 3 && store.has(DRAFT_KEY), 'draft: the line and its cursor come back');
+    saveDraft({ text: '  \n ', cursor: 1 });
+    assert(loadDraft() === null, 'draft: a blank line is no draft');
+    saveDraft({ text: '1 2 +', cursor: 99 });
+    assert(loadDraft().cursor === 5, 'draft: a cursor past the end is put at the end');
+    store.set(DRAFT_KEY, JSON.stringify({ text: 'X', cursor: 'a' }));
+    assert(loadDraft().cursor === 1, 'draft: a cursor that is no whole number is put at the end');
+    for (const bad of ['{', 'null', '[]', '{"text":5}', '{"text":""}']) {
+      store.set(DRAFT_KEY, bad);
+      assert(loadDraft() === null, `draft: ${bad} is no draft`);
+    }
+    saveDraft({ text: '1 2 +', cursor: 5 });
+    saveDraft(null);
+    assert(!store.has(DRAFT_KEY), 'draft: saving none forgets it');
+    saveDraft({ text: '1 2 +', cursor: 5 });
+    saveDraft({ text: 'X '.repeat(60000), cursor: 0 });
+    assert(!store.has(DRAFT_KEY), 'draft: a line of over 100,000 characters is not kept, and the older draft goes');
+    globalThis.localStorage = { getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('full'); }, removeItem: () => { throw new Error('blocked'); } };
+    let threw = false;
+    try { saveDraft({ text: '1', cursor: 1 }); saveDraft(null); loadDraft(); } catch { threw = true; }
+    assert(!threw && loadDraft() === null, 'draft: blocked or full storage is no error');
+  } finally {
+    globalThis.localStorage = saved;
+  }
 }
 
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');

@@ -4029,3 +4029,20 @@ setAngle('RAD');
   assert(/this\._installAutosave\(\);\n\s*this\._keepStorage\(\);/.test(app2) && /_keepStorage\(\) \{\n\s*if \(this\.isInstalledApp\(\)\) Promise\.resolve\(globalThis\.navigator\?\.storage\?\.persist\?\.\(\)\)\.catch\(\(\) => \{\}\);/.test(app2),
     'an installed app asks for lasting storage as it starts, and a tab waits for the button, as Firefox prompts');
 }
+
+// The command line typed but not entered is kept across a reload, as the HP keeps its line through power-off.
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  assert(/this\.renderAll\(\);\n\s*this\._restoreDraft\(\);\n\s*this\._installDraft\(\);\n\s*this\._openSharedLink\(\);/.test(appSrc),
+    'a kept line is restored before a shared link or shortcut fills the line, and saving starts after the restore');
+  assert(/_restoreDraft\(\) \{\n\s*const draft = loadDraft\(\);\n\s*if \(!draft\) return;\n\s*this\.entry\.resetBuffer\(draft\.text\);\n\s*this\.entry\.cursor = draft\.cursor;\n\s*\}/.test(appSrc),
+    'the restore sets the text and the cursor without recall, which would raise the phone keyboard');
+  assert(/this\.entry\.subscribe\(\(\) => \{\n\s*clearTimeout\(timer\);\n\s*if \(this\._draft\(\)\) timer = setTimeout\(keep, DRAFT_DELAY_MS\);\n\s*else keep\(\);\n\s*\}\);/.test(appSrc)
+    && /visibilityState === 'hidden'\) keep\(\)/.test(appSrc) && /addEventListener\('pagehide', keep\)/.test(appSrc),
+    'a line is saved after a pause in typing, at once when it is emptied, and as the page is hidden or closed');
+  assert(/_draft\(\) \{\n\s*const text = this\.entry\.buffer;\n\s*return !text\.trim\(\) \|\| this\.pendingEdit \|\| this\._dialogHalt \? null : \{ text, cursor: this\.entry\.cursor \};/.test(appSrc),
+    'a blank line, an edit of a level or variable and a dialog\'s answer are not kept');
+  assert(/resetEverything\(\) \{\n\s*this\.app\.entry\.resetBuffer\(''\);\n\s*const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY,/.test(sheetsSrc),
+    'Reset empties the line before it clears storage, or the page being closed would save the line again');
+}

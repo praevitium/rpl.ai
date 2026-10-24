@@ -327,6 +327,26 @@ export function loadInitialState(stack) {
   return 'seed';
 }
 
+export const DRAFT_KEY = 'hp50.draft';
+const DRAFT_MAX_CHARS = 100000;
+
+// The command line typed but not entered, which the HP keeps through power-off. Never throws: a draft is only a convenience.
+export function saveDraft(draft) {
+  try {
+    if (draft && draft.text.length <= DRAFT_MAX_CHARS) localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    else localStorage.removeItem(DRAFT_KEY);
+  } catch { /* storage is full or blocked */ }
+}
+
+export function loadDraft() {
+  try {
+    const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null');
+    if (typeof draft?.text !== 'string' || !draft.text.trim() || draft.text.length > DRAFT_MAX_CHARS) return null;
+    const cursor = Number.isInteger(draft.cursor) ? Math.max(0, Math.min(draft.cursor, draft.text.length)) : draft.text.length;
+    return { text: draft.text, cursor };
+  } catch { return null; }
+}
+
 export function exportToFile(stack, filename = `hp50-${fileStamp()}.json`) {
   return downloadFile(JSON.stringify(snapshot(stack), null, 2), filename, 'application/json');
 }
