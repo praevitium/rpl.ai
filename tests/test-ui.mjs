@@ -3944,9 +3944,12 @@ setAngle('RAD');
     && /case 'solver\.open': this\.openSolver\(\); return true;/.test(app)
     && /openSolver\(value = this\.stack\.depth \? this\.stack\.peek\(1\) : null\) \{\n\s*const eq = varRecall\('EQ'\);/.test(app),
     'a formula\'s level menu and soft keys open Solve equation, and so does command search, on level 1 or on EQ');
-  assert(/'solver\.open':\s+\{ label: 'Solve equation: [^']+', surfaces: \['palette'\] \},/.test(actions) && /'printlog\.open', 'solver\.open',\n\]\);/.test(palette)
+  assert(/'solver\.open':\s+\{ label: 'Solve equation: [^']+', surfaces: \['palette'\] \},/.test(actions) && /'printlog\.open', 'solver\.open', 'eqlib\.open',\n\]\);/.test(palette)
     && /this\.kind === 'solver'/.test(sheets) && /case 'sv-solve': this\._solve\(b\.dataset\.name\); return;/.test(sheets),
     'the sheet is an action in command search, and its Solve keys run _solve');
+  assert(/'eqlib\.open':\s+\{ label: 'Equation Library: physics and engineering equation sets to solve from a form', surfaces: \['palette'\] \},/.test(actions)
+    && /case 'eqlib\.open': this\.sheets\.openEquationLibrary\(\); return true;/.test(app),
+    'the Equation Library is an action in command search, found by Equation Library, physics, engineering or library, and opens its sheet');
 }
 
 // Settings > Data says whether the browser will keep the calculator's memory, and an installed app asks it to at the start.

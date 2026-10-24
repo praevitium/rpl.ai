@@ -2579,6 +2579,7 @@ class App {
       case 'about.open': this.sheets.openAbout(); return true;
       case 'printlog.open': this.sheets.openPrintLog(); return true;
       case 'solver.open': this.openSolver(); return true;
+      case 'eqlib.open': this.sheets.openEquationLibrary(); return true;
       case 'app.install': this.installApp(); return true;
       case 'assistant.ask': {
         const text = this.entry.buffer.trim().replace(/^\?/, '').trim();

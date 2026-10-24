@@ -20,6 +20,7 @@ export const ACTIONS = Object.freeze({
   'about.open':        { label: 'About rpl.ai', surfaces: ['appbar.help'] },
   'printlog.open':     { label: 'Print log: what PR1, PRST and the other print commands printed', surfaces: ['palette'] },
   'solver.open':       { label: 'Solve equation: find a name in the formula on level 1, or in EQ, from the others', surfaces: ['palette'] },
+  'eqlib.open':        { label: 'Equation Library: physics and engineering equation sets to solve from a form', surfaces: ['palette'] },
   'app.install':       { label: 'Install rpl.ai as an app', surfaces: ['appbar.help', 'settings.data', 'palette'] },
   'edit.undo':         { label: 'Undo', surfaces: ['appbar.undo', 'keypad.UNDO'] },
   'edit.redo':         { label: 'Redo', surfaces: ['appbar.redo', 'keypad.REDO'] },
