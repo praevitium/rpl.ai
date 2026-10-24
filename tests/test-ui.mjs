@@ -4037,12 +4037,12 @@ setAngle('RAD');
   const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
   assert(/this\.renderAll\(\);\n\s*this\._restoreDraft\(\);\n\s*this\._installDraft\(\);\n\s*this\._openSharedLink\(\);/.test(appSrc),
     'a kept line is restored before a shared link or shortcut fills the line, and saving starts after the restore');
-  assert(/_restoreDraft\(\) \{\n\s*const draft = loadDraft\(\);\n\s*if \(!draft\) return;\n\s*this\.entry\.resetBuffer\(draft\.text\);\n\s*this\.entry\.cursor = draft\.cursor;\n\s*\}/.test(appSrc),
+  assert(/_restoreDraft\(\) \{\n\s*const draft = loadDraft\(\);\n\s*if \(!draft\) return;\n\s*this\.entry\.resetBuffer\(draft\.text\);\n\s*this\.entry\.cursor = draft\.cursor;\n\s*if \(draft\.writer\) this\._restoreWriter\(draft\.writer\);\n\s*\}/.test(appSrc),
     'the restore sets the text and the cursor without recall, which would raise the phone keyboard');
   assert(/this\.entry\.subscribe\(\(\) => \{\n\s*clearTimeout\(timer\);\n\s*if \(this\._draft\(\)\) timer = setTimeout\(keep, DRAFT_DELAY_MS\);\n\s*else keep\(\);\n\s*\}\);/.test(appSrc)
     && /visibilityState === 'hidden'\) keep\(\)/.test(appSrc) && /addEventListener\('pagehide', keep\)/.test(appSrc),
     'a line is saved after a pause in typing, at once when it is emptied, and as the page is hidden or closed');
-  assert(/_draft\(\) \{\n\s*const text = this\.entry\.buffer;\n\s*return !text\.trim\(\) \|\| this\.pendingEdit \|\| this\._dialogHalt \? null : \{ text, cursor: this\.entry\.cursor \};/.test(appSrc),
+  assert(/_draft\(\) \{\n\s*if \(this\.pendingEdit \|\| this\._dialogHalt\) return null;\n\s*const text = this\.entry\.buffer;/.test(appSrc),
     'a blank line, an edit of a level or variable and a dialog\'s answer are not kept');
   assert(/resetEverything\(\) \{\n\s*this\.app\.entry\.resetBuffer\(''\);\n\s*const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY,/.test(sheetsSrc),
     'Reset empties the line before it clears storage, or the page being closed would save the line again');
@@ -4084,4 +4084,16 @@ setAngle('RAD');
   assert(/loadInitialState\(this\.stack\);\n\s*this\.entry\.setHistory\(loadHistory\(\)\);\n\s*this\.entry\.subscribeHistory\(\(\) => saveHistory\(this\.entry\.getHistory\(\)\)\);/.test(appSrc),
     'the saved lines are loaded into the entry at the start, and every change to the history saves it');
   assert(/const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY, HISTORY_KEY,/.test(sheetsSrc), 'Reset forgets the kept lines');
+}
+
+// The formula or matrix being written comes back with the line.
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/if \(draft\.writer\) this\._restoreWriter\(draft\.writer\);/.test(appSrc)
+    && /_restoreWriter\(\{ mode, saved \}\) \{\n\s*try \{\n\s*this\.setInputMode\(mode\);\n\s*this\._writer\(\)\.restore\(saved\);\n\s*\} catch \(e\) \{[\s\S]*?this\.setInputMode\('rpl'\);/.test(appSrc),
+    'the writer a draft held is opened and filled at the start, and one that cannot be put back is closed again so the start goes on');
+  assert(/_draft\(\) \{\n\s*if \(this\.pendingEdit \|\| this\._dialogHalt\) return null;\n\s*const text = this\.entry\.buffer;\n\s*const writer = this\._writerDraft\(\);\n\s*return text\.trim\(\) \|\| writer \? \{ text, cursor: this\.entry\.cursor, \.\.\.\(writer && \{ writer \}\) \} : null;/.test(appSrc)
+    && /if \(mode === 'equation'\) saved\.state = \{ \.\.\.saved\.state, history: \[\], future: \[\] \};/.test(appSrc),
+    'a draft holds the line and the open writer, a formula without its undo steps, and nothing while a level or variable is edited');
+  assert(/this\.renderStatus\(\);\n\s*this\._keepDraft\?\.\(\);\n\s*\}\n\n\s*\/\/ A line a program/.test(appSrc) || /this\._keepDraft\?\.\(\);/.test(appSrc), 'changing the input mode saves the draft at once, so a closed writer is forgotten');
 }

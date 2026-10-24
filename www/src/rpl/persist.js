@@ -330,20 +330,45 @@ export function loadInitialState(stack) {
 export const DRAFT_KEY = 'hp50.draft';
 const DRAFT_MAX_CHARS = 100000;
 
-// The command line typed but not entered, which the HP keeps through power-off. Never throws: a draft is only a convenience.
+// The command line typed but not entered, and the formula or matrix being written, which the HP keeps through power-off.
+// Never throws: a draft is only a convenience.
 export function saveDraft(draft) {
   try {
-    if (draft && draft.text.length <= DRAFT_MAX_CHARS) localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-    else localStorage.removeItem(DRAFT_KEY);
+    if (draft && draft.text.length <= DRAFT_MAX_CHARS) {
+      const kept = draft.writer && JSON.stringify(draft.writer).length > DRAFT_MAX_CHARS ? { text: draft.text, cursor: draft.cursor } : draft;
+      if (kept.text.trim() || kept.writer) { localStorage.setItem(DRAFT_KEY, JSON.stringify(kept)); return; }
+    }
+    localStorage.removeItem(DRAFT_KEY);
   } catch { /* storage is full or blocked */ }
+}
+
+// A writer's content as its snapshot() gives it, or null when what was saved is not that. A formula comes back without its
+// undo steps.
+function readWriter(writer) {
+  const saved = writer?.saved;
+  if (!saved || typeof saved !== 'object') return null;
+  if (writer.mode === 'equation') {
+    const { state } = saved;
+    const shaped = Array.isArray(state?.root) && state.root.length > 0 && typeof state.target?.mode === 'string' && Array.isArray(state.target.path);
+    return shaped ? { mode: 'equation', saved: { state: { ...state, history: [], future: [], typingKey: null, lastFace: null } } } : null;
+  }
+  if (writer.mode !== 'matrix') return null;
+  const { grid, asVector, focus } = saved;
+  const cell = (c) => c == null || typeof c === 'string' || typeof c === 'number';
+  const shaped = Array.isArray(grid) && grid.length > 0 && Array.isArray(grid[0]) && grid[0].length > 0
+    && grid.every((row) => Array.isArray(row) && row.length === grid[0].length && row.every(cell));
+  const at = Array.isArray(focus) && focus.length === 2 && focus.every(Number.isInteger) ? focus : undefined;
+  return shaped ? { mode: 'matrix', saved: { grid: grid.map((row) => row.map((c) => String(c ?? ''))), asVector: !!asVector, focus: at } } : null;
 }
 
 export function loadDraft() {
   try {
     const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null');
-    if (typeof draft?.text !== 'string' || !draft.text.trim() || draft.text.length > DRAFT_MAX_CHARS) return null;
-    const cursor = Number.isInteger(draft.cursor) ? Math.max(0, Math.min(draft.cursor, draft.text.length)) : draft.text.length;
-    return { text: draft.text, cursor };
+    const text = typeof draft?.text === 'string' && draft.text.length <= DRAFT_MAX_CHARS ? draft.text : '';
+    const writer = readWriter(draft?.writer);
+    if (!text.trim() && !writer) return null;
+    const cursor = Number.isInteger(draft.cursor) ? Math.max(0, Math.min(draft.cursor, text.length)) : text.length;
+    return { text, cursor, ...(writer && { writer }) };
   } catch { return null; }
 }
 

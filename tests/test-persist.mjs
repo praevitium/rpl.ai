@@ -1071,6 +1071,57 @@ function quotaError() {
   }
 }
 
+// The formula or matrix being written is kept with the line, as the HP keeps what it was in the middle of.
+{
+  const saved = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
+  const eq = (root, extra = {}) => ({ mode: 'equation', saved: { state: { root, target: { mode: 'insert', path: [2] }, history: [{ root: [{ t: 'hole' }] }], future: [], typingKey: 'x', lastFace: '+', ...extra } } });
+  const root = [{ t: 'name', text: 'X' }, { t: 'op', op: '+' }, { t: 'num', text: '1' }];
+  try {
+    saveDraft({ text: '', cursor: 0, writer: eq(root) });
+    const back = loadDraft();
+    assert(back.text === '' && back.writer.mode === 'equation' && back.writer.saved.state.root.length === 3 && store.has(DRAFT_KEY),
+      'writer draft: a formula alone is a draft, with a blank line');
+    assert(back.writer.saved.state.history.length === 0 && back.writer.saved.state.future.length === 0 && back.writer.saved.state.typingKey === null && back.writer.saved.state.lastFace === null,
+      'writer draft: a formula comes back without its undo steps and typing marks');
+    saveDraft({ text: '3 4 +', cursor: 2, writer: eq(root) });
+    assert(loadDraft().text === '3 4 +' && loadDraft().cursor === 2 && loadDraft().writer.mode === 'equation', 'writer draft: the line and the formula are kept together');
+    const matrix = { mode: 'matrix', saved: { grid: [['1', 2], [null, '4']], asVector: false, focus: [1, 0] } };
+    saveDraft({ text: '', cursor: 0, writer: matrix });
+    const m = loadDraft().writer;
+    assert(m.mode === 'matrix' && JSON.stringify(m.saved.grid) === '[["1","2"],["","4"]]' && m.saved.asVector === false && m.saved.focus.join() === '1,0',
+      'writer draft: a matrix comes back with its cells as text and its cursor cell');
+    saveDraft({ text: '', cursor: 0, writer: { mode: 'matrix', saved: { grid: [['1']], asVector: 1, focus: ['a', 2] } } });
+    assert(loadDraft().writer.saved.asVector === true && loadDraft().writer.saved.focus === undefined, 'writer draft: a cursor cell that is no pair of whole numbers is left out');
+    for (const [name, writer] of [
+      ['an unknown writer', { mode: 'plot', saved: { grid: [['1']] } }],
+      ['a matrix with ragged rows', { mode: 'matrix', saved: { grid: [['1', '2'], ['3']] } }],
+      ['a matrix with no cells', { mode: 'matrix', saved: { grid: [] } }],
+      ['a matrix of lists', { mode: 'matrix', saved: { grid: [[[1]]] } }],
+      ['a formula with no root', { mode: 'equation', saved: { state: { target: { mode: 'insert', path: [] } } } }],
+      ['a formula with an empty root', { mode: 'equation', saved: { state: { root: [], target: { mode: 'insert', path: [0] } } } }],
+      ['a formula with no target', { mode: 'equation', saved: { state: { root } } }],
+      ['a formula that is no object', { mode: 'equation', saved: { state: 5 } }],
+      ['nothing saved', { mode: 'equation' }],
+    ]) {
+      store.set(DRAFT_KEY, JSON.stringify({ text: '1 2', cursor: 1, writer }));
+      const d = loadDraft();
+      assert(d && d.text === '1 2' && d.writer === undefined, `writer draft: ${name} is dropped and the line stays`);
+    }
+    store.set(DRAFT_KEY, JSON.stringify({ text: '', cursor: 0, writer: { mode: 'matrix', saved: { grid: [[1], [2, 3]] } } }));
+    assert(loadDraft() === null, 'writer draft: a blank line and a writer that cannot be read is no draft');
+    saveDraft({ text: '1 2', cursor: 3, writer: { mode: 'matrix', saved: { grid: [['9'.repeat(150000)]], asVector: false } } });
+    assert(JSON.parse(store.get(DRAFT_KEY)).writer === undefined && loadDraft().text === '1 2', 'writer draft: a writer over 100,000 characters is left out and the line is kept');
+    saveDraft({ text: '', cursor: 0, writer: { mode: 'matrix', saved: { grid: [['9'.repeat(150000)]], asVector: false } } });
+    assert(!store.has(DRAFT_KEY), 'writer draft: with nothing else to keep, one that is too big leaves nothing');
+    saveDraft({ text: '  ', cursor: 0 });
+    assert(!store.has(DRAFT_KEY), 'writer draft: a blank line and no writer is no draft');
+  } finally {
+    globalThis.localStorage = saved;
+  }
+}
+
 // The lines entered are kept, as the HP keeps its last command lines through power-off.
 {
   const saved = globalThis.localStorage;

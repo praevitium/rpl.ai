@@ -288,6 +288,19 @@ class App {
     if (!draft) return;
     this.entry.resetBuffer(draft.text);
     this.entry.cursor = draft.cursor;
+    if (draft.writer) this._restoreWriter(draft.writer);
+  }
+
+  // A formula or matrix being written comes back open, as the line does; one that cannot be put back is left out.
+  _restoreWriter({ mode, saved }) {
+    try {
+      this.setInputMode(mode);
+      this._writer().restore(saved);
+    } catch (e) {
+      console.warn('rpl.ai: could not bring back the writer', e);
+      try { this._writer().clear(); } catch { /* it never opened */ }
+      this.setInputMode('rpl');
+    }
   }
 
   _installDraft() {
@@ -296,6 +309,7 @@ class App {
       clearTimeout(timer);
       saveDraft(this._draft());
     };
+    this._keepDraft = keep;
     this.entry.subscribe(() => {
       clearTimeout(timer);
       if (this._draft()) timer = setTimeout(keep, DRAFT_DELAY_MS);
@@ -305,10 +319,22 @@ class App {
     addEventListener('pagehide', keep);
   }
 
-  // What a reload brings back: the plain command line, not a level or variable being edited or a dialog's answer.
+  // What a reload brings back: the plain command line and the formula or matrix being written, not a level or variable being
+  // edited or a dialog's answer. A writer is saved as the page is hidden, and forgotten when it closes.
   _draft() {
+    if (this.pendingEdit || this._dialogHalt) return null;
     const text = this.entry.buffer;
-    return !text.trim() || this.pendingEdit || this._dialogHalt ? null : { text, cursor: this.entry.cursor };
+    const writer = this._writerDraft();
+    return text.trim() || writer ? { text, cursor: this.entry.cursor, ...(writer && { writer }) } : null;
+  }
+
+  _writerDraft() {
+    const mode = this.inputMode;
+    const editor = { equation: this.equationEditor, matrix: this.matrixEditor }[mode];
+    if (!editor || editor.isEmpty()) return null;
+    const saved = editor.snapshot();
+    if (mode === 'equation') saved.state = { ...saved.state, history: [], future: [] };
+    return { mode, saved };
   }
 
   // A shared link, or text another app shares to rpl.ai, only fills the command
@@ -1811,6 +1837,7 @@ class App {
     this.keypad.update();
     this.appbar.updateHistory();
     this.renderStatus();
+    this._keepDraft?.();
   }
 
   openEquationEditor() { this.runAction('writer.equation'); }
