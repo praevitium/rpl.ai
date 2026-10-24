@@ -1,4 +1,4 @@
-import { RPLError, checkTimeLimit } from '../stack.js';
+import { Stack, RPLError, checkTimeLimit } from '../stack.js';
 import { Real, Symbolic, Name, Str, RList, isReal, isInteger, isList, isName, isString, isSymbolic, isProgram } from '../types.js';
 import { Bin, freeVars } from '../algebra.js';
 import { register, lookup } from './registry.js';
@@ -78,15 +78,40 @@ export function findRoot(fx, guesses) {
   return extremum(fx, best, Math.abs(b - a) || (Math.abs(best) || 1));
 }
 
+// The root, how far the function is from zero there (NaN where it cannot be taken) and whether that is a zero: a million
+// times closer than it is a hair away.
+function rootAndResidual(f, name, guesses, s) {
+  const fx = sampler(f, name, s);
+  const root = findRoot(fx, guesses);
+  let residual = NaN, nearby = NaN;
+  try {
+    residual = Math.abs(fx(root));
+    nearby = Math.abs(fx(root + 1e-6 * Math.max(1, Math.abs(root))));
+  } catch { /* the root stands without it */ }
+  return { root, residual, zero: residual === 0 || residual <= 1e-6 * nearby };
+}
+
 register('ROOT', (s) => {
   const [f, name, guess] = s.popN(3);
   if (!(isSymbolic(f) || isProgram(f)) || !isName(name) || !(isList(guess) || isReal(guess) || isInteger(guess))) throw new RPLError('ROOT: Bad argument type');
   const guesses = (isList(guess) ? guess.items : [guess]).map(number);
   if (!guesses.length) throw new RPLError('ROOT: Bad argument value');
-  const root = findRoot(sampler(f, name.id, s), guesses);
+  const { root } = rootAndResidual(f, name.id, guesses, s);
   storeVar(name.id, Real(root));
   s.push(Real(root));
 }, { category: 'CAS / symbolic', categoryOrder: 10.7, label: 'ROOT' });
+
+// The solver sheet's side of ROOT: the names an equation holds, in the order they are written.
+export function solverNames(expr) {
+  return [...freeVars(expr)].filter((name) => !MES_CONSTANTS.has(name));
+}
+
+// One name solved from the others' stored values, from a starting point, as ROOT does but off the stack.
+export function solveEquation(f, name, guess) {
+  const found = rootAndResidual(f, name, [guess], new Stack());
+  storeVar(name, Real(found.root));
+  return found;
+}
 
 // The multiple-equation solver keeps its state in Mpar as a list anyone can read: { equations "title" { menu order,
 // "" for a blank key } { known variables } }. The HP's Mpar is opaque library data.

@@ -44,7 +44,7 @@ import { beep, alarmBeep, keyClick } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest, calculatorNow, headerClock } from './rpl/ops/time.js';
 import { _hp50TypeCode } from './rpl/ops/internal.js';
 import { displayDigitsArg } from './rpl/ops/display.js';
-import { mesMenu } from './rpl/ops/root.js';
+import { mesMenu, solverNames } from './rpl/ops/root.js';
 import { plotSettings } from './rpl/ops/graphics.js';
 import { alongOpenName } from './ui/plot-engine.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
@@ -100,6 +100,8 @@ function sigmaDataNote(data) {
 // A tagged formula, as TANL and F' leave, plots as the formula; the HP reads through a tag too.
 const plottableFormula = (value) => { const v = isTagged(value) ? value.value : value; return isSymbolic(v) && !hasUnits(v.expr); };
 const plottable = (value) => plottableFormula(value) || (isList(value) && value.items.length > 0 && value.items.every(plottableFormula));
+// What the numeric solver takes: a formula with a name to find and no units, or a tagged one.
+const solverFormula = (value) => { const v = isTagged(value) ? value.value : value; return isSymbolic(v) && !hasUnits(v.expr) && solverNames(v.expr).length ? v : null; };
 // What OBJ→ breaks into parts; a string has STR→ instead, and a number comes back whole.
 const takesApart = (value) => [isList, isVector, isMatrix, isComplex, isTagged, isUnit, isProgram, isSymbolic].some((is) => is(value));
 // SORT orders numbers, strings, names, units and lists of them, so a menu offers it only for a list it can order,
@@ -1053,6 +1055,7 @@ class App {
       case 'convert': this._convertMenu(level, anchor); return;
       case 'plot': this.clearSelection(); this.plotValue(value); return;
       case 'table': this.clearSelection(); this.drawers.graph.openTableOf(value); return;
+      case 'solver': this.clearSelection(); this.openSolver(value); return;
       case 'copy': {
         const table = spreadsheetHtml(value);
         this.copyText(formatSource(value), table ? `Copied level ${level}. It pastes into a spreadsheet as cells.` : `Copied level ${level}`, table);
@@ -1157,6 +1160,7 @@ class App {
         isVector(value) ? item('abs', 'chr', 'Length (ABS)') : '',
         sortable(value) ? item('sort', 'chr', 'Sort (SORT)') : '',
         isList(value) && value.items.length > 1 ? item('revlist', 'chr', 'Reverse (REVLIST)') + item('sumlist', 'chr', 'Sum (ΣLIST)') : '',
+        solverFormula(value) ? item('solver', 'play', 'Solve numerically…') : '',
         plottable(value) ? item('plot', 'plot', 'Plot it') + item('table', 'table', 'Table of values') : '',
         item('ask', 'spark', 'Ask the assistant about it'),
       ],
@@ -1770,6 +1774,14 @@ class App {
 
   openEquationEditor() { this.runAction('writer.equation'); }
 
+  // The HP's Solve equation form on a formula, or on the one EQ holds when level 1 is none.
+  openSolver(value = this.stack.depth ? this.stack.peek(1) : null) {
+    const eq = varRecall('EQ');
+    const formula = solverFormula(value) ?? solverFormula(isList(eq) && eq.items.length === 1 ? eq.items[0] : eq);
+    if (formula) this.sheets.openSolver(formula);
+    else this.toast('Put a formula with a name in it on the stack, or store one in EQ, to solve it for a number.');
+  }
+
   // The menu a writer puts up, or null; choosing another menu pins it in its place until the writer closes.
   writerMenuId() {
     if (this.inputMode === 'equation' && this.equationEditor) return 'EQW';
@@ -1902,6 +1914,7 @@ class App {
       { label: 'INFO', title: 'Its type and size', onPress: act('info') },
       isString(value) ? { label: 'STR→', title: 'Run its text', onPress: act('strto') } : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },
       ...(plottable(value) ? [{ label: 'PLOT', title: 'Plot it', onPress: act('plot') }, { label: 'TABLE', title: 'Its table of values', onPress: act('table') }] : []),
+      ...(solverFormula(value) ? [{ label: 'SOLVR', title: 'Find a name in it from the others', onPress: act('solver') }] : []),
       isReal(value)
         ? { label: '→Q', title: 'To a fraction', onPress: act('toq') }
         : isBinaryInteger(value) ? { label: 'B→R', title: 'To a real number', onPress: act('btor') }
@@ -2559,6 +2572,7 @@ class App {
       case 'catalog.open': this.drawers.open('catalog'); return true;
       case 'about.open': this.sheets.openAbout(); return true;
       case 'printlog.open': this.sheets.openPrintLog(); return true;
+      case 'solver.open': this.openSolver(); return true;
       case 'app.install': this.installApp(); return true;
       case 'assistant.ask': {
         const text = this.entry.buffer.trim().replace(/^\?/, '').trim();

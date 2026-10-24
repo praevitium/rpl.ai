@@ -3882,3 +3882,69 @@ setAngle('RAD');
     && /this\.notifyError\(result === 'nested'\n\s*\? 'Autosave failed because a value on the stack is nested too deeply to save\./.test(app),
     'an autosave that fails for a value nested too deeply says so, instead of blaming full or blocked storage');
 }
+
+// Solve equation: a box per name, the knowns stored as they are typed, Solve beside the one to find.
+{
+  const { Sheets, solverNumber, solverFailure } = await import('../www/src/ui/sheets.js');
+  const { Real, Integer, isReal, isInteger } = await import('../www/src/rpl/types.js');
+  const { varRecall, resetHome } = await import('../www/src/rpl/state.js');
+  const { runLine } = await import('./helpers.mjs');
+  assert(solverNumber('') === null && solverNumber('  ') === null && solverNumber(' 12 ').value === 12n && isInteger(solverNumber('12')) && isReal(solverNumber('-2.5')) && Number(solverNumber('1E3').value) === 1000,
+    'a solver box reads as null when blank and as the number typed otherwise');
+  assert(solverNumber('abc') === false && solverNumber('1 2') === false && solverNumber('(1,2)') === false && solverNumber('« 1 »') === false && solverNumber('"7"') === false,
+    'a name, two numbers, a complex number, a program or a string in a box is not a number');
+  assert(/another number in the V box/.test(solverFailure('V', new Error('ROOT: Bad Guess(es)'))) && /does not change with V/.test(solverFailure('V', new Error('ROOT: Constant?'))) && solverFailure('V', new Error('ROOT: Interrupted')) === 'Interrupted',
+    'ROOT\'s bad guess and constant answers are said for a phone, anything else as it is without ROOT:');
+
+  resetHome();
+  const formula = runLine("'V=I*R'").peek();
+  const box = (name, value) => { const input = { dataset: { sv: name }, value, classList: { toggle: (cls, on) => { input.bad = on; } }, focus: () => { input.focused = true; } }; return input; };
+  const inputs = [box('V', ''), box('I', '2'), box('R', '3')];
+  const note = { textContent: '' };
+  const snaps = [];
+  const sheet = {
+    app: { entry: { _snapForUndo: () => snaps.push('snap'), _dropNoOpUndoStep: () => snaps.push('drop') } },
+    sv: { value: formula, names: ['V', 'I', 'R'], texts: {}, note: '', snapped: false },
+    el: { querySelectorAll: () => inputs, querySelector: (sel) => (sel === '.sv-note' ? note : inputs.find((i) => sel.includes(`"${i.dataset.sv}"`))) },
+    _solverValues: Sheets.prototype._solverValues, _solverNote: Sheets.prototype._solverNote,
+  };
+  Sheets.prototype._solve.call(sheet, 'V');
+  assert(inputs[0].value === '6' && note.textContent === 'Found V = 6.' && Number(varRecall('I').value) === 2 && Number(varRecall('R').value) === 3 && Number(varRecall('V').value) === 6 && snaps.join() === 'snap',
+    `Solve stores the knowns, finds V from I=2 and R=3, puts 6 in its box, says so and takes one Undo step (${inputs[0].value}, ${note.textContent}, ${snaps})`);
+  inputs[0].value = '12';
+  inputs[1].value = '';
+  Sheets.prototype._solve.call(sheet, 'I');
+  assert(inputs[1].value === '4' && note.textContent === 'Found I = 4.' && snaps.join() === 'snap', 'a second Solve finds I from V=12 and R=3 and adds no second Undo step');
+  inputs[2].value = '';
+  inputs[1].value = '';
+  Sheets.prototype._solve.call(sheet, 'I');
+  assert(note.textContent === 'Type a value for R first.' && inputs[2].bad === true && inputs[2].focused === true && snaps.join() === 'snap',
+    'a Solve with a known box blank says which one to fill, marks it and puts the cursor in it');
+  inputs[2].value = 'x';
+  Sheets.prototype._solve.call(sheet, 'I');
+  assert(note.textContent === 'R is not a number.' && inputs[2].bad === true, 'a box that holds no number is named as such');
+  inputs[2].value = '3';
+  inputs[0].value = '0';
+  inputs[1].value = '';
+  sheet.sv.value = runLine("'5+V*0'").peek();
+  sheet.sv.names = ['V'];
+  inputs.length = 1;
+  Sheets.prototype._solve.call(sheet, 'V');
+  assert(/does not change with V/.test(note.textContent), `a formula that never changes says there is nothing to find (${note.textContent})`);
+  for (const id of ['I', 'R', 'V']) runLine(`'${id}' PURGE`);
+}
+{
+  const app = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const sheets = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  const actions = readFileSync(new URL('../www/src/ui/actions.js', import.meta.url), 'utf8');
+  const palette = readFileSync(new URL('../www/src/ui/palette.js', import.meta.url), 'utf8');
+  assert(/case 'solver': this\.clearSelection\(\); this\.openSolver\(value\); return;/.test(app)
+    && /solverFormula\(value\) \? item\('solver', 'play', 'Solve numerically…'\) : '',\n\s*plottable\(value\)/.test(app)
+    && /\.\.\.\(solverFormula\(value\) \? \[\{ label: 'SOLVR', title: 'Find a name in it from the others', onPress: act\('solver'\) \}\] : \[\]\),/.test(app)
+    && /case 'solver\.open': this\.openSolver\(\); return true;/.test(app)
+    && /openSolver\(value = this\.stack\.depth \? this\.stack\.peek\(1\) : null\) \{\n\s*const eq = varRecall\('EQ'\);/.test(app),
+    'a formula\'s level menu and soft keys open Solve equation, and so does command search, on level 1 or on EQ');
+  assert(/'solver\.open':\s+\{ label: 'Solve equation: [^']+', surfaces: \['palette'\] \},/.test(actions) && /'printlog\.open', 'solver\.open',\n\]\);/.test(palette)
+    && /this\.kind === 'solver'/.test(sheets) && /case 'sv-solve': this\._solve\(b\.dataset\.name\); return;/.test(sheets),
+    'the sheet is an action in command search, and its Solve keys run _solve');
+}

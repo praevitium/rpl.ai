@@ -162,3 +162,23 @@ const top = (s) => Number(s.peek().value);
   assert(runLine('5 EQNLIB').depth === 1, 'EQNLIB leaves the stack alone; the app opens the sheet through its hook');
   for (const id of ['EQ', 'Mpar', 'g', 'k', 'q', 'εsi', 'ε0', 'I0', 'P', 'L', 'a', 'M', 'w', 'x', 'V', 'T', 'λ1', 'λ2', 'f', 'σ', 'c3', 'Tc', 'Pc', 'Z', 'R']) err(`'${id}' PURGE`);
 }
+
+// The solver sheet's side of ROOT: the names of a formula and one solved from the others off the stack.
+{
+  const { solverNames, solveEquation } = await import('../www/src/rpl/ops/root.js');
+  const formula = (src) => runLine(src).peek();
+  const names = (src) => solverNames(formula(src).expr).join(' ');
+  assert(names("'V=I*R'") === 'V I R' && names("'A*X^2+B*X+C=0'") === 'A X B C' && names("'π*R^2+e*X+i'") === 'R X',
+    'solverNames lists a formula\'s names as they are written, the constants π, e and i left out');
+  runLine("2 'I' STO 3 'R' STO");
+  const volts = solveEquation(formula("'V=I*R'"), 'V', 1);
+  assert(near(volts.root, 6) && volts.zero && near(Number(recallVar('V').value), 6), `solveEquation finds V = I*R from the stored I and R, stores it and says it is a zero (${volts.root})`);
+  runLine("12 'V' STO");
+  const amps = solveEquation(formula("'V=I*R'"), 'I', 7);
+  assert(near(amps.root, 4) && amps.zero, `and I from V and R, starting from 7 (${amps.root})`);
+  const none = solveEquation(formula("'X^2+1'"), 'X', 1);
+  assert(!none.zero && near(none.residual, 1, 1e-4), `a formula with no sign change gives its closest point and says it is no zero (${none.residual})`);
+  assertThrows(() => solveEquation(formula("'5'"), 'X', 1), /ROOT: Constant\?/, 'a formula that never changes is Constant?');
+  assertThrows(() => solveEquation(formula("'1/X'"), 'X', 0), /ROOT: Bad Guess\(es\)/, 'a starting point the formula cannot take is a bad guess');
+  for (const id of ['I', 'R', 'V', 'X']) runLine(`'${id}' PURGE`);
+}

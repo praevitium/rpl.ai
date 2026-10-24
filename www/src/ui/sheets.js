@@ -4,7 +4,7 @@ import { ACTIONS, KEYMAP, CONTEXT_LABELS, chordText, isMacPlatform } from './act
 import { STORAGE_KEY as STACK_STORAGE_KEY, BACKUPS_KEY } from '../rpl/persist.js';
 import { UI_PREFS_KEY, THEMES, THEME_LABELS, STACK_SIZES, STACK_SIZE_LABELS, TUTOR_STYLES, KEYPAD_LAYOUTS, KEYPAD_LABELS, SIDES, SIDE_LABELS } from './ui-prefs.js';
 import { REMOTE_CONFIG_KEY as CHAT_REMOTE_KEY, CONSENT_KEY as CHAT_CONSENT_KEY } from '../ai/chat-bot.js';
-import { state as calcState, testUserFlag, setUserFlag, clearUserFlag, setClockOffset, varStore } from '../rpl/state.js';
+import { state as calcState, testUserFlag, setUserFlag, clearUserFlag, setClockOffset, varStore, varRecall } from '../rpl/state.js';
 import { ROWS, COLS, GOAL, minesAround, step, newField, saveField } from '../rpl/minehunt.js';
 import { ELEMENTS } from '../rpl/elements.js';
 import { PROPERTIES, propertyValue } from '../rpl/ops/periodic.js';
@@ -12,9 +12,12 @@ import { EQ_LIBRARY } from '../rpl/eqlib.js';
 import { solveSet, setVariables, libraryEquation } from '../rpl/ops/eqlib.js';
 import { printLog, clearPrintLog } from '../rpl/ops/print.js';
 import { lookup } from '../rpl/ops/registry.js';
-import { format, withFractionMark } from '../rpl/formatter.js';
-import { fromTyped } from '../rpl/parser.js';
-import { Real, Complex, RList, Str } from '../rpl/types.js';
+import { solverNames, solveEquation } from '../rpl/ops/root.js';
+import { astToSvg } from '../rpl/pretty.js';
+import { withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
+import { format, withFractionMark, formatSymbolic } from '../rpl/formatter.js';
+import { fromTyped, parseTyped } from '../rpl/parser.js';
+import { Real, Complex, RList, Str, isReal, isInteger } from '../rpl/types.js';
 import { formatDelimited, spreadsheetHtml } from '../rpl/sheet.js';
 import { VERSION, BUILD, SHA } from '../build-info.js';
 import { pickFile } from './drawer.js';
@@ -65,6 +68,29 @@ const TABLE_ROWS = 60;
 
 // A table value at 8 digits, 12 in a field to edit, with the HP's E for a power of ten.
 const tableText = (v, digits = 8) => String(Number(v.toPrecision(digits))).replace('e+', 'E').replace('e', 'E');
+
+// A solver box holds a number as typed; a blank or a name that holds something else is a box with nothing in it.
+const solverText = (v) => (isReal(v) || isInteger(v) ? withFractionMark(tableText(Number(v.value), 12)) : '');
+
+// What a solver box says: null when blank, false when it is no number, else the number as the calculator reads it.
+export function solverNumber(text) {
+  const typed = String(text).trim();
+  if (typed === '') return null;
+  try {
+    const values = parseTyped(typed);
+    return values.length === 1 && (isReal(values[0]) || isInteger(values[0])) ? values[0] : false;
+  } catch { return false; }
+}
+
+const joinNames = (names) => (names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`);
+
+// ROOT's own words, said for a phone: what went wrong and what to do about it.
+export function solverFailure(name, e) {
+  const text = String(e?.message ?? e).replace(/^ROOT: /, '');
+  if (/Bad Guess/i.test(text)) return `The equation has no value at the starting point. Type another number in the ${name} box and tap Solve again.`;
+  if (/Constant/i.test(text)) return `The equation does not change with ${name}, so there is nothing to find.`;
+  return text;
+}
 
 export class Sheets {
   constructor({ host, app }) {
@@ -144,6 +170,14 @@ export class Sheets {
     this.tbl = { ...setup, source };
     this._open('table');
     requestAnimationFrame(() => this.el?.querySelector('[data-sh="close"]')?.focus({ preventScroll: true }));
+  }
+
+  // SOLVE equation: a box per name in the formula, holding the variable of that name; type the knowns, tap Solve beside the unknown.
+  openSolver(value) {
+    const names = solverNames(value.expr);
+    this.sv = { value, names, texts: Object.fromEntries(names.map((name) => [name, solverText(varRecall(name))])), note: '', snapped: false };
+    this._open('solver');
+    requestAnimationFrame(() => (this.el?.querySelector('input[data-sv][value=""]') ?? this.el?.querySelector('[data-sh="close"]'))?.focus({ preventScroll: true }));
   }
 
   openView(title, html, level) {
@@ -256,6 +290,23 @@ export class Sheets {
       this.el.innerHTML = sheet('Print log', body, '', foot);
       const content = this.el.querySelector('.sheet-c');
       content.scrollTop = content.scrollHeight;
+      return;
+    }
+    if (this.kind === 'solver') {
+      const { value, names, texts, note } = this.sv;
+      const last = names.length - 1;
+      const row = (name, i) => {
+        const id = escapeHtml(name);
+        return `<div class="sv-row"><button type="button" class="sv-name" data-sh="sv-push" data-name="${id}" title="Put ${id} on the stack" aria-label="Put ${id} on the stack">${id}</button>`
+          + `<input type="text" data-sv="${id}" value="${escapeHtml(texts[name])}" aria-label="Value of ${id}" placeholder="?" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="${i === last ? 'done' : 'next'}" />`
+          + `<button type="button" class="btn sv-solve" data-sh="sv-solve" data-name="${id}" aria-label="Solve for ${id}">${icon('play', 'sm')}Solve</button></div>`;
+      };
+      const body = `<div class="sv-eq" role="img" aria-label="${escapeHtml(withFractionMark(formatSymbolic(value.expr)))}">${astToSvg(value.expr, { size: 20 }).svg}</div>`
+        + `<div class="sv-rows">${names.map(row).join('')}</div>`
+        + `<p class="sv-note" role="status" aria-live="polite">${escapeHtml(note)}</p>`
+        + '<p class="pt-hint">Type a value for each name you know, then tap Solve beside the one to find. The boxes are variables, as on the HP: the number in a name\'s box is where its search starts. Tap a name to put its value on the stack.</p>';
+      this.el.innerHTML = sheet('Solve equation', body, '', `<button type="button" class="btn" data-sh="close">${icon('x', 'sm')}Close</button>`);
+      this.el.querySelector('.sheet-c').classList.add('sv-c');
       return;
     }
     if (this.kind === 'table') {
@@ -486,7 +537,6 @@ export class Sheets {
         return;
       }
       case 'backup': app.exportSnapshot(); return;
-      case 'install': app.runAction('app.install'); return;
       case 'restore': pickFile('application/json,.json', async (f) => { if (await app.importSnapshotFromFile(f)) this.close(); }); return;
       case 'clock-reset': setClockOffset(0); this._render(); return;
       case 'eq-subject': this.eqlib.subject = Number(b.dataset.n); this._render(); return;
@@ -496,6 +546,14 @@ export class Sheets {
         else this.eqlib.subject = null;
         this._render();
         return;
+      case 'sv-solve': this._solve(b.dataset.name); return;
+      case 'sv-push': {
+        const value = this._solverValues()[b.dataset.name] || varRecall(b.dataset.name);
+        if (!(isReal(value) || isInteger(value))) { app.toast(`${b.dataset.name} has no value yet`); return; }
+        app.commitEntryAndPush(value);
+        app.toast(`${format(value)} is on the stack`);
+        return;
+      }
       case 'tb-copy': { const { text, html } = this._tableSheet(); app.copyText(text, 'Copied the table. It pastes into a spreadsheet as cells.', html); return; }
       case 'tb-share': app.shareText(this._tableSheet().text); return;
       case 'tb-finer': this.tbl.step = Number((this.tbl.step / 2).toPrecision(12)); this._render(); return;
@@ -593,7 +651,68 @@ export class Sheets {
     this._render();
   }
 
+  // What each solver box holds as a number (null when blank, false when it is no number); the text stays as typed.
+  _solverValues() {
+    const out = {};
+    for (const input of this.el.querySelectorAll('input[data-sv]')) {
+      this.sv.texts[input.dataset.sv] = input.value;
+      out[input.dataset.sv] = solverNumber(input.value);
+    }
+    return out;
+  }
+
+  _solverNote(text) {
+    this.sv.note = text;
+    const note = this.el.querySelector('.sv-note');
+    if (note) note.textContent = text;
+  }
+
+  // Stored as soon as it is typed, as the HP's fields are; the first change gets an Undo step of its own.
+  _solverStore(name, number) {
+    if (!this.sv.snapped) { this.app.entry._snapForUndo(); this.sv.snapped = true; }
+    varStore(name, number);
+  }
+
+  _solverChange(input) {
+    const number = solverNumber(input.value);
+    this.sv.texts[input.dataset.sv] = input.value;
+    input.classList.toggle('bad', number === false);
+    if (number === false) this._solverNote(`${input.dataset.sv} is not a number.`);
+    else if (number !== null) { this._solverStore(input.dataset.sv, number); this._solverNote(''); }
+  }
+
+  // ROOT on the formula for one name, from the box's number (1 when blank) with the other boxes as the knowns.
+  _solve(name) {
+    const { names, value } = this.sv;
+    const numbers = this._solverValues();
+    const bad = names.filter((n) => numbers[n] === false);
+    const missing = names.filter((n) => n !== name && numbers[n] === null);
+    for (const input of this.el.querySelectorAll('input[data-sv]')) input.classList.toggle('bad', bad.includes(input.dataset.sv) || missing.includes(input.dataset.sv));
+    if (bad.length || missing.length) {
+      this._solverNote(bad.length ? `${joinNames(bad)} ${bad.length > 1 ? 'are' : 'is'} not a number.` : `Type a value for ${joinNames(missing)} first.`);
+      this.el.querySelector(`input[data-sv="${globalThis.CSS?.escape?.([...bad, ...missing][0]) ?? [...bad, ...missing][0]}"]`)?.focus();
+      return;
+    }
+    const { app } = this;
+    const fresh = !this.sv.snapped;
+    if (fresh) { app.entry._snapForUndo(); this.sv.snapped = true; }
+    try {
+      for (const n of names) if (n !== name && numbers[n] !== null) varStore(n, numbers[n]);
+      const guess = numbers[name] === null ? 1 : Number(numbers[name].value);
+      const { root, residual, zero } = withTimeLimit(RUN_TIME_LIMIT_MS, () => solveEquation(value, name, guess));
+      const text = withFractionMark(tableText(root, 12));
+      this.el.querySelector(`input[data-sv="${globalThis.CSS?.escape?.(name) ?? name}"]`).value = text;
+      this.sv.texts[name] = text;
+      this._solverNote(zero ? `Found ${name} = ${text}.` : `No sign change was found. The closest to zero is ${name} = ${text}, where the equation is ${withFractionMark(tableText(residual, 3))} from zero.`);
+    } catch (e) {
+      if (fresh) { app.entry._dropNoOpUndoStep(); this.sv.snapped = false; }
+      this._solverNote(solverFailure(name, e));
+    }
+  }
+
   _onChange(e) {
+    const solver = this.kind === 'solver' && e.target.closest?.('input[data-sv]');
+    if (solver) { this._solverChange(solver); return; }
     const input = this.kind === 'table' && e.target.closest?.('input[data-tb]');
     if (!input) return;
     const value = Number(fromTyped(String(input.value).trim()));
@@ -613,6 +732,13 @@ export class Sheets {
       const next = radios[(radios.indexOf(radio) + (/Left|Up/.test(e.key) ? -1 : 1) + radios.length) % radios.length];
       next.focus();
       next.click();
+      return;
+    }
+    if (this.kind === 'solver' && e.key === 'Enter' && e.target.matches?.('input[data-sv]')) {
+      e.preventDefault();
+      const inputs = [...this.el.querySelectorAll('input[data-sv]')];
+      (inputs[inputs.indexOf(e.target) + 1] ?? e.target).focus();
+      if (inputs.indexOf(e.target) === inputs.length - 1) e.target.blur();
       return;
     }
     if (this.kind !== 'inform' || e.key !== 'Enter' || !e.target.matches('input[data-inf]')) return;
