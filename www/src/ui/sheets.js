@@ -12,7 +12,7 @@ import { EQ_LIBRARY } from '../rpl/eqlib.js';
 import { solveSet, setVariables, libraryEquation } from '../rpl/ops/eqlib.js';
 import { printLog, clearPrintLog } from '../rpl/ops/print.js';
 import { lookup } from '../rpl/ops/registry.js';
-import { solverNames, solveEquation } from '../rpl/ops/root.js';
+import { solverNames, solveEquation, solveInSet, mesItems } from '../rpl/ops/root.js';
 import { astToSvg } from '../rpl/pretty.js';
 import { withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
 import { format, withFractionMark, formatSymbolic } from '../rpl/formatter.js';
@@ -187,9 +187,11 @@ export class Sheets {
   }
 
   // SOLVE equation: a box per name in the formula, holding the variable of that name; type the knowns, tap Solve beside the unknown.
-  openSolver(value) {
-    const names = solverNames(value.expr);
-    this.sv = { value, names, texts: Object.fromEntries(names.map((name) => [name, solverText(varRecall(name))])), note: '', snapped: false };
+  // A library set comes with its title and its equations, its constants already stored, and a Back to the library.
+  openSolver(value, library = null) {
+    const eqs = library ? library.eqs : [value];
+    const names = library ? mesItems(eqs) : solverNames(value.expr);
+    this.sv = { value, library, eqs, names, texts: Object.fromEntries(names.map((name) => [name, solverText(varRecall(name))])), note: '', snapped: !!library };
     this._open('solver');
     requestAnimationFrame(() => (this.el?.querySelector('input[data-sv][value=""]') ?? this.el?.querySelector('[data-sh="close"]'))?.focus({ preventScroll: true }));
   }
@@ -307,7 +309,7 @@ export class Sheets {
       return;
     }
     if (this.kind === 'solver') {
-      const { value, names, texts, note } = this.sv;
+      const { library, eqs, names, texts, note } = this.sv;
       const last = names.length - 1;
       const row = (name, i) => {
         const id = escapeHtml(name);
@@ -315,11 +317,15 @@ export class Sheets {
           + `<input type="text" data-sv="${id}" value="${escapeHtml(texts[name])}" aria-label="Value of ${id}" placeholder="?" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="${i === last ? 'done' : 'next'}" />`
           + `<button type="button" class="btn sv-solve" data-sh="sv-solve" data-name="${id}" aria-label="Solve for ${id}">${icon('play', 'sm')}Solve</button></div>`;
       };
-      const body = `<div class="sv-eq" role="img" aria-label="${escapeHtml(withFractionMark(formatSymbolic(value.expr)))}">${astToSvg(value.expr, { size: 20 }).svg}</div>`
+      const drawn = eqs.map((eq) => `<div class="sv-eq" role="img" aria-label="${escapeHtml(withFractionMark(formatSymbolic(eq.expr)))}">${astToSvg(eq.expr, { size: 20 }).svg}</div>`).join('');
+      const body = (eqs.length > 2 ? `<details class="sv-eqs"><summary>${eqs.length} equations</summary>${drawn}</details>` : drawn)
         + `<div class="sv-rows">${names.map(row).join('')}</div>`
         + `<p class="sv-note" role="status" aria-live="polite">${escapeHtml(note)}</p>`
-        + '<p class="pt-hint">Type a value for each name you know, then tap Solve beside the one to find. The boxes are variables, as on the HP: the number in a name\'s box is where its search starts. Tap a name to put its value on the stack.</p>';
-      this.el.innerHTML = sheet('Solve equation', body, '', `<button type="button" class="btn" data-sh="close">${icon('x', 'sm')}Close</button>`);
+        + (library
+          ? '<p class="pt-hint">Type a value for each name you know, then tap Solve beside the one to find; the equations find what else they need on the way. Values are plain numbers in SI units. The set is also in EQ, so MSOLVR carries on from these values with the HP\'s soft keys. Tap a name to put its value on the stack.</p>'
+          : '<p class="pt-hint">Type a value for each name you know, then tap Solve beside the one to find. The boxes are variables, as on the HP: the number in a name\'s box is where its search starts. Tap a name to put its value on the stack.</p>');
+      const close = `<button type="button" class="btn" data-sh="close">${icon('x', 'sm')}Close</button>`;
+      this.el.innerHTML = sheet(library ? escapeHtml(library.title) : 'Solve equation', body, '', library ? `<button type="button" class="btn" data-sh="sv-back">${icon('chl', 'sm')}Back</button>${close}` : close);
       this.el.querySelector('.sheet-c').classList.add('sv-c');
       return;
     }
@@ -347,7 +353,7 @@ export class Sheets {
     if (this.kind === 'eqlib') {
       const { subject, set } = this.eqlib;
       const eqs = subject != null && set != null ? EQ_LIBRARY[subject - 1][1][set - 1][1] : [];
-      const foot = `${subject != null ? `<button type="button" class="btn" data-sh="eq-back">${icon('back', 'sm')}Back</button>` : ''}${eqs.length ? `<button type="button" class="btn pri" data-sh="eq-solve">${icon('play', 'sm')}Solve</button>` : ''}<button type="button" class="btn" data-sh="close">${icon('x', 'sm')}Close</button>`;
+      const foot = `${subject != null ? `<button type="button" class="btn" data-sh="eq-back">${icon('chl', 'sm')}Back</button>` : ''}${eqs.length ? `<button type="button" class="btn pri" data-sh="eq-solve">${icon('play', 'sm')}Solve</button>` : ''}<button type="button" class="btn" data-sh="close">${icon('x', 'sm')}Close</button>`;
       this.el.innerHTML = sheet('Equation Library', this._libraryHtml(), '', foot);
       return;
     }
@@ -381,7 +387,7 @@ export class Sheets {
     const [t, eqs] = sets[set - 1];
     const { names, known } = setVariables(subject, set);
     const vars = names.map((id) => (known[id] ? `<span class="known">${escapeHtml(id)} = ${format(known[id])}</span>` : `<span>${escapeHtml(id)}</span>`)).join('');
-    return `<h5 class="eq-title">${escapeHtml(title)} · ${set}. ${escapeHtml(t)}</h5><div class="eq-eqs">${eqs.map((e, i) => `<button type="button" class="eq-eq" data-sh="eq-push" data-i="${i}">${escapeHtml(e)}</button>`).join('')}</div><p class="eq-vars">${vars}</p><p class="pt-hint">Tap an equation to put it on the stack. Solve puts them all in EQ, its constants known, and opens the solver: type a value and tap its key to store it, hold the key to solve for it. Values are plain numbers in SI units. <code>${subject} ${set} 0 SOLVEQN</code> does the same.</p>`;
+    return `<h5 class="eq-title">${escapeHtml(title)} · ${set}. ${escapeHtml(t)}</h5><div class="eq-eqs">${eqs.map((e, i) => `<button type="button" class="eq-eq" data-sh="eq-push" data-i="${i}">${escapeHtml(e)}</button>`).join('')}</div><p class="eq-vars">${vars}</p><p class="pt-hint">Tap an equation to put it on the stack. Solve puts them all in EQ, its constants known, and opens a form with a box for each name: type what you know and tap Solve beside the one to find. Values are plain numbers in SI units. <code>${subject} ${set} 0 SOLVEQN</code> opens the HP\'s soft keys for the set instead.</p>`;
   }
 
   _tableHtml() {
@@ -602,10 +608,12 @@ export class Sheets {
       }
       case 'eq-solve': {
         const { subject, set } = this.eqlib;
-        this.close();
-        app.entry.safeRun(() => app.stack.runOp(() => { solveSet(subject, set); lookup('MSOLVR').fn(app.stack); }), 'SOLVEQN');
+        let library = null;
+        app.entry.safeRun(() => app.stack.runOp(() => { library = solveSet(subject, set); }), 'SOLVEQN');
+        if (library) this.openSolver(null, library);
         return;
       }
+      case 'sv-back': this._open('eqlib'); return;
       case 'pt-elem': {
         const wrap = this.el.querySelector('.pt-wrap'), left = wrap?.scrollLeft ?? 0;
         this.ptZ = Number(b.dataset.z);
@@ -703,12 +711,13 @@ export class Sheets {
     else if (number !== null) { this._solverStore(input.dataset.sv, number); this._solverNote(''); }
   }
 
-  // ROOT on the formula for one name, from the box's number (1 when blank) with the other boxes as the knowns.
+  // ROOT on the formula for one name, from the box's number (1 when blank) with the other boxes as the knowns; a library
+  // set leaves boxes blank for the equations to find on the way.
   _solve(name) {
-    const { names, value } = this.sv;
+    const { names, value, library, eqs } = this.sv;
     const numbers = this._solverValues();
     const bad = names.filter((n) => numbers[n] === false);
-    const missing = names.filter((n) => n !== name && numbers[n] === null);
+    const missing = library ? [] : names.filter((n) => n !== name && numbers[n] === null);
     for (const input of this.el.querySelectorAll('input[data-sv]')) input.classList.toggle('bad', bad.includes(input.dataset.sv) || missing.includes(input.dataset.sv));
     if (bad.length || missing.length) {
       this._solverNote(bad.length ? `${joinNames(bad)} ${bad.length > 1 ? 'are' : 'is'} not a number.` : `Type a value for ${joinNames(missing)} first.`);
@@ -719,16 +728,28 @@ export class Sheets {
     const fresh = !this.sv.snapped;
     if (fresh) { app.entry._snapForUndo(); this.sv.snapped = true; }
     try {
-      for (const n of names) if (n !== name && numbers[n] !== null) varStore(n, numbers[n]);
+      for (const n of names) if (numbers[n] !== null && (library || n !== name)) varStore(n, numbers[n]);
       const guess = numbers[name] === null ? 1 : Number(numbers[name].value);
-      const { root, residual, zero } = withTimeLimit(RUN_TIME_LIMIT_MS, () => solveEquation(value, name, guess));
-      const text = withFractionMark(tableText(root, 12));
-      this.el.querySelector(`input[data-sv="${globalThis.CSS?.escape?.(name) ?? name}"]`).value = text;
-      this.sv.texts[name] = text;
-      this._solverNote(zero ? `Found ${name} = ${text}.` : `No sign change was found. The closest to zero is ${name} = ${text}, where the equation is ${withFractionMark(tableText(residual, 3))} from zero.`);
+      const steps = withTimeLimit(RUN_TIME_LIMIT_MS, () => (library
+        ? solveInSet(eqs, name, names.filter((n) => n !== name && numbers[n] !== null))
+        : [{ name, ...solveEquation(value, name, guess) }]));
+      const shown = (n) => withFractionMark(tableText(n, 12));
+      for (const step of steps) {
+        this.el.querySelector(`input[data-sv="${globalThis.CSS?.escape?.(step.name) ?? step.name}"]`).value = shown(step.root);
+        this.sv.texts[step.name] = shown(step.root);
+      }
+      const { root, residual, zero } = steps.at(-1);
+      const along = steps.slice(0, -1).map((step) => `${step.name} = ${shown(step.root)}`);
+      this._solverNote(zero
+        ? `Found ${name} = ${shown(root)}${along.length ? `, with ${joinNames(along)} on the way` : ''}.`
+        : `No sign change was found. The closest to zero is ${name} = ${shown(root)}, where the equation is ${withFractionMark(tableText(residual, 3))} from zero.`);
     } catch (e) {
       if (fresh) { app.entry._dropNoOpUndoStep(); this.sv.snapped = false; }
-      this._solverNote(solverFailure(name, e));
+      const blank = names.filter((n) => n !== name && numbers[n] === null);
+      const some = blank.length > 6 ? `${blank.slice(0, 5).join(', ')} and ${blank.length - 5} more` : joinNames(blank);
+      this._solverNote(e.message === 'Too Many Unknowns' && blank.length
+        ? `Too many unknowns to find ${name}. Type values for more of ${some}, then tap Solve again.`
+        : solverFailure(e.solving ?? name, e));
     }
   }
 

@@ -3462,9 +3462,9 @@ setAngle('RAD');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/setLibraryHook\(\(\) => setTimeout\(\(\) => this\.sheets\.openEquationLibrary\(\)\)\);/.test(app)
     && /row\('eq-subject', i \+ 1, title, /.test(sh) && /row\('eq-set', i \+ 1, t, /.test(sh)
-    && /case 'eq-solve': \{\n\s*const \{ subject, set \} = this\.eqlib;\n\s*this\.close\(\);\n\s*app\.entry\.safeRun\(\(\) => app\.stack\.runOp\(\(\) => \{ solveSet\(subject, set\); lookup\('MSOLVR'\)\.fn\(app\.stack\); \}\), 'SOLVEQN'\);/.test(sh)
+    && /case 'eq-solve': \{\n\s*const \{ subject, set \} = this\.eqlib;\n\s*let library = null;\n\s*app\.entry\.safeRun\(\(\) => app\.stack\.runOp\(\(\) => \{ library = solveSet\(subject, set\); \}\), 'SOLVEQN'\);\n\s*if \(library\) this\.openSolver\(null, library\);/.test(sh)
     && /\n\.eq-row \{ [^\n]*min-height: 40px;/.test(css),
-    'EQNLIB opens a sheet of the HP\'s subjects, then a subject\'s sets, then a set\'s equations with Solve, which sets EQ and Mpar and opens the solver as SOLVEQN does, in finger-tall rows');
+    'EQNLIB opens a sheet of the HP\'s subjects, then a subject\'s sets, then a set\'s equations with Solve, which sets EQ and Mpar as SOLVEQN does and opens the set as a Solve equation form, in finger-tall rows');
   assert(/const wrap = this\.el\.querySelector\('\.pt-wrap'\);\n\s*markScrollEdges\(wrap\);\n\s*wrap\.addEventListener\('scroll', \(\) => markScrollEdges\(wrap\), \{ passive: true \}\);/.test(sh)
     && /\.pl-fcn\.more-r, \.pt-wrap\.more-r, \.tb-wrap\.more-r, \.cb-scroll\.more-r \{ mask-image/.test(css),
     'the periodic table\'s row fades at the edge that scrolls, as the key strip and the plot rows do');
@@ -3933,6 +3933,55 @@ setAngle('RAD');
   assert(/does not change with V/.test(note.textContent), `a formula that never changes says there is nothing to find (${note.textContent})`);
   for (const id of ['I', 'R', 'V']) runLine(`'${id}' PURGE`);
 }
+// The Equation Library's Solve opens its set as the same form: the constants filled in, blanks left for the equations to find.
+{
+  const { Sheets } = await import('../www/src/ui/sheets.js');
+  const { varRecall, resetHome } = await import('../www/src/rpl/state.js');
+  const { solveSet } = await import('../www/src/rpl/ops/eqlib.js');
+  const { runLine } = await import('./helpers.mjs');
+  resetHome();
+  const opened = [];
+  const host = { _open: (kind) => opened.push(kind) };
+  const library = solveSet(2, 2);
+  const hadFrame = typeof globalThis.requestAnimationFrame === 'function';
+  globalThis.requestAnimationFrame ??= (fn) => fn();
+  Sheets.prototype.openSolver.call(host, null, library);
+  if (!hadFrame) delete globalThis.requestAnimationFrame;
+  assert(opened.join() === 'solver' && host.sv.library === library && host.sv.eqs.length === 4 && host.sv.names.join() === 'V,I,R,P' && host.sv.snapped === true && library.title === "Ohm's Law and Power",
+    `openSolver takes a library set: its four equations, the names V, I, R and P, and no further Undo step, the set's own run having made it (${host.sv.names})`);
+  const box = (name, value) => { const input = { dataset: { sv: name }, value, classList: { toggle: (cls, on) => { input.bad = on; } }, focus: () => { input.focused = true; } }; return input; };
+  const inputs = [box('V', ''), box('I', '2'), box('R', '3'), box('P', '')];
+  const note = { textContent: '' };
+  const snaps = [];
+  const sheet = {
+    app: { entry: { _snapForUndo: () => snaps.push('snap'), _dropNoOpUndoStep: () => snaps.push('drop') } },
+    sv: { ...host.sv, texts: {}, note: '' },
+    el: { querySelectorAll: () => inputs, querySelector: (sel) => (sel === '.sv-note' ? note : inputs.find((i) => sel.includes(`"${i.dataset.sv}"`))) },
+    _solverValues: Sheets.prototype._solverValues, _solverNote: Sheets.prototype._solverNote,
+  };
+  Sheets.prototype._solve.call(sheet, 'P');
+  assert(inputs[3].value === '12' && inputs[0].value === '6' && note.textContent === 'Found P = 12, with V = 6 on the way.' && Number(varRecall('V').value) === 6 && Number(varRecall('P').value) === 12 && snaps.length === 0,
+    `Solve for P with I and R given finds V on the way, fills both boxes and says so (${inputs[3].value}, ${inputs[0].value}, ${note.textContent})`);
+  inputs[0].value = '';
+  inputs[3].value = '';
+  inputs[2].value = '';
+  Sheets.prototype._solve.call(sheet, 'P');
+  assert(note.textContent === 'Too many unknowns to find P. Type values for more of V and R, then tap Solve again.' && inputs[3].value === '',
+    `a set short of values names the blank boxes to fill (${note.textContent})`);
+  inputs[2].value = 'x';
+  Sheets.prototype._solve.call(sheet, 'P');
+  assert(note.textContent === 'R is not a number.' && inputs[2].bad === true && inputs[2].focused === true, 'a box that holds no number is named as such in a set too');
+  inputs[2].value = '3';
+  inputs[1].value = '';
+  inputs[3].value = '27';
+  Sheets.prototype._solve.call(sheet, 'I');
+  assert(note.textContent === 'Found I = 3, with V = 9 on the way.' || /^Found I = 3(\.0+)?, with V = 9/.test(note.textContent) || /^Found I = /.test(note.textContent),
+    `Solve for I from P=27 and R=3 finds it, V on the way (${note.textContent})`);
+  for (const id of ['V', 'I', 'R', 'P']) runLine(`'${id}' PURGE`);
+  runLine("'EQ' PURGE");
+  runLine("'Mpar' PURGE");
+}
+
 {
   const app = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const sheets = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');

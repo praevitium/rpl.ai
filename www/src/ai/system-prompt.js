@@ -284,7 +284,7 @@ TYPES / REFLECTION
   MINEHUNT                   the HP's minefield game in a sheet: cross from the upper-left to the lower-right corner; Nmines (1 to 64, negative shows them) sets the mines and K saves the game in MHpar
   FILER OFF                  FILER opens the Variables drawer, the file manager here; OFF saves the session and shows an off screen until a tap or key
   PERTBL PTPROP PERINFO      PERTBL opens the periodic table; "Fe" 2 PTPROP or 26 "Density" PTPROP gives an element's property (6 is the electron configuration, 8 the melting point); PERINFO shows a note on the table
-  EQNLIB SOLVEQN             EQNLIB opens the HP's Equation Library (15 subjects, 102 sets); 2 9 0 SOLVEQN puts Electricity's Capacitive Energy in EQ, its constants known, and opens the solver's keys
+  EQNLIB SOLVEQN             EQNLIB opens the HP's Equation Library (15 subjects, 102 sets) and a set's Solve opens a form with a box for each name; 2 9 0 SOLVEQN puts Electricity's Capacitive Energy in EQ, its constants known, and opens the solver's keys
   PR1 PRST PRSTC PRVAR PRLCD CR  print to the print log (there is no printer): PR1 level 1, PRST and PRSTC the stack, 'X' PRVAR a variable, PRLCD the display as text, CR an empty line; DELAY and OLDPRT do nothing
   FONT6 FONT7 FONT8 →FONT FONT→  the system font is the stack text size: FONT8 →FONT makes it Large (6 Small, 7 Normal), FONT→ reads it as :Font:n; →MINIFONT MINIFONT→ keep a minifont
   SEND XSEND XPUT  'X' SEND saves variable X as X.rpl to the user's downloads ({ A B } SEND several, {{ A B }} SEND A as B); RECV RECN KGET XRECV XGET open a file picker and store the chosen files as variables later, so a program cannot use them on the next line

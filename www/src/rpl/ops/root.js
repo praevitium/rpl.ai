@@ -113,6 +113,28 @@ export function solveEquation(f, name, guess) {
   return found;
 }
 
+// A set of equations solved for one name from the values stored under the names in known, as MROOT does: each pass finds,
+// from the variable's own value or 1, an unknown that an equation is left with alone, until the name itself is found.
+// The names found along the way come back in order, the one asked for last.
+export function solveInSet(eqs, name, known) {
+  const unknown = new Set(mesItems(eqs).filter((id) => id === name || !known.includes(id)));
+  const found = [];
+  while (unknown.has(name)) {
+    checkTimeLimit();
+    const step = eqs.map((eq) => [eq, mesNames(eq).filter((id) => unknown.has(id))]).find(([, ids]) => ids.length === 1);
+    if (!step) throw new RPLError('Too Many Unknowns');
+    const [eq, [id]] = step;
+    const start = recallVar(id);
+    try {
+      found.push({ name: id, ...solveEquation(eq, id, isReal(start) || isInteger(start) ? Number(start.value) : 1) });
+    } catch (e) {
+      throw Object.assign(e, { solving: id });
+    }
+    unknown.delete(id);
+  }
+  return found;
+}
+
 // The multiple-equation solver keeps its state in Mpar as a list anyone can read: { equations "title" { menu order,
 // "" for a blank key } { known variables } }. The HP's Mpar is opaque library data.
 const MES_CONSTANTS = new Set(['π', 'e', 'i', '∞']);

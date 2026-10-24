@@ -1,4 +1,5 @@
 import { Stack } from '../www/src/rpl/stack.js';
+const formulaOf = (src) => runLine(src).peek();
 import { lookup } from '../www/src/rpl/ops.js';
 import { recallVar } from '../www/src/rpl/ops/internal.js';
 import { format } from '../www/src/rpl/formatter.js';
@@ -181,4 +182,24 @@ const top = (s) => Number(s.peek().value);
   assertThrows(() => solveEquation(formula("'5'"), 'X', 1), /ROOT: Constant\?/, 'a formula that never changes is Constant?');
   assertThrows(() => solveEquation(formula("'1/X'"), 'X', 0), /ROOT: Bad Guess\(es\)/, 'a starting point the formula cannot take is a bad guess');
   for (const id of ['I', 'R', 'V', 'X']) runLine(`'${id}' PURGE`);
+}
+
+// A library set solved for one name as MROOT does: another unknown found on the way, and the names the data cannot reach.
+{
+  const { solveInSet } = await import('../www/src/rpl/ops/root.js');
+  const { solveSet } = await import('../www/src/rpl/ops/eqlib.js');
+  const set = solveSet(2, 2);
+  runLine("2 'I' STO 3 'R' STO");
+  const found = solveInSet(set.eqs, 'P', ['I', 'R']);
+  assert(found.map((f) => f.name).join() === 'V,P' && near(found[0].root, 6) && near(found[1].root, 12) && found.every((f) => f.zero) && near(Number(recallVar('P').value), 12),
+    `Ohm's law and power: P from I and R finds V on the way and stores both (${found.map((f) => `${f.name}=${f.root}`)})`);
+  assertThrows(() => solveInSet(set.eqs, 'P', ['I']), /Too Many Unknowns/, 'a name the other values cannot reach is Too Many Unknowns');
+  runLine("12 'P' STO 3 'R' STO");
+  const amps = solveInSet(set.eqs, 'I', ['P', 'R']);
+  assert(amps.map((f) => f.name).join() === 'I' && near(Math.abs(amps[0].root), 2), `I from P and R goes straight to the equation with one unknown (${amps.map((f) => `${f.name}=${f.root}`)})`);
+  runLine("0 'Y' STO");
+  let caught = null;
+  try { solveInSet([formulaOf("'X=1/Y'")], 'X', ['Y']); } catch (e) { caught = e; }
+  assert(caught && caught.solving === 'X', `a failing step says which name it was solving (${caught?.message}, ${caught?.solving})`);
+  for (const id of ['EQ', 'Mpar', 'I', 'R', 'V', 'P', 'X', 'Y']) { try { runLine(`'${id}' PURGE`); } catch { /* not stored */ } }
 }
