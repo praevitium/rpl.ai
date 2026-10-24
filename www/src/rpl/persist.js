@@ -17,7 +17,7 @@ import {
   state, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo, setRealAssume,
   ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX, isModeFlag,
 } from './state.js';
-import { TYPES, Decimal, BIN_BASES, Grob, isStorableHpName, bigintText } from './types.js';
+import { TYPES, Decimal, BIN_BASES, Grob, isStorableHpName, bigintText, isStackOverflow } from './types.js';
 import { RPLError } from './stack.js';
 import { formatHpText, parseHpText } from './hp-text.js';
 import { formatDelimited, importTable, importCells, isTable, xlsxRows, SHEET_MAX_CELLS } from './sheet.js';
@@ -250,14 +250,14 @@ export function rehydrate(snap, stack) {
 // What this window last wrote to the store or read from it.
 let _storedJson = null;
 
-// Never throws. true when stored, 'trimmed' when backups were dropped, false otherwise.
+// Never throws. true when stored, 'trimmed' when backups were dropped, 'nested' when a value is too deep to write, false otherwise.
 export function saveToLocalStorage(stack) {
   let json;
   try {
     json = JSON.stringify(snapshot(stack));
   } catch (e) {
     console.warn('hp50 autosave failed:', e);
-    return false;
+    return isStackOverflow(e) ? 'nested' : false;
   }
   try {
     localStorage.setItem(STORAGE_KEY, json);

@@ -318,15 +318,21 @@ class App {
     open(this);
   }
 
+  // Each part draws on its own, so one that throws never leaves the rest of the screen, or the app's start, undone.
   renderAll() {
-    this.appbar.render();
-    this.display.renderStack(this.stack);
-    this.display.renderCmdline(this.entry);
-    this.renderBanner();
-    this.renderStatus();
-    this.input.render();
-    this.menubar.render();
-    this.keypad.update();
+    const parts = [
+      () => this.appbar.render(),
+      () => this.display.renderStack(this.stack),
+      () => this.display.renderCmdline(this.entry),
+      () => this.renderBanner(),
+      () => this.renderStatus(),
+      () => this.input.render(),
+      () => this.menubar.render(),
+      () => this.keypad.update(),
+    ];
+    for (const draw of parts) {
+      try { draw(); } catch (e) { console.error('render', e); }
+    }
   }
 
   renderStatus() {
@@ -867,7 +873,9 @@ class App {
     }
     if (!this._autosaveFailed) {
       this._autosaveFailed = true;
-      this.notifyError('Autosave failed because browser storage is full or blocked. Export a backup before you reload, or the latest changes will be lost.');
+      this.notifyError(result === 'nested'
+        ? 'Autosave failed because a value on the stack is nested too deeply to save. Drop it, or the latest changes will be lost when you reload.'
+        : 'Autosave failed because browser storage is full or blocked. Export a backup before you reload, or the latest changes will be lost.');
     }
   }
 

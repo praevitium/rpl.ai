@@ -3870,3 +3870,15 @@ setAngle('RAD');
   assert(copied[0]?.text === want && /<table[\s\S]*<td[^>]*>-0\.997494986604<\/td>/.test(copied[0].html ?? '') && shared[0] === want,
     `plot table: Copy puts it on the clipboard and Share hands it on as spreadsheet cells, a heading row over the 12 digits a Real keeps, blank where a function has no value (${JSON.stringify(copied[0]?.text)})`);
 }
+
+{
+  const app = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const persist = readFileSync(new URL('../www/src/rpl/persist.js', import.meta.url), 'utf8');
+  assert(/renderAll\(\) \{\n\s*const parts = \[\n\s*\(\) => this\.appbar\.render\(\),\n\s*\(\) => this\.display\.renderStack\(this\.stack\),/.test(app)
+    && /for \(const draw of parts\) \{\n\s*try \{ draw\(\); \} catch \(e\) \{ console\.error\('render', e\); \}/.test(app)
+    && /\(\) => this\.keypad\.update\(\),\n\s*\];/.test(app),
+    'the whole screen draws part by part, each in a guard, so one that throws never stops the app starting or the rest of the screen drawing');
+  assert(/return isStackOverflow\(e\) \? 'nested' : false;/.test(persist)
+    && /this\.notifyError\(result === 'nested'\n\s*\? 'Autosave failed because a value on the stack is nested too deeply to save\./.test(app),
+    'an autosave that fails for a value nested too deeply says so, instead of blaming full or blocked storage');
+}

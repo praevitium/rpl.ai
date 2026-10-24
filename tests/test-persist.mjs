@@ -994,5 +994,17 @@ function quotaError() {
   assert(getHeaderLines() === 2 && getKeyTime() === 1138, 'a save from before them loads with 2 header lines and 1138 ticks');
 }
 
+{
+  resetHome();
+  const { Var: AstVar, Bin: AstBin } = await import('../www/src/rpl/algebra.js');
+  const { Symbolic } = await import('../www/src/rpl/types.js');
+  let ast = AstVar('A0');
+  for (let k = 1; k < 300000; k++) ast = AstBin('+', ast, AstVar(`A${k}`));
+  const s = new Stack();
+  s.push(Symbolic(ast));
+  assert(saveToLocalStorage(s) === 'nested', 'autosave says nested, not full, when a value is nested too deeply to write');
+  resetHome();
+}
+
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');
 process.exit(failed ? 1 : 0);

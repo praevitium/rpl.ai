@@ -7,11 +7,12 @@ import { parseEntry } from './parser.js';
 import { lookup, isProgramLine, runProgramLine } from './ops.js';
 import { withScratchState } from './state.js';
 import { format } from './formatter.js';
+import { isStackOverflow } from './types.js';
 import { withoutCas } from './cas/giac-engine.mjs';
 
 const PREVIEW_TIME_LIMIT_MS = 150;
 
-const errorText = (e) => ((e && typeof e === 'object' && e.message != null) ? String(e.message) : String(e));
+const errorText = (e) => (isStackOverflow(e) ? 'Insufficient memory' : (e && typeof e === 'object' && e.message != null) ? String(e.message) : String(e));
 
 // Like Entry._runOpTagged: errors carry the command name, but ABORT passes through untouched.
 function runTagged(stack, name, op) {

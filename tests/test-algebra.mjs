@@ -9181,3 +9181,26 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   const same = ['-X*Y', '-A/X^2', '-(A+B)*C', '-X^2*Y', 'A^(-B*C)', 'SIN(-X*Y)+1', '-1/2*π', 'A-(-X)*Y', 'X>-Y*Z AND X<2'].filter((src) => !astEqual(parseAlgebra(show(src)), parseAlgebra(src)));
   assert(same.length === 0, `what a leading minus prints as reads back as the same expression (${same})`);
 }
+
+// A sum built by a loop nests to the left thousands deep: it prints and lays out without a depth limit that matters.
+{
+  const { astToSvg } = await import('../www/src/rpl/pretty.js');
+  const show = (src) => formatAlgebra(parseAlgebra(src));
+  assert(show('(A+B)*C+D') === '(A + B)*C + D' && show('((A+B)*C+D)*E') === '((A + B)*C + D)*E' && show('A-(B-C)-D') === 'A - (B - C) - D' && show('A^B^C') === 'A^B^C' && show('(A^B)^C') === '(A^B)^C' && show('-X*Y+Z') === '-X*Y + Z' && show('A/B/C') === 'A/B/C' && show('A/(B/C)') === 'A/(B/C)',
+    'a chain of operators prints with the brackets its precedence needs, the same as when each left operand was a call of its own');
+  const sum = (n) => { let ast = AstVar('A0'); for (let k = 1; k < n; k++) ast = AstBin('+', ast, AstVar(`A${k}`)); return ast; };
+  const long = formatAlgebra(sum(40000));
+  assert(long.startsWith('A0 + A1 + A2 + ') && long.endsWith(' + A39998 + A39999') && long.split(' + ').length === 40000,
+    'a sum of 40,000 terms prints in full, not as a stack overflow');
+  const { svg, width } = astToSvg(sum(6000));
+  assert(svg.startsWith('<svg ') && width > 6000 && svg.indexOf('>A5999<') > svg.indexOf('>A1<') && svg.indexOf('>A1<') > svg.indexOf('>A0<'),
+    'a sum of 6,000 terms lays out in textbook form as one row, the terms in order');
+  const three = astToSvg(parseAlgebra('A+B*C')).svg;
+  assert(three.indexOf('>A<') < three.indexOf('>+<') && three.indexOf('>+<') < three.indexOf('>B<') && three.indexOf('>B<') < three.indexOf('>C<'),
+    'a short sum still lays out as its terms and signs in order');
+  let tower = AstVar('X');
+  for (let k = 0; k < 200000; k++) tower = AstFn('SIN', [tower]);
+  const note = astToSvg(tower).svg;
+  assert(note.startsWith('<svg ') && note.includes('(too large to show)') && format(Symbolic(tower)).includes('(too large to show)'),
+    'an expression nested past anything the page can walk is drawn and printed as a note, never thrown');
+}

@@ -2169,3 +2169,21 @@ resetBinaryState();
   assert(shown('1 C$ 3 a b 2') === '1 | "a b" | 2', 'C$ reads inside a line and the count includes spaces');
   assert(shown('C$ 0 ') === '""', 'C$ 0 is the empty string');
 }
+
+/* A value nested past what the page can walk makes the command that walks it say Insufficient memory, the HP's own words. */
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const { AstVar, AstBin } = await import('../www/src/rpl/algebra.js').then((m) => ({ AstVar: m.Var, AstBin: m.Bin }));
+  const { describeError } = await import('../www/src/ui/errors.js');
+  const { Symbolic } = await import('../www/src/rpl/types.js');
+  let ast = AstVar('A0');
+  for (let k = 1; k < 300000; k++) ast = AstBin('+', ast, AstVar(`A${k}`));
+  const deep = Symbolic(ast);
+  const s = new Stack();
+  s.push(deep);
+  const e = new Entry(s);
+  e.execOp('→NUM');
+  assert(/^→NUM: Insufficient memory$/.test(e.error), `→NUM of a sum of 300,000 terms says Insufficient memory, not a JavaScript message (${e.error})`);
+  assert(s.depth === 1 && s.peek(1) === deep, 'the stack is as it was after that error');
+  assert(describeError(e.error, { stack: [], depth: 1 }).kind === 'memory', 'and the error banner is the memory one');
+}

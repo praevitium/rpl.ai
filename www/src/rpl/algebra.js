@@ -736,19 +736,28 @@ function fmt(ast, parentPrec, lead = false) {
     const inside = ast.args.map(a => fmt(a, LOGIC_PREC.OR, true)).join(',');
     return `${ast.name}(${inside})`;
   }
-  if (ast.kind === 'bin') {
-    const p = PREC[ast.op];
-    const rightAssoc = (ast.op === '^');
-    const lPrec = rightAssoc ? p + 1 : p;
-    const rPrec = rightAssoc ? p : p + 1;
-    const lStr = fmt(ast.l, lPrec, lead || p < parentPrec);
-    const rStr = fmt(ast.r, rPrec);
-    // Comparisons other than = print tight, as the HP 50g shows 'X>Y'.
-    const sep = (ast.op === '+' || ast.op === '-' || ast.op === '=')
-                ? ` ${ast.op} `
-                : ast.op;
-    const s = `${lStr}${sep}${rStr}`;
-    return p < parentPrec ? `(${s})` : s;
-  }
+  if (ast.kind === 'bin') return fmtChain(ast, parentPrec, lead);
   return '?';
+}
+
+// A sum built by a loop nests to the left thousands deep, so the left operands are walked in a loop, not by recursion.
+function fmtChain(top, parentPrec, lead) {
+  const spine = [];
+  let node = top, outer = parentPrec, leading = lead;
+  while (node?.kind === 'bin') {
+    const p = PREC[node.op];
+    spine.push({ node, p, outer });
+    leading = leading || p < outer;
+    outer = node.op === '^' ? p + 1 : p;
+    node = node.l;
+  }
+  let text = fmt(node, outer, leading);
+  for (let i = spine.length - 1; i >= 0; i--) {
+    const { node: n, p, outer: parent } = spine[i];
+    // Comparisons other than = print tight, as the HP 50g shows 'X>Y'.
+    const sep = (n.op === '+' || n.op === '-' || n.op === '=') ? ` ${n.op} ` : n.op;
+    const s = `${text}${sep}${fmt(n.r, n.op === '^' ? p : p + 1)}`;
+    text = p < parent ? `(${s})` : s;
+  }
+  return text;
 }

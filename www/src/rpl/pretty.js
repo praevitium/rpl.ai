@@ -3,8 +3,9 @@
    Node and the browser.  A Box is { width, ascent, descent, draw(x, by) },
    and the boxes in a row share one baseline. */
 
-import { withFractionMark } from './formatter.js';
+import { withFractionMark, formatSymbolic } from './formatter.js';
 import { isNum, isVar, isNeg, isBin, isFn, PREC, LOGIC_PREC, LOGIC_ARITY, numText, unitNodeText } from './algebra.js';
+import { isStackOverflow } from './types.js';
 
 // Single-quoted family names let the stack sit inside a double-quoted attribute.
 const FONT_STACK = "'IBM Plex Mono', 'RPL Symbols', 'IBM Plex Sans', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
@@ -61,9 +62,12 @@ function opSepBox(op, size = DEFAULT_SIZE) {
 }
 
 function rowBox(children) {
-  const ascent  = Math.max(0, ...children.map(c => c.ascent));
-  const descent = Math.max(0, ...children.map(c => c.descent));
-  const width   = children.reduce((w, c) => w + c.width, 0);
+  let ascent = 0, descent = 0, width = 0;
+  for (const c of children) {
+    ascent = Math.max(ascent, c.ascent);
+    descent = Math.max(descent, c.descent);
+    width += c.width;
+  }
   return {
     width, ascent, descent,
     draw(x, by) {
@@ -417,16 +421,35 @@ function lay(ast, parentPrec, size) {
       return p < parentPrec ? parenBox(box) : box;
     }
 
-    const lBox = lay(l, p, size);
+    return layChain(ast, parentPrec, size);
+  }
+
+  return textBox(`?${ast.kind || ''}?`, size);
+}
+
+// A sum built by a loop nests to the left thousands deep, so its left operands are walked in a loop into one flat row.
+function layChain(top, parentPrec, size) {
+  const spine = [];
+  let node = top, outer = parentPrec;
+  while (isBin(node) && node.op !== '/' && node.op !== '^') {
+    const p = PREC[node.op];
+    spine.push({ node, p, outer });
+    outer = p;
+    node = node.l;
+  }
+  let parts = [lay(node, outer, size)];
+  for (let i = spine.length - 1; i >= 0; i--) {
+    const { node: n, p, outer: parent } = spine[i];
+    const { op, l, r } = n;
     const rBox = lay(r, p + 1, size);
     // 2*X reads 2X and X*(Y+1) reads X(Y+1), but 2*3 and 2*10^3 keep their dot so they cannot read as 23 and 210³.
     const rightInParens = isNeg(r) || (isBin(r) && r.op !== '/' && PREC[r.op] < p + 1);
     const juxtapose = op === '*' && ((isNum(l) && !startsLikeNumber(r)) || rightInParens);
-    const box = rowBox(juxtapose ? [lBox, rBox] : [lBox, opBox(op, size), rBox]);
-    return p < parentPrec ? parenBox(box) : box;
+    if (!juxtapose) parts.push(opBox(op, size));
+    parts.push(rBox);
+    if (p < parent) parts = [parenBox(rowBox(parts))];
   }
-
-  return textBox(`?${ast.kind || ''}?`, size);
+  return parts.length === 1 ? parts[0] : rowBox(parts);
 }
 
 function svgDoc(width, height, inner, attrs = '') {
@@ -438,7 +461,13 @@ function svgDoc(width, height, inner, attrs = '') {
 export function astToSvg(ast, opts = {}) {
   const size = opts.size ?? DEFAULT_SIZE;
   const pad  = opts.padding ?? 4;
-  const box = layoutAst(ast, size);
+  let box;
+  try { box = layoutAst(ast, size); }
+  catch (e) {
+    // Past what the page can lay out in two dimensions, the formula is drawn as one line of text.
+    if (!isStackOverflow(e)) throw e;
+    box = textBox(formatSymbolic(ast), size);
+  }
   const width  = box.width  + pad * 2;
   const height = box.ascent + box.descent + pad * 2;
   const baseline = pad + box.ascent;

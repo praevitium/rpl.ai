@@ -4,6 +4,7 @@ import { latexToSource } from '../rpl/latex.js';
 import { spreadsheetToSource, htmlTableToSource } from '../rpl/sheet.js';
 import { lookup, isProgramLine, runProgramLine, keepsFailureStack } from '../rpl/ops.js';
 import { RPLAbort, RPLError, withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
+import { isStackOverflow } from '../rpl/types.js';
 import { errorBeep } from './beep.js';
 import {
   saveVarStateForUndo, undoVarState, redoVarState,
@@ -64,7 +65,9 @@ function failedSpot(line, values, failed) {
   return commandSpot(line, name.id, before);
 }
 
+// A value nested past what the page can walk is the HP's out-of-memory, not a JavaScript message.
 function errorText(e) {
+  if (isStackOverflow(e)) return 'Insufficient memory';
   return e && typeof e === 'object' && e.message != null ? String(e.message) : String(e);
 }
 

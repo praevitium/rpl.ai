@@ -1,7 +1,7 @@
 import {
   isReal, isInteger, isRational, isBinaryInteger, isComplex, isString,
   isName, isList, isVector, isMatrix, isProgram, isTagged, isSymbolic,
-  isDirectory, isUnit, isGrob, grobToHex, bigintText,
+  isDirectory, isUnit, isGrob, grobToHex, bigintText, isStackOverflow,
   Decimal,
 } from './types.js';
 import { state as _state, getApproxMode, fromRadians, testUserFlag } from './state.js';
@@ -259,9 +259,13 @@ export function formatBinaryInteger(v) {
   return `#${body}${base}`;
 }
 
-function formatSymbolic(expr) {
+// An expression nested past what the page can walk is shown by this note, so it never stops the rest of the stack.
+const TOO_LARGE = '(too large to show)';
+
+export function formatSymbolic(expr) {
   if (expr && typeof expr === 'object' && typeof expr.kind === 'string') {
-    return formatAlgebra(expr);
+    try { return formatAlgebra(expr); }
+    catch (e) { if (isStackOverflow(e)) return TOO_LARGE; throw e; }
   }
   // Saved files older than the algebra AST hold strings, numbers or { op, args }.
   if (expr == null) return '';

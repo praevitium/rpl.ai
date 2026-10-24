@@ -6,7 +6,7 @@ import {
   isReal, isInteger, isRational, isBinaryInteger, isComplex, isDirectory, isProgram, isName,
   isString, isNumber, isTagged, isList, isVector, isMatrix, isSymbolic, promoteNumericPair, Decimal,
   isValidHpIdentifier, isCasIdentifier, isReservedHpName, isStorableHpName, registerReservedName,
-  TYPES, bigintText,
+  TYPES, bigintText, isStackOverflow,
 } from '../www/src/rpl/types.js';
 import { readFileSync } from 'node:fs';
 import { parseEntry } from '../www/src/rpl/parser.js';
@@ -12429,3 +12429,14 @@ for (const src of ['{ :a:1 :b:"s" }', '« :a:1 DTAG »', ':o:{ :i:2 }']) {
     'format: an integer and a fraction of long parts print through the same text');
 }
 
+
+{
+  const recurse = (n) => recurse(n + 1) + 1;
+  let real;
+  try { recurse(0); } catch (e) { real = e; }
+  const firefox = Object.assign(new Error('too much recursion'), { name: 'InternalError' });
+  assert(isStackOverflow(real) && isStackOverflow(new RangeError('Maximum call stack size exceeded')) && isStackOverflow(firefox),
+    'isStackOverflow: a real overflow, the RangeError V8 and JavaScriptCore throw and the InternalError Firefox throws');
+  assert(!isStackOverflow(new RangeError('Invalid array length')) && !isStackOverflow(new Error('Maximum call stack size exceeded')) && !isStackOverflow(null) && !isStackOverflow(undefined) && !isStackOverflow('too much recursion'),
+    'isStackOverflow: other range errors, a plain error with the words and a non-error are not one, so a DOERR message is left alone');
+}

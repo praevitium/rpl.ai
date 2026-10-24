@@ -159,6 +159,9 @@ export function Symbolic(expr) {
   return Object.freeze({ type: TYPES.SYMBOLIC, expr });
 }
 
+// V8 and JavaScriptCore throw a RangeError; Firefox an InternalError that says "too much recursion".
+export const isStackOverflow = (e) => (e instanceof RangeError || e?.name === 'InternalError') && /call stack|too much recursion/i.test(e.message);
+
 export function RList(items) {
   return Object.freeze({ type: TYPES.LIST, items: Object.freeze([...items]) });
 }
