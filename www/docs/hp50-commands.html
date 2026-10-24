@@ -2134,6 +2134,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dd class="cmd-field cmd-field-description">
     <p>Sort into Frequency Bins Command: Sorts the elements of the independent column (XCOL) of the current statistics matrix (the reserved variable ΣDAT) into (nbins + 2) bins, where the left edge of bin 1 starts at value xmin and each bin has width xwidth. BINS returns a matrix containing the frequency of occurrences in each bin, and a 2-element array containing the frequency of occurrences falling below or above the defined range of x-values. The array can be stored into the reserved variable ΣDAT and used to plot a bar histogram of the bin data (for example, by executing BARPLOT). For each element x in ΣDAT, the nth bin count nfreq bin n is incremented, where: x – x m in n f r e q b in n = IP ------------------ - x w i d th</p>
     <p>for xmin ≤ x ≤ xmax, where xmax = xmin + (nbins)(xwidth).</p>
+    <p>In rpl.ai more than a million bins says Insufficient memory.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -5765,6 +5766,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Factorial (Gamma) Function: FACT is the same as ! and is provided for compatibility with the HP 28. See !.</p>
+    <p>In rpl.ai the factorial of an integer is exact, up to a million digits (n of 205,022); past that it says Insufficient memory.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
@@ -7160,6 +7162,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Returns the nth Hermite polynomial.</p>
+    <p>In rpl.ai the coefficients are exact whole numbers, and a degree above 1000, whose coefficients would fill a million digits between them, says Insufficient memory.</p>
   </dd>
   <dt class="cmd-label cmd-label-input">Input</dt>
   <dd class="cmd-field cmd-field-input">
@@ -8958,6 +8961,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Returns the nth degree Legendre polynomial.</p>
+    <p>In rpl.ai the coefficients are exact whole numbers over the power of two that clears them, and a degree above 1000, whose coefficients would fill a million digits between them, says Insufficient memory.</p>
   </dd>
   <dt class="cmd-label cmd-label-input">Input</dt>
   <dd class="cmd-field cmd-field-input">
@@ -16826,6 +16830,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Returns the nth Tchebycheff polynomial.</p>
+    <p>In rpl.ai the coefficients are exact whole numbers, and a degree above 1000, whose coefficients would fill a million digits between them, says Insufficient memory.</p>
   </dd>
   <dt class="cmd-label cmd-label-input">Input</dt>
   <dd class="cmd-field cmd-field-input">
@@ -19467,6 +19472,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>∞ –t x Γ ( x + 1 ) = ∫ e t dt 0</p>
     <p>and defined for other values of x by analytic continuation: Γ(x + 1) = n Γ(x)</p>
     <p>In rpl.ai an algebraic reads 7! as the AUR says, and 2^3! as 2^6. The textbook display shows X!; the text form, and an edit, write FACT(X).</p>
+    <p>In rpl.ai the factorial of an integer is exact, up to a million digits (n of 205,022); past that it says Insufficient memory.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
