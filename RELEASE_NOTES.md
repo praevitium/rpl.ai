@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.70 (2026-10-23)
+**Latest release:** v0.8.71 (2026-10-23)
 
 ---
 
@@ -20,6 +20,27 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.71 — 2026-10-23
+
+- Fixed: Plot on an equation drew nothing. It now plots by the equation's
+  form, as the 50g's PLOT does: `expr = expr` draws each side as a trace of
+  its own, so `'X^2=4'` shows the parabola and the line 4 crossing where the
+  sides are equal; `name = expr` draws only the expression, so `'Y=2*X'`
+  is the line 2X; and `indep = constant` draws a vertical line, `'X=3'`.
+  A name before the `=` no longer draws a "has no value" note, and a
+  vertical line leaves the plot's height alone.
+- Added: the equation writer reads a phone's long-press keys as the command
+  line does. `x³`, `x¹⁰` and `x⁻¹` are powers (superscripts typed in a row
+  are one exponent and one undo step, and after a unit they are its power,
+  `5_m²`), `½` and the other fractions are fractions, `1½` a mixed number,
+  and `30°` or `20°C` the angle or temperature unit. Text pasted into the
+  writer reads them the same way. Before, ³, ½ and ° were refused with "can't
+  go in an equation" or "not available".
+- Improved: a list's level menu offers Sort (SORT) only when SORT can
+  order it, so a mixed list no longer offers a row that ends in an error,
+  and Differentiate by and Integrate by pick x, then t, then θ before the
+  first name, so `'A*T^2+V*T'` differentiates by T and not A.
 
 ## v0.8.70 — 2026-10-23
 

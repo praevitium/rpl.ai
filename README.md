@@ -127,7 +127,8 @@ RPL puts the numbers first and the operation last. Each value goes on the
   `` `X^2-5*X+6=0` `X` SOLVE `` for `{ X=2 X=3 }`; an algebraic level's
   menu offers Expand (EXPAND), Factor (FACTOR), Solve for each of its
   first three unknowns (SOLVE), and Differentiate by (DERIV) and Integrate
-  by (RISCH) its main variable too. The ` key stands in for
+  by (RISCH) its main variable too: the CAS variable, else x, t or θ, else
+  the first name. A list offers Sort (SORT) only when SORT can order it. The ` key stands in for
   the HP's ' key, and the command line reads apostrophes too: `'X^2-4'`
   is the same object. EVAL gathers like terms and factors: `'X+X+1+2'` gives
   `2*X+3` and `'X*X/X^3'` gives `1/X`. Or press `⌘E`, type `x^2-5x+6=0`, and
@@ -458,7 +459,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   *, / and -. Its long-press keys read as the HP would write them too: `5²`
   gives 25 (`2¹⁰` 1024, SQ or n ^ applied to what came before) and `'X²+1'`
   is `X^2+1`, `½` is the exact fraction 1/2 and `1½` the mixed number 3/2,
-  and `30°` or `20°C` is the angle or temperature unit, `30_°`. A phone
+  and `30°` or `20°C` is the angle or temperature unit, `30_°`. The equation
+  writer reads the same keys: `x³`, `x¹⁰` and `x⁻¹` are powers (a run of
+  superscripts is one exponent), `½` a fraction, `1½` a mixed number and
+  `30°` the angle, and text pasted into it reads them too. A phone
   keyboard has no →, ≤, ≥ or ≠ either: type `->`, `<=`,
   `>=`, `!=` or `<>` and a program keeps them as the HP writes them, `->STR` as
   `→STR`, and the completion list offers `→STR` for `->S`. Nor has it π,
@@ -782,7 +786,10 @@ level and the plot view's + Level 1 all draw both. Other names take the
 numbers their variables hold, so `` 2 `A` STO `A*X^2` `` plots 2X², and a
 note names any that hold none. A level's Plot draws a formula whose one open
 name is not X along that name, so `` `Y^2-3*Y+2` `` plots against Y, and a
-note says which name took X's place.
+note says which name took X's place. An equation plots by its form, as the
+50g's PLOT does: `` `X^2=4` `` draws each side, so the curves cross where they
+are equal, `` `Y=2*X` `` draws only the expression, and `` `X=3` `` draws a
+vertical line.
 `` 2 -3 1.5 EYEPT `SIN(X*3)*COS(Y*3)` WIREFRAME `` shows the surface from
 that eye point inside VPAR's view volume, and `FAST3D` draws one you turn
 with a drag or the arrow keys, as the 50g's arrow keys turn it;
