@@ -1,7 +1,7 @@
 import { format, formatStackTop, DEFAULT_DISPLAY, withFractionMark } from '../rpl/formatter.js';
 import { astToSvg } from '../rpl/pretty.js';
 import { Var } from '../rpl/algebra.js';
-import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isBinaryInteger, isUnit, isString, isGrob, isName } from '../rpl/types.js';
+import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isInteger, isBinaryInteger, isUnit, isString, isGrob, isName } from '../rpl/types.js';
 import { state as calcState, currentPath } from '../rpl/state.js';
 import { icon } from './icons.js';
 
@@ -34,6 +34,20 @@ function grobPicture(g) {
   canvas.style.width = `${canvas.width * scale}px`;
   return canvas;
 }
+
+// A whole number of this many digits or more shows its first and last few and how many there are: wrapped whole, 1000! fills
+// three screens, and what a phone level shows is the zeros at its end.
+const DIGEST_FROM = 120, DIGEST_HEAD = 36, DIGEST_TAIL = 12;
+
+export function digestOf(text) {
+  const [, sign, digits] = /^(-?)(\d+)$/.exec(text) ?? [];
+  return digits && digits.length >= DIGEST_FROM ? { head: sign + digits.slice(0, DIGEST_HEAD), tail: digits.slice(-DIGEST_TAIL), count: digits.length } : null;
+}
+
+const spoken = (text) => {
+  const d = digestOf(text);
+  return d ? `${d.count} digit number, ${d.head}…${d.tail}` : text;
+};
 
 const rowSig = (flat, svgSize, oneLine) => `${svgSize}|${calcState.textbookMode ? 1 : 0}|${oneLine ? 1 : 0}|${flat}`;
 // Above level 1, as on the HP, a list keeps to one line, and so does a matrix taller than this, in its typed form.
@@ -755,13 +769,13 @@ export class Display {
     const short = !selected && oneLine(value, level);
     const text = this._fillValue(cell, value, svgSize, short);
     this._rowSigs.set(row, rowSig(text, svgSize, short));
-    row.setAttribute('aria-label', `Level ${level}: ${text}`);
+    row.setAttribute('aria-label', `Level ${level}: ${spoken(text)}`);
     row.append(lvl, tag, cell);
     if (selected && this.rowActionsHtml) row.insertAdjacentHTML('beforeend', this.rowActionsHtml(level, value));
     return row;
   }
 
-  _fillValue(cell, value, svgSize, short = false) {
+  _fillValue(cell, value, svgSize, short = false, whole = false) {
     const flat = formatLevel(value, this.displayOpts);
     if (short) cell.classList.add('one-line');
     if (calcState.textbookMode && isSymbolic(value)) {
@@ -786,6 +800,7 @@ export class Display {
     } else {
       const span = document.createElement('span');
       span.className = 'value-text';
+      const digest = !whole && isInteger(value) && digestOf(flat);
       const label = isTagged(value) ? `${value.tag}: ` : null;
       if (label && flat.startsWith(label)) {
         // A long tag gives way to the value it labels, each ending in an ellipsis of its own.
@@ -797,6 +812,12 @@ export class Display {
         rest.className = 'tag-value';
         rest.textContent = flat.slice(label.length - 2);
         span.append(name, rest);
+      } else if (digest) {
+        const count = document.createElement('small');
+        count.textContent = `${digest.count.toLocaleString('en-US')} digits`;
+        count.title = 'Select the level and tap VIEW to see every digit';
+        span.classList.add('num', 'digest');
+        span.append(`${digest.head}…${digest.tail}`, count);
       } else if (isNumber(value) || isBinaryInteger(value) || isUnit(value)) {
         // A number wraps, breaking before an exponent first, where an ellipsis would hide its exponent or last digits;
         // a unit also breaks before its _ and after a * or / outside parentheses, never inside s^3 or (A*s^3).

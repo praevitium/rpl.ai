@@ -20,7 +20,7 @@ import {
 } from '../www/src/rpl/state.js';
 import { computeMenuPage } from '../www/src/ui/paging.js';
 import { headingKey, ALIASES, pushHistory } from '../www/src/ui/command-help.js';
-import { escapeHtml, binaryBaseLabel, displayModeLabel, coordModeGlyph, suspendedProgramText } from '../www/src/ui/display.js';
+import { escapeHtml, binaryBaseLabel, displayModeLabel, coordModeGlyph, suspendedProgramText, digestOf } from '../www/src/ui/display.js';
 import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '../www/src/ui/drawer.js';
 import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName, COMPACT_KEYS, holdToRepeat, hpKeyCode, typedKeyCode } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
@@ -3117,6 +3117,17 @@ setAngle('RAD');
   assert(/if \(isString\(value\)\) span\.classList\.add\('str'\);/.test(displaySrc)
     && /\.st-row\.sel \.st-val \.value-text, \.st-row\[data-level="1"\] \.st-val \.value-text\.str \{ white-space: pre-wrap;/.test(cssSrc),
     'level 1 strings: a string at level 1 shows whole with its line breaks, as a selected level does, where "LINE1" 10 CHR + "LINE2" + 10 CHR + "LINE3" + showed "LINE1 LINE2 L…" at 280 px');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(digestOf('9'.repeat(119)) === null && digestOf('12345') === null && digestOf('1.5E300') === null && digestOf(`1/${'7'.repeat(200)}`) === null,
+    'long whole numbers: a number of under 120 digits, a real and a fraction keep their full text');
+  const long = digestOf(`-${'1234567890'.repeat(30)}`);
+  assert(long.head === `-${'1234567890'.repeat(3)}123456` && long.tail === '901234567890' && long.count === 300 && digestOf('9'.repeat(120)).count === 120,
+    'long whole numbers: from 120 digits the stack keeps the first 36 and the last 12, the sign and the count');
+  assert(/const digest = !whole && isInteger\(value\) && digestOf\(flat\);/.test(displaySrc) && /\} else if \(digest\) \{[\s\S]*?span\.classList\.add\('num', 'digest'\);/.test(displaySrc)
+    && /this\.display\._fillValue\(cell, value, 30, false, true\);/.test(appSrc)
+    && /\.st-val \.value-text\.digest small \{ display: block;/.test(cssSrc)
+    && /aria-label', `Level \$\{level\}: \$\{spoken\(text\)\}`/.test(displaySrc),
+    'long whole numbers: a level shows an integer of 120 digits or more as its ends and its digit count, VIEW shows every digit and a screen reader hears the count, where 1000 FACT was a 2330 px wall of its own trailing zeros');
 }
 
 {

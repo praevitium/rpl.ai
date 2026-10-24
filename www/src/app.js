@@ -1100,7 +1100,7 @@ class App {
   _viewValue(value, title, level = null) {
     const cell = document.createElement('div');
     cell.className = 'st-val';
-    this.display._fillValue(cell, value, 30);
+    this.display._fillValue(cell, value, 30, false, true);
     this.sheets.openView(title, cell.outerHTML, level);
   }
 
