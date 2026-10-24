@@ -3948,3 +3948,32 @@ setAngle('RAD');
     && /this\.kind === 'solver'/.test(sheets) && /case 'sv-solve': this\._solve\(b\.dataset\.name\); return;/.test(sheets),
     'the sheet is an action in command search, and its Solve keys run _solve');
 }
+
+// Settings > Data says whether the browser will keep the calculator's memory, and an installed app asks it to at the start.
+{
+  const { Sheets, storageNote } = await import('../www/src/ui/sheets.js');
+  const kept = storageNote({ persisted: true, installed: false, usage: 183000, canAsk: true });
+  assert(kept.text === 'The browser keeps the stack, variables and programs until you clear them; rpl.ai holds 183 KB here.' && kept.ask === false,
+    `storageNote: when the browser keeps it, it says so with what rpl.ai holds and has nothing to ask (${kept.text})`);
+  const tab = storageNote({ persisted: false, installed: false, usage: 0, canAsk: true });
+  const app = storageNote({ persisted: false, installed: true, usage: 0, canAsk: true });
+  assert(tab.ask && /Safari after a week without a visit/.test(tab.text) && /Install rpl\.ai as an app/.test(tab.text) && /download a backup/.test(tab.text),
+    'storageNote: in a tab it names the risks, Safari\'s week included, and advises installing, asking and a backup');
+  assert(app.ask && !/Safari|Install rpl/.test(app.text) && /^A browser may clear a site's data when the device runs low on space\. Ask it to keep/.test(app.text),
+    'storageNote: an installed app is only told to ask, and to back up');
+  assert(storageNote({ persisted: null, installed: false, usage: 0, canAsk: false }).ask === false && /doesn't say/.test(storageNote({ persisted: false, installed: true, usage: 0, canAsk: false }).text),
+    'storageNote: a browser that cannot say or cannot be asked gets only the advice to back up');
+  Object.defineProperty(globalThis.navigator, 'storage', { configurable: true, value: { persisted: async () => false, persist: async () => true, estimate: async () => ({ usage: 5e6 }) } });
+  const note = { textContent: 'Checking…' }, ask = { hidden: true };
+  const sheet = { kind: 'settings', page: 'data', app: { isInstalledApp: () => false }, el: { querySelector: (sel) => (sel === '.keep-note' ? note : ask) } };
+  await Sheets.prototype._checkStorage.call(sheet);
+  assert(/Safari after a week/.test(note.textContent) && ask.hidden === false, 'the Data page fills its storage row from what the browser says and shows the button to ask');
+  sheet.page = 'appearance';
+  note.textContent = 'unchanged';
+  await Sheets.prototype._checkStorage.call(sheet);
+  assert(note.textContent === 'unchanged', 'a check that comes back after the page has changed leaves the new page alone');
+  delete globalThis.navigator.storage;
+  const app2 = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/this\._installAutosave\(\);\n\s*this\._keepStorage\(\);/.test(app2) && /_keepStorage\(\) \{\n\s*if \(this\.isInstalledApp\(\)\) Promise\.resolve\(globalThis\.navigator\?\.storage\?\.persist\?\.\(\)\)\.catch\(\(\) => \{\}\);/.test(app2),
+    'an installed app asks for lasting storage as it starts, and a tab waits for the button, as Firefox prompts');
+}

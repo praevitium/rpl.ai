@@ -263,6 +263,7 @@ class App {
     if (this.prefs.drawer) this.drawers.open(this.prefs.drawer);
     this._installKeyboard();
     this._installAutosave();
+    this._keepStorage();
     this._installFileDrop();
     this._installBackButton();
     this._installHaptics();
@@ -758,6 +759,11 @@ class App {
       editor: this.entry.buffer,
       lastError: this.entry.error || '',
     };
+  }
+
+  // An installed app is granted lasting storage without a prompt; a tab is left to Settings' Data page, since Firefox asks.
+  _keepStorage() {
+    if (this.isInstalledApp()) Promise.resolve(globalThis.navigator?.storage?.persist?.()).catch(() => {});
   }
 
   isInstalledApp() {

@@ -3,7 +3,7 @@ import { escapeHtml, markScrollEdges } from './display.js';
 import { ACTIONS, KEYMAP, CONTEXT_LABELS, chordText, isMacPlatform } from './actions.js';
 import { STORAGE_KEY as STACK_STORAGE_KEY, BACKUPS_KEY } from '../rpl/persist.js';
 import { UI_PREFS_KEY, THEMES, THEME_LABELS, STACK_SIZES, STACK_SIZE_LABELS, TUTOR_STYLES, KEYPAD_LAYOUTS, KEYPAD_LABELS, SIDES, SIDE_LABELS } from './ui-prefs.js';
-import { REMOTE_CONFIG_KEY as CHAT_REMOTE_KEY, CONSENT_KEY as CHAT_CONSENT_KEY } from '../ai/chat-bot.js';
+import { REMOTE_CONFIG_KEY as CHAT_REMOTE_KEY, CONSENT_KEY as CHAT_CONSENT_KEY, formatBytes } from '../ai/chat-bot.js';
 import { state as calcState, testUserFlag, setUserFlag, clearUserFlag, setClockOffset, varStore, varRecall } from '../rpl/state.js';
 import { ROWS, COLS, GOAL, minesAround, step, newField, saveField } from '../rpl/minehunt.js';
 import { ELEMENTS } from '../rpl/elements.js';
@@ -80,6 +80,20 @@ export function solverNumber(text) {
     const values = parseTyped(typed);
     return values.length === 1 && (isReal(values[0]) || isInteger(values[0])) ? values[0] : false;
   } catch { return false; }
+}
+
+// What the Data page says about the browser keeping the calculator's memory; persisted is null where it cannot say.
+export function storageNote({ persisted, installed, usage, canAsk }) {
+  if (persisted) {
+    const held = formatBytes(usage);
+    return { text: `The browser keeps the stack, variables and programs until you clear them${held ? `; rpl.ai holds ${held} here` : ''}.`, ask: false };
+  }
+  if (persisted === null || !canAsk) return { text: "This browser doesn't say whether it keeps the calculator's memory. Download a backup now and then.", ask: false };
+  return {
+    text: `A browser may clear a site's data when the device runs low on space${installed ? '' : ', and Safari after a week without a visit'}. `
+      + `${installed ? 'Ask it to keep the calculator\'s memory, and' : 'Install rpl.ai as an app, or ask the browser to keep the memory, and'} download a backup now and then.`,
+    ask: true,
+  };
 }
 
 const joinNames = (names) => (names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`);
@@ -351,6 +365,7 @@ export class Sheets {
     }
     const nav = SETTINGS_PAGES.map((p) => `<button type="button" data-sh="page" data-page="${p}" aria-pressed="${p === this.page}">${icon(SETTINGS_PAGE_NAMES[p][0], 'sm')}${SETTINGS_PAGE_NAMES[p][1]}</button>`).join('');
     this.el.innerHTML = sheet('Settings', this._settingsPageHtml(), `<nav class="sheet-nav">${nav}</nav>`);
+    if (this.page === 'data') this._checkStorage();
   }
 
   _libraryHtml() {
@@ -445,6 +460,7 @@ export class Sheets {
         <p class="muted" style="color:var(--ink3);font-size:12.5px">If a local or LAN Ollama fails to connect, the assistant explains why — a wrong origin, a plain-HTTP page under HTTPS, or nothing answering — and what to change. Ollama Cloud models need <code>ollama signin</code> on the machine running Ollama and a model name ending in <code>-cloud</code> or <code>:cloud</code>; browsers cannot call ollama.com directly. Safari, and every browser on iPhone and iPad, can't reach a local Ollama from the hosted app.</p>`;
     }
     return `<h4>Data</h4><p>Everything the calculator keeps lives in this browser.</p>
+      <div class="set"><b>Keep the calculator's memory</b><span class="keep-note">Checking…</span><button type="button" class="btn" data-sh="keep-data" hidden>${icon('check', 'sm')}Ask the browser to keep it</button></div>
       <div class="set"><b>Back up your work</b><span>Save the stack and HOME directory as a JSON file you can restore later.</span><button type="button" class="btn" data-sh="backup">${icon('down', 'sm')}Download a backup</button></div>
       ${app.isInstalledApp() ? '' : `<div class="set"><b>Install as an app</b><span>Runs in its own window, starts from the dock or home screen, and works offline.</span><button type="button" class="btn" data-sh="install">${icon('down', 'sm')}Install</button></div>`}
       <div class="set"><b>Calculator clock</b><span>${calcState.clockOffset
@@ -537,6 +553,12 @@ export class Sheets {
         return;
       }
       case 'backup': app.exportSnapshot(); return;
+      case 'keep-data': {
+        const asked = globalThis.navigator?.storage?.persist?.();
+        Promise.resolve(asked).then((granted) => app.toast(granted ? "The browser will keep the calculator's memory." : "The browser didn't agree to. Download a backup now and then."), () => {}).then(() => this._checkStorage());
+        return;
+      }
+      case 'install': app.runAction('app.install'); return;
       case 'restore': pickFile('application/json,.json', async (f) => { if (await app.importSnapshotFromFile(f)) this.close(); }); return;
       case 'clock-reset': setClockOffset(0); this._render(); return;
       case 'eq-subject': this.eqlib.subject = Number(b.dataset.n); this._render(); return;
@@ -708,6 +730,19 @@ export class Sheets {
       if (fresh) { app.entry._dropNoOpUndoStep(); this.sv.snapped = false; }
       this._solverNote(solverFailure(name, e));
     }
+  }
+
+  // The Data page's row on lasting storage: what the browser says, and the button to ask it to keep the memory.
+  async _checkStorage() {
+    const storage = globalThis.navigator?.storage;
+    let persisted = null, usage = 0;
+    try { if (typeof storage?.persisted === 'function') persisted = await storage.persisted(); } catch { persisted = null; }
+    try { usage = (await storage?.estimate?.())?.usage ?? 0; } catch { usage = 0; }
+    const note = storageNote({ persisted, installed: this.app.isInstalledApp(), usage, canAsk: typeof storage?.persist === 'function' });
+    const row = this.kind === 'settings' && this.page === 'data' ? this.el?.querySelector('.keep-note') : null;
+    if (!row) return;
+    row.textContent = note.text;
+    this.el.querySelector('[data-sh="keep-data"]').hidden = !note.ask;
   }
 
   _onChange(e) {

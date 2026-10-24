@@ -683,7 +683,7 @@ async function fetchRemoteModels(url, apiKey = '') {
   return fromOpenAI();
 }
 
-function formatBytes(n) {
+export function formatBytes(n) {
   if (typeof n !== 'number' || !isFinite(n) || n <= 0) return '';
   if (n >= 1e9) return (n / 1e9).toFixed(1) + ' GB';
   if (n >= 1e6) return (n / 1e6).toFixed(0) + ' MB';
