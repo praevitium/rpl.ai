@@ -221,6 +221,10 @@ export const KNOWN_FUNCTIONS = Object.freeze({
     if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return null;
     return a - b * Math.floor(a / b);
   } },
+  // The percent functions are worked out by evalAst, which keeps exact numbers exact.
+  '%':   { arity: 2 },
+  '%T':  { arity: 2 },
+  '%CH': { arity: 2 },
   MIN:   { arity: 2, eval: (a, b) => {
     if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
     return a <= b ? a : b;
@@ -485,7 +489,9 @@ export function parseAlgebra(src) {
     // function such as one DEFINE makes.
     // A name may hold % after its first letter, as the TVM solver's I%YR does, and start with &, the wildcard
     // ↓MATCH and ↑MATCH patterns use, or ←, a compiled local's mark. A call may have an arrow in it: D→R(X).
-    const m = s.slice(i).match(/^[&←]?[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω0-9%]*(?:→[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω0-9%]*(?=\s*\())?/);
+    // The percent functions %(x,y), %T(x,y) and %CH(x,y) are calls too, though their names start with a symbol.
+    const m = s.slice(i).match(/^%(?:CH|T)?(?=\s*\()/i)
+      ?? s.slice(i).match(/^[&←]?[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω0-9%]*(?:→[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω0-9%]*(?=\s*\())?/);
     if (m) {
       i += m[0].length;
       const ident = m[0];
@@ -526,6 +532,24 @@ export function parseAlgebra(src) {
   skip();
   if (i !== n) throw new Error(`Trailing input at pos ${i}: '${s.slice(i)}'`);
   return ast;
+}
+
+// What the percent functions come to: %(x,y) is xy/100, %T(x,y) is 100y/x and %CH(x,y) is 100(y-x)/x.
+const PERCENT_FORMULAS = Object.freeze({
+  '%':   (x, y) => Bin('/', Bin('*', x, y), Num(100n)),
+  '%T':  (x, y) => Bin('/', Bin('*', Num(100n), y), x),
+  '%CH': (x, y) => Bin('/', Bin('*', Num(100n), Bin('-', y, x)), x),
+});
+
+// The percent calls of an algebraic written out as arithmetic, for the CAS, which has no such functions.
+export function expandPercent(ast) {
+  if (!ast) return ast;
+  if (ast.kind === 'neg') return Neg(expandPercent(ast.arg));
+  if (ast.kind === 'bin') return Bin(ast.op, expandPercent(ast.l), expandPercent(ast.r));
+  if (ast.kind !== 'fn') return ast;
+  const args = ast.args.map(expandPercent);
+  const formula = PERCENT_FORMULAS[ast.name];
+  return formula && args.length === 2 ? formula(...args) : Fn(ast.name, args);
 }
 
 // A comparison of two numbers is a truth value, 1. or 0., as the comparison commands give; = stays an equation.
@@ -593,6 +617,10 @@ export function evalAst(ast, lookup, fnEval = defaultFnEval, binGate = null) {
       return integral ?? Fn(ast.name, args);
     }
     const evaldArgs = ast.args.map(a => evalAst(a, lookup, fnEval, binGate));
+    const percent = PERCENT_FORMULAS[ast.name];
+    if (percent && evaldArgs.length === 2 && evaldArgs.every(isNum) && !(ast.name !== '%' && Number(evaldArgs[0].value) === 0)) {
+      return evalAst(percent(...evaldArgs), lookup, fnEval, binGate);
+    }
     if (evaldArgs.every(isNum)) {
       const real = evaldArgs.some(isRealNum) || ast.name in LOGIC_ARITY;
       const result = fnEval(ast.name, evaldArgs.map(a => a.value), real);

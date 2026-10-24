@@ -642,12 +642,10 @@ register('TRNC', _roundingCommand('TRNC', Decimal.ROUND_DOWN), { category: 'Arit
 register('TRUNC', _roundingCommand('TRUNC', Decimal.ROUND_DOWN), { category: 'Arithmetic', categoryOrder: 20, label: "TRUNC" });
 
 
-function _percentAst(kind, l, r) {
-  if (kind === 'PCT')  return AstBin('/', AstBin('*', l, r), AstNum(100));
-  if (kind === 'PCTT') return AstBin('/', AstBin('*', AstNum(100), r), l);
-  /* PCTCH */         return AstBin('/', AstBin('*', AstNum(100),
-                          AstBin('-', r, l)), l);
-}
+const _PERCENT_NAMES = Object.freeze({ PCT: '%', PCTT: '%T', PCTCH: '%CH' });
+
+// A symbolic argument leaves the function as the AUR writes it, %(x,symb), which EVAL works out once both are numbers.
+const _percentAst = (kind, l, r) => AstFn(_PERCENT_NAMES[kind], [l, r]);
 
 // % takes one unit and keeps it; %T and %CH take two, convert the second to the
 // first's units (temperatures as differences) and return a plain number.

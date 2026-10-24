@@ -2429,6 +2429,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Percent Change Function: Returns the percent change from x to y as a percentage of x. If both arguments are unit objects, the units must be consistent with each other. The dimensions of a unit object are dropped from the result, but units are part of the calculation. For more information on using temperature units with arithmetic functions, refer to the keyword entry of +.</p>
+  <p>In rpl.ai %CH(x,y) also works inside an algebraic as the AUR writes it: EVAL gives the number when both arguments are numbers, exactly in EXACT mode ('%CH(3,4)' gives 100/3), and leaves the call as written when one is symbolic; the CAS commands read it as the arithmetic it stands for.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
@@ -16492,6 +16493,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Percent of Total Function: Returns the percent of the first argument that is represented by the second argument. If both arguments are unit objects, the units must be consistent with each other. The dimensions of a unit object are dropped from the result, but units are part of the calculation. For more information on using temperature units with arithmetic functions, refer to the entry for +.</p>
+  <p>In rpl.ai %T(x,y) also works inside an algebraic as the AUR writes it: EVAL gives the number when both arguments are numbers, exactly in EXACT mode ('%T(3,4)' gives 400/3), and leaves the call as written when one is symbolic; the CAS commands read it as the arithmetic it stands for.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
@@ -19498,6 +19500,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Percent Function: Returns x percent of y. Common usage is ambiguous about some units of temperature. When °C or °F represents a thermometer reading, then the temperature is a unit with an additive constant: 0 °C=273.15 K, and 0 °F=459.67 °R. But when °C or °F represents a difference in thermometer readings, then the temperature is a unit with no additive constant: 1 °C=1 K and 1 °F=1 °R. The arithmetic operators +, –, %, %CH, and %T treat temperatures as differences, without any additive constant. However, +, –, %CH, and %T require both arguments to be either absolute (K and °R), both °C, or both °F. No other combinations are allowed. For more information on using temperature units with arithmetic functions, see the entry for +.</p>
+  <p>In rpl.ai %(x,y) also works inside an algebraic as the AUR writes it: EVAL gives the number when both arguments are numbers, exactly in EXACT mode ('%(40,5)' gives 2), and leaves the call as written when one is symbolic; the CAS commands read it as the arithmetic it stands for.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">

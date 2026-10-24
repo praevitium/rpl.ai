@@ -3,7 +3,7 @@
 // Conversion between the algebra AST and the syntax Giac's caseval reads
 // and writes: the same infix surface, but with Giac's function names.
 
-import { parseAlgebra, Var, Neg, Bin, Num, Fn, UnitNode, numText } from "../algebra.js";
+import { parseAlgebra, Var, Neg, Bin, Num, Fn, UnitNode, numText, expandPercent } from "../algebra.js";
 import { multiplyUexpr, powerUexpr } from "../units.js";
 import { isCasIdentifier } from "../types.js";
 import { RPLError } from "../stack.js";
@@ -117,8 +117,9 @@ const GIAC_TO_HP = Object.freeze(
 );
 
 export function astToGiac(ast) {
-  assertAstNamesValid(ast);
-  return emit(ast, 0);
+  const written = expandPercent(ast);
+  assertAstNamesValid(written);
+  return emit(written, 0);
 }
 
 const PREC = {

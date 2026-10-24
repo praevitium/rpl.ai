@@ -9208,3 +9208,33 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(note.startsWith('<svg ') && note.includes('(too large to show)') && format(Symbolic(tower)).includes('(too large to show)'),
     'an expression nested past anything the page can walk is drawn and printed as a note, never thrown');
 }
+
+// %(x,y), %T(x,y) and %CH(x,y), the AUR's form for a symbolic argument, read and print as written, work out when both
+// arguments are numbers (exactly in EXACT mode) and reach the CAS as the arithmetic they stand for.
+{
+  const show = (src) => format(parseEntry(src)[0]);
+  assert(show("'%CH(A,B)'") === '`%CH(A,B)`' && show("'%T(A+1,B)*2'") === '`%T(A + 1,B)*2`' && show("'%(A,B)'") === '`%(A,B)`',
+    'percent functions: %(x,y), %T(x,y) and %CH(x,y) read and print as written, where they were Invalid algebraic');
+  assert(show("'%ch(a,B)'") === '`%CH(a,B)`', 'percent functions: the name reads in lower case, as a built-in function does');
+  const top = (src) => format(runLine(src).peek());
+  assert(top("'%CH(1,5)' EVAL") === '400' && top("'%(200,15)' EVAL") === '30' && top("'%T(4,1)' EVAL") === '25',
+    'percent functions: EVAL works out whole numbers as the commands do');
+  assert(top("'%CH(3,4)' EVAL") === '100/3' && top("'%T(3,4)' EVAL") === '400/3',
+    'percent functions: EXACT mode keeps the fraction, 100/3, where the command gives a decimal');
+  assert(top("'%(23.7,995)' EVAL") === '235.815' && top("'%CH(3,4)' →NUM") === '33.3333333333',
+    'percent functions: a decimal argument, or →NUM, gives the decimal');
+  assert(top("'%CH(X,Y)' EVAL") === '`%CH(X,Y)`' && top("'%CH(0,5)' EVAL") === '`%CH(0,5)`' && top("'%T(0,5)' EVAL") === '`%T(0,5)`',
+    'percent functions: a symbolic argument, or a zero first argument of %T and %CH, leaves the call as written');
+  assert(top("'%CH(%CH(1,2),3)' EVAL") === '-97' && top("'1+%(200,15)*2' EVAL") === '61',
+    'percent functions: they nest and sit in a sum');
+  varStore('X', Real(40));
+  assert(top("'%(X,5)' EVAL") === '2.' && top("'%CH(X,60)+X' →NUM") === '90.', 'percent functions: a stored variable gives its number');
+  varPurge('X');
+  assert(top("'X' 5 %") === '`%(X,5)`' && top("5 'X' %CH") === '`%CH(5,X)`' && top("'X' 'Y' %T") === '`%T(X,Y)`',
+    'percent functions: %, %CH and %T with a symbolic argument give the call, as the AUR says, where they gave a formula');
+  assert(top("'X' 5 % 40 'X' STO EVAL") === '2' && top("40. 'X' STO 'X' 5 % EVAL") === '2.', 'percent functions: the call gives its number once X has one, exact for a whole number');
+  varPurge('X');
+  const { astToGiac } = await import('../www/src/rpl/cas/giac-convert.mjs');
+  assert(astToGiac(parseAlgebra('%CH(X,Y)')) === '100*(Y-X)/X' && astToGiac(parseAlgebra('%(X,5)+1')) === 'X*5/100+1'
+    && astToGiac(parseAlgebra('SIN(%T(A+1,B))')) === 'sin(100*B/(A+1))', 'percent functions: the CAS gets the arithmetic, which it has no function for');
+}

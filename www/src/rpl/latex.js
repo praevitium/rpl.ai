@@ -137,7 +137,7 @@ function functionLatex(ast, parent, power) {
       default:
     }
   }
-  const command = FUNCTIONS[name] ?? (name.length === 1 ? name : `\\operatorname{${textLatex(name)}}`);
+  const command = FUNCTIONS[name] ?? (/^\p{L}$/u.test(name) ? name : `\\operatorname{${textLatex(name)}}`);
   const applied = power === undefined ? command : `${command}^{${power}}`;
   const bare = BARE.has(name) && parent < 2 && args.length === 1 && isAtom(args[0]);
   return bare ? `${applied}\\,${a}` : `${applied}${paren(parts.join(', '))}`;
@@ -259,7 +259,7 @@ const NUMBER = /^(?:\d+(?:(?:\\,|\{,\})\d{3})*\.?\d*|\.\d+)/;
 const MATH_WRAPPERS = [/^\$\$([\s\S]*)\$\$$/, /^\$([\s\S]*)\$$/, /^\\\(([\s\S]*)\\\)$/, /^\\\[([\s\S]*)\\\]$/];
 
 const has = (table, key) => Object.hasOwn(table, key);
-const isFunctionWord = (word) => has(FUNCTION_WORDS, word) || (word.length > 1 && isKnownFunction(word));
+const isFunctionWord = (word) => has(FUNCTION_WORDS, word) || ((word.length > 1 || word === '%') && isKnownFunction(word));
 const functionOfWord = (word) => FUNCTION_WORDS[word] ?? word.toUpperCase();
 const isVariable = (ast, name) => ast.kind === 'var' && ast.name === name;
 const hasValue = (ast, value) => ast.kind === 'num' && ast.value === value;
@@ -279,9 +279,9 @@ function lexLatex(src) {
     else if ((m = take(/^\\([A-Za-z]+)\*?/))) {
       const name = m[1];
       if (WORD_COMMANDS.has(name)) {
-        const word = take(/^\s*\{([A-Za-z](?:[A-Za-z0-9]|\\_)*)\}/)?.[1];
+        const word = take(/^\s*\{(\\%(?:CH|T)?|[A-Za-z](?:[A-Za-z0-9]|\\_)*)\}/)?.[1];
         if (word === undefined) throw new Error(`\\${name} needs a name in braces, like \\mathrm{rate}`);
-        tokens.push({ t: 'word', v: word.replace(/\\_/g, '_') });
+        tokens.push({ t: 'word', v: word.replace(/\\_/g, '_').replace(/^\\%/, '%') });
       } else if (has(RELATION_COMMANDS, name)) tokens.push({ t: 'rel', v: RELATION_COMMANDS[name] });
       else if (['lvert', 'rvert', 'vert'].includes(name)) tokens.push({ t: 'sym', v: '|' });
       else tokens.push({ t: 'cmd', v: name });

@@ -277,3 +277,13 @@ const value = (text) => toLatex(parseEntry(text)[0]);
   assert(algebra('NOT (A AND B)') === raw`\lnot \left(A \land B\right)` && algebra('NOT X>1') === raw`\lnot \left(X > 1\right)` && algebra('(A OR B) AND C') === raw`\left(A \lor B\right) \land C`,
     'Copy as LaTeX brackets what NOT and a mixed logic expression group');
 }
+
+// The percent functions' names start with a symbol: LaTeX would read a bare % as a comment, so it is written \%.
+{
+  const algebra = (src) => astLatex(parseAlgebra(src));
+  assert(algebra('%CH(X,Y)') === raw`\operatorname{\%CH}\left(X, Y\right)` && algebra('%(X,5)+1') === raw`\operatorname{\%}\left(X, 5\right) + 1`
+    && algebra('%T(A+1,B)') === raw`\operatorname{\%T}\left(A + 1, B\right)`, 'Copy as LaTeX writes %, %T and %CH with the percent sign escaped, so the rest of the line is not a comment');
+  const back = (src) => formatAlgebra(latexToAst(algebra(src)));
+  assert(back('%CH(X,Y)') === '%CH(X,Y)' && back('%(X,5)+1') === '%(X,5) + 1' && back('%T(A+1,B)') === '%T(A + 1,B)',
+    'a percent function written as LaTeX reads back as the function');
+}
