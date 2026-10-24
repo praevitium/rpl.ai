@@ -104,11 +104,13 @@ ready.
 
 Your stack, variables and settings stay in this browser on this device.
 Nothing is uploaded. Two windows of the same browser share them and stay in
-step. A line you have typed but not entered stays too, as the HP keeps its
-line through power-off: a phone that drops the page while another app has
-the screen gives it back, cursor and all, at the next start. A level or
-variable being edited and a program's `INPUT` answer are not kept. To move
-them to another browser or keep a copy, use Back up everything in the
+step. What you were doing stays too, as the HP keeps it through power-off: a
+phone that drops the page while another app has the screen gives back, at
+the next start, the line you were typing with its cursor, the formula or
+matrix you were writing, the lines you had entered (for the History drawer
+and the held Enter), and the formulas on the plot with their window. A level
+or variable being edited and a program's `INPUT` answer are not kept. To
+move them to another browser or keep a copy, use Back up everything in the
 Variables drawer's ⋯ menu, and Restore from a backup file on the other side.
 
 ### Five minutes with RPL
@@ -818,6 +820,8 @@ the window is typed in directly, and Trace mode (`T`) walks a cursor along
 the curves with live readouts; with several functions plotted, ↑ and ↓ move
 it to the previous or next one, as the HP's do, a tap or click on a curve
 traces that one, and ▸ marks it in the readout. Expand to fill the window, or go full screen.
+The formulas on the plot, which of them are shown, and the window stay across a
+reload; plotted data and fits come from ΣDAT or the stack, so they do not.
 On a phone the graph fills the plot view, with the plot types peeking
 below it; the traces and window scroll up under it.
 More canvas buttons copy the plot as an image, download it as a PNG at the

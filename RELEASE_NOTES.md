@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.80 (2026-10-24)
+**Latest release:** v0.8.81 (2026-10-24)
 
 ---
 
@@ -20,6 +20,27 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.81 — 2026-10-24
+
+- Fixed: the lines you had entered were forgotten at a reload, so the
+  History drawer, the held Enter's last command lines and the Up key started
+  empty, where the HP keeps its last command lines through power-off. The
+  last 100 lines, up to 100,000 characters, come back in order, and Reset
+  everything forgets them.
+- Added: the formula or matrix you were writing survives a reload with the
+  line. The equation or matrix writer reopens where it was, filled in, a
+  formula without its undo steps; a writer that cannot be put back is closed
+  and the start goes on. It is saved as the page is hidden or closed and
+  forgotten when the writer closes, like the line; one over 100,000
+  characters is left out, and a level or variable being edited is still not
+  kept.
+- Improved: the plot comes back after a reload. Its formulas, with their
+  colours and which of them are shown, and its window are kept, and a plot
+  drawer that was open reopens on them, where it opened empty. Plotted data
+  and fits come from ΣDAT or the stack and are not kept. A change is saved
+  a moment after it is drawn and as the page is hidden, and Reset
+  everything forgets the plot.
 
 ## v0.8.80 — 2026-10-24
 
