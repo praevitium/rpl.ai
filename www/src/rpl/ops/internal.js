@@ -644,8 +644,9 @@ function integerBinary(op, a, b) {
   throw new RPLError('Unknown op ' + op);
 }
 
-// The HP holds an integer in its memory, a few million digits at most; a bigger one is not worth a frozen page.
-const MAX_INTEGER_DIGITS = 1_000_000;
+// The HP holds an object in its memory, a few million digits or cells at most; a bigger one is not worth a frozen page.
+export const MAX_INTEGER_DIGITS = 1_000_000;
+export const MAX_CELLS = 1_000_000;
 
 function _checkBigPower(a, b) {
   const mag = a < 0n ? -a : a;
@@ -772,14 +773,22 @@ export function unaryReal(name, fn) {
 }
 
 
+// lo*(lo+1)*...*hi, halved so the big multiplications are between numbers of a size: 100000! takes 60 ms, not 4 s.
+function _rangeProduct(lo, hi) {
+  checkTimeLimit();
+  if (hi - lo < 16n) {
+    let acc = lo;
+    for (let i = lo + 1n; i <= hi; i++) acc *= i;
+    return acc;
+  }
+  const mid = (lo + hi) >> 1n;
+  return _rangeProduct(lo, mid) * _rangeProduct(mid + 1n, hi);
+}
+
 export function _bigFactorial(n) {
   if (n < 0n) throw new RPLError('Bad argument value');
-  let acc = 1n;
-  for (let i = 2n; i <= n; i++) {
-    checkTimeLimit();
-    acc *= i;
-  }
-  return acc;
+  if (!(_lngamma(Number(n) + 1) <= MAX_INTEGER_DIGITS * Math.LN10)) throw new RPLError('Insufficient memory');
+  return n < 2n ? 1n : _rangeProduct(2n, n);
 }
 
 // Lanczos approximation (g = 7, n = 9), good to about 15 significant digits.

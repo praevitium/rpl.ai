@@ -778,6 +778,7 @@ function makeXYMatrix() {
     'BINS: the AUR example sorts 19 values into 5 bins of width 2 from 1, with one value below and one above');
   assertThrows(() => runLine('CLΣ 1 2 5 BINS'), /Nonexistent ΣDAT/, 'BINS without ΣDAT is Nonexistent ΣDAT');
   assertThrows(() => runLine('CLΣ 5 Σ+ 1 0 5 BINS'), /Bad argument value/, 'BINS refuses a zero bin width');
+  assertThrows(() => runLine('CLΣ 5 Σ+ 0 1 1000000000 BINS'), /Insufficient memory/, 'BINS of a billion bins says Insufficient memory, where it filled an array until the page froze');
   runLine('CLΣ');
 }
 

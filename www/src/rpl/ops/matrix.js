@@ -8,15 +8,13 @@ import { giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
 import { charSpaceList, eigenvalueArray, spacesFromJordan } from '../jordan-format.js';
 import { register, OPS } from './registry.js';
 import { isPict, grobSize } from './graphics.js';
-import { _numVal, _astToRplValue, _coefArrToSymbolicX, _colCompose, _colDecompose, _decimalFrobeniusNorm, _fromArrayOp, _fromVecOp, _casArray, _hasSymEntry, _indexAsInt, _invMatrixNumeric, _isScalarOperand, _reducesByScalars, _rrefScalar, _isSymOperand, _matrixToGiacStr, _nFromIntegerArg, _popSquareMatrix, _rowCompose, _rowDecompose, _scalarBinary, _scalarSum, _scalarToGiacStr, _tidyBinary, _toArrayOp, _toV2Op, _toV3Op } from './internal.js';
+import { MAX_CELLS, _numVal, _astToRplValue, _coefArrToSymbolicX, _colCompose, _colDecompose, _decimalFrobeniusNorm, _fromArrayOp, _fromVecOp, _casArray, _hasSymEntry, _indexAsInt, _invMatrixNumeric, _isScalarOperand, _reducesByScalars, _rrefScalar, _isSymOperand, _matrixToGiacStr, _nFromIntegerArg, _popSquareMatrix, _rowCompose, _rowDecompose, _scalarBinary, _scalarSum, _scalarToGiacStr, _tidyBinary, _toArrayOp, _toV2Op, _toV3Op } from './internal.js';
 
 
 
 function _transpose(rows, width = rows[0]?.length ?? 0) {
   return Array.from({ length: width }, (_, j) => rows.map(row => row[j]));
 }
-
-const MAX_CELLS = 1_000_000;
 
 function _checkCells(m, n = 1) {
   if (m * n > MAX_CELLS) throw new RPLError('Insufficient memory');

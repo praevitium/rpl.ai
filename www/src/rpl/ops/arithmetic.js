@@ -7,7 +7,7 @@ import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { inverseUexpr, powerUexpr, sameDims, temperaturesAdd } from '../units.js';
 import { register, lookup, OPS } from './registry.js';
 import { isPict, negGrob } from './graphics.js';
-import { _inUnit, _infiniteResult, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _arrayToGiacStr, _casArray, _hasSymEntry, _invMatrixNumeric, _invMatrixScalar, _isScalarOperand, _isSymOperand, _makeUnit, _reducesByScalars, _scalarBinary, _scalarSum, _tidyBinary, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, exactSqrt, exactXroot, recallVar, storeVar } from './internal.js';
+import { MAX_INTEGER_DIGITS, _inUnit, _infiniteResult, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _arrayToGiacStr, _casArray, _hasSymEntry, _invMatrixNumeric, _invMatrixScalar, _isScalarOperand, _isSymOperand, _makeUnit, _reducesByScalars, _scalarBinary, _scalarSum, _tidyBinary, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, exactSqrt, exactXroot, recallVar, storeVar } from './internal.js';
 
 
 
@@ -50,6 +50,17 @@ function _checkSolveShape(rhs, m) {
 }
 
 
+// Squaring doubles an exact entry's digits, and one multiplication of huge numbers cannot be interrupted.
+function _checkEntryDigits(rows) {
+  for (const row of rows) {
+    for (const x of row) {
+      const big = isInteger(x) ? x.value : isRational(x) ? (x.n > x.d ? x.n : x.d) : 0n;
+      if (big.toString(16).length * Math.log10(16) > MAX_INTEGER_DIGITS / 2) throw new RPLError('Insufficient memory');
+    }
+  }
+}
+
+
 function _matrixPow(m, n) {
   const dim = m.rows.length;
   if (dim === 0 || (m.rows[0]?.length ?? 0) !== dim) throw new RPLError('Invalid dimension');
@@ -63,7 +74,10 @@ function _matrixPow(m, n) {
   while (exp > 0) {
     if (exp & 1) result = result ? _matMul(result, base) : base.map((row) => row.slice());
     exp = Math.floor(exp / 2);
-    if (exp > 0) base = _matMul(base, base);
+    if (exp > 0) {
+      _checkEntryDigits(base);
+      base = _matMul(base, base);
+    }
   }
   return Matrix(result);
 }

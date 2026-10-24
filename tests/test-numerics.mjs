@@ -7494,5 +7494,14 @@ function _arrayEq(a, b) {
   assertThrows(() => runLine('2 4000000 ^'), /Insufficient memory/, 'an exact integer power of over a million digits says Insufficient memory');
   assertThrows(() => runLine('7 -3000000 ^'), /Insufficient memory/, 'the same holds for the fraction a negative exponent makes');
   assertThrows(() => runLine('1/3 99999999999 ^'), /Insufficient memory/, 'and for a fraction raised to a huge power, which stopped the page');
+  const { withTimeLimit } = await import('../www/src/rpl/stack.js');
+  assert(top('100000 100000 COMB') === '1' && top('1000000000 1000000000 COMB') === '1' && top('100000 99999 COMB') === '100000', 'COMB counts the shorter side, so COMB(n, n) is 1 at once where it multiplied n numbers');
+  assertThrows(() => withTimeLimit(100, () => runLine('1000000000 1000000 PERM')), /Interrupted/, 'PERM and COMB of a count that would run for hours are interrupted at the time limit');
+  assertThrows(() => withTimeLimit(100, () => runLine('1000000000 400000000 COMB')), /Interrupted/, 'COMB likewise');
+  assert(top('1000 FACT SIZE') === '2568' && top('100000 FACT SIZE') === '456574', 'FACT of a hundred thousand comes out at once, from a product tree where one number grew by every factor in turn');
+  assertThrows(() => runLine('300000 FACT'), /Insufficient memory/, 'FACT of a number whose digits would pass a million says Insufficient memory');
+  assertThrows(() => runLine('1000000000 GAMMA'), /Insufficient memory/, 'and so does GAMMA of an integer that large');
+  assertThrows(() => withTimeLimit(5000, () => runLine('[[1 2][3 4]] 99999999999 ^')), /Insufficient memory/, 'a matrix of integers raised to a huge power says Insufficient memory, where its entries squared past anything that could be interrupted');
+  assert(top('[[1 1][0 1]] 1000000000000 ^') === '[[ 1 1000000000000 ][ 0 1 ]]', 'a matrix whose entries stay small still takes a huge power');
   assert(top('1/3 20 ^') === '1/3486784401' && top('2/3 -5 ^') === '243/32', 'a fraction to a modest power still comes out exact');
 }

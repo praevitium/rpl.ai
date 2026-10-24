@@ -1,4 +1,4 @@
-import { RPLError } from '../stack.js';
+import { RPLError, checkTimeLimit } from '../stack.js';
 import { Symbolic, isInteger, isReal, Integer, Real } from '../types.js';
 import { Fn as AstFn } from '../algebra.js';
 import { register } from './registry.js';
@@ -43,10 +43,12 @@ register('COMB', _withTaggedBinary(_withListBinary((s) => {
   const [a, b] = s.popN(2);
   const args = _combPermArgs(a, b, 'COMB');
   if (args.kind === 'sym') { s.push(args.expr); return; }
-  const { n, m } = args;
+  const { n } = args;
+  // C(n, m) is C(n, n-m): the shorter loop, so COMB(n, n) is 1 at once.
+  const m = args.m > n - args.m ? n - args.m : args.m;
   // The falling factorial over m! keeps intermediates near the result's size.
   let num = 1n, den = 1n;
-  for (let i = 1n; i <= m; i++) { num *= (n - m + i); den *= i; }
+  for (let i = 1n; i <= m; i++) { checkTimeLimit(); num *= (n - m + i); den *= i; }
   s.push(Integer(num / den));
 })), { category: 'Probability / combinatorics', categoryOrder: 0, label: "COMB" });
 
@@ -57,7 +59,7 @@ register('PERM', _withTaggedBinary(_withListBinary((s) => {
   if (args.kind === 'sym') { s.push(args.expr); return; }
   const { n, m } = args;
   let out = 1n;
-  for (let i = 0n; i < m; i++) out *= (n - i);
+  for (let i = 0n; i < m; i++) { checkTimeLimit(); out *= (n - i); }
   s.push(Integer(out));
 })), { category: 'Probability / combinatorics', categoryOrder: 1, label: "PERM" });
 

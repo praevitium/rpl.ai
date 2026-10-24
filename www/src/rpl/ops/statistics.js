@@ -3,6 +3,7 @@ import { RPLError } from '../stack.js';
 import { Var as AstVar, Bin as AstBin, Num as AstNum, Fn as AstFn } from '../algebra.js';
 import { setLastFitModel, FIT_KINDS, evalFitModel, getLastFitModel, varRecall, varStore, varPurge } from '../state.js';
 import { register, lookup } from './registry.js';
+import { MAX_CELLS } from './internal.js';
 
 // These ops read the reserved variable ΣDAT, as on the HP, and take nothing
 // from the stack.  In a Matrix each column is a variable and each row an
@@ -537,6 +538,7 @@ register('BINS', (s) => {
   const width = _statsNumericEntry(widthArg);
   const nbins = _statsNumericEntry(nbinsArg);
   if (!(width > 0) || !Number.isInteger(nbins) || nbins < 1) throw new RPLError('Bad argument value');
+  if (nbins > MAX_CELLS) throw new RPLError('Insufficient memory');
   const counts = new Array(nbins).fill(0);
   let below = 0, above = 0;
   for (const x of _xColumn(_sigmaData())) {
