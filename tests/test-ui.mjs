@@ -3806,7 +3806,7 @@ setAngle('RAD');
   assert(/this\._open\('table'\);\s*requestAnimationFrame\(\(\) => this\.el\?\.querySelector\('\[data-sh="close"\]'\)\?\.focus/.test(sh)
     && /case 'tb-pick': \{[\s\S]{0,420}Complex\(row\.x, Number\(y\.toPrecision\(12\)\)\)[\s\S]{0,80}app\.commitEntryAndPush\(value\);/.test(sh),
     'plot table: it opens with Close focused, so a phone\'s keyboard stays down, and a tap on a value puts its point on the stack at the 12 digits a Real keeps');
-  assert(/\.tb-c \{ display: flex; flex-direction: column; overflow: hidden; \}/.test(css) && /\.tb th \{ position: sticky; top: 0;/.test(css)
+  assert(/\.tb-c \{ display: flex; flex-direction: column; overflow: hidden; padding-bottom: 14px; \}/.test(css) && /\.tb th \{ position: sticky; top: 0;/.test(css)
     && css.includes('.pt-wrap.more-l.more-r, .tb-wrap.more-l.more-r,') && /@media \(pointer: coarse\) \{ \.tb td \{ height: 40px; \} \}/.test(css),
     'plot table: the rows scroll under a header that stays, fade where more columns continue, and take a 40 px tap on touch');
 }
@@ -3827,4 +3827,13 @@ setAngle('RAD');
     && app.includes("case 'table': this.clearSelection(); this.drawers.graph.openTableOf(value); return;")
     && /openTableOf\(value\) \{[\s\S]{0,520}'Only a formula has a table'[\s\S]{0,900}this\._noteUnvalued\(traces, 'its column stays blank'\);/.test(gv),
     'a formula\'s level menu opens its table of values with no plot drawn, under the formula\'s own variable, and says which name has no value');
+}
+
+{
+  const sh = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(sh.includes("${act('tb-earlier', icon('chu', 'sm'), 'Earlier rows')}${act('tb-later', icon('chd', 'sm'), 'Later rows')}</div></div>`")
+    && sh.includes("this.el.innerHTML = sheet('Table of values', body);")
+    && /\.tb-field \{[^}]*flex: 1 1 90px;/.test(css) && css.includes('@container sheet (max-height: 479px) { .tb-c .pt-hint { display: none; } }'),
+    'plot table on a phone: paging sits with the step keys, so the sheet has no footer taking a row of the screen, the fields share a row with them from 430 px, and a short window drops the hint');
 }

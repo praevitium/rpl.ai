@@ -2413,12 +2413,14 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 
 /* The print log: what the print commands printed, as the HP's paper roll. */
 .tb-set { display: flex; flex-wrap: wrap; align-items: end; gap: 8px 10px; margin-bottom: 12px; }
-.tb-field { display: grid; gap: 4px; flex: 1 1 110px; min-width: 0; font: 500 12.5px/1.3 var(--font-ui); color: var(--ink2); }
+.tb-field { display: grid; gap: 4px; flex: 1 1 90px; min-width: 0; font: 500 12.5px/1.3 var(--font-ui); color: var(--ink2); }
 .tb-field input { height: 40px; min-width: 0; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font: 14px var(--font-mono); }
 .tb-field input:focus { outline: none; border-color: var(--accent-line); }
 .tb-field input.bad { border-color: color-mix(in oklab, var(--danger) 60%, transparent); }
 .tb-zoom { display: flex; gap: 6px; }
-.tb-c { display: flex; flex-direction: column; overflow: hidden; }
+.tb-zoom .btn { min-width: 40px; padding-inline: 10px; justify-content: center; }
+@container sheet (max-height: 479px) { .tb-c .pt-hint { display: none; } }
+.tb-c { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 14px; }
 .tb-c .tb-set, .tb-c .pt-hint { flex: none; }
 .tb-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; margin-bottom: 8px; }
 .tb { width: 100%; border-collapse: collapse; font: 500 13.5px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }

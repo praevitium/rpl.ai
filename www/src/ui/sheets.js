@@ -266,11 +266,10 @@ export class Sheets {
       const act = (name, label, title) => `<button type="button" class="btn" data-sh="${name}" title="${title}" aria-label="${title}">${label}</button>`;
       const heads = data.heads.map((h) => `<th scope="col" title="${escapeHtml(withFractionMark(h))}">${escapeHtml(withFractionMark(h))}</th>`).join('');
       const rows = data.rows.map((r, i) => `<tr><td data-sh="tb-pick" data-i="${i}">${shown(r.x, 12)}</td>${r.ys.map((y, j) => `<td data-sh="tb-pick" data-i="${i}" data-j="${j}">${shown(y, 8)}</td>`).join('')}</tr>`).join('');
-      const body = `<div class="tb-set">${field('start', 'Start', start)}${field('step', 'Step', step)}<div class="tb-zoom">${act('tb-finer', '÷2', 'Halve the step')}${act('tb-coarser', '×2', 'Double the step')}</div></div>`
+      const body = `<div class="tb-set">${field('start', 'Start', start)}${field('step', 'Step', step)}<div class="tb-zoom">${act('tb-finer', '÷2', 'Halve the step')}${act('tb-coarser', '×2', 'Double the step')}${act('tb-earlier', icon('chu', 'sm'), 'Earlier rows')}${act('tb-later', icon('chd', 'sm'), 'Later rows')}</div></div>`
         + `<div class="tb-wrap"><table class="tb"><thead><tr><th scope="col">${escapeHtml(xName)}</th>${heads}</tr></thead><tbody>${rows}</tbody></table></div>`
         + '<p class="pt-hint">Tap a value to put its point on the stack.</p>';
-      const foot = `<button type="button" class="btn" data-sh="tb-earlier">${icon('chu', 'sm')}Earlier</button><button type="button" class="btn" data-sh="tb-later">${icon('chd', 'sm')}Later</button><button type="button" class="btn" data-sh="close">${icon('x', 'sm')}Close</button>`;
-      this.el.innerHTML = sheet('Table of values', body, '', foot);
+      this.el.innerHTML = sheet('Table of values', body);
       this.el.querySelector('.sheet-c').classList.add('tb-c');
       const wrap = this.el.querySelector('.tb-wrap');
       markScrollEdges(wrap);
