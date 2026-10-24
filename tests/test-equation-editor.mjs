@@ -420,8 +420,10 @@ function same(state, source, label) {
 {
   assert(variablesOf(parseAlgebra('π*X+e^i')).join() === 'X', 'EQW variablesOf skips π, e and i');
   assert(variablesOf(parseAlgebra('MAXR-X+MINR')).join() === 'X', 'EQW variablesOf skips MAXR and MINR, the HP\'s largest and smallest reals, so a level menu offers no Solve for MAXR');
-  assert(primaryVariable(parseAlgebra('a*t^2+x'), 'x') === 'x' && primaryVariable(parseAlgebra('a*t'), 'x') === 'a',
+  assert(primaryVariable(parseAlgebra('a*t^2+x'), 'x') === 'x' && primaryVariable(parseAlgebra('a*k'), 'x') === 'a',
     'EQW primaryVariable prefers the CAS variable, then the first name');
+  assert(primaryVariable(parseAlgebra('A*T^2+V*T')) === 'T' && primaryVariable(parseAlgebra('R*COS(θ)')) === 'θ' && primaryVariable(parseAlgebra('a*t+x')) === 'x' && primaryVariable(parseAlgebra('a*t'), 'a') === 'a',
+    'EQW primaryVariable takes x, then t, then θ before the first name, and the CAS variable before them all');
   assert(formatAlgebra(renameVariable(parseAlgebra('t^2+t'), 't', 'X')) === 'X^2 + X', 'EQW renameVariable renames every use');
   const value = equationInsights(parseAlgebra('2+3*4'), { cas: false });
   assert(value.length === 1 && value[0].kind === 'value' && value[0].value === 14, 'EQW insights: a number-only expression shows its value');

@@ -2957,9 +2957,12 @@ setAngle('RAD');
       'Variables: a folder with something in it offers Delete with its items (PGDIR), with Undo, where Delete could only refuse');
     assert(appSrc.includes("isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') + item('rref', 'chr', 'Row reduce (RREF)') : '',") && appSrc.includes("case 'rref': runOn('RREF'); return;"),
       'a matrix level offers Row reduce (RREF) beside Transpose, square or not');
-    assert(appSrc.includes("isList(value) && value.items.length > 1 ? item('sort', 'chr', 'Sort (SORT)') + item('revlist', 'chr', 'Reverse (REVLIST)') + item('sumlist', 'chr', 'Sum (ΣLIST)') : '',")
+    assert(appSrc.includes("sortable(value) ? item('sort', 'chr', 'Sort (SORT)') : '',")
+      && appSrc.includes("isList(value) && value.items.length > 1 ? item('revlist', 'chr', 'Reverse (REVLIST)') + item('sumlist', 'chr', 'Sum (ΣLIST)') : '',")
       && appSrc.includes("case 'sort': runOn('SORT'); return;") && appSrc.includes("case 'sumlist': runOn('ΣLIST'); return;"),
-      'a list of two or more items offers Sort (SORT), Reverse (REVLIST) and Sum (ΣLIST) in its level menu');
+      'a list of two or more items offers Reverse (REVLIST) and Sum (ΣLIST) in its level menu, and Sort (SORT) only where SORT can order it');
+    assert(/function sortable\(value\) \{\s+if \(!isList\(value\) \|\| value\.items\.length < 2\) return false;\s+try \{ const scratch = new Stack\(\); scratch\.pushMany\(\[value\]\); lookup\('SORT'\)\.fn\(scratch\); return true; \} catch \{ return false; \}/.test(appSrc),
+      'the level menu finds out whether SORT can order a list by trying it on a scratch stack');
     assert(appSrc.includes("isVector(value) ? item('abs', 'chr', 'Length (ABS)') : '',") && appSrc.includes("case 'abs': runOn('ABS'); return;"),
       'a vector level offers its length (ABS) in its menu');
     assert(appSrc.includes("isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : isBinaryInteger(value) ? item('btor', 'chr', 'To a real number (B→R)') : item('num', 'chr', 'To a number (→NUM)'),")

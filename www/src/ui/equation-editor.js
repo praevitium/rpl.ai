@@ -1412,9 +1412,10 @@ export function variablesOf(ast) {
   return [...freeVars(ast)].filter((name) => !CONSTANT_NAMES.has(name));
 }
 
+// The CAS variable first, then the names a formula is usually a function of (x, then t for time, then θ), then the first.
 export function primaryVariable(ast, preferred = 'x') {
   const names = variablesOf(ast);
-  return names.find((n) => n === preferred) ?? names.find((n) => n.toLowerCase() === 'x') ?? names[0] ?? null;
+  return names.find((n) => n === preferred) ?? ['x', 't', 'θ'].map((letter) => names.find((n) => n.toLowerCase() === letter)).find(Boolean) ?? names[0] ?? null;
 }
 
 export function renameVariable(ast, from, to) {

@@ -102,6 +102,12 @@ const plottableFormula = (value) => { const v = isTagged(value) ? value.value : 
 const plottable = (value) => plottableFormula(value) || (isList(value) && value.items.length > 0 && value.items.every(plottableFormula));
 // What OBJ→ breaks into parts; a string has STR→ instead, and a number comes back whole.
 const takesApart = (value) => [isList, isVector, isMatrix, isComplex, isTagged, isUnit, isProgram, isSymbolic].some((is) => is(value));
+// SORT orders numbers, strings, names, units and lists of them, so a menu offers it only for a list it can order,
+// found by trying it on a scratch stack.
+function sortable(value) {
+  if (!isList(value) || value.items.length < 2) return false;
+  try { const scratch = new Stack(); scratch.pushMany([value]); lookup('SORT').fn(scratch); return true; } catch { return false; }
+}
 // Level actions that run a command on the level and a name: solve:X runs 'X' SOLVE.
 const NAMED_LEVEL_OPS = Object.freeze({ solve: 'SOLVE', deriv: 'DERIV', integ: 'RISCH' });
 
@@ -1140,7 +1146,8 @@ class App {
         isMatrix(value) && value.rows.length === value.rows[0]?.length ? item('inv', 'chr', 'Inverse (INV)') + item('det', 'chr', 'Determinant (DET)') + item('egvl', 'chr', 'Eigenvalues (EGVL)') : '',
         isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') + item('rref', 'chr', 'Row reduce (RREF)') : '',
         isVector(value) ? item('abs', 'chr', 'Length (ABS)') : '',
-        isList(value) && value.items.length > 1 ? item('sort', 'chr', 'Sort (SORT)') + item('revlist', 'chr', 'Reverse (REVLIST)') + item('sumlist', 'chr', 'Sum (ΣLIST)') : '',
+        sortable(value) ? item('sort', 'chr', 'Sort (SORT)') : '',
+        isList(value) && value.items.length > 1 ? item('revlist', 'chr', 'Reverse (REVLIST)') + item('sumlist', 'chr', 'Sum (ΣLIST)') : '',
         plottable(value) ? item('plot', 'plot', 'Plot it') : '',
         item('ask', 'spark', 'Ask the assistant about it'),
       ],
