@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.77 (2026-10-24)
+**Latest release:** v0.8.78 (2026-10-24)
 
 ---
 
@@ -20,6 +20,34 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.78 — 2026-10-24
+
+- Fixed: a long symbolic sum stopped the stack from drawing and, once the
+  session was saved, kept the app from starting. A loop that adds `SIN(I)`
+  in exact mode builds a sum nested one level to the left per term, and
+  printing it recursed once per term: at about 3,000 terms the page ran out
+  of stack, no level drew, and after a reload the autosaved stack left the
+  page blank. A chain of sums, differences, products and quotients now prints
+  and draws in a loop: 40,000 terms print in full and 20,000 draw as one
+  scrolling line. An expression nested past what the page can walk at all
+  shows as `(too large to show)`, each part of the first draw runs on its own
+  so one that fails no longer leaves the app unstarted, and a command that
+  runs out of room says Insufficient memory where it showed "Maximum call
+  stack size exceeded". Past about 5,000 terms the autosave cannot write the
+  value, and its note says so where it blamed full or blocked storage.
+- Added: Solve equation, the HP's Solve application on a phone. A formula's
+  menu has Solve numerically… (and a SOLVR soft key), and command search has
+  Solve equation, which takes level 1 or the formula in EQ. The sheet shows
+  the formula and a box for each name in it, holding that variable; type the
+  names you know and tap Solve beside the one to find. It searches from the
+  number in that box (1 when blank) with ROOT, says whether it found a zero
+  or only the closest point, and a name tapped goes on the stack. Typed values
+  are stored as they are entered, and Undo takes the lot back.
+- Improved: Settings › Data says whether the browser will keep the
+  calculator's memory, which a browser may clear when the device runs low on
+  space and Safari after a week without a visit, and has a button to ask it
+  to. An installed app asks as it starts.
 
 ## v0.8.77 — 2026-10-24
 

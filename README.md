@@ -149,7 +149,13 @@ RPL puts the numbers first and the operation last. Each value goes on the
   it, ADDTOREAL keeps just that the name is real, and the assumptions are
   saved with the calculator. `ROOT` finds a root numerically from a guess:
   `` `COS(X)=X` `X` 1 ROOT `` gives 0.739085133215 and stores it in X, and a
-  program can stand in for the expression. With a list of equations in
+  program can stand in for the expression. A formula's menu has Solve
+  numerically… (its SOLVR soft key too), the HP's Solve equation form: a box
+  for each name in the formula, holding the variable of that name. Type
+  the names you know and tap Solve beside the one to find; it searches from
+  the number in its own box, so another number there can find another root,
+  and it says whether it found a zero. Tap a name to put its value on the
+  stack. Command search opens the form on level 1, or on EQ. With a list of equations in
   EQ, `MSOLVR` puts up the HP's multiple-equation solver, a key for each
   variable: the key stores level 1 in it and marks it known, ⇦ solves for
   it and ⇨ recalls it. `MROOT` solves one equation at a time, each left
@@ -1186,8 +1192,8 @@ Catalog and the command reference mark what is available. Not there yet:
 the HP's numbered menus for MENU and TMENU (a list, a name holding one or 0
 work).
 
-**Left out on purpose.** ENTRY mode and its RPL>, the NUM.SLV solver
-screens, RCLMENU, FINANCE, TIME, the StreamSmart app (STRM), UFL1→MINIF's
+**Left out on purpose.** ENTRY mode and its RPL>, the NUM.SLV screens
+other than Solve equation (a formula's menu opens that one), RCLMENU, FINANCE, TIME, the StreamSmart app (STRM), UFL1→MINIF's
 font libraries, libraries (ATTACH and DETACH; LIBS lists none), WSLOG's
 warmstart log, the HP 48's FREE and ROMUPLOAD, and Saturn assembly and
 System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
@@ -1259,6 +1265,15 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
   matrix of integers raised to a power), an array, list or `NDUPN` of over
   a million entries, over a million bins for `BINS`, and a degree over 1000
   for `HERMITE`, `LEGENDRE` and `TCHEBYCHEFF`.
+- A formula can be nested thousands of terms deep, a sum built by a loop
+  for one: it prints and draws in full, as one scrolling line. One nested past
+  what the page can walk at all, tens of thousands of levels, shows as
+  `(too large to show)`, a command that needs it says `Insufficient memory`,
+  and the autosave says it cannot write a value that deep (past about 5,000
+  terms) rather than blaming storage.
+- Solve equation is a sheet, opened from a formula's menu, not the HP's
+  NUM.SLV screen: its boxes are variables, as on the HP, and Solve runs
+  `ROOT` from the number in a box (1 when blank).
 - `RCLF` returns the numbers of the set flags as a list, and `STOF` takes
   that list back, instead of the HP's binary-integer flag words.
 - A local variable is visible to programs called from its body; on the HP
@@ -1303,7 +1318,10 @@ finishes. The equation writer's insights and the previews never wait on it.
 
 **Your data.** The stack and variables live in this browser's storage on
 this device. They don't sync, and clearing the site's data, or closing a
-private window, erases them. If the browser blocks site data altogether,
+private window, erases them. A browser may also clear a site's data when the
+device runs low on space, and Safari after a week without a visit: an
+installed app asks the browser to keep it, and Settings › Data says whether
+it will, with a button to ask when it hasn't agreed. If the browser blocks site data altogether,
 rpl.ai still runs but warns that nothing is being saved. Back them up with
 Back up everything in the Variables drawer. Spreadsheets exchange CSV, TSV
 and `.xlsx` files and copied cells; of a workbook only the first sheet is
