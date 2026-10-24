@@ -639,3 +639,36 @@ function replaceSelection(state, ast) {
   assert(sizes.join() === '28,44,42,28,60',
     `EQW type fills a phone's grown canvas up to 1.6 times, in even steps, never below its size (BIG's 38 included), and stays put where the canvas is capped (${sizes})`);
 }
+
+{
+  const key = (k) => physicalFace({ key: k, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false });
+  assert(['²', '³', '⁹', '⁻'].map(key).join() === 'sup:2,sup:3,sup:9,sup:−' && key('½') === '½' && key('⅞') === '⅞' && key('°') === '°',
+    "EQW physicalFace: a phone keyboard's superscripts, fractions and degree sign are keys of their own");
+  const typed = (...faces) => press(emptyEquation(), ...faces);
+  same(typed('x', 'sup:3'), 'x^3', 'EQW ³ puts what came before to the third power');
+  same(typed('x', 'sup:2'), 'x^2', 'EQW ² still squares');
+  const run = typed('x', 'sup:1', 'sup:0');
+  same(run, 'x^10', 'EQW superscripts typed in a row are one exponent, x¹⁰');
+  assert(run.history.length === typed('x', 'sup:1').history.length, 'EQW a run of superscripts is one undo step');
+  same(typed('x', 'sup:−', 'sup:1'), 'x^(-1)', 'EQW ⁻¹ is a negative exponent');
+  same(typed('x', 'sup:−', 'sup:1', 'sup:2'), 'x^(-12)', 'EQW ⁻¹² goes on into the negative exponent');
+  same(typed('x', 'sup:2', '+', '1'), 'x^2+1', 'EQW an operator ends the exponent run');
+  same(typed('x', 'sup:2', '+', 'y', 'sup:3'), 'x^2+y^3', 'EQW a superscript after another term starts a new power');
+  same(typed('( )', 'x', '+', '1', ')', 'sup:2'), '(x+1)^2', 'EQW a superscript after a group powers the group');
+  same(typed('2', '×', 'x', 'sup:3'), '2*x^3', 'EQW a superscript powers the last factor');
+  same(typed('5', '_', 'm', 'sup:2'), '5_m^2', 'EQW a superscript after a unit is its power, 5_m²');
+  same(typed('5', '_', 'm', 'sup:−', 'sup:2'), '5_(m^-2)', 'EQW ⁻² after a unit is its negative power');
+  same(typed('3', '0', '°'), '30_°', 'EQW a degree sign after a number is the unit, 30°');
+  same(typed('2', '0', '°', 'C'), '20_°C', 'EQW °C after a number is the unit');
+  assert(textOf(typed('SIN', '3', '0', '°')) === 'SIN(30._°)', 'EQW SIN(30°) takes the degree unit');
+  assertThrows(() => typed('x', '°'), /not available/, 'EQW a degree sign after a name is no unit');
+  same(typed('½'), '1/2', 'EQW ½ is the fraction 1/2');
+  same(typed('¾', '+', '⅛'), '3/4+1/8', 'EQW fraction glyphs are fractions');
+  same(typed('1', '½'), '1+1/2', 'EQW 1½ is the mixed number');
+  same(typed('2', '×', '1', '½'), '2*(1+1/2)', 'EQW a mixed number binds tighter than the product before it');
+  same(typed('x', '½'), 'x*(1/2)', 'EQW ½ after a name multiplies');
+  same(typed('1', '½', '×', '4'), '(1+1/2)*4', 'EQW a mixed number is a factor');
+  const paste = (text) => toAst(pasteText(emptyEquation(), text).root);
+  assert([['x²+1', 'x^2+1'], ['x³', 'x^3'], ['X⁻¹', 'X^(-1)'], ['(a+b)²', '(a+b)^2'], ['30°', '30_°'], ['½', '1/2'], ['1½', '1+1/2'], ['5_m²', '5_m^2'], ['2·x', '2*x']]
+    .every(([text, source]) => astEqual(paste(text), parseAlgebra(source))), "EQW pasting reads superscripts, fractions and degrees as a phone's keys type them");
+}

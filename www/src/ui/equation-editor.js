@@ -8,7 +8,7 @@ import { format, withFractionMark } from '../rpl/formatter.js';
 import { astLatex, parseMath } from '../rpl/latex.js';
 import { RPLError, Stack } from '../rpl/stack.js';
 import { lookup } from '../rpl/ops.js';
-import { parseEntry, fromTyped } from '../rpl/parser.js';
+import { parseEntry, fromTyped, plainPunctuation, SUPERSCRIPT_DIGITS, FRACTIONS } from '../rpl/parser.js';
 import { _astToRplValue } from '../rpl/ops/internal.js';
 import { giac } from '../rpl/cas/giac-engine.mjs';
 import { state as calcState, toRadians, fromRadians, testUserFlag } from '../rpl/state.js';
@@ -924,13 +924,20 @@ function unitPrefix(units) {
 }
 
 // Keys after 5_ spell its unit while they can, so 5_m^2 stays one number and 5_(m/s) takes the / in.
+// A superscript key after a unit gives it a power, 5_m² as 5_m^2.
+function unitPower(text, char) {
+  const power = /\^[-+]?\d*$/.test(text);
+  if (char === '−') return power ? null : `${text}^-`;
+  return `${text}${power ? '' : '^'}${char}`;
+}
+
 function typeUnit(state, face) {
   if (state.target.mode !== 'insert') return null;
   const item = getItem(state.root, state.target.path);
+  if (item?.t !== 'num' || !item.text.includes('_')) return null;
   const char = /^[A-Za-z0-9.ΩμÅ°]$/.test(face) ? face : UNIT_FACES[face];
-  if (item?.t !== 'num' || !item.text.includes('_') || !char) return null;
-  const text = item.text + char;
-  return unitPrefix(text.slice(text.indexOf('_') + 1)) ? putLeaf({ ...state, lastFace: face }, numLeaf(text)) : null;
+  const text = face.startsWith('sup:') ? unitPower(item.text, face.slice(4)) : char && item.text + char;
+  return text && unitPrefix(text.slice(text.indexOf('_') + 1)) ? putLeaf({ ...state, lastFace: face }, numLeaf(text)) : null;
 }
 
 // − straight after EEX makes the exponent negative, as typing 2E-3 does.
@@ -1023,9 +1030,38 @@ function convertCall(state, name) {
   return openStruct(state, 'fn', upper);
 }
 
-function postfix(state, item) {
+function postfix(state, item, typingKey = null) {
   const { rowKey, from, to } = spanOf(state);
-  return replaceSpan(state, rowKey, from, to, [marked(item, 'select')]);
+  return replaceSpan(state, rowKey, from, to, [marked(item, 'select')], typingKey);
+}
+
+const growExponent = (leaf, digit) => (leaf.t === 'neg' ? makeStruct('neg', [[numLeaf(leaf.slots[0][0].text + digit)]]) : numLeaf(leaf.text + digit));
+
+// A phone's superscript keys. The first puts what came before to that power, as x² does, and the keys after it go on
+// into the same exponent, so ¹⁰ is 10. A ⁻ waits for its digit and makes the exponent negative.
+function superscript(state, char) {
+  if (char === '−') return state.typingKey === 'sup' ? state : { ...state, typingKey: 'sup-' };
+  const items = targetItems(state);
+  const run = state.typingKey === 'sup' && items.length === 1 && items[0].t === 'pow' ? items[0] : null;
+  const exponent = run ? growExponent(run.slots[1][0], char) : state.typingKey === 'sup-' ? makeStruct('neg', [[numLeaf(char)]]) : numLeaf(char);
+  return postfix(state, makeStruct('pow', [run ? run.slots[0] : items, [exponent]]), 'sup');
+}
+
+// ½ and its kin: a fraction of its own, one after a number is a mixed number, 1½ as 1+1/2, and after anything else it multiplies.
+function vulgarFraction(state, glyph) {
+  const [top, bottom] = FRACTIONS[glyph].split('/');
+  const fraction = makeStruct('frac', [[numLeaf(top)], [numLeaf(bottom)]]);
+  if (state.target.mode === 'select') return vulgarFraction(insertAfterSelection(state, [opTok('*'), holeMark('insert')]), glyph);
+  const item = getItem(state.root, state.target.path);
+  if (item.t === 'hole') return postfix(state, fraction);
+  if (item.t === 'num' && !item.text.includes('_')) return postfix(state, makeParen([item, opTok('+'), fraction], false));
+  return insertAfter(state, [opTok('*'), marked(fraction, 'select')], glyph);
+}
+
+// A degree sign straight after a number is the unit, 30° as 30_°, as the command line reads it.
+function degrees(state, face) {
+  const item = state.target.mode === 'insert' ? getItem(state.root, state.target.path) : null;
+  return face === '°' && item?.t === 'num' && !item.text.includes('_') ? typeUnit(startUnit(state), face) : null;
 }
 
 function operate(state, op) {
@@ -1299,8 +1335,10 @@ export function pressEquationKey(state, face) {
   if (face === 'UNDO') return undoState(state);
   if (face === 'REDO') return redoState(state);
   if (face === 'CLEAR') return clearAll(state);
-  const unit = typeUnit(state, face) ?? exponentSign(state, face);
+  const unit = typeUnit(state, face) ?? exponentSign(state, face) ?? degrees(state, face);
   if (unit) return unit;
+  if (face.startsWith('sup:')) return superscript(state, face.slice(4));
+  if (Object.hasOwn(FRACTIONS, face)) return vulgarFraction(state, face);
   if (face === '_') return startUnit(state);
   if (!KEEPS_WORD_OPEN.has(face) && !isLetterFace(face) && !/^[0-9]$/.test(face)) state = completeWord(state);
   if (face === '⌫') return backspace(state);
@@ -1522,8 +1560,11 @@ export function readsAsFormula(text) {
   try { parseMath(pastedSource(text).trim()); return true; } catch { return false; }
 }
 
+// Pasted symbols read as they do inside an algebraic on the command line: x² is x^2, ½ a fraction and 30° the unit.
+const asAlgebraic = (text) => plainPunctuation(`\`${text}\``).slice(1, -1).replace(/(\d)°/g, '$1_°');
+
 export function pasteText(state, text, { selectionAsCaret = false } = {}) {
-  const ast = parseMath(String(text ?? '').trim());
+  const ast = parseMath(asAlgebraic(String(text ?? '').trim()));
   const items = [...fromAst(ast)];
   const at = state.target.mode === 'insert' ? getItem(state.root, state.target.path) : null;
   const afterSelection = selectionAsCaret && state.target.mode === 'select' && targetItems(state).some((item) => item.t !== 'hole');
@@ -1605,11 +1646,13 @@ export function physicalFace(event) {
   if (moves[event.key]) return moves[event.key];
   if (event.key === ' ') return 'NOOP';
   if (testUserFlag(-51) && COMMA_MODE_KEYS[event.key]) return COMMA_MODE_KEYS[event.key];
+  if (event.key?.length === 1 && (SUPERSCRIPT_DIGITS.includes(event.key) || event.key === '⁻')) return `sup:${event.key === '⁻' ? '−' : SUPERSCRIPT_DIGITS.indexOf(event.key)}`;
+  if (Object.hasOwn(FRACTIONS, event.key)) return event.key;
   const map = {
     '+': '+', '-': '−', '−': '−', '*': '×', '×': '×', '·': '×',
     '/': '÷', '÷': '÷', '^': 'yˣ', '!': '!', '(': '( )', ')': ')', ',': ',',
     '=': '=', '<': '<', '>': '>', '≠': '≠', '≤': '≤', '≥': '≥',
-    '√': '√x', '²': 'x²', 'π': 'π', '∞': '∞', '∫': '∫', '∂': '∂', '∑': 'Σ', '±': '+/-',
+    '√': '√x', 'π': 'π', '∞': '∞', '∫': '∫', '∂': '∂', '∑': 'Σ', '±': '+/-',
     '_': '_', 'µ': 'μ', '°': '°', 'Å': 'Å', '∆': 'Δ', 'Ω': 'Ω',
   };
   if (map[event.key]) return map[event.key];

@@ -241,9 +241,9 @@ function hpSpelling(text) {
 const PLAIN = Object.freeze({ '‘': "'", '’': "'", '×': '*', '÷': '/', '−': '-', '–': '-', '·': '*', '⋅': '*', '∕': '/' });
 
 // A long press on a phone's digit keys offers ½, ² and ³, and its symbol page ° and ·, which the HP has no keys for.
-const SUPERSCRIPT_DIGITS = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+export const SUPERSCRIPT_DIGITS = '⁰¹²³⁴⁵⁶⁷⁸⁹';
 const SUPERSCRIPT_RUN = /^⁻?[⁰¹²³⁴⁵⁶⁷⁸⁹]+/;
-const FRACTIONS = Object.freeze({
+export const FRACTIONS = Object.freeze({
   '½': '1/2', '⅓': '1/3', '⅔': '2/3', '¼': '1/4', '¾': '3/4', '⅕': '1/5', '⅖': '2/5', '⅗': '3/5', '⅘': '4/5',
   '⅙': '1/6', '⅚': '5/6', '⅐': '1/7', '⅛': '1/8', '⅜': '3/8', '⅝': '5/8', '⅞': '7/8', '⅑': '1/9', '⅒': '1/10',
 });
