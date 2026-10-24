@@ -22,7 +22,7 @@ import {
 import {
   snapshot, rehydrate, encodeValue, decodeValue, loadInitialState, STORAGE_KEY,
   BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup, putBackBackup, exportBackup, subscribeBackups,
-  saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX, saveDraft, loadDraft, DRAFT_KEY,
+  saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX, saveDraft, loadDraft, DRAFT_KEY, saveHistory, loadHistory, HISTORY_KEY,
 } from '../www/src/rpl/persist.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import { varRecall } from '../www/src/rpl/state.js';
@@ -1066,6 +1066,39 @@ function quotaError() {
     let threw = false;
     try { saveDraft({ text: '1', cursor: 1 }); saveDraft(null); loadDraft(); } catch { threw = true; }
     assert(!threw && loadDraft() === null, 'draft: blocked or full storage is no error');
+  } finally {
+    globalThis.localStorage = saved;
+  }
+}
+
+// The lines entered are kept, as the HP keeps its last command lines through power-off.
+{
+  const saved = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
+  try {
+    assert(loadHistory().length === 0, 'history: nothing kept on a fresh store');
+    saveHistory(['1 2 +', '3 *', "'X^2+1'"]);
+    assert(loadHistory().join('|') === "1 2 +|3 *|'X^2+1'" && store.has(HISTORY_KEY), 'history: the lines come back in order, newest last');
+    saveHistory([]);
+    assert(!store.has(HISTORY_KEY) && loadHistory().length === 0, 'history: saving none forgets it');
+    saveHistory(['old', 'x'.repeat(60000), 'y'.repeat(60000)]);
+    const big = loadHistory();
+    assert(big.length === 1 && big[0].startsWith('y'), 'history: the newest lines that fit in 100,000 characters are kept, oldest dropped first');
+    saveHistory(['x'.repeat(100001)]);
+    assert(!store.has(HISTORY_KEY), 'history: a single line over the limit is not kept, and the older lines go');
+    store.set(HISTORY_KEY, JSON.stringify(['a', 5, '', '  ', null, 'b']));
+    assert(loadHistory().join('|') === 'a|b', 'history: entries that are not text, and blank ones, are dropped on loading');
+    store.set(HISTORY_KEY, JSON.stringify(Array.from({ length: 250 }, (_, i) => `n${i}`)));
+    assert(loadHistory().length === 100 && loadHistory()[0] === 'n150', 'history: a store holding more than 100 lines loads the newest 100');
+    for (const bad of ['{', 'null', '{"a":1}', '"text"', '7']) {
+      store.set(HISTORY_KEY, bad);
+      assert(loadHistory().length === 0, `history: ${bad} is no history`);
+    }
+    globalThis.localStorage = { getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('full'); }, removeItem: () => { throw new Error('blocked'); } };
+    let threw = false;
+    try { saveHistory(['1']); saveHistory([]); loadHistory(); } catch { threw = true; }
+    assert(!threw && loadHistory().length === 0, 'history: blocked or full storage is no error');
   } finally {
     globalThis.localStorage = saved;
   }

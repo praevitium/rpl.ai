@@ -877,6 +877,25 @@ import { assert, assertThrows } from './helpers.mjs';
   }
 
   {
+    const e = new Entry(new Stack());
+    let emitted = 0;
+    e.subscribeHistory(() => { emitted++; });
+    e.setHistory(Array.from({ length: Entry.HISTORY_MAX + 3 }, (_, i) => `L${i}`));
+    assert(e.getHistory().length === Entry.HISTORY_MAX && e.getHistory()[0] === 'L3' && e.getHistory().at(-1) === `L${Entry.HISTORY_MAX + 2}` && emitted === 1,
+      'setHistory keeps the newest HISTORY_MAX lines, as the saved lines come back after a reload, and says so');
+    const lines = ['1 2 +', '3 *'];
+    e.setHistory(lines);
+    lines.push('mutated');
+    assert(e.getHistory().length === 2, 'setHistory copies the lines it is given');
+    e.removeHistory('3 *');
+    assert(e.getHistory().join() === '1 2 +' && emitted === 3, 'removing a line says so, so the saved lines follow');
+    e.removeHistory('not there');
+    assert(emitted === 3, 'removing a line that is not there says nothing');
+    e.clearHistory();
+    assert(e.getHistory().length === 0 && emitted === 4, 'clearing the history says so');
+  }
+
+  {
     resetHome();
     const s = new Stack();
     s.push(Matrix([[Real(1), Real(2)], [Real(3), Real(4)]]));

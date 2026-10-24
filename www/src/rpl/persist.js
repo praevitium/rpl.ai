@@ -347,6 +347,31 @@ export function loadDraft() {
   } catch { return null; }
 }
 
+export const HISTORY_KEY = 'hp50.history';
+const HISTORY_MAX_LINES = 100;
+const HISTORY_MAX_CHARS = 100000;
+
+// The lines entered, newest last, which the HP keeps through power-off as its last command lines. The newest that fit are kept.
+export function saveHistory(lines) {
+  try {
+    let room = HISTORY_MAX_CHARS;
+    const kept = [];
+    for (let i = lines.length - 1; i >= 0 && lines[i].length <= room; i--) {
+      kept.unshift(lines[i]);
+      room -= lines[i].length;
+    }
+    if (kept.length) localStorage.setItem(HISTORY_KEY, JSON.stringify(kept));
+    else localStorage.removeItem(HISTORY_KEY);
+  } catch { /* storage is full or blocked */ }
+}
+
+export function loadHistory() {
+  try {
+    const lines = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? 'null');
+    return Array.isArray(lines) ? lines.filter((line) => typeof line === 'string' && line.trim()).slice(-HISTORY_MAX_LINES) : [];
+  } catch { return []; }
+}
+
 export function exportToFile(stack, filename = `hp50-${fileStamp()}.json`) {
   return downloadFile(JSON.stringify(snapshot(stack), null, 2), filename, 'application/json');
 }

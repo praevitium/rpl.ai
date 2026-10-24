@@ -54,7 +54,7 @@ import {
 } from './rpl/types.js';
 import { parseTyped } from './rpl/parser.js';
 import {
-  loadInitialState, adoptStoredState, saveToLocalStorage, saveDraft, loadDraft, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
+  loadInitialState, adoptStoredState, saveToLocalStorage, saveDraft, loadDraft, saveHistory, loadHistory, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
   shareLink, sharedSource, sharedText,
 } from './rpl/persist.js';
 import { giac } from './rpl/cas/giac-engine.mjs';
@@ -231,6 +231,8 @@ class App {
 
     this._wireDisplay();
     loadInitialState(this.stack);
+    this.entry.setHistory(loadHistory());
+    this.entry.subscribeHistory(() => saveHistory(this.entry.getHistory()));
 
     this.stack.subscribe(() => this._onStackChange());
     this.entry.subscribe(() => this._onEntryChange());

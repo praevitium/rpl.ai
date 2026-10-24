@@ -4076,3 +4076,12 @@ setAngle('RAD');
   assert(/if \(this\.sheets\.isOpen\(\)\) \{ this\.sheets\.back\(\); return true; \}/.test(appSrc) && /\[\(\) => this\.sheets\.isOpen\(\), \(\) => this\.sheets\.back\(\)\],/.test(appSrc),
     'Escape and the phone\'s back button ask the open sheet to go back, where its Close button and a tap outside still close it');
 }
+
+// The lines entered are kept across a reload, so the History drawer, the held Enter's last lines and the Up key still have them.
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  assert(/loadInitialState\(this\.stack\);\n\s*this\.entry\.setHistory\(loadHistory\(\)\);\n\s*this\.entry\.subscribeHistory\(\(\) => saveHistory\(this\.entry\.getHistory\(\)\)\);/.test(appSrc),
+    'the saved lines are loaded into the entry at the start, and every change to the history saves it');
+  assert(/const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY, HISTORY_KEY,/.test(sheetsSrc), 'Reset forgets the kept lines');
+}

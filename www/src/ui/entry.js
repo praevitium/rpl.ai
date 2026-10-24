@@ -407,10 +407,16 @@ export class Entry {
     return this._history.slice();
   }
 
+  setHistory(lines) {
+    this._history = lines.slice(-Entry.HISTORY_MAX);
+    this._emitHistory();
+  }
+
   removeHistory(text) {
     const idx = this._history.indexOf(String(text ?? ''));
     if (idx < 0) return false;
     this._history.splice(idx, 1);
+    this._emitHistory();
     return true;
   }
 
@@ -430,6 +436,7 @@ export class Entry {
 
   clearHistory() {
     this._history.length = 0;
+    this._emitHistory();
   }
 
   recall(text, at = -1) {
