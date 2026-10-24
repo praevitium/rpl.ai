@@ -138,8 +138,8 @@ RPL puts the numbers first and the operation last. Each value goes on the
   gives the variation table, `-∞ ↓ -1 ↑ ∞`, from the signs of the
   derivative, STURM gives a polynomial's Sturm sequences, and TRIG turns
   `EXP(i*X)` into `COS(X)+i*SIN(X)`. SOLVEVX solves for the
-  current variable, or the only one there is: `` `T^2=9` SOLVEVX `` gives
-  `{ T=-3 T=3 }`. Both solvers take a list of equations too and solve each
+  current variable or its capital X, or the only one there is: `` `T^2=9` SOLVEVX `` gives
+  `{ T=-3 T=3 }`, and DERVX and INTVX pick the same way, so `` `A*X^2` INTVX `` gives `A*X^3/3`. Both solvers take a list of equations too and solve each
   one. FACTOR, EXPAND, DERIV, LIMIT, TAYLR, LAPLACE and the other CAS
   commands that take one expression take a list of them as well, nested
   lists included, and work element by element:

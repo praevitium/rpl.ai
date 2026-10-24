@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.71 (2026-10-23)
+**Latest release:** v0.8.72 (2026-10-23)
 
 ---
 
@@ -20,6 +20,22 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.72 — 2026-10-23
+
+- Fixed: the arrow keys through the completion list broke on a command whose
+  name ends in a symbol, such as `STO*`, `STO+` or `ΣX^2`. The list closed
+  under the line, reopened empty, and the next press failed with a script
+  error. It now stays open on those names and steps through them, and ↑ and ↓
+  do nothing when no list is showing.
+- Improved: the commands that work in VX (DERVX, INTVX, SOLVEVX, SIGMAVX and
+  the rest) take its capital too, since the 50g's X is the one its alpha keys
+  type. `` `A*X^2` DERVX `` differentiates by X where it gave 0, `` `A*X^2` INTVX ``
+  gives `A*X^3/3` where it gave `A*X^2*x`, and `` `X^2-A` SOLVEVX `` solves
+  where it returned an empty list. An expression that has VX (x) still uses it.
+- Improved: the equation writer's text view, and the check on text pasted
+  into the writer, read `x²+½` and `30°` as the command line does. They were
+  marked bad, and the formula stopped at the symbol.
 
 ## v0.8.71 — 2026-10-23
 
