@@ -438,7 +438,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   fade and scroll sideways the same way. A tagged value with a long tag shortens the tag, not
   the value: `Total pri…: 123.456`. A number too wide for its line wraps
   rather than lose its exponent or last digits, breaking before the
-  exponent first. Above level 1, as on the HP, a long list keeps to one
+  exponent first, and a whole number of 120 digits or more shows its first
+  36 and last 12 with how many it has, `402387260077…000000000000` over
+  `2,568 digits` for `1000 FACT`; select it and VIEW shows every digit.
+  Above level 1, as on the HP, a long list keeps to one
   line, and so does a matrix of more than three rows, in its typed form;
   tap the level, or VIEW it, to see it whole. The stack fades the same way at its top while a level
   runs above it, under a pill that counts the levels wholly above; tap it to go to the top. Both
@@ -1249,6 +1252,12 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
 - There is no ON key to break a running program. A command or program that
   runs longer than 10 seconds is stopped, the stack is put back, and the
   error says why. A loop stops after 1,000,000 passes.
+- A result too big for the page says `Insufficient memory` at once, where
+  the HP would run out of memory, rather than run until the 10-second
+  limit: an integer of over a million digits (a power, a factorial or a
+  matrix of integers raised to a power), an array, list or `NDUPN` of over
+  a million entries, over a million bins for `BINS`, and a degree over 1000
+  for `HERMITE`, `LEGENDRE` and `TCHEBYCHEFF`.
 - `RCLF` returns the numbers of the set flags as a list, and `STOF` takes
   that list back, instead of the HP's binary-integer flag words.
 - A local variable is visible to programs called from its body; on the HP

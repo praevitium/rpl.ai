@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.75 (2026-10-24)
+**Latest release:** v0.8.76 (2026-10-24)
 
 ---
 
@@ -20,6 +20,35 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.76 — 2026-10-24
+
+- Fixed: a command given a huge count or size could run until the page
+  froze. COMB and PERM took minutes, `100000 FACT` four seconds, BINS built
+  an array of a billion bins, and a matrix of integers raised to a huge power
+  squared its entries past anything that could be stopped. COMB counts the
+  shorter side, so `100000 100000 COMB` is 1 at once; FACT and GAMMA of an
+  integer multiply in halves, which takes `100000 FACT` 60 ms; COMB and PERM
+  stop at the time limit; and a result past a million digits or entries says
+  Insufficient memory: `300000 FACT`, `1000000000 GAMMA`, a million bins, a
+  matrix power whose entries pass half a million digits. A timing run of
+  every command against counts from a thousand to four billion and integers
+  of 30 to 70 digits found no other call that cannot be stopped; FACTORS,
+  DIVIS and EULER of a 70-digit number still run to the 10-second limit.
+- Fixed: HERMITE, LEGENDRE and TCHEBYCHEFF worked in doubles, so a
+  coefficient past 2^53 came out rounded, `30 HERMITE` giving
+  `164850350674673660000*X^16` for 164850350674673664000, and LEGENDRE came
+  out as decimals, `660.1943359375*X^12`. The coefficients are exact whole
+  numbers, and `4 LEGENDRE` is `(35*X^4-30*X^2+3)/8`, as the AUR shows. A
+  degree over 1000 says Insufficient memory.
+- Improved: an Insufficient memory error has a banner of its own naming the
+  command and the limits, with its reference and Explain, where it showed
+  the bare message.
+- Added: a whole number of 120 digits or more shows its first 36 and last 12
+  digits and how many it has on the stack, `402387260077…000000000000` over
+  `2,568 digits` for `1000 FACT`, where a phone showed a 2,330 px wall of
+  the number's own trailing zeros. VIEW, Copy, Edit and the command line
+  still have every digit.
 
 ## v0.8.75 — 2026-10-24
 
