@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.69 (2026-10-23)
+**Latest release:** v0.8.70 (2026-10-23)
 
 ---
 
@@ -20,6 +20,21 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.70 — 2026-10-23
+
+- Fixed: with an error or halt banner over the matrix or equation writer
+  in a short landscape window, the soft keys fell off the bottom (24 px
+  at 844x360, 62 px at 667x375, and with the keypad hidden at every
+  width). The banner is now one row with its fixes beside the message,
+  and the writer's tabs wait while it shows.
+- Added: a phone's long-press and symbol keys read as the HP writes them.
+  `5²` gives 25, `2¹⁰` 1024 and `'X²+1'` is `X^2+1` (`X²` was a name of
+  its own); `½` is the exact fraction 1/2 and `1½` the mixed number 3/2;
+  `30°` and `20°C` are the angle and temperature units; `·`, `∕` and `–`
+  read as `*`, `/` and `-`, and `!=` as `≠`.
+- Improved: a banner over an open writer sits 4 px tighter, which keeps
+  the Classic look's soft keys on screen from 740 px wide up.
 
 ## v0.8.69 — 2026-10-23
 

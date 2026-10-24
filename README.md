@@ -454,9 +454,13 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   with the keyboard up, the command line itself takes an amber outline while
   it edits, in the Classic theme too. Curly quotes, typed with an
   iPhone's smart punctuation or pasted from Notes or a messaging app, read
-  as the HP's straight ones, and ×, ÷ and − from a phone's symbol keys as
-  *, / and -. A phone keyboard has no →, ≤, ≥ or ≠ either: type `->`, `<=`,
-  `>=` or `<>` and a program keeps them as the HP writes them, `->STR` as
+  as the HP's straight ones, and ×, ÷, − and · from a phone's symbol keys as
+  *, / and -. Its long-press keys read as the HP would write them too: `5²`
+  gives 25 (`2¹⁰` 1024, SQ or n ^ applied to what came before) and `'X²+1'`
+  is `X^2+1`, `½` is the exact fraction 1/2 and `1½` the mixed number 3/2,
+  and `30°` or `20°C` is the angle or temperature unit, `30_°`. A phone
+  keyboard has no →, ≤, ≥ or ≠ either: type `->`, `<=`,
+  `>=`, `!=` or `<>` and a program keeps them as the HP writes them, `->STR` as
   `→STR`, and the completion list offers `→STR` for `->S`. Nor has it π,
   ∞, Σ, ∫, √ or ∂: spell them, `pi`, `inf`, `sum`, `integral`, `sqrt` or
   `deriv`, and the list offers the HP's sign; inside a command's name
@@ -534,7 +538,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   strip stays on screen. With the keyboard up an error
   keeps to its title and fixes (the explanation comes back with the
   keyboard down), on one row in landscape, so the command line stays in
-  view. Typing in a drawer on a short screen hides its tabs and the
+  view. A banner over an open writer in a short landscape window does the
+  same, sitting tighter with its fixes beside the message while the
+  writer's tabs wait, so the soft keys stay on screen. Typing in a drawer on a short screen hides its tabs and the
   assistant's status line, and in landscape its buttons too, so the
   conversation or list keeps its room.
 - While the phone's keyboard is up on the command line, a strip above it
