@@ -1,7 +1,7 @@
 import {
   isReal, isInteger, isRational, isBinaryInteger, isComplex, isString,
   isName, isList, isVector, isMatrix, isProgram, isTagged, isSymbolic,
-  isDirectory, isUnit, isGrob, grobToHex,
+  isDirectory, isUnit, isGrob, grobToHex, bigintText,
   Decimal,
 } from './types.js';
 import { state as _state, getApproxMode, fromRadians, testUserFlag } from './state.js';
@@ -27,8 +27,8 @@ export const separatorMark = () => (testUserFlag(-51) ? ';' : ',');
 export function format(v, display = DEFAULT_DISPLAY, options = {}) {
   if (v == null) return '';
   if (isReal(v))    return formatReal(v.value, display);
-  if (isInteger(v)) return v.value.toString();
-  if (isRational(v)) return `${v.n.toString()}/${v.d.toString()}`;
+  if (isInteger(v)) return bigintText(v.value);
+  if (isRational(v)) return `${bigintText(v.n)}/${bigintText(v.d)}`;
   if (isBinaryInteger(v)) return formatBinaryInteger(v);
   if (isComplex(v)) return formatComplex(v, display);
   if (isString(v))  return `"${v.value}"`;

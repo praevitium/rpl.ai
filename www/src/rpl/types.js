@@ -42,6 +42,22 @@ export function Real(n) {
   return Object.freeze({ type: TYPES.REAL, value: d });
 }
 
+// Printing a million-digit integer takes half a second, and a stack of copies of one is printed again on every redraw and
+// every autosave, so the last few long ones keep their text.
+const PRINTED_FROM = 10n ** 9999n;
+const printed = new Map();
+
+export function bigintText(n) {
+  if (n < PRINTED_FROM && n > -PRINTED_FROM) return n.toString();
+  let text = printed.get(n);
+  if (text === undefined) {
+    text = n.toString();
+    if (printed.size >= 4) printed.delete(printed.keys().next().value);
+    printed.set(n, text);
+  }
+  return text;
+}
+
 export function Integer(n) {
   const b = typeof n === 'bigint' ? n : BigInt(n);
   return Object.freeze({ type: TYPES.INTEGER, value: b });

@@ -6,7 +6,7 @@ import {
   isReal, isInteger, isRational, isBinaryInteger, isComplex, isDirectory, isProgram, isName,
   isString, isNumber, isTagged, isList, isVector, isMatrix, isSymbolic, promoteNumericPair, Decimal,
   isValidHpIdentifier, isCasIdentifier, isReservedHpName, isStorableHpName, registerReservedName,
-  TYPES,
+  TYPES, bigintText,
 } from '../www/src/rpl/types.js';
 import { readFileSync } from 'node:fs';
 import { parseEntry } from '../www/src/rpl/parser.js';
@@ -12413,5 +12413,19 @@ for (const src of ['{ :a:1 :b:"s" }', '« :a:1 DTAG »', ':o:{ :i:2 }']) {
     'BLANK makes a blank graphics object from two sizes in pixels');
   assertThrows(() => runLine('-1 2 BLANK'), /Bad argument value/, 'BLANK refuses a negative size');
   assertThrows(() => runLine('#10000d #10000d BLANK'), /Insufficient memory/, 'BLANK refuses an object too big to hold');
+}
+
+/* A long integer keeps its text for the redraw and the autosave that follow, where printing a million digits takes half a
+   second; short ones, negative ones and a fifth long one past the cache's four all still print as toString does. */
+{
+  const long = (k) => 7n ** BigInt(20000 + k);
+  const same = (n) => bigintText(n) === n.toString() && bigintText(n) === n.toString();
+  assert(same(0n) && same(-12345678901234567890n) && same(10n ** 9998n) && same(10n ** 9999n) && same(-(10n ** 9999n)),
+    'bigintText: small, negative and just-short-of-cached integers print as toString does, and so do ones past the cutoff');
+  const many = [0, 1, 2, 3, 4, 5].map(long);
+  assert(many.every(same) && same(many[0]) && same(many[5]), 'bigintText: six long integers in turn, past the four it keeps, each still print in full');
+  const fraction = Rational(many[3], many[4] + 1n);
+  assert(format(Integer(many[2])) === many[2].toString() && format(fraction) === `${fraction.n}/${fraction.d}`,
+    'format: an integer and a fraction of long parts print through the same text');
 }
 

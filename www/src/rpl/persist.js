@@ -17,7 +17,7 @@ import {
   state, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo, setRealAssume,
   ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX, isModeFlag,
 } from './state.js';
-import { TYPES, Decimal, BIN_BASES, Grob, isStorableHpName } from './types.js';
+import { TYPES, Decimal, BIN_BASES, Grob, isStorableHpName, bigintText } from './types.js';
 import { RPLError } from './stack.js';
 import { formatHpText, parseHpText } from './hp-text.js';
 import { formatDelimited, importTable, importCells, isTable, xlsxRows, SHEET_MAX_CELLS } from './sheet.js';
@@ -29,7 +29,7 @@ export const SCHEMA_VERSION = 1;
 
 function encode(v, seen) {
   if (v === null || v === undefined) return v;
-  if (typeof v === 'bigint') return { __t: 'bigint', v: v.toString() };
+  if (typeof v === 'bigint') return { __t: 'bigint', v: bigintText(v) };
   if (v instanceof Decimal) return { __t: 'decimal', v: v.toString() };
   if (v instanceof Uint8Array) return { __t: 'bytes', v: Array.from(v, (b) => b.toString(16).padStart(2, '0')).join('') };
   if (v instanceof Map) {
