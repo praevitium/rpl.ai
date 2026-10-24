@@ -8469,6 +8469,22 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 {
   const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
   giac._clear();
+  giac._setFixtures({
+    'diff(A*X^2,X)': '2*A*X', 'integrate(A*X^2,X)': '1/3*A*X^3', 'solve(X^2-A,X)': '[√A,-√A]',
+    'diff(A*B,x)': '0', 'diff(A*x^2,x)': '2*A*x', 'diff(A*X^2+A*x,x)': 'A',
+  });
+  assert(line("'A*X^2' DERVX") === '`2*A*X`' && line("'A*X^2' INTVX") === '`1/3*A*X^3`',
+    'DERVX and INTVX work in X for an expression with other letters while VX is the default x, as the HP does with its X');
+  assert(line("'X^2-A' SOLVEVX") === '{ `X = SQRT(A)` `X = -SQRT(A)` }', 'SOLVEVX solves for X when the equation has other letters too');
+  assert(line("'A*x^2' DERVX") === '`2*A*x`' && line("'A*X^2+A*x' DERVX") === '`A`',
+    'VX itself still wins: x is chosen over X when the expression has both');
+  assert(line("'A*B' DERVX") === '0', 'an expression with several letters and neither VX nor its capital still goes by VX');
+  giac._clear();
+}
+
+{
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
+  giac._clear();
   giac._setFixtures({ 'solve(sin(X)-1,X)': '[1/2*pi]', 'zeros(cos(X),X)': '[1/2*pi,(-1)/2*pi]' });
   assert(line("'SIN(X)=1' 'X' SOLVE") === '{ `X = 1/2*π` }', 'SOLVE shows Giac\'s pi as π, as the rest of the app does');
   assert(line("'COS(X)' 'X' ZEROS") === '{ `(-1)/2*π` `1/2*π` }', 'ZEROS orders roots that involve π by value');

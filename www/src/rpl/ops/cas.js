@@ -1036,19 +1036,23 @@ register('IBP', (s) => {
 
 const _CONSTANT_NAMES = new Set(['π', 'e', 'i', '∞']);
 
-// VX, or the only variable of expressions that lack VX, so `X^2` DERVX
+// VX or its capital, the HP's X, which its alpha keys type while VX is still the default x.
+function _vxIn(names) {
+  const vx = getCasVx();
+  return [vx, vx.toUpperCase()].find((name) => names.includes(name)) ?? null;
+}
+
+// VX, or the only variable of expressions that lack it, so `X^2` DERVX
 // differentiates by X while VX is still the default x.
 function _vxFor(...asts) {
-  const vx = getCasVx();
   const names = [...new Set(asts.filter(Boolean).flatMap((ast) => [...algebraFreeVars(ast)]))].filter((name) => !_CONSTANT_NAMES.has(name));
-  return names.length === 1 && names[0] !== vx ? names[0] : vx;
+  return _vxIn(names) ?? (names.length === 1 ? names[0] : getCasVx());
 }
 
 // AUR: VX when the expressions use it, else their first variable.
 function _mainVar(...asts) {
-  const vx = getCasVx();
   const names = [...new Set(asts.flatMap((ast) => [...algebraFreeVars(ast)]))].filter((name) => !_CONSTANT_NAMES.has(name));
-  return names.includes(vx) || !names.length ? vx : names[0];
+  return _vxIn(names) ?? names[0] ?? getCasVx();
 }
 
 function _vxForm(opName, pickVar = _vxFor) {
@@ -1661,9 +1665,8 @@ register('QUOTE', (s) => {
 
 
 function _lapVarName(ast) {
-  const vx = getCasVx();
-  const vars = algebraFreeVars(ast);
-  return vars.size === 0 || vars.has(vx) ? vx : [...vars][0];
+  const vars = [...algebraFreeVars(ast)];
+  return _vxIn(vars) ?? vars[0] ?? getCasVx();
 }
 
 // The HP50 transforms in place (X -> X).  Giac needs a target variable of its
