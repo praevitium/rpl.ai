@@ -3126,8 +3126,9 @@ setAngle('RAD');
   assert(/const digest = !whole && isInteger\(value\) && digestOf\(flat\);/.test(displaySrc) && /\} else if \(digest\) \{[\s\S]*?span\.classList\.add\('num', 'digest'\);/.test(displaySrc)
     && /this\.display\._fillValue\(cell, value, 30, false, true\);/.test(appSrc)
     && /\.st-val \.value-text\.digest small \{ display: block;/.test(cssSrc)
-    && /aria-label', `Level \$\{level\}: \$\{spoken\(text\)\}`/.test(displaySrc),
-    'long whole numbers: a level shows an integer of 120 digits or more as its ends and its digit count, VIEW shows every digit and a screen reader hears the count, where 1000 FACT was a 2330 px wall of its own trailing zeros');
+    && /aria-label', `Level \$\{level\}: \$\{spoken\(text\)\}`/.test(displaySrc)
+    && /_dragText\(row\) \{\s*return row\.querySelector\('\.digest'\) \? formatLevel\(this\._stack\.peek\(Number\(row\.dataset\.level\)\), this\.displayOpts\)/.test(displaySrc),
+    'long whole numbers: a level shows an integer of 120 digits or more as its ends and its digit count, VIEW shows every digit, dragging the level hands on every digit and a screen reader hears the count, where 1000 FACT was a 2330 px wall of its own trailing zeros');
 }
 
 {

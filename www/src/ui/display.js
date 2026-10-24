@@ -279,6 +279,11 @@ export class Display {
     this._installHandlers();
   }
 
+  // A level showing the ends of a long whole number hands on the whole number.
+  _dragText(row) {
+    return row.querySelector('.digest') ? formatLevel(this._stack.peek(Number(row.dataset.level)), this.displayOpts) : row.querySelector('.value-text')?.textContent ?? '';
+  }
+
   _installHandlers() {
     const view = this.stackView;
     view.addEventListener('click', (ev) => {
@@ -304,7 +309,7 @@ export class Display {
       if (!row) return;
       this._dragLevel = Number(row.dataset.level);
       row.classList.add('dragging');
-      try { ev.dataTransfer.setData('text/plain', row.querySelector('.value-text')?.textContent ?? ''); ev.dataTransfer.effectAllowed = 'move'; }
+      try { ev.dataTransfer.setData('text/plain', this._dragText(row)); ev.dataTransfer.effectAllowed = 'move'; }
       catch { /* some engines refuse setData outside a trusted drag */ }
     });
     view.addEventListener('dragover', (ev) => {
