@@ -107,11 +107,13 @@ Nothing is uploaded. Two windows of the same browser share them and stay in
 step. What you were doing stays too, as the HP keeps it through power-off: a
 phone that drops the page while another app has the screen gives back, at
 the next start, the line you were typing with its cursor, the formula or
-matrix you were writing, the lines you had entered (for the History drawer
-and the held Enter), and the formulas on the plot with their window. A level
-or variable being edited and a program's `INPUT` answer are not kept. To
-move them to another browser or keep a copy, use Back up everything in the
-Variables drawer's ⋯ menu, and Restore from a backup file on the other side.
+matrix you were writing, the level or variable you were editing (when it
+has not changed meanwhile), the lines you had entered (for the History
+drawer and the held Enter), the soft keys' menu with its folder and page,
+and the formulas on the plot with their window. A program's `INPUT` answer
+is not kept. To move them to another browser or keep a copy, use Back up
+everything in the Variables drawer's ⋯ menu, and Restore from a backup file
+on the other side.
 
 ### Five minutes with RPL
 

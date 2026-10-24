@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.81 (2026-10-24)
+**Latest release:** v0.8.82 (2026-10-24)
 
 ---
 
@@ -20,6 +20,31 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.82 — 2026-10-24
+
+- Fixed: `%(x,y)`, `%T(x,y)` and `%CH(x,y)`, the forms the AUR gives for
+  symbolic arguments, said "Invalid algebraic" when typed in a formula, and
+  `'X' 5 %` left the expanded `X*5/100` where the 50g leaves `'%(X,5)'`. They
+  are read and printed as typed now, and evaluate to what the commands give
+  once their arguments are numbers: `'%CH(40,50)'` EVAL is 25, and a call
+  with a zero base, where `%T` and `%CH` divide by zero, stays as written.
+  The CAS is handed the formula written out, and copying as LaTeX and
+  pasting it back into the equation writer keeps them.
+- Added: a level or variable being edited survives a reload. The text comes
+  back in the command line or the writer with the edit still on it, and Enter
+  puts it back where it began. When that level or variable has changed
+  meanwhile, in another window or by a program, the text comes back as a
+  plain line instead, so a stale edit never overwrites the newer value. It is
+  saved with the line, after a pause in typing and as the page is hidden, and
+  forgotten when the edit ends or is cancelled.
+- Improved: the soft keys come back on the menu, folder and page they were
+  left on. A reload used to bring the menu back on its first page and outside
+  any folder, so the 19th variable in VARS, UNITS > LENG's third page or
+  CAS > ALG's second had to be found again. The menu, its folder and its
+  page are saved as the page is hidden or closed, a menu a program put up
+  with TMENU excepted, and a saved page past the last one, in a directory
+  with fewer variables now, shows the last page.
 
 ## v0.8.81 — 2026-10-24
 
