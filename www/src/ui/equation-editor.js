@@ -1558,7 +1558,7 @@ function pastedSource(text) {
 }
 
 export function readsAsFormula(text) {
-  try { parseMath(pastedSource(text).trim()); return true; } catch { return false; }
+  try { parseMath(asAlgebraic(pastedSource(text).trim())); return true; } catch { return false; }
 }
 
 // Pasted symbols read as they do inside an algebraic on the command line: x² is x^2, ½ a fraction and 30° the unit.
@@ -2168,7 +2168,7 @@ export class EquationEditor {
   _onTextInput() {
     const text = this.textArea.value.trim();
     try {
-      this.state = text ? replaceWhole(this.state, parseMath(fromTyped(text)), 'text') : pressEquationKey(this.state, 'CLEAR');
+      this.state = text ? replaceWhole(this.state, parseMath(asAlgebraic(fromTyped(text))), 'text') : pressEquationKey(this.state, 'CLEAR');
       this.textArea.classList.remove('bad');
     } catch {
       this.textArea.classList.add('bad');

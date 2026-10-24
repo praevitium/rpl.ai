@@ -622,9 +622,11 @@ function replaceSelection(state, ast) {
 }
 
 {
-  const takes = ['1.5', '`2*X + 1`', 'X', '3._m'].map(readsAsFormula);
+  const takes = ['1.5', '`2*X + 1`', 'X', '3._m', 'x²+½', '30°'].map(readsAsFormula);
   const refuses = ['{ 1 2 }', '"hi"', '« 1 + »', '[[ 1 2 ][ 3 4 ]]'].map(readsAsFormula);
-  assert(takes.every(Boolean) && !refuses.some(Boolean), `EQW readsAsFormula takes numbers, expressions, names and units, not lists, strings, programs or matrices (${takes} / ${refuses})`);
+  assert(takes.every(Boolean) && !refuses.some(Boolean), `EQW readsAsFormula takes numbers, expressions, names, units and the symbols a phone keyboard types, not lists, strings, programs or matrices (${takes} / ${refuses})`);
+  assert(/replaceWhole\(this\.state, parseMath\(asAlgebraic\(fromTyped\(text\)\)\), 'text'\)/.test(readFileSync(new URL('../www/src/ui/equation-editor.js', import.meta.url), 'utf8')),
+    'EQW the text view reads x², ½ and 30° as the command line does, where it marked them bad');
 }
 
 {
