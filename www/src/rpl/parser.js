@@ -228,7 +228,7 @@ export function endsInQuote(src) {
 }
 
 // A phone keyboard has no →, ≤, ≥ or ≠, so a command typed ->STR, <= or <> is kept as the HP writes it, as << is.
-const HP_COMPARISONS = Object.freeze({ '<=': '≤', '>=': '≥', '<>': '≠' });
+const HP_COMPARISONS = Object.freeze({ '<=': '≤', '>=': '≥', '<>': '≠', '!=': '≠' });
 
 function hpSpelling(text) {
   if (text === '->') return '→';
@@ -236,13 +236,40 @@ function hpSpelling(text) {
   return name !== text && hasOp(name) ? name : text;
 }
 
-// A phone keyboard's smart punctuation, and notes and messaging apps, curl quotes, and a phone's symbol keys offer ×, ÷ and −.
+// A phone keyboard's smart punctuation, and notes and messaging apps, curl quotes, and a phone's symbol keys offer ×, ÷, − and ·.
 // The HP has none of them, so they read as ' " * / and -, one character for one; inside a string they are text.
-const PLAIN = Object.freeze({ '‘': "'", '’': "'", '×': '*', '÷': '/', '−': '-' });
+const PLAIN = Object.freeze({ '‘': "'", '’': "'", '×': '*', '÷': '/', '−': '-', '–': '-', '·': '*', '⋅': '*', '∕': '/' });
+
+// A long press on a phone's digit keys offers ½, ² and ³, and its symbol page ° and ·, which the HP has no keys for.
+const SUPERSCRIPT_DIGITS = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+const SUPERSCRIPT_RUN = /^⁻?[⁰¹²³⁴⁵⁶⁷⁸⁹]+/;
+const FRACTIONS = Object.freeze({
+  '½': '1/2', '⅓': '1/3', '⅔': '2/3', '¼': '1/4', '¾': '3/4', '⅕': '1/5', '⅖': '2/5', '⅗': '3/5', '⅘': '4/5',
+  '⅙': '1/6', '⅚': '5/6', '⅐': '1/7', '⅛': '1/8', '⅜': '3/8', '⅝': '5/8', '⅞': '7/8', '⅑': '1/9', '⅒': '1/10',
+});
+const NUMBER_TEXT = /^[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?$/;
+const trailingToken = (text) => text.match(/[^\s{}[\]()«»"'`]*$/)[0];
+
+// x² in an algebraic or a unit is x^2; on the command line it is SQ, or n ^ for a higher power, applied to what came before.
+function superscript(run, out, algebraic) {
+  const power = [...run].map((ch) => (ch === '⁻' ? '-' : SUPERSCRIPT_DIGITS.indexOf(ch))).join('');
+  if (algebraic) return power.startsWith('-') ? `^(${power})` : `^${power}`;
+  if (trailingToken(out).includes('_')) return `^${power}`;
+  return power === '2' ? ' SQ ' : ` ${power} ^ `;
+}
+
+// ½ is the exact fraction 1/2, and 1½ right after whole digits is the mixed number 3/2.
+function withFraction(out, glyph, algebraic) {
+  const ratio = FRACTIONS[glyph], whole = out.match(/(?<![\p{L}\d_.%])\d+$/u)?.[0];
+  if (algebraic) return whole ? `${out.slice(0, -whole.length)}(${whole}+${ratio})` : `${out}(${ratio})`;
+  if (whole) return `${out} ${ratio} + `;
+  return /^[-+]$/.test(trailingToken(out)) ? `${out}${ratio} ` : `${out} ${ratio} `;
+}
 
 export function plainPunctuation(src) {
   let out = '';
   let closer = null;
+  let quote = null;
   for (let i = 0; i < src.length; i++) {
     const c = src[i];
     if (closer) {
@@ -253,7 +280,14 @@ export function plainPunctuation(src) {
       out += '"';
       closer = c === '"' ? '"' : '”';
     } else {
-      out += PLAIN[c] ?? c;
+      const plain = PLAIN[c] ?? c;
+      if (quote ? plain === quote : plain === "'" || plain === '`') quote = quote ? null : plain;
+      else if (c === '\n') quote = null;
+      const run = c === '⁻' || SUPERSCRIPT_DIGITS.includes(c) ? src.slice(i).match(SUPERSCRIPT_RUN)?.[0] : null;
+      if (run) { out += superscript(run, out, quote !== null); i += run.length - 1; }
+      else if (FRACTIONS[c]) out = withFraction(out, c, quote !== null);
+      else if (c === '°' && !quote && NUMBER_TEXT.test(trailingToken(out))) out += '_°';
+      else out += plain;
     }
   }
   return out;

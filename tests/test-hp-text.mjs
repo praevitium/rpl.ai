@@ -1,6 +1,6 @@
 import { hpTextToSource, parseHpText, formatHpText, HP_TEXT_HEADER } from '../www/src/rpl/hp-text.js';
-import { parseEntry, endsInQuote } from '../www/src/rpl/parser.js';
-import { formatSource } from '../www/src/rpl/formatter.js';
+import { parseEntry, endsInQuote, plainPunctuation } from '../www/src/rpl/parser.js';
+import { formatSource, format } from '../www/src/rpl/formatter.js';
 import {
   Str, Rational, Integer, RList, Matrix, isDirectory, isProgram, isString, isSymbolic, isTagged, isRational, isInteger, isReal,
 } from '../www/src/rpl/types.js';
@@ -37,6 +37,22 @@ END`;
   assert(symbols.slice(0, 3).map((v) => v.id).join(' ') === '* / -' && symbols[3].type === 'integer' && symbols[3].value === -5n
     && isSymbolic(symbols[4]) && symbols[5].value === 'a×b÷c',
     'parseEntry: ×, ÷ and − from a phone\'s symbol keys read as *, / and - (−5 a number, ‘X−1’ an algebraic), and stay text in a string');
+  const same = (typed, plain) => formatSource(parseEntry(typed)[0]) === formatSource(parseEntry(plain)[0]);
+  assert(same("'X²+1'", "'X^2+1'") && same('‘X²’', "'X^2'") && same("'X⁻²'", "'X^(-2)'") && same("'(X+1)³'", "'(X+1)^3'") && same("'x¹⁰'", "'x^10'")
+    && same('5_m²', '5_m^2') && same('1_m/s²', '1_m/s^2') && same('5_m⁻¹', '5_m^-1') && parseEntry('"x² ½ 30°"')[0].value === 'x² ½ 30°',
+    'parseEntry: a superscript from a phone is a power, ^2 in an algebraic or a unit ("X²" was a name of its own), and text in a string');
+  const value = (src) => format(runLine(src).peek(), {});
+  assert(value('5²') === '25' && value('5 ²') === '25' && value('2³') === '8' && value('2¹⁰') === '1024' && value('« 5² »') === '« 5 SQ »' && value('(1,2)²') === '(-3., 4.)',
+    'parseEntry: on the command line a superscript applies SQ, or n ^, to what came before it, so 5² gives 25 and 2¹⁰ 1024');
+  assert(value('½') === '1/2' && value('¾ 4 *') === '3' && value('-½') === '-1/2' && value('1½') === '3/2' && value("'X/½'") === '`X/(1/2)`' && value("'2*1½'") === '`2*(1 + 1/2)`',
+    'parseEntry: a fraction glyph is the exact fraction, a minus sign beside it a negative one, and 1½ the mixed number 3/2, in an algebraic too');
+  assert(value('30°') === '30._°' && value('20°C') === '20._°C' && value('1.5°') === '1.5_°' && value('1_°C') === '1._°C' && value('30° SIN') === '0.5' && value('"30°"') === '"30°"',
+    'parseEntry: a degree sign right after a number is the angle unit, so 30° SIN is 0.5 and 20°C a temperature, and it is text in a string');
+  assert(value('3 4 !=') === '1.' && value('3 4 ∕') === '3/4' && value("'2·X'") === '`2*X`' && value('3 4 ·') === '12' && value("'X–1'") === '`X - 1`',
+    'parseEntry: != reads as ≠, and ·, ∕ and – from a phone\'s symbol keys as *, / and -');
+  assert(['5²', "'X²'", '½', '1½', '30°', '5_m²', '-½', '2¹⁰'].every((typed) => plainPunctuation(plainPunctuation(typed)) === plainPunctuation(typed))
+    && endsInQuote("1 'X²") && !endsInQuote("1 'X²'") && !endsInQuote('1 5² 30°'),
+    'parseEntry: the symbol keys read the same when the text is read twice, and a quote around ² opens and closes as any other');
   assert(hpTextToSource(`"it's @ here"`) === `"it's @ here"`,
     'hpTextToSource: apostrophes and @ inside a string are kept');
 }
