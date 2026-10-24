@@ -4097,3 +4097,51 @@ setAngle('RAD');
     'a draft holds the line and the open writer, a formula without its undo steps, and nothing while a level or variable is edited');
   assert(/this\.renderStatus\(\);\n\s*this\._keepDraft\?\.\(\);\n\s*\}\n\n\s*\/\/ A line a program/.test(appSrc) || /this\._keepDraft\?\.\(\);/.test(appSrc), 'changing the input mode saves the draft at once, so a closed writer is forgotten');
 }
+
+// The formulas on the plot and its window come back after a reload, as the HP keeps EQ and PPAR.
+{
+  const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
+  const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  assert(/const saved = loadPlot\(\);\n\s*if \(saved\) this\.restore\(saved\);\n\s*this\._kept = JSON\.stringify\(this\.snapshot\(\)\);/.test(gv)
+    && gv.includes("document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') this.keep(); });")
+    && gv.includes("addEventListener('pagehide', () => this.keep());")
+    && /this\._syncRanges\(\);\n\s*clearTimeout\(this\._keepTimer\);\n\s*this\._keepTimer = setTimeout\(\(\) => this\.keep\(\), PLOT_KEEP_MS\);/.test(gv),
+    'the plot loads what was kept when it is first built, saves a moment after every redraw and as the page is hidden');
+  assert(/const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY, HISTORY_KEY, PLOT_KEY,/.test(sheetsSrc), 'Reset forgets the kept plot');
+  const { GraphView } = await import('../www/src/ui/graph-view.js');
+  const { traceFromInputs } = await import('../www/src/ui/plot-engine.js');
+  const fn = (expr) => ({ ...traceFromInputs('function', expr), id: expr, color: '#3b82f6', enabled: true });
+  const data = { kind: 'scatter', expr: '', exprY: '', exprZ: '', label: 'scatter', points: [[1, 2]], color: '#ef4444', enabled: true };
+  const view = { xmin: -3, xmax: 3, ymin: -1, ymax: 1 };
+  const snap = (traces) => GraphView.prototype.snapshot.call({ traces, view });
+  assert(snap([]) === null && snap([data]) === null, 'plot kept: with no formula there is nothing to keep');
+  const kept = snap([fn('SIN(X)'), data, { ...fn('COS(X)'), enabled: false }]);
+  assert(kept.traces.map((t) => t.expr).join() === 'SIN(X),COS(X)' && kept.traces[1].enabled === false && kept.traces[0].color === '#3b82f6'
+    && !('points' in kept.traces[0]) && !('id' in kept.traces[0]) && kept.view !== view && kept.view.xmax === 3,
+    'plot kept: the formulas and the window are kept, plotted data and trace ids are not');
+  const set = [];
+  const fake = { traces: [], view: null, _selectedId: 'x', setKind: (k) => set.push(k), _renderExprs: () => set.push('render') };
+  GraphView.prototype.restore.call(fake, { traces: [{ kind: 'polar', expr: '1+COS(θ)', color: '#22c55e', enabled: false }, { kind: 'scatter', expr: '' }, { kind: 'bogus', expr: 'X' }, { kind: 'function', expr: 'X^2' }], view });
+  assert(fake.traces.length === 2 && fake.traces[0].kind === 'polar' && fake.traces[0].enabled === false && fake.traces[0].color === '#22c55e' && fake.traces[1].expr === 'X^2'
+    && new Set(fake.traces.map((t) => t.id)).size === 2 && fake.view === view && set.join() === 'function,render',
+    'plot kept: coming back, only formula traces of a known kind return, each with a fresh id, and the plot type matches the last one');
+  const empty = { traces: [], view: null, setKind: () => { throw new Error('no'); }, _renderExprs: () => { throw new Error('no'); } };
+  GraphView.prototype.restore.call(empty, { traces: [{ kind: 'scatter' }], view });
+  assert(empty.traces.length === 0 && empty.view === null, 'plot kept: a plot of no known formula changes nothing');
+  const store = new Map();
+  const savedStorage = globalThis.localStorage;
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
+  try {
+    const plotter = { traces: [fn('SIN(X)')], view, _kept: 'null', _keepTimer: 0, snapshot() { return GraphView.prototype.snapshot.call(this); } };
+    GraphView.prototype.keep.call(plotter);
+    const first = store.get('hp50.plot');
+    store.delete('hp50.plot');
+    GraphView.prototype.keep.call(plotter);
+    assert(JSON.parse(first).traces[0].expr === 'SIN(X)' && !store.has('hp50.plot'), 'plot kept: an unchanged plot is not written again, so Reset is not undone as the page closes');
+    plotter.traces = [];
+    GraphView.prototype.keep.call(plotter);
+    assert(!store.has('hp50.plot') && plotter._kept === 'null', 'plot kept: removing the last formula forgets the plot');
+  } finally {
+    globalThis.localStorage = savedStorage;
+  }
+}

@@ -10,7 +10,7 @@ import { icon } from './icons.js';
 import { isSymbolic, isName, isMatrix, isVector, isList, isGrob, isTagged, Real, Complex, RList, BinaryInteger, Name, Tagged } from '../rpl/types.js';
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians, getPict, subscribe as subscribeState } from '../rpl/state.js';
 import { plotSettings, pictWindow, pictGrid, pictPoint, pictLine, viewVolume } from '../rpl/ops/graphics.js';
-import { downloadFile } from '../rpl/persist.js';
+import { downloadFile, savePlot, loadPlot } from '../rpl/persist.js';
 import { withFractionMark, format } from '../rpl/formatter.js';
 import { fromTyped } from '../rpl/parser.js';
 import { lookup } from '../rpl/ops/registry.js';
@@ -38,6 +38,7 @@ const PLOT_KINDS = Object.freeze([
   ['hist', 'Histogram', 'Histogram from ΣDAT or the stack'],
 ]);
 const RANGE_FIELDS = Object.freeze([['xmin', 'x from'], ['xmax', 'x to'], ['ymin', 'y from'], ['ymax', 'y to']]);
+const PLOT_KEEP_MS = 400;
 // PICTURE's drawing keys, in the HP's order: DOT+ and DOT- turn pixels on or off as the cursor moves, MARK sets the
 // mark at the cursor, and LINE, TLINE, BOX, CIRCL, DEL and SUB work between the mark and the cursor.
 const PICT_TOOLS = Object.freeze([
@@ -231,6 +232,37 @@ export class GraphView {
       this._pict = calcState.pict;
       this.draw();
     });
+    const saved = loadPlot();
+    if (saved) this.restore(saved);
+    this._kept = JSON.stringify(this.snapshot());
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') this.keep(); });
+    addEventListener('pagehide', () => this.keep());
+  }
+
+  // What a reload brings back: the formulas on the plot and its window. Plotted data and fits come from ΣDAT or the stack.
+  snapshot() {
+    const traces = this.traces
+      .filter((t) => TRACE_KINDS[t.kind]?.editable)
+      .map(({ kind, expr, exprY, exprZ, label, color, enabled }) => ({ kind, expr, exprY, exprZ, label, color, enabled }));
+    return traces.length ? { traces, view: { ...this.view } } : null;
+  }
+
+  restore({ traces, view }) {
+    const formulas = traces.filter((t) => TRACE_KINDS[t.kind]?.editable);
+    if (!formulas.length) return;
+    this.traces = formulas.map((t) => makeTrace(t));
+    this.view = view;
+    this.setKind(formulas.at(-1).kind);
+    this._renderExprs();
+  }
+
+  keep() {
+    clearTimeout(this._keepTimer);
+    const plot = this.snapshot();
+    const json = JSON.stringify(plot);
+    if (json === this._kept) return;
+    this._kept = json;
+    savePlot(plot);
   }
 
   _bind() {
@@ -1352,6 +1384,8 @@ export class GraphView {
 
   draw() {
     this._syncRanges();
+    clearTimeout(this._keepTimer);
+    this._keepTimer = setTimeout(() => this.keep(), PLOT_KEEP_MS);
     const canvas = this._canvas;
     const wrap = canvas.parentElement;
     if (!wrap) return;

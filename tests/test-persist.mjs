@@ -22,7 +22,7 @@ import {
 import {
   snapshot, rehydrate, encodeValue, decodeValue, loadInitialState, STORAGE_KEY,
   BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup, putBackBackup, exportBackup, subscribeBackups,
-  saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX, saveDraft, loadDraft, DRAFT_KEY, saveHistory, loadHistory, HISTORY_KEY,
+  saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX, saveDraft, loadDraft, DRAFT_KEY, saveHistory, loadHistory, HISTORY_KEY, savePlot, loadPlot, PLOT_KEY,
 } from '../www/src/rpl/persist.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import { varRecall } from '../www/src/rpl/state.js';
@@ -1150,6 +1150,55 @@ function quotaError() {
     let threw = false;
     try { saveHistory(['1']); saveHistory([]); loadHistory(); } catch { threw = true; }
     assert(!threw && loadHistory().length === 0, 'history: blocked or full storage is no error');
+  } finally {
+    globalThis.localStorage = saved;
+  }
+}
+
+// The formulas on the plot and its window are kept, as the HP keeps EQ and PPAR through power-off.
+{
+  const saved = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
+  const view = { xmin: -6.5, xmax: 6.5, ymin: -2, ymax: 2 };
+  const plot = {
+    traces: [
+      { kind: 'function', expr: 'SIN(X)', exprY: '', exprZ: '', label: 'SIN(X)', color: '#3b82f6', enabled: true },
+      { kind: 'parametric', expr: 'COS(T)', exprY: 'SIN(T)', exprZ: '', label: '(COS(T), SIN(T))', color: '#ef4444', enabled: false },
+    ],
+    view,
+  };
+  try {
+    assert(loadPlot() === null, 'plot: nothing kept on a fresh store');
+    savePlot(plot);
+    const back = loadPlot();
+    assert(store.has(PLOT_KEY) && back.traces.length === 2 && back.traces[0].expr === 'SIN(X)' && back.traces[1].exprY === 'SIN(T)', 'plot: the formulas come back in order');
+    assert(back.traces[0].color === '#3b82f6' && back.traces[1].enabled === false && back.traces[0].enabled === true, 'plot: colours and hidden traces come back');
+    assert(JSON.stringify(back.view) === JSON.stringify(view), 'plot: the window comes back');
+    savePlot(null);
+    assert(!store.has(PLOT_KEY) && loadPlot() === null, 'plot: saving none forgets it');
+
+    const stored = (mutate) => { const copy = structuredClone(plot); mutate(copy); store.set(PLOT_KEY, JSON.stringify(copy)); return loadPlot(); };
+    assert(stored((p) => { p.traces[0].color = 'red; background:url(x)'; }).traces[0].color === undefined, 'plot: a colour that is not #rrggbb is dropped');
+    assert(stored((p) => { delete p.traces[1].exprZ; delete p.traces[1].label; }).traces[1].label === '', 'plot: a missing text field reads as empty');
+    assert(stored((p) => { p.traces[0].expr = 'X'.repeat(2001); }) === null, 'plot: a formula over 2,000 characters is no plot');
+    assert(stored((p) => { p.traces[0].expr = 5; }) === null, 'plot: a formula that is not text is no plot');
+    assert(stored((p) => { p.traces[0].kind = null; }) === null, 'plot: a trace with no kind is no plot');
+    assert(stored((p) => { p.traces = []; }) === null, 'plot: no traces is no plot');
+    assert(stored((p) => { p.traces = Array.from({ length: 21 }, () => p.traces[0]); }) === null, 'plot: more than 20 traces is no plot');
+    assert(stored((p) => { p.traces = Array.from({ length: 20 }, () => p.traces[0]); }).traces.length === 20, 'plot: 20 traces are kept');
+    for (const [key, value] of [['xmin', 'a'], ['xmax', null], ['ymin', Infinity], ['ymax', -2], ['xmax', -6.5]]) {
+      assert(stored((p) => { p.view[key] = value; }) === null, `plot: a window with ${key} ${value} is no plot`);
+    }
+    assert(stored((p) => { delete p.view; }) === null, 'plot: no window is no plot');
+    for (const bad of ['{', 'null', '{"a":1}', '"text"', '7', '[]']) {
+      store.set(PLOT_KEY, bad);
+      assert(loadPlot() === null, `plot: ${bad} is no plot`);
+    }
+    globalThis.localStorage = { getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('full'); }, removeItem: () => { throw new Error('blocked'); } };
+    let threw = false;
+    try { savePlot(plot); savePlot(null); loadPlot(); } catch { threw = true; }
+    assert(!threw && loadPlot() === null, 'plot: blocked or full storage is no error');
   } finally {
     globalThis.localStorage = saved;
   }
