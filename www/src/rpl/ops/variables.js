@@ -123,7 +123,8 @@ register('UNASSIGN', (s) => {
 function _localBinding(item) {
   const eq = isSymbolic(item) && item.expr.kind === 'bin' && item.expr.op === '=' ? item.expr : null;
   const name = eq ? eq.l.kind === 'var' && eq.l.name : isName(item) && item.id;
-  if (!name?.startsWith('←')) throw new RPLError('Bad argument value');
+  if (typeof name !== 'string') throw new RPLError('Bad argument type');
+  if (!name.startsWith('←')) throw new RPLError('Bad argument value');
   return [name, eq ? _astToRplValue(eq.r) : _calcState.approxMode ? Real(0) : Integer(0n)];
 }
 

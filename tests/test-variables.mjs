@@ -2143,6 +2143,8 @@ clearAllUserFlags();
   assert(shown("{ '←A=2' } LOCAL DROP 7 '←A' STO '←A*3' EVAL UNBIND") === '21 | { `←A = 7` }', 'LOCAL: STO and algebraics reach ← names');
   assertThrows(() => runLine('{ A } LOCAL'), /Bad argument value/, 'LOCAL wants ← names, as the AUR has it');
   assertThrows(() => runLine("'←A' LOCAL"), /Bad argument type/, 'LOCAL wants a list');
+  assertThrows(() => runLine('{ 1 2 3 } LOCAL'), /Bad argument type/, 'LOCAL: a number in the list is a wrong type, where it came out as JavaScript\'s "startsWith is not a function"');
+  assertThrows(() => runLine("{ ←A { 1 2 } } LOCAL"), /Bad argument type/, 'LOCAL: so is a list in the list');
 }
 
 // The user keyboard: ASN, STOKEYS, RCLKEYS and DELKEYS, keys as rc.pf.
