@@ -7,7 +7,7 @@ import {
   nextTraceColor, TRACE_COLORS, sampleTraceForFit, fitViewToTraces,
   evalTraceAtX, sampleTrace, traceInputError, axisTicks, traceFromInputs, retypeTrace, stackValueToTrace as engineStackValueToTrace, unvaluedNames, alongOpenName, splitEquation,
   DEFAULT_TURN, turnBy, evalComplex, TRACE_KINDS, cursorPoint, stepCursor, slopeAt, nearestRoot, nearestExtremum, integrateFunction,
-  tableRows, tableSetup,
+  tableRows, tableSetup, tableXName,
 } from '../www/src/ui/plot-engine.js';
 import { Matrix, Vector, Real, Integer, Symbolic, Program, RList, Tagged, isSymbolic, isMatrix } from '../www/src/rpl/types.js';
 import { lookup, setGraphicsHook } from '../www/src/rpl/ops.js';
@@ -1133,4 +1133,10 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   const setup = (xmin, xmax) => JSON.stringify(tableSetup({ xmin, xmax, ymin: -1, ymax: 1 }));
   assert(setup(-10, 10) === '{"start":-10,"step":2}' && setup(-6.5, 6.5) === '{"start":-7,"step":1}' && setup(0, 1) === '{"start":0,"step":0.1}' && setup(0.15, 0.35) === '{"start":0.14,"step":0.02}',
     'TABLE: it opens on a round start at the window\'s left edge with a step that gives about ten rows across it');
+}
+
+{
+  assert(tableXName(['T^2-3*T+2']) === 'T' && tableXName(['SIN(x)']) === 'x' && tableXName(['X^2', 'SIN(X)']) === 'X' && tableXName(['Y=2*X']) === 'X',
+    'TABLE: the x column carries the plot variable the formulas use, T for T^2-3*T+2');
+  assert(tableXName(['X*T']) === 'X' && tableXName(['A*X+1', 'B']) === 'X' && tableXName([]) === 'X', 'TABLE: two plot variables at once, or none, leave the column X');
 }

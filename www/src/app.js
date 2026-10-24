@@ -1044,6 +1044,7 @@ class App {
       case 'sumlist': runOn('ΣLIST'); return;
       case 'convert': this._convertMenu(level, anchor); return;
       case 'plot': this.clearSelection(); this.plotValue(value); return;
+      case 'table': this.clearSelection(); this.drawers.graph.openTableOf(value); return;
       case 'copy': {
         const table = spreadsheetHtml(value);
         this.copyText(formatSource(value), table ? `Copied level ${level}. It pastes into a spreadsheet as cells.` : `Copied level ${level}`, table);
@@ -1148,7 +1149,7 @@ class App {
         isVector(value) ? item('abs', 'chr', 'Length (ABS)') : '',
         sortable(value) ? item('sort', 'chr', 'Sort (SORT)') : '',
         isList(value) && value.items.length > 1 ? item('revlist', 'chr', 'Reverse (REVLIST)') + item('sumlist', 'chr', 'Sum (ΣLIST)') : '',
-        plottable(value) ? item('plot', 'plot', 'Plot it') : '',
+        plottable(value) ? item('plot', 'plot', 'Plot it') + item('table', 'table', 'Table of values') : '',
         item('ask', 'spark', 'Ask the assistant about it'),
       ],
       [

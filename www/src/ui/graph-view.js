@@ -3,7 +3,7 @@ import {
   worldToPixel, pixelToWorld, axisTicks, hasUsableSpan, cursorPoint, stepCursor,
   sampleTrace, fitViewToTraces, evalTraceAtX, slopeAt, nearestRoot, nearestExtremum, integrateFunction,
   stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace, unvaluedNames, splitEquation,
-  tableRows, tableSetup,
+  tableRows, tableSetup, tableXName, alongOpenName,
 } from './plot-engine.js';
 import { escapeHtml, markScrollEdges } from './display.js';
 import { icon } from './icons.js';
@@ -538,12 +538,12 @@ export class GraphView {
   }
 
   // As on the HP, a name with no number leaves its curve blank, so a note says which name to store.
-  _noteUnvalued(built) {
+  _noteUnvalued(built, effect = "the curve can't be drawn") {
     const names = [...new Set(built.flatMap((b) => unvaluedNames(b.expr, plotSettings()?.indep?.name)))];
     if (!names.length) { this.app.toasts?.dismiss('plot'); return; }
     const one = names.length === 1;
     const list = one ? names[0] : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
-    this.app.toast(`${list} ${one ? 'has' : 'have'} no value, so the curve can't be drawn. Store a number in ${one ? 'it' : 'each'} first.`, { key: 'plot', transient: true });
+    this.app.toast(`${list} ${one ? 'has' : 'have'} no value, so ${effect}. Store a number in ${one ? 'it' : 'each'} first.`, { key: 'plot', transient: true });
   }
 
   // DRAW's EQ: each formula the plot doesn't already show, as PPAR's plot type, in the window DRAW set.
@@ -724,7 +724,25 @@ export class GraphView {
   // TABLE: a sheet of x with the plotted functions' values beside it.
   openTable() {
     if (!this._tableTraces().length) { this._readout.textContent = 'Plot a function to see its table'; return; }
-    this.app.sheets.openTable(tableSetup(this.view));
+    const xName = tableXName(this._tableTraces().map((t) => t.expr), plotSettings()?.indep?.name);
+    this.app.sheets.openTable({ ...tableSetup(this.view), xName }, (start, step, count) => this.tableData(start, step, count));
+  }
+
+  // The same for a formula, or a list of them, from the stack, with no plot drawn: the one open name that is not X takes its place.
+  openTableOf(value) {
+    const specsOf = (v) => (formulaList(v) ?? [v]).map((item) => (isFormula(item) ? stackValueToTrace(item, 'function') : null));
+    const { value: shown, moved } = alongOpenName(value, plotSettings()?.indep?.name);
+    const [specs, named] = [specsOf(shown), specsOf(value)];
+    if (specs.includes(null) || specs.some((spec) => spec.kind !== 'function')) { this.app.toast('Only a formula has a table'); return; }
+    const traces = specs.map((spec) => makeTrace(spec));
+    const view = pparView() ?? defaultView();
+    const opts = sampleOpts({ snapX: 0, view, width: 240 });
+    const xName = moved.length === 1 ? moved[0] : tableXName(traces.map((t) => t.expr), plotSettings()?.indep?.name);
+    this.app.sheets.openTable({ ...tableSetup(view), xName }, (start, step, count) => ({
+      heads: named.map((spec) => spec.expr || 'Y'),
+      rows: tableRows(traces, start, step, count, opts),
+    }));
+    this._noteUnvalued(traces, 'its column stays blank');
   }
 
   _tableTraces() { return this.traces.filter((t) => t.enabled && t.kind === 'function'); }

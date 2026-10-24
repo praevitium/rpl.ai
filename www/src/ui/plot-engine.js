@@ -1600,6 +1600,13 @@ export function tableSetup(view) {
   return { start: Number((Math.floor(view.xmin / step) * step).toPrecision(12)), step };
 }
 
+// The name a table's x column carries: the plot variable its formulas use, T for T^2-3*T+2, else X.
+export function tableXName(exprs, indep = null) {
+  const own = Object.keys(bindIndependentVariable(0, indep)).map((n) => n.toLowerCase());
+  const used = new Set(exprs.flatMap((src) => [...freeVars(parsePlotExpr(src))]).filter((name) => own.includes(name.toLowerCase())));
+  return used.size === 1 ? [...used][0] : 'X';
+}
+
 export function traceInputError(kind, values, { adding = false } = {}) {
   const spec = TRACE_KINDS[kind];
   if (!spec?.fields?.length) return null;

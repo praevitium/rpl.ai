@@ -3800,7 +3800,7 @@ setAngle('RAD');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const { ACTIONS, KEYMAP } = await import('../www/src/ui/actions.js');
   assert(gv.includes('data-gr="table"') && gv.includes("else if (act === 'table') this.openTable();")
-    && /openTable\(\) \{\s*if \(!this\._tableTraces\(\)\.length\) \{ this\._readout\.textContent = 'Plot a function to see its table'; return; \}\s*this\.app\.sheets\.openTable\(tableSetup\(this\.view\)\);/.test(gv)
+    && /openTable\(\) \{\s*if \(!this\._tableTraces\(\)\.length\) \{ this\._readout\.textContent = 'Plot a function to see its table'; return; \}[\s\S]{0,260}this\.app\.sheets\.openTable\(\{ \.\.\.tableSetup\(this\.view\), xName \}/.test(gv)
     && ACTIONS['plot.table'] && KEYMAP.some((b) => b.context === 'plot' && b.chord === 'V' && b.action === 'plot.table'),
     'plot table: a tool in the plot toolbar, and V on the plot, open a sheet of the functions\' values, or say to plot a function first');
   assert(/this\._open\('table'\);\s*requestAnimationFrame\(\(\) => this\.el\?\.querySelector\('\[data-sh="close"\]'\)\?\.focus/.test(sh)
@@ -3818,4 +3818,13 @@ setAngle('RAD');
     && gv.includes('<input type="text" enterkeyhint="done" data-rng="${key}" aria-label="${label}" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off">')
     && sh.includes('<input type="text" enterkeyhint="done" data-tb="${key}"'),
     'plot window and table fields: they ask for the phone\'s usual keyboard, since an iPhone\'s decimal pad has no minus sign for a negative bound or start, and label Enter Done');
+}
+
+{
+  const app = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
+  assert(app.includes("plottable(value) ? item('plot', 'plot', 'Plot it') + item('table', 'table', 'Table of values') : '',")
+    && app.includes("case 'table': this.clearSelection(); this.drawers.graph.openTableOf(value); return;")
+    && /openTableOf\(value\) \{[\s\S]{0,520}'Only a formula has a table'[\s\S]{0,900}this\._noteUnvalued\(traces, 'its column stays blank'\);/.test(gv),
+    'a formula\'s level menu opens its table of values with no plot drawn, under the formula\'s own variable, and says which name has no value');
 }

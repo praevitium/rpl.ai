@@ -139,8 +139,8 @@ export class Sheets {
   }
 
   // TABLE: x from a start by a step with the plotted functions' values beside it, a tap on a value its point on the stack.
-  openTable(setup) {
-    this.tbl = { ...setup };
+  openTable(setup, source) {
+    this.tbl = { ...setup, source };
     this._open('table');
     requestAnimationFrame(() => this.el?.querySelector('[data-sh="close"]')?.focus({ preventScroll: true }));
   }
@@ -258,8 +258,8 @@ export class Sheets {
       return;
     }
     if (this.kind === 'table') {
-      const { start, step } = this.tbl;
-      const data = this.app.drawers.graph.tableData(start, step, TABLE_ROWS);
+      const { start, step, xName = 'X' } = this.tbl;
+      const data = this.tbl.source(start, step, TABLE_ROWS);
       this.tbl.data = data;
       const shown = (v, digits) => (Number.isNaN(v) ? '—' : v === Infinity ? '∞' : v === -Infinity ? '−∞' : escapeHtml(withFractionMark(tableText(v, digits))));
       const field = (key, label, value) => `<label class="tb-field"><span>${label}</span><input type="text" enterkeyhint="done" data-tb="${key}" value="${escapeHtml(withFractionMark(tableText(value, 12)))}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>`;
@@ -267,7 +267,7 @@ export class Sheets {
       const heads = data.heads.map((h) => `<th scope="col" title="${escapeHtml(withFractionMark(h))}">${escapeHtml(withFractionMark(h))}</th>`).join('');
       const rows = data.rows.map((r, i) => `<tr><td data-sh="tb-pick" data-i="${i}">${shown(r.x, 12)}</td>${r.ys.map((y, j) => `<td data-sh="tb-pick" data-i="${i}" data-j="${j}">${shown(y, 8)}</td>`).join('')}</tr>`).join('');
       const body = `<div class="tb-set">${field('start', 'Start', start)}${field('step', 'Step', step)}<div class="tb-zoom">${act('tb-finer', '÷2', 'Halve the step')}${act('tb-coarser', '×2', 'Double the step')}</div></div>`
-        + `<div class="tb-wrap"><table class="tb"><thead><tr><th scope="col">X</th>${heads}</tr></thead><tbody>${rows}</tbody></table></div>`
+        + `<div class="tb-wrap"><table class="tb"><thead><tr><th scope="col">${escapeHtml(xName)}</th>${heads}</tr></thead><tbody>${rows}</tbody></table></div>`
         + '<p class="pt-hint">Tap a value to put its point on the stack.</p>';
       const foot = `<button type="button" class="btn" data-sh="tb-earlier">${icon('chu', 'sm')}Earlier</button><button type="button" class="btn" data-sh="tb-later">${icon('chd', 'sm')}Later</button><button type="button" class="btn" data-sh="close">${icon('x', 'sm')}Close</button>`;
       this.el.innerHTML = sheet('Table of values', body, '', foot);
