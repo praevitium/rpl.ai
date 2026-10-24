@@ -139,6 +139,19 @@ export class Sheets {
     else this.close();
   }
 
+  // Escape and a phone's back button go up one level of the Equation Library, as its Back button does, and close from the top.
+  back() {
+    if (this.kind === 'solver' && this.sv.library) this._open('eqlib');
+    else if (this.kind === 'eqlib' && this.eqlib.subject != null) this._eqUp();
+    else this.dismiss();
+  }
+
+  _eqUp() {
+    if (this.eqlib.set != null) this.eqlib.set = null;
+    else this.eqlib.subject = null;
+    this._render();
+  }
+
   openSettings() {
     this.page = 'appearance';
     this._open('settings');
@@ -569,11 +582,7 @@ export class Sheets {
       case 'clock-reset': setClockOffset(0); this._render(); return;
       case 'eq-subject': this.eqlib.subject = Number(b.dataset.n); this._render(); return;
       case 'eq-set': this.eqlib.set = Number(b.dataset.n); this._render(); return;
-      case 'eq-back':
-        if (this.eqlib.set != null) this.eqlib.set = null;
-        else this.eqlib.subject = null;
-        this._render();
-        return;
+      case 'eq-back': this._eqUp(); return;
       case 'sv-solve': this._solve(b.dataset.name); return;
       case 'sv-push': {
         const value = this._solverValues()[b.dataset.name] || varRecall(b.dataset.name);

@@ -1813,7 +1813,7 @@ setAngle('RAD');
   assert(/\[\(\) => !!this\.pendingEdit, \(\) => this\.cancelEdit\(\)\],\n      \[\(\) => this\.selection != null, \(\) => this\.clearSelection\(\)\],\n    \];/.test(appSrc),
     'back button: a selected stack level is the last thing back puts away, as the HP\'s ON leaves the interactive stack, before the app itself (back with a level selected left the installed app)');
   assert(/const overlays = \[\n[^\n]*\n      \[\(\) => !!this\._offScreen, \(\) => this\._offScreen\.click\(\)\],/.test(appSrc)
-    && /\[\(\) => this\.sheets\.isOpen\(\), \(\) => this\.sheets\.dismiss\(\)\],\n      \[\(\) => !!this\.entry\.error, \(\) => this\.dismissError\(\)\],/.test(appSrc)
+    && /\[\(\) => this\.sheets\.isOpen\(\), \(\) => this\.sheets\.back\(\)\],\n      \[\(\) => !!this\.entry\.error, \(\) => this\.dismissError\(\)\],/.test(appSrc)
     && /this\._offScreen = off;\n    this\.keepAwake\(\);\n[^\n]*\n    this\._syncBackButton\?\.\(\);/.test(appSrc),
     'back button: as the HP\'s ON wakes it and clears an error message, back wakes the calculator from OFF (first, since the off screen covers everything) and puts an error banner away before the app is left (both left the installed app); OFF, which comes after its tap, guards the history itself');
   {
@@ -2891,8 +2891,9 @@ setAngle('RAD');
     "INFORM: its banner is the title with Fill in, Cancel and Stop keys; the form opens in a sheet with a label and a 40 px input per field, the help as the placeholder and the initial value as source, in the form's columns on a wide screen and one on a phone; OK parses each field (an empty one NOVAL), checks the field's types and answers with the values and 1, a failing field keeping the form open with the complaint on it; Cancel answers 0, Reset puts the reset values back, Enter moves to the next field and from the last answers, and the fields tell a phone keyboard so (Next, and Done on the last, as the matrix writer's cells and the command line's Go do); the sheet goes with its dialog and the banner's Fill in reopens it");
   assert(/dismiss\(\) \{\s*if \(this\.kind === 'inform'\) this\.app\.cancelInform\(\);\s*else this\.close\(\);/.test(sheetsSrc)
     && /if \(e\.target === this\.el\) this\.dismiss\(\);/.test(sheetsSrc) && /case 'close': this\.dismiss\(\); return;/.test(sheetsSrc)
-    && /if \(this\.sheets\.isOpen\(\)\) \{ this\.sheets\.dismiss\(\); return true; \}/.test(appSrc)
-    && /\[\(\) => this\.sheets\.isOpen\(\), \(\) => this\.sheets\.dismiss\(\)\]/.test(appSrc),
+    && /if \(this\.sheets\.isOpen\(\)\) \{ this\.sheets\.back\(\); return true; \}/.test(appSrc)
+    && /\[\(\) => this\.sheets\.isOpen\(\), \(\) => this\.sheets\.back\(\)\]/.test(appSrc)
+    && /back\(\) \{[^}]*?else this\.dismiss\(\);\n  \}/.test(sheetsSrc),
     'INFORM: the form put away by its X, Escape, the back button or a tap beside it cancels, answering 0 as the HP\'s CANCEL and ON do, where the program stayed halted with the form gone');
   assert(/\.st-row:is\(\.culprit, \.arg, \.ghost\):not\(\.sel\) \{ grid-template-columns: 34px auto minmax\(0, 1fr\); \}\s*\.st-row:is\(\.culprit, \.arg, \.ghost\):not\(\.sel\) \.st-tag \{ position: static; transform: none; \}/.test(css),
     'a marked level (this one, argument, result) keeps its tag beside the value, so a wide list at 280 px starts after "this one" instead of running 46 px under it');
@@ -4045,4 +4046,33 @@ setAngle('RAD');
     'a blank line, an edit of a level or variable and a dialog\'s answer are not kept');
   assert(/resetEverything\(\) \{\n\s*this\.app\.entry\.resetBuffer\(''\);\n\s*const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY,/.test(sheetsSrc),
     'Reset empties the line before it clears storage, or the page being closed would save the line again');
+}
+
+// Escape and a phone's back button go up one level of the Equation Library, as its Back button does, and close from the top.
+{
+  const { Sheets } = await import('../www/src/ui/sheets.js');
+  const fake = (kind, extra = {}) => ({
+    kind, opened: null, closed: false, rendered: 0,
+    _open(k) { this.opened = k; }, _render() { this.rendered++; }, dismiss() { this.closed = true; },
+    _eqUp: Sheets.prototype._eqUp, ...extra,
+  });
+  const form = fake('solver', { sv: { library: { eqs: [] } } });
+  Sheets.prototype.back.call(form);
+  assert(form.opened === 'eqlib' && !form.closed, 'back from a library set\'s form goes to the set');
+  const lone = fake('solver', { sv: { library: null } });
+  Sheets.prototype.back.call(lone);
+  assert(lone.closed && lone.opened === null, 'back from the Solve equation sheet of a formula closes it');
+  const set = fake('eqlib', { eqlib: { subject: 2, set: 3 } });
+  Sheets.prototype.back.call(set);
+  assert(set.eqlib.set === null && set.eqlib.subject === 2 && !set.closed && set.rendered === 1, 'back from a set goes to its subject\'s sets');
+  Sheets.prototype.back.call(set);
+  assert(set.eqlib.subject === null && !set.closed, 'back from the sets goes to the subjects');
+  Sheets.prototype.back.call(set);
+  assert(set.closed, 'back from the subjects closes the library');
+  const view = fake('view');
+  Sheets.prototype.back.call(view);
+  assert(view.closed, 'back from a sheet without levels closes it');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/if \(this\.sheets\.isOpen\(\)\) \{ this\.sheets\.back\(\); return true; \}/.test(appSrc) && /\[\(\) => this\.sheets\.isOpen\(\), \(\) => this\.sheets\.back\(\)\],/.test(appSrc),
+    'Escape and the phone\'s back button ask the open sheet to go back, where its Close button and a tap outside still close it');
 }
