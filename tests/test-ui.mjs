@@ -3118,17 +3118,21 @@ setAngle('RAD');
     && /\.st-row\.sel \.st-val \.value-text, \.st-row\[data-level="1"\] \.st-val \.value-text\.str \{ white-space: pre-wrap;/.test(cssSrc),
     'level 1 strings: a string at level 1 shows whole with its line breaks, as a selected level does, where "LINE1" 10 CHR + "LINE2" + 10 CHR + "LINE3" + showed "LINE1 LINE2 L…" at 280 px');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(digestOf('9'.repeat(119)) === null && digestOf('12345') === null && digestOf('1.5E300') === null && digestOf(`1/${'7'.repeat(200)}`) === null,
-    'long whole numbers: a number of under 120 digits, a real and a fraction keep their full text');
+  assert(digestOf('9'.repeat(119)) === null && digestOf('12345') === null && digestOf('1.5E300') === null && digestOf('7/9') === null && digestOf(`1/${'7'.repeat(119)}`) === null,
+    'long whole numbers: a number of under 120 digits, a real and a short fraction keep their full text');
   const long = digestOf(`-${'1234567890'.repeat(30)}`);
-  assert(long.head === `-${'1234567890'.repeat(3)}123456` && long.tail === '901234567890' && long.count === 300 && digestOf('9'.repeat(120)).count === 120,
+  assert(long.text === `-${'1234567890'.repeat(3)}123456…901234567890` && long.counts.join() === '300' && digestOf('9'.repeat(120)).counts.join() === '120',
     'long whole numbers: from 120 digits the stack keeps the first 36 and the last 12, the sign and the count');
-  assert(/const digest = !whole && isInteger\(value\) && digestOf\(flat\);/.test(displaySrc) && /\} else if \(digest\) \{[\s\S]*?span\.classList\.add\('num', 'digest'\);/.test(displaySrc)
+  const fraction = digestOf(`1/${'7'.repeat(200)}`), both = digestOf(`${'3'.repeat(130)}/${'7'.repeat(150)}`);
+  assert(fraction.text === `1/${'7'.repeat(36)}…${'7'.repeat(12)}` && fraction.counts.join() === '200' && both.text === `${'3'.repeat(36)}…${'3'.repeat(12)}/${'7'.repeat(36)}…${'7'.repeat(12)}` && both.counts.join() === '130,150',
+    'long whole numbers: a fraction keeps the short part whole and shortens each long part, counting both');
+  assert(/const digest = !whole && \(isInteger\(value\) \|\| isRational\(value\)\) && digestOf\(flat\);/.test(displaySrc) && /\} else if \(digest\) \{[\s\S]*?span\.classList\.add\('num', 'digest'\);/.test(displaySrc)
     && /this\.display\._fillValue\(cell, value, 30, false, true\);/.test(appSrc)
-    && /\.st-val \.value-text\.digest small \{ display: block;/.test(cssSrc)
+    && /\.st-val \.value-text\.digest button \{ display: block;/.test(cssSrc) && /count\.dataset\.rowAct = 'view';/.test(displaySrc)
+    && /^@media \(pointer: coarse\) \{[\s\S]*?\n  \.st-val \.value-text\.digest button \{ padding: 7px 0 3px 24px; \}/.test(cssSrc.slice(cssSrc.indexOf('@media (pointer: coarse) {')))
     && /aria-label', `Level \$\{level\}: \$\{spoken\(text\)\}`/.test(displaySrc)
     && /_dragText\(row\) \{\s*return row\.querySelector\('\.digest'\) \? formatLevel\(this\._stack\.peek\(Number\(row\.dataset\.level\)\), this\.displayOpts\)/.test(displaySrc),
-    'long whole numbers: a level shows an integer of 120 digits or more as its ends and its digit count, VIEW shows every digit, dragging the level hands on every digit and a screen reader hears the count, where 1000 FACT was a 2330 px wall of its own trailing zeros');
+    'long whole numbers: a level shows an integer of 120 digits or more as its ends and its digit count, VIEW shows every digit and the count opens it, dragging the level hands on every digit and a screen reader hears the count, where 1000 FACT was a 2330 px wall of its own trailing zeros');
 }
 
 {

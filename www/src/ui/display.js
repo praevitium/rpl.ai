@@ -1,7 +1,7 @@
 import { format, formatStackTop, DEFAULT_DISPLAY, withFractionMark } from '../rpl/formatter.js';
 import { astToSvg } from '../rpl/pretty.js';
 import { Var } from '../rpl/algebra.js';
-import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isInteger, isBinaryInteger, isUnit, isString, isGrob, isName } from '../rpl/types.js';
+import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isInteger, isRational, isBinaryInteger, isUnit, isString, isGrob, isName } from '../rpl/types.js';
 import { state as calcState, currentPath } from '../rpl/state.js';
 import { icon } from './icons.js';
 
@@ -35,18 +35,23 @@ function grobPicture(g) {
   return canvas;
 }
 
-// A whole number of this many digits or more shows its first and last few and how many there are: wrapped whole, 1000! fills
-// three screens, and what a phone level shows is the zeros at its end.
+// A whole number or fraction with a part of this many digits or more shows that part's first and last few and how many there
+// are: wrapped whole, 1000! fills three screens, and what a phone level shows is the zeros at its end.
 const DIGEST_FROM = 120, DIGEST_HEAD = 36, DIGEST_TAIL = 12;
 
 export function digestOf(text) {
-  const [, sign, digits] = /^(-?)(\d+)$/.exec(text) ?? [];
-  return digits && digits.length >= DIGEST_FROM ? { head: sign + digits.slice(0, DIGEST_HEAD), tail: digits.slice(-DIGEST_TAIL), count: digits.length } : null;
+  const [, sign, top, bottom = ''] = /^(-?)(\d+)(?:\/(\d+))?$/.exec(text) ?? [];
+  const long = [top, bottom].filter((digits) => digits?.length >= DIGEST_FROM);
+  if (!long.length) return null;
+  const ends = (digits) => (digits.length >= DIGEST_FROM ? `${digits.slice(0, DIGEST_HEAD)}…${digits.slice(-DIGEST_TAIL)}` : digits);
+  return { text: `${sign}${ends(top)}${bottom ? `/${ends(bottom)}` : ''}`, counts: long.map((digits) => digits.length) };
 }
+
+const digitsText = (counts) => `${counts.map((n) => n.toLocaleString('en-US')).join(' and ')} digits`;
 
 const spoken = (text) => {
   const d = digestOf(text);
-  return d ? `${d.count} digit number, ${d.head}…${d.tail}` : text;
+  return d ? `${d.counts.join(' and ')} digit number, ${d.text}` : text;
 };
 
 const rowSig = (flat, svgSize, oneLine) => `${svgSize}|${calcState.textbookMode ? 1 : 0}|${oneLine ? 1 : 0}|${flat}`;
@@ -805,7 +810,7 @@ export class Display {
     } else {
       const span = document.createElement('span');
       span.className = 'value-text';
-      const digest = !whole && isInteger(value) && digestOf(flat);
+      const digest = !whole && (isInteger(value) || isRational(value)) && digestOf(flat);
       const label = isTagged(value) ? `${value.tag}: ` : null;
       if (label && flat.startsWith(label)) {
         // A long tag gives way to the value it labels, each ending in an ellipsis of its own.
@@ -818,11 +823,13 @@ export class Display {
         rest.textContent = flat.slice(label.length - 2);
         span.append(name, rest);
       } else if (digest) {
-        const count = document.createElement('small');
-        count.textContent = `${digest.count.toLocaleString('en-US')} digits`;
-        count.title = 'Select the level and tap VIEW to see every digit';
+        const count = document.createElement('button');
+        count.type = 'button';
+        count.dataset.rowAct = 'view';
+        count.textContent = digitsText(digest.counts);
+        count.title = 'Show every digit (VIEW)';
         span.classList.add('num', 'digest');
-        span.append(`${digest.head}…${digest.tail}`, count);
+        span.append(digest.text, count);
       } else if (isNumber(value) || isBinaryInteger(value) || isUnit(value)) {
         // A number wraps, breaking before an exponent first, where an ellipsis would hide its exponent or last digits;
         // a unit also breaks before its _ and after a * or / outside parentheses, never inside s^3 or (A*s^3).
