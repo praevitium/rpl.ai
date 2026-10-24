@@ -29,6 +29,7 @@ export const SCHEMA_VERSION = 1;
 
 function encode(v, seen) {
   if (v === null || v === undefined) return v;
+  if (typeof v === 'number' && !Number.isFinite(v)) return { __t: 'number', v: String(v) };
   if (typeof v === 'bigint') return { __t: 'bigint', v: bigintText(v) };
   if (v instanceof Decimal) return { __t: 'decimal', v: v.toString() };
   if (v instanceof Uint8Array) return { __t: 'bytes', v: Array.from(v, (b) => b.toString(16).padStart(2, '0')).join('') };
@@ -63,6 +64,7 @@ function decode(v) {
   if (Array.isArray(v)) return v.map(decode);
   if (typeof v === 'object') {
     if (v.__t === 'bigint') return BigInt(v.v);
+    if (v.__t === 'number') return Number(v.v);
     if (v.__t === 'decimal') return new Decimal(v.v);
     if (v.__t === 'bytes') return Uint8Array.from(v.v.match(/../g) ?? [], (h) => parseInt(h, 16));
     if (v.__t === 'map') {

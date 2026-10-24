@@ -621,6 +621,18 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 }
 
 {
+  const unitLine = (src) => formatSource(runLine(src).peek());
+  assert(unitLine('(∞, -∞)') === '(∞, -∞)' && unitLine('(1, ∞)') === '(1, ∞)' && unitLine('(+∞ 3)') === '(∞, 3)',
+    'a complex part of ∞ reads as it is shown, so a value that overflowed can be edited and pasted back');
+  assertThrows(() => runLine('(1E400, 0)'), /Bad complex literal/, 'a figure past a double is no complex part, not an infinity');
+  assertThrows(() => runLine('(1/0, 2)'), /Bad complex literal/, 'a fraction with a zero denominator is no complex part');
+  assertThrows(() => runLine('(∞, ∠0)'), /Bad complex literal/, 'a polar form with an infinite modulus is refused');
+  assert(unitLine('(1E21,5)') === '(1.E21, 5)' && unitLine('(123456789012345678,1)') === '(1.23456789012E17, 1)',
+    'a complex part of 13 digits or more shows as a real does, not as JavaScript writes it');
+  assert(unitLine('(999999999999,1)') === '(999999999999, 1)' && unitLine('(1000000000000,1)') === '(1.E12, 1)', 'a whole complex part shows in full up to 12 digits');
+}
+
+{
   const line = (src) => runLine(src).snapshot().map((v) => formatSource(v)).join(' ');
   for (const bad of ['1_', '1_m*', '1_m/', '1_*m', '1_m//s', '1_m*/s', '1_1', '1_m**2']) {
     assertThrows(() => runLine(bad), /Bad unit expression|Missing unit/, `${bad} is a malformed unit literal, not a unit it half reads`);

@@ -169,7 +169,8 @@ function formatCmpxComp(n, d) {
     !getApproxMode() &&
     d.mode === 'STD' &&
     Number.isFinite(num) &&
-    Number.isInteger(num)
+    Number.isInteger(num) &&
+    Math.abs(num) < 1e12
   ) {
     return String(num);
   }

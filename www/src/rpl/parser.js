@@ -9,11 +9,13 @@ import { parseUnitExpr } from './units.js';
 import { hasOp, OPS } from './ops/registry.js';
 
 // A part of (re, im): a plain number or a fraction.  parseFloat would read 1_m as 1 and 1/2 as 1.
+// NaN for anything that is not a number a part can hold; ∞ is read as it is shown, and a figure past a double is no part.
 function complexPart(text) {
   const t = text.trim();
+  if (/^[-+]?∞$/.test(t)) return t.startsWith('-') ? -Infinity : Infinity;
   const fraction = /^([-+]?\d+)\/(\d+)$/.exec(t);
-  if (fraction) return Number(fraction[1]) / Number(fraction[2]);
-  return /^[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?$/.test(t) ? Number(t) : NaN;
+  const n = fraction ? Number(fraction[1]) / Number(fraction[2]) : /^[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?$/.test(t) ? Number(t) : NaN;
+  return Number.isFinite(n) ? n : NaN;
 }
 
 const BASE_DIGITS = Object.freeze({ h: /^[0-9A-Fa-f]+$/, d: /^[0-9]+$/, o: /^[0-7]+$/, b: /^[01]+$/ });
@@ -415,7 +417,7 @@ export function parseEntry(src) {
         const reN = complexPart(reText);
         const imN = complexPart(imText);
         // (x), left over when an unquoted SIN(x) splits, must not become Complex(NaN, 0).
-        if (!Number.isFinite(reN) || !Number.isFinite(imN)) {
+        if (Number.isNaN(reN) || Number.isNaN(imN)) {
           throw new RPLError(`Bad complex literal: (${t.text})`);
         }
         return Complex(reN, imN);

@@ -114,6 +114,14 @@ assert(isString(str) && str.value === 'hello', 'string restored');
 
 const cx = s2.peek(7);
 assert(isComplex(cx) && cx.re === 1 && cx.im === 2, 'complex restored');
+{
+  const infinite = [Complex(Infinity, -Infinity), Complex(1, Infinity), Complex(-Infinity, 2)];
+  const back = infinite.map((v) => decodeValue(JSON.parse(JSON.stringify(encodeValue(v)))));
+  assert(back.every((v, i) => isComplex(v) && v.re === infinite[i].re && v.im === infinite[i].im),
+    'a complex number with an infinite part comes back as it was, JSON having no Infinity to write');
+  const kept = decodeValue(JSON.parse(JSON.stringify(encodeValue(Matrix([[Complex(Infinity, -Infinity), Real(1)]])))));
+  assert(kept.rows[0][0].re === Infinity && kept.rows[0][0].im === -Infinity, 'an infinite complex part inside a matrix comes back as it was');
+}
 
 const int = s2.peek(8);
 assert(isInteger(int) && int.value === 42n, 'Integer 42 restored');
