@@ -104,9 +104,12 @@ ready.
 
 Your stack, variables and settings stay in this browser on this device.
 Nothing is uploaded. Two windows of the same browser share them and stay in
-step. To move them to another browser or keep a copy, use Back up everything
-in the Variables drawer's ⋯ menu, and Restore from a backup file on the other
-side.
+step. A line you have typed but not entered stays too, as the HP keeps its
+line through power-off: a phone that drops the page while another app has
+the screen gives it back, cursor and all, at the next start. A level or
+variable being edited and a program's `INPUT` answer are not kept. To move
+them to another browser or keep a copy, use Back up everything in the
+Variables drawer's ⋯ menu, and Restore from a backup file on the other side.
 
 ### Five minutes with RPL
 
@@ -662,7 +665,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - A phone's back button closes the open menu, search, sheet, writer or
   drawer first, then dismisses an error, cancels an edit and leaves a
   selected stack level as the HP's ON does, wakes rpl.ai from `OFF`, and
-  leaves the app only when nothing is open.
+  leaves the app only when nothing is open. In the Equation Library it goes
+  up a level at a time, from a set's form to the set, the subject's sets and
+  the subjects, as the sheet's Back button does, and Escape does the same.
 - The TOOL menu holds the HP's TOOL key: `EDIT`, `VIEW`, `RCL`, `STO`,
   `PURGE` and `CLEAR`, then `CASCMD` and `HELP`, so minimal view, which has
   no keypad, reaches them from the soft keys. `VIEW` shows level 1 full

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.79 (2026-10-24)
+**Latest release:** v0.8.80 (2026-10-24)
 
 ---
 
@@ -20,6 +20,29 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.80 — 2026-10-24
+
+- Fixed: `D→R(X)` and `R→D(X)`, which `'X' D→R` leaves on the stack, could
+  not be read back. Edit then Enter said "Invalid algebraic", and so did
+  typing `'D→R(180)'`, because the arrow ended the name. A call may have an
+  arrow in its name now; a bare `A→B` is still no name.
+- Fixed: `STMXE`'s exponent range and `→NDISP`'s line count were forgotten
+  at a reload, where `→HEADER` and `→KEYTIME` were kept. A reload brings
+  them back; a save from before them loads with 499 and 9.
+- Added: a command line you typed but did not enter survives a reload, as
+  the HP keeps its line through power-off. A phone that drops the page while
+  another app has the screen, or a browser that restarts, gives the line
+  back at the next start with the cursor where it was, and without raising
+  the keyboard. It is saved after a pause in typing and as the page is
+  hidden or closed, forgotten at once when the line is entered or cleared,
+  and a shared link or a shortcut that fills the line still wins. A level or
+  variable being edited, a program's `INPUT` answer and a line over 100,000
+  characters are not kept, and Reset everything forgets it.
+- Improved: Escape and a phone's back button go up one level in the
+  Equation Library, as its Back button does: a set's form returns to the
+  set, then the subject's sets, then the subjects, and the next press
+  closes the sheet. Close and a tap beside the sheet still close it at once.
 
 ## v0.8.79 — 2026-10-24
 
