@@ -23,8 +23,14 @@ function _notPole(x) {
   return x;
 }
 
+// A double that came out NaN was outside the function's reach, a bad value as the HP says.
+function _real(x) {
+  if (Number.isNaN(x)) throw new RPLError('Bad argument value');
+  return Real(x);
+}
+
 function _realFn(name, fn, arg = _realArg) {
-  return (v) => (_isSymOperand(v) ? Symbolic(AstFn(name, [_toAst(v)])) : Real(fn(arg(v))));
+  return (v) => (_isSymOperand(v) ? Symbolic(AstFn(name, [_toAst(v)])) : _real(fn(arg(v))));
 }
 
 function _unaryOp(scalar) {
@@ -44,7 +50,7 @@ function _gammaScalar(v) {
   if (_isSymOperand(v)) return Symbolic(AstFn('GAMMA', [_toAst(v)]));
   const x = _notPole(_realArg(v));
   if (isInteger(v)) return Integer(_bigFactorial(v.value - 1n));
-  return Real(_gamma(x));
+  return _real(_gamma(x));
 }
 
 
@@ -186,8 +192,12 @@ register('Beta', _withTaggedBinary(_withListBinary((s) => {
 })), { category: 'Special functions', categoryOrder: 3, label: "BETA" });
 
 
+// erfc(27) is 5e-319, the end of what a double holds: past it erf is ±1 and erfc 0 or 2, and x² cannot overflow the series.
+const _ERF_SATURATED = 27;
+
 register('erf', _unaryOp(_realFn('erf', (x) => {
   if (x === 0) return 0;
+  if (Math.abs(x) > _ERF_SATURATED) return Math.sign(x);
   return (x < 0 ? -1 : 1) * _regGammaP(0.5, x * x);
 }, _finiteArg)), { category: 'Special functions', categoryOrder: 4, label: "ERF" });
 
@@ -196,12 +206,16 @@ register('erf', _unaryOp(_realFn('erf', (x) => {
 // (erfc(5) ≈ 1.5e-12).
 register('erfc', _unaryOp(_realFn('erfc', (x) => {
   if (x === 0) return 1;
+  if (Math.abs(x) > _ERF_SATURATED) return x > 0 ? 0 : 2;
   if (x > 0) return _regGammaQ(0.5, x * x);
   return 1 + _regGammaP(0.5, x * x);
 }, _finiteArg)), { category: 'Special functions', categoryOrder: 5, label: "ERFC" });
 
 
 const _ZETA_EM_N = 15;
+
+// ζ(s) - 1 is below 2^-100 from here, and the series below would overflow its Pochhammer product.
+const _ZETA_ONE = 100;
 
 const _EVEN_FACTORIALS = Object.freeze([2, 24, 720, 40320, 3628800, 479001600]);
 
@@ -228,6 +242,7 @@ function _zetaEulerMaclaurin(s) {
 function _zeta(s) {
   if (!Number.isFinite(s)) throw new RPLError('Bad argument value');
   if (s === 1) throw new RPLError('Infinite result');
+  if (s > _ZETA_ONE) return 1;
   if (s === 0) return -0.5;
   // Trivial zeros are exact; the reflection below would only get near 0.
   if (s < 0 && Number.isInteger(s) && (s % 2) === 0) return 0;

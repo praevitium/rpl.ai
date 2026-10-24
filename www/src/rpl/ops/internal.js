@@ -639,16 +639,26 @@ function integerBinary(op, a, b) {
       if (b === 0n) throw _divisionByZero(a === 0n);
       return a / b;
     case '^':
-      return a ** b;
+      return _bigPower(a, b);
   }
   throw new RPLError('Unknown op ' + op);
+}
+
+// The HP holds an integer in its memory, a few million digits at most; a bigger one is not worth a frozen page.
+const MAX_INTEGER_DIGITS = 1_000_000;
+
+function _bigPower(a, b) {
+  const mag = a < 0n ? -a : a;
+  const log10 = Number.isFinite(Number(mag)) ? Math.log10(Number(mag)) : mag.toString().length - 1;
+  if (mag > 1n && Number(b) * log10 > MAX_INTEGER_DIGITS) throw new RPLError('Insufficient memory');
+  return a ** b;
 }
 
 // A negative integer exponent gives an exact fraction, or a Real in APPROX mode.
 function _integerReciprocalPower(a, b) {
   if (a === 0n) throw new RPLError('Infinite result');
   if (getApproxMode()) return Real(Decimal.pow(new Decimal(a.toString()), new Decimal(b.toString())));
-  const denominator = a ** -b;
+  const denominator = _bigPower(a, -b);
   return denominator === 1n || denominator === -1n ? Integer(denominator) : Rational(1n, denominator);
 }
 
@@ -783,17 +793,23 @@ const _LANCZOS_P = [
   1.5056327351493116e-7,
 ];
 
+// Γ(x) passes the largest double just past this.
+const _GAMMA_OVERFLOW = 171.625;
+
 export function _gamma(x) {
   if (x < 0.5) {
     const s = Math.sin(Math.PI * x);
     if (s === 0) throw new RPLError('Infinite result');
     return Math.PI / (s * _gamma(1 - x));
   }
+  if (x > _GAMMA_OVERFLOW) return Infinity;
   x -= 1;
   let a = _LANCZOS_P[0];
   for (let i = 1; i < _LANCZOS_P.length; i++) a += _LANCZOS_P[i] / (x + i);
   const t = x + _LANCZOS_G + 0.5;
-  return Math.sqrt(2 * Math.PI) * Math.pow(t, x + 0.5) * Math.exp(-t) * a;
+  // Two half powers, each brought back by e^-t in turn: t^(x+1/2) alone overflows a double from x = 142, where Γ does not.
+  const half = Math.pow(t, (x + 0.5) / 2);
+  return Math.sqrt(2 * Math.PI) * half * Math.exp(-t) * half * a;
 }
 
 

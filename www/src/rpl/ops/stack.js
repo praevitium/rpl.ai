@@ -127,9 +127,12 @@ register('UNPICK', (s) => {
 }, { category: 'Stack', categoryOrder: 15, label: "UNPICK" });
 
 
+const MAX_NDUPN = 1_000_000;
+
 // ( x n → x … x n ): n copies of x, then n itself.
 register('NDUPN', (s) => {
   const n = _toNonNegIntCount(s.pop());
+  if (n > MAX_NDUPN) throw new RPLError('Insufficient memory');
   s.need(1);
   const x = s.pop();
   s.pushMany(new Array(n).fill(x));

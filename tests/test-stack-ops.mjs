@@ -287,6 +287,13 @@ function vals(s) {
   lookup('NDUPN').fn(t);
   assert(t.depth === 1 && t.peek().value === 0n,
     'session064: x 0 NDUPN leaves just 0 on the stack (x consumed, no copies, n pushed)');
+
+  for (const count of [1000001n, 10n ** 300n]) {
+    const big = new Stack();
+    big.push(Integer(42n));
+    big.push(Integer(count));
+    assertThrows(() => lookup('NDUPN').fn(big), /Insufficient memory/, `NDUPN of ${count > 10n ** 9n ? 'a count past any array' : 'over a million copies'} says Insufficient memory, where JavaScript gave its own message`);
+  }
 }
 
 {

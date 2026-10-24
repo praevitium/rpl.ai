@@ -97,7 +97,9 @@ function _utpcScalar(nu, x) {
   _requireDegrees(n);
   if (!Number.isFinite(X)) throw new RPLError('Bad argument value');
   if (X <= 0) return Real(1);
-  return Real(_regGammaQ(n / 2, X / 2));
+  const q = _regGammaQ(n / 2, X / 2);
+  if (Number.isNaN(q)) throw new RPLError('Bad argument value');
+  return Real(q);
 }
 
 

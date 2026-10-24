@@ -7476,3 +7476,21 @@ function _arrayEq(a, b) {
   assertThrows(() => runLine('1 2 ZFACTOR'), /Bad argument value/, 'ZFACTOR wants a reduced temperature of 1.05 to 3');
   assertThrows(() => runLine('1.5 31 ZFACTOR'), /Bad argument value/, 'ZFACTOR wants a reduced pressure of 0 to 30');
 }
+
+// GAMMA's Lanczos product t^(x+1/2) e^-t overflowed a double from x = 142 on, where Γ itself holds to 171.6, and ERF, ZETA and the
+// like turned NaN on a huge argument and showed JavaScript's own message.
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top('150.5 GAMMA') === '4.6610726271E261' && top('142.5 GAMMA') === '2.25990910999E244', 'GAMMA: 142.5 and 150.5 hold their value where the formula gave ∞');
+  assert(top('171.5 GAMMA') === '9.48336756682E307' && top('170.5 FACT') === top('171.5 GAMMA') && top('172.5 GAMMA') === '∞', 'GAMMA and FACT of a fraction run up to the largest double and give ∞ past it');
+  assert(top('1E10 GAMMA') === '∞' && top('1E300 GAMMA') === '∞', 'GAMMA of a huge argument is ∞, as just past the largest double, and not a JavaScript error');
+  assert(top('1E300 ERF') === '1.' && top('-1E300 ERF') === '-1.' && top('1E300 ERFC') === '0.' && top('-1E300 ERFC') === '2.', 'ERF and ERFC saturate at ±1 and 0 or 2 for a huge argument');
+  assert(Number(runLine('26 ERFC').peek().value) > 0 && top('27.5 ERF') === '1.', 'ERFC keeps its tiny values to the edge of what a double holds');
+  assert(top('1E300 ZETA') === '1.' && top('150 ZETA') === '1.', 'ZETA is 1 for a large argument');
+  assertThrows(() => runLine('1E300 1E300 UTPC'), /Bad argument value/, 'UTPC with huge degrees of freedom and argument says Bad argument value, not NaN');
+  assertThrows(() => runLine('-99999999999.5 ZETA'), /Bad argument value/, 'ZETA of a hugely negative fraction says Bad argument value, where Γ(1-s)·2^s came out NaN');
+  assertThrows(() => runLine('123456789012345678901234567890 123456789012345678901234567890 ^'), /Insufficient memory/, 'an exact integer power too big for memory says so, where BigInt gave its own message');
+  assert(top('2 1000000 ^ SIZE') === '301030' && top('2 -10 ^') === '1/1024', 'an exact integer power of a million bits or so still comes out');
+  assertThrows(() => runLine('2 4000000 ^'), /Insufficient memory/, 'an exact integer power of over a million digits says Insufficient memory');
+  assertThrows(() => runLine('7 -3000000 ^'), /Insufficient memory/, 'the same holds for the fraction a negative exponent makes');
+}
