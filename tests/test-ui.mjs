@@ -2358,6 +2358,16 @@ setAngle('RAD');
 
 {
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const over = ':root\\[data-short\\]:not\\(\\[data-keyboard\\]\\) \\.work:has\\(\\.mx, \\.eqw\\)';
+  assert(new RegExp(`${over} > \\.banner > \\.bn:not\\(\\.halt\\) \\{ grid-template-columns: minmax\\(0, 1fr\\) auto auto; \\}`).test(css)
+    && new RegExp(`${over} > \\.banner > \\.bn:not\\(\\.halt\\) \\.bn-f \\{ grid-column: 2; margin-top: 0; \\}`).test(css)
+    && new RegExp(`${over} > \\.banner > \\.bn:not\\(\\.halt\\) \\.bn-x \\{ grid-column: 3; \\}`).test(css)
+    && new RegExp(`${over}:has\\(> \\.banner > \\.bn\\) \\.input-top \\{ display: none; \\}`).test(css),
+    "short windows: a banner over an open writer is one row with its fixes beside the message and the writer's tabs wait, so the soft keys stay on screen (an error over the matrix writer left them 24 px under the edge at 844x360 and 62 px at 667x375)");
+}
+
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const short = css.slice(css.indexOf('@media (max-height: 330px) {\n  :root[data-keyboard] .input-top'));
   assert(/@container app \(min-width: 480px\) \{\s*:root\[data-keyboard\] \.mx, :root\[data-keyboard\] \.eqw \{ grid-template-columns: 1fr auto; align-items: end; \}\s*:root\[data-keyboard\] \.writer-keys \.cmdline-go \{ flex: none; width: 40px; \}/.test(short)
     && !/\n  :root\[data-keyboard\] \.mx, :root\[data-keyboard\] \.eqw \{ grid-template-columns/.test(short),

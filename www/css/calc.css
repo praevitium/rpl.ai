@@ -2321,6 +2321,11 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 :root:is([data-keyboard], [data-short]) .bn:not(.halt) .bn-f { grid-column: 1 / -1; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-top: 2px; }
 /* Without a keyboard the short window keeps its app bar, so a banner's message gets two lines and scrolls (Classic's bezel wrapped a long PROMPT to three at 280x300, the soft keys 6px off). */
 :root[data-short]:not([data-keyboard]) .bn .bn-t { max-height: 2.7em; overflow-y: auto; }
+/* A banner over an open writer is all one row there, its fixes beside the message, and the writer's tabs wait: the matrix writer's soft keys fell off the bottom under an error at 844x360 (24px) and 667x375 (62px). */
+:root[data-short]:not([data-keyboard]) .work:has(.mx, .eqw) > .banner > .bn:not(.halt) { grid-template-columns: minmax(0, 1fr) auto auto; }
+:root[data-short]:not([data-keyboard]) .work:has(.mx, .eqw) > .banner > .bn:not(.halt) .bn-f { grid-column: 2; margin-top: 0; }
+:root[data-short]:not([data-keyboard]) .work:has(.mx, .eqw) > .banner > .bn:not(.halt) .bn-x { grid-column: 3; }
+:root[data-short]:not([data-keyboard]) .work:has(.mx, .eqw):has(> .banner > .bn) .input-top { display: none; }
 /* The assistant keeps its conversation in view the same way: the endpoint button and token counts wait for the keyboard to go. */
 :root[data-keyboard] .cb-switch-model-btn, :root[data-keyboard] .cb-stats { display: none; }
 /* A landscape phone with its keyboard up has about 190px left: while typing, only the stack, the line or writer and its keys stay. */
