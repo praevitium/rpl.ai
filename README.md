@@ -438,9 +438,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   fade and scroll sideways the same way. A tagged value with a long tag shortens the tag, not
   the value: `Total pri…: 123.456`. A number too wide for its line wraps
   rather than lose its exponent or last digits, breaking before the
-  exponent first, and a whole number of 120 digits or more shows its first
-  36 and last 12 with how many it has, `402387260077…000000000000` over
-  `2,568 digits` for `1000 FACT`; select it and VIEW shows every digit.
+  exponent first, and a whole number or fraction with a part of 120 digits
+  or more shows that part's first 36 and last 12 with how many it has,
+  `402387260077…000000000000` over `2,568 digits` for `1000 FACT`; tap the
+  count, or select the level and VIEW it, to see every digit.
   Above level 1, as on the HP, a long list keeps to one
   line, and so does a matrix of more than three rows, in its typed form;
   tap the level, or VIEW it, to see it whole. The stack fades the same way at its top while a level

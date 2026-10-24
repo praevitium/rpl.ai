@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.76 (2026-10-24)
+**Latest release:** v0.8.77 (2026-10-24)
 
 ---
 
@@ -20,6 +20,21 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.77 — 2026-10-24
+
+- Fixed: a long integer on the stack made every key slow. Printing a
+  million digits takes half a second, and the stack printed each one again on
+  every redraw and the autosave once more. The last four long integers now
+  keep their text: with five copies of `100000 FACT` on the stack a key takes
+  50 ms where it took 1.1 s, and with one 90 ms where it took 0.6 s.
+- Improved: the digit count under a long number is a button; tap it to open
+  VIEW with every digit, where it was a label and VIEW took selecting the
+  level first.
+- Improved: a fraction with a part of 120 digits or more is shortened as a
+  whole number is, each long part to its first 36 and last 12 digits with
+  both counts, `1/402387260077…000000000000` over `2,568 digits` for
+  `1 1000 FACT /`.
 
 ## v0.8.76 — 2026-10-24
 
