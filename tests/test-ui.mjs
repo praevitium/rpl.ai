@@ -3833,7 +3833,24 @@ setAngle('RAD');
   const sh = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(sh.includes("${act('tb-earlier', icon('chu', 'sm'), 'Earlier rows')}${act('tb-later', icon('chd', 'sm'), 'Later rows')}</div></div>`")
-    && sh.includes("this.el.innerHTML = sheet('Table of values', body);")
+    && sh.includes("this.el.innerHTML = sheet('Table of values', body, '', '', copy + share);")
     && /\.tb-field \{[^}]*flex: 1 1 90px;/.test(css) && css.includes('@container sheet (max-height: 479px) { .tb-c .pt-hint { display: none; } }'),
-    'plot table on a phone: paging sits with the step keys, so the sheet has no footer taking a row of the screen, the fields share a row with them from 430 px, and a short window drops the hint');
+    'plot table on a phone: paging sits with the step keys and Copy and Share in the header, so the sheet has no footer taking a row of the screen, the fields share a row with them from 430 px, and a short window drops the hint');
+}
+
+{
+  const { Sheets } = await import('../www/src/ui/sheets.js');
+  const copied = [], shared = [];
+  const sheet = {
+    el: { contains: () => true },
+    app: { copyText: (text, note, html) => copied.push({ text, note, html }), shareText: (text) => shared.push(text) },
+    tbl: { xName: 'T', data: { heads: ['SIN(T)', 'COS(T)/T'], rows: [{ x: 0, ys: [0, NaN] }, { x: 0.5, ys: [0.4794255386041834, Infinity] }, { x: -1.5, ys: [-0.9974949866040544, -0.04716] }] } },
+    _tableSheet: Sheets.prototype._tableSheet,
+  };
+  const tap = (name) => Sheets.prototype._onClick.call(sheet, { target: { closest: () => ({ dataset: { sh: name } }) } });
+  tap('tb-copy');
+  tap('tb-share');
+  const want = 'T\tSIN(T)\tCOS(T)/T\n0\t0\t\n0.5\t0.479425538604\t\n-1.5\t-0.997494986604\t-0.04716\n';
+  assert(copied[0]?.text === want && /<table[\s\S]*<td[^>]*>-0\.997494986604<\/td>/.test(copied[0].html ?? '') && shared[0] === want,
+    `plot table: Copy puts it on the clipboard and Share hands it on as spreadsheet cells, a heading row over the 12 digits a Real keeps, blank where a function has no value (${JSON.stringify(copied[0]?.text)})`);
 }

@@ -807,8 +807,11 @@ The table button, or `V` on the plot, opens the HP's table of values: x from
 a start by a step, a column for each function plotted, opening on a round
 start at the window's left edge. Type another start or step, halve or double
 the step, or page up and down by 30 rows; a tap on a value puts its point,
-(x,y), on the stack. A formula on the stack, or a list of them, opens the same table
-from its ⋯ menu, with no plot drawn.
+(x,y), on the stack. Copy, and Share where the device can share text, hand the
+table on as cells a spreadsheet pastes: a heading row, then x and each
+function's value at 12 digits, blank where a function has none. A formula on
+the stack, or a list of them, opens the same table from its ⋯ menu, or its TABLE
+soft key beside PLOT, with no plot drawn.
 
 PICT holds a graphics object: LINE, TLINE, BOX, ARC, PIXON, PIXOFF, DRAX
 and LABEL draw on it, GOR, GXOR, SUB, REPL and NEG work on it and on other

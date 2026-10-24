@@ -14,7 +14,8 @@ import { printLog, clearPrintLog } from '../rpl/ops/print.js';
 import { lookup } from '../rpl/ops/registry.js';
 import { format, withFractionMark } from '../rpl/formatter.js';
 import { fromTyped } from '../rpl/parser.js';
-import { Real, Complex } from '../rpl/types.js';
+import { Real, Complex, RList, Str } from '../rpl/types.js';
+import { formatDelimited, spreadsheetHtml } from '../rpl/sheet.js';
 import { VERSION, BUILD, SHA } from '../build-info.js';
 import { pickFile } from './drawer.js';
 import { MODES, modeById, DISPLAY_DIGITS_CHOICES } from './modes.js';
@@ -269,7 +270,9 @@ export class Sheets {
       const body = `<div class="tb-set">${field('start', 'Start', start)}${field('step', 'Step', step)}<div class="tb-zoom">${act('tb-finer', '÷2', 'Halve the step')}${act('tb-coarser', '×2', 'Double the step')}${act('tb-earlier', icon('chu', 'sm'), 'Earlier rows')}${act('tb-later', icon('chd', 'sm'), 'Later rows')}</div></div>`
         + `<div class="tb-wrap"><table class="tb"><thead><tr><th scope="col">${escapeHtml(xName)}</th>${heads}</tr></thead><tbody>${rows}</tbody></table></div>`
         + '<p class="pt-hint">Tap a value to put its point on the stack.</p>';
-      this.el.innerHTML = sheet('Table of values', body);
+      const copy = `<button type="button" class="icon-btn sm" data-sh="tb-copy" title="Copy the table (it pastes into a spreadsheet as cells)" aria-label="Copy the table">${icon('copy', 'sm')}</button>`;
+      const share = typeof navigator.share === 'function' ? `<button type="button" class="icon-btn sm" data-sh="tb-share" title="Share the table" aria-label="Share the table">${icon('share', 'sm')}</button>` : '';
+      this.el.innerHTML = sheet('Table of values', body, '', '', copy + share);
       this.el.querySelector('.sheet-c').classList.add('tb-c');
       const wrap = this.el.querySelector('.tb-wrap');
       markScrollEdges(wrap);
@@ -493,6 +496,8 @@ export class Sheets {
         else this.eqlib.subject = null;
         this._render();
         return;
+      case 'tb-copy': { const { text, html } = this._tableSheet(); app.copyText(text, 'Copied the table. It pastes into a spreadsheet as cells.', html); return; }
+      case 'tb-share': app.shareText(this._tableSheet().text); return;
       case 'tb-finer': this.tbl.step = Number((this.tbl.step / 2).toPrecision(12)); this._render(); return;
       case 'tb-coarser': this.tbl.step = Number((this.tbl.step * 2).toPrecision(12)); this._render(); return;
       case 'tb-earlier': this._tableMove(-TABLE_ROWS / 2); return;
@@ -575,7 +580,14 @@ export class Sheets {
     this._gameStep(dr, dc);
   }
 
-  // Enter in a form field moves on to the next, and from the last answers the form, as the HP's ENTER does.
+  // The table as a spreadsheet takes it: a heading row, then x and each function's value at the 12 digits a Real keeps, blank where it has none.
+  _tableSheet() {
+    const { xName = 'X', data: { heads, rows } } = this.tbl;
+    const cell = (v) => (Number.isFinite(v) ? Real(Number(v.toPrecision(12))) : Str(''));
+    const list = RList([RList([xName, ...heads].map(Str)), ...rows.map((r) => RList([r.x, ...r.ys].map(cell)))]);
+    return { text: formatDelimited(list, '\t').replace(/^\uFEFF/, ''), html: spreadsheetHtml(list) };
+  }
+
   _tableMove(rows) {
     this.tbl.start = Number((this.tbl.start + rows * this.tbl.step).toPrecision(12));
     this._render();
@@ -592,6 +604,7 @@ export class Sheets {
     this._render();
   }
 
+  // Enter in a form field moves on to the next, and from the last answers the form, as the HP's ENTER does.
   _onKeyDown(e) {
     const radio = /^Arrow(Left|Right|Up|Down)$/.test(e.key) && e.target.closest?.('[role="radiogroup"] [role="radio"]');
     if (radio) {
