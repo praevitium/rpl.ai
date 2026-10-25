@@ -610,7 +610,7 @@ export class Drawers {
     return `<div class="vr${isDir ? ' dir' : ''}" draggable="true" data-drag-name="${n}" data-dw="var" data-name="${n}" role="button" tabindex="0" title="${isDir ? `Open ${n}` : `${n}: ${value.type === TYPES.PROGRAM ? 'run it' : 'put it on the stack'} · Shift+Enter stores level 1 into it · Alt+Enter recalls without running · Delete purges it`}">
       <span class="grip" aria-hidden="true">${icon('grip', 'sm')}</span>
       <div class="main"><div class="nm">${isDir ? icon('folder', 'sm') : ''}<span class="nm-text">${n}</span><span class="badge">${escapeHtml(isDir ? 'Folder' : typeName(value))}</span></div><div class="pv">${escapeHtml(preview.length > 120 ? `${preview.slice(0, 119)}…` : preview)}</div></div>
-      <div class="acts"><button type="button" class="mini" data-dw="var-menu" data-name="${n}" title="${isDir ? 'Open' : 'Edit'}, rename, download or delete ${n}" aria-label="More for ${n}" aria-haspopup="menu">${icon('more', 'sm')}</button></div>
+      <div class="acts"><button type="button" class="mini" data-dw="var-menu" data-name="${n}" title="${isDir ? 'Open' : 'Edit'}, rename, put in your custom menu, download or delete ${n}" aria-label="More for ${n}" aria-haspopup="menu">${icon('more', 'sm')}</button></div>
     </div>`;
   }
 
@@ -827,11 +827,13 @@ export class Drawers {
     const isDir = value?.type === TYPES.DIRECTORY;
     const inside = isDir ? value.entries.size : 0;
     const remove = inside ? menuItem('pgdir', 'trash', `Delete with its ${inside} item${inside === 1 ? '' : 's'} (PGDIR)`) : menuItem('delete', 'trash', 'Delete');
-    const html = `<h6>${escapeHtml(name)}</h6>${isDir ? menuItem('open', 'chr', 'Open') : menuItem('edit', 'edit', 'Edit')}${menuItem('rename', 'rename', 'Rename')}${menuItem('download', 'down', 'Download as…')}<hr>${remove}`;
+    const mine = this.app.inMyMenu(name);
+    const html = `<h6>${escapeHtml(name)}</h6>${isDir ? menuItem('open', 'chr', 'Open') : menuItem('edit', 'edit', 'Edit')}${menuItem('rename', 'rename', 'Rename')}${menuItem('mymenu', mine ? 'minus' : 'plus', mine ? 'Remove from my menu' : 'Add to my menu')}${menuItem('download', 'down', 'Download as…')}<hr>${remove}`;
     this._openMenu(anchor, html, name, (act) => {
       if (act === 'open') this._activateVar(name);
       else if (act === 'edit') { this.app.editVariable(name); this._reveal(); }
       else if (act === 'rename') this._beginRename(anchor.closest('.vr'), name);
+      else if (act === 'mymenu') this.app.toggleMyMenu(name);
       else if (act === 'download') this.app.downloadMenu(anchor, name, calcState.current.entries.get(name));
       else if (act === 'delete') this._deleteVar(name);
       else if (act === 'pgdir') this._deleteVar(name, true);

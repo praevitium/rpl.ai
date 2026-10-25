@@ -3791,12 +3791,12 @@ setAngle('RAD');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const row = drawerSrc.slice(drawerSrc.indexOf('  _varRow(name, value) {'), drawerSrc.indexOf('  _renderBackups() {'));
   assert((row.match(/<button /g) ?? []).length === 1 && row.includes('data-dw="var-menu"')
-    && /_varMenu\(anchor, name\) \{[\s\S]*?menuItem\('open', 'chr', 'Open'\) : menuItem\('edit', 'edit', 'Edit'\)\}\$\{menuItem\('rename', 'rename', 'Rename'\)\}\$\{menuItem\('download', 'down', 'Download as…'\)\}<hr>\$\{remove\}/.test(drawerSrc)
+    && /_varMenu\(anchor, name\) \{[\s\S]*?menuItem\('open', 'chr', 'Open'\) : menuItem\('edit', 'edit', 'Edit'\)\}\$\{menuItem\('rename', 'rename', 'Rename'\)\}\$\{menuItem\('mymenu', mine \? 'minus' : 'plus', mine \? 'Remove from my menu' : 'Add to my menu'\)\}\$\{menuItem\('download', 'down', 'Download as…'\)\}<hr>\$\{remove\}/.test(drawerSrc)
     && /_varsMenu\(anchor\) \{[\s\S]*?'newdir'[\s\S]*?'upload'[\s\S]*?'export-rpl'[\s\S]*?'export'[\s\S]*?'import'/.test(drawerSrc)
     && drawerSrc.includes('data-dw="vars-more"') && !drawerSrc.includes('vars-foot')
     && drawerSrc.includes('<details class="vr-backups"><summary class="sec-h">') && !css.includes('.vars-foot')
     && !css.includes('  .vr .acts { grid-column: 1 / -1; }'),
-    "Variables drawer: a row is its name and value with one ⋯ (Edit or Open, Rename, Download, Delete), the folder tools sit in one ⋯ by the filter, and Backups fold away; a phone showed four buttons under every name and five more under the list");
+    "Variables drawer: a row is its name and value with one ⋯ (Edit or Open, Rename, Add to my menu, Download, Delete), the folder tools sit in one ⋯ by the filter, and Backups fold away; a phone showed four buttons under every name and five more under the list");
 }
 
 {
@@ -4429,4 +4429,12 @@ setAngle('RAD');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/\n\.cb-input \{[^}]*max-height: min\(14em, calc\(var\(--app-height, 100dvh\) \* \.3\)\);/.test(css),
     "assistant: a long draft (Explain with a deep stack, or a paste) stops growing at 30% of the window; a phone's 16 px type made the 14em cap 224 px, which put Send 35 px under the edge of a 360 px landscape screen");
+}
+
+// A variable's own menu in the Variables drawer puts it in CST too, so a program made on a phone becomes a key without typing a list.
+{
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  assert(drawerSrc.includes('const mine = this.app.inMyMenu(name);')
+    && drawerSrc.includes("else if (act === 'mymenu') this.app.toggleMyMenu(name);"),
+    "Variables drawer: a variable's menu offers Add to my menu (Remove from my menu once its name is in CST) for a program, a value or a folder, the Catalog's toggle on the variable's own name");
 }
