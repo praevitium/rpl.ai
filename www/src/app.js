@@ -54,7 +54,7 @@ import {
 } from './rpl/types.js';
 import { parseTyped } from './rpl/parser.js';
 import {
-  loadInitialState, adoptStoredState, saveToLocalStorage, saveDraft, loadDraft, saveHistory, loadHistory, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
+  loadInitialState, adoptStoredState, saveToLocalStorage, saveUndo, loadUndo, saveDraft, loadDraft, saveHistory, loadHistory, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
   shareLink, sharedSource, sharedText,
 } from './rpl/persist.js';
 import { giac } from './rpl/cas/giac-engine.mjs';
@@ -238,6 +238,7 @@ class App {
 
     this._wireDisplay();
     loadInitialState(this.stack);
+    loadUndo(this.stack);
     this.entry.setHistory(loadHistory());
     this.entry.subscribeHistory(() => saveHistory(this.entry.getHistory()));
 
@@ -276,6 +277,7 @@ class App {
     this._installKeyboard();
     this._installAutosave();
     this._keepStorage();
+    this._installUndoKeep();
     this._installFileDrop();
     this._installBackButton();
     this._installHaptics();
@@ -357,6 +359,13 @@ class App {
       if (this._draft()) timer = setTimeout(keep, DRAFT_DELAY_MS);
       else keep();
     });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') keep(); });
+    addEventListener('pagehide', keep);
+  }
+
+  // UNDO and LASTARG go to storage as the page is hidden, as the HP keeps them through power-off, and come back at the next start.
+  _installUndoKeep() {
+    const keep = () => saveUndo(this.stack);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') keep(); });
     addEventListener('pagehide', keep);
   }
@@ -953,6 +962,7 @@ class App {
   turnOff() {
     if (this._offScreen) return;
     this._noteAutosave(saveToLocalStorage(this.stack));
+    saveUndo(this.stack);
     const off = document.createElement('div');
     off.className = 'off-screen';
     off.setAttribute('role', 'button');

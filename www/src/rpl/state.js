@@ -904,6 +904,15 @@ export function clearVarUndo() {
   _varRedoStack = [];
 }
 
+export function varUndoSteps() {
+  return _varUndoStack;
+}
+
+export function restoreVarUndo(steps) {
+  _varUndoStack = steps;
+  _varRedoStack = [];
+}
+
 function _sameDir(a, b, seen = new Map()) {
   if (a === b) return true;
   const prior = seen.get(a);

@@ -14,7 +14,7 @@
    saves are rejected instead of loading as garbage. */
 
 import {
-  state, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo, setRealAssume,
+  state, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo, setRealAssume, varUndoSteps, restoreVarUndo,
   ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX, REAL_MAX_EXP_DEFAULT, REAL_MAX_EXP_MIN, REAL_MAX_EXP_MAX, isModeFlag,
 } from './state.js';
 import { TYPES, Decimal, BIN_BASES, Grob, isStorableHpName, bigintText, isStackOverflow } from './types.js';
@@ -190,6 +190,13 @@ function decodeCasModulo(snap) {
   return 13n;
 }
 
+// Stack levels as saved, with the folders among them linked again to what is in them.
+function decodeLevels(levels) {
+  const items = levels.map((item) => decode(item));
+  for (const item of items) if (item?.type === TYPES.DIRECTORY) relinkParents(item);
+  return items;
+}
+
 // Everything that can throw runs before any state changes, so a bad
 // snapshot leaves the calculator as it was.
 export function rehydrate(snap, stack) {
@@ -201,8 +208,7 @@ export function rehydrate(snap, stack) {
   if (!home || home.type !== TYPES.DIRECTORY || !(home.entries instanceof Map)) {
     throw new Error('snapshot: home is not a directory');
   }
-  const items = Array.isArray(snap.stack) ? snap.stack.map(decode) : [];
-  for (const item of items) if (item?.type === TYPES.DIRECTORY) relinkParents(item);
+  const items = Array.isArray(snap.stack) ? decodeLevels(snap.stack) : [];
   const pict = decodePict(snap);
   const userKeys = decodeUserKeys(snap);
 
@@ -258,6 +264,15 @@ export function rehydrate(snap, stack) {
 // What this window last wrote to the store or read from it.
 let _storedJson = null;
 
+// The kept undo steps come back at the next hide, so they go before backups do when the store is full.
+function dropUndo() {
+  try {
+    if (localStorage.getItem(UNDO_KEY) === null) return false;
+    localStorage.removeItem(UNDO_KEY);
+    return true;
+  } catch { return false; }
+}
+
 // Never throws. true when stored, 'trimmed' when backups were dropped, 'nested' when a value is too deep to write, false otherwise.
 export function saveToLocalStorage(stack) {
   let json;
@@ -275,6 +290,13 @@ export function saveToLocalStorage(stack) {
     if (!(e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014))) {
       console.warn('hp50 autosave failed:', e);
       return false;
+    }
+    if (dropUndo()) {
+      try {
+        localStorage.setItem(STORAGE_KEY, json);
+        _storedJson = json;
+        return true;
+      } catch { /* still full: the backups go next */ }
     }
     try { localStorage.removeItem(BACKUPS_KEY); } catch { }
     try {
@@ -319,6 +341,8 @@ export function adoptStoredState(stack) {
     return false;
   }
   _storedJson = raw;
+  stack.restoreUndo([], null);
+  restoreVarUndo([]);
   return true;
 }
 
@@ -326,6 +350,84 @@ export function loadInitialState(stack) {
   if (loadFromLocalStorage(stack)) return 'stored';
   rehydrate(SEED_STATE, stack);
   return 'seed';
+}
+
+export const UNDO_KEY = 'hp50.undo';
+const UNDO_MAX_STEPS = 20;
+const UNDO_MAX_CHARS = 400000;
+
+// Names the saved state a set of undo steps follows.
+function stateStamp(json) {
+  let hash = 2166136261;
+  for (let i = 0; i < json.length; i++) hash = Math.imul(hash ^ json.charCodeAt(i), 16777619);
+  return `${json.length}:${hash >>> 0}`;
+}
+
+// The newest steps that fit, oldest first. The variables a step goes back to are written once however many steps share them.
+function undoJson(stack, stamp) {
+  const stackSteps = stack.undoSteps();
+  const varSteps = varUndoSteps();
+  const homes = [];
+  const homeAt = new Map();
+  const steps = [];
+  let room = UNDO_MAX_CHARS;
+  for (let i = 1; i <= Math.min(stackSteps.length, varSteps.length, UNDO_MAX_STEPS); i++) {
+    const items = JSON.stringify(stackSteps[stackSteps.length - i].map((item) => encode(item)));
+    const snap = varSteps[varSteps.length - i];
+    const vars = JSON.stringify({ home: encode(snap.home), path: snap.path, pict: encode(snap.pict) });
+    const cost = items.length + (homeAt.has(vars) ? 0 : vars.length);
+    if (cost > room) break;
+    room -= cost;
+    if (!homeAt.has(vars)) { homeAt.set(vars, homes.length); homes.push(vars); }
+    steps.unshift(`{"stack":${items},"vars":${homeAt.get(vars)}}`);
+  }
+  const lastArgs = stack.hasLastArgs() ? JSON.stringify(stack.getLastArgs().map((item) => encode(item))) : 'null';
+  const kept = lastArgs.length <= room ? lastArgs : 'null';
+  if (!steps.length && kept === 'null') return null;
+  return `{"of":"${stamp}","steps":[${steps.join(',')}],"vars":[${homes.join(',')}],"lastArgs":${kept}}`;
+}
+
+// The steps UNDO takes back and what LASTARG brings back, which the HP keeps through power-off. They are kept as the page is hidden,
+// stamped with the state saved then, and come back only to that state.
+// Never throws: undo is only a convenience.
+export function saveUndo(stack) {
+  try {
+    const json = JSON.stringify(snapshot(stack));
+    const kept = json === localStorage.getItem(STORAGE_KEY) ? undoJson(stack, stateStamp(json)) : null;
+    if (kept) localStorage.setItem(UNDO_KEY, kept);
+    else localStorage.removeItem(UNDO_KEY);
+  } catch {
+    try { localStorage.removeItem(UNDO_KEY); } catch { /* storage is blocked */ }
+  }
+}
+
+function decodeVarSnapshot(saved) {
+  const home = decode(saved.home);
+  const { path } = saved;
+  if (home?.type !== TYPES.DIRECTORY || !(home.entries instanceof Map) || !Array.isArray(path) || !path.every((name) => typeof name === 'string')) {
+    throw new Error('undo: the variables are not a directory');
+  }
+  relinkParents(home);
+  return { home, path, pict: decodePict(saved) };
+}
+
+// The steps and LASTARG kept with the state just loaded. A state saved since, or steps that do not read, leave none.
+export function loadUndo(stack) {
+  if (_storedJson === null) return;
+  try {
+    const saved = JSON.parse(localStorage.getItem(UNDO_KEY) ?? 'null');
+    if (saved?.of !== stateStamp(_storedJson) || !Array.isArray(saved.steps) || !Array.isArray(saved.vars)) return;
+    const homes = saved.vars.map(decodeVarSnapshot);
+    const steps = saved.steps.slice(-UNDO_MAX_STEPS).map((step) => {
+      if (!Array.isArray(step?.stack) || !homes[step.vars]) throw new Error('undo: a step does not read');
+      return { items: decodeLevels(step.stack), vars: homes[step.vars] };
+    });
+    const lastArgs = Array.isArray(saved.lastArgs) ? decodeLevels(saved.lastArgs) : null;
+    stack.restoreUndo(steps.map((step) => step.items), lastArgs);
+    restoreVarUndo(steps.map((step) => step.vars));
+  } catch (e) {
+    console.warn('hp50 undo: could not bring back the steps', e);
+  }
 }
 
 export const DRAFT_KEY = 'hp50.draft';

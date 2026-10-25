@@ -3445,7 +3445,7 @@ setAngle('RAD');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/setFilerHook\(\(\) => setTimeout\(\(\) => \{ document\.activeElement\?\.blur\?\.\(\); this\.drawers\.open\('vars'\); \}\)\);/.test(app)
     && /setOffHook\(\(\) => setTimeout\(\(\) => this\.turnOff\(\)\)\);/.test(app)
-    && /this\._noteAutosave\(saveToLocalStorage\(this\.stack\)\);\n\s*const off = document\.createElement\('div'\);\n\s*off\.className = 'off-screen';/.test(app)
+    && /this\._noteAutosave\(saveToLocalStorage\(this\.stack\)\);\n\s*saveUndo\(this\.stack\);\n\s*const off = document\.createElement\('div'\);\n\s*off\.className = 'off-screen';/.test(app)
     && /off\.addEventListener\('click', wake\);\n\s*document\.addEventListener\('keydown', wake, true\);/.test(app) && /if \(ev\.type === 'keydown'\) this\.entry\.focus\(\);/.test(app)
     && /const wake = \(ev\) => \{\n\s*ev\.preventDefault\(\);\n\s*ev\.stopPropagation\(\);/.test(app)
     && /\n\.off-screen \{ position: fixed; inset: 0; z-index: 300;/.test(css),
@@ -4088,7 +4088,7 @@ setAngle('RAD');
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
-  assert(/loadInitialState\(this\.stack\);\n\s*this\.entry\.setHistory\(loadHistory\(\)\);\n\s*this\.entry\.subscribeHistory\(\(\) => saveHistory\(this\.entry\.getHistory\(\)\)\);/.test(appSrc),
+  assert(/loadInitialState\(this\.stack\);\n\s*loadUndo\(this\.stack\);\n\s*this\.entry\.setHistory\(loadHistory\(\)\);\n\s*this\.entry\.subscribeHistory\(\(\) => saveHistory\(this\.entry\.getHistory\(\)\)\);/.test(appSrc),
     'the saved lines are loaded into the entry at the start, and every change to the history saves it');
   assert(/const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY, HISTORY_KEY,/.test(sheetsSrc), 'Reset forgets the kept lines');
 }
@@ -4199,6 +4199,20 @@ setAngle('RAD');
     && /else if \(edit\?\.kind === 'var' && !away\) varStore\(edit\.name, value\);/.test(appSrc)
     && /_editedAway\(edit\) \{\n\s*return edit\.path !== currentPath\(\)\.join\('\/'\);\n\s*\}/.test(appSrc),
     'edit: a variable is stored in the folder its edit began in, and from another folder the line or formula stays on the stack with a note');
+}
+
+// UNDO and LASTARG are kept as the page is hidden and brought back right after the state is loaded, as the HP keeps them through
+// power-off; Reset everything and OFF treat the file like the other saved things.
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  assert(/loadInitialState\(this\.stack\);\n\s*loadUndo\(this\.stack\);\n\s*this\.entry\.setHistory\(loadHistory\(\)\);/.test(appSrc)
+    && /this\._keepStorage\(\);\n\s*this\._installUndoKeep\(\);/.test(appSrc)
+    && /_installUndoKeep\(\) \{\n\s*const keep = \(\) => saveUndo\(this\.stack\);\n\s*document\.addEventListener\('visibilitychange', \(\) => \{ if \(document\.visibilityState === 'hidden'\) keep\(\); \}\);\n\s*addEventListener\('pagehide', keep\);\n\s*\}/.test(appSrc)
+    && /if \(this\._offScreen\) return;\n\s*this\._noteAutosave\(saveToLocalStorage\(this\.stack\)\);\n\s*saveUndo\(this\.stack\);/.test(appSrc),
+    'undo kept: the steps load right after the state, are written as the page is hidden and at OFF');
+  assert(/const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY, HISTORY_KEY, PLOT_KEY, UNDO_KEY, UI_PREFS_KEY,/.test(sheetsSrc),
+    'undo kept: Reset everything removes the file');
 }
 
 // The table of values keeps its start and step: the plot's own snapshot holds them, a typed value, ÷2 or ×2 keeps them, paging does

@@ -22,11 +22,11 @@ import {
 import {
   snapshot, rehydrate, encodeValue, decodeValue, loadInitialState, STORAGE_KEY,
   BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup, putBackBackup, exportBackup, subscribeBackups,
-  saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX, saveDraft, loadDraft, DRAFT_KEY, saveHistory, loadHistory, HISTORY_KEY, savePlot, loadPlot, PLOT_KEY,
+  saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX, saveDraft, loadDraft, DRAFT_KEY, saveHistory, loadHistory, HISTORY_KEY, savePlot, loadPlot, PLOT_KEY, saveUndo, loadUndo, UNDO_KEY,
 } from '../www/src/rpl/persist.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import { formatSource } from '../www/src/rpl/formatter.js';
-import { varRecall } from '../www/src/rpl/state.js';
+import { varRecall, saveVarStateForUndo, undoVarState, varUndoSteps, clearVarUndo } from '../www/src/rpl/state.js';
 
 let failed = 0;
 function assert(cond, msg) {
@@ -841,6 +841,31 @@ function quotaError() {
   }
 }
 
+// A full store gives up the kept undo steps first, which come back at the next hide, and keeps the backups if that is enough.
+{
+  resetHome();
+  const s = new Stack();
+  s.push(Integer(1n));
+  const saved = globalThis.localStorage;
+  const store = new Map([[BACKUPS_KEY, '{}'], [UNDO_KEY, '{}']]);
+  let stateWrites = 0;
+  globalThis.localStorage = {
+    getItem: (k) => store.get(k) ?? null,
+    setItem: (k, v) => {
+      if (k === STORAGE_KEY && stateWrites === 0) { stateWrites++; throw quotaError(); }
+      store.set(k, String(v));
+    },
+    removeItem: (k) => store.delete(k),
+  };
+  try {
+    assert(saveToLocalStorage(s) === true, 'a full store that holds kept undo steps saves once they are dropped');
+    assert(!store.has(UNDO_KEY) && store.has(BACKUPS_KEY) && store.has(STORAGE_KEY), 'the undo steps go before the backups do');
+  } finally {
+    globalThis.localStorage = saved;
+    resetHome();
+  }
+}
+
 {
   resetHome();
   const saved = globalThis.localStorage;
@@ -1297,6 +1322,127 @@ function quotaError() {
     assert(Object.keys(extra.table).sort().join() === 'start,step', 'table: only the start and step are read');
   } finally {
     globalThis.localStorage = saved;
+  }
+}
+
+// UNDO and LASTARG are kept as the page is hidden and come back at the next start, as the HP keeps them through power-off, but only to
+// the state that was saved with them.
+{
+  const saved = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
+  const levels = (st) => st.snapshot().reverse().map(formatSource).join(' ');
+  const step = (st) => { st.saveForUndo(); saveVarStateForUndo(); };
+  const run = (st, op) => st.runOp(() => lookup(op).fn(st));
+  try {
+    resetHome(); clearVarUndo();
+    const live = new Stack();
+    live.push(Real(1));
+    step(live); live.push(Real(2));
+    step(live); varStore('A', Real(5));
+    step(live); live.push(Real(3)); live.push(Real(4)); run(live, '+');
+    assert(saveToLocalStorage(live) === true, 'undo kept: the state is saved first');
+    saveUndo(live);
+    assert(store.has(UNDO_KEY), 'undo kept: the steps are written');
+    const written = JSON.parse(store.get(UNDO_KEY));
+    assert(written.steps.length === 3 && written.vars.length === 2, 'undo kept: three steps, and the variables the first two share are written once');
+
+    resetHome(); clearVarUndo();
+    const back = new Stack();
+    assert(loadInitialState(back) === 'stored', 'undo kept: the state loads');
+    loadUndo(back);
+    assert(back.hasUndo() && back.undoSteps().length === 3 && varUndoSteps().length === 3, 'undo kept: the steps come back');
+    assert(back.hasLastArgs() && back.getLastArgs().map(formatSource).join(' ') === '3. 4.', 'undo kept: LASTARG comes back');
+    assert(levels(back) === '1. 2. 3. 7.' || levels(back) === '1. 2. 7.', 'undo kept: the stack itself is as saved');
+    undoVarState(); back.undo();
+    assert(levels(back) === '1. 2.' && varRecall('A') !== undefined, 'undo kept: the first Undo takes back the last step and keeps A');
+    undoVarState(); back.undo();
+    assert(levels(back) === '1. 2.' && varRecall('A') === undefined, 'undo kept: the next Undo takes back A');
+    undoVarState(); back.undo();
+    assert(levels(back) === '1.' && !back.hasUndo(), 'undo kept: the last Undo reaches the first level, and no more are left');
+
+    // a state saved after the steps leaves none
+    resetHome(); clearVarUndo();
+    const later = new Stack();
+    loadInitialState(later);
+    later.push(Real(9));
+    saveToLocalStorage(later);
+    resetHome(); clearVarUndo();
+    const afterwards = new Stack();
+    loadInitialState(afterwards);
+    loadUndo(afterwards);
+    assert(!afterwards.hasUndo() && !afterwards.hasLastArgs() && varUndoSteps().length === 0, 'undo kept: a state saved since comes back with no steps');
+
+    // the state of another window, taken up by this one, is not one the steps follow
+    resetHome(); clearVarUndo();
+    const mine = new Stack();
+    mine.push(Real(1)); step(mine); mine.push(Real(2)); run(mine, 'DUP');
+    saveToLocalStorage(mine);
+    const theirs = new Stack();
+    theirs.push(Real(99));
+    store.set(STORAGE_KEY, JSON.stringify(snapshot(theirs)));
+    assert(adoptStoredState(mine) === true && levels(mine) === '99.', 'undo kept: the other window\'s state is taken up');
+    assert(!mine.hasUndo() && !mine.hasLastArgs() && varUndoSteps().length === 0, 'undo kept: the steps of the state it replaced are gone with it');
+
+    // not written when the state was not saved
+    store.delete(STORAGE_KEY);
+    saveUndo(live);
+    assert(!store.has(UNDO_KEY), 'undo kept: a state that is not saved keeps no steps, and an old file goes');
+
+    // steps that share their variables write them once, and the file stays within its size
+    resetHome(); clearVarUndo();
+    const many = new Stack();
+    for (let i = 0; i < 40; i++) { step(many); many.push(Real(i)); }
+    saveToLocalStorage(many);
+    saveUndo(many);
+    const shared = JSON.parse(store.get(UNDO_KEY));
+    assert(shared.steps.length === 20 && shared.vars.length === 1, 'undo kept: the newest 20 steps, and the variables they share are written once');
+    resetHome(); clearVarUndo();
+    const big = new Stack();
+    for (let i = 0; i < 30; i++) { step(big); big.clear(); big.push(Str(`${i}`.padEnd(30000, 'x'))); }
+    saveToLocalStorage(big);
+    saveUndo(big);
+    const trimmed = JSON.parse(store.get(UNDO_KEY));
+    assert(trimmed.steps.length > 5 && trimmed.steps.length < 20 && store.get(UNDO_KEY).length < 440000, 'undo kept: big steps keep fewer of the newest, and the file stays within its size');
+    assert(trimmed.steps.at(-1).stack[0].value.startsWith('28xxx'), 'undo kept: the steps kept are the newest');
+    resetHome(); clearVarUndo();
+    const huge = new Stack();
+    huge.push(Str('x'.repeat(500000)));
+    step(huge); huge.push(Real(1));
+    saveToLocalStorage(huge);
+    saveUndo(huge);
+    assert(!store.has(UNDO_KEY), 'undo kept: a newest step too big to keep leaves no file');
+
+    // a folder on the stack in a step, and files that do not read
+    resetHome(); clearVarUndo();
+    makeSubdir('D1'); goInto('D1'); varStore('X', Real(5)); goHome();
+    const withFolder = new Stack();
+    withFolder.push(Name('D1')); lookup('RCL').fn(withFolder);
+    step(withFolder); withFolder.pop();
+    saveToLocalStorage(withFolder);
+    saveUndo(withFolder);
+    resetHome(); clearVarUndo();
+    const restored = new Stack();
+    loadInitialState(restored);
+    loadUndo(restored);
+    const folder = restored.undoSteps()[0][0];
+    assert(isDirectory(folder) && formatSource(folder.entries.get('X')) === '5.', 'undo kept: a folder on the stack in a step comes back with what is in it');
+    const good = store.get(UNDO_KEY);
+    for (const [name, text] of [['text that is not JSON', '{'], ['null', 'null'], ['steps that are not a list', good.replace('"steps":[', '"steps":{"a":[')], ['a step that points at no variables', good.replace('"vars":0', '"vars":7')], ['a variable snapshot that is no folder', good.replace(/("vars":\[\{"home":\{)"type":"directory"/, '$1"type":"real"')]]) {
+      store.set(UNDO_KEY, text);
+      resetHome(); clearVarUndo();
+      const odd = new Stack();
+      loadInitialState(odd);
+      loadUndo(odd);
+      assert(!odd.hasUndo() && varUndoSteps().length === 0, `undo kept: ${name} leaves no steps`);
+    }
+    globalThis.localStorage = { getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('full'); }, removeItem: () => { throw new Error('blocked'); } };
+    let threw = false;
+    try { saveUndo(live); loadUndo(new Stack()); } catch { threw = true; }
+    assert(!threw, 'undo kept: blocked or full storage is no error');
+  } finally {
+    globalThis.localStorage = saved;
+    resetHome(); clearVarUndo();
   }
 }
 

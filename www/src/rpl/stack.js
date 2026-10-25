@@ -229,6 +229,17 @@ export class Stack {
     this._undoStack.pop();
   }
 
+  // The steps UNDO takes back, oldest first, and LASTARG's record, which persist.js keeps through a reload.
+  undoSteps() {
+    return this._undoStack;
+  }
+
+  restoreUndo(steps, lastArgs) {
+    this._undoStack = steps;
+    this._redoStack = [];
+    this._lastArgs = lastArgs;
+  }
+
   // LASTARG gets what the op read, took or replaced: the stack from the lowest
   // level it touched, or where the before and after stacks first differ,
   // whichever is deeper, so no op declares its arity.  Ops that leave the stack
