@@ -688,3 +688,33 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   clearPrintLog();
   runLine("{ IOPAR IOSUB } PURGE");
 }
+
+// A program called by name runs on the driver stack, not nested on the JS call stack, so recursion goes thousands deep.
+{
+  const { localFramesDepth } = await import('../www/src/rpl/ops.js');
+  const { clearAllHalted, getHalted } = await import('../www/src/rpl/state.js');
+  resetHome(); clearAllHalted();
+  const run = (line, s = new Stack()) => runLine(line, s);
+  run("« → n « IF n 0 == THEN 0 ELSE n 1 - QDEEP 1 + END » » 'QDEEP' STO");
+  run("« IF DUP 0 == THEN DROP 0 ELSE 1 - QFLAT 1 + END » 'QFLAT' STO");
+  assert(format(run('3000 QDEEP').peek()) === '3000' && localFramesDepth() === 0,
+    'EVAL: a program that binds a local and calls itself by name goes 3000 deep, and leaves no local frame behind');
+  assert(format(run('3000 QFLAT').peek()) === '3000', 'EVAL: a program that calls itself on the stack goes 3000 deep');
+  run("« → n « n 1 + QRUN » » 'QRUN' STO");
+  assertThrows(() => run('0 QRUN'), /recursion too deep/, 'EVAL: a program that recurses without end stops with recursion too deep, not a JS stack error');
+  assert(localFramesDepth() === 0, 'EVAL: the locals of a runaway recursion are unwound when it stops');
+  run("« → n « IF n 0 == THEN \"x\" 1 - ELSE n 1 - QFAIL END » » 'QFAIL' STO");
+  assert(format(run('« IFERR 1500 QFAIL THEN ERRM END » EVAL').peek()) === '"Bad argument type"' && localFramesDepth() === 0,
+    'IFERR: an error 1500 calls down is caught by the program that called them, with its own message');
+  assert(format(run('« 7 → keep « 500 QDEEP DROP keep » » EVAL').peek()) === '7', '→: a local of the caller survives a deep recursion');
+  run("« → n « IF n 0 == THEN HALT 0 ELSE n 1 - QSTOP 1 + END » » 'QSTOP' STO");
+  const s = run('1000 QSTOP');
+  assert(getHalted() !== null && s.depth === 0, 'HALT: a halt 1000 calls down parks the whole recursion');
+  run('CONT', s);
+  assert(getHalted() === null && format(s.peek()) === '1000' && localFramesDepth() === 0, 'CONT: the recursion finishes from where it halted and unwinds its locals');
+  run('1000 QSTOP');
+  run('KILL');
+  assert(getHalted() === null && localFramesDepth() === 0, 'KILL: a halted recursion is closed and releases its locals');
+  clearAllHalted();
+  resetHome();
+}

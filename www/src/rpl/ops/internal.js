@@ -916,7 +916,10 @@ export function _coerceStorableName(v) {
 }
 
 
-const MAX_EVAL_DEPTH = 256;
+// Programs called by name run on a driver stack (see _drive), so this bounds memory, not the JS call stack: a few thousand
+// calls, as the HP manages.  A program called inside an algebraic still nests on the call stack, so it keeps the small limit.
+const MAX_EVAL_DEPTH = 12000;
+const MAX_USER_CALL_DEPTH = 256;
 
 // HP50 loops have no iteration cap; this one keeps a runaway loop recoverable. A loop that pauses, as one polling KEY
 // does, can be stopped from its banner, so its count starts again after each pause.
@@ -1354,7 +1357,8 @@ function* _stepYield(tokens, index) {
 // generator on the halted stack; any other exit unwinds leftover local frames.
 // Either way an unfrozen DISP display goes, as the HP's does when the keyboard is ready, except at a WAIT, whose
 // message the pause is for.
-export function runSuspendable(gen) {
+export function runSuspendable(program) {
+  const gen = _driven(program);
   const framesAtEntry = _localFrames.length;
   let halted = false;
   let waiting = false;
@@ -1379,6 +1383,53 @@ export function runSuspendable(gen) {
 }
 
 
+// A generator that delegates with yield* adds to the JS call stack for every level it nests, so a program that calls itself
+// a few hundred times overflowed it.  A call by name instead yields its callee to this loop, which runs the generators from
+// a flat stack of its own.  A yield of anything else is a real pause (HALT, a dialog, a step) and goes on up.
+const CALL = Symbol('call');
+const _drivers = new WeakSet();
+
+function* _onDriver(callee) {
+  return yield { [CALL]: callee };
+}
+
+function* _drive(root) {
+  const frames = [root];
+  let value;
+  let error = null;
+  try {
+    while (frames.length) {
+      const top = frames[frames.length - 1];
+      let step;
+      try {
+        step = error ? top.throw(error.thrown) : top.next(value);
+      } catch (e) {
+        frames.pop();
+        if (!frames.length) throw e;
+        error = { thrown: e };
+        value = undefined;
+        continue;
+      }
+      error = null;
+      if (step.done) { frames.pop(); value = step.value; continue; }
+      if (step.value?.[CALL]) { frames.push(step.value[CALL]); value = undefined; continue; }
+      value = yield step.value;
+    }
+  } finally {
+    for (let i = frames.length - 1; i >= 0; i--) {
+      try { frames[i].return(); } catch { /* a frame that has already finished */ }
+    }
+  }
+}
+
+function _driven(program) {
+  if (_drivers.has(program)) return program;
+  const driver = _drive(program);
+  _drivers.add(driver);
+  return driver;
+}
+
+
 function* evalToken(s, tok, depth) {
   if (isName(tok)) {
     if (tok.quoted) { s.push(tok); return; }
@@ -1399,7 +1450,7 @@ function* evalToken(s, tok, depth) {
 // other content, an algebraic included, is put on the stack as it is.
 function* _callGlobal(s, bound, depth, isSubProgram = true) {
   if (isName(bound) || isProgram(bound) || isDirectory(bound)) {
-    yield* _evalValueGen(s, bound, depth, isSubProgram);
+    yield* _onDriver(_evalValueGen(s, bound, depth, isSubProgram));
   } else {
     s.push(bound);
   }
@@ -1821,7 +1872,8 @@ function _symConstantValue(name) {
 
 // Runs a program generator that must not suspend; a HALT or PROMPT inside it is
 // reported as an error naming `caller` (e.g. 'IFT action').
-export function _driveGen(gen, caller) {
+export function _driveGen(program, caller) {
+  const gen = _driven(program);
   _unpausable++;
   let result;
   try { result = gen.next(); } finally { _unpausable--; }
@@ -2150,7 +2202,7 @@ function _callUserProgram(name, values) {
   if (isKnownFunction(name)) return null;
   const program = _localLookup(name) ?? varRecall(name);
   if (!isProgram(program)) return null;
-  if (_userCallDepth >= MAX_EVAL_DEPTH) throw new RPLError('EVAL recursion too deep');
+  if (_userCallDepth >= MAX_USER_CALL_DEPTH) throw new RPLError('EVAL recursion too deep');
   const s = new Stack();
   for (const v of values) s.push(v);
   _userCallDepth++;
