@@ -203,8 +203,8 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
     'haltedBannerHtml: shows the PROMPT text and Continue, Step, Step into and Stop');
   assert(haltedBannerHtml({ kind: 'halt', prompt: '<b>' }).includes('&lt;b&gt;'), 'haltedBannerHtml: prompt text is escaped');
   const running = haltedBannerHtml({ kind: 'slice' });
-  assert(running.includes('Running') && running.includes('data-bn="kill"') && !running.includes('data-bn="cont"') && !running.includes('data-bn="sst"') && running.includes('class="bn-time" aria-hidden="true"'),
-    'haltedBannerHtml: a program that has run a while says Running with the seconds it has run, kept from screen readers, and offers Stop, with no Continue or Step');
+  assert(running.includes('Running') && running.includes('data-bn="kill"') && !running.includes('data-bn="cont"') && !running.includes('data-bn="sst"') && running.includes('class="bn-time" aria-hidden="true"') && running.includes('data-bn="pause"'),
+    'haltedBannerHtml: a program that has run a while says Running with the seconds it has run, kept from screen readers, and offers Pause and Stop, with no Continue or Step');
 }
 
 {

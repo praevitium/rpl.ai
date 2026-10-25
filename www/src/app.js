@@ -37,7 +37,7 @@ import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, varStoreWhereFound, currentPath,
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo, getUserKeys, standardKeysActive,
-  batchStateNotifications, isSuspension, clearHalted, haltMark, tagHalted,
+  batchStateNotifications, isSuspension, clearHalted, haltMark, tagHalted, haltRun,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setFontHooks, setTransferHooks, receivedName, receivedTarget, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue, setRunSlice, withoutRunSlices, pausableRun } from './rpl/ops.js';
 import { VERSION, DATE } from './build-info.js';
@@ -574,7 +574,7 @@ class App {
     document.documentElement.toggleAttribute('data-running', true);
     this.keepAwake();
     clearTimeout(this._runTimer);
-    this._runTimer = setTimeout(() => { if (calcState.halted === halted) this._continueProgram(); }, 0);
+    this._runTimer = setTimeout(() => { if (calcState.halted === halted && halted.kind === 'slice') this._continueProgram(); }, 0);
   }
 
   _endRun() {
@@ -587,9 +587,9 @@ class App {
     this.keepAwake();
   }
 
-  // As the HP's ON does, Stop ends a running program where it is: the stack stays as the program left it, and Undo takes the run back.
+  // As the HP's ON does, Stop ends a running program, or one paused from its banner, where it is: the stack stays as the program left it, and Undo takes the run back.
   stopProgram() {
-    if (!this._running()) return false;
+    if (!this._running() && !calcState.halted?.paused) return false;
     clearHalted();
     this._endRun();
     this.undoToast('Program stopped');
@@ -779,7 +779,8 @@ class App {
     if (act === 'form' && kind === 'inform') { this.showInformSheet(); return; }
     if (act === 'cancel' && (kind === 'choose' || kind === 'inform')) { this._continueProgram(Integer(0n)); return; }
     if (act === 'enter' && kind === 'wait') { this._answerKey(hpKeyCode('ENTER')); return; }
-    if (act === 'kill' && kind === 'slice') { this.stopProgram(); return; }
+    if (act === 'kill' && (kind === 'slice' || calcState.halted?.paused)) { this.stopProgram(); return; }
+    if (act === 'pause' && kind === 'slice') { haltRun(); return; }
     if (act === 'kill' && kind === 'input') this.entry.cancel();
     const op = { cont: 'CONT', sst: 'SST', into: 'SST↓', kill: 'KILL' }[act];
     if (op) { this.entry.execOp(op); return; }

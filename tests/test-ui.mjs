@@ -2731,7 +2731,7 @@ setAngle('RAD');
     && /_acceptInput\(\) \{[\s\S]{0,200}?if \(dialog\.verify\) \{ try \{ parseTyped\(text\); \} catch \(e\) \{ this\.entry\.flashError\(e\); return; \} \}\s*this\.entry\.cancel\(\);\s*this\._continueProgram\(Str\(text\)\);/.test(appSrc)
     && /_continueProgram\(\.\.\.answers\) \{\s*const \{ kind, stepping, tag \} = calcState\.halted;\s*const op = \{ over: 'SST', into: 'SST↓' \}\[stepping\] \?\? 'CONT';\s*if \(kind !== 'wait' && kind !== 'slice'\) touchLcd\(\);\s*const resume = \(\) => \{ for \(const a of answers\) this\.stack\.push\(a\); lookup\(op\)\.fn\(this\.stack, this\.entry\); \};\s*this\.entry\.safeRun\(\(\) => this\.stack\.holdEmit\(\(\) => batchStateNotifications\(resume\)\), kind === 'slice' \? tag \?\? '' : op, \{ keepPartial: true \}\);/.test(appSrc)
     && /const stepping = _singleStepMode \? \(_stepInto \? 'into' : 'over'\) : null;\s*_pendingSuspend = \{ tokens, index, kind, dialog, stepping, prompt \};/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
-    && /if \(act === 'ok' && kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(act === 'cont' && kind === 'msgbox'\) \{ this\._continueProgram\(\); return; \}[\s\S]{0,500}?if \(act === 'kill' && kind === 'input'\) this\.entry\.cancel\(\);/.test(appSrc),
+    && /if \(act === 'ok' && kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(act === 'cont' && kind === 'msgbox'\) \{ this\._continueProgram\(\); return; \}[\s\S]{0,600}?if \(act === 'kill' && kind === 'input'\) this\.entry\.cancel\(\);/.test(appSrc),
     "INPUT: its banner is the prompt with OK and Stop keys and no program source; the text it offers goes on the command line once the line that ran the program has cleared; Enter or OK hands the line back as a string (with V only once it parses) and goes on without an undo step of its own, as MSGBOX's OK does, so UNDO after the program takes the whole run back rather than stopping between its answers, and a dialog reached while stepping steps on with SST or SST↓ rather than running the program out; Stop clears the line before KILL");
   assert(/if \(id === 'INPUT'\) \{[\s\S]{0,260}?_markSuspend\(toks, i \+ 1, 'input', input, s\.pop\(\)\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
     'INPUT halts a running program the way PROMPT does, carrying the text to offer');
@@ -4490,8 +4490,8 @@ setAngle('RAD');
     'running: the app asks the evaluator to pause a long program and tells the entry line when one runs');
   assert(/_escape\(\) \{\n\s*if \(this\.stopProgram\(\)\) return true;/.test(appSrc)
     && appSrc.includes('[() => this._running(), () => this.stopProgram()],')
-    && /if \(act === 'kill' && kind === 'slice'\) \{ this\.stopProgram\(\); return; \}/.test(appSrc),
-    'running: Esc and the keypad\'s ON, the back button and the banner\'s Stop key all stop the program');
+    && /if \(act === 'kill' && \(kind === 'slice' \|\| calcState\.halted\?\.paused\)\) \{ this\.stopProgram\(\); return; \}/.test(appSrc),
+    'running: Esc and the keypad\'s ON, the back button and the banner\'s Stop key (on a running or a paused program) all stop the program');
   assert(/_handleKey\(key, \{ standard = false \} = \{\}\) \{\n\s*if \(this\._running\(\)\) \{\n\s*if \(key\.primary === 'ON' && !this\.shift\) this\.stopProgram\(\);\n\s*return;/.test(appSrc)
     && /runAction\(id, arg\) \{\n\s*if \(id !== 'ui\.escape' && this\._running\(\)\) return true;/.test(appSrc)
     && /commitEntry\(\) \{\n\s*if \(this\._running\(\)\) return;/.test(appSrc)
@@ -4508,12 +4508,15 @@ setAngle('RAD');
   assert(/if \(!this\._running\(\)\) this\._noteAutosave\(saveToLocalStorage\(this\.stack\)\);/.test(appSrc)
     && /run: \(text\) => withoutRunSlices\(\(\) => \{/.test(appSrc),
     'running: half a run is never autosaved, and the assistant\'s run tool still runs a line through');
-  assert(/stopProgram\(\) \{\n\s*if \(!this\._running\(\)\) return false;\n\s*clearHalted\(\);\n\s*this\._endRun\(\);\n\s*this\.undoToast\('Program stopped'\);/.test(appSrc),
-    'running: Stop closes the paused program, leaves the stack where it was and offers Undo');
+  assert(/stopProgram\(\) \{\n\s*if \(!this\._running\(\) && !calcState\.halted\?\.paused\) return false;\n\s*clearHalted\(\);\n\s*this\._endRun\(\);\n\s*this\.undoToast\('Program stopped'\);/.test(appSrc),
+    'running: Stop closes the program, running or paused from its banner, leaves the stack where it was and offers Undo');
   assert(appSrc.includes("if (halted?.kind === 'slice' && Date.now() - (this._runStart ?? Date.now()) < RUN_BANNER_MS) {"),
     'running: the first pause, drawn before the run has a start time, holds the banner back like the later ones');
   assert(/if \(!runAs\) \{ this\.stack\.push\(value\); return; \}\n\s*const mark = haltMark\(\);\n\s*this\.entry\.safeRun\([^\n]*\n\s*tagHalted\(mark, runAs\);/.test(appSrc),
     'running: a program started by its soft key, a CST key or a user key keeps its name for an error after a pause, as a typed one does');
   assert(appSrc.includes("this.stack.runOp(op === 'EVAL' ? () => pausableRun(runIt) : runIt)") && appSrc.includes('tagHalted(mark, op);'),
     'running: a level\'s EVAL pauses too, while STR→ and the other ops that evaluate in the middle of their own work do not');
+  assert(appSrc.includes("if (act === 'pause' && kind === 'slice') { haltRun(); return; }") && appSrc.includes("if (act === 'kill' && (kind === 'slice' || calcState.halted?.paused)) { this.stopProgram(); return; }") && appSrc.includes("if (calcState.halted === halted && halted.kind === 'slice') this._continueProgram();")
+    && /\.bn\.running \[data-bn="pause"\] > span \{ display: none; \}\n@container app \(min-width: 480px\) \{ \.bn\.running \[data-bn="pause"\] > span \{ display: inline; \} \}/.test(cssSrc),
+    'running: Pause on the Running banner halts the program where it is, a timer already set does not resume it, and the key is an icon under 480 px');
 }

@@ -273,6 +273,15 @@ export function setHalted(h) {
 
 export function getHalted() { return state.halted; }
 
+// A running program paused between two of its stretches is halted where it is, as if a HALT stood there: CONT, SST and KILL take it from here.
+export function haltRun() {
+  if (state.halted?.kind !== 'slice') return false;
+  state.halted.kind = 'halt';
+  state.halted.paused = true;
+  _emit();
+  return true;
+}
+
 // generator.return() runs the program's finally blocks, which release the
 // compiled-local frames it held.
 function _closeRecord(record) {

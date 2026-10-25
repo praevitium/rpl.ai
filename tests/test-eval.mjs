@@ -724,7 +724,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 {
   const { Entry } = await import('../www/src/ui/entry.js');
   const { setRunSlice, withoutRunSlices } = await import('../www/src/rpl/ops.js');
-  const { clearAllHalted, getHalted, varPurge } = await import('../www/src/rpl/state.js');
+  const { clearAllHalted, getHalted, varPurge, haltRun } = await import('../www/src/rpl/state.js');
   const { evalScratch } = await import('../www/src/rpl/scratch.js');
   resetHome(); clearAllHalted();
   const s = new Stack();
@@ -778,6 +778,22 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
     assert(getHalted()?.kind === 'halt' && during > 0, `a program that pauses and then halts for real is left at its HALT (${getHalted()?.kind})`);
     e.safeRun(() => lookup('CONT').fn(s, e), '', { keepPartial: true });
     assert(text() === '300001' && !getHalted(), `and CONT finishes it (${text()})`);
+    clear();
+
+    typed('5 QSL 1 +');
+    assert(haltRun() && getHalted()?.kind === 'halt' && getHalted().paused && getHalted().after?.length === 2, `Pause halts a running program where it is, as a HALT would, with the rest of the line still owed (${getHalted()?.kind})`);
+    assert(!haltRun(), 'and a program already halted has no pause left to take');
+    e.safeRun(() => lookup('SST').fn(s, e), '', { keepPartial: true });
+    assert(getHalted()?.kind === 'step' && getHalted().after?.length === 2, `SST steps it one word and halts again (${getHalted()?.kind})`);
+    e.safeRun(() => lookup('CONT').fn(s, e), '', { keepPartial: true });
+    finish();
+    assert(text() === '300001 5' && !getHalted(), `CONT then takes it to the end and runs the rest of the line (${text()})`);
+    clear();
+
+    typed('5 QSL 1 +');
+    haltRun();
+    lookup('KILL').fn(s, e);
+    assert(!getHalted() && text() !== '300001 5', `KILL after a Pause drops the program and the rest of the line (${text()})`);
     clear();
 
   } finally {

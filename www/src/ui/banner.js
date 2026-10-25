@@ -40,8 +40,8 @@ const HALT_TITLES = Object.freeze({
 const key = (bn, label, title, ico, cls = '') => `<button type="button" class="chip${cls ? ` ${cls}` : ''}" data-bn="${bn}" title="${title}" aria-label="${label}">${icon(ico, 'sm')}<span>${label}</span></button>`;
 const STOP_KEY = key('kill', 'Stop', 'KILL: abandon the program', 'stop', 'warn');
 
-// A program that has run a while and goes on by itself: Stop ends it, as the HP's ON does.
-const RUNNING_BANNER = `<div class="bn halt running" role="status"><div class="bn-ico" aria-hidden="true">${icon('play', 'xs')}</div><div class="bn-t">Running <span class="bn-time" aria-hidden="true"></span></div><div class="bn-f">${key('kill', 'Stop', 'Stop the program (ON or Esc)', 'stop', 'warn')}</div></div>`;
+// A program that has run a while and goes on by itself: Stop ends it, as the HP's ON does, and Pause halts it where it is.
+const RUNNING_BANNER = `<div class="bn halt running" role="status"><div class="bn-ico" aria-hidden="true">${icon('play', 'xs')}</div><div class="bn-t">Running <span class="bn-time" aria-hidden="true"></span></div><div class="bn-f">${key('pause', 'Pause', 'Halt the program here, as a HALT would: then Continue, Step or Stop', 'pause')}${key('kill', 'Stop', 'Stop the program (ON or Esc)', 'stop', 'warn')}</div></div>`;
 
 // WAIT's pause: a timed one says how long, a key wait asks for a key, its Enter chip the ENTER key (105.1).
 function waitBannerHtml({ seconds }) {
