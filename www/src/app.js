@@ -2576,23 +2576,33 @@ class App {
     return this._changeMyMenu((list) => toggledCustomMenu(list, name), `${adding ? 'Added' : 'Removed'} ${name} ${adding ? 'to' : 'from'} your menu (CST)`);
   }
 
+  // A held CST key's own row, whatever the key holds: the item still where the menu was drawn, or nothing happens.
+  _dropMyMenuKey(item, index, label) {
+    return this._changeMyMenu((list) => (list?.items[index] === item ? RList(list.items.filter((_, i) => i !== index)) : null), `Removed ${label} from your menu (CST)`);
+  }
+
   _customMenuSlots(list) {
-    return list.items.map((item) => {
+    return list.items.map((item, index) => {
       const { label, main, left, right } = customMenuEntry(item);
       const shifted = !!(left || right);
       const press = (target) => () => { if (target) this._runKeyObject(target, label); };
+      const typeIt = () => { if (!this._typeCustomItem(main)) this.entry.typeToken(`${withFractionMark(customMenuSource(main))} `); };
+      const recallIt = () => {
+        if (this._typeCustomItem(main, 'R')) return;
+        if (this.entry.buffer.trim().length > 0) this.commitEntry();
+        this._pushValue(main);
+      };
       const hint = (mark, target) => (target ? ` · ${mark} ${customMenuLabel(target)}` : '');
+      const layers = shifted
+        ? [[left, '⇦'], [right, '⇨']].filter(([t]) => t).map(([t, mark]) => ({ text: customMenuLabel(t), mark, run: press(t) }))
+        : [{ text: `Type ${label}`, mark: '⇦', run: typeIt }, { text: `Recall ${label}`, mark: '⇨', run: recallIt }];
       return {
         label,
-        title: shifted ? `${label}${hint('↰', left)}${hint('↱', right)}` : `${label} · ↰ types it · ↱ recalls it`,
+        title: `${label}${shifted ? `${hint('↰', left)}${hint('↱', right)}` : ' · ↰ types it · ↱ recalls it'} · hold for more`,
         onPress: press(main),
-        onPressL: shifted ? press(left) : () => { if (!this._typeCustomItem(main)) this.entry.typeToken(`${withFractionMark(customMenuSource(main))} `); },
-        onPressR: shifted ? press(right) : () => {
-          if (this._typeCustomItem(main, 'R')) return;
-          if (this.entry.buffer.trim().length > 0) this.commitEntry();
-          this._pushValue(main);
-        },
-        onHold: shifted ? (anchor) => this._heldKeyMenu([[left, '⇦'], [right, '⇨']].filter(([t]) => t).map(([t, mark]) => ({ text: customMenuLabel(t), mark, run: press(t) })), anchor, label) : null,
+        onPressL: shifted ? press(left) : typeIt,
+        onPressR: shifted ? press(right) : recallIt,
+        onHold: (anchor) => this._heldKeyMenu([...layers, { text: 'Remove from my menu', mark: '', run: () => this._dropMyMenuKey(item, index, label) }], anchor, label),
       };
     });
   }

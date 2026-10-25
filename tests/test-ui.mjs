@@ -2692,8 +2692,8 @@ setAngle('RAD');
   assert(customMenuLabel(cst.items[1].items[0]) === 'Sq' && customMenuLabel(cst.items[0]) === 'SIN', 'custom menu: a string label reads as its text, a name as its id');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/const \{ label, main, left, right \} = customMenuEntry\(item\);\s*const shifted = !!\(left \|\| right\);/.test(appSrc)
-    && /onPressL: shifted \? press\(left\) :/.test(appSrc) && /onPressR: shifted \? press\(right\) :/.test(appSrc)
-    && /onHold: shifted \? \(anchor\) => this\._heldKeyMenu\(\[\[left, '⇦'\], \[right, '⇨'\]\]\.filter\(\(\[t\]\) => t\)\.map\(\(\[t, mark\]\) => \(\{ text: customMenuLabel\(t\), mark, run: press\(t\) \}\)\), anchor, label\) : null,/.test(appSrc),
+    && /onPressL: shifted \? press\(left\) : typeIt,/.test(appSrc) && /onPressR: shifted \? press\(right\) : recallIt,/.test(appSrc)
+    && /\? \[\[left, '⇦'\], \[right, '⇨'\]\]\.filter\(\(\[t\]\) => t\)\.map\(\(\[t, mark\]\) => \(\{ text: customMenuLabel\(t\), mark, run: press\(t\) \}\)\)/.test(appSrc),
     'custom menu: a key with shifted objects presses them with ⇦ and ⇨ and offers them under a held finger, while a plain key keeps types-it and recalls-it');
 }
 
@@ -4416,4 +4416,10 @@ setAngle('RAD');
   assert(/_changeMyMenu\(change, note\) \{\n\s*const \{ holder, list \} = this\._customMenu\(\);\n\s*if \(list !== undefined && !isList\(list\)\)[^\n]*flashError[^\n]*\n\s*const changed = change\(list\);\n\s*if \(!changed\) return false;\n\s*const store = \(\) => \{\n\s*this\.entry\._snapForUndo\(\);\n\s*varStoreWhereFound\(holder, changed\);/.test(appSrc)
     && appSrc.includes('return this._changeMyMenu((list) => toggledCustomMenu(list, name),'),
     'my menu: the app stores the changed list where CST (or the variable CST names) lives, as one undoable step, and refuses a CST that holds something other than a list');
+  assert(appSrc.includes("[{ text: `Type ${label}`, mark: '⇦', run: typeIt }, { text: `Recall ${label}`, mark: '⇨', run: recallIt }]")
+    && appSrc.includes("onHold: (anchor) => this._heldKeyMenu([...layers, { text: 'Remove from my menu', mark: '', run: () => this._dropMyMenuKey(item, index, label) }], anchor, label),")
+    && appSrc.includes('onPressL: shifted ? press(left) : typeIt,') && appSrc.includes('onPressR: shifted ? press(right) : recallIt,'),
+    'CST keys: a held finger offers the shift layers, which the hidden keypad has no keys for (Type and Recall for a plain key, the pair\'s own actions for a { label action } one), and Remove from my menu');
+  assert(appSrc.includes('list?.items[index] === item ? RList(list.items.filter((_, i) => i !== index)) : null'),
+    'CST keys: Remove takes out that key only when it is still the item the menu was drawn from');
 }
