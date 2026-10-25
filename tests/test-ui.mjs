@@ -3639,7 +3639,7 @@ setAngle('RAD');
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/if \(this\.pendingEdit\?\.kind === 'level' && this\.stack\.peek\(this\.pendingEdit\.level\) !== this\.pendingEdit\.value\) this\._followEdit\(\);/.test(appSrc)
-    && /_followEdit\(\) \{\s*const \{ value \} = this\.pendingEdit;\s*let level = 0;\s*for \(let n = 1; n <= this\.stack\.depth && !level; n\+\+\) if \(this\.stack\.peek\(n\) === value\) level = n;\s*this\.pendingEdit = level \? \{ \.\.\.this\.pendingEdit, level, label: `Editing level \$\{level\}` \} : null;\s*this\.input\.render\(\);\s*this\.renderStatus\(\);/.test(appSrc)
+    && /_followEdit\(\) \{\s*const level = this\._levelOf\(this\.pendingEdit\.value\);\s*this\.pendingEdit = level \? \{ \.\.\.this\.pendingEdit, level, label: `Editing level \$\{level\}` \} : null;\s*this\.input\.render\(\);\s*this\.renderStatus\(\);\s*\}\s*_levelOf\(value\) \{\s*for \(let n = 1; n <= this\.stack\.depth; n\+\+\) if \(this\.stack\.peek\(n\) === value\) return n;\s*return 0;/.test(appSrc)
     && /writerCommit\(value\) \{\s*if \(this\.entry\.buffer\.trim\(\)\) this\.entry\.enter\(\);\s*const edit = this\.pendingEdit;/.test(appSrc),
     "a level edit follows its value when other levels are moved, swiped away or pushed, so Enter still replaces it and minimal view's pencil names its new level; it ends, pencil and all, only when the value leaves the stack");
 }
@@ -4173,4 +4173,13 @@ setAngle('RAD');
     'menu place: the folder is opened by its own key, and a saved page past the last one shows the last');
   assert(/this\.showMenu\(this\.prefs\.menu \?\? \(varOrder\(\)\.length \? 'VARS' : 'STACK'\), \{ remember: false \}\);\n\s*this\._restoreMenuPlace\(\);\n\s*this\._installMenuPlace\(\);/.test(appSrc),
     'menu place: the place is restored right after the first menu is shown, and kept from then on');
+}
+
+// An edit begun with text on the command line: the line is entered first, so the edit is aimed again at where the level is now
+// (or the variable's new value) and gives up, with a note, when the line took it away.
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/_beginEdit\(picked\) \{\n\s*if \(this\.entry\.buffer\.trim\(\)\) this\.commitEntry\(\);\n\s*if \(this\.entry\.buffer\.trim\(\)\) return;\n\s*const edit = this\._settleEdit\(picked\);\n\s*if \(!edit\) \{\n\s*this\.toast\(picked\.kind === 'var' \? `\$\{picked\.name\} is gone, so there is nothing to edit\.` : 'That level is gone, so there is nothing to edit\.'\);\n\s*return;\n\s*\}\n\s*const \{ value \} = edit;/.test(appSrc)
+    && /_settleEdit\(edit\) \{\n\s*if \(edit\.kind === 'var'\) \{\n\s*const value = varRecall\(edit\.name\);\n\s*return value === undefined \? null : \{ \.\.\.edit, value \};\n\s*\}\n\s*const level = this\._levelOf\(edit\.value\);\n\s*return level \? \{ \.\.\.edit, level, label: `Editing level \$\{level\}` \} : null;/.test(appSrc),
+    'edit: a line entered before the edit starts moves the level or stores the variable, so the edit is aimed at where the value is now; if the line took it away there is a note and no edit');
 }

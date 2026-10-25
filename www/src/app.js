@@ -1445,12 +1445,15 @@ class App {
 
   // A level moved, dropped or pushed past the one being edited takes the edit along; it ends only when its value leaves the stack.
   _followEdit() {
-    const { value } = this.pendingEdit;
-    let level = 0;
-    for (let n = 1; n <= this.stack.depth && !level; n++) if (this.stack.peek(n) === value) level = n;
+    const level = this._levelOf(this.pendingEdit.value);
     this.pendingEdit = level ? { ...this.pendingEdit, level, label: `Editing level ${level}` } : null;
     this.input.render();
     this.renderStatus();
+  }
+
+  _levelOf(value) {
+    for (let n = 1; n <= this.stack.depth; n++) if (this.stack.peek(n) === value) return n;
+    return 0;
   }
 
   editVariable(name, { line = false } = {}) {
@@ -1459,9 +1462,14 @@ class App {
     this._beginEdit({ kind: 'var', name, value, line, label: `Editing ${name}` });
   }
 
-  _beginEdit(edit) {
+  _beginEdit(picked) {
     if (this.entry.buffer.trim()) this.commitEntry();
     if (this.entry.buffer.trim()) return;
+    const edit = this._settleEdit(picked);
+    if (!edit) {
+      this.toast(picked.kind === 'var' ? `${picked.name} is gone, so there is nothing to edit.` : 'That level is gone, so there is nothing to edit.');
+      return;
+    }
     const { value } = edit;
     const mode = edit.line ? 'rpl'
       : isSymbolic(value) || (isName(value) && edit.kind === 'level') ? 'equation'
@@ -1488,6 +1496,16 @@ class App {
     this._writer().restore(saved);
     this.input.render();
     this.renderStatus();
+  }
+
+  // The line entered first can push levels past the one picked, or store into the variable picked.
+  _settleEdit(edit) {
+    if (edit.kind === 'var') {
+      const value = varRecall(edit.name);
+      return value === undefined ? null : { ...edit, value };
+    }
+    const level = this._levelOf(edit.value);
+    return level ? { ...edit, level, label: `Editing level ${level}` } : null;
   }
 
   _endEdit() {
