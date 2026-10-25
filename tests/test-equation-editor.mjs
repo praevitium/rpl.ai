@@ -552,6 +552,18 @@ function replaceSelection(state, ast) {
 }
 
 {
+  const typed = (...faces) => {
+    try { return textOf(press(emptyEquation(), ...faces)); } catch (error) { return error.message; }
+  };
+  assert(typed('2', 'π', 'r') === '2*π*r' && typed('π', 'r', 'x²') === 'π*r^2' && typed('x', 'π', 'y') === 'x*π*y',
+    'EQW a letter typed after π starts a name of its own, so 2πr is 2*π*r and not the name πr');
+  assert(typed('const:i', 'x') === 'i*x' && typed('const:i', '2') === 'i*2' && typed('∞', 'm') === '∞*m',
+    'EQW the same after i and ∞, and a digit after i multiplies as well');
+  assert(typed('x', '2') === 'x2' && typed('A', 'B') === 'AB' && typed('e', 'x') === 'ex',
+    'EQW letters and digits still join a name typed with the letter keys');
+}
+
+{
   assertThrows(() => toAst(press(emptyEquation(), 'x', '=', '3', '=', '4').root), /Only one = or comparison/,
     'EQW refuses x=3=4 instead of pushing x=3');
   assert(textOf(press(emptyEquation(), 'x', '1')) === 'x1' && textOf(press(emptyEquation(), 'x', '1', '2', '+', 'y')) === 'x12 + y',

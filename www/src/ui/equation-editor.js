@@ -111,6 +111,9 @@ const GREEK_WORDS = Object.freeze({
 
 function numLeaf(text) { return Object.freeze({ t: 'num', text: String(text) }); }
 function nameLeaf(text) { return Object.freeze({ t: 'name', text: String(text) }); }
+// π, ∞ and i typed from their own keys: letters and digits typed after them start a name of their own.
+function constantLeaf(text) { return Object.freeze({ t: 'name', text: String(text), constant: true }); }
+const isConstantLeaf = (item) => item.constant || item.text === 'π' || item.text === '∞';
 function opTok(op) { return Object.freeze({ t: 'op', op }); }
 function freezeRow(items) { return Object.freeze(items.slice()); }
 function marked(item, how) { return Object.freeze({ ...item, mark: how }); }
@@ -908,9 +911,9 @@ function typeGlyph(state, text, kind) {
       : `${item.text}${text}`;
     if (next && /^\d*\.?\d*(?:E-?\d*)?$/.test(next)) return putLeaf(typed, numLeaf(next));
   }
-  if (kind === 'name' && item.t === 'name') return putLeaf(typed, nameLeaf(item.text + text));
+  if (kind === 'name' && item.t === 'name' && !isConstantLeaf(item)) return putLeaf(typed, nameLeaf(item.text + text));
   // A digit after a typed name joins it, so X1 is a name as on the HP, not X*1.
-  if (kind === 'num' && /^\d$/.test(text) && item.t === 'name' && /^[A-Za-z]/.test(item.text)) return putLeaf(typed, nameLeaf(item.text + text));
+  if (kind === 'num' && /^\d$/.test(text) && item.t === 'name' && /^[A-Za-z]/.test(item.text) && !isConstantLeaf(item)) return putLeaf(typed, nameLeaf(item.text + text));
   return implicitMul(typed, leaf);
 }
 
@@ -961,13 +964,10 @@ function startUnit(state) {
 
 function typeConstant(state, text) {
   const target = state.target;
-  if (target.mode === 'select') {
-    const widened = insertAfterSelection(state, [opTok('*'), holeMark('insert')]);
-    return typeGlyph(widened, text, 'name');
-  }
+  if (target.mode === 'select') return typeConstant(insertAfterSelection(state, [opTok('*'), holeMark('insert')]), text);
   const item = getItem(state.root, target.path);
-  if (target.mode === 'clear' || item.t === 'hole') return putLeaf(state, nameLeaf(text));
-  return implicitMul(state, nameLeaf(text));
+  if (target.mode === 'clear' || item.t === 'hole') return putLeaf(state, constantLeaf(text));
+  return implicitMul(state, constantLeaf(text));
 }
 
 function insertAfterSelection(state, extras) {
