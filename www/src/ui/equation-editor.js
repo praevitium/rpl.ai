@@ -615,6 +615,9 @@ function itemsAreRel(items) {
   return items.some(item => item.t === 'op' && RELS.has(item.op));
 }
 
+// A selection a factor can join only inside a group: a sum or comparison, but not one term with its minus.
+const needsGroup = (items) => itemsAreSum(items.slice(1)) || itemsAreRel(items);
+
 function outsideOp(row, from, to, op) {
   return row.some((item, index) => (index < from || index > to) && item.t === 'op' && item.op === op);
 }
@@ -972,6 +975,10 @@ function typeConstant(state, text) {
 
 function insertAfterSelection(state, extras) {
   const { rowKey, from, to } = spanOf(state);
+  const span = targetItems(state);
+  if (needsGroup(span)) {
+    return replaceSpan(state, rowKey, from, to, [makeParen(span, false), ...extras], null, '*');
+  }
   const row = rowByKey(state.root, rowKey).slice();
   row.splice(to + 1, 0, ...extras);
   return finishMarked(state, setRow(state.root, rowKey, row));
@@ -1084,7 +1091,7 @@ function operate(state, op) {
   }
   const { rowKey, from, to } = spanOf(state);
   const row = rowByKey(state.root, rowKey);
-  if (op === '*' && itemsAreSum(row.slice(from, to + 1))) {
+  if (op === '*' && needsGroup(targetItems(state))) {
     return replaceSpan(state, rowKey, from, to, [makeParen(row.slice(from, to + 1), false), opTok('*'), holeMark('insert')], null, op);
   }
   const cover = findCover(row, from, to);

@@ -564,6 +564,23 @@ function replaceSelection(state, ast) {
 }
 
 {
+  const typed = (...faces) => {
+    try { return textOf(press(emptyEquation(), ...faces)); } catch (error) { return error.message; }
+  };
+  const sum = ['x', '+', 'y', '▲', '▲'];
+  assert(typed(...sum, 'z') === '(x + y)*z' && typed(...sum, '2') === '(x + y)*2' && typed(...sum, 'π') === '(x + y)*π'
+    && typed(...sum, '½') === '(x + y)*(1/2)',
+    'EQW a letter, digit, π or fraction typed after a selected sum multiplies the whole sum, as ×, ÷ and ^ do');
+  assert(typed('x', '−', 'y', '▲', '▲', 'z') === 'x - y*z' && typed('x', '−', 'y', '▲', '▲', '×', '2') === 'x - y*2'
+    && typed('2', '×', 'x', '▲', '▲', 'z') === '2*x*z' && typed('x', '+', 'y', '▲', 'z') === 'x + y*z',
+    'EQW one term with its minus, a product and a lone last item take the factor without a group');
+  assert(/one side of the equation/.test(typed('x', '=', 'y', '+', '1', '▲', '▲', '▲', 'π'))
+    && /one side of the equation/.test(typed('x', '=', 'y', '+', '1', '▲', '▲', '▲', '×', '2'))
+    && typed('x', '=', 'y', '+', '1', '▲', '▲', 'π') === 'x = (y + 1)*π',
+    'EQW a whole equation selected refuses a factor, as it refuses ÷ and ^, instead of building (x = y)*2, which cannot be read back');
+}
+
+{
   assertThrows(() => toAst(press(emptyEquation(), 'x', '=', '3', '=', '4').root), /Only one = or comparison/,
     'EQW refuses x=3=4 instead of pushing x=3');
   assert(textOf(press(emptyEquation(), 'x', '1')) === 'x1' && textOf(press(emptyEquation(), 'x', '1', '2', '+', 'y')) === 'x12 + y',
