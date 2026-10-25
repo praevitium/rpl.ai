@@ -2148,6 +2148,8 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   /* A phone's row leaves a description four words on one line; two lines tell commands apart, and finish what the highlighted one would do,
      without a lone word such as a signature's last z on the second. */
   .pal-row .d, .pal-row .pv, .cmd-row .ds { white-space: normal; text-wrap: pretty; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  /* A title longer than the row, such as "Greatest common divisor (EUC)" at 280 px, takes a second line before an ellipsis hides the name that follows. */
+  :root:not([data-keyboard]) .pal-row .t { white-space: normal; text-wrap: balance; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
   /* With no hover to show a tile's title, its name takes two lines, where "speed of li…" was all a phone showed. */
   .cgrid span { white-space: normal; text-wrap: balance; text-align: center; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
   /* Finger-sized tap targets for the writers' keys and the command line's buttons (W-L30). The

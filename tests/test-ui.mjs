@@ -4316,3 +4316,10 @@ setAngle('RAD');
     assert(!stored && results.every((r) => r === null), `example program ${example.name} stores and gives what its row promises (${results.filter(Boolean).join('; ') || stored || 'ok'})`);
   }
 }
+
+// A command-search title longer than its row takes a second line on a phone, where an ellipsis cut "Greatest common divisor (EUC)" to "(E…".
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/:root:not\(\[data-keyboard\]\) \.pal-row \.t \{ white-space: normal;[^}]*-webkit-line-clamp: 2;/.test(css),
+    'command search: on a phone a title longer than its row wraps to a second line, as its description does, and with the keyboard up the rows stay one line');
+}
