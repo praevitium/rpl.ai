@@ -1908,6 +1908,8 @@ export function _evalSymbolic(v, keeps = () => false, gather = true) {
     ? null
     : (_op, args, result) => _approxGate(result, args);
   const evalNode = (ast) => algebraEvalAst(ast, resolve, _angleAwareFnEval, binGate);
+  const element = _indexedValue(v.expr, evalNode);
+  if (element !== undefined) return approx && isInteger(element) ? Real(element.value.toString()) : element;
   const evaluated = _foldUnits(evalNode(_expandUserCalls(v.expr)), evalNode);
   const trig = approx ? evaluated : _radicalRewrite(exactTrigRewrite(evaluated, _calcState.angle), gather);
   const folded = trig === evaluated ? evaluated : evalNode(trig);
@@ -2147,6 +2149,59 @@ function _callUserProgram(name, values) {
   return isSymbolic(result) && typeof result.expr === 'object' ? result.expr : null;
 }
 
+// The AUR's name(index): a list or vector variable called like a user function gives the element at n, a matrix the one at
+// n,m. A variable of another kind, or an index that is not a whole number, leaves the call as it is.
+function _indexedTarget(name) {
+  if (isKnownFunction(name)) return null;
+  const bound = _localLookup(name) ?? varRecall(name);
+  const arity = isList(bound) || isVector(bound) ? 1 : isMatrix(bound) ? 2 : 0;
+  return arity ? { bound, arity } : null;
+}
+
+const _indexObject = (indexes) => (indexes.length === 1 ? Integer(BigInt(indexes[0])) : RList(indexes.map((i) => Integer(BigInt(i)))));
+
+function _indexedElement(name, indexes) {
+  const target = _indexedTarget(name);
+  if (!target || indexes.length !== target.arity || !indexes.every(Number.isSafeInteger)) return undefined;
+  const s = new Stack();
+  s.push(target.bound);
+  s.push(_indexObject(indexes));
+  lookup('GET').fn(s);
+  return s.pop();
+}
+
+// Inside a larger algebraic the element has to be a number to fold, as F(3) does.
+function _indexedNumber(name, indexes) {
+  const element = _indexedElement(name, indexes);
+  return isReal(element) || isInteger(element) || isRational(element) ? _toAst(element) : null;
+}
+
+// 'A(3)' on its own gives the element whatever it is, a string or a list as well as a number.
+function _indexedValue(ast, evalNode) {
+  if (ast.kind !== 'fn' || !_indexedTarget(ast.name)) return undefined;
+  const indexes = ast.args.map((a) => evalNode(_expandUserCalls(a)));
+  return indexes.every((n) => n.kind === 'num') ? _indexedElement(ast.name, indexes.map((n) => Number(n.value))) : undefined;
+}
+
+// obj 'A(3)' STO and obj 'M(2,3)' STO replace an element, as PUT does. False when the name holds no such array.
+export function _storeIndexed(symbolic, value) {
+  const call = symbolic.expr;
+  if (call?.kind !== 'fn' || !_indexedTarget(call.name)) return false;
+  const indexes = call.args.map((a) => {
+    const n = _evalSymbolic(Symbolic(a), undefined, false);
+    if (isInteger(n)) return Number(n.value);
+    if (isReal(n)) return n.value.toNumber();
+    throw new RPLError('Bad argument type');
+  });
+  if (_indexedElement(call.name, indexes) === undefined) return false;
+  const s = new Stack();
+  s.push(Name(call.name));
+  s.push(_indexObject(indexes));
+  s.push(value);
+  lookup('PUT').fn(s);
+  return true;
+}
+
 const _numberValue = (x, real) => (!real && Number.isSafeInteger(x) ? Integer(BigInt(x)) : Real(x));
 
 
@@ -2217,6 +2272,8 @@ function _angleAwareFnEval(name, args, real = false) {
     case 'ACOS': result = fromRadians(Math.acos(x)); break;
     case 'ATAN': result = fromRadians(Math.atan(x)); break;
     default: {
+      const element = _indexedNumber(name, args);
+      if (element) return element;
       const call = _callUserProgram(name, args.map((a) => _numberValue(a, real)));
       if (call) return call;
       result = algebraDefaultFnEval(name, args) ?? _commandCall(name, args, real);

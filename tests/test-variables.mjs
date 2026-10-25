@@ -2212,3 +2212,27 @@ clearAllUserFlags();
   assert(s.depth === 1 && format(s.peek()) === '5' && format(varRecall('V7')) === '5', '▶ stores and leaves the object on the stack');
   runLine("{ Y7 W7 V7 } PURGE 'D7' PGDIR");
 }
+
+// The AUR's STO: obj 'name(index)' STO replaces one element, and name(index) in an algebraic reads it.
+{
+  resetHome();
+  const top = (line) => format(runLine(line).peek());
+  runLine("{ 5 6 7 } 'L' STO [ 5 6 7 ] 'V' STO [[ 1 2 ][ 3 4 ]] 'M' STO");
+  assert(top("'L(2)' EVAL") === '6' && top("'V(3)' EVAL") === '7' && top("'M(2,1)' EVAL") === '3',
+    "'A(n)' and 'M(n,m)' give an element of a list, a vector and a matrix");
+  assert(top("'M(1,2)+M(2,2)*2' EVAL") === '10', 'an element folds into a larger algebraic');
+  assert(top("'L(1+1)' EVAL") === '6', 'the index may be an expression');
+  runLine('9 \'L(2)\' STO 8 \'V(1)\' STO 7 \'M(2,2)\' STO');
+  assert(format(varRecall('L')) === '{ 5 9 7 }' && format(varRecall('V')) === '[ 8 6 7 ]' && format(varRecall('M')) === '[[ 1 2 ][ 3 7 ]]',
+    "STO into 'A(n)' and 'M(n,m)' replaces that element and leaves the rest");
+  runLine('"text" \'L(3)\' STO');
+  assert(top("'L(3)' EVAL") === '"text"', 'a list element that is not a number comes back as it is');
+  assert(top('0 « 1 2 FOR I 1 2 FOR J \'M(I,J)\' EVAL + NEXT NEXT » EVAL') === '13', 'locals as the indexes, in a loop over a matrix');
+  runLine("{ 0 0 0 } 'Q' STO « 1 3 FOR K K SQ 'Q(K)' STO NEXT » EVAL");
+  assert(format(varRecall('Q')) === '{ 1 4 9 }', 'locals as the indexes, in a loop that stores');
+  assertThrows(() => runLine("9 'L(4)' STO"), /Bad argument value/, 'an index past the end is Bad argument value');
+  assertThrows(() => runLine("'L(4)' EVAL"), /Bad argument value/, 'and so is reading one');
+  assertThrows(() => runLine("9 'NOSUCH8(1)' STO"), /Bad argument type|Invalid name/, 'a name that holds no array is still no place to store');
+  assert(top("'NOSUCH8(2)' EVAL") === '`NOSUCH8(2)`', 'a call of a name that holds no array stays as it was');
+  resetHome();
+}

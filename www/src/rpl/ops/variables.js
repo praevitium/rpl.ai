@@ -4,7 +4,7 @@ import { isList, RList, Name, isInteger, isReal, isName, isString, isDirectory, 
 import { Bin as AstBin, Var as AstVar } from '../algebra.js';
 import { archiveBackup, restoreBackup, portContents, pruneBackups } from '../persist.js';
 import { register, lookup } from './registry.js';
-import { _astToRplValue, _coerceDirName, _coerceStorableName, _hp50TypeCode, _toAst, recallVar, storeVar, bindLocals, unbindLocals } from './internal.js';
+import { _astToRplValue, _coerceDirName, _coerceStorableName, _hp50TypeCode, _storeIndexed, _toAst, recallVar, storeVar, bindLocals, unbindLocals } from './internal.js';
 import { isPict, storePict, purgePict } from './graphics.js';
 
 
@@ -40,7 +40,10 @@ function _forEachName(v, fn) {
 
 register('STO', (s) => {
   const [value, nameVal] = s.popN(2);
-  _forEachName(nameVal, (n) => (isPict(n) ? storePict(value) : _store(_coerceStorableName(n), value)));
+  _forEachName(nameVal, (n) => {
+    if (isPict(n)) storePict(value);
+    else if (!(isSymbolic(n) && _storeIndexed(n, value))) _store(_coerceStorableName(n), value);
+  });
 }, { category: 'Variables / directories', categoryOrder: 0, label: "STO" });
 
 // ▶ is STO that leaves the object on the stack, as the AUR's diagram shows (obj 'name' → obj).
