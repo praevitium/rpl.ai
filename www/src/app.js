@@ -17,7 +17,7 @@ import { Sheets } from './ui/sheets.js';
 import { Tour } from './ui/tour.js';
 import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
-import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, INTEGER_GROUPS, TRIG_GROUPS, LIST_GROUPS, TIME_GROUPS, KEY_LABELS, VECTOR_KEYS, TOOL_KEYS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, CONSTANT_TITLES, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel, inCustomMenu, toggledCustomMenu } from './ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, INTEGER_GROUPS, TRIG_GROUPS, LIST_GROUPS, TIME_GROUPS, KEY_LABELS, VECTOR_KEYS, TOOL_KEYS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, CONSTANT_TITLES, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel, inCustomMenu, toggledCustomMenu, movedCustomMenu } from './ui/menus.js';
 import { convertValue } from './rpl/units.js';
 import { MODES, modeCommandPreview } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
@@ -2581,6 +2581,10 @@ class App {
     return this._changeMyMenu((list) => (list?.items[index] === item ? RList(list.items.filter((_, i) => i !== index)) : null), `Removed ${label} from your menu (CST)`);
   }
 
+  _moveMyMenuKey(item, index, label, delta) {
+    return this._changeMyMenu((list) => movedCustomMenu(list, index, item, delta), `Moved ${label} ${delta < 0 ? 'left' : 'right'} in your menu (CST)`);
+  }
+
   _customMenuSlots(list) {
     return list.items.map((item, index) => {
       const { label, main, left, right } = customMenuEntry(item);
@@ -2596,13 +2600,15 @@ class App {
       const layers = shifted
         ? [[left, '⇦'], [right, '⇨']].filter(([t]) => t).map(([t, mark]) => ({ text: customMenuLabel(t), mark, run: press(t) }))
         : [{ text: `Type ${label}`, mark: '⇦', run: typeIt }, { text: `Recall ${label}`, mark: '⇨', run: recallIt }];
+      const moves = [[-1, 'Move left', index > 0], [1, 'Move right', index < list.items.length - 1]]
+        .filter(([, , room]) => room).map(([delta, text]) => ({ text, mark: '', run: () => this._moveMyMenuKey(item, index, label, delta) }));
       return {
         label,
         title: `${label}${shifted ? `${hint('↰', left)}${hint('↱', right)}` : ' · ↰ types it · ↱ recalls it'} · hold for more`,
         onPress: press(main),
         onPressL: shifted ? press(left) : typeIt,
         onPressR: shifted ? press(right) : recallIt,
-        onHold: (anchor) => this._heldKeyMenu([...layers, { text: 'Remove from my menu', mark: '', run: () => this._dropMyMenuKey(item, index, label) }], anchor, label),
+        onHold: (anchor) => this._heldKeyMenu([...layers, ...moves, { text: 'Remove from my menu', mark: '', run: () => this._dropMyMenuKey(item, index, label) }], anchor, label),
       };
     });
   }

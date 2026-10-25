@@ -25,7 +25,7 @@ import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '
 import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName, COMPACT_KEYS, holdToRepeat, hpKeyCode, typedKeyCode } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { unitInfo, UNIT_CATALOG, parseUnitExpr, sameDims } from '../www/src/rpl/units.js';
-import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, unitConversions, customMenuEntry, customMenuLabel, inCustomMenu, toggledCustomMenu } from '../www/src/ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, unitConversions, customMenuEntry, customMenuLabel, inCustomMenu, toggledCustomMenu, movedCustomMenu } from '../www/src/ui/menus.js';
 import { commandWordAt, commandHelpText } from '../www/src/ui/hover-help.js';
 import { holdToClear, holdForLines } from '../www/src/ui/input-area.js';
 import { parseCommandReference } from '../www/src/ui/command-reference.js';
@@ -4417,7 +4417,7 @@ setAngle('RAD');
     && appSrc.includes('return this._changeMyMenu((list) => toggledCustomMenu(list, name),'),
     'my menu: the app stores the changed list where CST (or the variable CST names) lives, as one undoable step, and refuses a CST that holds something other than a list');
   assert(appSrc.includes("[{ text: `Type ${label}`, mark: '⇦', run: typeIt }, { text: `Recall ${label}`, mark: '⇨', run: recallIt }]")
-    && appSrc.includes("onHold: (anchor) => this._heldKeyMenu([...layers, { text: 'Remove from my menu', mark: '', run: () => this._dropMyMenuKey(item, index, label) }], anchor, label),")
+    && appSrc.includes("onHold: (anchor) => this._heldKeyMenu([...layers, ...moves, { text: 'Remove from my menu', mark: '', run: () => this._dropMyMenuKey(item, index, label) }], anchor, label),")
     && appSrc.includes('onPressL: shifted ? press(left) : typeIt,') && appSrc.includes('onPressR: shifted ? press(right) : recallIt,'),
     'CST keys: a held finger offers the shift layers, which the hidden keypad has no keys for (Type and Recall for a plain key, the pair\'s own actions for a { label action } one), and Remove from my menu');
   assert(appSrc.includes('list?.items[index] === item ? RList(list.items.filter((_, i) => i !== index)) : null'),
@@ -4456,4 +4456,18 @@ setAngle('RAD');
   assert(at > css.indexOf('@media (max-height: 330px) {\n  :root[data-keyboard] .input-top')
     && css.slice(at).startsWith('@media (max-height: 400px) {\n  :root[data-keyboard]:not([data-view="minimal"]) .app:has(.bn) { grid-template-rows: minmax(0, 1fr); }\n  :root[data-keyboard]:not([data-view="minimal"]) .app:has(.bn) :is(.input-top, .input-hint, .mx-foot, .status-line, .appbar, .menubar, .st-more) { display: none; }\n}'),
     'keyboard up, keypad hidden: a banner (an error, PROMPT, INPUT or MSGBOX) over a long line hides the app bar, writer tabs and soft keys in a window up to 400 px tall, as under 330; the soft keys sat 4 to 37 px under the edge of a 361 to 399 px window');
+}
+
+// A held CST key moves left or right.
+{
+  const keys = RList([Name('A'), Name('B'), Name('C')]);
+  const [a, b, c] = keys.items;
+  assert(format(movedCustomMenu(keys, 1, b, -1)) === '{ B A C }' && format(movedCustomMenu(keys, 1, b, 1)) === '{ A C B }' && format(keys) === '{ A B C }',
+    'my menu: a key moves one place left or right by swapping with its neighbour, and the list it came from stays as it was');
+  assert(movedCustomMenu(keys, 0, a, -1) === null && movedCustomMenu(keys, 2, c, 1) === null && movedCustomMenu(keys, 1, a, 1) === null && movedCustomMenu(undefined, 0, a, 1) === null,
+    'my menu: the first key has no room to the left, the last none to the right, and a key that is no longer where the menu was drawn, or a missing CST, moves nothing');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(appSrc.includes("const moves = [[-1, 'Move left', index > 0], [1, 'Move right', index < list.items.length - 1]]")
+    && appSrc.includes('return this._changeMyMenu((list) => movedCustomMenu(list, index, item, delta), `Moved ${label} ${delta < 0 ? \'left\' : \'right\'} in your menu (CST)`);'),
+    "CST keys: a held key offers Move left unless it is the first and Move right unless it is the last, each one undoable step in CST");
 }

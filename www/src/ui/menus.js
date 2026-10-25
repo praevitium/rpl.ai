@@ -203,6 +203,16 @@ export function toggledCustomMenu(list, name) {
   return RList(inCustomMenu(list, name) ? items.filter((item) => !(isName(item) && item.id === name)) : [...items, Name(name)]);
 }
 
+// A CST key moved one place left (-1) or right (1); null when the list no longer holds that item there or has no room that way.
+export function movedCustomMenu(list, index, item, delta) {
+  const items = isList(list) ? list.items : [];
+  const to = index + delta;
+  if (items[index] !== item || to < 0 || to >= items.length) return null;
+  const moved = [...items];
+  [moved[index], moved[to]] = [moved[to], moved[index]];
+  return RList(moved);
+}
+
 // The HP's custom menu takes an object on its own, { "label" action } or { "label" { action ⇦action ⇨action } }.
 export function customMenuEntry(item) {
   const pair = !isTagged(item) && isList(item) && item.items.length === 2 ? item.items : null;
