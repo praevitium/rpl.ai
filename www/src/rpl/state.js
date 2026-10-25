@@ -592,6 +592,19 @@ export function homeStore(id, value) {
   _emit();
 }
 
+// STO where a recall finds the name, up the path, so a variable such as CST changes in the folder it lives in; HOME when it has none.
+export function varStoreWhereFound(id, value) {
+  const key = String(id);
+  for (let d = state.current; d; d = d.parent) {
+    if (d.entries.has(key)) {
+      d.entries.set(key, value);
+      _emit();
+      return;
+    }
+  }
+  homeStore(key, value);
+}
+
 // Map has no in-place reorder, so the directory gets a rebuilt Map.
 function _setEntries(dir, pairs) {
   dir.entries = new Map(pairs);

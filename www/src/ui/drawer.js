@@ -208,6 +208,8 @@ const menuItem = (act, ico, label, hint = '') => `<button type="button" class="o
 const DRAWER_MAX_WIDTH = 720;
 const TAB_FADE = 36;
 
+const myMenuButton = (name, inMenu) => `<button type="button" class="btn ghost" data-dw="ref-menu" data-in="${inMenu}" title="${inMenu ? 'Take' : 'Put'} ${escapeHtml(name)} ${inMenu ? 'out of' : 'in'} your custom menu: the CST key shows it as a key of its own">${icon(inMenu ? 'minus' : 'plus', 'sm')}${inMenu ? 'Remove from my menu' : 'Add to my menu'}</button>`;
+
 // Date and time each keep together, the time moving to a line of its own in a narrow drawer rather than being cut.
 const savedWhen = (savedAt) => {
   const at = new Date(savedAt);
@@ -245,6 +247,7 @@ export class Drawers {
     this._bindVarsDrag();
     subscribeState(() => {
       if (this.current === 'vars') this._renderVarsList();
+      else if (this.current === 'catalog' && this.cat.ref) this._syncMyMenu();
     });
     subscribeBackups(() => { if (this.current === 'vars') this._renderBackups(); });
     app.entry.subscribeHistory(() => { if (this.current === 'history') this._renderHistoryList(); });
@@ -440,6 +443,16 @@ export class Drawers {
 
   _body() { return this.el.querySelector('.dw-body'); }
 
+  // The reference page's menu button follows CST, which Undo and a program's STO change as well.
+  _syncMyMenu() {
+    const button = this._body().querySelector('[data-dw="ref-menu"]');
+    const inMenu = this.app.inMyMenu(this.cat.ref);
+    if (!button || button.dataset.in === String(inMenu)) return;
+    const focused = document.activeElement === button;
+    button.outerHTML = myMenuButton(this.cat.ref, inMenu);
+    if (focused) this._body().querySelector('[data-dw="ref-menu"]')?.focus();
+  }
+
   _renderBody() {
     const body = this._body();
     if (!body) return;
@@ -550,7 +563,7 @@ export class Drawers {
       ${entry ? `<div class="sum">${escapeHtml(shortDescription(entry, 400))}</div>` : ''}
       ${note ? `<div class="sum ref-app">${escapeHtml(note)}</div>` : ''}
       ${sig ? `<div><div class="lbl">Stack</div><pre class="ref-sig">${escapeHtml(entry.io.replace(/`/g, "'"))}</pre></div>` : ''}
-      <div class="acts">${runnable ? `<button type="button" class="btn pri" data-dw="ref-run" data-cmd="${escapeHtml(name)}">${icon('play', 'sm')}Run ${escapeHtml(name)}</button>` : ''}${runnable || isSyntaxWord(name) ? `<button type="button" class="btn${runnable ? '' : ' pri'}" data-dw="ref-insert">Insert in the command line</button>` : `<span class="badge">Not available in rpl.ai</span>`}<button type="button" class="btn ghost" data-dw="ref-ask">${icon('spark', 'sm')}Ask about it</button></div>
+      <div class="acts">${runnable ? `<button type="button" class="btn pri" data-dw="ref-run" data-cmd="${escapeHtml(name)}">${icon('play', 'sm')}Run ${escapeHtml(name)}</button>` : ''}${runnable || isSyntaxWord(name) ? `<button type="button" class="btn${runnable ? '' : ' pri'}" data-dw="ref-insert">Insert in the command line</button>` : `<span class="badge">Not available in rpl.ai</span>`}${runnable ? myMenuButton(name, this.app.inMyMenu(name)) : ''}<button type="button" class="btn ghost" data-dw="ref-ask">${icon('spark', 'sm')}Ask about it</button></div>
       <div class="ref-doc"></div>
     </div>`;
     // Enter in the search box opened this page and took the box away, so the keyboard carries on from its first action.
@@ -790,6 +803,7 @@ export class Drawers {
         return;
       case 'ref-run': app.runCommandFromUI(this.cat.ref); this._reveal(); return;
       case 'ref-insert': this._insertReferenced(); this._reveal(); return;
+      case 'ref-menu': app.toggleMyMenu(this.cat.ref); return;
       case 'ref-ask': app.askAssistant(`Explain the ${this.cat.ref} command: what it takes from the stack, what it returns, and a short example I can try.`); return;
       case 'char': this._insertWithMore(t.dataset.text, () => this.insertText(t.dataset.text), `[data-dw="char"][data-text="${CSS.escape(t.dataset.text)}"]`); return;
       case 'hist-recall': app.recallLine(t.dataset.text, 'the line from History'); this._reveal(); return;

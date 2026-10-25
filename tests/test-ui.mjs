@@ -25,7 +25,7 @@ import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '
 import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName, COMPACT_KEYS, holdToRepeat, hpKeyCode, typedKeyCode } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
 import { unitInfo, UNIT_CATALOG, parseUnitExpr, sameDims } from '../www/src/rpl/units.js';
-import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, unitConversions, customMenuEntry, customMenuLabel } from '../www/src/ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, unitConversions, customMenuEntry, customMenuLabel, inCustomMenu, toggledCustomMenu } from '../www/src/ui/menus.js';
 import { commandWordAt, commandHelpText } from '../www/src/ui/hover-help.js';
 import { holdToClear, holdForLines } from '../www/src/ui/input-area.js';
 import { parseCommandReference } from '../www/src/ui/command-reference.js';
@@ -2672,7 +2672,8 @@ setAngle('RAD');
     && /showCustomMenu\(\{ commit = true, refresh = false \} = \{\}\) \{\s*if \(commit && !refresh && this\.entry\.buffer/.test(appSrc)
     && /this\.setMenu\(\[\], 'CST', \{ preservePage: refresh \}\);\s*if \(!refresh\) this\.toast\(/.test(appSrc) && /this\.setMenu\(this\._customMenuSlots\(list\), 'CST', \{ preservePage: refresh \}\);/.test(appSrc),
     'the CST soft keys follow CST as it changes (STO, PURGE, UNDO) while the menu shows, as the VARS keys do, keeping their page and without the empty-CST note');
-  assert(/const list = isName\(cst\) \? varRecall\(cst\.id\) : cst;/.test(appSrc), 'the custom menu follows a name stored in CST to the list it holds, as the HP does');
+  assert(/const named = isName\(cst\);\s*return \{ cst, holder: named \? cst\.id : 'CST', list: named \? varRecall\(cst\.id\) : cst \};/.test(appSrc) && /const \{ cst, list \} = this\._customMenu\(\);/.test(appSrc),
+    'the custom menu follows a name stored in CST to the list it holds, as the HP does');
   assert(/\.pop \.opt, \.pop \.grid button, \.pop \.layers button, \.ac-row \{ min-height: 40px; \}/.test(readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8')), 'autocomplete rows take a finger on touch, as the popover rows do');
   assert(/@media \(pointer: coarse\) \{[\s\S]*?\.pop \.opt b \{ white-space: normal; overflow-wrap: anywhere; \}/.test(readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8')),
     'popover rows wrap on touch, so a level menu at 280 px keeps (ECHO) and (LEVEL) in sight');
@@ -4390,4 +4391,29 @@ setAngle('RAD');
     && menus.minimal.indexOf('writer.equation:Equation writer') === menus.minimal.indexOf('palette.open:Search commands') + 1,
     'minimal view menu: Equation writer and Matrix writer follow Search commands, where the writer tabs are hidden');
   assert(!menus.full.some((entry) => entry.startsWith('writer.')), 'full view More menu: no writer rows, its tabs open the writers');
+}
+
+// The Catalog's "my menu" button puts a command in CST as a plain name, which the CST key shows as a key, and takes it out again.
+{
+  const pair = RList([Str('KEY'), Name('FACTOR')]);
+  const base = RList([Name('SOLVE'), pair]);
+  assert(inCustomMenu(base, 'SOLVE') && !inCustomMenu(base, 'SIN') && !inCustomMenu(base, 'FACTOR') && !inCustomMenu(undefined, 'SIN') && !inCustomMenu(Name('SOLVE'), 'SOLVE'),
+    "my menu: a plain name in CST's list is in the menu; a command inside a { label action } pair, a missing CST or a lone name is not");
+  const added = toggledCustomMenu(base, 'SIN');
+  assert(format(added) === '{ SOLVE { "KEY" FACTOR } SIN }' && format(base) === '{ SOLVE { "KEY" FACTOR } }', 'my menu: adding appends the name and leaves the list it came from as it was');
+  const withFactor = toggledCustomMenu(base, 'FACTOR');
+  assert(format(toggledCustomMenu(added, 'SIN')) === '{ SOLVE { "KEY" FACTOR } }', 'my menu: toggling a second time takes the name out');
+  assert(format(withFactor) === '{ SOLVE { "KEY" FACTOR } FACTOR }' && format(toggledCustomMenu(withFactor, 'FACTOR')) === format(base),
+    'my menu: a command held inside a pair counts as not there, so adding it makes a key of its own and removing takes out only that one');
+  assert(format(toggledCustomMenu(undefined, 'SIN')) === '{ SIN }' && format(toggledCustomMenu(RList([Name('SIN'), Name('COS'), Name('SIN')]), 'SIN')) === '{ COS }',
+    'my menu: with no CST the list starts as the one name, and removing takes out every copy');
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(drawerSrc.includes("${runnable ? myMenuButton(name, this.app.inMyMenu(name)) : ''}<button type=\"button\" class=\"btn ghost\" data-dw=\"ref-ask\">")
+    && drawerSrc.includes("case 'ref-menu': app.toggleMyMenu(this.cat.ref); return;")
+    && drawerSrc.includes("else if (this.current === 'catalog' && this.cat.ref) this._syncMyMenu();"),
+    "Catalog reference page: a command the app runs has Add to my menu (Remove from my menu once it is there) before Ask about it, and the label follows CST when Undo or a program changes it");
+  assert(/_changeMyMenu\(change, note\) \{\n\s*const \{ holder, list \} = this\._customMenu\(\);\n\s*if \(list !== undefined && !isList\(list\)\)[^\n]*flashError[^\n]*\n\s*const changed = change\(list\);\n\s*if \(!changed\) return false;\n\s*const store = \(\) => \{\n\s*this\.entry\._snapForUndo\(\);\n\s*varStoreWhereFound\(holder, changed\);/.test(appSrc)
+    && appSrc.includes('return this._changeMyMenu((list) => toggledCustomMenu(list, name),'),
+    'my menu: the app stores the changed list where CST (or the variable CST names) lives, as one undoable step, and refuses a CST that holds something other than a list');
 }

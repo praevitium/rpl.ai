@@ -17,7 +17,7 @@ import { Sheets } from './ui/sheets.js';
 import { Tour } from './ui/tour.js';
 import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
-import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, INTEGER_GROUPS, TRIG_GROUPS, LIST_GROUPS, TIME_GROUPS, KEY_LABELS, VECTOR_KEYS, TOOL_KEYS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, CONSTANT_TITLES, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel } from './ui/menus.js';
+import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, INTEGER_GROUPS, TRIG_GROUPS, LIST_GROUPS, TIME_GROUPS, KEY_LABELS, VECTOR_KEYS, TOOL_KEYS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, CONSTANT_TITLES, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel, inCustomMenu, toggledCustomMenu } from './ui/menus.js';
 import { convertValue } from './rpl/units.js';
 import { MODES, modeCommandPreview } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
@@ -35,7 +35,7 @@ import { toLatex } from './rpl/latex.js';
 import { hasUnits } from './rpl/algebra.js';
 import {
   state as calcState, subscribe as subscribeState,
-  varOrder, varList, varRecall, varStore, currentPath,
+  varOrder, varList, varRecall, varStore, varStoreWhereFound, currentPath,
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo, getUserKeys, standardKeysActive,
   batchStateNotifications, isSuspension,
 } from './rpl/state.js';
@@ -2533,16 +2533,47 @@ class App {
   // CST as it changes (STO, PURGE, UNDO) while the menu shows, keeping the page and saying nothing.
   showCustomMenu({ commit = true, refresh = false } = {}) {
     if (commit && !refresh && this.entry.buffer.trim().length > 0 && !this.entry._typingAtCursor()) this.commitEntry();
-    const cst = varRecall('CST');
-    const list = isName(cst) ? varRecall(cst.id) : cst;
+    const { cst, list } = this._customMenu();
     if (!isList(list)) {
       this.setMenu([], 'CST', { preservePage: refresh });
       if (!refresh) this.toast(cst === undefined
-        ? 'CST is empty. Store a list of commands or names in CST, for example { SOLVE FACTOR } `CST` STO.'
+        ? 'CST, your custom menu, is empty. Tap Add to my menu on a command in the Catalog, or store a list such as { SOLVE FACTOR } in CST.'
         : 'CST must hold a list, for example { SOLVE FACTOR }.');
       return;
     }
     this.setMenu(this._customMenuSlots(list), 'CST', { preservePage: refresh });
+  }
+
+  // CST's list, which CST may name rather than hold, and the variable it is kept in.
+  _customMenu() {
+    const cst = varRecall('CST');
+    const named = isName(cst);
+    return { cst, holder: named ? cst.id : 'CST', list: named ? varRecall(cst.id) : cst };
+  }
+
+  inMyMenu(name) {
+    return inCustomMenu(this._customMenu().list, name);
+  }
+
+  // CST changes as one undoable step, in the folder it lives in; `change` gives the new list, or null when there is nothing to do.
+  _changeMyMenu(change, note) {
+    const { holder, list } = this._customMenu();
+    if (list !== undefined && !isList(list)) { this.entry.flashError({ message: 'CST must hold a list, for example { SOLVE FACTOR }.' }); return false; }
+    const changed = change(list);
+    if (!changed) return false;
+    const store = () => {
+      this.entry._snapForUndo();
+      varStoreWhereFound(holder, changed);
+    };
+    if (!this.entry.safeRun(store, 'STO')) return false;
+    this.undoToast(note);
+    return true;
+  }
+
+  // The Catalog's "my menu" button: a command goes into CST, the list the CST key shows, or comes out of it again.
+  toggleMyMenu(name) {
+    const adding = !this.inMyMenu(name);
+    return this._changeMyMenu((list) => toggledCustomMenu(list, name), `${adding ? 'Added' : 'Removed'} ${name} ${adding ? 'to' : 'from'} your menu (CST)`);
   }
 
   _customMenuSlots(list) {

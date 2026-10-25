@@ -13,7 +13,7 @@ import {
   varStore, varRecall, varList, varPurge, resetHome, currentPath,
   saveVarStateForUndo,
   setLastError, clearLastError, getLastError,
-  goHome, goUp, goInto, makeSubdir,
+  goHome, goUp, goInto, makeSubdir, varStoreWhereFound,
   setWordsize, getWordsize, getWordsizeMask,
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
@@ -2242,5 +2242,22 @@ clearAllUserFlags();
   assert(top("'RECIP9(0)'") === '`RECIP9(0)`', 'APPROX: entering a call of a user function that fails pushes the call');
   assertThrows(() => runLine("'RECIP9(0)' EVAL"), /Infinite result/, 'APPROX: EVAL of it reports the failure');
   setApproxMode(false);
+  resetHome();
+}
+
+// varStoreWhereFound changes a variable where a recall finds it, up the path, so a CST kept in HOME is edited there from a folder.
+{
+  resetHome();
+  varStore('CST', RList([Name('SIN')]));
+  makeSubdir('SUB9');
+  goInto('SUB9');
+  varStoreWhereFound('CST', RList([Name('SIN'), Name('COS')]));
+  assert(!calcState.current.entries.has('CST') && format(varRecall('CST')) === '{ SIN COS }', 'a variable found in HOME is replaced there, not copied into the folder');
+  goHome();
+  assert(format(varRecall('CST')) === '{ SIN COS }', 'and HOME has the new value');
+  goInto('SUB9');
+  varStoreWhereFound('NEWV9', Real(5));
+  assert(!calcState.current.entries.has('NEWV9') && calcState.current.parent.entries.has('NEWV9'), 'a name found nowhere goes into HOME, as the HP keeps CST there');
+  goHome();
   resetHome();
 }

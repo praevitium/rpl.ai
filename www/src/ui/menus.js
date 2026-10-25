@@ -1,5 +1,5 @@
 import { parseUnitExpr, sameDims, uexprEqual, toBaseUexpr } from '../rpl/units.js';
-import { isList, isName, isString, isTagged } from '../rpl/types.js';
+import { isList, isName, isString, isTagged, Name, RList } from '../rpl/types.js';
 import { format as formatValue, withFractionMark } from '../rpl/formatter.js';
 
 const format = (value) => withFractionMark(formatValue(value));
@@ -191,6 +191,16 @@ export function customMenuLabel(item) {
 export function chooseEntry(item) {
   const pair = isList(item) && item.items.length === 2;
   return { label: customMenuLabel(pair ? item.items[0] : item), value: pair ? item.items[1] : item };
+}
+
+// The Catalog's menu button keeps CST as plain names: SIN in the list is a SIN key.
+export function inCustomMenu(list, name) {
+  return isList(list) && list.items.some((item) => isName(item) && item.id === name);
+}
+
+export function toggledCustomMenu(list, name) {
+  const items = isList(list) ? list.items : [];
+  return RList(inCustomMenu(list, name) ? items.filter((item) => !(isName(item) && item.id === name)) : [...items, Name(name)]);
 }
 
 // The HP's custom menu takes an object on its own, { "label" action } or { "label" { action ⇦action ⇨action } }.
