@@ -2,7 +2,7 @@ import {
   parseAllToolCalls, parseSuggestions, findMachineSectionStart, stripThinkBlocks,
   resolveToolAlias, activeContextTokens, effectiveBudget, TOOL_ALIASES, ChatBot,
   parseFencedBlock, parseInlineSpans, classifyMarkdownLine, parseTableAt, listIndent, quoteLinesAt,
-  normalizeRpl, normalizeRemoteConfig, looksInfix,
+  normalizeRpl, normalizeRemoteConfig, looksInfix, fitChat, readChat, CHAT_KEY,
 } from '../www/src/ai/chat-bot.js';
 import {
   SYSTEM_PROMPT, RPL_CATALOG, TOOL_SCHEMAS, buildSystemPrompt,
@@ -1479,4 +1479,50 @@ const registryToolNames = () =>
   const off = stackCheck(['4', '3'], ['9', '3']);
   assert(!off.ok && off.level === 1 && off.got === '4' && off.want === '9', 'stackCheck reports the first level that differs');
   assert(!stackCheck([], ['9']).ok && stackCheck([], ['9']).got === null, 'stackCheck reports an empty level');
+}
+
+// The conversation a dropped page keeps: the transcript and what the model is sent, the newest that fit.
+{
+  const turn = (role, text) => ({ role, text });
+  const msg = (role, content) => ({ role, content });
+  assert(CHAT_KEY === 'hp50.chat', 'the kept conversation lives under hp50.chat');
+  assert(readChat(null) === null && readChat('x') === null && readChat({}) === null && readChat({ turns: [] }) === null,
+    'readChat gives nothing for a missing, junk or empty conversation');
+  const read = readChat({
+    turns: [turn('user', 'hi'), turn('assistant', 'hello'), { role: 'tool', text: 'x' }, turn('user', '   '), { role: 'user' }, 5],
+    history: [msg('assistant', 'orphan'), msg('user', 'ctx hi'), msg('assistant', '{"name":"run"}'), msg('system', 'no')],
+  });
+  assert(read.turns.length === 2 && read.turns[0].text === 'hi' && read.turns[1].role === 'assistant',
+    'readChat keeps the user and assistant turns that have text and drops the rest');
+  assert(read.history.length === 2 && read.history[0].role === 'user' && read.history[1].content === '{"name":"run"}',
+    'readChat starts the history at a user message and keeps the assistant reply with its tool-call JSON');
+  assert(JSON.stringify(readChat(JSON.parse(JSON.stringify(read)))) === JSON.stringify(read), 'a kept conversation reads back as itself');
+  const many = Array.from({ length: 200 }, (_, i) => turn(i % 2 ? 'assistant' : 'user', `m${i}`));
+  const manyHistory = Array.from({ length: 300 }, (_, i) => msg(i % 2 ? 'assistant' : 'user', `c${i}`));
+  const fit = fitChat({ turns: many, history: manyHistory });
+  assert(fit.turns.length === 60 && fit.turns.at(-1).text === 'm199' && fit.history.length === 120 && fit.history[0].role === 'user',
+    'fitChat keeps the newest 60 turns and 120 history messages, the history starting with a user message');
+  const big = 'x'.repeat(25000);
+  const bigFit = fitChat({
+    turns: Array.from({ length: 12 }, (_, i) => turn(i % 2 ? 'assistant' : 'user', big + i)),
+    history: Array.from({ length: 12 }, (_, i) => msg(i % 2 ? 'assistant' : 'user', big + i)),
+  });
+  const chars = bigFit.turns.reduce((n, m) => n + m.text.length, 0) + bigFit.history.reduce((n, m) => n + m.content.length, 0);
+  assert(chars <= 120000 && bigFit.turns.at(-1).text.endsWith('11'), 'fitChat drops the oldest messages to stay within 120,000 characters and keeps the newest');
+  assert(fitChat({ turns: [turn('user', 'y'.repeat(40000))], history: [] }) === null, 'fitChat leaves out a single message too long to keep');
+}
+
+{
+  const chatSrc = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
+  const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  assert(/this\._setUIState\('idle'\);\n\s*this\._restoreChat\(\);\n\s*return root;/.test(chatSrc),
+    'chat kept: the conversation is drawn again as the panel is built');
+  assert(/this\._addUserBubble\(text\);\n\s*this\._record\('user', text\);/.test(chatSrc)
+    && /if \(prose && !stalled\) this\._record\('assistant', prose\);/.test(chatSrc)
+    && /_keepChat\(\);\n\s*this\._setUIState\('idle'\);/.test(chatSrc),
+    'chat kept: each question and reply is recorded and the history saved when a turn ends');
+  assert(/this\._history = \[\];\n\s*this\._turns = \[\];\n\s*this\._keepChat\(\);\n\s*this\._sessionTotals = null;/.test(chatSrc)
+    && /this\._history = \[\];\n\s*this\._turns = \[\];\n\s*this\._keepChat\(\);\n\s*if \(this\._messagesEl\) this\._messagesEl\.innerHTML = '';/.test(chatSrc),
+    'chat kept: New chat and a new endpoint forget it');
+  assert(/CHAT_CONSENT_KEY, CHAT_KEY,/.test(sheetsSrc), 'chat kept: Reset everything removes it');
 }

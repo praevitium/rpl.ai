@@ -698,6 +698,44 @@ function setConsented() {
   try { localStorage.setItem(CONSENT_KEY, '1'); } catch { /* private mode */ }
 }
 
+export const CHAT_KEY = 'hp50.chat';
+const CHAT_MAX_MESSAGES = 60;
+const CHAT_MAX_CHARS = 120000;
+
+// What a dropped page keeps of the conversation: the transcript (turns, as shown) and what the model is sent (history,
+// tool-call JSON included). The newest messages that fit stay, and the history starts with a user message as chat templates need.
+export function fitChat({ turns, history }) {
+  const inRoom = (m) => (m.text ?? m.content).length <= CHAT_MAX_CHARS / 4;
+  let t = turns.filter(inRoom).slice(-CHAT_MAX_MESSAGES);
+  let h = history.filter(inRoom).slice(-CHAT_MAX_MESSAGES * 2);
+  const size = () => t.reduce((n, m) => n + m.text.length, 0) + h.reduce((n, m) => n + m.content.length, 0);
+  while (size() > CHAT_MAX_CHARS && (t.length > 1 || h.length > 1)) {
+    if (t.length > 1) t = t.slice(1);
+    if (size() > CHAT_MAX_CHARS && h.length > 1) h = h.slice(1);
+  }
+  while (h.length && h[0].role !== 'user') h = h.slice(1);
+  return t.length ? { turns: t, history: h } : null;
+}
+
+export function readChat(raw) {
+  const ok = (m, field) => (m?.role === 'user' || m?.role === 'assistant') && typeof m[field] === 'string' && m[field].trim();
+  const turns = (Array.isArray(raw?.turns) ? raw.turns : []).filter((m) => ok(m, 'text')).map(({ role, text }) => ({ role, text }));
+  const history = (Array.isArray(raw?.history) ? raw.history : []).filter((m) => ok(m, 'content')).map(({ role, content }) => ({ role, content }));
+  return fitChat({ turns, history });
+}
+
+function saveChat(chat) {
+  try {
+    const kept = chat.turns.length ? fitChat(chat) : null;
+    if (kept) localStorage.setItem(CHAT_KEY, JSON.stringify(kept));
+    else localStorage.removeItem(CHAT_KEY);
+  } catch { /* storage is full or blocked */ }
+}
+
+function loadChat() {
+  try { return readChat(JSON.parse(localStorage.getItem(CHAT_KEY) ?? 'null')); } catch { return null; }
+}
+
 export class ChatBot {
   constructor({ tools, getContext, onStatus = null, onTutorMine = null, onTutorShow = null }) {
     this._tools      = tools;
@@ -709,6 +747,7 @@ export class ChatBot {
     this.mode        = 'ask';
     this.tutorStyle  = 'socratic';
     this._history    = [];
+    this._turns      = [];
     this._container  = null;
     this._messagesEl = null;
     this._edgeObserver = null;
@@ -1015,6 +1054,7 @@ export class ChatBot {
     root.append(header, this._loadBtn, this._switchModelBtn, this._pickerEl,
       this._messagesEl, this._statsEl, this._stopBtn, inputRow);
     this._setUIState('idle');
+    this._restoreChat();
     return root;
   }
 
@@ -1243,6 +1283,8 @@ export class ChatBot {
     if (this._generating) this._abort();
     this._hidePicker();
     this._history = [];
+    this._turns = [];
+    this._keepChat();
     if (this._messagesEl) this._messagesEl.innerHTML = '';
     this._removeActiveChips();
     this._startLoadRemote(cfg);
@@ -1274,6 +1316,28 @@ export class ChatBot {
     setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
   }
 
+  _record(role, text) {
+    this._turns.push({ role, text });
+    this._keepChat();
+  }
+
+  _keepChat() { saveChat({ turns: this._turns, history: this._history }); }
+
+  // The kept conversation comes back as bubbles (the tool cards of its turns are not redrawn) and as the model's history.
+  _restoreChat() {
+    if (this._turns.length === 0) {
+      const saved = loadChat();
+      if (!saved) return;
+      this._turns = saved.turns;
+      this._history = saved.history;
+    }
+    this._place(elem('div', { className: 'cb-retry-note', textContent: 'Earlier in this conversation' }));
+    for (const { role, text } of this._turns) {
+      if (role === 'user') this._place(elem('div', { className: 'cb-bubble cb-bubble-user', textContent: text }));
+      else this._addAssistantBubble(text);
+    }
+  }
+
   _newChat() {
     dlog('newChat: reset (was generating=', this._generating,
          'history len=', this._history.length, ')');
@@ -1281,6 +1345,8 @@ export class ChatBot {
     if (this._generating) this._llm.abort();
     this._queue = [];
     this._history = [];
+    this._turns = [];
+    this._keepChat();
     this._sessionTotals = null;
     if (this._statsEl) {
       this._statsEl.textContent = '';
@@ -1449,6 +1515,7 @@ export class ChatBot {
     this._inputEl.value = '';
     this._inputEl.style.height = '';
     this._addUserBubble(text);
+    this._record('user', text);
 
     if (this._generating) {
       this._queue.push(text);
@@ -1468,6 +1535,7 @@ export class ChatBot {
       }
     } finally {
       dlog('submit: returning to idle (history len=', this._history.length, ')');
+      this._keepChat();
       this._setUIState('idle');
     }
   }
@@ -1666,6 +1734,7 @@ export class ChatBot {
       else bubble.remove();
       // Kept even before a retry, so the correction can refer to it.
       history.push({ role: 'assistant', content });
+      if (prose && !stalled) this._record('assistant', prose);
       reply = { bubble: display ? bubble : null, toolCalls, suggestions };
 
       const unknownNames = toolCalls.filter((c) => !this._registry[c.name]).map((c) => c.name);

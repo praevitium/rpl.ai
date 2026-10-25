@@ -3,7 +3,7 @@ import { escapeHtml, markScrollEdges } from './display.js';
 import { ACTIONS, KEYMAP, CONTEXT_LABELS, chordText, isMacPlatform } from './actions.js';
 import { STORAGE_KEY as STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY, HISTORY_KEY, PLOT_KEY, UNDO_KEY } from '../rpl/persist.js';
 import { UI_PREFS_KEY, THEMES, THEME_LABELS, STACK_SIZES, STACK_SIZE_LABELS, TUTOR_STYLES, KEYPAD_LAYOUTS, KEYPAD_LABELS, SIDES, SIDE_LABELS } from './ui-prefs.js';
-import { REMOTE_CONFIG_KEY as CHAT_REMOTE_KEY, CONSENT_KEY as CHAT_CONSENT_KEY, formatBytes } from '../ai/chat-bot.js';
+import { REMOTE_CONFIG_KEY as CHAT_REMOTE_KEY, CONSENT_KEY as CHAT_CONSENT_KEY, CHAT_KEY, formatBytes } from '../ai/chat-bot.js';
 import { state as calcState, testUserFlag, setUserFlag, clearUserFlag, setClockOffset, varStore, varRecall } from '../rpl/state.js';
 import { ROWS, COLS, GOAL, minesAround, step, newField, saveField } from '../rpl/minehunt.js';
 import { ELEMENTS } from '../rpl/elements.js';
@@ -859,7 +859,7 @@ export class Sheets {
 
   resetEverything() {
     this.app.entry.resetBuffer('');
-    const KEYS = [STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY, HISTORY_KEY, PLOT_KEY, UNDO_KEY, UI_PREFS_KEY, CHAT_REMOTE_KEY, CHAT_CONSENT_KEY, 'hp50.ui.sidePanel', 'hp50.ui.chrome'];
+    const KEYS = [STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY, HISTORY_KEY, PLOT_KEY, UNDO_KEY, UI_PREFS_KEY, CHAT_REMOTE_KEY, CHAT_CONSENT_KEY, CHAT_KEY, 'hp50.ui.sidePanel', 'hp50.ui.chrome'];
     try { for (const k of KEYS) localStorage.removeItem(k); } catch { /* private mode: nothing to clear */ }
     location.reload();
   }
