@@ -3115,7 +3115,12 @@ setPushCoerce((v) => {
   if (isSymbolic(v)) {
     const vars = algebraFreeVars(v.expr);
     if (vars.size === 0) {
-      const reduced = algebraEvalAst(v.expr, () => null, _angleAwareFnEval, null);
+      let reduced = null;
+      try {
+        reduced = algebraEvalAst(v.expr, () => null, _angleAwareFnEval, null);
+      } catch (e) {
+        if (!(e instanceof RPLError)) throw e;
+      }
       if (reduced && reduced.kind === 'num' && Number.isFinite(reduced.value)) {
         return Real(reduced.value);
       }

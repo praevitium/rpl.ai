@@ -2234,5 +2234,13 @@ clearAllUserFlags();
   assertThrows(() => runLine("'L(4)' EVAL"), /Bad argument value/, 'and so is reading one');
   assertThrows(() => runLine("9 'NOSUCH8(1)' STO"), /Bad argument type|Invalid name/, 'a name that holds no array is still no place to store');
   assert(top("'NOSUCH8(2)' EVAL") === '`NOSUCH8(2)`', 'a call of a name that holds no array stays as it was');
+  setApproxMode(true);
+  assert(top("'L(4)'") === '`L(4)`' && top("'M(3,1)+1'") === '`M(3,1) + 1`', "APPROX: entering an index past the end pushes the expression, as entering is not evaluating");
+  assert(top("'L(2)'") === '9.', 'APPROX: an index in range still folds as it is pushed');
+  assertThrows(() => runLine("'L(4)' EVAL"), /Bad argument value/, 'APPROX: EVAL of the expression still reports the index');
+  runLine("« → x « 1 x / » » 'RECIP9' STO");
+  assert(top("'RECIP9(0)'") === '`RECIP9(0)`', 'APPROX: entering a call of a user function that fails pushes the call');
+  assertThrows(() => runLine("'RECIP9(0)' EVAL"), /Infinite result/, 'APPROX: EVAL of it reports the failure');
+  setApproxMode(false);
   resetHome();
 }
