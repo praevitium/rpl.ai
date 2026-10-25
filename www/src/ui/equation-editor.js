@@ -19,7 +19,7 @@ import { writerKeys } from './input-area.js';
 const HOLE = Object.freeze({ t: 'hole' });
 
 const RELS = new Set(['=', '≠', '<', '>', '≤', '≥']);
-const WHOLE_FORMULA = 'An = or comparison goes between the two sides of the whole formula';
+const WHOLE_FORMULA = 'An = goes between the two sides of the whole formula';
 const ONE_SIDE = 'That works on one side of the equation, not on the whole equation';
 
 const EQW_STRUCTS = Object.freeze({
@@ -1072,8 +1072,8 @@ function operate(state, op) {
   const target = state.target;
   if (RELS.has(op)) {
     const rowKey = target.mode === 'select' ? target.row : rowKeyOf(target.path);
-    if (rowKey !== '') throw new RPLError(WHOLE_FORMULA);
-    if (state.root.some(item => item.t === 'op' && RELS.has(item.op) && item.op !== op)) {
+    if (op === '=' && rowKey !== '') throw new RPLError(WHOLE_FORMULA);
+    if (rowByKey(state.root, rowKey).some(item => item.t === 'op' && RELS.has(item.op) && item.op !== op)) {
       throw new RPLError('Only one = or comparison fits in an expression');
     }
   }

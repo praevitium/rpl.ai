@@ -494,6 +494,27 @@ function replaceSelection(state, ast) {
 }
 
 {
+  const typed = (...faces) => {
+    try { return textOf(press(emptyEquation(), ...faces)); } catch (error) { return error.message; }
+  };
+  assert(typed('IFTE', 'x', '<', '0', ',', '−', 'x', ',', 'x') === 'IFTE(x<0,-x,x)',
+    'EQW a comparison goes in a function argument, so IFTE(x<0,-x,x) types as written');
+  assert(typed('IFTE', 'x', '<', '=', '1', ',', '1', ',', '0') === 'IFTE(x≤1,1,0)'
+    && typed('IFTE', 'x', '>', '=', '1', ',', '1', ',', '0') === 'IFTE(x≥1,1,0)'
+    && typed('IFTE', 'x', '≠', '0', ',', '1', ',', '0') === 'IFTE(x≠0,1,0)',
+    'EQW < then = makes ≤ inside an argument as well, and ≠ types there');
+  assert(typed('y', '=', 'IFTE', 'x', '<', '0', ',', '−', 'x', ',', 'x') === 'y = IFTE(x<0,-x,x)'
+    && typed('IFTE', 'x', '<', '0', ',', '−', 'x', ',', 'x', ')', '<', '5') === 'IFTE(x<0,-x,x)<5',
+    'EQW an argument holding a comparison sits beside the formula\'s own = or comparison');
+  assert(typed('2', 'yˣ', '( )', 'x', '<', '1', ')') === '2^(x<1)',
+    'EQW a comparison goes in a group as well');
+  assert(/An = goes between the two sides of the whole formula/.test(typed('IFTE', 'x', '=', '0')),
+    'EQW an = inside a function argument is still refused, since only the whole formula is an equation');
+  assert(/Only one = or comparison/.test(typed('IFTE', 'x', '<', '0', '>', '1')),
+    'EQW a second comparison in the same argument is refused');
+}
+
+{
   const second = (...faces) => {
     try { return textOf(press(emptyEquation(), 'MAX', 'x', ',', ...faces)); } catch (error) { return error.message; }
   };
