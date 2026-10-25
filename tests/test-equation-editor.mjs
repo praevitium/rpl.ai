@@ -494,6 +494,20 @@ function replaceSelection(state, ast) {
 }
 
 {
+  const second = (...faces) => {
+    try { return textOf(press(emptyEquation(), 'MAX', 'x', ',', ...faces)); } catch (error) { return error.message; }
+  };
+  assert(second('−', 'y') === 'MAX(x,-y)' && second('+/-', 'y') === 'MAX(x,-y)',
+    'EQW a minus in the empty argument after a comma negates it, as in the first argument');
+  assert(second('π') === 'MAX(x,π)' && second('const:i') === 'MAX(x,i)' && second('∞') === 'MAX(x,∞)' && second('½') === 'MAX(x,1/2)',
+    'EQW a constant or ½ typed after a comma fills the argument instead of multiplying an empty one');
+  assert(second('( )', 'y', ')') === 'MAX(x,y)' && second('EXP', 'y') === 'MAX(x,EXP(y))' && second('ABS', 'y') === 'MAX(x,ABS(y))',
+    'EQW a group or a function after a comma fills the argument');
+  assert(second('3') === 'MAX(x,3)' && second('y') === 'MAX(x,y)',
+    'EQW digits and letters after a comma still fill the argument');
+}
+
+{
   assertThrows(() => toAst(press(emptyEquation(), 'x', '=', '3', '=', '4').root), /Only one = or comparison/,
     'EQW refuses x=3=4 instead of pushing x=3');
   assert(textOf(press(emptyEquation(), 'x', '1')) === 'x1' && textOf(press(emptyEquation(), 'x', '1', '2', '+', 'y')) === 'x12 + y',

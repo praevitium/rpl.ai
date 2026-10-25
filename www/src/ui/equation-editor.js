@@ -1335,10 +1335,20 @@ function leaveExponent(state) {
   return state;
 }
 
+// A comma or an arrow key lands on an empty slot as a selected hole; what is typed there goes in it as at an insertion point.
+function atEmptySlot(state) {
+  const target = state.target;
+  if (target.mode !== 'select' || target.from !== target.to || rowByKey(state.root, target.row)[target.from].t !== 'hole') return state;
+  return move(state, { mode: 'insert', path: itemPath(target.row, target.from) });
+}
+
+const MOVES_AND_DELETES = new Set(['⌫', 'DEL', '▲', '▼', '◀', '▶', 'RS▲', 'RS◀', 'RS▶', '⇧◀', '⇧▶', ',', ')']);
+
 export function pressEquationKey(state, face) {
   if (face === 'UNDO') return undoState(state);
   if (face === 'REDO') return redoState(state);
   if (face === 'CLEAR') return clearAll(state);
+  if (!MOVES_AND_DELETES.has(face)) state = atEmptySlot(state);
   const unit = typeUnit(state, face) ?? exponentSign(state, face) ?? degrees(state, face);
   if (unit) return unit;
   if (face.startsWith('sup:')) return superscript(state, face.slice(4));
