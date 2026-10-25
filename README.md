@@ -112,7 +112,9 @@ has not changed meanwhile), the lines you had entered (for the History
 drawer and the held Enter), the soft keys' menu with its folder and page,
 the formulas on the plot with their window, the table's start and step, and
 the last steps UNDO takes back with what LASTARG brings back (only to the
-state they were kept with). A program's `INPUT` answer is not kept. To move
+state they were kept with), and the assistant's conversation (its replies
+and your questions, without the cards of what it ran; ✱ New starts afresh).
+A program's `INPUT` answer is not kept. To move
 them to another browser or keep a copy, use Back up everything in the
 Variables drawer's ⋯ menu, and Restore from a backup file on the other side.
 
@@ -1012,7 +1014,8 @@ reads the live stack, modes and variables, looks commands up in the built-in
 HP 50g reference, and dry-runs RPL on a scratch copy of the calculator
 before acting for real. Every action is shown as a card, and each turn can
 be undone in one click. Error banners and stack levels hand their context to
-it with Explain or Ask.
+it with Explain or Ask. The conversation stays in this browser, so a phone
+that drops the page gives it back at the next start; ✱ New clears it.
 
 Setup takes about ten minutes plus the model download. Ollama has to run on
 a computer (Mac, Windows or Linux); phones and tablets connect to one.

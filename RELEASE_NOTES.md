@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.84 (2026-10-24)
+**Latest release:** v0.8.85 (2026-10-24)
 
 ---
 
@@ -20,6 +20,31 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.85 — 2026-10-24
+
+- Fixed: the equation writer could build an equation inside a formula, which
+  could not be read back. With a factor selected, or the cursor moved back
+  over it with ◀, pressing `=` or a comparison wrapped just that factor:
+  typing 8B, selecting B and pressing `= 1` gave `8*(B = 1)`, and x² or 1/x
+  on a selection holding the `=` gave `(3 - 0 = i)^2`. The level pushed that
+  way could not be edited or typed back ("An equation cannot be an
+  operand"). The `=` or comparison now ends the row as it does with the
+  cursor after the factor (`8*B = 1`), and a power or fraction on a
+  selection holding it is refused. Found by random key walks through the
+  writer, each formula printed, parsed and compared.
+- Added: the assistant's conversation survives a reload. What you asked, what
+  it replied and what the model is sent (its tool calls included) are kept
+  after each turn, so a phone that drops the page gives the conversation back
+  at the next start with an "Earlier in this conversation" note, and the
+  model goes on from it. The cards of what the assistant ran are not drawn
+  again. The newest 60 turns that fit 120,000 characters are kept; ✱ New,
+  connecting another endpoint and Reset everything forget it.
+- Changed: when the equation writer refuses an `=` or comparison, it says
+  where it goes ("An = or comparison goes between the two sides of the whole
+  formula") instead of a bare "Invalid syntax", and a second kind of
+  comparison says only one fits. Power and fraction keys on a whole equation
+  say "That works on one side of the equation, not on the whole equation".
 
 ## v0.8.84 — 2026-10-24
 
