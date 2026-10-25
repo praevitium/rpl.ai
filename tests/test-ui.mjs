@@ -4372,3 +4372,22 @@ setAngle('RAD');
   assert(/:root:not\(\[data-keyboard\]\) \.pal-row \.t \{ white-space: normal;[^}]*-webkit-line-clamp: 2;/.test(css),
     'command search: on a phone a title longer than its row wraps to a second line, as its description does, and with the keyboard up the rows stay one line');
 }
+
+// Minimal view hides the writer tabs, so its menu opens the two writers itself, as the full view's tabs do.
+{
+  const { AppBar } = await import('../www/src/ui/appbar.js');
+  const savedDoc = globalThis.document;
+  globalThis.document = { fullscreenEnabled: false };
+  const menus = {};
+  for (const minimal of [true, false]) {
+    let html = '';
+    const bar = { app: { prefs: { minimal, minimalMenu: true, keypad: 'full' }, popover: { open: (_anchor, markup) => { html = markup; } }, isInstalledApp: () => false } };
+    AppBar.prototype._helpMenu.call(bar, null, true, minimal);
+    menus[minimal ? 'minimal' : 'full'] = [...html.matchAll(/<button type="button" class="opt" data-act="([^"]+)"[^>]*><span class="ck">.*?<b>([^<]+)<\/b>/g)].map((m) => `${m[1]}:${m[2]}`);
+  }
+  globalThis.document = savedDoc;
+  assert(menus.minimal.includes('writer.equation:Equation writer') && menus.minimal.includes('writer.matrix:Matrix writer')
+    && menus.minimal.indexOf('writer.equation:Equation writer') === menus.minimal.indexOf('palette.open:Search commands') + 1,
+    'minimal view menu: Equation writer and Matrix writer follow Search commands, where the writer tabs are hidden');
+  assert(!menus.full.some((entry) => entry.startsWith('writer.')), 'full view More menu: no writer rows, its tabs open the writers');
+}

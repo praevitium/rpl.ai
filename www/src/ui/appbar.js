@@ -113,6 +113,8 @@ export class AppBar {
     const minimal = this.app.prefs.minimal;
     const drawerItems = withDrawers ? [
       item('palette.open', 'search', 'Search commands'),
+      item('writer.equation', 'fx', 'Equation writer'),
+      item('writer.matrix', 'matrix', 'Matrix writer'),
       drawer('vars', 'folder', 'Variables'),
       drawer('history', 'clock', 'History'),
       drawer('plot', 'plot', 'Plot'),
