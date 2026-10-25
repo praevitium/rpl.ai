@@ -7505,3 +7505,13 @@ function _arrayEq(a, b) {
   assert(top('[[1 1][0 1]] 1000000000000 ^') === '[[ 1 1000000000000 ][ 0 1 ]]', 'a matrix whose entries stay small still takes a huge power');
   assert(top('1/3 20 ^') === '1/3486784401' && top('2/3 -5 ^') === '243/32', 'a fraction to a modest power still comes out exact');
 }
+
+// RND and TRNC on an array round or truncate each entry, as the AUR's examples show.
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top('[ 2.34907 3.96351 2.73453 ] -2 RND') === '[ 2.3 4. 2.7 ]', 'AUR: [ 2.34907 3.96351 2.73453 ] -2 RND is [ 2.3 4 2.7 ]');
+  assert(top('[ 2.34907 3.96351 2.73453 ] -2 TRNC') === '[ 2.3 3.9 2.7 ]', 'AUR: [ 2.34907 3.96351 2.73453 ] -2 TRNC is [ 2.3 3.9 2.7 ]');
+  assert(top('[[ 1.234 5.678 ][ 9.1011 2.3456 ]] 2 RND') === '[[ 1.23 5.68 ][ 9.1 2.35 ]]', 'RND rounds a matrix to decimal places');
+  assert(top('[ (1.234,5.678) 7 ] 1 TRNC') === '[ (1.2, 5.6) 7 ]', 'TRNC takes each part of a complex entry');
+  assert(top('{ 1.234 5.678 } 1 RND') === '{ 1.2 5.7 }' && top('(4.5792,8.1275) 2 RND') === '(4.58, 8.13)', 'a list and a complex number still round as before');
+}

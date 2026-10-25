@@ -7,7 +7,7 @@ import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { inverseUexpr, powerUexpr, sameDims, temperaturesAdd } from '../units.js';
 import { register, lookup, OPS } from './registry.js';
 import { isPict, negGrob } from './graphics.js';
-import { MAX_INTEGER_DIGITS, _inUnit, _infiniteResult, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _hmsToHours, _hmsUnary, _hoursToHms, _arrayToGiacStr, _casArray, _hasSymEntry, _invMatrixNumeric, _invMatrixScalar, _isScalarOperand, _isSymOperand, _makeUnit, _reducesByScalars, _scalarBinary, _scalarSum, _tidyBinary, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, exactSqrt, exactXroot, recallVar, storeVar } from './internal.js';
+import { MAX_INTEGER_DIGITS, _inUnit, _infiniteResult, _numVal, _astToRplValue, _coerceStorableName, _decimalFrobeniusNorm, _entryWise, _hmsToHours, _hmsUnary, _hoursToHms, _arrayToGiacStr, _casArray, _hasSymEntry, _invMatrixNumeric, _invMatrixScalar, _isScalarOperand, _isSymOperand, _makeUnit, _reducesByScalars, _scalarBinary, _scalarSum, _tidyBinary, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary, binIntBinary, exactSqrt, exactXroot, recallVar, storeVar } from './internal.js';
 
 
 
@@ -635,9 +635,15 @@ function _roundingCommand(name, mode) {
   }));
 }
 
-register('RND',  _roundingCommand('RND',  Decimal.ROUND_HALF_UP), { category: 'Arithmetic', categoryOrder: 18, label: "RND" });
+// The AUR's RND and TRNC round or truncate each entry of an array.
+function _roundingArrays(scalar) {
+  const array = _entryWise(scalar, { argc: 2, at: 2 });
+  return (s) => (s.depth >= 2 && (isVector(s.peek(2)) || isMatrix(s.peek(2))) ? array(s) : scalar(s));
+}
 
-register('TRNC', _roundingCommand('TRNC', Decimal.ROUND_DOWN), { category: 'Arithmetic', categoryOrder: 19, label: "TRNC" });
+register('RND',  _roundingArrays(_roundingCommand('RND',  Decimal.ROUND_HALF_UP)), { category: 'Arithmetic', categoryOrder: 18, label: "RND" });
+
+register('TRNC', _roundingArrays(_roundingCommand('TRNC', Decimal.ROUND_DOWN)), { category: 'Arithmetic', categoryOrder: 19, label: "TRNC" });
 
 register('TRUNC', _roundingCommand('TRUNC', Decimal.ROUND_DOWN), { category: 'Arithmetic', categoryOrder: 20, label: "TRUNC" });
 
