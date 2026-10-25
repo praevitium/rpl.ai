@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.90 (2026-10-25)
+**Latest release:** v0.8.91 (2026-10-25)
 
 ---
 
@@ -18,6 +18,27 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.91 — 2026-10-25
+
+- Fixed: Explain, or any long draft, in the Assistant on a landscape phone put
+  the Send button under the bottom edge of the screen: 35 px at 360 px high,
+  all of it at 320. A phone types in 16 px, which made the draft box's 14em
+  limit 224 px; the box now stops at 30% of the window and scrolls. Found by a
+  monkey that taps through the app at phone sizes.
+- Added: Add to my menu in a variable's ⋯ menu in the Variables drawer (it
+  reads Remove from my menu once the name is in CST), beside the Catalog's
+  button for commands. A program, value, list or folder made on a phone
+  becomes a CST key without typing `{ MYPROG } 'CST' STO`. As on the HP, its
+  key runs a program, puts a value on the stack, or enters a folder, and a
+  held finger offers Type, Recall and Remove from my menu.
+- Fixed: with the keyboard up in a window under about 380 px tall (a 568 px
+  phone, or a 740 px one with the keypad hidden), an error banner over an
+  edited long line left the key strip up to 50 px under the edge. The command
+  line now stops at four rows under a banner, and at two under 360 px, the
+  rest scrolling, as it already did in landscape.
 
 ---
 
