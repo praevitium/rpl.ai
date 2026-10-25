@@ -4448,3 +4448,12 @@ setAngle('RAD');
   assert(editing > 0 && four > editing && two > four,
     'keyboard up: a banner over an edited long line caps the command line at four rows, not 40% of the window, and at two in a window under 360 px, the rest scrolling; the key strip sat 10 to 50 px under the edge from 270 to 380 px');
 }
+
+// A banner takes the bars round the command line with it up to 400 px tall with the keyboard up, as they go under 330.
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const at = css.indexOf('@media (max-height: 400px) {\n  :root[data-keyboard]:not([data-view="minimal"]) .app:has(.bn) { grid-template-rows: minmax(0, 1fr); }');
+  assert(at > css.indexOf('@media (max-height: 330px) {\n  :root[data-keyboard] .input-top')
+    && css.slice(at).startsWith('@media (max-height: 400px) {\n  :root[data-keyboard]:not([data-view="minimal"]) .app:has(.bn) { grid-template-rows: minmax(0, 1fr); }\n  :root[data-keyboard]:not([data-view="minimal"]) .app:has(.bn) :is(.input-top, .input-hint, .mx-foot, .status-line, .appbar, .menubar, .st-more) { display: none; }\n}'),
+    'keyboard up, keypad hidden: a banner (an error, PROMPT, INPUT or MSGBOX) over a long line hides the app bar, writer tabs and soft keys in a window up to 400 px tall, as under 330; the soft keys sat 4 to 37 px under the edge of a 361 to 399 px window');
+}

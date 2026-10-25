@@ -2374,6 +2374,11 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   :root[data-keyboard] .pal-row { padding-block: 0; }
   :root[data-keyboard] .pal-row .t { grid-row: 1 / 3; }
 }
+/* A banner takes a hundred pixels, so with the keyboard up the bars round the command line give way up to 400 px tall, as they do under 330; the soft keys sat 37 px under the edge of a 361 px window. */
+@media (max-height: 400px) {
+  :root[data-keyboard]:not([data-view="minimal"]) .app:has(.bn) { grid-template-rows: minmax(0, 1fr); }
+  :root[data-keyboard]:not([data-view="minimal"]) .app:has(.bn) :is(.input-top, .input-hint, .mx-foot, .status-line, .appbar, .menubar, .st-more) { display: none; }
+}
 /* Command search fills what the keyboard leaves, so more than one or two results show. */
 :root[data-keyboard] .pal-wrap { padding-top: 8px; padding-bottom: 8px; }
 :root[data-keyboard] .pal { max-height: 100%; }
