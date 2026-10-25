@@ -10,6 +10,7 @@ import { errorBannerHtml, haltedBannerHtml, lcdHtml } from './ui/banner.js';
 import { InputArea } from './ui/input-area.js';
 import { Autocomplete } from './ui/autocomplete.js';
 import { Palette } from './ui/palette.js';
+import { exampleUse } from './ui/examples.js';
 import { Popover } from './ui/popover.js';
 import { Toasts } from './ui/toast.js';
 import { Sheets } from './ui/sheets.js';
@@ -2417,6 +2418,20 @@ class App {
         options[Number(target.dataset.v)].run();
       },
     });
+  }
+
+  // An example program goes onto the command line to read and change, and its note stores it under its name, as `'FAC' STO`
+  // would, without the quote key.
+  loadExample(example) {
+    if (this.inputMode !== 'rpl') this.setInputMode('rpl');
+    if (this.entry.buffer.trim()) this.entry.typeToken(example.source); else this.entry.recall(example.source);
+    const keep = () => {
+      this.entry.cursorEnd();
+      this.entry.typeToken(`'${example.name}' STO`);
+      this.commitEntry();
+      this.toast(`Stored as ${example.name}. Try ${exampleUse(example)}.`, { key: 'example' });
+    };
+    this.toast('Press Enter to put the program on the stack.', { key: 'example', action: `Store as ${example.name}`, onAction: keep });
   }
 
   // The HP's CMD: the last four lines entered, newest first; one goes back on an empty line or into the line typed.

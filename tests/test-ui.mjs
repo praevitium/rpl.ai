@@ -4279,3 +4279,40 @@ setAngle('RAD');
     && sh.includes("const shown = (v, digits) => escapeHtml(tableCell(v, digits));"),
     'table fields: a typed start or step changes the values in place, the other field, and shows or hides Auto, without rebuilding the sheet, so a tap on the next field or key still lands');
 }
+
+// Command search offers short RPL programs, found by what they do, and a tap puts the source on the command line.
+{
+  const { EXAMPLE_PROGRAMS, exampleUse } = await import('../www/src/ui/examples.js');
+  const { Palette } = await import('../www/src/ui/palette.js');
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const { normalizeUiPrefs } = await import('../www/src/ui/ui-prefs.js');
+  const loaded = [];
+  const app = { prefs: normalizeUiPrefs({ minimal: true }), setPrefs: () => {}, runCommandFromUI: () => {}, runAction: () => {}, drawers: {}, loadExample: (example) => loaded.push(example.name) };
+  const palette = new Palette({ host: null, app });
+  const found = (q) => (palette._items(q).find(([title]) => title === 'Example programs') ?? ['', []])[1];
+  assert(found('factorial').map((it) => it.title).join() === 'Factorial (FAC)' && found('fibonacci').map((it) => it.title).join() === 'Fibonacci number (FIB)'
+    && found('compound').map((it) => it.title).join() === 'Compound growth (GROW)' && found('quadratic').some((it) => it.title === 'Quadratic roots (QRT)')
+    && found('example').length === EXAMPLE_PROGRAMS.length && found('while').some((it) => it.title === 'Greatest common divisor (EUC)'),
+    'command search: example programs are found by what they do or the loop they teach, and "example" lists them all');
+  assert(!palette._items('').some(([title]) => title === 'Example programs') && !found('zzzz').length,
+    'command search: with nothing typed the list is as before, and a query that matches none shows no example group');
+  found('factorial')[0].run();
+  assert(loaded.join() === 'FAC' && found('hypotenuse')[0].detail === `postfix arithmetic · ${exampleUse(EXAMPLE_PROGRAMS.find((e) => e.name === 'HYP'))}`,
+    'command search: a tap on an example loads it, and its row says what it teaches and one call with its result');
+  assert(EXAMPLE_PROGRAMS.length >= 8 && new Set(EXAMPLE_PROGRAMS.map((e) => e.name)).size === EXAMPLE_PROGRAMS.length
+    && EXAMPLE_PROGRAMS.every((e) => !lookup(e.name)), 'example programs: each has its own name, and none is the name of a command');
+  const stackText = (stack) => Array.from({ length: stack.depth }, (_, i) => format(stack.peek(stack.depth - i))).join(' ');
+  for (const example of EXAMPLE_PROGRAMS) {
+    const stack = new Stack();
+    const line = new Entry(stack);
+    const run = (text) => { line.buffer = text; line.cursor = text.length; line.enter(); return line.error; };
+    const stored = run(`${example.source} '${example.name}' STO`);
+    const results = example.tries.map(([args, want]) => {
+      while (stack.depth) stack.pop();
+      const error = run(`${args} ${example.name}`);
+      return error || stackText(stack) === want ? null : `${args} gave ${stackText(stack)}`;
+    });
+    varPurge(example.name);
+    assert(!stored && results.every((r) => r === null), `example program ${example.name} stores and gives what its row promises (${results.filter(Boolean).join('; ') || stored || 'ok'})`);
+  }
+}

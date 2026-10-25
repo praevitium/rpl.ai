@@ -10,6 +10,7 @@ import { THEMES, THEME_LABELS, SIDES } from './ui-prefs.js';
 import { MENU_FAMILIES, OWN_MENUS } from './menus.js';
 import { CATEGORIES, CHAR_GROUPS, signatureOf } from './drawer.js';
 import { icon } from './icons.js';
+import { EXAMPLE_PROGRAMS, exampleUse } from './examples.js';
 import { escapeHtml, typeName } from './display.js';
 
 const PALETTE_ACTIONS = Object.freeze([
@@ -18,7 +19,7 @@ const PALETTE_ACTIONS = Object.freeze([
 ]);
 
 const RESULT_CAP = 8;
-const PLACEHOLDERS = Object.freeze(['Search commands, settings, variables, constants…', 'Search commands, settings…', 'Search commands…']);
+const PLACEHOLDERS = Object.freeze(['Search commands, settings, variables, examples…', 'Search commands, settings…', 'Search commands…']);
 const STARTER_COMMANDS = Object.freeze(['SOLVE', 'FACTOR', 'DERIV', 'INTEG', 'CONVERT', 'ROLL', 'PICK', 'STO']);
 
 export function highlightMatches(text, query) {
@@ -173,6 +174,11 @@ export class Palette {
       },
     }));
     groups.push(['Menus', scored(menus)]);
+    const examples = EXAMPLE_PROGRAMS.map((ex) => ({
+      kind: 'example', title: `${ex.title} (${ex.name})`, icon: 'bulb', detail: `${ex.idiom} · ${exampleUse(ex)}`,
+      keywords: `example program rpl sample ${ex.keywords}`, run: () => this.app.loadExample(ex),
+    }));
+    if (q) groups.push(['Example programs', scored(examples)]);
     const vars = [...calcState.current.entries.entries()].map(([name, value]) => ({
       kind: 'variable', title: name, mono: true, icon: 'folder',
       detail: value.type === TYPES.DIRECTORY ? 'Folder' : typeName(value),
