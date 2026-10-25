@@ -56,7 +56,7 @@ download, no account and no sign-up.
 | **Units** | The HP 50g's whole unit catalog with SI prefixes, CONVERT and UBASE, and units inside algebraics |
 | **Linear algebra** | Vectors and matrices with DET, INV, RANK, LU, QR, SCHUR, CHOLESKY, EGV and LINSOLVE, and a matrix writer that pastes from spreadsheets |
 | **Statistics** | ΣDAT and Σ+, MEAN, SDEV, LINFIT, BESTFIT and BINS, and distributions such as NDIST and UTPN |
-| **Programming** | User RPL with `« »`, IF, CASE, FOR, WHILE and IFERR (typed from the HP's BRCH menu), local variables, recursion thousands of calls deep, DEFINE, directories, and HALT, SST, SST↓ and DBUG for debugging, and a Stop key for a program that runs long |
+| **Programming** | User RPL with `« »`, IF, CASE, FOR, WHILE and IFERR (typed from the HP's BRCH menu), local variables, recursion thousands of calls deep, DEFINE, directories, and HALT, SST, SST↓ and DBUG for debugging, and Pause and Stop keys for a program that runs long |
 | **Plots** | FUNCTION, POLAR, PARAMETRIC, DIFFEQ, slope fields, conics, truth plots, contour maps, 3D wireframes you can turn, y-slices, parametric surfaces, complex grid maps and matrices in 3D, scatter, bar and histogram plots, with trace, zoom and PNG export |
 | **Data in and out** | Copy and paste with Excel, Google Sheets and Numbers; CSV, TSV, `.xlsx`, JSON and HP `.rpl` files; LaTeX copied out and pasted in |
 | **Input** | Keyboard first with `⌘K` search, the HP 50g keypad on screen, and a phone layout with its own key strip |
@@ -731,10 +731,12 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   12.345, as the command line does. Exports, copies and shares always
   keep the point, so other tools read them.
 - A program that runs past half a second shows a one-row Running
-  banner with the seconds it has run and a Stop key; the ON key, Esc and
-  the back button stop it too, and the rest of the page waits until it
-  ends. The screen stays awake while it runs, and with the page in the
-  background it goes on in slower steps, a pause every second and a half.
+  banner with the seconds it has run, a Pause key (an icon under 480 px)
+  and a Stop key; the ON key, Esc and the back button stop it too, and the
+  rest of the page waits until it ends or is paused. Pause halts it as a
+  HALT would, with Continue and Step on the banner that follows. The
+  screen stays awake while it runs, and with the page in the background it
+  goes on in slower steps, a pause every second and a half.
 
 ---
 
@@ -1020,9 +1022,15 @@ stepped from the start with `DBUG`, or with Debug in its level's ⋯ menu.
 As on the HP, the rest of the line that called a program waits for it, even
 across a halt: with a `HALT` in `FOO`, `10 FOO 1 +` leaves 10 and adds the
 1 only once `CONT` has let `FOO` finish. A program that keeps running past
-half a second has a Running banner of its own, with its seconds and a Stop
-key; Stop, ON and Esc end it where it is, the stack stays as the
-program left it, and Undo takes the run back.
+half a second has a Running banner of its own, with its seconds, a Pause
+key and a Stop key. Stop (also ON and Esc) ends it where it is, the stack
+stays as the program left it, and Undo takes the run back. Pause halts it
+where it is, as if a `HALT` stood there: the banner then shows the program
+with its next word marked and Continue, Step, Step into and Stop work as
+for any halted program, so a long run can be looked into without editing a
+`HALT` into it, and the stack and variables can be looked at or changed
+first. Stop from a paused program is the same Stop, with the same note and
+Undo.
 
 ![A halted program](screenshots/debugging.png)
 
@@ -1330,17 +1338,18 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
   only.
 - MOLWT answers in g/mol, from standard atomic weights, where the HP
   writes g/gmol, so its last digits can differ from the HP's.
-- A program started from the command line runs for as long as it needs, in
-  short pauses where the page redraws and takes a press. After about half
-  a second a Running banner shows the seconds it has run and a Stop key,
-  and Stop, the ON key, Esc and a phone's back button end it where it is,
-  as the HP's ON does: the stack stays as the program left it and Undo
-  takes the run back. Nothing else takes a press until it ends, and a
-  reload ends it. What the page cannot pause still stops after 10 seconds,
-  with the stack put back and the error saying why: a command typed on
-  its own, a program a menu, a plot or the assistant runs, and a program
-  that `MAP`, `SEQ`, `DOLIST` or an algebraic calls. A loop there stops
-  after 1,000,000 passes.
+- A program started from the command line, a variable's or a CST soft key
+  or a level's EVAL runs for as long as it needs, in short pauses where
+  the page redraws and takes a press. After about half a second a Running
+  banner shows the seconds it has run, a Pause key and a Stop key. Stop,
+  the ON key, Esc and a phone's back button end it where it is, as the
+  HP's ON does: the stack stays as the program left it and Undo takes the
+  run back. Pause halts it instead, as a HALT would. Nothing else takes a
+  press until it ends or is paused, and a reload ends it. What the page
+  cannot pause still stops after 10 seconds, with the stack put back and
+  the error saying why: a command typed on its own, a program a plot or
+  the assistant runs, `STR→`, and a program that `MAP`, `SEQ`, `DOLIST` or
+  an algebraic calls. A loop there stops after 1,000,000 passes.
 - A result too big for the page says `Insufficient memory` at once, where
   the HP would run out of memory, rather than run until the 10-second
   limit: an integer of over a million digits (a power, a factorial or a

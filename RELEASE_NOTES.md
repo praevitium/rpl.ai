@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.94 (2026-10-25)
+**Latest release:** v0.8.95 (2026-10-25)
 
 ---
 
@@ -18,6 +18,25 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.95 — 2026-10-25
+
+- Fixed: a program run from a variable's soft key, from a CST or user key or
+  from a level's EVAL could not be stopped. Unlike a typed name it ran in one
+  stretch, so the page froze for up to 10 seconds (a level's EVAL stopped at
+  1,000,000 loop passes) with no Running banner and no Stop. They now pause
+  in short stretches as a typed name does, with the banner, Stop and an Undo
+  that takes the run back, and an error after a pause still names the program.
+- Added: a Pause key on the Running banner halts the program where it is, as
+  if a HALT stood there. The halted banner shows the program with its next
+  word marked and Continue, Step, Step into and Stop, so a long run can be
+  looked into without editing a HALT into it; the stack and variables can be
+  looked at or changed before Continue. The key is an icon under 480 px.
+- Changed: Stop from a paused program now gives the same Program stopped note
+  with Undo as Stop while it runs, so Undo takes the whole run back; before,
+  Stop from a halt left no note and Undo kept the partial result.
 
 ---
 
