@@ -2206,3 +2206,67 @@ resetBinaryState();
   assert(s.depth === 1 && s.peek(1) === deep, 'the stack is as it was after that error');
   assert(describeError(e.error, { stack: [], depth: 1 }).kind === 'memory', 'and the error banner is the memory one');
 }
+
+/* The HP runs the rest of a command line once the program it called ends, so a program that halts holds the rest of the line (and
+   the keys pressed with it) until CONT, and KILL drops them. */
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  resetHome();
+  clearAllHalted();
+  const s = new Stack();
+  const e = new Entry(s);
+  const typed = (line) => { e.buffer = line; e.cursor = line.length; e.enter(); };
+  const stackText = () => s.snapshot().map((v) => format(v)).join(' ');
+  const cont = () => lookup('CONT').fn(s, e);
+  const clear = () => { clearAllHalted(); while (s.depth) s.pop(); e.error = ''; };
+  typed("« HALT 2 * » 'HT1' STO");
+  typed("« 3 HALT 4 + » 'HT2' STO");
+
+  typed('10 HT1 1 +');
+  assert(stackText() === '10' && calcState.halted?.kind === 'halt', `10 HT1 1 + stops at the HALT with 10 on the stack, the 1 + still to come (${stackText()})`);
+  cont();
+  assert(stackText() === '21' && !calcState.halted, `CONT finishes HT1 (20) and then runs the 1 + of the line (${stackText()})`);
+  clear();
+
+  typed('HT2 HT2 5 *');
+  assert(stackText() === '3' && calcState.halted, `a line with two halting calls stops at the first (${stackText()})`);
+  cont();
+  assert(stackText() === '3 7' && calcState.halted, `CONT runs on to the second call and halts there with the 5 * still owed (${stackText()})`);
+  cont();
+  assert(stackText() === '35 7' && !calcState.halted, `the second CONT ends the line (${stackText()})`);
+  clear();
+
+  typed('10 HT1 1 +');
+  lookup('KILL').fn(s, e);
+  assert(stackText() === '10' && !calcState.halted, `KILL leaves the line's rest undone (${stackText()})`);
+  clear();
+
+  typed('10 « HALT 2 * » EVAL 1 +');
+  cont();
+  assert(stackText() === '21', `a program written in the line holds the rest of it too (${stackText()})`);
+  clear();
+
+  e.buffer = '10 HT1';
+  e.cursor = 6;
+  e.execOp('SQ');
+  assert(stackText() === '10' && calcState.halted, `a key pressed with the line waits for the program as well (${stackText()})`);
+  cont();
+  assert(stackText() === '400', `and goes on the program's result, 20 SQ (${stackText()})`);
+  clear();
+
+  typed('10 HT1 "a" -');
+  const failed = assertThrows(cont, /Bad argument type/, 'a failure in the rest of the line, after CONT, is an error');
+  assert(failed?.line === '10 HT1 "a" -' && failed.line.slice(failed.spot).startsWith('-'), `and still points at the word that failed (${failed?.line} ${failed?.spot})`);
+  clear();
+
+  typed('10 HT1 1 +');
+  for (let i = 0; i < 10 && calcState.halted; i++) lookup('SST').fn(s, e);
+  assert(stackText() === '21' && !calcState.halted, `stepping a halted program to its end runs the rest of the line (${stackText()})`);
+  clear();
+
+  typed('1 2 + 3 *');
+  assert(stackText() === '9', 'a line without a halt runs through as before');
+  clear();
+  varPurge('HT1');
+  varPurge('HT2');
+}

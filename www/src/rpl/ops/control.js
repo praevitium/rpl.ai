@@ -1,5 +1,5 @@
 import { RPLAbort, RPLError } from '../stack.js';
-import { getHalted, takeHalted, clearHalted, inScratchState, isSuspension } from '../state.js';
+import { getHalted, takeHalted, clearHalted, inScratchState, isSuspension, haltMark, owedAfter, runDeferred } from '../state.js';
 import { isProgram, isTagged, Name, Real } from '../types.js';
 import { register, lookup } from './registry.js';
 import { runSuspendable, withStepMode, promptStoProgram } from './internal.js';
@@ -69,15 +69,22 @@ register('NOVAL', (s) => {
 }, { category: 'Control flow / debug', categoryOrder: 14, label: "NOVAL" });
 
 
-// Resumes the most recently halted program, consuming any PROMPT banner.
-function resumeHalted() {
+// Resumes the most recently halted program, consuming any PROMPT banner.  The rest of the line that called it goes on once
+// the program ends, outside any stepping.
+function resumeHalted(stepping = null) {
   if (inScratchState()) throw new RPLError('Cannot dry-run a halted program');
   if (!getHalted()) throw new RPLError('No halted program');
-  runSuspendable(takeHalted().generator);
+  const record = takeHalted();
+  const mark = haltMark();
+  let owed = null;
+  const resume = () => { runSuspendable(record.generator); owed = owedAfter(record, mark); };
+  if (stepping) withStepMode(stepping.single, stepping.into, resume);
+  else resume();
+  if (owed) runDeferred(owed);
 }
 
 
-register('CONT', resumeHalted, { category: 'Control flow / debug', categoryOrder: 2, label: "CONT" });
+register('CONT', () => resumeHalted(), { category: 'Control flow / debug', categoryOrder: 2, label: "CONT" });
 
 
 // As the AUR has it, KILL cancels the program it stops and every halted one under it, not just the latest, but leaves a
@@ -89,7 +96,7 @@ register('KILL', () => {
 }, { category: 'Control flow / debug', categoryOrder: 3, label: "KILL" });
 
 
-register('RUN', () => withStepMode(false, false, resumeHalted), { category: 'Control flow / debug', categoryOrder: 5, label: "RUN" });
+register('RUN', () => resumeHalted({ single: false, into: false }), { category: 'Control flow / debug', categoryOrder: 5, label: "RUN" });
 
 
 register('DBUG', (s) => {
@@ -102,6 +109,6 @@ register('DBUG', (s) => {
 
 
 // SST runs a named sub-program call as one step; SST↓ steps into it.
-register('SST',  () => withStepMode(true, false, resumeHalted), { category: 'Control flow / debug', categoryOrder: 7, label: "SST" });
+register('SST',  () => resumeHalted({ single: true, into: false }), { category: 'Control flow / debug', categoryOrder: 7, label: "SST" });
 
-register('SST↓', () => withStepMode(true, true, resumeHalted), { category: 'Control flow / debug', categoryOrder: 8, label: "SST↓" });
+register('SST↓', () => resumeHalted({ single: true, into: true }), { category: 'Control flow / debug', categoryOrder: 8, label: "SST↓" });

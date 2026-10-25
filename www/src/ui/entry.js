@@ -8,7 +8,7 @@ import { isStackOverflow } from '../rpl/types.js';
 import { errorBeep } from './beep.js';
 import {
   saveVarStateForUndo, undoVarState, redoVarState,
-  hasVarRedo, varStateMatchesUndoTop, dropVarUndoTop, touchLcd,
+  hasVarRedo, varStateMatchesUndoTop, dropVarUndoTop, touchLcd, runDeferred,
 } from '../rpl/state.js';
 import {
   EditorState, EditorView, Transaction, keymap, drawSelection,
@@ -657,8 +657,9 @@ export class Entry {
 
   // A syntax error keeps the line for editing.  Once the line runs it is used up,
   // as on the HP, even when it fails or aborts; a failure keeps it on the error
-  // (e.line) for Fix the line.
-  _commitEntry(raw) {
+  // (e.line) for Fix the line.  The tail (the keys that go with the line) and the
+  // rest of the line wait for a program the line halts, as on the HP.
+  _commitEntry(raw, tail = []) {
     let values;
     try {
       values = parseTyped(raw);
@@ -668,19 +669,24 @@ export class Entry {
       throw e;
     }
     let failed = -1;
-    try {
-      if (isProgramLine(values)) this.stack.runOp(() => runProgramLine(this.stack, values));
-      else this.stack.holdEmit(() => {
-        for (const v of values) {
-          failed++;
-          if (v?.type === 'name' && !v.quoted && lookup(v.id)) this._runOpTagged(v.id);
-          else if (v?.type === 'name' && !v.quoted) { this.stack.push(v); this._runOpTagged('EVAL', v.id); }
-          else this.stack.push(v);
-        }
+    const onLine = (step) => () => {
+      try {
+        step();
+      } catch (e) {
+        if (e instanceof Error && !(e instanceof RPLAbort)) { e.line = raw; e.spot = failedSpot(raw, values, failed); }
+        throw e;
+      }
+    };
+    const steps = isProgramLine(values)
+      ? [() => this.stack.runOp(() => runProgramLine(this.stack, values))]
+      : values.map((v, k) => () => {
+        failed = k;
+        if (v?.type === 'name' && !v.quoted && lookup(v.id)) this._runOpTagged(v.id);
+        else if (v?.type === 'name' && !v.quoted) { this.stack.push(v); this._runOpTagged('EVAL', v.id); }
+        else this.stack.push(v);
       });
-    } catch (e) {
-      if (e instanceof Error && !(e instanceof RPLAbort)) { e.line = raw; e.spot = failedSpot(raw, values, failed); }
-      throw e;
+    try {
+      this.stack.holdEmit(() => runDeferred([...steps.map(onLine), ...tail]));
     } finally {
       this._clearCommittedBuffer(raw);
     }
@@ -699,15 +705,20 @@ export class Entry {
     this._snapForUndo();
     this.safeRun(() => {
       const raw = this.buffer.trim();
-      if (raw) this._commitEntry(raw);
       let at = raw.length;
-      try {
-        for (const name of names) { at += 1; this._runOpTagged(name); at += name.length; }
-      } catch (e) {
-        // A key pressed on a typed line fails as the line and the command typed together would, so Fix the line brings back both.
-        if (raw && e instanceof Error && !(e instanceof RPLAbort)) { e.line = `${raw} ${names.join(' ')}`; e.spot = at; }
-        throw e;
-      }
+      const keys = names.map((name) => () => {
+        at += 1;
+        try {
+          this._runOpTagged(name);
+        } catch (e) {
+          // A key pressed on a typed line fails as the line and the command typed together would, so Fix the line brings back both.
+          if (raw && e instanceof Error && !(e instanceof RPLAbort)) { e.line = `${raw} ${names.join(' ')}`; e.spot = at; }
+          throw e;
+        }
+        at += name.length;
+      });
+      if (raw) this._commitEntry(raw, keys);
+      else runDeferred(keys);
     }, '', { keepPartial: true });
     this._emit();
   }

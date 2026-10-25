@@ -261,7 +261,10 @@ export function getLastFitModel() { return state.lastFitModel; }
 
 export function clearLastFitModel() { _set('lastFitModel', null); }
 
+let haltSerial = 0;
+
 export function setHalted(h) {
+  h.serial = ++haltSerial;
   state.haltedStack.push(h);
   state.halted = h;
   state.promptMessage = h.prompt ?? null;
@@ -306,6 +309,31 @@ export function clearAllHalted() {
 }
 
 export function haltedDepth() { return state.haltedStack.length; }
+
+// The HP runs the rest of a command line once the program it called ends, so the steps after one that halts a program wait on
+// its record (after) and run when it finishes.  A program that halts again keeps them.
+export function haltMark() { return haltSerial; }
+
+export function haltedSince(mark) { return state.halted?.serial > mark; }
+
+export function runDeferred(steps) {
+  for (let i = 0; i < steps.length; i++) {
+    const mark = haltSerial;
+    steps[i]();
+    if (haltedSince(mark)) {
+      state.halted.after = [...(state.halted.after ?? []), ...steps.slice(i + 1)];
+      return;
+    }
+  }
+}
+
+// What a resumed program's record still owed, when it has ended; none while it is halted again, which now owes it.
+export function owedAfter(record, mark) {
+  if (!record.after?.length) return null;
+  if (!haltedSince(mark)) return record.after;
+  state.halted.after = [...record.after, ...(state.halted.after ?? [])];
+  return null;
+}
 
 // HALT, PROMPT and a single step halt a program; the dialogs and WAIT suspend one, which the HP's KILL leaves and its
 // HLT annunciator doesn't show.
