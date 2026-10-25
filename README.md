@@ -230,6 +230,9 @@ RPL puts the numbers first and the operation last. Each value goes on the
   negative real give its principal complex value with CMPLX on or off, as on
   the HP: `-1. LN` gives `(0, 3.14159265359)`. The TRIG menu opens on the
   HP's HYP folder: SINH ASINH COSH ACOSH TANH ATANH, then EXPM and LNP1.
+  The imaginary unit works in a formula: `'3+4*i' →NUM` gives `(3, 4)`,
+  `'ABS(3+4*i)' →NUM` gives 5, and APPROX does the same on EVAL, as `π` and
+  `e` fold to their numbers; EXACT EVAL keeps `i` as it is.
 - **Matrices.** `[[ 2 1 ][ 1 3 ]] DET` gives 5, `INV`, `EGV` and `LU` work
   on it, and `→NUM` gives every entry its number. In exact mode an integer
   matrix inverts and row-reduces to fractions, as on the HP:
@@ -581,9 +584,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   so `→ X « X SQ »` binds X (elsewhere it begins a name such as `→NUM`),
   and `« »`, `{ }` and `[ ]` start a word of their own after a name or
   number.
-- In the equation writer, a drag scrolls a long formula; touch and hold,
-  then drag, to select part of it, and the tools over the selection
-  (Evaluate, Simplify, Factor and the rest) take a finger.
+- In the equation writer, a drag scrolls a long formula, which fades at the
+  edge it runs on past, as a matrix grid wider than the screen does; touch
+  and hold, then drag, to select part of it, and the tools over the
+  selection (Evaluate, Simplify, Factor and the rest) take a finger.
 - In Minimal view, ⌫ and Enter stay beside the command line, the menu
   button on the status line reaches Undo, command search, the drawers, the
   soft keys, full screen and Settings, and the button beside it leaves. A
@@ -722,7 +726,10 @@ power, so `(x^5-1)/(x-1)` types as written; Tab leaves any box. Click to
 place the cursor. Select a part with a drag, `↑`, ⇧← ⇧→, or a click on a
 fraction bar or root sign, and a toolbar evaluates, simplifies, expands,
 factors or differentiates just that part. On a Mac, Option types the
-symbols it has, such as √, π, ≤ and ∑.
+symbols it has, such as √, π, ≤ and ∑. A comparison goes in a function's
+argument or a group, so `IFTE(x<0,-x,x)` types as written, and a `,` moves
+to the next argument, where `-`, π, a group or a function fill the empty
+box; `=` stays between the two sides of the whole formula.
 
 On a phone with the keypad hidden, or in minimal view, the writer takes two
 parts of the spare height to the stack's one, and the formula's type grows

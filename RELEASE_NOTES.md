@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.85 (2026-10-24)
+**Latest release:** v0.8.86 (2026-10-24)
 
 ---
 
@@ -20,6 +20,33 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.86 — 2026-10-24
+
+- Fixed: `i` in a formula was never worked out. `'3+4*i' →NUM` stayed
+  `3+4*i`, `'ABS(3+4*i)' →NUM` stayed as typed and a matrix entry `i` stayed
+  a name, while `π` and `e` folded to their numbers, though the AUR gives
+  `i` as "the symbolic constant i or its numerical representation, (0, 1)".
+  →NUM and EVAL under APPROX now work an expression holding `i` out with the
+  commands themselves: `(3, 4)`, 5, `(2, 0)` for `'(1+i)*(1-i)'`. EXACT EVAL
+  keeps `i` symbolic, and an expression with another unknown name in it stays
+  as it is.
+- Fixed: in the equation writer, a key typed in the empty box after a comma
+  built a product with that empty box. In `MAX(x,` a `-`, `+/-`, π, i, ∞, ½,
+  a group, EXP or a function key left "Incomplete Subexpression" where the
+  same key in the first argument worked (digits and letters were the only
+  keys that filled the box). They fill it now, so `MAX(x,-4)` and `MAX(x,π)`
+  type as written, and so does a box reached with the arrow keys.
+- Added: a comparison goes in a function's argument or a group in the
+  equation writer: `IFTE(x<0,-x,x)`, `IFTE(x≤1,1,0)` and `2^(x<1)` type as
+  written, with `<` then `=` making ≤ there as well. The `=` stays between
+  the two sides of the whole formula, and says so when typed inside an
+  argument ("An = goes between the two sides of the whole formula"); a second
+  comparison in the same argument is still refused.
+- Changed: the equation writer's formula and the matrix writer's grid fade at
+  the edge they run on past when they are wider than the screen, as every
+  other sideways scroller already did (the stack levels, the insight cards,
+  the key strips). The caret and a focused cell scroll to clear of the fade.
 
 ## v0.8.85 — 2026-10-24
 
