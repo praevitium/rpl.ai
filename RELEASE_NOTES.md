@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.86 (2026-10-24)
+**Latest release:** v0.8.87 (2026-10-25)
 
 ---
 
@@ -18,6 +18,39 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.87 — 2026-10-25
+
+- Fixed: in the equation writer, `+/-` pressed twice took the negation off
+  but left the cursor in the wrong place, so the next key typed into the
+  wrong part of the formula, or, inside a function or an exponent, failed
+  with an error. `2 × 3 +/- +/- 4` types `2*34`, and inside `EXP(...)` the
+  cursor stays in the box it was in.
+- Fixed: a second `=` or comparison typed in the same argument or group,
+  even the same one (`x ≥ 1 + y ≥`), was accepted and then broke the cursor
+  keys. It is refused as `x=3=4` already was: "Only one = or comparison fits
+  in an expression".
+- Fixed: a letter or digit typed after π, ∞ or i joined it into one name, so
+  `2 π r` made the name `πr` where it should be 2·π·r. They multiply now;
+  letters typed with the letter keys still join as before (`AB`, `x2`).
+- Fixed: with a sum selected in the equation writer, typing a letter, digit,
+  π or ½ gave `x + y*z`, the factor joining only the last term, where ×, ÷
+  and ^ put the sum in a group. It is `(x + y)*z` now. A whole equation
+  selected refuses a factor, as it already refused ÷ and ^, where × built
+  `(x = y + 1)*2`, which could not be read back.
+- Added: command search finds example programs, eight short RPL programs to
+  learn from (factorial, Fibonacci, quadratic roots, Euclid's GCD, Collatz
+  steps, an average, compound growth, the hypotenuse), by what they do or the
+  loop they teach, and all of them with `example`. A tap puts the program on
+  the command line (after what is there, and from either writer too), and the
+  note's Store as FAC key stores it under its name, so `5 FAC` works at once
+  without typing the quote. Each one is tested to give the answers its row
+  shows.
+- Changed: on a phone a title in command search longer than the row, such as
+  "Greatest common divisor (EUC)" at 280 px, takes a second line, where an
+  ellipsis cut it to "(E…" and hid the name.
 
 ---
 

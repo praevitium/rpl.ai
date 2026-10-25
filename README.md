@@ -729,7 +729,9 @@ factors or differentiates just that part. On a Mac, Option types the
 symbols it has, such as √, π, ≤ and ∑. A comparison goes in a function's
 argument or a group, so `IFTE(x<0,-x,x)` types as written, and a `,` moves
 to the next argument, where `-`, π, a group or a function fill the empty
-box; `=` stays between the two sides of the whole formula.
+box; `=` stays between the two sides of the whole formula. A letter, digit or
+π typed after a selected sum multiplies the whole sum, `(x + y)*z`, and π, ∞
+and i keep to themselves, so `2 π r` is 2·π·r.
 
 On a phone with the keypad hidden, or in minimal view, the writer takes two
 parts of the spare height to the stack's one, and the formula's type grows
@@ -899,7 +901,11 @@ installed as an app, its icon carries a dot until the alarm is acknowledged.
 variables and constants. For quick commands, the selected result shows what
 it would leave on your stack, why it can't run, or the mode or variable it would change; `→` opens its reference page. With nothing
 typed, the commands you last ran from search come first, so on a phone
-without the keypad a command you use often is two taps away.
+without the keypad a command you use often is two taps away. Type `example`,
+or what a program does (`factorial`, `quadratic`, `compound`) or the loop it
+teaches (`while`, `for`), for short RPL programs to learn from: a tap puts one
+on the command line to read and change, and the note's **Store as FAC** keeps
+it under its name, so `5 FAC` works at once.
 
 ![Search with a result preview](screenshots/palette.png)
 
