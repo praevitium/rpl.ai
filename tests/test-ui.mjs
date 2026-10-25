@@ -4215,6 +4215,16 @@ setAngle('RAD');
     'undo kept: Reset everything removes the file');
 }
 
+// A folder tapped, its row in the Variables drawer or a path row there, takes in the typed line first. When that line fails, the folder
+// stays shut and the error is in sight, as a folder's soft key leaves it, instead of the folder opening behind a drawer that hides it.
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  assert(/if \(value\.type === TYPES\.DIRECTORY\) \{\n\s*if \(app\.entry\.buffer\.trim\(\)\) \{\n\s*app\.commitEntry\(\);\n\s*if \(app\.entry\.error\) \{ this\._reveal\(\); return; \}\n\s*\}\n\s*goInto\(name\);/.test(drawerSrc)
+    && /if \(this\.entry\.buffer\.trim\(\)\) \{\n\s*this\.commitEntry\(\);\n\s*if \(this\.entry\.error\) \{ if \(this\.drawers\.hidesInput\(\)\) this\.drawers\.close\(\); return; \}\n\s*\}\n\s*if \(index === 0\) \{ goHome\(\); return; \}/.test(appSrc),
+    'a folder tapped with a line that fails stays shut and shows the error, whether it is a folder row or a path row in the drawer');
+}
+
 // The table of values keeps its start and step: the plot's own snapshot holds them, a typed value, ÷2 or ×2 keeps them, paging does
 // not, and Auto, offered once they differ from the plot window's, forgets them.
 {

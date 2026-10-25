@@ -1879,7 +1879,10 @@ class App {
     if (index < 0 || index >= path.length) return;
     const stepsUp = path.length - 1 - index;
     if (stepsUp <= 0) return;
-    if (this.entry.buffer.trim()) this.commitEntry();
+    if (this.entry.buffer.trim()) {
+      this.commitEntry();
+      if (this.entry.error) { if (this.drawers.hidesInput()) this.drawers.close(); return; }
+    }
     if (index === 0) { goHome(); return; }
     for (let i = 0; i < stepsUp; i++) goUp();
   }

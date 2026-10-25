@@ -844,7 +844,10 @@ export class Drawers {
     const value = calcState.current.entries.get(name);
     if (value === undefined) return;
     if (value.type === TYPES.DIRECTORY) {
-      if (app.entry.buffer.trim()) app.commitEntry();
+      if (app.entry.buffer.trim()) {
+        app.commitEntry();
+        if (app.entry.error) { this._reveal(); return; }
+      }
       goInto(name);
       return;
     }
