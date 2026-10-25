@@ -4006,3 +4006,16 @@ function _approxMatEqual(A, B, tol) {
   assertThrows(() => runLine('[[ 1 2 ][ 3 4 ]] [[ 5 6 7 ]] 1 ROW+'), /Invalid dimension/, 'rows of another width are Invalid dimension');
   assert(stack('[[ 1 2 ][ 3 4 ]] [ 5 6 ] 3 ROW+') === '[[ 1 2 ][ 3 4 ][ 5 6 ]]', 'a vector still goes in as a row for ROW+');
 }
+
+// SUB and REPL on a matrix take positions as { row column } or as a count in row order.
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top('[[ 1 1 1 1 ][ 1 1 1 1 ][ 1 1 1 1 ]] 6 [[ 2 2 ][ 2 2 ]] REPL') === '[[ 1 1 1 1 ][ 1 2 2 1 ][ 1 2 2 1 ]]', 'AUR: REPL of a matrix at position 6 reads it in row order');
+  assert(top('[[ 1 2 3 ][ 4 5 6 ][ 7 8 9 ]] { 2 2 } [[ 0 0 ][ 0 0 ]] REPL') === '[[ 1 2 3 ][ 4 0 0 ][ 7 0 0 ]]', 'REPL of a matrix at { row column } as before');
+  assertThrows(() => runLine('[[ 1 2 3 ][ 4 5 6 ][ 7 8 9 ]] 9 [[ 0 0 ]] REPL'), /Bad argument value/, 'a patch that runs past the matrix is Bad argument value');
+  assert(top('[[ 1 2 3 ][ 4 5 6 ][ 7 8 9 ]] 2 5 SUB') === '[[ 2 ][ 5 ]]', 'SUB of a matrix between two positions in row order is the rectangle they span');
+  assert(top('[[ 1 2 3 ][ 4 5 6 ][ 7 8 9 ]] { 1 2 } { 2 3 } SUB') === '[[ 2 3 ][ 5 6 ]]', 'SUB of a matrix between { row column } corners');
+  assert(top('[[ 1 2 3 ][ 4 5 6 ][ 7 8 9 ]] { 2 2 } 9 SUB') === '[[ 5 6 ][ 8 9 ]]', 'a corner may be a position and the other a pair');
+  assert(top('[[ 1 2 3 ][ 4 5 6 ][ 7 8 9 ]] 5 99 SUB') === '[[ 5 6 ][ 8 9 ]]', 'an end past the matrix reads as the last element');
+  assertThrows(() => runLine('[[ 1 2 3 ][ 4 5 6 ][ 7 8 9 ]] 5 1 SUB'), /Bad argument value/, 'an end before the start has nothing to give');
+}

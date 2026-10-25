@@ -175,10 +175,37 @@ register('TAIL', (s) => {
 }, { category: 'Lists / strings', categoryOrder: 5, label: "TAIL" });
 
 
+// A place in a matrix is { row column } or a count in row order, as the AUR gives them for SUB and REPL.
+function _matrixPlace(cols, where, toInt) {
+  if (isList(where)) {
+    if (where.items.length !== 2) throw new RPLError('Bad argument value');
+    return where.items.map(toInt);
+  }
+  const n = toInt(where);
+  if (n < 1 || cols === 0) throw new RPLError('Bad argument value');
+  return [Math.floor((n - 1) / cols) + 1, ((n - 1) % cols) + 1];
+}
+
+// The rectangle between two places, whose rows and columns past an edge read as the edge.
+function _subMatrix(m, from, to) {
+  const rows = m.rows.length;
+  const cols = rows > 0 ? m.rows[0].length : 0;
+  const edge = (x, hi) => Math.min(Math.max(x, 1), hi);
+  const [r1, c1] = _matrixPlace(cols, from, _toCountN);
+  const [r2, c2] = _matrixPlace(cols, to, _toCountN);
+  const top = edge(r1, rows), bottom = edge(r2, rows), left = edge(c1, cols), right = edge(c2, cols);
+  if (bottom < top || right < left) throw new RPLError('Bad argument value');
+  return Matrix(m.rows.slice(top - 1, bottom).map((row) => row.slice(left - 1, right)));
+}
+
 register('SUB', (s) => {
   const [v, mVal, nVal] = s.popN(3);
   if (isGrob(v) || isPict(v)) {
     subGrob(s, v, mVal, nVal);
+    return;
+  }
+  if (isMatrix(v)) {
+    s.push(_subMatrix(v, mVal, nVal));
     return;
   }
   if (!isList(v) && !isString(v)) throw new RPLError('Bad argument type');
@@ -395,14 +422,10 @@ register('REPL', (s) => {
   }
 
   if (isMatrix(host)) {
-    if (!isList(pos) || pos.items.length !== 2) {
-      throw new RPLError('Bad argument type');
-    }
     if (!isMatrix(patch)) throw new RPLError('Bad argument type');
-    const r0 = _toIntIdx(pos.items[0]);
-    const c0 = _toIntIdx(pos.items[1]);
     const hostRows = host.rows.length;
     const hostCols = hostRows > 0 ? host.rows[0].length : 0;
+    const [r0, c0] = _matrixPlace(hostCols, pos, _toIntIdx);
     const pRows = patch.rows.length;
     const pCols = pRows > 0 ? patch.rows[0].length : 0;
     if (r0 + pRows - 1 > hostRows || c0 + pCols - 1 > hostCols) {
