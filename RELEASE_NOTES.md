@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.93 (2026-10-25)
+**Latest release:** v0.8.94 (2026-10-25)
 
 ---
 
@@ -18,6 +18,33 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.94 — 2026-10-25
+
+- Fixed: the rest of a command line ran at once when the program it called
+  halted. With a `HALT` in `FOO`, `10 FOO 1 +` left 11 on the stack, the 1 added
+  to the 10 before `FOO` had finished. As on the HP, the rest of the line now
+  waits for the program: the stack shows 10 at the HALT, and `CONT` (or `RUN`,
+  `SST`, `SST↓`) finishes `FOO` and then adds the 1, giving 21. An error after a
+  pause still names the program and the word that failed, and `KILL` drops the
+  rest of the line with the program.
+- Added: a long program no longer has to fit in 10 seconds. A program you start
+  from the command line runs in short pauses where the page redraws and takes
+  a press, and after about half a second a Running banner appears with the
+  seconds it has run and a Stop key. Stop, the ON key, Esc and a phone's back
+  button end the run where it is, as the HP's ON does; the stack stays as the
+  program left it and Undo takes the run back. Nothing else takes a press until
+  it ends, so a stray tap cannot start a second command on top of it. On a
+  phone the banner is one row, the screen stays awake while it runs, and with
+  the page in the background the program goes on in slower steps. A reload
+  ends the run.
+- Changed: the 10-second limit now applies only to what the page cannot pause: a
+  command typed on its own, a program run from a menu, a plot or the
+  assistant, and a program that `MAP`, `SEQ`, `DOLIST` or an algebraic calls. A
+  loop there still stops after 1,000,000 passes. This replaces the README's
+  "There is no ON key to break a running program" difference from the HP 50g.
 
 ---
 
