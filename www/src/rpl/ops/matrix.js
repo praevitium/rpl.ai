@@ -553,26 +553,55 @@ register('LSQ', (s) => {
 }, { category: 'Vectors / matrices', categoryOrder: 15, label: "LSQ" });
 
 
+// A vector takes part in the row and column commands as its list of elements: the one to insert, delete or swap is a position.
+const _isElement = (x) => isReal(x) || isInteger(x) || isComplex(x) || isRational(x) || isSymbolic(x);
+
+function _insertElement(items, element, n) {
+  if (!_isElement(element)) throw new RPLError('Bad argument type');
+  if (n < 1 || n > items.length + 1) throw new RPLError('Invalid dimension');
+  const out = items.slice();
+  out.splice(n - 1, 0, element);
+  return Vector(out);
+}
+
+function _deleteElement(s, items, n) {
+  if (n < 1 || n > items.length) throw new RPLError('Invalid dimension');
+  const out = items.slice();
+  const [removed] = out.splice(n - 1, 1);
+  s.push(Vector(out));
+  s.push(removed);
+}
+
+function _swapElements(items, i, j) {
+  if (i < 1 || i > items.length || j < 1 || j > items.length) throw new RPLError('Invalid dimension');
+  const out = items.slice();
+  [out[i - 1], out[j - 1]] = [out[j - 1], out[i - 1]];
+  return Vector(out);
+}
+
+// ROW+ puts the rows of a vector or matrix into a matrix before row n, which need as many columns, and one element into a vector.
 register('ROW+', (s) => {
-  const [M, vec, idx] = s.popN(3);
-  if (!isMatrix(M)) throw new RPLError('Bad argument type');
-  if (!isVector(vec)) throw new RPLError('Bad argument type');
+  const [M, block, idx] = s.popN(3);
   const n = _indexAsInt(idx);
+  if (isVector(M)) { s.push(_insertElement(M.items, block, n)); return; }
+  if (!isMatrix(M)) throw new RPLError('Bad argument type');
+  if (!isVector(block) && !isMatrix(block)) throw new RPLError('Bad argument type');
+  const rows = isVector(block) ? [block.items] : block.rows;
   const m = M.rows.length;
   const cols = m > 0 ? M.rows[0].length : 0;
-  if (vec.items.length !== cols) throw new RPLError('Invalid dimension');
+  if (rows.some((r) => r.length !== cols)) throw new RPLError('Invalid dimension');
   if (n < 1 || n > m + 1) throw new RPLError('Invalid dimension');
-  const newRow = vec.items.slice();
   const out = M.rows.map(r => r.slice());
-  out.splice(n - 1, 0, newRow);
+  out.splice(n - 1, 0, ...rows.map((r) => r.slice()));
   s.push(Matrix(out));
 }, { category: 'Vectors / matrices', categoryOrder: 20, label: "ROW+" });
 
 
 register('ROW-', (s) => {
   const [M, idx] = s.popN(2);
-  if (!isMatrix(M)) throw new RPLError('Bad argument type');
   const n = _indexAsInt(idx);
+  if (isVector(M)) { _deleteElement(s, M.items, n); return; }
+  if (!isMatrix(M)) throw new RPLError('Bad argument type');
   const m = M.rows.length;
   if (n < 1 || n > m) throw new RPLError('Invalid dimension');
   const rows = M.rows.map(r => r.slice());
@@ -582,29 +611,27 @@ register('ROW-', (s) => {
 }, { category: 'Vectors / matrices', categoryOrder: 21, label: "ROW-" });
 
 
+// COL+ puts the columns of a vector or matrix into a matrix before column n, which need as many rows, and one element into a vector.
 register('COL+', (s) => {
-  const [M, vec, idx] = s.popN(3);
-  if (!isMatrix(M)) throw new RPLError('Bad argument type');
-  if (!isVector(vec)) throw new RPLError('Bad argument type');
+  const [M, block, idx] = s.popN(3);
   const n = _indexAsInt(idx);
+  if (isVector(M)) { s.push(_insertElement(M.items, block, n)); return; }
+  if (!isMatrix(M)) throw new RPLError('Bad argument type');
+  if (!isVector(block) && !isMatrix(block)) throw new RPLError('Bad argument type');
+  const cols = isVector(block) ? block.items.map((x) => [x]) : block.rows;
   const m = M.rows.length;
-  const cols = m > 0 ? M.rows[0].length : 0;
-  if (vec.items.length !== m) throw new RPLError('Invalid dimension');
-  if (n < 1 || n > cols + 1) throw new RPLError('Invalid dimension');
-  const out = [];
-  for (let i = 0; i < m; i++) {
-    const row = M.rows[i].slice();
-    row.splice(n - 1, 0, vec.items[i]);
-    out.push(row);
-  }
-  s.push(Matrix(out));
+  const width = m > 0 ? M.rows[0].length : 0;
+  if (cols.length !== m) throw new RPLError('Invalid dimension');
+  if (n < 1 || n > width + 1) throw new RPLError('Invalid dimension');
+  s.push(Matrix(M.rows.map((row, i) => { const out = row.slice(); out.splice(n - 1, 0, ...cols[i]); return out; })));
 }, { category: 'Vectors / matrices', categoryOrder: 22, label: "COL+" });
 
 
 register('COL-', (s) => {
   const [M, idx] = s.popN(2);
-  if (!isMatrix(M)) throw new RPLError('Bad argument type');
   const n = _indexAsInt(idx);
+  if (isVector(M)) { _deleteElement(s, M.items, n); return; }
+  if (!isMatrix(M)) throw new RPLError('Bad argument type');
   const m = M.rows.length;
   const cols = m > 0 ? M.rows[0].length : 0;
   if (n < 1 || n > cols) throw new RPLError('Invalid dimension');
@@ -699,6 +726,7 @@ register('COL→',  _colCompose, { category: 'Vectors / matrices', categoryOrder
 
 register('RSWP', (s) => {
   const [M, iv, jv] = s.popN(3);
+  if (isVector(M)) { s.push(_swapElements(M.items, _indexAsInt(iv), _indexAsInt(jv))); return; }
   if (!isMatrix(M)) throw new RPLError('Bad argument type');
   const i = _indexAsInt(iv);
   const j = _indexAsInt(jv);
@@ -716,6 +744,7 @@ register('RSWP', (s) => {
 
 register('CSWP', (s) => {
   const [M, iv, jv] = s.popN(3);
+  if (isVector(M)) { s.push(_swapElements(M.items, _indexAsInt(iv), _indexAsInt(jv))); return; }
   if (!isMatrix(M)) throw new RPLError('Bad argument type');
   const i = _indexAsInt(iv);
   const j = _indexAsInt(jv);

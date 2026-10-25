@@ -2062,13 +2062,18 @@ import { seedPrng, resetPrng, getPrngSeed } from '../www/src/rpl/state.js';
     assertThrows(() => lookup('RSWP').fn(s), /Invalid dimension/, 'session051: RSWP OOB row index throws');
   }
 
-  // Non-Matrix throws.
+  // A vector swaps two of its elements, as the AUR says; a number is no matrix.
   {
     const s = new Stack();
     s.push(Vector([Real(1), Real(2)]));
     s.push(Integer(1));
     s.push(Integer(2));
-    assertThrows(() => lookup('RSWP').fn(s), /Bad argument/, 'session051: RSWP on Vector throws');
+    lookup('RSWP').fn(s);
+    assert(format(s.peek()) === '[ 2. 1. ]', 'RSWP on a vector swaps its elements');
+    s.push(Real(5));
+    s.push(Integer(1));
+    s.push(Integer(2));
+    assertThrows(() => lookup('RSWP').fn(s), /Bad argument/, 'session051: RSWP on a number throws');
   }
 
 
@@ -3987,4 +3992,17 @@ function _approxMatEqual(A, B, tol) {
   assertThrows(() => runLine("'NOSUCH9' TRN"), /Undefined name/, 'TRN of a name nothing holds is Undefined name');
   assertThrows(() => runLine("5 'N9' STO 'N9' TRN"), /Bad argument type/, 'and of a name that holds no array is Bad argument type');
   resetHome();
+}
+
+// The vector forms and the block forms of the AUR's row and column commands.
+{
+  const stack = (line) => { const s = runLine(line); const out = []; for (let i = s.depth; i >= 1; i--) out.push(format(s.peek(i))); return out.join(' | '); };
+  assert(stack('[ 1 2 3 ] 2 COL-') === '[ 1 3 ] | 2' && stack('[ 1 2 3 ] 2 ROW-') === '[ 1 3 ] | 2', 'COL- and ROW- of a vector give it without the element, then the element');
+  assert(stack('[ 1 2 3 ] 9 2 COL+') === '[ 1 9 2 3 ]' && stack('[ 1 2 3 ] 9 4 ROW+') === '[ 1 2 3 9 ]', 'COL+ and ROW+ put one element into a vector');
+  assert(stack('[ 1 2 3 ] 1 3 CSWP') === '[ 3 2 1 ]' && stack('[ 1 2 3 ] 1 3 RSWP') === '[ 3 2 1 ]', 'CSWP and RSWP swap two elements of a vector');
+  assertThrows(() => runLine('[ 1 2 3 ] 9 5 COL+'), /Invalid dimension/, 'an insert past the end of a vector is Invalid dimension');
+  assert(stack('[[ 1 2 ][ 3 4 ]] [[ 5 6 ]] 2 ROW+') === '[[ 1 2 ][ 5 6 ][ 3 4 ]]', 'ROW+ puts the rows of a matrix in before row n');
+  assert(stack('[[ 1 2 ][ 3 4 ]] [[ 5 ][ 6 ]] 1 COL+') === '[[ 5 1 2 ][ 6 3 4 ]]', 'COL+ puts the columns of a matrix in before column n');
+  assertThrows(() => runLine('[[ 1 2 ][ 3 4 ]] [[ 5 6 7 ]] 1 ROW+'), /Invalid dimension/, 'rows of another width are Invalid dimension');
+  assert(stack('[[ 1 2 ][ 3 4 ]] [ 5 6 ] 3 ROW+') === '[[ 1 2 ][ 3 4 ][ 5 6 ]]', 'a vector still goes in as a row for ROW+');
 }
