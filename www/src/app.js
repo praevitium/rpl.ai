@@ -2422,17 +2422,32 @@ class App {
   }
 
   // An example program goes onto the command line to read and change, and its note stores it under its name, as `'FAC' STO`
-  // would, without the quote key.
+  // would, without the quote key; the next note runs its first sample call. A name in use is named as replaced.
   loadExample(example) {
     if (this.inputMode !== 'rpl') this.setInputMode('rpl');
     if (this.entry.buffer.trim()) this.entry.typeToken(example.source); else this.entry.recall(example.source);
+    const replaces = varRecall(example.name) !== undefined;
     const keep = () => {
       this.entry.cursorEnd();
       this.entry.typeToken(`'${example.name}' STO`);
       this.commitEntry();
-      this.toast(`Stored as ${example.name}. Try ${exampleUse(example)}.`, { key: 'example' });
+      this.toast(`${replaces ? 'Replaced' : 'Stored as'} ${example.name}. Try ${exampleUse(example)}.`, { key: 'example', action: 'Try it', onAction: () => this.tryExample(example, true) });
     };
-    this.toast('Press Enter to put the program on the stack.', { key: 'example', action: `Store as ${example.name}`, onAction: keep });
+    this.toast('Press Enter to put the program on the stack.', { key: 'example', action: `${replaces ? 'Replace' : 'Store as'} ${example.name}`, onAction: keep });
+  }
+
+  // The example's first sample call, run on the command line, or typed into a line in progress as command search does: by its
+  // name once it is stored, else with its program in front of EVAL, which leaves nothing in memory.
+  tryExample({ name, source, tries: [[args]] }, stored = false) {
+    if (this.inputMode !== 'rpl') this.setInputMode('rpl');
+    const call = stored ? `${args} ${name}` : `${args} ${source} EVAL`;
+    if (this.entry.buffer.trim()) {
+      this.entry.typeToken(call);
+      this.toast('Added to the command line. Press Enter to run it.', { key: 'example' });
+      return;
+    }
+    this.entry.recall(call);
+    this.commitEntry();
   }
 
   // The HP's CMD: the last four lines entered, newest first; one goes back on an empty line or into the line typed.
@@ -2755,6 +2770,7 @@ class App {
       case 'catalog.open': this.drawers.open('catalog'); return true;
       case 'about.open': this.sheets.openAbout(); return true;
       case 'printlog.open': this.sheets.openPrintLog(); return true;
+      case 'examples.open': this.sheets.openExamples(); return true;
       case 'solver.open': this.openSolver(); return true;
       case 'eqlib.open': this.sheets.openEquationLibrary(); return true;
       case 'app.install': this.installApp(); return true;

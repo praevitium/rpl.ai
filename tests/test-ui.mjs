@@ -4020,7 +4020,7 @@ setAngle('RAD');
     && /case 'solver\.open': this\.openSolver\(\); return true;/.test(app)
     && /openSolver\(value = this\.stack\.depth \? this\.stack\.peek\(1\) : null\) \{\n\s*const eq = varRecall\('EQ'\);/.test(app),
     'a formula\'s level menu and soft keys open Solve equation, and so does command search, on level 1 or on EQ');
-  assert(/'solver\.open':\s+\{ label: 'Solve equation: [^']+', surfaces: \['palette'\] \},/.test(actions) && /'printlog\.open', 'solver\.open', 'eqlib\.open',\n\]\);/.test(palette)
+  assert(/'solver\.open':\s+\{ label: 'Solve equation: [^']+', surfaces: \['palette'\] \},/.test(actions) && /'printlog\.open', 'solver\.open', 'eqlib\.open', 'examples\.open',\n\]\);/.test(palette)
     && /this\.kind === 'solver'/.test(sheets) && /case 'sv-solve': this\._solve\(b\.dataset\.name\); return;/.test(sheets),
     'the sheet is an action in command search, and its Solve keys run _solve');
   assert(/'eqlib\.open':\s+\{ label: 'Equation Library: physics and engineering equation sets to solve from a form', surfaces: \['palette'\] \},/.test(actions)
@@ -4316,7 +4316,54 @@ setAngle('RAD');
     });
     varPurge(example.name);
     assert(!stored && results.every((r) => r === null), `example program ${example.name} stores and gives what its row promises (${results.filter(Boolean).join('; ') || stored || 'ok'})`);
+    const [[args, want]] = example.tries;
+    while (stack.depth) stack.pop();
+    const inline = run(`${args} ${example.source} EVAL`);
+    assert(!inline && stackText(stack) === want && !varRecall(example.name), `example program ${example.name}: Try runs its first call with the program in front of EVAL, giving ${want} and storing nothing`);
   }
+}
+
+// The Example programs sheet shows each program laid out as EDIT lays it, with its sample call, Try (run on the stack, nothing stored)
+// and Edit (on the command line, with the note that stores it); the Help menu and command search open it.
+{
+  const { EXAMPLE_PROGRAMS, exampleUse } = await import('../www/src/ui/examples.js');
+  const { Sheets } = await import('../www/src/ui/sheets.js');
+  const { Palette } = await import('../www/src/ui/palette.js');
+  const { normalizeUiPrefs } = await import('../www/src/ui/ui-prefs.js');
+  const { ACTIONS } = await import('../www/src/ui/actions.js');
+  const html = Sheets.prototype._examplesHtml.call({});
+  const count = (re) => (html.match(re) ?? []).length;
+  assert(count(/data-sh="ex-try"/g) === EXAMPLE_PROGRAMS.length && count(/data-sh="ex-edit"/g) === EXAMPLE_PROGRAMS.length
+    && EXAMPLE_PROGRAMS.every((e) => html.includes(`<b>${e.title}</b>`) && html.includes(`<code>${e.name}</code>`) && html.includes(exampleUse(e).replace('→', '→'))),
+    'Example programs sheet: every example has its title, name, sample call, Try and Edit');
+  assert(html.includes('<pre class="ex-src">« → n\n  « 1 1 n\n    FOR k k *\n    NEXT\n  »\n»</pre>'),
+    'Example programs sheet: a program is laid out over lines as EDIT lays it, structures starting lines and nested programs indented');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(html.includes('<p class="pt-hint ex-intro">') && /@container sheet \(max-height: 479px\) \{ \.ex-intro \{ display: none; \} \}/.test(css),
+    'Example programs sheet: in a short window, a phone in landscape, its intro gives way as the table sheet\'s does, so the first program and its keys fit');
+  const calls = [];
+  let closed = 0;
+  const sheet = { el: { contains: () => true }, app: { tryExample: (e) => calls.push(`try ${e.name}`), loadExample: (e) => calls.push(`edit ${e.name}`) }, close: () => { closed++; } };
+  const tap = (dataset) => Sheets.prototype._onClick.call(sheet, { target: { closest: () => ({ dataset }) } });
+  tap({ sh: 'ex-try', i: '1' });
+  tap({ sh: 'ex-edit', i: '2' });
+  assert(calls.join() === `try ${EXAMPLE_PROGRAMS[1].name},edit ${EXAMPLE_PROGRAMS[2].name}` && closed === 2,
+    'Example programs sheet: Try and Edit close the sheet and hand the example to the app, so the result or the line shows');
+  const palette = new Palette({ host: null, app: { prefs: normalizeUiPrefs({ minimal: true }), setPrefs: () => {}, runCommandFromUI: () => {}, runAction: (id) => calls.push(id), drawers: {} } });
+  const row = palette._items('example programs').find(([title]) => title === 'Settings and modes')?.[1].find((r) => r.title.startsWith('Example programs'));
+  row?.run();
+  assert(ACTIONS['examples.open']?.surfaces.includes('appbar.help') && ACTIONS['examples.open'].surfaces.includes('palette') && calls.at(-1) === 'examples.open',
+    'Example programs sheet: command search lists it as an action and the Help menu has it');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const barSrc = readFileSync(new URL('../www/src/ui/appbar.js', import.meta.url), 'utf8');
+  assert(/case 'examples\.open': this\.sheets\.openExamples\(\); return true;/.test(appSrc) && barSrc.includes("${item('examples.open', 'bulb', 'Example programs')}"),
+    'Example programs sheet: the app opens it for its action and the Help menu item runs that action');
+  assert(/tryExample\(\{ name, source, tries: \[\[args\]\] \}, stored = false\) \{\n\s*if \(this\.inputMode !== 'rpl'\) this\.setInputMode\('rpl'\);\n\s*const call = stored \? `\$\{args\} \$\{name\}` : `\$\{args\} \$\{source\} EVAL`;\n\s*if \(this\.entry\.buffer\.trim\(\)\) \{\n\s*this\.entry\.typeToken\(call\);\n\s*this\.toast\('Added to the command line\. Press Enter to run it\.', \{ key: 'example' \}\);\n\s*return;\n\s*\}\n\s*this\.entry\.recall\(call\);\n\s*this\.commitEntry\(\);/.test(appSrc),
+    'Try: the first sample call runs on the command line, or is typed into a line in progress as command search does, with a note to press Enter; by name once stored, else with the program before EVAL');
+  assert(/const replaces = varRecall\(example\.name\) !== undefined;/.test(appSrc)
+    && appSrc.includes("`${replaces ? 'Replaced' : 'Stored as'} ${example.name}. Try ${exampleUse(example)}.`, { key: 'example', action: 'Try it', onAction: () => this.tryExample(example, true) }")
+    && appSrc.includes("action: `${replaces ? 'Replace' : 'Store as'} ${example.name}`, onAction: keep"),
+    'example note: a name already in use reads Replace and Replaced rather than Store as, and the stored note offers Try it');
 }
 
 // A command-search title longer than its row takes a second line on a phone, where an ellipsis cut "Greatest common divisor (EUC)" to "(E…".

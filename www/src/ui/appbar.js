@@ -131,7 +131,7 @@ export class AppBar {
       item('settings.open', 'sliders', 'Settings'),
       '<hr>',
     ].join('') : '';
-    const html = `${appItems}${item('help.tour', 'play', 'Take the tour')}${item('shortcuts.open', 'keypad', 'Keyboard shortcuts')}${item('catalog.open', 'book', 'Command reference')}${item('assistant.ask', 'spark', 'Ask the assistant')}${item('assistant.tutor', 'cap', 'Walk me through a problem')}${this.app.isInstalledApp() ? '' : item('app.install', 'down', 'Install as an app')}${item('about.open', 'info', 'About rpl.ai')}`;
+    const html = `${appItems}${item('help.tour', 'play', 'Take the tour')}${item('shortcuts.open', 'keypad', 'Keyboard shortcuts')}${item('catalog.open', 'book', 'Command reference')}${item('examples.open', 'bulb', 'Example programs')}${item('assistant.ask', 'spark', 'Ask the assistant')}${item('assistant.tutor', 'cap', 'Walk me through a problem')}${this.app.isInstalledApp() ? '' : item('app.install', 'down', 'Install as an app')}${item('about.open', 'info', 'About rpl.ai')}`;
     this.app.popover.open(anchor, html, {
       label: 'Help',
       onClick: (target) => {

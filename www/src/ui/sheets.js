@@ -15,12 +15,13 @@ import { lookup } from '../rpl/ops/registry.js';
 import { solverNames, solveEquation, solveInSet, mesItems } from '../rpl/ops/root.js';
 import { astToSvg } from '../rpl/pretty.js';
 import { withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
-import { format, withFractionMark, formatSymbolic } from '../rpl/formatter.js';
+import { format, withFractionMark, formatSymbolic, formatProgramLines } from '../rpl/formatter.js';
 import { fromTyped, parseTyped } from '../rpl/parser.js';
 import { Real, Complex, RList, Str, isReal, isInteger } from '../rpl/types.js';
 import { formatDelimited, spreadsheetHtml } from '../rpl/sheet.js';
 import { VERSION, BUILD, SHA } from '../build-info.js';
 import { pickFile } from './drawer.js';
+import { EXAMPLE_PROGRAMS, exampleUse } from './examples.js';
 import { MODES, modeById, DISPLAY_DIGITS_CHOICES } from './modes.js';
 
 
@@ -186,6 +187,10 @@ export class Sheets {
     this.app.toasts?.dismiss('print');
     this._open('print');
   }
+
+  // Short RPL programs laid out as EDIT lays them, each with a sample call: Try runs one on the stack and stores nothing, Edit
+  // puts it on the command line.
+  openExamples() { this._open('examples'); }
 
   // EQNLIB: the subjects, a subject's sets, a set's equations with Solve.
   openEquationLibrary() {
@@ -366,6 +371,10 @@ export class Sheets {
       wrap.addEventListener('scroll', () => markScrollEdges(wrap), { passive: true });
       return;
     }
+    if (this.kind === 'examples') {
+      this.el.innerHTML = sheet('Example programs', this._examplesHtml());
+      return;
+    }
     if (this.kind === 'eqlib') {
       const { subject, set } = this.eqlib;
       const eqs = subject != null && set != null ? EQ_LIBRARY[subject - 1][1][set - 1][1] : [];
@@ -388,6 +397,11 @@ export class Sheets {
     const nav = SETTINGS_PAGES.map((p) => `<button type="button" data-sh="page" data-page="${p}" aria-pressed="${p === this.page}">${icon(SETTINGS_PAGE_NAMES[p][0], 'sm')}${SETTINGS_PAGE_NAMES[p][1]}</button>`).join('');
     this.el.innerHTML = sheet('Settings', this._settingsPageHtml(), `<nav class="sheet-nav">${nav}</nav>`);
     if (this.page === 'data') this._checkStorage();
+  }
+
+  _examplesHtml() {
+    const card = (e, i) => `<div class="ex"><div class="ex-h"><b>${escapeHtml(e.title)}</b><code>${escapeHtml(e.name)}</code></div><p class="ex-i">${escapeHtml(e.idiom)}</p><pre class="ex-src">${escapeHtml(formatProgramLines(parseTyped(e.source)[0]))}</pre><p class="ex-u">${escapeHtml(exampleUse(e))}</p><div class="ex-b"><button type="button" class="btn pri" data-sh="ex-try" data-i="${i}">${icon('play', 'sm')}Try</button><button type="button" class="btn" data-sh="ex-edit" data-i="${i}">${icon('edit', 'sm')}Edit</button></div></div>`;
+    return `<p class="pt-hint ex-intro">Short RPL programs. Try runs one on the stack and stores nothing. Edit puts it on the command line to change and store.</p>${EXAMPLE_PROGRAMS.map(card).join('')}`;
   }
 
   _libraryHtml() {
@@ -583,6 +597,8 @@ export class Sheets {
       case 'install': app.runAction('app.install'); return;
       case 'restore': pickFile('application/json,.json', async (f) => { if (await app.importSnapshotFromFile(f)) this.close(); }); return;
       case 'clock-reset': setClockOffset(0); this._render(); return;
+      case 'ex-try': this.close(); app.tryExample(EXAMPLE_PROGRAMS[Number(b.dataset.i)]); return;
+      case 'ex-edit': this.close(); app.loadExample(EXAMPLE_PROGRAMS[Number(b.dataset.i)]); return;
       case 'eq-subject': this.eqlib.subject = Number(b.dataset.n); this._render(); return;
       case 'eq-set': this.eqlib.set = Number(b.dataset.n); this._render(); return;
       case 'eq-back': this._eqUp(); return;

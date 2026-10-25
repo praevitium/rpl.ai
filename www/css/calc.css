@@ -2452,4 +2452,13 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 .sv-eqs { margin: 0 0 8px; }
 .sv-eqs summary { display: list-item; min-height: 32px; line-height: 32px; color: var(--ink2); font: 500 12.5px/32px var(--font-ui); cursor: pointer; }
 @container sheet (max-height: 479px) { .sv-c .pt-hint { display: none; } }
+.ex { margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.ex-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.ex-h b { font: 600 14px/1.3 var(--font-ui); }
+.ex-h code { font: 600 12px/1 var(--font-mono); color: var(--ink2); }
+.ex-i { margin: 2px 0 8px; color: var(--ink2); font-size: 12.5px; }
+.ex-src { margin: 0 0 8px; padding: 8px 10px; border-radius: 8px; background: var(--r1); color: var(--ink); font: 500 13px/1.45 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.ex-u { margin: 0 0 8px; color: var(--ink2); font: 500 12.5px/1.4 var(--font-mono); overflow-wrap: anywhere; }
+.ex-b { display: flex; gap: 8px; }
+@container sheet (max-height: 479px) { .ex-intro { display: none; } }
 .pr-log { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--r1); color: var(--ink); font: 500 13px/1.45 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
