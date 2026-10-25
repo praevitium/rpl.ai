@@ -4180,8 +4180,25 @@ setAngle('RAD');
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/_beginEdit\(picked\) \{\n\s*if \(this\.entry\.buffer\.trim\(\)\) this\.commitEntry\(\);\n\s*if \(this\.entry\.buffer\.trim\(\)\) return;\n\s*const edit = this\._settleEdit\(picked\);\n\s*if \(!edit\) \{\n\s*this\.toast\(picked\.kind === 'var' \? `\$\{picked\.name\} is gone, so there is nothing to edit\.` : 'That level is gone, so there is nothing to edit\.'\);\n\s*return;\n\s*\}\n\s*const \{ value \} = edit;/.test(appSrc)
-    && /_settleEdit\(edit\) \{\n\s*if \(edit\.kind === 'var'\) \{\n\s*const value = varRecall\(edit\.name\);\n\s*return value === undefined \? null : \{ \.\.\.edit, value \};\n\s*\}\n\s*const level = this\._levelOf\(edit\.value\);\n\s*return level \? \{ \.\.\.edit, level, label: `Editing level \$\{level\}` \} : null;/.test(appSrc),
+    && /_settleEdit\(edit\) \{\n\s*if \(edit\.kind === 'var'\) \{\n\s*const value = varRecall\(edit\.name\);\n\s*return value === undefined \? null : \{ \.\.\.edit, value, path: currentPath\(\)\.join\('\/'\) \};\n\s*\}\n\s*const level = this\._levelOf\(edit\.value\);\n\s*return level \? \{ \.\.\.edit, level, label: `Editing level \$\{level\}` \} : null;/.test(appSrc),
     'edit: a line entered before the edit starts moves the level or stores the variable, so the edit is aimed at where the value is now; if the line took it away there is a note and no edit');
+}
+
+// Enter on an edit line the user emptied has nothing to enter, so the edit ends with the level or variable as it was, not replaced by a
+// copy of level 1; once a key has run on the line (the stack changed since), Enter still stores or replaces with level 1.
+// A variable is stored in the folder its edit began in; from another folder the result stays on the stack with a note.
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/if \(this\.pendingEdit\) this\.pendingEdit\.ran = true;\n\s*if \(this\.pendingEdit\?\.kind === 'level' && /.test(appSrc)
+    && /_commitEdit\(\) \{\n\s*const edit = this\.pendingEdit;\n\s*if \(!edit\.ran && !this\.entry\.buffer\.trim\(\)\) \{ this\.cancelEdit\(\); return; \}\n\s*const before = this\.stack\.depth;/.test(appSrc)
+    && /if \(this\.pendingEdit && key\.primary === 'ENTER'\) return !this\.pendingEdit\.ran \? 'CANCEL' : this\.pendingEdit\.kind === 'var' \? 'STORE' : 'REPLACE';\n\s*if \(key\.primary === 'ENTER' && depth\) return 'DUP';/.test(appSrc),
+    'edit: Enter on an emptied edit line cancels the edit unless a key has changed the stack since, and the Enter key is captioned to match');
+  assert(/\{ name, label: `Editing \$\{name\}`, path: currentPath\(\)\.join\('\/'\) \}/.test(appSrc)
+    && /if \(this\._editedAway\(edit\)\) this\.toast\(this\._editedAwayNote\(edit\)\);\n\s*else \{\n\s*varStore\(edit\.name, this\.stack\.pop\(\)\);\n\s*this\.undoToast\(`Stored \$\{edit\.name\}`\);\n\s*\}/.test(appSrc)
+    && /const away = edit\?\.kind === 'var' && this\._editedAway\(edit\);/.test(appSrc)
+    && /else if \(edit\?\.kind === 'var' && !away\) varStore\(edit\.name, value\);/.test(appSrc)
+    && /_editedAway\(edit\) \{\n\s*return edit\.path !== currentPath\(\)\.join\('\/'\);\n\s*\}/.test(appSrc),
+    'edit: a variable is stored in the folder its edit began in, and from another folder the line or formula stays on the stack with a note');
 }
 
 // The table of values keeps its start and step: the plot's own snapshot holds them, a typed value, ÷2 or ×2 keeps them, paging does

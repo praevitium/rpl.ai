@@ -327,7 +327,7 @@ class App {
   _restoreEdit({ kind, level, name, line, was }) {
     const value = kind === 'level' ? (level <= this.stack.depth ? this.stack.peek(level) : undefined) : varRecall(name);
     if (value === undefined || sourceHash(value) !== was) return;
-    const target = kind === 'level' ? { level, label: `Editing level ${level}` } : { name, label: `Editing ${name}` };
+    const target = kind === 'level' ? { level, label: `Editing level ${level}` } : { name, label: `Editing ${name}`, path: currentPath().join('/') };
     this.pendingEdit = { kind, value, line, was, ...target };
     this.renderStatus();
     this.input.render();
@@ -473,6 +473,7 @@ class App {
       this.selection = clamped || null;
       this.display.selectedLevel = this.selection;
     }
+    if (this.pendingEdit) this.pendingEdit.ran = true;
     if (this.pendingEdit?.kind === 'level' && this.stack.peek(this.pendingEdit.level) !== this.pendingEdit.value) this._followEdit();
     if (this.errorBanner && !this.entry.error) this._showError('');
     this.display.renderStack(this.stack);
@@ -1502,7 +1503,7 @@ class App {
   _settleEdit(edit) {
     if (edit.kind === 'var') {
       const value = varRecall(edit.name);
-      return value === undefined ? null : { ...edit, value };
+      return value === undefined ? null : { ...edit, value, path: currentPath().join('/') };
     }
     const level = this._levelOf(edit.value);
     return level ? { ...edit, level, label: `Editing level ${level}` } : null;
@@ -1517,14 +1518,25 @@ class App {
   writerCommit(value) {
     if (this.entry.buffer.trim()) this.entry.enter();
     const edit = this.pendingEdit;
+    const away = edit?.kind === 'var' && this._editedAway(edit);
     this.entry._recordHistory(withFractionMark(formatSource(value)));
     this.entry._snapForUndo();
     if (edit?.kind === 'level' && this.stack.peek(edit.level) === edit.value) replaceLevel(this.stack, edit.level, [value]);
-    else if (edit?.kind === 'var') varStore(edit.name, value);
+    else if (edit?.kind === 'var' && !away) varStore(edit.name, value);
     else this.stack.push(value);
     this._endEdit();
     this.setInputMode('rpl');
-    if (edit?.kind === 'var') this.undoToast(`Stored ${edit.name}`);
+    if (away) this.toast(this._editedAwayNote(edit));
+    else if (edit?.kind === 'var') this.undoToast(`Stored ${edit.name}`);
+  }
+
+  // A variable is stored in the folder its edit began in; from another folder the result stays on the stack.
+  _editedAway(edit) {
+    return edit.path !== currentPath().join('/');
+  }
+
+  _editedAwayNote(edit) {
+    return `${edit.name} is in ${edit.path}, so the result stays on the stack.`;
   }
 
   _writer() {
@@ -1592,6 +1604,7 @@ class App {
 
   _commitEdit() {
     const edit = this.pendingEdit;
+    if (!edit.ran && !this.entry.buffer.trim()) { this.cancelEdit(); return; }
     const before = this.stack.depth;
     this.entry.enter();
     if (this.entry.error) { this.entry.focus(); return; }
@@ -1606,8 +1619,11 @@ class App {
         this.stack.restore(items);
       }
     } else if (edit.kind === 'var' && added === 1) {
-      varStore(edit.name, this.stack.pop());
-      this.undoToast(`Stored ${edit.name}`);
+      if (this._editedAway(edit)) this.toast(this._editedAwayNote(edit));
+      else {
+        varStore(edit.name, this.stack.pop());
+        this.undoToast(`Stored ${edit.name}`);
+      }
     }
     this._endEdit();
   }
@@ -2608,6 +2624,7 @@ class App {
     }
     const depth = this.stack.depth;
     if (this.entry.buffer.length) return key.primary === 'ON' ? 'CANCEL' : '';
+    if (this.pendingEdit && key.primary === 'ENTER') return !this.pendingEdit.ran ? 'CANCEL' : this.pendingEdit.kind === 'var' ? 'STORE' : 'REPLACE';
     if (key.primary === 'ENTER' && depth) return 'DUP';
     if (key.primary === '▲' && depth) return 'SELECT';
     if (key.primary === '▼' && depth) return 'EDIT';
