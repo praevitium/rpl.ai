@@ -541,6 +541,17 @@ function replaceSelection(state, ast) {
 }
 
 {
+  const typed = (...faces) => {
+    try { return textOf(press(emptyEquation(), ...faces)); } catch (error) { return error.message; }
+  };
+  assert(/Only one = or comparison/.test(typed('x', '≥', '1', '+', 'y', '≥')) && /Only one = or comparison/.test(typed('x', '=', '3', '=')),
+    'EQW a second = or comparison is refused as it is typed, even the same one, instead of leaving two in a row');
+  const row = press(emptyEquation(), 'ABS', '≥', '+');
+  assertThrows(() => press(row, '≥'), /Only one = or comparison/, 'EQW ≥ typed again inside an argument is refused, and the cursor keys still work after it');
+  assert(press(row, '⇧◀').target != null, 'EQW the cursor keys work on the row after the refusal');
+}
+
+{
   assertThrows(() => toAst(press(emptyEquation(), 'x', '=', '3', '=', '4').root), /Only one = or comparison/,
     'EQW refuses x=3=4 instead of pushing x=3');
   assert(textOf(press(emptyEquation(), 'x', '1')) === 'x1' && textOf(press(emptyEquation(), 'x', '1', '2', '+', 'y')) === 'x12 + y',

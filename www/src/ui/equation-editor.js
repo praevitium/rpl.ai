@@ -1073,7 +1073,7 @@ function operate(state, op) {
   if (RELS.has(op)) {
     const rowKey = target.mode === 'select' ? target.row : rowKeyOf(target.path);
     if (op === '=' && rowKey !== '') throw new RPLError(WHOLE_FORMULA);
-    if (rowByKey(state.root, rowKey).some(item => item.t === 'op' && RELS.has(item.op) && item.op !== op)) {
+    if (rowByKey(state.root, rowKey).some(item => item.t === 'op' && RELS.has(item.op))) {
       throw new RPLError('Only one = or comparison fits in an expression');
     }
   }
