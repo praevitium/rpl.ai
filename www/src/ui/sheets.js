@@ -65,6 +65,7 @@ function clockOffsetText(ms) {
 }
 
 const TABLE_ROWS = 60;
+const tableCell = (v, digits) => (Number.isNaN(v) ? '—' : v === Infinity ? '∞' : v === -Infinity ? '−∞' : withFractionMark(tableText(v, digits)));
 
 // A table value at 8 digits, 12 in a field to edit, with the HP's E for a power of ten.
 const tableText = (v, digits = 8) => String(Number(v.toPrecision(digits))).replace('e+', 'E').replace('e', 'E');
@@ -348,12 +349,12 @@ export class Sheets {
       const custom = !!auto && (auto.start !== start || auto.step !== step);
       const data = this.tbl.source(start, step, TABLE_ROWS);
       this.tbl.data = data;
-      const shown = (v, digits) => (Number.isNaN(v) ? '—' : v === Infinity ? '∞' : v === -Infinity ? '−∞' : escapeHtml(withFractionMark(tableText(v, digits))));
+      const shown = (v, digits) => escapeHtml(tableCell(v, digits));
       const field = (key, label, value) => `<label class="tb-field"><span>${label}</span><input type="text" enterkeyhint="done" data-tb="${key}" value="${escapeHtml(withFractionMark(tableText(value, 12)))}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>`;
       const act = (name, label, title) => `<button type="button" class="btn" data-sh="${name}" title="${title}" aria-label="${title}">${label}</button>`;
       const heads = data.heads.map((h) => `<th scope="col" title="${escapeHtml(withFractionMark(h))}">${escapeHtml(withFractionMark(h))}</th>`).join('');
       const rows = data.rows.map((r, i) => `<tr><td data-sh="tb-pick" data-i="${i}">${shown(r.x, 12)}</td>${r.ys.map((y, j) => `<td data-sh="tb-pick" data-i="${i}" data-j="${j}">${shown(y, 8)}</td>`).join('')}</tr>`).join('');
-      const body = `<div class="tb-set">${field('start', 'Start', start)}${field('step', 'Step', step)}<div class="tb-zoom">${act('tb-finer', '÷2', 'Halve the step')}${act('tb-coarser', '×2', 'Double the step')}${custom ? act('tb-auto', 'Auto', 'Start and step from the plot window') : ''}${act('tb-earlier', icon('chu', 'sm'), 'Earlier rows')}${act('tb-later', icon('chd', 'sm'), 'Later rows')}</div></div>`
+      const body = `<div class="tb-set">${field('start', 'Start', start)}${field('step', 'Step', step)}<div class="tb-zoom">${act('tb-finer', '÷2', 'Halve the step')}${act('tb-coarser', '×2', 'Double the step')}${custom ? this._tableAutoKey() : ''}${act('tb-earlier', icon('chu', 'sm'), 'Earlier rows')}${act('tb-later', icon('chd', 'sm'), 'Later rows')}</div></div>`
         + `<div class="tb-wrap"><table class="tb"><thead><tr><th scope="col">${escapeHtml(xName)}</th>${heads}</tr></thead><tbody>${rows}</tbody></table></div>`
         + '<p class="pt-hint">Tap a value to put its point on the stack.</p>';
       const copy = `<button type="button" class="icon-btn sm" data-sh="tb-copy" title="Copy the table (it pastes into a spreadsheet as cells)" aria-label="Copy the table">${icon('copy', 'sm')}</button>`;
@@ -692,6 +693,29 @@ export class Sheets {
     this.tbl.keep?.({ start: this.tbl.start, step: this.tbl.step });
   }
 
+  _tableAutoKey() {
+    return `<button type="button" class="btn" data-sh="tb-auto" title="Start and step from the plot window" aria-label="Start and step from the plot window">Auto</button>`;
+  }
+
+  // A typed start or step redraws the values in place and shows or hides Auto, leaving the fields and keys where they are, so a finger
+  // that went on to the next one still lands on it and the phone's keyboard stays up.
+  _refreshTable() {
+    const { start, step } = this.tbl;
+    const data = this.tbl.source(start, step, TABLE_ROWS);
+    this.tbl.data = data;
+    this.el.querySelectorAll('.tb tbody tr').forEach((tr, i) => {
+      [...tr.cells].forEach((td, j) => { td.textContent = tableCell(j ? data.rows[i].ys[j - 1] : data.rows[i].x, j ? 8 : 12); });
+    });
+    for (const input of this.el.querySelectorAll('input[data-tb]')) {
+      if (input !== document.activeElement) input.value = withFractionMark(tableText(this.tbl[input.dataset.tb], 12));
+    }
+    const auto = this.tbl.auto?.();
+    const custom = !!auto && (auto.start !== start || auto.step !== step);
+    const key = this.el.querySelector('[data-sh="tb-auto"]');
+    if (custom && !key) this.el.querySelector('[data-sh="tb-earlier"]').insertAdjacentHTML('beforebegin', this._tableAutoKey());
+    else if (!custom) key?.remove();
+  }
+
   _tableMove(rows) {
     this.tbl.start = Number((this.tbl.start + rows * this.tbl.step).toPrecision(12));
     this._render();
@@ -793,7 +817,7 @@ export class Sheets {
     if (!ok) return;
     this.tbl[input.dataset.tb] = value;
     this._keepTable();
-    this._render();
+    this._refreshTable();
   }
 
   // Enter in a form field moves on to the next, and from the last answers the form, as the HP's ENTER does.

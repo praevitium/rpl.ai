@@ -4198,13 +4198,24 @@ setAngle('RAD');
     && gv.includes('this.app.sheets.openTable(this._tableSetup(view, xName), (start, step, count) => ({'),
     'table setup: a plot\'s table and a formula\'s own table both open on the kept start and step, else a round pair from the window');
   assert(/_keepTable\(\) \{\n\s*this\.tbl\.keep\?\.\(\{ start: this\.tbl\.start, step: this\.tbl\.step \}\);\n\s*\}/.test(sh)
-    && /this\.tbl\[input\.dataset\.tb\] = value;\n\s*this\._keepTable\(\);\n\s*this\._render\(\);/.test(sh)
+    && /this\.tbl\[input\.dataset\.tb\] = value;\n\s*this\._keepTable\(\);\n\s*this\._refreshTable\(\);/.test(sh)
     && sh.includes("case 'tb-finer': this.tbl.step = Number((this.tbl.step / 2).toPrecision(12)); this._keepTable(); this._render(); return;")
     && sh.includes("case 'tb-coarser': this.tbl.step = Number((this.tbl.step * 2).toPrecision(12)); this._keepTable(); this._render(); return;")
     && sh.includes("case 'tb-auto': Object.assign(this.tbl, this.tbl.auto()); this.tbl.keep?.(null); this._render(); return;")
     && /_tableMove\(rows\) \{\n\s*this\.tbl\.start = Number\(\(this\.tbl\.start \+ rows \* this\.tbl\.step\)\.toPrecision\(12\)\);\n\s*this\._render\(\);/.test(sh),
     'table setup: typing a start or step, ÷2 and ×2 keep it; paging moves the start without keeping it; Auto takes the plot window\'s pair and forgets the kept one');
   assert(/const auto = this\.tbl\.auto\?\.\(\);\n\s*const custom = !!auto && \(auto\.start !== start \|\| auto\.step !== step\);/.test(sh)
-    && sh.includes("${custom ? act('tb-auto', 'Auto', 'Start and step from the plot window') : ''}${act('tb-earlier'"),
+    && sh.includes("${custom ? this._tableAutoKey() : ''}${act('tb-earlier'"),
     'table setup: the Auto key shows only while the start and step differ from the plot window\'s, so the keys keep their one row from 430 px');
+}
+
+// A typed start or step must not rebuild the sheet: the finger that left the field for the next field or a key would land on a
+// node that is gone, and the phone's keyboard would close.
+{
+  const sh = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  assert(/_refreshTable\(\) \{\n\s*const \{ start, step \} = this\.tbl;\n\s*const data = this\.tbl\.source\(start, step, TABLE_ROWS\);\n\s*this\.tbl\.data = data;\n\s*this\.el\.querySelectorAll\('\.tb tbody tr'\)\.forEach\(\(tr, i\) => \{\n\s*\[\.\.\.tr\.cells\]\.forEach\(\(td, j\) => \{ td\.textContent = tableCell\(j \? data\.rows\[i\]\.ys\[j - 1\] : data\.rows\[i\]\.x, j \? 8 : 12\); \}\);/.test(sh)
+    && /if \(input !== document\.activeElement\) input\.value = withFractionMark\(tableText\(this\.tbl\[input\.dataset\.tb\], 12\)\);/.test(sh)
+    && /if \(custom && !key\) this\.el\.querySelector\('\[data-sh="tb-earlier"\]'\)\.insertAdjacentHTML\('beforebegin', this\._tableAutoKey\(\)\);\n\s*else if \(!custom\) key\?\.remove\(\);/.test(sh)
+    && sh.includes("const shown = (v, digits) => escapeHtml(tableCell(v, digits));"),
+    'table fields: a typed start or step changes the values in place, the other field, and shows or hides Auto, without rebuilding the sheet, so a tap on the next field or key still lands');
 }
