@@ -56,7 +56,7 @@ download, no account and no sign-up.
 | **Units** | The HP 50g's whole unit catalog with SI prefixes, CONVERT and UBASE, and units inside algebraics |
 | **Linear algebra** | Vectors and matrices with DET, INV, RANK, LU, QR, SCHUR, CHOLESKY, EGV and LINSOLVE, and a matrix writer that pastes from spreadsheets |
 | **Statistics** | ΣDAT and Σ+, MEAN, SDEV, LINFIT, BESTFIT and BINS, and distributions such as NDIST and UTPN |
-| **Programming** | User RPL with `« »`, IF, CASE, FOR, WHILE and IFERR (typed from the HP's BRCH menu), local variables, recursion, DEFINE, directories, and HALT, SST, SST↓ and DBUG for debugging |
+| **Programming** | User RPL with `« »`, IF, CASE, FOR, WHILE and IFERR (typed from the HP's BRCH menu), local variables, recursion thousands of calls deep, DEFINE, directories, and HALT, SST, SST↓ and DBUG for debugging |
 | **Plots** | FUNCTION, POLAR, PARAMETRIC, DIFFEQ, slope fields, conics, truth plots, contour maps, 3D wireframes you can turn, y-slices, parametric surfaces, complex grid maps and matrices in 3D, scatter, bar and histogram plots, with trace, zoom and PNG export |
 | **Data in and out** | Copy and paste with Excel, Google Sheets and Numbers; CSV, TSV, `.xlsx`, JSON and HP `.rpl` files; LaTeX copied out and pasted in |
 | **Input** | Keyboard first with `⌘K` search, the HP 50g keypad on screen, and a phone layout with its own key strip |
@@ -925,7 +925,7 @@ teaches (`while`, `for`), for short RPL programs to learn from: a tap puts one
 on the command line to read and change, and the note's **Store as FAC** keeps
 it under its name (**Replace FAC** when that name is taken), so `5 FAC` works
 at once; the next note's **Try it** runs it. **Example programs** in the Help
-menu (the ⋯ menu on a phone, minimal view's menu too) lists all eight laid out
+menu (the ⋯ menu on a phone, minimal view's menu too) lists all sixteen laid out
 as EDIT lays a program out, each with **Try**, which runs it on the stack
 without storing it, and **Edit**.
 
@@ -1256,6 +1256,11 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
 
 **Behaviour that differs from the HP 50g.**
 
+- A program that calls itself by name goes thousands of levels deep, about
+  4000 with a local variable, and then stops with a banner saying it called
+  itself too many times; the HP goes on until it runs out of memory. A
+  recursive function called inside a formula, `'R(N)'` after `DEFINE`, goes
+  a few hundred deep, and then says Insufficient memory.
 - `FILER` opens the Variables drawer, the file manager here, and `OFF`
   saves the session and covers the app with an off screen until a tap or a
   key wakes it, since a web page has no power to cut.

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.92 (2026-10-25)
+**Latest release:** v0.8.93 (2026-10-25)
 
 ---
 
@@ -18,6 +18,30 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.93 — 2026-10-25
+
+- Fixed: a program that called itself by name stopped with EVAL recursion too
+  deep at about 85 levels, 128 without a local variable, because each level
+  nested on the browser's call stack. Programs called by name now run on a
+  stack of their own, so they go thousands of levels deep, as on the HP: a
+  program that adds n to the sum below it gives 500500 for 1000. A runaway
+  recursion still stops, in about half a second, IFERR, HALT and CONT, KILL
+  and DBUG work through any depth as before, and the stack and local
+  variables are left as they were. A recursive function called inside a
+  formula (after DEFINE) still goes a few hundred levels deep, as before; this
+  is listed under the differences from the HP 50g in the README.
+- Added: eight more example programs, sixteen in all, in the Example programs
+  sheet and command search: a letter grade with CASE, a divide that traps
+  its error with IFERR, a reversed string, a list doubled with MAP, the sum
+  of a number's digits, a row of Pascal's triangle, a leap-year test with
+  IFTE, and Newton's square root with DO UNTIL. Each is checked against its
+  sample calls in the tests, and Try runs it without storing it.
+- Changed: a program that recurses without end shows a banner saying it
+  called itself too many times and what to check, in place of the bare
+  message EVAL recursion too deep.
 
 ---
 
