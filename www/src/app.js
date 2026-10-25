@@ -37,9 +37,9 @@ import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, varStoreWhereFound, currentPath,
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo, getUserKeys, standardKeysActive,
-  batchStateNotifications, isSuspension, clearHalted,
+  batchStateNotifications, isSuspension, clearHalted, haltMark, tagHalted,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setFontHooks, setTransferHooks, receivedName, receivedTarget, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue, setRunSlice, withoutRunSlices } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setFontHooks, setTransferHooks, receivedName, receivedTarget, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue, setRunSlice, withoutRunSlices, pausableRun } from './rpl/ops.js';
 import { VERSION, DATE } from './build-info.js';
 import { beep, alarmBeep, keyClick } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest, calculatorNow, headerClock } from './rpl/ops/time.js';
@@ -1217,7 +1217,10 @@ class App {
     const runOn = (op, operand) => {
       this.clearSelection();
       this.entry._snapForUndo();
-      this.entry.safeRun(() => { moveLevel(this.stack, level, 1); if (operand) this.stack.push(operand); this.stack.runOp(() => lookup(op).fn(this.stack, this.entry)); }, op);
+      const mark = haltMark();
+      const runIt = () => lookup(op).fn(this.stack, this.entry);
+      this.entry.safeRun(() => { moveLevel(this.stack, level, 1); if (operand) this.stack.push(operand); this.stack.runOp(op === 'EVAL' ? () => pausableRun(runIt) : runIt); }, op);
+      tagHalted(mark, op);
     };
     const runOnLevels = (op) => {
       this.clearSelection();
@@ -2590,8 +2593,10 @@ class App {
 
   _pushValue(value, runAs = null, typed = null) {
     this.entry._snapForUndo();
-    if (runAs) this.entry.safeRun(() => { this.stack.push(value); lookup('EVAL').fn(this.stack, this.entry); }, runAs, { typed });
-    else this.stack.push(value);
+    if (!runAs) { this.stack.push(value); return; }
+    const mark = haltMark();
+    this.entry.safeRun(() => { this.stack.push(value); this.stack.runOp(() => pausableRun(() => lookup('EVAL').fn(this.stack, this.entry))); }, runAs, { typed });
+    tagHalted(mark, runAs);
   }
 
   showVarsMenu(opts = {}) {

@@ -315,7 +315,7 @@ import { assert, assertThrows } from './helpers.mjs';
     && /isMatrix\(value\) \? item\('trn', 'chr', 'Transpose \(TRN\)'\) \+ item\('rref', 'chr', 'Row reduce \(RREF\)'\) : ''/.test(appSrc)
     && /case 'inv': runOn\('INV'\); return;\s*case 'det': runOn\('DET'\); return;\s*case 'egvl': runOn\('EGVL'\); return;\s*case 'trn': runOn\('TRN'\); return;/.test(appSrc),
     'stack: a matrix level\'s ⋯ menu has Inverse, Determinant and Eigenvalues when it is square, and Transpose, run on the level as its EVAL and →NUM are, as a unit level has Convert to… and a formula Plot');
-  assert((appSrc.match(/this\.stack\.runOp\(\(\) => lookup\(op\)\.fn\(this\.stack, this\.entry\)\)/g) || []).length === 2,
+  assert((appSrc.match(/this\.stack\.runOp\(\(\) => lookup\(op\)\.fn\(this\.stack, this\.entry\)\)/g) || []).length === 1 && appSrc.includes('const runIt = () => lookup(op).fn(this.stack, this.entry);'),
     'stack: a level menu\'s EVAL, →NUM, DBUG, →LIST, DUPN and DROPN run through Stack.runOp, so LASTARG gives their arguments as it does for a typed command');
   assert(/onHold: \(anchor\) => this\._heldKeyMenu\(this\._heldUnitOptions\(unit\), anchor, 'Unit'\)/.test(appSrc)
     && /return \[\{ text: `Convert level 1 to \$\{unit\}`, run: \(\) => this\.insertUnit\(unit, 'convert'\) \}, divide\];/.test(appSrc)
@@ -3244,7 +3244,7 @@ setAngle('RAD');
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/this\._pushValue\(v, isProgram\(v\) \? name : null, raw \? \{ line: `\$\{raw\} \$\{name\}`, spot: raw\.length \+ 1 \} : null\);/.test(appSrc)
-    && /this\.entry\.safeRun\(\(\) => \{ this\.stack\.push\(value\); lookup\('EVAL'\)\.fn\(this\.stack, this\.entry\); \}, runAs, \{ typed \}\);/.test(appSrc),
+    && /this\.entry\.safeRun\(\(\) => \{ this\.stack\.push\(value\); this\.stack\.runOp\(\(\) => pausableRun\(\(\) => lookup\('EVAL'\)\.fn\(this\.stack, this\.entry\)\)\); \}, runAs, \{ typed \}\);/.test(appSrc),
     'variable keys: a program\'s key pressed on a typed value that fails keeps both for Fix the line, as a command key does');
 }
 
@@ -4512,4 +4512,8 @@ setAngle('RAD');
     'running: Stop closes the paused program, leaves the stack where it was and offers Undo');
   assert(appSrc.includes("if (halted?.kind === 'slice' && Date.now() - (this._runStart ?? Date.now()) < RUN_BANNER_MS) {"),
     'running: the first pause, drawn before the run has a start time, holds the banner back like the later ones');
+  assert(/if \(!runAs\) \{ this\.stack\.push\(value\); return; \}\n\s*const mark = haltMark\(\);\n\s*this\.entry\.safeRun\([^\n]*\n\s*tagHalted\(mark, runAs\);/.test(appSrc),
+    'running: a program started by its soft key, a CST key or a user key keeps its name for an error after a pause, as a typed one does');
+  assert(appSrc.includes("this.stack.runOp(op === 'EVAL' ? () => pausableRun(runIt) : runIt)") && appSrc.includes('tagHalted(mark, op);'),
+    'running: a level\'s EVAL pauses too, while STR→ and the other ops that evaluate in the middle of their own work do not');
 }
