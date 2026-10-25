@@ -479,6 +479,17 @@ function replaceSelection(state, ast) {
 }
 
 {
+  assert(textOf(press(emptyEquation(), '8', 'B', '▲', '=', '1')) === '8*B = 1',
+    'EQW = with a factor selected ends the row, so 8B with B selected then =1 is 8*B = 1, not an equation inside a product');
+  assert(textOf(press(emptyEquation(), '2', '7', '−', '8', 'π', '◀', '=', '7')) === '27 - 8*π = 7',
+    'EQW = after ◀ over the last factor is the equation of the whole row');
+  assertThrows(() => press(emptyEquation(), '3', '−', '0', '=', 'i', '▶', ')', 'x²'), /Invalid syntax/,
+    'EQW x² on a selection holding the = is refused, since an equation cannot be raised to a power');
+  assertThrows(() => press(emptyEquation(), 'x', '=', '3', 'RS▲', '1/x'), /Invalid syntax/,
+    'EQW 1/x on the whole equation selected is refused as well');
+}
+
+{
   assertThrows(() => toAst(press(emptyEquation(), 'x', '=', '3', '=', '4').root), /Only one = or comparison/,
     'EQW refuses x=3=4 instead of pushing x=3');
   assert(textOf(press(emptyEquation(), 'x', '1')) === 'x1' && textOf(press(emptyEquation(), 'x', '1', '2', '+', 'y')) === 'x12 + y',

@@ -650,7 +650,9 @@ function replaceSpan(state, rowKey, from, to, items, typingKey = null, lastFace 
 
 function targetItems(state) {
   const { rowKey, from, to } = spanOf(state);
-  return rowByKey(state.root, rowKey).slice(from, to + 1);
+  const items = rowByKey(state.root, rowKey).slice(from, to + 1);
+  if (rowKey === '' && items.some(item => item.t === 'op' && RELS.has(item.op))) throw new RPLError('Invalid syntax');
+  return items;
 }
 
 function landSelect(state, rowKey, from, to) {
@@ -1086,7 +1088,7 @@ function operate(state, op) {
   const cover = findCover(row, from, to);
   const parent = cover.node.from === from && cover.node.to === to ? cover.parent : null;
   const factor = parent?.kind === 'product' && parent.kids.some(kid => kid.from === from && kid.to === to);
-  if (factor && op !== '*') {
+  if (factor && op !== '*' && !RELS.has(op)) {
     const inner = row.slice(from, to + 1).concat([opTok(op), holeMark('insert')]);
     return replaceSpan(state, rowKey, from, to, [makeParen(inner, false)], null, op);
   }
