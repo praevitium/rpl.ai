@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.91 (2026-10-25)
+**Latest release:** v0.8.92 (2026-10-25)
 
 ---
 
@@ -18,6 +18,25 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.92 — 2026-10-25
+
+- Fixed: with the keypad hidden and the keyboard up, an error, PROMPT, INPUT
+  or MSGBOX banner over a long line left the soft keys up to 37 px under the
+  edge of a window 361 to 399 px tall, such as a small phone with its keyboard
+  up. The app bar, the writer tabs and the soft keys now give way under a
+  banner up to 400 px tall, as they already did under 330, and the key strip
+  and the command line stay whole. Minimal view was not affected.
+- Added: Move left and Move right in the menu a finger held on a CST key
+  opens, so a phone can order its own menu (the keys a Catalog or Variables
+  page added to CST) without typing a list. The first key has no Move left
+  and the last no Move right; each move is one Undo step.
+- Added: the note after adding, removing or moving a key in your menu has a
+  Show button before Undo. It closes a drawer in the way and puts the soft
+  keys on CST, turning them on in minimal view, since a phone with the keypad
+  hidden has no CST key to find the menu with.
 
 ---
 
