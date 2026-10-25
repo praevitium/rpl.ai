@@ -251,15 +251,25 @@ RPL puts the numbers first and the operation last. Each value goes on the
   take and give a vector's polar parts, as on the HP: `2 90 →V2` in DEG is
   `[ 2 ∠90 ]`. The VECTOR menu holds the HP's MTH VECTR keys, `ABS`, `DOT`,
   `CROSS`, `V→`, `→V2` and `→V3`, then the RECT, CYLIN and SPHERE modes.
+  A stored vector, matrix or list is read and changed one entry at a time as
+  on the HP: with `[[ 1 2 ][ 3 4 ]]` in `M`, `'M(2,1)' EVAL` gives 3 and
+  `9 'M(1,2)' STO` replaces that entry, `A(3)` does the same for a vector or
+  list, and a local variable works as the index, so a FOR loop can read and
+  store every entry. ROW+, COL+, ROW-, COL-, RSWP and CSWP take a vector as
+  well as a matrix, RDM drops or zero-fills entries to the new size, TRN, RDM
+  and CON take a variable name and store the result in it, RND and TRNC round
+  a vector or matrix entry by entry, and SUB and REPL take a matrix's places
+  as `{ row column }`.
 - **Lists and strings.** `{ 10 20 30 } 2 GET` gives 20,
-  `{ 1 2 3 } « SQ » MAP` gives `{ 1 4 9 }`, and `"HELLO" 2 3 SUB` gives
-  `"EL"`. The LIST menu opens on the HP's folders: ELEM and PROC from its
-  PRG LIST menu and CHARS, its string commands, then OBJ→, →LIST, SUB and
-  REPL. A list's level menu offers Sort (SORT), Reverse (REVLIST) and Sum
-  (ΣLIST), a string's offers Run its text (STR→), so `"1 2 +"` gives 3,
-  a vector's offers Length (ABS), a tagged object's Drop the tag (DTAG),
-  a unit object's Drop the unit (UVAL) and a binary integer's To a real
-  number (B→R), also on its soft keys, and a quoted name's Recall its
+  `{ 1 2 3 } « SQ » MAP` gives `{ 1 4 9 }`, a list inside the list is mapped
+  item by item (`{ 1 2 { 3 4 } } « SQ » MAP` gives `{ 1 4 { 9 16 } }`), and
+  `"HELLO" 2 3 SUB` gives `"EL"`. The LIST menu opens on the HP's folders:
+  ELEM and PROC from its PRG LIST menu and CHARS, its string commands, then
+  OBJ→, →LIST, SUB and REPL. A list's level menu offers Sort (SORT), Reverse
+  (REVLIST) and Sum (ΣLIST), a string's offers Run its text (STR→), so
+  `"1 2 +"` gives 3, a vector's offers Length (ABS), a tagged object's Drop
+  the tag (DTAG), a unit object's Drop the unit (UVAL) and a binary
+  integer's To a real number (B→R), also on its soft keys, and a quoted name's Recall its
   value (RCL), on level 1 Store level 2 in it (STO) and, for a variable
   in this folder, Purge its variable (PURGE). A list, array, complex
   number, tagged or unit object, program or algebraic offers Take apart
@@ -589,8 +599,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   and hold, then drag, to select part of it, and the tools over the
   selection (Evaluate, Simplify, Factor and the rest) take a finger.
 - In Minimal view, ⌫ and Enter stay beside the command line, the menu
-  button on the status line reaches Undo, command search, the drawers, the
-  soft keys, full screen and Settings, and the button beside it leaves. A
+  button on the status line reaches Undo, command search, the equation and
+  matrix writers (Minimal view hides their tabs), the drawers, the soft keys,
+  full screen and Settings, and the button beside it leaves. A
   writer brings its soft keys with it, as on the HP, so the matrix writer's
   +ROW, +COL and TRN are a tap away, and a menu picked from command search
   turns the soft keys on. Command search and the Catalog find a symbol the

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.88 (2026-10-25)
+**Latest release:** v0.8.89 (2026-10-25)
 
 ---
 
@@ -18,6 +18,47 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.89 — 2026-10-25
+
+This run read the examples and I/O tables in the AUR's command reference
+against the app, one command at a time, which turned up the gaps below.
+
+- Fixed: MAP did not go into a list inside the list. The AUR says MAP applies
+  its program to the items of an inner list, and its example
+  `{ 1 2 { 3 4 } } « →STR » MAP` gives `{ "1" "2" { "3" "4" } }`; the inner
+  list was handed to the program whole.
+- Added: indexed names. A stored list, vector or matrix is read in a formula
+  as `A(3)` or `M(2,3)`, and `obj 'A(3)' STO` replaces that entry in place,
+  as the AUR's STO entry describes. A local variable works as the index, so a
+  FOR loop can read and store every entry. An index out of range is "Bad
+  argument value"; a name holding anything else, or given the wrong number of
+  indexes, stays symbolic as before.
+- Fixed: RND and TRNC took numbers, complex numbers, units and lists but threw
+  on a vector or matrix. Each rounds or truncates every entry, so
+  `[ 2.34907 3.96351 2.73453 ] -2 RND` gives `[ 2.3 4. 2.7 ]`. TRUNC, a series
+  command in the AUR, is unchanged.
+- Changed: RDM drops or zero-fills entries to fit the new size, as the AUR
+  lists, where it refused a size that held a different number of entries
+  (a program that relied on that error now gets the redimensioned array). TRN,
+  TRAN, RDM and CON take a variable name and store the result in it, and CON
+  keeps a complex array complex.
+- Fixed: COL-, ROW-, COL+, ROW+, CSWP and RSWP refused a vector. A vector
+  takes a position to delete, insert or swap, as the AUR's tables list, and
+  COL+ and ROW+ also put the columns or rows of a whole matrix into a matrix.
+- Fixed: SUB refused a matrix and REPL a number as the place in one. Both take
+  `{ row column }` or a count in row order, so
+  `[[ 1 2 3 ][ 4 5 6 ]] { 1 2 } { 2 3 } SUB` gives `[[ 2 3 ][ 5 6 ]]`.
+- Fixed: NEG of a binary integer threw "Bad argument type". It is its
+  two's complement in the word size (`#1h NEG` is `#FFFFFFFFFFFFFFFFh` at 64
+  bits). V→ of a complex number gives its two parts, r and the angle in polar
+  mode, as the AUR lists.
+- Fixed: Minimal view hides the writer tabs, and its menu reached neither
+  writer short of command search. The menu on the status line now lists the
+  Equation writer and the Matrix writer after Search commands, and a second
+  tap on the open one carries it to the command line, as its tab does.
 
 ---
 
