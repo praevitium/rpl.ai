@@ -1280,7 +1280,8 @@ function toggleNeg(state) {
       const root = setRow(state.root, rowKey, row);
       const kept = target.path.slice();
       kept.splice(owner.length - 1, 2);
-      return step(state, { root, target: { mode: 'insert', path: kept.length ? kept : target.path.slice(-1) }, lastFace: '+/-' });
+      kept[owner.length - 1] += index;
+      return step(state, { root, target: { mode: 'insert', path: kept }, lastFace: '+/-' });
     }
     const wrapped = makeStruct('neg', [[item]]);
     const { rowKey, from } = spanOf(state);

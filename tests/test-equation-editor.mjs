@@ -529,6 +529,18 @@ function replaceSelection(state, ast) {
 }
 
 {
+  const typed = (...faces) => {
+    try { return textOf(press(emptyEquation(), ...faces)); } catch (error) { return error.message; }
+  };
+  assert(typed('2', '×', '3', '+/-', '+/-', '4') === '2*34' && typed('x', '+', '5', '+/-', '+/-', 'y') === 'x + 5*y',
+    'EQW +/- twice takes the negation off and leaves the cursor after the number, so typing goes on there');
+  assert(typed('2', '+', '3', '×', 'x', '+/-', '+/-', 'y') === '2 + 3*xy',
+    'EQW +/- twice on a later factor leaves the cursor on it too');
+  assert(typed('eˣ', '3', '×', '4', '+/-', '7', 'eˣ', '4', '+/-', '5') === 'EXP(3*47*EXP(45))',
+    'EQW +/- inside a deeper negation keeps the cursor in the part it was in');
+}
+
+{
   assertThrows(() => toAst(press(emptyEquation(), 'x', '=', '3', '=', '4').root), /Only one = or comparison/,
     'EQW refuses x=3=4 instead of pushing x=3');
   assert(textOf(press(emptyEquation(), 'x', '1')) === 'x1' && textOf(press(emptyEquation(), 'x', '1', '2', '+', 'y')) === 'x12 + y',
