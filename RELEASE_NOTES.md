@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.87 (2026-10-25)
+**Latest release:** v0.8.88 (2026-10-25)
 
 ---
 
@@ -18,6 +18,30 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.88 — 2026-10-25
+
+- Fixed: a level or variable being edited came back from a reload as nothing
+  when its command line had been emptied first (the text deleted, or ⌫ held),
+  so the next value typed was pushed as a new level where it should have
+  replaced the edited one. The kept line now holds the edit with no text, as
+  it does with text, and Enter on it still ends the edit as before the
+  reload. Found by the reload monkey.
+- Added: Example programs, a sheet in the Help menu (the ⋯ menu on a phone,
+  minimal view's menu too, and command search finds it). It lists the eight
+  example programs laid out as EDIT lays a program out over lines, each with
+  its sample call and two keys: Try runs the program on the stack with the
+  sample's arguments and stores nothing, and Edit puts it on the command line,
+  as a tap in command search does. On a short landscape window its intro line
+  gives way so the first program and its keys fit.
+- Changed: the note that stores an example now offers Try it, which runs the
+  sample call by the program's name (`5 FAC`). A name already in use reads
+  Replace FAC, then Replaced FAC, where it read Store as FAC, so it is clear
+  that a variable is overwritten; Undo takes it back. Try with a line in
+  progress adds the call to the line, with a note to press Enter, and does not
+  run what was being typed.
 
 ---
 

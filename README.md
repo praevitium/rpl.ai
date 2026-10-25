@@ -905,7 +905,11 @@ without the keypad a command you use often is two taps away. Type `example`,
 or what a program does (`factorial`, `quadratic`, `compound`) or the loop it
 teaches (`while`, `for`), for short RPL programs to learn from: a tap puts one
 on the command line to read and change, and the note's **Store as FAC** keeps
-it under its name, so `5 FAC` works at once.
+it under its name (**Replace FAC** when that name is taken), so `5 FAC` works
+at once; the next note's **Try it** runs it. **Example programs** in the Help
+menu (the ⋯ menu on a phone, minimal view's menu too) lists all eight laid out
+as EDIT lays a program out, each with **Try**, which runs it on the stack
+without storing it, and **Edit**.
 
 ![Search with a result preview](screenshots/palette.png)
 
