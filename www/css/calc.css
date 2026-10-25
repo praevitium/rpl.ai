@@ -512,11 +512,19 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .bn.halt .bn-ico { background: var(--amber); color: #1b1203; }
 /* A program's message keeps its line breaks, as MSGBOX's and PROMPT's do on the HP. */
 .bn.halt .bn-t { white-space: pre-wrap; }
+/* A running program takes no press but Stop: the banner's, the keypad's ON, or Esc. */
+:root[data-running] body { pointer-events: none; }
+:root[data-running] :is(#banner, #banner *, [data-on], .off-screen) { pointer-events: auto; }
+:root[data-running] :is(#appbar, #rail, #drawer, #input, #menubar, #keys) button:not([data-on]) { opacity: .45; transition: opacity .2s var(--ease) .25s; }
 .bn-t { font: 600 13px/1.35 var(--font-ui); color: var(--ink); overflow-wrap: anywhere; }
 .bn-t code, .bn-d code { font: 12px var(--font-mono); background: var(--r2); padding: 1px 5px; border-radius: 4px; }
 .bn-d { grid-column: 2; font-size: 12.5px; color: var(--ink2); line-height: 1.45; }
 .bn-f { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .bn-x { grid-row: 1; grid-column: 3; }
+/* A running program's banner is one row, Stop beside its title, so the stack keeps its room. */
+.bn.running { align-items: center; padding-block: 6px; }
+.bn.running .bn-f { grid-column: 3; grid-row: 1; margin-top: 0; }
+.bn-time { margin-left: 4px; font: 500 12px var(--font-mono); color: var(--ink2); }
 /* On a narrow phone the fixes start under the icon, so a banner of five takes two or three rows rather than four. */
 @container app (max-width: 359px) { .bn-f { grid-column: 1 / -1; } }
 /* Under 320 px tighter fixes keep a bad type's five to two rows, where Explain took a third on its own at 280. */

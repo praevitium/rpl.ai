@@ -37,9 +37,9 @@ import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, varStoreWhereFound, currentPath,
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo, getUserKeys, standardKeysActive,
-  batchStateNotifications, isSuspension,
+  batchStateNotifications, isSuspension, clearHalted,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setFontHooks, setTransferHooks, receivedName, receivedTarget, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setFontHooks, setTransferHooks, receivedName, receivedTarget, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue, setRunSlice, withoutRunSlices } from './rpl/ops.js';
 import { VERSION, DATE } from './build-info.js';
 import { beep, alarmBeep, keyClick } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest, calculatorNow, headerClock } from './rpl/ops/time.js';
@@ -67,6 +67,13 @@ const MODIFIER_KINDS = new Set(['shiftL', 'shiftR', 'alpha']);
 const DOUBLE_PRESS_MS = 300;
 // Between the stretches of a program polling KEY, long enough for the page to draw and take a key.
 const KEY_PAUSE_MS = 20;
+// A program runs this long before it pauses, so that the page can take a press; its banner shows once it has run this long.
+const RUN_SLICE_MS = 100;
+// A page that is hidden gets its timers about once a second, so its program runs in longer stretches, with nobody to answer.
+const RUN_SLICE_HIDDEN_MS = 1500;
+const RUN_BANNER_MS = 300;
+// A running program pauses often, and drawing at every pause would cost it much of its time on a slow phone.
+const RUN_DRAW_MS = 500;
 // The installed app's icon shortcuts (the manifest's ./?open=…); a link can name nothing else.
 const APP_SHORTCUTS = new Map([
   ['equation', (app) => app.setInputMode('equation')],
@@ -190,6 +197,8 @@ class App {
     });
     this.chatBot.setMode(this.prefs.assistantMode, { tutorStyle: this.prefs.tutorStyle });
     this.drawers = new Drawers({ rail: $('rail'), el: $('drawer'), scrim: $('scrim'), app: this });
+    setRunSlice(RUN_SLICE_MS);
+    this.entry.busy = () => this._running();
     setGraphicsHook((kind, stack, data) => (kind === 'text' ? this.drawers.closeGraph() : this.drawers.openGraph(kind, stack, data)));
     setMenuHook((list, temporary, title = null) => {
       if (!list) this.showLastMenu();
@@ -289,7 +298,7 @@ class App {
     this._openShortcut();
     this._watchAlarms();
     this.keepAwake();
-    document.addEventListener('visibilitychange', () => { this._watchAlarms(); this.keepAwake(); });
+    document.addEventListener('visibilitychange', () => { this._watchAlarms(); this.keepAwake(); setRunSlice(document.hidden ? RUN_SLICE_HIDDEN_MS : RUN_SLICE_MS); });
     if (!this.prefs.tourSeen) setTimeout(() => this.tour.start(), 700);
   }
 
@@ -477,6 +486,7 @@ class App {
   }
 
   _onStackChange() {
+    if (this._drawLater('stack')) return;
     this._dropPreview();
     if (this.selection != null) {
       const clamped = clampLevel(this.selection, this.stack.depth);
@@ -515,6 +525,7 @@ class App {
   }
 
   _onStateChange() {
+    if (this._drawLater('state')) { this._followRun(calcState.halted); return; }
     if (!testUserFlag(-62)) this._userOnce = false;
     this.appbar.render();
     this.renderStatus();
@@ -533,6 +544,56 @@ class App {
       this._promptHalt = halted;
       if (this.inputMode !== 'rpl') this._closeWriter((mode) => `Put the ${mode} aside for the program's PROMPT`);
     }
+    this._followRun(halted);
+  }
+
+  // A long program pauses every RUN_SLICE_MS, and the pause is where the page takes a press.  Between pauses it goes on by itself
+  // behind a banner with Stop (also ON, Esc and the back button), and nothing else takes a press until it ends.
+  _running() { return calcState.halted?.kind === 'slice'; }
+
+  _drawLater(part) {
+    if (!this._running()) { this._drawn = null; return false; }
+    const now = Date.now();
+    this._drawn ??= {};
+    if (now - (this._drawn[part] ?? 0) < RUN_DRAW_MS) return true;
+    this._drawn[part] = now;
+    return false;
+  }
+
+  _followRun(halted) {
+    if (halted?.kind !== 'slice') {
+      if (this._runHalt) this._endRun();
+      return;
+    }
+    if (this._runHalt === halted) return;
+    this._runHalt = halted;
+    if (this._runStart == null) {
+      this._runStart = Date.now();
+      this._bannerTimer = setTimeout(() => this.renderBanner(), RUN_BANNER_MS + 20);
+    }
+    document.documentElement.toggleAttribute('data-running', true);
+    this.keepAwake();
+    clearTimeout(this._runTimer);
+    this._runTimer = setTimeout(() => { if (calcState.halted === halted) this._continueProgram(); }, 0);
+  }
+
+  _endRun() {
+    this._runHalt = null;
+    this._runStart = null;
+    clearTimeout(this._runTimer);
+    clearTimeout(this._bannerTimer);
+    clearInterval(this._runClock);
+    document.documentElement.removeAttribute('data-running');
+    this.keepAwake();
+  }
+
+  // As the HP's ON does, Stop ends a running program where it is: the stack stays as the program left it, and Undo takes the run back.
+  stopProgram() {
+    if (!this._running()) return false;
+    clearHalted();
+    this._endRun();
+    this.undoToast('Program stopped');
+    return true;
   }
 
   setPrefs(patch) {
@@ -654,6 +715,11 @@ class App {
     const lcd = lcdHtml(getLcd());
     if (this.errorBanner) { this._haltBanner = null; el.innerHTML = lcd + errorBannerHtml(this.errorBanner); this._markBannerEdges(); return; }
     const halted = calcState.halted;
+    if (halted?.kind === 'slice' && Date.now() - (this._runStart ?? Date.now()) < RUN_BANNER_MS) {
+      this._haltBanner = null;
+      el.innerHTML = lcd;
+      return;
+    }
     if (halted) {
       const prompt = getPromptMessage();
       const banner = haltedBannerHtml({
@@ -669,10 +735,24 @@ class App {
       }
       this._haltBanner = banner;
       el.innerHTML = lcd + banner;
+      this._showRunTime();
       return;
     }
     this._haltBanner = null;
     el.innerHTML = lcd;
+  }
+
+  // How long the program has run, to the second, so a long one can be told from one that has stopped answering.
+  _showRunTime() {
+    const el = $('banner').querySelector('.bn-time');
+    clearInterval(this._runClock);
+    if (!el || this._runStart == null) return;
+    const show = () => {
+      const s = Math.floor((Date.now() - this._runStart) / 1000);
+      el.textContent = s < 60 ? `${s} s` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    };
+    show();
+    this._runClock = setInterval(show, 1000);
   }
 
   // With the keyboard up the fixes keep to one row that scrolls, and fade at the edge they continue past.
@@ -699,6 +779,7 @@ class App {
     if (act === 'form' && kind === 'inform') { this.showInformSheet(); return; }
     if (act === 'cancel' && (kind === 'choose' || kind === 'inform')) { this._continueProgram(Integer(0n)); return; }
     if (act === 'enter' && kind === 'wait') { this._answerKey(hpKeyCode('ENTER')); return; }
+    if (act === 'kill' && kind === 'slice') { this.stopProgram(); return; }
     if (act === 'kill' && kind === 'input') this.entry.cancel();
     const op = { cont: 'CONT', sst: 'SST', into: 'SST↓', kill: 'KILL' }[act];
     if (op) { this.entry.execOp(op); return; }
@@ -833,11 +914,11 @@ class App {
   _assistantTools() {
     const displayOpts = () => this.display.displayOpts;
     return {
-      run: (text) => {
+      run: (text) => withoutRunSlices(() => {
         this.entry.recall(withFractionMark(text));
         this.entry.enter();
         return this.entry.error || '';
-      },
+      }),
       evaluate: (text) => evalScratch(text, { liveItems: this.stack.save(), displayOpts: displayOpts() }),
       evaluateOn: (text, liveItems) => evalScratch(text, { liveItems, displayOpts: displayOpts() }),
       appendToEditor: (text) => this.entry.type(text),
@@ -940,7 +1021,7 @@ class App {
       pending = true;
       queueMicrotask(() => {
         pending = false;
-        this._noteAutosave(saveToLocalStorage(this.stack));
+        if (!this._running()) this._noteAutosave(saveToLocalStorage(this.stack));
       });
     };
     this.stack.subscribe(schedule);
@@ -1654,6 +1735,7 @@ class App {
   }
 
   commitEntry() {
+    if (this._running()) return;
     if (this.inputMode !== 'rpl') { this._writer().commit(); return; }
     const text = this.entry.buffer.trimStart();
     if (text.startsWith('?')) {
@@ -1818,10 +1900,11 @@ class App {
   // back, as the HP's LAST STACK does. A dialog reached while stepping steps on, as the HP's SST would. The end of
   // a WAIT is no key press for the display: its message stays. The run draws once, when it halts again or ends.
   _continueProgram(...answers) {
-    const op = { over: 'SST', into: 'SST↓' }[calcState.halted.stepping] ?? 'CONT';
-    if (calcState.halted.kind !== 'wait') touchLcd();
+    const { kind, stepping, tag } = calcState.halted;
+    const op = { over: 'SST', into: 'SST↓' }[stepping] ?? 'CONT';
+    if (kind !== 'wait' && kind !== 'slice') touchLcd();
     const resume = () => { for (const a of answers) this.stack.push(a); lookup(op).fn(this.stack, this.entry); };
-    this.entry.safeRun(() => this.stack.holdEmit(() => batchStateNotifications(resume)), op, { keepPartial: true });
+    this.entry.safeRun(() => this.stack.holdEmit(() => batchStateNotifications(resume)), kind === 'slice' ? tag ?? '' : op, { keepPartial: true });
   }
 
   backspace() {
@@ -2754,6 +2837,10 @@ class App {
   }
 
   _handleKey(key, { standard = false } = {}) {
+    if (this._running()) {
+      if (key.primary === 'ON' && !this.shift) this.stopProgram();
+      return;
+    }
     // A shift key with a letter on it (the compact keypad's) types the letter under α. KEY takes a shift key as a key.
     if (MODIFIER_KINDS.has(key.kind) && !calcState.halted?.dialog?.poll && !(key.alpha && this.layer() === 'A')) {
       if (key.kind !== 'alpha' || this.layer() !== 'L') this.setShift(key.kind);
@@ -2817,6 +2904,7 @@ class App {
   }
 
   runAction(id, arg) {
+    if (id !== 'ui.escape' && this._running()) return true;
     switch (id) {
       case 'palette.open': this.popover.close({ restoreFocus: false }); this.palette.open(); return true;
       case 'assistant.tutor': this.setAssistantMode('tutor'); this.askAssistant(); return true;
@@ -2931,6 +3019,7 @@ class App {
   }
 
   _escape() {
+    if (this.stopProgram()) return true;
     if (this.popover.isOpen()) { this.popover.close(); return true; }
     if (this.sheets.isOpen()) { this.sheets.back(); return true; }
     if (this.plotFocus) { this.setPlotFocus(false); return true; }
@@ -2969,7 +3058,7 @@ class App {
   // The phone lets go of a screen wake lock whenever the app is hidden, so it is asked for again as the app comes back.
   // OFF lets go of it too, or the phone's screen would stay lit on the dark off screen.
   keepAwake() {
-    if (!this.prefs.keepAwake || this._offScreen || document.visibilityState !== 'visible' || !navigator.wakeLock) {
+    if (!(this.prefs.keepAwake || this._runHalt) || this._offScreen || document.visibilityState !== 'visible' || !navigator.wakeLock) {
       this._wakeLock?.then((lock) => lock?.release());
       this._wakeLock = null;
       return;
@@ -3011,6 +3100,7 @@ class App {
     const overlays = [
       // As the HP's ON wakes it from OFF and clears an error message, so does a phone's back button.
       [() => !!this._offScreen, () => this._offScreen.click()],
+      [() => this._running(), () => this.stopProgram()],
       [() => this.popover.isOpen(), () => this.popover.close()],
       [() => this.palette.isOpen(), () => this.palette.close()],
       [() => this.sheets.isOpen(), () => this.sheets.back()],
@@ -3051,6 +3141,10 @@ class App {
   }
 
   _onKeyDown(e) {
+    if (this._running() && e.key !== 'Escape') {
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && !/^F\d+$/.test(e.key)) e.preventDefault();
+      return;
+    }
     if (e.defaultPrevented || this.palette.isOpen()) return;
     const target = e.target;
     const tag = target?.tagName;

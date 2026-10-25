@@ -369,6 +369,7 @@ export class Keypad {
     el.type = 'button';
     const entry = { el, key };
     if (key.kind === 'back') holdToClear(el, this.app);
+    if (key.primary === 'ON') el.dataset.on = '';
     const press = () => {
       el.classList.add('pressed');
       setTimeout(() => el.classList.remove('pressed'), 80);

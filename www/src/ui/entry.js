@@ -2,13 +2,13 @@ import { parseTyped, endsInQuote } from '../rpl/parser.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
 import { latexToSource } from '../rpl/latex.js';
 import { spreadsheetToSource, htmlTableToSource } from '../rpl/sheet.js';
-import { lookup, isProgramLine, runProgramLine, keepsFailureStack } from '../rpl/ops.js';
+import { lookup, isProgramLine, runProgramLine, keepsFailureStack, pausableRun } from '../rpl/ops.js';
 import { RPLAbort, RPLError, withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
 import { isStackOverflow } from '../rpl/types.js';
 import { errorBeep } from './beep.js';
 import {
   saveVarStateForUndo, undoVarState, redoVarState,
-  hasVarRedo, varStateMatchesUndoTop, dropVarUndoTop, touchLcd, runDeferred,
+  hasVarRedo, varStateMatchesUndoTop, dropVarUndoTop, touchLcd, runDeferred, haltMark, tagHalted,
 } from '../rpl/state.js';
 import {
   EditorState, EditorView, Transaction, keymap, drawSelection,
@@ -126,6 +126,7 @@ export class Entry {
     this._historyListeners = new Set();
     this._history = [];
     this._errorLog = [];
+    this.busy = () => false;
   }
 
   _dispatch(spec) {
@@ -614,8 +615,11 @@ export class Entry {
     tag ??= op.name;
     const before = this.stack.save();
     const seen = this.stack.snapshot().slice(0, 3);
+    const mark = haltMark();
     try {
-      this.stack.runOp(() => op.fn(this.stack, this));
+      const run = () => this.stack.runOp(() => op.fn(this.stack, this));
+      if (opName === 'EVAL') pausableRun(run);
+      else run();
     } catch (e) {
       if (e instanceof RPLAbort) throw e;
       if (!keepsFailureStack(e)) this.stack.restore(before);
@@ -623,9 +627,11 @@ export class Entry {
       const text = errorText(e);
       throw new RPLError(text.startsWith(`${tag}: `) ? text : `${tag}: ${text}`);
     }
+    tagHalted(mark, tag);
   }
 
   enter() {
+    if (this.busy()) return;
     this.error = '';
     this.failure = null;
     touchLcd();
@@ -699,6 +705,7 @@ export class Entry {
 
   // Several names run as one step, with one Undo.
   execOp(...names) {
+    if (this.busy()) return;
     this.error = '';
     this.failure = null;
     touchLcd();

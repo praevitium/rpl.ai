@@ -347,6 +347,8 @@ export class RPLInterrupt extends Error {
 export const RUN_TIME_LIMIT_MS = 10000;
 
 let _deadline = Infinity;
+let _sliceAt = Infinity;
+let _sliceDue = false;
 let _ticks = 0;
 
 export function withTimeLimit(ms, fn) {
@@ -356,5 +358,16 @@ export function withTimeLimit(ms, fn) {
 }
 
 export function checkTimeLimit() {
-  if (_deadline !== Infinity && (++_ticks & 255) === 0 && Date.now() > _deadline) throw new RPLInterrupt();
+  if (_deadline === Infinity || (++_ticks & 255) !== 0) return;
+  const now = Date.now();
+  if (now > _deadline) throw new RPLInterrupt();
+  if (now >= _sliceAt) _sliceDue = true;
 }
+
+// A program that has run for ms is due to pause, so that the page can take a press; 0 never is.
+export function startSlice(ms) {
+  _sliceDue = false;
+  _sliceAt = ms > 0 ? Date.now() + ms : Infinity;
+}
+
+export function sliceDue() { return _sliceDue; }

@@ -1,11 +1,11 @@
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Name, Symbolic, Integer, Unit, isUnit, isBinaryInteger, isNumber, promoteNumericPair, Complex, Rational, isList, RList, isTagged, Tagged, isVector, Vector, isMatrix, Matrix, BinaryInteger, toRealOrThrow, toRealDecimal, isString, isValidHpIdentifier, isStorableHpName, isProgram, isDirectory, isGrob, Str, Program } from '../types.js';
-import { RPLAbort, RPLError, Stack, setPushCoerce, checkTimeLimit } from '../stack.js';
+import { RPLAbort, RPLError, Stack, setPushCoerce, checkTimeLimit, startSlice, sliceDue } from '../stack.js';
 import { exactTrigRewrite } from '../exact-trig.js';
 import { gatherLike } from '../tidy.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, UnitNode as AstUnit, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, hasUnits, exactRational, isRealNum, isKnownFunction } from '../algebra.js';
 import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
-import { state as _calcState, getApproxMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, testUserFlag, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd, withScratchState } from '../state.js';
+import { state as _calcState, getApproxMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, testUserFlag, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd, withScratchState, inScratchState } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
 import { formatSource, currentDisplay, withFractionMark } from '../formatter.js';
@@ -964,7 +964,7 @@ export function isProgramLine(values) {
 }
 
 export function runProgramLine(s, values) {
-  runSuspendable(_evalValueGen(s, Program(values), 0, false));
+  pausableRun(() => runSuspendable(_evalValueGen(s, Program(values), 0, false)));
 }
 
 
@@ -1172,6 +1172,10 @@ function* evalRange(s, toks, from, to, depth) {
   let i = from;
   while (i < to) {
     checkTimeLimit();
+    if (_sliceNow()) {
+      _markSuspend(toks, i, 'slice');
+      yield;
+    }
     const tok = toks[i];
     const id = bareNameId(tok);
     if (id && CF_OPENERS.has(id)) {
@@ -1337,6 +1341,32 @@ const KEY_POLL = Object.freeze({ key: true, poll: true });
 let _resumedAt = 0;
 let _unpausable = 0;
 
+// The page can't take a press while a program runs, so a program that has run for _sliceMs pauses (a halt of kind slice that
+// the app resumes at once), which is also where its Stop key is heard.  Only the app asks for it; 0 never pauses.  Only a
+// program the user starts (a line, EVAL, CONT) may pause: an op that evaluates a program in the middle of its own work needs
+// the answer at once.
+let _sliceMs = 0;
+let _sliceOk = false;
+let _runDepth = 0;
+
+export function setRunSlice(ms) { _sliceMs = ms; }
+
+export function withoutRunSlices(fn) {
+  const saved = _sliceMs;
+  _sliceMs = 0;
+  try { return fn(); } finally { _sliceMs = saved; }
+}
+
+export function pausableRun(fn) {
+  const saved = _sliceOk;
+  _sliceOk = true;
+  try { return fn(); } finally { _sliceOk = saved; }
+}
+
+function _sliceNow() {
+  return _sliceOk && sliceDue() && _sliceMs > 0 && _runDepth === 1 && !_unpausable && !_singleStepMode && !inScratchState();
+}
+
 function _keyCanPause() {
   return !_singleStepMode && !_unpausable && Date.now() - _resumedAt >= KEY_SLICE_MS;
 }
@@ -1363,15 +1393,18 @@ export function runSuspendable(program) {
   let halted = false;
   let waiting = false;
   _resumedAt = Date.now();
+  if (_runDepth === 0) startSlice(_sliceMs);
+  _runDepth++;
   try {
     if (!gen.next().done) {
       halted = true;
       const { tokens = null, index = null, kind = null, dialog = null, stepping = null, prompt = null } = _pendingSuspend ?? {};
       _pendingSuspend = null;
-      waiting = kind === 'wait';
+      waiting = kind === 'wait' || kind === 'slice';
       setHalted({ generator: gen, tokens, index, kind, dialog, stepping, prompt });
     }
   } finally {
+    _runDepth--;
     if (!waiting) settleLcd();
     if (!halted) {
       _pendingSuspend = null;

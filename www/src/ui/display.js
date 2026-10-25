@@ -626,8 +626,9 @@ export class Display {
     this._renderScroll = true;
     requestAnimationFrame(() => { this._renderScroll = false; });
     // Every measurement comes before any change, so the rows are laid out once, not once per change. A program that
-    // WAITs in a loop redraws the stack many times a second, so its rows change in place, as on the HP's display.
-    const animate = !this.ghosts && !this.marks && before.size && !prefersReducedMotion() && calcState.halted?.kind !== 'wait';
+    // WAITs in a loop, or runs long enough to pause, redraws the stack many times a second, so its rows change in place, as on
+    // the HP's display.
+    const animate = !this.ghosts && !this.marks && before.size && !prefersReducedMotion() && !['wait', 'slice'].includes(calcState.halted?.kind);
     const after = animate ? this._positions() : null;
     this._fromBottom = fromBottom(view);
     const markEdges = this._measureEdges();

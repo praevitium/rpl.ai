@@ -40,6 +40,9 @@ const HALT_TITLES = Object.freeze({
 const key = (bn, label, title, ico, cls = '') => `<button type="button" class="chip${cls ? ` ${cls}` : ''}" data-bn="${bn}" title="${title}" aria-label="${label}">${icon(ico, 'sm')}<span>${label}</span></button>`;
 const STOP_KEY = key('kill', 'Stop', 'KILL: abandon the program', 'stop', 'warn');
 
+// A program that has run a while and goes on by itself: Stop ends it, as the HP's ON does.
+const RUNNING_BANNER = `<div class="bn halt running" role="status"><div class="bn-ico" aria-hidden="true">${icon('play', 'xs')}</div><div class="bn-t">Running <span class="bn-time" aria-hidden="true"></span></div><div class="bn-f">${key('kill', 'Stop', 'Stop the program (ON or Esc)', 'stop', 'warn')}</div></div>`;
+
 // WAIT's pause: a timed one says how long, a key wait asks for a key, its Enter chip the ENTER key (105.1).
 function waitBannerHtml({ seconds }) {
   if (seconds) {
@@ -52,6 +55,7 @@ function waitBannerHtml({ seconds }) {
 // MSGBOX and INPUT speak to the program's user: the message alone, with no program source or debugger keys.
 export function haltedBannerHtml({ kind, prompt = '', programHtml = '', dialog = null }) {
   if (kind === 'wait') return waitBannerHtml(dialog);
+  if (kind === 'slice') return RUNNING_BANNER;
   const message = `<div class="bn-t">${escapeHtml(prompt)}</div>`;
   if (kind === 'msgbox') return `<div class="bn halt msgbox" role="status"><div class="bn-ico" aria-hidden="true">${icon('info', 'xs')}</div>${message}<div class="bn-f">${key('cont', 'OK', 'CONT', 'check', 'pri')}</div></div>`;
   if (kind === 'input') return `<div class="bn halt input" role="status"><div class="bn-ico" aria-hidden="true">${icon('edit', 'xs')}</div>${message}<div class="bn-f">${key('ok', 'OK', 'Enter: answer with the command line', 'check', 'pri')}${STOP_KEY}</div></div>`;

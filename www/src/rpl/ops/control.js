@@ -1,8 +1,8 @@
 import { RPLAbort, RPLError } from '../stack.js';
-import { getHalted, takeHalted, clearHalted, inScratchState, isSuspension, haltMark, owedAfter, runDeferred } from '../state.js';
+import { getHalted, takeHalted, clearHalted, inScratchState, isSuspension, haltMark, owedAfter, runDeferred, tagHalted } from '../state.js';
 import { isProgram, isTagged, Name, Real } from '../types.js';
 import { register, lookup } from './registry.js';
-import { runSuspendable, withStepMode, promptStoProgram } from './internal.js';
+import { runSuspendable, withStepMode, promptStoProgram, pausableRun } from './internal.js';
 
 
 
@@ -77,7 +77,7 @@ function resumeHalted(stepping = null) {
   const record = takeHalted();
   const mark = haltMark();
   let owed = null;
-  const resume = () => { runSuspendable(record.generator); owed = owedAfter(record, mark); };
+  const resume = () => { pausableRun(() => runSuspendable(record.generator)); tagHalted(mark, record.tag); owed = owedAfter(record, mark); };
   if (stepping) withStepMode(stepping.single, stepping.into, resume);
   else resume();
   if (owed) runDeferred(owed);

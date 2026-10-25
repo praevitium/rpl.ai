@@ -1,7 +1,7 @@
 export {
   lookup, hasOp, allOps, opCategories,
 } from './ops/registry.js';
-export { singleStepMode, stepIntoMode, localFramesDepth, dosubsStackDepth, isProgramLine, runProgramLine, keepsFailureStack } from './ops/internal.js';
+export { singleStepMode, stepIntoMode, localFramesDepth, dosubsStackDepth, isProgramLine, runProgramLine, keepsFailureStack, setRunSlice, withoutRunSlices, pausableRun } from './ops/internal.js';
 export { setGraphicsHook } from './ops/graphics.js';
 export { setMenuHook, setBeepHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook } from './ops/display.js';
 export { setTableHook } from './ops/periodic.js';

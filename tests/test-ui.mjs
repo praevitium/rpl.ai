@@ -1811,10 +1811,10 @@ setAngle('RAD');
     'key feedback: NXT on the soft-key row ticks and buzzes like the soft keys beside it, where with the keypad hidden or in minimal view, the only NXT there is, it stayed silent');
   assert(normalizeUiPrefs({}).keepAwake === false && normalizeUiPrefs({ keepAwake: true }).keepAwake === true && normalizeUiPrefs({ keepAwake: 'yes' }).keepAwake === false,
     'Settings: Keep the screen on is off until switched on, and kept as a preference');
-  assert(/this\.keepAwake\(\);\n    document\.addEventListener\('visibilitychange', \(\) => \{ this\._watchAlarms\(\); this\.keepAwake\(\); \}\);/.test(appSrc)
+  assert(/this\.keepAwake\(\);\n    document\.addEventListener\('visibilitychange', \(\) => \{ this\._watchAlarms\(\); this\.keepAwake\(\); setRunSlice\(document\.hidden \? RUN_SLICE_HIDDEN_MS : RUN_SLICE_MS\); \}\);/.test(appSrc)
     && /navigator\.wakeLock\.request\('screen'\)/.test(appSrc) && /if \(this\._wakeLock === pending\) this\._wakeLock = null;/.test(appSrc),
     'Settings: Keep the screen on holds a screen wake lock while the app shows and asks again as it comes back, since the phone lets go of it when hidden; an old lock\'s release leaves a newer request alone (a quick off and on lost track of the new lock)');
-  assert(/if \(!this\.prefs\.keepAwake \|\| this\._offScreen \|\|/.test(appSrc)
+  assert(/if \(!\(this\.prefs\.keepAwake \|\| this\._runHalt\) \|\| this\._offScreen \|\|/.test(appSrc)
     && /this\._offScreen = off;\n    this\.keepAwake\(\);/.test(appSrc) && /this\._offScreen = null;\n      this\.keepAwake\(\);/.test(appSrc),
     'Settings: Keep the screen on lets go while OFF\'s dark screen shows and takes the lock again as a tap wakes the calculator (the phone stayed lit on the off screen)');
   assert(/\[\(\) => !!this\.pendingEdit, \(\) => this\.cancelEdit\(\)\],\n      \[\(\) => this\.selection != null, \(\) => this\.clearSelection\(\)\],\n    \];/.test(appSrc),
@@ -2729,9 +2729,9 @@ setAngle('RAD');
     && /if \(calcState\.halted\?\.kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(this\._answerKey\(hpKeyCode\('ENTER'\)\)\) return;\s*this\.entry\.enter\(\);/.test(appSrc)
     && /_beginDialog\(halted\) \{\s*this\._dialogHalt = halted;\s*if \(halted\.kind === 'wait'\) \{ this\._beginWait\(halted\); return; \}\s*queueMicrotask\(\(\) => \{\s*if \(calcState\.halted !== halted\) return;\s*if \(halted\.kind === 'input'\) \{\s*if \(this\.inputMode !== 'rpl'\) this\._closeWriter\(\(mode\) => `Put the \$\{mode\} aside for the program's INPUT`\);\s*this\.entry\.recall\(halted\.dialog\.text\);\s*if \(halted\.dialog\.cursor != null\) this\.entry\.cursor = halted\.dialog\.cursor;\s*if \(halted\.dialog\.alpha && this\.shift !== 'alphaLock'\) \{ this\._dialogAlpha = true; this\.setShift\('alphaLock'\); \}\s*\} else if \(halted\.kind === 'inform'\) this\.showInformSheet\(\);\s*else this\.showChooseList\(\);/.test(appSrc)
     && /_acceptInput\(\) \{[\s\S]{0,200}?if \(dialog\.verify\) \{ try \{ parseTyped\(text\); \} catch \(e\) \{ this\.entry\.flashError\(e\); return; \} \}\s*this\.entry\.cancel\(\);\s*this\._continueProgram\(Str\(text\)\);/.test(appSrc)
-    && /_continueProgram\(\.\.\.answers\) \{\s*const op = \{ over: 'SST', into: 'SST↓' \}\[calcState\.halted\.stepping\] \?\? 'CONT';\s*if \(calcState\.halted\.kind !== 'wait'\) touchLcd\(\);\s*const resume = \(\) => \{ for \(const a of answers\) this\.stack\.push\(a\); lookup\(op\)\.fn\(this\.stack, this\.entry\); \};\s*this\.entry\.safeRun\(\(\) => this\.stack\.holdEmit\(\(\) => batchStateNotifications\(resume\)\), op, \{ keepPartial: true \}\);/.test(appSrc)
+    && /_continueProgram\(\.\.\.answers\) \{\s*const \{ kind, stepping, tag \} = calcState\.halted;\s*const op = \{ over: 'SST', into: 'SST↓' \}\[stepping\] \?\? 'CONT';\s*if \(kind !== 'wait' && kind !== 'slice'\) touchLcd\(\);\s*const resume = \(\) => \{ for \(const a of answers\) this\.stack\.push\(a\); lookup\(op\)\.fn\(this\.stack, this\.entry\); \};\s*this\.entry\.safeRun\(\(\) => this\.stack\.holdEmit\(\(\) => batchStateNotifications\(resume\)\), kind === 'slice' \? tag \?\? '' : op, \{ keepPartial: true \}\);/.test(appSrc)
     && /const stepping = _singleStepMode \? \(_stepInto \? 'into' : 'over'\) : null;\s*_pendingSuspend = \{ tokens, index, kind, dialog, stepping, prompt \};/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
-    && /if \(act === 'ok' && kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(act === 'cont' && kind === 'msgbox'\) \{ this\._continueProgram\(\); return; \}[\s\S]{0,400}?if \(act === 'kill' && kind === 'input'\) this\.entry\.cancel\(\);/.test(appSrc),
+    && /if \(act === 'ok' && kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(act === 'cont' && kind === 'msgbox'\) \{ this\._continueProgram\(\); return; \}[\s\S]{0,500}?if \(act === 'kill' && kind === 'input'\) this\.entry\.cancel\(\);/.test(appSrc),
     "INPUT: its banner is the prompt with OK and Stop keys and no program source; the text it offers goes on the command line once the line that ran the program has cleared; Enter or OK hands the line back as a string (with V only once it parses) and goes on without an undo step of its own, as MSGBOX's OK does, so UNDO after the program takes the whole run back rather than stopping between its answers, and a dialog reached while stepping steps on with SST or SST↓ rather than running the program out; Stop clears the line before KILL");
   assert(/if \(id === 'INPUT'\) \{[\s\S]{0,260}?_markSuspend\(toks, i \+ 1, 'input', input, s\.pop\(\)\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
     'INPUT halts a running program the way PROMPT does, carrying the text to offer');
@@ -2840,8 +2840,8 @@ setAngle('RAD');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   assert(/export function lcdHtml\(lcd\) \{\s*const lines = lcd\?\.lines \?\? \[\];\s*const last = lines\.findLastIndex\(\(line\) => line\);\s*if \(last < 0 && !lcd\?\.grob\) return '';/.test(bannerSrc)
     && /renderBanner\(\) \{\s*const el = \$\('banner'\);\s*const lcd = lcdHtml\(getLcd\(\)\);\s*if \(this\.errorBanner\) \{ this\._haltBanner = null; el\.innerHTML = lcd \+ errorBannerHtml\(this\.errorBanner\); this\._markBannerEdges\(\); return; \}/.test(appSrc)
-    && /enter\(\) \{\s*this\.error = '';\s*this\.failure = null;\s*touchLcd\(\);/.test(entrySrc) && /execOp\(\.\.\.names\) \{\s*this\.error = '';\s*this\.failure = null;\s*touchLcd\(\);/.test(entrySrc)
-    && /\} finally \{\s*if \(!waiting\) settleLcd\(\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
+    && /enter\(\) \{\s*if \(this\.busy\(\)\) return;\s*this\.error = '';\s*this\.failure = null;\s*touchLcd\(\);/.test(entrySrc) && /execOp\(\.\.\.names\) \{\s*if \(this\.busy\(\)\) return;\s*this\.error = '';\s*this\.failure = null;\s*touchLcd\(\);/.test(entrySrc)
+    && /\} finally \{\s*_runDepth--;\s*if \(!waiting\) settleLcd\(\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
     && /\.lcd \{ margin: 8px 10px 0; padding: 8px 12px;[^}]*font: 13px\/1\.45 var\(--font-mono\);/.test(css) && /:root\[data-keyboard\] \.lcd \{ max-height: calc\(3 \* 1\.45em \+ 18px\); overflow-y: auto; \}/.test(css)
     && /\.lcd > div \{ min-height: 1\.45em; white-space: pre-wrap; overflow-wrap: anywhere; \}/.test(css),
     "DISP: a program's display lines show in the banner slot above the command line, down to the last line with text, in the stack's mono ink (three lines with the keyboard up, a line longer than the screen wrapping as the command line does rather than scrolling off the edge unseen); an unfrozen display goes when the program ends or pauses, a frozen one at the next Enter, command or dialog answer");
@@ -2850,9 +2850,9 @@ setAngle('RAD');
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/if \(banner === this\._haltBanner\) \{\s*el\.querySelector\(':scope > \.lcd'\)\?\.remove\(\);\s*el\.insertAdjacentHTML\('afterbegin', lcd\);\s*return;\s*\}\s*this\._haltBanner = banner;\s*el\.innerHTML = lcd \+ banner;/.test(appSrc)
-    && /this\.entry\.safeRun\(\(\) => this\.stack\.holdEmit\(\(\) => batchStateNotifications\(resume\)\), op, \{ keepPartial: true \}\);/.test(appSrc),
+    && /this\.entry\.safeRun\(\(\) => this\.stack\.holdEmit\(\(\) => batchStateNotifications\(resume\)\), kind === 'slice' \? tag \?\? '' : op, \{ keepPartial: true \}\);/.test(appSrc),
     'WAIT in a loop: the banner stays put while the program halts again under the same one, and only its display is redrawn, where « 1 30 START .1 WAIT NEXT » rebuilt the banner every 0.1 s and its fade-in held it between 0 and 83% opacity at 280 px');
-  assert(/const animate = !this\.ghosts && !this\.marks && before\.size && !prefersReducedMotion\(\) && calcState\.halted\?\.kind !== 'wait';/.test(readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8')),
+  assert(/const animate = !this\.ghosts && !this\.marks && before\.size && !prefersReducedMotion\(\) && !\['wait', 'slice'\]\.includes\(calcState\.halted\?\.kind\);/.test(readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8')),
     "WAIT in a loop: the stack's rows change in place while the program waits, where « 0 1 50 START 1 + .1 WAIT NEXT » replayed level 1's fade-in every 0.1 s, between 0 and 73% opacity");
 }
 
@@ -4478,4 +4478,38 @@ setAngle('RAD');
     && /showMyMenu\(\) \{\n\s*if \(this\.drawers\.hidesInput\(\)\) this\.drawers\.close\(\);\n\s*this\.showMenu\('CST', \{ commit: false \}\);\n\s*if \(this\.prefs\.minimal\) this\.setMinimalMenu\(true\);/.test(appSrc)
     && /also = null,/.test(toastSrc) && toastSrc.includes('also.onAction?.()'),
     'my menu: the note after adding, removing or moving a key has a Show button before Undo that closes a drawer in the way and puts the soft keys, on in minimal view, on CST, since a phone with the keypad hidden has no CST key');
+}
+
+/* A program that has run a while pauses between slices, and only Stop (the banner's, ON, Esc or the back button) takes a press. */
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const cssSrc = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const keySrc = readFileSync(new URL('../www/src/ui/keyboard.js', import.meta.url), 'utf8');
+  const entrySrc = readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8');
+  assert(appSrc.includes('setRunSlice(RUN_SLICE_MS);') && appSrc.includes('this.entry.busy = () => this._running();'),
+    'running: the app asks the evaluator to pause a long program and tells the entry line when one runs');
+  assert(/_escape\(\) \{\n\s*if \(this\.stopProgram\(\)\) return true;/.test(appSrc)
+    && appSrc.includes('[() => this._running(), () => this.stopProgram()],')
+    && /if \(act === 'kill' && kind === 'slice'\) \{ this\.stopProgram\(\); return; \}/.test(appSrc),
+    'running: Esc and the keypad\'s ON, the back button and the banner\'s Stop key all stop the program');
+  assert(/_handleKey\(key, \{ standard = false \} = \{\}\) \{\n\s*if \(this\._running\(\)\) \{\n\s*if \(key\.primary === 'ON' && !this\.shift\) this\.stopProgram\(\);\n\s*return;/.test(appSrc)
+    && /runAction\(id, arg\) \{\n\s*if \(id !== 'ui\.escape' && this\._running\(\)\) return true;/.test(appSrc)
+    && /commitEntry\(\) \{\n\s*if \(this\._running\(\)\) return;/.test(appSrc)
+    && /_onKeyDown\(e\) \{\n\s*if \(this\._running\(\) && e\.key !== 'Escape'\) \{\n\s*if \(!e\.ctrlKey && !e\.metaKey && !e\.altKey && !\/\^F\\d\+\$\/\.test\(e\.key\)\) e\.preventDefault\(\);\n\s*return;/.test(appSrc)
+    && /enter\(\) \{\n\s*if \(this\.busy\(\)\) return;/.test(entrySrc) && /execOp\(\.\.\.names\) \{\n\s*if \(this\.busy\(\)\) return;/.test(entrySrc),
+    'running: the keypad, the keyboard (a browser shortcut such as reload still works), the actions and the entry line take nothing but Stop while a program runs');
+  assert(appSrc.includes('setRunSlice(document.hidden ? RUN_SLICE_HIDDEN_MS : RUN_SLICE_MS)') && appSrc.includes('if (!(this.prefs.keepAwake || this._runHalt)')
+    && /if \(opName === 'EVAL'\) pausableRun\(run\);/.test(entrySrc),
+    'running: a hidden page runs its program in longer stretches, the screen stays on while one runs, and only the EVAL a line runs may pause');
+  assert(/:root\[data-running\] body \{ pointer-events: none; \}/.test(cssSrc) && /:root\[data-running\] :is\(#banner, #banner \*, \[data-on\], \.off-screen\) \{ pointer-events: auto; \}/.test(cssSrc)
+    && keySrc.includes("if (key.primary === 'ON') el.dataset.on = '';")
+    && /:root\[data-running\] :is\(#appbar, #rail, #drawer, #input, #menubar, #keys\) button:not\(\[data-on\]\) \{ opacity: \.45;/.test(cssSrc),
+    'running: a touch lands on the banner and the ON key and on nothing else, and every other key shows dimmed');
+  assert(/if \(!this\._running\(\)\) this\._noteAutosave\(saveToLocalStorage\(this\.stack\)\);/.test(appSrc)
+    && /run: \(text\) => withoutRunSlices\(\(\) => \{/.test(appSrc),
+    'running: half a run is never autosaved, and the assistant\'s run tool still runs a line through');
+  assert(/stopProgram\(\) \{\n\s*if \(!this\._running\(\)\) return false;\n\s*clearHalted\(\);\n\s*this\._endRun\(\);\n\s*this\.undoToast\('Program stopped'\);/.test(appSrc),
+    'running: Stop closes the paused program, leaves the stack where it was and offers Undo');
+  assert(appSrc.includes("if (halted?.kind === 'slice' && Date.now() - (this._runStart ?? Date.now()) < RUN_BANNER_MS) {"),
+    'running: the first pause, drawn before the run has a start time, holds the banner back like the later ones');
 }

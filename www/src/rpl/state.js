@@ -327,6 +327,11 @@ export function runDeferred(steps) {
   }
 }
 
+// The name the line called a program by, kept on its record so that an error after a pause still names it.
+export function tagHalted(mark, tag) {
+  if (tag && haltedSince(mark)) state.halted.tag ??= tag;
+}
+
 // What a resumed program's record still owed, when it has ended; none while it is halted again, which now owes it.
 export function owedAfter(record, mark) {
   if (!record.after?.length) return null;
@@ -337,7 +342,7 @@ export function owedAfter(record, mark) {
 
 // HALT, PROMPT and a single step halt a program; the dialogs and WAIT suspend one, which the HP's KILL leaves and its
 // HLT annunciator doesn't show.
-const SUSPENSION_KINDS = new Set(['wait', 'msgbox', 'input', 'choose', 'inform']);
+const SUSPENSION_KINDS = new Set(['wait', 'msgbox', 'input', 'choose', 'inform', 'slice']);
 export const isSuspension = (record) => SUSPENSION_KINDS.has(record?.kind);
 
 export function getPromptMessage() { return state.promptMessage; }

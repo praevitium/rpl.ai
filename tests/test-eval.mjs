@@ -718,3 +718,72 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   clearAllHalted();
   resetHome();
 }
+
+// When the app asks for it, a program that has run for a while pauses so that the page can take a press, and the rest of its line
+// waits; a part that can't pause, a dry run and a stepped program run straight through.
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const { setRunSlice, withoutRunSlices } = await import('../www/src/rpl/ops.js');
+  const { clearAllHalted, getHalted, varPurge } = await import('../www/src/rpl/state.js');
+  const { evalScratch } = await import('../www/src/rpl/scratch.js');
+  resetHome(); clearAllHalted();
+  const s = new Stack();
+  const e = new Entry(s);
+  const typed = (line) => { e.buffer = line; e.cursor = line.length; e.enter(); return e.error; };
+  const text = () => s.snapshot().map((v) => format(v)).join(' ');
+  const finish = () => {
+    let resumes = 0;
+    while (getHalted()?.kind === 'slice' && resumes < 100000) { e.safeRun(() => lookup('CONT').fn(s, e), '', { keepPartial: true }); resumes++; }
+    return resumes;
+  };
+  const clear = () => { clearAllHalted(); while (s.depth) s.pop(); e.error = ''; };
+  typed("« 0 1 300000 START 1 + NEXT » 'QSL' STO");
+
+  typed('5 QSL 1 +');
+  assert(text() === '300001 5' && !getHalted(), `by default a long program runs straight through (${text()})`);
+  clear();
+
+  try {
+    setRunSlice(1);
+    typed('5 QSL 1 +');
+    assert(getHalted()?.kind === 'slice' && getHalted().after?.length === 2 && text() !== '300001 5', `with slices on, a long program pauses part way with the rest of the line owed (${text()})`);
+    const resumes = finish();
+    assert(resumes > 1 && text() === '300001 5' && !getHalted(), `resuming it again and again finishes the program and then the line, as if it had not paused (${resumes} resumes, ${text()})`);
+    clear();
+
+    typed('5 QSL 1 +');
+    clearAllHalted();
+    assert(!getHalted() && text() !== '300001 5' && s.depth > 0, `stopping a paused program drops the rest of the line and leaves the stack as it was (${text()})`);
+    clear();
+
+    typed('1 « QSL » IFT');
+    assert(!getHalted() && text() === '300000', `a program run by IFT can't pause, so it runs through (${text()})`);
+    clear();
+
+    typed('"QSL" STR→');
+    assert(!getHalted() && text() === '300000', `an op that runs a program for its own work, STR→, gets its answer at once rather than a half-run program (${text()})`);
+    clear();
+
+    const dry = evalScratch('QSL', { liveItems: s.save() });
+    assert(!getHalted() && dry.ok !== false, 'a dry run never pauses');
+    clear();
+
+    withoutRunSlices(() => typed('QSL'));
+    assert(!getHalted() && text() === '300000', 'withoutRunSlices runs a program through whatever the setting');
+    clear();
+
+    typed("« QSL HALT 1 + » 'QSH' STO");
+    typed('QSH');
+    const during = finish();
+    assert(getHalted()?.kind === 'halt' && during > 0, `a program that pauses and then halts for real is left at its HALT (${getHalted()?.kind})`);
+    e.safeRun(() => lookup('CONT').fn(s, e), '', { keepPartial: true });
+    assert(text() === '300001' && !getHalted(), `and CONT finishes it (${text()})`);
+    clear();
+
+  } finally {
+    setRunSlice(0);
+  }
+  varPurge('QSL');
+  varPurge('QSH');
+  resetHome();
+}
