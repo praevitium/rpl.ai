@@ -4438,3 +4438,13 @@ setAngle('RAD');
     && drawerSrc.includes("else if (act === 'mymenu') this.app.toggleMyMenu(name);"),
     "Variables drawer: a variable's menu offers Add to my menu (Remove from my menu once its name is in CST) for a program, a value or a folder, the Catalog's toggle on the variable's own name");
 }
+
+// A banner over an edited long line leaves the key strip on screen when the keyboard is up.
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const editing = css.indexOf('.cmdline.editing .cm-scroller { max-height: max(4lh, calc(var(--app-height, 100dvh) * .4)); }');
+  const four = css.indexOf(':root[data-keyboard] .app:has(.bn) .cmdline .cm-scroller { max-height: 4lh; }');
+  const two = css.indexOf('@media (max-height: 360px) { :root[data-keyboard] .app:has(.bn) .cmdline .cm-scroller { max-height: 2lh; } }');
+  assert(editing > 0 && four > editing && two > four,
+    'keyboard up: a banner over an edited long line caps the command line at four rows, not 40% of the window, and at two in a window under 360 px, the rest scrolling; the key strip sat 10 to 50 px under the edge from 270 to 380 px');
+}
