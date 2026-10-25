@@ -548,6 +548,24 @@ export function _entryWise(handler, { argc = 1, at = null, only = null } = {}) {
 }
 
 
+// The AUR's `name` forms of TRN, RDM and CON: the argument that is a name stands for the vector or matrix the variable holds,
+// and the result is stored back in it, leaving nothing. `at` levels down is where the name sits among `argc` arguments.
+export function _withNamedArray(handler, { argc = 1, at = argc } = {}) {
+  return (s) => {
+    const target = s.depth >= argc ? s.peek(at) : null;
+    if (!isName(target)) { handler(s); return; }
+    const bound = recallVar(target.id);
+    if (bound === undefined) throw new RPLError(`Undefined name: ${target.id}`);
+    if (!isVector(bound) && !isMatrix(bound)) throw new RPLError('Bad argument type');
+    const args = s.popN(argc);
+    args[argc - at] = bound;
+    for (const a of args) s.push(a);
+    handler(s);
+    storeVar(target.id, s.pop());
+  };
+}
+
+
 export function _scalarSum(parts) {
   if (parts.length === 0) return Real(0);
   let acc = parts[0];

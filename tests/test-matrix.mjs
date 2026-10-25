@@ -3168,7 +3168,8 @@ function _approxMatEqual(A, B, tol) {
   const s = new Stack();
   s.push(Vector([Real(1), Real(2), Real(3)]));
   s.push(RList([Real(2), Real(2)]));
-  assertThrows(() => lookup('RDM').fn(s), /Invalid dimension/, 'session055: RDM count mismatch throws');
+  lookup('RDM').fn(s);
+  assert(format(s.peek()) === '[[ 1. 2. ][ 3. 0. ]]', 'RDM to a larger size fills out with zeros, as the AUR says');
 }
 
 {
@@ -3963,4 +3964,27 @@ function _approxMatEqual(A, B, tol) {
     `CHARPOL of a symbolic matrix is a polynomial in VX (got ${top('[[ A B ][ C D ]] CHARPOL')})`);
   assert(top('[[ A 1 ][ 1 A ]] PCAR') === '`x^2 - 2*A*x + A^2 - 1`', `PCAR writes Giac's coefficients in VX (got ${top('[[ A 1 ][ 1 A ]] PCAR')})`);
   giac._clear();
+}
+
+// The AUR's RDM, CON and TRN: sizes that differ, a complex array that stays complex, and a variable name for the array.
+{
+  resetHome();
+  const top = (line) => format(runLine(line).peek());
+  assert(top('[[ 2 3 4 ][ 1 6 9 ]] { 8 } RDM') === '[ 2 3 4 1 6 9 0 0 ]', 'AUR: [[ 2 3 4 ][ 1 6 9 ]] { 8 } RDM is [ 2 3 4 1 6 9 0 0 ]');
+  assert(top('[[ 2 3 4 ][ 1 6 9 ]] { 2 2 } RDM') === '[[ 2 3 ][ 4 1 ]]', 'RDM to fewer entries drops the ones at the end of the row order');
+  assert(top('[ 1 2 3 4 ] { 2 3 } RDM') === '[[ 1 2 3 ][ 4 0 0 ]]', 'RDM of a vector to a larger matrix fills out with zeros');
+  assertThrows(() => runLine('[ 1 ] { 1000000 1000000 } RDM'), /Insufficient memory/, 'RDM to a size past memory says Insufficient memory');
+  assert(top('[ (2,4) (7,9) ] 3 CON') === '[ (3, 0) (3, 0) ]', 'AUR: [ (2,4) (7,9) ] 3 CON is the complex vector [ (3,0) (3,0) ]');
+  assert(top('[ 1 2 3 ] 7 CON') === '[ 7 7 7 ]' && top('{ 2 2 } 6 CON') === '[[ 6 6 ][ 6 6 ]]', 'CON of a real array and of a list stays as it was');
+  runLine("[[ 1 2 ][ 3 4 ]] 'M' STO 'M' TRN");
+  assert(format(varRecall('M')) === '[[ 1 3 ][ 2 4 ]]', 'AUR: TRN of a name replaces the matrix with its transpose and leaves nothing');
+  runLine("'M' TRAN");
+  assert(format(varRecall('M')) === '[[ 1 2 ][ 3 4 ]]', 'TRAN of a name does the same');
+  runLine("[ 1 2 3 4 ] 'V' STO 'V' { 2 2 } RDM");
+  assert(format(varRecall('V')) === '[[ 1 2 ][ 3 4 ]]', 'AUR: RDM of a name stores the new shape in the variable');
+  runLine("'V' 5 CON");
+  assert(format(varRecall('V')) === '[[ 5 5 ][ 5 5 ]]', 'AUR: CON of a name replaces the elements of the array it holds');
+  assertThrows(() => runLine("'NOSUCH9' TRN"), /Undefined name/, 'TRN of a name nothing holds is Undefined name');
+  assertThrows(() => runLine("5 'N9' STO 'N9' TRN"), /Bad argument type/, 'and of a name that holds no array is Bad argument type');
+  resetHome();
 }

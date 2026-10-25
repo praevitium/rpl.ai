@@ -8,7 +8,7 @@ import { giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
 import { charSpaceList, eigenvalueArray, spacesFromJordan } from '../jordan-format.js';
 import { register, OPS } from './registry.js';
 import { isPict, grobSize } from './graphics.js';
-import { MAX_CELLS, _numVal, _astToRplValue, _coefArrToSymbolicX, _colCompose, _colDecompose, _decimalFrobeniusNorm, _fromArrayOp, _fromVecOp, _casArray, _hasSymEntry, _indexAsInt, _invMatrixNumeric, _isScalarOperand, _reducesByScalars, _rrefScalar, _isSymOperand, _matrixToGiacStr, _nFromIntegerArg, _popSquareMatrix, _rowCompose, _rowDecompose, _scalarBinary, _scalarSum, _scalarToGiacStr, _tidyBinary, _toArrayOp, _toV2Op, _toV3Op } from './internal.js';
+import { MAX_CELLS, _numVal, _astToRplValue, _coefArrToSymbolicX, _colCompose, _colDecompose, _decimalFrobeniusNorm, _fromArrayOp, _fromVecOp, _casArray, _hasSymEntry, _indexAsInt, _invMatrixNumeric, _isScalarOperand, _reducesByScalars, _rrefScalar, _isSymOperand, _matrixToGiacStr, _nFromIntegerArg, _popSquareMatrix, _rowCompose, _rowDecompose, _scalarBinary, _scalarSum, _scalarToGiacStr, _tidyBinary, _toArrayOp, _toV2Op, _toV3Op, _withNamedArray } from './internal.js';
 
 
 
@@ -79,9 +79,9 @@ function _transposeOp(conjugate) {
   };
 }
 
-register('TRN', _transposeOp(true), { category: 'Vectors / matrices', categoryOrder: 1, label: "TRN" });
+register('TRN', _withNamedArray(_transposeOp(true)), { category: 'Vectors / matrices', categoryOrder: 1, label: "TRN" });
 
-register('TRAN', _transposeOp(false), { category: 'Vectors / matrices', categoryOrder: 1.5, label: "TRAN" });
+register('TRAN', _withNamedArray(_transposeOp(false)), { category: 'Vectors / matrices', categoryOrder: 1.5, label: "TRAN" });
 
 
 // Cofactor expansion through _tidyBinary, so Integer and Symbolic entries stay exact.
@@ -334,7 +334,10 @@ function _conShapeFrom(v) {
 }
 
 
-register('CON', (s) => {
+// A complex array keeps to complex entries, so [ (2,4) (7,9) ] 3 CON is [ (3,0) (3,0) ], as the AUR shows.
+const _holdsComplex = (v) => (isVector(v) ? v.items : isMatrix(v) ? v.rows.flat() : []).some(isComplex);
+
+register('CON', _withNamedArray((s) => {
   const [shape, value] = s.popN(2);
   if (!(isReal(value) || isInteger(value) || isComplex(value) || isSymbolic(value))) {
     throw new RPLError('Bad argument type');
@@ -343,14 +346,15 @@ register('CON', (s) => {
   if (m <= 0) throw new RPLError('Bad argument value');
   if (n !== null && n <= 0) throw new RPLError('Bad argument value');
   _checkCells(m, n ?? 1);
+  const fill = _holdsComplex(shape) && (isReal(value) || isInteger(value)) ? Complex(Number(isInteger(value) ? value.value : value.value.toNumber()), 0) : value;
   if (n === null) {
-    s.push(Vector(new Array(m).fill(value)));
+    s.push(Vector(new Array(m).fill(fill)));
   } else {
     const rows = [];
-    for (let i = 0; i < m; i++) rows.push(new Array(n).fill(value));
+    for (let i = 0; i < m; i++) rows.push(new Array(n).fill(fill));
     s.push(Matrix(rows));
   }
-}, { category: 'Vectors / matrices', categoryOrder: 13, label: "CON" });
+}, { argc: 2, at: 2 }), { category: 'Vectors / matrices', categoryOrder: 13, label: "CON" });
 
 
 // DIAG→ ( [diagonals] { dim } → matrix ): one dimension makes it square, real dimensions round, a longer
@@ -980,7 +984,8 @@ function _shapeFromList(L) {
 }
 
 
-register('RDM', (s) => {
+// Entries are taken in row order: past the new size they are dropped, and a larger size is filled out with zeros, as the AUR says.
+register('RDM', _withNamedArray((s) => {
   const [src, shape] = s.popN(2);
   const { rows, cols } = _shapeFromList(shape);
   let flat;
@@ -992,7 +997,10 @@ register('RDM', (s) => {
     throw new RPLError('Bad argument type');
   }
   const want = rows === null ? cols : rows * cols;
-  if (flat.length !== want) throw new RPLError('Invalid dimension');
+  _checkCells(rows ?? 1, cols);
+  const zero = flat.some(isComplex) ? Complex(0, 0) : flat.some((x) => isReal(x) || isRational(x)) ? Real(0) : Integer(0);
+  flat = flat.slice(0, want);
+  while (flat.length < want) flat.push(zero);
   if (rows === null) {
     s.push(Vector(flat));
     return;
@@ -1002,7 +1010,7 @@ register('RDM', (s) => {
     out.push(flat.slice(i * cols, (i + 1) * cols));
   }
   s.push(Matrix(out));
-}, { category: 'Vectors / matrices', categoryOrder: 32, label: "RDM" });
+}, { argc: 2, at: 2 }), { category: 'Vectors / matrices', categoryOrder: 32, label: "RDM" });
 
 
 // LQ(A) is the transpose of QR(Aᵀ): with Aᵀ = Q₁R₁, L = R₁ᵀ and Q = Q₁ᵀ.
