@@ -5,17 +5,19 @@ export class Toasts {
 
   // A toast with a key replaces the one before it with that key; a transient one also goes at the next press outside
   // the toasts, so a note under it keeps its place while a finger presses that note's button.
-  // The message is text, or a node such as a tutor step's title with its math.
-  show(message, { action = '', onAction = null, timeout = 3200, error = false, key = '', transient = false } = {}) {
+  // The message is text, or a node such as a tutor step's title with its math; `also` adds a second button before the action.
+  show(message, { action = '', onAction = null, also = null, timeout = 3200, error = false, key = '', transient = false } = {}) {
     if (!this.el) return;
     if (key) this.dismiss(key);
     const t = document.createElement('div');
     t.className = `toast${error ? ' err' : ''}`;
     if (key) t.dataset.key = key;
-    t.innerHTML = `<span></span>${action ? `<button type="button">${escapeHtml(action)}</button>` : ''}`;
+    t.innerHTML = `<span></span>${also ? `<button type="button">${escapeHtml(also.action)}</button>` : ''}${action ? `<button type="button">${escapeHtml(action)}</button>` : ''}`;
     t.firstChild.append(message);
     const remove = () => t.remove();
-    t.querySelector('button')?.addEventListener('click', () => { remove(); onAction?.(); });
+    const [first, second] = t.querySelectorAll('button');
+    (also ? first : null)?.addEventListener('click', () => { remove(); also.onAction?.(); });
+    (also ? second : first)?.addEventListener('click', () => { remove(); onAction?.(); });
     this.el.appendChild(t);
     if (transient) {
       const away = (ev) => {

@@ -800,9 +800,9 @@ class App {
 
   // A toast's Undo reverses its own step, never the text being typed, and
   // only while that step is still the latest one, so each replaces the last.
-  undoToast(message) {
+  undoToast(message, also = null) {
     const mark = this.stack.undoMark();
-    this.toast(message, { key: 'undo', action: 'Undo', onAction: () => {
+    this.toast(message, { key: 'undo', action: 'Undo', also, onAction: () => {
       if (this.stack.undoMark() === mark) this._undoStackStep();
       else this.notifyError('Something has changed since, so that Undo no longer applies. Use Undo to step back.');
     } });
@@ -2566,8 +2566,15 @@ class App {
       varStoreWhereFound(holder, changed);
     };
     if (!this.entry.safeRun(store, 'STO')) return false;
-    this.undoToast(note);
+    this.undoToast(note, { action: 'Show', onAction: () => this.showMyMenu() });
     return true;
+  }
+
+  // Where a phone with no CST key finds the menu it has just changed: the soft keys on it, the drawer out of the way.
+  showMyMenu() {
+    if (this.drawers.hidesInput()) this.drawers.close();
+    this.showMenu('CST', { commit: false });
+    if (this.prefs.minimal) this.setMinimalMenu(true);
   }
 
   // The Catalog's "my menu" button: a command goes into CST, the list the CST key shows, or comes out of it again.

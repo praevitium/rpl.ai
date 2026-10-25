@@ -1943,7 +1943,7 @@ setAngle('RAD');
 
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/undoToast\(message\) \{[^}]*key: 'undo'/.test(appSrc),
+  assert(/undoToast\(message, also = null\) \{[^}]*key: 'undo'/.test(appSrc),
     'undo notes: each replaces the one before (an older one\'s Undo no longer applies), so swiping away three levels leaves one note over the stack, not three');
 }
 
@@ -4458,7 +4458,7 @@ setAngle('RAD');
     'keyboard up, keypad hidden: a banner (an error, PROMPT, INPUT or MSGBOX) over a long line hides the app bar, writer tabs and soft keys in a window up to 400 px tall, as under 330; the soft keys sat 4 to 37 px under the edge of a 361 to 399 px window');
 }
 
-// A held CST key moves left or right.
+// A held CST key moves left or right, and the note after a change to the menu has a Show button that opens it.
 {
   const keys = RList([Name('A'), Name('B'), Name('C')]);
   const [a, b, c] = keys.items;
@@ -4467,7 +4467,12 @@ setAngle('RAD');
   assert(movedCustomMenu(keys, 0, a, -1) === null && movedCustomMenu(keys, 2, c, 1) === null && movedCustomMenu(keys, 1, a, 1) === null && movedCustomMenu(undefined, 0, a, 1) === null,
     'my menu: the first key has no room to the left, the last none to the right, and a key that is no longer where the menu was drawn, or a missing CST, moves nothing');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const toastSrc = readFileSync(new URL('../www/src/ui/toast.js', import.meta.url), 'utf8');
   assert(appSrc.includes("const moves = [[-1, 'Move left', index > 0], [1, 'Move right', index < list.items.length - 1]]")
     && appSrc.includes('return this._changeMyMenu((list) => movedCustomMenu(list, index, item, delta), `Moved ${label} ${delta < 0 ? \'left\' : \'right\'} in your menu (CST)`);'),
     "CST keys: a held key offers Move left unless it is the first and Move right unless it is the last, each one undoable step in CST");
+  assert(appSrc.includes("this.undoToast(note, { action: 'Show', onAction: () => this.showMyMenu() });")
+    && /showMyMenu\(\) \{\n\s*if \(this\.drawers\.hidesInput\(\)\) this\.drawers\.close\(\);\n\s*this\.showMenu\('CST', \{ commit: false \}\);\n\s*if \(this\.prefs\.minimal\) this\.setMinimalMenu\(true\);/.test(appSrc)
+    && /also = null,/.test(toastSrc) && toastSrc.includes('also.onAction?.()'),
+    'my menu: the note after adding, removing or moving a key has a Show button before Undo that closes a drawer in the way and puts the soft keys, on in minimal view, on CST, since a phone with the keypad hidden has no CST key');
 }
