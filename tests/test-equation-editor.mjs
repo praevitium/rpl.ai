@@ -483,10 +483,14 @@ function replaceSelection(state, ast) {
     'EQW = with a factor selected ends the row, so 8B with B selected then =1 is 8*B = 1, not an equation inside a product');
   assert(textOf(press(emptyEquation(), '2', '7', '−', '8', 'π', '◀', '=', '7')) === '27 - 8*π = 7',
     'EQW = after ◀ over the last factor is the equation of the whole row');
-  assertThrows(() => press(emptyEquation(), '3', '−', '0', '=', 'i', '▶', ')', 'x²'), /Invalid syntax/,
-    'EQW x² on a selection holding the = is refused, since an equation cannot be raised to a power');
-  assertThrows(() => press(emptyEquation(), 'x', '=', '3', 'RS▲', '1/x'), /Invalid syntax/,
+  assertThrows(() => press(emptyEquation(), '3', '−', '0', '=', 'i', '▶', ')', 'x²'), /one side of the equation/,
+    'EQW x² on a selection holding the = is refused in words, since an equation cannot be raised to a power');
+  assertThrows(() => press(emptyEquation(), 'x', '=', '3', 'RS▲', '1/x'), /one side of the equation/,
     'EQW 1/x on the whole equation selected is refused as well');
+  assertThrows(() => press(emptyEquation(), 'x', 'yˣ', '=', '4'), /between the two sides of the whole formula/,
+    'EQW = typed inside an exponent says that an = goes between the two sides of the whole formula');
+  assertThrows(() => press(emptyEquation(), 'x', '<', '3', '='), /Only one = or comparison/,
+    'EQW a second kind of comparison says that only one fits');
 }
 
 {

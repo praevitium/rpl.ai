@@ -19,6 +19,8 @@ import { writerKeys } from './input-area.js';
 const HOLE = Object.freeze({ t: 'hole' });
 
 const RELS = new Set(['=', '≠', '<', '>', '≤', '≥']);
+const WHOLE_FORMULA = 'An = or comparison goes between the two sides of the whole formula';
+const ONE_SIDE = 'That works on one side of the equation, not on the whole equation';
 
 const EQW_STRUCTS = Object.freeze({
   frac:  Object.freeze({ reading: Object.freeze([0, 1]), wrap: 0, open: 0, after: 1, afterMode: 'insert' }),
@@ -651,7 +653,7 @@ function replaceSpan(state, rowKey, from, to, items, typingKey = null, lastFace 
 function targetItems(state) {
   const { rowKey, from, to } = spanOf(state);
   const items = rowByKey(state.root, rowKey).slice(from, to + 1);
-  if (rowKey === '' && items.some(item => item.t === 'op' && RELS.has(item.op))) throw new RPLError('Invalid syntax');
+  if (rowKey === '' && items.some(item => item.t === 'op' && RELS.has(item.op))) throw new RPLError(ONE_SIDE);
   return items;
 }
 
@@ -1070,9 +1072,9 @@ function operate(state, op) {
   const target = state.target;
   if (RELS.has(op)) {
     const rowKey = target.mode === 'select' ? target.row : rowKeyOf(target.path);
-    if (rowKey !== '') throw new RPLError('Invalid syntax');
+    if (rowKey !== '') throw new RPLError(WHOLE_FORMULA);
     if (state.root.some(item => item.t === 'op' && RELS.has(item.op) && item.op !== op)) {
-      throw new RPLError('Invalid syntax');
+      throw new RPLError('Only one = or comparison fits in an expression');
     }
   }
   if (target.mode === 'insert') {
