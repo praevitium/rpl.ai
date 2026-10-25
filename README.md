@@ -110,10 +110,11 @@ the next start, the line you were typing with its cursor, the formula or
 matrix you were writing, the level or variable you were editing (when it
 has not changed meanwhile), the lines you had entered (for the History
 drawer and the held Enter), the soft keys' menu with its folder and page,
-the formulas on the plot with their window, and the table's start and step. A
-program's `INPUT` answer is not kept. To move them to another browser or keep a
-copy, use Back up everything in the Variables drawer's ⋯ menu, and Restore from
-a backup file on the other side.
+the formulas on the plot with their window, the table's start and step, and
+the last steps UNDO takes back with what LASTARG brings back (only to the
+state they were kept with). A program's `INPUT` answer is not kept. To move
+them to another browser or keep a copy, use Back up everything in the
+Variables drawer's ⋯ menu, and Restore from a backup file on the other side.
 
 ### Five minutes with RPL
 

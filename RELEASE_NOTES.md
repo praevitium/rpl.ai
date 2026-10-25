@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.83 (2026-10-24)
+**Latest release:** v0.8.84 (2026-10-24)
 
 ---
 
@@ -20,6 +20,39 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.84 — 2026-10-24
+
+- Fixed: a folder on the stack stopped the autosave. Fetching a folder with
+  `RCL` (or `DIR`'s empty one) put it there, and from then on every save
+  failed, with a banner that blamed full or blocked storage, so nothing done
+  after it was kept: a reload brought back the state from before the folder
+  arrived. A folder is saved like any other level now, with the folders in
+  it, and the stack comes back whole.
+- Fixed: Enter on an edit line you had emptied replaced the variable or level
+  being edited with a copy of level 1. It now ends the edit and leaves the
+  value as it was, with the usual note and Undo, and the Enter key says
+  CANCEL while that is what it does. After a key has changed the stack (an
+  operator on the edit's text, say) it still stores or replaces with level 1,
+  and says STORE or REPLACE.
+- Fixed: a variable being edited was stored in whichever folder you stood in
+  when you pressed Enter, so leaving the folder mid-edit (a path row, a
+  folder in the drawer) overwrote another folder's variable of the same
+  name. It is stored in the folder the edit began in; from another folder the
+  result, line or formula, stays on the stack with a note naming that folder.
+- Added: UNDO and LASTARG survive a reload, as the HP keeps them through
+  power-off. The last 20 steps (fewer when they are large) and LASTARG's
+  arguments are kept as the page is hidden, and Undo takes them back after
+  a phone has dropped the page. They come back only to the state they were
+  kept with: a state saved since, or another window's changes taken up, start
+  with none, and the taken-up state no longer lets Undo go back to what it
+  replaced. Reset everything removes them, and a full browser store gives
+  them up before it gives up any backup.
+- Fixed: tapping a folder in the Variables drawer, or a path row there, with
+  a line that fails opened the folder behind the drawer, where the error
+  could not be seen. The line is entered first as before; when it fails the
+  folder stays shut, the drawer closes and the error shows, as a folder's
+  soft key leaves it.
 
 ## v0.8.83 — 2026-10-24
 
