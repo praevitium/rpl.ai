@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.82 (2026-10-24)
+**Latest release:** v0.8.83 (2026-10-24)
 
 ---
 
@@ -20,6 +20,28 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.83 — 2026-10-24
+
+- Fixed: editing a level or a variable while the command line held text
+  aimed the edit at the wrong place. The line is entered first, which pushes
+  its values over the level you picked, but the edit kept the old level
+  number: the pencil named the wrong level, and Enter pushed the edited value
+  as a new level beside the original instead of replacing it. A variable
+  stored by that line showed its old value in the editor. The edit now
+  follows the value to where it is, shows the variable as it is now, and
+  says "That level is gone, so there is nothing to edit." (or the
+  variable's name) when the line took it away.
+- Added: the table of values keeps its start and step. Typed values, ÷2 and
+  ×2 are kept for the next opening and through a reload, with the plot (or
+  alone, for a formula's table with nothing plotted); paging does not change
+  them. An Auto key shows while they differ from the round pair the plot
+  window gives, and brings that pair back.
+- Fixed: on a phone, typing a start and then tapping the step field closed
+  the keyboard and left the tap on nothing, and a first tap on ÷2, ×2 or a
+  value while a typed start was still in its field was lost, because the
+  sheet was rebuilt under the finger. A typed start or step now changes the
+  values in place and leaves the fields and keys alone.
 
 ## v0.8.82 — 2026-10-24
 

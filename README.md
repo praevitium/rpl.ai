@@ -110,10 +110,10 @@ the next start, the line you were typing with its cursor, the formula or
 matrix you were writing, the level or variable you were editing (when it
 has not changed meanwhile), the lines you had entered (for the History
 drawer and the held Enter), the soft keys' menu with its folder and page,
-and the formulas on the plot with their window. A program's `INPUT` answer
-is not kept. To move them to another browser or keep a copy, use Back up
-everything in the Variables drawer's ⋯ menu, and Restore from a backup file
-on the other side.
+the formulas on the plot with their window, and the table's start and step. A
+program's `INPUT` answer is not kept. To move them to another browser or keep a
+copy, use Back up everything in the Variables drawer's ⋯ menu, and Restore from
+a backup file on the other side.
 
 ### Five minutes with RPL
 
@@ -831,8 +831,10 @@ screen's pixel density, and, where the device can share images, share it.
 The table button, or `V` on the plot, opens the HP's table of values: x from
 a start by a step, a column for each function plotted, opening on a round
 start at the window's left edge. Type another start or step, halve or double
-the step, or page up and down by 30 rows; a tap on a value puts its point,
-(x,y), on the stack. Copy, and Share where the device can share text, hand the
+the step, or page up and down by 30 rows; the start and step you set are kept,
+through a reload too, until Auto, which shows once they differ, brings back the
+round ones from the plot window. A tap on a value puts its point, (x,y), on
+the stack. Copy, and Share where the device can share text, hand the
 table on as cells a spreadsheet pastes: a heading row, then x and each
 function's value at 12 digits, blank where a function has none. A formula on
 the stack, or a list of them, opens the same table from its ⋯ menu, or its TABLE
