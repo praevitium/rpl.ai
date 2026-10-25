@@ -4423,3 +4423,10 @@ setAngle('RAD');
   assert(appSrc.includes('list?.items[index] === item ? RList(list.items.filter((_, i) => i !== index)) : null'),
     'CST keys: Remove takes out that key only when it is still the item the menu was drawn from');
 }
+
+// The Assistant's draft box stops growing at 30% of the window.
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/\n\.cb-input \{[^}]*max-height: min\(14em, calc\(var\(--app-height, 100dvh\) \* \.3\)\);/.test(css),
+    "assistant: a long draft (Explain with a deep stack, or a paste) stops growing at 30% of the window; a phone's 16 px type made the 14em cap 224 px, which put Send 35 px under the edge of a 360 px landscape screen");
+}

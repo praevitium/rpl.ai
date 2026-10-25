@@ -2048,6 +2048,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   border-top: 1px solid var(--line2);
   align-items: flex-end;
 }
+/* A phone's 16 px type makes 14em 224 px, which put Send under the bottom edge of a landscape screen or a split one; a draft past 30% of the window scrolls instead. */
 .cb-input {
   flex: 1 1 auto;
   min-width: 0;
@@ -2056,7 +2057,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   border: 1px solid var(--line2);
   border-radius: 6px;
   min-height: 34px;
-  max-height: 14em;
+  max-height: min(14em, calc(var(--app-height, 100dvh) * .3));
   padding: 7px 10px;
   color: var(--ink);
   font-size: 13px;
