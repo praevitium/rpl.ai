@@ -2153,6 +2153,25 @@ setAngle('RAD');
 }
 
 {
+  const eqwSrc = readFileSync(new URL('../www/src/ui/equation-editor.js', import.meta.url), 'utf8');
+  const mxSrc = readFileSync(new URL('../www/src/ui/matrix-editor.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/this\.canvas\.addEventListener\('scroll', \(\) => \{\s*markScrollEdges\(this\.canvas\);/.test(eqwSrc)
+    && /new ResizeObserver\(\(\) => \{\s*markScrollEdges\(this\.canvas\);/.test(eqwSrc)
+    && /this\._scrollToCaret\(drawn\.rects\.get\([^\n]+\);\s*markScrollEdges\(this\.canvas\);/.test(eqwSrc)
+    && /\.eqw-canvas\.more-r,[^{]*\{ mask-image: linear-gradient\(to right, #000 calc\(100% - 36px\), transparent\); \}/.test(css)
+    && /\.eqw-canvas\.more-l\.more-r,[^{]*\{ mask-image: linear-gradient\(to right, transparent, #000 36px/.test(css),
+    'equation writer: a formula wider than its canvas fades at the edge it runs on past, as the insight cards do, where on a phone it was cut off with no cue');
+  assert(/this\._wrapEl = wrap;\s*wrap\.addEventListener\('scroll', \(\) => markScrollEdges\(wrap\), \{ passive: true \}\);\s*new ResizeObserver\(\(\) => markScrollEdges\(wrap\)\)\.observe\(wrap\);/.test(mxSrc)
+    && /\)\)\.join\(''\)\)\.join\(''\);\s*markScrollEdges\(this\._wrapEl\);/.test(mxSrc)
+    && /\.mx-grid-wrap\.more-r,[^{]*\{ mask-image: linear-gradient\(to right, #000 calc\(100% - 36px\), transparent\); \}/.test(css)
+    && /\.mx-grid-wrap \{[^}]*scroll-padding-inline: 40px;/.test(css),
+    'matrix writer: a grid wider than the screen fades at the edge it continues past, and a focused cell scrolls clear of the fade');
+  assert(/keepInView\(origin\.x \+ rect\.x, rect\.w, 'scrollLeft', this\.canvas\.clientWidth, 44\);/.test(eqwSrc),
+    'equation writer: the caret scrolls to 44 px from the edge, clear of the 36 px fade');
+}
+
+{
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/const plottableFormula = \(value\) => \{ const v = isTagged\(value\) \? value\.value : value; return isSymbolic\(v\) && !hasUnits\(v\.expr\); \};/.test(appSrc)
     && /\$\{plottable\(value\) \? `<button type="button" data-row-act="plot"/.test(appSrc)

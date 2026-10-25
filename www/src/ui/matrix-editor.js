@@ -1,4 +1,4 @@
-import { escapeHtml } from './display.js';
+import { escapeHtml, markScrollEdges } from './display.js';
 import { writerKeys } from './input-area.js';
 import { parseEntry, fromTyped } from '../rpl/parser.js';
 import { format, withFractionMark, fractionMark, separatorMark } from '../rpl/formatter.js';
@@ -350,6 +350,10 @@ export class MatrixEditor {
     this.el.className = 'mx';
     this.el.innerHTML = '<div class="mx-grid-wrap"><div class="mx-grid" role="grid" aria-label="Matrix cells"></div></div><div class="mx-foot" role="status"></div>';
     this._gridEl = this.el.querySelector('.mx-grid');
+    const wrap = this._gridEl.parentElement;
+    this._wrapEl = wrap;
+    wrap.addEventListener('scroll', () => markScrollEdges(wrap), { passive: true });
+    new ResizeObserver(() => markScrollEdges(wrap)).observe(wrap);
     this._shape = this.el.querySelector('.mx-foot');
     this.el.append(writerKeys(TAP_KEYS, (face) => this.pressFace(face)));
     this._gridEl.addEventListener('keydown', (e) => this._onKey(e));
@@ -818,6 +822,7 @@ export class MatrixEditor {
     this._gridEl.innerHTML = this.grid.map((row, r) => row.map((cell, c) => (
       `<input class="mx-cell" data-r="${r}" data-c="${c}" value="${escapeHtml(cell ?? '')}" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done"${keyboard ? ` inputmode="${keyboard}"` : ''} aria-label="Row ${r + 1}, column ${c + 1}">`
     )).join('')).join('');
+    markScrollEdges(this._wrapEl);
     this._noteShape();
   }
 }

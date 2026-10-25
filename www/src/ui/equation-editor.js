@@ -1851,7 +1851,10 @@ export class EquationEditor {
     this.strip = this.el.querySelector('.eqw-ins');
     this.strip.addEventListener('scroll', () => markScrollEdges(this.strip), { passive: true });
     new ResizeObserver(() => markScrollEdges(this.strip)).observe(this.strip);
-    new ResizeObserver(() => { if (this._natural && this._fitSize(this._natural) !== this._drawnSize) this._render(); }).observe(this.canvas);
+    new ResizeObserver(() => {
+      markScrollEdges(this.canvas);
+      if (this._natural && this._fitSize(this._natural) !== this._drawnSize) this._render();
+    }).observe(this.canvas);
     this.canvas.after(writerKeys(TAP_KEYS, (face) => this.pressFace(face)));
     this.state = emptyEquation();
     this.big = false;
@@ -1870,7 +1873,10 @@ export class EquationEditor {
     // On a touch screen a drag scrolls the formula; a long press first starts a selection instead (W-L25).
     this.canvas.addEventListener('touchmove', (e) => { if (this._press?.selecting) e.preventDefault(); }, { passive: false });
     this.canvas.addEventListener('contextmenu', (e) => { if (this._press) e.preventDefault(); });
-    this.canvas.addEventListener('scroll', () => { if (this.hasSelection() && this._toolsFor) this._placeTools(this._toolsFor); });
+    this.canvas.addEventListener('scroll', () => {
+      markScrollEdges(this.canvas);
+      if (this.hasSelection() && this._toolsFor) this._placeTools(this._toolsFor);
+    });
     this.el.addEventListener('mousedown', (e) => { if (e.target.closest('.ins, .eqw-tip')) e.preventDefault(); });
     this.el.addEventListener('click', (e) => this._onClick(e));
     this._softKeys = SOFT_KEYS_REST;
@@ -2282,6 +2288,7 @@ export class EquationEditor {
     this.canvas.innerHTML = drawn.svg.replace('<svg ', `<svg role="img" aria-label="${escapeHtml(text || 'empty')}" `);
     if (drawn.selection && this._selecting) this._placeTools(drawn.selection);
     this._scrollToCaret(drawn.rects.get(target.path?.join('.') ?? ''));
+    markScrollEdges(this.canvas);
     if (this.showText && document.activeElement !== this.textArea) {
       this.textArea.value = withFractionMark(text);
       this.textArea.classList.remove('bad');
@@ -2332,13 +2339,13 @@ export class EquationEditor {
   _scrollToCaret(rect) {
     if (!rect || !this.el.isConnected) return;
     const origin = this._svgOrigin();
-    const margin = 16;
-    const keepInView = (start, size, scroll, view) => {
+    const keepInView = (start, size, scroll, view, margin) => {
       if (start < this.canvas[scroll] + margin) this.canvas[scroll] = Math.max(0, start - margin);
       else if (start + size > this.canvas[scroll] + view - margin) this.canvas[scroll] = start + size - view + margin;
     };
-    keepInView(origin.x + rect.x, rect.w, 'scrollLeft', this.canvas.clientWidth);
-    keepInView(origin.y + rect.y, rect.h, 'scrollTop', this.canvas.clientHeight);
+    // The caret stays clear of the edge fade the canvas shows where the formula runs on.
+    keepInView(origin.x + rect.x, rect.w, 'scrollLeft', this.canvas.clientWidth, 44);
+    keepInView(origin.y + rect.y, rect.h, 'scrollTop', this.canvas.clientHeight, 16);
   }
 
   _scheduleInsights() {
