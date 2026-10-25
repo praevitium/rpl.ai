@@ -1918,8 +1918,37 @@ export function _evalSymbolic(v, keeps = () => false, gather = true) {
   const infinite = testUserFlag(-22) && _infiniteTop(reduced);
   if (infinite) return infinite;
   _checkInfinite(reduced);
-  const value = _astToRplValue(reduced);
+  const value = (approx && _foldImaginary(reduced)) || _astToRplValue(reduced);
   return approx && isInteger(value) ? Real(value.value.toString()) : value;
+}
+
+
+// The algebra evaluator holds real numbers only, so →NUM and APPROX work an expression that holds i out with the commands
+// themselves: '3+4*i' gives (3,4), as '3+4*π' gives a real. Anything else left in it keeps the whole expression symbolic.
+const _IMAGINARY_OPS = new Set(['+', '-', '*', '/', '^']);
+const _IMAGINARY_FUNCTIONS = new Set(['ABS', 'ARG', 'RE', 'IM', 'CONJ', 'SQRT', 'SQ', 'INV', 'EXP', 'LN', 'LOG', 'ALOG', 'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN', 'SINH', 'COSH', 'TANH', 'ASINH', 'ACOSH', 'ATANH']);
+
+function _foldImaginary(ast) {
+  if (!algebraFreeVars(ast).has('i')) return null;
+  const walk = (node) => {
+    if (node.kind === 'num') return _numToRpl(node);
+    if (node.kind === 'var' && node.name === 'i') return Complex(0, 1);
+    const call = node.kind === 'neg' ? ['NEG', [node.arg]]
+      : node.kind === 'bin' && _IMAGINARY_OPS.has(node.op) ? [node.op, [node.l, node.r]]
+        : node.kind === 'fn' && _IMAGINARY_FUNCTIONS.has(node.name.toUpperCase()) ? [node.name.toUpperCase(), node.args] : null;
+    if (!call) throw new RPLError('Bad argument type');
+    const s = new Stack();
+    call[1].forEach((arg) => s.push(walk(arg)));
+    lookup(call[0]).fn(s);
+    return s.pop();
+  };
+  try {
+    const value = walk(ast);
+    return isNumber(value) ? value : null;
+  } catch (e) {
+    if (e instanceof RPLError) return null;
+    throw e;
+  }
 }
 
 

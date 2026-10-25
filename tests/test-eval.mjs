@@ -566,6 +566,20 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   runLine('5 CF');
 }
 
+// i in an algebraic is the imaginary unit under →NUM and APPROX, as π is the number; EXACT EVAL keeps it symbolic.
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top("'3+4*i' →NUM") === '(3, 4)', "→NUM works '3+4*i' out to a complex number");
+  assert(top("'(1+i)*(1-i)' →NUM") === '(2, 0)' && top("'i^2' →NUM") === '(-1, 0)', 'products and powers of i are worked out');
+  assert(top("'ABS(3+4*i)' →NUM") === '5.' && top("'RE(i+2)' →NUM") === '2.', 'a function of an expression holding i is worked out');
+  assert(top("'EXP(i*π)' →NUM") === '(-1, -2.0682310711E-13)', 'EXP(i*π) comes out as the 12-digit π gives it');
+  assert(top("APPROX '3+4*i' EVAL EXACT") === '(3, 4)', 'APPROX EVAL works it out too');
+  assert(top("'3+4*i' EVAL") === '`3 + 4*i`', 'EXACT EVAL keeps i symbolic');
+  assert(top("'X+i' →NUM") === '`X + i`', 'another unknown name keeps the whole expression symbolic');
+  assert(top("[ 'i+1' 2 ] →NUM") === '[ (1, 1) 2. ]', 'an array entry holding i is worked out');
+  assert(top("'1/(1+i)' →NUM") === '(0.5, -0.5)', 'a quotient is worked out');
+}
+
 // EVAL of an array with symbolic entries evaluates each entry; a numeric array stays as it is.
 {
   const top = (line) => format(runLine(line).peek());
