@@ -1240,5 +1240,35 @@ function quotaError() {
   }
 }
 
+// The table of values keeps its start and step with the plot, or alone when its formula was never plotted.
+{
+  const saved = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
+  const view = { xmin: -6.5, xmax: 6.5, ymin: -2, ymax: 2 };
+  const traces = [{ kind: 'function', expr: 'SIN(X)', exprY: '', exprZ: '', label: 'SIN(X)', enabled: true }];
+  const load = (plot) => { store.set(PLOT_KEY, JSON.stringify(plot)); return loadPlot(); };
+  try {
+    savePlot({ traces, view, table: { start: -1, step: 0.1 } });
+    let back = loadPlot();
+    assert(back.traces.length === 1 && JSON.stringify(back.table) === '{"start":-1,"step":0.1}', 'table: the start and step come back with the plot');
+    savePlot({ traces, view });
+    assert(loadPlot().table === undefined, 'table: a plot saved without one has none');
+    back = load({ traces: [], view, table: { start: 3, step: 0.5 } });
+    assert(back && back.traces.length === 0 && JSON.stringify(back.table) === '{"start":3,"step":0.5}', 'table: a table alone comes back, with no formulas');
+    assert(load({ traces: [], view }) === null, 'table: no formulas and no table is no plot');
+    assert(JSON.stringify(load({ traces, view, table: { start: 0, step: -0.25 } }).table) === '{"start":0,"step":-0.25}', 'table: a negative step counts down and is kept');
+    for (const [name, table] of [['a step of 0', { start: 1, step: 0 }], ['a start that is no number', { start: 'a', step: 1 }], ['an infinite start', { start: Infinity, step: 1 }], ['a missing step', { start: 1 }], ['a step as text', { start: 1, step: '2' }], ['no object', 5], ['null', null]]) {
+      const kept = load({ traces, view, table });
+      assert(kept && kept.traces.length === 1 && kept.table === undefined, `table: ${name} is dropped and the plot stays`);
+      assert(load({ traces: [], view, table }) === null, `table: ${name} alone is no plot`);
+    }
+    const extra = load({ traces, view, table: { start: 2, step: 4, evil: '<script>' } });
+    assert(Object.keys(extra.table).sort().join() === 'start,step', 'table: only the start and step are read');
+  } finally {
+    globalThis.localStorage = saved;
+  }
+}
+
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');
 process.exit(failed ? 1 : 0);

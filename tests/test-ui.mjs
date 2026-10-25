@@ -3824,7 +3824,7 @@ setAngle('RAD');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const { ACTIONS, KEYMAP } = await import('../www/src/ui/actions.js');
   assert(gv.includes('data-gr="table"') && gv.includes("else if (act === 'table') this.openTable();")
-    && /openTable\(\) \{\s*if \(!this\._tableTraces\(\)\.length\) \{ this\._readout\.textContent = 'Plot a function to see its table'; return; \}[\s\S]{0,260}this\.app\.sheets\.openTable\(\{ \.\.\.tableSetup\(this\.view\), xName \}/.test(gv)
+    && /openTable\(\) \{\s*if \(!this\._tableTraces\(\)\.length\) \{ this\._readout\.textContent = 'Plot a function to see its table'; return; \}[\s\S]{0,260}this\.app\.sheets\.openTable\(this\._tableSetup\(this\.view, xName\)/.test(gv)
     && ACTIONS['plot.table'] && KEYMAP.some((b) => b.context === 'plot' && b.chord === 'V' && b.action === 'plot.table'),
     'plot table: a tool in the plot toolbar, and V on the plot, open a sheet of the functions\' values, or say to plot a function first');
   assert(/this\._open\('table'\);\s*requestAnimationFrame\(\(\) => this\.el\?\.querySelector\('\[data-sh="close"\]'\)\?\.focus/.test(sh)
@@ -4182,4 +4182,29 @@ setAngle('RAD');
   assert(/_beginEdit\(picked\) \{\n\s*if \(this\.entry\.buffer\.trim\(\)\) this\.commitEntry\(\);\n\s*if \(this\.entry\.buffer\.trim\(\)\) return;\n\s*const edit = this\._settleEdit\(picked\);\n\s*if \(!edit\) \{\n\s*this\.toast\(picked\.kind === 'var' \? `\$\{picked\.name\} is gone, so there is nothing to edit\.` : 'That level is gone, so there is nothing to edit\.'\);\n\s*return;\n\s*\}\n\s*const \{ value \} = edit;/.test(appSrc)
     && /_settleEdit\(edit\) \{\n\s*if \(edit\.kind === 'var'\) \{\n\s*const value = varRecall\(edit\.name\);\n\s*return value === undefined \? null : \{ \.\.\.edit, value \};\n\s*\}\n\s*const level = this\._levelOf\(edit\.value\);\n\s*return level \? \{ \.\.\.edit, level, label: `Editing level \$\{level\}` \} : null;/.test(appSrc),
     'edit: a line entered before the edit starts moves the level or stores the variable, so the edit is aimed at where the value is now; if the line took it away there is a note and no edit');
+}
+
+// The table of values keeps its start and step: the plot's own snapshot holds them, a typed value, ÷2 or ×2 keeps them, paging does
+// not, and Auto, offered once they differ from the plot window's, forgets them.
+{
+  const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
+  const sh = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  assert(/this\.tableKept = null;\n\s*const saved = loadPlot\(\);/.test(gv)
+    && /return traces\.length \|\| this\.tableKept \? \{ traces, view: \{ \.\.\.this\.view \}, \.\.\.\(this\.tableKept && \{ table: this\.tableKept \}\) \} : null;/.test(gv)
+    && /restore\(\{ traces, view, table \}\) \{\n\s*this\.tableKept = table \?\? null;/.test(gv),
+    'table setup: the plot snapshot carries the table\'s start and step, alone when nothing is plotted, and restore puts them back');
+  assert(/_tableSetup\(view, xName\) \{\n\s*return \{ \.\.\.tableSetup\(view\), \.\.\.this\.tableKept, xName, auto: \(\) => tableSetup\(view\), keep: \(table\) => \{ this\.tableKept = table; this\.keep\(\); \} \};/.test(gv)
+    && gv.includes('this.app.sheets.openTable(this._tableSetup(this.view, xName), (start, step, count) => this.tableData(start, step, count));')
+    && gv.includes('this.app.sheets.openTable(this._tableSetup(view, xName), (start, step, count) => ({'),
+    'table setup: a plot\'s table and a formula\'s own table both open on the kept start and step, else a round pair from the window');
+  assert(/_keepTable\(\) \{\n\s*this\.tbl\.keep\?\.\(\{ start: this\.tbl\.start, step: this\.tbl\.step \}\);\n\s*\}/.test(sh)
+    && /this\.tbl\[input\.dataset\.tb\] = value;\n\s*this\._keepTable\(\);\n\s*this\._render\(\);/.test(sh)
+    && sh.includes("case 'tb-finer': this.tbl.step = Number((this.tbl.step / 2).toPrecision(12)); this._keepTable(); this._render(); return;")
+    && sh.includes("case 'tb-coarser': this.tbl.step = Number((this.tbl.step * 2).toPrecision(12)); this._keepTable(); this._render(); return;")
+    && sh.includes("case 'tb-auto': Object.assign(this.tbl, this.tbl.auto()); this.tbl.keep?.(null); this._render(); return;")
+    && /_tableMove\(rows\) \{\n\s*this\.tbl\.start = Number\(\(this\.tbl\.start \+ rows \* this\.tbl\.step\)\.toPrecision\(12\)\);\n\s*this\._render\(\);/.test(sh),
+    'table setup: typing a start or step, ÷2 and ×2 keep it; paging moves the start without keeping it; Auto takes the plot window\'s pair and forgets the kept one');
+  assert(/const auto = this\.tbl\.auto\?\.\(\);\n\s*const custom = !!auto && \(auto\.start !== start \|\| auto\.step !== step\);/.test(sh)
+    && sh.includes("${custom ? act('tb-auto', 'Auto', 'Start and step from the plot window') : ''}${act('tb-earlier'"),
+    'table setup: the Auto key shows only while the start and step differ from the plot window\'s, so the keys keep their one row from 430 px');
 }

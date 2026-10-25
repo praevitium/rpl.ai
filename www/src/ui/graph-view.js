@@ -232,6 +232,7 @@ export class GraphView {
       this._pict = calcState.pict;
       this.draw();
     });
+    this.tableKept = null;
     const saved = loadPlot();
     if (saved) this.restore(saved);
     this._kept = JSON.stringify(this.snapshot());
@@ -239,15 +240,17 @@ export class GraphView {
     addEventListener('pagehide', () => this.keep());
   }
 
-  // What a reload brings back: the formulas on the plot and its window. Plotted data and fits come from ΣDAT or the stack.
+  // What a reload brings back: the formulas on the plot and its window, and the table's start and step. Plotted data and fits come
+  // from ΣDAT or the stack.
   snapshot() {
     const traces = this.traces
       .filter((t) => TRACE_KINDS[t.kind]?.editable)
       .map(({ kind, expr, exprY, exprZ, label, color, enabled }) => ({ kind, expr, exprY, exprZ, label, color, enabled }));
-    return traces.length ? { traces, view: { ...this.view } } : null;
+    return traces.length || this.tableKept ? { traces, view: { ...this.view }, ...(this.tableKept && { table: this.tableKept }) } : null;
   }
 
-  restore({ traces, view }) {
+  restore({ traces, view, table }) {
+    this.tableKept = table ?? null;
     const formulas = traces.filter((t) => TRACE_KINDS[t.kind]?.editable);
     if (!formulas.length) return;
     this.traces = formulas.map((t) => makeTrace(t));
@@ -757,7 +760,12 @@ export class GraphView {
   openTable() {
     if (!this._tableTraces().length) { this._readout.textContent = 'Plot a function to see its table'; return; }
     const xName = tableXName(this._tableTraces().map((t) => t.expr), plotSettings()?.indep?.name);
-    this.app.sheets.openTable({ ...tableSetup(this.view), xName }, (start, step, count) => this.tableData(start, step, count));
+    this.app.sheets.openTable(this._tableSetup(this.view, xName), (start, step, count) => this.tableData(start, step, count));
+  }
+
+  // The start and step the table last had, else a round pair from the plot window, which the sheet's Auto returns to.
+  _tableSetup(view, xName) {
+    return { ...tableSetup(view), ...this.tableKept, xName, auto: () => tableSetup(view), keep: (table) => { this.tableKept = table; this.keep(); } };
   }
 
   // The same for a formula, or a list of them, from the stack, with no plot drawn: the one open name that is not X takes its place.
@@ -770,7 +778,7 @@ export class GraphView {
     const view = pparView() ?? defaultView();
     const opts = sampleOpts({ snapX: 0, view, width: 240 });
     const xName = moved.length === 1 ? moved[0] : tableXName(traces.map((t) => t.expr), plotSettings()?.indep?.name);
-    this.app.sheets.openTable({ ...tableSetup(view), xName }, (start, step, count) => ({
+    this.app.sheets.openTable(this._tableSetup(view, xName), (start, step, count) => ({
       heads: named.map((spec) => spec.expr || 'Y'),
       rows: tableRows(traces, start, step, count, opts),
     }));

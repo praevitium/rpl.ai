@@ -413,7 +413,8 @@ const PLOT_MAX_TEXT = 2000;
 const PLOT_TEXTS = ['expr', 'exprY', 'exprZ', 'label'];
 const PLOT_WINDOW = ['xmin', 'xmax', 'ymin', 'ymax'];
 
-// The formulas on the plot and the window they are drawn in, which the HP keeps through power-off as EQ and PPAR.
+// The formulas on the plot and the window they are drawn in, which the HP keeps through power-off as EQ and PPAR, and the table's
+// start and step.
 // Never throws: a plot is only a convenience.
 export function savePlot(plot) {
   try {
@@ -424,17 +425,19 @@ export function savePlot(plot) {
 
 export function loadPlot() {
   try {
-    const { traces, view } = JSON.parse(localStorage.getItem(PLOT_KEY) ?? 'null') ?? {};
+    const { traces, view, table } = JSON.parse(localStorage.getItem(PLOT_KEY) ?? 'null') ?? {};
     const text = (v) => v === undefined || (typeof v === 'string' && v.length <= PLOT_MAX_TEXT);
     const sound = (t) => typeof t?.kind === 'string' && PLOT_TEXTS.every((k) => text(t[k]));
     const windowed = PLOT_WINDOW.every((k) => Number.isFinite(view?.[k])) && view.xmax > view.xmin && view.ymax > view.ymin;
-    if (!Array.isArray(traces) || !traces.length || traces.length > PLOT_MAX_TRACES || !traces.every(sound) || !windowed) return null;
+    const kept = Number.isFinite(table?.start) && Number.isFinite(table?.step) && table.step !== 0 ? { start: table.start, step: table.step } : null;
+    if (!Array.isArray(traces) || traces.length > PLOT_MAX_TRACES || !traces.every(sound) || !windowed || !(traces.length || kept)) return null;
     return {
       traces: traces.map((t) => ({
         kind: t.kind, expr: t.expr ?? '', exprY: t.exprY ?? '', exprZ: t.exprZ ?? '', label: t.label ?? '',
         enabled: t.enabled !== false, ...(/^#[0-9a-f]{6}$/i.test(t.color) && { color: t.color }),
       })),
       view: Object.fromEntries(PLOT_WINDOW.map((k) => [k, view[k]])),
+      ...(kept && { table: kept }),
     };
   } catch { return null; }
 }

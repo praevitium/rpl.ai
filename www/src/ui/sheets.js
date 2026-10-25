@@ -344,6 +344,8 @@ export class Sheets {
     }
     if (this.kind === 'table') {
       const { start, step, xName = 'X' } = this.tbl;
+      const auto = this.tbl.auto?.();
+      const custom = !!auto && (auto.start !== start || auto.step !== step);
       const data = this.tbl.source(start, step, TABLE_ROWS);
       this.tbl.data = data;
       const shown = (v, digits) => (Number.isNaN(v) ? '—' : v === Infinity ? '∞' : v === -Infinity ? '−∞' : escapeHtml(withFractionMark(tableText(v, digits))));
@@ -351,7 +353,7 @@ export class Sheets {
       const act = (name, label, title) => `<button type="button" class="btn" data-sh="${name}" title="${title}" aria-label="${title}">${label}</button>`;
       const heads = data.heads.map((h) => `<th scope="col" title="${escapeHtml(withFractionMark(h))}">${escapeHtml(withFractionMark(h))}</th>`).join('');
       const rows = data.rows.map((r, i) => `<tr><td data-sh="tb-pick" data-i="${i}">${shown(r.x, 12)}</td>${r.ys.map((y, j) => `<td data-sh="tb-pick" data-i="${i}" data-j="${j}">${shown(y, 8)}</td>`).join('')}</tr>`).join('');
-      const body = `<div class="tb-set">${field('start', 'Start', start)}${field('step', 'Step', step)}<div class="tb-zoom">${act('tb-finer', '÷2', 'Halve the step')}${act('tb-coarser', '×2', 'Double the step')}${act('tb-earlier', icon('chu', 'sm'), 'Earlier rows')}${act('tb-later', icon('chd', 'sm'), 'Later rows')}</div></div>`
+      const body = `<div class="tb-set">${field('start', 'Start', start)}${field('step', 'Step', step)}<div class="tb-zoom">${act('tb-finer', '÷2', 'Halve the step')}${act('tb-coarser', '×2', 'Double the step')}${custom ? act('tb-auto', 'Auto', 'Start and step from the plot window') : ''}${act('tb-earlier', icon('chu', 'sm'), 'Earlier rows')}${act('tb-later', icon('chd', 'sm'), 'Later rows')}</div></div>`
         + `<div class="tb-wrap"><table class="tb"><thead><tr><th scope="col">${escapeHtml(xName)}</th>${heads}</tr></thead><tbody>${rows}</tbody></table></div>`
         + '<p class="pt-hint">Tap a value to put its point on the stack.</p>';
       const copy = `<button type="button" class="icon-btn sm" data-sh="tb-copy" title="Copy the table (it pastes into a spreadsheet as cells)" aria-label="Copy the table">${icon('copy', 'sm')}</button>`;
@@ -593,8 +595,9 @@ export class Sheets {
       }
       case 'tb-copy': { const { text, html } = this._tableSheet(); app.copyText(text, 'Copied the table. It pastes into a spreadsheet as cells.', html); return; }
       case 'tb-share': app.shareText(this._tableSheet().text); return;
-      case 'tb-finer': this.tbl.step = Number((this.tbl.step / 2).toPrecision(12)); this._render(); return;
-      case 'tb-coarser': this.tbl.step = Number((this.tbl.step * 2).toPrecision(12)); this._render(); return;
+      case 'tb-finer': this.tbl.step = Number((this.tbl.step / 2).toPrecision(12)); this._keepTable(); this._render(); return;
+      case 'tb-coarser': this.tbl.step = Number((this.tbl.step * 2).toPrecision(12)); this._keepTable(); this._render(); return;
+      case 'tb-auto': Object.assign(this.tbl, this.tbl.auto()); this.tbl.keep?.(null); this._render(); return;
       case 'tb-earlier': this._tableMove(-TABLE_ROWS / 2); return;
       case 'tb-later': this._tableMove(TABLE_ROWS / 2); return;
       case 'tb-pick': {
@@ -683,6 +686,10 @@ export class Sheets {
     const cell = (v) => (Number.isFinite(v) ? Real(Number(v.toPrecision(12))) : Str(''));
     const list = RList([RList([xName, ...heads].map(Str)), ...rows.map((r) => RList([r.x, ...r.ys].map(cell)))]);
     return { text: formatDelimited(list, '\t').replace(/^\uFEFF/, ''), html: spreadsheetHtml(list) };
+  }
+
+  _keepTable() {
+    this.tbl.keep?.({ start: this.tbl.start, step: this.tbl.step });
   }
 
   _tableMove(rows) {
@@ -785,6 +792,7 @@ export class Sheets {
     input.classList.toggle('bad', !ok);
     if (!ok) return;
     this.tbl[input.dataset.tb] = value;
+    this._keepTable();
     this._render();
   }
 
