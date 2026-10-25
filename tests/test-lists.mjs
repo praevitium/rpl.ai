@@ -1118,6 +1118,19 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 }
 
 {
+  const text = (src) => format(runLine(src).peek());
+  assert(text('{ 1 2 { 3 4 } } « →STR » MAP') === '{ "1" "2" { "3" "4" } }',
+    'MAP goes into an inner list, as the AUR example { 1 2 { 3 4 } } « →STR » MAP reads');
+  assert(text('{ { 1 { 2 } } 3 } « 2 * » MAP') === '{ { 2 { 4 } } 6 }',
+    'MAP goes into lists inside lists');
+  assert(text('{ 1 2 } « { 7 8 } SWAP DROP » MAP') === '{ { 7 8 } { 7 8 } }',
+    'MAP leaves a list a program returns as the result, not mapped again');
+  const empty = runLine('{ { } { 1 } } « 2 * » MAP').peek();
+  assert(isList(empty) && empty.items.length === 2 && isList(empty.items[0]) && empty.items[0].items.length === 0,
+    'MAP of a list holding an empty list leaves the empty list');
+}
+
+{
   const s = new Stack();
   s.push(RList([Real(1)]));
   s.push(Real(5));          // not a program

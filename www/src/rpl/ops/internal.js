@@ -2624,15 +2624,21 @@ function* _mapOneValueGen(s, prog, e, depth) {
 }
 
 
+// A list inside the list is mapped item by item, as the AUR's MAP says.
+function* _mapListGen(s, prog, list, depth) {
+  const out = [];
+  for (const e of list.items) out.push(isList(e) ? yield* _mapListGen(s, prog, e, depth) : yield* _mapOneValueGen(s, prog, e, depth));
+  return RList(out);
+}
+
+
 export function* runMap(s, depth) {
   s.need(2);
   const prog = s.pop();
   const obj  = s.pop();
   _combinatorProgCheck(prog);
   if (isList(obj)) {
-    const out = [];
-    for (const e of obj.items) out.push(yield* _mapOneValueGen(s, prog, e, depth));
-    s.push(RList(out));
+    s.push(yield* _mapListGen(s, prog, obj, depth));
     return;
   }
   if (isVector(obj)) {
