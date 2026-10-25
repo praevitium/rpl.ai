@@ -4019,3 +4019,10 @@ function _approxMatEqual(A, B, tol) {
   assert(top('[[ 1 2 3 ][ 4 5 6 ][ 7 8 9 ]] 5 99 SUB') === '[[ 5 6 ][ 8 9 ]]', 'an end past the matrix reads as the last element');
   assertThrows(() => runLine('[[ 1 2 3 ][ 4 5 6 ][ 7 8 9 ]] 5 1 SUB'), /Bad argument value/, 'an end before the start has nothing to give');
 }
+
+// V→ splits a complex number into its two parts, which are r and the angle in polar mode.
+{
+  const s = runLine('(1.5,2.5) V→');
+  assert(s.depth === 2 && format(s.peek(2)) === '1.5' && format(s.peek(1)) === '2.5', 'AUR: (x,y) V→ gives x and y');
+  assert(format(runLine('CYLIN (3,4) V→ RECT').peek(1)) === '0.927295218002', 'in polar mode V→ of a complex number gives r and the angle');
+}

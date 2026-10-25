@@ -18,7 +18,7 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows } from './helpers.mjs';
+import { assert, assertThrows, runLine } from './helpers.mjs';
 
 /* BinaryInteger type, STWS wordsize, HEX/DEC/OCT/BIN display, bitwise ops,
    B→R / R→B converters, parse-time literal truncation. */
@@ -1072,4 +1072,14 @@ setBinaryBase(null);
   assert(format(parseEntry('« # 1Fh # 3d AND »')[0]) === '« #1Fh #3d AND »', 'parse: # 1Fh and # 3d inside a program');
   assertThrows(() => parseEntry('# '), /Malformed binary integer/, 'parse: # alone is still malformed');
   assertThrows(() => parseEntry('# DUP'), /Malformed binary integer/, 'parse: # before a name is still malformed');
+}
+
+// NEG of a binary integer is its two's complement in the wordsize, as the AUR says.
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top('64 STWS #1h NEG') === '#FFFFFFFFFFFFFFFFh', '#1h NEG is all ones at 64 bits');
+  assert(top('8 STWS #5h NEG') === '#FBh' && top('8 STWS #FFh NEG') === '#1h', 'at 8 bits #5h NEG is #FBh and #FFh NEG is #1h');
+  runLine('16 STWS');
+  assert(top('#0h NEG') === '#0h' && top('#1234h NEG NEG') === '#1234h', 'zero stays zero and NEG NEG gives the number back');
+  runLine('64 STWS');
 }

@@ -2,7 +2,7 @@ import { RPLError, checkTimeLimit } from '../stack.js';
 import { Integer, Matrix, isGrob, isInteger, isReal, isVector, Vector, isMatrix, isSymbolic, Symbolic, isString, isBinaryInteger, isComplex, isName, Real, isRational, Rational, Complex, isUnit, Unit, toComplex, toRealOrThrow, toRealDecimal, BinaryInteger, isNumber, isList, RList, Str } from '../types.js';
 import { Bin as AstBin, formatAlgebra, isRealNum, Neg as AstNeg, Num as AstNum, Fn as AstFn, Var as AstVar } from '../algebra.js';
 import { formatReal, DEFAULT_DISPLAY, formatBinaryInteger } from '../formatter.js';
-import { state as _calcState, getApproxMode, getRealMaxExp, getWordsize, nextPrngUnit, seedPrng } from '../state.js';
+import { state as _calcState, getApproxMode, getRealMaxExp, getWordsize, getWordsizeMask, nextPrngUnit, seedPrng } from '../state.js';
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { inverseUexpr, powerUexpr, sameDims, temperaturesAdd } from '../units.js';
 import { register, lookup, OPS } from './registry.js';
@@ -222,6 +222,12 @@ function _stringCoerce(v) {
 }
 
 
+// Negating a binary integer takes its two's complement within the wordsize, as the AUR says.
+function _twosComplement(v) {
+  const mask = getWordsizeMask();
+  return BinaryInteger((mask + 1n - (v.value & mask)) & mask, v.base);
+}
+
 register('NEG', _withTaggedUnary(_withListUnary(_withVMUnary((s) => {
   const v = s.pop();
   if (isGrob(v) || isPict(v)) { negGrob(s, v); return; }
@@ -234,6 +240,7 @@ register('NEG', _withTaggedUnary(_withListUnary(_withVMUnary((s) => {
   }
   else if (isComplex(v)) s.push(Complex(-v.re, -v.im));
   else if (isUnit(v))    s.push(Unit(-v.value, v.uexpr));
+  else if (isBinaryInteger(v)) s.push(_twosComplement(v));
   else throw new RPLError('Bad argument type');
 }))), { category: 'Arithmetic', categoryOrder: 5, label: "NEG" });
 

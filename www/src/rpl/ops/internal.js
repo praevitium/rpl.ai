@@ -2575,6 +2575,10 @@ export const _toV3Op = (s) => {
 
 export const _fromVecOp = (s) => {
   const [v] = s.popN(1);
+  if (isComplex(v)) {
+    for (const part of _polarMode() ? _polarParts([v.re, v.im]) : [v.re, v.im]) s.push(Real(part));
+    return;
+  }
   if (!isVector(v)) throw new RPLError('Bad argument type');
   const n = v.items.length;
   if (_polarMode() && (n === 2 || n === 3) && _allReal(v.items)) {
