@@ -1163,6 +1163,16 @@ function quotaError() {
     assert(back.edit.kind === 'level' && back.edit.level === 2 && back.edit.line === true && back.edit.name === undefined, 'edit draft: a level edit comes back with its level and the line flag');
     saveDraft({ text: '7', cursor: 1 });
     assert(loadDraft().edit === undefined, 'edit draft: a draft that is no edit has none');
+    saveDraft({ text: '', cursor: 0, edit: { kind: 'level', level: 1, was: 9 } });
+    back = loadDraft();
+    assert(back && back.text === '' && back.cursor === 0 && back.edit.kind === 'level' && back.edit.level === 1 && back.edit.was === 9,
+      'edit draft: an edit whose line was emptied is kept, so the next value typed still replaces the level');
+    saveDraft({ text: ' \n ', cursor: 2, edit: { kind: 'var', name: 'PRG', was: 4 } });
+    assert(loadDraft().edit.name === 'PRG', 'edit draft: a blank line keeps its edit');
+    saveDraft({ text: '', cursor: 0, edit: { kind: 'level', level: 0, was: 9 } });
+    assert(loadDraft() === null, 'edit draft: an edit that cannot be read is no draft when the line is blank');
+    saveDraft({ text: '', cursor: 0 });
+    assert(!store.has(DRAFT_KEY) && loadDraft() === null, 'edit draft: no edit and no line is no draft');
     for (const [name, edit] of [
       ['a level that is no whole number', { kind: 'level', level: 'a', was: 1 }],
       ['level 0', { kind: 'level', level: 0, was: 1 }],

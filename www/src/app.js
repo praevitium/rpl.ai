@@ -378,7 +378,7 @@ class App {
     const text = this.entry.buffer;
     const writer = this._writerDraft();
     const edit = this._editDraft();
-    return text.trim() || writer ? { text, cursor: this.entry.cursor, ...(writer && { writer }), ...(edit && { edit }) } : null;
+    return text.trim() || writer || edit ? { text, cursor: this.entry.cursor, ...(writer && { writer }), ...(edit && { edit }) } : null;
   }
 
   _editDraft() {
@@ -1524,6 +1524,7 @@ class App {
     this.pendingEdit = null;
     this.renderStatus();
     this.input.render();
+    this._keepDraft?.();
   }
 
   writerCommit(value) {

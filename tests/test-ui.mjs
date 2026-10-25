@@ -4069,7 +4069,7 @@ setAngle('RAD');
     && /visibilityState === 'hidden'\) keep\(\)/.test(appSrc) && /addEventListener\('pagehide', keep\)/.test(appSrc),
     'a line is saved after a pause in typing, at once when it is emptied, and as the page is hidden or closed');
   assert(/_draft\(\) \{\n\s*if \(this\._dialogHalt\) return null;\n\s*const text = this\.entry\.buffer;/.test(appSrc),
-    'a blank line and a dialog\'s answer are not kept');
+    'a dialog\'s answer is not kept, nor a blank line with no writer and no edit');
   assert(/resetEverything\(\) \{\n\s*this\.app\.entry\.resetBuffer\(''\);\n\s*const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY,/.test(sheetsSrc),
     'Reset empties the line before it clears storage, or the page being closed would save the line again');
 }
@@ -4118,7 +4118,7 @@ setAngle('RAD');
   assert(/if \(draft\.writer\) this\._restoreWriter\(draft\.writer\);/.test(appSrc)
     && /_restoreWriter\(\{ mode, saved \}\) \{\n\s*try \{\n\s*this\.setInputMode\(mode\);\n\s*this\._writer\(\)\.restore\(saved\);\n\s*\} catch \(e\) \{[\s\S]*?this\.setInputMode\('rpl'\);/.test(appSrc),
     'the writer a draft held is opened and filled at the start, and one that cannot be put back is closed again so the start goes on');
-  assert(/_draft\(\) \{\n\s*if \(this\._dialogHalt\) return null;\n\s*const text = this\.entry\.buffer;\n\s*const writer = this\._writerDraft\(\);\n\s*const edit = this\._editDraft\(\);\n\s*return text\.trim\(\) \|\| writer \? \{ text, cursor: this\.entry\.cursor, \.\.\.\(writer && \{ writer \}\), \.\.\.\(edit && \{ edit \}\) \} : null;/.test(appSrc)
+  assert(/_draft\(\) \{\n\s*if \(this\._dialogHalt\) return null;\n\s*const text = this\.entry\.buffer;\n\s*const writer = this\._writerDraft\(\);\n\s*const edit = this\._editDraft\(\);\n\s*return text\.trim\(\) \|\| writer \|\| edit \? \{ text, cursor: this\.entry\.cursor, \.\.\.\(writer && \{ writer \}\), \.\.\.\(edit && \{ edit \}\) \} : null;/.test(appSrc)
     && /if \(mode === 'equation'\) saved\.state = \{ \.\.\.saved\.state, history: \[\], future: \[\] \};/.test(appSrc),
     'a draft holds the line, the open writer, a formula without its undo steps, and the level or variable being edited');
   assert(/this\.renderStatus\(\);\n\s*this\._keepDraft\?\.\(\);\n\s*\}\n\n\s*\/\/ A line a program/.test(appSrc) || /this\._keepDraft\?\.\(\);/.test(appSrc), 'changing the input mode saves the draft at once, so a closed writer is forgotten');
@@ -4180,6 +4180,8 @@ setAngle('RAD');
     'a draft names the edit by its level or variable and a hash of the value it began from');
   assert(/_restoreEdit\(\{ kind, level, name, line, was \}\) \{\n\s*const value = kind === 'level' \? \(level <= this\.stack\.depth \? this\.stack\.peek\(level\) : undefined\) : varRecall\(name\);\n\s*if \(value === undefined \|\| sourceHash\(value\) !== was\) return;/.test(appSrc),
     'the edit is taken up again only for the value it began from; a level or variable that changed leaves the text as a plain line');
+  assert(/_endEdit\(\) \{\n\s*this\.pendingEdit = null;\n\s*this\.renderStatus\(\);\n\s*this\.input\.render\(\);\n\s*this\._keepDraft\?\.\(\);\n\s*\}/.test(appSrc),
+    'an edit that ends is forgotten at once, since an edit with its line emptied is kept and would otherwise wait out the typing pause');
 }
 
 // The soft keys come back on the folder and page they were left on: kept as the page is hidden, found again by the folder's key.

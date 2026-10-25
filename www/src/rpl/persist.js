@@ -439,7 +439,7 @@ export function saveDraft(draft) {
   try {
     if (draft && draft.text.length <= DRAFT_MAX_CHARS) {
       const kept = draft.writer && JSON.stringify(draft.writer).length > DRAFT_MAX_CHARS ? { text: draft.text, cursor: draft.cursor } : draft;
-      if (kept.text.trim() || kept.writer) { localStorage.setItem(DRAFT_KEY, JSON.stringify(kept)); return; }
+      if (kept.text.trim() || kept.writer || kept.edit) { localStorage.setItem(DRAFT_KEY, JSON.stringify(kept)); return; }
     }
     localStorage.removeItem(DRAFT_KEY);
   } catch { /* storage is full or blocked */ }
@@ -478,9 +478,9 @@ export function loadDraft() {
     const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null');
     const text = typeof draft?.text === 'string' && draft.text.length <= DRAFT_MAX_CHARS ? draft.text : '';
     const writer = readWriter(draft?.writer);
-    if (!text.trim() && !writer) return null;
+    const edit = readEdit(draft?.edit);
+    if (!text.trim() && !writer && !edit) return null;
     const cursor = Number.isInteger(draft.cursor) ? Math.max(0, Math.min(draft.cursor, text.length)) : text.length;
-    const edit = readEdit(draft.edit);
     return { text, cursor, ...(writer && { writer }), ...(edit && { edit }) };
   } catch { return null; }
 }
