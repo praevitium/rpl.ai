@@ -60,6 +60,7 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
     undefinedName: 'Undefined name: FOO',
     casLoading: 'FACTOR: CAS not ready',
     interrupted: 'EVAL: Interrupted',
+    recursion: 'QRUNAWAY: EVAL recursion too deep',
     memory: 'FACT: Insufficient memory',
     syntax: 'Invalid algebraic: Unexpected end of expression',
     sigmaData: 'MEAN: Nonexistent ΣDAT',
@@ -77,6 +78,16 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
       assert(html.includes('role="alert"') && html.includes('data-fix='), `errorBannerHtml: ${kind} renders its fixes`);
     }
   }
+}
+
+{
+  const loop = describeError('QRUNAWAY: EVAL recursion too deep', ctx({ line: 'QRUNAWAY' }));
+  assert(loop.kind === 'recursion' && loop.title === 'QRUNAWAY called itself too many times, so it was stopped.' && /Check that a test ends the recursion/.test(loop.detail)
+    && loop.fixes.map((f) => f.id).join() === 'edit-line,explain',
+    `recursion banner: a program that never stops says so and what to look for, where it showed the bare message (${loop.title})`);
+  assert(describeError('EVAL: EVAL recursion too deep', ctx()).title === 'A program called itself too many times, so it was stopped.'
+    && describeError('EVAL recursion too deep', ctx()).kind === 'recursion',
+    'recursion banner: an EVAL, or no command at all, reads as a program');
 }
 
 {

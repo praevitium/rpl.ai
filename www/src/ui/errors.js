@@ -5,7 +5,7 @@ import { getBinaryBase } from '../rpl/state.js';
 const CORE_MESSAGES = Object.freeze([
   'Too few arguments', 'Bad argument type', 'Bad argument value', 'Infinite result',
   'Invalid dimension', 'Inconsistent units', 'Undefined local name', 'Undefined name',
-  'CAS not ready', 'Interrupted', 'Insufficient memory', 'Nonexistent ΣDAT', 'Nonexistent alarm', 'Undefined result',
+  'CAS not ready', 'Interrupted', 'EVAL recursion too deep', 'Insufficient memory', 'Nonexistent ΣDAT', 'Nonexistent alarm', 'Undefined result',
 ]);
 
 const NUMBER_WORDS = Object.freeze(['no values', 'one value', 'two values', 'three values', 'four values', 'five values', 'six values', 'seven values', 'eight values', 'nine values']);
@@ -139,6 +139,12 @@ export const ERROR_KINDS = Object.freeze({
     match: (p) => p.core === 'Interrupted',
     title: (c) => `${c.command ?? 'That command'} ran for ${RUN_TIME_LIMIT_MS / 1000} seconds, so it was stopped.`,
     detail: () => "The page can't respond while a command runs, so a command that runs this long is stopped. The stack is back as it was. In a program, look for a loop that never ends.",
+    fixes: () => [{ id: 'explain', label: 'Explain' }],
+  },
+  recursion: {
+    match: (p) => p.core === 'EVAL recursion too deep',
+    title: (c) => `${c.command && !evaluates(c) ? c.command : 'A program'} called itself too many times, so it was stopped.`,
+    detail: () => 'A program can call itself a few thousand levels deep, and this one went past that. Check that a test ends the recursion, such as IF n 0 == THEN … END.',
     fixes: () => [{ id: 'explain', label: 'Explain' }],
   },
   memory: {
