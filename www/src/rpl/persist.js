@@ -107,11 +107,11 @@ export function snapshot(stack) {
     },
     home:    encode(state.home),
     path:    currentPath(),
-    stack:   stack._items.map(encode),      // level 1 last
+    stack:   stack._items.map((item) => encode(item)),      // level 1 last
     prngSeed: encode(state.prngSeed),
     casVx: state.casVx,
     casModulo: encode(state.casModulo),
-    realAssume: state.realAssume.map(encode),
+    realAssume: state.realAssume.map((item) => encode(item)),
     alarms: state.alarms,
     pict: encode(state.pict),
     userKeys: state.userKeys.map(([key, value]) => [key, encode(value)]),
@@ -202,6 +202,7 @@ export function rehydrate(snap, stack) {
     throw new Error('snapshot: home is not a directory');
   }
   const items = Array.isArray(snap.stack) ? snap.stack.map(decode) : [];
+  for (const item of items) if (item?.type === TYPES.DIRECTORY) relinkParents(item);
   const pict = decodePict(snap);
   const userKeys = decodeUserKeys(snap);
 

@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { Stack } from '../www/src/rpl/stack.js';
 import {
   Real, Integer, BinaryInteger, Complex, Name, Str, Program,
-  RList, Vector, Matrix, Tagged, Symbolic, Decimal,
+  RList, Vector, Matrix, Tagged, Symbolic, Decimal, Directory,
   isReal, isInteger, isBinaryInteger, isComplex, isString, isName,
   isList, isVector, isMatrix, isProgram, isTagged, isSymbolic,
   isDirectory,
@@ -25,6 +25,7 @@ import {
   saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX, saveDraft, loadDraft, DRAFT_KEY, saveHistory, loadHistory, HISTORY_KEY, savePlot, loadPlot, PLOT_KEY,
 } from '../www/src/rpl/persist.js';
 import { lookup } from '../www/src/rpl/ops.js';
+import { formatSource } from '../www/src/rpl/formatter.js';
 import { varRecall } from '../www/src/rpl/state.js';
 
 let failed = 0;
@@ -1188,6 +1189,35 @@ function quotaError() {
     assert(!threw && loadHistory().length === 0, 'history: blocked or full storage is no error');
   } finally {
     globalThis.localStorage = saved;
+  }
+}
+
+// A folder on the stack, from RCL of a folder or from DIR, saves like any other level. The save once threw for it, so the autosave
+// failed for as long as it stayed, and nothing entered after it was kept.
+{
+  const saved = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
+  try {
+    resetHome();
+    makeSubdir('D1'); goInto('D1'); varStore('X', Real(5)); makeSubdir('D2'); goInto('D2'); varStore('Y', Real(6)); goHome();
+    const st = new Stack();
+    st.push(Real(1));
+    st.push(Name('D1')); lookup('RCL').fn(st);
+    st.push(Directory({ name: '' }));
+    st.push(Real(2));
+    assert(saveToLocalStorage(st) === true && store.has(STORAGE_KEY), 'folders on the stack: the autosave writes');
+    resetHome();
+    const back = new Stack();
+    assert(loadInitialState(back) === 'stored', 'folders on the stack: the save loads');
+    const folder = back.peek(3);
+    assert(back.depth === 4 && formatSource(back.peek(4)) === '1.' && formatSource(back.peek(1)) === '2.', 'folders on the stack: the other levels come back in place');
+    assert(isDirectory(folder) && [...folder.entries.keys()].join() === 'X,D2' && formatSource(folder.entries.get('X')) === '5.', 'folders on the stack: a folder comes back with what is in it');
+    assert(folder.entries.get('D2').parent === folder && formatSource(folder.entries.get('D2').entries.get('Y')) === '6.', 'folders on the stack: a subfolder is linked to the folder it is in');
+    assert(isDirectory(back.peek(2)) && back.peek(2).entries.size === 0, 'folders on the stack: an empty folder comes back empty');
+  } finally {
+    globalThis.localStorage = saved;
+    resetHome();
   }
 }
 
