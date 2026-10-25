@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.89 (2026-10-25)
+**Latest release:** v0.8.90 (2026-10-25)
 
 ---
 
@@ -18,6 +18,30 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.90 — 2026-10-25
+
+- Fixed: with APPROX set, entering a formula that reads a stored list, vector
+  or matrix past its end, such as `'L(5)'` with three entries in `L`, or calls
+  a user function that fails, such as `'F(0)'` for `« → x « 1 x / » »`, failed
+  on Enter with the error of evaluating it. APPROX works a formula with no
+  free names out as it goes on the stack, and that failure was not caught.
+  The formula now goes on the stack as typed, and EVAL reports the error as
+  before. Found by fuzzing the array commands.
+- Added: Add to my menu, a button on a command's page in the Catalog. It puts
+  the command in CST, the list the CST key shows as soft keys, so a phone
+  needs no `{ SIN COS } 'CST' STO`; the button reads Remove from my menu once
+  the command is there, and follows CST when Undo or a program changes it. CST
+  is changed where it lives (HOME, or the variable CST names), as one Undo
+  step. Commands the app cannot run (IF, FOR) have no button.
+- Added: a finger held on a CST soft key offers what the shift keys do, which
+  the hidden keypad and minimal view have no keys for: Type and Recall for a
+  plain key, as the VARS keys' held menu offers Store and Recall, or the
+  shifted objects of a `{ "label" { action ⇦action ⇨action } }` item as
+  before. Every key's held menu also has Remove from my menu, whatever the key
+  holds. A held plain CST key did nothing before.
 
 ---
 

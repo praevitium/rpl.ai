@@ -427,7 +427,11 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   rewriting commands.
   An item can be `{ "label" object }` or `{ "label" { object ⇦object
   ⇨object } }`, as on the HP; a finger held on the key offers the shifted
-  objects.
+  objects, or for a plain key Type and Recall (the ⇦ and ⇨ a hidden
+  keypad has no keys for), and Remove from my menu for any key. A
+  command's page in the Catalog has an Add to my menu button that puts
+  the command in CST (it reads Remove from my menu once it is there), so
+  a phone needs no `{ SIN COS } 'CST' STO`; Undo takes either back.
   The user keyboard is the HP's too: `« 2 * » 53.1 ASN` gives the SIN key
   a program, `STOKEYS` assigns a list of pairs, `RCLKEYS` lists them and
   `DELKEYS` removes them, keys numbered rc.p as on the 50g (row, column,
