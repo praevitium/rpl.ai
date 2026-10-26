@@ -4473,12 +4473,19 @@ setAngle('RAD');
 // A decimal comma typed on a phone keyboard is read as two numbers, as on the HP, so a note says so and offers the switch.
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/if \(this\.entry\.decimalComma\) queueMicrotask\(\(\) => this\._noteDecimalComma\(\)\);/.test(appSrc)
-    && /_noteDecimalComma\(\) \{\n\s*const found = this\.entry\.decimalComma;\n\s*this\.entry\.decimalComma = null;\n\s*if \(!found \|\| this\.entry\.error \|\| this\._running\(\) \|\| testUserFlag\(-51\)\) return;/.test(appSrc),
-    'decimal comma note: a line with 3,14 in it is noted once it has run, unless it failed, a program is running or -51 is set');
-  assert(appSrc.includes("parts.length === 2 ? { action: 'Decimal comma', onAction: () => this._undoIfLatest(mark, rerun) } : null")
-    && /const rerun = \(\) => \{\n\s*const typed = this\.entry\.buffer;\n\s*setUserFlag\(-51\);\n\s*this\.runLine\(found\.line\);\n\s*if \(typed\.trim\(\)\) this\.entry\.recall\(typed\);/.test(appSrc),
+  assert(/if \(this\.entry\.decimalComma \|\| this\.entry\.gluedSigns\) queueMicrotask\(\(\) => this\._noteReadings\(\)\);/.test(appSrc)
+    && /_noteReadings\(\) \{\n\s*const \{ decimalComma, gluedSigns \} = this\.entry;\n\s*this\.entry\.decimalComma = this\.entry\.gluedSigns = null;\n\s*if \(this\.entry\.error \|\| this\._running\(\)\) return;\n\s*if \(decimalComma && !testUserFlag\(-51\)\) this\._noteDecimalComma\(decimalComma\);\n\s*else if \(gluedSigns\) this\._noteGluedSigns\(gluedSigns\);/.test(appSrc),
+    'reading notes: a line is noted once it has run, unless it failed or a program is running, with one note and the decimal comma first, and not with -51 set');
+  assert(/parts\.length === 2 && \{\n\s*action: 'Decimal comma',\n\s*run: \(\) => \{\n\s*setUserFlag\(-51\);\n\s*this\.runLine\(found\.line\);/.test(appSrc)
+    && /_noteReading\(message, fix\) \{\n\s*const mark = this\.stack\.undoMark\(\);\n\s*const rerun = \(\) => \{\n\s*const typed = this\.entry\.buffer;\n\s*fix\.run\(\);\n\s*if \(typed\.trim\(\)\) this\.entry\.recall\(typed\);\n\s*\};\n\s*this\.undoToast\(message, fix && \{ action: fix\.action, onAction: \(\) => this\._undoIfLatest\(mark, rerun\) \}\);/.test(appSrc),
     'decimal comma note: its Decimal comma key undoes the line, sets -51 and runs the line again, keeping a line typed since, and only a lone comma offers it');
+}
+
+// 2+3 and 10-4 read as two numbers, so a note offers them as a formula, as the syntax error for 2*3 does.
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(appSrc.includes("action: 'Evaluate as a formula',\n      run: () => this.runLine(found.line.replace(found.text, `'${found.text}' EVAL`)),"),
+    'glued signs note: Evaluate as a formula runs the line again with the word, 2+3, quoted and EVALed');
 }
 
 // A field that holds one number reads 3,14 as the decimal it is, whichever way -51 is set.

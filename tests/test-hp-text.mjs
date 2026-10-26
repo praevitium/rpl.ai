@@ -1,5 +1,5 @@
 import { hpTextToSource, parseHpText, formatHpText, HP_TEXT_HEADER } from '../www/src/rpl/hp-text.js';
-import { parseEntry, endsInQuote, plainPunctuation, plainCharacter, bareDecimalComma, numberFieldText } from '../www/src/rpl/parser.js';
+import { parseEntry, endsInQuote, plainPunctuation, plainCharacter, bareDecimalComma, numberFieldText, gluedSigns } from '../www/src/rpl/parser.js';
 import { formatSource, format } from '../www/src/rpl/formatter.js';
 import {
   Str, Rational, Integer, RList, Matrix, isDirectory, isProgram, isString, isSymbolic, isTagged, isRational, isInteger, isReal,
@@ -77,6 +77,11 @@ END`;
     'bareDecimalComma: a comma between digits at the top of a line is found, as the number it sits in, for a phone keyboard that types the decimal comma');
   assert(['{ 1,2,3 }', '[1,2,3]', '[[1,2][3,4]]', '(1,2)', "'MAX(1,2)'", '`MAX(1,2)`', '"3,14"', '@ 3,14', '« 1,2 + »', '<< 1,2 + >>', 'A1,2', '1, 2', '1 ,2', '3.14', '1.5,2', '1,5.2', '3,', ',3', '1,,2', ''].every((src) => bareDecimalComma(src) === null),
     'bareDecimalComma: a comma inside a list, vector, complex number, algebraic, program, string or comment, beside a name, a space or a point, or a lone comma, is no decimal comma');
+  const glued = { '2+3': '2+3', '10-4': '10-4', '5-3+1': '5-3+1', '1.5+2.5': '1.5+2.5', '-5+3': '-5+3', '2E3-1': '2E3-1', '.5+.5': '.5+.5', '5 2+3 *': '2+3', '1 2 + 10-4': '10-4' };
+  assert(Object.entries(glued).every(([src, word]) => gluedSigns(src) === word),
+    'gluedSigns: numbers run together with signs, 2+3 or 10-4, are found as the word they are, wherever they sit at the top of a line');
+  assert(['1E-3', '1E+3', '5-', '-5', '5 -3', '5 - 3', '5 3 -', '1/3+1/6', 'x+1', '2+x', '5_m-2_m', '#12+3', '3,14', '(2+3)', '{ 2+3 }', '[2+3]', "'2+3'", '`2+3`', '"2+3"', '@ 2+3', '« 2+3 »', '<< 2+3 >>', '2^3', '3-4i', ''].every((src) => gluedSigns(src) === null),
+    'gluedSigns: a lone number, an exponent, spaced signs, a name, a unit, a list, vector, complex number, algebraic, program, string or comment is no run of numbers');
   assert(numberFieldText('3,14') === '3.14' && numberFieldText('-2,5') === '-2.5' && numberFieldText(',5') === '.5' && numberFieldText('2,5E3') === '2.5E3'
     && numberFieldText('−2,5') === '-2.5' && numberFieldText('３,１') === '3.1' && numberFieldText(' 1.5 ') === '1.5',
     'numberFieldText: a number with a lone comma is a decimal in a field of its own, and the characters of other keyboards read as on the command line');

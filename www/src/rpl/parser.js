@@ -363,12 +363,18 @@ export function numberFieldText(text) {
   return testUserFlag(-51) ? periodFractionMark(typed) : typed.replace(/^([-+]?\d*),(\d+(?:[eE][-+]?\d+)?)$/, '$1.$2');
 }
 
+// A typed line with its strings, comments and quoted algebraics blanked and << >> as « », the same length, for finding what sits at
+// the top of the line.
+function maskedLine(src) {
+  return plainPunctuation(src)
+    .replace(/"(?:\\.|[^"\\])*"?|@[^\n\r]*|'[^']*'?|`[^`]*`?/g, (m) => ' '.repeat(m.length))
+    .replace(/<</g, ' «').replace(/>>/g, ' »');
+}
+
 // A comma between digits at the top of a line separates objects as a space does, so 3,14 is 3 and 14 unless flag -51 makes the
 // comma a fraction mark. This is the first such number, for a phone keyboard that types the decimal comma of its language.
 export function bareDecimalComma(src) {
-  const text = plainPunctuation(src)
-    .replace(/"(?:\\.|[^"\\])*"?|@[^\n\r]*|'[^']*'?|`[^`]*`?/g, (m) => ' '.repeat(m.length))
-    .replace(/<</g, ' «').replace(/>>/g, ' »');
+  const text = maskedLine(src);
   let depth = 0;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
@@ -384,6 +390,21 @@ export function bareDecimalComma(src) {
       if (!/[A-Za-z_.]/.test(text[from - 1] ?? '') && text[to] !== '.') return text.slice(from, to);
       i = to - 1;
     }
+  }
+  return null;
+}
+
+// Numbers run together with signs, 2+3 or 10-4, read as 2 and 3 or 10 and -4, since a sign starts a number of its own and RPL puts an
+// operator after its numbers. This is the first such word at the top of a line, for a note that offers it as a formula.
+const UNSIGNED_NUMBER = String.raw`(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?`;
+const GLUED_SIGNS = new RegExp(String.raw`^[-+]?${UNSIGNED_NUMBER}(?:[-+]${UNSIGNED_NUMBER})+$`);
+
+export function gluedSigns(src) {
+  let depth = 0;
+  for (const [word] of maskedLine(src).matchAll(/[^\s,{}[\]()«»]+|[{[(«}\])»]/g)) {
+    if ('{[(«'.includes(word)) depth++;
+    else if ('}])»'.includes(word)) depth = Math.max(0, depth - 1);
+    else if (!depth && GLUED_SIGNS.test(word)) return word;
   }
   return null;
 }

@@ -2173,6 +2173,13 @@ resetBinaryState();
     'a line with a comma between digits keeps the number and the line, for the note that offers Decimal comma');
   s.clear(); e.type('1,5'); e.execOp('SQ');
   assert(e.decimalComma?.line === '1,5 SQ', 'a key pressed with the line goes into the line the note runs again');
+  run('5 2+3 *');
+  assert(e.gluedSigns?.text === '2+3' && e.gluedSigns.line === '5 2+3 *',
+    'a line with 2+3 in it keeps the word and the line, for the note that offers it as a formula');
+  s.clear(); e.type('2+3'); e.execOp('SQ');
+  assert(e.gluedSigns?.line === '2+3 SQ', 'a key pressed with the line goes into the line the note runs again');
+  run('1 2 + 1E-3 5 -2');
+  assert(e.gluedSigns === null, 'a line of spaced numbers, an exponent and a signed number is not a run of numbers');
   run('{ 1,5 } (1,5) [1,2] 3 4 +');
   assert(e.decimalComma === null, 'a comma inside a list, a complex number or a vector separates there, so nothing is noted');
   run('-51 SF');

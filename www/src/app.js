@@ -101,6 +101,9 @@ const ALARM_WAIT_MAX_MS = 3600000;
 const DRAFT_DELAY_MS = 400;
 
 // Stands for the value an edit began from, so a draft is only taken back to an edit of that value.
+// Words for a short list: 3 and 14, 1, 234 and 567.
+const andList = (items) => `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
+
 function sourceHash(value) {
   let hash = 0;
   for (const c of formatSource(value)) hash = (Math.imul(hash, 31) + c.codePointAt(0)) | 0;
@@ -433,24 +436,49 @@ class App {
     }
   }
 
+  // What a line that ran was read as, when it may not be what its writer meant: one note, the comma first.
+  _noteReadings() {
+    const { decimalComma, gluedSigns } = this.entry;
+    this.entry.decimalComma = this.entry.gluedSigns = null;
+    if (this.entry.error || this._running()) return;
+    if (decimalComma && !testUserFlag(-51)) this._noteDecimalComma(decimalComma);
+    else if (gluedSigns) this._noteGluedSigns(gluedSigns);
+  }
+
   // A phone keyboard in a comma locale types 3,14, which is 3 and 14 here as on the HP unless flag -51 makes the comma a fraction
-  // mark, so the note says how the line was read and offers the switch, which runs the line again.
-  _noteDecimalComma() {
-    const found = this.entry.decimalComma;
-    this.entry.decimalComma = null;
-    if (!found || this.entry.error || this._running() || testUserFlag(-51)) return;
+  // mark, so the note says how the line was read and offers the switch.
+  _noteDecimalComma(found) {
     const parts = found.text.split(',');
+    this._noteReading(`${found.text} was read as ${andList(parts)}: a comma separates objects.`, parts.length === 2 && {
+      action: 'Decimal comma',
+      run: () => {
+        setUserFlag(-51);
+        this.runLine(found.line);
+        this.toast(`Decimal comma is on: ${found.text} is one number now, and ; separates the parts of a complex number. Turn it off in Settings.`, { key: 'comma' });
+      },
+    });
+  }
+
+  // 2+3 or 10-4, typed as another calculator takes it, is 2 and 3 or 10 and -4 here: a sign starts a number of its own and the
+  // operator goes after its numbers. The note offers the word as a formula.
+  _noteGluedSigns(found) {
+    const numbers = found.text.match(/[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/g).map((n) => n.replace(/^\+/, ''));
+    this._noteReading(`${found.text} was read as ${andList(numbers)}: RPL puts an operator after its numbers.`, {
+      action: 'Evaluate as a formula',
+      run: () => this.runLine(found.line.replace(found.text, `'${found.text}' EVAL`)),
+    });
+  }
+
+  // A line read other than its writer may have meant is said so, with a key that runs it again the other way: Undo takes the line
+  // back, then the fix runs, and a line typed since stays on the command line.
+  _noteReading(message, fix) {
     const mark = this.stack.undoMark();
     const rerun = () => {
       const typed = this.entry.buffer;
-      setUserFlag(-51);
-      this.runLine(found.line);
+      fix.run();
       if (typed.trim()) this.entry.recall(typed);
-      this.toast(`Decimal comma is on: ${found.text} is one number now, and ; separates the parts of a complex number. Turn it off in Settings.`, { key: 'comma' });
     };
-    const read = `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`;
-    this.undoToast(`${found.text} was read as ${read}: a comma separates objects.`,
-      parts.length === 2 ? { action: 'Decimal comma', onAction: () => this._undoIfLatest(mark, rerun) } : null);
+    this.undoToast(message, fix && { action: fix.action, onAction: () => this._undoIfLatest(mark, rerun) });
   }
 
   // What a reload brings back: the command line, the formula or matrix being written and the level or variable it edits, not a
@@ -588,7 +616,7 @@ class App {
     if (this.entry.error !== this._errorShown) this._showError(this.entry.error);
     if (this.entry.notice && this.entry.notice !== this._noticeShown) this.toast(this.entry.notice);
     this._noticeShown = this.entry.notice;
-    if (this.entry.decimalComma) queueMicrotask(() => this._noteDecimalComma());
+    if (this.entry.decimalComma || this.entry.gluedSigns) queueMicrotask(() => this._noteReadings());
     this.display.renderCmdline(this.entry);
     if (this.entry.buffer && this.selection != null) this.clearSelection();
     this.input.render();
