@@ -4489,6 +4489,13 @@ setAngle('RAD');
     "number fields: the plot window's range and the table's start and step read 3,14 as a decimal, whichever way -51 is set");
 }
 
+// Two keys beside a note's message leave it a column of four words on the narrowest phones, so they take a row of their own.
+{
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/@container app \(max-width: 359px\) \{\n\s*\.toast:has\(button \+ button\) \{ flex-wrap: wrap; \}\n\s*\.toast:has\(button \+ button\) > span \{ flex-basis: 100%; \}\n\s*\.toast:has\(button \+ button\) > button:first-of-type \{ margin-left: auto; \}/.test(css),
+    'notes: under 360 px a message with two keys gives them a row of their own, where they left it a column of four words');
+}
+
 // The Catalog's "my menu" button puts a command in CST as a plain name, which the CST key shows as a key, and takes it out again.
 {
   const pair = RList([Str('KEY'), Name('FACTOR')]);
