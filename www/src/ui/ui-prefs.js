@@ -32,6 +32,7 @@ export const DEFAULT_UI_PREFS = Object.freeze({
   keyClick: false,
   keepAwake: false,
   notes: true,
+  formulaEntry: false,
   stackSize: 'normal',
   historySort: 'newest',
   menu: null,
@@ -75,6 +76,7 @@ export function normalizeUiPrefs(raw) {
   if (typeof raw.keyClick === 'boolean') p.keyClick = raw.keyClick;
   if (typeof raw.keepAwake === 'boolean') p.keepAwake = raw.keepAwake;
   if (typeof raw.notes === 'boolean') p.notes = raw.notes;
+  if (typeof raw.formulaEntry === 'boolean') p.formulaEntry = raw.formulaEntry;
   if (STACK_SIZES.includes(raw.stackSize)) p.stackSize = raw.stackSize;
   if (HISTORY_SORTS.includes(raw.historySort)) p.historySort = raw.historySort;
   if (typeof raw.menu === 'string' && /^[A-Z]{2,8}$/.test(raw.menu)) p.menu = raw.menu;

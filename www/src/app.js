@@ -154,6 +154,7 @@ class App {
     this.stack = new Stack();
     this.entry = new Entry(this.stack);
     this.prefs = loadUiPrefs();
+    this.entry.formulaEntry = this.prefs.formulaEntry;
     this.shift = null;
     this._lastShiftAt = 0;
     this._lastShiftKind = null;
@@ -466,7 +467,7 @@ class App {
     const numbers = found.text.match(/[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/g).map((n) => n.replace(/^\+/, ''));
     this._noteReading(`${found.text} was read as ${andList(numbers)}: RPL puts an operator after its numbers.`, {
       action: 'Evaluate as a formula',
-      run: () => this.runLine(found.line.replace(found.text, `'${found.text}' EVAL`)),
+      run: () => { this.runLine(found.line.replace(found.text, `'${found.text}' EVAL`)); this._offerAlgebraicEntry(); },
     });
   }
 
@@ -475,8 +476,15 @@ class App {
   _noteCalledFunction(found) {
     this._noteReading(`${found.text} was read word by word: RPL puts a function after its argument.`, {
       action: 'Evaluate as a formula',
-      run: () => this.runLine(`'${found.text}' EVAL${found.line.slice(found.text.length)}`),
+      run: () => { this.runLine(`'${found.text}' EVAL${found.line.slice(found.text.length)}`); this._offerAlgebraicEntry(); },
     });
+  }
+
+  // The key that works a formula out is where a TI's owner learns of the setting that does it on Enter.
+  _offerAlgebraicEntry() {
+    if (this.prefs.formulaEntry || this._algebraicOffered) return;
+    this._algebraicOffered = true;
+    this.toast('Algebraic entry does this when you press Enter.', { key: 'algebraic', action: 'Turn on', onAction: () => this.setPrefs({ formulaEntry: true }) });
   }
 
   // A line read other than its writer may have meant is said so, with a key that runs it again the other way: Undo takes the line
@@ -712,6 +720,7 @@ class App {
 
   setPrefs(patch) {
     this.prefs = normalizeUiPrefs({ ...this.prefs, ...patch });
+    this.entry.formulaEntry = this.prefs.formulaEntry;
     saveUiPrefs(this.prefs);
   }
 
@@ -914,7 +923,7 @@ class App {
       case 'edit-line': if (!this.entry.buffer.trim() && this.entry.errorLine) this.entry.recall(this.entry.errorLine, this.entry.errorSpot); else this.entry.focus(); return;
       case 'vars': this.drawers.open('vars'); return;
       case 'stosigma': this.dismissError(); this.entry.execOp('STOΣ', desc.command); return;
-      case 'formula': this.dismissError(); this.entry.recall(`'${arg}' EVAL`); this.commitEntry(); return;
+      case 'formula': this.dismissError(); this.entry.recall(`'${arg}' EVAL`); this.commitEntry(); this._offerAlgebraicEntry(); return;
       case 'line': this.dismissError(); this.entry.recall(arg); this.commitEntry(); return;
       case 'retry':
         this.dismissError();

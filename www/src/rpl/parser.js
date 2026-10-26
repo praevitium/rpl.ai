@@ -423,6 +423,13 @@ export function calledFunction(src) {
   return false;
 }
 
+// Products written as another calculator takes them, 2(3+4), (1+2)(3+4) or 2sin(30), get their *; a number's exponent, 1E3, stays one.
+export function withTimes(src) {
+  return src
+    .replace(/(?<![A-Za-z_])(\d+\.?\d*(?:[eE][-+]?\d+)?|\.\d+(?:[eE][-+]?\d+)?)\s*(?=[(A-Za-zπ√])/g, '$1*')
+    .replace(/([)π])\s*(?=[(A-Za-zπ√])/g, '$1*');
+}
+
 /** One value per top-level object, in entry order.  Unclosed brackets,
  *  strings and quotes close at the end of the input. */
 export function parseEntry(src) {

@@ -1783,7 +1783,7 @@ setAngle('RAD');
   const { state: calc, testUserFlag: flagSet, setDisplay } = await import('../www/src/rpl/state.js');
   const page = () => Sheets.prototype._calculatorPageHtml.call({ app: { prefs: { keyClick: false } } });
   const rows = [...page().matchAll(/<b>([^<]+)<\/b>/g)].map((m) => m[1]).join(', ');
-  assert(rows === 'Angle, Number format, Results, Number domain, Coordinates, Integer base, Decimal comma, Beep, Key click, Save last arguments, 24-hour clock, Day first in dates',
+  assert(rows === 'Angle, Number format, Results, Number domain, Coordinates, Integer base, Decimal comma, Beep, Algebraic entry, Key click, Save last arguments, 24-hour clock, Day first in dates',
     `Settings: a Calculator page holds the HP's MODES form, its modes and the mode flags (${rows})`);
   const sheet = { el: { contains: () => true }, app: {}, _render: () => {} };
   const tap = (dataset) => Sheets.prototype._onClick.call(sheet, { target: { closest: () => ({ dataset }) } });
@@ -1809,6 +1809,17 @@ setAngle('RAD');
     'Settings: with Key click on, a keypad key, soft key, key strip button or the Enter beside the line ticks as it is pressed');
   assert(appSrc.includes(`closest?.('.k, .sk, [data-mb="next"]:not(:disabled), .key-strip button, .cmdline-go')`),
     'key feedback: NXT on the soft-key row ticks and buzzes like the soft keys beside it, where with the keypad hidden or in minimal view, the only NXT there is, it stayed silent');
+  const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  assert(normalizeUiPrefs({}).formulaEntry === false && normalizeUiPrefs({ formulaEntry: true }).formulaEntry === true && normalizeUiPrefs({ formulaEntry: 1 }).formulaEntry === false
+    && sheetsSrc.includes("else if (setting === 'formulaEntry') app.setPrefs({ formulaEntry: on });") && /\['formulaEntry', false, 'Algebraic entry', /.test(sheetsSrc)
+    && appSrc.includes('this.prefs = loadUiPrefs();\n    this.entry.formulaEntry = this.prefs.formulaEntry;')
+    && appSrc.includes('this.prefs = normalizeUiPrefs({ ...this.prefs, ...patch });\n    this.entry.formulaEntry = this.prefs.formulaEntry;'),
+    'Settings: Algebraic entry is off until switched on, kept as a preference and handed to the command line at start and whenever it changes');
+  assert(/_offerAlgebraicEntry\(\) \{\n    if \(this\.prefs\.formulaEntry \|\| this\._algebraicOffered\) return;\n    this\._algebraicOffered = true;\n    this\.toast\('Algebraic entry does this when you press Enter\.', \{ key: 'algebraic', action: 'Turn on', onAction: \(\) => this\.setPrefs\(\{ formulaEntry: true \}\) \}\);/.test(appSrc)
+    && appSrc.includes("this.commitEntry(); this._offerAlgebraicEntry(); return;")
+    && appSrc.includes("run: () => { this.runLine(found.line.replace(found.text, `'${found.text}' EVAL`)); this._offerAlgebraicEntry(); },")
+    && appSrc.includes("run: () => { this.runLine(`'${found.text}' EVAL${found.line.slice(found.text.length)}`); this._offerAlgebraicEntry(); },"),
+    'Algebraic entry: the keys that work a typed formula out (the banner key, the 2+3 note and the sin(30) note) offer the setting once, with a key that turns it on');
   assert(normalizeUiPrefs({}).keepAwake === false && normalizeUiPrefs({ keepAwake: true }).keepAwake === true && normalizeUiPrefs({ keepAwake: 'yes' }).keepAwake === false,
     'Settings: Keep the screen on is off until switched on, and kept as a preference');
   assert(/this\.keepAwake\(\);\n    document\.addEventListener\('visibilitychange', \(\) => \{ this\._watchAlarms\(\); this\.keepAwake\(\); setRunSlice\(document\.hidden \? RUN_SLICE_HIDDEN_MS : RUN_SLICE_MS\); \}\);/.test(appSrc)
@@ -4518,9 +4529,9 @@ setAngle('RAD');
 // 2+3 and 10-4 read as two numbers, so a note offers them as a formula, as the syntax error for 2*3 does.
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(appSrc.includes("action: 'Evaluate as a formula',\n      run: () => this.runLine(found.line.replace(found.text, `'${found.text}' EVAL`)),"),
+  assert(appSrc.includes("action: 'Evaluate as a formula',\n      run: () => { this.runLine(found.line.replace(found.text, `'${found.text}' EVAL`)); this._offerAlgebraicEntry(); },"),
     'glued signs note: Evaluate as a formula runs the line again with the word, 2+3, quoted and EVALed');
-  assert(appSrc.includes("run: () => this.runLine(`'${found.text}' EVAL${found.line.slice(found.text.length)}`),"),
+  assert(appSrc.includes("run: () => { this.runLine(`'${found.text}' EVAL${found.line.slice(found.text.length)}`); this._offerAlgebraicEntry(); },"),
     'called function note: Evaluate as a formula runs the line as a formula, with the keys pressed with it after');
 }
 

@@ -1,11 +1,12 @@
-import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction, plainPunctuation } from '../rpl/parser.js';
+import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction, plainPunctuation, withTimes } from '../rpl/parser.js';
 import { formulaOf } from './errors.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
 import { latexToSource } from '../rpl/latex.js';
 import { spreadsheetToSource, htmlTableToSource } from '../rpl/sheet.js';
 import { lookup, isProgramLine, runProgramLine, keepsFailureStack, pausableRun } from '../rpl/ops.js';
 import { RPLAbort, RPLError, withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
-import { isStackOverflow } from '../rpl/types.js';
+import { isStackOverflow, isSymbolic } from '../rpl/types.js';
+import { freeVars } from '../rpl/algebra.js';
 import { errorBeep } from './beep.js';
 import {
   saveVarStateForUndo, undoVarState, redoVarState,
@@ -58,6 +59,8 @@ export function commandSpot(line, id, nth = 0) {
   }
   return -1;
 }
+
+const SYMBOLIC_CONSTANTS = new Set(['π', 'e', 'i']);
 
 function failedSpot(line, values, failed) {
   const name = values[failed];
@@ -125,6 +128,7 @@ export class Entry {
     this.errorSpot = -1;
     this.decimalComma = null;
     this.gluedSigns = null;
+    this.formulaEntry = false;
     this.calledFunction = null;
     this._listeners = new Set();
     this._historyListeners = new Set();
@@ -674,21 +678,24 @@ export class Entry {
   // rest of the line wait for a program the line halts, as on the HP.
   _commitEntry(raw, tail = []) {
     this.decimalComma = this.gluedSigns = this.calledFunction = null;
+    const formula = this._formulaOf(raw);
     let values;
     try {
-      values = parseTyped(raw);
+      values = parseTyped(formula ? `'${formula}' EVAL` : raw);
     } catch (e) {
       const at = errorSpot(this.buffer, errorText(e));
       if (at >= 0) this.cursor = at;
       throw e;
     }
     const plain = plainPunctuation(raw);
-    const comma = testUserFlag(-51) ? null : bareDecimalComma(plain);
-    this.decimalComma = comma && { text: comma, line: plain };
-    const glued = gluedSigns(plain);
-    this.gluedSigns = glued && { text: glued, line: plain };
-    const called = calledFunction(plain) ? formulaOf(plain) : '';
-    this.calledFunction = called ? { text: called, line: plain } : null;
+    if (!formula) {
+      const comma = testUserFlag(-51) ? null : bareDecimalComma(plain);
+      this.decimalComma = comma && { text: comma, line: plain };
+      const glued = gluedSigns(plain);
+      this.gluedSigns = glued && { text: glued, line: plain };
+      const called = calledFunction(plain) ? formulaOf(plain) : '';
+      this.calledFunction = called ? { text: called, line: plain } : null;
+    }
     let failed = -1;
     const onLine = (step) => () => {
       try {
@@ -706,11 +713,29 @@ export class Entry {
         else if (v?.type === 'name' && !v.quoted) { this.stack.push(v); this._runOpTagged('EVAL', v.id); }
         else this.stack.push(v);
       });
+    if (formula) steps.push(() => this._settleFormula());
     try {
       this.stack.holdEmit(() => runDeferred([...steps.map(onLine), ...tail]));
     } finally {
       this._clearCommittedBuffer(raw);
     }
+  }
+
+  // With algebraic entry on, a line that is one formula and no RPL of its own is worked out as one: it is no RPL at all, or it
+  // reads as a run of signed numbers or a function called with brackets, as 2+3 and sin(30) do.
+  _formulaOf(raw) {
+    if (!this.formulaEntry) return '';
+    const plain = plainPunctuation(raw);
+    const formula = formulaOf(plain) || formulaOf(withTimes(plain));
+    if (!formula) return '';
+    try { parseTyped(raw); } catch { return formula; }
+    return gluedSigns(plain) === formula || calledFunction(plain) ? formula : '';
+  }
+
+  // A formula that can't be exact, sin(30) in radians, comes out as the number a calculator gives.
+  _settleFormula() {
+    const top = this.stack.depth ? this.stack.peek() : null;
+    if (isSymbolic(top) && [...freeVars(top.expr)].every((name) => SYMBOLIC_CONSTANTS.has(name))) this._runOpTagged('→NUM');
   }
 
   _clearCommittedBuffer(raw) {

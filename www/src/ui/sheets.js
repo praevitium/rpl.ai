@@ -32,6 +32,7 @@ const SETTINGS_PAGE_NAMES = Object.freeze({ appearance: ['sliders', 'Appearance'
 const CALC_SWITCHES = Object.freeze([
   [-51, false, 'Decimal comma', 'Show 1,5 and read a typed comma as the decimal mark, with ; between the parts of (1,5; 2).'],
   [-56, true, 'Beep', 'An error beeps, and BEEP plays its tone; with key vibration on, an error buzzes too.'],
+  ['formulaEntry', false, 'Algebraic entry', "Enter works out a line typed as a formula, such as 3×4 or sin(30), as other calculators do. A line in RPN, such as 2 3 +, runs as always."],
   ['keyClick', false, 'Key click', "A short tick as a key or soft key is pressed, for a phone that can't vibrate, such as an iPhone."],
   [-55, true, 'Save last arguments', 'LASTARG brings back the arguments of the last command.'],
   [-41, false, '24-hour clock', 'TSTR and the alarm list write 14:55:00 rather than 02:55:00P.'],
@@ -870,6 +871,7 @@ export class Sheets {
     else if (setting === 'haptics') app.setPrefs({ haptics: on });
     else if (setting === 'keyClick') app.setPrefs({ keyClick: on });
     else if (setting === 'notes') app.setPrefs({ notes: on });
+    else if (setting === 'formulaEntry') app.setPrefs({ formulaEntry: on });
     else if (setting === 'keepAwake') { app.setPrefs({ keepAwake: on }); app.keepAwake(); }
   }
 

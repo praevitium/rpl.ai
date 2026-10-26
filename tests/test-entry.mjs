@@ -2206,6 +2206,44 @@ resetBinaryState();
   assert(reals === '{ 1. 2. }', `with -51 set a whole real shown as 1, reads back as a real (${reals})`);
 }
 
+/* Algebraic entry: with the setting on, a line typed as one formula is worked out on Enter, as other calculators do. */
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  setApproxMode(false);
+  setAngle('RAD');
+  const s = new Stack();
+  const e = new Entry(s);
+  const run = (line, keys = []) => {
+    s.clear(); e.resetBuffer(''); e.type(line);
+    if (keys.length) e.execOp(...keys); else e.enter();
+    return s.save().map((v) => format(v)).join(' ');
+  };
+  e.formulaEntry = false;
+  assert(run('2+3') === '2 3' && run('2^10') === '' && e.error !== '', 'with algebraic entry off, 2+3 is 2 and 3 and 2^10 is a syntax error, as on the HP');
+  e.formulaEntry = true;
+  assert(run('2+3') === '5' && run('3×4') === '12' && run('2^10') === '1024' && run('(1+2)*3') === '9' && run('-5+3') === '-2',
+    'with it on, a line typed as one formula, 2+3, 3×4, 2^10 or (1+2)*3, is worked out on Enter');
+  assert(run('2(3+4)') === '14' && run('(1+2)(3+4)') === '21' && run('2sin(30)') === '-1.97606324819' && run('1E3(2)') === '2000.' && run('4.5(2)') === '9.',
+    'a product written as 2(3+4) or 2sin(30) is read with its *, and an exponent such as 1E3 stays one');
+  assert(run('sin(30)') === '-0.988031624093' && run('sqrt(2)') === '1.41421356237' && run('e^2') === '7.38905609894' && run('π/6') === '0.523598775598',
+    'a formula that can\'t be exact, sin(30), sqrt(2), e^2 or π/6, comes out as a number');
+  assert(run('sqrt(16)') === '4' && run('1/3+1/3') === '2/3' && run('x^2+1') === '`x^2 + 1`',
+    'one that can be exact stays exact, and one with a free name stays a formula');
+  assert(run('5 3 +') === '8' && run('1/2') === '1/2' && run('5 2+3 *') === '5 6' && run('3 x') === '3 x' && run('5!') === '120' && run("'X+1'") === '`X + 1`',
+    'a line that is RPN on its own, with a space-separated operator, a fraction, a factorial, a quoted formula or a run of words, runs as RPN');
+  run('5 2+3 *');
+  assert(e.gluedSigns?.text === '2+3', 'the note for a run of numbers still comes with a line that mixes RPN and a formula');
+  run('2+3');
+  assert(e.gluedSigns === null && e.calledFunction === null, 'a line worked out as a formula leaves no note about how it was read');
+  assert(run('2+3', ['SQ']) === '25', 'a key pressed with a typed formula works on its value');
+  s.clear(); e.resetBuffer(''); e.type('1/0'); e.enter();
+  assert(e.error !== '' || s.depth > 0, 'a formula that fails reports it as a line does');
+  s.clear(); e.resetBuffer(''); e.type('2*3'); e.enter();
+  e.performUndo();
+  assert(s.depth === 0, 'a formula line is one step for Undo');
+  e.formulaEntry = false;
+}
+
 /* C$, the HP's counted string: C$ n and one separator take the next n characters, C$ $ the rest of the line. */
 {
   const shown = (src) => parseEntry(src).map((v) => (v.type === 'string' ? `"${v.value}"` : v.id ?? String(v.value))).join(' | ');
