@@ -1,4 +1,4 @@
-import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction, groupedNumber, plainPunctuation, withTimes, withAnswers, withPi } from '../rpl/parser.js';
+import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction, groupedNumber, plainPunctuation, withTimes, withAnswers, withPi, periodFractionMark, commaFractionMark } from '../rpl/parser.js';
 import { formulaOf } from './errors.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
 import { latexToSource } from '../rpl/latex.js';
@@ -63,6 +63,10 @@ export function commandSpot(line, id, nth = 0) {
 const SYMBOLIC_CONSTANTS = new Set(['π', 'e', 'i']);
 const FORMULA_VALUES = [isReal, isInteger, isRational, isUnit, isSymbolic, isName, isComplex, isList, isVector, isMatrix];
 const INFIX_OPERATORS = new Set(['+', '-', '*', '/', '^']);
+
+// With flag -51 set the parser reads 3,5 as the number 3.5, so the readings that look for numbers in a typed line look at that form.
+const asParsed = (plain) => (testUserFlag(-51) ? periodFractionMark(plain) : plain);
+const asTyped = (parsed) => (testUserFlag(-51) ? commaFractionMark(parsed) : parsed);
 
 // 3 + 4 * x: operands and operators take turns. RPN puts an operator after its operands, so this is a formula typed with spaces.
 function spacedFormula(values) {
@@ -700,9 +704,10 @@ export class Entry {
     if (!formula) {
       const comma = testUserFlag(-51) ? null : bareDecimalComma(plain);
       this.decimalComma = comma && { text: comma, line: plain };
-      const glued = gluedSigns(plain);
-      this.gluedSigns = glued && { text: glued, line: plain };
-      const called = calledFunction(plain) || groupedNumber(plain) || spacedFormula(values) ? formulaOf(plain) : '';
+      const parsed = asParsed(plain);
+      const glued = gluedSigns(parsed) && asTyped(gluedSigns(parsed));
+      this.gluedSigns = glued && plain.includes(glued) ? { text: glued, line: plain } : null;
+      const called = calledFunction(parsed) || groupedNumber(parsed) || spacedFormula(values) ? formulaOf(plain) : '';
       this.calledFunction = called ? { text: called, line: plain } : null;
     }
     let failed = -1;
@@ -741,7 +746,8 @@ export class Entry {
     if (!formula) return '';
     let values;
     try { values = parseTyped(raw); } catch { return formula; }
-    return gluedSigns(plain) === formula || calledFunction(plain) || groupedNumber(plain) || spacedFormula(values) ? formula : '';
+    const parsed = asParsed(plain);
+    return gluedSigns(parsed) === parsed.trim() || calledFunction(parsed) || groupedNumber(parsed) || spacedFormula(values) ? formula : '';
   }
 
   // The answers a formula names are copied from the stack into locals, deepest first, each pick one level deeper for the copies made.

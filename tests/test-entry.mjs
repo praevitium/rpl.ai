@@ -2210,6 +2210,14 @@ resetBinaryState();
   const reals = run('{ 1, 2, }');
   run('-51 CF');
   assert(reals === '{ 1. 2. }', `with -51 set a whole real shown as 1, reads back as a real (${reals})`);
+  run('-51 SF');
+  run('2+3,5');
+  const sumWithComma = e.gluedSigns;
+  run('(3,5)+1');
+  const bracketedWithComma = e.calledFunction;
+  run('-51 CF');
+  assert(sumWithComma?.text === '2+3,5' && sumWithComma.line === '2+3,5', 'with -51 set, the note for a sum typed with a decimal comma names the whole sum, not 2+3');
+  assert(bracketedWithComma?.text === '(3,5)+1', 'and a number in brackets typed with one is noted as a line that may be a formula');
 }
 
 /* Algebraic entry: with the setting on, a line typed as one formula is worked out on Enter, as other calculators do. */
@@ -2240,6 +2248,10 @@ resetBinaryState();
   run("3 'pi' STO");
   assert(run('2*pi') === '6', 'a variable stored as pi keeps its own value');
   run("'pi' PURGE");
+  run('-51 SF');
+  const withComma = ['3,5+2', '2+3,5', '3,5+2,5', '-3,5+2', '(3,5)+1', '2,5(2)'].map((line) => run(line));
+  run('-51 CF');
+  assert(withComma.join(' ') === '5.5 5.5 6. -1.5 4.5 5.', `with the decimal comma set, a formula typed with 3,5 is worked out as the parser reads the number (${withComma.join(' ')})`);
   assert(run('3 + 4') === '7' && run('2 ^ 10') === '1024' && run('3 × 4') === '12' && run('3 + 4 * 5') === '23' && run('-3 + 4') === '1' && run('10 - 2 - 3') === '5' && run('x * 2') === '`x*2`' && run('e ^ 2') === '7.38905609894',
     'a formula typed with spaces around its operators, 3 + 4, 2 ^ 10, 3 × 4 or 3 + 4 * 5, is worked out');
   assert(run('2 3 +') === '5' && run('3 DUP *') === '9' && run('5 DUP * 2 +') === '27' && run('3 +4') === '3 4' && run('1 + 2 +') === '1' && run('+ 3') === '',

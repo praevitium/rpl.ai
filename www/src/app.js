@@ -464,7 +464,7 @@ class App {
   // 2+3 or 10-4, typed as another calculator takes it, is 2 and 3 or 10 and -4 here: a sign starts a number of its own and the
   // operator goes after its numbers. The note offers the word as a formula.
   _noteGluedSigns(found) {
-    const numbers = found.text.match(/[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/g).map((n) => n.replace(/^\+/, ''));
+    const numbers = found.text.match(/[-+]?(?:\d+[.,]?\d*|[.,]\d+)(?:[eE][-+]?\d+)?/g).map((n) => n.replace(/^\+/, ''));
     this._noteReading(`${found.text} was read as ${andList(numbers)}: RPL puts an operator after its numbers.`, {
       action: 'Evaluate as a formula',
       run: () => { this.runLine(found.line.replace(found.text, `'${found.text}' EVAL`)); this._offerAlgebraicEntry(); },
