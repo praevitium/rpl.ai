@@ -142,6 +142,7 @@ export class Entry {
     this.decimalComma = null;
     this.gluedSigns = null;
     this.formulaEntry = false;
+    this._forcedFormula = false;
     this.calledFunction = null;
     this._listeners = new Set();
     this._historyListeners = new Set();
@@ -740,17 +741,23 @@ export class Entry {
   // number against a name, as 2+3, sin(30), 3*(-2), 3 + 4 and 2π do. A line that opens with * / or ^ against its operand, *2,
   // goes on from the last result, as a TI's Ans does; the signs + and - start a number of their own, so they cannot.
   _formulaOf(raw) {
-    if (!this.formulaEntry) return '';
+    if (!this.formulaEntry && !this._forcedFormula) return '';
     const plain = plainPunctuation(raw);
     if (/^\s*ans\s*$/i.test(plain)) return 'ans';
     const continued = /^\s*[*/^]\S/.test(plain) ? formulaOf(`ans${plain.trim()}`) : '';
     if (continued) return continued;
     const formula = formulaOf(plain) || formulaOf(withTimes(plain));
-    if (!formula) return '';
+    if (!formula || this._forcedFormula) return formula;
     let values;
     try { values = parseTyped(raw); } catch { return formula; }
     const parsed = asParsed(plain);
     return gluedSigns(parsed) === parsed.trim() || calledFunction(parsed) || groupedNumber(parsed) || gluedProduct(parsed) || spacedFormula(values) ? formula : '';
+  }
+
+  // Enter as it is with Algebraic entry on, for a fix that offers the line as a formula while the setting is off.
+  asFormula(run) {
+    this._forcedFormula = true;
+    try { run(); } finally { this._forcedFormula = false; }
   }
 
   // A formula as the HP reads it: pi is π and a TI's function names are the HP's, unless a variable by that name is stored.

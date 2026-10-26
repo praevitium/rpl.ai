@@ -1816,7 +1816,7 @@ setAngle('RAD');
     && appSrc.includes('this.prefs = normalizeUiPrefs({ ...this.prefs, ...patch });\n    this.entry.formulaEntry = this.prefs.formulaEntry;'),
     'Settings: Algebraic entry is off until switched on, kept as a preference and handed to the command line at start and whenever it changes');
   assert(/_offerAlgebraicEntry\(\) \{\n    if \(this\.prefs\.formulaEntry \|\| this\._algebraicOffered\) return;\n    this\._algebraicOffered = true;\n    this\.toast\('Algebraic entry does this when you press Enter\.', \{ key: 'algebraic', action: 'Turn on', onAction: \(\) => this\.setPrefs\(\{ formulaEntry: true \}\) \}\);/.test(appSrc)
-    && appSrc.includes("this.commitEntry(); this._offerAlgebraicEntry(); return;")
+    && appSrc.includes("this.entry.asFormula(() => { this.entry.recall(arg); this.commitEntry(); }); this._offerAlgebraicEntry(); return;")
     && appSrc.includes("run: () => { this.runLine(found.line.replace(found.text, `'${this.entry.formulaText(found.text)}' EVAL`)); this._offerAlgebraicEntry(); },")
     && appSrc.includes("run: () => { this.runLine(`'${this.entry.formulaText(found.text)}' EVAL${found.line.slice(found.text.length)}`); this._offerAlgebraicEntry(); },"),
     'Algebraic entry: the keys that work a typed formula out (the banner key, the 2+3 note and the sin(30) note) offer the setting once, with a key that turns it on');

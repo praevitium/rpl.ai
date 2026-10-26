@@ -2340,6 +2340,11 @@ resetBinaryState();
   assert(s.depth === 1 && e.error !== '', 'with algebraic entry off, ans*2 is a syntax error as before');
   keep('*2');
   assert(s.depth === 1 && e.error !== '', 'and so is *2');
+  const forced = (line) => { s.clear(); e.resetBuffer(''); e.type(line); e.asFormula(() => e.enter()); return s.save().map((v) => format(v)).join(' '); };
+  assert(forced('sin(30)+cos(60)') === '-1.94044460451' && forced('ncr(5,2)') === '10' && forced('2x+1') === '`2*x + 1`' && forced('2^10') === '1024' && forced('det([[1,2],[3,4]])') === '-2',
+    'the fix that offers a line as a formula works it out as Algebraic entry does, a TI\'s names, a number against a name and a result that can\'t be exact included, with the setting off');
+  s.clear(); e.resetBuffer(''); e.type('2^10'); e.enter();
+  assert(e.formulaEntry === false && s.depth === 0 && e.error !== '', 'and the setting stays off for the next line');
 }
 
 /* C$, the HP's counted string: C$ n and one separator take the next n characters, C$ $ the rest of the line. */

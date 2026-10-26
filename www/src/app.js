@@ -923,7 +923,7 @@ class App {
       case 'edit-line': if (!this.entry.buffer.trim() && this.entry.errorLine) this.entry.recall(this.entry.errorLine, this.entry.errorSpot); else this.entry.focus(); return;
       case 'vars': this.drawers.open('vars'); return;
       case 'stosigma': this.dismissError(); this.entry.execOp('STOΣ', desc.command); return;
-      case 'formula': this.dismissError(); this.entry.recall(`'${arg}' EVAL`); this.commitEntry(); this._offerAlgebraicEntry(); return;
+      case 'formula': this.dismissError(); this.entry.asFormula(() => { this.entry.recall(arg); this.commitEntry(); }); this._offerAlgebraicEntry(); return;
       case 'line': this.dismissError(); this.entry.recall(arg); this.commitEntry(); return;
       case 'retry':
         this.dismissError();

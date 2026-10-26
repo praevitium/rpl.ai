@@ -1,5 +1,5 @@
 import { RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
-import { parseTyped, plainPunctuation } from '../rpl/parser.js';
+import { parseTyped, plainPunctuation, calledFunction, gluedProduct, withTimes } from '../rpl/parser.js';
 import { getBinaryBase } from '../rpl/state.js';
 
 const CORE_MESSAGES = Object.freeze([
@@ -244,7 +244,9 @@ export function describeError(message, { failure = null, stack = [], depth = 0, 
   const culprits = seen.slice(0, count).map((value, i) => ({ level: i + 1, ...describe(value) }));
   const top = stack.length ? describe(stack[0]) : null;
   const storesTop = /^(Vector|Matrix)$/.test(top?.type) && !!command && !['RCLΣ', 'Σ-'].includes(command);
-  const formula = kind === 'syntax' || kind === 'tooFew' ? formulaOf(line) : '';
+  // A number against a name, 2x+1 or the 5x of factor(x^2+5x+6), is a product, as Algebraic entry reads it.
+  const asFormula = (text) => formulaOf(text) || (calledFunction(text) || gluedProduct(text) ? formulaOf(withTimes(text)) : '');
+  const formula = kind === 'syntax' || kind === 'tooFew' ? asFormula(line) : '';
   const hex = kind === 'syntax' ? hexLineOf(line) : null;
   const ctx = { ...parsed, message: String(message ?? ''), command, signature, args, depth, seenDepth, culprits, onStack, top, storesTop, formula, hex, base: BASE_NAMES[getBinaryBase()], hasLine: !!String(line).trim() };
   return {
