@@ -580,6 +580,21 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(top("'1/(1+i)' →NUM") === '(0.5, -0.5)', 'a quotient is worked out');
 }
 
+// A closed expression whose value is not real is worked out under →NUM and APPROX, as the stack commands give it.
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top("'SQRT(-4)' →NUM") === '(0, 2)' && top("'LN(-1)' →NUM") === '(0, 3.14159265359)' && top("'LOG(-100)' →NUM") === '(2, 1.36437635384)',
+    "→NUM gives 'SQRT(-4)', 'LN(-1)' and 'LOG(-100)' their complex values");
+  assert(top("'(-8)^(1/3)' →NUM") === '(1, 1.73205080757)', 'a negative base to a fractional power is the principal root');
+  assert(top("'ASIN(2)' →NUM") === top('2 ASIN') && top("'ACOS(2)' →NUM") === top('2 ACOS') && top("'ATANH(2)' →NUM") === top('2 ATANH'),
+    'an inverse function beyond its real range gives what the stack command gives');
+  assert(top("'SQRT(-4)+SQRT(-9)' →NUM") === '(0, 5)' && top("'SQRT(-4)^2' →NUM") === '(-4, 0)' && top("'SQRT(-4)+i' →NUM") === '(0, 3)',
+    'sums and powers of such values are worked out');
+  assert(top("APPROX 'SQRT(-4)' EVAL EXACT") === '(0, 2)' && top("'SQRT(-4)' EVAL") === '`SQRT(-4)`', 'APPROX EVAL works it out, EXACT EVAL keeps it');
+  assert(top("'SQRT(-4)*X' →NUM") === '`SQRT(-4)*X`' && top("'IP(-2.5)' →NUM") === '-2.', 'an unknown name keeps the expression symbolic, and a real result is as before');
+  assert(top("[ 'SQRT(-4)' 1 ] →NUM") === '[ (0, 2) 1. ]', 'an array entry is worked out');
+}
+
 // EVAL of an array with symbolic entries evaluates each entry; a numeric array stays as it is.
 {
   const top = (line) => format(runLine(line).peek());

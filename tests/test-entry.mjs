@@ -2248,6 +2248,8 @@ resetBinaryState();
   run("3 'pi' STO");
   assert(run('2*pi') === '6', 'a variable stored as pi keeps its own value');
   run("'pi' PURGE");
+  assert(run('sqrt(-4)') === '(0, 2)' && run('ln(-1)') === '(0, 3.14159265359)' && run('2+sqrt(-9)') === '(2, 3)' && run('sqrt(-4)*x') === '`SQRT(-4)*x`',
+    'a typed formula whose value is not real is worked out to a complex number, unless it holds an unknown name');
   const products = ['2π', '3x', '2πr', '2e', '2.5x', '3kk'].map((line) => run(line));
   assert(products.join(' ') === '6.28318530718 `3*x` `2*π*r` 5.43656365692 `2.5*x` `3*kk`', `a number written straight against a name or constant, 2π, 3x or 2πr, is a product in a typed formula (${products.join(' ')})`);
   assert(run('2 π') === '2 π' && run('3 x') === '3 x' && run('1E3 2 +') === '1002.' && run('x2') === 'x2',

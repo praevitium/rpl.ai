@@ -2079,12 +2079,15 @@ function _evalObjects(ast, keeps) {
 
 
 // The algebra evaluator holds real numbers only, so →NUM and APPROX work an expression that holds i out with the commands
-// themselves: '3+4*i' gives (3,4), as '3+4*π' gives a real. Anything else left in it keeps the whole expression symbolic.
+// themselves: '3+4*i' gives (3,4), as '3+4*π' gives a real, and so does a closed expression it left because its value is not
+// real, 'SQRT(-4)' or 'LN(-1)'. Anything else left in it keeps the whole expression symbolic.
 const _IMAGINARY_OPS = new Set(['+', '-', '*', '/', '^']);
 const _IMAGINARY_FUNCTIONS = new Set(['ABS', 'ARG', 'RE', 'IM', 'CONJ', 'SQRT', 'SQ', 'INV', 'EXP', 'LN', 'LOG', 'ALOG', 'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN', 'SINH', 'COSH', 'TANH', 'ASINH', 'ACOSH', 'ATANH']);
 
 function _foldImaginary(ast) {
-  if (!algebraFreeVars(ast).has('i')) return null;
+  const names = algebraFreeVars(ast);
+  const plain = ast.kind === 'num' || (ast.kind === 'neg' && ast.arg.kind === 'num');
+  if (!names.has('i') && (names.size > 0 || plain)) return null;
   const walk = (node) => {
     if (node.kind === 'num') return _numToRpl(node);
     if (node.kind === 'var' && node.name === 'i') return Complex(0, 1);
