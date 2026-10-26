@@ -336,9 +336,16 @@ export function runDeferred(steps) {
   }
 }
 
-// The name the line called a program by, kept on its record so that an error after a pause still names it.
-export function tagHalted(mark, tag) {
-  if (tag && haltedSince(mark)) state.halted.tag ??= tag;
+// The name the line called a program by, kept on its record so that an error after a pause still names it; with the line, and the
+// undo step it began at, a page that ends can say how to run the program again.
+export function tagHalted(mark, tag, origin = null) {
+  if (!haltedSince(mark)) return;
+  const record = state.halted;
+  if (tag) record.tag ??= tag;
+  if (origin) {
+    record.line ??= origin.line;
+    record.step ??= origin.step;
+  }
 }
 
 // What a resumed program's record still owed, when it has ended; none while it is halted again, which now owes it.

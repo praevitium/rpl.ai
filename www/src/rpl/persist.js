@@ -488,6 +488,7 @@ export function loadDraft() {
 export const RUN_KEY = 'hp50.run';
 const RUN_KINDS = ['halt', 'step', 'prompt', 'slice', 'wait', 'msgbox', 'input', 'choose', 'inform'];
 const RUN_TAG_MAX = 200;
+const RUN_LINE_MAX = 2000;
 const PAGE_LOCK = 'hp50.page.';
 const PAGE_ID = Math.random().toString(36).slice(2);
 
@@ -504,9 +505,13 @@ async function pageIsOpen(page) {
 // Never throws: it is only a note.
 export function saveRun(run) {
   try {
-    if (run) localStorage.setItem(RUN_KEY, JSON.stringify({ ...run, page: PAGE_ID }));
+    if (run) localStorage.setItem(RUN_KEY, JSON.stringify({ ...run, line: noteLine(run.line), page: PAGE_ID }));
     else localStorage.removeItem(RUN_KEY);
   } catch { /* storage is full or blocked */ }
+}
+
+function noteLine(line) {
+  return typeof line === 'string' && line.trim() && line.length <= RUN_LINE_MAX ? line : null;
 }
 
 // The note the last page left, taken so that it shows once; none when there was none, when that page is still open, or when what
@@ -516,7 +521,8 @@ export async function takeRun() {
     const run = JSON.parse(localStorage.getItem(RUN_KEY) ?? 'null');
     if (typeof run?.page !== 'string' || !RUN_KINDS.includes(run.kind) || await pageIsOpen(run.page)) return null;
     localStorage.removeItem(RUN_KEY);
-    return { kind: run.kind, tag: typeof run.tag === 'string' && run.tag.length <= RUN_TAG_MAX ? run.tag : null };
+    const line = noteLine(run.line);
+    return { kind: run.kind, tag: typeof run.tag === 'string' && run.tag.length <= RUN_TAG_MAX ? run.tag : null, line, again: run.again === true && line !== null };
   } catch { return null; }
 }
 

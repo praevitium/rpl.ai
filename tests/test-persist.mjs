@@ -1486,6 +1486,18 @@ function quotaError() {
     assert((await takeRun()).tag === null, 'run note: a program without a name is kept as none');
     saveRun({ kind: 'input', tag: 'X'.repeat(300) });
     assert((await takeRun()).tag === null, 'run note: a name over 200 characters is dropped');
+    saveRun({ kind: 'halt', tag: 'FOO', line: '5 FOO', again: true });
+    const again = await takeRun();
+    assert(again.line === '5 FOO' && again.again === true, 'run note: the line that began the program, and whether Undo reaches back to before it, are kept');
+    saveRun({ kind: 'halt', tag: 'FOO', again: true });
+    assert((await takeRun()).again === false, 'run note: without its line there is no running it again');
+    saveRun({ kind: 'halt', tag: 'FOO', line: '1 '.repeat(1500), again: true });
+    const long = await takeRun();
+    assert(long.line === null && long.again === false, 'run note: a line over 2,000 characters is not kept, and nor is running it again');
+    saveRun({ kind: 'halt', tag: 'FOO', line: '  ', again: true });
+    assert((await takeRun()).line === null, 'run note: a blank line is no line');
+    saveRun({ kind: 'halt', tag: 'FOO', line: '5 FOO', again: 'yes' });
+    assert((await takeRun()).again === false, 'run note: only a true again counts');
     open = true;
     saveRun({ kind: 'prompt', tag: 'BAR' });
     assert(await takeRun() === null && store.has(RUN_KEY), 'run note: the page that left it still being open leaves it for later');

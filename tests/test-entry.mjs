@@ -2270,3 +2270,36 @@ resetBinaryState();
   varPurge('HT1');
   varPurge('HT2');
 }
+
+/* The line that halted a program, and the undo step it began at, stay on the program's record through CONT, so that a page which
+   ends can say how to run the program again. */
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  resetHome();
+  clearAllHalted();
+  const s = new Stack();
+  const e = new Entry(s);
+  const typed = (line) => { e.buffer = line; e.cursor = line.length; e.enter(); };
+  typed("« 3 HALT 4 + HALT 5 * » 'OR1' STO");
+
+  typed('10 OR1');
+  const first = calcState.halted;
+  assert(first.line === '10 OR1' && first.tag === 'OR1' && first.step === s.undoMark(), 'a line that halts a program leaves the line and its undo step on the record');
+  lookup('CONT').fn(s, e);
+  const second = calcState.halted;
+  assert(second !== first && second.line === '10 OR1' && second.step === first.step && second.tag === 'OR1', 'the program halted again keeps them on its new record');
+  typed('7');
+  assert(second.step !== s.undoMark(), 'an undoable action while it is halted moves the latest step on, so the record no longer names it');
+  clearAllHalted();
+
+  e.buffer = '10 OR1';
+  e.cursor = 6;
+  e.execOp('SQ');
+  assert(calcState.halted.line === '10 OR1 SQ' && calcState.halted.step === s.undoMark(), 'a key pressed with the line gives the line and the key');
+  clearAllHalted();
+
+  typed('1 2 +');
+  assert(!calcState.halted, 'a line that halts nothing leaves no record');
+  while (s.depth) s.pop();
+  varPurge('OR1');
+}

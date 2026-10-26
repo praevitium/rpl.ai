@@ -77,7 +77,7 @@ function resumeHalted(stepping = null) {
   const record = takeHalted();
   const mark = haltMark();
   let owed = null;
-  const resume = () => { pausableRun(() => runSuspendable(record.generator)); tagHalted(mark, record.tag); owed = owedAfter(record, mark); };
+  const resume = () => { pausableRun(() => runSuspendable(record.generator)); tagHalted(mark, record.tag, record); owed = owedAfter(record, mark); };
   if (stepping) withStepMode(stepping.single, stepping.into, resume);
   else resume();
   if (owed) runDeferred(owed);

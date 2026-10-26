@@ -1955,7 +1955,8 @@ setAngle('RAD');
 
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/const runExample = \(line\) => \{\s*if \(this\.inputMode !== 'rpl'\) this\.setInputMode\('rpl'\);/.test(appSrc)
+  assert(/const runExample = \(line\) => this\.runLine\(withFractionMark\(line\)\);/.test(appSrc)
+    && /runLine\(line\) \{\n\s*if \(this\.inputMode !== 'rpl'\) this\.setInputMode\('rpl'\);\n\s*this\.entry\.recall\(line\);\n\s*this\.commitEntry\(\);/.test(appSrc)
     && /act === 'solve'\) runExample\(/.test(appSrc) && /act === 'plot'\) runExample\(/.test(appSrc),
     'empty stack: the Solve and Plot examples run on the command line even with a writer open (Enter used to commit the empty writer: "Type an expression first")');
 }
@@ -4244,17 +4245,30 @@ setAngle('RAD');
   const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
   assert(/this\._installUndoKeep\(\);\n\s*this\._installRunKeep\(\);/.test(appSrc)
     && /this\._openShortcut\(\);\n\s*this\._noteInterruptedRun\(\);/.test(appSrc)
-    && /_installRunKeep\(\) \{\n\s*holdPageLock\(\);\n\s*let kept = false;\n\s*const keep = \(\) => \{\n\s*const record = calcState\.halted;\n\s*if \(!record\) return;\n\s*saveRun\(\{ kind: record\.kind, tag: \(calcState\.haltedStack\[0\] \?\? record\)\.tag \?\? null \}\);\n\s*kept = true;\n\s*\};\n\s*const back = \(\) => \{\n\s*if \(kept\) saveRun\(null\);\n\s*kept = false;\n\s*\};/.test(appSrc)
+    && /_installRunKeep\(\) \{\n\s*holdPageLock\(\);\n\s*let kept = false;\n\s*const keep = \(\) => \{\n\s*const record = calcState\.halted;\n\s*if \(!record\) return;\n\s*const first = calcState\.haltedStack\[0\] \?\? record;\n\s*saveRun\(\{ kind: record\.kind, tag: first\.tag \?\? null, line: first\.line, again: !!first\.line && first\.step === this\.stack\.undoMark\(\) \}\);\n\s*kept = true;\n\s*\};\n\s*const back = \(\) => \{\n\s*if \(kept\) saveRun\(null\);\n\s*kept = false;\n\s*\};/.test(appSrc)
     && /document\.addEventListener\('visibilitychange', \(\) => \{ if \(document\.visibilityState === 'hidden'\) keep\(\); else back\(\); \}\);\n\s*addEventListener\('pagehide', keep\);\n\s*addEventListener\('pageshow', back\);\n\s*subscribeState\(\(\) => \{ if \(document\.hidden\) \(calcState\.halted \? keep : back\)\(\); \}\);/.test(appSrc),
     'run note: the program left suspended is written as the page is hidden, and forgotten when the page is back or the program ended');
-  assert(/async _noteInterruptedRun\(\) \{\n\s*const run = await takeRun\(\);\n\s*if \(!run\) return;\n\s*const text = interruptedRunNote\(run\);\n\s*const opts = \{ essential: true, transient: true, timeout: Infinity \};\n\s*if \(run\.kind !== 'slice' && this\.stack\.hasUndo\(\)\) this\.undoToast\(text, null, opts\);\n\s*else this\.toast\(text, \{ key: 'run', \.\.\.opts \}\);/.test(appSrc)
+  assert(/async _noteInterruptedRun\(\) \{\n\s*const run = await takeRun\(\);\n\s*if \(!run\) return;\n\s*const text = interruptedRunNote\(run\);\n\s*const opts = \{ essential: true, transient: true, timeout: Infinity \};\n\s*if \(run\.kind === 'slice' \|\| !this\.stack\.hasUndo\(\)\) \{\n\s*this\.toast\(text, \{ key: 'run', \.\.\.opts \}\);\n\s*return;\n\s*\}\n\s*const mark = this\.stack\.undoMark\(\);\n\s*const rerun = \(\) => \{\n\s*const typed = this\.entry\.buffer;\n\s*this\.runLine\(run\.line\);\n\s*if \(typed\.trim\(\)\) this\.entry\.recall\(typed\);\n\s*\};\n\s*const again = run\.again \? \{ action: 'Run again', onAction: \(\) => this\._undoIfLatest\(mark, rerun\) \} : null;\n\s*this\.undoToast\(text, again, opts\);/.test(appSrc)
     && /undoToast\(message, also = null, opts = \{\}\) \{\n\s*const mark = this\.stack\.undoMark\(\);\n\s*this\.toast\(message, \{ key: 'undo', action: 'Undo', also, \.\.\.opts, onAction:/.test(appSrc),
-    'run note: the next start says so once, in a note that stays until a tap, essential even with pop-up notes off, with Undo unless the program was still running');
+    'run note: the next start says so once, in a note that stays until a tap, essential even with pop-up notes off, with Undo unless the program was still running, and Run again when its line is known and Undo reaches back to before it began');
+  assert(/_undoIfLatest\(mark, then\) \{\n\s*if \(this\.stack\.undoMark\(\) !== mark\) \{\n\s*this\.notifyError\('Something has changed since, so that Undo no longer applies\. Use Undo to step back\.'\);\n\s*return;\n\s*\}\n\s*this\._undoStackStep\(\);\n\s*then\?\.\(\);/.test(appSrc)
+    && /onAction: \(\) => this\._undoIfLatest\(mark\) \}\);/.test(appSrc),
+    'run note: an Undo note, and the Run again beside it, act only while their step is still the latest, and Run again takes the step back first');
   assert(/function interruptedRunNote\(\{ kind, tag \}\) \{\n\s*const who = tag && tag !== 'EVAL' \? tag : 'A program';\n\s*if \(kind === 'slice'\) return `\$\{who\} was still running when the page closed, so it did not finish\.`;\n\s*return `\$\{who\} was \$\{RUN_WAS\[kind\] \?\? 'waiting'\} when the page closed and can't be continued\.`;/.test(appSrc)
     && /const RUN_WAS = \{ slice: 'still running', halt: 'halted', step: 'halted', prompt: 'halted' \};/.test(appSrc),
     'run note: it names the program (A program for a bare EVAL) and says halted, waiting or still running');
   assert(/this\.app\.entry\.resetBuffer\(''\);\n\s*clearAllHalted\(\);\n\s*const KEYS = /.test(sheetsSrc),
     'run note: Reset everything ends the halted programs first, so the reload that follows leaves no note');
+  const entrySrc = readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8');
+  const controlSrc = readFileSync(new URL('../www/src/rpl/ops/control.js', import.meta.url), 'utf8');
+  const stateSrc = readFileSync(new URL('../www/src/rpl/state.js', import.meta.url), 'utf8');
+  assert(/const step = this\.stack\.undoMark\(\);\n\s*this\.entry\.safeRun\(\(\) => \{ this\.stack\.push\(value\);[^\n]*\n\s*tagHalted\(mark, runAs, \{ line: runAs, step \}\);/.test(appSrc)
+    && /const mark = haltMark\(\);\n\s*const step = this\.stack\.undoMark\(\);\n\s*this\.safeRun\(\(\) => \{\n\s*this\._commitEntry\(raw\);\n\s*this\._emit\(\);\n\s*\}, '', \{ keepPartial: true \}\);\n\s*tagHalted\(mark, '', \{ line: raw, step \}\);/.test(entrySrc)
+    && /tagHalted\(mark, '', \{ line: \[raw, \.\.\.names\]\.filter\(Boolean\)\.join\(' '\), step \}\);/.test(entrySrc),
+    'run again: a program started from the command line, a key pressed with it or a variable key keeps its line and the undo step it began at on its record');
+  assert(/tagHalted\(mark, record\.tag, record\);/.test(controlSrc)
+    && /export function tagHalted\(mark, tag, origin = null\) \{\n\s*if \(!haltedSince\(mark\)\) return;\n\s*const record = state\.halted;\n\s*if \(tag\) record\.tag \?\?= tag;\n\s*if \(origin\) \{\n\s*record\.line \?\?= origin\.line;\n\s*record\.step \?\?= origin\.step;/.test(stateSrc),
+    'run again: CONT hands the line and the step to the record of a program that halts again, and an earlier line is never replaced');
 }
 
 // A folder tapped, its row in the Variables drawer or a path row there, takes in the typed line first. When that line fails, the folder
@@ -4532,7 +4546,7 @@ setAngle('RAD');
     'running: Stop closes the program, running or paused from its banner, and any started over it, leaves the stack where it was and offers Undo');
   assert(appSrc.includes("if (halted?.kind === 'slice' && Date.now() - (this._runStart ?? Date.now()) < RUN_BANNER_MS) {"),
     'running: the first pause, drawn before the run has a start time, holds the banner back like the later ones');
-  assert(/if \(!runAs\) \{ this\.stack\.push\(value\); return; \}\n\s*const mark = haltMark\(\);\n\s*this\.entry\.safeRun\([^\n]*\n\s*tagHalted\(mark, runAs\);/.test(appSrc),
+  assert(/if \(!runAs\) \{ this\.stack\.push\(value\); return; \}\n\s*const mark = haltMark\(\);\n\s*const step = this\.stack\.undoMark\(\);\n\s*this\.entry\.safeRun\([^\n]*\n\s*tagHalted\(mark, runAs, \{ line: runAs, step \}\);/.test(appSrc),
     'running: a program started by its soft key, a CST key or a user key keeps its name for an error after a pause, as a typed one does');
   assert(appSrc.includes("this.stack.runOp(op === 'EVAL' ? () => pausableRun(runIt) : runIt)") && appSrc.includes('tagHalted(mark, op);'),
     'running: a level\'s EVAL pauses too, while STR→ and the other ops that evaluate in the middle of their own work do not');

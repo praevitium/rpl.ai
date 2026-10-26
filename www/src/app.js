@@ -398,7 +398,8 @@ class App {
     const keep = () => {
       const record = calcState.halted;
       if (!record) return;
-      saveRun({ kind: record.kind, tag: (calcState.haltedStack[0] ?? record).tag ?? null });
+      const first = calcState.haltedStack[0] ?? record;
+      saveRun({ kind: record.kind, tag: first.tag ?? null, line: first.line, again: !!first.line && first.step === this.stack.undoMark() });
       kept = true;
     };
     const back = () => {
@@ -416,8 +417,18 @@ class App {
     if (!run) return;
     const text = interruptedRunNote(run);
     const opts = { essential: true, transient: true, timeout: Infinity };
-    if (run.kind !== 'slice' && this.stack.hasUndo()) this.undoToast(text, null, opts);
-    else this.toast(text, { key: 'run', ...opts });
+    if (run.kind === 'slice' || !this.stack.hasUndo()) {
+      this.toast(text, { key: 'run', ...opts });
+      return;
+    }
+    const mark = this.stack.undoMark();
+    const rerun = () => {
+      const typed = this.entry.buffer;
+      this.runLine(run.line);
+      if (typed.trim()) this.entry.recall(typed);
+    };
+    const again = run.again ? { action: 'Run again', onAction: () => this._undoIfLatest(mark, rerun) } : null;
+    this.undoToast(text, again, opts);
   }
 
   // What a reload brings back: the command line, the formula or matrix being written and the level or variable it edits, not a
@@ -927,10 +938,16 @@ class App {
   // only while that step is still the latest one, so each replaces the last.
   undoToast(message, also = null, opts = {}) {
     const mark = this.stack.undoMark();
-    this.toast(message, { key: 'undo', action: 'Undo', also, ...opts, onAction: () => {
-      if (this.stack.undoMark() === mark) this._undoStackStep();
-      else this.notifyError('Something has changed since, so that Undo no longer applies. Use Undo to step back.');
-    } });
+    this.toast(message, { key: 'undo', action: 'Undo', also, ...opts, onAction: () => this._undoIfLatest(mark) });
+  }
+
+  _undoIfLatest(mark, then) {
+    if (this.stack.undoMark() !== mark) {
+      this.notifyError('Something has changed since, so that Undo no longer applies. Use Undo to step back.');
+      return;
+    }
+    this._undoStackStep();
+    then?.();
   }
 
   canUndo() {
@@ -1189,12 +1206,7 @@ class App {
   _wireDisplay() {
     const d = this.display;
     d.emptyHtml = `<div class="st-empty"><h5>The stack is empty</h5><p>Type a number and press Enter. Commands take their arguments from the stack and leave their results on it.</p><div class="keysline"><span class="kc">2</span> <span class="kc">Enter</span> <span class="kc">3</span> <span class="kc">+</span> → 5</div><div class="chipset" style="justify-content:center"><button type="button" class="chip" data-empty-act="equation">${icon('fx', 'sm')}Write an equation</button><button type="button" class="chip" data-empty-act="solve">Solve x² − 5x + 6 = 0</button><button type="button" class="chip" data-empty-act="plot">${icon('plot', 'sm')}Plot sin x</button><button type="button" class="chip" data-empty-act="tutor">${icon('cap', 'sm')}Walk me through a problem</button></div></div>`;
-    // An example line runs on the command line; with a writer open, Enter would commit the writer instead.
-    const runExample = (line) => {
-      if (this.inputMode !== 'rpl') this.setInputMode('rpl');
-      this.entry.recall(withFractionMark(line));
-      this.commitEntry();
-    };
+    const runExample = (line) => this.runLine(withFractionMark(line));
     d.onEmptyAction = (act) => {
       if (act === 'equation') this.setInputMode('equation');
       else if (act === 'solve') runExample('`X^2-5*X+6=0` `X` SOLVE');
@@ -1692,6 +1704,13 @@ class App {
   recallLine(text, why) {
     if (this.inputMode !== 'rpl') this._closeWriter((mode) => `Put the ${mode} aside for ${why}`);
     this.entry.recall(text);
+  }
+
+  // A line runs on the command line; with a writer open, Enter would commit the writer instead.
+  runLine(line) {
+    if (this.inputMode !== 'rpl') this.setInputMode('rpl');
+    this.entry.recall(line);
+    this.commitEntry();
   }
 
   cancelWriter() {
@@ -2640,8 +2659,9 @@ class App {
     this.entry._snapForUndo();
     if (!runAs) { this.stack.push(value); return; }
     const mark = haltMark();
+    const step = this.stack.undoMark();
     this.entry.safeRun(() => { this.stack.push(value); this.stack.runOp(() => pausableRun(() => lookup('EVAL').fn(this.stack, this.entry))); }, runAs, { typed });
-    tagHalted(mark, runAs);
+    tagHalted(mark, runAs, { line: runAs, step });
   }
 
   // A halted program's local variables come first, as keys of its own, so a program stopped by HALT, a step or Pause can be looked into.

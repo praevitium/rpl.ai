@@ -655,10 +655,13 @@ export class Entry {
       this.safeRun(() => this.stack.dup(), 'DUP');
       return;
     }
+    const mark = haltMark();
+    const step = this.stack.undoMark();
     this.safeRun(() => {
       this._commitEntry(raw);
       this._emit();
     }, '', { keepPartial: true });
+    tagHalted(mark, '', { line: raw, step });
   }
 
   // A syntax error keeps the line for editing.  Once the line runs it is used up,
@@ -710,8 +713,10 @@ export class Entry {
     this.failure = null;
     touchLcd();
     this._snapForUndo();
+    const raw = this.buffer.trim();
+    const mark = haltMark();
+    const step = this.stack.undoMark();
     this.safeRun(() => {
-      const raw = this.buffer.trim();
       let at = raw.length;
       const keys = names.map((name) => () => {
         at += 1;
@@ -727,6 +732,7 @@ export class Entry {
       if (raw) this._commitEntry(raw, keys);
       else runDeferred(keys);
     }, '', { keepPartial: true });
+    tagHalted(mark, '', { line: [raw, ...names].filter(Boolean).join(' '), step });
     this._emit();
   }
 
