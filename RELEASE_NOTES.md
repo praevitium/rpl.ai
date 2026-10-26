@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.109 (2026-10-26)
+**Latest release:** v0.8.110 (2026-10-26)
 
 ---
 
@@ -20,6 +20,28 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.110 — 2026-10-26
+
+- Fixed: a Giac download that failed, as a phone's connection drops, left the
+  CAS dead until the page was reloaded, and every CAS command said the
+  engine was "still loading, try again in a moment". A failed load is now
+  forgotten: Try again on that banner, the browser coming back online, and
+  the equation writer's CAS keys start the download again, so the engine
+  arrives with no reload. The banner says the engine couldn't be loaded when
+  that is so, follows a retry that fails again, and goes with a note when the
+  engine arrives. The writer's insight strip says the same instead of
+  "Loading" for ever.
+- Added: a Giac download still running after 2.5 seconds shows a note,
+  "Loading the algebra engine…", so a phone on mobile data knows why FACTOR
+  and the rest wait, then a note that it is ready; a download that fails
+  after the first note has a note with Try again, which starts it at once.
+  A fast load, the usual case once the app is installed, shows nothing, and
+  with pop-up notes off the notes stay away.
+- Changed: the equation writer's text view asks a phone's keyboard not to
+  capitalize or correct what is typed, as every other field in the app
+  already did, so `x` no longer arrives as `X`, a different variable. A test
+  now checks every input and text area in the app for the three settings.
 
 ## v0.8.109 — 2026-10-26
 

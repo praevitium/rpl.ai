@@ -1521,9 +1521,13 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
 back in a different but equivalent form. Units go through it as names, so
 EXPAND, SOLVE, DERIV and the rest work on an algebraic holding them, and the
 numbers and units of each product come back as one unit object, `5_m*X`.
-It is an 11.8 MB download, fetched once. One CAS command, such as factoring
-a huge polynomial, can't be interrupted: the page stops responding until it
-finishes. The equation writer's insights and the previews never wait on it.
+It is an 11.8 MB download, fetched once; on a slow connection a note says it is
+loading, and another that it is ready. If the connection drops first, the CAS
+commands say the engine couldn't be loaded, and Try again, or the connection
+coming back, starts the download again with no reload. One CAS command, such
+as factoring a huge polynomial, can't be interrupted: the page stops
+responding until it finishes. The equation writer's insights and the previews
+never wait on it.
 
 **Your data.** The stack and variables live in this browser's storage on
 this device. They don't sync, and clearing the site's data, or closing a
