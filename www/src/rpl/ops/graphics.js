@@ -1,6 +1,6 @@
 import { RPLError } from '../stack.js';
 import { inScratchState, varRecall, varStore, getPict, setPict, getBinaryBase, toRadians, getLcd, setLcdGrob } from '../state.js';
-import { Complex, Real, Name, RList, Str, BinaryInteger, Grob, Symbolic, isComplex, isReal, isInteger, isBinaryInteger, isName, isList, isString, isGrob, isSymbolic, isUnit, isMatrix, isVector, toRealOrThrow } from '../types.js';
+import { Complex, Real, Name, RList, Str, BinaryInteger, Grob, Symbolic, isComplex, isReal, isInteger, isBinaryInteger, isName, isList, isString, isGrob, isSymbolic, isUnit, isMatrix, isVector, toRealOrThrow, charsOf } from '../types.js';
 import { register, lookup } from './registry.js';
 import { statPlotData } from './statistics.js';
 import { TRUE, FALSE, withLocalVariable } from './internal.js';
@@ -945,8 +945,9 @@ function _levelText(level, v) {
   const label = `${level}:`;
   const room = LCD_COLUMNS - label.length - 1;
   const shown = withFractionMark(format(v, currentDisplay())).replace(/\s*\n\s*/g, ' ');
-  const text = shown.length > room ? `${shown.slice(0, room - 1)}…` : shown;
-  return label.padEnd(LCD_COLUMNS - text.length) + text;
+  const chars = charsOf(shown);
+  const text = chars.length > room ? `${chars.slice(0, room - 1).join('')}…` : shown;
+  return label.padEnd(LCD_COLUMNS - charsOf(text).length) + text;
 }
 
 // LCD→ pictures the display as the HP lays it out: the stack's levels up from the menu row, which is left blank, each

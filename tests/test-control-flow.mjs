@@ -7608,6 +7608,8 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   assert(blankRows(shot, 72, 80) && blankRows(shot, 0, 56), 'LCD→: the menu row and the rows above the stack are blank');
   const long = runLine('"ABCDEFGHIJKLMNOPQRSTUVWXYZ" LCD→').peek(1);
   assert(rowIs(long, 64, '1: "ABCDEFGHIJKLMNOP…'), 'LCD→: a value too wide for its row is cut with an ellipsis');
+  const emoji = runLine('"😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀" LCD→').peek(1);
+  assert(rowIs(emoji, 64, `1: "${'😀'.repeat(16)}…`), 'LCD→: an emoji counts as one column, so a cut never halves one');
   const p = new Stack();
   p.push(Real(5));
   p.push(parseEntry('« "Hi" 1 DISP "X" { #120d #64d } 1 DISPXY LCD→ »')[0]);

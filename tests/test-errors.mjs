@@ -29,6 +29,13 @@ const COMMANDS = {
 const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMMANDS[n] ?? null, ...extra });
 
 {
+  const { Str } = await import('../www/src/rpl/types.js');
+  const lone = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+  const long = describeValue(Str('😀'.repeat(40))).text, plain = describeValue(Str('x'.repeat(40))).text;
+  assert(!lone.test(long) && long.endsWith('…') && [...long].length === [...plain].length, 'a long string with emoji in an error banner is cut between characters, as a plain one is');
+}
+
+{
   const zero = describeError('/: Undefined result', ctx({ line: '0 0 /' }));
   assert(zero.title === '0/0 has no value.' && /Zero divided by zero/.test(zero.detail),
     'the 0/0 banner names 0/0, where it said / has no value there and spoke of one argument outside a domain');

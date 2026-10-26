@@ -1,7 +1,7 @@
 import { format, formatStackTop, DEFAULT_DISPLAY, withFractionMark } from '../rpl/formatter.js';
 import { astToSvg } from '../rpl/pretty.js';
 import { Var } from '../rpl/algebra.js';
-import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isInteger, isRational, isBinaryInteger, isUnit, isString, isGrob, isName } from '../rpl/types.js';
+import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isInteger, isRational, isBinaryInteger, isUnit, isString, isGrob, isName, charsOf } from '../rpl/types.js';
 import { state as calcState, currentPath } from '../rpl/state.js';
 import { icon } from './icons.js';
 
@@ -206,7 +206,10 @@ export function typeName(value) {
   return TYPE_NAMES[value?.type] ?? 'Object';
 }
 
-const clipText = (text, max = 28) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
+const clipText = (text, max = 28) => {
+  const chars = charsOf(text);
+  return chars.length > max ? `${chars.slice(0, max - 1).join('')}…` : text;
+};
 
 export function describeValue(value) {
   const type = typeName(value);
