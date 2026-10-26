@@ -560,17 +560,22 @@ register('SRAD', (s) => {
   s.push(_numericResult(`max(abs(evalf(eigenvals(${_matrixArg(m)}))))`));
 }, { category: 'Vectors / matrices', categoryOrder: 67, label: "SRAD" });
 
-// AUR: in non-increasing order, where Giac's svl gives them increasing.
+// Giac has no answer for a square matrix of zeros.
+const _isZeroMatrix = (m) => m.rows.every((row) => row.every((x) => (isInteger(x) || isReal(x)) && Number(x.value) === 0));
+
+// AUR: MIN(m,n) values in non-increasing order, where Giac's svl gives them increasing, and a wide matrix's with a 0 more.
 register('SVL', (s) => {
   const [m] = s.popN(1);
   const cmd = `svl(evalf(${_matrixArg(m)}))`;
+  const count = Math.min(m.rows.length, m.rows[0].length);
+  if (_isZeroMatrix(m)) { s.push(Vector(Array.from({ length: count }, () => Real(0)))); return; }
   if (!giac.isReady()) throw new RPLError('CAS not ready');
   const values = (splitGiacList(giac.caseval(cmd)) ?? []).map(giacToAst);
   if (!values.length || !values.every(astIsNum)) throw new RPLError('Bad argument value');
-  s.push(Vector(values.map((a) => a.value).sort((x, y) => y - x).map((x) => Real(x))));
+  s.push(Vector(values.map((a) => a.value).sort((x, y) => y - x).slice(0, count).map((x) => Real(x))));
 }, { category: 'Vectors / matrices', categoryOrder: 68, label: "SVL" });
 
-// SVD ( A → U V S ): A = U·diag(S)·V with U and V square and orthogonal and S nonincreasing, as the AUR has it. Giac's
+// SVD ( A → U V S ): A = U·diag(S)·Vᵀ with U and V square and orthogonal and S nonincreasing, as the AUR has it. Giac's
 // svd gives thin factors with S increasing, so the columns are reordered and U and V completed to orthonormal bases.
 function _completeBasis(columns, n) {
   const basis = columns.map((c) => c.slice());
@@ -588,9 +593,17 @@ function _completeBasis(columns, n) {
 
 const _cleanReal = (x) => Real(Math.abs(x) < 1e-12 ? 0 : x);
 
+const _identityMatrix = (n) => Matrix(Array.from({ length: n }, (_, i) => Array.from({ length: n }, (__, j) => Real(i === j ? 1 : 0))));
+
 register('SVD', (s) => {
   const [m] = s.popN(1);
   const cmd = `[svd(evalf(${_matrixArg(m)}))]`;
+  if (_isZeroMatrix(m)) {
+    s.push(_identityMatrix(m.rows.length));
+    s.push(_identityMatrix(m.rows[0].length));
+    s.push(Vector(Array.from({ length: Math.min(m.rows.length, m.rows[0].length) }, () => Real(0))));
+    return;
+  }
   if (!giac.isReady()) throw new RPLError('CAS not ready');
   const parts = splitGiacList(giac.caseval(cmd));
   if (parts?.length !== 3) throw new RPLError('Bad argument value');
@@ -601,8 +614,9 @@ register('SVD', (s) => {
   const order = values.map((_, i) => i).sort((a, b) => values[b] - values[a]);
   const columns = (rows) => order.map((j) => rows.map((row) => row[j]));
   const uColumns = _completeBasis(columns(u), u.length);
+  const vColumns = _completeBasis(columns(v), v.length);
   s.push(Matrix(u.map((_, i) => uColumns.map((col) => _cleanReal(col[i])))));
-  s.push(Matrix(_completeBasis(columns(v), v.length).map((col) => col.map(_cleanReal))));
+  s.push(Matrix(v.map((_, i) => vColumns.map((col) => _cleanReal(col[i])))));
   s.push(Vector(order.map((j) => _cleanReal(values[j]))));
 }, { category: 'Vectors / matrices', categoryOrder: 70.5, label: "SVD" });
 

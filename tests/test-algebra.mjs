@@ -6600,6 +6600,19 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   });
   assert(shown('[[2 1][1 2]] EGVL') === '[ 3 1 ]', 'EGVL of an integer matrix gives the CAS exact answer');
   giac._clear();
+  giac._setFixtures({
+    'svl(evalf([[1,2,3],[4,5,6]]))': '[0.772869635673,9.5080320007,0]',
+    '[svd(evalf([[1,2],[3,4]]))]': '[[[0.914514295677,0.404553584834],[-0.404553584834,0.914514295677]],[0.365966190626,5.46498570422],[[-0.81741556047,0.576048436766],[0.576048436766,0.81741556047]]]',
+  });
+  assert(shown('[[1 2 3][4 5 6]] SVL') === '[ 9.5080320007 0.772869635673 ]', 'SVL of a 2x3 matrix has MIN(m,n) = 2 values');
+  assert(shown('[[0 0 0][0 0 0][0 0 0]] SVL') === '[ 0. 0. 0. ]' && shown('[[0 0 0][0 0 0]] SVD') === '[[ 1. 0. ][ 0. 1. ]] | [[ 1. 0. 0. ][ 0. 1. 0. ][ 0. 0. 1. ]] | [ 0. 0. ]',
+    'SVL and SVD of a matrix of zeros answer without the CAS, which has none');
+  const [u, v, sv] = runLine('[[1 2][3 4]] SVD').snapshot().reverse();
+  const at = (m, i, j) => Number(m.rows[i][j].value);
+  const rebuilt = [0, 1].map((i) => [0, 1].map((j) => [0, 1].reduce((sum, k) => sum + at(u, i, k) * Number(sv.items[k].value) * at(v, j, k), 0)));
+  assert(rebuilt.every((row, i) => row.every((x, j) => Math.abs(x - [[1, 2], [3, 4]][i][j]) < 1e-9)),
+    `SVD gives V with A = U*diag(S)*V' (got ${JSON.stringify(rebuilt)})`);
+  giac._clear();
 }
 
 
