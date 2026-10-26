@@ -5,7 +5,7 @@ import { latexToSource } from '../rpl/latex.js';
 import { spreadsheetToSource, htmlTableToSource } from '../rpl/sheet.js';
 import { lookup, isProgramLine, runProgramLine, keepsFailureStack, pausableRun } from '../rpl/ops.js';
 import { RPLAbort, RPLError, withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
-import { isStackOverflow, isSymbolic, isReal, isInteger, isRational, isUnit, isName } from '../rpl/types.js';
+import { isStackOverflow, isSymbolic, isReal, isInteger, isRational, isUnit, isName, isComplex, isList, isVector, isMatrix } from '../rpl/types.js';
 import { freeVars } from '../rpl/algebra.js';
 import { errorBeep } from './beep.js';
 import {
@@ -61,6 +61,7 @@ export function commandSpot(line, id, nth = 0) {
 }
 
 const SYMBOLIC_CONSTANTS = new Set(['π', 'e', 'i']);
+const FORMULA_VALUES = [isReal, isInteger, isRational, isUnit, isSymbolic, isName, isComplex, isList, isVector, isMatrix];
 
 function failedSpot(line, values, failed) {
   const name = values[failed];
@@ -742,8 +743,8 @@ export class Entry {
       const needs = deepest === 1 ? 'ans needs a result' : `ANS(${deepest}) needs ${deepest} results`;
       throw new RPLError(`${needs}; the stack ${this.stack.depth ? `holds ${this.stack.depth}` : 'is empty'}.`);
     }
-    const odd = text !== 'ANS1' && levels.find((level) => ![isReal, isInteger, isRational, isUnit, isSymbolic, isName].some((is) => is(this.stack.peek(level))));
-    if (odd) throw new RPLError(`${odd === 1 ? 'ans' : `ANS(${odd})`} stands for a number, a unit or a formula; level ${odd} holds something else.`);
+    const odd = text !== 'ANS1' && levels.find((level) => !FORMULA_VALUES.some((is) => is(this.stack.peek(level))));
+    if (odd) throw new RPLError(`${odd === 1 ? 'ans' : `ANS(${odd})`} stands for a number, a list, an array, a unit or a formula; level ${odd} holds something else.`);
     const picks = levels.map((level, k) => `${level + k} ANS`).join(' ');
     return `${picks} → ${levels.map((level) => `ANS${level}`).join(' ')} « '${text}' EVAL »`;
   }

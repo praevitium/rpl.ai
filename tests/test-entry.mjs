@@ -2253,10 +2253,14 @@ resetBinaryState();
   keep('ANS(3)+1');
   assert(s.depth === 1 && e.error.includes('ANS(3) needs 3 results; the stack holds 1'), 'ANS(3) with two results too few says how many the stack holds');
   s.clear(); keep('(1,2)');
+  assert(keep('ans*2') === '(1, 2) (2, 4)', 'ans can be a complex number');
+  s.clear(); keep('[[1 2][3 4]]');
+  assert(keep('ans*ans') === '[[ 1 2 ][ 3 4 ]] [[ 7 10 ][ 15 22 ]]' && keep('DET(ans)') === '[[ 1 2 ][ 3 4 ]] [[ 7 10 ][ 15 22 ]] 4', 'ans can be a matrix');
+  s.clear(); keep('"hi"');
   keep('ans*2');
-  assert(s.depth === 1 && e.error.includes('stands for a number, a unit or a formula'), 'ans over a complex number says a formula can\'t hold it');
-  s.clear(); keep('{1,2}');
-  assert(keep('ans') === '{ 1 2 } { 1 2 }' && keep('answer+1') === '{ 1 2 } { 1 2 } `answer + 1`' && keep('ANS(0)+1').endsWith('`ANS(0) + 1`'),
+  assert(s.depth === 1 && e.error.includes('stands for a number, a list, an array, a unit or a formula'), 'ans over a string says a formula can\'t hold it');
+  s.clear(); keep('"hi"');
+  assert(keep('ans') === '"hi" "hi"' && keep('answer+1') === '"hi" "hi" `answer + 1`' && keep('ANS(0)+1').endsWith('`ANS(0) + 1`'),
     'ans alone copies any object, and answer and ANS(0) are not answers');
   s.clear(); keep('5');
   keep('ans+1'); e.performUndo();
