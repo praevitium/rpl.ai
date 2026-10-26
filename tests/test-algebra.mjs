@@ -9314,3 +9314,29 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(astToGiac(parseAlgebra('%CH(X,Y)')) === '100*(Y-X)/X' && astToGiac(parseAlgebra('%(X,5)+1')) === 'X*5/100+1'
     && astToGiac(parseAlgebra('SIN(%T(A+1,B))')) === 'sin(100*B/(A+1))', 'percent functions: the CAS gets the arithmetic, which it has no function for');
 }
+
+// A command called with parentheses in a formula, as the AUR's examples write them, runs on its arguments when the formula is
+// evaluated: FACTOR(X^2+5*X+6) is X^2+5*X+6 FACTOR. A command with several results gives them as a list, calls nest, a function
+// the algebra already works out or leaves symbolic is unchanged, and a call the command cannot work out stays as it was.
+{
+  const top = (src) => format(runLine(src).peek());
+  giac._clear();
+  giac._setFixtures({
+    'factor(X^2+5*X+6)': '(X+2)*(X+3)',
+    'factor(X^2-1)': '(X-1)*(X+1)',
+    'expand((X-1)*(X+1))': 'X^2-1',
+    'quorem(X^2+X+1,2*X+4,X)': '[1/2*X-1/2,3]',
+    'lcm(X^2-1,X-1)': '(X+1)*(X-1)',
+  });
+  assert(top("'FACTOR(X^2+5*X+6)' EVAL") === top("'X^2+5*X+6' FACTOR"), 'command calls: FACTOR(X^2+5*X+6) is the stack form, X^2+5*X+6 FACTOR');
+  assert(top("'FACTOR(X^2+5*X+6)' EVAL") === '`(X + 2)*(X + 3)`', 'command calls: the factored product');
+  assert(top("'DIV2(X^2+X+1,2*X+4)' EVAL") === '{ `1/2*X - 1/2` 3 }', 'command calls: a command with two results gives a list of them');
+  assert(top("'EXPAND(FACTOR(X^2-1))' EVAL") === '`X^2 - 1`', 'command calls: a call inside a call works from the inside out');
+  assert(top("'COMB(5,2)+1' EVAL") === '11' && top("'SIN(X)+1' EVAL") === '`SIN(X) + 1`' && top("'COMB(N,2)' EVAL") === '`COMB(N,2)`',
+    'command calls: a function worked out as before, a symbolic one and a command that cannot work out its arguments stay as they were');
+  varStore('P', parseEntry("'X^2-1'")[0]);
+  assert(top("'FACTOR(P)' EVAL") === '`(X - 1)*(X + 1)`', 'command calls: a stored formula is the argument');
+  varPurge('P');
+  assert(top("'FACTOR(X^2+5*X+6)' →NUM") !== '', 'command calls: →NUM does not choke on them');
+  giac._clear();
+}

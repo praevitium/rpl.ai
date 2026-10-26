@@ -2030,6 +2030,8 @@ export function _evalSymbolic(v, keeps = () => false, gather = true) {
   const objects = _evalObjects(_expandUserCalls(v.expr), keeps);
   if (objects) return objects;
   const evaluated = _foldUnits(evalNode(_expandUserCalls(v.expr)), evalNode);
+  const called = _evalCommandCalls(evaluated);
+  if (called) return called;
   const trig = approx ? evaluated : _radicalRewrite(exactTrigRewrite(evaluated, _calcState.angle), gather);
   const folded = trig === evaluated ? evaluated : evalNode(trig);
   const integrated = _casCalculus(folded);
@@ -2075,6 +2077,43 @@ function _evalObjects(ast, keeps) {
     return s.depth === 1 ? s.pop() : undefined;
   };
   return walk(ast) ?? null;
+}
+
+
+// A command called with parentheses in a formula, 'FACTOR(X^2+5*X+6)', runs on its arguments when the formula is evaluated, as
+// the HP's algebraic parser has it; a command that leaves several results gives them as a list, as the AUR's examples show.
+// The commands that only turn their arguments into a result are callable; stack, memory and display commands are not. A call the
+// command cannot work out, 'COMB(N,2)' with N unknown, leaves the formula as it was.
+const _CALLABLE_CATEGORIES = new Set(['CAS / symbolic', 'Polynomials', 'Vectors / matrices', 'Integer / number theory']);
+const _isCommandCall = (node) => node.kind === 'fn' && !_LAZY_FUNCTIONS.has(node.name.toUpperCase()) && _CALLABLE_CATEGORIES.has(lookup(node.name)?.category);
+
+function _holdsCommandCall(node) {
+  if (node.kind === 'fn') return _isCommandCall(node) || node.args.some(_holdsCommandCall);
+  if (node.kind === 'bin') return _holdsCommandCall(node.l) || _holdsCommandCall(node.r);
+  return node.kind === 'neg' && _holdsCommandCall(node.arg);
+}
+
+function _evalCommandCalls(ast) {
+  if (!_holdsCommandCall(ast)) return null;
+  const run = (name, args) => {
+    if (!lookup(name) || args.includes(undefined)) return undefined;
+    const s = new Stack();
+    args.forEach((arg) => s.push(arg));
+    lookup(name).fn(s);
+    return s.depth === 1 ? s.pop() : RList(s.snapshot().reverse());
+  };
+  const walk = (node) => {
+    if (!_holdsCommandCall(node)) return _astToRplValue(node);
+    if (node.kind === 'neg') return run('NEG', [walk(node.arg)]);
+    if (node.kind === 'bin') return run(node.op, [walk(node.l), walk(node.r)]);
+    return run(node.name, node.args.map(walk));
+  };
+  try {
+    return walk(ast) ?? null;
+  } catch (e) {
+    if (e instanceof RPLError) return null;
+    throw e;
+  }
 }
 
 
