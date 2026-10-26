@@ -1756,7 +1756,9 @@ function insightNote(title, text) {
 }
 
 function loadingNote() {
-  return insightNote('Algebra engine', 'Loading. Simplify, factor and solve appear here when it is ready.');
+  return giac.loadFailed()
+    ? insightNote('Algebra engine', "Couldn't load. Check the connection; it tries again when you are back online.")
+    : insightNote('Algebra engine', 'Loading. Simplify, factor and solve appear here when it is ready.');
 }
 
 function reviveInsight(insight) {
@@ -2138,7 +2140,10 @@ export class EquationEditor {
 
   _casMessage(error) {
     const message = String(error?.message ?? error);
-    return /CAS not ready/.test(message) ? 'The algebra engine is still loading. Try again in a moment.' : message;
+    if (!/CAS not ready/.test(message)) return message;
+    if (!giac.loadFailed()) return 'The algebra engine is still loading. Try again in a moment.';
+    this.app.loadCas();
+    return "The algebra engine couldn't be loaded, so it is trying again. Check the connection.";
   }
 
   _replacePart(compute) {

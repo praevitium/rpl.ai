@@ -4687,4 +4687,9 @@ setAngle('RAD');
     && /showLocals\(\) \{\n\s*if \(this\.drawers\.hidesInput\(\)\) this\.drawers\.close\(\);\n\s*this\.showMenu\('VARS', \{ commit: false \}\);\n\s*if \(this\.prefs\.minimal\) this\.setMinimalMenu\(true\);/.test(appSrc)
     && /\.bn\.halt \[data-bn="vars"\] > span \{ display: none; \}\n@container app \(min-width: 480px\) \{ \.bn\.halt \[data-bn="vars"\] > span \{ display: inline; \} \}/.test(cssSrc),
     'halted banner: a program with local variables has a Variables key, an icon under 480 px, which opens the VAR menu with them first, soft keys on in minimal view');
+  const engineSrc = readFileSync(new URL('../www/src/rpl/cas/giac-engine.mjs', import.meta.url), 'utf8');
+  assert(/this\.dismissError\(\);\n\s*if \(giac\.loadFailed\(\)\) this\.loadCas\(\);/.test(appSrc) && appSrc.includes("addEventListener('online', () => { if (giac.loadFailed()) window.__hp50.loadCas(); });")
+    && appSrc.includes('casFailed: giac.loadFailed(),') && /if \(this\.errorBanner\?\.kind === 'casLoading'\) this\._showError\(this\._errorShown\);/.test(appSrc)
+    && /\.catch\(\(e\) => \{\n\s*\/\/[^\n]*\n[^\n]*\n\s*this\._ready = null;\n\s*this\._failed = true;/.test(engineSrc),
+    'algebra engine: a failed download is forgotten, so Try again, the browser coming back online and the writer start it again, and a banner that says it is still loading follows the outcome');
 }

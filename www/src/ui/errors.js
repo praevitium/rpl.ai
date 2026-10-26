@@ -134,8 +134,10 @@ export const ERROR_KINDS = Object.freeze({
   },
   casLoading: {
     match: (p) => p.core === 'CAS not ready',
-    title: () => 'The algebra engine is still loading.',
-    detail: () => 'Giac loads in the background after start-up. Try again in a moment; nothing was lost.',
+    title: (c) => (c.casFailed ? "The algebra engine couldn't be loaded." : 'The algebra engine is still loading.'),
+    detail: (c) => (c.casFailed
+      ? 'Giac, about 12 MB, is fetched the first time it is needed, and it did not arrive. Check the connection and try again; nothing was lost.'
+      : 'Giac loads in the background after start-up. Try again in a moment; nothing was lost.'),
     fixes: () => [{ id: 'retry', label: 'Try again' }],
   },
   interrupted: {
@@ -217,7 +219,7 @@ function withLineFix(fixes, hasLine) {
   return at < 0 ? [...fixes, LINE_FIX] : [...fixes.slice(0, at), LINE_FIX, ...fixes.slice(at)];
 }
 
-export function describeError(message, { failure = null, stack = [], depth = 0, line = '', describe, commandInfo = () => null } = {}) {
+export function describeError(message, { failure = null, stack = [], depth = 0, line = '', casFailed = false, describe, commandInfo = () => null } = {}) {
   const parsed = parseErrorMessage(message);
   const [kind, spec] = Object.entries(ERROR_KINDS).find(([, k]) => k.match(parsed));
   const command = parsed.command ?? failure?.op ?? null;
@@ -236,7 +238,7 @@ export function describeError(message, { failure = null, stack = [], depth = 0, 
   const asFormula = (text) => formulaOf(text) || (calledFunction(text) || gluedProduct(text) ? formulaOf(withTimes(text)) : '');
   const formula = kind === 'syntax' || kind === 'tooFew' ? asFormula(line) : '';
   const hex = kind === 'syntax' ? hexLineOf(line) : null;
-  const ctx = { ...parsed, message: String(message ?? ''), command, signature, args, depth, seenDepth, culprits, onStack, top, storesTop, formula, hex, base: BASE_NAMES[getBinaryBase()], hasLine: !!String(line).trim() };
+  const ctx = { ...parsed, message: String(message ?? ''), command, signature, args, depth, seenDepth, culprits, onStack, top, storesTop, formula, hex, base: BASE_NAMES[getBinaryBase()], hasLine: !!String(line).trim(), casFailed };
   return {
     kind,
     command,

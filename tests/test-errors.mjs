@@ -274,6 +274,14 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
 }
 
 {
+  const loading = describeError('FACTOR: CAS not ready', ctx());
+  const failed = describeError('FACTOR: CAS not ready', ctx({ casFailed: true }));
+  assert(loading.title === 'The algebra engine is still loading.' && failed.title === "The algebra engine couldn't be loaded." && /did not arrive/.test(failed.detail)
+    && !/connection/.test(loading.detail) && failed.fixes.map((f) => f.id).join() === 'retry',
+    'describeError: a load that failed says so, where one in progress says it is still loading, and both offer Try again');
+}
+
+{
   const short = RList([Real(1), Real(2)]), long = RList([Real(1), Real(2), Real(3)]);
   const lists = describeError('ADD: Invalid dimension', ctx({ failure: { op: 'ADD', levels: [long, short] }, stack: [long, short], depth: 2 }));
   const arrays = describeError('+: Invalid dimension', ctx({ failure: { op: '+', levels: [Vector([Real(1)])] }, stack: [], depth: 0 }));

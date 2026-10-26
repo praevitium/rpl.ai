@@ -821,6 +821,7 @@ class App {
       stack: this.stack.snapshot().slice(0, 3),
       depth: this.stack.depth,
       line: this.entry.buffer || this.entry.errorLine,
+      casFailed: giac.loadFailed(),
       describe: describeValue,
       commandInfo: (name) => this.commandInfo(name),
     }) : null;
@@ -927,10 +928,25 @@ class App {
       case 'line': this.dismissError(); this.entry.recall(arg); this.commitEntry(); return;
       case 'retry':
         this.dismissError();
+        if (giac.loadFailed()) this.loadCas();
         if (!this.entry.buffer.trim() && desc?.command && lookup(desc.command)) this.entry.execOp(desc.command);
         else this.commitEntry();
         return;
     }
+  }
+
+  // A load that failed starts over when the connection is back, Try again is pressed or a writer asks, so the algebra engine
+  // needs no reload.
+  loadCas() {
+    giac.init().then(() => {
+      this.equationEditor?.refreshInsights();
+      if (this.errorBanner?.kind !== 'casLoading') return;
+      this.dismissError();
+      this.toast('The algebra engine is ready');
+    }).catch((e) => {
+      console.error('[giac] init failed:', e);
+      if (this.errorBanner?.kind === 'casLoading') this._showError(this._errorShown);
+    });
   }
 
   _explainError(message) {
@@ -3383,9 +3399,8 @@ function customCommand(target) {
 
 window.__hp50 = new App();
 
-giac.init().then(() => window.__hp50.equationEditor?.refreshInsights()).catch((e) => {
-  console.error('[giac] init failed:', e);
-});
+window.__hp50.loadCas();
+addEventListener('online', () => { if (giac.loadFailed()) window.__hp50.loadCas(); });
 
 function installOfflineCache(app) {
   if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;

@@ -38,9 +38,11 @@ function assertCommand(cmd) {
 
 const normalize = (out) => stripGiacApproxSuffix(stripGiacQuotes(out));
 
-class BrowserGiacEngine {
+export class BrowserGiacEngine {
   constructor() {
     this._ready = null;
+    this._failed = false;
+    this._script = null;
     this._caseval = null;
     this._angleSent = null;
     this._assumeSent = null;
@@ -68,6 +70,7 @@ class BrowserGiacEngine {
 
   init() {
     if (this._ready) return this._ready;
+    this._failed = false;
     this._ready = new Promise((resolve, reject) => {
       // The vendored Xcas build expects its host page's UI object; without
       // it calls like factor() fail with "UI is not defined".
@@ -98,12 +101,24 @@ class BrowserGiacEngine {
       script.async = true;
       script.onerror = () => reject(new Error("Failed to load giacwasm.js"));
       document.head.appendChild(script);
+      this._script = script;
+    }).catch((e) => {
+      // A phone's connection can drop mid-download. The failed load is forgotten so the next init() starts over, not
+      // repeats the failure until the page is reloaded.
+      this._ready = null;
+      this._failed = true;
+      this._script?.remove();
+      throw e;
     });
     return this._ready;
   }
 
   isReady() {
     return this._caseval !== null;
+  }
+
+  loadFailed() {
+    return this._failed;
   }
 
   // The build has C++ exception catching compiled out, so a Giac error
@@ -155,6 +170,10 @@ class MockGiacEngine {
 
   isReady() {
     return true;
+  }
+
+  loadFailed() {
+    return false;
   }
 
   caseval(cmd) {

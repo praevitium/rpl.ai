@@ -92,3 +92,34 @@ assert(![...files].some((f) => /(^|\/)(README|LICENSE)/i.test(f) || f.endsWith('
     rmSync(dir, { recursive: true, force: true });
   }
 }
+
+{
+  const { BrowserGiacEngine } = await import('../www/src/rpl/cas/giac-engine.mjs');
+  const scripts = [];
+  globalThis.document = { createElement: () => ({ remove() { this.removed = true; } }), head: { appendChild: (script) => scripts.push(script) } };
+  try {
+    const engine = new BrowserGiacEngine();
+    const lost = engine.init();
+    scripts[0].onerror();
+    const reason = await lost.then(() => null, (e) => e.message);
+    assert(reason === 'Failed to load giacwasm.js' && engine.loadFailed() && !engine.isReady() && scripts[0].removed,
+      'a Giac download that fails is reported, and its script is taken out of the page');
+    const again = engine.init();
+    assert(scripts.length === 2 && !engine.loadFailed() && engine.init() === again,
+      'the next init() after a failed download starts it again, where it used to hand back the failure for the whole session, and shares the attempt in progress');
+    globalThis.Module.cwrap = () => (cmd) => cmd;
+    globalThis.Module.onRuntimeInitialized();
+    await again;
+    assert(engine.isReady() && !engine.loadFailed(), 'a retried download that succeeds leaves the engine ready');
+
+    const aborted = new BrowserGiacEngine();
+    const wasm = aborted.init();
+    globalThis.Module.onAbort('no wasm binary');
+    assert(await wasm.then(() => null, (e) => e.message) === 'Giac aborted: no wasm binary' && aborted.loadFailed() && aborted.init() !== wasm,
+      'a wasm file that fails to arrive aborts the runtime, and that is a failed load too');
+  } finally {
+    delete globalThis.document;
+    delete globalThis.Module;
+    delete globalThis.UI;
+  }
+}
