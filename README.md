@@ -146,7 +146,12 @@ RPL puts the numbers first and the operation last. Each value goes on the
   the first name. A list offers Sort (SORT) only when SORT can order it. The ` key stands in for
   the HP's ' key, and the command line reads apostrophes too: `'X^2-4'`
   is the same object. EVAL gathers like terms and factors: `'X+X+1+2'` gives
-  `2*X+3` and `'X*X/X^3'` gives `1/X`. Or press `⌘E`, type `x^2-5x+6=0`, and
+  `2*X+3` and `'X*X/X^3'` gives `1/X`. A command written as a call, as the
+  AUR's examples have it, runs on its arguments when the formula is
+  evaluated: `'FACTOR(X^2+5*X+6)' EVAL` gives `(X+2)*(X+3)`,
+  `'DIV2(X^2+X+1,2*X+4)' EVAL` gives the list `{ 1/2*X-1/2 3 }` of its two
+  results, and a call the command cannot work out, `'COMB(N,2)'` with N
+  unknown, stays as it was. Or press `⌘E`, type `x^2-5x+6=0`, and
   click the Solve card. `` `EXP(X)` `X` 3 TAYLR `` gives the Taylor polynomial
   `1+X+1/2*X^2+1/6*X^3`, SERIES expands around any point with the limit and
   remainder, and ZEROS lists the roots on their own. `` `X^2-1` TABVAR ``
@@ -266,7 +271,11 @@ RPL puts the numbers first and the operation last. Each value goes on the
   store every entry. A stored complex number, list, vector or matrix works
   in an algebraic too, as on the HP: with `[[ 1 2 ][ 3 4 ]]` in `A`,
   `'A*A' EVAL` gives `[[ 7 10 ][ 15 22 ]]` and `'DET(A)' EVAL` gives -2,
-  and a product the sizes do not allow reports its error. A square matrix to
+  and a product the sizes do not allow reports its error. A matrix, vector
+  or list can be written inside a call's parentheses: `'DET([[1,2],[3,4]])'
+  EVAL` gives -2, `'DOT([1,2],[3,4])' EVAL` 11, `'SIZE({1,2,3})' EVAL` 3, and
+  operators between two of them are the commands' own,
+  `'DET([[1,2],[3,4]]*[[0,1],[1,0]])' EVAL` giving 2. A square matrix to
   a negative whole power is the power of its inverse, as a TI's `[A]^-1`
   is: `[[ 1 2 ][ 3 4 ]] -1 ^` is `[[ -2 1 ][ 3/2 -1/2 ]]`, `'A^-2' EVAL`
   squares the inverse of a stored `A`, and a singular matrix says Infinite
@@ -1339,15 +1348,21 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
   `iPart`, `fPart`, `int`, `ceiling`, `round` and `arcsin`, `arccos` and
   `arctan`, are the HP's COMB, PERM, IP, FP, FLOOR, CEIL, RND, ASIN, ACOS and
   ATAN (`round(x)` is `RND(x,0)`, and a variable stored under such a name
-  keeps it); command search and the completion list offer the HP's name for
-  them, `ncr` giving COMB, with the setting on or off. It reads only a line
-  that would otherwise fail or be read word by word, which takes in a number
-  in brackets, `(5)+1`, a complex number in RPL, and operands and operators
-  that take turns, `3 + 4`, where RPN puts an operator after its operands; a
-  line in RPN, `2 3 +`, `2 π`, `1/2` or `5!`, runs as on the HP, and the
-  keypad's keys stay RPN. It is not the HP's ALG mode (flag -95), which the
-  app has not: a line is worked out when Enter is pressed, and a key pressed
-  with the line works on its value.
+  keeps it); so are `dotP`, `crossP`, `identity`, `eigVl` and `eigVc` the
+  HP's DOT, CROSS, IDN, EGVL and EGV. Command search and the completion list
+  offer the HP's name for them, `ncr` giving COMB, with the setting on or
+  off. Any command can be called in a formula, in lowercase too:
+  `factor(x^2+5x+6)`, `lcm(12,18)` and `det([[1,2],[3,4]])` are worked out
+  on Enter. With the setting off, the Evaluate as a formula key on the
+  error banner does the same, reading the line just as Enter does, so
+  `2x+1`, `ncr(5,2)` and `sin(30)` come out as they would with it on. It
+  reads only a line that would otherwise fail or be read word by word, which
+  takes in a number in brackets, `(5)+1`, a complex number in RPL, and
+  operands and operators that take turns, `3 + 4`, where RPN puts an
+  operator after its operands; a line in RPN, `2 3 +`, `2 π`, `1/2` or
+  `5!`, runs as on the HP, and the keypad's keys stay RPN. It is not the
+  HP's ALG mode (flag -95), which the app has not: a line is worked out
+  when Enter is pressed, and a key pressed with the line works on its value.
 - A program that is halted, waiting at a dialog or running when the page
   closes is lost with the page, where the HP keeps it through power-off:
   its place in the program is not kept. The next start says so in a note

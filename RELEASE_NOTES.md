@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.107 (2026-10-26)
+**Latest release:** v0.8.108 (2026-10-26)
 
 ---
 
@@ -20,6 +20,40 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.108 — 2026-10-26
+
+- Fixed: a command written with parentheses in a formula stayed as written
+  when the formula was evaluated, so the AUR's own examples could not be
+  repeated. `'FACTOR(X^2+5*X+6)' EVAL` now gives `(X+2)*(X+3)`,
+  `'DIV2(X^2+X+1,2*X+4)' EVAL` the list `{ 1/2*X-1/2 3 }` of its two
+  results, `'LCM(12,18)+1' EVAL` 37, and a call inside a call,
+  `'EXPAND(FACTOR(X^2-1))'`, works from the inside out. The CAS, polynomial,
+  vector and matrix and integer commands are called this way; the functions
+  the formula evaluator already works out, such as SIN and COMB, are as
+  before, and a call the command cannot work out, `'COMB(N,2)'` with N
+  unknown, stays as written.
+- Added: a matrix, vector or list written inside a call's parentheses is
+  read as the object it spells, as the AUR's examples write them:
+  `'DET([[1,2],[3,4]])' EVAL` gives -2, `'DOT([1,2],[3,4])' EVAL` 11,
+  `'SIZE({1,2,3})' EVAL` 3, and operators between two of them are the
+  commands' own, `'DET([[1,2],[3,4]]*[[0,1],[1,0]])' EVAL` giving 2. A
+  formula that cannot be worked out prints as it was written, and OBJ→
+  hands the array back as an object. With Algebraic entry on the same lines
+  can be typed on the command line, in lowercase too: `det([[1,2],[3,4]])`,
+  `dot([1,2],[3,4])`, `factor(x^2+5x+6)` and `lcm(12,18)` work on Enter. An
+  array outside a call's parentheses is still RPL, so `[1 2 3] (4)` is a
+  vector and a complex number as before.
+- Added: with Algebraic entry on, a TI's `dotP`, `crossP`, `identity`,
+  `eigVl` and `eigVc` are the HP's DOT, CROSS, IDN, EGVL and EGV in a typed
+  formula, and command search and completion offer the HP's name for each.
+- Changed: with Algebraic entry off, the error banner's Evaluate as a
+  formula key reads the line just as Enter does with it on, so a TI's names,
+  `pi` and a number against a name work: `ncr(5,2)` gives 10, `2x+1` gives
+  `2*x+1` and `sin(30)+cos(60)` comes out as a number, where the key left
+  them as written or unevaluated. The key is now offered for such lines
+  too, `factor(x^2+5x+6)` and `2x+1` having had none, and for a matrix in a
+  call, `det([[1,2],[3,4]])`, which said Bad complex literal.
 
 ## v0.8.107 — 2026-10-26
 
