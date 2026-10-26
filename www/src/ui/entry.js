@@ -1,4 +1,4 @@
-import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction, groupedNumber, plainPunctuation, withTimes, withAnswers } from '../rpl/parser.js';
+import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction, groupedNumber, plainPunctuation, withTimes, withAnswers, withPi } from '../rpl/parser.js';
 import { formulaOf } from './errors.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
 import { latexToSource } from '../rpl/latex.js';
@@ -10,7 +10,7 @@ import { freeVars } from '../rpl/algebra.js';
 import { errorBeep } from './beep.js';
 import {
   saveVarStateForUndo, undoVarState, redoVarState,
-  hasVarRedo, varStateMatchesUndoTop, dropVarUndoTop, touchLcd, runDeferred, haltMark, tagHalted, testUserFlag,
+  hasVarRedo, varStateMatchesUndoTop, dropVarUndoTop, touchLcd, runDeferred, haltMark, tagHalted, testUserFlag, varRecall,
 } from '../rpl/state.js';
 import {
   EditorState, EditorView, Transaction, keymap, drawSelection,
@@ -746,7 +746,7 @@ export class Entry {
 
   // The answers a formula names are copied from the stack into locals, deepest first, each pick one level deeper for the copies made.
   _formulaLine(formula) {
-    const { text, levels } = withAnswers(formula);
+    const { text, levels } = withAnswers(withPi(formula, (name) => varRecall(name) !== undefined));
     if (!levels.length) return `'${text}' EVAL`;
     const [deepest] = levels;
     if (this.stack.depth < deepest) {

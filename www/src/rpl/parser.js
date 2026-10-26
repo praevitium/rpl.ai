@@ -451,6 +451,11 @@ export function withTimes(src) {
     .replace(/([)π])\s*(?=[(A-Za-zπ√])/g, '$1*');
 }
 
+// A phone keyboard has no π, so pi in a formula stands for it, unless isTaken says a variable by that name is stored.
+export function withPi(formula, isTaken) {
+  return formula.replace(/\bpi\b/gi, (word) => (isTaken(word) ? word : 'π'));
+}
+
 // ans is the previous result and ANS(n) the nth, as a TI and the HP's algebraic mode have them; each becomes a name ANSn.
 export function withAnswers(formula) {
   const found = new Set();

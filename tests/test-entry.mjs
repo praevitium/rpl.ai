@@ -6,7 +6,7 @@ import {
   isReal, isInteger, isBinaryInteger, isComplex, isDirectory, isProgram, isName,
   isString, isList, isVector, isUnit, isMatrix, isSymbolic,
 } from '../www/src/rpl/types.js';
-import { parseEntry, plainPunctuation, withAnswers } from '../www/src/rpl/parser.js';
+import { parseEntry, plainPunctuation, withAnswers, withPi } from '../www/src/rpl/parser.js';
 import { format, formatStackTop } from '../www/src/rpl/formatter.js';
 import {
   state as calcState, setAngle, cycleAngle, toRadians, fromRadians,
@@ -2235,6 +2235,11 @@ resetBinaryState();
     'a number in parentheses is no complex number in a typed formula: (1)+4, 3*(-2), 4-(-10), (2)(3), -(100), (1/2)+1, (2)^(3), √(16) and an unclosed 3*(5 are worked out');
   assert(run('(5)') === '(5, 0)' && run('(1,2)+4') === '(1, 2) 4' && run('(1 2)') === '(1, 2)' && run('(1) 4') === '(1, 0) 4' && run('(1) (2) +') === '(3, 0)',
     'a complex number, a lone (5) and spaced words stay RPN');
+  assert(run('2*pi') === '6.28318530718' && run('sin(pi/2)') === '1' && run('PI*2') === '6.28318530718' && run('pi2*2') === '`pi2*2`' && run('api*2') === '`api*2`' && run('x*pi') === '`x*π`',
+    'pi in a typed formula is π, since a phone keyboard has no π key, and a longer name holding pi is not');
+  run("3 'pi' STO");
+  assert(run('2*pi') === '6', 'a variable stored as pi keeps its own value');
+  run("'pi' PURGE");
   assert(run('3 + 4') === '7' && run('2 ^ 10') === '1024' && run('3 × 4') === '12' && run('3 + 4 * 5') === '23' && run('-3 + 4') === '1' && run('10 - 2 - 3') === '5' && run('x * 2') === '`x*2`' && run('e ^ 2') === '7.38905609894',
     'a formula typed with spaces around its operators, 3 + 4, 2 ^ 10, 3 × 4 or 3 + 4 * 5, is worked out');
   assert(run('2 3 +') === '5' && run('3 DUP *') === '9' && run('5 DUP * 2 +') === '27' && run('3 +4') === '3 4' && run('1 + 2 +') === '1' && run('+ 3') === '',
@@ -2283,6 +2288,7 @@ resetBinaryState();
   s.clear(); keep('5');
   keep('ans+1'); e.performUndo();
   assert(s.depth === 1 && format(s.peek()) === '5', 'a formula with ans is one step for Undo');
+  assert(withPi('2*pi+PI+pi2+api+pi', (name) => name === 'PI') === '2*π+PI+pi2+api+π', 'withPi turns pi into π unless a variable of that name is stored');
   const found = withAnswers('ans*2+ANS(3)+Ans( 2 )+answer+ans2+ans(0)');
   assert(found.text === 'ANS1*2+ANS3+ANS2+answer+ans2+ans(0)' && found.levels.join() === '3,2,1', 'withAnswers names ans and ANS(n) ANSn and lists the levels, deepest first');
   e.formulaEntry = false;
