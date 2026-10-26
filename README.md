@@ -533,9 +533,11 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   banner's Evaluate as a formula runs it quoted with EVAL, and the cursor
   waits at `^10`, where the line broke, as on the HP. `2+3` and `10-4` are
   two numbers each, as on the HP, so a note says how the line was read and
-  offers the same key. A function called with brackets, `sin(30)`, runs
-  word by word, SIN and then the complex number (30, 0), as on the HP; the
-  Too few arguments banner and a note offer it as a formula too, and the
+  offers the same key. A function called with brackets, `sin(30)`, a
+  number in brackets, `(1)+4`, and a formula typed with spaces, `3 + 4`,
+  run word by word, as on the HP (SIN and then the complex number (30, 0);
+  the complex number (1, 0) and 4; a + with one number to take); the
+  Too few arguments banner and a note offer them as a formula too, and the
   first time one of those keys is used a note offers Algebraic entry
   (Settings › Calculator), which works such a line out on Enter. A `#ff`
   typed in DEC reads in decimal, as on the HP, and its banner's Read as hex
@@ -1311,14 +1313,18 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
 
 - Algebraic entry, a switch in Settings › Calculator that is off until
   turned on, lets Enter work out a line typed as one formula, as a TI or a
-  Casio does: `2+3`, `3×4`, `2^10`, `(1+2)(3+4)` and `sin(30)` give 5, 12,
-  1024, 21 and the sine of 30 in the angle mode. A result that can't be
-  exact, such as `sqrt(2)` or `e^2`, comes out as a number, and one with a
-  free name, `x^2+1`, stays a formula. In a formula `ans` is the result
-  on level 1, as a TI has it, and `ANS(2)` the one on level 2, as the HP's
-  algebraic mode has it, so `ans*2` doubles the last result; `ans` alone
-  copies it. It reads only a line that would otherwise fail or be read word
-  by word; a line in RPN, `2 3 +`, `1/2` or `5!`, runs as on the HP, and
+  Casio does: `2+3`, `3 + 4`, `3×4`, `2^10`, `3*(-2)`, `(1+2)(3+4)` and
+  `sin(30)` give 5, 7, 12, 1024, -6, 21 and the sine of 30 in the angle
+  mode. A result that can't be exact, such as `sqrt(2)` or `e^2`, comes out
+  as a number, and one with a free name, `x^2+1`, stays a formula. In a
+  formula `pi` is π, a phone keyboard having no π key, unless a variable
+  called pi is stored, and `ans` is the result on level 1, as a TI has it,
+  and `ANS(2)` the one on level 2, as the HP's algebraic mode has it, so
+  `ans*2` doubles the last result; `ans` alone copies it. It reads only a
+  line that would otherwise fail or be read word by word, which takes in a
+  number in brackets, `(5)+1`, a complex number in RPL, and operands and
+  operators that take turns, `3 + 4`, where RPN puts an operator after its
+  operands; a line in RPN, `2 3 +`, `1/2` or `5!`, runs as on the HP, and
   the keypad's keys stay RPN. It is not the
   HP's ALG mode (flag -95), which the app has not: a line is worked out
   when Enter is pressed, and a key pressed with the line works on its

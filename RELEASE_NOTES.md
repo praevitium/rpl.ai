@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.103 (2026-10-26)
+**Latest release:** v0.8.104 (2026-10-26)
 
 ---
 
@@ -18,6 +18,29 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.104 — 2026-10-26
+
+- Fixed: with Algebraic entry on, a formula holding a number in brackets
+  was read as a complex number and ran as RPN. `(1)+4` left (1, 0) and 4,
+  `3*(-2)`, `4-(-10)` and `-(100)` failed with Too few arguments, and
+  `√(16)` did too. They now give 5, -6, 14, -100 and 4, and an unclosed
+  `3*(5` gives 15. A complex number written with a comma, `(1,2)`, a
+  lone `(5)` and spaced words are read as before. With the setting off such
+  a line that ran, `(1)+4`, gets the note with an Evaluate as a formula key
+  that `sin(30)` has, and its wording now says RPL puts a function or an
+  operator after its arguments.
+- Added: with Algebraic entry on, a formula typed with spaces around its
+  operators, `3 + 4`, `2 ^ 10`, `3 + 4 * 5` or `x * 2`, is worked out, the
+  way a phone user types it, whatever the stack holds. A line whose
+  operators come after its operands, `2 3 +`, `3 DUP *` or `3 +4`, is
+  still RPN. With the setting off, `3 + 4` with a value on the stack, which
+  runs as RPN, gets the same note.
+- Changed: with Algebraic entry on, `pi` in a formula is π, so `2*pi`
+  gives 6.28318530718 and `sin(pi/2)` gives 1, as a phone keyboard has no π
+  key; a variable stored as `pi` keeps its value.
 
 ---
 
