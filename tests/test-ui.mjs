@@ -4692,4 +4692,7 @@ setAngle('RAD');
     && appSrc.includes('casFailed: giac.loadFailed(),') && /if \(this\.errorBanner\?\.kind === 'casLoading'\) this\._showError\(this\._errorShown\);/.test(appSrc)
     && /\.catch\(\(e\) => \{\n\s*\/\/[^\n]*\n[^\n]*\n\s*this\._ready = null;\n\s*this\._failed = true;/.test(engineSrc),
     'algebra engine: a failed download is forgotten, so Try again, the browser coming back online and the writer start it again, and a banner that says it is still loading follows the outcome');
+  assert(appSrc.includes('const CAS_SLOW_MS = 2500;') && appSrc.includes("this.toast('Loading the algebra engine…', { key: 'cas', timeout: Infinity, transient: true });")
+    && appSrc.includes("this.toast('The algebra engine is ready', { key: 'cas' });") && /onAction: \(\) => this\.loadCas\(\{ now: true \}\)/.test(appSrc),
+    'algebra engine: a download that takes over 2.5 s gets a note, replaced by one saying it is ready or, when it fails, one with Try again, which starts at once');
 }

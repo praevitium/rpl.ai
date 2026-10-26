@@ -65,6 +65,8 @@ const $ = (id) => document.getElementById(id);
 
 const MODIFIER_KINDS = new Set(['shiftL', 'shiftR', 'alpha']);
 const DOUBLE_PRESS_MS = 300;
+// A download that has not finished by now gets a note, so a phone on mobile data knows why the CAS commands wait.
+const CAS_SLOW_MS = 2500;
 // Between the stretches of a program polling KEY, long enough for the page to draw and take a key.
 const KEY_PAUSE_MS = 20;
 // A program runs this long before it pauses, so that the page can take a press; its banner shows once it has run this long.
@@ -937,15 +939,23 @@ class App {
 
   // A load that failed starts over when the connection is back, Try again is pressed or a writer asks, so the algebra engine
   // needs no reload.
-  loadCas() {
+  loadCas({ now = false } = {}) {
+    let noted = false;
+    const slow = setTimeout(() => {
+      noted = true;
+      this.toast('Loading the algebra engine…', { key: 'cas', timeout: Infinity, transient: true });
+    }, now ? 0 : CAS_SLOW_MS);
     giac.init().then(() => {
+      clearTimeout(slow);
       this.equationEditor?.refreshInsights();
-      if (this.errorBanner?.kind !== 'casLoading') return;
-      this.dismissError();
-      this.toast('The algebra engine is ready');
+      const waiting = this.errorBanner?.kind === 'casLoading';
+      if (waiting) this.dismissError();
+      if (noted || waiting) this.toast('The algebra engine is ready', { key: 'cas' });
     }).catch((e) => {
+      clearTimeout(slow);
       console.error('[giac] init failed:', e);
       if (this.errorBanner?.kind === 'casLoading') this._showError(this._errorShown);
+      else if (noted) this.toast("The algebra engine couldn't be loaded", { key: 'cas', action: 'Try again', onAction: () => this.loadCas({ now: true }) });
     });
   }
 
