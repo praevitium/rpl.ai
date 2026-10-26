@@ -266,7 +266,11 @@ RPL puts the numbers first and the operation last. Each value goes on the
   store every entry. A stored complex number, list, vector or matrix works
   in an algebraic too, as on the HP: with `[[ 1 2 ][ 3 4 ]]` in `A`,
   `'A*A' EVAL` gives `[[ 7 10 ][ 15 22 ]]` and `'DET(A)' EVAL` gives -2,
-  and a product the sizes do not allow reports its error. ROW+, COL+, ROW-, COL-, RSWP and CSWP take a vector as
+  and a product the sizes do not allow reports its error. A square matrix to
+  a negative whole power is the power of its inverse, as a TI's `[A]^-1`
+  is: `[[ 1 2 ][ 3 4 ]] -1 ^` is `[[ -2 1 ][ 3/2 -1/2 ]]`, `'A^-2' EVAL`
+  squares the inverse of a stored `A`, and a singular matrix says Infinite
+  result. ROW+, COL+, ROW-, COL-, RSWP and CSWP take a vector as
   well as a matrix, RDM drops or zero-fills entries to the new size, TRN, RDM
   and CON take a variable name and store the result in it, RND and TRNC round
   a vector or matrix entry by entry, and SUB and REPL take a matrix's places
@@ -1462,6 +1466,8 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
   On a phone in landscape the pad sits beside the field.
 - `EVAL` of a matrix or vector with symbolic entries evaluates each entry;
   the AUR's EVAL table leaves an array as it is.
+- A square matrix to a negative whole power is the power of its inverse, as
+  on a TI; the AUR's `^` takes whole-number powers only.
 - REALASSUME starts empty rather than holding X, Y, t, S1 and S2, and
   `ASSUME` keeps a strict `Z>0` as written where the HP makes it `Z≥0`.
 - `STURM` lists the content as `[c] -1.` and then each multiplicity's

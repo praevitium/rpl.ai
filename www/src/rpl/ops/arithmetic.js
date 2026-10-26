@@ -84,8 +84,8 @@ function _matrixPow(m, n) {
 
 
 function _wholeNumberExp(v) {
-  if (isInteger(v)) return v.value >= 0n ? Number(v.value) : null;
-  if (isReal(v) && v.value.isInteger() && v.value.gte(0)) return v.value.toNumber();
+  if (isInteger(v)) return Number(v.value);
+  if (isReal(v) && v.value.isInteger()) return v.value.toNumber();
   return null;
 }
 
@@ -173,6 +173,12 @@ function binaryMath(op) {
       if (isVector(a)) throw new RPLError('Bad argument type');
       const n = _wholeNumberExp(b);
       if (n === null) throw new RPLError('Bad argument value');
+      if (n < 0) {
+        s.push(a);
+        lookup('INV').fn(s);
+        s.push(_matrixPow(s.pop(), -n));
+        return;
+      }
       s.push(_matrixPow(a, n));
       return;
     }

@@ -12216,9 +12216,10 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
    `binaryMath` now intercepts `op==='^'` for Matrix/Vector bases —
    square Matrix^whole-number routes through the new `_matrixPow`
    (which shares `_matMul` with the `*` branch); Vector base and a
-   non-whole-number / negative exponent reject.  These pins lock the
-   corrected behavior plus a `*`-matmul regression for the extracted
-   `_matMul` helper.
+   non-whole-number exponent reject.  A negative whole exponent is the
+   power of INV(M), as a TI's [A]^-1 (an extension: the AUR says
+   whole-number).  These pins lock the corrected behavior plus a
+   `*`-matmul regression for the extracted `_matMul` helper.
    ================================================================ */
 {
   const M22 = () => Matrix([[Integer(1n), Integer(2n)], [Integer(3n), Integer(4n)]]);
@@ -12294,13 +12295,35 @@ for (const [make, code, label] of TYPE_CODE_TABLE) {
     lookup('^').fn(s);
   }, 'Invalid dimension', 'session298: M(2x3) ^ 2 → Invalid dimension (square only)');
 
-  // Negative exponent — AUR specifies whole-number power only.
-  assertThrows(() => {
-    const s = new Stack();
-    s.push(M22());
-    s.push(Integer(-1n));
-    lookup('^').fn(s);
-  }, 'Bad argument value', 'session298: M ^ -1 → Bad argument value (whole-number only)');
+  // Negative whole exponent — the power of the inverse, exact for exact entries.
+  {
+    const power = (src) => runLine(src).peek();
+    const rows = (src) => formatSource(power(src));
+    assert(rows('[[1 2][3 4]] -1 ^') === '[[ -2 1 ][ 3/2 -1/2 ]]',
+      `session298: M ^ -1 → INV(M) (got ${rows('[[1 2][3 4]] -1 ^')})`);
+    assert(rows('[[1 2][3 4]] -2 ^') === '[[ 11/2 -5/2 ][ -15/4 7/4 ]]',
+      `session298: M ^ -2 → INV(M)^2 (got ${rows('[[1 2][3 4]] -2 ^')})`);
+    assert(rows('[[1 2][3 4]] -3 ^') === rows('[[1 2][3 4]] INV 3 ^'),
+      'session298: M ^ -3 → INV(M)^3');
+    assert(rows('[[1 2][3 4]] -1. ^') === '[[ -2 1 ][ 3/2 -1/2 ]]',
+      'session298: M ^ -1. → integer-valued Real exponent also takes the inverse');
+    assert(rows('[[1 2][3 4]] -4 ^ [[1 2][3 4]] 4 ^ *') === '[[ 1 0 ][ 0 1 ]]',
+      'session298: M ^ -4 * M ^ 4 → identity');
+    assert(rows('[[2.5 2][3 4]] -1 ^') === '[[ 1. -0.5 ][ -0.75 0.625 ]]',
+      'session298: decimal M ^ -1 → decimal inverse');
+    assert(rows("[[1 2][3 4]] 'A' STO 'A^-1' EVAL 'A' PURGE") === '[[ -2 1 ][ 3/2 -1/2 ]]',
+      "session298: 'A^-1' EVAL → inverse of the stored matrix, as a TI's [A]^-1");
+    assert(rows("[[1 2][3 4]] 'A' STO 'A^(-2)' EVAL 'A' PURGE") === '[[ 11/2 -5/2 ][ -15/4 7/4 ]]',
+      "session298: 'A^(-2)' EVAL → inverse of the stored matrix squared");
+  }
+  assertThrows(() => runLine('[[1 2][2 4]] -1 ^'), 'Infinite result',
+    'session298: singular M ^ -1 → Infinite result (as INV)');
+  assertThrows(() => runLine('[[1 2 3][4 5 6]] -1 ^'), 'Invalid dimension',
+    'session298: M(2x3) ^ -1 → Invalid dimension (square only)');
+  assertThrows(() => runLine('[[1 2][3 4]] -1.5 ^'), 'Bad argument value',
+    'session298: M ^ -1.5 → Bad argument value (whole-number only)');
+  assertThrows(() => runLine('[1 2] -1 ^'), 'Bad argument type',
+    'session298: V ^ -1 → Bad argument type (no vector power)');
 
   // Non-integer exponent — rejected.
   assertThrows(() => {

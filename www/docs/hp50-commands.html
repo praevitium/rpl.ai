@@ -19236,6 +19236,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Power Analytic Function: Returns the value of the level 2 object raised to the power of the level 1 object. This can also apply to a square matrix raised to a whole-number power. If either argument is complex, the result is complex. The branch cuts and inverse relations for wz are determined by this relationship: wz = exp(z(ln w))</p>
+    <p>In rpl.ai a square matrix may also be raised to a negative whole number: the result is the power of its inverse, as a TI&#x27;s [A]^-1 is, so [[1 2][3 4]] with -1 gives [[-2 1][3/2 -1/2]], and a singular matrix gives Infinite result.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
