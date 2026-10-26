@@ -4519,4 +4519,14 @@ setAngle('RAD');
   assert(appSrc.includes("if (act === 'pause' && kind === 'slice') { haltRun(); return; }") && appSrc.includes("if (act === 'kill' && (kind === 'slice' || calcState.halted?.paused)) { this.stopProgram(); return; }") && appSrc.includes("if (calcState.halted === halted && halted.kind === 'slice') this._continueProgram();")
     && /\.bn\.running \[data-bn="pause"\] > span \{ display: none; \}\n@container app \(min-width: 480px\) \{ \.bn\.running \[data-bn="pause"\] > span \{ display: inline; \} \}/.test(cssSrc),
     'running: Pause on the Running banner halts the program where it is, a timer already set does not resume it, and the key is an icon under 480 px');
+  assert(/showVarsMenu\(opts = \{\}\) \{\n\s*const keys = \[\.\.\.haltedLocals\(\)\.map\(\(\[id, v\]\) => this\._variableKey\(id, v, true\)\), \.\.\.varOrder\(\)\.map\(\(id\) => this\._variableKey\(id, varRecall\(id\)\)\)\];\n\s*this\.setMenu\(keys, 'VARS', opts\);/.test(appSrc)
+    && appSrc.includes('const v = recallVar(name);') && appSrc.includes('storeVar(name, this.stack.pop())')
+    && /\$\{slot\.variable \? ' var' : ''\}\$\{slot\.local \? ' local' : ''\}/.test(readFileSync(new URL('../www/src/ui/menubar.js', import.meta.url), 'utf8'))
+    && /\.sk\.local::after \{ content: ""; position: absolute; right: 6px; top: 6px; width: 5px; height: 5px; border-radius: 50%; background: var\(--amber\); \}/.test(cssSrc),
+    'variable keys: a halted program\'s local variables lead the VAR menu as keys marked with a dot, and pressing, storing into and recalling them goes by the name as the program sees it');
+  const drawerSrc = readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8');
+  assert(drawerSrc.includes("import { allOps, lookup, opCategories, haltedLocals } from '../rpl/ops.js';") && drawerSrc.includes('<div class="sec-h">Local variables of the halted program</div>')
+    && drawerSrc.includes("_localRow(name, value) {") && drawerSrc.includes("case 'local': app.pressVariable(name); this._reveal(); return;")
+    && /\.vr\.local \{ grid-template-columns: minmax\(0, 1fr\); border-left: 3px solid var\(--amber\); \}/.test(cssSrc),
+    'variables drawer: a halted program\'s locals head the list as rows with no grip and no menu, whose tap puts the value on the stack');
 }

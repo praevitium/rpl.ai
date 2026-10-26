@@ -616,6 +616,7 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .sk.dir { border-top-left-radius: 4px; }
 .sk.dir::before { content: ""; position: absolute; left: 6px; top: -1px; width: 30%; height: 3px; border-radius: 0 0 3px 3px; background: var(--ink3); }
 .sk.tog.on::after { content: ""; position: absolute; right: 6px; top: 6px; width: 5px; height: 5px; border-radius: 1px; background: var(--accent); }
+.sk.local::after { content: ""; position: absolute; right: 6px; top: 6px; width: 5px; height: 5px; border-radius: 50%; background: var(--amber); }
 .sk.empty { opacity: .35; cursor: default; }
 .sk.blocked { opacity: .45; }
 .sk.l { color: var(--amber); } .sk.r { color: var(--coral); }
@@ -1016,6 +1017,7 @@ body.file-drag::after { content: "Drop a .csv, .tsv, .xlsx, .rpl or .txt file to
 .vr-list { display: grid; }
 .vr { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 8px 7px 8px; border-top: 1px solid var(--line); cursor: pointer; position: relative; }
 .vr:hover { background: var(--r1); }
+.vr.local { grid-template-columns: minmax(0, 1fr); border-left: 3px solid var(--amber); }
 .vr .grip { color: var(--ink4); opacity: 0; cursor: grab; display: grid; place-items: center; }
 .vr:hover .grip { opacity: 1; }
 .vr .main { min-width: 0; display: grid; gap: 2px; }

@@ -1,4 +1,4 @@
-import { allOps, lookup, opCategories } from '../rpl/ops.js';
+import { allOps, lookup, opCategories, haltedLocals } from '../rpl/ops.js';
 import {
   state as calcState, subscribe as subscribeState,
   varPurge, goInto, currentPath, makeSubdir,
@@ -595,12 +595,23 @@ export class Drawers {
     bar.innerHTML = path.map((seg, i) => `${i ? '<span class="sep" aria-hidden="true">›</span>' : ''}<button type="button" data-dw="path" data-index="${i}" aria-current="${i === path.length - 1}" title="${i === path.length - 1 ? `You are in ${escapeHtml(seg)}` : `Go to ${escapeHtml(seg)}; drop a variable here to move it`}">${escapeHtml(seg)}</button>`).join('');
     const q = this.varsQuery.trim().toLowerCase();
     const entries = [...calcState.current.entries.entries()].filter(([name]) => !q || name.toLowerCase().includes(q));
+    const locals = haltedLocals().filter(([name]) => !q || name.toLowerCase().includes(q));
+    const localRows = locals.length ? `<div class="sec-h">Local variables of the halted program</div>${locals.map(([name, value]) => this._localRow(name, value)).join('')}${entries.length ? '<div class="sec-h">Variables</div>' : ''}` : '';
     if (!entries.length) {
-      list.innerHTML = `<div class="empty-note">${q ? 'No variable matches.' : 'This directory is empty. Store a value with <span class="kc">STO</span> (for example <code>42 `X` STO</code>), or upload a file.'}</div>`;
+      list.innerHTML = localRows || `<div class="empty-note">${q ? 'No variable matches.' : 'This directory is empty. Store a value with <span class="kc">STO</span> (for example <code>42 `X` STO</code>), or upload a file.'}</div>`;
     } else {
-      list.innerHTML = entries.map(([name, value]) => this._varRow(name, value)).join('');
+      list.innerHTML = localRows + entries.map(([name, value]) => this._varRow(name, value)).join('');
     }
     this._renderBackups();
+  }
+
+  // A halted program's local: tapping it puts its value on the stack, and it has no menu, no grip and no folder to move to.
+  _localRow(name, value) {
+    const n = escapeHtml(name);
+    const preview = withFractionMark(format(value));
+    return `<div class="vr local" data-dw="local" data-name="${n}" role="button" tabindex="0" title="${n}, a local variable of the halted program: ${value.type === TYPES.PROGRAM ? 'run it' : 'put it on the stack'}">
+      <div class="main"><div class="nm"><span class="nm-text">${n}</span><span class="badge">${escapeHtml(typeName(value))}</span></div><div class="pv">${escapeHtml(preview.length > 120 ? `${preview.slice(0, 119)}…` : preview)}</div></div>
+    </div>`;
   }
 
   _varRow(name, value) {
@@ -813,6 +824,7 @@ export class Drawers {
       case 'err-explain': e.stopPropagation(); app.askAssistant(`I got this error on the calculator: ${t.dataset.text}. What went wrong and how do I fix it?`); return;
       case 'path': app.navigateToPathSegment(Number(t.dataset.index)); return;
       case 'var': this._activateVar(name); return;
+      case 'local': app.pressVariable(name); this._reveal(); return;
       case 'var-menu': e.stopPropagation(); this._varMenu(t, name); return;
       case 'vars-more': this._varsMenu(t); return;
       case 'backup-restore': this._restoreBackup(t.dataset.key); return;

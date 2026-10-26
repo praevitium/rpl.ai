@@ -692,7 +692,7 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 // A program called by name runs on the driver stack, not nested on the JS call stack, so recursion goes thousands deep.
 {
   const { localFramesDepth } = await import('../www/src/rpl/ops.js');
-  const { clearAllHalted, getHalted } = await import('../www/src/rpl/state.js');
+  const { clearAllHalted, getHalted, subscribe } = await import('../www/src/rpl/state.js');
   resetHome(); clearAllHalted();
   const run = (line, s = new Stack()) => runLine(line, s);
   run("« → n « IF n 0 == THEN 0 ELSE n 1 - QDEEP 1 + END » » 'QDEEP' STO");
@@ -716,6 +716,35 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   run('KILL');
   assert(getHalted() === null && localFramesDepth() === 0, 'KILL: a halted recursion is closed and releases its locals');
   clearAllHalted();
+
+  // What a halted program can still see of its locals, for the VAR menu: innermost first, each name once, none when nothing is halted.
+  const { haltedLocals, recallVar, storeVar } = await import('../www/src/rpl/ops.js');
+  const names = () => haltedLocals().map(([id, v]) => `${id}=${format(v)}`).join(' ');
+  run("« 5 7 → a b « a b + HALT a b * » » 'QLV' STO");
+  run("« 1 → x « 2 → y « HALT » » » 'QNST' STO");
+  run("« 1 → x « 2 → x « HALT » » » 'QSHD' STO");
+  assert(names() === '', 'locals: none are listed while no program is halted');
+  const t = run('QLV');
+  assert(getHalted() !== null && names() === 'a=5 b=7', `locals: a halted program lists its locals in the order it bound them (${names()})`);
+  storeVar('a', Real(9));
+  assert(recallVar('a') && format(recallVar('a')) === '9.', 'locals: STO into a listed name changes the program\'s own variable');
+  let heard = 0;
+  const stopHearing = subscribe(() => { heard++; });
+  storeVar('a', Real(10));
+  assert(heard === 1, 'locals: a store into one from the command line tells the listeners, so the drawer shows the new value');
+  stopHearing();
+  storeVar('a', Real(9));
+  run('CONT', t);
+  assert(format(t.peek()) === '63.' && names() === '', `locals: and the halted program goes on with it, then none are left (${format(t.peek())})`);
+  run('QNST');
+  assert(names() === 'y=2 x=1', `locals: a program halted inside another lists the innermost frame first (${names()})`);
+  run('KILL');
+  assert(names() === '', 'locals: KILL leaves none');
+  run('QSHD');
+  assert(names() === 'x=2', `locals: a name bound twice is listed once, as the program sees it (${names()})`);
+  run('KILL');
+  clearAllHalted();
+  varPurge('QLV'); varPurge('QNST'); varPurge('QSHD');
   resetHome();
 }
 

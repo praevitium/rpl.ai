@@ -39,7 +39,7 @@ import {
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo, getUserKeys, standardKeysActive,
   batchStateNotifications, isSuspension, clearHalted, haltMark, tagHalted, haltRun,
 } from './rpl/state.js';
-import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setFontHooks, setTransferHooks, receivedName, receivedTarget, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue, setRunSlice, withoutRunSlices, pausableRun } from './rpl/ops.js';
+import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setFontHooks, setTransferHooks, receivedName, receivedTarget, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue, setRunSlice, withoutRunSlices, pausableRun, haltedLocals, recallVar, storeVar } from './rpl/ops.js';
 import { VERSION, DATE } from './build-info.js';
 import { beep, alarmBeep, keyClick } from './ui/beep.js';
 import { pastDueAlarm, msToNextAlarm, acknowledgeOldest, calculatorNow, headerClock } from './rpl/ops/time.js';
@@ -2576,12 +2576,13 @@ class App {
       this.commitEntry();
       if (this.entry.error) return;
     }
-    const v = varRecall(name);
+    const v = recallVar(name);
     if (v === undefined) { this.entry.flashError({ message: `Undefined name: ${name}` }); return; }
     if (layer === 'L') {
       if (this.stack.depth < 1) { this.entry.flashError({ message: `STO ${name} needs a value on level 1; the stack is empty.` }); return; }
-      const stored = this.entry.safeRun(() => { this.entry._snapForUndo(); varStore(name, this.stack.pop()); }, 'STO');
-      if (stored) this.undoToast(`Stored level 1 in ${name}`);
+      const local = haltedLocals().some(([id]) => id === name);
+      const stored = this.entry.safeRun(() => { this.entry._snapForUndo(); storeVar(name, this.stack.pop()); }, 'STO');
+      if (stored) { if (local) this.toast(`Stored level 1 in ${name}`); else this.undoToast(`Stored level 1 in ${name}`); }
       return;
     }
     if (layer === 'R') { this._pushValue(v); return; }
@@ -2601,22 +2602,25 @@ class App {
     tagHalted(mark, runAs);
   }
 
+  // A halted program's local variables come first, as keys of its own, so a program stopped by HALT, a step or Pause can be looked into.
   showVarsMenu(opts = {}) {
-    const slots = varOrder().map((id) => {
-      const v = varRecall(id);
-      const dir = isDirectory(v);
-      return {
-        label: id,
-        dir,
-        variable: !dir,
-        title: dir ? `Open folder ${id}` : `${id}: ${isProgram(v) ? 'run it' : 'put it on the stack'} · ↰ stores level 1 into it · ↱ recalls without running`,
-        onPress: () => this.pressVariable(id),
-        onPressL: dir ? null : () => this.pressVariable(id, 'L'),
-        onPressR: dir ? null : () => this.pressVariable(id, 'R'),
-        onHold: dir ? null : (anchor) => this._heldKeyMenu([{ text: `Store level 1 in ${id}`, run: () => this.pressVariable(id, 'L') }, { text: `Recall ${id}`, run: () => this.pressVariable(id, 'R') }], anchor, 'Variable'),
-      };
-    });
-    this.setMenu(slots, 'VARS', opts);
+    const keys = [...haltedLocals().map(([id, v]) => this._variableKey(id, v, true)), ...varOrder().map((id) => this._variableKey(id, varRecall(id)))];
+    this.setMenu(keys, 'VARS', opts);
+  }
+
+  _variableKey(id, v, local = false) {
+    const dir = isDirectory(v);
+    return {
+      label: id,
+      dir,
+      local,
+      variable: !dir,
+      title: dir ? `Open folder ${id}` : `${id}${local ? ', a local variable of the halted program' : ''}: ${isProgram(v) ? 'run it' : 'put it on the stack'} · ↰ stores level 1 into it · ↱ recalls without running`,
+      onPress: () => this.pressVariable(id),
+      onPressL: dir ? null : () => this.pressVariable(id, 'L'),
+      onPressR: dir ? null : () => this.pressVariable(id, 'R'),
+      onHold: dir ? null : (anchor) => this._heldKeyMenu([{ text: `Store level 1 in ${id}`, run: () => this.pressVariable(id, 'L') }, { text: `Recall ${id}`, run: () => this.pressVariable(id, 'R') }], anchor, 'Variable'),
+    };
   }
 
   // MENU runs with the line still in hand, so it shows the menu without committing it again; a refresh follows

@@ -5,7 +5,7 @@ import { exactTrigRewrite } from '../exact-trig.js';
 import { gatherLike } from '../tidy.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, UnitNode as AstUnit, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, hasUnits, exactRational, isRealNum, isKnownFunction } from '../algebra.js';
 import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
-import { state as _calcState, getApproxMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, testUserFlag, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd, withScratchState, inScratchState } from '../state.js';
+import { state as _calcState, getApproxMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, testUserFlag, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd, withScratchState, inScratchState, notify } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
 import { formatSource, currentDisplay, withFractionMark } from '../formatter.js';
@@ -1067,8 +1067,9 @@ export function recallVar(id) {
 
 export function storeVar(id, value) {
   const frame = _localFrame(id);
-  if (frame) frame.set(id, value);
-  else varStore(id, value);
+  if (!frame) { varStore(id, value); return; }
+  frame.set(id, value);
+  if (_calcState.halted && _runDepth === 0) notify();
 }
 
 // fn runs with the name bound as a local variable, set through the function it is given, as a plot binds its variable.
@@ -1098,6 +1099,19 @@ export function singleStepMode() { return _singleStepMode; }
 export function stepIntoMode() { return _stepInto; }
 
 export function localFramesDepth() { return _localFrames.length; }
+
+// What a halted program can still see of its local variables: each name once, as the program would resolve it, innermost first.
+export function haltedLocals() {
+  if (!_calcState.halted) return [];
+  const seen = new Set();
+  const found = [];
+  for (let i = _localFrames.length - 1; i >= 0; i--) {
+    for (const [id, value] of _localFrames[i]) {
+      if (value != null && !seen.has(id)) { seen.add(id); found.push([id, value]); }
+    }
+  }
+  return found;
+}
 
 
 export function withStepMode(single, into, fn) {
