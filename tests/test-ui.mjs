@@ -4508,8 +4508,8 @@ setAngle('RAD');
   assert(/if \(!this\._running\(\)\) this\._noteAutosave\(saveToLocalStorage\(this\.stack\)\);/.test(appSrc)
     && /run: \(text\) => withoutRunSlices\(\(\) => \{/.test(appSrc),
     'running: half a run is never autosaved, and the assistant\'s run tool still runs a line through');
-  assert(/stopProgram\(\) \{\n\s*if \(!this\._running\(\) && !calcState\.halted\?\.paused\) return false;\n\s*clearHalted\(\);\n\s*this\._endRun\(\);\n\s*this\.undoToast\('Program stopped'\);/.test(appSrc),
-    'running: Stop closes the program, running or paused from its banner, leaves the stack where it was and offers Undo');
+  assert(/stopProgram\(\) \{\n\s*if \(!this\._running\(\) && !calcState\.halted\?\.paused\) return false;\n\s*do clearHalted\(\); while \(this\._running\(\)\);\n\s*this\._endRun\(\);\n\s*this\.undoToast\('Program stopped'\);/.test(appSrc),
+    'running: Stop closes the program, running or paused from its banner, and any started over it, leaves the stack where it was and offers Undo');
   assert(appSrc.includes("if (halted?.kind === 'slice' && Date.now() - (this._runStart ?? Date.now()) < RUN_BANNER_MS) {"),
     'running: the first pause, drawn before the run has a start time, holds the banner back like the later ones');
   assert(/if \(!runAs\) \{ this\.stack\.push\(value\); return; \}\n\s*const mark = haltMark\(\);\n\s*this\.entry\.safeRun\([^\n]*\n\s*tagHalted\(mark, runAs\);/.test(appSrc),

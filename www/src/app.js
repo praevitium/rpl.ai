@@ -588,9 +588,10 @@ class App {
   }
 
   // As the HP's ON does, Stop ends a running program, or one paused from its banner, where it is: the stack stays as the program left it, and Undo takes the run back.
+  // A program started over a running one stops with it, since the one beneath would otherwise sit paused with nothing to resume it.
   stopProgram() {
     if (!this._running() && !calcState.halted?.paused) return false;
-    clearHalted();
+    do clearHalted(); while (this._running());
     this._endRun();
     this.undoToast('Program stopped');
     return true;
