@@ -2260,6 +2260,9 @@ resetBinaryState();
   assert(run('det([[1,2],[3,4]])') === '-2' && run('trn([[1,2],[3,4]])') === '[[ 1 3 ][ 2 4 ]]' && run('dot([1,2],[3,4])') === '11' && run('abs([3,4])') === '5.'
     && run('size({1,2,3})') === '3' && run('2*det([[1 2][3 4]])+1') === '-3' && run('det([[1,2],[3,4]]*[[0,1],[1,0]])') === '2' && run('cross([1,2,3],[4,5,6])') === '[ -3 6 -3 ]',
     'a matrix, vector or list among a typed call\'s arguments, det([[1,2],[3,4]]) or dot([1,2],[3,4]), is worked out, in a formula too');
+  assert(run('dotP([1,2],[3,4])') === '11' && run('crossP([1,2,3],[4,5,6])') === '[ -3 6 -3 ]' && run('identity(2)') === '[[ 1. 0. ][ 0. 1. ]]'
+    && run('norm([3,4])') === '5.' && e.formulaText('eigVl(a)+eigVc(a)+norm(a)') === 'EGVL(a)+EGV(a)+norm(a)',
+    'a TI\'s names for matrix and vector functions, dotP, crossP, identity, eigVl and eigVc, are the HP\'s in a typed formula, and norm already is one');
   assert(run('[1 2 3] (4)') === '[ 1 2 3 ] (4, 0)' && run('[1 2 3] 2 *') === '[ 2 4 6 ]' && run('{1 2} {3} +') === '{ 1 2 3 }' && run('[[1,2],[3,4]] DET') === '-2',
     'an array outside a call\'s parentheses leaves the line RPN');
   assert(run('det([[1,2],[3,4]') === '' && e.error !== '' && run('det([1,2)') === '' && e.error !== '', 'an array that never closes is an error, not a formula');

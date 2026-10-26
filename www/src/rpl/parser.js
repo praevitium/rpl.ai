@@ -473,6 +473,7 @@ export function withPi(formula, isTaken) {
 // The names a TI's owner calls functions by, where the HP has them under others.
 export const TI_NAMES = Object.freeze({
   ncr: 'COMB', npr: 'PERM', ipart: 'IP', fpart: 'FP', int: 'FLOOR', ceiling: 'CEIL', round: 'RND', arcsin: 'ASIN', arccos: 'ACOS', arctan: 'ATAN',
+  dotp: 'DOT', crossp: 'CROSS', identity: 'IDN', eigvl: 'EGVL', eigvc: 'EGV',
 });
 
 // Command search and completion offer them for the HP's names; int is left out, the start of too many of those.
