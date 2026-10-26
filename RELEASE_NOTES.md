@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.97 (2026-10-25)
+**Latest release:** v0.8.98 (2026-10-25)
 
 ---
 
@@ -18,6 +18,26 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.98 — 2026-10-25
+
+- Fixed: text from other keyboards and apps ended in a syntax error near a
+  character that was sometimes invisible. The dashes of pasted text (— and the
+  hyphen variants), the dot operators ∗ and ∙, the slash ⁄, primes and an acute
+  accent for the apostrophe, º and ˚ for the degree sign (a Spanish or
+  Portuguese keyboard has º where ° would be), ∑ and ∆ for Σ and Δ, German „Hi“
+  quotes, the full-width forms of an East Asian keyboard and Arabic-Indic,
+  Persian, Devanagari and Bengali digits now read as the plain characters the
+  HP uses, and a zero-width space ends a word as a space does. Inside a string
+  they stay text.
+- Changed: the equation writer reads what a phone keyboard types as the
+  command line does. An en dash, ⋅, ∕, º, a full-width digit or the ohm sign
+  flashed unavailable there; each now types the face it stands for.
+- Added: while a program is halted, stepped or paused, the completion list
+  offers its local variables first, so typing the first letters of `rate`
+  recalls it.
 
 ---
 

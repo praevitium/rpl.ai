@@ -505,7 +505,12 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   it edits, in the Classic theme too. Curly quotes, typed with an
   iPhone's smart punctuation or pasted from Notes or a messaging app, read
   as the HP's straight ones, and ×, ÷, − and · from a phone's symbol keys as
-  *, / and -. Its long-press keys read as the HP would write them too: `5²`
+  *, / and -. So do the dashes, dots and slashes of pasted text (— ‐ ∗ ∙ ⁄),
+  „Hi“ quotes, ′ for an apostrophe, º or ˚ for the degree sign, ∑ and ∆ for Σ
+  and Δ, the full-width forms of an East Asian keyboard and Arabic-Indic
+  digits, and a zero-width space ends a word as a space does, in the
+  equation writer too. Its
+  long-press keys read as the HP would write them too: `5²`
   gives 25 (`2¹⁰` 1024, SQ or n ^ applied to what came before) and `'X²+1'`
   is `X^2+1`, `½` is the exact fraction 1/2 and `1½` the mixed number 3/2,
   and `30°` or `20°C` is the angle or temperature unit, `30_°`. The equation
@@ -1041,7 +1046,8 @@ lead the VAR menu as keys marked with a dot and head the Variables drawer,
 and the banner has a Variables key (an icon on a phone) that opens the
 menu: tap one to put its value on the stack, ↰ to store level 1 into it,
 ↱ to recall it without running it. Typing a local's name, or `STO` into
-it, works as before.
+it, works as before, and the completion list offers the locals first, so a
+phone keyboard needs only the first letters of `rate` to recall it.
 
 ![A halted program](screenshots/debugging.png)
 
