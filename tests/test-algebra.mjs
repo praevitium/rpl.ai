@@ -8541,6 +8541,28 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 }
 
 {
+  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
+  setApproxMode(false);
+  assert(line("(1,2) 'Z' STO 'Z*2' EVAL 'Z' PURGE") === '(2, 4)' && line("(1,2) 'Z' STO 'ABS(Z)' EVAL 'Z' PURGE") === '2.2360679775' && line("(1,2) 'Z' STO 2 'N' STO 'N*Z' EVAL { Z N } PURGE") === '(2, 4)',
+    'EVAL works an algebraic out with the commands when a variable holds a complex number, as the HP does: Z*2 with Z = (1,2) is (2, 4)');
+  assert(line("[[1 2][3 4]] 'A' STO 'A*A' EVAL 'A' PURGE") === '[[ 7 10 ][ 15 22 ]]' && line("[[1 2][3 4]] 'A' STO 'DET(A)' EVAL 'A' PURGE") === '-2'
+    && line("[[1 2][3 4]] 'A' STO 'A^2+A' EVAL 'A' PURGE") === '[[ 8 12 ][ 18 26 ]]' && line("[[1 2][3 4]] 'A' STO 'A/A' EVAL 'A' PURGE") === '[[ 1 0 ][ 0 1 ]]',
+    'a stored matrix is multiplied, raised to a power, divided and taken the determinant of inside an algebraic, where A*A had become A^2');
+  assert(line("[1 2 3] 'V' STO 2 'N' STO 'V*N' EVAL { V N } PURGE") === '[ 2 4 6 ]' && line("{1 2} 'L' STO {3} 'M' STO 'L+M' EVAL { L M } PURGE") === '{ 1 2 3 }'
+    && line("[1 2 3] 'V' STO [4 5 6] 'W' STO 'DOT(V,W)' EVAL { V W } PURGE") === '32',
+    'a stored vector or list takes part in the algebraic as it does in RPN');
+  assert(line("(1,2) 'Z' STO 'Z*X' EVAL 'Z' PURGE") === '`Z*X`' && line("(1,2) 'Z' STO 'Z*π' EVAL 'Z' PURGE") === '`Z*π`' && line("(1,2) 'Z' STO 'Z*π' →NUM 'Z' PURGE") === '(3.14159265359, 6.28318530718)',
+    'a name with no value leaves the expression as it was, and →NUM gives π its value');
+  setApproxMode(true);
+  assert(line("(1,2) 'Z' STO 'Z*i' EVAL 'Z' PURGE") === '(-2., 1.)', 'in APPROX mode i is the imaginary unit in such an expression');
+  setApproxMode(false);
+  varStore('A', Matrix([[Integer(1n), Integer(2n)], [Integer(3n), Integer(4n)]]));
+  varStore('V', Vector([Integer(1n), Integer(2n), Integer(3n)]));
+  assertThrows(() => runLine("'A*V' EVAL"), /Invalid dimension/, 'an operation the values do not allow reports its error, as it does in RPN');
+  varPurge('A'); varPurge('V');
+}
+
+{
   const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' | ');
   giac._clear();
   giac._setFixtures({

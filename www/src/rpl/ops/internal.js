@@ -2027,6 +2027,8 @@ export function _evalSymbolic(v, keeps = () => false, gather = true) {
   const evalNode = (ast) => algebraEvalAst(ast, resolve, _angleAwareFnEval, binGate);
   const element = _indexedValue(v.expr, evalNode);
   if (element !== undefined) return approx && isInteger(element) ? Real(element.value.toString()) : element;
+  const objects = _evalObjects(_expandUserCalls(v.expr), keeps);
+  if (objects) return objects;
   const evaluated = _foldUnits(evalNode(_expandUserCalls(v.expr)), evalNode);
   const trig = approx ? evaluated : _radicalRewrite(exactTrigRewrite(evaluated, _calcState.angle), gather);
   const folded = trig === evaluated ? evaluated : evalNode(trig);
@@ -2039,6 +2041,40 @@ export function _evalSymbolic(v, keeps = () => false, gather = true) {
   _checkInfinite(reduced);
   const value = (approx && _foldImaginary(reduced)) || _astToRplValue(reduced);
   return approx && isInteger(value) ? Real(value.value.toString()) : value;
+}
+
+
+// The algebra evaluator holds real numbers only, so an expression whose variables hold a complex number, a list, a vector or a
+// matrix is worked out with the commands themselves, as the HP runs an algebraic: 'A*B' with two stored matrices is their product.
+// Null when no variable holds one, or a name has no value to work with, and the expression goes on as it was.
+const _OBJECT_OPS = new Set(['+', '-', '*', '/', '^']);
+const _OBJECT_FUNCTIONS = new Set(['DET', 'INV', 'TRN', 'SQ', 'TRACE', 'CNRM', 'RNRM', 'DOT', 'CROSS', 'RANK']);
+const _LAZY_FUNCTIONS = new Set(['IFTE', 'INTEG', 'DERIV', 'Σ', 'SUM']);
+const _isObjectValue = (v) => isComplex(v) || isList(v) || isVector(v) || isMatrix(v);
+
+function _evalObjects(ast, keeps) {
+  const bound = new Map([...algebraFreeVars(ast)].map((name) => [name, keeps(name) ? undefined : _localLookup(name) ?? varRecall(name)]));
+  if (![...bound.values()].some(_isObjectValue)) return null;
+  const approx = getApproxMode();
+  const walk = (node) => {
+    if (node.kind === 'num') return _numToRpl(node);
+    if (node.kind === 'var') {
+      const value = bound.get(node.name) ?? (approx && !keeps(node.name) ? _symConstantRpl(node.name) : undefined);
+      return _isObjectValue(value) || isReal(value) || isInteger(value) || isRational(value) ? value : undefined;
+    }
+    const name = node.kind === 'fn' ? node.name.toUpperCase() : '';
+    const call = node.kind === 'neg' ? ['NEG', [node.arg]]
+      : node.kind === 'bin' && _OBJECT_OPS.has(node.op) ? [node.op, [node.l, node.r]]
+        : (_OBJECT_FUNCTIONS.has(name) || (isKnownFunction(name) && !_LAZY_FUNCTIONS.has(name))) && lookup(name) ? [name, node.args] : null;
+    if (!call) return undefined;
+    const args = call[1].map(walk);
+    if (args.includes(undefined)) return undefined;
+    const s = new Stack();
+    args.forEach((arg) => s.push(arg));
+    lookup(call[0]).fn(s);
+    return s.depth === 1 ? s.pop() : undefined;
+  };
+  return walk(ast) ?? null;
 }
 
 
