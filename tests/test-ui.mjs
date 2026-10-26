@@ -4286,7 +4286,7 @@ setAngle('RAD');
   const stateSrc = readFileSync(new URL('../www/src/rpl/state.js', import.meta.url), 'utf8');
   assert(/const step = this\.stack\.undoMark\(\);\n\s*this\.entry\.safeRun\(\(\) => \{ this\.stack\.push\(value\);[^\n]*\n\s*tagHalted\(mark, runAs, \{ line: runAs, step \}\);/.test(appSrc)
     && /const mark = haltMark\(\);\n\s*const step = this\.stack\.undoMark\(\);\n\s*this\.safeRun\(\(\) => \{\n\s*this\._commitEntry\(raw\);\n\s*this\._emit\(\);\n\s*\}, '', \{ keepPartial: true \}\);\n\s*tagHalted\(mark, '', \{ line: raw, step \}\);/.test(entrySrc)
-    && /tagHalted\(mark, '', \{ line: \[raw, \.\.\.names\]\.filter\(Boolean\)\.join\(' '\), step \}\);/.test(entrySrc),
+    && /const line = \[raw, \.\.\.names\]\.filter\(Boolean\)\.join\(' '\);\n\s*tagHalted\(mark, '', \{ line, step \}\);/.test(entrySrc),
     'run again: a program started from the command line, a key pressed with it or a variable key keeps its line and the undo step it began at on its record');
   assert(/tagHalted\(mark, record\.tag, record\);/.test(controlSrc)
     && /export function tagHalted\(mark, tag, origin = null\) \{\n\s*if \(!haltedSince\(mark\)\) return;\n\s*const record = state\.halted;\n\s*if \(tag\) record\.tag \?\?= tag;\n\s*if \(origin\) \{\n\s*record\.line \?\?= origin\.line;\n\s*record\.step \?\?= origin\.step;/.test(stateSrc),
@@ -4465,6 +4465,17 @@ setAngle('RAD');
     'app bar: search shows the magnifier alone, with no box, placeholder or ⌘K keycap');
   assert(!/\.search-btn span|\.search-btn \.kbd|\.search-btn:hover|flex: 0 10000 250px/.test(css),
     'app bar: no style is left over for a search box (its width, placeholder and keycap)');
+}
+
+// A decimal comma typed on a phone keyboard is read as two numbers, as on the HP, so a note says so and offers the switch.
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/if \(this\.entry\.decimalComma\) queueMicrotask\(\(\) => this\._noteDecimalComma\(\)\);/.test(appSrc)
+    && /_noteDecimalComma\(\) \{\n\s*const found = this\.entry\.decimalComma;\n\s*this\.entry\.decimalComma = null;\n\s*if \(!found \|\| this\.entry\.error \|\| this\._running\(\) \|\| testUserFlag\(-51\)\) return;/.test(appSrc),
+    'decimal comma note: a line with 3,14 in it is noted once it has run, unless it failed, a program is running or -51 is set');
+  assert(appSrc.includes("parts.length === 2 ? { action: 'Decimal comma', onAction: () => this._undoIfLatest(mark, rerun) } : null")
+    && /const rerun = \(\) => \{\n\s*const typed = this\.entry\.buffer;\n\s*setUserFlag\(-51\);\n\s*this\.runLine\(found\.line\);\n\s*if \(typed\.trim\(\)\) this\.entry\.recall\(typed\);/.test(appSrc),
+    'decimal comma note: its Decimal comma key undoes the line, sets -51 and runs the line again, keeping a line typed since, and only a lone comma offers it');
 }
 
 // The Catalog's "my menu" button puts a command in CST as a plain name, which the CST key shows as a key, and takes it out again.

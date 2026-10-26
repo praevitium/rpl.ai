@@ -355,6 +355,31 @@ export function parseTyped(src) {
   return parseEntry(fromTyped(src));
 }
 
+// A comma between digits at the top of a line separates objects as a space does, so 3,14 is 3 and 14 unless flag -51 makes the
+// comma a fraction mark. This is the first such number, for a phone keyboard that types the decimal comma of its language.
+export function bareDecimalComma(src) {
+  const text = plainPunctuation(src)
+    .replace(/"(?:\\.|[^"\\])*"?|@[^\n\r]*|'[^']*'?|`[^`]*`?/g, (m) => ' '.repeat(m.length))
+    .replace(/<</g, ' «').replace(/>>/g, ' »');
+  let depth = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if ('{[(«'.includes(c)) depth++;
+    else if ('}])»'.includes(c)) depth = Math.max(0, depth - 1);
+    else if (c === ',' && !depth && /\d/.test(text[i - 1] ?? '') && /\d/.test(text[i + 1] ?? '')) {
+      let from = i;
+      while (/[\d,]/.test(text[from - 1] ?? '')) from--;
+      while (text[from] === ',') from++;
+      let to = i + 1;
+      while (/[\d,]/.test(text[to] ?? '')) to++;
+      while (text[to - 1] === ',') to--;
+      if (!/[A-Za-z_.]/.test(text[from - 1] ?? '') && text[to] !== '.') return text.slice(from, to);
+      i = to - 1;
+    }
+  }
+  return null;
+}
+
 /** One value per top-level object, in entry order.  Unclosed brackets,
  *  strings and quotes close at the end of the input. */
 export function parseEntry(src) {

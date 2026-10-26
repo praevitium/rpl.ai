@@ -1,5 +1,5 @@
 import { hpTextToSource, parseHpText, formatHpText, HP_TEXT_HEADER } from '../www/src/rpl/hp-text.js';
-import { parseEntry, endsInQuote, plainPunctuation, plainCharacter } from '../www/src/rpl/parser.js';
+import { parseEntry, endsInQuote, plainPunctuation, plainCharacter, bareDecimalComma } from '../www/src/rpl/parser.js';
 import { formatSource, format } from '../www/src/rpl/formatter.js';
 import {
   Str, Rational, Integer, RList, Matrix, isDirectory, isProgram, isString, isSymbolic, isTagged, isRational, isInteger, isReal,
@@ -69,6 +69,14 @@ END`;
   assert(['5²', "'X²'", '½', '1½', '30°', '5_m²', '-½', '2¹⁰'].every((typed) => plainPunctuation(plainPunctuation(typed)) === plainPunctuation(typed))
     && endsInQuote("1 'X²") && !endsInQuote("1 'X²'") && !endsInQuote('1 5² 30°'),
     'parseEntry: the symbol keys read the same when the text is read twice, and a quote around ² opens and closes as any other');
+  const found = {
+    '3,14': '3,14', '3,14 2 *': '3,14', '5 3,14 *': '3,14', '-3,14': '3,14', '3,5_m': '3,5', '2,5E3': '2,5', '1,5 2,5 +': '1,5',
+    '{ 1 2 } 3,14': '3,14', '(1,2) 3,14': '3,14', "'X' 3,14": '3,14', '3,14 @ 1,5': '3,14', '1,234,567': '1,234,567', '12,345 SQ': '12,345',
+  };
+  assert(Object.entries(found).every(([src, number]) => bareDecimalComma(src) === number),
+    'bareDecimalComma: a comma between digits at the top of a line is found, as the number it sits in, for a phone keyboard that types the decimal comma');
+  assert(['{ 1,2,3 }', '[1,2,3]', '[[1,2][3,4]]', '(1,2)', "'MAX(1,2)'", '`MAX(1,2)`', '"3,14"', '@ 3,14', '« 1,2 + »', '<< 1,2 + >>', 'A1,2', '1, 2', '1 ,2', '3.14', '1.5,2', '1,5.2', '3,', ',3', '1,,2', ''].every((src) => bareDecimalComma(src) === null),
+    'bareDecimalComma: a comma inside a list, vector, complex number, algebraic, program, string or comment, beside a name, a space or a point, or a lone comma, is no decimal comma');
   assert(hpTextToSource(`"it's @ here"`) === `"it's @ here"`,
     'hpTextToSource: apostrophes and @ inside a string are kept');
 }

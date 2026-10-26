@@ -1,4 +1,4 @@
-import { parseTyped, endsInQuote } from '../rpl/parser.js';
+import { parseTyped, endsInQuote, bareDecimalComma } from '../rpl/parser.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
 import { latexToSource } from '../rpl/latex.js';
 import { spreadsheetToSource, htmlTableToSource } from '../rpl/sheet.js';
@@ -8,7 +8,7 @@ import { isStackOverflow } from '../rpl/types.js';
 import { errorBeep } from './beep.js';
 import {
   saveVarStateForUndo, undoVarState, redoVarState,
-  hasVarRedo, varStateMatchesUndoTop, dropVarUndoTop, touchLcd, runDeferred, haltMark, tagHalted,
+  hasVarRedo, varStateMatchesUndoTop, dropVarUndoTop, touchLcd, runDeferred, haltMark, tagHalted, testUserFlag,
 } from '../rpl/state.js';
 import {
   EditorState, EditorView, Transaction, keymap, drawSelection,
@@ -122,6 +122,7 @@ export class Entry {
     this.error = '';
     this.errorLine = '';
     this.errorSpot = -1;
+    this.decimalComma = null;
     this._listeners = new Set();
     this._historyListeners = new Set();
     this._history = [];
@@ -677,6 +678,8 @@ export class Entry {
       if (at >= 0) this.cursor = at;
       throw e;
     }
+    const comma = testUserFlag(-51) ? null : bareDecimalComma(raw);
+    this.decimalComma = comma && { text: comma, line: raw };
     let failed = -1;
     const onLine = (step) => () => {
       try {
@@ -732,7 +735,9 @@ export class Entry {
       if (raw) this._commitEntry(raw, keys);
       else runDeferred(keys);
     }, '', { keepPartial: true });
-    tagHalted(mark, '', { line: [raw, ...names].filter(Boolean).join(' '), step });
+    const line = [raw, ...names].filter(Boolean).join(' ');
+    tagHalted(mark, '', { line, step });
+    if (this.decimalComma) this.decimalComma.line = line;
     this._emit();
   }
 

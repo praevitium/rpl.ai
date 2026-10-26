@@ -433,6 +433,26 @@ class App {
     }
   }
 
+  // A phone keyboard in a comma locale types 3,14, which is 3 and 14 here as on the HP unless flag -51 makes the comma a fraction
+  // mark, so the note says how the line was read and offers the switch, which runs the line again.
+  _noteDecimalComma() {
+    const found = this.entry.decimalComma;
+    this.entry.decimalComma = null;
+    if (!found || this.entry.error || this._running() || testUserFlag(-51)) return;
+    const parts = found.text.split(',');
+    const mark = this.stack.undoMark();
+    const rerun = () => {
+      const typed = this.entry.buffer;
+      setUserFlag(-51);
+      this.runLine(found.line);
+      if (typed.trim()) this.entry.recall(typed);
+      this.toast(`Decimal comma is on: ${found.text} is one number now, and ; separates the parts of a complex number. Turn it off in Settings.`, { key: 'comma' });
+    };
+    const read = `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`;
+    this.undoToast(`${found.text} was read as ${read}: a comma separates objects.`,
+      parts.length === 2 ? { action: 'Decimal comma', onAction: () => this._undoIfLatest(mark, rerun) } : null);
+  }
+
   // What a reload brings back: the command line, the formula or matrix being written and the level or variable it edits, not a
   // dialog's answer. A writer is saved as the page is hidden, and forgotten when it closes.
   _draft() {
@@ -568,6 +588,7 @@ class App {
     if (this.entry.error !== this._errorShown) this._showError(this.entry.error);
     if (this.entry.notice && this.entry.notice !== this._noticeShown) this.toast(this.entry.notice);
     this._noticeShown = this.entry.notice;
+    if (this.entry.decimalComma) queueMicrotask(() => this._noteDecimalComma());
     this.display.renderCmdline(this.entry);
     if (this.entry.buffer && this.selection != null) this.clearSelection();
     this.input.render();

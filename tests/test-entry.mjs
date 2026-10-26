@@ -2169,9 +2169,17 @@ resetBinaryState();
   const e = new Entry(s);
   const run = (line) => { s.clear(); e.type(line); e.enter(); return s.save().map((v) => format(v)).join(' '); };
   assert(run('1,5 2,25') === '1 5 2 25', 'without -51 a comma separates as a space does: 1,5 2,25 is 1, 5, 2 and 25');
+  assert(e.decimalComma?.text === '1,5' && e.decimalComma.line === '1,5 2,25',
+    'a line with a comma between digits keeps the number and the line, for the note that offers Decimal comma');
+  s.clear(); e.type('1,5'); e.execOp('SQ');
+  assert(e.decimalComma?.line === '1,5 SQ', 'a key pressed with the line goes into the line the note runs again');
+  run('{ 1,5 } (1,5) [1,2] 3 4 +');
+  assert(e.decimalComma === null, 'a comma inside a list, a complex number or a vector separates there, so nothing is noted');
   run('-51 SF');
   const typed = run("1,5 (2,5;-1) 'X+0,5'");
+  const notedWithFlag = e.decimalComma;
   run('-51 CF');
+  assert(notedWithFlag === null, 'with -51 set the comma is a fraction mark, so nothing is noted');
   assert(typed === '1.5 (2.5, -1) `X + 0.5`', `with -51 set the command line reads 1,5 as 1.5 and (2,5;-1) as a complex number (${typed})`);
   run('-51 SF');
   const reals = run('{ 1, 2, }');
