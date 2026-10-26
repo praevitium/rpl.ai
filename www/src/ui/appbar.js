@@ -55,7 +55,7 @@ export class AppBar {
       <div class="modes" role="group" aria-label="Calculator modes">${chips}<button type="button" class="mode-chip summary" data-act="modes-all" title="Calculator modes" aria-haspopup="menu" aria-expanded="false"><span>${escapeHtml(modesSummary())}</span>${icon('chd')}</button></div>
       <div class="sp"></div>
       ${this.app.offersInstall() ? `<button type="button" class="install-btn" data-act="app.install" title="Install rpl.ai as an app: it opens in its own window and works offline" aria-label="Install rpl.ai as an app">${icon('down', 'sm')}<span>Install</span></button>` : ''}
-      <button type="button" class="search-btn" data-act="palette.open" title="Search commands, settings, variables and help${kbd('palette.open')}">${icon('search', 'sm')}<span>Search commands, settings…</span><span class="kbd">${escapeHtml(shortcutText('palette.open'))}</span></button>
+      <button type="button" class="icon-btn search-btn" data-act="palette.open" title="Search commands, settings, variables and help${kbd('palette.open')}" aria-label="Search">${icon('search')}</button>
       <button type="button" class="icon-btn wide-only" data-act="edit.undo" title="Undo${kbd('edit.undo')}" aria-label="Undo" ${this.app.canUndo() ? '' : 'disabled'}>${icon('undo')}</button>
       <button type="button" class="icon-btn wide-only" data-act="edit.redo" title="Redo${kbd('edit.redo')}" aria-label="Redo" ${this.app.canRedo() ? '' : 'disabled'}>${icon('redo')}</button>
       <button type="button" class="icon-btn wide-only" data-act="keypad.toggle" aria-pressed="${prefs.keypad !== 'hidden'}" title="Keypad${kbd('keypad.toggle')}" aria-label="Keypad">${icon('keypad')}</button>

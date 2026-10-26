@@ -254,12 +254,8 @@ button { cursor: pointer; }
 .icon-btn[aria-pressed="true"] { color: var(--accent); }
 .icon-btn:disabled { opacity: .35; cursor: default; background: transparent; }
 .icon-btn.sm { width: 28px; height: 28px; border-radius: 7px; }
-/* A shrink weight this large makes the search box give way before the directory name does. */
-.search-btn { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink3); font: 12.5px/1 var(--font-ui); min-width: 0; flex: 0 10000 250px; }
-.search-btn:hover { border-color: var(--line2); color: var(--ink2); }
 .install-btn { flex: none; display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px 0 10px; border-radius: 8px; border: 0; background: var(--accent); color: var(--accent-ink); font: 600 12.5px/1 var(--font-ui); }
 .install-btn:hover { filter: brightness(1.06); }
-.search-btn span:not(.kbd) { flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kbd { font: 500 10.5px/1 var(--font-mono); color: var(--ink3); border: 1px solid var(--line2); border-bottom-width: 2px; padding: 2px 5px; border-radius: 4px; white-space: nowrap; background: transparent; }
 .appbar .narrow-only { display: none; }
 
@@ -304,8 +300,6 @@ button { cursor: pointer; }
 }
 @container app (max-width: 979px) {
   .appbar .narrow-only { display: grid; }
-  .search-btn { flex: 0 0 auto; width: 34px; padding: 0; justify-content: center; border-color: transparent; background: transparent; }
-  .search-btn span, .search-btn .kbd { display: none; }
   .appbar .wide-only { display: none; }
 }
 @container app (max-width: 479px) {
@@ -2216,7 +2210,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   /* Narrower, the path would show only a clipped brace. */
   @container app (max-width: 389px) { .ann-status .ann-path { display: none; } }
   /* Keyboard shortcuts mean nothing on a touch screen. */
-  .pop .opt em, .pal .kbd, .pal-foot, .search-btn .kbd { display: none; }
+  .pop .opt em, .pal .kbd, .pal-foot { display: none; }
   .pop .opt, .pop .grid button, .pop .layers button, .ac-row { min-height: 40px; }
   /* With no hover title, a cut row would hide its command name, so rows wrap. */
   .pop .opt b { white-space: normal; overflow-wrap: anywhere; }
@@ -2303,12 +2297,12 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
     :root[data-theme="classic"] .menubar { margin-inline: -10px; }
     :root[data-theme="classic"][data-view="minimal"] .menubar { margin: 0 -14px -14px; }
   }
-  .crumbs button, .mode-chip, .appbar .icon-btn, .search-btn, .install-btn { min-height: 40px; }
+  .crumbs button, .mode-chip, .appbar .icon-btn, .install-btn { min-height: 40px; }
   /* Under 384 px the directory name needs the width. */
-  @container app (min-width: 384px) { .appbar .icon-btn, .search-btn, .install-btn { min-width: 40px; } }
+  @container app (min-width: 384px) { .appbar .icon-btn, .install-btn { min-width: 40px; } }
   /* Narrower, they stay 34 px wide but take a finger in the bar's padding and the gap after the modes. */
   @container app (max-width: 383px) {
-    .appbar > button:first-child, .appbar > button:last-child, .appbar .sp + button, .appbar .sp + .install-btn + .search-btn { position: relative; }
+    .appbar > button:first-child, .appbar > button:last-child, .appbar .sp + button { position: relative; }
     .appbar > button:first-child::before, .appbar .sp + button::before { content: ""; position: absolute; inset: 0 0 0 -6px; }
     .appbar > button:last-child::before { content: ""; position: absolute; inset: 0 -6px 0 0; }
   }

@@ -4452,6 +4452,21 @@ setAngle('RAD');
   assert(!menus.full.some((entry) => entry.startsWith('writer.')), 'full view More menu: no writer rows, its tabs open the writers');
 }
 
+// The app bar's search is the magnifier alone: a box with a placeholder and a ⌘K keycap said what the icon and its tooltip already do.
+{
+  const { AppBar } = await import('../www/src/ui/appbar.js');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const bar = { el: { innerHTML: '' }, app: { prefs: { keypad: 'full' }, offersInstall: () => false, canUndo: () => false, canRedo: () => false } };
+  AppBar.prototype.render.call(bar);
+  const search = bar.el.innerHTML.match(/<button type="button" class="([^"]*)" data-act="palette\.open"([^>]*)>([\s\S]*?)<\/button>/);
+  assert(search && search[1].split(' ').includes('icon-btn') && /aria-label="Search"/.test(search[2]) && /title="Search commands, settings, variables and help/.test(search[2]),
+    'app bar: search is an icon button like its neighbours, named Search for a screen reader, with the tooltip saying what it finds and its shortcut');
+  assert(search && /^<svg[\s\S]*<\/svg>$/.test(search[3].trim()) && !/<span/.test(search[3]) && !search[3].includes('Search commands, settings…'),
+    'app bar: search shows the magnifier alone, with no box, placeholder or ⌘K keycap');
+  assert(!/\.search-btn span|\.search-btn \.kbd|\.search-btn:hover|flex: 0 10000 250px/.test(css),
+    'app bar: no style is left over for a search box (its width, placeholder and keycap)');
+}
+
 // The Catalog's "my menu" button puts a command in CST as a plain name, which the CST key shows as a key, and takes it out again.
 {
   const pair = RList([Str('KEY'), Name('FACTOR')]);
