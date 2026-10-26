@@ -1943,7 +1943,7 @@ setAngle('RAD');
 
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/undoToast\(message, also = null\) \{[^}]*key: 'undo'/.test(appSrc),
+  assert(/undoToast\(message, also = null, opts = \{\}\) \{[^}]*key: 'undo'/.test(appSrc),
     'undo notes: each replaces the one before (an older one\'s Undo no longer applies), so swiping away three levels leaves one note over the stack, not three');
 }
 
@@ -4071,7 +4071,7 @@ setAngle('RAD');
     'a line is saved after a pause in typing, at once when it is emptied, and as the page is hidden or closed');
   assert(/_draft\(\) \{\n\s*if \(this\._dialogHalt\) return null;\n\s*const text = this\.entry\.buffer;/.test(appSrc),
     'a dialog\'s answer is not kept, nor a blank line with no writer and no edit');
-  assert(/resetEverything\(\) \{\n\s*this\.app\.entry\.resetBuffer\(''\);\n\s*const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY,/.test(sheetsSrc),
+  assert(/resetEverything\(\) \{\n\s*this\.app\.entry\.resetBuffer\(''\);\n\s*clearAllHalted\(\);\n\s*const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY,/.test(sheetsSrc),
     'Reset empties the line before it clears storage, or the page being closed would save the line again');
 }
 
@@ -4233,8 +4233,28 @@ setAngle('RAD');
     && /_installUndoKeep\(\) \{\n\s*const keep = \(\) => saveUndo\(this\.stack\);\n\s*document\.addEventListener\('visibilitychange', \(\) => \{ if \(document\.visibilityState === 'hidden'\) keep\(\); \}\);\n\s*addEventListener\('pagehide', keep\);\n\s*\}/.test(appSrc)
     && /if \(this\._offScreen\) return;\n\s*this\._noteAutosave\(saveToLocalStorage\(this\.stack\)\);\n\s*saveUndo\(this\.stack\);/.test(appSrc),
     'undo kept: the steps load right after the state, are written as the page is hidden and at OFF');
-  assert(/const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY, HISTORY_KEY, PLOT_KEY, UNDO_KEY, UI_PREFS_KEY,/.test(sheetsSrc),
+  assert(/const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY, HISTORY_KEY, PLOT_KEY, UNDO_KEY, RUN_KEY, UI_PREFS_KEY,/.test(sheetsSrc),
     'undo kept: Reset everything removes the file');
+}
+
+// A program that the page ended while it was halted, waiting or running is noted as the page is hidden, forgotten when the page comes
+// back or the program ends, and the next start says so once, with Undo when the program's work can be taken back.
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  assert(/this\._installUndoKeep\(\);\n\s*this\._installRunKeep\(\);/.test(appSrc)
+    && /this\._openShortcut\(\);\n\s*this\._noteInterruptedRun\(\);/.test(appSrc)
+    && /_installRunKeep\(\) \{\n\s*holdPageLock\(\);\n\s*let kept = false;\n\s*const keep = \(\) => \{\n\s*const record = calcState\.halted;\n\s*if \(!record\) return;\n\s*saveRun\(\{ kind: record\.kind, tag: \(calcState\.haltedStack\[0\] \?\? record\)\.tag \?\? null \}\);\n\s*kept = true;\n\s*\};\n\s*const back = \(\) => \{\n\s*if \(kept\) saveRun\(null\);\n\s*kept = false;\n\s*\};/.test(appSrc)
+    && /document\.addEventListener\('visibilitychange', \(\) => \{ if \(document\.visibilityState === 'hidden'\) keep\(\); else back\(\); \}\);\n\s*addEventListener\('pagehide', keep\);\n\s*addEventListener\('pageshow', back\);\n\s*subscribeState\(\(\) => \{ if \(document\.hidden\) \(calcState\.halted \? keep : back\)\(\); \}\);/.test(appSrc),
+    'run note: the program left suspended is written as the page is hidden, and forgotten when the page is back or the program ended');
+  assert(/async _noteInterruptedRun\(\) \{\n\s*const run = await takeRun\(\);\n\s*if \(!run\) return;\n\s*const text = interruptedRunNote\(run\);\n\s*const opts = \{ essential: true, transient: true, timeout: Infinity \};\n\s*if \(run\.kind !== 'slice' && this\.stack\.hasUndo\(\)\) this\.undoToast\(text, null, opts\);\n\s*else this\.toast\(text, \{ key: 'run', \.\.\.opts \}\);/.test(appSrc)
+    && /undoToast\(message, also = null, opts = \{\}\) \{\n\s*const mark = this\.stack\.undoMark\(\);\n\s*this\.toast\(message, \{ key: 'undo', action: 'Undo', also, \.\.\.opts, onAction:/.test(appSrc),
+    'run note: the next start says so once, in a note that stays until a tap, essential even with pop-up notes off, with Undo unless the program was still running');
+  assert(/function interruptedRunNote\(\{ kind, tag \}\) \{\n\s*const who = tag && tag !== 'EVAL' \? tag : 'A program';\n\s*if \(kind === 'slice'\) return `\$\{who\} was still running when the page closed, so it did not finish\.`;\n\s*return `\$\{who\} was \$\{RUN_WAS\[kind\] \?\? 'waiting'\} when the page closed and can't be continued\.`;/.test(appSrc)
+    && /const RUN_WAS = \{ slice: 'still running', halt: 'halted', step: 'halted', prompt: 'halted' \};/.test(appSrc),
+    'run note: it names the program (A program for a bare EVAL) and says halted, waiting or still running');
+  assert(/this\.app\.entry\.resetBuffer\(''\);\n\s*clearAllHalted\(\);\n\s*const KEYS = /.test(sheetsSrc),
+    'run note: Reset everything ends the halted programs first, so the reload that follows leaves no note');
 }
 
 // A folder tapped, its row in the Variables drawer or a path row there, takes in the typed line first. When that line fails, the folder

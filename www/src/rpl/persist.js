@@ -485,6 +485,41 @@ export function loadDraft() {
   } catch { return null; }
 }
 
+export const RUN_KEY = 'hp50.run';
+const RUN_KINDS = ['halt', 'step', 'prompt', 'slice', 'wait', 'msgbox', 'input', 'choose', 'inform'];
+const RUN_TAG_MAX = 200;
+const PAGE_LOCK = 'hp50.page.';
+const PAGE_ID = Math.random().toString(36).slice(2);
+
+// A page holds a lock under its id while it lives, so a later start can tell whether the page that left a note is gone.
+export function holdPageLock() {
+  try { navigator.locks?.request(PAGE_LOCK + PAGE_ID, () => new Promise(() => {})).catch(() => {}); } catch { /* no locks here */ }
+}
+
+async function pageIsOpen(page) {
+  try { return (await navigator.locks?.request(PAGE_LOCK + page, { ifAvailable: true }, (lock) => lock === null)) === true; } catch { return false; }
+}
+
+// The program a page left halted, waiting or running as it was hidden, which a reload ends where the HP keeps it through power-off.
+// Never throws: it is only a note.
+export function saveRun(run) {
+  try {
+    if (run) localStorage.setItem(RUN_KEY, JSON.stringify({ ...run, page: PAGE_ID }));
+    else localStorage.removeItem(RUN_KEY);
+  } catch { /* storage is full or blocked */ }
+}
+
+// The note the last page left, taken so that it shows once; none when there was none, when that page is still open, or when what
+// was saved is no note.
+export async function takeRun() {
+  try {
+    const run = JSON.parse(localStorage.getItem(RUN_KEY) ?? 'null');
+    if (typeof run?.page !== 'string' || !RUN_KINDS.includes(run.kind) || await pageIsOpen(run.page)) return null;
+    localStorage.removeItem(RUN_KEY);
+    return { kind: run.kind, tag: typeof run.tag === 'string' && run.tag.length <= RUN_TAG_MAX ? run.tag : null };
+  } catch { return null; }
+}
+
 export const HISTORY_KEY = 'hp50.history';
 const HISTORY_MAX_LINES = 100;
 const HISTORY_MAX_CHARS = 100000;

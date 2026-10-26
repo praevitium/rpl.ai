@@ -56,7 +56,7 @@ import {
 import { parseTyped } from './rpl/parser.js';
 import {
   loadInitialState, adoptStoredState, saveToLocalStorage, saveUndo, loadUndo, saveDraft, loadDraft, saveHistory, loadHistory, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
-  shareLink, sharedSource, sharedText,
+  shareLink, sharedSource, sharedText, holdPageLock, saveRun, takeRun,
 } from './rpl/persist.js';
 import { giac } from './rpl/cas/giac-engine.mjs';
 import { ChatBot, renderInlineMarkdown } from './ai/chat-bot.js';
@@ -74,6 +74,14 @@ const RUN_SLICE_HIDDEN_MS = 1500;
 const RUN_BANNER_MS = 300;
 // A running program pauses often, and drawing at every pause would cost it much of its time on a slow phone.
 const RUN_DRAW_MS = 500;
+const RUN_WAS = { slice: 'still running', halt: 'halted', step: 'halted', prompt: 'halted' };
+
+// What the next start says of a program that the page ended, which the HP would have kept through power-off.
+function interruptedRunNote({ kind, tag }) {
+  const who = tag && tag !== 'EVAL' ? tag : 'A program';
+  if (kind === 'slice') return `${who} was still running when the page closed, so it did not finish.`;
+  return `${who} was ${RUN_WAS[kind] ?? 'waiting'} when the page closed and can't be continued.`;
+}
 // The installed app's icon shortcuts (the manifest's ./?open=…); a link can name nothing else.
 const APP_SHORTCUTS = new Map([
   ['equation', (app) => app.setInputMode('equation')],
@@ -288,6 +296,7 @@ class App {
     this._installAutosave();
     this._keepStorage();
     this._installUndoKeep();
+    this._installRunKeep();
     this._installFileDrop();
     this._installBackButton();
     this._installHaptics();
@@ -296,6 +305,7 @@ class App {
     this._installDraft();
     this._openSharedLink();
     this._openShortcut();
+    this._noteInterruptedRun();
     this._watchAlarms();
     this.keepAwake();
     document.addEventListener('visibilitychange', () => { this._watchAlarms(); this.keepAwake(); setRunSlice(document.hidden ? RUN_SLICE_HIDDEN_MS : RUN_SLICE_MS); });
@@ -378,6 +388,36 @@ class App {
     const keep = () => saveUndo(this.stack);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') keep(); });
     addEventListener('pagehide', keep);
+  }
+
+  // A reload ends a program the HP would keep through power-off, so one left halted, waiting or running as the page is hidden is
+  // noted for the next start, and forgotten when the page comes back or the program ends.
+  _installRunKeep() {
+    holdPageLock();
+    let kept = false;
+    const keep = () => {
+      const record = calcState.halted;
+      if (!record) return;
+      saveRun({ kind: record.kind, tag: (calcState.haltedStack[0] ?? record).tag ?? null });
+      kept = true;
+    };
+    const back = () => {
+      if (kept) saveRun(null);
+      kept = false;
+    };
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') keep(); else back(); });
+    addEventListener('pagehide', keep);
+    addEventListener('pageshow', back);
+    subscribeState(() => { if (document.hidden) (calcState.halted ? keep : back)(); });
+  }
+
+  async _noteInterruptedRun() {
+    const run = await takeRun();
+    if (!run) return;
+    const text = interruptedRunNote(run);
+    const opts = { essential: true, transient: true, timeout: Infinity };
+    if (run.kind !== 'slice' && this.stack.hasUndo()) this.undoToast(text, null, opts);
+    else this.toast(text, { key: 'run', ...opts });
   }
 
   // What a reload brings back: the command line, the formula or matrix being written and the level or variable it edits, not a
@@ -885,9 +925,9 @@ class App {
 
   // A toast's Undo reverses its own step, never the text being typed, and
   // only while that step is still the latest one, so each replaces the last.
-  undoToast(message, also = null) {
+  undoToast(message, also = null, opts = {}) {
     const mark = this.stack.undoMark();
-    this.toast(message, { key: 'undo', action: 'Undo', also, onAction: () => {
+    this.toast(message, { key: 'undo', action: 'Undo', also, ...opts, onAction: () => {
       if (this.stack.undoMark() === mark) this._undoStackStep();
       else this.notifyError('Something has changed since, so that Undo no longer applies. Use Undo to step back.');
     } });

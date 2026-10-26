@@ -22,7 +22,7 @@ import {
 import {
   snapshot, rehydrate, encodeValue, decodeValue, loadInitialState, STORAGE_KEY,
   BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup, putBackBackup, exportBackup, subscribeBackups,
-  saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX, saveDraft, loadDraft, DRAFT_KEY, saveHistory, loadHistory, HISTORY_KEY, savePlot, loadPlot, PLOT_KEY, saveUndo, loadUndo, UNDO_KEY,
+  saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX, saveDraft, loadDraft, DRAFT_KEY, saveHistory, loadHistory, HISTORY_KEY, savePlot, loadPlot, PLOT_KEY, saveUndo, loadUndo, UNDO_KEY, saveRun, takeRun, holdPageLock, RUN_KEY,
 } from '../www/src/rpl/persist.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import { formatSource } from '../www/src/rpl/formatter.js';
@@ -1453,6 +1453,65 @@ function quotaError() {
   } finally {
     globalThis.localStorage = saved;
     resetHome(); clearVarUndo();
+  }
+}
+
+// A program the page left halted, waiting or running is noted as the page is hidden, and the next start says so once, unless the
+// page that left it is still open (it holds a lock under its id).
+{
+  const saved = globalThis.localStorage;
+  const navigatorWas = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
+  const held = [];
+  let open = false;
+  const locks = {
+    request: (name, a, b) => {
+      if (typeof a === 'function') { held.push(name); return new Promise(() => {}); }
+      return Promise.resolve(b(open ? null : { name }));
+    },
+  };
+  Object.defineProperty(globalThis, 'navigator', { value: { locks }, configurable: true });
+  try {
+    assert(await takeRun() === null, 'run note: none on a fresh store');
+    holdPageLock();
+    assert(held.length === 1 && /^hp50\.page\./.test(held[0]), 'run note: a page holds a lock under its own id while it lives');
+    saveRun({ kind: 'halt', tag: 'FOO' });
+    const page = JSON.parse(store.get(RUN_KEY)).page;
+    assert(held[0] === `hp50.page.${page}`, 'run note: the note names the page by the id its lock carries');
+    const back = await takeRun();
+    assert(back.kind === 'halt' && back.tag === 'FOO' && !store.has(RUN_KEY), 'run note: the next start gets the kind and the program, once');
+    assert(await takeRun() === null, 'run note: a taken note is gone');
+    saveRun({ kind: 'slice', tag: null });
+    assert((await takeRun()).tag === null, 'run note: a program without a name is kept as none');
+    saveRun({ kind: 'input', tag: 'X'.repeat(300) });
+    assert((await takeRun()).tag === null, 'run note: a name over 200 characters is dropped');
+    open = true;
+    saveRun({ kind: 'prompt', tag: 'BAR' });
+    assert(await takeRun() === null && store.has(RUN_KEY), 'run note: the page that left it still being open leaves it for later');
+    open = false;
+    assert((await takeRun()).tag === 'BAR' && !store.has(RUN_KEY), 'run note: once that page is gone the next start takes it');
+    saveRun({ kind: 'halt', tag: 'FOO' });
+    saveRun(null);
+    assert(!store.has(RUN_KEY), 'run note: saving none forgets it');
+    for (const bad of ['{', 'null', '[]', '{"kind":"halt"}', '{"kind":"nope","page":"x"}', '{"kind":"halt","page":5}']) {
+      store.set(RUN_KEY, bad);
+      assert(await takeRun() === null, `run note: ${bad} is no note`);
+    }
+    Object.defineProperty(globalThis, 'navigator', { value: {}, configurable: true });
+    saveRun({ kind: 'wait', tag: 'W' });
+    assert((await takeRun()).kind === 'wait', 'run note: a browser without locks takes the note');
+    Object.defineProperty(globalThis, 'navigator', { value: { locks: { request: () => { throw new Error('denied'); } } }, configurable: true });
+    saveRun({ kind: 'wait', tag: 'W' });
+    assert((await takeRun()).kind === 'wait', 'run note: locks that refuse count as a page that is gone');
+    globalThis.localStorage = { getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('full'); }, removeItem: () => { throw new Error('blocked'); } };
+    let threw = false;
+    try { saveRun({ kind: 'halt', tag: 'F' }); saveRun(null); await takeRun(); holdPageLock(); } catch { threw = true; }
+    assert(!threw && await takeRun() === null, 'run note: blocked or full storage is no error');
+  } finally {
+    globalThis.localStorage = saved;
+    if (navigatorWas) Object.defineProperty(globalThis, 'navigator', navigatorWas);
+    else delete globalThis.navigator;
   }
 }
 
