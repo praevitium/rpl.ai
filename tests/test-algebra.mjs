@@ -9368,9 +9368,12 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(top("'DET([[1,2],[3,4]]*[[0,1],[1,0]])' EVAL") === '2' && top("'TRN([[1,2],[3,4]]+[[1,1],[1,1]])' EVAL") === '[[ 2 4 ][ 3 5 ]]' && top("'DET(-[[1,2],[3,4]])' EVAL") === '-2'
     && top("'SIZE({1,2}+{3,4})' EVAL") === '4' && top("'DET([[1,2],[3,4]]^2)' EVAL") === '4',
     'array arguments: operators between literals are the commands\' own: a product, a sum, a sign, a power, a join of lists');
-  assert(top("'FOO([1,2])' EVAL") === '`FOO([1,2])`' && top("'DET([[1,2],[3,4]],2)' EVAL") === '`DET([[1,2],[3,4]],2)`' && top("'DET({1,[2,3]})' EVAL") === '`DET({1,[2,3]})`'
-    && top("'ABS([1,2]*[3,4,5])' EVAL") === '`ABS([1,2]*[3,4,5])`',
-    'array arguments: a function nothing defines, the wrong number of arguments and an array the command cannot take leave the formula as it was');
+  assert(top("'FOO([1,2])' EVAL") === '`FOO([1,2])`' && top("'FOO([1,2])*X' EVAL") === '`FOO([1,2])*X`' && top("'DOT(A,[1,2])' EVAL") === '`DOT(A,[1,2])`',
+    'array arguments: a function nothing defines, and a call with an unknown name among its arguments, leave the formula as it was');
+  assertThrows(() => top("'DET([[1,2],[3,4]],2)' EVAL"), /Bad argument type/, 'array arguments: with only values for arguments, the command\'s own error stands: the wrong number of them');
+  assertThrows(() => top("'DET({1,[2,3]})' EVAL"), /Bad argument type/, 'array arguments: an array the command cannot take');
+  assertThrows(() => top("'ABS([1,2]*[3,4,5])' EVAL"), /Invalid dimension/, 'array arguments: a product the sizes do not allow, as in RPN');
+  assertThrows(() => top("'IQUOT(5,0)' EVAL"), /Infinite result/, 'command calls: a call on plain numbers that fails says so');
   assert(top("'DET([[1,2],[3,4]])' →NUM") === '-2.' && top("'SIZE({1,2,3})' →NUM") === '3.', 'array arguments: →NUM works them out');
   assert(runLine("'DET([[1,2],[3,4]])' OBJ→").save().map((v) => format(v)).join(' ') === '[[ 1 2 ][ 3 4 ]] 1 `DET`', 'array arguments: OBJ→ takes the call apart, the matrix as an object');
   varStore('F', parseEntry("'DET([[1,2],[3,4]])'")[0]);
@@ -9388,8 +9391,9 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(top("'[[1,2],[3,4]]*[[5],[6]]' EVAL") === '[[ 17 ][ 39 ]]' && top("'[[1,2],[3,4]]^-1' EVAL") === '[[ -2 1 ][ 3/2 -1/2 ]]' && top("'[[1,2],[3,4]]^2' EVAL") === '[[ 7 10 ][ 15 22 ]]'
     && top("'[1,2]*[3,4]' EVAL") === '11' && top("'[[1,2],[3,4]]/[[1,0],[0,2]]' EVAL") === '[[ 1 2 ][ 3/2 2 ]]',
     'array operands: matrices multiply, invert, square and divide, and two vectors give their dot product');
-  assert(top("'[1,2]*X' EVAL") === '[ `X` `2*X` ]' && top("'[1,2]+[3,4,5]' EVAL") === '`[1,2] + [3,4,5]`' && top("'[1,2,3]^2' EVAL") === '`[1,2,3]^2`',
-    'array operands: an unknown name goes into the entries, and sizes or powers the commands refuse leave the formula as it was');
+  assert(top("'[1,2]*X' EVAL") === '[ `X` `2*X` ]', 'array operands: an unknown name goes into the entries');
+  assertThrows(() => top("'[1,2]+[3,4,5]' EVAL"), /Invalid dimension/, 'array operands: sizes that do not add say so, as in RPN');
+  assertThrows(() => top("'[1,2,3]^2' EVAL"), /Bad argument type/, 'array operands: so does a power the command refuses');
   varStore('A', parseEntry('[[1 2][3 4]]')[0]);
   assert(top("'A*[[5],[6]]' EVAL") === '[[ 17 ][ 39 ]]' && top("'A^-1*[[1],[2]]' EVAL") === '[[ 0 ][ 1/2 ]]' && top("'A*[1,2]' EVAL") === '[ 5 11 ]' && top("'A+[[1,1],[1,1]]' EVAL") === '[[ 2 3 ][ 4 5 ]]',
     'array operands: a stored matrix takes part with them, as it does with another stored one');

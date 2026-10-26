@@ -2084,8 +2084,9 @@ function _evalObjects(ast, keeps) {
 // A command called with parentheses in a formula, 'FACTOR(X^2+5*X+6)', runs on its arguments when the formula is evaluated, as
 // the HP's algebraic parser has it; a command that leaves several results gives them as a list, as the AUR's examples show.
 // The commands that only turn their arguments into a result are callable; stack, memory and display commands are not. A call the
-// command cannot work out, 'COMB(N,2)' with N unknown, leaves the formula as it was. Any function given a matrix, vector or list
-// to work on, 'ABS([3,4])', is a call too, since the algebra evaluator cannot take that.
+// command cannot work out, 'COMB(N,2)' with N unknown, leaves the formula as it was; with only values for arguments, as in
+// '[1,2]*[3,4,5]', the command's own error stands. Any function given a matrix, vector or list to work on, 'ABS([3,4])', is a call
+// too, since the algebra evaluator cannot take that.
 const _CALLABLE_CATEGORIES = new Set(['CAS / symbolic', 'Polynomials', 'Vectors / matrices', 'Integer / number theory']);
 const _isArrayLiteral = (node) => node.kind === 'var' && isArrayLiteral(node.name);
 const _isCommandCall = (node) => {
@@ -2105,7 +2106,13 @@ function _evalCommandCalls(ast) {
     if (!lookup(name) || args.includes(undefined)) return undefined;
     const s = new Stack();
     args.forEach((arg) => s.push(arg));
-    lookup(name).fn(s);
+    try {
+      lookup(name).fn(s);
+    } catch (e) {
+      // With every argument a value, the command's own error is the answer, as in RPN: [1,2]*[3,4,5] says Invalid dimension.
+      if (e instanceof RPLError && !args.some((arg) => isName(arg) || isSymbolic(arg))) e.concrete = true;
+      throw e;
+    }
     return s.depth === 1 ? s.pop() : RList(s.snapshot().reverse());
   };
   const walk = (node) => {
@@ -2117,7 +2124,7 @@ function _evalCommandCalls(ast) {
   try {
     return walk(ast) ?? null;
   } catch (e) {
-    if (e instanceof RPLError) return null;
+    if (e instanceof RPLError && !e.concrete) return null;
     throw e;
   }
 }
