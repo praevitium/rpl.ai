@@ -2083,6 +2083,39 @@ resetBinaryState();
   assert(e.buffer === '' && e.stack.depth === 2 && e.stack.peek(1).value.eq(8), 'backspace on an empty line leaves the stack alone');
 }
 
+/* The arrow keys and backspace step over a whole emoji, flag or accented letter, never half of one: a phone keyboard types them into strings. */
+{
+  const { Entry } = await import('../www/src/ui/entry.js');
+  const e = new Entry(new Stack());
+  const lone = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+  e.buffer = '"a😀b"';
+  e.cursor = e.buffer.length;
+  e.cursorLeft();
+  e.cursorLeft();
+  assert(e.cursor === 4, 'the left arrow steps onto the emoji\'s far side');
+  e.cursorLeft();
+  assert(e.cursor === 2, 'the left arrow crosses an emoji in one step');
+  e.cursorRight();
+  assert(e.cursor === 4, 'the right arrow crosses an emoji in one step');
+  e.backspace();
+  assert(e.buffer === '"ab"' && e.cursor === 2 && !lone.test(e.buffer), 'backspace deletes a whole emoji');
+  e.buffer = '"👨‍👩‍👧🇺🇸👍🏽e\u0301"';
+  e.cursor = e.buffer.length - 1;
+  e.backspace();
+  assert(e.buffer === '"👨‍👩‍👧🇺🇸👍🏽"', 'backspace deletes a letter with its accent');
+  e.backspace();
+  e.backspace();
+  assert(e.buffer === '"👨‍👩‍👧🇺🇸"' || e.buffer === '"👨‍👩‍👧"', 'backspace deletes a skin-toned emoji whole');
+  e.buffer = '"😀"';
+  e.cursor = 2;
+  assert(e.cursor === 1, 'a cursor set between the halves of an emoji moves before it');
+  e.buffer = '12';
+  e.cursor = 1;
+  e.cursorLeft();
+  e.cursorLeft();
+  assert(e.cursor === 0, 'the arrow keys still step one plain character');
+}
+
 /* The HP 50g quotes with apostrophes; the ` key stands in for its ' key, and the command line reads either. */
 {
   const { Entry } = await import('../www/src/ui/entry.js');

@@ -1,4 +1,4 @@
-import { isVector, RList, Real, isMatrix, isString, Integer, isList, isProgram, Matrix, Vector, isInteger, isReal, isComplex, Complex, isRational, isSymbolic, isUnit, isGrob, Symbolic } from '../types.js';
+import { isVector, RList, Real, isMatrix, isString, Integer, isList, isProgram, Matrix, Vector, isInteger, isReal, isComplex, Complex, isRational, isSymbolic, isUnit, isGrob, Symbolic, charsOf } from '../types.js';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { astSize, Bin as AstBin, Neg as AstNeg, Num as AstNum, Var as AstVar } from '../algebra.js';
 import { unitSize } from '../units.js';
@@ -56,7 +56,7 @@ register('SIZE', (s) => {
     s.push(RList([Real(rows), Real(cols)]));
     return;
   }
-  if (isString(v)) { s.push(Integer(BigInt(v.value.length))); return; }
+  if (isString(v)) { s.push(Integer(BigInt(charsOf(v.value).length))); return; }
   if (isList(v))   { s.push(Integer(BigInt(v.items.length))); return; }
   if (isProgram(v)) { s.push(Integer(BigInt(v.tokens.length))); return; }
   if (isInteger(v)) { s.push(Integer(BigInt((v.value < 0n ? -v.value : v.value).toString().length))); return; }

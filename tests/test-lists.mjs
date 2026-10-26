@@ -2058,3 +2058,18 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(loop.depth === 3 && loop.peek().value === 7n, 'a DO GETI UNTIL -64 FS? loop stops after the last element');
   varPurge('L');
 }
+
+/* A string's characters are its code points, as NUM and CHR take them, so an emoji from a phone keyboard is one character, never a cut pair. */
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top('"😀a" SIZE') === '2' && top('"a😀b😀" SIZE') === '4' && top('"日本語" SIZE') === '3', 'SIZE counts an emoji as one character');
+  assert(top('"😀a" 1 1 SUB') === '"😀"' && top('"a😀b" 2 2 SUB') === '"😀"' && top('"a😀b" 3 3 SUB') === '"b"' && top('"😀a" 2 9 SUB') === '"a"',
+    'SUB takes whole characters and clamps past the end');
+  assert(top('"😀a" HEAD') === '"😀"' && top('"😀a" TAIL') === '"a"' && top('"a😀" TAIL') === '"😀"', 'HEAD and TAIL keep an emoji whole');
+  assert(top('"a😀b" "b" POS') === '3' && top('"😀😀x" "x" POS') === '3' && top('"a😀b" "z" POS') === '0', 'POS counts characters, and 0 when absent');
+  assert(top('"a😀b" 2 "z" REPL') === '"azb"' && top('"a😀b" 3 "😀" REPL') === '"a😀😀"' && top('"😀😀" 1 "x" REPL') === '"x😀"',
+    'REPL replaces whole characters');
+  assertThrows(() => runLine('"a😀" 2 "xy" REPL'), /Bad argument value/, 'REPL refuses a patch that runs past the end, counting characters');
+  assert(top('128512 CHR SIZE') === '1' && top('"😀" NUM') === '128512', 'CHR and NUM agree with SIZE on one emoji');
+  assert(top('"😀😀" "😀" "x" SREPL DROP') === '"xx"', 'SREPL is unaffected');
+}

@@ -114,6 +114,9 @@ export function Str(s) {
   return Object.freeze({ type: TYPES.STRING, value: String(s) });
 }
 
+// A string's characters are its code points, as NUM and CHR take them, so an emoji counts as one and is never cut in half.
+export const charsOf = (s) => Array.from(s);
+
 // A quoted name was written in ticks; EVAL and the entry loop push it back
 // instead of looking it up.
 export function Name(id, { local = false, quoted = false } = {}) {

@@ -1,4 +1,4 @@
-import { isGrob, isList, isVector, Integer, Real, isSymbolic, Symbolic, isName, isReal, isInteger, isComplex, isNumber, toComplex, toRealOrThrow, isString, isBinaryInteger, isTagged, isMatrix, Str, RList, Vector, Matrix, isProgram, isRational, isUnit, Unit } from '../types.js';
+import { isGrob, isList, isVector, Integer, Real, isSymbolic, Symbolic, isName, isReal, isInteger, isComplex, isNumber, toComplex, toRealOrThrow, isString, isBinaryInteger, isTagged, isMatrix, Str, charsOf, RList, Vector, Matrix, isProgram, isRational, isUnit, Unit } from '../types.js';
 import { RPLError } from '../stack.js';
 import { Fn as AstFn, astEqual } from '../algebra.js';
 import { parseEntry as _parseEntryForObjTo, fromTyped } from '../parser.js';
@@ -151,8 +151,9 @@ register('HEAD', (s) => {
     return;
   }
   if (isString(v)) {
-    if (v.value.length === 0) throw new RPLError('Bad argument value');
-    s.push(Str(v.value[0]));
+    const chars = charsOf(v.value);
+    if (chars.length === 0) throw new RPLError('Bad argument value');
+    s.push(Str(chars[0]));
     return;
   }
   throw new RPLError('Bad argument type');
@@ -167,8 +168,9 @@ register('TAIL', (s) => {
     return;
   }
   if (isString(v)) {
-    if (v.value.length === 0) throw new RPLError('Bad argument value');
-    s.push(Str(v.value.slice(1)));
+    const chars = charsOf(v.value);
+    if (chars.length === 0) throw new RPLError('Bad argument value');
+    s.push(Str(chars.slice(1).join('')));
     return;
   }
   throw new RPLError('Bad argument type');
@@ -212,7 +214,7 @@ register('SUB', (s) => {
   // HP50 clamps instead of erroring: a start below 1 reads as 1, an end past the length as the length.
   const m = Math.max(1, _toCountN(mVal));
   const n = _toCountN(nVal);
-  s.push(isList(v) ? RList(v.items.slice(m - 1, n)) : Str(v.value.slice(m - 1, n)));
+  s.push(isList(v) ? RList(v.items.slice(m - 1, n)) : Str(charsOf(v.value).slice(m - 1, n).join('')));
 }, { category: 'Lists / strings', categoryOrder: 6, label: "SUB" });
 
 register('→LIST',  _toListOp, { category: 'Lists / strings', categoryOrder: 9, label: "→LIST" });
@@ -228,7 +230,8 @@ register('POS', (s) => {
   }
   if (isString(coll)) {
     if (!isString(needle)) throw new RPLError('Bad argument type');
-    s.push(Integer(BigInt(coll.value.indexOf(needle.value) + 1)));
+    const at = coll.value.indexOf(needle.value);
+    s.push(Integer(BigInt(at < 0 ? 0 : charsOf(coll.value.slice(0, at)).length + 1)));
     return;
   }
   throw new RPLError('Bad argument type');
@@ -445,13 +448,13 @@ register('REPL', (s) => {
 
   if (isString(host)) {
     if (!isString(patch)) throw new RPLError('Bad argument type');
-    const hostText = host.value;
-    const patchText = patch.value;
-    if (n + patchText.length - 1 > hostText.length) {
+    const hostChars = charsOf(host.value);
+    const patchLength = charsOf(patch.value).length;
+    if (n + patchLength - 1 > hostChars.length) {
       throw new RPLError('Bad argument value');
     }
-    const out = hostText.slice(0, n - 1) + patchText
-              + hostText.slice(n - 1 + patchText.length);
+    const out = hostChars.slice(0, n - 1).join('') + patch.value
+              + hostChars.slice(n - 1 + patchLength).join('');
     s.push(Str(out));
     return;
   }

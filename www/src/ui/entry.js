@@ -20,6 +20,21 @@ import {
 const UNDO_WORD = /^(UNDO|LASTSTACK|REDO)$/i;
 const onTouch = () => globalThis.matchMedia?.('(pointer: coarse)').matches === true;
 
+const SEGMENTER = globalThis.Intl?.Segmenter ? new Intl.Segmenter(undefined, { granularity: 'grapheme' }) : null;
+const isHighSurrogate = (c) => c >= '\uD800' && c <= '\uDBFF';
+const isLowSurrogate = (c) => c >= '\uDC00' && c <= '\uDFFF';
+
+// An emoji, a flag or an accented letter is one step for the arrow keys and backspace, as in a text field.
+function charStart(text, at) {
+  if (SEGMENTER) return SEGMENTER.segment(text).containing(at - 1).index;
+  return isLowSurrogate(text[at - 1]) && isHighSurrogate(text[at - 2]) ? at - 2 : at - 1;
+}
+
+function charEnd(text, at) {
+  if (SEGMENTER) { const unit = SEGMENTER.segment(text).containing(at); return unit.index + unit.segment.length; }
+  return isHighSurrogate(text[at]) && isLowSurrogate(text[at + 1]) ? at + 2 : at + 1;
+}
+
 const pastedSource = (text) => latexToSource(text) ?? spreadsheetToSource(text) ?? hpTextToSource(text);
 
 // As on the HP, a line that doesn't parse keeps the cursor at the word that broke it: ^10 in 2^10, #ff for its #ffd.
@@ -184,7 +199,8 @@ export class Entry {
   set cursor(n) {
     const len = this._state.doc.length;
     const clamped = Math.max(0, Math.min(Number(n) || 0, len));
-    this._dispatch({ selection: { anchor: clamped } });
+    const pair = clamped > 0 && clamped < len ? this._state.doc.sliceString(clamped - 1, clamped + 1) : '';
+    this._dispatch({ selection: { anchor: isHighSurrogate(pair[0]) && isLowSurrogate(pair[1]) ? clamped - 1 : clamped } });
   }
 
   attach(parent, { onCommit, onCancel, onArrowUpEmpty, onArrowDownEmpty,
@@ -471,11 +487,12 @@ export class Entry {
   }
 
   cursorLeft() {
-    if (this.cursor > 0) { this.cursor--; this._emit(); }
+    if (this.cursor > 0) { this.cursor = charStart(this.buffer, this.cursor); this._emit(); }
   }
 
   cursorRight() {
-    if (this.cursor < this.buffer.length) { this.cursor++; this._emit(); }
+    const text = this.buffer;
+    if (this.cursor < text.length) { this.cursor = charEnd(text, this.cursor); this._emit(); }
   }
 
   cursorHome() {
@@ -524,7 +541,8 @@ export class Entry {
       this._emit();
     } else if (this.cursor > 0) {
       const at = this.cursor;
-      this._dispatch({ changes: { from: at - 1, to: at }, selection: { anchor: at - 1 } });
+      const start = charStart(this.buffer, at);
+      this._dispatch({ changes: { from: start, to: at }, selection: { anchor: start } });
       this._emit();
     }
   }
