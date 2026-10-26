@@ -50,6 +50,20 @@ END`;
     'parseEntry: a degree sign right after a number is the angle unit, so 30° SIN is 0.5 and 20°C a temperature, and it is text in a string');
   assert(value('3 4 !=') === '1.' && value('3 4 ∕') === '3/4' && value("'2·X'") === '`2*X`' && value('3 4 ·') === '12' && value("'X–1'") === '`X - 1`',
     'parseEntry: != reads as ≠, and ·, ∕ and – from a phone\'s symbol keys as *, / and -');
+  assert(['\u2014', '\u2010', '\u2011', '\u2012', '\ufe63'].every((dash) => value(`5 3 ${dash}`) === '2')
+    && ['\u2217', '\u2219', '\u2715', '\u2716'].every((dot) => value(`4 3 ${dot}`) === '12') && value('12 4 \u2044') === '3'
+    && same("'X\u2014\u2012Y'", "'X--Y'") && parseEntry('"a\u2014b\u200b"')[0].value === 'a\u2014b\u200b',
+    'parseEntry: the dashes, dots and slashes that pasted text brings (em dash, hyphens, ∗, ∙, ✕, ⁄) read as - * and /, and stay text in a string');
+  assert(value('12\u200b3 +') === '15' && value('12\u200b 3 +') === '15' && value('\u200c1\u200d 2\u2060 +') === '3',
+    'parseEntry: an invisible character, a zero-width space or joiner, ends a word as a space does, not a syntax error near nothing');
+  assert(value('30\u00ba SIN') === '0.5' && value('30\u02da') === '30._°' && value('1.5\u00ba') === '1.5_°' && parseEntry('"30\u00ba"')[0].value === '30\u00ba',
+    'parseEntry: º, which a Spanish or Portuguese keyboard has where ° is, and ˚ are the degree sign');
+  assert(value('\u201eHi\u201c SIZE') === '2' && value('\u201eHi\u201d SIZE') === '2' && value('\u201cHi\u201d SIZE') === '2'
+    && same('\u2032X^2\u2032', "'X^2'") && same('\u00b4X\u00b4', "'X'") && value('{ 1 2 3 } \u2211LIST') === '6' && value('{ 1 4 9 } \u2206LIST') === '{ 3 5 }',
+    'parseEntry: „Hi“ and „Hi” are strings as “Hi” is, primes and an acute accent are apostrophes, and ∑ and ∆ are Σ and Δ');
+  assert(value('\uff11\uff12 \uff12 \uff0b') === '14' && same('\uff07\uff38\uff0b\uff11\uff07', "'X+1'") && value('\u0661\u0662 \u0663 +') === '15'
+    && value('\u06f1\u06f2 \u06f3 +') === '15' && value('\u09e7 \u09e8 +') === '3' && value('"\u0661"') === '"\u0661"',
+    'parseEntry: full-width forms of ASCII from an East Asian keyboard and Arabic-Indic, Persian and Bengali digits read as the plain ones, and stay text in a string');
   assert(['5²', "'X²'", '½', '1½', '30°', '5_m²', '-½', '2¹⁰'].every((typed) => plainPunctuation(plainPunctuation(typed)) === plainPunctuation(typed))
     && endsInQuote("1 'X²") && !endsInQuote("1 'X²'") && !endsInQuote('1 5² 30°'),
     'parseEntry: the symbol keys read the same when the text is read twice, and a quote around ² opens and closes as any other');

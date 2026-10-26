@@ -239,8 +239,26 @@ function hpSpelling(text) {
 }
 
 // A phone keyboard's smart punctuation, and notes and messaging apps, curl quotes, and a phone's symbol keys offer ×, ÷, − and ·.
-// The HP has none of them, so they read as ' " * / and -, one character for one; inside a string they are text.
-const PLAIN = Object.freeze({ '‘': "'", '’': "'", '×': '*', '÷': '/', '−': '-', '–': '-', '·': '*', '⋅': '*', '∕': '/' });
+// The HP has none of them, so they read as ' " * / and -, one character for one; inside a string they are text. So do the dashes,
+// dots, slashes and primes that pasted text brings, º and ˚ for the degree sign, ∑ and ∆ for the HP's Σ and Δ, an invisible
+// character where it would end a word, East Asian keyboards' full-width forms and the Arabic-Indic and Bengali digits.
+const PLAIN = Object.freeze({
+  '‘': "'", '’': "'", '′': "'", '´': "'", 'ʼ': "'",
+  '×': '*', '·': '*', '⋅': '*', '∗': '*', '∙': '*', '✕': '*', '✖': '*',
+  '÷': '/', '∕': '/', '⁄': '/',
+  '−': '-', '–': '-', '—': '-', '‐': '-', '‑': '-', '‒': '-', '﹣': '-',
+  '∑': 'Σ', '∆': 'Δ', 'º': '°', '˚': '°',
+  '\u200B': ' ', '\u200C': ' ', '\u200D': ' ', '\u2060': ' ', '\u00AD': ' ',
+});
+const DIGIT_ZEROS = [0x660, 0x6F0, 0x966, 0x9E6];
+
+function plainOf(c) {
+  if (PLAIN[c]) return PLAIN[c];
+  const code = c.charCodeAt(0);
+  if (code >= 0xFF01 && code <= 0xFF5E) return String.fromCharCode(code - 0xFEE0);
+  const zero = DIGIT_ZEROS.find((z) => code >= z && code <= z + 9);
+  return zero ? String(code - zero) : c;
+}
 
 // A long press on a phone's digit keys offers ½, ² and ³, and its symbol page ° and ·, which the HP has no keys for.
 export const SUPERSCRIPT_DIGITS = '⁰¹²³⁴⁵⁶⁷⁸⁹';
@@ -276,19 +294,19 @@ export function plainPunctuation(src) {
     const c = src[i];
     if (closer) {
       if (c === '\\' && i + 1 < src.length) { out += c + src[++i]; continue; }
-      if (c === closer || c === '"') { out += '"'; closer = null; continue; }
+      if (closer.includes(c) || c === '"') { out += '"'; closer = null; continue; }
       out += c;
-    } else if (c === '"' || c === '“' || c === '”') {
+    } else if (c === '"' || c === '“' || c === '”' || c === '„') {
       out += '"';
-      closer = c === '"' ? '"' : '”';
+      closer = c === '"' ? '"' : c === '„' ? '“”' : '”';
     } else {
-      const plain = PLAIN[c] ?? c;
+      const plain = plainOf(c);
       if (quote ? plain === quote : plain === "'" || plain === '`') quote = quote ? null : plain;
       else if (c === '\n') quote = null;
       const run = c === '⁻' || SUPERSCRIPT_DIGITS.includes(c) ? src.slice(i).match(SUPERSCRIPT_RUN)?.[0] : null;
       if (run) { out += superscript(run, out, quote !== null); i += run.length - 1; }
       else if (FRACTIONS[c]) out = withFraction(out, c, quote !== null);
-      else if (c === '°' && !quote && NUMBER_TEXT.test(trailingToken(out))) out += '_°';
+      else if (plain === '°' && !quote && NUMBER_TEXT.test(trailingToken(out))) out += '_°';
       else out += plain;
     }
   }
