@@ -444,6 +444,20 @@ export function groupedNumber(src) {
   return false;
 }
 
+// A number written straight against a name or constant, 2π, 3x or 2πr, is a product as other calculators take it, where RPL reads two
+// objects. True when one stands at the top of the line; a number inside a name or a # base number, #1Ah, does not count.
+const GLUED_PRODUCT = /[{[(«]|[}\])»]|(?<![A-Za-z_#\d.])(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?(?![eE][-+]?\d)(?=[A-Za-zπ√])/g;
+
+export function gluedProduct(src) {
+  let depth = 0;
+  for (const [word] of maskedLine(src).matchAll(GLUED_PRODUCT)) {
+    if ('{[(«'.includes(word)) depth++;
+    else if ('}])»'.includes(word)) depth = Math.max(0, depth - 1);
+    else if (!depth) return true;
+  }
+  return false;
+}
+
 // Products written as another calculator takes them, 2(3+4), (1+2)(3+4) or 2sin(30), get their *; a number's exponent, 1E3, stays one.
 export function withTimes(src) {
   return src

@@ -1,5 +1,5 @@
 import { hpTextToSource, parseHpText, formatHpText, HP_TEXT_HEADER } from '../www/src/rpl/hp-text.js';
-import { parseEntry, endsInQuote, plainPunctuation, plainCharacter, bareDecimalComma, numberFieldText, gluedSigns, calledFunction, groupedNumber } from '../www/src/rpl/parser.js';
+import { parseEntry, endsInQuote, plainPunctuation, plainCharacter, bareDecimalComma, numberFieldText, gluedSigns, calledFunction, groupedNumber, gluedProduct } from '../www/src/rpl/parser.js';
 import { formatSource, format } from '../www/src/rpl/formatter.js';
 import {
   Str, Rational, Integer, RList, Matrix, isDirectory, isProgram, isString, isSymbolic, isTagged, isRational, isInteger, isReal,
@@ -88,6 +88,9 @@ END`;
   assert(['(1)+4', '3*(-2)', '4-(-10)', '(2)(3)', '-(100)', '(1) + 4', '2 * (3)', '(2)x', '(1/2)^2', '(-3)^2', '(.5)*(1E3)', '(∞)-1', '(2)π', '√(16)', '√ (16', '3*(5'].every((src) => groupedNumber(src) === true)
     && ['(5)', '(1,2)', '(1,2)+4', '(1 2)', '(5∠30)', '(1) 4', '(1) (2)', '3 (4)', '(1+2)*3', '(x)+1', '2+(', '(5', '{ (1)+2 }', '[ (1)+2 ]', "'(1)+2'", '"(1)+2"', '@ (1)+2', '« (1)+2 »', '1_m/(s*s)', '5 3 +', ''].every((src) => groupedNumber(src) === false),
     'groupedNumber: a number in parentheses with an operator beside it, or a ( or name straight after it, is found at the top of a line; a complex number, a lone (5), spaced words, a list, quote, string, comment or program is not');
+  assert(['2π', '3x', '2πr', '2e', '2.5x', '.5x', '1E3x', '3E-2x', '2√9', '2ans', '5a+2b', 'x+3x', '2 + 3x', '2π r', '2e^2'].every((src) => gluedProduct(src) === true)
+    && ['2 π', '3 x', 'x2', 'x2y', '#1Ah', '#FFh', '1E3', '1E-3', '2E3', '1E3 2 +', '5_m', '3°', '5!', '{ 2x }', '[ 2x ]', "'2x'", '"2x"', '@ 2x', '« 2x »', '(2x)', '2(3)', '2*x', '3.', ''].every((src) => gluedProduct(src) === false),
+    'gluedProduct: a number straight against a name or constant at the top of a line is found; spaced words, a number inside a name, a # base number, an exponent, a unit, a list, quote, string, comment or program are not');
   assert(numberFieldText('3,14') === '3.14' && numberFieldText('-2,5') === '-2.5' && numberFieldText(',5') === '.5' && numberFieldText('2,5E3') === '2.5E3'
     && numberFieldText('−2,5') === '-2.5' && numberFieldText('３,１') === '3.1' && numberFieldText(' 1.5 ') === '1.5',
     'numberFieldText: a number with a lone comma is a decimal in a field of its own, and the characters of other keyboards read as on the command line');
