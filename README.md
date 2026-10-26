@@ -114,9 +114,14 @@ the formulas on the plot with their window, the table's start and step, and
 the last steps UNDO takes back with what LASTARG brings back (only to the
 state they were kept with), and the assistant's conversation (its replies
 and your questions, without the cards of what it ran; ✱ New starts afresh).
-A program's `INPUT` answer is not kept. To move
-them to another browser or keep a copy, use Back up everything in the
-Variables drawer's ⋯ menu, and Restore from a backup file on the other side.
+A program's `INPUT` answer is not kept. A program that was halted, waiting
+at a dialog or running when the page went cannot be brought back, because
+its place in the program is not kept; the next start says so in a note
+naming it, with Undo, and Run again, which takes the run back and enters its
+line again. A program that was running gets Run again alone, when nothing
+was saved since it began. To move all of this to another browser or keep a
+copy, use Back up everything in the Variables drawer's ⋯ menu, and Restore
+from a backup file on the other side.
 
 ### Five minutes with RPL
 
@@ -1281,6 +1286,11 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
 
 **Behaviour that differs from the HP 50g.**
 
+- A program that is halted, waiting at a dialog or running when the page
+  closes is lost with the page, where the HP keeps it through power-off:
+  its place in the program is not kept. The next start says so in a note
+  with Undo and Run again, which takes the run back and enters its line
+  again.
 - A program that calls itself by name goes thousands of levels deep, about
   4000 with a local variable, and then stops with a banner saying it called
   itself too many times; the HP goes on until it runs out of memory. A
@@ -1351,11 +1361,12 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
   the ON key, Esc and a phone's back button end it where it is, as the
   HP's ON does: the stack stays as the program left it and Undo takes the
   run back. Pause halts it instead, as a HALT would. Nothing else takes a
-  press until it ends or is paused, and a reload ends it. What the page
-  cannot pause still stops after 10 seconds, with the stack put back and
-  the error saying why: a command typed on its own, a program a plot or
-  the assistant runs, `STR→`, and a program that `MAP`, `SEQ`, `DOLIST` or
-  an algebraic calls. A loop there stops after 1,000,000 passes.
+  press until it ends or is paused, and a reload ends it (the next start
+  says so, with Run again). What the page cannot pause still stops after
+  10 seconds, with the stack put back and the error saying why: a command
+  typed on its own, a program a plot or the assistant runs, `STR→`, and a
+  program that `MAP`, `SEQ`, `DOLIST` or an algebraic calls. A loop there
+  stops after 1,000,000 passes.
 - A result too big for the page says `Insufficient memory` at once, where
   the HP would run out of memory, rather than run until the 10-second
   limit: an integer of over a million digits (a power, a factorial or a

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.96 (2026-10-25)
+**Latest release:** v0.8.97 (2026-10-25)
 
 ---
 
@@ -18,6 +18,28 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.97 — 2026-10-25
+
+- Fixed: a program that was halted, waiting at a dialog (a PROMPT, an INPUT,
+  a CHOOSE) or running when the page closed was gone at the next start with
+  nothing said, and the stack was left as it had been in the middle of the
+  run. The page now notes the program as it is hidden, and the next start
+  says which program it was and what it was doing ("AREA was halted when the
+  page closed and can't be continued", or "still running ... so it did not
+  finish"), once, in a note that stays until a tap and shows even with
+  pop-up notes off. A second window that is still open does not get it. Undo
+  is on the note when the program's work can be taken back, and Reset
+  everything ends a halted program first, so its reload leaves no note.
+- Added: Run again on that note. The line that began a program, with the undo
+  step it began at, is now kept on the program's record through CONT, and Run
+  again takes the run back with Undo and enters the line again, so a program
+  lost to the phone starts over in one tap; a line half typed meanwhile stays
+  on the command line. A program that was still running gets Run again alone,
+  when nothing was saved since it began. A run resumed after a halt, or one
+  followed by something else that Undo can take back, gets the note only.
 
 ---
 
