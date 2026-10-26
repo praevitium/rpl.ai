@@ -270,7 +270,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   a negative whole power is the power of its inverse, as a TI's `[A]^-1`
   is: `[[ 1 2 ][ 3 4 ]] -1 ^` is `[[ -2 1 ][ 3/2 -1/2 ]]`, `'A^-2' EVAL`
   squares the inverse of a stored `A`, and a singular matrix says Infinite
-  result. ROW+, COL+, ROW-, COL-, RSWP and CSWP take a vector as
+  result. EGV and EGVL give an eigenvalue the CAS cannot write as a closed
+  form, a cubic's roots or a complex pair, as a number, and work out a
+  matrix of decimals or complex numbers, or any matrix in APPROX mode, without
+  it. ROW+, COL+, ROW-, COL-, RSWP and CSWP take a vector as
   well as a matrix, RDM drops or zero-fills entries to the new size, TRN, RDM
   and CON take a variable name and store the result in it, RND and TRNC round
   a vector or matrix entry by entry, and SUB and REPL take a matrix's places
@@ -1467,7 +1470,10 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
 - `EVAL` of a matrix or vector with symbolic entries evaluates each entry;
   the AUR's EVAL table leaves an array as it is.
 - A square matrix to a negative whole power is the power of its inverse, as
-  on a TI; the AUR's `^` takes whole-number powers only.
+  on a TI; the AUR's `^` takes whole-number powers only. The eigenvalues
+  and eigenvectors of a matrix of decimals or complex numbers come from
+  rpl.ai's own solver, not the HP's: values by decreasing size, each vector
+  of length 1 with its largest entry real and positive.
 - REALASSUME starts empty rather than holding X, Y, t, S1 and S2, and
   `ASSUME` keeps a strict `Z>0` as written where the HP makes it `Z≥0`.
 - `STURM` lists the content as `[c] -1.` and then each multiplicity's

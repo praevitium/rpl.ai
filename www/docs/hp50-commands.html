@@ -5050,6 +5050,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dd class="cmd-field cmd-field-description">
     <p>Eigenvalues and Eigenvectors Command: Computes the eigenvalues and right eigenvectors for a square matrix. The resulting vector EVal contains the computed eigenvalues. The columns of matrix EVec contain the right eigenvectors corresponding to the elements of vector EVal. The computed results should minimize (within computational precision): A ⋅ EVec – EVec ⋅ diag ( EVal ) ------------------------------------------------------------------------------ n⋅ A</p>
     <p>where diag (EVal) denotes the n × n diagonal matrix containing the eigenvalues EVal.</p>
+    <p>In rpl.ai the CAS solves an exact matrix and gives radicals where it can. A matrix of decimals or complex numbers, any matrix in APPROX mode, and an exact matrix whose roots the CAS cannot write give the eigenvalues as numbers from rpl.ai&#x27;s own solver, by decreasing size, with each eigenvector of length 1 and its largest entry real and positive.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -5070,6 +5071,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Eigenvalues Command: Computes the eigenvalues of a square matrix. The resulting vector L contains the computed eigenvalues.</p>
+    <p>In rpl.ai the CAS solves an exact matrix and gives radicals where it can. A matrix of decimals or complex numbers, any matrix in APPROX mode, and an exact matrix whose roots the CAS cannot write give the eigenvalues as numbers from rpl.ai&#x27;s own solver, by decreasing size.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
