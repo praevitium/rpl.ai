@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.104 (2026-10-26)
+**Latest release:** v0.8.105 (2026-10-26)
 
 ---
 
@@ -18,6 +18,27 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.105 — 2026-10-26
+
+- Fixed: with the decimal comma set (flag -51), Algebraic entry did not
+  read `3,5` as a number where it looks for the shapes it works out. `2+3,5`
+  left 2 and 3.5, `3,5+2,5` left 3.5 and 2.5, and `(3,5)+1` left (3.5, 0)
+  and 1; they now give 5.5, 6. and 4.5. With Algebraic entry off, the note
+  for such a sum named only `2+3` and offered a fix that dropped the `,5`; it
+  now names `2+3,5` and its Evaluate as a formula key works it out.
+- Added: with Algebraic entry on, a number written against a name or a
+  constant is a product, as on a TI: `2π`, `3x`, `2πr`, `2e` and `2ans` give
+  6.28318530718, `3*x`, `2*π*r`, 5.43656365692 and twice the last result.
+  Spaced words, `2 π`, a `#1Ah` number, an exponent such as `1E3` and a
+  unit, `5_m`, are read as before.
+- Added: with Algebraic entry on, a line that opens with `*`, `/` or `^` (or
+  `×` or `÷`) against its operand goes on from the last result, as a TI's Ans
+  does: after 7, `*2` gives 14 and `^2` then gives 196. The line was a syntax
+  error before. `+3` and `-3` are still the numbers 3 and -3, and a spaced
+  `/ 4` is still the RPN divide.
 
 ---
 

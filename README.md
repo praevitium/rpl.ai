@@ -1320,12 +1320,17 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
   formula `pi` is π, a phone keyboard having no π key, unless a variable
   called pi is stored, and `ans` is the result on level 1, as a TI has it,
   and `ANS(2)` the one on level 2, as the HP's algebraic mode has it, so
-  `ans*2` doubles the last result; `ans` alone copies it. It reads only a
-  line that would otherwise fail or be read word by word, which takes in a
-  number in brackets, `(5)+1`, a complex number in RPL, and operands and
-  operators that take turns, `3 + 4`, where RPN puts an operator after its
-  operands; a line in RPN, `2 3 +`, `1/2` or `5!`, runs as on the HP, and
-  the keypad's keys stay RPN. It is not the
+  `ans*2` doubles the last result; `ans` alone copies it, and a line that
+  opens with `*`, `/` or `^` (or `×` or `÷`) against its operand, `*2`, goes
+  on from the last result as a TI's Ans does (`+` and `-` start a number of
+  their own, so they can't). A number written against a name, `2π`, `3x` or
+  `2πr`, is a product, and with the decimal comma set a number such as `3,5`
+  is read as the parser reads it. It reads only a line that would otherwise
+  fail or be read word by word, which takes in a number in brackets,
+  `(5)+1`, a complex number in RPL, and operands and operators that take
+  turns, `3 + 4`, where RPN puts an operator after its operands; a line in
+  RPN, `2 3 +`, `2 π`, `1/2` or `5!`, runs as on the HP, and the keypad's
+  keys stay RPN. It is not the
   HP's ALG mode (flag -95), which the app has not: a line is worked out
   when Enter is pressed, and a key pressed with the line works on its
   value.
