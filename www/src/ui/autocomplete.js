@@ -1,4 +1,4 @@
-import { allOps, lookup } from '../rpl/ops.js';
+import { allOps, lookup, haltedLocals } from '../rpl/ops.js';
 import { endsInQuote } from '../rpl/parser.js';
 import { varOrder, varRecall, state } from '../rpl/state.js';
 import { shortDescription } from './command-reference.js';
@@ -202,7 +202,7 @@ export class Autocomplete {
       return;
     }
     const rows = at.unit ? unitCompletions(at.word, { plain: isInsideAlgebraic(text, at.from) })
-      : completions(at.word, { names: allOps().map((n) => lookup(n).name), variables: varOrder(), locals: localNames(text.slice(0, at.from)), structures: !isInsideAlgebraic(text, at.from) });
+      : completions(at.word, { names: allOps().map((n) => lookup(n).name), variables: varOrder(), locals: [...localNames(text.slice(0, at.from)), ...haltedLocals().map(([id]) => id)], structures: !isInsideAlgebraic(text, at.from) });
     if (!rows.length || (rows.length === 1 && rows[0].name === at.word && !at.glue)) { this.close(); return; }
     if (this.word?.word !== at.word) this.index = 0;
     this.word = at;
