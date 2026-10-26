@@ -1,5 +1,5 @@
 import { hpTextToSource, parseHpText, formatHpText, HP_TEXT_HEADER } from '../www/src/rpl/hp-text.js';
-import { parseEntry, endsInQuote, plainPunctuation, plainCharacter, bareDecimalComma } from '../www/src/rpl/parser.js';
+import { parseEntry, endsInQuote, plainPunctuation, plainCharacter, bareDecimalComma, numberFieldText } from '../www/src/rpl/parser.js';
 import { formatSource, format } from '../www/src/rpl/formatter.js';
 import {
   Str, Rational, Integer, RList, Matrix, isDirectory, isProgram, isString, isSymbolic, isTagged, isRational, isInteger, isReal,
@@ -77,6 +77,11 @@ END`;
     'bareDecimalComma: a comma between digits at the top of a line is found, as the number it sits in, for a phone keyboard that types the decimal comma');
   assert(['{ 1,2,3 }', '[1,2,3]', '[[1,2][3,4]]', '(1,2)', "'MAX(1,2)'", '`MAX(1,2)`', '"3,14"', '@ 3,14', '« 1,2 + »', '<< 1,2 + >>', 'A1,2', '1, 2', '1 ,2', '3.14', '1.5,2', '1,5.2', '3,', ',3', '1,,2', ''].every((src) => bareDecimalComma(src) === null),
     'bareDecimalComma: a comma inside a list, vector, complex number, algebraic, program, string or comment, beside a name, a space or a point, or a lone comma, is no decimal comma');
+  assert(numberFieldText('3,14') === '3.14' && numberFieldText('-2,5') === '-2.5' && numberFieldText(',5') === '.5' && numberFieldText('2,5E3') === '2.5E3'
+    && numberFieldText('−2,5') === '-2.5' && numberFieldText('３,１') === '3.1' && numberFieldText(' 1.5 ') === '1.5',
+    'numberFieldText: a number with a lone comma is a decimal in a field of its own, and the characters of other keyboards read as on the command line');
+  assert(['1,234,567', '1,5,2', '(1,2)', '1, 2', '3,', '3,14 2', 'abc', ''].every((src) => numberFieldText(src) === src),
+    'numberFieldText: text that is not one number with a lone comma is left for the field to refuse');
   assert(hpTextToSource(`"it's @ here"`) === `"it's @ here"`,
     'hpTextToSource: apostrophes and @ inside a string are kept');
 }

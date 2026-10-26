@@ -16,7 +16,7 @@ import { solverNames, solveEquation, solveInSet, mesItems } from '../rpl/ops/roo
 import { astToSvg } from '../rpl/pretty.js';
 import { withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
 import { format, withFractionMark, formatSymbolic, formatProgramLines } from '../rpl/formatter.js';
-import { fromTyped, parseTyped } from '../rpl/parser.js';
+import { numberFieldText, parseEntry, parseTyped } from '../rpl/parser.js';
 import { Real, Complex, RList, Str, isReal, isInteger } from '../rpl/types.js';
 import { formatDelimited, spreadsheetHtml } from '../rpl/sheet.js';
 import { VERSION, BUILD, SHA } from '../build-info.js';
@@ -79,7 +79,7 @@ export function solverNumber(text) {
   const typed = String(text).trim();
   if (typed === '') return null;
   try {
-    const values = parseTyped(typed);
+    const values = parseEntry(numberFieldText(typed));
     return values.length === 1 && (isReal(values[0]) || isInteger(values[0])) ? values[0] : false;
   } catch { return false; }
 }
@@ -827,7 +827,7 @@ export class Sheets {
     if (solver) { this._solverChange(solver); return; }
     const input = this.kind === 'table' && e.target.closest?.('input[data-tb]');
     if (!input) return;
-    const value = Number(fromTyped(String(input.value).trim()));
+    const value = Number(numberFieldText(input.value));
     const ok = Number.isFinite(value) && (input.dataset.tb !== 'step' || value !== 0);
     input.classList.toggle('bad', !ok);
     if (!ok) return;

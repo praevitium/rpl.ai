@@ -12,7 +12,7 @@ import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians,
 import { plotSettings, pictWindow, pictGrid, pictPoint, pictLine, viewVolume } from '../rpl/ops/graphics.js';
 import { downloadFile, savePlot, loadPlot } from '../rpl/persist.js';
 import { withFractionMark, format } from '../rpl/formatter.js';
-import { fromTyped } from '../rpl/parser.js';
+import { fromTyped, numberFieldText } from '../rpl/parser.js';
 import { lookup } from '../rpl/ops/registry.js';
 import { Stack } from '../rpl/stack.js';
 
@@ -1209,7 +1209,7 @@ export class GraphView {
 
   _applyRange(input) {
     const text = String(input.value).trim();
-    const value = text ? Number(fromTyped(text)) : NaN;
+    const value = text ? Number(numberFieldText(text)) : NaN;
     const next = { ...this.view, [input.dataset.rng]: value };
     const valid = Number.isFinite(value) && hasUsableSpan(next.xmin, next.xmax) && hasUsableSpan(next.ymin, next.ymax);
     input.classList.toggle('bad', !valid);

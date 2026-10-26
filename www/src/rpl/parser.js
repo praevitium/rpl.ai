@@ -355,6 +355,14 @@ export function parseTyped(src) {
   return parseEntry(fromTyped(src));
 }
 
+// What a field that holds one number reads, in the period form the parser reads. A number with a lone comma, 3,14, is a decimal
+// there whichever way flag -51 is set, since nothing else it could be, and the characters of other keyboards read as they do on
+// the command line.
+export function numberFieldText(text) {
+  const typed = plainPunctuation(String(text).trim());
+  return testUserFlag(-51) ? periodFractionMark(typed) : typed.replace(/^([-+]?\d*),(\d+(?:[eE][-+]?\d+)?)$/, '$1.$2');
+}
+
 // A comma between digits at the top of a line separates objects as a space does, so 3,14 is 3 and 14 unless flag -51 makes the
 // comma a fraction mark. This is the first such number, for a phone keyboard that types the decimal comma of its language.
 export function bareDecimalComma(src) {

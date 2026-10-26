@@ -3942,6 +3942,9 @@ setAngle('RAD');
     'a solver box reads as null when blank and as the number typed otherwise');
   assert(solverNumber('abc') === false && solverNumber('1 2') === false && solverNumber('(1,2)') === false && solverNumber('« 1 »') === false && solverNumber('"7"') === false,
     'a name, two numbers, a complex number, a program or a string in a box is not a number');
+  assert(isReal(solverNumber('3,14')) && Number(solverNumber('3,14').value) === 3.14 && Number(solverNumber('-2,5').value) === -2.5
+    && solverNumber('1,5,2') === false && solverNumber('1,234,567') === false && solverNumber('1, 2') === false,
+    'a solver box reads a lone decimal comma, 3,14, as the decimal it is, and a comma that could be a separator is still no number');
   assert(/another number in the V box/.test(solverFailure('V', new Error('ROOT: Bad Guess(es)'))) && /does not change with V/.test(solverFailure('V', new Error('ROOT: Constant?'))) && solverFailure('V', new Error('ROOT: Interrupted')) === 'Interrupted',
     'ROOT\'s bad guess and constant answers are said for a phone, anything else as it is without ROOT:');
 
@@ -4476,6 +4479,14 @@ setAngle('RAD');
   assert(appSrc.includes("parts.length === 2 ? { action: 'Decimal comma', onAction: () => this._undoIfLatest(mark, rerun) } : null")
     && /const rerun = \(\) => \{\n\s*const typed = this\.entry\.buffer;\n\s*setUserFlag\(-51\);\n\s*this\.runLine\(found\.line\);\n\s*if \(typed\.trim\(\)\) this\.entry\.recall\(typed\);/.test(appSrc),
     'decimal comma note: its Decimal comma key undoes the line, sets -51 and runs the line again, keeping a line typed since, and only a lone comma offers it');
+}
+
+// A field that holds one number reads 3,14 as the decimal it is, whichever way -51 is set.
+{
+  const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
+  const graphSrc = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
+  assert(sheetsSrc.includes('const value = Number(numberFieldText(input.value));') && graphSrc.includes('const value = text ? Number(numberFieldText(text)) : NaN;'),
+    "number fields: the plot window's range and the table's start and step read 3,14 as a decimal, whichever way -51 is set");
 }
 
 // The Catalog's "my menu" button puts a command in CST as a plain name, which the CST key shows as a key, and takes it out again.
