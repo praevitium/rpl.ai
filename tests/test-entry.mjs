@@ -2286,6 +2286,13 @@ resetBinaryState();
   assert(keep('ans*2') === '`x + 1` `(x + 1)*2`', 'ans can be a formula');
   s.clear(); keep('7');
   assert(keep('2ans') === '7 14', 'a number against ans is a product too');
+  s.clear(); keep('7');
+  assert(keep('*2') === '7 14' && keep('^2') === '7 14 196' && keep('÷4') === '7 14 196 49' && keep('×3+1') === '7 14 196 49 148',
+    'a line that opens with * / or ^ against its operand goes on from the last result, as a TI\'s Ans does');
+  s.clear(); keep('7');
+  assert(keep('-3') === '7 -3' && keep('+3') === '7 -3 3' && keep('/ 4') === '7 -1 4', 'the signs + and - start a number of their own, and a spaced operator is RPN');
+  s.clear(); e.resetBuffer(''); e.type('*2'); e.enter();
+  assert(s.depth === 0 && e.error.includes('ans needs a result') && e.buffer === '*2', 'a continuation with nothing on the stack says so and keeps the line');
   s.clear(); keep('10');
   assert(keep('3 + 4') === '10 7' && keep('ans * 2') === '10 7 14', 'a spaced formula is worked out whatever the stack holds, where RPN would add the 3 to level 1, and ans may be spaced too');
   s.clear(); e.resetBuffer(''); e.type('ans*2'); e.enter();
@@ -2313,6 +2320,8 @@ resetBinaryState();
   s.clear(); keep('7');
   keep('ans*2');
   assert(s.depth === 1 && e.error !== '', 'with algebraic entry off, ans*2 is a syntax error as before');
+  keep('*2');
+  assert(s.depth === 1 && e.error !== '', 'and so is *2');
 }
 
 /* C$, the HP's counted string: C$ n and one separator take the next n characters, C$ $ the rest of the line. */

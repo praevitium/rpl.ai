@@ -737,11 +737,14 @@ export class Entry {
 
   // With algebraic entry on, a line that is one formula and no RPL of its own is worked out as one: it is no RPL at all, or it
   // reads as a run of signed numbers, a function called with brackets, a number in brackets, operands and operators in turn or a
-  // number against a name, as 2+3, sin(30), 3*(-2), 3 + 4 and 2π do.
+  // number against a name, as 2+3, sin(30), 3*(-2), 3 + 4 and 2π do. A line that opens with * / or ^ against its operand, *2,
+  // goes on from the last result, as a TI's Ans does; the signs + and - start a number of their own, so they cannot.
   _formulaOf(raw) {
     if (!this.formulaEntry) return '';
     const plain = plainPunctuation(raw);
     if (/^\s*ans\s*$/i.test(plain)) return 'ans';
+    const continued = /^\s*[*/^]\S/.test(plain) ? formulaOf(`ans${plain.trim()}`) : '';
+    if (continued) return continued;
     const formula = formulaOf(plain) || formulaOf(withTimes(plain));
     if (!formula) return '';
     let values;
