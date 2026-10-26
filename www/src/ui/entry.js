@@ -1,11 +1,11 @@
-import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction, plainPunctuation, withTimes } from '../rpl/parser.js';
+import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction, plainPunctuation, withTimes, withAnswers } from '../rpl/parser.js';
 import { formulaOf } from './errors.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
 import { latexToSource } from '../rpl/latex.js';
 import { spreadsheetToSource, htmlTableToSource } from '../rpl/sheet.js';
 import { lookup, isProgramLine, runProgramLine, keepsFailureStack, pausableRun } from '../rpl/ops.js';
 import { RPLAbort, RPLError, withTimeLimit, RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
-import { isStackOverflow, isSymbolic } from '../rpl/types.js';
+import { isStackOverflow, isSymbolic, isReal, isInteger, isRational, isUnit, isName } from '../rpl/types.js';
 import { freeVars } from '../rpl/algebra.js';
 import { errorBeep } from './beep.js';
 import {
@@ -681,7 +681,7 @@ export class Entry {
     const formula = this._formulaOf(raw);
     let values;
     try {
-      values = parseTyped(formula ? `'${formula}' EVAL` : raw);
+      values = parseTyped(formula ? this._formulaLine(formula) : raw);
     } catch (e) {
       const at = errorSpot(this.buffer, errorText(e));
       if (at >= 0) this.cursor = at;
@@ -726,10 +726,26 @@ export class Entry {
   _formulaOf(raw) {
     if (!this.formulaEntry) return '';
     const plain = plainPunctuation(raw);
+    if (/^\s*ans\s*$/i.test(plain)) return 'ans';
     const formula = formulaOf(plain) || formulaOf(withTimes(plain));
     if (!formula) return '';
     try { parseTyped(raw); } catch { return formula; }
     return gluedSigns(plain) === formula || calledFunction(plain) ? formula : '';
+  }
+
+  // The answers a formula names are copied from the stack into locals, deepest first, each pick one level deeper for the copies made.
+  _formulaLine(formula) {
+    const { text, levels } = withAnswers(formula);
+    if (!levels.length) return `'${text}' EVAL`;
+    const [deepest] = levels;
+    if (this.stack.depth < deepest) {
+      const needs = deepest === 1 ? 'ans needs a result' : `ANS(${deepest}) needs ${deepest} results`;
+      throw new RPLError(`${needs}; the stack ${this.stack.depth ? `holds ${this.stack.depth}` : 'is empty'}.`);
+    }
+    const odd = text !== 'ANS1' && levels.find((level) => ![isReal, isInteger, isRational, isUnit, isSymbolic, isName].some((is) => is(this.stack.peek(level))));
+    if (odd) throw new RPLError(`${odd === 1 ? 'ans' : `ANS(${odd})`} stands for a number, a unit or a formula; level ${odd} holds something else.`);
+    const picks = levels.map((level, k) => `${level + k} ANS`).join(' ');
+    return `${picks} → ${levels.map((level) => `ANS${level}`).join(' ')} « '${text}' EVAL »`;
   }
 
   // A formula that can't be exact, sin(30) in radians, comes out as the number a calculator gives.

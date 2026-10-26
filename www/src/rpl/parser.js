@@ -430,6 +430,17 @@ export function withTimes(src) {
     .replace(/([)π])\s*(?=[(A-Za-zπ√])/g, '$1*');
 }
 
+// ans is the previous result and ANS(n) the nth, as a TI and the HP's algebraic mode have them; each becomes a name ANSn.
+export function withAnswers(formula) {
+  const found = new Set();
+  const text = formula.replace(/\bANS\s*\(\s*([1-9]\d*)\s*\)|\bANS\b(?!\s*\()/gi, (_, n) => {
+    const level = n ? Number(n) : 1;
+    found.add(level);
+    return `ANS${level}`;
+  });
+  return { text, levels: [...found].sort((a, b) => b - a) };
+}
+
 /** One value per top-level object, in entry order.  Unclosed brackets,
  *  strings and quotes close at the end of the input. */
 export function parseEntry(src) {

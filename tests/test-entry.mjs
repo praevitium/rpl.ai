@@ -6,7 +6,7 @@ import {
   isReal, isInteger, isBinaryInteger, isComplex, isDirectory, isProgram, isName,
   isString, isList, isVector, isUnit, isMatrix, isSymbolic,
 } from '../www/src/rpl/types.js';
-import { parseEntry, plainPunctuation } from '../www/src/rpl/parser.js';
+import { parseEntry, plainPunctuation, withAnswers } from '../www/src/rpl/parser.js';
 import { format, formatStackTop } from '../www/src/rpl/formatter.js';
 import {
   state as calcState, setAngle, cycleAngle, toRadians, fromRadians,
@@ -2241,7 +2241,32 @@ resetBinaryState();
   s.clear(); e.resetBuffer(''); e.type('2*3'); e.enter();
   e.performUndo();
   assert(s.depth === 0, 'a formula line is one step for Undo');
+  const keep = (line) => { e.resetBuffer(''); e.type(line); e.enter(); return s.save().map((v) => format(v)).join(' '); };
+  s.clear();
+  assert(keep('7') === '7' && keep('ans*2') === '7 14' && keep('ANS(2)+ans') === '7 14 21' && keep('ans') === '7 14 21 21',
+    'ans is the previous result in a typed formula, ANS(2) the one before it, and ans alone copies it');
+  s.clear(); keep('x+1');
+  assert(keep('ans*2') === '`x + 1` `(x + 1)*2`', 'ans can be a formula');
+  s.clear(); e.resetBuffer(''); e.type('ans*2'); e.enter();
+  assert(s.depth === 0 && e.error.includes('ans needs a result; the stack is empty') && e.buffer === 'ans*2', 'ans with nothing on the stack says so and keeps the line');
+  s.clear(); keep('7');
+  keep('ANS(3)+1');
+  assert(s.depth === 1 && e.error.includes('ANS(3) needs 3 results; the stack holds 1'), 'ANS(3) with two results too few says how many the stack holds');
+  s.clear(); keep('(1,2)');
+  keep('ans*2');
+  assert(s.depth === 1 && e.error.includes('stands for a number, a unit or a formula'), 'ans over a complex number says a formula can\'t hold it');
+  s.clear(); keep('{1,2}');
+  assert(keep('ans') === '{ 1 2 } { 1 2 }' && keep('answer+1') === '{ 1 2 } { 1 2 } `answer + 1`' && keep('ANS(0)+1').endsWith('`ANS(0) + 1`'),
+    'ans alone copies any object, and answer and ANS(0) are not answers');
+  s.clear(); keep('5');
+  keep('ans+1'); e.performUndo();
+  assert(s.depth === 1 && format(s.peek()) === '5', 'a formula with ans is one step for Undo');
+  const found = withAnswers('ans*2+ANS(3)+Ans( 2 )+answer+ans2+ans(0)');
+  assert(found.text === 'ANS1*2+ANS3+ANS2+answer+ans2+ans(0)' && found.levels.join() === '3,2,1', 'withAnswers names ans and ANS(n) ANSn and lists the levels, deepest first');
   e.formulaEntry = false;
+  s.clear(); keep('7');
+  keep('ans*2');
+  assert(s.depth === 1 && e.error !== '', 'with algebraic entry off, ans*2 is a syntax error as before');
 }
 
 /* C$, the HP's counted string: C$ n and one separator take the next n characters, C$ $ the rest of the line. */
