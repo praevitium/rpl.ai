@@ -1389,6 +1389,7 @@ class App {
       case 'inv': runOn('INV'); return;
       case 'det': runOn('DET'); return;
       case 'egvl': runOn('EGVL'); return;
+      case 'egv': runOn('EGV'); return;
       case 'trn': runOn('TRN'); return;
       case 'rref': runOn('RREF'); return;
       case 'abs': runOn('ABS'); return;
@@ -1498,7 +1499,7 @@ class App {
         isSymbolic(value) ? variablesOf(value.expr).slice(0, 3).map((name) => item(`solve:${escapeHtml(name)}`, 'chr', `Solve for ${name} (SOLVE)`)).join('') : '',
         mainVariable ? item(`deriv:${escapeHtml(mainVariable)}`, 'chr', `Differentiate by ${mainVariable} (DERIV)`) : '',
         integrable ? item(`integ:${escapeHtml(mainVariable)}`, 'chr', `Integrate by ${mainVariable} (RISCH)`) : '',
-        isMatrix(value) && value.rows.length === value.rows[0]?.length ? item('inv', 'chr', 'Inverse (INV)') + item('det', 'chr', 'Determinant (DET)') + item('egvl', 'chr', 'Eigenvalues (EGVL)') : '',
+        isMatrix(value) && value.rows.length === value.rows[0]?.length ? item('inv', 'chr', 'Inverse (INV)') + item('det', 'chr', 'Determinant (DET)') + item('egvl', 'chr', 'Eigenvalues (EGVL)') + item('egv', 'chr', 'Eigenvectors (EGV)') : '',
         isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') + item('rref', 'chr', 'Row reduce (RREF)') : '',
         isVector(value) ? item('abs', 'chr', 'Length (ABS)') : '',
         sortable(value) ? item('sort', 'chr', 'Sort (SORT)') : '',

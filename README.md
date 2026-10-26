@@ -254,8 +254,8 @@ RPL puts the numbers first and the operation last. Each value goes on the
   of variables gives the gradient, `'X^2*Y' [ X Y ] DERIV` giving
   `[ 2*X*Y X^2 ]`, and a vector of functions with it the Jacobian. The MATRIX menu opens as
   the HP's MTH MATR does, on MAKE, NORM, FACTR, COL and ROW folders and
-  then LSQ. A matrix level's ⋯ menu has Inverse, Determinant and
-  Eigenvalues when it is square, and Transpose. In CYLIN and SPHERE modes `→V2`, `→V3` and `V→`
+  then LSQ. A matrix level's ⋯ menu has Inverse, Determinant,
+  Eigenvalues and Eigenvectors when it is square, and Transpose. In CYLIN and SPHERE modes `→V2`, `→V3` and `V→`
   take and give a vector's polar parts, as on the HP: `2 90 →V2` in DEG is
   `[ 2 ∠90 ]`. The VECTOR menu holds the HP's MTH VECTR keys, `ABS`, `DOT`,
   `CROSS`, `V→`, `→V2` and `→V3`, then the RECT, CYLIN and SPHERE modes.
