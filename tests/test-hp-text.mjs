@@ -1,5 +1,5 @@
 import { hpTextToSource, parseHpText, formatHpText, HP_TEXT_HEADER } from '../www/src/rpl/hp-text.js';
-import { parseEntry, endsInQuote, plainPunctuation } from '../www/src/rpl/parser.js';
+import { parseEntry, endsInQuote, plainPunctuation, plainCharacter } from '../www/src/rpl/parser.js';
 import { formatSource, format } from '../www/src/rpl/formatter.js';
 import {
   Str, Rational, Integer, RList, Matrix, isDirectory, isProgram, isString, isSymbolic, isTagged, isRational, isInteger, isReal,
@@ -64,6 +64,8 @@ END`;
   assert(value('\uff11\uff12 \uff12 \uff0b') === '14' && same('\uff07\uff38\uff0b\uff11\uff07', "'X+1'") && value('\u0661\u0662 \u0663 +') === '15'
     && value('\u06f1\u06f2 \u06f3 +') === '15' && value('\u09e7 \u09e8 +') === '3' && value('"\u0661"') === '"\u0661"',
     'parseEntry: full-width forms of ASCII from an East Asian keyboard and Arabic-Indic, Persian and Bengali digits read as the plain ones, and stay text in a string');
+  assert(plainPunctuation('\u2126 \u212b') === 'Ω Å' && plainCharacter('\u2014') === '-' && plainCharacter('x') === 'x',
+    'plainCharacter: one character as the plain one, the ohm and angstrom signs as the Greek and Latin letters');
   assert(['5²', "'X²'", '½', '1½', '30°', '5_m²', '-½', '2¹⁰'].every((typed) => plainPunctuation(plainPunctuation(typed)) === plainPunctuation(typed))
     && endsInQuote("1 'X²") && !endsInQuote("1 'X²'") && !endsInQuote('1 5² 30°'),
     'parseEntry: the symbol keys read the same when the text is read twice, and a quote around ² opens and closes as any other');

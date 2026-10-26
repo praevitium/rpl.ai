@@ -8,7 +8,7 @@ import { format, withFractionMark } from '../rpl/formatter.js';
 import { astLatex, parseMath } from '../rpl/latex.js';
 import { RPLError, Stack } from '../rpl/stack.js';
 import { lookup } from '../rpl/ops.js';
-import { parseEntry, fromTyped, plainPunctuation, SUPERSCRIPT_DIGITS, FRACTIONS } from '../rpl/parser.js';
+import { parseEntry, fromTyped, plainPunctuation, plainCharacter, SUPERSCRIPT_DIGITS, FRACTIONS } from '../rpl/parser.js';
 import { _astToRplValue } from '../rpl/ops/internal.js';
 import { giac } from '../rpl/cas/giac-engine.mjs';
 import { state as calcState, toRadians, fromRadians, testUserFlag } from '../rpl/state.js';
@@ -1679,6 +1679,8 @@ export function physicalFace(event) {
     '_': '_', 'µ': 'μ', '°': '°', 'Å': 'Å', '∆': 'Δ', 'Ω': 'Ω',
   };
   if (map[event.key]) return map[event.key];
+  const plain = event.key?.length === 1 ? plainCharacter(event.key) : event.key;
+  if (plain !== event.key) return physicalFace({ ...event, key: plain });
   if (event.key === '.' || /^[0-9]$/.test(event.key) || isLetterFace(event.key)) return event.key;
   if (event.key?.length === 1) return 'UNAVAILABLE';
   return null;

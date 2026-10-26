@@ -344,6 +344,12 @@ function same(state, source, label) {
     'EQW physicalFace maps ^ to yˣ');
   assert(physicalFace({ key: '/', ctrlKey: false, metaKey: false, altKey: false, shiftKey: false }) === '÷',
     'EQW physicalFace maps / to ÷');
+  const face = (key) => physicalFace({ key, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false });
+  assert(['\u2013', '\u2014', '\u2010'].every((k) => face(k) === '−') && ['\u22c5', '\u2217', '\u2219'].every((k) => face(k) === '×')
+    && ['\u2215', '\u2044'].every((k) => face(k) === '÷') && face('\u00ba') === '°' && face('\u02da') === '°' && face('\uff0b') === '+'
+    && face('\uff11') === '1' && face('\u0663') === '3' && face('\u2126') === 'Ω' && face('\u212b') === 'Å' && face('\u200b') === 'NOOP'
+    && face('\u2032') === 'UNAVAILABLE' && face('x') === 'x',
+    'EQW physicalFace reads the characters other keyboards and pasted text have as the command line does: dashes, dots, slashes, º, full-width and Arabic-Indic digits, the ohm and angstrom signs, an invisible space');
   assert(physicalFace({ key: 'ArrowUp', ctrlKey: false, metaKey: false, altKey: false, shiftKey: true }) === 'RS▲',
     'EQW physicalFace maps Shift+ArrowUp to RS▲');
   assert(physicalFace({ key: 'z', ctrlKey: true, metaKey: false, altKey: false, shiftKey: false }) === null,

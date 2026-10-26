@@ -240,19 +240,19 @@ function hpSpelling(text) {
 
 // A phone keyboard's smart punctuation, and notes and messaging apps, curl quotes, and a phone's symbol keys offer ×, ÷, − and ·.
 // The HP has none of them, so they read as ' " * / and -, one character for one; inside a string they are text. So do the dashes,
-// dots, slashes and primes that pasted text brings, º and ˚ for the degree sign, ∑ and ∆ for the HP's Σ and Δ, an invisible
+// dots, slashes and primes that pasted text brings, º and ˚ for the degree sign, ∑, ∆, the ohm and angstrom signs for the HP's Σ, Δ, Ω and Å, an invisible
 // character where it would end a word, East Asian keyboards' full-width forms and the Arabic-Indic and Bengali digits.
 const PLAIN = Object.freeze({
   '‘': "'", '’': "'", '′': "'", '´': "'", 'ʼ': "'",
   '×': '*', '·': '*', '⋅': '*', '∗': '*', '∙': '*', '✕': '*', '✖': '*',
   '÷': '/', '∕': '/', '⁄': '/',
   '−': '-', '–': '-', '—': '-', '‐': '-', '‑': '-', '‒': '-', '﹣': '-',
-  '∑': 'Σ', '∆': 'Δ', 'º': '°', '˚': '°',
+  '∑': 'Σ', '∆': 'Δ', '\u2126': 'Ω', '\u212B': 'Å', 'º': '°', '˚': '°',
   '\u200B': ' ', '\u200C': ' ', '\u200D': ' ', '\u2060': ' ', '\u00AD': ' ',
 });
 const DIGIT_ZEROS = [0x660, 0x6F0, 0x966, 0x9E6];
 
-function plainOf(c) {
+export function plainCharacter(c) {
   if (PLAIN[c]) return PLAIN[c];
   const code = c.charCodeAt(0);
   if (code >= 0xFF01 && code <= 0xFF5E) return String.fromCharCode(code - 0xFEE0);
@@ -300,7 +300,7 @@ export function plainPunctuation(src) {
       out += '"';
       closer = c === '"' ? '"' : c === '„' ? '“”' : '”';
     } else {
-      const plain = plainOf(c);
+      const plain = plainCharacter(c);
       if (quote ? plain === quote : plain === "'" || plain === '`') quote = quote ? null : plain;
       else if (c === '\n') quote = null;
       const run = c === '⁻' || SUPERSCRIPT_DIGITS.includes(c) ? src.slice(i).match(SUPERSCRIPT_RUN)?.[0] : null;
