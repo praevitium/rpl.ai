@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.98 (2026-10-25)
+**Latest release:** v0.8.99 (2026-10-26)
 
 ---
 
@@ -18,6 +18,17 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.99 — 2026-10-26
+
+- Changed: the app bar's search is the magnifier icon alone. From 980 px up it
+  was a box holding "Search commands, settings…" and a ⌘K keycap, which said
+  what the icon's tooltip already says. The icon now sits with the other app
+  bar buttons at every width, and the directory name gets the room the box
+  took. ⌘K (Ctrl+K) still opens command search, and the tooltip names the
+  shortcut.
 
 ---
 
