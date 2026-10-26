@@ -329,7 +329,8 @@ export function giacToAst(giacStr) {
 
   let ast;
   try {
-    ast = parseAlgebra(mapped);
+    // The brackets in Giac's rootof([[3,0,-1460],[1,0,-584]]) are no array of the user's, so a result holding them stays unsupported.
+    ast = parseAlgebra(mapped, { arrays: false });
   } catch {
     throw new RPLError(`Unsupported result: ${giacStr}`);
   }

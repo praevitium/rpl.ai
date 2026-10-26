@@ -9340,3 +9340,40 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(top("'FACTOR(X^2+5*X+6)' →NUM") !== '', 'command calls: →NUM does not choke on them');
   giac._clear();
 }
+
+// A matrix, vector or list written among a call's arguments, DET([[1,2],[3,4]]), is the object it spells: the parser holds it as a
+// name that is its own text, free variables skip it, and the command that is called works on it, operators between two of them
+// too. A function the algebra evaluator cannot take an array in, ABS([3,4]), runs as the command. Outside a call it is still no
+// formula.
+{
+  const top = (src) => format(runLine(src).peek());
+  const call = parseAlgebra('DET([[1,2],[3,4]])');
+  assert(call.kind === 'fn' && call.args.length === 1 && call.args[0].kind === 'var' && call.args[0].name === '[[1,2],[3,4]]',
+    'array arguments: the parser holds a matrix among a call\'s arguments as the text it was written in');
+  assert(formatAlgebra(call) === 'DET([[1,2],[3,4]])' && formatAlgebra(parseAlgebra('SIZE({1, 2, 3})')) === 'SIZE({1, 2, 3})',
+    'array arguments: a formula holding one prints as it was written');
+  assert([...freeVars(parseAlgebra('DOT([1,2],[3,4])*X+SIZE({A,B})'))].join() === 'X', 'array arguments: free variables skip a literal, even a list of names');
+  assert(parseAlgebra('F([1,2],[3,[4,5]],G({6}))').args.map((a) => a.kind).join() === 'var,var,fn', 'array arguments: several of them, nested ones and one in an inner call');
+  assertThrows(() => parseAlgebra('DET([[1,2],[3,4}])'), /Unclosed \[/, 'array arguments: a literal whose brackets do not match is not read');
+  assertThrows(() => parseAlgebra('DET([[1,2],[3,4]'), /Unclosed \[/, 'array arguments: nor one that never closes, though a missing ) at the very end is forgiven as before');
+  assertThrows(() => parseAlgebra('[1,2]+X'), /Unexpected character '\['/, 'array arguments: a literal outside a call is still no formula');
+  assert(top("'[1,2]'") === '`[1,2]`', 'array arguments: a quoted [1,2] is still the name it was');
+  assert(top("'DET([[1,2],[3,4]])' EVAL") === '-2' && top("'DET([[1 2][3 4]])' EVAL") === '-2' && top("'DET( [[1,2],[3,4]] )+1' EVAL") === '-1',
+    'array arguments: DET of a matrix written with commas or with spaces, and in a sum');
+  assert(top("'TRN([[1,2],[3,4]])' EVAL") === '[[ 1 3 ][ 2 4 ]]' && top("'DOT([1,2],[3,4])*2' EVAL") === '22' && top("'CROSS([1,2,3],[4,5,6])' EVAL") === '[ -3 6 -3 ]'
+    && top("'SIZE({1,2,3})' EVAL") === '3' && top("'INV([[1,2],[3,4]])' EVAL") === '[[ -2 1 ][ 3/2 -1/2 ]]',
+    'array arguments: TRN, DOT, CROSS, SIZE and INV work on what they are given');
+  assert(top("'ABS([3,4])' EVAL") === '5.' && top("'ABS([3,4])+1' EVAL") === '6.' && top("'SQ([[1,2],[3,4]])' EVAL") === '[[ 7 10 ][ 15 22 ]]' && top("'SIN({0,1})' EVAL") === '{ 0 `SIN(1)` }',
+    'array arguments: a function the algebra already knows, ABS, SQ or SIN, is run as the command when it is given an array');
+  assert(top("'DET([[1,2],[3,4]]*[[0,1],[1,0]])' EVAL") === '2' && top("'TRN([[1,2],[3,4]]+[[1,1],[1,1]])' EVAL") === '[[ 2 4 ][ 3 5 ]]' && top("'DET(-[[1,2],[3,4]])' EVAL") === '-2'
+    && top("'SIZE({1,2}+{3,4})' EVAL") === '4' && top("'DET([[1,2],[3,4]]^2)' EVAL") === '4',
+    'array arguments: operators between literals are the commands\' own: a product, a sum, a sign, a power, a join of lists');
+  assert(top("'FOO([1,2])' EVAL") === '`FOO([1,2])`' && top("'DET([[1,2],[3,4]],2)' EVAL") === '`DET([[1,2],[3,4]],2)`' && top("'DET({1,[2,3]})' EVAL") === '`DET({1,[2,3]})`'
+    && top("'ABS([1,2]*[3,4,5])' EVAL") === '`ABS([1,2]*[3,4,5])`',
+    'array arguments: a function nothing defines, the wrong number of arguments and an array the command cannot take leave the formula as it was');
+  assert(top("'DET([[1,2],[3,4]])' →NUM") === '-2.' && top("'SIZE({1,2,3})' →NUM") === '3.', 'array arguments: →NUM works them out');
+  assert(runLine("'DET([[1,2],[3,4]])' OBJ→").save().map((v) => format(v)).join(' ') === '[[ 1 2 ][ 3 4 ]] 1 `DET`', 'array arguments: OBJ→ takes the call apart, the matrix as an object');
+  varStore('F', parseEntry("'DET([[1,2],[3,4]])'")[0]);
+  assert(top('F EVAL') === '-2' && top('F') === '`DET([[1,2],[3,4]])`', 'array arguments: a stored call keeps its literal until it is evaluated');
+  varPurge('F');
+}

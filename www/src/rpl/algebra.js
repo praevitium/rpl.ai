@@ -305,12 +305,28 @@ export function isKnownFunction(name) {
 // Name.  A comparison or logic test is read anywhere, as in IFTE(X>0,X,-X)
 // and (X>0 OR Y>0) AND Z; an equation only at the top level and as a
 // function argument, so (X=Y)+1 is still refused.
-export function parseAlgebra(src) {
+export function parseAlgebra(src, { arrays = true } = {}) {
   const s = String(src);
   let i = 0;
   const n = s.length;
 
   function skip() { while (i < n && /\s/.test(s[i])) i++; }
+
+  // The text of the array or list from the opening bracket at i to its match, past any strings; -1 when it never closes.
+  function matchingBracket() {
+    const closers = [];
+    for (let k = i; k < n; k++) {
+      const c = s[k];
+      if (c === '"') { k = s.indexOf('"', k + 1); if (k < 0) return -1; continue; }
+      if (c === '[' || c === '{') closers.push(c === '[' ? ']' : '}');
+      else if (c === ']' || c === '}') {
+        if (closers.pop() !== c) return -1;
+        if (!closers.length) return k;
+      }
+    }
+    return -1;
+  }
+  let callDepth = 0;
 
   function expect(ch) {
     skip();
@@ -458,6 +474,16 @@ export function parseAlgebra(src) {
       return Var(c);
     }
 
+    // An array or list among a call's arguments, DET([[1,2],[3,4]]), is held as a name that is its own text; the command that
+    // is called reads it.
+    if ((c === '[' || c === '{') && arrays && callDepth > 0) {
+      const close = matchingBracket();
+      if (close < 0) throw new Error(`Unclosed ${c} at pos ${i}`);
+      const text = s.slice(i, close + 1);
+      i = close + 1;
+      return Var(text);
+    }
+
     if (c === '√') {
       i++;
       return Fn('SQRT', [parseP()]);
@@ -499,6 +525,7 @@ export function parseAlgebra(src) {
       if (s[i] === '(') {
         i++;
         const args = [];
+        callDepth++;
         args.push(parseOr());
         skip();
         while (s[i] === ',') {
@@ -506,6 +533,7 @@ export function parseAlgebra(src) {
           args.push(parseOr());
           skip();
         }
+        callDepth--;
         expect(')');
         // The HP writes a sum Σ(index=initial,final,summand); it is kept as Σ(summand,index,initial,final).
         if (ident === 'Σ' && args.length === 3 && args[0].kind === 'bin' && args[0].op === '=' && isVar(args[0].l)) {
@@ -693,9 +721,11 @@ export function defaultFnEval(name, args) {
   return spec.eval(...args);
 }
 
+export const isArrayLiteral = (name) => name[0] === '[' || name[0] === '{';
+
 export function freeVars(ast, out = new Set()) {
   if (!ast) return out;
-  if (ast.kind === 'var') out.add(ast.name);
+  if (ast.kind === 'var') { if (!isArrayLiteral(ast.name)) out.add(ast.name); }
   else if (ast.kind === 'neg') freeVars(ast.arg, out);
   else if (ast.kind === 'bin') { freeVars(ast.l, out); freeVars(ast.r, out); }
   else if (ast.kind === 'fn')  for (const a of ast.args) freeVars(a, out);

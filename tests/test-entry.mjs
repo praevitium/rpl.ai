@@ -2257,6 +2257,12 @@ resetBinaryState();
   assert(run('round(2.5)') === '`round(2.5)`', 'a variable stored under such a name keeps its meaning');
   run("'round' PURGE");
   assert(e.formulaText('nCr(5,2)+pi') === 'COMB(5,2)+π', 'formulaText gives a formula as the HP reads it, which the reading notes\' keys use too');
+  assert(run('det([[1,2],[3,4]])') === '-2' && run('trn([[1,2],[3,4]])') === '[[ 1 3 ][ 2 4 ]]' && run('dot([1,2],[3,4])') === '11' && run('abs([3,4])') === '5.'
+    && run('size({1,2,3})') === '3' && run('2*det([[1 2][3 4]])+1') === '-3' && run('det([[1,2],[3,4]]*[[0,1],[1,0]])') === '2' && run('cross([1,2,3],[4,5,6])') === '[ -3 6 -3 ]',
+    'a matrix, vector or list among a typed call\'s arguments, det([[1,2],[3,4]]) or dot([1,2],[3,4]), is worked out, in a formula too');
+  assert(run('[1 2 3] (4)') === '[ 1 2 3 ] (4, 0)' && run('[1 2 3] 2 *') === '[ 2 4 6 ]' && run('{1 2} {3} +') === '{ 1 2 3 }' && run('[[1,2],[3,4]] DET') === '-2',
+    'an array outside a call\'s parentheses leaves the line RPN');
+  assert(run('det([[1,2],[3,4]') === '' && e.error !== '' && run('det([1,2)') === '' && e.error !== '', 'an array that never closes is an error, not a formula');
   const products = ['2π', '3x', '2πr', '2e', '2.5x', '3kk'].map((line) => run(line));
   assert(products.join(' ') === '6.28318530718 `3*x` `2*π*r` 5.43656365692 `2.5*x` `3*kk`', `a number written straight against a name or constant, 2π, 3x or 2πr, is a product in a typed formula (${products.join(' ')})`);
   assert(run('2 π') === '2 π' && run('3 x') === '3 x' && run('1E3 2 +') === '1002.' && run('x2') === 'x2',

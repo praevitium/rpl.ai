@@ -112,6 +112,11 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   clearUserFlag(-51);
   assert(comma.fixes[0].id === 'formula' && comma.fixes[0].arg === '2,5^2',
     'syntax banner: with flag -51 a formula typed with the comma fraction mark, 2,5^2, gets the formula fix too, where it read as no formula');
+  const array = describeError('Bad complex literal: ([[1,2],[3,4]])', ctx({ line: 'det([[1,2],[3,4]])' }));
+  assert(array.fixes[0].id === 'formula' && array.fixes[0].arg === 'det([[1,2],[3,4]])' && /In quotes it is a formula, 'det\(\[\[1,2\],\[3,4\]\]\)'/.test(array.detail),
+    'syntax banner: a matrix among a call\'s arguments, det([[1,2],[3,4]]), gets the formula fix');
+  assert(['[1 2 3] 4 +', '[[1,2],[3,4]]*2', '{1 2} (3)', 'det([1,2)', 'det(]1,2[)', 'det([1,2})'].every((line) => !describeError('Syntax error near 4', ctx({ line })).fixes.some((f) => f.id === 'formula' && f.arg === line)),
+    'syntax banner: no formula fix for an array outside the parentheses, or for brackets that do not match');
   const symbols = describeError('Syntax error near *4', ctx({ line: '3×4' }));
   assert(symbols.fixes[0].id === 'formula' && symbols.fixes[0].arg === '3*4' && describeError('Syntax error near /4', ctx({ line: '3÷4+1' })).fixes[0].arg === '3/4+1',
     'syntax banner: a phone\'s × and ÷ read as * and /, so 3×4 gets the formula fix 3*4 as 3*4 does, where it got none');

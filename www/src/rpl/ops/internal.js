@@ -3,7 +3,7 @@ import { isReal, isInteger, isComplex, Real, isSymbolic, isName, isRational, Nam
 import { RPLAbort, RPLError, Stack, setPushCoerce, checkTimeLimit, startSlice, sliceDue } from '../stack.js';
 import { exactTrigRewrite } from '../exact-trig.js';
 import { gatherLike } from '../tidy.js';
-import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, UnitNode as AstUnit, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, hasUnits, exactRational, isRealNum, isKnownFunction } from '../algebra.js';
+import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, UnitNode as AstUnit, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, hasUnits, exactRational, isRealNum, isKnownFunction, isArrayLiteral } from '../algebra.js';
 import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
 import { state as _calcState, getApproxMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, testUserFlag, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd, withScratchState, inScratchState, notify } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
@@ -61,7 +61,7 @@ export function _astToRplValue(ast) {
   if (!ast) return Name('', { quoted: true });
   if (ast.kind === 'num') return _numToRpl(ast);
   if (ast.kind === 'unit') return Unit(ast.value, ast.uexpr);
-  if (ast.kind === 'var') return Name(ast.name, { quoted: true });
+  if (ast.kind === 'var') return isArrayLiteral(ast.name) ? _parseEntryForObjTo(ast.name)[0] : Name(ast.name, { quoted: true });
   // Giac returns negative literals as Neg(Num); land them as plain numbers.
   if (ast.kind === 'neg' && ast.arg && ast.arg.kind === 'num') return _numToRpl(ast.arg, -1);
   const fraction = exactRational(ast);
@@ -2083,14 +2083,19 @@ function _evalObjects(ast, keeps) {
 // A command called with parentheses in a formula, 'FACTOR(X^2+5*X+6)', runs on its arguments when the formula is evaluated, as
 // the HP's algebraic parser has it; a command that leaves several results gives them as a list, as the AUR's examples show.
 // The commands that only turn their arguments into a result are callable; stack, memory and display commands are not. A call the
-// command cannot work out, 'COMB(N,2)' with N unknown, leaves the formula as it was.
+// command cannot work out, 'COMB(N,2)' with N unknown, leaves the formula as it was. Any function given a matrix, vector or list
+// to work on, 'ABS([3,4])', is a call too, since the algebra evaluator cannot take that.
 const _CALLABLE_CATEGORIES = new Set(['CAS / symbolic', 'Polynomials', 'Vectors / matrices', 'Integer / number theory']);
-const _isCommandCall = (node) => node.kind === 'fn' && !_LAZY_FUNCTIONS.has(node.name.toUpperCase()) && _CALLABLE_CATEGORIES.has(lookup(node.name)?.category);
+const _isArrayLiteral = (node) => node.kind === 'var' && isArrayLiteral(node.name);
+const _isCommandCall = (node) => {
+  const command = node.kind === 'fn' && !_LAZY_FUNCTIONS.has(node.name.toUpperCase()) && lookup(node.name);
+  return !!command && (_CALLABLE_CATEGORIES.has(command.category) || node.args.some(_isArrayLiteral));
+};
 
 function _holdsCommandCall(node) {
   if (node.kind === 'fn') return _isCommandCall(node) || node.args.some(_holdsCommandCall);
   if (node.kind === 'bin') return _holdsCommandCall(node.l) || _holdsCommandCall(node.r);
-  return node.kind === 'neg' && _holdsCommandCall(node.arg);
+  return node.kind === 'neg' ? _holdsCommandCall(node.arg) : _isArrayLiteral(node);
 }
 
 function _evalCommandCalls(ast) {
@@ -2103,7 +2108,7 @@ function _evalCommandCalls(ast) {
     return s.depth === 1 ? s.pop() : RList(s.snapshot().reverse());
   };
   const walk = (node) => {
-    if (!_holdsCommandCall(node)) return _astToRplValue(node);
+    if (!_holdsCommandCall(node) || node.kind === 'var') return _astToRplValue(node);
     if (node.kind === 'neg') return run('NEG', [walk(node.arg)]);
     if (node.kind === 'bin') return run(node.op, [walk(node.l), walk(node.r)]);
     return run(node.name, node.args.map(walk));
