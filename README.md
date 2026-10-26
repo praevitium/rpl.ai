@@ -270,14 +270,14 @@ RPL puts the numbers first and the operation last. Each value goes on the
   a negative whole power is the power of its inverse, as a TI's `[A]^-1`
   is: `[[ 1 2 ][ 3 4 ]] -1 ^` is `[[ -2 1 ][ 3/2 -1/2 ]]`, `'A^-2' EVAL`
   squares the inverse of a stored `A`, and a singular matrix says Infinite
-  result. EGV and EGVL give an eigenvalue the CAS cannot write as a closed
-  form, a cubic's roots or a complex pair, as a number, and work out a
-  matrix of decimals or complex numbers, or any matrix in APPROX mode, without
-  it. ROW+, COL+, ROW-, COL-, RSWP and CSWP take a vector as
-  well as a matrix, RDM drops or zero-fills entries to the new size, TRN, RDM
-  and CON take a variable name and store the result in it, RND and TRNC round
-  a vector or matrix entry by entry, and SUB and REPL take a matrix's places
-  as `{ row column }`.
+  result. EGV and EGVL give an eigenvalue the CAS cannot write in closed
+  form, such as the roots of a cubic, as a number; a matrix of decimals or
+  complex numbers, or any matrix in APPROX mode, is solved without the CAS,
+  a complex eigenvalue then being a complex number. ROW+, COL+, ROW-, COL-,
+  RSWP and CSWP take a vector as well as a matrix, RDM drops or zero-fills
+  entries to the new size, TRN, RDM and CON take a variable name and store
+  the result in it, RND and TRNC round a vector or matrix entry by entry, and
+  SUB and REPL take a matrix's places as `{ row column }`.
 - **Lists and strings.** `{ 10 20 30 } 2 GET` gives 20,
   `{ 1 2 3 } « SQ » MAP` gives `{ 1 4 9 }`, a list inside the list is mapped
   item by item (`{ 1 2 { 3 4 } } « SQ » MAP` gives `{ 1 4 { 9 16 } }`), and

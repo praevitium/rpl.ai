@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.106 (2026-10-26)
+**Latest release:** v0.8.107 (2026-10-26)
 
 ---
 
@@ -20,6 +20,34 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.107 — 2026-10-26
+
+- Fixed: EGV and EGVL said Bad argument value on a matrix whose eigenvalues
+  the CAS gives as roots of a cubic, `[[ 1 2 3 ][ 4 5 6 ][ 7 8 10 ]] EGVL`, and
+  could return wrong eigenvectors or none for a matrix of decimals that is
+  reducible or has a repeated eigenvalue. A root the CAS cannot write in closed form now
+  comes as a number (`[ 16.7074933161 -0.905740179522 0.198246863397 ]`),
+  and a matrix of decimals or complex numbers, or any matrix in APPROX mode,
+  is solved without the CAS by a solver of rpl.ai's own: `[[ 1.5 2 ][ -5 1 ]]
+  EGVL` gives `[ (1.25, -3.15238005323) (1.25, 3.15238005323) ]`. Its values
+  come by decreasing size, and each eigenvector has length 1 with its largest
+  entry real and positive. An exact matrix still goes to the CAS first, for
+  radicals and fractions.
+- Fixed: SVD gave V transposed, where the AUR has A = U×diag(S)×Vᵀ, so
+  rebuilding the matrix from its three results failed; SVL of a wide matrix,
+  `[[ 1 2 3 ][ 4 5 6 ]] SVL`, gave three values where the AUR gives MIN(rows,
+  columns); and both said Bad argument value for a matrix of zeros, which
+  now gives identity U and V and zeros.
+- Added: a square matrix to a negative whole power is the power of its
+  inverse, as a TI's `[A]^-1` is, an extension of the AUR's whole-number
+  powers: `[[ 1 2 ][ 3 4 ]] -1 ^` is `[[ -2 1 ][ 3/2 -1/2 ]]`, `-2 ^` squares
+  that, and `'A^-1' EVAL` or `'A⁻¹' EVAL` does the same for a stored `A`. A
+  singular matrix says Infinite result, as INV does, and a power that is not
+  a whole number still says Bad argument value.
+- Added: a square matrix level's ⋯ menu has Eigenvectors (EGV) beside
+  Eigenvalues (EGVL), so a phone with the keypad hidden or in minimal view
+  reaches both without typing.
 
 ## v0.8.106 — 2026-10-26
 
