@@ -423,6 +423,27 @@ export function calledFunction(src) {
   return false;
 }
 
+// A number in parentheses is a one-part complex number in RPL, so (1)+4, 3*(-2), √(16) or (2)(3) run word by word. True when one at
+// the top of the line, closed or running to its end, has an operator or √ before it, an operator after it, or a ( or name straight after.
+const PARENTHESIZED_NUMBER = new RegExp(String.raw`^\(\s*[-+]?(?:\d+/\d+|${UNSIGNED_NUMBER}|∞)\s*(?:\)|$)`);
+
+export function groupedNumber(src) {
+  const text = maskedLine(src);
+  let depth = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    const group = c === '(' && !depth && PARENTHESIZED_NUMBER.exec(text.slice(i));
+    if (group) {
+      const before = text.slice(0, i).trimEnd().slice(-1);
+      const after = text.slice(i + group[0].length);
+      if (/[-+*/^=<>≤≥≠√]/.test(before) || /^\s*[-+*/^=<>≤≥≠]/.test(after) || /^[(A-Za-zπ√]/.test(after)) return true;
+    }
+    if ('{[(«'.includes(c)) depth++;
+    else if ('}])»'.includes(c)) depth = Math.max(0, depth - 1);
+  }
+  return false;
+}
+
 // Products written as another calculator takes them, 2(3+4), (1+2)(3+4) or 2sin(30), get their *; a number's exponent, 1E3, stays one.
 export function withTimes(src) {
   return src

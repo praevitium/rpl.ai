@@ -1,4 +1,4 @@
-import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction, plainPunctuation, withTimes, withAnswers } from '../rpl/parser.js';
+import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction, groupedNumber, plainPunctuation, withTimes, withAnswers } from '../rpl/parser.js';
 import { formulaOf } from './errors.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
 import { latexToSource } from '../rpl/latex.js';
@@ -694,7 +694,7 @@ export class Entry {
       this.decimalComma = comma && { text: comma, line: plain };
       const glued = gluedSigns(plain);
       this.gluedSigns = glued && { text: glued, line: plain };
-      const called = calledFunction(plain) ? formulaOf(plain) : '';
+      const called = calledFunction(plain) || groupedNumber(plain) ? formulaOf(plain) : '';
       this.calledFunction = called ? { text: called, line: plain } : null;
     }
     let failed = -1;
@@ -723,7 +723,8 @@ export class Entry {
   }
 
   // With algebraic entry on, a line that is one formula and no RPL of its own is worked out as one: it is no RPL at all, or it
-  // reads as a run of signed numbers or a function called with brackets, as 2+3 and sin(30) do.
+  // reads as a run of signed numbers, a function called with brackets or a number in brackets,
+  // as 2+3, sin(30) and 3*(-2) do.
   _formulaOf(raw) {
     if (!this.formulaEntry) return '';
     const plain = plainPunctuation(raw);
@@ -731,7 +732,7 @@ export class Entry {
     const formula = formulaOf(plain) || formulaOf(withTimes(plain));
     if (!formula) return '';
     try { parseTyped(raw); } catch { return formula; }
-    return gluedSigns(plain) === formula || calledFunction(plain) ? formula : '';
+    return gluedSigns(plain) === formula || calledFunction(plain) || groupedNumber(plain) ? formula : '';
   }
 
   // The answers a formula names are copied from the stack into locals, deepest first, each pick one level deeper for the copies made.

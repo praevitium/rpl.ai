@@ -471,10 +471,10 @@ class App {
     });
   }
 
-  // sin(30) or 2(3+4), typed as another calculator takes it, runs word by word here: RPL puts a function after its argument. The
-  // note offers the line as a formula, with the keys pressed with it after.
+  // sin(30), 2(3+4) or (1)+4, typed as another calculator takes it, runs word by word here: RPL puts a function or an operator
+  // after its arguments. The note offers the line as a formula, with the keys pressed with it after.
   _noteCalledFunction(found) {
-    this._noteReading(`${found.text} was read word by word: RPL puts a function after its argument.`, {
+    this._noteReading(`${found.text} was read word by word: RPL puts a function or an operator after its arguments.`, {
       action: 'Evaluate as a formula',
       run: () => { this.runLine(`'${found.text}' EVAL${found.line.slice(found.text.length)}`); this._offerAlgebraicEntry(); },
     });

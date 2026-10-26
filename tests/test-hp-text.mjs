@@ -1,5 +1,5 @@
 import { hpTextToSource, parseHpText, formatHpText, HP_TEXT_HEADER } from '../www/src/rpl/hp-text.js';
-import { parseEntry, endsInQuote, plainPunctuation, plainCharacter, bareDecimalComma, numberFieldText, gluedSigns, calledFunction } from '../www/src/rpl/parser.js';
+import { parseEntry, endsInQuote, plainPunctuation, plainCharacter, bareDecimalComma, numberFieldText, gluedSigns, calledFunction, groupedNumber } from '../www/src/rpl/parser.js';
 import { formatSource, format } from '../www/src/rpl/formatter.js';
 import {
   Str, Rational, Integer, RList, Matrix, isDirectory, isProgram, isString, isSymbolic, isTagged, isRational, isInteger, isReal,
@@ -85,6 +85,9 @@ END`;
   assert(['sin(30)', '2(3+4)', 'sin(30)+cos(30)', '2sin(30)', '5 sin(30)', 'f(3)', 'x1(2)'].every((src) => calledFunction(src) === true)
     && ['(1,2)', '3 (4)', '{ f(3) }', "'sin(30)'", '"sin(30)"', '@ sin(30)', '« sin(30) »', '5 3 +', '1_m/(s*s)', ':A:(1,2)', '(1,2) (3,4)', '', 'SIN (30)'].every((src) => calledFunction(src) === false),
     'calledFunction: a ( straight after a word at the top of a line is a call as other calculators write it, and a complex number, list, quote, string, comment or program is not');
+  assert(['(1)+4', '3*(-2)', '4-(-10)', '(2)(3)', '-(100)', '(1) + 4', '2 * (3)', '(2)x', '(1/2)^2', '(-3)^2', '(.5)*(1E3)', '(∞)-1', '(2)π', '√(16)', '√ (16', '3*(5'].every((src) => groupedNumber(src) === true)
+    && ['(5)', '(1,2)', '(1,2)+4', '(1 2)', '(5∠30)', '(1) 4', '(1) (2)', '3 (4)', '(1+2)*3', '(x)+1', '2+(', '(5', '{ (1)+2 }', '[ (1)+2 ]', "'(1)+2'", '"(1)+2"', '@ (1)+2', '« (1)+2 »', '1_m/(s*s)', '5 3 +', ''].every((src) => groupedNumber(src) === false),
+    'groupedNumber: a number in parentheses with an operator beside it, or a ( or name straight after it, is found at the top of a line; a complex number, a lone (5), spaced words, a list, quote, string, comment or program is not');
   assert(numberFieldText('3,14') === '3.14' && numberFieldText('-2,5') === '-2.5' && numberFieldText(',5') === '.5' && numberFieldText('2,5E3') === '2.5E3'
     && numberFieldText('−2,5') === '-2.5' && numberFieldText('３,１') === '3.1' && numberFieldText(' 1.5 ') === '1.5',
     'numberFieldText: a number with a lone comma is a decimal in a field of its own, and the characters of other keyboards read as on the command line');
