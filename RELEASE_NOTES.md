@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.100 (2026-10-26)
+**Latest release:** v0.8.101 (2026-10-26)
 
 ---
 
@@ -18,6 +18,26 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.101 — 2026-10-26
+
+- Fixed: a sum typed the way other calculators take it, `2+3` or `10-4`, was
+  read as two numbers with nothing said, so the stack showed 2 and 3, or 10
+  and -4. A sign starts a number here, as on the HP, and an operator goes
+  after its numbers. A note now says how the line was read, and its Evaluate
+  as a formula key runs the word quoted with EVAL, as the banner for `2^10`
+  already did. Nothing is said for a lone signed number, for numbers inside
+  a list, a vector, an algebraic, a program or a string, or for a failed
+  line.
+- Added: a function called with brackets, `sin(30)`, runs word by word, as on
+  the HP: SIN, then the complex number (30, 0). The Too few arguments banner
+  now offers Evaluate as a formula for such a line, and a line that ran gets
+  a note with the same key; the keys pressed with the line still run after
+  the formula.
+- Changed: the note that says Decimal comma is on has a Turn off key, which
+  clears flag -51 again, where it sent you to Settings.
 
 ---
 

@@ -528,9 +528,13 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   the SIN reference. A line typed the way other
   calculators take it, `2^10` or `e^2`, is no RPL, as on the HP; its
   banner's Evaluate as a formula runs it quoted with EVAL, and the cursor
-  waits at `^10`, where the line broke, as on the HP. A `#ff` typed
-  in DEC reads in decimal, as on the HP, and its banner's Read as hex runs
-  the line with `#ffh`.
+  waits at `^10`, where the line broke, as on the HP. `2+3` and `10-4` are
+  two numbers each, as on the HP, so a note says how the line was read and
+  offers the same key. A function called with brackets, `sin(30)`, runs
+  word by word, SIN and then the complex number (30, 0), as on the HP; the
+  Too few arguments banner and a note offer it as a formula too. A `#ff`
+  typed in DEC reads in decimal, as on the HP, and its banner's Read as hex
+  runs the line with `#ffh`.
 - ⌫ and Enter sit beside the command line, finger-sized. ⌫ deletes a
   character or the selected text, and leaves the stack alone on an empty
   line. Hold ⌫, there or on the keypad, to clear the whole line; Undo in
@@ -742,7 +746,8 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   keep the point, so other tools read them. With the flag clear a comma
   separates objects, as on the HP, so `3,14` is 3 and 14; a note after
   such a line says so and offers Decimal comma, which sets the flag and
-  runs the line again. A box that holds one number (the plot window, the
+  runs the line again, and the note that follows has a Turn off key. A box
+  that holds one number (the plot window, the
   table's start and step, the solver's) reads a lone `3,14` as 3.14 in
   either mode.
 - A program that runs past half a second shows a one-row Running
