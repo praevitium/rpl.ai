@@ -2192,6 +2192,10 @@ resetBinaryState();
   assert(e.calledFunction === null, 'a call in a line that is no formula once quoted is not noted');
   run('(1)+4');
   assert(e.calledFunction?.text === '(1)+4' && e.calledFunction.line === '(1)+4', 'a number in parentheses with an operator beside it is noted as a line that may be a formula');
+  run('3 + 4');
+  assert(e.calledFunction?.text === '3 + 4', 'so is a formula typed with spaces around its operators');
+  run('2 3 + 4 *');
+  assert(e.calledFunction === null, 'RPN with its operators after its operands is not');
   run('1 2 + 1E-3 5 -2');
   assert(e.gluedSigns === null, 'a line of spaced numbers, an exponent and a signed number is not a run of numbers');
   run('{ 1,5 } (1,5) [1,2] 3 4 +');
@@ -2223,6 +2227,7 @@ resetBinaryState();
   e.formulaEntry = false;
   assert(run('2+3') === '2 3' && run('2^10') === '' && e.error !== '', 'with algebraic entry off, 2+3 is 2 and 3 and 2^10 is a syntax error, as on the HP');
   assert(run('(1)+4') === '(1, 0) 4', 'with it off, (1)+4 is the complex number (1, 0) and 4');
+  assert(run('3 + 4') === '3' && e.error.includes('Too few arguments'), 'with it off, 3 + 4 is the RPN line whose + has one number to take');
   e.formulaEntry = true;
   assert(run('2+3') === '5' && run('3×4') === '12' && run('2^10') === '1024' && run('(1+2)*3') === '9' && run('-5+3') === '-2',
     'with it on, a line typed as one formula, 2+3, 3×4, 2^10 or (1+2)*3, is worked out on Enter');
@@ -2230,6 +2235,10 @@ resetBinaryState();
     'a number in parentheses is no complex number in a typed formula: (1)+4, 3*(-2), 4-(-10), (2)(3), -(100), (1/2)+1, (2)^(3), √(16) and an unclosed 3*(5 are worked out');
   assert(run('(5)') === '(5, 0)' && run('(1,2)+4') === '(1, 2) 4' && run('(1 2)') === '(1, 2)' && run('(1) 4') === '(1, 0) 4' && run('(1) (2) +') === '(3, 0)',
     'a complex number, a lone (5) and spaced words stay RPN');
+  assert(run('3 + 4') === '7' && run('2 ^ 10') === '1024' && run('3 × 4') === '12' && run('3 + 4 * 5') === '23' && run('-3 + 4') === '1' && run('10 - 2 - 3') === '5' && run('x * 2') === '`x*2`' && run('e ^ 2') === '7.38905609894',
+    'a formula typed with spaces around its operators, 3 + 4, 2 ^ 10, 3 × 4 or 3 + 4 * 5, is worked out');
+  assert(run('2 3 +') === '5' && run('3 DUP *') === '9' && run('5 DUP * 2 +') === '27' && run('3 +4') === '3 4' && run('1 + 2 +') === '1' && run('+ 3') === '',
+    'operands that run together, a signed number, a command between operands and an operator at either end stay RPN');
   assert(run('2(3+4)') === '14' && run('(1+2)(3+4)') === '21' && run('2sin(30)') === '-1.97606324819' && run('1E3(2)') === '2000.' && run('4.5(2)') === '9.',
     'a product written as 2(3+4) or 2sin(30) is read with its *, and an exponent such as 1E3 stays one');
   assert(run('sin(30)') === '-0.988031624093' && run('sqrt(2)') === '1.41421356237' && run('e^2') === '7.38905609894' && run('π/6') === '0.523598775598',
@@ -2254,6 +2263,8 @@ resetBinaryState();
     'ans is the previous result in a typed formula, ANS(2) the one before it, and ans alone copies it');
   s.clear(); keep('x+1');
   assert(keep('ans*2') === '`x + 1` `(x + 1)*2`', 'ans can be a formula');
+  s.clear(); keep('10');
+  assert(keep('3 + 4') === '10 7' && keep('ans * 2') === '10 7 14', 'a spaced formula is worked out whatever the stack holds, where RPN would add the 3 to level 1, and ans may be spaced too');
   s.clear(); e.resetBuffer(''); e.type('ans*2'); e.enter();
   assert(s.depth === 0 && e.error.includes('ans needs a result; the stack is empty') && e.buffer === 'ans*2', 'ans with nothing on the stack says so and keeps the line');
   s.clear(); keep('7');

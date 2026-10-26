@@ -62,6 +62,14 @@ export function commandSpot(line, id, nth = 0) {
 
 const SYMBOLIC_CONSTANTS = new Set(['π', 'e', 'i']);
 const FORMULA_VALUES = [isReal, isInteger, isRational, isUnit, isSymbolic, isName, isComplex, isList, isVector, isMatrix];
+const INFIX_OPERATORS = new Set(['+', '-', '*', '/', '^']);
+
+// 3 + 4 * x: operands and operators take turns. RPN puts an operator after its operands, so this is a formula typed with spaces.
+function spacedFormula(values) {
+  const operator = (v) => isName(v) && !v.quoted && INFIX_OPERATORS.has(v.id);
+  const operand = (v) => !isName(v) || v.quoted || /^ans$/i.test(v.id) || !lookup(v.id);
+  return values.length >= 3 && values.length % 2 === 1 && values.every((v, i) => (i % 2 ? operator(v) : operand(v)));
+}
 
 function failedSpot(line, values, failed) {
   const name = values[failed];
@@ -694,7 +702,7 @@ export class Entry {
       this.decimalComma = comma && { text: comma, line: plain };
       const glued = gluedSigns(plain);
       this.gluedSigns = glued && { text: glued, line: plain };
-      const called = calledFunction(plain) || groupedNumber(plain) ? formulaOf(plain) : '';
+      const called = calledFunction(plain) || groupedNumber(plain) || spacedFormula(values) ? formulaOf(plain) : '';
       this.calledFunction = called ? { text: called, line: plain } : null;
     }
     let failed = -1;
@@ -723,16 +731,17 @@ export class Entry {
   }
 
   // With algebraic entry on, a line that is one formula and no RPL of its own is worked out as one: it is no RPL at all, or it
-  // reads as a run of signed numbers, a function called with brackets or a number in brackets,
-  // as 2+3, sin(30) and 3*(-2) do.
+  // reads as a run of signed numbers, a function called with brackets, a number in brackets or operands and operators in turn,
+  // as 2+3, sin(30), 3*(-2) and 3 + 4 do.
   _formulaOf(raw) {
     if (!this.formulaEntry) return '';
     const plain = plainPunctuation(raw);
     if (/^\s*ans\s*$/i.test(plain)) return 'ans';
     const formula = formulaOf(plain) || formulaOf(withTimes(plain));
     if (!formula) return '';
-    try { parseTyped(raw); } catch { return formula; }
-    return gluedSigns(plain) === formula || calledFunction(plain) || groupedNumber(plain) ? formula : '';
+    let values;
+    try { values = parseTyped(raw); } catch { return formula; }
+    return gluedSigns(plain) === formula || calledFunction(plain) || groupedNumber(plain) || spacedFormula(values) ? formula : '';
   }
 
   // The answers a formula names are copied from the stack into locals, deepest first, each pick one level deeper for the copies made.
