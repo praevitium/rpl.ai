@@ -2250,6 +2250,13 @@ resetBinaryState();
   run("'pi' PURGE");
   assert(run('sqrt(-4)') === '(0, 2)' && run('ln(-1)') === '(0, 3.14159265359)' && run('2+sqrt(-9)') === '(2, 3)' && run('sqrt(-4)*x') === '`SQRT(-4)*x`',
     'a typed formula whose value is not real is worked out to a complex number, unless it holds an unknown name');
+  assert(run('nCr(5,2)') === '10' && run('nPr(5,2)') === '20' && run('iPart(-3.7)') === '-3.' && run('fPart(-3.7)') === '-0.7' && run('int(-3.7)') === '-4.' && run('ceiling(3.2)') === '4.'
+    && run('round(3.14159,2)') === '3.14' && run('round(2.5)') === '3.' && run('arcsin(0.5)') === '0.523598775598' && run('2*nCr(5,2)+nPr(4,2)') === '32',
+    'a TI\'s function names, nCr, nPr, iPart, fPart, int, ceiling, round and arcsin, work in a typed formula');
+  run("3 'round' STO");
+  assert(run('round(2.5)') === '`round(2.5)`', 'a variable stored under such a name keeps its meaning');
+  run("'round' PURGE");
+  assert(e.formulaText('nCr(5,2)+pi') === 'COMB(5,2)+π', 'formulaText gives a formula as the HP reads it, which the reading notes\' keys use too');
   const products = ['2π', '3x', '2πr', '2e', '2.5x', '3kk'].map((line) => run(line));
   assert(products.join(' ') === '6.28318530718 `3*x` `2*π*r` 5.43656365692 `2.5*x` `3*kk`', `a number written straight against a name or constant, 2π, 3x or 2πr, is a product in a typed formula (${products.join(' ')})`);
   assert(run('2 π') === '2 π' && run('3 x') === '3 x' && run('1E3 2 +') === '1002.' && run('x2') === 'x2',

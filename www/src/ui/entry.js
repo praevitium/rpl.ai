@@ -1,4 +1,4 @@
-import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction, groupedNumber, gluedProduct, plainPunctuation, withTimes, withAnswers, withPi, periodFractionMark, commaFractionMark } from '../rpl/parser.js';
+import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction, groupedNumber, gluedProduct, plainPunctuation, withTimes, withAnswers, withPi, withTiNames, periodFractionMark, commaFractionMark } from '../rpl/parser.js';
 import { formulaOf } from './errors.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
 import { latexToSource } from '../rpl/latex.js';
@@ -753,9 +753,15 @@ export class Entry {
     return gluedSigns(parsed) === parsed.trim() || calledFunction(parsed) || groupedNumber(parsed) || gluedProduct(parsed) || spacedFormula(values) ? formula : '';
   }
 
+  // A formula as the HP reads it: pi is π and a TI's function names are the HP's, unless a variable by that name is stored.
+  formulaText(formula) {
+    const taken = (name) => varRecall(name) !== undefined;
+    return withTiNames(withPi(formula, taken), taken);
+  }
+
   // The answers a formula names are copied from the stack into locals, deepest first, each pick one level deeper for the copies made.
   _formulaLine(formula) {
-    const { text, levels } = withAnswers(withPi(formula, (name) => varRecall(name) !== undefined));
+    const { text, levels } = withAnswers(this.formulaText(formula));
     if (!levels.length) return `'${text}' EVAL`;
     const [deepest] = levels;
     if (this.stack.depth < deepest) {

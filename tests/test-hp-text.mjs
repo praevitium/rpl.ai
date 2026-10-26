@@ -1,5 +1,5 @@
 import { hpTextToSource, parseHpText, formatHpText, HP_TEXT_HEADER } from '../www/src/rpl/hp-text.js';
-import { parseEntry, endsInQuote, plainPunctuation, plainCharacter, bareDecimalComma, numberFieldText, gluedSigns, calledFunction, groupedNumber, gluedProduct } from '../www/src/rpl/parser.js';
+import { parseEntry, endsInQuote, plainPunctuation, plainCharacter, bareDecimalComma, numberFieldText, gluedSigns, calledFunction, groupedNumber, gluedProduct, withTiNames } from '../www/src/rpl/parser.js';
 import { formatSource, format } from '../www/src/rpl/formatter.js';
 import {
   Str, Rational, Integer, RList, Matrix, isDirectory, isProgram, isString, isSymbolic, isTagged, isRational, isInteger, isReal,
@@ -91,6 +91,15 @@ END`;
   assert(['2π', '3x', '2πr', '2e', '2.5x', '.5x', '1E3x', '3E-2x', '2√9', '2ans', '5a+2b', 'x+3x', '2 + 3x', '2π r', '2e^2'].every((src) => gluedProduct(src) === true)
     && ['2 π', '3 x', 'x2', 'x2y', '#1Ah', '#FFh', '1E3', '1E-3', '2E3', '1E3 2 +', '5_m', '3°', '5!', '{ 2x }', '[ 2x ]', "'2x'", '"2x"', '@ 2x', '« 2x »', '(2x)', '2(3)', '2*x', '3.', ''].every((src) => gluedProduct(src) === false),
     'gluedProduct: a number straight against a name or constant at the top of a line is found; spaced words, a number inside a name, a # base number, an exponent, a unit, a list, quote, string, comment or program are not');
+  const noneTaken = () => false;
+  assert(withTiNames('nCr(5,2)+NPR(4,2)', noneTaken) === 'COMB(5,2)+PERM(4,2)' && withTiNames('iPart(-3.7)*fPart(2.5)', noneTaken) === 'IP(-3.7)*FP(2.5)'
+    && withTiNames('int(3.7)+ceiling(3.2)', noneTaken) === 'FLOOR(3.7)+CEIL(3.2)' && withTiNames('arcsin(0.5)+arccos(0)+arctan(1)', noneTaken) === 'ASIN(0.5)+ACOS(0)+ATAN(1)',
+    'withTiNames: a TI\'s function names become the HP\'s');
+  assert(withTiNames('round(3.14159,2)', noneTaken) === 'RND(3.14159,2)' && withTiNames('round(2.5)', noneTaken) === 'RND(2.5,0)' && withTiNames('round(round(2.5)*1.5)', noneTaken) === 'RND(RND(2.5,0)*1.5,0)'
+    && withTiNames('round(max(2.5,3.5))', noneTaken) === 'RND(max(2.5,3.5),0)' && withTiNames('RND(7.5,1)', noneTaken) === 'RND(7.5,1)',
+    'withTiNames: round with no digits rounds to a whole number, RND(x,0), and a call that has its digits is left as it is');
+  assert(withTiNames('int(3)+round(x)', (name) => name === 'int') === 'int(3)+RND(x,0)' && withTiNames('myint(3)+x1int(2)+a.int(1)+int', noneTaken) === 'myint(3)+x1int(2)+a.int(1)+int' && withTiNames('sin(30)', noneTaken) === 'sin(30)',
+    'withTiNames: a stored variable keeps its name, and a longer name, a name beside a digit or a point, a bare name and the HP\'s own functions are not touched');
   assert(numberFieldText('3,14') === '3.14' && numberFieldText('-2,5') === '-2.5' && numberFieldText(',5') === '.5' && numberFieldText('2,5E3') === '2.5E3'
     && numberFieldText('−2,5') === '-2.5' && numberFieldText('３,１') === '3.1' && numberFieldText(' 1.5 ') === '1.5',
     'numberFieldText: a number with a lone comma is a decimal in a field of its own, and the characters of other keyboards read as on the command line');

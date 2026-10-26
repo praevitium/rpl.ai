@@ -467,7 +467,7 @@ class App {
     const numbers = found.text.match(/[-+]?(?:\d+[.,]?\d*|[.,]\d+)(?:[eE][-+]?\d+)?/g).map((n) => n.replace(/^\+/, ''));
     this._noteReading(`${found.text} was read as ${andList(numbers)}: RPL puts an operator after its numbers.`, {
       action: 'Evaluate as a formula',
-      run: () => { this.runLine(found.line.replace(found.text, `'${found.text}' EVAL`)); this._offerAlgebraicEntry(); },
+      run: () => { this.runLine(found.line.replace(found.text, `'${this.entry.formulaText(found.text)}' EVAL`)); this._offerAlgebraicEntry(); },
     });
   }
 
@@ -476,7 +476,7 @@ class App {
   _noteCalledFunction(found) {
     this._noteReading(`${found.text} was read word by word: RPL puts a function or an operator after its arguments.`, {
       action: 'Evaluate as a formula',
-      run: () => { this.runLine(`'${found.text}' EVAL${found.line.slice(found.text.length)}`); this._offerAlgebraicEntry(); },
+      run: () => { this.runLine(`'${this.entry.formulaText(found.text)}' EVAL${found.line.slice(found.text.length)}`); this._offerAlgebraicEntry(); },
     });
   }
 

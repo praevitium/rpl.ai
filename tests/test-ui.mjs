@@ -1817,8 +1817,8 @@ setAngle('RAD');
     'Settings: Algebraic entry is off until switched on, kept as a preference and handed to the command line at start and whenever it changes');
   assert(/_offerAlgebraicEntry\(\) \{\n    if \(this\.prefs\.formulaEntry \|\| this\._algebraicOffered\) return;\n    this\._algebraicOffered = true;\n    this\.toast\('Algebraic entry does this when you press Enter\.', \{ key: 'algebraic', action: 'Turn on', onAction: \(\) => this\.setPrefs\(\{ formulaEntry: true \}\) \}\);/.test(appSrc)
     && appSrc.includes("this.commitEntry(); this._offerAlgebraicEntry(); return;")
-    && appSrc.includes("run: () => { this.runLine(found.line.replace(found.text, `'${found.text}' EVAL`)); this._offerAlgebraicEntry(); },")
-    && appSrc.includes("run: () => { this.runLine(`'${found.text}' EVAL${found.line.slice(found.text.length)}`); this._offerAlgebraicEntry(); },"),
+    && appSrc.includes("run: () => { this.runLine(found.line.replace(found.text, `'${this.entry.formulaText(found.text)}' EVAL`)); this._offerAlgebraicEntry(); },")
+    && appSrc.includes("run: () => { this.runLine(`'${this.entry.formulaText(found.text)}' EVAL${found.line.slice(found.text.length)}`); this._offerAlgebraicEntry(); },"),
     'Algebraic entry: the keys that work a typed formula out (the banner key, the 2+3 note and the sin(30) note) offer the setting once, with a key that turns it on');
   assert(normalizeUiPrefs({}).keepAwake === false && normalizeUiPrefs({ keepAwake: true }).keepAwake === true && normalizeUiPrefs({ keepAwake: 'yes' }).keepAwake === false,
     'Settings: Keep the screen on is off until switched on, and kept as a preference');
@@ -4529,9 +4529,9 @@ setAngle('RAD');
 // 2+3 and 10-4 read as two numbers, so a note offers them as a formula, as the syntax error for 2*3 does.
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(appSrc.includes("action: 'Evaluate as a formula',\n      run: () => { this.runLine(found.line.replace(found.text, `'${found.text}' EVAL`)); this._offerAlgebraicEntry(); },"),
+  assert(appSrc.includes("action: 'Evaluate as a formula',\n      run: () => { this.runLine(found.line.replace(found.text, `'${this.entry.formulaText(found.text)}' EVAL`)); this._offerAlgebraicEntry(); },"),
     'glued signs note: Evaluate as a formula runs the line again with the word, 2+3, quoted and EVALed');
-  assert(appSrc.includes("run: () => { this.runLine(`'${found.text}' EVAL${found.line.slice(found.text.length)}`); this._offerAlgebraicEntry(); },"),
+  assert(appSrc.includes("run: () => { this.runLine(`'${this.entry.formulaText(found.text)}' EVAL${found.line.slice(found.text.length)}`); this._offerAlgebraicEntry(); },"),
     'called function note: Evaluate as a formula runs the line as a formula, with the keys pressed with it after');
 }
 

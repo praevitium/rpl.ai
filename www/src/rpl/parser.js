@@ -470,6 +470,31 @@ export function withPi(formula, isTaken) {
   return formula.replace(/\bpi\b/gi, (word) => (isTaken(word) ? word : 'π'));
 }
 
+// The names a TI's owner calls functions by, where the HP has them under others.
+export const TI_NAMES = Object.freeze({
+  ncr: 'COMB', npr: 'PERM', ipart: 'IP', fpart: 'FP', int: 'FLOOR', ceiling: 'CEIL', round: 'RND', arcsin: 'ASIN', arccos: 'ACOS', arctan: 'ATAN',
+});
+
+// In a formula typed on a phone those names are the HP's functions, unless isTaken says a variable by that name is stored.
+// RND wants its digits in a formula, so round(x), which a TI rounds to a whole number, is RND(x,0).
+export function withTiNames(formula, isTaken) {
+  const named = formula.replace(/(?<![\w.])[A-Za-z]+(?=\s*\()/g, (word) => {
+    const hp = TI_NAMES[word.toLowerCase()];
+    return hp && !isTaken(word) ? hp : word;
+  });
+  const inserts = [];
+  for (const call of named.matchAll(/(?<![\w.])RND\s*\(/g)) {
+    let depth = 1, comma = false, i = call.index + call[0].length;
+    for (; i < named.length && depth; i++) {
+      if (named[i] === '(') depth++;
+      else if (named[i] === ')') depth--;
+      else if (named[i] === ',' && depth === 1) comma = true;
+    }
+    if (!depth && !comma) inserts.push(i - 1);
+  }
+  return inserts.sort((a, b) => b - a).reduce((text, at) => `${text.slice(0, at)},0${text.slice(at)}`, named);
+}
+
 // ans is the previous result and ANS(n) the nth, as a TI and the HP's algebraic mode have them; each becomes a name ANSn.
 export function withAnswers(formula) {
   const found = new Set();
