@@ -436,12 +436,13 @@ class App {
     }
   }
 
-  // What a line that ran was read as, when it may not be what its writer meant: one note, the comma first.
+  // What a line that ran was read as, when it may not be what its writer meant: one note, a function call first, then the comma.
   _noteReadings() {
-    const { decimalComma, gluedSigns } = this.entry;
-    this.entry.decimalComma = this.entry.gluedSigns = null;
+    const { decimalComma, gluedSigns, calledFunction } = this.entry;
+    this.entry.decimalComma = this.entry.gluedSigns = this.entry.calledFunction = null;
     if (this.entry.error || this._running()) return;
-    if (decimalComma && !testUserFlag(-51)) this._noteDecimalComma(decimalComma);
+    if (calledFunction) this._noteCalledFunction(calledFunction);
+    else if (decimalComma && !testUserFlag(-51)) this._noteDecimalComma(decimalComma);
     else if (gluedSigns) this._noteGluedSigns(gluedSigns);
   }
 
@@ -466,6 +467,15 @@ class App {
     this._noteReading(`${found.text} was read as ${andList(numbers)}: RPL puts an operator after its numbers.`, {
       action: 'Evaluate as a formula',
       run: () => this.runLine(found.line.replace(found.text, `'${found.text}' EVAL`)),
+    });
+  }
+
+  // sin(30) or 2(3+4), typed as another calculator takes it, runs word by word here: RPL puts a function after its argument. The
+  // note offers the line as a formula, with the keys pressed with it after.
+  _noteCalledFunction(found) {
+    this._noteReading(`${found.text} was read word by word: RPL puts a function after its argument.`, {
+      action: 'Evaluate as a formula',
+      run: () => this.runLine(`'${found.text}' EVAL${found.line.slice(found.text.length)}`),
     });
   }
 
@@ -616,7 +626,7 @@ class App {
     if (this.entry.error !== this._errorShown) this._showError(this.entry.error);
     if (this.entry.notice && this.entry.notice !== this._noticeShown) this.toast(this.entry.notice);
     this._noticeShown = this.entry.notice;
-    if (this.entry.decimalComma || this.entry.gluedSigns) queueMicrotask(() => this._noteReadings());
+    if (this.entry.decimalComma || this.entry.gluedSigns || this.entry.calledFunction) queueMicrotask(() => this._noteReadings());
     this.display.renderCmdline(this.entry);
     if (this.entry.buffer && this.selection != null) this.clearSelection();
     this.input.render();

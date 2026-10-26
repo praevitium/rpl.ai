@@ -409,6 +409,20 @@ export function gluedSigns(src) {
   return null;
 }
 
+// A function called as other calculators take it, sin(30) or 2(3+4): RPL puts a function after its argument and starts a complex
+// number at a ( , so such a line runs word by word. True when a ( follows a word at the top of the line.
+export function calledFunction(src) {
+  const text = maskedLine(src);
+  let depth = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '(' && !depth && /\w/.test(text[i - 1] ?? '')) return true;
+    if ('{[(«'.includes(c)) depth++;
+    else if ('}])»'.includes(c)) depth = Math.max(0, depth - 1);
+  }
+  return false;
+}
+
 /** One value per top-level object, in entry order.  Unclosed brackets,
  *  strings and quotes close at the end of the input. */
 export function parseEntry(src) {

@@ -1,4 +1,5 @@
-import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns } from '../rpl/parser.js';
+import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction } from '../rpl/parser.js';
+import { formulaOf } from './errors.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
 import { latexToSource } from '../rpl/latex.js';
 import { spreadsheetToSource, htmlTableToSource } from '../rpl/sheet.js';
@@ -124,6 +125,7 @@ export class Entry {
     this.errorSpot = -1;
     this.decimalComma = null;
     this.gluedSigns = null;
+    this.calledFunction = null;
     this._listeners = new Set();
     this._historyListeners = new Set();
     this._history = [];
@@ -671,7 +673,7 @@ export class Entry {
   // (e.line) for Fix the line.  The tail (the keys that go with the line) and the
   // rest of the line wait for a program the line halts, as on the HP.
   _commitEntry(raw, tail = []) {
-    this.decimalComma = this.gluedSigns = null;
+    this.decimalComma = this.gluedSigns = this.calledFunction = null;
     let values;
     try {
       values = parseTyped(raw);
@@ -684,6 +686,8 @@ export class Entry {
     this.decimalComma = comma && { text: comma, line: raw };
     const glued = gluedSigns(raw);
     this.gluedSigns = glued && { text: glued, line: raw };
+    const called = calledFunction(raw) ? formulaOf(raw) : '';
+    this.calledFunction = called ? { text: called, line: raw } : null;
     let failed = -1;
     const onLine = (step) => () => {
       try {
@@ -741,7 +745,7 @@ export class Entry {
     }, '', { keepPartial: true });
     const line = [raw, ...names].filter(Boolean).join(' ');
     tagHalted(mark, '', { line, step });
-    for (const read of [this.decimalComma, this.gluedSigns]) if (read) read.line = line;
+    for (const read of [this.decimalComma, this.gluedSigns, this.calledFunction]) if (read) read.line = line;
     this._emit();
   }
 

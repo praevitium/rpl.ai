@@ -4473,8 +4473,8 @@ setAngle('RAD');
 // A decimal comma typed on a phone keyboard is read as two numbers, as on the HP, so a note says so and offers the switch.
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/if \(this\.entry\.decimalComma \|\| this\.entry\.gluedSigns\) queueMicrotask\(\(\) => this\._noteReadings\(\)\);/.test(appSrc)
-    && /_noteReadings\(\) \{\n\s*const \{ decimalComma, gluedSigns \} = this\.entry;\n\s*this\.entry\.decimalComma = this\.entry\.gluedSigns = null;\n\s*if \(this\.entry\.error \|\| this\._running\(\)\) return;\n\s*if \(decimalComma && !testUserFlag\(-51\)\) this\._noteDecimalComma\(decimalComma\);\n\s*else if \(gluedSigns\) this\._noteGluedSigns\(gluedSigns\);/.test(appSrc),
+  assert(/if \(this\.entry\.decimalComma \|\| this\.entry\.gluedSigns \|\| this\.entry\.calledFunction\) queueMicrotask\(\(\) => this\._noteReadings\(\)\);/.test(appSrc)
+    && /_noteReadings\(\) \{\n\s*const \{ decimalComma, gluedSigns, calledFunction \} = this\.entry;\n\s*this\.entry\.decimalComma = this\.entry\.gluedSigns = this\.entry\.calledFunction = null;\n\s*if \(this\.entry\.error \|\| this\._running\(\)\) return;\n\s*if \(calledFunction\) this\._noteCalledFunction\(calledFunction\);\n\s*else if \(decimalComma && !testUserFlag\(-51\)\) this\._noteDecimalComma\(decimalComma\);\n\s*else if \(gluedSigns\) this\._noteGluedSigns\(gluedSigns\);/.test(appSrc),
     'reading notes: a line is noted once it has run, unless it failed or a program is running, with one note and the decimal comma first, and not with -51 set');
   assert(/parts\.length === 2 && \{\n\s*action: 'Decimal comma',\n\s*run: \(\) => \{\n\s*setUserFlag\(-51\);\n\s*this\.runLine\(found\.line\);/.test(appSrc)
     && /_noteReading\(message, fix\) \{\n\s*const mark = this\.stack\.undoMark\(\);\n\s*const rerun = \(\) => \{\n\s*const typed = this\.entry\.buffer;\n\s*fix\.run\(\);\n\s*if \(typed\.trim\(\)\) this\.entry\.recall\(typed\);\n\s*\};\n\s*this\.undoToast\(message, fix && \{ action: fix\.action, onAction: \(\) => this\._undoIfLatest\(mark, rerun\) \}\);/.test(appSrc),
@@ -4486,6 +4486,8 @@ setAngle('RAD');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(appSrc.includes("action: 'Evaluate as a formula',\n      run: () => this.runLine(found.line.replace(found.text, `'${found.text}' EVAL`)),"),
     'glued signs note: Evaluate as a formula runs the line again with the word, 2+3, quoted and EVALed');
+  assert(appSrc.includes("run: () => this.runLine(`'${found.text}' EVAL${found.line.slice(found.text.length)}`),"),
+    'called function note: Evaluate as a formula runs the line as a formula, with the keys pressed with it after');
 }
 
 // A field that holds one number reads 3,14 as the decimal it is, whichever way -51 is set.

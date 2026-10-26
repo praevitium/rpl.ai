@@ -149,6 +149,11 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
 
   const few = describeError('+: Too few arguments', ctx({ depth: 1 }));
   assert(few.title === '+ needs two values; the stack has one value.', 'describeError: too few arguments counts what is missing');
+  const called = describeError('SIN: Too few arguments', ctx({ failure: { op: 'SIN', levels: [], depth: 0 }, depth: 0, line: 'sin(30)' }));
+  assert(called.fixes[0].id === 'formula' && called.fixes[0].arg === 'sin(30)' && /Or, in quotes, it is a formula, 'sin\(30\)', that EVAL works out\./.test(called.detail)
+    && !describeError('SIN: Too few arguments', ctx({ depth: 0, line: '5 3 +' })).fixes.some((f) => f.id === 'formula')
+    && !describeError('SIN: Too few arguments', ctx({ depth: 0, line: 'SWAP' })).fixes.some((f) => f.id === 'formula'),
+    'describeError: a function typed as sin(30) with nothing on the stack offers the line as a formula, and a line that is no formula does not');
   const rolledBack = describeError('DROP: Too few arguments', ctx({ failure: { op: 'DROP', levels: [], depth: 0 }, depth: 4 }));
   assert(rolledBack.title === 'DROP needs one value; the stack had none.',
     'describeError: DROP after CLEAR counts the stack DROP saw, not the four values the rollback put back');
