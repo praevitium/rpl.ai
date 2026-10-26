@@ -734,9 +734,10 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   banner with the seconds it has run, a Pause key (an icon under 480 px)
   and a Stop key; the ON key, Esc and the back button stop it too, and the
   rest of the page waits until it ends or is paused. Pause halts it as a
-  HALT would, with Continue and Step on the banner that follows. The
-  screen stays awake while it runs, and with the page in the background it
-  goes on in slower steps, a pause every second and a half.
+  HALT would, with Continue and Step on the banner that follows, and a
+  Variables key to its local variables when it has any. The screen stays
+  awake while it runs, and with the page in the background it goes on in
+  slower steps, a pause every second and a half.
 
 ---
 
@@ -1030,7 +1031,12 @@ with its next word marked and Continue, Step, Step into and Stop work as
 for any halted program, so a long run can be looked into without editing a
 `HALT` into it, and the stack and variables can be looked at or changed
 first. Stop from a paused program is the same Stop, with the same note and
-Undo.
+Undo. While a program is halted, stepped or paused, its local variables
+lead the VAR menu as keys marked with a dot and head the Variables drawer,
+and the banner has a Variables key (an icon on a phone) that opens the
+menu: tap one to put its value on the stack, ↰ to store level 1 into it,
+↱ to recall it without running it. Typing a local's name, or `STO` into
+it, works as before.
 
 ![A halted program](screenshots/debugging.png)
 

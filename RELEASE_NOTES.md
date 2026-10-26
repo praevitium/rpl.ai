@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.95 (2026-10-25)
+**Latest release:** v0.8.96 (2026-10-25)
 
 ---
 
@@ -18,6 +18,25 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.96 — 2026-10-25
+
+- Fixed: Stop left a program parked when another had been started over a
+  running one. The older program stayed paused with no timer to resume it, so
+  the page stayed busy with no shield, and its banner went on saying Running
+  while nothing ran. Stop now ends every program that is running, not only
+  the newest.
+- Added: a halted, stepped or paused program's local variables lead the VAR
+  menu as keys marked with a dot, and head the Variables drawer. Tap one to
+  put its value on the stack, ↰ stores level 1 into it and ↱ recalls it
+  without running it, so a program's variables can be looked at and changed
+  before Continue; a store from the command line refreshes the drawer. Before,
+  a local could be reached only by typing its name.
+- Changed: the halted banner (HALT, a step, PROMPT or a Pause) has a Variables
+  key, an icon under 480 px, when the program has locals; it opens the VAR menu
+  with them first and turns the soft keys on in minimal view.
 
 ---
 
