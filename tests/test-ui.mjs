@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { Stack } from '../www/src/rpl/stack.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import {
@@ -4695,4 +4695,18 @@ setAngle('RAD');
   assert(appSrc.includes('const CAS_SLOW_MS = 2500;') && appSrc.includes("this.toast('Loading the algebra engine…', { key: 'cas', timeout: Infinity, transient: true });")
     && appSrc.includes("this.toast('The algebra engine is ready', { key: 'cas' });") && /onAction: \(\) => this\.loadCas\(\{ now: true \}\)/.test(appSrc),
     'algebra engine: a download that takes over 2.5 s gets a note, replaced by one saying it is ready or, when it fails, one with Try again, which starts at once');
+}
+
+{
+  const www = new URL('../www/', import.meta.url);
+  const sources = readdirSync(new URL('src/', www), { recursive: true }).filter((f) => f.endsWith('.js')).map((f) => `src/${f}`).concat('index.html');
+  const loose = [];
+  for (const file of sources) {
+    for (const m of readFileSync(new URL(file, www), 'utf8').matchAll(/<(?:input|textarea)\b[^>]*>/g)) {
+      if (/type="(?:checkbox|radio|file|range)"/.test(m[0])) continue;
+      const missing = ['autocapitalize="off"', 'autocorrect="off"', 'spellcheck="false"'].filter((a) => !m[0].includes(a));
+      if (missing.length) loose.push(`${file}: ${m[0].slice(0, 60)} lacks ${missing.join(' ')}`);
+    }
+  }
+  assert(loose.length === 0, `every text field asks a phone's keyboard not to capitalize, correct or spell-check it, as a name's case and a command's spelling matter${loose.length ? `; ${loose.join('; ')}` : ''}`);
 }

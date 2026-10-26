@@ -1855,7 +1855,7 @@ export class EquationEditor {
     this.el.tabIndex = 0;
     this.el.setAttribute('role', 'textbox');
     this.el.setAttribute('aria-label', EQW_LABEL);
-    this.el.innerHTML = `<input class="eqw-keys" type="text" tabindex="-1" aria-label="${EQW_LABEL}" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done"><div class="eqw-canvas"></div><div class="eqw-text" hidden><textarea class="eqw-ta" rows="1" spellcheck="false" autocomplete="off" aria-label="The expression as text"></textarea></div><div class="eqw-ins" aria-live="polite"></div>`;
+    this.el.innerHTML = `<input class="eqw-keys" type="text" tabindex="-1" aria-label="${EQW_LABEL}" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done"><div class="eqw-canvas"></div><div class="eqw-text" hidden><textarea class="eqw-ta" rows="1" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" aria-label="The expression as text"></textarea></div><div class="eqw-ins" aria-live="polite"></div>`;
     this.keys = this.el.querySelector('.eqw-keys');
     this.canvas = this.el.querySelector('.eqw-canvas');
     this.textBox = this.el.querySelector('.eqw-text');
