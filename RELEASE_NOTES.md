@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.108 (2026-10-26)
+**Latest release:** v0.8.109 (2026-10-26)
 
 ---
 
@@ -20,6 +20,35 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.109 — 2026-10-26
+
+- Fixed: a string counted an emoji as two characters, so `"😀a" SIZE` gave 3,
+  and HEAD, TAIL, SUB, POS and REPL could cut one in half and leave a
+  broken character. A string now counts characters as NUM and CHR take them,
+  an emoji from a phone keyboard being one, and POS answers in characters.
+  On the command line the keypad's ◀ ▶ and ⌫ stepped through half an emoji,
+  so it took two presses with a broken character between; they now step
+  over a whole emoji or a letter with its accent. The ellipsis that shortens
+  a long string in an error banner and in the LCD picture fell between the
+  halves too, and now counts whole characters.
+- Added: a matrix, vector or list written beside an operator in a typed or
+  quoted formula is an operand like a number, as on a TI:
+  `'[1,2,3]*2' EVAL` gives `[ 2 4 6 ]`, `'[[1,2],[3,4]]*[[5],[6]]' EVAL`
+  gives `[[ 17 ][ 39 ]]`, `'[[1,2],[3,4]]^-1' EVAL` the inverse and
+  `'[1,2]*[3,4]' EVAL` the dot product 11. A stored matrix takes part with a
+  literal, `'A*[[5],[6]]'`, and the operators are the commands' own, so a
+  list is joined or multiplied as the HP does it. With Algebraic entry on the
+  same lines are typed on the command line and worked out on Enter,
+  `[1,2,3]*2`, `-[1,2,3]` and `3-[1,2,3]` included. An array on its own,
+  `'[1,2]'`, is still a name, and `[1 2 3] (4)` is still a vector and a
+  complex number.
+- Changed: a call or operator in a formula whose arguments are all values
+  says what the command says, as in RPN: `'[1,2]*[3,4,5]' EVAL` is Invalid
+  dimension and `'IQUOT(5,0)' EVAL` is Infinite result, where 0.8.108 left
+  the formula as written. The failing formula stays on level 1 with the
+  error banner, as the HP leaves an argument. A call with an unknown name
+  among its arguments, `'COMB(N,2)'`, still stays as it was.
 
 ## v0.8.108 — 2026-10-26
 

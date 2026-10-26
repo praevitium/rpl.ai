@@ -151,8 +151,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   evaluated: `'FACTOR(X^2+5*X+6)' EVAL` gives `(X+2)*(X+3)`,
   `'DIV2(X^2+X+1,2*X+4)' EVAL` gives the list `{ 1/2*X-1/2 3 }` of its two
   results, and a call the command cannot work out, `'COMB(N,2)'` with N
-  unknown, stays as it was. Or press `⌘E`, type `x^2-5x+6=0`, and
-  click the Solve card. `` `EXP(X)` `X` 3 TAYLR `` gives the Taylor polynomial
+  unknown, stays as it was, while a call on values alone says what the
+  command says, as in RPN: `'[1,2]*[3,4,5]' EVAL` is Invalid dimension.
+  Or press `⌘E`, type `x^2-5x+6=0`, and click the Solve card.
+  `` `EXP(X)` `X` 3 TAYLR `` gives the Taylor polynomial
   `1+X+1/2*X^2+1/6*X^3`, SERIES expands around any point with the limit and
   remainder, and ZEROS lists the roots on their own. `` `X^2-1` TABVAR ``
   gives the variation table, `-∞ ↓ -1 ↑ ∞`, from the signs of the
@@ -275,7 +277,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   or list can be written inside a call's parentheses: `'DET([[1,2],[3,4]])'
   EVAL` gives -2, `'DOT([1,2],[3,4])' EVAL` 11, `'SIZE({1,2,3})' EVAL` 3, and
   operators between two of them are the commands' own,
-  `'DET([[1,2],[3,4]]*[[0,1],[1,0]])' EVAL` giving 2. A square matrix to
+  `'DET([[1,2],[3,4]]*[[0,1],[1,0]])' EVAL` giving 2. One can stand beside an
+  operator too, as a number does: `'[[1,2],[3,4]]*[[5],[6]]' EVAL` gives
+  `[[ 17 ][ 39 ]]` and `'[1,2,3]*2' EVAL` gives `[ 2 4 6 ]`, while a quoted
+  array on its own, `'[1,2]'`, is still a name. A square matrix to
   a negative whole power is the power of its inverse, as a TI's `[A]^-1`
   is: `[[ 1 2 ][ 3 4 ]] -1 ^` is `[[ -2 1 ][ 3/2 -1/2 ]]`, `'A^-2' EVAL`
   squares the inverse of a stored `A`, and a singular matrix says Infinite
@@ -309,7 +314,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   window, a formula's for one, fades at the edge that has more rows.
   `→STR` writes a number in the display format, as on the HP, so
   `2 FIX "Total: " 12.3456 →STR +` gives `"Total: 12.35"`, and a string
-  at level 1 shows whole, line breaks included.
+  at level 1 shows whole, line breaks included. A string holds any Unicode
+  text, not only the HP's 256 characters, and counts an emoji from a phone
+  keyboard as one character: `"😀a" SIZE` is 2, `"😀a" 1 1 SUB` is
+  `"😀"`, and the keypad's ◀ ▶ and ⌫ step over it whole.
 - **Programs.** `` « DUP * » `SQUARE` STO `` stores a program; `5 SQUARE`
   then gives `25`, and SQUARE appears on the VARS menu. A stored program
   runs by name like a built-in. Built-in names such as `SQ` are reserved.
@@ -1353,9 +1361,12 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
   offer the HP's name for them, `ncr` giving COMB, with the setting on or
   off. Any command can be called in a formula, in lowercase too:
   `factor(x^2+5x+6)`, `lcm(12,18)` and `det([[1,2],[3,4]])` are worked out
-  on Enter. With the setting off, the Evaluate as a formula key on the
-  error banner does the same, reading the line just as Enter does, so
-  `2x+1`, `ncr(5,2)` and `sin(30)` come out as they would with it on. It
+  on Enter, and a matrix, vector or list is an operand like a number:
+  `[1,2,3]*2`, `[[1,2],[3,4]]*[[5],[6]]`, `[[1,2],[3,4]]^-1` and, with a
+  stored `A`, `A^-1*[[1],[2]]` are worked out as a TI takes them. With
+  the setting off, the Evaluate as a formula key on the error banner does
+  the same, reading the line just as Enter does, so `2x+1`, `ncr(5,2)` and
+  `sin(30)` come out as they would with it on. It
   reads only a line that would otherwise fail or be read word by word, which
   takes in a number in brackets, `(5)+1`, a complex number in RPL, and
   operands and operators that take turns, `3 + 4`, where RPN puts an
@@ -1500,6 +1511,9 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
 - ⌫ on an empty line leaves the stack alone, where the HP's drops level 1.
   DROP is on the STACK menu, the key strip above a phone's keyboard and a
   level's menu, and ⌫ still removes a selected level.
+- A string holds any Unicode text, where the HP has its 256 characters, and
+  an emoji from a phone keyboard counts as one character in `SIZE`, `SUB`,
+  `HEAD`, `TAIL`, `POS` and `REPL`, and as one step of the keypad's ◀ ▶ and ⌫.
 - A line that starts with `?` asks the assistant, so the undefined symbol `?`
   comes from the Catalog, command search, `'?'` or anywhere later in a line.
 

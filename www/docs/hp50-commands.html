@@ -5398,6 +5398,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
     <p>To evaluate a symbolic argument to a numerical result, evaluate the argument in Numerical Results mode (flag –3 set) or execute →NUM on that argument.</p>
   <p>In rpl.ai a matrix or vector with symbolic entries evaluates entry by entry, so <code>[[ X 1 ][ 2 Y ]] EVAL</code> with 3 stored in X gives <code>[[ 3 1 ][ 2 Y ]]</code>; an entry that gives other than one value is a Bad argument value. A numeric array goes back on the stack as it is.</p>
   <p>In exact mode rpl.ai's EVAL gathers like terms and like factors and drops identities: <code>'X+X'</code> gives <code>2*X</code>, <code>'X*X'</code> gives <code>X^2</code>, <code>'X/X'</code> gives <code>1</code> and <code>'1*X+0'</code> gives <code>X</code>. <code>'(X^2)^(1/2)'</code> stays, as it is |X|, not X.</p>
+  <p>In rpl.ai a matrix, vector or list written beside an operator in a formula is an operand like a number, so <code>'[[1,2],[3,4]]*[[5],[6]]' EVAL</code> gives <code>[[ 17 ][ 39 ]]</code> and <code>'[1,2,3]*2' EVAL</code> gives <code>[ 2 4 6 ]</code>. A call or operator whose arguments are all values says what the command says, so <code>'[1,2]*[3,4,5]' EVAL</code> is Invalid dimension; with an unknown name among the arguments, <code>'COMB(N,2)'</code>, the formula stays as it was.</p>
   </dd>
   <dt class="cmd-label cmd-label-flags">Flags</dt>
   <dd class="cmd-field cmd-field-flags">
@@ -7087,6 +7088,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>First Listed Element Command: Returns the first element of a list or string.</p>
+    <p>In rpl.ai a string holds any Unicode text and a character is one code point, so an emoji from a phone keyboard counts as one.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -11893,6 +11895,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Position Command: Returns the position of a substring within a string or the position of an object within a list. If there is no match for obj or substring, POS returns zero.</p>
+    <p>In rpl.ai a string holds any Unicode text and a character is one code point, so an emoji from a phone keyboard counts as one.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -13533,6 +13536,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Replace Command: Replaces a portion of the target object (first input) with a specified object (third input), beginning at a specified position (second input). For arrays, nposition counts in row order. For matrices, nposition specifies the new location of the upper left-hand element of the replacement matrix. For graphics objects, the upper left corner of grob1 is positioned at the user-unit or pixel coordinates (x,y) or { #n #m }. From there, it overwrites a rectangular portion of grobtarget or PICT. If grob1 extends past grobtarget or PICT in either direction, it is truncated in that direction. If the specified coordinate is not on the target graphics object, the target graphics object does not change.</p>
+    <p>In rpl.ai a string holds any Unicode text and a character is one code point, so an emoji from a phone keyboard counts as one.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -15225,6 +15229,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Size Command: Returns the number of characters in a string, the number of digits in an integer, the number of elements in a list, the dimensions of an array, the number of objects in a unit object or algebraic object, or the dimensions of a graphics object. The size of a unit is computed as follows: the scalar (+1), the underscore (+1), each unit name (+1), operator or exponent (+1), and each prefix (+2). Any object type not listed above returns a value of 1.</p>
+    <p>In rpl.ai a string holds any Unicode text and a character is one code point, so an emoji from a phone keyboard counts as one.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -16272,6 +16277,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Subset Command: Returns the portion of a string or list defined by specified positions, or returns the rectangular portion of a graphics object or PICT defined by two corner pixel coordinates. If nend position is less than nstart position, SUB returns an empty string or list. Values of n less than 1 are treated as 1; values of n exceeding the length of the string or list are treated as that length. For graphics objects, a user-unit coordinate less than the minimum user-unit coordinate of the graphics object is treated as that minimum. A pixel or user-unit coordinate greater than the maximum pixel or user-unit coordinate of the graphics object is treated as that maximum.</p>
+    <p>In rpl.ai a string holds any Unicode text and a character is one code point, so an emoji from a phone keyboard counts as one.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
@@ -16605,6 +16611,7 @@ input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px soli
   <dt class="cmd-label cmd-label-description">Description</dt>
   <dd class="cmd-field cmd-field-description">
     <p>Last Listed Elements Command: Returns all but the first element of a list or string.</p>
+    <p>In rpl.ai a string holds any Unicode text and a character is one code point, so an emoji from a phone keyboard counts as one.</p>
   </dd>
   <dt class="cmd-label cmd-label-input-output">Input/Output</dt>
   <dd class="cmd-field cmd-field-input-output">
