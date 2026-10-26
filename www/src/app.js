@@ -455,7 +455,7 @@ class App {
       run: () => {
         setUserFlag(-51);
         this.runLine(found.line);
-        this.toast(`Decimal comma is on: ${found.text} is one number now, and ; separates the parts of a complex number. Turn it off in Settings.`, { key: 'comma' });
+        this.toast(`Decimal comma is on: ${found.text} is one number now, and ; separates the parts of a complex number.`, { key: 'comma', action: 'Turn off', onAction: () => clearUserFlag(-51) });
       },
     });
   }

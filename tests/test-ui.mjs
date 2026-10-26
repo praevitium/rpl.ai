@@ -4479,6 +4479,8 @@ setAngle('RAD');
   assert(/parts\.length === 2 && \{\n\s*action: 'Decimal comma',\n\s*run: \(\) => \{\n\s*setUserFlag\(-51\);\n\s*this\.runLine\(found\.line\);/.test(appSrc)
     && /_noteReading\(message, fix\) \{\n\s*const mark = this\.stack\.undoMark\(\);\n\s*const rerun = \(\) => \{\n\s*const typed = this\.entry\.buffer;\n\s*fix\.run\(\);\n\s*if \(typed\.trim\(\)\) this\.entry\.recall\(typed\);\n\s*\};\n\s*this\.undoToast\(message, fix && \{ action: fix\.action, onAction: \(\) => this\._undoIfLatest\(mark, rerun\) \}\);/.test(appSrc),
     'decimal comma note: its Decimal comma key undoes the line, sets -51 and runs the line again, keeping a line typed since, and only a lone comma offers it');
+  assert(appSrc.includes("{ key: 'comma', action: 'Turn off', onAction: () => clearUserFlag(-51) }"),
+    'decimal comma note: the note that says it is on has a Turn off key, which clears -51 again');
 }
 
 // 2+3 and 10-4 read as two numbers, so a note offers them as a formula, as the syntax error for 2*3 does.
