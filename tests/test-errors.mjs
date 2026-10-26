@@ -115,8 +115,10 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   const array = describeError('Bad complex literal: ([[1,2],[3,4]])', ctx({ line: 'det([[1,2],[3,4]])' }));
   assert(array.fixes[0].id === 'formula' && array.fixes[0].arg === 'det([[1,2],[3,4]])' && /In quotes it is a formula, 'det\(\[\[1,2\],\[3,4\]\]\)'/.test(array.detail),
     'syntax banner: a matrix among a call\'s arguments, det([[1,2],[3,4]]), gets the formula fix');
-  assert(['[1 2 3] 4 +', '[[1,2],[3,4]]*2', '{1 2} (3)', 'det([1,2)', 'det(]1,2[)', 'det([1,2})'].every((line) => !describeError('Syntax error near 4', ctx({ line })).fixes.some((f) => f.id === 'formula' && f.arg === line)),
-    'syntax banner: no formula fix for an array outside the parentheses, or for brackets that do not match');
+  assert(['[1 2 3] 4 +', '[1 2 3]', '[1 -2 3]', '{1 2} (3)', 'det([1,2)', 'det(]1,2[)', 'det([1,2})'].every((line) => !describeError('Syntax error near 4', ctx({ line })).fixes.some((f) => f.id === 'formula' && f.arg === line)),
+    'syntax banner: no formula fix for an array on its own or in an RPN line, or for brackets that do not match');
+  assert(['[[1,2],[3,4]]*2', '2*[1,2,3]', '[1,2]+[3,4]', '[[1,2],[3,4]]^-1', '{1,2,3}*2'].every((line) => describeError('Syntax error near 4', ctx({ line })).fixes.some((f) => f.id === 'formula' && f.arg === line)),
+    'syntax banner: an array or list as an operand, [[1,2],[3,4]]*2 or {1,2,3}*2, gets the formula fix');
   const products = describeError('Syntax error near x+1', ctx({ line: '2x+1' }));
   assert(products.fixes[0].id === 'formula' && products.fixes[0].arg === '2*x+1' && describeError('Bad complex literal: (x^2+5x+6)', ctx({ line: 'factor(x^2+5x+6)' })).fixes[0].arg === 'factor(x^2+5*x+6)'
     && !describeError('Syntax error near DUPP', ctx({ line: '3 DUPP' })).fixes.some((f) => f.id === 'formula'),

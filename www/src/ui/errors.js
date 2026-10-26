@@ -189,22 +189,10 @@ export const ERROR_KINDS = Object.freeze({
   },
 });
 
-// A matrix, vector or list among a call's arguments, det([[1,2],[3,4]]), is part of the formula; one outside the parentheses is RPL.
-function arraysInCalls(text) {
-  let parens = 0, brackets = 0;
-  for (const c of text) {
-    if ('[{'.includes(c)) { if (!parens && !brackets) return false; brackets++; }
-    else if (']}'.includes(c)) { if (--brackets < 0) return false; }
-    else if (!brackets && c === '(') parens++;
-    else if (!brackets && c === ')') parens--;
-  }
-  return brackets === 0;
-}
-
 // A line typed the way other calculators take it, 2^10 or e^2, is a formula once quoted; a phone's × and ÷ are * and /.
 export function formulaOf(line) {
   const text = plainPunctuation(String(line ?? '').trim());
-  if (!/[\^*/+\-√=<>(]/.test(text) || /['`"«»]/.test(text) || !arraysInCalls(text)) return '';
+  if (!/[\^*/+\-√=<>(]/.test(text) || /['`"«»]/.test(text)) return '';
   try { return parseTyped(`'${text}'`).length === 1 ? text : ''; } catch { return ''; }
 }
 

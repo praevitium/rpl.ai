@@ -2060,6 +2060,7 @@ function _evalObjects(ast, keeps) {
   const approx = getApproxMode();
   const walk = (node) => {
     if (node.kind === 'num') return _numToRpl(node);
+    if (_isArrayLiteral(node)) return _astToRplValue(node);
     if (node.kind === 'var') {
       const value = bound.get(node.name) ?? (approx && !keeps(node.name) ? _symConstantRpl(node.name) : undefined);
       return _isObjectValue(value) || isReal(value) || isInteger(value) || isRational(value) ? value : undefined;

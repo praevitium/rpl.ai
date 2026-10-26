@@ -9376,4 +9376,24 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   varStore('F', parseEntry("'DET([[1,2],[3,4]])'")[0]);
   assert(top('F EVAL') === '-2' && top('F') === '`DET([[1,2],[3,4]])`', 'array arguments: a stored call keeps its literal until it is evaluated');
   varPurge('F');
+
+  // A quoted algebraic read by the RPL parser takes an array or list wherever a number goes, [1,2,3]*2, never alone.
+  const operand = parseAlgebra('[1,2,3]*2+X', { operands: true });
+  assert(operand.kind === 'bin' && operand.l.kind === 'bin' && operand.l.l.kind === 'var' && operand.l.l.name === '[1,2,3]' && [...freeVars(operand)].join() === 'X',
+    'array operands: with operands the parser holds an array beside an operator as the text it was written in, and free variables skip it');
+  assertThrows(() => parseAlgebra('[1,2,3]', { operands: true }), /on its own/, 'array operands: an array on its own is no formula, so a quoted one stays a name');
+  assert(top("'[1,2,3]*2' EVAL") === '[ 2 4 6 ]' && top("'2*[1,2,3]-[1,1,1]' EVAL") === '[ 1 3 5 ]' && top("'-[1,2,3]' EVAL") === '[ -1 -2 -3 ]'
+    && top("'{1,2,3}*2' EVAL") === '{ 2 4 6 }' && top("'([1,2]+[3,4])*2' EVAL") === '[ 8 12 ]' && top("'[1,2,3]/2' EVAL") === '[ 1/2 1 3/2 ]',
+    'array operands: a vector or list in a sum, a product, a sign, a quotient or brackets is worked out by the commands');
+  assert(top("'[[1,2],[3,4]]*[[5],[6]]' EVAL") === '[[ 17 ][ 39 ]]' && top("'[[1,2],[3,4]]^-1' EVAL") === '[[ -2 1 ][ 3/2 -1/2 ]]' && top("'[[1,2],[3,4]]^2' EVAL") === '[[ 7 10 ][ 15 22 ]]'
+    && top("'[1,2]*[3,4]' EVAL") === '11' && top("'[[1,2],[3,4]]/[[1,0],[0,2]]' EVAL") === '[[ 1 2 ][ 3/2 2 ]]',
+    'array operands: matrices multiply, invert, square and divide, and two vectors give their dot product');
+  assert(top("'[1,2]*X' EVAL") === '[ `X` `2*X` ]' && top("'[1,2]+[3,4,5]' EVAL") === '`[1,2] + [3,4,5]`' && top("'[1,2,3]^2' EVAL") === '`[1,2,3]^2`',
+    'array operands: an unknown name goes into the entries, and sizes or powers the commands refuse leave the formula as it was');
+  varStore('A', parseEntry('[[1 2][3 4]]')[0]);
+  assert(top("'A*[[5],[6]]' EVAL") === '[[ 17 ][ 39 ]]' && top("'A^-1*[[1],[2]]' EVAL") === '[[ 0 ][ 1/2 ]]' && top("'A*[1,2]' EVAL") === '[ 5 11 ]' && top("'A+[[1,1],[1,1]]' EVAL") === '[[ 2 3 ][ 4 5 ]]',
+    'array operands: a stored matrix takes part with them, as it does with another stored one');
+  varPurge('A');
+  assert(top("'[1,2,3]*2' →NUM") === '[ 2. 4. 6. ]', 'array operands: →NUM works them out');
+  assertThrows(() => runLine("'[1,-2]'"), /Invalid algebraic/, 'array operands: a quoted array with a sign in it is still no algebraic');
 }

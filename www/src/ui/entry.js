@@ -1,4 +1,4 @@
-import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction, groupedNumber, gluedProduct, plainPunctuation, withTimes, withAnswers, withPi, withTiNames, periodFractionMark, commaFractionMark } from '../rpl/parser.js';
+import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, signedArray, calledFunction, groupedNumber, gluedProduct, plainPunctuation, withTimes, withAnswers, withPi, withTiNames, periodFractionMark, commaFractionMark } from '../rpl/parser.js';
 import { formulaOf } from './errors.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
 import { latexToSource } from '../rpl/latex.js';
@@ -726,7 +726,7 @@ export class Entry {
       const parsed = asParsed(plain);
       const glued = gluedSigns(parsed) && asTyped(gluedSigns(parsed));
       this.gluedSigns = glued && plain.includes(glued) ? { text: glued, line: plain } : null;
-      const called = calledFunction(parsed) || groupedNumber(parsed) || spacedFormula(values) ? formulaOf(plain) : '';
+      const called = calledFunction(parsed) || groupedNumber(parsed) || signedArray(parsed) || spacedFormula(values) ? formulaOf(plain) : '';
       this.calledFunction = called ? { text: called, line: plain } : null;
     }
     let failed = -1;
@@ -769,7 +769,7 @@ export class Entry {
     let values;
     try { values = parseTyped(raw); } catch { return formula; }
     const parsed = asParsed(plain);
-    return gluedSigns(parsed) === parsed.trim() || calledFunction(parsed) || groupedNumber(parsed) || gluedProduct(parsed) || spacedFormula(values) ? formula : '';
+    return gluedSigns(parsed) === parsed.trim() || calledFunction(parsed) || groupedNumber(parsed) || signedArray(parsed) || gluedProduct(parsed) || spacedFormula(values) ? formula : '';
   }
 
   // Enter as it is with Algebraic entry on, for a fix that offers the line as a formula while the setting is off.

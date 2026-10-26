@@ -2298,6 +2298,21 @@ resetBinaryState();
     'a TI\'s names for matrix and vector functions, dotP, crossP, identity, eigVl and eigVc, are the HP\'s in a typed formula, and norm already is one');
   assert(run('[1 2 3] (4)') === '[ 1 2 3 ] (4, 0)' && run('[1 2 3] 2 *') === '[ 2 4 6 ]' && run('{1 2} {3} +') === '{ 1 2 3 }' && run('[[1,2],[3,4]] DET') === '-2',
     'an array outside a call\'s parentheses leaves the line RPN');
+  assert(run('[1 2 3] [4 5 6] +') === '[ 5 7 9 ]' && run('[1 2 3]') === '[ 1 2 3 ]' && run('[1 -2 3]') === '[ 1 -2 3 ]' && run('{ 1 2 + }') === '{ 1 2 + }' && run('[1 2 3] 4') === '[ 1 2 3 ] 4',
+    'an array that is alone or among spaced RPN words is RPL, and a sign inside one is no operator');
+  assert(run('[1,2,3]*2') === '[ 2 4 6 ]' && run('2*[1,2,3]') === '[ 2 4 6 ]' && run('[[1,2],[3,4]]*[[5],[6]]') === '[[ 17 ][ 39 ]]' && run('[[1 2][3 4]]*[[5][6]]') === '[[ 17 ][ 39 ]]'
+    && run('[[1,2],[3,4]]^-1') === '[[ -2 1 ][ 3/2 -1/2 ]]' && run('[1,2]+[3,4]') === '[ 4 6 ]' && run('[1,2,3]-[1,1,1]') === '[ 0 1 2 ]' && run('{1,2}*3') === '{ 3 6 }' && run('{1,2,3}+1') === '{ 1 2 3 1 }' && run('([1,2]+[3,4])*2') === '[ 8 12 ]',
+    'a matrix, vector or list as an operand of a typed formula, [1,2,3]*2 or [[1,2],[3,4]]*[[5],[6]], is worked out, as on a TI');
+  run("[[1 2][3 4]] 'A' STO");
+  assert(run('A*[[5],[6]]') === '[[ 17 ][ 39 ]]' && run('A^-1*[[1],[2]]') === '[[ 0 ][ 1/2 ]]' && run('2*A') === '[[ 2 4 ][ 6 8 ]]' && run('A*[1,2]') === '[ 5 11 ]',
+    'a stored matrix takes part in a typed formula with an array literal');
+  run("'A' PURGE");
+  assert(run('[1,2]*[3,4,5]') === '`[1,2]*[3,4,5]`' && run('[1,2,3]^2') === '`[1,2,3]^2`' && run('-[1,2,3]') === '[ -1 -2 -3 ]' && run('3-[1,2,3]') === '[ 2 1 0 ]',
+    'sizes or powers the commands refuse leave the formula as it was, and a sign stands before an array as it does before a number');
+  e.formulaEntry = false;
+  assert(run('[1,2,3]*2') === '' && e.error !== '' && run('[1,2]+[3,4]') === '[ 1 2 ]' && e.calledFunction?.text === '[1,2]+[3,4]' && run('{1,2,3}+1') === '{ 1 2 3 } 1' && e.calledFunction?.text === '{1,2,3}+1',
+    'with algebraic entry off such lines stay RPN, and the ones that ran word by word keep the line for the note that offers it as a formula');
+  e.formulaEntry = true;
   assert(run('det([[1,2],[3,4]') === '' && e.error !== '' && run('det([1,2)') === '' && e.error !== '', 'an array that never closes is an error, not a formula');
   const products = ['2π', '3x', '2πr', '2e', '2.5x', '3kk'].map((line) => run(line));
   assert(products.join(' ') === '6.28318530718 `3*x` `2*π*r` 5.43656365692 `2.5*x` `3*kk`', `a number written straight against a name or constant, 2π, 3x or 2πr, is a product in a typed formula (${products.join(' ')})`);

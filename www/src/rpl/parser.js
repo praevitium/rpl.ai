@@ -444,6 +444,23 @@ export function groupedNumber(src) {
   return false;
 }
 
+// A sign straight against an array or list, [1,2]+3, {1,2,3}-1 or -[1,2], is an operator as other calculators take it, where RPL starts a
+// number of its own or puts the operator after its operands. True when one stands at the top of the line.
+export function signedArray(src) {
+  const text = maskedLine(src);
+  let depth = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if ((c === '[' || c === '{') && !depth && /[-+]/.test(text[i - 1] ?? '')) return true;
+    if ('{[(«'.includes(c)) depth++;
+    else if ('}])»'.includes(c)) {
+      depth = Math.max(0, depth - 1);
+      if (!depth && c !== ')' && c !== '»' && /[-+]/.test(text[i + 1] ?? '')) return true;
+    }
+  }
+  return false;
+}
+
 // A number written straight against a name or constant, 2π, 3x or 2πr, is a product as other calculators take it, where RPL reads two
 // objects. True when one stands at the top of the line; a number inside a name or a # base number, #1Ah, does not count.
 const GLUED_PRODUCT = /[{[(«]|[}\])»]|(?<![A-Za-z_#\d.])(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?(?![eE][-+]?\d)(?=[A-Za-zπ√])/g;
@@ -617,7 +634,7 @@ export function parseEntry(src) {
           /[+\-*/^()=≠<>≤≥√!]/.test(body) || /^[\d.]/.test(body) || /\b(AND|OR|XOR|NOT)\b/i.test(body);
         if (looksAlgebraic) {
           try {
-            return Symbolic(parseAlgebra(body));
+            return Symbolic(parseAlgebra(body, { operands: true }));
           } catch (e) {
             // Only identifiers and bare operators (`+`) fall back to a Name,
             // so a malformed SIN(X never survives as a garbage Name.

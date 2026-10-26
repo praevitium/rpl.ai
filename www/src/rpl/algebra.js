@@ -304,8 +304,9 @@ export function isKnownFunction(name) {
 // Throws on malformed input, and parser.js then keeps the text as a quoted
 // Name.  A comparison or logic test is read anywhere, as in IFTE(X>0,X,-X)
 // and (X>0 OR Y>0) AND Z; an equation only at the top level and as a
-// function argument, so (X=Y)+1 is still refused.
-export function parseAlgebra(src, { arrays = true } = {}) {
+// function argument, so (X=Y)+1 is still refused.  A matrix, vector or list is read among a call's arguments; with operands it is read
+// anywhere a number is, [1,2,3]*2, though never alone, since a quoted array is a name.
+export function parseAlgebra(src, { arrays = true, operands = false } = {}) {
   const s = String(src);
   let i = 0;
   const n = s.length;
@@ -476,7 +477,7 @@ export function parseAlgebra(src, { arrays = true } = {}) {
 
     // An array or list among a call's arguments, DET([[1,2],[3,4]]), is held as a name that is its own text; the command that
     // is called reads it.
-    if ((c === '[' || c === '{') && arrays && callDepth > 0) {
+    if ((c === '[' || c === '{') && arrays && (callDepth > 0 || operands)) {
       const close = matchingBracket();
       if (close < 0) throw new Error(`Unclosed ${c} at pos ${i}`);
       const text = s.slice(i, close + 1);
@@ -559,6 +560,7 @@ export function parseAlgebra(src, { arrays = true } = {}) {
   const ast = parseOr();
   skip();
   if (i !== n) throw new Error(`Trailing input at pos ${i}: '${s.slice(i)}'`);
+  if (operands && ast.kind === 'var' && isArrayLiteral(ast.name)) throw new Error('An array on its own is no formula');
   return ast;
 }
 
