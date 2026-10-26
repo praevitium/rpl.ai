@@ -532,7 +532,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   two numbers each, as on the HP, so a note says how the line was read and
   offers the same key. A function called with brackets, `sin(30)`, runs
   word by word, SIN and then the complex number (30, 0), as on the HP; the
-  Too few arguments banner and a note offer it as a formula too. A `#ff`
+  Too few arguments banner and a note offer it as a formula too, and the
+  first time one of those keys is used a note offers Algebraic entry
+  (Settings › Calculator), which works such a line out on Enter. A `#ff`
   typed in DEC reads in decimal, as on the HP, and its banner's Read as hex
   runs the line with `#ffh`.
 - ⌫ and Enter sit beside the command line, finger-sized. ⌫ deletes a
@@ -693,7 +695,9 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 - Settings › Calculator is the HP's MODES form: angle, number format
   with its digits, exact or approximate results, real or complex domain,
   coordinates and integer base, then switches for the decimal comma,
-  Beep (flag -56: off, an error and BEEP stay silent), Key click (a short
+  Beep (flag -56: off, an error and BEEP stay silent), Algebraic entry
+  (Enter works out a line typed as one formula, `3×4` or `sin(30)`, as
+  other calculators do; see below), Key click (a short
   tick as a key, soft key or NXT is pressed, for a phone that can't vibrate,
   such as an iPhone), saving last arguments (-55), a 24-hour clock (-41)
   and day-first dates (-42). It changes the same settings as the MODES
@@ -1302,6 +1306,20 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
 
 **Behaviour that differs from the HP 50g.**
 
+- Algebraic entry, a switch in Settings › Calculator that is off until
+  turned on, lets Enter work out a line typed as one formula, as a TI or a
+  Casio does: `2+3`, `3×4`, `2^10`, `(1+2)(3+4)` and `sin(30)` give 5, 12,
+  1024, 21 and the sine of 30 in the angle mode. A result that can't be
+  exact, such as `sqrt(2)` or `e^2`, comes out as a number, and one with a
+  free name, `x^2+1`, stays a formula. In a formula `ans` is the result
+  on level 1, as a TI has it, and `ANS(2)` the one on level 2, as the HP's
+  algebraic mode has it, so `ans*2` doubles the last result; `ans` alone
+  copies it. It reads only a line that would otherwise fail or be read word
+  by word; a line in RPN, `2 3 +`, `1/2` or `5!`, runs as on the HP, and
+  the keypad's keys stay RPN. It is not the
+  HP's ALG mode (flag -95), which the app has not: a line is worked out
+  when Enter is pressed, and a key pressed with the line works on its
+  value.
 - A program that is halted, waiting at a dialog or running when the page
   closes is lost with the page, where the HP keeps it through power-off:
   its place in the program is not kept. The next start says so in a note

@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.101 (2026-10-26)
+**Latest release:** v0.8.102 (2026-10-26)
 
 ---
 
@@ -18,6 +18,39 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.102 — 2026-10-26
+
+- Fixed: the empty stack's card was cut off on a phone with the full keypad,
+  where the stack view is 100 to 200 px tall: its chips and its last lines
+  ran under the edge. The card now gives up its extras in turn until it
+  fits: its padding shrinks and the chips go on one row that scrolls, then
+  the chips, the text and the demo line go.
+- Fixed: a formula typed with the phone's × or ÷ (`3×4`, `3÷4+1`) was not
+  offered as a formula, as `3*4` and `3/4+1` are, and a note's Evaluate as a
+  formula key ran the line with the phone's symbols, not the HP's. Notes and
+  banners now read a line as the HP does, and a line run with keys pressed
+  with it keeps the keys in the line they offer.
+- Added: Algebraic entry, a switch in Settings › Calculator that is off
+  until turned on. With it on, Enter works out a line typed as one formula,
+  `2+3`, `3×4`, `2^10`, `(1+2)(3+4)` or `sin(30)`, as other calculators
+  do, where the HP reads `2+3` as two numbers and `sin(30)` word by word. A
+  result that can't be exact, `sqrt(2)` or `e^2`, comes out as a number; a
+  formula with a free name stays a formula. A line in RPN, `2 3 +`, `1/2`
+  or `5!`, runs as before, the keypad's keys stay RPN, and the whole line
+  is one step for Undo. The first time Evaluate as a formula is used, a note
+  offers the switch with a Turn on key.
+- Added: in a formula typed with Algebraic entry on, `ans` is the result on
+  level 1, as a TI has it, and `ANS(2)` the one on level 2, as the HP's
+  algebraic mode has it: `ans*2` doubles the last result and `ans` alone
+  copies it. With no result there, or one a formula can't hold (a list, a
+  vector or a complex number), a banner says so and the line stays.
+- Algebraic entry is not the HP's ALG mode (flag -95), which the app has not:
+  a line is worked out when Enter is pressed, and a key pressed with the line
+  works on its value. The README lists it with the behaviour that differs
+  from the HP 50g.
 
 ---
 
