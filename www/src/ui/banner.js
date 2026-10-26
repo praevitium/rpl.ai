@@ -52,8 +52,9 @@ function waitBannerHtml({ seconds }) {
   return `<div class="bn halt wait" role="status"><div class="bn-ico" aria-hidden="true">${icon('keypad', 'xs')}</div><div class="bn-t">Press a key</div><div class="bn-f">${key('enter', 'Enter', 'The ENTER key (105.1)', 'enter', 'pri')}${STOP_KEY}</div></div>`;
 }
 
-// MSGBOX and INPUT speak to the program's user: the message alone, with no program source or debugger keys.
-export function haltedBannerHtml({ kind, prompt = '', programHtml = '', dialog = null }) {
+// MSGBOX and INPUT speak to the program's user: the message alone, with no program source or debugger keys.  A halted program
+// that has local variables adds a key to them.
+export function haltedBannerHtml({ kind, prompt = '', programHtml = '', dialog = null, locals = false }) {
   if (kind === 'wait') return waitBannerHtml(dialog);
   if (kind === 'slice') return RUNNING_BANNER;
   const message = `<div class="bn-t">${escapeHtml(prompt)}</div>`;
@@ -64,5 +65,5 @@ export function haltedBannerHtml({ kind, prompt = '', programHtml = '', dialog =
   // A PROMPT speaks to the program's user, so its message is the title and the program's source stays out, as on the HP.
   const title = kind === 'prompt' && prompt ? prompt : `${HALT_TITLES[kind] ?? HALT_TITLES.halt}${prompt ? ` · ${prompt}` : ''}`;
   const program = kind === 'prompt' ? '' : programHtml;
-  return `<div class="bn halt" role="status"><div class="bn-ico" aria-hidden="true">${icon('stop', 'xs')}</div><div class="bn-t">${escapeHtml(title)}</div>${program ? `<div class="bn-prog">${program}</div>` : ''}<div class="bn-f">${key('cont', 'Continue', 'CONT', 'play', 'pri')}${key('sst', 'Step', 'SST: run the next instruction', 'step')}${key('into', 'Step into', 'SST↓: run the next instruction, stepping into a subroutine', 'step-into')}${STOP_KEY}</div></div>`;
+  return `<div class="bn halt" role="status"><div class="bn-ico" aria-hidden="true">${icon('stop', 'xs')}</div><div class="bn-t">${escapeHtml(title)}</div>${program ? `<div class="bn-prog">${program}</div>` : ''}<div class="bn-f">${key('cont', 'Continue', 'CONT', 'play', 'pri')}${key('sst', 'Step', 'SST: run the next instruction', 'step')}${key('into', 'Step into', 'SST↓: run the next instruction, stepping into a subroutine', 'step-into')}${locals ? key('vars', 'Variables', 'The local variables of the program, first in the VAR menu', 'folder') : ''}${STOP_KEY}</div></div>`;
 }

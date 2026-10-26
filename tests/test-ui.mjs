@@ -2731,7 +2731,7 @@ setAngle('RAD');
     && /_acceptInput\(\) \{[\s\S]{0,200}?if \(dialog\.verify\) \{ try \{ parseTyped\(text\); \} catch \(e\) \{ this\.entry\.flashError\(e\); return; \} \}\s*this\.entry\.cancel\(\);\s*this\._continueProgram\(Str\(text\)\);/.test(appSrc)
     && /_continueProgram\(\.\.\.answers\) \{\s*const \{ kind, stepping, tag \} = calcState\.halted;\s*const op = \{ over: 'SST', into: 'SST↓' \}\[stepping\] \?\? 'CONT';\s*if \(kind !== 'wait' && kind !== 'slice'\) touchLcd\(\);\s*const resume = \(\) => \{ for \(const a of answers\) this\.stack\.push\(a\); lookup\(op\)\.fn\(this\.stack, this\.entry\); \};\s*this\.entry\.safeRun\(\(\) => this\.stack\.holdEmit\(\(\) => batchStateNotifications\(resume\)\), kind === 'slice' \? tag \?\? '' : op, \{ keepPartial: true \}\);/.test(appSrc)
     && /const stepping = _singleStepMode \? \(_stepInto \? 'into' : 'over'\) : null;\s*_pendingSuspend = \{ tokens, index, kind, dialog, stepping, prompt \};/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
-    && /if \(act === 'ok' && kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(act === 'cont' && kind === 'msgbox'\) \{ this\._continueProgram\(\); return; \}[\s\S]{0,600}?if \(act === 'kill' && kind === 'input'\) this\.entry\.cancel\(\);/.test(appSrc),
+    && /if \(act === 'ok' && kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(act === 'cont' && kind === 'msgbox'\) \{ this\._continueProgram\(\); return; \}[\s\S]{0,700}?if \(act === 'kill' && kind === 'input'\) this\.entry\.cancel\(\);/.test(appSrc),
     "INPUT: its banner is the prompt with OK and Stop keys and no program source; the text it offers goes on the command line once the line that ran the program has cleared; Enter or OK hands the line back as a string (with V only once it parses) and goes on without an undo step of its own, as MSGBOX's OK does, so UNDO after the program takes the whole run back rather than stopping between its answers, and a dialog reached while stepping steps on with SST or SST↓ rather than running the program out; Stop clears the line before KILL");
   assert(/if \(id === 'INPUT'\) \{[\s\S]{0,260}?_markSuspend\(toks, i \+ 1, 'input', input, s\.pop\(\)\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
     'INPUT halts a running program the way PROMPT does, carrying the text to offer');
@@ -4529,4 +4529,8 @@ setAngle('RAD');
     && drawerSrc.includes("_localRow(name, value) {") && drawerSrc.includes("case 'local': app.pressVariable(name); this._reveal(); return;")
     && /\.vr\.local \{ grid-template-columns: minmax\(0, 1fr\); border-left: 3px solid var\(--amber\); \}/.test(cssSrc),
     'variables drawer: a halted program\'s locals head the list as rows with no grip and no menu, whose tap puts the value on the stack');
+  assert(appSrc.includes('locals: haltedLocals().length > 0,') && appSrc.includes("if (act === 'vars') { this.showLocals(); return; }")
+    && /showLocals\(\) \{\n\s*if \(this\.drawers\.hidesInput\(\)\) this\.drawers\.close\(\);\n\s*this\.showMenu\('VARS', \{ commit: false \}\);\n\s*if \(this\.prefs\.minimal\) this\.setMinimalMenu\(true\);/.test(appSrc)
+    && /\.bn\.halt \[data-bn="vars"\] > span \{ display: none; \}\n@container app \(min-width: 480px\) \{ \.bn\.halt \[data-bn="vars"\] > span \{ display: inline; \} \}/.test(cssSrc),
+    'halted banner: a program with local variables has a Variables key, an icon under 480 px, which opens the VAR menu with them first, soft keys on in minimal view');
 }

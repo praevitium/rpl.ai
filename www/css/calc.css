@@ -527,6 +527,8 @@ button.ann-m:hover { background: var(--r1); color: var(--ink); }
 .bn-time { margin-left: 4px; font: 500 12px var(--font-mono); color: var(--ink2); }
 .bn.running [data-bn="pause"] > span { display: none; }
 @container app (min-width: 480px) { .bn.running [data-bn="pause"] > span { display: inline; } }
+.bn.halt [data-bn="vars"] > span { display: none; }
+@container app (min-width: 480px) { .bn.halt [data-bn="vars"] > span { display: inline; } }
 /* On a narrow phone the fixes start under the icon, so a banner of five takes two or three rows rather than four. */
 @container app (max-width: 359px) { .bn-f { grid-column: 1 / -1; } }
 /* Under 320 px tighter fixes keep a bad type's five to two rows, where Explain took a third on its own at 280. */

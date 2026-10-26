@@ -728,6 +728,7 @@ class App {
         dialog: halted.dialog,
         prompt: prompt == null ? '' : isString(prompt) ? prompt.value : withFractionMark(format(prompt)),
         programHtml: suspendedProgramHtml(halted, this.display.displayOpts),
+        locals: haltedLocals().length > 0,
       });
       if (banner === this._haltBanner) {
         el.querySelector(':scope > .lcd')?.remove();
@@ -782,6 +783,7 @@ class App {
     if (act === 'enter' && kind === 'wait') { this._answerKey(hpKeyCode('ENTER')); return; }
     if (act === 'kill' && (kind === 'slice' || calcState.halted?.paused)) { this.stopProgram(); return; }
     if (act === 'pause' && kind === 'slice') { haltRun(); return; }
+    if (act === 'vars') { this.showLocals(); return; }
     if (act === 'kill' && kind === 'input') this.entry.cancel();
     const op = { cont: 'CONT', sst: 'SST', into: 'SST↓', kill: 'KILL' }[act];
     if (op) { this.entry.execOp(op); return; }
@@ -2668,6 +2670,13 @@ class App {
   showMyMenu() {
     if (this.drawers.hidesInput()) this.drawers.close();
     this.showMenu('CST', { commit: false });
+    if (this.prefs.minimal) this.setMinimalMenu(true);
+  }
+
+  // The halted banner's way to the program's local variables, which lead the VAR menu, with the soft keys on in minimal view.
+  showLocals() {
+    if (this.drawers.hidesInput()) this.drawers.close();
+    this.showMenu('VARS', { commit: false });
     if (this.prefs.minimal) this.setMinimalMenu(true);
   }
 
