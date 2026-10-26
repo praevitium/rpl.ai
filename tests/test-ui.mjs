@@ -20,7 +20,7 @@ import {
 } from '../www/src/rpl/state.js';
 import { computeMenuPage } from '../www/src/ui/paging.js';
 import { headingKey, ALIASES, pushHistory } from '../www/src/ui/command-help.js';
-import { escapeHtml, binaryBaseLabel, displayModeLabel, coordModeGlyph, suspendedProgramText, digestOf } from '../www/src/ui/display.js';
+import { Display, escapeHtml, binaryBaseLabel, displayModeLabel, coordModeGlyph, suspendedProgramText, digestOf } from '../www/src/ui/display.js';
 import { uncategorizedOps, dropZoneForFraction, CATEGORIES, CHAR_GROUPS } from '../www/src/ui/drawer.js';
 import { SOFT_KEYS, NAV_KEYS, ARROW_KEYS, MAIN_KEYS, keyAccessibleName, COMPACT_KEYS, holdToRepeat, hpKeyCode, typedKeyCode } from '../www/src/ui/keyboard.js';
 import { allOps } from '../www/src/rpl/ops.js';
@@ -2254,6 +2254,38 @@ setAngle('RAD');
     'stack: level 1 stays in sight when the equation writer closes over the full keypad (the view grew, then shrank again in the same frame as the keys refit, and level 1 was left 13 px low), going by the distance from the bottom last seen on a scroll, render or resize; a selected level stays in sight instead, so turning the phone with level 8 selected no longer leaves it below a 216 px landscape view');
   assert(/view\.innerHTML = this\.emptyHtml;\s*view\.dataset\.empty = '1';\s*view\.scrollTop = 0;/.test(displaySrc),
     'stack: the empty-stack card starts at its heading, so the keyboard coming up over a 108 px well at 320x340 no longer pins it to the bottom with Write an equation cut under the app bar');
+}
+
+// A phone's full keypad leaves the empty stack's card 100 to 200 px, so its example chips were cut in half or out of sight; the card
+// now gives up its extras until it fits, and the chips become one scrolling row first.
+{
+  const cardHeights = { '': 258, compact: 165, 'compact no-chips': 116, 'compact no-chips no-text': 76, 'compact no-chips no-text no-demo': 48 };
+  const fit = (room) => {
+    const card = { className: 'st-empty old', classList: { add: (name) => { card.className += ` ${name}`; } } };
+    const view = {
+      clientHeight: room,
+      get scrollHeight() { return Math.max(room, cardHeights[card.className.replace(/^st-empty ?/, '')]); },
+      querySelector: () => card,
+    };
+    Display.prototype._fitEmpty.call({ stackView: view });
+    return card.className;
+  };
+  assert(fit(300) === 'st-empty' && fit(258) === 'st-empty' && fit(169) === 'st-empty compact' && fit(128) === 'st-empty compact no-chips'
+    && fit(98) === 'st-empty compact no-chips no-text' && fit(60) === 'st-empty compact no-chips no-text no-demo' && fit(0) === 'st-empty old',
+    'empty stack: the card keeps what fits the view, giving up its chips as a row, then the example chips, then the text, then the demo line, and leaves a view with no height alone');
+  const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  assert(/const EMPTY_STEPS = \['compact', 'no-chips', 'no-text', 'no-demo'\];/.test(displaySrc)
+    && /view\.scrollTop = 0;\s*this\._fitEmpty\(\);\s*this\._updateMore\(\);/.test(displaySrc)
+    && /this\._showMore\(more\);\s*if \(view\.dataset\.empty\) this\._fitEmpty\(\);\s*\}\)\.observe\(view\);/.test(displaySrc),
+    'empty stack: the card is fitted as it is drawn and again whenever the view changes size (a writer, the keyboard or a turned phone)');
+  assert(/\.st-empty\.compact \{ padding: 8px 14px; gap: 6px; \}/.test(css)
+    && /\.st-empty\.compact \.chipset \{ flex-wrap: nowrap; justify-content: flex-start; justify-self: stretch; margin-inline: -14px; padding-inline: 14px; overflow-x: auto; scrollbar-width: none; \}/.test(css)
+    && /\.st-empty\.compact \.chip:first-child \{ margin-left: auto; \}\s*\.st-empty\.compact \.chip:last-child \{ margin-right: auto; \}/.test(css)
+    && /\.st-empty\.no-chips \.chipset, \.st-empty\.no-text p, \.st-empty\.no-demo \.keysline \{ display: none; \}/.test(css)
+    && /\.st-empty \.chipset \{ justify-content: center; \}/.test(css) && !/class="chipset" style="justify-content:center"/.test(appSrc),
+    'empty stack: a compact card trims its padding and puts the example chips in one row that scrolls under a finger to the screen edge, centred when they fit, with no inline style to hold the row back');
 }
 
 {

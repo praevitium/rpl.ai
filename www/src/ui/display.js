@@ -151,6 +151,8 @@ function tallLevelScroll(view, v, r) {
 const LEVEL_WINDOW = 50;
 // A long formula shrinks to fit only this far; past it, it keeps a readable size and scrolls sideways as a wide matrix does.
 const MIN_FORMULA_SCALE = 0.75;
+// An empty stack's card gives up its extras in this order until it fits the view: a phone's full keypad leaves 100 to 200 px.
+const EMPTY_STEPS = ['compact', 'no-chips', 'no-text', 'no-demo'];
 // A grid of plain entries in em, for calc.css to shrink it to its line: Plex Mono's 0.6em advance per character,
 // .1em of padding per entry, .9em between columns and .5em at each bracket.
 const gridWidthEm = (texts) => {
@@ -362,6 +364,7 @@ export class Display {
         const more = this._measureMore();
         markEdges();
         this._showMore(more);
+        if (view.dataset.empty) this._fitEmpty();
       }).observe(view);
     }
     const statusAction = (el) => this.onStatusAction?.(el.dataset.status, el.dataset, el);
@@ -589,6 +592,7 @@ export class Display {
       view.innerHTML = this.emptyHtml;
       view.dataset.empty = '1';
       view.scrollTop = 0;
+      this._fitEmpty();
       this._updateMore();
       return;
     }
@@ -711,6 +715,16 @@ export class Display {
 
   _updateMore() {
     if (this.stackView?.parentElement) this._showMore(this._measureMore());
+  }
+
+  _fitEmpty() {
+    const view = this.stackView, card = view.querySelector('.st-empty');
+    if (!card || !view.clientHeight) return;
+    card.className = 'st-empty';
+    for (const step of EMPTY_STEPS) {
+      if (view.scrollHeight <= view.clientHeight + 1) break;
+      card.classList.add(step);
+    }
   }
 
   // A level that ends inside the faded top edge, under the pill, can't be read, so it counts as above; a selected level reaching through it puts both away.
