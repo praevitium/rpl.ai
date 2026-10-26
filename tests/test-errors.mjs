@@ -112,6 +112,9 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   clearUserFlag(-51);
   assert(comma.fixes[0].id === 'formula' && comma.fixes[0].arg === '2,5^2',
     'syntax banner: with flag -51 a formula typed with the comma fraction mark, 2,5^2, gets the formula fix too, where it read as no formula');
+  const symbols = describeError('Syntax error near *4', ctx({ line: '3×4' }));
+  assert(symbols.fixes[0].id === 'formula' && symbols.fixes[0].arg === '3*4' && describeError('Syntax error near /4', ctx({ line: '3÷4+1' })).fixes[0].arg === '3/4+1',
+    'syntax banner: a phone\'s × and ÷ read as * and /, so 3×4 gets the formula fix 3*4 as 3*4 does, where it got none');
 }
 
 {

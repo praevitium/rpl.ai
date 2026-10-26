@@ -1,5 +1,5 @@
 import { RUN_TIME_LIMIT_MS } from '../rpl/stack.js';
-import { parseTyped } from '../rpl/parser.js';
+import { parseTyped, plainPunctuation } from '../rpl/parser.js';
 import { getBinaryBase } from '../rpl/state.js';
 
 const CORE_MESSAGES = Object.freeze([
@@ -189,9 +189,9 @@ export const ERROR_KINDS = Object.freeze({
   },
 });
 
-// A line typed the way other calculators take it, 2^10 or e^2, is a formula once quoted.
+// A line typed the way other calculators take it, 2^10 or e^2, is a formula once quoted; a phone's × and ÷ are * and /.
 export function formulaOf(line) {
-  const text = String(line ?? '').trim();
+  const text = plainPunctuation(String(line ?? '').trim());
   if (!/[\^*/+\-√=<>(]/.test(text) || /['`"«»{}[\]]/.test(text)) return '';
   try { return parseTyped(`'${text}'`).length === 1 ? text : ''; } catch { return ''; }
 }

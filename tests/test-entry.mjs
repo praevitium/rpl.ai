@@ -6,7 +6,7 @@ import {
   isReal, isInteger, isBinaryInteger, isComplex, isDirectory, isProgram, isName,
   isString, isList, isVector, isUnit, isMatrix, isSymbolic,
 } from '../www/src/rpl/types.js';
-import { parseEntry } from '../www/src/rpl/parser.js';
+import { parseEntry, plainPunctuation } from '../www/src/rpl/parser.js';
 import { format, formatStackTop } from '../www/src/rpl/formatter.js';
 import {
   state as calcState, setAngle, cycleAngle, toRadians, fromRadians,
@@ -2180,6 +2180,12 @@ resetBinaryState();
   assert(e.gluedSigns?.line === '2+3 SQ', 'a key pressed with the line goes into the line the note runs again');
   run('sin(30)');
   assert(e.calledFunction?.text === 'sin(30)' && e.calledFunction.line === 'sin(30)', 'a line with a function called as sin(30) keeps the line, for the note that offers it as a formula');
+  run('sin(30) × 2');
+  assert(e.calledFunction?.text === 'sin(30) * 2' && e.calledFunction.line === 'sin(30) * 2', 'a phone\'s × in a line is read as *, so the line and its formula agree for the note');
+  run('2−3');
+  assert(e.gluedSigns?.text === '2-3', 'a minus sign from another keyboard reads as a minus in the run of numbers');
+  run('3,14 ²');
+  assert(e.decimalComma?.line === plainPunctuation('3,14 ²') && e.decimalComma.line !== '3,14 ²', 'the line a note runs again is the line as the parser reads it');
   run('2+3 +');
   assert(e.decimalComma === null && e.gluedSigns?.text === '2+3' && e.calledFunction === null, 'each reading is set for its own line and cleared with the next');
   run('5 sin(30) +');

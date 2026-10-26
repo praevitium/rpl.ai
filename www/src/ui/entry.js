@@ -1,4 +1,4 @@
-import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction } from '../rpl/parser.js';
+import { parseTyped, endsInQuote, bareDecimalComma, gluedSigns, calledFunction, plainPunctuation } from '../rpl/parser.js';
 import { formulaOf } from './errors.js';
 import { hpTextToSource } from '../rpl/hp-text.js';
 import { latexToSource } from '../rpl/latex.js';
@@ -682,12 +682,13 @@ export class Entry {
       if (at >= 0) this.cursor = at;
       throw e;
     }
-    const comma = testUserFlag(-51) ? null : bareDecimalComma(raw);
-    this.decimalComma = comma && { text: comma, line: raw };
-    const glued = gluedSigns(raw);
-    this.gluedSigns = glued && { text: glued, line: raw };
-    const called = calledFunction(raw) ? formulaOf(raw) : '';
-    this.calledFunction = called ? { text: called, line: raw } : null;
+    const plain = plainPunctuation(raw);
+    const comma = testUserFlag(-51) ? null : bareDecimalComma(plain);
+    this.decimalComma = comma && { text: comma, line: plain };
+    const glued = gluedSigns(plain);
+    this.gluedSigns = glued && { text: glued, line: plain };
+    const called = calledFunction(plain) ? formulaOf(plain) : '';
+    this.calledFunction = called ? { text: called, line: plain } : null;
     let failed = -1;
     const onLine = (step) => () => {
       try {
@@ -745,7 +746,7 @@ export class Entry {
     }, '', { keepPartial: true });
     const line = [raw, ...names].filter(Boolean).join(' ');
     tagHalted(mark, '', { line, step });
-    for (const read of [this.decimalComma, this.gluedSigns, this.calledFunction]) if (read) read.line = line;
+    for (const read of [this.decimalComma, this.gluedSigns, this.calledFunction]) if (read) read.line = [read.line, ...names].filter(Boolean).join(' ');
     this._emit();
   }
 
