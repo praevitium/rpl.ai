@@ -399,7 +399,8 @@ class App {
       const record = calcState.halted;
       if (!record) return;
       const first = calcState.haltedStack[0] ?? record;
-      saveRun({ kind: record.kind, tag: first.tag ?? null, line: first.line, again: !!first.line && first.step === this.stack.undoMark() });
+      const again = record.kind === 'slice' ? !this._savedMidRun : first.step === this.stack.undoMark();
+      saveRun({ kind: record.kind, tag: first.tag ?? null, line: first.line, again: !!first.line && again });
       kept = true;
     };
     const back = () => {
@@ -417,18 +418,19 @@ class App {
     if (!run) return;
     const text = interruptedRunNote(run);
     const opts = { essential: true, transient: true, timeout: Infinity };
-    if (run.kind === 'slice' || !this.stack.hasUndo()) {
-      this.toast(text, { key: 'run', ...opts });
-      return;
-    }
-    const mark = this.stack.undoMark();
     const rerun = () => {
       const typed = this.entry.buffer;
       this.runLine(run.line);
       if (typed.trim()) this.entry.recall(typed);
     };
-    const again = run.again ? { action: 'Run again', onAction: () => this._undoIfLatest(mark, rerun) } : null;
-    this.undoToast(text, again, opts);
+    if (run.kind === 'slice') {
+      this.toast(text, { key: 'run', ...(run.again && { action: 'Run again', onAction: rerun }), ...opts });
+    } else if (this.stack.hasUndo()) {
+      const mark = this.stack.undoMark();
+      this.undoToast(text, run.again ? { action: 'Run again', onAction: () => this._undoIfLatest(mark, rerun) } : null, opts);
+    } else {
+      this.toast(text, { key: 'run', ...opts });
+    }
   }
 
   // What a reload brings back: the command line, the formula or matrix being written and the level or variable it edits, not a
@@ -576,6 +578,7 @@ class App {
   }
 
   _onStateChange() {
+    if (!calcState.halted) this._savedMidRun = false;
     if (this._drawLater('state')) { this._followRun(calcState.halted); return; }
     if (!testUserFlag(-62)) this._userOnce = false;
     this.appbar.render();
@@ -1082,7 +1085,9 @@ class App {
       pending = true;
       queueMicrotask(() => {
         pending = false;
-        if (!this._running()) this._noteAutosave(saveToLocalStorage(this.stack));
+        if (this._running()) return;
+        if (calcState.halted) this._savedMidRun = true;
+        this._noteAutosave(saveToLocalStorage(this.stack));
       });
     };
     this.stack.subscribe(schedule);
