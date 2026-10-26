@@ -237,7 +237,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   HP's HYP folder: SINH ASINH COSH ACOSH TANH ATANH, then EXPM and LNP1.
   The imaginary unit works in a formula: `'3+4*i' →NUM` gives `(3, 4)`,
   `'ABS(3+4*i)' →NUM` gives 5, and APPROX does the same on EVAL, as `π` and
-  `e` fold to their numbers; EXACT EVAL keeps `i` as it is.
+  `e` fold to their numbers; EXACT EVAL keeps `i` as it is. →NUM and APPROX
+  work out a formula whose value is not real as the commands do: `'SQRT(-4)'
+  →NUM` gives `(0, 2)`, `'LN(-1)'` `(0, 3.14159265359)` and `'(-8)^(1/3)'`
+  `(1, 1.73205080757)`, while EXACT EVAL keeps them as they are.
 - **Matrices.** `[[ 2 1 ][ 1 3 ]] DET` gives 5, `INV`, `EGV` and `LU` work
   on it, and `→NUM` gives every entry its number. In exact mode an integer
   matrix inverts and row-reduces to fractions, as on the HP:
@@ -1325,15 +1328,19 @@ System RPL (SYSEVAL, LIBEVAL, FLASHEVAL).
   on from the last result as a TI's Ans does (`+` and `-` start a number of
   their own, so they can't). A number written against a name, `2π`, `3x` or
   `2πr`, is a product, and with the decimal comma set a number such as `3,5`
-  is read as the parser reads it. It reads only a line that would otherwise
-  fail or be read word by word, which takes in a number in brackets,
-  `(5)+1`, a complex number in RPL, and operands and operators that take
-  turns, `3 + 4`, where RPN puts an operator after its operands; a line in
-  RPN, `2 3 +`, `2 π`, `1/2` or `5!`, runs as on the HP, and the keypad's
-  keys stay RPN. It is not the
-  HP's ALG mode (flag -95), which the app has not: a line is worked out
-  when Enter is pressed, and a key pressed with the line works on its
-  value.
+  is read as the parser reads it. A TI's names for functions, `nCr`, `nPr`,
+  `iPart`, `fPart`, `int`, `ceiling`, `round` and `arcsin`, `arccos` and
+  `arctan`, are the HP's COMB, PERM, IP, FP, FLOOR, CEIL, RND, ASIN, ACOS and
+  ATAN (`round(x)` is `RND(x,0)`, and a variable stored under such a name
+  keeps it); command search and the completion list offer the HP's name for
+  them, `ncr` giving COMB, with the setting on or off. It reads only a line
+  that would otherwise fail or be read word by word, which takes in a number
+  in brackets, `(5)+1`, a complex number in RPL, and operands and operators
+  that take turns, `3 + 4`, where RPN puts an operator after its operands; a
+  line in RPN, `2 3 +`, `2 π`, `1/2` or `5!`, runs as on the HP, and the
+  keypad's keys stay RPN. It is not the HP's ALG mode (flag -95), which the
+  app has not: a line is worked out when Enter is pressed, and a key pressed
+  with the line works on its value.
 - A program that is halted, waiting at a dialog or running when the page
   closes is lost with the page, where the HP keeps it through power-off:
   its place in the program is not kept. The next start says so in a note

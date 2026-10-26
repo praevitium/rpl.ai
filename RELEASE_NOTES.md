@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.105 (2026-10-26)
+**Latest release:** v0.8.106 (2026-10-26)
 
 ---
 
@@ -18,6 +18,31 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.106 — 2026-10-26
+
+- Fixed: →NUM and APPROX left a formula whose value is not real as it was,
+  where the HP works it out: `'SQRT(-4)' →NUM` stayed `SQRT(-4)`, `'LN(-1)'`
+  and `'ASIN(2)'` the same, and `'(-8)^(1/3)'` came out `(-8)^0.333333333333`.
+  They now give `(0, 2)`, `(0, 3.14159265359)`, `(1.57079632679,
+  -1.31695789692)` and `(1, 1.73205080757)`, what the stack commands give for
+  those numbers. Sums and powers of such values work too, and an expression
+  with an unknown name in it stays symbolic. EXACT EVAL keeps these formulas
+  as they are, as before. With Algebraic entry on, `sqrt(-4)` is now `(0, 2)`.
+- Added: with Algebraic entry on, a TI's names for functions work in a typed
+  formula: `nCr(5,2)` is 10, `nPr(5,2)` 20, `iPart(-3.7)` -3, `fPart(-3.7)`
+  -0.7, `int(-3.7)` -4, `ceiling(3.2)` 4, `round(3.14159,2)` 3.14 (`round(2.5)`
+  is 3) and `arcsin(0.5)` 0.523598775598, for COMB, PERM, IP, FP, FLOOR, CEIL,
+  RND and ASIN, with `arccos` and `arctan` as ACOS and ATAN. A variable stored
+  under one of those names keeps it, and the note's Evaluate as a formula key
+  (with the setting off) uses the HP's names and π for `pi` as well.
+- Added: typing a TI's name on the command line offers the HP's command in
+  the completion list, as `pi` offers π: `ncr` gives COMB, `ipart` IP and
+  `arcsin` ASIN, and command search finds them the same way. `int` is left
+  alone, since INTEG and INTVX start with it. The list shows in minimal view
+  and with the keypad hidden, 40 px rows, from 280 px.
 
 ---
 
