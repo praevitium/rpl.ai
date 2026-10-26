@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.99 (2026-10-26)
+**Latest release:** v0.8.100 (2026-10-26)
 
 ---
 
@@ -18,6 +18,26 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.100 — 2026-10-26
+
+- Fixed: a decimal comma typed on a phone keyboard was read as two numbers
+  with nothing said. A comma beside a digit separates objects here, as on
+  the HP (`3,14` is 3 and 14, until flag -51 makes the comma a fraction
+  mark), so a French or German phone gave 3 and 14 where its owner meant
+  3.14. A note now says how the line was read, in two lines at 280 px, and
+  its Decimal comma key sets flag -51, takes the line back and runs it again.
+  Nothing is said for a comma inside a list, a vector, a complex number, an
+  algebraic, a program or a string, for a failed line, or with the flag set.
+- Changed: the plot window's range, the table's start and step and the
+  solver's boxes read a lone comma as a decimal in either mode, where
+  `-2,5` turned the box red and the solver said it was not a number. Text
+  that could be a separator, such as `1,234,567`, is still refused.
+- Changed: under 360 px a note with two keys, such as Decimal comma and
+  Undo or Run again and Undo, gives them a row of their own, where they left
+  the message a column of four words.
 
 ---
 

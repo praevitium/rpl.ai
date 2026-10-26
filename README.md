@@ -739,7 +739,12 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   axis labels, trace readout, range boxes and formula fields, which read
   a typed comma. A spreadsheet range pasted in this mode reads 12,345 as
   12.345, as the command line does. Exports, copies and shares always
-  keep the point, so other tools read them.
+  keep the point, so other tools read them. With the flag clear a comma
+  separates objects, as on the HP, so `3,14` is 3 and 14; a note after
+  such a line says so and offers Decimal comma, which sets the flag and
+  runs the line again. A box that holds one number (the plot window, the
+  table's start and step, the solver's) reads a lone `3,14` as 3.14 in
+  either mode.
 - A program that runs past half a second shows a one-row Running
   banner with the seconds it has run, a Pause key (an icon under 480 px)
   and a Stop key; the ON key, Esc and the back button stop it too, and the
