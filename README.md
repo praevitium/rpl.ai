@@ -260,7 +260,10 @@ RPL puts the numbers first and the operation last. Each value goes on the
   on the HP: with `[[ 1 2 ][ 3 4 ]]` in `M`, `'M(2,1)' EVAL` gives 3 and
   `9 'M(1,2)' STO` replaces that entry, `A(3)` does the same for a vector or
   list, and a local variable works as the index, so a FOR loop can read and
-  store every entry. ROW+, COL+, ROW-, COL-, RSWP and CSWP take a vector as
+  store every entry. A stored complex number, list, vector or matrix works
+  in an algebraic too, as on the HP: with `[[ 1 2 ][ 3 4 ]]` in `A`,
+  `'A*A' EVAL` gives `[[ 7 10 ][ 15 22 ]]` and `'DET(A)' EVAL` gives -2,
+  and a product the sizes do not allow reports its error. ROW+, COL+, ROW-, COL-, RSWP and CSWP take a vector as
   well as a matrix, RDM drops or zero-fills entries to the new size, TRN, RDM
   and CON take a variable name and store the result in it, RND and TRNC round
   a vector or matrix entry by entry, and SUB and REPL take a matrix's places

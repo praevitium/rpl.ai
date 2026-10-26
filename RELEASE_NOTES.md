@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.102 (2026-10-26)
+**Latest release:** v0.8.103 (2026-10-26)
 
 ---
 
@@ -18,6 +18,20 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.103 — 2026-10-26
+
+- Fixed: EVAL and →NUM left an algebraic as it was when one of its variables
+  held a complex number, a list, a vector or a matrix, so `'Z*2'` with
+  `(1,2)` in `Z` stayed `Z*2` and `'A*A'` with a stored matrix became `A^2`.
+  Such an expression is now worked out with the commands themselves, as the
+  HP runs an algebraic: `Z*2` is (2, 4), `A*A` the matrix product, `DET(A)`
+  the determinant, and a product the sizes do not allow reports its error.
+  A name with no value still leaves the expression as it was.
+- Changed: with Algebraic entry on, `ans` and `ANS(n)` can stand for such a
+  value too, so `ans*2` doubles a matrix on level 1.
 
 ---
 
