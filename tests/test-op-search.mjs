@@ -305,6 +305,9 @@ import { assert } from './helpers.mjs';
       'completions: pi, inf, sum, integral, sqrt and deriv offer π, ∞, Σ, ∫, √ and ∂, behind a command spelled exactly so');
     assert(!has('p', 'π') && !has('in', '∞') && completions('pi', { names: [], variables: ['pi'] })[0].kind === 'variable',
       'completions: a spelled glyph needs its whole spelling or three letters of it, and a variable named pi still leads');
+    assert(first('ncr').name === 'COMB' && first('nPr').name === 'PERM' && first('ipart').name === 'IP' && first('fPart').name === 'FP' && first('round').name === 'RND'
+      && first('ceiling').name === 'CEIL' && first('arcsin').name === 'ASIN' && first('arccos').name === 'ACOS' && first('arctan').name === 'ATAN' && first('int').name !== 'FLOOR',
+      'completions: a TI\'s name for a function, ncr, nPr, ipart, fPart, round, ceiling or arcsin, offers the HP\'s command, and int still leads to the commands that start with it');
   }
   {
     const first = (w) => completions(w, { names: allOps() })[0]?.name;

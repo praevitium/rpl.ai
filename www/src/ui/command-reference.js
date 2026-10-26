@@ -1,6 +1,7 @@
 // Parses the manual into plain text without the DOM, so it also runs under Node.
 import { ALIASES, headingKey } from './command-help.js';
 import { fuzzyScore } from './op-search.js';
+import { TI_SPELLINGS } from '../rpl/parser.js';
 
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
 
@@ -170,8 +171,8 @@ function keywords(query) {
 // Crude stem so "matrix" meets "matrices": compare the first five letters.
 const stem = (w) => w.slice(0, 5);
 const escapeRe = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-// A phone keyboard has no π, so its spelled name finds it.
-const SPELLED = new Map([['pi', 'Π']]);
+// A phone keyboard has no π, so its spelled name finds it, and a TI's names for functions find the HP's.
+const SPELLED = new Map([['pi', 'Π'], ...TI_SPELLINGS]);
 // Several words that run together in a description outrank one of them being some command's name: "square root" is √, not ROOT.
 const PHRASE_SCORE = 1500;
 

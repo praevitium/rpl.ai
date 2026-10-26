@@ -1,5 +1,5 @@
 import { allOps, lookup, haltedLocals } from '../rpl/ops.js';
-import { endsInQuote } from '../rpl/parser.js';
+import { endsInQuote, TI_SPELLINGS } from '../rpl/parser.js';
 import { varOrder, varRecall, state } from '../rpl/state.js';
 import { shortDescription } from './command-reference.js';
 import { fuzzyScore, matchPositions, highlightSegments } from './op-search.js';
@@ -40,9 +40,11 @@ function completionScore(word, name) {
   return Math.max(0, fuzzyScore(word, name));
 }
 
-// A phone keyboard has none of these, so each is offered for the word that spells it: pi gives π, inf ∞, sum Σ.
+// A phone keyboard has none of these, so each is offered for the word that spells it: pi gives π, inf ∞, sum Σ. A TI's name
+// for a function offers the HP's: ncr gives COMB, ipart IP.
 const SPELLED = Object.freeze({
   'π': ['pi'], '∞': ['inf', 'infinity'], 'Σ': ['sum', 'sigma'], '∫': ['integral'], '√': ['sqrt'], '∂': ['deriv', 'partial'],
+  ...Object.fromEntries(TI_SPELLINGS.map(([word, name]) => [name, [word]])),
 });
 
 // The BRCH menu's structures, offered whole as ⇦ on its keys types them, and the words that only continue one.

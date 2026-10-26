@@ -475,6 +475,9 @@ export const TI_NAMES = Object.freeze({
   ncr: 'COMB', npr: 'PERM', ipart: 'IP', fpart: 'FP', int: 'FLOOR', ceiling: 'CEIL', round: 'RND', arcsin: 'ASIN', arccos: 'ACOS', arctan: 'ATAN',
 });
 
+// Command search and completion offer them for the HP's names; int is left out, the start of too many of those.
+export const TI_SPELLINGS = Object.freeze(Object.entries(TI_NAMES).filter(([word]) => word !== 'int'));
+
 // In a formula typed on a phone those names are the HP's functions, unless isTaken says a variable by that name is stored.
 // RND wants its digits in a formula, so round(x), which a TI rounds to a whole number, is RND(x,0).
 export function withTiNames(formula, isTaken) {
