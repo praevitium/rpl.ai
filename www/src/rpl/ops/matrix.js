@@ -2,7 +2,8 @@ import { isVector, RList, Real, isMatrix, isString, Integer, isList, isProgram, 
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { astSize, Bin as AstBin, Neg as AstNeg, Num as AstNum, Var as AstVar } from '../algebra.js';
 import { unitSize } from '../units.js';
-import { nextPrngInt9, getCasVx } from '../state.js';
+import { eigenSystem } from '../eigen.js';
+import { nextPrngInt9, getCasVx, getApproxMode } from '../state.js';
 import { giac } from '../cas/giac-engine.mjs';
 import { giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
 import { charSpaceList, eigenvalueArray, spacesFromJordan } from '../jordan-format.js';
@@ -1273,17 +1274,71 @@ register('PCAR', (s) => {
 register('CHARPOL', (s) => { OPS.get('PCAR').fn(s); }, { category: 'Vectors / matrices', categoryOrder: 47, label: "CHARPOL" });
 
 
-function _eigenvalues(matStr) {
-  const raw = giac.caseval(`eigenvals(${matStr})`);
-  const parts = splitGiacList(/^[[a-z]/.test(raw) ? raw : `[${raw}]`);
-  if (parts === null) throw new RPLError('Bad argument value');
-  return parts.map((elt) => _astToRplValue(giacToAst(elt)));
+// Giac lists a matrix's eigenvalues with its brackets, without them, or as seq[...] when there is one.
+function _giacItems(raw) {
+  const list = raw.replace(/^seq(?=\[)/, '');
+  const items = /\bundef\b/.test(list) ? null : splitGiacList(list.startsWith('[') ? list : `[${list}]`);
+  if (items === null) throw new RPLError('Bad argument value');
+  return items;
+}
+
+const _casEigenvalues = (matStr) => _giacItems(giac.caseval(`eigenvals(${matStr})`)).map((elt) => _astToRplValue(giacToAst(elt)));
+
+function _casEigenvectors(matStr) {
+  const rows = splitGiacList(giac.caseval(`egv(${matStr})`));
+  if (rows === null) throw new RPLError('Bad argument value');
+  return rows.map((rowStr) => {
+    const cols = splitGiacList(rowStr);
+    if (cols === null) throw new RPLError('Bad argument value');
+    return cols.map((c) => _astToRplValue(giacToAst(c)));
+  });
+}
+
+// The matrix as [re, im] pairs, or null when an entry is not a number.
+function _numberPairs(matrix) {
+  const pairs = matrix.rows.map((row) => row.map((x) => {
+    if (isComplex(x)) return [Number(x.re), Number(x.im)];
+    if (isRational(x)) return [Number(x.n) / Number(x.d), 0];
+    return isInteger(x) || isReal(x) ? [Number(x.value), 0] : null;
+  }));
+  return pairs.every((row) => row.every(Boolean)) ? pairs : null;
+}
+
+// Eigenvalues and eigenvectors as numbers, the largest eigenvalue first; complex ones are complex numbers.
+function _numericEigen(matrix) {
+  const pairs = _numberPairs(matrix);
+  if (!pairs) throw new RPLError('Bad argument type');
+  let system;
+  try {
+    system = eigenSystem(pairs, checkTimeLimit);
+  } catch (e) {
+    throw e instanceof RPLError ? e : new RPLError('Bad argument value');
+  }
+  const number = ([re, im]) => (im === 0 ? Real(re) : Complex(re, im));
+  const values = system.values.map(number);
+  return { values, rows: values.map((_, i) => system.vectors.map((vector) => number(vector[i]))) };
+}
+
+// A matrix of decimals, or any matrix under APPROX, has its eigenvalues as numbers; an exact one has the CAS's own, radicals
+// included, unless the CAS cannot write them out (a cubic's rootof), and then the numbers too.
+const _isDecimalMatrix = (matrix) => !_hasSymEntry(matrix.rows.flat())
+  && (getApproxMode() || matrix.rows.some((row) => row.some((x) => isReal(x) || isComplex(x))));
+
+function _eigenAnswer(matrix, exact, numeric) {
+  if (!_isDecimalMatrix(matrix)) {
+    if (!giac.isReady()) throw new RPLError('CAS not ready');
+    try {
+      return exact(_matrixToGiacStr(matrix));
+    } catch (e) {
+      if (!(e instanceof RPLError) || _hasSymEntry(matrix.rows.flat())) throw e;
+    }
+  }
+  return numeric(_numericEigen(matrix));
 }
 
 register('EGVL', (s) => {
   const { matrix } = _popSquareMatrix(s);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  s.push(Vector(_eigenvalues(_matrixToGiacStr(matrix))));
+  s.push(Vector(_eigenAnswer(matrix, _casEigenvalues, (found) => found.values)));
 }, { category: 'Vectors / matrices', categoryOrder: 49, label: "EGVL" });
 
 
@@ -1291,22 +1346,10 @@ register('EGVL', (s) => {
 // egvl(M), despite the name, is the diagonal eigenvalue matrix.
 register('EGV', (s) => {
   const { matrix } = _popSquareMatrix(s);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const matStr = _matrixToGiacStr(matrix);
-
-  const evecRaw = giac.caseval(`egv(${matStr})`);
-  const evecRows = splitGiacList(evecRaw);
-  if (evecRows === null) throw new RPLError('Bad argument value');
-  const matrixRows = evecRows.map((rowStr) => {
-    const cols = splitGiacList(rowStr);
-    if (cols === null) throw new RPLError('Bad argument value');
-    return cols.map((c) => _astToRplValue(giacToAst(c)));
-  });
-
-  const evalItems = _eigenvalues(matStr);
-
-  s.push(Matrix(matrixRows));
-  s.push(Vector(evalItems));
+  const { rows, values } = _eigenAnswer(matrix,
+    (matStr) => ({ rows: _casEigenvectors(matStr), values: _casEigenvalues(matStr) }), (found) => found);
+  s.push(Matrix(rows));
+  s.push(Vector(values));
 }, { category: 'Vectors / matrices', categoryOrder: 48, label: "EGV" });
 
 

@@ -6332,11 +6332,11 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   const s = new Stack();
   s.push(Matrix([[Integer(1n), Integer(2n)], [Integer(3n), Integer(4n)]]));
   giac._clear();
-  // Return something that doesn't look like a list (no surrounding brackets).
-  giac._setFixture('eigenvals([[1,2],[3,4]])', 'garbage');
-  assertThrows(() => { lookup('EGVL').fn(s); },
-               /Bad argument value/,
-               'session114: EGVL on non-list Giac output → Bad argument value');
+  // The CAS answers with no eigenvalue list: the numbers are given instead.
+  giac._setFixture('eigenvals([[1,2],[3,4]])', 'undef');
+  lookup('EGVL').fn(s);
+  assert(isVector(s.peek()) && s.peek().items.length === 2 && isReal(s.peek().items[0]),
+         'session114: EGVL on non-list Giac output → the eigenvalues as numbers');
   giac._clear();
 }
 
@@ -6555,9 +6555,50 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   giac._clear();
   giac._setFixture('egv([[1,2],[3,4]])', 'garbage');
   giac._setFixture('eigenvals([[1,2],[3,4]])', '[1,2]');
-  assertThrows(() => { lookup('EGV').fn(s); },
-               /Bad argument value/,
-               'session119: EGV on non-list egv() output → Bad argument value');
+  lookup('EGV').fn(s);
+  assert(isVector(s.peek()) && isReal(s.peek().items[0]) && isMatrix(s.peek(2)) && isReal(s.peek(2).rows[0][0]),
+         'session119: EGV on non-list egv() output → the eigenvectors and eigenvalues as numbers');
+  giac._clear();
+}
+
+// Eigenvalues as numbers when the CAS has no closed form or the matrix holds decimals, and singular values as the AUR counts them.
+{
+  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
+  const num = (v) => (isComplex(v) ? [Number(v.re), Number(v.im)] : [Number(v.value), 0]);
+  const near = (x, y) => Math.abs(x[0] - y[0]) < 1e-9 && Math.abs(x[1] - y[1]) < 1e-9;
+  // Whether every column of the eigenvector matrix is an eigenvector for the eigenvalue of its position.
+  const pairsHold = (A, [vectors, values]) => values.items.every((l, j) => A.every((row, i) => {
+    const [lr, li] = num(l), [vr, vi] = num(vectors.rows[i][j]);
+    const av = row.reduce((sum, a, k) => { const [er, ei] = num(vectors.rows[k][j]); return [sum[0] + a * er, sum[1] + a * ei]; }, [0, 0]);
+    return near(av, [lr * vr - li * vi, lr * vi + li * vr]);
+  }));
+  const cubic = '[[1,2,3],[4,5,6],[7,8,10]]';
+  giac._clear();
+  giac._setFixtures({
+    [`eigenvals(${cubic})`]: 'rootof([[3,0,-1460,0,166160],[1,0,-584,0,85264,0,-103053]])/9839,rootof([[-3,0,1460,9839,-8736],[1,0,-584,0,85264,0,-103053]])/19678,rootof([[-3,0,1460,-9839,-8736],[1,0,-584,0,85264,0,-103053]])/19678',
+    [`egv(${cubic})`]: '[[rootof([[-13,0,3047,0,296670],[1,0,-584,0,85264,0,-103053]]),1,1],[1,1,1],[1,1,1]]',
+  });
+  const found = runLine('[[1 2 3][4 5 6][7 8 10]] EGVL').peek().items.map(num);
+  assert(found.length === 3 && near(found[0], [16.7074933161, 0]) && near(found[1], [-0.905740179522, 0]) && near(found[2], [0.198246863397, 0]),
+    'EGVL of an integer matrix whose eigenvalues the CAS leaves as rootof gives the numbers, the largest first');
+  assert(pairsHold([[1, 2, 3], [4, 5, 6], [7, 8, 10]], runLine('[[1 2 3][4 5 6][7 8 10]] EGV').snapshot().reverse()),
+    'EGV of it gives each eigenvector beside its eigenvalue');
+  giac._clear();
+  const decimals = runLine('[[1.5 2][-3 4]] EGVL').peek().items.map(num);
+  assert(isComplex(runLine('[[1.5 2][-3 4]] EGVL').peek().items[0]) && near(decimals[0], [2.75, -2.10653744329]) && near(decimals[1], [2.75, 2.10653744329]),
+    'EGVL of a matrix of decimals gives complex eigenvalues as complex numbers, with no CAS');
+  const [vectors, values] = runLine('[[1.5 2][-3 4]] EGV').snapshot().reverse();
+  assert(pairsHold([[1.5, 2], [-3, 4]], [vectors, values]) && isComplex(vectors.rows[0][0]) && isReal(vectors.rows[1][0]) && num(vectors.rows[1][0])[0] > 0,
+    'EGV of it gives complex eigenvectors that fit, each with its largest entry real and positive');
+  assert(shown('APPROX [[2 1][1 2]] EGVL EXACT') === '[ 3. 1. ]', 'EGVL under APPROX gives reals');
+  assert(shown('[[0. 1. 0.][0. 0. 1.][0. 0. 0.]] EGVL') === '[ 0. 0. 0. ]', 'EGVL of a nilpotent matrix of decimals is its zeros');
+  const rotation = runLine('[[0. 1.][-1. 0.]] EGVL').peek().items.map(num);
+  assert(near(rotation[0], [0, -1]) && near(rotation[1], [0, 1]), 'EGVL of a rotation is the pair -i and i');
+  giac._clear();
+  giac._setFixtures({
+    'eigenvals([[2,1],[1,2]])': '3,1',
+  });
+  assert(shown('[[2 1][1 2]] EGVL') === '[ 3 1 ]', 'EGVL of an integer matrix gives the CAS exact answer');
   giac._clear();
 }
 
