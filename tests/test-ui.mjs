@@ -1741,6 +1741,22 @@ setAngle('RAD');
   };
   assert(roll([1, 2]) === '0,5', 'soft keys: a second finger landing before the first lifts leaves both keys to run as their fingers lift, as a fast typist rolls from one key to the next');
   assert(roll([2, 1]) === '5,0', 'soft keys: rolling taps run in the order the fingers lift');
+  {
+    const { LONG_PRESS_MS } = await import('../www/src/ui/display.js');
+    let held = 0;
+    app.showLastMenu = () => { held++; };
+    const pick = { dataset: { mb: 'pick' }, closest: (sel) => (/data-mb="pick"/.test(sel) ? pick : null) };
+    fire('pointerdown', touch(7, pick));
+    fire('pointerdown', touch(8, key(0)));
+    fire('pointerup', touch(8, key(0)));
+    await new Promise((r) => setTimeout(r, LONG_PRESS_MS + 80));
+    assert(held === 1, 'menu button held: another finger lifting elsewhere does not cancel the hold');
+    fire('pointerup', touch(7, pick));
+    fire('pointerdown', touch(9, pick));
+    fire('pointerup', touch(9, pick));
+    await new Promise((r) => setTimeout(r, LONG_PRESS_MS + 80));
+    assert(held === 1, 'menu button held: a finger that lifts before the hold time still cancels its own hold');
+  }
   log.pressed.length = 0;
   const first = key(0), second = key(1);
   fire('pointerdown', touch(1, first));

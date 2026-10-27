@@ -44,7 +44,7 @@ export class MenuBar {
     el.addEventListener('focusout', () => this._endPreview());
     el.addEventListener('pointerdown', (e) => {
       const held = e.pointerType === 'touch' && e.target.closest('[data-mb="next"]:not(:disabled), [data-mb="pick"]');
-      if (held) { this._mbHoldStart(held); return; }
+      if (held) { this._mbHoldStart(held, e.pointerId); return; }
       if (e.pointerType === 'touch' && e.target.closest('.mb-keys')) { e.preventDefault(); this._touchStart(e); return; }
       const sk = e.target.closest('.sk[data-i]');
       if (!sk || e.button !== 0 || sk.disabled) return;
@@ -52,8 +52,8 @@ export class MenuBar {
       this._press(sk);
     });
     el.addEventListener('pointermove', (e) => this._touchMove(e));
-    el.addEventListener('pointerup', (e) => { this._mbHoldEnd(); this._touchUp(e); });
-    el.addEventListener('pointercancel', (e) => { this._mbHoldEnd(); this._touchEnd(e.pointerId); });
+    el.addEventListener('pointerup', (e) => { this._mbHoldEnd(e.pointerId); this._touchUp(e); });
+    el.addEventListener('pointercancel', (e) => { this._mbHoldEnd(e.pointerId); this._touchEnd(e.pointerId); });
     el.addEventListener('contextmenu', (e) => { if (e.target.closest('.sk[data-i]')) e.preventDefault(); });
     el.addEventListener('click', (e) => {
       const sk = e.target.closest('.sk[data-i]');
@@ -190,9 +190,10 @@ export class MenuBar {
 
   // A finger held on NXT lays every key of the menu out at once, so a long menu is one tap, not a page hunt; held on
   // the menu button, it goes back to the menu shown before.
-  _mbHoldStart(button) {
+  _mbHoldStart(button, pointerId) {
     this._mbHoldEnd();
     this._mbHeld = false;
+    this._mbPointer = pointerId;
     this._mbTimer = setTimeout(() => {
       this._mbHeld = true;
       this.app.buzzHold();
@@ -201,7 +202,8 @@ export class MenuBar {
     }, LONG_PRESS_MS);
   }
 
-  _mbHoldEnd() {
+  _mbHoldEnd(pointerId) {
+    if (pointerId !== undefined && pointerId !== this._mbPointer) return;
     clearTimeout(this._mbTimer);
     this._mbTimer = null;
   }
