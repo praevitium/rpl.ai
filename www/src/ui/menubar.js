@@ -26,6 +26,7 @@ export class MenuBar {
     this.el = el;
     this.app = app;
     this._previewTimer = 0;
+    this._touches = new Map();
     // The keys and the page arrows leave the focus where it is, so a phone's keyboard stays up.
     el.addEventListener('mousedown', (e) => { if (e.target.closest('.sk, .mb-pg button')) e.preventDefault(); });
     el.addEventListener('pointerover', (e) => {
@@ -52,7 +53,7 @@ export class MenuBar {
     });
     el.addEventListener('pointermove', (e) => this._touchMove(e));
     el.addEventListener('pointerup', (e) => { this._mbHoldEnd(); this._touchUp(e); });
-    el.addEventListener('pointercancel', () => { this._mbHoldEnd(); this._touchEnd(); });
+    el.addEventListener('pointercancel', (e) => { this._mbHoldEnd(); this._touchEnd(e.pointerId); });
     el.addEventListener('contextmenu', (e) => { if (e.target.closest('.sk[data-i]')) e.preventDefault(); });
     el.addEventListener('click', (e) => {
       const sk = e.target.closest('.sk[data-i]');
@@ -96,9 +97,12 @@ export class MenuBar {
 
   // A finger presses a soft key as it lifts, so it can instead swipe along the row to turn the page (left for NXT,
   // right for PREV) or hold a key with more to offer (a BRCH word's whole structures). Held on a command, a key
-  // previews its result as a mouse hovering does, and still runs as the finger lifts unless it slides away.
+  // previews its result as a mouse hovering does, and still runs as the finger lifts unless it slides away. Each
+  // finger is followed on its own, so a second landing before the first lifts, as a fast typist's does, leaves the
+  // first key to run as it lifts.
   _touchStart(e) {
-    this._touchEnd();
+    this._touchEnd(e.pointerId);
+    for (const other of this._touches.values()) this._stopHold(other);
     const sk = e.target.closest('.sk[data-i]:not(:disabled)');
     const t = { id: e.pointerId, sk, x: e.clientX, y: e.clientY, moved: false, done: false, preview: false };
     const i = Number(sk?.dataset.i);
@@ -112,39 +116,45 @@ export class MenuBar {
     } else if (slot?.command) {
       t.timer = setTimeout(() => { t.preview = true; this.app.previewSoftKey(i); }, LONG_PRESS_MS);
     }
-    this._touch = t;
+    this._touches.set(e.pointerId, t);
   }
 
   _touchMove(e) {
-    const t = this._touch;
-    if (t?.id !== e.pointerId || t.done) return;
+    const t = this._touches.get(e.pointerId);
+    if (!t || t.done) return;
     const dx = e.clientX - t.x, dy = e.clientY - t.y;
     if (Math.hypot(dx, dy) > 10) {
       t.moved = true;
-      clearTimeout(t.timer);
-      if (t.preview) { t.preview = false; this._endPreview(); }
+      this._stopHold(t);
     }
     if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < 2 * Math.abs(dy)) return;
-    t.done = true;
+    // The keys under the other fingers are those of the page being left.
+    for (const other of this._touches.values()) other.done = true;
     if (this.app.menuView().pages > 1) this.app.buzzHold();
     if (dx < 0) this.app.nextMenuPage();
     else this.app.prevMenuPage();
   }
 
   _touchUp(e) {
-    const t = this._touch;
-    if (t?.id !== e.pointerId) return;
-    this._touchEnd();
+    const t = this._touches.get(e.pointerId);
+    if (!t) return;
+    this._touchEnd(e.pointerId);
     if (t.sk && !t.moved && !t.done) {
       this._lifted = true;
       this._press(t.sk);
     }
   }
 
-  _touchEnd() {
-    clearTimeout(this._touch?.timer);
-    if (this._touch?.preview) this._endPreview();
-    this._touch = null;
+  _touchEnd(id) {
+    const t = this._touches.get(id);
+    if (!t) return;
+    this._stopHold(t);
+    this._touches.delete(id);
+  }
+
+  _stopHold(t) {
+    clearTimeout(t.timer);
+    if (t.preview) { t.preview = false; this._endPreview(); }
   }
 
   _press(sk) {

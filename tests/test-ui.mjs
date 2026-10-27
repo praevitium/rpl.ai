@@ -1716,6 +1716,49 @@ setAngle('RAD');
 }
 
 {
+  const { MenuBar } = await import('../www/src/ui/menubar.js');
+  const on = {};
+  const el = { addEventListener: (type, fn) => { (on[type] ??= []).push(fn); }, ownerDocument: null };
+  const fire = (type, ev) => { for (const fn of on[type] ?? []) fn({ preventDefault() {}, ...ev }); };
+  const log = { pressed: [], pages: 0 };
+  const slots = Array.from({ length: 6 }, (_, i) => ({ label: `K${i}` }));
+  const app = { menuView: () => ({ slots, pages: 2 }), pressSoftKey: (i) => log.pressed.push(i), buzzHold() {}, clearPreview() {}, previewSoftKey() {}, nextMenuPage: () => { log.pages++; }, prevMenuPage() {} };
+  new MenuBar({ el, app });
+  const key = (i) => {
+    const k = { dataset: { i: String(i) }, classList: { add() {}, remove() {} }, closest: (sel) => (/\.sk\[|\.mb-keys/.test(sel) ? k : null) };
+    return k;
+  };
+  const touch = (id, target, x = 0, y = 0) => ({ pointerId: id, pointerType: 'touch', target, clientX: x, clientY: y, button: 0 });
+  const roll = (order) => {
+    log.pressed.length = 0;
+    const keys = { 1: key(0), 2: key(5) };
+    fire('pointerdown', touch(1, keys[1]));
+    fire('pointerdown', touch(2, keys[2]));
+    for (const id of order) fire('pointerup', touch(id, keys[id]));
+    return log.pressed.join();
+  };
+  assert(roll([1, 2]) === '0,5', 'soft keys: a second finger landing before the first lifts leaves both keys to run as their fingers lift, as a fast typist rolls from one key to the next');
+  assert(roll([2, 1]) === '5,0', 'soft keys: rolling taps run in the order the fingers lift');
+  log.pressed.length = 0;
+  const first = key(0), second = key(1);
+  fire('pointerdown', touch(1, first));
+  fire('pointerdown', touch(2, second));
+  fire('pointermove', touch(2, second, -40, 0));
+  fire('pointerup', touch(2, second, -40, 0));
+  fire('pointerup', touch(1, first));
+  assert(log.pages === 1 && !log.pressed.length, 'soft keys: a finger swiping turns the page, and the keys another finger was on belong to the page just left, so neither runs');
+  log.pressed.length = 0;
+  fire('pointerdown', touch(3, key(2)));
+  fire('pointerdown', touch(4, key(3)));
+  fire('pointercancel', touch(3, key(2)));
+  fire('pointerup', touch(4, key(3)));
+  assert(log.pressed.join() === '3', 'soft keys: a finger the phone takes over (a cancelled touch) presses nothing and leaves the other finger its key');
+  log.pressed.length = 0;
+  fire('pointerup', touch(5, key(1)));
+  assert(!log.pressed.length, 'soft keys: a lift with no touch on record (its landing was somewhere else) presses nothing');
+}
+
+{
   const { Drawers } = await import('../www/src/ui/drawer.js');
   const { LONG_PRESS_MS } = await import('../www/src/ui/display.js');
   const on = {};
