@@ -56,7 +56,7 @@ import {
 import { parseTyped } from './rpl/parser.js';
 import {
   loadInitialState, adoptStoredState, saveToLocalStorage, saveUndo, loadUndo, saveDraft, loadDraft, saveHistory, loadHistory, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
-  shareLink, sharedSource, sharedText, holdPageLock, saveRun, takeRun,
+  shareLink, sharedSource, sharedText, holdPageLock, saveRun, takeRun, NOT_STORED,
 } from './rpl/persist.js';
 import { giac } from './rpl/cas/giac-engine.mjs';
 import { ChatBot, renderInlineMarkdown } from './ai/chat-bot.js';
@@ -355,8 +355,8 @@ class App {
   // A level or variable being edited is edited again, if its value is still the one the edit began from; else the text stays as a line.
   _restoreEdit({ kind, level, name, line, was }) {
     const value = kind === 'level' ? (level <= this.stack.depth ? this.stack.peek(level) : undefined) : varRecall(name);
-    if (value === undefined || sourceHash(value) !== was) return;
-    const target = kind === 'level' ? { level, label: `Editing level ${level}` } : { name, label: `Editing ${name}`, path: currentPath().join('/') };
+    if (value === undefined ? was !== NOT_STORED : sourceHash(value) !== was) return;
+    const target = kind === 'level' ? { level, label: `Editing level ${level}` } : { name, label: `${was === NOT_STORED ? 'Entering' : 'Editing'} ${name}`, path: currentPath().join('/') };
     this.pendingEdit = { kind, value, line, was, ...target };
     this.renderStatus();
     this.input.render();
@@ -1715,6 +1715,13 @@ class App {
     this._beginEdit({ kind: 'var', name, value, line, label: `Editing ${name}` });
   }
 
+  // The HP's statistics edit ΣDAT in the matrix writer, where a spreadsheet range pastes whole. With no data yet the writer
+  // opens empty and Enter stores what it holds as ΣDAT.
+  editStatData() {
+    if (varRecall('ΣDAT') !== undefined) this.editVariable('ΣDAT');
+    else this._beginEdit({ kind: 'var', name: 'ΣDAT', fresh: true, was: NOT_STORED, label: 'Entering ΣDAT' });
+  }
+
   _beginEdit(picked) {
     if (this.entry.buffer.trim()) this.commitEntry();
     if (this.entry.buffer.trim()) return;
@@ -1724,11 +1731,12 @@ class App {
       return;
     }
     const { value } = edit;
-    const mode = edit.line ? 'rpl'
+    const mode = edit.line ? 'rpl' : edit.fresh ? 'matrix'
       : isSymbolic(value) || (isName(value) && edit.kind === 'level') ? 'equation'
         : isMatrix(value) || isVector(value) ? 'matrix' : 'rpl';
     const writer = { equation: this.equationEditor, matrix: this.matrixEditor }[mode];
     const replaced = writer && !writer.isEmpty() ? { saved: writer.snapshot(), edit: this.pendingEdit } : null;
+    if (edit.fresh) writer?.clear();
     this.pendingEdit = edit;
     if (mode === 'rpl') {
       this.setInputMode('rpl');
@@ -1755,7 +1763,7 @@ class App {
   _settleEdit(edit) {
     if (edit.kind === 'var') {
       const value = varRecall(edit.name);
-      return value === undefined ? null : { ...edit, value, path: currentPath().join('/') };
+      return value === undefined && !edit.fresh ? null : { ...edit, value, path: currentPath().join('/') };
     }
     const level = this._levelOf(edit.value);
     return level ? { ...edit, level, label: `Editing level ${level}` } : null;
@@ -1780,7 +1788,7 @@ class App {
     this._endEdit();
     this.setInputMode('rpl');
     if (away) this.toast(this._editedAwayNote(edit));
-    else if (edit?.kind === 'var') this.undoToast(`Stored ${edit.name}`);
+    else if (edit?.kind === 'var') this.undoToast(edit.name === 'ΣDAT' ? `Stored ${sigmaDataNote(value)}` : `Stored ${edit.name}`);
   }
 
   // A variable is stored in the folder its edit began in; from another folder the result stays on the stack.
@@ -2415,7 +2423,9 @@ class App {
 
   _showGroupMenu(group, familyId) {
     const back = { label: '◀ BACK', title: `Back to the ${menuById(familyId).title} menu`, onPress: () => this._showFamilyMenu(familyId) };
-    this.setMenu([back, ...group.commands.map((name) => this._commandSlot(name))], familyId, { folder: group.id });
+    const edit = familyId === 'STAT' && group.id === 'DATA'
+      ? [{ label: 'EDIT', title: 'Edit the statistics matrix ΣDAT as a table; a spreadsheet range pastes into it', onPress: () => this.editStatData() }] : [];
+    this.setMenu([back, ...edit, ...group.commands.map((name) => this._commandSlot(name))], familyId, { folder: group.id });
     if (group.commands.includes('MODSTO')) this.toast(`${modulusNote()}; MODSTO sets it.`, { key: 'modulus', transient: true });
   }
 

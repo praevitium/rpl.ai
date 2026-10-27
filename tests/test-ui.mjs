@@ -368,7 +368,7 @@ import { assert, assertThrows } from './helpers.mjs';
     `STAT_GROUPS: the folders hold every statistics command once, spelt as the HP spells it, in the HP's folder order, PLOT holding the three statistics plots (missing ${statNames.filter((n) => !inFolders.includes(n) && !aliases.includes(n))})`);
   assert(/STAT: \(\) => this\._groupKeys\(STAT_GROUPS, 'STAT'\),/.test(appSrc)
     && /_groupKeys\(groups, familyId\) \{\s*return groups\.map\(\(group\) => \(\{ label: group\.id, dir: true, .*?onPress: \(\) => this\._showGroupMenu\(group, familyId\) \}\)\);/.test(appSrc)
-    && /_showGroupMenu\(group, familyId\) \{\s*const back = \{ label: '◀ BACK', title: `Back to the \$\{menuById\(familyId\)\.title\} menu`, onPress: \(\) => this\._showFamilyMenu\(familyId\) \};\s*this\.setMenu\(\[back, \.\.\.group\.commands\.map\(\(name\) => this\._commandSlot\(name\)\)\], familyId, \{ folder: group\.id \}\);/.test(appSrc),
+    && /_showGroupMenu\(group, familyId\) \{\s*const back = \{ label: '◀ BACK', title: `Back to the \$\{menuById\(familyId\)\.title\} menu`, onPress: \(\) => this\._showFamilyMenu\(familyId\) \};\s*const edit = familyId === 'STAT' && group\.id === 'DATA'\n[^\n]*\n\s*this\.setMenu\(\[back, \.\.\.edit, \.\.\.group\.commands\.map\(\(name\) => this\._commandSlot\(name\)\)\], familyId, \{ folder: group\.id \}\);/.test(appSrc),
     'STAT menu: it opens on the HP\'s folders, DATA, ΣPAR, 1VAR, PLOT, FIT and SUMS, whose keys run, type and look up their commands as the flat list\'s do, with a BACK key');
   const casNames = allOps().filter((n) => lookup(n).category === 'CAS / symbolic');
   assert(CAS_GROUPS.map((g) => g.id).join(' ') === 'ALG CALC S.SLV TRIG EXP&LN'
@@ -4328,7 +4328,7 @@ setAngle('RAD');
   assert(/_editDraft\(\) \{\n\s*const edit = this\.pendingEdit;\n\s*if \(!edit\) return null;\n\s*edit\.was \?\?= sourceHash\(edit\.value\);\n\s*const \{ kind, level, name, line, was \} = edit;\n\s*return \{ kind, \.\.\.\(kind === 'level' \? \{ level \} : \{ name \}\), \.\.\.\(line && \{ line \}\), was \};/.test(appSrc)
     && /for \(const c of formatSource\(value\)\) hash = \(Math\.imul\(hash, 31\) \+ c\.codePointAt\(0\)\) \| 0;/.test(appSrc),
     'a draft names the edit by its level or variable and a hash of the value it began from');
-  assert(/_restoreEdit\(\{ kind, level, name, line, was \}\) \{\n\s*const value = kind === 'level' \? \(level <= this\.stack\.depth \? this\.stack\.peek\(level\) : undefined\) : varRecall\(name\);\n\s*if \(value === undefined \|\| sourceHash\(value\) !== was\) return;/.test(appSrc),
+  assert(/_restoreEdit\(\{ kind, level, name, line, was \}\) \{\n\s*const value = kind === 'level' \? \(level <= this\.stack\.depth \? this\.stack\.peek\(level\) : undefined\) : varRecall\(name\);\n\s*if \(value === undefined \? was !== NOT_STORED : sourceHash\(value\) !== was\) return;/.test(appSrc),
     'the edit is taken up again only for the value it began from; a level or variable that changed leaves the text as a plain line');
   assert(/_endEdit\(\) \{\n\s*this\.pendingEdit = null;\n\s*this\.renderStatus\(\);\n\s*this\.input\.render\(\);\n\s*this\._keepDraft\?\.\(\);\n\s*\}/.test(appSrc),
     'an edit that ends is forgotten at once, since an edit with its line emptied is kept and would otherwise wait out the typing pause');
@@ -4351,7 +4351,7 @@ setAngle('RAD');
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/_beginEdit\(picked\) \{\n\s*if \(this\.entry\.buffer\.trim\(\)\) this\.commitEntry\(\);\n\s*if \(this\.entry\.buffer\.trim\(\)\) return;\n\s*const edit = this\._settleEdit\(picked\);\n\s*if \(!edit\) \{\n\s*this\.toast\(picked\.kind === 'var' \? `\$\{picked\.name\} is gone, so there is nothing to edit\.` : 'That level is gone, so there is nothing to edit\.'\);\n\s*return;\n\s*\}\n\s*const \{ value \} = edit;/.test(appSrc)
-    && /_settleEdit\(edit\) \{\n\s*if \(edit\.kind === 'var'\) \{\n\s*const value = varRecall\(edit\.name\);\n\s*return value === undefined \? null : \{ \.\.\.edit, value, path: currentPath\(\)\.join\('\/'\) \};\n\s*\}\n\s*const level = this\._levelOf\(edit\.value\);\n\s*return level \? \{ \.\.\.edit, level, label: `Editing level \$\{level\}` \} : null;/.test(appSrc),
+    && /_settleEdit\(edit\) \{\n\s*if \(edit\.kind === 'var'\) \{\n\s*const value = varRecall\(edit\.name\);\n\s*return value === undefined && !edit\.fresh \? null : \{ \.\.\.edit, value, path: currentPath\(\)\.join\('\/'\) \};\n\s*\}\n\s*const level = this\._levelOf\(edit\.value\);\n\s*return level \? \{ \.\.\.edit, level, label: `Editing level \$\{level\}` \} : null;/.test(appSrc),
     'edit: a line entered before the edit starts moves the level or stores the variable, so the edit is aimed at where the value is now; if the line took it away there is a note and no edit');
 }
 
@@ -4364,7 +4364,7 @@ setAngle('RAD');
     && /_commitEdit\(\) \{\n\s*const edit = this\.pendingEdit;\n\s*if \(!edit\.ran && !this\.entry\.buffer\.trim\(\)\) \{ this\.cancelEdit\(\); return; \}\n\s*const before = this\.stack\.depth;/.test(appSrc)
     && /if \(this\.pendingEdit && key\.primary === 'ENTER'\) return !this\.pendingEdit\.ran \? 'CANCEL' : this\.pendingEdit\.kind === 'var' \? 'STORE' : 'REPLACE';\n\s*if \(key\.primary === 'ENTER' && depth\) return 'DUP';/.test(appSrc),
     'edit: Enter on an emptied edit line cancels the edit unless a key has changed the stack since, and the Enter key is captioned to match');
-  assert(/\{ name, label: `Editing \$\{name\}`, path: currentPath\(\)\.join\('\/'\) \}/.test(appSrc)
+  assert(/\{ name, label: `\$\{was === NOT_STORED \? 'Entering' : 'Editing'\} \$\{name\}`, path: currentPath\(\)\.join\('\/'\) \}/.test(appSrc)
     && /if \(this\._editedAway\(edit\)\) this\.toast\(this\._editedAwayNote\(edit\)\);\n\s*else \{\n\s*varStore\(edit\.name, this\.stack\.pop\(\)\);\n\s*this\.undoToast\(`Stored \$\{edit\.name\}`\);\n\s*\}/.test(appSrc)
     && /const away = edit\?\.kind === 'var' && this\._editedAway\(edit\);/.test(appSrc)
     && /else if \(edit\?\.kind === 'var' && !away\) varStore\(edit\.name, value\);/.test(appSrc)
@@ -4777,6 +4777,11 @@ setAngle('RAD');
   assert(appSrc.includes('const CAS_SLOW_MS = 2500;') && appSrc.includes("this.toast('Loading the algebra engine…', { key: 'cas', timeout: Infinity, transient: true });")
     && appSrc.includes("this.toast('The algebra engine is ready', { key: 'cas' });") && /onAction: \(\) => this\.loadCas\(\{ now: true \}\)/.test(appSrc),
     'algebra engine: a download that takes over 2.5 s gets a note, replaced by one saying it is ready or, when it fails, one with Try again, which starts at once');
+  assert(/familyId === 'STAT' && group\.id === 'DATA'\n\s*\? \[\{ label: 'EDIT',[^\n]*onPress: \(\) => this\.editStatData\(\) \}\] : \[\];/.test(appSrc)
+    && /editStatData\(\) \{\n\s*if \(varRecall\('ΣDAT'\) !== undefined\) this\.editVariable\('ΣDAT'\);\n\s*else this\._beginEdit\(\{ kind: 'var', name: 'ΣDAT', fresh: true, was: NOT_STORED, label: 'Entering ΣDAT' \}\);/.test(appSrc)
+    && appSrc.includes("const mode = edit.line ? 'rpl' : edit.fresh ? 'matrix'") && appSrc.includes('return value === undefined && !edit.fresh ? null : { ...edit, value, path: currentPath().join(\'/\') };')
+    && appSrc.includes('if (value === undefined ? was !== NOT_STORED : sourceHash(value) !== was) return;') && appSrc.includes("edit.name === 'ΣDAT' ? `Stored ${sigmaDataNote(value)}` : `Stored ${edit.name}`"),
+    'statistics data: the DATA folder has an EDIT key that opens ΣDAT in the matrix writer, an empty one that stores as ΣDAT when none is stored yet, which a reload brings back, and the note says how many points it holds');
 }
 
 {

@@ -22,7 +22,7 @@ import {
 import {
   snapshot, rehydrate, encodeValue, decodeValue, loadInitialState, STORAGE_KEY,
   BACKUPS_KEY, listBackups, archiveBackup, restoreBackup, deleteBackup, putBackBackup, exportBackup, subscribeBackups,
-  saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX, saveDraft, loadDraft, DRAFT_KEY, saveHistory, loadHistory, HISTORY_KEY, savePlot, loadPlot, PLOT_KEY, saveUndo, loadUndo, UNDO_KEY, saveRun, takeRun, holdPageLock, RUN_KEY,
+  saveToLocalStorage, adoptStoredState, shareLink, sharedSource, sharedText, SHARE_LINK_MAX, saveDraft, loadDraft, DRAFT_KEY, NOT_STORED, saveHistory, loadHistory, HISTORY_KEY, savePlot, loadPlot, PLOT_KEY, saveUndo, loadUndo, UNDO_KEY, saveRun, takeRun, holdPageLock, RUN_KEY,
 } from '../www/src/rpl/persist.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import { formatSource } from '../www/src/rpl/formatter.js';
@@ -1161,6 +1161,11 @@ function quotaError() {
     saveDraft({ text: '7', cursor: 1, edit: { kind: 'level', level: 2, was: 9, line: true } });
     back = loadDraft();
     assert(back.edit.kind === 'level' && back.edit.level === 2 && back.edit.line === true && back.edit.name === undefined, 'edit draft: a level edit comes back with its level and the line flag');
+    saveDraft({ text: '', cursor: 0, edit: { kind: 'var', name: 'ΣDAT', was: NOT_STORED } });
+    back = loadDraft();
+    assert(back.edit.kind === 'var' && back.edit.name === 'ΣDAT' && back.edit.was === NOT_STORED, 'edit draft: a variable not stored yet, as ΣDAT being entered, comes back as one');
+    store.set(DRAFT_KEY, JSON.stringify({ text: '1', cursor: 1, edit: { kind: 'level', level: 1, was: NOT_STORED } }));
+    assert(loadDraft().edit === undefined, 'edit draft: a level always began from a value, so one that was not stored is dropped');
     saveDraft({ text: '7', cursor: 1 });
     assert(loadDraft().edit === undefined, 'edit draft: a draft that is no edit has none');
     saveDraft({ text: '', cursor: 0, edit: { kind: 'level', level: 1, was: 9 } });

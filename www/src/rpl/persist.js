@@ -464,12 +464,15 @@ function readWriter(writer) {
   return shaped ? { mode: 'matrix', saved: { grid: grid.map((row) => row.map((c) => String(c ?? ''))), asVector: !!asVector, focus: at } } : null;
 }
 
+// What an edit of a variable that is not stored yet began from.
+export const NOT_STORED = 'none';
+
 // The level or variable a draft was an edit of, by where it is and a hash of the value it started from, or null when what was saved
 // is not that.
 function readEdit(edit) {
   const named = edit?.kind === 'var' && typeof edit.name === 'string' && edit.name.length > 0 && edit.name.length <= 200;
   const leveled = edit?.kind === 'level' && Number.isInteger(edit.level) && edit.level >= 1;
-  if (!(named || leveled) || !Number.isInteger(edit.was)) return null;
+  if (!(named || leveled) || !(Number.isInteger(edit.was) || (named && edit.was === NOT_STORED))) return null;
   return { kind: edit.kind, ...(leveled ? { level: edit.level } : { name: edit.name }), ...(edit.line === true && { line: true }), was: edit.was };
 }
 
