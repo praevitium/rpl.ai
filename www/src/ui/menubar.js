@@ -69,7 +69,7 @@ export class MenuBar {
     const doc = el.ownerDocument;
     doc?.addEventListener('pointerdown', () => { this._lifted = false; }, true);
     doc?.addEventListener('click', (e) => {
-      if (!this._lifted) return;
+      if (!this._lifted || !e.isTrusted) return;
       this._lifted = false;
       e.preventDefault();
       e.stopPropagation();

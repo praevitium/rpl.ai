@@ -1718,8 +1718,10 @@ setAngle('RAD');
 {
   const { MenuBar } = await import('../www/src/ui/menubar.js');
   const on = {};
-  const el = { addEventListener: (type, fn) => { (on[type] ??= []).push(fn); }, ownerDocument: null };
+  const docOn = {};
+  const el = { addEventListener: (type, fn) => { (on[type] ??= []).push(fn); }, ownerDocument: { addEventListener: (type, fn) => { (docOn[type] ??= []).push(fn); } } };
   const fire = (type, ev) => { for (const fn of on[type] ?? []) fn({ preventDefault() {}, ...ev }); };
+  const docFire = (type, ev) => { const e = { stopped: false, prevented: false, preventDefault() { this.prevented = true; }, stopPropagation() { this.stopped = true; }, ...ev }; for (const fn of docOn[type] ?? []) fn(e); return e; };
   const log = { pressed: [], pages: 0 };
   const slots = Array.from({ length: 6 }, (_, i) => ({ label: `K${i}` }));
   const app = { menuView: () => ({ slots, pages: 2 }), pressSoftKey: (i) => log.pressed.push(i), buzzHold() {}, clearPreview() {}, previewSoftKey() {}, nextMenuPage: () => { log.pages++; }, prevMenuPage() {} };
@@ -1756,6 +1758,11 @@ setAngle('RAD');
   log.pressed.length = 0;
   fire('pointerup', touch(5, key(1)));
   assert(!log.pressed.length, 'soft keys: a lift with no touch on record (its landing was somewhere else) presses nothing');
+  const lift = () => { const k = key(4); fire('pointerdown', touch(6, k)); fire('pointerup', touch(6, k)); };
+  lift();
+  assert(docFire('click', { isTrusted: true }).stopped, 'soft keys: the click Chrome sends after a finger lifts off a key is swallowed, as it lands on whatever the key opened');
+  lift();
+  assert(!docFire('click', { isTrusted: false }).stopped, 'soft keys: a click sent for a rolling tap on another button is not taken for that one, and still reaches its button');
 }
 
 {
@@ -3325,7 +3332,7 @@ setAngle('RAD');
   const opened = [];
   new MenuBar({ el, app: { menuView: () => ({ slots: [{ label: 'VIEW' }] }), pressSoftKey: () => opened.push('view'), clearPreview: () => {} } });
   const fire = (registry, type, target) => {
-    const ev = { type, pointerType: 'touch', pointerId: 1, button: 0, clientX: 100, clientY: 100, target, stopped: false, preventDefault() { this.stopped = true; }, stopPropagation() { this.stopped = true; } };
+    const ev = { type, pointerType: 'touch', pointerId: 1, button: 0, clientX: 100, clientY: 100, isTrusted: true, target, stopped: false, preventDefault() { this.stopped = true; }, stopPropagation() { this.stopped = true; } };
     for (const fn of registry[type] ?? []) fn(ev);
     return ev;
   };
