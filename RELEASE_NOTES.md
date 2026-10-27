@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.111 (2026-10-26)
+**Latest release:** v0.8.112 (2026-10-27)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.112 — 2026-10-27
+
+- Fixed: a finger held on NXT (the whole-menu grid) or on the menu button (the
+  previous menu) lost its hold when another finger lifted anywhere on the soft
+  keys, such as a thumb finishing a tap on a key beside it. The hold now ends
+  only with the finger that started it.
 
 ## v0.8.111 — 2026-10-26
 
