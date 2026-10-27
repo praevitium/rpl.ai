@@ -7,7 +7,7 @@ import { AppBar, installHint } from './ui/appbar.js';
 import { Drawers, CATEGORIES, familyCommands, signatureOf, pickFiles, UPLOAD_ACCEPT } from './ui/drawer.js';
 import { describeError, ERROR_KINDS } from './ui/errors.js';
 import { errorBannerHtml, haltedBannerHtml, lcdHtml } from './ui/banner.js';
-import { InputArea } from './ui/input-area.js';
+import { InputArea, restoreRollingTaps } from './ui/input-area.js';
 import { Autocomplete } from './ui/autocomplete.js';
 import { Palette } from './ui/palette.js';
 import { exampleUse } from './ui/examples.js';
@@ -306,6 +306,7 @@ class App {
     this._installFileDrop();
     this._installBackButton();
     this._installHaptics();
+    restoreRollingTaps(document);
     this.renderAll();
     this._restoreDraft();
     this._installDraft();

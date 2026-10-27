@@ -1759,6 +1759,45 @@ setAngle('RAD');
 }
 
 {
+  const { restoreRollingTaps } = await import('../www/src/ui/input-area.js');
+  const { LONG_PRESS_MS } = await import('../www/src/ui/display.js');
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const on = {};
+  class FakePointerEvent { constructor(type, init) { Object.assign(this, init, { type, isTrusted: false }); } }
+  const doc = {
+    addEventListener: (type, fn) => { (on[type] ??= new Set()).add(fn); },
+    removeEventListener: (type, fn) => { on[type]?.delete(fn); },
+    defaultView: { PointerEvent: FakePointerEvent },
+  };
+  restoreRollingTaps(doc);
+  const clicks = [];
+  const fire = (type, ev) => { for (const fn of [...(on[type] ?? [])]) fn(ev); };
+  const target = (name, connected = true) => ({ name, isConnected: connected, dispatchEvent(ev) { clicks.push(`${name}:${ev.detail}:${ev.pointerType}`); fire('click', ev); } });
+  const touch = (type, id, el, at, x = 0, pointerType = 'touch') => fire(type, { pointerType, pointerId: id, target: el, timeStamp: at, clientX: x, clientY: 0, screenX: x, screenY: 0 });
+  const settle = async () => { await wait(150); return clicks.splice(0).join(' '); };
+  const a = target('a'), b = target('b');
+  touch('pointerdown', 1, a, 0); touch('pointerup', 1, a, 50);
+  assert(await settle() === '', 'rolling taps: a lone tap keeps the click Chrome sends and gets none of its own');
+  touch('pointerdown', 1, a, 0); touch('pointerdown', 2, b, 10); touch('pointerup', 1, a, 60); touch('pointerup', 2, b, 80);
+  assert(await settle() === 'a:1:touch b:1:touch', 'rolling taps: two touches that overlapped each get the click Chrome left out, as a touch click, in the order the fingers lifted');
+  touch('pointerdown', 1, a, 0); touch('pointerdown', 2, b, 10); touch('pointerup', 2, b, 60); touch('pointerup', 1, a, LONG_PRESS_MS + 200);
+  assert(await settle() === 'b:1:touch', 'rolling taps: a finger resting for a long press gets no click when it lifts, but the quick tap beside it does');
+  touch('pointerdown', 1, a, 0); touch('pointerdown', 2, b, 10); touch('pointerup', 1, a, 60, 40); touch('pointerup', 2, b, 80);
+  assert(await settle() === 'b:1:touch', 'rolling taps: a finger that slid away from where it landed is not a tap');
+  touch('pointerdown', 1, a, 0); touch('pointerdown', 2, b, 10); touch('pointercancel', 1, a, 30); touch('pointerup', 2, b, 80);
+  assert(await settle() === 'b:1:touch', 'rolling taps: a touch the phone takes over (a pinch, a scroll) gets no click');
+  touch('pointerdown', 1, a, 0); touch('pointerdown', 2, b, 10); touch('pointerup', 1, a, 60);
+  fire('click', { isTrusted: true, target: a });
+  touch('pointerup', 2, b, 80);
+  assert(await settle() === 'b:1:touch', 'rolling taps: a click Chrome did send is not sent twice');
+  const gone = target('gone', false);
+  touch('pointerdown', 1, gone, 0); touch('pointerdown', 2, b, 10); touch('pointerup', 1, gone, 60); touch('pointerup', 2, b, 80);
+  assert(await settle() === 'b:1:touch', 'rolling taps: a key that a quicker finger took off the screen is not pressed in its place');
+  touch('pointerdown', 1, a, 0, 0, 'mouse'); touch('pointerdown', 2, b, 10, 0, 'mouse'); touch('pointerup', 1, a, 60, 0, 'mouse'); touch('pointerup', 2, b, 80, 0, 'mouse');
+  assert(await settle() === '', 'rolling taps: a mouse and a pen keep their own clicks');
+}
+
+{
   const { Drawers } = await import('../www/src/ui/drawer.js');
   const { LONG_PRESS_MS } = await import('../www/src/ui/display.js');
   const on = {};

@@ -41,6 +41,44 @@ function holdOn(el, app, arm, fire) {
   el.addEventListener('click', (ev) => { if (held) { held = false; swallow(ev); } }, { capture: true });
 }
 
+const TAP_SLOP_PX = 10;
+const CLICK_WAIT_MS = 60;
+const STALE_TOUCH_MS = 10000;
+
+// Chrome sends no click for a touch that overlapped another, so a fast typist's rolling taps lose every key that acts
+// on a click, where the keypad's keys, pressing as the finger lands, never miss. A short touch that overlapped another
+// and stayed put gets the click Chrome left out, unless one came.
+export function restoreRollingTaps(doc) {
+  const down = new Map();
+  const listen = (type, fn) => doc.addEventListener(type, fn, { capture: true, passive: true });
+  listen('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return;
+    for (const [id, d] of down) if (e.timeStamp - d.at > STALE_TOUCH_MS) down.delete(id);
+    const rolling = down.size > 0;
+    for (const d of down.values()) d.rolling = true;
+    down.set(e.pointerId, { x: e.clientX, y: e.clientY, at: e.timeStamp, rolling });
+  });
+  listen('pointercancel', (e) => down.delete(e.pointerId));
+  listen('pointerup', (e) => {
+    const d = down.get(e.pointerId);
+    down.delete(e.pointerId);
+    if (!d?.rolling || e.timeStamp - d.at >= LONG_PRESS_MS || Math.hypot(e.clientX - d.x, e.clientY - d.y) > TAP_SLOP_PX) return;
+    const { target } = e;
+    let clicked = false;
+    const seen = (click) => { if (click.isTrusted) clicked = true; };
+    listen('click', seen);
+    setTimeout(() => {
+      doc.removeEventListener('click', seen, { capture: true });
+      if (clicked || !target.isConnected) return;
+      const { defaultView: view } = doc;
+      target.dispatchEvent(new view.PointerEvent('click', {
+        bubbles: true, cancelable: true, composed: true, view, detail: 1, pointerType: 'touch', pointerId: e.pointerId,
+        clientX: e.clientX, clientY: e.clientY, screenX: e.screenX, screenY: e.screenY,
+      }));
+    }, CLICK_WAIT_MS);
+  });
+}
+
 // Holding ⌫ clears the whole line, with Undo, wherever a quick press deletes a character from it.
 export function holdToClear(el, app) {
   holdOn(el, app, () => app.inputMode === 'rpl' && app.selection == null && !app.shift && app.entry.buffer, (text) => { if (app.entry.buffer) app.clearLine(text); });
