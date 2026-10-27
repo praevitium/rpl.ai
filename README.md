@@ -210,8 +210,12 @@ RPL puts the numbers first and the operation last. Each value goes on the
   (1, 2.1), (2, 3.9), (3, 6.2) and (4, 7.8), `LR` gives the intercept 0.15
   and slope 1.94, and `5 PREDY` gives 9.85. `SCATRPLOT` plots the points,
   the XCOL column against the YCOL column, and `BARPLOT` and `HISTPLOT` the
-  XCOL column. The STAT menu opens on the HP's folders: DATA (Σ+, Σ-, CLΣ),
-  ΣPAR, 1VAR, PLOT, FIT and SUMS.
+  XCOL column. The STAT menu opens on the HP's folders: DATA (EDIT, Σ+, Σ-,
+  CLΣ), ΣPAR, 1VAR, PLOT, FIT and SUMS. DATA's EDIT key opens ΣDAT as a
+  table in the matrix writer, one point to a row, and a range copied from a
+  spreadsheet pastes into it whole; Enter stores it back as ΣDAT and says
+  how many points it holds. With no data yet the writer opens empty, and a
+  reload while you copy the range from another app brings it back.
   Once ΣDAT exists, `3 1 7 Σ+` adds a point from separate numbers, the
   quickest way on a phone. The Σ+, Σ-, CLΣ and STOΣ keys say how many points
   ΣDAT holds, and a statistics command run with an array on the stack but no
@@ -594,6 +598,12 @@ Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
   Under 360 px the page count moves from the menu button onto NXT, and under
   320 the menu button keeps only its icon, so each soft key stays
   finger-wide. The menu button's list leads with the menus you used last.
+- A second finger may land before the first lifts, as two thumbs typing fast
+  do. The keypad types as each finger lands, a soft key runs as its finger
+  lifts, so both keys run in the order the fingers leave them, and every
+  other button, the key strip, ⌫, Enter, NXT and the writers' keys among
+  them, gets the tap Chrome would otherwise drop for a touch that overlapped
+  another. A finger resting on the screen for a long press is left alone.
 - The equation writer has its own row of buttons (move, fraction, power,
   root and parentheses), and so does the matrix writer (previous cell, next
   cell and next row), each with ⌫ and Enter. The matrix writer pushes only

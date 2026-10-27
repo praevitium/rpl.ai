@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.110 (2026-10-26)
+**Latest release:** v0.8.111 (2026-10-26)
 
 ---
 
@@ -20,6 +20,30 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.111 — 2026-10-26
+
+- Fixed: two fingers landing one after the other on the soft keys, as two
+  thumbs typing fast do, lost the first key. The menu bar followed one touch
+  at a time, so a second finger took the first's place and the first key never
+  ran. Each finger is now followed on its own, and both keys run, in the order
+  the fingers lift. A finger that swipes to turn the page leaves the other
+  finger's key unpressed, since that key belonged to the page just left.
+- Fixed: the same overlap lost every tap on a button that acts on a click,
+  because Chrome sends no click for a touch that overlapped another. The key
+  strip above the phone keyboard, ⌫ and Enter beside the line, NXT, the
+  writers' keys and the rest dropped both taps, where the keypad, which types
+  as a finger lands, never did. A short touch that overlapped another and
+  stayed put now gets the click Chrome left out, unless one came. A finger
+  resting on the screen for a long press, one that slid away and one the phone
+  took over (a pinch, a scroll) get none, and a mouse or a pen keeps its own.
+- Added: the STAT menu's DATA folder has an EDIT key that opens ΣDAT as a
+  table in the matrix writer, one point to a row. A range copied from a
+  spreadsheet pastes into it whole, and Enter stores it back, saying how many
+  points ΣDAT holds. With no data yet the writer opens empty and Enter stores
+  what it holds as ΣDAT. A reload while it is open, as a phone may drop the
+  page while you copy the range from another app, brings the entry back still
+  aimed at ΣDAT. `Σ+` stays for adding a point at a time.
 
 ## v0.8.110 — 2026-10-26
 
