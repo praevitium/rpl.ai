@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.112 (2026-10-27)
+**Latest release:** v0.8.113 (2026-10-27)
 
 ---
 
@@ -20,6 +20,14 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.8.113 — 2026-10-27
+
+- Fixed: the equation writer's insight strip never went back to its separate
+  algebra worker after one failed load (a phone losing signal while the engine
+  downloaded). It kept working on the page's own copy, where a slow
+  simplify or solve cannot be cut off. The worker is now tried again as soon as
+  the phone is back online.
 
 ## v0.8.112 — 2026-10-27
 
