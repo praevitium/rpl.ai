@@ -1825,6 +1825,10 @@ class InsightWorker {
     if (this.queued) this._pump();
   }
 
+  retry() {
+    if (this.broken && typeof Worker === 'function') this.broken = false;
+  }
+
   _fail() {
     this.broken = true;
     this.worker?.terminate();
@@ -1840,6 +1844,7 @@ class InsightWorker {
 }
 
 const insightWorker = new InsightWorker();
+globalThis.addEventListener?.('online', () => insightWorker.retry());
 
 // A phone only raises its keyboard for a text field, so touch devices type into
 // a hidden one. The rest character gives Backspace something to delete.

@@ -784,3 +784,9 @@ function replaceSelection(state, ast) {
   assert([['x²+1', 'x^2+1'], ['x³', 'x^3'], ['X⁻¹', 'X^(-1)'], ['(a+b)²', '(a+b)^2'], ['30°', '30_°'], ['½', '1/2'], ['1½', '1+1/2'], ['5_m²', '5_m^2'], ['2·x', '2*x']]
     .every(([text, source]) => astEqual(paste(text), parseAlgebra(source))), "EQW pasting reads superscripts, fractions and degrees as a phone's keys type them");
 }
+
+{
+  const source = readFileSync(new URL('../www/src/ui/equation-editor.js', import.meta.url), 'utf8');
+  assert(/addEventListener\?\.\('online', \(\) => insightWorker\.retry\(\)\)/.test(source) && /retry\(\) \{\s*if \(this\.broken && typeof Worker === 'function'\) this\.broken = false;/.test(source),
+    'EQW insight worker: a failed load is tried again when the phone is back online, so a slow CAS call stays off the page');
+}
