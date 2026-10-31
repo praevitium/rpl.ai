@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.113 (2026-10-27)
+**Latest release:** v0.8.114 (2026-10-31)
 
 ---
 
@@ -18,6 +18,20 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.114 — 2026-10-31
+
+- Fixed: the assistant's "Undo this turn" on an older turn restored that turn's
+  snapshot and threw away everything done after it. Only the latest turn's Undo
+  stays active now; an older one is disabled and says so.
+- Fixed: the assistant's run tool replaced the command line, so the line the
+  user was typing was gone after it ran. The line is put back as it was.
+- Fixed: an assistant server that accepted the connection but never replied
+  left the assistant on "Connecting…" for ever. The version, model-list and
+  model-info probes now give up after 15 seconds and the status says no answer
+  came.
 
 ---
 
