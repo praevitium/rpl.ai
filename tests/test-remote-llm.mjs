@@ -5,6 +5,7 @@ import {
   localAccessPermission, LOCAL_ACCESS_BLOCKED,
 } from '../www/src/ai/remote-llm.js';
 import { assert } from './helpers.mjs';
+import { readFileSync } from 'node:fs';
 
 /* RemoteLLM URL normalizers — the two pure helpers that turn whatever
    base URL the user typed into the canonical forms the call sites need:
@@ -609,4 +610,12 @@ const frame = (obj) => 'data: ' + JSON.stringify(obj);
     if (realNavigator) Object.defineProperty(globalThis, 'navigator', realNavigator);
     else delete globalThis.navigator;
   }
+}
+
+{
+  const src = readFileSync(new URL('../www/src/ai/remote-llm.js', import.meta.url), 'utf8');
+  assert(/const PROBE_TIMEOUT_MS = 15000;/.test(src)
+    && (src.match(/signal: probeSignal\(\)/g) ?? []).length === 4
+    && /err\?\.name === 'TimeoutError'[\s\S]*?No answer from/.test(src),
+    'RemoteLLM connect: the version, model-list and show probes give up after 15 s with a message, so a server that never replies cannot leave Connecting… for ever');
 }

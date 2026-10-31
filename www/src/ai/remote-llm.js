@@ -90,6 +90,10 @@ export function ollamaCloudAdvice(origin = globalThis.location?.origin ?? '') {
 
 /** Browsers report a refused origin, a closed port and a bad host all as
  *  "Failed to fetch"; a no-cors probe separates "answered" from "nothing there". */
+// A server that accepts the connection but never replies would leave the probe, and the status, waiting for ever.
+const PROBE_TIMEOUT_MS = 15000;
+const probeSignal = () => AbortSignal.timeout?.(PROBE_TIMEOUT_MS);
+
 export async function explainConnectionError(url, err, origin = globalThis.location?.origin ?? '',
   userAgent = globalThis.navigator?.userAgent ?? '') {
   if (!(err instanceof TypeError)) return err?.message ?? String(err);
@@ -118,7 +122,7 @@ export async function explainConnectionError(url, err, origin = globalThis.locat
       + 'and the request stopped without an answer. Try again and choose Allow.';
   }
   try {
-    await fetch(`${base}/api/version`, { mode: 'no-cors' });
+    await fetch(`${base}/api/version`, { mode: 'no-cors', signal: probeSignal() });
   } catch {
     let pageIsLocal = false;
     try { pageIsLocal = isLoopbackHost(new URL(origin).hostname); } catch { /* no page origin */ }
@@ -319,7 +323,7 @@ export class RemoteLLM {
                     'maxContext=', maxContext,
                     'num_ctx=', this._contextTokens);
       } else {
-        const resp = await this._fetch(this._endpoint + '/models', { method: 'GET' });
+        const resp = await this._fetch(this._endpoint + '/models', { method: 'GET', signal: probeSignal() });
         if (resp.status === 401) throw new Error('HTTP 401 — check the API key');
         if (!resp.ok) throw new Error(`HTTP ${resp.status} from ${this._endpoint}/models`);
         try {
@@ -337,17 +341,21 @@ export class RemoteLLM {
       this._loadedModelId = modelId;
       this._setStatus('ready', this._isOllama ? 'Ready (Ollama)' : 'Ready (remote)');
     } catch (err) {
-      this._setStatus('error', await explainConnectionError(this._endpoint, err));
+      const message = err?.name === 'TimeoutError'
+        ? `No answer from ${this._endpoint} within ${PROBE_TIMEOUT_MS / 1000} seconds. Check that the server is running and reachable, then try again.`
+        : await explainConnectionError(this._endpoint, err);
+      this._setStatus('error', message);
       throw err;
     }
   }
 
   async _answersAsOllama(base) {
     try {
-      const r = await this._fetch(base + '/api/version', { method: 'GET' });
+      const r = await this._fetch(base + '/api/version', { method: 'GET', signal: probeSignal() });
       const body = r.ok ? await r.json().catch(() => null) : null;
       return typeof body?.version === 'string';
-    } catch {
+    } catch (err) {
+      if (err?.name === 'TimeoutError') throw err;
       return false;
     }
   }
@@ -355,6 +363,7 @@ export class RemoteLLM {
   async _showModel(base, modelId) {
     const r = await this._fetch(base + '/api/show', {
       method: 'POST',
+      signal: probeSignal(),
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: modelId }),
     });
