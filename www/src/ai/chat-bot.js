@@ -2135,6 +2135,7 @@ export class ChatBot {
 
   _addUndoRow(snapshot, after = null) {
     if (typeof this._tools.restoreState !== 'function') return null;
+    this._retireUndoButton();
     const row = elem('div', { className: 'cb-undo-row' });
     const btn = button({
       className: 'cb-undo-btn',
@@ -2152,7 +2153,17 @@ export class ChatBot {
       }
     });
     row.appendChild(btn);
+    this._undoBtn = btn;
     return this._place(row, after);
+  }
+
+  // An older turn's snapshot would also throw away everything done since.
+  _retireUndoButton() {
+    const btn = this._undoBtn;
+    this._undoBtn = null;
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = '↶ Undo applies to the latest turn only';
   }
 
   _addStreamingBubble() {

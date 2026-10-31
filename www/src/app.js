@@ -1074,9 +1074,12 @@ class App {
     const displayOpts = () => this.display.displayOpts;
     return {
       run: (text) => withoutRunSlices(() => {
+        const draft = this.entry.buffer;
         this.entry.recall(withFractionMark(text));
         this.entry.enter();
-        return this.entry.error || '';
+        const error = this.entry.error || '';
+        if (draft) this.entry.recall(draft);
+        return error;
       }),
       evaluate: (text) => evalScratch(text, { liveItems: this.stack.save(), displayOpts: displayOpts() }),
       evaluateOn: (text, liveItems) => evalScratch(text, { liveItems, displayOpts: displayOpts() }),

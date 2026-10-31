@@ -1526,3 +1526,13 @@ const registryToolNames = () =>
     'chat kept: New chat and a new endpoint forget it');
   assert(/CHAT_CONSENT_KEY, CHAT_KEY,/.test(sheetsSrc), 'chat kept: Reset everything removes it');
 }
+
+{
+  const chatSrc = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/_addUndoRow\(snapshot, after = null\) \{[^}]*\n\s*this\._retireUndoButton\(\);/.test(chatSrc)
+    && /_retireUndoButton\(\) \{[\s\S]*?btn\.disabled = true;[\s\S]*?latest turn only/.test(chatSrc),
+    'assistant Undo this turn: a newer turn disables the older Undo, which would also discard the later work');
+  assert(/run: \(text\) => withoutRunSlices\(\(\) => \{\n\s*const draft = this\.entry\.buffer;[\s\S]*?const error = this\.entry\.error \|\| '';\n\s*if \(draft\) this\.entry\.recall\(draft\);\n\s*return error;/.test(appSrc),
+    'assistant run tool: the command line draft the user was typing is put back after the run');
+}
