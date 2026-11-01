@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.117 (2026-11-01)
+**Latest release:** v0.8.118 (2026-11-01)
 
 ---
 
@@ -18,6 +18,17 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.118 — 2026-11-01
+
+- Added: LaTeX copied from a document or from Copy as LaTeX, a `bmatrix`,
+  `pmatrix`, `vmatrix` or similar environment, pastes onto the command line as a
+  matrix, or a vector when it has one row. A cell that is not a plain number
+  (`x`, `\frac{1}{2}`) is quoted as an algebraic. Rows of different lengths
+  and empty cells are left as typed text. It is not read in the equation
+  writer.
 
 ---
 
