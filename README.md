@@ -57,7 +57,7 @@ download, no account and no sign-up.
 | **Linear algebra** | Vectors and matrices with DET, INV, RANK, LU, QR, SCHUR, CHOLESKY, EGV and LINSOLVE, and a matrix writer that pastes from spreadsheets |
 | **Statistics** | ΣDAT and Σ+, MEAN, SDEV, LINFIT, BESTFIT and BINS, and distributions such as NDIST and UTPN |
 | **Programming** | User RPL with `« »`, IF, CASE, FOR, WHILE and IFERR (typed from the HP's BRCH menu), local variables, recursion thousands of calls deep, DEFINE, directories, and HALT, SST, SST↓ and DBUG for debugging, and Pause and Stop keys for a program that runs long |
-| **Plots** | FUNCTION, POLAR, PARAMETRIC, DIFFEQ, slope fields, conics, truth plots, contour maps, 3D wireframes you can turn, y-slices, parametric surfaces, complex grid maps and matrices in 3D, scatter, bar and histogram plots, with trace, zoom and PNG export |
+| **Plots** | FUNCTION, POLAR, PARAMETRIC, DIFFEQ, slope fields, conics, truth plots, contour maps, 3D wireframes you can turn, y-slices, parametric surfaces, complex grid maps and matrices in 3D, scatter, bar and histogram plots, with trace, zoom and PNG or SVG export |
 | **Data in and out** | Copy and paste with Excel, Google Sheets and Numbers; CSV, TSV, `.xlsx`, JSON and HP `.rpl` files; LaTeX copied out and pasted in |
 | **Input** | Keyboard first with `⌘K` search, the HP 50g keypad on screen, and a phone layout with its own key strip |
 | **Assistant** | Optional. A model you run with Ollama explains, solves, writes programs and tutors, acting on your stack with one-click undo |
@@ -934,7 +934,9 @@ reload; plotted data and fits come from ΣDAT or the stack, so they do not.
 On a phone the graph fills the plot view, with the plot types peeking
 below it; the traces and window scroll up under it.
 More canvas buttons copy the plot as an image, download it as a PNG at the
-screen's pixel density, and, where the device can share images, share it.
+screen's pixel density, download it as an SVG vector picture (the plot's own
+curves, grid and labels, which stay sharp at any size and open in a vector
+editor), and, where the device can share images, share it.
 The table button, or `V` on the plot, opens the HP's table of values: x from
 a start by a step, a column for each function plotted, opening on a round
 start at the window's left edge. Type another start or step, halve or double

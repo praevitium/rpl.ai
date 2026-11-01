@@ -1140,3 +1140,35 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
     'TABLE: the x column carries the plot variable the formulas use, T for T^2-3*T+2');
   assert(tableXName(['X*T']) === 'X' && tableXName(['A*X+1', 'B']) === 'X' && tableXName([]) === 'X', 'TABLE: two plot variables at once, or none, leave the column X');
 }
+
+{
+  const { SvgContext } = await import('../www/src/ui/svg-context.js');
+  const resolve = (css) => (css === 'half' ? { color: 'rgb(1,2,3)', alpha: 0.5 } : { color: css, alpha: 1 });
+  const g = new SvgContext({ resolve });
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, 100, 50);
+  g.save();
+  g.strokeStyle = 'half';
+  g.lineWidth = 2;
+  g.lineCap = 'round';
+  g.setLineDash([4, 2]);
+  g.beginPath(); g.moveTo(1, 2); g.lineTo(3.456, 4); g.stroke();
+  g.restore();
+  g.beginPath(); g.moveTo(0, 0); g.lineTo(5, 5); g.stroke();
+  g.fillStyle = '#123';
+  g.font = '11px "IBM Plex Mono", monospace';
+  g.fillText('a<b & "c"', 7, 8);
+  g.beginPath(); g.arc(10, 10, 3, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.arc(0, 0, 4, 0, Math.PI / 2); g.stroke();
+  const svg = g.toSvg(100, 50);
+  assert(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="50" viewBox="0 0 100 50">') && svg.includes('<rect x="0" y="0" width="100" height="50" fill="#fff"/>'),
+    'SvgContext: the picture is an SVG the size of the plot and fillRect is a rect');
+  assert(svg.includes('<path d="M1 2 L3.46 4" fill="none" stroke="rgb(1,2,3)" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 2" opacity="0.5"/>'),
+    'SvgContext: a stroked path keeps its width, cap, dashes and the opacity of its colour');
+  assert(svg.includes('<path d="M0 0 L5 5" fill="none" stroke="rgb(1,2,3)"') === false && svg.includes('<path d="M0 0 L5 5" fill="none" stroke="#000" stroke-width="1"/>'),
+    'SvgContext: restore brings the saved stroke style back, dashes and caps included');
+  assert(svg.includes('<text x="7" y="8" font-size="11" font-family="&quot;IBM Plex Mono&quot;, monospace" fill="#123">a&lt;b &amp; &quot;c&quot;</text>'),
+    'SvgContext: text is escaped and its size and family come from the font');
+  assert(svg.includes('M13 10 A3 3 0 1 1 7 10 A3 3 0 1 1 13 10') && svg.includes('<path d="M4 0 A4 4 0 0 1 0 4" fill="none"'),
+    'SvgContext: a full circle is two half arcs and a quarter turn is one arc');
+}

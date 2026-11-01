@@ -11,6 +11,7 @@ import { isSymbolic, isName, isMatrix, isVector, isList, isGrob, isTagged, Real,
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians, getPict, subscribe as subscribeState } from '../rpl/state.js';
 import { plotSettings, pictWindow, pictGrid, pictPoint, pictLine, viewVolume } from '../rpl/ops/graphics.js';
 import { downloadFile, savePlot, loadPlot } from '../rpl/persist.js';
+import { SvgContext } from './svg-context.js';
 import { withFractionMark, format } from '../rpl/formatter.js';
 import { fromTyped, numberFieldText } from '../rpl/parser.js';
 import { lookup } from '../rpl/ops/registry.js';
@@ -186,6 +187,7 @@ export class GraphView {
             <button type="button" data-gr="table" title="Table of values" aria-label="Table of values">${icon('table', 'sm')}</button>
             <button type="button" data-gr="copy" title="Copy the plot as an image" aria-label="Copy as image">${icon('copy', 'sm')}</button>
             <button type="button" data-gr="png" title="Download the plot as a PNG" aria-label="Download as PNG">${icon('down', 'sm')}</button>
+            <button type="button" data-gr="svg" title="Download the plot as an SVG vector picture" aria-label="Download as SVG">${icon('plot', 'sm')}</button>
             ${canSharePng() ? `<button type="button" data-gr="share" title="Share the plot as an image" aria-label="Share">${icon('share', 'sm')}</button>` : ''}
           </div>
           <button type="button" class="pl-push" data-gr="push" title="Put the cursor's point on the stack (Enter)" hidden></button>
@@ -291,6 +293,7 @@ export class GraphView {
       else if (act === 'table') this.openTable();
       else if (act === 'fold') this._toggleTools(tool);
       else if (act === 'png') this.downloadPng();
+      else if (act === 'svg') this.downloadSvg();
       else if (act === 'copy') this.copyPng();
       else if (act === 'share') this.sharePng();
       else if (act === 'push') this.pushCursor();
@@ -1182,6 +1185,35 @@ export class GraphView {
     catch (e) { if (e.name !== 'AbortError') this.app.notifyError(`Share failed: ${e.message}`); }
   }
 
+  // The plot as a vector picture: the same drawing calls recorded as SVG, in colours any viewer reads.
+  _svg() {
+    const canvas = this._canvas;
+    const width = Math.max(1, canvas.parentElement.clientWidth);
+    const height = Math.max(1, canvas.parentElement.clientHeight);
+    const scratch = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+    scratch.canvas.width = scratch.canvas.height = 1;
+    const resolve = (css) => {
+      scratch.clearRect(0, 0, 1, 1);
+      scratch.fillStyle = '#000';
+      scratch.fillStyle = css;
+      scratch.fillRect(0, 0, 1, 1);
+      const [r, g, b, a] = scratch.getImageData(0, 0, 1, 1).data;
+      return { color: `rgb(${r},${g},${b})`, alpha: a / 255 };
+    };
+    return this._withoutCursor(() => {
+      const recorder = new SvgContext({ resolve });
+      this._paint(recorder, width, height);
+      return recorder.toSvg(width, height);
+    });
+  }
+
+  downloadSvg() {
+    try {
+      const blob = new Blob([this._svg()], { type: 'image/svg+xml' });
+      this.app.toast(`Saved ${downloadFile(blob, this._fileName().replace(/\.png$/, '.svg'), 'image/svg+xml')}`);
+    } catch (e) { this.app.notifyError(`Download failed: ${e.message}`); }
+  }
+
   // A picture of the plot leaves out the hover readout and the graphics cursor; the canvas is copied as the call is made.
   _withoutCursor(take) {
     const { _mark: mark, _anchor: anchor } = this;
@@ -1407,7 +1439,12 @@ export class GraphView {
     const ctx = this._ctx;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
+    this._paint(ctx, width, height);
+    this._syncPush();
+  }
 
+  // Everything the plot shows, drawn on any context with the canvas calls it uses; the picture saved as SVG is drawn on a recorder.
+  _paint(ctx, width, height) {
     this._colors = this._palette();
     ctx.fillStyle = this._colors.bg;
     ctx.fillRect(0, 0, width, height);
@@ -1424,7 +1461,6 @@ export class GraphView {
     this._drawPict(ctx, width, height);
     this._drawHover(ctx, width, height);
     this._drawMark(ctx, width, height);
-    this._syncPush();
   }
 
   // The axes cross where AXES puts them, (0,0) by default, with grid lines every ATICK units from there.
