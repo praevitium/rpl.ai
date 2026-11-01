@@ -592,10 +592,28 @@ export const looksLikeLatex = (text) => /\\[A-Za-z]|[\^_]\s*\{|^\s*\$|\\[(\[]/.t
 // The AST of text written as LaTeX or as algebra.
 export const parseMath = (text) => (looksLikeLatex(text) ? latexToAst(text) : parseAlgebra(text));
 
+const MATRIX_ENVIRONMENT = /^\\begin\{([bpvBV]?matrix)\}([\s\S]*)\\end\{\1\}$/;
+const PLAIN_NUMBER = /^-?(?:\d+\.?\d*|\.\d+)(?:E[-+]?\d+)?$/;
+
+// A pasted matrix environment as the command line's matrix, one row as a vector; a cell that is not a number is
+// quoted, and null comes back for ragged rows or a cell that does not read.
+function latexMatrixSource(text) {
+  const body = MATRIX_ENVIRONMENT.exec(unwrapMath(text))?.[2];
+  if (body === undefined) return null;
+  const rows = body.split(/\\\\(?:\[[^\]]*\])?/).map((row) => row.trim());
+  while (rows.length && rows.at(-1) === '') rows.pop();
+  const cells = rows.map((row) => row.split('&').map((cell) => formatAlgebra(latexToAst(cell))));
+  if (!cells.length || cells.some((row) => row.length !== cells[0].length)) return null;
+  const vector = (row) => `[ ${row.map((c) => (PLAIN_NUMBER.test(c) ? c : `\`${c}\``)).join(' ')} ]`;
+  return cells.length === 1 ? vector(cells[0]) : `[${cells.map(vector).join('')}]`;
+}
+
 // Pasted LaTeX that reads as a formula, as the quoted algebraic the command line takes, or null.
 export function latexToSource(text) {
   if (!looksLikeLatex(text)) return null;
   try {
+    const matrix = latexMatrixSource(text);
+    if (matrix) return matrix;
     const ast = latexToAst(text);
     return ast.kind === 'var' || ast.kind === 'num' ? null : `\`${formatAlgebra(ast)}\``;
   } catch {

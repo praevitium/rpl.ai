@@ -287,3 +287,17 @@ const value = (text) => toLatex(parseEntry(text)[0]);
   assert(back('%CH(X,Y)') === '%CH(X,Y)' && back('%(X,5)+1') === '%(X,5) + 1' && back('%T(A+1,B)') === '%T(A + 1,B)',
     'a percent function written as LaTeX reads back as the function');
 }
+
+{
+  const m = (text) => latexToSource(text);
+  assert(m('\\begin{bmatrix} 1 & 2 \\\\ 3 & 4 \\end{bmatrix}') === '[[ 1 2 ][ 3 4 ]]', 'pasted LaTeX: a bmatrix is a matrix on the command line');
+  assert(m('$\\begin{pmatrix}1&-2.5&\\frac{1}{2}\\end{pmatrix}$') === '[ 1 -2.5 `1/2` ]',
+    'pasted LaTeX: a pmatrix with one row is a vector, a negative or decimal cell is a number and a fraction a quoted algebraic');
+  assert(m('\\begin{bmatrix} x & 2 \\\\ 3 & y^2 \\\\ \\end{bmatrix}') === '[[ `x` 2 ][ 3 `y^2` ]]', 'pasted LaTeX: a formula cell is quoted and a trailing \\\\ adds no row');
+  assert(m('\\begin{bmatrix} 1 \\\\ 2 \\\\ 3 \\end{bmatrix}') === '[[ 1 ][ 2 ][ 3 ]]' && m('\\begin{vmatrix} 1 & 0 \\\\ 0 & 1 \\end{vmatrix}') === '[[ 1 0 ][ 0 1 ]]',
+    'pasted LaTeX: a column is a one-column matrix and every matrix environment is read');
+  assert(m('\\begin{bmatrix} 1 & 2 \\\\ 3 \\end{bmatrix}') === null && m('\\begin{bmatrix} 1 & \\end{bmatrix}') === null,
+    'pasted LaTeX: ragged rows and an empty cell are left as typed text');
+  const sheet = parseEntry('[[ 1 2.5 ][ 3 4 ]]')[0];
+  assert(m(toLatex(sheet)) === '[[ 1 2.5 ][ 3 4 ]]', 'pasted LaTeX: what Copy as LaTeX writes for a matrix pastes back as the same matrix');
+}

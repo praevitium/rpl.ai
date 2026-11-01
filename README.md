@@ -850,8 +850,11 @@ command line, and it is read as the expression it spells. Fractions, roots,
 powers, Greek letters, `\sin`, `\ln`, bars, factorials, `\binom`, `\sum`,
 `\int` with its `dx`, and `\frac{d}{dx}` all come across, and `$…$` or
 `\(…\)` around it is dropped. As in TeX, `2x` is 2·x and `\sin 2x` is
-sin(2x), and `\sin^{-1}` is the inverse function, as on a calculator. Limits,
-matrices and anything else the algebra has no word for are refused with a
+sin(2x), and `\sin^{-1}` is the inverse function, as on a calculator. A
+matrix environment (`bmatrix`, `pmatrix`, `vmatrix` and the rest) pasted onto
+the command line becomes a matrix, or a vector for one row, with any cell that
+is not a number quoted as an algebraic; it is not read in the equation writer.
+Limits and anything else the algebra has no word for are refused with a
 message saying which command it could not read.
 
 ![The equation writer, its tap buttons and insight strip](screenshots/equation-writer.png)
