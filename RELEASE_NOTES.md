@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.118 (2026-11-01)
+**Latest release:** v0.8.119 (2026-11-01)
 
 ---
 
@@ -18,6 +18,16 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.119 — 2026-11-01
+
+- Added: a stack level's ⋯ menu has **Download levels 1–n…** (on any level but
+  level 1), which saves levels 1 to that level as one list, deepest first, in
+  the usual formats: `.json`, HP text, `.csv`, `.tsv` and `.xlsx`. On the
+  deepest level it is the whole stack. Upload the `.rpl` or `.json` file and
+  `OBJ→` puts the levels back on the stack.
 
 ---
 
