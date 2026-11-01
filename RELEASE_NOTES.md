@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.116 (2026-11-01)
+**Latest release:** v0.8.117 (2026-11-01)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.117 — 2026-11-01
+
+- Added: an uploaded `.xlsx` workbook reads its date cells as dates. A cell
+  whose number format is a date (built in or custom, on either of Excel's two
+  date systems) used to arrive as Excel's serial number, 45658 for 1 January
+  2025. It now becomes the HP's date number, `1.012025` (`MM.DDYYYY`, or
+  `DD.MMYYYY` with flag -42), and a time of day its `HH.MMSS`, so `DDAYS`,
+  `DATE+` and arithmetic work on a column of dates. A date with a time of day
+  arrives as `yyyy-mm-dd hh:mm:ss` text. The upload note says when dates were
+  read.
 
 ---
 

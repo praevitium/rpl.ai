@@ -1038,7 +1038,10 @@ calculator to put it on the stack; `'X' SEND` and `RECV` do the same from a
 program. A table of numbers becomes a matrix (a vector for one row), a
 text row above numbers is taken as a header and skipped, and a table with
 other text becomes a list of rows. From a workbook rpl.ai reads the first
-sheet's used range; dates arrive as Excel's serial numbers.
+sheet's used range. A cell shown as a date becomes the HP's date number,
+`MM.DDYYYY` (`DD.MMYYYY` with flag -42), and a time of day its `HH.MMSS`, so
+`DDAYS`, `DATE+` and arithmetic work on them; a date with a time of day
+arrives as `yyyy-mm-dd hh:mm:ss` text.
 
 ![The Variables drawer](screenshots/variables.png)
 
