@@ -272,31 +272,33 @@ function sheetCells(xml, shared, dates) {
   return cells;
 }
 
-async function firstSheet(files, read) {
+async function sheetAt(files, read, index) {
   const workbook = await read('xl/workbook.xml');
   const rels = await read('xl/_rels/workbook.xml.rels');
   const sheets = [...(workbook ?? '').matchAll(/<sheet\b[^>]*>/g)].map((m) => attributes(m[0]));
-  const target = [...(rels ?? '').matchAll(/<Relationship\b[^>]*>/g)].map((m) => attributes(m[0])).find((rel) => rel.Id === sheets[0]?.['r:id'])?.Target;
+  const names = sheets.map((sheet) => sheet.name);
+  const at = index >= 0 && index < sheets.length ? index : 0;
+  const target = [...(rels ?? '').matchAll(/<Relationship\b[^>]*>/g)].map((m) => attributes(m[0])).find((rel) => rel.Id === sheets[at]?.['r:id'])?.Target;
   const path = target && (target.startsWith('/') ? target.slice(1) : `xl/${target}`);
-  if (path && files.has(path)) return { path, name: sheets[0].name, count: sheets.length };
+  if (path && files.has(path)) return { path, name: sheets[at].name, count: sheets.length, names };
   const guess = [...files.keys()].filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/.test(name)).sort((a, b) => a.length - b.length || a.localeCompare(b))[0];
   if (!guess) throw new Error('the workbook has no worksheet');
-  return { path: guess, name: sheets[0]?.name ?? 'Sheet1', count: Math.max(sheets.length, 1) };
+  return { path: guess, name: sheets[0]?.name ?? 'Sheet1', count: Math.max(sheets.length, 1), names: names.length ? names : ['Sheet1'] };
 }
 
-// The used range of the first worksheet as rows of cell text, with its name and
-// the number of sheets in the workbook.  Booleans read as TRUE and FALSE; a cell shown as a date or time reads as
+// The used range of a worksheet, the first unless sheet says which, as rows of cell text, with its name, the number
+// of sheets in the workbook and all their names.  Booleans read as TRUE and FALSE; a cell shown as a date or time reads as
 // yyyy-mm-dd, hh:mm:ss or both, unless formatDate({ year, month, day, hour, minute, second, kind }) gives other text.
-export async function readXlsx(input, { maxCells = Infinity, formatDate = () => undefined } = {}) {
+export async function readXlsx(input, { maxCells = Infinity, formatDate = () => undefined, sheet: sheetIndex = 0 } = {}) {
   const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
   const files = readZip(bytes);
   const read = async (name) => (files.has(name) ? decoder.decode(await extract(bytes, files.get(name))) : null);
-  const sheet = await firstSheet(files, read);
+  const sheet = await sheetAt(files, read, sheetIndex);
   const kinds = dateStyles(await read('xl/styles.xml'));
   const date1904 = /<workbookPr\b[^>]*date1904\s*=\s*["'](?:1|true)["']/i.test(await read('xl/workbook.xml') ?? '');
   const dates = kinds.size ? { kinds, date1904, format: formatDate } : null;
   const cells = sheetCells(await read(sheet.path), sharedStrings(await read('xl/sharedStrings.xml')), dates);
-  if (!cells.length) return { rows: [], sheet: sheet.name, sheets: sheet.count };
+  if (!cells.length) return { rows: [], sheet: sheet.name, sheets: sheet.count, names: sheet.names };
   const box = cells.reduce((b, [r, c]) => ({ top: Math.min(b.top, r), left: Math.min(b.left, c), bottom: Math.max(b.bottom, r), right: Math.max(b.right, c) }),
     { top: Infinity, left: Infinity, bottom: -1, right: -1 });
   const { top, left } = box;
@@ -305,5 +307,5 @@ export async function readXlsx(input, { maxCells = Infinity, formatDate = () => 
   if (height * width > maxCells) throw new Error(`more than ${maxCells} cells`);
   const rows = Array.from({ length: height }, () => new Array(width).fill(''));
   for (const [r, c, text] of cells) rows[r - top][c - left] = text;
-  return { rows, sheet: sheet.name, sheets: sheet.count };
+  return { rows, sheet: sheet.name, sheets: sheet.count, names: sheet.names };
 }

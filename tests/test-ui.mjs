@@ -2591,6 +2591,13 @@ setAngle('RAD');
 
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert((appSrc.match(/readUpload\(file, \{ chooseSheet: \(names\) => this\._chooseSheet\(names\) \}\)/g) ?? []).length === 2
+    && /_chooseSheet\(names\) \{[\s\S]*?onClick: \(target\) => \{ answer\(Number\(target\.dataset\.v\)\); this\.popover\.close\(\{ restoreFocus: false \}\); \},\s*onClose: \(\) => answer\(0\),/.test(appSrc),
+    'upload: a workbook with several sheets asks which to read, from the Variables drawer and from a dropped file, and a list closed without a choice keeps the first sheet');
+}
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/deeper \? item\('roll', 'up', 'Move to level 1 \(ROLL\)'\) : ''/.test(appSrc)
     && /deeper \? item\('rolld', 'down', 'Move level 1 here \(ROLLD\)'\) : ''/.test(appSrc)
     && /deeper \? item\('dupn', 'copy', `Copy \$\{span\} \(DUPN\)`\) : ''/.test(appSrc)

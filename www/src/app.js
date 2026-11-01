@@ -1018,7 +1018,7 @@ class App {
     this.entry._snapForUndo();
     for (const file of files) {
       try {
-        const { name, value, note } = await readUpload(file);
+        const { name, value, note } = await readUpload(file, { chooseSheet: (names) => this._chooseSheet(names) });
         const target = receivedTarget(pairs, file.name, name);
         if (!target) { skipped.push(file.name); continue; }
         const as = receivedName(target);
@@ -1283,7 +1283,7 @@ class App {
 
   async putFileOnStack(file) {
     try {
-      const { value, note } = await readUpload(file);
+      const { value, note } = await readUpload(file, { chooseSheet: (names) => this._chooseSheet(names) });
       if (isDirectory(value)) throw new Error('a directory belongs in the Variables drawer (Upload)');
       if (this.entry.buffer.trim()) this.commitEntry();
       this.entry._snapForUndo();
@@ -1292,6 +1292,20 @@ class App {
     } catch (e) {
       this.notifyError(`Couldn't read ${file.name}: ${e.message}`);
     }
+  }
+
+  // A workbook with several sheets asks which to read; closing the list without a choice keeps the first.
+  _chooseSheet(names) {
+    return new Promise((resolve) => {
+      let answered = false;
+      const answer = (index) => { if (!answered) { answered = true; resolve(index); } };
+      const rows = names.map((name, i) => `<button type="button" class="opt" data-v="${i}"><span class="ck">${icon('table', 'sm')}</span><b>${escapeHtml(name)}</b></button>`).join('');
+      this.popover.open(this.display.stackView, `<h6>Which sheet?</h6>${rows}`, {
+        label: 'Choose a sheet',
+        onClick: (target) => { answer(Number(target.dataset.v)); this.popover.close({ restoreFocus: false }); },
+        onClose: () => answer(0),
+      });
+    });
   }
 
   _installFileDrop() {

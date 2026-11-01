@@ -185,3 +185,32 @@ const book = (sheet, extra = {}) => ({ 'xl/workbook.xml': WORKBOOK(), 'xl/_rels/
   assert(stamped.value.items?.[0]?.items?.map((v) => v.value).join('|') === '2025-01-01 12:00:00|2025-01-02 00:00:00' && !/Dates read/.test(stamped.note),
     'readUpload: a date with a time stays as yyyy-mm-dd hh:mm:ss text, so the sheet comes in as a list');
 }
+
+{
+  const two = await makeZip({
+    'xl/workbook.xml': WORKBOOK(['Sales', 'Costs']),
+    'xl/_rels/workbook.xml.rels': RELS(['worksheets/sheet1.xml', 'worksheets/sheet2.xml']),
+    'xl/worksheets/sheet1.xml': SHEET('<row><c r="A1"><v>1</v></c><c r="B1"><v>2</v></c></row>'),
+    'xl/worksheets/sheet2.xml': SHEET('<row><c r="A1"><v>30</v></c><c r="B1"><v>40</v></c></row>'),
+  });
+  const first = await readXlsx(two);
+  const second = await readXlsx(two, { sheet: 1 });
+  assert(JSON.stringify(first.rows) === '[["1","2"]]' && first.sheet === 'Sales' && first.names.join() === 'Sales,Costs'
+    && JSON.stringify(second.rows) === '[["30","40"]]' && second.sheet === 'Costs' && second.sheets === 2,
+    'readXlsx: sheet picks the worksheet to read, the first by default, and every sheet name comes back');
+  assert((await readXlsx(two, { sheet: 9 })).sheet === 'Sales', 'readXlsx: a sheet number past the last reads the first');
+  const asked = [];
+  const choose = (index) => (names) => { asked.push(names.join()); return index; };
+  const fileOf = () => new File([two], 'book.xlsx');
+  const defaulted = await readUpload(fileOf());
+  assert(defaulted.value.items.map((v) => v.value).join() === '1,2' && defaulted.note === 'Read the first of 2 sheets, Sales.',
+    'readUpload: without a chooser the first sheet is read and the note says it was the first of two');
+  const pickedSecond = await readUpload(fileOf(), { chooseSheet: choose(1) });
+  assert(pickedSecond.value.items.map((v) => v.value).join() === '30,40' && pickedSecond.note === 'Read sheet Costs, one of 2.' && asked[0] === 'Sales,Costs',
+    'readUpload: a chooser is asked with the sheet names and the sheet it picks is read');
+  const keptFirst = await readUpload(fileOf(), { chooseSheet: choose(0) });
+  assert(keptFirst.value.items.map((v) => v.value).join() === '1,2' && keptFirst.note === 'Read the first of 2 sheets, Sales.', 'readUpload: choosing the first sheet reads it');
+  const single = [];
+  await readUpload(new File([await makeZip(book(SHEET('<row><c><v>5</v></c></row>')))], 'one.xlsx'), { chooseSheet: (names) => { single.push(names); return 0; } });
+  assert(single.length === 0, 'readUpload: a workbook with one sheet asks nothing');
+}

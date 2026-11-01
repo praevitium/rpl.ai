@@ -1042,8 +1042,9 @@ puts them back. Upload `.csv`, `.tsv`, `.xlsx`, `.rpl`, `.txt` or
 calculator to put it on the stack; `'X' SEND` and `RECV` do the same from a
 program. A table of numbers becomes a matrix (a vector for one row), a
 text row above numbers is taken as a header and skipped, and a table with
-other text becomes a list of rows. From a workbook rpl.ai reads the first
-sheet's used range. A cell shown as a date becomes the HP's date number,
+other text becomes a list of rows. From a workbook rpl.ai reads one sheet's
+used range, asking which when the workbook has several (closing the list reads
+the first). A cell shown as a date becomes the HP's date number,
 `MM.DDYYYY` (`DD.MMYYYY` with flag -42), and a time of day its `HH.MMSS`, so
 `DDAYS`, `DATE+` and arithmetic work on them; a date with a time of day
 arrives as `yyyy-mm-dd hh:mm:ss` text.
@@ -1555,8 +1556,8 @@ installed app asks the browser to keep it, and Settings › Data says whether
 it will, with a button to ask when it hasn't agreed. If the browser blocks site data altogether,
 rpl.ai still runs but warns that nothing is being saved. Back them up with
 Back up everything in the Variables drawer. Spreadsheets exchange CSV, TSV
-and `.xlsx` files and copied cells; of a workbook only the first sheet is
-read, and formulas arrive as their last calculated values.
+and `.xlsx` files and copied cells; a workbook with several sheets asks which
+to read, and formulas arrive as their last calculated values.
 
 **The assistant.** It is only as good as the model you connect, and small
 models make mistakes in RPL; check its work, and use Undo freely. It needs

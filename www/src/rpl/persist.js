@@ -869,24 +869,32 @@ function hpDateText({ year, month, day, hour, minute, second, kind }) {
   return `${first}.${pad(second2)}${pad(year, 4)}`;
 }
 
-async function readWorkbook(file) {
+async function readWorkbook(file, chooseSheet) {
   let dates = false;
   const formatDate = (parts) => {
     const text = hpDateText(parts);
     if (text !== undefined && parts.kind === 'date') dates = true;
     return text;
   };
-  const { rows, sheet, sheets } = await readXlsx(await file.arrayBuffer(), { maxCells: SHEET_MAX_CELLS, formatDate });
-  const { value, header } = importCells(rows);
+  const bytes = await file.arrayBuffer();
+  const read = (sheet) => readXlsx(bytes, { maxCells: SHEET_MAX_CELLS, formatDate, sheet });
+  let book = await read(0);
+  let picked = 0;
+  if (book.sheets > 1 && chooseSheet) {
+    picked = Math.max(0, Math.min(book.sheets - 1, (await chooseSheet(book.names)) | 0));
+    if (picked > 0) { dates = false; book = await read(picked); }
+  }
+  const { value, header } = importCells(book.rows);
   const dateNote = dates ? `Dates read as HP dates (${testUserFlag(-42) ? 'DD.MMYYYY' : 'MM.DDYYYY'}).` : '';
-  return { value, note: [headerNote(header), dateNote, sheets > 1 ? `Read the first of ${sheets} sheets, ${sheet}.` : ''].filter(Boolean).join(' ') };
+  const sheetNote = book.sheets < 2 ? '' : picked > 0 ? `Read sheet ${book.sheet}, one of ${book.sheets}.` : `Read the first of ${book.sheets} sheets, ${book.sheet}.`;
+  return { value, note: [headerNote(header), dateNote, sheetNote].filter(Boolean).join(' ') };
 }
 
-/** Read an uploaded or dropped file: a table (.csv, .tsv, .xlsx), an HP text file (.rpl, .txt) or an exported variable (.json). */
-export async function readUpload(file) {
+/** Read an uploaded or dropped file (chooseSheet(names) picks the sheet of a workbook with several): a table (.csv, .tsv, .xlsx), an HP text file (.rpl, .txt) or an exported variable (.json). */
+export async function readUpload(file, { chooseSheet = null } = {}) {
   const kind = /\.([^.]+)$/.exec(file.name)?.[1].toLowerCase();
   const name = fileVariableName(file.name);
-  if (kind === 'xlsx') return { name, ...(await readWorkbook(file)) };
+  if (kind === 'xlsx') return { name, ...(await readWorkbook(file, chooseSheet)) };
   const text = await readFileText(file);
   if (kind === 'json') {
     const snap = JSON.parse(text);
