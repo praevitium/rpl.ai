@@ -2584,6 +2584,13 @@ setAngle('RAD');
 
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  assert(/case 'downloadn': this\.downloadMenu\(anchor, `levels1-\$\{level\}`, RList\(Array\.from\(\{ length: level \}, \(_, i\) => this\.stack\.peek\(level - i\)\)\)\); return;/.test(appSrc)
+    && /level > 1 \? item\('downloadn', 'down', `Download levels 1–\$\{level\}…`\) : ''/.test(appSrc),
+    'stack: a level\'s ⋯ menu downloads levels 1 to it as one list, deepest first, in the usual formats, and OBJ→ on the uploaded list puts the stack back');
+}
+
+{
+  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/deeper \? item\('roll', 'up', 'Move to level 1 \(ROLL\)'\) : ''/.test(appSrc)
     && /deeper \? item\('rolld', 'down', 'Move level 1 here \(ROLLD\)'\) : ''/.test(appSrc)
     && /deeper \? item\('dupn', 'copy', `Copy \$\{span\} \(DUPN\)`\) : ''/.test(appSrc)

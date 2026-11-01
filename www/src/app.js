@@ -1459,6 +1459,7 @@ class App {
         return;
       }
       case 'download': this.downloadMenu(anchor, `level${level}`, value); return;
+      case 'downloadn': this.downloadMenu(anchor, `levels1-${level}`, RList(Array.from({ length: level }, (_, i) => this.stack.peek(level - i)))); return;
       case 'store': this._storePrompt(level, anchor); return;
       case 'ask': this.askAssistant(`Explain what is on level ${level} of my stack: ${formatSource(value)}`); return;
       case 'more': this._levelMenu(level, anchor); return;
@@ -1552,6 +1553,7 @@ class App {
         typeof navigator.share === 'function' ? item('share', 'share', 'Share…') : '',
         typeof navigator.share === 'function' && level > 1 ? item('sharen', 'share', `Share levels 1–${level}…`) : '',
         item('download', 'down', 'Download as…'),
+        level > 1 ? item('downloadn', 'down', `Download levels 1–${level}…`) : '',
       ],
       [item('drop', 'trash', 'Drop', shortcutText('level.drop'))],
     ];

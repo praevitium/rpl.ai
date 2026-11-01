@@ -1035,7 +1035,9 @@ numbers.
 Spreadsheet files work too. Download a matrix, vector or list as `.csv`,
 `.tsv` or Excel's `.xlsx` with Download as… in its Variables drawer menu,
 or with **Download as…** in a stack level's menu, which offers `.rpl` and
-`.json` for any value. Upload `.csv`, `.tsv`, `.xlsx`, `.rpl`, `.txt` or
+`.json` for any value; **Download levels 1–n…** in the menu of any level
+above level 1 saves those levels as one list, and `OBJ→` on it after an upload
+puts them back. Upload `.csv`, `.tsv`, `.xlsx`, `.rpl`, `.txt` or
 `.json` files in the drawer, several at once, or drop one anywhere on the
 calculator to put it on the stack; `'X' SEND` and `RECV` do the same from a
 program. A table of numbers becomes a matrix (a vector for one row), a

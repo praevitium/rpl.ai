@@ -2,7 +2,7 @@ import { hpTextToSource, parseHpText, formatHpText, HP_TEXT_HEADER } from '../ww
 import { parseEntry, endsInQuote, plainPunctuation, plainCharacter, bareDecimalComma, numberFieldText, gluedSigns, signedArray, calledFunction, groupedNumber, gluedProduct, withTiNames } from '../www/src/rpl/parser.js';
 import { formatSource, format } from '../www/src/rpl/formatter.js';
 import {
-  Str, Rational, Integer, RList, Matrix, isDirectory, isProgram, isString, isSymbolic, isTagged, isRational, isInteger, isReal,
+  Str, Rational, Integer, RList, Matrix, isList, isDirectory, isProgram, isString, isSymbolic, isTagged, isRational, isInteger, isReal,
 } from '../www/src/rpl/types.js';
 import { setApproxMode } from '../www/src/rpl/state.js';
 import { assert, assertThrows, runLine } from './helpers.mjs';
@@ -180,4 +180,11 @@ assertThrows(() => parseHpText('DIR SUB 1 END', 'N'), /expected a variable name/
   } finally {
     setApproxMode(false);
   }
+}
+
+{
+  const stackList = parseEntry('{ 1 2 `X+1` "hi" { 3 4 } }')[0];
+  const back = parseHpText(formatHpText(stackList, 'STK'), 'STK');
+  assert(isList(back) && back.items.length === 5 && formatSource(back) === formatSource(stackList),
+    'a stack downloaded as a list comes back from its HP text as the same list, ready for OBJ→');
 }
