@@ -4800,6 +4800,11 @@ setAngle('RAD');
   assert(appSrc.includes('const CAS_SLOW_MS = 2500;') && appSrc.includes("this.toast('Loading the algebra engine…', { key: 'cas', timeout: Infinity, transient: true });")
     && appSrc.includes("this.toast('The algebra engine is ready', { key: 'cas' });") && /onAction: \(\) => this\.loadCas\(\{ now: true \}\)/.test(appSrc),
     'algebra engine: a download that takes over 2.5 s gets a note, replaced by one saying it is ready or, when it fails, one with Try again, which starts at once');
+  assert(appSrc.includes('const CAS_STALLED_MS = 45000;') && /action: 'Start over', onAction: \(\) => \{ giac\.restart\(\)\.catch\(\(\) => \{\}\); this\.loadCas\(\{ now: true \}\); \}/.test(appSrc)
+    && /clearTimeout\(stalled\);\n\s*this\.equationEditor\?\.refreshInsights\(\);/.test(appSrc)
+    && /restart\(\) \{\n\s*this\._restarts\+\+;\n\s*this\._ready = null;\n\s*this\._failed = false;\n\s*this\._script\?\.remove\(\);/.test(engineSrc)
+    && engineSrc.includes('script.src = this._fresh(GIAC_JS);') && engineSrc.includes('this._fresh(GIAC_WASM)'),
+    'algebra engine: a download still running after 45 s gets a note with Start over, which asks for a fresh download under a new query so it cannot join the stalled one; a slow one is never restarted on its own');
   assert(/familyId === 'STAT' && group\.id === 'DATA'\n\s*\? \[\{ label: 'EDIT',[^\n]*onPress: \(\) => this\.editStatData\(\) \}\] : \[\];/.test(appSrc)
     && /editStatData\(\) \{\n\s*if \(varRecall\('ΣDAT'\) !== undefined\) this\.editVariable\('ΣDAT'\);\n\s*else this\._beginEdit\(\{ kind: 'var', name: 'ΣDAT', fresh: true, was: NOT_STORED, label: 'Entering ΣDAT' \}\);/.test(appSrc)
     && appSrc.includes("const mode = edit.line ? 'rpl' : edit.fresh ? 'matrix'") && appSrc.includes('return value === undefined && !edit.fresh ? null : { ...edit, value, path: currentPath().join(\'/\') };')

@@ -43,6 +43,7 @@ export class BrowserGiacEngine {
     this._ready = null;
     this._failed = false;
     this._script = null;
+    this._restarts = 0;
     this._caseval = null;
     this._angleSent = null;
     this._assumeSent = null;
@@ -79,7 +80,7 @@ export class BrowserGiacEngine {
         noExitRuntime: true,
         print: () => {},
         printErr: () => {},
-        locateFile: (name) => (name.endsWith(".wasm") ? GIAC_WASM : name),
+        locateFile: (name) => (name.endsWith(".wasm") ? this._fresh(GIAC_WASM) : name),
         onRuntimeInitialized: () => {
           try {
             this._caseval = globalThis.Module.cwrap("caseval", "string", ["string"]);
@@ -93,11 +94,11 @@ export class BrowserGiacEngine {
         },
       };
       if (isWorker) {
-        importScripts(GIAC_JS);
+        importScripts(this._fresh(GIAC_JS));
         return;
       }
       const script = document.createElement("script");
-      script.src = GIAC_JS;
+      script.src = this._fresh(GIAC_JS);
       script.async = true;
       script.onerror = () => reject(new Error("Failed to load giacwasm.js"));
       document.head.appendChild(script);
@@ -111,6 +112,21 @@ export class BrowserGiacEngine {
       throw e;
     });
     return this._ready;
+  }
+
+  // A new request for a URL that is already in flight can join the stalled one, so a restart asks under a new query.
+  _fresh(url) {
+    return this._restarts ? `${url}?again=${this._restarts}` : url;
+  }
+
+  // A download that neither fails nor finishes: the user asks for a fresh one.
+  restart() {
+    this._restarts++;
+    this._ready = null;
+    this._failed = false;
+    this._script?.remove();
+    this._script = null;
+    return this.init();
   }
 
   isReady() {
