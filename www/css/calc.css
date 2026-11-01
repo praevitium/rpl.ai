@@ -1231,6 +1231,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
 .pl-tools button { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: var(--ink2); }
 .pl-tools button:hover { background: var(--r2); color: var(--ink); }
 .pl-tools button[aria-pressed="true"] { color: var(--accent); background: var(--accent-dim); }
+.pl-tools .gr-txt { font: 700 9px/1 var(--font-mono); }
 .pl-tools .pl-fold { display: none; }
 .pl-push { position: absolute; left: 8px; bottom: 8px; max-width: calc(100% - 64px); height: 28px; padding: 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 8px; border: 1px solid var(--line2); background: color-mix(in oklab, var(--panel) 88%, transparent); color: var(--ink); font: 12px/1 var(--font-mono); box-shadow: var(--shadow-1); }
 .pl-push:hover { background: var(--r2); }
@@ -2256,6 +2257,7 @@ body:has(.lay-pop > .pop) .toast[data-key="tutor"] { visibility: hidden; }
   /* Two columns keep all eight finger-sized tools in a 220 px plot. */
   .pl-tools { display: grid; grid-template-columns: repeat(2, 40px); }
   .pl-tools button { width: 40px; height: 40px; }
+  .pl-tools .gr-txt { font-size: 11px; }
   .pl-push { height: 40px; }
   .gr-add input, .gr-expr, .pl-range input { height: 40px; }
   /* The native show/hide box is 16 px, so a finger gets a 40 px one drawn in the trace's colour. */

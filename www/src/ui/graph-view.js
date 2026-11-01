@@ -187,7 +187,7 @@ export class GraphView {
             <button type="button" data-gr="table" title="Table of values" aria-label="Table of values">${icon('table', 'sm')}</button>
             <button type="button" data-gr="copy" title="Copy the plot as an image" aria-label="Copy as image">${icon('copy', 'sm')}</button>
             <button type="button" data-gr="png" title="Download the plot as a PNG" aria-label="Download as PNG">${icon('down', 'sm')}</button>
-            <button type="button" data-gr="svg" title="Download the plot as an SVG vector picture" aria-label="Download as SVG">${icon('plot', 'sm')}</button>
+            <button type="button" data-gr="svg" title="Download the plot as an SVG vector picture" aria-label="Download as SVG"><span class="gr-txt">SVG</span></button>
             ${canSharePng() ? `<button type="button" data-gr="share" title="Share the plot as an image" aria-label="Share">${icon('share', 'sm')}</button>` : ''}
           </div>
           <button type="button" class="pl-push" data-gr="push" title="Put the cursor's point on the stack (Enter)" hidden></button>

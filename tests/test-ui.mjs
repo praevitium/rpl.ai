@@ -2598,7 +2598,7 @@ setAngle('RAD');
 
 {
   const gv = readFileSync(new URL('../www/src/ui/graph-view.js', import.meta.url), 'utf8');
-  assert(gv.includes("import { SvgContext } from './svg-context.js';") && gv.includes('data-gr="svg" title="Download the plot as an SVG vector picture"')
+  assert(gv.includes("import { SvgContext } from './svg-context.js';") && gv.includes('data-gr="svg" title="Download the plot as an SVG vector picture" aria-label="Download as SVG"><span class="gr-txt">SVG</span></button>')
     && gv.includes("else if (act === 'svg') this.downloadSvg();")
     && /this\._paint\(ctx, width, height\);\n\s*this\._syncPush\(\);/.test(gv)
     && /return this\._withoutCursor\(\(\) => \{\n\s*const recorder = new SvgContext\(\{ resolve \}\);\n\s*this\._paint\(recorder, width, height\);/.test(gv),
