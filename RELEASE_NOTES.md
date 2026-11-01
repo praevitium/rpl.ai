@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.115 (2026-11-01)
+**Latest release:** v0.8.116 (2026-11-01)
 
 ---
 
@@ -18,6 +18,16 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.116 — 2026-11-01
+
+- Fixed: when the algebra engine's download neither failed nor finished (a
+  phone on a poor connection), the "Loading the algebra engine…" note stayed
+  up for ever with nothing to press. After 45 seconds it now says the download
+  is taking long, with a Start over button that asks for a fresh one. A slow
+  download that is still making progress is never restarted on its own.
 
 ---
 
