@@ -188,17 +188,72 @@ function sharedStrings(xml) {
   return xml ? [...xml.matchAll(/<si\b[^>]*?(?:\/>|>([\s\S]*?)<\/si>)/g)].map((m) => textOf(m[1] ?? '')) : [];
 }
 
-function cellText(type, inner, shared) {
+// Excel stores a date as a day count and tells a date from a number only by the cell's number format.
+const BUILTIN_DATE_FORMATS = new Set([14, 15, 16, 17, 22, 27, 28, 29, 30, 31, 36, 50, 51, 52, 53, 54, 55, 56, 57, 58]);
+const BUILTIN_TIME_FORMATS = new Set([18, 19, 20, 21, 32, 33, 34, 35, 45, 46, 47]);
+
+function formatKind(code) {
+  const plain = code.replace(/"[^"]*"|\[[^\]]*\]|\\.|_.|\*./g, '');
+  const date = /[yd]/i.test(plain);
+  const time = /[hs]/i.test(plain) || /AM\/PM|A\/P/i.test(plain);
+  if (date && time) return 'datetime';
+  if (date) return 'date';
+  if (time) return 'time';
+  return /m/i.test(plain) && !/[#0?]/.test(plain) ? 'date' : null;
+}
+
+// The kind of date each cell style (an index into cellXfs) shows, from the workbook's number formats.
+function dateStyles(xml) {
+  const kinds = new Map();
+  if (!xml) return kinds;
+  const custom = new Map([...xml.matchAll(/<numFmt\b[^>]*>/g)].map((m) => attributes(m[0])).map((a) => [Number(a.numFmtId), a.formatCode ?? '']));
+  const xfs = /<cellXfs\b[^>]*>([\s\S]*?)<\/cellXfs>/.exec(xml)?.[1] ?? '';
+  [...xfs.matchAll(/<xf\b[^>]*>/g)].forEach((m, index) => {
+    const id = Number(attributes(m[0]).numFmtId ?? 0);
+    const kind = custom.has(id) ? formatKind(custom.get(id)) : BUILTIN_DATE_FORMATS.has(id) ? (id === 22 ? 'datetime' : 'date') : BUILTIN_TIME_FORMATS.has(id) ? 'time' : null;
+    if (kind) kinds.set(index, kind);
+  });
+  return kinds;
+}
+
+const pad2 = (n) => String(n).padStart(2, '0');
+
+// A day count as its calendar parts. The 1900 system counts a day that never existed (serial 60, 29 February 1900),
+// so serials from 61 on start from 30 December 1899.
+function dateParts(serial, date1904) {
+  let day = Math.floor(serial);
+  let seconds = Math.round((serial - day) * 86400);
+  if (seconds === 86400) { day += 1; seconds = 0; }
+  const parts = { hour: Math.floor(seconds / 3600), minute: Math.floor(seconds / 60) % 60, second: seconds % 60 };
+  if (!date1904 && day === 60) return { year: 1900, month: 2, day: 29, ...parts };
+  const epoch = date1904 ? Date.UTC(1904, 0, 1) : day < 60 ? Date.UTC(1899, 11, 31) : Date.UTC(1899, 11, 30);
+  const d = new Date(epoch + day * 86400000);
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate(), ...parts };
+}
+
+function isoDate({ year, month, day, hour, minute, second, kind }) {
+  const date = `${String(year).padStart(4, '0')}-${pad2(month)}-${pad2(day)}`;
+  const time = `${pad2(hour)}:${pad2(minute)}:${pad2(second)}`;
+  return kind === 'date' ? date : kind === 'time' ? time : `${date} ${time}`;
+}
+
+function cellText(type, inner, shared, dates) {
   if (type === 'inlineStr') return textOf(inner);
   const raw = /<v\b[^>]*>([\s\S]*?)<\/v>/.exec(inner)?.[1];
   if (raw === undefined) return '';
   const value = decodeXml(raw);
   if (type === 's') return shared[Number(value)] ?? '';
   if (type === 'b') return value === '1' ? 'TRUE' : 'FALSE';
+  const kind = dates?.kinds.get(dates.style);
+  const serial = Number(value);
+  if (kind && (type === undefined || type === 'n') && Number.isFinite(serial) && serial >= 0) {
+    const parts = { ...dateParts(serial, dates.date1904), kind };
+    return dates.format(parts) ?? isoDate(parts);
+  }
   return value;
 }
 
-function sheetCells(xml, shared) {
+function sheetCells(xml, shared, dates) {
   const cells = [];
   let nextRow = 0;
   for (const row of xml.matchAll(/<row\b([^>]*?)(?:\/>|>([\s\S]*?)<\/row>)/g)) {
@@ -207,10 +262,10 @@ function sheetCells(xml, shared) {
     nextRow = rowIndex + 1;
     let c = -1;
     for (const cell of (row[2] ?? '').matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
-      const { r: ref, t } = attributes(cell[1]);
+      const { r: ref, t, s: style } = attributes(cell[1]);
       const at = ref ? /^([A-Za-z]+)(\d+)$/.exec(ref) : null;
       c = at ? columnIndex(at[1]) : c + 1;
-      const text = cellText(t, cell[2] ?? '', shared);
+      const text = cellText(t, cell[2] ?? '', shared, dates && { ...dates, style: Number(style ?? 0) });
       if (text !== '') cells.push([at ? Number(at[2]) - 1 : rowIndex, c, text]);
     }
   }
@@ -230,13 +285,17 @@ async function firstSheet(files, read) {
 }
 
 // The used range of the first worksheet as rows of cell text, with its name and
-// the number of sheets in the workbook.  Booleans read as TRUE and FALSE.
-export async function readXlsx(input, { maxCells = Infinity } = {}) {
+// the number of sheets in the workbook.  Booleans read as TRUE and FALSE; a cell shown as a date or time reads as
+// yyyy-mm-dd, hh:mm:ss or both, unless formatDate({ year, month, day, hour, minute, second, kind }) gives other text.
+export async function readXlsx(input, { maxCells = Infinity, formatDate = () => undefined } = {}) {
   const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
   const files = readZip(bytes);
   const read = async (name) => (files.has(name) ? decoder.decode(await extract(bytes, files.get(name))) : null);
   const sheet = await firstSheet(files, read);
-  const cells = sheetCells(await read(sheet.path), sharedStrings(await read('xl/sharedStrings.xml')));
+  const kinds = dateStyles(await read('xl/styles.xml'));
+  const date1904 = /<workbookPr\b[^>]*date1904\s*=\s*["'](?:1|true)["']/i.test(await read('xl/workbook.xml') ?? '');
+  const dates = kinds.size ? { kinds, date1904, format: formatDate } : null;
+  const cells = sheetCells(await read(sheet.path), sharedStrings(await read('xl/sharedStrings.xml')), dates);
   if (!cells.length) return { rows: [], sheet: sheet.name, sheets: sheet.count };
   const box = cells.reduce((b, [r, c]) => ({ top: Math.min(b.top, r), left: Math.min(b.left, c), bottom: Math.max(b.bottom, r), right: Math.max(b.right, c) }),
     { top: Infinity, left: Infinity, bottom: -1, right: -1 });

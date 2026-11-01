@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { buildXlsx, readXlsx } from '../www/src/rpl/xlsx.js';
 import { assert, assertThrows } from './helpers.mjs';
+import { readUpload } from '../www/src/rpl/persist.js';
+import { setUserFlag, clearUserFlag } from '../www/src/rpl/state.js';
 
 /* openpyxl.xlsx (openpyxl 3.1), xlsxwriter.xlsx and inline.xlsx (XlsxWriter 3.2,
    the last in constant_memory mode, which writes inline strings) are real
@@ -104,10 +106,10 @@ const book = (sheet, extra = {}) => ({ 'xl/workbook.xml': WORKBOOK(), 'xl/_rels/
     ['a & b <c>', '1234.5', 'TRUE'],
     ['two\nlines', '-0.000125', 'FALSE'],
     ['héllo Ω', '2469', '1E+21'],
-    ['45659', '0.25', ''],
+    ['2025-01-02', '0.25', ''],
     ['bold plain', '', ''],
   ]) && writer.sheet === 'Mixed',
-    'readXlsx: an XlsxWriter workbook: data from C3 is trimmed to the used range; entities, newlines, booleans, a formula result, a date serial and rich text read');
+    'readXlsx: an XlsxWriter workbook: data from C3 is trimmed to the used range; entities, newlines, booleans, a formula result, a date cell read as its date and rich text read');
   const inline = await readXlsx(fixture('inline.xlsx'));
   assert(JSON.stringify(inline.rows) === '[["x","y"],["1","2"],["3","4"]]', 'readXlsx: inline strings read');
 }
@@ -142,4 +144,44 @@ const book = (sheet, extra = {}) => ({ 'xl/workbook.xml': WORKBOOK(), 'xl/_rels/
   await rejects(makeZip({ 'readme.txt': 'hi' }).then(readXlsx), /no worksheet/, 'readXlsx: a zip without a worksheet is rejected');
   const sparse = await makeZip(book(SHEET('<row><c r="A1"><v>1</v></c><c r="C9"><v>2</v></c></row>')));
   await rejects(readXlsx(sparse, { maxCells: 10 }), /more than 10 cells/, 'readXlsx: a sparse sheet spanning too many cells is rejected');
+}
+
+{
+  const STYLES = (formats, xfs) => `<styleSheet><numFmts count="${formats.length}">${formats.map(([id, code]) => `<numFmt numFmtId="${id}" formatCode="${code}"/>`).join('')}</numFmts><cellXfs count="${xfs.length}">${xfs.map((id) => `<xf numFmtId="${id}"/>`).join('')}</cellXfs></styleSheet>`;
+  const dates = async (cells, { formats = [], xfs, date1904 = false, formatDate } = {}) => {
+    const parts = book(SHEET(`<row>${cells}</row>`), { 'xl/styles.xml': STYLES(formats, xfs) });
+    if (date1904) parts['xl/workbook.xml'] = parts['xl/workbook.xml'].replace('<workbook ', '<workbook ').replace('<sheets>', '<workbookPr date1904="1"/><sheets>');
+    return (await readXlsx(await makeZip(parts), { formatDate })).rows[0];
+  };
+  const xfs = [0, 14, 20, 22, 164, 165, 2];
+  const formats = [[164, 'dddd, mmmm d, yyyy'], [165, '&quot;day&quot; 0']];
+  const row = await dates('<c s="0"><v>45658</v></c><c s="1"><v>45658</v></c><c s="2"><v>0.5</v></c><c s="3"><v>45658.75</v></c><c s="4"><v>43905</v></c><c s="5"><v>45658</v></c><c s="6"><v>45658</v></c>', { formats, xfs });
+  assert(JSON.stringify(row) === JSON.stringify(['45658', '2025-01-01', '12:00:00', '2025-01-01 18:00:00', '2020-03-15', '45658', '45658']),
+    'readXlsx: a cell in a date or time number format (built in or custom) reads as yyyy-mm-dd, hh:mm:ss or both; an unformatted number, a literal-text format and a plain number format stay numbers');
+  const edge = await dates('<c s="1"><v>1</v></c><c s="1"><v>59</v></c><c s="1"><v>60</v></c><c s="1"><v>61</v></c><c s="1" t="s"><v>0</v></c><c s="1"><v>-1</v></c>', { xfs });
+  assert(JSON.stringify(edge.slice(0, 4)) === JSON.stringify(['1900-01-01', '1900-02-28', '1900-02-29', '1900-03-01']) && edge[5] === '-1',
+    'readXlsx: the 1900 system counts the day that never existed, as Excel does, and a negative number is left alone');
+  const mac = await dates('<c s="1"><v>0</v></c><c s="1"><v>1462</v></c>', { xfs, date1904: true });
+  assert(JSON.stringify(mac) === JSON.stringify(['1904-01-01', '1908-01-02']), 'readXlsx: a workbook on the 1904 date system counts from 1 January 1904');
+  const hook = await dates('<c s="1"><v>45658</v></c><c s="2"><v>0.5</v></c><c s="3"><v>45658.5</v></c>', { xfs, formatDate: (d) => (d.kind === 'date' ? `${d.month}.${String(d.day).padStart(2, '0')}${d.year}` : undefined) });
+  assert(JSON.stringify(hook) === JSON.stringify(['1.012025', '12:00:00', '2025-01-01 12:00:00']), 'readXlsx: formatDate can replace the text of a cell, and returning nothing keeps the default');
+}
+
+{
+  const styles = '<styleSheet><cellXfs count="3"><xf numFmtId="0"/><xf numFmtId="14"/><xf numFmtId="20"/></cellXfs></styleSheet>';
+  const sheet = '<row><c s="1"><v>45658</v></c><c s="1"><v>45700</v></c><c s="2"><v>0.5</v></c><c s="0"><v>7</v></c></row>';
+  const bytes = await makeZip(book(SHEET(sheet), { 'xl/styles.xml': styles }));
+  const upload = () => readUpload(new File([bytes], 'dates.xlsx'));
+  const first = await upload();
+  assert(first.value.items?.map((v) => v.value.toString()).join(' ') === '1.012025 2.122025 12 7' && /Dates read as HP dates \(MM\.DDYYYY\)/.test(first.note),
+    'readUpload: Excel dates become HP dates, MM.DDYYYY, a time of day its HH.MMSS, and the note says so');
+  setUserFlag(-42);
+  try {
+    const dayFirst = await upload();
+    assert(dayFirst.value.items?.map((v) => v.value.toString()).join(' ') === '1.012025 12.022025 12 7' && /DD\.MMYYYY/.test(dayFirst.note),
+      'readUpload: with flag -42 set Excel dates become DD.MMYYYY');
+  } finally { clearUserFlag(-42); }
+  const stamped = await readUpload(new File([await makeZip(book(SHEET('<row><c s="1"><v>45658.5</v></c><c s="1"><v>45659</v></c></row>'), { 'xl/styles.xml': styles.replace('numFmtId="14"', 'numFmtId="22"') }))], 'stamped.xlsx'));
+  assert(stamped.value.items?.[0]?.items?.map((v) => v.value).join('|') === '2025-01-01 12:00:00|2025-01-02 00:00:00' && !/Dates read/.test(stamped.note),
+    'readUpload: a date with a time stays as yyyy-mm-dd hh:mm:ss text, so the sheet comes in as a list');
 }

@@ -14,7 +14,7 @@
    saves are rejected instead of loading as garbage. */
 
 import {
-  state, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo, setRealAssume, varUndoSteps, restoreVarUndo,
+  state, testUserFlag, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo, setRealAssume, varUndoSteps, restoreVarUndo,
   ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX, REAL_MAX_EXP_DEFAULT, REAL_MAX_EXP_MIN, REAL_MAX_EXP_MAX, isModeFlag,
 } from './state.js';
 import { TYPES, Decimal, BIN_BASES, Grob, isStorableHpName, bigintText, isStackOverflow } from './types.js';
@@ -859,10 +859,27 @@ function readTable(text, kind) {
   return { value, note: headerNote(header) };
 }
 
+// A date cell becomes the HP's date number, MM.DDYYYY or DD.MMYYYY with flag -42, and a time of day its HH.MMSS, so
+// DDAYS, DATE+ and arithmetic work on them; a date with a time stays as text.
+function hpDateText({ year, month, day, hour, minute, second, kind }) {
+  const pad = (n, width = 2) => String(n).padStart(width, '0');
+  if (kind === 'time') return `${hour}.${pad(minute)}${pad(second)}`;
+  if (kind !== 'date') return undefined;
+  const [first, second2] = testUserFlag(-42) ? [day, month] : [month, day];
+  return `${first}.${pad(second2)}${pad(year, 4)}`;
+}
+
 async function readWorkbook(file) {
-  const { rows, sheet, sheets } = await readXlsx(await file.arrayBuffer(), { maxCells: SHEET_MAX_CELLS });
+  let dates = false;
+  const formatDate = (parts) => {
+    const text = hpDateText(parts);
+    if (text !== undefined && parts.kind === 'date') dates = true;
+    return text;
+  };
+  const { rows, sheet, sheets } = await readXlsx(await file.arrayBuffer(), { maxCells: SHEET_MAX_CELLS, formatDate });
   const { value, header } = importCells(rows);
-  return { value, note: [headerNote(header), sheets > 1 ? `Read the first of ${sheets} sheets, ${sheet}.` : ''].filter(Boolean).join(' ') };
+  const dateNote = dates ? `Dates read as HP dates (${testUserFlag(-42) ? 'DD.MMYYYY' : 'MM.DDYYYY'}).` : '';
+  return { value, note: [headerNote(header), dateNote, sheets > 1 ? `Read the first of ${sheets} sheets, ${sheet}.` : ''].filter(Boolean).join(' ') };
 }
 
 /** Read an uploaded or dropped file: a table (.csv, .tsv, .xlsx), an HP text file (.rpl, .txt) or an exported variable (.json). */
