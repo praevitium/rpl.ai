@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.114 (2026-10-31)
+**Latest release:** v0.8.115 (2026-11-01)
 
 ---
 
@@ -18,6 +18,16 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.115 — 2026-11-01
+
+- Fixed: when a program's own control structure refused its argument (a
+  string as a FOR or START bound, a string as the test of IF, CASE, WHILE or
+  DO, or too few arguments), the EVAL put the stack back as it found it. The
+  structure now gives its arguments back as a failing command does, so the
+  stack is left where the program got to.
 
 ---
 
