@@ -1130,8 +1130,19 @@ export function withStepMode(single, into, fn) {
 // A structure that finds too few values names itself, as a failing command does, so its banner counts the stack the
 // structure saw and does not blame the EVAL that was running it.
 function takeValues(s, structure, n) {
-  if (s.depth < n) throw Object.assign(new RPLError(`${structure}: Too few arguments`), { depth: s.depth, missing: n - s.depth });
+  if (s.depth < n) throw Object.assign(new RPLError(`${structure}: Too few arguments`), { depth: s.depth, missing: n - s.depth, argsReturned: true });
   return s.popN(n);
+}
+
+
+// A control structure that refuses its own arguments gives them back, as a command
+// does, so the EVAL running it leaves the stack where the program got to.
+function _giveBack(s, values, e) {
+  if (e instanceof RPLError && !e.argsReturned) {
+    for (const v of values) s.push(v);
+    e.argsReturned = true;
+  }
+  return e;
 }
 
 
@@ -1613,10 +1624,10 @@ function* runCase(s, toks, openIdx, depth) {
     }
     const thenIdx = scan.idx;
     yield* evalRange(s, toks, i, thenIdx, depth + 1);
-    const [test] = takeValues(s, 'CASE', 1);
+    const truthy = _takeTest(s, 'CASE');
     const innerEnd = scanAtDepth0(toks, thenIdx + 1, null);
     const innerEndIdx = (innerEnd && innerEnd.kind === 'END') ? innerEnd.idx : bound;
-    if (isTruthy(_testValue(test))) {
+    if (truthy) {
       yield* evalRange(s, toks, thenIdx + 1, innerEndIdx, depth + 1);
       return _pastCaseEnd(toks, innerEndIdx + 1);
     }
@@ -1637,12 +1648,22 @@ function _testValue(v) {
 }
 
 
+function _takeTest(s, structure) {
+  const [test] = takeValues(s, structure, 1);
+  try {
+    return isTruthy(_testValue(test));
+  } catch (e) {
+    throw _giveBack(s, [test], e);
+  }
+}
+
+
 function* runIf(s, toks, openIdx, depth) {
   const thenIdx = _scanRequired(toks, openIdx + 1, 'THEN', 'IF without THEN');
   yield* evalRange(s, toks, openIdx + 1, thenIdx, depth + 1);
-  const [test] = takeValues(s, 'IF', 1);
+  const truthy = _takeTest(s, 'IF');
   const { elseIdx, endIdx } = _scanElseEnd(toks, thenIdx, 'IF');
-  if (isTruthy(_testValue(test))) {
+  if (truthy) {
     yield* evalRange(s, toks, thenIdx + 1, elseIdx >= 0 ? elseIdx : endIdx, depth + 1);
   } else if (elseIdx >= 0) {
     yield* evalRange(s, toks, elseIdx + 1, endIdx, depth + 1);
@@ -1739,8 +1760,7 @@ function* runWhile(s, toks, openIdx, depth) {
     limit();
     checkTimeLimit();
     yield* evalRange(s, toks, openIdx + 1, repeatIdx, depth + 1);
-    const [test] = takeValues(s, 'WHILE', 1);
-    if (!isTruthy(_testValue(test))) break;
+    if (!_takeTest(s, 'WHILE')) break;
     yield* evalRange(s, toks, repeatIdx + 1, endIdx, depth + 1);
   }
   return _pastBlock(toks, endIdx);
@@ -1756,8 +1776,7 @@ function* runDo(s, toks, openIdx, depth) {
     checkTimeLimit();
     yield* evalRange(s, toks, openIdx + 1, untilIdx, depth + 1);
     yield* evalRange(s, toks, untilIdx + 1, endIdx, depth + 1);
-    const [test] = takeValues(s, 'DO', 1);
-    if (isTruthy(_testValue(test))) break;
+    if (_takeTest(s, 'DO')) break;
   }
   return _pastBlock(toks, endIdx);
 }
@@ -1766,10 +1785,15 @@ function* runDo(s, toks, openIdx, depth) {
 // Integer bounds keep the loop counter a BigInt; anything else counts in Decimal,
 // so 0 0.3 FOR with a 0.1 step reaches 0.3.
 function _popLoopBounds(s, structure) {
-  const [startVal, endVal] = takeValues(s, structure, 2);
+  const values = takeValues(s, structure, 2);
+  const [startVal, endVal] = values;
   const intMode = isInteger(startVal) && isInteger(endVal);
   const toBound = (v) => intMode ? v.value : toRealDecimal(v);
-  return { a: toBound(startVal), b: toBound(endVal), intMode };
+  try {
+    return { a: toBound(startVal), b: toBound(endVal), intMode };
+  } catch (e) {
+    throw _giveBack(s, values, e);
+  }
 }
 
 

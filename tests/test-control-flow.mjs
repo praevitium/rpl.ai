@@ -7831,3 +7831,20 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
     `STR→ gives the arguments of a failing / back and says / would give an infinite result, not STR→ (${inf?.message} ${t.depth})`);
   assert(runLine('"1 2 +" STR→').peek().value === 3n && runLine('"5" STR→').peek().value === 5n, 'STR→ still evaluates a string of commands and numbers');
 }
+
+/* ---- A control structure that refuses its own arguments gives them back, as a
+        command does, so the EVAL leaves the stack where the program got to. ---- */
+{
+  const fail = (src) => { const s = new Stack(); let err = null; try { runLine(src, s); } catch (e) { err = e; } return { s, err }; };
+  const shape = (s) => s.snapshot().map((v) => String(v.value ?? v.type)).reverse().join(' ');
+  const forBad = fail('1 2 « 3 4 + "a" 1 FOR i NEXT » EVAL');
+  assert(forBad.err && shape(forBad.s) === '1 2 7 a 1', `FOR with a string bound leaves the stack as the program got to it (${shape(forBad.s)})`);
+  const startBad = fail('1 2 « 3 4 + 1 "z" START NEXT » EVAL');
+  assert(startBad.err && shape(startBad.s) === '1 2 7 1 z', `START with a string bound gives its arguments back (${shape(startBad.s)})`);
+  const ifBad = fail('1 2 « 3 4 + 5 IF "x" THEN 9 END » EVAL');
+  assert(ifBad.err && shape(ifBad.s) === '1 2 7 5 x', `IF with a string test gives it back (${shape(ifBad.s)})`);
+  const whileBad = fail('1 2 « 3 4 + "s" WHILE REPEAT END » EVAL');
+  assert(whileBad.err && shape(whileBad.s) === '1 2 7 s', `WHILE with a string test gives it back (${shape(whileBad.s)})`);
+  const few = fail('« 5 START NEXT » EVAL');
+  assert(few.err && /Too few/.test(few.err.message) && shape(few.s) === '5', `START with one argument keeps the stack as it was (${shape(few.s)})`);
+}
