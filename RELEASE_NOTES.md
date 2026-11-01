@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.119 (2026-11-01)
+**Latest release:** v0.8.120 (2026-11-01)
 
 ---
 
@@ -18,6 +18,15 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.120 — 2026-11-01
+
+- Added: uploading or dropping an `.xlsx` workbook with several sheets asks
+  which sheet to read, in a list of their names. It used to read only the first
+  sheet. Closing the list without a choice keeps the first sheet, and the note
+  says which sheet was read.
 
 ---
 
