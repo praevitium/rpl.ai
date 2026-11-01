@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.120 (2026-11-01)
+**Latest release:** v0.8.121 (2026-11-01)
 
 ---
 
@@ -18,6 +18,16 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.121 — 2026-11-01
+
+- Added: the plot can be downloaded as an SVG vector picture, from a new
+  button beside the PNG one (in the folded tools menu on a phone). It holds the
+  curves, grid, axes and labels as shapes and text, in plain colours, so it
+  stays sharp at any size and opens in a vector editor or a document. The
+  hover readout and the graphics cursor are left out, as in the PNG.
 
 ---
 
