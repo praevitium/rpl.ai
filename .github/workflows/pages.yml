@@ -24,7 +24,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # build-info numbers the build by commit count
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - run: npm run build-info
+      - run: node tests/test-all.mjs > /dev/null # failures go to stderr
+      - run: node tests/test-persist.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
