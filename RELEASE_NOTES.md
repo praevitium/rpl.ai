@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.123 (2026-11-17)
+**Latest release:** v0.8.124 (2026-11-17)
 
 ---
 
@@ -18,6 +18,17 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.124 — 2026-11-17
+
+- Fixed: with complex results on (flag -103) in exact mode, `'LN(-1)' EVAL`
+  and `-1 LN` give `'i*π'` as the HP 50g does, where they stayed `'LN(-1)'`.
+  LN of any negative whole number or fraction comes out the same way, as LN
+  of its size plus `i*π`: `-2 LN` is `'LN(2)+i*π'`. With complex results off
+  it stays as written, and a decimal such as `-1.` still gives the complex
+  number.
 
 ---
 
