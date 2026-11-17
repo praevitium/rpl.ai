@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.122 (2026-11-01)
+**Latest release:** v0.8.123 (2026-11-17)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.123 — 2026-11-17
+
+- Changed: `==` with a name or an algebraic on one side and a number, a name
+  or an algebraic on the other now builds a comparison to evaluate later, so
+  `'X' 0 ==` gives `'X==0'` as the HP 50g does and as `≠ < > ≤ ≥` already
+  did; before it answered 0 or 1 by comparing the two objects as written.
+  EVAL or →NUM works the comparison out once the names have values, and IF
+  and the other tests do so themselves. Use SAME to ask whether two
+  expressions are written the same. Against a string, a list or any other
+  object `==` is still a plain test.
 
 ---
 
