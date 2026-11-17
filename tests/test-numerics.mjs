@@ -7515,3 +7515,16 @@ function _arrayEq(a, b) {
   assert(top('[ (1.234,5.678) 7 ] 1 TRNC') === '[ (1.2, 5.6) 7 ]', 'TRNC takes each part of a complex entry');
   assert(top('{ 1.234 5.678 } 1 RND') === '{ 1.2 5.7 }' && top('(4.5792,8.1275) 2 RND') === '(4.58, 8.13)', 'a list and a complex number still round as before');
 }
+
+// LN of a negative exact number in complex mode (flag -103) is LN of its size plus i*π, as on the HP.
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top('-1 LN') === '`LN(-1)`' && top("'LN(-1)' EVAL") === '`LN(-1)`', 'LN(-1) stays as it is with complex results off');
+  runLine('-103 SF');
+  assert(top('-1 LN') === '`i*π`' && top("'LN(-1)' EVAL") === '`i*π`', "LN(-1) is 'i*π' in exact and complex mode");
+  assert(top('-2 LN') === '`LN(2) + i*π`' && top('-1 3 / LN') === '`LN(1/3) + i*π`', 'LN of a negative exact number keeps LN of its size');
+  assert(top("'LN(-2)+1' EVAL") === '`LN(2) + i*π + 1`', 'LN of a negative number inside an algebraic is rewritten on EVAL');
+  assert(top('2 LN') === '`LN(2)`' && top("'LN(X)' EVAL") === '`LN(X)`', 'LN of a positive number or a name is untouched');
+  assert(top('-2 LN →NUM') === '(0.69314718056, 3.14159265359)' && top('-1. LN') === '(0, 3.14159265359)', 'the numeric LN of a negative number is unchanged');
+  runLine('-103 CF');
+}

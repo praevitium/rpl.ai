@@ -5,7 +5,7 @@ import { exactTrigRewrite } from '../exact-trig.js';
 import { gatherLike } from '../tidy.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, UnitNode as AstUnit, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, hasUnits, exactRational, isRealNum, isKnownFunction, isArrayLiteral } from '../algebra.js';
 import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
-import { state as _calcState, getApproxMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, testUserFlag, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd, withScratchState, inScratchState, notify } from '../state.js';
+import { state as _calcState, getApproxMode, getComplexMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, testUserFlag, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd, withScratchState, inScratchState, notify } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
 import { formatSource, currentDisplay, withFractionMark } from '../formatter.js';
@@ -2056,7 +2056,7 @@ export function _evalSymbolic(v, keeps = () => false, gather = true) {
   const evaluated = _foldUnits(evalNode(_expandUserCalls(v.expr)), evalNode);
   const called = _evalCommandCalls(evaluated);
   if (called) return called;
-  const trig = approx ? evaluated : _radicalRewrite(exactTrigRewrite(evaluated, _calcState.angle), gather);
+  const trig = approx ? evaluated : _radicalRewrite(exactTrigRewrite(_complexLnRewrite(evaluated), _calcState.angle), gather);
   const folded = trig === evaluated ? evaluated : evalNode(trig);
   const integrated = _casCalculus(folded);
   const calculated = integrated === folded ? folded : evalNode(integrated);
@@ -2183,6 +2183,34 @@ function _foldImaginary(ast) {
     if (e instanceof RPLError) return null;
     throw e;
   }
+}
+
+
+const _I_PI = AstBin('*', AstVar('i'), AstVar('π'));
+
+// In exact mode with complex results on, LN of the negative exact number
+// -n/d is LN(n/d) plus i*π, so LN(-1) is 'i*π' as on the HP.
+export function _exactLnNegative(n, d) {
+  if (n === d) return _I_PI;
+  const size = d === 1n ? AstNum(n) : AstBin('/', AstNum(n), AstNum(d));
+  return AstBin('+', AstFn('LN', [size]), _I_PI);
+}
+
+function _complexLnRewrite(ast) {
+  if (!getComplexMode() || !ast || typeof ast !== 'object') return ast;
+  if (ast.kind === 'neg') {
+    const arg = _complexLnRewrite(ast.arg);
+    return arg === ast.arg ? ast : AstNeg(arg);
+  }
+  if (ast.kind === 'bin') {
+    const l = _complexLnRewrite(ast.l), r = _complexLnRewrite(ast.r);
+    return l === ast.l && r === ast.r ? ast : AstBin(ast.op, l, r);
+  }
+  if (ast.kind !== 'fn') return ast;
+  const args = ast.args.map(_complexLnRewrite);
+  const exact = ast.name === 'LN' && args.length === 1 ? exactRational(args[0]) : null;
+  if (exact && exact[0] < 0n) return _exactLnNegative(-exact[0], exact[1]);
+  return args.every((a, i) => a === ast.args[i]) ? ast : AstFn(ast.name, args);
 }
 
 

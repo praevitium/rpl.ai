@@ -1,4 +1,4 @@
-import { setAngle, state as _calcState, getApproxMode, toRadians, fromRadians } from '../state.js';
+import { setAngle, state as _calcState, getApproxMode, getComplexMode, toRadians, fromRadians } from '../state.js';
 import { Symbolic, toRealOrThrow, Real, isComplex, Complex, isInteger, isRational, isReal, isUnit, Rational, Integer } from '../types.js';
 import { convertValue, parseUnitExpr, sameDims } from '../units.js';
 import { Fn as AstFn } from '../algebra.js';
@@ -6,7 +6,7 @@ import { exactTrig, exactInverseTrig, exactRadians, exactDegrees } from '../exac
 import { RPLError } from '../stack.js';
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { register } from './registry.js';
-import { _astToRplValue, _infiniteResult, _cx, _cxAdd, _cxDiv, _cxMul, _cxSub, _exactUnaryLift, _isSymOperand, _toAst, _withListUnary, _withTaggedUnary, _withVMUnary, unaryReal } from './internal.js';
+import { _astToRplValue, _exactLnNegative, _infiniteResult, _cx, _cxAdd, _cxDiv, _cxMul, _cxSub, _exactUnaryLift, _isSymOperand, _toAst, _withListUnary, _withTaggedUnary, _withVMUnary, unaryReal } from './internal.js';
 
 
 
@@ -234,6 +234,9 @@ function _unaryCx(name, realFn, cxFn, decimalFn) {
   return _unaryOp(name, (v) => {
     if ((name === 'LN' || name === 'LOG') && (_isZero(v) || (isComplex(v) && !v.re && !v.im))) return _infiniteResult(true);
     if (isComplex(v)) return _complex(cxFn(v));
+    if (name === 'LN' && _isExact(v) && getComplexMode() && toRealOrThrow(v) < 0) {
+      return Symbolic(isInteger(v) ? _exactLnNegative(-v.value, 1n) : _exactLnNegative(-v.n, v.d));
+    }
     if (_isExact(v)) return _exactUnaryLift(name, realFn(toRealOrThrow(v)), v);
     const d = _toDecimal(v);
     const result = decimalFn(d);
