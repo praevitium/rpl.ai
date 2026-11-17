@@ -59,7 +59,19 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   const s = new Stack();
   s.push(Name('X')); s.push(Name('X'));
   lookup('==').fn(s);
-  assert(s.peek().value.eq(1), "Name(`X`) == Name(`X`)");
+  assert(format(s.peek()) === '`X==X`', "== on two names builds 'X==X'");
+  s.clear();
+  s.push(Name('X')); s.push(Integer(0n));
+  lookup('==').fn(s);
+  assert(format(s.peek()) === '`X==0`', "== on a name and a number builds 'X==0'");
+  s.clear();
+  s.push(Name('X')); s.push(Str('X'));
+  lookup('==').fn(s);
+  assert(s.peek().value.eq(0), '== on a name and a string is a plain test');
+  s.clear();
+  s.push(Name('X')); s.push(RList([Integer(1n)]));
+  lookup('==').fn(s);
+  assert(s.peek().value.eq(0), '== on a name and a list is a plain test');
   s.clear();
   s.push(Str('foo')); s.push(Str('bar'));
   lookup('==').fn(s);
@@ -96,9 +108,9 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
    Reference: HP50 AUR §4 "Real-number calculator commands", tables 4-1
    and 4-2 on the type matrix of comparison operators.  Quick summary:
      =     equation builder: always returns a Symbolic.
-     ==    strict structural: numeric promotes; non-numerics compare
-           by their "content" (names by id, strings by char-for-char,
-           lists/vectors/matrices structurally, symbolics by AST).
+     ==    numeric promotes; strings, lists, vectors and matrices
+           compare by content; a Symbolic/Name against a number or
+           another of them lifts to a Symbolic, as ≠ does.
      SAME  structural including types — does NOT lift to Symbolic;
            always returns a Real 1. / 0.
      ≠     negation of ==, also lifts to Symbolic when an operand is
@@ -722,16 +734,16 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   const s = new Stack();
   s.push(a); s.push(b);
   lookup('==').fn(s);
-  assert(s.peek().value.eq(1), "session072: `X+Y` == `X+Y` = 1");
+  assert(format(s.peek()) === '`X + Y==X + Y`', "== on two algebraics builds a comparison expression");
 }
 {
   const [a] = parseEntry("`X+Y`");
   const [b] = parseEntry("`Y+X`");
   const s = new Stack();
   s.push(a); s.push(b);
-  lookup('==').fn(s);
+  lookup('SAME').fn(s);
   assert(s.peek().value.eq(0),
-    "session072: `X+Y` == `Y+X` = 0 (commutativity is a CAS concern, not ==)");
+    "SAME `X+Y` `Y+X` = 0 (commutativity is a CAS concern, not SAME)");
 }
 {
   const [a] = parseEntry("`SIN(X)`");
@@ -746,16 +758,16 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   const [b] = parseEntry("`COS(X)`");
   const s = new Stack();
   s.push(a); s.push(b);
-  lookup('==').fn(s);
-  assert(s.peek().value.eq(0), "session072: `SIN(X)` == `COS(X)` = 0 (fn-name differs)");
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(0), "SAME `SIN(X)` `COS(X)` = 0 (fn-name differs)");
 }
 {
   const [a] = parseEntry("`X^2+SIN(X)`");
   const [b] = parseEntry("`X^2+SIN(X)`");
   const s = new Stack();
   s.push(a); s.push(b);
-  lookup('==').fn(s);
-  assert(s.peek().value.eq(1), "session072: `X^2+SIN(X)` structural match");
+  lookup('SAME').fn(s);
+  assert(s.peek().value.eq(1), "SAME `X^2+SIN(X)` structural match");
 }
 {
   const s = new Stack();
@@ -1017,9 +1029,9 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   // Note: `==` does NOT call `_trySymCompare`; it goes straight to
   // `eqValues`, which returns false on Sy-vs-Real.  This is intentional
   // per the docstring on register('=='): "strict structural equality".
-  lookup('==').fn(s);
+  lookup('SAME').fn(s);
   assert(s.peek().value.eq(0),
-    "session072: `X` == 5 = 0 (== is strictly structural, no symbolic lift)");
+    "SAME `X` 5 = 0 (SAME is strictly structural, no symbolic lift)");
 }
 
 /* ================================================================

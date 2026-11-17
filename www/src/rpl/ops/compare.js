@@ -104,9 +104,14 @@ function _binIntCrossNormalize(a, b) {
 }
 
 
-// Unlike ≠, == returns a truth value even for symbolic operands.
+// A Name or Symbolic against a number or another of them builds 'X==0';
+// against anything else (a string, a list) == is a plain test.
 register('==', (s) => {
   const [a0, b0] = s.popN(2);
+  if ((_isSymOperand(a0) || _isSymOperand(b0)) && _toAst(a0) && _toAst(b0)) {
+    _pushSymComparison(s, a0, b0, '==');
+    return;
+  }
   const [a, b] = _binIntCrossNormalize(a0, b0);
   s.push(eqValues(a, b) ? TRUE : FALSE);
 }, { category: 'Comparisons / logic', categoryOrder: 0, label: "==" });

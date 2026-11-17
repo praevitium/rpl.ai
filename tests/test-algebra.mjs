@@ -2363,8 +2363,8 @@ giac._setFixtures({
       const s = new Stack();
       s.push(Name('X')); s.push(Name('X'));
       lookup('==').fn(s);
-      assert(s.peek(1).type === TYPES.REAL && s.peek(1).value.eq(1),
-        'Name(X) Name(X) == → 1. (structural test, not symbolic)');
+      assert(s.peek(1).type === TYPES.SYMBOLIC && formatAlgebra(s.peek(1).expr) === 'X==X',
+        "== on two names builds 'X==X'");
     }
 
     {
