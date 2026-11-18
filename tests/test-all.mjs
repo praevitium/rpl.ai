@@ -10,6 +10,7 @@
    files still run — one crash does not knock out the aggregate. */
 
 import { state } from './helpers.mjs';
+import { resetAll } from '../www/src/rpl/state.js';
 
 const FILES = [
   './test-helpers.mjs',
@@ -59,6 +60,7 @@ const importErrors = [];
 for (const f of FILES) {
   const beforePass = state.passed;
   const beforeFail = state.failed;
+  resetAll();
   try {
     await import(f);
   } catch (e) {

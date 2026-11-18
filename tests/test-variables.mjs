@@ -2261,3 +2261,16 @@ clearAllUserFlags();
   goHome();
   resetHome();
 }
+
+// resetAll puts every mode, flag and setting back to its boot value and empties HOME.
+{
+  const { resetAll, state: st } = await import('../www/src/rpl/state.js');
+  resetAll();
+  const boot = JSON.stringify(st, (k, v) => (typeof v === 'bigint' ? `${v}n` : v instanceof Set ? [...v] : k === 'home' || k === 'current' ? undefined : v));
+  runLine("DEG 4 FIX -64 SF -103 SF HEX 16 STWS 5 'A' STO 7 RDZ");
+  st.lastFitModel = { kind: 'LIN', a: 1, b: 2 };
+  resetAll();
+  const after = JSON.stringify(st, (k, v) => (typeof v === 'bigint' ? `${v}n` : v instanceof Set ? [...v] : k === 'home' || k === 'current' ? undefined : v));
+  assert(after === boot, 'resetAll restores every state field to its boot value');
+  assert(st.home.entries.size === 0 && st.current === st.home, 'resetAll empties HOME and returns to it');
+}

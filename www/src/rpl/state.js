@@ -755,6 +755,21 @@ export function resetHome() {
   _emit();
 }
 
+const _DEFAULTS = Object.freeze({ ...state });
+const _RESET_BY_HOME = new Set(['home', 'current', 'halted', 'haltedStack', 'promptMessage', 'lcd', 'pict']);
+
+// Everything in `state` back to its boot value: HOME emptied, halted
+// programs closed, and every mode, flag and setting restored.
+export function resetAll() {
+  resetHome();
+  for (const [key, value] of Object.entries(_DEFAULTS)) {
+    if (_RESET_BY_HOME.has(key)) continue;
+    if (value instanceof Set) state[key].clear();
+    else state[key] = Array.isArray(value) ? [] : value;
+  }
+  _emit();
+}
+
 export function goHome() { _set('current', _home); }
 
 // UPDIR from HOME is a silent no-op, as on the HP50.

@@ -22,6 +22,7 @@
    round-trip the exact order that produced the observed outcome. */
 
 import { state } from './helpers.mjs';
+import { resetAll } from '../www/src/rpl/state.js';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
@@ -61,6 +62,7 @@ if (shuffle) {
 
 const importErrors = [];
 for (const f of files) {
+  resetAll();
   try { await import(f); }
   catch (e) { importErrors.push({ file: f, err: e }); }
 }
