@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.130 (2026-11-18)
+**Latest release:** v0.8.131 (2026-11-18)
 
 ---
 
@@ -18,6 +18,14 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.131 — 2026-11-18
+
+- Changed: nothing a user sees. A command name can now be defined only once
+  in the code; a second definition is refused at start-up where it used to
+  replace the first without notice. No command was defined twice.
 
 ---
 
