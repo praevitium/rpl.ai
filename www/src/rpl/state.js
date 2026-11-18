@@ -75,12 +75,12 @@ export const STATE_FIELDS = Object.freeze({
   prngSeed:      { init: PRNG_DEFAULT, persist: 'top' },
 });
 
-function _bootValue(key) {
+export function bootValue(key) {
   const { init } = STATE_FIELDS[key];
   return typeof init === 'function' ? init() : init;
 }
 
-export const state = Object.fromEntries(Object.keys(STATE_FIELDS).map((key) => [key, _bootValue(key)]));
+export const state = Object.fromEntries(Object.keys(STATE_FIELDS).map((key) => [key, bootValue(key)]));
 
 function _dispatchState() {
   for (const fn of _listeners) {
@@ -777,7 +777,7 @@ const _RESET_BY_HOME = new Set(['home', 'current', 'halted', 'haltedStack', 'pro
 export function resetAll() {
   resetHome();
   for (const key of Object.keys(STATE_FIELDS)) {
-    if (!_RESET_BY_HOME.has(key)) state[key] = _bootValue(key);
+    if (!_RESET_BY_HOME.has(key)) state[key] = bootValue(key);
   }
   _emit();
 }

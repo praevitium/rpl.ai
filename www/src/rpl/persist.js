@@ -15,8 +15,8 @@
    still load. */
 
 import {
-  state, testUserFlag, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo, setRealAssume, varUndoSteps, restoreVarUndo,
-  ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX, REAL_MAX_EXP_DEFAULT, REAL_MAX_EXP_MIN, REAL_MAX_EXP_MAX, isModeFlag,
+  state, bootValue, testUserFlag, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo, setRealAssume, varUndoSteps, restoreVarUndo,
+  ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX, REAL_MAX_EXP_MIN, REAL_MAX_EXP_MAX, isModeFlag,
 } from './state.js';
 import { TYPES, Decimal, BIN_BASES, Grob, isStorableHpName, bigintText, isStackOverflow } from './types.js';
 import { RPLError } from './stack.js';
@@ -191,7 +191,7 @@ function restoreModes(modes) {
 }
 
 function decodeCasModulo(snap) {
-  if (snap.casModulo === undefined || snap.casModulo === null) return 13n;
+  if (snap.casModulo === undefined || snap.casModulo === null) return bootValue('casModulo');
   try {
     const m = decode(snap.casModulo);
     if (typeof m === 'bigint') return m;
@@ -199,7 +199,7 @@ function decodeCasModulo(snap) {
   } catch (e) {
     console.warn('hp50 persist: bad casModulo, ignoring', e);
   }
-  return 13n;
+  return bootValue('casModulo');
 }
 
 // Stack levels as saved, with the folders among them linked again to what is in them.
@@ -237,7 +237,7 @@ export function rehydrate(saved, stack) {
     if (!goInto(path[i])) break;
   }
 
-  state.angle = ANGLE_MODES.includes(snap.angle) ? snap.angle : 'RAD';
+  state.angle = ANGLE_MODES.includes(snap.angle) ? snap.angle : bootValue('angle');
 
   if (snap.prngSeed !== undefined && snap.prngSeed !== null) {
     try {
@@ -251,8 +251,8 @@ export function rehydrate(saved, stack) {
   }
 
   // Saves from before lowercase became the default carry casVx 'X'.
-  const vx = typeof snap.casVx === 'string' && snap.casVx.length > 0 ? snap.casVx : 'x';
-  setCasVx(vx === 'X' ? 'x' : vx);
+  const vx = typeof snap.casVx === 'string' && snap.casVx.length > 0 ? snap.casVx : bootValue('casVx');
+  setCasVx(vx === 'X' ? bootValue('casVx') : vx);
 
   setCasModulo(decodeCasModulo(snap));
   setRealAssume(decodeRealAssume(snap));
@@ -263,12 +263,12 @@ export function rehydrate(saved, stack) {
   state.pict = pict;
   state.userKeys = userKeys;
   state.standardKeys = snap.standardKeys !== false;
-  state.headerLines = [0, 1, 2].includes(snap.headerLines) ? snap.headerLines : 2;
-  state.keyTime = Number.isInteger(snap.keyTime) && snap.keyTime >= 0 && snap.keyTime <= 4096 ? snap.keyTime : 1138;
-  state.programLines = Number.isInteger(snap.programLines) && snap.programLines >= 1 ? snap.programLines : 9;
+  state.headerLines = [0, 1, 2].includes(snap.headerLines) ? snap.headerLines : bootValue('headerLines');
+  state.keyTime = Number.isInteger(snap.keyTime) && snap.keyTime >= 0 && snap.keyTime <= 4096 ? snap.keyTime : bootValue('keyTime');
+  state.programLines = Number.isInteger(snap.programLines) && snap.programLines >= 1 ? snap.programLines : bootValue('programLines');
   const maxExp = snap.realMaxExp;
-  state.realMaxExp = Number.isInteger(maxExp) && maxExp >= REAL_MAX_EXP_MIN && maxExp <= REAL_MAX_EXP_MAX ? maxExp : REAL_MAX_EXP_DEFAULT;
-  state.clockOffset = Number.isFinite(snap.clockOffset) ? snap.clockOffset : 0;
+  state.realMaxExp = Number.isInteger(maxExp) && maxExp >= REAL_MAX_EXP_MIN && maxExp <= REAL_MAX_EXP_MAX ? maxExp : bootValue('realMaxExp');
+  state.clockOffset = Number.isFinite(snap.clockOffset) ? snap.clockOffset : bootValue('clockOffset');
 
   stack.restore(items);
   notify();

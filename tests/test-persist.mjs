@@ -1638,6 +1638,11 @@ function quotaError() {
   rehydrate(JSON.parse(golden), st);
   assert(shot() === golden, 'state table: the version 1 fixture loads and saves unchanged');
   resetAll();
+  const odd = { ...JSON.parse(golden), angle: 'TURNS', casVx: '', casModulo: null, headerLines: 7, keyTime: -1, programLines: 0, realMaxExp: 1, clockOffset: 'late' };
+  rehydrate(odd, st);
+  assert(['angle', 'casVx', 'casModulo', 'headerLines', 'keyTime', 'programLines', 'realMaxExp', 'clockOffset'].every((k) => calcState[k] === STATE_FIELDS[k].init),
+    'state table: a saved value out of range loads as the boot value');
+  resetAll();
 }
 
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');
