@@ -1610,7 +1610,7 @@ tests/                Node test suites, one area per file
 scripts/              Build info, offline precache, README screenshots, command-reference upkeep
 screenshots/          Images used above
 utils/                Pre-commit hook: sanity smoke, optional full and persist suites
-.github/workflows/    Publishes www/ to GitHub Pages on every push to main
+.github/workflows/    Tests, then publishes www/ to GitHub Pages on every push to main
 ```
 
 Shipped commands are the `register` calls under `www/src/rpl/ops/`.
@@ -1626,6 +1626,10 @@ node tests/test-equation-editor.mjs       # one area
 node tests/flake-scan.mjs                 # rerun the suite to catch flaky results
 node tests/flake-bisect.mjs --label "…"   # find the file order that breaks an assertion
 ```
+
+A file run on its own ends with its passed and failed counts and exits
+non-zero on a failure; `QUIET=1` in front of any of these prints only the
+failures and the summary.
 
 In Node the CAS answers come from Giac fixtures each test registers; the
 real Giac WebAssembly runs only in the browser.

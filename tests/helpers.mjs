@@ -14,12 +14,25 @@
        pre-stack in order (level-k pushed k-th → ends up on top-of-stack
        last, matching RPL convention), run the op, return `peek()`. */
 
+import { basename } from 'node:path';
+
 export const state = { failed: 0, passed: 0 };
+
+const QUIET = !!process.env.QUIET;
 
 export function assert(cond, msg) {
   if (!cond) { console.error('FAIL:', msg); state.failed++; }
-  else { console.log('ok  ', msg); state.passed++; }
+  else { if (!QUIET) console.log('ok  ', msg); state.passed++; }
 }
+
+// A test file run on its own has no runner to report for it: print the
+// counts and fail the process when an assertion failed.
+const RAN_ALONE = /^test-(?!all\.)[^/]*\.mjs$/.test(basename(process.argv[1] ?? ''));
+
+process.on('exit', (code) => {
+  if (RAN_ALONE) console.log(`\n${state.passed} passed, ${state.failed} failed`);
+  if (state.failed && !code) process.exitCode = 1;
+});
 
 /**
  * Assert that `fn()` throws an Error whose message matches `pattern`.
