@@ -25,44 +25,62 @@ export const REAL_MAX_EXP_DEFAULT = 499;
 export const REAL_MAX_EXP_MIN     = 10;
 export const REAL_MAX_EXP_MAX     = 9e15;
 
-export const state = {
-  angle:   'RAD',
-  coordMode: 'RECT',         // display only; stored values stay rectangular
-  displayMode: 'STD',
-  displayDigits: 12,
-  home:    _home,
-  current: _home,
-  lastError: null,           // { message, number } of the last trapped error
-  wordsize: WORDSIZE_DEFAULT,
-  binaryBase: 'd',           // null renders each BinInt in its own base
-  textbookMode: true,
-  approxMode: false,         // flag -105, clear at boot as on the HP50
-  userFlags: new Set(),      // user flags 1..128, system flags -1..-128
-  complexMode: false,        // flag -103
-  lastFitModel: null,        // { kind, a, b } for PREDV / PREDX; not persisted
-  casVx: 'x',                // the HP50 uses 'X'; lowercase matches the keyboard
-  casModulo: 13n,
-  realAssume: [],            // REALASSUME: names the CAS takes as real, and ASSUME's conditions
-  realMaxExp: REAL_MAX_EXP_DEFAULT,
+const PRNG_DEFAULT = 741n;
+
+// One row per field of `state`.
+//   init     the boot value; a function where each use needs a fresh object.
+//   capture  false for the fields captureCalcState saves by its own path.
+//   persist  where snapshot() in persist.js keeps the field: 'top' under its
+//            own key, 'modes' under modes, 'path' as the directory path; a
+//            field with no persist is not saved, for the reason on its row.
+export const STATE_FIELDS = Object.freeze({
+  angle:         { init: 'RAD', persist: 'top' },
+  coordMode:     { init: 'RECT', persist: 'modes' },   // display only; stored values stay rectangular
+  displayMode:   { init: 'STD', persist: 'modes' },
+  displayDigits: { init: 12, persist: 'modes' },
+  home:          { init: () => _home, capture: false, persist: 'top' },
+  current:       { init: () => _home, capture: false, persist: 'path' },
+  lastError:     { init: null },                       // { message, number } of the last trapped error; a session's, not saved
+  wordsize:      { init: WORDSIZE_DEFAULT, persist: 'modes' },
+  binaryBase:    { init: 'd', persist: 'modes' },      // null renders each BinInt in its own base
+  textbookMode:  { init: true, persist: 'modes' },
+  approxMode:    { init: false, persist: 'modes' },    // flag -105, clear at boot as on the HP50
+  userFlags:     { init: () => new Set(), capture: false, persist: 'modes' },   // user flags 1..128, system flags -1..-128
+  complexMode:   { init: false, persist: 'modes' },    // flag -103
+  lastFitModel:  { init: null },                       // { kind, a, b } for PREDV / PREDX; refitted from ΣDAT, not saved
+  casVx:         { init: 'x', persist: 'top' },        // the HP50 uses 'X'; lowercase matches the keyboard
+  casModulo:     { init: 13n, persist: 'top' },
+  realAssume:    { init: () => [], persist: 'top' },   // REALASSUME: names the CAS takes as real, and ASSUME's conditions
+  realMaxExp:    { init: REAL_MAX_EXP_DEFAULT, persist: 'top' },
   // Suspended programs, oldest first, as { generator, tokens, index, kind, dialog, stepping, prompt }.
   // halted is the newest one, which CONT resumes first; promptMessage is its message.
-  halted: null,
-  haltedStack: [],
-  promptMessage: null,
-  lcd: null,
-  pict: null,                // PICT, the graphics object the drawing commands use; null until something sets it
+  // A running generator cannot be saved, so none of the three is.
+  halted:        { init: null },
+  haltedStack:   { init: () => [], capture: false },
+  promptMessage: { init: null },
+  lcd:           { init: null },                       // what a program drew over the stack; gone with the program
+  pict:          { init: null, persist: 'top' },       // PICT, the graphics object the drawing commands use; null until something sets it
   // Appointment alarms, soonest first: { due (ms), message, repeat (ticks, 8192 a second), ack }.
-  alarms: [],
+  alarms:        { init: () => [], persist: 'top' },
   // User key assignments as [key, object] pairs in key order, the key being rc.pf × 100 (7530 for 75.3);
   // standardKeys is false after S DELKEYS.
-  userKeys: [],
-  standardKeys: true,
+  userKeys:      { init: () => [], persist: 'top' },
+  standardKeys:  { init: true, persist: 'top' },
   // →HEADER, →KEYTIME and →NDISP are checked and kept; the header, key handling and program view are rpl.ai's own.
-  headerLines: 2,
-  keyTime: 1138,
-  programLines: 9,
-  clockOffset: 0,            // ms that →DATE, →TIME and CLKADJ put the calculator's clock from the device's
-};
+  headerLines:   { init: 2, persist: 'top' },
+  keyTime:       { init: 1138, persist: 'top' },
+  programLines:  { init: 9, persist: 'top' },
+  clockOffset:   { init: 0, persist: 'top' },          // ms that →DATE, →TIME and CLKADJ put the calculator's clock from the device's
+  // Park-Miller seed for RAND, RANM and RDZ; the fixed boot seed makes the first sequence reproducible.
+  prngSeed:      { init: PRNG_DEFAULT, persist: 'top' },
+});
+
+function _bootValue(key) {
+  const { init } = STATE_FIELDS[key];
+  return typeof init === 'function' ? init() : init;
+}
+
+export const state = Object.fromEntries(Object.keys(STATE_FIELDS).map((key) => [key, _bootValue(key)]));
 
 function _dispatchState() {
   for (const fn of _listeners) {
@@ -566,9 +584,6 @@ export function resetBinaryState() {
 // sequence reproducible, as on a reset HP50.
 const PRNG_MOD = 2147483647n;
 const PRNG_MULT = 48271n;
-const PRNG_DEFAULT = 741n;
-
-state.prngSeed = PRNG_DEFAULT;
 
 // RDZ 0 seeds from the clock.  0 is the LCG's fixed point, so it is mapped
 // to 1 after the reduction.
@@ -755,17 +770,14 @@ export function resetHome() {
   _emit();
 }
 
-const _DEFAULTS = Object.freeze({ ...state });
 const _RESET_BY_HOME = new Set(['home', 'current', 'halted', 'haltedStack', 'promptMessage', 'lcd', 'pict']);
 
 // Everything in `state` back to its boot value: HOME emptied, halted
 // programs closed, and every mode, flag and setting restored.
 export function resetAll() {
   resetHome();
-  for (const [key, value] of Object.entries(_DEFAULTS)) {
-    if (_RESET_BY_HOME.has(key)) continue;
-    if (value instanceof Set) state[key].clear();
-    else state[key] = Array.isArray(value) ? [] : value;
+  for (const key of Object.keys(STATE_FIELDS)) {
+    if (!_RESET_BY_HOME.has(key)) state[key] = _bootValue(key);
   }
   _emit();
 }
@@ -1044,12 +1056,7 @@ export function redoVarState() {
 // Everything the ops read or write here, so the assistant can run RPL in a
 // sandbox and roll it back, or undo a whole assistant turn.  The stack is
 // captured separately with Stack.save / restore.
-const CAPTURED_SCALARS = [
-  'angle', 'coordMode', 'displayMode', 'displayDigits', 'lastError',
-  'wordsize', 'binaryBase', 'textbookMode', 'approxMode', 'complexMode',
-  'lastFitModel', 'casVx', 'casModulo', 'realAssume', 'halted', 'promptMessage', 'prngSeed',
-  'realMaxExp', 'lcd', 'alarms', 'pict', 'userKeys', 'standardKeys', 'headerLines', 'keyTime', 'programLines', 'clockOffset',
-];
+const CAPTURED_SCALARS = Object.keys(STATE_FIELDS).filter((key) => STATE_FIELDS[key].capture !== false);
 
 export function captureCalcState() {
   const scalars = {};

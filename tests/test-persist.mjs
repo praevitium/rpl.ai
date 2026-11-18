@@ -1532,5 +1532,78 @@ function quotaError() {
   }
 }
 
+/* --- The state field table: every field of `state` is either saved by
+       snapshot() or left out on purpose, and a full save reads back the same. --- */
+{
+  const { STATE_FIELDS, resetAll } = await import('../www/src/rpl/state.js');
+  const { Grob } = await import('../www/src/rpl/types.js');
+  const st = new Stack();
+  const shot = () => JSON.stringify(snapshot(st));
+  const change = {
+    angle: () => { calcState.angle = 'DEG'; },
+    coordMode: () => { calcState.coordMode = 'SPHERE'; },
+    displayMode: () => { calcState.displayMode = 'FIX'; },
+    displayDigits: () => { calcState.displayDigits = 4; },
+    home: () => { varStore('A', Integer(5n)); },
+    current: () => { makeSubdir('SUB'); goInto('SUB'); },
+    wordsize: () => { calcState.wordsize = 16; },
+    binaryBase: () => { calcState.binaryBase = 'h'; },
+    textbookMode: () => { calcState.textbookMode = false; },
+    approxMode: () => { calcState.approxMode = true; },
+    userFlags: () => { calcState.userFlags.add(5); },
+    complexMode: () => { calcState.complexMode = true; },
+    casVx: () => { calcState.casVx = 't'; },
+    casModulo: () => { calcState.casModulo = 7n; },
+    realAssume: () => { calcState.realAssume = [Name('Q')]; },
+    realMaxExp: () => { calcState.realMaxExp = 300; },
+    pict: () => { calcState.pict = Grob(8, 2, new Uint8Array([1, 2])); },
+    alarms: () => { calcState.alarms = [{ due: 1e12, message: 'tea', repeat: 0, ack: false }]; },
+    userKeys: () => { calcState.userKeys = [[1110, Integer(1n)]]; },
+    standardKeys: () => { calcState.standardKeys = false; },
+    headerLines: () => { calcState.headerLines = 1; },
+    keyTime: () => { calcState.keyTime = 500; },
+    programLines: () => { calcState.programLines = 5; },
+    clockOffset: () => { calcState.clockOffset = 60000; },
+    prngSeed: () => { calcState.prngSeed = 99n; },
+    lastError: () => { calcState.lastError = { message: 'Bad argument type', number: 514 }; },
+    lastFitModel: () => { calcState.lastFitModel = { kind: 'LIN', a: 1, b: 2 }; },
+    halted: () => { calcState.halted = { kind: 'halt' }; },
+    promptMessage: () => { calcState.promptMessage = 'go on'; },
+    lcd: () => { calcState.lcd = { lines: ['x'], frozen: false }; },
+  };
+  const keys = Object.keys(STATE_FIELDS);
+  const persisted = keys.filter((k) => STATE_FIELDS[k].persist);
+  assert(JSON.stringify(Object.keys(calcState)) === JSON.stringify(keys), 'state table: state has exactly the fields the table lists');
+  assert(keys.filter((k) => !STATE_FIELDS[k].persist).sort().join() === 'halted,haltedStack,lastError,lastFitModel,lcd,promptMessage',
+    'state table: only the session fields are left out of a save');
+  resetAll();
+  const boot = shot();
+  const unsaved = [], saved = [];
+  for (const key of keys.filter((k) => change[k])) {
+    resetAll();
+    change[key]();
+    (shot() === boot ? unsaved : saved).push(key);
+    calcState.halted = null;
+  }
+  assert(saved.join() === persisted.join(), `state table: each field marked persisted changes the save, and no other does (saved ${saved.join()})`);
+  assert(unsaved.join() === keys.filter((k) => !STATE_FIELDS[k].persist && change[k]).join(), 'state table: a session field leaves the save as it was');
+
+  resetAll();
+  st.push(Integer(42n));
+  for (const key of persisted) change[key]();
+  const full = shot();
+  resetAll();
+  st.clear();
+  rehydrate(JSON.parse(full), st);
+  assert(shot() === full, 'state table: a save with every field changed reads back to the same save');
+  const golden = readFileSync(new URL('./fixtures/snapshot-v1.json', import.meta.url), 'utf8').trim();
+  assert(full === golden, 'state table: the saved format matches the version 1 fixture');
+  resetAll();
+  st.clear();
+  rehydrate(JSON.parse(golden), st);
+  assert(shot() === golden, 'state table: the version 1 fixture loads and saves unchanged');
+  resetAll();
+}
+
 console.log(failed ? `\n${failed} FAIL(s)` : '\nALL PERSIST TESTS PASSED');
 process.exit(failed ? 1 : 0);
