@@ -10,8 +10,9 @@
                  relinked on decode)
    Other objects are walked as plain objects and are not refrozen.
 
-   Bump SCHEMA_VERSION whenever this shape changes incompatibly, so old
-   saves are rejected instead of loading as garbage. */
+   When this shape changes incompatibly, bump SCHEMA_VERSION and add a step
+   to MIGRATIONS that turns the old shape into the new one, so old saves
+   still load. */
 
 import {
   state, testUserFlag, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo, setRealAssume, varUndoSteps, restoreVarUndo,
@@ -25,7 +26,18 @@ import { buildXlsx, readXlsx } from './xlsx.js';
 import SEED_STATE from '../../hp50-all.json' with { type: 'json' };
 
 export const STORAGE_KEY = 'hp50.state';
+// The last autosave that would not load, kept so it can still be recovered.
+export const BAD_STATE_KEY = 'hp50.state.bad';
 export const SCHEMA_VERSION = 1;
+
+// MIGRATIONS[n] takes a version n snapshot and returns the version n + 1 one.
+const MIGRATIONS = {};
+
+function migrate(snap) {
+  let s = snap;
+  while (s && typeof s === 'object' && typeof MIGRATIONS[s.version] === 'function') s = MIGRATIONS[s.version](s);
+  return s;
+}
 
 function encode(v, seen) {
   if (v === null || v === undefined) return v;
@@ -199,7 +211,8 @@ function decodeLevels(levels) {
 
 // Everything that can throw runs before any state changes, so a bad
 // snapshot leaves the calculator as it was.
-export function rehydrate(snap, stack) {
+export function rehydrate(saved, stack) {
+  const snap = migrate(saved);
   if (!snap || typeof snap !== 'object') throw new Error('snapshot: not an object');
   if (snap.version !== SCHEMA_VERSION) {
     throw new Error(`snapshot: unsupported version ${snap.version}`);
@@ -310,7 +323,7 @@ export function saveToLocalStorage(stack) {
   }
 }
 
-// A snapshot that fails to load is dropped so the next start is clean.
+// A snapshot that fails to load is moved aside so the next start is clean.
 function loadFromLocalStorage(stack) {
   let raw;
   try { raw = localStorage.getItem(STORAGE_KEY); }
@@ -321,7 +334,8 @@ function loadFromLocalStorage(stack) {
     _storedJson = raw;
     return true;
   } catch (e) {
-    console.warn('hp50 load failed, clearing:', e);
+    console.warn('hp50 load failed, setting the save aside:', e);
+    try { localStorage.setItem(BAD_STATE_KEY, raw); } catch {}
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
     return false;
   }

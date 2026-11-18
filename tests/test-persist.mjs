@@ -1532,6 +1532,41 @@ function quotaError() {
   }
 }
 
+/* --- An autosave that will not load is set aside under its own key, not
+       deleted, and a save of another version is refused, not misread. --- */
+{
+  const { BAD_STATE_KEY } = await import('../www/src/rpl/persist.js');
+  const savedStorage = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = {
+    getItem: (k) => store.get(k) ?? null,
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: (k) => store.delete(k),
+  };
+  const warn = console.warn;
+  console.warn = () => {};
+  try {
+    const future = JSON.stringify({ ...snapshot(new Stack()), version: 2 });
+    store.set(STORAGE_KEY, future);
+    assert(loadInitialState(new Stack()) === 'seed', 'bad autosave: a save of a later version starts from the seed');
+    assert(store.get(BAD_STATE_KEY) === future && !store.has(STORAGE_KEY), 'bad autosave: the save is kept under the bad key and leaves the autosave key');
+    store.set(STORAGE_KEY, '{not json');
+    loadInitialState(new Stack());
+    assert(store.get(BAD_STATE_KEY) === '{not json', 'bad autosave: the latest save that failed replaces the one kept before');
+    store.clear();
+    store.set(STORAGE_KEY, JSON.stringify(snapshot(new Stack())));
+    assert(loadInitialState(new Stack()) === 'stored' && !store.has(BAD_STATE_KEY), 'bad autosave: a save that loads sets nothing aside');
+    globalThis.localStorage = { ...globalThis.localStorage, setItem: () => { throw new Error('full'); } };
+    store.set(STORAGE_KEY, '{not json');
+    assert(loadInitialState(new Stack()) === 'seed' && !store.has(STORAGE_KEY), 'bad autosave: with no room to keep it the save is still cleared');
+  } finally {
+    console.warn = warn;
+    globalThis.localStorage = savedStorage;
+    resetHome();
+  }
+  assertThrows(() => rehydrate({ ...snapshot(new Stack()), version: 0 }, new Stack()), 'unsupported version', 'a save of an earlier unknown version is refused');
+}
+
 /* --- The state field table: every field of `state` is either saved by
        snapshot() or left out on purpose, and a full save reads back the same. --- */
 {

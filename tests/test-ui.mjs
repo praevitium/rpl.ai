@@ -4253,6 +4253,24 @@ setAngle('RAD');
     'an installed app asks for lasting storage as it starts, and a tab waits for the button, as Firefox prompts');
 }
 
+// Reset everything, run against a recording store: what it did, in order, and the keys it removed.
+const resetRun = await (async () => {
+  const { Sheets } = await import('../www/src/ui/sheets.js');
+  const keys = await import('../www/src/rpl/persist.js');
+  const events = [];
+  const removed = new Set();
+  const saved = { storage: globalThis.localStorage, location: globalThis.location };
+  globalThis.localStorage = { getItem: () => null, setItem: () => {}, removeItem: (k) => { removed.add(k); events.push(`remove ${k}`); } };
+  globalThis.location = { reload: () => events.push('reload') };
+  try {
+    Sheets.prototype.resetEverything.call({ app: { entry: { resetBuffer: () => events.push('line') } } });
+  } finally {
+    globalThis.localStorage = saved.storage;
+    globalThis.location = saved.location;
+  }
+  return { events, removed, keys };
+})();
+
 // The command line typed but not entered is kept across a reload, as the HP keeps its line through power-off.
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
@@ -4266,7 +4284,7 @@ setAngle('RAD');
     'a line is saved after a pause in typing, at once when it is emptied, and as the page is hidden or closed');
   assert(/_draft\(\) \{\n\s*if \(this\._dialogHalt\) return null;\n\s*const text = this\.entry\.buffer;/.test(appSrc),
     'a dialog\'s answer is not kept, nor a blank line with no writer and no edit');
-  assert(/resetEverything\(\) \{\n\s*this\.app\.entry\.resetBuffer\(''\);\n\s*clearAllHalted\(\);\n\s*const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY,/.test(sheetsSrc),
+  assert(resetRun.events[0] === 'line' && resetRun.events[1].startsWith('remove '),
     'Reset empties the line before it clears storage, or the page being closed would save the line again');
 }
 
@@ -4305,7 +4323,7 @@ setAngle('RAD');
   const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
   assert(/loadInitialState\(this\.stack\);\n\s*loadUndo\(this\.stack\);\n\s*this\.entry\.setHistory\(loadHistory\(\)\);\n\s*this\.entry\.subscribeHistory\(\(\) => saveHistory\(this\.entry\.getHistory\(\)\)\);/.test(appSrc),
     'the saved lines are loaded into the entry at the start, and every change to the history saves it');
-  assert(/const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY, HISTORY_KEY,/.test(sheetsSrc), 'Reset forgets the kept lines');
+  assert(resetRun.removed.has(resetRun.keys.HISTORY_KEY), 'Reset forgets the kept lines');
 }
 
 // The formula or matrix being written comes back with the line.
@@ -4329,7 +4347,7 @@ setAngle('RAD');
     && gv.includes("addEventListener('pagehide', () => this.keep());")
     && /this\._syncRanges\(\);\n\s*clearTimeout\(this\._keepTimer\);\n\s*this\._keepTimer = setTimeout\(\(\) => this\.keep\(\), PLOT_KEEP_MS\);/.test(gv),
     'the plot loads what was kept when it is first built, saves a moment after every redraw and as the page is hidden');
-  assert(/const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY, HISTORY_KEY, PLOT_KEY,/.test(sheetsSrc), 'Reset forgets the kept plot');
+  assert(resetRun.removed.has(resetRun.keys.PLOT_KEY), 'Reset forgets the kept plot');
   const { GraphView } = await import('../www/src/ui/graph-view.js');
   const { traceFromInputs } = await import('../www/src/ui/plot-engine.js');
   const fn = (expr) => ({ ...traceFromInputs('function', expr), id: expr, color: '#3b82f6', enabled: true });
@@ -4428,8 +4446,9 @@ setAngle('RAD');
     && /_installUndoKeep\(\) \{\n\s*const keep = \(\) => saveUndo\(this\.stack\);\n\s*document\.addEventListener\('visibilitychange', \(\) => \{ if \(document\.visibilityState === 'hidden'\) keep\(\); \}\);\n\s*addEventListener\('pagehide', keep\);\n\s*\}/.test(appSrc)
     && /if \(this\._offScreen\) return;\n\s*this\._noteAutosave\(saveToLocalStorage\(this\.stack\)\);\n\s*saveUndo\(this\.stack\);/.test(appSrc),
     'undo kept: the steps load right after the state, are written as the page is hidden and at OFF');
-  assert(/const KEYS = \[STACK_STORAGE_KEY, BACKUPS_KEY, DRAFT_KEY, HISTORY_KEY, PLOT_KEY, UNDO_KEY, RUN_KEY, UI_PREFS_KEY,/.test(sheetsSrc),
-    'undo kept: Reset everything removes the file');
+  assert(resetRun.removed.has(resetRun.keys.UNDO_KEY), 'undo kept: Reset everything removes the file');
+  assert(resetRun.removed.has(resetRun.keys.STORAGE_KEY) && resetRun.removed.has(resetRun.keys.BAD_STATE_KEY) && resetRun.events.at(-1) === 'reload',
+    'Reset everything removes the autosave and one set aside, then reloads');
 }
 
 // A program that the page ended while it was halted, waiting or running is noted as the page is hidden, forgotten when the page comes
