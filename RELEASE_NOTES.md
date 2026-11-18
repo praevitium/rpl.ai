@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.128 (2026-11-18)
+**Latest release:** v0.8.129 (2026-11-18)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.129 — 2026-11-18
+
+- Changed: a saved calculator that will not load is no longer deleted. The
+  app still starts from the built-in examples, but the save is kept aside in
+  the browser's storage (as `hp50.state.bad`, replaced by the next one that
+  fails) so it can be looked at or recovered. Reset everything removes it
+  with the rest.
+- Changed: the loader can now convert a save written in an older layout
+  before reading it, so a later change to what is saved need not lose
+  anyone's calculator. Nothing is converted yet.
 
 ---
 
