@@ -349,3 +349,13 @@ import { assert } from './helpers.mjs';
     'completions: a program\'s locals lead, ahead of shorter commands');
   assert(isInsideAlgebraic('2 `SI', 3) && !isInsideAlgebraic('`X` SI', 4), 'isInsideAlgebraic: counts the quotes before the word');
 }
+
+// A command name can be registered only once, so a second definition cannot silently replace the first.
+{
+  const { register, lookup } = await import('../www/src/rpl/ops/registry.js');
+  const { assertThrows } = await import('./helpers.mjs');
+  const swap = lookup('SWAP').fn;
+  assertThrows(() => register('SWAP', () => {}), 'SWAP is already registered', 'register refuses a name that is taken');
+  assertThrows(() => register('swap', () => {}), 'SWAP is already registered', 'register compares names without regard to case');
+  assert(lookup('SWAP').fn === swap, 'a refused registration leaves the command as it was');
+}

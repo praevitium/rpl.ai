@@ -4,6 +4,7 @@ export const OPS = new Map();
 
 export function register(name, fn, opts = {}) {
   const key = String(name).toUpperCase();
+  if (OPS.has(key)) throw new Error(`register: ${key} is already registered`);
   OPS.set(key, { fn, label: name, ...opts, name });
   registerReservedName(name);
 }
