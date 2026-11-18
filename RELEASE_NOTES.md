@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.126 (2026-11-17)
+**Latest release:** v0.8.127 (2026-11-17)
 
 ---
 
@@ -18,6 +18,15 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.127 — 2026-11-17
+
+- Changed: nothing a user sees. The calculator's settings can now be put
+  back to their starting values in one step, which the tests do before each
+  file so that one file's angle mode, flags or stored variables no longer
+  reach the next.
 
 ---
 
