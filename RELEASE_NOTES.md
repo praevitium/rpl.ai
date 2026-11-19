@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.133 (2026-11-19)
+**Latest release:** v0.8.134 (2026-11-19)
 
 ---
 
@@ -18,6 +18,20 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.134 — 2026-11-19
+
+- Fixed: `%`, `%T` and `%CH` with a number beyond 1E308, such as
+  `1E400 2 %CH`, stopped with "Real() does not accept NaN", an error that
+  IFERR could not trap. They are now worked out in the calculator's decimal
+  arithmetic, so `1E400 1E400 %T` is 100 and `1E300 1E300 %` is 1.E598, as
+  `*` gives, where it was ∞. Everyday percentages are unchanged.
+- Fixed: `RDZ` with a whole number beyond 1E308 stopped with an error IFERR
+  could not trap; it now seeds from the number, as for any other.
+- Fixed: `FACT` and `!` of a whole negative number beyond 1E308 stopped the
+  same way; they now report Infinite result, as for `-5.`.
 
 ---
 
