@@ -313,3 +313,20 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   assert(dismissed === 2, 'banner swipe: a finger swiped far either way across an error banner puts it away, as a phone notification goes');
   assert(armed === 2, 'banner swipe: crossing the point where letting go puts it away is heard once per swipe, for a buzz, and a short swipe never crosses it');
 }
+
+// The shared error makers carry the HP's error number with the message, so ERRN needs no lookup by text.
+{
+  const { badType, badValue, invalidDimension, casNotReady, ERROR_NUMBERS } = await import('../www/src/rpl/errors.js');
+  const { RPLError } = await import('../www/src/rpl/stack.js');
+  const made = [badType(), badValue(), invalidDimension()];
+  assert(made.every((e) => e instanceof RPLError && e.errorNumber === ERROR_NUMBERS[e.message]) && made.map((e) => e.errorNumber).join() === '514,515,1281',
+    'badType, badValue and invalidDimension are RPLErrors numbered 202h, 203h and 501h');
+  assert(casNotReady() instanceof RPLError && casNotReady().errorNumber === undefined, 'casNotReady is an RPLError with no HP number');
+  const { Stack } = await import('../www/src/rpl/stack.js');
+  const { lookup } = await import('../www/src/rpl/ops.js');
+  const s = new Stack();
+  s.push(Integer(0n)); s.push(Integer(0n));
+  let caught = null;
+  try { lookup('EUCLID').fn(s); } catch (e) { caught = e; }
+  assert(caught instanceof RPLError && caught.message === 'Bad argument value' && caught.errorNumber === 0x203, 'a bad value given to an integer command is thrown with its number, 203h');
+}

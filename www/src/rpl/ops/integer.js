@@ -1,5 +1,6 @@
 import { isInteger, isReal, Symbolic, Integer, Real, RList, Complex, isList } from '../types.js';
 import { RPLError, checkTimeLimit } from '../stack.js';
+import { badType, badValue, casNotReady } from '../errors.js';
 import { Fn as AstFn, Bin as AstBin, Num as AstNum, Neg as AstNeg } from '../algebra.js';
 import { getCasModulo, setCasModulo } from '../state.js';
 import { giac } from '../cas/giac-engine.mjs';
@@ -12,10 +13,10 @@ import { FALSE, TRUE, _astToRplValue, _bigFactorial, _pushCasResult, _gamma, _is
 function _toBigInt(v) {
   if (isInteger(v)) return v.value;
   if (isReal(v)) {
-    if (!v.value.isInteger()) throw new RPLError('Bad argument value');
+    if (!v.value.isInteger()) throw badValue();
     return BigInt(v.value.toFixed(0));
   }
-  throw new RPLError('Bad argument type');
+  throw badType();
 }
 
 const _isIntLike = (v) => isInteger(v) || (isReal(v) && v.value.isInteger());
@@ -59,7 +60,7 @@ function _intBinaryOp(name, fn) {
     const [a, b] = s.popN(2);
     if (_isSymOperand(a) || _isSymOperand(b)) {
       const l = _toAst(a), r = _toAst(b);
-      if (!l || !r) throw new RPLError('Bad argument type');
+      if (!l || !r) throw badType();
       s.push(Symbolic(AstFn(name, [l, r])));
       return;
     }
@@ -79,7 +80,7 @@ register('FACT', _withTaggedUnary(_withListUnary(_withVMUnary((s) => {
     return;
   }
   if (isInteger(v)) {
-    if (v.value < 0n) throw new RPLError('Bad argument value');
+    if (v.value < 0n) throw badValue();
     s.push(Integer(_bigFactorial(v.value)));
     return;
   }
@@ -93,7 +94,7 @@ register('FACT', _withTaggedUnary(_withListUnary(_withVMUnary((s) => {
     s.push(Real(_gamma(x + 1)));
     return;
   }
-  throw new RPLError('Bad argument type');
+  throw badType();
 }))), { category: 'Integer / number theory', categoryOrder: 2, label: "FACT" });
 
 
@@ -114,7 +115,7 @@ register('EUCLID', (s) => {
   const [a, b] = s.popN(2);
   const ba = _toBigInt(a);
   const bb = _toBigInt(b);
-  if (ba === 0n && bb === 0n) throw new RPLError('Bad argument value');
+  if (ba === 0n && bb === 0n) throw badValue();
   const { g, u, v } = _extGcd(ba, bb);
   s.push(RList([Integer(u), Integer(v), Integer(g)]));
 }, { category: 'Integer / number theory', categoryOrder: 14, label: "EUCLID" });
@@ -122,9 +123,9 @@ register('EUCLID', (s) => {
 
 function _invMod(a, m) {
   const r = _mod(a, m);
-  if (r === 0n) throw new RPLError('Bad argument value');
+  if (r === 0n) throw badValue();
   const { g, u } = _extGcd(r, m);
-  if (g !== 1n) throw new RPLError('Bad argument value');
+  if (g !== 1n) throw badValue();
   return _mod(u, m);
 }
 
@@ -135,7 +136,7 @@ register('INVMOD', (s) => {
   const [a, n] = s.popN(2);
   const ba = _toBigInt(a);
   const m = _bigAbs(_toBigInt(n));
-  if (m < 2n) throw new RPLError('Bad argument value');
+  if (m < 2n) throw badValue();
   s.push(Integer(_invMod(ba, m)));
 }, { category: 'Integer / number theory', categoryOrder: 24, label: "INVMOD" });
 
@@ -149,8 +150,8 @@ function _centerMod(a, m) {
 
 function _giacModAsts(...vals) {
   const asts = vals.map(_toAst);
-  if (asts.includes(null)) throw new RPLError('Bad argument type');
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  if (asts.includes(null)) throw badType();
+  if (!giac.isReady()) throw casNotReady();
   return asts;
 }
 
@@ -183,7 +184,7 @@ function _modUnary(giacFn) {
 
 register('MODSTO', (s) => {
   const [v] = s.popN(1);
-  if (!_isIntLike(v)) throw new RPLError('Bad argument type');
+  if (!_isIntLike(v)) throw badType();
   setCasModulo(_toBigInt(v));
 }, { category: 'Integer / number theory', categoryOrder: 19, label: "MODSTO" });
 
@@ -201,7 +202,7 @@ register('POWMOD', (s) => {
   if (_isIntLike(a) && _isIntLike(e)) {
     const ba = _toBigInt(a);
     const be = _toBigInt(e);
-    if (be < 0n) throw new RPLError('Bad argument value');
+    if (be < 0n) throw badValue();
     s.push(Integer(_centerMod(_powModBig(ba, be, m), m)));
     return;
   }
@@ -218,7 +219,7 @@ const _factorMod = _modUnary('factor');
 register('FACTORMOD', (s) => {
   const m = getCasModulo();
   // AUR p.3-83: the modulus must be a prime below 100.
-  if (m >= 100n || !_isPrimeBig(m)) throw new RPLError('Bad argument value');
+  if (m >= 100n || !_isPrimeBig(m)) throw badValue();
   _factorMod(s);
 }, { category: 'Integer / number theory', categoryOrder: 29, label: "FACTORMOD" });
 
@@ -229,7 +230,7 @@ register('GCDMOD', (s) => {
   if (_isIntLike(a) && _isIntLike(b)) {
     const ba = _toBigInt(a);
     const bb = _toBigInt(b);
-    if (ba === 0n && bb === 0n) throw new RPLError('Bad argument value');
+    if (ba === 0n && bb === 0n) throw badValue();
     s.push(Integer(_centerMod(_bigGcd(ba, bb), m)));
     return;
   }
@@ -241,7 +242,7 @@ register('GCDMOD', (s) => {
 // An exact integer quotient wins even when b has no inverse mod m
 // (User Guide p.5-14: 12/3 is 4 mod 12, but 12/8 does not exist).
 function _modDiv(a, b, m) {
-  if (b === 0n) throw new RPLError('Bad argument value');
+  if (b === 0n) throw badValue();
   if (a % b === 0n) return a / b;
   return a * _invMod(b, m);
 }
@@ -393,7 +394,7 @@ register('NEXTPRIME', (s) => {
 register('PREVPRIME', (s) => {
   const [v] = s.popN(1);
   const p = _prevPrimeBig(_toBigInt(v));
-  if (p === null) throw new RPLError('Bad argument value');
+  if (p === null) throw badValue();
   s.push(Integer(p));
 }, { category: 'Integer / number theory', categoryOrder: 9, label: "PREVPRIME" });
 
@@ -415,12 +416,12 @@ function _bigIntSqrtFloor(n) {
 register('PA2B2', (s) => {
   const [v] = s.popN(1);
   const p = _toBigInt(v);
-  if (!_isPrimeBig(p)) throw new RPLError('Bad argument value');
+  if (!_isPrimeBig(p)) throw badValue();
   if (p === 2n) {
     s.push(Complex(1, 1));
     return;
   }
-  if (p % 4n !== 1n) throw new RPLError('Bad argument value');
+  if (p % 4n !== 1n) throw badValue();
   const pm1 = p - 1n;
   let z = 2n;
   while (_powModBig(z, pm1 >> 1n, p) !== pm1) z += 1n;
@@ -429,7 +430,7 @@ register('PA2B2', (s) => {
   while (b > sp) [a, b] = [b, a % b];
   const rem = p - b * b;
   const c = _bigIntSqrtFloor(rem);
-  if (c * c !== rem) throw new RPLError('Bad argument value');
+  if (c * c !== rem) throw badValue();
   s.push(Complex(Number(c < b ? c : b), Number(c < b ? b : c)));
 }, { category: 'Integer / number theory', categoryOrder: 18, label: "PA2B2" });
 
@@ -437,7 +438,7 @@ register('PA2B2', (s) => {
 register('EULER', (s) => {
   const [v] = s.popN(1);
   const n = _toBigInt(v);
-  if (n <= 0n) throw new RPLError('Bad argument value');
+  if (n <= 0n) throw badValue();
   let phi = n;
   for (const [p] of _factorIntBig(n)) phi = phi / p * (p - 1n);
   s.push(Integer(phi));
@@ -447,7 +448,7 @@ register('EULER', (s) => {
 register('DIVIS', (s) => {
   const [v] = s.popN(1);
   const n = _toBigInt(v);
-  if (n === 0n) throw new RPLError('Bad argument value');
+  if (n === 0n) throw badValue();
   s.push(RList(_divisorsBig(_bigAbs(n)).map((d) => Integer(d))));
 }, { category: 'Integer / number theory', categoryOrder: 4, label: "DIVIS" });
 
@@ -455,7 +456,7 @@ register('DIVIS', (s) => {
 register('FACTORS', (s) => {
   const [v] = s.popN(1);
   const n = _toBigInt(v);
-  if (n <= 0n) throw new RPLError('Bad argument value');
+  if (n <= 0n) throw badValue();
   s.push(RList(_factorIntBig(n).flatMap(([p, e]) => [Integer(p), Integer(e)])));
 }, { category: 'Integer / number theory', categoryOrder: 5, label: "FACTORS" });
 
@@ -480,7 +481,7 @@ register('IBERNOULLI', (s) => {
   const [v] = s.popN(1);
   const nBig = _toBigInt(v);
   // The exact rational work grows as n², so n is capped.
-  if (nBig < 0n || nBig > 100n) throw new RPLError('Bad argument value');
+  if (nBig < 0n || nBig > 100n) throw badValue();
   const n = Number(nBig);
   if (n >= 3 && n % 2 === 1) {
     s.push(Symbolic(AstNum(0)));
@@ -511,7 +512,7 @@ register('IEGCD', (s) => {
 
 
 function _intPair(list) {
-  if (!isList(list) || list.items.length !== 2) throw new RPLError('Bad argument type');
+  if (!isList(list) || list.items.length !== 2) throw badType();
   return [_toBigInt(list.items[0]), _toBigInt(list.items[1])];
 }
 
@@ -520,12 +521,12 @@ register('ICHINREM', (s) => {
   const [l1, l2] = s.popN(2);
   const [a, m] = _intPair(l1);
   const [b, n] = _intPair(l2);
-  if (m === 0n || n === 0n) throw new RPLError('Bad argument value');
+  if (m === 0n || n === 0n) throw badValue();
   const mAbs = _bigAbs(m);
   const nAbs = _bigAbs(n);
   const { g, u } = _extGcd(mAbs, nAbs);
   const diff = b - a;
-  if (diff % g !== 0n) throw new RPLError('Bad argument value');
+  if (diff % g !== 0n) throw badValue();
   const lcm = (mAbs / g) * nAbs;
   s.push(RList([Integer(_mod(a + mAbs * u * (diff / g), lcm)), Integer(lcm)]));
 }, { category: 'Integer / number theory', categoryOrder: 12, label: "ICHINREM" });
@@ -538,35 +539,35 @@ register('IABCUV', (s) => {
   const c = _toBigInt(cv);
   const { g, u, v } = _extGcd(a, b);
   if (g === 0n) {
-    if (c !== 0n) throw new RPLError('Bad argument value');
+    if (c !== 0n) throw badValue();
     s.push(Integer(0n));
     s.push(Integer(0n));
     return;
   }
-  if (c % g !== 0n) throw new RPLError('Bad argument value');
+  if (c % g !== 0n) throw badValue();
   s.push(Integer(u * (c / g)));
   s.push(Integer(v * (c / g)));
 }, { category: 'Integer / number theory', categoryOrder: 10, label: "IABCUV" });
 
 
 const _positions = (list) => {
-  if (!isList(list)) throw new RPLError('Bad argument type');
+  if (!isList(list)) throw badType();
   return list.items.map((v) => Number(_toBigInt(v)));
 };
 
 const _permutation = (list) => {
   const perm = _positions(list);
-  if (new Set(perm).size !== perm.length || perm.some((k) => k < 1 || k > perm.length)) throw new RPLError('Bad argument value');
+  if (new Set(perm).size !== perm.length || perm.some((k) => k < 1 || k > perm.length)) throw badValue();
   return perm;
 };
 
 // AUR: { { 1 3 5 } { 2 4 } } C2P is { 3 4 5 2 1 }; each cycle sends an entry to the next.
 register('C2P', (s) => {
   const [cyclesArg] = s.popN(1);
-  if (!isList(cyclesArg)) throw new RPLError('Bad argument type');
+  if (!isList(cyclesArg)) throw badType();
   const cycles = cyclesArg.items.map(_positions);
   const n = Math.max(0, ...cycles.flat());
-  if (cycles.flat().some((k) => k < 1)) throw new RPLError('Bad argument value');
+  if (cycles.flat().some((k) => k < 1)) throw badValue();
   const perm = Array.from({ length: n }, (_, i) => i + 1);
   for (const cycle of cycles) cycle.forEach((k, i) => { perm[k - 1] = cycle[(i + 1) % cycle.length]; });
   s.push(RList(perm.map((k) => Integer(BigInt(k)))));

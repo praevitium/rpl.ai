@@ -3,6 +3,9 @@
 
 import { Directory, Grob, TYPES, BIN_BASES } from './types.js';
 import { setStateBatcher, setLastArgsGate } from './stack.js';
+import { ERROR_NUMBERS } from './errors.js';
+
+export { ERROR_NUMBERS };
 
 // RAD first: it is the boot default here, although the HP50 boots in DEG.
 export const ANGLE_MODES = Object.freeze(['RAD', 'DEG', 'GRD']);
@@ -857,26 +860,6 @@ export function moveCurrentEntry(name, targetDir) {
   if (isDir) value.parent = targetDir;
   _emit();
 }
-
-// ERRN numbers from the HP's list of error messages; DOERR in ops/evaluation.js reads it backwards.
-export const ERROR_NUMBERS = Object.freeze({
-  'Undefined local name':  0x003,
-  'Directory not allowed': 0x12A,
-  'Directory not empty':   0x12B,
-  'Name conflict':         0x13C,
-  'Interrupted':           0x13F,
-  'Too few arguments':     0x201,
-  'Bad argument type':     0x202,
-  'Bad argument value':    0x203,
-  'Undefined name':        0x204,
-  'Division by zero':      0x303,
-  'Undefined result':      0x304,
-  'Infinite result':       0x305,
-  'Invalid dimension':     0x501,
-  'Nonexistent ΣDAT':      0x602,
-  'Inconsistent units':    0xB02,
-  'Nonexistent alarm':     0xD04,
-});
 
 // ERRM reports the message without the dispatcher's `CMD: ` prefix.  A
 // message such as "Undefined name: X" is numbered by its leading key.
