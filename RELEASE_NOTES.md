@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.132 (2026-11-18)
+**Latest release:** v0.8.133 (2026-11-19)
 
 ---
 
@@ -18,6 +18,15 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.133 — 2026-11-19
+
+- Changed: nothing a user sees. The commonest errors (Bad argument type,
+  Bad argument value, Invalid dimension) are now made in one place in the
+  code, each with its HP error number attached, instead of being spelled
+  out wherever they are raised. The integer commands use them first.
 
 ---
 
