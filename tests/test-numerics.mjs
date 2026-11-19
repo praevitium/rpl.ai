@@ -7528,3 +7528,13 @@ function _arrayEq(a, b) {
   assert(top('-2 LN →NUM') === '(0.69314718056, 3.14159265359)' && top('-1. LN') === '(0, 3.14159265359)', 'the numeric LN of a negative number is unchanged');
   runLine('-103 CF');
 }
+
+// A number too large for a JavaScript double must not turn into an error that IFERR cannot trap.
+{
+  const top = (line) => format(runLine(line).peek());
+  assert(top('1E400 0 %') === '0.' && top('1E400 1E400 %T') === '100.' && top('1E400 2 %CH') === '-100.', '%, %T and %CH work on numbers beyond 1E308');
+  assert(top('1E300 1E300 %') === '1.E598' && top('200 15 %') === '30.' && top('3 7 %T') === '233.333333333' && top('50 75 %CH') === '50.',
+    '% keeps the size of a large product, as * does, and everyday percentages are unchanged');
+  assert(top('1E400 RDZ RAND') === top('1E400 RDZ RAND') && top('5. RDZ RAND') === top('5 RDZ RAND'), 'RDZ takes a whole number of any size as the seed');
+  assertThrows(() => runLine('-1E400 FACT'), 'Infinite result', 'FACT of a huge negative whole number is an Infinite result error, as for -5.');
+}

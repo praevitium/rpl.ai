@@ -673,12 +673,12 @@ function _percentUnits(x, y, computeNumeric, ratio) {
     if (isUnit(x) === isUnit(y)) throw new RPLError('Bad argument type');
     const unit = isUnit(x) ? x : y;
     const [xn, yn] = [x, y].map((v) => (isUnit(v) ? v.value : toRealOrThrow(v)));
-    return _makeUnit(computeNumeric(xn, yn), unit.uexpr);
+    return _makeUnit(computeNumeric(new Decimal(xn), new Decimal(yn)).toNumber(), unit.uexpr);
   }
   if (!isUnit(x) || !isUnit(y)) throw new RPLError('Bad argument type');
   if (!sameDims(x.uexpr, y.uexpr) || !temperaturesAdd(x.uexpr, y.uexpr)) throw new RPLError('Inconsistent units');
   if (x.value === 0) throw new RPLError('Infinite result');
-  return Real(computeNumeric(x.value, _inUnit(y, x.uexpr, { difference: true })));
+  return Real(computeNumeric(new Decimal(x.value), new Decimal(_inUnit(y, x.uexpr, { difference: true }))));
 }
 
 function _percentOp(kind, computeNumeric, errorsOnZeroX) {
@@ -694,18 +694,18 @@ function _percentOp(kind, computeNumeric, errorsOnZeroX) {
       s.push(_percentUnits(x, y, computeNumeric, errorsOnZeroX));
       return;
     }
-    const xn = toRealOrThrow(x);
-    const yn = toRealOrThrow(y);
-    if (errorsOnZeroX && xn === 0) throw new RPLError('Infinite result');
+    const xn = _toDecimal(x);
+    const yn = _toDecimal(y);
+    if (errorsOnZeroX && xn.isZero()) throw new RPLError('Infinite result');
     s.push(Real(computeNumeric(xn, yn)));
   }));
 }
 
-register('%',   _percentOp('PCT',   (x, y) => x * y / 100,          false), { category: 'Arithmetic', categoryOrder: 27, label: "%" });
+register('%',   _percentOp('PCT',   (x, y) => x.times(y).div(100),              false), { category: 'Arithmetic', categoryOrder: 27, label: "%" });
 
-register('%T',  _percentOp('PCTT',  (x, y) => 100 * y / x,          true), { category: 'Arithmetic', categoryOrder: 29, label: "%T" });
+register('%T',  _percentOp('PCTT',  (x, y) => y.times(100).div(x),              true), { category: 'Arithmetic', categoryOrder: 29, label: "%T" });
 
-register('%CH', _percentOp('PCTCH', (x, y) => 100 * (y - x) / x,    true), { category: 'Arithmetic', categoryOrder: 28, label: "%CH" });
+register('%CH', _percentOp('PCTCH', (x, y) => y.minus(x).times(100).div(x),     true), { category: 'Arithmetic', categoryOrder: 28, label: "%CH" });
 
 
 register('MAXR', (s) => {
@@ -968,7 +968,7 @@ register('RDZ', (s) => {
   if (isReal(v)) {
     // Stricter than the HP50: a fractional seed is rejected rather than truncated.
     if (!v.value.isInteger()) throw new RPLError('Bad argument value');
-    seedPrng(v.value.toNumber());
+    seedPrng(BigInt(v.value.toFixed()));
     return;
   }
   throw new RPLError('Bad argument type');

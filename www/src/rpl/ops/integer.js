@@ -86,7 +86,7 @@ register('FACT', _withTaggedUnary(_withListUnary(_withVMUnary((s) => {
   }
   if (isReal(v)) {
     const x = v.value.toNumber();
-    if (Number.isInteger(x) && x < 0) throw new RPLError('Infinite result');
+    if (v.value.isInteger() && v.value.lt(0)) throw new RPLError('Infinite result');
     if (Number.isInteger(x)) {
       s.push(Integer(_bigFactorial(BigInt(x))));
       return;
