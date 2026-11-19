@@ -2111,11 +2111,10 @@ function _evalObjects(ast, keeps) {
 // command cannot work out, 'COMB(N,2)' with N unknown, leaves the formula as it was; with only values for arguments, as in
 // '[1,2]*[3,4,5]', the command's own error stands. Any function given a matrix, vector or list to work on, 'ABS([3,4])', is a call
 // too, since the algebra evaluator cannot take that.
-const _CALLABLE_CATEGORIES = new Set(['CAS / symbolic', 'Polynomials', 'Vectors / matrices', 'Integer / number theory']);
 const _isArrayLiteral = (node) => node.kind === 'var' && isArrayLiteral(node.name);
 const _isCommandCall = (node) => {
   const command = node.kind === 'fn' && !_LAZY_FUNCTIONS.has(node.name.toUpperCase()) && lookup(node.name);
-  return !!command && (_CALLABLE_CATEGORIES.has(command.category) || node.args.some(_isArrayLiteral));
+  return !!command && (command.callable || node.args.some(_isArrayLiteral));
 };
 
 function _holdsCommandCall(node) {

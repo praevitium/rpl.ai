@@ -2,10 +2,32 @@ import { registerReservedName } from '../types.js';
 
 export const OPS = new Map();
 
+// What a command may be used for follows from its family unless its
+// registration says otherwise with `previewable` or `callable`.
+//   previewable  it only reads the stack, so its result can be shown before it is run.
+//   callable     it only turns arguments into a result, so 'FACTOR(X^2-1)' runs it inside an algebraic.
+const PREVIEWABLE_CATEGORIES = new Set([
+  'Stack', 'Arithmetic', 'Trig / log / exp / hyperbolic', 'Complex / coordinates',
+  'Comparisons / logic', 'Integer / number theory', 'Special functions',
+  'Vectors / matrices', 'Lists / strings', 'Units', 'Types & tags',
+]);
+const WRITES_STATE_OR_RANDOM = new Set([
+  'UNDO', 'REDO', 'LASTSTACK', 'LASTARG', 'LAST', 'RAND', 'RDZ', 'RANM',
+  'DEG', 'RAD', 'GRAD', 'GRD', 'RECT', 'CYLIN', 'SPHERE', 'CMPLX', 'MODSTO',
+]);
+const CALLABLE_CATEGORIES = new Set(['CAS / symbolic', 'Polynomials', 'Vectors / matrices', 'Integer / number theory']);
+
 export function register(name, fn, opts = {}) {
   const key = String(name).toUpperCase();
   if (OPS.has(key)) throw new Error(`register: ${key} is already registered`);
-  OPS.set(key, { fn, label: name, ...opts, name });
+  OPS.set(key, {
+    fn,
+    label: name,
+    previewable: PREVIEWABLE_CATEGORIES.has(opts.category) && !WRITES_STATE_OR_RANDOM.has(key),
+    callable: CALLABLE_CATEGORIES.has(opts.category),
+    ...opts,
+    name,
+  });
   registerReservedName(name);
 }
 

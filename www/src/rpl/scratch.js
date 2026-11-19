@@ -53,19 +53,8 @@ export function evalScratch(text, { liveItems = [], displayOpts, maxLevels = 8 }
   }));
 }
 
-const STATE_READ_ONLY_CATEGORIES = new Set([
-  'Stack', 'Arithmetic', 'Trig / log / exp / hyperbolic', 'Complex / coordinates',
-  'Comparisons / logic', 'Integer / number theory', 'Special functions',
-  'Vectors / matrices', 'Lists / strings', 'Units', 'Types & tags',
-]);
-const WRITES_STATE_OR_RANDOM = new Set([
-  'UNDO', 'REDO', 'LASTSTACK', 'LASTARG', 'LAST', 'RAND', 'RDZ', 'RANM',
-  'DEG', 'RAD', 'GRAD', 'GRD', 'RECT', 'CYLIN', 'SPHERE', 'CMPLX', 'MODSTO',
-]);
-
 export function isPreviewable(name) {
-  const op = lookup(name);
-  return !!op && STATE_READ_ONLY_CATEGORIES.has(op.category) && !WRITES_STATE_OR_RANDOM.has(String(name).toUpperCase());
+  return !!lookup(name)?.previewable;
 }
 
 export function previewCommand(name, liveItems = []) {

@@ -359,3 +359,14 @@ import { assert } from './helpers.mjs';
   assertThrows(() => register('swap', () => {}), 'SWAP is already registered', 'register compares names without regard to case');
   assert(lookup('SWAP').fn === swap, 'a refused registration leaves the command as it was');
 }
+
+// Each command carries what it may be used for: shown as a preview, or called inside an algebraic.
+{
+  const { lookup, OPS } = await import('../www/src/rpl/ops/registry.js');
+  const { isPreviewable } = await import('../www/src/rpl/scratch.js');
+  assert([...OPS.values()].every((op) => typeof op.previewable === 'boolean' && typeof op.callable === 'boolean'), 'every command says whether it is previewable and callable');
+  assert(isPreviewable('SWAP') && isPreviewable('SIN') && !isPreviewable('RAND') && !isPreviewable('DEG') && !isPreviewable('STO') && !isPreviewable('NOSUCH'),
+    'a command that only reads the stack can be previewed; one that draws a random number, sets a mode or stores cannot');
+  assert(lookup('FACTOR').callable && lookup('DET').callable && !lookup('SWAP').callable && !lookup('STO').callable,
+    'a command that turns arguments into a result can be called in an algebraic; a stack or memory command cannot');
+}
