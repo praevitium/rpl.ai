@@ -70,7 +70,7 @@ export function Rational(n, d = 1n) {
   let den = _bigIntArg(d, 'denominator');
   if (den === 0n) throw new RangeError('Division by zero');
   if (den < 0n) { num = -num; den = -den; }
-  const g = _bigIntGcd(num < 0n ? -num : num, den);
+  const g = bigGcd(num < 0n ? -num : num, den);
   return Object.freeze({ type: TYPES.RATIONAL, n: num / g, d: den / g });
 }
 
@@ -80,8 +80,9 @@ function _bigIntArg(v, role) {
   throw new TypeError(`Rational ${role} must be BigInt or integer Number, got ${typeof v}`);
 }
 
-function _bigIntGcd(a, b) {
-  while (b !== 0n) { [a, b] = [b, a % b]; }
+// Euclid on BigInts as given: the sign of the result follows the operands.
+export function bigGcd(a, b) {
+  while (b !== 0n) [a, b] = [b, a % b];
   return a;
 }
 

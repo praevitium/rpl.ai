@@ -1,15 +1,15 @@
 // EVAL's exact tidying: like terms add (X+X is 2*X), like factors gather into powers (X*X is X^2, √X*√X is X),
 // numbers gather into one coefficient (π/4*4 is π), and identities drop out (1*X, X+0, X^1 are X; X/X, X^0 are 1; X-X, 0*X are 0).
 import { Num, Neg, Bin, exactRational, astEqual, freeVars } from './algebra.js';
+import { bigGcd } from './types.js';
 
 const ONE = [1n, 1n];
 const abs = (x) => (x < 0n ? -x : x);
-const gcd = (a, b) => (b === 0n ? a : gcd(b, a % b));
 const isOne = (r) => r[0] === 1n && r[1] === 1n;
 
 function ratio(n, d) {
   if (d < 0n) [n, d] = [-n, -d];
-  const g = gcd(abs(n), d);
+  const g = bigGcd(abs(n), d);
   return [n / g, d / g];
 }
 const add = (a, b) => ratio(a[0] * b[1] + b[0] * a[1], a[1] * b[1]);

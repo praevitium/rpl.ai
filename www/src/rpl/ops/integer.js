@@ -1,4 +1,4 @@
-import { isInteger, isReal, Symbolic, Integer, Real, RList, Complex, isList } from '../types.js';
+import { bigGcd, isInteger, isReal, Symbolic, Integer, Real, RList, Complex, isList } from '../types.js';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { badType, badValue, casNotReady } from '../errors.js';
 import { Fn as AstFn, Bin as AstBin, Num as AstNum, Neg as AstNeg } from '../algebra.js';
@@ -23,12 +23,7 @@ const _isIntLike = (v) => isInteger(v) || (isReal(v) && v.value.isInteger());
 
 const _bigAbs = (x) => (x < 0n ? -x : x);
 
-function _bigGcd(a, b) {
-  a = _bigAbs(a);
-  b = _bigAbs(b);
-  while (b !== 0n) [a, b] = [b, a % b];
-  return a;
-}
+const _bigGcd = (a, b) => bigGcd(_bigAbs(a), _bigAbs(b));
 
 function _extGcd(a, b) {
   let [r0, r1] = [_bigAbs(a), _bigAbs(b)];

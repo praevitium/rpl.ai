@@ -1,4 +1,4 @@
-import { isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isList, Real, Name, Integer, isComplex, Complex, isVector, Vector, isMatrix, Matrix, isCasIdentifier, isBinaryInteger, isRational, isUnit, Tagged, Program, isProgram } from '../types.js';
+import { bigGcd, isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isList, Real, Name, Integer, isComplex, Complex, isVector, Vector, isMatrix, Matrix, isCasIdentifier, isBinaryInteger, isRational, isUnit, Tagged, Program, isProgram } from '../types.js';
 import { giac } from '../cas/giac-engine.mjs';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { buildGiacCmd, giacToAst, splitGiacList, astToGiac, isGiacErrorString, assumedName } from '../cas/giac-convert.mjs';
@@ -345,13 +345,12 @@ function _sturmTerms(raw, x) {
     const coefs = splitGiacList(term) ?? [term];
     if (!coefs.every((c) => /^-?\d+$/.test(c))) return `[${coefs.join(',')}]`;
     const big = coefs.map(BigInt);
-    const g = big.reduce((a, b) => _bigGcd(a, b < 0n ? -b : b), 0n) || 1n;
+    const g = big.reduce((a, b) => bigGcd(a, b < 0n ? -b : b), 0n) || 1n;
     return `[${big.map((c) => c / g).join(',')}]`;
   });
   return splitGiacList(giac.caseval(`[${scaled.map((c) => `expand(poly2symb(${c},${x}))`).join(',')}]`)).map((t) => _tableValue(giacToAst(t)));
 }
 
-const _bigGcd = (a, b) => (b === 0n ? a : _bigGcd(b, a % b));
 
 register('STURM', (s) => {
   const [v] = s.popN(1);

@@ -3,6 +3,7 @@
    Giac through cas/giac-convert.mjs. */
 
 import { formatUnitExpr, parseUnitExpr, uexprEqual } from './units.js';
+import { bigGcd } from './types.js';
 
 // A number past 2^53 keeps its exact `digits` (`value` is the nearest
 // double).  isNum() is false for it, so numeric folding leaves it alone.
@@ -98,7 +99,6 @@ export function exactRational(n) {
 }
 
 const bigAbs = (x) => (x < 0n ? -x : x);
-const bigGcd = (a, b) => (b === 0n ? a : bigGcd(b, a % b));
 
 function rationalNode(n, d) {
   if (d < 0n) { n = -n; d = -d; }

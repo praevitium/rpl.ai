@@ -1,6 +1,7 @@
 // The HP's exact mode gives SIN, COS and TAN their closed forms at multiples of 30 and 45 degrees,
 // and ASIN, ACOS and ATAN the angles back: 30 SIN in DEG is 1/2, 'SIN(π/4)' EVAL is √2/2, 1 ASIN in RAD is π/2.
 import { Num, Var, Neg, Bin, Fn, exactRational, astEqual } from './algebra.js';
+import { bigGcd } from './types.js';
 
 const HALF = Bin('/', Num(1n), Num(2n));
 const root = (n) => Fn('SQRT', [Num(n)]);
@@ -98,7 +99,7 @@ function degreesOf(name, ast) {
 
 // n/d reduced, its magnitude drawn by top: k, k*π, k/m, k*π/m, or the negative of one.
 function signedFraction(n, d, top) {
-  const g = gcd(n < 0n ? -n : n, d);
+  const g = bigGcd(n < 0n ? -n : n, d);
   [n, d] = [n / g, d / g];
   if (n === 0n) return ZERO;
   const magnitude = n < 0n ? -n : n;
@@ -121,11 +122,6 @@ export const exactRadians = (n, d) => signedFraction(n, d * 180n, piTimes);
 export function exactDegrees(ast) {
   const m = piMultiple(ast);
   return m && [m[0] * 180n, m[1]];
-}
-
-function gcd(a, b) {
-  while (b) [a, b] = [b, a % b];
-  return a;
 }
 
 export function exactInverseTrig(name, ast, angle) {
