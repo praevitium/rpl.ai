@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.134 (2026-11-19)
+**Latest release:** v0.8.135 (2026-11-19)
 
 ---
 
@@ -18,6 +18,13 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.135 — 2026-11-19
+
+- Changed: nothing a user sees. Six copies of the same greatest-common-divisor
+  routine in the code are now one.
 
 ---
 
