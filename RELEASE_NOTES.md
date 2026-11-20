@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.139 (2026-11-20)
+**Latest release:** v0.8.140 (2026-11-20)
 
 ---
 
@@ -18,6 +18,14 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.140 — 2026-11-20
+
+- Changed: nothing a user sees. Every command that calls the algebra
+  engine now goes through one function that checks the engine is loaded,
+  where each call site made its own check before.
 
 ---
 
