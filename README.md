@@ -1623,13 +1623,12 @@ The tests are plain Node ES modules with no framework:
 npm test                                  # every area except persistence
 node tests/test-persist.mjs               # save, load, export and backups
 node tests/test-equation-editor.mjs       # one area
-node tests/flake-scan.mjs                 # rerun the suite to catch flaky results
-node tests/flake-bisect.mjs --label "…"   # find the file order that breaks an assertion
 ```
 
-A file run on its own ends with its passed and failed counts and exits
-non-zero on a failure; `QUIET=1` in front of any of these prints only the
-failures and the summary.
+`npm test` runs each file in its own Node process, so the files cannot
+affect one another. A file run on its own ends with its passed and failed
+counts and exits non-zero on a failure; `QUIET=1` in front of any of these
+prints only the failures and the summary.
 
 In Node the CAS answers come from Giac fixtures each test registers; the
 real Giac WebAssembly runs only in the browser.

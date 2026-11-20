@@ -1,16 +1,10 @@
-/* Aggregate runner: imports every split test file and prints the
-   combined pass/fail summary.
+/* Aggregate runner: runs every test file in its own Node process, so
+   no file can see state another one left behind, and prints one
+   headline line per file plus the combined total. */
 
-   A dynamic-import loop snapshots the shared pass/fail counters
-   before and after each file and prints one headline line per file,
-   giving per-file attribution on top of the aggregate total.
-
-   Each dynamic import is wrapped in a try/catch so a file that throws
-   at module-load time is reported with its filename and the remaining
-   files still run — one crash does not knock out the aggregate. */
-
-import { state } from './helpers.mjs';
-import { resetAll } from '../www/src/rpl/state.js';
+import { spawn } from 'node:child_process';
+import { availableParallelism } from 'node:os';
+import { fileURLToPath } from 'node:url';
 
 const FILES = [
   './test-helpers.mjs',
@@ -54,48 +48,50 @@ const FILES = [
   './test-errors.mjs',
 ];
 
-const perFile = [];
-const importErrors = [];
-
-for (const f of FILES) {
-  const beforePass = state.passed;
-  const beforeFail = state.failed;
-  resetAll();
-  try {
-    await import(f);
-  } catch (e) {
-    importErrors.push({ file: f, err: e });
-  }
-  perFile.push({
-    file: f,
-    passed: state.passed - beforePass,
-    failed: state.failed - beforeFail,
+function runFile(file) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [fileURLToPath(new URL(file, import.meta.url))]);
+    let out = '';
+    let err = '';
+    child.stdout.on('data', (d) => { out += d; });
+    child.stderr.on('data', (d) => { err += d; });
+    child.on('close', (code) => {
+      const m = /^(\d+) passed, (\d+) failed$/m.exec(out);
+      resolve({ file, out, err, code, passed: m ? +m[1] : 0, failed: m ? +m[2] : 0, crashed: !m || (code !== 0 && m[2] === '0') });
+    });
   });
+}
+
+const pending = FILES.map(() => null);
+let next = 0;
+async function worker() {
+  while (next < FILES.length) {
+    const i = next++;
+    pending[i] = await runFile(FILES[i]);
+  }
+}
+await Promise.all(Array.from({ length: Math.min(availableParallelism(), FILES.length) }, worker));
+
+for (const r of pending) {
+  process.stdout.write(r.out);
+  process.stderr.write(r.err);
 }
 
 console.log('\n' + '='.repeat(60));
 console.log(' Per-file headline counts');
 console.log('='.repeat(60));
-// Width of the longest filename (trimmed of leading './') + a bit.
-const nameW = Math.max(...perFile.map(r => r.file.length));
-for (const r of perFile) {
-  const tag = r.failed === 0 ? 'ok  ' : 'FAIL';
+const nameW = Math.max(...FILES.map(f => f.length));
+for (const r of pending) {
+  const tag = r.crashed ? 'DIED' : r.failed === 0 ? 'ok  ' : 'FAIL';
   console.log(` ${tag}  ${r.file.padEnd(nameW)}  ${String(r.passed).padStart(5)} passed  ${String(r.failed).padStart(3)} failed`);
 }
 
-if (importErrors.length) {
-  console.error('\n' + '='.repeat(60));
-  console.error(' Module-load failures');
-  console.error('='.repeat(60));
-  for (const { file, err } of importErrors) {
-    console.error(` ${file}:`);
-    console.error('   ' + (err && err.stack ? err.stack.split('\n').join('\n   ') : String(err)));
-  }
-}
-
-const total = state.passed + state.failed;
-const hasImportErr = importErrors.length > 0;
-console.log(state.failed === 0 && !hasImportErr
-  ? `\nALL TESTS PASSED (${state.passed})`
-  : `\n${state.failed} FAILED (of ${total})${hasImportErr ? ` + ${importErrors.length} import error(s)` : ''}`);
-process.exit(state.failed === 0 && !hasImportErr ? 0 : 1);
+const passed = pending.reduce((n, r) => n + r.passed, 0);
+const failed = pending.reduce((n, r) => n + r.failed, 0);
+const crashed = pending.filter(r => r.crashed);
+for (const r of crashed) console.error(`${r.file} did not finish (exit code ${r.code})`);
+const clean = failed === 0 && crashed.length === 0;
+console.log(clean
+  ? `\nALL TESTS PASSED (${passed})`
+  : `\n${failed} FAILED (of ${passed + failed})${crashed.length ? ` + ${crashed.length} file(s) did not finish` : ''}`);
+process.exitCode = clean ? 0 : 1;
