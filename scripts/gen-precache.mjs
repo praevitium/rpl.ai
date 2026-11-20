@@ -30,11 +30,19 @@ export function precacheVersion(wwwDir, files, label) {
   return `${label}-${hash.digest('hex').slice(0, 10)}`;
 }
 
+const HASH_CHARS = 16;
+
+// The page itself is cached as './', so it carries index.html's hash.
+export function precacheHashes(wwwDir, files) {
+  const hashOf = (f) => createHash('sha256').update(readFileSync(join(wwwDir, f))).digest('hex').slice(0, HASH_CHARS);
+  return Object.fromEntries([['./', hashOf('index.html')], ...files.map((f) => [f, hashOf(f)])]);
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const www = resolve(fileURLToPath(new URL('../www/', import.meta.url)));
   const files = precacheFiles(www);
   const { FULL } = await import(new URL('../www/src/build-info.js', import.meta.url));
   const version = precacheVersion(www, files, FULL);
-  writeFileSync(join(www, 'precache.js'), `self.PRECACHE = ${JSON.stringify({ version, files: ['./', ...files] }, null, 1)};\n`);
+  writeFileSync(join(www, 'precache.js'), `self.PRECACHE = ${JSON.stringify({ version, hashes: precacheHashes(www, files) }, null, 1)};\n`);
   process.stdout.write(`precache: ${files.length} files, ${version}\n`);
 }

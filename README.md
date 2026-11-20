@@ -100,7 +100,8 @@ browser tab once the app is installed.
 
 After the first visit, rpl.ai runs offline. When you are online it checks
 for a new version, and an installed copy offers to reload when one is
-ready.
+ready. An update downloads only the files that changed since the copy
+you have; the rest, the algebra engine among them, are kept.
 
 Your stack, variables and settings stay in this browser on this device.
 Nothing is uploaded. Two windows of the same browser share them and stay in
