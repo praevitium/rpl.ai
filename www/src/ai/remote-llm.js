@@ -96,6 +96,23 @@ export function ollamaCloudAdvice(origin = globalThis.location?.origin ?? '') {
 const PROBE_TIMEOUT_MS = 15000;
 const probeSignal = () => AbortSignal.timeout?.(PROBE_TIMEOUT_MS);
 
+// The usual port of each local server says which one the user is likely reaching, and so whose setting to name.
+const SERVERS = [
+  { port: '11434', name: 'Ollama', network: 'that it listens on the network (OLLAMA_HOST=0.0.0.0)',
+    origins: (origin) => `Add ${origin} to OLLAMA_ORIGINS where Ollama runs, then restart Ollama.` },
+  { port: '8000', name: 'vLLM', network: 'that it listens on the network (--host 0.0.0.0)',
+    origins: (origin) => `If vLLM was started with --allowed-origins, add ${origin} to it, then restart vLLM.` },
+  { port: '8080', name: 'llama-server', network: 'that it listens on the network (--host 0.0.0.0)',
+    origins: () => 'llama-server allows any origin unless a proxy in front of it says otherwise; check that proxy.' },
+  { port: '1234', name: 'LM Studio', network: 'that Serve on Local Network is on',
+    origins: () => 'Turn on Enable CORS in LM Studio\'s server settings.' },
+];
+
+function serverAt(base) {
+  try { return SERVERS.find((s) => s.port === new URL(base).port) ?? null; }
+  catch { return null; }
+}
+
 export async function explainConnectionError(url, err, origin = globalThis.location?.origin ?? '',
   userAgent = globalThis.navigator?.userAgent ?? '') {
   if (!(err instanceof TypeError)) return err?.message ?? String(err);
@@ -128,13 +145,16 @@ export async function explainConnectionError(url, err, origin = globalThis.locat
   } catch {
     let pageIsLocal = false;
     try { pageIsLocal = isLoopbackHost(new URL(origin).hostname); } catch { /* no page origin */ }
-    return `Nothing answered at ${host}. Check the address and port${loopback ? ' and' : ','} that Ollama is running`
-      + `${loopback ? '' : ', and that it listens on the network (OLLAMA_HOST=0.0.0.0)'}.`
+    const server = serverAt(base);
+    return `Nothing answered at ${host}. Check the address and port${loopback ? ' and' : ','} that ${server?.name ?? 'the server'} is running`
+      + `${loopback ? '' : `, and ${server?.network ?? 'that it listens on the network, not only on this computer'}`}.`
       + (pageIsLocal ? '' : ' If the browser asked whether this site may reach apps on your device or local network, '
         + 'allow it; if you declined, change it in the site settings.');
   }
+  const server = serverAt(base);
   return `${host} answered but refused this page's origin (${origin}). `
-    + `Add ${origin} to OLLAMA_ORIGINS where Ollama runs, then restart Ollama.`;
+    + (server ? server.origins(origin) : `Allow ${origin} in the server's CORS settings: OLLAMA_ORIGINS for Ollama, `
+      + '--allowed-origins for vLLM, Enable CORS in LM Studio. A hosted provider that refuses browser requests cannot be used from a web page.');
 }
 
 export function bearerHeaders(apiKey, extra = {}) {
@@ -358,8 +378,10 @@ export class RemoteLLM {
         const resp = await this._fetch(this._endpoint + '/models', { method: 'GET', signal: probeSignal() });
         if (resp.status === 401) throw new Error('HTTP 401 — check the API key');
         if (!resp.ok) throw new Error(`HTTP ${resp.status} from ${this._endpoint}/models`);
+        let modelMax = null;
         try {
           const body = await resp.json();
+          modelMax = (body?.data ?? []).find((m) => m.id === modelId)?.max_model_len ?? null;
           const ids = (body?.data ?? []).map((m) => m.id).filter(Boolean);
           if (ids.length && !ids.includes(modelId)) {
             console.warn('[RemoteLLM] model', modelId, 'not in /models response; available:', ids);
@@ -368,7 +390,8 @@ export class RemoteLLM {
         this._isOllama = false;
         this._capabilities = [];
         this._openAITools = await this._acceptsTools(modelId);
-        this._contextTokens = this._requestedContext || null;
+        // vLLM reports the window it was started with; asking for more would overrun it.
+        this._contextTokens = Number.isFinite(modelMax) ? chooseNumCtx(this._requestedContext, modelMax) : this._requestedContext || null;
       }
 
       this._loadedModelId = modelId;

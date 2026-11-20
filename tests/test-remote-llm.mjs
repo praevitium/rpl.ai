@@ -564,6 +564,23 @@ const frame = (obj) => 'data: ' + JSON.stringify(obj);
     assert(!msg.includes('allow it'), 'explainConnectionError: a localhost page gets no permission hint');
     assert(msg.includes('Check the address and port and that Ollama is running.'),
            'explainConnectionError: the loopback hint reads as one sentence');
+    const page = 'http://10.0.0.22:5050';
+    msg = await explainConnectionError('http://gpu:8000/v1', failed, page);
+    assert(msg.startsWith('Nothing answered at gpu:8000') && msg.includes('vLLM is running') && msg.includes('--host 0.0.0.0'),
+      'explainConnectionError: on port 8000 silence names vLLM and its --host flag');
+    msg = await explainConnectionError('http://localhost:8080', failed, 'http://localhost:5050');
+    assert(msg === 'Nothing answered at localhost:8080. Check the address and port and that llama-server is running.',
+      'explainConnectionError: on port 8080 silence names llama-server');
+    msg = await explainConnectionError('http://box:9999/v1', failed, page);
+    assert(msg.includes('that the server is running') && !msg.includes('Ollama'), 'explainConnectionError: an unknown port names no particular server');
+    globalThis.fetch = async () => ({ type: 'opaque', status: 0 });
+    msg = await explainConnectionError('http://gpu:8000/v1', failed, page);
+    assert(msg.includes('--allowed-origins') && !msg.includes('OLLAMA_ORIGINS'), 'explainConnectionError: vLLM refusing the origin points at --allowed-origins');
+    msg = await explainConnectionError('http://localhost:1234/v1', failed, 'http://localhost:5050');
+    assert(msg.includes('Enable CORS'), 'explainConnectionError: LM Studio refusing the origin points at Enable CORS');
+    msg = await explainConnectionError('http://box:9999/v1', failed, page);
+    assert(msg.includes('OLLAMA_ORIGINS') && msg.includes('--allowed-origins') && msg.includes('Enable CORS'),
+      'explainConnectionError: an unknown server refusing the origin lists where each server allows it');
     msg = await explainConnectionError('http://alpha:11434', new Error('HTTP 401 — check the API key'), 'http://x');
     assert(msg === 'HTTP 401 — check the API key', 'explainConnectionError: other errors pass through unchanged');
   } finally {
@@ -693,6 +710,18 @@ const frame = (obj) => 'data: ' + JSON.stringify(obj);
   };
   try {
     globalThis.fetch = serve(true);
+    const small = new RemoteLLM('http://srv:8000/v1', { contextTokens: 32768 });
+    const listModels = globalThis.fetch;
+    globalThis.fetch = async (url, init) => (String(url).endsWith('/models')
+      ? { ok: true, status: 200, json: async () => ({ data: [{ id: 'm', max_model_len: 16384 }] }) }
+      : listModels(url, init));
+    await small.load('m');
+    assert(small.contextTokens === 16384, 'RemoteLLM.load keeps the history inside the window vLLM reports (max_model_len)');
+    globalThis.fetch = listModels;
+    const roomy = new RemoteLLM('http://srv:8000/v1', { contextTokens: 32768 });
+    await roomy.load('m');
+    assert(roomy.contextTokens === 32768, 'RemoteLLM.load keeps the chosen window when the server reports none');
+    posts.length = 0;
     const llm = new RemoteLLM('http://srv:8000/v1');
     await llm.load('m');
     assert(llm.supportsTools && !llm.isOllama && posts[0].max_tokens === 1 && posts[0].tools.length === 1,
