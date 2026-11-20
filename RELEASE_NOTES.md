@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.143 (2026-11-20)
+**Latest release:** v0.9.0 (2026-11-20)
 
 ---
 
@@ -18,6 +18,26 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.9.0 — 2026-11-20
+
+The assistant works with local vLLM, llama.cpp and LM Studio servers and
+with hosted OpenAI-compatible providers as well as it does with Ollama.
+
+- Added: native tool calling and streamed reasoning on these servers
+  (from v0.8.143), checked when connecting, with a fall-back to tool calls
+  written as text when a server refuses tools.
+- Added: when a connection fails, the advice names the server that usually
+  runs on that port (Ollama 11434, vLLM 8000, llama-server 8080, LM Studio
+  1234) and the setting to change there, rather than always pointing at
+  `OLLAMA_ORIGINS`.
+- Changed: with vLLM, the assistant keeps its history inside the window
+  the server reports (`max_model_len`), so a server started with a smaller
+  window no longer rejects long conversations.
+- Added: a README section on setting up vLLM, llama.cpp, LM Studio and a
+  hosted provider, including the flags that turn on tool calling.
 
 ---
 
