@@ -1535,7 +1535,7 @@ function quotaError() {
 /* --- An autosave that will not load is set aside under its own key, not
        deleted, and a save of another version is refused, not misread. --- */
 {
-  const { BAD_STATE_KEY } = await import('../www/src/rpl/persist.js');
+  const { BAD_STATE_KEY, setAsideSave, dropSetAsideSave, downloadSetAsideSave } = await import('../www/src/rpl/persist.js');
   const savedStorage = globalThis.localStorage;
   const store = new Map();
   globalThis.localStorage = {
@@ -1553,6 +1553,28 @@ function quotaError() {
     store.set(STORAGE_KEY, '{not json');
     loadInitialState(new Stack());
     assert(store.get(BAD_STATE_KEY) === '{not json', 'bad autosave: the latest save that failed replaces the one kept before');
+    assert(setAsideSave() === '{not json', 'bad autosave: the save set aside can be read back');
+    const savedDoc = globalThis.document;
+    const savedCreate = URL.createObjectURL;
+    const savedRevoke = URL.revokeObjectURL;
+    const clicked = [];
+    let blob = null;
+    globalThis.document = { createElement: () => ({ click() { clicked.push(this.download); }, remove() {} }), body: { appendChild() {} } };
+    URL.createObjectURL = (b) => { blob = b; return 'blob:x'; };
+    URL.revokeObjectURL = () => {};
+    try {
+      const name = downloadSetAsideSave();
+      assert(/^hp50-unreadable-.*\.json$/.test(name) && clicked[0] === name, 'bad autosave: the save set aside downloads as a named file');
+      assert(await blob.text() === '{not json', 'bad autosave: the file holds the save as it was stored');
+      assert(setAsideSave() === null && downloadSetAsideSave() === null, 'bad autosave: once downloaded it is no longer kept');
+    } finally {
+      globalThis.document = savedDoc;
+      URL.createObjectURL = savedCreate;
+      URL.revokeObjectURL = savedRevoke;
+    }
+    store.set(BAD_STATE_KEY, 'x');
+    dropSetAsideSave();
+    assert(!store.has(BAD_STATE_KEY), 'bad autosave: dismissing drops the save set aside');
     store.clear();
     store.set(STORAGE_KEY, JSON.stringify(snapshot(new Stack())));
     assert(loadInitialState(new Stack()) === 'stored' && !store.has(BAD_STATE_KEY), 'bad autosave: a save that loads sets nothing aside');

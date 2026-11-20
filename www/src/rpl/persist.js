@@ -341,6 +341,23 @@ function loadFromLocalStorage(stack) {
   }
 }
 
+export function setAsideSave() {
+  try { return localStorage.getItem(BAD_STATE_KEY); }
+  catch { return null; }
+}
+
+export function dropSetAsideSave() {
+  try { localStorage.removeItem(BAD_STATE_KEY); } catch {}
+}
+
+export function downloadSetAsideSave() {
+  const raw = setAsideSave();
+  if (raw == null) return null;
+  const filename = downloadFile(raw, `hp50-unreadable-${fileStamp()}.json`, 'application/json');
+  dropSetAsideSave();
+  return filename;
+}
+
 // Loads what another window saved since this one last wrote or read the
 // store, so this window's next save does not overwrite it.
 export function adoptStoredState(stack) {

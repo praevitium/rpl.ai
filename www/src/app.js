@@ -57,6 +57,7 @@ import { parseTyped } from './rpl/parser.js';
 import {
   loadInitialState, adoptStoredState, saveToLocalStorage, saveUndo, loadUndo, saveDraft, loadDraft, saveHistory, loadHistory, exportToFile, importFromFile, downloadFormats, downloadValue, readUpload, STORAGE_KEY,
   shareLink, sharedSource, sharedText, holdPageLock, saveRun, takeRun, NOT_STORED,
+  setAsideSave, dropSetAsideSave, downloadSetAsideSave,
 } from './rpl/persist.js';
 import { giac } from './rpl/cas/giac-engine.mjs';
 import { ChatBot, renderInlineMarkdown } from './ai/chat-bot.js';
@@ -263,6 +264,7 @@ class App {
 
     this._wireDisplay();
     loadInitialState(this.stack);
+    this._offerSetAsideSave();
     loadUndo(this.stack);
     this.entry.setHistory(loadHistory());
     this.entry.subscribeHistory(() => saveHistory(this.entry.getHistory()));
@@ -1240,6 +1242,15 @@ class App {
     // OFF can come after the tap that ran it has settled the back button, as from a program.
     this._syncBackButton?.();
     off.focus({ preventScroll: true });
+  }
+
+  _offerSetAsideSave() {
+    if (setAsideSave() == null) return;
+    this.toast('The last saved session could not be read, so the calculator started fresh. You can download what was saved.', {
+      key: 'bad-save', timeout: Infinity, essential: true,
+      also: { action: 'Dismiss', onAction: dropSetAsideSave },
+      action: 'Download', onAction: () => this.toast(`Saved ${downloadSetAsideSave()}`),
+    });
   }
 
   _noteAutosave(result) {

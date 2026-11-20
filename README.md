@@ -1556,7 +1556,9 @@ private window, erases them. A browser may also clear a site's data when the
 device runs low on space, and Safari after a week without a visit: an
 installed app asks the browser to keep it, and Settings › Data says whether
 it will, with a button to ask when it hasn't agreed. If the browser blocks site data altogether,
-rpl.ai still runs but warns that nothing is being saved. Back them up with
+rpl.ai still runs but warns that nothing is being saved. A saved session
+that cannot be read is set aside: the calculator starts fresh and a note
+offers to download what was saved. Back them up with
 Back up everything in the Variables drawer. Spreadsheets exchange CSV, TSV
 and `.xlsx` files and copied cells; a workbook with several sheets asks which
 to read, and formulas arrive as their last calculated values.
