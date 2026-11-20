@@ -264,10 +264,10 @@ class App {
 
     this._wireDisplay();
     loadInitialState(this.stack);
-    this._offerSetAsideSave();
     loadUndo(this.stack);
     this.entry.setHistory(loadHistory());
     this.entry.subscribeHistory(() => saveHistory(this.entry.getHistory()));
+    this._offerSetAsideSave();
 
     this.stack.subscribe(() => this._onStackChange());
     this.entry.subscribe(() => this._onEntryChange());
