@@ -1277,8 +1277,9 @@ rpl.ai yourself (below).
 The assistant asks for a 32K-token context by default. On a computer with
 little memory, choose 8K or 16K under Context in the endpoint settings.
 Thinking models reason before answering unless you turn that off there.
-Ollama models that support tools get native tool calling; others write
-their tool calls as text.
+Models that support tools get native tool calling, on Ollama and on
+OpenAI-compatible servers that accept tools; others write their tool calls
+as text.
 
 ### Cloud models
 
@@ -1321,9 +1322,14 @@ out of browser code. The app says so if you try.
   address on your network, so either open rpl.ai over plain HTTP from a
   server you run (and add that page's origin to `OLLAMA_ORIGINS`), or put
   Ollama behind HTTPS. Anyone on your network can use an exposed Ollama.
-- **Other OpenAI-compatible servers** work if they accept requests from a
-  web page. Put an API key in the endpoint settings if the server needs
-  one.
+- **Other OpenAI-compatible servers**, such as vLLM, llama.cpp's
+  `llama-server`, LM Studio or a hosted provider, work if they accept
+  requests from a web page. Put an API key in the endpoint settings if the
+  server needs one. When connecting, rpl.ai checks whether the server
+  takes tools: vLLM needs `--enable-auto-tool-choice` and a
+  `--tool-call-parser` for the model, and `llama-server` needs `--jinja`.
+  Without them the assistant still works, writing its tool calls as text.
+  Reasoning that the server streams separately is shown as thinking.
 
 ### If it doesn't connect
 

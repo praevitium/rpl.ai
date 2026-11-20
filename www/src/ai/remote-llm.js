@@ -2,7 +2,9 @@
    server that answers Ollama's /api/version gets the native /api/chat
    protocol, which sizes num_ctx itself (Ollama's small default context
    silently truncates the system prompt) and passes tools and think when
-   the model supports them; anything else gets /v1/chat/completions. */
+   the model supports them; anything else (vLLM, llama.cpp, LM Studio, a
+   hosted provider) gets /v1/chat/completions, with tools when the server
+   accepts them. */
 
 export function isOllamaCloudUrl(url) {
   try {
@@ -253,6 +255,35 @@ async function readStream(resp, onText) {
   }
 }
 
+const PROBE_TOOL = {
+  type: 'function',
+  function: { name: 'noop', description: 'Does nothing.', parameters: { type: 'object', properties: {} } },
+};
+
+/** Gathers an OpenAI stream's tool calls, whose name and arguments arrive in pieces keyed by index. */
+export class OpenAIToolCalls {
+  constructor() { this._byIndex = new Map(); }
+
+  add(deltas) {
+    if (!Array.isArray(deltas)) return;
+    deltas.forEach((d, i) => {
+      const key = d?.index ?? i;
+      const call = this._byIndex.get(key) ?? { name: '', arguments: '' };
+      const fn = d?.function ?? {};
+      if (typeof fn.name === 'string') call.name += fn.name;
+      if (typeof fn.arguments === 'string') call.arguments += fn.arguments;
+      else if (fn.arguments && typeof fn.arguments === 'object') call.arguments = fn.arguments;
+      this._byIndex.set(key, call);
+    });
+  }
+
+  done() {
+    return [...this._byIndex.entries()].sort(([a], [b]) => a - b)
+      .map(([, call]) => normalizeToolCall({ function: { name: call.name, arguments: call.arguments || '{}' } }))
+      .filter(Boolean);
+  }
+}
+
 export class RemoteLLM {
   /** `opts`: contextTokens (the num_ctx to request and the history budget),
    *  think (let a thinking model reason first; default true), apiKey. */
@@ -270,6 +301,7 @@ export class RemoteLLM {
     this._apiKey = String(opts.apiKey || '').trim();
     this._isOllama = false;
     this._capabilities = [];
+    this._openAITools = false;
     this._contextTokens = null;
 
     this._abortCtrl = null;
@@ -282,7 +314,7 @@ export class RemoteLLM {
   get loadedModelId() { return this._loadedModelId ?? null; }
   get contextTokens() { return this._contextTokens; }
   get isOllama() { return this._isOllama; }
-  get supportsTools() { return this._isOllama && this._capabilities.includes('tools'); }
+  get supportsTools() { return this._isOllama ? this._capabilities.includes('tools') : this._openAITools; }
   get supportsThinking() { return this._isOllama && this._capabilities.includes('thinking'); }
   get thinkEnabled() { return this._think; }
   get options() {
@@ -335,6 +367,7 @@ export class RemoteLLM {
         } catch { /* not a model list: the chat request will tell */ }
         this._isOllama = false;
         this._capabilities = [];
+        this._openAITools = await this._acceptsTools(modelId);
         this._contextTokens = this._requestedContext || null;
       }
 
@@ -346,6 +379,28 @@ export class RemoteLLM {
         : await explainConnectionError(this._endpoint, err);
       this._setStatus('error', message);
       throw err;
+    }
+  }
+
+  // vLLM refuses tools unless started with --enable-auto-tool-choice and llama.cpp unless started with --jinja,
+  // so one token is asked for with a tool offered: an error means the assistant writes its tool calls as text.
+  async _acceptsTools(modelId) {
+    try {
+      const r = await this._fetch(`${this._endpoint}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: modelId,
+          messages: [{ role: 'user', content: 'Reply OK.' }],
+          max_tokens: 1,
+          tools: [PROBE_TOOL],
+          tool_choice: 'auto',
+        }),
+        signal: probeSignal(),
+      });
+      return r.ok;
+    } catch {
+      return false;
     }
   }
 
@@ -374,8 +429,7 @@ export class RemoteLLM {
     return r.json();
   }
 
-  /** Streams one reply and resolves to `{ toolCalls, finishReason }`; native
-   *  tool calls and `onThinking` reasoning come only from Ollama. */
+  /** Streams one reply and resolves to `{ toolCalls, finishReason }`. */
   async generate(messages, { onToken, onThinking, maxTokens, tools } = {}) {
     if (this._status !== 'ready') {
       console.warn('[RemoteLLM] generate rejected: status=', this._status);
@@ -407,7 +461,7 @@ export class RemoteLLM {
       if (this._isOllama) {
         await this._streamOllama(messages, { maxTokens, tools, emit, think, run });
       } else {
-        await this._streamOpenAI(messages, { maxTokens, emit, run });
+        await this._streamOpenAI(messages, { maxTokens, tools, emit, think, run });
       }
     } catch (err) {
       if (err.name !== 'AbortError' && !this._abortCtrl?.signal.aborted) throw err;
@@ -477,8 +531,9 @@ export class RemoteLLM {
     });
   }
 
-  async _streamOpenAI(messages, { maxTokens, emit, run }) {
-    const resp = await this._post(`${this._endpoint}/chat/completions`, {
+  async _streamOpenAI(messages, { maxTokens, tools, emit, think, run }) {
+    const url = `${this._endpoint}/chat/completions`;
+    const body = {
       model: this._loadedModelId,
       messages,
       stream: true,
@@ -487,9 +542,19 @@ export class RemoteLLM {
       max_tokens: maxTokens || 1024,
       frequency_penalty: 0.5,
       presence_penalty: 0,
-    });
+    };
+    if (tools?.length && this.supportsTools) Object.assign(body, { tools, tool_choice: 'auto' });
+    let resp = await this._post(url, body);
+    if (!resp.ok && body.tools && resp.status === 400) {
+      console.warn('[RemoteLLM] server rejected tools; retrying without');
+      this._openAITools = false;
+      delete body.tools;
+      delete body.tool_choice;
+      resp = await this._post(url, body);
+    }
     if (!resp.ok) throw httpError(resp.status, await resp.text().catch(() => ''));
 
+    const calls = new OpenAIToolCalls();
     let buffer = '';
     await readStream(resp, (text) => {
       const { frames, rest } = takeSSEFrames(buffer + text);
@@ -498,11 +563,15 @@ export class RemoteLLM {
         const chunk = parseChunk(data, 'SSE frame');
         if (!chunk) continue;
         const choice = chunk.choices?.[0];
-        emit(choice?.delta?.content);
+        const delta = choice?.delta ?? {};
+        think(delta.reasoning_content ?? delta.reasoning);
+        emit(delta.content);
+        calls.add(delta.tool_calls);
         if (choice?.finish_reason) run.finishReason = choice.finish_reason;
         if (typeof chunk.usage?.prompt_tokens === 'number') run.inputTokens = chunk.usage.prompt_tokens;
       }
     });
+    run.toolCalls.push(...calls.done());
   }
 
   _fetch(url, init = {}) {

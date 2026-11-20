@@ -1140,7 +1140,7 @@ export class ChatBot {
         + 'appear below once it is reachable. For Ollama\'s cloud models, run `ollama signin` on the machine '
         + 'running Ollama and pick a model whose name ends in -cloud or :cloud; browsers can\'t call ollama.com directly. '
         + 'Any OpenAI-compatible server that accepts browser requests also works. '
-        + 'Ollama models that support tools and thinking get native tool calling and reasoning.',
+        + 'Models that support tools get native tool calling, on Ollama and on servers such as vLLM or llama.cpp started with tool calling on.',
     });
     const urlInput = elem('input', {
       type: 'url',

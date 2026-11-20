@@ -5,7 +5,6 @@ import {
   localAccessPermission, LOCAL_ACCESS_BLOCKED,
 } from '../www/src/ai/remote-llm.js';
 import { assert } from './helpers.mjs';
-import { readFileSync } from 'node:fs';
 
 /* RemoteLLM URL normalizers — the two pure helpers that turn whatever
    base URL the user typed into the canonical forms the call sites need:
@@ -613,9 +612,110 @@ const frame = (obj) => 'data: ' + JSON.stringify(obj);
 }
 
 {
-  const src = readFileSync(new URL('../www/src/ai/remote-llm.js', import.meta.url), 'utf8');
-  assert(/const PROBE_TIMEOUT_MS = 15000;/.test(src)
-    && (src.match(/signal: probeSignal\(\)/g) ?? []).length === 4
-    && /err\?\.name === 'TimeoutError'[\s\S]*?No answer from/.test(src),
-    'RemoteLLM connect: the version, model-list and show probes give up after 15 s with a message, so a server that never replies cannot leave Connecting… for ever');
+  // Every request load() makes carries the probe's time limit; when it runs out, the status says so.
+  const origFetch = globalThis.fetch;
+  const origTimeout = AbortSignal.timeout;
+  const limits = [];
+  AbortSignal.timeout = (ms) => { limits.push(ms); return AbortSignal.abort(new DOMException('timed out', 'TimeoutError')); };
+  const unsigned = [];
+  globalThis.fetch = async (url, init = {}) => {
+    if (!init.signal) unsigned.push(String(url));
+    if (String(url).endsWith('/models')) return { ok: true, status: 200, json: async () => ({ data: [{ id: 'm' }] }) };
+    if (String(url).endsWith('/chat/completions')) throw init.signal.reason;
+    return { ok: false, status: 404, json: async () => ({}) };
+  };
+  try {
+    const llm = new RemoteLLM('http://srv:8000/v1');
+    await llm.load('m');
+    assert(unsigned.length === 0 && limits.length === 3 && limits.every((ms) => ms === 15000) && !llm.supportsTools,
+      'RemoteLLM connect: the version, model-list and tool probes each give up after 15 s, and a tool probe that times out leaves tools off');
+    globalThis.fetch = async (url, init = {}) => {
+      if (!init.signal) unsigned.push(String(url));
+      if (String(url).endsWith('/api/version')) return { ok: true, status: 200, json: async () => ({ version: '0.12.0' }) };
+      throw init.signal.reason;
+    };
+    await new RemoteLLM('http://localhost:11434').load('m').catch(() => {});
+    assert(unsigned.length === 0 && limits.length === 5, 'RemoteLLM connect: Ollama\'s show probe has the same limit');
+    globalThis.fetch = async (url, init = {}) => { if (!init.signal) unsigned.push(String(url)); throw init.signal.reason; };
+    const silent = new RemoteLLM('http://srv:8001/v1');
+    await silent.load('m').catch(() => {});
+    assert(unsigned.length === 0 && silent.status === 'error' && /No answer from http:\/\/srv:8001\/v1 within 15 seconds/.test(silent.statusMsg),
+      'RemoteLLM connect: a server that never replies ends Connecting… with a message, not for ever');
+  } finally {
+    globalThis.fetch = origFetch;
+    AbortSignal.timeout = origTimeout;
+  }
+}
+{
+  // OpenAIToolCalls: vLLM and llama.cpp stream a call's name and arguments in pieces keyed by index.
+  const { OpenAIToolCalls } = await import('../www/src/ai/remote-llm.js');
+  const calls = new OpenAIToolCalls();
+  calls.add([{ index: 0, id: 'a', type: 'function', function: { name: 'run', arguments: '' } }]);
+  calls.add([{ index: 0, function: { arguments: '{"text":' } }]);
+  calls.add([{ index: 1, function: { name: 'lookup', arguments: '{"name":"SIN"}' } }]);
+  calls.add([{ index: 0, function: { arguments: '"10 FACT"}' } }]);
+  calls.add(undefined);
+  const got = calls.done();
+  assert(JSON.stringify(got) === JSON.stringify([{ name: 'run', arguments: { text: '10 FACT' } }, { name: 'lookup', arguments: { name: 'SIN' } }]),
+    'OpenAIToolCalls joins each call\'s pieces by index, in index order');
+  const bare = new OpenAIToolCalls();
+  bare.add([{ index: 0, function: { name: 'stack' } }]);
+  assert(JSON.stringify(bare.done()) === '[{"name":"stack","arguments":{}}]', 'OpenAIToolCalls gives a call with no arguments an empty object');
+}
+{
+  // An OpenAI-compatible server that accepts tools (vLLM with --enable-auto-tool-choice, llama-server with --jinja):
+  // load() finds out with a one-token probe, and generate() sends the tools and reads back calls and reasoning.
+  const origFetch = globalThis.fetch;
+  const enc = new TextEncoder();
+  const sse = (o) => `data: ${JSON.stringify(o)}\n\n`;
+  const frames = [
+    sse({ choices: [{ delta: { reasoning_content: 'hmm' } }] }),
+    sse({ choices: [{ delta: { content: 'Computing.' } }] }),
+    sse({ choices: [{ delta: { tool_calls: [{ index: 0, id: 'c1', type: 'function', function: { name: 'run', arguments: '{"text"' } }] } }] }),
+    sse({ choices: [{ delta: { tool_calls: [{ index: 0, function: { arguments: ':"2 3 +"}' } }] }, finish_reason: 'tool_calls' }] }),
+    'data: [DONE]\n\n',
+  ];
+  const posts = [];
+  const serve = (acceptTools) => async (url, init) => {
+    if (String(url).endsWith('/api/version')) return { ok: false, status: 404, json: async () => ({}) };
+    if (String(url).endsWith('/models')) return { ok: true, status: 200, json: async () => ({ data: [{ id: 'm' }] }) };
+    if (String(url).endsWith('/chat/completions')) {
+      const body = JSON.parse(init.body);
+      posts.push(body);
+      if (body.tools && !acceptTools) return { ok: false, status: 400, text: async () => '"auto" tool choice requires --enable-auto-tool-choice' };
+      if (!body.stream) return { ok: true, status: 200, json: async () => ({}) };
+      let i = 0;
+      return { ok: true, status: 200, body: { getReader: () => ({
+        read: async () => (i < frames.length ? { done: false, value: enc.encode(frames[i++]) } : { done: true }),
+      }) } };
+    }
+    return { ok: false, status: 404, text: async () => '' };
+  };
+  try {
+    globalThis.fetch = serve(true);
+    const llm = new RemoteLLM('http://srv:8000/v1');
+    await llm.load('m');
+    assert(llm.supportsTools && !llm.isOllama && posts[0].max_tokens === 1 && posts[0].tools.length === 1,
+      'RemoteLLM.load probes an OpenAI-compatible server with one token and a tool, and keeps tools on when it answers');
+    let thought = '';
+    let said = '';
+    const tools = [{ type: 'function', function: { name: 'run', parameters: { type: 'object', properties: {} } } }];
+    const out = await llm.generate([{ role: 'user', content: 'add' }], { tools, onThinking: (t) => { thought += t; }, onToken: (t) => { said += t; } });
+    const sent = posts.at(-1);
+    assert(sent.tools === undefined ? false : sent.tools[0].function.name === 'run' && sent.tool_choice === 'auto',
+      'generate() sends the tools to an OpenAI-compatible server that takes them');
+    assert(JSON.stringify(out.toolCalls) === '[{"name":"run","arguments":{"text":"2 3 +"}}]' && out.finishReason === 'tool_calls',
+      'generate() reads back the streamed tool call');
+    assert(thought === 'hmm' && said === 'Computing.', 'generate() reports reasoning_content as thinking and content as text');
+
+    posts.length = 0;
+    globalThis.fetch = serve(false);
+    const plain = new RemoteLLM('http://srv:8080');
+    await plain.load('m');
+    assert(!plain.supportsTools, 'RemoteLLM.load turns tools off when the server refuses them (vLLM without --enable-auto-tool-choice, llama-server without --jinja)');
+    await plain.generate([{ role: 'user', content: 'add' }], { tools });
+    assert(posts.at(-1).tools === undefined, 'generate() then leaves the tools out');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
 }
