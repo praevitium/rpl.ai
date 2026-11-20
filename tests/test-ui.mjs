@@ -11,7 +11,7 @@ import { parseEntry } from '../www/src/rpl/parser.js';
 import { format, formatStackTop } from '../www/src/rpl/formatter.js';
 import {
   state as calcState, setAngle, cycleAngle, toRadians, fromRadians,
-  varStore, varRecall, varList, varPurge, resetHome, currentPath,
+  varStore, varRecall, varList, varPurge, resetHome, currentPath, clearHalted,
   setLastError, clearLastError, getLastError,
   goHome, goUp, goInto, makeSubdir,
   setWordsize, getWordsize, getWordsizeMask,
@@ -2894,7 +2894,7 @@ setAngle('RAD');
   assert(/const key = \(bn, label, title, ico, cls = ''\) => `<button type="button" class="chip\$\{cls \? ` \$\{cls\}` : ''\}" data-bn="\$\{bn\}" title="\$\{title\}" aria-label="\$\{label\}">\$\{icon\(ico, 'sm'\)\}<span>\$\{label\}<\/span><\/button>`;/.test(bannerSrc)
     && /if \(kind === 'msgbox'\) return `<div class="bn halt msgbox" role="status">[\s\S]*?\$\{message\}<div class="bn-f">\$\{key\('cont', 'OK', 'CONT', 'check', 'pri'\)\}<\/div><\/div>`;/.test(bannerSrc),
     'MSGBOX: its banner is the message with one OK key that continues the program, no program source or debugger keys');
-  assert(/if \(id === 'PROMPT' \|\| id === 'MSGBOX'\) \{[\s\S]{0,200}?_markSuspend\(toks, i \+ 1, id === 'PROMPT' \? 'prompt' : 'msgbox', null, s\.pop\(\)\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
+  assert(parks('« "m" PROMPT »', 'prompt') && parks('« "m" MSGBOX »', 'msgbox'),
     'MSGBOX halts a running program the way PROMPT does, under its own kind');
 }
 
@@ -2925,7 +2925,7 @@ setAngle('RAD');
     && /const stepping = _singleStepMode \? \(_stepInto \? 'into' : 'over'\) : null;\s*_pendingSuspend = \{ tokens, index, kind, dialog, stepping, prompt \};/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
     && /if \(act === 'ok' && kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(act === 'cont' && kind === 'msgbox'\) \{ this\._continueProgram\(\); return; \}[\s\S]{0,700}?if \(act === 'kill' && kind === 'input'\) this\.entry\.cancel\(\);/.test(appSrc),
     "INPUT: its banner is the prompt with OK and Stop keys and no program source; the text it offers goes on the command line once the line that ran the program has cleared; Enter or OK hands the line back as a string (with V only once it parses) and goes on without an undo step of its own, as MSGBOX's OK does, so UNDO after the program takes the whole run back rather than stopping between its answers, and a dialog reached while stepping steps on with SST or SST↓ rather than running the program out; Stop clears the line before KILL");
-  assert(/if \(id === 'INPUT'\) \{[\s\S]{0,260}?_markSuspend\(toks, i \+ 1, 'input', input, s\.pop\(\)\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
+  assert(parks('« "Name?" "abc" INPUT »', 'input', true),
     'INPUT halts a running program the way PROMPT does, carrying the text to offer');
   assert(/this\.entry\.recall\(halted\.dialog\.text\);\s*if \(halted\.dialog\.cursor != null\) this\.entry\.cursor = halted\.dialog\.cursor;/.test(appSrc),
     "INPUT: the HP's cursor position (n from the left, or { row col }, 0 the end of the row) places the cursor in the offered text");
@@ -2949,7 +2949,7 @@ setAngle('RAD');
     && /if \(act === 'choose' && kind === 'choose'\) \{ this\.showChooseList\(\); return; \}\s*if \(act === 'form' && kind === 'inform'\) \{ this\.showInformSheet\(\); return; \}\s*if \(act === 'cancel' && \(kind === 'choose' \|\| kind === 'inform'\)\) \{ this\._continueProgram\(Integer\(0n\)\); return; \}/.test(appSrc)
     && /if \(this\._dialogHalt && this\._dialogHalt !== halted\) this\._endDialog\(\);\s*if \(halted\?\.dialog && this\._dialogHalt !== halted\) this\._beginDialog\(halted\);/.test(appSrc)
     && /_endDialog\(\) \{\s*if \(this\._dialogAlpha\) \{[^}]*\}\s*if \(this\._dialogHalt\.kind === 'choose'\) this\.popover\.close\(\{ restoreFocus: false \}\);\s*if \(this\._dialogHalt\.kind === 'inform' && this\.sheets\.kind === 'inform'\) this\.sheets\.close\(\);\s*clearTimeout\(this\._waitTimer\);\s*this\._dialogHalt = null;/.test(appSrc)
-    && /if \(id === 'CHOOSE'\) \{[\s\S]{0,300}?_markSuspend\(toks, i \+ 1, 'choose', choose, s\.pop\(\)\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
+    && parks('« "Q" { 1 2 } 1 CHOOSE »', 'choose', true),
     "CHOOSE: its banner is the prompt with Choose, Cancel and Stop keys; the choices open in the held-key popover above the banner (below the chip it covered Stop and the command line), the highlighted one marked, a tap answering with the choice and 1 (0 when none is highlighted), Cancel with 0, and the list goes when its dialog ends (a press on the banner's keys leaves a popover anchored to the banner open); it halts a running program the way INPUT does, carrying its choices");
 }
 
@@ -3070,7 +3070,7 @@ setAngle('RAD');
     && /if \(e\.key\.length === 1 && !e\.ctrlKey && !e\.metaKey && !e\.altKey && !inField && this\._answerKey\(typedKeyCode\(e\.key\)\)\) \{ e\.preventDefault\(\); return; \}\s*const binding = findBinding\(chord,/.test(appSrc)
     && /_beginWait\(halted\) \{\s*const \{ seconds, menu, poll \} = halted\.dialog;\s*if \(menu && this\.prefs\.minimal\) this\.setMinimalMenu\(true\);\s*if \(seconds\) this\._waitTimer = setTimeout\(\(\) => \{ if \(calcState\.halted === halted\) this\._continueProgram\(\); \}, seconds \* 1000\);/.test(appSrc)
     && /halted: calcState\.haltedStack\.some\(\(h\) => !isSuspension\(h\)\),/.test(appSrc)
-    && /if \(id === 'WAIT'\) \{[\s\S]{0,300}?_markSuspend\(toks, i \+ 1, 'wait', wait\);/.test(internalSrc),
+    && parks('« 1 WAIT »', 'wait', true),
     "WAIT: a timed wait shows how long with a Stop key and goes on by itself after its seconds (no key press for the display, whose message stays); a key wait says Press a key with Enter and Stop, and any keypad key, soft key (F1 to F6), character typed on a keyboard (a hardware keyboard's keydown ahead of its chords, a phone keyboard's text through the editor's input handler) or Enter, from the chip, the line's Enter or the keyboard (ahead of the empty line's Enter chord), answers with its HP code; -1 shows the soft keys in minimal view; the status line lights no HALT for a wait, nor, as on the HP, for MSGBOX, INPUT, CHOOSE or INFORM, but keeps it while a program halted by HALT or PROMPT waits underneath");
 }
 
@@ -3104,7 +3104,7 @@ setAngle('RAD');
     && /_onKeyDown\(e\) \{[\s\S]*?\n    if \(this\.kind !== 'inform' \|\| e\.key !== 'Enter' \|\| !e\.target\.matches\('input\[data-inf\]'\)\) return;[\s\S]*?if \(next\) next\.focus\(\);\s*else this\.app\.acceptInform\(\);/.test(sheetsSrc)
     && /const last = fields\.filter\(Boolean\)\.length - 1;/.test(sheetsSrc)
     && /data-inf="\$\{n\}"[^>]*enterkeyhint="\$\{n\+\+ === last \? 'done' : 'next'\}"/.test(sheetsSrc)
-    && /if \(id === 'INFORM'\) \{[\s\S]{0,400}?_markSuspend\(toks, i \+ 1, 'inform', inform, title\);/.test(internalSrc)
+    && parks('« "T" { "A" } 1 { } { } INFORM »', 'inform', true)
     && /\.inf-fields \{ display: grid; grid-template-columns: repeat\(var\(--inf-cols, 1\), minmax\(0, 1fr\)\);/.test(css)
     && /@container app \(max-width: 479px\) \{ \.inf-fields \{ grid-template-columns: minmax\(0, 1fr\); \} \.inf-blank \{ display: none; \} \}/.test(css),
     "INFORM: its banner is the title with Fill in, Cancel and Stop keys; the form opens in a sheet with a label and a 40 px input per field, the help as the placeholder and the initial value as source, in the form's columns on a wide screen and one on a phone; OK parses each field (an empty one NOVAL), checks the field's types and answers with the values and 1, a failing field keeping the form open with the complaint on it; Cancel answers 0, Reset puts the reset values back, Enter moves to the next field and from the last answers, and the fields tell a phone keyboard so (Next, and Done on the last, as the matrix writer's cells and the command line's Go do); the sheet goes with its dialog and the banner's Fill in reopens it");
@@ -4254,6 +4254,17 @@ setAngle('RAD');
 }
 
 // Reset everything, run against a recording store: what it did, in order, and the keys it removed.
+// Runs a program and reports whether it parked a halt record of `kind`, with a dialog when one is due.
+function parks(src, kind, dialog = false) {
+  const depth = calcState.haltedStack.length;
+  const st = new Stack();
+  st.push(parseEntry(src)[0]);
+  lookup('EVAL').fn(st);
+  const record = calcState.haltedStack.length > depth ? calcState.halted : null;
+  while (calcState.haltedStack.length > depth) clearHalted();
+  return record?.kind === kind && !!record.dialog === dialog;
+}
+
 const resetRun = await (async () => {
   const { Sheets } = await import('../www/src/ui/sheets.js');
   const keys = await import('../www/src/rpl/persist.js');
