@@ -1148,7 +1148,8 @@ The calculator needs none of this. The assistant is optional, and nothing
 leaves your browser until you connect a model.
 
 It works with [Ollama](https://ollama.com), a free app that runs AI models
-on your own computer, and with other OpenAI-compatible servers. Each turn it
+on your own computer, and with
+[vLLM, llama.cpp, LM Studio and hosted providers](#vllm-llamacpp-lm-studio-and-hosted-providers). Each turn it
 reads the live stack, modes and variables, looks commands up in the built-in
 HP 50g reference, and dry-runs RPL on a scratch copy of the calculator
 before acting for real. Every action is shown as a card, and each turn can
@@ -1322,14 +1323,46 @@ out of browser code. The app says so if you try.
   address on your network, so either open rpl.ai over plain HTTP from a
   server you run (and add that page's origin to `OLLAMA_ORIGINS`), or put
   Ollama behind HTTPS. Anyone on your network can use an exposed Ollama.
-- **Other OpenAI-compatible servers**, such as vLLM, llama.cpp's
-  `llama-server`, LM Studio or a hosted provider, work if they accept
-  requests from a web page. Put an API key in the endpoint settings if the
-  server needs one. When connecting, rpl.ai checks whether the server
-  takes tools: vLLM needs `--enable-auto-tool-choice` and a
-  `--tool-call-parser` for the model, and `llama-server` needs `--jinja`.
-  Without them the assistant still works, writing its tool calls as text.
-  Reasoning that the server streams separately is shown as thinking.
+
+### vLLM, llama.cpp, LM Studio and hosted providers
+
+Any server that speaks the OpenAI chat API works in place of Ollama. In
+**+ Add endpoint**, type its address ending in `/v1`, add an API key if the
+server wants one, pick a model and connect. When it connects, rpl.ai asks
+the server for one token with a tool offered: a server that accepts gets
+native tool calling, and one that refuses still works, with the assistant
+writing its tool calls as text. Reasoning a server streams separately
+shows as thinking.
+
+- **vLLM** (Linux with an NVIDIA or AMD GPU). Start it with tool calling
+  on and the window you want:
+  ```sh
+  vllm serve Qwen/Qwen3-8B --enable-auto-tool-choice --tool-call-parser hermes \
+    --reasoning-parser qwen3 --max-model-len 32768
+  ```
+  Connect to `http://localhost:8000/v1`. The tool-call and reasoning
+  parsers depend on the model family; vLLM's documentation lists them.
+  rpl.ai keeps its history inside the window vLLM reports, so a smaller
+  `--max-model-len` is fine. vLLM accepts requests from any page unless
+  you set `--allowed-origins`.
+- **llama.cpp** (`llama-server`, on a Mac, Windows or Linux, GPU or not).
+  `--jinja` turns on tool calling:
+  ```sh
+  llama-server -hf unsloth/Qwen3-8B-GGUF:Q4_K_M --jinja -c 32768
+  ```
+  Connect to `http://localhost:8080/v1`. It listens only on this computer
+  unless you add `--host 0.0.0.0`.
+- **LM Studio.** In the Developer tab, start the server and turn on
+  **Enable CORS** in its settings. Connect to `http://localhost:1234/v1`.
+  Models it marks with tool use get native tool calling.
+- **A hosted provider.** Use its OpenAI-compatible address and an API key.
+  The provider has to accept requests from a web page; OpenAI's API does,
+  and others say so in their documentation. The key is kept in this
+  browser's storage on this device, so use one you can revoke, with a
+  spending limit.
+
+A server on another computer is reached by its address instead of
+`localhost`, with the same HTTPS caveat as Ollama above.
 
 ### If it doesn't connect
 
@@ -1339,8 +1372,8 @@ The endpoint form explains the failure it sees:
 |---|---|
 | Waiting for your browser | Find the browser's prompt about apps and services on this device, near the address bar, and choose **Allow**. Until you answer it, nothing reaches Ollama |
 | Your browser is blocking this page | You chose Block earlier: click the icon to the left of the address, allow **Apps on device** (**Local network access** in older Chrome, **Device apps and services** in Firefox) and try again |
-| answered but refused this page's origin | Set `OLLAMA_ORIGINS` (step 3), then quit and restart Ollama |
-| Nothing answered | Check that Ollama is running (<http://localhost:11434>) |
+| answered but refused this page's origin | Ollama: set `OLLAMA_ORIGINS` (step 3), then quit and restart it. vLLM: add the origin to `--allowed-origins`. LM Studio: turn on Enable CORS |
+| Nothing answered | Check that the server is running and on that port (Ollama 11434, vLLM 8000, llama-server 8080, LM Studio 1234) |
 | Safari … blocks HTTPS pages | Use Chrome, Edge or Firefox, or run rpl.ai yourself |
 | served over HTTPS … blocks plain-HTTP requests | See "Ollama on another computer" above |
 | `unauthorized` from a cloud model | Run `ollama signin` on the computer running Ollama |
