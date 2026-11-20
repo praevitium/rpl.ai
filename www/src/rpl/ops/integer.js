@@ -1,9 +1,9 @@
 import { bigGcd, isInteger, isReal, Symbolic, Integer, Real, RList, Complex, isList } from '../types.js';
 import { RPLError, checkTimeLimit } from '../stack.js';
-import { badType, badValue, casNotReady } from '../errors.js';
+import { badType, badValue } from '../errors.js';
 import { Fn as AstFn, Bin as AstBin, Num as AstNum, Neg as AstNeg } from '../algebra.js';
 import { getCasModulo, setCasModulo } from '../state.js';
-import { giac } from '../cas/giac-engine.mjs';
+import { requireCas, casRun } from '../cas/giac-engine.mjs';
 import { giacToAst, astToGiac } from '../cas/giac-convert.mjs';
 import { register, lookup } from './registry.js';
 import { FALSE, TRUE, _astToRplValue, _bigFactorial, _pushCasResult, _gamma, _isSymOperand, _toAst, _withListBinary, _withListUnary, _withTaggedBinary, _withTaggedUnary, _withVMUnary } from './internal.js';
@@ -146,7 +146,7 @@ function _centerMod(a, m) {
 function _giacModAsts(...vals) {
   const asts = vals.map(_toAst);
   if (asts.includes(null)) throw badType();
-  if (!giac.isReady()) throw casNotReady();
+  requireCas();
   return asts;
 }
 
@@ -159,7 +159,7 @@ function _modBinary(intOp, giacOp) {
       return;
     }
     const [l, r] = _giacModAsts(a, b);
-    _pushCasResult(s, giacToAst(giac.caseval(`(${astToGiac(AstBin(giacOp, l, r))}) mod ${m}`)));
+    _pushCasResult(s, giacToAst(casRun(`(${astToGiac(AstBin(giacOp, l, r))}) mod ${m}`)));
   };
 }
 
@@ -172,7 +172,7 @@ function _modUnary(giacFn) {
       return;
     }
     const [a] = _giacModAsts(v);
-    s.push(_astToRplValue(giacToAst(giac.caseval(`${giacFn}(${astToGiac(a)}) mod ${m}`))));
+    s.push(_astToRplValue(giacToAst(casRun(`${giacFn}(${astToGiac(a)}) mod ${m}`))));
   };
 }
 
@@ -202,7 +202,7 @@ register('POWMOD', (s) => {
     return;
   }
   const [l, r] = _giacModAsts(a, e);
-  _pushCasResult(s, giacToAst(giac.caseval(`powmod(${astToGiac(l)},${astToGiac(r)},${m})`)));
+  _pushCasResult(s, giacToAst(casRun(`powmod(${astToGiac(l)},${astToGiac(r)},${m})`)));
 }, { category: 'Integer / number theory', categoryOrder: 23, label: "POWMOD" });
 
 
@@ -230,7 +230,7 @@ register('GCDMOD', (s) => {
     return;
   }
   const [l, r] = _giacModAsts(a, b);
-  s.push(_astToRplValue(giacToAst(giac.caseval(`gcd(${astToGiac(l)},${astToGiac(r)}) mod ${m}`))));
+  s.push(_astToRplValue(giacToAst(casRun(`gcd(${astToGiac(l)},${astToGiac(r)}) mod ${m}`))));
 }, { category: 'Integer / number theory', categoryOrder: 27, label: "GCDMOD" });
 
 
@@ -251,7 +251,7 @@ register('DIVMOD', (s) => {
     return;
   }
   const [l, r] = _giacModAsts(a, b);
-  s.push(_astToRplValue(giacToAst(giac.caseval(`(${astToGiac(l)})/(${astToGiac(r)}) mod ${m}`))));
+  s.push(_astToRplValue(giacToAst(casRun(`(${astToGiac(l)})/(${astToGiac(r)}) mod ${m}`))));
 }, { category: 'Integer / number theory', categoryOrder: 25, label: "DIVMOD" });
 
 
@@ -268,8 +268,8 @@ register('DIV2MOD', (s) => {
   }
   const [l, r] = _giacModAsts(a, b);
   const lStr = astToGiac(l), rStr = astToGiac(r);
-  s.push(_astToRplValue(giacToAst(giac.caseval(`quo(${lStr},${rStr}) mod ${m}`))));
-  s.push(_astToRplValue(giacToAst(giac.caseval(`rem(${lStr},${rStr}) mod ${m}`))));
+  s.push(_astToRplValue(giacToAst(casRun(`quo(${lStr},${rStr}) mod ${m}`))));
+  s.push(_astToRplValue(giacToAst(casRun(`rem(${lStr},${rStr}) mod ${m}`))));
 }, { category: 'Integer / number theory', categoryOrder: 26, label: "DIV2MOD" });
 
 

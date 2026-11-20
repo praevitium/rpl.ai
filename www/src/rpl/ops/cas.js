@@ -1,5 +1,5 @@
 import { bigGcd, isSymbolic, Symbolic, isReal, isInteger, isName, isString, RList, isList, Real, Name, Integer, isComplex, Complex, isVector, Vector, isMatrix, Matrix, isCasIdentifier, isBinaryInteger, isRational, isUnit, Tagged, Program, isProgram } from '../types.js';
-import { giac } from '../cas/giac-engine.mjs';
+import { giac, requireCas, casRun } from '../cas/giac-engine.mjs';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { buildGiacCmd, giacToAst, splitGiacList, astToGiac, isGiacErrorString, assumedName } from '../cas/giac-convert.mjs';
 import { Neg as AstNeg, Num as AstNum, Bin as AstBin, Var as AstVar, isNum as astIsNum, Fn as AstFn, freeVars as algebraFreeVars, evalAst as algebraEvalAst, isKnownFunction, LOGIC_ARITY, formatAlgebra, astEqual, exactRational } from '../algebra.js';
@@ -12,8 +12,8 @@ import { _astToRplValue, _entryWise, _pushCasResult, _isSymOperand, _toAst, _sub
 
 
 function _casEval(ast, wrap, vars) {
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  return giacToAst(giac.caseval(buildGiacCmd(ast, wrap, vars)));
+  requireCas();
+  return giacToAst(casRun(buildGiacCmd(ast, wrap, vars)));
 }
 
 function _varName(v) {
@@ -116,8 +116,8 @@ function _factorInteger(v) {
   if (abs < 2n) return v;
   let ast;
   if (abs > BigInt(Number.MAX_SAFE_INTEGER)) {
-    if (!giac.isReady()) throw new RPLError('CAS not ready');
-    ast = giacToAst(giac.caseval(`ifactor(${abs})`));
+    requireCas();
+    ast = giacToAst(casRun(`ifactor(${abs})`));
   } else {
     ast = _factorsToAst(_primeFactor(abs));
   }
@@ -169,16 +169,16 @@ function _solveFor(exprArg, varName) {
   let ast = _astArg(exprArg);
   // Giac reads `=` differently under its Maple/Mupad modes; `lhs - rhs` is unambiguous.
   if (ast.kind === 'bin' && ast.op === '=') ast = AstBin('-', ast.l, ast.r);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   // Complex mode (flag -103) also looks for complex roots, as on the HP50.
   const cmplx = getComplexMode();
   const solveFn = cmplx ? 'csolve' : 'solve';
-  let raw = giac.caseval(buildGiacCmd(ast, (e) => `${solveFn}(${e},${varName})`, [varName]));
+  let raw = casRun(buildGiacCmd(ast, (e) => `${solveFn}(${e},${varName})`, [varName]));
   // Roots without a radical form come back as rootof(...), which the parser
   // cannot read, so ask again for numeric roots.
   if (typeof raw === 'string' && raw.includes('rootof')) {
     const fsolveFn = cmplx ? 'cfsolve' : 'fsolve';
-    raw = giac.caseval(buildGiacCmd(ast, (e) => `${fsolveFn}(${e},${varName})`, [varName]));
+    raw = casRun(buildGiacCmd(ast, (e) => `${fsolveFn}(${e},${varName})`, [varName]));
   }
   // Some builds return a lone root without the list brackets.
   const trimmed = String(raw).trim();
@@ -205,7 +205,7 @@ function _linearSystem(eqsArg, varsArg) {
   const eqs = items(eqsArg).map((e) => astToGiac(asZero(_astArg(e))));
   const vars = items(varsArg).map(_varName);
   if (!eqs.length || !vars.length) throw new RPLError('Bad argument value');
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   return { system: `[${eqs.join(',')}],[${vars.map((v) => astToGiac(AstVar(v))).join(',')}]`, vars };
 }
 
@@ -214,9 +214,9 @@ function _linearSystem(eqsArg, varsArg) {
 register('LINSOLVE', (s) => {
   const [eqsArg, varsArg] = s.popN(2);
   const { system, vars } = _linearSystem(eqsArg, varsArg);
-  const reduced = splitGiacList(giac.caseval(`lu(delcols(syst2mat(${system}),${vars.length}))[2]`)) ?? [];
+  const reduced = splitGiacList(casRun(`lu(delcols(syst2mat(${system}),${vars.length}))[2]`)) ?? [];
   const pivots = reduced.map((row) => (splitGiacList(row) ?? []).find((cell) => !/^-?0(\.0*)?$/.test(cell))).filter(Boolean);
-  const values = splitGiacList(giac.caseval(`linsolve(${system})`)) ?? [];
+  const values = splitGiacList(casRun(`linsolve(${system})`)) ?? [];
   const solution = values.map(giacToAst).map((value, i) => AstBin('=', AstVar(vars[i]), value))
     .filter((eq) => !(eq.r.kind === 'var' && eq.r.name === eq.l.name));
   s.push(RList([eqsArg, varsArg]));
@@ -232,7 +232,7 @@ register('MSLV', (s) => {
   const { system, vars } = _linearSystem(eqsArg, varsArg);
   const guesses = items(guessArg);
   if (items(eqsArg).length !== vars.length || guesses.length !== vars.length) throw new RPLError('Bad argument value');
-  const values = splitGiacList(giac.caseval(`fsolve(${system},[${guesses.map((g) => astToGiac(_astArg(g))).join(',')}])`));
+  const values = splitGiacList(casRun(`fsolve(${system},[${guesses.map((g) => astToGiac(_astArg(g))).join(',')}])`));
   if (values?.length !== vars.length) throw new RPLError('MSLV: Bad Guess(es)');
   s.push(eqsArg);
   s.push(varsArg);
@@ -245,7 +245,7 @@ register('MSLV', (s) => {
 register('SYST2MAT', (s) => {
   const [eqsArg, varsArg] = s.popN(2);
   const { system, vars } = _linearSystem(eqsArg, varsArg);
-  const rows = (splitGiacList(giac.caseval(`syst2mat(${system})`)) ?? []).map((row) => (splitGiacList(row) ?? []).map(giacToAst));
+  const rows = (splitGiacList(casRun(`syst2mat(${system})`)) ?? []).map((row) => (splitGiacList(row) ?? []).map(giacToAst));
   const linear = rows.length && rows.every((row) => row.every((cell) => !vars.some((v) => algebraFreeVars(cell).has(v))));
   if (!linear) throw new RPLError('Bad argument value');
   s.push(Matrix(rows.map((row) => row.map(_casValue))));
@@ -254,8 +254,8 @@ register('SYST2MAT', (s) => {
 // SIMP2 ( a b → a/gcd b/gcd ): the AUR's example leaves X+3 and X-3 from X^3+6*X^2+11*X+6 and X^3-7*X-6.
 register('SIMP2', (s) => {
   const [a, b] = s.popN(2);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const parts = splitGiacList(giac.caseval(`simp2(${astToGiac(_astArg(a))},${astToGiac(_astArg(b))})`));
+  requireCas();
+  const parts = splitGiacList(casRun(`simp2(${astToGiac(_astArg(a))},${astToGiac(_astArg(b))})`));
   if (parts?.length !== 2) throw new RPLError('Bad argument value');
   for (const part of parts) s.push(_casValue(giacToAst(part)));
 }, { category: 'Polynomials', categoryOrder: 8.5, label: "SIMP2" });
@@ -264,8 +264,8 @@ register('SIMP2', (s) => {
 register('LGCD', (s) => {
   const [list] = s.popN(1);
   if (!isList(list) || !list.items.length) throw new RPLError('Bad argument type');
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const gcd = giacToAst(giac.caseval(`lgcd([${list.items.map((v) => astToGiac(_astArg(v))).join(',')}])`));
+  requireCas();
+  const gcd = giacToAst(casRun(`lgcd([${list.items.map((v) => astToGiac(_astArg(v))).join(',')}])`));
   s.push(list);
   s.push(_casValue(gcd));
 }, { category: 'Polynomials', categoryOrder: 8.55, label: "LGCD" });
@@ -274,8 +274,8 @@ register('LGCD', (s) => {
 function _polyArith(giacFn, argc, order) {
   return (s) => {
     const args = s.popN(argc).map(_astArg);
-    if (!giac.isReady()) throw new RPLError('CAS not ready');
-    const parts = splitGiacList(giac.caseval(`${giacFn}(${args.map(astToGiac).join(',')},${_vxFor(...args)})`));
+    requireCas();
+    const parts = splitGiacList(casRun(`${giacFn}(${args.map(astToGiac).join(',')},${_vxFor(...args)})`));
     if (parts?.length !== order.length) throw new RPLError('Bad argument value');
     for (const i of order) s.push(_casValue(giacToAst(parts[i])));
   };
@@ -296,8 +296,8 @@ register('CHINREM', (s) => {
   };
   const [p, q] = [congruence(u), congruence(v)];
   const x = _mainVar(...p, ...q);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const parts = splitGiacList(giac.caseval(`chinrem([${p.map(astToGiac).join(',')}],[${q.map(astToGiac).join(',')}],${x})`));
+  requireCas();
+  const parts = splitGiacList(casRun(`chinrem([${p.map(astToGiac).join(',')}],[${q.map(astToGiac).join(',')}],${x})`));
   if (parts?.length !== 2) throw new RPLError('Bad argument value');
   s.push(Vector(parts.map((t) => _casValue(giacToAst(t)))));
 }, { category: 'Polynomials', categoryOrder: 8.93, label: "CHINREM" });
@@ -307,9 +307,9 @@ register('LAGRANGE', (s) => {
   const [m] = s.popN(1);
   if (!isMatrix(m)) throw new RPLError('Bad argument type');
   if (m.rows.length !== 2) throw new RPLError('Invalid dimension');
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const [xs, ys] = m.rows.map((row) => `[${row.map((v) => astToGiac(_astArg(v))).join(',')}]`);
-  const parts = splitGiacList(giac.caseval(`f2nd(normal(lagrange(${xs},${ys},${astToGiac(AstVar(getCasVx()))})))`));
+  const parts = splitGiacList(casRun(`f2nd(normal(lagrange(${xs},${ys},${astToGiac(AstVar(getCasVx()))})))`));
   if (parts?.length !== 2) throw new RPLError('Bad argument value');
   const [num, den] = parts.map(giacToAst);
   _pushCasResult(s, astIsNum(den) && den.value === 1 ? num : AstBin('/', num, den));
@@ -317,23 +317,23 @@ register('LAGRANGE', (s) => {
 
 register('RESULTANT', (s) => {
   const [a, b] = s.popN(2).map(_astArg);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const x = astToGiac(AstVar(_mainVar(a, b)));
-  _pushCasResult(s, giacToAst(giac.caseval(`resultant(${astToGiac(a)},${astToGiac(b)},${x})`)));
+  _pushCasResult(s, giacToAst(casRun(`resultant(${astToGiac(a)},${astToGiac(b)},${x})`)));
 }, { category: 'Polynomials', categoryOrder: 8.91, label: "RESULTANT" });
 
 // AUR: P(a), for its sign, and the number of roots in [a, b]. Giac's sturmab counts ]a, b], so a root at a
 // is counted apart, with the square-free P divided by X-a; with no roots it gives -1 where P is negative.
 register('STURMAB', (s) => {
   const [p, a, b] = s.popN(3).map(_astArg);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const [P, A, B] = [p, a, b].map(astToGiac);
   const x = astToGiac(AstVar(_mainVar(p)));
-  const atA = giacToAst(giac.caseval(`subst(${P},${x}=${A})`));
+  const atA = giacToAst(casRun(`subst(${P},${x}=${A})`));
   const count = astIsNum(atA) && atA.value === 0
     ? `1+max(0,sturmab(quo(normal((${P})/gcd(${P},diff(${P},${x}))),${x}-(${A}),${x}),${x},${A},${B}))`
     : `max(0,sturmab(${P},${x},${A},${B}))`;
-  s.push(RList([_casValue(atA), _casValue(giacToAst(giac.caseval(count)))]));
+  s.push(RList([_casValue(atA), _casValue(giacToAst(casRun(count)))]));
 }, { category: 'Polynomials', categoryOrder: 8.92, label: "STURMAB" });
 
 // STURM ( P → { [content] -1. seq1 m1 … } ): P's content, marked -1. as in the AUR, then for each multiplicity m the
@@ -348,17 +348,17 @@ function _sturmTerms(raw, x) {
     const g = big.reduce((a, b) => bigGcd(a, b < 0n ? -b : b), 0n) || 1n;
     return `[${big.map((c) => c / g).join(',')}]`;
   });
-  return splitGiacList(giac.caseval(`[${scaled.map((c) => `expand(poly2symb(${c},${x}))`).join(',')}]`)).map((t) => _tableValue(giacToAst(t)));
+  return splitGiacList(casRun(`[${scaled.map((c) => `expand(poly2symb(${c},${x}))`).join(',')}]`)).map((t) => _tableValue(giacToAst(t)));
 }
 
 
 register('STURM', (s) => {
   const [v] = s.popN(1);
   const p = _astArg(v);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const name = _mainVar(p);
   const x = astToGiac(AstVar(name));
-  const pairs = splitGiacList(giac.caseval(`factors(${astToGiac(p)})`));
+  const pairs = splitGiacList(casRun(`factors(${astToGiac(p)})`));
   if (!pairs || pairs.length % 2) throw new RPLError('Bad argument value');
   const content = [];
   const groups = new Map();
@@ -368,9 +368,9 @@ register('STURM', (s) => {
     else if (Number.isInteger(m) && m > 0) groups.set(m, [...(groups.get(m) ?? []), `(${factor})`]);
     else throw new RPLError('Bad argument value');
   }
-  const items = [Vector([_tableValue(giacToAst(giac.caseval(`normal(${content.join('*') || 1})`)))]), Real(-1)];
+  const items = [Vector([_tableValue(giacToAst(casRun(`normal(${content.join('*') || 1})`)))]), Real(-1)];
   for (const m of [...groups.keys()].sort((a, b) => a - b)) {
-    const seq = giac.caseval(`sturmseq(expand(${groups.get(m).join('*')}),${x})`);
+    const seq = casRun(`sturmseq(expand(${groups.get(m).join('*')}),${x})`);
     items.push(Vector(_sturmTerms(splitGiacList(seq)?.[1], x)), Real(m));
   }
   s.push(RList(items));
@@ -379,9 +379,9 @@ register('STURM', (s) => {
 function _planePoint(v) {
   if (isComplex(v)) return [AstNum(v.re, true), AstNum(v.im, true)];
   if (isReal(v) || isInteger(v)) return [_astArg(v), AstNum(0)];
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const e = astToGiac(_astArg(v));
-  const parts = splitGiacList(giac.caseval(`[re(${e}),im(${e})]`));
+  const parts = splitGiacList(casRun(`[re(${e}),im(${e})]`));
   if (parts?.length !== 2) throw new RPLError('Bad argument value');
   return parts.map(giacToAst);
 }
@@ -412,9 +412,9 @@ function _vectorCalculus(giacFn, check) {
     const parts = isVector(fnArg) || isList(fnArg) ? fnArg.items : null;
     const vars = varsArg.items.map(_varName);
     check(parts, vars);
-    if (!giac.isReady()) throw new RPLError('CAS not ready');
+    requireCas();
     const f = parts ? `[${parts.map((e) => astToGiac(_astArg(e))).join(',')}]` : astToGiac(_astArg(fnArg));
-    const raw = giac.caseval(`${giacFn}(${f},[${vars.map((v) => astToGiac(AstVar(v))).join(',')}])`);
+    const raw = casRun(`${giacFn}(${f},[${vars.map((v) => astToGiac(AstVar(v))).join(',')}])`);
     if (isGiacErrorString(raw)) throw new RPLError('Bad argument value');
     const items = splitGiacList(raw);
     s.push(items ? Vector(items.map((item) => _casValue(giacToAst(item)))) : _casValue(giacToAst(raw)));
@@ -454,11 +454,11 @@ register('HESS', (s) => {
   const [expr, varsArg] = s.popN(2);
   if (!isVector(varsArg) && !isList(varsArg)) throw new RPLError('Bad argument type');
   if (!varsArg.items.length) throw new RPLError('Bad argument value');
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const f = astToGiac(_astArg(expr));
   const vars = `[${varsArg.items.map((v) => astToGiac(AstVar(_varName(v)))).join(',')}]`;
-  const hessian = _giacMatrix(giac.caseval(`normal(hessian(${f},${vars}))`));
-  const gradient = splitGiacList(giac.caseval(`normal(grad(${f},${vars}))`));
+  const hessian = _giacMatrix(casRun(`normal(hessian(${f},${vars}))`));
+  const gradient = splitGiacList(casRun(`normal(grad(${f},${vars}))`));
   if (!gradient) throw new RPLError('Bad argument value');
   s.push(hessian);
   s.push(Vector(gradient.map((item) => _casValue(giacToAst(item)))));
@@ -491,8 +491,8 @@ function _leadPositive(entries) {
 const _giacVector = (raw) => Vector(_leadPositive((splitGiacList(raw) ?? []).map(giacToAst)).map(_casValue));
 
 function _giacBasis(cmd) {
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const vectors = splitGiacList(giac.caseval(cmd));
+  requireCas();
+  const vectors = splitGiacList(casRun(cmd));
   if (!vectors?.every((v) => splitGiacList(v))) throw new RPLError('Bad argument value');
   return RList(vectors.map(_giacVector));
 }
@@ -526,22 +526,22 @@ function _variables(v) {
 register('AXQ', (s) => {
   const [m, vars] = s.popN(2);
   const cmd = `a2q(${_matrixArg(m)},${_variables(vars)})`;
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  _pushCasResult(s, giacToAst(giac.caseval(cmd)));
+  requireCas();
+  _pushCasResult(s, giacToAst(casRun(cmd)));
   s.push(vars);
 }, { category: 'Vectors / matrices', categoryOrder: 64, label: "AXQ" });
 
 register('QXA', (s) => {
   const [q, vars] = s.popN(2);
   const cmd = `q2a(${astToGiac(_astArg(q))},${_variables(vars)})`;
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  s.push(_giacMatrix(giac.caseval(cmd)));
+  requireCas();
+  s.push(_giacMatrix(casRun(cmd)));
   s.push(vars);
 }, { category: 'Vectors / matrices', categoryOrder: 65, label: "QXA" });
 
 function _numericResult(cmd) {
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const ast = giacToAst(giac.caseval(cmd));
+  requireCas();
+  const ast = giacToAst(casRun(cmd));
   if (!astIsNum(ast)) throw new RPLError('Bad argument value');
   return Real(ast.value);
 }
@@ -568,8 +568,8 @@ register('SVL', (s) => {
   const cmd = `svl(evalf(${_matrixArg(m)}))`;
   const count = Math.min(m.rows.length, m.rows[0].length);
   if (_isZeroMatrix(m)) { s.push(Vector(Array.from({ length: count }, () => Real(0)))); return; }
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const values = (splitGiacList(giac.caseval(cmd)) ?? []).map(giacToAst);
+  requireCas();
+  const values = (splitGiacList(casRun(cmd)) ?? []).map(giacToAst);
   if (!values.length || !values.every(astIsNum)) throw new RPLError('Bad argument value');
   s.push(Vector(values.map((a) => a.value).sort((x, y) => y - x).slice(0, count).map((x) => Real(x))));
 }, { category: 'Vectors / matrices', categoryOrder: 68, label: "SVL" });
@@ -603,8 +603,8 @@ register('SVD', (s) => {
     s.push(Vector(Array.from({ length: Math.min(m.rows.length, m.rows[0].length) }, () => Real(0))));
     return;
   }
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const parts = splitGiacList(giac.caseval(cmd));
+  requireCas();
+  const parts = splitGiacList(casRun(cmd));
   if (parts?.length !== 3) throw new RPLError('Bad argument value');
   const numbers = (list) => (splitGiacList(list) ?? []).map(Number);
   const [u, v] = [parts[0], parts[2]].map((t) => (splitGiacList(t) ?? []).map(numbers));
@@ -624,8 +624,8 @@ register('SVD', (s) => {
 register('ISOM', (s) => {
   const [m] = s.popN(1);
   const cmd = `isom(${_matrixArg(m)})`;
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const parts = splitGiacList(giac.caseval(cmd));
+  requireCas();
+  const parts = splitGiacList(casRun(cmd));
   if (!parts?.length) throw new RPLError('Bad argument value');
   const axisAndAngle = parts.length > 2;
   s.push(RList(parts.map((p) => {
@@ -641,8 +641,8 @@ register('MKISOM', (s) => {
   const giacElement = (v) => (isVector(v) ? _giacArray(v) : astToGiac(_astArg(v)));
   const els = isList(elements) ? `[${elements.items.map(giacElement).join(',')}]` : giacElement(elements);
   const cmd = `mkisom(${els},${astToGiac(_astArg(sign))})`;
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  s.push(_giacMatrix(giac.caseval(cmd)));
+  requireCas();
+  s.push(_giacMatrix(casRun(cmd)));
 }, { category: 'Vectors / matrices', categoryOrder: 70, label: "MKISOM" });
 
 // A = PᵀDP for a symmetric A, by LDLᵀ in Giac: D's diagonal and P = Lᵀ, as SYLVESTER and GAUSS give them.
@@ -651,8 +651,8 @@ const _LDLT = '(A->{local n,L,D,i,j,k,s;n:=rowdim(A);L:=idn(n);D:=[0$n];'
   + 'for(i:=j+1;i<n;i++){s:=A[i,j];for(k:=0;k<j;k++){s:=s-L[i,k]*L[j,k]*D[k]};L[i,j]:=normal(s/D[j])}};[D,tran(L)]})';
 
 function _ldlt(matrixGiac) {
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const raw = giac.caseval(`${_LDLT}(${matrixGiac})`);
+  requireCas();
+  const raw = casRun(`${_LDLT}(${matrixGiac})`);
   const parts = splitGiacList(raw);
   if (parts?.length !== 2 || /undef|infinity/.test(raw)) throw new RPLError('Bad argument value');
   return { d: Vector((splitGiacList(parts[0]) ?? []).map((c) => _casValue(giacToAst(c)))), p: _giacMatrix(parts[1]) };
@@ -674,7 +674,7 @@ register('GAUSS', (s) => {
   const { d, p } = _ldlt(`q2a(${form},${v})`);
   s.push(d);
   s.push(p);
-  _pushCasResult(s, giacToAst(giac.caseval(`gauss(${form},${v})`)));
+  _pushCasResult(s, giacToAst(casRun(`gauss(${form},${v})`)));
   s.push(vars);
 }, { category: 'Vectors / matrices', categoryOrder: 71.6, label: "GAUSS" });
 
@@ -682,8 +682,8 @@ register('GAUSS', (s) => {
 register('RREFMOD', (s) => {
   const [m] = s.popN(1);
   const cmd = `rref(${_matrixArg(m)} % ${getCasModulo()})`;
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  s.push(_giacMatrix(giac.caseval(cmd).replace(/ % \d+/g, '')));
+  requireCas();
+  s.push(_giacMatrix(casRun(cmd).replace(/ % \d+/g, '')));
 }, { category: 'Vectors / matrices', categoryOrder: 71.7, label: "RREFMOD" });
 
 // A program or a function name takes the value from the stack; an expression has it put for its variable.
@@ -703,14 +703,14 @@ function _applyTo(s, fn, valueAst) {
 register('DIAGMAP', (s) => {
   const [m, fn] = s.popN(2);
   const cmd = `[jordan(${_matrixArg(m)})]`;
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const parts = splitGiacList(giac.caseval(cmd));
+  requireCas();
+  const parts = splitGiacList(casRun(cmd));
   if (parts?.length !== 2) throw new RPLError('Bad argument value');
   const [pGiac, jGiac] = parts;
   const j = (splitGiacList(jGiac) ?? []).map((row) => (splitGiacList(row) ?? []).map(giacToAst));
   if (j.some((row, r) => row.some((c, k) => k !== r && !_isZero(c)))) throw new RPLError('Bad argument value');
   const fd = j.map((row, r) => astToGiac(_applyTo(s, fn, row[r])));
-  s.push(_giacMatrix(giac.caseval(`normal(${pGiac}*diag([${fd.join(',')}])*inv(${pGiac}))`)));
+  s.push(_giacMatrix(casRun(`normal(${pGiac}*diag([${fd.join(',')}])*inv(${pGiac}))`)));
 }, { category: 'Vectors / matrices', categoryOrder: 71.8, label: "DIAGMAP" });
 
 // AUR: 2 3 « → I J 'I+2*J' » LCXM is [[ 3 5 7 ][ 4 6 8 ]]; an expression in I and J also serves.
@@ -753,15 +753,15 @@ function _byValue(roots) {
 // + or -, between them, as the AUR tabulates 2-X^2.
 function _signTable(expr, x) {
   const e = astToGiac(expr);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const found = ['numer', 'denom'].flatMap((part) => splitGiacList(giac.caseval(`solve(${part}(${e}),${x})`)) ?? []).map(giacToAst);
+  requireCas();
+  const found = ['numer', 'denom'].flatMap((part) => splitGiacList(casRun(`solve(${part}(${e}),${x})`)) ?? []).map(giacToAst);
   const points = found.map((ast) => [ast, algebraEvalAst(ast, (name) => (name === 'π' ? Math.PI : undefined))]);
   if (!points.every(([, value]) => astIsNum(value) && Number.isFinite(value.value))) throw new RPLError('Bad argument value');
   const sorted = points.map(([ast, value]) => [ast, value.value]).sort((a, b) => a[1] - b[1])
     .filter(([, value], i, all) => i === 0 || value - all[i - 1][1] > 1e-12);
   const at = sorted.map(([, value]) => value);
   const tests = at.length ? [at[0] - 1, ...at.slice(1).map((value, i) => (at[i] + value) / 2), at.at(-1) + 1] : [0];
-  const signs = (splitGiacList(giac.caseval(`[${tests.map((t) => `sign(evalf(subst(${e},${x}=${t})))`).join(',')}]`)) ?? []).map(Number);
+  const signs = (splitGiacList(casRun(`[${tests.map((t) => `sign(evalf(subst(${e},${x}=${t})))`).join(',')}]`)) ?? []).map(Number);
   if (signs.length !== tests.length) throw new RPLError('Bad argument value');
   return { points: [AstNeg(AstVar('∞')), ...sorted.map(([ast]) => ast), AstVar('∞')], signs };
 }
@@ -801,11 +801,11 @@ register('TABVAR', (s) => {
   const [v] = s.popN(1);
   const f = _astArg(v);
   const x = _mainVar(f);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const [F, X] = [f, AstVar(x)].map(astToGiac);
-  const df = giacToAst(giac.caseval(`simplify(diff(${F},${X}))`));
+  const df = giacToAst(casRun(`simplify(diff(${F},${X}))`));
   const { points, signs } = _signTable(df, x);
-  const limits = splitGiacList(giac.caseval(`[${points.map((p) => `limit(${F},${X},${astToGiac(p)})`).join(',')}]`));
+  const limits = splitGiacList(casRun(`[${points.map((p) => `limit(${F},${X},${astToGiac(p)})`).join(',')}]`));
   if (limits?.length !== points.length) throw new RPLError('Bad argument value');
   const xRow = _interleave(points.map(_tableValue), signs.map(_signMark));
   const fRow = _interleave(limits.map((t) => _tableValue(_limitValue(t))), signs.map((sign) => Name(_ARROWS[sign] ?? '?')));
@@ -851,8 +851,8 @@ register('DOMAIN', (s) => {
   const expr = _expandUserCalls(_astArg(v));
   if (_usesUnknownFunction(expr)) throw new RPLError('Unknown operator');
   const x = _mainVar(expr);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const raw = String(giac.caseval(`domain(${astToGiac(expr)},${x})`)).trim();
+  requireCas();
+  const raw = String(casRun(`domain(${astToGiac(expr)},${x})`)).trim();
   const relations = (t) => t.replace(/>=/g, '≥').replace(/<=/g, '≤').replace(/<>/g, '≠');
   const conditions = raw === x ? [] : (splitGiacList(raw) ?? [raw]).map((c) => giacToAst(relations(c)));
   const bounds = conditions.flatMap((c) => _domainBounds(c, x));
@@ -873,9 +873,9 @@ register('ZEROS', _entryWise((s) => {
   const varName = _varName(varArg);
   let ast = _astArg(exprArg);
   if (ast.kind === 'bin' && ast.op === '=') ast = AstBin('-', ast.l, ast.r);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const zeros = getComplexMode() ? 'czeros' : 'zeros';
-  const raw = giac.caseval(buildGiacCmd(ast, (e) => (getApproxMode() ? `evalf(${zeros}(${e},${varName}))` : `${zeros}(${e},${varName})`), [varName]));
+  const raw = casRun(buildGiacCmd(ast, (e) => (getApproxMode() ? `evalf(${zeros}(${e},${varName}))` : `${zeros}(${e},${varName})`), [varName]));
   const trimmed = String(raw).trim();
   const roots = (splitGiacList(raw) ?? (trimmed ? [trimmed] : [])).map((r) => giacToAst(r));
   s.push(RList(_byValue(roots).map(_casValue)));
@@ -968,9 +968,9 @@ register('|', _entryWise((s) => {
 
 
 function _substVar(ast, name, valueAst) {
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const valueGiac = astToGiac(valueAst);
-  return giacToAst(giac.caseval(buildGiacCmd(ast, (e) => `subst(${e},${name}=${valueGiac})`, [name])));
+  return giacToAst(casRun(buildGiacCmd(ast, (e) => `subst(${e},${name}=${valueGiac})`, [name])));
 }
 
 
@@ -1039,9 +1039,9 @@ register('SIGMA', _entryWise((s) => {
 // AUR: u*v' and v give u*v and -u'*v, the integral still to take; Giac's ibpdv is the HP's command.
 register('IBP', (s) => {
   const [f, v] = s.popN(2).map(_astArg);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const x = astToGiac(AstVar(_mainVar(f, v)));
-  const parts = splitGiacList(giac.caseval(`ibpdv(${astToGiac(f)},${astToGiac(v)},${x})`));
+  const parts = splitGiacList(casRun(`ibpdv(${astToGiac(f)},${astToGiac(v)},${x})`));
   if (parts?.length !== 2) throw new RPLError('Bad argument value');
   for (const part of parts) s.push(_casValue(giacToAst(part)));
 }, { category: 'CAS / symbolic', categoryOrder: 2.4, label: "IBP" });
@@ -1086,12 +1086,12 @@ register('SIGMAVX', _vxForm('SIGMA', _mainVar), { category: 'CAS / symbolic', ca
 register('∫', _entryWise((s) => {
   const [lower, upper, integrand, varArg] = s.popN(4);
   const varName = _varName(varArg);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const endpoint = (v) => (isBinaryInteger(v) ? AstNum(v.value) : _astArg(v));
   const a = astToGiac(endpoint(lower));
   const b = astToGiac(endpoint(upper));
   const cmd = buildGiacCmd(_astArg(integrand), (e) => `simplify(subst(integrate(${e},${varName}),${varName}=${b})-subst(integrate(${e},${varName}),${varName}=${a}))`, [varName]);
-  _pushCasResult(s, giacToAst(giac.caseval(cmd)));
+  _pushCasResult(s, giacToAst(casRun(cmd)));
 }, { argc: 4, at: 2 }), { category: 'CAS / symbolic', categoryOrder: 2.5, label: "∫" });
 
 // AUR: Σ takes the index, its first and last values and the summand, and gives the sum, or the
@@ -1178,10 +1178,10 @@ register('TABVAL', (s) => {
   const [expr, list] = s.popN(2);
   if (!isList(list)) throw new RPLError('Bad argument type');
   const ast = _astArg(expr);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const [e, x] = [ast, AstVar(_mainVar(ast))].map(astToGiac);
   const results = list.items.length
-    ? splitGiacList(giac.caseval(`[${list.items.map((v) => `subst(${e},${x}=${astToGiac(_astArg(v))})`).join(',')}]`))
+    ? splitGiacList(casRun(`[${list.items.map((v) => `subst(${e},${x}=${astToGiac(_astArg(v))})`).join(',')}]`))
     : [];
   if (results?.length !== list.items.length) throw new RPLError('Bad argument value');
   try {
@@ -1196,11 +1196,11 @@ register('TABVAL', (s) => {
 // AUR: the nth complex Fourier coefficient over one period from 0, the period being PERIOD, 2π unless stored.
 register('FOURIER', _entryWise((s) => {
   const [f, n] = s.popN(2).map(_astArg);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const period = recallVar('PERIOD');
   const L = period === undefined ? '2*pi' : astToGiac(_astArg(period));
   const x = astToGiac(AstVar(_mainVar(f)));
-  _pushCasResult(s, giacToAst(giac.caseval(`fourier_cn(${astToGiac(f)},${x},${L},${astToGiac(n)},0)`)));
+  _pushCasResult(s, giacToAst(casRun(`fourier_cn(${astToGiac(f)},${x},${L},${astToGiac(n)},0)`)));
 }, { argc: 2 }), { category: 'CAS / symbolic', categoryOrder: 3.65, label: "FOURIER" });
 
 const _infinitySign = (ast) => {
@@ -1226,13 +1226,13 @@ register('SERIES', (s) => {
   const n = _taylorOrder(orderArg);
   if (n < 1) throw new RPLError('Bad argument value');
   const { varName: x, point } = _seriesPoint(pointArg, expr);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const h = AstVar('h');
   const sign = _infinitySign(point);
   const atZero = astIsNum(point) && point.value === 0;
   const inH = sign ? AstBin('/', AstNum(sign > 0 ? 1n : -1n), h) : atZero ? h : AstBin('+', point, h);
   const shifted = _substitute(expr, new Map([[x, inH]]));
-  const raw = String(giac.caseval(buildGiacCmd(shifted, (e) => `series(${e},h=0,${n})`, ['h'])));
+  const raw = String(casRun(buildGiacCmd(shifted, (e) => `series(${e},h=0,${n})`, ['h'])));
   if (!raw || /undef|rror/i.test(raw)) throw new RPLError('No series at that point');
   const tail = raw.match(/(?:h(?:\^\(?(-?\d+)\)?)?\*)?order_size\(h\)/);
   const expans = giacToAst(raw.replace(/[-+]?(?:h(?:\^\(?-?\d+\)?)?\*)?order_size\(h\)$/, '') || '0');
@@ -1241,7 +1241,7 @@ register('SERIES', (s) => {
   const powers = terms.map((t) => _termPower(t, 'h'));
   const lowest = powers.reduce((best, p, i) => (p < powers[best] ? i : best), 0);
   const limitCmd = buildGiacCmd(expr, (e) => `limit(${e},${x},${sign ? `${sign > 0 ? '+' : '-'}infinity` : astToGiac(point)})`, [x]);
-  const limit = giacToAst(giac.caseval(limitCmd));
+  const limit = giacToAst(casRun(limitCmd));
   const back = sign ? AstBin('/', AstNum(sign > 0 ? 1n : -1n), AstVar(x)) : atZero ? AstVar(x) : AstBin('-', AstVar(x), point);
   s.push(RList([
     Tagged('Limit', _casValue(limit)),
@@ -1536,7 +1536,7 @@ register('PREVAL', (s) => {
   const endpointAst = (v) => (isBinaryInteger(v) ? AstNum(v.value) : _astArg(v));
   const aAst = endpointAst(aVal);
   const bAst = endpointAst(bVal);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const aG = astToGiac(aAst);
   const bG = astToGiac(bAst);
   const cmd = buildGiacCmd(
@@ -1544,7 +1544,7 @@ register('PREVAL', (s) => {
     (e) => `simplify(subst(${e},${varName}=${bG})-subst(${e},${varName}=${aG}))`,
     [varName],
   );
-  _pushCasResult(s, giacToAst(giac.caseval(cmd)));
+  _pushCasResult(s, giacToAst(casRun(cmd)));
 }, { category: 'CAS / symbolic', categoryOrder: 5, label: "PREVAL" });
 
 
@@ -1584,8 +1584,8 @@ register('FXND', (s) => {
     s.push(_casValue(ast.r));
     return;
   }
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const parts = splitGiacList(giac.caseval(buildGiacCmd(ast, (e) => `fxnd(${e})`)));
+  requireCas();
+  const parts = splitGiacList(casRun(buildGiacCmd(ast, (e) => `fxnd(${e})`)));
   if (parts?.length !== 2) throw new RPLError('Bad argument value');
   for (const part of parts) s.push(_casValue(giacToAst(part)));
 }, { category: 'CAS / symbolic', categoryOrder: 38.1, label: "FXND" });
@@ -1595,9 +1595,9 @@ register('DEGREE', (s) => {
   const [v] = s.popN(1);
   let ast = _astArg(v);
   if (ast.kind === 'bin' && ast.op === '=') ast = AstBin('-', ast.l, ast.r);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const p = astToGiac(ast);
-  const d = giacToAst(giac.caseval(`when(normal(${p})==0,-1,degree(normal(${p}),${astToGiac(AstVar(_mainVar(ast)))}))`));
+  const d = giacToAst(casRun(`when(normal(${p})==0,-1,degree(normal(${p}),${astToGiac(AstVar(_mainVar(ast)))}))`));
   const degree = d.kind === 'neg' && astIsNum(d.arg) ? -d.arg.value : d.value;
   if (!Number.isInteger(degree)) throw new RPLError('Bad argument value');
   s.push(getApproxMode() ? Real(degree) : Integer(BigInt(degree)));
@@ -1639,8 +1639,8 @@ register('LVAR', (s) => {
   s.need(1);
   const v = s.peek();
   if (!isSymbolic(v)) throw new RPLError('Bad argument type');
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const items = (splitGiacList(giac.caseval(buildGiacCmd(v.expr, (e) => `lvar(${e})`))) ?? []).map(giacToAst);
+  requireCas();
+  const items = (splitGiacList(casRun(buildGiacCmd(v.expr, (e) => `lvar(${e})`))) ?? []).map(giacToAst);
   const text = new Map(items.map((a) => [a, a.kind === 'var' ? a.name : formatAlgebra(a)]));
   items.sort((a, b) => _longestFirst(text.get(a), text.get(b)));
   s.push(Vector(items.map((a) => (a.kind === 'var' ? Name(a.name) : Symbolic(a)))));
@@ -1728,8 +1728,8 @@ register('DESOLVE', (s) => {
   const fn = _astArg(fnArg);
   if (fn.kind !== 'fn' || fn.args.length !== 1 || fn.args[0].kind !== 'var') throw new RPLError('Bad argument type');
   const eqs = (isList(eqArg) ? eqArg.items : [eqArg]).map((e) => astToGiac(_dnToDeriv(_astArg(e))));
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const raw = giac.caseval(`desolve(${eqs.length > 1 ? `[${eqs.join(',')}]` : eqs[0]},${astToGiac(fn)})`);
+  requireCas();
+  const raw = casRun(`desolve(${eqs.length > 1 ? `[${eqs.join(',')}]` : eqs[0]},${astToGiac(fn)})`);
   const solutions = (splitGiacList(raw) ?? [raw]).map((r) => giacToAst(_hpConstants(r)));
   if (!solutions.length) throw new RPLError('Bad argument value');
   s.push(RList(solutions.map((solution) => Symbolic(AstBin('=', fn, solution)))));
@@ -1741,13 +1741,13 @@ register('LDEC', (s) => {
   const rhs = _astArg(rhsArg);
   const poly = _astArg(polyArg);
   const x = _mainVar(rhs, poly);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const coeffs = splitGiacList(giac.caseval(`symb2poly(${astToGiac(poly)},${x})`)) ?? [];
+  requireCas();
+  const coeffs = splitGiacList(casRun(`symb2poly(${astToGiac(poly)},${x})`)) ?? [];
   if (coeffs.length < 2) throw new RPLError('Bad argument value');
   // Giac's desolve misreads diff(y,X,1), so a first derivative is written without its order.
   const derivative = (k) => (k === 0 ? `rplY(${x})` : `diff(rplY(${x}),${x}${k > 1 ? `,${k}` : ''})`);
   const terms = coeffs.map((c, i) => `(${c})*${derivative(coeffs.length - 1 - i)}`);
-  _pushCasResult(s, giacToAst(_hpConstants(giac.caseval(`desolve(${terms.join('+')}=${astToGiac(rhs)},rplY(${x}))`))));
+  _pushCasResult(s, giacToAst(_hpConstants(casRun(`desolve(${terms.join('+')}=${astToGiac(rhs)},rplY(${x}))`))));
 }, { category: 'CAS / symbolic', categoryOrder: 32.2, label: "LDEC" });
 
 
@@ -2014,10 +2014,10 @@ function _limitPoint(v, vx) {
 register('LIMIT', _entryWise((s) => {
   const [exprArg, pointArg] = s.popN(2);
   if (!_isSymOperand(exprArg)) throw new RPLError('Bad argument type');
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const { varName, valGiac } = _limitPoint(pointArg, _vxFor(_toAst(exprArg)));
   const cmd = buildGiacCmd(_toAst(exprArg), (e) => `limit(${e},${varName},${valGiac})`, [varName]);
-  _pushCasResult(s, giacToAst(giac.caseval(cmd)));
+  _pushCasResult(s, giacToAst(casRun(cmd)));
 }, { argc: 2, only: _isSymOperand }), { category: 'CAS / symbolic', categoryOrder: 34, label: "LIMIT" });
 
 

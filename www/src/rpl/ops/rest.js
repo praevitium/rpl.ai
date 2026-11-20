@@ -1,7 +1,7 @@
 import { isInteger, isReal, Integer, Symbolic, Matrix } from '../types.js';
 import { RPLError } from '../stack.js';
 import { REAL_MAX_EXP_MIN, REAL_MAX_EXP_MAX, setRealMaxExp, getRealMaxExp, getCasVx } from '../state.js';
-import { giac } from '../cas/giac-engine.mjs';
+import { requireCas, casRun } from '../cas/giac-engine.mjs';
 import { giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
 import { register, lookup } from './registry.js';
 import { _astToRplValue, _cToPOp, _cToROp, _colCompose, _colDecompose, _fromArrayOp, _fromListOp, _fromStrOp, _fromVecOp, _matrixToGiacStr, _pToCOp, _popSquareMatrix, _rToCOp, _rowCompose, _rowDecompose, _toArrayOp, _toListOp, _toStrOp, _toV2Op, _toV3Op } from './internal.js';
@@ -113,10 +113,10 @@ register('P->C', _pToCOp);
 // Minimal polynomial of a square matrix, in the CAS variable.
 register('PMINI', (s) => {
   const { matrix } = _popSquareMatrix(s);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const vx = getCasVx();
   const matStr = _matrixToGiacStr(matrix);
-  s.push(Symbolic(giacToAst(giac.caseval(`pmin(${matStr},${vx})`))));
+  s.push(Symbolic(giacToAst(casRun(`pmin(${matStr},${vx})`))));
 }, { category: 'Vectors / matrices', categoryOrder: 55, label: "PMINI" });
 
 
@@ -124,9 +124,9 @@ register('PMINI', (s) => {
 // HP50's Q (level 2) and T (level 1).
 register('SCHUR', (s) => {
   const { matrix } = _popSquareMatrix(s);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const matStr = _matrixToGiacStr(matrix);
-  const pair = splitGiacList(giac.caseval(`SCHUR(${matStr})`));
+  const pair = splitGiacList(casRun(`SCHUR(${matStr})`));
   if (pair === null || pair.length !== 2) throw new RPLError('Bad argument value');
   const toMatrix = (mStr) => {
     const rows = splitGiacList(mStr);

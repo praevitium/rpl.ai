@@ -11,7 +11,7 @@ import Complex$ from '../../../vendor/complex.js/complex.mjs';
 import { formatSource, currentDisplay, withFractionMark } from '../formatter.js';
 import { parseEntry as _parseEntryForObjTo, polarVector, fromTyped } from '../parser.js';
 import { astToGiac, buildGiacCmd, giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
-import { giac } from '../cas/giac-engine.mjs';
+import { giac, requireCas, casRun } from '../cas/giac-engine.mjs';
 import { lookup } from './registry.js';
 
 
@@ -2221,7 +2221,7 @@ function _casSpecialValues(ast) {
   if (bare.kind === 'var' || (!names.has('∞') && !names.has('?')) || hasUnits(ast) || !giac.isReady()) return ast;
   let raw;
   try {
-    raw = giac.caseval(buildGiacCmd(ast, (e) => e));
+    raw = casRun(buildGiacCmd(ast, (e) => e));
   } catch (e) {
     if (e instanceof RPLError) return ast;
     throw e;
@@ -3319,8 +3319,8 @@ export function _arrayToGiacStr(v) {
 
 // Giac's answer for an array with symbolic entries, as a vector or matrix; singular is Infinite result, as numerically.
 export function _casArray(cmd) {
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const raw = giac.caseval(cmd);
+  requireCas();
+  const raw = casRun(cmd);
   if (/not invertible/i.test(raw)) throw new RPLError('Infinite result');
   const items = splitGiacList(raw);
   if (!items) throw new RPLError('Bad argument value');

@@ -7,6 +7,7 @@
 import { stripGiacQuotes, stripGiacApproxSuffix, assumeCommands } from "./giac-convert.mjs";
 import { state as calcState } from "../state.js";
 import { RPLError, RPLInterrupt } from "../stack.js";
+import { casNotReady } from "../errors.js";
 
 const isBrowser =
   typeof globalThis.document !== "undefined" &&
@@ -208,3 +209,12 @@ class MockGiacEngine {
 }
 
 export const giac = isBrowser || isWorker ? new BrowserGiacEngine() : new MockGiacEngine();
+
+export function requireCas() {
+  if (!giac.isReady()) throw casNotReady();
+}
+
+export function casRun(cmd) {
+  requireCas();
+  return giac.caseval(cmd);
+}

@@ -2,7 +2,7 @@ import { isProgram, Str, isList, isReal, isInteger, isComplex, RList, Integer, S
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { format as formatValue, DEFAULT_DISPLAY } from '../formatter.js';
 import { Var as AstVar, Bin as AstBin, Num as AstNum, Neg as AstNeg, Fn as AstFn, isNum as astIsNum, freeVars as algebraFreeVars } from '../algebra.js';
-import { giac } from '../cas/giac-engine.mjs';
+import { requireCas, casRun } from '../cas/giac-engine.mjs';
 import { giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
 import { register } from './registry.js';
 import { _astToRplValue, _coefArrToSymbolicX, _cx, _cxAdd, _cxDiv, _cxMul, _cxSub, _nFromIntegerArg, _scalarBinary, _scalarToGiacStr, _toAst } from './internal.js';
@@ -619,7 +619,7 @@ function _giacPolysAndVars(polysV, varsV) {
   if (!isVector(varsV) || !isVector(polysV)) throw new RPLError('Bad argument type');
   if (varsV.items.length === 0 || polysV.items.length === 0) throw new RPLError('Invalid dimension');
   if (!varsV.items.every(isName)) throw new RPLError('Bad argument type');
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const polys = polysV.items.map(_scalarToGiacStr).join(',');
   const vars = varsV.items.map((n) => n.id).join(',');
   return `[${polys}],[${vars}]`;
@@ -629,14 +629,14 @@ function _giacPolysAndVars(polysV, varsV) {
 register('GREDUCE', (s) => {
   const [poly, basisV, varsV] = s.popN(3);
   const args = _giacPolysAndVars(basisV, varsV);
-  const raw = giac.caseval(`greduce(${_scalarToGiacStr(poly)},${args})`);
+  const raw = casRun(`greduce(${_scalarToGiacStr(poly)},${args})`);
   s.push(_astToRplValue(giacToAst(raw)));
 }, { category: 'Polynomials', categoryOrder: 12, label: "GREDUCE" });
 
 
 register('GBASIS', (s) => {
   const [polysV, varsV] = s.popN(2);
-  const parts = splitGiacList(giac.caseval(`gbasis(${_giacPolysAndVars(polysV, varsV)})`));
+  const parts = splitGiacList(casRun(`gbasis(${_giacPolysAndVars(polysV, varsV)})`));
   if (parts === null) throw new RPLError('Bad argument value');
   s.push(Vector(parts.map((elt) => _astToRplValue(giacToAst(elt)))));
 }, { category: 'Polynomials', categoryOrder: 11, label: "GBASIS" });

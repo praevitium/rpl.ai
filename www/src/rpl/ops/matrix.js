@@ -4,7 +4,7 @@ import { astSize, Bin as AstBin, Neg as AstNeg, Num as AstNum, Var as AstVar } f
 import { unitSize } from '../units.js';
 import { eigenSystem } from '../eigen.js';
 import { nextPrngInt9, getCasVx, getApproxMode } from '../state.js';
-import { giac } from '../cas/giac-engine.mjs';
+import { requireCas, casRun } from '../cas/giac-engine.mjs';
 import { giacToAst, splitGiacList } from '../cas/giac-convert.mjs';
 import { charSpaceList, eigenvalueArray, spacesFromJordan } from '../jordan-format.js';
 import { register, OPS } from './registry.js';
@@ -303,8 +303,8 @@ register('RREF', (s) => {
 
 
 function _casRank(m) {
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const raw = giac.caseval(`rank(${_matrixToGiacStr(m)})`);
+  requireCas();
+  const raw = casRun(`rank(${_matrixToGiacStr(m)})`);
   if (!/^\d+$/.test(raw)) throw new RPLError('Bad argument value');
   return Integer(BigInt(raw));
 }
@@ -848,8 +848,8 @@ register('HILBERT', (s) => {
 
 // Giac answers [p, L, U] with P·A = L·U, P's row i holding its 1 in column p[i].
 function _casLU(A) {
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
-  const [perm, L, U] = splitGiacList(giac.caseval(`normal([lu(${_matrixToGiacStr(A)})])`)) ?? [];
+  requireCas();
+  const [perm, L, U] = splitGiacList(casRun(`normal([lu(${_matrixToGiacStr(A)})])`)) ?? [];
   const p = splitGiacList(perm ?? '');
   const lower = giacMatrixRows(L ?? ''), upper = giacMatrixRows(U ?? '');
   if (!p || !lower || !upper) throw new RPLError('Bad argument value');
@@ -1260,13 +1260,13 @@ function _polyInVx(raw, vx) {
 
 function _matrixPoly(cmd, matrix, vx) {
   const matStr = _matrixToGiacStr(matrix);
-  if (_hasSymEntry(matrix.rows.flat())) return _polyInVx(giac.caseval(`${cmd}(${matStr})`), vx);
-  return Symbolic(giacToAst(giac.caseval(`${cmd}(${matStr},${vx})`)));
+  if (_hasSymEntry(matrix.rows.flat())) return _polyInVx(casRun(`${cmd}(${matStr})`), vx);
+  return Symbolic(giacToAst(casRun(`${cmd}(${matStr},${vx})`)));
 }
 
 register('PCAR', (s) => {
   const { matrix } = _popSquareMatrix(s);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   s.push(_matrixPoly('charpoly', matrix, getCasVx()));
 }, { category: 'Vectors / matrices', categoryOrder: 46, label: "PCAR" });
 
@@ -1282,10 +1282,10 @@ function _giacItems(raw) {
   return items;
 }
 
-const _casEigenvalues = (matStr) => _giacItems(giac.caseval(`eigenvals(${matStr})`)).map((elt) => _astToRplValue(giacToAst(elt)));
+const _casEigenvalues = (matStr) => _giacItems(casRun(`eigenvals(${matStr})`)).map((elt) => _astToRplValue(giacToAst(elt)));
 
 function _casEigenvectors(matStr) {
-  const rows = splitGiacList(giac.caseval(`egv(${matStr})`));
+  const rows = splitGiacList(casRun(`egv(${matStr})`));
   if (rows === null) throw new RPLError('Bad argument value');
   return rows.map((rowStr) => {
     const cols = splitGiacList(rowStr);
@@ -1326,7 +1326,7 @@ const _isDecimalMatrix = (matrix) => !_hasSymEntry(matrix.rows.flat())
 
 function _eigenAnswer(matrix, exact, numeric) {
   if (!_isDecimalMatrix(matrix)) {
-    if (!giac.isReady()) throw new RPLError('CAS not ready');
+    requireCas();
     try {
       return exact(_matrixToGiacStr(matrix));
     } catch (e) {
@@ -1404,15 +1404,15 @@ function jordanFactors(raw) {
 
 register('JORDAN', (s) => {
   const { matrix } = _popSquareMatrix(s);
-  if (!giac.isReady()) throw new RPLError('CAS not ready');
+  requireCas();
   const vx = getCasVx();
-  const factors = jordanFactors(giac.caseval(`jordan(${_matrixToGiacStr(matrix)})`));
+  const factors = jordanFactors(casRun(`jordan(${_matrixToGiacStr(matrix)})`));
   if (!factors) throw new RPLError('Bad argument value');
   const built = spacesFromJordan(factors.transition, factors.form);
   if (!built) throw new RPLError('Bad argument value');
   // Giac's pmin of a symbolic matrix can be wrong, so its roots come from the Jordan blocks.
   s.push(_hasSymEntry(matrix.rows.flat())
-    ? _polyInVx(giac.caseval(`normal(pcoeff([${built.minimalRoots.map(_scalarToGiacStr).join(',')}]))`), vx)
+    ? _polyInVx(casRun(`normal(pcoeff([${built.minimalRoots.map(_scalarToGiacStr).join(',')}]))`), vx)
     : _matrixPoly('pmin', matrix, vx));
   s.push(_matrixPoly('charpoly', matrix, vx));
   s.push(charSpaceList(built.spaces));

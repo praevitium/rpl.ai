@@ -322,6 +322,15 @@ const ctx = (extra = {}) => ({ describe: describeValue, commandInfo: (n) => COMM
   assert(made.every((e) => e instanceof RPLError && e.errorNumber === ERROR_NUMBERS[e.message]) && made.map((e) => e.errorNumber).join() === '514,515,1281',
     'badType, badValue and invalidDimension are RPLErrors numbered 202h, 203h and 501h');
   assert(casNotReady() instanceof RPLError && casNotReady().errorNumber === undefined, 'casNotReady is an RPLError with no HP number');
+  const { giac, casRun, requireCas } = await import('../www/src/rpl/cas/giac-engine.mjs');
+  giac._setFixture('1+1', '2');
+  assert(casRun('1+1') === '2', 'casRun hands the command to Giac and returns its answer');
+  const ready = giac.isReady;
+  giac.isReady = () => false;
+  try {
+    const refused = [() => casRun('1+1'), requireCas].map((f) => { try { f(); } catch (e) { return e instanceof RPLError && e.message; } });
+    assert(refused.join() === 'CAS not ready,CAS not ready', 'casRun and requireCas refuse with CAS not ready while Giac is loading');
+  } finally { giac.isReady = ready; }
   const { Stack } = await import('../www/src/rpl/stack.js');
   const { lookup } = await import('../www/src/rpl/ops.js');
   const s = new Stack();
