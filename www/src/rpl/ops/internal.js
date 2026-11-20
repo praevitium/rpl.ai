@@ -5,7 +5,7 @@ import { exactTrigRewrite } from '../exact-trig.js';
 import { gatherLike } from '../tidy.js';
 import { Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, UnitNode as AstUnit, evalAst as algebraEvalAst, defaultFnEval as algebraDefaultFnEval, Neg as AstNeg, freeVars as algebraFreeVars, hasUnits, exactRational, isRealNum, isKnownFunction, isArrayLiteral } from '../algebra.js';
 import { sameDims, convertValue, temperaturesAdd, uexprEqual, multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr } from '../units.js';
-import { state as _calcState, getApproxMode, getComplexMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, testUserFlag, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, settleLcd, withScratchState, inScratchState, notify } from '../state.js';
+import { state as _calcState, getApproxMode, getComplexMode, getWordsizeMask, varRecall, getLastError, setLastError, restoreLastError, varStore, getRealMaxExp, testUserFlag, enterDirectory, toRadians, fromRadians, angleTrig, setHalted, HALT_KIND, settleLcd, withScratchState, inScratchState, notify } from '../state.js';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import Complex$ from '../../../vendor/complex.js/complex.mjs';
 import { formatSource, currentDisplay, withFractionMark } from '../formatter.js';
@@ -1198,7 +1198,7 @@ function* evalRange(s, toks, from, to, depth) {
   while (i < to) {
     checkTimeLimit();
     if (_sliceNow()) {
-      _markSuspend(toks, i, 'slice');
+      _markSuspend(toks, i, HALT_KIND.SLICE);
       yield;
     }
     const tok = toks[i];
@@ -1214,14 +1214,14 @@ function* evalRange(s, toks, from, to, depth) {
       continue;
     }
     if (id === 'HALT') {
-      _markSuspend(toks, i + 1, 'halt');
+      _markSuspend(toks, i + 1, HALT_KIND.HALT);
       yield;
       i++;
       continue;
     }
     if (id === 'PROMPT' || id === 'MSGBOX') {
       if (s.depth < 1) throw new RPLError(`${id}: Too few arguments`);
-      _markSuspend(toks, i + 1, id === 'PROMPT' ? 'prompt' : 'msgbox', null, s.pop());
+      _markSuspend(toks, i + 1, id === 'PROMPT' ? HALT_KIND.PROMPT : HALT_KIND.MSGBOX, null, s.pop());
       yield;
       i++;
       continue;
@@ -1230,7 +1230,7 @@ function* evalRange(s, toks, from, to, depth) {
       if (s.depth < 2) throw new RPLError('INPUT: Too few arguments');
       const input = inputSpec(s.peek());
       s.pop();
-      _markSuspend(toks, i + 1, 'input', input, s.pop());
+      _markSuspend(toks, i + 1, HALT_KIND.INPUT, input, s.pop());
       yield;
       i++;
       continue;
@@ -1240,7 +1240,7 @@ function* evalRange(s, toks, from, to, depth) {
       const choose = chooseSpec(s.peek(2), s.peek());
       s.pop();
       s.pop();
-      _markSuspend(toks, i + 1, 'choose', choose, s.pop());
+      _markSuspend(toks, i + 1, HALT_KIND.CHOOSE, choose, s.pop());
       yield;
       i++;
       continue;
@@ -1249,13 +1249,13 @@ function* evalRange(s, toks, from, to, depth) {
       if (s.depth < 1) throw new RPLError('WAIT: Too few arguments');
       const wait = waitSpec(s.peek());
       s.pop();
-      _markSuspend(toks, i + 1, 'wait', wait);
+      _markSuspend(toks, i + 1, HALT_KIND.WAIT, wait);
       yield;
       i++;
       continue;
     }
     if (id === 'KEY' && _keyCanPause()) {
-      _markSuspend(toks, i + 1, 'wait', KEY_POLL);
+      _markSuspend(toks, i + 1, HALT_KIND.WAIT, KEY_POLL);
       yield;
       i++;
       continue;
@@ -1265,7 +1265,7 @@ function* evalRange(s, toks, from, to, depth) {
       const inform = informSpec(s.peek(5), s.peek(4), s.peek(3), s.peek(2), s.peek());
       const title = s.peek(5);
       s.popN(5);
-      _markSuspend(toks, i + 1, 'inform', inform, title);
+      _markSuspend(toks, i + 1, HALT_KIND.INFORM, inform, title);
       yield;
       i++;
       continue;
@@ -1403,7 +1403,7 @@ function _markSuspend(tokens, index, kind, dialog = null, prompt = null) {
 
 function* _stepYield(tokens, index) {
   if (!_singleStepMode || (_insideSubProgram && !_stepInto)) return;
-  _markSuspend(tokens, index, 'step');
+  _markSuspend(tokens, index, HALT_KIND.STEP);
   yield;
 }
 
@@ -1425,7 +1425,7 @@ export function runSuspendable(program) {
       halted = true;
       const { tokens = null, index = null, kind = null, dialog = null, stepping = null, prompt = null } = _pendingSuspend ?? {};
       _pendingSuspend = null;
-      waiting = kind === 'wait' || kind === 'slice';
+      waiting = kind === HALT_KIND.WAIT || kind === HALT_KIND.SLICE;
       setHalted({ generator: gen, tokens, index, kind, dialog, stepping, prompt });
     }
   } finally {

@@ -16,7 +16,7 @@
 
 import {
   state, bootValue, testUserFlag, currentPath, goHome, goInto, notify, seedPrng, setCasVx, setCasModulo, setRealAssume, varUndoSteps, restoreVarUndo,
-  ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX, REAL_MAX_EXP_MIN, REAL_MAX_EXP_MAX, isModeFlag,
+  ANGLE_MODES, COORD_MODES, DISPLAY_MODES, WORDSIZE_MIN, WORDSIZE_MAX, REAL_MAX_EXP_MIN, REAL_MAX_EXP_MAX, isModeFlag, HALT_KIND,
 } from './state.js';
 import { TYPES, Decimal, BIN_BASES, Grob, isStorableHpName, bigintText, isStackOverflow } from './types.js';
 import { RPLError } from './stack.js';
@@ -520,7 +520,7 @@ export function loadDraft() {
 }
 
 export const RUN_KEY = 'hp50.run';
-const RUN_KINDS = ['halt', 'step', 'prompt', 'slice', 'wait', 'msgbox', 'input', 'choose', 'inform'];
+const RUN_KINDS = Object.values(HALT_KIND);
 const RUN_TAG_MAX = 200;
 const RUN_LINE_MAX = 2000;
 const PAGE_LOCK = 'hp50.page.';

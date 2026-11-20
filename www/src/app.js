@@ -37,7 +37,7 @@ import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, varStoreWhereFound, currentPath,
   goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo, getUserKeys, standardKeysActive,
-  batchStateNotifications, isSuspension, clearHalted, haltMark, tagHalted, haltRun,
+  batchStateNotifications, isSuspension, isSlicePause, clearHalted, haltMark, tagHalted, haltRun,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setFontHooks, setTransferHooks, receivedName, receivedTarget, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue, setRunSlice, withoutRunSlices, pausableRun, haltedLocals, recallVar, storeVar } from './rpl/ops.js';
 import { VERSION, DATE } from './build-info.js';
@@ -676,7 +676,7 @@ class App {
 
   // A long program pauses every RUN_SLICE_MS, and the pause is where the page takes a press.  Between pauses it goes on by itself
   // behind a banner with Stop (also ON, Esc and the back button), and nothing else takes a press until it ends.
-  _running() { return calcState.halted?.kind === 'slice'; }
+  _running() { return isSlicePause(calcState.halted); }
 
   _drawLater(part) {
     if (!this._running()) { this._drawn = null; return false; }

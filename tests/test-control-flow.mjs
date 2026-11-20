@@ -7848,3 +7848,25 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   const few = fail('« 5 START NEXT » EVAL');
   assert(few.err && /Too few/.test(few.err.message) && shape(few.s) === '5', `START with one argument keeps the stack as it was (${shape(few.s)})`);
 }
+
+/* --- Halt kinds: one list names every way a program can stop, and the
+       predicates read a record's kind from it. --- */
+{
+  const { HALT_KIND, isSuspension, isSlicePause, getHalted, clearHalted, resetHome } = await import('../www/src/rpl/state.js');
+  assert(Object.values(HALT_KIND).sort().join() === 'choose,halt,inform,input,msgbox,prompt,slice,step,wait',
+    'HALT_KIND names the nine ways a program stops');
+  assert(Object.values(HALT_KIND).filter((kind) => isSuspension({ kind })).sort().join() === 'choose,inform,input,msgbox,slice,wait',
+    'the dialogs, WAIT and a paused run are suspensions; HALT, PROMPT and a step are not');
+  assert(isSlicePause({ kind: HALT_KIND.SLICE }) && !isSlicePause({ kind: HALT_KIND.HALT }) && !isSlicePause(null),
+    'isSlicePause is true only for a run paused between stretches');
+  resetHome();
+  const kinds = [['« 1 HALT 2 »', HALT_KIND.HALT], ['« "x" PROMPT »', HALT_KIND.PROMPT], ['« "x" MSGBOX »', HALT_KIND.MSGBOX], ['« 1 WAIT »', HALT_KIND.WAIT]].map(([src, want]) => {
+    const s = new Stack();
+    s.push(parseEntry(src)[0]);
+    lookup('EVAL').fn(s);
+    const got = getHalted()?.kind;
+    clearHalted();
+    return got === want;
+  });
+  assert(kinds.every(Boolean), 'HALT, PROMPT, MSGBOX and WAIT park a record of their own kind');
+}

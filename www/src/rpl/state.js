@@ -282,6 +282,11 @@ export function getLastFitModel() { return state.lastFitModel; }
 
 export function clearLastFitModel() { _set('lastFitModel', null); }
 
+export const HALT_KIND = Object.freeze({
+  HALT: 'halt', STEP: 'step', PROMPT: 'prompt', MSGBOX: 'msgbox', INPUT: 'input',
+  CHOOSE: 'choose', INFORM: 'inform', WAIT: 'wait', SLICE: 'slice',
+});
+
 let haltSerial = 0;
 
 export function setHalted(h) {
@@ -296,8 +301,8 @@ export function getHalted() { return state.halted; }
 
 // A running program paused between two of its stretches is halted where it is, as if a HALT stood there: CONT, SST and KILL take it from here.
 export function haltRun() {
-  if (state.halted?.kind !== 'slice') return false;
-  state.halted.kind = 'halt';
+  if (!isSlicePause(state.halted)) return false;
+  state.halted.kind = HALT_KIND.HALT;
   state.halted.paused = true;
   _emit();
   return true;
@@ -379,8 +384,9 @@ export function owedAfter(record, mark) {
 
 // HALT, PROMPT and a single step halt a program; the dialogs and WAIT suspend one, which the HP's KILL leaves and its
 // HLT annunciator doesn't show.
-const SUSPENSION_KINDS = new Set(['wait', 'msgbox', 'input', 'choose', 'inform', 'slice']);
+const SUSPENSION_KINDS = new Set([HALT_KIND.WAIT, HALT_KIND.MSGBOX, HALT_KIND.INPUT, HALT_KIND.CHOOSE, HALT_KIND.INFORM, HALT_KIND.SLICE]);
 export const isSuspension = (record) => SUSPENSION_KINDS.has(record?.kind);
+export const isSlicePause = (record) => record?.kind === HALT_KIND.SLICE;
 
 export function getPromptMessage() { return state.promptMessage; }
 
