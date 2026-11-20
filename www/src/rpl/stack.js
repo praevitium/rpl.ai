@@ -170,6 +170,19 @@ export class Stack {
     this._emit();
   }
 
+  // Takes `count` levels out, from `level` downwards, and puts `values` in their place; gives back what it took.
+  replaceLevels(level, count, values = []) {
+    const taken = this._items.splice(this._items.length - level, count, ...values);
+    this._emit();
+    return taken;
+  }
+
+  moveLevel(from, to) {
+    const [v] = this._items.splice(this._items.length - from, 1);
+    this._items.splice(this._items.length - (to - 1), 0, v);
+    this._emit();
+  }
+
   save() {
     return this._items.slice();
   }

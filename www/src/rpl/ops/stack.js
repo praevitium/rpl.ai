@@ -99,10 +99,7 @@ register('ROLL', (s) => {
   const n = _toNonNegIntCount(s.pop());
   if (n <= 1) return;
   s.need(n);
-  const arr = s._items;
-  const [x] = arr.splice(arr.length - n, 1);
-  arr.push(x);
-  s._emit();
+  s.moveLevel(n, 1);
 }, { category: 'Stack', categoryOrder: 16, label: "ROLL" });
 
 
@@ -110,10 +107,7 @@ register('ROLLD', (s) => {
   const n = _toNonNegIntCount(s.pop());
   if (n <= 1) return;
   s.need(n);
-  const arr = s._items;
-  const top = arr.pop();
-  arr.splice(arr.length - (n - 1), 0, top);
-  s._emit();
+  s.moveLevel(1, n);
 }, { category: 'Stack', categoryOrder: 17, label: "ROLLD" });
 
 
@@ -122,8 +116,7 @@ register('UNPICK', (s) => {
   const n = _toPosIntIndex(s.pop());
   s.need(n + 1);
   const v = s.pop();
-  s._items[s._items.length - n] = v;
-  s._emit();
+  s.replaceLevels(n, 1, [v]);
 }, { category: 'Stack', categoryOrder: 15, label: "UNPICK" });
 
 

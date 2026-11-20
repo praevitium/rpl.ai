@@ -119,7 +119,7 @@ export function snapshot(stack) {
     },
     home:    encode(state.home),
     path:    currentPath(),
-    stack:   stack._items.map((item) => encode(item)),      // level 1 last
+    stack:   stack.save().map((item) => encode(item)),      // level 1 last
     prngSeed: encode(state.prngSeed),
     casVx: state.casVx,
     casModulo: encode(state.casModulo),

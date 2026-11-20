@@ -16,31 +16,25 @@ export function rollDownToLevel(stack, level) {
 export function dropLevel(stack, level) {
   const depth = stack.depth;
   if (level < 1 || level > depth) throw new Error('Too few arguments');
-  stack._items.splice(stack._items.length - level, 1);
-  stack._emit();
+  stack.replaceLevels(level, 1);
 }
 
 // The HP interactive stack's KEEP: levels 1 to level stay, everything above goes.
 export function keepLevels(stack, level) {
   if (level < 1 || level > stack.depth) throw new Error('Too few arguments');
   if (level === stack.depth) return;
-  stack._items.splice(0, stack.depth - level);
-  stack._emit();
+  stack.replaceLevels(stack.depth, stack.depth - level);
 }
 
 export function moveLevel(stack, from, to) {
   const depth = stack.depth;
   if (from < 1 || from > depth || to < 1 || to > depth) throw new Error('Too few arguments');
   if (from === to) return;
-  const [v] = stack._items.splice(stack._items.length - from, 1);
-  stack._items.splice(stack._items.length - (to - 1), 0, v);
-  stack._emit();
+  stack.moveLevel(from, to);
 }
 
 export function replaceLevel(stack, level, values) {
   const depth = stack.depth;
   if (level < 1 || level > depth) throw new Error('Too few arguments');
-  const at = stack._items.length - level;
-  stack._items.splice(at, 1, ...values);
-  stack._emit();
+  stack.replaceLevels(level, 1, values);
 }
