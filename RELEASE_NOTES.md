@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.140 (2026-11-20)
+**Latest release:** v0.8.141 (2026-11-20)
 
 ---
 
@@ -18,6 +18,14 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.141 — 2026-11-20
+
+- Changed: nothing a user sees. The ways a program can stop (HALT, a
+  step, PROMPT, the dialogs, WAIT and a paused run) are named in one list
+  that the interpreter, the saved-run check and the pause test all read.
 
 ---
 
