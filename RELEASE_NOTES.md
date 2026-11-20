@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.0 (2026-11-20)
+**Latest release:** v0.9.1 (2026-11-20)
 
 ---
 
@@ -18,6 +18,17 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.9.1 — 2026-11-20
+
+- Changed: the README, the assistant's page in Settings, its first-use
+  notice and the endpoint form now describe every supported server, where
+  several still said Ollama only. The endpoint form gives the usual
+  address of vLLM, llama-server and LM Studio and the flags that turn on
+  their tool calling, and the Context and thinking options say what they
+  do on servers other than Ollama.
 
 ---
 
