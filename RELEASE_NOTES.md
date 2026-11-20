@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.8.141 (2026-11-20)
+**Latest release:** v0.8.142 (2026-11-20)
 
 ---
 
@@ -18,6 +18,19 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.8.142 — 2026-11-20
+
+- Changed: an update downloads only the files that changed. Each release
+  used to fetch the whole app again, about 20 MB with the algebra engine;
+  now the service worker keeps every file whose content is the same and
+  fetches the rest. The update that brings this in is still a full
+  download, and the saving starts with the one after it.
+- A fetched file is checked against the release's list before it is
+  trusted for later updates, so an old copy served while a release is
+  still spreading is fetched again next time.
 
 ---
 
