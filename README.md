@@ -40,7 +40,8 @@ download, no account and no sign-up.
 - **A tutor, not just an answer engine.** The optional assistant turns a
   physics or maths problem into steps you work through on your own stack.
   It checks each step and gives hints before it gives answers. It runs on a
-  model you choose, on your own computer or through Ollama's cloud.
+  model you choose: on your own computer with Ollama, vLLM, llama.cpp or
+  LM Studio, or through Ollama's cloud or a hosted provider.
 - **At home on a phone.** The HP keypad, or a Minimal view with just the
   stack, ⌫ and Enter; a strip of RPL keys above the phone's keyboard;
   finger-sized controls; and a back button that closes what's open first.
@@ -60,7 +61,7 @@ download, no account and no sign-up.
 | **Plots** | FUNCTION, POLAR, PARAMETRIC, DIFFEQ, slope fields, conics, truth plots, contour maps, 3D wireframes you can turn, y-slices, parametric surfaces, complex grid maps and matrices in 3D, scatter, bar and histogram plots, with trace, zoom and PNG or SVG export |
 | **Data in and out** | Copy and paste with Excel, Google Sheets and Numbers; CSV, TSV, `.xlsx`, JSON and HP `.rpl` files; LaTeX copied out and pasted in |
 | **Input** | Keyboard first with `⌘K` search, the HP 50g keypad on screen, and a phone layout with its own key strip |
-| **Assistant** | Optional. A model you run with Ollama explains, solves, writes programs and tutors, acting on your stack with one-click undo |
+| **Assistant** | Optional. A model you run with Ollama, vLLM, llama.cpp or LM Studio, or a hosted one, explains, solves, writes programs and tutors, acting on your stack with one-click undo |
 | **Where it runs** | Any modern browser, installable as an app, offline after the first visit, with no account; your data stays in the browser |
 
 **Contents:** [Get started](#get-started) ·
@@ -1157,8 +1158,11 @@ be undone in one click. Error banners and stack levels hand their context to
 it with Explain or Ask. The conversation stays in this browser, so a phone
 that drops the page gives it back at the next start; ✱ New clears it.
 
-Setup takes about ten minutes plus the model download. Ollama has to run on
-a computer (Mac, Windows or Linux); phones and tablets connect to one.
+Setup takes about ten minutes plus the model download. The steps below set
+up Ollama; for vLLM, llama.cpp, LM Studio or a hosted provider, see
+[their section](#vllm-llamacpp-lm-studio-and-hosted-providers). A local
+server has to run on a computer (Mac, Windows or Linux); phones and
+tablets connect to one.
 
 ### 1. Install Ollama
 
@@ -1275,10 +1279,12 @@ block a secure page from calling `http://localhost`, with no prompt and no
 setting to change it. Use Chrome, Edge or Firefox on the computer, or run
 rpl.ai yourself (below).
 
-The assistant asks for a 32K-token context by default. On a computer with
-little memory, choose 8K or 16K under Context in the endpoint settings.
-Thinking models reason before answering unless you turn that off there.
-Models that support tools get native tool calling, on Ollama and on
+The assistant asks Ollama for a 32K-token context by default. On a
+computer with little memory, choose 8K or 16K under Context in the
+endpoint settings. Thinking models reason before answering unless you turn
+that off there. Other servers fix the context and thinking when they
+start, and the Context choice then only limits how much conversation is
+sent. Models that support tools get native tool calling, on Ollama and on
 OpenAI-compatible servers that accept tools; others write their tool calls
 as text.
 
@@ -1370,12 +1376,12 @@ The endpoint form explains the failure it sees:
 
 | It says | Do this |
 |---|---|
-| Waiting for your browser | Find the browser's prompt about apps and services on this device, near the address bar, and choose **Allow**. Until you answer it, nothing reaches Ollama |
+| Waiting for your browser | Find the browser's prompt about apps and services on this device, near the address bar, and choose **Allow**. Until you answer it, nothing reaches the server |
 | Your browser is blocking this page | You chose Block earlier: click the icon to the left of the address, allow **Apps on device** (**Local network access** in older Chrome, **Device apps and services** in Firefox) and try again |
 | answered but refused this page's origin | Ollama: set `OLLAMA_ORIGINS` (step 3), then quit and restart it. vLLM: add the origin to `--allowed-origins`. LM Studio: turn on Enable CORS |
 | Nothing answered | Check that the server is running and on that port (Ollama 11434, vLLM 8000, llama-server 8080, LM Studio 1234) |
 | Safari … blocks HTTPS pages | Use Chrome, Edge or Firefox, or run rpl.ai yourself |
-| served over HTTPS … blocks plain-HTTP requests | See "Ollama on another computer" above |
+| served over HTTPS … blocks plain-HTTP requests | See "Ollama on another computer" above; the same applies to any server on another computer |
 | `unauthorized` from a cloud model | Run `ollama signin` on the computer running Ollama |
 
 ---
@@ -1605,9 +1611,11 @@ to read, and formulas arrive as their last calculated values.
 
 **The assistant.** It is only as good as the model you connect, and small
 models make mistakes in RPL; check its work, and use Undo freely. It needs
-Ollama or a compatible server, it can't use ollama.com's API directly, and
-Safari and iPhone or iPad browsers can't reach a local Ollama from the
-hosted app.
+Ollama or another OpenAI-compatible server (vLLM, llama.cpp, LM Studio or
+a hosted provider that accepts browser requests); it can't use
+ollama.com's API directly; tool calling on vLLM and llama.cpp has to be
+turned on when the server starts; and Safari and iPhone or iPad browsers
+can't reach a local server from the hosted app.
 
 **Browsers.** Firefox runs rpl.ai but can't install it as an app. The first
 visit needs a network connection; after that it works offline.

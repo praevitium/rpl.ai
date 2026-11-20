@@ -971,7 +971,7 @@ export class ChatBot {
     const list = wrap.appendChild(elem('ul', { className: 'cb-consent-list' }));
     for (const text of [
       'Replies come from a language model and may be wrong. The assistant checks its work on the calculator, but verify anything important.',
-      'The assistant runs on an Ollama or OpenAI-compatible endpoint that you configure. The conversation and calculator state are sent to that server.',
+      'The assistant runs on an endpoint that you configure: Ollama, or an OpenAI-compatible server such as vLLM, llama.cpp, LM Studio or a hosted provider. The conversation and calculator state are sent to that server.',
       'The assistant runs calculator actions immediately — pushing values, running commands, storing variables, changing modes. Every action is shown as a card, and each turn has an Undo link that restores the calculator to how it was before.',
     ]) {
       list.appendChild(elem('li', { textContent: text }));
@@ -1139,8 +1139,10 @@ export class ChatBot {
       textContent: 'For local Ollama the URL is http://localhost:11434 — models you have pulled '
         + 'appear below once it is reachable. For Ollama\'s cloud models, run `ollama signin` on the machine '
         + 'running Ollama and pick a model whose name ends in -cloud or :cloud; browsers can\'t call ollama.com directly. '
-        + 'Any OpenAI-compatible server that accepts browser requests also works. '
-        + 'Models that support tools get native tool calling, on Ollama and on servers such as vLLM or llama.cpp started with tool calling on.',
+        + 'Any OpenAI-compatible server that accepts browser requests also works: vLLM at http://localhost:8000/v1, '
+        + 'llama-server at http://localhost:8080/v1, LM Studio at http://localhost:1234/v1, or a hosted provider with its API key. '
+        + 'Models that support tools get native tool calling, on Ollama and on servers started with tool calling on '
+        + '(vLLM: --enable-auto-tool-choice; llama-server: --jinja).',
     });
     const urlInput = elem('input', {
       type: 'url',
@@ -1161,10 +1163,10 @@ export class ChatBot {
     modelSelect.appendChild(placeholder);
     const statusEl = elem('div', { className: 'cb-remote-help' });
 
-    // Context is the num_ctx requested; both options are ignored by non-Ollama servers.
+    // Ollama gets the context as num_ctx and the thinking switch; other servers ignore thinking, and their context only budgets the history.
     const ctxSelect = elem('select', {
       className: 'cb-remote-input cb-picker-select cb-remote-ctx',
-      title: 'Context window to request from Ollama (num_ctx). Larger keeps more conversation but uses more memory.',
+      title: 'Context window: Ollama is asked for this much (num_ctx); with other servers it limits how much conversation is sent, capped by vLLM\'s window. Larger keeps more conversation but uses more memory.',
     });
     for (const n of REMOTE_CONTEXT_CHOICES) {
       ctxSelect.appendChild(elem('option', { value: String(n), textContent: `${n / 1024}K tokens` }));
@@ -1175,7 +1177,7 @@ export class ChatBot {
     const thinkBox = elem('input', { type: 'checkbox', checked: seed?.think !== false });
     const thinkLabel = label('', 'cb-remote-label cb-remote-opt cb-remote-check');
     thinkLabel.append(thinkBox, ' Let thinking models reason first');
-    thinkLabel.title = 'For models that support it (Qwen3, DeepSeek-R1, gpt-oss…): reason before answering. Slower, but better on multi-step problems.';
+    thinkLabel.title = 'For Ollama models that support it (Qwen3, DeepSeek-R1, gpt-oss…): reason before answering. Slower, but better on multi-step problems. Other servers decide this when they start.';
     const optsRow = elem('div', { className: 'cb-remote-opts' });
     optsRow.append(ctxLabel, thinkLabel);
     const errEl = elem('div', { className: 'cb-remote-err' });
