@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.4 (2026-11-21)
+**Latest release:** v0.9.5 (2026-11-21)
 
 ---
 
@@ -18,6 +18,15 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.9.5 — 2026-11-21
+
+- Changed: nothing a user sees. `escapeHtml` and the scroll-edge helpers
+  live in a small `ui/dom.js`, so notes, banners, the tour, the keyboard
+  strip, menus and the writers no longer load the stack display to use
+  them. `display.js` still passes them on for the modules that import it.
 
 ---
 
