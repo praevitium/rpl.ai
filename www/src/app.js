@@ -2102,7 +2102,7 @@ class App {
   _answerKey(code) {
     const halted = calcState.halted;
     if (halted?.kind !== 'wait' || !halted.dialog.key || code == null) return false;
-    if (this.shift && !this.shiftLocked()) this.setShift(null);
+    this.releaseShift();
     if (halted.dialog.poll) this._continueProgram(Real(Math.trunc(code)), Real(1));
     else this._continueProgram(Real(code));
     return true;
@@ -2352,7 +2352,7 @@ class App {
     if (!slot) return;
     const layer = forcedLayer ?? this.layer();
     const handler = (layer === 'L' && slot.onPressL) || (layer === 'R' && slot.onPressR) || slot.onPress;
-    if (!forcedLayer && this.shift && !this.shiftLocked()) this.setShift(null);
+    if (!forcedLayer) this.releaseShift();
     if (!handler) return;
     try { handler(); } catch (e) { this.entry.flashError(e); }
   }
@@ -2947,7 +2947,7 @@ class App {
     const obj = this._userAssignment(Math.round((hpKeyCode(primary, layer) ?? 0) * 100), primary);
     if (obj === null) return false;
     if (obj) this._runKeyObject(obj, customMenuLabel(obj));
-    if (this.shift && !this.shiftLocked()) this.setShift(null);
+    this.releaseShift();
     return true;
   }
 
@@ -3004,6 +3004,9 @@ class App {
   shiftKind() { return this.shift ? this.shift.replace('Lock', '') : null; }
 
   shiftLocked() { return !!this.shift?.endsWith('Lock'); }
+
+  // A one-shot shift ends after the press it applied to; a locked one stays.
+  releaseShift() { if (this.shift && !this.shiftLocked()) this.setShift(null); }
 
   setShift(state) {
     if (MODIFIER_KINDS.has(state)) {
@@ -3092,7 +3095,7 @@ class App {
       if (shifted?.opensMenu) shifted(this.entry, this.stack, this);
       else if (this.inputMode === 'equation') this.equationEditor.pressKeypad(key, this.shift);
       else this.matrixEditor.pressFace(keypadFace(key, this.shift));
-      if (this.shift && !this.shiftLocked()) this.setShift(null);
+      this.releaseShift();
       return;
     }
 
@@ -3111,7 +3114,7 @@ class App {
       : (layer === 'R' && !key.shiftRAction && key.shiftR) ? key.shiftR : null;
     if (missing) this.entry.flashError({ message: `${missing} isn't available in rpl.ai` });
     else if (action) action(this.entry, this.shift, this);
-    if (this.shift && !this.shiftLocked()) this.setShift(null);
+    this.releaseShift();
   }
 
   _keyContexts() {

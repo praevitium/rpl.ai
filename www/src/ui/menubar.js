@@ -90,7 +90,7 @@ export class MenuBar {
   _nxt() {
     const { app } = this;
     const back = app.layer() === 'L';
-    if (app.shift && !app.shiftLocked()) app.setShift(null);
+    app.releaseShift();
     if (back) app.prevMenuPage();
     else app.nextMenuPage();
   }
