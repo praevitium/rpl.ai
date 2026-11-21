@@ -13,7 +13,7 @@ import { _astToRplValue } from '../rpl/ops/internal.js';
 import { giac } from '../rpl/cas/giac-engine.mjs';
 import { state as calcState, toRadians, fromRadians, testUserFlag } from '../rpl/state.js';
 import { evalNumeric } from './plot-engine.js';
-import { escapeHtml, markScrollEdges } from './display.js';
+import { escapeHtml, markScrollEdges } from './dom.js';
 import { writerKeys } from './input-area.js';
 
 const HOLE = Object.freeze({ t: 'hole' });

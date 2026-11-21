@@ -1,4 +1,4 @@
-import { escapeHtml, markScrollEdges } from './display.js';
+import { escapeHtml, markScrollEdges } from './dom.js';
 import { writerKeys } from './input-area.js';
 import { parseEntry, fromTyped } from '../rpl/parser.js';
 import { format, withFractionMark, fractionMark, separatorMark } from '../rpl/formatter.js';

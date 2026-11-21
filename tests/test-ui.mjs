@@ -2714,8 +2714,7 @@ setAngle('RAD');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
   const ends = [];
   const el = { scrollTop: 0, clientHeight: 40, scrollHeight: 268, classList: { toggle: (c, on) => on && ends.push(c) } };
-  const displaySrc = readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8');
-  const markEnds = new Function(`return function ${displaySrc.match(/export function (markScrollEnds\(el\) \{[\s\S]*?\n\})/)[1]}`)();
+  const { markScrollEnds: markEnds } = await import('../www/src/ui/dom.js');
   markEnds(el);
   const atTop = ends.join(' ');
   ends.length = 0;
@@ -2732,8 +2731,7 @@ setAngle('RAD');
 {
   const popSrc = readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/import \{ markScrollEnds \} from '\.\/display\.js';/.test(popSrc)
-    && /this\._place\(point\);\s*el\.addEventListener\('scroll', \(\) => markScrollEnds\(el\), \{ passive: true \}\);/.test(popSrc)
+  assert(/this\._place\(point\);\s*el\.addEventListener\('scroll', \(\) => markScrollEnds\(el\), \{ passive: true \}\);/.test(popSrc)
     && /el\.style\.top = `\$\{top\}px`;\s*markScrollEnds\(el\);\s*\}/.test(popSrc)
     && /\.pop::before, \.pop::after \{ content: ''; position: sticky;/.test(css) && /\.pop\.more-t::before, \.pop\.more-b::after \{ opacity: 1; \}/.test(css),
     'popover: a menu that scrolls fades at the edge it continues past, as the autocomplete list does, so the level menu\'s rows below the fold show there are more');
@@ -4877,4 +4875,18 @@ const resetRun = await (async () => {
     }
   }
   assert(loose.length === 0, `every text field asks a phone's keyboard not to capitalize, correct or spell-check it, as a name's case and a command's spelling matter${loose.length ? `; ${loose.join('; ')}` : ''}`);
+}
+
+{
+  const dom = await import('../www/src/ui/dom.js');
+  const display = await import('../www/src/ui/display.js');
+  assert(dom.escapeHtml('<a href="x">&</a>') === '&lt;a href=&quot;x&quot;&gt;&amp;&lt;/a&gt;', 'dom.js escapeHtml escapes markup');
+  assert(display.escapeHtml === dom.escapeHtml && display.markScrollEdges === dom.markScrollEdges && display.markScrollEnds === dom.markScrollEnds,
+    'display.js passes the DOM helpers through from dom.js, so either import works');
+  const classes = new Set();
+  const el = { scrollLeft: 0, clientWidth: 100, scrollWidth: 300, scrollTop: 5, clientHeight: 50, scrollHeight: 55,
+    classList: { toggle: (c, on) => (on ? classes.add(c) : classes.delete(c)) } };
+  dom.markScrollEdges(el);
+  dom.markScrollEnds(el);
+  assert([...classes].sort().join() === 'more-r,more-t', 'markScrollEdges and markScrollEnds mark the edges a scroller continues past');
 }

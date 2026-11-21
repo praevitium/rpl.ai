@@ -1,5 +1,5 @@
 import { icon } from './icons.js';
-import { escapeHtml } from './display.js';
+import { escapeHtml } from './dom.js';
 import { fractionMark, separatorMark } from '../rpl/formatter.js';
 import { holdToClear } from './input-area.js';
 

@@ -1,4 +1,4 @@
-import { markScrollEnds } from './display.js';
+import { markScrollEnds } from './dom.js';
 
 const FOCUSABLE = 'button:not([disabled]), input, select, [tabindex="0"]';
 

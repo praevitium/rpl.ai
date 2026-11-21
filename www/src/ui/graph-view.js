@@ -5,7 +5,7 @@ import {
   stackValueToTrace, traceToStackValues, traceInputError, traceFromInputs, retypeTrace, unvaluedNames, splitEquation,
   tableRows, tableSetup, tableXName, alongOpenName,
 } from './plot-engine.js';
-import { escapeHtml, markScrollEdges } from './display.js';
+import { escapeHtml, markScrollEdges } from './dom.js';
 import { icon } from './icons.js';
 import { isSymbolic, isName, isMatrix, isVector, isList, isGrob, isTagged, Real, Complex, RList, BinaryInteger, Name, Tagged } from '../rpl/types.js';
 import { state as calcState, varRecall, getLastFitModel, toRadians, fromRadians, getPict, subscribe as subscribeState } from '../rpl/state.js';

@@ -1,5 +1,5 @@
 import { icon } from '../ui/icons.js';
-import { escapeHtml, markScrollEdges } from '../ui/display.js';
+import { escapeHtml, markScrollEdges } from '../ui/dom.js';
 
 const DECIMAL = /^[-+]?(\d+\.?\d*|\.\d+)(E[-+]?\d+)?$/i;
 

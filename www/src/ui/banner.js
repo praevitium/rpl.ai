@@ -1,5 +1,5 @@
 import { icon } from './icons.js';
-import { escapeHtml } from './display.js';
+import { escapeHtml } from './dom.js';
 
 export function errorBannerHtml(desc) {
   const fixes = desc.fixes.map((f, i) => `<button type="button" class="chip${i === 0 ? ' pri' : ''}" data-bn="fix" data-fix="${escapeHtml(f.id)}"${f.arg ? ` data-arg="${escapeHtml(f.arg)}"` : ''}>${escapeHtml(f.label)}</button>`).join('');

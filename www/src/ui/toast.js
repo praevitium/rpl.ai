@@ -1,4 +1,4 @@
-import { escapeHtml } from './display.js';
+import { escapeHtml } from './dom.js';
 
 export class Toasts {
   constructor(el) { this.el = el; }

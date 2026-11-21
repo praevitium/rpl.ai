@@ -4,14 +4,11 @@ import { Var } from '../rpl/algebra.js';
 import { TYPES, isSymbolic, isMatrix, isVector, isList, isTagged, isNumber, isInteger, isRational, isBinaryInteger, isUnit, isString, isGrob, isName, charsOf } from '../rpl/types.js';
 import { state as calcState, currentPath } from '../rpl/state.js';
 import { icon } from './icons.js';
+import { escapeHtml, scrollEdges, setScrollEdges } from './dom.js';
+
+export { escapeHtml, markScrollEdges, markScrollEnds } from './dom.js';
 
 const formatLevel = (value, display) => withFractionMark(formatStackTop(value, display));
-
-export function escapeHtml(text) {
-  return String(text)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 const GROB_PICTURE_MAX = { width: 240, height: 96, scale: 3 };
 
@@ -63,24 +60,6 @@ const gridText = (cell, display) => (isName(cell) && !cell.local ? cell.id : wit
 const oneLine = (value, level) => level > 1 && calcState.textbookMode && (isList(value) || gridRows(value) > DEEP_GRID_ROWS);
 const levelTitle = (level) => `Level ${level}. Click to select, double-click to edit, drag to move.`;
 const fromBottom = (view) => view.scrollHeight - view.scrollTop - view.clientHeight;
-const scrollEdges = (el) => [el.scrollLeft > 1, el.scrollLeft + el.clientWidth < el.scrollWidth - 1];
-
-function setScrollEdges(el, [left, right]) {
-  el.classList.toggle('more-l', left);
-  el.classList.toggle('more-r', right);
-}
-
-// Classes for edge fades on a sideways scroller, showing which way there is more.
-export function markScrollEdges(el) {
-  setScrollEdges(el, scrollEdges(el));
-}
-
-// The same for a list that scrolls up and down: more-t and more-b mark the edge it continues past.
-export function markScrollEnds(el) {
-  el.classList.toggle('more-t', el.scrollTop > 1);
-  el.classList.toggle('more-b', el.scrollTop + el.clientHeight < el.scrollHeight - 1);
-}
-
 const swipeThreshold = (width) => Math.min(120, width * 0.35);
 
 // A finger swiped sideways across a notice (an error banner, a toast) puts it away, as a phone's notifications go.

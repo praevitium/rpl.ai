@@ -1,5 +1,5 @@
 import { icon } from './icons.js';
-import { escapeHtml, markScrollEdges } from './display.js';
+import { escapeHtml, markScrollEdges } from './dom.js';
 import { ACTIONS, KEYMAP, CONTEXT_LABELS, chordText, isMacPlatform } from './actions.js';
 import { STORAGE_KEY as STACK_STORAGE_KEY, BAD_STATE_KEY, BACKUPS_KEY, DRAFT_KEY, HISTORY_KEY, PLOT_KEY, UNDO_KEY, RUN_KEY } from '../rpl/persist.js';
 import { UI_PREFS_KEY, THEMES, THEME_LABELS, STACK_SIZES, STACK_SIZE_LABELS, TUTOR_STYLES, KEYPAD_LAYOUTS, KEYPAD_LABELS, SIDES, SIDE_LABELS } from './ui-prefs.js';
