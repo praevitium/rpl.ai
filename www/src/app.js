@@ -154,6 +154,13 @@ function tutorNote(step, tail) {
 }
 
 class App {
+  // Fields the methods below first set, declared here so the class lists all of them. They start undefined, as before.
+  menuFolder; typingOnKeypad; _lastKeypad; _lastMenu; _menuPinned; _userOnce; _offScreen; _wakeLock;
+  _runHalt; _runStart; _runClock; _runTimer; _savedMidRun; _drawn; _haltBanner; _bannerTimer;
+  _dialogHalt; _dialogAlpha; _promptHalt; _chooseList; _waitTimer;
+  _alarmShown; _alarmTimer; _announceTimer; _clockTimer; _printTimer; _printedLines; _algebraicOffered;
+  _autosaveFailed; _autosaveTrimmed; _keepDraft; _syncBackButton;
+
   constructor() {
     this.stack = new Stack();
     this.entry = new Entry(this.stack);
