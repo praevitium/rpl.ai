@@ -566,7 +566,7 @@ import { assert, assertThrows } from './helpers.mjs';
     const s = new Stack();
     s.push(Real(1));
     const e = new Entry(s);
-    e._snapForUndo();
+    e.snapForUndo();
     s.push(Real(2));
     e.performUndo();
     assert(s.depth === 1 && s.peek(1).value.eq(1), 'performUndo restores the stack');
@@ -585,15 +585,15 @@ import { assert, assertThrows } from './helpers.mjs';
   // stack undo slot and the var-state undo slot, or performUndo will
   // trip "No undo available" from the var-state side even when the
   // stack has an undo slot, and a later REDO can replay a stale var
-  // snapshot.  These sites route through Entry._snapForUndo which
-  // pushes both slots.  This test exercises _snapForUndo directly and
+  // snapshot.  These sites route through Entry.snapForUndo which
+  // pushes both slots.  This test exercises snapForUndo directly and
   // verifies UNDO/REDO succeed when only the stack content changed.
   {
     const s = new Stack();
     s.push(Real(1));
     s.push(Real(2));
     const e = new Entry(s);
-    e._snapForUndo();                 // what swapTop should do
+    e.snapForUndo();                 // what swapTop should do
     s.drop();                          // stack-only mutation, no var change
     assert(s.depth === 1, 'pre-undo sanity: { 1 } after DROP');
     e.performUndo();
@@ -3481,7 +3481,7 @@ setAngle('RAD');
     'Store in a variable: a refusal shows under the field and clears as the name is retyped, where an error note covered the popover\'s heading, or its field in landscape, with the keyboard up');
   assert(/<div class="note err" role="alert" hidden><\/div><div class="note">Same as <code>\\`NAME\\` CRDIR<\/code>\.<\/div>/.test(newFolder)
     && /app\.nameForm\(pop\.querySelector\('form'\), \(dir, refuse\) => \{/.test(newFolder)
-    && /catch \(err\) \{ app\.entry\._dropNoOpUndoStep\(\); refuse\(err\.message\); \}/.test(newFolder) && !/notifyError/.test(newFolder),
+    && /catch \(err\) \{ app\.entry\.dropNoOpUndoStep\(\); refuse\(err\.message\); \}/.test(newFolder) && !/notifyError/.test(newFolder),
     'Variables, New folder: the name field reads names as the Store box does, an empty one doing nothing and quotes dropped, and says why it refuses one under the field, where an error note covered the field itself at 280 px with the keyboard up');
   assert(/const next = input\.value\.trim\(\)\.replace\(\/\^\(\['`\]\)\(\.\+\)\\1\$\/, '\$2'\);/.test(drawerSrcForNames)
     && /if \(keep\) \{ input\.setAttribute\('aria-invalid', 'true'\); input\.select\(\); return; \}/.test(drawerSrcForNames)
@@ -4126,7 +4126,7 @@ setAngle('RAD');
   const note = { textContent: '' };
   const snaps = [];
   const sheet = {
-    app: { entry: { _snapForUndo: () => snaps.push('snap'), _dropNoOpUndoStep: () => snaps.push('drop') } },
+    app: { entry: { snapForUndo: () => snaps.push('snap'), dropNoOpUndoStep: () => snaps.push('drop') } },
     sv: { value: formula, names: ['V', 'I', 'R'], texts: {}, note: '', snapped: false },
     el: { querySelectorAll: () => inputs, querySelector: (sel) => (sel === '.sv-note' ? note : inputs.find((i) => sel.includes(`"${i.dataset.sv}"`))) },
     _solverValues: Sheets.prototype._solverValues, _solverNote: Sheets.prototype._solverNote,
@@ -4177,7 +4177,7 @@ setAngle('RAD');
   const note = { textContent: '' };
   const snaps = [];
   const sheet = {
-    app: { entry: { _snapForUndo: () => snaps.push('snap'), _dropNoOpUndoStep: () => snaps.push('drop') } },
+    app: { entry: { snapForUndo: () => snaps.push('snap'), dropNoOpUndoStep: () => snaps.push('drop') } },
     sv: { ...host.sv, texts: {}, note: '' },
     el: { querySelectorAll: () => inputs, querySelector: (sel) => (sel === '.sv-note' ? note : inputs.find((i) => sel.includes(`"${i.dataset.sv}"`))) },
     _solverValues: Sheets.prototype._solverValues, _solverNote: Sheets.prototype._solverNote,
@@ -4728,7 +4728,7 @@ const resetRun = await (async () => {
     && drawerSrc.includes("case 'ref-menu': app.toggleMyMenu(this.cat.ref); return;")
     && drawerSrc.includes("else if (this.current === 'catalog' && this.cat.ref) this._syncMyMenu();"),
     "Catalog reference page: a command the app runs has Add to my menu (Remove from my menu once it is there) before Ask about it, and the label follows CST when Undo or a program changes it");
-  assert(/_changeMyMenu\(change, note\) \{\n\s*const \{ holder, list \} = this\._customMenu\(\);\n\s*if \(list !== undefined && !isList\(list\)\)[^\n]*flashError[^\n]*\n\s*const changed = change\(list\);\n\s*if \(!changed\) return false;\n\s*const store = \(\) => \{\n\s*this\.entry\._snapForUndo\(\);\n\s*varStoreWhereFound\(holder, changed\);/.test(appSrc)
+  assert(/_changeMyMenu\(change, note\) \{\n\s*const \{ holder, list \} = this\._customMenu\(\);\n\s*if \(list !== undefined && !isList\(list\)\)[^\n]*flashError[^\n]*\n\s*const changed = change\(list\);\n\s*if \(!changed\) return false;\n\s*const store = \(\) => \{\n\s*this\.entry\.snapForUndo\(\);\n\s*varStoreWhereFound\(holder, changed\);/.test(appSrc)
     && appSrc.includes('return this._changeMyMenu((list) => toggledCustomMenu(list, name),'),
     'my menu: the app stores the changed list where CST (or the variable CST names) lives, as one undoable step, and refuses a CST that holds something other than a list');
   assert(appSrc.includes("[{ text: `Type ${label}`, mark: '⇦', run: typeIt }, { text: `Recall ${label}`, mark: '⇨', run: recallIt }]")

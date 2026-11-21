@@ -1024,7 +1024,7 @@ class App {
     const stored = [];
     const notes = [];
     const skipped = [];
-    this.entry._snapForUndo();
+    this.entry.snapForUndo();
     for (const file of files) {
       try {
         const { name, value, note } = await readUpload(file, { chooseSheet: (names) => this._chooseSheet(names) });
@@ -1041,7 +1041,7 @@ class App {
     }
     if (skipped.length) notes.push(`Skipped ${skipped.join(', ')}, not asked for.`);
     if (!stored.length) {
-      this.entry._dropNoOpUndoStep();
+      this.entry.dropNoOpUndoStep();
       if (notes.length) this.toast(notes.join(' '));
       return;
     }
@@ -1116,7 +1116,7 @@ class App {
       searchCommands: (query) => searchCommands(query, { names: allOps(), entries: this.reference, categories: CATEGORIES, limit: 12 }),
       snapshotState: () => ({ stack: this.stack.save(), calc: captureCalcState(), editor: this.entry.buffer }),
       restoreState: (snap) => {
-        this.entry._snapForUndo();
+        this.entry.snapForUndo();
         this.stack.restore(snap.stack);
         restoreCalcState(snap.calc);
         this.entry.recall(snap.editor ?? '');
@@ -1287,13 +1287,13 @@ class App {
   }
 
   async importSnapshotFromFile(file) {
-    this.entry._snapForUndo();
+    this.entry.snapForUndo();
     try {
       await importFromFile(file, this.stack);
       this.undoToast(`Restored from ${file.name}`);
       return true;
     } catch (e) {
-      this.entry._dropNoOpUndoStep();
+      this.entry.dropNoOpUndoStep();
       this.notifyError(`Couldn't restore ${file.name}: ${e.message}`);
       return false;
     }
@@ -1304,7 +1304,7 @@ class App {
       const { value, note } = await readUpload(file, { chooseSheet: (names) => this._chooseSheet(names) });
       if (isDirectory(value)) throw new Error('a directory belongs in the Variables drawer (Upload)');
       if (this.entry.buffer.trim()) this.commitEntry();
-      this.entry._snapForUndo();
+      this.entry.snapForUndo();
       this.stack.push(value);
       this.undoToast(`Put ${file.name} on the stack${note ? `. ${note}` : ''}`);
     } catch (e) {
@@ -1409,12 +1409,12 @@ class App {
     if (level == null || level > this.stack.depth) return;
     const value = this.stack.peek(level);
     const run = (fn) => {
-      this.entry._snapForUndo();
-      try { fn(); } catch (e) { this.entry._dropNoOpUndoStep(); this.entry.flashError(e); }
+      this.entry.snapForUndo();
+      try { fn(); } catch (e) { this.entry.dropNoOpUndoStep(); this.entry.flashError(e); }
     };
     const runOn = (op, operand) => {
       this.clearSelection();
-      this.entry._snapForUndo();
+      this.entry.snapForUndo();
       const mark = haltMark();
       const runIt = () => lookup(op).fn(this.stack, this.entry);
       this.entry.safeRun(() => { moveLevel(this.stack, level, 1); if (operand) this.stack.push(operand); this.stack.runOp(op === 'EVAL' ? () => pausableRun(runIt) : runIt); }, op);
@@ -1422,7 +1422,7 @@ class App {
     };
     const runOnLevels = (op) => {
       this.clearSelection();
-      this.entry._snapForUndo();
+      this.entry.snapForUndo();
       this.entry.safeRun(() => { this.stack.push(Integer(level)); this.stack.runOp(() => lookup(op).fn(this.stack, this.entry)); }, op);
     };
     const [verb, name] = act.split(':');
@@ -1607,7 +1607,7 @@ class App {
       onClick: (t) => {
         this.popover.close({ restoreFocus: false });
         this.clearSelection();
-        this.entry._snapForUndo();
+        this.entry.snapForUndo();
         this.entry.safeRun(() => { moveLevel(this.stack, level, 1); this.stack.push(Unit(1, targets[+t.dataset.v])); this.stack.runOp(() => lookup('CONVERT').fn(this.stack, this.entry)); }, 'CONVERT');
       },
     });
@@ -1632,13 +1632,13 @@ class App {
     const pop = this.popover.open(anchor ?? this.display.stackView.querySelector('.st-row.sel'), html, { label: 'Store' });
     const take = this.nameForm(pop.querySelector('form'), (name, refuse) => {
       const value = this.stack.peek(level);
-      this.entry._snapForUndo();
+      this.entry.snapForUndo();
       try {
         varStore(name, value);
         this.popover.close();
         this.undoToast(`Stored in ${name}`);
       } catch (err) {
-        this.entry._dropNoOpUndoStep();
+        this.entry.dropNoOpUndoStep();
         refuse(`Couldn't store in “${name}”: ${err.message}`);
       }
     });
@@ -1674,8 +1674,8 @@ class App {
 
   _moveLevel(from, to) {
     if (from === to) return;
-    this.entry._snapForUndo();
-    try { moveLevel(this.stack, from, to); } catch (e) { this.entry._dropNoOpUndoStep(); this.entry.flashError(e); return; }
+    this.entry.snapForUndo();
+    try { moveLevel(this.stack, from, to); } catch (e) { this.entry.dropNoOpUndoStep(); this.entry.flashError(e); return; }
     this.selectLevel(to);
   }
 
@@ -1712,7 +1712,7 @@ class App {
   _storeLevel(level, name) {
     this.clearSelection();
     const stored = this.entry.safeRun(() => {
-      this.entry._snapForUndo();
+      this.entry.snapForUndo();
       const value = this.stack.peek(level);
       dropLevel(this.stack, level);
       varStore(name, value);
@@ -1825,7 +1825,7 @@ class App {
     const edit = this.pendingEdit;
     const away = edit?.kind === 'var' && this._editedAway(edit);
     this.entry._recordHistory(withFractionMark(formatSource(value)));
-    this.entry._snapForUndo();
+    this.entry.snapForUndo();
     if (edit?.kind === 'level' && this.stack.peek(edit.level) === edit.value) replaceLevel(this.stack, edit.level, [value]);
     else if (edit?.kind === 'var' && !away) varStore(edit.name, value);
     else this.stack.push(value);
@@ -1891,7 +1891,7 @@ class App {
   }
 
   pushFromWriter(value, message) {
-    this.entry._snapForUndo();
+    this.entry.snapForUndo();
     this.stack.push(value);
     this.undoToast(message);
   }
@@ -1910,7 +1910,7 @@ class App {
 
   commitEntryAndPush(values) {
     if (this.entry.buffer.trim()) this.entry.enter();
-    this.entry._snapForUndo();
+    this.entry.snapForUndo();
     for (const value of Array.isArray(values) ? values : [values]) this.stack.push(value);
   }
 
@@ -2132,7 +2132,7 @@ class App {
   }
 
   swapTop() {
-    this.entry._snapForUndo();
+    this.entry.snapForUndo();
     this.entry.safeRun(() => lookup('SWAP').fn(this.stack, this.entry), 'SWAP');
   }
 
@@ -2482,7 +2482,7 @@ class App {
         if (!this.stack.depth) { this.entry.flashError({ message: `${id} needs a value on level 1; the stack is empty.` }); return; }
         const value = this.stack.peek();
         const store = () => {
-          this.entry._snapForUndo();
+          this.entry.snapForUndo();
           if (known) { this.stack.push(named()); lookup(known).fn(this.stack); }
           varStore(id, this.stack.pop());
         };
@@ -2522,7 +2522,7 @@ class App {
   }
 
   _solverRoot(root, arg) {
-    this.entry._snapForUndo();
+    this.entry.snapForUndo();
     this.entry.safeRun(() => { this.stack.push(arg); this.stack.runOp(() => lookup(root).fn(this.stack, this.entry)); }, root);
   }
 
@@ -2797,7 +2797,7 @@ class App {
     if (layer === 'L') {
       if (this.stack.depth < 1) { this.entry.flashError({ message: `STO ${name} needs a value on level 1; the stack is empty.` }); return; }
       const local = haltedLocals().some(([id]) => id === name);
-      const stored = this.entry.safeRun(() => { this.entry._snapForUndo(); storeVar(name, this.stack.pop()); }, 'STO');
+      const stored = this.entry.safeRun(() => { this.entry.snapForUndo(); storeVar(name, this.stack.pop()); }, 'STO');
       if (stored) { if (local) this.toast(`Stored level 1 in ${name}`); else this.undoToast(`Stored level 1 in ${name}`); }
       return;
     }
@@ -2811,7 +2811,7 @@ class App {
   }
 
   _pushValue(value, runAs = null, typed = null) {
-    this.entry._snapForUndo();
+    this.entry.snapForUndo();
     if (!runAs) { this.stack.push(value); return; }
     const mark = haltMark();
     const step = this.stack.undoMark();
@@ -2873,7 +2873,7 @@ class App {
     const changed = change(list);
     if (!changed) return false;
     const store = () => {
-      this.entry._snapForUndo();
+      this.entry.snapForUndo();
       varStoreWhereFound(holder, changed);
     };
     if (!this.entry.safeRun(store, 'STO')) return false;

@@ -985,7 +985,7 @@ export class GraphView {
       return s;
     };
     const [mark, cursor] = [this._anchor, this._mark];
-    const snap = () => this.app.entry._snapForUndo();
+    const snap = () => this.app.entry.snapForUndo();
     switch (key) {
       case 'DOT+': case 'DOT-': {
         this._dot = this._dot === DOTS[key] ? null : DOTS[key];

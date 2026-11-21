@@ -756,7 +756,7 @@ export class Sheets {
 
   // Stored as soon as it is typed, as the HP's fields are; the first change gets an Undo step of its own.
   _solverStore(name, number) {
-    if (!this.sv.snapped) { this.app.entry._snapForUndo(); this.sv.snapped = true; }
+    if (!this.sv.snapped) { this.app.entry.snapForUndo(); this.sv.snapped = true; }
     varStore(name, number);
   }
 
@@ -783,7 +783,7 @@ export class Sheets {
     }
     const { app } = this;
     const fresh = !this.sv.snapped;
-    if (fresh) { app.entry._snapForUndo(); this.sv.snapped = true; }
+    if (fresh) { app.entry.snapForUndo(); this.sv.snapped = true; }
     try {
       for (const n of names) if (numbers[n] !== null && (library || n !== name)) varStore(n, numbers[n]);
       const guess = numbers[name] === null ? 1 : Number(numbers[name].value);
@@ -801,7 +801,7 @@ export class Sheets {
         ? `Found ${name} = ${shown(root)}${along.length ? `, with ${joinNames(along)} on the way` : ''}.`
         : `No sign change was found. The closest to zero is ${name} = ${shown(root)}, where the equation is ${withFractionMark(tableText(residual, 3))} from zero.`);
     } catch (e) {
-      if (fresh) { app.entry._dropNoOpUndoStep(); this.sv.snapped = false; }
+      if (fresh) { app.entry.dropNoOpUndoStep(); this.sv.snapped = false; }
       const blank = names.filter((n) => n !== name && numbers[n] === null);
       const some = blank.length > 6 ? `${blank.slice(0, 5).join(', ')} and ${blank.length - 5} more` : joinNames(blank);
       this._solverNote(e.message === 'Too Many Unknowns' && blank.length

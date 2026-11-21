@@ -899,12 +899,12 @@ export class Drawers {
     const { app } = this;
     const v = calcState.current.entries.get(name);
     if (v === undefined) return;
-    app.entry._snapForUndo();
+    app.entry.snapForUndo();
     try {
       varPurge(name, withContents);
       app.undoToast(`Deleted ${name}`);
     } catch (e) {
-      app.entry._dropNoOpUndoStep();
+      app.entry.dropNoOpUndoStep();
       app.notifyError(v.type === TYPES.DIRECTORY
         ? `${name} isn't empty, and PURGE leaves a full folder alone. Its menu's Delete with its items runs PGDIR, which takes everything inside.`
         : `Couldn't delete ${name}: ${e.message}`);
@@ -916,9 +916,9 @@ export class Drawers {
     const html = `<form data-newdir><h6>New folder</h6><div style="padding:4px 6px 6px"><input type="text" name="name" placeholder="Name, like PROJECTS" aria-label="Folder name" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done" class="pop-name"></div><div class="note err" role="alert" hidden></div><div class="note">Same as <code>\`NAME\` CRDIR</code>.</div><div style="display:flex;justify-content:flex-end;gap:6px;padding:6px"><button type="submit" class="btn pri">Create</button></div></form>`;
     const pop = app.popover.open(anchor, html, { label: 'New folder' });
     app.nameForm(pop.querySelector('form'), (dir, refuse) => {
-      app.entry._snapForUndo();
+      app.entry.snapForUndo();
       try { makeSubdir(dir); app.popover.close(); app.undoToast(`Created ${dir}`); }
-      catch (err) { app.entry._dropNoOpUndoStep(); refuse(err.message); }
+      catch (err) { app.entry.dropNoOpUndoStep(); refuse(err.message); }
     });
   }
 
@@ -941,13 +941,13 @@ export class Drawers {
     const sep = key.indexOf(':');
     const port = key.slice(0, sep);
     const name = key.slice(sep + 1);
-    app.entry._snapForUndo();
+    app.entry.snapForUndo();
     try {
       restoreBackup(port, name, app.stack);
       app.undoToast(`Restored :${key}`);
       this._reveal();
     } catch (e) {
-      app.entry._dropNoOpUndoStep();
+      app.entry.dropNoOpUndoStep();
       app.notifyError(`Restore failed: ${e.message}`);
     }
   }
@@ -1000,9 +1000,9 @@ export class Drawers {
       }
       done = true;
       if (commit && next && next !== oldName) {
-        this.app.entry._snapForUndo();
+        this.app.entry.snapForUndo();
         try { renameCurrentEntry(oldName, next); return; }
-        catch (e) { this.app.entry._dropNoOpUndoStep(); this.app.notifyError(`Rename failed: ${e.message}`); }
+        catch (e) { this.app.entry.dropNoOpUndoStep(); this.app.notifyError(`Rename failed: ${e.message}`); }
       }
       this._renderVarsList();
     };
@@ -1127,7 +1127,7 @@ export class Drawers {
 
   _performDrop(name, target) {
     const { app } = this;
-    app.entry._snapForUndo();
+    app.entry.snapForUndo();
     try {
       if (target.kind === 'crumb') {
         const dir = getDirectoryByPath(currentPath().slice(0, target.index + 1));
@@ -1146,7 +1146,7 @@ export class Drawers {
         reorderCurrentEntry(name, null);
       }
     } catch (e) {
-      app.entry._dropNoOpUndoStep();
+      app.entry.dropNoOpUndoStep();
       app.notifyError(`Move failed: ${e.message}`);
     }
   }

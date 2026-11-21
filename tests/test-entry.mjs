@@ -2180,7 +2180,7 @@ resetBinaryState();
   e.enter();
   const failed = /Infinite result/.test(e.error);
   heard = 0;
-  e._snapForUndo();
+  e.snapForUndo();
   s.push(Integer(7n));
   assert(failed && e.error === '' && heard === 1 && s.depth === 4,
     'the next action after an error starts with the error cleared, so a writer entry or a level action no longer leaves the old message up');

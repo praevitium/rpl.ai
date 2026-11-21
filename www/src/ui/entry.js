@@ -416,7 +416,7 @@ export class Entry {
 
   // Every action that changes the stack or the variables starts here, and the error before it no longer applies:
   // the HP's message goes at the next key.
-  _snapForUndo() {
+  snapForUndo() {
     this.stack.saveForUndo();
     saveVarStateForUndo();
     if (this.error) { this.error = ''; this._emit(); }
@@ -633,7 +633,7 @@ export class Entry {
       }
       if (!this.failure && e.depth != null) this.failure = { op: null, levels: [], depth: e.depth, missing: e.missing };
       if (!keepPartial) this.stack.restore(rollback);
-      this._dropNoOpUndoStep();
+      this.dropNoOpUndoStep();
       const error = context ? new RPLError(`${context}: ${errorText(e)}`) : e;
       if (typed && error instanceof Error && error.line == null) Object.assign(error, typed);
       this.flashError(error);
@@ -641,7 +641,7 @@ export class Entry {
     }
   }
 
-  _dropNoOpUndoStep() {
+  dropNoOpUndoStep() {
     if (this.stack.undoTopMatchesCurrent() && varStateMatchesUndoTop()) {
       this.stack.dropUndoTop();
       dropVarUndoTop();
@@ -690,7 +690,7 @@ export class Entry {
       this._emit();
       return;
     }
-    this._snapForUndo();
+    this.snapForUndo();
     if (!raw) {
       this.safeRun(() => this.stack.dup(), 'DUP');
       return;
@@ -816,7 +816,7 @@ export class Entry {
     this.error = '';
     this.failure = null;
     touchLcd();
-    this._snapForUndo();
+    this.snapForUndo();
     const raw = this.buffer.trim();
     const mark = haltMark();
     const step = this.stack.undoMark();
