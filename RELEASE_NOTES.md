@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.1 (2026-11-20)
+**Latest release:** v0.9.2 (2026-11-20)
 
 ---
 
@@ -18,6 +18,14 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.9.2 — 2026-11-20
+
+- Changed: nothing a user sees. The check that ends a one-shot shift after
+  the press it applied to, and keeps a locked one, is one method used by
+  the keypad, the keyboard and NXT, where seven places repeated it.
 
 ---
 
